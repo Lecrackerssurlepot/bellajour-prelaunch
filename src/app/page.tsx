@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import Image from "next/image";
-
 const IMG_W = 120;
 const IMG_H = 120;
 
@@ -62,13 +60,13 @@ export default function Home() {
           overflow: "hidden",
         }}
       >
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src="/surprise.jpg"
           alt=""
           width={IMG_W}
           height={IMG_H}
           style={{ objectFit: "cover", display: "block" }}
-          unoptimized
         />
       </div>
     </div>
