@@ -1,19 +1,20 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 
 const IMG_W = 120;
 const IMG_H = 120;
 
 export default function Home() {
-  const imgRef = useRef<HTMLImageElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const pos = useRef({ x: 100, y: 100 });
   const vel = useRef({ x: 2.5, y: 2.2 });
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
     function tick() {
-      const el = imgRef.current;
+      const el = wrapperRef.current;
       if (!el) return;
 
       const maxX = window.innerWidth - IMG_W;
@@ -48,21 +49,28 @@ export default function Home() {
 
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden", background: "var(--color-bg)" }}>
-      <img
-        ref={imgRef}
-        src="/surprise.jpg"
-        alt=""
+      <div
+        ref={wrapperRef}
         style={{
           position: "absolute",
           top: 0,
           left: 0,
           width: IMG_W,
           height: IMG_H,
-          objectFit: "cover",
-          borderRadius: 8,
           willChange: "transform",
+          borderRadius: 8,
+          overflow: "hidden",
         }}
-      />
+      >
+        <Image
+          src="/surprise.jpg"
+          alt=""
+          width={IMG_W}
+          height={IMG_H}
+          style={{ objectFit: "cover", display: "block" }}
+          unoptimized
+        />
+      </div>
     </div>
   );
 }
