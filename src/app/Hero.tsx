@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react'
 import './hero.css'
 
 const photos = [
-  { src: '/images/hero/hero-01.jpg', from: 'IMG_5733.JPG',   to: 'Bruny Island, Australie',         cls: 'p1' },
-  { src: '/images/hero/hero-02.jpg', from: '1-CC5.HEIC',     to: 'Coucher de soleil, Pacifique',    cls: 'p2' },
-  { src: '/images/hero/hero-03.jpg', from: 'RT26_020.PNG',   to: 'Antelope Canyon, Arizona',        cls: 'p3' },
-  { src: '/images/hero/hero-04.jpg', from: '_307.PNG',       to: 'Kimberley, Australie-Occidentale',cls: 'p4' },
-  { src: '/images/hero/hero-05.jpg', from: 'IMG_0391.JPG',   to: 'Baie de Sydney, Australie',       cls: 'p5' },
-  { src: '/images/hero/hero-06.jpg', from: '5768_000.PNG',   to: 'Opera House, Sydney',             cls: 'p6' },
-  { src: '/images/hero/hero-07.jpg', from: 'DJI_037.PNG',    to: 'Dampier Peninsula, Australie',    cls: 'p7' },
+  { src: '/images/hero/hero-01.webp', from: 'IMG_5733.JPG',   to: 'Bruny Island, Australie',         cls: 'p1' },
+  { src: '/images/hero/hero-02.webp', from: '1-CC5.HEIC',     to: 'Coucher de soleil, Pacifique',    cls: 'p2' },
+  { src: '/images/hero/hero-03.webp', from: 'RT26_020.PNG',   to: 'Antelope Canyon, Arizona',        cls: 'p3' },
+  { src: '/images/hero/hero-04.webp', from: '_307.PNG',       to: 'Kimberley, Australie-Occidentale',cls: 'p4' },
+  { src: '/images/hero/hero-05.webp', from: 'IMG_0391.JPG',   to: 'Baie de Sydney, Australie',       cls: 'p5' },
+  { src: '/images/hero/hero-06.webp', from: '5768_000.PNG',   to: 'Opera House, Sydney',             cls: 'p6' },
+  { src: '/images/hero/hero-07.webp', from: 'DJI_037.PNG',    to: 'Dampier Peninsula, Australie',    cls: 'p7' },
 ]
 
 function TypewriterLabel({ from, to, delay }: { from: string; to: string; delay: number }) {
@@ -52,7 +52,7 @@ export default function Hero() {
       <span className="vtext vtext-right">VIVEZ NOUS COMPOSONS</span>
 
       <nav className={scrolled ? 'hero-nav hero-nav--scrolled' : 'hero-nav'}>
-        <img src="/images/ui/logo.png" className="hero-nav-logo" alt="Bellajour" />
+        <img src="/images/ui/logo.webp" className="hero-nav-logo" alt="Bellajour" />
       </nav>
 
       <section className="hero">
