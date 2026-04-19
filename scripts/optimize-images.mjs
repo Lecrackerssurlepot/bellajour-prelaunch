@@ -24,6 +24,7 @@ for (const folder of folders) {
       file.replace(/\.(jpg|jpeg|png)$/i, '.webp'));
 
     await sharp(input)
+      .rotate()
       .webp({ quality: 85 })
       .toFile(output);
 
