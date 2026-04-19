@@ -1,15 +1,45 @@
-@import "tailwindcss";
-
 :root {
-  --color-bg: #FAF8F5;
-  --color-text: #1A1A18;
-  --color-accent: #C8A97E;
-  --color-muted: #8C8880;
-  --font-serif: 'Playfair Display', serif;
-  --font-sans: 'Inter', sans-serif;
+  --bj-bg: #F0EAE0;
+  --bj-text: #17140F;
+  --bj-muted: #7A6F62;
+  --bj-gold: #B8834A;
+
+  --bj-section-padding-desktop: 120px;
+  --bj-section-padding-tablet: 88px;
+  --bj-section-padding-mobile: 64px;
+
+  --bj-ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+  --bj-duration-fast: 220ms;
+  --bj-duration-medium: 420ms;
+  --bj-duration-slow: 700ms;
+
+  --bj-max-width: 1440px;
+  --bj-font-serif: 'Cormorant', serif;
+  --bj-font-sans: 'DM Sans', sans-serif;
 }
 
-body {
-  background-color: var(--color-bg);
-  color: var(--color-text);
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  background: var(--bj-bg);
+  overflow-x: hidden;
+  font-family: var(--bj-font-sans);
+}
+
+* { box-sizing: border-box; }
+
+.bj-section {
+  width: 100%;
+  max-width: var(--bj-max-width);
+  margin: 0 auto;
+  padding: var(--bj-section-padding-desktop) 5vw;
+}
+
+@media (max-width: 1279px) {
+  .bj-section { padding: var(--bj-section-padding-tablet) 5vw; }
+}
+
+@media (max-width: 767px) {
+  .bj-section { padding: var(--bj-section-padding-mobile) 5vw; }
 }
