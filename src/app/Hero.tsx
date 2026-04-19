@@ -28,7 +28,7 @@ function TypewriterLabel({ from, to, delay }: { from: string; to: string; delay:
           clearInterval(interval)
           setMono(false)
         }
-      }, 40)
+      }, 18)
       return () => clearInterval(interval)
     }, delay)
     return () => clearTimeout(timeout)
@@ -68,7 +68,7 @@ export default function Hero() {
             <div className="frame">
               <img src={p.src} alt={p.to} />
             </div>
-            <TypewriterLabel from={p.from} to={p.to} delay={800 + i * 200} />
+            <TypewriterLabel from={p.from} to={p.to} delay={300 + i * 80} />
           </div>
         ))}
 

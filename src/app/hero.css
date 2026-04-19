@@ -189,7 +189,15 @@
 }
 .hero-input::placeholder { color: rgba(23, 20, 15, 0.4); }
 .hero-input-prenom { width: clamp(100px, 8vw, 140px); }
-.hero-input-email  { width: clamp(130px, 10vw, 190px); }
+.hero-input-email {
+  width: clamp(130px, 10vw, 190px);
+  min-width: clamp(130px, 10vw, 190px);
+  transition: width 0.3s var(--bj-ease-premium, cubic-bezier(0.22,1,0.36,1));
+}
+.hero-input-email:focus {
+  width: clamp(200px, 16vw, 280px);
+  outline: none;
+}
 .hero-btn {
   height: clamp(38px, 4vh, 52px);
   padding: 0 clamp(14px, 1.5vw, 24px);
