@@ -1,445 +1,220 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Anxiété — Bellajour</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=DM+Sans:ital,wght@1,300&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { background: #1C1C1C; }
-
-    /* Hero placeholder */
-    #hero-placeholder {
-      height: 100vh;
-      background: #EAE3D8;
-    }
-
-    /* Section anxiété */
-    #section {
-      height: 600vh;
-      position: relative;
-      border-top: 1px solid #2C2C2C;
-    }
-
-    #stage {
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    /* Photos */
-    .photo {
-      position: absolute;
-      background: #2A2828;
-      background-size: cover;
-      background-position: center;
-      opacity: 0;
-    }
-    #g0, #g1, #g2, #g3, #g4, #g5 { width: 155px; height: 200px; }
-    #fl1 { width: 160px; height: 210px; }
-    #fl2 { width: 190px; height: 120px; }
-    #fr1 { width: 150px; height: 210px; }
-    #fr2 { width: 190px; height: 120px; }
-
-    /* Textes */
-    #txt-l1 {
-      position: absolute;
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-weight: 400;
-      font-size: 58px;
-      color: #F0EBE1;
-      text-align: center;
-      width: 100%;
-      opacity: 0;
-    }
-    #txt-l2 {
-      position: absolute;
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-weight: 300;
-      font-size: 36px;
-      color: #A89880;
-      text-align: center;
-      width: 100%;
-      opacity: 0;
-    }
-    #txt-scroll {
-      position: absolute;
-      top: 8vh;
-      left: 0;
-      width: 100%;
-    }
-    .scroll-phrase {
-      position: absolute;
-      top: 0;
-      width: 100%;
-      text-align: center;
-      opacity: 0;
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-weight: 300;
-      font-size: 32px;
-      color: #F0EBE1;
-    }
-    #txt-b1 {
-      position: absolute;
-      top: 0;
-      width: 100%;
-      text-align: center;
-      opacity: 0;
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-weight: 300;
-      font-size: 28px;
-      color: #F0EBE1;
-    }
-    #txt-b2 {
-      position: absolute;
-      top: 48px;
-      width: 100%;
-      text-align: center;
-      opacity: 0;
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-weight: 300;
-      font-size: 28px;
-      color: #A89880;
-    }
-    #txt-anx1 {
-      position: absolute;
-      top: 8vh;
-      width: 100%;
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-weight: 300;
-      font-size: 32px;
-      color: #A89880;
-      text-align: center;
-      opacity: 0;
-    }
-    #txt-anx2 {
-      position: absolute;
-      top: calc(8vh + 48px);
-      width: 100%;
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-weight: 400;
-      font-size: 52px;
-      color: #F0EBE1;
-      text-align: center;
-      opacity: 0;
-    }
-    #txt-sol1 {
-      position: absolute;
-      top: 8vh;
-      width: 100%;
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-weight: 400;
-      font-size: 64px;
-      color: #F0EBE1;
-      text-align: center;
-      opacity: 0;
-    }
-    #txt-sol2 {
-      position: absolute;
-      top: calc(8vh + 82px);
-      width: 100%;
-      font-family: 'DM Sans', sans-serif;
-      font-style: italic;
-      font-weight: 300;
-      font-size: 18px;
-      color: #A89880;
-      text-align: center;
-      line-height: 1.7;
-      opacity: 0;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bellajour — Preview</title>
+<link rel="stylesheet" href="/hero.css">
+<style>
+  #section { background: #1C1C1C !important; }
+  #stage { background: #1C1C1C !important; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=DM+Sans:ital,wght@1,300&display=swap" rel="stylesheet">
 </head>
 <body>
 
-  <div id="hero-placeholder"></div>
+<!-- ═══════════════════════════════════ HERO ═══════════════════════════════════ -->
+  <!-- ── Hero ── -->
+  <span class="vtext vtext-left">MAISON D'ÉDITION DU SOUVENIR</span>
+  <span class="vtext vtext-right">VIVEZ NOUS COMPOSONS</span>
 
-  <div id="section">
-    <div id="stage">
+  <nav class="hero-nav" id="hero-nav">
+    <img src="images/ui/logo.webp" class="hero-nav-logo" alt="Bellajour">
+  </nav>
 
-      <div id="txt-l1">Vos photos sont là.</div>
-      <div id="txt-l2">Votre album, lui, attend encore.</div>
-
-      <div id="txt-scroll">
-        <div id="p3" class="scroll-phrase">À force de vouloir choisir la bonne, on garde tout.</div>
-        <div id="p4" class="scroll-phrase">La première est belle.</div>
-        <div id="p5" class="scroll-phrase">La deuxième aussi.</div>
-        <div id="p6" class="scroll-phrase">La troisième a une lumière différente.</div>
-        <div id="p7" class="scroll-phrase">Et la quarantième… peut-être que c'est la bonne.</div>
-        <div id="txt-b1">Alors les souvenirs restent là.</div>
-        <div id="txt-b2">Magnifiques, mais jamais vraiment racontés.</div>
-      </div>
-
-      <div id="txt-anx1">C'est ce qu'on appelle</div>
-      <div id="txt-anx2">l'anxiété photographique.</div>
-
-      <div id="txt-sol1">Bellajour</div>
-      <div id="txt-sol2">Comprend vos besoins<br>et crée l'album parfait pour vous</div>
-
-      <div id="g0" class="photo"></div>
-      <div id="g1" class="photo"></div>
-      <div id="g2" class="photo"></div>
-      <div id="g3" class="photo"></div>
-      <div id="g4" class="photo"></div>
-      <div id="g5" class="photo"></div>
-
-      <div id="fl1" class="photo"></div>
-      <div id="fl2" class="photo"></div>
-      <div id="fr1" class="photo"></div>
-      <div id="fr2" class="photo"></div>
-
+  <section class="hero">
+    <div class="hero-line"></div>
+    <div class="hero-headline">
+      <p class="hero-headline-l1">Nous composons vos photos</p>
+      <p class="hero-headline-l2">en albums premium</p>
     </div>
+    <div class="photo p1"><div class="frame"><img src="images/hero/hero-01.webp" alt="Bruny Island"></div><span class="label">IMG_5733.JPG</span></div>
+    <div class="photo p2"><div class="frame"><img src="images/hero/hero-02.webp" alt="Pacifique"></div><span class="label">1-CC5.HEIC</span></div>
+    <div class="photo p3"><div class="frame"><img src="images/hero/hero-03.webp" alt="Antelope Canyon"></div><span class="label">RT26_020.PNG</span></div>
+    <div class="photo p4"><div class="frame"><img src="images/hero/hero-04.webp" alt="Kimberley"></div><span class="label">_307.PNG</span></div>
+    <div class="photo p5"><div class="frame"><img src="images/hero/hero-05.webp" alt="Sydney"></div><span class="label">IMG_0391.JPG</span></div>
+    <div class="photo p6"><div class="frame"><img src="images/hero/hero-06.webp" alt="Opera House"></div><span class="label">5768_000.PNG</span></div>
+    <div class="photo p7"><div class="frame"><img src="images/hero/hero-07.webp" alt="Dampier"></div><span class="label">DJI_037.PNG</span></div>
+    <div class="hero-badge"><span>WAITLIST OUVERTE</span></div>
+    <div class="hero-form">
+      <div class="hero-form-label">REJOINDRE LA LISTE</div>
+      <div class="hero-form-row">
+        <input type="text" placeholder="Prénom" class="hero-input hero-input-prenom">
+        <input type="email" placeholder="Email" class="hero-input hero-input-email">
+        <button class="hero-btn" type="button">→</button>
+      </div>
+      <div class="hero-count">
+        <span class="hero-count-dot"></span>
+        847 personnes déjà inscrites
+      </div>
+    </div>
+  </section>
+
+  <div class="sig-cta">
+    <span class="sig-text">Rejoindre la liste</span>
+    <img src="images/ui/signature.svg" alt="" class="sig-img">
   </div>
 
-  <script>
-    // ── Utilitaires ──
-    function lerp(a, b, t) { return a + (b - a) * t; }
-    function normalize(p, a, b) {
-      return Math.min(1, Math.max(0, (p - a) / (b - a)));
+<!-- ═══════════════════════════════ SECTION ANXIÉTÉ ══════════════════════════ -->
+<div id="section" style="height:600vh;position:relative;background:#1C1C1C;border-top:1px solid #2C2C2C;">
+  <div id="stage" style="position:sticky;top:0;height:100vh;overflow:hidden;">
+
+    <div id="txt-l1" style="position:absolute;width:100%;text-align:center;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;font-size:58px;color:#F0EBE1;opacity:0;">Vos photos sont là.</div>
+    <div id="txt-l2" style="position:absolute;width:100%;text-align:center;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:36px;color:#A89880;opacity:0;">Votre album, lui, attend encore.</div>
+
+    <div id="txt-scroll" style="position:absolute;top:8vh;left:0;width:100%;text-align:center;">
+      <div id="p3" style="position:absolute;top:0;left:0;width:100%;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:32px;color:#F0EBE1;opacity:0;">À force de vouloir choisir la bonne, on garde tout.</div>
+      <div id="p4" style="position:absolute;top:0;left:0;width:100%;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:32px;color:#F0EBE1;opacity:0;">La première est belle.</div>
+      <div id="p5" style="position:absolute;top:0;left:0;width:100%;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:32px;color:#F0EBE1;opacity:0;">La deuxième aussi.</div>
+      <div id="p6" style="position:absolute;top:0;left:0;width:100%;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:32px;color:#F0EBE1;opacity:0;">La troisième a une lumière différente.</div>
+      <div id="p7" style="position:absolute;top:0;left:0;width:100%;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:32px;color:#F0EBE1;opacity:0;">Et la quarantième… peut-être que c'est la bonne.</div>
+      <div id="txt-b1" style="position:absolute;top:0;left:0;width:100%;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:28px;color:#F0EBE1;opacity:0;">Alors les souvenirs restent là.</div>
+      <div id="txt-b2" style="position:absolute;top:44px;left:0;width:100%;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:28px;color:#A89880;opacity:0;">Magnifiques, mais jamais vraiment racontés.</div>
+    </div>
+
+    <div id="txt-anx1" style="position:absolute;top:8vh;left:0;width:100%;text-align:center;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:32px;color:#A89880;opacity:0;">C'est ce qu'on appelle</div>
+    <div id="txt-anx2" style="position:absolute;top:calc(8vh + 52px);left:0;width:100%;text-align:center;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;font-size:52px;color:#F0EBE1;opacity:0;">l'anxiété photographique.</div>
+
+    <div id="txt-sol1" style="position:absolute;top:8vh;left:0;width:100%;text-align:center;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:400;font-size:64px;color:#F0EBE1;opacity:0;">Bellajour</div>
+    <div id="txt-sol2" style="position:absolute;top:calc(8vh + 86px);left:0;width:100%;text-align:center;font-family:'DM Sans',sans-serif;font-style:italic;font-weight:300;font-size:18px;color:#A89880;line-height:1.7;opacity:0;">Comprend vos besoins<br>et crée l'album parfait pour vous</div>
+
+    <div id="g0" style="position:absolute;width:155px;height:200px;background:#2A2828;background-size:cover;background-position:center;opacity:0;"></div>
+    <div id="g1" style="position:absolute;width:155px;height:200px;background:#2A2828;background-size:cover;background-position:center;opacity:0;"></div>
+    <div id="g2" style="position:absolute;width:155px;height:200px;background:#2A2828;background-size:cover;background-position:center;opacity:0;"></div>
+    <div id="g3" style="position:absolute;width:155px;height:200px;background:#2A2828;background-size:cover;background-position:center;opacity:0;"></div>
+    <div id="g4" style="position:absolute;width:155px;height:200px;background:#2A2828;background-size:cover;background-position:center;opacity:0;"></div>
+    <div id="g5" style="position:absolute;width:155px;height:200px;background:#2A2828;background-size:cover;background-position:center;opacity:0;"></div>
+
+    <div id="fl1" style="position:absolute;width:160px;height:210px;background:#333030;background-size:cover;background-position:center;opacity:0;"></div>
+    <div id="fl2" style="position:absolute;width:190px;height:120px;background:#333030;background-size:cover;background-position:center;opacity:0;"></div>
+    <div id="fr1" style="position:absolute;width:150px;height:210px;background:#333030;background-size:cover;background-position:center;opacity:0;"></div>
+    <div id="fr2" style="position:absolute;width:190px;height:120px;background:#333030;background-size:cover;background-position:center;opacity:0;"></div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  function lerp(a,b,t){return a+(b-a)*t}
+  function norm(p,a,b){return Math.min(1,Math.max(0,(p-a)/(b-a)))}
+  function set(el,o,l,t,tr){
+    if(!el)return;
+    if(o!==null)el.style.opacity=o;
+    if(l!==null)el.style.left=l+'px';
+    if(t!==null)el.style.top=t+'px';
+    if(tr!==null)el.style.transform=tr;
+  }
+
+  var sec=document.getElementById('section');
+  if(!sec){console.error('NO SECTION');return;}
+
+  var W,H,G={},F={};
+  function calc(){
+    W=window.innerWidth;H=window.innerHeight;
+    G.g0={l:W/2-240,t:H*.38}; G.g1={l:W/2-77,t:H*.38}; G.g2={l:W/2+86,t:H*.38};
+    G.g3={l:W/2-240,t:H*.38+208}; G.g4={l:W/2-77,t:H*.38+208}; G.g5={l:W/2+86,t:H*.38+208};
+    F.fl1={l:W/2-265,t:H*.20}; F.g5={l:W/2-78,t:H*.20}; F.fr1={l:W/2+90,t:H*.20};
+    F.fl2={l:W/2-265,t:H*.62}; F.fr2={l:W/2+50,t:H*.62};
+  }
+  window.addEventListener('resize',calc);
+  calc();
+
+  function progress(){
+    var r=sec.getBoundingClientRect();
+    var total=sec.offsetHeight-window.innerHeight;
+    return Math.min(1,Math.max(0,-r.top/total));
+  }
+
+  var ids=['g0','g1','g2','g3','g4','g5','fl1','fl2','fr1','fr2',
+           'txt-l1','txt-l2','txt-scroll','p3','p4','p5','p6','p7',
+           'txt-b1','txt-b2','txt-anx1','txt-anx2','txt-sol1','txt-sol2'];
+  var el={};
+  ids.forEach(function(id){el[id]=document.getElementById(id);});
+
+  function run(){
+    var p=progress();
+
+    // F1A — txt-l1
+    var a=norm(p,0,.10);
+    set(el['txt-l1'],a,null,H*.42-(1-a)*20,null);
+
+    // F1B — txt-l2
+    var b=norm(p,.12,.20);
+    set(el['txt-l2'],b,null,H*.52-(1-b)*14,null);
+
+    // F2 — texte monte + grille entre
+    var p2=norm(p,.22,.38);
+    if(p>=.22){
+      set(el['txt-l1'],null,null,lerp(H*.42,H*.08,p2),null);
+      set(el['txt-l2'],null,null,lerp(H*.52,H*.14,p2),null);
     }
-    function setEl(el, props) {
-      if (!el) return;
-      if (props.opacity   !== undefined) el.style.opacity   = props.opacity;
-      if (props.left      !== undefined) el.style.left      = props.left + 'px';
-      if (props.top       !== undefined) el.style.top       = props.top  + 'px';
-      if (props.transform !== undefined) el.style.transform = props.transform;
+    var go=norm(p,.22,.30), gy=lerp(H,0,p2);
+    ['g0','g1','g2','g3','g4','g5'].forEach(function(id){
+      set(el[id],go,G[id].l,G[id].t+gy,null);
+    });
+
+    // F3 — floats + phrases
+    if(p>=.38){
+      var fo=1-norm(p,.38,.42);
+      set(el['txt-l1'],fo,null,null,null);
+      set(el['txt-l2'],fo,null,null,null);
     }
-
-    // ── DOM ──
-    const section  = document.getElementById('section');
-    const txt_l1   = document.getElementById('txt-l1');
-    const txt_l2   = document.getElementById('txt-l2');
-    const txt_anx1 = document.getElementById('txt-anx1');
-    const txt_anx2 = document.getElementById('txt-anx2');
-    const txt_sol1 = document.getElementById('txt-sol1');
-    const txt_sol2 = document.getElementById('txt-sol2');
-    const fl1 = document.getElementById('fl1');
-    const fl2 = document.getElementById('fl2');
-    const fr1 = document.getElementById('fr1');
-    const fr2 = document.getElementById('fr2');
-
-    // ── Images ──
-    document.getElementById('g0').style.backgroundImage = "url('images/anxiete/grid-01.webp')";
-    document.getElementById('g1').style.backgroundImage = "url('images/anxiete/grid-02.webp')";
-    document.getElementById('g2').style.backgroundImage = "url('images/anxiete/grid-03.webp')";
-    document.getElementById('g3').style.backgroundImage = "url('images/anxiete/grid-04.webp')";
-    document.getElementById('g4').style.backgroundImage = "url('images/anxiete/grid-05.webp')";
-    document.getElementById('g5').style.backgroundImage = "url('images/anxiete/grid-06.webp')";
-    fl1.style.backgroundImage = "url('images/anxiete/float-01.webp')";
-    fl2.style.backgroundImage = "url('images/anxiete/float-02.webp')";
-    fr1.style.backgroundImage = "url('images/anxiete/float-03.webp')";
-    fr2.style.backgroundImage = "url('images/anxiete/float-04.webp')";
-
-    // ── Positions ──
-    let W, H, G = {}, F = {};
-
-    function computePositions() {
-      W = window.innerWidth;
-      H = window.innerHeight;
-
-      G.g0 = { left: W/2 - 240,       top: H * 0.38 };
-      G.g1 = { left: W/2 - 240 + 163, top: H * 0.38 };
-      G.g2 = { left: W/2 - 240 + 326, top: H * 0.38 };
-      G.g3 = { left: W/2 - 240,       top: H * 0.38 + 208 };
-      G.g4 = { left: W/2 - 240 + 163, top: H * 0.38 + 208 };
-      G.g5 = { left: W/2 - 240 + 326, top: H * 0.38 + 208 };
-
-      F.fl1 = { left: W/2 - 265, top: H * 0.20 };
-      F.g5  = { left: W/2 - 78,  top: H * 0.20 };
-      F.fr1 = { left: W/2 + 90,  top: H * 0.20 };
-      F.fl2 = { left: W/2 - 265, top: H * 0.62 };
-      F.fr2 = { left: W/2 + 50,  top: H * 0.62 };
+    if(p>=.38&&p<.62){
+      ['g0','g1','g2','g3','g4','g5'].forEach(function(id){
+        set(el[id],1,G[id].l,G[id].t,null);
+      });
     }
+    var e=norm(p,.38,.50);
+    set(el['fl1'],e,lerp(-160,W*.06,e),H*.28,'rotate(-3deg)');
+    set(el['fl2'],e,lerp(-190,W*.04,e),H*.58,'rotate(2deg)');
+    set(el['fr1'],e,lerp(W+150,W-150-W*.05,e),H*.22,'rotate(3deg)');
+    set(el['fr2'],e,lerp(W+190,W-190-W*.03,e),H*.60,'rotate(-2deg)');
 
-    window.addEventListener('resize', computePositions);
-    computePositions();
+    var phrases=[
+      {id:'p3',s:.38,pk:.44,e:.49},{id:'p4',s:.44,pk:.49,e:.53},
+      {id:'p5',s:.49,pk:.53,e:.57},{id:'p6',s:.53,pk:.57,e:.60},
+      {id:'p7',s:.57,pk:.62,e:.66}
+    ];
+    phrases.forEach(function(ph){
+      var x=el[ph.id]; if(!x)return;
+      var op=0,ty=0;
+      if(p>=ph.s&&p<ph.pk){var t=norm(p,ph.s,ph.pk);op=t;ty=lerp(10,0,t);}
+      else if(p>=ph.pk&&p<ph.e){var t=norm(p,ph.pk,ph.e);op=1-t;ty=lerp(0,-10,t);}
+      x.style.opacity=op; x.style.transform='translateY('+ty+'px)';
+    });
 
-    function getProgress() {
-      const top   = section.getBoundingClientRect().top;
-      const total = section.offsetHeight - window.innerHeight;
-      return Math.min(1, Math.max(0, -top / total));
-    }
-
-    // ── Boucle ──
-    function update() {
-      const p = getProgress();
-
-      // ── FRAME 1A : 0.00 → 0.10 ── txt-l1 apparaît au centre
-      const p1a = normalize(p, 0.00, 0.10);
-      setEl(txt_l1, {
-        opacity: p1a,
-        top: H * 0.42 - (1 - p1a) * 20
+    // F4
+    if(p>=.62){
+      var p4=norm(p,.62,.80);
+      ['g0','g1','g2','g3','g4'].forEach(function(id,i){
+        var fs=.62+i*.005;
+        set(el[id],1-norm(p,fs,fs+.06),G[id].l,G[id].t,null);
       });
-
-      // ── FRAME 1B : 0.12 → 0.20 ── txt-l2 apparaît
-      const p1b = normalize(p, 0.12, 0.20);
-      setEl(txt_l2, {
-        opacity: p1b,
-        top: H * 0.52 - (1 - p1b) * 14
-      });
-
-      // ── FRAME 2 : 0.22 → 0.38 ── textes montent, grille entre par le bas
-      const p2 = normalize(p, 0.22, 0.38);
-
-      if (p >= 0.22) {
-        setEl(txt_l1, { top: lerp(H * 0.42, H * 0.08, p2) });
-        setEl(txt_l2, { top: lerp(H * 0.52, H * 0.14, p2) });
-      }
-
-      const gridOpacity = normalize(p, 0.22, 0.30);
-      const gridOffsetY = lerp(H, 0, p2);
-      ['g0','g1','g2','g3','g4','g5'].forEach(id => {
-        setEl(document.getElementById(id), {
-          opacity: gridOpacity,
-          left: G[id].left,
-          top:  G[id].top + gridOffsetY
-        });
-      });
-
-      // ── FRAME 3 : 0.38 → 0.62 ── textes s'effacent, floats entrent, phrases défilent
-      if (p >= 0.38) {
-        const fadeOut12 = 1 - normalize(p, 0.38, 0.42);
-        setEl(txt_l1, { opacity: fadeOut12 });
-        setEl(txt_l2, { opacity: fadeOut12 });
-      }
-
-      const p3enter = normalize(p, 0.38, 0.50);
-      setEl(fl1, {
-        opacity:   p3enter,
-        left:      lerp(-160,          W * 0.06,          p3enter),
-        top:       H * 0.28,
-        transform: 'rotate(-3deg)'
-      });
-      setEl(fl2, {
-        opacity:   p3enter,
-        left:      lerp(-190,          W * 0.04,          p3enter),
-        top:       H * 0.58,
-        transform: 'rotate(2deg)'
-      });
-      setEl(fr1, {
-        opacity:   p3enter,
-        left:      lerp(W + 150,       W - 150 - W*0.05,  p3enter),
-        top:       H * 0.22,
-        transform: 'rotate(3deg)'
-      });
-      setEl(fr2, {
-        opacity:   p3enter,
-        left:      lerp(W + 190,       W - 190 - W*0.03,  p3enter),
-        top:       H * 0.60,
-        transform: 'rotate(-2deg)'
-      });
-
-      if (p >= 0.38 && p < 0.62) {
-        ['g0','g1','g2','g3','g4','g5'].forEach(id => {
-          setEl(document.getElementById(id), { opacity: 1, left: G[id].left, top: G[id].top });
-        });
-      }
-
-      const phrases = [
-        { id:'p3', start:0.38, peak:0.44, end:0.49 },
-        { id:'p4', start:0.44, peak:0.49, end:0.53 },
-        { id:'p5', start:0.49, peak:0.53, end:0.57 },
-        { id:'p6', start:0.53, peak:0.57, end:0.60 },
-        { id:'p7', start:0.57, peak:0.62, end:0.66 },
-      ];
-      phrases.forEach(ph => {
-        const el = document.getElementById(ph.id);
-        if (!el) return;
-        let op = 0, ty = 0;
-        if (p >= ph.start && p < ph.peak) {
-          const t = normalize(p, ph.start, ph.peak);
-          op = t; ty = lerp(10, 0, t);
-        } else if (p >= ph.peak && p < ph.end) {
-          const t = normalize(p, ph.peak, ph.end);
-          op = 1 - t; ty = lerp(0, -10, t);
-        }
-        el.style.opacity   = op;
-        el.style.transform = `translateY(${ty}px)`;
-      });
-
-      // ── FRAME 4 : 0.62 → 0.80 ── g0-g4 disparaissent, composition finale se forme
-      if (p >= 0.62) {
-        const p4      = normalize(p, 0.62, 0.80);
-        const stagger = 0.005;
-
-        ['g0','g1','g2','g3','g4'].forEach((id, i) => {
-          const fadeStart = 0.62 + i * stagger;
-          setEl(document.getElementById(id), {
-            opacity: 1 - normalize(p, fadeStart, fadeStart + 0.06),
-            left: G[id].left,
-            top:  G[id].top
-          });
-        });
-
-        setEl(document.getElementById('g5'), {
-          opacity: 1,
-          left: lerp(G.g5.left, F.g5.left, p4),
-          top:  lerp(G.g5.top,  F.g5.top,  p4)
-        });
-
-        setEl(fl1, {
-          opacity:   1,
-          left:      lerp(W * 0.06,          F.fl1.left, p4),
-          top:       lerp(H * 0.28,          F.fl1.top,  p4),
-          transform: `rotate(${lerp(-3, 0, p4)}deg)`
-        });
-        setEl(fl2, {
-          opacity:   1,
-          left:      lerp(W * 0.04,          F.fl2.left, p4),
-          top:       lerp(H * 0.58,          F.fl2.top,  p4),
-          transform: `rotate(${lerp(2, 0, p4)}deg)`
-        });
-        setEl(fr1, {
-          opacity:   1,
-          left:      lerp(W - 150 - W*0.05,  F.fr1.left, p4),
-          top:       lerp(H * 0.22,          F.fr1.top,  p4),
-          transform: `rotate(${lerp(3, 0, p4)}deg)`
-        });
-        setEl(fr2, {
-          opacity:   1,
-          left:      lerp(W - 190 - W*0.03,  F.fr2.left, p4),
-          top:       lerp(H * 0.60,          F.fr2.top,  p4),
-          transform: `rotate(${lerp(-2, 0, p4)}deg)`
-        });
-
-        const pb1in  = normalize(p, 0.62, 0.67);
-        const pb1out = 1 - normalize(p, 0.68, 0.72);
-        document.getElementById('txt-b1').style.opacity = p < 0.68 ? pb1in : pb1out;
-        document.getElementById('txt-b2').style.opacity = p < 0.68 ? pb1in : pb1out;
-
-        const pAin  = normalize(p, 0.72, 0.76);
-        const pAout = 1 - normalize(p, 0.78, 0.82);
-        setEl(txt_anx1, { opacity: p < 0.78 ? pAin : pAout });
-        setEl(txt_anx2, { opacity: p < 0.78 ? normalize(p, 0.73, 0.77) : pAout });
-      }
-
-      // ── FRAME 5 : 0.80 → 1.00 ── solution apparaît
-      const p5sol1 = normalize(p, 0.86, 0.92);
-      setEl(txt_sol1, {
-        opacity: p5sol1,
-        top: H * 0.08 + lerp(20, 0, p5sol1)
-      });
-      const p5sol2 = normalize(p, 0.90, 0.96);
-      setEl(txt_sol2, {
-        opacity: p5sol2,
-        top: H * 0.08 + 82 + lerp(20, 0, p5sol2)
-      });
-
-      requestAnimationFrame(update);
+      set(el['g5'],1,lerp(G.g5.l,F.g5.l,p4),lerp(G.g5.t,F.g5.t,p4),null);
+      set(el['fl1'],1,lerp(W*.06,F.fl1.l,p4),lerp(H*.28,F.fl1.t,p4),'rotate('+lerp(-3,0,p4)+'deg)');
+      set(el['fl2'],1,lerp(W*.04,F.fl2.l,p4),lerp(H*.58,F.fl2.t,p4),'rotate('+lerp(2,0,p4)+'deg)');
+      set(el['fr1'],1,lerp(W-150-W*.05,F.fr1.l,p4),lerp(H*.22,F.fr1.t,p4),'rotate('+lerp(3,0,p4)+'deg)');
+      set(el['fr2'],1,lerp(W-190-W*.03,F.fr2.l,p4),lerp(H*.60,F.fr2.t,p4),'rotate('+lerp(-2,0,p4)+'deg)');
+      var bi=norm(p,.62,.67), bo=1-norm(p,.68,.72);
+      el['txt-b1'].style.opacity=p<.68?bi:bo;
+      el['txt-b2'].style.opacity=p<.68?bi:bo;
+      var ai=norm(p,.72,.76), ao=1-norm(p,.78,.82);
+      set(el['txt-anx1'],p<.78?ai:ao,null,null,null);
+      set(el['txt-anx2'],p<.78?norm(p,.73,.77):ao,null,null,null);
     }
 
-    requestAnimationFrame(update);
-  </script>
+    // F5
+    var s1=norm(p,.86,.92);
+    set(el['txt-sol1'],s1,null,H*.08+lerp(20,0,s1),null);
+    var s2=norm(p,.90,.96);
+    set(el['txt-sol2'],s2,null,H*.08+86+lerp(20,0,s2),null);
+  }
+
+  window.addEventListener('scroll',run,{passive:true});
+  run();
+})();
+</script>
+
 </body>
 </html>

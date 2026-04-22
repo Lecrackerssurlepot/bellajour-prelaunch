@@ -39,6 +39,35 @@ function TypewriterLabel({ from, to, delay }: { from: string; to: string; delay:
 
 export default function Hero() {
   const [scrolled, setScrolled] = useState(false)
+  const [firstName, setFirstName] = useState('')
+  const [email, setEmail] = useState('')
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [message, setMessage] = useState('')
+
+  const handleSubmit = async () => {
+    if (!email || status === 'loading') return
+    setStatus('loading')
+    setMessage('')
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, firstName }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setStatus('success')
+        setMessage('Vous êtes sur la liste. On vous contacte bientôt.')
+        setEmail('')
+      } else {
+        setStatus('error')
+        setMessage(data.message || 'Une erreur est survenue.')
+      }
+    } catch {
+      setStatus('error')
+      setMessage('Erreur réseau. Réessayez.')
+    }
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
@@ -79,10 +108,43 @@ export default function Hero() {
         <div className="hero-form">
           <div className="hero-form-label">REJOINDRE LA LISTE</div>
           <div className="hero-form-row">
-            <input type="text" placeholder="Prénom" className="hero-input hero-input-prenom" />
-            <input type="email" placeholder="Email" className="hero-input hero-input-email" />
-            <button className="hero-btn" type="button">→</button>
+            <input
+              type="text"
+              placeholder="Prénom"
+              className="hero-input hero-input-prenom"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              className="hero-input hero-input-email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              disabled={status === 'loading' || status === 'success'}
+            />
+            <button
+              className="hero-btn"
+              type="button"
+              onClick={handleSubmit}
+              disabled={status === 'loading' || status === 'success'}
+            >
+              {status === 'loading' ? '...' : '→'}
+            </button>
           </div>
+          {message && (
+            <p style={{
+              marginTop: '12px',
+              fontSize: '14px',
+              fontFamily: 'DM Sans, sans-serif',
+              fontStyle: 'italic',
+              color: status === 'success' ? '#B8834A' : '#cc4444',
+              letterSpacing: '0.02em',
+            }}>
+              {message}
+            </p>
+          )}
           <div className="hero-count">
             <span className="hero-count-dot" />
             847 personnes déjà inscrites
