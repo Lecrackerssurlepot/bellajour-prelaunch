@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         email: normalizedEmail,
-        attributes: { FIRSTNAME: firstName || '' },
+        attributes: { PRENOM: firstName || '' },
         listIds: [listId],
         updateEnabled: true,
       }),
