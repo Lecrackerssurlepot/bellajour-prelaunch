@@ -114,6 +114,7 @@ export default function Hero() {
               className="hero-input hero-input-prenom"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
+              disabled={status === 'loading' || status === 'success'}
             />
             <input
               type="email"
