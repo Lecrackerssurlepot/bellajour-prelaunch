@@ -145,6 +145,11 @@
   color: #F0EAE0;
 }
 
+.anx-line .anx-warm,
+.anx-line strong.anx-warm {
+  color: #D4AA6E;
+}
+
 /* "C'est choisir. Renoncer. Organiser. Raconter." — plus grande, bold */
 .anx-line--bold {
   font-size: clamp(20px, 2.4vw, 38px);
