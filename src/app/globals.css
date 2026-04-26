@@ -23,7 +23,7 @@ html, body {
   padding: 0;
   width: 100%;
   background: var(--bj-bg);
-  overflow-x: hidden;
+  overflow-x: clip;
   font-family: var(--bj-font-sans);
 }
 

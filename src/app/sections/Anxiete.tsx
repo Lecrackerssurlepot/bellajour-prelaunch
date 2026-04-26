@@ -51,6 +51,18 @@ export default function Anxiete() {
   const [slots, setSlots] = useState<number[]>(initialSlots)
   const [fadingSlots, setFadingSlots] = useState<Set<number>>(new Set())
 
+  // ─── gridVisible dès que la section entre dans le viewport
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+    const io = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setGridVisible(true) },
+      { threshold: 0.01 }
+    )
+    io.observe(section)
+    return () => io.disconnect()
+  }, [])
+
   // ─── Tracker le scroll pour calculer progress
   useEffect(() => {
     const section = sectionRef.current
@@ -63,7 +75,6 @@ export default function Anxiete() {
       const scrolled = Math.max(0, -rect.top)
       const p = Math.min(1, scrolled / sectionH)
       setProgress(p)
-      setGridVisible(p > 0.02)
     }
 
     window.addEventListener('scroll', onScroll, { passive: true })
