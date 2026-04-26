@@ -89,7 +89,7 @@
 
 /* ── Titre principal ── */
 .anx-title {
-  margin: 0 0 clamp(12px, 2vh, 24px);
+  margin: 0 0 clamp(8px, 1.4vh, 18px);
   font-family: 'Cormorant', serif;
   font-weight: 300;
   font-size: clamp(36px, 5.5vw, 88px);
@@ -98,36 +98,21 @@
   color: #F0EAE0;
 }
 
-/* "vos photos sont là." — bold + couleur chaude */
-.anx-title-accent {
-  font-weight: 600;
-  color: #D4AA6E;
-}
-
 /* ── Sous-titre ── */
 .anx-subtitle {
-  margin: 0 0 clamp(20px, 3.5vh, 44px);
+  margin: 0 0 clamp(16px, 2.5vh, 32px);
   font-family: 'Cormorant', serif;
   font-weight: 300;
-  font-size: clamp(18px, 2.2vw, 34px);
+  font-size: clamp(17px, 2vw, 30px);
   line-height: 1.3;
-  color: rgba(240, 234, 224, 0.60);
-  font-style: italic;
+  color: rgba(240, 234, 224, 0.55);
 }
 
-/* ── Séparateur ── */
-.anx-sep {
-  width: 40px;
-  height: 1px;
-  background: rgba(212, 170, 110, 0.4);
-  margin-bottom: clamp(20px, 3.5vh, 44px);
-}
-
-/* ── Corps du texte ── */
+/* ── Corps du texte — bloc compact ── */
 .anx-body {
   display: flex;
   flex-direction: column;
-  gap: clamp(10px, 1.8vh, 22px);
+  gap: clamp(6px, 1vh, 12px);
 }
 
 .anx-line {
@@ -135,38 +120,16 @@
   font-family: 'Cormorant', serif;
   font-weight: 300;
   font-size: clamp(17px, 1.9vw, 30px);
-  line-height: 1.45;
-  color: rgba(240, 234, 224, 0.85);
+  line-height: 1.5;
+  color: rgba(240, 234, 224, 0.65);
   letter-spacing: -0.01em;
 }
 
-.anx-line strong {
-  font-weight: 600;
-  color: #F0EAE0;
-}
-
-.anx-line .anx-warm,
-.anx-line strong.anx-warm {
-  color: #D4AA6E;
-}
-
-/* "C'est choisir. Renoncer. Organiser. Raconter." — plus grande, bold */
+/* "C'est choisir. Renoncer. Organiser. Raconter." — bold blanc pur */
 .anx-line--bold {
-  font-size: clamp(20px, 2.4vw, 38px);
-  font-weight: 600;
+  font-weight: 700;
   color: #F0EAE0;
-  letter-spacing: -0.02em;
-}
-
-/* Lignes secondaires — plus discrètes */
-.anx-line--muted {
-  color: rgba(240, 234, 224, 0.55);
-  font-size: clamp(15px, 1.6vw, 26px);
-}
-
-/* Mots en couleur chaude (Renoncer. / Encore et encore.) */
-.anx-warm {
-  color: #D4AA6E;
+  letter-spacing: -0.01em;
 }
 
 /* ── Barre de progression ── */
@@ -182,7 +145,7 @@
 }
 .anx-progress-bar {
   height: 100%;
-  background: rgba(212, 170, 110, 0.5);
+  background: rgba(240, 234, 224, 0.35);
   transform-origin: left;
   will-change: transform;
 }

@@ -147,7 +147,7 @@ export default function Anxiete() {
           {/* Titre principal */}
           <h2 className="anx-title">
             Les souvenirs sont grav&eacute;s,<br />
-            <span className="anx-title-accent">vos photos sont l&agrave;.</span>
+            vos photos sont l&agrave;.
           </h2>
 
           {/* Sous-titre */}
@@ -155,31 +155,22 @@ export default function Anxiete() {
             Votre album, lui, vous attend.
           </p>
 
-          {/* Séparateur */}
-          <div className="anx-sep" />
-
-          {/* Corps du texte */}
+          {/* Corps du texte — bloc compact */}
           <div className="anx-body">
 
             <p className="anx-line">
-              Mais quand on se lance&hellip;{' '}
-              <strong>ce n&rsquo;est jamais qu&rsquo;un album.</strong>
+              Mais quand on se lance&hellip; ce n&rsquo;est jamais qu&rsquo;un album.
             </p>
 
             <p className="anx-line anx-line--bold">
-              C&rsquo;est choisir.{' '}
-              <span className="anx-warm">Renoncer.</span>{' '}
-              Organiser. Raconter.
-            </p>
-
-            <p className="anx-line anx-line--muted">
-              Et vos photos se perdent, se m&eacute;langent.<br />
-              Les instants parfaits, les doublons, les presque parfaits.
+              C&rsquo;est choisir. Renoncer. Organiser. Raconter.
             </p>
 
             <p className="anx-line">
-              Alors l&rsquo;album devient une t&acirc;che qu&rsquo;on reporte.{' '}
-              <strong className="anx-warm">Encore et encore.</strong>
+              Et vos photos se perdent, se m&eacute;langent.
+              Les instants parfaits, les doublons, les presque parfaits.
+              Alors l&rsquo;album devient une t&acirc;che qu&rsquo;on reporte.
+              Encore et encore.
             </p>
 
           </div>
