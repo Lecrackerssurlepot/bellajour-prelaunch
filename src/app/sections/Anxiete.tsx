@@ -17,92 +17,10 @@ const PHOTOS = [
   '/images/anxiete/float-04.webp',
 ]
 
-// ── Blocs narratifs
-const A = [
-  "Les souvenirs sont grav\u00e9s,\nvos photos sont l\u00e0.",
-  "Votre album, lui, vous attend.",
-  "Mais quand on se lance\u2026\nce n\u2019est jamais qu\u2019un album.",
-]
-const C = ["C\u2019est choisir.", "Renoncer.", "Organiser.", "Raconter."]
-const B = [
-  "Et vos photos se perdent,\nse m\u00e9langent.",
-  "Les instants parfaits,\nles doublons, les presque parfaits.",
-  "Alors l\u2019album devient une t\u00e2che\nqu\u2019on reporte.",
-  "Encore et encore.",
-]
-
-// ── Timer : 13 secondes total
-const DURATION = 13000
-
-// ── Seuils (0 → 1 sur DURATION ms)
-const P = {
-  A0_IN:     0.06,
-  A1_IN:     0.22,
-  A2_IN:     0.32,
-  GA_FADE_S: 0.44,
-  GA_FADE_E: 0.52,
-  C0_IN:     0.50,
-  C1_IN:     0.57,
-  C2_IN:     0.63,
-  C3_IN:     0.69,
-  C_FADE_S:  0.77,
-  C_FADE_E:  0.84,
-  B0_IN:     0.82,
-  B1_IN:     0.87,
-  B2_IN:     0.91,
-  B3_IN:     0.95,
-}
-
-// ── Helpers
-function clamp01(v: number) { return Math.max(0, Math.min(1, v)) }
-function easeOut3(t: number) { return 1 - Math.pow(clamp01(1 - t), 3) }
-function lerp(a: number, b: number, t: number) { return a + (b - a) * clamp01(t) }
-
-// ── Word stagger : chaque mot rise + blur individuellement
-function WordStagger({
-  text,
-  progress,
-  startAt,
-  wordDelay = 0.006,
-}: {
-  text: string
-  progress: number
-  startAt: number
-  wordDelay?: number
-}) {
-  type Item = { type: 'word'; text: string; idx: number } | { type: 'br' }
-  const items: Item[] = []
-  let wordIdx = 0
-  text.split('\n').forEach((line, li) => {
-    if (li > 0) items.push({ type: 'br' })
-    line.split(' ').filter(Boolean).forEach(w => {
-      items.push({ type: 'word', text: w, idx: wordIdx++ })
-    })
-  })
-
-  return (
-    <>
-      {items.map((item, i) => {
-        if (item.type === 'br') return <br key={i} />
-        const wordStart = startAt + item.idx * wordDelay
-        const o = easeOut3((progress - wordStart) / 0.045)
-        return (
-          <span
-            key={i}
-            className="anx-word"
-            style={{
-              opacity: o,
-              transform: `translateY(${(1 - o) * 22}px)`,
-              filter: o > 0 && o < 0.99 ? `blur(${((1 - o) * 6).toFixed(2)}px)` : 'none',
-            }}
-          >
-            {item.text}
-          </span>
-        )
-      })}
-    </>
-  )
-}
+// ── Timer
+const DURATION      = 12000  // 12 secondes
+const TEXT_TRIGGER  = 0.30   // texte apparaît à 30% (~3.6s)
+const GRID_ENTRY    = 0.08   // grille en place à 8% (~1s)
 
 // ── Grille
 const COLS = 4
@@ -110,42 +28,35 @@ const ROWS = 4
 const TOTAL = COLS * ROWS
 function mkSlots() { return Array.from({ length: TOTAL }, (_, i) => i % PHOTOS.length) }
 
+// ── Helpers
+function clamp01(v: number) { return Math.max(0, Math.min(1, v)) }
+function easeOut3(t: number) { return 1 - Math.pow(clamp01(1 - t), 3) }
+
 export default function Anxiete() {
-  const sectionRef = useRef<HTMLDivElement>(null)
-  const [progress, setProgress] = useState(0)
-  const [entered, setEntered] = useState(false)
-  const [slots, setSlots] = useState<number[]>(mkSlots)
+  const sectionRef    = useRef<HTMLDivElement>(null)
+  const [progress, setProgress]       = useState(0)
+  const [entered, setEntered]         = useState(false)
+  const [slots, setSlots]             = useState<number[]>(mkSlots)
   const [fadingSlots, setFadingSlots] = useState<Set<number>>(new Set())
-  const rafRef = useRef<number | null>(null)
+  const rafRef       = useRef<number | null>(null)
   const startTimeRef = useRef<number | null>(null)
 
-  // ── Déclenche le timer dès que la section entre dans le viewport
+  // ── Entrée dans la section → déclenche le timer
   useEffect(() => {
     const section = sectionRef.current
     if (!section) return
-
     const trigger = () => {
       const rect = section.getBoundingClientRect()
-      if (rect.top < window.innerHeight && rect.bottom > 0) {
-        setEntered(true)
-      }
+      if (rect.top < window.innerHeight && rect.bottom > 0) setEntered(true)
     }
-
-    // IO pour les navigateurs normaux
     const io = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) setEntered(true) },
       { threshold: 0 }
     )
     io.observe(section)
-
-    // Scroll listener en fallback (headless / preview)
     window.addEventListener('scroll', trigger, { passive: true })
-    trigger() // check immédiat au mount
-
-    return () => {
-      io.disconnect()
-      window.removeEventListener('scroll', trigger)
-    }
+    trigger()
+    return () => { io.disconnect(); window.removeEventListener('scroll', trigger) }
   }, [])
 
   // ── RAF timer loop
@@ -161,7 +72,7 @@ export default function Anxiete() {
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
   }, [entered])
 
-  // ── Cycling photos (s'active dès l'entrée)
+  // ── Cycling photos
   useEffect(() => {
     if (!entered) return
     const iv = setInterval(() => {
@@ -185,34 +96,15 @@ export default function Anxiete() {
     return () => clearInterval(iv)
   }, [entered])
 
-  // ── Colonnes : slide depuis ±110vh à l'entrée (premier 8% du timer)
+  // ── Colonnes : glissent depuis ±110vh en 1s
   function colTranslate(col: number): string {
-    if (!entered) {
-      const sign = col % 2 === 0 ? -1 : 1
-      return `${sign * 110}vh`
-    }
+    if (!entered) return `${col % 2 === 0 ? -110 : 110}vh`
     const sign = col % 2 === 0 ? -1 : 1
-    const t = clamp01(progress / 0.08)
-    const e = easeOut3(t)
+    const e = easeOut3(clamp01(progress / GRID_ENTRY))
     return `${(sign * 110 * (1 - e)).toFixed(2)}vh`
   }
 
-  // ── Opacités de groupe
-  const gaOp = progress < P.GA_FADE_S
-    ? 1
-    : clamp01(1 - (progress - P.GA_FADE_S) / (P.GA_FADE_E - P.GA_FADE_S))
-
-  const cOp = progress < P.C_FADE_S
-    ? 1
-    : clamp01(1 - (progress - P.C_FADE_S) / (P.C_FADE_E - P.C_FADE_S))
-
-  // ── Bloc 1 : A[0] BIG → rétrécit entre 14% et 26% du timer
-  const bigT    = clamp01((progress - 0.14) / 0.12)
-  const bigFont = `clamp(${lerp(48, 24, bigT).toFixed(1)}px, ${lerp(10, 4, bigT).toFixed(2)}vw, ${lerp(130, 64, bigT).toFixed(1)}px)`
-
-  const showA = progress >= P.A0_IN && progress < P.GA_FADE_E + 0.02
-  const showC = progress >= P.C0_IN && progress < P.C_FADE_E + 0.02
-  const showB = progress >= P.B0_IN
+  const textVisible = progress >= TEXT_TRIGGER
 
   return (
     <div
@@ -224,14 +116,10 @@ export default function Anxiete() {
     >
       <div className="anx-sticky">
 
-        {/* Grille */}
+        {/* ── Grille photo ── */}
         <div className="anx-grid">
           {Array.from({ length: COLS }, (_, col) => (
-            <div
-              key={col}
-              className="anx-col"
-              style={{ transform: `translateY(${colTranslate(col)})` }}
-            >
+            <div key={col} className="anx-col" style={{ transform: `translateY(${colTranslate(col)})` }}>
               {Array.from({ length: ROWS }, (_, row) => {
                 const idx = col * ROWS + row
                 return (
@@ -250,84 +138,58 @@ export default function Anxiete() {
           ))}
         </div>
 
+        {/* ── Overlay gradient (sombre à gauche pour lisibilité) ── */}
         <div className="anx-overlay" />
 
-        {/* ── Zone texte ── */}
-        <div className="anx-text">
+        {/* ── Contenu texte — aligné à gauche ── */}
+        <div className={`anx-content${textVisible ? ' anx-content--visible' : ''}`}>
 
-          {/* Bloc 1 : A[] */}
-          {showA && (
-            <div className="anx-block" style={{ opacity: gaOp }}>
-              <p className="anx-phrase anx-phrase--first" style={{ fontSize: bigFont }}>
-                <WordStagger text={A[0]} progress={progress} startAt={P.A0_IN} wordDelay={0.008} />
-              </p>
-              {progress >= P.A1_IN && (
-                <p className="anx-phrase anx-phrase--sub">
-                  <WordStagger text={A[1]} progress={progress} startAt={P.A1_IN} />
-                </p>
-              )}
-              {progress >= P.A2_IN && (
-                <p className="anx-phrase anx-phrase--sub">
-                  <WordStagger text={A[2]} progress={progress} startAt={P.A2_IN} />
-                </p>
-              )}
-            </div>
-          )}
+          {/* Titre principal */}
+          <h2 className="anx-title">
+            Les souvenirs sont grav&eacute;s,<br />
+            <span className="anx-title-accent">vos photos sont l&agrave;.</span>
+          </h2>
 
-          {/* Bloc 2 : C[] "C'est choisir…" */}
-          {showC && (
-            <div className="anx-block anx-block--choisir" style={{ opacity: cOp }}>
-              <p className="anx-phrase anx-phrase--choisir">
-                <WordStagger text={C[0]} progress={progress} startAt={P.C0_IN} wordDelay={0.012} />
-              </p>
-              {progress >= P.C1_IN && (
-                <p className="anx-phrase anx-phrase--choisir">
-                  <WordStagger text={C[1]} progress={progress} startAt={P.C1_IN} wordDelay={0.012} />
-                </p>
-              )}
-              {progress >= P.C2_IN && (
-                <p className="anx-phrase anx-phrase--choisir">
-                  <WordStagger text={C[2]} progress={progress} startAt={P.C2_IN} wordDelay={0.012} />
-                </p>
-              )}
-              {progress >= P.C3_IN && (
-                <p className="anx-phrase anx-phrase--choisir">
-                  <WordStagger text={C[3]} progress={progress} startAt={P.C3_IN} wordDelay={0.012} />
-                </p>
-              )}
-            </div>
-          )}
+          {/* Sous-titre */}
+          <p className="anx-subtitle">
+            Votre album, lui, vous attend.
+          </p>
 
-          {/* Bloc 3 : B[] */}
-          {showB && (
-            <div className="anx-block">
-              <p className="anx-phrase anx-phrase--b-large">
-                <WordStagger text={B[0]} progress={progress} startAt={P.B0_IN} />
-              </p>
-              {progress >= P.B1_IN && (
-                <p className="anx-phrase anx-phrase--b-medium">
-                  <WordStagger text={B[1]} progress={progress} startAt={P.B1_IN} />
-                </p>
-              )}
-              {progress >= P.B2_IN && (
-                <p className="anx-phrase anx-phrase--b-large">
-                  <WordStagger text={B[2]} progress={progress} startAt={P.B2_IN} />
-                </p>
-              )}
-              {progress >= P.B3_IN && (
-                <p className="anx-phrase anx-phrase--b-final">
-                  <WordStagger text={B[3]} progress={progress} startAt={P.B3_IN} wordDelay={0.015} />
-                </p>
-              )}
-            </div>
-          )}
+          {/* Séparateur */}
+          <div className="anx-sep" />
 
+          {/* Corps du texte */}
+          <div className="anx-body">
+
+            <p className="anx-line">
+              Mais quand on se lance&hellip;{' '}
+              <strong>ce n&rsquo;est jamais qu&rsquo;un album.</strong>
+            </p>
+
+            <p className="anx-line anx-line--bold">
+              C&rsquo;est choisir.{' '}
+              <span className="anx-warm">Renoncer.</span>{' '}
+              Organiser. Raconter.
+            </p>
+
+            <p className="anx-line anx-line--muted">
+              Et vos photos se perdent, se m&eacute;langent.<br />
+              Les instants parfaits, les doublons, les presque parfaits.
+            </p>
+
+            <p className="anx-line">
+              Alors l&rsquo;album devient une t&acirc;che qu&rsquo;on reporte.{' '}
+              <strong className="anx-warm">Encore et encore.</strong>
+            </p>
+
+          </div>
         </div>
 
-        {/* Barre de progression */}
+        {/* ── Barre de progression ── */}
         <div className="anx-progress">
           <div className="anx-progress-bar" style={{ transform: `scaleX(${progress})` }} />
         </div>
+
       </div>
     </div>
   )

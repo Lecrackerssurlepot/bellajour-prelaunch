@@ -1,4 +1,6 @@
-/* ── Section Anxiété ── */
+/* ════════════════════════════════════════
+   Section Anxiété — layout gauche Apple-like
+   ════════════════════════════════════════ */
 
 .anx-scroll {
   position: relative;
@@ -15,7 +17,7 @@
   background: #17140F;
 }
 
-/* ── Grille 4 colonnes — toujours opacity:1, position pilotée par JS ── */
+/* ── Grille 4 colonnes ── */
 .anx-grid {
   position: absolute;
   inset: -12% -2%;
@@ -29,6 +31,7 @@
   flex-direction: column;
   gap: clamp(6px, 1vw, 14px);
   will-change: transform;
+  transition: transform 0.05s linear;
 }
 
 .anx-cell {
@@ -48,105 +51,117 @@
 }
 .anx-photo--fading { opacity: 0; }
 
-/* ── Overlay ── */
+/* ── Overlay : gradient asymétrique
+   sombre à gauche (lisibilité texte) → photo visible à droite ── */
 .anx-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    to bottom,
-    rgba(23, 20, 15, 0.60) 0%,
-    rgba(23, 20, 15, 0.48) 40%,
-    rgba(23, 20, 15, 0.60) 100%
+    to right,
+    rgba(23, 20, 15, 0.96) 0%,
+    rgba(23, 20, 15, 0.85) 38%,
+    rgba(23, 20, 15, 0.50) 62%,
+    rgba(23, 20, 15, 0.20) 100%
   );
   z-index: 2;
 }
 
-/* ── Conteneur texte ── */
-.anx-text {
+/* ── Contenu texte — gauche ── */
+.anx-content {
   position: absolute;
-  inset: 0;
+  left: 7vw;
+  top: 50%;
+  transform: translateY(calc(-50% + 28px));
+  width: min(52%, 680px);
   z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6vw;
   pointer-events: none;
+
+  opacity: 0;
+  transition:
+    opacity 1.4s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ── Blocs de phrases ── */
-.anx-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: clamp(14px, 2.5vh, 32px);
-  text-align: center;
-  width: 100%;
+.anx-content--visible {
+  opacity: 1;
+  transform: translateY(-50%);
 }
 
-/* Bloc 2 : "C'est choisir…" — centré, grande taille */
-.anx-block--choisir {
-  gap: clamp(6px, 1.2vh, 18px);
-}
-
-/* ── Phrase générique ── */
-.anx-phrase {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: clamp(4px, 0.8vh, 10px);
-}
-
-/* ── Première phrase (BIG → normal via fontSize inline) ── */
-.anx-phrase--first {
-  /* font-size piloté inline depuis le JS */
+/* ── Titre principal ── */
+.anx-title {
+  margin: 0 0 clamp(12px, 2vh, 24px);
   font-family: 'Cormorant', serif;
   font-weight: 300;
+  font-size: clamp(36px, 5.5vw, 88px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: #F0EAE0;
+}
+
+/* "vos photos sont là." — bold + couleur chaude */
+.anx-title-accent {
+  font-weight: 600;
+  color: #D4AA6E;
+}
+
+/* ── Sous-titre ── */
+.anx-subtitle {
+  margin: 0 0 clamp(20px, 3.5vh, 44px);
+  font-family: 'Cormorant', serif;
+  font-weight: 300;
+  font-size: clamp(18px, 2.2vw, 34px);
+  line-height: 1.3;
+  color: rgba(240, 234, 224, 0.60);
+  font-style: italic;
+}
+
+/* ── Séparateur ── */
+.anx-sep {
+  width: 40px;
+  height: 1px;
+  background: rgba(212, 170, 110, 0.4);
+  margin-bottom: clamp(20px, 3.5vh, 44px);
+}
+
+/* ── Corps du texte ── */
+.anx-body {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vh, 22px);
+}
+
+.anx-line {
+  margin: 0;
+  font-family: 'Cormorant', serif;
+  font-weight: 300;
+  font-size: clamp(17px, 1.9vw, 30px);
+  line-height: 1.45;
+  color: rgba(240, 234, 224, 0.85);
   letter-spacing: -0.01em;
 }
 
-/* ── Sous-phrases (A[1-3] et B[1-3]) ── */
-.anx-phrase--sub {
-  font-size: clamp(18px, 3vw, 46px);
+.anx-line strong {
+  font-weight: 600;
+  color: #F0EAE0;
 }
 
-/* ── Bloc 2 : "C'est choisir…" — très grand, impact maximal ── */
-.anx-phrase--choisir {
-  font-size: clamp(36px, 7vw, 110px);
-  font-family: 'Cormorant', serif;
-  font-weight: 300;
+/* "C'est choisir. Renoncer. Organiser. Raconter." — plus grande, bold */
+.anx-line--bold {
+  font-size: clamp(20px, 2.4vw, 38px);
+  font-weight: 600;
+  color: #F0EAE0;
   letter-spacing: -0.02em;
 }
 
-/* ── Bloc 3 : grande phrase (B[0], B[2]) ── */
-.anx-phrase--b-large {
-  font-size: clamp(22px, 4vw, 64px);
+/* Lignes secondaires — plus discrètes */
+.anx-line--muted {
+  color: rgba(240, 234, 224, 0.55);
+  font-size: clamp(15px, 1.6vw, 26px);
 }
 
-/* ── Bloc 3 : phrase medium (B[1]) ── */
-.anx-phrase--b-medium {
-  font-size: clamp(17px, 2.8vw, 44px);
-  opacity: 0.75;
-}
-
-/* ── Bloc 3 : phrase finale "Encore et encore." — italique + espacement ── */
-.anx-phrase--b-final {
-  font-size: clamp(26px, 5vw, 80px);
-  font-style: italic;
-  margin-top: clamp(8px, 1.5vh, 24px);
-  letter-spacing: 0.01em;
-}
-
-/* ── Mot individuel (word stagger) ── */
-.anx-word {
-  display: inline-block;
-  margin-right: 0.28em;
-  font-family: 'Cormorant', serif;
-  font-weight: 300;
-  color: #F0EAE0;
-  line-height: 1.15;
-  text-shadow: 0 2px 28px rgba(0,0,0,0.55), 0 0 2px rgba(0,0,0,0.3);
-  will-change: opacity, transform, filter;
+/* Mots en couleur chaude (Renoncer. / Encore et encore.) */
+.anx-warm {
+  color: #D4AA6E;
 }
 
 /* ── Barre de progression ── */
@@ -162,7 +177,7 @@
 }
 .anx-progress-bar {
   height: 100%;
-  background: rgba(119, 136, 153, 0.6);
+  background: rgba(212, 170, 110, 0.5);
   transform-origin: left;
   will-change: transform;
 }
@@ -172,22 +187,37 @@
   .anx-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  .anx-text {
-    padding: 8vw;
+
+  .anx-overlay {
+    background: rgba(23, 20, 15, 0.80);
   }
-  .anx-phrase--sub {
-    font-size: clamp(16px, 5vw, 28px);
+
+  .anx-content {
+    left: 5vw;
+    right: 5vw;
+    width: auto;
+    top: auto;
+    bottom: 8vh;
+    transform: translateY(28px);
   }
-  .anx-phrase--choisir {
-    font-size: clamp(28px, 9vw, 60px);
+
+  .anx-content--visible {
+    transform: translateY(0);
   }
-  .anx-phrase--b-large {
-    font-size: clamp(18px, 6vw, 40px);
+
+  .anx-title {
+    font-size: clamp(30px, 8vw, 52px);
   }
-  .anx-phrase--b-medium {
-    font-size: clamp(15px, 4.5vw, 28px);
+
+  .anx-subtitle {
+    font-size: clamp(16px, 4.5vw, 24px);
   }
-  .anx-phrase--b-final {
-    font-size: clamp(22px, 8vw, 50px);
+
+  .anx-line {
+    font-size: clamp(15px, 4vw, 22px);
+  }
+
+  .anx-line--bold {
+    font-size: clamp(17px, 5vw, 28px);
   }
 }
