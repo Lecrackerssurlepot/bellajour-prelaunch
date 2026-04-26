@@ -2,7 +2,7 @@
 
 .anx-scroll {
   position: relative;
-  height: 600vh;
+  height: 700vh;
   background: #17140F;
 }
 
@@ -73,14 +73,19 @@
   pointer-events: none;
 }
 
-/* ── Groupe (A ou B) ── */
-.anx-group {
+/* ── Blocs de phrases ── */
+.anx-block {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: clamp(14px, 2.5vh, 32px);
   text-align: center;
-  transition: transform 0.05s linear; /* micro-smooth sur translateY */
+  width: 100%;
+}
+
+/* Bloc 2 : "C'est choisir…" — centré, grande taille */
+.anx-block--choisir {
+  gap: clamp(6px, 1.2vh, 18px);
 }
 
 /* ── Phrase générique ── */
@@ -105,11 +110,31 @@
   font-size: clamp(18px, 3vw, 46px);
 }
 
-/* ── Dernière phrase : légèrement plus grande + spacing ── */
-.anx-phrase--last {
-  font-size: clamp(28px, 5vw, 76px);
-  margin-top: clamp(8px, 1.5vh, 20px);
+/* ── Bloc 2 : "C'est choisir…" — très grand, impact maximal ── */
+.anx-phrase--choisir {
+  font-size: clamp(36px, 7vw, 110px);
+  font-family: 'Cormorant', serif;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+/* ── Bloc 3 : grande phrase (B[0], B[2]) ── */
+.anx-phrase--b-large {
+  font-size: clamp(22px, 4vw, 64px);
+}
+
+/* ── Bloc 3 : phrase medium (B[1]) ── */
+.anx-phrase--b-medium {
+  font-size: clamp(17px, 2.8vw, 44px);
+  opacity: 0.75;
+}
+
+/* ── Bloc 3 : phrase finale "Encore et encore." — italique + espacement ── */
+.anx-phrase--b-final {
+  font-size: clamp(26px, 5vw, 80px);
   font-style: italic;
+  margin-top: clamp(8px, 1.5vh, 24px);
+  letter-spacing: 0.01em;
 }
 
 /* ── Lignes de texte ── */
@@ -145,10 +170,22 @@
   .anx-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .anx-text {
+    padding: 8vw;
+  }
   .anx-phrase--sub {
     font-size: clamp(16px, 5vw, 28px);
   }
-  .anx-phrase--last {
-    font-size: clamp(24px, 7vw, 46px);
+  .anx-phrase--choisir {
+    font-size: clamp(28px, 9vw, 60px);
+  }
+  .anx-phrase--b-large {
+    font-size: clamp(18px, 6vw, 40px);
+  }
+  .anx-phrase--b-medium {
+    font-size: clamp(15px, 4.5vw, 28px);
+  }
+  .anx-phrase--b-final {
+    font-size: clamp(22px, 8vw, 50px);
   }
 }
