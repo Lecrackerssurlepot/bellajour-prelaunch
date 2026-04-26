@@ -2,7 +2,7 @@
 
 .anx-scroll {
   position: relative;
-  height: 700vh;
+  height: 300vh;
   background: #17140F;
 }
 
@@ -137,14 +137,16 @@
   letter-spacing: 0.01em;
 }
 
-/* ── Lignes de texte ── */
-.anx-line {
-  display: block;
+/* ── Mot individuel (word stagger) ── */
+.anx-word {
+  display: inline-block;
+  margin-right: 0.28em;
   font-family: 'Cormorant', serif;
   font-weight: 300;
   color: #F0EAE0;
   line-height: 1.15;
   text-shadow: 0 2px 28px rgba(0,0,0,0.55), 0 0 2px rgba(0,0,0,0.3);
+  will-change: opacity, transform, filter;
 }
 
 /* ── Barre de progression ── */
