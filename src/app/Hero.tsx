@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react'
 import './hero.css'
 
 const photos = [
-  { src: '/images/hero/hero-01.webp', from: 'IMG_5733.JPG',   to: 'Bruny Island, Australie',         cls: 'p1' },
-  { src: '/images/hero/hero-02.webp', from: '1-CC5.HEIC',     to: 'Coucher de soleil, Pacifique',    cls: 'p2' },
-  { src: '/images/hero/hero-03.webp', from: 'RT26_020.PNG',   to: 'Antelope Canyon, Arizona',        cls: 'p3' },
-  { src: '/images/hero/hero-04.webp', from: '_307.PNG',       to: 'Kimberley, Australie-Occidentale',cls: 'p4' },
-  { src: '/images/hero/hero-05.webp', from: 'IMG_0391.JPG',   to: 'Baie de Sydney, Australie',       cls: 'p5' },
-  { src: '/images/hero/hero-06.webp', from: '5768_000.PNG',   to: 'Opera House, Sydney',             cls: 'p6' },
-  { src: '/images/hero/hero-07.webp', from: 'DJI_037.PNG',    to: 'Dampier Peninsula, Australie',    cls: 'p7' },
+  { src: '/images/hero/hero-01.webp', from: 'IMG_5733.JPG',   to: 'Bruny Island, Tasmanie',           cls: 'p1' },
+  { src: '/images/hero/hero-02.webp', from: '1-CC5.HEIC',     to: 'Coucher de soleil, Pacifique',     cls: 'p2' },
+  { src: '/images/hero/hero-03.webp', from: 'RT26_020.PNG',   to: 'Antelope Canyon, Arizona',         cls: 'p3' },
+  { src: '/images/hero/hero-04.webp', from: '_307.PNG',       to: 'Kimberley, Australie-Occidentale', cls: 'p4' },
+  { src: '/images/hero/hero-05.webp', from: 'IMG_0391.JPG',   to: 'Baie de Sydney, 2023',             cls: 'p5' },
+  { src: '/images/hero/hero-06.webp', from: '5768_000.PNG',   to: 'Opera House, Sydney',              cls: 'p6' },
+  { src: '/images/hero/hero-07.webp', from: 'DJI_037.PNG',    to: 'Dampier Peninsula, Australie',     cls: 'p7' },
 ]
 
 function TypewriterLabel({ from, to, delay }: { from: string; to: string; delay: number }) {
@@ -39,20 +39,40 @@ function TypewriterLabel({ from, to, delay }: { from: string; to: string; delay:
 
 export default function Hero() {
   const [scrolled, setScrolled] = useState(false)
-  const [firstName, setFirstName] = useState('')
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
+  const [count, setCount] = useState<number | null>(null)
 
-  const handleSubmit = async () => {
-    if (!email || status === 'loading') return
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/waitlist/count')
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && typeof d?.count === 'number') setCount(d.count)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault()
+    if (!email || status === 'loading' || status === 'success') return
     setStatus('loading')
     setMessage('')
     try {
       const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, firstName }),
+        body: JSON.stringify({ email }),
       })
       const data = await res.json()
       if (res.ok) {
@@ -69,28 +89,21 @@ export default function Hero() {
     }
   }
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  const handleDiscover = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    document.getElementById('anxiete')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const displayCount = count ?? 847
 
   return (
     <>
-      <span className="vtext vtext-left">MAISON D'ÉDITION DU SOUVENIR</span>
-      <span className="vtext vtext-right">VIVEZ NOUS COMPOSONS</span>
-
       <nav className={scrolled ? 'hero-nav hero-nav--scrolled' : 'hero-nav'}>
         <img src="/images/ui/logo.webp" className="hero-nav-logo" alt="Bellajour" />
       </nav>
 
       <section className="hero">
         <div className="hero-line" />
-
-        <div className="hero-headline">
-          <p className="hero-headline-l1">Nous composons vos photos</p>
-          <p className="hero-headline-l2">en albums premium</p>
-        </div>
 
         {photos.map((p, i) => (
           <div key={p.cls} className={`photo ${p.cls}`}>
@@ -101,62 +114,49 @@ export default function Hero() {
           </div>
         ))}
 
-        <div className="hero-badge">
-          <span>WAITLIST OUVERTE</span>
-        </div>
+        <div className="hero-center">
+          <div className="hero-headline">
+            <p className="hero-headline-l1">Nous composons vos photos</p>
+            <p className="hero-headline-l2">en albums d&rsquo;exception</p>
+          </div>
 
-        <div className="hero-form">
-          <div className="hero-form-label">REJOINDRE LA LISTE</div>
-          <div className="hero-form-row">
-            <input
-              type="text"
-              placeholder="Prénom"
-              className="hero-input hero-input-prenom"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              disabled={status === 'loading' || status === 'success'}
-            />
+          <form className="hero-form" onSubmit={handleSubmit}>
             <input
               type="email"
-              placeholder="Email"
-              className="hero-input hero-input-email"
+              placeholder="Entrez votre e-mail"
+              className="hero-input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               disabled={status === 'loading' || status === 'success'}
+              required
             />
             <button
+              type="submit"
               className="hero-btn"
-              type="button"
-              onClick={handleSubmit}
               disabled={status === 'loading' || status === 'success'}
             >
-              {status === 'loading' ? '...' : '→'}
+              {status === 'loading' ? 'Envoi…' : 'Réserver mon invitation'}
             </button>
-          </div>
+          </form>
+
           {message && (
-            <p style={{
-              marginTop: '12px',
-              fontSize: '14px',
-              fontFamily: 'DM Sans, sans-serif',
-              fontStyle: 'italic',
-              color: status === 'success' ? '#B8834A' : '#cc4444',
-              letterSpacing: '0.02em',
-            }}>
-              {message}
-            </p>
+            <p className={`hero-msg hero-msg--${status}`}>{message}</p>
           )}
+
+          <div className="hero-badge">
+            <span>WAITLIST OUVERTE</span>
+          </div>
+
           <div className="hero-count">
             <span className="hero-count-dot" />
-            847 personnes déjà inscrites
+            {displayCount.toLocaleString('fr-FR')} personnes ont déjà rejoint la liste
           </div>
         </div>
-      </section>
 
-      <div className="sig-cta">
-        <span className="sig-text">Rejoindre la liste</span>
-        <img src="/images/ui/signature.svg" alt="" className="sig-img" />
-      </div>
+        <a href="#anxiete" onClick={handleDiscover} className="hero-discover">
+          En savoir plus
+        </a>
+      </section>
     </>
   )
 }
