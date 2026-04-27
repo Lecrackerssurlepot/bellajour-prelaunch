@@ -126,19 +126,15 @@ export default function Hero() {
       const data = await res.json()
       if (res.ok) {
         setStatus('success')
+        setMessage('Vous êtes sur la liste. On vous contacte bientôt.')
         setEmail('')
-        if (data.alreadyRegistered) {
-          setMessage('Vous êtes déjà sur la liste — vous avez sûrement reçu de nos nouvelles par mail.')
-        } else {
-          setMessage('Bienvenue sur la liste. On vous écrit bientôt.')
-        }
       } else {
         setStatus('error')
-        setMessage(data.message || 'Une erreur s\'est glissée. Réessayez dans un instant.')
+        setMessage(data.message || 'Une erreur est survenue.')
       }
     } catch {
       setStatus('error')
-      setMessage('La connexion a flanché. Réessayez.')
+      setMessage('Erreur réseau. Réessayez.')
     }
   }
 
@@ -147,7 +143,7 @@ export default function Hero() {
     document.getElementById('anxiete')?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const displayCount = (count ?? 0) + 30
+  const displayCount = count ?? 847
 
   return (
     <>
@@ -206,7 +202,7 @@ export default function Hero() {
 
           <div className="hero-count">
             <span className="hero-count-dot" />
-            {displayCount} personnes sur la liste
+            {displayCount.toLocaleString('fr-FR')} personnes ont d\u00e9j\u00e0 rejoint la liste
           </div>
         </div>
 
