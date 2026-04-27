@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     if (!emailRegex.test(normalizedEmail)) {
       return NextResponse.json(
-        { message: "Adresse email invalide." },
+        { message: "Cette adresse ne nous semble pas valide." },
         { status: 400 }
       );
     }
@@ -49,24 +49,21 @@ export async function POST(request: Request) {
     });
 
     if (!brevoResponse.ok) {
-      const error = await brevoResponse.json().catch(() => null);
-
       return NextResponse.json(
-        {
-          message: "Impossible d'ajouter cet email à la waitlist.",
-          error,
-        },
-        { status: brevoResponse.status }
+        { message: "Une erreur s'est glissée. Réessayez dans un instant." },
+        { status: 500 }
       );
     }
 
+    const alreadyRegistered = brevoResponse.status === 204;
+
     return NextResponse.json(
-      { message: "Inscription à la waitlist confirmée." },
+      { alreadyRegistered },
       { status: 200 }
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { message: "Erreur serveur.", error },
+      { message: "Une erreur s'est glissée. Réessayez dans un instant." },
       { status: 500 }
     );
   }
