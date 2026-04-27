@@ -17,11 +17,12 @@
   background: #17140F;
 }
 
-/* ── Wrapper grille (pour contrôle opacity) ── */
+/* ── Wrapper grille (zoom progressif via inline transform scale) ── */
 .anx-grid-wrap {
   position: absolute;
   inset: 0;
-  will-change: opacity;
+  transform-origin: center center;
+  will-change: transform;
 }
 
 /* ── Grille 8 colonnes ── */
@@ -88,6 +89,7 @@
     rgba(23, 20, 15, 0.20) 100%
   );
   z-index: 2;
+  will-change: opacity;
 }
 
 /* ── Overlay sombre (phase collage) ── */
@@ -100,20 +102,15 @@
   will-change: opacity;
 }
 
-/* ── Texte gauche ── */
+/* ── Texte gauche — transform géré en JS pour slide-up au scroll ── */
 .anx-content {
   position: absolute;
   left: 7vw;
   top: 50%;
-  transform: translateY(calc(-50% + 70px));
   width: min(52%, 680px);
   z-index: 10;
   pointer-events: none;
   will-change: opacity, transform;
-  transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.anx-content--entered {
-  transform: translateY(-50%);
 }
 
 /* ── Titre ── */
@@ -176,16 +173,16 @@
   pointer-events: none;
 }
 
-/* Grid 3 colonnes × 2 rangées */
+/* Grid 3 colonnes × 2 rangées — proportions album */
 .anx-collage-grid {
   display: grid;
   grid-template-columns:
     clamp(130px, 17vw, 240px)
-    clamp(170px, 21vw, 300px)
+    clamp(180px, 22vw, 320px)
     clamp(130px, 17vw, 240px);
   grid-template-rows:
-    clamp(155px, 33vh, 270px)
-    clamp(115px, 24vh, 195px);
+    clamp(160px, 34vh, 280px)
+    clamp(120px, 25vh, 200px);
   gap: clamp(5px, 0.7vw, 11px);
 }
 
@@ -278,10 +275,8 @@
     width: auto;
     top: auto;
     bottom: 10vh;
-    transform: translateY(60px);
-  }
-  .anx-content--entered {
-    transform: translateY(0);
+    /* transform géré en JS — pas de top/translate ici sur mobile */
+    transform: none !important;
   }
 
   .anx-collage-grid {

@@ -5,46 +5,68 @@ import './anxiete.css'
 
 // ── Photos grille (cycling)
 const PHOTOS = [
-  '/images/anxiete/grid-01.webp',   // idx 0
-  '/images/anxiete/grid-02.webp',   // idx 1
-  '/images/anxiete/grid-03.webp',   // idx 2
-  '/images/anxiete/grid-04.webp',   // idx 3
-  '/images/anxiete/grid-05.webp',   // idx 4
-  '/images/anxiete/grid-06.webp',   // idx 5
-  '/images/anxiete/float-01.webp',  // idx 6
-  '/images/anxiete/float-02.webp',  // idx 7
-  '/images/anxiete/float-03.webp',  // idx 8
-  '/images/anxiete/float-04.webp',  // idx 9
+  '/images/anxiete/grid-01.webp',
+  '/images/anxiete/grid-02.webp',
+  '/images/anxiete/grid-03.webp',
+  '/images/anxiete/grid-04.webp',
+  '/images/anxiete/grid-05.webp',
+  '/images/anxiete/grid-06.webp',
+  '/images/anxiete/float-01.webp',
+  '/images/anxiete/float-02.webp',
+  '/images/anxiete/float-03.webp',
+  '/images/anxiete/float-04.webp',
 ]
 
-// ── 5 photos du collage — positions fixes dans la grille (col × ROWS + row)
+// ── 5 photos du collage final
 const COLLAGE = [
-  { src: '/images/anxiete/grid-01.webp', pos: 'tl', gridIdx:  4, photoIdx: 0, thresh: 0.66 },
-  { src: '/images/anxiete/grid-02.webp', pos: 'bl', gridIdx:  7, photoIdx: 1, thresh: 0.71 },
-  { src: '/images/anxiete/grid-03.webp', pos: 'ct', gridIdx: 17, photoIdx: 2, thresh: 0.62 },
-  { src: '/images/anxiete/grid-04.webp', pos: 'tr', gridIdx: 24, photoIdx: 3, thresh: 0.68 },
-  { src: '/images/anxiete/grid-06.webp', pos: 'br', gridIdx: 27, photoIdx: 5, thresh: 0.73 },
+  { src: '/images/anxiete/grid-01.webp', pos: 'tl', gridIdx:  4, photoIdx: 0, thresh: 0.74 },
+  { src: '/images/anxiete/grid-02.webp', pos: 'bl', gridIdx:  7, photoIdx: 1, thresh: 0.79 },
+  { src: '/images/anxiete/grid-03.webp', pos: 'ct', gridIdx: 17, photoIdx: 2, thresh: 0.70 },
+  { src: '/images/anxiete/grid-04.webp', pos: 'tr', gridIdx: 24, photoIdx: 3, thresh: 0.76 },
+  { src: '/images/anxiete/grid-06.webp', pos: 'br', gridIdx: 27, photoIdx: 5, thresh: 0.81 },
 ]
 const CHOSEN_SET = new Set(COLLAGE.map(c => c.gridIdx))
 
-// ── Positions de départ (dans la grille) → collage centre
-// tx en vw, ty en vh, s = scale initial
+// ── Positions de départ (grille → collage centre)
+// Les photos partent de leur position approximative dans la grille zoomée
 const STARTS: Record<string, { tx: number; ty: number; s: number }> = {
-  tl: { tx: -28, ty: -20, s: 2.2 },
-  bl: { tx: -28, ty:  20, s: 2.0 },
-  ct: { tx:   4, ty:  -6, s: 2.8 },
-  tr: { tx:  28, ty: -20, s: 2.2 },
-  br: { tx:  28, ty:  20, s: 2.0 },
+  tl: { tx: -34, ty: -22, s: 2.4 },
+  bl: { tx: -34, ty:  22, s: 2.2 },
+  ct: { tx:   2, ty:  -5, s: 3.0 },
+  tr: { tx:  34, ty: -22, s: 2.4 },
+  br: { tx:  34, ty:  22, s: 2.2 },
 }
 
-// ── Grille
 const DURATION   = 10000
 const GRID_ENTRY = 0.06
 const COLS       = 8
 const ROWS       = 4
 const TOTAL      = COLS * ROWS
 
-// Slots initiaux : chosen cells pré-assignées à leurs vraies photos
+// ── Stagger disparition cellules : les plus éloignées des 5 choisies s'effacent en premier
+function cellCoords(idx: number) { return { col: Math.floor(idx / ROWS), row: idx % ROWS } }
+function manhattanDist(
+  a: { col: number; row: number },
+  b: { col: number; row: number }
+) { return Math.abs(a.col - b.col) + Math.abs(a.row - b.row) }
+function minDistToChosen(idx: number) {
+  const c = cellCoords(idx)
+  return Math.min(...COLLAGE.map(col => manhattanDist(c, cellCoords(col.gridIdx))))
+}
+
+const NON_CHOSEN = Array.from({ length: TOTAL }, (_, i) => i).filter(i => !CHOSEN_SET.has(i))
+const MAX_DIST   = Math.max(...NON_CHOSEN.map(minDistToChosen))
+
+// Seuil de début de fondu : lointain → 0.47, proche → 0.63
+// Chaque cellule met 0.09 de scroll pour disparaître complètement
+const CELL_FADE_T = new Map<number, number>()
+NON_CHOSEN.forEach(idx => {
+  const d = minDistToChosen(idx)
+  // d grand = loin des choisies = seuil bas = disparaît en premier
+  CELL_FADE_T.set(idx, 0.63 - (d / MAX_DIST) * 0.16)
+})
+
+// ── Slots initiaux
 function mkSlots() {
   const arr = Array.from({ length: TOTAL }, (_, i) => i % PHOTOS.length)
   COLLAGE.forEach(c => { arr[c.gridIdx] = c.photoIdx })
@@ -58,7 +80,7 @@ function revealOp(p: number, thresh: number) {
 }
 
 export default function Anxiete() {
-  const sectionRef = useRef<HTMLDivElement>(null)
+  const sectionRef    = useRef<HTMLDivElement>(null)
   const [timerProg, setTimerProg]     = useState(0)
   const [scrollProg, setScrollProg]   = useState(0)
   const [entered, setEntered]         = useState(false)
@@ -86,7 +108,7 @@ export default function Anxiete() {
     return () => { io.disconnect(); window.removeEventListener('scroll', trigger) }
   }, [])
 
-  // ── Timer grille
+  // ── Timer grille (slide-in entrée colonnes)
   useEffect(() => {
     if (!entered) return
     const tick = (now: number) => {
@@ -115,7 +137,7 @@ export default function Anxiete() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // ── Cycling photos (jamais sur les cellules choisies, s'arrête à 0.52)
+  // ── Cycling photos (s'arrête à 0.52, jamais sur les cellules choisies)
   useEffect(() => {
     if (!entered) return
     const iv = setInterval(() => {
@@ -143,7 +165,7 @@ export default function Anxiete() {
     return () => clearInterval(iv)
   }, [entered])
 
-  // ── Slide-in → CSS float (figée si grille gelée)
+  // ── Slide-in colonnes (timer)
   function colTranslate(col: number): string | null {
     if (!entered) return `${col % 2 === 0 ? -110 : 110}vh`
     const e = easeOut3(clamp01(timerProg / GRID_ENTRY))
@@ -152,20 +174,21 @@ export default function Anxiete() {
     return `${(sign * 110 * (1 - e)).toFixed(2)}vh`
   }
 
-  // ── Opacité cellule grille
+  // ── Opacité cellule grille avec stagger
   function cellOp(idx: number): number {
-    if (scrollProg < 0.55) return 1
     if (CHOSEN_SET.has(idx)) {
-      // Choisie : reste visible jusqu'à 0.65, puis s'efface (handoff vers collage)
-      return Math.max(0, 1 - (scrollProg - 0.65) / 0.12)
+      // Les 5 choisies restent jusqu'au moment où le collage prend le relais
+      if (scrollProg < 0.72) return 1
+      return Math.max(0, 1 - (scrollProg - 0.72) / 0.10)
     }
-    // Non choisie : s'efface en place 0.55 → 0.70
-    return Math.max(0, 1 - (scrollProg - 0.55) / 0.15)
+    const start = CELL_FADE_T.get(idx) ?? 0.55
+    if (scrollProg < start) return 1
+    return Math.max(0, 1 - (scrollProg - start) / 0.09)
   }
 
-  // ── Style photo collage : vole depuis position grille → position finale
+  // ── Style photo collage : vole depuis grille zoomée → position finale
   function cpStyle(pos: string, thresh: number): React.CSSProperties {
-    const t = easeOut3(clamp01((scrollProg - thresh) / 0.18))
+    const t  = easeOut3(clamp01((scrollProg - thresh) / 0.16))
     const st = STARTS[pos]
     return {
       opacity: t,
@@ -175,10 +198,30 @@ export default function Anxiete() {
   }
 
   // ── Phases dérivées
-  const gridFrozen   = scrollProg >= 0.55
-  const textPhaseOp  = scrollProg >= 0.48 ? clamp01(1 - (scrollProg - 0.48) / 0.12) : 1
-  const darkOp       = clamp01((scrollProg - 0.55) / 0.21) * 0.88
-  const showCollage  = scrollProg >= 0.60
+  const textScrolled = scrollProg >= 0.35
+
+  // Texte : glisse vers le haut et disparaît
+  const textSlideY  = textScrolled ? -clamp01((scrollProg - 0.35) / 0.18) * 180 : 0
+  const entryY      = entered ? 0 : 70
+  const textOp      = textScrolled ? clamp01(1 - (scrollProg - 0.35) / 0.14) : 1
+  const contentTY   = `translateY(calc(-50% + ${entryY + textSlideY}px))`
+  const contentTr   = (entered && !textScrolled)
+    ? 'transform 1.2s cubic-bezier(0.22,1,0.36,1)'
+    : 'none'
+
+  // Overlay gauche (lisibilité texte) — disparaît avec le texte
+  const overlayOp = textScrolled ? clamp01(1 - (scrollProg - 0.35) / 0.14) : 1
+
+  // Grille : zoom progressif (sensation de plonger dedans)
+  const gridScaleVal = 1 + easeOut3(clamp01((scrollProg - 0.38) / 0.38)) * 0.22
+
+  // Flottement s'arrête quand la grille commence à grossir
+  const gridFrozen = scrollProg >= 0.40
+
+  // Overlay sombre (phase collage)
+  const darkOp = clamp01((scrollProg - 0.62) / 0.18) * 0.88
+
+  const showCollage  = scrollProg >= 0.70
   const showHeadline = scrollProg >= 0.86
   const headlineT    = easeOut3(clamp01((scrollProg - 0.88) / 0.10))
 
@@ -198,10 +241,13 @@ export default function Anxiete() {
       <div className="anx-sticky">
 
         {/* ── Grille 8 colonnes ── */}
-        <div className="anx-grid-wrap">
+        <div
+          className="anx-grid-wrap"
+          style={{ transform: `scale(${gridScaleVal.toFixed(3)})` }}
+        >
           <div className="anx-grid">
             {Array.from({ length: COLS }, (_, col) => {
-              const translate = colTranslate(col)
+              const translate  = colTranslate(col)
               const isFloating = translate === null && !gridFrozen
               return (
                 <div
@@ -237,15 +283,19 @@ export default function Anxiete() {
         </div>
 
         {/* ── Overlay gradient (lisibilité texte) ── */}
-        <div className="anx-overlay" />
+        <div className="anx-overlay" style={{ opacity: overlayOp }} />
 
         {/* ── Overlay sombre (phase collage) ── */}
         <div className="anx-overlay-dark" style={{ opacity: darkOp }} />
 
-        {/* ── Texte gauche ── */}
+        {/* ── Texte gauche — glisse vers le haut au scroll ── */}
         <div
-          className={`anx-content${entered ? ' anx-content--entered' : ''}`}
-          style={{ opacity: textPhaseOp }}
+          className="anx-content"
+          style={{
+            opacity: textOp,
+            transform: contentTY,
+            transition: contentTr,
+          }}
         >
           <h2 className="anx-title">
             Les souvenirs sont grav&eacute;s,<br />
@@ -270,7 +320,7 @@ export default function Anxiete() {
           </div>
         </div>
 
-        {/* ── Collage : photos volent depuis la grille ── */}
+        {/* ── Collage : 5 photos convergent depuis la grille ── */}
         {showCollage && (
           <div className="anx-collage">
             <div className="anx-collage-grid">
@@ -293,7 +343,7 @@ export default function Anxiete() {
             className="anx-headline-final"
             style={{
               opacity: headlineT,
-              transform: `translateY(${(1 - headlineT) * 20}px)`,
+              transform: `translateY(${(1 - headlineT) * 24}px)`,
             }}
           >
             <p className="anx-hf-brand">Bellajour</p>
