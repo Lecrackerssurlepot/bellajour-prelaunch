@@ -57,15 +57,19 @@ export default function Hero() {
       const data = await res.json()
       if (res.ok) {
         setStatus('success')
-        setMessage('Vous êtes sur la liste. On vous contacte bientôt.')
         setEmail('')
+        if (data.alreadyRegistered) {
+          setMessage('Vous êtes déjà sur la liste — vous avez sûrement reçu de nos nouvelles par mail.')
+        } else {
+          setMessage('Bienvenue sur la liste. On vous écrit bientôt.')
+        }
       } else {
         setStatus('error')
-        setMessage(data.message || 'Une erreur est survenue.')
+        setMessage(data.message || 'Une erreur s\'est glissée. Réessayez dans un instant.')
       }
     } catch {
       setStatus('error')
-      setMessage('Erreur réseau. Réessayez.')
+      setMessage('La connexion a flanché. Réessayez.')
     }
   }
 
