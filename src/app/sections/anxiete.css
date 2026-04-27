@@ -63,6 +63,7 @@
   overflow: hidden;
   border-radius: 2px;
   min-height: 0;
+  transition: opacity 0.2s ease;
 }
 
 .anx-photo {
