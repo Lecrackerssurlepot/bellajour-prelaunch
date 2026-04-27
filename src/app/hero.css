@@ -197,7 +197,11 @@
   text-decoration: none;
   cursor: pointer;
   padding: 4px 8px;
-  animation: hero-fade 600ms var(--bj-ease-premium) 0.7s both;
+  animation: hero-discover-fade 600ms var(--bj-ease-premium) 0.7s both;
+}
+@keyframes hero-discover-fade {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 .hero-discover::after {
   content: '';
