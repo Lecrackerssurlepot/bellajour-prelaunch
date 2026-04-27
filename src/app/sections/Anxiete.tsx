@@ -17,31 +17,33 @@ const PHOTOS = [
   '/images/anxiete/float-04.webp',
 ]
 
-// ── Timer
-const DURATION      = 12000  // 12 secondes
-const TEXT_TRIGGER  = 0.30   // texte apparaît à 30% (~3.6s)
-const GRID_ENTRY    = 0.08   // grille en place à 8% (~1s)
+const DURATION   = 10000  // timer pour la grille uniquement
+const GRID_ENTRY = 0.06   // grille en place en 6% (~0.6s)
 
-// ── Grille
-const COLS = 4
-const ROWS = 4
+const COLS  = 8
+const ROWS  = 4
 const TOTAL = COLS * ROWS
 function mkSlots() { return Array.from({ length: TOTAL }, (_, i) => i % PHOTOS.length) }
 
-// ── Helpers
 function clamp01(v: number) { return Math.max(0, Math.min(1, v)) }
 function easeOut3(t: number) { return 1 - Math.pow(clamp01(1 - t), 3) }
 
+// Opacité de révélation : 0.20 → 1.0 sur 12% de scroll à partir du seuil
+function revealOp(scrollProg: number, threshold: number): number {
+  return Math.max(0.20, Math.min(1, 0.20 + clamp01((scrollProg - threshold) / 0.12) * 0.80))
+}
+
 export default function Anxiete() {
   const sectionRef    = useRef<HTMLDivElement>(null)
-  const [progress, setProgress]       = useState(0)
+  const [timerProg, setTimerProg]     = useState(0)   // pour la grille
+  const [scrollProg, setScrollProg]   = useState(0)   // pour les phrases
   const [entered, setEntered]         = useState(false)
   const [slots, setSlots]             = useState<number[]>(mkSlots)
   const [fadingSlots, setFadingSlots] = useState<Set<number>>(new Set())
   const rafRef       = useRef<number | null>(null)
   const startTimeRef = useRef<number | null>(null)
 
-  // ── Entrée dans la section → déclenche le timer
+  // ── Entrée dans la section
   useEffect(() => {
     const section = sectionRef.current
     if (!section) return
@@ -59,18 +61,32 @@ export default function Anxiete() {
     return () => { io.disconnect(); window.removeEventListener('scroll', trigger) }
   }, [])
 
-  // ── RAF timer loop
+  // ── Timer pour la grille
   useEffect(() => {
     if (!entered) return
     const tick = (now: number) => {
       if (startTimeRef.current === null) startTimeRef.current = now
       const p = clamp01((now - startTimeRef.current) / DURATION)
-      setProgress(p)
+      setTimerProg(p)
       if (p < 1) rafRef.current = requestAnimationFrame(tick)
     }
     rafRef.current = requestAnimationFrame(tick)
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
   }, [entered])
+
+  // ── Scroll progress dans la section (pour révéler les phrases)
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+    const onScroll = () => {
+      const h = section.offsetHeight - window.innerHeight
+      if (h <= 0) return
+      setScrollProg(clamp01(-section.getBoundingClientRect().top / h))
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   // ── Cycling photos
   useEffect(() => {
@@ -92,19 +108,18 @@ export default function Anxiete() {
         })
         setTimeout(() => setFadingSlots(new Set()), 300)
       }, 250)
-    }, 1800)
+    }, 1400)
     return () => clearInterval(iv)
   }, [entered])
 
-  // ── Colonnes : glissent depuis ±110vh en 1s
-  function colTranslate(col: number): string {
+  // ── Grille : slide-in → null = switch vers CSS loop animation
+  function colTranslate(col: number): string | null {
     if (!entered) return `${col % 2 === 0 ? -110 : 110}vh`
+    const e = easeOut3(clamp01(timerProg / GRID_ENTRY))
+    if (e >= 1) return null
     const sign = col % 2 === 0 ? -1 : 1
-    const e = easeOut3(clamp01(progress / GRID_ENTRY))
     return `${(sign * 110 * (1 - e)).toFixed(2)}vh`
   }
-
-  const textVisible = progress >= TEXT_TRIGGER
 
   return (
     <div
@@ -116,57 +131,77 @@ export default function Anxiete() {
     >
       <div className="anx-sticky">
 
-        {/* ── Grille photo ── */}
+        {/* ── Grille 8 colonnes ── */}
         <div className="anx-grid">
-          {Array.from({ length: COLS }, (_, col) => (
-            <div key={col} className="anx-col" style={{ transform: `translateY(${colTranslate(col)})` }}>
-              {Array.from({ length: ROWS }, (_, row) => {
-                const idx = col * ROWS + row
-                return (
-                  <div key={row} className="anx-cell">
-                    <img
-                      src={PHOTOS[slots[idx]]}
-                      alt=""
-                      className={`anx-photo${fadingSlots.has(idx) ? ' anx-photo--fading' : ''}`}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                )
-              })}
-            </div>
-          ))}
+          {Array.from({ length: COLS }, (_, col) => {
+            const translate = colTranslate(col)
+            return (
+              <div
+                key={col}
+                className={`anx-col${translate === null ? ' anx-col--floating' : ''}`}
+                style={{
+                  '--col-idx': col,
+                  ...(translate !== null ? { transform: `translateY(${translate})` } : {}),
+                } as React.CSSProperties}
+              >
+                {Array.from({ length: ROWS }, (_, row) => {
+                  const idx = col * ROWS + row
+                  return (
+                    <div key={row} className="anx-cell">
+                      <img
+                        src={PHOTOS[slots[idx]]}
+                        alt=""
+                        className={`anx-photo${fadingSlots.has(idx) ? ' anx-photo--fading' : ''}`}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
         </div>
 
-        {/* ── Overlay gradient (sombre à gauche pour lisibilité) ── */}
         <div className="anx-overlay" />
 
-        {/* ── Contenu texte — aligné à gauche ── */}
-        <div className={`anx-content${textVisible ? ' anx-content--visible' : ''}`}>
+        {/* ── Texte gauche — révélation au scroll ── */}
+        <div className={`anx-content${entered ? ' anx-content--entered' : ''}`}>
 
-          {/* Titre principal */}
+          {/* Titre : blanc 100% toujours */}
           <h2 className="anx-title">
             Les souvenirs sont grav&eacute;s,<br />
             vos photos sont l&agrave;.
           </h2>
 
-          {/* Sous-titre */}
-          <p className="anx-subtitle">
+          {/* Sous-titre : révélé en scrollant */}
+          <p
+            className="anx-subtitle"
+            style={{ opacity: revealOp(scrollProg, 0.05) }}
+          >
             Votre album, lui, vous attend.
           </p>
 
-          {/* Corps du texte — bloc compact */}
           <div className="anx-body">
 
-            <p className="anx-line">
+            <p
+              className="anx-line"
+              style={{ opacity: revealOp(scrollProg, 0.18) }}
+            >
               Mais quand on se lance&hellip; ce n&rsquo;est jamais qu&rsquo;un album.
             </p>
 
-            <p className="anx-line anx-line--bold">
+            <p
+              className="anx-line anx-line--bold"
+              style={{ opacity: revealOp(scrollProg, 0.38) }}
+            >
               C&rsquo;est choisir. Renoncer. Organiser. Raconter.
             </p>
 
-            <p className="anx-line">
+            <p
+              className="anx-line"
+              style={{ opacity: revealOp(scrollProg, 0.58) }}
+            >
               Et vos photos se perdent, se m&eacute;langent.
               Les instants parfaits, les doublons, les presque parfaits.
               Alors l&rsquo;album devient une t&acirc;che qu&rsquo;on reporte.
@@ -176,9 +211,8 @@ export default function Anxiete() {
           </div>
         </div>
 
-        {/* ── Barre de progression ── */}
         <div className="anx-progress">
-          <div className="anx-progress-bar" style={{ transform: `scaleX(${progress})` }} />
+          <div className="anx-progress-bar" style={{ transform: `scaleX(${scrollProg})` }} />
         </div>
 
       </div>

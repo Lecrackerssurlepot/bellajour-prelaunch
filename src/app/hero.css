@@ -215,6 +215,7 @@
   position: absolute;
   z-index: 2;
   animation: hero-fade 700ms var(--bj-ease-premium) both;
+  will-change: transform, opacity;
 }
 .frame {
   overflow: hidden;
