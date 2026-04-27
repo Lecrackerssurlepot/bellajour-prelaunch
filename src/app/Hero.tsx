@@ -147,7 +147,7 @@ export default function Hero() {
     document.getElementById('anxiete')?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const displayCount = count ?? 847
+  const displayCount = (count ?? 0) + 30
 
   return (
     <>
@@ -206,7 +206,7 @@ export default function Hero() {
 
           <div className="hero-count">
             <span className="hero-count-dot" />
-            {displayCount.toLocaleString('fr-FR')} personnes ont d\u00e9j\u00e0 rejoint la liste
+            {displayCount} personnes sur la liste
           </div>
         </div>
 
