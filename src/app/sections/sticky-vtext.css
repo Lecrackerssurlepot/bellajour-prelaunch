@@ -1,0 +1,27 @@
+.svt {
+  position: fixed;
+  top: 50%;
+  font-family: 'DM Sans', sans-serif;
+  font-size: clamp(9px, 0.6vw, 11px);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  transform: translateY(-50%);
+  z-index: 80;
+  pointer-events: none;
+  color: rgba(23, 20, 15, 0.55);
+  transition: color 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.svt-left  { left: 14px; }
+.svt-right {
+  right: 14px;
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.svt--dark { color: rgba(240, 234, 224, 0.55); }
+
+@media (max-width: 767px) {
+  .svt { display: none; }
+}

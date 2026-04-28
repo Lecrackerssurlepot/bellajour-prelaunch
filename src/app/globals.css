@@ -2,7 +2,7 @@
   --bj-bg: #F0EAE0;
   --bj-text: #17140F;
   --bj-muted: #7A6F62;
-  --bj-gold: #B8834A;
+  --bj-gold: #778899;
 
   --bj-section-padding-desktop: 120px;
   --bj-section-padding-tablet: 88px;
@@ -23,7 +23,7 @@ html, body {
   padding: 0;
   width: 100%;
   background: var(--bj-bg);
-  overflow-x: hidden;
+  overflow-x: clip;
   font-family: var(--bj-font-sans);
 }
 
