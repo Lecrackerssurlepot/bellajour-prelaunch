@@ -1,0 +1,257 @@
+/* ════════════════════════════════════════
+   ReferralSheet — Bottom sheet parrainage
+   Slide depuis le bas, premium Bellajour
+   ════════════════════════════════════════ */
+
+/* ── Backdrop ── */
+.rs-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(23, 20, 15, 0);
+  pointer-events: none;
+  overflow: hidden;
+  transition: background 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rs-backdrop--visible {
+  background: rgba(23, 20, 15, 0.30);
+  pointer-events: auto;
+}
+
+/* ── Sheet ── */
+.rs-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bj-bg);
+  border-radius: 20px 20px 0 0;
+  padding: 14px clamp(22px, 6vw, 52px) clamp(32px, 6vh, 52px);
+  transform: translateY(100%);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  max-width: 600px;
+  margin: 0 auto;
+  /* Ombre portée vers le haut */
+  box-shadow: 0 -8px 48px -4px rgba(23, 20, 15, 0.14);
+}
+
+.rs-sheet--visible {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-backdrop { transition: none; }
+  .rs-sheet    { transition: none; }
+}
+
+/* ── Handle ── */
+.rs-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(23, 20, 15, 0.14);
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+
+/* ── Bouton fermer ── */
+.rs-close {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: rgba(23, 20, 15, 0.07);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--bj-muted);
+  transition: background 0.2s;
+  line-height: 1;
+  padding: 0;
+}
+
+.rs-close:hover { background: rgba(23, 20, 15, 0.12); }
+
+/* ── En-tête ── */
+.rs-header {
+  margin-bottom: clamp(14px, 2.5vh, 22px);
+}
+
+.rs-eyebrow {
+  display: block;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(9px, 0.75vw, 11px);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--bj-muted);
+  margin-bottom: 10px;
+}
+
+.rs-titre {
+  margin: 0;
+  font-family: var(--bj-font-serif);
+  font-weight: 300;
+  font-size: clamp(26px, 4vw, 40px);
+  line-height: 1.15;
+  color: var(--bj-text);
+  letter-spacing: -0.02em;
+}
+
+.rs-titre em {
+  font-style: italic;
+  color: var(--bj-gold);
+}
+
+/* ── Description ── */
+.rs-desc {
+  margin: 0 0 clamp(20px, 3.5vh, 32px);
+  font-family: var(--bj-font-serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(14px, 1.2vw, 17px);
+  line-height: 1.65;
+  color: var(--bj-muted);
+}
+
+/* ── Bloc lien ── */
+.rs-link-block {
+  margin-bottom: clamp(16px, 2.5vh, 24px);
+}
+
+.rs-link-label {
+  display: block;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(9px, 0.7vw, 11px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--bj-muted);
+  margin-bottom: 8px;
+}
+
+.rs-link-row {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.70);
+  border: 0.5px solid rgba(23, 20, 15, 0.12);
+  border-radius: 999px;
+  padding: 5px 5px 5px clamp(16px, 2vw, 22px);
+  gap: 8px;
+}
+
+.rs-link-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(12px, 1vw, 14px);
+  color: var(--bj-text);
+  letter-spacing: 0.01em;
+  cursor: text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Bouton copier ── */
+.rs-copy-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: clamp(36px, 5vh, 44px);
+  padding: 0 clamp(16px, 2vw, 22px);
+  border: 1px solid rgba(119, 136, 153, 0.30);
+  border-radius: 999px;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(12px, 0.95vw, 14px);
+  font-weight: 400;
+  cursor: pointer;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  background: rgba(119, 136, 153, 0.15);
+  color: var(--bj-gold);
+  letter-spacing: 0.02em;
+}
+
+.rs-copy-btn:hover  { opacity: 0.88; }
+.rs-copy-btn:active { transform: scale(0.97); }
+
+.rs-copy-btn--done {
+  background: rgba(119, 136, 153, 0.28);
+  border-color: rgba(119, 136, 153, 0.50);
+  color: var(--bj-gold);
+}
+
+.rs-copy-icon {
+  font-size: 1em;
+  line-height: 1;
+}
+
+/* ── CTA Partager ── */
+.rs-share-btn {
+  width: 100%;
+  height: clamp(48px, 6vh, 58px);
+  background: rgba(119, 136, 153, 0.15);
+  color: var(--bj-gold);
+  border: 1px solid rgba(119, 136, 153, 0.30);
+  border-radius: 999px;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(14px, 1.1vw, 16px);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  margin-bottom: clamp(16px, 2.5vh, 24px);
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rs-share-btn:hover  { opacity: 0.88; }
+.rs-share-btn:active { transform: scale(0.97); }
+
+/* ── Note de bas ── */
+.rs-note {
+  margin: 0;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(10px, 0.78vw, 12px);
+  line-height: 1.7;
+  color: var(--bj-muted);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+/* ── Safe area iOS ── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .rs-sheet {
+    padding-bottom: calc(clamp(32px, 6vh, 52px) + env(safe-area-inset-bottom));
+  }
+}
+
+/* ── Desktop : sheet centré et encadré ── */
+@media (min-width: 768px) {
+  .rs-backdrop--visible {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .rs-sheet {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    margin: 0 auto 40px;
+    border-radius: 16px;
+    max-width: 520px;
+    width: 100%;
+    transform: translateY(120%);
+  }
+
+  .rs-sheet--visible {
+    transform: translateY(0);
+  }
+}

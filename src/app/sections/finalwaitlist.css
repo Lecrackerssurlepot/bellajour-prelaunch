@@ -1,0 +1,444 @@
+/* ════════════════════════════════════════
+   Section FinalWaitlist
+   Fond beige, premium, calme, éditorial
+   ════════════════════════════════════════ */
+
+/* ── Section ── */
+.fwl-section {
+  width: 100%;
+  background: var(--bj-bg);
+  padding: clamp(80px, 14vh, 160px) 0 clamp(80px, 12vh, 140px);
+  overflow: hidden;
+}
+
+/* ── Inner — centré, colonne ── */
+.fwl-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 5vw, 60px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* ════════════════════
+   RÉVÉLATION AU SCROLL
+   Chaque bloc a sa propre transition-delay
+   ════════════════════ */
+
+.fwl-logo-wrap,
+.fwl-titre,
+.fwl-count,
+.fwl-form,
+.fwl-msg,
+.fwl-reassurance,
+.fwl-ticker,
+.fwl-chapitres-intro,
+.fwl-chapitres {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.85s var(--bj-ease-premium),
+    transform 0.85s var(--bj-ease-premium);
+}
+
+.fwl-section--visible .fwl-logo-wrap     { opacity: 1; transform: none; transition-delay: 0.00s; }
+.fwl-section--visible .fwl-titre         { opacity: 1; transform: none; transition-delay: 0.10s; }
+.fwl-section--visible .fwl-count         { opacity: 1; transform: none; transition-delay: 0.18s; }
+.fwl-section--visible .fwl-form          { opacity: 1; transform: none; transition-delay: 0.26s; }
+.fwl-section--visible .fwl-msg           { opacity: 1; transform: none; transition-delay: 0.26s; }
+.fwl-section--visible .fwl-reassurance   { opacity: 1; transform: none; transition-delay: 0.34s; }
+.fwl-section--visible .fwl-ticker        { opacity: 1; transform: none; transition-delay: 0.42s; }
+.fwl-section--visible .fwl-chapitres-intro { opacity: 1; transform: none; transition-delay: 0.50s; }
+.fwl-section--visible .fwl-chapitres     { opacity: 1; transform: none; transition-delay: 0.60s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fwl-logo-wrap,
+  .fwl-titre,
+  .fwl-count,
+  .fwl-form,
+  .fwl-msg,
+  .fwl-reassurance,
+  .fwl-ticker,
+  .fwl-chapitres-intro,
+  .fwl-chapitres {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ── Logo ── */
+.fwl-logo-wrap {
+  margin-bottom: clamp(28px, 5vh, 52px);
+}
+
+.fwl-logo {
+  height: clamp(48px, 7vw, 80px);
+  display: block;
+  margin: 0 auto;
+}
+
+/* ── Titre principal ── */
+.fwl-titre {
+  margin: 0 0 clamp(20px, 3.5vh, 36px);
+  font-family: var(--bj-font-serif);
+  font-weight: 300;
+  font-style: italic;
+  font-size: clamp(32px, 5vw, 72px);
+  line-height: 1.15;
+  color: var(--bj-text);
+  letter-spacing: -0.02em;
+  max-width: 680px;
+}
+
+/* ── Compteur social ── */
+.fwl-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 clamp(24px, 4vh, 40px);
+  font-family: var(--bj-font-sans);
+  font-size: clamp(13px, 1vw, 15px);
+  color: var(--bj-text);
+  letter-spacing: 0.01em;
+}
+
+.fwl-count-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--bj-gold);
+  flex-shrink: 0;
+}
+
+/* ── Formulaire — reprise exacte du Hero ── */
+.fwl-form {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.65);
+  border: 0.5px solid rgba(23, 20, 15, 0.10);
+  border-radius: 999px;
+  padding: 5px;
+  width: min(580px, 92vw);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 8px 24px -16px rgba(23, 20, 15, 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  margin-bottom: 0;
+}
+
+.fwl-input {
+  flex: 1;
+  min-width: 0;
+  height: clamp(48px, 6vh, 62px);
+  padding: 0 clamp(18px, 2.2vw, 26px);
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(14px, 1.15vw, 17px);
+  color: var(--bj-text);
+}
+
+.fwl-input::placeholder { color: rgba(23, 20, 15, 0.42); }
+.fwl-input:disabled      { color: rgba(23, 20, 15, 0.35); }
+
+.fwl-btn {
+  flex-shrink: 0;
+  height: clamp(48px, 6vh, 62px);
+  padding: 0 clamp(24px, 2.8vw, 36px);
+  background: rgba(119, 136, 153, 0.15);
+  color: var(--bj-gold);
+  border: 1px solid rgba(119, 136, 153, 0.30);
+  border-radius: 999px;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(13px, 1.1vw, 16px);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fwl-btn:hover:not(:disabled) { opacity: 0.88; }
+.fwl-btn:active:not(:disabled) { transform: scale(0.97); }
+.fwl-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Message statut ── */
+.fwl-msg {
+  margin: 14px 0 0;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(13px, 1vw, 15px);
+  font-style: italic;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+}
+
+.fwl-msg--success { color: var(--bj-gold); }
+.fwl-msg--error   { color: #B0413E; }
+
+/* ── Micro-réassurance ── */
+.fwl-reassurance {
+  margin: clamp(16px, 2.5vh, 24px) 0 0;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(11px, 0.85vw, 13px);
+  letter-spacing: 0.04em;
+  color: var(--bj-muted);
+  line-height: 1.6;
+  max-width: 440px;
+}
+
+/* ════════════════════
+   TICKER ZOOM CINÉMATIQUE
+   Grossit 1× → 2.8× lentement, défile vers le haut en sortie
+   ════════════════════ */
+
+.fwl-ticker {
+  margin: clamp(28px, 5vh, 52px) 0;
+  position: relative;
+  height: clamp(72px, 11vh, 110px);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Dégradé masque haut/bas pour un fondu naturel sur le cadre */
+  mask-image: linear-gradient(to bottom,
+    transparent 0%,
+    black 18%,
+    black 82%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(to bottom,
+    transparent 0%,
+    black 18%,
+    black 82%,
+    transparent 100%
+  );
+}
+
+.fwl-ticker-item {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: clamp(10px, 1.5vw, 18px);
+  transform-origin: center center;
+  will-change: transform, opacity;
+  animation: fwl-ticker-heartbeat 4.6s linear forwards;
+}
+
+@keyframes fwl-ticker-heartbeat {
+  /* ── Entrée ── */
+  0%   { transform: translateY(10px) scale(0.92); opacity: 0; }
+  7%   { transform: translateY(0)    scale(1.00); opacity: 1; }
+
+  /* ── Battement 1 ── */
+  16%  { transform: scale(1.00); animation-timing-function: cubic-bezier(0.15, 0, 0.30, 1); }
+  19%  { transform: scale(1.11); animation-timing-function: ease-out; }
+  24%  { transform: scale(1.00); }
+
+  /* ── Battement 2 ── */
+  34%  { transform: scale(1.00); animation-timing-function: cubic-bezier(0.15, 0, 0.30, 1); }
+  37%  { transform: scale(1.11); animation-timing-function: ease-out; }
+  42%  { transform: scale(1.00); }
+
+  /* ── Battement 3 ── */
+  52%  { transform: scale(1.00); animation-timing-function: cubic-bezier(0.15, 0, 0.30, 1); }
+  55%  { transform: scale(1.11); animation-timing-function: ease-out; }
+  60%  { transform: scale(1.00); }
+
+  /* ── Repos ── */
+  80%  { transform: translateY(0) scale(1.00); opacity: 1; }
+
+  /* ── Sortie : défile vers le haut ── */
+  93%  { transform: translateY(-10px) scale(1.00); opacity: 0; }
+  100% { transform: translateY(-10px) scale(1.00); opacity: 0; }
+}
+
+.fwl-ticker-label {
+  font-family: var(--bj-font-sans);
+  font-size: clamp(9px, 0.75vw, 12px);
+  letter-spacing: 0.30em;
+  text-transform: uppercase;
+  color: var(--bj-muted);
+}
+
+.fwl-ticker-sep {
+  color: rgba(23, 20, 15, 0.20);
+  font-size: 0.9em;
+}
+
+.fwl-ticker-date {
+  font-family: var(--bj-font-serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(16px, 1.6vw, 24px);
+  color: var(--bj-text);
+  letter-spacing: -0.01em;
+}
+
+/* Fallback statique (masqué par défaut, visible si reduced-motion) */
+.fwl-ticker-static {
+  display: none;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(10px, 0.85vw, 13px);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bj-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fwl-ticker-item   { animation: none; opacity: 1; }
+  .fwl-ticker-static { display: block; }
+}
+
+/* ── Intro chapitres ── */
+.fwl-chapitres-intro {
+  margin: 0 0 clamp(28px, 5vh, 52px);
+  font-family: var(--bj-font-serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(16px, 1.4vw, 22px);
+  color: var(--bj-muted);
+  letter-spacing: -0.01em;
+}
+
+/* ════════════════════
+   CARTES CHAPITRES
+   ════════════════════ */
+
+.fwl-chapitres {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(14px, 2.5vw, 28px);
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.fwl-card {
+  background: #F7F2EB;
+  border: 0.5px solid rgba(23, 20, 15, 0.08);
+  border-radius: 3px;
+  padding: clamp(28px, 4vh, 48px) clamp(22px, 2.8vw, 36px);
+  position: relative;
+  cursor: default;
+  transition:
+    transform 0.45s var(--bj-ease-premium),
+    box-shadow 0.45s var(--bj-ease-premium);
+}
+
+@media (hover: hover) {
+  .fwl-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 48px -8px rgba(23, 20, 15, 0.08);
+  }
+}
+
+/* Ligne verticale de reliure */
+.fwl-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(23, 20, 15, 0.08);
+  border-radius: 1px 0 0 1px;
+}
+
+/* Numéro discret */
+.fwl-card-num {
+  display: block;
+  font-family: var(--bj-font-serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(11px, 0.9vw, 14px);
+  color: var(--bj-gold);
+  letter-spacing: 0.06em;
+  margin-bottom: clamp(14px, 2vh, 22px);
+}
+
+/* Ligne horizontale fine */
+.fwl-card-rule {
+  width: clamp(24px, 3vw, 40px);
+  height: 0.5px;
+  background: rgba(23, 20, 15, 0.18);
+  margin-bottom: clamp(14px, 2vh, 22px);
+}
+
+/* Titre uppercase */
+.fwl-card-titre {
+  margin: 0 0 clamp(10px, 1.5vh, 16px);
+  font-family: var(--bj-font-sans);
+  font-weight: 400;
+  font-size: clamp(10px, 0.8vw, 13px);
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--bj-text);
+}
+
+/* Texte descriptif */
+.fwl-card-texte {
+  margin: 0;
+  font-family: var(--bj-font-serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(14px, 1.2vw, 18px);
+  line-height: 1.65;
+  color: var(--bj-muted);
+}
+
+/* ── Label accessible masqué visuellement ── */
+.fwl-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ════════════════════
+   RESPONSIVE MOBILE
+   ════════════════════ */
+
+@media (max-width: 767px) {
+  .fwl-titre {
+    font-size: clamp(28px, 8vw, 40px);
+  }
+
+  .fwl-form {
+    flex-wrap: wrap;
+    border-radius: 12px;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .fwl-input {
+    width: 100%;
+    height: clamp(44px, 6vh, 52px);
+  }
+
+  .fwl-btn {
+    width: 100%;
+    border-radius: 8px;
+    height: clamp(44px, 6vh, 52px);
+    justify-content: center;
+  }
+
+  .fwl-chapitres {
+    grid-template-columns: 1fr;
+    gap: clamp(14px, 3vw, 20px);
+  }
+
+  .fwl-card {
+    padding: clamp(24px, 4vh, 32px) clamp(20px, 5vw, 28px);
+  }
+}

@@ -1,0 +1,149 @@
+/* ════════════════════════════════════════
+   Section FAQ
+   Fond beige, accordion épuré, Bellajour
+   ════════════════════════════════════════ */
+
+.faq-section {
+  width: 100%;
+  background: var(--bj-bg);
+  padding: clamp(64px, 10vh, 120px) 0 clamp(80px, 12vh, 140px);
+  border-top: 0.5px solid rgba(23, 20, 15, 0.10);
+}
+
+.faq-inner {
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 5vw, 60px);
+}
+
+/* ── En-tête ── */
+.faq-header {
+  margin-bottom: clamp(40px, 6vh, 64px);
+}
+
+.faq-eyebrow {
+  display: block;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(9px, 0.75vw, 11px);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--bj-muted);
+  margin-bottom: 16px;
+}
+
+.faq-titre {
+  margin: 0;
+  font-family: var(--bj-font-serif);
+  font-weight: 300;
+  font-style: italic;
+  font-size: clamp(32px, 4vw, 56px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--bj-text);
+}
+
+/* ── Liste ── */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Item ── */
+.faq-item {
+  border-top: 0.5px solid rgba(23, 20, 15, 0.12);
+}
+
+.faq-item:last-child {
+  border-bottom: 0.5px solid rgba(23, 20, 15, 0.12);
+}
+
+/* ── Question (bouton) ── */
+.faq-question {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: clamp(20px, 2.8vh, 28px) 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.faq-question:focus-visible {
+  outline: 2px solid var(--bj-gold);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.faq-question-text {
+  font-family: var(--bj-font-serif);
+  font-weight: 300;
+  font-style: italic;
+  font-size: clamp(17px, 1.6vw, 22px);
+  line-height: 1.35;
+  color: var(--bj-text);
+  letter-spacing: -0.01em;
+  transition: color 0.25s var(--bj-ease-premium);
+}
+
+.faq-item--open .faq-question-text {
+  color: var(--bj-text);
+}
+
+.faq-icon {
+  flex-shrink: 0;
+  margin-top: 3px;
+  font-family: var(--bj-font-sans);
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--bj-muted);
+  transition: color 0.25s var(--bj-ease-premium), transform 0.35s var(--bj-ease-premium);
+}
+
+.faq-item--open .faq-icon {
+  color: var(--bj-text);
+}
+
+/* ── Réponse — grid-rows trick pour transition smooth ── */
+.faq-answer-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s var(--bj-ease-premium);
+}
+
+.faq-item--open .faq-answer-wrap {
+  grid-template-rows: 1fr;
+}
+
+.faq-answer {
+  overflow: hidden;
+}
+
+.faq-answer p {
+  margin: 0 0 clamp(10px, 1.5vh, 14px);
+  font-family: var(--bj-font-sans);
+  font-size: clamp(13px, 1vw, 15px);
+  line-height: 1.75;
+  color: var(--bj-muted);
+  letter-spacing: 0.01em;
+}
+
+.faq-answer p:last-child {
+  margin-bottom: clamp(20px, 3vh, 28px);
+}
+
+/* ── reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .faq-answer-wrap { transition: none; }
+  .faq-icon        { transition: none; }
+}
+
+/* ── Mobile ── */
+@media (max-width: 767px) {
+  .faq-titre {
+    font-size: clamp(28px, 8vw, 38px);
+  }
+}

@@ -1,0 +1,108 @@
+/* ════════════════════════════════════════
+   Footer Bellajour — sobre, centré
+   ════════════════════════════════════════ */
+
+.footer {
+  width: 100%;
+  background: var(--bj-bg);
+  border-top: 0.5px solid rgba(23, 20, 15, 0.10);
+  padding: clamp(48px, 8vh, 80px) 0 clamp(40px, 6vh, 64px);
+}
+
+.footer-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 5vw, 60px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(24px, 3.5vh, 36px);
+}
+
+/* ── Logo ── */
+.footer-logo-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.footer-logo {
+  height: clamp(36px, 5vw, 52px);
+  display: block;
+  opacity: 0.85;
+}
+
+/* ── Liens nav ── */
+.footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 12px;
+}
+
+.footer-link {
+  font-family: var(--bj-font-sans);
+  font-size: clamp(11px, 0.85vw, 13px);
+  letter-spacing: 0.02em;
+  color: var(--bj-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-link:hover {
+  color: var(--bj-text);
+}
+
+.footer-sep {
+  color: rgba(23, 20, 15, 0.22);
+  font-size: 0.9em;
+}
+
+/* ── Instagram ── */
+.footer-insta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--bj-muted);
+  transition: color 0.2s;
+}
+
+.footer-insta:hover {
+  color: var(--bj-text);
+}
+
+.footer-insta-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.footer-insta span {
+  font-family: var(--bj-font-sans);
+  font-size: clamp(11px, 0.85vw, 13px);
+  letter-spacing: 0.04em;
+}
+
+/* ── Mention légale bas ── */
+.footer-legal {
+  margin: 0;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(10px, 0.78vw, 12px);
+  letter-spacing: 0.02em;
+  color: rgba(23, 20, 15, 0.35);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ── Mobile ── */
+@media (max-width: 767px) {
+  .footer-nav {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .footer-sep {
+    display: none;
+  }
+}

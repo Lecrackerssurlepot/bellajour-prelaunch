@@ -1,0 +1,315 @@
+/* ════════════════════════════════════════
+   Section Solution — Comment ça marche
+   Tempo-driven, hiérarchie visuelle
+   ════════════════════════════════════════ */
+
+.sol-section {
+  width: 100%;
+  background: var(--bj-bg);
+  padding: clamp(64px, 10vh, 120px) 0;
+}
+
+/* ── Inner : grille 2 colonnes ── */
+.sol-inner {
+  display: grid;
+  grid-template-columns: 44% 56%;
+  min-height: 76vh;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* ── Colonne gauche ── */
+.sol-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: clamp(48px, 7vh, 80px) clamp(32px, 5vw, 80px) clamp(48px, 7vh, 80px) clamp(32px, 7vw, 120px);
+}
+
+/* ── Étape ── */
+.sol-step {
+  position: relative;
+  cursor: pointer;
+}
+
+/* ── Contenu texte ── */
+.sol-step-content {
+  padding: clamp(6px, 1vh, 12px) 0 clamp(6px, 1vh, 12px) 20px;
+}
+
+/* ── Animation entrée par le bas ── */
+@keyframes sol-slide-up {
+  from { transform: translateY(52px); }
+  to   { transform: translateY(0); }
+}
+
+.sol-step--active .sol-step-content {
+  animation: sol-slide-up 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Hiérarchie : opacité ── */
+.sol-step--far     { opacity: 0.20; }
+.sol-step--next    { opacity: 0.50; }
+.sol-step--active  { opacity: 1; }
+
+/* Transitions douces */
+.sol-step--far,
+.sol-step--next,
+.sol-step--active {
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Numéro ── */
+.sol-num {
+  display: block;
+  font-family: var(--bj-font-serif);
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--bj-gold);
+  letter-spacing: -0.03em;
+  /* Hiérarchie taille */
+  font-size: clamp(11px, 1vw, 14px);
+  transition: font-size 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  margin-bottom: 2px;
+}
+
+.sol-step--next  .sol-num { font-size: clamp(32px, 3.2vw, 50px); }
+.sol-step--active .sol-num { font-size: clamp(80px, 9vw, 130px); margin-bottom: clamp(4px, 0.8vh, 12px); }
+
+/* ── Titre étape ── */
+.sol-titre {
+  margin: 0;
+  font-family: var(--bj-font-serif);
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.05;
+  color: var(--bj-text);
+  letter-spacing: -0.02em;
+  /* Hiérarchie taille */
+  font-size: clamp(10px, 0.9vw, 13px);
+  transition: font-size 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sol-step--next  .sol-titre { font-size: clamp(26px, 2.8vw, 42px); }
+.sol-step--active .sol-titre { font-size: clamp(40px, 4.8vw, 72px); }
+
+/* ── Sous-titre (uniquement actif) ── */
+.sol-sous-titre {
+  margin: clamp(12px, 2vh, 22px) 0 0;
+  font-family: var(--bj-font-sans);
+  font-weight: 300;
+  font-size: clamp(9px, 0.7vw, 12px);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--bj-muted);
+  line-height: 2.2;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-height 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.5s 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sol-step--active .sol-sous-titre {
+  max-height: 120px;
+  opacity: 1;
+}
+
+/* ── Connecteur vertical pointillé ── */
+.sol-connector {
+  position: relative;
+  margin-left: 20px;
+  width: 1px;
+  height: clamp(20px, 3.5vh, 36px);
+  /* Ligne pointillée en fond */
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(23, 20, 15, 0.25) 0px,
+    rgba(23, 20, 15, 0.25) 3px,
+    transparent 3px,
+    transparent 7px
+  );
+}
+
+.sol-connector-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--bj-text);
+  transform-origin: top;
+  transform: scaleY(0);
+  will-change: transform;
+}
+
+/* ── Colonne droite ── */
+.sol-right {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(32px, 5vw, 80px);
+}
+
+/* ── Visuels (absolus superposés) ── */
+.sol-visual {
+  position: absolute;
+  inset: clamp(32px, 5vw, 80px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 2vh, 20px);
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.sol-visual--active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* ── Placeholders ── */
+.sol-placeholder {
+  width: 100%;
+  background: rgba(23, 20, 15, 0.10);
+}
+
+.sol-placeholder--tall  { flex: 3; }
+.sol-placeholder--short { flex: 1; }
+
+/* ════════════════════════════════════════
+   UPLOAD VISUAL — Étape 01
+   4 vagues de photos depuis les côtés → centre
+   Barre de chargement centrée dans le container
+   ════════════════════════════════════════ */
+
+.sol-upload {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.sol-upload-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(23, 20, 15, 0.04);
+}
+
+/* ── Photos animées ── */
+.sol-upload-photo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(55px, 6.5vw, 88px);
+  height: clamp(42px, 5vw, 68px);
+  overflow: hidden;
+  border-radius: 2px;
+  box-shadow: 0 4px 16px rgba(23, 20, 15, 0.28);
+  opacity: 0;
+  animation-name: sol-photo-fly;
+  animation-duration: 1.55s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: forwards;
+  animation-delay: var(--delay, 0s);
+  will-change: transform, opacity;
+}
+
+.sol-upload-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@keyframes sol-photo-fly {
+  0%   {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.90) rotate(var(--rot, 0deg));
+    opacity: 0;
+  }
+  8%   {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.95) rotate(var(--rot, 0deg));
+    opacity: 1;
+  }
+  68%  {
+    transform: translate(-50%, -50%) scale(0.55) rotate(0deg);
+    opacity: 0.9;
+  }
+  84%  {
+    transform: translate(-50%, -50%) scale(0.25) rotate(0deg);
+    opacity: 0;
+  }
+  100% { opacity: 0; }
+}
+
+/* ── UI centré : label + barre + % ── */
+.sol-upload-ui {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 52%;
+  pointer-events: none;
+}
+
+.sol-upload-ui-label {
+  font-family: var(--bj-font-sans);
+  font-size: clamp(8px, 0.65vw, 10px);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--bj-muted);
+}
+
+.sol-upload-ui-bar {
+  width: 100%;
+  height: 1.5px;
+  background: rgba(23, 20, 15, 0.12);
+  overflow: hidden;
+}
+
+.sol-upload-ui-fill {
+  height: 100%;
+  background: var(--bj-gold);
+  transform-origin: left;
+  transform: scaleX(0);
+  will-change: transform;
+}
+
+.sol-upload-ui-pct {
+  font-family: var(--bj-font-serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(28px, 3vw, 46px);
+  color: var(--bj-text);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* ── Mobile ── */
+@media (max-width: 767px) {
+  .sol-inner {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .sol-left {
+    padding: 0 6vw;
+  }
+
+  .sol-right { display: none; }
+
+  .sol-step--active .sol-titre { font-size: clamp(28px, 7vw, 40px); }
+  .sol-step--active .sol-num   { font-size: clamp(48px, 14vw, 72px); }
+  .sol-step--next   .sol-titre { font-size: clamp(16px, 4vw, 22px); }
+  .sol-step--next   .sol-num   { font-size: clamp(16px, 4vw, 22px); }
+}
