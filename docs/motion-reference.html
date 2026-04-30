@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bellajour — Motion & Design Reference v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=DM+Sans:ital,wght@1,300;0,300;0,400&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bj-beige: #EAE3D8;
+    --bj-noir: #1C1C1C;
+    --bj-creme: #F0EBE1;
+    --bj-accent: #778899;       /* Slate Blue — couleur officielle */
+    --bj-accent-light: rgba(119,136,153,0.10);
+    --bj-accent-border: rgba(119,136,153,0.22);
+    --bj-muted: #A89880;
+    --bj-border: #2C2C2C;
+    --bj-border-light: rgba(234,227,216,0.15);
+    --bj-radius-sm:   10px;
+    --bj-radius-md:   16px;
+    --bj-radius-lg:   24px;
+    --bj-radius-pill: 100px;
+    --bj-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --bj-ease-out: cubic-bezier(0.0, 0.0, 0.2, 1);
+    --bj-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bj-beige);
+    color: var(--bj-noir);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(234,227,216,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(28,28,28,0.08);
+  }
+
+  .nav-logo {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 0.06em;
+  }
+
+  .nav-label {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-style: italic;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    color: var(--bj-muted);
+    text-transform: uppercase;
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    min-height: 100vh;
+    padding: 120px 60px 80px;
+    position: relative;
+  }
+
+  .section-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--bj-muted);
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: clamp(32px, 5vw, 56px);
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+
+  .section-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: 20px;
+    color: var(--bj-muted);
+    margin-bottom: 64px;
+  }
+
+  /* ── EFFECT CARDS ── */
+  .effect-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2px;
+    margin-top: 48px;
+  }
+
+  .effect-card {
+    background: white;
+    padding: 48px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .effect-card-dark {
+    background: var(--bj-noir);
+    color: var(--bj-creme);
+  }
+
+  .effect-tag {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--bj-accent);
+    margin-bottom: 24px;
+    display: block;
+  }
+
+  .effect-name {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+
+  .effect-desc {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--bj-muted);
+    margin-bottom: 40px;
+    line-height: 1.6;
+  }
+
+  .effect-card-dark .effect-desc { color: rgba(240,235,225,0.5); }
+
+  .demo-area {
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top: 1px solid rgba(28,28,28,0.08);
+    padding-top: 32px;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .effect-card-dark .demo-area { border-color: var(--bj-border); }
+
+  .replay-btn {
+    position: absolute;
+    bottom: 20px;
+    right: 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--bj-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 300ms;
+  }
+  .replay-btn:hover { opacity: 1; }
+
+
+  /* ═══════════════════════════════════════
+     EFFET 1 — LUX FADE
+  ═══════════════════════════════════════ */
+  @keyframes luxFade {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .lux-fade-demo { text-align: center; }
+  .lux-item {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 28px;
+    opacity: 0;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .lux-item.playing { animation: luxFade 800ms var(--bj-ease-out) forwards; }
+  .lux-item:nth-child(2).playing { animation-delay: 120ms; }
+  .lux-item:nth-child(3).playing { animation-delay: 240ms; }
+  .lux-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-style: italic;
+    font-weight: 300;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bj-muted);
+    opacity: 0;
+  }
+  .lux-sub.playing { animation: luxFade 800ms var(--bj-ease-out) 360ms forwards; }
+
+
+  /* ═══════════════════════════════════════
+     EFFET 2 — LIGHT BLEED
+  ═══════════════════════════════════════ */
+  .light-bleed-demo {
+    width: 100%;
+    border-radius: 0;
+    overflow: hidden;
+  }
+  .sep-demo-wrap { width: 100%; }
+  .sep-beige { height: 80px; background: var(--bj-beige); display: flex; align-items: center; justify-content: center; }
+  .sep-line {
+    height: 1px;
+    background: linear-gradient(to right, transparent 0%, rgba(28,28,28,0.10) 25%, rgba(28,28,28,0.10) 75%, transparent 100%);
+    margin: 0 40px;
+  }
+  .sep-dark { height: 80px; background: var(--bj-noir); display: flex; align-items: center; justify-content: center; }
+  .sep-text { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 300; font-style: italic; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bj-muted); }
+  .sep-text-dark { color: rgba(168,152,128,0.5); }
+
+
+  /* ═══════════════════════════════════════
+     EFFET 3 — DRUM ROLL
+  ═══════════════════════════════════════ */
+  .drum-demo {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+  }
+  .drum-digit-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .drum-digit {
+    width: 52px;
+    height: 72px;
+    background: var(--bj-noir);
+    border: 1px solid var(--bj-border);
+    border-radius: var(--bj-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 36px;
+    color: var(--bj-creme);
+    position: relative;
+    overflow: hidden;
+  }
+  .drum-digit::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%;
+    height: 1px;
+    background: rgba(240,235,225,0.12);
+  }
+  .drum-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9px;
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bj-muted);
+  }
+  .drum-date-demo {
+    margin-top: 20px;
+    text-align: center;
+  }
+  .drum-date-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 22px;
+    color: var(--bj-muted);
+    letter-spacing: 0.04em;
+    min-height: 32px;
+  }
+
+
+  /* ═══════════════════════════════════════
+     EFFET 4 — SLIDE REVEAL
+  ═══════════════════════════════════════ */
+  @keyframes slideReveal {
+    from { opacity: 0; transform: translateY(40px); filter: blur(4px); }
+    to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+  }
+
+  .slide-cards {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .slide-card {
+    flex: 1;
+    background: var(--bj-beige);
+    border-radius: var(--bj-radius-md);
+    padding: 20px 16px;
+    opacity: 0;
+  }
+
+  .slide-card.playing { animation: slideReveal 700ms var(--bj-spring) forwards; }
+  .slide-card:nth-child(2).playing { animation-delay: 80ms; }
+  .slide-card:nth-child(3).playing { animation-delay: 160ms; }
+
+  .sc-eyebrow {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9px;
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--bj-accent);
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .sc-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+
+  .sc-body {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--bj-muted);
+    line-height: 1.6;
+  }
+
+
+  /* ═══════════════════════════════════════
+     EFFET 5 — GLASS PANEL
+  ═══════════════════════════════════════ */
+  .glass-bg {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(135deg, #2a2018 0%, #1C1C1C 50%, #1a1510 100%);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .glass-bg-texture {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(ellipse at 30% 50%, rgba(119,136,153,0.12) 0%, transparent 60%),
+                      radial-gradient(ellipse at 70% 30%, rgba(234,227,216,0.06) 0%, transparent 50%);
+  }
+
+  .glass-panel {
+    position: relative;
+    background: rgba(234, 227, 216, 0.08);
+    backdrop-filter: blur(20px) saturate(1.2);
+    -webkit-backdrop-filter: blur(20px) saturate(1.2);
+    border: 1px solid rgba(234, 227, 216, 0.15);
+    border-radius: var(--bj-radius-lg);
+    padding: 24px 28px;
+    width: 280px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 700ms var(--bj-spring), transform 700ms var(--bj-spring);
+  }
+
+  .glass-panel.playing {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .gp-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9px;
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(240,235,225,0.45);
+    margin-bottom: 10px;
+  }
+
+  .gp-title {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--bj-creme);
+    margin-bottom: 4px;
+  }
+
+  .gp-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--bj-muted);
+  }
+
+  .gp-divider {
+    height: 1px;
+    background: rgba(234,227,216,0.1);
+    margin: 14px 0;
+  }
+
+  .gp-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .gp-number {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 28px;
+    color: var(--bj-accent);
+  }
+
+  .gp-unit {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 300;
+    color: rgba(240,235,225,0.4);
+    letter-spacing: 0.1em;
+  }
+
+
+  /* ═══════════════════════════════════════
+     EFFET 6 — DEPTH LAYER
+  ═══════════════════════════════════════ */
+  .depth-scene {
+    position: relative;
+    width: 100%;
+    height: 220px;
+    overflow: hidden;
+    background: var(--bj-noir);
+  }
+
+  /* Plan 1 — BG */
+  .depth-bg-layer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #1a1208 0%, #1C1C1C 60%, #0d0d0d 100%);
+  }
+
+  .depth-bg-grain {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(ellipse at 20% 80%, rgba(119,136,153,0.08) 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 20%, rgba(234,227,216,0.04) 0%, transparent 50%);
+  }
+
+  /* Plan 2 — MID (éléments flottants) */
+  .depth-float-el {
+    position: absolute;
+    background: rgba(234,227,216,0.06);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(234,227,216,0.1);
+    border-radius: var(--bj-radius-sm);
+    padding: 8px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: 0.12em;
+    color: rgba(240,235,225,0.5);
+    opacity: 0;
+    transition: opacity 800ms var(--bj-ease-out);
+  }
+
+  .depth-float-el.playing { opacity: 1; }
+  .depth-float-el:nth-child(3) { top: 28px; right: 40px; transition-delay: 300ms; }
+  .depth-float-el:nth-child(4) { bottom: 40px; right: 80px; transition-delay: 500ms; }
+  .depth-float-el:nth-child(5) { top: 60px; left: 20px; transition-delay: 200ms; }
+
+  /* Plan 3 — FG (typographie) */
+  .depth-fg-text {
+    position: absolute;
+    bottom: 20px;
+    left: 32px;
+    z-index: 20;
+  }
+
+  .depth-headline {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: clamp(28px, 5vw, 44px);
+    color: var(--bj-creme);
+    line-height: 1.05;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 900ms var(--bj-ease-out), transform 900ms var(--bj-ease-out);
+  }
+
+  .depth-headline.playing { opacity: 1; transform: translateY(0); }
+
+  .depth-italic {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--bj-accent);
+  }
+
+
+  /* ═══════════════════════════════════════
+     SECTION 2 — UI DESIGN REFERENCES
+  ═══════════════════════════════════════ */
+  .section-dark {
+    background: var(--bj-noir);
+    color: var(--bj-creme);
+  }
+
+  .section-dark .section-sub { color: rgba(240,235,225,0.45); }
+  .section-dark .section-label { color: rgba(168,152,128,0.7); }
+
+  /* STATUS PILLS */
+  .status-demo {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+  }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    opacity: 0;
+    transform: translateX(-12px);
+    transition: opacity 600ms var(--bj-spring), transform 600ms var(--bj-spring);
+  }
+
+  .status-row.playing { opacity: 1; transform: translateX(0); }
+  .status-row:nth-child(2).playing { transition-delay: 100ms; }
+  .status-row:nth-child(3).playing { transition-delay: 200ms; }
+  .status-row:nth-child(4).playing { transition-delay: 300ms; }
+
+  .status-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid var(--bj-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+    transition: all 400ms var(--bj-ease);
+  }
+
+  .status-pill {
+    padding: 6px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: var(--bj-radius-pill);
+  }
+
+  .status-pill.draft { background: rgba(234,227,216,0.06); color: rgba(240,235,225,0.4); border: 1px solid var(--bj-border); }
+  .status-pill.progress { background: rgba(119,136,153,0.15); color: var(--bj-accent); border: 1px solid rgba(119,136,153,0.3); }
+  .status-pill.review { background: rgba(168,152,128,0.1); color: var(--bj-muted); border: 1px solid rgba(168,152,128,0.25); }
+  .status-pill.done { background: rgba(234,227,216,0.08); color: var(--bj-creme); border: 1px solid rgba(234,227,216,0.15); }
+
+  .pill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .pill-dot.draft { background: rgba(240,235,225,0.2); }
+  .pill-dot.progress { background: var(--bj-accent); }
+  .pill-dot.review { background: var(--bj-muted); }
+  .pill-dot.done { background: var(--bj-creme); }
+
+  .status-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: rgba(240,235,225,0.3);
+    margin-left: 4px;
+  }
+
+
+  /* DASHBOARD DARK */
+  .dashboard-demo {
+    width: 100%;
+    background: #111;
+    border: 1px solid var(--bj-border);
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .db-metric {
+    padding: 16px;
+    background: rgba(234,227,216,0.03);
+    border: 1px solid var(--bj-border);
+    border-radius: var(--bj-radius-sm);
+    opacity: 0;
+    transition: opacity 600ms var(--bj-ease-out);
+  }
+
+  .db-metric.playing { opacity: 1; }
+  .db-metric:nth-child(2).playing { transition-delay: 80ms; }
+  .db-metric:nth-child(3).playing { transition-delay: 160ms; }
+  .db-metric:nth-child(4).playing { transition-delay: 240ms; }
+
+  .db-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9px;
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(168,152,128,0.6);
+    margin-bottom: 10px;
+  }
+
+  .db-number {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 32px;
+    color: var(--bj-creme);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .db-trend {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    color: rgba(119,136,153,0.8);
+    letter-spacing: 0.06em;
+  }
+
+  .db-bar-wrap {
+    margin-top: 10px;
+    height: 2px;
+    background: var(--bj-border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .db-bar {
+    height: 100%;
+    background: var(--bj-accent);
+    width: 0%;
+    transition: width 1200ms var(--bj-ease-out);
+  }
+
+  .db-bar.playing { width: var(--w); }
+
+
+  /* TAG CLOUD */
+  .tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    padding: 8px 0;
+  }
+
+  .bj-tag {
+    padding: 7px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 300;
+    letter-spacing: 0.06em;
+    border-radius: var(--bj-radius-pill);
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 400ms var(--bj-spring), transform 400ms var(--bj-spring);
+  }
+
+  .bj-tag.playing { opacity: 1; transform: scale(1); }
+
+  /* Bellajour color variants for tags (subtils) */
+  .tag-v1 { background: rgba(119,136,153,0.12); color: var(--bj-accent); border: 1px solid rgba(119,136,153,0.25); }
+  .tag-v2 { background: rgba(168,152,128,0.1); color: var(--bj-muted); border: 1px solid rgba(168,152,128,0.2); }
+  .tag-v3 { background: rgba(234,227,216,0.06); color: rgba(240,235,225,0.6); border: 1px solid var(--bj-border); }
+  .tag-v4 { background: rgba(240,235,225,0.04); color: var(--bj-creme); border: 1px solid rgba(234,227,216,0.1); }
+
+
+  /* ── SECTION BLEED DÉMO ── */
+  .bleed-section-demo {
+    background: var(--bj-beige);
+    padding: 60px 60px 0;
+    position: relative;
+  }
+
+  .bleed-into-dark {
+    background: var(--bj-noir);
+    padding: 0 60px 60px;
+    position: relative;
+  }
+
+  .bleed-into-dark::before {
+    content: '';
+    display: block;
+    height: 160px;
+    background: linear-gradient(to bottom, var(--bj-beige) 0%, rgba(234,227,216,0.35) 35%, transparent 100%);
+    margin-bottom: 0;
+    pointer-events: none;
+  }
+
+  .bleed-content {
+    padding-top: 16px;
+    text-align: center;
+  }
+
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--bj-noir);
+    padding: 48px 60px;
+    border-top: 1px solid var(--bj-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-logo {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--bj-creme);
+    letter-spacing: 0.06em;
+  }
+
+  .footer-note {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--bj-muted);
+  }
+
+
+  /* ── EFFECT HEADER ── */
+  .effects-header {
+    padding: 100px 60px 0;
+    background: var(--bj-beige);
+  }
+
+  /* Separator */
+  .sep {
+    height: 1px;
+    background: rgba(28,28,28,0.1);
+    margin: 0 60px;
+  }
+
+  .sep-dark { background: var(--bj-border); }
+
+  /* ── SCROLL ANIMATIONS ── */
+  [data-scroll] {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 800ms var(--bj-ease-out), transform 800ms var(--bj-ease-out);
+  }
+
+  [data-scroll].visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  [data-scroll-delay="1"] { transition-delay: 100ms; }
+  [data-scroll-delay="2"] { transition-delay: 200ms; }
+  [data-scroll-delay="3"] { transition-delay: 300ms; }
+
+
+  /* ══════════════════════════════════════
+     EFFET 7 — HORLOGE CANVAS
+  ══════════════════════════════════════ */
+  .clock-outer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 0;
+  }
+  .clock-time-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--bj-muted);
+    letter-spacing: 0.06em;
+    text-align: center;
+    min-height: 24px;
+  }
+  .clock-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .clock-ctrl {
+    padding: 5px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border: 1px solid var(--bj-border);
+    background: none;
+    color: var(--bj-muted);
+    border-radius: var(--bj-radius-pill);
+    cursor: pointer;
+    transition: all 250ms;
+  }
+  .clock-ctrl:hover { border-color: var(--bj-accent); color: var(--bj-accent); }
+  .clock-ctrl.active { background: var(--bj-creme); color: var(--bj-noir); border-color: var(--bj-creme); }
+  .clock-ctrl-dark.active { background: var(--bj-noir); color: var(--bj-creme); border-color: var(--bj-border); }
+
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-logo">Bellajour</span>
+  <span class="nav-label">Motion & Design Reference — Document interne</span>
+</nav>
+
+
+<!-- ═══════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════ -->
+<section style="background:var(--bj-beige);display:flex;flex-direction:column;justify-content:center;padding-top:160px;">
+  <p class="section-label" data-scroll>Document de référence</p>
+  <h1 class="section-title" data-scroll data-scroll-delay="1">Motion &<br><em style="font-style:italic;color:var(--bj-accent)">Design System</em></h1>
+  <p class="section-sub" data-scroll data-scroll-delay="2">Les 6 effets Bellajour — reproductibles par Claude Code</p>
+
+  <div style="display:flex;gap:32px;margin-top:48px;" data-scroll data-scroll-delay="3">
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <span style="font-family:'Playfair Display',serif;font-weight:700;font-size:36px;">6</span>
+      <span style="font-family:'DM Sans',sans-serif;font-size:10px;font-style:italic;font-weight:300;letter-spacing:0.14em;text-transform:uppercase;color:var(--bj-muted);">Effets Motion</span>
+    </div>
+    <div style="width:1px;background:rgba(28,28,28,0.12);"></div>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <span style="font-family:'Playfair Display',serif;font-weight:700;font-size:36px;">3</span>
+      <span style="font-family:'DM Sans',sans-serif;font-size:10px;font-style:italic;font-weight:300;letter-spacing:0.14em;text-transform:uppercase;color:var(--bj-muted);">UI Patterns</span>
+    </div>
+    <div style="width:1px;background:rgba(28,28,28,0.12);"></div>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <span style="font-family:'Playfair Display',serif;font-weight:700;font-size:36px;">∞</span>
+      <span style="font-family:'DM Sans',sans-serif;font-size:10px;font-style:italic;font-weight:300;letter-spacing:0.14em;text-transform:uppercase;color:var(--bj-muted);">Combinaisons</span>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 1 — MOTION EFFECTS
+═══════════════════════════════════════════ -->
+<div class="effects-header">
+  <p class="section-label" data-scroll>Section 01</p>
+  <h2 class="section-title" data-scroll data-scroll-delay="1">Motion Lexicon</h2>
+  <p class="section-sub" data-scroll data-scroll-delay="2">Les 6 effets autorisés — cliquer pour rejouer</p>
+</div>
+
+<div class="effect-grid" style="margin:48px 0 0;">
+
+  <!-- EFFET 1 — LUX FADE -->
+  <div class="effect-card" id="card-lux">
+    <span class="effect-tag">Effet 01</span>
+    <h3 class="effect-name">Lux Fade</h3>
+    <p class="effect-desc">Apparition standard — 800ms, translateY 16px, easing ease-out. Stagger 120ms entre éléments.</p>
+    <div class="demo-area lux-fade-demo">
+      <span class="lux-item" id="li1" style="color:var(--bj-noir);">Vos souvenirs méritent</span>
+      <span class="lux-item" id="li2" style="color:var(--bj-accent);">d'être racontés.</span>
+      <span class="lux-sub" id="li3">Bellajour · Album photo IA</span>
+    </div>
+    <button class="replay-btn" onclick="playLux()">↺ rejouer</button>
+  </div>
+
+  <!-- EFFET 2 — LIGHT BLEED -->
+  <div class="effect-card">
+    <span class="effect-tag">Effet 02</span>
+    <h3 class="effect-name">Light Bleed</h3>
+    <p class="effect-desc">Transition lumineuse entre section beige et sombre. La lumière saigne vers le bas sur 150–250px.</p>
+    <div class="demo-area" style="padding:0;border:none;display:block;margin-top:32px;">
+      <div class="sep-demo-wrap">
+        <div class="sep-beige"><span class="sep-text">Section Beige #EAE3D8</span></div>
+        <div class="sep-line"></div>
+        <div class="sep-dark"><span class="sep-text-dark">Section Sombre #1C1C1C</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EFFET 3 — DRUM ROLL -->
+  <div class="effect-card effect-card-dark" id="card-drum">
+    <span class="effect-tag">Effet 03</span>
+    <h3 class="effect-name" style="color:var(--bj-creme);">Drum Roll</h3>
+    <p class="effect-desc">Chiffres et dates qui défilent mécaniquement — 1200ms, style tableau d'aéroport.</p>
+    <div class="demo-area" style="border-color:var(--bj-border);flex-direction:column;gap:24px;">
+      <div class="drum-demo">
+        <div class="drum-digit-wrap">
+          <div class="drum-digit" id="dd1">4</div>
+          <span class="drum-label">centaines</span>
+        </div>
+        <div class="drum-digit-wrap">
+          <div class="drum-digit" id="dd2">2</div>
+          <span class="drum-label">dizaines</span>
+        </div>
+        <div class="drum-digit-wrap">
+          <div class="drum-digit" id="dd3">7</div>
+          <span class="drum-label">unités</span>
+        </div>
+        <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13px;color:var(--bj-muted);align-self:flex-end;padding-bottom:24px;margin-left:8px;">albums créés</div>
+      </div>
+      <div class="drum-date-demo">
+        <div class="drum-date-text" id="drum-date">—</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:9px;font-style:italic;font-weight:300;letter-spacing:0.14em;text-transform:uppercase;color:var(--bj-muted);margin-top:6px;">date de livraison</div>
+      </div>
+    </div>
+    <button class="replay-btn" style="color:var(--bj-muted);" onclick="playDrum()">↺ rejouer</button>
+  </div>
+
+  <!-- EFFET 4 — SLIDE REVEAL -->
+  <div class="effect-card" id="card-slide">
+    <span class="effect-tag">Effet 04</span>
+    <h3 class="effect-name">Slide Reveal</h3>
+    <p class="effect-desc">Cards qui montent avec blur — 700ms, spring easing. Stagger 80ms. Sensation de matérialisation.</p>
+    <div class="demo-area" style="display:block;border:none;padding-top:24px;">
+      <div class="slide-cards">
+        <div class="slide-card" id="sc1">
+          <span class="sc-eyebrow">Artisanal</span>
+          <div class="sc-title">Chaque photo, choisie.</div>
+          <p class="sc-body">Notre IA sélectionne avec précision.</p>
+        </div>
+        <div class="slide-card" id="sc2">
+          <span class="sc-eyebrow">Premium</span>
+          <div class="sc-title">Impression luxe.</div>
+          <p class="sc-body">Papier photo mat, reliure cousue.</p>
+        </div>
+        <div class="slide-card" id="sc3">
+          <span class="sc-eyebrow">Livré</span>
+          <div class="sc-title">En 5 jours.</div>
+          <p class="sc-body">Directement chez vous.</p>
+        </div>
+      </div>
+    </div>
+    <button class="replay-btn" onclick="playSlide()">↺ rejouer</button>
+  </div>
+
+  <!-- EFFET 5 — GLASS PANEL -->
+  <div class="effect-card effect-card-dark" id="card-glass">
+    <span class="effect-tag">Effet 05</span>
+    <h3 class="effect-name" style="color:var(--bj-creme);">Glass Panel</h3>
+    <p class="effect-desc">Glassmorphism Bellajour — backdrop-filter blur(20px), opacité 0.08 max. Uniquement sur fond texturé.</p>
+    <div class="demo-area" style="border:none;padding:0;margin-top:24px;">
+      <div class="glass-bg">
+        <div class="glass-bg-texture"></div>
+        <div class="glass-panel" id="glass-el">
+          <div class="gp-label">Votre album</div>
+          <div class="gp-title">Voyage en Toscane</div>
+          <div class="gp-sub">Été 2024 · 48 photos</div>
+          <div class="gp-divider"></div>
+          <div class="gp-stat">
+            <span class="gp-number" id="gp-num">0</span>
+            <span class="gp-unit">photos sélectionnées</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="replay-btn" style="color:var(--bj-muted);" onclick="playGlass()">↺ rejouer</button>
+  </div>
+
+  <!-- EFFET 6 — DEPTH LAYER -->
+  <div class="effect-card effect-card-dark" id="card-depth">
+    <span class="effect-tag">Effet 06</span>
+    <h3 class="effect-name" style="color:var(--bj-creme);">Depth Layer</h3>
+    <p class="effect-desc">Typographie à 3 plans — texte foreground, UI mid-ground, photo background. Profondeur de scène.</p>
+    <div class="demo-area" style="border:none;padding:0;margin-top:24px;display:block;">
+      <div class="depth-scene" id="depth-scene">
+        <div class="depth-bg-layer"></div>
+        <div class="depth-bg-grain"></div>
+        <!-- Plan 2 — Mid -->
+        <div class="depth-float-el" id="df1">48 photos</div>
+        <div class="depth-float-el" id="df2">Toscane · Été</div>
+        <div class="depth-float-el" id="df3">→ Prévisualiser</div>
+        <!-- Plan 3 — FG -->
+        <div class="depth-fg-text">
+          <div class="depth-headline" id="depth-headline">
+            L'album que vous<br>n'auriez <em class="depth-italic">jamais</em> fait seul.
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="replay-btn" style="color:var(--bj-muted);" onclick="playDepth()">↺ rejouer</button>
+  </div>
+
+
+  <!-- EFFET 7 — HORLOGE CANVAS -->
+  <div class="effect-card effect-card-dark" id="card-clock">
+    <span class="effect-tag">Effet 07</span>
+    <h3 class="effect-name" style="color:var(--bj-creme);">Horloge Canvas</h3>
+    <p class="effect-desc">Horloge analogique temps réel — aiguilles slate blue #778899, trotteuse smooth sweep, chiffres Cormorant italic.</p>
+    <div class="demo-area" style="border:none;padding-top:16px;flex-direction:column;gap:16px;">
+      <div class="clock-outer">
+        <canvas id="clockCanvas" width="200" height="200"></canvas>
+        <p class="clock-time-label" id="clockTimeLabel">—</p>
+        <div class="clock-controls">
+          <button class="clock-ctrl clock-ctrl-dark active" id="cc-dark" onclick="clockSetTheme('dark')">Fond sombre</button>
+          <button class="clock-ctrl clock-ctrl-dark" id="cc-light" onclick="clockSetTheme('light')">Fond beige</button>
+          <button class="clock-ctrl clock-ctrl-dark active" id="cc-min" onclick="clockSetStyle('minimal')">Minimal</button>
+          <button class="clock-ctrl clock-ctrl-dark" id="cc-num" onclick="clockSetStyle('chiffres')">Chiffres</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+
+<div class="sep" style="margin-top:2px;"></div>
+
+
+<!-- ═══════════════════════════════════════════
+     LIGHT BLEED LIVE
+═══════════════════════════════════════════ -->
+<div class="bleed-section-demo">
+  <p class="section-label" data-scroll>Transition en contexte</p>
+  <h2 style="font-family:'Playfair Display',serif;font-weight:700;font-size:clamp(28px,4vw,44px);margin-bottom:8px;" data-scroll data-scroll-delay="1">Light Bleed — en situation réelle</h2>
+  <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;color:var(--bj-muted);margin-bottom:40px;" data-scroll data-scroll-delay="2">Scrollez pour voir la transition lumineuse</p>
+</div>
+
+<div class="bleed-into-dark">
+  <div class="bleed-content">
+    <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:24px;color:rgba(240,235,225,0.5);" data-scroll>La lumière guide.</p>
+    <h2 style="font-family:'Playfair Display',serif;font-weight:700;font-size:clamp(32px,5vw,52px);color:var(--bj-creme);margin-top:8px;" data-scroll data-scroll-delay="1">Chaque souvenir,<br><em style="color:var(--bj-accent);font-style:italic;">magnifié.</em></h2>
+  </div>
+</div>
+
+<div class="sep sep-dark"></div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 2 — UI PATTERNS
+═══════════════════════════════════════════ -->
+<section class="section-dark">
+  <p class="section-label" data-scroll>Section 02</p>
+  <h2 class="section-title" data-scroll data-scroll-delay="1">UI Design Patterns</h2>
+  <p class="section-sub" data-scroll data-scroll-delay="2">Status, Dashboard, Tags — dans la palette Bellajour</p>
+
+  <div class="effect-grid" style="margin-top:48px;">
+
+    <!-- STATUS PILLS -->
+    <div class="effect-card effect-card-dark" id="card-status">
+      <span class="effect-tag">UI 01</span>
+      <h3 class="effect-name" style="color:var(--bj-creme);">Status Pills</h3>
+      <p class="effect-desc">États de progression — slide-in depuis la gauche, stagger 100ms. Dots colorés selon l'état.</p>
+      <div class="demo-area" style="border-color:var(--bj-border);flex-direction:column;align-items:flex-start;">
+        <div class="status-demo" id="status-demo">
+          <div class="status-row" id="sr1">
+            <div class="status-icon" style="border-color:rgba(234,227,216,0.12);">○</div>
+            <div class="status-pill draft"><span class="pill-dot draft"></span>En attente</div>
+            <span class="status-label">Photos uploadées</span>
+          </div>
+          <div class="status-row" id="sr2">
+            <div class="status-icon" style="border-color:rgba(119,136,153,0.3);background:rgba(119,136,153,0.08);">◑</div>
+            <div class="status-pill progress"><span class="pill-dot progress"></span>En cours</div>
+            <span class="status-label">Sélection IA</span>
+          </div>
+          <div class="status-row" id="sr3">
+            <div class="status-icon" style="border-color:rgba(168,152,128,0.3);background:rgba(168,152,128,0.08);">◕</div>
+            <div class="status-pill review"><span class="pill-dot review"></span>À valider</div>
+            <span class="status-label">Mise en page</span>
+          </div>
+          <div class="status-row" id="sr4">
+            <div class="status-icon" style="border-color:rgba(240,235,225,0.2);background:rgba(240,235,225,0.05);">●</div>
+            <div class="status-pill done"><span class="pill-dot done"></span>Terminé</div>
+            <span class="status-label">Envoi imprimeur</span>
+          </div>
+        </div>
+      </div>
+      <button class="replay-btn" style="color:var(--bj-muted);" onclick="playStatus()">↺ rejouer</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="effect-card effect-card-dark" id="card-dash">
+      <span class="effect-tag">UI 02</span>
+      <h3 class="effect-name" style="color:var(--bj-creme);">Dashboard Metrics</h3>
+      <p class="effect-desc">Métriques avec progress bars — apparition séquentielle + Drum Roll sur les chiffres.</p>
+      <div class="demo-area" style="border:none;padding:0;margin-top:24px;display:block;">
+        <div class="dashboard-demo" id="dash-demo">
+          <div class="db-metric" id="dm1">
+            <div class="db-label">Albums créés</div>
+            <div class="db-number" id="dm1-num">0</div>
+            <div class="db-trend">↑ 12% ce mois</div>
+            <div class="db-bar-wrap"><div class="db-bar" id="db1" style="--w:72%;"></div></div>
+          </div>
+          <div class="db-metric" id="dm2">
+            <div class="db-label">Photos traitées</div>
+            <div class="db-number" id="dm2-num">0</div>
+            <div class="db-trend">↑ 8% ce mois</div>
+            <div class="db-bar-wrap"><div class="db-bar" id="db2" style="--w:58%;"></div></div>
+          </div>
+          <div class="db-metric" id="dm3">
+            <div class="db-label">Satisfaction</div>
+            <div class="db-number" id="dm3-num">0<span style="font-size:16px;color:var(--bj-muted);">%</span></div>
+            <div class="db-trend">Stable</div>
+            <div class="db-bar-wrap"><div class="db-bar" id="db3" style="--w:94%;"></div></div>
+          </div>
+          <div class="db-metric" id="dm4">
+            <div class="db-label">Délai moyen</div>
+            <div class="db-number" id="dm4-num">0<span style="font-size:16px;color:var(--bj-muted);">j</span></div>
+            <div class="db-trend">↓ 1j vs avant</div>
+            <div class="db-bar-wrap"><div class="db-bar" id="db4" style="--w:40%;"></div></div>
+          </div>
+        </div>
+      </div>
+      <button class="replay-btn" style="color:var(--bj-muted);" onclick="playDash()">↺ rejouer</button>
+    </div>
+
+    <!-- TAG CLOUD -->
+    <div class="effect-card effect-card-dark" id="card-tags">
+      <span class="effect-tag">UI 03</span>
+      <h3 class="effect-name" style="color:var(--bj-creme);">Tag Cloud</h3>
+      <p class="effect-desc">Pills thématiques — stagger 60ms, scale 0.9 → 1. Variantes de teintes dans la palette Bellajour.</p>
+      <div class="demo-area" style="border-color:var(--bj-border);flex-direction:column;gap:12px;">
+        <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;color:rgba(240,235,225,0.5);text-align:center;">Ce que Bellajour incarne :</p>
+        <div class="tag-cloud" id="tag-cloud">
+          <span class="bj-tag tag-v1" data-tag>Artisanal</span>
+          <span class="bj-tag tag-v2" data-tag>Premium</span>
+          <span class="bj-tag tag-v3" data-tag>Émotion</span>
+          <span class="bj-tag tag-v4" data-tag>Souvenir</span>
+          <span class="bj-tag tag-v1" data-tag>IA curatoriale</span>
+          <span class="bj-tag tag-v2" data-tag>Photo argentique</span>
+          <span class="bj-tag tag-v3" data-tag>Récit visuel</span>
+          <span class="bj-tag tag-v4" data-tag>Impression luxe</span>
+          <span class="bj-tag tag-v2" data-tag>Made in France</span>
+          <span class="bj-tag tag-v1" data-tag>Livraison 5j</span>
+        </div>
+      </div>
+      <button class="replay-btn" style="color:var(--bj-muted);" onclick="playTags()">↺ rejouer</button>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-logo">Bellajour</span>
+  <span class="footer-note">Document d'exécution interne — Motion & Design Reference v1</span>
+</footer>
+
+
+<!-- ═══════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════ -->
+<script>
+
+// ── SCROLL ANIMATIONS ──
+const scrollObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('[data-scroll]').forEach(el => scrollObserver.observe(el));
+
+
+// ── HELPERS ──
+function resetClass(els, cls) {
+  els.forEach(el => { el.classList.remove(cls); void el.offsetWidth; });
+}
+
+function drumRoll(el, finalVal, duration = 1100) {
+  const chars = '0123456789';
+  const steps = 14;
+  const interval = duration / steps;
+  let count = 0;
+  el.textContent = chars[Math.floor(Math.random() * 10)];
+  const timer = setInterval(() => {
+    if (count < steps - 1) {
+      el.textContent = chars[Math.floor(Math.random() * 10)];
+      count++;
+    } else {
+      el.textContent = finalVal;
+      clearInterval(timer);
+    }
+  }, interval);
+}
+
+function countUp(el, target, suffix = '', duration = 1200) {
+  const start = 0;
+  const step = (target - start) / (duration / 16);
+  let current = start;
+  const timer = setInterval(() => {
+    current += step;
+    if (current >= target) {
+      el.innerHTML = target + (suffix ? `<span style="font-size:16px;color:var(--bj-muted);">${suffix}</span>` : '');
+      clearInterval(timer);
+    } else {
+      el.innerHTML = Math.floor(current) + (suffix ? `<span style="font-size:16px;color:var(--bj-muted);">${suffix}</span>` : '');
+    }
+  }, 16);
+}
+
+
+// ── EFFET 1 — LUX FADE ──
+function playLux() {
+  const items = [document.getElementById('li1'), document.getElementById('li2'), document.getElementById('li3')];
+  resetClass(items, 'playing');
+  items.forEach(el => el.classList.add('playing'));
+}
+
+// ── EFFET 3 — DRUM ROLL ──
+function playDrum() {
+  const digits = [
+    { el: document.getElementById('dd1'), val: '4' },
+    { el: document.getElementById('dd2'), val: '2' },
+    { el: document.getElementById('dd3'), val: '7' },
+  ];
+  digits.forEach((d, i) => {
+    setTimeout(() => drumRoll(d.el, d.val, 1000), i * 150);
+  });
+
+  // Date animation
+  const dateEl = document.getElementById('drum-date');
+  const dateStr = '14 Juin 2025';
+  dateEl.textContent = '';
+  let i = 0;
+  const typeTimer = setInterval(() => {
+    if (i < dateStr.length) {
+      dateEl.textContent += dateStr[i];
+      i++;
+    } else {
+      clearInterval(typeTimer);
+    }
+  }, 60 + Math.random() * 20);
+}
+
+// ── EFFET 4 — SLIDE REVEAL ──
+function playSlide() {
+  const cards = [document.getElementById('sc1'), document.getElementById('sc2'), document.getElementById('sc3')];
+  resetClass(cards, 'playing');
+  cards.forEach(c => c.classList.add('playing'));
+}
+
+// ── EFFET 5 — GLASS PANEL ──
+function playGlass() {
+  const panel = document.getElementById('glass-el');
+  panel.classList.remove('playing');
+  void panel.offsetWidth;
+  panel.classList.add('playing');
+
+  const numEl = document.getElementById('gp-num');
+  numEl.textContent = '0';
+  setTimeout(() => {
+    let n = 0;
+    const t = setInterval(() => {
+      n += 2;
+      if (n >= 36) { numEl.textContent = '36'; clearInterval(t); }
+      else numEl.textContent = n;
+    }, 30);
+  }, 400);
+}
+
+// ── EFFET 6 — DEPTH LAYER ──
+function playDepth() {
+  const floats = [document.getElementById('df1'), document.getElementById('df2'), document.getElementById('df3')];
+  const headline = document.getElementById('depth-headline');
+
+  [floats[0], floats[1], floats[2], headline].forEach(el => el.classList.remove('playing'));
+  void document.getElementById('depth-scene').offsetWidth;
+  [floats[0], floats[1], floats[2], headline].forEach(el => el.classList.add('playing'));
+}
+
+// ── UI STATUS ──
+function playStatus() {
+  const rows = [document.getElementById('sr1'), document.getElementById('sr2'), document.getElementById('sr3'), document.getElementById('sr4')];
+  resetClass(rows, 'playing');
+  rows.forEach(r => r.classList.add('playing'));
+}
+
+// ── UI DASHBOARD ──
+function playDash() {
+  const metrics = [document.getElementById('dm1'), document.getElementById('dm2'), document.getElementById('dm3'), document.getElementById('dm4')];
+  const bars = [document.getElementById('db1'), document.getElementById('db2'), document.getElementById('db3'), document.getElementById('db4')];
+
+  resetClass(metrics, 'playing');
+  resetClass(bars, 'playing');
+
+  metrics.forEach(m => m.classList.add('playing'));
+
+  setTimeout(() => {
+    countUp(document.getElementById('dm1-num'), 427, '', 1200);
+    countUp(document.getElementById('dm2-num'), 8340, '', 1200);
+    countUp(document.getElementById('dm3-num'), 94, '%', 1200);
+    countUp(document.getElementById('dm4-num'), 5, 'j', 900);
+    bars.forEach(b => b.classList.add('playing'));
+  }, 200);
+}
+
+// ── UI TAGS ──
+function playTags() {
+  const tags = document.querySelectorAll('[data-tag]');
+  tags.forEach(t => { t.classList.remove('playing'); void t.offsetWidth; });
+  tags.forEach((t, i) => {
+    setTimeout(() => t.classList.add('playing'), i * 60);
+  });
+}
+
+
+// ── AUTO-PLAY ON SCROLL ──
+const autoObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      if (id === 'card-lux') playLux();
+      if (id === 'card-drum') playDrum();
+      if (id === 'card-slide') playSlide();
+      if (id === 'card-glass') playGlass();
+      if (id === 'card-depth') playDepth();
+      if (id === 'card-status') playStatus();
+      if (id === 'card-dash') playDash();
+      if (id === 'card-tags') playTags();
+    }
+  });
+}, { threshold: 0.3 });
+
+['card-lux','card-drum','card-slide','card-glass','card-depth','card-status','card-dash','card-tags']
+  .forEach(id => {
+    const el = document.getElementById(id);
+    if (el) autoObserver.observe(el);
+  });
+
+
+
+// ── EFFET 7 — HORLOGE CANVAS ──
+(function() {
+  const cv = document.getElementById('clockCanvas');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height, R = 88, cx = W/2, cy = H/2;
+
+  let clockTheme = 'dark';
+  let clockStyle = 'minimal';
+
+  const C = {
+    dark:  { bg:'#1C1C1C', rim:'rgba(240,235,225,0.08)', nums:'#A89880', hour:'#F0EBE1', min:'#F0EBE1', sec:'#778899', center:'#778899', tick:'rgba(240,235,225,0.12)', tickMaj:'rgba(240,235,225,0.28)' },
+    light: { bg:'#EAE3D8', rim:'rgba(28,28,28,0.08)',    nums:'#A89880', hour:'#1C1C1C', min:'#1C1C1C', sec:'#778899', center:'#778899', tick:'rgba(28,28,28,0.1)',   tickMaj:'rgba(28,28,28,0.22)'  }
+  };
+
+  window.clockSetTheme = function(t) {
+    clockTheme = t;
+    document.getElementById('cc-dark').className = 'clock-ctrl clock-ctrl-dark' + (t==='dark'?' active':'');
+    document.getElementById('cc-light').className = 'clock-ctrl clock-ctrl-dark' + (t==='light'?' active':'');
+  };
+  window.clockSetStyle = function(s) {
+    clockStyle = s;
+    document.getElementById('cc-min').className = 'clock-ctrl clock-ctrl-dark' + (s==='minimal'?' active':'');
+    document.getElementById('cc-num').className = 'clock-ctrl clock-ctrl-dark' + (s==='chiffres'?' active':'');
+  };
+
+  function draw() {
+    const now = new Date();
+    const h = now.getHours() % 12, m = now.getMinutes(), s = now.getSeconds(), ms = now.getMilliseconds();
+    const c = C[clockTheme];
+
+    ctx.clearRect(0, 0, W, H);
+
+    ctx.beginPath(); ctx.arc(cx, cy, R+2, 0, Math.PI*2);
+    ctx.fillStyle = c.bg; ctx.fill();
+
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2);
+    ctx.strokeStyle = c.rim; ctx.lineWidth = 1; ctx.stroke();
+
+    for (let i = 0; i < 60; i++) {
+      const a = (i/60)*Math.PI*2 - Math.PI/2;
+      const maj = i%5===0;
+      const inner = maj ? R-12 : R-7;
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(a)*inner, cy+Math.sin(a)*inner);
+      ctx.lineTo(cx+Math.cos(a)*(R-2), cy+Math.sin(a)*(R-2));
+      ctx.strokeStyle = maj ? c.tickMaj : c.tick;
+      ctx.lineWidth = maj ? 1.5 : 0.5;
+      ctx.stroke();
+    }
+
+    if (clockStyle === 'chiffres') {
+      ctx.font = 'italic 11px "Cormorant Garamond", Georgia, serif';
+      ctx.fillStyle = c.nums; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (let i = 1; i <= 12; i++) {
+        const a = (i/12)*Math.PI*2 - Math.PI/2;
+        ctx.fillText(i, cx+Math.cos(a)*(R-22), cy+Math.sin(a)*(R-22));
+      }
+    }
+
+    const sS = s + ms/1000, sM = m + sS/60, sH = h + sM/60;
+
+    function hand(angle, len, w, color, cap) {
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(angle-Math.PI/2);
+      ctx.beginPath(); ctx.moveTo(0, len*0.18); ctx.lineTo(0, -len);
+      ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = cap||'round'; ctx.stroke();
+      ctx.restore();
+    }
+
+    hand((sH/12)*Math.PI*2, R*0.52, 2.5, c.hour, 'round');
+    hand((sM/60)*Math.PI*2, R*0.72, 1.5, c.min,  'round');
+    hand((sS/60)*Math.PI*2, R*0.82, 0.8, c.sec,  'butt');
+
+    ctx.beginPath(); ctx.arc(cx,cy,4,0,Math.PI*2); ctx.fillStyle=c.center; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy,1.5,0,Math.PI*2); ctx.fillStyle=c.bg; ctx.fill();
+
+    const pad = n => String(n).padStart(2,'0');
+    const label = document.getElementById('clockTimeLabel');
+    if (label) label.textContent = pad(now.getHours()) + 'h' + pad(m) + ' — ' + now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+</script>
+</body>
+</html>
