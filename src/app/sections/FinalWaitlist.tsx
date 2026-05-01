@@ -126,7 +126,7 @@ export default function FinalWaitlist() {
         )
         // Ouvre le sheet parrainage (referralCode sera branché sur l'API)
         if (data.referralCode) setReferralCode(data.referralCode)
-        setTimeout(() => setSheetOpen(true), 600)
+        setTimeout(() => { if (window.innerWidth < 768) setSheetOpen(true) }, 600)
       } else {
         setStatus('error')
         setMessage(data.message || "Une erreur s'est glissée. Réessayez dans un instant.")
