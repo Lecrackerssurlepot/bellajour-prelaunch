@@ -9,9 +9,8 @@
   transform: translateY(-50%);
   z-index: 80;
   pointer-events: none;
-  color: rgba(23, 20, 15, 0.55);
-  transition: color 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  color: white;
+  mix-blend-mode: difference;
 }
 
 .svt-left  { left: 14px; }
@@ -19,8 +18,6 @@
   right: 14px;
   transform: translateY(-50%) rotate(180deg);
 }
-
-.svt--dark { color: rgba(240, 234, 224, 0.55); }
 
 @media (max-width: 767px) {
   .svt { display: none; }

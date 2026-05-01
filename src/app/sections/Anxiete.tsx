@@ -198,19 +198,19 @@ export default function Anxiete() {
   }
 
   // ── Phases dérivées
-  const textScrolled = scrollProg >= 0.35
+  const textScrolled = scrollProg >= 0.50
 
   // Texte : glisse vers le haut et disparaît
-  const textSlideY  = textScrolled ? -clamp01((scrollProg - 0.35) / 0.18) * 180 : 0
+  const textSlideY  = textScrolled ? -clamp01((scrollProg - 0.50) / 0.22) * 180 : 0
   const entryY      = entered ? 0 : 70
-  const textOp      = textScrolled ? clamp01(1 - (scrollProg - 0.35) / 0.14) : 1
+  const textOp      = textScrolled ? clamp01(1 - (scrollProg - 0.50) / 0.22) : 1
   const contentTY   = `translateY(calc(-50% + ${entryY + textSlideY}px))`
   const contentTr   = (entered && !textScrolled)
     ? 'transform 1.2s cubic-bezier(0.22,1,0.36,1)'
     : 'none'
 
   // Overlay gauche (lisibilité texte) — disparaît avec le texte
-  const overlayOp = textScrolled ? clamp01(1 - (scrollProg - 0.35) / 0.14) : 1
+  const overlayOp = textScrolled ? clamp01(1 - (scrollProg - 0.50) / 0.22) : 1
 
   // Grille : zoom progressif (sensation de plonger dedans)
   const gridScaleVal = 1 + easeOut3(clamp01((scrollProg - 0.38) / 0.38)) * 0.22
