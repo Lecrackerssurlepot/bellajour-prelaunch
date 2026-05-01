@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './hero.css'
 
 const photos = [
@@ -45,7 +45,9 @@ export default function Hero() {
   const [email, setEmail]     = useState('')
   const [status, setStatus]   = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
-  const [count, setCount]     = useState<number | null>(null)
+  const [count, setCount]           = useState<number | null>(null)
+  const [referralCode, setReferralCode] = useState<string | undefined>(undefined)
+  const [inlineOpen,   setInlineOpen]   = useState(false)
 
   // ── Refs pour manipulation DOM directe (parallax + fly-up)
   const photoRefs = useRef<(HTMLDivElement | null)[]>([])
@@ -102,6 +104,16 @@ export default function Hero() {
     }
   }, [])
 
+  // ── Scroll lock — sheet mobile
+  useEffect(() => {
+    if (inlineOpen && window.innerWidth < 768) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [inlineOpen])
+
   // ── Compteur Brevo
   useEffect(() => {
     let cancelled = false
@@ -132,6 +144,8 @@ export default function Hero() {
         } else {
           setMessage('Bienvenue sur la liste. On vous écrit bientôt.')
         }
+        if (data.referralCode) setReferralCode(data.referralCode)
+        setTimeout(() => setInlineOpen(true), 600)
       } else {
         setStatus('error')
         setMessage(data.message || 'Une erreur s\'est glissée. Réessayez dans un instant.')
@@ -141,6 +155,15 @@ export default function Hero() {
       setMessage('La connexion a flanché. Réessayez.')
     }
   }
+
+  const handleShare = useCallback(async () => {
+    const link = `${typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.com'}/r/${referralCode ?? 'VOTRECODE'}`
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try { await navigator.share({ title: 'Bellajour — Mon lien de parrainage', url: link }) } catch {}
+    } else {
+      await navigator.clipboard?.writeText(link).catch(() => {})
+    }
+  }, [referralCode])
 
   const handleDiscover = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
@@ -200,6 +223,31 @@ export default function Hero() {
             <p className={`hero-msg hero-msg--${status}`}>{message}</p>
           )}
 
+          {/* Encart parrainage inline — desktop */}
+          <div className={`hero-referral-wrap${inlineOpen ? ' hero-referral-wrap--open' : ''}`}>
+            <div className="hero-referral-inner">
+              <div className="hero-referral-block">
+                <span className="hero-referral-eyebrow">Parrainage Bellajour</span>
+                <h3 className="hero-referral-titre">
+                  Gagnez&nbsp;<em>5&nbsp;€</em> pour chaque<br />
+                  proche que vous invitez
+                </h3>
+                <div className="hero-referral-link-row">
+                  <input
+                    type="text"
+                    className="hero-referral-input"
+                    value={`${typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.com'}/r/${referralCode ?? 'VOTRECODE'}`}
+                    readOnly
+                    onFocus={e => e.target.select()}
+                  />
+                  <button className="hero-referral-share-btn" onClick={handleShare}>
+                    Partager mon lien
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="hero-badge">
             <span>WAITLIST OUVERTE</span>
           </div>
@@ -214,6 +262,44 @@ export default function Hero() {
           En savoir plus
         </a>
       </section>
+
+      {/* Sheet parrainage mobile */}
+      <div
+        className={`hero-mobile-backdrop${inlineOpen ? ' hero-mobile-backdrop--open' : ''}`}
+        onClick={() => setInlineOpen(false)}
+        aria-hidden="true"
+      />
+      <div
+        className={`hero-mobile-sheet${inlineOpen ? ' hero-mobile-sheet--open' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Votre lien de parrainage Bellajour"
+      >
+        <button
+          className="hero-mobile-close"
+          onClick={() => setInlineOpen(false)}
+          aria-label="Fermer"
+        >
+          &#x2715;
+        </button>
+        <span className="hero-referral-eyebrow">Parrainage Bellajour</span>
+        <h3 className="hero-referral-titre">
+          Gagnez&nbsp;<em>5&nbsp;€</em> pour chaque<br />
+          proche que vous invitez
+        </h3>
+        <div className="hero-referral-link-row">
+          <input
+            type="text"
+            className="hero-referral-input"
+            value={`${typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.com'}/r/${referralCode ?? 'VOTRECODE'}`}
+            readOnly
+            onFocus={e => e.target.select()}
+          />
+          <button className="hero-referral-share-btn" onClick={handleShare}>
+            Partager mon lien
+          </button>
+        </div>
+      </div>
     </>
   )
 }

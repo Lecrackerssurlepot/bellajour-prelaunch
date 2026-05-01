@@ -300,3 +300,247 @@
     padding: 0;
   }
 }
+
+/* ════════════════════
+   ENCART PARRAINAGE INLINE (desktop ≥ 768px)
+   ════════════════════ */
+
+.hero-referral-wrap {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hero-referral-wrap {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows 0.4s ease, opacity 0.4s ease;
+    width: min(580px, 92vw);
+    text-align: left;
+  }
+
+  .hero-referral-wrap--open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    margin-top: clamp(20px, 3vh, 32px);
+  }
+
+  .hero-referral-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .hero-referral-block {
+    background: rgba(247, 242, 235, 0.85);
+    border: 0.5px solid rgba(23, 20, 15, 0.08);
+    border-radius: 8px;
+    padding: clamp(24px, 3.5vh, 36px) clamp(22px, 2.8vw, 36px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .hero-referral-eyebrow {
+    display: block;
+    font-family: var(--bj-font-sans);
+    font-size: clamp(9px, 0.75vw, 11px);
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--bj-muted);
+    margin-bottom: 10px;
+  }
+
+  .hero-referral-titre {
+    margin: 0 0 clamp(16px, 2.5vh, 24px);
+    font-family: var(--bj-font-serif);
+    font-weight: 300;
+    font-size: clamp(22px, 2.8vw, 36px);
+    line-height: 1.2;
+    color: var(--bj-text);
+    letter-spacing: -0.02em;
+  }
+
+  .hero-referral-titre em {
+    font-style: italic;
+    color: var(--bj-gold);
+  }
+
+  .hero-referral-link-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .hero-referral-input {
+    flex: 1;
+    min-width: 0;
+    height: clamp(44px, 5.5vh, 54px);
+    padding: 0 clamp(16px, 1.8vw, 22px);
+    background: rgba(255, 255, 255, 0.70);
+    border: 0.5px solid rgba(23, 20, 15, 0.12);
+    border-radius: 999px;
+    outline: none;
+    font-family: var(--bj-font-sans);
+    font-size: clamp(12px, 1vw, 14px);
+    color: var(--bj-text);
+    cursor: text;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .hero-referral-share-btn {
+    flex-shrink: 0;
+    height: clamp(44px, 5.5vh, 54px);
+    padding: 0 clamp(20px, 2.2vw, 28px);
+    background: rgba(119, 136, 153, 0.15);
+    color: var(--bj-gold);
+    border: 1px solid rgba(119, 136, 153, 0.30);
+    border-radius: 999px;
+    font-family: var(--bj-font-sans);
+    font-size: clamp(13px, 1vw, 15px);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+
+  .hero-referral-share-btn:hover  { opacity: 0.88; }
+  .hero-referral-share-btn:active { transform: scale(0.97); }
+}
+
+/* ════════════════════
+   SHEET PARRAINAGE MOBILE (< 768px)
+   ════════════════════ */
+
+.hero-mobile-backdrop,
+.hero-mobile-sheet {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .hero-mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 199;
+    background: rgba(23, 20, 15, 0);
+    pointer-events: none;
+    transition: background 0.4s ease;
+  }
+
+  .hero-mobile-backdrop--open {
+    background: rgba(23, 20, 15, 0.30);
+    pointer-events: auto;
+  }
+
+  .hero-mobile-sheet {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    background: #F7F2EB;
+    border-radius: 16px 16px 0 0;
+    padding: clamp(24px, 5vw, 40px);
+    padding-top: 52px;
+    transform: translateY(100%);
+    transition: transform 0.4s ease;
+    pointer-events: none;
+  }
+
+  .hero-mobile-sheet--open {
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .hero-mobile-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: rgba(23, 20, 15, 0.07);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--bj-muted);
+    transition: background 0.2s;
+    line-height: 1;
+    padding: 0;
+  }
+
+  .hero-mobile-close:hover { background: rgba(23, 20, 15, 0.12); }
+
+  .hero-mobile-sheet .hero-referral-eyebrow {
+    display: block;
+    font-family: var(--bj-font-sans);
+    font-size: clamp(9px, 2.5vw, 11px);
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--bj-muted);
+    margin-bottom: 10px;
+  }
+
+  .hero-mobile-sheet .hero-referral-titre {
+    margin: 0 0 clamp(16px, 3vh, 24px);
+    font-family: var(--bj-font-serif);
+    font-weight: 300;
+    font-size: clamp(24px, 7vw, 36px);
+    line-height: 1.2;
+    color: var(--bj-text);
+    letter-spacing: -0.02em;
+  }
+
+  .hero-mobile-sheet .hero-referral-titre em {
+    font-style: italic;
+    color: var(--bj-gold);
+  }
+
+  .hero-mobile-sheet .hero-referral-link-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .hero-mobile-sheet .hero-referral-input {
+    width: 100%;
+    height: clamp(44px, 6vh, 52px);
+    padding: 0 clamp(16px, 4vw, 22px);
+    background: rgba(255, 255, 255, 0.70);
+    border: 0.5px solid rgba(23, 20, 15, 0.12);
+    border-radius: 999px;
+    outline: none;
+    font-family: var(--bj-font-sans);
+    font-size: clamp(12px, 3.5vw, 14px);
+    color: var(--bj-text);
+    cursor: text;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+  }
+
+  .hero-mobile-sheet .hero-referral-share-btn {
+    width: 100%;
+    height: clamp(48px, 6.5vh, 56px);
+    background: rgba(119, 136, 153, 0.15);
+    color: var(--bj-gold);
+    border: 1px solid rgba(119, 136, 153, 0.30);
+    border-radius: 999px;
+    font-family: var(--bj-font-sans);
+    font-size: clamp(14px, 4vw, 16px);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+
+  .hero-mobile-sheet .hero-referral-share-btn:hover  { opacity: 0.88; }
+  .hero-mobile-sheet .hero-referral-share-btn:active { transform: scale(0.97); }
+}
