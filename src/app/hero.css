@@ -28,6 +28,7 @@
   background: var(--bj-bg);
   overflow: hidden;
   position: relative;
+  scroll-snap-align: start;
 }
 
 /* ── Vertical line centrale ── */

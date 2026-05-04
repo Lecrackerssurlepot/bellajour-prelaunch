@@ -107,12 +107,15 @@ export default function Album() {
             opacity: albumOp,
             transform: albumTransform,
             willChange: 'opacity, transform',
+            background: 'transparent',
+            boxShadow: 'none',
           }}
         >
           <img
-            src="/images/album/mockup-miami.png"
-            alt="Album Bellajour Miami"
+            src="/images/Mockup-Album-transparent.png"
+            alt="Album Bellajour"
             className={isMobile ? 'alb-img--mobile' : ''}
+            style={{ background: 'transparent', boxShadow: 'none' }}
           />
         </div>
 

@@ -6,9 +6,11 @@
 /* ── Section ── */
 .fwl-section {
   width: 100%;
+  min-height: 100vh;
   background: var(--bj-bg);
   padding: clamp(80px, 14vh, 160px) 0 clamp(80px, 12vh, 140px);
   overflow: hidden;
+  scroll-snap-align: start;
 }
 
 /* ── Inner — centré, colonne ── */

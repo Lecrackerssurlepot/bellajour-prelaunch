@@ -3,6 +3,7 @@
 .alb-scroll {
   height: 700vh;
   position: relative;
+  scroll-snap-align: start;
 }
 
 .alb-sticky {
@@ -11,7 +12,7 @@
   height: 100vh;
   width: 100%;
   overflow: hidden;
-  background: #EAE3D8;
+  background: #17140F;
 }
 
 /* ── Décor ── */
@@ -45,6 +46,9 @@
   top: 50vh;
   left: 50vw;
   z-index: 2;
+  background: transparent;
+  box-shadow: none;
+  transform: translate(-50%, -50%);
 }
 
 .alb-mockup img {
@@ -52,6 +56,8 @@
   max-height: 80vh;
   object-fit: contain;
   display: block;
+  background: transparent;
+  box-shadow: none;
 }
 
 .alb-mockup img.alb-img--mobile {
@@ -74,7 +80,7 @@
   font-family: 'Playfair Display', serif;
   font-weight: 700;
   font-size: 4vw;
-  color: #1C1C1C;
+  color: #EAE3D8;
   margin: 0;
   letter-spacing: -0.02em;
 }
@@ -100,7 +106,7 @@
   font-weight: 300;
   font-style: italic;
   font-size: 2vw;
-  color: #A89880;
+  color: #EAE3D8;
   margin: 0;
 }
 

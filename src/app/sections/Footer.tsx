@@ -27,7 +27,7 @@ export default function Footer() {
 
         {/* Instagram */}
         <a
-          href="https://instagram.com/bellajour"
+          href="https://www.instagram.com/bellajour__/"
           target="_blank"
           rel="noopener noreferrer"
           className="footer-insta"

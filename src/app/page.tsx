@@ -10,20 +10,20 @@ import Footer from './sections/Footer'
 
 export default function Page() {
   return (
-    <main>
+    <main style={{ scrollSnapType: 'y proximity' }}>
       <StickyVText />
       <StickyJoinCTA />
 
-      <div data-section="hero" data-theme="light">
+      <div id="hero" data-section="hero" data-theme="light">
         <Hero />
       </div>
 
-      <Anxiete />
-      <Solution />
-      <Album />
-      <FinalWaitlist />
-      <FAQ />
-      <Footer />
+      <div id="anxiete"><Anxiete /></div>
+      <div id="solution"><Solution /></div>
+      <div id="album"><Album /></div>
+      <div id="finalwaitlist"><FinalWaitlist /></div>
+      <div id="faq"><FAQ /></div>
+      <div id="footer"><Footer /></div>
     </main>
   )
 }

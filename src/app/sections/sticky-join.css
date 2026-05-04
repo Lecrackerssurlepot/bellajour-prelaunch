@@ -10,7 +10,6 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-
   opacity: 0;
   pointer-events: none;
   transform: translateY(6px);
@@ -46,24 +45,12 @@
   margin-top: 3px;
   pointer-events: none;
   transition: opacity 0.3s ease;
-  /* La signature SVG est noire par défaut — on l'inverse sur fond sombre */
 }
 
-.sjc--dark .sjc-sig { filter: invert(1); }
+/* Signature bleue dans les deux modes */
+.sjc-sig { filter: invert(29%) sepia(97%) saturate(1000%) hue-rotate(190deg) brightness(95%) contrast(95%); }
 
 .sjc:hover .sjc-sig { opacity: 1; }
-
-/* Underline discret au hover */
-.sjc-text::after {
-  content: '';
-  display: block;
-  width: 0;
-  height: 0.5px;
-  background: currentColor;
-  margin-top: 3px;
-  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.sjc:hover .sjc-text::after { width: 100%; }
 
 @media (max-width: 767px) {
   .sjc { display: none; }
