@@ -1,71 +1,163 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 import './solution.css'
+import CastingVisual from './CastingVisual'
+import SelectionVisual from './SelectionVisual'
+import MiseEnPageVisual from './MiseEnPageVisual'
 
-// ── 12 photos en 4 vagues gauche / droite
 const UPLOAD_PHOTOS = [
-  // Vague 1 — gauche
-  { src: '/images/hero/hero-01.webp',    dx: '-220px', dy: '-55px', rot: '-9deg',  delay: '0.00s' },
-  { src: '/images/hero/hero-03.webp',    dx: '-220px', dy:   '0px', rot: '-5deg',  delay: '0.10s' },
-  { src: '/images/anxiete/grid-01.webp', dx: '-220px', dy:  '55px', rot: '-11deg', delay: '0.20s' },
-  // Vague 2 — droite
-  { src: '/images/hero/hero-07.webp',    dx:  '220px', dy: '-55px', rot:  '9deg',  delay: '0.70s' },
-  { src: '/images/anxiete/grid-02.webp', dx:  '220px', dy:   '0px', rot:  '5deg',  delay: '0.80s' },
-  { src: '/images/hero/hero-04.webp',    dx:  '220px', dy:  '55px', rot: '11deg',  delay: '0.90s' },
-  // Vague 3 — gauche
-  { src: '/images/hero/hero-02.webp',    dx: '-220px', dy: '-55px', rot: '-7deg',  delay: '1.40s' },
-  { src: '/images/anxiete/grid-03.webp', dx: '-220px', dy:   '0px', rot: '-9deg',  delay: '1.50s' },
-  { src: '/images/hero/hero-05.webp',    dx: '-220px', dy:  '55px', rot: '-4deg',  delay: '1.60s' },
-  // Vague 4 — droite
-  { src: '/images/anxiete/grid-04.webp', dx:  '220px', dy: '-55px', rot:  '7deg',  delay: '2.10s' },
-  { src: '/images/hero/hero-06.webp',    dx:  '220px', dy:   '0px', rot:  '4deg',  delay: '2.20s' },
-  { src: '/images/anxiete/grid-06.webp', dx:  '220px', dy:  '55px', rot: '10deg',  delay: '2.30s' },
+  '/images/hero/hero-01.webp',
+  '/images/hero/hero-02.webp',
+  '/images/hero/hero-03.webp',
+  '/images/hero/hero-04.webp',
+  '/images/hero/hero-05.webp',
+  '/images/hero/hero-06.webp',
+  '/images/hero/hero-07.webp',
+  '/images/anxiete/grid-01.webp',
+  '/images/anxiete/grid-02.webp',
+  '/images/anxiete/grid-03.webp',
+  '/images/anxiete/grid-04.webp',
+  '/images/anxiete/grid-06.webp',
 ]
 
-function UploadVisual({ progress, active }: { progress: number; active: number }) {
-  const [animKey, setAnimKey] = useState(0)
-  const prevActive = useRef(active)
+const UploadVisual = memo(function UploadVisual({ active, onComplete }: { active: number; onComplete: () => void }) {
+  const squareRef    = useRef<HTMLDivElement>(null)
+  const pctRef       = useRef<HTMLSpanElement>(null)
+  const imgARef      = useRef<HTMLImageElement>(null)
+  const imgBRef      = useRef<HTMLImageElement>(null)
+  const counterRaf   = useRef<number>(0)
 
   useEffect(() => {
-    if (active === 0 && prevActive.current !== 0) {
-      setAnimKey(k => k + 1)
+    if (active !== 0) return
+
+    const square = squareRef.current
+    const pct    = pctRef.current
+    const imgA   = imgARef.current
+    const imgB   = imgBRef.current
+    if (!square || !pct || !imgA || !imgB) return
+
+    const n = UPLOAD_PHOTOS.length
+
+    // Init
+    imgA.src = UPLOAD_PHOTOS[0]
+    imgA.style.opacity    = '1'
+    imgA.style.zIndex     = '2'
+    imgA.style.transition = ''
+    imgB.style.opacity    = '0'
+    imgB.style.zIndex     = '1'
+    imgB.style.transition = ''
+    pct.textContent = '0%'
+    pct.style.opacity = '0'
+    pct.style.transition = ''
+
+    // 1. Rise CSS — position de départ calculée dynamiquement
+    const startY = window.innerHeight * 0.6
+    square.style.transform = `translateY(${startY}px)`
+    const riseTimer = setTimeout(() => {
+      square.style.transform = ''
+      square.classList.add('sol-upload-square--risen')
+    }, 16)
+
+    // 2. Crossfade — une photo nette à la fois, dissolve 600ms toutes les 1200ms
+    let photoIdx = 0
+    let frontIsA = true
+    let swapTimer: ReturnType<typeof setTimeout> | undefined
+
+    const swapInterval = setInterval(() => {
+      photoIdx = (photoIdx + 1) % n
+      const front = frontIsA ? imgA : imgB
+      const back  = frontIsA ? imgB : imgA
+
+      // Charge la prochaine photo dans l'image de derrière
+      back.src = UPLOAD_PHOTOS[photoIdx]
+      // Dissolve simultané : front s'efface, back apparaît
+      front.style.transition = 'opacity 120ms ease-in-out'
+      back.style.transition  = 'opacity 120ms ease-in-out'
+      front.style.opacity    = '0'
+      back.style.opacity     = '1'
+      // Après le dissolve : swap z-index, nettoyage transitions
+      swapTimer = setTimeout(() => {
+        front.style.transition = ''
+        back.style.transition  = ''
+        back.style.zIndex  = '2'
+        front.style.zIndex = '1'
+        frontIsA = !frontIsA
+      }, 120)
+    }, 300)
+
+    // 3. Compteur RAF — monte de 0 à 100 en (STEP_DURATION - 1200)ms, 60fps, démarre à t=1200ms
+    const counterStart = setTimeout(() => {
+      pct.style.transition = 'opacity 400ms ease'
+      pct.style.opacity = '1'
+
+      const duration = (STEP_DURATION - 1200) * 0.75
+      const start = performance.now()
+
+      function tickPct(now: number) {
+        const progress = Math.min((now - start) / duration, 1)
+        const value = Math.floor(progress * 100)
+        pct.textContent = value + '%'
+        if (progress < 1) {
+          counterRaf.current = requestAnimationFrame(tickPct)
+        } else {
+          pct.textContent = '100%'
+          setTimeout(onComplete, 500)
+        }
+      }
+      counterRaf.current = requestAnimationFrame(tickPct)
+    }, 1200)
+
+    return () => {
+      clearTimeout(riseTimer)
+      clearTimeout(swapTimer)
+      clearTimeout(counterStart)
+      cancelAnimationFrame(counterRaf.current)
+      clearInterval(swapInterval)
+      imgA.style.transition = ''
+      imgB.style.transition = ''
+      imgA.style.opacity    = '1'
+      imgA.style.zIndex     = '2'
+      imgB.style.opacity    = '0'
+      imgB.style.zIndex     = '1'
+      square.style.transform = ''
+      square.classList.remove('sol-upload-square--risen')
+      pct.style.opacity = '0'
+      pct.style.transition = ''
     }
-    prevActive.current = active
   }, [active])
 
-  const pct = Math.round(progress * 100)
-
   return (
-    <div className="sol-upload">
-      <div key={animKey} className="sol-upload-stage">
-        {UPLOAD_PHOTOS.map((p, i) => (
-          <div
-            key={i}
-            className="sol-upload-photo"
-            style={{ '--dx': p.dx, '--dy': p.dy, '--rot': p.rot, '--delay': p.delay } as React.CSSProperties}
-          >
-            <img src={p.src} alt="" />
-          </div>
-        ))}
-
-        {/* ── UI centré : label + barre + pourcentage ── */}
-        <div className="sol-upload-ui">
-          <span className="sol-upload-ui-label">Chargement</span>
-          <div className="sol-upload-ui-bar">
-            <div className="sol-upload-ui-fill" style={{ transform: `scaleX(${progress})` }} />
-          </div>
-          <span className="sol-upload-ui-pct">{pct} %</span>
+    <div style={{
+      width: '100%', height: '100%',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      overflow: 'hidden',
+    }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div ref={squareRef} className="sol-upload-square" style={{
+          position: 'relative', width: 260, height: 260, flexShrink: 0,
+          borderRadius: 16, overflow: 'hidden',
+        }}>
+          <img ref={imgARef} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 1, zIndex: 2 }} />
+          <img ref={imgBRef} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0, zIndex: 1 }} />
+        </div>
+        <div style={{
+          marginTop: 48,
+          fontFamily: 'var(--bj-font-serif)', fontStyle: 'italic',
+          fontWeight: 300, fontSize: 72, color: '#1C1C1C',
+          lineHeight: 1, letterSpacing: '-0.02em', whiteSpace: 'nowrap',
+        }}>
+          <span ref={pctRef}>0%</span>
         </div>
       </div>
     </div>
   )
-}
+})
 
 const ETAPES = [
   {
     num: '01',
-    titre: "L\u2019upload",
+    titre: "L’upload",
     lines: ["VOUS IMPORTEZ VOS SOUVENIRS", "BELLAJOUR EN EXTRAIT UNE HISTOIRE."],
   },
   {
@@ -75,21 +167,22 @@ const ETAPES = [
   },
   {
     num: '03',
-    titre: "La s\u00e9lection",
-    lines: ["NOTRE \u00c9QUIPE S\u00c9LECTIONNE", "VOS MEILLEURS SOUVENIRS."],
+    titre: "La sélection",
+    lines: ["NOTRE ÉQUIPE SÉLECTIONNE", "VOS MEILLEURS SOUVENIRS."],
   },
   {
     num: '04',
     titre: "La mise en page",
-    lines: ["VOTRE ALBUM PREND FORME.", "VOUS N\u2019AVEZ PLUS QU\u2019\u00c0 L\u2019ATTENDRE."],
+    lines: ["VOTRE ALBUM PREND FORME.", "VOUS N’AVEZ PLUS QU’À L’ATTENDRE."],
   },
 ]
 
 const STEP_DURATION = 6000
 
-function getState(i: number, active: number): 'active' | 'next' | 'far' {
+function getState(i: number, active: number): 'active' | 'next' | 'prev' | 'far' {
   if (i === active) return 'active'
   if (i === (active + 1) % ETAPES.length) return 'next'
+  if (i === (active - 1 + ETAPES.length) % ETAPES.length) return 'prev'
   return 'far'
 }
 
@@ -148,6 +241,12 @@ export default function Solution() {
     setProgress(0)
   }
 
+  const handleNextStep = () => {
+    stepStartRef.current = Date.now()
+    setActive(prev => (prev + 1) % ETAPES.length)
+    setProgress(0)
+  }
+
   return (
     <section ref={sectionRef} className="sol-section" data-section="solution" data-theme="light">
       <div className="sol-inner">
@@ -201,16 +300,17 @@ export default function Solution() {
           {ETAPES.map((e, i) => (
             <div
               key={e.num}
-              className={`sol-visual${i === active ? ' sol-visual--active' : ''}`}
+              className={`sol-visual${i === active ? ' sol-visual--active' : i === (active + 1) % ETAPES.length ? ' sol-visual--next' : ''}`}
             >
               {i === 0 ? (
-                <UploadVisual progress={progress} active={active} />
-              ) : (
-                <>
-                  <div className="sol-placeholder sol-placeholder--tall" />
-                  <div className="sol-placeholder sol-placeholder--short" />
-                </>
-              )}
+                <UploadVisual active={active} onComplete={handleNextStep} />
+              ) : i === 1 ? (
+                <CastingVisual active={active} onComplete={handleNextStep} />
+              ) : i === 2 ? (
+                <SelectionVisual active={active} onComplete={handleNextStep} />
+              ) : i === 3 ? (
+                <MiseEnPageVisual active={active} onComplete={handleNextStep} />
+              ) : null}
             </div>
           ))}
         </div>

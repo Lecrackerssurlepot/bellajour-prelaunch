@@ -22,7 +22,7 @@
 .sol-left {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   padding: clamp(48px, 7vh, 80px) clamp(32px, 5vw, 80px) clamp(48px, 7vh, 80px) clamp(32px, 7vw, 120px);
 }
 
@@ -34,7 +34,7 @@
 
 /* ── Contenu texte ── */
 .sol-step-content {
-  padding: clamp(6px, 1vh, 12px) 0 clamp(6px, 1vh, 12px) 20px;
+  padding: 0 0 0 20px;
 }
 
 /* ── Animation entrée par le bas ── */
@@ -51,12 +51,15 @@
 .sol-step--far     { opacity: 0.20; }
 .sol-step--next    { opacity: 0.50; }
 .sol-step--active  { opacity: 1; }
+.sol-step--prev    { opacity: 0; }
 
 /* Transitions douces */
 .sol-step--far,
 .sol-step--next,
-.sol-step--active {
-  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+.sol-step--active,
+.sol-step--prev {
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ── Numéro ── */
@@ -121,7 +124,7 @@
 .sol-connector {
   position: relative;
   margin-left: 20px;
-  width: 1px;
+  width: 2px;
   height: clamp(20px, 3.5vh, 36px);
   /* Ligne pointillée en fond */
   background: repeating-linear-gradient(
@@ -136,7 +139,7 @@
 .sol-connector-fill {
   position: absolute;
   inset: 0;
-  background: var(--bj-text);
+  background: var(--bj-gold);
   transform-origin: top;
   transform: scaleY(0);
   will-change: transform;
@@ -149,12 +152,18 @@
   align-items: center;
   justify-content: center;
   padding: clamp(32px, 5vw, 80px);
+  overflow: visible;
 }
 
 /* ── Visuels (absolus superposés) ── */
 .sol-visual {
   position: absolute;
-  inset: clamp(32px, 5vw, 80px);
+  top: clamp(32px, 5vw, 80px);
+  left: clamp(32px, 5vw, 80px);
+  right: clamp(32px, 5vw, 80px);
+  bottom: auto;
+  height: auto;
+  aspect-ratio: 9 / 16;
   display: flex;
   flex-direction: column;
   gap: clamp(12px, 2vh, 20px);
@@ -172,6 +181,11 @@
   pointer-events: auto;
 }
 
+.sol-visual--next {
+  opacity: 0.15;
+  transform: translateY(calc(75vh + 16px));
+}
+
 /* ── Placeholders ── */
 .sol-placeholder {
   width: 100%;
@@ -181,118 +195,35 @@
 .sol-placeholder--tall  { flex: 3; }
 .sol-placeholder--short { flex: 1; }
 
-/* ════════════════════════════════════════
-   UPLOAD VISUAL — Étape 01
-   4 vagues de photos depuis les côtés → centre
-   Barre de chargement centrée dans le container
-   ════════════════════════════════════════ */
 
-.sol-upload {
-  position: relative;
-  width: 100%;
-  height: 100%;
+/* ── Upload visual — CSS animation ── */
+.sol-upload-square {
+  transform: translateY(900px);
+  transition: transform 1.2s cubic-bezier(0.55, 0, 1, 0.45);
+  will-change: transform;
+}
+.sol-upload-square--risen {
+  transform: translateY(0);
 }
 
-.sol-upload-stage {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  border-radius: 3px;
-  background: rgba(23, 20, 15, 0.04);
-}
-
-/* ── Photos animées ── */
-.sol-upload-photo {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: clamp(55px, 6.5vw, 88px);
-  height: clamp(42px, 5vw, 68px);
-  overflow: hidden;
-  border-radius: 2px;
-  box-shadow: 0 4px 16px rgba(23, 20, 15, 0.28);
-  opacity: 0;
-  animation-name: sol-photo-fly;
-  animation-duration: 1.55s;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  animation-fill-mode: forwards;
-  animation-delay: var(--delay, 0s);
-  will-change: transform, opacity;
-}
-
-.sol-upload-photo img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-@keyframes sol-photo-fly {
-  0%   {
-    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.90) rotate(var(--rot, 0deg));
-    opacity: 0;
-  }
-  8%   {
-    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.95) rotate(var(--rot, 0deg));
-    opacity: 1;
-  }
-  68%  {
-    transform: translate(-50%, -50%) scale(0.55) rotate(0deg);
-    opacity: 0.9;
-  }
-  84%  {
-    transform: translate(-50%, -50%) scale(0.25) rotate(0deg);
-    opacity: 0;
-  }
+@keyframes sol-photo-flip {
+  0%   { opacity: 0; }
+  50%  { opacity: 1; }
   100% { opacity: 0; }
 }
 
-/* ── UI centré : label + barre + % ── */
-.sol-upload-ui {
+.sol-upload-img {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: 52%;
-  pointer-events: none;
-}
-
-.sol-upload-ui-label {
-  font-family: var(--bj-font-sans);
-  font-size: clamp(8px, 0.65vw, 10px);
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: var(--bj-muted);
-}
-
-.sol-upload-ui-bar {
+  inset: 0;
   width: 100%;
-  height: 1.5px;
-  background: rgba(23, 20, 15, 0.12);
-  overflow: hidden;
-}
-
-.sol-upload-ui-fill {
   height: 100%;
-  background: var(--bj-gold);
-  transform-origin: left;
-  transform: scaleX(0);
-  will-change: transform;
+  object-fit: cover;
+  will-change: opacity;
+  animation: sol-photo-flip 800ms ease-in-out infinite;
+  animation-fill-mode: both;
 }
-
-.sol-upload-ui-pct {
-  font-family: var(--bj-font-serif);
-  font-style: italic;
-  font-weight: 300;
-  font-size: clamp(28px, 3vw, 46px);
-  color: var(--bj-text);
-  letter-spacing: -0.02em;
-  line-height: 1;
+.sol-upload-img--b {
+  animation-delay: 400ms;
 }
 
 /* ── Mobile ── */
