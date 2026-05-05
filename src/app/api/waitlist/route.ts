@@ -34,9 +34,9 @@ async function generateUniqueCode(supabase: any): Promise<string> {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, firstName, referred_by } = body as {
+    const { email, prenom, referred_by } = body as {
       email?: string;
-      firstName?: string;
+      prenom?: string;
       referred_by?: string;
     };
 
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     // Insérer dans waitlist
     const insertPayload: Record<string, unknown> = {
       email: normalizedEmail,
-      prenom: firstName || null,
+      prenom: prenom || null,
       ref_code,
     };
     if (referred_by) insertPayload.referred_by = referred_by;
@@ -94,15 +94,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Créditer le parrain si referred_by valide
+    // Créditer le parrain si referred_by valide + récupérer son prénom pour Brevo
+    let prenomParrain = "";
     if (referred_by) {
       const { data: parrain } = await supabase
         .from("waitlist")
-        .select("email")
+        .select("email, prenom")
         .eq("ref_code", referred_by)
         .maybeSingle();
 
       if (parrain?.email) {
+        prenomParrain = parrain.prenom || "";
         await supabase.from("credits").insert({
           email: parrain.email,
           montant: 5,
@@ -113,6 +115,12 @@ export async function POST(request: Request) {
     }
 
     // Synchroniser avec Brevo
+    const brevoAttributes: Record<string, string> = {
+      PRENOM: prenom || "",
+      REF_CODE: ref_code,
+    };
+    if (prenomParrain) brevoAttributes.PRENOM_PARRAIN = prenomParrain;
+
     const brevoResponse = await fetch(BREVO_API_URL, {
       method: "POST",
       headers: {
@@ -121,10 +129,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         email: normalizedEmail,
-        attributes: {
-          PRENOM: firstName || "",
-          REF_CODE: ref_code,
-        },
+        attributes: brevoAttributes,
         listIds: [listId],
         updateEnabled: true,
       }),
