@@ -97,7 +97,7 @@ const UploadVisual = memo(function UploadVisual({ active, onComplete }: { active
       function tickPct(now: number) {
         const progress = Math.min((now - start) / duration, 1)
         const value = Math.floor(progress * 100)
-        pct.textContent = value + '%'
+        if (pct) pct.textContent = value + '%'
         if (progress < 1) {
           counterRaf.current = requestAnimationFrame(tickPct)
         } else {
