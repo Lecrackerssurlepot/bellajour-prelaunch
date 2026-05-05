@@ -195,7 +195,7 @@ export default function Hero() {
   /* Parrainage */
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.fr'
   const referralLink = refCode ? `${origin}?ref=${refCode}` : ''
-  const prenomDisplay = prenom.trim() || 'vous'
+  const prenomDisplay = prenom.trim() || null
 
   const handleCopy = async () => {
     if (!referralLink) return
@@ -237,7 +237,9 @@ export default function Hero() {
           {/* ── Étape 3 — Confirmation ── */}
           {step === 3 && refCode ? (
             <div className="hero-confirm">
-              <h2 className="hero-confirm-title">Bienvenue, {prenomDisplay}.</h2>
+              <h2 className="hero-confirm-title">
+                {prenomDisplay ? `Bienvenue, ${prenomDisplay}.` : 'Vous êtes sur la liste.'}
+              </h2>
               <div className="hero-confirm-code">{refCode}</div>
               <div className="hero-confirm-link-row">
                 <span className="hero-confirm-link-text">{referralLink}</span>

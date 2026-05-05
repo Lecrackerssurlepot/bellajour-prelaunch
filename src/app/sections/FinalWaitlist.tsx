@@ -177,7 +177,7 @@ export default function FinalWaitlist() {
   /* Parrainage */
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.fr'
   const referralLink = refCode ? `${origin}?ref=${refCode}` : ''
-  const prenomDisplay = prenom.trim() || 'vous'
+  const prenomDisplay = prenom.trim() || null
 
   const handleCopy = async () => {
     if (!referralLink) return
@@ -205,7 +205,9 @@ export default function FinalWaitlist() {
         {/* ── Étape 3 — Confirmation ── */}
         {step === 3 && refCode ? (
           <div className="fwl-confirm">
-            <h2 className="fwl-confirm-titre">Bienvenue, {prenomDisplay}.</h2>
+            <h2 className="fwl-confirm-titre">
+              {prenomDisplay ? `Bienvenue, ${prenomDisplay}.` : 'Vous êtes sur la liste.'}
+            </h2>
             <p className="fwl-confirm-sub">
               Parrainez vos proches, gagnez 5&nbsp;€ de crédit par inscription.
             </p>
