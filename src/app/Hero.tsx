@@ -126,8 +126,8 @@ export default function Hero() {
     if (step === 2) prenomRef.current?.focus()
   }, [step])
 
-  /* Étape 1 — validation email locale */
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  /* Étape 1 — vérification email (check_only, pas d'insertion) */
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const normalized = emailValue.trim().toLowerCase()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
@@ -136,7 +136,25 @@ export default function Hero() {
     }
     setEmailValue(normalized)
     setErrorMsg('')
-    setStep(2)
+    setLoading(true)
+    try {
+      const res  = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalized, check_only: true }),
+      })
+      const data = await res.json()
+      if (data.error === 'already_registered') {
+        setRefCode(data.ref_code ?? null)
+        setStep(3)
+      } else {
+        setStep(2)
+      }
+    } catch {
+      setErrorMsg("La connexion a flanché. Réessayez.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   /* Étape 2 — appel API */
@@ -280,8 +298,8 @@ export default function Hero() {
                   required
                   autoComplete="email"
                 />
-                <button type="submit" className="hero-btn">
-                  R&eacute;server mon invitation
+                <button type="submit" className="hero-btn" disabled={loading}>
+                  {loading ? 'Vérification…' : 'Réserver mon invitation'}
                 </button>
               </form>
               {errorMsg && <p className="hero-msg hero-msg--error">{errorMsg}</p>}

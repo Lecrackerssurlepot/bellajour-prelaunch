@@ -34,10 +34,11 @@ async function generateUniqueCode(supabase: any): Promise<string> {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, prenom, referred_by } = body as {
+    const { email, prenom, referred_by, check_only } = body as {
       email?: string;
       prenom?: string;
       referred_by?: string;
+      check_only?: boolean;
     };
 
     if (!email || typeof email !== "string") {
@@ -51,12 +52,6 @@ export async function POST(request: Request) {
         { message: "Cette adresse ne nous semble pas valide." },
         { status: 400 }
       );
-    }
-
-    const apiKey = process.env.BREVO_API_KEY;
-    const listId = Number(process.env.BREVO_WAITLIST_LIST_ID);
-    if (!apiKey || !listId) {
-      return NextResponse.json({ message: "Configuration Brevo manquante." }, { status: 500 });
     }
 
     const supabase = makeSupabase();
@@ -73,6 +68,17 @@ export async function POST(request: Request) {
         { success: false, error: "already_registered", ref_code: existing.ref_code },
         { status: 200 }
       );
+    }
+
+    // Mode vérification seule — pas d'insertion
+    if (check_only) {
+      return NextResponse.json({ available: true }, { status: 200 });
+    }
+
+    const apiKey = process.env.BREVO_API_KEY;
+    const listId = Number(process.env.BREVO_WAITLIST_LIST_ID);
+    if (!apiKey || !listId) {
+      return NextResponse.json({ message: "Configuration Brevo manquante." }, { status: 500 });
     }
 
     // Générer un ref_code unique

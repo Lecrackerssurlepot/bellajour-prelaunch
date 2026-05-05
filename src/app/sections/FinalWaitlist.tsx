@@ -113,8 +113,8 @@ export default function FinalWaitlist() {
     if (step === 2) prenomRef.current?.focus()
   }, [step])
 
-  /* Étape 1 — validation email locale, pas d'appel API */
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  /* Étape 1 — vérification email (check_only, pas d'insertion) */
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const normalized = emailValue.trim().toLowerCase()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
@@ -123,7 +123,25 @@ export default function FinalWaitlist() {
     }
     setEmailValue(normalized)
     setErrorMsg('')
-    setStep(2)
+    setLoading(true)
+    try {
+      const res  = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalized, check_only: true }),
+      })
+      const data = await res.json()
+      if (data.error === 'already_registered') {
+        setRefCode(data.ref_code ?? null)
+        setStep(3)
+      } else {
+        setStep(2)
+      }
+    } catch {
+      setErrorMsg("La connexion a flanché. Réessayez.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   /* Étape 2 — appel API avec email + prenom */
@@ -265,8 +283,8 @@ export default function FinalWaitlist() {
                 required
                 autoComplete="email"
               />
-              <button type="submit" className="fwl-btn">
-                Rejoindre la liste d&rsquo;attente
+              <button type="submit" className="fwl-btn" disabled={loading}>
+                {loading ? 'Vérification…' : 'Rejoindre la liste d’attente'}
               </button>
             </form>
             {errorMsg && (
