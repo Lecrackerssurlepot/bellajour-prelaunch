@@ -88,8 +88,7 @@ const UploadVisual = memo(function UploadVisual({ active, onComplete }: { active
 
     // 3. Compteur RAF — monte de 0 à 100 en (STEP_DURATION - 1200)ms, 60fps, démarre à t=1200ms
     const counterStart = setTimeout(() => {
-      pct.style.transition = 'opacity 400ms ease'
-      pct.style.opacity = '1'
+      if (pct) { pct.style.transition = 'opacity 400ms ease'; pct.style.opacity = '1' }
 
       const duration = (STEP_DURATION - 1200) * 0.75
       const start = performance.now()
@@ -101,7 +100,7 @@ const UploadVisual = memo(function UploadVisual({ active, onComplete }: { active
         if (progress < 1) {
           counterRaf.current = requestAnimationFrame(tickPct)
         } else {
-          pct.textContent = '100%'
+          if (pct) pct.textContent = '100%'
           setTimeout(onComplete, 500)
         }
       }
@@ -122,8 +121,7 @@ const UploadVisual = memo(function UploadVisual({ active, onComplete }: { active
       imgB.style.zIndex     = '1'
       square.style.transform = ''
       square.classList.remove('sol-upload-square--risen')
-      pct.style.opacity = '0'
-      pct.style.transition = ''
+      if (pct) { pct.style.opacity = '0'; pct.style.transition = '' }
     }
   }, [active])
 
