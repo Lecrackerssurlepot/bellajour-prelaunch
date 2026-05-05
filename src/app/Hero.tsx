@@ -47,9 +47,10 @@ export default function Hero() {
   const [loading,    setLoading]    = useState(false)
   const [errorMsg,   setErrorMsg]   = useState('')
   const [count,      setCount]      = useState<number | null>(null)
-  const [refCode,    setRefCode]    = useState<string | null>(null)
-  const [referredBy, setReferredBy] = useState<string | null>(null)
-  const [copied,     setCopied]     = useState(false)
+  const [refCode,             setRefCode]             = useState<string | null>(null)
+  const [referredBy,          setReferredBy]          = useState<string | null>(null)
+  const [copied,              setCopied]              = useState(false)
+  const [wasAlreadyRegistered, setWasAlreadyRegistered] = useState(false)
 
   const photoRefs = useRef<(HTMLDivElement | null)[]>([])
   const mouseRef  = useRef({ x: 0, y: 0 })
@@ -146,6 +147,8 @@ export default function Hero() {
       const data = await res.json()
       if (data.error === 'already_registered') {
         setRefCode(data.ref_code ?? null)
+        if (data.prenom) setPrenom(data.prenom)
+        setWasAlreadyRegistered(true)
         setStep(3)
       } else {
         setStep(2)
@@ -238,7 +241,11 @@ export default function Hero() {
           {step === 3 && refCode ? (
             <div className="hero-confirm">
               <h2 className="hero-confirm-title">
-                {prenomDisplay ? `Bienvenue, ${prenomDisplay}.` : 'Vous êtes sur la liste.'}
+                {prenomDisplay
+                  ? `Bienvenue, ${prenomDisplay}.`
+                  : wasAlreadyRegistered
+                    ? 'Vous êtes déjà sur la liste.'
+                    : 'Vous êtes sur la liste.'}
               </h2>
               <div className="hero-confirm-code">{refCode}</div>
               <div className="hero-confirm-link-row">

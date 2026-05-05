@@ -59,13 +59,13 @@ export async function POST(request: Request) {
     // Vérifier si l'email est déjà enregistré
     const { data: existing } = await supabase
       .from("waitlist")
-      .select("ref_code")
+      .select("ref_code, prenom")
       .eq("email", normalizedEmail)
       .maybeSingle();
 
     if (existing) {
       return NextResponse.json(
-        { success: false, error: "already_registered", ref_code: existing.ref_code },
+        { success: false, error: "already_registered", ref_code: existing.ref_code, prenom: existing.prenom ?? null },
         { status: 200 }
       );
     }

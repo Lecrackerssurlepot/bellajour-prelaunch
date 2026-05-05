@@ -76,8 +76,9 @@ export default function FinalWaitlist() {
   const [errorMsg,   setErrorMsg]   = useState('')
   const [count,      setCount]      = useState<number | null>(null)
   const [visible,    setVisible]    = useState(false)
-  const [refCode,    setRefCode]    = useState<string | null>(null)
-  const [referredBy, setReferredBy] = useState<string | null>(null)
+  const [refCode,             setRefCode]             = useState<string | null>(null)
+  const [referredBy,          setReferredBy]          = useState<string | null>(null)
+  const [wasAlreadyRegistered, setWasAlreadyRegistered] = useState(false)
   const [copied,     setCopied]     = useState(false)
   const sectionRef = useRef<HTMLElement>(null)
   const prenomRef  = useRef<HTMLInputElement>(null)
@@ -133,6 +134,8 @@ export default function FinalWaitlist() {
       const data = await res.json()
       if (data.error === 'already_registered') {
         setRefCode(data.ref_code ?? null)
+        if (data.prenom) setPrenom(data.prenom)
+        setWasAlreadyRegistered(true)
         setStep(3)
       } else {
         setStep(2)
@@ -206,7 +209,11 @@ export default function FinalWaitlist() {
         {step === 3 && refCode ? (
           <div className="fwl-confirm">
             <h2 className="fwl-confirm-titre">
-              {prenomDisplay ? `Bienvenue, ${prenomDisplay}.` : 'Vous êtes sur la liste.'}
+              {prenomDisplay
+                ? `Bienvenue, ${prenomDisplay}.`
+                : wasAlreadyRegistered
+                  ? 'Vous êtes déjà sur la liste.'
+                  : 'Vous êtes sur la liste.'}
             </h2>
             <p className="fwl-confirm-sub">
               Parrainez vos proches, gagnez 5&nbsp;€ de crédit par inscription.
