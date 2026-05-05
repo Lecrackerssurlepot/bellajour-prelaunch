@@ -216,7 +216,9 @@ export default function FinalWaitlist() {
                   : 'Vous êtes sur la liste.'}
             </h2>
             <p className="fwl-confirm-sub">
-              Parrainez vos proches, gagnez 5&nbsp;€ de crédit par inscription.
+              {wasAlreadyRegistered
+                ? 'Vous pouvez continuer à parrainer vos proches et cumuler vos crédits.'
+                : 'Parrainez vos proches, gagnez 5 € de crédit par inscription.'}
             </p>
             <div className="fwl-confirm-code">{refCode}</div>
             <p className="fwl-confirm-link-label">Votre lien de parrainage</p>
