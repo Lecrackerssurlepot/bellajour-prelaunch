@@ -109,7 +109,7 @@ export async function POST(request: Request) {
         .eq("ref_code", referred_by)
         .maybeSingle();
 
-      if (parrain?.email) {
+      if (parrain?.email && parrain.email !== normalizedEmail) {
         prenomParrain = parrain.prenom || "";
         await supabase.from("credits").insert({
           email: parrain.email,
