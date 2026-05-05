@@ -836,3 +836,102 @@
     justify-content: center;
   }
 }
+
+/* ════════════════════
+   ÉTAPE 2 — PRÉNOM
+   ════════════════════ */
+
+.fwl-prenom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 560px;
+  padding: clamp(24px, 4vh, 48px) 0;
+}
+
+.fwl-prenom-titre {
+  margin: 0 0 clamp(10px, 1.5vh, 16px);
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: clamp(32px, 4.5vw, 56px);
+  line-height: 1.1;
+  color: var(--bj-text);
+  letter-spacing: -0.02em;
+}
+
+.fwl-prenom-sub {
+  margin: 0 0 clamp(24px, 4vh, 36px);
+  font-family: var(--bj-font-sans);
+  font-size: clamp(14px, 1.1vw, 17px);
+  color: var(--bj-muted);
+  line-height: 1.6;
+}
+
+.fwl-prenom-form {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.65);
+  border: 0.5px solid rgba(23, 20, 15, 0.10);
+  border-radius: 999px;
+  padding: 5px;
+  width: min(480px, 92vw);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.fwl-prenom-input {
+  flex: 1;
+  min-width: 0;
+  height: clamp(48px, 6vh, 62px);
+  padding: 0 clamp(18px, 2.2vw, 26px);
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(14px, 1.15vw, 17px);
+  color: var(--bj-text);
+}
+
+.fwl-prenom-input::placeholder { color: rgba(23, 20, 15, 0.42); }
+
+.fwl-prenom-btn {
+  flex-shrink: 0;
+  height: clamp(48px, 6vh, 62px);
+  padding: 0 clamp(24px, 2.8vw, 36px);
+  background: var(--bj-gold);
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(14px, 1.15vw, 17px);
+  font-weight: 400;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.3s;
+}
+
+.fwl-prenom-btn:hover:not(:disabled) { opacity: 0.9; }
+.fwl-prenom-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+@media (max-width: 767px) {
+  .fwl-prenom-form {
+    width: 94vw;
+    flex-wrap: wrap;
+    border-radius: 18px;
+    padding: 6px;
+    gap: 6px;
+  }
+  .fwl-prenom-input {
+    width: 100%;
+    flex: none;
+    height: 52px;
+  }
+  .fwl-prenom-btn {
+    width: 100%;
+    flex: none;
+    height: 52px;
+    border-radius: 12px;
+  }
+}

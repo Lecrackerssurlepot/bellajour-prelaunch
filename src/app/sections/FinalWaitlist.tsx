@@ -28,7 +28,6 @@ const CHAPITRES = [
   },
 ]
 
-/* ── Sous-composant DateTicker — zoom cinématique ── */
 function DateTicker() {
   const [idx,     setIdx]     = useState(0)
   const [animKey, setAnimKey] = useState(0)
@@ -57,7 +56,6 @@ function DateTicker() {
   )
 }
 
-/* ── Sous-composant WaitlistChapterCard ── */
 function WaitlistChapterCard({ num, titre, texte }: { num: string; titre: string; texte: string }) {
   return (
     <article className="fwl-card">
@@ -71,20 +69,22 @@ function WaitlistChapterCard({ num, titre, texte }: { num: string; titre: string
 
 /* ── Composant principal ── */
 export default function FinalWaitlist() {
-  const [email,      setEmail]      = useState('')
-  const [status,     setStatus]     = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [message,    setMessage]    = useState('')
+  const [step,       setStep]       = useState<1 | 2 | 3>(1)
+  const [emailValue, setEmailValue] = useState('')
+  const [prenom,     setPrenom]     = useState('')
+  const [loading,    setLoading]    = useState(false)
+  const [errorMsg,   setErrorMsg]   = useState('')
   const [count,      setCount]      = useState<number | null>(null)
   const [visible,    setVisible]    = useState(false)
   const [refCode,    setRefCode]    = useState<string | null>(null)
   const [referredBy, setReferredBy] = useState<string | null>(null)
   const [copied,     setCopied]     = useState(false)
   const sectionRef = useRef<HTMLElement>(null)
+  const prenomRef  = useRef<HTMLInputElement>(null)
 
-  /* Lire ?ref= dans l'URL à l'arrivée */
+  /* Lire ?ref= dans l'URL */
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const ref = params.get('ref')
+    const ref = new URLSearchParams(window.location.search).get('ref')
     if (ref) setReferredBy(ref)
   }, [])
 
@@ -108,14 +108,32 @@ export default function FinalWaitlist() {
     return () => observer.disconnect()
   }, [])
 
-  /* Formulaire */
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault()
-    if (!email || status === 'loading' || status === 'success') return
-    setStatus('loading')
-    setMessage('')
+  /* Auto-focus prénom à l'étape 2 */
+  useEffect(() => {
+    if (step === 2) prenomRef.current?.focus()
+  }, [step])
+
+  /* Étape 1 — validation email locale, pas d'appel API */
+  const handleEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const normalized = emailValue.trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+      setErrorMsg("Cette adresse ne nous semble pas valide.")
+      return
+    }
+    setEmailValue(normalized)
+    setErrorMsg('')
+    setStep(2)
+  }
+
+  /* Étape 2 — appel API avec email + prenom */
+  const handlePrenomSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (loading) return
+    setLoading(true)
+    setErrorMsg('')
     try {
-      const body: Record<string, string> = { email }
+      const body: Record<string, string> = { email: emailValue, prenom }
       if (referredBy) body.referred_by = referredBy
 
       const res  = await fetch('/api/waitlist', {
@@ -126,22 +144,22 @@ export default function FinalWaitlist() {
       const data = await res.json()
 
       if (res.ok && (data.success || data.error === 'already_registered')) {
-        setStatus('success')
-        setEmail('')
         setRefCode(data.ref_code ?? null)
+        setStep(3)
       } else {
-        setStatus('error')
-        setMessage(data.message || "Une erreur s'est glissée. Réessayez dans un instant.")
+        setErrorMsg(data.message || "Une erreur s'est glissée. Réessayez dans un instant.")
       }
     } catch {
-      setStatus('error')
-      setMessage("La connexion a flanché. Réessayez.")
+      setErrorMsg("La connexion a flanché. Réessayez.")
+    } finally {
+      setLoading(false)
     }
   }
 
   /* Parrainage */
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.fr'
   const referralLink = refCode ? `${origin}?ref=${refCode}` : ''
+  const prenomDisplay = prenom.trim() || 'vous'
 
   const handleCopy = async () => {
     if (!referralLink) return
@@ -166,16 +184,14 @@ export default function FinalWaitlist() {
     >
       <div className="fwl-inner">
 
-        {/* ── Confirmation post-inscription ── */}
-        {status === 'success' && refCode ? (
+        {/* ── Étape 3 — Confirmation ── */}
+        {step === 3 && refCode ? (
           <div className="fwl-confirm">
-            <h2 className="fwl-confirm-titre">Vous êtes sur la liste.</h2>
+            <h2 className="fwl-confirm-titre">Bienvenue, {prenomDisplay}.</h2>
             <p className="fwl-confirm-sub">
               Parrainez vos proches, gagnez 5&nbsp;€ de crédit par inscription.
             </p>
-
             <div className="fwl-confirm-code">{refCode}</div>
-
             <p className="fwl-confirm-link-label">Votre lien de parrainage</p>
             <div className="fwl-confirm-link-row">
               <span className="fwl-confirm-link-text">{referralLink}</span>
@@ -183,7 +199,6 @@ export default function FinalWaitlist() {
                 {copied ? 'Lien copié ✓' : 'Copier le lien'}
               </button>
             </div>
-
             <a
               className="fwl-confirm-wa-btn"
               href={`https://wa.me/?text=${waText}`}
@@ -195,25 +210,48 @@ export default function FinalWaitlist() {
               </svg>
               Partager sur WhatsApp
             </a>
-
             <p className="fwl-confirm-footer">
               Ce crédit sera appliqué automatiquement à la création de votre compte.<br />
               Conservez bien cette adresse email.
             </p>
           </div>
+
+        ) : step === 2 ? (
+          /* ── Étape 2 — Prénom ── */
+          <div className="fwl-prenom">
+            <h2 className="fwl-prenom-titre">Dernière étape.</h2>
+            <p className="fwl-prenom-sub">Comment souhaitez-vous être appelé&nbsp;?</p>
+            <form className="fwl-prenom-form" onSubmit={handlePrenomSubmit} noValidate>
+              <input
+                ref={prenomRef}
+                type="text"
+                placeholder="Votre prénom"
+                className="fwl-prenom-input"
+                value={prenom}
+                onChange={e => setPrenom(e.target.value)}
+                disabled={loading}
+                autoComplete="given-name"
+              />
+              <button type="submit" className="fwl-prenom-btn" disabled={loading}>
+                {loading ? 'Envoi…' : 'Continuer'}
+              </button>
+            </form>
+            {errorMsg && (
+              <p className="fwl-msg fwl-msg--error" role="status">{errorMsg}</p>
+            )}
+          </div>
+
         ) : (
-          /* ── Formulaire ── */
+          /* ── Étape 1 — Email ── */
           <>
             <h2 className="fwl-titre">
               Prêt à rejoindre les premiers albums Bellajour&nbsp;?
             </h2>
-
             <p className="fwl-count">
               <span className="fwl-count-dot" aria-hidden="true" />
               {displayCount} personnes attendent déjà leur premier album Bellajour.
             </p>
-
-            <form className="fwl-form" onSubmit={handleSubmit} noValidate>
+            <form className="fwl-form" onSubmit={handleEmailSubmit} noValidate>
               <label htmlFor="fwl-email-input" className="fwl-sr-only">
                 Adresse email
               </label>
@@ -222,42 +260,30 @@ export default function FinalWaitlist() {
                 type="email"
                 placeholder="Entrez votre email"
                 className="fwl-input"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                disabled={status === 'loading'}
+                value={emailValue}
+                onChange={e => setEmailValue(e.target.value)}
                 required
                 autoComplete="email"
               />
-              <button
-                type="submit"
-                className="fwl-btn"
-                disabled={status === 'loading'}
-              >
-                {status === 'loading' ? "Envoi…" : "Rejoindre la liste d’attente"}
+              <button type="submit" className="fwl-btn">
+                Rejoindre la liste d&rsquo;attente
               </button>
             </form>
-
-            {message && (
-              <p className={`fwl-msg fwl-msg--${status}`} role="status">
-                {message}
-              </p>
+            {errorMsg && (
+              <p className="fwl-msg fwl-msg--error" role="status">{errorMsg}</p>
             )}
-
             <p className="fwl-reassurance">
               Nous vous écrirons seulement lorsque Bellajour aura quelque chose d&rsquo;important à vous montrer.
             </p>
           </>
         )}
 
-        {/* Ticker dates */}
         <DateTicker />
 
-        {/* Intro chapitres */}
         <p className="fwl-chapitres-intro">
           Trois attentions réservées aux premiers inscrits.
         </p>
 
-        {/* Cartes chapitres */}
         <div className="fwl-chapitres">
           {CHAPITRES.map(c => (
             <WaitlistChapterCard key={c.num} {...c} />

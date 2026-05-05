@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './hero.css'
 
 const photos = [
@@ -13,7 +13,6 @@ const photos = [
   { src: '/images/hero/hero-07.webp', from: 'DJI_037.PNG',    to: 'Dampier Peninsula, Australie',     cls: 'p7' },
 ]
 
-// Profondeur parallax unique par photo (plus grand = bouge plus)
 const DEPTHS = [0.014, 0.022, 0.018, 0.026, 0.016, 0.012, 0.020]
 
 function TypewriterLabel({ from, to, delay }: { from: string; to: string; delay: number }) {
@@ -41,33 +40,42 @@ function TypewriterLabel({ from, to, delay }: { from: string; to: string; delay:
 }
 
 export default function Hero() {
-  const [scrolled, setScrolled] = useState(false)
-  const [email, setEmail]     = useState('')
-  const [status, setStatus]   = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [message, setMessage] = useState('')
-  const [count, setCount]           = useState<number | null>(null)
-  const [referralCode, setReferralCode] = useState<string | undefined>(undefined)
-  const [inlineOpen,   setInlineOpen]   = useState(false)
+  const [scrolled,   setScrolled]   = useState(false)
+  const [step,       setStep]       = useState<1 | 2 | 3>(1)
+  const [emailValue, setEmailValue] = useState('')
+  const [prenom,     setPrenom]     = useState('')
+  const [loading,    setLoading]    = useState(false)
+  const [errorMsg,   setErrorMsg]   = useState('')
+  const [count,      setCount]      = useState<number | null>(null)
+  const [refCode,    setRefCode]    = useState<string | null>(null)
+  const [referredBy, setReferredBy] = useState<string | null>(null)
+  const [copied,     setCopied]     = useState(false)
 
-  // ── Refs pour manipulation DOM directe (parallax + fly-up)
   const photoRefs = useRef<(HTMLDivElement | null)[]>([])
   const mouseRef  = useRef({ x: 0, y: 0 })
   const scrollRef = useRef(0)
   const animRef   = useRef<number | null>(null)
+  const prenomRef = useRef<HTMLInputElement>(null)
 
-  // ── RAF : parallax souris + fly-up scroll
+  /* Lire ?ref= dans l'URL */
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get('ref')
+    if (ref) setReferredBy(ref)
+  }, [])
+
+  /* Parallax + fly-up scroll */
   useEffect(() => {
     const animate = () => {
       const { x, y } = mouseRef.current
-      const sp = scrollRef.current  // 0 → 1 sur 70% du hero height
+      const sp = scrollRef.current
 
       photoRefs.current.forEach((el, i) => {
         if (!el) return
-        const d   = DEPTHS[i]
-        const px  = x * d * 110                          // parallax X
-        const py  = y * d * 75 - sp * (110 + i * 12)   // parallax Y + fly-up
-        const sc  = 1 + sp * 0.28                        // grandit légèrement
-        const op  = Math.max(0, 1 - sp * 2.2)           // disparaît rapidement
+        const d  = DEPTHS[i]
+        const px = x * d * 110
+        const py = y * d * 75 - sp * (110 + i * 12)
+        const sc = 1 + sp * 0.28
+        const op = Math.max(0, 1 - sp * 2.2)
 
         el.style.transform = `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px) scale(${sc.toFixed(3)})`
         el.style.opacity   = op.toFixed(3)
@@ -91,7 +99,6 @@ export default function Hero() {
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('scroll', onScroll, { passive: true })
 
-    // Attendre la fin des hero-fade animations (~1s) avant de démarrer le RAF
     const t = setTimeout(() => {
       animRef.current = requestAnimationFrame(animate)
     }, 900)
@@ -104,17 +111,7 @@ export default function Hero() {
     }
   }, [])
 
-  // ── Scroll lock — sheet mobile
-  useEffect(() => {
-    if (inlineOpen && window.innerWidth < 768) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => { document.body.style.overflow = '' }
-  }, [inlineOpen])
-
-  // ── Compteur Brevo
+  /* Compteur */
   useEffect(() => {
     let cancelled = false
     fetch('/api/waitlist/count')
@@ -124,51 +121,74 @@ export default function Hero() {
     return () => { cancelled = true }
   }, [])
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault()
-    if (!email || status === 'loading' || status === 'success') return
-    setStatus('loading')
-    setMessage('')
+  /* Auto-focus prénom à l'étape 2 */
+  useEffect(() => {
+    if (step === 2) prenomRef.current?.focus()
+  }, [step])
+
+  /* Étape 1 — validation email locale */
+  const handleEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const normalized = emailValue.trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+      setErrorMsg("Cette adresse ne nous semble pas valide.")
+      return
+    }
+    setEmailValue(normalized)
+    setErrorMsg('')
+    setStep(2)
+  }
+
+  /* Étape 2 — appel API */
+  const handlePrenomSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (loading) return
+    setLoading(true)
+    setErrorMsg('')
     try {
+      const body: Record<string, string> = { email: emailValue, prenom }
+      if (referredBy) body.referred_by = referredBy
+
       const res  = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
-      if (res.ok) {
-        setStatus('success')
-        setEmail('')
-        if (data.alreadyRegistered) {
-          setMessage('Vous êtes déjà sur la liste — vous avez sûrement reçu de nos nouvelles par mail.')
-        } else {
-          setMessage('Bienvenue sur la liste. On vous écrit bientôt.')
-        }
-        if (data.referralCode) setReferralCode(data.referralCode)
-        setTimeout(() => setInlineOpen(true), 600)
+
+      if (res.ok && (data.success || data.error === 'already_registered')) {
+        setRefCode(data.ref_code ?? null)
+        setStep(3)
       } else {
-        setStatus('error')
-        setMessage(data.message || 'Une erreur s\'est glissée. Réessayez dans un instant.')
+        setErrorMsg(data.message || "Une erreur s'est glissée. Réessayez dans un instant.")
       }
     } catch {
-      setStatus('error')
-      setMessage('La connexion a flanché. Réessayez.')
+      setErrorMsg("La connexion a flanché. Réessayez.")
+    } finally {
+      setLoading(false)
     }
   }
-
-  const handleShare = useCallback(async () => {
-    const link = `${typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.com'}/r/${referralCode ?? 'VOTRECODE'}`
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try { await navigator.share({ title: 'Bellajour — Mon lien de parrainage', url: link }) } catch {}
-    } else {
-      await navigator.clipboard?.writeText(link).catch(() => {})
-    }
-  }, [referralCode])
 
   const handleDiscover = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
     document.getElementById('anxiete')?.scrollIntoView({ behavior: 'smooth' })
   }
+
+  /* Parrainage */
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.fr'
+  const referralLink = refCode ? `${origin}?ref=${refCode}` : ''
+  const prenomDisplay = prenom.trim() || 'vous'
+
+  const handleCopy = async () => {
+    if (!referralLink) return
+    await navigator.clipboard.writeText(referralLink).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const waText = encodeURIComponent(
+    `J'ai découvert Bellajour, un service qui transforme tes photos en albums photo ✦ Rejoins la liste avec mon lien : ${referralLink}`
+  )
 
   const displayCount = (count ?? 0) + 30
 
@@ -195,58 +215,78 @@ export default function Hero() {
         ))}
 
         <div className="hero-center">
-          <div className="hero-headline">
-            <p className="hero-headline-l1">Nous composons vos photos</p>
-            <p className="hero-headline-l2">en albums d&rsquo;exception</p>
-          </div>
 
-          <form className="hero-form" onSubmit={handleSubmit}>
-            <input
-              type="email"
-              placeholder="Entrez votre e-mail"
-              className="hero-input"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              disabled={status === 'loading' || status === 'success'}
-              required
-            />
-            <button
-              type="submit"
-              className="hero-btn"
-              disabled={status === 'loading' || status === 'success'}
-            >
-              {status === 'loading' ? 'Envoi\u2026' : 'R\u00e9server mon invitation'}
-            </button>
-          </form>
-
-          {message && (
-            <p className={`hero-msg hero-msg--${status}`}>{message}</p>
-          )}
-
-          {/* Encart parrainage inline — desktop */}
-          <div className={`hero-referral-wrap${inlineOpen ? ' hero-referral-wrap--open' : ''}`}>
-            <div className="hero-referral-inner">
-              <div className="hero-referral-block">
-                <span className="hero-referral-eyebrow">Parrainage Bellajour</span>
-                <h3 className="hero-referral-titre">
-                  Gagnez&nbsp;<em>5&nbsp;€</em> pour chaque<br />
-                  proche que vous invitez
-                </h3>
-                <div className="hero-referral-link-row">
-                  <input
-                    type="text"
-                    className="hero-referral-input"
-                    value={`${typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.com'}/r/${referralCode ?? 'VOTRECODE'}`}
-                    readOnly
-                    onFocus={e => e.target.select()}
-                  />
-                  <button className="hero-referral-share-btn" onClick={handleShare}>
-                    Partager mon lien
-                  </button>
-                </div>
+          {/* ── Étape 3 — Confirmation ── */}
+          {step === 3 && refCode ? (
+            <div className="hero-confirm">
+              <h2 className="hero-confirm-title">Bienvenue, {prenomDisplay}.</h2>
+              <div className="hero-confirm-code">{refCode}</div>
+              <div className="hero-confirm-link-row">
+                <span className="hero-confirm-link-text">{referralLink}</span>
+                <button className="hero-confirm-copy-btn" onClick={handleCopy}>
+                  {copied ? 'Copié ✓' : 'Copier'}
+                </button>
               </div>
+              <a
+                className="hero-confirm-wa"
+                href={`https://wa.me/?text=${waText}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                Partager sur WhatsApp
+              </a>
             </div>
-          </div>
+
+          ) : step === 2 ? (
+            /* ── Étape 2 — Prénom ── */
+            <>
+              <p className="hero-step-title">Dernière étape.</p>
+              <p className="hero-step-lead">Comment souhaitez-vous être appelé&nbsp;?</p>
+              <form className="hero-form" onSubmit={handlePrenomSubmit} noValidate>
+                <input
+                  ref={prenomRef}
+                  type="text"
+                  placeholder="Votre prénom"
+                  className="hero-input"
+                  value={prenom}
+                  onChange={e => setPrenom(e.target.value)}
+                  disabled={loading}
+                  autoComplete="given-name"
+                />
+                <button type="submit" className="hero-btn" disabled={loading}>
+                  {loading ? 'Envoi…' : 'Continuer'}
+                </button>
+              </form>
+              {errorMsg && <p className="hero-msg hero-msg--error">{errorMsg}</p>}
+            </>
+
+          ) : (
+            /* ── Étape 1 — Email ── */
+            <>
+              <div className="hero-headline">
+                <p className="hero-headline-l1">Nous composons vos photos</p>
+                <p className="hero-headline-l2">en albums d&rsquo;exception</p>
+              </div>
+              <form className="hero-form" onSubmit={handleEmailSubmit} noValidate>
+                <input
+                  type="email"
+                  placeholder="Entrez votre e-mail"
+                  className="hero-input"
+                  value={emailValue}
+                  onChange={e => setEmailValue(e.target.value)}
+                  required
+                  autoComplete="email"
+                />
+                <button type="submit" className="hero-btn">
+                  R&eacute;server mon invitation
+                </button>
+              </form>
+              {errorMsg && <p className="hero-msg hero-msg--error">{errorMsg}</p>}
+            </>
+          )}
 
           <div className="hero-badge">
             <span>WAITLIST OUVERTE</span>
@@ -262,44 +302,6 @@ export default function Hero() {
           En savoir plus
         </a>
       </section>
-
-      {/* Sheet parrainage mobile */}
-      <div
-        className={`hero-mobile-backdrop${inlineOpen ? ' hero-mobile-backdrop--open' : ''}`}
-        onClick={() => setInlineOpen(false)}
-        aria-hidden="true"
-      />
-      <div
-        className={`hero-mobile-sheet${inlineOpen ? ' hero-mobile-sheet--open' : ''}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Votre lien de parrainage Bellajour"
-      >
-        <button
-          className="hero-mobile-close"
-          onClick={() => setInlineOpen(false)}
-          aria-label="Fermer"
-        >
-          &#x2715;
-        </button>
-        <span className="hero-referral-eyebrow">Parrainage Bellajour</span>
-        <h3 className="hero-referral-titre">
-          Gagnez&nbsp;<em>5&nbsp;€</em> pour chaque<br />
-          proche que vous invitez
-        </h3>
-        <div className="hero-referral-link-row">
-          <input
-            type="text"
-            className="hero-referral-input"
-            value={`${typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.com'}/r/${referralCode ?? 'VOTRECODE'}`}
-            readOnly
-            onFocus={e => e.target.select()}
-          />
-          <button className="hero-referral-share-btn" onClick={handleShare}>
-            Partager mon lien
-          </button>
-        </div>
-      </div>
     </>
   )
 }

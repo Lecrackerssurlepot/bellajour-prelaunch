@@ -305,6 +305,127 @@
 }
 
 /* ════════════════════
+   ÉTAPE 2 — PRÉNOM
+   ════════════════════ */
+
+.hero-step-title {
+  margin: 0 0 clamp(8px, 1.2vh, 14px);
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: clamp(28px, 3.5vw, 48px);
+  line-height: 1.1;
+  color: var(--bj-text);
+  letter-spacing: -0.02em;
+}
+
+.hero-step-lead {
+  margin: 0 0 clamp(20px, 3vh, 30px);
+  font-family: var(--bj-font-sans);
+  font-size: clamp(13px, 1vw, 16px);
+  color: var(--bj-muted);
+  line-height: 1.5;
+}
+
+/* ════════════════════
+   ÉTAPE 3 — CONFIRMATION HERO
+   ════════════════════ */
+
+.hero-confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.hero-confirm-title {
+  margin: 0 0 clamp(10px, 1.5vh, 18px);
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: clamp(26px, 3.2vw, 46px);
+  line-height: 1.1;
+  color: var(--bj-text);
+  letter-spacing: -0.02em;
+}
+
+.hero-confirm-code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: clamp(20px, 2.8vw, 38px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--bj-gold);
+  margin-bottom: clamp(14px, 2vh, 24px);
+}
+
+.hero-confirm-link-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 460px;
+  margin-bottom: clamp(10px, 1.5vh, 18px);
+}
+
+.hero-confirm-link-text {
+  flex: 1;
+  min-width: 0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: clamp(9px, 0.65vw, 11px);
+  color: var(--bj-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 9px 12px;
+  background: rgba(23, 20, 15, 0.05);
+  border: 0.5px solid rgba(23, 20, 15, 0.10);
+  border-right: none;
+}
+
+.hero-confirm-copy-btn {
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 14px;
+  background: var(--bj-gold);
+  color: #EAE3D8;
+  border: none;
+  font-family: var(--bj-font-sans);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.3s;
+}
+.hero-confirm-copy-btn:hover { opacity: 0.85; }
+
+.hero-confirm-wa {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(12px, 0.9vw, 14px);
+  color: #25D366;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: opacity 0.3s;
+}
+.hero-confirm-wa:hover { opacity: 0.85; }
+
+@media (max-width: 767px) {
+  .hero-confirm-link-row {
+    flex-direction: column;
+  }
+  .hero-confirm-link-text {
+    width: 100%;
+    border-right: 0.5px solid rgba(23, 20, 15, 0.10);
+    border-bottom: none;
+    text-align: center;
+  }
+  .hero-confirm-copy-btn {
+    width: 100%;
+    height: 40px;
+  }
+}
+
+/* ════════════════════
    ENCART PARRAINAGE INLINE (desktop ≥ 768px)
    ════════════════════ */
 
