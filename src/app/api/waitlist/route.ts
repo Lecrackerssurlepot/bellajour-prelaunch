@@ -17,7 +17,8 @@ function randomCode(): string {
   return code;
 }
 
-async function generateUniqueCode(supabase: ReturnType<typeof createClient>): Promise<string> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function generateUniqueCode(supabase: any): Promise<string> {
   for (let attempt = 0; attempt < 10; attempt++) {
     const code = randomCode();
     const { data } = await supabase
