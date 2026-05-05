@@ -79,6 +79,7 @@ export default function FinalWaitlist() {
   const [refCode,             setRefCode]             = useState<string | null>(null)
   const [referredBy,          setReferredBy]          = useState<string | null>(null)
   const [wasAlreadyRegistered, setWasAlreadyRegistered] = useState(false)
+  const [wasReferred,          setWasReferred]          = useState(false)
   const [copied,     setCopied]     = useState(false)
   const sectionRef = useRef<HTMLElement>(null)
   const prenomRef  = useRef<HTMLInputElement>(null)
@@ -166,6 +167,7 @@ export default function FinalWaitlist() {
 
       if (res.ok && (data.success || data.error === 'already_registered')) {
         setRefCode(data.ref_code ?? null)
+        if (referredBy) setWasReferred(true)
         setStep(3)
       } else {
         setErrorMsg(data.message || "Une erreur s'est glissée. Réessayez dans un instant.")
@@ -216,9 +218,11 @@ export default function FinalWaitlist() {
                   : 'Vous êtes sur la liste.'}
             </h2>
             <p className="fwl-confirm-sub">
-              {wasAlreadyRegistered
-                ? 'Vous pouvez continuer à parrainer vos proches et cumuler vos crédits.'
-                : 'Parrainez vos proches, gagnez 5 € de crédit par inscription.'}
+              {wasReferred
+                ? 'Vous pouvez à votre tour faire découvrir Bellajour à vos proches et gagner 5 € de crédit par ami inscrit.'
+                : wasAlreadyRegistered
+                  ? 'Vous pouvez continuer à parrainer vos proches et cumuler vos crédits.'
+                  : 'Parrainez vos proches, gagnez 5 € de crédit par inscription.'}
             </p>
             <div className="fwl-confirm-code">{refCode}</div>
             <p className="fwl-confirm-link-label">Votre lien de parrainage</p>

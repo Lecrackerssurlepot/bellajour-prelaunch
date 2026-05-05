@@ -51,6 +51,7 @@ export default function Hero() {
   const [referredBy,          setReferredBy]          = useState<string | null>(null)
   const [copied,              setCopied]              = useState(false)
   const [wasAlreadyRegistered, setWasAlreadyRegistered] = useState(false)
+  const [wasReferred,          setWasReferred]          = useState(false)
 
   const photoRefs = useRef<(HTMLDivElement | null)[]>([])
   const mouseRef  = useRef({ x: 0, y: 0 })
@@ -179,6 +180,7 @@ export default function Hero() {
 
       if (res.ok && (data.success || data.error === 'already_registered')) {
         setRefCode(data.ref_code ?? null)
+        if (referredBy) setWasReferred(true)
         setStep(3)
       } else {
         setErrorMsg(data.message || "Une erreur s'est glissée. Réessayez dans un instant.")
@@ -247,6 +249,13 @@ export default function Hero() {
                     ? 'Vous êtes déjà sur la liste.'
                     : 'Vous êtes sur la liste.'}
               </h2>
+              <p className="hero-step-lead">
+                {wasReferred
+                  ? 'Vous pouvez à votre tour faire découvrir Bellajour à vos proches et gagner 5 € de crédit par ami inscrit.'
+                  : wasAlreadyRegistered
+                    ? 'Vous pouvez continuer à parrainer vos proches et cumuler vos crédits.'
+                    : 'Parrainez vos proches, gagnez 5 € de crédit par inscription.'}
+              </p>
               <div className="hero-confirm-code">{refCode}</div>
               <div className="hero-confirm-link-row">
                 <span className="hero-confirm-link-text">{referralLink}</span>
