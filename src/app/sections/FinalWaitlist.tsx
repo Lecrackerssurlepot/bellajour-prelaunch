@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './finalwaitlist.css'
 
 /* ── Données ── */
@@ -30,12 +30,12 @@ const CHAPITRES = [
 
 /* ── Sous-composant DateTicker — zoom cinématique ── */
 function DateTicker() {
-  const [idx,      setIdx]      = useState(0)
-  const [animKey,  setAnimKey]  = useState(0)
+  const [idx,     setIdx]     = useState(0)
+  const [animKey, setAnimKey] = useState(0)
 
   useEffect(() => {
     const id = setInterval(() => {
-      setIdx(i  => (i  + 1) % DATES.length)
+      setIdx(i => (i + 1) % DATES.length)
       setAnimKey(k => k + 1)
     }, 4600)
     return () => clearInterval(id)
@@ -58,9 +58,7 @@ function DateTicker() {
 }
 
 /* ── Sous-composant WaitlistChapterCard ── */
-function WaitlistChapterCard({
-  num, titre, texte,
-}: { num: string; titre: string; texte: string }) {
+function WaitlistChapterCard({ num, titre, texte }: { num: string; titre: string; texte: string }) {
   return (
     <article className="fwl-card">
       <span className="fwl-card-num">{num}</span>
@@ -73,16 +71,24 @@ function WaitlistChapterCard({
 
 /* ── Composant principal ── */
 export default function FinalWaitlist() {
-  const [email,   setEmail]   = useState('')
-  const [status,  setStatus]  = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [message, setMessage] = useState('')
-  const [count,   setCount]   = useState<number | null>(null)
-  const [visible,       setVisible]       = useState(false)
-  const [referralCode,  setReferralCode]  = useState<string | undefined>(undefined)
-  const [inlineOpen,    setInlineOpen]    = useState(false)
+  const [email,      setEmail]      = useState('')
+  const [status,     setStatus]     = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [message,    setMessage]    = useState('')
+  const [count,      setCount]      = useState<number | null>(null)
+  const [visible,    setVisible]    = useState(false)
+  const [refCode,    setRefCode]    = useState<string | null>(null)
+  const [referredBy, setReferredBy] = useState<string | null>(null)
+  const [copied,     setCopied]     = useState(false)
   const sectionRef = useRef<HTMLElement>(null)
 
-  /* Compteur dynamique — même source que le Hero */
+  /* Lire ?ref= dans l'URL à l'arrivée */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const ref = params.get('ref')
+    if (ref) setReferredBy(ref)
+  }, [])
+
+  /* Compteur dynamique */
   useEffect(() => {
     let cancelled = false
     fetch('/api/waitlist/count')
@@ -102,39 +108,27 @@ export default function FinalWaitlist() {
     return () => observer.disconnect()
   }, [])
 
-  /* Scroll lock — sheet mobile */
-  useEffect(() => {
-    if (inlineOpen && window.innerWidth < 768) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => { document.body.style.overflow = '' }
-  }, [inlineOpen])
-
-  /* Formulaire — même API Brevo que le Hero */
+  /* Formulaire */
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault()
     if (!email || status === 'loading' || status === 'success') return
     setStatus('loading')
     setMessage('')
     try {
+      const body: Record<string, string> = { email }
+      if (referredBy) body.referred_by = referredBy
+
       const res  = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
-      if (res.ok) {
+
+      if (res.ok && (data.success || data.error === 'already_registered')) {
         setStatus('success')
         setEmail('')
-        setMessage(
-          data.alreadyRegistered
-            ? "Vous êtes déjà sur la liste — vous avez sûrement reçu de nos nouvelles par mail."
-            : "Bienvenue sur la liste. On vous écrit bientôt."
-        )
-        if (data.referralCode) setReferralCode(data.referralCode)
-        setTimeout(() => setInlineOpen(true), 600)
+        setRefCode(data.ref_code ?? null)
       } else {
         setStatus('error')
         setMessage(data.message || "Une erreur s'est glissée. Réessayez dans un instant.")
@@ -145,14 +139,20 @@ export default function FinalWaitlist() {
     }
   }
 
-  const handleDesktopShare = useCallback(async () => {
-    const link = `${typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.com'}/r/${referralCode ?? 'VOTRECODE'}`
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try { await navigator.share({ title: 'Bellajour — Mon lien de parrainage', url: link }) } catch {}
-    } else {
-      await navigator.clipboard?.writeText(link).catch(() => {})
-    }
-  }, [referralCode])
+  /* Parrainage */
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.fr'
+  const referralLink = refCode ? `${origin}?ref=${refCode}` : ''
+
+  const handleCopy = async () => {
+    if (!referralLink) return
+    await navigator.clipboard.writeText(referralLink).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const waText = encodeURIComponent(
+    `J'ai découvert Bellajour, un service qui transforme tes photos en albums photo ✦ Rejoins la liste avec mon lien : ${referralLink}`
+  )
 
   const displayCount = (count ?? 0) + 30
 
@@ -166,87 +166,98 @@ export default function FinalWaitlist() {
     >
       <div className="fwl-inner">
 
-        {/* 1. Titre */}
-        <h2 className="fwl-titre">
-          Prêt à rejoindre les premiers albums Bellajour&nbsp;?
-        </h2>
+        {/* ── Confirmation post-inscription ── */}
+        {status === 'success' && refCode ? (
+          <div className="fwl-confirm">
+            <h2 className="fwl-confirm-titre">Vous êtes sur la liste.</h2>
+            <p className="fwl-confirm-sub">
+              Parrainez vos proches, gagnez 5&nbsp;€ de crédit par inscription.
+            </p>
 
-        {/* 3. Compteur social */}
-        <p className="fwl-count">
-          <span className="fwl-count-dot" aria-hidden="true" />
-          {displayCount} personnes attendent déjà leur premier album Bellajour.
-        </p>
+            <div className="fwl-confirm-code">{refCode}</div>
 
-        {/* 4. Formulaire */}
-        <form className="fwl-form" onSubmit={handleSubmit} noValidate>
-          <label htmlFor="fwl-email-input" className="fwl-sr-only">
-            Adresse email
-          </label>
-          <input
-            id="fwl-email-input"
-            type="email"
-            placeholder="Entrez votre email"
-            className="fwl-input"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            disabled={status === 'loading' || status === 'success'}
-            required
-            autoComplete="email"
-          />
-          <button
-            type="submit"
-            className="fwl-btn"
-            disabled={status === 'loading' || status === 'success'}
-          >
-            {status === 'loading' ? "Envoi\u2026" : "Rejoindre la liste d\u2019attente"}
-          </button>
-        </form>
+            <p className="fwl-confirm-link-label">Votre lien de parrainage</p>
+            <div className="fwl-confirm-link-row">
+              <span className="fwl-confirm-link-text">{referralLink}</span>
+              <button className="fwl-confirm-copy-btn" onClick={handleCopy}>
+                {copied ? 'Lien copié ✓' : 'Copier le lien'}
+              </button>
+            </div>
 
-        {message && (
-          <p className={`fwl-msg fwl-msg--${status}`} role="status">
-            {message}
-          </p>
+            <a
+              className="fwl-confirm-wa-btn"
+              href={`https://wa.me/?text=${waText}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+              Partager sur WhatsApp
+            </a>
+
+            <p className="fwl-confirm-footer">
+              Ce crédit sera appliqué automatiquement à la création de votre compte.<br />
+              Conservez bien cette adresse email.
+            </p>
+          </div>
+        ) : (
+          /* ── Formulaire ── */
+          <>
+            <h2 className="fwl-titre">
+              Prêt à rejoindre les premiers albums Bellajour&nbsp;?
+            </h2>
+
+            <p className="fwl-count">
+              <span className="fwl-count-dot" aria-hidden="true" />
+              {displayCount} personnes attendent déjà leur premier album Bellajour.
+            </p>
+
+            <form className="fwl-form" onSubmit={handleSubmit} noValidate>
+              <label htmlFor="fwl-email-input" className="fwl-sr-only">
+                Adresse email
+              </label>
+              <input
+                id="fwl-email-input"
+                type="email"
+                placeholder="Entrez votre email"
+                className="fwl-input"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                disabled={status === 'loading'}
+                required
+                autoComplete="email"
+              />
+              <button
+                type="submit"
+                className="fwl-btn"
+                disabled={status === 'loading'}
+              >
+                {status === 'loading' ? "Envoi…" : "Rejoindre la liste d’attente"}
+              </button>
+            </form>
+
+            {message && (
+              <p className={`fwl-msg fwl-msg--${status}`} role="status">
+                {message}
+              </p>
+            )}
+
+            <p className="fwl-reassurance">
+              Nous vous écrirons seulement lorsque Bellajour aura quelque chose d&rsquo;important à vous montrer.
+            </p>
+          </>
         )}
 
-        {/* Encart parrainage inline — desktop uniquement */}
-        <div className={`fwl-referral-wrap${inlineOpen ? ' fwl-referral-wrap--open' : ''}`}>
-          <div className="fwl-referral-inner">
-            <div className="fwl-referral-block">
-              <span className="fwl-referral-eyebrow">Parrainage Bellajour</span>
-              <h3 className="fwl-referral-titre">
-                Gagnez&nbsp;<em>5&nbsp;€</em> pour chaque<br />
-                proche que vous invitez
-              </h3>
-              <div className="fwl-referral-link-row">
-                <input
-                  type="text"
-                  className="fwl-referral-input"
-                  value={`${typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.com'}/r/${referralCode ?? 'VOTRECODE'}`}
-                  readOnly
-                  onFocus={e => e.target.select()}
-                />
-                <button className="fwl-referral-share-btn" onClick={handleDesktopShare}>
-                  Partager mon lien
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 5. Micro-réassurance */}
-        <p className="fwl-reassurance">
-          Nous vous écrirons seulement lorsque Bellajour aura quelque chose d&rsquo;important à vous montrer.
-        </p>
-
-        {/* 6. Ticker dates */}
+        {/* Ticker dates */}
         <DateTicker />
 
-        {/* 7. Intro chapitres */}
+        {/* Intro chapitres */}
         <p className="fwl-chapitres-intro">
           Trois attentions réservées aux premiers inscrits.
         </p>
 
-        {/* 8. Cartes chapitres */}
+        {/* Cartes chapitres */}
         <div className="fwl-chapitres">
           {CHAPITRES.map(c => (
             <WaitlistChapterCard key={c.num} {...c} />
@@ -254,45 +265,6 @@ export default function FinalWaitlist() {
         </div>
 
       </div>
-
-      {/* Sheet parrainage mobile */}
-      <div
-        className={`fwl-mobile-backdrop${inlineOpen ? ' fwl-mobile-backdrop--open' : ''}`}
-        onClick={() => setInlineOpen(false)}
-        aria-hidden="true"
-      />
-      <div
-        className={`fwl-mobile-sheet${inlineOpen ? ' fwl-mobile-sheet--open' : ''}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Votre lien de parrainage Bellajour"
-      >
-        <button
-          className="fwl-mobile-close"
-          onClick={() => setInlineOpen(false)}
-          aria-label="Fermer"
-        >
-          &#x2715;
-        </button>
-        <span className="fwl-referral-eyebrow">Parrainage Bellajour</span>
-        <h3 className="fwl-referral-titre">
-          Gagnez&nbsp;<em>5&nbsp;€</em> pour chaque<br />
-          proche que vous invitez
-        </h3>
-        <div className="fwl-referral-link-row">
-          <input
-            type="text"
-            className="fwl-referral-input"
-            value={`${typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.com'}/r/${referralCode ?? 'VOTRECODE'}`}
-            readOnly
-            onFocus={e => e.target.select()}
-          />
-          <button className="fwl-referral-share-btn" onClick={handleDesktopShare}>
-            Partager mon lien
-          </button>
-        </div>
-      </div>
-
     </section>
   )
 }
