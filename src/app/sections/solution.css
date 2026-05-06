@@ -189,6 +189,8 @@
   transform: translateY(900px);
   transition: transform 1.2s cubic-bezier(0.55, 0, 1, 0.45);
   will-change: transform;
+  border-radius: var(--bj-radius-lg);
+  overflow: hidden;
 }
 .sol-upload-square--risen { transform: translateY(0); }
 

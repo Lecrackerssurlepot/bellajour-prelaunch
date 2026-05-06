@@ -129,12 +129,10 @@
   align-items: center;
   background: rgba(255, 255, 255, 0.65);
   border: 0.5px solid rgba(23, 20, 15, 0.10);
-  border-radius: 999px;
+  border-radius: var(--bj-radius-md);
   padding: 5px;
   width: min(580px, 92vw);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 8px 24px -16px rgba(23, 20, 15, 0.18);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   margin-bottom: 0;
 }
 
@@ -161,7 +159,7 @@
   background: rgba(119, 136, 153, 0.15);
   color: var(--bj-gold);
   border: 1px solid rgba(119, 136, 153, 0.30);
-  border-radius: 999px;
+  border-radius: var(--bj-radius-md);
   font-family: var(--bj-font-sans);
   font-size: clamp(13px, 1.1vw, 16px);
   font-weight: 400;
@@ -329,21 +327,11 @@
 }
 
 .fwl-card {
-  background: rgba(255, 255, 255, 0.38);
-  backdrop-filter: blur(28px) saturate(1.3);
-  -webkit-backdrop-filter: blur(28px) saturate(1.3);
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  border-radius: 24px;
+  background: rgba(23, 20, 15, 0.03);
+  border-radius: var(--bj-radius-lg);
   padding: 44px 36px 48px;
   position: relative;
   cursor: default;
-  transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@media (hover: hover) {
-  .fwl-card:hover {
-    transform: translateY(-6px) scale(1.02);
-  }
 }
 
 /* Ligne verticale de reliure */
@@ -355,7 +343,6 @@
   bottom: 0;
   width: 1px;
   background: rgba(23, 20, 15, 0.08);
-  border-radius: 1px 0 0 1px;
 }
 
 /* Numéro discret */
@@ -424,7 +411,7 @@
 
   .fwl-form {
     flex-wrap: wrap;
-    border-radius: 12px;
+    border-radius: var(--bj-radius-md);
     gap: 8px;
     padding: 10px;
   }
@@ -436,7 +423,7 @@
 
   .fwl-btn {
     width: 100%;
-    border-radius: 8px;
+    border-radius: var(--bj-radius-md);
     height: clamp(44px, 6vh, 52px);
     justify-content: center;
   }
@@ -482,7 +469,7 @@
   .fwl-referral-block {
     background: #F7F2EB;
     border: 0.5px solid rgba(23, 20, 15, 0.08);
-    border-radius: 8px;
+    border-radius: var(--bj-radius-lg);
     padding: clamp(24px, 3.5vh, 36px) clamp(22px, 2.8vw, 36px);
     text-align: left;
   }
@@ -525,7 +512,7 @@
     padding: 0 clamp(16px, 1.8vw, 22px);
     background: rgba(255, 255, 255, 0.70);
     border: 0.5px solid rgba(23, 20, 15, 0.12);
-    border-radius: 999px;
+    border-radius: var(--bj-radius-md);
     outline: none;
     font-family: var(--bj-font-sans);
     font-size: clamp(12px, 1vw, 14px);
@@ -543,7 +530,7 @@
     background: rgba(119, 136, 153, 0.15);
     color: var(--bj-gold);
     border: 1px solid rgba(119, 136, 153, 0.30);
-    border-radius: 999px;
+    border-radius: var(--bj-radius-md);
     font-family: var(--bj-font-sans);
     font-size: clamp(13px, 1vw, 15px);
     font-weight: 400;
@@ -611,7 +598,7 @@
     height: 30px;
     border: none;
     background: rgba(23, 20, 15, 0.07);
-    border-radius: 50%;
+    border-radius: var(--bj-radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -662,7 +649,7 @@
     padding: 0 clamp(16px, 4vw, 22px);
     background: rgba(255, 255, 255, 0.70);
     border: 0.5px solid rgba(23, 20, 15, 0.12);
-    border-radius: 999px;
+    border-radius: var(--bj-radius-md);
     outline: none;
     font-family: var(--bj-font-sans);
     font-size: clamp(12px, 3.5vw, 14px);
@@ -680,7 +667,7 @@
     background: rgba(119, 136, 153, 0.15);
     color: var(--bj-gold);
     border: 1px solid rgba(119, 136, 153, 0.30);
-    border-radius: 999px;
+    border-radius: var(--bj-radius-md);
     font-family: var(--bj-font-sans);
     font-size: clamp(14px, 4vw, 16px);
     font-weight: 400;
@@ -874,11 +861,9 @@
   align-items: center;
   background: rgba(255, 255, 255, 0.65);
   border: 0.5px solid rgba(23, 20, 15, 0.10);
-  border-radius: 999px;
+  border-radius: var(--bj-radius-md);
   padding: 5px;
   width: min(480px, 92vw);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .fwl-prenom-input {
@@ -903,7 +888,7 @@
   background: var(--bj-gold);
   color: #ffffff;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--bj-radius-md);
   font-family: var(--bj-font-sans);
   font-size: clamp(14px, 1.15vw, 17px);
   font-weight: 400;
@@ -919,7 +904,7 @@
   .fwl-prenom-form {
     width: 94vw;
     flex-wrap: wrap;
-    border-radius: 18px;
+    border-radius: var(--bj-radius-md);
     padding: 6px;
     gap: 6px;
   }
@@ -932,6 +917,6 @@
     width: 100%;
     flex: none;
     height: 52px;
-    border-radius: 12px;
+    border-radius: var(--bj-radius-md);
   }
 }

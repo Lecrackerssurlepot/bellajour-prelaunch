@@ -62,7 +62,7 @@
 .anx-cell {
   flex: 1;
   overflow: hidden;
-  border-radius: 2px;
+  border-radius: var(--bj-radius-sm);
   min-height: 0;
   transition: opacity 0.2s ease;
 }
@@ -188,7 +188,7 @@
 
 .anx-cp {
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: var(--bj-radius-sm);
   background: #0a0807;
 }
 .anx-cp img {

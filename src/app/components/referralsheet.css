@@ -50,7 +50,7 @@
   width: 36px;
   height: 4px;
   background: rgba(23, 20, 15, 0.14);
-  border-radius: 2px;
+  border-radius: var(--bj-radius-sm);
   margin: 0 auto 20px;
 }
 
@@ -63,7 +63,7 @@
   height: 30px;
   border: none;
   background: rgba(23, 20, 15, 0.07);
-  border-radius: 50%;
+  border-radius: var(--bj-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -138,7 +138,7 @@
   align-items: center;
   background: rgba(255, 255, 255, 0.70);
   border: 0.5px solid rgba(23, 20, 15, 0.12);
-  border-radius: 999px;
+  border-radius: var(--bj-radius-md);
   padding: 5px 5px 5px clamp(16px, 2vw, 22px);
   gap: 8px;
 }
@@ -168,7 +168,7 @@
   height: clamp(36px, 5vh, 44px);
   padding: 0 clamp(16px, 2vw, 22px);
   border: 1px solid rgba(119, 136, 153, 0.30);
-  border-radius: 999px;
+  border-radius: var(--bj-radius-md);
   font-family: var(--bj-font-sans);
   font-size: clamp(12px, 0.95vw, 14px);
   font-weight: 400;
@@ -200,7 +200,7 @@
   background: rgba(119, 136, 153, 0.15);
   color: var(--bj-gold);
   border: 1px solid rgba(119, 136, 153, 0.30);
-  border-radius: 999px;
+  border-radius: var(--bj-radius-md);
   font-family: var(--bj-font-sans);
   font-size: clamp(14px, 1.1vw, 16px);
   font-weight: 400;
@@ -245,7 +245,7 @@
     left: auto;
     right: auto;
     margin: 0 auto 40px;
-    border-radius: 16px;
+    border-radius: var(--bj-radius-lg);
     max-width: 520px;
     width: 100%;
     transform: translateY(120%);

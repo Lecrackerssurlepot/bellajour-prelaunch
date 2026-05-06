@@ -134,7 +134,6 @@ const UploadVisual = memo(function UploadVisual({ active, onComplete }: { active
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div ref={squareRef} className="sol-upload-square" style={{
           position: 'relative', width: 260, height: 260, flexShrink: 0,
-          borderRadius: 16, overflow: 'hidden',
         }}>
           <img ref={imgARef} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 1, zIndex: 2 }} />
           <img ref={imgBRef} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0, zIndex: 1 }} />

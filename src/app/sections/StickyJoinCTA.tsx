@@ -12,7 +12,7 @@ interface SectionConfig {
 }
 
 const SECTIONS: SectionConfig[] = [
-  { id: 'hero',         theme: 'light', hidden: true },
+  { id: 'hero',         theme: 'light' },
   { id: 'anxiete',      theme: 'dark' },
   { id: 'solution',     theme: 'light' },
   { id: 'album',        theme: 'dark' },
@@ -26,26 +26,19 @@ export default function StickyJoinCTA() {
   const [dark, setDark] = useState(false)
 
   useEffect(() => {
-    console.log('StickyJoinCTA mounted')
     const getSectionId = (): SectionConfig | null => {
       const scrollY = window.scrollY + window.innerHeight * 0.5
-      console.log('scrollY mid:', scrollY)
       for (const config of SECTIONS) {
         const el = document.getElementById(config.id)
-        if (!el) {
-          console.log('MISSING id:', config.id)
-          continue
-        }
+        if (!el) continue
         const top = el.offsetTop
         const bottom = top + el.offsetHeight
-        console.log(config.id, '→ top:', top, 'bottom:', bottom, 'match:', scrollY >= top && scrollY < bottom)
         if (scrollY >= top && scrollY < bottom) return config
       }
       return null
     }
 
     const onScroll = () => {
-      console.log('scroll fired')
       const config = getSectionId()
       if (!config) return
       setVisible(!config.hidden)

@@ -16,6 +16,16 @@
   --bj-max-width: 1440px;
   --bj-font-serif: 'Cormorant', serif;
   --bj-font-sans: 'DM Sans', sans-serif;
+
+  /* ── Radius système éditorial ── */
+  --bj-radius-sm: 4px;   /* badges, tags, petits éléments */
+  --bj-radius-md: 10px;  /* boutons, inputs, formulaires  */
+  --bj-radius-lg: 12px;  /* cartes, modals desktop        */
+
+  /* ── Glass — uniquement sur contenu photo/media en dessous ── */
+  --bj-glass-blur:   blur(10px);
+  --bj-glass-bg:     rgba(255, 255, 255, 0.62);
+  --bj-glass-border: rgba(255, 255, 255, 0.45);
 }
 
 html, body {
