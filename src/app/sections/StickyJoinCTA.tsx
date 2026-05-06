@@ -62,9 +62,9 @@ export default function StickyJoinCTA() {
     <button
       className={`sjc${visible ? ' sjc--visible' : ''}${dark ? ' sjc--dark' : ''}`}
       onClick={handleClick}
-      aria-label="Rejoindre la liste d'attente"
+      aria-label="Réserver ma place"
     >
-      <span className="sjc-text">Rejoindre la liste</span>
+      <span className="sjc-text">Réserver ma place</span>
       <img
         src="/images/ui/signature.svg"
         alt=""

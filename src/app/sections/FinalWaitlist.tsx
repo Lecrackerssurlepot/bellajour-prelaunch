@@ -299,7 +299,7 @@ export default function FinalWaitlist() {
                 autoComplete="email"
               />
               <button type="submit" className="fwl-btn" disabled={loading}>
-                {loading ? 'Vérification…' : 'Rejoindre la liste d’attente'}
+                {loading ? "Vérification…" : "Réserver ma place"}
               </button>
             </form>
             {errorMsg && (

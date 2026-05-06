@@ -289,18 +289,18 @@ export default function Hero() {
             </div>
           )}
 
-          <div className="hero-badge">
-            <span>WAITLIST OUVERTE</span>
-          </div>
-
-          <div className="hero-count">
-            <span className="hero-count-dot" />
-            {displayCount} personnes sur la liste
+          <div className="hero-prelaunch">
+            <p className="hero-prelaunch-date">
+              <span className="hero-prelaunch-dash">───</span>
+              {' '}PRÉ-VENTE LE 1<sup>ER</sup> JUIN{' '}
+              <span className="hero-prelaunch-dash">───</span>
+            </p>
+            <p className="hero-prelaunch-sub">Accès anticipé pour les inscrits</p>
           </div>
         </div>
 
         <a href="#anxiete" onClick={handleDiscover} className="hero-discover">
-          En savoir plus
+          Découvrir Bellajour
         </a>
       </section>
     </>

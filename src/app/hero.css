@@ -134,55 +134,48 @@
 .hero-msg--error   { color: #B0413E; }
 
 /* ── Badge "WAITLIST OUVERTE" ── */
-.hero-badge {
+/* ── Bloc pré-vente ── */
+.hero-prelaunch {
   margin-top: clamp(20px, 3.5vh, 32px);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 6px;
 }
-.hero-badge::before,
-.hero-badge::after {
-  content: '';
-  display: block;
-  width: clamp(40px, 5.5vw, 70px);
-  height: 0.5px;
-  background: rgba(23, 20, 15, 0.25);
-}
-.hero-badge span {
-  font-family: var(--bj-font-sans);
-  font-size: clamp(10px, 0.8vw, 13px);
+
+.hero-prelaunch-date {
+  margin: 0;
+  font-family: var(--bj-font-serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(11px, 0.85vw, 13px);
   letter-spacing: 0.28em;
-  text-transform: uppercase;
   color: var(--bj-muted);
   white-space: nowrap;
 }
 
-/* ── Compteur dynamique ── */
-.hero-count {
-  margin-top: clamp(10px, 1.5vh, 14px);
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.hero-prelaunch-date sup {
+  font-size: 0.65em;
+  vertical-align: super;
+  letter-spacing: 0.1em;
+}
+
+.hero-prelaunch-dash {
+  color: var(--bj-gold);
+}
+
+.hero-prelaunch-sub {
+  margin: 0;
   font-family: var(--bj-font-sans);
-  font-size: clamp(13px, 1vw, 15px);
-  color: var(--bj-text);
-  letter-spacing: 0.01em;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1);    box-shadow: 0 0 0 0   rgba(119,136,153,0.5); }
-  50%       { opacity: 0.5; transform: scale(0.85); box-shadow: 0 0 0 5px rgba(119,136,153,0); }
-}
-
-.hero-count-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--bj-gold);
-  flex-shrink: 0;
-  animation: pulse 2s ease-in-out infinite;
+  font-weight: 300;
+  font-size: clamp(9px, 0.7vw, 11px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--bj-muted);
+  opacity: 0.7;
 }
 
-/* ── En savoir plus ── */
+/* ── Découvrir Bellajour ── */
 .hero-discover {
   position: absolute;
   bottom: clamp(20px, 4vh, 44px);
@@ -269,8 +262,7 @@
 }
 
 /* Badge + compteur restent lisibles par-dessus les photos */
-.hero-badge,
-.hero-count { position: relative; }
+.hero-prelaunch { position: relative; }
 
 /* ── Animations ── */
 @keyframes hero-fade {
