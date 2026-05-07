@@ -165,12 +165,12 @@ const ETAPES = [
   {
     num: '03',
     titre: "La sélection",
-    lines: ["NOTRE ÉQUIPE SÉLECTIONNE", "VOS MEILLEURS SOUVENIRS."],
+    lines: ["BELLAJOUR SÉLECTIONNE", "VOS MEILLEURS SOUVENIRS."],
   },
   {
     num: '04',
     titre: "La mise en page",
-    lines: ["VOTRE ALBUM PREND FORME.", "VOUS N’AVEZ PLUS QU’À L’ATTENDRE."],
+    lines: ["VOTRE ALBUM PREND FORME.", "VOUS N’AVEZ PLUS QU’À L’ADMIRER."],
   },
 ]
 

@@ -11,7 +11,7 @@
   align-items: center;
   padding: 16px 0;
   z-index: 50;
-  transition: background 0.3s, backdrop-filter 0.3s;
+  transition: background 0.4s, backdrop-filter 0.4s;
 }
 .hero-nav--scrolled {}
 .hero-nav-logo {
@@ -79,10 +79,9 @@
   align-items: center;
   background: var(--bj-glass-bg);
   border: 0.5px solid var(--bj-glass-border);
-  border-radius: var(--bj-radius-md);
+  border-radius: 10px;
   padding: 5px;
   width: min(580px, 92vw);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 8px 24px -16px rgba(23, 20, 15, 0.18);
   backdrop-filter: var(--bj-glass-blur);
   -webkit-backdrop-filter: var(--bj-glass-blur);
 }
@@ -106,18 +105,23 @@
   height: clamp(48px, 6vh, 62px);
   padding: 0 clamp(24px, 2.8vw, 36px);
   background: var(--bj-gold);
-  color: #FFFFFF;
+  color: var(--bj-creme);
   border: none;
-  border-radius: var(--bj-radius-md);
+  border-radius: 10px;
   font-family: var(--bj-font-sans);
   font-size: clamp(14px, 1.15vw, 17px);
   font-weight: 400;
   letter-spacing: 0.01em;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity 0.3s, transform 0.15s;
+  transition: opacity 0.4s, transform 0.4s;
 }
-.hero-btn:hover:not(:disabled) { opacity: 0.9; }
+.hero-btn:hover:not(:disabled) {
+  opacity: 1;
+  background: var(--bj-noir);
+  color: var(--bj-creme);
+  transition: background 0.4s cubic-bezier(0.4,0,0.2,1), color 0.4s cubic-bezier(0.4,0,0.2,1);
+}
 .hero-btn:active:not(:disabled) { transform: scale(0.98); }
 .hero-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
@@ -131,7 +135,7 @@
   line-height: 1.4;
 }
 .hero-msg--success { color: var(--bj-gold); }
-.hero-msg--error   { color: #B0413E; }
+.hero-msg--error   { color: var(--bj-muted); }
 
 /* ── Badge "WAITLIST OUVERTE" ── */
 /* ── Bloc pré-vente ── */
@@ -254,7 +258,7 @@
 .frame {
   position: relative;
   overflow: hidden;
-  border-radius: var(--bj-radius-lg);
+  border-radius: 12px;
 }
 .frame img {
   width: 100%;
@@ -361,10 +365,11 @@
 }
 
 .hero-confirm-code {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'DM Sans', sans-serif;
+  font-style: italic;
+  font-weight: 300;
   font-size: clamp(20px, 2.8vw, 38px);
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   color: var(--bj-gold);
   margin-bottom: clamp(14px, 2vh, 24px);
 }
@@ -380,8 +385,11 @@
 .hero-confirm-link-text {
   flex: 1;
   min-width: 0;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'DM Sans', sans-serif;
+  font-style: italic;
+  font-weight: 300;
   font-size: clamp(9px, 0.65vw, 11px);
+  letter-spacing: 0.12em;
   color: var(--bj-text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -404,9 +412,14 @@
   letter-spacing: 0.06em;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity 0.3s;
+  transition: opacity 0.4s;
 }
-.hero-confirm-copy-btn:hover { opacity: 0.85; }
+.hero-confirm-copy-btn:hover {
+  opacity: 1;
+  background: var(--bj-noir);
+  color: var(--bj-creme);
+  transition: background 0.4s cubic-bezier(0.4,0,0.2,1), color 0.4s cubic-bezier(0.4,0,0.2,1);
+}
 
 .hero-confirm-wa {
   display: inline-flex;
@@ -417,9 +430,14 @@
   color: #25D366;
   text-decoration: none;
   letter-spacing: 0.02em;
-  transition: opacity 0.3s;
+  transition: opacity 0.4s;
 }
-.hero-confirm-wa:hover { opacity: 0.85; }
+.hero-confirm-wa:hover {
+  opacity: 1;
+  background: var(--bj-noir);
+  color: var(--bj-creme);
+  transition: background 0.4s cubic-bezier(0.4,0,0.2,1), color 0.4s cubic-bezier(0.4,0,0.2,1);
+}
 
 @media (max-width: 767px) {
   .hero-confirm-link-row {
@@ -467,7 +485,7 @@
   }
 
   .hero-referral-block {
-    background: rgba(247, 242, 235, 0.85);
+    background: rgba(234, 227, 216, 0.85);
     border: 0.5px solid rgba(23, 20, 15, 0.08);
     border-radius: var(--bj-radius-lg);
     padding: clamp(24px, 3.5vh, 36px) clamp(22px, 2.8vw, 36px);
@@ -541,7 +559,12 @@
     transition: opacity 0.4s ease, transform 0.4s ease;
   }
 
-  .hero-referral-share-btn:hover  { opacity: 0.88; }
+  .hero-referral-share-btn:hover {
+    opacity: 1;
+    background: var(--bj-noir);
+    color: var(--bj-creme);
+    transition: background 0.4s cubic-bezier(0.4,0,0.2,1), color 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
   .hero-referral-share-btn:active { transform: scale(0.97); }
 }
 
@@ -577,7 +600,7 @@
     left: 0;
     right: 0;
     z-index: 200;
-    background: #F7F2EB;
+    background: var(--bj-beige);
     border-radius: 16px 16px 0 0;
     padding: clamp(24px, 5vw, 40px);
     padding-top: 52px;
@@ -606,7 +629,7 @@
     cursor: pointer;
     font-size: 14px;
     color: var(--bj-muted);
-    transition: background 0.2s;
+    transition: background 0.4s;
     line-height: 1;
     padding: 0;
   }
@@ -677,6 +700,11 @@
     transition: opacity 0.4s ease, transform 0.4s ease;
   }
 
-  .hero-mobile-sheet .hero-referral-share-btn:hover  { opacity: 0.88; }
+  .hero-mobile-sheet .hero-referral-share-btn:hover {
+    opacity: 1;
+    background: var(--bj-noir);
+    color: var(--bj-creme);
+    transition: background 0.4s cubic-bezier(0.4,0,0.2,1), color 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
   .hero-mobile-sheet .hero-referral-share-btn:active { transform: scale(0.97); }
 }

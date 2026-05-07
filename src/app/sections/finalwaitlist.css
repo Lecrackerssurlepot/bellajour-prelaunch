@@ -109,8 +109,20 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1);    box-shadow: 0 0 0 0   rgba(119,136,153,0.5); }
-  50%       { opacity: 0.5; transform: scale(0.85); box-shadow: 0 0 0 5px rgba(119,136,153,0); }
+  0%, 100% {
+    opacity: 1;
+    box-shadow:
+      0 0 0 2px rgba(100,149,237, 0.15),
+      0 0 8px 2px rgba(100,149,237, 0.35),
+      0 0 20px 4px rgba(100,149,237, 0.15);
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow:
+      0 0 0 2px rgba(100,149,237, 0.05),
+      0 0 4px 1px rgba(100,149,237, 0.15),
+      0 0 10px 2px rgba(100,149,237, 0.05);
+  }
 }
 
 .fwl-count-dot {
@@ -129,10 +141,9 @@
   align-items: center;
   background: rgba(255, 255, 255, 0.65);
   border: 0.5px solid rgba(23, 20, 15, 0.10);
-  border-radius: var(--bj-radius-md);
+  border-radius: 10px;
   padding: 5px;
   width: min(580px, 92vw);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 8px 24px -16px rgba(23, 20, 15, 0.18);
   margin-bottom: 0;
 }
 
@@ -159,17 +170,19 @@
   background: rgba(119, 136, 153, 0.15);
   color: var(--bj-gold);
   border: 1px solid rgba(119, 136, 153, 0.30);
-  border-radius: var(--bj-radius-md);
+  border-radius: 10px;
   font-family: var(--bj-font-sans);
   font-size: clamp(13px, 1.1vw, 16px);
   font-weight: 400;
   letter-spacing: 0.02em;
-  cursor: pointer;
   white-space: nowrap;
-  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  isolation: isolate;
 }
 
-.fwl-btn:hover:not(:disabled) { opacity: 0.88; }
 .fwl-btn:active:not(:disabled) { transform: scale(0.97); }
 .fwl-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
@@ -184,7 +197,7 @@
 }
 
 .fwl-msg--success { color: var(--bj-gold); }
-.fwl-msg--error   { color: #B0413E; }
+.fwl-msg--error   { color: var(--bj-muted); }
 
 /* ── Micro-réassurance ── */
 .fwl-reassurance {
@@ -325,14 +338,22 @@
   max-width: 1100px;
   margin: 0 auto;
   text-align: left;
+  overflow: visible;
 }
 
 .fwl-card {
   background: rgba(23, 20, 15, 0.03);
-  border-radius: var(--bj-radius-lg);
+  border-radius: 12px;
   padding: 44px 36px 48px;
   position: relative;
   cursor: default;
+  z-index: 1;
+  transition:
+    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    z-index 0s;
 }
 
 /* Ligne verticale de reliure */
@@ -370,7 +391,8 @@
 .fwl-card-titre {
   margin: 0 0 clamp(10px, 1.5vh, 16px);
   font-family: var(--bj-font-sans);
-  font-weight: 700;
+  font-weight: 300;
+  font-style: italic;
   font-size: 18px;
   letter-spacing: 0.20em;
   text-transform: uppercase;
@@ -384,8 +406,31 @@
   font-style: italic;
   font-weight: 300;
   font-size: 17px;
-  line-height: 1.65;
+  line-height: 1.7;
   color: var(--bj-muted);
+}
+
+/* ── Hover scale cartes — desktop uniquement ── */
+@media (min-width: 768px) {
+  .fwl-card:hover {
+    transform: scale(1.06);
+    z-index: 10;
+    background: rgba(119, 136, 153, 0.12);
+    border: 1px solid rgba(119, 136, 153, 0.35);
+  }
+
+  .fwl-chapitres:hover .fwl-card:not(:hover) {
+    opacity: 0.65;
+    transform: scale(0.97);
+  }
+
+  .fwl-chapitres:hover .fwl-card:hover .fwl-card-titre {
+    color: #778899;
+  }
+
+  .fwl-chapitres:hover .fwl-card:hover .fwl-card-num {
+    color: rgba(119, 136, 153, 0.6);
+  }
 }
 
 /* ── Label accessible masqué visuellement ── */
@@ -412,7 +457,7 @@
 
   .fwl-form {
     flex-wrap: wrap;
-    border-radius: var(--bj-radius-md);
+    border-radius: 10px;
     gap: 8px;
     padding: 10px;
   }
@@ -424,18 +469,22 @@
 
   .fwl-btn {
     width: 100%;
-    border-radius: var(--bj-radius-md);
+    border-radius: 10px;
     height: clamp(44px, 6vh, 52px);
     justify-content: center;
   }
 
   .fwl-chapitres {
+    display: grid;
     grid-template-columns: 1fr;
     gap: clamp(14px, 3vw, 20px);
   }
 
   .fwl-card {
     padding: clamp(24px, 4vh, 32px) clamp(20px, 5vw, 28px);
+    transition: none;
+    transform: none !important;
+    opacity: 1 !important;
   }
 }
 
@@ -468,9 +517,9 @@
   }
 
   .fwl-referral-block {
-    background: #F7F2EB;
+    background: var(--bj-beige);
     border: 0.5px solid rgba(23, 20, 15, 0.08);
-    border-radius: var(--bj-radius-lg);
+    border-radius: 12px;
     padding: clamp(24px, 3.5vh, 36px) clamp(22px, 2.8vw, 36px);
     text-align: left;
   }
@@ -513,7 +562,7 @@
     padding: 0 clamp(16px, 1.8vw, 22px);
     background: rgba(255, 255, 255, 0.70);
     border: 0.5px solid rgba(23, 20, 15, 0.12);
-    border-radius: var(--bj-radius-md);
+    border-radius: 10px;
     outline: none;
     font-family: var(--bj-font-sans);
     font-size: clamp(12px, 1vw, 14px);
@@ -531,7 +580,7 @@
     background: rgba(119, 136, 153, 0.15);
     color: var(--bj-gold);
     border: 1px solid rgba(119, 136, 153, 0.30);
-    border-radius: var(--bj-radius-md);
+    border-radius: 10px;
     font-family: var(--bj-font-sans);
     font-size: clamp(13px, 1vw, 15px);
     font-weight: 400;
@@ -541,7 +590,12 @@
     transition: opacity 0.4s ease, transform 0.4s ease;
   }
 
-  .fwl-referral-share-btn:hover  { opacity: 0.88; }
+  .fwl-referral-share-btn:hover {
+    opacity: 1;
+    background: var(--bj-gold);
+    color: var(--bj-beige);
+    transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
   .fwl-referral-share-btn:active { transform: scale(0.97); }
 }
 
@@ -577,7 +631,7 @@
     left: 0;
     right: 0;
     z-index: 200;
-    background: #F7F2EB;
+    background: var(--bj-beige);
     border-radius: 16px 16px 0 0;
     padding: clamp(24px, 5vw, 40px);
     padding-top: 52px;
@@ -599,14 +653,14 @@
     height: 30px;
     border: none;
     background: rgba(23, 20, 15, 0.07);
-    border-radius: var(--bj-radius-sm);
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     font-size: 14px;
     color: var(--bj-muted);
-    transition: background 0.2s;
+    transition: background 0.4s;
     line-height: 1;
     padding: 0;
   }
@@ -650,7 +704,7 @@
     padding: 0 clamp(16px, 4vw, 22px);
     background: rgba(255, 255, 255, 0.70);
     border: 0.5px solid rgba(23, 20, 15, 0.12);
-    border-radius: var(--bj-radius-md);
+    border-radius: 10px;
     outline: none;
     font-family: var(--bj-font-sans);
     font-size: clamp(12px, 3.5vw, 14px);
@@ -668,7 +722,7 @@
     background: rgba(119, 136, 153, 0.15);
     color: var(--bj-gold);
     border: 1px solid rgba(119, 136, 153, 0.30);
-    border-radius: var(--bj-radius-md);
+    border-radius: 10px;
     font-family: var(--bj-font-sans);
     font-size: clamp(14px, 4vw, 16px);
     font-weight: 400;
@@ -677,7 +731,12 @@
     transition: opacity 0.4s ease, transform 0.4s ease;
   }
 
-  .fwl-mobile-sheet .fwl-referral-share-btn:hover  { opacity: 0.88; }
+  .fwl-mobile-sheet .fwl-referral-share-btn:hover {
+    opacity: 1;
+    background: var(--bj-gold);
+    color: var(--bj-beige);
+    transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
   .fwl-mobile-sheet .fwl-referral-share-btn:active { transform: scale(0.97); }
 }
 
@@ -714,10 +773,11 @@
 }
 
 .fwl-confirm-code {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--bj-font-sans);
+  font-style: italic;
   font-size: clamp(28px, 4vw, 52px);
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font-weight: 300;
+  letter-spacing: 0.12em;
   color: var(--bj-gold);
   margin-bottom: clamp(24px, 4vh, 40px);
 }
@@ -743,8 +803,11 @@
 .fwl-confirm-link-text {
   flex: 1;
   min-width: 0;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--bj-font-sans);
+  font-style: italic;
+  font-weight: 300;
   font-size: clamp(10px, 0.8vw, 13px);
+  letter-spacing: 0.12em;
   color: var(--bj-text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -767,10 +830,15 @@
   letter-spacing: 0.06em;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.4s ease;
 }
 
-.fwl-confirm-copy-btn:hover { opacity: 0.85; }
+.fwl-confirm-copy-btn:hover {
+  opacity: 1;
+  background: var(--bj-noir);
+  color: var(--bj-creme);
+  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
 .fwl-confirm-wa-btn {
   display: inline-flex;
@@ -779,7 +847,7 @@
   height: 48px;
   padding: 0 28px;
   background: #25D366;
-  color: #fff;
+  color: #ffffff;
   border: none;
   text-decoration: none;
   font-family: var(--bj-font-sans);
@@ -787,10 +855,14 @@
   letter-spacing: 0.03em;
   cursor: pointer;
   margin-bottom: clamp(28px, 4vh, 44px);
-  transition: opacity 0.3s ease;
+  transition: opacity 0.4s ease;
 }
 
-.fwl-confirm-wa-btn:hover { opacity: 0.88; }
+.fwl-confirm-wa-btn:hover {
+  opacity: 1;
+  background: #1da851;
+  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
 .fwl-confirm-footer {
   margin: 0;
@@ -862,7 +934,7 @@
   align-items: center;
   background: rgba(255, 255, 255, 0.65);
   border: 0.5px solid rgba(23, 20, 15, 0.10);
-  border-radius: var(--bj-radius-md);
+  border-radius: 10px;
   padding: 5px;
   width: min(480px, 92vw);
 }
@@ -886,26 +958,68 @@
   flex-shrink: 0;
   height: clamp(48px, 6vh, 62px);
   padding: 0 clamp(24px, 2.8vw, 36px);
-  background: var(--bj-gold);
-  color: #ffffff;
-  border: none;
-  border-radius: var(--bj-radius-md);
+  background: rgba(119, 136, 153, 0.15);
+  color: var(--bj-gold);
+  border: 1px solid rgba(119, 136, 153, 0.30);
+  border-radius: 10px;
   font-family: var(--bj-font-sans);
   font-size: clamp(14px, 1.15vw, 17px);
   font-weight: 400;
-  cursor: pointer;
   white-space: nowrap;
-  transition: opacity 0.3s;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  isolation: isolate;
 }
 
-.fwl-prenom-btn:hover:not(:disabled) { opacity: 0.9; }
 .fwl-prenom-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Wipe gauche→droite au hover (partagé fwl-btn + fwl-prenom-btn) ── */
+.fwl-btn::before,
+.fwl-prenom-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #778899;
+  transform: translateX(-101%);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+
+.fwl-btn > span,
+.fwl-prenom-btn > span {
+  position: relative;
+  z-index: 1;
+}
+
+.fwl-btn:hover:not(:disabled)::before,
+.fwl-prenom-btn:hover:not(:disabled)::before {
+  transform: translateX(0);
+}
+
+.fwl-btn:hover:not(:disabled),
+.fwl-prenom-btn:hover:not(:disabled) {
+  color: #EAE3D8;
+}
+
+.fwl-btn:active:not(:disabled),
+.fwl-prenom-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+.fwl-btn:focus-visible,
+.fwl-prenom-btn:focus-visible {
+  outline: 2px solid #A89880;
+  outline-offset: 3px;
+}
 
 @media (max-width: 767px) {
   .fwl-prenom-form {
     width: 94vw;
     flex-wrap: wrap;
-    border-radius: var(--bj-radius-md);
+    border-radius: 10px;
     padding: 6px;
     gap: 6px;
   }
@@ -918,6 +1032,6 @@
     width: 100%;
     flex: none;
     height: 52px;
-    border-radius: var(--bj-radius-md);
+    border-radius: 10px;
   }
 }

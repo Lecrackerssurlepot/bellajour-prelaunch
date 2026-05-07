@@ -27,7 +27,7 @@
 .sjc-text {
   display: block;
   font-family: 'Cormorant', serif;
-  font-weight: 400;
+  font-weight: 300;
   font-size: clamp(18px, 1.5vw, 24px);
   letter-spacing: 0.03em;
   color: var(--bj-text);

@@ -12,7 +12,7 @@
   height: 100vh;
   width: 100%;
   overflow: hidden;
-  background: #17140F;
+  background: var(--bj-noir);
 }
 
 /* ── Décor ── */

@@ -85,7 +85,7 @@
   line-height: 1.35;
   color: var(--bj-text);
   letter-spacing: -0.01em;
-  transition: color 0.25s var(--bj-ease-premium);
+  transition: color 0.4s var(--bj-ease-premium);
 }
 
 .faq-item--open .faq-question-text {
@@ -100,7 +100,7 @@
   font-weight: 300;
   line-height: 1;
   color: var(--bj-muted);
-  transition: color 0.25s var(--bj-ease-premium), transform 0.35s var(--bj-ease-premium);
+  transition: color 0.4s var(--bj-ease-premium), transform 0.4s var(--bj-ease-premium);
 }
 
 .faq-item--open .faq-icon {

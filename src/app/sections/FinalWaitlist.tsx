@@ -266,7 +266,7 @@ export default function FinalWaitlist() {
                 autoComplete="given-name"
               />
               <button type="submit" className="fwl-prenom-btn" disabled={loading}>
-                {loading ? 'Envoi…' : 'Continuer'}
+                <span>{loading ? 'Envoi…' : 'Continuer'}</span>
               </button>
             </form>
             {errorMsg && (
@@ -299,7 +299,7 @@ export default function FinalWaitlist() {
                 autoComplete="email"
               />
               <button type="submit" className="fwl-btn" disabled={loading}>
-                {loading ? "Vérification…" : "Réserver ma place"}
+                <span>{loading ? "Vérification…" : "Réserver ma place"}</span>
               </button>
             </form>
             {errorMsg && (

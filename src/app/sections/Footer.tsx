@@ -9,18 +9,15 @@ export default function Footer() {
         {/* Gauche — tagline + liens */}
         <div className="footer-left">
           <p className="footer-tagline">Vivez. Nous composons.</p>
+          <p className="footer-contact-label">Une question&nbsp;? &Eacute;crivez-nous&nbsp;:</p>
           <nav className="footer-links" aria-label="Liens footer">
             <a href="mailto:contact@bellajour.com" className="footer-link">
               contact@bellajour.com
             </a>
             <span className="footer-sep" aria-hidden="true">&middot;</span>
-            <a href="/mentions-legales" className="footer-link">
-              Mentions l&eacute;gales
-            </a>
+            <span className="footer-link">Mentions l&eacute;gales</span>
             <span className="footer-sep" aria-hidden="true">&middot;</span>
-            <a href="/confidentialite" className="footer-link">
-              Confidentialit&eacute;
-            </a>
+            <span className="footer-link">Confidentialit&eacute;</span>
           </nav>
         </div>
 

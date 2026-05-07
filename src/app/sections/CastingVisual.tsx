@@ -19,13 +19,15 @@ const CastingVisual = memo(function CastingVisual({
   active: number
   onComplete: () => void
 }) {
-  const wrapRef        = useRef<HTMLDivElement>(null)
-  const colRightRef    = useRef<HTMLDivElement>(null)
-  const circleLeftRef  = useRef<HTMLDivElement>(null)
-  const circleMidRef   = useRef<HTMLDivElement>(null)
-  const circleRightRef = useRef<HTMLDivElement>(null)
-  const nameLeftRef    = useRef<HTMLSpanElement>(null)
-  const nameMidRef     = useRef<HTMLSpanElement>(null)
+  const wrapRef           = useRef<HTMLDivElement>(null)
+  const colRightRef       = useRef<HTMLDivElement>(null)
+  const circleLeftRef     = useRef<HTMLDivElement>(null)
+  const circleMidRef      = useRef<HTMLDivElement>(null)
+  const circleRightRef    = useRef<HTMLDivElement>(null)
+  const nameLeftRef       = useRef<HTMLSpanElement>(null)
+  const nameMidRef        = useRef<HTMLSpanElement>(null)
+  const typewriteMidRef   = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
+  const typewriteLeftRef  = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
 
   useEffect(() => {
     if (active !== 1) return
@@ -55,7 +57,6 @@ const CastingVisual = memo(function CastingVisual({
     wrap.style.transition  = ''
 
     const timers: ReturnType<typeof setTimeout>[] = []
-    let typewriteInterval: ReturnType<typeof setInterval> | undefined
 
     const t = (ms: number, fn: () => void) => { timers.push(setTimeout(fn, ms)) }
 
@@ -86,10 +87,10 @@ const CastingVisual = memo(function CastingVisual({
     t(1600, () => {
       let i = 0
       const delay = Math.floor(500 / PRENOM_MID.length)
-      typewriteInterval = setInterval(() => {
+      typewriteMidRef.current = setInterval(() => {
         i++
         nameMid.textContent = PRENOM_MID.slice(0, i)
-        if (i >= PRENOM_MID.length) clearInterval(typewriteInterval)
+        if (i >= PRENOM_MID.length) clearInterval(typewriteMidRef.current)
       }, delay)
     })
 
@@ -117,10 +118,10 @@ const CastingVisual = memo(function CastingVisual({
     t(4300, () => {
       let i = 0
       const delay = Math.floor(600 / PRENOM_LEFT.length)
-      typewriteInterval = setInterval(() => {
+      typewriteLeftRef.current = setInterval(() => {
         i++
         nameLeft.textContent = PRENOM_LEFT.slice(0, i)
-        if (i >= PRENOM_LEFT.length) clearInterval(typewriteInterval)
+        if (i >= PRENOM_LEFT.length) clearInterval(typewriteLeftRef.current)
       }, delay)
     })
 
@@ -129,7 +130,8 @@ const CastingVisual = memo(function CastingVisual({
 
     return () => {
       timers.forEach(clearTimeout)
-      clearInterval(typewriteInterval)
+      clearInterval(typewriteMidRef.current)
+      clearInterval(typewriteLeftRef.current)
       ;[circleLeft, circleMid, circleRight].forEach(c => {
         c.style.opacity    = '0'
         c.style.transform  = 'translateX(400px)'

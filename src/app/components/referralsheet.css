@@ -32,8 +32,7 @@
   transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
   max-width: 600px;
   margin: 0 auto;
-  /* Ombre portée vers le haut */
-  box-shadow: 0 -8px 48px -4px rgba(23, 20, 15, 0.14);
+
 }
 
 .rs-sheet--visible {
@@ -50,7 +49,7 @@
   width: 36px;
   height: 4px;
   background: rgba(23, 20, 15, 0.14);
-  border-radius: var(--bj-radius-sm);
+  border-radius: 0;
   margin: 0 auto 20px;
 }
 
@@ -63,14 +62,14 @@
   height: 30px;
   border: none;
   background: rgba(23, 20, 15, 0.07);
-  border-radius: var(--bj-radius-sm);
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   font-size: 14px;
   color: var(--bj-muted);
-  transition: background 0.2s;
+  transition: background 0.4s;
   line-height: 1;
   padding: 0;
 }
@@ -136,9 +135,9 @@
 .rs-link-row {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.70);
+  background: rgba(234, 227, 216, 0.70);
   border: 0.5px solid rgba(23, 20, 15, 0.12);
-  border-radius: var(--bj-radius-md);
+  border-radius: 0;
   padding: 5px 5px 5px clamp(16px, 2vw, 22px);
   gap: 8px;
 }
@@ -168,7 +167,7 @@
   height: clamp(36px, 5vh, 44px);
   padding: 0 clamp(16px, 2vw, 22px);
   border: 1px solid rgba(119, 136, 153, 0.30);
-  border-radius: var(--bj-radius-md);
+  border-radius: 0;
   font-family: var(--bj-font-sans);
   font-size: clamp(12px, 0.95vw, 14px);
   font-weight: 400;
@@ -179,7 +178,12 @@
   letter-spacing: 0.02em;
 }
 
-.rs-copy-btn:hover  { opacity: 0.88; }
+.rs-copy-btn:hover {
+  opacity: 1;
+  background: var(--bj-gold);
+  color: var(--bj-beige);
+  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
 .rs-copy-btn:active { transform: scale(0.97); }
 
 .rs-copy-btn--done {
@@ -200,7 +204,7 @@
   background: rgba(119, 136, 153, 0.15);
   color: var(--bj-gold);
   border: 1px solid rgba(119, 136, 153, 0.30);
-  border-radius: var(--bj-radius-md);
+  border-radius: 0;
   font-family: var(--bj-font-sans);
   font-size: clamp(14px, 1.1vw, 16px);
   font-weight: 400;
@@ -210,7 +214,12 @@
   transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.rs-share-btn:hover  { opacity: 0.88; }
+.rs-share-btn:hover {
+  opacity: 1;
+  background: var(--bj-gold);
+  color: var(--bj-beige);
+  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
 .rs-share-btn:active { transform: scale(0.97); }
 
 /* ── Note de bas ── */
@@ -245,7 +254,7 @@
     left: auto;
     right: auto;
     margin: 0 auto 40px;
-    border-radius: var(--bj-radius-lg);
+    border-radius: 0;
     max-width: 520px;
     width: 100%;
     transform: translateY(120%);

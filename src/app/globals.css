@@ -1,7 +1,12 @@
 :root {
-  --bj-bg: #F0EAE0;
-  --bj-text: #17140F;
+  --bj-bg: #EAE3D8;
+  --bj-beige: #EAE3D8;
+  --bj-noir: #1C1C1C;
+  --bj-text: #1C1C1C;
   --bj-muted: #7A6F62;
+  --bj-creme: #F0EBE1;
+  --bj-border: #2C2C2C;
+  --bj-border-light: rgba(234, 227, 216, 0.15);
   --bj-gold: #778899;
 
   --bj-section-padding-desktop: 120px;
@@ -13,19 +18,18 @@
   --bj-duration-medium: 420ms;
   --bj-duration-slow: 700ms;
 
-  --bj-max-width: 1440px;
+  --bj-max-width: 1200px;
   --bj-font-serif: 'Cormorant', serif;
   --bj-font-sans: 'DM Sans', sans-serif;
 
-  /* ── Radius système éditorial ── */
-  --bj-radius-sm: 4px;   /* badges, tags, petits éléments */
-  --bj-radius-md: 10px;  /* boutons, inputs, formulaires  */
-  --bj-radius-lg: 12px;  /* cartes, modals desktop        */
+  /* ── Radius ── */
+  --bj-radius: 0;
+  --bj-radius-glass: 24px;
 
   /* ── Glass — uniquement sur contenu photo/media en dessous ── */
   --bj-glass-blur:   blur(10px);
-  --bj-glass-bg:     rgba(255, 255, 255, 0.62);
-  --bj-glass-border: rgba(255, 255, 255, 0.45);
+  --bj-glass-bg:     rgba(234, 227, 216, 0.08);
+  --bj-glass-border: rgba(234, 227, 216, 0.15);
 }
 
 html, body {
