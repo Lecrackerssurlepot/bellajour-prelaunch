@@ -226,9 +226,10 @@ export default function Anxiete() {
   const headlineT    = easeOut3(clamp01((scrollProg - 0.88) / 0.10))
 
   const sub   = revealOp(scrollProg, 0.03)
-  const line1 = revealOp(scrollProg, 0.10)
+  const line1 = revealOp(scrollProg, 0.12)
   const bold  = revealOp(scrollProg, 0.22)
-  const line3 = revealOp(scrollProg, 0.34)
+  const line3 = revealOp(scrollProg, 0.32)
+  const line4 = revealOp(scrollProg, 0.42)
 
   return (
     <div
@@ -298,24 +299,27 @@ export default function Anxiete() {
           }}
         >
           <h2 className="anx-title">
-            Les souvenirs sont grav&eacute;s,<br />
-            vos photos sont l&agrave;.
+            Vous prenez des photos. Tout le temps.
           </h2>
           <p className="anx-subtitle" style={{ opacity: sub }}>
-            Votre album, lui, vous attend.
+            Le voyage de l&rsquo;&eacute;t&eacute; dernier est encore dans votre t&eacute;l&eacute;phone.
+            Celui d&rsquo;avant aussi.
           </p>
           <div className="anx-body">
             <p className="anx-line" style={{ opacity: line1 }}>
-              Mais quand on se lance&hellip; ce n&rsquo;est jamais qu&rsquo;un album.
+              Un soir, vous vous &ecirc;tes dit qu&rsquo;il faudrait en faire un album.
             </p>
             <p className="anx-line anx-line--bold" style={{ opacity: bold }}>
-              C&rsquo;est choisir. Renoncer. Organiser. Raconter.
+              L&rsquo;id&eacute;e est pass&eacute;e.
             </p>
             <p className="anx-line" style={{ opacity: line3 }}>
-              Et vos photos se perdent, se m&eacute;langent.
-              Les instants parfaits, les doublons, les presque parfaits.
-              Alors l&rsquo;album devient une t&acirc;che qu&rsquo;on reporte.
-              Encore et encore.
+              Parce qu&rsquo;au fond, trier, choisir, composer,
+              &ccedil;a prend des heures. Des soirs entiers.
+              Alors vous reportez.
+            </p>
+            <p className="anx-line" style={{ opacity: line4 }}>
+              Et pendant ce temps, ce qui n&rsquo;est pas dans un album finit par se perdre.
+              M&ecirc;me les plus beaux moments.
             </p>
           </div>
         </div>

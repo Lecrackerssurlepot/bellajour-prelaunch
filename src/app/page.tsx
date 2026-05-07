@@ -19,7 +19,7 @@ export default function Page() {
       </div>
 
       <div id="anxiete"><Anxiete /></div>
-      <div id="solution"><Solution /></div>
+      <div id="solution" style={{ scrollSnapAlign: 'start' }}><Solution /></div>
       <div id="album"><Album /></div>
       <div id="finalwaitlist"><FinalWaitlist /></div>
       <div id="faq"><FAQ /></div>

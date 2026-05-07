@@ -11,7 +11,7 @@
   justify-content: center;
   box-sizing: border-box;
   scroll-snap-align: start;
-  overflow: hidden;
+  overflow: clip;
 }
 
 .sol-inner {
@@ -30,7 +30,45 @@
   flex-direction: column;
   justify-content: center;
   padding: 0 clamp(32px, 5vw, 80px) 0 clamp(32px, 7vw, 120px);
-  overflow: hidden;
+  overflow: clip;
+}
+
+.sol-left::before {
+  content: '';
+  display: block;
+  height: clamp(100px, 14vh, 130px);
+  flex-shrink: 0;
+}
+
+.sol-header {
+  position: absolute;
+  top: 15vh;
+  left: 0;
+  right: 0;
+  padding: 0 clamp(32px, 5vw, 80px) clamp(16px, 2.5vh, 28px) calc(clamp(32px, 7vw, 120px) + 20px);
+  z-index: 1;
+}
+
+.sol-header-title {
+  margin: 0 0 6px;
+  font-family: var(--bj-font-serif);
+  font-weight: 600;
+  font-style: normal;
+  font-size: clamp(40px, 3.5vw, 58px);
+  color: var(--bj-text);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.sol-header-sub {
+  margin: 0;
+  font-family: var(--bj-font-sans);
+  font-weight: 400;
+  font-style: italic;
+  font-size: clamp(13px, 1vw, 16px);
+  color: var(--bj-gold);
+  letter-spacing: 0.12em;
+  line-height: 1.4;
 }
 
 .sol-step {
@@ -62,7 +100,8 @@
 .sol-step--active,
 .sol-step--prev {
   transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
-              transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+              transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .sol-num {
@@ -94,7 +133,7 @@
 }
 
 .sol-step--next   .sol-titre { font-size: clamp(26px, 2.8vw, 42px); }
-.sol-step--active .sol-titre { font-size: clamp(40px, 4.8vw, 72px); }
+.sol-step--active .sol-titre { font-size: clamp(32px, 3.8vw, 56px); }
 
 .sol-sous-titre {
   margin: clamp(12px, 2vh, 22px) 0 0;
@@ -219,6 +258,9 @@
   }
   .sol-left { padding: 0 6vw; }
   .sol-right { display: none; }
+  .sol-header { padding-left: 0; }
+  .sol-header-title { font-size: clamp(16px, 4.5vw, 20px); }
+  .sol-header-sub   { font-size: clamp(12px, 3.5vw, 15px); }
   .sol-step--active .sol-titre { font-size: clamp(28px, 7vw, 40px); }
   .sol-step--active .sol-num   { font-size: clamp(48px, 14vw, 72px); }
   .sol-step--next   .sol-titre { font-size: clamp(16px, 4vw, 22px); }

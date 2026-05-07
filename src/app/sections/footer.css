@@ -1,43 +1,47 @@
 /* ════════════════════════════════════════
-   Footer Bellajour — sobre, centré
+   Footer Bellajour — clair, mot géant
    ════════════════════════════════════════ */
 
 .footer {
   width: 100%;
-  background: var(--bj-bg);
-  border-top: 0.5px solid rgba(23, 20, 15, 0.10);
-  padding: clamp(48px, 8vh, 80px) 0 clamp(40px, 6vh, 64px);
+  background: #EAE3D8;
+  padding: clamp(48px, 8vh, 72px) clamp(32px, 6vw, 96px) 0;
+  overflow: hidden;
 }
 
-.footer-inner {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 0 clamp(20px, 5vw, 60px);
+/* ── Deux colonnes haut ── */
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: clamp(48px, 10vh, 100px);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Colonne gauche ── */
+.footer-left {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: clamp(24px, 3.5vh, 36px);
+  gap: clamp(10px, 1.8vh, 16px);
 }
 
-/* ── Logo ── */
-.footer-logo-wrap {
-  display: flex;
-  justify-content: center;
+.footer-tagline {
+  margin: 0;
+  font-family: var(--bj-font-serif);
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(18px, 1.6vw, 24px);
+  color: var(--bj-gold);
+  letter-spacing: 0.01em;
+  line-height: 1.2;
 }
 
-.footer-logo {
-  height: clamp(36px, 5vw, 52px);
-  display: block;
-  opacity: 0.85;
-}
-
-/* ── Liens nav ── */
-.footer-nav {
+.footer-links {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: 6px 12px;
+  gap: 5px 10px;
 }
 
 .footer-link {
@@ -46,35 +50,38 @@
   letter-spacing: 0.02em;
   color: var(--bj-muted);
   text-decoration: none;
-  transition: color 0.2s;
+  transition: color 0.22s;
 }
 
-.footer-link:hover {
-  color: var(--bj-text);
-}
+.footer-link:hover { color: var(--bj-text); }
 
 .footer-sep {
-  color: rgba(23, 20, 15, 0.22);
+  color: rgba(23, 20, 15, 0.20);
   font-size: 0.9em;
 }
 
-/* ── Instagram ── */
+/* ── Colonne droite ── */
+.footer-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: clamp(8px, 1.4vh, 14px);
+}
+
 .footer-insta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   text-decoration: none;
   color: var(--bj-muted);
-  transition: color 0.2s;
+  transition: color 0.22s;
 }
 
-.footer-insta:hover {
-  color: var(--bj-text);
-}
+.footer-insta:hover { color: var(--bj-text); }
 
 .footer-insta-icon {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
 }
 
@@ -84,25 +91,50 @@
   letter-spacing: 0.04em;
 }
 
-/* ── Mention légale bas ── */
-.footer-legal {
+.footer-copy {
   margin: 0;
   font-family: var(--bj-font-sans);
-  font-size: clamp(10px, 0.78vw, 12px);
+  font-size: clamp(10px, 0.75vw, 12px);
   letter-spacing: 0.02em;
   color: rgba(23, 20, 15, 0.35);
-  text-align: center;
-  line-height: 1.6;
+  text-align: right;
+}
+
+/* ── Mot géant coupé en bas ── */
+.footer-word {
+  display: block;
+  width: 100%;
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: clamp(120px, 18vw, 220px);
+  white-space: nowrap;
+  color: #1C1C1C;
+  opacity: 1;
+  line-height: 1;
+  margin: clamp(32px, 5vh, 56px) 0 0;
+  padding: 0;
+  transform: translateY(0.2em);
+  pointer-events: none;
+  user-select: none;
 }
 
 /* ── Mobile ── */
 @media (max-width: 767px) {
-  .footer-nav {
+  .footer-top {
     flex-direction: column;
-    gap: 10px;
+    align-items: flex-start;
+    gap: clamp(28px, 5vh, 40px);
   }
 
-  .footer-sep {
-    display: none;
+  .footer-right {
+    align-items: flex-start;
   }
+
+  .footer-links {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .footer-sep { display: none; }
 }

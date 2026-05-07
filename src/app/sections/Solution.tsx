@@ -177,6 +177,7 @@ const ETAPES = [
 const STEP_DURATION = 6000
 
 function getState(i: number, active: number): 'active' | 'next' | 'prev' | 'far' {
+  if (active < 0) return 'far'
   if (i === active) return 'active'
   if (i === (active + 1) % ETAPES.length) return 'next'
   if (i === (active - 1 + ETAPES.length) % ETAPES.length) return 'prev'
@@ -184,7 +185,7 @@ function getState(i: number, active: number): 'active' | 'next' | 'prev' | 'far'
 }
 
 export default function Solution() {
-  const [active, setActive] = useState(0)
+  const [active, setActive] = useState(-1)
   const [progress, setProgress] = useState(0)
   const sectionRef   = useRef<HTMLElement>(null)
   const stepStartRef = useRef(Date.now())
@@ -250,6 +251,10 @@ export default function Solution() {
 
         {/* ── Colonne gauche ── */}
         <div className="sol-left">
+          <div className="sol-header">
+            <p className="sol-header-title">Le parcours de création</p>
+            <p className="sol-header-sub">À vous la direction. À nous l&rsquo;exécution.</p>
+          </div>
           {ETAPES.map((e, i) => {
             const state = getState(i, active)
             const isActive = state === 'active'
@@ -297,7 +302,7 @@ export default function Solution() {
           {ETAPES.map((e, i) => (
             <div
               key={e.num}
-              className={`sol-visual${i === active ? ' sol-visual--active' : i === (active + 1) % ETAPES.length ? ' sol-visual--next' : ''}`}
+              className={`sol-visual${i === active ? ' sol-visual--active' : active >= 0 && i === (active + 1) % ETAPES.length ? ' sol-visual--next' : ''}`}
             >
               {i === 0 ? (
                 <UploadVisual active={active} onComplete={handleNextStep} />

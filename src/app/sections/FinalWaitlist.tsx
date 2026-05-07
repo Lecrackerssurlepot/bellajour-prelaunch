@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, type ReactNode } from 'react'
 import './finalwaitlist.css'
 
 /* ── Données ── */
@@ -10,21 +10,21 @@ const DATES = [
   { label: 'LANCEMENT',        date: '1 JUILLET' },
 ]
 
-const CHAPITRES = [
+const CHAPITRES: { num: string; titre: string; texte: ReactNode }[] = [
   {
     num: '01',
     titre: 'ACCÈS PRIORITAIRE',
-    texte: "Découvrez les préventes avant l'ouverture publique et réservez votre création Bellajour en priorité.",
+    texte: <>Découvrez les préventes avant l&rsquo;heure.<br />Réservez votre création Bellajour en avance.</>,
   },
   {
     num: '02',
-    titre: 'OFFRES DE LANCEMENT',
-    texte: "Des conditions réservées aux inscrits de la première heure, pensées pour accompagner les premiers albums Bellajour.",
+    titre: 'OFFRE FONDATEUR',
+    texte: <>Un tarif spécial pour les 100 premiers inscrits.<br />Une attention pour celles et ceux qui nous font confiance.</>,
   },
   {
     num: '03',
     titre: 'PARRAINAGE BELLAJOUR',
-    texte: "Faites découvrir Bellajour à vos proches et débloquez des avantages à mesure que votre cercle rejoint l'aventure.",
+    texte: <>Faites découvrir Bellajour à vos proches.<br />Une attention de 5&nbsp;€ vous est offerte à chaque parrainage.<br />Autant de fois que vous le souhaitez.</>,
   },
 ]
 
@@ -56,7 +56,7 @@ function DateTicker() {
   )
 }
 
-function WaitlistChapterCard({ num, titre, texte }: { num: string; titre: string; texte: string }) {
+function WaitlistChapterCard({ num, titre, texte }: { num: string; titre: string; texte: ReactNode }) {
   return (
     <article className="fwl-card">
       <span className="fwl-card-num">{num}</span>
@@ -314,7 +314,7 @@ export default function FinalWaitlist() {
         <DateTicker />
 
         <p className="fwl-chapitres-intro">
-          Trois attentions réservées aux premiers inscrits.
+          Trois attentions, réservées à la waitlist.
         </p>
 
         <div className="fwl-chapitres">

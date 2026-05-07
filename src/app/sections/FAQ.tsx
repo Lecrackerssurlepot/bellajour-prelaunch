@@ -8,47 +8,48 @@ const ITEMS = [
     q: 'Pourquoi rejoindre la liste maintenant\u00a0?',
     a: [
       "L\u2019inscription est gratuite, sans engagement, et vous permet d\u2019\u00eatre pr\u00e9venu avant l\u2019ouverture officielle de Bellajour.",
-      "Les premiers inscrits seront inform\u00e9s des prochaines \u00e9tapes, des premiers acc\u00e8s disponibles et des \u00e9ventuels avantages de lancement.",
-      "Pas de spam. Pas d\u2019emails inutiles. Et vous pouvez vous d\u00e9sinscrire \u00e0 tout moment.",
+      "En rejoignant la waitlist, vous devenez l\u2019un des premiers Fondateurs Bellajour\u00a0: acc\u00e8s aux pr\u00e9ventes avant le 1er juin, tarif exclusif pour les 100 premiers inscrits, et programme de parrainage d\u00e8s l\u2019ouverture.",
+      "Pas de spam. Pas d\u2019emails inutiles.",
     ],
   },
   {
     q: 'Combien co\u00fbtera un album Bellajour\u00a0?',
     a: [
-      "Le prix d\u00e9pendra du nombre de pages et des options choisies au moment de la cr\u00e9ation.",
-      "L\u2019objectif est de proposer un album premium, imprim\u00e9 avec soin, avec un prix clair et transparent avant toute commande.",
-      "Les personnes inscrites \u00e0 la liste d\u2019attente seront pr\u00e9venues en priorit\u00e9 des premi\u00e8res offres de lancement.",
+      "Bellajour est un service premium, mais pens\u00e9 pour rester accessible.",
+      "Son prix sera annonc\u00e9 d\u00e8s les pr\u00e9ventes du 1er juin, en toute transparence. Livraison incluse, sans surprise. C\u2019est quelque chose qui nous tient \u00e0 c\u0153ur.",
+      "Et en plus, chaque parrainage que vous effectuez vient directement r\u00e9duire le prix.",
     ],
   },
   {
     q: '\u00c0 qui s\u2019adresse Bellajour\u00a0?',
     a: [
-      "Bellajour s\u2019adresse aux personnes qui ont des centaines \u2014 parfois des milliers \u2014 de photos importantes, mais pas le temps, l\u2019\u00e9nergie ou l\u2019envie de les trier pour cr\u00e9er un vrai album.",
-      "Voyages, famille, couple, naissance, mariage, ann\u00e9e entre amis ou souvenirs du quotidien\u00a0: Bellajour transforme vos photos en une histoire que l\u2019on a enfin envie de feuilleter.",
+      "Bellajour s\u2019adresse aux personnes qui ont accumul\u00e9 des photos importantes, mais pas le temps, l\u2019\u00e9nergie ou l\u2019envie de les trier pour cr\u00e9er un vrai album.",
+      "Voyages, famille, couple, naissance, mariage, ann\u00e9e entre amis ou souvenirs du quotidien\u00a0: Bellajour compose une histoire que l\u2019on a enfin envie de feuilleter.",
     ],
   },
   {
     q: 'Quand Bellajour sera-t-il disponible\u00a0?',
     a: [
       "Bellajour est en cours de pr\u00e9paration.",
-      "L\u2019objectif est d\u2019ouvrir les premiers acc\u00e8s dans les prochains mois, avec une phase de lancement progressive avant l\u2019ouverture officielle.",
-      "Les inscrits seront les premiers inform\u00e9s des dates, des acc\u00e8s disponibles et des prochaines \u00e9tapes.",
+      "Les pr\u00e9ventes ouvrent le 1er juin 2026, r\u00e9serv\u00e9es en priorit\u00e9 aux inscrits de la waitlist.",
+      "Le lancement officiel est pr\u00e9vu le 1er juillet 2026.",
     ],
   },
   {
     q: "Qu\u2019est-ce qui rend Bellajour diff\u00e9rent d\u2019un album photo classique\u00a0?",
     a: [
       "Bellajour ne vous demande pas seulement de d\u00e9poser vos photos dans un mod\u00e8le.",
-      "L\u2019objectif est de vous aider \u00e0 choisir, organiser et composer vos souvenirs pour cr\u00e9er un album qui raconte vraiment quelque chose.",
+      "Vous donnez la direction. Nous nous chargeons du reste\u00a0: s\u00e9lection, composition et mise en page pour un album qui raconte vraiment quelque chose.",
+      "Et chaque album b\u00e9n\u00e9ficie d\u2019une couverture illustr\u00e9e, compos\u00e9e uniquement pour votre histoire. Aucun autre album n\u2019aura la m\u00eame.",
       "Moins de tri, moins d\u2019h\u00e9sitation, plus d\u2019histoire.",
     ],
   },
   {
     q: 'Est-ce que je peux inviter des proches\u00a0?',
     a: [
-      "Oui. Apr\u00e8s votre inscription, vous pourrez partager Bellajour \u00e0 vos proches gr\u00e2ce \u00e0 votre lien personnel.",
-      "Si vos proches rejoignent la liste gr\u00e2ce \u00e0 vous, vous pourrez d\u00e9bloquer certains avantages au moment du lancement\u00a0: acc\u00e8s prioritaire, offres r\u00e9serv\u00e9es ou r\u00e9compenses de parrainage.",
-      "Une belle fa\u00e7on de faire d\u00e9couvrir Bellajour\u2026 et de prendre un peu d\u2019avance.",
+      "Oui. Apr\u00e8s votre inscription, vous recevez un lien personnel pour faire d\u00e9couvrir Bellajour \u00e0 vos proches.",
+      "Chaque proche qui rejoint la waitlist gr\u00e2ce \u00e0 vous vous offre une attention de 5\u00a0\u20ac, d\u00e9duite directement de votre commande.",
+      "Autant de fois que vous le souhaitez.",
     ],
   },
 ]

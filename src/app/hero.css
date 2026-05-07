@@ -252,6 +252,7 @@
 }
 
 .frame {
+  position: relative;
   overflow: hidden;
   border-radius: var(--bj-radius-lg);
 }
@@ -259,6 +260,16 @@
   width: 100%;
   height: auto;
   display: block;
+}
+.frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuNjUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsdGVyPSJ1cmwoI25vaXNlKSIgb3BhY2l0eT0iMSIvPjwvc3ZnPg==");
+  background-size: 200px 200px;
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+  pointer-events: none;
 }
 
 /* Badge + compteur restent lisibles par-dessus les photos */

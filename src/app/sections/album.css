@@ -83,6 +83,8 @@
   color: #EAE3D8;
   margin: 0;
   letter-spacing: -0.02em;
+  line-height: 1.1;
+  text-shadow: 0 0 30px rgba(0, 0, 0, 0.6), 0 0 60px rgba(0, 0, 0, 0.4);
 }
 
 /* ── Sous-titre Phase 2 ── */
@@ -108,6 +110,10 @@
   font-size: 2vw;
   color: #EAE3D8;
   margin: 0;
+}
+
+.alb-subtitle + .alb-subtitle {
+  margin-top: 1em;
 }
 
 /* ── Mobile ── */

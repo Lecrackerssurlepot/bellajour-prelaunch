@@ -71,9 +71,9 @@ export default function Album() {
   const decorScale  = lerp(1.05, 1, clamp01(p2Norm / 0.5))
 
   const albumScaleP1 = lerp(0.8, 1, entryProgress)
-  const albumScale   = lerp(albumScaleP1, isMobile ? 0.6 : 0.35, p2Norm)
-  const albumTX      = isMobile ? 0 : lerp(0, -8, p2Norm)     // vw
-  const albumTY      = entryTY + lerp(0, 15, p2Norm)           // vh
+  const albumScale   = lerp(albumScaleP1, isMobile ? 0.6 : 0.45, p2Norm)
+  const albumTX      = isMobile ? 0 : lerp(0, -25, p2Norm)     // vw
+  const albumTY      = entryTY + lerp(0, isMobile ? 15 : -10, p2Norm)  // vh
   const subtitleOp   = easeOut3(clamp01((p2Norm - 0.3) / 0.3))
   const rotate       = isMobile ? 0 : swayAngle
 
@@ -121,7 +121,7 @@ export default function Album() {
 
         {/* Titre Phase 1 */}
         <div className="alb-title-wrap" style={{ opacity: titleOp }}>
-          <h2 className="alb-title">Un objet. Une histoire.</h2>
+          <h2 className="alb-title">Une couverture<br />qui raconte votre histoire.</h2>
         </div>
 
         {/* Sous-titre Phase 2 */}
@@ -129,7 +129,8 @@ export default function Album() {
           className={`alb-subtitle-wrap${isMobile ? ' alb-subtitle-wrap--center' : ''}`}
           style={{ opacity: subtitleOp }}
         >
-          <p className="alb-subtitle">Compos&eacute; pour durer.</p>
+          <p className="alb-subtitle">Une illustration unique, imagin&eacute;e pour votre voyage.</p>
+          <p className="alb-subtitle">Le dernier trait qui fait na&icirc;tre votre Bellajour.</p>
         </div>
 
       </div>

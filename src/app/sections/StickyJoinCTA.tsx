@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './sticky-join.css'
 
 type Theme = 'light' | 'dark'
@@ -18,12 +18,14 @@ const SECTIONS: SectionConfig[] = [
   { id: 'album',        theme: 'dark' },
   { id: 'finalwaitlist',theme: 'light', hidden: true },
   { id: 'faq',          theme: 'light' },
-  { id: 'footer',       theme: 'dark' },
+  { id: 'footer',       theme: 'dark',  hidden: true },
 ]
 
 export default function StickyJoinCTA() {
   const [visible, setVisible] = useState(false)
   const [dark, setDark] = useState(false)
+
+  const footerInView = useRef(false)
 
   useEffect(() => {
     const getSectionId = (): SectionConfig | null => {
@@ -39,18 +41,34 @@ export default function StickyJoinCTA() {
     }
 
     const onScroll = () => {
+      if (footerInView.current) return
       const config = getSectionId()
-      if (!config) return
+      if (!config) { setVisible(true); return }
       setVisible(!config.hidden)
       setDark(config.theme === 'dark')
     }
 
     window.addEventListener('scroll', onScroll, { passive: true })
-    // Attendre que le DOM soit complètement rendu
     const timer = setTimeout(onScroll, 300)
+
+    const footerEl = document.getElementById('footer')
+    const footerObserver = new IntersectionObserver(
+      ([entry]) => {
+        footerInView.current = entry.isIntersecting
+        if (entry.isIntersecting) {
+          setVisible(false)
+        } else {
+          onScroll()
+        }
+      },
+      { threshold: 0 }
+    )
+    if (footerEl) footerObserver.observe(footerEl)
+
     return () => {
       window.removeEventListener('scroll', onScroll)
       clearTimeout(timer)
+      footerObserver.disconnect()
     }
   }, [])
 
