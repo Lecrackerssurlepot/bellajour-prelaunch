@@ -97,7 +97,7 @@ export default function Album() {
             transform: `scale(${decorScale.toFixed(4)})`,
           }}
         >
-          <img src="/images/album/decor-salon.jpg" alt="" />
+          <img src="/images/decor-album.png" alt="" />
         </div>
 
         {/* Mockup album */}

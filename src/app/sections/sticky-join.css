@@ -50,7 +50,16 @@
 /* Signature bleue dans les deux modes */
 .sjc-sig { filter: invert(29%) sepia(97%) saturate(1000%) hue-rotate(190deg) brightness(95%) contrast(95%); }
 
-.sjc:hover .sjc-sig { opacity: 1; }
+.sjc-text::after {
+  content: '';
+  display: block;
+  width: 0;
+  height: 0.5px;
+  background: currentColor;
+  margin: 4px auto 0;
+  transition: width 0.35s var(--bj-ease-premium);
+}
+.sjc:hover .sjc-text::after { width: 100%; }
 
 @media (max-width: 767px) {
   .sjc { display: none; }

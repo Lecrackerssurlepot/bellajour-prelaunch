@@ -83,9 +83,7 @@ export default function FAQ() {
                   aria-expanded={isOpen}
                 >
                   <span className="faq-question-text">{item.q}</span>
-                  <span className="faq-icon" aria-hidden="true">
-                    {isOpen ? '\u2212' : '\u002B'}
-                  </span>
+                  <span className="faq-icon" aria-hidden="true">+</span>
                 </button>
                 <div className="faq-answer-wrap">
                   <div className="faq-answer">

@@ -187,9 +187,11 @@ function getState(i: number, active: number): 'active' | 'next' | 'prev' | 'far'
 export default function Solution() {
   const [active, setActive] = useState(-1)
   const [progress, setProgress] = useState(0)
-  const sectionRef   = useRef<HTMLElement>(null)
-  const stepStartRef = useRef(Date.now())
-  const runningRef   = useRef(false)
+  const sectionRef    = useRef<HTMLElement>(null)
+  const stepStartRef  = useRef(Date.now())
+  const runningRef    = useRef(false)
+  const isSnappingRef = useRef(false)
+  const lastScrollY   = useRef(0)
 
   useEffect(() => {
     let raf: number
@@ -211,8 +213,20 @@ export default function Solution() {
     // Démarre le timer uniquement quand la section est visible
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !runningRef.current) {
-          // Repart toujours depuis l'étape 01
+        const scrollingDown = window.scrollY > lastScrollY.current
+        lastScrollY.current = window.scrollY
+
+        if (
+          entry.isIntersecting &&
+          !runningRef.current &&
+          !isSnappingRef.current &&
+          scrollingDown &&
+          entry.intersectionRatio < 0.5
+        ) {
+          isSnappingRef.current = true
+          sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          setTimeout(() => { isSnappingRef.current = false }, 800)
+
           setActive(0)
           setProgress(0)
           stepStartRef.current = Date.now()
@@ -318,6 +332,7 @@ export default function Solution() {
         </div>
 
       </div>
+      <div className="sol-snap-end" />
     </section>
   )
 }

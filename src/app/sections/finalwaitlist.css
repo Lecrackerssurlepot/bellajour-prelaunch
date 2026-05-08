@@ -197,7 +197,32 @@
 }
 
 .fwl-msg--success { color: var(--bj-gold); }
-.fwl-msg--error   { color: var(--bj-muted); }
+.fwl-msg--error {
+  color: #778899;
+  font-style: italic;
+  font-size: clamp(12px, 0.9vw, 14px);
+  letter-spacing: 0.02em;
+  animation: errorFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes errorFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fwl-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+
+.fwl-input--error {
+  border-color: rgba(119, 136, 153, 0.6) !important;
+  background: rgba(119, 136, 153, 0.05) !important;
+  animation: fwl-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
 
 /* ── Micro-réassurance ── */
 .fwl-reassurance {
@@ -356,16 +381,6 @@
     z-index 0s;
 }
 
-/* Ligne verticale de reliure */
-.fwl-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: rgba(23, 20, 15, 0.08);
-}
 
 /* Numéro discret */
 .fwl-card-num {

@@ -93,18 +93,34 @@
 }
 
 .faq-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  margin-top: 3px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(119, 136, 153, 0.12);
+  border: 1px solid rgba(119, 136, 153, 0.35);
   font-family: var(--bj-font-sans);
   font-size: 18px;
   font-weight: 300;
   line-height: 1;
-  color: var(--bj-muted);
-  transition: color 0.4s var(--bj-ease-premium), transform 0.4s var(--bj-ease-premium);
+  color: #778899;
+  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .faq-item--open .faq-icon {
-  color: var(--bj-text);
+  background: rgba(119, 136, 153, 0.25);
+  border-color: rgba(119, 136, 153, 0.55);
+  transform: rotate(45deg);
+}
+
+.faq-item:hover .faq-icon {
+  background: rgba(119, 136, 153, 0.20);
+  border-color: rgba(119, 136, 153, 0.45);
 }
 
 /* ── Réponse — grid-rows trick pour transition smooth ── */

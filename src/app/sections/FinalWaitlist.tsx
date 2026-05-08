@@ -82,6 +82,7 @@ export default function FinalWaitlist() {
   const [wasReferred,          setWasReferred]          = useState(false)
   const [copied,     setCopied]     = useState(false)
   const sectionRef = useRef<HTMLElement>(null)
+  const inputRef   = useRef<HTMLInputElement>(null)
   const prenomRef  = useRef<HTMLInputElement>(null)
 
   /* Lire ?ref= dans l'URL */
@@ -120,7 +121,11 @@ export default function FinalWaitlist() {
     e.preventDefault()
     const normalized = emailValue.trim().toLowerCase()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
-      setErrorMsg("Cette adresse ne nous semble pas valide.")
+      setErrorMsg("Entrez votre email pour rejoindre la liste.")
+      inputRef.current?.classList.remove('fwl-input--error')
+      requestAnimationFrame(() => {
+        inputRef.current?.classList.add('fwl-input--error')
+      })
       return
     }
     setEmailValue(normalized)
@@ -152,6 +157,14 @@ export default function FinalWaitlist() {
   const handlePrenomSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (loading) return
+    if (!prenom.trim()) {
+      setErrorMsg("Entrez votre prénom pour continuer.")
+      prenomRef.current?.classList.remove('fwl-input--error')
+      requestAnimationFrame(() => {
+        prenomRef.current?.classList.add('fwl-input--error')
+      })
+      return
+    }
     setLoading(true)
     setErrorMsg('')
     try {
@@ -170,7 +183,7 @@ export default function FinalWaitlist() {
         if (referredBy) setWasReferred(true)
         setStep(3)
       } else {
-        setErrorMsg(data.message || "Une erreur s'est glissée. Réessayez dans un instant.")
+        setErrorMsg(data.message || "Entrez votre prénom pour continuer.")
       }
     } catch {
       setErrorMsg("La connexion a flanché. Réessayez.")
@@ -253,7 +266,7 @@ export default function FinalWaitlist() {
           /* ── Étape 2 — Prénom ── */
           <div className="fwl-prenom">
             <h2 className="fwl-prenom-titre">Dernière étape.</h2>
-            <p className="fwl-prenom-sub">Comment souhaitez-vous être appelé&nbsp;?</p>
+            <p className="fwl-prenom-sub">Veuillez entrer votre prénom.</p>
             <form className="fwl-prenom-form" onSubmit={handlePrenomSubmit} noValidate>
               <input
                 ref={prenomRef}
@@ -293,6 +306,7 @@ export default function FinalWaitlist() {
                 type="email"
                 placeholder="Entrez votre email"
                 className="fwl-input"
+                ref={inputRef}
                 value={emailValue}
                 onChange={e => setEmailValue(e.target.value)}
                 required

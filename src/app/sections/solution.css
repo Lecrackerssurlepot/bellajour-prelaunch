@@ -10,8 +10,20 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  position: relative;
   scroll-snap-align: start;
+  scroll-snap-stop: always;
   overflow: clip;
+}
+
+.sol-snap-end {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  scroll-snap-align: end;
+  pointer-events: none;
 }
 
 .sol-inner {

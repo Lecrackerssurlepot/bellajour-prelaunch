@@ -32,6 +32,10 @@
   --bj-glass-border: rgba(234, 227, 216, 0.15);
 }
 
+html {
+  scroll-snap-type: y proximity;
+}
+
 html, body {
   margin: 0;
   padding: 0;
