@@ -183,7 +183,7 @@ export default function FinalWaitlist() {
         if (referredBy) setWasReferred(true)
         setStep(3)
       } else {
-        setErrorMsg(data.message || "Entrez votre prénom pour continuer.")
+        setErrorMsg(data.message || "Une erreur s'est glissée. Réessayez dans un instant.")
       }
     } catch {
       setErrorMsg("La connexion a flanché. Réessayez.")
@@ -221,20 +221,27 @@ export default function FinalWaitlist() {
       <div className="fwl-inner">
 
         {/* ── Étape 3 — Confirmation ── */}
-        {step === 3 && refCode ? (
+        {step === 3 ? (
           <div className="fwl-confirm">
+            {wasAlreadyRegistered && !refCode ? (
+              <p style={{ textAlign: 'center', color: '#A89880', fontSize: '0.95rem', lineHeight: 1.7 }}>
+                Vous êtes déjà sur la liste Bellajour.<br/>
+                Vérifiez vos emails pour retrouver votre lien de parrainage.
+              </p>
+            ) : (
+            <>
             <h2 className="fwl-confirm-titre">
               {prenomDisplay
                 ? `Bienvenue, ${prenomDisplay}.`
                 : wasAlreadyRegistered
-                  ? 'Vous êtes déjà sur la liste.'
+                  ? 'Vous êtes déjà avec nous.'
                   : 'Vous êtes sur la liste.'}
             </h2>
             <p className="fwl-confirm-sub">
               {wasReferred
                 ? 'Vous pouvez à votre tour faire découvrir Bellajour à vos proches et gagner 5 € de crédit par ami inscrit.'
                 : wasAlreadyRegistered
-                  ? 'Vous pouvez continuer à parrainer vos proches et cumuler vos crédits.'
+                  ? 'Parrainez vos proches et gagnez 5 € de crédit par inscription.'
                   : 'Parrainez vos proches, gagnez 5 € de crédit par inscription.'}
             </p>
             <div className="fwl-confirm-code">{refCode}</div>
@@ -257,16 +264,17 @@ export default function FinalWaitlist() {
               Partager sur WhatsApp
             </a>
             <p className="fwl-confirm-footer">
-              Ce crédit sera appliqué automatiquement à la création de votre compte.<br />
-              Conservez bien cette adresse email.
+              Vos crédits seront appliqués dès que chacun de vos filleuls passera commande au lancement. Pas de limite — plus vous parrainez, plus vous cumulez.
             </p>
+            </>
+            )}
           </div>
 
         ) : step === 2 ? (
           /* ── Étape 2 — Prénom ── */
           <div className="fwl-prenom">
             <h2 className="fwl-prenom-titre">Dernière étape.</h2>
-            <p className="fwl-prenom-sub">Veuillez entrer votre prénom.</p>
+            <p className="fwl-prenom-sub">Comment souhaitez-vous être appelé&nbsp;?</p>
             <form className="fwl-prenom-form" onSubmit={handlePrenomSubmit} noValidate>
               <input
                 ref={prenomRef}
@@ -316,6 +324,11 @@ export default function FinalWaitlist() {
                 <span>{loading ? "Vérification…" : "Réserver ma place"}</span>
               </button>
             </form>
+            <p style={{ fontSize: '0.72rem', color: '#A89880', textAlign: 'center', lineHeight: 1.5, marginTop: '0.6rem' }}>
+              En vous inscrivant, vous acceptez de recevoir des communications de Bellajour. Vos données ne seront jamais partagées.{' '}
+              Vous pouvez vous désinscrire à tout moment.{' '}
+              <a href="/confidentialite" style={{ color: '#A89880', textDecoration: 'underline' }}>Politique de confidentialité</a>
+            </p>
             {errorMsg && (
               <p className="fwl-msg fwl-msg--error" role="status">{errorMsg}</p>
             )}

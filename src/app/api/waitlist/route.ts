@@ -3,6 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/contacts";
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = process.env.NODE_ENV === 'production' ? 3 : 20;
+const RATE_LIMIT_WINDOW_MS = process.env.NODE_ENV === 'production' ? 60_000 : 10_000;
+
 function makeSupabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
@@ -18,14 +22,30 @@ function randomCode(): string {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function generateUniqueCode(supabase: any): Promise<string> {
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const code = randomCode();
-    const { data } = await supabase
-      .from("waitlist")
-      .select("id")
-      .eq("ref_code", code)
-      .maybeSingle();
+async function generateUniqueCode(supabase: any, prenom?: string): Promise<string> {
+  const clean = prenom
+    ? prenom.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z]/g, "").toUpperCase()
+    : "";
+
+  if (!clean) {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    for (let attempt = 0; attempt < 10; attempt++) {
+      let suffix = "";
+      for (let i = 0; i < 4; i++) suffix += chars[Math.floor(Math.random() * chars.length)];
+      const code = "BJ-" + suffix;
+      const { data } = await supabase.from("waitlist").select("id").eq("ref_code", code).maybeSingle();
+      if (!data) return code;
+    }
+    throw new Error("Impossible de générer un ref_code unique.");
+  }
+
+  const base = "BJ-" + clean;
+  const { data: first } = await supabase.from("waitlist").select("id").eq("ref_code", base).maybeSingle();
+  if (!first) return base;
+
+  for (let n = 2; n <= 99; n++) {
+    const code = base + "-" + n;
+    const { data } = await supabase.from("waitlist").select("id").eq("ref_code", code).maybeSingle();
     if (!data) return code;
   }
   throw new Error("Impossible de générer un ref_code unique.");
@@ -33,6 +53,25 @@ async function generateUniqueCode(supabase: any): Promise<string> {
 
 export async function POST(request: Request) {
   try {
+    const now = Date.now();
+    for (const [key, val] of rateLimitMap) {
+      if (val.resetAt < now) rateLimitMap.delete(key);
+    }
+
+    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    const entry = rateLimitMap.get(ip);
+    if (entry && entry.resetAt > now) {
+      if (entry.count >= RATE_LIMIT_MAX) {
+        return NextResponse.json(
+          { message: "Trop de tentatives. Réessayez dans quelques instants." },
+          { status: 429 }
+        );
+      }
+      entry.count++;
+    } else {
+      rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    }
+
     const body = await request.json();
     const { email, prenom, referred_by, check_only } = body as {
       email?: string;
@@ -40,6 +79,8 @@ export async function POST(request: Request) {
       referred_by?: string;
       check_only?: boolean;
     };
+
+    const cleanPrenom = prenom ? prenom.replace(/<[^>]*>/g, '').trim().slice(0, 50) : undefined;
 
     if (!email || typeof email !== "string") {
       return NextResponse.json({ message: "Adresse email manquante." }, { status: 400 });
@@ -64,6 +105,9 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (existing) {
+      if (check_only) {
+        return NextResponse.json({ error: "already_registered", ref_code: existing.ref_code }, { status: 200 });
+      }
       return NextResponse.json(
         { success: false, error: "already_registered", ref_code: existing.ref_code, prenom: existing.prenom ?? null },
         { status: 200 }
@@ -78,24 +122,29 @@ export async function POST(request: Request) {
     const apiKey = process.env.BREVO_API_KEY;
     const listId = Number(process.env.BREVO_WAITLIST_LIST_ID);
     if (!apiKey || !listId) {
-      return NextResponse.json({ message: "Configuration Brevo manquante." }, { status: 500 });
+      return NextResponse.json({ message: "Une erreur s'est glissée. Réessayez dans un instant." }, { status: 500 });
     }
 
-    // Générer un ref_code unique
-    const ref_code = await generateUniqueCode(supabase);
-
-    // Insérer dans waitlist
+    // Générer un ref_code unique et insérer avec retry sur contrainte UNIQUE (race condition)
+    let ref_code = await generateUniqueCode(supabase, cleanPrenom);
     const insertPayload: Record<string, unknown> = {
       email: normalizedEmail,
-      prenom: prenom || null,
-      ref_code,
+      prenom: cleanPrenom || null,
     };
     if (referred_by) insertPayload.referred_by = referred_by;
 
-    const { error: insertError } = await supabase.from("waitlist").insert(insertPayload);
+    let insertError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await supabase.from("waitlist").insert({ ...insertPayload, ref_code });
+      insertError = result.error;
+      if (!insertError) break;
+      if (insertError.code !== "23505") break;
+      ref_code = await generateUniqueCode(supabase, cleanPrenom);
+    }
+
     if (insertError) {
       return NextResponse.json(
-        { message: "Erreur lors de l'enregistrement." },
+        { message: "Une erreur s'est glissée. Réessayez dans un instant." },
         { status: 500 }
       );
     }
@@ -122,7 +171,7 @@ export async function POST(request: Request) {
 
     // Synchroniser avec Brevo
     const brevoAttributes: Record<string, string> = {
-      PRENOM: prenom || "",
+      PRENOM: cleanPrenom || "",
       REF_CODE: ref_code,
     };
     if (prenomParrain) brevoAttributes.PRENOM_PARRAIN = prenomParrain;
@@ -142,14 +191,12 @@ export async function POST(request: Request) {
     });
 
     if (!brevoResponse.ok) {
-      return NextResponse.json(
-        { message: "Une erreur s'est glissée. Réessayez dans un instant." },
-        { status: 500 }
-      );
+      console.error("[/api/waitlist] Brevo sync failed:", brevoResponse.status);
     }
 
     return NextResponse.json({ success: true, ref_code }, { status: 200 });
-  } catch {
+  } catch (error) {
+    console.error("[/api/waitlist] ERREUR:", error);
     return NextResponse.json(
       { message: "Une erreur s'est glissée. Réessayez dans un instant." },
       { status: 500 }
