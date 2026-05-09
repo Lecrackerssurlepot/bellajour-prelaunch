@@ -188,7 +188,7 @@
   z-index: 30;
   font-family: var(--bj-font-serif);
   font-style: italic;
-  font-weight: 400;
+  font-weight: 700;
   font-size: clamp(16px, 1.4vw, 22px);
   color: var(--bj-text);
   text-decoration: none;

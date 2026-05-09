@@ -1,6 +1,6 @@
 .sjc {
   position: fixed;
-  bottom: clamp(20px, 3.5vh, 40px);
+  bottom: clamp(20px, 4vh, 44px);
   right: clamp(20px, 2.5vw, 36px);
   z-index: 90;
   background: none;
@@ -27,7 +27,7 @@
 .sjc-text {
   display: block;
   font-family: 'Cormorant', serif;
-  font-weight: 300;
+  font-weight: 700;
   font-size: clamp(18px, 1.5vw, 24px);
   letter-spacing: 0.03em;
   color: var(--bj-text);
