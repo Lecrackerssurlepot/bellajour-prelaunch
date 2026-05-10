@@ -146,4 +146,9 @@
   }
 
   .footer-sep { display: none; }
+
+  .footer-word {
+    font-size: clamp(56px, 16vw, 80px) !important;
+    line-height: 1 !important;
+  }
 }
