@@ -80,18 +80,26 @@ html, body {
     scroll-snap-align: none !important;
   }
 
-  /* Reset hauteurs sticky des sections lourdes */
-  .anx-scroll,
-  .alb-scroll {
+  /* Solution — pas de scroll-driven, height auto */
+  #solution {
     height: auto !important;
     min-height: 100vh;
   }
 
-  /* Désactiver sticky internes → contenu défile naturellement */
-  .anx-sticky,
-  .alb-sticky {
+  /* Anxiété : réduit de 600vh à 200vh, sticky conservé */
+  .anx-scroll {
+    height: 200vh !important;
+  }
+
+  /* Album : réduit de 700vh à 250vh, sticky conservé */
+  .alb-scroll {
+    height: 250vh !important;
+  }
+
+  /* Sticky uniquement pour éléments non-animés */
+  .sol-sticky,
+  [class*="-pin"]:not(.anx-sticky):not(.alb-sticky) {
     position: relative !important;
     top: auto !important;
-    height: auto !important;
   }
 }
