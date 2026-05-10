@@ -87,7 +87,7 @@ export default function Anxiete() {
   const [entered, setEntered]         = useState(false)
   const [slots, setSlots]             = useState<number[]>(mkSlots)
   const [fadingSlots, setFadingSlots] = useState<Set<number>>(new Set())
-  const [isMobile,    setIsMobile]    = useState(false)
+  const [isMobile,    setIsMobile]    = useState<boolean | null>(null)
   const gridReveal      = useReveal(0.15)
   const headlineReveal  = useReveal<HTMLHeadingElement>(0.25)
   const paragraphsReveal = useReveal(0.25)
@@ -218,7 +218,7 @@ export default function Anxiete() {
   const textSlideY  = textScrolled ? -clamp01((scrollProg - 0.50) / 0.22) * 180 : 0
   const entryY      = isMobile ? 0 : (entered ? 0 : 70)
   const textOp      = textScrolled ? clamp01(1 - (scrollProg - 0.50) / 0.22) : 1
-  const contentTY   = isMobile ? 'none' : `translateY(calc(-50% + ${entryY + textSlideY}px))`
+  const contentTY   = isMobile ? 'translateY(-50%)' : `translateY(calc(-50% + ${entryY + textSlideY}px))`
   const contentTr   = (!isMobile && entered && !textScrolled)
     ? 'transform 1.2s cubic-bezier(0.22,1,0.36,1)'
     : 'none'
@@ -239,6 +239,8 @@ export default function Anxiete() {
   const bold  = isMobile ? 1 : revealOp(scrollProg, 0.22)
   const line3 = isMobile ? 1 : revealOp(scrollProg, 0.32)
   const line4 = isMobile ? 1 : revealOp(scrollProg, 0.42)
+
+  if (isMobile === null) return null
 
   return (
     <div

@@ -12,7 +12,7 @@ export default function Album() {
   const sectionRef    = useRef<HTMLDivElement>(null)
   const [scrollProg, setScrollProg] = useState(0)
   const [swayAngle, setSwayAngle]   = useState(0)
-  const [isMobile, setIsMobile]     = useState(false)
+  const [isMobile, setIsMobile]     = useState<boolean | null>(null)
   const bookReveal     = useReveal(0.30)
   const titleReveal    = useReveal(0.30)
   const subtitleReveal = useReveal(0.30)
@@ -83,6 +83,8 @@ export default function Album() {
   const rotate       = isMobile ? 0 : swayAngle
 
   const albumTransform = `translate(calc(-50% + ${albumTX.toFixed(2)}vw), calc(-50% + ${albumTY.toFixed(2)}vh)) scale(${albumScale.toFixed(4)}) rotateZ(${rotate.toFixed(3)}deg)`
+
+  if (isMobile === null) return null
 
   return (
     <div
