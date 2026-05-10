@@ -1,0 +1,86 @@
+/* ════════════════════════════════════════
+   BrandIntro — Section mobile uniquement
+   Visible entre Anxiete et Solution
+   ════════════════════════════════════════ */
+
+.bi-section {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .bi-section {
+    display: block;
+    background: var(--bj-noir, #1C1C1C);
+    padding: 80px 5vw 100px;
+    color: var(--bj-bg, #EAE3D8);
+  }
+
+  .bi-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    max-width: 100%;
+  }
+
+  .bi-brand {
+    font-family: var(--bj-font-serif, 'Playfair Display'), serif;
+    font-weight: 700;
+    font-size: clamp(48px, 13vw, 72px);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--bj-bg, #EAE3D8);
+    margin: 0;
+    text-align: center;
+  }
+
+  .bi-tagline {
+    font-family: var(--bj-font-serif, 'Cormorant Garamond'), serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(16px, 4.2vw, 20px);
+    line-height: 1.5;
+    color: var(--bj-bg, #EAE3D8);
+    opacity: 0.9;
+    margin: 16px 0 48px;
+    text-align: center;
+  }
+
+  .bi-photos {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .bi-photo {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    background: var(--bj-noir, #1C1C1C);
+  }
+
+  .bi-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .bi-cta {
+    margin-top: 48px;
+    padding: 12px 4px;
+    background: transparent;
+    border: none;
+    font-family: var(--bj-font-serif, 'Playfair Display'), serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(18px, 5vw, 22px);
+    color: var(--bj-bg, #EAE3D8);
+    text-decoration: underline;
+    text-underline-offset: 6px;
+    text-decoration-thickness: 1px;
+    cursor: pointer;
+    min-height: 44px;
+  }
+}
