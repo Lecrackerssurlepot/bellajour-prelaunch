@@ -1052,3 +1052,56 @@
     border-radius: 10px;
   }
 }
+
+/* ── Dots navigation — masqués desktop ── */
+.fwl-dots {
+  display: none;
+}
+
+/* ── Carousel + dots mobile ── */
+@media (max-width: 767px) {
+  .fwl-chapitres {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    grid-template-columns: none !important;
+    gap: 16px !important;
+    padding: 0 5vw 4px !important;
+    margin: 0 -5vw !important;
+  }
+
+  .fwl-chapitres::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .fwl-card {
+    flex: 0 0 88vw !important;
+    scroll-snap-align: center !important;
+  }
+
+  .fwl-dots {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .fwl-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--bj-text, #1C1C1C);
+    border: none;
+    cursor: pointer;
+    opacity: 0.25;
+    transition: opacity 0.3s;
+    padding: 0;
+  }
+
+  .fwl-dot.is-active {
+    opacity: 1;
+  }
+}

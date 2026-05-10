@@ -81,9 +81,11 @@ export default function FinalWaitlist() {
   const [wasAlreadyRegistered, setWasAlreadyRegistered] = useState(false)
   const [wasReferred,          setWasReferred]          = useState(false)
   const [copied,     setCopied]     = useState(false)
-  const sectionRef = useRef<HTMLElement>(null)
-  const inputRef   = useRef<HTMLInputElement>(null)
-  const prenomRef  = useRef<HTMLInputElement>(null)
+  const [activeDot,  setActiveDot]  = useState(0)
+  const sectionRef   = useRef<HTMLElement>(null)
+  const inputRef     = useRef<HTMLInputElement>(null)
+  const prenomRef    = useRef<HTMLInputElement>(null)
+  const carouselRef  = useRef<HTMLDivElement>(null)
 
   /* Lire ?ref= dans l'URL */
   useEffect(() => {
@@ -115,6 +117,33 @@ export default function FinalWaitlist() {
   useEffect(() => {
     if (step === 2) prenomRef.current?.focus()
   }, [step])
+
+  /* Carousel dots — sync scroll position */
+  useEffect(() => {
+    const container = carouselRef.current
+    if (!container) return
+    const handleScroll = () => {
+      const cards = Array.from(container.children) as HTMLElement[]
+      const containerCenter = container.scrollLeft + container.offsetWidth / 2
+      let closestIndex = 0
+      let closestDist = Infinity
+      cards.forEach((card, i) => {
+        const cardCenter = card.offsetLeft + card.offsetWidth / 2
+        const dist = Math.abs(cardCenter - containerCenter)
+        if (dist < closestDist) { closestDist = dist; closestIndex = i }
+      })
+      setActiveDot(closestIndex)
+    }
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToCard = (index: number) => {
+    const container = carouselRef.current
+    if (!container) return
+    const card = container.children[index] as HTMLElement
+    if (card) container.scrollTo({ left: card.offsetLeft - container.offsetLeft, behavior: 'smooth' })
+  }
 
   /* Étape 1 — vérification email (check_only, pas d'insertion) */
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -344,9 +373,20 @@ export default function FinalWaitlist() {
           Trois attentions, réservées à la waitlist.
         </p>
 
-        <div className="fwl-chapitres">
+        <div ref={carouselRef} className="fwl-chapitres">
           {CHAPITRES.map(c => (
             <WaitlistChapterCard key={c.num} {...c} />
+          ))}
+        </div>
+
+        <div className="fwl-dots">
+          {[0, 1, 2].map(i => (
+            <button
+              key={i}
+              className={`fwl-dot${activeDot === i ? ' is-active' : ''}`}
+              onClick={() => scrollToCard(i)}
+              aria-label={`Aller à la carte ${i + 1}`}
+            />
           ))}
         </div>
 
