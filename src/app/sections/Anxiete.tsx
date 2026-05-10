@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import './anxiete.css'
+import { useReveal } from '@/hooks/useReveal'
 
 // ── Photos grille (cycling)
 const PHOTOS = [
@@ -87,6 +88,9 @@ export default function Anxiete() {
   const [slots, setSlots]             = useState<number[]>(mkSlots)
   const [fadingSlots, setFadingSlots] = useState<Set<number>>(new Set())
   const [isMobile,    setIsMobile]    = useState(false)
+  const gridReveal      = useReveal(0.15)
+  const headlineReveal  = useReveal<HTMLHeadingElement>(0.25)
+  const paragraphsReveal = useReveal(0.25)
   const rafRef        = useRef<number | null>(null)
   const startTimeRef  = useRef<number | null>(null)
   const scrollProgRef = useRef(0)
@@ -248,7 +252,8 @@ export default function Anxiete() {
 
         {/* ── Grille 8 colonnes ── */}
         <div
-          className="anx-grid-wrap"
+          ref={gridReveal.ref}
+          className={`anx-grid-wrap reveal-fade${gridReveal.isVisible ? ' is-visible' : ''}`}
           style={{ transform: `scale(${gridScaleVal.toFixed(3)})` }}
         >
           <div className="anx-grid">
@@ -303,26 +308,33 @@ export default function Anxiete() {
             transition: contentTr,
           }}
         >
-          <h2 className="anx-title">
+          <h2
+            ref={headlineReveal.ref}
+            className={`anx-title reveal-up${headlineReveal.isVisible ? ' is-visible' : ''}`}
+          >
             Vous prenez des photos. Tout le temps.
           </h2>
-          <p className="anx-subtitle" style={{ opacity: sub }}>
+          <p className="anx-subtitle" style={isMobile ? undefined : { opacity: sub }}>
             Le voyage de l&rsquo;&eacute;t&eacute; dernier est encore dans votre t&eacute;l&eacute;phone.
             Celui d&rsquo;avant aussi.
           </p>
-          <div className="anx-body">
-            <p className="anx-line" style={{ opacity: line1 }}>
+          <div ref={paragraphsReveal.ref} className="anx-body">
+            <p className={`anx-line reveal-up reveal-delay-1${paragraphsReveal.isVisible ? ' is-visible' : ''}`}
+               style={isMobile ? undefined : { opacity: line1 }}>
               Un soir, vous vous &ecirc;tes dit qu&rsquo;il faudrait en faire un album.
             </p>
-            <p className="anx-line anx-line--bold" style={{ opacity: bold }}>
+            <p className={`anx-line anx-line--bold reveal-up reveal-delay-2${paragraphsReveal.isVisible ? ' is-visible' : ''}`}
+               style={isMobile ? undefined : { opacity: bold }}>
               L&rsquo;id&eacute;e est pass&eacute;e.
             </p>
-            <p className="anx-line" style={{ opacity: line3 }}>
+            <p className={`anx-line reveal-up reveal-delay-3${paragraphsReveal.isVisible ? ' is-visible' : ''}`}
+               style={isMobile ? undefined : { opacity: line3 }}>
               Parce qu&rsquo;au fond, trier, choisir, composer,
               &ccedil;a prend des heures. Des soirs entiers.
               Alors vous reportez.
             </p>
-            <p className="anx-line" style={{ opacity: line4 }}>
+            <p className={`anx-line reveal-up reveal-delay-4${paragraphsReveal.isVisible ? ' is-visible' : ''}`}
+               style={isMobile ? undefined : { opacity: line4 }}>
               Et pendant ce temps, ce qui n&rsquo;est pas dans un album finit par se perdre.
               M&ecirc;me les plus beaux moments.
             </p>

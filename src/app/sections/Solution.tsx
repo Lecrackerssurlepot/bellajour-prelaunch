@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, memo } from 'react'
 import './solution.css'
+import { useReveal } from '@/hooks/useReveal'
 import CastingVisual from './CastingVisual'
 import SelectionVisual from './SelectionVisual'
 import MiseEnPageVisual from './MiseEnPageVisual'
@@ -187,11 +188,29 @@ function getState(i: number, active: number): 'active' | 'next' | 'prev' | 'far'
 export default function Solution() {
   const [active, setActive] = useState(-1)
   const [progress, setProgress] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
   const sectionRef    = useRef<HTMLElement>(null)
   const stepStartRef  = useRef(Date.now())
   const runningRef    = useRef(false)
   const isSnappingRef = useRef(false)
   const lastScrollY   = useRef(0)
+  const isMobileRef   = useRef(false)
+
+  const step1Reveal = useReveal(0.25)
+  const step2Reveal = useReveal(0.25)
+  const step3Reveal = useReveal(0.25)
+  const step4Reveal = useReveal(0.25)
+  const stepReveals = [step1Reveal, step2Reveal, step3Reveal, step4Reveal]
+
+  useEffect(() => {
+    const check = () => {
+      isMobileRef.current = window.innerWidth < 768
+      setIsMobile(isMobileRef.current)
+    }
+    check()
+    window.addEventListener('resize', check, { passive: true })
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   useEffect(() => {
     let raf: number
@@ -213,6 +232,7 @@ export default function Solution() {
     // Démarre le timer uniquement quand la section est visible
     const observer = new IntersectionObserver(
       ([entry]) => {
+        if (isMobileRef.current) return
         const scrollingDown = window.scrollY > lastScrollY.current
         lastScrollY.current = window.scrollY
 
@@ -259,8 +279,37 @@ export default function Solution() {
     setProgress(0)
   }
 
+  if (isMobile) {
+    return (
+      <section ref={sectionRef} id="solution" className="sol-section" data-section="solution" data-theme="light">
+        <div className="sol-inner-mobile">
+          <div className="sol-header">
+            <p className="sol-header-title">Le parcours de création</p>
+            <p className="sol-header-sub">À vous la direction. À nous l&rsquo;exécution.</p>
+          </div>
+          <div className="sol-cards">
+            {ETAPES.map((e, i) => {
+              const reveal = stepReveals[i]
+              return (
+                <div
+                  key={e.num}
+                  ref={reveal.ref}
+                  className={`sol-card reveal-up${i > 0 ? ` reveal-delay-${i}` : ''}${reveal.isVisible ? ' is-visible' : ''}`}
+                >
+                  <span className="sol-num">{e.num}</span>
+                  <h2 className="sol-titre">{e.titre}</h2>
+                  <p className="sol-sous-titre">{e.lines[0]}<br />{e.lines[1]}</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
-    <section ref={sectionRef} className="sol-section" data-section="solution" data-theme="light">
+    <section ref={sectionRef} id="solution" className="sol-section" data-section="solution" data-theme="light">
       <div className="sol-inner">
 
         {/* ── Colonne gauche ── */}

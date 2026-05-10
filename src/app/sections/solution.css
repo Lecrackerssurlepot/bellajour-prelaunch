@@ -278,3 +278,70 @@
   .sol-step--next   .sol-titre { font-size: clamp(16px, 4vw, 22px); }
   .sol-step--next   .sol-num   { font-size: clamp(16px, 4vw, 22px); }
 }
+
+/* ── Mobile — Cards empilées ── */
+@media (max-width: 767px) {
+  .sol-section {
+    height: auto !important;
+    padding: 60px 20px;
+    align-items: flex-start;
+    overflow: visible;
+  }
+
+  .sol-inner-mobile {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sol-inner-mobile .sol-header {
+    position: relative !important;
+    top: auto !important;
+    padding: 0 !important;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+
+  .sol-inner-mobile .sol-header-title {
+    font-size: clamp(32px, 8vw, 48px) !important;
+  }
+
+  .sol-inner-mobile .sol-header-sub {
+    font-size: clamp(12px, 3.5vw, 14px) !important;
+  }
+
+  .sol-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .sol-card {
+    background: var(--bj-creme);
+    padding: 32px 24px;
+  }
+
+  .sol-card .sol-num {
+    display: block;
+    font-size: 56px !important;
+    color: var(--bj-gold) !important;
+    margin-bottom: 8px !important;
+    line-height: 1 !important;
+  }
+
+  .sol-card .sol-titre {
+    font-size: 24px !important;
+    margin: 0 0 16px !important;
+    line-height: 1.2 !important;
+  }
+
+  .sol-card .sol-sous-titre {
+    max-height: none !important;
+    opacity: 1 !important;
+    font-size: clamp(11px, 3vw, 13px) !important;
+    letter-spacing: 0.22em;
+    line-height: 2;
+    margin: 0 !important;
+  }
+}

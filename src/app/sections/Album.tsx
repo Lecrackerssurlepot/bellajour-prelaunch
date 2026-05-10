@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import './album.css'
+import { useReveal } from '@/hooks/useReveal'
 
 function clamp01(v: number) { return Math.max(0, Math.min(1, v)) }
 function easeOut3(t: number) { return 1 - Math.pow(clamp01(1 - t), 3) }
@@ -12,6 +13,9 @@ export default function Album() {
   const [scrollProg, setScrollProg] = useState(0)
   const [swayAngle, setSwayAngle]   = useState(0)
   const [isMobile, setIsMobile]     = useState(false)
+  const bookReveal     = useReveal(0.30)
+  const titleReveal    = useReveal(0.30)
+  const subtitleReveal = useReveal(0.30)
   const scrollProgRef = useRef(0)
   const rafRef        = useRef<number | null>(null)
 
@@ -103,9 +107,10 @@ export default function Album() {
 
         {/* Mockup album */}
         <div
-          className="alb-mockup"
+          ref={bookReveal.ref}
+          className={`alb-mockup reveal-up-far${bookReveal.isVisible ? ' is-visible' : ''}`}
           style={{
-            opacity: albumOp,
+            opacity: isMobile ? undefined : albumOp,
             transform: albumTransform,
             willChange: 'opacity, transform',
             background: 'transparent',
@@ -121,14 +126,19 @@ export default function Album() {
         </div>
 
         {/* Titre Phase 1 */}
-        <div className="alb-title-wrap" style={{ opacity: titleOp }}>
+        <div
+          ref={titleReveal.ref}
+          className={`alb-title-wrap reveal-up reveal-delay-1${titleReveal.isVisible ? ' is-visible' : ''}`}
+          style={{ opacity: isMobile ? undefined : titleOp }}
+        >
           <h2 className="alb-title">Une couverture<br />qui raconte votre histoire.</h2>
         </div>
 
         {/* Sous-titre Phase 2 */}
         <div
-          className={`alb-subtitle-wrap${isMobile ? ' alb-subtitle-wrap--center' : ''}`}
-          style={{ opacity: subtitleOp }}
+          ref={subtitleReveal.ref}
+          className={`alb-subtitle-wrap${isMobile ? ' alb-subtitle-wrap--center' : ''} reveal-up reveal-delay-2${subtitleReveal.isVisible ? ' is-visible' : ''}`}
+          style={{ opacity: isMobile ? undefined : subtitleOp }}
         >
           <p className="alb-subtitle">Une illustration unique, imagin&eacute;e pour votre voyage.</p>
           <p className="alb-subtitle">Le dernier trait qui fait na&icirc;tre votre Bellajour.</p>
