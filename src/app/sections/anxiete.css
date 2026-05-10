@@ -265,6 +265,10 @@
     grid-template-columns: repeat(4, 1fr);
   }
 
+  .anx-progress {
+    display: none !important;
+  }
+
   .anx-overlay {
     background: rgba(23, 20, 15, 0.82);
   }
