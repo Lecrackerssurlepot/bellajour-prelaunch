@@ -111,7 +111,7 @@ export default function Album() {
           className={`alb-mockup reveal-up-far${bookReveal.isVisible ? ' is-visible' : ''}`}
           style={{
             opacity: isMobile ? undefined : albumOp,
-            transform: albumTransform,
+            transform: isMobile ? undefined : albumTransform,
             willChange: 'opacity, transform',
             background: 'transparent',
             boxShadow: 'none',
