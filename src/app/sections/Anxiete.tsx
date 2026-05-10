@@ -218,7 +218,7 @@ export default function Anxiete() {
   const textSlideY  = textScrolled ? -clamp01((scrollProg - 0.50) / 0.22) * 180 : 0
   const entryY      = isMobile ? 0 : (entered ? 0 : 70)
   const textOp      = textScrolled ? clamp01(1 - (scrollProg - 0.50) / 0.22) : 1
-  const contentTY   = isMobile ? 'none' : `translateY(calc(-50% + ${entryY + textSlideY}px))`
+  const contentTY   = isMobile ? 'translateY(-50%)' : `translateY(calc(-50% + ${entryY + textSlideY}px))`
   const contentTr   = (!isMobile && entered && !textScrolled)
     ? 'transform 1.2s cubic-bezier(0.22,1,0.36,1)'
     : 'none'

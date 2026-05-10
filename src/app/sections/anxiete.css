@@ -273,10 +273,9 @@
     left: 5vw;
     right: 5vw;
     width: auto;
-    top: auto;
-    bottom: 10vh;
-    /* transform géré en JS — pas de top/translate ici sur mobile */
-    transform: none !important;
+    top: 50%;
+    bottom: auto;
+    /* translateY(-50%) vient du JS inline style */
   }
 
   .anx-collage-grid {
