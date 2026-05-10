@@ -292,3 +292,32 @@
     font-size: clamp(14px, 4.5vw, 22px);
   }
 }
+
+/* ── Recalibrage typo + alignements texte mobile ── */
+@media (max-width: 767px) {
+  /* Bloc texte — centrage horizontal */
+  .anx-content {
+    text-align: center !important;
+  }
+
+  /* Titre — hiérarchie mobile réduite + centrage */
+  .anx-title {
+    font-size: clamp(32px, 8vw, 48px) !important;
+    line-height: 1.1 !important;
+    text-align: center !important;
+  }
+
+  /* Sous-titre — taille mobile + alignement gauche pour lisibilité */
+  .anx-subtitle {
+    font-size: clamp(15px, 4vw, 18px) !important;
+    line-height: 1.5 !important;
+    text-align: left !important;
+  }
+
+  /* Corps texte — mêmes ajustements */
+  .anx-line {
+    font-size: clamp(15px, 4vw, 18px) !important;
+    line-height: 1.5 !important;
+    text-align: left !important;
+  }
+}
