@@ -115,8 +115,8 @@ html, body {
   }
 
   .reveal-up.is-visible {
-    opacity: 1;
-    transform: translateY(0);
+    opacity: 1 !important;
+    transform: translateY(0) !important;
   }
 
   .reveal-up-far {
@@ -127,8 +127,8 @@ html, body {
   }
 
   .reveal-up-far.is-visible {
-    opacity: 1;
-    transform: translateY(0);
+    opacity: 1 !important;
+    transform: translateY(0) !important;
   }
 
   .reveal-fade {
@@ -137,13 +137,13 @@ html, body {
   }
 
   .reveal-fade.is-visible {
-    opacity: 1;
+    opacity: 1 !important;
   }
 
-  .reveal-delay-1 { transition-delay: 0.15s; }
-  .reveal-delay-2 { transition-delay: 0.30s; }
-  .reveal-delay-3 { transition-delay: 0.45s; }
-  .reveal-delay-4 { transition-delay: 0.60s; }
+  .reveal-delay-1 { transition-delay: 0.10s; }
+  .reveal-delay-2 { transition-delay: 0.20s; }
+  .reveal-delay-3 { transition-delay: 0.30s; }
+  .reveal-delay-4 { transition-delay: 0.40s; }
 }
 
 @media (prefers-reduced-motion: reduce) {
