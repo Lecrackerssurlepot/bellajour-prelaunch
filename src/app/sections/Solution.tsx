@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, memo } from 'react'
 import './solution.css'
-
+import { useReveal } from '@/hooks/useReveal'
 import CastingVisual from './CastingVisual'
 import SelectionVisual from './SelectionVisual'
 import MiseEnPageVisual from './MiseEnPageVisual'
@@ -185,185 +185,22 @@ function getState(i: number, active: number): 'active' | 'next' | 'prev' | 'far'
   return 'far'
 }
 
-// ── Visuels mobiles ──────────────────────────────────────────────────────────
-
-function UploadVisualMobile() {
-  const pctRef = useRef<HTMLSpanElement>(null)
-  useEffect(() => {
-    const pct = pctRef.current
-    if (!pct) return
-    pct.textContent = '0%'
-    const duration = 2000
-    const start = performance.now()
-    let raf: number
-    function tick(now: number) {
-      const p = Math.min((now - start) / duration, 1)
-      if (pct) pct.textContent = Math.floor(p * 100) + '%'
-      if (p < 1) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [])
-  return (
-    <div className="solm-upload">
-      <div className="solm-upload-photo">
-        <img src="/images/hero/hero-01.webp" alt="" />
-      </div>
-      <div className="solm-upload-pct"><span ref={pctRef}>0%</span></div>
-    </div>
-  )
-}
-
-function CastingVisualMobile() {
-  const p1Ref = useRef<HTMLDivElement>(null)
-  const p2Ref = useRef<HTMLDivElement>(null)
-  const n1Ref = useRef<HTMLSpanElement>(null)
-  const n2Ref = useRef<HTMLSpanElement>(null)
-  useEffect(() => {
-    const p1 = p1Ref.current; const p2 = p2Ref.current
-    const n1 = n1Ref.current; const n2 = n2Ref.current
-    if (!p1 || !p2 || !n1 || !n2) return
-    const timers: ReturnType<typeof setTimeout>[] = []
-    const t = (ms: number, fn: () => void) => { timers.push(setTimeout(fn, ms)) }
-    p1.style.opacity = '0'; p1.style.transform = 'translateX(-60px)'; p1.style.transition = ''
-    p2.style.opacity = '0'; p2.style.transform = 'translateX(60px)';  p2.style.transition = ''
-    n1.textContent = ''; n2.textContent = ''
-    t(100, () => {
-      p1.style.transition = 'transform 0.6s cubic-bezier(0.22,1,0.36,1), opacity 0.6s'
-      p1.style.transform = 'translateX(0)'; p1.style.opacity = '1'
-    })
-    t(200, () => {
-      p2.style.transition = 'transform 0.6s cubic-bezier(0.22,1,0.36,1), opacity 0.6s'
-      p2.style.transform = 'translateX(0)'; p2.style.opacity = '1'
-    })
-    t(800, () => {
-      'Camille'.split('').forEach((ch, i) => { timers.push(setTimeout(() => { n1.textContent += ch }, i * 80)) })
-    })
-    t(1000, () => {
-      'Louise'.split('').forEach((ch, i) => { timers.push(setTimeout(() => { n2.textContent += ch }, i * 80)) })
-    })
-    return () => timers.forEach(clearTimeout)
-  }, [])
-  return (
-    <div className="solm-casting">
-      <div className="solm-casting-person">
-        <div ref={p1Ref} className="solm-casting-photo"><img src="/images/anxiete/float-01.webp" alt="" /></div>
-        <span ref={n1Ref} className="solm-casting-name" />
-      </div>
-      <div className="solm-casting-person">
-        <div ref={p2Ref} className="solm-casting-photo"><img src="/images/anxiete/float-02.webp" alt="" /></div>
-        <span ref={n2Ref} className="solm-casting-name" />
-      </div>
-    </div>
-  )
-}
-
-function SelectionVisualMobile() {
-  const r1 = useRef<HTMLDivElement>(null)
-  const r2 = useRef<HTMLDivElement>(null)
-  const r3 = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const refs = [r1.current, r2.current, r3.current]
-    if (refs.some(r => !r)) return
-    const timers: ReturnType<typeof setTimeout>[] = []
-    const t = (ms: number, fn: () => void) => { timers.push(setTimeout(fn, ms)) }
-    refs.forEach(el => {
-      if (!el) return
-      el.style.transition = ''; el.style.opacity = '0'; el.style.transform = 'translateY(40px)'
-    })
-    refs.forEach((el, i) => {
-      t(i * 350 + 100, () => {
-        if (!el) return
-        el.style.transition = 'transform 0.5s cubic-bezier(0.22,1,0.36,1), opacity 0.5s'
-        el.style.transform = 'translateY(0)'; el.style.opacity = '1'
-      })
-    })
-    t(1500, () => {
-      const el = r2.current; if (!el) return
-      el.style.transition = 'transform 0.35s cubic-bezier(0.55,0,1,0.45), opacity 0.35s'
-      el.style.transform = 'translateX(200px)'; el.style.opacity = '0'
-    })
-    return () => timers.forEach(clearTimeout)
-  }, [])
-  return (
-    <div className="solm-selection">
-      <div ref={r1} className="solm-sel-photo"><img src="/images/anxiete/float-01.webp" alt="" /></div>
-      <div ref={r2} className="solm-sel-photo"><img src="/images/anxiete/float-02.webp" alt="" /></div>
-      <div ref={r3} className="solm-sel-photo"><img src="/images/anxiete/float-03.webp" alt="" /></div>
-    </div>
-  )
-}
-
-function MiseEnPageVisualMobile() {
-  const r0 = useRef<HTMLDivElement>(null)
-  const r1 = useRef<HTMLDivElement>(null)
-  const r2 = useRef<HTMLDivElement>(null)
-  const r3 = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const els = [r0.current, r1.current, r2.current, r3.current]
-    if (els.some(e => !e)) return
-    const timers: ReturnType<typeof setTimeout>[] = []
-    const t = (ms: number, fn: () => void) => { timers.push(setTimeout(fn, ms)) }
-    const PILE_Y = [-24, -16, -8, 0]
-    els.forEach((el, i) => {
-      if (!el) return
-      el.style.transition = ''; el.style.opacity = '0'
-      el.style.transform = `translateY(${PILE_Y[i]}px)`
-    })
-    els.forEach((el, i) => {
-      t(i * 200 + 100, () => {
-        if (!el) return
-        el.style.transition = 'transform 0.35s ease, opacity 0.35s ease'
-        el.style.opacity = '1'
-      })
-    })
-    const GRID = ['translate(-44px,-44px)', 'translate(44px,-44px)', 'translate(-44px,44px)', 'translate(44px,44px)']
-    t(1500, () => {
-      els.forEach((el, i) => {
-        if (!el) return
-        el.style.transition = 'transform 0.7s cubic-bezier(0.33,1,0.68,1)'
-        el.style.transform = GRID[i]
-      })
-    })
-    return () => timers.forEach(clearTimeout)
-  }, [])
-  const PHOTOS = ['/images/hero/hero-01.webp', '/images/hero/hero-03.webp', '/images/hero/hero-05.webp', '/images/hero/hero-07.webp']
-  const refs = [r0, r1, r2, r3]
-  return (
-    <div className="solm-mise-en-page">
-      {PHOTOS.map((src, i) => (
-        <div key={i} ref={refs[i]} className="solm-mep-photo">
-          <img src={src} alt="" />
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function SolutionVisualMobile({ step, animKey }: { step: number; animKey: number }) {
-  switch (step) {
-    case 0: return <UploadVisualMobile key={animKey} />
-    case 1: return <CastingVisualMobile key={animKey} />
-    case 2: return <SelectionVisualMobile key={animKey} />
-    case 3: return <MiseEnPageVisualMobile key={animKey} />
-    default: return null
-  }
-}
-
 export default function Solution() {
   const [active, setActive] = useState(-1)
   const [progress, setProgress] = useState(0)
-  const [isMobile, setIsMobile] = useState<boolean | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
   const sectionRef    = useRef<HTMLElement>(null)
   const stepStartRef  = useRef(Date.now())
   const runningRef    = useRef(false)
   const isSnappingRef = useRef(false)
   const lastScrollY   = useRef(0)
   const isMobileRef   = useRef(false)
-  const [activeStep, setActiveStep] = useState(0)
-  const [animKey, setAnimKey] = useState(0)
-  const touchStartX = useRef(0)
-  const touchStartY = useRef(0)
+
+  const step1Reveal = useReveal(0.25)
+  const step2Reveal = useReveal(0.25)
+  const step3Reveal = useReveal(0.25)
+  const step4Reveal = useReveal(0.25)
+  const stepReveals = [step1Reveal, step2Reveal, step3Reveal, step4Reveal]
 
   useEffect(() => {
     const check = () => {
@@ -442,48 +279,29 @@ export default function Solution() {
     setProgress(0)
   }
 
-  const goToStep = (i: number) => { setActiveStep(i); setAnimKey(k => k + 1) }
-  const onTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX
-    touchStartY.current = e.touches[0].clientY
-  }
-  const onTouchEnd = (e: React.TouchEvent) => {
-    const dx = e.changedTouches[0].clientX - touchStartX.current
-    const dy = e.changedTouches[0].clientY - touchStartY.current
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-      if (dx < 0 && activeStep < ETAPES.length - 1) goToStep(activeStep + 1)
-      else if (dx > 0 && activeStep > 0) goToStep(activeStep - 1)
-    }
-  }
-
-  if (isMobile === null) return null
-
   if (isMobile) {
     return (
       <section ref={sectionRef} id="solution" className="sol-section" data-section="solution" data-theme="light">
-        <div className="sol-stepper-mobile" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-          <div className="sol-stepper-header">
-            <p className="sol-stepper-title">Le parcours de création</p>
-            <p className="sol-stepper-sub">À vous la direction. À nous l&rsquo;exécution.</p>
+        <div className="sol-inner-mobile">
+          <div className="sol-header">
+            <p className="sol-header-title">Le parcours de création</p>
+            <p className="sol-header-sub">À vous la direction. À nous l&rsquo;exécution.</p>
           </div>
-          <div className="sol-stepper-slide">
-            <div className="sol-slide-text">
-              <span className="sol-num">{ETAPES[activeStep].num}</span>
-              <h2 className="sol-titre">{ETAPES[activeStep].titre}</h2>
-              <p className="sol-sous-titre">{ETAPES[activeStep].lines[0]}<br />{ETAPES[activeStep].lines[1]}</p>
-            </div>
-            <div className="sol-slide-visual">
-              <SolutionVisualMobile step={activeStep} animKey={animKey} />
-            </div>
-          </div>
-          <div className="sol-stepper-nav">
-            <button className="sol-stepper-btn" onClick={() => goToStep(activeStep - 1)} disabled={activeStep === 0} aria-label="Précédent">‹</button>
-            <div className="sol-stepper-dots">
-              {ETAPES.map((_, i) => (
-                <button key={i} className={`sol-dot${i === activeStep ? ' sol-dot--active' : ''}`} onClick={() => goToStep(i)} aria-label={`Étape ${i + 1}`} />
-              ))}
-            </div>
-            <button className="sol-stepper-btn" onClick={() => goToStep(activeStep + 1)} disabled={activeStep === ETAPES.length - 1} aria-label="Suivant">›</button>
+          <div className="sol-cards">
+            {ETAPES.map((e, i) => {
+              const reveal = stepReveals[i]
+              return (
+                <div
+                  key={e.num}
+                  ref={reveal.ref}
+                  className={`sol-card reveal-up${i > 0 ? ` reveal-delay-${i}` : ''}${reveal.isVisible ? ' is-visible' : ''}`}
+                >
+                  <span className="sol-num">{e.num}</span>
+                  <h2 className="sol-titre">{e.titre}</h2>
+                  <p className="sol-sous-titre">{e.lines[0]}<br />{e.lines[1]}</p>
+                </div>
+              )
+            })}
           </div>
         </div>
       </section>
