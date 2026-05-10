@@ -49,13 +49,13 @@
   .bi-photos {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 10px;
     width: 100%;
   }
 
   .bi-photo {
     width: 100%;
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 3 / 2;
     overflow: hidden;
     background: var(--bj-noir, #1C1C1C);
   }
