@@ -24,7 +24,7 @@
   }
 
   .bi-brand {
-    font-family: var(--bj-font-serif, 'Playfair Display'), serif;
+    font-family: 'Playfair Display', serif;
     font-weight: 700;
     font-size: clamp(48px, 13vw, 72px);
     line-height: 1;
