@@ -76,7 +76,7 @@ export default function Album() {
   const decorScale  = lerp(1.05, 1, clamp01(p2Norm / 0.5))
 
   const albumScaleP1 = lerp(0.8, 1, entryProgress)
-  const albumScale   = lerp(albumScaleP1, isMobile ? 0.6 : 0.45, p2Norm)
+  const albumScale   = isMobile ? 1 : lerp(albumScaleP1, 0.45, p2Norm)
   const albumTX      = isMobile ? 0 : lerp(0, -25, p2Norm)
   const albumTY      = entryTY + lerp(0, isMobile ? 0 : -10, p2Norm)
   const subtitleOp   = isMobile ? 1 : easeOut3(clamp01((p2Norm - 0.3) / 0.3))
