@@ -328,16 +328,16 @@
     height: auto !important;
     min-height: 100svh;
     overflow: visible !important;
-    padding-bottom: 80px;
+    padding-bottom: 20px;
   }
 
-  /* Collage en dessous de la zone grille (100svh de décalage) */
+  /* Collage juste après la zone grille */
   .anx-collage {
     position: relative !important;
     width: auto !important;
     height: auto !important;
-    margin-top: 100svh !important;
-    padding: 0 5vw !important;
+    margin-top: 40px !important;
+    padding: 60px 5vw 0 !important;
     align-items: flex-start !important;
     justify-content: flex-start !important;
   }
