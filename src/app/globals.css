@@ -25,6 +25,7 @@
   /* ── Radius ── */
   --bj-radius: 0;
   --bj-radius-glass: 24px;
+  --bj-radius-md: 10px;
 
   /* ── Glass — uniquement sur contenu photo/media en dessous ── */
   --bj-glass-blur:   blur(10px);
