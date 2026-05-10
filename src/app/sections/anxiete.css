@@ -296,14 +296,14 @@
 @media (max-width: 767px) {
   /* Bloc texte — centrage horizontal */
   .anx-content {
-    text-align: center !important;
+    text-align: left !important;
   }
 
-  /* Titre — hiérarchie mobile réduite + centrage */
+  /* Titre — hiérarchie mobile réduite */
   .anx-title {
     font-size: clamp(32px, 8vw, 48px) !important;
     line-height: 1.1 !important;
-    text-align: center !important;
+    text-align: left !important;
   }
 
   /* Sous-titre — taille mobile + alignement gauche pour lisibilité */
