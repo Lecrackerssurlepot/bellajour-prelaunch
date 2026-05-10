@@ -15,7 +15,7 @@ const SECTIONS: SectionConfig[] = [
   { id: 'hero',         theme: 'light' },
   { id: 'anxiete',      theme: 'dark' },
   { id: 'solution',     theme: 'light' },
-  { id: 'album',        theme: 'light' },
+  { id: 'album',        theme: 'dark' },
   { id: 'finalwaitlist',theme: 'light', hidden: true },
   { id: 'faq',          theme: 'light' },
   { id: 'footer',       theme: 'dark',  hidden: true },
