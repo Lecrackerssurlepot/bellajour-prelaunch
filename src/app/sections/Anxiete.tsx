@@ -88,9 +88,11 @@ export default function Anxiete() {
   const [slots, setSlots]             = useState<number[]>(mkSlots)
   const [fadingSlots, setFadingSlots] = useState<Set<number>>(new Set())
   const [isMobile,    setIsMobile]    = useState(false)
-  const gridReveal      = useReveal(0.15)
-  const headlineReveal  = useReveal<HTMLHeadingElement>(0.25)
+  const gridReveal       = useReveal(0.15)
+  const headlineReveal   = useReveal<HTMLHeadingElement>(0.25)
   const paragraphsReveal = useReveal(0.25)
+  const collageReveal    = useReveal(0.20)
+  const finalReveal      = useReveal(0.20)
   const rafRef        = useRef<number | null>(null)
   const startTimeRef  = useRef<number | null>(null)
   const scrollProgRef = useRef(0)
@@ -230,8 +232,8 @@ export default function Anxiete() {
 
   const darkOp = isMobile ? 0 : clamp01((scrollProg - 0.62) / 0.18) * 0.88
 
-  const showCollage  = !isMobile && scrollProg >= 0.70
-  const showHeadline = !isMobile && scrollProg >= 0.86
+  const showCollage  = isMobile || (scrollProg >= 0.70)
+  const showHeadline = isMobile || (scrollProg >= 0.86)
   const headlineT    = easeOut3(clamp01((scrollProg - 0.88) / 0.10))
 
   const sub   = isMobile ? 1 : revealOp(scrollProg, 0.03)
@@ -343,13 +345,13 @@ export default function Anxiete() {
 
         {/* ── Collage : 5 photos convergent depuis la grille ── */}
         {showCollage && (
-          <div className="anx-collage">
+          <div ref={collageReveal.ref} className="anx-collage">
             <div className="anx-collage-grid">
-              {COLLAGE.map(c => (
+              {COLLAGE.map((c, idx) => (
                 <div
                   key={c.pos}
-                  className={`anx-cp anx-cp--${c.pos}`}
-                  style={cpStyle(c.pos, c.thresh)}
+                  className={`anx-cp anx-cp--${c.pos} reveal-fade reveal-delay-${idx}${collageReveal.isVisible ? ' is-visible' : ''}`}
+                  style={isMobile ? undefined : cpStyle(c.pos, c.thresh)}
                 >
                   <img src={c.src} alt="" />
                 </div>
@@ -361,8 +363,9 @@ export default function Anxiete() {
         {/* ── Headline final ── */}
         {showHeadline && (
           <div
-            className="anx-headline-final"
-            style={{
+            ref={finalReveal.ref}
+            className={`anx-headline-final reveal-up reveal-delay-1${finalReveal.isVisible ? ' is-visible' : ''}`}
+            style={isMobile ? undefined : {
               opacity: headlineT,
               transform: `translateY(${(1 - headlineT) * 24}px)`,
             }}
