@@ -61,3 +61,37 @@ html, body {
 @media (max-width: 767px) {
   .bj-section { padding: var(--bj-section-padding-mobile) 5vw; }
 }
+
+/* ════════════════════════════════════════
+   Mobile — Scroll naturel (≤ 767px)
+   ════════════════════════════════════════ */
+@media (max-width: 767px) {
+  /* Désactivation snap global */
+  html {
+    scroll-snap-type: none !important;
+  }
+
+  /* Reset snap-align sur toutes les sections */
+  .hero,
+  .sol-section,
+  .sol-snap-end,
+  .fwl-section,
+  .alb-scroll {
+    scroll-snap-align: none !important;
+  }
+
+  /* Reset hauteurs sticky des sections lourdes */
+  .anx-scroll,
+  .alb-scroll {
+    height: auto !important;
+    min-height: 100vh;
+  }
+
+  /* Désactiver sticky internes → contenu défile naturellement */
+  .anx-sticky,
+  .alb-sticky {
+    position: relative !important;
+    top: auto !important;
+    height: auto !important;
+  }
+}
