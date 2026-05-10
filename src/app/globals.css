@@ -63,42 +63,40 @@ html, body {
 }
 
 /* ════════════════════════════════════════
-   Mobile — Scroll naturel (≤ 767px)
+   Mobile — Scroll natif (≤ 767px)
    ════════════════════════════════════════ */
 @media (max-width: 767px) {
-  /* Désactivation snap global */
   html {
     scroll-snap-type: none !important;
   }
 
-  /* Reset snap-align sur toutes les sections */
   .hero,
   .sol-section,
   .sol-snap-end,
-  .fwl-section,
-  .alb-scroll {
+  .fwl-section {
     scroll-snap-align: none !important;
   }
 
-  /* Solution — pas de scroll-driven, height auto */
   #solution {
     height: auto !important;
     min-height: 100vh;
   }
 
-  /* Anxiété : réduit de 600vh à 200vh, sticky conservé */
-  .anx-scroll {
-    height: 200vh !important;
-  }
-
-  /* Album : réduit de 700vh à 250vh, sticky conservé */
+  /* Anxiété & Album — abandon sticky, blocs natifs 100svh */
+  .anx-scroll,
   .alb-scroll {
-    height: 250vh !important;
+    height: auto !important;
   }
 
-  /* Sticky uniquement pour éléments non-animés */
+  .anx-sticky,
+  .alb-sticky {
+    position: relative !important;
+    top: auto !important;
+    height: 100svh !important;
+  }
+
   .sol-sticky,
-  [class*="-pin"]:not(.anx-sticky):not(.alb-sticky) {
+  [class*="-pin"] {
     position: relative !important;
     top: auto !important;
   }

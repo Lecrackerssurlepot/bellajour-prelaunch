@@ -86,6 +86,7 @@ export default function Anxiete() {
   const [entered, setEntered]         = useState(false)
   const [slots, setSlots]             = useState<number[]>(mkSlots)
   const [fadingSlots, setFadingSlots] = useState<Set<number>>(new Set())
+  const [isMobile,    setIsMobile]    = useState(false)
   const rafRef        = useRef<number | null>(null)
   const startTimeRef  = useRef<number | null>(null)
   const scrollProgRef = useRef(0)
@@ -135,6 +136,14 @@ export default function Anxiete() {
     window.addEventListener('scroll', onScroll, { passive: true })
     onScroll()
     return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // ── Detect mobile
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check, { passive: true })
+    return () => window.removeEventListener('resize', check)
   }, [])
 
   // ── Cycling photos (s'arrête à 0.52, jamais sur les cellules choisies)
@@ -198,38 +207,34 @@ export default function Anxiete() {
   }
 
   // ── Phases dérivées
-  const textScrolled = scrollProg >= 0.50
+  // Sur mobile : sticky abandonné → scrollProg reste 0 (h ≤ 0 dans le handler)
+  // On force tout à visible via isMobile.
+  const textScrolled = !isMobile && scrollProg >= 0.50
 
-  // Texte : glisse vers le haut et disparaît
   const textSlideY  = textScrolled ? -clamp01((scrollProg - 0.50) / 0.22) * 180 : 0
-  const entryY      = entered ? 0 : 70
+  const entryY      = isMobile ? 0 : (entered ? 0 : 70)
   const textOp      = textScrolled ? clamp01(1 - (scrollProg - 0.50) / 0.22) : 1
-  const contentTY   = `translateY(calc(-50% + ${entryY + textSlideY}px))`
-  const contentTr   = (entered && !textScrolled)
+  const contentTY   = isMobile ? 'none' : `translateY(calc(-50% + ${entryY + textSlideY}px))`
+  const contentTr   = (!isMobile && entered && !textScrolled)
     ? 'transform 1.2s cubic-bezier(0.22,1,0.36,1)'
     : 'none'
 
-  // Overlay gauche (lisibilité texte) — disparaît avec le texte
   const overlayOp = textScrolled ? clamp01(1 - (scrollProg - 0.50) / 0.22) : 1
 
-  // Grille : zoom progressif (sensation de plonger dedans)
-  const gridScaleVal = 1 + easeOut3(clamp01((scrollProg - 0.38) / 0.38)) * 0.22
+  const gridScaleVal = isMobile ? 1 : (1 + easeOut3(clamp01((scrollProg - 0.38) / 0.38)) * 0.22)
+  const gridFrozen   = isMobile || scrollProg >= 0.40
 
-  // Flottement s'arrête quand la grille commence à grossir
-  const gridFrozen = scrollProg >= 0.40
+  const darkOp = isMobile ? 0 : clamp01((scrollProg - 0.62) / 0.18) * 0.88
 
-  // Overlay sombre (phase collage)
-  const darkOp = clamp01((scrollProg - 0.62) / 0.18) * 0.88
-
-  const showCollage  = scrollProg >= 0.70
-  const showHeadline = scrollProg >= 0.86
+  const showCollage  = !isMobile && scrollProg >= 0.70
+  const showHeadline = !isMobile && scrollProg >= 0.86
   const headlineT    = easeOut3(clamp01((scrollProg - 0.88) / 0.10))
 
-  const sub   = revealOp(scrollProg, 0.03)
-  const line1 = revealOp(scrollProg, 0.12)
-  const bold  = revealOp(scrollProg, 0.22)
-  const line3 = revealOp(scrollProg, 0.32)
-  const line4 = revealOp(scrollProg, 0.42)
+  const sub   = isMobile ? 1 : revealOp(scrollProg, 0.03)
+  const line1 = isMobile ? 1 : revealOp(scrollProg, 0.12)
+  const bold  = isMobile ? 1 : revealOp(scrollProg, 0.22)
+  const line3 = isMobile ? 1 : revealOp(scrollProg, 0.32)
+  const line4 = isMobile ? 1 : revealOp(scrollProg, 0.42)
 
   return (
     <div

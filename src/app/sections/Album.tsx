@@ -59,22 +59,23 @@ export default function Album() {
   const p2Norm        = clamp01((scrollProg - 0.5) / 0.5)
   const entryProgress = easeOut3(clamp01(p1Norm / 0.4))
 
-  const entryTY      = lerp(100, 0, entryProgress)   // vh — enters from below
-  const albumOp      = entryProgress
+  // Sur mobile : sticky abandonné → scrollProg reste 0 → tout forcé visible
+  const entryTY      = isMobile ? 0 : lerp(100, 0, entryProgress)
+  const albumOp      = isMobile ? 1 : entryProgress
   const titleFadeIn  = easeOut3(clamp01((p1Norm - 0.3) / 0.3))
   const titleFadeOut = 1 - easeOut3(clamp01(p2Norm / 0.3))
-  const titleOp      = titleFadeIn * titleFadeOut
+  const titleOp      = isMobile ? 1 : titleFadeIn * titleFadeOut
 
   // Phase 2: p = 0.5 → 1
   const decorOpRaw  = easeOut3(clamp01(p2Norm / 0.5))
-  const decorOp     = decorOpRaw * (isMobile ? 0.4 : 1)
+  const decorOp     = isMobile ? 0 : decorOpRaw
   const decorScale  = lerp(1.05, 1, clamp01(p2Norm / 0.5))
 
   const albumScaleP1 = lerp(0.8, 1, entryProgress)
   const albumScale   = lerp(albumScaleP1, isMobile ? 0.6 : 0.45, p2Norm)
-  const albumTX      = isMobile ? 0 : lerp(0, -25, p2Norm)     // vw
-  const albumTY      = entryTY + lerp(0, isMobile ? 15 : -10, p2Norm)  // vh
-  const subtitleOp   = easeOut3(clamp01((p2Norm - 0.3) / 0.3))
+  const albumTX      = isMobile ? 0 : lerp(0, -25, p2Norm)
+  const albumTY      = entryTY + lerp(0, isMobile ? 0 : -10, p2Norm)
+  const subtitleOp   = isMobile ? 1 : easeOut3(clamp01((p2Norm - 0.3) / 0.3))
   const rotate       = isMobile ? 0 : swayAngle
 
   const albumTransform = `translate(calc(-50% + ${albumTX.toFixed(2)}vw), calc(-50% + ${albumTY.toFixed(2)}vh)) scale(${albumScale.toFixed(4)}) rotateZ(${rotate.toFixed(3)}deg)`
