@@ -7,6 +7,7 @@ const PHOTOS = [
   '/images/anxiete/grid-03.webp',
   '/images/anxiete/grid-05.webp',
   '/images/anxiete/grid-04.webp',
+  '/images/anxiete/grid-06.webp',
 ]
 
 const BG_PHOTOS = [
@@ -19,20 +20,18 @@ const BG_PHOTOS = [
 ]
 
 export default function BrandIntro() {
-  const signatureReveal = useReveal<HTMLImageElement>(0.25)
-  const brandReveal     = useReveal(0.25)
-  const taglineReveal   = useReveal(0.25)
-  const photo1Reveal    = useReveal(0.15)
-  const photo2Reveal    = useReveal(0.15)
-  const photo3Reveal    = useReveal(0.15)
-  const photo4Reveal    = useReveal(0.15)
-  const ctaReveal       = useReveal<HTMLButtonElement>(0.30)
+  const brandReveal   = useReveal(0.25)
+  const taglineReveal = useReveal(0.25)
+  const photo1Reveal  = useReveal(0.15)
+  const photo2Reveal  = useReveal(0.15)
+  const photo3Reveal  = useReveal(0.15)
+  const photo4Reveal  = useReveal(0.15)
+  const photo5Reveal  = useReveal(0.15)
+  const ctaReveal     = useReveal<HTMLButtonElement>(0.30)
 
   const scrollToWaitlist = () => {
     document.getElementById('finalwaitlist')?.scrollIntoView({ behavior: 'smooth' })
   }
-
-  const photoReveals = [photo1Reveal, photo2Reveal, photo3Reveal, photo4Reveal]
 
   return (
     <section className="bi-section" data-theme="dark">
@@ -49,19 +48,10 @@ export default function BrandIntro() {
       <div className="bi-bg-overlay" aria-hidden="true" />
 
       <div className="bi-inner">
-        {/* Signature manuscrite */}
-        <img
-          ref={signatureReveal.ref}
-          src="/images/ui/signature.svg"
-          alt=""
-          aria-hidden="true"
-          className={`bi-signature reveal-up${signatureReveal.isVisible ? ' is-visible' : ''}`}
-        />
-
         {/* Bellajour Playfair italic */}
         <h2
           ref={brandReveal.ref}
-          className={`bi-brand reveal-up reveal-delay-1${brandReveal.isVisible ? ' is-visible' : ''}`}
+          className={`bi-brand reveal-up${brandReveal.isVisible ? ' is-visible' : ''}`}
         >
           Bellajour
         </h2>
@@ -69,32 +59,37 @@ export default function BrandIntro() {
         {/* Tagline */}
         <p
           ref={taglineReveal.ref}
-          className={`bi-tagline reveal-up reveal-delay-2${taglineReveal.isVisible ? ' is-visible' : ''}`}
+          className={`bi-tagline reveal-up reveal-delay-1${taglineReveal.isVisible ? ' is-visible' : ''}`}
         >
           Comprend vos besoins<br />et crée l&rsquo;album parfait pour vous
         </p>
 
-        {/* 4 photos avec zoom reveal premium */}
-        <div className="bi-photos-grid">
-          {[0, 1, 2, 3].map((i) => {
-            const reveal = photoReveals[i]
-            return (
+        {/* Mosaïque 5 photos : 1 hero + grille 2x2 */}
+        <div className="bi-photos-mosaic">
+          <div
+            ref={photo1Reveal.ref}
+            className={`bi-photo bi-photo-hero bi-photo-zoom${photo1Reveal.isVisible ? ' is-visible' : ''}`}
+          >
+            <img src={PHOTOS[0]} alt="" loading="lazy" />
+          </div>
+          <div className="bi-photos-grid">
+            {([photo2Reveal, photo3Reveal, photo4Reveal, photo5Reveal] as const).map((reveal, i) => (
               <div
                 key={i}
                 ref={reveal.ref}
                 className={`bi-photo bi-photo-zoom reveal-delay-${i + 1}${reveal.isVisible ? ' is-visible' : ''}`}
               >
-                <img src={PHOTOS[i]} alt="" loading="lazy" />
+                <img src={PHOTOS[i + 1]} alt="" loading="lazy" />
               </div>
-            )
-          })}
+            ))}
+          </div>
         </div>
 
         {/* CTA */}
         <button
           ref={ctaReveal.ref}
           onClick={scrollToWaitlist}
-          className={`bi-cta reveal-up reveal-delay-3${ctaReveal.isVisible ? ' is-visible' : ''}`}
+          className={`bi-cta reveal-up reveal-delay-2${ctaReveal.isVisible ? ' is-visible' : ''}`}
           aria-label="Réserver ma place sur la waitlist"
         >
           Réserver ma place

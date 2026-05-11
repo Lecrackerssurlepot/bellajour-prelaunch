@@ -37,7 +37,7 @@
     height: 100%;
     object-fit: cover;
     display: block;
-    opacity: 0.30;
+    opacity: 0.28;
   }
 
   /* ── Overlay sombre pour lisibilité ── */
@@ -61,16 +61,6 @@
     flex-direction: column;
     align-items: center;
     gap: 0;
-  }
-
-  /* ── Signature manuscrite — crème sur fond noir ── */
-  .bi-signature {
-    width: clamp(120px, 38vw, 200px);
-    height: auto;
-    display: block;
-    margin: 0 0 -4px;
-    filter: brightness(0) invert(1);
-    opacity: 0.75;
   }
 
   /* ── Bellajour Playfair italic ── */
@@ -99,21 +89,34 @@
     text-align: center;
   }
 
-  /* ── Grille 2×2 photos ── */
+  /* ── Mosaïque : photo hero + grille 2×2 ── */
+  .bi-photos-mosaic {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 40px;
+  }
+
+  .bi-photo-hero {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    border-radius: 8px;
+  }
+
   .bi-photos-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 8px;
     width: 100%;
-    margin-bottom: 36px;
   }
 
-  /* ── Photo + animation premium reveal + zoom ── */
+  /* ── Photo (commune) ── */
   .bi-photo {
-    width: 100%;
-    aspect-ratio: 1 / 1;
     overflow: hidden;
     background: var(--bj-noir, #1C1C1C);
+    border-radius: 8px;
+    aspect-ratio: 1 / 1;
   }
 
   .bi-photo img {
@@ -123,6 +126,7 @@
     display: block;
   }
 
+  /* ── Animation zoom reveal premium ── */
   .bi-photo-zoom {
     opacity: 0;
     transform: translateY(40px);
@@ -132,7 +136,7 @@
   }
 
   .bi-photo-zoom img {
-    transform: scale(1.10);
+    transform: scale(1.08);
     transition: transform 1.8s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
