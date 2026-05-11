@@ -10,49 +10,105 @@
 @media (max-width: 767px) {
   .bi-section {
     display: block;
+    position: relative;
     background: var(--bj-noir, #1C1C1C);
-    padding: 80px 5vw 80px;
+    padding: 100px 5vw 80px;
     color: var(--bj-bg, #EAE3D8);
+    overflow: hidden;
   }
 
+  /* ── Grille de fond (filigrane Anxiété) ── */
+  .bi-bg-grid {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    z-index: 0;
+  }
+
+  .bi-bg-cell {
+    overflow: hidden;
+    background: var(--bj-noir, #1C1C1C);
+  }
+
+  .bi-bg-cell img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0.30;
+  }
+
+  /* ── Overlay sombre pour lisibilité ── */
+  .bi-bg-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(28, 28, 28, 0.88) 0%,
+      rgba(28, 28, 28, 0.78) 50%,
+      rgba(28, 28, 28, 0.88) 100%
+    );
+    z-index: 1;
+  }
+
+  /* ── Contenu ── */
   .bi-inner {
+    position: relative;
+    z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0;
-    max-width: 100%;
   }
 
+  /* ── Signature manuscrite — crème sur fond noir ── */
+  .bi-signature {
+    width: clamp(120px, 38vw, 200px);
+    height: auto;
+    display: block;
+    margin: 0 0 -4px;
+    filter: brightness(0) invert(1);
+    opacity: 0.75;
+  }
+
+  /* ── Bellajour Playfair italic ── */
   .bi-brand {
     font-family: 'Playfair Display', serif;
-    font-weight: 700;
-    font-size: clamp(56px, 14vw, 72px);
+    font-weight: 400;
+    font-style: italic;
+    font-size: clamp(52px, 13vw, 80px);
     line-height: 1;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
     color: var(--bj-bg, #EAE3D8);
     margin: 0;
     text-align: center;
   }
 
+  /* ── Tagline ── */
   .bi-tagline {
     font-family: 'Cormorant Garamond', serif;
     font-style: italic;
     font-weight: 300;
     font-size: clamp(16px, 4.2vw, 20px);
-    line-height: 1.4;
+    line-height: 1.45;
     color: var(--bj-bg, #EAE3D8);
-    opacity: 0.85;
-    margin: 16px 0 32px;
+    opacity: 0.80;
+    margin: 14px 0 36px;
     text-align: center;
   }
 
+  /* ── Grille 2×2 photos ── */
   .bi-photos-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
+    margin-bottom: 36px;
   }
 
+  /* ── Photo + animation premium reveal + zoom ── */
   .bi-photo {
     width: 100%;
     aspect-ratio: 1 / 1;
@@ -67,8 +123,30 @@
     display: block;
   }
 
+  .bi-photo-zoom {
+    opacity: 0;
+    transform: translateY(40px);
+    transition:
+      opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .bi-photo-zoom img {
+    transform: scale(1.10);
+    transition: transform 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .bi-photo-zoom.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .bi-photo-zoom.is-visible img {
+    transform: scale(1);
+  }
+
+  /* ── CTA ── */
   .bi-cta {
-    margin-top: 32px;
     padding: 12px 4px;
     background: transparent;
     border: none;
@@ -82,6 +160,6 @@
     text-decoration-thickness: 1px;
     cursor: pointer;
     min-height: 44px;
-    align-self: flex-end;
+    align-self: center;
   }
 }
