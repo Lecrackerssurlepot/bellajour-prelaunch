@@ -486,6 +486,13 @@
     transform: none !important;
   }
 
+  /* ── Carousel : désactive le slide-up du container sur mobile ── */
+  .fwl-chapitres {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
   /* ── Ticker heartbeat — ancrage mobile explicite ── */
   .fwl-ticker-item {
     animation: fwl-ticker-heartbeat 4.6s linear forwards;
