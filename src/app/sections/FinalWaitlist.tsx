@@ -373,10 +373,22 @@ export default function FinalWaitlist() {
           Trois attentions, réservées à la waitlist.
         </p>
 
-        <div ref={carouselRef} className="fwl-chapitres">
-          {CHAPITRES.map(c => (
-            <WaitlistChapterCard key={c.num} {...c} />
-          ))}
+        <div className="fwl-carousel-wrap">
+          <button
+            className={`fwl-arrow fwl-arrow-prev${activeDot === 0 ? ' is-disabled' : ''}`}
+            onClick={() => scrollToCard(Math.max(0, activeDot - 1))}
+            aria-label="Précédent"
+          >&#8249;</button>
+          <div ref={carouselRef} className="fwl-chapitres">
+            {CHAPITRES.map(c => (
+              <WaitlistChapterCard key={c.num} {...c} />
+            ))}
+          </div>
+          <button
+            className={`fwl-arrow fwl-arrow-next${activeDot === 2 ? ' is-disabled' : ''}`}
+            onClick={() => scrollToCard(Math.min(2, activeDot + 1))}
+            aria-label="Suivant"
+          >&#8250;</button>
         </div>
 
         <div className="fwl-dots">
