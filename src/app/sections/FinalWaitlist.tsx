@@ -118,10 +118,11 @@ export default function FinalWaitlist() {
     if (step === 2) prenomRef.current?.focus()
   }, [step])
 
-  /* Carousel dots — sync scroll position */
+  /* Carousel — init scroll à 0 + sync dots */
   useEffect(() => {
     const container = carouselRef.current
     if (!container) return
+    container.scrollLeft = 0
     const handleScroll = () => {
       const cards = Array.from(container.children) as HTMLElement[]
       const containerCenter = container.scrollLeft + container.offsetWidth / 2

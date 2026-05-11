@@ -1107,6 +1107,8 @@
     overflow-x: auto !important;
     overflow-y: visible !important;
     scroll-snap-type: x mandatory !important;
+    scroll-padding: 0 !important;
+    overscroll-behavior-x: contain !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
     grid-template-columns: none !important;
@@ -1121,7 +1123,8 @@
 
   .fwl-card {
     flex: 0 0 80vw !important;
-    scroll-snap-align: center !important;
+    scroll-snap-align: start !important;
+    scroll-snap-stop: always !important;
   }
 
   .fwl-arrow {
