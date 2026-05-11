@@ -470,6 +470,23 @@
     font-size: clamp(28px, 8vw, 40px);
   }
 
+  /* ── Compteur : alignement point + texte ── */
+  .fwl-count {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+    font-size: clamp(13px, 3.5vw, 16px) !important;
+    text-align: center;
+  }
+
+  .fwl-count-dot {
+    flex-shrink: 0 !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+  }
+
   /* ── Ticker heartbeat — ancrage mobile explicite ── */
   .fwl-ticker-item {
     animation: fwl-ticker-heartbeat 4.6s linear forwards;
