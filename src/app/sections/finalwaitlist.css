@@ -470,6 +470,16 @@
     font-size: clamp(28px, 8vw, 40px);
   }
 
+  /* ── Ticker heartbeat — ancrage mobile explicite ── */
+  .fwl-ticker-item {
+    animation: fwl-ticker-heartbeat 4.6s linear forwards;
+  }
+
+  /* ── Ligne statique cachée sur mobile ── */
+  .fwl-ticker-static {
+    display: none !important;
+  }
+
   .fwl-form {
     flex-wrap: wrap;
     border-radius: 10px;
