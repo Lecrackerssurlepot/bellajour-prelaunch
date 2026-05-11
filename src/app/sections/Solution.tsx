@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, memo } from 'react'
 import './solution.css'
-import { useReveal } from '@/hooks/useReveal'
 import CastingVisual from './CastingVisual'
 import SelectionVisual from './SelectionVisual'
 import MiseEnPageVisual from './MiseEnPageVisual'
@@ -196,11 +195,29 @@ export default function Solution() {
   const lastScrollY   = useRef(0)
   const isMobileRef   = useRef(false)
 
-  const step1Reveal = useReveal(0.25)
-  const step2Reveal = useReveal(0.25)
-  const step3Reveal = useReveal(0.25)
-  const step4Reveal = useReveal(0.25)
-  const stepReveals = [step1Reveal, step2Reveal, step3Reveal, step4Reveal]
+  const [mobileSolVisible, setMobileSolVisible] = useState(new Set<number>())
+
+  useEffect(() => {
+    if (!isMobile) return
+    const section = sectionRef.current
+    if (!section) return
+    const cards = Array.from(section.querySelectorAll('.sol-card')) as HTMLElement[]
+    if (!cards.length) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const idx = cards.indexOf(entry.target as HTMLElement)
+            if (idx !== -1) setMobileSolVisible(prev => { const next = new Set(prev); next.add(idx); return next })
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.15 }
+    )
+    cards.forEach(card => observer.observe(card))
+    return () => observer.disconnect()
+  }, [isMobile])
 
   useEffect(() => {
     const check = () => {
@@ -288,20 +305,16 @@ export default function Solution() {
             <p className="sol-header-sub">À vous la direction. À nous l&rsquo;exécution.</p>
           </div>
           <div className="sol-cards">
-            {ETAPES.map((e, i) => {
-              const reveal = stepReveals[i]
-              return (
-                <div
-                  key={e.num}
-                  ref={reveal.ref}
-                  className={`sol-card reveal-up${i > 0 ? ` reveal-delay-${i}` : ''}${reveal.isVisible ? ' is-visible' : ''}`}
-                >
-                  <span className="sol-num">{e.num}</span>
-                  <h2 className="sol-titre">{e.titre}</h2>
-                  <p className="sol-sous-titre">{e.lines[0]}<br />{e.lines[1]}</p>
-                </div>
-              )
-            })}
+            {ETAPES.map((e, i) => (
+              <div
+                key={e.num}
+                className={`sol-card reveal-up${i > 0 ? ` reveal-delay-${i}` : ''}${mobileSolVisible.has(i) ? ' is-visible' : ''}`}
+              >
+                <span className="sol-num">{e.num}</span>
+                <h2 className="sol-titre">{e.titre}</h2>
+                <p className="sol-sous-titre">{e.lines[0]}<br />{e.lines[1]}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
