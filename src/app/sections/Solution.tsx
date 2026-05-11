@@ -202,39 +202,6 @@ export default function Solution() {
   const step4Reveal = useReveal(0.25)
   const stepReveals = [step1Reveal, step2Reveal, step3Reveal, step4Reveal]
 
-  const solCarouselRef = useRef<HTMLDivElement>(null)
-  const [solActiveCard, setSolActiveCard] = useState(0)
-
-  const scrollToSolCard = (index: number) => {
-    if (!solCarouselRef.current) return
-    const card = solCarouselRef.current.children[index] as HTMLElement
-    if (card) {
-      solCarouselRef.current.scrollTo({
-        left: card.offsetLeft - solCarouselRef.current.offsetLeft,
-        behavior: 'smooth'
-      })
-    }
-  }
-
-  useEffect(() => {
-    const container = solCarouselRef.current
-    if (!container) return
-    const handleScroll = () => {
-      const cards = Array.from(container.children) as HTMLElement[]
-      const containerCenter = container.scrollLeft + container.offsetWidth / 2
-      let closestIndex = 0
-      let closestDist = Infinity
-      cards.forEach((card, i) => {
-        const cardCenter = card.offsetLeft + card.offsetWidth / 2
-        const dist = Math.abs(cardCenter - containerCenter)
-        if (dist < closestDist) { closestDist = dist; closestIndex = i }
-      })
-      setSolActiveCard(closestIndex)
-    }
-    container.addEventListener('scroll', handleScroll, { passive: true })
-    return () => container.removeEventListener('scroll', handleScroll)
-  }, [])
-
   useEffect(() => {
     const check = () => {
       isMobileRef.current = window.innerWidth < 768
@@ -320,33 +287,21 @@ export default function Solution() {
             <p className="sol-header-title">Le parcours de création</p>
             <p className="sol-header-sub">À vous la direction. À nous l&rsquo;exécution.</p>
           </div>
-          <div className="sol-carousel-wrap">
-            <button
-              className={`sol-arrow sol-arrow-prev${solActiveCard === 0 ? ' is-disabled' : ''}`}
-              onClick={() => scrollToSolCard(Math.max(0, solActiveCard - 1))}
-              aria-label="Étape précédente"
-            >&#8249;</button>
-            <div ref={solCarouselRef} className="sol-cards">
-              {ETAPES.map((e, i) => {
-                const reveal = stepReveals[i]
-                return (
-                  <div
-                    key={e.num}
-                    ref={reveal.ref}
-                    className={`sol-card reveal-up${i > 0 ? ` reveal-delay-${i}` : ''}${reveal.isVisible ? ' is-visible' : ''}`}
-                  >
-                    <span className="sol-num">{e.num}</span>
-                    <h2 className="sol-titre">{e.titre}</h2>
-                    <p className="sol-sous-titre">{e.lines[0]}<br />{e.lines[1]}</p>
-                  </div>
-                )
-              })}
-            </div>
-            <button
-              className={`sol-arrow sol-arrow-next${solActiveCard === 3 ? ' is-disabled' : ''}`}
-              onClick={() => scrollToSolCard(Math.min(3, solActiveCard + 1))}
-              aria-label="Étape suivante"
-            >&#8250;</button>
+          <div className="sol-cards">
+            {ETAPES.map((e, i) => {
+              const reveal = stepReveals[i]
+              return (
+                <div
+                  key={e.num}
+                  ref={reveal.ref}
+                  className={`sol-card reveal-up${i > 0 ? ` reveal-delay-${i}` : ''}${reveal.isVisible ? ' is-visible' : ''}`}
+                >
+                  <span className="sol-num">{e.num}</span>
+                  <h2 className="sol-titre">{e.titre}</h2>
+                  <p className="sol-sous-titre">{e.lines[0]}<br />{e.lines[1]}</p>
+                </div>
+              )
+            })}
           </div>
         </div>
       </section>

@@ -310,37 +310,37 @@
     font-size: clamp(12px, 3.5vw, 14px) !important;
   }
 
-  .sol-carousel-wrap {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    gap: 4px;
-  }
-
   .sol-cards {
-    flex: 1;
-    min-width: 0;
     display: flex !important;
-    flex-direction: row !important;
-    overflow-x: auto !important;
-    overflow-y: visible !important;
-    scroll-snap-type: x mandatory !important;
-    -webkit-overflow-scrolling: touch !important;
-    scrollbar-width: none !important;
-    gap: 12px !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+    width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
-  }
-
-  .sol-cards::-webkit-scrollbar {
-    display: none !important;
+    overflow: visible !important;
+    scroll-snap-type: none !important;
   }
 
   .sol-card {
     background: var(--bj-creme);
     padding: 32px 24px;
-    flex: 0 0 80vw !important;
-    scroll-snap-align: center !important;
+    border-radius: 8px !important;
+    flex: none !important;
+    width: 100% !important;
+    scroll-snap-align: none !important;
+  }
+
+  .sol-card.reveal-up {
+    opacity: 0;
+    transform: translateY(30px);
+    transition:
+      opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .sol-card.reveal-up.is-visible {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
   }
 
   .sol-card .sol-num {
@@ -366,29 +366,4 @@
     margin: 0 !important;
   }
 
-  .sol-arrow {
-    display: flex !important;
-    flex-shrink: 0;
-    background: transparent;
-    border: none;
-    font-size: 36px;
-    line-height: 1;
-    color: var(--bj-text, #1C1C1C);
-    cursor: pointer;
-    padding: 0 4px;
-    min-width: 36px;
-    min-height: 44px;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.3s;
-  }
-
-  .sol-arrow.is-disabled {
-    opacity: 0.2;
-    pointer-events: none;
-  }
-}
-
-.sol-arrow {
-  display: none;
 }
