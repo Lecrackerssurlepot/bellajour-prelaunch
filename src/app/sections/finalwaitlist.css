@@ -470,21 +470,20 @@
     font-size: clamp(28px, 8vw, 40px);
   }
 
-  /* ── Compteur : alignement point + texte ── */
+  /* ── Compteur : point inline devant le texte ── */
   .fwl-count {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    flex-wrap: nowrap !important;
-    font-size: clamp(13px, 3.5vw, 16px) !important;
-    text-align: center;
+    display: block !important;
+    text-align: center !important;
+    font-size: clamp(13px, 3.5vw, 15px) !important;
   }
 
   .fwl-count-dot {
-    flex-shrink: 0 !important;
     display: inline-block !important;
     vertical-align: middle !important;
+    margin-right: 6px !important;
+    margin-bottom: 2px !important;
+    position: static !important;
+    transform: none !important;
   }
 
   /* ── Ticker heartbeat — ancrage mobile explicite ── */
