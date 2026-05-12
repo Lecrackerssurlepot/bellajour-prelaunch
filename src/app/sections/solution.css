@@ -462,7 +462,6 @@
     left: 50% !important;
     margin-left: -36px !important;
     margin-top: -48px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
   }
   .sol-stack-1 {
     animation: sol-stack 5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
@@ -506,14 +505,15 @@
     flex-direction: column !important;
     align-items: center !important;
     gap: 10px !important;
-    opacity: 0 !important;
+    opacity: 0;
+    animation-fill-mode: both;
   }
   .sol-quest-person-1 {
-    animation: sol-quest-show 6s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation: sol-quest-show 6s cubic-bezier(0.22, 1, 0.36, 1) infinite both !important;
     animation-delay: 0s !important;
   }
   .sol-quest-person-2 {
-    animation: sol-quest-show 6s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation: sol-quest-show 6s cubic-bezier(0.22, 1, 0.36, 1) infinite both !important;
     animation-delay: 1.5s !important;
   }
   @keyframes sol-quest-show {
@@ -542,37 +542,21 @@
     font-size: 17px !important;
     color: var(--bj-text, #1C1C1C) !important;
     white-space: nowrap !important;
-    overflow: hidden !important;
-    display: inline-block !important;
-    width: 0 !important;
-    border-right: 2px solid var(--bj-text, #1C1C1C) !important;
+    opacity: 0;
+    animation-fill-mode: both;
   }
   .sol-quest-name-1 {
-    animation:
-      sol-typewriter-camille 6s steps(7, end) infinite,
-      sol-blink-caret 0.7s step-end infinite !important;
+    animation: sol-name-fade 6s cubic-bezier(0.22, 1, 0.36, 1) infinite both !important;
+    animation-delay: 0.5s !important;
   }
   .sol-quest-name-2 {
-    animation:
-      sol-typewriter-julien 6s steps(6, end) infinite,
-      sol-blink-caret 0.7s step-end infinite !important;
-    animation-delay: 1.5s, 1.5s !important;
+    animation: sol-name-fade 6s cubic-bezier(0.22, 1, 0.36, 1) infinite both !important;
+    animation-delay: 2s !important;
   }
-  @keyframes sol-typewriter-camille {
-    0%, 10%   { width: 0;   border-right-color: var(--bj-text, #1C1C1C); }
-    30%       { width: 7ch; border-right-color: var(--bj-text, #1C1C1C); }
-    65%       { width: 7ch; border-right-color: transparent; }
-    75%, 100% { width: 0;   border-right-color: transparent; }
-  }
-  @keyframes sol-typewriter-julien {
-    0%, 10%   { width: 0;   border-right-color: var(--bj-text, #1C1C1C); }
-    30%       { width: 6ch; border-right-color: var(--bj-text, #1C1C1C); }
-    65%       { width: 6ch; border-right-color: transparent; }
-    75%, 100% { width: 0;   border-right-color: transparent; }
-  }
-  @keyframes sol-blink-caret {
-    0%, 100% { border-right-color: var(--bj-text, #1C1C1C); }
-    50%      { border-right-color: transparent; }
+  @keyframes sol-name-fade {
+    0%, 10%   { opacity: 0; transform: translateY(4px); }
+    20%, 75%  { opacity: 1; transform: translateY(0); }
+    85%, 100% { opacity: 0; transform: translateY(0); }
   }
 
   /* ═══ 03 — SÉLECTION : grille 3×2 photos resserrée dans le cadre ═══ */
@@ -615,14 +599,14 @@
   .sol-select-drop-2 { animation-delay: 0.4s !important; }
   .sol-select-drop-3 { animation-delay: 0.8s !important; }
   @keyframes sol-keep {
-    0%, 30%   { opacity: 0.5; transform: scale(1);    filter: grayscale(60%); }
-    50%, 80%  { opacity: 1;   transform: scale(1.04); filter: grayscale(0%); box-shadow: 0 0 12px rgba(184, 131, 74, 0.5); }
-    100%      { opacity: 0.5; transform: scale(1);    filter: grayscale(60%); }
+    0%, 30%   { opacity: 0.5; transform: scale(1); filter: grayscale(60%); }
+    50%, 80%  { opacity: 1;   transform: scale(1); filter: grayscale(0%); }
+    100%      { opacity: 0.5; transform: scale(1); filter: grayscale(60%); }
   }
   @keyframes sol-drop {
-    0%, 30%   { opacity: 0.5; transform: scale(1);    filter: grayscale(60%); }
-    50%, 80%  { opacity: 0.2; transform: scale(0.92); filter: grayscale(100%); }
-    100%      { opacity: 0.5; transform: scale(1);    filter: grayscale(60%); }
+    0%, 30%   { opacity: 0.5; transform: scale(1); filter: grayscale(60%); }
+    50%, 80%  { opacity: 0.2; transform: scale(1); filter: grayscale(100%); }
+    100%      { opacity: 0.5; transform: scale(1); filter: grayscale(60%); }
   }
 
   /* ═══ 04 — MISE EN PAGE : 4 photos carrées qui s'agencent en grille 2×2 ═══ */
@@ -646,23 +630,24 @@
     height: 100% !important;
     object-fit: cover !important;
     border-radius: 3px !important;
-    opacity: 0 !important;
-    transform: scale(0.7) !important;
+    opacity: 0;
+    transform: scale(0.7);
+    animation-fill-mode: both;
   }
   .sol-layout-photo-1 {
-    animation: sol-layout-pop 6s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation: sol-layout-pop 6s cubic-bezier(0.22, 1, 0.36, 1) infinite both !important;
     animation-delay: 0s !important;
   }
   .sol-layout-photo-2 {
-    animation: sol-layout-pop 6s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation: sol-layout-pop 6s cubic-bezier(0.22, 1, 0.36, 1) infinite both !important;
     animation-delay: 0.4s !important;
   }
   .sol-layout-photo-3 {
-    animation: sol-layout-pop 6s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation: sol-layout-pop 6s cubic-bezier(0.22, 1, 0.36, 1) infinite both !important;
     animation-delay: 0.8s !important;
   }
   .sol-layout-photo-4 {
-    animation: sol-layout-pop 6s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation: sol-layout-pop 6s cubic-bezier(0.22, 1, 0.36, 1) infinite both !important;
     animation-delay: 1.2s !important;
   }
   @keyframes sol-layout-pop {
