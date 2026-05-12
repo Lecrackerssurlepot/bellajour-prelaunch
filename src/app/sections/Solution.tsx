@@ -5,7 +5,6 @@ import './solution.css'
 import CastingVisual from './CastingVisual'
 import SelectionVisual from './SelectionVisual'
 import MiseEnPageVisual from './MiseEnPageVisual'
-import { useReveal } from '@/hooks/useReveal'
 
 const UPLOAD_PHOTOS = [
   '/images/hero/hero-01.webp',
@@ -196,10 +195,48 @@ export default function Solution() {
   const lastScrollY   = useRef(0)
   const isMobileRef   = useRef(false)
 
-  const step1Reveal = useReveal(0.15)
-  const step2Reveal = useReveal(0.15)
-  const step3Reveal = useReveal(0.15)
-  const step4Reveal = useReveal(0.15)
+  const solCarouselRef = useRef<HTMLDivElement>(null)
+  const [solActiveDot, setSolActiveDot] = useState(0)
+
+  const scrollToSolCard = (index: number) => {
+    const container = solCarouselRef.current
+    if (!container) return
+    const card = container.children[index] as HTMLElement
+    if (card) {
+      container.scrollTo({
+        left: card.offsetLeft - container.offsetLeft,
+        behavior: 'smooth',
+      })
+    }
+  }
+
+  useEffect(() => {
+    const container = solCarouselRef.current
+    if (!container) return
+
+    container.style.scrollBehavior = 'auto'
+    container.scrollLeft = 0
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        container.style.scrollBehavior = 'smooth'
+      })
+    })
+
+    const handleScroll = () => {
+      const cards = Array.from(container.children) as HTMLElement[]
+      const containerCenter = container.scrollLeft + container.offsetWidth / 2
+      let closestIndex = 0
+      let closestDist = Infinity
+      cards.forEach((card, i) => {
+        const cardCenter = card.offsetLeft + card.offsetWidth / 2
+        const dist = Math.abs(cardCenter - containerCenter)
+        if (dist < closestDist) { closestDist = dist; closestIndex = i }
+      })
+      setSolActiveDot(closestIndex)
+    }
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [isMobile])
 
   useEffect(() => {
     const check = () => {
@@ -286,21 +323,51 @@ export default function Solution() {
             <p className="sol-header-title">Le parcours de création</p>
             <p className="sol-header-sub">À vous la direction. À nous l&rsquo;exécution.</p>
           </div>
-          <div className="sol-cards">
-            {ETAPES.map((e, i) => {
-              const reveal = [step1Reveal, step2Reveal, step3Reveal, step4Reveal][i]
-              return (
+
+          <div className="sol-carousel-wrap">
+            <button
+              type="button"
+              className={`sol-arrow sol-arrow-prev${solActiveDot === 0 ? ' is-disabled' : ''}`}
+              onClick={() => scrollToSolCard(Math.max(0, solActiveDot - 1))}
+              aria-label="Étape précédente"
+            >&#8249;</button>
+
+            <div ref={solCarouselRef} className="sol-cards">
+              {ETAPES.map((step, i) => (
                 <div
-                  key={e.num}
-                  ref={reveal.ref}
-                  className={`sol-card reveal-up${i > 0 ? ` reveal-delay-${i}` : ''}${reveal.isVisible ? ' is-visible' : ''}`}
+                  key={step.num}
+                  className="sol-card"
+                  data-active={solActiveDot === i ? 'true' : 'false'}
+                  data-step={step.num}
                 >
-                  <span className="sol-num">{e.num}</span>
-                  <h2 className="sol-titre">{e.titre}</h2>
-                  <p className="sol-sous-titre">{e.lines[0]}<br />{e.lines[1]}</p>
+                  <div className={`sol-card-visual sol-visual-${step.num}`} aria-hidden="true" />
+                  <span className="sol-num">{step.num}</span>
+                  <h2 className="sol-titre">{step.titre}</h2>
+                  <p className="sol-sous-titre">
+                    {step.lines[0]}<br />{step.lines[1]}
+                  </p>
                 </div>
-              )
-            })}
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className={`sol-arrow sol-arrow-next${solActiveDot === ETAPES.length - 1 ? ' is-disabled' : ''}`}
+              onClick={() => scrollToSolCard(Math.min(ETAPES.length - 1, solActiveDot + 1))}
+              aria-label="Étape suivante"
+            >&#8250;</button>
+          </div>
+
+          <div className="sol-dots">
+            {ETAPES.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`sol-dot${solActiveDot === i ? ' is-active' : ''}`}
+                onClick={() => scrollToSolCard(i)}
+                aria-label={`Aller à l'étape ${i + 1}`}
+              />
+            ))}
           </div>
         </div>
       </section>
