@@ -557,6 +557,18 @@
     opacity: 1 !important;
     animation: none !important;
   }
+
+  /* ── Réordonnancement mobile : ticker remonte sous le titre ── */
+  .fwl-titre              { order: 1 !important; }
+  .fwl-ticker             { order: 2 !important; }
+  .fwl-count              { order: 3 !important; }
+  .fwl-form               { order: 4 !important; }
+  .fwl-inner > p:not([class]) { order: 5 !important; }
+  .fwl-msg                { order: 6 !important; }
+  .fwl-reassurance        { order: 7 !important; }
+  .fwl-chapitres-intro    { order: 8 !important; }
+  .fwl-carousel-wrap      { order: 9 !important; }
+  .fwl-dots               { order: 10 !important; }
 }
 
 /* ════════════════════
