@@ -470,20 +470,29 @@
     font-size: clamp(28px, 8vw, 40px);
   }
 
-  /* ── Compteur : point inline devant le texte ── */
+  /* ── Compteur : point aligné baseline avec le 1er mot,
+     texte wrap nativement à l'intérieur de son flex-item ── */
   .fwl-count {
-    display: block !important;
-    text-align: center !important;
+    display: flex !important;
+    align-items: baseline !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+    text-align: left !important;
+    line-height: 1.5 !important;
     font-size: clamp(13px, 3.5vw, 15px) !important;
+    max-width: 92vw !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 
   .fwl-count-dot {
-    display: inline-block !important;
-    vertical-align: middle !important;
-    margin-right: 6px !important;
-    margin-bottom: 2px !important;
-    position: static !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+    top: -1px !important;
     transform: none !important;
+    margin: 0 !important;
+    align-self: baseline !important;
   }
 
   /* ── Carousel : désactive le slide-up du container sur mobile ── */
