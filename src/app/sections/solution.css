@@ -441,7 +441,7 @@
     width: 100% !important;
     height: 180px !important;
     margin-bottom: 24px !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     border-radius: 0 !important;
     background: transparent !important;
   }
@@ -561,27 +561,26 @@
 
   /* ═══ 03 — SÉLECTION : grille 3×2 photos resserrée dans le cadre ═══ */
   .sol-visual-03 {
-    padding: 16px !important;
-    overflow: hidden !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    padding: 12px !important;
+    height: 100% !important;
   }
   .sol-select-grid {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     grid-template-rows: repeat(2, 1fr) !important;
-    gap: 5px !important;
-    width: 100% !important;
-    max-width: 240px !important;
-    height: 100% !important;
-    max-height: 148px !important;
+    gap: 4px !important;
+    width: 200px !important;
+    height: 130px !important;
   }
   .sol-select-photo {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
     border-radius: 3px !important;
+    display: block !important;
     transition: none !important;
   }
   .sol-select-keep-1,
@@ -614,22 +613,23 @@
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 16px !important;
-    overflow: hidden !important;
+    padding: 12px !important;
+    height: 100% !important;
   }
   .sol-layout-grid {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     grid-template-rows: repeat(2, 1fr) !important;
-    gap: 6px !important;
-    width: 148px !important;
-    height: 148px !important;
+    gap: 4px !important;
+    width: 130px !important;
+    height: 130px !important;
   }
   .sol-layout-photo {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
     border-radius: 3px !important;
+    display: block !important;
     opacity: 0;
     transform: scale(0.7);
     animation-fill-mode: both;
