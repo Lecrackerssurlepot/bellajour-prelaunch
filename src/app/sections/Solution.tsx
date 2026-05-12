@@ -340,7 +340,10 @@ export default function Solution() {
                   data-active={solActiveDot === i ? 'true' : 'false'}
                   data-step={step.num}
                 >
-                  <div className={`sol-card-visual sol-visual-${step.num}`} aria-hidden="true" />
+                  <div className={`sol-card-visual sol-visual-${step.num}`} aria-hidden="true">
+                    <span className="sol-anim-el sol-anim-el-1" />
+                    <span className="sol-anim-el sol-anim-el-2" />
+                  </div>
                   <span className="sol-num">{step.num}</span>
                   <h2 className="sol-titre">{step.titre}</h2>
                   <p className="sol-sous-titre">
