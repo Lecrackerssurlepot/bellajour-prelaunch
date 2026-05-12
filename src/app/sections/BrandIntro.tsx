@@ -17,6 +17,8 @@ const BG_PHOTOS = [
   '/images/anxiete/grid-04.webp',
   '/images/anxiete/grid-05.webp',
   '/images/anxiete/grid-06.webp',
+  '/images/anxiete/grid-02.webp',
+  '/images/anxiete/grid-05.webp',
 ]
 
 export default function BrandIntro() {

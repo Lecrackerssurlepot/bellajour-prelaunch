@@ -19,13 +19,15 @@
     max-height: 100svh;
   }
 
-  /* ── Grille de fond (filigrane Anxiété) ── */
+  /* ── Grille de fond — calquée sur .anx-grid mobile
+     (4 colonnes, débordement -16% -1%, gap fin, photos opacité 1) ── */
   .bi-bg-grid {
     position: absolute;
-    inset: 0;
+    inset: -16% -1%;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(2, 1fr);
+    gap: clamp(4px, 0.6vw, 10px);
     z-index: 0;
   }
 
@@ -39,7 +41,7 @@
     height: 100%;
     object-fit: cover;
     display: block;
-    opacity: 0.28;
+    opacity: 1;
   }
 
   /* ── Overlay sombre — calqué exactement sur .anx-overlay mobile
