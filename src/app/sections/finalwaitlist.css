@@ -500,6 +500,8 @@
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;
+    animation: none !important;
+    will-change: auto !important;
   }
 
   /* ── Ticker heartbeat — ancrage mobile explicite ── */
@@ -539,9 +541,21 @@
 
   .fwl-card {
     padding: clamp(24px, 4vh, 32px) clamp(20px, 5vw, 28px);
-    transition: none;
+    transition: none !important;
     transform: none !important;
     opacity: 1 !important;
+    animation: none !important;
+    will-change: auto !important;
+  }
+
+  .fwl-card-num,
+  .fwl-card-rule,
+  .fwl-card-titre,
+  .fwl-card-texte {
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    animation: none !important;
   }
 }
 
