@@ -431,4 +431,140 @@
   .sol-dot.is-active {
     opacity: 1 !important;
   }
+
+  /* ──────────────────────────────────────────
+     ANIMATIONS PAR ÉTAPE (CSS pur, en boucle)
+     ────────────────────────────────────────── */
+
+  .sol-card-visual {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    border-radius: 6px;
+    background: var(--bj-noir, #1C1C1C);
+  }
+
+  /* ═══ 01 — UPLOAD : 2 mini-photos qui se déposent ═══ */
+  .sol-visual-01::before,
+  .sol-visual-01::after {
+    content: '';
+    position: absolute;
+    width: 80px;
+    height: 100px;
+    border-radius: 4px;
+    top: 50%;
+    left: 50%;
+    margin-left: -40px;
+    margin-top: -50px;
+    background: var(--bj-bg, #EAE3D8);
+    animation: sol-upload-stack 3s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+  .sol-visual-01::after {
+    background: #A89880;
+    animation-delay: 1s;
+  }
+  @keyframes sol-upload-stack {
+    0%   { opacity: 0; transform: translateY(40px) rotate(-8deg); }
+    30%  { opacity: 1; transform: translateY(-8px) rotate(-4deg); }
+    60%  { opacity: 1; transform: translateY(0) rotate(2deg); }
+    100% { opacity: 0; transform: translateY(0) rotate(2deg); }
+  }
+
+  /* ═══ 02 — QUESTIONNAIRE : 2 lignes qui s'allument ═══ */
+  .sol-visual-02 {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 24px;
+    gap: 14px;
+  }
+  .sol-visual-02::before,
+  .sol-visual-02::after {
+    content: '';
+    display: block;
+    height: 12px;
+    width: 100%;
+    border-radius: 2px;
+    background: var(--bj-bg, #EAE3D8);
+    opacity: 0.3;
+    animation: sol-question-fill 4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+  .sol-visual-02::after {
+    width: 75%;
+    animation-delay: 1.3s;
+  }
+  @keyframes sol-question-fill {
+    0%, 20%   { opacity: 0.3; background: var(--bj-bg, #EAE3D8); }
+    40%, 80%  { opacity: 1;   background: #B8834A; }
+    100%      { opacity: 0.3; background: var(--bj-bg, #EAE3D8); }
+  }
+
+  /* ═══ 03 — SÉLECTION : 2 vignettes qui s'illuminent ═══ */
+  .sol-visual-03 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 6px;
+    padding: 24px;
+  }
+  .sol-visual-03::before,
+  .sol-visual-03::after {
+    content: '';
+    display: block;
+    background: var(--bj-bg, #EAE3D8);
+    border-radius: 3px;
+    animation: sol-select-highlight 3.5s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+  .sol-visual-03::before { grid-column: 1; grid-row: 1; }
+  .sol-visual-03::after  { grid-column: 3; grid-row: 2; animation-delay: 1.5s; }
+  @keyframes sol-select-highlight {
+    0%, 100% { opacity: 0.3; transform: scale(1); box-shadow: none; }
+    50%      { opacity: 1;   transform: scale(1.05); box-shadow: 0 0 12px rgba(184, 131, 74, 0.4); }
+  }
+
+  /* ═══ 04 — MISE EN PAGE : 2 pages qui se rapprochent ═══ */
+  .sol-visual-04 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sol-visual-04::before,
+  .sol-visual-04::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    margin-top: -45px;
+    width: 60px;
+    height: 90px;
+    background: var(--bj-bg, #EAE3D8);
+    animation: sol-layout-fold-left 3s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+  .sol-visual-04::after {
+    background: #A89880;
+    animation-name: sol-layout-fold-right;
+  }
+  @keyframes sol-layout-fold-left {
+    0%, 100% { transform: translateX(-40px); }
+    50%      { transform: translateX(-2px); }
+  }
+  @keyframes sol-layout-fold-right {
+    0%, 100% { transform: translateX(40px); }
+    50%      { transform: translateX(2px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sol-visual-01::before,
+    .sol-visual-01::after,
+    .sol-visual-02::before,
+    .sol-visual-02::after,
+    .sol-visual-03::before,
+    .sol-visual-03::after,
+    .sol-visual-04::before,
+    .sol-visual-04::after {
+      animation: none !important;
+      opacity: 0.5 !important;
+    }
+  }
 }
