@@ -441,12 +441,12 @@
     width: 100% !important;
     height: 180px !important;
     margin-bottom: 24px !important;
-    overflow: hidden !important;
-    border-radius: 6px !important;
-    background: var(--bj-noir, #1C1C1C) !important;
+    overflow: visible !important;
+    border-radius: 0 !important;
+    background: transparent !important;
   }
 
-  /* ═══ 01 — UPLOAD : 3 photos qui se déposent en pile ═══ */
+  /* ═══ 01 — UPLOAD : 5 photos qui s'empilent en cascade (sans rotation) ═══ */
   .sol-visual-01 {
     display: flex !important;
     align-items: center !important;
@@ -465,84 +465,133 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
   }
   .sol-stack-1 {
-    animation: sol-stack 4s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation: sol-stack 5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
     animation-delay: 0s !important;
   }
   .sol-stack-2 {
-    animation: sol-stack 4s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation: sol-stack 5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
     animation-delay: 1s !important;
   }
   .sol-stack-3 {
-    animation: sol-stack 4s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation: sol-stack 5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
     animation-delay: 2s !important;
   }
+  .sol-stack-4 {
+    animation: sol-stack 5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation-delay: 3s !important;
+  }
+  .sol-stack-5 {
+    animation: sol-stack 5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation-delay: 4s !important;
+  }
   @keyframes sol-stack {
-    0%   { opacity: 0; transform: translateY(60px) rotate(-12deg) scale(0.9); }
-    20%  { opacity: 1; transform: translateY(-4px) rotate(-6deg) scale(1); }
-    40%  { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
-    80%  { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
-    100% { opacity: 0; transform: translateY(-20px) rotate(8deg) scale(0.95); }
+    0%   { opacity: 0; transform: translateY(60px) scale(0.9); }
+    20%  { opacity: 1; transform: translateY(-4px) scale(1); }
+    40%  { opacity: 1; transform: translateY(0) scale(1); }
+    80%  { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-20px) scale(0.95); }
   }
 
-  /* ═══ 02 — QUESTIONNAIRE : photo de fond + tags qui s'allument ═══ */
-  .sol-visual-02 {
-    display: block !important;
+  /* ═══ 02 — QUESTIONNAIRE : 2 ronds + prénoms typewriter ═══ */
+  .sol-quest-people {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 36px !important;
+    width: 100% !important;
+    height: 100% !important;
   }
-  .sol-anim-bg {
-    position: absolute !important;
-    inset: 0 !important;
+  .sol-quest-person {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 10px !important;
+    opacity: 0 !important;
+  }
+  .sol-quest-person-1 {
+    animation: sol-quest-show 6s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation-delay: 0s !important;
+  }
+  .sol-quest-person-2 {
+    animation: sol-quest-show 6s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation-delay: 1.5s !important;
+  }
+  @keyframes sol-quest-show {
+    0%, 5%    { opacity: 0; transform: translateY(8px); }
+    10%, 65%  { opacity: 1; transform: translateY(0); }
+    75%, 100% { opacity: 0; transform: translateY(0); }
+  }
+  .sol-quest-circle {
+    width: 72px !important;
+    height: 72px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    background: var(--bj-noir, #1C1C1C) !important;
+    flex-shrink: 0 !important;
+  }
+  .sol-quest-circle img {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
-    opacity: 0.4 !important;
+    display: block !important;
   }
-  .sol-tag {
-    position: absolute !important;
-    padding: 6px 14px !important;
-    border-radius: 999px !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    color: var(--bj-noir, #1C1C1C) !important;
-    font-family: 'DM Sans', sans-serif !important;
-    font-size: 11px !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.05em !important;
-    text-transform: uppercase !important;
-    opacity: 0 !important;
-    animation: sol-tag-pop 4.5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+  .sol-quest-name {
+    font-family: 'Cormorant Garamond', serif !important;
+    font-style: italic !important;
+    font-weight: 300 !important;
+    font-size: 17px !important;
+    color: var(--bj-text, #1C1C1C) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    display: inline-block !important;
+    width: 0 !important;
+    border-right: 2px solid var(--bj-text, #1C1C1C) !important;
   }
-  .sol-tag-1 {
-    top: 24px !important;
-    left: 24px !important;
-    animation-delay: 0.3s !important;
+  .sol-quest-name-1 {
+    animation:
+      sol-typewriter-camille 6s steps(7, end) infinite,
+      sol-blink-caret 0.7s step-end infinite !important;
   }
-  .sol-tag-2 {
-    top: 50% !important;
-    right: 24px !important;
-    margin-top: -10px !important;
-    animation-delay: 1.3s !important;
+  .sol-quest-name-2 {
+    animation:
+      sol-typewriter-julien 6s steps(6, end) infinite,
+      sol-blink-caret 0.7s step-end infinite !important;
+    animation-delay: 1.5s, 1.5s !important;
   }
-  .sol-tag-3 {
-    bottom: 24px !important;
-    left: 32% !important;
-    animation-delay: 2.3s !important;
+  @keyframes sol-typewriter-camille {
+    0%, 10%   { width: 0;   border-right-color: var(--bj-text, #1C1C1C); }
+    30%       { width: 7ch; border-right-color: var(--bj-text, #1C1C1C); }
+    65%       { width: 7ch; border-right-color: transparent; }
+    75%, 100% { width: 0;   border-right-color: transparent; }
   }
-  @keyframes sol-tag-pop {
-    0%, 10%    { opacity: 0; transform: scale(0.7); }
-    20%, 70%   { opacity: 1; transform: scale(1); background: #B8834A; color: #fff; }
-    85%, 100%  { opacity: 0; transform: scale(0.9); }
+  @keyframes sol-typewriter-julien {
+    0%, 10%   { width: 0;   border-right-color: var(--bj-text, #1C1C1C); }
+    30%       { width: 6ch; border-right-color: var(--bj-text, #1C1C1C); }
+    65%       { width: 6ch; border-right-color: transparent; }
+    75%, 100% { width: 0;   border-right-color: transparent; }
+  }
+  @keyframes sol-blink-caret {
+    0%, 100% { border-right-color: var(--bj-text, #1C1C1C); }
+    50%      { border-right-color: transparent; }
   }
 
-  /* ═══ 03 — SÉLECTION : grille 3×2 photos, retenues vs écartées ═══ */
+  /* ═══ 03 — SÉLECTION : grille 3×2 photos resserrée dans le cadre ═══ */
   .sol-visual-03 {
     padding: 16px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
   .sol-select-grid {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     grid-template-rows: repeat(2, 1fr) !important;
-    gap: 6px !important;
+    gap: 5px !important;
     width: 100% !important;
+    max-width: 240px !important;
     height: 100% !important;
+    max-height: 148px !important;
   }
   .sol-select-photo {
     width: 100% !important;
@@ -576,62 +625,70 @@
     100%      { opacity: 0.5; transform: scale(1);    filter: grayscale(60%); }
   }
 
-  /* ═══ 04 — MISE EN PAGE : 2 pages d'album qui se composent ═══ */
+  /* ═══ 04 — MISE EN PAGE : 4 photos carrées qui s'agencent en grille 2×2 ═══ */
   .sol-visual-04 {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 20px !important;
-  }
-  .sol-album-mockup {
-    position: relative !important;
-    display: flex !important;
-    width: 100% !important;
-    height: 100% !important;
-    gap: 4px !important;
-    justify-content: center !important;
-  }
-  .sol-album-page {
-    flex: 0 0 45% !important;
-    height: 100% !important;
+    padding: 16px !important;
     overflow: hidden !important;
-    border-radius: 3px !important;
-    background: var(--bj-bg, #EAE3D8) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
   }
-  .sol-album-page img {
+  .sol-layout-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-rows: repeat(2, 1fr) !important;
+    gap: 6px !important;
+    width: 148px !important;
+    height: 148px !important;
+  }
+  .sol-layout-photo {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
-    display: block !important;
+    border-radius: 3px !important;
+    opacity: 0 !important;
+    transform: scale(0.7) !important;
   }
-  .sol-album-left {
-    animation: sol-album-left 4s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+  .sol-layout-photo-1 {
+    animation: sol-layout-pop 6s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation-delay: 0s !important;
   }
-  .sol-album-right {
-    animation: sol-album-right 4s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+  .sol-layout-photo-2 {
+    animation: sol-layout-pop 6s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation-delay: 0.4s !important;
   }
-  @keyframes sol-album-left {
-    0%, 100% { transform: translateX(-30px) rotateY(15deg); }
-    50%      { transform: translateX(0) rotateY(0deg); }
+  .sol-layout-photo-3 {
+    animation: sol-layout-pop 6s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation-delay: 0.8s !important;
   }
-  @keyframes sol-album-right {
-    0%, 100% { transform: translateX(30px) rotateY(-15deg); }
-    50%      { transform: translateX(0) rotateY(0deg); }
+  .sol-layout-photo-4 {
+    animation: sol-layout-pop 6s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation-delay: 1.2s !important;
+  }
+  @keyframes sol-layout-pop {
+    0%, 5%    { opacity: 0; transform: scale(0.7); }
+    15%, 70%  { opacity: 1; transform: scale(1); }
+    85%, 100% { opacity: 0; transform: scale(0.95); }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .sol-anim-photo,
-    .sol-tag,
+    .sol-quest-person-1, .sol-quest-person-2,
+    .sol-quest-name-1, .sol-quest-name-2,
     .sol-select-keep-1, .sol-select-keep-2, .sol-select-keep-3,
     .sol-select-drop-1, .sol-select-drop-2, .sol-select-drop-3,
-    .sol-album-left, .sol-album-right {
+    .sol-layout-photo-1, .sol-layout-photo-2, .sol-layout-photo-3, .sol-layout-photo-4 {
       animation: none !important;
     }
     .sol-anim-photo,
-    .sol-tag {
+    .sol-quest-person,
+    .sol-layout-photo {
       opacity: 1 !important;
       transform: none !important;
+    }
+    .sol-quest-name {
+      width: auto !important;
+      border-right-color: transparent !important;
     }
   }
 }

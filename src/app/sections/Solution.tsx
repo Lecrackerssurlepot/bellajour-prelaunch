@@ -344,17 +344,27 @@ export default function Solution() {
                     {step.num === '01' && (
                       <>
                         <img src="/images/anxiete/grid-01.webp" alt="" className="sol-anim-photo sol-stack-1" loading="lazy" />
-                        <img src="/images/anxiete/grid-03.webp" alt="" className="sol-anim-photo sol-stack-2" loading="lazy" />
-                        <img src="/images/anxiete/grid-05.webp" alt="" className="sol-anim-photo sol-stack-3" loading="lazy" />
+                        <img src="/images/anxiete/grid-02.webp" alt="" className="sol-anim-photo sol-stack-2" loading="lazy" />
+                        <img src="/images/anxiete/grid-03.webp" alt="" className="sol-anim-photo sol-stack-3" loading="lazy" />
+                        <img src="/images/anxiete/grid-04.webp" alt="" className="sol-anim-photo sol-stack-4" loading="lazy" />
+                        <img src="/images/anxiete/grid-05.webp" alt="" className="sol-anim-photo sol-stack-5" loading="lazy" />
                       </>
                     )}
                     {step.num === '02' && (
-                      <>
-                        <img src="/images/anxiete/grid-04.webp" alt="" className="sol-anim-bg" loading="lazy" />
-                        <span className="sol-tag sol-tag-1">Voyage</span>
-                        <span className="sol-tag sol-tag-2">Famille</span>
-                        <span className="sol-tag sol-tag-3">Mariage</span>
-                      </>
+                      <div className="sol-quest-people">
+                        <div className="sol-quest-person sol-quest-person-1">
+                          <div className="sol-quest-circle">
+                            <img src="/images/anxiete/grid-01.webp" alt="" loading="lazy" />
+                          </div>
+                          <span className="sol-quest-name sol-quest-name-1">Camille</span>
+                        </div>
+                        <div className="sol-quest-person sol-quest-person-2">
+                          <div className="sol-quest-circle">
+                            <img src="/images/anxiete/grid-03.webp" alt="" loading="lazy" />
+                          </div>
+                          <span className="sol-quest-name sol-quest-name-2">Julien</span>
+                        </div>
+                      </div>
                     )}
                     {step.num === '03' && (
                       <div className="sol-select-grid">
@@ -367,13 +377,11 @@ export default function Solution() {
                       </div>
                     )}
                     {step.num === '04' && (
-                      <div className="sol-album-mockup">
-                        <div className="sol-album-page sol-album-left">
-                          <img src="/images/anxiete/grid-03.webp" alt="" loading="lazy" />
-                        </div>
-                        <div className="sol-album-page sol-album-right">
-                          <img src="/images/anxiete/grid-04.webp" alt="" loading="lazy" />
-                        </div>
+                      <div className="sol-layout-grid">
+                        <img src="/images/anxiete/grid-01.webp" alt="" className="sol-layout-photo sol-layout-photo-1" loading="lazy" />
+                        <img src="/images/anxiete/grid-03.webp" alt="" className="sol-layout-photo sol-layout-photo-2" loading="lazy" />
+                        <img src="/images/anxiete/grid-04.webp" alt="" className="sol-layout-photo sol-layout-photo-3" loading="lazy" />
+                        <img src="/images/anxiete/grid-06.webp" alt="" className="sol-layout-photo sol-layout-photo-4" loading="lazy" />
                       </div>
                     )}
                   </div>
