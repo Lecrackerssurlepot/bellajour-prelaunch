@@ -3,11 +3,11 @@ import './brand-intro.css'
 import { useReveal } from '@/hooks/useReveal'
 
 const PHOTOS = [
-  '/images/anxiete/grid-01.webp',
-  '/images/anxiete/grid-03.webp',
-  '/images/anxiete/grid-05.webp',
-  '/images/anxiete/grid-04.webp',
-  '/images/anxiete/grid-06.webp',
+  '/images/anxiete/grid-01.webp',  // top-left
+  '/images/anxiete/grid-03.webp',  // center (étendue 2 rangées)
+  '/images/anxiete/grid-04.webp',  // top-right
+  '/images/anxiete/grid-05.webp',  // bottom-left
+  '/images/anxiete/grid-06.webp',  // bottom-right
 ]
 
 const BG_PHOTOS = [
@@ -64,24 +64,37 @@ export default function BrandIntro() {
           Comprend vos besoins<br />et crée l&rsquo;album parfait pour vous
         </p>
 
-        {/* Mosaïque 5 photos : 1 hero + grille 2x2 */}
-        <div className="bi-photos-mosaic">
+        {/* Collage 5 photos : 3 cols × 2 rows, photo centrale étendue */}
+        <div className="bi-photos-collage">
           <div
             ref={photo1Reveal.ref}
-            className={`bi-photo bi-photo-hero bi-photo-zoom${photo1Reveal.isVisible ? ' is-visible' : ''}`}
+            className={`bi-photo bi-photo--tl bi-photo-zoom${photo1Reveal.isVisible ? ' is-visible' : ''}`}
           >
             <img src={PHOTOS[0]} alt="" loading="lazy" />
           </div>
-          <div className="bi-photos-grid">
-            {([photo2Reveal, photo3Reveal, photo4Reveal, photo5Reveal] as const).map((reveal, i) => (
-              <div
-                key={i}
-                ref={reveal.ref}
-                className={`bi-photo bi-photo-zoom reveal-delay-${i + 1}${reveal.isVisible ? ' is-visible' : ''}`}
-              >
-                <img src={PHOTOS[i + 1]} alt="" loading="lazy" />
-              </div>
-            ))}
+          <div
+            ref={photo2Reveal.ref}
+            className={`bi-photo bi-photo--ct bi-photo-zoom reveal-delay-1${photo2Reveal.isVisible ? ' is-visible' : ''}`}
+          >
+            <img src={PHOTOS[1]} alt="" loading="lazy" />
+          </div>
+          <div
+            ref={photo3Reveal.ref}
+            className={`bi-photo bi-photo--tr bi-photo-zoom reveal-delay-2${photo3Reveal.isVisible ? ' is-visible' : ''}`}
+          >
+            <img src={PHOTOS[2]} alt="" loading="lazy" />
+          </div>
+          <div
+            ref={photo4Reveal.ref}
+            className={`bi-photo bi-photo--bl bi-photo-zoom reveal-delay-3${photo4Reveal.isVisible ? ' is-visible' : ''}`}
+          >
+            <img src={PHOTOS[3]} alt="" loading="lazy" />
+          </div>
+          <div
+            ref={photo5Reveal.ref}
+            className={`bi-photo bi-photo--br bi-photo-zoom reveal-delay-4${photo5Reveal.isVisible ? ' is-visible' : ''}`}
+          >
+            <img src={PHOTOS[4]} alt="" loading="lazy" />
           </div>
         </div>
 
