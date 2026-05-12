@@ -437,126 +437,201 @@
      ────────────────────────────────────────── */
 
   .sol-card-visual {
-    position: relative;
-    width: 100%;
-    height: 180px;
-    margin-bottom: 24px;
-    overflow: hidden;
-    border-radius: 6px;
-    background: var(--bj-noir, #1C1C1C);
-  }
-
-  /* Reset base des éléments d'animation */
-  .sol-anim-el {
-    display: block;
-    position: absolute;
-  }
-
-  /* ═══ 01 — UPLOAD : 2 mini-photos qui se déposent ═══ */
-  .sol-visual-01 .sol-anim-el {
-    width: 80px;
-    height: 100px;
-    border-radius: 4px;
-    top: 50%;
-    left: 50%;
-    margin-left: -40px;
-    margin-top: -50px;
-    background: var(--bj-bg, #EAE3D8);
-    animation: sol-upload-stack 3s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-  }
-  .sol-visual-01 .sol-anim-el-2 {
-    background: #A89880;
-    animation-delay: 1s;
-  }
-  @keyframes sol-upload-stack {
-    0%   { opacity: 0; transform: translateY(40px) rotate(-8deg); }
-    30%  { opacity: 1; transform: translateY(-8px) rotate(-4deg); }
-    60%  { opacity: 1; transform: translateY(0) rotate(2deg); }
-    100% { opacity: 0; transform: translateY(0) rotate(2deg); }
-  }
-
-  /* ═══ 02 — QUESTIONNAIRE : 2 barres qui s'allument ═══ */
-  .sol-visual-02 {
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    padding: 24px !important;
-    gap: 14px !important;
-  }
-  .sol-visual-02 .sol-anim-el {
     position: relative !important;
-    display: block !important;
-    height: 12px !important;
     width: 100% !important;
-    border-radius: 2px !important;
-    background: var(--bj-bg, #EAE3D8) !important;
-    opacity: 0.3 !important;
-    animation: sol-question-fill 4s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
-  }
-  .sol-visual-02 .sol-anim-el-2 {
-    width: 75% !important;
-    animation-delay: 1.3s !important;
-  }
-  @keyframes sol-question-fill {
-    0%, 20%   { opacity: 0.3; background: var(--bj-bg, #EAE3D8); }
-    40%, 80%  { opacity: 1;   background: #B8834A; }
-    100%      { opacity: 0.3; background: var(--bj-bg, #EAE3D8); }
+    height: 180px !important;
+    margin-bottom: 24px !important;
+    overflow: hidden !important;
+    border-radius: 6px !important;
+    background: var(--bj-noir, #1C1C1C) !important;
   }
 
-  /* ═══ 03 — SÉLECTION : 2 vignettes qui s'illuminent ═══ */
-  .sol-visual-03 {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    grid-template-rows: repeat(2, 1fr) !important;
-    gap: 6px !important;
-    padding: 24px !important;
-  }
-  .sol-visual-03 .sol-anim-el {
-    position: relative !important;
-    display: block !important;
-    background: var(--bj-bg, #EAE3D8) !important;
-    border-radius: 3px !important;
-    animation: sol-select-highlight 3.5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
-  }
-  .sol-visual-03 .sol-anim-el-1 { grid-column: 1; grid-row: 1; }
-  .sol-visual-03 .sol-anim-el-2 { grid-column: 3; grid-row: 2; animation-delay: 1.5s !important; }
-  @keyframes sol-select-highlight {
-    0%, 100% { opacity: 0.3; transform: scale(1); box-shadow: none; }
-    50%      { opacity: 1;   transform: scale(1.05); box-shadow: 0 0 12px rgba(184, 131, 74, 0.4); }
-  }
-
-  /* ═══ 04 — MISE EN PAGE : 2 pages qui se rapprochent ═══ */
-  .sol-visual-04 {
+  /* ═══ 01 — UPLOAD : 3 photos qui se déposent en pile ═══ */
+  .sol-visual-01 {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
   }
-  .sol-visual-04 .sol-anim-el {
+  .sol-anim-photo {
     position: absolute !important;
+    width: 72px !important;
+    height: 96px !important;
+    object-fit: cover !important;
+    border-radius: 4px !important;
     top: 50% !important;
-    margin-top: -45px !important;
-    width: 60px !important;
-    height: 90px !important;
+    left: 50% !important;
+    margin-left: -36px !important;
+    margin-top: -48px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  }
+  .sol-stack-1 {
+    animation: sol-stack 4s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation-delay: 0s !important;
+  }
+  .sol-stack-2 {
+    animation: sol-stack 4s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation-delay: 1s !important;
+  }
+  .sol-stack-3 {
+    animation: sol-stack 4s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation-delay: 2s !important;
+  }
+  @keyframes sol-stack {
+    0%   { opacity: 0; transform: translateY(60px) rotate(-12deg) scale(0.9); }
+    20%  { opacity: 1; transform: translateY(-4px) rotate(-6deg) scale(1); }
+    40%  { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+    80%  { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+    100% { opacity: 0; transform: translateY(-20px) rotate(8deg) scale(0.95); }
+  }
+
+  /* ═══ 02 — QUESTIONNAIRE : photo de fond + tags qui s'allument ═══ */
+  .sol-visual-02 {
+    display: block !important;
+  }
+  .sol-anim-bg {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    opacity: 0.4 !important;
+  }
+  .sol-tag {
+    position: absolute !important;
+    padding: 6px 14px !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: var(--bj-noir, #1C1C1C) !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.05em !important;
+    text-transform: uppercase !important;
+    opacity: 0 !important;
+    animation: sol-tag-pop 4.5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+  }
+  .sol-tag-1 {
+    top: 24px !important;
+    left: 24px !important;
+    animation-delay: 0.3s !important;
+  }
+  .sol-tag-2 {
+    top: 50% !important;
+    right: 24px !important;
+    margin-top: -10px !important;
+    animation-delay: 1.3s !important;
+  }
+  .sol-tag-3 {
+    bottom: 24px !important;
+    left: 32% !important;
+    animation-delay: 2.3s !important;
+  }
+  @keyframes sol-tag-pop {
+    0%, 10%    { opacity: 0; transform: scale(0.7); }
+    20%, 70%   { opacity: 1; transform: scale(1); background: #B8834A; color: #fff; }
+    85%, 100%  { opacity: 0; transform: scale(0.9); }
+  }
+
+  /* ═══ 03 — SÉLECTION : grille 3×2 photos, retenues vs écartées ═══ */
+  .sol-visual-03 {
+    padding: 16px !important;
+  }
+  .sol-select-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-rows: repeat(2, 1fr) !important;
+    gap: 6px !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .sol-select-photo {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 3px !important;
+    transition: none !important;
+  }
+  .sol-select-keep-1,
+  .sol-select-keep-2,
+  .sol-select-keep-3 {
+    animation: sol-keep 3.5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+  }
+  .sol-select-keep-2 { animation-delay: 0.4s !important; }
+  .sol-select-keep-3 { animation-delay: 0.8s !important; }
+  .sol-select-drop-1,
+  .sol-select-drop-2,
+  .sol-select-drop-3 {
+    animation: sol-drop 3.5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+  }
+  .sol-select-drop-2 { animation-delay: 0.4s !important; }
+  .sol-select-drop-3 { animation-delay: 0.8s !important; }
+  @keyframes sol-keep {
+    0%, 30%   { opacity: 0.5; transform: scale(1);    filter: grayscale(60%); }
+    50%, 80%  { opacity: 1;   transform: scale(1.04); filter: grayscale(0%); box-shadow: 0 0 12px rgba(184, 131, 74, 0.5); }
+    100%      { opacity: 0.5; transform: scale(1);    filter: grayscale(60%); }
+  }
+  @keyframes sol-drop {
+    0%, 30%   { opacity: 0.5; transform: scale(1);    filter: grayscale(60%); }
+    50%, 80%  { opacity: 0.2; transform: scale(0.92); filter: grayscale(100%); }
+    100%      { opacity: 0.5; transform: scale(1);    filter: grayscale(60%); }
+  }
+
+  /* ═══ 04 — MISE EN PAGE : 2 pages d'album qui se composent ═══ */
+  .sol-visual-04 {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 20px !important;
+  }
+  .sol-album-mockup {
+    position: relative !important;
+    display: flex !important;
+    width: 100% !important;
+    height: 100% !important;
+    gap: 4px !important;
+    justify-content: center !important;
+  }
+  .sol-album-page {
+    flex: 0 0 45% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    border-radius: 3px !important;
     background: var(--bj-bg, #EAE3D8) !important;
-    animation: sol-layout-fold-left 3s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
   }
-  .sol-visual-04 .sol-anim-el-2 {
-    background: #A89880 !important;
-    animation-name: sol-layout-fold-right !important;
+  .sol-album-page img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
   }
-  @keyframes sol-layout-fold-left {
-    0%, 100% { transform: translateX(-40px); }
-    50%      { transform: translateX(-2px); }
+  .sol-album-left {
+    animation: sol-album-left 4s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
   }
-  @keyframes sol-layout-fold-right {
-    0%, 100% { transform: translateX(40px); }
-    50%      { transform: translateX(2px); }
+  .sol-album-right {
+    animation: sol-album-right 4s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+  }
+  @keyframes sol-album-left {
+    0%, 100% { transform: translateX(-30px) rotateY(15deg); }
+    50%      { transform: translateX(0) rotateY(0deg); }
+  }
+  @keyframes sol-album-right {
+    0%, 100% { transform: translateX(30px) rotateY(-15deg); }
+    50%      { transform: translateX(0) rotateY(0deg); }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .sol-anim-el {
+    .sol-anim-photo,
+    .sol-tag,
+    .sol-select-keep-1, .sol-select-keep-2, .sol-select-keep-3,
+    .sol-select-drop-1, .sol-select-drop-2, .sol-select-drop-3,
+    .sol-album-left, .sol-album-right {
       animation: none !important;
-      opacity: 0.5 !important;
+    }
+    .sol-anim-photo,
+    .sol-tag {
+      opacity: 1 !important;
+      transform: none !important;
     }
   }
 }

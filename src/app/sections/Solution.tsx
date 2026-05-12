@@ -341,8 +341,41 @@ export default function Solution() {
                   data-step={step.num}
                 >
                   <div className={`sol-card-visual sol-visual-${step.num}`} aria-hidden="true">
-                    <span className="sol-anim-el sol-anim-el-1" />
-                    <span className="sol-anim-el sol-anim-el-2" />
+                    {step.num === '01' && (
+                      <>
+                        <img src="/images/anxiete/grid-01.webp" alt="" className="sol-anim-photo sol-stack-1" loading="lazy" />
+                        <img src="/images/anxiete/grid-03.webp" alt="" className="sol-anim-photo sol-stack-2" loading="lazy" />
+                        <img src="/images/anxiete/grid-05.webp" alt="" className="sol-anim-photo sol-stack-3" loading="lazy" />
+                      </>
+                    )}
+                    {step.num === '02' && (
+                      <>
+                        <img src="/images/anxiete/grid-04.webp" alt="" className="sol-anim-bg" loading="lazy" />
+                        <span className="sol-tag sol-tag-1">Voyage</span>
+                        <span className="sol-tag sol-tag-2">Famille</span>
+                        <span className="sol-tag sol-tag-3">Mariage</span>
+                      </>
+                    )}
+                    {step.num === '03' && (
+                      <div className="sol-select-grid">
+                        <img src="/images/anxiete/grid-01.webp" alt="" className="sol-select-photo sol-select-keep-1" loading="lazy" />
+                        <img src="/images/anxiete/grid-02.webp" alt="" className="sol-select-photo sol-select-drop-1" loading="lazy" />
+                        <img src="/images/anxiete/grid-03.webp" alt="" className="sol-select-photo sol-select-keep-2" loading="lazy" />
+                        <img src="/images/anxiete/grid-04.webp" alt="" className="sol-select-photo sol-select-drop-2" loading="lazy" />
+                        <img src="/images/anxiete/grid-05.webp" alt="" className="sol-select-photo sol-select-keep-3" loading="lazy" />
+                        <img src="/images/anxiete/grid-06.webp" alt="" className="sol-select-photo sol-select-drop-3" loading="lazy" />
+                      </div>
+                    )}
+                    {step.num === '04' && (
+                      <div className="sol-album-mockup">
+                        <div className="sol-album-page sol-album-left">
+                          <img src="/images/anxiete/grid-03.webp" alt="" loading="lazy" />
+                        </div>
+                        <div className="sol-album-page sol-album-right">
+                          <img src="/images/anxiete/grid-04.webp" alt="" loading="lazy" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <span className="sol-num">{step.num}</span>
                   <h2 className="sol-titre">{step.titre}</h2>
