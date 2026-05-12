@@ -17,6 +17,7 @@ const DEPTHS = [0.014, 0.022, 0.018, 0.026, 0.016, 0.012, 0.020]
 
 export default function Hero() {
   const [scrolled,   setScrolled]   = useState(false)
+  const [logoVisible, setLogoVisible] = useState(true)
   const [step,       setStep]       = useState<1 | 2 | 3>(1)
   const [emailValue, setEmailValue] = useState('')
   const [prenom,     setPrenom]     = useState('')
@@ -34,6 +35,8 @@ export default function Hero() {
   const scrollRef = useRef(0)
   const animRef   = useRef<number | null>(null)
   const prenomRef = useRef<HTMLInputElement>(null)
+  const lastScrollY     = useRef(0)
+  const scrollStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   /* Lire ?ref= dans l'URL */
   useEffect(() => {
@@ -173,6 +176,44 @@ export default function Hero() {
     document.getElementById('anxiete')?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  /* Logo smart : fade au scroll bas, réapparaît au scroll haut ou à l'arrêt */
+  useEffect(() => {
+    const handleLogoScroll = () => {
+      const currentY = window.scrollY
+
+      if (currentY < 50) {
+        setLogoVisible(true)
+        lastScrollY.current = currentY
+        return
+      }
+
+      if (currentY < lastScrollY.current) {
+        setLogoVisible(true)
+      } else if (currentY > lastScrollY.current) {
+        setLogoVisible(false)
+      }
+      lastScrollY.current = currentY
+
+      if (scrollStopTimer.current) clearTimeout(scrollStopTimer.current)
+      scrollStopTimer.current = setTimeout(() => setLogoVisible(true), 1000)
+    }
+
+    window.addEventListener('scroll', handleLogoScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleLogoScroll)
+      if (scrollStopTimer.current) clearTimeout(scrollStopTimer.current)
+    }
+  }, [])
+
+  const scrollToHero = () => {
+    const hero = document.getElementById('hero')
+    if (hero) {
+      hero.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
   /* Parrainage */
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.fr'
   const referralLink = refCode ? `${origin}?ref=${refCode}` : ''
@@ -194,7 +235,14 @@ export default function Hero() {
   return (
     <>
       <nav className={scrolled ? 'hero-nav hero-nav--scrolled' : 'hero-nav'}>
-        <img src="/images/ui/logo.webp" className="hero-nav-logo" alt="Bellajour" />
+        <button
+          type="button"
+          onClick={scrollToHero}
+          className={`hero-nav-logo-btn ${logoVisible ? 'is-visible' : 'is-hidden'}`}
+          aria-label="Retour en haut"
+        >
+          <img src="/images/ui/logo.webp" className="hero-nav-logo" alt="Bellajour" />
+        </button>
       </nav>
 
       <section id="hero" className="hero">
