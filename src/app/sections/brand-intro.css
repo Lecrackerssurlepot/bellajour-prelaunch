@@ -42,16 +42,12 @@
     opacity: 0.28;
   }
 
-  /* ── Overlay sombre pour lisibilité ── */
+  /* ── Overlay sombre — calqué exactement sur .anx-overlay mobile
+     (rgba(23,20,15,0.82) uniforme) pour continuité visuelle ── */
   .bi-bg-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      180deg,
-      rgba(28, 28, 28, 0.88) 0%,
-      rgba(28, 28, 28, 0.78) 50%,
-      rgba(28, 28, 28, 0.88) 100%
-    );
+    background: rgba(23, 20, 15, 0.82);
     z-index: 1;
   }
 
