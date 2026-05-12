@@ -478,7 +478,7 @@
     justify-content: center !important;
     gap: 6px !important;
     flex-wrap: nowrap !important;
-    text-align: left !important;
+    text-align: center !important;
     line-height: 1.5 !important;
     font-size: clamp(13px, 3.5vw, 15px) !important;
     max-width: 92vw !important;
