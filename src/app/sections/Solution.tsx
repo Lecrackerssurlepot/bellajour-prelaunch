@@ -333,14 +333,20 @@ export default function Solution() {
             >&#8249;</button>
 
             <div ref={solCarouselRef} className="sol-cards">
-              {ETAPES.map((step, i) => (
+              {ETAPES.map((step, i) => {
+                const isActive = solActiveDot === i
+                return (
                 <div
                   key={step.num}
                   className="sol-card"
-                  data-active={solActiveDot === i ? 'true' : 'false'}
+                  data-active={isActive ? 'true' : 'false'}
                   data-step={step.num}
                 >
-                  <div className={`sol-card-visual sol-visual-${step.num}`} aria-hidden="true">
+                  <div
+                    key={`${step.num}-${isActive ? 'active' : 'paused'}`}
+                    className={`sol-card-visual sol-visual-${step.num}`}
+                    aria-hidden="true"
+                  >
                     {step.num === '01' && (
                       <>
                         <img src="/images/anxiete/grid-01.webp" alt="" className="sol-anim-photo sol-stack-1" loading="lazy" />
@@ -391,7 +397,8 @@ export default function Solution() {
                     {step.lines[0]}<br />{step.lines[1]}
                   </p>
                 </div>
-              ))}
+                )
+              })}
             </div>
 
             <button

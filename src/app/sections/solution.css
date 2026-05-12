@@ -655,6 +655,23 @@
     85%, 100% { opacity: 0; transform: scale(0.95); }
   }
 
+  /* ═══ Contrôle play-state par carte active ═══
+     Les anims tournent uniquement dans la card centrée du carousel. */
+  .sol-card[data-active="false"] .sol-anim-photo,
+  .sol-card[data-active="false"] .sol-quest-person,
+  .sol-card[data-active="false"] .sol-quest-name,
+  .sol-card[data-active="false"] .sol-select-photo,
+  .sol-card[data-active="false"] .sol-layout-photo {
+    animation-play-state: paused !important;
+  }
+  .sol-card[data-active="true"] .sol-anim-photo,
+  .sol-card[data-active="true"] .sol-quest-person,
+  .sol-card[data-active="true"] .sol-quest-name,
+  .sol-card[data-active="true"] .sol-select-photo,
+  .sol-card[data-active="true"] .sol-layout-photo {
+    animation-play-state: running !important;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .sol-anim-photo,
     .sol-quest-person-1, .sol-quest-person-2,
