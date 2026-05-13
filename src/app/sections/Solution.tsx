@@ -7,18 +7,18 @@ import SelectionVisual from './SelectionVisual'
 import MiseEnPageVisual from './MiseEnPageVisual'
 
 const UPLOAD_PHOTOS = [
-  '/images/hero/hero-01.webp',
-  '/images/hero/hero-02.webp',
-  '/images/hero/hero-03.webp',
-  '/images/hero/hero-04.webp',
-  '/images/hero/hero-05.webp',
-  '/images/hero/hero-06.webp',
-  '/images/hero/hero-07.webp',
-  '/images/anxiete/grid-01.webp',
-  '/images/anxiete/grid-02.webp',
-  '/images/anxiete/grid-03.webp',
-  '/images/anxiete/grid-04.webp',
-  '/images/anxiete/grid-06.webp',
+  '/images/solution/solution-upload-01.webp',
+  '/images/solution/solution-upload-02.webp',
+  '/images/solution/solution-upload-03.webp',
+  '/images/solution/solution-upload-04.webp',
+  '/images/solution/solution-upload-05.webp',
+  '/images/solution/solution-upload-06.webp',
+  '/images/solution/solution-upload-07.webp',
+  '/images/solution/solution-upload-08.webp',
+  '/images/solution/solution-upload-09.webp',
+  '/images/solution/solution-upload-10.webp',
+  '/images/solution/solution-upload-11.webp',
+  '/images/solution/solution-upload-12.webp',
 ]
 
 const UploadVisual = memo(function UploadVisual({ active, onComplete }: { active: number; onComplete: () => void }) {
@@ -349,11 +349,11 @@ export default function Solution() {
                   >
                     {step.num === '01' && (
                       <>
-                        <img src="/images/anxiete/grid-01.webp" alt="" className="sol-anim-photo sol-stack-1" loading="lazy" />
-                        <img src="/images/anxiete/grid-02.webp" alt="" className="sol-anim-photo sol-stack-2" loading="lazy" />
-                        <img src="/images/anxiete/grid-03.webp" alt="" className="sol-anim-photo sol-stack-3" loading="lazy" />
-                        <img src="/images/anxiete/grid-04.webp" alt="" className="sol-anim-photo sol-stack-4" loading="lazy" />
-                        <img src="/images/anxiete/grid-05.webp" alt="" className="sol-anim-photo sol-stack-5" loading="lazy" />
+                        <img src="/images/solution/solution-upload-01.webp" alt="" className="sol-anim-photo sol-stack-1" loading="lazy" />
+                        <img src="/images/solution/solution-upload-02.webp" alt="" className="sol-anim-photo sol-stack-2" loading="lazy" />
+                        <img src="/images/solution/solution-upload-03.webp" alt="" className="sol-anim-photo sol-stack-3" loading="lazy" />
+                        <img src="/images/solution/solution-upload-04.webp" alt="" className="sol-anim-photo sol-stack-4" loading="lazy" />
+                        <img src="/images/solution/solution-upload-05.webp" alt="" className="sol-anim-photo sol-stack-5" loading="lazy" />
                       </>
                     )}
                     {step.num === '02' && (
