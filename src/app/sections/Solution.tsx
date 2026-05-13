@@ -374,20 +374,20 @@ export default function Solution() {
                     )}
                     {step.num === '03' && (
                       <div className="sol-select-grid">
-                        <img src="/images/anxiete/grid-01.webp" alt="" className="sol-select-photo sol-select-keep-1" loading="lazy" />
-                        <img src="/images/anxiete/grid-02.webp" alt="" className="sol-select-photo sol-select-drop-1" loading="lazy" />
-                        <img src="/images/anxiete/grid-03.webp" alt="" className="sol-select-photo sol-select-keep-2" loading="lazy" />
-                        <img src="/images/anxiete/grid-04.webp" alt="" className="sol-select-photo sol-select-drop-2" loading="lazy" />
-                        <img src="/images/anxiete/grid-05.webp" alt="" className="sol-select-photo sol-select-keep-3" loading="lazy" />
-                        <img src="/images/anxiete/grid-06.webp" alt="" className="sol-select-photo sol-select-drop-3" loading="lazy" />
+                        <img src="/images/anxiete/float-01.webp" alt="" className="sol-select-photo sol-select-keep-1" loading="lazy" />
+                        <img src="/images/anxiete/float-02.webp" alt="" className="sol-select-photo sol-select-drop-1" loading="lazy" />
+                        <img src="/images/anxiete/float-03.webp" alt="" className="sol-select-photo sol-select-keep-2" loading="lazy" />
+                        <img src="/images/anxiete/float-04.webp" alt="" className="sol-select-photo sol-select-drop-2" loading="lazy" />
+                        <img src="/images/anxiete/grid-03.webp" alt="" className="sol-select-photo sol-select-keep-3" loading="lazy" />
+                        <img src="/images/anxiete/grid-04.webp" alt="" className="sol-select-photo sol-select-drop-3" loading="lazy" />
                       </div>
                     )}
                     {step.num === '04' && (
                       <div className="sol-layout-grid">
-                        <img src="/images/anxiete/grid-01.webp" alt="" className="sol-layout-photo sol-layout-photo-1" loading="lazy" />
-                        <img src="/images/anxiete/grid-03.webp" alt="" className="sol-layout-photo sol-layout-photo-2" loading="lazy" />
-                        <img src="/images/anxiete/grid-04.webp" alt="" className="sol-layout-photo sol-layout-photo-3" loading="lazy" />
-                        <img src="/images/anxiete/grid-06.webp" alt="" className="sol-layout-photo sol-layout-photo-4" loading="lazy" />
+                        <img src="/images/hero/hero-01.webp" alt="" className="sol-layout-photo sol-layout-photo-1" loading="lazy" />
+                        <img src="/images/hero/hero-03.webp" alt="" className="sol-layout-photo sol-layout-photo-2" loading="lazy" />
+                        <img src="/images/hero/hero-05.webp" alt="" className="sol-layout-photo sol-layout-photo-3" loading="lazy" />
+                        <img src="/images/hero/hero-07.webp" alt="" className="sol-layout-photo sol-layout-photo-4" loading="lazy" />
                       </div>
                     )}
                   </div>
