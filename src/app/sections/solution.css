@@ -461,33 +461,61 @@
     left: 50% !important;
     margin-left: -36px !important;
     margin-top: -48px !important;
+    opacity: 0;
+    animation-fill-mode: both;
   }
   .sol-stack-1 {
-    animation: sol-stack 5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation: sol-stack-cycle 7s cubic-bezier(0.22, 1, 0.36, 1) infinite both !important;
     animation-delay: 0s !important;
+    z-index: 1 !important;
+    --offset-x: 0px;
+    --offset-y: 0px;
   }
   .sol-stack-2 {
-    animation: sol-stack 5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation: sol-stack-cycle 7s cubic-bezier(0.22, 1, 0.36, 1) infinite both !important;
     animation-delay: 1s !important;
+    z-index: 2 !important;
+    --offset-x: 8px;
+    --offset-y: 8px;
   }
   .sol-stack-3 {
-    animation: sol-stack 5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation: sol-stack-cycle 7s cubic-bezier(0.22, 1, 0.36, 1) infinite both !important;
     animation-delay: 2s !important;
+    z-index: 3 !important;
+    --offset-x: 16px;
+    --offset-y: 16px;
   }
   .sol-stack-4 {
-    animation: sol-stack 5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation: sol-stack-cycle 7s cubic-bezier(0.22, 1, 0.36, 1) infinite both !important;
     animation-delay: 3s !important;
+    z-index: 4 !important;
+    --offset-x: 24px;
+    --offset-y: 24px;
   }
   .sol-stack-5 {
-    animation: sol-stack 5s cubic-bezier(0.22, 1, 0.36, 1) infinite !important;
+    animation: sol-stack-cycle 7s cubic-bezier(0.22, 1, 0.36, 1) infinite both !important;
     animation-delay: 4s !important;
+    z-index: 5 !important;
+    --offset-x: 32px;
+    --offset-y: 32px;
   }
-  @keyframes sol-stack {
-    0%   { opacity: 0; transform: translateY(60px) scale(0.9); }
-    20%  { opacity: 1; transform: translateY(-4px) scale(1); }
-    40%  { opacity: 1; transform: translateY(0) scale(1); }
-    80%  { opacity: 1; transform: translateY(0) scale(1); }
-    100% { opacity: 0; transform: translateY(-20px) scale(0.95); }
+  @keyframes sol-stack-cycle {
+    0% {
+      opacity: 0;
+      transform: translate(var(--offset-x, 0px), calc(var(--offset-y, 0px) - 40px));
+    }
+    14% {
+      opacity: 1;
+      transform: translate(var(--offset-x, 0px), var(--offset-y, 0px));
+    }
+    86% {
+      opacity: 1;
+      transform: translate(var(--offset-x, 0px), var(--offset-y, 0px));
+    }
+    100% {
+      opacity: 0;
+      transform: translate(var(--offset-x, 0px), var(--offset-y, 0px)) scale(0.95);
+    }
   }
 
   /* ═══ 02 — QUESTIONNAIRE : 2 ronds + prénoms typewriter ═══ */
