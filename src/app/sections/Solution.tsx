@@ -360,13 +360,13 @@ export default function Solution() {
                       <div className="sol-quest-people">
                         <div className="sol-quest-person sol-quest-person-1">
                           <div className="sol-quest-circle">
-                            <img src="/images/anxiete/grid-01.webp" alt="" loading="lazy" />
+                            <img src="/images/solution/solution-casting-01.webp" alt="" loading="lazy" />
                           </div>
                           <span className="sol-quest-name sol-quest-name-1">Camille</span>
                         </div>
                         <div className="sol-quest-person sol-quest-person-2">
                           <div className="sol-quest-circle">
-                            <img src="/images/anxiete/grid-03.webp" alt="" loading="lazy" />
+                            <img src="/images/solution/solution-casting-03.webp" alt="" loading="lazy" />
                           </div>
                           <span className="sol-quest-name sol-quest-name-2">Julien</span>
                         </div>

@@ -4,9 +4,9 @@ import { useEffect, useRef, memo } from 'react'
 import type { CSSProperties } from 'react'
 
 const CASTING_PHOTOS = [
-  '/images/anxiete/float-01.webp',
-  '/images/anxiete/float-02.webp',
-  '/images/anxiete/float-03.webp',
+  '/images/solution/solution-casting-02.webp',  // [0] cercle gauche — Louise
+  '/images/solution/solution-casting-01.webp',  // [1] cercle milieu — Camille
+  '/images/solution/solution-casting-03.webp',  // [2] cercle droite — Julien
 ]
 
 const PRENOM_MID  = 'Camille'
