@@ -85,6 +85,15 @@
     height: auto;
     min-height: 0;
   }
+
+  /* FIX 5 : le ::before (spacer 100-130px) n'a plus de raison d'être depuis
+     que le header est sorti de .sol-left (FIX 4). Le spacer poussait le
+     contenu de la colonne vers le bas. Supprimé → contenu centré net dans
+     .sol-inner via les règles existantes (sol-inner align-items: center,
+     sol-left justify-content: center). */
+  .sol-left::before {
+    height: 0;
+  }
 }
 
 .sol-header-title {
