@@ -193,7 +193,7 @@ export default function Hero() {
 
         <div className="hero-photo-wrap" aria-hidden="true">
           <div className="hero-photo">
-            <img src="/images/header-bellajour.png" alt="" />
+            <img src="/images/header-bellajour.webp" alt="" />
             <div className="hero-photo-grain" />
           </div>
         </div>
