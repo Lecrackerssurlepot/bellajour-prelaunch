@@ -3,18 +3,6 @@
 import { useEffect, useRef, useState } from 'react'
 import './hero.css'
 
-const photos = [
-  { src: '/images/hero/hero-01.webp', cls: 'p1' },
-  { src: '/images/hero/hero-02.webp', cls: 'p2' },
-  { src: '/images/hero/hero-03.webp', cls: 'p3' },
-  { src: '/images/hero/hero-04.webp', cls: 'p4' },
-  { src: '/images/hero/hero-05.webp', cls: 'p5' },
-  { src: '/images/hero/hero-06.webp', cls: 'p6' },
-  { src: '/images/hero/hero-07.webp', cls: 'p7' },
-]
-
-const DEPTHS = [0.014, 0.022, 0.018, 0.026, 0.016, 0.012, 0.020]
-
 export default function Hero() {
   const [scrolled,   setScrolled]   = useState(false)
   const [logoVisible, setLogoVisible] = useState(true)
@@ -30,10 +18,6 @@ export default function Hero() {
   const [wasAlreadyRegistered, setWasAlreadyRegistered] = useState(false)
   const [wasReferred,          setWasReferred]          = useState(false)
 
-  const photoRefs = useRef<(HTMLDivElement | null)[]>([])
-  const mouseRef  = useRef({ x: 0, y: 0 })
-  const scrollRef = useRef(0)
-  const animRef   = useRef<number | null>(null)
   const prenomRef = useRef<HTMLInputElement>(null)
   const lastScrollY     = useRef(0)
   const scrollStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -44,52 +28,11 @@ export default function Hero() {
     if (ref) setReferredBy(ref)
   }, [])
 
-  /* Parallax + fly-up scroll */
+  /* Nav scrolled state */
   useEffect(() => {
-    const animate = () => {
-      const { x, y } = mouseRef.current
-      const sp = scrollRef.current
-
-      photoRefs.current.forEach((el, i) => {
-        if (!el) return
-        const d  = DEPTHS[i]
-        const px = x * d * 110
-        const py = y * d * 75 - sp * (110 + i * 12)
-        const sc = 1 + sp * 0.28
-        const op = Math.max(0, 1 - sp * 2.2)
-
-        el.style.transform = `translate(${px.toFixed(1)}px, ${py.toFixed(1)}px) scale(${sc.toFixed(3)})`
-        el.style.opacity   = op.toFixed(3)
-      })
-
-      animRef.current = requestAnimationFrame(animate)
-    }
-
-    const onMouseMove = (e: MouseEvent) => {
-      mouseRef.current = {
-        x: (e.clientX / window.innerWidth  - 0.5) * 2,
-        y: (e.clientY / window.innerHeight - 0.5) * 2,
-      }
-    }
-
-    const onScroll = () => {
-      scrollRef.current = Math.min(1, window.scrollY / (window.innerHeight * 0.7))
-      setScrolled(window.scrollY > 10)
-    }
-
-    window.addEventListener('mousemove', onMouseMove)
+    const onScroll = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', onScroll, { passive: true })
-
-    const t = setTimeout(() => {
-      animRef.current = requestAnimationFrame(animate)
-    }, 900)
-
-    return () => {
-      clearTimeout(t)
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('scroll', onScroll)
-      if (animRef.current) cancelAnimationFrame(animRef.current)
-    }
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   /* Compteur */
@@ -248,6 +191,13 @@ export default function Hero() {
       <section id="hero" className="hero">
         <div className="hero-line" />
 
+        <div className="hero-photo-wrap" aria-hidden="true">
+          <div className="hero-photo">
+            <img src="/images/header-bellajour.png" alt="" />
+            <div className="hero-photo-grain" />
+          </div>
+        </div>
+
         <div className="hero-center">
 
           {/* ── Étape 3 — Confirmation ── */}
@@ -325,27 +275,10 @@ export default function Hero() {
             </>
 
           ) : (
-            /* ── Étape 1 — Titre + stack ancré sur "photos" ── */
+            /* ── Étape 1 — Titre ── */
             <div className="hero-headline">
               <div className="hero-headline-l1">
-                Nous composons vos{' '}
-                <span className="hero-anchor-photos">
-                  photos
-                  <div className="hero-stack">
-                    {photos.map((p, i) => (
-                      <div key={p.cls} className="hero-stack-photo">
-                        <div
-                          className="hero-stack-photo-inner"
-                          ref={el => { photoRefs.current[i] = el }}
-                        >
-                          <div className="frame">
-                            <img src={p.src} alt="" />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </span>
+                Nous composons vos <span className="hero-anchor-photos">photos</span>
               </div>
               <div className="hero-headline-l2">en albums d&rsquo;exception</div>
             </div>
