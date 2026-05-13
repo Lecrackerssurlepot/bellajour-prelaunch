@@ -171,3 +171,40 @@ html, body {
 img[src*="solution-casting-03.webp"] {
   object-position: center top !important;
 }
+
+/* ═══════════════════════════════════════════
+   DESKTOP FIXES — OVERRIDE BLOCK
+   Centralised desktop adjustments using !important
+   to guarantee application over earlier rules.
+   Mobile (@media max-width: 767px) NEVER affected.
+   ═══════════════════════════════════════════ */
+@media (min-width: 768px) {
+  /* === 1. HERO — Image illustration à 50% du viewport === */
+  .hero-photo {
+    width: 50% !important;
+    max-width: 540px !important;
+    height: auto !important;
+    margin: 0 auto !important;
+  }
+
+  /* === 2. ANXIÉTÉ — Label vertical "VIVEZ, NOUS COMPOSONS"
+        plus loin du bord droit pour éviter clipping === */
+  .svt-right {
+    right: 32px !important;
+  }
+
+  /* === 3. SOLUTION — Photo upload centrée horizontalement === */
+  .sol-upload-square {
+    margin: 0 auto !important;
+  }
+
+  /* === 4. ALBUM — Titre au-dessus du mockup (sortie de la zone du livre) === */
+  .alb-title-wrap {
+    top: 5vh !important;
+  }
+
+  /* === 5. (Reporté) Signature ↔ titre Bellajour Anxiete : éléments
+        géométriquement séparés dans le code (sjc-sig fixed bottom-right
+        vs anx-hf-brand absolute top-center). Diagnostic incomplet —
+        screenshot annoté requis. === */
+}
