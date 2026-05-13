@@ -179,12 +179,39 @@ img[src*="solution-casting-03.webp"] {
    Mobile (@media max-width: 767px) NEVER affected.
    ═══════════════════════════════════════════ */
 @media (min-width: 768px) {
-  /* === 1. HERO — Image illustration à 50% du viewport === */
+  /* === 1. HERO — Image header réduite (38% / 360px max),
+        bornée verticalement à 55vh pour clearance navbar logo (140px + 16px top
+        padding = 156px bottom). À 1440×900 : image 360×540, top 180 → 24px
+        clearance sous le logo. === */
   .hero-photo {
-    width: 50% !important;
-    max-width: 540px !important;
+    width: 38% !important;
+    max-width: 360px !important;
+    max-height: 55vh !important;
     height: auto !important;
     margin: 0 auto !important;
+  }
+
+  /* === 1b. HERO — Overlay crème sur l'image pour lisibilité du titre noir
+        (option A : pas de text-shadow, pas de filter sur l'image). Z-index 1
+        entre <img> (z=0 auto) et .hero-photo-grain (z=2). Le titre dans
+        .hero-center est au z=10, toujours au-dessus. === */
+  .hero-photo::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: var(--bj-bg) !important;
+    opacity: 0.30 !important;
+    z-index: 1 !important;
+    pointer-events: none !important;
+  }
+
+  /* === 1c. HERO — Grain légèrement amplifié (impression papier édition).
+        Opacity 0.15→0.22, baseFrequency 0.9→0.85 pour un grain un peu plus
+        large. mix-blend-mode: multiply conservé (image avec falaises orange
+        + végétation foncée — multiply garde le contraste naturel). === */
+  .hero-photo-grain {
+    opacity: 0.22 !important;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E") !important;
   }
 
   /* === 2. ANXIÉTÉ — Label vertical "VIVEZ, NOUS COMPOSONS"
