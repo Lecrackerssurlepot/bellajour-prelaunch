@@ -116,6 +116,8 @@ influencers (id, nom, slug, utm_campaign, conversions, created_at)
 ✅ FAQ         — validé
 ✅ Footer      — validé
 
+
+ls .claude/worktrees/friendly-banach/ 
 ## Règles absolues de sécurité
 - Clés API jamais dans le code → variables Vercel uniquement
 - Rate limiting sur /api/waitlist (max 3 req/min par IP)
