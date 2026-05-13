@@ -20,11 +20,11 @@ const PHOTOS = [
 
 // ── 5 photos du collage final
 const COLLAGE = [
-  { src: '/images/anxiete/grid-01.webp', pos: 'tl', gridIdx:  4, photoIdx: 0, thresh: 0.74 },
-  { src: '/images/anxiete/grid-02.webp', pos: 'bl', gridIdx:  7, photoIdx: 1, thresh: 0.79 },
-  { src: '/images/anxiete/grid-03.webp', pos: 'ct', gridIdx: 17, photoIdx: 2, thresh: 0.70 },
-  { src: '/images/anxiete/grid-04.webp', pos: 'tr', gridIdx: 24, photoIdx: 3, thresh: 0.76 },
-  { src: '/images/anxiete/grid-06.webp', pos: 'br', gridIdx: 27, photoIdx: 5, thresh: 0.81 },
+  { src: '/images/brand/brand-01.webp', pos: 'tl', gridIdx:  4, photoIdx: 0, thresh: 0.74 },
+  { src: '/images/brand/brand-02.webp', pos: 'bl', gridIdx:  7, photoIdx: 1, thresh: 0.79 },
+  { src: '/images/brand/brand-03.webp', pos: 'ct', gridIdx: 17, photoIdx: 2, thresh: 0.70 },
+  { src: '/images/brand/brand-04.webp', pos: 'tr', gridIdx: 24, photoIdx: 3, thresh: 0.76 },
+  { src: '/images/brand/brand-05.webp', pos: 'br', gridIdx: 27, photoIdx: 5, thresh: 0.81 },
 ]
 const CHOSEN_SET = new Set(COLLAGE.map(c => c.gridIdx))
 
