@@ -66,7 +66,7 @@
   font-family: var(--bj-font-serif);
   font-weight: 400;
   font-style: italic;
-  font-size: clamp(40px, 3.5vw, 58px);
+  font-size: clamp(34px, 2.98vw, 49px);
   color: var(--bj-text);
   letter-spacing: -0.01em;
   line-height: 1.1;
@@ -129,8 +129,8 @@
   margin-bottom: 2px;
 }
 
-.sol-step--next   .sol-num   { font-size: clamp(32px, 3.2vw, 50px); }
-.sol-step--active .sol-num   { font-size: clamp(80px, 9vw, 130px); margin-bottom: clamp(4px, 0.8vh, 12px); }
+.sol-step--next   .sol-num   { font-size: clamp(27px, 2.72vw, 43px); }
+.sol-step--active .sol-num   { font-size: clamp(68px, 7.65vw, 111px); margin-bottom: clamp(4px, 0.8vh, 12px); }
 
 .sol-titre {
   margin: 0;
@@ -144,8 +144,8 @@
   transition: font-size 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.sol-step--next   .sol-titre { font-size: clamp(26px, 2.8vw, 42px); }
-.sol-step--active .sol-titre { font-size: clamp(32px, 3.8vw, 56px); }
+.sol-step--next   .sol-titre { font-size: clamp(22px, 2.38vw, 36px); }
+.sol-step--active .sol-titre { font-size: clamp(27px, 3.23vw, 48px); }
 
 .sol-sous-titre {
   margin: clamp(12px, 2vh, 22px) 0 0;
