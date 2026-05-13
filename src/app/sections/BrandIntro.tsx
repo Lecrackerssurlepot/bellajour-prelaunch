@@ -3,11 +3,11 @@ import './brand-intro.css'
 import { useReveal } from '@/hooks/useReveal'
 
 const PHOTOS = [
-  '/images/anxiete/grid-01.webp',  // top-left
-  '/images/anxiete/grid-03.webp',  // center (étendue 2 rangées)
-  '/images/anxiete/grid-04.webp',  // top-right
-  '/images/anxiete/grid-05.webp',  // bottom-left
-  '/images/anxiete/grid-06.webp',  // bottom-right
+  '/images/brand/brand-01.webp',  // top-left
+  '/images/brand/brand-03.webp',  // center (étendue 2 rangées)
+  '/images/brand/brand-04.webp',  // top-right
+  '/images/brand/brand-02.webp',  // bottom-left
+  '/images/brand/brand-05.webp',  // bottom-right
 ]
 
 const BG_PHOTOS = [
