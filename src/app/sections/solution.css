@@ -609,6 +609,10 @@
     border-radius: 3px !important;
     display: block !important;
     transition: none !important;
+    /* État initial aligné sur la frame 0% des keyframes sol-keep / sol-drop */
+    opacity: 0.5;
+    filter: grayscale(60%);
+    animation-fill-mode: both !important;
   }
   .sol-select-keep-1,
   .sol-select-keep-2,
