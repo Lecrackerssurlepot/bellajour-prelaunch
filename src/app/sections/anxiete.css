@@ -259,6 +259,16 @@
   will-change: transform;
 }
 
+/* ── Desktop ─ Typo alignée sur les autres sections (Solution/Album/FAQ/FWL) ── */
+@media (min-width: 768px) {
+  .anx-title {
+    font-size: clamp(24px, 3.40vw, 50px);
+  }
+  .anx-line {
+    font-size: clamp(15px, 1.65vw, 24px);
+  }
+}
+
 /* ── Mobile ── */
 @media (max-width: 767px) {
   .anx-grid {
