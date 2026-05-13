@@ -427,14 +427,14 @@ export default function Solution() {
 
   return (
     <section ref={sectionRef} id="solution" className="sol-section" data-section="solution" data-theme="light">
+      <div className="sol-header sol-header--desktop">
+        <p className="sol-header-title">Le parcours de création</p>
+        <p className="sol-header-sub">À vous la direction. À nous l&rsquo;exécution.</p>
+      </div>
       <div className="sol-inner">
 
         {/* ── Colonne gauche ── */}
         <div className="sol-left">
-          <div className="sol-header">
-            <p className="sol-header-title">Le parcours de création</p>
-            <p className="sol-header-sub">À vous la direction. À nous l&rsquo;exécution.</p>
-          </div>
           {ETAPES.map((e, i) => {
             const state = getState(i, active)
             const isActive = state === 'active'
