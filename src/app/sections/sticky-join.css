@@ -47,6 +47,15 @@
   transition: opacity 0.3s ease;
 }
 
+/* Desktop : SVG signature (889px naturels) gonflait la box du button.
+   Comme la sig est invisible (opacity 0, pointer-events none), on la masque
+   complètement → le button épouse la largeur du texte. */
+@media (min-width: 768px) {
+  .sjc-sig {
+    display: none;
+  }
+}
+
 /* Signature bleue dans les deux modes */
 .sjc-sig { filter: invert(29%) sepia(97%) saturate(1000%) hue-rotate(190deg) brightness(95%) contrast(95%); }
 
