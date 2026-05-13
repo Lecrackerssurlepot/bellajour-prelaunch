@@ -199,7 +199,7 @@ img[src*="solution-casting-03.webp"] {
     position: absolute !important;
     inset: 0 !important;
     background: var(--bj-bg) !important;
-    opacity: 0.30 !important;
+    opacity: 0.10 !important;
     z-index: 1 !important;
     pointer-events: none !important;
   }
