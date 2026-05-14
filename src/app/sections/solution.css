@@ -61,38 +61,42 @@
   z-index: 1;
 }
 
-/* ── Desktop : header sorti de .sol-left, posé au-dessus de .sol-inner
-   en flow vertical relatif (FIX 4). Span toute la section, centré. ── */
+/* ── Desktop : header en position absolute au-dessus de la section
+   (sorti du flow → .sol-inner reprend 100% hauteur section → contenu centré
+   dans la section TOTALE et non dans l'espace résiduel sous le header).
+   Top démarre à clamp(96,14vh,132) pour passer SOUS la navbar (0→103px)
+   avec ~25px de respiration. ── */
 @media (min-width: 768px) {
-  .sol-section {
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: stretch;
-  }
-
   .sol-header--desktop {
-    position: relative;
-    top: auto;
-    left: auto;
-    right: auto;
-    padding: clamp(24px, 4vh, 56px) clamp(32px, 5vw, 80px) clamp(16px, 2vh, 28px);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: clamp(96px, 14vh, 132px) clamp(32px, 5vw, 80px) clamp(16px, 2vh, 28px);
     text-align: center;
-    flex-shrink: 0;
-  }
-
-  .sol-inner {
-    flex: 1;
-    height: auto;
-    min-height: 0;
+    z-index: 5;
   }
 
   /* FIX 5 : le ::before (spacer 100-130px) n'a plus de raison d'être depuis
-     que le header est sorti de .sol-left (FIX 4). Le spacer poussait le
-     contenu de la colonne vers le bas. Supprimé → contenu centré net dans
+     que le header est sorti de .sol-left. Supprimé → contenu centré net dans
      .sol-inner via les règles existantes (sol-inner align-items: center,
      sol-left justify-content: center). */
   .sol-left::before {
     height: 0;
+  }
+
+  /* ── Visuel actif : suppression aspect-ratio 9/16 qui créait une box
+     virtuelle de 1149px (à 1440), poussant le contenu centré à 770px du top
+     (322px sous le centre 448). Insets symétriques top/bottom = 80px →
+     .sol-visual fait .sol-right - 160px = 736px, contenu centré midpoint à
+     448 = centre exact de la section. ── */
+  .sol-visual {
+    top: clamp(32px, 5vw, 80px);
+    bottom: clamp(32px, 5vw, 80px);
+    left: clamp(32px, 5vw, 80px);
+    right: clamp(32px, 5vw, 80px);
+    height: auto;
+    aspect-ratio: auto;
   }
 }
 
