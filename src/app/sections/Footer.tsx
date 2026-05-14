@@ -11,7 +11,7 @@ export default function Footer() {
           <p className="footer-tagline">Vivez. Nous composons.</p>
           <p className="footer-contact-label">Une question&nbsp;? &Eacute;crivez-nous&nbsp;:</p>
           <nav className="footer-links" aria-label="Liens footer">
-            <a href="mailto:contact@bellajour.com" className="footer-link">
+            <a href="mailto:contact@bellajour.com" className="footer-link footer-link--mail">
               contact@bellajour.com
             </a>
             <span className="footer-sep" aria-hidden="true">&middot;</span>

@@ -64,6 +64,10 @@
 
 .footer-link:hover { color: var(--bj-text); }
 
+.footer-link--mail {
+  font-weight: 700;
+}
+
 .footer-sep {
   color: rgba(23, 20, 15, 0.20);
   font-size: 0.9em;
