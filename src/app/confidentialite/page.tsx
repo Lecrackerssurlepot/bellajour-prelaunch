@@ -44,7 +44,7 @@ export default function PolitiqueConfidentialite() {
 
         <Section titre="Responsable du traitement">
           <p><strong>Bellajour</strong></p>
-          <p>Contact : <a href="mailto:hello@bellajour.fr" style={{ color: '#1C1C1C' }}>hello@bellajour.fr</a></p>
+          <p>Contact : <a href="mailto:contact@bellajour.fr" style={{ color: '#1C1C1C' }}>contact@bellajour.fr</a></p>
         </Section>
 
         <Section titre="Données collectées">
@@ -73,7 +73,7 @@ export default function PolitiqueConfidentialite() {
           </ul>
           <p>
             Pour exercer ces droits, écrivez-nous à{' '}
-            <a href="mailto:hello@bellajour.fr" style={{ color: '#1C1C1C' }}>hello@bellajour.fr</a>.
+            <a href="mailto:contact@bellajour.fr" style={{ color: '#1C1C1C' }}>contact@bellajour.fr</a>.
             Nous répondrons dans un délai de 30 jours.
           </p>
           <p>
@@ -107,7 +107,7 @@ export default function PolitiqueConfidentialite() {
         <Section titre="Contact">
           <p>
             Pour toute question relative à cette politique :{' '}
-            <a href="mailto:hello@bellajour.fr" style={{ color: '#1C1C1C' }}>hello@bellajour.fr</a>
+            <a href="mailto:contact@bellajour.fr" style={{ color: '#1C1C1C' }}>contact@bellajour.fr</a>
           </p>
         </Section>
 
