@@ -267,6 +267,16 @@
   .anx-line {
     font-size: clamp(15px, 1.65vw, 24px);
   }
+
+  /* ── Collage final — réduction de hauteur pour éliminer le chevauchement
+        avec le headline final (scrollProg ≥ 0.86).
+        Avant : row1 34vh/280max + row2 25vh/200max = 490px → top 205, overlap 12px.
+        Après : row1 25vh/210max + row2 17vh/140max = 360px → top 270, dégagement 53px. ── */
+  .anx-collage-grid {
+    grid-template-rows:
+      clamp(140px, 25vh, 210px)
+      clamp(100px, 17vh, 140px);
+  }
 }
 
 /* ── Mobile ── */
