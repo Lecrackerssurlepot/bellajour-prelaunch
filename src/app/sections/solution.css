@@ -85,34 +85,10 @@
     height: 0;
   }
 
-  /* ── Visuel : centrage flex PUR, sans dépendance vw.
-     inset: 0 → .sol-visual fait 100% de .sol-right (toute résolution).
-     align-items + justify-content center → contenu interne centré math.
-     Conséquence: midpoint contenu = 50% de .sol-right = 50% de la section
-     (puisque .sol-right = 100% section après revert combo A). Robuste
-     1440 (448), 1512 (491), 1728 (558.5). aspect-ratio neutralisé pour
-     éviter la box virtuelle 9/16 = 1149px qui décentrait avant. ── */
-  .sol-visual {
-    inset: 0;
-    height: auto;
-    aspect-ratio: auto;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* ── Parité mécanique stricte avec .sol-left.
-     AVANT : .sol-right padding clamp(32,5vw,80) sur 4 côtés (151px vertical)
-             + flex-direction: row default. .sol-left avait padding horizontal
-             uniquement + flex-direction column. Asymétrie structurelle.
-     APRÈS : .sol-right utilise EXACTEMENT le même pattern de padding
-             (horizontal-only) et flex-direction (column) que .sol-left.
-     Le centrage math reste 491 à 1512×982 (inset: 0 sur .sol-visual fait
-     toujours 100% du padding box, qui = 982 quand padding-vertical = 0).
-     Robustesse mécanique garantie sur 1440 / 1512 / 1728. ── */
-  .sol-right {
-    padding: 0 clamp(32px, 5vw, 80px);
-    flex-direction: column;
-  }
+  /* NOTE : les anciens overrides .sol-visual et .sol-right ont été déplacés
+     en fin de fichier (bloc DESKTOP OVERRIDES FINAL) — ils étaient ineffectifs
+     ici à cause d'un bug source order (.sol-visual et .sol-right base CSS
+     définis APRÈS, lignes 249/259, gagnaient par cascade order). */
 }
 
 .sol-header-title {
@@ -316,6 +292,44 @@
   animation-fill-mode: both;
 }
 .sol-upload-img--b { animation-delay: 400ms; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   DESKTOP OVERRIDES FINAL — placés APRÈS toutes les règles base pour
+   gagner via la cascade order (les overrides précédents au @media
+   ligne 69 étaient ineffectifs car .sol-visual et .sol-right base
+   apparaissent ensuite dans le fichier).
+   ═══════════════════════════════════════════════════════════════════ */
+@media (min-width: 768px) {
+  /* FIX A — Step centering : compense la hauteur du .sol-step--next
+     (~103px) qui contribue au flex flow de .sol-left. Sans padding,
+     active center = section/2 − 51.5 (active tiré vers le haut par
+     next). Avec padding-top 103, active center matche section/2.
+     Robuste 1440/1512/1728 car next height ~constant via clamp caps. */
+  .sol-left {
+    padding-top: 103px;
+  }
+
+  /* FIX B — Visual centering : remplace effectivement les valeurs base
+     (top: clamp(32,5vw,80), aspect-ratio: 9/16, bottom: auto) qui
+     produisaient une box mal dimensionnée débordant la section.
+     inset: 0 + aspect-ratio: auto → .sol-visual = padding box .sol-right
+     = section height (puisque .sol-right padding-vertical = 0 desktop).
+     Contenu centré flex → midpoint = section/2 = step center. */
+  .sol-visual {
+    inset: 0;
+    height: auto;
+    aspect-ratio: auto;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Parité mécanique avec .sol-left : padding horizontal-only +
+     flex-direction column. Remplace effectivement le base padding 4 côtés. */
+  .sol-right {
+    padding: 0 clamp(32px, 5vw, 80px);
+    flex-direction: column;
+  }
+}
 
 @media (max-width: 767px) {
   .sol-inner {
