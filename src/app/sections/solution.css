@@ -99,6 +99,20 @@
     align-items: center;
     justify-content: center;
   }
+
+  /* ── Parité mécanique stricte avec .sol-left.
+     AVANT : .sol-right padding clamp(32,5vw,80) sur 4 côtés (151px vertical)
+             + flex-direction: row default. .sol-left avait padding horizontal
+             uniquement + flex-direction column. Asymétrie structurelle.
+     APRÈS : .sol-right utilise EXACTEMENT le même pattern de padding
+             (horizontal-only) et flex-direction (column) que .sol-left.
+     Le centrage math reste 491 à 1512×982 (inset: 0 sur .sol-visual fait
+     toujours 100% du padding box, qui = 982 quand padding-vertical = 0).
+     Robustesse mécanique garantie sur 1440 / 1512 / 1728. ── */
+  .sol-right {
+    padding: 0 clamp(32px, 5vw, 80px);
+    flex-direction: column;
+  }
 }
 
 .sol-header-title {
