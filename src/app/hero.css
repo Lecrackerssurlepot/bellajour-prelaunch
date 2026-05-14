@@ -258,6 +258,20 @@
   height: auto;
 }
 
+/* Overlay crème sur l'image header pour lisibilité du titre Playfair noir.
+   Mobile ET desktop uniformément à 25%. Z-index 1 = au-dessus de <img>
+   (z auto = 0), en dessous de .hero-photo-grain (z 2). Le titre dans
+   .hero-center (z 10) reste au-dessus de tout. */
+.hero-photo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--bj-bg);
+  opacity: 0.25;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .hero-photo-grain {
   position: absolute;
   inset: 0;

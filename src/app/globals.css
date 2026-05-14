@@ -190,19 +190,8 @@ img[src*="solution-casting-03.webp"] {
     margin: 0 auto !important;
   }
 
-  /* === 1b. HERO — Overlay crème sur l'image pour lisibilité du titre noir
-        (option A : pas de text-shadow, pas de filter sur l'image). Z-index 1
-        au-dessus du <img>. Le titre dans .hero-center est au z=10, toujours
-        au-dessus. === */
-  .hero-photo::before {
-    content: '' !important;
-    position: absolute !important;
-    inset: 0 !important;
-    background: var(--bj-bg) !important;
-    opacity: 0.10 !important;
-    z-index: 1 !important;
-    pointer-events: none !important;
-  }
+  /* === 1b. (Déplacé) Overlay crème .hero-photo::before est désormais en base
+        CSS dans hero.css → s'applique mobile ET desktop uniformément à 0.25. === */
 
   /* === 1c. HERO — Grain masqué sur desktop (rendu peu satisfaisant).
         Mobile garde le grain via la règle de base de hero.css (intouchée). === */
