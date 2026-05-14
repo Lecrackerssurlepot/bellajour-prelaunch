@@ -128,24 +128,26 @@ const UploadVisual = memo(function UploadVisual({ active, onComplete }: { active
   return (
     <div style={{
       width: '100%', height: '100%',
+      position: 'relative',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       overflow: 'hidden',
     }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div ref={squareRef} className="sol-upload-square" style={{
-          position: 'relative', width: 260, height: 260, flexShrink: 0,
-        }}>
-          <img ref={imgARef} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 1, zIndex: 2 }} />
-          <img ref={imgBRef} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0, zIndex: 1 }} />
-        </div>
-        <div style={{
-          marginTop: 48,
-          fontFamily: 'var(--bj-font-serif)', fontStyle: 'italic',
-          fontWeight: 300, fontSize: 72, color: '#1C1C1C',
-          lineHeight: 1, letterSpacing: '-0.02em', whiteSpace: 'nowrap',
-        }}>
-          <span ref={pctRef}>0%</span>
-        </div>
+      <div ref={squareRef} className="sol-upload-square" style={{
+        position: 'relative', width: 260, height: 260, flexShrink: 0,
+      }}>
+        <img ref={imgARef} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 1, zIndex: 2 }} />
+        <img ref={imgBRef} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0, zIndex: 1 }} />
+      </div>
+      <div style={{
+        position: 'absolute',
+        top: 'calc(50% + 154px)',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        fontFamily: 'var(--bj-font-serif)', fontStyle: 'italic',
+        fontWeight: 300, fontSize: 72, color: '#1C1C1C',
+        lineHeight: 1, letterSpacing: '-0.02em', whiteSpace: 'nowrap',
+      }}>
+        <span ref={pctRef}>0%</span>
       </div>
     </div>
   )

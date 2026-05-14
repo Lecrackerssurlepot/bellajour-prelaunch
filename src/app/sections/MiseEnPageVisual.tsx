@@ -25,7 +25,7 @@ const LAYOUT = [
 
 // Stage 400×280px — pile centrée à left=(400-160)/2=120, top=100
 const PILE_LEFT = 120
-const PILE_TOP  = 100
+const PILE_TOP  = 16
 
 const PHASE2_TRANSITION =
   'left 0.8s cubic-bezier(0.33,1,0.68,1), ' +
@@ -140,7 +140,7 @@ const MiseEnPageVisual = memo(function MiseEnPageVisual({
       overflow: 'hidden',
     }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ position: 'relative', width: 400, height: 280, overflow: 'visible' }}>
+        <div style={{ position: 'relative', width: 400, height: 192, overflow: 'visible' }}>
           {PHOTOS.map((src, i) => (
             <div
               key={i}
