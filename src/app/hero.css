@@ -250,6 +250,7 @@
   max-width: 720px;
   height: auto;
   margin: 0 auto;
+  overflow: hidden;
 }
 
 .hero-photo img {
@@ -260,8 +261,10 @@
 
 /* Overlay crème sur l'image header pour lisibilité du titre Playfair noir.
    Mobile ET desktop uniformément à 25%. Z-index 1 = au-dessus de <img>
-   (z auto = 0), en dessous de .hero-photo-grain (z 2). Le titre dans
-   .hero-center (z 10) reste au-dessus de tout. */
+   (z auto = 0). Le grain (.hero-photo-grain) est désormais caché partout
+   pour garantir une couverture overlay strictement uniforme (le grain
+   multiply ajoutait une variation pixel-par-pixel perçue comme
+   non-uniformité). Titre .hero-center (z 10) reste au-dessus. */
 .hero-photo::before {
   content: '';
   position: absolute;
@@ -273,6 +276,7 @@
 }
 
 .hero-photo-grain {
+  display: none;
   position: absolute;
   inset: 0;
   z-index: 2;

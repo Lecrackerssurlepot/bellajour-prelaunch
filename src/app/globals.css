@@ -193,11 +193,9 @@ img[src*="solution-casting-03.webp"] {
   /* === 1b. (Déplacé) Overlay crème .hero-photo::before est désormais en base
         CSS dans hero.css → s'applique mobile ET desktop uniformément à 0.25. === */
 
-  /* === 1c. HERO — Grain masqué sur desktop (rendu peu satisfaisant).
-        Mobile garde le grain via la règle de base de hero.css (intouchée). === */
-  .hero-photo-grain {
-    display: none !important;
-  }
+  /* === 1c. (Déplacé) Le display:none du grain est désormais en base CSS
+        dans hero.css → s'applique mobile ET desktop. Ce override desktop
+        n'est plus nécessaire. === */
 
   /* === 2. ANXIÉTÉ — Label vertical "VIVEZ, NOUS COMPOSONS"
         plus loin du bord droit pour éviter clipping === */
