@@ -277,6 +277,23 @@
       clamp(140px, 25vh, 210px)
       clamp(100px, 17vh, 140px);
   }
+
+  /* ── Phase finale : descend headline + collage SOUS la navbar.
+        Navbar (.hero-nav--scrolled) occupe top 0 → 103px ; buffer respiration
+        +25px → top minimum 128px pour le headline.
+        À 1440×900 :
+        - .anx-headline-final top : 54 → 126 (clamp 14vh entre 96 et 132)
+        - .anx-collage : align-items center → flex-start avec padding-top 342
+          (clamp 38vh entre 280 et 360) pour préserver dégagement 54px sous headline
+        - Bottom collage 702 < 900 (marge bottom 198px, pas de clipping) ── */
+  .anx-headline-final {
+    top: clamp(96px, 14vh, 132px);
+  }
+
+  .anx-collage {
+    align-items: flex-start;
+    padding-top: clamp(280px, 38vh, 360px);
+  }
 }
 
 /* ── Mobile ── */
