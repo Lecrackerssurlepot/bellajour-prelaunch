@@ -113,9 +113,10 @@ export default function FinalWaitlist() {
     return () => observer.disconnect()
   }, [])
 
-  /* Auto-focus prénom à l'étape 2 */
+  /* Auto-focus prénom à l'étape 2 — preventScroll évite le scroll iOS Safari
+     qui repositionnait l'input en haut du viewport et décalait le layout. */
   useEffect(() => {
-    if (step === 2) prenomRef.current?.focus()
+    if (step === 2) prenomRef.current?.focus({ preventScroll: true })
   }, [step])
 
   /* Carousel — init scroll à 0 + sync dots */
