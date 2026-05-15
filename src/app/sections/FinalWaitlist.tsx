@@ -115,20 +115,21 @@ export default function FinalWaitlist() {
 
   /* Auto-focus prénom à l'étape 2.
      Sur mobile : étape 1 (~444px) >> étape 2 (~168px) → à la transition,
-     le contenu rétrécit et l'utilisateur reste à sa scroll position →
-     prenom form partiellement coupé en haut. Fix : re-scroll smooth la
-     section vers le centre du viewport, puis focus après le scroll.
-     Sur desktop : pas de bug (centrage absolu Hero / pas de shift FWL
-     desktop), focus direct comme avant. */
+     contenu interne rétrécit de 276px mais .fwl-section (min-height 100dvh)
+     reste de la taille du viewport. scrollIntoView({ block: 'center' })
+     était no-op car Safari considérait la section déjà centrée.
+     Fix : window.scrollTo() avec position calculée
+     (getBoundingClientRect + scrollY) pour aligner le TOP de la section
+     au TOP du viewport. Force un point de scroll absolu que Safari honore.
+     Sur desktop : focus direct (pas de bug, scroll inutile). */
   useEffect(() => {
-    if (step !== 2) return
-    const isMobile = window.innerWidth < 768
-    if (isMobile && sectionRef.current) {
-      sectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (step === 2 && sectionRef.current && window.innerWidth < 768) {
+      const sectionTop = sectionRef.current.getBoundingClientRect().top + window.scrollY
+      window.scrollTo({ top: sectionTop, behavior: 'smooth' })
       setTimeout(() => {
         prenomRef.current?.focus({ preventScroll: true })
-      }, 400)
-    } else {
+      }, 500)
+    } else if (step === 2) {
       prenomRef.current?.focus({ preventScroll: true })
     }
   }, [step])
