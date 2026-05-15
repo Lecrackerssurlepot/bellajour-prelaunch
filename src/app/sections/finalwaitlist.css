@@ -963,7 +963,8 @@
 @media (max-width: 767px) {
   .fwl-confirm-link-row {
     flex-direction: column;
-    gap: 0;
+    gap: 12px;
+    padding: 16px 12px;
   }
 
   .fwl-confirm-link-text {
