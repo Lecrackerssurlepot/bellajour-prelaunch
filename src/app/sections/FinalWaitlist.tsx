@@ -304,7 +304,7 @@ export default function FinalWaitlist() {
           /* ── Étape 2 — Prénom ── */
           <div className="fwl-prenom">
             <h2 className="fwl-prenom-titre">Dernière étape.</h2>
-            <p className="fwl-prenom-sub">Comment souhaitez-vous être appelé&nbsp;?</p>
+            <p className="fwl-prenom-sub">Veuillez entrer votre pr&eacute;nom</p>
             <form className="fwl-prenom-form" onSubmit={handlePrenomSubmit} noValidate>
               <input
                 ref={prenomRef}

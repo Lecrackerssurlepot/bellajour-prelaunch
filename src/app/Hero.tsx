@@ -250,7 +250,7 @@ export default function Hero() {
             /* ── Étape 2 — Prénom ── */
             <>
               <p className="hero-step-title">Dernière étape.</p>
-              <p className="hero-step-lead">Comment souhaitez-vous être appelé&nbsp;?</p>
+              <p className="hero-step-lead">Veuillez entrer votre pr&eacute;nom</p>
               <form className="hero-form" onSubmit={handlePrenomSubmit} noValidate>
                 <input
                   ref={prenomRef}

@@ -6,7 +6,7 @@
 /* ── Section ── */
 .fwl-section {
   width: 100%;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bj-bg);
   padding: clamp(80px, 14vh, 160px) 0 clamp(80px, 12vh, 140px);
   overflow: hidden;
@@ -1033,7 +1033,7 @@
   border: none;
   outline: none;
   font-family: var(--bj-font-sans);
-  font-size: clamp(14px, 1.15vw, 17px);
+  font-size: clamp(16px, 1.15vw, 17px);
   color: var(--bj-text);
 }
 
