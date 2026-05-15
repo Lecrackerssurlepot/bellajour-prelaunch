@@ -113,10 +113,24 @@ export default function FinalWaitlist() {
     return () => observer.disconnect()
   }, [])
 
-  /* Auto-focus prénom à l'étape 2 — preventScroll évite le scroll iOS Safari
-     qui repositionnait l'input en haut du viewport et décalait le layout. */
+  /* Auto-focus prénom à l'étape 2.
+     Sur mobile : étape 1 (~444px) >> étape 2 (~168px) → à la transition,
+     le contenu rétrécit et l'utilisateur reste à sa scroll position →
+     prenom form partiellement coupé en haut. Fix : re-scroll smooth la
+     section vers le centre du viewport, puis focus après le scroll.
+     Sur desktop : pas de bug (centrage absolu Hero / pas de shift FWL
+     desktop), focus direct comme avant. */
   useEffect(() => {
-    if (step === 2) prenomRef.current?.focus({ preventScroll: true })
+    if (step !== 2) return
+    const isMobile = window.innerWidth < 768
+    if (isMobile && sectionRef.current) {
+      sectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setTimeout(() => {
+        prenomRef.current?.focus({ preventScroll: true })
+      }, 400)
+    } else {
+      prenomRef.current?.focus({ preventScroll: true })
+    }
   }, [step])
 
   /* Carousel — init scroll à 0 + sync dots */
