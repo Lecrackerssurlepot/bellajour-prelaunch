@@ -33,9 +33,11 @@
 .hero-nav-logo {
   height: clamp(80px, 10vw, 140px);
   display: block;
-  transition: height 0.4s var(--bj-ease-premium);
+  transition: transform 0.4s var(--bj-ease-premium);
+  transform-origin: center center;
+  will-change: transform;
 }
-.hero-nav--scrolled .hero-nav-logo { height: clamp(60px, 7vw, 100px); }
+.hero-nav--scrolled .hero-nav-logo { transform: scale(0.72); }
 
 /* ── Hero section ── */
 .hero {
