@@ -185,7 +185,7 @@ export default function Hero() {
           className={`hero-nav-logo-btn ${logoVisible ? 'is-visible' : 'is-hidden'}`}
           aria-label="Retour en haut"
         >
-          <img src="/images/ui/logo.webp" className="hero-nav-logo" alt="Bellajour" />
+          <img src="/images/ui/logo.webp" className="hero-nav-logo" alt="Bellajour" fetchPriority="high" decoding="sync" />
         </button>
       </nav>
 
@@ -194,7 +194,7 @@ export default function Hero() {
 
         <div className="hero-photo-wrap" aria-hidden="true">
           <div className="hero-photo">
-            <img src="/images/header-bellajour.webp" alt="" />
+            <img src="/images/header-bellajour.webp" alt="" fetchPriority="high" decoding="sync" />
             <div className="hero-photo-grain" />
           </div>
         </div>
