@@ -678,8 +678,7 @@
     display: block !important;
     transition: none !important;
     /* État initial aligné sur la frame 0% des keyframes sol-keep / sol-drop */
-    opacity: 0.5;
-    filter: grayscale(60%);
+    opacity: 0.85;
     animation-fill-mode: both !important;
   }
   .sol-select-keep-1,
@@ -697,14 +696,14 @@
   .sol-select-drop-2 { animation-delay: 0.4s !important; }
   .sol-select-drop-3 { animation-delay: 0.8s !important; }
   @keyframes sol-keep {
-    0%, 30%   { opacity: 0.5; transform: scale(1); filter: grayscale(60%); }
-    50%, 80%  { opacity: 1;   transform: scale(1); filter: grayscale(0%); }
-    100%      { opacity: 0.5; transform: scale(1); filter: grayscale(60%); }
+    0%, 30%   { opacity: 0.85; transform: scale(1); }
+    50%, 80%  { opacity: 1;    transform: scale(1); }
+    100%      { opacity: 0.85; transform: scale(1); }
   }
   @keyframes sol-drop {
-    0%, 30%   { opacity: 0.5; transform: scale(1); filter: grayscale(60%); }
-    50%, 80%  { opacity: 0.2; transform: scale(1); filter: grayscale(100%); }
-    100%      { opacity: 0.5; transform: scale(1); filter: grayscale(60%); }
+    0%, 30%   { opacity: 0.85; transform: scale(1); }
+    50%, 80%  { opacity: 0.2;  transform: scale(1); }
+    100%      { opacity: 0.85; transform: scale(1); }
   }
 
   /* ═══ 04 — MISE EN PAGE : 4 photos carrées qui s'agencent en grille 2×2 ═══ */
