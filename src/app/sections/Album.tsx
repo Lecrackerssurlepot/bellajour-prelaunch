@@ -13,6 +13,7 @@ export default function Album() {
   const [scrollProg, setScrollProg] = useState(0)
   const [swayAngle, setSwayAngle]   = useState(0)
   const [isMobile, setIsMobile]     = useState(false)
+  const [isAlbumVisible, setIsAlbumVisible] = useState(false)
   const bookReveal     = useReveal(0.30)
   const titleReveal    = useReveal(0.30)
   const subtitleReveal = useReveal(0.30)
@@ -43,8 +44,24 @@ export default function Album() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Autonomous sway via rAF (amplitude driven by scroll phase)
+  // Gate the sway rAF on section visibility
   useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+    const io = new IntersectionObserver(
+      ([entry]) => setIsAlbumVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    )
+    io.observe(section)
+    return () => io.disconnect()
+  }, [])
+
+  // Autonomous sway via rAF (amplitude driven by scroll phase) — only when section is visible
+  useEffect(() => {
+    if (!isAlbumVisible) {
+      setSwayAngle(0)
+      return
+    }
     const tick = () => {
       const p      = scrollProgRef.current
       const p1Norm = clamp01(p / 0.5)
@@ -56,7 +73,7 @@ export default function Album() {
     }
     rafRef.current = requestAnimationFrame(tick)
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
-  }, [])
+  }, [isAlbumVisible])
 
   // Phase 1: p = 0 → 0.5
   const p1Norm        = clamp01(scrollProg / 0.5)
