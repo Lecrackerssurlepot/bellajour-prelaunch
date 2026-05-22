@@ -21,6 +21,7 @@ export default function Hero() {
   const prenomRef = useRef<HTMLInputElement>(null)
   const lastScrollY     = useRef(0)
   const scrollStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const topSentinelRef  = useRef<HTMLDivElement>(null)
 
   /* Lire ?ref= dans l'URL */
   useEffect(() => {
@@ -28,11 +29,16 @@ export default function Hero() {
     if (ref) setReferredBy(ref)
   }, [])
 
-  /* Nav scrolled state */
+  /* Nav scrolled state — IO sur sentinelle 10px (équivalent scrollY > 10) */
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    const sentinel = topSentinelRef.current
+    if (!sentinel) return
+    const io = new IntersectionObserver(
+      ([entry]) => setScrolled(!entry.isIntersecting),
+      { threshold: 0 }
+    )
+    io.observe(sentinel)
+    return () => io.disconnect()
   }, [])
 
   /* Compteur */
@@ -120,26 +126,34 @@ export default function Hero() {
     document.getElementById('anxiete')?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  /* Logo smart : fade au scroll bas, réapparaît au scroll haut ou à l'arrêt */
+  /* Logo smart : fade au scroll bas, réapparaît au scroll haut ou à l'arrêt
+     — logique direction-aware non réductible à un IO, throttle via rAF */
   useEffect(() => {
+    let ticking = false
     const handleLogoScroll = () => {
-      const currentY = window.scrollY
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        const currentY = window.scrollY
 
-      if (currentY < 50) {
-        setLogoVisible(true)
+        if (currentY < 50) {
+          setLogoVisible(true)
+          lastScrollY.current = currentY
+          ticking = false
+          return
+        }
+
+        if (currentY < lastScrollY.current) {
+          setLogoVisible(true)
+        } else if (currentY > lastScrollY.current) {
+          setLogoVisible(false)
+        }
         lastScrollY.current = currentY
-        return
-      }
 
-      if (currentY < lastScrollY.current) {
-        setLogoVisible(true)
-      } else if (currentY > lastScrollY.current) {
-        setLogoVisible(false)
-      }
-      lastScrollY.current = currentY
-
-      if (scrollStopTimer.current) clearTimeout(scrollStopTimer.current)
-      scrollStopTimer.current = setTimeout(() => setLogoVisible(true), 1000)
+        if (scrollStopTimer.current) clearTimeout(scrollStopTimer.current)
+        scrollStopTimer.current = setTimeout(() => setLogoVisible(true), 1000)
+        ticking = false
+      })
     }
 
     window.addEventListener('scroll', handleLogoScroll, { passive: true })
@@ -178,6 +192,11 @@ export default function Hero() {
 
   return (
     <>
+      <div
+        ref={topSentinelRef}
+        aria-hidden="true"
+        style={{ position: 'absolute', top: 0, left: 0, height: '10px', width: '100%', pointerEvents: 'none' }}
+      />
       <nav className={scrolled ? 'hero-nav hero-nav--scrolled' : 'hero-nav'}>
         <button
           type="button"
