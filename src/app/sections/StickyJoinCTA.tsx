@@ -28,28 +28,33 @@ export default function StickyJoinCTA() {
   const footerInView = useRef(false)
 
   useEffect(() => {
-    const getSectionId = (): SectionConfig | null => {
-      const scrollY = window.scrollY + window.innerHeight * 0.5
-      for (const config of SECTIONS) {
-        const el = document.getElementById(config.id)
-        if (!el) continue
-        const top = el.offsetTop
-        const bottom = top + el.offsetHeight
-        if (scrollY >= top && scrollY < bottom) return config
-      }
-      return null
-    }
+    const crossing = new Map<string, boolean>()
 
-    const onScroll = () => {
+    const applyState = () => {
       if (footerInView.current) return
-      const config = getSectionId()
-      if (!config) { setVisible(true); return }
-      setVisible(!config.hidden)
-      setDark(config.theme === 'dark')
+      let active: SectionConfig | null = null
+      for (const config of SECTIONS) {
+        if (crossing.get(config.id)) { active = config; break }
+      }
+      if (!active) { setVisible(true); return }
+      setVisible(!active.hidden)
+      setDark(active.theme === 'dark')
     }
 
-    window.addEventListener('scroll', onScroll, { passive: true })
-    const timer = setTimeout(onScroll, 300)
+    const observers: IntersectionObserver[] = []
+    for (const config of SECTIONS) {
+      const el = document.getElementById(config.id)
+      if (!el) continue
+      const io = new IntersectionObserver(
+        ([entry]) => {
+          crossing.set(config.id, entry.isIntersecting)
+          applyState()
+        },
+        { rootMargin: '-50% 0px -50% 0px', threshold: 0 }
+      )
+      io.observe(el)
+      observers.push(io)
+    }
 
     const footerEl = document.getElementById('footer')
     const footerObserver = new IntersectionObserver(
@@ -58,7 +63,7 @@ export default function StickyJoinCTA() {
         if (entry.isIntersecting) {
           setVisible(false)
         } else {
-          onScroll()
+          applyState()
         }
       },
       { threshold: 0 }
@@ -66,8 +71,7 @@ export default function StickyJoinCTA() {
     if (footerEl) footerObserver.observe(footerEl)
 
     return () => {
-      window.removeEventListener('scroll', onScroll)
-      clearTimeout(timer)
+      observers.forEach(io => io.disconnect())
       footerObserver.disconnect()
     }
   }, [])
