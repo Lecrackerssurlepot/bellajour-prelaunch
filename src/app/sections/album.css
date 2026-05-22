@@ -3,7 +3,6 @@
 .alb-scroll {
   height: 700vh;
   position: relative;
-  scroll-snap-align: start;
 }
 
 .alb-sticky {

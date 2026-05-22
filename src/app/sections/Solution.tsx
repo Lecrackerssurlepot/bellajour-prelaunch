@@ -500,7 +500,6 @@ export default function Solution() {
         </div>
 
       </div>
-      <div className="sol-snap-end" />
     </section>
   )
 }

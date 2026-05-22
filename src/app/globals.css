@@ -33,10 +33,6 @@
   --bj-glass-border: rgba(234, 227, 216, 0.15);
 }
 
-html {
-  scroll-snap-type: y proximity;
-}
-
 html, body {
   margin: 0;
   padding: 0;
@@ -67,17 +63,6 @@ html, body {
    Mobile — Scroll natif (≤ 767px)
    ════════════════════════════════════════ */
 @media (max-width: 767px) {
-  html {
-    scroll-snap-type: none !important;
-  }
-
-  .hero,
-  .sol-section,
-  .sol-snap-end,
-  .fwl-section {
-    scroll-snap-align: none !important;
-  }
-
   #solution {
     height: auto !important;
     min-height: 100vh;
