@@ -32,7 +32,7 @@ const ITEMS = [
     a: [
       "Bellajour est en cours de pr\u00e9paration.",
       "Les pr\u00e9ventes ouvrent le 1er juin 2026, r\u00e9serv\u00e9es en priorit\u00e9 aux inscrits de la waitlist.",
-      "Le lancement officiel est pr\u00e9vu le 1er juillet 2026.",
+      "Le lancement officiel est pr\u00e9vu le 15 ao\u00fbt 2026.",
     ],
   },
   {
