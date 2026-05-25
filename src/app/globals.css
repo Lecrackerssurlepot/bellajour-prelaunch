@@ -206,9 +206,9 @@ img[src*="solution-casting-03.webp"] {
     margin: 0 auto !important;
   }
 
-  /* === 4. ALBUM — Titre au-dessus du mockup (sortie de la zone du livre) === */
+  /* === 4. ALBUM — Titre repositionné dans la zone noire avec respiration au seam === */
   .alb-title-wrap {
-    top: 5vh !important;
+    top: clamp(120px, 15vh, 170px) !important;
   }
 
   /* === 5. (Reporté) Signature ↔ titre Bellajour Anxiete : éléments
