@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import './hero.css'
 
 export default function Hero() {
+  const [scrolled,   setScrolled]   = useState(false)
   const [step,       setStep]       = useState<1 | 2 | 3>(1)
   const [emailValue, setEmailValue] = useState('')
   const [prenom,     setPrenom]     = useState('')
@@ -22,6 +23,24 @@ export default function Hero() {
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get('ref')
     if (ref) setReferredBy(ref)
+  }, [])
+
+  /* Navbar scroll-state — toggle .hero-nav--scrolled au-delà de 80px.
+     Scroll listener throttled via rAF (1 update / frame max). */
+  useEffect(() => {
+    let ticking = false
+    const update = () => {
+      setScrolled(window.scrollY > 80)
+      ticking = false
+    }
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   /* Compteur */
@@ -138,7 +157,7 @@ export default function Hero() {
 
   return (
     <>
-      <nav className="hero-nav" aria-label="Navigation principale">
+      <nav className={scrolled ? 'hero-nav hero-nav--scrolled' : 'hero-nav'} aria-label="Navigation principale">
         <button
           type="button"
           onClick={scrollToHero}

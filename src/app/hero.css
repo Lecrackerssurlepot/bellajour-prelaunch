@@ -1,20 +1,37 @@
 @import './globals.css';
 
-/* ── Nav (logo seul centré, fond beige opaque, hauteur fine)
-   Mobile : 56px · Desktop ≥768px : 64px (var --bj-nav-h dans globals.css)
-   Pas de scroll-state, pas de backdrop-filter, pas d'ombre. ── */
+/* ── Nav scroll-state (logo seul centré, transition 280ms ease-out)
+   TOP (scroll=0)        : fond transparent, height 96/112px, logo big
+   SCROLLED (scroll>80)  : fond beige glass (rgba+blur), height 64/72px, logo small
+   Glassmorphism autorisé uniquement ici (décision charte 2026-05-25). ── */
 .hero-nav {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: var(--bj-nav-h);
+  height: 96px;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #EAE3D8;
+  background: transparent;
   z-index: 50;
+  transition:
+    height 280ms ease-out,
+    background-color 280ms ease-out,
+    backdrop-filter 280ms ease-out,
+    -webkit-backdrop-filter 280ms ease-out;
 }
+@media (min-width: 768px) {
+  .hero-nav { height: 112px; }
+}
+
+.hero-nav--scrolled {
+  height: var(--bj-nav-h);
+  background-color: rgba(234, 227, 216, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
 .hero-nav-logo-btn {
   background: transparent;
   border: none;
@@ -24,10 +41,17 @@
 }
 .hero-nav-logo {
   display: block;
-  height: clamp(28px, 7.2vw, 32px);
+  height: clamp(72px, 18vw, 80px);
+  transition: height 280ms ease-out;
 }
 @media (min-width: 768px) {
-  .hero-nav-logo { height: clamp(32px, 2.5vw, 36px); }
+  .hero-nav-logo { height: clamp(88px, 7vw, 96px); }
+}
+.hero-nav--scrolled .hero-nav-logo {
+  height: 36px;
+}
+@media (min-width: 768px) {
+  .hero-nav--scrolled .hero-nav-logo { height: 40px; }
 }
 
 /* ── Hero section

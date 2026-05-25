@@ -32,12 +32,14 @@
   --bj-glass-bg:     rgba(234, 227, 216, 0.08);
   --bj-glass-border: rgba(234, 227, 216, 0.15);
 
-  /* ── Navbar height (logo seul centré, fond beige opaque) ── */
-  --bj-nav-h: 56px;
+  /* ── Navbar height — représente la hauteur SCROLLED (état compact).
+     Utilisée pour main { padding-top }. État TOP (navbar transparente,
+     plus haute) est géré directement dans hero.css sur .hero-nav. ── */
+  --bj-nav-h: 64px;
 }
 
 @media (min-width: 768px) {
-  :root { --bj-nav-h: 64px; }
+  :root { --bj-nav-h: 72px; }
 }
 
 html, body {
