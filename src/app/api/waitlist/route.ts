@@ -160,11 +160,12 @@ export async function POST(request: Request) {
 
       if (parrain?.email && parrain.email !== normalizedEmail) {
         prenomParrain = parrain.prenom || "";
-        await supabase.from("credits").insert({
+        await supabase.from("pages_credits").insert({
           email: parrain.email,
           montant: 5,
           source: ref_code,
           applique: false,
+          status: "pending",
         });
       }
     }
