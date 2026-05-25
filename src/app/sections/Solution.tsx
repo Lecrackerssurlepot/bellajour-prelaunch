@@ -193,8 +193,6 @@ export default function Solution() {
   const sectionRef    = useRef<HTMLElement>(null)
   const stepStartRef  = useRef(Date.now())
   const runningRef    = useRef(false)
-  const isSnappingRef = useRef(false)
-  const lastScrollY   = useRef(0)
   const isMobileRef   = useRef(false)
 
   const solCarouselRef = useRef<HTMLDivElement>(null)
@@ -271,20 +269,8 @@ export default function Solution() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (isMobileRef.current) return
-        const scrollingDown = window.scrollY > lastScrollY.current
-        lastScrollY.current = window.scrollY
 
-        if (
-          entry.isIntersecting &&
-          !runningRef.current &&
-          !isSnappingRef.current &&
-          scrollingDown &&
-          entry.intersectionRatio < 0.5
-        ) {
-          isSnappingRef.current = true
-          sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          setTimeout(() => { isSnappingRef.current = false }, 800)
-
+        if (entry.isIntersecting && !runningRef.current) {
           setActive(0)
           setProgress(0)
           stepStartRef.current = Date.now()
