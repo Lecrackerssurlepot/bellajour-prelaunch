@@ -52,15 +52,15 @@
 /* ── Desktop : header en position absolute au-dessus de la section
    (sorti du flow → .sol-inner reprend 100% hauteur section → contenu centré
    dans la section TOTALE et non dans l'espace résiduel sous le header).
-   Top démarre à clamp(96,14vh,132) pour passer SOUS la navbar (0→103px)
-   avec ~25px de respiration. ── */
+   Padding-top = var(--bj-nav-h) (64px desktop) + clamp(24,4vh,44) de respiration
+   pour passer sous la navbar fixe sans gap excessif. ── */
 @media (min-width: 768px) {
   .sol-header--desktop {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    padding: clamp(96px, 14vh, 132px) clamp(32px, 5vw, 80px) clamp(16px, 2vh, 28px);
+    padding: calc(var(--bj-nav-h) + clamp(24px, 4vh, 44px)) clamp(32px, 5vw, 80px) clamp(16px, 2vh, 28px);
     text-align: center;
     z-index: 5;
   }

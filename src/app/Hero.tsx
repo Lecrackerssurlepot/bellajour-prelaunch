@@ -4,8 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import './hero.css'
 
 export default function Hero() {
-  const [scrolled,   setScrolled]   = useState(false)
-  const [logoVisible, setLogoVisible] = useState(true)
   const [step,       setStep]       = useState<1 | 2 | 3>(1)
   const [emailValue, setEmailValue] = useState('')
   const [prenom,     setPrenom]     = useState('')
@@ -19,26 +17,11 @@ export default function Hero() {
   const [wasReferred,          setWasReferred]          = useState(false)
 
   const prenomRef = useRef<HTMLInputElement>(null)
-  const lastScrollY     = useRef(0)
-  const scrollStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const topSentinelRef  = useRef<HTMLDivElement>(null)
 
   /* Lire ?ref= dans l'URL */
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get('ref')
     if (ref) setReferredBy(ref)
-  }, [])
-
-  /* Nav scrolled state — IO sur sentinelle 10px (équivalent scrollY > 10) */
-  useEffect(() => {
-    const sentinel = topSentinelRef.current
-    if (!sentinel) return
-    const io = new IntersectionObserver(
-      ([entry]) => setScrolled(!entry.isIntersecting),
-      { threshold: 0 }
-    )
-    io.observe(sentinel)
-    return () => io.disconnect()
   }, [])
 
   /* Compteur */
@@ -126,43 +109,6 @@ export default function Hero() {
     document.getElementById('anxiete')?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  /* Logo smart : fade au scroll bas, réapparaît au scroll haut ou à l'arrêt
-     — logique direction-aware non réductible à un IO, throttle via rAF */
-  useEffect(() => {
-    let ticking = false
-    const handleLogoScroll = () => {
-      if (ticking) return
-      ticking = true
-      requestAnimationFrame(() => {
-        const currentY = window.scrollY
-
-        if (currentY < 50) {
-          setLogoVisible(true)
-          lastScrollY.current = currentY
-          ticking = false
-          return
-        }
-
-        if (currentY < lastScrollY.current) {
-          setLogoVisible(true)
-        } else if (currentY > lastScrollY.current) {
-          setLogoVisible(false)
-        }
-        lastScrollY.current = currentY
-
-        if (scrollStopTimer.current) clearTimeout(scrollStopTimer.current)
-        scrollStopTimer.current = setTimeout(() => setLogoVisible(true), 1000)
-        ticking = false
-      })
-    }
-
-    window.addEventListener('scroll', handleLogoScroll, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', handleLogoScroll)
-      if (scrollStopTimer.current) clearTimeout(scrollStopTimer.current)
-    }
-  }, [])
-
   const scrollToHero = () => {
     const hero = document.getElementById('hero')
     if (hero) {
@@ -192,16 +138,11 @@ export default function Hero() {
 
   return (
     <>
-      <div
-        ref={topSentinelRef}
-        aria-hidden="true"
-        style={{ position: 'absolute', top: 0, left: 0, height: '10px', width: '100%', pointerEvents: 'none' }}
-      />
-      <nav className={scrolled ? 'hero-nav hero-nav--scrolled' : 'hero-nav'}>
+      <nav className="hero-nav" aria-label="Navigation principale">
         <button
           type="button"
           onClick={scrollToHero}
-          className={`hero-nav-logo-btn ${logoVisible ? 'is-visible' : 'is-hidden'}`}
+          className="hero-nav-logo-btn"
           aria-label="Retour en haut"
         >
           <img src="/images/ui/logo.webp" className="hero-nav-logo" alt="Bellajour" fetchPriority="high" decoding="sync" />

@@ -31,6 +31,13 @@
   --bj-glass-blur:   blur(10px);
   --bj-glass-bg:     rgba(234, 227, 216, 0.08);
   --bj-glass-border: rgba(234, 227, 216, 0.15);
+
+  /* ── Navbar height (logo seul centré, fond beige opaque) ── */
+  --bj-nav-h: 56px;
+}
+
+@media (min-width: 768px) {
+  :root { --bj-nav-h: 64px; }
 }
 
 html, body {
@@ -41,6 +48,10 @@ html, body {
   overflow-x: clip;
   font-family: var(--bj-font-sans);
 }
+
+/* Offset pour la navbar fixe : le contenu démarre sous la navbar.
+   Hero compense avec calc(100svh - var(--bj-nav-h)) pour plein écran. */
+main { padding-top: var(--bj-nav-h); }
 
 * { box-sizing: border-box; }
 
@@ -165,8 +176,8 @@ img[src*="solution-casting-03.webp"] {
    ═══════════════════════════════════════════ */
 @media (min-width: 768px) {
   /* === 1. HERO — Image header (44% / 450px max / max-height 65vh).
-        Centrée verticalement, ne chevauche pas le logo navbar (height 140px
-        + padding 16px = bottom 156px) sur viewports standard. === */
+        Centrée verticalement dans la zone hero sous la navbar fixe
+        (--bj-nav-h = 64px desktop / 56px mobile). === */
   .hero-photo {
     width: 44% !important;
     max-width: 450px !important;
