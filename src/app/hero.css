@@ -48,10 +48,10 @@
   .hero-nav-logo { height: clamp(88px, 7vw, 96px); }
 }
 .hero-nav--scrolled .hero-nav-logo {
-  height: 36px;
+  height: 48px;
 }
 @media (min-width: 768px) {
-  .hero-nav--scrolled .hero-nav-logo { height: 40px; }
+  .hero-nav--scrolled .hero-nav-logo { height: 56px; }
 }
 
 /* ── Hero section
