@@ -1,4 +1,7 @@
 import { ImageResponse } from 'next/og'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import sharp from 'sharp'
 
 export const alt = "Bellajour — Maison d'édition du souvenir"
 export const size = { width: 1200, height: 630 }
@@ -15,11 +18,21 @@ async function loadGoogleFont(family: string, weight = 400, italic = false): Pro
   return fontRes.arrayBuffer()
 }
 
+async function webpToPngDataUrl(publicPath: string, targetWidth: number): Promise<string> {
+  const buf = await readFile(join(process.cwd(), 'public', publicPath))
+  const png = await sharp(buf, { limitInputPixels: false })
+    .resize({ width: targetWidth })
+    .png()
+    .toBuffer()
+  return `data:image/png;base64,${png.toString('base64')}`
+}
+
 export default async function OpengraphImage() {
-  const [playfairBold, cormorantItalic, dmSans] = await Promise.all([
+  const [playfairBold, cormorantItalic, signatureSrc, calanqueSrc] = await Promise.all([
     loadGoogleFont('Playfair Display', 700, false),
     loadGoogleFont('Cormorant', 400, true),
-    loadGoogleFont('DM Sans', 400, false),
+    webpToPngDataUrl('images/ui/logo.webp', 520),
+    webpToPngDataUrl('images/header-bellajour.webp', 426),
   ])
 
   return new ImageResponse(
@@ -30,91 +43,84 @@ export default async function OpengraphImage() {
           height: '100%',
           backgroundColor: '#EAE3D8',
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '72px 96px',
-          color: '#1C1C1C',
+          position: 'relative',
         }}
       >
+        {/* ligne verticale centrale — réplique de .hero-line */}
         <div
           style={{
-            fontFamily: 'DM Sans',
-            fontSize: 18,
-            letterSpacing: 6,
-            textTransform: 'uppercase',
-            color: '#A89880',
-            alignSelf: 'flex-start',
+            position: 'absolute',
+            left: '50%',
+            top: 0,
+            bottom: 0,
+            width: 1,
+            backgroundColor: 'rgba(23, 20, 15, 0.20)',
           }}
-        >
-          Maison d'édition du souvenir
-        </div>
+        />
 
+        {/* stack central */}
         <div
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            textAlign: 'center',
-            gap: 28,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: 'Playfair Display',
-              fontWeight: 700,
-              fontSize: 120,
-              lineHeight: 1,
-              color: '#1C1C1C',
-            }}
-          >
-            Bellajour
-          </div>
-          <div
-            style={{
-              fontFamily: 'Cormorant',
-              fontStyle: 'italic',
-              fontSize: 56,
-              lineHeight: 1.1,
-              color: '#1C1C1C',
-              maxWidth: 900,
-            }}
-          >
-            Vos souvenirs méritent un album d'exception
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 18,
             width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 14,
+            padding: '32px 0',
           }}
         >
-          <div style={{ width: 80, height: 1, backgroundColor: '#A89880' }} />
+          {/* signature cursive bleue */}
+          <img
+            src={signatureSrc}
+            width={200}
+            height={142}
+            style={{ objectFit: 'contain' }}
+            alt=""
+          />
+
+          {/* illustration calanque verticale, bords déchirés intégrés au PNG */}
+          <img
+            src={calanqueSrc}
+            width={187}
+            height={280}
+            style={{ objectFit: 'contain' }}
+            alt=""
+          />
+
+          {/* titre en deux temps, sous l'illustration, distinct pour la lisibilité */}
           <div
             style={{
-              fontFamily: 'Cormorant',
-              fontStyle: 'italic',
-              fontSize: 32,
-              color: '#1C1C1C',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 4,
+              marginTop: 2,
             }}
           >
-            Vivez. Nous composons.
-          </div>
-          <div
-            style={{
-              fontFamily: 'DM Sans',
-              fontSize: 16,
-              letterSpacing: 4,
-              textTransform: 'uppercase',
-              color: '#A89880',
-              marginTop: 4,
-            }}
-          >
-            bellajour.fr
+            <div
+              style={{
+                fontFamily: 'Playfair Display',
+                fontWeight: 700,
+                fontSize: 40,
+                lineHeight: 1.1,
+                color: '#1C1C1C',
+              }}
+            >
+              Nous composons vos photos
+            </div>
+            <div
+              style={{
+                fontFamily: 'Cormorant',
+                fontStyle: 'italic',
+                fontSize: 46,
+                lineHeight: 1.1,
+                color: '#1C1C1C',
+              }}
+            >
+              en albums d&rsquo;exception
+            </div>
           </div>
         </div>
       </div>
@@ -124,7 +130,6 @@ export default async function OpengraphImage() {
       fonts: [
         { name: 'Playfair Display', data: playfairBold, weight: 700, style: 'normal' },
         { name: 'Cormorant', data: cormorantItalic, weight: 400, style: 'italic' },
-        { name: 'DM Sans', data: dmSans, weight: 400, style: 'normal' },
       ],
     },
   )
