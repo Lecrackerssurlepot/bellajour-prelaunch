@@ -8,7 +8,7 @@ const ITEMS = [
     q: 'Pourquoi rejoindre la liste maintenant\u00a0?',
     a: [
       "L\u2019inscription est gratuite, sans engagement, et vous permet d\u2019\u00eatre pr\u00e9venu avant l\u2019ouverture officielle de Bellajour.",
-      "En rejoignant la waitlist, vous devenez l\u2019un des premiers Fondateurs Bellajour\u00a0: acc\u00e8s aux pr\u00e9ventes avant le 1er juin, tarif exclusif pour les 100 premiers inscrits, et programme de parrainage d\u00e8s l\u2019ouverture.",
+      "En rejoignant la waitlist, vous devenez l\u2019un des premiers Fondateurs Bellajour\u00a0: acc\u00e8s aux pr\u00e9ventes avant le 15 juin, tarif exclusif pour les 100 premiers inscrits, et programme de parrainage d\u00e8s l\u2019ouverture.",
       "Pas de spam. Pas d\u2019emails inutiles.",
     ],
   },
@@ -16,7 +16,7 @@ const ITEMS = [
     q: 'Combien co\u00fbtera un album Bellajour\u00a0?',
     a: [
       "Bellajour est un service premium, mais pens\u00e9 pour rester accessible.",
-      "Son prix sera annonc\u00e9 d\u00e8s les pr\u00e9ventes du 1er juin, en toute transparence. Livraison incluse, sans surprise. C\u2019est quelque chose qui nous tient \u00e0 c\u0153ur.",
+      "Son prix sera annonc\u00e9 d\u00e8s les pr\u00e9ventes du 15 juin, en toute transparence. Livraison incluse, sans surprise. C\u2019est quelque chose qui nous tient \u00e0 c\u0153ur.",
       "Et en plus, chaque parrainage que vous effectuez vient directement r\u00e9duire le prix.",
     ],
   },
@@ -31,7 +31,7 @@ const ITEMS = [
     q: 'Quand Bellajour sera-t-il disponible\u00a0?',
     a: [
       "Bellajour est en cours de pr\u00e9paration.",
-      "Les pr\u00e9ventes ouvrent le 1er juin 2026, r\u00e9serv\u00e9es en priorit\u00e9 aux inscrits de la waitlist.",
+      "Les pr\u00e9ventes ouvrent le 15 juin 2026, r\u00e9serv\u00e9es en priorit\u00e9 aux inscrits de la waitlist.",
       "Le lancement officiel est pr\u00e9vu le 15 ao\u00fbt 2026.",
     ],
   },

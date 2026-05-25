@@ -6,7 +6,7 @@ import './finalwaitlist.css'
 /* ── Données ── */
 const DATES = [
   { label: 'WAITLIST OUVERTE', date: 'MAINTENANT' },
-  { label: 'PRÉVENTES',        date: '1 JUIN' },
+  { label: 'PRÉVENTES',        date: '15 JUIN' },
   { label: 'LANCEMENT',        date: '15 AOÛT' },
 ]
 
@@ -50,7 +50,7 @@ function DateTicker() {
         <span className="fwl-ticker-date">{d.date}</span>
       </div>
       <p className="fwl-ticker-static">
-        Waitlist ouverte &middot; Pr&#233;ventes 1 juin &middot; Lancement 15 ao&#251;t
+        Waitlist ouverte &middot; Pr&#233;ventes 15 juin &middot; Lancement 15 ao&#251;t
       </p>
     </div>
   )

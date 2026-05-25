@@ -307,7 +307,7 @@ export default function Hero() {
           <div className="hero-prelaunch">
             <p className="hero-prelaunch-date">
               <span className="hero-prelaunch-dash">───</span>
-              {' '}PRÉ-VENTE LE 1<sup>ER</sup> JUIN{' '}
+              {' '}PRÉ-VENTE LE 15 JUIN{' '}
               <span className="hero-prelaunch-dash">───</span>
             </p>
             <p className="hero-prelaunch-sub">Accès anticipé pour les inscrits</p>
