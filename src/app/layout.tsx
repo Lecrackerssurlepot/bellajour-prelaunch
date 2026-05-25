@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://www.bellajour.fr'),
   title: "Bellajour — Vos souvenirs méritent un album d'exception",
   description:
-    "Maison d'édition du souvenir. Bellajour compose vos photos en albums imprimés faits pour traverser le temps. Vivez. Nous composons.",
+    "Maison d'édition du souvenir. Bellajour compose vos photos en albums d'exception sublimés par une couverture unique. Vivez. Nous composons.",
   keywords: [
     'album photo',
     'maison édition souvenir',
@@ -24,14 +24,14 @@ export const metadata: Metadata = {
     siteName: 'Bellajour',
     title: "Bellajour — Vos souvenirs méritent un album d'exception",
     description:
-      "Maison d'édition du souvenir. Bellajour compose vos photos en albums imprimés faits pour traverser le temps. Vivez. Nous composons.",
+      "Maison d'édition du souvenir. Bellajour compose vos photos en albums d'exception sublimés par une couverture unique. Vivez. Nous composons.",
   },
 
   twitter: {
     card: 'summary_large_image',
     title: "Bellajour — Vos souvenirs méritent un album d'exception",
     description:
-      "Maison d'édition du souvenir. Bellajour compose vos photos en albums imprimés faits pour traverser le temps. Vivez. Nous composons.",
+      "Maison d'édition du souvenir. Bellajour compose vos photos en albums d'exception sublimés par une couverture unique. Vivez. Nous composons.",
   },
 
   icons: {
