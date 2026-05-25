@@ -3,9 +3,9 @@ import './globals.css'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.bellajour.fr'),
-  title: "Bellajour — Nous composons vos photos en albums d'exception",
+  title: "Bellajour — Vos souvenirs méritent un album d'exception",
   description:
-    "Bellajour transforme vos photos en albums imprimés d'exception. Une maison d'édition du souvenir. Inscrivez-vous à la pré-vente.",
+    "Maison d'édition du souvenir. Bellajour compose vos photos en albums imprimés faits pour traverser le temps. Vivez. Nous composons.",
   keywords: [
     'album photo',
     'maison édition souvenir',
@@ -22,26 +22,16 @@ export const metadata: Metadata = {
     locale: 'fr_FR',
     url: 'https://www.bellajour.fr',
     siteName: 'Bellajour',
-    title: "Bellajour — Nous composons vos photos en albums d'exception",
+    title: "Bellajour — Vos souvenirs méritent un album d'exception",
     description:
-      "Bellajour transforme vos photos en albums imprimés d'exception. Une maison d'édition du souvenir. Inscrivez-vous à la pré-vente.",
-    images: [
-      {
-        url: '/og-image.jpg',
-        width: 1200,
-        height: 630,
-        alt: "Bellajour — Maison d'édition du souvenir",
-        type: 'image/jpeg',
-      },
-    ],
+      "Maison d'édition du souvenir. Bellajour compose vos photos en albums imprimés faits pour traverser le temps. Vivez. Nous composons.",
   },
 
   twitter: {
     card: 'summary_large_image',
-    title: "Bellajour — Nous composons vos photos en albums d'exception",
+    title: "Bellajour — Vos souvenirs méritent un album d'exception",
     description:
-      "Bellajour transforme vos photos en albums imprimés d'exception. Une maison d'édition du souvenir. Inscrivez-vous à la pré-vente.",
-    images: ['/og-image.jpg'],
+      "Maison d'édition du souvenir. Bellajour compose vos photos en albums imprimés faits pour traverser le temps. Vivez. Nous composons.",
   },
 
   icons: {
