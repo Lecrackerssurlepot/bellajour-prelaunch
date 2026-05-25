@@ -28,16 +28,22 @@ export default function Album() {
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  // Scroll progress
+  // Scroll progress (throttle rAF — Chrome iOS burst au changement de direction sinon)
   useEffect(() => {
     const section = sectionRef.current
     if (!section) return
+    let ticking = false
     const onScroll = () => {
-      const h = section.offsetHeight - window.innerHeight
-      if (h <= 0) return
-      const p = clamp01(-section.getBoundingClientRect().top / h)
-      scrollProgRef.current = p
-      setScrollProg(p)
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        const h = section.offsetHeight - window.innerHeight
+        if (h <= 0) { ticking = false; return }
+        const p = clamp01(-section.getBoundingClientRect().top / h)
+        scrollProgRef.current = p
+        setScrollProg(p)
+        ticking = false
+      })
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     onScroll()

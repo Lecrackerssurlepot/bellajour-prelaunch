@@ -95,22 +95,16 @@ export default function Anxiete() {
   const startTimeRef  = useRef<number | null>(null)
   const scrollProgRef = useRef(0)
 
-  // ── Entrée section
+  // ── Entrée section (piloté par IO uniquement — scroll listener redondant supprimé)
   useEffect(() => {
     const section = sectionRef.current
     if (!section) return
-    const trigger = () => {
-      const rect = section.getBoundingClientRect()
-      if (rect.top < window.innerHeight && rect.bottom > 0) setEntered(true)
-    }
     const io = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) setEntered(true) },
       { threshold: 0 }
     )
     io.observe(section)
-    window.addEventListener('scroll', trigger, { passive: true })
-    trigger()
-    return () => { io.disconnect(); window.removeEventListener('scroll', trigger) }
+    return () => io.disconnect()
   }, [])
 
   // ── Timer grille (slide-in entrée colonnes)
@@ -126,16 +120,22 @@ export default function Anxiete() {
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
   }, [entered])
 
-  // ── Scroll progress
+  // ── Scroll progress (throttle rAF — Chrome iOS burst au changement de direction sinon)
   useEffect(() => {
     const section = sectionRef.current
     if (!section) return
+    let ticking = false
     const onScroll = () => {
-      const h = section.offsetHeight - window.innerHeight
-      if (h <= 0) return
-      const p = clamp01(-section.getBoundingClientRect().top / h)
-      scrollProgRef.current = p
-      setScrollProg(p)
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        const h = section.offsetHeight - window.innerHeight
+        if (h <= 0) { ticking = false; return }
+        const p = clamp01(-section.getBoundingClientRect().top / h)
+        scrollProgRef.current = p
+        setScrollProg(p)
+        ticking = false
+      })
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     onScroll()
