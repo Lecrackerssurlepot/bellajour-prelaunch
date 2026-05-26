@@ -92,7 +92,7 @@ main { padding-top: var(--bj-nav-h); }
   .anx-sticky {
     position: relative !important;
     top: auto !important;
-    height: 100svh !important;
+    height: 100lvh !important;
   }
 
   /* Album mobile — min-height (au lieu de height) pour permettre à la section
@@ -102,7 +102,7 @@ main { padding-top: var(--bj-nav-h); }
   .alb-sticky {
     position: relative !important;
     top: auto !important;
-    min-height: 100svh !important;
+    min-height: 100lvh !important;
   }
 
   .sol-sticky,

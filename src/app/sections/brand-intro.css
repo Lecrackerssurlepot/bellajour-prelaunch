@@ -16,7 +16,7 @@
     color: var(--bj-bg, #EAE3D8);
     overflow: hidden;
     min-height: auto;
-    max-height: 100svh;
+    max-height: 100lvh;
   }
 
   /* ── Grille de fond — calquée sur .anx-grid mobile
