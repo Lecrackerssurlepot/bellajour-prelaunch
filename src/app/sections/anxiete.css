@@ -38,7 +38,6 @@
   display: flex;
   flex-direction: column;
   gap: clamp(4px, 0.6vw, 10px);
-  will-change: transform;
 }
 
 /* ── Loop flottant ── */
@@ -89,7 +88,6 @@
     rgba(23, 20, 15, 0.20) 100%
   );
   z-index: 2;
-  will-change: opacity;
 }
 
 /* ── Overlay sombre (phase collage) ── */
@@ -99,7 +97,6 @@
   background: var(--bj-noir);
   z-index: 3;
   pointer-events: none;
-  will-change: opacity;
 }
 
 /* ── Texte gauche — transform géré en JS pour slide-up au scroll ── */
@@ -132,7 +129,6 @@
   font-size: clamp(14px, 1.69vw, 25px);
   line-height: 1.3;
   color: var(--bj-creme);
-  will-change: opacity;
 }
 
 /* ── Corps texte ── */
@@ -150,7 +146,6 @@
   line-height: 1.7;
   color: var(--bj-creme);
   letter-spacing: -0.01em;
-  will-change: opacity;
 }
 
 .anx-line--bold {

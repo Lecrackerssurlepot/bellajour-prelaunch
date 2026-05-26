@@ -41,7 +41,7 @@ export default function BrandIntro() {
       <div className="bi-bg-grid" aria-hidden="true">
         {BG_PHOTOS.map((src, i) => (
           <div key={i} className="bi-bg-cell">
-            <img src={src} alt="" loading="lazy" />
+            <img src={src} alt="" loading="lazy" decoding="async" />
           </div>
         ))}
       </div>
@@ -72,31 +72,31 @@ export default function BrandIntro() {
             ref={photo1Reveal.ref}
             className={`bi-photo bi-photo--tl bi-photo-zoom${photo1Reveal.isVisible ? ' is-visible' : ''}`}
           >
-            <img src={PHOTOS[0]} alt="" loading="lazy" />
+            <img src={PHOTOS[0]} alt="" loading="lazy" decoding="async" />
           </div>
           <div
             ref={photo2Reveal.ref}
             className={`bi-photo bi-photo--ct bi-photo-zoom reveal-delay-1${photo2Reveal.isVisible ? ' is-visible' : ''}`}
           >
-            <img src={PHOTOS[1]} alt="" loading="lazy" />
+            <img src={PHOTOS[1]} alt="" loading="lazy" decoding="async" />
           </div>
           <div
             ref={photo3Reveal.ref}
             className={`bi-photo bi-photo--tr bi-photo-zoom reveal-delay-2${photo3Reveal.isVisible ? ' is-visible' : ''}`}
           >
-            <img src={PHOTOS[2]} alt="" loading="lazy" />
+            <img src={PHOTOS[2]} alt="" loading="lazy" decoding="async" />
           </div>
           <div
             ref={photo4Reveal.ref}
             className={`bi-photo bi-photo--bl bi-photo-zoom reveal-delay-3${photo4Reveal.isVisible ? ' is-visible' : ''}`}
           >
-            <img src={PHOTOS[3]} alt="" loading="lazy" />
+            <img src={PHOTOS[3]} alt="" loading="lazy" decoding="async" />
           </div>
           <div
             ref={photo5Reveal.ref}
             className={`bi-photo bi-photo--br bi-photo-zoom reveal-delay-4${photo5Reveal.isVisible ? ' is-visible' : ''}`}
           >
-            <img src={PHOTOS[4]} alt="" loading="lazy" />
+            <img src={PHOTOS[4]} alt="" loading="lazy" decoding="async" />
           </div>
         </div>
 

@@ -281,7 +281,7 @@ export default function Anxiete() {
                           src={PHOTOS[slots[idx]]}
                           alt=""
                           className={`anx-photo${fadingSlots.has(idx) ? ' anx-photo--fading' : ''}`}
-                          loading="lazy"
+                          loading="eager"
                           decoding="async"
                         />
                       </div>
