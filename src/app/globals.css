@@ -87,11 +87,20 @@ main { padding-top: var(--bj-nav-h); }
     height: auto !important;
   }
 
-  .anx-sticky,
-  .alb-sticky {
+  .anx-sticky {
     position: relative !important;
     top: auto !important;
     height: 100svh !important;
+  }
+
+  /* Album mobile — min-height (au lieu de height) pour permettre à la section
+     de grandir si le stack flex (title + mockup 80vw + subtitle) dépasse
+     100svh sur Safari iOS. Évite le débordement du subtitle crème sur le
+     fond crème de FinalWaitlist (effet « tronqué » iPhone réel). */
+  .alb-sticky {
+    position: relative !important;
+    top: auto !important;
+    min-height: 100svh !important;
   }
 
   .sol-sticky,
