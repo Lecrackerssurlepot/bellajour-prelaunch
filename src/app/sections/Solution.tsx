@@ -144,7 +144,7 @@ const UploadVisual = memo(function UploadVisual({ active, onComplete }: { active
         left: '50%',
         transform: 'translateX(-50%)',
         fontFamily: 'var(--bj-font-serif)', fontStyle: 'italic',
-        fontWeight: 300, fontSize: 72, color: '#1C1C1C',
+        fontWeight: 300, fontSize: 72, color: 'var(--bj-text)',
         lineHeight: 1, letterSpacing: '-0.02em', whiteSpace: 'nowrap',
       }}>
         <span ref={pctRef}>0%</span>

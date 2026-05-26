@@ -184,7 +184,7 @@ export default function Hero() {
           {step === 3 ? (
             <div className="hero-confirm">
               {wasAlreadyRegistered && !refCode ? (
-                <p style={{ textAlign: 'center', color: '#A89880', fontSize: '0.95rem', lineHeight: 1.7 }}>
+                <p style={{ textAlign: 'center', color: 'var(--bj-muted)', fontSize: '0.95rem', lineHeight: 1.7 }}>
                   Vous êtes déjà sur la liste Bellajour.<br/>
                   Vérifiez vos emails pour retrouver votre lien de parrainage.
                 </p>
@@ -246,10 +246,10 @@ export default function Hero() {
                   {loading ? 'Envoi…' : 'Continuer'}
                 </button>
               </form>
-              <p style={{ fontSize: '0.72rem', color: '#A89880', textAlign: 'center', lineHeight: 1.5, marginTop: '0.6rem' }}>
+              <p style={{ fontSize: '0.72rem', color: 'var(--bj-muted)', textAlign: 'center', lineHeight: 1.5, marginTop: '0.6rem' }}>
                 En vous inscrivant, vous acceptez de recevoir des communications de Bellajour. Vos données ne seront jamais partagées.{' '}
                 Vous pouvez vous désinscrire à tout moment.{' '}
-                <a href="/confidentialite" style={{ color: '#A89880', textDecoration: 'underline' }}>Politique de confidentialité</a>
+                <a href="/confidentialite" style={{ color: 'var(--bj-muted)', textDecoration: 'underline' }}>Politique de confidentialité</a>
               </p>
               {errorMsg && <p className="hero-msg hero-msg--error">{errorMsg}</p>}
             </>

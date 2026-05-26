@@ -65,7 +65,7 @@
 
   /* ── Bellajour Cormorant italic (cohérence avec tagline) ── */
   .bi-brand {
-    font-family: 'Cormorant Garamond', serif !important;
+    font-family: 'Cormorant', serif !important;
     font-style: italic !important;
     font-weight: 300 !important;
     font-size: clamp(36px, 10vw, 48px) !important;
@@ -78,7 +78,7 @@
 
   /* ── Tagline ── */
   .bi-tagline {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: 'Cormorant', serif;
     font-style: italic;
     font-weight: 300;
     font-size: clamp(13px, 3.5vw, 16px);
@@ -153,7 +153,7 @@
     padding: 8px 4px;
     background: transparent;
     border: none;
-    font-family: 'Cormorant Garamond', serif;
+    font-family: 'Cormorant', serif;
     font-style: italic;
     font-weight: 300;
     font-size: clamp(14px, 3.8vw, 17px);

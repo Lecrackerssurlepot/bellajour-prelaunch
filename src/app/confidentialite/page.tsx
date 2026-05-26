@@ -9,11 +9,11 @@ export const metadata: Metadata = {
 export default function PolitiqueConfidentialite() {
   return (
     <main style={{
-      backgroundColor: '#EAE3D8',
+      backgroundColor: 'var(--bj-bg)',
       minHeight: '100vh',
       padding: '6vh 5vw',
       fontFamily: '"DM Sans", sans-serif',
-      color: '#1C1C1C',
+      color: 'var(--bj-text)',
     }}>
       <div style={{ maxWidth: '720px', margin: '0 auto' }}>
 
@@ -21,7 +21,7 @@ export default function PolitiqueConfidentialite() {
           display: 'inline-block',
           marginBottom: '3rem',
           fontSize: '0.85rem',
-          color: '#A89880',
+          color: 'var(--bj-muted)',
           textDecoration: 'none',
           letterSpacing: '0.05em',
         }}>
@@ -29,7 +29,7 @@ export default function PolitiqueConfidentialite() {
         </a>
 
         <h1 style={{
-          fontFamily: '"Playfair Display", serif',
+          fontFamily: '"Cormorant", serif',
           fontWeight: 400,
           fontSize: 'clamp(2rem, 4vw, 2.8rem)',
           lineHeight: 1.2,
@@ -38,13 +38,13 @@ export default function PolitiqueConfidentialite() {
           Politique de confidentialité
         </h1>
 
-        <p style={{ color: '#A89880', fontSize: '0.85rem', marginBottom: '3.5rem' }}>
+        <p style={{ color: 'var(--bj-muted)', fontSize: '0.85rem', marginBottom: '3.5rem' }}>
           Dernière mise à jour : mai 2026
         </p>
 
         <Section titre="Responsable du traitement">
           <p><strong>Bellajour</strong></p>
-          <p>Contact : <a href="mailto:contact@bellajour.com" style={{ color: '#1C1C1C' }}>contact@bellajour.com</a></p>
+          <p>Contact : <a href="mailto:contact@bellajour.com" style={{ color: 'var(--bj-text)' }}>contact@bellajour.com</a></p>
         </Section>
 
         <Section titre="Données collectées">
@@ -73,13 +73,13 @@ export default function PolitiqueConfidentialite() {
           </ul>
           <p>
             Pour exercer ces droits, écrivez-nous à{' '}
-            <a href="mailto:contact@bellajour.com" style={{ color: '#1C1C1C' }}>contact@bellajour.com</a>.
+            <a href="mailto:contact@bellajour.com" style={{ color: 'var(--bj-text)' }}>contact@bellajour.com</a>.
             Nous répondrons dans un délai de 30 jours.
           </p>
           <p>
             Si vous estimez que vos droits ne sont pas respectés, vous pouvez introduire une réclamation
             auprès de la{' '}
-            <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" style={{ color: '#1C1C1C' }}>CNIL</a>.
+            <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--bj-text)' }}>CNIL</a>.
           </p>
         </Section>
 
@@ -107,7 +107,7 @@ export default function PolitiqueConfidentialite() {
         <Section titre="Contact">
           <p>
             Pour toute question relative à cette politique :{' '}
-            <a href="mailto:contact@bellajour.com" style={{ color: '#1C1C1C' }}>contact@bellajour.com</a>
+            <a href="mailto:contact@bellajour.com" style={{ color: 'var(--bj-text)' }}>contact@bellajour.com</a>
           </p>
         </Section>
 
@@ -115,7 +115,7 @@ export default function PolitiqueConfidentialite() {
           marginTop: '4rem',
           paddingTop: '2rem',
           borderTop: '1px solid #C8BFB3',
-          color: '#A89880',
+          color: 'var(--bj-muted)',
           fontSize: '0.8rem',
         }}>
           © 2026 Bellajour. Vivez. Nous composons.
@@ -130,18 +130,18 @@ function Section({ titre, children }: { titre: string; children: ReactNode }) {
   return (
     <section style={{ marginBottom: '2.5rem' }}>
       <h2 style={{
-        fontFamily: '"Playfair Display", serif',
+        fontFamily: '"Cormorant", serif',
         fontWeight: 400,
         fontSize: '1.25rem',
         marginBottom: '0.9rem',
-        color: '#1C1C1C',
+        color: 'var(--bj-text)',
       }}>
         {titre}
       </h2>
       <div style={{
         fontSize: '0.95rem',
         lineHeight: 1.8,
-        color: '#3A3A3A',
+        color: 'var(--bj-muted)',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.6rem',

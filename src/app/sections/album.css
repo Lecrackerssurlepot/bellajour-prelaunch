@@ -76,10 +76,10 @@
 }
 
 .alb-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Cormorant', serif;
   font-weight: 700;
-  font-size: 3.2vw;
-  color: #EAE3D8;
+  font-size: 3.4vw;
+  color: var(--bj-bg);
   margin: 0;
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -102,11 +102,11 @@
 }
 
 .alb-subtitle {
-  font-family: 'Cormorant Garamond', 'Cormorant', serif;
+  font-family: 'Cormorant', serif;
   font-weight: 300;
   font-style: italic;
   font-size: 1.7vw;
-  color: #EAE3D8;
+  color: var(--bj-bg);
   margin: 0;
 }
 
@@ -117,7 +117,7 @@
 /* ── Mobile ── */
 @media (max-width: 767px) {
   .alb-title {
-    font-size: 7.5vw;
+    font-size: 8vw;
   }
   .alb-subtitle {
     font-size: 5.5vw;

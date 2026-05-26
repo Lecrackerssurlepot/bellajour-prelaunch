@@ -69,7 +69,7 @@
 }
 
 .footer-sep {
-  color: rgba(23, 20, 15, 0.20);
+  color: rgba(28, 28, 28, 0.20);
   font-size: 0.9em;
 }
 
@@ -109,7 +109,7 @@
   font-family: var(--bj-font-sans);
   font-size: clamp(10px, 0.75vw, 12px);
   letter-spacing: 0.02em;
-  color: rgba(23, 20, 15, 0.35);
+  color: rgba(28, 28, 28, 0.35);
   text-align: right;
 }
 
@@ -117,11 +117,11 @@
 .footer-word {
   display: block;
   width: 100%;
-  font-family: 'Playfair Display', serif;
+  font-family: 'Cormorant', serif;
   font-weight: 700;
-  font-size: clamp(96px, 14.38vw, 176px);
+  font-size: clamp(108px, 16vw, 196px);
   white-space: nowrap;
-  color: #1C1C1C;
+  color: var(--bj-text);
   opacity: 1;
   line-height: 1;
   margin: clamp(32px, 5vh, 56px) 0 0;
@@ -152,7 +152,7 @@
   .footer-sep { display: none; }
 
   .footer-word {
-    font-size: clamp(56px, 16vw, 80px) !important;
+    font-size: clamp(64px, 18vw, 90px) !important;
     line-height: 1 !important;
   }
 }

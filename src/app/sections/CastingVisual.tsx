@@ -154,7 +154,7 @@ const CastingVisual = memo(function CastingVisual({
   }
   const nameStyle: CSSProperties = {
     fontFamily: 'var(--bj-font-serif)', fontStyle: 'italic', fontWeight: 300,
-    fontSize: 26, color: '#1C1C1C', letterSpacing: '0.04em',
+    fontSize: 26, color: 'var(--bj-text)', letterSpacing: '0.04em',
     minHeight: 22, textAlign: 'center',
   }
   const colStyle: CSSProperties = {

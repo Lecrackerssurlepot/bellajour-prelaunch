@@ -106,7 +106,7 @@
   font-size: 18px;
   font-weight: 300;
   line-height: 1;
-  color: #778899;
+  color: var(--bj-gold);
   transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
               border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
               transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
