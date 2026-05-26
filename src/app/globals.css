@@ -48,6 +48,7 @@ html, body {
   width: 100%;
   background: var(--bj-bg);
   overflow-x: clip;
+  overflow-anchor: none;
   font-family: var(--bj-font-sans);
 }
 
@@ -78,7 +79,7 @@ main { padding-top: var(--bj-nav-h); }
 @media (max-width: 767px) {
   #solution {
     height: auto !important;
-    min-height: 100vh;
+    min-height: 100svh;
   }
 
   /* Anxiété & Album — abandon sticky, blocs natifs 100svh */

@@ -1,14 +1,14 @@
 /* ── Section Album — scroll-driven 700vh ─────────────────── */
 
 .alb-scroll {
-  height: 700vh;
+  height: 700svh;
   position: relative;
 }
 
 .alb-sticky {
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: 100svh;
   width: 100%;
   overflow: hidden;
   background: var(--bj-noir);

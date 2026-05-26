@@ -4,7 +4,7 @@
 
 .anx-scroll {
   position: relative;
-  height: 600vh;
+  height: 600svh;
   background: var(--bj-noir);
 }
 
@@ -12,7 +12,7 @@
   position: sticky;
   top: 0;
   width: 100%;
-  height: 100vh;
+  height: 100svh;
   overflow: hidden;
   background: var(--bj-noir);
 }
