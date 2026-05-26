@@ -54,6 +54,12 @@
   .hero-nav--scrolled .hero-nav-logo { height: 56px; }
 }
 
+/* Mobile : navbar globale cachée — cohérence avec .svt et .sjc déjà display:none mobile.
+   Évite le chevauchement glass beige sur les sections sombres (Anxiete/Album). */
+@media (max-width: 767px) {
+  .hero-nav { display: none !important; }
+}
+
 /* ── Hero section
    min-height calc(100svh - var(--bj-nav-h)) : préserve l'effet plein écran
    en occupant exactement la zone visible sous la navbar fixe. ── */
