@@ -3,6 +3,7 @@
 .alb-scroll {
   height: 700svh;
   position: relative;
+  background: var(--bj-noir);
 }
 
 .alb-sticky {

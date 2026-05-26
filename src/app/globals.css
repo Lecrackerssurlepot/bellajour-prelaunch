@@ -49,6 +49,7 @@ html, body {
   background: var(--bj-bg);
   overflow-x: clip;
   overflow-anchor: none;
+  overscroll-behavior-y: none;
   font-family: var(--bj-font-sans);
 }
 
