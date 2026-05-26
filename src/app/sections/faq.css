@@ -24,7 +24,7 @@
 .faq-eyebrow {
   display: block;
   font-family: var(--bj-font-sans);
-  font-size: clamp(9px, 0.75vw, 11px);
+  font-size: clamp(13px, 0.85vw, 13px);
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--bj-muted);
@@ -81,7 +81,7 @@
   font-family: var(--bj-font-serif);
   font-weight: 300;
   font-style: italic;
-  font-size: clamp(14px, 1.35vw, 19px);
+  font-size: clamp(16px, 1.35vw, 19px);
   line-height: 1.35;
   color: var(--bj-text);
   letter-spacing: -0.01em;
@@ -141,7 +141,7 @@
 .faq-answer p {
   margin: 0 0 clamp(10px, 1.5vh, 14px);
   font-family: var(--bj-font-sans);
-  font-size: clamp(13px, 1vw, 15px);
+  font-size: clamp(15px, 1vw, 15px);
   line-height: 1.75;
   color: var(--bj-muted);
   letter-spacing: 0.01em;

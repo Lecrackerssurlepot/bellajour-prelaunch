@@ -84,7 +84,7 @@
 .rs-eyebrow {
   display: block;
   font-family: var(--bj-font-sans);
-  font-size: clamp(9px, 0.75vw, 11px);
+  font-size: clamp(13px, 0.85vw, 13px);
   letter-spacing: 0.26em;
   text-transform: uppercase;
   color: var(--bj-muted);
@@ -112,7 +112,7 @@
   font-family: var(--bj-font-serif);
   font-style: italic;
   font-weight: 300;
-  font-size: clamp(14px, 1.2vw, 17px);
+  font-size: clamp(16px, 1.2vw, 17px);
   line-height: 1.65;
   color: var(--bj-muted);
 }
@@ -125,7 +125,7 @@
 .rs-link-label {
   display: block;
   font-family: var(--bj-font-sans);
-  font-size: clamp(9px, 0.7vw, 11px);
+  font-size: clamp(13px, 0.85vw, 13px);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--bj-muted);

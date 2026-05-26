@@ -229,7 +229,7 @@
 .fwl-reassurance {
   margin: clamp(16px, 2.5vh, 24px) 0 0;
   font-family: var(--bj-font-sans);
-  font-size: clamp(11px, 0.85vw, 13px);
+  font-size: clamp(12px, 0.85vw, 13px);
   letter-spacing: 0.04em;
   color: var(--bj-muted);
   line-height: 1.6;
@@ -306,7 +306,7 @@
 
 .fwl-ticker-label {
   font-family: var(--bj-font-sans);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.2;
   letter-spacing: 0.30em;
   text-transform: uppercase;
@@ -322,7 +322,7 @@
   font-family: var(--bj-font-serif);
   font-style: italic;
   font-weight: 300;
-  font-size: clamp(13px, 1.35vw, 21px);
+  font-size: clamp(18px, 1.35vw, 21px);
   line-height: 1.2;
   color: var(--bj-text);
   letter-spacing: -0.01em;
@@ -392,7 +392,7 @@
   font-family: var(--bj-font-serif);
   font-style: italic;
   font-weight: 300;
-  font-size: clamp(11px, 0.9vw, 14px);
+  font-size: clamp(12px, 0.9vw, 14px);
   color: var(--bj-gold);
   letter-spacing: 0.06em;
   margin-bottom: clamp(14px, 2vh, 22px);

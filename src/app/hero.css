@@ -188,7 +188,7 @@
   font-family: var(--bj-font-serif);
   font-style: italic;
   font-weight: 300;
-  font-size: clamp(11px, 0.85vw, 13px);
+  font-size: clamp(12px, 0.85vw, 13px);
   letter-spacing: 0.28em;
   color: var(--bj-text);
   white-space: nowrap;
@@ -225,7 +225,7 @@
   font-family: var(--bj-font-serif);
   font-style: italic;
   font-weight: 700;
-  font-size: clamp(13px, 1.18vw, 19px);
+  font-size: clamp(16px, 1.18vw, 19px);
   color: var(--bj-text);
   text-decoration: none;
   cursor: pointer;
@@ -423,7 +423,7 @@
   font-family: 'DM Sans', sans-serif;
   font-style: italic;
   font-weight: 300;
-  font-size: clamp(9px, 0.65vw, 11px);
+  font-size: clamp(13px, 0.85vw, 13px);
   letter-spacing: 0.12em;
   color: var(--bj-text);
   overflow: hidden;

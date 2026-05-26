@@ -353,7 +353,7 @@
 
   /* Corps texte — mêmes ajustements */
   .anx-line {
-    font-size: clamp(15px, 4vw, 18px) !important;
+    font-size: clamp(16px, 4vw, 18px) !important;
     line-height: 1.5 !important;
     text-align: left !important;
   }
