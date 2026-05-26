@@ -323,10 +323,10 @@
   }
 
   .anx-hf-brand {
-    font-size: clamp(36px, 10vw, 64px);
+    font-size: clamp(40px, 10vw, 64px);
   }
   .anx-hf-tagline {
-    font-size: clamp(14px, 4.5vw, 22px);
+    font-size: clamp(18px, 5vw, 22px);
   }
 }
 
@@ -346,14 +346,14 @@
 
   /* Sous-titre — taille mobile + alignement gauche pour lisibilité */
   .anx-subtitle {
-    font-size: clamp(15px, 4vw, 18px) !important;
+    font-size: clamp(18px, 5vw, 18px) !important;
     line-height: 1.5 !important;
     text-align: left !important;
   }
 
   /* Corps texte — mêmes ajustements */
   .anx-line {
-    font-size: clamp(16px, 4vw, 18px) !important;
+    font-size: clamp(18px, 4.5vw, 18px) !important;
     line-height: 1.5 !important;
     text-align: left !important;
   }
