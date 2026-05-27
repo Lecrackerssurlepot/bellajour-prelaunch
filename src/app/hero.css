@@ -279,24 +279,23 @@
   height: auto;
 }
 
-/* Desktop : la cap de hauteur est appliquée DIRECTEMENT sur l'<img> (et non
-   sur .hero-photo), car max-height:100% sur l'image ne se résout pas quand
-   le parent est en height:auto. Avec la cap en svh sur l'img, l'image se
-   réduit pour rester sous la marge basse (48px). Le parent .hero-photo
-   shrink-wrap à la taille réelle de l'image → le voile ::before (inset:0)
-   couvre exactement la zone de l'image, zéro démarcation possible. */
+/* Desktop : la HAUTEUR est la contrainte primaire (cap viewport), la LARGEUR
+   suit le ratio naturel 2:3 de l'illustration. Aucun cap de largeur → image
+   entière visible, jamais cropée. .hero-photo shrink-wrap à la taille réelle
+   de l'image → le voile ::before (inset:0) couvre exactement la zone image.
+   Cap appliquée directement sur l'<img> en valeur concrète (et non
+   max-height:100%) car % ne se résout pas quand le parent est en height:auto. */
 @media (min-width: 768px) {
   .hero-photo {
     width: auto;
-    max-width: min(60vw, 720px);
     height: auto;
+    margin: 0 auto;
     overflow: hidden;
   }
   .hero-photo img {
     display: block;
     width: auto;
     height: auto;
-    max-width: 100%;
     max-height: calc(100svh - var(--bj-nav-h) - 48px);
   }
 }
