@@ -1,0 +1,85 @@
+/* ════════════════════
+   Page /inviter — lien de parrainage standalone (depuis emails Brevo)
+   ════════════════════ */
+
+.inviter {
+  min-height: 100dvh;
+  background: var(--bj-bg);
+  color: var(--bj-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(40px, 6vh, 72px) clamp(20px, 5vw, 48px);
+  text-align: center;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.inviter-logo {
+  width: clamp(80px, 12vw, 120px);
+  height: auto;
+  display: block;
+  margin: 0 auto clamp(28px, 4vh, 44px);
+}
+
+.inviter-title {
+  margin: 0 0 clamp(10px, 1.5vh, 16px);
+  font-family: 'Cormorant', serif;
+  font-weight: 700;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--bj-text);
+}
+
+.inviter-sub {
+  margin: 0 0 clamp(28px, 4vh, 44px);
+  font-family: 'Cormorant', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(16px, 1.6vw, 21px);
+  line-height: 1.5;
+  color: var(--bj-muted);
+  max-width: 480px;
+}
+
+/* ─── État d'erreur ─── */
+.inviter--error {
+  justify-content: center;
+  padding-top: clamp(60px, 12vh, 120px);
+}
+
+.inviter-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  padding: 0 32px;
+  background: transparent;
+  color: var(--bj-text);
+  border: 1px solid var(--bj-noir);
+  border-radius: 10px;
+  font-family: var(--bj-font-sans);
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: clamp(16px, 2vh, 24px);
+}
+
+.inviter-back-btn:hover {
+  background: var(--bj-noir);
+  color: var(--bj-creme);
+}
+
+.inviter-back-btn:focus-visible {
+  outline: 2px solid var(--bj-gold);
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .inviter {
+    padding: clamp(32px, 5vh, 48px) 20px;
+  }
+}

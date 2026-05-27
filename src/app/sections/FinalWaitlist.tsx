@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, type ReactNode } from 'react'
+import ReferralCard from '../components/ReferralCard'
 import './finalwaitlist.css'
 
 /* ── Données ── */
@@ -81,7 +82,6 @@ export default function FinalWaitlist() {
   const [referrerPrenom,      setReferrerPrenom]      = useState<string | null>(null)
   const [wasAlreadyRegistered, setWasAlreadyRegistered] = useState(false)
   const [wasReferred,          setWasReferred]          = useState(false)
-  const [copied,     setCopied]     = useState(false)
   const [activeDot,  setActiveDot]  = useState(0)
   const sectionRef   = useRef<HTMLElement>(null)
   const inputRef     = useRef<HTMLInputElement>(null)
@@ -292,37 +292,7 @@ export default function FinalWaitlist() {
   }
 
   /* Parrainage */
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://bellajour.fr'
-  const referralLink = refCode ? `${origin}?ref=${refCode}` : ''
   const prenomDisplay = prenom.trim() || null
-
-  const handleCopy = async () => {
-    if (!referralLink) return
-    await navigator.clipboard.writeText(referralLink).catch(() => {})
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  /* Partage natif via Web Share API (iOS Safari 12.2+, Chrome Android).
-     Fallback desktop : copie le lien dans le presse-papier. */
-  const handleShare = async () => {
-    const shareData = {
-      title: 'Bellajour',
-      text: "Rejoins-moi sur Bellajour, la maison d'édition du souvenir.",
-      url: referralLink || 'https://www.bellajour.fr',
-    }
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share(shareData)
-      } catch {
-        /* user cancelled or share denied — no-op */
-      }
-    } else if (referralLink) {
-      await navigator.clipboard.writeText(referralLink).catch(() => {})
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
-  }
 
   const displayCount = (count ?? 0) + 30
 
@@ -344,42 +314,26 @@ export default function FinalWaitlist() {
                 Vous êtes déjà sur la liste Bellajour.<br/>
                 Vérifiez vos emails pour retrouver votre lien de parrainage.
               </p>
-            ) : (
-            <>
-            <h2 className="fwl-confirm-titre">
-              {prenomDisplay
-                ? `Bienvenue, ${prenomDisplay}.`
-                : wasAlreadyRegistered
-                  ? 'Vous êtes déjà avec nous.'
-                  : 'Vous êtes sur la liste.'}
-            </h2>
-            <p className="fwl-confirm-sub">
-              {wasReferred
-                ? 'Parrainez vos proches à votre tour, gagnez 5 pages par inscription !'
-                : wasAlreadyRegistered
-                  ? 'Parrainez vos proches et gagnez 5 pages par inscription !'
-                  : 'Parrainez vos proches, gagnez 5 pages par inscription !'}
-            </p>
-            <div className="fwl-confirm-code">{refCode}</div>
-            <p className="fwl-confirm-link-label">Votre lien de parrainage</p>
-            <div className="fwl-confirm-link-row">
-              <span className="fwl-confirm-link-text">{referralLink}</span>
-              <button className="fwl-confirm-copy-btn" onClick={handleCopy}>
-                {copied ? 'Lien copié ✓' : 'Copier le lien'}
-              </button>
-            </div>
-            <button
-              type="button"
-              className="fwl-confirm-wa-btn"
-              onClick={handleShare}
-            >
-              Partager &agrave; vos proches
-            </button>
-            <p className="fwl-confirm-footer">
-              Vos 5 pages seront appliquées dès que chacun de vos filleuls passera commande au lancement. Pas de limite — plus vous parrainez, plus vous cumulez.
-            </p>
-            </>
-            )}
+            ) : refCode ? (
+              <ReferralCard
+                variant="full"
+                refCode={refCode}
+                title={
+                  prenomDisplay
+                    ? `Bienvenue, ${prenomDisplay}.`
+                    : wasAlreadyRegistered
+                      ? 'Vous êtes déjà avec nous.'
+                      : 'Vous êtes sur la liste.'
+                }
+                subtitle={
+                  wasReferred
+                    ? 'Parrainez vos proches à votre tour, gagnez 5 pages par inscription.'
+                    : wasAlreadyRegistered
+                      ? 'Parrainez vos proches et gagnez 5 pages par inscription.'
+                      : 'Parrainez vos proches, gagnez 5 pages par inscription.'
+                }
+              />
+            ) : null}
           </div>
 
         ) : step === 2 ? (

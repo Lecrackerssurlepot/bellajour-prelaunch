@@ -76,7 +76,8 @@ public/images/ui/signature.svg
 public/images/hero/hero-01.webp à hero-07.webp
 public/images/anxiete/grid-01.jpg à grid-06.jpg
 public/images/anxiete/float-01.jpg à float-04.jpg
-
+cd ~/Desktop/bellajour-photos/originaux/Brand
+ls -lah
 ## Variables d'environnement (jamais dans le code)
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -135,3 +136,6 @@ ls .claude/worktrees/friendly-banach/
 - Ne jamais réécrire un fichier entier pour une correction partielle
 - Montrer les lignes exactes à modifier avant d'appliquer
 - Respecter data-theme="light/dark" sur chaque section
+
+## Cleanup post-launch
+- Supprimer src/app/components/ReferralSheet.tsx + referralsheet.css (orphelins, jamais importés).

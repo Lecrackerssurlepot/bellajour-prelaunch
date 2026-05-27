@@ -1,0 +1,277 @@
+/* ════════════════════
+   ReferralCard — composant unifié parrainage
+   Variants : --hero (compact, espace contraint) | --full (généreux)
+   ════════════════════ */
+
+.ref-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  position: relative;
+}
+
+.ref-card--full {
+  max-width: 640px;
+  padding: clamp(32px, 5vh, 64px) 0;
+}
+
+.ref-card--hero {
+  max-width: 480px;
+}
+
+/* ─── Titre ─── */
+.ref-card-title {
+  margin: 0 0 clamp(10px, 1.8vh, 18px);
+  font-family: 'Cormorant', serif;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--bj-text);
+  letter-spacing: -0.02em;
+}
+.ref-card--full .ref-card-title {
+  font-size: clamp(31px, 4.2vw, 55px);
+}
+.ref-card--hero .ref-card-title {
+  font-size: clamp(21px, 2.56vw, 37px);
+}
+
+/* ─── Sous-titre ─── */
+.ref-card-sub {
+  margin: 0 0 clamp(20px, 3vh, 34px);
+  font-family: var(--bj-font-sans);
+  color: var(--bj-muted);
+  line-height: 1.6;
+}
+.ref-card--full .ref-card-sub {
+  font-size: clamp(14px, 1.1vw, 17px);
+  margin-bottom: clamp(28px, 4vh, 44px);
+}
+.ref-card--hero .ref-card-sub {
+  font-size: clamp(13px, 1vw, 16px);
+  margin-bottom: clamp(16px, 2.4vh, 24px);
+}
+
+/* ─── Code parrainage ─── */
+.ref-card-code {
+  font-family: var(--bj-font-sans);
+  font-style: italic;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  color: var(--bj-gold);
+}
+.ref-card--full .ref-card-code {
+  font-size: clamp(28px, 4vw, 52px);
+  margin-bottom: clamp(20px, 3vh, 36px);
+}
+.ref-card--hero .ref-card-code {
+  font-size: clamp(20px, 2.8vw, 38px);
+  margin-bottom: clamp(12px, 1.8vh, 20px);
+}
+
+/* ─── Label "Votre lien" (variant full only) ─── */
+.ref-card-link-label {
+  margin: 0 0 8px;
+  font-family: var(--bj-font-sans);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--bj-muted);
+}
+
+/* ─── Ligne lien + bouton copier ─── */
+.ref-card-link-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.ref-card--full .ref-card-link-row {
+  max-width: 520px;
+  background: #FAF8F5;
+  border: 1px solid #C8BFB3;
+  border-radius: 10px;
+  padding: 5px;
+  margin-bottom: clamp(16px, 2.5vh, 28px);
+}
+
+.ref-card--hero .ref-card-link-row {
+  max-width: 460px;
+  margin-bottom: clamp(10px, 1.5vh, 18px);
+}
+
+.ref-card-link-text {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--bj-font-sans);
+  font-style: italic;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ref-card--full .ref-card-link-text {
+  font-size: 0.85rem;
+  color: var(--bj-muted);
+  padding: 0 clamp(14px, 1.8vw, 20px);
+  background: transparent;
+  border: none;
+}
+
+.ref-card--hero .ref-card-link-text {
+  font-size: 13px;
+  color: var(--bj-text);
+  padding: 9px 12px;
+  background: rgba(23, 20, 15, 0.05);
+  border: 0.5px solid rgba(23, 20, 15, 0.10);
+  border-right: none;
+}
+
+.ref-card-copy-btn {
+  flex-shrink: 0;
+  font-family: var(--bj-font-sans);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.4s ease, background 0.4s ease, color 0.4s ease;
+}
+
+.ref-card--full .ref-card-copy-btn {
+  height: clamp(48px, 6vh, 62px);
+  padding: 0 22px;
+  background: rgba(119, 136, 153, 0.15);
+  color: var(--bj-gold);
+  border: 1px solid rgba(119, 136, 153, 0.30);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.ref-card--full .ref-card-copy-btn:hover {
+  opacity: 0.82;
+}
+
+.ref-card--hero .ref-card-copy-btn {
+  height: 36px;
+  padding: 0 14px;
+  background: var(--bj-gold);
+  color: var(--bj-bg);
+  border: none;
+  font-size: 12px;
+}
+.ref-card--hero .ref-card-copy-btn:hover {
+  background: var(--bj-noir);
+  color: var(--bj-creme);
+}
+
+/* ─── Bouton Partager ─── */
+.ref-card-share-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: transparent;
+  color: var(--bj-text);
+  border: 1px solid var(--bj-noir);
+  border-radius: 10px;
+  font-family: var(--bj-font-sans);
+  cursor: pointer;
+  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ref-card--full .ref-card-share-btn {
+  max-width: 520px;
+  height: 48px;
+  padding: 0 28px;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  margin-bottom: clamp(20px, 3vh, 32px);
+}
+
+.ref-card--hero .ref-card-share-btn {
+  max-width: 460px;
+  height: 40px;
+  padding: 0 20px;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+}
+
+.ref-card-share-btn:hover {
+  background: var(--bj-noir);
+  color: var(--bj-creme);
+}
+
+.ref-card-share-btn:focus-visible,
+.ref-card-copy-btn:focus-visible {
+  outline: 2px solid var(--bj-gold);
+  outline-offset: 2px;
+}
+
+/* ─── Footer phrase mécanique (variant full only) ─── */
+.ref-card-footer {
+  margin: 0;
+  font-family: var(--bj-font-sans);
+  font-size: clamp(11px, 0.85vw, 13px);
+  color: var(--bj-muted);
+  line-height: 1.8;
+  max-width: 400px;
+}
+
+/* ─── Toast ─── */
+.ref-card-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-12px);
+  background: var(--bj-noir);
+  color: #fff;
+  font-family: var(--bj-font-sans);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  padding: 12px 22px;
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.32s ease, transform 0.32s ease;
+  z-index: 9999;
+}
+.ref-card-toast--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ─── Responsive mobile ─── */
+@media (max-width: 767px) {
+  .ref-card--full .ref-card-link-row {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 12px;
+  }
+  .ref-card--full .ref-card-link-text {
+    width: 100%;
+    text-align: center;
+  }
+  .ref-card--full .ref-card-copy-btn {
+    width: 100%;
+    height: 44px;
+  }
+  .ref-card--full .ref-card-share-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .ref-card--hero .ref-card-link-row {
+    flex-direction: column;
+  }
+  .ref-card--hero .ref-card-link-text {
+    width: 100%;
+    border-right: 0.5px solid rgba(23, 20, 15, 0.10);
+    border-bottom: none;
+    text-align: center;
+  }
+  .ref-card--hero .ref-card-copy-btn {
+    width: 100%;
+    height: 40px;
+  }
+}
