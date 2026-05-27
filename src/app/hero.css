@@ -279,16 +279,15 @@
   height: auto;
 }
 
-/* Desktop : la HAUTEUR est la contrainte primaire (cap viewport), la LARGEUR
-   suit le ratio naturel 2:3 de l'illustration. Aucun cap de largeur → image
-   entière visible, jamais cropée. .hero-photo shrink-wrap à la taille réelle
-   de l'image → le voile ::before (inset:0) couvre exactement la zone image.
-   Cap appliquée directement sur l'<img> en valeur concrète (et non
-   max-height:100%) car % ne se résout pas quand le parent est en height:auto. */
+/* Desktop : les DEUX caps (max-width ET max-height) sont posées directement
+   sur l'<img> → le navigateur calcule la taille maximale qui respecte les
+   deux contraintes en préservant le ratio naturel 2:3. L'image est garantie
+   entièrement visible (aucun crop possible) et .hero-photo, en
+   display:inline-block, épouse exactement la taille rendue de l'image →
+   le voile ::before (inset:0) couvre pile la zone image, zéro démarcation. */
 @media (min-width: 768px) {
   .hero-photo {
-    width: auto;
-    height: auto;
+    display: inline-block;
     margin: 0 auto;
     overflow: hidden;
   }
@@ -296,7 +295,8 @@
     display: block;
     width: auto;
     height: auto;
-    max-height: calc(100svh - var(--bj-nav-h) - 48px);
+    max-width: min(60vw, 720px);
+    max-height: calc(100svh - var(--bj-nav-h) - 96px);
   }
 }
 
