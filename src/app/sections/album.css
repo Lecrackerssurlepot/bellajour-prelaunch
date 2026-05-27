@@ -10,6 +10,7 @@
   position: sticky;
   top: 0;
   height: 100lvh;
+  height: var(--app-height, 100lvh);
   width: 100%;
   overflow: hidden;
   background: var(--bj-noir);

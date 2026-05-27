@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import AppHeightInit from './components/AppHeightInit'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.bellajour.fr'),
@@ -70,7 +71,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
       </head>
-      <body>{children}</body>
+      <body>
+        <AppHeightInit />
+        {children}
+      </body>
     </html>
   )
 }
