@@ -91,7 +91,7 @@ export default function ReferralSheet({ visible, onClose, referralCode }: Referr
         <div className="rs-header">
           <span className="rs-eyebrow">Parrainage Bellajour</span>
           <h3 className="rs-titre">
-            Gagnez&nbsp;<em>5&nbsp;€</em> pour chaque<br />
+            Gagnez&nbsp;<em>5&nbsp;pages</em> pour chaque<br />
             proche que vous invitez
           </h3>
         </div>
@@ -99,7 +99,7 @@ export default function ReferralSheet({ visible, onClose, referralCode }: Referr
         {/* Description */}
         <p className="rs-desc">
           Partagez votre lien personnel. Pour chaque proche qui commande
-          son album, vous recevez 5&nbsp;€ crédités sur votre prochain Bellajour.
+          son album, vous recevez 5&nbsp;pages offertes sur votre prochain Bellajour.
         </p>
 
         {/* Bloc lien */}
@@ -136,7 +136,7 @@ export default function ReferralSheet({ visible, onClose, referralCode }: Referr
 
         {/* Note de bas de sheet */}
         <p className="rs-note">
-          Le crédit est appliqué dès le premier achat confirmé de votre filleul.
+          Les pages vous sont offertes dès le premier achat confirmé de votre filleul.
           <br />Sans limite de parrainages.
         </p>
 

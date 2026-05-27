@@ -94,6 +94,17 @@
   max-width: 680px;
 }
 
+/* ── Sous-titre invitation parrainage (visible uniquement avec ?ref=) ── */
+.fwl-invite-sub {
+  margin: clamp(-12px, -1.5vh, -8px) 0 clamp(20px, 3vh, 28px);
+  font-family: var(--bj-font-sans);
+  font-size: clamp(13px, 1vw, 15px);
+  font-style: italic;
+  color: var(--bj-muted);
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+}
+
 /* ── Compteur social ── */
 .fwl-count {
   display: flex;

@@ -24,7 +24,7 @@ const CHAPITRES: { num: string; titre: string; texte: ReactNode }[] = [
   {
     num: '03',
     titre: 'PARRAINAGE BELLAJOUR',
-    texte: <>Faites découvrir Bellajour à vos proches.<br />Une attention de 5&nbsp;€ vous est offerte à chaque parrainage.<br />Autant de fois que vous le souhaitez.</>,
+    texte: <>Faites découvrir Bellajour à vos proches.<br />5&nbsp;pages vous sont offertes à chaque parrainage.<br />Autant de fois que vous le souhaitez.</>,
   },
 ]
 
@@ -78,6 +78,7 @@ export default function FinalWaitlist() {
   const [visible,    setVisible]    = useState(false)
   const [refCode,             setRefCode]             = useState<string | null>(null)
   const [referredBy,          setReferredBy]          = useState<string | null>(null)
+  const [referrerPrenom,      setReferrerPrenom]      = useState<string | null>(null)
   const [wasAlreadyRegistered, setWasAlreadyRegistered] = useState(false)
   const [wasReferred,          setWasReferred]          = useState(false)
   const [copied,     setCopied]     = useState(false)
@@ -87,10 +88,62 @@ export default function FinalWaitlist() {
   const prenomRef    = useRef<HTMLInputElement>(null)
   const carouselRef  = useRef<HTMLDivElement>(null)
 
-  /* Lire ?ref= dans l'URL */
+  /* Parrainage : lire ?ref= dans l'URL (ou fallback sessionStorage),
+     lookup prénom du parrain, puis scroll auto vers la waitlist.
+     Ordre strict pour éviter le flash de wording :
+       1) fetch prénom  →  2) setState  →  3) scroll au prochain rAF
+     Si le fetch échoue ou retourne null, on garde le fallback "Un proche…"
+     et on scrolle quand même. */
   useEffect(() => {
-    const ref = new URLSearchParams(window.location.search).get('ref')
-    if (ref) setReferredBy(ref)
+    const urlRef = new URLSearchParams(window.location.search).get('ref')
+    let stored: { code?: string; prenom?: string | null } | null = null
+    try {
+      const raw = sessionStorage.getItem('bellajour_referral')
+      if (raw) stored = JSON.parse(raw)
+    } catch { /* sessionStorage indispo (Safari privé) — no-op */ }
+
+    const ref = urlRef || stored?.code || null
+    if (!ref) return
+
+    setReferredBy(ref)
+
+    let cancelled = false
+    const scrolledAtMount = window.scrollY > 0
+
+    const triggerScroll = () => {
+      if (cancelled) return
+      if (window.scrollY > 0) return
+      const el = document.getElementById('finalwaitlist')
+      if (!el) return
+      const top = el.getBoundingClientRect().top + window.scrollY
+      window.scrollTo({ top, behavior: 'smooth' })
+    }
+
+    const finalize = (prenom: string | null) => {
+      if (cancelled) return
+      setReferrerPrenom(prenom)
+      try {
+        sessionStorage.setItem(
+          'bellajour_referral',
+          JSON.stringify({ code: ref, prenom })
+        )
+      } catch { /* no-op */ }
+      if (!scrolledAtMount) {
+        requestAnimationFrame(() => requestAnimationFrame(triggerScroll))
+      }
+    }
+
+    if (stored?.code === ref && typeof stored.prenom !== 'undefined') {
+      finalize(stored.prenom ?? null)
+      return () => { cancelled = true }
+    }
+
+    fetch(`/api/referrer?code=${encodeURIComponent(ref)}`)
+      .then(r => r.json())
+      .then(d => finalize(typeof d?.prenom === 'string' ? d.prenom : null))
+      .catch(() => finalize(null))
+
+    return () => { cancelled = true }
   }, [])
 
   /* Compteur dynamique */
@@ -302,10 +355,10 @@ export default function FinalWaitlist() {
             </h2>
             <p className="fwl-confirm-sub">
               {wasReferred
-                ? 'Vous pouvez à votre tour faire découvrir Bellajour à vos proches et gagner 5 € de crédit par ami inscrit.'
+                ? 'Parrainez vos proches à votre tour, gagnez 5 pages par inscription !'
                 : wasAlreadyRegistered
-                  ? 'Parrainez vos proches et gagnez 5 € de crédit par inscription.'
-                  : 'Parrainez vos proches, gagnez 5 € de crédit par inscription.'}
+                  ? 'Parrainez vos proches et gagnez 5 pages par inscription !'
+                  : 'Parrainez vos proches, gagnez 5 pages par inscription !'}
             </p>
             <div className="fwl-confirm-code">{refCode}</div>
             <p className="fwl-confirm-link-label">Votre lien de parrainage</p>
@@ -323,7 +376,7 @@ export default function FinalWaitlist() {
               Partager &agrave; vos proches
             </button>
             <p className="fwl-confirm-footer">
-              Vos crédits seront appliqués dès que chacun de vos filleuls passera commande au lancement. Pas de limite — plus vous parrainez, plus vous cumulez.
+              Vos 5 pages seront appliquées dès que chacun de vos filleuls passera commande au lancement. Pas de limite — plus vous parrainez, plus vous cumulez.
             </p>
             </>
             )}
@@ -358,8 +411,17 @@ export default function FinalWaitlist() {
           /* ── Étape 1 — Email ── */
           <>
             <h2 className="fwl-titre">
-              Prêt à rejoindre les premiers albums Bellajour&nbsp;?
+              {referredBy
+                ? (referrerPrenom
+                    ? `${referrerPrenom} vous invite chez Bellajour.`
+                    : 'Un proche vous invite chez Bellajour.')
+                : <>Prêt à rejoindre les premiers albums Bellajour&nbsp;?</>}
             </h2>
+            {referredBy && (
+              <p className="fwl-invite-sub">
+                Trois pages vous sont offertes sur votre premier album.
+              </p>
+            )}
             <p className="fwl-count">
               <span className="fwl-count-dot" aria-hidden="true" />
               {displayCount} personnes attendent déjà leur premier album Bellajour.

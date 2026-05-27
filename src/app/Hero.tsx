@@ -199,10 +199,10 @@ export default function Hero() {
                   </h2>
                   <p className="hero-step-lead">
                     {wasReferred
-                      ? 'Vous pouvez à votre tour faire découvrir Bellajour à vos proches et gagner 5 € de crédit par ami inscrit.'
+                      ? 'Parrainez vos proches à votre tour, gagnez 5 pages par inscription !'
                       : wasAlreadyRegistered
-                        ? 'Parrainez vos proches et gagnez 5 € de crédit par inscription.'
-                        : 'Parrainez vos proches, gagnez 5 € de crédit par inscription.'}
+                        ? 'Parrainez vos proches et gagnez 5 pages par inscription !'
+                        : 'Parrainez vos proches, gagnez 5 pages par inscription !'}
                   </p>
                   <div className="hero-confirm-code">{refCode}</div>
                   <div className="hero-confirm-link-row">
