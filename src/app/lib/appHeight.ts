@@ -1,21 +1,40 @@
 export function initAppHeight() {
   if (typeof window === 'undefined') return;
 
-  let maxHeight = window.innerHeight;
   const root = document.documentElement;
+  const getH = () => {
+    return window.visualViewport?.height ?? window.innerHeight;
+  };
+
+  let maxHeight = getH();
+
+  const apply = () => {
+    root.style.setProperty('--app-height', `${maxHeight}px`);
+  };
 
   const update = () => {
-    const h = window.innerHeight;
-    if (h > maxHeight) maxHeight = h;
-    root.style.setProperty('--app-height', `${maxHeight}px`);
+    const h = getH();
+    if (h > maxHeight) {
+      maxHeight = h;
+      apply();
+    }
   };
 
   const reset = () => {
-    maxHeight = window.innerHeight;
-    root.style.setProperty('--app-height', `${maxHeight}px`);
+    maxHeight = getH();
+    apply();
   };
 
-  update();
+  apply();
+
   window.addEventListener('resize', update, { passive: true });
   window.addEventListener('orientationchange', reset, { passive: true });
+  window.visualViewport?.addEventListener('resize', update, { passive: true });
+
+  let polls = 0;
+  const pollInterval = setInterval(() => {
+    update();
+    polls++;
+    if (polls >= 30) clearInterval(pollInterval);
+  }, 100);
 }
