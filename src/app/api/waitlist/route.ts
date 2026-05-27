@@ -2,10 +2,36 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/contacts";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = process.env.NODE_ENV === 'production' ? 3 : 20;
 const RATE_LIMIT_WINDOW_MS = process.env.NODE_ENV === 'production' ? 60_000 : 10_000;
+
+async function updateBrevoContact(
+  email: string,
+  attributes: Record<string, string | number>,
+  apiKey: string
+): Promise<void> {
+  try {
+    const res = await fetch(`${BREVO_API_URL}/${encodeURIComponent(email)}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": apiKey,
+      },
+      body: JSON.stringify({ attributes }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[brevo] update échec ${email} → ${res.status} ${body}`);
+    } else {
+      console.log(`[brevo] update OK ${email}`, attributes);
+    }
+  } catch (err) {
+    console.error(`[brevo] update exception ${email}`, err);
+  }
+}
 
 function makeSupabase() {
   const url = process.env.SUPABASE_URL;
@@ -167,6 +193,26 @@ export async function POST(request: Request) {
           applique: false,
           status: "pending",
         });
+        console.log(`[parrainage] crédit ajouté → parrain=${parrain.email} source=${ref_code}`);
+
+        // Compter les filleuls du parrain (inclut le filleul qui vient d'être inséré)
+        const { count: nbProches } = await supabase
+          .from("waitlist")
+          .select("id", { count: "exact", head: true })
+          .eq("referred_by", referred_by);
+
+        const nb = nbProches ?? 1;
+        console.log(`[parrainage] ${parrain.email} → +1 filleul (${cleanPrenom || "?"}), total=${nb}`);
+
+        await updateBrevoContact(
+          parrain.email,
+          {
+            PRENOM_PROCHE: cleanPrenom || "",
+            NB_PROCHES: nb,
+            NB_PAGES_ACCUMULEES: 5 * nb,
+          },
+          apiKey
+        );
       }
     }
 
@@ -174,6 +220,7 @@ export async function POST(request: Request) {
     const brevoAttributes: Record<string, string> = {
       PRENOM: cleanPrenom || "",
       REF_CODE: ref_code,
+      REF_LINK: `${SITE_URL}/?ref=${ref_code}`,
     };
     if (prenomParrain) brevoAttributes.PRENOM_PARRAIN = prenomParrain;
 
@@ -192,7 +239,10 @@ export async function POST(request: Request) {
     });
 
     if (!brevoResponse.ok) {
-      console.error("[/api/waitlist] Brevo sync failed:", brevoResponse.status);
+      const body = await brevoResponse.text().catch(() => "");
+      console.error(`[brevo] create échec ${normalizedEmail} → ${brevoResponse.status} ${body}`);
+    } else {
+      console.log(`[brevo] create OK ${normalizedEmail}`, brevoAttributes);
     }
 
     return NextResponse.json({ success: true, ref_code }, { status: 200 });
