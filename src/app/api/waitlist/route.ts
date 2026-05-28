@@ -2,11 +2,52 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/contacts";
+const BREVO_SMTP_URL = "https://api.brevo.com/v3/smtp/email";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+const W1_REF_LINK_BASE = "https://www.bellajour.fr";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = process.env.NODE_ENV === 'production' ? 3 : 20;
 const RATE_LIMIT_WINDOW_MS = process.env.NODE_ENV === 'production' ? 60_000 : 10_000;
+
+async function sendWelcomeEmailW1(
+  email: string,
+  prenom: string,
+  refCode: string,
+  apiKey: string
+): Promise<void> {
+  const templateId = Number(process.env.BREVO_TEMPLATE_W1_ID);
+  if (!templateId) {
+    console.error("[brevo] W1 skip — BREVO_TEMPLATE_W1_ID manquant");
+    return;
+  }
+  try {
+    const res = await fetch(BREVO_SMTP_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": apiKey,
+      },
+      body: JSON.stringify({
+        templateId,
+        to: [{ email, name: prenom || email }],
+        params: {
+          PRENOM: prenom || "",
+          REF_CODE: refCode,
+          REF_LINK: `${W1_REF_LINK_BASE}/?ref=${refCode}`,
+        },
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[brevo] W1 échec ${email} → ${res.status} ${body}`);
+    } else {
+      console.log(`[brevo] W1 envoyé ${email} (ref_code=${refCode})`);
+    }
+  } catch (err) {
+    console.error(`[brevo] W1 exception ${email}`, err);
+  }
+}
 
 async function updateBrevoContact(
   email: string,
@@ -177,6 +218,7 @@ export async function POST(request: Request) {
 
     // Créditer le parrain si referred_by valide + récupérer son prénom pour Brevo
     let prenomParrain = "";
+    let parrainValide = false;
     if (referred_by) {
       const { data: parrain } = await supabase
         .from("waitlist")
@@ -185,6 +227,7 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       if (parrain?.email && parrain.email !== normalizedEmail) {
+        parrainValide = true;
         prenomParrain = parrain.prenom || "";
         await supabase.from("pages_credits").insert({
           email: parrain.email,
@@ -243,6 +286,11 @@ export async function POST(request: Request) {
       console.error(`[brevo] create échec ${normalizedEmail} → ${brevoResponse.status} ${body}`);
     } else {
       console.log(`[brevo] create OK ${normalizedEmail}`, brevoAttributes);
+    }
+
+    // W1 — bienvenue waitlist : uniquement si inscription SANS parrain valide
+    if (!parrainValide) {
+      await sendWelcomeEmailW1(normalizedEmail, cleanPrenom || "", ref_code, apiKey);
     }
 
     return NextResponse.json({ success: true, ref_code }, { status: 200 });
