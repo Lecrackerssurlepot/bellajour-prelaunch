@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import './anxiete.css'
 import { useReveal } from '@/hooks/useReveal'
 
-// ── Photos grille (cycling)
+// ── Photos grille (assignation figée — plus de cycling)
 const PHOTOS = [
   '/images/anxiete/grid-01.webp',
   '/images/anxiete/grid-02.webp',
@@ -28,23 +28,23 @@ const COLLAGE = [
 ]
 const CHOSEN_SET = new Set(COLLAGE.map(c => c.gridIdx))
 
-// ── Positions de départ (grille → collage centre)
-// Les photos partent de leur position approximative dans la grille zoomée
+// Convergence légère depuis l'extérieur — l'amplitude scale a été réduite
+// (anciens : s 2.2–3.0) pour éliminer le coût GPU/rasterisation pendant la phase
+// collage. Les tx/ty conservent le mouvement directionnel ; scale ajoute un
+// soupçon de zoom-in pour l'élégance.
 const STARTS: Record<string, { tx: number; ty: number; s: number }> = {
-  tl: { tx: -34, ty: -22, s: 2.4 },
-  bl: { tx: -34, ty:  22, s: 2.2 },
-  ct: { tx:   2, ty:  -5, s: 3.0 },
-  tr: { tx:  34, ty: -22, s: 2.4 },
-  br: { tx:  34, ty:  22, s: 2.2 },
+  tl: { tx: -34, ty: -22, s: 1.10 },
+  bl: { tx: -34, ty:  22, s: 1.10 },
+  ct: { tx:   2, ty:  -5, s: 1.12 },
+  tr: { tx:  34, ty: -22, s: 1.10 },
+  br: { tx:  34, ty:  22, s: 1.08 },
 }
 
-const DURATION   = 10000
-const GRID_ENTRY = 0.06
-const COLS       = 8
-const ROWS       = 4
-const TOTAL      = COLS * ROWS
+const TIMER_DURATION = 600 // ms — phase d'entrée (slide-in colonnes)
+const COLS  = 8
+const ROWS  = 4
+const TOTAL = COLS * ROWS
 
-// ── Stagger disparition cellules : les plus éloignées des 5 choisies s'effacent en premier
 function cellCoords(idx: number) { return { col: Math.floor(idx / ROWS), row: idx % ROWS } }
 function manhattanDist(
   a: { col: number; row: number },
@@ -58,21 +58,17 @@ function minDistToChosen(idx: number) {
 const NON_CHOSEN = Array.from({ length: TOTAL }, (_, i) => i).filter(i => !CHOSEN_SET.has(i))
 const MAX_DIST   = Math.max(...NON_CHOSEN.map(minDistToChosen))
 
-// Seuil de début de fondu : lointain → 0.47, proche → 0.63
-// Chaque cellule met 0.09 de scroll pour disparaître complètement
 const CELL_FADE_T = new Map<number, number>()
 NON_CHOSEN.forEach(idx => {
   const d = minDistToChosen(idx)
-  // d grand = loin des choisies = seuil bas = disparaît en premier
   CELL_FADE_T.set(idx, 0.63 - (d / MAX_DIST) * 0.16)
 })
 
-// ── Slots initiaux
-function mkSlots() {
+const INITIAL_SLOTS: number[] = (() => {
   const arr = Array.from({ length: TOTAL }, (_, i) => i % PHOTOS.length)
   COLLAGE.forEach(c => { arr[c.gridIdx] = c.photoIdx })
   return arr
-}
+})()
 
 function clamp01(v: number) { return Math.max(0, Math.min(1, v)) }
 function easeOut3(t: number) { return 1 - Math.pow(clamp01(1 - t), 3) }
@@ -81,164 +77,294 @@ function revealOp(p: number, thresh: number) {
 }
 
 export default function Anxiete() {
-  const sectionRef    = useRef<HTMLDivElement>(null)
-  const [timerProg, setTimerProg]     = useState(0)
-  const [scrollProg, setScrollProg]   = useState(0)
-  const [entered, setEntered]         = useState(false)
-  const [slots, setSlots]             = useState<number[]>(mkSlots)
-  const [fadingSlots, setFadingSlots] = useState<Set<number>>(new Set())
-  const [isMobile,    setIsMobile]    = useState(false)
+  // ── Refs sur les éléments animés
+  const sectionRef        = useRef<HTMLDivElement>(null)
+  const gridWrapRef       = useRef<HTMLDivElement | null>(null)
+  const colRefs           = useRef<(HTMLDivElement | null)[]>([])
+  const cellRefs          = useRef<(HTMLDivElement | null)[]>([])
+  const contentRef        = useRef<HTMLDivElement>(null)
+  const overlayRef        = useRef<HTMLDivElement>(null)
+  const overlayDarkRef    = useRef<HTMLDivElement>(null)
+  const progressBarRef    = useRef<HTMLDivElement>(null)
+  const cpRefs            = useRef<(HTMLDivElement | null)[]>([])
+  const headlineFinalRef  = useRef<HTMLDivElement>(null)
+  const subRef            = useRef<HTMLParagraphElement>(null)
+  const line1Ref          = useRef<HTMLParagraphElement>(null)
+  const boldRef           = useRef<HTMLParagraphElement>(null)
+  const line3Ref          = useRef<HTMLParagraphElement>(null)
+  const line4Ref          = useRef<HTMLParagraphElement>(null)
+
+  // ── État React = uniquement les phases (booléens, flip rare)
+  // Note : showCollage / showHeadline retirés — desktop monte ces blocs en
+  // permanence (gated par !isMobile dans le JSX) pour éviter le spike de mount
+  // React + décodage WebP au franchissement du seuil.
+  const [entered,      setEntered]      = useState(false)
+  const [isMobile,     setIsMobile]     = useState(false)
+  const [gridFrozen,   setGridFrozen]   = useState(false)
+  const [textScrolled, setTextScrolled] = useState(false)
+  const [timerDone,    setTimerDone]    = useState(false)
+
+  // ── Miroirs des phases (évite setState redondants dans le hot path)
+  const phaseRef = useRef({
+    entered:      false,
+    isMobile:     false,
+    gridFrozen:   false,
+    textScrolled: false,
+    timerDone:    false,
+  })
+
+  // ── Source unique de scroll progress
+  const scrollProgRef = useRef(0)
+  const timerStartRef = useRef<number | null>(null)
+  const scrollRafRef  = useRef<number | null>(null)
+  const timerRafRef   = useRef<number | null>(null)
+  const tickingRef    = useRef(false)
+
+  // ── Reveal hooks (mobile uniquement — pas d'impact desktop)
   const gridReveal       = useReveal(0.15)
   const headlineReveal   = useReveal<HTMLHeadingElement>(0.25)
   const paragraphsReveal = useReveal(0.25)
-  const rafRef        = useRef<number | null>(null)
-  const startTimeRef  = useRef<number | null>(null)
-  const scrollProgRef = useRef(0)
 
-  // ── Entrée section (piloté par IO uniquement — scroll listener redondant supprimé)
+  // Bind dual ref sur le grid-wrap (gridReveal.ref + gridWrapRef)
+  const setGridWrapRef = (el: HTMLDivElement | null) => {
+    gridWrapRef.current = el
+    ;(gridReveal.ref as React.MutableRefObject<HTMLDivElement | null>).current = el
+  }
+
+  // ── Detect mobile
+  useEffect(() => {
+    const check = () => {
+      const m = window.innerWidth < 768
+      phaseRef.current.isMobile = m
+      setIsMobile(m)
+    }
+    check()
+    window.addEventListener('resize', check, { passive: true })
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  // ── Entrée section
   useEffect(() => {
     const section = sectionRef.current
     if (!section) return
     const io = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) setEntered(true) },
+      ([e]) => {
+        if (e.isIntersecting) {
+          phaseRef.current.entered = true
+          setEntered(true)
+        }
+      },
       { threshold: 0 }
     )
     io.observe(section)
     return () => io.disconnect()
   }, [])
 
-  // ── Timer grille (slide-in entrée colonnes)
-  useEffect(() => {
-    if (!entered) return
-    const tick = (now: number) => {
-      if (startTimeRef.current === null) startTimeRef.current = now
-      const p = clamp01((now - startTimeRef.current) / DURATION)
-      setTimerProg(p)
-      if (p < 1) rafRef.current = requestAnimationFrame(tick)
-    }
-    rafRef.current = requestAnimationFrame(tick)
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
-  }, [entered])
-
-  // ── Scroll progress (throttle rAF — Chrome iOS burst au changement de direction sinon)
+  // ── Préchargement images (fetch + decode hors animation)
+  // rootMargin '0 0 150% 0' = root viewport étendu vers le bas de 1.5×height
+  // → preload() se déclenche quand la section est encore ~1.5 viewport SOUS le
+  // viewport actuel, donc bien avant l'animation collage (et après le LCP Hero).
+  // Grille : decode sur new Image() (cache HTTP, peu critique car les cellules
+  // apparaissent progressivement). Collage : decode sur les <img> réels du DOM
+  // via cpRefs → garantit que le bitmap décodé est celui que l'animation affiche.
   useEffect(() => {
     const section = sectionRef.current
     if (!section) return
-    let ticking = false
-    const onScroll = () => {
-      if (ticking) return
-      ticking = true
-      requestAnimationFrame(() => {
-        const h = section.offsetHeight - window.innerHeight
-        if (h <= 0) { ticking = false; return }
-        const p = clamp01(-section.getBoundingClientRect().top / h)
-        scrollProgRef.current = p
-        setScrollProg(p)
-        ticking = false
+    let preloaded = false
+    const preload = () => {
+      if (preloaded) return
+      preloaded = true
+      PHOTOS.forEach(src => {
+        const img = new Image()
+        img.src = src
+        if (typeof img.decode === 'function') {
+          img.decode().catch(() => { /* non-bloquant */ })
+        }
+      })
+      cpRefs.current.forEach(div => {
+        const img = div?.querySelector('img')
+        if (img && typeof img.decode === 'function') {
+          img.decode().catch(() => { /* élément retiré / src en cours — non-bloquant */ })
+        }
       })
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-    return () => window.removeEventListener('scroll', onScroll)
+    const io = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) preload() },
+      { rootMargin: '0px 0px 150% 0px' }
+    )
+    io.observe(section)
+    return () => io.disconnect()
   }, [])
 
-  // ── Detect mobile
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768)
-    check()
-    window.addEventListener('resize', check, { passive: true })
-    return () => window.removeEventListener('resize', check)
-  }, [])
-
-  // ── Cycling photos (s'arrête à 0.52, jamais sur les cellules choisies)
+  // ── Cœur : apply() écrit transforms/opacités directement dans le DOM via refs.
+  // Aucun setState par frame → React ne re-rend que sur flip de phase booléenne.
   useEffect(() => {
     if (!entered) return
-    const iv = setInterval(() => {
-      if (scrollProgRef.current >= 0.52) return
-      const count = Math.random() > 0.6 ? 2 : 1
-      const chosen = new Set<number>()
-      while (chosen.size < count) {
-        const idx = Math.floor(Math.random() * TOTAL)
-        if (!CHOSEN_SET.has(idx)) chosen.add(idx)
+    const section = sectionRef.current
+    if (!section) return
+
+    const apply = () => {
+      // 1. Scroll progress
+      const h = section.offsetHeight - window.innerHeight
+      const p = h > 0 ? clamp01(-section.getBoundingClientRect().top / h) : 0
+      scrollProgRef.current = p
+
+      // 2. Timer progress (entrée colonnes)
+      const now = performance.now()
+      if (timerStartRef.current === null) timerStartRef.current = now
+      const tp        = clamp01((now - timerStartRef.current) / TIMER_DURATION)
+      const timerEase = easeOut3(tp)
+
+      const m = phaseRef.current.isMobile
+
+      // 3. Phases (bidirectionnel — pas d'état coincé si on saute des seuils)
+      const newGridFrozen   = m || p >= 0.40
+      const newTextScrolled = !m && p >= 0.50
+
+      if (newGridFrozen !== phaseRef.current.gridFrozen) {
+        phaseRef.current.gridFrozen = newGridFrozen
+        setGridFrozen(newGridFrozen)
       }
-      setFadingSlots(chosen)
-      setTimeout(() => {
-        setSlots(prev => {
-          const next = [...prev]
-          chosen.forEach(idx => {
-            let n: number
-            do { n = Math.floor(Math.random() * PHOTOS.length) } while (n === prev[idx])
-            next[idx] = n
-          })
-          return next
-        })
-        setTimeout(() => setFadingSlots(new Set()), 300)
-      }, 250)
-    }, 1400)
-    return () => clearInterval(iv)
+      if (newTextScrolled !== phaseRef.current.textScrolled) {
+        phaseRef.current.textScrolled = newTextScrolled
+        setTextScrolled(newTextScrolled)
+      }
+      if (tp >= 1 && !phaseRef.current.timerDone) {
+        phaseRef.current.timerDone = true
+        setTimerDone(true)
+      }
+
+      // 4. Grid scale
+      if (gridWrapRef.current) {
+        const s = m ? 1 : (1 + easeOut3(clamp01((p - 0.38) / 0.38)) * 0.22)
+        gridWrapRef.current.style.transform = `scale(${s.toFixed(3)})`
+      }
+
+      // 5. Colonnes — slide-in pendant la phase d'entrée uniquement
+      if (timerEase < 1) {
+        for (let col = 0; col < COLS; col++) {
+          const el = colRefs.current[col]
+          if (!el) continue
+          const sign = col % 2 === 0 ? -1 : 1
+          const ty   = sign * 110 * (1 - timerEase)
+          el.style.transform = `translateY(${ty.toFixed(2)}vh)`
+        }
+      } else {
+        // Une fois l'entrée finie : on libère l'inline transform pour laisser
+        // la CSS animation (.anx-col--floating) prendre la main.
+        for (let col = 0; col < COLS; col++) {
+          const el = colRefs.current[col]
+          if (!el || el.style.transform === '') continue
+          el.style.transform = ''
+        }
+      }
+
+      // 6. Cellules — opacité
+      for (let idx = 0; idx < TOTAL; idx++) {
+        const el = cellRefs.current[idx]
+        if (!el) continue
+        let op: number
+        if (CHOSEN_SET.has(idx)) {
+          op = p < 0.72 ? 1 : Math.max(0, 1 - (p - 0.72) / 0.10)
+        } else {
+          const start = CELL_FADE_T.get(idx) ?? 0.55
+          op = p < start ? 1 : Math.max(0, 1 - (p - start) / 0.09)
+        }
+        el.style.opacity = op.toFixed(3)
+      }
+
+      // 7. Overlay clair (lisibilité texte)
+      if (overlayRef.current) {
+        const op = newTextScrolled ? clamp01(1 - (p - 0.50) / 0.22) : 1
+        overlayRef.current.style.opacity = op.toFixed(3)
+      }
+      // Overlay sombre (phase collage)
+      if (overlayDarkRef.current) {
+        const op = m ? 0 : clamp01((p - 0.62) / 0.18) * 0.88
+        overlayDarkRef.current.style.opacity = op.toFixed(3)
+      }
+
+      // 8. Bloc texte (translate Y + opacity)
+      if (contentRef.current) {
+        if (m) {
+          contentRef.current.style.transform = 'translateY(-50%)'
+          contentRef.current.style.opacity   = '1'
+        } else {
+          const slideY = newTextScrolled ? -clamp01((p - 0.50) / 0.22) * 180 : 0
+          const op     = newTextScrolled ? clamp01(1 - (p - 0.50) / 0.22) : 1
+          contentRef.current.style.transform = `translateY(calc(-50% + ${slideY.toFixed(2)}px))`
+          contentRef.current.style.opacity   = op.toFixed(3)
+        }
+      }
+
+      // 9. Reveal progressif des lignes — desktop only
+      if (!m) {
+        if (subRef.current)   subRef.current.style.opacity   = revealOp(p, 0.03).toFixed(3)
+        if (line1Ref.current) line1Ref.current.style.opacity = revealOp(p, 0.12).toFixed(3)
+        if (boldRef.current)  boldRef.current.style.opacity  = revealOp(p, 0.22).toFixed(3)
+        if (line3Ref.current) line3Ref.current.style.opacity = revealOp(p, 0.32).toFixed(3)
+        if (line4Ref.current) line4Ref.current.style.opacity = revealOp(p, 0.42).toFixed(3)
+      }
+
+      // 10. Collage photos — transform + opacity (desktop uniquement, montés en permanence)
+      if (!m) {
+        for (let i = 0; i < COLLAGE.length; i++) {
+          const el = cpRefs.current[i]
+          if (!el) continue
+          const c  = COLLAGE[i]
+          const t  = easeOut3(clamp01((p - c.thresh) / 0.16))
+          const st = STARTS[c.pos]
+          el.style.opacity   = t.toFixed(3)
+          el.style.transform = `translate(${(st.tx * (1 - t)).toFixed(1)}vw, ${(st.ty * (1 - t)).toFixed(1)}vh) scale(${(st.s + (1 - st.s) * t).toFixed(3)})`
+        }
+      }
+
+      // 11. Headline final (desktop, monté en permanence)
+      if (!m && headlineFinalRef.current) {
+        const t = easeOut3(clamp01((p - 0.88) / 0.10))
+        headlineFinalRef.current.style.opacity   = t.toFixed(3)
+        headlineFinalRef.current.style.transform = `translateY(${((1 - t) * 24).toFixed(1)}px)`
+      }
+
+      // 12. Progress bar
+      if (progressBarRef.current) {
+        progressBarRef.current.style.transform = `scaleX(${p.toFixed(4)})`
+      }
+    }
+
+    // Scroll handler — rAF throttle (1 apply max par frame)
+    const onScroll = () => {
+      if (tickingRef.current) return
+      tickingRef.current = true
+      scrollRafRef.current = requestAnimationFrame(() => {
+        apply()
+        tickingRef.current = false
+      })
+    }
+
+    // Boucle timer d'entrée — vit ~600ms puis meurt
+    const timerLoop = () => {
+      apply()
+      const now     = performance.now()
+      const elapsed = timerStartRef.current !== null ? now - timerStartRef.current : 0
+      if (elapsed < TIMER_DURATION) {
+        timerRafRef.current = requestAnimationFrame(timerLoop)
+      } else {
+        timerRafRef.current = null
+      }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    timerRafRef.current = requestAnimationFrame(timerLoop)
+    // Apply initial (handle reload mi-section)
+    apply()
+
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current)
+      if (timerRafRef.current)  cancelAnimationFrame(timerRafRef.current)
+    }
   }, [entered])
-
-  // ── Slide-in colonnes (timer)
-  function colTranslate(col: number): string | null {
-    if (!entered) return `${col % 2 === 0 ? -110 : 110}vh`
-    const e = easeOut3(clamp01(timerProg / GRID_ENTRY))
-    if (e >= 1) return null
-    const sign = col % 2 === 0 ? -1 : 1
-    return `${(sign * 110 * (1 - e)).toFixed(2)}vh`
-  }
-
-  // ── Opacité cellule grille avec stagger
-  function cellOp(idx: number): number {
-    if (CHOSEN_SET.has(idx)) {
-      // Les 5 choisies restent jusqu'au moment où le collage prend le relais
-      if (scrollProg < 0.72) return 1
-      return Math.max(0, 1 - (scrollProg - 0.72) / 0.10)
-    }
-    const start = CELL_FADE_T.get(idx) ?? 0.55
-    if (scrollProg < start) return 1
-    return Math.max(0, 1 - (scrollProg - start) / 0.09)
-  }
-
-  // ── Style photo collage : vole depuis grille zoomée → position finale
-  function cpStyle(pos: string, thresh: number): React.CSSProperties {
-    const t  = easeOut3(clamp01((scrollProg - thresh) / 0.16))
-    const st = STARTS[pos]
-    return {
-      opacity: t,
-      transform: `translate(${(st.tx * (1 - t)).toFixed(1)}vw, ${(st.ty * (1 - t)).toFixed(1)}vh) scale(${(st.s + (1 - st.s) * t).toFixed(3)})`,
-      willChange: 'opacity, transform',
-    }
-  }
-
-  // ── Phases dérivées
-  // Sur mobile : sticky abandonné → scrollProg reste 0 (h ≤ 0 dans le handler)
-  // On force tout à visible via isMobile.
-  const textScrolled = !isMobile && scrollProg >= 0.50
-
-  const textSlideY  = textScrolled ? -clamp01((scrollProg - 0.50) / 0.22) * 180 : 0
-  const entryY      = isMobile ? 0 : (entered ? 0 : 70)
-  const textOp      = textScrolled ? clamp01(1 - (scrollProg - 0.50) / 0.22) : 1
-  const contentTY   = isMobile ? 'translateY(-50%)' : `translateY(calc(-50% + ${entryY + textSlideY}px))`
-  const contentTr   = (!isMobile && entered && !textScrolled)
-    ? 'transform 1.2s cubic-bezier(0.22,1,0.36,1)'
-    : 'none'
-
-  const overlayOp = textScrolled ? clamp01(1 - (scrollProg - 0.50) / 0.22) : 1
-
-  const gridScaleVal = isMobile ? 1 : (1 + easeOut3(clamp01((scrollProg - 0.38) / 0.38)) * 0.22)
-  const gridFrozen   = isMobile || scrollProg >= 0.40
-
-  const darkOp = isMobile ? 0 : clamp01((scrollProg - 0.62) / 0.18) * 0.88
-
-  const showCollage  = !isMobile && scrollProg >= 0.70
-  const showHeadline = !isMobile && scrollProg >= 0.86
-  const headlineT    = easeOut3(clamp01((scrollProg - 0.88) / 0.10))
-
-  const sub   = isMobile ? 1 : revealOp(scrollProg, 0.03)
-  const line1 = isMobile ? 1 : revealOp(scrollProg, 0.12)
-  const bold  = isMobile ? 1 : revealOp(scrollProg, 0.22)
-  const line3 = isMobile ? 1 : revealOp(scrollProg, 0.32)
-  const line4 = isMobile ? 1 : revealOp(scrollProg, 0.42)
 
   return (
     <div
@@ -252,36 +378,32 @@ export default function Anxiete() {
 
         {/* ── Grille 8 colonnes ── */}
         <div
-          ref={gridReveal.ref}
+          ref={setGridWrapRef}
           className={`anx-grid-wrap reveal-fade${gridReveal.isVisible ? ' is-visible' : ''}`}
-          style={{ transform: `scale(${gridScaleVal.toFixed(3)})` }}
         >
           <div className="anx-grid">
             {Array.from({ length: COLS }, (_, col) => {
-              const translate  = colTranslate(col)
-              const isFloating = translate === null && !gridFrozen
+              const floatingClass = entered && timerDone && !gridFrozen ? ' anx-col--floating' : ''
               return (
                 <div
                   key={col}
-                  className={`anx-col${isFloating ? ' anx-col--floating' : ''}`}
-                  style={{
-                    '--col-idx': col,
-                    ...(translate !== null ? { transform: `translateY(${translate})` } : {}),
-                  } as React.CSSProperties}
+                  ref={(el) => { colRefs.current[col] = el }}
+                  className={`anx-col${floatingClass}`}
+                  style={{ '--col-idx': col } as React.CSSProperties}
                 >
                   {Array.from({ length: ROWS }, (_, row) => {
                     const idx = col * ROWS + row
                     return (
                       <div
                         key={row}
+                        ref={(el) => { cellRefs.current[idx] = el }}
                         className="anx-cell"
-                        style={{ opacity: cellOp(idx) }}
                       >
                         <img
-                          src={PHOTOS[slots[idx]]}
+                          src={PHOTOS[INITIAL_SLOTS[idx]]}
                           alt=""
-                          className={`anx-photo${fadingSlots.has(idx) ? ' anx-photo--fading' : ''}`}
-                          loading="eager"
+                          className="anx-photo"
+                          loading="lazy"
                           decoding="async"
                         />
                       </div>
@@ -294,79 +416,62 @@ export default function Anxiete() {
         </div>
 
         {/* ── Overlay gradient (lisibilité texte) ── */}
-        <div className="anx-overlay" style={{ opacity: overlayOp }} />
+        <div ref={overlayRef} className="anx-overlay" />
 
         {/* ── Overlay sombre (phase collage) ── */}
-        <div className="anx-overlay-dark" style={{ opacity: darkOp }} />
+        <div ref={overlayDarkRef} className="anx-overlay-dark" />
 
-        {/* ── Texte gauche — glisse vers le haut au scroll ── */}
-        <div
-          className="anx-content"
-          style={{
-            opacity: textOp,
-            transform: contentTY,
-            transition: contentTr,
-          }}
-        >
+        {/* ── Texte gauche — slide-up au scroll ── */}
+        <div ref={contentRef} className="anx-content">
           <h2
             ref={headlineReveal.ref}
             className={`anx-title reveal-up${headlineReveal.isVisible ? ' is-visible' : ''}`}
           >
             Vous prenez des photos. Tout le temps.
           </h2>
-          <p className="anx-subtitle" style={isMobile ? undefined : { opacity: sub }}>
+          <p ref={subRef} className="anx-subtitle">
             Le voyage de l&rsquo;&eacute;t&eacute; dernier est encore dans votre t&eacute;l&eacute;phone.
             Celui d&rsquo;avant aussi.
           </p>
           <div ref={paragraphsReveal.ref} className="anx-body">
-            <p className={`anx-line reveal-up reveal-delay-1${paragraphsReveal.isVisible ? ' is-visible' : ''}`}
-               style={isMobile ? undefined : { opacity: line1 }}>
+            <p ref={line1Ref} className={`anx-line reveal-up reveal-delay-1${paragraphsReveal.isVisible ? ' is-visible' : ''}`}>
               Un soir, vous vous &ecirc;tes dit qu&rsquo;il faudrait en faire un album.
             </p>
-            <p className={`anx-line anx-line--bold reveal-up reveal-delay-2${paragraphsReveal.isVisible ? ' is-visible' : ''}`}
-               style={isMobile ? undefined : { opacity: bold }}>
+            <p ref={boldRef} className={`anx-line anx-line--bold reveal-up reveal-delay-2${paragraphsReveal.isVisible ? ' is-visible' : ''}`}>
               L&rsquo;id&eacute;e est pass&eacute;e.
             </p>
-            <p className={`anx-line reveal-up reveal-delay-3${paragraphsReveal.isVisible ? ' is-visible' : ''}`}
-               style={isMobile ? undefined : { opacity: line3 }}>
+            <p ref={line3Ref} className={`anx-line reveal-up reveal-delay-3${paragraphsReveal.isVisible ? ' is-visible' : ''}`}>
               Parce qu&rsquo;au fond, trier, choisir, composer,
               &ccedil;a prend des heures. Des soirs entiers.
               Alors vous reportez.
             </p>
-            <p className={`anx-line reveal-up reveal-delay-4${paragraphsReveal.isVisible ? ' is-visible' : ''}`}
-               style={isMobile ? undefined : { opacity: line4 }}>
+            <p ref={line4Ref} className={`anx-line reveal-up reveal-delay-4${paragraphsReveal.isVisible ? ' is-visible' : ''}`}>
               Et pendant ce temps, ce qui n&rsquo;est pas dans un album finit par se perdre.
               M&ecirc;me les plus beaux moments.
             </p>
           </div>
         </div>
 
-        {/* ── Collage : 5 photos convergent depuis la grille ── */}
-        {showCollage && (
+        {/* ── Collage : 5 photos convergent depuis la grille — desktop only, monté en permanence ── */}
+        {!isMobile && (
           <div className="anx-collage">
             <div className="anx-collage-grid">
-              {COLLAGE.map(c => (
+              {COLLAGE.map((c, i) => (
                 <div
                   key={c.pos}
+                  ref={(el) => { cpRefs.current[i] = el }}
                   className={`anx-cp anx-cp--${c.pos}`}
-                  style={cpStyle(c.pos, c.thresh)}
                 >
-                  <img src={c.src} alt="" />
+                  <img src={c.src} alt="" loading="eager" decoding="async" />
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* ── Headline final ── */}
-        {showHeadline && (
-          <div
-            className="anx-headline-final"
-            style={{
-              opacity: headlineT,
-              transform: `translateY(${(1 - headlineT) * 24}px)`,
-            }}
-          >
+        {/* ── Headline final — desktop only, monté en permanence ── */}
+        {!isMobile && (
+          <div ref={headlineFinalRef} className="anx-headline-final">
             <p className="anx-hf-brand">Bellajour</p>
             <p className="anx-hf-tagline">
               Comprend vos besoins<br />
@@ -377,7 +482,7 @@ export default function Anxiete() {
 
         {/* ── Progress ── */}
         <div className="anx-progress">
-          <div className="anx-progress-bar" style={{ transform: `scaleX(${scrollProg})` }} />
+          <div ref={progressBarRef} className="anx-progress-bar" />
         </div>
 
       </div>
