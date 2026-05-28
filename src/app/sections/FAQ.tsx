@@ -7,17 +7,18 @@ const ITEMS = [
   {
     q: 'Pourquoi rejoindre la liste maintenant\u00a0?',
     a: [
-      "L\u2019inscription est gratuite, sans engagement, et vous permet d\u2019\u00eatre pr\u00e9venu avant l\u2019ouverture officielle de Bellajour.",
-      "En rejoignant la waitlist, vous devenez l\u2019un des premiers Fondateurs Bellajour\u00a0: acc\u00e8s aux pr\u00e9ventes avant le 15 juin, tarif exclusif pour les 100 premiers inscrits, et programme de parrainage d\u00e8s l\u2019ouverture.",
-      "Pas de spam. Pas d\u2019emails inutiles.",
+      "L\u2019inscription est gratuite et sans engagement\u00a0: vous serez averti par mail avant l\u2019ouverture officielle.",
+      "En rejoignant la liste d\u2019attente, vous faites partie des premiers Fondateurs Bellajour\u00a0: acc\u00e8s aux pr\u00e9ventes d\u00e8s le 13 juin, 48 heures avant tout le monde, et tarif r\u00e9serv\u00e9 aux 100 premiers inscrits.",
+      "Le programme de parrainage s\u2019ouvre pour toute la p\u00e9riode de waitlist. Pour 25\u00a0\u20ac d\u2019acompte, vous obtenez 30\u00a0\u20ac d\u00e9duits de votre premi\u00e8re commande d\u00e8s le 15 ao\u00fbt.",
+      "Et d\u2019autres avantages exclusifs r\u00e9serv\u00e9s aux 100 premiers, pour remercier ceux qui nous font confiance depuis le d\u00e9but.",
     ],
   },
   {
-    q: 'Combien co\u00fbtera un album Bellajour\u00a0?',
+    q: 'Combien co\u00fbte un album\u00a0?',
     a: [
-      "Bellajour est un service premium, mais pens\u00e9 pour rester accessible.",
-      "Son prix sera annonc\u00e9 d\u00e8s les pr\u00e9ventes du 15 juin, en toute transparence. Livraison incluse, sans surprise. C\u2019est quelque chose qui nous tient \u00e0 c\u0153ur.",
-      "Et en plus, chaque parrainage que vous effectuez vient directement r\u00e9duire le prix.",
+      "Nos albums commencent \u00e0 60\u00a0\u20ac pour 30 pages. En dessous de 30 pages, nous trouvons qu\u2019il n\u2019y a pas assez de place pour raconter.",
+      "Puis, comptez 1\u00a0\u20ac par page ajout\u00e9e. La livraison est toujours comprise. Le prix comprendra toujours notre analyse IA pouss\u00e9e, votre version digitale HD et la cr\u00e9ation de l\u2019illustration Bellajour unique \u00e0 chaque album. Toutes ces attentions nous tiennent \u00e0 c\u0153ur.",
+      "Nous mettons tout en place pour vous proposer les meilleurs prix gr\u00e2ce \u00e0 notre syst\u00e8me d\u2019offre pr\u00e9ventes, notre syst\u00e8me de points (appel\u00e9 \u00ab\u00a0Instants\u00a0\u00bb) et notre syst\u00e8me de parrainage. Chaque proche que vous parrainez r\u00e9duit directement le prix de votre album, ceci \u00e0 l\u2019infini.",
     ],
   },
   {
@@ -30,9 +31,10 @@ const ITEMS = [
   {
     q: 'Quand Bellajour sera-t-il disponible\u00a0?',
     a: [
-      "Bellajour est en cours de pr\u00e9paration.",
-      "Les pr\u00e9ventes ouvrent le 15 juin 2026, r\u00e9serv\u00e9es en priorit\u00e9 aux inscrits de la waitlist.",
+      "Bellajour se pr\u00e9pare.",
+      "Les pr\u00e9ventes ouvrent le 15 juin 2026, en priorit\u00e9 pour les inscrits.",
       "Le lancement officiel est pr\u00e9vu le 15 ao\u00fbt 2026.",
+      "Deux mois peuvent sembler longs, c\u2019est en r\u00e9alit\u00e9 le moment id\u00e9al pour photographier votre \u00e9t\u00e9 et recevoir votre album d\u00e8s la rentr\u00e9e.",
     ],
   },
   {
