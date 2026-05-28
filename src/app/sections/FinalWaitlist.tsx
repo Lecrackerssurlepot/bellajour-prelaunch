@@ -15,17 +15,17 @@ const CHAPITRES: { num: string; titre: string; texte: ReactNode }[] = [
   {
     num: '01',
     titre: 'ACCÈS PRIORITAIRE',
-    texte: <>Découvrez les préventes avant l&rsquo;heure.<br />Réservez votre création Bellajour en avance.</>,
+    texte: <>Découvrez les préventes avant l&rsquo;heure.<br />Réservez votre création Bellajour 48&nbsp;h avant l&rsquo;ouverture officielle.</>,
   },
   {
     num: '02',
     titre: 'OFFRE FONDATEUR',
-    texte: <>Un tarif spécial pour les 100 premiers inscrits.<br />Une attention pour celles et ceux qui nous font confiance.</>,
+    texte: <>Un tarif spécial pour les 100 premiers inscrits.<br />Réalisez l&rsquo;illustration de votre album cet été, avant le lancement officiel.<br />Une attention pour celles et ceux qui nous font confiance.</>,
   },
   {
     num: '03',
     titre: 'PARRAINAGE BELLAJOUR',
-    texte: <>Faites découvrir Bellajour à vos proches.<br />5&nbsp;pages vous sont offertes à chaque parrainage.<br />Autant de fois que vous le souhaitez.</>,
+    texte: <>Faites découvrir Bellajour à vos proches.<br />5&nbsp;pages offertes pour vous, 3&nbsp;pages pour votre filleul.<br />Autant de fois que vous le souhaitez.<br />1&nbsp;page = 1&nbsp;€</>,
   },
 ]
 
