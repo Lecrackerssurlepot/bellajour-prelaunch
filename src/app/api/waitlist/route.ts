@@ -150,6 +150,13 @@ export async function POST(request: Request) {
 
     const cleanPrenom = prenom ? prenom.replace(/<[^>]*>/g, '').trim().slice(0, 50) : undefined;
 
+    // G2 — Format-check serveur du ref_code (même regex que /api/referrer).
+    // Invalide → traité comme absent : inscription OK, 0 crédit, pas de stockage du déchet.
+    const safeReferredBy =
+      typeof referred_by === "string" && /^[A-Z0-9-]{3,30}$/i.test(referred_by.trim())
+        ? referred_by.trim()
+        : undefined;
+
     if (!email || typeof email !== "string") {
       return NextResponse.json({ message: "Adresse email manquante." }, { status: 400 });
     }
@@ -205,7 +212,7 @@ export async function POST(request: Request) {
       email_canonical: emailCanonical,
       prenom: cleanPrenom || null,
     };
-    if (referred_by) insertPayload.referred_by = referred_by;
+    if (safeReferredBy) insertPayload.referred_by = safeReferredBy;
 
     let insertError = null;
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -226,11 +233,11 @@ export async function POST(request: Request) {
     // Créditer le parrain si referred_by valide + récupérer son prénom pour Brevo
     let prenomParrain = "";
     let parrainValide = false;
-    if (referred_by) {
+    if (safeReferredBy) {
       const { data: parrain } = await supabase
         .from("waitlist")
         .select("email, email_canonical, prenom")
-        .eq("ref_code", referred_by)
+        .eq("ref_code", safeReferredBy)
         .maybeSingle();
 
       // Anti-auto-parrainage : compare sur la forme canonique pour bloquer
@@ -251,7 +258,7 @@ export async function POST(request: Request) {
         const { count: nbProches } = await supabase
           .from("waitlist")
           .select("id", { count: "exact", head: true })
-          .eq("referred_by", referred_by);
+          .eq("referred_by", safeReferredBy);
 
         const nb = nbProches ?? 1;
         console.log(`[parrainage] ${parrain.email} → +1 filleul (${cleanPrenom || "?"}), total=${nb}`);
