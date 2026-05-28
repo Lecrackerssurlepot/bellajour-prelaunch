@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { canonicalizeEmail } from "@/lib/email";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/contacts";
 const BREVO_SMTP_URL = "https://api.brevo.com/v3/smtp/email";
@@ -162,13 +163,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // Forme canonique anti-alias (Gmail dots + tags). Sert UNIQUEMENT à la
+    // déduplication et à l'anti-auto-parrainage. L'email d'origine reste la
+    // valeur stockée pour l'affichage et envoyée à Brevo.
+    const emailCanonical = canonicalizeEmail(normalizedEmail);
+
     const supabase = makeSupabase();
 
-    // Vérifier si l'email est déjà enregistré
+    // Vérifier si l'email est déjà enregistré (comparaison canonique)
     const { data: existing } = await supabase
       .from("waitlist")
       .select("ref_code, prenom")
-      .eq("email", normalizedEmail)
+      .eq("email_canonical", emailCanonical)
       .maybeSingle();
 
     if (existing) {
@@ -196,6 +202,7 @@ export async function POST(request: Request) {
     let ref_code = await generateUniqueCode(supabase, cleanPrenom);
     const insertPayload: Record<string, unknown> = {
       email: normalizedEmail,
+      email_canonical: emailCanonical,
       prenom: cleanPrenom || null,
     };
     if (referred_by) insertPayload.referred_by = referred_by;
@@ -222,11 +229,13 @@ export async function POST(request: Request) {
     if (referred_by) {
       const { data: parrain } = await supabase
         .from("waitlist")
-        .select("email, prenom")
+        .select("email, email_canonical, prenom")
         .eq("ref_code", referred_by)
         .maybeSingle();
 
-      if (parrain?.email && parrain.email !== normalizedEmail) {
+      // Anti-auto-parrainage : compare sur la forme canonique pour bloquer
+      // les alias Gmail (jane+1@gmail.com → jane@gmail.com).
+      if (parrain?.email && parrain.email_canonical !== emailCanonical) {
         parrainValide = true;
         prenomParrain = parrain.prenom || "";
         await supabase.from("pages_credits").insert({
