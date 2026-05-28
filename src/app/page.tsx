@@ -8,12 +8,10 @@ import Album from './sections/Album'
 import FinalWaitlist from './sections/FinalWaitlist'
 import FAQ from './sections/FAQ'
 import Footer from './sections/Footer'
-import FpsCounter from './components/FpsCounter'
 
 export default function Page() {
   return (
     <main>
-      <FpsCounter />
       <StickyVText />
       <StickyJoinCTA />
 
