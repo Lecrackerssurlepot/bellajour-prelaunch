@@ -82,6 +82,21 @@ function makeSupabase() {
   return createClient(url, key);
 }
 
+/**
+ * Identifie la colonne en cause d'une violation de contrainte UNIQUE (PG 23505).
+ * Inspecte `details` puis `message` (Supabase remonte typiquement
+ * "Key (email_canonical)=(jane@gmail.com) already exists.").
+ * Renvoie "ref_code" | "email_canonical" | "email" | "unknown".
+ */
+type UniqueCollisionTarget = "ref_code" | "email_canonical" | "email" | "unknown";
+function detectUniqueCollision(err: { details?: string | null; message?: string | null }): UniqueCollisionTarget {
+  const blob = `${err.details ?? ""} ${err.message ?? ""}`.toLowerCase();
+  if (/\bref_code\b/.test(blob)) return "ref_code";
+  if (/\bemail_canonical\b/.test(blob)) return "email_canonical";
+  if (/\bemail\b/.test(blob)) return "email";
+  return "unknown";
+}
+
 function randomCode(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let code = "BJ-";
@@ -205,7 +220,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Une erreur s'est glissée. Réessayez dans un instant." }, { status: 500 });
     }
 
-    // Générer un ref_code unique et insérer avec retry sur contrainte UNIQUE (race condition)
+    // Générer un ref_code unique et insérer avec retry CIBLÉ sur 23505.
+    // - 23505 sur ref_code → régénère le ref_code et retry (race sur génération).
+    // - 23505 sur email / email_canonical → un autre worker a inscrit le même
+    //   email entre notre check d'existence et notre insert : court-circuiter
+    //   vers le chemin "already_registered" (pas de 500, pas de boucle stérile).
+    // - autre erreur → bail 500.
     let ref_code = await generateUniqueCode(supabase, cleanPrenom);
     const insertPayload: Record<string, unknown> = {
       email: normalizedEmail,
@@ -215,12 +235,40 @@ export async function POST(request: Request) {
     if (safeReferredBy) insertPayload.referred_by = safeReferredBy;
 
     let insertError = null;
+    let raceAlreadyRegistered = false;
     for (let attempt = 0; attempt < 3; attempt++) {
       const result = await supabase.from("waitlist").insert({ ...insertPayload, ref_code });
       insertError = result.error;
       if (!insertError) break;
       if (insertError.code !== "23505") break;
-      ref_code = await generateUniqueCode(supabase, cleanPrenom);
+      const collisionColumn = detectUniqueCollision(insertError);
+      if (collisionColumn === "ref_code") {
+        ref_code = await generateUniqueCode(supabase, cleanPrenom);
+        continue;
+      }
+      if (collisionColumn === "email" || collisionColumn === "email_canonical") {
+        raceAlreadyRegistered = true;
+        break;
+      }
+      // Collision sur une autre colonne unique inconnue → ne pas boucler.
+      break;
+    }
+
+    if (raceAlreadyRegistered) {
+      const { data: existingRace } = await supabase
+        .from("waitlist")
+        .select("ref_code, prenom")
+        .eq("email_canonical", emailCanonical)
+        .maybeSingle();
+      return NextResponse.json(
+        {
+          success: false,
+          error: "already_registered",
+          ref_code: existingRace?.ref_code ?? null,
+          prenom: existingRace?.prenom ?? null,
+        },
+        { status: 200 }
+      );
     }
 
     if (insertError) {
