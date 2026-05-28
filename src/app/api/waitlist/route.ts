@@ -91,6 +91,50 @@ async function sendReferralWelcomeEmailP1(
   }
 }
 
+async function sendReferralNotifyEmailP2(
+  parrainEmail: string,
+  prenomParrain: string,
+  prenomProche: string,
+  nbProches: number,
+  refCodeParrain: string,
+  apiKey: string
+): Promise<void> {
+  const templateId = Number(process.env.BREVO_TEMPLATE_P2_ID);
+  if (!templateId) {
+    console.error("[brevo] P2 skip — BREVO_TEMPLATE_P2_ID manquant");
+    return;
+  }
+  try {
+    const res = await fetch(BREVO_SMTP_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": apiKey,
+      },
+      body: JSON.stringify({
+        templateId,
+        to: [{ email: parrainEmail, name: prenomParrain || parrainEmail }],
+        params: {
+          PRENOM: prenomParrain || "",
+          PRENOM_PROCHE: prenomProche || "",
+          NB_PROCHES: nbProches,
+          NB_PAGES_ACCUMULEES: nbProches * 5,
+          REF_CODE: refCodeParrain,
+          REF_LINK: `${W1_REF_LINK_BASE}/?ref=${refCodeParrain}`,
+        },
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[brevo] P2 échec ${parrainEmail} → ${res.status} ${body}`);
+    } else {
+      console.log(`[brevo] P2 envoyé ${parrainEmail} (proche=${prenomProche}, nb=${nbProches})`);
+    }
+  } catch (err) {
+    console.error(`[brevo] P2 exception ${parrainEmail}`, err);
+  }
+}
+
 async function updateBrevoContact(
   email: string,
   attributes: Record<string, string | number>,
@@ -371,6 +415,18 @@ export async function POST(request: Request) {
             NB_PROCHES: nb,
             NB_PAGES_ACCUMULEES: 5 * nb,
           },
+          apiKey
+        );
+
+        // P2 — notif au parrain qu'un proche vient de le rejoindre.
+        // Source unique de NB_PROCHES = count(waitlist where referred_by=...) ci-dessus,
+        // donc même valeur que celle envoyée à Brevo via updateBrevoContact.
+        await sendReferralNotifyEmailP2(
+          parrain.email,
+          prenomParrain,
+          cleanPrenom || "",
+          nb,
+          safeReferredBy,
           apiKey
         );
       }
