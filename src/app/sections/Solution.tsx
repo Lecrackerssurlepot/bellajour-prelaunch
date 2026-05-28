@@ -265,11 +265,9 @@ export default function Solution() {
       raf = requestAnimationFrame(tick)
     }
 
-    // Démarre le timer uniquement quand la section est visible
+    // Démarre le timer uniquement quand la section est visible (desktop seulement)
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (isMobileRef.current) return
-
         if (entry.isIntersecting && !runningRef.current) {
           setActive(0)
           setProgress(0)
@@ -282,7 +280,7 @@ export default function Solution() {
       { threshold: 0.2 }
     )
 
-    if (sectionRef.current) observer.observe(sectionRef.current)
+    if (!isMobileRef.current && sectionRef.current) observer.observe(sectionRef.current)
     raf = requestAnimationFrame(tick)
 
     return () => {
@@ -331,30 +329,29 @@ export default function Solution() {
                   data-step={step.num}
                 >
                   <div
-                    key={`${step.num}-${isActive ? 'active' : 'paused'}`}
                     className={`sol-card-visual sol-visual-${step.num}`}
                     aria-hidden="true"
                   >
                     {step.num === '01' && (
                       <>
-                        <img src="/images/solution/solution-upload-01.webp" alt="" className="sol-anim-photo sol-stack-1" loading="lazy" />
-                        <img src="/images/solution/solution-upload-02.webp" alt="" className="sol-anim-photo sol-stack-2" loading="lazy" />
-                        <img src="/images/solution/solution-upload-03.webp" alt="" className="sol-anim-photo sol-stack-3" loading="lazy" />
-                        <img src="/images/solution/solution-upload-04.webp" alt="" className="sol-anim-photo sol-stack-4" loading="lazy" />
-                        <img src="/images/solution/solution-upload-05.webp" alt="" className="sol-anim-photo sol-stack-5" loading="lazy" />
+                        <img src="/images/solution/solution-upload-01.webp" alt="" className="sol-anim-photo sol-stack-1" width="72" height="96" loading="eager" decoding="async" />
+                        <img src="/images/solution/solution-upload-02.webp" alt="" className="sol-anim-photo sol-stack-2" width="72" height="96" loading="eager" decoding="async" />
+                        <img src="/images/solution/solution-upload-03.webp" alt="" className="sol-anim-photo sol-stack-3" width="72" height="96" loading="eager" decoding="async" />
+                        <img src="/images/solution/solution-upload-04.webp" alt="" className="sol-anim-photo sol-stack-4" width="72" height="96" loading="eager" decoding="async" />
+                        <img src="/images/solution/solution-upload-05.webp" alt="" className="sol-anim-photo sol-stack-5" width="72" height="96" loading="eager" decoding="async" />
                       </>
                     )}
                     {step.num === '02' && (
                       <div className="sol-quest-people">
                         <div className="sol-quest-person sol-quest-person-1">
                           <div className="sol-quest-circle">
-                            <img src="/images/solution/solution-casting-01.webp" alt="" loading="lazy" />
+                            <img src="/images/solution/solution-casting-01.webp" alt="" width="72" height="72" loading="eager" decoding="async" />
                           </div>
                           <span className="sol-quest-name sol-quest-name-1">Camille</span>
                         </div>
                         <div className="sol-quest-person sol-quest-person-2">
                           <div className="sol-quest-circle">
-                            <img src="/images/solution/solution-casting-03.webp" alt="" loading="lazy" />
+                            <img src="/images/solution/solution-casting-03.webp" alt="" width="72" height="72" loading="eager" decoding="async" />
                           </div>
                           <span className="sol-quest-name sol-quest-name-2">Julien</span>
                         </div>
@@ -362,20 +359,20 @@ export default function Solution() {
                     )}
                     {step.num === '03' && (
                       <div className="sol-select-grid">
-                        <img src="/images/anxiete/float-01.webp" alt="" className="sol-select-photo sol-select-keep-1" loading="lazy" />
-                        <img src="/images/anxiete/float-02.webp" alt="" className="sol-select-photo sol-select-drop-1" loading="lazy" />
-                        <img src="/images/anxiete/float-03.webp" alt="" className="sol-select-photo sol-select-keep-2" loading="lazy" />
-                        <img src="/images/anxiete/float-04.webp" alt="" className="sol-select-photo sol-select-drop-2" loading="lazy" />
-                        <img src="/images/anxiete/grid-03.webp" alt="" className="sol-select-photo sol-select-keep-3" loading="lazy" />
-                        <img src="/images/anxiete/grid-04.webp" alt="" className="sol-select-photo sol-select-drop-3" loading="lazy" />
+                        <img src="/images/anxiete/float-01.webp" alt="" className="sol-select-photo sol-select-keep-1" width="64" height="63" loading="eager" decoding="async" />
+                        <img src="/images/anxiete/float-02.webp" alt="" className="sol-select-photo sol-select-drop-1" width="64" height="63" loading="eager" decoding="async" />
+                        <img src="/images/anxiete/float-03.webp" alt="" className="sol-select-photo sol-select-keep-2" width="64" height="63" loading="eager" decoding="async" />
+                        <img src="/images/anxiete/float-04.webp" alt="" className="sol-select-photo sol-select-drop-2" width="64" height="63" loading="eager" decoding="async" />
+                        <img src="/images/anxiete/grid-03.webp" alt="" className="sol-select-photo sol-select-keep-3" width="64" height="63" loading="eager" decoding="async" />
+                        <img src="/images/anxiete/grid-04.webp" alt="" className="sol-select-photo sol-select-drop-3" width="64" height="63" loading="eager" decoding="async" />
                       </div>
                     )}
                     {step.num === '04' && (
                       <div className="sol-layout-grid">
-                        <img src="/images/hero/hero-01.webp" alt="" className="sol-layout-photo sol-layout-photo-1" loading="lazy" />
-                        <img src="/images/hero/hero-03.webp" alt="" className="sol-layout-photo sol-layout-photo-2" loading="lazy" />
-                        <img src="/images/hero/hero-05.webp" alt="" className="sol-layout-photo sol-layout-photo-3" loading="lazy" />
-                        <img src="/images/hero/hero-07.webp" alt="" className="sol-layout-photo sol-layout-photo-4" loading="lazy" />
+                        <img src="/images/hero/hero-01.webp" alt="" className="sol-layout-photo sol-layout-photo-1" width="63" height="63" loading="eager" decoding="async" />
+                        <img src="/images/hero/hero-03.webp" alt="" className="sol-layout-photo sol-layout-photo-2" width="63" height="63" loading="eager" decoding="async" />
+                        <img src="/images/hero/hero-05.webp" alt="" className="sol-layout-photo sol-layout-photo-3" width="63" height="63" loading="eager" decoding="async" />
+                        <img src="/images/hero/hero-07.webp" alt="" className="sol-layout-photo sol-layout-photo-4" width="63" height="63" loading="eager" decoding="async" />
                       </div>
                     )}
                   </div>

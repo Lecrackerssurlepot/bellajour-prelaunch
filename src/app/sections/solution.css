@@ -399,10 +399,10 @@
     scroll-snap-align: center !important;
     scroll-snap-stop: always !important;
     opacity: 1 !important;
-    transform: none !important;
+    transform: translateZ(0) !important;
     transition: none !important;
     animation: none !important;
-    will-change: auto !important;
+    will-change: transform !important;
     padding: clamp(20px, 4vh, 28px) clamp(20px, 5vw, 28px) !important;
     border-radius: 8px !important;
     display: flex !important;
