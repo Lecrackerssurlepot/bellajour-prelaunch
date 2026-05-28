@@ -50,6 +50,47 @@ async function sendWelcomeEmailW1(
   }
 }
 
+async function sendReferralWelcomeEmailP1(
+  email: string,
+  prenom: string,
+  prenomParrain: string,
+  refCode: string,
+  apiKey: string
+): Promise<void> {
+  const templateId = Number(process.env.BREVO_TEMPLATE_P1_ID);
+  if (!templateId) {
+    console.error("[brevo] P1 skip — BREVO_TEMPLATE_P1_ID manquant");
+    return;
+  }
+  try {
+    const res = await fetch(BREVO_SMTP_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": apiKey,
+      },
+      body: JSON.stringify({
+        templateId,
+        to: [{ email, name: prenom || email }],
+        params: {
+          PRENOM: prenom || "",
+          PRENOM_PARRAIN: prenomParrain || "",
+          REF_CODE: refCode,
+          REF_LINK: `${W1_REF_LINK_BASE}/?ref=${refCode}`,
+        },
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[brevo] P1 échec ${email} → ${res.status} ${body}`);
+    } else {
+      console.log(`[brevo] P1 envoyé ${email} (ref_code=${refCode}, parrain=${prenomParrain})`);
+    }
+  } catch (err) {
+    console.error(`[brevo] P1 exception ${email}`, err);
+  }
+}
+
 async function updateBrevoContact(
   email: string,
   attributes: Record<string, string | number>,
@@ -364,9 +405,17 @@ export async function POST(request: Request) {
       console.log(`[brevo] create OK ${normalizedEmail}`, brevoAttributes);
     }
 
-    // W1 — bienvenue waitlist : uniquement si inscription SANS parrain valide
+    // W1 (sans parrain) XOR P1 (avec parrain valide) — un inscrit ne reçoit jamais les deux.
     if (!parrainValide) {
       await sendWelcomeEmailW1(normalizedEmail, cleanPrenom || "", ref_code, apiKey);
+    } else {
+      await sendReferralWelcomeEmailP1(
+        normalizedEmail,
+        cleanPrenom || "",
+        prenomParrain,
+        ref_code,
+        apiKey
+      );
     }
 
     return NextResponse.json({ success: true, ref_code }, { status: 200 });
