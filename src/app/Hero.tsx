@@ -129,12 +129,7 @@ export default function Hero() {
   }
 
   const scrollToHero = () => {
-    const hero = document.getElementById('hero')
-    if (hero) {
-      hero.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    } else {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   /* Parrainage */
