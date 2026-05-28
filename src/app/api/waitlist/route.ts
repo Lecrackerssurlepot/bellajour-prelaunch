@@ -394,9 +394,34 @@ export async function POST(request: Request) {
             { onConflict: "source", ignoreDuplicates: true }
           );
         if (creditError) {
-          console.error(`[parrainage] crédit échec source=${ref_code}`, creditError);
+          console.error(`[parrainage] crédit parrain échec source=${ref_code}`, creditError);
         } else {
-          console.log(`[parrainage] crédit OK (upsert) → parrain=${parrain.email} source=${ref_code}`);
+          console.log(`[parrainage] crédit parrain OK (upsert) → ${parrain.email} source=${ref_code}`);
+        }
+
+        // Crédit miroir du PROCHE (+3 pages). Même mécanisme que le crédit parrain,
+        // source préfixée "SELF:" pour cohabiter avec le crédit parrain sous la
+        // contrainte UNIQUE(source) : 1 event signup = 2 lignes distinctes
+        //   (parrain : source=ref_code) + (proche : source=SELF:ref_code).
+        // Idempotent sur replay du même signup. Échec isolé : ne casse ni le
+        // crédit parrain, ni l'envoi des mails, ni le retour 200.
+        const procheSource = `SELF:${ref_code}`;
+        const { error: procheCreditError } = await supabase
+          .from("pages_credits")
+          .upsert(
+            {
+              email: normalizedEmail,
+              montant: 3,
+              source: procheSource,
+              applique: false,
+              status: "pending",
+            },
+            { onConflict: "source", ignoreDuplicates: true }
+          );
+        if (procheCreditError) {
+          console.error(`[parrainage] crédit proche échec source=${procheSource}`, procheCreditError);
+        } else {
+          console.log(`[parrainage] crédit proche OK (upsert) → ${normalizedEmail} source=${procheSource}`);
         }
 
         // Compter les filleuls du parrain (inclut le filleul qui vient d'être inséré)
