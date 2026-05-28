@@ -245,14 +245,26 @@ export async function POST(request: Request) {
       if (parrain?.email && parrain.email_canonical !== emailCanonical) {
         parrainValide = true;
         prenomParrain = parrain.prenom || "";
-        await supabase.from("pages_credits").insert({
-          email: parrain.email,
-          montant: 5,
-          source: ref_code,
-          applique: false,
-          status: "pending",
-        });
-        console.log(`[parrainage] crédit ajouté → parrain=${parrain.email} source=${ref_code}`);
+        // Upsert idempotent : si un crédit existe déjà pour ce filleul (replay,
+        // retry, race condition), on ne crée pas de doublon. La contrainte
+        // UNIQUE(source) en base garantit qu'un filleul = 1 crédit max.
+        const { error: creditError } = await supabase
+          .from("pages_credits")
+          .upsert(
+            {
+              email: parrain.email,
+              montant: 5,
+              source: ref_code,
+              applique: false,
+              status: "pending",
+            },
+            { onConflict: "source", ignoreDuplicates: true }
+          );
+        if (creditError) {
+          console.error(`[parrainage] crédit échec source=${ref_code}`, creditError);
+        } else {
+          console.log(`[parrainage] crédit OK (upsert) → parrain=${parrain.email} source=${ref_code}`);
+        }
 
         // Compter les filleuls du parrain (inclut le filleul qui vient d'être inséré)
         const { count: nbProches } = await supabase
