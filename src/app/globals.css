@@ -51,6 +51,7 @@ html, body {
   overflow-anchor: none;
   overscroll-behavior-y: none;
   font-family: var(--bj-font-sans);
+  scroll-padding-top: var(--bj-nav-h);
 }
 
 /* Offset pour la navbar fixe : le contenu démarre sous la navbar.

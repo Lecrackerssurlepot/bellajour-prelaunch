@@ -89,11 +89,10 @@ export default function FinalWaitlist() {
   const carouselRef  = useRef<HTMLDivElement>(null)
 
   /* Parrainage : lire ?ref= dans l'URL (ou fallback sessionStorage),
-     lookup prénom du parrain, puis scroll auto vers la waitlist.
-     Ordre strict pour éviter le flash de wording :
-       1) fetch prénom  →  2) setState  →  3) scroll au prochain rAF
-     Si le fetch échoue ou retourne null, on garde le fallback "Un proche…"
-     et on scrolle quand même. */
+     lookup prénom du parrain pour adapter le wording ("{prenom} vous invite…"),
+     persister en sessionStorage pour les pages suivantes.
+     Le scroll vers la waitlist est géré nativement via le hash #finalwaitlist
+     ajouté par ReferralHashRedirect — pas de scroll JS ici. */
   useEffect(() => {
     const urlRef = new URLSearchParams(window.location.search).get('ref')
     let stored: { code?: string; prenom?: string | null } | null = null
@@ -108,16 +107,6 @@ export default function FinalWaitlist() {
     setReferredBy(ref)
 
     let cancelled = false
-    const scrolledAtMount = window.scrollY > 0
-
-    const triggerScroll = () => {
-      if (cancelled) return
-      if (window.scrollY > 0) return
-      const el = document.getElementById('finalwaitlist')
-      if (!el) return
-      const top = el.getBoundingClientRect().top + window.scrollY
-      window.scrollTo({ top, behavior: 'smooth' })
-    }
 
     const finalize = (prenom: string | null) => {
       if (cancelled) return
@@ -128,9 +117,6 @@ export default function FinalWaitlist() {
           JSON.stringify({ code: ref, prenom })
         )
       } catch { /* no-op */ }
-      if (!scrolledAtMount) {
-        requestAnimationFrame(() => requestAnimationFrame(triggerScroll))
-      }
     }
 
     if (stored?.code === ref && typeof stored.prenom !== 'undefined') {

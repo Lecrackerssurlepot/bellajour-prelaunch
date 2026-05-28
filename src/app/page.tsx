@@ -1,4 +1,5 @@
 import Hero from './Hero'
+import ReferralHashRedirect from './components/ReferralHashRedirect'
 import StickyVText from './sections/StickyVText'
 import StickyJoinCTA from './sections/StickyJoinCTA'
 import Anxiete from './sections/Anxiete'
@@ -12,6 +13,7 @@ import Footer from './sections/Footer'
 export default function Page() {
   return (
     <main>
+      <ReferralHashRedirect />
       <StickyVText />
       <StickyJoinCTA />
 
