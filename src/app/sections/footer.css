@@ -81,29 +81,6 @@
   gap: clamp(8px, 1.4vh, 14px);
 }
 
-.footer-insta {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  text-decoration: none;
-  color: var(--bj-muted);
-  transition: color 0.22s;
-}
-
-.footer-insta:hover { color: var(--bj-text); }
-
-.footer-insta-icon {
-  width: 15px;
-  height: 15px;
-  flex-shrink: 0;
-}
-
-.footer-insta span {
-  font-family: var(--bj-font-sans);
-  font-size: clamp(13px, 0.85vw, 13px);
-  letter-spacing: 0.04em;
-}
-
 .footer-copy {
   margin: 0;
   font-family: var(--bj-font-sans);

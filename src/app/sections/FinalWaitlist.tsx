@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode } from 'react'
 import ReferralCard from '../components/ReferralCard'
+import InstagramLink from '../components/InstagramLink'
 import './finalwaitlist.css'
 
 /* ── Données ── */
@@ -308,7 +309,7 @@ export default function FinalWaitlist() {
                   prenomDisplay
                     ? `Bienvenue, ${prenomDisplay}.`
                     : wasAlreadyRegistered
-                      ? 'Vous êtes déjà avec nous.'
+                      ? 'Ravi de vous revoir !'
                       : 'Vous êtes sur la liste.'
                 }
                 subtitle={
@@ -396,6 +397,11 @@ export default function FinalWaitlist() {
             <p className="fwl-reassurance">
               Nous vous écrirons seulement lorsque Bellajour aura quelque chose d&rsquo;important à vous montrer.
             </p>
+            {referredBy && (
+              <div className="fwl-invite-insta">
+                <InstagramLink />
+              </div>
+            )}
           </>
         )}
 

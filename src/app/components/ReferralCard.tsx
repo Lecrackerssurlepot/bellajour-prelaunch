@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import InstagramLink from './InstagramLink'
 import './referralcard.css'
 
 interface ReferralCardProps {
@@ -142,10 +143,18 @@ export default function ReferralCard({
         Partager à vos proches
       </button>
 
+      <p className="ref-card-reassurance">
+        Vous allez recevoir un mail avec toutes les informations. Si ce n&rsquo;est pas le cas, n&rsquo;hésitez pas à vérifier vos spams.
+      </p>
+
       {footerVisible && (
         <p className="ref-card-footer">
           Vos 5 pages s&rsquo;appliquent dès que chacun de vos proches passera commande au lancement. Pas de limite — plus vous parrainez, plus vous cumulez.
         </p>
+      )}
+
+      {variant === 'full' && (
+        <InstagramLink className="ref-card-insta" />
       )}
 
       <div

@@ -1,3 +1,4 @@
+import InstagramLink from '../components/InstagramLink'
 import './footer.css'
 
 export default function Footer() {
@@ -23,30 +24,7 @@ export default function Footer() {
 
         {/* Droite — Instagram + copyright */}
         <div className="footer-right">
-          <a
-            href="https://www.instagram.com/bellajour__/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="footer-insta"
-            aria-label="Bellajour sur Instagram"
-          >
-            <svg
-              className="footer-insta-icon"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-              <circle cx="12" cy="12" r="4" />
-              <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
-            </svg>
-            <span>@bellajour</span>
-          </a>
+          <InstagramLink handle="@bellajour" />
           <p className="footer-copy">&copy;&nbsp;2026 Bellajour</p>
         </div>
 

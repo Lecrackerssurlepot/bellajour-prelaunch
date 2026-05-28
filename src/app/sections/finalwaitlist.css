@@ -34,6 +34,7 @@
 .fwl-form,
 .fwl-msg,
 .fwl-reassurance,
+.fwl-invite-insta,
 .fwl-ticker,
 .fwl-chapitres-intro,
 .fwl-chapitres {
@@ -50,6 +51,7 @@
 .fwl-section--visible .fwl-form          { opacity: 1; transform: none; transition-delay: 0.26s; }
 .fwl-section--visible .fwl-msg           { opacity: 1; transform: none; transition-delay: 0.26s; }
 .fwl-section--visible .fwl-reassurance   { opacity: 1; transform: none; transition-delay: 0.34s; }
+.fwl-section--visible .fwl-invite-insta  { opacity: 1; transform: none; transition-delay: 0.38s; }
 .fwl-section--visible .fwl-ticker        { opacity: 1; transform: none; transition-delay: 0.42s; }
 .fwl-section--visible .fwl-chapitres-intro { opacity: 1; transform: none; transition-delay: 0.50s; }
 .fwl-section--visible .fwl-chapitres     { opacity: 1; transform: none; transition-delay: 0.60s; }
@@ -61,6 +63,7 @@
   .fwl-form,
   .fwl-msg,
   .fwl-reassurance,
+  .fwl-invite-insta,
   .fwl-ticker,
   .fwl-chapitres-intro,
   .fwl-chapitres {
@@ -245,6 +248,13 @@
   color: var(--bj-muted);
   line-height: 1.6;
   max-width: 440px;
+}
+
+/* ── Bloc Instagram état parrainage (step 1 avec referredBy) ── */
+.fwl-invite-insta {
+  margin: clamp(18px, 2.6vh, 28px) 0 0;
+  display: flex;
+  justify-content: center;
 }
 
 /* ════════════════════
@@ -582,9 +592,10 @@
   .fwl-inner > p:not([class]) { order: 5 !important; }
   .fwl-msg                { order: 6 !important; }
   .fwl-reassurance        { order: 7 !important; }
-  .fwl-chapitres-intro    { order: 8 !important; }
-  .fwl-carousel-wrap      { order: 9 !important; }
-  .fwl-dots               { order: 10 !important; }
+  .fwl-invite-insta       { order: 8 !important; }
+  .fwl-chapitres-intro    { order: 9 !important; }
+  .fwl-carousel-wrap      { order: 10 !important; }
+  .fwl-dots               { order: 11 !important; }
 }
 
 /* ════════════════════
