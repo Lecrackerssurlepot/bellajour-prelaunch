@@ -47,11 +47,11 @@ const ITEMS = [
     ],
   },
   {
-    q: 'Est-ce que je peux inviter des proches\u00a0?',
+    q: 'Comment fonctionne le syst\u00e8me de parrainage\u00a0?',
     a: [
-      "Oui. Apr\u00e8s votre inscription, vous recevez un lien personnel pour faire d\u00e9couvrir Bellajour \u00e0 vos proches.",
-      "Chaque proche qui rejoint la waitlist gr\u00e2ce \u00e0 vous vous offre une attention de 5\u00a0\u20ac, d\u00e9duite directement de votre commande.",
-      "Autant de fois que vous le souhaitez.",
+      "Apr\u00e8s votre inscription, vous recevez un lien personnel pour faire d\u00e9couvrir Bellajour \u00e0 vos proches.",
+      "Chaque proche qui rejoint la Waitlist gr\u00e2ce \u00e0 vous vous offre 5 pages suppl\u00e9mentaires (soit 5\u00a0\u20ac), d\u00e9duites directement de votre premi\u00e8re commande d\u2019album. Votre filleul re\u00e7oit \u00e9galement 3 pages (soit 3\u00a0\u20ac), ainsi qu\u2019un code unique pour parrainer \u00e0 son tour.",
+      "Vous pouvez parrainer autant de proches que vous le souhaitez\u00a0: les pages s\u2019accumulent sans limite. Jusqu\u2019\u00e0 20 pages sont d\u00e9ductibles par commande\u00a0; le reste est cr\u00e9dit\u00e9 sur votre compte, pour vos prochaines commandes.",
     ],
   },
 ]
