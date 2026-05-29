@@ -176,13 +176,6 @@
 
 .fwl-input::placeholder { color: rgba(28, 28, 28, 0.42); }
 .fwl-input:disabled      { color: rgba(28, 28, 28, 0.35); }
-.fwl-input:focus-visible {
-  outline: 2px solid var(--bj-muted);
-  outline-offset: 3px;
-}
-.fwl-input:focus:not(:focus-visible) {
-  outline: none;
-}
 
 .fwl-btn {
   flex-shrink: 0;
@@ -925,13 +918,6 @@
 }
 
 .fwl-prenom-input::placeholder { color: rgba(28, 28, 28, 0.42); }
-.fwl-prenom-input:focus-visible {
-  outline: 2px solid var(--bj-muted);
-  outline-offset: 3px;
-}
-.fwl-prenom-input:focus:not(:focus-visible) {
-  outline: none;
-}
 
 .fwl-prenom-btn {
   flex-shrink: 0;
