@@ -108,14 +108,25 @@ export default function Anxiete() {
   const tickingRef    = useRef(false)
 
   // ── Reveal hooks (mobile uniquement — pas d'impact desktop)
-  const gridReveal       = useReveal(0.15)
-  const headlineReveal   = useReveal<HTMLHeadingElement>(0.25)
-  const paragraphsReveal = useReveal(0.25)
+  const gridReveal     = useReveal(0.15)
+  const headlineReveal = useReveal<HTMLHeadingElement>(0.25)
+
+  // Reveal mobile : un seul IO partagé sur le bloc texte (.anx-content). Dès que
+  // la zone est atteinte, sous-titre + 4 paragraphes s'allument en cascade rapide
+  // (delays CSS .anx-cascade-* mobile-only). Desktop ignore reveal-up/is-visible
+  // (classes mobile-only) et reste piloté par revealOp (opacity inline).
+  const textReveal = useReveal(0.20)
 
   // Bind dual ref sur le grid-wrap (gridReveal.ref + gridWrapRef)
   const setGridWrapRef = (el: HTMLDivElement | null) => {
     gridWrapRef.current = el
     ;(gridReveal.ref as React.MutableRefObject<HTMLDivElement | null>).current = el
+  }
+
+  // Bind dual ref sur le bloc texte (contentRef lue par apply()/revealOp + textReveal.ref)
+  const setContentRef = (el: HTMLDivElement | null) => {
+    contentRef.current = el
+    ;(textReveal.ref as React.MutableRefObject<HTMLDivElement | null>).current = el
   }
 
   // ── Detect mobile
@@ -392,30 +403,30 @@ export default function Anxiete() {
         <div ref={overlayDarkRef} className="anx-overlay-dark" />
 
         {/* ── Texte gauche — slide-up au scroll ── */}
-        <div ref={contentRef} className="anx-content">
+        <div ref={setContentRef} className="anx-content">
           <h2
             ref={headlineReveal.ref}
             className={`anx-title reveal-up${headlineReveal.isVisible ? ' is-visible' : ''}`}
           >
             Vous prenez des photos. Tout le temps.
           </h2>
-          <p ref={subRef} className="anx-subtitle">
+          <p ref={subRef} className={`anx-subtitle reveal-up anx-cascade-1${textReveal.isVisible ? ' is-visible' : ''}`}>
             Le voyage de l&rsquo;&eacute;t&eacute; dernier est encore dans votre t&eacute;l&eacute;phone.
             Celui d&rsquo;avant aussi.
           </p>
-          <div ref={paragraphsReveal.ref} className="anx-body">
-            <p ref={line1Ref} className={`anx-line reveal-up reveal-delay-1${paragraphsReveal.isVisible ? ' is-visible' : ''}`}>
+          <div className="anx-body">
+            <p ref={line1Ref} className={`anx-line reveal-up anx-cascade-2${textReveal.isVisible ? ' is-visible' : ''}`}>
               Un soir, vous vous &ecirc;tes dit qu&rsquo;il faudrait en faire un album.
             </p>
-            <p ref={boldRef} className={`anx-line anx-line--bold reveal-up reveal-delay-2${paragraphsReveal.isVisible ? ' is-visible' : ''}`}>
+            <p ref={boldRef} className={`anx-line anx-line--bold reveal-up anx-cascade-3${textReveal.isVisible ? ' is-visible' : ''}`}>
               L&rsquo;id&eacute;e est pass&eacute;e.
             </p>
-            <p ref={line3Ref} className={`anx-line reveal-up reveal-delay-3${paragraphsReveal.isVisible ? ' is-visible' : ''}`}>
+            <p ref={line3Ref} className={`anx-line reveal-up anx-cascade-4${textReveal.isVisible ? ' is-visible' : ''}`}>
               Parce qu&rsquo;au fond, trier, choisir, composer,
               &ccedil;a prend des heures. Des soirs entiers.
               Alors vous reportez.
             </p>
-            <p ref={line4Ref} className={`anx-line reveal-up reveal-delay-4${paragraphsReveal.isVisible ? ' is-visible' : ''}`}>
+            <p ref={line4Ref} className={`anx-line reveal-up anx-cascade-5${textReveal.isVisible ? ' is-visible' : ''}`}>
               Et pendant ce temps, ce qui n&rsquo;est pas dans un album finit par se perdre.
               M&ecirc;me les plus beaux moments.
             </p>
