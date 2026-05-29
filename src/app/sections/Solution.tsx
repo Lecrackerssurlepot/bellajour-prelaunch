@@ -342,11 +342,11 @@ export default function Solution() {
                   >
                     {step.num === '01' && (
                       <>
-                        <img src="/images/solution/solution-upload-01.webp" alt="" className="sol-anim-photo sol-stack-1" width="72" height="96" loading="eager" decoding="async" />
-                        <img src="/images/solution/solution-upload-02.webp" alt="" className="sol-anim-photo sol-stack-2" width="72" height="96" loading="eager" decoding="async" />
-                        <img src="/images/solution/solution-upload-03.webp" alt="" className="sol-anim-photo sol-stack-3" width="72" height="96" loading="eager" decoding="async" />
-                        <img src="/images/solution/solution-upload-04.webp" alt="" className="sol-anim-photo sol-stack-4" width="72" height="96" loading="eager" decoding="async" />
-                        <img src="/images/solution/solution-upload-05.webp" alt="" className="sol-anim-photo sol-stack-5" width="72" height="96" loading="eager" decoding="async" />
+                        <img src="/images/solution/solution-upload-01.webp" alt="" className="sol-anim-photo sol-stack-1" width="72" height="96" loading="lazy" decoding="async" />
+                        <img src="/images/solution/solution-upload-02.webp" alt="" className="sol-anim-photo sol-stack-2" width="72" height="96" loading="lazy" decoding="async" />
+                        <img src="/images/solution/solution-upload-03.webp" alt="" className="sol-anim-photo sol-stack-3" width="72" height="96" loading="lazy" decoding="async" />
+                        <img src="/images/solution/solution-upload-04.webp" alt="" className="sol-anim-photo sol-stack-4" width="72" height="96" loading="lazy" decoding="async" />
+                        <img src="/images/solution/solution-upload-05.webp" alt="" className="sol-anim-photo sol-stack-5" width="72" height="96" loading="lazy" decoding="async" />
                       </>
                     )}
                     {step.num === '02' && (

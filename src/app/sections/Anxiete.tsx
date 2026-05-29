@@ -190,7 +190,7 @@ export default function Anxiete() {
     }
     const io = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) preload() },
-      { rootMargin: '0px 0px 150% 0px' }
+      { rootMargin: '0px 0px 30% 0px' }
     )
     io.observe(section)
     return () => io.disconnect()
@@ -462,7 +462,7 @@ export default function Anxiete() {
                   ref={(el) => { cpRefs.current[i] = el }}
                   className={`anx-cp anx-cp--${c.pos}`}
                 >
-                  <img src={c.src} alt="" loading="eager" decoding="async" />
+                  <img src={c.src} alt="" loading="lazy" decoding="async" />
                 </div>
               ))}
             </div>
