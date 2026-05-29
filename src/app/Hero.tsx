@@ -42,7 +42,7 @@ export default function Hero() {
           className="hero-nav-logo-btn"
           aria-label="Retour en haut"
         >
-          <img src="/images/ui/logo.webp" className="hero-nav-logo" alt="Bellajour" fetchPriority="high" decoding="sync" />
+          <img src="/images/ui/logo.webp" className="hero-nav-logo" alt="Bellajour" decoding="sync" />
         </button>
       </nav>
 

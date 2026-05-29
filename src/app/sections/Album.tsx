@@ -125,7 +125,7 @@ export default function Album() {
             transform: `scale(${decorScale.toFixed(4)})`,
           }}
         >
-          <img src="/images/decor-album.webp" alt="" decoding="async" fetchPriority="high" />
+          <img src="/images/decor-album.webp" alt="" loading="lazy" decoding="async" />
         </div>
 
         {/* Mockup album */}
@@ -144,8 +144,8 @@ export default function Album() {
             src="/images/Mockup-Album-transparent.webp"
             alt="Album Bellajour"
             className={isMobile ? 'alb-img--mobile' : ''}
+            loading="lazy"
             decoding="async"
-            fetchPriority="high"
             style={{ background: 'transparent', boxShadow: 'none' }}
           />
         </div>
