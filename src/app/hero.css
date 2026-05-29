@@ -93,11 +93,13 @@
 
 /* ── Headline ── */
 .hero-headline {
+  margin-top: 0;
   margin-bottom: clamp(28px, 4vh, 44px);
   white-space: nowrap;
 }
 .hero-headline-l1,
 .hero-headline-l2 {
+  display: block;
   font-family: var(--bj-font-serif);
   font-size: clamp(34px, 4.79vw, 77px);
   font-weight: 300;
@@ -134,6 +136,10 @@
 }
 .hero-input::placeholder { color: rgba(28, 28, 28, 0.42); }
 .hero-input:disabled { color: rgba(28, 28, 28, 0.35); }
+.hero-input:focus-visible {
+  outline: 2px solid var(--bj-muted);
+  outline-offset: 3px;
+}
 
 .hero-btn {
   flex-shrink: 0;
@@ -497,6 +503,11 @@
     text-overflow: ellipsis;
   }
 
+  .hero-referral-input:focus-visible {
+    outline: 2px solid var(--bj-muted);
+    outline-offset: 3px;
+  }
+
   .hero-referral-share-btn {
     flex-shrink: 0;
     height: clamp(44px, 5.5vh, 54px);
@@ -638,6 +649,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     box-sizing: border-box;
+  }
+
+  .hero-mobile-sheet .hero-referral-input:focus-visible {
+    outline: 2px solid var(--bj-muted);
+    outline-offset: 3px;
   }
 
   .hero-mobile-sheet .hero-referral-share-btn {

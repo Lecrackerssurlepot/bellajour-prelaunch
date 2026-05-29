@@ -57,12 +57,12 @@ export default function Hero() {
         </div>
 
         <div className="hero-center">
-          <div className="hero-headline">
-            <div className="hero-headline-l1">
+          <h1 className="hero-headline">
+            <span className="hero-headline-l1">
               Nous composons vos <span className="hero-anchor-photos">photos</span>
-            </div>
-            <div className="hero-headline-l2">en albums d&rsquo;exception</div>
-          </div>
+            </span>
+            <span className="hero-headline-l2">en albums d&rsquo;exception</span>
+          </h1>
 
           <div className="hero-prelaunch">
             <p className="hero-prelaunch-date">
