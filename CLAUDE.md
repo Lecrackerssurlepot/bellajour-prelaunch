@@ -28,9 +28,16 @@ Collecte emails → parrainage → offre Fondateurs (100 places) → Stripe.
 --steel-glass: #77889926  /* bouton CTA — glassmorphism bleu-gris semi-transparent */
 --border: #2C2C2C         /* séparation Hero → section sombre */
 
-Font serif  : Cormorant Garamond (Google Fonts) — 300, 300 italic, 400 italic
-Font display: Playfair Display (Google Fonts) — 700, 400 italic
-Font sans   : DM Sans (Google Fonts) — 300 italic, 400, 15px sur boutons
+Fonts réellement chargées (src/app/layout.tsx) — ne pas ajouter de poids sans usage :
+Font serif  : Cormorant (Google Fonts) — 7 poids : 300n, 300i, 400n, 400i, 500i, 700n, 700i
+Font sans   : DM Sans (Google Fonts) — 5 poids : 300n, 300i, 400n, 400i, 500n
+Playfair Display : NON chargée sur la landing — utilisée uniquement dans l'OG image
+              (src/app/opengraph-image.tsx, server-side, indépendant du <link> fonts)
+
+⚠️ Écart charte/code à investiguer :
+- La charte mentionne « Cormorant Garamond » mais le code charge « Cormorant » (police distincte)
+- La charte mentionne Playfair Display Bold pour les titres Hero, mais le titre Hero
+  utilise en réalité Cormorant 300/300i (hero-headline). Playfair absent de la landing.
 
 ## Règles design absolues
 - Bouton CTA : fond --steel-glass (#77889926), texte --steel (#778899), border-radius présent
