@@ -28,18 +28,6 @@ const COLLAGE = [
 ]
 const CHOSEN_SET = new Set(COLLAGE.map(c => c.gridIdx))
 
-// Convergence légère depuis l'extérieur — l'amplitude scale a été réduite
-// (anciens : s 2.2–3.0) pour éliminer le coût GPU/rasterisation pendant la phase
-// collage. Les tx/ty conservent le mouvement directionnel ; scale ajoute un
-// soupçon de zoom-in pour l'élégance.
-const STARTS: Record<string, { tx: number; ty: number; s: number }> = {
-  tl: { tx: -34, ty: -22, s: 1.10 },
-  bl: { tx: -34, ty:  22, s: 1.10 },
-  ct: { tx:   2, ty:  -5, s: 1.12 },
-  tr: { tx:  34, ty: -22, s: 1.10 },
-  br: { tx:  34, ty:  22, s: 1.08 },
-}
-
 const TIMER_DURATION = 600 // ms — phase d'entrée (slide-in colonnes)
 const COLS  = 8
 const ROWS  = 4
@@ -79,6 +67,7 @@ function revealOp(p: number, thresh: number) {
 export default function Anxiete() {
   // ── Refs sur les éléments animés
   const sectionRef        = useRef<HTMLDivElement>(null)
+  const stickyRef         = useRef<HTMLDivElement>(null)
   const gridWrapRef       = useRef<HTMLDivElement | null>(null)
   const colRefs           = useRef<(HTMLDivElement | null)[]>([])
   const cellRefs          = useRef<(HTMLDivElement | null)[]>([])
@@ -86,8 +75,6 @@ export default function Anxiete() {
   const overlayRef        = useRef<HTMLDivElement>(null)
   const overlayDarkRef    = useRef<HTMLDivElement>(null)
   const progressBarRef    = useRef<HTMLDivElement>(null)
-  const cpRefs            = useRef<(HTMLDivElement | null)[]>([])
-  const headlineFinalRef  = useRef<HTMLDivElement>(null)
   const subRef            = useRef<HTMLParagraphElement>(null)
   const line1Ref          = useRef<HTMLParagraphElement>(null)
   const boldRef           = useRef<HTMLParagraphElement>(null)
@@ -165,8 +152,7 @@ export default function Anxiete() {
   // → preload() se déclenche quand la section est encore ~1.5 viewport SOUS le
   // viewport actuel, donc bien avant l'animation collage (et après le LCP Hero).
   // Grille : decode sur new Image() (cache HTTP, peu critique car les cellules
-  // apparaissent progressivement). Collage : decode sur les <img> réels du DOM
-  // via cpRefs → garantit que le bitmap décodé est celui que l'animation affiche.
+  // apparaissent progressivement).
   useEffect(() => {
     const section = sectionRef.current
     if (!section) return
@@ -179,12 +165,6 @@ export default function Anxiete() {
         img.src = src
         if (typeof img.decode === 'function') {
           img.decode().catch(() => { /* non-bloquant */ })
-        }
-      })
-      cpRefs.current.forEach(div => {
-        const img = div?.querySelector('img')
-        if (img && typeof img.decode === 'function') {
-          img.decode().catch(() => { /* élément retiré / src en cours — non-bloquant */ })
         }
       })
     }
@@ -306,24 +286,14 @@ export default function Anxiete() {
         if (line4Ref.current) line4Ref.current.style.opacity = revealOp(p, 0.42).toFixed(3)
       }
 
-      // 10. Collage photos — transform + opacity (desktop uniquement, montés en permanence)
-      if (!m) {
-        for (let i = 0; i < COLLAGE.length; i++) {
-          const el = cpRefs.current[i]
-          if (!el) continue
-          const c  = COLLAGE[i]
-          const t  = easeOut3(clamp01((p - c.thresh) / 0.16))
-          const st = STARTS[c.pos]
-          el.style.opacity   = t.toFixed(3)
-          el.style.transform = `translate(${(st.tx * (1 - t)).toFixed(1)}vw, ${(st.ty * (1 - t)).toFixed(1)}vh) scale(${(st.s + (1 - st.s) * t).toFixed(3)})`
+      // Fade-out groupé desktop — toute la section fade entre p=0.80 et p=1.0
+      if (stickyRef.current) {
+        if (m) {
+          stickyRef.current.style.opacity = '1'
+        } else {
+          stickyRef.current.style.opacity =
+            (1 - easeOut3(clamp01((p - 0.70) / 0.30))).toFixed(3)
         }
-      }
-
-      // 11. Headline final (desktop, monté en permanence)
-      if (!m && headlineFinalRef.current) {
-        const t = easeOut3(clamp01((p - 0.88) / 0.10))
-        headlineFinalRef.current.style.opacity   = t.toFixed(3)
-        headlineFinalRef.current.style.transform = `translateY(${((1 - t) * 24).toFixed(1)}px)`
       }
 
       // 12. Progress bar
@@ -374,7 +344,7 @@ export default function Anxiete() {
       data-theme="dark"
       id="anxiete"
     >
-      <div className="anx-sticky">
+      <div ref={stickyRef} className="anx-sticky">
 
         {/* ── Grille 8 colonnes ── */}
         <div
@@ -451,34 +421,6 @@ export default function Anxiete() {
             </p>
           </div>
         </div>
-
-        {/* ── Collage : 5 photos convergent depuis la grille — desktop only, monté en permanence ── */}
-        {!isMobile && (
-          <div className="anx-collage">
-            <div className="anx-collage-grid">
-              {COLLAGE.map((c, i) => (
-                <div
-                  key={c.pos}
-                  ref={(el) => { cpRefs.current[i] = el }}
-                  className={`anx-cp anx-cp--${c.pos}`}
-                >
-                  <img src={c.src} alt="" loading="lazy" decoding="async" />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Headline final — desktop only, monté en permanence ── */}
-        {!isMobile && (
-          <div ref={headlineFinalRef} className="anx-headline-final">
-            <p className="anx-hf-brand">Bellajour</p>
-            <p className="anx-hf-tagline">
-              Comprend vos besoins<br />
-              et cr&eacute;e l&rsquo;album parfait pour vous
-            </p>
-          </div>
-        )}
 
         {/* ── Progress ── */}
         <div className="anx-progress">

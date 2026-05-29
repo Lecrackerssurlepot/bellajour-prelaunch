@@ -157,91 +157,6 @@
   letter-spacing: -0.01em;
 }
 
-/* ════════════════════════════════════════
-   COLLAGE CENTRÉ
-   ════════════════════════════════════════ */
-
-.anx-collage {
-  position: absolute;
-  inset: 0;
-  z-index: 8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-
-/* Grid 3 colonnes × 2 rangées — proportions album */
-.anx-collage-grid {
-  display: grid;
-  grid-template-columns:
-    clamp(130px, 17vw, 240px)
-    clamp(180px, 22vw, 320px)
-    clamp(130px, 17vw, 240px);
-  grid-template-rows:
-    clamp(160px, 34vh, 280px)
-    clamp(120px, 25vh, 200px);
-  gap: clamp(5px, 0.7vw, 11px);
-}
-
-.anx-cp {
-  overflow: hidden;
-  border-radius: 4px;
-  background: #0a0807;
-  opacity: 0;
-  will-change: opacity, transform;
-}
-.anx-cp img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* Positions dans la grille */
-.anx-cp--tl { grid-column: 1; grid-row: 1; }
-.anx-cp--bl { grid-column: 1; grid-row: 2; }
-.anx-cp--ct { grid-column: 2; grid-row: 1 / 3; }   /* centre : 2 rangées */
-.anx-cp--tr { grid-column: 3; grid-row: 1; }
-.anx-cp--br { grid-column: 3; grid-row: 2; }
-
-/* ════════════════════════════════════════
-   HEADLINE FINAL
-   ════════════════════════════════════════ */
-
-.anx-headline-final {
-  position: absolute;
-  top: clamp(28px, 6vh, 60px);
-  left: 0;
-  right: 0;
-  text-align: center;
-  z-index: 15;
-  pointer-events: none;
-  opacity: 0;
-  will-change: opacity, transform;
-}
-
-.anx-hf-brand {
-  margin: 0;
-  font-family: 'Cormorant', serif;
-  font-weight: 300;
-  font-style: italic;
-  font-size: clamp(35px, 5.59vw, 89px);
-  line-height: 1;
-  letter-spacing: -0.02em;
-  color: var(--bj-creme);
-}
-
-.anx-hf-tagline {
-  margin: clamp(6px, 1.2vh, 14px) 0 0;
-  font-family: 'Cormorant', serif;
-  font-weight: 300;
-  font-style: italic;
-  font-size: clamp(14px, 1.86vw, 29px);
-  line-height: 1.35;
-  color: var(--bj-creme);
-}
-
 /* ── Barre de progression ── */
 .anx-progress {
   position: absolute;
@@ -262,35 +177,22 @@
 
 /* ── Desktop ─ Typo alignée sur les autres sections (Solution/Album/FAQ/FWL) ── */
 @media (min-width: 768px) {
+  /* Sticky raccourci (collage + headline-final retirés) — mobile garde 600svh
+     hérité de la base. */
+  .anx-scroll {
+    height: 500svh;
+  }
+  /* Contexte d'empilement borné sous BrandIntro (z-index:5) pendant le
+     chevauchement margin-top:-100vh — contient .anx-content (z10) /
+     .anx-progress (z20). */
+  .anx-sticky {
+    z-index: 1;
+  }
   .anx-title {
     font-size: clamp(24px, 3.40vw, 50px);
   }
   .anx-line {
     font-size: clamp(15px, 1.65vw, 24px);
-  }
-
-  /* ── Collage final — réduction de hauteur pour éliminer le chevauchement
-        avec le headline final (scrollProg ≥ 0.86).
-        Avant : row1 34vh/280max + row2 25vh/200max = 490px → top 205, overlap 12px.
-        Après : row1 25vh/210max + row2 17vh/140max = 360px → top 270, dégagement 53px. ── */
-  .anx-collage-grid {
-    grid-template-rows:
-      clamp(140px, 25vh, 210px)
-      clamp(100px, 17vh, 140px);
-  }
-
-  /* ── Phase finale : descend headline + collage SOUS la navbar.
-        Navbar (.hero-nav, --bj-nav-h = 64px desktop) + ~25px de respiration
-        → top minimum ~89px pour le headline. Collage glissé du même delta
-        pour préserver le dégagement ~54px sous headline.
-        À 1440×900 : headline top ~99, collage padding-top ~306. ── */
-  .anx-headline-final {
-    top: calc(var(--bj-nav-h) + clamp(24px, 4vh, 44px));
-  }
-
-  .anx-collage {
-    align-items: flex-start;
-    padding-top: clamp(250px, 34vh, 330px);
   }
 }
 
@@ -315,19 +217,6 @@
     top: 50%;
     bottom: auto;
     /* translateY(-50%) vient du JS inline style */
-  }
-
-  .anx-collage-grid {
-    grid-template-columns: 1fr 1.3fr 1fr;
-    grid-template-rows: clamp(110px, 22vh, 180px) clamp(80px, 16vh, 130px);
-    width: 92vw;
-  }
-
-  .anx-hf-brand {
-    font-size: clamp(40px, 10vw, 64px);
-  }
-  .anx-hf-tagline {
-    font-size: clamp(18px, 5vw, 22px);
   }
 }
 

@@ -179,6 +179,10 @@
   .bi-section {
     display: block;
     position: relative;
+    /* Chevauche la fin d'Anxiete (sa dernière 100vh est en fade-out) pour
+       supprimer la zone noire morte. z-index:5 > .anx-sticky (z-index:1). */
+    margin-top: -100vh;
+    z-index: 5;
     background: var(--bj-noir, #1C1C1C);
     padding: clamp(48px, 6vh, 72px) clamp(24px, 5vw, 80px);
     color: var(--bj-bg, #EAE3D8);
