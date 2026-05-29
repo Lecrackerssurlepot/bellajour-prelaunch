@@ -168,3 +168,183 @@
     align-self: center;
   }
 }
+
+/* ════════════════════════════════════════
+   BrandIntro — Desktop (≥768px)
+   Activation desktop : même structure que mobile, dimensions desktop.
+   Reveal photos = translateY + opacity uniquement (pas de zoom interne).
+   ════════════════════════════════════════ */
+
+@media (min-width: 768px) {
+  .bi-section {
+    display: block;
+    position: relative;
+    background: var(--bj-noir, #1C1C1C);
+    padding: clamp(48px, 6vh, 72px) clamp(24px, 5vw, 80px);
+    color: var(--bj-bg, #EAE3D8);
+    overflow: hidden;
+  }
+
+  /* ── Grille de fond — filigrane Anxiété (4 cols × 2 rows, débordement) ── */
+  .bi-bg-grid {
+    position: absolute;
+    inset: -16% -1%;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: clamp(4px, 0.6vw, 10px);
+    z-index: 0;
+  }
+
+  .bi-bg-cell {
+    overflow: hidden;
+    background: var(--bj-noir, #1C1C1C);
+  }
+
+  .bi-bg-cell img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 1;
+  }
+
+  /* ── Overlay sombre — lisibilité (identique mobile pour continuité) ── */
+  .bi-bg-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(23, 20, 15, 0.82);
+    z-index: 1;
+  }
+
+  /* ── Contenu — colonne centrée, conteneur borné ── */
+  .bi-inner {
+    position: relative;
+    z-index: 2;
+    max-width: 1080px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* ── Bellajour — Cormorant italic 300 (cohérence site) ── */
+  .bi-brand {
+    font-family: 'Cormorant', serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(42px, 4vw, 68px);
+    line-height: 1;
+    letter-spacing: 0;
+    color: var(--bj-bg, #EAE3D8);
+    margin: 0;
+    text-align: center;
+  }
+
+  /* ── Tagline ── */
+  .bi-tagline {
+    font-family: 'Cormorant', serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(17px, 1.4vw, 22px);
+    line-height: 1.35;
+    color: var(--bj-bg, #EAE3D8);
+    opacity: 0.80;
+    margin: clamp(6px, 1vh, 12px) 0 clamp(24px, 3vh, 36px);
+    text-align: center;
+  }
+
+  /* ── Collage 5 photos : 3 cols × 2 rows, photo centrale étendue ── */
+  .bi-photos-collage {
+    display: grid;
+    grid-template-columns: 1fr 1.25fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: clamp(10px, 1vw, 14px);
+    width: 100%;
+    max-width: 720px;
+    aspect-ratio: 3 / 2;
+    margin: 0 auto clamp(20px, 2.5vh, 32px);
+  }
+
+  .bi-photo {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bj-noir, #1C1C1C);
+    border-radius: 8px;
+  }
+
+  .bi-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 8px;
+  }
+
+  /* ── Placement grille ── */
+  .bi-photo--tl { grid-column: 1; grid-row: 1; }
+  .bi-photo--ct { grid-column: 2; grid-row: 1 / span 2; }
+  .bi-photo--tr { grid-column: 3; grid-row: 1; }
+  .bi-photo--bl { grid-column: 1; grid-row: 2; }
+  .bi-photo--br { grid-column: 3; grid-row: 2; }
+
+  /* ── Reveal desktop — scopé à .bi-section (le vocabulaire reveal global est
+        mobile-only dans globals.css ; on le réactive ici sans toucher au global
+        ni aux autres sections) ── */
+  .bi-section .reveal-up {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .bi-section .reveal-up.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .bi-section .reveal-delay-1 { transition-delay: 0.10s; }
+  .bi-section .reveal-delay-2 { transition-delay: 0.20s; }
+  .bi-section .reveal-delay-3 { transition-delay: 0.30s; }
+  .bi-section .reveal-delay-4 { transition-delay: 0.40s; }
+
+  /* ── Reveal photos — translateY + opacity uniquement (position finale directe,
+        pas de zoom interne sur les <img>) ── */
+  .bi-photo-zoom {
+    opacity: 0;
+    transform: translateY(40px);
+    transition:
+      opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .bi-photo-zoom.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── CTA bottom — masqué sur desktop (le sticky CTA droit .sjc prend le relais) ── */
+  .bi-cta {
+    display: none;
+    padding: 12px 8px;
+    background: transparent;
+    border: none;
+    font-family: 'Cormorant', serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(17px, 1.3vw, 22px);
+    color: var(--bj-bg, #EAE3D8);
+    text-decoration: underline;
+    text-underline-offset: 6px;
+    text-decoration-thickness: 1px;
+    cursor: pointer;
+    min-height: 44px;
+    margin-top: clamp(6px, 1vh, 12px);
+    align-self: center;
+    transition: opacity 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+
+  .bi-cta:hover {
+    opacity: 0.65;
+  }
+}
