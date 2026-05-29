@@ -222,20 +222,28 @@ export default function Solution() {
       })
     })
 
+    let rafId = 0
     const handleScroll = () => {
-      const cards = Array.from(container.children) as HTMLElement[]
-      const containerCenter = container.scrollLeft + container.offsetWidth / 2
-      let closestIndex = 0
-      let closestDist = Infinity
-      cards.forEach((card, i) => {
-        const cardCenter = card.offsetLeft + card.offsetWidth / 2
-        const dist = Math.abs(cardCenter - containerCenter)
-        if (dist < closestDist) { closestDist = dist; closestIndex = i }
+      if (rafId) return
+      rafId = requestAnimationFrame(() => {
+        rafId = 0
+        const cards = Array.from(container.children) as HTMLElement[]
+        const containerCenter = container.scrollLeft + container.offsetWidth / 2
+        let closestIndex = 0
+        let closestDist = Infinity
+        cards.forEach((card, i) => {
+          const cardCenter = card.offsetLeft + card.offsetWidth / 2
+          const dist = Math.abs(cardCenter - containerCenter)
+          if (dist < closestDist) { closestDist = dist; closestIndex = i }
+        })
+        setSolActiveDot(closestIndex)
       })
-      setSolActiveDot(closestIndex)
     }
     container.addEventListener('scroll', handleScroll, { passive: true })
-    return () => container.removeEventListener('scroll', handleScroll)
+    return () => {
+      container.removeEventListener('scroll', handleScroll)
+      if (rafId) cancelAnimationFrame(rafId)
+    }
   }, [isMobile])
 
   useEffect(() => {
@@ -345,13 +353,13 @@ export default function Solution() {
                       <div className="sol-quest-people">
                         <div className="sol-quest-person sol-quest-person-1">
                           <div className="sol-quest-circle">
-                            <img src="/images/solution/solution-casting-01.webp" alt="" width="72" height="72" loading="eager" decoding="async" />
+                            <img src="/images/solution/solution-casting-01.webp" alt="" width="72" height="72" loading="lazy" decoding="async" />
                           </div>
                           <span className="sol-quest-name sol-quest-name-1">Camille</span>
                         </div>
                         <div className="sol-quest-person sol-quest-person-2">
                           <div className="sol-quest-circle">
-                            <img src="/images/solution/solution-casting-03.webp" alt="" width="72" height="72" loading="eager" decoding="async" />
+                            <img src="/images/solution/solution-casting-03.webp" alt="" width="72" height="72" loading="lazy" decoding="async" />
                           </div>
                           <span className="sol-quest-name sol-quest-name-2">Julien</span>
                         </div>
@@ -359,20 +367,20 @@ export default function Solution() {
                     )}
                     {step.num === '03' && (
                       <div className="sol-select-grid">
-                        <img src="/images/anxiete/float-01.webp" alt="" className="sol-select-photo sol-select-keep-1" width="64" height="63" loading="eager" decoding="async" />
-                        <img src="/images/anxiete/float-02.webp" alt="" className="sol-select-photo sol-select-drop-1" width="64" height="63" loading="eager" decoding="async" />
-                        <img src="/images/anxiete/float-03.webp" alt="" className="sol-select-photo sol-select-keep-2" width="64" height="63" loading="eager" decoding="async" />
-                        <img src="/images/anxiete/float-04.webp" alt="" className="sol-select-photo sol-select-drop-2" width="64" height="63" loading="eager" decoding="async" />
-                        <img src="/images/anxiete/grid-03.webp" alt="" className="sol-select-photo sol-select-keep-3" width="64" height="63" loading="eager" decoding="async" />
-                        <img src="/images/anxiete/grid-04.webp" alt="" className="sol-select-photo sol-select-drop-3" width="64" height="63" loading="eager" decoding="async" />
+                        <img src="/images/anxiete/float-01.webp" alt="" className="sol-select-photo sol-select-keep-1" width="64" height="63" loading="lazy" decoding="async" />
+                        <img src="/images/anxiete/float-02.webp" alt="" className="sol-select-photo sol-select-drop-1" width="64" height="63" loading="lazy" decoding="async" />
+                        <img src="/images/anxiete/float-03.webp" alt="" className="sol-select-photo sol-select-keep-2" width="64" height="63" loading="lazy" decoding="async" />
+                        <img src="/images/anxiete/float-04.webp" alt="" className="sol-select-photo sol-select-drop-2" width="64" height="63" loading="lazy" decoding="async" />
+                        <img src="/images/anxiete/grid-03.webp" alt="" className="sol-select-photo sol-select-keep-3" width="64" height="63" loading="lazy" decoding="async" />
+                        <img src="/images/anxiete/grid-04.webp" alt="" className="sol-select-photo sol-select-drop-3" width="64" height="63" loading="lazy" decoding="async" />
                       </div>
                     )}
                     {step.num === '04' && (
                       <div className="sol-layout-grid">
-                        <img src="/images/hero/hero-01.webp" alt="" className="sol-layout-photo sol-layout-photo-1" width="63" height="63" loading="eager" decoding="async" />
-                        <img src="/images/hero/hero-03.webp" alt="" className="sol-layout-photo sol-layout-photo-2" width="63" height="63" loading="eager" decoding="async" />
-                        <img src="/images/hero/hero-05.webp" alt="" className="sol-layout-photo sol-layout-photo-3" width="63" height="63" loading="eager" decoding="async" />
-                        <img src="/images/hero/hero-07.webp" alt="" className="sol-layout-photo sol-layout-photo-4" width="63" height="63" loading="eager" decoding="async" />
+                        <img src="/images/hero/hero-01.webp" alt="" className="sol-layout-photo sol-layout-photo-1" width="63" height="63" loading="lazy" decoding="async" />
+                        <img src="/images/hero/hero-03.webp" alt="" className="sol-layout-photo sol-layout-photo-2" width="63" height="63" loading="lazy" decoding="async" />
+                        <img src="/images/hero/hero-05.webp" alt="" className="sol-layout-photo sol-layout-photo-3" width="63" height="63" loading="lazy" decoding="async" />
+                        <img src="/images/hero/hero-07.webp" alt="" className="sol-layout-photo sol-layout-photo-4" width="63" height="63" loading="lazy" decoding="async" />
                       </div>
                     )}
                   </div>

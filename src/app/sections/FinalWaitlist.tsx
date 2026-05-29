@@ -179,20 +179,28 @@ export default function FinalWaitlist() {
     const container = carouselRef.current
     if (!container) return
     container.scrollLeft = 0
+    let rafId = 0
     const handleScroll = () => {
-      const cards = Array.from(container.children) as HTMLElement[]
-      const containerCenter = container.scrollLeft + container.offsetWidth / 2
-      let closestIndex = 0
-      let closestDist = Infinity
-      cards.forEach((card, i) => {
-        const cardCenter = card.offsetLeft + card.offsetWidth / 2
-        const dist = Math.abs(cardCenter - containerCenter)
-        if (dist < closestDist) { closestDist = dist; closestIndex = i }
+      if (rafId) return
+      rafId = requestAnimationFrame(() => {
+        rafId = 0
+        const cards = Array.from(container.children) as HTMLElement[]
+        const containerCenter = container.scrollLeft + container.offsetWidth / 2
+        let closestIndex = 0
+        let closestDist = Infinity
+        cards.forEach((card, i) => {
+          const cardCenter = card.offsetLeft + card.offsetWidth / 2
+          const dist = Math.abs(cardCenter - containerCenter)
+          if (dist < closestDist) { closestDist = dist; closestIndex = i }
+        })
+        setActiveDot(closestIndex)
       })
-      setActiveDot(closestIndex)
     }
     container.addEventListener('scroll', handleScroll, { passive: true })
-    return () => container.removeEventListener('scroll', handleScroll)
+    return () => {
+      container.removeEventListener('scroll', handleScroll)
+      if (rafId) cancelAnimationFrame(rafId)
+    }
   }, [])
 
   const scrollToCard = (index: number) => {
