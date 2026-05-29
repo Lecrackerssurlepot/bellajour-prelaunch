@@ -1,19 +1,13 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-function makeSupabase() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY;
-  if (!url || !key) throw new Error("SUPABASE_URL ou SUPABASE_SERVICE_KEY manquant.");
-  return createClient(url, key);
-}
+import { makeSupabase } from "@/lib/supabase";
+import { isValidRefCode } from "@/lib/validation";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const code = (searchParams.get("code") || "").trim();
 
-    if (!code || !/^[A-Z0-9-]{3,30}$/i.test(code)) {
+    if (!code || !isValidRefCode(code)) {
       return NextResponse.json({ prenom: null }, { status: 200 });
     }
 

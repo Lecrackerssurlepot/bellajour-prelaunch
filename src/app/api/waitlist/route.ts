@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { SupabaseClient } from "@supabase/supabase-js";
 import { canonicalizeEmail } from "@/lib/email";
+import { makeSupabase } from "@/lib/supabase";
+import { isValidRefCode } from "@/lib/validation";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/contacts";
 const BREVO_SMTP_URL = "https://api.brevo.com/v3/smtp/email";
@@ -160,13 +162,6 @@ async function updateBrevoContact(
   }
 }
 
-function makeSupabase() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY;
-  if (!url || !key) throw new Error("SUPABASE_URL ou SUPABASE_SERVICE_KEY manquant.");
-  return createClient(url, key);
-}
-
 /**
  * Identifie la colonne en cause d'une violation de contrainte UNIQUE (PG 23505).
  * Inspecte `details` puis `message` (Supabase remonte typiquement
@@ -189,8 +184,7 @@ function randomCode(): string {
   return code;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function generateUniqueCode(supabase: any, prenom?: string): Promise<string> {
+async function generateUniqueCode(supabase: SupabaseClient, prenom?: string): Promise<string> {
   const clean = prenom
     ? prenom.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z]/g, "").toUpperCase()
     : "";
@@ -250,10 +244,10 @@ export async function POST(request: Request) {
 
     const cleanPrenom = prenom ? prenom.replace(/<[^>]*>/g, '').trim().slice(0, 50) : undefined;
 
-    // G2 — Format-check serveur du ref_code (même regex que /api/referrer).
+    // G2 — Format-check serveur du ref_code (isValidRefCode, partagé avec /api/referrer et /inviter).
     // Invalide → traité comme absent : inscription OK, 0 crédit, pas de stockage du déchet.
     const safeReferredBy =
-      typeof referred_by === "string" && /^[A-Z0-9-]{3,30}$/i.test(referred_by.trim())
+      typeof referred_by === "string" && isValidRefCode(referred_by.trim())
         ? referred_by.trim()
         : undefined;
 

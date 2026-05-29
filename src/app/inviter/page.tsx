@@ -4,15 +4,14 @@ import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import ReferralCard from '../components/ReferralCard'
+import { isValidRefCode } from '@/lib/validation'
 import './inviter.css'
-
-const REF_PATTERN = /^BJ-[A-Z0-9-]{1,30}$/i
 
 function InviterClient() {
   const searchParams = useSearchParams()
   const rawRef = searchParams.get('ref')?.trim() ?? ''
   const action = searchParams.get('action')?.trim() ?? ''
-  const refCode = REF_PATTERN.test(rawRef) ? rawRef : null
+  const refCode = isValidRefCode(rawRef) ? rawRef : null
 
   const [prenomParrain, setPrenomParrain] = useState<string | null>(null)
   const [referrerLoaded, setReferrerLoaded] = useState(false)
