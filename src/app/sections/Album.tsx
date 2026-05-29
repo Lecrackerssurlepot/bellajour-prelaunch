@@ -141,7 +141,7 @@ export default function Album() {
           }}
         >
           <img
-            src="/images/Mockup-Album-transparent.png"
+            src="/images/Mockup-Album-transparent.webp"
             alt="Album Bellajour"
             className={isMobile ? 'alb-img--mobile' : ''}
             decoding="async"
