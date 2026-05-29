@@ -140,6 +140,9 @@
   outline: 2px solid var(--bj-muted);
   outline-offset: 3px;
 }
+.hero-input:focus:not(:focus-visible) {
+  outline: none;
+}
 
 .hero-btn {
   flex-shrink: 0;
@@ -508,6 +511,10 @@
     outline-offset: 3px;
   }
 
+  .hero-referral-input:focus:not(:focus-visible) {
+    outline: none;
+  }
+
   .hero-referral-share-btn {
     flex-shrink: 0;
     height: clamp(44px, 5.5vh, 54px);
@@ -654,6 +661,10 @@
   .hero-mobile-sheet .hero-referral-input:focus-visible {
     outline: 2px solid var(--bj-muted);
     outline-offset: 3px;
+  }
+
+  .hero-mobile-sheet .hero-referral-input:focus:not(:focus-visible) {
+    outline: none;
   }
 
   .hero-mobile-sheet .hero-referral-share-btn {

@@ -180,6 +180,9 @@
   outline: 2px solid var(--bj-muted);
   outline-offset: 3px;
 }
+.fwl-input:focus:not(:focus-visible) {
+  outline: none;
+}
 
 .fwl-btn {
   flex-shrink: 0;
@@ -925,6 +928,9 @@
 .fwl-prenom-input:focus-visible {
   outline: 2px solid var(--bj-muted);
   outline-offset: 3px;
+}
+.fwl-prenom-input:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .fwl-prenom-btn {
