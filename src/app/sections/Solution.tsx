@@ -105,7 +105,7 @@ const UploadVisual = memo(function UploadVisual({ active, onComplete }: { active
         }
       }
       counterRaf.current = requestAnimationFrame(tickPct)
-    }, 1200)
+    }, 600)
 
     return () => {
       clearTimeout(riseTimer)
@@ -285,7 +285,7 @@ export default function Solution() {
           runningRef.current = false
         }
       },
-      { threshold: 0.2 }
+      { threshold: 0.05, rootMargin: '0px 0px -15% 0px' }
     )
 
     if (!isMobileRef.current && sectionRef.current) observer.observe(sectionRef.current)

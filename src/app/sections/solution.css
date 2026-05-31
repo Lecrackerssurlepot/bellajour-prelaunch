@@ -256,7 +256,7 @@
 
 .sol-upload-square {
   transform: translateY(900px);
-  transition: transform 1.2s cubic-bezier(0.55, 0, 1, 0.45);
+  transition: transform 0.7s cubic-bezier(0.55, 0, 1, 0.45);
   will-change: transform;
   border-radius: 12px;
   overflow: hidden;
