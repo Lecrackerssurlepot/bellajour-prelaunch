@@ -290,6 +290,13 @@
 @media (min-width: 768px) {
   .hero-photo {
     display: inline-block;
+    /* width:auto annule le width:60% de la règle de base → la boîte
+       inline-block épouse exactement la largeur rendue de l'<img>.
+       Le flex parent (.hero-photo-wrap, justify-content:center) la centre
+       alors parfaitement, et le voile ::before (inset:0) couvre pile
+       l'image. Sans cette ligne, la boîte restait à 60vw et l'image, plus
+       étroite, se collait à gauche → décalage perçu comme « coupé à droite ». */
+    width: auto;
     margin: 0 auto;
     overflow: hidden;
   }
