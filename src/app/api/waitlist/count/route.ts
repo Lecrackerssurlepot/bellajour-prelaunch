@@ -1,44 +1,27 @@
 import { NextResponse } from 'next/server'
+import { makeSupabase } from '@/lib/supabase'
 
-const FALLBACK_COUNT = 847
-
+// Source de vérité = table `waitlist` Supabase (là où /api/waitlist insère).
+// Base nettoyée → 0. +1 à chaque inscription réelle.
+// Pas de fallback gonflé : en cas d'erreur on renvoie 0 plutôt qu'un nombre inventé.
 export async function GET() {
   try {
-    const apiKey = process.env.BREVO_API_KEY
-    const listId = Number(process.env.BREVO_WAITLIST_LIST_ID)
+    const supabase = makeSupabase()
+    const { count, error } = await supabase
+      .from('waitlist')
+      .select('id', { count: 'exact', head: true })
 
-    if (!apiKey || !listId) {
-      return NextResponse.json({ count: FALLBACK_COUNT }, { status: 200 })
+    if (error || typeof count !== 'number') {
+      return NextResponse.json({ count: 0 }, { status: 200 })
     }
-
-    const res = await fetch(`https://api.brevo.com/v3/contacts/lists/${listId}`, {
-      method: 'GET',
-      headers: {
-        'api-key': apiKey,
-        accept: 'application/json',
-      },
-      next: { revalidate: 60 },
-    })
-
-    if (!res.ok) {
-      return NextResponse.json({ count: FALLBACK_COUNT }, { status: 200 })
-    }
-
-    const data = await res.json()
-    const count =
-      typeof data?.totalSubscribers === 'number'
-        ? data.totalSubscribers
-        : typeof data?.uniqueSubscribers === 'number'
-          ? data.uniqueSubscribers
-          : FALLBACK_COUNT
 
     return NextResponse.json(
       { count },
       {
-        headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' },
+        headers: { 'Cache-Control': 's-maxage=30, stale-while-revalidate=120' },
       }
     )
   } catch {
-    return NextResponse.json({ count: FALLBACK_COUNT }, { status: 200 })
+    return NextResponse.json({ count: 0 }, { status: 200 })
   }
 }

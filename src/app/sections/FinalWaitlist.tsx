@@ -289,7 +289,7 @@ export default function FinalWaitlist() {
   /* Parrainage */
   const prenomDisplay = prenom.trim() || null
 
-  const displayCount = (count ?? 0) + 30
+  const displayCount = count ?? 0
 
   return (
     <section
@@ -375,10 +375,12 @@ export default function FinalWaitlist() {
                 Trois pages vous sont offertes sur votre premier album.
               </p>
             )}
-            <p className="fwl-count">
-              <span className="fwl-count-dot" aria-hidden="true" />
-              {displayCount} personnes attendent déjà leur premier album Bellajour.
-            </p>
+            {displayCount >= 1 && (
+              <p className="fwl-count">
+                <span className="fwl-count-dot" aria-hidden="true" />
+                {displayCount} personnes attendent déjà leur premier album Bellajour.
+              </p>
+            )}
             <form className="fwl-form" onSubmit={handleEmailSubmit} noValidate>
               <label htmlFor="fwl-email-input" className="fwl-sr-only">
                 Adresse email
