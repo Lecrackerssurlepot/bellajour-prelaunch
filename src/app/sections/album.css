@@ -138,14 +138,28 @@
     text-align: center;
   }
 
-  /* Mockup centré horizontalement sur mobile */
+  /* Bloc produit statique en flux normal : empilé depuis le haut, la section
+     grandit pour contenir tout son contenu (height auto + min-height plancher
+     fourni par globals.css), padding vertical généreux, jamais de clip. */
   .alb-sticky {
     display: flex !important;
     flex-direction: column !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     align-items: center !important;
     overflow: visible !important;
-    padding-top: clamp(60px, 10vh, 100px) !important;
+    height: auto !important;
+    gap: clamp(20px, 4vh, 40px) !important;
+    padding: clamp(72px, 12vh, 120px) 5vw clamp(72px, 12vh, 120px) !important;
+  }
+
+  /* Contenu 100% statique sur mobile — neutralise le reveal d'entrée
+     (translateY/opacity) : tout visible immédiatement, aucun mouvement au scroll. */
+  .alb-mockup,
+  .alb-title-wrap,
+  .alb-subtitle-wrap {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
 
   .alb-mockup {
