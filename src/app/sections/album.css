@@ -1,16 +1,26 @@
 /* ── Section Album — scroll-driven 700vh ─────────────────── */
 
 .alb-scroll {
-  height: 700svh;
+  height: calc(7 * var(--app-height));
   position: relative;
+  background: var(--bj-noir);
+}
+
+/* Ceinture jonction sombre→crème (cf. .anx-scroll::after) : 2px noir débordant. */
+.alb-scroll::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 2px;
   background: var(--bj-noir);
 }
 
 .alb-sticky {
   position: sticky;
   top: 0;
-  height: 100lvh;
-  height: var(--app-height, 100lvh);
+  height: var(--app-height);
   width: 100%;
   overflow: hidden;
   background: var(--bj-noir);

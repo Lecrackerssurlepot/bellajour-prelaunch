@@ -1,6 +1,11 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import AppHeightInit from './components/AppHeightInit'
+
+/* Fige --app-height en pixels AVANT le premier paint (pas de FOUC de hauteur).
+   Posé au load = innerHeight (viewport de layout, stable). Mis à jour UNIQUEMENT
+   si la LARGEUR change (rotation / vrai changement de layout) + orientationchange.
+   La barre d'outils iOS ne change que la hauteur → ignorée → plus de saut. */
+const APP_HEIGHT_SCRIPT = `(function(){var d=document.documentElement,w=window;function s(){d.style.setProperty('--app-height',Math.round(w.innerHeight)+'px');}s();var lw=w.innerWidth;w.addEventListener('resize',function(){if(w.innerWidth!==lw){lw=w.innerWidth;s();}},{passive:true});w.addEventListener('orientationchange',function(){lw=w.innerWidth;s();},{passive:true});})();`
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.bellajour.fr'),
@@ -65,13 +70,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <script dangerouslySetInnerHTML={{ __html: APP_HEIGHT_SCRIPT }} />
         <link rel="preload" as="image" href="/images/header-bellajour.webp" fetchPriority="high" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,700;1,300;1,400;1,500;1,700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <AppHeightInit />
         {children}
       </body>
     </html>

@@ -55,11 +55,11 @@
 }
 
 /* ── Hero section
-   min-height calc(100svh - var(--bj-nav-h)) : préserve l'effet plein écran
-   en occupant exactement la zone visible sous la navbar fixe. ── */
+   min-height calc(var(--app-height) - var(--bj-nav-h)) : plein écran en hauteur
+   FIGÉE px (cf. script inline layout.tsx) — la barre iOS ne le recalcule plus. ── */
 .hero {
   width: 100%;
-  min-height: calc(100svh - var(--bj-nav-h));
+  min-height: calc(var(--app-height) - var(--bj-nav-h));
   background: var(--bj-bg);
   overflow: hidden;
   position: relative;
@@ -298,7 +298,7 @@
     width: auto;
     height: auto;
     max-width: min(60vw, 720px);
-    max-height: calc(100svh - var(--bj-nav-h) - 96px);
+    max-height: calc(var(--app-height) - var(--bj-nav-h) - 96px);
   }
 }
 

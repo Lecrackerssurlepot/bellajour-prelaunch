@@ -16,8 +16,7 @@
     color: var(--bj-bg, #EAE3D8);
     overflow: hidden;
     min-height: auto;
-    max-height: 100lvh;
-    max-height: var(--app-height, 100lvh);
+    max-height: var(--app-height);
   }
 
   /* ── Grille de fond — calquée sur .anx-grid mobile
@@ -179,9 +178,10 @@
   .bi-section {
     display: block;
     position: relative;
-    /* Chevauche la fin d'Anxiete (sa dernière 100vh est en fade-out) pour
-       supprimer la zone noire morte. z-index:5 > .anx-sticky (z-index:1). */
-    margin-top: -100vh;
+    /* Chevauche la fin d'Anxiete (son dernier écran est en fade-out) pour
+       supprimer la zone noire morte. Aligné sur .anx-sticky (var(--app-height)).
+       z-index:5 > .anx-sticky (z-index:1). */
+    margin-top: calc(-1 * var(--app-height));
     z-index: 5;
     background: var(--bj-noir, #1C1C1C);
     padding: clamp(48px, 6vh, 72px) clamp(24px, 5vw, 80px);

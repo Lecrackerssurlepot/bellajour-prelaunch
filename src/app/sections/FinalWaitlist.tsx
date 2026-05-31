@@ -155,7 +155,7 @@ export default function FinalWaitlist() {
 
   /* Auto-focus prénom à l'étape 2.
      Sur mobile : étape 1 (~444px) >> étape 2 (~168px) → à la transition,
-     contenu interne rétrécit de 276px mais .fwl-section (min-height 100dvh)
+     contenu interne rétrécit de 276px mais .fwl-section (min-height var(--app-height))
      reste de la taille du viewport. scrollIntoView({ block: 'center' })
      était no-op car Safari considérait la section déjà centrée.
      Fix : window.scrollTo() avec position calculée

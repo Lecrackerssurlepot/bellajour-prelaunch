@@ -4,7 +4,19 @@
 
 .anx-scroll {
   position: relative;
-  height: 600svh;
+  height: calc(6 * var(--app-height));
+  background: var(--bj-noir);
+}
+
+/* Ceinture jonction sombre→crème : 2px noir débordant sous le wrapper pour
+   qu'un éventuel écart sub-pixel ne laisse jamais filtrer le crème en dessous. */
+.anx-scroll::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 2px;
   background: var(--bj-noir);
 }
 
@@ -12,8 +24,7 @@
   position: sticky;
   top: 0;
   width: 100%;
-  height: 100lvh;
-  height: var(--app-height, 100lvh);
+  height: var(--app-height);
   overflow: hidden;
   background: var(--bj-noir);
 }
@@ -180,10 +191,10 @@
   /* Sticky raccourci (collage + headline-final retirés) — mobile garde 600svh
      hérité de la base. */
   .anx-scroll {
-    height: 500svh;
+    height: calc(5 * var(--app-height));
   }
   /* Contexte d'empilement borné sous BrandIntro (z-index:5) pendant le
-     chevauchement margin-top:-100vh — contient .anx-content (z10) /
+     chevauchement margin-top négatif — contient .anx-content (z10) /
      .anx-progress (z20). */
   .anx-sticky {
     z-index: 1;
