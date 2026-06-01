@@ -754,3 +754,96 @@
   }
 
 }
+
+/* ════════════════════════════════════════════════════════
+   MOBILE < 768px — HEADER EMPILÉ (flux vertical, pas de superposition)
+   Ordre : titre → photo → préventes → CTA « Découvrir Bellajour ».
+   DOM inchangé → desktop (@media min-width:768px) strictement intact.
+   .hero-center passe en display:contents → ses enfants (titre + préventes)
+   deviennent des items flex directs de .hero, intercalables avec la photo.
+   ════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  /* Section en colonne, flux normal, peut grandir (height auto implicite) :
+     overflow visible + pas de height figée → aucune troncature de la pile.
+     min-height (plancher plein écran via --app-height) conservé. */
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow: visible;
+    padding: clamp(28px, 5vh, 56px) 5vw clamp(32px, 6vh, 64px);
+    gap: clamp(24px, 4vh, 40px);
+  }
+
+  /* Trait central : sans objet en pile */
+  .hero-line { display: none; }
+
+  /* Dégroupe le bloc texte → titre et préventes deviennent items flex de .hero
+     (DOM intact). width:94vw de la règle mobile de base devient sans effet. */
+  .hero-center { display: contents; }
+
+  /* Ordre d'empilement haut → bas */
+  .hero-headline   { order: 1; }
+  .hero-photo-wrap { order: 2; }
+  .hero-prelaunch  { order: 3; }
+  .hero-discover   { order: 4; }
+
+  /* 1 — TITRE : centré, marge neutralisée (espacement géré par gap) */
+  .hero-headline {
+    margin: 0;
+    text-align: center;
+    max-width: 94vw;
+    animation: hero-fade 700ms var(--bj-ease-premium) 0.15s both;
+  }
+
+  /* 2 — PHOTO : sort du fond absolute → bloc normal centré dans la pile.
+     Le wrapper épouse l'image ; les caps sont portés par l'<img> (ratio 2:3
+     préservé, object-fit:contain en garde-fou) → jamais coupée. La hauteur
+     (max-height 64vh) laisse la largeur piloter sur un téléphone portrait. */
+  .hero-photo-wrap {
+    position: static;
+    inset: auto;
+    width: 100%;
+    animation: hero-fade 700ms var(--bj-ease-premium) 0.25s both;
+  }
+  .hero-photo {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    overflow: visible;
+  }
+  .hero-photo img {
+    display: block;
+    width: auto;
+    height: auto;
+    margin: 0 auto;
+    object-fit: contain;
+    max-width: min(74vw, 320px);
+    /* Hauteur lue sur --app-height figée (pas de vh brut) → la barre iOS qui
+       apparaît/disparaît ne redimensionne pas l'image (zéro reflow de la pile).
+       0.64 laisse la largeur (max-width) piloter sur un portrait standard. */
+    max-height: calc(var(--app-height) * 0.64);
+  }
+  /* Voile crème : le texte n'est plus PAR-DESSUS la photo → inutile, retiré
+     pour laisser la photo pleine et vibrante. */
+  .hero-photo::before { display: none; }
+
+  /* 3 — PRÉVENTES : marge neutralisée (espacement géré par gap) */
+  .hero-prelaunch {
+    margin: 0;
+    animation: hero-fade 700ms var(--bj-ease-premium) 0.35s both;
+  }
+
+  /* 4 — CTA : sort de l'absolute → flux normal centré. Le keyframe
+     hero-discover-fade (translateX -50%) est incompatible avec le flux →
+     remplacé par hero-fade (translateY pur). */
+  .hero-discover {
+    position: static;
+    inset: auto;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    animation: hero-fade 600ms var(--bj-ease-premium) 0.5s both;
+  }
+}
