@@ -763,16 +763,27 @@
    deviennent des items flex directs de .hero, intercalables avec la photo.
    ════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
-  /* Section en colonne, flux normal, peut grandir (height auto implicite) :
-     overflow visible + pas de height figée → aucune troncature de la pile.
-     min-height (plancher plein écran via --app-height) conservé. */
+  /* Section en colonne, flux normal. */
   .hero {
     display: flex;
     flex-direction: column;
     align-items: center;
+    /* flex-start : empile depuis le haut. Jamais center (qui pousserait le
+       bas de la pile hors champ, comme le bug Album d'avant). */
     justify-content: flex-start;
+    /* height auto EXPLICITE : la section grandit pour contenir ses 4 blocs.
+       Jamais enfermée dans une hauteur d'écran figée → le bas (préventes +
+       CTA) reste dans le flux, défilable, jamais masqué par la barre iOS. */
+    height: auto;
+    /* min-height = PLANCHER plein écran (sous la navbar fixe) quand le contenu
+       est court. min-height n'empêche PAS la croissance, contrairement à une
+       height figée → pas de troncature. */
+    min-height: calc(var(--app-height) - var(--bj-nav-h));
+    /* Rien n'est clippé verticalement. */
     overflow: visible;
-    padding: clamp(28px, 5vh, 56px) 5vw clamp(32px, 6vh, 64px);
+    /* Padding bas généreux : le CTA « Découvrir Bellajour » ne colle jamais
+       au bord bas ni à la barre du navigateur (dégagement ~barre iOS). */
+    padding: clamp(24px, 5vh, 48px) 5vw clamp(48px, 10vh, 96px);
     gap: clamp(24px, 4vh, 40px);
   }
 
