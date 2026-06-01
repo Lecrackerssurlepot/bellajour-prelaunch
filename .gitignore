@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 .env*.local
 .DS_Store
+
+# Night perf session — local backup of original images (recoverable from main too)
+/image-originals/
