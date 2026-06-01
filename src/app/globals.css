@@ -195,15 +195,30 @@ img[src*="solution-casting-03.webp"] {
    Mobile (@media max-width: 767px) NEVER affected.
    ═══════════════════════════════════════════ */
 @media (min-width: 768px) {
-  /* === 1. HERO — Image header (44% / 450px max / max-height 65vh).
-        Centrée verticalement dans la zone hero sous la navbar fixe
-        (--bj-nav-h = 64px desktop / 56px mobile). === */
+  /* === 1. HERO — Image header (layout 2 colonnes).
+        La boîte .hero-photo épouse EXACTEMENT l'image (aucun max sur la
+        boîte) → plus de clip vertical via overflow:hidden. Les caps de
+        taille sont portés par l'<img> ci-dessous, qui scale en préservant
+        son ratio 2:3 → image entièrement visible, jamais coupée. === */
   .hero-photo {
-    width: 44% !important;
-    max-width: 450px !important;
-    max-height: 65vh !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: none !important;
     height: auto !important;
     margin: 0 auto !important;
+  }
+
+  /* L'<img> porte les DEUX caps → se réduit pour tenir à la fois dans la
+     colonne (max-width) ET dans la hauteur visible du hero sous la navbar
+     fixe (max-height), ratio intact. Jamais coupée ni géante, de 1280×720
+     à 2560 : la contrainte la plus serrée gagne, l'autre dimension suit le
+     ratio. object-fit:contain en garde-fou (aucun recadrage possible). === */
+  .hero-photo img {
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    max-width: min(38vw, 440px) !important;
+    max-height: calc(var(--app-height) - var(--bj-nav-h) - clamp(56px, 9vh, 120px)) !important;
   }
 
   /* === 1b. (Déplacé) Overlay crème .hero-photo::before est désormais en base

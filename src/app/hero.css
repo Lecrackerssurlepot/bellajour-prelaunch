@@ -728,12 +728,10 @@
     width: auto;
   }
 
-  /* Recale les caps de l'image pour sa colonne (le fix width:auto qui
-     épouse l'image et garantit zéro crop reste intact — on ne touche
-     qu'aux max-width/height). Ratio 2:3 préservé, jamais coupée. */
-  .hero-photo img {
-    max-width: min(40vw, 460px);
-  }
+  /* Le dimensionnement de l'image (caps max-width/max-height portés par
+     l'<img>, ratio 2:3 préservé, jamais coupée ni géante) est centralisé
+     dans le bloc override desktop de globals.css (.hero-photo + .hero-photo
+     img, !important) — source unique pour éviter tout conflit de caps. */
 }
 
 /* ── Recalibrage typo + CTA + parallax mobile ── */
