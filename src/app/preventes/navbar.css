@@ -11,7 +11,7 @@
   height: 96px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 0 5vw;
   background: transparent;
   z-index: 50;
@@ -74,12 +74,6 @@
   transition: opacity var(--bj-dur-fast) var(--bj-ease);
 }
 .pv-nav-cta:hover { opacity: 0.88; }
-
-/* ── Visibilité desktop / mobile ── */
-.pv-nav-cta-desktop { display: none; }
-@media (min-width: 768px) {
-  .pv-nav-cta-desktop { display: block; }
-}
 
 /* CTA sticky bottom mobile */
 .pv-nav-sticky-mobile {
