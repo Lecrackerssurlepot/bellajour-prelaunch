@@ -1,0 +1,112 @@
+/* ════════════════════════════════════════════════════════════
+   PRÉVENTE — S5 Garanties + FAQ (PRD §5.5)
+   ════════════════════════════════════════════════════════════ */
+
+.s5 {
+  width: 100%;
+  background: var(--bj-cream);
+  padding: clamp(56px, 9vh, 110px) 5vw;
+}
+
+.s5-inner {
+  max-width: 840px;
+  margin: 0 auto;
+}
+
+/* ── 4 garanties ── */
+.s5-garanties {
+  list-style: none;
+  margin: 0 0 clamp(48px, 7vh, 80px);
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+@media (min-width: 600px) {
+  .s5-garanties { grid-template-columns: 1fr 1fr; }
+}
+.s5-garantie {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  background: var(--bj-cream-tint-1);
+  border: 1px solid var(--bj-cream-tint-3);
+  border-radius: var(--bj-r-md);
+}
+.s5-garantie-titre {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-ui);
+  font-weight: 500;
+  color: var(--bj-text);
+}
+.s5-garantie-texte {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+}
+
+/* ── FAQ accordéon ── */
+.s5-faq-title {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(26px, 3.4vw, var(--bj-fs-h2));
+  color: var(--bj-text);
+  margin-bottom: clamp(20px, 3vh, 32px);
+}
+
+.s5-faq-item {
+  border-bottom: 0.5px solid var(--bj-veil-12);
+}
+.s5-faq-q {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 20px 0;
+  cursor: pointer;
+}
+.s5-faq-q-text {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-lg);
+  color: var(--bj-text);
+}
+.s5-faq-icon {
+  flex-shrink: 0;
+  font-family: var(--bj-font-ui);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--bj-action);
+  transition: transform var(--bj-dur) var(--bj-ease);
+}
+.s5-faq-item--open .s5-faq-icon { transform: rotate(45deg); }
+
+/* Ouverture animée via grid-template-rows (pas de hauteur fixe). */
+.s5-faq-answer-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--bj-dur) var(--bj-ease);
+}
+.s5-faq-item--open .s5-faq-answer-wrap {
+  grid-template-rows: 1fr;
+}
+.s5-faq-answer {
+  overflow: hidden;
+}
+.s5-faq-answer p {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  line-height: 1.6;
+  color: var(--bj-text-soft);
+  padding-bottom: 20px;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .s5-faq-answer-wrap, .s5-faq-icon { transition: none; }
+}

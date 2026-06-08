@@ -1,0 +1,132 @@
+/* ════════════════════════════════════════════════════════════
+   PRÉVENTE — S2 Expérience (carrousel 4 cartes) (PRD §5.2 / D3)
+   Desktop ~2,5 cartes visibles · Mobile 1,2 carte.
+   ════════════════════════════════════════════════════════════ */
+
+.s2 {
+  width: 100%;
+  background: var(--bj-cream);
+  padding: clamp(56px, 9vh, 110px) 0;
+  overflow: hidden;
+}
+
+.s2-head {
+  max-width: var(--bj-max-width, 1200px);
+  margin: 0 auto clamp(28px, 4vh, 48px);
+  padding: 0 5vw;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.s2-title {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(26px, 3.6vw, var(--bj-fs-h2));
+  line-height: 1.12;
+  color: var(--bj-text);
+}
+
+/* ── Flèches ── */
+.s2-arrows { display: flex; gap: 10px; flex-shrink: 0; }
+.s2-arrow {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--bj-r-pill);
+  border: 1px solid var(--bj-action-border);
+  background: var(--bj-glass-light-bg);
+  color: var(--bj-action);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--bj-dur-fast) var(--bj-ease);
+}
+.s2-arrow:hover { background: var(--bj-action-soft); }
+@media (max-width: 767px) {
+  .s2-arrows { display: none; } /* mobile = swipe au doigt (D3) */
+}
+
+/* ── Track scroll-snap ── */
+.s2-track {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 5vw 8px;
+  scrollbar-width: none;
+}
+.s2-track::-webkit-scrollbar { display: none; }
+
+/* Largeur carte : mobile 1,2 carte / tablette ~2,5 / desktop ~2,5.
+   83vw mobile laisse l'amorce de la suivante visible (D3). */
+.s2-card {
+  flex: 0 0 auto;
+  width: 83vw;
+  scroll-snap-align: start;
+  background: var(--bj-cream-tint-1);
+  border: 1px solid var(--bj-cream-tint-3);
+  border-radius: var(--bj-r-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 768px) {
+  .s2-card { width: 38vw; }
+}
+@media (min-width: 1100px) {
+  .s2-card { width: clamp(360px, 32vw, 440px); }
+}
+
+/* Carte active (1ère visible) plus présente, les autres légèrement en retrait. */
+.s2-card + .s2-card { opacity: 0.92; }
+
+.s2-card-media {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: var(--bj-cream-tint-2);
+  border-bottom: 1px dashed var(--bj-text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.s2-card-media-label {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bj-text-faint);
+}
+
+.s2-card-body {
+  padding: clamp(20px, 3vw, 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.s2-card-label {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: var(--bj-fs-display-sm);
+  color: var(--bj-terracotta-2);
+}
+.s2-card-ux {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  line-height: 1.5;
+  color: var(--bj-text);
+}
+.s2-card-algo {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  line-height: 1.55;
+  color: var(--bj-text-soft);
+}
+.s2-card-cloture {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: var(--bj-fs-lg);
+  color: var(--bj-action);
+  margin-top: 4px;
+}

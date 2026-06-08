@@ -1,0 +1,117 @@
+/* ════════════════════════════════════════════════════════════
+   PRÉVENTE — S3 L'objet Bellajour (PRD §5.3)
+   ════════════════════════════════════════════════════════════ */
+
+.s3 {
+  width: 100%;
+  background: linear-gradient(180deg, var(--bj-cream-2) 0%, var(--bj-cream) 100%);
+  padding: clamp(56px, 9vh, 110px) 5vw;
+}
+
+.s3-inner {
+  max-width: var(--bj-max-width, 1200px);
+  margin: 0 auto;
+}
+
+.s3-title {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(28px, 4vw, var(--bj-fs-h2));
+  color: var(--bj-text);
+  margin-bottom: clamp(28px, 4vh, 48px);
+}
+
+/* Desktop : nav à gauche, image au centre, panel à droite.
+   Mobile : empilé — nav scrollable horizontale, image, panel. */
+.s3-grid {
+  display: grid;
+  gap: clamp(20px, 3vw, 40px);
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .s3-grid {
+    grid-template-columns: minmax(180px, 1fr) 1.4fr 1.2fr;
+  }
+}
+
+/* ── Boutons-titres ── */
+.s3-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.s3-nav::-webkit-scrollbar { display: none; }
+@media (min-width: 900px) {
+  .s3-nav { flex-direction: column; overflow: visible; }
+}
+.s3-nav-btn {
+  flex: 0 0 auto;
+  text-align: left;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-ui);
+  color: var(--bj-text-soft);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--bj-r-btn);
+  padding: 10px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--bj-dur-fast) var(--bj-ease),
+              background var(--bj-dur-fast) var(--bj-ease);
+}
+.s3-nav-btn:hover { color: var(--bj-text); }
+.s3-nav-btn--active {
+  color: var(--bj-action);
+  background: var(--bj-action-soft);
+  border-color: var(--bj-action-border);
+}
+
+/* ── Image objet ── */
+.s3-media {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--bj-r-lg);
+  background: var(--bj-cream-tint-2);
+  border: 1px dashed var(--bj-text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.s3-media-label {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bj-text-faint);
+}
+
+/* ── Panel texte (animation d'entrée à chaque changement via key) ── */
+.s3-panel {
+  animation: s3-slide-in var(--bj-dur) var(--bj-ease);
+}
+@keyframes s3-slide-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.s3-panel-accroche {
+  display: block;
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: clamp(20px, 2.4vw, 26px);
+  color: var(--bj-text);
+  margin-bottom: 14px;
+}
+.s3-panel-corps {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  line-height: 1.6;
+  color: var(--bj-text-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .s3-panel { animation: none; }
+}

@@ -1,0 +1,84 @@
+/* ════════════════════════════════════════════════════════════
+   PRÉVENTE — S1 Hero produit (PRD §5.1)
+   ════════════════════════════════════════════════════════════ */
+
+.s1 {
+  width: 100%;
+  background: linear-gradient(180deg, var(--bj-cream) 0%, var(--bj-cream-2) 100%);
+  padding: calc(var(--bj-topbar-h) + 4vh) 5vw 8vh;
+}
+
+.s1-inner {
+  max-width: var(--bj-max-width, 1200px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(24px, 4vh, 48px);
+}
+
+/* ── Placeholder visuel 16:9 ── */
+.s1-media {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--bj-r-lg);
+  background: var(--bj-cream-tint-2);
+  border: 1px dashed var(--bj-text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.s1-media-label {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bj-text-faint);
+}
+
+/* ── Texte ── */
+.s1-text {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(12px, 2vh, 20px);
+}
+.s1-title {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(32px, 6vw, var(--bj-fs-h1));
+  line-height: 1.08;
+  color: var(--bj-text);
+  max-width: 16ch;
+}
+.s1-subtitle {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-lg);
+  color: var(--bj-text-soft);
+}
+.s1-cta {
+  margin-top: clamp(8px, 1.5vh, 16px);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-lg);
+  font-weight: 500;
+  color: var(--bj-on-action);
+  background: var(--bj-action);
+  border: none;
+  border-radius: var(--bj-r-pill);
+  padding: 16px 32px;
+  cursor: pointer;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.s1-cta:hover { opacity: 0.88; }
+
+/* Le CTA Hero est doublé par le sticky-bottom mobile (Navbar) :
+   on le masque sur mobile pour éviter le doublon visuel. */
+@media (max-width: 767px) {
+  .s1-cta { display: none; }
+}
+
+@media (min-width: 900px) {
+  .s1-title { max-width: 18ch; }
+}

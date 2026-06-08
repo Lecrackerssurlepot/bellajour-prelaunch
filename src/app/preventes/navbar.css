@@ -1,0 +1,104 @@
+/* ════════════════════════════════════════════════════════════
+   PRÉVENTE — Navbar (PRD §4)
+   Tokens valides --bj-* uniquement. Pattern glass repris de .hero-nav.
+   ════════════════════════════════════════════════════════════ */
+
+.pv-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5vw;
+  background: transparent;
+  z-index: 50;
+  transition:
+    height 280ms var(--bj-ease),
+    background-color 280ms var(--bj-ease),
+    backdrop-filter 280ms var(--bj-ease),
+    -webkit-backdrop-filter 280ms var(--bj-ease);
+}
+@media (min-width: 768px) {
+  .pv-nav { height: 112px; }
+}
+
+.pv-nav--scrolled {
+  height: var(--bj-topbar-h);
+  background-color: var(--bj-glass-light-bg);
+  border-bottom: 0.5px solid var(--bj-glass-light-border);
+  backdrop-filter: blur(var(--bj-glass-blur));
+  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+}
+
+/* ── Logo ── */
+.pv-nav-logo-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: block;
+}
+.pv-nav-logo {
+  display: block;
+  height: clamp(64px, 16vw, 72px);
+  transition: height 280ms var(--bj-ease);
+}
+@media (min-width: 768px) {
+  .pv-nav-logo { height: clamp(80px, 6vw, 88px); }
+}
+.pv-nav--scrolled .pv-nav-logo { height: 44px; }
+@media (min-width: 768px) {
+  .pv-nav--scrolled .pv-nav-logo { height: 52px; }
+}
+
+/* ── CTA (bouton ou lien, même style) ── */
+.pv-nav-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-ui);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--bj-on-action);
+  background: var(--bj-action);
+  border: none;
+  border-radius: var(--bj-r-pill);
+  padding: 12px 22px;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.pv-nav-cta:hover { opacity: 0.88; }
+
+/* ── Visibilité desktop / mobile ── */
+.pv-nav-cta-desktop { display: none; }
+@media (min-width: 768px) {
+  .pv-nav-cta-desktop { display: block; }
+}
+
+/* CTA sticky bottom mobile */
+.pv-nav-sticky-mobile {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  padding: 12px 5vw calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--bj-glass-light-bg);
+  border-top: 0.5px solid var(--bj-glass-light-border);
+  backdrop-filter: blur(var(--bj-glass-blur));
+  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+}
+.pv-nav-sticky-mobile .pv-nav-cta {
+  width: 100%;
+  padding: 16px;
+  font-size: var(--bj-fs-lg);
+}
+@media (min-width: 768px) {
+  .pv-nav-sticky-mobile { display: none; }
+}

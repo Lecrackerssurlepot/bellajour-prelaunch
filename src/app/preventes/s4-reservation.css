@@ -1,0 +1,208 @@
+/* ════════════════════════════════════════════════════════════
+   PRÉVENTE — S4 Réservation fondatrice (PRD §5.4 / §3)
+   Machine à états : duo (founder) · solo (soldout / influencer).
+   ════════════════════════════════════════════════════════════ */
+
+.s4 {
+  width: 100%;
+  background: linear-gradient(180deg, var(--bj-cream) 0%, var(--bj-cream-2) 100%);
+  padding: clamp(56px, 9vh, 110px) 5vw calc(clamp(56px, 9vh, 110px) + 72px);
+}
+@media (min-width: 768px) {
+  .s4 { padding-bottom: clamp(56px, 9vh, 110px); }
+}
+
+.s4-inner {
+  max-width: var(--bj-max-width, 1200px);
+  margin: 0 auto;
+}
+
+/* ── En-tête ── */
+.s4-head { text-align: center; margin-bottom: clamp(32px, 5vh, 56px); }
+.s4-title {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(28px, 4.4vw, var(--bj-fs-h1));
+  line-height: 1.1;
+  color: var(--bj-text);
+  max-width: 22ch;
+  margin: 0 auto;
+}
+.s4-subtitle {
+  margin-top: 14px;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-lg);
+  color: var(--bj-text-soft);
+}
+
+/* ── Disposition des cartes ── */
+.s4-cards {
+  display: grid;
+  gap: clamp(20px, 3vw, 32px);
+  align-items: start;
+  justify-content: center;
+}
+.s4-cards--solo { grid-template-columns: minmax(0, 460px); }
+.s4-cards--duo  { grid-template-columns: 1fr; }
+@media (min-width: 900px) {
+  /* Fondateur prominent (gauche, large) + Standard secondaire (droite, petit). */
+  .s4-cards--duo { grid-template-columns: 1.25fr 0.85fr; align-items: stretch; }
+}
+
+/* ── Carte offre ── */
+.s4-card {
+  position: relative;
+  background: var(--bj-glass-light-bg);
+  border: 1px solid var(--bj-action-border);
+  border-radius: var(--bj-r-lg);
+  padding: clamp(24px, 3vw, 36px);
+  backdrop-filter: blur(var(--bj-glass-blur));
+  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+}
+.s4-card--secondary {
+  border-color: var(--bj-cream-tint-3);
+  background: var(--bj-cream-tint-1);
+}
+@media (min-width: 900px) {
+  .s4-card--secondary { transform: scale(0.96); transform-origin: top center; }
+}
+
+.s4-card-badge {
+  display: inline-block;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bj-on-action);
+  background: var(--bj-action);
+  border-radius: var(--bj-r-pill);
+  padding: 5px 12px;
+  margin-bottom: 16px;
+}
+.s4-card-nom {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(22px, 2.8vw, 30px);
+  color: var(--bj-text);
+}
+
+/* Prix */
+.s4-card-price {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 12px;
+}
+.s4-card-price-old {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-lg);
+  color: var(--bj-text-faint);
+  text-decoration: line-through;
+}
+.s4-card-price-now {
+  font-family: var(--bj-font-display);
+  font-weight: 700;
+  font-size: clamp(34px, 4.6vw, 48px);
+  color: var(--bj-text);
+}
+.s4-card-price-unit {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-ui);
+  color: var(--bj-text-soft);
+}
+.s4-card-price-note {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  margin-top: 4px;
+}
+.s4-card-places {
+  margin-top: 12px;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  color: var(--bj-action);
+}
+
+/* Features */
+.s4-card-feats {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  border-top: 0.5px solid var(--bj-veil-12);
+}
+.s4-feat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 0.5px solid var(--bj-veil-8);
+}
+.s4-feat-label {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+}
+.s4-feat-val {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  color: var(--bj-text);
+  text-align: right;
+}
+.s4-feat-yes { color: var(--bj-save-ok); font-weight: 600; }
+.s4-feat-no  { color: var(--bj-text-faint); }
+
+/* ── Note crédit ── */
+.s4-credit-note {
+  max-width: 60ch;
+  margin: clamp(28px, 4vh, 44px) auto 0;
+  text-align: center;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  line-height: 1.6;
+  color: var(--bj-text-soft);
+}
+
+/* ── Checkout (CGV + bouton) ── */
+.s4-checkout {
+  max-width: 460px;
+  margin: clamp(24px, 4vh, 40px) auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.s4-cgv {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  cursor: pointer;
+}
+.s4-cgv input { margin-top: 2px; accent-color: var(--bj-action); width: 18px; height: 18px; }
+.s4-cgv-link { color: var(--bj-action); text-decoration: underline; }
+
+.s4-reserver {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-lg);
+  font-weight: 500;
+  color: var(--bj-on-action);
+  background: var(--bj-action);
+  border: none;
+  border-radius: var(--bj-r-btn);
+  padding: 16px;
+  cursor: pointer;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.s4-reserver:hover:not(:disabled) { opacity: 0.88; }
+.s4-reserver:disabled {
+  background: var(--bj-veil-16);
+  color: var(--bj-text-faint);
+  cursor: not-allowed;
+}
