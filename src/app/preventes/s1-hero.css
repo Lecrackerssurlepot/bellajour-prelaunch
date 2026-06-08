@@ -1,6 +1,6 @@
 /* ════════════════════════════════════════════════════════════
    PRÉVENTE — S1 Hero plein page (PRD §5.1, itération design)
-   Photo full-bleed + titre bleu superposé centré.
+   Titre 2 lignes forcées · sous-titre + CTA collés en bas.
    ════════════════════════════════════════════════════════════ */
 
 .s1 {
@@ -10,11 +10,6 @@
   height: 100dvh;
   min-height: 560px;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Dégage la zone du logo fixe pour que le titre centré ne passe jamais dessous. */
-  padding-top: var(--bj-topbar-h);
 }
 
 /* ── Couche photo full-bleed ── */
@@ -68,37 +63,58 @@
   );
 }
 
-/* ── Contenu superposé ── */
+/* ── Contenu superposé : 3 zones verticales ── */
 .s1-content {
   position: relative;
   z-index: 1;
+  height: 100%;
   width: 100%;
-  max-width: 1100px;
+  max-width: 1200px;
+  margin: 0 auto;
   padding: 0 6vw;
-  text-align: center;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  /* Léger biais vers le haut (zone claire de la photo), sans repasser sous le logo. */
-  margin-bottom: 4vh;
+  text-align: center;
 }
 
+/* Zone haute : réserve l'espace du logo (navbar fixe). */
+.s1-zone-top {
+  flex: 0 0 auto;
+  height: var(--bj-topbar-h);
+}
+
+/* Zone centrale : titre 2 lignes. flex:1 → reste centré entre haut et bas. */
 .s1-title {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   font-family: var(--bj-font-display);
   font-style: italic;
   font-weight: 600;
   color: var(--bj-action);
-  line-height: 1.04;
+  line-height: 1.06;
   letter-spacing: -0.01em;
-  font-size: clamp(40px, 8.5vw, 104px);
+  /* Calibré pour que chaque ligne tienne sur UNE ligne en desktop. */
+  font-size: clamp(34px, 5.4vw, 80px);
+}
+.s1-title-line {
+  display: block;
+  white-space: nowrap;
+}
+
+/* Zone basse : sous-titre + bouton, collés en bas. */
+.s1-bottom {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: clamp(16px, 2.5vh, 26px);
+  padding-bottom: clamp(28px, 5vh, 56px);
 }
-.s1-title-l1,
-.s1-title-l2 { display: block; }
-
 .s1-subtitle {
-  margin-top: clamp(16px, 2.5vh, 28px);
   font-family: var(--bj-font-ui);
   font-size: clamp(15px, 1.4vw, 19px);
   letter-spacing: 0.02em;
@@ -107,7 +123,6 @@
 
 /* ── Bouton ghost / outline ── */
 .s1-cta {
-  margin-top: clamp(22px, 3.5vh, 40px);
   font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-sm);
   font-weight: 500;
@@ -129,11 +144,20 @@
 }
 
 /* ── Mobile ──
-   < 768px : le CTA hero est REDONDANT avec le sticky bottom (même libellé,
-   même action) et risquerait de le chevaucher → on masque le bouton hero et
-   on garde le sticky bottom. Titre réduit, 2 lignes, sans débordement. */
+   Titre : autorise le passage à l'échelle (clamp) ; si une ligne ne tient pas
+   en nowrap on laisse réduire la taille plutôt que casser le sens. CTA compact. */
 @media (max-width: 767px) {
-  .s1-content { margin-bottom: 8vh; }
-  .s1-title { font-size: clamp(34px, 11vw, 60px); }
-  .s1-cta { display: none; }
+  .s1-title {
+    font-size: clamp(28px, 8.4vw, 50px);
+  }
+  .s1-cta {
+    padding: 12px 26px;
+    font-size: var(--bj-fs-xs);
+    letter-spacing: 0.14em;
+  }
+}
+
+/* Très petits écrans : on autorise le wrap interne pour éviter tout débordement. */
+@media (max-width: 360px) {
+  .s1-title-line { white-space: normal; }
 }

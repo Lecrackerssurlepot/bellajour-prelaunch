@@ -1,6 +1,7 @@
 /* ════════════════════════════════════════════════════════════
-   PRÉVENTE — Navbar (PRD §4)
-   Tokens valides --bj-* uniquement. Pattern glass repris de .hero-nav.
+   PRÉVENTE — Top bar TRANSFORMANTE (PRD §4)
+   État A : logo centré, transparent (sur le hero).
+   État B (.pv-nav--solid) : logo gauche + CTA droite, fond glass.
    ════════════════════════════════════════════════════════════ */
 
 .pv-nav {
@@ -11,26 +12,33 @@
   height: 96px;
   display: flex;
   align-items: center;
+  /* État A : logo centré. */
   justify-content: center;
   padding: 0 5vw;
   background: transparent;
   z-index: 50;
   transition:
-    height 280ms var(--bj-ease),
-    background-color 280ms var(--bj-ease),
-    backdrop-filter 280ms var(--bj-ease),
-    -webkit-backdrop-filter 280ms var(--bj-ease);
+    height 300ms var(--bj-ease),
+    background-color 300ms var(--bj-ease),
+    border-color 300ms var(--bj-ease),
+    backdrop-filter 300ms var(--bj-ease),
+    -webkit-backdrop-filter 300ms var(--bj-ease);
 }
 @media (min-width: 768px) {
   .pv-nav { height: 112px; }
 }
 
-.pv-nav--scrolled {
+/* ── État B : fond glass + logo gauche / CTA droite ── */
+.pv-nav--solid {
   height: var(--bj-topbar-h);
+  justify-content: space-between;
   background-color: var(--bj-glass-light-bg);
   border-bottom: 0.5px solid var(--bj-glass-light-border);
   backdrop-filter: blur(var(--bj-glass-blur));
   -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+}
+@media (min-width: 768px) {
+  .pv-nav--solid { height: var(--bj-topbar-h); }
 }
 
 /* ── Logo ── */
@@ -44,55 +52,53 @@
 .pv-nav-logo {
   display: block;
   height: clamp(64px, 16vw, 72px);
-  transition: height 280ms var(--bj-ease);
+  transition: height 300ms var(--bj-ease);
 }
 @media (min-width: 768px) {
   .pv-nav-logo { height: clamp(80px, 6vw, 88px); }
 }
-.pv-nav--scrolled .pv-nav-logo { height: 44px; }
+.pv-nav--solid .pv-nav-logo { height: 44px; }
 @media (min-width: 768px) {
-  .pv-nav--scrolled .pv-nav-logo { height: 52px; }
+  .pv-nav--solid .pv-nav-logo { height: 52px; }
 }
 
-/* ── CTA (bouton ou lien, même style) ── */
+/* ── CTA (état B uniquement) ──
+   Positionné en absolu pour ne pas décaler le logo centré en état A. */
 .pv-nav-cta {
+  position: absolute;
+  right: 5vw;
+  top: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-ui);
+  font-size: var(--bj-fs-sm);
   font-weight: 500;
   line-height: 1;
   color: var(--bj-on-action);
   background: var(--bj-action);
   border: none;
   border-radius: var(--bj-r-pill);
-  padding: 12px 22px;
+  padding: 11px 20px;
   cursor: pointer;
-  text-decoration: none;
   white-space: nowrap;
-  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+  /* Masqué + non cliquable en état A. */
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) translateX(8px);
+  transition:
+    opacity 240ms var(--bj-ease),
+    transform 240ms var(--bj-ease),
+    background-color var(--bj-dur-fast) var(--bj-ease);
 }
-.pv-nav-cta:hover { opacity: 0.88; }
+.pv-nav--solid .pv-nav-cta {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(-50%) translateX(0);
+}
+.pv-nav-cta:hover { background: var(--bj-action); opacity: 0.88; }
 
-/* CTA sticky bottom mobile */
-.pv-nav-sticky-mobile {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 60;
-  padding: 12px 5vw calc(12px + env(safe-area-inset-bottom, 0px));
-  background: var(--bj-glass-light-bg);
-  border-top: 0.5px solid var(--bj-glass-light-border);
-  backdrop-filter: blur(var(--bj-glass-blur));
-  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
-}
-.pv-nav-sticky-mobile .pv-nav-cta {
-  width: 100%;
-  padding: 16px;
-  font-size: var(--bj-fs-lg);
-}
-@media (min-width: 768px) {
-  .pv-nav-sticky-mobile { display: none; }
+/* Mobile : CTA compact en état B. */
+@media (max-width: 767px) {
+  .pv-nav-cta { padding: 9px 16px; font-size: var(--bj-fs-xs); }
 }

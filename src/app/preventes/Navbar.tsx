@@ -3,29 +3,25 @@
 import { useEffect, useState } from 'react'
 import './navbar.css'
 
-/* PRD §4 — Top bar prévente (itération design).
-   Desktop + mobile : logo « bellajour » CENTRÉ, barre transparente par-dessus le hero.
-   Plus de CTA dans la barre. Le CTA mobile vit en sticky bottom (→ scroll vers S4). */
+/* PRD §4 — Top bar prévente TRANSFORMANTE.
+   État A (hero visible) : logo « bellajour » centré, fond transparent, pas de CTA.
+   État B (hero sorti du viewport) : logo à gauche + CTA à droite, avec fond glass.
+   Bascule pilotée par IntersectionObserver sur le hero (#s1) — pas de scroll listener. */
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false)
+  /* heroOut = true quand le hero n'est plus visible → état B. */
+  const [heroOut, setHeroOut] = useState(false)
 
-  /* État scroll (glass au-delà de 80px, pour la lisibilité du logo passé le hero)
-     — throttlé via rAF. */
   useEffect(() => {
-    let ticking = false
-    const update = () => {
-      setScrolled(window.scrollY > 80)
-      ticking = false
-    }
-    const onScroll = () => {
-      if (ticking) return
-      ticking = true
-      requestAnimationFrame(update)
-    }
-    update()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    const hero = document.getElementById('s1')
+    if (!hero) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setHeroOut(!entry.isIntersecting),
+      /* bascule quand il reste moins de ~12% du hero visible */
+      { threshold: 0.12 }
+    )
+    observer.observe(hero)
+    return () => observer.disconnect()
   }, [])
 
   const scrollToS4 = () => {
@@ -36,27 +32,23 @@ export default function Navbar() {
   }
 
   return (
-    <>
-      <nav
-        className={scrolled ? 'pv-nav pv-nav--scrolled' : 'pv-nav'}
-        aria-label="Navigation prévente"
+    <nav
+      className={heroOut ? 'pv-nav pv-nav--solid' : 'pv-nav'}
+      aria-label="Navigation prévente"
+    >
+      <button
+        type="button"
+        onClick={scrollToTop}
+        className="pv-nav-logo-btn"
+        aria-label="Retour en haut"
       >
-        <button
-          type="button"
-          onClick={scrollToTop}
-          className="pv-nav-logo-btn"
-          aria-label="Retour en haut"
-        >
-          <img src="/images/ui/logo.webp" className="pv-nav-logo" alt="Bellajour" decoding="sync" />
-        </button>
-      </nav>
+        <img src="/images/ui/logo.webp" className="pv-nav-logo" alt="Bellajour" decoding="sync" />
+      </button>
 
-      {/* CTA sticky bottom — mobile uniquement (masqué en desktop via CSS) */}
-      <div className="pv-nav-sticky-mobile">
-        <button type="button" className="pv-nav-cta" onClick={scrollToS4}>
-          Participer aux préventes
-        </button>
-      </div>
-    </>
+      {/* CTA — visible uniquement en état B (hero sorti). */}
+      <button type="button" className="pv-nav-cta" onClick={scrollToS4}>
+        Participer aux préventes
+      </button>
+    </nav>
   )
 }
