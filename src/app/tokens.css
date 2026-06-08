@@ -1,0 +1,108 @@
+/* ============================================================
+   BELLAJOUR — DESIGN TOKENS (PRÉVENTE / DA GLOBALE)
+   Extrait du prototype, namespacé --bj-*.
+   SOURCE DE VÉRITÉ UNIQUE : pour changer une couleur, une font,
+   un rayon ou le glass, c'est ICI et nulle part ailleurs.
+
+   Fonts : chargées via next/font dans layout.tsx (variables
+   --font-display / --font-ui posées sur <html>). Pas de @import
+   ici — sinon double chargement. Voir CHARTE-PREVENTE.md.
+   ============================================================ */
+
+:root {
+  /* ─────────────── SURFACES & ENCRE ─────────────── */
+  --bj-cream:          #f7f1e9;   /* fond général de l'app */
+  --bj-cream-2:        #efe6d8;   /* crème plus profond (dégradés) */
+  --bj-charcoal:       #1c1c1c;   /* encre / glass foncé */
+  --bj-terracotta:     #bc977d;   /* terracotta doux */
+  --bj-terracotta-2:   #c47a5c;   /* terracotta accent (eyebrows) */
+
+  /* Tints crème décoratifs (dégradés de fond, bordures douces).
+     Optionnels — utilisés ponctuellement dans le proto. */
+  --bj-cream-tint-1:   #f8f3ed;
+  --bj-cream-tint-2:   #ece2d5;
+  --bj-cream-tint-3:   #e6ddcf;
+
+  /* ─────────────── ACTION (bleu unique) ─────────────── */
+  --bj-action:         #4a90d9;   /* CTA, liens, accents, sélection */
+  --bj-action-soft:    #f0f7ff;   /* fond survol / sélection */
+  --bj-action-border:  rgba(74, 144, 217, 0.35);  /* bordure dérivée */
+  --bj-action-ring:    rgba(74, 144, 217, 0.40);  /* halo focus dérivé */
+
+  /* ─────────────── TEXTE ─────────────── */
+  --bj-text:           #1c1c1c;   /* texte principal */
+  --bj-text-soft:      #5b554d;   /* texte secondaire sur crème */
+  --bj-text-faint:     #8c8579;   /* texte tertiaire / placeholders */
+  --bj-on-action:      #ffffff;   /* texte sur fond bleu */
+
+  /* ─────────────── GLASS CLAIR (texte foncé) ─────────────── */
+  --bj-glass-light-bg:     rgba(255, 255, 255, 0.55);
+  --bj-glass-light-border: rgba(255, 255, 255, 0.65);
+  --bj-glass-light-text:   var(--bj-charcoal);
+
+  /* ─────────────── GLASS FONCÉ (texte clair) ─────────────── */
+  --bj-glass-dark-bg:      rgba(28, 28, 28, 0.62);
+  --bj-glass-dark-border:  rgba(255, 255, 255, 0.14);
+  --bj-glass-dark-text:    #f5efe6;
+
+  --bj-glass-blur:         18px;
+
+  /* Voiles génériques sur charbon (overlays, hovers discrets) */
+  --bj-veil-6:   rgba(28, 28, 28, 0.06);
+  --bj-veil-8:   rgba(28, 28, 28, 0.08);
+  --bj-veil-12:  rgba(28, 28, 28, 0.12);
+  --bj-veil-16:  rgba(28, 28, 28, 0.16);
+  --bj-veil-35:  rgba(28, 28, 28, 0.35);   /* overlay de modale */
+
+  /* ─────────────── RAYONS (généreux, jamais de coin vif) ─────────────── */
+  --bj-r-sm:   12px;
+  --bj-r-md:   16px;
+  --bj-r-lg:   20px;
+  --bj-r-pill: 999px;
+  --bj-r-btn:  14px;   /* arrondi des boutons */
+
+  /* ─────────────── OMBRES DOUCES ─────────────── */
+  --bj-shadow-soft: 0 8px 30px rgba(28, 28, 28, 0.10);
+  --bj-shadow-pop:  0 12px 40px rgba(28, 28, 28, 0.18);
+
+  /* ─────────────── ESPACEMENTS (échelle de 8, base 4) ─────────────── */
+  --bj-sp-1: 4px;
+  --bj-sp-2: 8px;
+  --bj-sp-3: 12px;
+  --bj-sp-4: 16px;
+  --bj-sp-5: 24px;
+  --bj-sp-6: 32px;
+  --bj-sp-7: 48px;
+  --bj-sp-8: 64px;
+
+  /* ─────────────── TYPOGRAPHIE ───────────────
+     Familles branchées sur les variables next/font (layout.tsx).
+     Fallbacks conservés si next/font n'est pas encore chargé. */
+  --bj-font-display: var(--font-display), 'Cormorant Garamond', Georgia, serif;  /* titres (italic) */
+  --bj-font-ui:      var(--font-ui), 'DM Sans', system-ui, sans-serif;            /* UI / corps */
+
+  /* Tailles de référence (proto) */
+  --bj-fs-h1:        56px;   /* grand titre (italic) */
+  --bj-fs-h1-screen: 40px;   /* titre d'écran */
+  --bj-fs-h2:        34px;
+  --bj-fs-display-sm:20px;   /* titres de cartes en Cormorant */
+  --bj-fs-lg:        18px;
+  --bj-fs-body:      16px;
+  --bj-fs-ui:        15px;
+  --bj-fs-sm:        14px;
+  --bj-fs-xs:        13px;
+  --bj-fs-xxs:       12px;
+
+  /* ─────────────── ANIMATION ─────────────── */
+  --bj-ease: cubic-bezier(0.4, 0, 0.2, 1);  /* easing unique */
+  --bj-dur:  240ms;                          /* durée de base */
+  --bj-dur-fast: 180ms;                      /* micro-interactions */
+
+  /* ─────────────── ÉTATS / FEEDBACK ─────────────── */
+  --bj-save-ok:   #3fa66a;   /* vert (sauvegardé) */
+  --bj-save-warn: #d9822b;   /* orange (en cours) */
+  --bj-warn-soft: rgba(217, 130, 43, 0.12);
+
+  /* ─────────────── LAYOUT ─────────────── */
+  --bj-topbar-h: 76px;
+}

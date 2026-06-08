@@ -1,5 +1,24 @@
 import type { Metadata } from 'next'
+import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
 import './globals.css'
+
+/* Fonts DA (charte) chargées via next/font (self-host, zéro FOUC, pas de
+   requête runtime vers fonts.gstatic.com). Exposées en variables CSS et
+   branchées sur --bj-font-display / --bj-font-ui dans tokens.css. */
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['500', '600'],
+  style: ['normal', 'italic'],
+  variable: '--font-display',
+  display: 'swap',
+})
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-ui',
+  display: 'swap',
+})
 
 /* Fige --app-height en pixels AVANT le premier paint (pas de FOUC de hauteur).
    Posé au load = innerHeight (viewport de layout, stable). Mis à jour UNIQUEMENT
@@ -67,14 +86,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="fr" className={`${cormorant.variable} ${dmSans.variable}`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <script dangerouslySetInnerHTML={{ __html: APP_HEIGHT_SCRIPT }} />
         <link rel="preload" as="image" href="/images/header-bellajour.webp" fetchPriority="high" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,700;1,300;1,400;1,500;1,700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
       </head>
       <body>
         {children}
