@@ -1,6 +1,7 @@
 /* ════════════════════════════════════════════════════════════
    PRÉVENTE — S2 Expérience (carrousel 4 cartes) (PRD §5.2 / D3)
-   Desktop ~2,5 cartes visibles · Mobile 1,2 carte.
+   Desktop ~2,5 cartes visibles · Mobile 1 carte + peek.
+   Carrousel piloté par activeIndex → transform translateX (GPU only).
    ════════════════════════════════════════════════════════════ */
 
 .s2 {
@@ -25,7 +26,7 @@
   font-weight: 600;
   font-size: clamp(26px, 3.6vw, var(--bj-fs-h2));
   line-height: 1.12;
-  color: var(--bj-text);
+  color: var(--bj-action); /* bleu Bellajour — même token que .s1-title / logo / CTA */
 }
 
 /* ── Flèches ── */
@@ -42,36 +43,35 @@
   cursor: pointer;
   transition: background var(--bj-dur-fast) var(--bj-ease);
 }
-.s2-arrow:hover { background: var(--bj-action-soft); }
-@media (max-width: 767px) {
-  .s2-arrows { display: none; } /* mobile = swipe au doigt (D3) */
-}
+.s2-arrow:hover:not(:disabled) { background: var(--bj-action-soft); }
+.s2-arrow:disabled { opacity: 0.35; cursor: default; }
 
-/* ── Track scroll-snap ── */
+/* ── Track : carrousel transform-driven ── */
 .s2-track {
   display: flex;
-  gap: 24px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  padding: 0 5vw 8px;
-  scrollbar-width: none;
+  gap: clamp(24px, 3vw, 44px); /* respiration ~32-48px desktop */
+  padding: 0 5vw;
+  overflow: visible; /* .s2 masque le débordement */
+  transform: translateX(var(--s2-shift, 0px));
+  transition: transform 0.6s var(--bj-ease); /* --bj-ease = cubic-bezier(0.4,0,0.2,1) */
+  will-change: transform;
 }
-.s2-track::-webkit-scrollbar { display: none; }
 
-/* Largeur carte : mobile 1,2 carte / tablette ~2,5 / desktop ~2,5.
-   83vw mobile laisse l'amorce de la suivante visible (D3). */
+/* Largeur carte : mobile 1 carte + ~10% peek / tablette ~2,5 / desktop ~2,5. */
 .s2-card {
   flex: 0 0 auto;
-  width: 83vw;
-  scroll-snap-align: start;
+  width: 90vw;
   background: var(--bj-cream-tint-1);
   border: 1px solid var(--bj-cream-tint-3);
   border-radius: var(--bj-r-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  opacity: 0.4; /* cartes inactives figées */
+  transition: opacity 0.6s var(--bj-ease);
 }
+.s2-card[data-active='true'] { opacity: 1; } /* carte active = la plus à gauche */
+
 @media (min-width: 768px) {
   .s2-card { width: 38vw; }
 }
@@ -79,26 +79,7 @@
   .s2-card { width: clamp(360px, 32vw, 440px); }
 }
 
-/* Carte active (1ère visible) plus présente, les autres légèrement en retrait. */
-.s2-card + .s2-card { opacity: 0.92; }
-
-.s2-card-media {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  background: var(--bj-cream-tint-2);
-  border-bottom: 1px dashed var(--bj-text-faint);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.s2-card-media-label {
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--bj-text-faint);
-}
-
+/* ── Corps : titre → texte (en haut) ── */
 .s2-card-body {
   padding: clamp(20px, 3vw, 32px);
   display: flex;
@@ -108,8 +89,13 @@
 .s2-card-label {
   font-family: var(--bj-font-display);
   font-style: italic;
-  font-size: var(--bj-fs-display-sm);
+  font-size: clamp(22px, 2.4vw, 28px); /* titre de carte « en gros » en haut */
+  line-height: 1.1;
   color: var(--bj-terracotta-2);
+}
+.s2-card-num {
+  font-style: italic;
+  color: var(--bj-action);
 }
 .s2-card-ux {
   font-family: var(--bj-font-ui);
@@ -129,4 +115,27 @@
   font-size: var(--bj-fs-lg);
   color: var(--bj-action);
   margin-top: 4px;
+}
+
+/* ── Visuel / mockup arrondi (en bas) ── */
+.s2-card-media {
+  margin: 0 clamp(20px, 3vw, 32px) clamp(20px, 3vw, 32px);
+  aspect-ratio: 4 / 3;
+  background: var(--bj-cream-tint-2);
+  border-radius: var(--bj-r-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.s2-card-media-label {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bj-text-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .s2-track,
+  .s2-card { transition: none; }
 }

@@ -1,11 +1,13 @@
 'use client'
 
-import { useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './s2-experience.css'
 
 /* PRD §5.2 — S2 Expérience Bellajour.
-   Carrousel horizontal de 4 cartes. Desktop ~2,5 cartes / mobile 1,2 carte (D3).
-   Scroll-snap CSS + flèches. Wording figé du PRD (UX + Algo par carte). */
+   Carrousel horizontal de 4 cartes piloté par activeIndex (transform translateX).
+   Desktop ~2,5 cartes / mobile 1 carte + peek (~10%). Flèches + swipe.
+   Carte active = la plus à gauche (opacity 1), les autres figées (opacity 0.4).
+   Wording figé du PRD (UX + Algo par carte). */
 
 interface Carte {
   num: string
@@ -43,15 +45,50 @@ const CARTES: Carte[] = [
   },
 ]
 
+const SWIPE_THRESHOLD = 50 // px
+
 export default function S2Experience() {
   const trackRef = useRef<HTMLDivElement>(null)
+  const touchStartX = useRef<number | null>(null)
+  const [activeIndex, setActiveIndex] = useState(0)
 
-  const scrollByCard = (dir: 1 | -1) => {
+  const goTo = useCallback((index: number) => {
+    setActiveIndex((prev) => {
+      const next = Math.max(0, Math.min(CARTES.length - 1, index))
+      return next === prev ? prev : next
+    })
+  }, [])
+
+  // Décale le track de activeIndex × (largeur carte + gap), mesuré sur le DOM
+  // pour gérer automatiquement gap et largeurs responsive (vw/clamp).
+  const applyShift = useCallback(() => {
     const track = trackRef.current
     if (!track) return
-    const card = track.querySelector<HTMLElement>('.s2-card')
-    const step = card ? card.offsetWidth + 24 : track.clientWidth * 0.8
-    track.scrollBy({ left: dir * step, behavior: 'smooth' })
+    const cards = track.querySelectorAll<HTMLElement>('.s2-card')
+    if (cards.length === 0) return
+    const step =
+      cards.length > 1
+        ? cards[1].offsetLeft - cards[0].offsetLeft
+        : cards[0].offsetWidth
+    track.style.setProperty('--s2-shift', `${-activeIndex * step}px`)
+  }, [activeIndex])
+
+  useEffect(() => {
+    applyShift()
+    window.addEventListener('resize', applyShift)
+    return () => window.removeEventListener('resize', applyShift)
+  }, [applyShift])
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return
+    const delta = e.changedTouches[0].clientX - touchStartX.current
+    if (Math.abs(delta) > SWIPE_THRESHOLD) {
+      goTo(activeIndex + (delta < 0 ? 1 : -1))
+    }
+    touchStartX.current = null
   }
 
   return (
@@ -59,22 +96,45 @@ export default function S2Experience() {
       <div className="s2-head">
         <h2 className="s2-title">Tout le parcours, sans la complexité.</h2>
         <div className="s2-arrows">
-          <button type="button" className="s2-arrow" aria-label="Précédent" onClick={() => scrollByCard(-1)}>‹</button>
-          <button type="button" className="s2-arrow" aria-label="Suivant" onClick={() => scrollByCard(1)}>›</button>
+          <button
+            type="button"
+            className="s2-arrow"
+            aria-label="Précédent"
+            disabled={activeIndex === 0}
+            onClick={() => goTo(activeIndex - 1)}
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            className="s2-arrow"
+            aria-label="Suivant"
+            disabled={activeIndex === CARTES.length - 1}
+            onClick={() => goTo(activeIndex + 1)}
+          >
+            ›
+          </button>
         </div>
       </div>
 
-      <div className="s2-track" ref={trackRef}>
-        {CARTES.map((c) => (
-          <article key={c.num} className="s2-card">
-            <div className="s2-card-media" aria-hidden="true">
-              <span className="s2-card-media-label">MOCKUP CARTE {c.num}</span>
-            </div>
+      <div
+        className="s2-track"
+        ref={trackRef}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        {CARTES.map((c, i) => (
+          <article key={c.num} className="s2-card" data-active={i === activeIndex}>
             <div className="s2-card-body">
-              <span className="s2-card-label">{c.label}</span>
+              <span className="s2-card-label">
+                <span className="s2-card-num">{c.num}</span> {c.label}
+              </span>
               <p className="s2-card-ux">{c.ux}</p>
               <p className="s2-card-algo">{c.algo}</p>
               {c.cloture && <p className="s2-card-cloture">{c.cloture}</p>}
+            </div>
+            <div className="s2-card-media" aria-hidden="true">
+              <span className="s2-card-media-label">MOCKUP CARTE {c.num}</span>
             </div>
           </article>
         ))}
