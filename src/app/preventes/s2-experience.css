@@ -7,13 +7,21 @@
 .s2 {
   width: 100%;
   background: var(--bj-cream);
-  padding: clamp(56px, 9vh, 110px) 0;
+  /* Hauteur viewport — 100dvh (jamais 100vh) comme le hero. Colonne flex :
+     head (auto) + track (remplit le reste) → la carte tient dans la section. */
+  height: 100dvh;
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(32px, 5vh, 72px) 0;
   overflow: hidden;
 }
 
 .s2-head {
+  flex: 0 0 auto;
+  width: 100%;
   max-width: var(--bj-max-width, 1200px);
-  margin: 0 auto clamp(28px, 4vh, 48px);
+  margin: 0 auto clamp(20px, 3vh, 36px);
   padding: 0 5vw;
   display: flex;
   align-items: baseline;
@@ -48,7 +56,10 @@
 
 /* ── Track : carrousel transform-driven ── */
 .s2-track {
+  flex: 1 1 auto;
+  min-height: 0; /* autorise le track à rétrécir sous la hauteur du viewport */
   display: flex;
+  align-items: stretch; /* les cartes remplissent la hauteur du track */
   gap: clamp(24px, 3vw, 44px); /* respiration ~32-48px desktop */
   padding: 0 5vw;
   overflow: visible; /* .s2 masque le débordement */
@@ -79,8 +90,9 @@
   .s2-card { width: clamp(360px, 32vw, 440px); }
 }
 
-/* ── Corps : titre → texte (en haut) ── */
+/* ── Corps : titre → texte (en haut) — taille naturelle ── */
 .s2-card-body {
+  flex: 0 0 auto;
   padding: clamp(20px, 3vw, 32px);
   display: flex;
   flex-direction: column;
@@ -117,10 +129,11 @@
   margin-top: 4px;
 }
 
-/* ── Visuel / mockup arrondi (en bas) ── */
+/* ── Visuel / mockup arrondi (en bas) — absorbe l'espace restant ── */
 .s2-card-media {
+  flex: 1 1 auto;
+  min-height: 0; /* pas de hauteur imposée : remplit ce qui reste sous le texte */
   margin: 0 clamp(20px, 3vw, 32px) clamp(20px, 3vw, 32px);
-  aspect-ratio: 4 / 3;
   background: var(--bj-cream-tint-2);
   border-radius: var(--bj-r-lg);
   display: flex;
@@ -133,6 +146,13 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--bj-text-faint);
+}
+
+/* Mobile : la section peut grandir si le texte est long (jamais couper le texte) ;
+   le média garde un plancher visible mais se réduit en priorité. */
+@media (max-width: 767px) {
+  .s2 { height: auto; min-height: 100dvh; }
+  .s2-card-media { min-height: clamp(120px, 20dvh, 200px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
