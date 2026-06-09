@@ -4,6 +4,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
 import { isValidRefCode } from "@/lib/validation";
+import { FOUNDER_CAP, countConfirmedFounders } from "@/lib/founder";
 
 /**
  * POST /api/checkout — point d'entrée du bouton « Réserver mon acompte » (S4).
@@ -35,7 +36,6 @@ const OFFER_LABELS: Record<OfferType, string> = {
   standard: "Standard",
 };
 
-const FOUNDER_CAP = 100;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
 
@@ -138,16 +138,14 @@ export async function POST(request: Request) {
     if (refInf && influencerAllowlist().has(refInf.toUpperCase())) {
       resolved = "influencer";
     } else {
-      const { count, error: countError } = await supabase
-        .from("waitlist")
-        .select("id", { count: "exact", head: true })
-        .eq("offer_type", "founder")
-        .eq("status", "confirmed");
-      if (countError) {
-        console.error("[checkout] founder count error", countError.code);
+      let count: number;
+      try {
+        count = await countConfirmedFounders(supabase);
+      } catch (countErr) {
+        console.error("[checkout] founder count error", (countErr as Error)?.message);
         return NextResponse.json({ error: "internal" }, { status: 500 });
       }
-      resolved = (count ?? 0) < FOUNDER_CAP ? "founder" : "standard";
+      resolved = count < FOUNDER_CAP ? "founder" : "standard";
     }
 
     const amount_cents = AMOUNTS_CENTS[resolved];

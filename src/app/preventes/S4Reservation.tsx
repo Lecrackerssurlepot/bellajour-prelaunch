@@ -1,13 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './s4-reservation.css'
-import { OFFER_STATE, PRIX_ALBUM_BASE, placesRestantes } from './offer-state'
+import { DEFAULT_OFFER_STATE, PRIX_ALBUM_BASE, placesRestantes } from './offer-state'
+import type { OfferState } from './offer-state'
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /* PRD §5.4 + §3 — S4 Réservation fondatrice (handoff).
-   Machine à états : rend UN seul mode à la fois selon OFFER_STATE.offerMode.
+   Machine à états : rend UN seul mode à la fois selon l'état serveur
+   (GET /api/offer-state). Le bouton « Réserver » câble POST /api/checkout.
    ⚠️ Seuls les montants client-facing sont ici. Aucune donnée interne (marges,
-   commissions, coûts de production). Bouton handoff INERTE (pas d'appel /api/checkout). */
+   commissions, coûts de production). */
 
 type FeatureValue = string | boolean
 
@@ -157,18 +161,96 @@ function OffreCard({
 }
 
 export default function S4Reservation() {
+  const [offer, setOffer] = useState<OfferState | null>(null) // null = chargement (skeleton) — jamais d'offre flashée
   const [cgv, setCgv] = useState(false)
-  const { offerMode } = OFFER_STATE
-  const places = placesRestantes(OFFER_STATE)
+  const [email, setEmail] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  /* Handoff INERTE — sera branché plus tard sur POST /api/checkout (PRD §6). */
-  const handleReserver = () => {
-    /* no-op : scaffold. Le handoff backend n'est pas câblé. */
+  /* État de l'offre = autorité serveur (GET /api/offer-state). Fallback résilient
+     si fetch KO → la page ne casse jamais. Réutilisé sur 409 offer_changed pour
+     réafficher la bonne offre. */
+  const refetchOffer = async () => {
+    try {
+      const res = await fetch('/api/offer-state')
+      if (!res.ok) throw new Error('offer-state ' + res.status)
+      const data = await res.json()
+      setOffer({
+        offerMode: data.offerMode,
+        foundersConfirmed: data.foundersConfirmed,
+        foundersTotal: data.foundersTotal,
+        influencer: null,
+      })
+    } catch (e) {
+      console.error('[s4] offer-state fetch failed', e)
+      setOffer(DEFAULT_OFFER_STATE)
+    }
   }
 
-  /* Checkout = CGV + bouton. Rendu À L'INTÉRIEUR de l'encart actionnable (règle D). */
+  useEffect(() => {
+    refetchOffer()
+  }, [])
+
+  const emailValid = EMAIL_RE.test(email.trim())
+
+  /* Handoff POST /api/checkout. Le SERVEUR décide l'offre ; on envoie l'offre
+     affichée en expected_offer. Email en BODY uniquement (jamais en query string). */
+  const handleReserver = async () => {
+    if (!offer) return
+    const expectedOffer = offer.offerMode === 'soldout' ? 'standard' : offer.offerMode
+
+    setSubmitting(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          cgv_accepted: cgv,
+          expected_offer: expectedOffer,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+
+      if (res.ok && data.checkout_url) {
+        // Succès → Stripe. submitting reste true : bouton verrouillé pendant la
+        // navigation (anti double-submit).
+        window.location.href = data.checkout_url
+        return
+      }
+
+      if (res.status === 409 && data.error === 'offer_changed') {
+        await refetchOffer()
+        setError("L’offre a changé entre-temps. Nous avons mis à jour l’offre affichée — vérifiez puis réessayez.")
+      } else if (res.status === 409 && data.error === 'already_purchased') {
+        setError('Cet email a déjà réservé son acompte. Aucun nouveau paiement n’est nécessaire.')
+      } else if (res.status === 400 && data.error === 'invalid_email') {
+        setError('Adresse email invalide. Vérifiez votre saisie.')
+      } else {
+        setError('Une erreur est survenue. Merci de réessayer dans un instant.')
+      }
+    } catch {
+      setError('Connexion impossible. Vérifiez votre réseau et réessayez.')
+    }
+    setSubmitting(false)
+  }
+
+  /* Checkout = email + CGV + bouton. Rendu À L'INTÉRIEUR de l'encart actionnable (règle D). */
   const checkout = (
     <div className="s4-checkout">
+      <input
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        className="s4-email"
+        placeholder="votre@email.fr"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        aria-label="Adresse email"
+        disabled={submitting}
+      />
+
       <label className="s4-cgv">
         <input
           type="checkbox"
@@ -182,10 +264,12 @@ export default function S4Reservation() {
         </span>
       </label>
 
+      {error && <p className="s4-error" role="alert">{error}</p>}
+
       <button
         type="button"
         className="s4-reserver"
-        disabled={!cgv}
+        disabled={!emailValid || !cgv || submitting}
         onClick={handleReserver}
       >
         Réserver mon acompte
@@ -193,18 +277,26 @@ export default function S4Reservation() {
     </div>
   )
 
-  /* Le front rend ce que offerMode dit (PRD §3.3) — il ne décide pas du mode. */
+  /* Le front rend ce que offerMode dit (PRD §3.3) — il ne décide pas du mode.
+     Tant que l'état réel n'est pas arrivé (offer === null) → skeleton neutre :
+     jamais l'offre Fondateur flashée (le résultat final peut être soldout). */
   let cards: React.ReactNode
-  if (offerMode === 'founder') {
+  if (offer === null) {
+    cards = (
+      <div className="s4-cards s4-cards--solo" aria-busy="true">
+        <div className="s4-card s4-cards-skeleton" aria-hidden="true" />
+      </div>
+    )
+  } else if (offer.offerMode === 'founder') {
     cards = (
       <div className="s4-cards s4-cards--duo">
-        <OffreCard offre={OFFRE_FOUNDER} places={places} checkout={checkout} />
+        <OffreCard offre={OFFRE_FOUNDER} places={placesRestantes(offer)} checkout={checkout} />
         {/* Standard — repoussoir visuel (desktop only). Masquée mobile, non actionnable
             (aucun bouton). Réactivable plus tard pour la rendre visible sur mobile. */}
         <OffreCard offre={OFFRE_STANDARD} secondary />
       </div>
     )
-  } else if (offerMode === 'soldout') {
+  } else if (offer.offerMode === 'soldout') {
     cards = (
       <div className="s4-cards s4-cards--solo">
         <OffreCard offre={OFFRE_STANDARD} checkout={checkout} />

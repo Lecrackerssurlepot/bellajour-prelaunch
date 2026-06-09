@@ -232,6 +232,24 @@
   flex-direction: column;
   gap: 14px;
 }
+/* Champ email : glassmorphism cohérent avec les cartes. font-size 16px explicite
+   = anti-zoom iOS Safari (sous 16px, Safari zoome au focus). */
+.s4-email {
+  width: 100%;
+  font-family: var(--bj-font-ui);
+  font-size: 16px;
+  color: var(--bj-text);
+  background: var(--bj-glass-light-bg);
+  border: 1px solid var(--bj-action-border);
+  border-radius: var(--bj-r-btn);
+  padding: 14px 16px;
+  outline: none;
+  transition: border-color var(--bj-dur-fast) var(--bj-ease);
+}
+.s4-email::placeholder { color: var(--bj-text-faint); }
+.s4-email:focus { border-color: var(--bj-action); }
+.s4-email:disabled { opacity: 0.6; cursor: not-allowed; }
+
 .s4-cgv {
   display: flex;
   align-items: flex-start;
@@ -261,4 +279,30 @@
   background: var(--bj-veil-16);
   color: var(--bj-text-faint);
   cursor: not-allowed;
+}
+
+/* Message d'erreur checkout — sobre, lisible sur le glass, sans dramatiser. */
+.s4-error {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  line-height: 1.4;
+  color: var(--bj-text);
+  margin: 0;
+}
+
+/* ── Skeleton de chargement ── */
+/* Silhouette neutre pendant le fetch de l'état : même gabarit qu'une carte,
+   aucun contenu d'offre identifiable (anti-flash Fondateur si final = soldout). */
+.s4-cards-skeleton {
+  min-height: 420px;
+  background: var(--bj-cream-tint-1);
+  border-color: var(--bj-cream-tint-3);
+  animation: s4-skeleton-pulse 1.4s ease-in-out infinite;
+}
+@keyframes s4-skeleton-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.85; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s4-cards-skeleton { animation: none; }
 }
