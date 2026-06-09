@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { SupabaseClient } from "@supabase/supabase-js";
 import { canonicalizeEmail } from "@/lib/email";
 import { makeSupabase } from "@/lib/supabase";
 import { isValidRefCode } from "@/lib/validation";
+import { generateUniqueCode } from "@/lib/refcode";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/contacts";
 const BREVO_SMTP_URL = "https://api.brevo.com/v3/smtp/email";
@@ -182,35 +182,6 @@ function randomCode(): string {
   let code = "BJ-";
   for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
   return code;
-}
-
-async function generateUniqueCode(supabase: SupabaseClient, prenom?: string): Promise<string> {
-  const clean = prenom
-    ? prenom.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z]/g, "").toUpperCase()
-    : "";
-
-  if (!clean) {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    for (let attempt = 0; attempt < 10; attempt++) {
-      let suffix = "";
-      for (let i = 0; i < 4; i++) suffix += chars[Math.floor(Math.random() * chars.length)];
-      const code = "BJ-" + suffix;
-      const { data } = await supabase.from("waitlist").select("id").eq("ref_code", code).maybeSingle();
-      if (!data) return code;
-    }
-    throw new Error("Impossible de générer un ref_code unique.");
-  }
-
-  const base = "BJ-" + clean;
-  const { data: first } = await supabase.from("waitlist").select("id").eq("ref_code", base).maybeSingle();
-  if (!first) return base;
-
-  for (let n = 2; n <= 99; n++) {
-    const code = base + "-" + n;
-    const { data } = await supabase.from("waitlist").select("id").eq("ref_code", code).maybeSingle();
-    if (!data) return code;
-  }
-  throw new Error("Impossible de générer un ref_code unique.");
 }
 
 export async function POST(request: Request) {

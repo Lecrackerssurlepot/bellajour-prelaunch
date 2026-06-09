@@ -5,6 +5,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
 import { isValidRefCode } from "@/lib/validation";
 import { FOUNDER_CAP, countConfirmedFounders } from "@/lib/founder";
+import { generateUniqueCode } from "@/lib/refcode";
 
 /**
  * POST /api/checkout — point d'entrée du bouton « Réserver mon acompte » (S4).
@@ -51,7 +52,8 @@ function influencerAllowlist(): Set<string> {
   );
 }
 
-/* Génère un ref_code unique (préfixe "BJ-", cf. lib/validation REF_CODE_PATTERN). */
+/* Génère un ref_code unique aléatoire (préfixe "BJ-", cf. lib/validation REF_CODE_PATTERN).
+   Conservé comme FALLBACK quand le prénom est absent ou que la génération prénom échoue. */
 async function generateUniqueRefCode(supabase: SupabaseClient): Promise<string> {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   for (let attempt = 0; attempt < 10; attempt++) {
@@ -68,6 +70,21 @@ async function generateUniqueRefCode(supabase: SupabaseClient): Promise<string> 
   throw new Error("ref_code_generation_failed");
 }
 
+/* Résout le ref_code : prénom → code humain (generateUniqueCode, partagé avec la
+   waitlist), sinon/à défaut → code aléatoire. Ne bloque JAMAIS le checkout :
+   un échec côté prénom retombe sur le générateur aléatoire. */
+async function resolveRefCode(supabase: SupabaseClient, prenom: string): Promise<string> {
+  const clean = prenom.trim();
+  if (clean) {
+    try {
+      return await generateUniqueCode(supabase, clean);
+    } catch (err) {
+      console.error("[checkout] generateUniqueCode prénom échec, fallback aléatoire", (err as Error)?.message);
+    }
+  }
+  return generateUniqueRefCode(supabase);
+}
+
 export async function POST(request: Request) {
   // 1. Parse + validation d'entrée -----------------------------------------
   let body: Record<string, unknown>;
@@ -82,6 +99,9 @@ export async function POST(request: Request) {
   const expected_offer = body.expected_offer;
   const ref_influenceur_raw = typeof body.ref_influenceur === "string" ? body.ref_influenceur : "";
   const referred_by_raw = typeof body.referred_by === "string" ? body.referred_by : "";
+  // Sanitation identique à /api/waitlist (strip HTML, trim, cap 50). Vide → fallback aléatoire.
+  const cleanPrenom =
+    typeof body.prenom === "string" ? body.prenom.replace(/<[^>]*>/g, "").trim().slice(0, 50) : "";
 
   const normalizedEmail = email.trim().toLowerCase();
   if (!normalizedEmail || !EMAIL_RE.test(normalizedEmail)) {
@@ -119,7 +139,7 @@ export async function POST(request: Request) {
     // 3. Ligne existante (dédup canonique, cohérent avec /api/waitlist) -----
     const { data: existing, error: lookupError } = await supabase
       .from("waitlist")
-      .select("id, status, referred_by, ref_code")
+      .select("id, status, referred_by, ref_code, prenom")
       .eq("email_canonical", emailCanonical)
       .maybeSingle();
 
@@ -167,8 +187,12 @@ export async function POST(request: Request) {
       if (resolved === "influencer") update.ref_influenceur = refInf;
       // referred_by : premier lien gagne, jamais réécrit.
       if (!existing.referred_by && safeReferredBy) update.referred_by = safeReferredBy;
-      // ref_code : généré seulement s'il est vide (ne devrait pas arriver, garde-fou).
-      if (!existing.ref_code) update.ref_code = await generateUniqueRefCode(supabase);
+      // prenom : posé seulement s'il manque (ne jamais écraser celui d'une inscription waitlist).
+      if (!existing.prenom && cleanPrenom) update.prenom = cleanPrenom;
+      // ref_code : généré seulement s'il est vide (garde-fou) — basé prénom si dispo.
+      if (!existing.ref_code) {
+        update.ref_code = await resolveRefCode(supabase, existing.prenom || cleanPrenom);
+      }
 
       const { error: updateError } = await supabase
         .from("waitlist")
@@ -184,7 +208,8 @@ export async function POST(request: Request) {
         email_canonical: emailCanonical,
         status: "pending",
         offer_type: resolved,
-        ref_code: await generateUniqueRefCode(supabase),
+        prenom: cleanPrenom || null,
+        ref_code: await resolveRefCode(supabase, cleanPrenom),
       };
       if (safeReferredBy) insert.referred_by = safeReferredBy;
       if (resolved === "influencer") insert.ref_influenceur = refInf;

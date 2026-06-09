@@ -232,8 +232,9 @@
   flex-direction: column;
   gap: 14px;
 }
-/* Champ email : glassmorphism cohérent avec les cartes. font-size 16px explicite
-   = anti-zoom iOS Safari (sous 16px, Safari zoome au focus). */
+/* Champs prénom + email : glassmorphism cohérent avec les cartes. font-size 16px
+   explicite = anti-zoom iOS Safari (sous 16px, Safari zoome au focus). */
+.s4-prenom,
 .s4-email {
   width: 100%;
   font-family: var(--bj-font-ui);
@@ -246,8 +247,11 @@
   outline: none;
   transition: border-color var(--bj-dur-fast) var(--bj-ease);
 }
+.s4-prenom::placeholder,
 .s4-email::placeholder { color: var(--bj-text-faint); }
+.s4-prenom:focus,
 .s4-email:focus { border-color: var(--bj-action); }
+.s4-prenom:disabled,
 .s4-email:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .s4-cgv {

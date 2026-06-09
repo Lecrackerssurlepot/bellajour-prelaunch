@@ -163,6 +163,7 @@ function OffreCard({
 export default function S4Reservation() {
   const [offer, setOffer] = useState<OfferState | null>(null) // null = chargement (skeleton) — jamais d'offre flashée
   const [cgv, setCgv] = useState(false)
+  const [prenom, setPrenom] = useState('')
   const [email, setEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -192,6 +193,7 @@ export default function S4Reservation() {
   }, [])
 
   const emailValid = EMAIL_RE.test(email.trim())
+  const prenomValid = prenom.trim().length > 0
 
   /* Handoff POST /api/checkout. Le SERVEUR décide l'offre ; on envoie l'offre
      affichée en expected_offer. Email en BODY uniquement (jamais en query string). */
@@ -206,6 +208,7 @@ export default function S4Reservation() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          prenom: prenom.trim(),
           email: email.trim(),
           cgv_accepted: cgv,
           expected_offer: expectedOffer,
@@ -240,6 +243,17 @@ export default function S4Reservation() {
   const checkout = (
     <div className="s4-checkout">
       <input
+        type="text"
+        autoComplete="given-name"
+        className="s4-prenom"
+        placeholder="Votre prénom"
+        value={prenom}
+        onChange={(e) => setPrenom(e.target.value)}
+        aria-label="Prénom"
+        disabled={submitting}
+      />
+
+      <input
         type="email"
         inputMode="email"
         autoComplete="email"
@@ -269,7 +283,7 @@ export default function S4Reservation() {
       <button
         type="button"
         className="s4-reserver"
-        disabled={!emailValid || !cgv || submitting}
+        disabled={!prenomValid || !emailValid || !cgv || submitting}
         onClick={handleReserver}
       >
         Réserver mon acompte
