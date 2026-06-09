@@ -28,6 +28,7 @@
   --bj-action-soft:    #f0f7ff;   /* fond survol / sélection */
   --bj-action-border:  rgba(74, 144, 217, 0.35);  /* bordure dérivée */
   --bj-action-ring:    rgba(74, 144, 217, 0.40);  /* halo focus dérivé */
+  --bj-action-faint:   rgba(74, 144, 217, 0.45);  /* bleu clair/transparent — texte (ex. numéros cartes) */
 
   /* ─────────────── TEXTE ─────────────── */
   --bj-text:           #1c1c1c;   /* texte principal */

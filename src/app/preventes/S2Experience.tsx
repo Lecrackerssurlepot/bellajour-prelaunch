@@ -140,7 +140,8 @@ export default function S2Experience() {
           <article key={c.num} className="s2-card" data-active={i === activeIndex}>
             <div className="s2-card-body">
               <span className="s2-card-label">
-                <span className="s2-card-num">{c.num}</span> {c.label}
+                <span className="s2-card-num">{c.num}</span>{' '}
+                <span className="s2-card-title">{c.label}</span>
               </span>
               <p className="s2-card-ux">{c.ux}</p>
               <p className="s2-card-algo">{c.algo}</p>

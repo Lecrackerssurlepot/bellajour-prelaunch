@@ -130,13 +130,14 @@
 .s2-card-label {
   font-family: var(--bj-font-display);
   font-style: italic;
-  font-size: clamp(22px, 2.4vw, 28px); /* titre de carte « en gros » en haut */
-  line-height: 1.1;
-  color: var(--bj-terracotta-2);
+  font-size: clamp(28px, 3.2vw, 40px); /* label imposant en haut */
+  line-height: 1.08;
 }
 .s2-card-num {
-  font-style: italic;
-  color: var(--bj-action);
+  color: var(--bj-action-faint); /* numéro en bleu clair / transparent */
+}
+.s2-card-title {
+  color: var(--bj-text); /* titre en noir éditorial */
 }
 .s2-card-ux {
   font-family: var(--bj-font-ui);
@@ -186,6 +187,8 @@
      et on allège légèrement la phrase UX → tout rentre dans la hauteur. */
   .s2-card-algo { display: none; }
   .s2-card-ux { font-size: var(--bj-fs-sm); line-height: 1.45; }
+  /* Label imposant mais clamp réduit en mobile (ne pas manger la hauteur). */
+  .s2-card-label { font-size: clamp(22px, 6vw, 26px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
