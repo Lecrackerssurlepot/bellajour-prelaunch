@@ -13,7 +13,9 @@
   min-height: 560px;
   display: flex;
   flex-direction: column;
-  padding: clamp(32px, 5vh, 72px) 0;
+  /* padding-top = navbar fixe (--bj-topbar-h = 76px) + respiration → titre dégagé.
+     Bas réduit pour rendre de la hauteur au track. */
+  padding: calc(var(--bj-topbar-h) + clamp(12px, 2vh, 24px)) 0 clamp(24px, 4vh, 56px);
   overflow: hidden;
 }
 
@@ -21,12 +23,12 @@
   flex: 0 0 auto;
   width: 100%;
   max-width: var(--bj-max-width, 1200px);
-  margin: 0 auto clamp(20px, 3vh, 36px);
+  margin: 0 auto clamp(12px, 2vh, 22px); /* espace titre→cartes réduit */
   padding: 0 5vw;
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
+  flex-direction: column;
+  align-items: center; /* titre centré, aligné avec la carte active centrée */
+  gap: clamp(10px, 1.5vh, 16px);
 }
 .s2-title {
   font-family: var(--bj-font-display);
@@ -34,6 +36,7 @@
   font-weight: 600;
   font-size: clamp(26px, 3.6vw, var(--bj-fs-h2));
   line-height: 1.12;
+  text-align: center;
   color: var(--bj-action); /* bleu Bellajour — même token que .s1-title / logo / CTA */
 }
 
@@ -94,7 +97,8 @@
   .s2-card { width: 38vw; }
 }
 @media (min-width: 1100px) {
-  .s2-card { width: clamp(360px, 32vw, 440px); }
+  /* Cartes plus larges → texte sur moins de lignes → plus aéré, moins haut. */
+  .s2-card { width: clamp(440px, 40vw, 560px); }
 }
 
 /* Desktop ≥1100px : carte active centrée + agrandie (mise en valeur).
@@ -178,6 +182,10 @@
 @media (max-width: 767px) {
   .s2 { height: auto; min-height: 100dvh; }
   .s2-card-media { min-height: clamp(120px, 20dvh, 200px); }
+  /* Contenu réduit : on masque la phrase algo (wording conservé dans le JSX),
+     et on allège légèrement la phrase UX → tout rentre dans la hauteur. */
+  .s2-card-algo { display: none; }
+  .s2-card-ux { font-size: var(--bj-fs-sm); line-height: 1.45; }
 }
 
 @media (prefers-reduced-motion: reduce) {
