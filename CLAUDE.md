@@ -146,3 +146,6 @@ ls .claude/worktrees/friendly-banach/
 
 ## Cleanup post-launch
 - Supprimer src/app/components/ReferralSheet.tsx + referralsheet.css (orphelins, jamais importés).
+
+## Prévente — Section 4
+- Le prix/offre d'acompte est TOUJOURS décidé par le backend (/api/checkout). Le front envoie expected_offer (affichage seulement) et gère le 409 offer_changed. Ne jamais hardcoder un montant ni le seuil FOUNDER_CAP côté front.
