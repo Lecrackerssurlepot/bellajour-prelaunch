@@ -59,13 +59,26 @@ export default function S2Experience() {
     })
   }, [])
 
-  // Décale le track de activeIndex × (largeur carte + gap), mesuré sur le DOM
-  // pour gérer automatiquement gap et largeurs responsive (vw/clamp).
+  // Calcule --s2-shift (translateX du track). Deux modèles selon le viewport :
+  // - Desktop ≥1100px : carte active CENTRÉE dans le conteneur (mise en valeur).
+  // - Mobile / tablette : carte active calée à GAUCHE (1 carte + peek).
+  // Mesuré sur le DOM (offsetLeft/offsetWidth, non affectés par le scale visuel)
+  // pour gérer gap + largeurs responsive (vw/clamp).
   const applyShift = useCallback(() => {
     const track = trackRef.current
     if (!track) return
     const cards = track.querySelectorAll<HTMLElement>('.s2-card')
     if (cards.length === 0) return
+
+    if (window.matchMedia('(min-width: 1100px)').matches) {
+      const active = cards[activeIndex]
+      if (!active) return
+      const shift =
+        track.clientWidth / 2 - (active.offsetLeft + active.offsetWidth / 2)
+      track.style.setProperty('--s2-shift', `${shift}px`)
+      return
+    }
+
     const step =
       cards.length > 1
         ? cards[1].offsetLeft - cards[0].offsetLeft

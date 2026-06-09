@@ -47,6 +47,18 @@
 
   --bj-glass-blur:         18px;
 
+  /* ─────────────── GLASS CARTES — charte v2 (S2) ───────────────
+     Dérogation assumée à l'interdit v1 (glass/box-shadow). Glass subtil,
+     ombre douce ; carte active = fond plus opaque + scale. Voir MIGRATION-CHARTE.md.
+     Namespace dédié --bj-glass-card-* pour ne pas entrer en collision avec
+     --bj-glass-blur (18px nu) consommé par navbar + s4-reservation. */
+  --bj-glass-card-bg:            rgba(240, 235, 225, 0.55);
+  --bj-glass-card-bg-active:     rgba(240, 235, 225, 0.78);
+  --bj-glass-card-blur:          blur(12px) saturate(1.08);
+  --bj-glass-card-border:        1px solid rgba(168, 152, 128, 0.30);
+  --bj-glass-card-shadow:        0 8px 32px rgba(28, 28, 28, 0.08);
+  --bj-glass-card-shadow-active: 0 16px 48px rgba(28, 28, 28, 0.14);
+
   /* Voiles génériques sur charbon (overlays, hovers discrets) */
   --bj-veil-6:   rgba(28, 28, 28, 0.06);
   --bj-veil-8:   rgba(28, 28, 28, 0.08);
