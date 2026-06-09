@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { canonicalizeEmail } from "@/lib/email";
 import { makeSupabase } from "@/lib/supabase";
 import { isValidRefCode } from "@/lib/validation";
+import { createPendingReferralCredits } from "@/lib/referral-credits";
 import { generateUniqueCode } from "@/lib/refcode";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/contacts";
@@ -328,66 +329,25 @@ export async function POST(request: Request) {
       );
     }
 
-    // Créditer le parrain si referred_by valide + récupérer son prénom pour Brevo
+    // Créditer le parrain si referred_by valide + récupérer son prénom pour Brevo.
+    // La CRÉATION des crédits pending (anti-auto-parrainage inclus) est factorisée dans
+    // createPendingReferralCredits (source de vérité partagée avec /api/checkout).
+    // Ici on garde les effets SPÉCIFIQUES au signup : count filleuls + Brevo + email P2.
     let prenomParrain = "";
     let parrainValide = false;
     if (safeReferredBy) {
-      const { data: parrain } = await supabase
-        .from("waitlist")
-        .select("email, email_canonical, prenom")
-        .eq("ref_code", safeReferredBy)
-        .maybeSingle();
+      const credit = await createPendingReferralCredits({
+        supabase,
+        referredBy: safeReferredBy,
+        filleulEmail: normalizedEmail,
+        filleulEmailCanonical: emailCanonical,
+        filleulRefCode: ref_code,
+      });
+      parrainValide = credit.parrainValide;
+      prenomParrain = credit.prenomParrain;
 
-      // Anti-auto-parrainage : compare sur la forme canonique pour bloquer
-      // les alias Gmail (jane+1@gmail.com → jane@gmail.com).
-      if (parrain?.email && parrain.email_canonical !== emailCanonical) {
-        parrainValide = true;
-        prenomParrain = parrain.prenom || "";
-        // Upsert idempotent : si un crédit existe déjà pour ce filleul (replay,
-        // retry, race condition), on ne crée pas de doublon. La contrainte
-        // UNIQUE(source) en base garantit qu'un filleul = 1 crédit max.
-        const { error: creditError } = await supabase
-          .from("pages_credits")
-          .upsert(
-            {
-              email: parrain.email,
-              montant: 5,
-              source: ref_code,
-              applique: false,
-              status: "pending",
-            },
-            { onConflict: "source", ignoreDuplicates: true }
-          );
-        if (creditError) {
-          console.error(`[parrainage] crédit parrain échec source=${ref_code}`, creditError);
-        } else {
-          console.log(`[parrainage] crédit parrain OK (upsert) → ${parrain.email} source=${ref_code}`);
-        }
-
-        // Crédit miroir du PROCHE (+3 pages). Même mécanisme que le crédit parrain,
-        // source préfixée "SELF:" pour cohabiter avec le crédit parrain sous la
-        // contrainte UNIQUE(source) : 1 event signup = 2 lignes distinctes
-        //   (parrain : source=ref_code) + (proche : source=SELF:ref_code).
-        // Idempotent sur replay du même signup. Échec isolé : ne casse ni le
-        // crédit parrain, ni l'envoi des mails, ni le retour 200.
-        const procheSource = `SELF:${ref_code}`;
-        const { error: procheCreditError } = await supabase
-          .from("pages_credits")
-          .upsert(
-            {
-              email: normalizedEmail,
-              montant: 3,
-              source: procheSource,
-              applique: false,
-              status: "pending",
-            },
-            { onConflict: "source", ignoreDuplicates: true }
-          );
-        if (procheCreditError) {
-          console.error(`[parrainage] crédit proche échec source=${procheSource}`, procheCreditError);
-        } else {
-          console.log(`[parrainage] crédit proche OK (upsert) → ${normalizedEmail} source=${procheSource}`);
-        }
+      if (credit.parrainValide && credit.parrainEmail) {
+        const parrainEmail = credit.parrainEmail;
 
         // Compter les filleuls du parrain (inclut le filleul qui vient d'être inséré)
         const { count: nbProches } = await supabase
@@ -396,10 +356,10 @@ export async function POST(request: Request) {
           .eq("referred_by", safeReferredBy);
 
         const nb = nbProches ?? 1;
-        console.log(`[parrainage] ${parrain.email} → +1 filleul (${cleanPrenom || "?"}), total=${nb}`);
+        console.log(`[parrainage] ${parrainEmail} → +1 filleul (${cleanPrenom || "?"}), total=${nb}`);
 
         await updateBrevoContact(
-          parrain.email,
+          parrainEmail,
           {
             PRENOM_PROCHE: cleanPrenom || "",
             NB_PROCHES: nb,
@@ -412,7 +372,7 @@ export async function POST(request: Request) {
         // Source unique de NB_PROCHES = count(waitlist where referred_by=...) ci-dessus,
         // donc même valeur que celle envoyée à Brevo via updateBrevoContact.
         await sendReferralNotifyEmailP2(
-          parrain.email,
+          parrainEmail,
           prenomParrain,
           cleanPrenom || "",
           nb,

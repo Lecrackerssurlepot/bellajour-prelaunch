@@ -6,6 +6,7 @@ import { canonicalizeEmail } from "@/lib/email";
 import { isValidRefCode } from "@/lib/validation";
 import { FOUNDER_CAP, countConfirmedFounders } from "@/lib/founder";
 import { generateUniqueCode } from "@/lib/refcode";
+import { createPendingReferralCredits } from "@/lib/referral-credits";
 
 /**
  * POST /api/checkout — point d'entrée du bouton « Réserver mon acompte » (S4).
@@ -179,7 +180,14 @@ export async function POST(request: Request) {
     }
 
     // 6. UPSERT pending (service role) — jamais numero_fondateur ici --------
+    //    On capture deux valeurs pour la création des crédits parrainage (étape 6.5) :
+    //    - filleulRefCode : ref_code final du filleul (= source des crédits)
+    //    - effectiveReferredBy : parrain effectif, premier-lien-gagne (existant l'emporte)
+    let filleulRefCode: string | null;
+    const effectiveReferredBy: string | null = existing?.referred_by ?? safeReferredBy ?? null;
+
     if (existing) {
+      filleulRefCode = existing.ref_code ?? null;
       const update: Record<string, unknown> = {
         status: "pending",
         offer_type: resolved,
@@ -191,7 +199,8 @@ export async function POST(request: Request) {
       if (!existing.prenom && cleanPrenom) update.prenom = cleanPrenom;
       // ref_code : généré seulement s'il est vide (garde-fou) — basé prénom si dispo.
       if (!existing.ref_code) {
-        update.ref_code = await resolveRefCode(supabase, existing.prenom || cleanPrenom);
+        filleulRefCode = await resolveRefCode(supabase, existing.prenom || cleanPrenom);
+        update.ref_code = filleulRefCode;
       }
 
       const { error: updateError } = await supabase
@@ -203,13 +212,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "internal" }, { status: 500 });
       }
     } else {
+      filleulRefCode = await resolveRefCode(supabase, cleanPrenom);
       const insert: Record<string, unknown> = {
         email: normalizedEmail,
         email_canonical: emailCanonical,
         status: "pending",
         offer_type: resolved,
         prenom: cleanPrenom || null,
-        ref_code: await resolveRefCode(supabase, cleanPrenom),
+        ref_code: filleulRefCode,
       };
       if (safeReferredBy) insert.referred_by = safeReferredBy;
       if (resolved === "influencer") insert.ref_influenceur = refInf;
@@ -219,6 +229,26 @@ export async function POST(request: Request) {
         // Race possible (un autre worker a inséré le même email entre lookup et insert).
         console.error("[checkout] insert error", insertError.code);
         return NextResponse.json({ error: "internal" }, { status: 500 });
+      }
+    }
+
+    // 6.5. Crédits parrainage pending (parrainage CLIENT) — même logique que /api/waitlist
+    //      via la lib partagée. Idempotent (UNIQUE(source) sur ref_code filleul) : un
+    //      filleul déjà inscrit waitlist puis payant ne génère pas de doublon. La ligne
+    //      waitlist du filleul existe désormais (étape 6) → le trigger peuple filleul_email.
+    //      Best-effort : ZÉRO email/Brevo ici, et ne bloque jamais le handoff Stripe.
+    //      La confirmation (pending → confirmed) reste au webhook.
+    if (effectiveReferredBy && filleulRefCode) {
+      try {
+        await createPendingReferralCredits({
+          supabase,
+          referredBy: effectiveReferredBy,
+          filleulEmail: normalizedEmail,
+          filleulEmailCanonical: emailCanonical,
+          filleulRefCode,
+        });
+      } catch (creditErr) {
+        console.error("[checkout] crédits parrainage exception", (creditErr as Error)?.message);
       }
     }
 

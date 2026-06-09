@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import './s4-reservation.css'
 import { DEFAULT_OFFER_STATE, PRIX_ALBUM_BASE, placesRestantes } from './offer-state'
 import type { OfferState } from './offer-state'
+import { isValidRefCode } from '@/lib/validation'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -167,6 +168,28 @@ export default function S4Reservation() {
   const [email, setEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [referredBy, setReferredBy] = useState<string | null>(null)
+
+  /* Parrainage CLIENT : retrouver le code parrain pour le transmettre au checkout.
+     Les liens partagés pointent vers la LANDING (/?ref=), pas /preventes — donc une fois
+     ici le ?ref= n'est généralement PLUS dans l'URL. Source PRINCIPALE = sessionStorage
+     « bellajour_referral » (posé par la landing, même clé/forme {code, prenom} que
+     FinalWaitlist), ?ref= URL en bonus/override. On ne retient qu'un code bien formé
+     (isValidRefCode, préfixe BJ-) ; le backend re-valide de toute façon. */
+  useEffect(() => {
+    const urlRef = new URLSearchParams(window.location.search).get('ref')
+    let stored: string | null = null
+    try {
+      const raw = sessionStorage.getItem('bellajour_referral')
+      if (raw) {
+        const parsed = JSON.parse(raw) as { code?: string }
+        stored = typeof parsed?.code === 'string' ? parsed.code : null
+      }
+    } catch { /* sessionStorage indispo (Safari privé) — no-op */ }
+
+    const code = (urlRef || stored || '').trim()
+    if (code && isValidRefCode(code)) setReferredBy(code)
+  }, [])
 
   /* État de l'offre = autorité serveur (GET /api/offer-state). Fallback résilient
      si fetch KO → la page ne casse jamais. Réutilisé sur 409 offer_changed pour
@@ -212,6 +235,8 @@ export default function S4Reservation() {
           email: email.trim(),
           cgv_accepted: cgv,
           expected_offer: expectedOffer,
+          // Parrainage CLIENT : transmis seulement si présent et bien formé. Absent → omis.
+          ...(referredBy ? { referred_by: referredBy } : {}),
         }),
       })
       const data = await res.json().catch(() => ({}))
