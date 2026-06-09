@@ -1,10 +1,13 @@
 /* ════════════════════════════════════════════════════════════
    PRÉVENTE — S3 L'objet Bellajour (PRD §5.3)
+   Accordéon à gauche (corps déroulé SOUS le bouton, un seul ouvert) +
+   image à droite qui slide selon l'item actif. Fond clair (--bj-cream),
+   aligné sur S2/S4. transform + opacity uniquement, easing doux ≥600ms.
    ════════════════════════════════════════════════════════════ */
 
 .s3 {
   width: 100%;
-  background: linear-gradient(180deg, var(--bj-cream-2) 0%, var(--bj-cream) 100%);
+  background: var(--bj-cream); /* même clair que les sections voisines (S2/S4) */
   padding: clamp(56px, 9vh, 110px) 5vw;
 }
 
@@ -13,6 +16,7 @@
   margin: 0 auto;
 }
 
+/* Titre : style identique aux autres sections (S4/S5) — pas de style ad hoc. */
 .s3-title {
   font-family: var(--bj-font-display);
   font-style: italic;
@@ -22,66 +26,180 @@
   margin-bottom: clamp(28px, 4vh, 48px);
 }
 
-/* Desktop : nav à gauche, image au centre, panel à droite.
-   Mobile : empilé — nav scrollable horizontale, image, panel. */
+/* Desktop : accordéon à gauche, image moitié droite centrée.
+   Mobile : une colonne — image en haut (toujours visible), accordéon dessous. */
 .s3-grid {
   display: grid;
-  gap: clamp(20px, 3vw, 40px);
+  gap: clamp(24px, 4vw, 56px);
   grid-template-columns: 1fr;
-  align-items: start;
+  align-items: center;
 }
 @media (min-width: 900px) {
   .s3-grid {
-    grid-template-columns: minmax(180px, 1fr) 1.4fr 1.2fr;
+    grid-template-columns: 1fr 1fr; /* ~50/50 */
   }
 }
 
-/* ── Boutons-titres ── */
-.s3-nav {
+/* ════════════════ GAUCHE — accordéon ════════════════ */
+.s3-acc {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  flex-direction: column;
+  order: 2; /* mobile : sous l'image */
 }
-.s3-nav::-webkit-scrollbar { display: none; }
 @media (min-width: 900px) {
-  .s3-nav { flex-direction: column; overflow: visible; }
-}
-.s3-nav-btn {
-  flex: 0 0 auto;
-  text-align: left;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-ui);
-  color: var(--bj-text-soft);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--bj-r-btn);
-  padding: 10px 14px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: color var(--bj-dur-fast) var(--bj-ease),
-              background var(--bj-dur-fast) var(--bj-ease);
-}
-.s3-nav-btn:hover { color: var(--bj-text); }
-.s3-nav-btn--active {
-  color: var(--bj-action);
-  background: var(--bj-action-soft);
-  border-color: var(--bj-action-border);
+  .s3-acc { order: 0; }
 }
 
-/* ── Image objet ── */
+.s3-item {
+  border-bottom: 0.5px solid var(--bj-veil-12);
+}
+.s3-item:first-child {
+  border-top: 0.5px solid var(--bj-veil-12);
+}
+
+/* Bouton — grande zone de clic, aspect éditorial */
+.s3-item-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent; /* accent actif — largeur stable (pas de shift) */
+  padding: clamp(18px, 2.4vh, 26px) clamp(14px, 1.6vw, 22px);
+  cursor: pointer;
+  transition: background var(--bj-dur) var(--bj-ease),
+              border-color var(--bj-dur) var(--bj-ease);
+}
+.s3-item-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.s3-item-titre {
+  font-family: var(--bj-font-display);
+  font-weight: 600;
+  font-size: clamp(21px, 2.4vw, 28px);
+  line-height: 1.15;
+  color: var(--bj-text);
+  transition: transform var(--bj-dur) var(--bj-ease),
+              color var(--bj-dur) var(--bj-ease);
+}
+.s3-item-accroche {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: clamp(14px, 1.5vw, 17px);
+  line-height: 1.3;
+  color: var(--bj-text-soft);
+}
+
+/* Chevron qui pivote à l'ouverture */
+.s3-item-chevron {
+  flex: 0 0 auto;
+  font-family: var(--bj-font-ui);
+  font-size: 26px;
+  line-height: 1;
+  color: var(--bj-text-faint);
+  transform: rotate(0deg);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              color var(--bj-dur) var(--bj-ease);
+}
+
+/* ── Hover subtil ── */
+.s3-item-btn:hover {
+  background: var(--bj-veil-6);
+}
+.s3-item-btn:hover .s3-item-titre {
+  transform: translateX(3px);
+  color: var(--bj-action);
+}
+
+/* ── État actif ── */
+.s3-item[data-active='true'] .s3-item-btn {
+  background: var(--bj-action-soft);
+  border-left-color: var(--bj-action);
+}
+.s3-item[data-active='true'] .s3-item-titre {
+  color: var(--bj-action);
+}
+.s3-item[data-active='true'] .s3-item-chevron {
+  transform: rotate(90deg);
+  color: var(--bj-action);
+}
+
+/* ── Reveal : grid-rows 0fr → 1fr (transition douce, pas de height brute) ── */
+.s3-item-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.s3-item[data-active='true'] .s3-item-reveal {
+  grid-template-rows: 1fr;
+}
+.s3-item-reveal-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+.s3-item-corps {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  line-height: 1.6;
+  color: var(--bj-text-soft);
+  padding: 0 clamp(14px, 1.6vw, 22px) clamp(20px, 2.6vh, 28px);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s,
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s;
+}
+.s3-item[data-active='true'] .s3-item-corps {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Version courte (mobile) masquée par défaut */
+.s3-corps-short { display: none; }
+
+/* ════════════════ DROITE — image objet (slide) ════════════════ */
 .s3-media {
+  position: relative;
   width: 100%;
   aspect-ratio: 3 / 4;
   border-radius: var(--bj-r-lg);
-  background: var(--bj-cream-tint-2);
-  border: 1px dashed var(--bj-text-faint);
+  overflow: hidden;
+  order: 1; /* mobile : au-dessus de l'accordéon */
+}
+@media (min-width: 900px) {
+  .s3-media { order: 0; }
+}
+
+/* 2+ calques empilés : actif visible, autres parqués d'un côté.
+   before = items avant l'actif (parqués à gauche) ; after = après (à droite).
+   Passage avant→arrière : le sortant glisse d'un côté, l'entrant arrive de l'autre. */
+.s3-layer {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  background: var(--bj-cream-tint-2);
+  border: 1px dashed var(--bj-text-faint);
+  border-radius: var(--bj-r-lg);
+  opacity: 0;
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
 }
-.s3-media-label {
+.s3-layer[data-state='before'] { transform: translateX(-8%); opacity: 0; }
+.s3-layer[data-state='after']  { transform: translateX(8%);  opacity: 0; }
+.s3-layer[data-state='active'] {
+  transform: translateX(0);
+  opacity: 1;
+  z-index: 2;
+}
+.s3-layer-label {
   font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-sm);
   letter-spacing: 0.16em;
@@ -89,29 +207,20 @@
   color: var(--bj-text-faint);
 }
 
-/* ── Panel texte (animation d'entrée à chaque changement via key) ── */
-.s3-panel {
-  animation: s3-slide-in var(--bj-dur) var(--bj-ease);
-}
-@keyframes s3-slide-in {
-  from { opacity: 0; transform: translateX(16px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-.s3-panel-accroche {
-  display: block;
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-size: clamp(20px, 2.4vw, 26px);
-  color: var(--bj-text);
-  margin-bottom: 14px;
-}
-.s3-panel-corps {
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-body);
-  line-height: 1.6;
-  color: var(--bj-text-soft);
+/* ════════════════ Mobile ════════════════ */
+@media (max-width: 899px) {
+  .s3-corps-full { display: none; }
+  .s3-corps-short { display: inline; }
+  .s3-media { max-width: clamp(240px, 70vw, 360px); margin: 0 auto; }
 }
 
+/* ════════════════ Reduced motion ════════════════ */
 @media (prefers-reduced-motion: reduce) {
-  .s3-panel { animation: none; }
+  .s3-item-reveal,
+  .s3-item-corps,
+  .s3-item-chevron,
+  .s3-item-titre,
+  .s3-layer {
+    transition: none;
+  }
 }
