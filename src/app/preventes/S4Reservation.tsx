@@ -60,7 +60,7 @@ const OFFRE_STANDARD: Offre = {
     { label: FEATURE_LABELS.livraison, value: true },
     { label: FEATURE_LABELS.digital, value: true },
   ],
-  parrainagePages: 10,
+  parrainagePages: 20,
 }
 
 const OFFRE_INFLUENCER: Offre = {
