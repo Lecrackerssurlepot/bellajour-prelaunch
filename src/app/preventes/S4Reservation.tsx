@@ -299,7 +299,10 @@ export default function S4Reservation() {
   } else if (offer.offerMode === 'soldout') {
     cards = (
       <div className="s4-cards s4-cards--solo">
-        <OffreCard offre={OFFRE_STANDARD} checkout={checkout} />
+        {/* Carte seule (Fondateur épuisé) : on valorise « l'offre du moment »
+            plutôt qu'un choix par défaut → libellé « Offre Prévente ».
+            Le repoussoir en mode founder garde « Offre Standard » (contraste). */}
+        <OffreCard offre={{ ...OFFRE_STANDARD, nom: 'Offre Prévente' }} checkout={checkout} />
       </div>
     )
   } else {
