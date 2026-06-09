@@ -5,6 +5,7 @@ import './s4-reservation.css'
 import { DEFAULT_OFFER_STATE, PRIX_ALBUM_BASE, placesRestantes } from './offer-state'
 import type { OfferState } from './offer-state'
 import { isValidRefCode } from '@/lib/validation'
+import ReservationModal from './ReservationModal'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -169,6 +170,7 @@ export default function S4Reservation() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [referredBy, setReferredBy] = useState<string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false) // encart de réservation (prénom/email/CGV)
 
   /* Parrainage CLIENT : retrouver le code parrain pour le transmettre au checkout.
      Les liens partagés pointent vers la LANDING (/?ref=), pas /preventes — donc une fois
@@ -264,52 +266,15 @@ export default function S4Reservation() {
     setSubmitting(false)
   }
 
-  /* Checkout = email + CGV + bouton. Rendu À L'INTÉRIEUR de l'encart actionnable (règle D). */
+  /* Checkout = bouton d'ouverture de l'encart. Rendu À L'INTÉRIEUR de l'encart
+     actionnable (règle D). Les champs prénom/email/CGV + le handoff vivent désormais
+     dans le modal (<ReservationModal>), déclenché par ce bouton. */
   const checkout = (
     <div className="s4-checkout">
-      <input
-        type="text"
-        autoComplete="given-name"
-        className="s4-prenom"
-        placeholder="Votre prénom"
-        value={prenom}
-        onChange={(e) => setPrenom(e.target.value)}
-        aria-label="Prénom"
-        disabled={submitting}
-      />
-
-      <input
-        type="email"
-        inputMode="email"
-        autoComplete="email"
-        className="s4-email"
-        placeholder="votre@email.fr"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        aria-label="Adresse email"
-        disabled={submitting}
-      />
-
-      <label className="s4-cgv">
-        <input
-          type="checkbox"
-          checked={cgv}
-          onChange={(e) => setCgv(e.target.checked)}
-        />
-        <span>
-          J’accepte les{' '}
-          {/* Lien CGV branché plus tard (avec Louis) — emplacement prévu. */}
-          <a href="#" className="s4-cgv-link">conditions générales de vente</a>
-        </span>
-      </label>
-
-      {error && <p className="s4-error" role="alert">{error}</p>}
-
       <button
         type="button"
         className="s4-reserver"
-        disabled={!prenomValid || !emailValid || !cgv || submitting}
-        onClick={handleReserver}
+        onClick={() => setModalOpen(true)}
       >
         Réserver mon acompte
       </button>
@@ -353,6 +318,7 @@ export default function S4Reservation() {
   }
 
   return (
+    <>
     <section id="s4" className="s4" data-section="s4-reservation" data-theme="light">
       <div className="s4-inner">
 
@@ -373,5 +339,22 @@ export default function S4Reservation() {
 
       </div>
     </section>
+
+    <ReservationModal
+      open={modalOpen}
+      onClose={() => setModalOpen(false)}
+      prenom={prenom}
+      setPrenom={setPrenom}
+      email={email}
+      setEmail={setEmail}
+      cgv={cgv}
+      setCgv={setCgv}
+      prenomValid={prenomValid}
+      emailValid={emailValid}
+      submitting={submitting}
+      error={error}
+      onSubmit={handleReserver}
+    />
+    </>
   )
 }
