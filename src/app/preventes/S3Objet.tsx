@@ -4,17 +4,18 @@ import { useState } from 'react'
 import './s3-objet.css'
 
 /* PRD §5.3 — S3 L'objet Bellajour.
-   Interaction : accordéon à gauche (le corps se déroule SOUS le bouton cliqué,
-   un seul ouvert à la fois) + image à droite (moitié droite, centrée) qui se
-   remplace par un slide fluide selon l'item actif.
-   Mobile : une colonne, image en haut (slide identique), corps condensé (`court`).
+   Pills arrondis (style proto .s1-cta) pour 5 facettes.
+   Desktop : pills empilées en haut à gauche + accordéon (corps complet déroulé
+   SOUS la pill active, un seul ouvert) ; image réduite centrée à droite.
+   Mobile : pills en barre horizontale scrollable (onglets) + texte court partagé
+   + image en dessous, tout visible sans scroller. Image : slide fluide au changement.
    Wording desktop figé du PRD (`corps` inchangé). */
 
 interface Facette {
   titre: string
   accroche: string
   corps: string
-  court: string // version condensée mobile
+  court: string // version condensée mobile (onglets)
 }
 
 const FACETTES: Facette[] = [
@@ -51,14 +52,14 @@ const FACETTES: Facette[] = [
 ]
 
 export default function S3Objet() {
-  // `active` pilote l'image (reste affichée même accordéon replié).
-  // `open` : l'item actif est-il déroulé. Un seul ouvert à la fois.
+  // `active` pilote l'image + l'onglet mobile (reste affiché même replié desktop).
+  // `open` : la pill active est-elle déroulée (accordéon desktop). Un seul ouvert.
   const [active, setActive] = useState(0)
   const [open, setOpen] = useState(true)
 
-  const toggle = (i: number) => {
+  const select = (i: number) => {
     if (i === active) {
-      setOpen((o) => !o)
+      setOpen((o) => !o) // re-clic desktop : replie/déplie l'accordéon
     } else {
       setActive(i)
       setOpen(true)
@@ -73,49 +74,60 @@ export default function S3Objet() {
 
         <div className="s3-grid">
 
-          {/* GAUCHE — accordéon */}
-          <div className="s3-acc">
-            {FACETTES.map((f, i) => {
-              const isOpen = open && i === active
-              return (
-                <div className="s3-item" data-active={isOpen} key={f.titre}>
-                  <button
-                    type="button"
-                    className="s3-item-btn"
-                    aria-expanded={isOpen}
-                    aria-controls={`s3-reveal-${i}`}
-                    onClick={() => toggle(i)}
-                  >
-                    <span className="s3-item-head">
-                      <span className="s3-item-titre">{f.titre}</span>
-                      <span className="s3-item-accroche">{f.accroche}</span>
-                    </span>
-                    <span className="s3-item-chevron" aria-hidden="true">›</span>
-                  </button>
+          {/* GAUCHE (desktop) / HAUT (mobile) — pills + texte */}
+          <div className="s3-left">
+            <div className="s3-pills" role="tablist" aria-label="Facettes de l’objet">
+              {FACETTES.map((f, i) => {
+                const isOpen = open && i === active
+                return (
+                  <div className="s3-item" data-active={i === active} key={f.titre}>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={i === active}
+                      aria-expanded={isOpen}
+                      aria-controls={`s3-reveal-${i}`}
+                      className="s3-pill"
+                      onClick={() => select(i)}
+                    >
+                      {f.titre}
+                    </button>
 
-                  <div className="s3-item-reveal" id={`s3-reveal-${i}`} role="region">
-                    <div className="s3-item-reveal-inner">
-                      <p className="s3-item-corps">
-                        <span className="s3-corps-full">{f.corps}</span>
-                        <span className="s3-corps-short">{f.court}</span>
-                      </p>
+                    {/* Accordéon desktop : corps complet sous la pill active */}
+                    <div
+                      className="s3-item-reveal"
+                      id={`s3-reveal-${i}`}
+                      data-open={isOpen}
+                      role="region"
+                    >
+                      <div className="s3-item-reveal-inner">
+                        <span className="s3-item-accroche">{f.accroche}</span>
+                        <p className="s3-item-corps">{f.corps}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
+
+            {/* Onglet mobile : texte court de l'item actif (masqué en desktop) */}
+            <div className="s3-tab-text" aria-live="polite">
+              <p>{FACETTES[active].court}</p>
+            </div>
           </div>
 
-          {/* DROITE — image objet (slide selon l'item actif) */}
-          <div className="s3-media" aria-hidden="true">
-            {FACETTES.map((f, i) => {
-              const state = i === active ? 'active' : i < active ? 'before' : 'after'
-              return (
-                <div className="s3-layer" data-state={state} key={f.titre}>
-                  <span className="s3-layer-label">{f.titre}</span>
-                </div>
-              )
-            })}
+          {/* DROITE (desktop) / BAS (mobile) — image objet (slide selon l'actif) */}
+          <div className="s3-media-wrap">
+            <div className="s3-media" aria-hidden="true">
+              {FACETTES.map((f, i) => {
+                const state = i === active ? 'active' : i < active ? 'before' : 'after'
+                return (
+                  <div className="s3-layer" data-state={state} key={f.titre}>
+                    <span className="s3-layer-label">{f.titre}</span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
 
         </div>

@@ -1,13 +1,14 @@
 /* ════════════════════════════════════════════════════════════
    PRÉVENTE — S3 L'objet Bellajour (PRD §5.3)
-   Accordéon à gauche (corps déroulé SOUS le bouton, un seul ouvert) +
-   image à droite qui slide selon l'item actif. Fond clair (--bj-cream),
-   aligné sur S2/S4. transform + opacity uniquement, easing doux ≥600ms.
+   Pills arrondis (style proto .s1-cta). Desktop : pills en haut à gauche +
+   accordéon (corps sous la pill active) ; image réduite centrée à droite.
+   Mobile : pills en barre horizontale scrollable (onglets) + texte court + image,
+   tout visible sans scroller. transform + opacity uniquement, easing doux ≥600ms.
    ════════════════════════════════════════════════════════════ */
 
 .s3 {
   width: 100%;
-  background: var(--bj-cream); /* même clair que les sections voisines (S2/S4) */
+  background: var(--bj-cream); /* même clair que S2/S4 */
   padding: clamp(56px, 9vh, 110px) 5vw;
 }
 
@@ -26,13 +27,13 @@
   margin-bottom: clamp(28px, 4vh, 48px);
 }
 
-/* Desktop : accordéon à gauche, image moitié droite centrée.
-   Mobile : une colonne — image en haut (toujours visible), accordéon dessous. */
+/* Desktop : pills+texte à gauche (remontés en haut), image à droite (centrée).
+   Mobile : une colonne — pills/texte en haut, image en dessous. */
 .s3-grid {
   display: grid;
   gap: clamp(24px, 4vw, 56px);
   grid-template-columns: 1fr;
-  align-items: center;
+  align-items: start; /* pills collées en haut */
 }
 @media (min-width: 900px) {
   .s3-grid {
@@ -40,144 +41,118 @@
   }
 }
 
-/* ════════════════ GAUCHE — accordéon ════════════════ */
-.s3-acc {
+/* ════════════════ GAUCHE — pills + accordéon ════════════════ */
+.s3-left {
+  min-width: 0;
+}
+
+.s3-pills {
   display: flex;
   flex-direction: column;
-  order: 2; /* mobile : sous l'image */
-}
-@media (min-width: 900px) {
-  .s3-acc { order: 0; }
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .s3-item {
-  border-bottom: 0.5px solid var(--bj-veil-12);
-}
-.s3-item:first-child {
-  border-top: 0.5px solid var(--bj-veil-12);
-}
-
-/* Bouton — grande zone de clic, aspect éditorial */
-.s3-item-btn {
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  text-align: left;
-  background: transparent;
-  border: none;
-  border-left: 2px solid transparent; /* accent actif — largeur stable (pas de shift) */
-  padding: clamp(18px, 2.4vh, 26px) clamp(14px, 1.6vw, 22px);
-  cursor: pointer;
-  transition: background var(--bj-dur) var(--bj-ease),
-              border-color var(--bj-dur) var(--bj-ease);
-}
-.s3-item-head {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-.s3-item-titre {
-  font-family: var(--bj-font-display);
-  font-weight: 600;
-  font-size: clamp(21px, 2.4vw, 28px);
-  line-height: 1.15;
-  color: var(--bj-text);
-  transition: transform var(--bj-dur) var(--bj-ease),
-              color var(--bj-dur) var(--bj-ease);
-}
-.s3-item-accroche {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-size: clamp(14px, 1.5vw, 17px);
-  line-height: 1.3;
-  color: var(--bj-text-soft);
 }
 
-/* Chevron qui pivote à l'ouverture */
-.s3-item-chevron {
-  flex: 0 0 auto;
+/* ── Pill : réutilise EXACTEMENT le style proto .s1-cta ── */
+.s3-pill {
+  display: inline-block;
   font-family: var(--bj-font-ui);
-  font-size: 26px;
-  line-height: 1;
-  color: var(--bj-text-faint);
-  transform: rotate(0deg);
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-              color var(--bj-dur) var(--bj-ease);
-}
-
-/* ── Hover subtil ── */
-.s3-item-btn:hover {
-  background: var(--bj-veil-6);
-}
-.s3-item-btn:hover .s3-item-titre {
-  transform: translateX(3px);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   color: var(--bj-action);
+  background: transparent;
+  border: 1.5px solid var(--bj-action);
+  border-radius: var(--bj-r-pill);
+  padding: clamp(11px, 1.4vh, 15px) clamp(20px, 2.4vw, 30px);
+  cursor: pointer;
+  transition:
+    background-color var(--bj-dur-fast) var(--bj-ease),
+    color var(--bj-dur-fast) var(--bj-ease);
 }
-
-/* ── État actif ── */
-.s3-item[data-active='true'] .s3-item-btn {
+/* Hover subtil (inactif) : teinte douce, pas de remplissage plein */
+.s3-pill:hover {
   background: var(--bj-action-soft);
-  border-left-color: var(--bj-action);
 }
-.s3-item[data-active='true'] .s3-item-titre {
-  color: var(--bj-action);
-}
-.s3-item[data-active='true'] .s3-item-chevron {
-  transform: rotate(90deg);
-  color: var(--bj-action);
+/* État actif distinct : pill remplie */
+.s3-item[data-active='true'] .s3-pill {
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+  border-color: var(--bj-action);
 }
 
-/* ── Reveal : grid-rows 0fr → 1fr (transition douce, pas de height brute) ── */
+/* ── Accordéon desktop : grid-rows 0fr → 1fr (pas de height brute) ── */
 .s3-item-reveal {
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.s3-item[data-active='true'] .s3-item-reveal {
+.s3-item-reveal[data-open='true'] {
   grid-template-rows: 1fr;
 }
 .s3-item-reveal-inner {
   overflow: hidden;
   min-height: 0;
 }
-.s3-item-corps {
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-body);
-  line-height: 1.6;
-  color: var(--bj-text-soft);
-  padding: 0 clamp(14px, 1.6vw, 22px) clamp(20px, 2.6vh, 28px);
+.s3-item-accroche {
+  display: block;
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: clamp(18px, 2.2vw, 24px);
+  color: var(--bj-text);
+  padding: clamp(14px, 2vh, 20px) 4px 8px;
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s,
               transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s;
 }
-.s3-item[data-active='true'] .s3-item-corps {
+.s3-item-corps {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  line-height: 1.6;
+  color: var(--bj-text-soft);
+  padding: 0 4px clamp(8px, 1.6vh, 16px);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s,
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s;
+}
+.s3-item-reveal[data-open='true'] .s3-item-accroche,
+.s3-item-reveal[data-open='true'] .s3-item-corps {
   opacity: 1;
   transform: translateY(0);
 }
 
-/* Version courte (mobile) masquée par défaut */
-.s3-corps-short { display: none; }
+/* Texte court (onglet mobile) — masqué en desktop */
+.s3-tab-text { display: none; }
 
-/* ════════════════ DROITE — image objet (slide) ════════════════ */
+/* ════════════════ DROITE — image objet (slide), encart réduit ════════════════ */
+.s3-media-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+@media (min-width: 900px) {
+  .s3-media-wrap { align-self: center; } /* centré verticalement dans la colonne */
+}
+
 .s3-media {
   position: relative;
   width: 100%;
+  max-width: clamp(220px, 26vw, 320px); /* encart plus petit qu'avant */
   aspect-ratio: 3 / 4;
   border-radius: var(--bj-r-lg);
   overflow: hidden;
-  order: 1; /* mobile : au-dessus de l'accordéon */
-}
-@media (min-width: 900px) {
-  .s3-media { order: 0; }
 }
 
-/* 2+ calques empilés : actif visible, autres parqués d'un côté.
-   before = items avant l'actif (parqués à gauche) ; after = après (à droite).
-   Passage avant→arrière : le sortant glisse d'un côté, l'entrant arrive de l'autre. */
+/* Calques empilés : actif visible, autres parqués d'un côté (before=gauche,
+   after=droite). Changement : le sortant glisse d'un côté, l'entrant arrive
+   de l'autre. transform + opacity uniquement. */
 .s3-layer {
   position: absolute;
   inset: 0;
@@ -207,19 +182,63 @@
   color: var(--bj-text-faint);
 }
 
-/* ════════════════ Mobile ════════════════ */
+/* ════════════════ Mobile : onglets ════════════════ */
 @media (max-width: 899px) {
-  .s3-corps-full { display: none; }
-  .s3-corps-short { display: inline; }
-  .s3-media { max-width: clamp(240px, 70vw, 360px); margin: 0 auto; }
+  /* Accordéon desktop masqué — on bascule en pattern onglets */
+  .s3-item-reveal { display: none; }
+
+  /* Pills en barre horizontale scrollable au doigt */
+  .s3-pills {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin: 0 -5vw; /* déborde jusqu'aux bords pour un vrai scroll plein largeur */
+    padding-left: 5vw;
+    padding-right: 5vw;
+  }
+  .s3-pills::-webkit-scrollbar { display: none; }
+  .s3-item {
+    width: auto;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+  .s3-pill {
+    white-space: nowrap;
+    padding: 10px 18px;
+    font-size: var(--bj-fs-xs);
+    letter-spacing: 0.12em;
+  }
+
+  /* Texte court partagé sous les pills */
+  .s3-tab-text {
+    display: block;
+    margin-top: clamp(14px, 2.4vh, 20px);
+    min-height: 5.4em; /* réserve la hauteur → pas de saut entre onglets */
+  }
+  .s3-tab-text p {
+    font-family: var(--bj-font-ui);
+    font-size: var(--bj-fs-sm);
+    line-height: 1.55;
+    color: var(--bj-text-soft);
+  }
+
+  /* Image compacte sous le texte → tout tient dans le viewport */
+  .s3-grid { gap: clamp(16px, 3vh, 24px); }
+  .s3-media { max-width: clamp(160px, 44vw, 220px); }
 }
 
 /* ════════════════ Reduced motion ════════════════ */
 @media (prefers-reduced-motion: reduce) {
   .s3-item-reveal,
+  .s3-item-accroche,
   .s3-item-corps,
-  .s3-item-chevron,
-  .s3-item-titre,
+  .s3-pill,
   .s3-layer {
     transition: none;
   }
