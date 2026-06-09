@@ -26,7 +26,9 @@
   font-size: clamp(28px, 4.4vw, var(--bj-fs-h1));
   line-height: 1.1;
   color: var(--bj-text);
-  max-width: 22ch;
+  /* Forcer 2 lignes max (pas 3) : largeur suffisante + équilibrage du retour. */
+  max-width: 28ch;
+  text-wrap: balance;
   margin: 0 auto;
 }
 .s4-subtitle {
@@ -35,6 +37,8 @@
   font-size: var(--bj-fs-lg);
   color: var(--bj-text-soft);
 }
+/* « 15 août » mis en avant par le poids, même couleur (pas de teinte différente). */
+.s4-subtitle strong { font-weight: 500; color: inherit; }
 
 /* ── Disposition des cartes ── */
 .s4-cards {
@@ -44,10 +48,24 @@
   justify-content: center;
 }
 .s4-cards--solo { grid-template-columns: minmax(0, 460px); }
-.s4-cards--duo  { grid-template-columns: 1fr; }
+/* Mobile : Fondateur seul, centré (la Standard est masquée — règle C). */
+.s4-cards--duo  { grid-template-columns: minmax(0, 480px); }
 @media (min-width: 900px) {
-  /* Fondateur prominent (gauche, large) + Standard secondaire (droite, petit). */
-  .s4-cards--duo { grid-template-columns: 1.25fr 0.85fr; align-items: stretch; }
+  /* Desktop : Fondateur = élément focal, centré en flux, taille pleine.
+     Standard = repoussoir hors-flux (absolute), en retrait derrière. */
+  .s4-cards--duo {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* clippe proprement le bord de la Standard sur écran étroit */
+  }
+  .s4-cards--duo > .s4-card:not(.s4-card--secondary) {
+    position: relative;
+    z-index: 2;
+    flex: 0 0 auto;
+    width: min(480px, 100%);
+  }
 }
 
 /* ── Carte offre ── */
@@ -63,9 +81,24 @@
 .s4-card--secondary {
   border-color: var(--bj-cream-tint-3);
   background: var(--bj-cream-tint-1);
+  /* Mobile : jamais les 2 encarts en même temps (règle C). Réactivable plus tard. */
+  display: none;
 }
 @media (min-width: 900px) {
-  .s4-card--secondary { transform: scale(0.96); transform-origin: top center; }
+  /* Repoussoir : nettement plus petite, en retrait derrière le Fondateur, transparente.
+     transform + opacity uniquement (GPU). Ne capte pas le clic. */
+  .s4-card--secondary {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: calc(50% + 140px);
+    width: 320px;
+    transform: translateY(-50%) scale(0.78);
+    transform-origin: left center;
+    opacity: 0.42;
+    pointer-events: none;
+    z-index: 1;
+  }
 }
 
 .s4-card-badge {
@@ -168,13 +201,14 @@
   color: var(--bj-text-soft);
 }
 
-/* ── Checkout (CGV + bouton) ── */
+/* ── Checkout (CGV + bouton) — DANS l'encart actionnable ── */
 .s4-checkout {
-  max-width: 460px;
-  margin: clamp(24px, 4vh, 40px) auto 0;
+  margin-top: clamp(18px, 2.6vh, 26px);
+  padding-top: clamp(16px, 2.2vh, 22px);
+  border-top: 0.5px solid var(--bj-veil-12);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 .s4-cgv {
   display: flex;

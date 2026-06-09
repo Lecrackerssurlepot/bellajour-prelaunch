@@ -39,7 +39,6 @@ const OFFRE_FOUNDER: Offre = {
   acompteBarre: 30,
   features: [
     { label: FEATURE_LABELS.credite, value: '30 €' },
-    { label: FEATURE_LABELS.statut, value: 'Fondateur numéroté #1 → #100' },
     { label: FEATURE_LABELS.illustration, value: true },
     { label: FEATURE_LABELS.instants, value: '200' },
     { label: FEATURE_LABELS.livraison, value: true },
@@ -59,7 +58,6 @@ const OFFRE_STANDARD: Offre = {
     { label: FEATURE_LABELS.instants, value: '100' },
     { label: FEATURE_LABELS.livraison, value: true },
     { label: FEATURE_LABELS.digital, value: true },
-    { label: FEATURE_LABELS.acces, value: 'Premiers à recevoir' },
   ],
 }
 
@@ -96,13 +94,18 @@ function OffreCard({
   offre,
   secondary = false,
   places,
+  checkout,
 }: {
   offre: Offre
   secondary?: boolean
   places?: number
+  checkout?: React.ReactNode
 }) {
   return (
-    <article className={`s4-card${secondary ? ' s4-card--secondary' : ''}`}>
+    <article
+      className={`s4-card${secondary ? ' s4-card--secondary' : ''}`}
+      aria-hidden={secondary || undefined}
+    >
       {offre.badge && <span className="s4-card-badge">{offre.badge}</span>}
       <h3 className="s4-card-nom">{offre.nom}</h3>
 
@@ -124,6 +127,9 @@ function OffreCard({
           <FeatureRow key={f.label} label={f.label} value={f.value} />
         ))}
       </ul>
+
+      {/* Checkout (CGV + bouton) vit DANS l'encart actionnable — jamais détaché. */}
+      {checkout}
     </article>
   )
 }
@@ -133,32 +139,61 @@ export default function S4Reservation() {
   const { offerMode } = OFFER_STATE
   const places = placesRestantes(OFFER_STATE)
 
+  /* Handoff INERTE — sera branché plus tard sur POST /api/checkout (PRD §6). */
+  const handleReserver = () => {
+    /* no-op : scaffold. Le handoff backend n'est pas câblé. */
+  }
+
+  /* Checkout = CGV + bouton. Rendu À L'INTÉRIEUR de l'encart actionnable (règle D). */
+  const checkout = (
+    <div className="s4-checkout">
+      <label className="s4-cgv">
+        <input
+          type="checkbox"
+          checked={cgv}
+          onChange={(e) => setCgv(e.target.checked)}
+        />
+        <span>
+          J’accepte les{' '}
+          {/* Lien CGV branché plus tard (avec Louis) — emplacement prévu. */}
+          <a href="#" className="s4-cgv-link">conditions générales de vente</a>
+        </span>
+      </label>
+
+      <button
+        type="button"
+        className="s4-reserver"
+        disabled={!cgv}
+        onClick={handleReserver}
+      >
+        Réserver mon acompte
+      </button>
+    </div>
+  )
+
   /* Le front rend ce que offerMode dit (PRD §3.3) — il ne décide pas du mode. */
   let cards: React.ReactNode
   if (offerMode === 'founder') {
     cards = (
       <div className="s4-cards s4-cards--duo">
-        <OffreCard offre={OFFRE_FOUNDER} places={places} />
+        <OffreCard offre={OFFRE_FOUNDER} places={places} checkout={checkout} />
+        {/* Standard — repoussoir visuel (desktop only). Masquée mobile, non actionnable
+            (aucun bouton). Réactivable plus tard pour la rendre visible sur mobile. */}
         <OffreCard offre={OFFRE_STANDARD} secondary />
       </div>
     )
   } else if (offerMode === 'soldout') {
     cards = (
       <div className="s4-cards s4-cards--solo">
-        <OffreCard offre={OFFRE_STANDARD} />
+        <OffreCard offre={OFFRE_STANDARD} checkout={checkout} />
       </div>
     )
   } else {
     cards = (
       <div className="s4-cards s4-cards--solo">
-        <OffreCard offre={OFFRE_INFLUENCER} />
+        <OffreCard offre={OFFRE_INFLUENCER} checkout={checkout} />
       </div>
     )
-  }
-
-  /* Handoff INERTE — sera branché plus tard sur POST /api/checkout (PRD §6). */
-  const handleReserver = () => {
-    /* no-op : scaffold. Le handoff backend n'est pas câblé. */
   }
 
   return (
@@ -168,7 +203,7 @@ export default function S4Reservation() {
         <header className="s4-head">
           <h2 className="s4-title">Pré-commandez dès maintenant votre album Bellajour</h2>
           <p className="s4-subtitle">
-            Lancement le 15 août, date à laquelle vous pourrez concevoir votre premier album
+            Lancement le <strong>15 août</strong>, date à laquelle vous pourrez concevoir votre premier album
           </p>
         </header>
 
@@ -179,30 +214,6 @@ export default function S4Reservation() {
           L’album se règle ensuite au prix grille selon le nombre de pages (base 30 pages),
           à partir de {PRIX_ALBUM_BASE} €.
         </p>
-
-        <div className="s4-checkout">
-          <label className="s4-cgv">
-            <input
-              type="checkbox"
-              checked={cgv}
-              onChange={(e) => setCgv(e.target.checked)}
-            />
-            <span>
-              J’accepte les{' '}
-              {/* Lien CGV branché plus tard (avec Louis) — emplacement prévu. */}
-              <a href="#" className="s4-cgv-link">conditions générales de vente</a>
-            </span>
-          </label>
-
-          <button
-            type="button"
-            className="s4-reserver"
-            disabled={!cgv}
-            onClick={handleReserver}
-          >
-            Réserver mon acompte
-          </button>
-        </div>
 
       </div>
     </section>
