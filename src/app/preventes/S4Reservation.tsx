@@ -6,6 +6,9 @@ import { DEFAULT_OFFER_STATE, PRIX_ALBUM_BASE, placesRestantes } from './offer-s
 import type { OfferState } from './offer-state'
 import { isValidRefCode } from '@/lib/validation'
 import ReservationModal from './ReservationModal'
+import InfoSheet from './InfoSheet'
+
+type InfoKind = 'instants' | 'parrainage'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -84,32 +87,52 @@ const OFFRE_INFLUENCER: Offre = {
   ],
 }
 
-function FeatureRow({ label, value }: { label: string; value: FeatureValue }) {
+function FeatureRow({
+  label,
+  value,
+  onInstants,
+}: {
+  label: string
+  value: FeatureValue
+  onInstants?: () => void
+}) {
   let display: React.ReactNode
   if (value === true) display = <span className="s4-feat-yes" aria-label="inclus">✓</span>
   else if (value === false) display = <span className="s4-feat-no" aria-label="non inclus">—</span>
   else display = <span className="s4-feat-val">{value}</span>
+
+  /* Mot « Instants » cliquable : on cible explicitement le mot lui-même (pas un
+     split positionnel) → reste correct même si l'ordre du wording du label change. */
+  let labelNode: React.ReactNode = label
+  if (onInstants) {
+    labelNode = label.split(/(Instants)/).map((part, i) =>
+      part === 'Instants' ? (
+        <button key={i} type="button" className="s4-parrain-link" onClick={onInstants}>
+          {part}
+        </button>
+      ) : (
+        part
+      ),
+    )
+  }
+
   return (
     <li className="s4-feat">
-      <span className="s4-feat-label">{label}</span>
+      <span className="s4-feat-label">{labelNode}</span>
       {display}
     </li>
   )
 }
 
-/* Ligne parrainage pleine largeur : « parrainage » est un lien bleu cliquable.
-   Cible branchée plus tard (même logique que le lien CGV — emplacement prévu). */
-function ParrainageRow({ pages }: { pages: number }) {
+/* Ligne parrainage pleine largeur : « parrainage » est un lien bleu cliquable
+   qui ouvre l'encart info parrainage (InfoSheet) via onParrainage. */
+function ParrainageRow({ pages, onParrainage }: { pages: number; onParrainage: () => void }) {
   return (
     <li className="s4-feat s4-feat--parrain">
       Accès{' '}
-      <a
-        className="s4-parrain-link"
-        href="#parrainage"
-        // TODO: brancher infos parrainage
-      >
+      <button type="button" className="s4-parrain-link" onClick={onParrainage}>
         parrainage
-      </a>{' '}
+      </button>{' '}
       : jusqu’à {pages} pages (= {pages} €) offertes par commande
     </li>
   )
@@ -120,11 +143,13 @@ function OffreCard({
   secondary = false,
   places,
   checkout,
+  onInfo,
 }: {
   offre: Offre
   secondary?: boolean
   places?: number
   checkout?: React.ReactNode
+  onInfo: (k: InfoKind) => void
 }) {
   return (
     <article
@@ -149,10 +174,15 @@ function OffreCard({
 
       <ul className="s4-card-feats">
         {offre.features.map((f) => (
-          <FeatureRow key={f.label} label={f.label} value={f.value} />
+          <FeatureRow
+            key={f.label}
+            label={f.label}
+            value={f.value}
+            onInstants={f.label === FEATURE_LABELS.instants ? () => onInfo('instants') : undefined}
+          />
         ))}
         {typeof offre.parrainagePages === 'number' && (
-          <ParrainageRow pages={offre.parrainagePages} />
+          <ParrainageRow pages={offre.parrainagePages} onParrainage={() => onInfo('parrainage')} />
         )}
       </ul>
 
@@ -171,6 +201,7 @@ export default function S4Reservation() {
   const [error, setError] = useState<string | null>(null)
   const [referredBy, setReferredBy] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false) // encart de réservation (prénom/email/CGV)
+  const [info, setInfo] = useState<InfoKind | null>(null) // encart info (Instants / parrainage)
 
   /* Parrainage CLIENT : retrouver le code parrain pour le transmettre au checkout.
      Les liens partagés pointent vers la LANDING (/?ref=), pas /preventes — donc une fois
@@ -294,10 +325,10 @@ export default function S4Reservation() {
   } else if (offer.offerMode === 'founder') {
     cards = (
       <div className="s4-cards s4-cards--duo">
-        <OffreCard offre={OFFRE_FOUNDER} places={placesRestantes(offer)} checkout={checkout} />
+        <OffreCard offre={OFFRE_FOUNDER} places={placesRestantes(offer)} checkout={checkout} onInfo={setInfo} />
         {/* Standard — repoussoir visuel (desktop only). Masquée mobile, non actionnable
             (aucun bouton). Réactivable plus tard pour la rendre visible sur mobile. */}
-        <OffreCard offre={OFFRE_STANDARD} secondary />
+        <OffreCard offre={OFFRE_STANDARD} secondary onInfo={setInfo} />
       </div>
     )
   } else if (offer.offerMode === 'soldout') {
@@ -306,13 +337,13 @@ export default function S4Reservation() {
         {/* Carte seule (Fondateur épuisé) : on valorise « l'offre du moment »
             plutôt qu'un choix par défaut → libellé « Offre Prévente ».
             Le repoussoir en mode founder garde « Offre Standard » (contraste). */}
-        <OffreCard offre={{ ...OFFRE_STANDARD, nom: 'Offre Prévente' }} checkout={checkout} />
+        <OffreCard offre={{ ...OFFRE_STANDARD, nom: 'Offre Prévente' }} checkout={checkout} onInfo={setInfo} />
       </div>
     )
   } else {
     cards = (
       <div className="s4-cards s4-cards--solo">
-        <OffreCard offre={OFFRE_INFLUENCER} checkout={checkout} />
+        <OffreCard offre={OFFRE_INFLUENCER} checkout={checkout} onInfo={setInfo} />
       </div>
     )
   }
@@ -355,6 +386,25 @@ export default function S4Reservation() {
       error={error}
       onSubmit={handleReserver}
     />
+
+    <InfoSheet
+      open={info !== null}
+      onClose={() => setInfo(null)}
+      title={info === 'instants' ? 'Les Instants' : 'Le parrainage'}
+    >
+      {info === 'instants' ? (
+        <p>
+          Les Instants sont des points que vous cumulez à chaque commande. Ils vous donnent
+          accès à des avantages : offres dédiées, produits offerts, et bien plus.
+        </p>
+      ) : (
+        <p>
+          <strong>1 page = 1€</strong>. Parrainer offre 5 pages à vous, 3 à votre filleul.
+          Cumulable à l’infini (jusqu’à 20 pages par commande). Le reste est crédité pour vos
+          prochaines commandes !
+        </p>
+      )}
+    </InfoSheet>
     </>
   )
 }

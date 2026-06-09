@@ -1,0 +1,127 @@
+/* ════════════════════════════════════════════════════════════
+   PRÉVENTE — Encart info (S4) : « Les Instants » / « Le parrainage »
+   Miroir visuel de reservation-modal.css. Charte prévente : glassmorphism,
+   bleu action #4a90d9, Cormorant + DM Sans. Animations transform + opacity
+   uniquement (GPU). Mobile = bottom-sheet ; desktop = encart centré.
+   ════════════════════════════════════════════════════════════ */
+
+.is-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000; /* navbar prévente = 50 → toujours au-dessus */
+  display: flex;
+  align-items: flex-end;       /* mobile : sheet collée en bas */
+  justify-content: center;
+  background: var(--bj-veil-35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--bj-dur) var(--bj-ease);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+.is-backdrop--open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.is-panel {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  max-height: 92vh;
+  overflow-y: auto;                 /* scroll INTERNE si le contenu dépasse l'écran */
+  overscroll-behavior: contain;     /* iOS Safari : le fond ne scrolle pas */
+  -webkit-overflow-scrolling: touch;
+  background: var(--bj-glass-light-bg);
+  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+  backdrop-filter: blur(var(--bj-glass-blur));
+  border: 1px solid var(--bj-action-border);
+  border-radius: var(--bj-r-lg) var(--bj-r-lg) 0 0;  /* mobile : coins hauts arrondis */
+  padding: clamp(22px, 6vw, 36px);
+  transform: translateY(100%);      /* mobile : monte du bas */
+  transition: transform var(--bj-dur) var(--bj-ease);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.is-backdrop--open .is-panel {
+  transform: translateY(0);
+}
+
+/* Safe-area iOS (notch / home indicator) sur le bottom-sheet. */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .is-panel {
+    padding-bottom: calc(clamp(22px, 6vw, 36px) + env(safe-area-inset-bottom));
+  }
+}
+
+/* ── Titre ── */
+.is-title {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(22px, 3.4vw, 28px);
+  line-height: 1.15;
+  color: var(--bj-text);
+  margin: 0 36px 4px 0; /* marge droite : ne pas passer sous la croix */
+}
+
+/* ── Corps ── */
+.is-body {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  line-height: 1.6;
+  color: var(--bj-text-soft);
+}
+.is-body p {
+  margin: 0;
+}
+.is-body strong {
+  font-weight: 500;
+  color: var(--bj-action); /* met en valeur « 1 page = 1€ » */
+}
+
+/* ── Croix de fermeture ── */
+.is-close {
+  position: absolute;
+  top: clamp(14px, 3vw, 20px);
+  right: clamp(14px, 3vw, 20px);
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--bj-font-ui);
+  font-size: 18px;
+  line-height: 1;
+  color: var(--bj-text-soft);
+  background: transparent;
+  border: none;
+  border-radius: var(--bj-r-pill);
+  cursor: pointer;
+  transition: color var(--bj-dur-fast) var(--bj-ease),
+              background var(--bj-dur-fast) var(--bj-ease);
+}
+.is-close:hover {
+  color: var(--bj-text);
+  background: var(--bj-veil-8);
+}
+
+/* ── Desktop : encart centré, fade + scale (pas de slide depuis le bas) ── */
+@media (min-width: 768px) {
+  .is-backdrop { align-items: center; }
+  .is-panel {
+    border-radius: var(--bj-r-lg);
+    max-height: 88vh;
+    transform: scale(0.96);
+  }
+  .is-backdrop--open .is-panel { transform: scale(1); }
+}
+
+/* ── Accessibilité : pas d'anim de position si reduced-motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .is-backdrop,
+  .is-panel { transition: opacity var(--bj-dur) var(--bj-ease); }
+  .is-panel { transform: none; }
+  .is-backdrop--open .is-panel { transform: none; }
+}
