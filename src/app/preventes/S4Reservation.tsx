@@ -28,7 +28,6 @@ const FEATURE_LABELS = {
   instants: 'Instants crédités',
   livraison: 'Livraison offerte',
   digital: 'Version digitale HD',
-  acces: 'Accès anticipé',
 } as const
 
 const OFFRE_FOUNDER: Offre = {
@@ -43,7 +42,6 @@ const OFFRE_FOUNDER: Offre = {
     { label: FEATURE_LABELS.instants, value: '200' },
     { label: FEATURE_LABELS.livraison, value: true },
     { label: FEATURE_LABELS.digital, value: true },
-    { label: FEATURE_LABELS.acces, value: false },
   ],
 }
 
@@ -73,7 +71,6 @@ const OFFRE_INFLUENCER: Offre = {
     { label: FEATURE_LABELS.instants, value: '100' },
     { label: FEATURE_LABELS.livraison, value: true },
     { label: FEATURE_LABELS.digital, value: true },
-    { label: FEATURE_LABELS.acces, value: false },
   ],
 }
 

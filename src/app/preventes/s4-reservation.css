@@ -93,7 +93,9 @@
     top: 50%;
     left: calc(50% + 140px);
     width: 320px;
-    transform: translateY(-50%) scale(0.78);
+    /* Décalée vers la DROITE : dépasse côté droit du Fondateur (léger chevauchement
+       pour la profondeur) au lieu d'être superposée dessous. translateX GPU. */
+    transform: translateX(72px) translateY(-50%) scale(0.78);
     transform-origin: left center;
     opacity: 0.42;
     pointer-events: none;
