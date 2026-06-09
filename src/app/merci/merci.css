@@ -46,30 +46,34 @@
 }
 
 .merci-founder {
-  margin: 16px 0 0;
+  margin: 16px auto 0;
+  max-width: 34ch;
   font-family: var(--bj-font-display);
   font-style: italic;
   font-weight: 600;
   font-size: clamp(20px, 2.6vw, 28px);
   color: var(--bj-action);
+  text-wrap: balance;
 }
 
 .merci-lede {
   margin: clamp(16px, 2.4vh, 24px) auto 0;
-  max-width: 48ch;
+  max-width: 34ch;
   font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-lg);
   line-height: 1.6;
   color: var(--bj-text-soft);
+  text-wrap: balance;
 }
 
 .merci-hint {
   margin: clamp(20px, 3vh, 30px) auto 0;
-  max-width: 44ch;
+  max-width: 34ch;
   font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-sm);
   line-height: 1.6;
   color: var(--bj-text-faint);
+  text-wrap: balance;
 }
 
 .merci-back {
@@ -189,11 +193,13 @@
 }
 
 .merci-ref-explain {
-  margin: clamp(16px, 2.4vh, 22px) 0 0;
+  margin: clamp(16px, 2.4vh, 22px) auto 0;
+  max-width: 36ch;
   font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-sm);
   line-height: 1.6;
   color: var(--bj-text-soft);
+  text-wrap: balance;
 }
 .merci-ref-explain strong { font-weight: 500; color: var(--bj-text); }
 

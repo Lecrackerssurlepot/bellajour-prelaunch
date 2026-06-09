@@ -38,7 +38,7 @@ export default function MerciPendingRefresh({
     return (
       <p className="merci-hint">
         La confirmation prend un peu plus de temps que prévu. Rafraîchissez cette page dans un
-        instant — votre paiement est bien pris en compte.
+        instant, votre paiement est bien pris en compte.
       </p>
     )
   }

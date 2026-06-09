@@ -110,8 +110,8 @@ export default async function MerciPage({
                 </p>
               )}
               <p className="merci-lede">
-                Votre pré-commande est enregistrée. Un e-mail de confirmation arrive — pensez à
-                vérifier vos spams.
+                Votre pré-commande est enregistrée. Vous allez recevoir votre e-mail de confirmation
+                dans quelques instants.
               </p>
               <MerciReferral refCode={state.refCode} />
             </>
@@ -131,8 +131,7 @@ export default async function MerciPage({
               <h1 className="merci-title">Merci pour votre confiance.</h1>
               <p className="merci-lede">
                 Nous n&rsquo;avons pas pu afficher le détail de votre pré-commande ici. Si vous venez
-                de régler votre acompte, un e-mail de confirmation est en route — vérifiez vos spams
-                au besoin.
+                de régler votre acompte, votre e-mail de confirmation vous parviendra sous peu.
               </p>
               <a className="merci-back" href="/preventes">
                 Retour aux préventes

@@ -42,8 +42,8 @@ export default function MerciReferral({ refCode }: { refCode: string }) {
       </button>
 
       <p className="merci-ref-explain">
-        Partagez ce lien. Pour chaque proche qui pré-commande, vous gagnez des pages offertes —
-        <strong> 1 page = 1 €</strong>. La remise s&rsquo;active au lancement, le <strong>15 août</strong>.
+        Partagez ce lien. Pour chaque proche qui pré-commande, vous gagnez des pages offertes :{' '}
+        <strong>1 page = 1 €</strong>. La remise s&rsquo;active au lancement, le <strong>15 août</strong>.
       </p>
 
       <div
