@@ -19,6 +19,8 @@ interface Offre {
   acompteBarre?: number // prix barré (Fondateur uniquement : 30 → 25)
   acompteNote?: string
   features: { label: string; value: FeatureValue }[]
+  /* Ligne parrainage (pleine largeur, mot « parrainage » cliquable) : pages offertes par commande. */
+  parrainagePages?: number
 }
 
 const FEATURE_LABELS = {
@@ -43,6 +45,7 @@ const OFFRE_FOUNDER: Offre = {
     { label: FEATURE_LABELS.livraison, value: true },
     { label: FEATURE_LABELS.digital, value: true },
   ],
+  parrainagePages: 20,
 }
 
 const OFFRE_STANDARD: Offre = {
@@ -57,6 +60,7 @@ const OFFRE_STANDARD: Offre = {
     { label: FEATURE_LABELS.livraison, value: true },
     { label: FEATURE_LABELS.digital, value: true },
   ],
+  parrainagePages: 10,
 }
 
 const OFFRE_INFLUENCER: Offre = {
@@ -83,6 +87,24 @@ function FeatureRow({ label, value }: { label: string; value: FeatureValue }) {
     <li className="s4-feat">
       <span className="s4-feat-label">{label}</span>
       {display}
+    </li>
+  )
+}
+
+/* Ligne parrainage pleine largeur : « parrainage » est un lien bleu cliquable.
+   Cible branchée plus tard (même logique que le lien CGV — emplacement prévu). */
+function ParrainageRow({ pages }: { pages: number }) {
+  return (
+    <li className="s4-feat s4-feat--parrain">
+      Accès{' '}
+      <a
+        className="s4-parrain-link"
+        href="#parrainage"
+        // TODO: brancher infos parrainage
+      >
+        parrainage
+      </a>{' '}
+      : jusqu’à {pages} pages (= {pages} €) offertes par commande
     </li>
   )
 }
@@ -123,6 +145,9 @@ function OffreCard({
         {offre.features.map((f) => (
           <FeatureRow key={f.label} label={f.label} value={f.value} />
         ))}
+        {typeof offre.parrainagePages === 'number' && (
+          <ParrainageRow pages={offre.parrainagePages} />
+        )}
       </ul>
 
       {/* Checkout (CGV + bouton) vit DANS l'encart actionnable — jamais détaché. */}

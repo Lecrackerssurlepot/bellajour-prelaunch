@@ -192,6 +192,26 @@
 .s4-feat-yes { color: var(--bj-save-ok); font-weight: 600; }
 .s4-feat-no  { color: var(--bj-text-faint); }
 
+/* Ligne parrainage : pleine largeur (pas de split label/valeur), même style de base. */
+.s4-feat--parrain {
+  display: block;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  line-height: 1.45;
+  color: var(--bj-text-soft);
+}
+/* Mot « parrainage » = lien bleu cliquable, lisible sur le glass des 2 offres. */
+.s4-parrain-link {
+  color: var(--bj-action); /* #4a90d9 */
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+  transition: color var(--bj-dur-fast) var(--bj-ease);
+}
+.s4-parrain-link:hover { color: #357ec0; }
+
 /* ── Note crédit ── */
 .s4-credit-note {
   max-width: 60ch;
