@@ -160,6 +160,22 @@
   font-size: var(--bj-fs-sm);
   font-weight: 500;
   color: var(--bj-action);
+  /* Pulsation douce (opacity uniquement, GPU) — attire l'œil sur le Fondateur
+     sans clignotement dur. Spécifique au Fondateur : seul ce compteur est rendu. */
+  animation: s4-places-pulse 1.8s var(--bj-ease) infinite;
+}
+
+@keyframes s4-places-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* Accessibilité : pas de pulsation si reduced-motion. */
+@media (prefers-reduced-motion: reduce) {
+  .s4-card-places {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 /* Features */
