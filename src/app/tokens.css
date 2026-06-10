@@ -38,6 +38,7 @@
 
   /* ─────────────── GLASS CLAIR (texte foncé) ─────────────── */
   --bj-glass-light-bg:     rgba(255, 255, 255, 0.55);
+  --bj-glass-light-bg-active: rgba(255, 255, 255, 0.85); /* carte active carrousel : lisible en superposition */
   --bj-glass-light-border: rgba(255, 255, 255, 0.65);
   --bj-glass-light-text:   var(--bj-charcoal);
 

@@ -69,37 +69,47 @@ Règles structurelles qui référencent encore des tokens disparus :
 
 ---
 
-## Effet glass — cartes (charte v2)
+## Glass de référence — cartes prévente (standard figé)
 
-La Section 2 (carrousel parcours) introduit un **effet glass sur les cartes** + une
-**carte active mise en valeur** (desktop). C'est une **dérogation volontaire** à
-l'interdit v1 de la charte motion (qui bannissait `box-shadow` et le glassmorphism) :
-ici glass **subtil** + **ombre douce uniquement**, jamais d'ombre dure.
+**Standard unique** du glass des cartes prévente, appliqué **à la fois** aux cartes
+d'offre de la **Section 4** (`s4-reservation.css` → `.s4-card`) et aux cartes du
+**carrousel Section 2** (`s2-experience.css` → `.s2-card`). Même langage visuel : la carte
+**flotte** au-dessus du fond.
 
-**Tokens** (définis dans `src/app/tokens.css`, namespace dédié `--bj-glass-card-*`
-pour ne pas entrer en collision avec `--bj-glass-blur` (18px nu) consommé par
-`navbar.css` + `s4-reservation.css`) :
+> **Remplace** la dérogation « glass cream » v2 de la S2 (`--bj-glass-card-bg`,
+> `--bj-glass-card-bg-active`, `--bj-glass-card-blur`, `--bj-glass-card-border` →
+> **obsolètes**, plus consommés ; encore définis dans `tokens.css` mais supprimables).
+> Seules les ombres `--bj-glass-card-shadow` / `--bj-glass-card-shadow-active` subsistent.
 
+**Recette (tokens charte uniquement) :**
 ```css
---bj-glass-card-bg:            rgba(240, 235, 225, 0.55);
---bj-glass-card-bg-active:     rgba(240, 235, 225, 0.78);
---bj-glass-card-blur:          blur(12px) saturate(1.08);
---bj-glass-card-border:        1px solid rgba(168, 152, 128, 0.30);
---bj-glass-card-shadow:        0 8px 32px rgba(28, 28, 28, 0.08);
---bj-glass-card-shadow-active: 0 16px 48px rgba(28, 28, 28, 0.14);
+background:    var(--bj-glass-light-bg);            /* clair translucide (0.55) */
+backdrop-filter: blur(var(--bj-glass-blur));        /* 18px ; + préfixe -webkit- AVANT */
+border:        1px solid var(--bj-glass-light-border); /* hairline discret (pas d'accent coloré) */
+border-radius: var(--bj-r-lg);                      /* arrondi généreux (20px) */
+box-shadow:    var(--bj-glass-card-shadow);         /* ombre douce diffuse, basse opacité */
 ```
 
-**Règles d'usage :**
-- Glass **subtil**, **ombre douce** uniquement (jamais d'ombre lourde/dure).
-- Carte **active** = fond plus opaque (`-bg-active`) + ombre plus marquée
-  (`-shadow-active`) + `transform: scale(1.05)` + centrage dans le conteneur.
-  Mise en valeur **desktop uniquement** (`≥1100px`).
-- Mobile (`<768px`) : glass appliqué **sans** scale ni centrage (modèle 1 carte + peek).
-- GPU only : `transform` + `opacity` ; `-webkit-backdrop-filter` présent (Safari) ;
-  `prefers-reduced-motion` coupe les transitions.
+**L'ombre douce est ici explicitement AUTORISÉE** = exception assumée à l'interdit v1
+(no `box-shadow`). Ombre **douce/diffuse uniquement**, jamais dure.
 
-> ⚠️ Ne PAS redéfinir `--bj-glass-blur` (18px) : il est utilisé via
-> `blur(var(--bj-glass-blur))` par la navbar et le formulaire de réservation.
+**Variantes :**
+- Carte **active S2** (desktop ≥1100px) : emphase = `transform: scale(1.05)` + ombre plus
+  marquée `--bj-glass-card-shadow-active` + fond plus opaque `--bj-glass-light-bg-active`
+  (rgba 255,255,255,0.85) → reste lisible quand elle se superpose à ses voisines.
+- **Repoussoir S4** (`.s4-card--secondary`, desktop) : même famille glass mais **atténué**
+  (ombre absente + opacité réduite) → reste clairement secondaire.
+
+**Fallback & perf :**
+- `@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))` :
+  si non supporté → **fond opaque clair** (`--bj-cream-tint-1`, actif `--bj-cream-2`),
+  jamais de carte transparente illisible.
+- `will-change: transform` sur les cartes carrousel (promotion GPU). **Jamais**
+  `will-change: backdrop-filter`. Pas d'empilement de blur (médias internes opaques).
+- **Périmètre** : S4 + S2 uniquement. **S3 NON concernée** (ses encarts deviendront des images).
+
+> ⚠️ Ne PAS redéfinir `--bj-glass-blur` (18px) : utilisé via `blur(var(--bj-glass-blur))`
+> par la navbar, le formulaire de réservation, et désormais les cartes S2 + S4.
 
 ---
 

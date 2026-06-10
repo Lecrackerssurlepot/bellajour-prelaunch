@@ -77,19 +77,26 @@
   flex: 0 0 auto;
   width: 90vw;
   position: relative; /* permet le z-index de la carte active */
-  /* Glass subtil (charte v2) */
-  background: var(--bj-glass-card-bg);
-  backdrop-filter: var(--bj-glass-card-blur);
-  -webkit-backdrop-filter: var(--bj-glass-card-blur); /* Safari */
-  border: var(--bj-glass-card-border);
+  /* Glass de référence (standard cartes prévente, cf. MIGRATION-CHARTE.md) :
+     fond clair translucide + blur + ombre douce diffuse (flotte) + hairline. */
+  background: var(--bj-cream-tint-1);             /* fallback opaque */
+  border: 1px solid var(--bj-glass-light-border); /* hairline discret */
   border-radius: var(--bj-r-lg);
-  box-shadow: var(--bj-glass-card-shadow);
+  box-shadow: var(--bj-glass-card-shadow);        /* ombre douce diffuse → flotte */
   overflow: hidden;
   display: flex;
   flex-direction: column;
   opacity: 0.4; /* cartes inactives figées (mobile / tablette) */
+  will-change: transform; /* promotion GPU (scale carrousel) — PAS sur backdrop-filter */
   transition: transform 0.6s var(--bj-ease), opacity 0.6s var(--bj-ease),
     background 0.6s var(--bj-ease), box-shadow 0.6s var(--bj-ease);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .s2-card {
+    background: var(--bj-glass-light-bg);
+    -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+    backdrop-filter: blur(var(--bj-glass-blur));
+  }
 }
 .s2-card[data-active='true'] { opacity: 1; }
 
@@ -113,9 +120,13 @@
   .s2-card[data-active='true'] {
     transform: scale(1.05);
     opacity: 1;
-    background: var(--bj-glass-card-bg-active);
-    box-shadow: var(--bj-glass-card-shadow-active);
+    background: var(--bj-cream-2);                  /* fallback opaque actif */
+    box-shadow: var(--bj-glass-card-shadow-active); /* ombre + marquée → emphase */
     z-index: 2;
+  }
+  /* Carte active superposée → fond plus opaque pour rester lisible (glass sur glass). */
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .s2-card[data-active='true'] { background: var(--bj-glass-light-bg-active); }
   }
 }
 

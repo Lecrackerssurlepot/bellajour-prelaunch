@@ -68,19 +68,30 @@
   }
 }
 
-/* ── Carte offre ── */
+/* ── Carte offre ──
+   Glass de référence (standard cartes prévente, cf. MIGRATION-CHARTE.md) :
+   fond clair translucide + blur + ombre douce diffuse (la carte « flotte ») +
+   bordure hairline discrète. Fallback opaque si backdrop-filter non supporté. */
 .s4-card {
   position: relative;
-  background: var(--bj-glass-light-bg);
-  border: 1px solid var(--bj-action-border);
+  background: var(--bj-cream-tint-1);             /* fallback opaque (pas de backdrop-filter) */
+  border: 1px solid var(--bj-glass-light-border); /* hairline discret */
   border-radius: var(--bj-r-lg);
   padding: clamp(24px, 3vw, 36px);
-  backdrop-filter: blur(var(--bj-glass-blur));
-  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+  box-shadow: var(--bj-glass-card-shadow);        /* ombre douce diffuse → flotte */
 }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  /* Skeleton exclu : reste opaque/plat pendant le chargement. */
+  .s4-card:not(.s4-cards-skeleton) {
+    background: var(--bj-glass-light-bg);
+    -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+    backdrop-filter: blur(var(--bj-glass-blur));
+  }
+}
+/* Repoussoir : même famille glass mais ATTÉNUÉ (ombre absente + opacité réduite au
+   desktop via le bloc ≥900px) → reste clairement secondaire. */
 .s4-card--secondary {
-  border-color: var(--bj-cream-tint-3);
-  background: var(--bj-cream-tint-1);
+  box-shadow: none;
   /* Mobile : jamais les 2 encarts en même temps (règle C). Réactivable plus tard. */
   display: none;
 }
@@ -324,6 +335,7 @@
   min-height: 420px;
   background: var(--bj-cream-tint-1);
   border-color: var(--bj-cream-tint-3);
+  box-shadow: none; /* plat/opaque : exclu du glass des cartes */
   animation: s4-skeleton-pulse 1.4s ease-in-out infinite;
 }
 @keyframes s4-skeleton-pulse {
