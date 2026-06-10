@@ -94,8 +94,8 @@
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .s2-card {
     background: var(--bj-glass-light-bg);
-    -webkit-backdrop-filter: blur(var(--bj-glass-blur));
-    backdrop-filter: blur(var(--bj-glass-blur));
+    -webkit-backdrop-filter: blur(var(--bj-glass-blur-card));
+    backdrop-filter: blur(var(--bj-glass-blur-card));
   }
 }
 .s2-card[data-active='true'] { opacity: 1; }

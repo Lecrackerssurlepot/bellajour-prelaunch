@@ -37,8 +37,8 @@
   --bj-on-action:      #ffffff;   /* texte sur fond bleu */
 
   /* ─────────────── GLASS CLAIR (texte foncé) ─────────────── */
-  --bj-glass-light-bg:     rgba(255, 255, 255, 0.55);
-  --bj-glass-light-bg-active: rgba(255, 255, 255, 0.85); /* carte active carrousel : lisible en superposition */
+  --bj-glass-light-bg:     rgba(255, 255, 255, 0.32); /* translucide « verre dépoli » (laisse deviner derrière) */
+  --bj-glass-light-bg-active: rgba(255, 255, 255, 0.55); /* carte active carrousel : un cran + opaque = emphase lisible */
   --bj-glass-light-border: rgba(255, 255, 255, 0.65);
   --bj-glass-light-text:   var(--bj-charcoal);
 
@@ -48,6 +48,10 @@
   --bj-glass-dark-text:    #f5efe6;
 
   --bj-glass-blur:         18px;
+  /* Flou dédié aux cartes prévente (S2 + S4) : un cran + fort que --bj-glass-blur
+     pour la texture « dépoli » sur fond translucide. Ne PAS confondre avec
+     --bj-glass-blur (18px) partagé navbar/modals/hero/merci. */
+  --bj-glass-blur-card:    22px;
 
   /* ─────────────── GLASS CARTES — charte v2 (S2) ───────────────
      Dérogation assumée à l'interdit v1 (glass/box-shadow). Glass subtil,

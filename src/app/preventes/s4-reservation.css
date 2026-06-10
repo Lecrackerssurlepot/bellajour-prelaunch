@@ -84,8 +84,8 @@
   /* Skeleton exclu : reste opaque/plat pendant le chargement. */
   .s4-card:not(.s4-cards-skeleton) {
     background: var(--bj-glass-light-bg);
-    -webkit-backdrop-filter: blur(var(--bj-glass-blur));
-    backdrop-filter: blur(var(--bj-glass-blur));
+    -webkit-backdrop-filter: blur(var(--bj-glass-blur-card));
+    backdrop-filter: blur(var(--bj-glass-blur-card));
   }
 }
 /* Repoussoir : même famille glass mais ATTÉNUÉ (ombre absente + opacité réduite au
