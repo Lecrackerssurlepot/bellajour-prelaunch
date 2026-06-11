@@ -69,7 +69,8 @@
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding-top: clamp(18px, 4vh, 42px);
+  /* Petite respiration depuis le bord haut RÉEL du hero (16–24px). */
+  padding-top: clamp(16px, 2vh, 24px);
   pointer-events: none;
 }
 .s1-logo {
