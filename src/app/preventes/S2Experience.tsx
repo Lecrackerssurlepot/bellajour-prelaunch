@@ -49,8 +49,23 @@ const SWIPE_THRESHOLD = 50 // px
 
 export default function S2Experience() {
   const trackRef = useRef<HTMLDivElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   const touchStartX = useRef<number | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
+
+  // Respect prefers-reduced-motion : on fige la démo (autoplay coupé) sur 1re frame.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const apply = () => {
+      if (mq.matches) video.pause()
+      else video.play().catch(() => {})
+    }
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
 
   const goTo = useCallback((index: number) => {
     setActiveIndex((prev) => {
@@ -147,9 +162,26 @@ export default function S2Experience() {
               <p className="s2-card-algo">{c.algo}</p>
               {c.cloture && <p className="s2-card-cloture">{c.cloture}</p>}
             </div>
-            <div className="s2-card-media" aria-hidden="true">
-              <span className="s2-card-media-label">MOCKUP CARTE {c.num}</span>
-            </div>
+            {i === 0 ? (
+              <div className="s2-card-media">
+                <video
+                  ref={videoRef}
+                  className="s2-card-video"
+                  src="/images/prevente/parcours/upload.mp4"
+                  poster="/images/prevente/parcours/upload-cover.png"
+                  muted
+                  autoPlay
+                  loop
+                  playsInline
+                  preload="metadata"
+                  aria-label="Démo : l’upload de vos photos sur Bellajour"
+                />
+              </div>
+            ) : (
+              <div className="s2-card-media" aria-hidden="true">
+                <span className="s2-card-media-label">MOCKUP CARTE {c.num}</span>
+              </div>
+            )}
           </article>
         ))}
       </div>

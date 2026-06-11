@@ -188,6 +188,15 @@
   text-transform: uppercase;
   color: var(--bj-text-faint);
 }
+/* Vidéo démo (Carte 01) : largeur pleine du cadre, ratio respecté (height auto),
+   coins arrondis alignés sur le cadre média. */
+.s2-card-video {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--bj-r-lg);
+  object-fit: contain;
+}
 
 /* Mobile : la section peut grandir si le texte est long (jamais couper le texte) ;
    le média garde un plancher visible mais se réduit en priorité. */
