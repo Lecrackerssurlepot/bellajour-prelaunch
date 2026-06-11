@@ -18,6 +18,7 @@ interface Facette {
   court: string // version condensée mobile (onglets)
   img: string // visuel produit (webp, fond transparent)
   ratio: string // ratio du visuel (le cadre s'y adapte) : '3 / 4' portrait, '4 / 3' paysage
+  crop?: boolean // desktop : recadrer dans la boîte paysage partagée (object-fit cover)
 }
 
 const FACETTES: Facette[] = [
@@ -36,6 +37,7 @@ const FACETTES: Facette[] = [
     court: 'A4 portrait, 21 × 29,7 cm. Couverture rigide, papier 170g, 30 pages de base. Parce que 24, c’est trop peu pour raconter une histoire.',
     img: '/images/prevente/objet/format.webp',
     ratio: '3 / 4',
+    crop: true,
   },
   {
     titre: 'La mise en page',
@@ -60,6 +62,7 @@ const FACETTES: Facette[] = [
     court: 'La tranche porte le titre de votre voyage. Sur une étagère, c’est ce qui le rend reconnaissable au premier coup d’œil.',
     img: '/images/prevente/objet/reliure.webp',
     ratio: '3 / 4',
+    crop: true,
   },
 ]
 
@@ -146,18 +149,27 @@ export default function S3Objet() {
           <div className="s3-media-wrap">
             {/* Le cadre s'adapte au ratio du visuel actif (portrait 3:4 / paysage 4:3).
                 data-orient='land' élargit le cadre des 2 visuels paysage pour égaliser
-                leur surface avec les portraits. */}
+                leur surface avec les portraits.
+                data-crop='true' (desktop) : format/reliure recadrés dans la boîte paysage
+                partagée (4:3) au lieu de créer une boîte portrait plus haute. */}
             <div
               className="s3-media"
               aria-hidden="true"
               data-orient={FACETTES[active].ratio === '4 / 3' ? 'land' : 'port'}
+              data-crop={FACETTES[active].crop ? 'true' : 'false'}
               style={{ '--s3-ratio': FACETTES[active].ratio } as CSSProperties}
             >
               {FACETTES.map((f, i) => {
                 const state = i === active ? 'active' : i < active ? 'before' : 'after'
                 return (
                   <div className="s3-layer" data-state={state} key={f.titre}>
-                    <img className="s3-layer-img" src={f.img} alt="" loading="lazy" />
+                    <img
+                      className="s3-layer-img"
+                      data-crop={f.crop ? 'true' : 'false'}
+                      src={f.img}
+                      alt=""
+                      loading="lazy"
+                    />
                   </div>
                 )
               })}

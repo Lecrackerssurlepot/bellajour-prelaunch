@@ -168,6 +168,21 @@
   max-width: clamp(400px, 50vw, 586px);
 }
 
+/* Desktop only : format + reliure (portrait) recadrés dans la MÊME boîte paysage
+   (4:3) que illustration/mise-en-page, pour ne plus descendre plus bas que les
+   autres. object-fit cover centré → l'excédent haut/bas est rogné, la boîte ne
+   grandit pas. Mobile inchangé (pas de data-crop hors de ce media query). */
+@media (min-width: 900px) {
+  .s3-media[data-crop='true'] {
+    aspect-ratio: 4 / 3;
+    max-width: clamp(400px, 50vw, 586px);
+  }
+  .s3-layer-img[data-crop='true'] {
+    object-fit: cover;
+    object-position: center;
+  }
+}
+
 /* Calques empilés : actif visible, autres parqués d'un côté (before=gauche,
    after=droite). Changement : le sortant glisse d'un côté, l'entrant arrive
    de l'autre. transform + opacity uniquement.
