@@ -214,6 +214,11 @@
     margin: 0 -5vw; /* déborde jusqu'aux bords pour un vrai scroll plein largeur */
     padding-left: 5vw;
     padding-right: 5vw;
+    /* Le snap se cale sur le scrollport (padding-box) : sans inset, le 1er onglet
+       reviendrait au bord viewport. On décale le snapport de la gouttière (5vw) pour
+       aligner le 1er onglet sur le titre/paragraphe, tout en gardant le bleed. */
+    scroll-padding-left: 5vw;
+    scroll-padding-right: 5vw;
   }
   .s3-pills::-webkit-scrollbar { display: none; }
   .s3-item {
