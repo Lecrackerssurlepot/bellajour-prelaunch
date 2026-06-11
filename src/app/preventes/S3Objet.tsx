@@ -16,6 +16,7 @@ interface Facette {
   accroche: string
   corps: string
   court: string // version condensée mobile (onglets)
+  img: string // visuel produit (webp, fond transparent)
 }
 
 const FACETTES: Facette[] = [
@@ -24,30 +25,35 @@ const FACETTES: Facette[] = [
     accroche: 'Fait pour durer',
     corps: 'A4 portrait — 21 × 29,7 cm. Un format choisi pour une raison précise : il suit naturellement le regard. La verticalité de l’A4 portrait accompagne la lecture, page après page, comme on tourne les chapitres d’un livre. Couverture rigide. Papier 170g. Base de 30 pages — pas 24. La plupart des albums démarrent au minimum d’impression en usine. Nous avons choisi 30, parce que 24 pages, c’est trop peu pour raconter une histoire.',
     court: 'A4 portrait, 21 × 29,7 cm. Couverture rigide, papier 170g, 30 pages de base — parce que 24, c’est trop peu pour raconter une histoire.',
+    img: '/images/prevente/objet/format.webp',
   },
   {
     titre: 'L’illustration',
     accroche: 'Une couverture pensée comme une œuvre',
     corps: 'La couverture de votre album est une illustration originale générée à partir de votre voyage, ses couleurs, ses ambiances et son âme. Elle ne reproduit pas vos photos. Elle les interprète. Chaque couverture est unique, faite pour être exposée.',
     court: 'Une couverture originale générée à partir de votre voyage. Elle ne reproduit pas vos photos, elle les interprète. Unique, faite pour être exposée.',
+    img: '/images/prevente/objet/illustration.webp',
   },
   {
     titre: 'La mise en page',
     accroche: 'Des pages composées pour raconter',
     corps: 'Les photos sont organisées en chapitres, doubles-pages et respirations visuelles. Bellajour alterne les grands moments, les séquences intimes et les pages plus calmes pour créer un rythme naturel. Trois styles de mise en page coexistent dans chaque album : pleine page pour les photos qui méritent tout l’espace, composition à plusieurs images pour les séquences et les détails, et pages aérées pour laisser respirer le récit.',
     court: 'Vos photos organisées en chapitres et doubles-pages. Trois styles — pleine page, compositions, pages aérées — pour un rythme naturel.',
+    img: '/images/prevente/objet/mise-en-page.webp',
   },
   {
     titre: 'La 4ème de couverture',
     accroche: 'L’endroit où rien n’a besoin d’être dit',
     corps: 'La quatrième de couverture porte juste une photo, ou rien. Un espace pour souffler avant de refermer l’album. La sobriété comme choix délibéré.',
     court: 'Juste une photo, ou rien. Un espace pour souffler avant de refermer l’album. La sobriété comme choix délibéré.',
+    img: '/images/prevente/objet/quatrieme-couverture.webp',
   },
   {
     titre: 'La reliure',
     accroche: 'Une tranche marquante',
     corps: 'La tranche de l’album est le seul endroit où figure le titre de votre voyage. Posé sur une étagère parmi d’autres, c’est ce qui le rend reconnaissable au premier coup d’œil : un nom, une date, une destination.',
     court: 'La tranche porte le titre de votre voyage. Sur une étagère, c’est ce qui le rend reconnaissable au premier coup d’œil.',
+    img: '/images/prevente/objet/reliure.webp',
   },
 ]
 
@@ -123,7 +129,7 @@ export default function S3Objet() {
                 const state = i === active ? 'active' : i < active ? 'before' : 'after'
                 return (
                   <div className="s3-layer" data-state={state} key={f.titre}>
-                    <span className="s3-layer-label">{f.titre}</span>
+                    <img className="s3-layer-img" src={f.img} alt="" loading="lazy" />
                   </div>
                 )
               })}
