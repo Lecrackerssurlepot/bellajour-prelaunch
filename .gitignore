@@ -44,3 +44,7 @@ next-env.d.ts
 
 # Night perf session — local backup of original images (recoverable from main too)
 /image-originals/
+
+# Sources vidéo brutes du parcours S2 — conservées en local, jamais déployées
+# (assets web = les .mp4 optimisés + covers .png commités à côté)
+/public/images/prevente/parcours/*.mov
