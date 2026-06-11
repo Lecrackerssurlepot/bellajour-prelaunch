@@ -17,6 +17,7 @@ interface Facette {
   corps: string
   court: string // version condensée mobile (onglets)
   img: string // visuel produit (webp, fond transparent)
+  alt: string // texte alternatif descriptif (SEO + accessibilité)
   ratio: string // ratio du visuel (le cadre s'y adapte) : '3 / 4' portrait, '4 / 3' paysage
   crop?: boolean // desktop : recadrer dans la boîte paysage partagée (object-fit cover)
 }
@@ -28,6 +29,7 @@ const FACETTES: Facette[] = [
     corps: 'Une illustration **originale**, générée à partir de votre voyage : ses couleurs, ses ambiances, son âme. Une **interprétation unique**, faite pour être exposée.',
     court: 'Une couverture originale générée à partir de votre voyage. Elle ne reproduit pas vos photos, elle les interprète. Unique, faite pour être exposée.',
     img: '/images/prevente/objet/illustration.webp',
+    alt: 'Couverture illustrée d’un album photo Bellajour',
     ratio: '4 / 3',
   },
   {
@@ -36,6 +38,7 @@ const FACETTES: Facette[] = [
     corps: '**A4 portrait**, 21 × 29,7 cm. Un format qui suit naturellement le regard, page après page. Couverture **rigide**, papier **170g**. Sur une base de **30 pages**, pour incarner l’essentiel de votre histoire.',
     court: 'A4 portrait, 21 × 29,7 cm. Couverture rigide, papier 170g, 30 pages de base. Parce que 24, c’est trop peu pour raconter une histoire.',
     img: '/images/prevente/objet/format.webp',
+    alt: 'Album photo Bellajour au format A4 portrait à couverture rigide',
     ratio: '3 / 4',
     crop: true,
   },
@@ -45,6 +48,7 @@ const FACETTES: Facette[] = [
     corps: 'Vos photos organisées en **chapitres**, doubles-pages et respirations. Bellajour alterne grands moments et séquences intimes pour créer un **rythme naturel**.',
     court: 'Vos photos organisées en chapitres et doubles-pages. Trois styles (pleine page, compositions, pages aérées) pour un rythme naturel.',
     img: '/images/prevente/objet/mise-en-page.webp',
+    alt: 'Pages intérieures d’un album photo Bellajour',
     ratio: '4 / 3',
   },
   {
@@ -53,6 +57,7 @@ const FACETTES: Facette[] = [
     corps: 'Juste une photo. Ou **rien**. Un espace pour **souffler** avant de refermer l’album. La sobriété comme choix délibéré.',
     court: 'Juste une photo, ou rien. Un espace pour souffler avant de refermer l’album. La sobriété comme choix délibéré.',
     img: '/images/prevente/objet/quatrieme-couverture.webp',
+    alt: 'Quatrième de couverture d’un album photo Bellajour',
     ratio: '3 / 4',
   },
   {
@@ -61,6 +66,7 @@ const FACETTES: Facette[] = [
     corps: 'La tranche porte le **titre de votre voyage**. Sur une étagère, c’est ce qui le rend **reconnaissable au premier coup d’œil** : un nom, une date, une destination.',
     court: 'La tranche porte le titre de votre voyage. Sur une étagère, c’est ce qui le rend reconnaissable au premier coup d’œil.',
     img: '/images/prevente/objet/reliure.webp',
+    alt: 'Tranche reliée d’un album photo Bellajour',
     ratio: '3 / 4',
     crop: true,
   },
@@ -154,7 +160,6 @@ export default function S3Objet() {
                 partagée (4:3) au lieu de créer une boîte portrait plus haute. */}
             <div
               className="s3-media"
-              aria-hidden="true"
               data-orient={FACETTES[active].ratio === '4 / 3' ? 'land' : 'port'}
               data-crop={FACETTES[active].crop ? 'true' : 'false'}
               style={{ '--s3-ratio': FACETTES[active].ratio } as CSSProperties}
@@ -162,13 +167,21 @@ export default function S3Objet() {
               {FACETTES.map((f, i) => {
                 const state = i === active ? 'active' : i < active ? 'before' : 'after'
                 return (
-                  <div className="s3-layer" data-state={state} key={f.titre}>
+                  // Couches non actives masquées au lecteur d'écran : il n'annonce
+                  // que l'alt du visuel actif (le crawler SEO lit quand même les 5).
+                  <div
+                    className="s3-layer"
+                    data-state={state}
+                    aria-hidden={i !== active}
+                    key={f.titre}
+                  >
                     <img
                       className="s3-layer-img"
                       data-crop={f.crop ? 'true' : 'false'}
                       src={f.img}
-                      alt=""
+                      alt={f.alt}
                       loading="lazy"
+                      decoding="async"
                     />
                   </div>
                 )
