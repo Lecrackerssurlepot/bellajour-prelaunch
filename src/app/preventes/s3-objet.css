@@ -129,11 +129,11 @@
   opacity: 1;
   transform: translateY(0);
 }
-/* Mots mis en avant dans le corps : couleur accent, même taille, sans gras lourd */
+/* Mots mis en avant dans le corps : noir éditorial, gras, même taille */
 .s3-em {
-  color: var(--bj-action);
+  color: var(--bj-text);
   font-style: normal;
-  font-weight: inherit;
+  font-weight: 600;
 }
 
 /* Texte court (onglet mobile) — masqué en desktop */
@@ -152,13 +152,20 @@
 .s3-media {
   position: relative;
   width: 100%;
-  max-width: clamp(300px, 38vw, 440px); /* image agrandie (colonne droite élargie) */
+  /* Portrait (défaut) : encart agrandi (colonne droite élargie). */
+  max-width: clamp(300px, 38vw, 440px);
   /* Le cadre épouse le ratio du visuel actif (var posée en inline par le composant).
      Défaut 3/4 si la var n'est pas définie (no-JS). */
   aspect-ratio: var(--s3-ratio, 3 / 4);
   border-radius: var(--bj-r-lg);
   overflow: hidden;
-  transition: aspect-ratio 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: aspect-ratio 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              max-width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* Paysage (illustration + mise-en-page) : cadre élargi (× 4/3) pour égaliser la
+   surface avec les visuels portrait → même poids visuel. object-fit reste contain. */
+.s3-media[data-orient='land'] {
+  max-width: clamp(400px, 50vw, 586px);
 }
 
 /* Calques empilés : actif visible, autres parqués d'un côté (before=gauche,
@@ -237,6 +244,8 @@
   /* Image compacte sous le texte → tout tient dans le viewport */
   .s3-grid { gap: clamp(16px, 3vh, 24px); }
   .s3-media { max-width: clamp(160px, 44vw, 220px); }
+  /* Paysage : même élargissement × 4/3 pour égaliser le poids visuel sur mobile */
+  .s3-media[data-orient='land'] { max-width: clamp(213px, 58vw, 293px); }
 }
 
 /* ════════════════ Reduced motion ════════════════ */

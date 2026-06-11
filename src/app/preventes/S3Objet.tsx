@@ -33,7 +33,7 @@ const FACETTES: Facette[] = [
     titre: 'Le format',
     accroche: 'Fait pour durer',
     corps: '**A4 portrait**, 21 × 29,7 cm. Un format qui suit naturellement le regard, page après page. Couverture **rigide**, papier **170g**. Sur une base de **30 pages**, pour incarner l’essentiel de votre histoire.',
-    court: 'A4 portrait, 21 × 29,7 cm. Couverture rigide, papier 170g, 30 pages de base — parce que 24, c’est trop peu pour raconter une histoire.',
+    court: 'A4 portrait, 21 × 29,7 cm. Couverture rigide, papier 170g, 30 pages de base. Parce que 24, c’est trop peu pour raconter une histoire.',
     img: '/images/prevente/objet/format.webp',
     ratio: '3 / 4',
   },
@@ -41,7 +41,7 @@ const FACETTES: Facette[] = [
     titre: 'La mise en page',
     accroche: 'Des pages composées pour raconter',
     corps: 'Vos photos organisées en **chapitres**, doubles-pages et respirations. Bellajour alterne grands moments et séquences intimes pour créer un **rythme naturel**.',
-    court: 'Vos photos organisées en chapitres et doubles-pages. Trois styles — pleine page, compositions, pages aérées — pour un rythme naturel.',
+    court: 'Vos photos organisées en chapitres et doubles-pages. Trois styles (pleine page, compositions, pages aérées) pour un rythme naturel.',
     img: '/images/prevente/objet/mise-en-page.webp',
     ratio: '4 / 3',
   },
@@ -63,7 +63,7 @@ const FACETTES: Facette[] = [
   },
 ]
 
-// Découpe le corps sur les segments **emphase** → texte accent (var(--bj-action)).
+// Découpe le corps sur les segments **emphase** → noir éditorial gras (.s3-em).
 // Index impairs = segments capturés (emphase), pairs = texte normal.
 function renderCorps(corps: string) {
   return corps.split(/\*\*(.+?)\*\*/g).map((part, i) =>
@@ -144,10 +144,13 @@ export default function S3Objet() {
 
           {/* DROITE (desktop) / BAS (mobile) — image objet (slide selon l'actif) */}
           <div className="s3-media-wrap">
-            {/* Le cadre s'adapte au ratio du visuel actif (portrait 3:4 / paysage 4:3) */}
+            {/* Le cadre s'adapte au ratio du visuel actif (portrait 3:4 / paysage 4:3).
+                data-orient='land' élargit le cadre des 2 visuels paysage pour égaliser
+                leur surface avec les portraits. */}
             <div
               className="s3-media"
               aria-hidden="true"
+              data-orient={FACETTES[active].ratio === '4 / 3' ? 'land' : 'port'}
               style={{ '--s3-ratio': FACETTES[active].ratio } as CSSProperties}
             >
               {FACETTES.map((f, i) => {
