@@ -19,7 +19,6 @@ interface Facette {
   img: string // visuel produit (webp, fond transparent)
   alt: string // texte alternatif descriptif (SEO + accessibilité)
   ratio: string // ratio du visuel (le cadre s'y adapte) : '3 / 4' portrait, '4 / 3' paysage
-  crop?: boolean // desktop : recadrer dans la boîte paysage partagée (object-fit cover)
 }
 
 const FACETTES: Facette[] = [
@@ -40,7 +39,6 @@ const FACETTES: Facette[] = [
     img: '/images/prevente/objet/format.webp',
     alt: 'Album photo Bellajour au format A4 portrait à couverture rigide',
     ratio: '3 / 4',
-    crop: true,
   },
   {
     titre: 'La mise en page',
@@ -68,7 +66,6 @@ const FACETTES: Facette[] = [
     img: '/images/prevente/objet/reliure.webp',
     alt: 'Tranche reliée d’un album photo Bellajour',
     ratio: '3 / 4',
-    crop: true,
   },
 ]
 
@@ -153,15 +150,13 @@ export default function S3Objet() {
 
           {/* DROITE (desktop) / BAS (mobile) — image objet (slide selon l'actif) */}
           <div className="s3-media-wrap">
-            {/* Le cadre s'adapte au ratio du visuel actif (portrait 3:4 / paysage 4:3).
-                data-orient='land' élargit le cadre des 2 visuels paysage pour égaliser
-                leur surface avec les portraits.
-                data-crop='true' (desktop) : format/reliure recadrés dans la boîte paysage
-                partagée (4:3) au lieu de créer une boîte portrait plus haute. */}
+            {/* Le cadre épouse le ratio du visuel actif (portrait 3:4 / paysage 4:3) :
+                desktop largeur uniforme, seule la hauteur varie (images entières,
+                object-fit: contain). data-orient ne pilote plus que le dimensionnement
+                mobile (bloc @media max-width:899px). */}
             <div
               className="s3-media"
               data-orient={FACETTES[active].ratio === '4 / 3' ? 'land' : 'port'}
-              data-crop={FACETTES[active].crop ? 'true' : 'false'}
               style={{ '--s3-ratio': FACETTES[active].ratio } as CSSProperties}
             >
               {FACETTES.map((f, i) => {
@@ -177,7 +172,6 @@ export default function S3Objet() {
                   >
                     <img
                       className="s3-layer-img"
-                      data-crop={f.crop ? 'true' : 'false'}
                       src={f.img}
                       alt={f.alt}
                       loading="lazy"
