@@ -41,6 +41,11 @@
   --bj-glass-light-bg-active: rgba(255, 255, 255, 0.55); /* carte active carrousel : un cran + opaque = emphase lisible */
   --bj-glass-light-border: rgba(255, 255, 255, 0.65);
   --bj-glass-light-text:   var(--bj-charcoal);
+  /* Android (Chromium) : remplace le verre dépoli de la navbar fixe par un crème
+     quasi-opaque — le backdrop-filter d'un position:fixed est re-rastérisé à chaque
+     frame de scroll = jank. Appliqué uniquement via NavbarPrix (cf. .pv-nav--flat).
+     Desktop + Safari iOS gardent le verre dépoli. = --bj-cream #f7f1e9 @ 0.92. */
+  --bj-nav-android-bg:     rgba(247, 241, 233, 0.92);
 
   /* ─────────────── GLASS MODALES (Instants / Parrainage / Réservation) ───────────────
      Variante dédiée : surface givrée quasi opaque pour garantir le contraste du

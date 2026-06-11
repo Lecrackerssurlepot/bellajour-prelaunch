@@ -16,14 +16,22 @@ import { preventesHref, preventesRootHref } from './_ref'
 export default function NavbarPrix() {
   const [root, setRoot] = useState('/preventes')
   const [cta, setCta] = useState('/preventes#s4')
+  /* Android (Chromium) : on retire le backdrop-filter live de la navbar fixe
+     (re-rastérisé à chaque frame = jank). Détecté post-montage → initial false =
+     rendu SSR, aucune erreur d'hydratation. Desktop + Safari iOS inchangés. */
+  const [flat, setFlat] = useState(false)
 
   useEffect(() => {
     setRoot(preventesRootHref())
     setCta(preventesHref())
+    setFlat(/Android/i.test(navigator.userAgent))
   }, [])
 
   return (
-    <nav className="pv-nav pv-nav--solid" aria-label="Navigation prix">
+    <nav
+      className={`pv-nav pv-nav--solid${flat ? ' pv-nav--flat' : ''}`}
+      aria-label="Navigation prix"
+    >
       <a href={root} className="pv-nav-logo-btn" aria-label="Retour à la prévente">
         <img
           src="/images/ui/logo.webp"

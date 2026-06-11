@@ -114,13 +114,15 @@
   /* Élargi pour que TOUT le récapitulatif tienne d'un coup (aucun scroll interne :
      le panel est en flux normal, sans max-height ni overflow). */
   max-width: 680px;
-  /* Glass charte (carte qui flotte). */
+  /* Glass charte (carte qui flotte).
+     Pas de backdrop-filter : la carte flotte au-dessus d'un fond PLAT (.px = crème
+     uniforme), donc flouter ne change rien (no-op visuel). Sur Chrome/Android, ce
+     blur en flux était re-rastérisé à chaque frame de scroll = jank. Retiré → rendu
+     identique partout, scroll fluide. Fallback opaque conservé ci-dessous. */
   background: var(--bj-glass-light-bg);
   border: 1px solid var(--bj-glass-light-border);
   border-radius: var(--bj-r-lg);
   box-shadow: var(--bj-shadow-soft);
-  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
-  backdrop-filter: blur(var(--bj-glass-blur));
   padding: clamp(30px, 4.5vw, 56px);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
