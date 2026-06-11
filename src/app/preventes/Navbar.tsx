@@ -42,7 +42,12 @@ export default function Navbar() {
         className="pv-nav-logo-btn"
         aria-label="Retour en haut"
       >
-        <img src="/images/ui/logo.webp" className="pv-nav-logo" alt="Bellajour" decoding="sync" />
+        <img
+          src={heroOut ? '/images/ui/logo.webp' : '/images/ui/bellajour-blanc.webp'}
+          className="pv-nav-logo"
+          alt="Bellajour"
+          decoding="sync"
+        />
       </button>
 
       {/* CTA — visible uniquement en état B (hero sorti). */}

@@ -18,6 +18,7 @@
   inset: 0;
   z-index: 0;
 }
+/* S'applique au <video> ET au <img> de fond (même classe). */
 .s1-bg-img {
   width: 100%;
   height: 100%;
@@ -26,40 +27,18 @@
   object-position: 50% 38%;
   display: block;
 }
-/* Placeholder full-bleed — gradient évoquant une vue mer (clair en haut),
-   pour évaluer la lisibilité du titre bleu en attendant le vrai visuel. */
-.s1-bg-placeholder {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    180deg,
-    #dfeaf0 0%,
-    #cddde6 38%,
-    #aebfc9 70%,
-    #8fa3b0 100%
-  );
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 18px;
-}
-.s1-bg-label {
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(28, 28, 28, 0.45);
-}
 
-/* Scrim : voile clair en haut (lisibilité titre) qui s'estompe vers le bas. */
+/* Scrim : léger voile sombre (texte blanc sur ciel clair). Renforcé en haut
+   sous le logo et en bas sous le CTA, allégé au centre. Fourchette .10–.22. */
 .s1-scrim {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(247, 241, 233, 0.55) 0%,
-    rgba(247, 241, 233, 0.18) 32%,
-    rgba(247, 241, 233, 0) 58%
+    rgba(0, 0, 0, 0.22) 0%,
+    rgba(0, 0, 0, 0.1) 40%,
+    rgba(0, 0, 0, 0.12) 72%,
+    rgba(0, 0, 0, 0.18) 100%
   );
 }
 
@@ -85,16 +64,25 @@
   height: var(--bj-topbar-h);
 }
 
-/* Zone centrale : titre 2 lignes. flex:1 → reste centré entre haut et bas. */
-.s1-title {
+/* Zone centrale : titre + album, groupés et centrés entre haut et bas. */
+.s1-middle {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
+  gap: clamp(20px, 3vh, 40px);
+  min-height: 0;
+}
+
+/* Titre 2 lignes — blanc, AU-DESSUS de l'album. */
+.s1-title {
+  display: flex;
+  flex-direction: column;
   font-family: var(--bj-font-display);
   font-style: italic;
   font-weight: 600;
-  color: var(--bj-action);
+  color: #ffffff;
   line-height: 1.06;
   letter-spacing: -0.01em;
   /* Calibré pour que chaque ligne tienne sur UNE ligne en desktop. */
@@ -103,6 +91,13 @@
 .s1-title-line {
   display: block;
   white-space: nowrap;
+}
+
+/* Album centré sous le titre — ~30-40% desktop. */
+.s1-album {
+  display: block;
+  width: clamp(220px, 34vw, 440px);
+  height: auto;
 }
 
 /* Zone basse : sous-titre + bouton, collés en bas. */
@@ -118,7 +113,7 @@
   font-family: var(--bj-font-ui);
   font-size: clamp(15px, 1.4vw, 19px);
   letter-spacing: 0.02em;
-  color: var(--bj-text);
+  color: #ffffff;
 }
 
 /* ── Bouton ghost / outline ── */
@@ -128,9 +123,9 @@
   font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--bj-action);
+  color: #ffffff;
   background: transparent;
-  border: 1.5px solid var(--bj-action);
+  border: 1.5px solid #ffffff;
   border-radius: var(--bj-r-pill);
   padding: 15px 34px;
   cursor: pointer;
@@ -139,8 +134,8 @@
     color var(--bj-dur-fast) var(--bj-ease);
 }
 .s1-cta:hover {
-  background: var(--bj-action);
-  color: var(--bj-on-action);
+  background: #ffffff;
+  color: var(--bj-action);
 }
 
 /* ── Mobile ──
@@ -149,6 +144,10 @@
 @media (max-width: 767px) {
   .s1-title {
     font-size: clamp(28px, 8.4vw, 50px);
+  }
+  /* Album plus présent sur mobile — ~55-65% de la largeur. */
+  .s1-album {
+    width: 60vw;
   }
   .s1-cta {
     padding: 12px 26px;
