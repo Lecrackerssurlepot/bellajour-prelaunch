@@ -145,9 +145,12 @@
   position: relative;
   width: 100%;
   max-width: clamp(220px, 26vw, 320px); /* encart plus petit qu'avant */
-  aspect-ratio: 3 / 4;
+  /* Le cadre épouse le ratio du visuel actif (var posée en inline par le composant).
+     Défaut 3/4 si la var n'est pas définie (no-JS). */
+  aspect-ratio: var(--s3-ratio, 3 / 4);
   border-radius: var(--bj-r-lg);
   overflow: hidden;
+  transition: aspect-ratio 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Calques empilés : actif visible, autres parqués d'un côté (before=gauche,
@@ -234,6 +237,7 @@
   .s3-item-accroche,
   .s3-item-corps,
   .s3-pill,
+  .s3-media,
   .s3-layer {
     transition: none;
   }

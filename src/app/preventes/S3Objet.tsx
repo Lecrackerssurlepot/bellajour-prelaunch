@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import './s3-objet.css'
 
 /* PRD §5.3 — S3 L'objet Bellajour.
@@ -17,6 +17,7 @@ interface Facette {
   corps: string
   court: string // version condensée mobile (onglets)
   img: string // visuel produit (webp, fond transparent)
+  ratio: string // ratio du visuel (le cadre s'y adapte) : '3 / 4' portrait, '4 / 3' paysage
 }
 
 const FACETTES: Facette[] = [
@@ -26,6 +27,7 @@ const FACETTES: Facette[] = [
     corps: 'A4 portrait — 21 × 29,7 cm. Un format choisi pour une raison précise : il suit naturellement le regard. La verticalité de l’A4 portrait accompagne la lecture, page après page, comme on tourne les chapitres d’un livre. Couverture rigide. Papier 170g. Base de 30 pages — pas 24. La plupart des albums démarrent au minimum d’impression en usine. Nous avons choisi 30, parce que 24 pages, c’est trop peu pour raconter une histoire.',
     court: 'A4 portrait, 21 × 29,7 cm. Couverture rigide, papier 170g, 30 pages de base — parce que 24, c’est trop peu pour raconter une histoire.',
     img: '/images/prevente/objet/format.webp',
+    ratio: '3 / 4',
   },
   {
     titre: 'L’illustration',
@@ -33,6 +35,7 @@ const FACETTES: Facette[] = [
     corps: 'La couverture de votre album est une illustration originale générée à partir de votre voyage, ses couleurs, ses ambiances et son âme. Elle ne reproduit pas vos photos. Elle les interprète. Chaque couverture est unique, faite pour être exposée.',
     court: 'Une couverture originale générée à partir de votre voyage. Elle ne reproduit pas vos photos, elle les interprète. Unique, faite pour être exposée.',
     img: '/images/prevente/objet/illustration.webp',
+    ratio: '4 / 3',
   },
   {
     titre: 'La mise en page',
@@ -40,6 +43,7 @@ const FACETTES: Facette[] = [
     corps: 'Les photos sont organisées en chapitres, doubles-pages et respirations visuelles. Bellajour alterne les grands moments, les séquences intimes et les pages plus calmes pour créer un rythme naturel. Trois styles de mise en page coexistent dans chaque album : pleine page pour les photos qui méritent tout l’espace, composition à plusieurs images pour les séquences et les détails, et pages aérées pour laisser respirer le récit.',
     court: 'Vos photos organisées en chapitres et doubles-pages. Trois styles — pleine page, compositions, pages aérées — pour un rythme naturel.',
     img: '/images/prevente/objet/mise-en-page.webp',
+    ratio: '4 / 3',
   },
   {
     titre: 'La 4ème de couverture',
@@ -47,6 +51,7 @@ const FACETTES: Facette[] = [
     corps: 'La quatrième de couverture porte juste une photo, ou rien. Un espace pour souffler avant de refermer l’album. La sobriété comme choix délibéré.',
     court: 'Juste une photo, ou rien. Un espace pour souffler avant de refermer l’album. La sobriété comme choix délibéré.',
     img: '/images/prevente/objet/quatrieme-couverture.webp',
+    ratio: '3 / 4',
   },
   {
     titre: 'La reliure',
@@ -54,6 +59,7 @@ const FACETTES: Facette[] = [
     corps: 'La tranche de l’album est le seul endroit où figure le titre de votre voyage. Posé sur une étagère parmi d’autres, c’est ce qui le rend reconnaissable au premier coup d’œil : un nom, une date, une destination.',
     court: 'La tranche porte le titre de votre voyage. Sur une étagère, c’est ce qui le rend reconnaissable au premier coup d’œil.',
     img: '/images/prevente/objet/reliure.webp',
+    ratio: '3 / 4',
   },
 ]
 
@@ -124,7 +130,12 @@ export default function S3Objet() {
 
           {/* DROITE (desktop) / BAS (mobile) — image objet (slide selon l'actif) */}
           <div className="s3-media-wrap">
-            <div className="s3-media" aria-hidden="true">
+            {/* Le cadre s'adapte au ratio du visuel actif (portrait 3:4 / paysage 4:3) */}
+            <div
+              className="s3-media"
+              aria-hidden="true"
+              style={{ '--s3-ratio': FACETTES[active].ratio } as CSSProperties}
+            >
               {FACETTES.map((f, i) => {
                 const state = i === active ? 'active' : i < active ? 'before' : 'after'
                 return (
