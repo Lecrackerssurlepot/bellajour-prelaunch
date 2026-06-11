@@ -11,6 +11,7 @@ import './s2-experience.css'
 
 interface Carte {
   num: string
+  slug: string // dérive la vidéo (.mp4) et la cover (.png) dans /parcours/
   label: string
   ux: string
   algo: string
@@ -20,24 +21,28 @@ interface Carte {
 const CARTES: Carte[] = [
   {
     num: '01',
+    slug: 'upload',
     label: 'L’upload',
     ux: 'Ajoutez l’ensemble de vos photos, même si elles ne sont pas triées. Invitez vos proches à contribuer directement sur votre projet.',
     algo: 'Bellajour analyse chaque photo : netteté, lumière, doublons, valeur émotionnelle… afin de préparer la composition.',
   },
   {
     num: '02',
+    slug: 'questionnaire',
     label: 'Le questionnaire',
     ux: 'Choisissez vos préférences de mise en page parmi nos différents styles, ajustez la densité. Définissez les rôles des protagonistes de votre histoire.',
     algo: 'Vos réponses calibrent l’algorithme de sélection. Il sait maintenant qui compte pour vous, quelles photos prioriser, dans quel ordre, et avec quelle intention narrative.',
   },
   {
     num: '03',
+    slug: 'mise-en-page',
     label: 'La mise en page',
     ux: 'Votre album est déjà là. Feuilletez, admirez, et si une photo vous manque, échangez-la en un geste selon vos envies.',
     algo: 'Bellajour a sélectionné, ordonné et mis en page vos meilleures photos. Les autres sont triées par critères — lieu, moment, personne — pour que comparer et choisir ne prenne que quelques secondes.',
   },
   {
     num: '04',
+    slug: 'illustration',
     label: 'L’illustration',
     ux: 'Choisissez une illustration générée uniquement pour votre album, créée pour refléter votre histoire. Ajoutez-la en couverture, complétez avec une de vos photos si vous le souhaitez. Sélectionnez vos couleurs, donnez un titre à vos souvenirs.',
     algo: 'Bellajour a analysé l’ensemble de votre album — les lieux, les visages, les émotions — pour générer une illustration qui lui ressemble. Rien n’est pioché dans une bibliothèque. C’est la vôtre !',
@@ -54,6 +59,8 @@ export default function S2Experience() {
   const [activeIndex, setActiveIndex] = useState(0)
 
   // Respect prefers-reduced-motion : on fige la démo (autoplay coupé) sur 1re frame.
+  // Re-exécuté à chaque changement de carte active : seule la vidéo active est montée,
+  // donc videoRef pointe sur la nouvelle vidéo après le remount (key=slug).
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
@@ -65,7 +72,7 @@ export default function S2Experience() {
     apply()
     mq.addEventListener('change', apply)
     return () => mq.removeEventListener('change', apply)
-  }, [])
+  }, [activeIndex])
 
   const goTo = useCallback((index: number) => {
     setActiveIndex((prev) => {
@@ -162,26 +169,33 @@ export default function S2Experience() {
               <p className="s2-card-algo">{c.algo}</p>
               {c.cloture && <p className="s2-card-cloture">{c.cloture}</p>}
             </div>
-            {i === 0 ? (
-              <div className="s2-card-media">
+            {/* Carte active : seule vidéo montée (autoPlay/loop) → joue.
+                Cartes inactives : aucune vidéo montée, cover figée → perf, batterie,
+                data ; rien ne tourne en fond. key=slug force le remount au swipe. */}
+            <div className="s2-card-media">
+              {i === activeIndex ? (
                 <video
+                  key={c.slug}
                   ref={videoRef}
                   className="s2-card-video"
-                  src="/images/prevente/parcours/upload.mp4"
-                  poster="/images/prevente/parcours/upload-cover.png"
+                  src={`/images/prevente/parcours/${c.slug}.mp4`}
+                  poster={`/images/prevente/parcours/${c.slug}-cover.png`}
                   muted
                   autoPlay
                   loop
                   playsInline
                   preload="metadata"
-                  aria-label="Démo : l’upload de vos photos sur Bellajour"
+                  aria-label={`Démo : ${c.label} sur Bellajour`}
                 />
-              </div>
-            ) : (
-              <div className="s2-card-media" aria-hidden="true">
-                <span className="s2-card-media-label">MOCKUP CARTE {c.num}</span>
-              </div>
-            )}
+              ) : (
+                <img
+                  className="s2-card-cover"
+                  src={`/images/prevente/parcours/${c.slug}-cover.png`}
+                  alt=""
+                  aria-hidden="true"
+                />
+              )}
+            </div>
           </article>
         ))}
       </div>

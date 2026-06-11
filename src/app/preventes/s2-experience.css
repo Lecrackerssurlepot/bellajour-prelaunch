@@ -102,6 +102,9 @@
 
 @media (min-width: 768px) {
   .s2-card { width: 38vw; }
+  /* Cartes à hauteur de contenu, centrées verticalement dans le track :
+     le média n'est plus étiré (aspect-ratio compact) → pas de vide en bas de carte. */
+  .s2-track { align-items: center; }
 }
 @media (min-width: 1100px) {
   /* Cartes plus larges → texte sur moins de lignes → plus aéré, moins haut. */
@@ -170,30 +173,29 @@
   margin-top: 4px;
 }
 
-/* ── Visuel / mockup arrondi (en bas) — absorbe l'espace restant ── */
+/* ── Visuel / mockup arrondi (en bas) ──
+   Le cadre épouse la vidéo : aspect-ratio commun aux 4 vidéos (3024x1500 = ~2:1)
+   et aux 4 covers (même ratio) ⇒ object-fit:contain ne laisse aucune bande crème.
+   Plus de flex:1 1 auto qui étirait la zone et créait le grand vide crème. */
 .s2-card-media {
-  flex: 1 1 auto;
-  min-height: 0; /* pas de hauteur imposée : remplit ce qui reste sous le texte */
+  flex: 0 0 auto;
+  aspect-ratio: 3024 / 1500;
   margin: 0 clamp(20px, 3vw, 32px) clamp(20px, 3vw, 32px);
   background: var(--bj-cream-tint-2);
   border-radius: var(--bj-r-lg);
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.s2-card-media-label {
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--bj-text-faint);
-}
-/* Vidéo démo (Carte 01) : largeur pleine du cadre, ratio respecté (height auto),
-   coins arrondis alignés sur le cadre média. */
-.s2-card-video {
+/* Vidéo (carte active) + cover (cartes inactives) : remplissent le cadre média,
+   ratio commun ⇒ contain sans bande, coins arrondis alignés. width/height 100%
+   pour épouser exactement l'aspect-ratio du cadre (swipe stable, pas de saut). */
+.s2-card-video,
+.s2-card-cover {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   border-radius: var(--bj-r-lg);
   object-fit: contain;
 }
@@ -206,14 +208,13 @@
   .s2 { height: auto; min-height: 0; }
   /* Cartes calées en haut, hauteur = contenu (plus d'étirement par align stretch). */
   .s2-track { align-items: flex-start; }
-  /* Média n'absorbe plus l'espace restant : il épouse la vidéo / son contenu.
-     min-height conservé comme plancher pour les placeholders 02/03/04. */
+  /* Média = l'aspect-ratio commun épouse exactement la vidéo / la cover :
+     plus de plancher min-height qui recréait du vide crème.
+     max-height = garde-fou pour ne jamais dépasser l'écran (contain → pas de rognage). */
   .s2-card-media {
     flex: 0 0 auto;
-    min-height: clamp(120px, 20dvh, 200px);
+    max-height: 45dvh;
   }
-  /* Vidéo bornée pour ne jamais dépasser l'écran (object-fit:contain → pas de rognage). */
-  .s2-card-video { max-height: 45dvh; }
   /* Contenu réduit : on masque la phrase algo (wording conservé dans le JSX),
      et on allège légèrement la phrase UX → tout rentre dans la hauteur. */
   .s2-card-algo { display: none; }
