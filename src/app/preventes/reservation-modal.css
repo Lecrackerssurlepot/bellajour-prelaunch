@@ -12,12 +12,12 @@
   display: flex;
   align-items: flex-end;       /* mobile : sheet collée en bas */
   justify-content: center;
-  background: var(--bj-veil-35);
+  background: var(--bj-glass-modal-scrim);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--bj-dur) var(--bj-ease);
-  -webkit-backdrop-filter: blur(2px);
-  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
 }
 .rm-backdrop--open {
   opacity: 1;
@@ -32,7 +32,7 @@
   overflow-y: auto;                 /* scroll INTERNE si le contenu dépasse l'écran */
   overscroll-behavior: contain;     /* iOS Safari : le fond ne scrolle pas */
   -webkit-overflow-scrolling: touch;
-  background: var(--bj-glass-light-bg);
+  background: var(--bj-glass-modal-bg);
   -webkit-backdrop-filter: blur(var(--bj-glass-blur));
   backdrop-filter: blur(var(--bj-glass-blur));
   border: 1px solid var(--bj-action-border);

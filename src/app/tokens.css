@@ -42,6 +42,15 @@
   --bj-glass-light-border: rgba(255, 255, 255, 0.65);
   --bj-glass-light-text:   var(--bj-charcoal);
 
+  /* ─────────────── GLASS MODALES (Instants / Parrainage / Réservation) ───────────────
+     Variante dédiée : surface givrée quasi opaque pour garantir le contraste du
+     contenu (texte foncé) tout en gardant le backdrop-filter blur → rendu verre,
+     pas bloc plein plat. Scrim renforcé pour que la page ne transparaisse plus.
+     Namespace isolé → n'affecte PAS les encarts décoratifs translucides S2/S3
+     qui restent sur --bj-glass-light-bg / --bj-glass-card-*. */
+  --bj-glass-modal-bg:     rgba(255, 255, 255, 0.90);
+  --bj-glass-modal-scrim:  rgba(28, 28, 28, 0.55);
+
   /* ─────────────── GLASS FONCÉ (texte clair) ─────────────── */
   --bj-glass-dark-bg:      rgba(28, 28, 28, 0.62);
   --bj-glass-dark-border:  rgba(255, 255, 255, 0.14);
