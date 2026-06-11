@@ -1,8 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './s5-garanties.css'
 import { PRIX_ALBUM_BASE } from './offer-state'
+import { isValidRefCode } from '@/lib/validation'
+
+interface FaqItem {
+  q: string
+  a: string
+  /* Affiche le renvoi inline « Voir le détail de nos prix » → /preventes/prix. */
+  priceLink?: boolean
+}
 
 /* PRD §5.5 — S5 Garanties + FAQ courte.
    4 garanties + accordéon 5 Q/R (wording figé du PRD).
@@ -16,7 +24,7 @@ const GARANTIES = [
   { titre: 'Acompte remboursable', texte: 'Remboursé si l’album ne peut pas être produit.' },
 ]
 
-const FAQ = [
+const FAQ: FaqItem[] = [
   {
     q: 'Quand pourrai-je créer mon album ?',
     a: 'Le lancement a lieu le 15 août. En réservant pendant la prévente, vous faites partie des tout premiers à concevoir votre album, dès l’ouverture.',
@@ -24,6 +32,7 @@ const FAQ = [
   {
     q: 'Combien coûtera l’album final ?',
     a: `L’album se règle selon son nombre de pages, à partir de ${PRIX_ALBUM_BASE} € pour 30 pages (le format de base). Votre acompte est intégralement crédité sur ce prix : il n’est pas un surcoût, il est déduit de votre commande.`,
+    priceLink: true,
   },
   {
     q: 'Puis-je valider avant impression ?',
@@ -42,6 +51,15 @@ const FAQ = [
 export default function S5Garanties() {
   const [open, setOpen] = useState<number | null>(null)
   const toggle = (i: number) => setOpen((prev) => (prev === i ? null : i))
+
+  /* Lien prix avec ?ref préservé (lecture URL uniquement, pas de storage). */
+  const [prixHref, setPrixHref] = useState('/preventes/prix')
+  useEffect(() => {
+    const ref = (new URLSearchParams(window.location.search).get('ref') || '').trim()
+    if (ref && isValidRefCode(ref)) {
+      setPrixHref(`/preventes/prix?ref=${encodeURIComponent(ref)}`)
+    }
+  }, [])
 
   return (
     <section className="s5" data-section="s5-garanties" data-theme="light">
@@ -77,7 +95,17 @@ export default function S5Garanties() {
                   </button>
                   <div className="s5-faq-answer-wrap">
                     <div className="s5-faq-answer">
-                      <p>{item.a}</p>
+                      <p>
+                        {item.a}
+                        {item.priceLink && (
+                          <>
+                            {' '}
+                            <a className="s5-faq-link" href={prixHref}>
+                              Voir le détail de nos prix
+                            </a>
+                          </>
+                        )}
+                      </p>
                     </div>
                   </div>
                 </div>

@@ -107,6 +107,17 @@
   margin: 0;
 }
 
+/* Lien inline « Voir le détail de nos prix » (renvoi vers /preventes/prix). */
+.s5-faq-link {
+  color: var(--bj-action);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  transition: color var(--bj-dur-fast) var(--bj-ease);
+}
+.s5-faq-link:hover { color: #357ec0; }
+
 @media (prefers-reduced-motion: reduce) {
   .s5-faq-answer-wrap, .s5-faq-icon { transition: none; }
 }

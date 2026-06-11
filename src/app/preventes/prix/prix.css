@@ -1,0 +1,399 @@
+/* ════════════════════════════════════════════════════════════
+   /preventes/prix — « Nos prix »
+   Charte prévente (tokens --bj-* uniquement). Page courte, très aérée :
+   respiration généreuse entre blocs, le simulateur est la pièce maîtresse.
+   Animations GPU only (opacity/transform), reveal via IntersectionObserver,
+   prefers-reduced-motion respecté. Glass = recette charte (glass-light + blur).
+   ════════════════════════════════════════════════════════════ */
+
+.px {
+  background: var(--bj-cream);
+  color: var(--bj-text);
+  font-family: var(--bj-font-ui);
+  /* Respiration verticale généreuse entre les blocs. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(72px, 12vh, 140px);
+  padding: 0 6vw clamp(72px, 12vh, 140px);
+}
+
+/* ── Reveal d'entrée (LUX FADE / SLIDE REVEAL) ── */
+.px-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.7s var(--bj-ease),
+    transform 0.7s var(--bj-ease);
+  will-change: opacity, transform;
+}
+.px-reveal.is-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ════════════ HERO ════════════ */
+.px-hero {
+  /* Compense la navbar fixe (--bj-topbar-h) + respiration plein écran léger. */
+  padding-top: calc(var(--bj-topbar-h) + clamp(48px, 12vh, 120px));
+  max-width: 22ch;
+  text-align: center;
+}
+.px-eyebrow {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--bj-terracotta-2);
+  margin-bottom: clamp(18px, 3vh, 28px);
+}
+.px-hero-title {
+  font-family: var(--bj-font-display);
+  font-weight: 500;
+  font-size: clamp(34px, 6vw, 60px);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--bj-text);
+}
+.px-hero-sub {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: clamp(18px, 2.4vw, 24px);
+  line-height: 1.5;
+  color: var(--bj-text-soft);
+  margin: clamp(20px, 3vh, 32px) auto 0;
+  max-width: 30ch;
+}
+
+/* ════════════ POURQUOI 30 PAGES ════════════ */
+.px-why {
+  max-width: 52ch;
+  text-align: center;
+}
+.px-why-title {
+  font-family: var(--bj-font-display);
+  font-weight: 500;
+  font-size: clamp(26px, 4vw, 38px);
+  line-height: 1.15;
+  color: var(--bj-text);
+}
+.px-why-body {
+  font-size: clamp(16px, 1.8vw, 18px);
+  line-height: 1.7;
+  color: var(--bj-text-soft);
+  margin: clamp(18px, 3vh, 28px) auto 0;
+  max-width: 46ch;
+}
+.px-specs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(8px, 1.4vw, 12px);
+  margin-top: clamp(26px, 4vh, 40px);
+}
+.px-spec {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  background: var(--bj-cream-tint-1);
+  border: 0.5px solid var(--bj-veil-12);
+  border-radius: var(--bj-r-pill);
+  padding: 8px 16px;
+  white-space: nowrap;
+}
+
+/* ════════════ SIMULATEUR ★ ════════════ */
+.px-sim-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.px-sim {
+  width: 100%;
+  max-width: 560px;
+  /* Glass charte (carte qui flotte). */
+  background: var(--bj-glass-light-bg);
+  border: 1px solid var(--bj-glass-light-border);
+  border-radius: var(--bj-r-lg);
+  box-shadow: var(--bj-shadow-soft);
+  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+  backdrop-filter: blur(var(--bj-glass-blur));
+  padding: clamp(28px, 4vw, 44px);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  /* Pas de glass → fond crème opaque, jamais une carte transparente illisible. */
+  .px-sim { background: var(--bj-cream-tint-1); }
+}
+
+.px-sim-head { text-align: center; }
+.px-sim-title {
+  font-family: var(--bj-font-display);
+  font-weight: 500;
+  font-size: clamp(24px, 3.4vw, 32px);
+  line-height: 1.15;
+  color: var(--bj-text);
+}
+.px-sim-intro {
+  font-size: var(--bj-fs-ui);
+  line-height: 1.6;
+  color: var(--bj-text-soft);
+  margin: 14px auto 0;
+  max-width: 42ch;
+}
+
+/* ── Contrôles ── */
+.px-controls {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(22px, 4vh, 32px);
+  margin-top: clamp(28px, 4vh, 40px);
+}
+.px-field {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.px-field-label {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body); /* 16px — confort + anti-zoom iOS */
+  font-weight: 500;
+  color: var(--bj-text);
+}
+.px-field-hint {
+  font-weight: 400;
+  color: var(--bj-text-faint);
+  font-size: var(--bj-fs-sm);
+}
+
+/* Slider — large, confortable au doigt. transform/opacity safe. */
+.px-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-cream-tint-3);
+  outline: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+.px-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-action);
+  border: 3px solid #fff;
+  box-shadow: var(--bj-shadow-soft);
+  cursor: pointer;
+  transition: transform var(--bj-dur-fast) var(--bj-ease);
+}
+.px-slider::-moz-range-thumb {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-action);
+  border: 3px solid #fff;
+  box-shadow: var(--bj-shadow-soft);
+  cursor: pointer;
+}
+.px-slider:active::-webkit-slider-thumb { transform: scale(1.08); }
+.px-slider:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--bj-action-ring); }
+.px-slider:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px var(--bj-action-ring); }
+.px-slider-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+
+/* Stepper — proches parrainés. */
+.px-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(20px, 5vw, 32px);
+  align-self: flex-start;
+}
+.px-step-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--bj-r-pill);
+  border: 1px solid var(--bj-action-border);
+  background: var(--bj-action-soft);
+  color: var(--bj-action);
+  font-family: var(--bj-font-ui);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color var(--bj-dur-fast) var(--bj-ease),
+    opacity var(--bj-dur-fast) var(--bj-ease),
+    transform var(--bj-dur-fast) var(--bj-ease);
+}
+.px-step-btn:hover:not(:disabled) { background: var(--bj-action); color: var(--bj-on-action); }
+.px-step-btn:active:not(:disabled) { transform: scale(0.94); }
+.px-step-btn:disabled { opacity: 0.4; cursor: default; }
+.px-step-val {
+  font-family: var(--bj-font-display);
+  font-size: clamp(28px, 5vw, 34px);
+  font-weight: 500;
+  color: var(--bj-text);
+  min-width: 1.2ch;
+  text-align: center;
+}
+
+/* ── Affichage prix ── */
+.px-readout {
+  margin-top: clamp(28px, 4vh, 40px);
+  padding-top: clamp(24px, 3.5vh, 32px);
+  border-top: 0.5px solid var(--bj-veil-12);
+}
+.px-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.px-price {
+  font-family: var(--bj-font-display);
+  font-weight: 500;
+  font-size: clamp(52px, 11vw, 76px);
+  line-height: 1;
+  color: var(--bj-text);
+}
+.px-price-cur { font-size: 0.5em; }
+.px-price-pages {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-ui);
+  color: var(--bj-text-soft);
+}
+
+/* Ligne PERSISTANTE — toujours visible quel que soit le réglage. */
+.px-included {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  line-height: 1.6;
+  color: var(--bj-text-faint);
+  margin-top: 14px;
+}
+
+.px-breakdown {
+  margin-top: clamp(18px, 2.6vh, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.px-line {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-ui);
+}
+.px-line-op { font-weight: 500; color: var(--bj-text); white-space: nowrap; }
+.px-line-note { color: var(--bj-text-soft); }
+
+.px-rest {
+  margin-top: clamp(20px, 3vh, 28px);
+  padding-top: clamp(18px, 2.6vh, 24px);
+  border-top: 0.5px solid var(--bj-veil-12);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.px-rest-label {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-lg);
+  font-weight: 500;
+  color: var(--bj-text);
+}
+.px-rest-val {
+  font-family: var(--bj-font-display);
+  font-weight: 700;
+  font-size: clamp(36px, 8vw, 52px);
+  line-height: 1;
+  color: var(--bj-action);
+  /* Micro-transition douce à chaque changement (remount via key). GPU only. */
+  animation: px-rest-pop var(--bj-dur) var(--bj-ease);
+}
+@keyframes px-rest-pop {
+  from { opacity: 0.35; transform: translateY(3px); }
+  to   { opacity: 1;    transform: translateY(0); }
+}
+
+.px-sim-micro {
+  margin-top: clamp(22px, 3.4vh, 30px);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  line-height: 1.6;
+  color: var(--bj-text-faint);
+  text-align: center;
+}
+
+/* ════════════ POSITIONNEMENT ════════════ */
+.px-stance {
+  max-width: 40ch;
+  text-align: center;
+  padding: clamp(8px, 4vh, 48px) 0;
+}
+.px-stance-text {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(22px, 3.4vw, 32px);
+  line-height: 1.45;
+  color: var(--bj-text);
+}
+
+/* ════════════ CTA FINAL ════════════ */
+.px-cta {
+  text-align: center;
+}
+.px-cta-title {
+  font-family: var(--bj-font-display);
+  font-weight: 500;
+  font-size: clamp(26px, 4vw, 40px);
+  line-height: 1.15;
+  color: var(--bj-text);
+  margin-bottom: clamp(24px, 4vh, 36px);
+}
+.px-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  font-weight: 500;
+  color: var(--bj-on-action);
+  background: var(--bj-action);
+  border-radius: var(--bj-r-pill);
+  padding: 16px 32px;
+  text-decoration: none;
+  transition:
+    background-color var(--bj-dur-fast) var(--bj-ease),
+    opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.px-cta-btn:hover { opacity: 0.88; }
+
+/* ── Desktop : un peu plus d'air autour des blocs texte ── */
+@media (min-width: 768px) {
+  .px-why { max-width: 56ch; }
+}
+
+/* ── Reduced motion : aucune animation, état final immédiat ── */
+@media (prefers-reduced-motion: reduce) {
+  .px-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .px-rest-val { animation: none; }
+  .px-slider::-webkit-slider-thumb { transition: none; }
+  .px-step-btn { transition: none; }
+}
