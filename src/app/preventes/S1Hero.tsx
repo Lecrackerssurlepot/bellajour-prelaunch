@@ -78,6 +78,9 @@ export default function S1Hero() {
             <span className="s1-title-line">Nous composons vos photos</span>
             <span className="s1-title-line">en albums d’exception</span>
           </h1>
+          {/* Sous-titre DESKTOP — entre titre et album. Masqué en mobile (le
+              sous-titre mobile reste celui de .s1-bottom → layout mobile inchangé). */}
+          <p className="s1-subtitle s1-subtitle--top">Vivez, nous composons</p>
           <img
             className="s1-album"
             src="/images/Mockup-Album-transparent.webp"

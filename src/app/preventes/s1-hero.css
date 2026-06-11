@@ -133,8 +133,21 @@
   font-size: clamp(15px, 1.4vw, 19px);
   letter-spacing: 0.02em;
   color: #ffffff;
-  /* Filet de sécurité contraste sur fond sable/mer clair — subtil, pas de halo. */
+  /* Filet de sécurité contraste sur fond sable/mer clair — subtil, pas de halo.
+     (Conservé pour le sous-titre MOBILE de .s1-bottom ; retiré en desktop ci-dessous.) */
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* Sous-titre DESKTOP (entre titre et album) : masqué par défaut → mobile inchangé.
+   Sans ombre portée (aucun effet) sur desktop. */
+.s1-subtitle--top {
+  display: none;
+  text-shadow: none;
+}
+@media (min-width: 768px) {
+  /* Desktop : ordre logo → titre → sous-titre → album → CTA. */
+  .s1-subtitle--top { display: block; }
+  .s1-bottom .s1-subtitle { display: none; }
 }
 
 /* ── Bouton ghost / outline ── */
