@@ -52,9 +52,17 @@ export default function S1Hero() {
         <div className="s1-scrim" />
       </div>
 
-      {/* Contenu superposé — titre / album / bas */}
+      {/* Contenu superposé — logo / titre / album / bas */}
       <div className="s1-content">
-        <div className="s1-zone-top" aria-hidden="true" />
+        {/* Logo blanc centré, propre au hero (la navbar est masquée tant que le
+            hero est visible → pas de logo gauche / CTA par-dessus le hero). */}
+        <div className="s1-logo-wrap">
+          <img
+            className="s1-logo"
+            src="/images/ui/bellajour-blanc.webp"
+            alt="Bellajour"
+          />
+        </div>
 
         <div className="s1-middle">
           <h1 className="s1-title">
@@ -63,7 +71,7 @@ export default function S1Hero() {
           </h1>
           <img
             className="s1-album"
-            src="/images/prevente/objet/format.webp"
+            src="/images/Mockup-Album-transparent.webp"
             alt="Album Bellajour"
           />
         </div>

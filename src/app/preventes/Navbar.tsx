@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react'
 import './navbar.css'
 
-/* PRD §4 — Top bar prévente TRANSFORMANTE.
-   État A (hero visible) : logo « bellajour » centré, fond transparent, pas de CTA.
-   État B (hero sorti du viewport) : logo à gauche + CTA à droite, avec fond glass.
-   Bascule pilotée par IntersectionObserver sur le hero (#s1) — pas de scroll listener. */
+/* PRD §4 — Top bar prévente.
+   État A (hero visible) : navbar MASQUÉE — le hero affiche son propre logo blanc
+   centré (cf. S1Hero). Aucune navbar / CTA par-dessus le hero.
+   État B (hero sorti du viewport) : navbar visible — logo foncé à gauche + CTA à
+   droite, fond glass. Bascule pilotée par IntersectionObserver sur le hero (#s1). */
 
 export default function Navbar() {
   /* heroOut = true quand le hero n'est plus visible → état B. */
@@ -43,7 +44,7 @@ export default function Navbar() {
         aria-label="Retour en haut"
       >
         <img
-          src={heroOut ? '/images/ui/logo.webp' : '/images/ui/bellajour-blanc.webp'}
+          src="/images/ui/logo.webp"
           className="pv-nav-logo"
           alt="Bellajour"
           decoding="sync"

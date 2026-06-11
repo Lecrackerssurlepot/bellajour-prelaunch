@@ -9,36 +9,36 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 96px;
+  height: var(--bj-topbar-h);
   display: flex;
   align-items: center;
-  /* État A : logo centré. */
-  justify-content: center;
+  /* Logo à gauche / CTA à droite — la navbar n'est visible qu'en état B. */
+  justify-content: space-between;
   padding: 0 5vw;
   background: transparent;
   z-index: 50;
+  /* État A (hero visible) : navbar masquée, remontée hors champ. */
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-100%);
   transition:
-    height 300ms var(--bj-ease),
+    opacity 300ms var(--bj-ease),
+    transform 300ms var(--bj-ease),
     background-color 300ms var(--bj-ease),
     border-color 300ms var(--bj-ease),
     backdrop-filter 300ms var(--bj-ease),
     -webkit-backdrop-filter 300ms var(--bj-ease);
 }
-@media (min-width: 768px) {
-  .pv-nav { height: 112px; }
-}
 
-/* ── État B : fond glass + logo gauche / CTA droite ── */
+/* ── État B : navbar visible, fond glass + logo gauche / CTA droite ── */
 .pv-nav--solid {
-  height: var(--bj-topbar-h);
-  justify-content: space-between;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
   background-color: var(--bj-glass-light-bg);
   border-bottom: 0.5px solid var(--bj-glass-light-border);
   backdrop-filter: blur(var(--bj-glass-blur));
   -webkit-backdrop-filter: blur(var(--bj-glass-blur));
-}
-@media (min-width: 768px) {
-  .pv-nav--solid { height: var(--bj-topbar-h); }
 }
 
 /* ── Logo ── */

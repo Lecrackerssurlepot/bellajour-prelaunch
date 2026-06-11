@@ -58,10 +58,18 @@
   text-align: center;
 }
 
-/* Zone haute : réserve l'espace du logo (navbar fixe). */
-.s1-zone-top {
+/* Zone haute : logo blanc centré, avec respiration depuis le bord supérieur. */
+.s1-logo-wrap {
   flex: 0 0 auto;
-  height: var(--bj-topbar-h);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: clamp(20px, 4.5vh, 48px);
+}
+.s1-logo {
+  display: block;
+  width: auto;
+  height: clamp(72px, 8vw, 104px);
 }
 
 /* Zone centrale : titre + album, groupés et centrés entre haut et bas. */
@@ -93,11 +101,15 @@
   white-space: nowrap;
 }
 
-/* Album centré sous le titre — ~30-40% desktop. */
+/* Album centré sous le titre. Dimensionné par la HAUTEUR (max-height en vh) :
+   l'image reste sous le titre, ne le chevauche jamais, et rétrécit sur écran court. */
 .s1-album {
   display: block;
-  width: clamp(220px, 34vw, 440px);
+  width: auto;
+  max-width: 86vw;
   height: auto;
+  max-height: 48vh;
+  object-fit: contain;
 }
 
 /* Zone basse : sous-titre + bouton, collés en bas. */
@@ -145,15 +157,22 @@
   .s1-title {
     font-size: clamp(28px, 8.4vw, 50px);
   }
-  /* Album plus présent sur mobile — ~55-65% de la largeur. */
+  /* Album mobile — piloté par la hauteur (~42vh), centré. */
   .s1-album {
-    width: 60vw;
+    max-height: 42vh;
+    max-width: 78vw;
   }
   .s1-cta {
     padding: 12px 26px;
     font-size: var(--bj-fs-xs);
     letter-spacing: 0.14em;
   }
+}
+
+/* Écrans courts (paysage mobile, petits laptops) : on réduit encore l'album
+   pour garantir l'absence de chevauchement titre / album et de débordement. */
+@media (max-height: 700px) {
+  .s1-album { max-height: 38vh; }
 }
 
 /* Très petits écrans : on autorise le wrap interne pour éviter tout débordement. */
