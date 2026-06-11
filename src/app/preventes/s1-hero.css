@@ -50,7 +50,8 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 6vw;
+  /* padding-top réserve la barre logo (positionnée en absolu au-dessus). */
+  padding: clamp(96px, 14vh, 150px) 6vw 0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -58,13 +59,18 @@
   text-align: center;
 }
 
-/* Zone haute : logo blanc centré, avec respiration depuis le bord supérieur. */
-.s1-logo-wrap {
-  flex: 0 0 auto;
+/* Barre logo : tout en haut du hero, centrée, hors du flux (comme une navbar). */
+.s1-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding-top: clamp(20px, 4.5vh, 48px);
+  padding-top: clamp(18px, 4vh, 42px);
+  pointer-events: none;
 }
 .s1-logo {
   display: block;
@@ -126,6 +132,8 @@
   font-size: clamp(15px, 1.4vw, 19px);
   letter-spacing: 0.02em;
   color: #ffffff;
+  /* Filet de sécurité contraste sur fond sable/mer clair — subtil, pas de halo. */
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
 /* ── Bouton ghost / outline ── */

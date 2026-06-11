@@ -86,7 +86,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${cormorant.variable} ${dmSans.variable}`}>
+    <html
+      lang="fr"
+      className={`${cormorant.variable} ${dmSans.variable}`}
+      /* APP_HEIGHT_SCRIPT pose --app-height en inline style sur <html> avant
+         l'hydratation → attendu, on supprime l'avertissement de mismatch. */
+      suppressHydrationWarning
+    >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <script dangerouslySetInnerHTML={{ __html: APP_HEIGHT_SCRIPT }} />
