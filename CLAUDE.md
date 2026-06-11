@@ -149,3 +149,13 @@ ls .claude/worktrees/friendly-banach/
 
 ## Prévente — Section 4
 - Le prix/offre d'acompte est TOUJOURS décidé par le backend (/api/checkout). Le front envoie expected_offer (affichage seulement) et gère le 409 offer_changed. Ne jamais hardcoder un montant ni le seuil FOUNDER_CAP côté front.
+
+## Perf / animations — backdrop-filter (règle anti-jank prévente)
+Sur les pages prévente, ne JAMAIS poser `backdrop-filter: blur()` sur :
+- un élément en flux large posé sur un fond PLAT (couleur uniforme, ex. --bj-cream) :
+  flouter une couleur uniforme = no-op visuel, mais Chrome la re-rastérise à chaque
+  frame de scroll = jank. → retirer le blur, le rendu est identique.
+- une navbar `position:fixed` sur Chrome/Android : même cause, jank garanti.
+  → fallback fond quasi-opaque sur Android only (détection UA scopée à la page),
+  verre dépoli conservé sur desktop + Safari iOS.
+Réf : commit 246d8e5, tokens --bj-nav-android-bg, classe .pv-nav--flat.
