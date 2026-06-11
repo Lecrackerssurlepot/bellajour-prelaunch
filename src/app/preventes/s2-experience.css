@@ -140,6 +140,12 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* Hauteur commune des 4 zones texte : valeur calée sur la carte la plus haute
+     hors clôture (label + ux + algo). Les cartes au texte plus court réservent
+     le même espace → les 4 cartes s'alignent. La carte 04 dépasse naturellement
+     (clôture mise en valeur dessous) : voulu. Si le contenu dépasse, min-height
+     est ignoré → jamais de texte coupé. */
+  min-height: 200px;
 }
 .s2-card-label {
   font-family: var(--bj-font-display);
@@ -218,6 +224,9 @@
   /* Contenu réduit : on masque la phrase algo (wording conservé dans le JSX),
      et on allège légèrement la phrase UX → tout rentre dans la hauteur. */
   .s2-card-algo { display: none; }
+  /* Hauteur commune recalculée pour le mobile : l'algo étant masqué, la valeur
+     est calée sur le label + le texte UX le plus long (carte 04). */
+  .s2-card-body { min-height: 130px; }
   .s2-card-ux { font-size: var(--bj-fs-sm); line-height: 1.45; }
   /* Label imposant mais clamp réduit en mobile (ne pas manger la hauteur). */
   .s2-card-label { font-size: clamp(22px, 6vw, 26px); }
