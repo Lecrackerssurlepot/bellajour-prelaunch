@@ -111,7 +111,9 @@
 }
 .px-sim {
   width: 100%;
-  max-width: 560px;
+  /* Élargi pour que TOUT le récapitulatif tienne d'un coup (aucun scroll interne :
+     le panel est en flux normal, sans max-height ni overflow). */
+  max-width: 680px;
   /* Glass charte (carte qui flotte). */
   background: var(--bj-glass-light-bg);
   border: 1px solid var(--bj-glass-light-border);
@@ -119,7 +121,7 @@
   box-shadow: var(--bj-shadow-soft);
   -webkit-backdrop-filter: blur(var(--bj-glass-blur));
   backdrop-filter: blur(var(--bj-glass-blur));
-  padding: clamp(28px, 4vw, 44px);
+  padding: clamp(30px, 4.5vw, 56px);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   /* Pas de glass → fond crème opaque, jamais une carte transparente illisible. */
@@ -384,6 +386,14 @@
 /* ── Desktop : un peu plus d'air autour des blocs texte ── */
 @media (min-width: 768px) {
   .px-why { max-width: 56ch; }
+  /* Hero pleine largeur pour que le titre tienne sur UNE ligne (centré).
+     En mobile (<768px) : .px-hero garde max-width 22ch → wrap naturel. */
+  .px-hero { max-width: none; }
+  .px-hero-title {
+    white-space: nowrap;
+    /* Taille conservatrice indexée sur le viewport → jamais d'overflow horizontal. */
+    font-size: clamp(25px, 3.2vw, 50px);
+  }
 }
 
 /* ── Reduced motion : aucune animation, état final immédiat ── */

@@ -365,14 +365,7 @@ export default function S4Reservation() {
         <p className="s4-credit-note">
           Votre acompte est <strong>intégralement crédité</strong> sur la commande finale.
           L’album se règle ensuite au prix grille selon le nombre de pages (base 30 pages),
-          à partir de {PRIX_ALBUM_BASE} €.{' '}
-          {/* Lien vers la page prix détaillée — ?ref préservé via le code parrain déjà résolu. */}
-          <a
-            className="s4-parrain-link"
-            href={referredBy ? `/preventes/prix?ref=${encodeURIComponent(referredBy)}` : '/preventes/prix'}
-          >
-            En savoir plus sur les prix
-          </a>
+          à partir de {PRIX_ALBUM_BASE} €.
         </p>
 
       </div>

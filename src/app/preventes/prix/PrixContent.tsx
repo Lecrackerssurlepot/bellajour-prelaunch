@@ -94,8 +94,8 @@ export default function PrixContent() {
           Le prix que vous voyez est le prix que vous payez.
         </h1>
         <p className="px-hero-sub">
-          Pas de frais cachés, pas de promotions gonflées. Un prix juste, et tout
-          ce qui le rend plus doux.
+          Pas de frais cachés, pas de promotions gonflées.<br />
+          Un prix juste, et tout ce qui le rend plus doux.
         </p>
       </header>
 
@@ -230,10 +230,11 @@ export default function PrixContent() {
       {/* ════════════ POSITIONNEMENT ════════════ */}
       <section className="px-stance px-reveal">
         <p className="px-stance-text">
-          Pas de promotions, pas de frais cachés. Juste un prix honnête pour un
-          objet pensé comme une œuvre, imprimé en Europe, au plus proche de chez
-          vous. Et la seule maison à composer votre album par l’image, puis à en
-          générer la couverture rien que pour vous.
+          Pas de promotions, pas de frais cachés.<br />
+          Juste un prix honnête pour un objet pensé comme une œuvre, imprimé en
+          Europe, au plus proche de chez vous.<br />
+          Et la seule maison à composer votre album par l’image, puis à en générer
+          la couverture rien que pour vous.
         </p>
       </section>
 
