@@ -149,7 +149,9 @@ function ParrainageRow({
         parrainage
       </button>{' '}
       : jusqu’à {pages} pages (= {pages} €) offertes par commande
-      {referrerPrenom ? ` · 3 pages offertes par ${referrerPrenom}` : ''}
+      {referrerPrenom ? (
+        <> · <strong>3 pages</strong> offertes par <strong>{referrerPrenom}</strong></>
+      ) : null}
     </li>
   )
 }
