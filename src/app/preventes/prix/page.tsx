@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: 'Nos prix — Bellajour',
   description:
     'Le prix que vous voyez est le prix que vous payez. Pas de frais cachés, pas de promotions gonflées. Composez votre album et voyez votre prix se dessiner.',
+  alternates: {
+    canonical: 'https://www.bellajour.fr/preventes/prix',
+  },
 }
 
 export default function PrixPage() {

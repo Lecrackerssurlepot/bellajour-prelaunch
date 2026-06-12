@@ -4,6 +4,9 @@ import type { ReactNode } from 'react'
 export const metadata: Metadata = {
   title: 'Politique de confidentialité — Bellajour',
   description: 'Comment Bellajour collecte et utilise vos données personnelles.',
+  alternates: {
+    canonical: 'https://www.bellajour.fr/confidentialite',
+  },
 }
 
 export default function PolitiqueConfidentialite() {
