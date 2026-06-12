@@ -89,6 +89,11 @@
   accent-color: var(--bj-action);
   cursor: pointer;
 }
+.amb-reg-charte-link {
+  color: var(--bj-action);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
 .amb-reg-error {
   font-family: var(--bj-font-ui);
@@ -149,16 +154,36 @@
 .amb-reg-copy:hover {
   opacity: 0.9;
 }
+/* Bouton secondaire « Voir mon espace » — accès direct au dashboard (token 1 h). */
+.amb-reg-espace-btn {
+  display: inline-block;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-ui);
+  font-weight: 500;
+  color: var(--bj-action);
+  background: transparent;
+  border: 1px solid var(--bj-action);
+  border-radius: var(--bj-r-pill);
+  padding: 13px 26px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.amb-reg-espace-btn:hover {
+  opacity: 0.7;
+}
 .amb-reg-mailnote {
   font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-sm);
   color: var(--bj-text-faint);
+  margin-top: clamp(14px, 2.4vh, 20px);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .amb-reg-input,
   .amb-reg-submit,
-  .amb-reg-copy {
+  .amb-reg-copy,
+  .amb-reg-espace-btn {
     transition: none;
   }
 }

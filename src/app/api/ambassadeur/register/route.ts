@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { canonicalizeEmail } from "@/lib/email";
 import { makeSupabase } from "@/lib/supabase";
 import { generateUniqueCode } from "@/lib/refcode";
-import { signToken } from "@/lib/ambassadeur-token";
+import { signToken, signTokenShort } from "@/lib/ambassadeur-token";
 import { sendAmbassadeurWelcome } from "@/lib/ambassadeur-mail";
 
 /* POST /api/ambassadeur/register
@@ -79,9 +79,13 @@ export async function POST(request: Request) {
     // Ligne existante ? (comparaison canonique anti-alias)
     const { data: existing } = await supabase
       .from("waitlist")
-      .select("ref_code, prenom")
+      .select("ref_code, prenom, is_ambassadeur")
       .eq("email_canonical", emailCanonical)
       .maybeSingle();
+
+    // État AVANT cet appel : la personne était-elle déjà ambassadeur ?
+    // (le SELECT lit l'état antérieur à tout UPDATE ci-dessous → ordre correct)
+    const wasAlreadyAmbassador = existing?.is_ambassadeur === true;
 
     let refCode: string;
 
@@ -172,7 +176,7 @@ export async function POST(request: Request) {
     // Lien de partage (préserve la logique ?ref : / → /preventes redirige en gardant ?ref).
     const shareUrl = `${SITE_URL}/?ref=${refCode}`;
 
-    // Hook mail (best-effort, jamais bloquant). Dashboard via lien magique signé.
+    // Hook mail (best-effort, jamais bloquant). Dashboard via lien magique signé 7 j.
     try {
       const dashboardUrl = `${SITE_URL}/ambassadeurs/espace?token=${signToken(emailCanonical)}`;
       await sendAmbassadeurWelcome(normalizedEmail, cleanPrenom, refCode, dashboardUrl);
@@ -180,7 +184,22 @@ export async function POST(request: Request) {
       console.error("[ambassadeur] hook welcome échec (non bloquant)", err);
     }
 
-    return NextResponse.json({ ref_code: refCode, share_url: shareUrl }, { status: 200 });
+    // Accès direct « Voir mon espace » depuis l'écran de succès, sans attendre le mail.
+    // ⚠️ Sécurité : cet accès NE prouve PAS la possession de l'email. On l'accepte car
+    // le dashboard ne révèle que des prénoms et un nombre de pages (jamais d'email), et
+    // le token est court (1 h) pour limiter le risque. L'accès durable reste le lien
+    // magique 7 j envoyé par mail.
+    const dashboardUrlShort = `${SITE_URL}/ambassadeurs/espace?token=${signTokenShort(emailCanonical)}`;
+
+    return NextResponse.json(
+      {
+        ref_code: refCode,
+        share_url: shareUrl,
+        already_ambassador: wasAlreadyAmbassador,
+        dashboard_url: dashboardUrlShort,
+      },
+      { status: 200 },
+    );
   } catch (err) {
     console.error("[ambassadeur] register exception", err);
     return NextResponse.json(

@@ -18,6 +18,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  */
 
 const TTL_SECONDS = 7 * 24 * 60 * 60; // 7 jours
+const SHORT_TTL_SECONDS = 60 * 60; // 1 h — accès direct depuis l'écran de succès
 
 function getSecret(): string {
   const secret = process.env.AMBASSADEUR_LINK_SECRET;
@@ -33,13 +34,19 @@ function sign(payloadB64: string, secret: string): string {
   return createHmac("sha256", secret).update(payloadB64).digest("base64url");
 }
 
-/** Signe un token pour `emailCanonical`, expirant dans 7 jours. */
-export function signToken(emailCanonical: string): string {
+/** Signe un token pour `emailCanonical`. exp = now + `ttlSeconds` (défaut : 7 jours). */
+export function signToken(emailCanonical: string, ttlSeconds: number = TTL_SECONDS): string {
   const secret = getSecret();
-  const exp = Math.floor(Date.now() / 1000) + TTL_SECONDS;
+  const exp = Math.floor(Date.now() / 1000) + ttlSeconds;
   const payloadB64 = b64urlEncode(JSON.stringify({ e: emailCanonical, exp }));
   const sig = sign(payloadB64, secret);
   return `${payloadB64}.${sig}`;
+}
+
+/** Token court (1 h) pour l'accès direct au dashboard depuis l'écran de succès.
+   Vérifié serveur comme tout token (signature + exp) ; expire seul. */
+export function signTokenShort(emailCanonical: string): string {
+  return signToken(emailCanonical, SHORT_TTL_SECONDS);
 }
 
 /**

@@ -13,6 +13,8 @@ const CHARTE_VERSION = 'cercle-2026-vague-1'
 interface SuccessData {
   ref_code: string
   share_url: string
+  already_ambassador: boolean
+  dashboard_url: string
 }
 
 export default function Inscription() {
@@ -48,7 +50,12 @@ export default function Inscription() {
         setError(data.message || 'Une erreur s’est glissée. Réessayez dans un instant.')
         return
       }
-      setSuccess({ ref_code: data.ref_code, share_url: data.share_url })
+      setSuccess({
+        ref_code: data.ref_code,
+        share_url: data.share_url,
+        already_ambassador: data.already_ambassador === true,
+        dashboard_url: data.dashboard_url,
+      })
     } catch {
       setError('Connexion impossible. Vérifiez votre réseau et réessayez.')
     } finally {
@@ -72,8 +79,17 @@ export default function Inscription() {
       <div className="amb-reg-inner">
         {success ? (
           <div className="amb-reg-success" aria-live="polite">
-            <p className="amb-reg-eyebrow">Bienvenue dans le Cercle</p>
-            <h2 className="amb-reg-title">Votre lien de partage est prêt.</h2>
+            {success.already_ambassador ? (
+              <>
+                <p className="amb-reg-eyebrow">Vous faites déjà partie du Cercle.</p>
+                <h2 className="amb-reg-title">Voici votre code de parrainage.</h2>
+              </>
+            ) : (
+              <>
+                <p className="amb-reg-eyebrow">Bienvenue dans le Cercle</p>
+                <h2 className="amb-reg-title">Votre lien de partage est prêt.</h2>
+              </>
+            )}
             <p className="amb-reg-sub">
               Partagez-le largement : chaque proche qui réserve via ce lien vous
               rapporte des pages.
@@ -92,6 +108,12 @@ export default function Inscription() {
                 {copied ? 'Copié ✓' : 'Copier'}
               </button>
             </div>
+
+            {success.dashboard_url && (
+              <a className="amb-reg-espace-btn" href={success.dashboard_url}>
+                Voir mon espace
+              </a>
+            )}
 
             <p className="amb-reg-mailnote">
               Votre accès à l&apos;espace ambassadeur vous est envoyé par mail.
@@ -145,7 +167,16 @@ export default function Inscription() {
                   onChange={(e) => setAccepted(e.target.checked)}
                 />
                 <span>
-                  J&apos;accepte la charte du Cercle Ambassadeur (Vague&nbsp;1).
+                  J&apos;accepte la charte du Cercle Ambassadeur (Vague&nbsp;1).{' '}
+                  <a
+                    href="/ambassadeurs/charte"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="amb-reg-charte-link"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Lire la charte
+                  </a>
                 </span>
               </label>
 

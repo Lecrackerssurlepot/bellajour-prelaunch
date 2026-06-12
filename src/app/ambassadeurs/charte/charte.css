@@ -1,0 +1,89 @@
+/* Page charte du Cercle Ambassadeur — rendu lisible « charte prévente ».
+   Fond crème, largeur de lecture ~720px, interligne aéré. Barre fine en flux
+   (pas de position:fixed + backdrop-filter → règle anti-jank). Zéro ombre. */
+
+.amb-charte {
+  background: var(--bj-cream);
+  color: var(--bj-text);
+  min-height: 100vh;
+}
+
+/* ── Navbar légère ── */
+.amb-charte-nav {
+  display: flex;
+  align-items: center;
+  padding: clamp(16px, 2.6vh, 24px) clamp(20px, 5vw, 48px);
+  background: var(--bj-cream);
+  border-bottom: 1px solid var(--bj-glass-light-border);
+}
+.amb-charte-logo-link {
+  display: inline-flex;
+  align-items: center;
+}
+.amb-charte-logo {
+  height: clamp(26px, 3.4vh, 32px);
+  width: auto;
+  display: block;
+}
+
+/* ── Corps charte ── */
+.amb-charte-body {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(36px, 7vh, 72px) clamp(20px, 5vw, 32px) clamp(48px, 9vh, 96px);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  line-height: 1.7;
+  color: var(--bj-text-soft);
+}
+
+.amb-charte-body h1 {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: var(--bj-fs-h1-screen);
+  line-height: 1.15;
+  color: var(--bj-text);
+  margin: 0 0 12px;
+}
+
+.amb-charte-tagline {
+  font-family: var(--bj-font-display);
+  font-size: var(--bj-fs-lg);
+  color: var(--bj-text-faint);
+  margin: 0 0 clamp(28px, 5vh, 44px);
+}
+
+.amb-charte-body h2 {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: var(--bj-fs-h2);
+  line-height: 1.2;
+  color: var(--bj-text);
+  margin: clamp(32px, 5.5vh, 48px) 0 12px;
+}
+
+.amb-charte-body p {
+  margin: 0 0 16px;
+}
+
+.amb-charte-body ul,
+.amb-charte-body ol {
+  margin: 0 0 16px;
+  padding-left: 24px;
+}
+.amb-charte-body li {
+  margin: 0 0 8px;
+}
+
+.amb-charte-rule {
+  border: none;
+  border-top: 1px solid var(--bj-glass-light-border);
+  margin: clamp(32px, 5.5vh, 48px) 0 24px;
+}
+
+.amb-charte-version {
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-faint);
+}
