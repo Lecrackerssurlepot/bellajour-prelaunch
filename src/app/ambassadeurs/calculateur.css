@@ -1,0 +1,238 @@
+/* ════════════════ Calculateur ambassadeur ════════════════
+   Carte translucide sur fond crème PLAT → AUCUN backdrop-filter (règle anti-jank :
+   flouter une couleur uniforme = no-op + jank). Verre rendu par fond translucide +
+   bordure + ombre douce. Remplissage des pistes via transform: scaleX (GPU). */
+
+.amb-calc {
+  width: 100%;
+  background: var(--bj-cream);
+  padding: clamp(48px, 8vh, 96px) 5vw;
+}
+
+.amb-calc-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.amb-calc-title {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(28px, 4.5vw, var(--bj-fs-h2));
+  color: var(--bj-text);
+  text-align: center;
+}
+
+.amb-calc-lead {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  color: var(--bj-text-soft);
+  text-align: center;
+  margin-top: clamp(8px, 1.4vh, 14px);
+  margin-bottom: clamp(28px, 4.5vh, 48px);
+}
+
+.amb-calc-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(24px, 4vw, 44px);
+  align-items: stretch;
+}
+@media (min-width: 860px) {
+  .amb-calc-grid {
+    grid-template-columns: 1.05fr 0.95fr;
+  }
+}
+
+/* ── Curseurs ── */
+.amb-calc-controls {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(24px, 4vh, 40px);
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--bj-glass-light-border);
+  border-radius: var(--bj-r-lg);
+  padding: clamp(24px, 4vw, 38px);
+}
+
+.amb-calc-field {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 2vh, 18px);
+}
+
+.amb-calc-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-ui);
+  font-weight: 500;
+  color: var(--bj-text);
+}
+
+.amb-calc-val {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: clamp(24px, 4vw, 32px);
+  font-weight: 600;
+  color: var(--bj-action);
+  min-width: 1.6em;
+  text-align: right;
+}
+
+/* Piste custom : fond + remplissage + range natif transparent par-dessus. */
+.amb-calc-track {
+  position: relative;
+  height: 22px;
+  display: flex;
+  align-items: center;
+}
+.amb-calc-track::before {
+  /* rail */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bj-veil-12);
+}
+.amb-calc-track-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bj-action);
+  transform-origin: left center;
+  transform: scaleX(0);
+  will-change: transform;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .amb-calc-track-fill {
+    transition: transform 120ms var(--bj-ease);
+  }
+}
+
+.amb-calc-range {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  height: 22px;
+}
+.amb-calc-range:focus-visible {
+  outline: 2px solid var(--bj-action-ring);
+  outline-offset: 6px;
+  border-radius: 999px;
+}
+/* Thumb — bleu, généreux pour le tactile (≥ 24px). */
+.amb-calc-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bj-action);
+  border: 3px solid #fff;
+  box-shadow: var(--bj-shadow-soft);
+  cursor: pointer;
+}
+.amb-calc-range::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bj-action);
+  border: 3px solid #fff;
+  box-shadow: var(--bj-shadow-soft);
+  cursor: pointer;
+}
+.amb-calc-range::-webkit-slider-runnable-track {
+  background: transparent;
+}
+.amb-calc-range::-moz-range-track {
+  background: transparent;
+}
+
+/* ── Résultat ── */
+.amb-calc-result {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: rgba(74, 144, 217, 0.06);
+  border: 1px solid var(--bj-action-border);
+  border-radius: var(--bj-r-lg);
+  padding: clamp(28px, 5vw, 44px);
+}
+
+.amb-calc-pages {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-lg);
+  color: var(--bj-text-soft);
+}
+.amb-calc-pages-num {
+  display: block;
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 700;
+  font-size: clamp(64px, 14vw, 104px);
+  line-height: 1;
+  color: var(--bj-action);
+}
+
+.amb-calc-albums {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  color: var(--bj-text);
+  margin-top: clamp(14px, 2.4vh, 20px);
+  min-height: 1.4em;
+}
+.amb-calc-bonus {
+  color: var(--bj-action);
+  font-weight: 500;
+}
+
+.amb-calc-valeur {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: clamp(18px, 2.6vw, 22px);
+  color: var(--bj-text-soft);
+  margin-top: clamp(8px, 1.4vh, 12px);
+}
+
+.amb-calc-credit-note {
+  display: none;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-faint);
+  margin-top: clamp(10px, 1.8vh, 16px);
+  max-width: 28ch;
+}
+
+/* ── Lignes fixes sous le calculateur ── */
+.amb-calc-fixed {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-ui);
+  color: var(--bj-text-soft);
+  text-align: center;
+  margin-top: clamp(28px, 4.5vh, 44px);
+}
+
+.amb-calc-punch {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(22px, 3.6vw, 30px);
+  color: var(--bj-text);
+  text-align: center;
+  margin-top: clamp(12px, 2vh, 18px);
+}

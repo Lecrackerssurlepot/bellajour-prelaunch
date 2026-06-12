@@ -1,0 +1,87 @@
+/* ════════════════ Hero Cercle Ambassadeur ════════════════
+   Fond crème plat. Aucun backdrop-filter (règle anti-jank). */
+
+.amb-hero {
+  width: 100%;
+  min-height: 92vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bj-cream);
+  padding: clamp(80px, 12vh, 140px) 5vw clamp(48px, 8vh, 96px);
+}
+
+.amb-hero-inner {
+  max-width: 720px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.amb-hero-logo {
+  height: clamp(56px, 9vw, 76px);
+  width: auto;
+  margin-bottom: clamp(28px, 5vh, 48px);
+}
+
+.amb-hero-eyebrow {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--bj-action);
+  margin-bottom: clamp(14px, 2.4vh, 22px);
+}
+
+.amb-hero-title {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(40px, 8vw, 72px);
+  line-height: 1.04;
+  color: var(--bj-text);
+  margin-bottom: clamp(16px, 2.6vh, 24px);
+}
+
+.amb-hero-tagline {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: clamp(20px, 3vw, 26px);
+  color: var(--bj-text-soft);
+  margin-bottom: clamp(10px, 1.6vh, 16px);
+}
+
+.amb-hero-sub {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-lg);
+  line-height: 1.6;
+  color: var(--bj-text-soft);
+  max-width: 38ch;
+  margin-bottom: clamp(28px, 4.5vh, 44px);
+}
+
+.amb-hero-cta {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-ui);
+  font-weight: 500;
+  color: var(--bj-on-action);
+  background: var(--bj-action);
+  border: none;
+  border-radius: var(--bj-r-pill);
+  padding: 15px 34px;
+  cursor: pointer;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease),
+    transform var(--bj-dur-fast) var(--bj-ease);
+}
+.amb-hero-cta:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .amb-hero-cta {
+    transition: none;
+  }
+}

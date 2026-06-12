@@ -1,0 +1,113 @@
+/* ════════════════ Engagement + crédibilité ════════════════
+   Fond crème plat → pas de backdrop-filter. */
+
+.amb-eng {
+  width: 100%;
+  background: var(--bj-cream);
+  padding: clamp(32px, 6vh, 72px) 5vw;
+}
+.amb-eng-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(28px, 5vh, 48px);
+}
+
+/* Encart engagement — chaleureux, distinct */
+.amb-eng-card {
+  background: rgba(74, 144, 217, 0.06);
+  border: 1px solid var(--bj-action-border);
+  border-radius: var(--bj-r-lg);
+  padding: clamp(28px, 5vw, 48px);
+}
+.amb-eng-eyebrow {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--bj-action);
+  margin-bottom: clamp(16px, 2.6vh, 24px);
+}
+.amb-eng-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 2vh, 18px);
+}
+.amb-eng-list li {
+  position: relative;
+  padding-left: 26px;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  line-height: 1.55;
+  color: var(--bj-text);
+}
+.amb-eng-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bj-action);
+}
+.amb-eng-quote {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: clamp(20px, 3vw, 26px);
+  color: var(--bj-text);
+  margin-top: clamp(20px, 3.4vh, 30px);
+}
+
+/* Bandeau crédibilité */
+.amb-cred {
+  text-align: center;
+}
+.amb-cred-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px 18px;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-ui);
+  color: var(--bj-text-soft);
+}
+.amb-cred-list li {
+  position: relative;
+  padding-right: 18px;
+}
+.amb-cred-list li:not(:last-child)::after {
+  content: '·';
+  position: absolute;
+  right: 0;
+  color: var(--bj-text-faint);
+}
+.amb-cred-list strong {
+  color: var(--bj-action);
+  font-weight: 600;
+}
+.amb-cred-compare {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  margin-top: clamp(16px, 2.6vh, 22px);
+  line-height: 1.6;
+}
+.amb-cred-compare strong {
+  color: var(--bj-text);
+  font-weight: 600;
+}
+.amb-cred-vs {
+  font-style: italic;
+  color: var(--bj-text-faint);
+  margin: 0 2px;
+}

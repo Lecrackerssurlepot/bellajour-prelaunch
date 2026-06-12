@@ -1,0 +1,191 @@
+import { NextResponse } from "next/server";
+import { canonicalizeEmail } from "@/lib/email";
+import { makeSupabase } from "@/lib/supabase";
+import { generateUniqueCode } from "@/lib/refcode";
+import { signToken } from "@/lib/ambassadeur-token";
+import { sendAmbassadeurWelcome } from "@/lib/ambassadeur-mail";
+
+/* POST /api/ambassadeur/register
+   Inscription (ou ré-inscription) d'un ambassadeur du Cercle.
+   - Upsert sur email_canonical : ne RECRÉE jamais la mécanique de crédit, ne
+     downgrade JAMAIS un statut existant (founder/confirmed/pending intacts).
+   - charte_version : décidé côté serveur (le front l'envoie pour affichage seulement).
+   - Hooks mail : stub, branché plus tard sur Brevo. */
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+const CHARTE_VERSION = "cercle-2026-vague-1";
+
+// Rate-limit in-memory (même pattern que /api/waitlist).
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = process.env.NODE_ENV === "production" ? 3 : 20;
+const RATE_LIMIT_WINDOW_MS = process.env.NODE_ENV === "production" ? 60_000 : 10_000;
+
+export async function POST(request: Request) {
+  try {
+    const now = Date.now();
+    for (const [key, val] of rateLimitMap) {
+      if (val.resetAt < now) rateLimitMap.delete(key);
+    }
+    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    const entry = rateLimitMap.get(ip);
+    if (entry && entry.resetAt > now) {
+      if (entry.count >= RATE_LIMIT_MAX) {
+        return NextResponse.json(
+          { message: "Trop de tentatives. Réessayez dans quelques instants." },
+          { status: 429 },
+        );
+      }
+      entry.count++;
+    } else {
+      rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    }
+
+    const body = await request.json().catch(() => ({}));
+    // charte_version est envoyé par le front pour affichage, mais le serveur fait foi
+    // (CHARTE_VERSION) : on ne le lit donc pas ici.
+    const { prenom, email, charte_accepted } = body as {
+      prenom?: string;
+      email?: string;
+      charte_accepted?: boolean;
+    };
+
+    // Acceptation de la charte OBLIGATOIRE (= signature).
+    if (charte_accepted !== true) {
+      return NextResponse.json(
+        { message: "Vous devez accepter la charte du Cercle Ambassadeur." },
+        { status: 400 },
+      );
+    }
+
+    if (!email || typeof email !== "string") {
+      return NextResponse.json({ message: "Adresse email manquante." }, { status: 400 });
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return NextResponse.json(
+        { message: "Cette adresse ne nous semble pas valide." },
+        { status: 400 },
+      );
+    }
+
+    const cleanPrenom = prenom ? prenom.replace(/<[^>]*>/g, "").trim().slice(0, 50) : "";
+    if (!cleanPrenom) {
+      return NextResponse.json({ message: "Votre prénom est requis." }, { status: 400 });
+    }
+
+    const emailCanonical = canonicalizeEmail(normalizedEmail);
+    const supabase = makeSupabase();
+
+    // Ligne existante ? (comparaison canonique anti-alias)
+    const { data: existing } = await supabase
+      .from("waitlist")
+      .select("ref_code, prenom")
+      .eq("email_canonical", emailCanonical)
+      .maybeSingle();
+
+    let refCode: string;
+
+    if (existing) {
+      // UPDATE — on PROMEUT en ambassadeur sans toucher status / offer_type / numero_fondateur.
+      // prenom seulement s'il était vide (on ne réécrit pas un prénom déjà saisi).
+      const updatePayload: Record<string, unknown> = {
+        is_ambassadeur: true,
+        ambassadeur_consent_at: new Date().toISOString(),
+        ambassadeur_charte_version: CHARTE_VERSION,
+      };
+      if (!existing.prenom) updatePayload.prenom = cleanPrenom;
+
+      const { error: updateError } = await supabase
+        .from("waitlist")
+        .update(updatePayload)
+        .eq("email_canonical", emailCanonical);
+      if (updateError) {
+        console.error("[ambassadeur] update échec", updateError);
+        return NextResponse.json(
+          { message: "Une erreur s'est glissée. Réessayez dans un instant." },
+          { status: 500 },
+        );
+      }
+      refCode = existing.ref_code;
+    } else {
+      // INSERT — nouvelle ligne waitlist directement marquée ambassadeur.
+      // Retry ciblé sur collision ref_code (23505), comme /api/waitlist.
+      let ref = await generateUniqueCode(supabase, cleanPrenom);
+      let inserted = false;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { error: insertError } = await supabase.from("waitlist").insert({
+          email: normalizedEmail,
+          email_canonical: emailCanonical,
+          prenom: cleanPrenom,
+          ref_code: ref,
+          status: "waitlist",
+          is_ambassadeur: true,
+          consent_at: new Date().toISOString(),
+          ambassadeur_consent_at: new Date().toISOString(),
+          ambassadeur_charte_version: CHARTE_VERSION,
+        });
+        if (!insertError) {
+          inserted = true;
+          break;
+        }
+        // Collision ref_code → régénère et retry. Toute autre erreur → bail.
+        if (insertError.code === "23505" && /ref_code/.test(insertError.message || "")) {
+          ref = await generateUniqueCode(supabase, cleanPrenom);
+          continue;
+        }
+        // Course possible : un autre chemin a inséré ce même email entre le check et l'insert.
+        if (insertError.code === "23505") {
+          const { data: race } = await supabase
+            .from("waitlist")
+            .select("ref_code")
+            .eq("email_canonical", emailCanonical)
+            .maybeSingle();
+          if (race?.ref_code) {
+            await supabase
+              .from("waitlist")
+              .update({
+                is_ambassadeur: true,
+                ambassadeur_consent_at: new Date().toISOString(),
+                ambassadeur_charte_version: CHARTE_VERSION,
+              })
+              .eq("email_canonical", emailCanonical);
+            ref = race.ref_code;
+            inserted = true;
+            break;
+          }
+        }
+        console.error("[ambassadeur] insert échec", insertError);
+        return NextResponse.json(
+          { message: "Une erreur s'est glissée. Réessayez dans un instant." },
+          { status: 500 },
+        );
+      }
+      if (!inserted) {
+        return NextResponse.json(
+          { message: "Une erreur s'est glissée. Réessayez dans un instant." },
+          { status: 500 },
+        );
+      }
+      refCode = ref;
+    }
+
+    // Lien de partage (préserve la logique ?ref : / → /preventes redirige en gardant ?ref).
+    const shareUrl = `${SITE_URL}/?ref=${refCode}`;
+
+    // Hook mail (best-effort, jamais bloquant). Dashboard via lien magique signé.
+    try {
+      const dashboardUrl = `${SITE_URL}/ambassadeurs/espace?token=${signToken(emailCanonical)}`;
+      await sendAmbassadeurWelcome(normalizedEmail, cleanPrenom, refCode, dashboardUrl);
+    } catch (err) {
+      console.error("[ambassadeur] hook welcome échec (non bloquant)", err);
+    }
+
+    return NextResponse.json({ ref_code: refCode, share_url: shareUrl }, { status: 200 });
+  } catch (err) {
+    console.error("[ambassadeur] register exception", err);
+    return NextResponse.json(
+      { message: "Une erreur s'est glissée. Réessayez dans un instant." },
+      { status: 500 },
+    );
+  }
+}

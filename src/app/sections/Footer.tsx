@@ -19,6 +19,10 @@ export default function Footer() {
             <span className="footer-link">Mentions l&eacute;gales</span>
             <span className="footer-sep" aria-hidden="true">&middot;</span>
             <span className="footer-link">Confidentialit&eacute;</span>
+            <span className="footer-sep" aria-hidden="true">&middot;</span>
+            <a href="/ambassadeurs/espace" className="footer-link footer-link--amb">
+              Espace ambassadeur
+            </a>
           </nav>
         </div>
 

@@ -1,0 +1,164 @@
+/* ════════════════ Bloc inscription ambassadeur ════════════════
+   Fond crème plat → pas de backdrop-filter. Inputs ≥16px (anti-zoom iOS). */
+
+.amb-reg {
+  width: 100%;
+  background: var(--bj-cream);
+  padding: clamp(56px, 9vh, 110px) 5vw;
+}
+.amb-reg-inner {
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.amb-reg-eyebrow {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--bj-action);
+  margin-bottom: clamp(12px, 2vh, 18px);
+}
+.amb-reg-title {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(28px, 5vw, 44px);
+  line-height: 1.1;
+  color: var(--bj-text);
+  margin-bottom: clamp(12px, 2vh, 18px);
+}
+.amb-reg-sub {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  line-height: 1.6;
+  color: var(--bj-text-soft);
+  margin-bottom: clamp(28px, 4.5vh, 44px);
+}
+
+.amb-reg-form {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2.6vh, 22px);
+  text-align: left;
+}
+.amb-reg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.amb-reg-label {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  color: var(--bj-text);
+}
+.amb-reg-input {
+  font-family: var(--bj-font-ui);
+  font-size: 16px; /* anti-zoom iOS — ne pas descendre sous 16px */
+  color: var(--bj-text);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--bj-glass-light-border);
+  border-radius: var(--bj-r-btn);
+  padding: 14px 16px;
+  width: 100%;
+  transition: border-color var(--bj-dur-fast) var(--bj-ease);
+}
+.amb-reg-input:focus {
+  outline: none;
+  border-color: var(--bj-action);
+}
+
+.amb-reg-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  line-height: 1.5;
+  color: var(--bj-text-soft);
+  cursor: pointer;
+}
+.amb-reg-check input {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  accent-color: var(--bj-action);
+  cursor: pointer;
+}
+
+.amb-reg-error {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-save-warn);
+}
+
+.amb-reg-submit {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-ui);
+  font-weight: 500;
+  color: var(--bj-on-action);
+  background: var(--bj-action);
+  border: none;
+  border-radius: var(--bj-r-pill);
+  padding: 15px 28px;
+  cursor: pointer;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.amb-reg-submit:hover:not(:disabled) {
+  opacity: 0.9;
+}
+.amb-reg-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ── Écran de succès ── */
+.amb-reg-sharebox {
+  display: flex;
+  gap: 8px;
+  margin: clamp(20px, 3.4vh, 30px) 0 clamp(14px, 2.4vh, 20px);
+}
+.amb-reg-shareinput {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--bj-font-ui);
+  font-size: 16px;
+  color: var(--bj-text);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--bj-glass-light-border);
+  border-radius: var(--bj-r-btn);
+  padding: 13px 14px;
+}
+.amb-reg-copy {
+  flex: 0 0 auto;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  color: var(--bj-on-action);
+  background: var(--bj-action);
+  border: none;
+  border-radius: var(--bj-r-btn);
+  padding: 0 18px;
+  cursor: pointer;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.amb-reg-copy:hover {
+  opacity: 0.9;
+}
+.amb-reg-mailnote {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .amb-reg-input,
+  .amb-reg-submit,
+  .amb-reg-copy {
+    transition: none;
+  }
+}

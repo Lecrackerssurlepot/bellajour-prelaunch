@@ -1,0 +1,201 @@
+/* ════════════════ Onglets ambassadeur (pattern S3Objet) ════════════════
+   Desktop : pills empilées + accordéon (grid-rows 0fr→1fr). Mobile : pills
+   horizontales scrollables + zone de contenu partagée. transform/opacity. */
+
+.amb-tabs {
+  width: 100%;
+  background: var(--bj-cream);
+  padding: clamp(48px, 8vh, 96px) 5vw;
+}
+.amb-tabs-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.amb-tabs-title {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(28px, 4.5vw, var(--bj-fs-h2));
+  color: var(--bj-text);
+  margin-bottom: clamp(28px, 4vh, 48px);
+  text-align: center;
+}
+
+.amb-tabs-pills {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.amb-tab-item {
+  width: 100%;
+}
+
+/* Pill — même langage que .s3-pill */
+.amb-tab-pill {
+  display: inline-block;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bj-action);
+  background: transparent;
+  border: 1.5px solid var(--bj-action);
+  border-radius: var(--bj-r-pill);
+  padding: clamp(11px, 1.4vh, 15px) clamp(20px, 2.4vw, 30px);
+  cursor: pointer;
+  transition: background-color var(--bj-dur-fast) var(--bj-ease),
+    color var(--bj-dur-fast) var(--bj-ease);
+}
+.amb-tab-pill:hover {
+  background: var(--bj-action-soft);
+}
+.amb-tab-item[data-active='true'] .amb-tab-pill {
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+  border-color: var(--bj-action);
+}
+
+/* Accordéon desktop */
+.amb-tab-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.amb-tab-reveal[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+.amb-tab-reveal-inner {
+  overflow: hidden;
+  min-height: 0;
+  max-width: 56ch;
+}
+
+.amb-tab-accroche {
+  display: block;
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: clamp(18px, 2.2vw, 24px);
+  color: var(--bj-text);
+  padding: clamp(14px, 2vh, 20px) 4px 8px;
+}
+.amb-tab-corps {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  line-height: 1.65;
+  color: var(--bj-text-soft);
+  padding: 0 4px clamp(8px, 1.6vh, 16px);
+}
+.amb-tab-corps strong {
+  color: var(--bj-text);
+  font-weight: 600;
+}
+
+/* Opacité/translation du contenu révélé (desktop) */
+.amb-tab-reveal .amb-tab-accroche,
+.amb-tab-reveal .amb-tab-corps {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s,
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s;
+}
+.amb-tab-reveal[data-open='true'] .amb-tab-accroche,
+.amb-tab-reveal[data-open='true'] .amb-tab-corps {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Tableau récompenses */
+.amb-tab-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4px 0 4px;
+}
+.amb-tab-table th,
+.amb-tab-table td {
+  text-align: left;
+  padding: clamp(10px, 1.6vh, 14px) 8px;
+  border-bottom: 1px solid var(--bj-veil-12);
+  vertical-align: baseline;
+}
+.amb-tab-table th {
+  font-family: var(--bj-font-ui);
+  font-weight: 600;
+  color: var(--bj-text);
+  white-space: nowrap;
+}
+.amb-tab-table td {
+  font-family: var(--bj-font-ui);
+  color: var(--bj-text-soft);
+}
+.amb-tab-val {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  color: var(--bj-action);
+  white-space: nowrap;
+  text-align: right;
+}
+.amb-tab-note {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-faint);
+  padding: clamp(10px, 1.8vh, 16px) 4px 0;
+}
+
+/* Zone mobile partagée (masquée desktop) */
+.amb-tabs-mobile {
+  display: none;
+}
+
+/* ════════════════ Mobile ════════════════ */
+@media (max-width: 859px) {
+  .amb-tab-reveal {
+    display: none;
+  }
+  .amb-tabs-pills {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin: 0 -5vw;
+    padding-left: 5vw;
+    padding-right: 5vw;
+    scroll-padding-left: 5vw;
+    scroll-padding-right: 5vw;
+  }
+  .amb-tabs-pills::-webkit-scrollbar {
+    display: none;
+  }
+  .amb-tab-item {
+    width: auto;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+  .amb-tab-pill {
+    white-space: nowrap;
+    padding: 10px 18px;
+    font-size: var(--bj-fs-xs);
+    letter-spacing: 0.12em;
+  }
+  .amb-tabs-mobile {
+    display: block;
+    margin-top: clamp(16px, 2.6vh, 22px);
+    max-width: 56ch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .amb-tab-reveal,
+  .amb-tab-accroche,
+  .amb-tab-corps,
+  .amb-tab-pill {
+    transition: none;
+  }
+}
