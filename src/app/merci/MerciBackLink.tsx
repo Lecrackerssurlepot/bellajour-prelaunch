@@ -9,7 +9,8 @@
  * version normale (titre standard, aucune mention « 3 pages offertes par {Prénom} »).
  *
  * Navigation full-page (window.location.href) → S4Reservation se réinitialise sans
- * cache parrain. href="/preventes" reste en fallback si JS désactivé.
+ * cache parrain. Le marqueur ?merci=1 indique à S4 qu'on revient après paiement
+ * (titre « Votre commande est validée ! »). href reste en fallback si JS désactivé.
  */
 export default function MerciBackLink() {
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -19,11 +20,11 @@ export default function MerciBackLink() {
     } catch {
       /* sessionStorage indispo (Safari privé) — no-op */
     }
-    window.location.href = '/preventes'
+    window.location.href = '/preventes?merci=1'
   }
 
   return (
-    <a className="merci-back" href="/preventes" onClick={handleClick}>
+    <a className="merci-back" href="/preventes?merci=1" onClick={handleClick}>
       Retour à Bellajour
     </a>
   )

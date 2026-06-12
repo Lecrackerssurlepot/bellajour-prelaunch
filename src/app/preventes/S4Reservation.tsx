@@ -225,8 +225,19 @@ export default function S4Reservation() {
   const [error, setError] = useState<string | null>(null)
   const [referredBy, setReferredBy] = useState<string | null>(null)
   const [referrerPrenom, setReferrerPrenom] = useState<string | null>(null) // prénom parrain (affichage seulement)
+  const [orderConfirmed, setOrderConfirmed] = useState(false) // retour depuis /merci (?merci=1) → titre « commande validée »
   const [modalOpen, setModalOpen] = useState(false) // encart de réservation (prénom/email/CGV)
   const [info, setInfo] = useState<InfoKind | null>(null) // encart info (Instants / parrainage)
+
+  /* Retour depuis /merci : MerciBackLink navigue vers /preventes?merci=1 après paiement.
+     Ce marqueur bascule le titre S4 en « Votre commande est validée ! » (prime sur tout). */
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get('merci') === '1') {
+        setOrderConfirmed(true)
+      }
+    } catch { /* URL indispo — no-op */ }
+  }, [])
 
   /* Parrainage CLIENT : retrouver le code parrain pour le transmettre au checkout.
      Depuis la bascule du 13 juin, les liens partagés pointent directement vers /preventes
@@ -406,9 +417,11 @@ export default function S4Reservation() {
 
         <header className="s4-head">
           <h2 className="s4-title">
-            {referrerPrenom
-              ? `${referrerPrenom} vous invite à pré-commander votre album`
-              : 'Pré-commandez dès maintenant votre album Bellajour'}
+            {orderConfirmed
+              ? 'Votre commande est validée !'
+              : referrerPrenom
+                ? `${referrerPrenom} vous invite à pré-commander votre album`
+                : 'Pré-commandez dès maintenant votre album Bellajour'}
           </h2>
           <p className="s4-subtitle">
             Lancement le <strong>15 août</strong>, date à laquelle vous pourrez concevoir votre premier album
