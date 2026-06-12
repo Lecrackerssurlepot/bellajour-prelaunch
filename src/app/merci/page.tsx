@@ -4,6 +4,7 @@ import { makeSupabase } from '@/lib/supabase'
 import Navbar from '../preventes/Navbar'
 import Footer from '../sections/Footer'
 import MerciReferral from './MerciReferral'
+import MerciBackLink from './MerciBackLink'
 import MerciPendingRefresh from './MerciPendingRefresh'
 import './merci.css'
 
@@ -114,9 +115,7 @@ export default async function MerciPage({
                 dans quelques instants.
               </p>
               <MerciReferral refCode={state.refCode} />
-              <a className="merci-back" href="/preventes">
-                Retour à Bellajour
-              </a>
+              <MerciBackLink />
             </>
           )}
 
