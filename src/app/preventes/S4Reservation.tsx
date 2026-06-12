@@ -12,6 +12,13 @@ type InfoKind = 'instants' | 'parrainage'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+/* Le prénom du parrain est stocké brut en base (souvent en MAJ, ex. « MARIE »).
+   On le normalise à l'affichage : 1re lettre majuscule, reste minuscule. null → null. */
+function capitalizePrenom(s: string | null): string | null {
+  const t = (s ?? '').trim()
+  return t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : null
+}
+
 /* PRD §5.4 + §3 — S4 Réservation fondatrice (handoff).
    Machine à états : rend UN seul mode à la fois selon l'état serveur
    (GET /api/offer-state). Le bouton « Réserver » câble POST /api/checkout.
@@ -126,7 +133,15 @@ function FeatureRow({
 
 /* Ligne parrainage pleine largeur : « parrainage » est un lien bleu cliquable
    qui ouvre l'encart info parrainage (InfoSheet) via onParrainage. */
-function ParrainageRow({ pages, onParrainage }: { pages: number; onParrainage: () => void }) {
+function ParrainageRow({
+  pages,
+  onParrainage,
+  referrerPrenom,
+}: {
+  pages: number
+  onParrainage: () => void
+  referrerPrenom?: string | null
+}) {
   return (
     <li className="s4-feat s4-feat--parrain">
       Accès{' '}
@@ -134,6 +149,7 @@ function ParrainageRow({ pages, onParrainage }: { pages: number; onParrainage: (
         parrainage
       </button>{' '}
       : jusqu’à {pages} pages (= {pages} €) offertes par commande
+      {referrerPrenom ? ` · 3 pages offertes par ${referrerPrenom}` : ''}
     </li>
   )
 }
@@ -144,12 +160,14 @@ function OffreCard({
   places,
   checkout,
   onInfo,
+  referrerPrenom,
 }: {
   offre: Offre
   secondary?: boolean
   places?: number
   checkout?: React.ReactNode
   onInfo: (k: InfoKind) => void
+  referrerPrenom?: string | null
 }) {
   return (
     <article
@@ -182,7 +200,11 @@ function OffreCard({
           />
         ))}
         {typeof offre.parrainagePages === 'number' && (
-          <ParrainageRow pages={offre.parrainagePages} onParrainage={() => onInfo('parrainage')} />
+          <ParrainageRow
+            pages={offre.parrainagePages}
+            onParrainage={() => onInfo('parrainage')}
+            referrerPrenom={referrerPrenom}
+          />
         )}
       </ul>
 
@@ -200,6 +222,7 @@ export default function S4Reservation() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [referredBy, setReferredBy] = useState<string | null>(null)
+  const [referrerPrenom, setReferrerPrenom] = useState<string | null>(null) // prénom parrain (affichage seulement)
   const [modalOpen, setModalOpen] = useState(false) // encart de réservation (prénom/email/CGV)
   const [info, setInfo] = useState<InfoKind | null>(null) // encart info (Instants / parrainage)
 
@@ -212,17 +235,42 @@ export default function S4Reservation() {
      (isValidRefCode, préfixe BJ-) ; le backend re-valide de toute façon. */
   useEffect(() => {
     const urlRef = new URLSearchParams(window.location.search).get('ref')
-    let stored: string | null = null
+    let stored: { code?: string; prenom?: string | null } | null = null
     try {
       const raw = sessionStorage.getItem('bellajour_referral')
-      if (raw) {
-        const parsed = JSON.parse(raw) as { code?: string }
-        stored = typeof parsed?.code === 'string' ? parsed.code : null
-      }
+      if (raw) stored = JSON.parse(raw)
     } catch { /* sessionStorage indispo (Safari privé) — no-op */ }
 
-    const code = (urlRef || stored || '').trim()
-    if (code && isValidRefCode(code)) setReferredBy(code)
+    const code = (urlRef || stored?.code || '').trim()
+    if (!code || !isValidRefCode(code)) return
+
+    setReferredBy(code)
+
+    /* Résolution du PRÉNOM parrain (affichage seulement) — même mécanisme que la
+       waitlist (FinalWaitlist + GET /api/referrer). Le code transmis au checkout
+       (referredBy ci-dessus) est inchangé : le prénom ne sert qu'au wording S4. */
+    let cancelled = false
+
+    const finalize = (prenom: string | null) => {
+      if (cancelled) return
+      setReferrerPrenom(capitalizePrenom(prenom))
+      try {
+        sessionStorage.setItem('bellajour_referral', JSON.stringify({ code, prenom }))
+      } catch { /* no-op */ }
+    }
+
+    // Prénom déjà en cache pour ce même code → pas de fetch.
+    if (stored?.code === code && typeof stored.prenom !== 'undefined') {
+      finalize(stored.prenom ?? null)
+      return () => { cancelled = true }
+    }
+
+    fetch(`/api/referrer?code=${encodeURIComponent(code)}`)
+      .then(r => r.json())
+      .then(d => finalize(typeof d?.prenom === 'string' ? d.prenom : null))
+      .catch(() => finalize(null))
+
+    return () => { cancelled = true }
   }, [])
 
   /* État de l'offre = autorité serveur (GET /api/offer-state). Fallback résilient
@@ -326,10 +374,10 @@ export default function S4Reservation() {
   } else if (offer.offerMode === 'founder') {
     cards = (
       <div className="s4-cards s4-cards--duo">
-        <OffreCard offre={OFFRE_FOUNDER} places={placesRestantes(offer)} checkout={checkout} onInfo={setInfo} />
+        <OffreCard offre={OFFRE_FOUNDER} places={placesRestantes(offer)} checkout={checkout} onInfo={setInfo} referrerPrenom={referrerPrenom} />
         {/* Standard — repoussoir visuel (desktop only). Masquée mobile, non actionnable
             (aucun bouton). Réactivable plus tard pour la rendre visible sur mobile. */}
-        <OffreCard offre={OFFRE_STANDARD} secondary onInfo={setInfo} />
+        <OffreCard offre={OFFRE_STANDARD} secondary onInfo={setInfo} referrerPrenom={referrerPrenom} />
       </div>
     )
   } else if (offer.offerMode === 'soldout') {
@@ -338,13 +386,13 @@ export default function S4Reservation() {
         {/* Carte seule (Fondateur épuisé) : on valorise « l'offre du moment »
             plutôt qu'un choix par défaut → libellé « Offre Prévente ».
             Le repoussoir en mode founder garde « Offre Standard » (contraste). */}
-        <OffreCard offre={{ ...OFFRE_STANDARD, nom: 'Offre Prévente' }} checkout={checkout} onInfo={setInfo} />
+        <OffreCard offre={{ ...OFFRE_STANDARD, nom: 'Offre Prévente' }} checkout={checkout} onInfo={setInfo} referrerPrenom={referrerPrenom} />
       </div>
     )
   } else {
     cards = (
       <div className="s4-cards s4-cards--solo">
-        <OffreCard offre={OFFRE_INFLUENCER} checkout={checkout} onInfo={setInfo} />
+        <OffreCard offre={OFFRE_INFLUENCER} checkout={checkout} onInfo={setInfo} referrerPrenom={referrerPrenom} />
       </div>
     )
   }
@@ -355,7 +403,11 @@ export default function S4Reservation() {
       <div className="s4-inner">
 
         <header className="s4-head">
-          <h2 className="s4-title">Pré-commandez dès maintenant votre album Bellajour</h2>
+          <h2 className="s4-title">
+            {referrerPrenom
+              ? `${referrerPrenom} vous invite à pré-commander votre album`
+              : 'Pré-commandez dès maintenant votre album Bellajour'}
+          </h2>
           <p className="s4-subtitle">
             Lancement le <strong>15 août</strong>, date à laquelle vous pourrez concevoir votre premier album
           </p>
