@@ -27,6 +27,9 @@ export default function ChartePage() {
             decoding="sync"
           />
         </a>
+        <a href="/ambassadeurs#inscription" className="amb-charte-back">
+          ← Revenir à l&apos;inscription
+        </a>
       </nav>
 
       <article className="amb-charte-body">

@@ -185,11 +185,13 @@ export async function POST(request: Request) {
     }
 
     // Accès direct « Voir mon espace » depuis l'écran de succès, sans attendre le mail.
+    // URL RELATIVE (pas de SITE_URL) → le bouton reste sur l'origine courante (preview
+    // ou prod), évitant un 404 en preview. Le mail, lui, garde l'URL absolue ci-dessus.
     // ⚠️ Sécurité : cet accès NE prouve PAS la possession de l'email. On l'accepte car
     // le dashboard ne révèle que des prénoms et un nombre de pages (jamais d'email), et
     // le token est court (1 h) pour limiter le risque. L'accès durable reste le lien
     // magique 7 j envoyé par mail.
-    const dashboardUrlShort = `${SITE_URL}/ambassadeurs/espace?token=${signTokenShort(emailCanonical)}`;
+    const dashboardUrlShort = `/ambassadeurs/espace?token=${signTokenShort(emailCanonical)}`;
 
     return NextResponse.json(
       {

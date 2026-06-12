@@ -12,6 +12,8 @@
 .amb-charte-nav {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   padding: clamp(16px, 2.6vh, 24px) clamp(20px, 5vw, 48px);
   background: var(--bj-cream);
   border-bottom: 1px solid var(--bj-glass-light-border);
@@ -24,6 +26,18 @@
   height: clamp(26px, 3.4vh, 32px);
   width: auto;
   display: block;
+}
+.amb-charte-back {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-ui);
+  font-weight: 500;
+  color: var(--bj-action);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.amb-charte-back:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* ── Corps charte ── */
