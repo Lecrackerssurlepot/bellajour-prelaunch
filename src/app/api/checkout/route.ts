@@ -261,6 +261,9 @@ export async function POST(request: Request) {
         mode: "payment",
         customer_email: normalizedEmail,
         client_reference_id: normalizedEmail,
+        // Facture PDF de l'acompte générée + envoyée par Stripe au client.
+        // Compatible mode "payment". Le reçu reste piloté par customer_email.
+        invoice_creation: { enabled: true },
         line_items: [
           {
             quantity: 1,
