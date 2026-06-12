@@ -47,7 +47,7 @@ export function useReferralShare(
   const didAutoTriggerRef = useRef(false)
 
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.bellajour.fr'
-  const referralLink = `${origin}/?ref=${refCode}`
+  const referralLink = `${origin}/preventes?ref=${refCode}`
 
   const flashToast = (duration = 3000) => {
     setToastVisible(true)

@@ -204,10 +204,11 @@ export default function S4Reservation() {
   const [info, setInfo] = useState<InfoKind | null>(null) // encart info (Instants / parrainage)
 
   /* Parrainage CLIENT : retrouver le code parrain pour le transmettre au checkout.
-     Les liens partagés pointent vers la LANDING (/?ref=), pas /preventes — donc une fois
-     ici le ?ref= n'est généralement PLUS dans l'URL. Source PRINCIPALE = sessionStorage
-     « bellajour_referral » (posé par la landing, même clé/forme {code, prenom} que
-     FinalWaitlist), ?ref= URL en bonus/override. On ne retient qu'un code bien formé
+     Depuis la bascule du 13 juin, les liens partagés pointent directement vers /preventes
+     (/preventes?ref=BJ-XXXX) — le ?ref= est donc normalement PRÉSENT dans l'URL. Source
+     PRINCIPALE = ?ref= URL ; fallback sessionStorage « bellajour_referral » (posé par la
+     landing tant qu'elle existe, ou conservé après la redirection 307 / → /preventes,
+     même clé/forme {code, prenom} que FinalWaitlist). On ne retient qu'un code bien formé
      (isValidRefCode, préfixe BJ-) ; le backend re-valide de toute façon. */
   useEffect(() => {
     const urlRef = new URLSearchParams(window.location.search).get('ref')

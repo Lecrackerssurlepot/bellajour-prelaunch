@@ -38,7 +38,7 @@ async function sendWelcomeEmailW1(
         params: {
           PRENOM: prenom || "",
           REF_CODE: refCode,
-          REF_LINK: `${W1_REF_LINK_BASE}/?ref=${refCode}`,
+          REF_LINK: `${W1_REF_LINK_BASE}/preventes?ref=${refCode}`,
         },
       }),
     });
@@ -79,7 +79,7 @@ async function sendReferralWelcomeEmailP1(
           PRENOM: prenom || "",
           PRENOM_PARRAIN: prenomParrain || "",
           REF_CODE: refCode,
-          REF_LINK: `${W1_REF_LINK_BASE}/?ref=${refCode}`,
+          REF_LINK: `${W1_REF_LINK_BASE}/preventes?ref=${refCode}`,
         },
       }),
     });
@@ -123,7 +123,7 @@ async function sendReferralNotifyEmailP2(
           NB_PROCHES: nbProches,
           NB_PAGES_ACCUMULEES: nbProches * 5,
           REF_CODE: refCodeParrain,
-          REF_LINK: `${W1_REF_LINK_BASE}/?ref=${refCodeParrain}`,
+          REF_LINK: `${W1_REF_LINK_BASE}/preventes?ref=${refCodeParrain}`,
         },
       }),
     });
@@ -386,7 +386,7 @@ export async function POST(request: Request) {
     const brevoAttributes: Record<string, string> = {
       PRENOM: cleanPrenom || "",
       REF_CODE: ref_code,
-      REF_LINK: `${SITE_URL}/?ref=${ref_code}`,
+      REF_LINK: `${SITE_URL}/preventes?ref=${ref_code}`,
     };
     if (prenomParrain) brevoAttributes.PRENOM_PARRAIN = prenomParrain;
 
