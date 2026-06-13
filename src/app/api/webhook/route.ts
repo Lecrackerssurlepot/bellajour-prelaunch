@@ -178,6 +178,104 @@ function asId(v: string | { id: string } | null | undefined): string | null {
 }
 
 /**
+ * A3 — album offert au franchissement de 30 pages de parrainage confirmées (= 6e
+ * parrainage, 6 × 5). Best-effort STRICT.
+ *
+ * Appelée APRÈS la confirmation des pages (étape 3 du handler completed). Couvre
+ * TOUS les ambassadeurs liés à CE filleul via un crédit niveau 1 (parrain direct)
+ * OU niveau 2 (grand-parrain) — leurs crédits viennent d'être confirmés à l'étape 3.
+ *
+ * Idempotence robuste : verrou ATOMIQUE `UPDATE ... WHERE a3_notified_at IS NULL`
+ * (PAS un SELECT puis UPDATE). Seul l'event qui pose le flag (1 ligne touchée)
+ * envoie A3 ; deux events concurrents ne peuvent pas tous deux gagner la course.
+ *
+ * Ne throw jamais : chaque ambassadeur est traité dans son propre try/catch et
+ * sendBrevoEmail ne throw pas.
+ */
+async function sendA3ForCrossings(supabase: SupabaseClient, payerEmail: string): Promise<void> {
+  const apiKey = process.env.BREVO_API_KEY;
+
+  // Ambassadeurs candidats = bénéficiaires d'un crédit niveau 1|2 lié à ce filleul.
+  const { data: links } = await supabase
+    .from("pages_credits")
+    .select("email")
+    .eq("filleul_email", payerEmail)
+    .eq("status", "confirmed")
+    .in("niveau", [1, 2]);
+
+  const parrainEmails = Array.from(
+    new Set((links ?? []).map((r) => r.email).filter((e): e is string => Boolean(e)))
+  );
+  if (parrainEmails.length === 0) return;
+
+  for (const pEmail of parrainEmails) {
+    try {
+      // Résolution du parrain (état AVANT pose du flag).
+      const { data: amb } = await supabase
+        .from("waitlist")
+        .select("email, prenom, email_canonical, is_ambassadeur, a3_notified_at")
+        .eq("email", pEmail)
+        .maybeSingle();
+
+      // Pas ambassadeur, ou déjà notifié → on ne tente rien (court-circuit avant calcul).
+      if (!amb?.is_ambassadeur || !amb.email || !amb.email_canonical) continue;
+      if (amb.a3_notified_at) continue;
+
+      // Total des pages CONFIRMÉES niveau 1+2 (même calcul que /api/ambassadeur/me).
+      const { data: credits } = await supabase
+        .from("pages_credits")
+        .select("montant")
+        .eq("email", amb.email)
+        .eq("status", "confirmed")
+        .in("niveau", [1, 2]);
+      const total = (credits ?? []).reduce((sum, r) => sum + (r.montant ?? 0), 0);
+      if (total < 30) continue;
+
+      // Verrou ATOMIQUE anti-doublon : pose le flag SEULEMENT s'il est encore NULL.
+      // `.select()` renvoie les lignes réellement modifiées → 0 ligne = un autre event
+      // (ou un paiement précédent) a déjà gagné la course → on n'envoie pas.
+      const { data: claimed, error: claimErr } = await supabase
+        .from("waitlist")
+        .update({ a3_notified_at: new Date().toISOString() })
+        .eq("email_canonical", amb.email_canonical)
+        .is("a3_notified_at", null)
+        .select("email_canonical");
+      if (claimErr) {
+        console.error("[webhook] A3 claim flag échec", claimErr.code);
+        continue;
+      }
+      if (!claimed || claimed.length === 0) {
+        console.log(`[webhook] A3 déjà notifié (course perdue) — ${amb.email}`);
+        continue;
+      }
+
+      // DASHBOARD_URL via builder existant (signToken). Peut throw si secret manquant
+      // → on omet juste l'URL, A3 part quand même.
+      const params: Record<string, unknown> = {
+        PRENOM: amb.prenom || "",
+        PAGES_TOTAL: total,
+      };
+      try {
+        params.DASHBOARD_URL = `${SITE_URL}/ambassadeurs/espace?token=${signToken(amb.email_canonical)}`;
+      } catch (err) {
+        console.error("[webhook] A3 signToken échec — DASHBOARD_URL omis", (err as Error)?.message);
+      }
+
+      await sendBrevoEmail({
+        label: "A3",
+        templateId: Number(process.env.BREVO_TEMPLATE_A3_ID) || undefined,
+        email: amb.email,
+        name: amb.prenom || undefined,
+        apiKey,
+        params,
+      });
+    } catch (err) {
+      console.error("[webhook] A3 exception (non bloquant)", (err as Error)?.message);
+    }
+  }
+}
+
+/**
  * checkout.session.completed — confirme le paiement et fait le travail métier.
  * Retourne false si une écriture DB échoue (→ 500 → retry Stripe, sûr car idempotent).
  */
@@ -278,6 +376,68 @@ async function handleCheckoutCompleted(
     console.error("[webhook] envois transactionnels exception (non bloquant)", (err as Error)?.message);
   }
 
+  // 6. A3 — franchissement 30 pages (parrain direct + grand-parrain ambassadeur).
+  //    Best-effort STRICT, après toute la logique métier. Seulement si le payeur a
+  //    un referred_by (sinon aucun crédit niveau 1|2 ne le lie à un parrain).
+  if (row?.referred_by) {
+    try {
+      await sendA3ForCrossings(supabase, email);
+    } catch (err) {
+      console.error("[webhook] A3 exception (non bloquant)", (err as Error)?.message);
+    }
+  }
+
+  return true;
+}
+
+/**
+ * checkout.session.expired — relance best-effort d'un acompte abandonné.
+ *
+ * GARDE-FOU : n'envoie QUE si la ligne waitlist est encore `status="pending"`
+ * (ni confirmed ni refunded) → jamais de relance à quelqu'un qui a déjà payé.
+ * Retourne toujours true (200) : un échec d'envoi ne doit pas faire retenter Stripe.
+ */
+async function handleCheckoutExpired(
+  supabase: SupabaseClient,
+  session: Stripe.Checkout.Session
+): Promise<boolean> {
+  const meta = (session.metadata ?? {}) as CheckoutMeta;
+  const email = (meta.email || session.customer_email || session.client_reference_id || "")
+    .trim()
+    .toLowerCase();
+  if (!email) {
+    console.log("[webhook] checkout.session.expired sans email — skip");
+    return true;
+  }
+
+  let row: { prenom: string | null; status: string | null } | null = null;
+  try {
+    const { data } = await supabase
+      .from("waitlist")
+      .select("prenom, status")
+      .eq("email", email)
+      .maybeSingle();
+    row = data;
+  } catch (err) {
+    console.error("[webhook] expired lookup exception", (err as Error)?.message);
+    return true;
+  }
+
+  // Relance UNIQUEMENT si encore en attente de paiement.
+  if (row?.status !== "pending") {
+    console.log(`[webhook] relance sautée — status=${row?.status ?? "absent"}`);
+    return true;
+  }
+
+  await sendBrevoEmail({
+    label: "RELANCE",
+    templateId: Number(process.env.BREVO_TEMPLATE_RELANCE_ID) || undefined,
+    email,
+    name: row.prenom || undefined,
+    apiKey: process.env.BREVO_API_KEY,
+    params: { PRENOM: row.prenom || "" },
+  });
+
   return true;
 }
 
@@ -376,6 +536,12 @@ export async function POST(request: Request) {
     switch (event.type) {
       case "checkout.session.completed":
         ok = await handleCheckoutCompleted(
+          supabase,
+          event.data.object as Stripe.Checkout.Session
+        );
+        break;
+      case "checkout.session.expired":
+        ok = await handleCheckoutExpired(
           supabase,
           event.data.object as Stripe.Checkout.Session
         );
