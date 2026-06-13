@@ -159,3 +159,14 @@ Sur les pages prévente, ne JAMAIS poser `backdrop-filter: blur()` sur :
   → fallback fond quasi-opaque sur Android only (détection UA scopée à la page),
   verre dépoli conservé sur desktop + Safari iOS.
 Réf : commit 246d8e5, tokens --bj-nav-android-bg, classe .pv-nav--flat.
+
+## Mapping templates Brevo (transactionnels prévente)
+- F1 (Fondateur) = template 17, env BREVO_TEMPLATE_F1_ID, déclencheur webhook completed (offre founder)
+- S1 (Standard)  = template 18, env BREVO_TEMPLATE_S1_ID, déclencheur webhook completed (offre standard)
+- P3 (Parrain)   = template 19, env BREVO_TEMPLATE_P3_ID, déclencheur webhook completed si referred_by (parrain only)
+- A1 (Ambassadeur bienvenue) = template 20, env BREVO_TEMPLATE_A1_ID, déclencheur /ambassadeur/register si !wasAlreadyAmbassador
+- A2 (Ambassadeur accès)     = template 21, env BREVO_TEMPLATE_A2_ID, déclencheur /ambassadeur/request-access (redemandable)
+- Relance (session.expired)  = template À CRÉER, env BREVO_TEMPLATE_RELANCE_ID, NON ENCORE BRANCHÉ
+- A3 (album offert au 6e)    = template À CRÉER, NON ENCORE BRANCHÉ
+- Anciens (waitlist, hors paiement) : W1, P1, P2 dans waitlist/route.ts
+Helper partagé : src/lib/brevo.ts → sendBrevoEmail({templateId,email,name,params,apiKey,label}), best-effort strict.
