@@ -10,7 +10,7 @@ import './calculateur.css'
 
 const ALBUM_PAGES = 30
 const PAGE_VALUE = 1 // 1 page restante ≈ 1 € de valeur
-const ALBUM_VALUE = 63 // un album de 30 pages = 63 €
+const ALBUM_VALUE = 64 // un album de 30 pages = 64 €
 
 export default function Calculateur() {
   const directsRef = useRef<HTMLInputElement>(null)

@@ -26,7 +26,7 @@ export const DEFAULT_OFFER_STATE: OfferState = {
 }
 
 /* D1 — prix album final, variable isolée (modif facile). */
-export const PRIX_ALBUM_BASE = 63
+export const PRIX_ALBUM_BASE = 64
 
 /* PRD §3.2 — places restantes, jamais négatif. */
 export function placesRestantes(state: OfferState): number {

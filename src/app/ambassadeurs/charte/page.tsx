@@ -101,14 +101,14 @@ export default function ChartePage() {
 
         <h2>5. Vos récompenses</h2>
         <ul>
-          <li>6 parrainages validés : un album de 30 pages (valeur indicative 63 €).</li>
+          <li>6 parrainages validés : un album de 30 pages (valeur indicative 64 €).</li>
           <li>
             10 parrainages validés : un album jusqu&apos;à 50 pages (valeur indicative jusqu&apos;à
-            83 €).
+            82 €).
           </li>
           <li>
             20 parrainages validés : plusieurs albums au choix, par exemple deux de 30 pages et un
-            de 40 (valeur indicative jusqu&apos;à 199 €).
+            de 40 (valeur indicative jusqu&apos;à 211 €).
           </li>
         </ul>
         <p>

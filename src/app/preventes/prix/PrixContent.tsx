@@ -15,8 +15,8 @@ import { preventesHref } from './_ref'
 /* Grille TTC, livraison incluse. step=10 sur [30,150] ⇒ chaque réglage du slider
    tombe EXACTEMENT sur une clé ⇒ prix toujours défini, aucune interpolation. */
 const LOOKUP: Record<number, number> = {
-  30: 63, 40: 67, 50: 80, 60: 92, 70: 105, 80: 117, 90: 130,
-  100: 143, 110: 155, 120: 168, 130: 181, 140: 193, 150: 206,
+  30: 64, 40: 69, 50: 82, 60: 94, 70: 107, 80: 120, 90: 133,
+  100: 146, 110: 159, 120: 172, 130: 185, 140: 198, 150: 211,
 }
 
 const PAGES_MIN = 30

@@ -32,7 +32,7 @@ export default function Engagement() {
             <li>le regard reste humain</li>
           </ul>
           <p className="amb-cred-compare">
-            Album 50 pages — Bellajour <strong>80 € livraison incluse</strong>{' '}
+            Album 50 pages — Bellajour <strong>82 € livraison incluse</strong>{' '}
             <span className="amb-cred-vs">vs</span> marques établies 95–130 € hors
             livraison.
           </p>

@@ -48,17 +48,17 @@ const ONGLETS: Onglet[] = [
             <tr>
               <th scope="row">6 parrainages</th>
               <td>un album de 30 pages</td>
-              <td className="amb-tab-val">63 €</td>
+              <td className="amb-tab-val">64 €</td>
             </tr>
             <tr>
               <th scope="row">10 parrainages</th>
               <td>un album jusqu&apos;à 50 pages</td>
-              <td className="amb-tab-val">jusqu&apos;à 83 €</td>
+              <td className="amb-tab-val">jusqu&apos;à 82 €</td>
             </tr>
             <tr>
               <th scope="row">20 parrainages</th>
               <td>plusieurs albums au choix</td>
-              <td className="amb-tab-val">jusqu&apos;à 199 €</td>
+              <td className="amb-tab-val">jusqu&apos;à 211 €</td>
             </tr>
           </tbody>
         </table>
