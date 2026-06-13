@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { canonicalizeEmail } from "@/lib/email";
 import { makeSupabase } from "@/lib/supabase";
 import { signToken } from "@/lib/ambassadeur-token";
-import { sendAmbassadeurAccess } from "@/lib/ambassadeur-mail";
+import { sendBrevoEmail } from "@/lib/brevo";
 
 /* POST /api/ambassadeur/request-access
    Lien magique d'accès au dashboard. Réponse VOLONTAIREMENT NEUTRE : ne révèle
@@ -50,16 +50,24 @@ export async function POST(request: Request) {
 
     const { data: amb } = await supabase
       .from("waitlist")
-      .select("email, is_ambassadeur")
+      .select("email, prenom, is_ambassadeur")
       .eq("email_canonical", emailCanonical)
       .maybeSingle();
 
     if (amb?.is_ambassadeur && amb.email) {
       try {
+        // Lien magique frais à chaque demande (signToken régénère exp à l'appel).
         const dashboardUrl = `${SITE_URL}/ambassadeurs/espace?token=${signToken(emailCanonical)}`;
-        await sendAmbassadeurAccess(amb.email, dashboardUrl);
+        await sendBrevoEmail({
+          templateId: Number(process.env.BREVO_TEMPLATE_A2_ID) || undefined,
+          email: amb.email,
+          name: amb.prenom || undefined,
+          params: { PRENOM: amb.prenom || "", DASHBOARD_URL: dashboardUrl },
+          apiKey: process.env.BREVO_API_KEY,
+          label: "A2",
+        });
       } catch (err) {
-        console.error("[ambassadeur] hook access échec (non bloquant)", err);
+        console.error("[ambassadeur] A2 échec (non bloquant)", err);
       }
     }
 

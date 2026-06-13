@@ -3,7 +3,7 @@ import { canonicalizeEmail } from "@/lib/email";
 import { makeSupabase } from "@/lib/supabase";
 import { generateUniqueCode } from "@/lib/refcode";
 import { signToken, signTokenShort } from "@/lib/ambassadeur-token";
-import { sendAmbassadeurWelcome } from "@/lib/ambassadeur-mail";
+import { sendBrevoEmail } from "@/lib/brevo";
 
 /* POST /api/ambassadeur/register
    Inscription (ou ré-inscription) d'un ambassadeur du Cercle.
@@ -176,12 +176,22 @@ export async function POST(request: Request) {
     // Lien de partage (préserve la logique ?ref : / → /preventes redirige en gardant ?ref).
     const shareUrl = `${SITE_URL}/?ref=${refCode}`;
 
-    // Hook mail (best-effort, jamais bloquant). Dashboard via lien magique signé 7 j.
-    try {
-      const dashboardUrl = `${SITE_URL}/ambassadeurs/espace?token=${signToken(emailCanonical)}`;
-      await sendAmbassadeurWelcome(normalizedEmail, cleanPrenom, refCode, dashboardUrl);
-    } catch (err) {
-      console.error("[ambassadeur] hook welcome échec (non bloquant)", err);
+    // A1 (best-effort, jamais bloquant) — UNIQUEMENT pour un nouvel ambassadeur.
+    // Dashboard via lien magique signé 7 j (builder existant signToken, inchangé).
+    if (!wasAlreadyAmbassador) {
+      try {
+        const dashboardUrl = `${SITE_URL}/ambassadeurs/espace?token=${signToken(emailCanonical)}`;
+        await sendBrevoEmail({
+          templateId: Number(process.env.BREVO_TEMPLATE_A1_ID) || undefined,
+          email: normalizedEmail,
+          name: cleanPrenom,
+          params: { PRENOM: cleanPrenom, SHARE_URL: shareUrl, DASHBOARD_URL: dashboardUrl },
+          apiKey: process.env.BREVO_API_KEY,
+          label: "A1",
+        });
+      } catch (err) {
+        console.error("[ambassadeur] A1 échec (non bloquant)", err);
+      }
     }
 
     // Accès direct « Voir mon espace » depuis l'écran de succès, sans attendre le mail.
