@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import ReferralCard from '../components/ReferralCard'
+import InviterReferral from './InviterReferral'
 import { isValidRefCode } from '@/lib/validation'
 import './inviter.css'
 
@@ -54,8 +54,7 @@ function InviterClient() {
       <p className="inviter-sub">{subtitle}</p>
 
       {referrerLoaded && (
-        <ReferralCard
-          variant="full"
+        <InviterReferral
           refCode={refCode}
           autoCopyOnMount={action !== 'share'}
           autoShareOnMount={action === 'share'}

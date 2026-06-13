@@ -1,10 +1,13 @@
 /* ════════════════════
    Page /inviter — lien de parrainage standalone (depuis emails Brevo)
+   Charte PRÉVENTE : crème, glass, --bj-action #4a90d9, fonts --bj-font-*,
+   radius --bj-r-*. Tokens charte uniquement (cf. tokens.css). Logique
+   (?ref, ?action=share, /api/referrer, useReferralShare) inchangée.
    ════════════════════ */
 
 .inviter {
   min-height: 100dvh;
-  background: var(--bj-bg);
+  background: var(--bj-cream);
   color: var(--bj-text);
   display: flex;
   flex-direction: column;
@@ -25,26 +28,26 @@
 
 .inviter-title {
   margin: 0 0 clamp(10px, 1.5vh, 16px);
-  font-family: 'Cormorant', serif;
-  font-weight: 700;
+  font-family: var(--bj-font-display);
+  font-weight: 600;
   font-size: clamp(28px, 4vw, 44px);
   line-height: 1.15;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   color: var(--bj-text);
 }
 
 .inviter-sub {
   margin: 0 0 clamp(28px, 4vh, 44px);
-  font-family: 'Cormorant', serif;
+  font-family: var(--bj-font-display);
   font-style: italic;
   font-weight: 400;
   font-size: clamp(16px, 1.6vw, 21px);
   line-height: 1.5;
-  color: var(--bj-muted);
+  color: var(--bj-text-soft);
   max-width: 480px;
 }
 
-/* ─── État d'erreur ─── */
+/* ─── État d'erreur (?ref invalide) ─── */
 .inviter--error {
   justify-content: center;
   padding-top: clamp(60px, 12vh, 120px);
@@ -56,30 +59,198 @@
   justify-content: center;
   height: 48px;
   padding: 0 32px;
-  background: transparent;
-  color: var(--bj-text);
-  border: 1px solid var(--bj-noir);
-  border-radius: 10px;
-  font-family: var(--bj-font-sans);
-  font-size: 14px;
-  letter-spacing: 0.03em;
+  background: var(--bj-action-soft);
+  color: var(--bj-action);
+  border: 1px solid var(--bj-action-border);
+  border-radius: var(--bj-r-btn);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  letter-spacing: 0.02em;
   text-decoration: none;
-  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
   margin-top: clamp(16px, 2vh, 24px);
 }
 
-.inviter-back-btn:hover {
-  background: var(--bj-noir);
-  color: var(--bj-creme);
-}
+.inviter-back-btn:hover { opacity: 0.82; }
 
 .inviter-back-btn:focus-visible {
-  outline: 2px solid var(--bj-gold);
+  outline: 2px solid var(--bj-action);
   outline-offset: 2px;
 }
 
-@media (max-width: 480px) {
+/* ════════════════════
+   Carte parrainage (glass) — charte prévente, calquée sur .merci-ref-*.
+   ════════════════════ */
+.inviter-ref {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+  padding: clamp(24px, 4vw, 40px);
+  background: var(--bj-glass-light-bg);
+  border: 1px solid var(--bj-action-border);
+  border-radius: var(--bj-r-lg);
+  box-shadow: var(--bj-shadow-soft);
+  backdrop-filter: blur(var(--bj-glass-blur));
+  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+}
+
+.inviter-ref-code {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-size: clamp(30px, 5.2vw, 48px);
+  line-height: 1.1;
+  color: var(--bj-action);
+  margin-bottom: clamp(14px, 2.2vh, 22px);
+  word-break: break-word;
+}
+
+.inviter-ref-link-label {
+  margin: 0 0 8px;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xxs);
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--bj-text-faint);
+}
+
+/* ── Ligne lien + bouton copier ── */
+.inviter-ref-link-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.inviter-ref-link-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--bj-action-border);
+  border-radius: var(--bj-r-btn);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inviter-ref-copy-btn {
+  flex-shrink: 0;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--bj-action);
+  background: var(--bj-action-soft);
+  border: 1px solid var(--bj-action-border);
+  border-radius: var(--bj-r-btn);
+  padding: 12px 18px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.inviter-ref-copy-btn:hover { opacity: 0.82; }
+
+/* ── Bouton partager (CTA principal) ── */
+.inviter-ref-share-btn {
+  width: 100%;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-lg);
+  font-weight: 500;
+  color: var(--bj-on-action);
+  background: var(--bj-action);
+  border: none;
+  border-radius: var(--bj-r-btn);
+  padding: 15px;
+  cursor: pointer;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.inviter-ref-share-btn:hover { opacity: 0.88; }
+
+.inviter-ref-copy-btn:focus-visible,
+.inviter-ref-share-btn:focus-visible {
+  outline: 2px solid var(--bj-action);
+  outline-offset: 2px;
+}
+
+/* ── Rassurance mail ── */
+.inviter-ref-reassurance {
+  margin: clamp(16px, 2.4vh, 22px) auto 0;
+  max-width: 40ch;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  line-height: 1.6;
+  color: var(--bj-text-soft);
+  text-wrap: balance;
+}
+
+/* ── Footer mécanique (5 pages) ── */
+.inviter-ref-footer {
+  margin: clamp(12px, 1.8vh, 18px) auto 0;
+  max-width: 40ch;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  line-height: 1.7;
+  color: var(--bj-text-faint);
+  text-wrap: balance;
+}
+
+.inviter-ref-insta {
+  margin-top: clamp(20px, 3vh, 32px);
+}
+
+/* ── Toast ── */
+.inviter-ref-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-12px);
+  background: var(--bj-charcoal);
+  color: #fff;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  letter-spacing: 0.02em;
+  padding: 12px 22px;
+  border-radius: var(--bj-r-sm);
+  box-shadow: var(--bj-shadow-pop);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--bj-dur) var(--bj-ease), transform var(--bj-dur) var(--bj-ease);
+  z-index: 9999;
+}
+.inviter-ref-toast--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ════════════════════ MOBILE ════════════════════ */
+@media (max-width: 767px) {
   .inviter {
     padding: clamp(32px, 5vh, 48px) 20px;
+  }
+  .inviter-ref-link-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .inviter-ref-link-text {
+    padding: 12px 16px;
+    justify-content: center;
+    text-align: center;
+  }
+  .inviter-ref-copy-btn {
+    width: 100%;
   }
 }
