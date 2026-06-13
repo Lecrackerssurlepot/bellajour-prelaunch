@@ -16,9 +16,13 @@ export default function Footer() {
               contact@bellajour.com
             </a>
             <span className="footer-sep" aria-hidden="true">&middot;</span>
-            <span className="footer-link">Mentions l&eacute;gales</span>
+            <a href="/mentions-legales" className="footer-link">Mentions l&eacute;gales</a>
             <span className="footer-sep" aria-hidden="true">&middot;</span>
-            <span className="footer-link">Confidentialit&eacute;</span>
+            <a href="/confidentialite" className="footer-link">Confidentialit&eacute;</a>
+            <span className="footer-sep" aria-hidden="true">&middot;</span>
+            <a href="/cgv" className="footer-link">CGV</a>
+            <span className="footer-sep" aria-hidden="true">&middot;</span>
+            <a href="/remboursement" className="footer-link">Remboursement</a>
             <span className="footer-sep" aria-hidden="true">&middot;</span>
             <a href="/ambassadeurs/espace" className="footer-link footer-link--amb">
               Espace ambassadeur

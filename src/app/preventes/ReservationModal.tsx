@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { currentRef } from './prix/_ref'
 import './reservation-modal.css'
 
 /* Modal de réservation (prévente S4). Composant PRÉSENTATIONNEL : tout l'état
@@ -39,6 +40,15 @@ export default function ReservationModal({
   error,
   onSubmit,
 }: ReservationModalProps) {
+  /* Lien CGV : ?ref préservé (parrain) depuis l'URL courante. Calculé côté client
+     (currentRef lit window) ; valeur SSR-safe par défaut = /cgv. Ouvert dans un
+     nouvel onglet → l'état du checkout (prénom/email/CGV) n'est pas perdu. */
+  const [cgvHref, setCgvHref] = useState('/cgv')
+  useEffect(() => {
+    const ref = currentRef()
+    setCgvHref(ref ? `/cgv?ref=${encodeURIComponent(ref)}` : '/cgv')
+  }, [])
+
   /* Fermeture clavier (Échap). Actif uniquement quand le modal est ouvert. */
   useEffect(() => {
     if (!open) return
@@ -124,8 +134,14 @@ export default function ReservationModal({
           />
           <span>
             J’accepte les{' '}
-            {/* Lien CGV branché plus tard (avec Louis) — emplacement prévu. */}
-            <a href="#" className="s4-cgv-link">conditions générales de vente</a>
+            <a
+              href={cgvHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="s4-cgv-link"
+            >
+              conditions générales de vente
+            </a>
           </span>
         </label>
 
