@@ -25,6 +25,12 @@ export default function NavbarPrix() {
     setRoot(preventesRootHref())
     setCta(preventesHref())
     setFlat(/Android/i.test(navigator.userAgent))
+    /* Réactive le ré-ancrage scroll de Chrome sur cette route (cf. globals.css
+       html.px-anchor) : sans ça, la barre d'URL Chrome/Android fait sauter le
+       contenu. Cleanup obligatoire → ne pas fuiter la classe en nav SPA vers le
+       landing (qui a besoin de overflow-anchor: none pour son scroll-jacking). */
+    document.documentElement.classList.add('px-anchor')
+    return () => document.documentElement.classList.remove('px-anchor')
   }, [])
 
   return (

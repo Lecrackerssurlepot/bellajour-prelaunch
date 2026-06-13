@@ -33,6 +33,14 @@ html, body {
   scroll-padding-top: var(--bj-nav-h);
 }
 
+/* Réactive le ré-ancrage scroll de Chrome sur la route /preventes/prix UNIQUEMENT.
+   `overflow-anchor: none` (ci-dessus) est requis par le scroll-jacking du landing,
+   mais sur prix il fait sauter le contenu à chaque redimensionnement du viewport par
+   la barre d'URL Chrome/Android (Chrome ne compense plus). La classe .px-anchor est
+   posée sur <html> par NavbarPrix (et retirée au démontage). Spécificité
+   html.px-anchor body (0,1,2) > html, body (0,0,1) → écrase le none, prix seul. */
+html.px-anchor, html.px-anchor body { overflow-anchor: auto; }
+
 /* Offset pour la navbar fixe : le contenu démarre sous la navbar.
    Hero compense avec calc(var(--app-height) - var(--bj-nav-h)) pour plein écran. */
 main { padding-top: var(--bj-nav-h); }
