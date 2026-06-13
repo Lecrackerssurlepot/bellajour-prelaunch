@@ -14,8 +14,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(72px, 12vh, 140px);
-  padding: 0 6vw clamp(72px, 12vh, 140px);
+  gap: clamp(72px, calc(var(--app-height) * 0.12), 140px);
+  padding: 0 6vw clamp(72px, calc(var(--app-height) * 0.12), 140px);
 }
 
 /* ── Reveal d'entrée (LUX FADE / SLIDE REVEAL) ── */
@@ -35,7 +35,7 @@
 /* ════════════ HERO ════════════ */
 .px-hero {
   /* Compense la navbar fixe (--bj-topbar-h) + respiration plein écran léger. */
-  padding-top: calc(var(--bj-topbar-h) + clamp(48px, 12vh, 120px));
+  padding-top: calc(var(--bj-topbar-h) + clamp(48px, calc(var(--app-height) * 0.12), 120px));
   max-width: 22ch;
   text-align: center;
 }
@@ -46,7 +46,7 @@
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--bj-terracotta-2);
-  margin-bottom: clamp(18px, 3vh, 28px);
+  margin-bottom: clamp(18px, calc(var(--app-height) * 0.03), 28px);
 }
 .px-hero-title {
   font-family: var(--bj-font-display);
@@ -62,7 +62,7 @@
   font-size: clamp(18px, 2.4vw, 24px);
   line-height: 1.5;
   color: var(--bj-text-soft);
-  margin: clamp(20px, 3vh, 32px) auto 0;
+  margin: clamp(20px, calc(var(--app-height) * 0.03), 32px) auto 0;
   max-width: 30ch;
 }
 
@@ -82,7 +82,7 @@
   font-size: clamp(16px, 1.8vw, 18px);
   line-height: 1.7;
   color: var(--bj-text-soft);
-  margin: clamp(18px, 3vh, 28px) auto 0;
+  margin: clamp(18px, calc(var(--app-height) * 0.03), 28px) auto 0;
   max-width: 46ch;
 }
 .px-specs {
@@ -90,7 +90,7 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: clamp(8px, 1.4vw, 12px);
-  margin-top: clamp(26px, 4vh, 40px);
+  margin-top: clamp(26px, calc(var(--app-height) * 0.04), 40px);
 }
 .px-spec {
   font-family: var(--bj-font-ui);
@@ -150,8 +150,8 @@
 .px-controls {
   display: flex;
   flex-direction: column;
-  gap: clamp(22px, 4vh, 32px);
-  margin-top: clamp(28px, 4vh, 40px);
+  gap: clamp(22px, calc(var(--app-height) * 0.04), 32px);
+  margin-top: clamp(28px, calc(var(--app-height) * 0.04), 40px);
 }
 .px-field {
   display: flex;
@@ -253,8 +253,8 @@
 
 /* ── Affichage prix ── */
 .px-readout {
-  margin-top: clamp(28px, 4vh, 40px);
-  padding-top: clamp(24px, 3.5vh, 32px);
+  margin-top: clamp(28px, calc(var(--app-height) * 0.04), 40px);
+  padding-top: clamp(24px, calc(var(--app-height) * 0.035), 32px);
   border-top: 0.5px solid var(--bj-veil-12);
 }
 .px-price-row {
@@ -287,7 +287,7 @@
 }
 
 .px-breakdown {
-  margin-top: clamp(18px, 2.6vh, 24px);
+  margin-top: clamp(18px, calc(var(--app-height) * 0.026), 24px);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -303,8 +303,8 @@
 .px-line-note { color: var(--bj-text-soft); }
 
 .px-rest {
-  margin-top: clamp(20px, 3vh, 28px);
-  padding-top: clamp(18px, 2.6vh, 24px);
+  margin-top: clamp(20px, calc(var(--app-height) * 0.03), 28px);
+  padding-top: clamp(18px, calc(var(--app-height) * 0.026), 24px);
   border-top: 0.5px solid var(--bj-veil-12);
   display: flex;
   align-items: baseline;
@@ -332,7 +332,7 @@
 }
 
 .px-sim-micro {
-  margin-top: clamp(22px, 3.4vh, 30px);
+  margin-top: clamp(22px, calc(var(--app-height) * 0.034), 30px);
   font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-xs);
   line-height: 1.6;
@@ -344,7 +344,7 @@
 .px-stance {
   max-width: 40ch;
   text-align: center;
-  padding: clamp(8px, 4vh, 48px) 0;
+  padding: clamp(8px, calc(var(--app-height) * 0.04), 48px) 0;
 }
 .px-stance-text {
   font-family: var(--bj-font-display);
@@ -365,7 +365,7 @@
   font-size: clamp(26px, 4vw, 40px);
   line-height: 1.15;
   color: var(--bj-text);
-  margin-bottom: clamp(24px, 4vh, 36px);
+  margin-bottom: clamp(24px, calc(var(--app-height) * 0.04), 36px);
 }
 .px-cta-btn {
   display: inline-flex;
