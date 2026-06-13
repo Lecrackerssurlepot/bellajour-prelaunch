@@ -242,6 +242,10 @@
     color: var(--bj-text-soft);
   }
 
+  /* Swipe gauche/droite sur l'image : on ne gère que l'horizontal en JS,
+     pan-y laisse le scroll vertical natif de la page intact. */
+  .s3-media-wrap { touch-action: pan-y; }
+
   /* Image compacte sous le texte → tout tient dans le viewport */
   .s3-grid { gap: clamp(16px, 3vh, 24px); }
   .s3-media { max-width: clamp(160px, 44vw, 220px); }

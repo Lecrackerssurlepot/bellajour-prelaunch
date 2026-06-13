@@ -1,7 +1,11 @@
 'use client'
 
-import { useState, type CSSProperties } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
 import './s3-objet.css'
+
+// Swipe mobile : seuil horizontal mini + dominante horizontale (|dx| > |dy|)
+// pour ne pas déclencher sur un scroll vertical accidentel de la page.
+const SWIPE_THRESHOLD = 45 // px
 
 /* PRD §5.3 — S3 L'objet Bellajour.
    Pills arrondis (style proto .s1-cta) pour 5 facettes.
@@ -98,6 +102,33 @@ export default function S3Objet() {
     }
   }
 
+  // Navigation par index clampée — réutilise le state `active` (slide image existant).
+  const goTo = (i: number) => {
+    const next = Math.max(0, Math.min(FACETTES.length - 1, i))
+    if (next === active) return
+    setActive(next)
+    setOpen(true)
+  }
+
+  // Swipe mobile sur la zone média : gauche → facette suivante, droite → précédente.
+  const touchStart = useRef<{ x: number; y: number } | null>(null)
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0]
+    touchStart.current = { x: t.clientX, y: t.clientY }
+  }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStart.current
+    if (!start) return
+    touchStart.current = null
+    const t = e.changedTouches[0]
+    const dx = t.clientX - start.x
+    const dy = t.clientY - start.y
+    // Geste horizontal dominant + au-delà du seuil seulement.
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
+      goTo(active + (dx < 0 ? 1 : -1))
+    }
+  }
+
   return (
     <section className="s3" data-section="s3-objet" data-theme="light">
       <div className="s3-inner">
@@ -149,7 +180,12 @@ export default function S3Objet() {
           </div>
 
           {/* DROITE (desktop) / BAS (mobile) — image objet (slide selon l'actif) */}
-          <div className="s3-media-wrap">
+          {/* Swipe horizontal mobile : touch-action:pan-y (CSS) garde le scroll vertical. */}
+          <div
+            className="s3-media-wrap"
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+          >
             {/* Le cadre épouse le ratio du visuel actif (portrait 3:4 / paysage 4:3) :
                 desktop largeur uniforme, seule la hauteur varie (images entières,
                 object-fit: contain). data-orient ne pilote plus que le dimensionnement
