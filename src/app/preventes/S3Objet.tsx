@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import './s3-objet.css'
 
 // Swipe mobile : seuil horizontal mini + dominante horizontale (|dx| > |dy|)
@@ -110,6 +110,22 @@ export default function S3Objet() {
     setOpen(true)
   }
 
+  // Recentre l'onglet actif dans la barre scrollable mobile à chaque changement
+  // d'`active` (swipe ET tap, donc codé une seule fois ici). scrollTo sur le seul
+  // conteneur .s3-pills → aucun ancêtre page ne bouge (pas de saut vertical).
+  // Desktop (barre verticale, pas d'overflow-x) : garde matchMedia → no-op.
+  const pillsRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const bar = pillsRef.current
+    if (!bar) return
+    if (window.matchMedia('(min-width: 900px)').matches) return // desktop inchangé
+    const el = bar.children[active] as HTMLElement | undefined
+    if (!el) return
+    const left = el.offsetLeft - (bar.clientWidth - el.offsetWidth) / 2
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    bar.scrollTo({ left, behavior: reduce ? 'auto' : 'smooth' })
+  }, [active])
+
   // Swipe mobile sur la zone média : gauche → facette suivante, droite → précédente.
   const touchStart = useRef<{ x: number; y: number } | null>(null)
   const onTouchStart = (e: React.TouchEvent) => {
@@ -139,7 +155,7 @@ export default function S3Objet() {
 
           {/* GAUCHE (desktop) / HAUT (mobile) — pills + texte */}
           <div className="s3-left">
-            <div className="s3-pills" role="tablist" aria-label="Facettes de l’objet">
+            <div className="s3-pills" role="tablist" aria-label="Facettes de l’objet" ref={pillsRef}>
               {FACETTES.map((f, i) => {
                 const isOpen = open && i === active
                 return (
