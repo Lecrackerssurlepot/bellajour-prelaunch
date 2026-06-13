@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { makeSupabase } from "@/lib/supabase";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { signToken } from "@/lib/ambassadeur-token";
+import { canonicalizeEmail } from "@/lib/email";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
 const REF_LINK_BASE = "https://www.bellajour.fr";
@@ -210,11 +211,13 @@ async function sendA3ForCrossings(supabase: SupabaseClient, payerEmail: string):
 
   for (const pEmail of parrainEmails) {
     try {
-      // Résolution du parrain (état AVANT pose du flag).
+      // Résolution du parrain (état AVANT pose du flag). Match par forme canonique
+      // (pEmail vient de pages_credits ; canonicalizeEmail est idempotent → robuste
+      // aux alias Gmail +tag, cohérent avec le reste du fichier et /api/checkout).
       const { data: amb } = await supabase
         .from("waitlist")
         .select("email, prenom, email_canonical, is_ambassadeur, a3_notified_at")
-        .eq("email", pEmail)
+        .eq("email_canonical", canonicalizeEmail(pEmail))
         .maybeSingle();
 
       // Pas ambassadeur, ou déjà notifié → on ne tente rien (court-circuit avant calcul).
@@ -295,16 +298,31 @@ async function handleCheckoutCompleted(
     return true; // rien à faire, ne pas faire retenter Stripe en boucle
   }
 
+  // Clé de résolution = forme canonique (cohérent avec /api/checkout, qui
+  // déduplique et retrouve la ligne par email_canonical). Indispensable pour les
+  // alias Gmail +tag : le paiement peut arriver avec mdurand085@gmail.com alors
+  // que la colonne email stocke mdurand085+amb1@gmail.com (même email_canonical).
+  const emailCanonical = canonicalizeEmail(email);
+
   // Idempotence : déjà confirmé avec ce payment_intent → ne rien refaire.
   // (prenom, ref_code, referred_by : élargi pour les envois transactionnels finaux.)
   const { data: row, error: lookupErr } = await supabase
     .from("waitlist")
     .select("status, stripe_payment_intent, prenom, ref_code, referred_by")
-    .eq("email", email)
+    .eq("email_canonical", emailCanonical)
     .maybeSingle();
   if (lookupErr) {
     console.error("[webhook] lookup waitlist échec", lookupErr.code);
     return false;
+  }
+  // Ligne introuvable : un UPDATE .eq(...) toucherait 0 ligne SANS erreur, et on
+  // renverrait 200 "confirmé" à tort (cause du bug Gmail +tag). On sort proprement,
+  // sans update ni envois, et sans demander de retry Stripe.
+  if (!row) {
+    console.warn(
+      "[webhook] checkout.completed: aucune ligne waitlist pour email_canonical=" + emailCanonical
+    );
+    return true;
   }
   if (row?.status === "confirmed" && row.stripe_payment_intent === paymentIntent) {
     console.log("[webhook] event déjà traité (confirmed) — skip");
@@ -319,7 +337,7 @@ async function handleCheckoutCompleted(
       confirmed_at: new Date().toISOString(),
       stripe_payment_intent: paymentIntent,
     })
-    .eq("email", email);
+    .eq("email_canonical", emailCanonical);
   if (updErr) {
     console.error("[webhook] update waitlist confirmed échec", updErr.code);
     return false;
@@ -410,12 +428,16 @@ async function handleCheckoutExpired(
     return true;
   }
 
+  // Même clé canonique que completed (cf. /api/checkout). La relance, elle, part
+  // bien sur l'email brut de la session (destinataire d'affichage).
+  const emailCanonical = canonicalizeEmail(email);
+
   let row: { prenom: string | null; status: string | null } | null = null;
   try {
     const { data } = await supabase
       .from("waitlist")
       .select("prenom, status")
-      .eq("email", email)
+      .eq("email_canonical", emailCanonical)
       .maybeSingle();
     row = data;
   } catch (err) {
