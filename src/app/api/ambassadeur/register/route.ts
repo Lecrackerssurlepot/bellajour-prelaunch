@@ -173,8 +173,10 @@ export async function POST(request: Request) {
       refCode = ref;
     }
 
-    // Lien de partage (préserve la logique ?ref : / → /preventes redirige en gardant ?ref).
-    const shareUrl = `${SITE_URL}/?ref=${refCode}`;
+    // Lien de partage : pointe directement vers /preventes (le filleul atterrit en haut,
+    // découvre le parcours, convertit sur place ; S4Reservation capture ?ref= au mount →
+    // attribution préservée). Forme identique au générateur de /api/ambassadeur/me.
+    const shareUrl = refCode ? `${SITE_URL}/preventes?ref=${refCode}` : `${SITE_URL}/preventes`;
 
     // A1 (best-effort, jamais bloquant) — UNIQUEMENT pour un nouvel ambassadeur.
     // Dashboard via lien magique signé 7 j (builder existant signToken, inchangé).

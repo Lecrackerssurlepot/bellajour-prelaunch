@@ -67,7 +67,9 @@ export async function GET(request: Request) {
       {
         prenom: amb.prenom || "",
         ref_code: amb.ref_code,
-        share_url: `${SITE_URL}/?ref=${amb.ref_code}`,
+        share_url: amb.ref_code
+          ? `${SITE_URL}/preventes?ref=${amb.ref_code}`
+          : `${SITE_URL}/preventes`,
         pages_confirmees: pagesConfirmees,
         parrainages,
         filleuls, // prénoms only — aucun email
