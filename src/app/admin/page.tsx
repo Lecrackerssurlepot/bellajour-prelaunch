@@ -53,6 +53,7 @@ export type AdminInscrit = {
   confirmedAt: string | null;
   refCode: string | null;
   referredBy: string | null;
+  parrainLabel: string | null; // prénom (ou email) du parrain résolu depuis referred_by
   isAmbassadeur: boolean;
   isNew: boolean; // inscrit depuis la dernière visite
 };
@@ -60,6 +61,7 @@ export type AdminInscrit = {
 export type AdminAmbassadeur = {
   email: string;
   prenom: string;
+  refCode: string | null;
   createdAt: string | null;
   niveau1Confirmed: number;
   niveau1Pending: number;
@@ -81,6 +83,7 @@ export type AdminData = {
     founderCap: number;
     placesRestantes: number;
     totalAmbassadeurs: number;
+    conversionRate: number; // clients / inscrits, en % (0 si aucun inscrit)
   };
   nouveautes: {
     inscrits: number;
@@ -89,9 +92,41 @@ export type AdminData = {
   };
   inscrits: AdminInscrit[];
   ambassadeurs: AdminAmbassadeur[];
+  inscritsParJour: { date: string; count: number }[]; // 13 juin → aujourd'hui (jours à 0 inclus)
   lastSeen: string | null; // visite précédente (avant cette MAJ)
   fetchedAt: string;
 };
+
+/* Date "civile" Europe/Paris au format YYYY-MM-DD (bucket du graphique). */
+const PARIS_DAY = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Paris",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const parisDay = (iso: string) => PARIS_DAY.format(new Date(iso));
+
+/* Liste inclusive de jours (YYYY-MM-DD) de start à end. Itère en UTC pour éviter
+   les surprises DST. Renvoie [] si end < start. */
+function dayRange(start: string, end: string): string[] {
+  const out: string[] = [];
+  const [sy, sm, sd] = start.split("-").map(Number);
+  const [ey, em, ed] = end.split("-").map(Number);
+  let cur = Date.UTC(sy, sm - 1, sd);
+  const last = Date.UTC(ey, em - 1, ed);
+  while (cur <= last) {
+    const d = new Date(cur);
+    out.push(
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(
+        d.getUTCDate(),
+      ).padStart(2, "0")}`,
+    );
+    cur += 86_400_000;
+  }
+  return out;
+}
+
+const CHART_START = "2026-06-13"; // début prévente
 
 export default async function AdminPage() {
   const supabase = makeSupabase();
@@ -134,23 +169,40 @@ export default async function AdminPage() {
   const influencerConfirmed = confirmedRows.filter((r) => r.offer_type === "influencer").length;
   const totalAmbassadeurs = waitlist.filter((r) => r.is_ambassadeur === true).length;
   const placesRestantes = Math.max(0, FOUNDER_CAP - founderConfirmed);
+  const conversionRate = totalInscrits > 0 ? (totalClients / totalInscrits) * 100 : 0;
 
-  // 4. Inscrits (sérialisés + flag "nouveau").
+  // 4. Inscrits (sérialisés + flag "nouveau" + parrain résolu).
+  //    Map ref_code → personne pour résoudre referred_by en prénom/email lisible.
+  const byRefCode = new Map<string, WaitlistRow>();
+  for (const r of waitlist) {
+    if (r.ref_code) byRefCode.set(r.ref_code, r);
+  }
   const tsMs = (s: string | null) => (s ? new Date(s).getTime() : 0);
-  const inscrits: AdminInscrit[] = waitlist.map((r) => ({
-    id: r.id,
-    email: r.email,
-    prenom: (r.prenom || "").trim(),
-    status: r.status || "waitlist",
-    offerType: r.offer_type,
-    numeroFondateur: r.numero_fondateur,
-    createdAt: r.created_at,
-    confirmedAt: r.confirmed_at,
-    refCode: r.ref_code,
-    referredBy: r.referred_by,
-    isAmbassadeur: r.is_ambassadeur === true,
-    isNew: tsMs(r.created_at) > prevSeenMs,
-  }));
+  const inscrits: AdminInscrit[] = waitlist.map((r) => {
+    // Parrain : referred_by est un ref_code → on remonte à la personne. Si le
+    // ref_code est introuvable (orphelin), on garde la valeur brute plutôt que de
+    // la perdre. "—" (côté client) seulement si aucun referred_by.
+    let parrainLabel: string | null = null;
+    if (r.referred_by) {
+      const p = byRefCode.get(r.referred_by);
+      parrainLabel = p ? (p.prenom || "").trim() || p.email : r.referred_by;
+    }
+    return {
+      id: r.id,
+      email: r.email,
+      prenom: (r.prenom || "").trim(),
+      status: r.status || "waitlist",
+      offerType: r.offer_type,
+      numeroFondateur: r.numero_fondateur,
+      createdAt: r.created_at,
+      confirmedAt: r.confirmed_at,
+      refCode: r.ref_code,
+      referredBy: r.referred_by,
+      parrainLabel,
+      isAmbassadeur: r.is_ambassadeur === true,
+      isNew: tsMs(r.created_at) > prevSeenMs,
+    };
+  });
 
   // 5. Ambassadeurs : agrégation des crédits niveau 1/2 par email bénéficiaire.
   //    pages_credits.email = email d'affichage (cf. referral-credits.ts), donc on
@@ -189,6 +241,7 @@ export default async function AdminPage() {
       return {
         email: r.email,
         prenom: (r.prenom || "").trim(),
+        refCode: r.ref_code,
         createdAt: r.created_at,
         niveau1Confirmed: agg.n1c,
         niveau1Pending: agg.n1p,
@@ -210,6 +263,19 @@ export default async function AdminPage() {
 
   const fetchedAt = new Date().toISOString();
 
+  // 6b. Inscrits par jour (Europe/Paris), 13 juin → aujourd'hui, jours à 0 inclus.
+  const dayCounts = new Map<string, number>();
+  for (const r of waitlist) {
+    if (!r.created_at) continue;
+    const d = parisDay(r.created_at);
+    dayCounts.set(d, (dayCounts.get(d) ?? 0) + 1);
+  }
+  const today = parisDay(fetchedAt);
+  const inscritsParJour = dayRange(CHART_START, today).map((date) => ({
+    date,
+    count: dayCounts.get(date) ?? 0,
+  }));
+
   // 7. MAJ de la dernière visite à maintenant (SEULE écriture). Best-effort : un
   //    échec ne casse pas l'affichage (au pire les badges restent au prochain tour).
   await supabase
@@ -228,10 +294,12 @@ export default async function AdminPage() {
       founderCap: FOUNDER_CAP,
       placesRestantes,
       totalAmbassadeurs,
+      conversionRate,
     },
     nouveautes,
     inscrits,
     ambassadeurs,
+    inscritsParJour,
     lastSeen: prevSeen,
     fetchedAt,
   };
