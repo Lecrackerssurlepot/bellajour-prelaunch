@@ -94,11 +94,29 @@ STRIPE_WEBHOOK_SECRET
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 
 ## Tables Supabase
-contacts (id, email, prenom, profil_icp, code_parrain,
-          source_utm, created_at, points_total)
-referrals (id, code, contact_id, filleuls_count, created_at)
-points_log (id, contact_id, action, points, created_at)
-influencers (id, nom, slug, utm_campaign, conversions, created_at)
+⚠️ Schéma RÉEL (vérifié sur la DB live) : seulement 2 tables métier. Les tables
+contacts / referrals / points_log / influencers n'existent PAS — tout vit dans
+waitlist + pages_credits.
+
+waitlist  — table centrale (inscrits + clients + ambassadeurs)
+  id, email, prenom, ref_code (code de parrainage de la personne),
+  referred_by (ref_code du parrain), created_at, email_canonical,
+  offer_type [founder|standard|influencer], status [waitlist|pending|confirmed|refunded],
+  numero_fondateur, is_ambassadeur, confirmed_at,
+  + secondaires : stripe_payment_intent, ref_influenceur, consent_at,
+    ambassadeur_consent_at, ambassadeur_charte_version, a3_notified_at
+pages_credits  — crédits de parrainage
+  id, email (bénéficiaire), montant (+5 parrain / +3 self), source (ref_code filleul
+  ou "SELF:<refcode>"), niveau [0=bonus self | 1=filleul direct | 2=grand-filleul],
+  filleul_email, status [pending|confirmed|applied], created_at, applique
+admin_last_seen  — singleton interne (timestamp "dernière visite" du dashboard /admin)
+
+## Dashboard interne /admin
+- /admin : dashboard interne LECTURE SEULE (inscrits / clients / ambassadeurs,
+  KPI, graphique inscrits/jour, export CSV). Non lié dans la nav publique.
+- Protégé par mot de passe partagé : middleware.ts (cookie HMAC bj_admin) +
+  env ADMIN_PASSWORD (Vercel Preview + Production). Service key strictement server-side.
+- Seule écriture autorisée : admin_last_seen. Ne touche jamais aux données métier.
 
 ## Sections landing page (ordre d'affichage)
 1. Hero      — photos flottantes + headline + formulaire waitlist
