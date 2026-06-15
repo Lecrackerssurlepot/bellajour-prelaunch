@@ -221,6 +221,76 @@
   border-color: var(--bj-action);
   box-shadow: 0 0 0 3px var(--bj-action-ring);
 }
+
+/* Groupe de filtre (libellé léger + contrôle) */
+.adm-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+}
+.adm-filter-label {
+  font-size: var(--bj-fs-xxs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--bj-text-faint);
+}
+
+/* Segmented control (pills) — Statut, Ambassadeur */
+.adm-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bj-veil-6);
+  border-radius: var(--bj-r-pill);
+}
+.adm-seg-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  font-weight: 500;
+  color: var(--bj-text-soft);
+  padding: var(--bj-sp-1) var(--bj-sp-3);
+  border-radius: var(--bj-r-pill);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--bj-dur-fast) var(--bj-ease),
+    color var(--bj-dur-fast) var(--bj-ease);
+}
+.adm-seg-btn:hover:not(.adm-seg-btn--active) {
+  background: var(--bj-action-soft);
+  color: var(--bj-action);
+}
+.adm-seg-btn--active {
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+}
+
+/* Select stylé (Offre) — chevron custom token-coloré (fix appearance:none nu) */
+.adm-select-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.adm-select-wrap .adm-select {
+  padding-right: var(--bj-sp-6);
+  border-color: var(--bj-veil-8);
+  border-radius: var(--bj-r-sm);
+  cursor: pointer;
+}
+.adm-select-wrap::after {
+  content: "";
+  position: absolute;
+  right: var(--bj-sp-3);
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid var(--bj-text-faint);
+  border-bottom: 2px solid var(--bj-text-faint);
+  transform: translateY(-65%) rotate(45deg);
+  pointer-events: none;
+}
 .adm-count {
   font-size: var(--bj-fs-xs);
   color: var(--bj-text-faint);
@@ -446,15 +516,39 @@
   stroke: var(--bj-veil-12);
   stroke-width: 1;
 }
+.adm-chart-grid {
+  stroke: var(--bj-veil-8);
+  stroke-width: 1;
+}
+/* Dégradé vertical des barres : haut plus clair, bas soutenu (--bj-action). */
+.adm-chart-grad-top {
+  stop-color: color-mix(in srgb, var(--bj-action) 55%, var(--bj-on-action));
+}
+.adm-chart-grad-bottom {
+  stop-color: var(--bj-action);
+}
 .adm-chart-bar {
-  fill: var(--bj-action);
-  transition: fill var(--bj-dur-fast) var(--bj-ease);
+  fill: url(#admBarGrad);
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: adm-bar-rise 520ms var(--bj-ease) both;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
 }
 .adm-chart-bar:hover {
-  fill: var(--bj-text);
+  opacity: 0.82;
 }
-.adm-chart-bar--empty {
-  fill: var(--bj-veil-16);
+@keyframes adm-bar-rise {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .adm-chart-bar {
+    animation: none;
+  }
 }
 .adm-chart-val {
   fill: var(--bj-text-soft);
@@ -480,5 +574,9 @@
   }
   .adm-count {
     margin-left: 0;
+  }
+  /* Trop serré : 1 label de date sur 2. */
+  .adm-chart-label--odd {
+    display: none;
   }
 }

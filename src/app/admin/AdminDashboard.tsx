@@ -66,21 +66,66 @@ function NewBadge() {
   return <span className="adm-badge-new">nouveau</span>;
 }
 
+/* Segmented control charté (pills) — purement présentationnel, pilote un état string. */
+function Segmented({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="adm-filter">
+      <span className="adm-filter-label">{label}</span>
+      <div className="adm-seg" role="group" aria-label={label}>
+        {options.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            className={value === o.value ? "adm-seg-btn adm-seg-btn--active" : "adm-seg-btn"}
+            aria-pressed={value === o.value}
+            onClick={() => onChange(o.value)}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ───────────────────────── Graphique inscrits/jour (SVG maison) ───────────────────────── */
 
 function InscritsChart({ data }: { data: { date: string; count: number }[] }) {
   if (data.length === 0) {
     return <p className="adm-note">Aucune donnée sur la période.</p>;
   }
-  const H = 170;
-  const PAD_TOP = 16;
+  const H = 190;
+  const PAD_TOP = 22;
   const PAD_BOTTOM = 30;
-  const STEP = 36;
+  const STEP = 38;
   const BAR_W = 22;
+  const R = 6; // rayon des coins hauts (~--bj-r-sm visuel)
   const innerH = H - PAD_TOP - PAD_BOTTOM;
   const max = Math.max(1, ...data.map((d) => d.count));
   const width = Math.max(data.length * STEP, 120);
   const total = data.reduce((s, d) => s + d.count, 0);
+  const baseY = PAD_TOP + innerH;
+
+  // Barre à coins HAUTS arrondis (bas droit), r borné à la largeur/hauteur dispo.
+  const barPath = (x: number, w: number, top: number) => {
+    const r = Math.max(0, Math.min(R, w / 2, baseY - top));
+    return `M${x},${baseY} L${x},${top + r} Q${x},${top} ${x + r},${top} L${
+      x + w - r
+    },${top} Q${x + w},${top} ${x + w},${top + r} L${x + w},${baseY} Z`;
+  };
+
+  // 3 lignes de repère horizontales (en plus de la ligne de base).
+  const grid = [1, 2, 3].map((i) => PAD_TOP + (innerH * i) / 3);
 
   return (
     <div className="adm-chart">
@@ -100,39 +145,46 @@ function InscritsChart({ data }: { data: { date: string; count: number }[] }) {
           role="img"
           aria-label="Inscrits par jour"
         >
+          <defs>
+            <linearGradient id="admBarGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" className="adm-chart-grad-top" />
+              <stop offset="1" className="adm-chart-grad-bottom" />
+            </linearGradient>
+          </defs>
+          {/* Grille horizontale discrète */}
+          {grid.map((gy, i) => (
+            <line key={i} x1="0" y1={gy} x2={width} y2={gy} className="adm-chart-grid" />
+          ))}
           {/* Ligne de base */}
-          <line
-            x1="0"
-            y1={PAD_TOP + innerH}
-            x2={width}
-            y2={PAD_TOP + innerH}
-            className="adm-chart-axis"
-          />
+          <line x1="0" y1={baseY} x2={width} y2={baseY} className="adm-chart-axis" />
           {data.map((d, i) => {
             const h = (d.count / max) * innerH;
             const x = i * STEP + (STEP - BAR_W) / 2;
-            const y = PAD_TOP + innerH - h;
-            const [, , dayNum] = d.date.split("-");
+            const top = baseY - h;
+            const [, mm, dd] = d.date.split("-");
             return (
               <g key={d.date}>
                 <title>
                   {fmtDay(d.date)} — {d.count} inscrit{d.count > 1 ? "s" : ""}
                 </title>
                 {d.count > 0 ? (
-                  <text x={x + BAR_W / 2} y={y - 5} className="adm-chart-val">
-                    {d.count}
-                  </text>
+                  <>
+                    <text x={x + BAR_W / 2} y={top - 7} className="adm-chart-val">
+                      {d.count}
+                    </text>
+                    <path
+                      d={barPath(x, BAR_W, top)}
+                      className="adm-chart-bar"
+                      style={{ animationDelay: `${i * 28}ms` }}
+                    />
+                  </>
                 ) : null}
-                <rect
-                  x={x}
-                  y={d.count > 0 ? y : PAD_TOP + innerH - 2}
-                  width={BAR_W}
-                  height={d.count > 0 ? h : 2}
-                  rx="3"
-                  className={d.count > 0 ? "adm-chart-bar" : "adm-chart-bar adm-chart-bar--empty"}
-                />
-                <text x={x + BAR_W / 2} y={H - 10} className="adm-chart-label">
-                  {dayNum}
+                <text
+                  x={x + BAR_W / 2}
+                  y={H - 10}
+                  className={`adm-chart-label${i % 2 === 1 ? " adm-chart-label--odd" : ""}`}
+                >
+                  {dd}/{mm}
                 </text>
               </g>
             );
@@ -332,34 +384,41 @@ function Inscrits({ rows }: { rows: AdminInscrit[] }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select
-          className="adm-select"
+        <Segmented
+          label="Statut"
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-        >
-          <option value="all">Tous statuts</option>
-          <option value="client">Clients</option>
-          <option value="nonclient">Non-clients</option>
-        </select>
-        <select
-          className="adm-select"
-          value={offerFilter}
-          onChange={(e) => setOfferFilter(e.target.value)}
-        >
-          <option value="all">Toutes offres</option>
-          <option value="founder">Fondateur</option>
-          <option value="standard">Standard</option>
-          <option value="influencer">Influenceur</option>
-        </select>
-        <select
-          className="adm-select"
+          onChange={(v) => setStatusFilter(v as typeof statusFilter)}
+          options={[
+            { value: "all", label: "Tous" },
+            { value: "client", label: "Clients" },
+            { value: "nonclient", label: "Non-clients" },
+          ]}
+        />
+        <div className="adm-filter">
+          <span className="adm-filter-label">Offre</span>
+          <div className="adm-select-wrap">
+            <select
+              className="adm-select"
+              value={offerFilter}
+              onChange={(e) => setOfferFilter(e.target.value)}
+            >
+              <option value="all">Toutes</option>
+              <option value="founder">Fondateur</option>
+              <option value="standard">Standard</option>
+              <option value="influencer">Influenceur</option>
+            </select>
+          </div>
+        </div>
+        <Segmented
+          label="Ambassadeur"
           value={ambFilter}
-          onChange={(e) => setAmbFilter(e.target.value as typeof ambFilter)}
-        >
-          <option value="all">Tous</option>
-          <option value="amb">Ambassadeurs</option>
-          <option value="nonamb">Non-ambassadeurs</option>
-        </select>
+          onChange={(v) => setAmbFilter(v as typeof ambFilter)}
+          options={[
+            { value: "all", label: "Tous" },
+            { value: "amb", label: "Ambassadeurs" },
+            { value: "nonamb", label: "Non-amb." },
+          ]}
+        />
         <button className="adm-btn" onClick={exportCsv} disabled={filtered.length === 0}>
           Exporter CSV
         </button>
