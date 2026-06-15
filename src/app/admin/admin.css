@@ -451,6 +451,68 @@
 .adm-btn--refresh {
   margin-left: auto;
 }
+.adm-btn--ghost {
+  color: var(--bj-text-soft);
+  background: transparent;
+  border-color: var(--bj-veil-12);
+}
+.adm-btn--ghost:hover:not(:disabled) {
+  color: var(--bj-text);
+  box-shadow: 0 0 0 3px var(--bj-veil-8);
+}
+.adm-logout-form {
+  display: inline-flex;
+  margin: 0;
+}
+
+/* ── Page de login ── */
+.adm-login-root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.adm-login-card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-3);
+  background: var(--bj-glass-card-bg);
+  -webkit-backdrop-filter: var(--bj-glass-card-blur);
+  backdrop-filter: var(--bj-glass-card-blur);
+  border: var(--bj-glass-card-border);
+  border-radius: var(--bj-r-lg);
+  box-shadow: var(--bj-glass-card-shadow);
+  padding: var(--bj-sp-6);
+}
+.adm-login-title {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: var(--bj-fs-h2);
+  color: var(--bj-action);
+  margin: 0;
+}
+.adm-login-sub {
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  margin: 0 0 var(--bj-sp-2);
+}
+.adm-login-input {
+  min-width: 0;
+  width: 100%;
+}
+.adm-login-error {
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-save-warn);
+  margin: 0;
+}
+.adm-login-btn {
+  width: 100%;
+  text-align: center;
+  padding: var(--bj-sp-3);
+  font-size: var(--bj-fs-ui);
+}
 .adm-spin {
   display: inline-block;
   animation: adm-spin 0.7s linear infinite;

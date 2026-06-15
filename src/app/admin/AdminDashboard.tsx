@@ -631,6 +631,11 @@ export default function AdminDashboard({ data }: { data: AdminData }) {
           </span>{" "}
           {isPending ? "Actualisation…" : "Rafraîchir"}
         </button>
+        <form method="post" action="/api/admin/logout" className="adm-logout-form">
+          <button className="adm-btn adm-btn--ghost" type="submit">
+            Déconnexion
+          </button>
+        </form>
       </header>
 
       <nav className="adm-tabs">
