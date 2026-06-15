@@ -1,0 +1,316 @@
+/* Dashboard interne — UI sobre, dense, lisible. HORS charte Bellajour :
+   priorité à la densité d'info, pas à l'esthétique de marque. Desktop d'abord. */
+
+.adm-root {
+  --adm-bg: #f5f6f8;
+  --adm-surface: #ffffff;
+  --adm-border: #e1e4e8;
+  --adm-text: #1c2024;
+  --adm-muted: #6b7280;
+  --adm-accent: #2563eb;
+  --adm-new: #16a34a;
+  --adm-new-bg: #ecfdf3;
+
+  min-height: 100vh;
+  background: var(--adm-bg);
+  color: var(--adm-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.adm-root * {
+  box-sizing: border-box;
+}
+
+.adm-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.adm-header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+.adm-fetched {
+  font-size: 12px;
+  color: var(--adm-muted);
+}
+
+/* Tabs */
+.adm-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--adm-border);
+  margin-bottom: 20px;
+}
+.adm-tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--adm-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.adm-tab:hover {
+  color: var(--adm-text);
+}
+.adm-tab--active {
+  color: var(--adm-accent);
+  border-bottom-color: var(--adm-accent);
+}
+
+/* Banner */
+.adm-banner {
+  background: var(--adm-new-bg);
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+.adm-banner--muted {
+  background: var(--adm-surface);
+  border-color: var(--adm-border);
+  color: var(--adm-muted);
+}
+
+/* KPI cards */
+.adm-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.adm-card {
+  background: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  padding: 16px;
+}
+.adm-card--accent {
+  border-color: var(--adm-accent);
+  background: #eff6ff;
+}
+.adm-card-value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.adm-card-sub {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--adm-muted);
+}
+.adm-card-label {
+  font-size: 13px;
+  color: var(--adm-muted);
+  margin-top: 4px;
+}
+.adm-card-foot {
+  font-size: 12px;
+  color: var(--adm-accent);
+  margin-top: 6px;
+}
+
+/* Breakdown */
+.adm-breakdown h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 10px;
+}
+.adm-breakdown-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.adm-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  background: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+}
+.adm-pill b {
+  font-size: 15px;
+}
+.adm-pill--founder {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+.adm-pill--standard {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+.adm-pill--influencer {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+/* Toolbar */
+.adm-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.adm-input,
+.adm-select {
+  appearance: none;
+  border: 1px solid var(--adm-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  background: var(--adm-surface);
+  color: var(--adm-text);
+}
+.adm-input {
+  min-width: 260px;
+}
+.adm-count {
+  font-size: 13px;
+  color: var(--adm-muted);
+  margin-left: auto;
+}
+
+/* Table */
+.adm-table-wrap {
+  background: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  border-radius: 10px;
+  overflow-x: auto;
+}
+.adm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.adm-table th,
+.adm-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--adm-border);
+  white-space: nowrap;
+}
+.adm-table thead th {
+  position: sticky;
+  top: 0;
+  background: #fafbfc;
+  font-weight: 600;
+  color: var(--adm-muted);
+  cursor: pointer;
+  user-select: none;
+}
+.adm-table tbody tr:hover {
+  background: #f9fafb;
+}
+.adm-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.adm-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.adm-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+.adm-empty {
+  text-align: center;
+  color: var(--adm-muted);
+  padding: 28px;
+}
+
+/* Status chips */
+.adm-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.adm-status--confirmed {
+  background: #ecfdf3;
+  color: #15803d;
+}
+.adm-status--pending {
+  background: #fffbeb;
+  color: #b45309;
+}
+.adm-status--refunded {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.adm-status--waitlist {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* Badges & tags */
+.adm-badge-new {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--adm-new);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+.adm-row-new {
+  background: var(--adm-new-bg);
+}
+.adm-row-new:hover {
+  background: #dcfce7 !important;
+}
+.adm-tag-amb {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.adm-pending {
+  color: var(--adm-muted);
+  font-weight: 400;
+  font-size: 11px;
+}
+
+.adm-note {
+  font-size: 12px;
+  color: var(--adm-muted);
+  margin-top: 12px;
+}
+
+@media (max-width: 640px) {
+  .adm-root {
+    padding: 14px;
+  }
+  .adm-input {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+  .adm-count {
+    margin-left: 0;
+  }
+}
