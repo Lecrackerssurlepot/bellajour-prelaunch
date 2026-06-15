@@ -1,221 +1,271 @@
-/* Dashboard interne — UI sobre, dense, lisible. HORS charte Bellajour :
-   priorité à la densité d'info, pas à l'esthétique de marque. Desktop d'abord. */
+/* Dashboard interne — identité Bellajour (tokens --bj-* de tokens.css, importés
+   globalement via globals.css). Règle : marque sur titres/onglets/cartes (Cormorant
+   italic + bleu --bj-action, glass sur les KPI), mais DONNÉES toujours lisibles
+   (DM Sans, tableaux à fond plein, zéro glass, zéro serif sur chiffres/cellules).
+   Aucun hex de charte recodé en dur : tout vient des variables. */
 
 .adm-root {
-  --adm-bg: #f5f6f8;
-  --adm-surface: #ffffff;
-  --adm-border: #e1e4e8;
-  --adm-text: #1c2024;
-  --adm-muted: #6b7280;
-  --adm-accent: #2563eb;
-  --adm-new: #16a34a;
-  --adm-new-bg: #ecfdf3;
-
   min-height: 100vh;
-  background: var(--adm-bg);
-  color: var(--adm-text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
-  font-size: 14px;
-  line-height: 1.4;
-  padding: 24px;
+  background: linear-gradient(180deg, var(--bj-cream) 0%, var(--bj-cream-2) 100%);
+  color: var(--bj-text);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-ui);
+  line-height: 1.45;
+  padding: var(--bj-sp-6) clamp(var(--bj-sp-5), 4vw, var(--bj-sp-8));
   box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
 }
-
 .adm-root * {
   box-sizing: border-box;
 }
 
+/* ── En-tête ── */
 .adm-header {
   display: flex;
   align-items: baseline;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: var(--bj-sp-4);
+  margin-bottom: var(--bj-sp-5);
 }
 .adm-header h1 {
-  font-size: 20px;
-  font-weight: 700;
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(1.9rem, 4vw, var(--bj-fs-h2));
+  line-height: 1.1;
+  color: var(--bj-action);
   margin: 0;
 }
 .adm-fetched {
-  font-size: 12px;
-  color: var(--adm-muted);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
 }
 
-/* Tabs */
+/* ── Onglets (titres de marque) ── */
 .adm-tabs {
   display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--adm-border);
-  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: var(--bj-sp-2);
+  border-bottom: 1px solid var(--bj-veil-12);
+  margin-bottom: var(--bj-sp-6);
 }
 .adm-tab {
   appearance: none;
   border: none;
   background: transparent;
-  padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--adm-muted);
+  padding: var(--bj-sp-2) var(--bj-sp-4);
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: var(--bj-fs-lg);
+  font-weight: 600;
+  color: var(--bj-text-soft);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
+  transition: color var(--bj-dur-fast) var(--bj-ease),
+    border-color var(--bj-dur-fast) var(--bj-ease);
 }
 .adm-tab:hover {
-  color: var(--adm-text);
+  color: var(--bj-text);
 }
 .adm-tab--active {
-  color: var(--adm-accent);
-  border-bottom-color: var(--adm-accent);
+  color: var(--bj-action);
+  border-bottom-color: var(--bj-action);
 }
 
-/* Banner */
+/* ── Bandeau nouveautés ── */
 .adm-banner {
-  background: var(--adm-new-bg);
-  border: 1px solid #bbf7d0;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  font-size: 14px;
+  background: var(--bj-action-soft);
+  border: 1px solid var(--bj-action-border);
+  border-radius: var(--bj-r-md);
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  margin-bottom: var(--bj-sp-6);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text);
+}
+.adm-banner strong {
+  color: var(--bj-action);
 }
 .adm-banner--muted {
-  background: var(--adm-surface);
-  border-color: var(--adm-border);
-  color: var(--adm-muted);
+  background: var(--bj-glass-light-bg);
+  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+  backdrop-filter: blur(var(--bj-glass-blur));
+  border-color: var(--bj-veil-8);
+  color: var(--bj-text-faint);
 }
 
-/* KPI cards */
+/* ── Cartes KPI (glassmorphism de marque) ── */
 .adm-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 12px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--bj-sp-4);
+  margin-bottom: var(--bj-sp-7);
 }
 .adm-card {
-  background: var(--adm-surface);
-  border: 1px solid var(--adm-border);
-  border-radius: 10px;
-  padding: 16px;
+  background: var(--bj-glass-card-bg);
+  -webkit-backdrop-filter: var(--bj-glass-card-blur);
+  backdrop-filter: var(--bj-glass-card-blur);
+  border: var(--bj-glass-card-border);
+  border-radius: var(--bj-r-lg);
+  box-shadow: var(--bj-glass-card-shadow);
+  padding: var(--bj-sp-5);
 }
 .adm-card--accent {
-  border-color: var(--adm-accent);
-  background: #eff6ff;
+  background: var(--bj-glass-card-bg-active);
+  border-color: var(--bj-action-border);
+  box-shadow: var(--bj-glass-card-shadow-active);
 }
 .adm-card-value {
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1.1;
+  font-family: var(--bj-font-ui); /* chiffre = DM Sans, lisibilité */
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.05;
+  color: var(--bj-text);
+  font-variant-numeric: tabular-nums;
 }
 .adm-card-sub {
-  font-size: 16px;
+  font-size: var(--bj-fs-lg);
   font-weight: 500;
-  color: var(--adm-muted);
+  color: var(--bj-text-faint);
 }
 .adm-card-label {
-  font-size: 13px;
-  color: var(--adm-muted);
-  margin-top: 4px;
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  margin-top: var(--bj-sp-1);
 }
 .adm-card-foot {
-  font-size: 12px;
-  color: var(--adm-accent);
-  margin-top: 6px;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-action);
+  margin-top: var(--bj-sp-2);
 }
 
-/* Breakdown */
+/* ── Répartition offres ── */
+.adm-breakdown {
+  margin-bottom: var(--bj-sp-5);
+}
 .adm-breakdown h3 {
-  font-size: 14px;
+  font-family: var(--bj-font-display);
+  font-style: italic;
   font-weight: 600;
-  margin: 0 0 10px;
+  font-size: var(--bj-fs-display-sm);
+  color: var(--bj-text);
+  margin: 0 0 var(--bj-sp-3);
 }
 .adm-breakdown-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--bj-sp-2);
 }
 .adm-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  background: var(--adm-surface);
-  border: 1px solid var(--adm-border);
+  gap: var(--bj-sp-2);
+  padding: var(--bj-sp-2) var(--bj-sp-4);
+  border-radius: var(--bj-r-pill);
+  font-size: var(--bj-fs-sm);
+  background: var(--bj-glass-light-bg);
+  border: 1px solid var(--bj-veil-8);
 }
 .adm-pill b {
-  font-size: 15px;
+  font-size: var(--bj-fs-lg);
+  font-variant-numeric: tabular-nums;
 }
 .adm-pill--founder {
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  background: var(--bj-action-soft);
+  border-color: var(--bj-action-border);
+}
+.adm-pill--founder b {
+  color: var(--bj-action);
 }
 .adm-pill--standard {
-  background: #f5f3ff;
-  border-color: #ddd6fe;
+  background: var(--bj-warn-soft);
+  border-color: color-mix(in srgb, var(--bj-save-warn) 30%, transparent);
+}
+.adm-pill--standard b {
+  color: var(--bj-save-warn);
 }
 .adm-pill--influencer {
-  background: #fff7ed;
-  border-color: #fed7aa;
+  background: color-mix(in srgb, var(--bj-terracotta) 14%, transparent);
+  border-color: color-mix(in srgb, var(--bj-terracotta) 32%, transparent);
+}
+.adm-pill--influencer b {
+  color: var(--bj-terracotta-2);
 }
 
-/* Toolbar */
+/* ── Barre d'outils (données = DM Sans) ── */
 .adm-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: var(--bj-sp-3);
+  margin-bottom: var(--bj-sp-4);
 }
 .adm-input,
 .adm-select {
   appearance: none;
-  border: 1px solid var(--adm-border);
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 14px;
-  background: var(--adm-surface);
-  color: var(--adm-text);
+  font-family: var(--bj-font-ui);
+  border: 1px solid var(--bj-veil-12);
+  border-radius: var(--bj-r-btn);
+  padding: var(--bj-sp-2) var(--bj-sp-3);
+  font-size: var(--bj-fs-sm);
+  background: var(--bj-cream-tint-1);
+  color: var(--bj-text);
+  transition: border-color var(--bj-dur-fast) var(--bj-ease),
+    box-shadow var(--bj-dur-fast) var(--bj-ease);
 }
 .adm-input {
   min-width: 260px;
 }
+.adm-input:focus,
+.adm-select:focus {
+  outline: none;
+  border-color: var(--bj-action);
+  box-shadow: 0 0 0 3px var(--bj-action-ring);
+}
 .adm-count {
-  font-size: 13px;
-  color: var(--adm-muted);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
   margin-left: auto;
 }
 
-/* Table */
+/* ── Tableaux (fond plein, ZÉRO glass) ── */
 .adm-table-wrap {
-  background: var(--adm-surface);
-  border: 1px solid var(--adm-border);
-  border-radius: 10px;
+  background: var(--bj-cream-tint-1);
+  border: 1px solid var(--bj-veil-8);
+  border-radius: var(--bj-r-md);
+  box-shadow: var(--bj-shadow-soft);
   overflow-x: auto;
 }
 .adm-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
 }
 .adm-table th,
 .adm-table td {
   text-align: left;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--adm-border);
+  padding: var(--bj-sp-3);
+  border-bottom: 1px solid var(--bj-veil-8);
   white-space: nowrap;
 }
 .adm-table thead th {
   position: sticky;
   top: 0;
-  background: #fafbfc;
+  z-index: 1;
+  background: var(--bj-cream-tint-3);
   font-weight: 600;
-  color: var(--adm-muted);
+  font-size: var(--bj-fs-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bj-text);
   cursor: pointer;
   user-select: none;
 }
+.adm-table tbody tr:nth-child(even) {
+  background: var(--bj-veil-6);
+}
 .adm-table tbody tr:hover {
-  background: #f9fafb;
+  background: var(--bj-action-soft);
 }
 .adm-table tbody tr:last-child td {
   border-bottom: none;
@@ -226,47 +276,48 @@
 }
 .adm-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
 }
 .adm-empty {
   text-align: center;
-  color: var(--adm-muted);
-  padding: 28px;
+  color: var(--bj-text-faint);
+  padding: var(--bj-sp-6);
 }
 
-/* Status chips */
+/* ── Chips de statut ── */
 .adm-status {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
+  padding: 2px var(--bj-sp-2);
+  border-radius: var(--bj-r-sm);
+  font-size: var(--bj-fs-xxs);
+  font-weight: 600;
 }
 .adm-status--confirmed {
-  background: #ecfdf3;
-  color: #15803d;
+  background: color-mix(in srgb, var(--bj-save-ok) 14%, transparent);
+  color: var(--bj-save-ok);
 }
 .adm-status--pending {
-  background: #fffbeb;
-  color: #b45309;
+  background: var(--bj-warn-soft);
+  color: var(--bj-save-warn);
 }
 .adm-status--refunded {
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--bj-veil-12);
+  color: var(--bj-text-faint);
 }
 .adm-status--waitlist {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--bj-veil-6);
+  color: var(--bj-text-soft);
 }
 
-/* Badges & tags */
+/* ── Badges & tags ── */
 .adm-badge-new {
   display: inline-block;
-  margin-left: 6px;
-  padding: 1px 6px;
-  border-radius: 5px;
-  background: var(--adm-new);
-  color: #fff;
+  margin-left: var(--bj-sp-2);
+  padding: 1px var(--bj-sp-2);
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-action);
+  color: var(--bj-on-action);
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
@@ -274,37 +325,36 @@
   vertical-align: middle;
 }
 .adm-row-new {
-  background: var(--adm-new-bg);
-}
-.adm-row-new:hover {
-  background: #dcfce7 !important;
+  background: var(--bj-action-soft) !important;
+  box-shadow: inset 3px 0 0 0 var(--bj-action);
 }
 .adm-tag-amb {
   display: inline-block;
-  margin-left: 6px;
-  padding: 1px 6px;
-  border-radius: 5px;
-  background: #eef2ff;
-  color: #4338ca;
+  margin-left: var(--bj-sp-2);
+  padding: 1px var(--bj-sp-2);
+  border-radius: var(--bj-r-sm);
+  background: color-mix(in srgb, var(--bj-terracotta) 16%, transparent);
+  color: var(--bj-terracotta-2);
   font-size: 10px;
   font-weight: 600;
   vertical-align: middle;
 }
 .adm-pending {
-  color: var(--adm-muted);
+  color: var(--bj-text-faint);
   font-weight: 400;
-  font-size: 11px;
+  font-size: var(--bj-fs-xxs);
 }
 
 .adm-note {
-  font-size: 12px;
-  color: var(--adm-muted);
-  margin-top: 12px;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+  margin-top: var(--bj-sp-3);
+  line-height: 1.6;
 }
 
 @media (max-width: 640px) {
   .adm-root {
-    padding: 14px;
+    padding: var(--bj-sp-4);
   }
   .adm-input {
     min-width: 0;
