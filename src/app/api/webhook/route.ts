@@ -308,7 +308,7 @@ async function handleCheckoutCompleted(
   // (prenom, ref_code, referred_by : élargi pour les envois transactionnels finaux.)
   const { data: row, error: lookupErr } = await supabase
     .from("waitlist")
-    .select("status, stripe_payment_intent, prenom, ref_code, referred_by")
+    .select("id, status, stripe_payment_intent, prenom, ref_code, referred_by")
     .eq("email_canonical", emailCanonical)
     .maybeSingle();
   if (lookupErr) {
@@ -341,6 +341,36 @@ async function handleCheckoutCompleted(
   if (updErr) {
     console.error("[webhook] update waitlist confirmed échec", updErr.code);
     return false;
+  }
+
+  // 1b. Enregistrement du job à facturer (invoice_jobs) — BEST-EFFORT STRICT.
+  //     On NE fait AUCUN appel InvoiceXpress ici : l'émission réelle viendra plus
+  //     tard via une Edge Function. On insère juste une ligne `pending` idempotente.
+  //     Un échec ici ne doit JAMAIS casser la confirmation ni les emails : on log
+  //     et on continue (pas de return false, pas de throw). pays_client laissé null.
+  try {
+    if (session.amount_total != null && row.id) {
+      const montantTtc = session.amount_total / 100; // amount_total en centimes
+      const montantHt = Math.round((montantTtc / 1.23) * 100) / 100; // TVA 23 % (PT)
+      const montantTva = Math.round((montantTtc - montantHt) * 100) / 100;
+
+      const { error: invErr } = await supabase.from("invoice_jobs").upsert(
+        {
+          stripe_payment_intent: paymentIntent,
+          waitlist_id: row.id,
+          montant_ht: montantHt,
+          montant_tva: montantTva,
+        },
+        { onConflict: "stripe_payment_intent", ignoreDuplicates: true }
+      );
+      if (invErr) {
+        console.error("[webhook] insert invoice_jobs échec (non bloquant)", invErr.code);
+      }
+    } else {
+      console.warn("[webhook] invoice_jobs sauté — amount_total ou waitlist.id manquant");
+    }
+  } catch (err) {
+    console.error("[webhook] invoice_jobs exception (non bloquant)", (err as Error)?.message);
   }
 
   // 2. Numéro fondateur (atomique, idempotent, soft cap) via RPC dédiée.
