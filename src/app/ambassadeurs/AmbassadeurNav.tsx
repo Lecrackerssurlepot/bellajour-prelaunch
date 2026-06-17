@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { preventesRootHref } from '../preventes/prix/_ref'
 import '../preventes/navbar.css'
 
 /* Top bar /ambassadeurs — réutilise EXACTEMENT navbar.css (.pv-nav).
@@ -16,9 +17,13 @@ export default function AmbassadeurNav({
 }) {
   const [heroOut, setHeroOut] = useState(variant === 'espace')
   const [flat, setFlat] = useState(false)
+  // Cible du logo → /preventes (?ref préservé). Client-only (lit window), donc
+  // calculée après montage pour rester SSR-safe ; fallback /preventes nu au SSR.
+  const [logoHref, setLogoHref] = useState('/preventes')
 
   useEffect(() => {
     setFlat(/Android/i.test(navigator.userAgent))
+    setLogoHref(preventesRootHref())
   }, [])
 
   useEffect(() => {
@@ -44,20 +49,16 @@ export default function AmbassadeurNav({
       window.location.href = '/ambassadeurs#inscription'
     }
   }
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
 
   const cls =
     'pv-nav' + (heroOut ? ' pv-nav--solid' : '') + (flat ? ' pv-nav--flat' : '')
 
   return (
     <nav className={cls} aria-label="Navigation Cercle Ambassadeur">
-      <button
-        type="button"
-        onClick={scrollToTop}
+      <a
+        href={logoHref}
         className="pv-nav-logo-btn"
-        aria-label="Retour en haut"
+        aria-label="Aller à la prévente Bellajour"
       >
         <img
           src="/images/ui/logo.webp"
@@ -65,7 +66,7 @@ export default function AmbassadeurNav({
           alt="Bellajour"
           decoding="sync"
         />
-      </button>
+      </a>
 
       <button type="button" className="pv-nav-cta" onClick={onCta}>
         Rejoindre le Cercle
