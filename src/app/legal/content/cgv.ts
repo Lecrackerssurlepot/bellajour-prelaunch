@@ -261,7 +261,7 @@ export const CGV: LocalizedDoc = {
       {
         heading: `Artigo 4.º — Preços, IVA e faturação`,
         blocks: [
-          { kind: 'p', value: `4.1 Preços com impostos incluídos. Os preços são exibidos em euros, com todos os impostos incluídos. O preço do álbum depende do escalão de páginas escolhido (tabela constante da Ficha de Produto); O preço do álbum depende do escalão de paginação escolhido, de acordo com a grelha tarifária constante da Ficha de Produto. O número de páginas é definido à medida.` },
+          { kind: 'p', value: `4.1 Preços com impostos incluídos. Os preços são exibidos em euros, com todos os impostos incluídos. O preço do álbum depende do escalão de paginação escolhido, de acordo com a grelha tarifária constante da Ficha de Produto. O número de páginas é definido à medida.` },
           { kind: 'p', value: `4.2 Transparência — sem custos ocultos. O preço com impostos exibido antes da validação é completo; nenhum custo é acrescentado após a validação da encomenda. Fora do período de pré-venda, os portes eventuais são indicados claramente antes da validação da encomenda. No âmbito da pré-venda, os portes são oferecidos.` },
           { kind: 'p', value: `4.3 Regime de IVA. A Bellajour encontra-se enquadrada no regime normal de IVA em Portugal. Para as vendas a consumidores (B2C):` },
           { kind: 'list', items: [
