@@ -3,7 +3,10 @@ import type { LocalizedDoc } from '../types'
 /* POLITIQUE DE CONFIDENTIALITÉ — transcription fidèle de
    legal-source/confidentialite/FR/…docx (v3.1). Remplace l'ancien contenu
    placeholder de src/app/confidentialite/page.tsx.
-   EN / PT : sources présentes dans legal-source/confidentialite/{EN,PT} — à brancher plus tard. */
+   PT : transcription fidèle de legal-source/confidentialite/PT/…docx (clé `pt`
+   ci-dessous). Normalisations source→gabarit FR : §1 et §4, paragraphes sortis
+   des listes pour coller au FR.
+   EN : source présente dans legal-source/confidentialite/EN — à brancher plus tard. */
 
 export const CONFIDENTIALITE: LocalizedDoc = {
   fr: {
@@ -144,6 +147,148 @@ export const CONFIDENTIALITE: LocalizedDoc = {
           { kind: 'p', value: `Bellajour tient un registre des activités de traitement (art. 30) et réalise une analyse d'impact (AIPD/DPIA, art. 35) sur le traitement biométrique des photos.` },
           { kind: 'p', value: `Toute évolution future — notamment une « mémoire des visages » (conservation des gabarits d'une commande à l'autre pour le confort du compte) ou une application mobile — fera l'objet d'une information actualisée et, le cas échéant, d'un nouveau consentement spécifique avant sa mise en œuvre.` },
           { kind: 'p', value: `Le service est proposé au sein de l'Union européenne ; toute extension hors UE donnera lieu à une mise à jour de la présente politique.` },
+        ],
+      },
+    ],
+  },
+  pt: {
+    title: `Política de privacidade`,
+    lastUpdated: `Versão 3.1 — Em vigor em 13/06/2026`,
+    intro: [
+      `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
+      `Texto de referência (versão portuguesa), juridicamente prevalecente. As traduções para francês e inglês são meramente informativas. Esta política complementa as Condições Gerais de Venda, às quais está ligada (RGPD, art. 13.º e 14.º).`,
+    ],
+    sections: [
+      {
+        heading: `1. Quem é responsável pelos seus dados`,
+        blocks: [
+          { kind: 'p', value: `O responsável pelo tratamento é a MISTÉRIO HERMÉTICO, LDA (marca Bellajour), NIPC 519443284, com sede no Beco de Santa Helena, 21A, 2.º, 1100-117 Lisboa, Portugal.` },
+          { kind: 'p', value: `A Bellajour é responsável pelo tratamento de todas as suas operações, incluindo o tratamento das fotografias que nos transmite para produzir o seu álbum: é a Bellajour que decide as finalidades e os meios. A Bellajour não é subcontratante do cliente.` },
+          { kind: 'p', value: `Contacto em matéria de proteção de dados: contact@bellajour.com.` },
+          { kind: 'p', value: `Encarregado da Proteção de Dados (EPD/DPO): a designação de um EPD não é obrigatória no lançamento (não existe tratamento em larga escala na aceção do artigo 37.º do RGPD). Qualquer pedido relativo aos seus dados é tratado através de contact@bellajour.com.` },
+        ],
+      },
+      {
+        heading: `2. As suas responsabilidades sobre o conteúdo que nos confia`,
+        blocks: [
+          { kind: 'p', value: `Ao carregar fotografias, garante dispor de todos os direitos necessários: direito à imagem das pessoas retratadas, autoridade parental ou autorizações relativas a menores fotografados, e direitos de propriedade intelectual. Para um uso puramente pessoal, as suas fotografias estão, em princípio, abrangidas pela exceção doméstica (art. 2.º, n.º 2, al. c) do RGPD); mas a partir da sua transmissão à Bellajour para produção, é a Bellajour que trata os dados e por eles responde.` },
+        ],
+      },
+      {
+        heading: `3. Que dados, para que finalidades, com que base legal`,
+        blocks: [
+          { kind: 'table', columns: [`Categoria de dados`, `Finalidade`, `Base legal (RGPD)`], rows: [
+            [`Nome, e-mail, morada postal`, `Encomenda, entrega, faturação, apoio ao cliente`, `Execução do contrato (art. 6.1.b)`],
+            [`Dados de pagamento (via Stripe)`, `Processamento do pagamento, prevenção da fraude`, `Execução do contrato / obrigação legal (6.1.b / 6.1.c)`],
+            [`Fotografias e conteúdos carregados`, `Produção do álbum de acordo com as suas especificações (triagem, seleção, composição, geração da capa, ficheiro HD)`, `Execução do contrato (6.1.b)`],
+            [`Dados biométricos (gabarito facial calculado a partir das suas fotografias)`, `Agrupamento das fotografias por pessoa e etapa de «Casting» (hierarquização das pessoas)`, `Consentimento explícito (art. 9.2.a) — ver §5`],
+            [`Histórico de encomendas`, `Conta de cliente, apoio ao cliente, garantias legais`, `Execução do contrato / obrigação legal`],
+            [`Dados de faturação (nome, morada, NIF se fornecido, montante)`, `Emissão das faturas certificadas`, `Obrigação legal (6.1.c)`],
+            [`Provas de encomenda e de validação (versão das CGV aceite e registo temporal da aceitação, registo temporal do carregamento, registo temporal e versão da validação da maquete, identificador da transação Stripe)`, `Prova do consentimento, gestão de litígios e obrigações contabilísticas`, `Obrigação legal (6.1.c) e interesse legítimo (6.1.f)`],
+            [`Registos de ligação, endereço IP`, `Segurança técnica, prevenção de fraudes`, `Interesse legítimo (6.1.f)`],
+            [`E-mail (newsletter)`, `Marketing direto`, `Consentimento (caixa dedicada) — ou soft opt-in para cliente existente (ver §8)`],
+            [`Dados de sessão (carrinho)`, `Funcionamento do sítio`, `Necessidade técnica`],
+            [`Cookies / pixel de marketing (Meta)`, `Publicidade direcionada e medição publicitária`, `Consentimento (art. 6.1.a) — ver §8`],
+          ] },
+        ],
+      },
+      {
+        heading: `4. O tratamento automatizado das suas fotografias (transparência)`,
+        blocks: [
+          { kind: 'p', value: `Para compor o seu álbum, as suas fotografias são objeto de uma análise automatizada: triagem, classificação de qualidade, seleção e paginação. Uma capa ilustrada é gerada por IA num estilo próprio da marca.` },
+          { kind: 'p', value: `A base legal é a execução do contrato (art. 6.1.b) para estas operações, com exceção do agrupamento por rosto, que assenta no consentimento explícito (art. 9.º — ver §5).` },
+          { kind: 'p', value: `Esta composição não produz efeito jurídico nem efeito significativo sobre si na aceção do art. 22.º do RGPD: existe controlo humano e o cliente valida a maquete final.` },
+          { kind: 'p', value: `Conformidade Regulamento da IA (Reg. (UE) 2024/1689): o motor não é, à data, um sistema de risco elevado; aplica uma categorização biométrica sujeita a uma obrigação de transparência, satisfeita pela presente informação.` },
+          { kind: 'p', value: `Sem reutilização das suas fotografias para outros fins (marketing, treino de IA, portefólio) sem o seu consentimento separado, explícito e específico.` },
+        ],
+      },
+      {
+        heading: `5. Dados biométricos — reconhecimento dos rostos`,
+        blocks: [
+          { kind: 'p', value: `5.1 O que fazemos. Se consentir, a Bellajour calcula a partir das suas fotografias um gabarito facial que permite agrupar as fotografias por pessoa. Este agrupamento alimenta a etapa de «Casting» (hierarquização e destaque das pessoas-chave no álbum). Trata-se de um tratamento de dados biométricos na aceção do artigo 9.º do RGPD.` },
+          { kind: 'p', value: `5.2 Base legal: o seu consentimento explícito (art. 9.2.a), recolhido antes da análise através de uma caixa de seleção dedicada, distinta das CGV e da validação da maquete.` },
+          { kind: 'p', value: `5.3 Carácter facultativo. Este consentimento é livre. Se o recusar, o seu álbum é composto normalmente, sem a etapa de Casting; nenhuma outra funcionalidade é degradada. Pode retirar o seu consentimento a qualquer momento, sem efeito sobre a licitude do tratamento já efetuado.` },
+          { kind: 'p', value: `5.4 Tratamento realizado exclusivamente na União Europeia. O reconhecimento dos rostos é efetuado através do serviço Amazon Web Services (AWS) Rekognition, na região da UE na Irlanda (eu-west-1). O cálculo do gabarito facial e o seu tratamento têm lugar integralmente na União Europeia: não ocorre qualquer transferência dos seus dados biométricos para fora da UE.` },
+          { kind: 'p', value: `5.5 Duração — eliminação na composição. O gabarito facial é conservado num espaço de tratamento temporário, eliminado assim que a composição do seu álbum estiver concluída. O gabarito não é conservado para além disso e nenhuma base de gabaritos ou de identidades é constituída ou reutilizada de uma encomenda para outra.` },
+          { kind: 'p', value: `5.6 Sem identificação nominativa. A Bellajour não associa qualquer identidade civil aos rostos; o agrupamento é puramente técnico e interno à sua encomenda.` },
+        ],
+      },
+      {
+        heading: `6. Fotografias potencialmente «reveladoras» e fotografias de crianças`,
+        blocks: [
+          { kind: 'p', value: `6.1 Uma fotografia pode revelar indiretamente uma origem, convicções, um estado de saúde ou uma orientação. Fora do reconhecimento dos rostos (§5), a Bellajour trata estes conteúdos com base na execução do contrato (art. 6.1.b), sem explorar nem deduzir qualquer atributo sensível, e aplica medidas reforçadas de minimização e de acesso restrito.` },
+          { kind: 'p', value: `6.2 Quanto às fotografias de crianças fornecidas por um adulto: o cliente garante dispor da autoridade parental ou das autorizações necessárias; a Bellajour aplica medidas de segurança e prazos de conservação reforçados (§7).` },
+          { kind: 'p', value: `6.3 Menores. O serviço não se destina a pessoas com menos de 18 anos; não é aberta qualquer conta ou encomenda a menor (CGV, art. 2.º).` },
+        ],
+      },
+      {
+        heading: `7. Durante quanto tempo conservamos os seus dados`,
+        blocks: [
+          { kind: 'p', value: `Os prazos abaixo distinguem as obrigações legais portuguesas dos prazos de conservação documentados pela Bellajour (RGPD, art. 5.1.e).` },
+          { kind: 'table', columns: [`Dado`, `Conservação`], rows: [
+            [`Fotografias carregadas + ficheiro HD`, `Eliminados 90 dias após a entrega (salvo opção futura de salvaguarda a longo prazo, que seria objeto de consentimento separado)`],
+            [`Gabarito biométrico`, `Eliminado assim que o álbum estiver composto (ver §5.5)`],
+            [`Conta de cliente`, `Eliminação 3 anos após a última compra ou contacto`],
+            [`Encomendas, faturas e provas de validação`, `10 anos — obrigação contabilística e fiscal portuguesa (Código Comercial, art. 40.º; CIVA / SAF-T)`],
+            [`Dados de marketing (potenciais clientes)`, `3 anos após o último contacto, ou até à retirada do consentimento`],
+            [`Registos técnicos (logs)`, `12 meses`],
+          ] },
+        ],
+      },
+      {
+        heading: `8. Cookies e comunicações de marketing`,
+        blocks: [
+          { kind: 'p', value: `8.1 Cookies (Diretiva ePrivacy; Lei 41/2004). O sítio utiliza:` },
+          { kind: 'list', items: [
+            `cookies estritamente necessários (sessão, carrinho) — sem necessidade de consentimento, mas declarados;`,
+            `o pixel publicitário Meta (Meta Ads / Meta Pixel), cookie de marketing sujeito a consentimento prévio.`,
+          ] },
+          { kind: 'p', value: `O banner de consentimento permite aceitar, recusar ou personalizar com a mesma facilidade (sem dark patterns). O pixel Meta só é ativado após o seu consentimento. A prova da escolha (data, versão) é conservada e o consentimento é novamente solicitado periodicamente. Uma política de cookies detalhada está acessível através do banner.` },
+          { kind: 'p', value: `8.2 Partilha com a Meta. Quando consente, certos dados de navegação são transmitidos à Meta Platforms Ireland para fins de medição e de direcionamento publicitário; a Meta pode transferi-los para os Estados Unidos, transferência coberta pelo Data Privacy Framework (DPF). Para estas operações, a Bellajour e a Meta podem agir como responsáveis conjuntos nos limites definidos pela Meta.` },
+          { kind: 'p', value: `8.3 Newsletter. A inscrição na newsletter (gerida através da Brevo) assenta numa caixa de consentimento dedicada, não pré-selecionada; para um cliente existente, é possível um soft opt-in (Lei 41/2004, art. 13.º, n.º 2). Cada mensagem inclui uma ligação de cancelamento de subscrição simples.` },
+        ],
+      },
+      {
+        heading: `9. A quem os seus dados são transmitidos (subcontratantes e transferências)`,
+        blocks: [
+          { kind: 'p', value: `Cada subcontratante está vinculado por um contrato conforme ao art. 28.º do RGPD (DPA).` },
+          { kind: 'table', columns: [`Subcontratante`, `Função`, `Localização`, `Transferência fora da UE`], rows: [
+            [`AWS (Amazon Web Services)`, `Reconhecimento dos rostos (biometria)`, `UE — Irlanda (eu-west-1)`, `Não`],
+            [`Stripe`, `Pagamento (certificado PCI-DSS)`, `UE / Estados Unidos`, `Sim — DPF / CCT`],
+            [`InvoiceXpress`, `Faturação certificada`, `UE (Portugal)`, `Não`],
+            [`Supabase`, `Base de dados / registos de prova`, `União Europeia`, `Não`],
+            [`Cloudflare R2`, `Armazenamento das fotografias e do ficheiro HD`, `UE (restrição de jurisdição UE); Cloudflare, Inc. estabelecida nos Estados Unidos`, `Enquadrado DPF / CCT por precaução`],
+            [`Vercel`, `Alojamento do sítio`, `Estados Unidos`, `Sim — DPF / CCT`],
+            [`Brevo`, `E-mails transacionais e newsletter`, `UE (França)`, `Não`],
+            [`Impressor / subcontratante de produção`, `Produção física dos álbuns`, `União Europeia`, `Não`],
+            [`OpenAI`, `Análise e preparação da capa ilustrada`, `Estados Unidos`, `Sim — CCT`],
+            [`Fal.ai`, `Geração da capa ilustrada`, `Estados Unidos`, `Sim — CCT`],
+            [`Meta (Pixel / Ads)`, `Publicidade e medição`, `Meta Ireland / Estados Unidos`, `Sim — DPF (sob consentimento, §8)`],
+          ] },
+          { kind: 'p', value: `Transferências fora da UE. As transferências para os Estados Unidos (Stripe, Vercel, OpenAI, Fal.ai, Meta e, se aplicável, Cloudflare) estão cobertas pela decisão de adequação EU-US Data Privacy Framework (DPF) quando o prestador está certificado e, na sua falta ou em complemento, pelas Cláusulas Contratuais-Tipo (CCT) da Comissão Europeia. Os seus dados biométricos constituem exceção: são tratados integralmente na UE (AWS, Irlanda) e não são objeto de qualquer transferência para fora da UE (§5).` },
+          { kind: 'p', value: `A Bellajour não vende os seus dados.` },
+        ],
+      },
+      {
+        heading: `10. Segurança (art. 32.º do RGPD)`,
+        blocks: [
+          { kind: 'p', value: `Cifragem em trânsito e em repouso, acesso restrito às fotografias e aos conteúdos, autenticação forte interna, política de habilitação de acessos, registo dos acessos e procedimento de notificação de violações de dados (CNPD no prazo de 72 horas; titulares dos dados em caso de risco elevado).` },
+        ],
+      },
+      {
+        heading: `11. Os seus direitos`,
+        blocks: [
+          { kind: 'p', value: `Dispõe dos direitos de acesso, retificação, apagamento, limitação, oposição (imediata para o marketing direto), portabilidade e retirada do consentimento a qualquer momento (nomeadamente quanto ao reconhecimento dos rostos e à newsletter).` },
+          { kind: 'p', value: `Exercício: contact@bellajour.com (pode ser solicitada uma verificação de identidade); resposta no prazo de um mês (prorrogável até três). Quanto a menores fotografados, os direitos são exercidos pelos representantes legais.` },
+          { kind: 'p', value: `Tem o direito de apresentar uma reclamação junto da CNPD (Comissão Nacional de Proteção de Dados, www.cnpd.pt).` },
+        ],
+      },
+      {
+        heading: `12. Documentação interna e evolução`,
+        blocks: [
+          { kind: 'p', value: `A Bellajour mantém um registo das atividades de tratamento (art. 30.º) e realiza uma avaliação de impacto (AIPD/DPIA, art. 35.º) sobre o tratamento biométrico das fotografias.` },
+          { kind: 'p', value: `Qualquer evolução futura — nomeadamente uma «memória dos rostos» (conservação dos gabaritos de uma encomenda para outra, para conforto da conta) ou uma aplicação móvel — será objeto de informação atualizada e, se for caso disso, de um novo consentimento específico antes da sua implementação.` },
+          { kind: 'p', value: `O serviço é proposto no território da União Europeia; qualquer extensão fora da UE dará lugar a uma atualização da presente política.` },
         ],
       },
     ],

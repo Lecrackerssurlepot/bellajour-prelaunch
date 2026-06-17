@@ -2,7 +2,9 @@ import type { LocalizedDoc } from '../types'
 
 /* POLITIQUE DE REMBOURSEMENT ET RETOURS — transcription fidèle de
    legal-source/remboursement/FR/…docx (v3.0).
-   EN / PT : sources présentes dans legal-source/remboursement/{EN,PT} — à brancher plus tard. */
+   PT : transcription fidèle de legal-source/remboursement/PT/…docx (clé `pt`
+   ci-dessous), parité structurelle 1:1 avec le FR.
+   EN : source présente dans legal-source/remboursement/EN — à brancher plus tard. */
 
 export const REMBOURSEMENT: LocalizedDoc = {
   fr: {
@@ -101,6 +103,107 @@ export const REMBOURSEMENT: LocalizedDoc = {
             `Livro de Reclamações Eletrónico : https://www.livroreclamacoes.pt (lien en pied de page du site).`,
             `Entités de RAL portugaises (Lei 144/2015) : Centro de Arbitragem de Conflitos de Consumo de Lisboa (www.centroarbitragemlisboa.pt) — centre compétent pour le siège de Bellajour — ou, pour les zones non couvertes par un centre régional, le CNIACC (www.cniacc.pt). L'information est obligatoire ; l'adhésion de Bellajour est facultative.`,
             `Tribunaux : le consommateur peut saisir les tribunaux de son pays de résidence (droit portugais applicable, sous réserve des dispositions impératives plus protectrices — Règlement Rome I, article 6).`,
+          ] },
+        ],
+      },
+    ],
+  },
+  pt: {
+    title: `Política de reembolso e devoluções`,
+    lastUpdated: `Versão 3.0 — Em vigor em 13/06/2026`,
+    intro: [
+      `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
+      `Texto de referência (versão portuguesa), juridicamente prevalecente. As traduções para francês e inglês são meramente informativas. A ler em conjunto com as Condições Gerais de Venda (artigos 5.º, 8.º e 9.º) e a Política de Privacidade.`,
+    ],
+    sections: [
+      {
+        heading: `1. Espírito desta política`,
+        blocks: [
+          { kind: 'p', value: `Cada álbum Bellajour é um livro único, confecionado de acordo com as suas especificações. Esta política explica, com transparência, o que é reembolsável, o que não é, e como tratamos qualquer problema. Não reduz as suas garantias legais (ver §5), que são irrenunciáveis.` },
+        ],
+      },
+      {
+        heading: `2. Direito de livre resolução: porque não se aplica`,
+        blocks: [
+          { kind: 'p', value: `Nos termos do artigo 17.º, n.º 1, alínea c), do DL 24/2014 (que transpõe a Diretiva 2011/83/UE), o direito de livre resolução de 14 dias não se aplica aos álbuns Bellajour, que são bens manifestamente personalizados, criados a partir das suas fotografias e de uma capa gerada apenas para si.` },
+          { kind: 'p', value: `A sua encomenda torna-se definitiva e não resolúvel no momento exato da validação da maquete (caixa de seleção dedicada + registo de data e hora). O cliente é informado desta exceção, de forma clara e legível, antes do pagamento do adiantamento e antes da validação da maquete.` },
+        ],
+      },
+      {
+        heading: `3. Reembolso do adiantamento (pré-venda)`,
+        blocks: [
+          { kind: 'p', value: `O momento em que solicita a interrupção da sua encomenda determina o reembolso:` },
+          { kind: 'table', columns: [`Etapa`, `Reembolso`], rows: [
+            [`Antes da validação da maquete (independentemente do estado de execução, incluindo o carregamento das fotografias)`, `100 % do adiantamento efetivamente pago — sem retenção, sem custos e sem penalização («reserva sem risco»)`],
+            [`Após a validação da maquete`, `Encomenda definitiva: sem reembolso a este título, sem prejuízo das garantias legais (§5) e da impossibilidade de produzir/entregar (§7)`],
+          ] },
+          { kind: 'p', value: `Reembolso = montante efetivamente pago. O crédito (Instants) de 30 € é uma vantagem comercial; apenas o montante pago é reembolsado:` },
+          { kind: 'list', items: [
+            `Fundador: pagou 25 € → 25 € reembolsados; a bonificação de 5 €, nunca desembolsada, não é reembolsável.`,
+            `Standard: pagou 30 € → 30 € reembolsados.`,
+            `Código influenciador: pagou 25 € → 25 € reembolsados; a bonificação de 5 € não é reembolsável.`,
+          ] },
+          { kind: 'p', value: `O crédito (Instants) atribuído (30 €) é anulado em caso de reembolso em numerário.` },
+        ],
+      },
+      {
+        heading: `4. Defeitos: o que reparamos ou reembolsamos`,
+        blocks: [
+          { kind: 'p', value: `Independentemente da exceção acima, assumimos qualquer defeito que nos seja imputável. O nosso meio prioritário de reposição da conformidade é a reimpressão.` },
+          { kind: 'table', columns: [`Situação`, `Compromisso`, `Prazo de comunicação`], rows: [
+            [`Álbum danificado no transporte`, `Reimpressão prioritária ou reembolso`, `7 dias após a receção, com fotografias`],
+            [`Álbum não conforme à maquete validada (erro de produção)`, `Reimpressão gratuita ou reembolso total`, `Até 30 dias`],
+            [`Capa não conforme à validada`, `Reimpressão ou reembolso`, `Até 30 dias`],
+            [`Qualidade de impressão manifestamente defeituosa (cores fora de tolerância, páginas em falta)`, `Reimpressão ou reembolso`, `Até 30 dias`],
+            [`Não entrega do ficheiro digital HD incluído`, `Entrega do ficheiro ou reembolso da parte correspondente`, `De imediato`],
+            [`Defeito menor (ligeira variação cromática dentro das tolerâncias anunciadas)`, `Gesto comercial possível — não é obrigação legal`, `—`],
+          ] },
+          { kind: 'p', value: `Importante — ecrã ≠ impressão. A variação cromática normal entre a exibição no ecrã (RGB retroiluminado) e a impressão em papel (CMYK), dentro das tolerâncias usuais, não constitui defeito (CGV artigo 6.º).` },
+        ],
+      },
+      {
+        heading: `5. As suas garantias legais (sempre aplicáveis)`,
+        blocks: [
+          { kind: 'p', value: `Nos termos do Decreto-Lei n.º 84/2021:` },
+          { kind: 'list', items: [
+            `Garantia de conformidade: 3 anos a contar da entrega (artigo 12.º).`,
+            `Presunção de não conformidade: 2 anos — durante 24 meses cabe à Bellajour provar a conformidade (artigo 13.º).`,
+            `Direito de rejeição: 30 dias — pode exigir diretamente a substituição ou a resolução, sem condição; este prazo conta-se da entrega ou da descoberta de um defeito não aparente.`,
+            `Hierarquia dos meios: primeiro, reparação ou substituição (reimpressão); subsidiariamente, redução do preço ou resolução, se a reimpressão for impossível, desproporcionada, falhar ou se repetir.`,
+          ] },
+          { kind: 'p', value: `Nenhuma cláusula desta política pode excluir ou reduzir estas garantias.` },
+        ],
+      },
+      {
+        heading: `6. Procedimento — como nos contactar`,
+        blocks: [
+          { kind: 'list', items: [
+            `Escreva para contact@bellajour.com com o seu número de encomenda e fotografias do defeito.`,
+            `Respondemos no prazo de 5 dias úteis.`,
+            `Solução: reimpressão prioritária ou reembolso (parcial ou total consoante a extensão do defeito).`,
+            `Se for necessária uma devolução física (defeito grave), os custos de devolução são da nossa responsabilidade.`,
+            `Reembolsos efetuados em numerário no meio de pagamento original, no prazo máximo de 14 dias após a aceitação da reclamação (artigo 12.º do DL 24/2014). No plano contabilístico, o reembolso de um adiantamento já faturado dá lugar a uma nota de crédito que anula a fatura; esta nota de crédito é um documento contabilístico e não um vale que substitua o reembolso em numerário.`,
+            `Para evitar desperdício, um álbum personalizado não conforme geralmente não tem de ser devolvido: privilegia-se a reimpressão.`,
+          ] },
+          { kind: 'p', value: `Conservação de provas. A Bellajour conserva durante 10 anos (Código Comercial, artigo 40.º) os elementos de prova da encomenda e da validação (versão das CGV aceite, registos temporais de aceitação, carregamento e validação da maquete, identificador da transação Stripe).` },
+        ],
+      },
+      {
+        heading: `7. Bónus adquiridos, créditos e impossibilidade de produzir`,
+        blocks: [
+          { kind: 'p', value: `7.1 Elementos sempre adquiridos. Mesmo em caso de litígio ou anulação relativa ao álbum físico, mantêm-se definitivamente adquiridos: os Instants creditados, a ilustração de capa já entregue e o ficheiro digital HD já entregue (incluído em todas as encomendas). Apenas o álbum físico não produzido pode ser objeto de reembolso.` },
+          { kind: 'p', value: `7.2 Páginas de indicação (apadrinhamento). As páginas oferecidas por indicação não são reembolsáveis em dinheiro; são utilizáveis em encomendas futuras nas condições do programa. São anuladas se o adiantamento associado for reembolsado (CGV art. 5.6).` },
+          { kind: 'p', value: `7.3 Impossibilidade de produzir ou entregar. Se a Bellajour não puder produzir ou entregar (falha interna, falha do impressor parceiro, força maior, cessação de atividade), qualquer montante pago é integralmente reembolsado em numerário, sem condição.` },
+        ],
+      },
+      {
+        heading: `8. Reclamações e resolução alternativa de litígios (RAL)`,
+        blocks: [
+          { kind: 'list', items: [
+            `Reclamação direta: contact@bellajour.com (resposta no prazo de 5 dias úteis).`,
+            `Livro de Reclamações Eletrónico: https://www.livroreclamacoes.pt (ligação no rodapé do sítio).`,
+            `Entidades de RAL portuguesas (Lei 144/2015): Centro de Arbitragem de Conflitos de Consumo de Lisboa (www.centroarbitragemlisboa.pt) — centro competente para a sede da Bellajour — ou, para as zonas não abrangidas por um centro regional, o CNIACC (www.cniacc.pt). A informação é obrigatória; a adesão da Bellajour é facultativa.`,
+            `Tribunais: o consumidor pode recorrer aos tribunais do seu país de residência (direito português aplicável, sem prejuízo das disposições imperativas mais protetoras — Regulamento Roma I, artigo 6.º).`,
           ] },
         ],
       },
