@@ -6,7 +6,8 @@ import type { LocalizedDoc } from '../types'
    PT : transcription fidèle de legal-source/confidentialite/PT/…docx (clé `pt`
    ci-dessous). Normalisations source→gabarit FR : §1 et §4, paragraphes sortis
    des listes pour coller au FR.
-   EN : source présente dans legal-source/confidentialite/EN — à brancher plus tard. */
+   EN : transcription fidèle de legal-source/confidentialite/EN/PRIVACY POLICY —
+   BELLAJOUR.docx (clé `en` ci-dessous ; mêmes normalisations §1/§4). */
 
 export const CONFIDENTIALITE: LocalizedDoc = {
   fr: {
@@ -289,6 +290,148 @@ export const CONFIDENTIALITE: LocalizedDoc = {
           { kind: 'p', value: `A Bellajour mantém um registo das atividades de tratamento (art. 30.º) e realiza uma avaliação de impacto (AIPD/DPIA, art. 35.º) sobre o tratamento biométrico das fotografias.` },
           { kind: 'p', value: `Qualquer evolução futura — nomeadamente uma «memória dos rostos» (conservação dos gabaritos de uma encomenda para outra, para conforto da conta) ou uma aplicação móvel — será objeto de informação atualizada e, se for caso disso, de um novo consentimento específico antes da sua implementação.` },
           { kind: 'p', value: `O serviço é proposto no território da União Europeia; qualquer extensão fora da UE dará lugar a uma atualização da presente política.` },
+        ],
+      },
+    ],
+  },
+  en: {
+    title: `Privacy Policy`,
+    lastUpdated: `Version 3.1 — Effective 13/06/2026`,
+    intro: [
+      `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
+      `English translation for information only. The legally prevailing version is the Portuguese text; in the event of any discrepancy, the Portuguese text prevails. This policy complements the Terms and Conditions of Sale, to which it is linked (GDPR, Arts. 13 and 14).`,
+    ],
+    sections: [
+      {
+        heading: `1. Who is responsible for your data`,
+        blocks: [
+          { kind: 'p', value: `The data controller is MISTÉRIO HERMÉTICO, LDA (Bellajour brand), NIPC 519443284, with registered office at Beco de Santa Helena, 21A, 2.º, 1100-117 Lisbon, Portugal.` },
+          { kind: 'p', value: `Bellajour is the controller for all of its operations, including the processing of the photos you send us to produce your album: it is Bellajour that decides the purposes and means. Bellajour is not the customer's processor.` },
+          { kind: 'p', value: `Data protection contact: contact@bellajour.com.` },
+          { kind: 'p', value: `Data Protection Officer (DPO): appointing a DPO is not mandatory at launch (no large-scale processing within the meaning of Article 37 GDPR). Any request regarding your data is handled via contact@bellajour.com.` },
+        ],
+      },
+      {
+        heading: `2. Your responsibilities for the content you entrust to us`,
+        blocks: [
+          { kind: 'p', value: `When you upload photos, you warrant that you hold all necessary rights: image rights of the persons depicted, parental authority or authorisations for photographed minors, and intellectual property rights. For purely personal use, your photos are in principle covered by the household exemption (Art. 2.2.c GDPR); but from the moment they are transmitted to Bellajour for production, it is Bellajour that processes the data and is accountable for it.` },
+        ],
+      },
+      {
+        heading: `3. What data, for what purposes, on what legal basis`,
+        blocks: [
+          { kind: 'table', columns: [`Data category`, `Purpose`, `Legal basis (GDPR)`], rows: [
+            [`Name, email, postal address`, `Order, delivery, invoicing, customer service`, `Performance of the contract (Art. 6.1.b)`],
+            [`Payment data (via Stripe)`, `Payment processing, fraud prevention`, `Performance of the contract / legal obligation (6.1.b / 6.1.c)`],
+            [`Uploaded photos and content`, `Production of the album to your specifications (sorting, selection, composition, cover generation, HD file)`, `Performance of the contract (6.1.b)`],
+            [`Biometric data (facial template computed from your photos)`, `Grouping photos by person and "Casting" step (ranking of people)`, `Explicit consent (Art. 9.2.a) — see §5`],
+            [`Order history`, `Customer account, customer service, legal guarantees`, `Performance of the contract / legal obligation`],
+            [`Invoicing data (name, address, tax number if provided, amount)`, `Issuance of certified invoices`, `Legal obligation (6.1.c)`],
+            [`Order and validation evidence (version of the T&Cs accepted and timestamp of acceptance, timestamp of upload, timestamp and version of proof validation, Stripe transaction identifier)`, `Proof of consent, dispute management and accounting obligations`, `Legal obligation (6.1.c) and legitimate interest (6.1.f)`],
+            [`Connection logs, IP address`, `Technical security, fraud prevention`, `Legitimate interest (6.1.f)`],
+            [`Email (newsletter)`, `Marketing`, `Consent (dedicated checkbox) — or soft opt-in for an existing customer (see §8)`],
+            [`Session data (cart)`, `Operation of the site`, `Technical necessity`],
+            [`Marketing cookies / pixel (Meta)`, `Targeted advertising and ad measurement`, `Consent (Art. 6.1.a) — see §8`],
+          ] },
+        ],
+      },
+      {
+        heading: `4. The automated processing of your photos (transparency)`,
+        blocks: [
+          { kind: 'p', value: `To compose your album, your photos undergo automated analysis: sorting, quality scoring, selection and layout. An illustrated cover is AI-generated in a style specific to the brand.` },
+          { kind: 'p', value: `The legal basis is performance of the contract (Art. 6.1.b) for these operations, except for grouping by face, which relies on explicit consent (Art. 9 — see §5).` },
+          { kind: 'p', value: `This composition does not produce legal or significant effects on you within the meaning of Art. 22 GDPR: there is human control and you validate the final proof.` },
+          { kind: 'p', value: `AI Act compliance (Reg. (EU) 2024/1689): the engine is not, to date, a high-risk system; it carries out biometric categorisation subject to a transparency obligation, met by this information.` },
+          { kind: 'p', value: `No reuse of your photos for other purposes (marketing, AI training, portfolio) without your separate, explicit and specific consent.` },
+        ],
+      },
+      {
+        heading: `5. Biometric data — facial recognition`,
+        blocks: [
+          { kind: 'p', value: `5.1 What we do. If you consent, Bellajour computes from your photos a facial template that allows photos to be grouped by person. This grouping feeds the "Casting" step (ranking and highlighting of key people in the album). This is processing of biometric data within the meaning of Article 9 GDPR.` },
+          { kind: 'p', value: `5.2 Legal basis: your explicit consent (Art. 9.2.a), collected before the analysis via a dedicated checkbox, separate from the T&Cs and from proof validation.` },
+          { kind: 'p', value: `5.3 Optional. This consent is freely given. If you refuse it, your album is composed normally, without the Casting step; no other feature is degraded. You may withdraw your consent at any time, without affecting the lawfulness of processing already carried out.` },
+          { kind: 'p', value: `5.4 Processing carried out exclusively within the European Union. Facial recognition is performed via the Amazon Web Services (AWS) Rekognition service, in the EU Ireland region (eu-west-1). The computation of the facial template and its processing take place entirely within the European Union: no transfer of your biometric data takes place outside the EU.` },
+          { kind: 'p', value: `5.5 Retention — deletion upon composition. The facial template is kept in a temporary processing space, deleted as soon as the composition of your album is complete. The template is not retained beyond that, and no database of templates or identities is built or reused from one order to another.` },
+          { kind: 'p', value: `5.6 No nominative identification. Bellajour does not link any civil identity to faces; the grouping is purely technical and internal to your order.` },
+        ],
+      },
+      {
+        heading: `6. Potentially "revealing" photos and photos of children`,
+        blocks: [
+          { kind: 'p', value: `6.1 A photo may indirectly reveal an origin, beliefs, a health condition or an orientation. Outside facial recognition (§5), Bellajour processes this content on the basis of performance of the contract (Art. 6.1.b), without exploiting or inferring any sensitive attribute, and applies enhanced minimisation and restricted-access measures.` },
+          { kind: 'p', value: `6.2 For photos of children provided by an adult: the customer warrants that they hold parental authority or the necessary authorisations; Bellajour applies enhanced security measures and retention periods (§7).` },
+          { kind: 'p', value: `6.3 Minors. The service is not intended for persons under 18; no account or order is opened for a minor (T&Cs, Art. 2).` },
+        ],
+      },
+      {
+        heading: `7. How long we keep your data`,
+        blocks: [
+          { kind: 'p', value: `The periods below distinguish Portuguese legal obligations from retention choices documented by Bellajour (GDPR, Art. 5.1.e).` },
+          { kind: 'table', columns: [`Data`, `Retention`], rows: [
+            [`Uploaded photos + HD file`, `Deleted 90 days after delivery (save for a future long-term backup option, which would be subject to separate consent)`],
+            [`Biometric template`, `Deleted as soon as the album is composed (see §5.5)`],
+            [`Customer account`, `Deletion 3 years after the last purchase or contact`],
+            [`Orders, invoices and validation evidence`, `10 years — Portuguese accounting and tax obligation (Commercial Code, Art. 40; CIVA / SAF-T)`],
+            [`Marketing data (prospects)`, `3 years after the last contact, or until consent is withdrawn`],
+            [`Technical logs`, `12 months`],
+          ] },
+        ],
+      },
+      {
+        heading: `8. Cookies and marketing communications`,
+        blocks: [
+          { kind: 'p', value: `8.1 Cookies (ePrivacy Directive; Law 41/2004). The site uses:` },
+          { kind: 'list', items: [
+            `strictly necessary cookies (session, cart) — no consent required, but declared;`,
+            `the Meta advertising pixel (Meta Ads / Meta Pixel), a marketing cookie subject to prior consent.`,
+          ] },
+          { kind: 'p', value: `The consent banner allows you to accept, refuse or customise with the same ease (no dark patterns). The Meta pixel is activated only after your consent. Proof of the choice (date, version) is kept and consent is re-requested periodically. A detailed cookie policy is accessible via the banner.` },
+          { kind: 'p', value: `8.2 Sharing with Meta. When you consent, certain browsing data is transmitted to Meta Platforms Ireland for ad measurement and targeting purposes; Meta may transfer it to the United States, a transfer covered by the Data Privacy Framework (DPF). For these operations, Bellajour and Meta may act as joint controllers within the limits defined by Meta.` },
+          { kind: 'p', value: `8.3 Newsletter. Subscription to the newsletter (managed via Brevo) relies on a dedicated consent checkbox, not pre-ticked; for an existing customer, a soft opt-in is possible (Law 41/2004, Art. 13(2)). Each message includes a simple unsubscribe link.` },
+        ],
+      },
+      {
+        heading: `9. To whom your data is transmitted (processors and transfers)`,
+        blocks: [
+          { kind: 'p', value: `Each processor is bound by a contract compliant with Art. 28 GDPR (DPA).` },
+          { kind: 'table', columns: [`Processor`, `Role`, `Location`, `Transfer outside the EU`], rows: [
+            [`AWS (Amazon Web Services)`, `Facial recognition (biometrics)`, `EU — Ireland (eu-west-1)`, `No`],
+            [`Stripe`, `Payment (PCI-DSS certified)`, `EU / United States`, `Yes — DPF / SCC`],
+            [`InvoiceXpress`, `Certified invoicing`, `EU (Portugal)`, `No`],
+            [`Supabase`, `Database / evidence records`, `European Union`, `No`],
+            [`Cloudflare R2`, `Storage of photos and HD file`, `EU (EU jurisdiction restriction); Cloudflare, Inc. established in the United States`, `Framed by DPF / SCC as a precaution`],
+            [`Vercel`, `Website hosting`, `United States`, `Yes — DPF / SCC`],
+            [`Brevo`, `Transactional emails and newsletter`, `EU (France)`, `No`],
+            [`Printer / production subcontractor`, `Physical production of the albums`, `European Union`, `No`],
+            [`OpenAI`, `Analysis and preparation of the illustrated cover`, `United States`, `Yes — SCC`],
+            [`Fal.ai`, `Generation of the illustrated cover`, `United States`, `Yes — SCC`],
+            [`Meta (Pixel / Ads)`, `Advertising and measurement`, `Meta Ireland / United States`, `Yes — DPF (subject to consent, §8)`],
+          ] },
+          { kind: 'p', value: `Transfers outside the EU. Transfers to the United States (Stripe, Vercel, OpenAI, Fal.ai, Meta, and where applicable Cloudflare) are covered by the EU-US Data Privacy Framework (DPF) adequacy decision where the provider is certified and, failing that or in addition, by the European Commission's Standard Contractual Clauses (SCC). Your biometric data is an exception: it is processed entirely within the EU (AWS, Ireland) and is not subject to any transfer outside the EU (§5).` },
+          { kind: 'p', value: `Bellajour does not sell your data.` },
+        ],
+      },
+      {
+        heading: `10. Security (Art. 32 GDPR)`,
+        blocks: [
+          { kind: 'p', value: `Encryption in transit and at rest, restricted access to photos and content, internal strong authentication, access authorisation policy, access logging and a data breach notification procedure (CNPD within 72 hours; data subjects in the event of high risk).` },
+        ],
+      },
+      {
+        heading: `11. Your rights`,
+        blocks: [
+          { kind: 'p', value: `You have the rights of access, rectification, erasure, restriction, objection (immediate for direct marketing), portability and withdrawal of consent at any time (in particular for facial recognition and the newsletter).` },
+          { kind: 'p', value: `Exercise: contact@bellajour.com (an identity check may be requested); response within one month (extendable up to three). For photographed minors, the rights are exercised by the legal representatives.` },
+          { kind: 'p', value: `You have the right to lodge a complaint with the CNPD (Comissão Nacional de Proteção de Dados, www.cnpd.pt).` },
+        ],
+      },
+      {
+        heading: `12. Internal documentation and evolution`,
+        blocks: [
+          { kind: 'p', value: `Bellajour maintains a record of processing activities (Art. 30) and carries out a data protection impact assessment (DPIA, Art. 35) on the biometric processing of photos.` },
+          { kind: 'p', value: `Any future evolution — in particular a "face memory" (retention of templates from one order to another for account convenience) or a mobile application — will be the subject of updated information and, where applicable, a new specific consent before its implementation.` },
+          { kind: 'p', value: `The service is offered within the European Union; any extension outside the EU will give rise to an update of this policy.` },
         ],
       },
     ],

@@ -11,7 +11,10 @@ import type { LocalizedDoc } from '../types'
      FR (lien interne #fiche-produit, annexe reproduite en page).
    - art. 4.1 : la source PT contient une phrase dupliquée (copier-coller) ;
      transcrite verbatim, à dédupliquer après validation juridique.
-   EN : source présente dans legal-source/cgv/EN — à brancher plus tard. */
+   EN : transcription fidèle de legal-source/cgv/EN/{TERMS AND CONDITIONS OF SALE,
+   PRODUCT SHEET}.docx (clé `en` ci-dessous). Mêmes deux points qu'en PT :
+   - art. 3.1 : source EN « [TO BE COMPLETED: PDF link] » → aligné FR/PT (#fiche-produit).
+   - art. 4.1 : phrase dupliquée dans la source EN → dédupliquée comme le PT (commit a8efedb). */
 
 export const CGV: LocalizedDoc = {
   fr: {
@@ -403,6 +406,203 @@ export const CGV: LocalizedDoc = {
             [`80 páginas`, `120 €`],
             [`100 páginas`, `146 €`],
             [`150 páginas`, `211 €`],
+          ] },
+        ],
+      },
+    ],
+  },
+  en: {
+    title: `Terms and Conditions of Sale`,
+    lastUpdated: `Version 2.5 — Effective 13/06/2026`,
+    intro: [
+      `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
+      `English translation for information only. The legally prevailing version is the Portuguese text; in the event of any discrepancy, the Portuguese text prevails.`,
+    ],
+    sections: [
+      {
+        heading: `Preamble — Who we are`,
+        blocks: [
+          { kind: 'p', value: `Bellajour is a brand operated by MISTÉRIO HERMÉTICO, LDA, a private limited company (sociedade por quotas) under Portuguese law, with a fully paid-up share capital of €1,000, registered with the Commercial Registry of Odivelas under tax number (NIPC) 519443284, with registered office at Beco de Santa Helena, 21A, 2.º, 1100-117 Lisbon (Santa Maria Maior parish), VAT identification number PT519443284 (hereinafter "Bellajour", "we"). Contact: contact@bellajour.com.` },
+          { kind: 'p', value: `Bellajour describes itself as a publishing house of memories: we do not print a photo book, we edit your story. Motto: "Live, we compose." Each album is a unique bound book, with an illustrated cover created specifically for you and a layout composed solely for your memories. This bespoke nature is central to these terms and underpins the exception to the right of withdrawal (see Article 8).` },
+        ],
+      },
+      {
+        heading: `Article 1 — Subject matter and scope`,
+        blocks: [
+          { kind: 'p', value: `1.1 These Terms and Conditions of Sale ("Terms") govern any order placed by a consumer on the website bellajour.fr and Bellajour's future application.` },
+          { kind: 'p', value: `1.2 They apply to the sale of highly personalised photo albums and their components: the bound physical album, the bespoke illustrated cover, the layout composed by our algorithmic engine under human control, and the high-definition digital file ("HD digital version"), included with every order.` },
+          { kind: 'p', value: `1.3 The internal points system "Instants" is governed by these Terms and, where applicable, by specific conditions displayed on the website.` },
+          { kind: 'p', value: `1.4 Any order implies full acceptance of the Terms in the version in force on the date of the order (see Article 13).` },
+          { kind: 'p', value: `Cross-reference: for the processing of your personal data and photographs, see our Privacy Policy (GDPR, Arts. 13–14), an integral part of the contractual relationship.` },
+        ],
+      },
+      {
+        heading: `Article 2 — Capacity and customer account`,
+        blocks: [
+          { kind: 'p', value: `2.1 Age. The customer declares that they are at least 18 years old (age of majority in Portugal) and have full legal capacity to contract. Any order placed by a minor is voidable (anulável, Article 125 of the Civil Code).` },
+          { kind: 'p', value: `2.2 The customer guarantees the accuracy of the information provided when creating their account and placing the order.` },
+        ],
+      },
+      {
+        heading: `Article 3 — Products, personalisation and automated processing of photos`,
+        blocks: [
+          {
+            kind: 'p',
+            value: [
+              `3.1 Description. The Bellajour album is a hardcover bound book, printed in high definition in A4 portrait format, comprising a unique illustrated cover (AI-generated), a layout composed by algorithm under human control, and an included HD digital version. The detailed technical specifications (format, pagination, paper, finishes) and the price list per page tier are set out in the `,
+              { text: `Product Sheet`, href: `#fiche-produit` },
+              `, a document annexed to these Terms and reproduced in the annex below. This document forms an integral part of the contract in the version in force on the date of the order (Art. 13).`,
+            ],
+          },
+          { kind: 'p', value: `3.2 Automated processing of photos. To compose your album, your photos undergo automated analysis: sorting, selection, quality scoring and layout. These steps do not rely on identifying individuals. A separate step — grouping photos by person, by means of facial recognition, which enables the "Casting" step (ranking and highlighting of key people) — constitutes processing of biometric data (Article 9 GDPR) subject to your explicit and separate consent, collected before the analysis. This consent is optional: in its absence, grouping by person and Casting are not carried out, and your album is composed from the other steps only. The terms of this consent, the option to refuse it, the general logic, the purpose and your rights are described in the Privacy Policy. This composition does not constitute a solely automated decision producing legal effects within the meaning of Article 22 GDPR, as the customer retains control by validating the final proof. Bellajour's engine is not, as at the date hereof, classified as a high-risk AI system within the meaning of Regulation (EU) 2024/1689 (AI Act); it does, however, carry out biometric categorisation subject to a transparency obligation, met by this information and by the Privacy Policy.` },
+          { kind: 'p', value: `3.3 Rights to the content. The customer warrants that they hold all rights to the photos submitted (image rights of the persons depicted, including parental authority for photographed minors; intellectual property rights). In the event of a third-party claim relating to the content provided, the customer indemnifies and holds Bellajour harmless from any consequence.` },
+        ],
+      },
+      {
+        heading: `Article 4 — Prices, VAT and invoicing`,
+        blocks: [
+          { kind: 'p', value: `4.1 Prices inclusive of all taxes. Prices are displayed in euros, inclusive of all taxes. The album price depends on the chosen pagination tier, according to the price list set out in the Product Sheet. The number of pages is defined bespoke.` },
+          { kind: 'p', value: `4.2 Transparency — no hidden costs. The tax-inclusive price displayed before validation is complete; no cost is added after validation of the order. Outside the pre-sale period, any shipping costs are clearly indicated before order validation. During the pre-sale, shipping is free of charge.` },
+          { kind: 'p', value: `4.3 VAT regime. Bellajour is registered under the standard VAT regime in Portugal. For consumer (B2C) sales:` },
+          { kind: 'list', items: [
+            `until the €10,000 annual threshold of intra-EU distance sales is exceeded, Portuguese VAT at the standard rate in force applies (23% in mainland Portugal; 22% in Madeira; 16% in the Azores);`,
+            `beyond that threshold, the VAT of the consumer's country of residence applies, declared by Bellajour via the One-Stop Shop (OSS-Union) scheme or, where applicable, by direct registration in the Member State concerned.`,
+          ] },
+          { kind: 'p', value: `The rate actually applied to each order appears on the invoice.` },
+          { kind: 'p', value: `4.4 Chargeability and invoicing of the deposit. VAT is chargeable upon receipt, including upon receipt of the deposit. Upon receipt of the deposit, an invoice is issued with the description "Deposit on order [no.]", for the amount actually paid. In the event of a refund, a credit note is issued (never a negative invoice). Documents are issued via invoicing software certified by the Tax Authority, with ATCUD and QR code.` },
+          { kind: 'p', value: `4.5 Manifest pricing error. An order at a manifestly incorrect price (gross display error) may be cancelled by Bellajour; the customer is informed and fully refunded.` },
+          { kind: 'p', value: `4.6 Omnibus rule. Where a price reduction is announced, the reference price displayed is the lowest applied during the previous 30 days (DL 109-G/2021).` },
+        ],
+      },
+      {
+        heading: `Article 5 — Order, pre-sale, deposit and credit (Instants)`,
+        blocks: [
+          { kind: 'p', value: `5.1 Formation of the contract. The order is concluded when the customer validates payment after accepting these Terms. A confirmation email summarises the order.` },
+          { kind: 'p', value: `5.2 Nature of the initial payment (deposit). The amount paid at reservation (Founder: €25; Standard: €30; Influencer code: €25) is a deposit — an advance partial payment credited against the total price. It does not constitute a sinal (earnest money) within the meaning of Articles 440 to 442 of the Civil Code: neither party may invoke it as a penalty, and its payment produces no double-restitution effect.` },
+          { kind: 'p', value: `5.3 Conversion into credit (Instants). As soon as it is received, the deposit is immediately converted into credit (Instants) posted to the customer's account linked to their email address, in the amount of €30 regardless of the offer. This €30 credit is a commercial benefit and not a payment: only the amount actually paid as a deposit (€25 or €30 depending on the offer) is collected and invoiced; the bonus portion (€5 on the Founder and influencer offers) constitutes a conditional commercial discount, never collected and not invoiced. This credit: (i) is personal and non-transferable; (ii) is not refundable in cash, except under the conditions set out in Articles 5.4 and 8.2; (iii) expires 12 months after it is granted; (iv) is credited against the price of the final order. Offers and codes cannot be combined with one another.` },
+          { kind: 'p', value: `5.4 Mandatory refund reserve (before the proof). By exception to the non-refundable nature of the credit, and in accordance with Articles 10 and 12 of DL 24/2014, a customer who expressly requests it before validating their proof obtains a cash refund of the deposit actually paid (see Article 8). This option ceases upon validation of the proof.` },
+          { kind: 'p', value: `5.5 Unfinalised deposit — expiry of the credit. If the customer never validates their proof, the credit remains usable until it expires (12 months). Bellajour sends an email reminder before the deadline. The 12-month period is suspended for any period during which the inability to use the credit is attributable to Bellajour (in particular a delay in making the proof available). On expiry, the unused credit is forfeited, with no amount remaining due by way of penalty, and without prejudice to the refund option under 5.4 exercised in due time.` },
+          { kind: 'p', value: `5.6 Offer schemes. The specific conditions of each offer — including the exact dates and times of opening and closing — appear on the relevant offer page; Bellajour retains a timestamped copy of the conditions of each offer (Article 8.6). The main offers are as follows:` },
+          { kind: 'list', items: [
+            `Founder offer (places #1 to #100): open from 13 June to 15 August 2026, limited to 100 places. Deposit of €25, converted into a €30 credit. Founders open the pre-sale two days before the Standard offer. Bonuses earned on proof validation: illustrated cover, 200 Instants and free shipping.`,
+            `Standard offer: open from 15 June to 15 August 2026, no quota. Deposit of €30, converted into a €30 credit. Bonus: 100 Instants and free shipping.`,
+            `Influencer code: open from 15 June to 15 August 2026. Deposit of €25, converted into a €30 credit (effective €5 discount). Any commission paid to the influencer is not borne by the customer.`,
+            `Referral: from 15 August 2026. The referral grants 5 free pages to the referrer and 3 free pages to the referred customer. These pages are placed on hold in the account from sign-up and are definitively earned once both deposits have been paid and are no longer refundable (i.e. after each party's proof has been validated). Until this condition is met, the pages remain on hold; they are cancelled if either of the two deposits is refunded.`,
+          ] },
+          { kind: 'p', value: `The HD digital file is included with all offers.` },
+        ],
+      },
+      {
+        heading: `Article 6 — Technical specifications of customer-provided content`,
+        blocks: [
+          { kind: 'p', value: `6.1 The customer provides photographs that comply with the displayed specifications (minimum resolution, accepted formats, trim margins) detailed in the Product Sheet. The album result is assessed against these specifications.` },
+          { kind: 'p', value: `6.2 The following do not constitute defects: (i) colour differences between on-screen display (backlit RGB) and paper printing (CMYK), within the normal tolerances of the process; (ii) output limitations attributable to a non-compliant source file (low resolution, compression, blur).` },
+          { kind: 'p', value: `6.3 The customer is solely responsible for the photographs they submit and warrants that they hold all rights to them (Article 3.3).` },
+        ],
+      },
+      {
+        heading: `Article 7 — Payment`,
+        blocks: [
+          { kind: 'p', value: `7.1 Provider. Payments are processed by Stripe, PCI-DSS certified. Bellajour stores no card data.` },
+          { kind: 'p', value: `7.2 Strong authentication (SCA / 3-D Secure 2). In accordance with PSD2, payment may require strong authentication with the customer's bank.` },
+          { kind: 'p', value: `7.3 Non-payment of the balance. In the event of failure to pay the balance after validation of the proof, Bellajour may suspend production and, after an unanswered reminder, terminate the order. In that case, the deposit is retained only to the extent of the costs actually and justifiably incurred (in particular the design of the validated proof), in a proportionate manner and without exceeding the amount of the deposit; any surplus is refunded. This provision is without prejudice to Article 8.` },
+          { kind: 'p', value: `7.4 Chargebacks. Any unfounded payment dispute (chargeback) relating to an order whose proof has been validated (definitive order — Article 8) may be contested by Bellajour with Stripe on the basis of these Terms and the timestamp of validation.` },
+        ],
+      },
+      {
+        heading: `Article 8 — Right of withdrawal and its exception`,
+        blocks: [
+          { kind: 'p', value: `8.1 Principle. For distance contracts, the consumer in principle has a right of withdrawal (direito de livre resolução) of 14 days, without reason (Article 10 of DL 24/2014).` },
+          { kind: 'p', value: `8.2 Before validation of the proof — full refund. As long as the customer has not validated their proof, the order is not definitive. Whatever the stage of progress (including uploading of photos), they may request a cash refund of the deposit actually paid, in full, with no deduction, no charge and no penalty, by exception to the non-refundable nature of the credit (5.3). The right of withdrawal is granted by Article 10 of DL 24/2014 and its effects (refund) are governed by Article 12 of the same decree-law. This option may be exercised as long as the proof has not been validated and the credit has not expired (Article 5.5); the earlier of these two dates prevails.` },
+          { kind: 'p', value: `8.3 Personalisation exception and its crystallisation. In accordance with Article 17(1)(c) of DL 24/2014 (transposing Directive 2011/83/EU), the right of withdrawal does not apply to goods made to the consumer's specifications or clearly personalised. For the Bellajour album, this exception takes effect at the precise moment the customer validates the proof, evidenced by a dedicated, timestamped checkbox by which the customer: (i) acknowledges that their album is made to their specifications; (ii) expressly acknowledges losing their right of withdrawal; (iii) requests the start of production. From this validation, the order is definitive and cannot be cancelled, and no further refund (cash or credit) is due on this basis, without prejudice to the legal guarantees (Article 9) and to Bellajour's default (Articles 8.7 and 12).` },
+          { kind: 'p', value: `8.4 Validated proof = contractual reference. The validated, timestamped proof constitutes the reference for the order. Any assessment of conformity of the delivered album is carried out by comparison with this validated proof, excluding any subjective expectation not reflected in the proof.` },
+          { kind: 'p', value: `8.5 Prior information. The loss of the right of withdrawal is brought to the customer's attention clearly and legibly, in a separate box, from the offer page and in the summary preceding the "Order with obligation to pay" button, in accordance with Article 4(1)(n) of DL 24/2014. Without prior information, the exception is not enforceable.` },
+          { kind: 'p', value: `8.6 Evidence. Bellajour retains, for 10 years (Commercial Code, Article 40), the evidence: version of the Terms accepted and timestamp of acceptance at deposit, timestamp of upload, timestamp and version of proof validation, and Stripe transaction identifier.` },
+          { kind: 'p', value: `8.7 Amount and Bellajour's default. The refund covers the amount actually paid (Founder €25; influencer €25); bonuses never disbursed (€5) are not refundable. If Bellajour cannot produce or deliver (internal failure, failure of the partner printer, force majeure, cessation of business), any amount paid is refunded in full, in cash, to the original means of payment, no later than 14 days after acceptance of the request or finding of the default (Article 12 of DL 24/2014). For accounting purposes, this refund gives rise to the issuance of a credit note cancelling the deposit invoice; the credit note is an accounting document and not a method of refund replacing the cash payment.` },
+          { kind: 'p', value: `8.8 Versioning. The version of these Terms enforceable against the customer is the one they accepted at the order; for Founder pre-sales, the one accepted at payment of the deposit. Any subsequent amendment has no retroactive effect on their order.` },
+        ],
+      },
+      {
+        heading: `Article 9 — Legal guarantees`,
+        blocks: [
+          { kind: 'p', value: `9.1 Conformity guarantee — 3 years (DL no. 84/2021, Article 12(1)), from delivery.` },
+          { kind: 'p', value: `9.2 Presumption — 2 years (Article 13): for 24 months, it is for Bellajour to prove conformity.` },
+          { kind: 'p', value: `9.3 Right of rejeição — 30 days: immediate replacement or termination, without condition. This period runs from delivery or, for a defect not apparent on receipt, from the date on which it is or should reasonably have been discovered (DL 84/2021).` },
+          { kind: 'p', value: `9.4 Hierarchy of remedies. In the event of non-conformity, the customer is entitled, first, to restoration of conformity by repair or replacement (reprint); subsidiarily, to a price reduction or termination, where the reprint is impossible or disproportionate, or where it fails, recurs or is not carried out within a reasonable time. Time to restore conformity: 30 days, save particular complexity.` },
+          { kind: 'p', value: `9.5 Non-waiver: any clause to the contrary is deemed unwritten.` },
+          { kind: 'p', value: `9.6 The guarantees apply independently of the exception to the right of withdrawal (Article 8).` },
+        ],
+      },
+      {
+        heading: `Article 10 — Delivery, transfer of risk and product safety (GPSR)`,
+        blocks: [
+          { kind: 'p', value: `10.1 Delivery to the address indicated by the customer. Manufacturing is entrusted to a partner printer established in the European Union, without this subcontracting altering Bellajour's liability towards the customer. The delivery time runs from validation of the proof; it is made known to the customer before the order (estimate: 10 to 15 business days depending on production load) and does not exceed 30 days, save express agreement of the customer, in accordance with Article 9 of DL 24/2014.` },
+          { kind: 'p', value: `10.2 Transfer of risk. The risks of loss or deterioration transfer to the consumer at the time of physical receipt of the goods (by the consumer or a third party they designate, other than the carrier), in accordance with Article 20 of Directive 2011/83/EU and DL 24/2014. Risk is never transferred upon handover to the carrier.` },
+          { kind: 'p', value: `10.3 Gift purchase: the consumer within the meaning of these Terms is the buyer, who exercises the guarantees and receives communications, even if the album is delivered to a third-party beneficiary.` },
+          { kind: 'p', value: `10.4 Deliveries outside the EU: customs duties and import taxes may apply at the recipient's expense, according to the rules of the destination country.` },
+          { kind: 'p', value: `10.5 Manufacturer and traceability (GPSR). Within the meaning of Regulation (EU) 2023/988, Bellajour, which markets the album under its brand, retains the status of manufacturer (Articles 3(8) and 13(1)) and is itself the responsible person established in the EU (Article 16); the obligations of Article 9 of the Regulation are non-delegable, with the partner printer acting as a production subcontractor. Each album is identified by its order number, shown on the delivery slip. In the event of a recall or safety alert, Bellajour contacts the affected customers at the email address provided with the order; the customer undertakes to keep their contact details up to date.` },
+        ],
+      },
+      {
+        heading: `Article 11 — Liability and security of content`,
+        blocks: [
+          { kind: 'p', value: `11.1 Bellajour is liable for direct and foreseeable damage resulting from a proven breach of its obligations.` },
+          { kind: 'p', value: `11.2 To the extent permitted by law, Bellajour excludes liability for indirect damage (loss of income or data, loss of profit). This limitation does not apply to personal injury, nor in the event of wilful misconduct or gross negligence.` },
+          { kind: 'p', value: `11.3 Security and storage of content. The photos submitted and the HD file are stored on infrastructure located in the European Union; no transfer outside the EU takes place in respect of storage. Facial recognition is also performed within the EU. By contrast, certain processing operations (analysis and generation of the illustrated cover) use providers established in the United States; these transfers are framed by the European Commission's Standard Contractual Clauses (and, where applicable, the Data Privacy Framework where the provider is certified). The security measures and the up-to-date list of providers are described in the Privacy Policy, to which express reference is made.` },
+        ],
+      },
+      {
+        heading: `Article 12 — Force majeure, unavailability and safety recall`,
+        blocks: [
+          { kind: 'p', value: `12.1 Force majeure. Bellajour is not liable for a breach resulting from force majeure, that is, an external, unforeseeable and irresistible event beyond its control (in particular natural disaster, general shortage of raw materials, major technical incident of an infrastructure provider, armed conflict). Deadlines are suspended during the impediment. If it continues beyond 60 days or makes performance permanently impossible, either party may terminate the order; amounts paid are then refunded in full, with no further compensation. Failure of the partner printer, chosen by Bellajour, is not a case of force majeure; it is dealt with in Article 8.7 (full refund).` },
+          { kind: 'p', value: `12.2 Unavailability. If a format or product becomes unavailable definitively and non-substitutably after the order, Bellajour refunds the customer; no substitution is imposed without their agreement.` },
+          { kind: 'p', value: `12.3 Safety recall (GPSR). In the event of a recall under Regulation (EU) 2023/988, Bellajour contacts the affected customers by email and publishes the information on its website; the terms (return, replacement, refund) are defined on a case-by-case basis in accordance with legal obligations.` },
+        ],
+      },
+      {
+        heading: `Article 13 — Versions, governing law and disputes`,
+        blocks: [
+          { kind: 'p', value: `13.1 Enforceable version: the one accepted on the date of the order. Founder pre-sales remain governed by the version accepted at payment of the deposit. Any subsequent amendment has no retroactive effect.` },
+          { kind: 'p', value: `13.2 Catalogue evolution. Bellajour may develop its offering (new styles, mobile application, complementary products) without retroactively binding customers who have already ordered; Instants and credits remain valid under the conditions of their acquisition.` },
+          { kind: 'p', value: `13.3 Governing law: Portuguese law, without prejudice to the mandatory provisions more protective of the law of the consumer's habitual residence (Rome I Regulation, Article 6).` },
+          { kind: 'p', value: `13.4 Jurisdiction: the consumer may bring proceedings before the courts of their country of residence.` },
+          { kind: 'p', value: `13.5 Complaints and alternative dispute resolution (ADR). Before any action, the customer may submit a complaint to contact@bellajour.com. They may also: use the Electronic Complaints Book (Livro de Reclamações Eletrónico, https://www.livroreclamacoes.pt); refer the matter to a Portuguese ADR body (Law 144/2015), in particular the Lisbon Consumer Dispute Arbitration Centre (www.centroarbitragemlisboa.pt) — the body territorially competent for Bellajour's registered office — or, for areas not covered by a regional centre, CNIACC (www.cniacc.pt). The information is mandatory; Bellajour's adherence is optional.` },
+          { kind: 'p', value: `13.6 Partial nullity: if a clause is held void, the others remain in force.` },
+          { kind: 'p', value: `13.7 GDPR and cookies cross-reference: the processing of personal data is described in the Privacy Policy (GDPR, Articles 13–14) and the use of cookies in the Cookie Policy, accessible via the site's consent banner. These documents form an integral part of the contractual relationship.` },
+        ],
+      },
+      {
+        heading: `Annex — Product Sheet (Bellajour Album at Launch, base offer)`,
+        id: `fiche-produit`,
+        blocks: [
+          { kind: 'h3', text: `Technical specifications` },
+          { kind: 'table', columns: [`Parameter`, `Value`], rows: [
+            [`Type`, `Bound photo book, printed on demand`],
+            [`Format`, `A4 portrait — 210 × 297 mm`],
+            [`Binding`, `Hardcover`],
+            [`Base pagination`, `30 pages`],
+            [`Pagination min. / max.`, `min. 30 pages — max. 200 pages (page count must be even)`],
+            [`Cover`, `Illustrated, unique, AI-generated in a style specific to the brand`],
+            [`Printing`, `Four-colour (CMYK), 300 DPI, FOGRA 39 colour profile`],
+          ] },
+          { kind: 'h3', text: `What the base offer includes` },
+          { kind: 'list', items: [
+            `The bound physical album (book, composed from your photos)`,
+            `The bespoke illustrated cover`,
+            `The layout composed by an algorithm enriched with customer feedback, with human intervention`,
+            `The HD digital version (high-definition digital file of your album, included)`,
+          ] },
+          { kind: 'h3', text: `Specifications for customer-provided files` },
+          { kind: 'p', value: `Minimum resolution: 800 × 800 pixels. Below this threshold, the photo is rejected or downgraded to a smaller slot. A normal colour difference exists between on-screen display (RGB) and paper printing; this does not constitute a defect.` },
+          { kind: 'p', value: `Accepted file formats: JPEG, PNG, HEIC, HEIF, WebP.` },
+          { kind: 'h3', text: `Price list — Bellajour Album Launch (base offer)` },
+          { kind: 'p', value: `Standard catalogue prices, excluding promotional offers. Prices displayed in euros, inclusive of all taxes. VAT applied at the rate of the consumer's country of residence (OSS-Union scheme) after the €10,000 turnover threshold.` },
+          { kind: 'table', columns: [`Pagination`, `Price incl. VAT`], rows: [
+            [`30 pages (base)`, `64 €`],
+            [`50 pages`, `82 €`],
+            [`80 pages`, `120 €`],
+            [`100 pages`, `146 €`],
+            [`150 pages`, `211 €`],
           ] },
         ],
       },

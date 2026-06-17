@@ -5,8 +5,9 @@ import type { LocalizedDoc } from '../types'
    PT : transcription fidèle de legal-source/mentions-legales/PT/…docx (clé `pt`
    ci-dessous). Normalisations source→gabarit FR : §1 « Direção da publicação »
    sortie de la liste en paragraphe ; §4 paragraphe fabricant sorti de la liste.
-   EN : source présente dans legal-source/mentions-legales/EN — à brancher plus
-   tard (⚠ vérifier le fichier EN, nommé « TERMS AND CONDITIONS »). */
+   EN : transcription fidèle de legal-source/mentions-legales/EN/LEGAL NOTICE AND
+   PRE-CONTRACTUAL INFORMATION — BELLAJOUR.docx (clé `en` ci-dessous ; le fichier EN
+   est bien le Legal Notice, mêmes normalisations §1/§4). */
 
 export const MENTIONS_LEGALES: LocalizedDoc = {
   fr: {
@@ -242,6 +243,125 @@ export const MENTIONS_LEGALES: LocalizedDoc = {
             `Livro de Reclamações Eletrónico: https://www.livroreclamacoes.pt (obrigatório — ligação no rodapé do sítio).`,
             `Entidades de RAL portuguesas (Lei 144/2015): Centro de Arbitragem de Conflitos de Consumo de Lisboa (www.centroarbitragemlisboa.pt) ou, para as zonas não abrangidas por um centro regional, o CNIACC (www.cniacc.pt). A informação é obrigatória; a adesão da Bellajour é facultativa.`,
             `Lei aplicável: direito português, sem prejuízo das disposições imperativas mais protetoras da lei da residência do consumidor (Regulamento Roma I, artigo 6.º). O consumidor pode recorrer aos tribunais do seu país de residência.`,
+          ] },
+        ],
+      },
+    ],
+  },
+  en: {
+    title: `Legal Notice and Pre-Contractual Information`,
+    lastUpdated: `Version 1.0 — Effective 13/06/2026`,
+    intro: [
+      `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
+      `English translation for information only. The legally prevailing version is the Portuguese text; in the event of any discrepancy, the Portuguese text prevails.`,
+    ],
+    sections: [
+      {
+        heading: `1. Site publisher`,
+        blocks: [
+          { kind: 'p', value: `The website bellajour.fr (and its extension bellajour.com) is published by:` },
+          { kind: 'list', items: [
+            `MISTÉRIO HERMÉTICO, LDA (trading as "Bellajour")`,
+            `Form: private limited company (sociedade por quotas) under Portuguese law`,
+            `Share capital: €1,000, fully paid up`,
+            `Registered office: Beco de Santa Helena, 21A, 2.º, 1100-117 Lisbon, Portugal`,
+            `NIPC / registration number: 519443284 — Commercial Registry of Odivelas`,
+            `VAT identification number: PT519443284`,
+            `Contact: contact@bellajour.com`,
+          ] },
+          { kind: 'p', value: `Publication management: carried out by the company's management.` },
+        ],
+      },
+      {
+        heading: `2. Hosting provider`,
+        blocks: [
+          { kind: 'p', value: `The website is hosted by:` },
+          { kind: 'p', value: `Vercel Inc. — 440 N Barranca Ave #4133, Covina, CA 91723, United States.` },
+          { kind: 'p', value: `Personal data and content processed in connection with the service are hosted and located in accordance with the Privacy Policy, to which reference is made.` },
+        ],
+      },
+      {
+        heading: `3. Activity and area of sale`,
+        blocks: [
+          { kind: 'p', value: `Bellajour carries out an activity of online publishing and sale of personalised photo albums (AI-generated illustrated cover, algorithmic layout under human control, HD digital version included).` },
+          { kind: 'p', value: `The products are sold within the European Union. Any extension to other territories will be the subject of an update to this notice and the applicable terms.` },
+        ],
+      },
+      {
+        heading: `4. Product safety (Regulation (EU) 2023/988 — GPSR)`,
+        blocks: [
+          { kind: 'p', value: `Within the meaning of Regulation (EU) 2023/988 on general product safety:` },
+          { kind: 'p', value: `Bellajour, which markets the album under its brand, is the manufacturer (Articles 3(8) and 13) and is itself the responsible person established in the European Union (Article 16). The corresponding obligations are not delegated; physical manufacturing is entrusted to a production subcontractor established in the European Union.` },
+          { kind: 'list', items: [
+            `Traceability: each album is identified by its order number, shown on the delivery slip.`,
+            `Product safety contact: contact@bellajour.com. Any safety concern may be reported to us at this address.`,
+            `Notification to authorities: in the event of a safety incident, Bellajour carries out the required notifications via the European Safety Business Gateway portal (Article 20).`,
+            `Recall: in the event of a recall, the affected customers are contacted by email at the address provided with the order; the customer undertakes to keep their contact details up to date.`,
+          ] },
+        ],
+      },
+      {
+        heading: `5. Accessibility (European Accessibility Act)`,
+        blocks: [
+          { kind: 'p', value: `Directive (EU) 2019/882 ("European Accessibility Act"), transposed in Portugal by Decreto-Lei no. 82/2022 and Portaria no. 220/2023, provides for an exemption for micro-enterprises (fewer than 10 persons and annual turnover or balance sheet below €2 million).` },
+          { kind: 'p', value: `Bellajour falls within this category and is therefore exempt from the accessibility obligations laid down by this act.` },
+          { kind: 'p', value: `Bellajour nonetheless endeavours, as an obligation of means (and not of result), to progressively improve the accessibility of its website. Any access difficulty may be reported to contact@bellajour.com; we strive to respond within a reasonable time.` },
+        ],
+      },
+      {
+        heading: `6. Right of withdrawal and its exception`,
+        blocks: [
+          { kind: 'p', value: `For distance contracts, the consumer in principle has a right of withdrawal of 14 days (Article 10 of DL 24/2014).` },
+          { kind: 'p', value: `However, in accordance with Article 17(1)(c) of DL 24/2014, this right does not apply to clearly personalised goods — as is the case for Bellajour albums, made from your photos and a cover created for you alone.` },
+          { kind: 'p', value: `This exception takes effect at the precise moment the proof is validated, evidenced by a dedicated, timestamped checkbox:` },
+          { kind: 'list', items: [
+            `before this validation, your order is not definitive and the deposit paid is fully refundable (no charge or penalty);`,
+            `from this validation, the order is definitive and non-cancellable.`,
+          ] },
+          { kind: 'p', value: `The details of this mechanism appear in Article 8 of the Terms and Conditions of Sale, to which reference is made.` },
+        ],
+      },
+      {
+        heading: `7. Pre-contractual information`,
+        blocks: [
+          { kind: 'p', value: `In accordance with Article 4 of DL 24/2014, the essential pre-contractual information is made available before the order:` },
+          { kind: 'list', items: [
+            `Essential characteristics of the product: see the Product Sheet (format, binding, pagination, printing, accepted files).`,
+            `Prices: displayed in euros, inclusive of all taxes, according to the price list in the Product Sheet; the VAT regime and invoicing arrangements appear in Article 4 of the T&Cs.`,
+            `Deposit, credit (Instants) and pre-sale: Article 5 of the T&Cs.`,
+            `Payment methods: by card via Stripe (strong authentication SCA / 3-D Secure 2) — Article 7 of the T&Cs.`,
+            `Delivery and time: Article 10 of the T&Cs (the time is made known to you before the order).`,
+            `Transfer of risk: upon physical receipt of the goods — Article 10 of the T&Cs.`,
+            `Right of withdrawal and its exception: see §6 above and Article 8 of the T&Cs.`,
+            `Legal guarantees: conformity guarantee of 3 years, presumption of 2 years, right of rejection of 30 days (DL no. 84/2021) — Article 9 of the T&Cs.`,
+            `Duration and performance of the contract: the order is performed until delivery of the album and provision of the HD file.`,
+          ] },
+          { kind: 'p', value: `The Terms and Conditions of Sale and the Product Sheet form an integral part of the contractual relationship and prevail for the details of the above points.` },
+        ],
+      },
+      {
+        heading: `8. Intellectual property`,
+        blocks: [
+          { kind: 'p', value: `The "Bellajour" brand, the domain name, the graphic identity, the texts, the interface, as well as the style of the AI-generated illustrated covers and the layout of the albums, are the property of MISTÉRIO HERMÉTICO, LDA or are subject to a licence of use.` },
+          { kind: 'p', value: `Any reproduction, representation or exploitation, in whole or in part, without prior written authorisation, is prohibited.` },
+          { kind: 'p', value: `The photographs provided by the customer remain the customer's property; the customer warrants that they hold all rights to them (T&Cs, Article 3).` },
+        ],
+      },
+      {
+        heading: `9. Personal data`,
+        blocks: [
+          { kind: 'p', value: `The processing of personal data (including the automated analysis of photos and facial recognition) is described in the Privacy Policy (GDPR, Articles 13 and 14).` },
+          { kind: 'p', value: `The competent supervisory authority is the CNPD (Comissão Nacional de Proteção de Dados, www.cnpd.pt), with which any complaint may be lodged.` },
+        ],
+      },
+      {
+        heading: `10. Disputes and alternative resolution (ADR)`,
+        blocks: [
+          { kind: 'list', items: [
+            `Direct complaint: contact@bellajour.com.`,
+            `Electronic Complaints Book (Livro de Reclamações Eletrónico): https://www.livroreclamacoes.pt (mandatory — link in the website footer).`,
+            `Portuguese ADR bodies (Law 144/2015): Lisbon Consumer Dispute Arbitration Centre (www.centroarbitragemlisboa.pt) or, for areas not covered by a regional centre, CNIACC (www.cniacc.pt). The information is mandatory; Bellajour's adherence is optional.`,
+            `Governing law: Portuguese law, without prejudice to the more protective mandatory provisions of the consumer's country of residence (Rome I Regulation, Article 6). The consumer may bring proceedings before the courts of their country of residence.`,
           ] },
         ],
       },

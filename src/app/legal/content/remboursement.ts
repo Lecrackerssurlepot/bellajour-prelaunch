@@ -4,7 +4,8 @@ import type { LocalizedDoc } from '../types'
    legal-source/remboursement/FR/…docx (v3.0).
    PT : transcription fidèle de legal-source/remboursement/PT/…docx (clé `pt`
    ci-dessous), parité structurelle 1:1 avec le FR.
-   EN : source présente dans legal-source/remboursement/EN — à brancher plus tard. */
+   EN : transcription fidèle de legal-source/remboursement/EN/REFUND AND RETURNS
+   POLICY — BELLAJOUR.docx (clé `en` ci-dessous), parité 1:1 également. */
 
 export const REMBOURSEMENT: LocalizedDoc = {
   fr: {
@@ -204,6 +205,107 @@ export const REMBOURSEMENT: LocalizedDoc = {
             `Livro de Reclamações Eletrónico: https://www.livroreclamacoes.pt (ligação no rodapé do sítio).`,
             `Entidades de RAL portuguesas (Lei 144/2015): Centro de Arbitragem de Conflitos de Consumo de Lisboa (www.centroarbitragemlisboa.pt) — centro competente para a sede da Bellajour — ou, para as zonas não abrangidas por um centro regional, o CNIACC (www.cniacc.pt). A informação é obrigatória; a adesão da Bellajour é facultativa.`,
             `Tribunais: o consumidor pode recorrer aos tribunais do seu país de residência (direito português aplicável, sem prejuízo das disposições imperativas mais protetoras — Regulamento Roma I, artigo 6.º).`,
+          ] },
+        ],
+      },
+    ],
+  },
+  en: {
+    title: `Refund and Returns Policy`,
+    lastUpdated: `Version 3.0 — Effective 13/06/2026`,
+    intro: [
+      `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
+      `English translation for information only. The legally prevailing version is the Portuguese text; in the event of any discrepancy, the Portuguese text prevails. To be read together with the Terms and Conditions of Sale (Articles 5, 8 and 9) and the Privacy Policy.`,
+    ],
+    sections: [
+      {
+        heading: `1. Spirit of this policy`,
+        blocks: [
+          { kind: 'p', value: `Each Bellajour album is a unique book, made to your specifications. This policy explains, transparently, what is refundable, what is not, and how we handle any problem. It does not reduce your legal guarantees (see §5), which cannot be waived.` },
+        ],
+      },
+      {
+        heading: `2. Right of withdrawal: why it does not apply`,
+        blocks: [
+          { kind: 'p', value: `In accordance with Article 17(1)(c) of DL 24/2014 (transposing Directive 2011/83/EU), the 14-day right of withdrawal (direito de livre resolução) does not apply to Bellajour albums, which are clearly personalised goods, created from your photos and a cover generated for you alone.` },
+          { kind: 'p', value: `Your order becomes definitive and non-cancellable at the precise moment the proof is validated (dedicated checkbox + timestamp). You are informed of this exception, clearly and legibly, before paying the deposit and before validating the proof.` },
+        ],
+      },
+      {
+        heading: `3. Refund of the deposit (pre-sale orders)`,
+        blocks: [
+          { kind: 'p', value: `The moment at which you request to stop your order determines the refund:` },
+          { kind: 'table', columns: [`Stage`, `Refund`], rows: [
+            [`Before validation of the proof (whatever the stage of progress, including uploading of photos)`, `100% of the deposit actually paid — no deduction, no charge and no penalty ("risk-free reservation")`],
+            [`After validation of the proof`, `Definitive order: no further refund on this basis, without prejudice to the legal guarantees (§5) and to the impossibility of producing/delivering (§7)`],
+          ] },
+          { kind: 'p', value: `Amount refunded = amount actually paid. The €30 credit (Instants) is a commercial benefit; only the amount paid is refunded:` },
+          { kind: 'list', items: [
+            `Founder: you paid €25 → €25 refunded; the €5 bonus, never disbursed, is not refundable.`,
+            `Standard: you paid €30 → €30 refunded.`,
+            `Influencer code: you paid €25 → €25 refunded; the €5 bonus is not refundable.`,
+          ] },
+          { kind: 'p', value: `The credit (Instants) granted (€30) is cancelled in the event of a cash refund.` },
+        ],
+      },
+      {
+        heading: `4. Defects: what Bellajour repairs or refunds`,
+        blocks: [
+          { kind: 'p', value: `Regardless of the exception above, we take responsibility for any defect attributable to us. Our primary means of restoring conformity is reprinting.` },
+          { kind: 'table', columns: [`Situation`, `Our commitment`, `Reporting deadline`], rows: [
+            [`Album damaged in transit`, `Priority reprint or refund`, `7 days after receipt, with photos`],
+            [`Album not matching the validated proof (production error)`, `Free reprint or full refund`, `Within 30 days`],
+            [`Cover not matching the validated one`, `Reprint or refund`, `Within 30 days`],
+            [`Manifestly defective print quality (colours out of tolerance, missing pages)`, `Reprint or refund`, `Within 30 days`],
+            [`Non-delivery of the included HD digital file`, `Delivery of the file or refund of the corresponding share`, `Immediately`],
+            [`Minor defect (slight colour variation within the announced tolerances)`, `Possible goodwill gesture — not a legal obligation`, `—`],
+          ] },
+          { kind: 'p', value: `Important — screen ≠ print. A normal colour variation between on-screen display (backlit RGB) and paper printing (CMYK), within usual tolerances, does not constitute a defect (T&Cs Article 6).` },
+        ],
+      },
+      {
+        heading: `5. Your legal guarantees (always applicable)`,
+        blocks: [
+          { kind: 'p', value: `In accordance with Decreto-Lei no. 84/2021:` },
+          { kind: 'list', items: [
+            `Conformity guarantee: 3 years from delivery (Article 12).`,
+            `Presumption of non-conformity: 2 years — for 24 months, it is for Bellajour to prove conformity (Article 13).`,
+            `Right of rejeição: 30 days — you may directly demand replacement or termination, without condition; this period runs from delivery or from the discovery of a non-apparent defect.`,
+            `Hierarchy of remedies: first repair or replacement (reprint); subsidiarily, price reduction or termination, if reprinting is impossible, disproportionate, fails or recurs.`,
+          ] },
+          { kind: 'p', value: `No clause of this policy may exclude or reduce these guarantees.` },
+        ],
+      },
+      {
+        heading: `6. Procedure — how to contact us`,
+        blocks: [
+          { kind: 'list', items: [
+            `Write to contact@bellajour.com with your order number and photos of the defect.`,
+            `We respond within 5 business days.`,
+            `Solution: priority reprint or refund (partial or full depending on the extent of the defect).`,
+            `If a physical return is necessary (serious defect), return costs are at our expense.`,
+            `Refunds made in cash to the original means of payment, no later than 14 days after acceptance of the claim (Article 12 of DL 24/2014). For accounting purposes, the refund of an already-invoiced deposit gives rise to a credit note cancelling the invoice; this credit note is an accounting document and not a voucher replacing the cash refund.`,
+            `To limit waste, a non-conforming personalised album generally does not have to be returned: reprinting is preferred.`,
+          ] },
+          { kind: 'p', value: `Retention of evidence. Bellajour retains for 10 years (Commercial Code, Article 40) the evidence of the order and validation (version of the T&Cs accepted, timestamps of acceptance, upload and proof validation, Stripe transaction identifier).` },
+        ],
+      },
+      {
+        heading: `7. Earned bonuses, credits, and cases where we cannot produce`,
+        blocks: [
+          { kind: 'p', value: `7.1 Items always earned. Even in the event of a dispute or cancellation concerning the physical album, the following remain definitively earned: the credited Instants, the cover illustration already delivered, and the HD digital file already delivered (included with every order). Only the unproduced physical album may be refunded.` },
+          { kind: 'p', value: `7.2 Referral pages. Pages granted through referral are not refundable in cash; they may be used on future orders under the conditions of the programme. They are cancelled if the associated deposit is refunded (T&Cs Art. 5.6).` },
+          { kind: 'p', value: `7.3 Impossibility of producing or delivering. If Bellajour cannot produce or deliver (internal failure, failure of the partner printer, force majeure, cessation of business), any amount paid is refunded in full, in cash, without condition.` },
+        ],
+      },
+      {
+        heading: `8. Complaints and alternative dispute resolution (ADR)`,
+        blocks: [
+          { kind: 'list', items: [
+            `Direct complaint: contact@bellajour.com (response within 5 business days).`,
+            `Electronic Complaints Book (Livro de Reclamações Eletrónico): https://www.livroreclamacoes.pt (link in the website footer).`,
+            `Portuguese ADR bodies (Law 144/2015): Lisbon Consumer Dispute Arbitration Centre (www.centroarbitragemlisboa.pt) — the body competent for Bellajour's registered office — or, for areas not covered by a regional centre, CNIACC (www.cniacc.pt). The information is mandatory; Bellajour's adherence is optional.`,
+            `Courts: the consumer may bring proceedings before the courts of their country of residence (Portuguese law applicable, without prejudice to the more protective mandatory provisions — Rome I Regulation, Article 6).`,
           ] },
         ],
       },
