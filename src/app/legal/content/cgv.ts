@@ -5,7 +5,13 @@ import type { LocalizedDoc } from '../types'
    Annexe « Fiche produit » (legal-source/cgv/FR/FICHE PRODUIT …docx) intégrée en
    dernière section, id='fiche-produit'. Le lien interne de l'article 3.1 pointe
    dessus (#fiche-produit) — UNIQUEMENT cette occurrence.
-   EN / PT : sources présentes dans legal-source/cgv/{EN,PT} — à brancher plus tard. */
+   PT : transcription fidèle de legal-source/cgv/PT/{CONDIÇÕES GERAIS DE VENDA,
+   FICHA DE PRODUTO}.docx (clé `pt` ci-dessous). Deux points signalés à relire :
+   - art. 3.1 : la source PT portait « [A COMPLETAR: ligação PDF] » ; aligné sur le
+     FR (lien interne #fiche-produit, annexe reproduite en page).
+   - art. 4.1 : la source PT contient une phrase dupliquée (copier-coller) ;
+     transcrite verbatim, à dédupliquer après validation juridique.
+   EN : source présente dans legal-source/cgv/EN — à brancher plus tard. */
 
 export const CGV: LocalizedDoc = {
   fr: {
@@ -200,6 +206,203 @@ export const CGV: LocalizedDoc = {
             [`80 pages`, `120 €`],
             [`100 pages`, `146 €`],
             [`150 pages`, `211 €`],
+          ] },
+        ],
+      },
+    ],
+  },
+  pt: {
+    title: `Condições gerais de venda`,
+    lastUpdated: `Versão 2.5 — Em vigor em 13/06/2026`,
+    intro: [
+      `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
+      `Texto de referência (versão portuguesa), juridicamente prevalecente. As traduções para francês e inglês são meramente informativas; em caso de divergência, prevalece o presente texto português.`,
+    ],
+    sections: [
+      {
+        heading: `Preâmbulo — Quem somos`,
+        blocks: [
+          { kind: 'p', value: `A Bellajour é uma marca explorada pela MISTÉRIO HERMÉTICO, LDA, sociedade por quotas de direito português, com o capital social de 1 000 €, integralmente realizado, matriculada na Conservatória do Registo Comercial de Odivelas sob o NIPC 519443284, com sede no Beco de Santa Helena, 21A, 2.º, 1100-117 Lisboa (freguesia de Santa Maria Maior), número de identificação para efeitos de IVA PT519443284 (doravante «Bellajour», «nós»). Contacto: contact@bellajour.com.` },
+          { kind: 'p', value: `A Bellajour define-se como uma casa de edição da memória: não imprimimos um livro de fotografias, editamos a sua história. Lema: «Viva, nós compomos.» Cada álbum é um livro encadernado único, com uma capa ilustrada criada especificamente para si e uma paginação composta apenas para as suas memórias. Este carácter à medida está no cerne das presentes condições e fundamenta a exceção ao direito de livre resolução (ver artigo 8.º).` },
+        ],
+      },
+      {
+        heading: `Artigo 1.º — Objeto e âmbito`,
+        blocks: [
+          { kind: 'p', value: `1.1 As presentes Condições Gerais de Venda («Condições») regem qualquer encomenda efetuada por um consumidor no sítio bellajour.fr e na futura aplicação da Bellajour.` },
+          { kind: 'p', value: `1.2 Aplicam-se à venda de álbuns de fotografias altamente personalizados e respetivos componentes: o álbum físico encadernado, a capa ilustrada gerada à medida, a paginação composta pelo nosso motor algorítmico sob controlo humano e o ficheiro digital de alta definição («versão digital HD»), incluído em todas as encomendas.` },
+          { kind: 'p', value: `1.3 O sistema de pontos internos «Instants» rege-se pelas presentes Condições e, quando aplicável, por condições específicas exibidas no sítio.` },
+          { kind: 'p', value: `1.4 Qualquer encomenda implica a aceitação integral das Condições na versão em vigor à data da encomenda (ver artigo 13.º).` },
+          { kind: 'p', value: `Remissão: para o tratamento dos seus dados pessoais e das suas fotografias, ver a nossa Política de Privacidade (RGPD, art. 13.º e 14.º), parte integrante da relação contratual.` },
+        ],
+      },
+      {
+        heading: `Artigo 2.º — Capacidade e conta de cliente`,
+        blocks: [
+          { kind: 'p', value: `2.1 Idade. O cliente declara ter pelo menos 18 anos (maioridade em Portugal) e dispor de plena capacidade jurídica para contratar. Qualquer encomenda efetuada por menor é anulável (artigo 125.º do Código Civil).` },
+          { kind: 'p', value: `2.2 O cliente garante a exatidão das informações prestadas no registo da conta e na encomenda.` },
+        ],
+      },
+      {
+        heading: `Artigo 3.º — Produtos, personalização e tratamento automatizado das fotografias`,
+        blocks: [
+          {
+            kind: 'p',
+            value: [
+              `3.1 Descrição. O álbum Bellajour é um livro encadernado de capa dura, impresso em alta definição no formato A4 retrato, composto por uma capa ilustrada única (gerada por IA), uma paginação composta por algoritmo sob controlo humano e uma versão digital HD incluída. As características técnicas detalhadas (formato, paginação, papel, acabamentos) e a tabela de preços por escalão de páginas constam da `,
+              { text: `Ficha de Produto`, href: `#fiche-produit` },
+              `, documento anexo às presentes e reproduzido em anexo abaixo. Este documento faz parte integrante do contrato na versão em vigor à data da encomenda (art. 13.º).`,
+            ],
+          },
+          { kind: 'p', value: `3.2 Tratamento automatizado das fotografias. Para compor o seu álbum, as suas fotografias são objeto de uma análise automatizada: triagem, seleção, classificação de qualidade e paginação. Estas etapas não assentam numa identificação das pessoas. Uma etapa distinta — o agrupamento das fotografias por pessoa, mediante reconhecimento dos rostos, que permite a etapa de «Casting» (hierarquização e destaque das pessoas-chave) — constitui um tratamento de dados biométricos (artigo 9.º do RGPD) sujeito ao seu consentimento explícito e distinto, recolhido antes da análise. Este consentimento é facultativo: na sua ausência, o agrupamento por pessoa e o Casting não são realizados, sendo o seu álbum composto apenas a partir das restantes etapas. As modalidades deste consentimento, a possibilidade de o recusar, a lógica geral, a finalidade e os seus direitos constam da Política de Privacidade. Esta composição não constitui uma decisão exclusivamente automatizada com efeitos jurídicos na aceção do artigo 22.º do RGPD, mantendo o cliente o controlo, uma vez que valida a maquete final. O motor da Bellajour não se encontra, à data das presentes, classificado como sistema de IA de risco elevado na aceção do Regulamento (UE) 2024/1689 (Regulamento da IA); aplica todavia uma categorização biométrica sujeita a uma obrigação de transparência, satisfeita pela presente informação e pela Política de Privacidade.` },
+          { kind: 'p', value: `3.3 Direitos sobre o conteúdo. O cliente garante deter todos os direitos sobre as fotografias transmitidas (direito à imagem das pessoas retratadas, incluindo a autoridade parental quanto a menores fotografados; direitos de propriedade intelectual). Em caso de reclamação de terceiro relativa ao conteúdo fornecido, o cliente garante e indemniza a Bellajour por qualquer consequência.` },
+        ],
+      },
+      {
+        heading: `Artigo 4.º — Preços, IVA e faturação`,
+        blocks: [
+          { kind: 'p', value: `4.1 Preços com impostos incluídos. Os preços são exibidos em euros, com todos os impostos incluídos. O preço do álbum depende do escalão de páginas escolhido (tabela constante da Ficha de Produto); O preço do álbum depende do escalão de paginação escolhido, de acordo com a grelha tarifária constante da Ficha de Produto. O número de páginas é definido à medida.` },
+          { kind: 'p', value: `4.2 Transparência — sem custos ocultos. O preço com impostos exibido antes da validação é completo; nenhum custo é acrescentado após a validação da encomenda. Fora do período de pré-venda, os portes eventuais são indicados claramente antes da validação da encomenda. No âmbito da pré-venda, os portes são oferecidos.` },
+          { kind: 'p', value: `4.3 Regime de IVA. A Bellajour encontra-se enquadrada no regime normal de IVA em Portugal. Para as vendas a consumidores (B2C):` },
+          { kind: 'list', items: [
+            `enquanto não for ultrapassado o limiar de 10 000 € anuais de vendas à distância intracomunitárias, aplica-se o IVA português à taxa normal em vigor (23 % no Continente; 22 % na Madeira; 16 % nos Açores);`,
+            `a partir desse limiar, aplica-se o IVA do país de residência do consumidor, declarado pela Bellajour através do regime do balcão único (OSS-União) ou, se for caso disso, mediante registo direto no Estado-Membro em causa.`,
+          ] },
+          { kind: 'p', value: `A taxa efetivamente aplicada a cada encomenda consta da fatura.` },
+          { kind: 'p', value: `4.4 Exigibilidade e faturação do adiantamento. O IVA é exigível no momento do recebimento, incluindo no recebimento do adiantamento. No recebimento do adiantamento é emitida uma fatura com o descritivo «Adiantamento sobre a encomenda [n.º]», pelo montante efetivamente pago. Em caso de reembolso, é emitida uma nota de crédito (nunca uma fatura negativa). Os documentos são emitidos através de programa de faturação certificado pela Autoridade Tributária, com ATCUD e código QR.` },
+          { kind: 'p', value: `4.5 Erro manifesto de preço. Uma encomenda a preço manifestamente errado (lapso grosseiro de exibição) pode ser anulada pela Bellajour; o cliente é informado e integralmente reembolsado.` },
+          { kind: 'p', value: `4.6 Regra Omnibus. Em caso de anúncio de redução de preço, o preço de referência exibido é o mais baixo praticado nos últimos 30 dias (DL 109-G/2021).` },
+        ],
+      },
+      {
+        heading: `Artigo 5.º — Encomenda, pré-venda, adiantamento e crédito (Instants)`,
+        blocks: [
+          { kind: 'p', value: `5.1 Formação do contrato. A encomenda conclui-se quando o cliente valida o pagamento após aceitação das presentes Condições. Um e-mail de confirmação resume a encomenda.` },
+          { kind: 'p', value: `5.2 Natureza do pagamento inicial (adiantamento). A quantia paga na reserva (Fundador: 25 €; Standard: 30 €; Código influenciador: 25 €) é um adiantamento — pagamento parcial antecipado imputado no preço total. Não constitui sinal na aceção dos artigos 440.º a 442.º do Código Civil: nenhuma das partes a pode invocar a título de penalização e a sua entrega não produz qualquer efeito de restituição em dobro.` },
+          { kind: 'p', value: `5.3 Conversão em crédito (Instants). Logo que recebido, o adiantamento é imediatamente convertido em crédito (Instants) lançado na conta do cliente associada ao seu endereço de correio eletrónico, no valor de 30 € independentemente da oferta. Este crédito de 30 € é uma vantagem comercial e não um pagamento: apenas o montante efetivamente pago a título de adiantamento (25 € ou 30 € consoante a oferta) é objeto de recebimento e de fatura; a fração de bónus (5 € nas ofertas Fundador e influenciador) constitui um desconto comercial condicional, nunca recebido e não faturado. Este crédito: (i) é nominativo e não cessível; (ii) não é reembolsável em numerário, salvo nas condições previstas nos artigos 5.4 e 8.2; (iii) caduca 12 meses após a sua atribuição; (iv) é imputado no preço da encomenda final. As ofertas e códigos não são cumuláveis entre si.` },
+          { kind: 'p', value: `5.4 Reserva imperativa de reembolso (antes da maquete). Por exceção ao carácter não reembolsável do crédito, e nos termos dos artigos 10.º e 12.º do DL 24/2014, o cliente que o solicite expressamente antes da validação da sua maquete obtém o reembolso em numerário do adiantamento efetivamente pago (ver artigo 8.º). Esta faculdade extingue-se com a validação da maquete.` },
+          { kind: 'p', value: `5.5 Adiantamento não finalizado — caducidade do crédito. Se o cliente nunca validar a sua maquete, o crédito permanece utilizável até à sua caducidade (12 meses). A Bellajour envia uma interpelação por correio eletrónico antes do termo. O prazo de 12 meses é suspenso durante qualquer período em que a impossibilidade de utilizar o crédito seja imputável à Bellajour (nomeadamente atraso na disponibilização da maquete). Na caducidade, o crédito não utilizado perde-se, sem que qualquer quantia continue a ser devida a título de penalização, e sem prejuízo da faculdade de reembolso do n.º 5.4 exercida atempadamente.` },
+          { kind: 'p', value: `5.6 Regimes de oferta. As condições específicas de cada oferta — incluindo as datas e horas exatas de abertura e de encerramento — constam da página da oferta em causa; a Bellajour conserva uma cópia com registo temporal das condições de cada oferta (artigo 8.6). As principais ofertas são as seguintes:` },
+          { kind: 'list', items: [
+            `Oferta Fundador (lugares #1 a #100): aberta de 13 de junho a 15 de agosto de 2026, limitada a 100 lugares. Adiantamento de 25 €, convertido em crédito de 30 €. Os Fundadores abrem a pré-venda dois dias antes da oferta Standard. Bónus adquiridos na validação da maquete: capa ilustrada, 200 Instants e portes oferecidos.`,
+            `Oferta Standard: aberta de 15 de junho a 15 de agosto de 2026, sem quota. Adiantamento de 30 €, convertido em crédito de 30 €. Bónus: 100 Instants e portes oferecidos.`,
+            `Código influenciador: aberto de 15 de junho a 15 de agosto de 2026. Adiantamento de 25 €, convertido em crédito de 30 € (desconto efetivo de 5 €). A comissão eventualmente paga ao influenciador não é suportada pelo cliente.`,
+            `Indicação (apadrinhamento): a partir de 15 de agosto de 2026. A indicação confere 5 páginas oferecidas ao padrinho e 3 páginas oferecidas ao afilhado. Estas páginas ficam em espera na conta desde a inscrição e são definitivamente adquiridas quando ambos os adiantamentos tiverem sido pagos e deixarem de ser reembolsáveis (ou seja, após a validação da maquete de cada um). Enquanto esta condição não estiver preenchida, as páginas permanecem em espera; são anuladas se um dos dois adiantamentos for reembolsado.`,
+          ] },
+          { kind: 'p', value: `O ficheiro digital HD está incluído em todas as ofertas.` },
+        ],
+      },
+      {
+        heading: `Artigo 6.º — Especificações técnicas do conteúdo fornecido pelo cliente`,
+        blocks: [
+          { kind: 'p', value: `6.1 O cliente fornece fotografias conformes às especificações exibidas (resolução mínima, formatos aceites, margens de corte) detalhadas na Ficha de Produto. O resultado do álbum é apreciado à luz dessas especificações.` },
+          { kind: 'p', value: `6.2 Não constituem defeito: (i) as diferenças de cor entre a exibição no ecrã (RGB retroiluminado) e a impressão em papel (CMYK), dentro das tolerâncias normais do processo; (ii) as limitações de resultado imputáveis a um ficheiro de origem não conforme (baixa resolução, compressão, desfocagem).` },
+          { kind: 'p', value: `6.3 O cliente é o único responsável pelas fotografias que transmite e garante deter todos os direitos sobre as mesmas (artigo 3.3).` },
+        ],
+      },
+      {
+        heading: `Artigo 7.º — Pagamento`,
+        blocks: [
+          { kind: 'p', value: `7.1 Prestador. Os pagamentos são processados pela Stripe, certificada PCI-DSS. A Bellajour não conserva dados do cartão.` },
+          { kind: 'p', value: `7.2 Autenticação forte (SCA / 3-D Secure 2). Nos termos da DSP2, o pagamento pode exigir autenticação forte junto do banco do cliente.` },
+          { kind: 'p', value: `7.3 Falta de pagamento do remanescente. Em caso de não pagamento do remanescente após a validação da maquete, a Bellajour pode suspender a produção e, após interpelação sem resposta, resolver a encomenda. Nesse caso, o adiantamento é retido apenas na medida dos custos efetiva e justificadamente incorridos (nomeadamente a conceção da maquete validada), de forma proporcionada e sem exceder o montante do adiantamento; qualquer excedente é reembolsado. Esta estipulação não prejudica o artigo 8.º.` },
+          { kind: 'p', value: `7.4 Chargebacks. Qualquer contestação de pagamento (chargeback) infundada, relativa a encomenda cuja maquete foi validada (encomenda definitiva — artigo 8.º), poderá ser contestada pela Bellajour junto da Stripe com base nas presentes Condições e no registo temporal da validação.` },
+        ],
+      },
+      {
+        heading: `Artigo 8.º — Direito de livre resolução e a sua exceção`,
+        blocks: [
+          { kind: 'p', value: `8.1 Princípio. Nos contratos à distância, o consumidor dispõe, em princípio, de um direito de livre resolução de 14 dias, sem necessidade de indicar motivo (artigo 10.º do DL 24/2014).` },
+          { kind: 'p', value: `8.2 Antes da validação da maquete — reembolso integral. Enquanto o cliente não tiver validado a sua maquete, a encomenda não é definitiva. Independentemente do estado de execução (incluindo o carregamento das fotografias), pode solicitar o reembolso em numerário do adiantamento efetivamente pago, a 100 %, sem retenção, sem custos e sem penalização, por exceção ao carácter não reembolsável do crédito (5.3). O direito de resolução é conferido pelo artigo 10.º do DL 24/2014 e os seus efeitos (reembolso) regem-se pelo artigo 12.º do mesmo decreto-lei. Esta faculdade pode ser exercida enquanto a maquete não tiver sido validada e o crédito não tiver caducado (artigo 5.5); prevalece a mais próxima destas duas datas.` },
+          { kind: 'p', value: `8.3 Exceção de personalização e a sua cristalização. Nos termos do artigo 17.º, n.º 1, alínea c), do DL 24/2014 (que transpõe a Diretiva 2011/83/UE), o direito de livre resolução não se aplica aos bens confecionados de acordo com especificações do consumidor ou manifestamente personalizados. Para o álbum Bellajour, esta exceção produz efeitos no momento exato da validação da maquete pelo cliente, concretizada por uma caixa de seleção própria e com registo de data e hora, pela qual o cliente: (i) reconhece que o seu álbum é confecionado de acordo com as suas especificações; (ii) reconhece expressamente perder o seu direito de livre resolução; (iii) solicita o início da produção. A partir desta validação, a encomenda é definitiva e não resolúvel, e nenhum reembolso (em numerário ou em crédito) é devido a este título, sem prejuízo das garantias legais (artigo 9.º) e do incumprimento da Bellajour (artigos 8.7 e 12.º).` },
+          { kind: 'p', value: `8.4 Maquete validada = referência contratual. A maquete validada e datada constitui a referência da encomenda. Qualquer apreciação de conformidade do álbum entregue é efetuada por comparação com essa maquete validada, com exclusão de qualquer expectativa subjetiva não refletida na maquete.` },
+          { kind: 'p', value: `8.5 Informação prévia. A perda do direito de livre resolução é dada a conhecer ao cliente de forma clara e legível, em destaque próprio, desde a página da oferta e no resumo que antecede o botão «Encomendar com obrigação de pagamento», nos termos do artigo 4.º, n.º 1, alínea n), do DL 24/2014. Na falta de informação prévia, a exceção não é oponível.` },
+          { kind: 'p', value: `8.6 Prova. A Bellajour conserva, durante 10 anos (Código Comercial, artigo 40.º), os elementos de prova: versão das Condições aceite e registo temporal da aceitação no adiantamento, registo temporal do carregamento, registo temporal e versão da validação da maquete, e identificador da transação Stripe.` },
+          { kind: 'p', value: `8.7 Montante e incumprimento da Bellajour. O reembolso incide sobre o montante efetivamente pago (Fundador 25 €; influenciador 25 €); as bonificações nunca desembolsadas (5 €) não são reembolsáveis. Se a Bellajour não puder produzir ou entregar (falha interna, falha do impressor parceiro, força maior, cessação de atividade), qualquer quantia paga é integralmente reembolsada em numerário no meio de pagamento original, no prazo máximo de 14 dias após a aceitação do pedido ou a constatação da falha (artigo 12.º do DL 24/2014). No plano contabilístico, este reembolso dá lugar à emissão de uma nota de crédito que anula a fatura de adiantamento; a nota de crédito é um documento contabilístico e não um modo de reembolso que substitua o pagamento em numerário.` },
+          { kind: 'p', value: `8.8 Versionamento. A versão das presentes Condições oponível ao cliente é a que aceitou no momento da encomenda; nas pré-vendas Fundadores, a aceite no momento do pagamento do adiantamento. Qualquer alteração posterior não tem efeito retroativo sobre a sua encomenda.` },
+        ],
+      },
+      {
+        heading: `Artigo 9.º — Garantias legais`,
+        blocks: [
+          { kind: 'p', value: `9.1 Garantia de conformidade — 3 anos (DL n.º 84/2021, artigo 12.º, n.º 1), a contar da entrega.` },
+          { kind: 'p', value: `9.2 Presunção — 2 anos (artigo 13.º): durante 24 meses cabe à Bellajour provar a conformidade.` },
+          { kind: 'p', value: `9.3 Direito de rejeição — 30 dias: substituição ou resolução imediatas, sem condição. Este prazo conta-se da entrega ou, tratando-se de defeito não aparente na receção, da data em que é ou deveria razoavelmente ter sido constatado (DL 84/2021).` },
+          { kind: 'p', value: `9.4 Hierarquia dos meios. Em caso de desconformidade, o cliente tem direito, em primeiro lugar, à reposição da conformidade por reparação ou substituição (reimpressão); subsidiariamente, à redução do preço ou à resolução, quando a reimpressão for impossível ou desproporcionada, ou quando falhe, se repita ou não seja realizada num prazo razoável. Prazo de reposição: 30 dias, salvo complexidade especial.` },
+          { kind: 'p', value: `9.5 Irrenunciabilidade: qualquer cláusula em contrário tem-se por não escrita.` },
+          { kind: 'p', value: `9.6 As garantias aplicam-se independentemente da exceção ao direito de livre resolução (artigo 8.º).` },
+        ],
+      },
+      {
+        heading: `Artigo 10.º — Entrega, transferência do risco e segurança do produto (GPSR)`,
+        blocks: [
+          { kind: 'p', value: `10.1 Entrega na morada indicada pelo cliente. O fabrico é confiado a um impressor parceiro estabelecido na União Europeia, sem que esta subcontratação altere a responsabilidade da Bellajour perante o cliente. O prazo de entrega conta-se a partir da validação da maquete; é dado a conhecer ao cliente antes da encomenda (estimativa: 10 a 15 dias úteis consoante a carga de produção) e não excede 30 dias, salvo acordo expresso do cliente, nos termos do artigo 9.º do DL 24/2014.` },
+          { kind: 'p', value: `10.2 Transferência do risco. Os riscos de perda ou deterioração transferem-se para o consumidor no momento da receção física do bem (por si ou por terceiro que designe, distinto da transportadora), nos termos do artigo 20.º da Diretiva 2011/83/UE e do DL 24/2014. O risco nunca se transfere com a entrega à transportadora.` },
+          { kind: 'p', value: `10.3 Compra-presente: o consumidor na aceção das presentes Condições é o comprador, que exerce as garantias e recebe as comunicações, ainda que o álbum seja entregue a um terceiro beneficiário.` },
+          { kind: 'p', value: `10.4 Entregas fora da UE: podem aplicar-se direitos aduaneiros e impostos de importação a cargo do destinatário, segundo as regras do país de destino.` },
+          { kind: 'p', value: `10.5 Fabricante e rastreabilidade (GPSR). Na aceção do Regulamento (UE) 2023/988, a Bellajour, que comercializa o álbum sob a sua marca, mantém a qualidade de fabricante (artigos 3.º, n.º 8, e 13.º, n.º 1) e é ela própria a pessoa responsável estabelecida na UE (artigo 16.º); as obrigações do artigo 9.º do Regulamento não são delegáveis, atuando o impressor parceiro como subcontratante de produção. Cada álbum é identificado pelo número de encomenda, constante da guia de entrega. Em caso de recolha ou alerta de segurança, a Bellajour contacta os clientes afetados através do e-mail indicado na encomenda; o cliente compromete-se a manter os seus dados de contacto atualizados.` },
+        ],
+      },
+      {
+        heading: `Artigo 11.º — Responsabilidade e segurança dos conteúdos`,
+        blocks: [
+          { kind: 'p', value: `11.1 A Bellajour responde pelos danos diretos e previsíveis decorrentes de incumprimento comprovado das suas obrigações.` },
+          { kind: 'p', value: `11.2 Nos limites permitidos por lei, exclui-se a responsabilidade por danos indiretos (perda de rendimentos ou de dados, lucros cessantes). Esta limitação não se aplica a danos pessoais, nem em caso de dolo ou culpa grave.` },
+          { kind: 'p', value: `11.3 Segurança e armazenamento dos conteúdos. As fotografias transmitidas e o ficheiro HD são armazenados numa infraestrutura situada na União Europeia; não há qualquer transferência fora da UE a título do armazenamento. O reconhecimento dos rostos é igualmente efetuado na UE. Em contrapartida, certas operações de tratamento (análise e geração da capa ilustrada) recorrem a prestadores estabelecidos nos Estados Unidos; estas transferências são enquadradas pelas cláusulas contratuais-tipo da Comissão Europeia (e, se for caso disso, pelo Data Privacy Framework quando o prestador esteja certificado). As medidas de segurança e a lista atualizada dos prestadores constam da Política de Privacidade, para a qual se remete expressamente.` },
+        ],
+      },
+      {
+        heading: `Artigo 12.º — Força maior, indisponibilidade e recolha de segurança`,
+        blocks: [
+          { kind: 'p', value: `12.1 Força maior. A Bellajour não é responsável por incumprimento resultante de caso de força maior, isto é, um evento exterior, imprevisível e irresistível que escape ao seu controlo (nomeadamente catástrofe natural, escassez geral de matérias-primas, incidente técnico grave de um fornecedor de infraestrutura, conflito armado). Os prazos suspendem-se durante o impedimento. Se este se prolongar por mais de 60 dias ou tornar a execução definitivamente impossível, qualquer das partes pode resolver a encomenda; as quantias pagas são integralmente reembolsadas, sem outra indemnização. A falha do impressor parceiro, escolhido pela Bellajour, não é um caso de força maior; é tratada no artigo 8.7 (reembolso integral).` },
+          { kind: 'p', value: `12.2 Indisponibilidade. Se um formato ou produto ficar indisponível de forma definitiva e não substituível após a encomenda, a Bellajour reembolsa o cliente; nenhuma substituição é imposta sem o seu acordo.` },
+          { kind: 'p', value: `12.3 Recolha de segurança (GPSR). Em caso de recolha ao abrigo do Regulamento (UE) 2023/988, a Bellajour contacta os clientes afetados por e-mail e publica a informação no seu sítio; as modalidades (devolução, substituição, reembolso) são definidas caso a caso nos termos legais.` },
+        ],
+      },
+      {
+        heading: `Artigo 13.º — Versões, lei aplicável e litígios`,
+        blocks: [
+          { kind: 'p', value: `13.1 Versão oponível: a aceite à data da encomenda. As pré-vendas Fundadores regem-se pela versão aceite no pagamento do adiantamento. Qualquer alteração posterior é sem efeito retroativo.` },
+          { kind: 'p', value: `13.2 Evolução do catálogo. A Bellajour pode fazer evoluir a sua oferta (novos estilos, aplicação móvel, produtos complementares) sem vincular retroativamente os clientes que já tenham encomendado; os Instants e créditos mantêm-se nas condições da sua aquisição.` },
+          { kind: 'p', value: `13.3 Lei aplicável: direito português, sem prejuízo das disposições imperativas mais protetoras da lei da residência habitual do consumidor (Regulamento Roma I, artigo 6.º).` },
+          { kind: 'p', value: `13.4 Foro: o consumidor pode recorrer aos tribunais do seu país de residência.` },
+          { kind: 'p', value: `13.5 Reclamações e resolução alternativa de litígios (RAL). Antes de qualquer ação, o cliente pode reclamar para contact@bellajour.com. Pode ainda: utilizar o Livro de Reclamações Eletrónico (https://www.livroreclamacoes.pt); recorrer a uma entidade de RAL portuguesa (Lei 144/2015), designadamente o Centro de Arbitragem de Conflitos de Consumo de Lisboa (www.centroarbitragemlisboa.pt) — centro territorialmente competente para a sede da Bellajour — ou, para as zonas não abrangidas por um centro regional, o CNIACC (www.cniacc.pt). A informação é obrigatória; a adesão da Bellajour é facultativa.` },
+          { kind: 'p', value: `13.6 Nulidade parcial: se uma cláusula for considerada nula, as demais mantêm-se em vigor.` },
+          { kind: 'p', value: `13.7 Remissão RGPD e cookies: o tratamento de dados pessoais consta da Política de Privacidade (RGPD, artigos 13.º e 14.º) e a utilização de cookies da Política de Cookies, acessível através do banner de consentimento do sítio. Estes documentos fazem parte integrante da relação contratual.` },
+        ],
+      },
+      {
+        heading: `Anexo — Ficha de produto (Álbum Bellajour no Lançamento, oferta de base)`,
+        id: `fiche-produit`,
+        blocks: [
+          { kind: 'h3', text: `Características técnicas` },
+          { kind: 'table', columns: [`Parâmetro`, `Valor`], rows: [
+            [`Tipo`, `Livro de fotografias encadernado, impresso por encomenda`],
+            [`Formato`, `A4 retrato — 210 × 297 mm`],
+            [`Encadernação`, `Capa dura (hardcover)`],
+            [`Paginação de base`, `30 páginas`],
+            [`Paginação mín. / máx.`, `mín. 30 páginas — máx. 200 páginas (número de páginas obrigatoriamente par)`],
+            [`Capa`, `Ilustrada, única, gerada por IA num estilo próprio da marca`],
+            [`Impressão`, `Quadricromia, 300 DPI, perfil colorimétrico FOGRA 39`],
+          ] },
+          { kind: 'h3', text: `O que inclui a oferta de base` },
+          { kind: 'list', items: [
+            `O álbum físico encadernado (livro, composto a partir das suas fotografias)`,
+            `A capa ilustrada à medida`,
+            `A paginação composta por algoritmo enriquecido com os retornos dos clientes, com intervenção humana`,
+            `A versão digital HD (ficheiro digital de alta definição do seu álbum, incluído)`,
+          ] },
+          { kind: 'h3', text: `Especificações dos ficheiros fornecidos pelo cliente` },
+          { kind: 'p', value: `Resolução mínima: 800 × 800 píxeis. Abaixo deste limiar, a fotografia é rejeitada ou remetida para um espaço mais pequeno. Existe uma diferença de cor normal entre a exibição no ecrã (RGB) e a impressão em papel; esta não constitui um defeito.` },
+          { kind: 'p', value: `Formatos de ficheiro aceites: JPEG, PNG, HEIC, HEIF, WebP.` },
+          { kind: 'h3', text: `Grelha tarifária — Álbum Bellajour Lançamento (oferta de base)` },
+          { kind: 'p', value: `Preços de catálogo padrão, fora de oferta promocional. Preços exibidos em euros, com todos os impostos incluídos. IVA aplicado à taxa do país de residência do consumidor (regime OSS-União) após o limiar de 10 000 € de volume de negócios.` },
+          { kind: 'table', columns: [`Paginação`, `Preço c/ IVA`], rows: [
+            [`30 páginas (base)`, `64 €`],
+            [`50 páginas`, `82 €`],
+            [`80 páginas`, `120 €`],
+            [`100 páginas`, `146 €`],
+            [`150 páginas`, `211 €`],
           ] },
         ],
       },
