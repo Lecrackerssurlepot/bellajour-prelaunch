@@ -42,7 +42,7 @@ interface Offre {
 const FEATURE_LABELS = {
   credite: 'Crédité sur commande',
   statut: 'Statut',
-  illustration: 'Illustration Midjourney offerte',
+  illustration: 'Création de votre illustration Bellajour, cet été quand vous voulez',
   instants: 'Instants crédités',
   livraison: 'Livraison offerte',
   digital: 'Version digitale HD',
