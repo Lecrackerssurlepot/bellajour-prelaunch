@@ -87,14 +87,15 @@ function Book({ spread, reduce }) {
           style={{ left: '50%', width: '24px', transform: 'translateX(-50%)', background: 'linear-gradient(to right, transparent 0%, rgba(28,28,28,0.08) 50%, transparent 100%)' }}
         />
 
-        {/* Surface des pages — clip strict : aucune image ne bave hors du livre. */}
-        <div className="fb-book__pages" style={{ aspectRatio: '1.414 / 1' }}>
+        {/* Surface des pages — clip strict : aucune image ne bave hors du livre.
+            Ratio EXACT de 2 pages A4 côte à côte (1000×1414 chacune → 2000/1414)
+            → chaque demi-page = A4 pile → object-fit:contain remplit sans bande
+            ni rognage. La reliure (spine/crease) est un overlay absolu par-dessus
+            la couture centrale ; pas de colonne « gouttière » qui rognerait. */}
+        <div className="fb-book__pages" style={{ aspectRatio: '2000 / 1414' }}>
           <div className="fb-book__inner">
-            {/* GUTTER STRICT : deux demi-pages égales séparées par une gouttière
-                centrale alignée sur la reliure. Chaque page reste confinée. */}
             <div className="fb-spread">
               <Page url={spread.left} seed={`${spread.index}-l`} eager={eager} />
-              <div className="fb-spread__gutter" aria-hidden="true" />
               <Page url={spread.right} seed={`${spread.index}-r`} eager={eager} />
             </div>
           </div>

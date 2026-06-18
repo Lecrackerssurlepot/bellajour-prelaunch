@@ -98,16 +98,19 @@
 .fb-book__inner {
   position: absolute;
   inset: 0;
-  padding: 12px;
+  /* padding 0 : les photos vont bord à bord (le fin liseré du livre = padding
+     du .fb-book__shell, conservé). Plus de marge interne crème/blanche. */
+  padding: 0;
 }
 
-/* ── La double-page : 2 demi-pages égales + gouttière centrale ── */
+/* ── La double-page : 2 demi-pages STRICTEMENT égales, sans gouttière.
+   Chaque demi-page = A4 exact (le conteneur est en 2000/1414) → contain fait
+   pile le plein cadre. La reliure est dessinée en overlay (spine/crease). ── */
 .fb-spread {
   display: grid;
-  grid-template-columns: 1fr var(--bj-sp-4) 1fr;
+  grid-template-columns: 1fr 1fr;
   height: 100%;
 }
-.fb-spread__gutter { /* la gouttière alignée sur la reliure (colonne vide) */ }
 .fb-spread__page {
   position: relative;
   overflow: hidden; /* chaque page clippe son image */
@@ -118,7 +121,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain; /* pages A4 déjà composées : on ne rogne RIEN */
+  object-fit: contain; /* demi-page = A4 exact → remplit sans bande ni rognage */
   display: block;
 }
 
@@ -164,6 +167,11 @@
 .fb-film__scroll {
   overflow-x: auto;
   scrollbar-width: none;
+  /* Centre les vignettes quand elles tiennent dans la largeur ; `safe` retombe
+     sur un alignement début (scrollable) dès que ça déborde → jamais de coupe
+     à gauche. Corrige le ruban « collé à gauche » sous le livre centré. */
+  display: flex;
+  justify-content: safe center;
 }
 .fb-film__scroll::-webkit-scrollbar {
   display: none;

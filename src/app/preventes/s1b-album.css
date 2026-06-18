@@ -6,11 +6,10 @@
 
 .fbsec {
   width: 100%;
-  max-width: var(--bj-max-width);
-  margin: 0 auto;
-  /* Air généreux au-dessus du titre (la section suit le Hero) : padding-top
-     renforcé pour que le titre respire, cohérent avec les autres sections. */
-  padding: calc(var(--bj-section-padding-desktop) + var(--bj-sp-8)) 5vw var(--bj-section-padding-desktop);
+  /* Padding section = réf. charte des autres sections (S3Objet / S5Garanties).
+     Les tokens --bj-section-padding-* et --bj-max-width n'existent pas dans le
+     repo (jamais définis) : on utilise le littéral clamp, comme S3/S5. */
+  padding: clamp(56px, 9vh, 110px) 5vw;
   /* Apparition au scroll : fade + translateY (GPU-only : opacity + transform). */
   opacity: 0;
   transform: translateY(24px);
@@ -47,15 +46,13 @@
   display: flex;
 }
 
-/* ── Tablette ── */
-@media (max-width: 1279px) {
-  .fbsec { padding: var(--bj-section-padding-tablet) 5vw; }
-}
+/* Tablette : le padding base clamp(56px, 9vh, 110px) est déjà responsive (9vh)
+   → pas d'override dédié nécessaire. */
 
 /* ── Mobile (≤767px) : 1 page + swipe. La scène n'impose plus de hauteur fixe :
-   le livre (.fb-m) se dimensionne par la largeur, la section grandit avec lui. ── */
+   le livre (.fb-m) se dimensionne par la largeur, la section grandit avec lui.
+   Le padding section reste le clamp de base (min 56px) — correct sur mobile. ── */
 @media (max-width: 767px) {
-  .fbsec { padding: var(--bj-section-padding-mobile) 5vw; }
   .fbsec__head { margin-bottom: var(--bj-sp-5); }
   .fbsec__title { font-size: var(--bj-fs-h1-screen); }
   .fbsec__stage {
