@@ -296,7 +296,7 @@
 .fb-m__shell {
   position: relative;
   padding: 10px;
-  background: var(--bj-cream-2);
+  background: #fff; /* surface du livre BLANCHE (cohérence desktop/mobile) */
   box-shadow:
     0 2px 4px rgba(28, 28, 28, 0.06),
     0 8px 24px rgba(28, 28, 28, 0.1),
@@ -307,14 +307,14 @@
   position: relative;
   width: 100%;
   aspect-ratio: 0.707 / 1; /* une page A4 portrait */
-  background: var(--bj-cream-tint-1);
+  background: #fff; /* fond pages BLANC */
   overflow: hidden;
 }
 .fb-m__page {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: var(--bj-cream);
+  background: #fff; /* fond page BLANC */
 }
 .fb-m__img {
   position: absolute;
