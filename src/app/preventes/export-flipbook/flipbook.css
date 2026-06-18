@@ -1,0 +1,353 @@
+/* ============================================================
+   FLIPBOOK — coque livre double-page + filmstrip.
+   Extrait/adapté de src/screens/montage/Montage.css du proto.
+   La GÉOMÉTRIE (aspect, reliure) reste en style inline (JSX).
+
+   TOKENS : on N'IMPORTE PAS tokens.css (supprimé). Toutes les variables
+   sont remappées sur les tokens charte --bj-* (source unique : src/app/tokens.css).
+   Cf. ÉTAPE 2.B — le glass actif passe par --bj-glass-light-bg-active (0.55).
+   ============================================================ */
+
+/* ── Conteneur ──────────────────────────────────────────────
+   ⚠️ Le parent DOIT donner une hauteur à .fb (ex. height fixe ou flex:1
+   dans un parent flex), sinon le livre n'a pas de hauteur à remplir.
+   Ici, le parent est .fbsec__stage (hauteur CONTENUE, pas 100dvh). */
+.fb {
+  --film-rest: 92px;            /* hauteur réelle du filmstrip au repos */
+  --film-gap: var(--bj-sp-4);   /* écart du filmstrip au bord bas */
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fb__stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* réserve la place du filmstrip → le livre ne passe jamais dessous */
+  padding: 0 var(--bj-sp-5) calc(var(--film-rest) + var(--film-gap) + var(--bj-sp-5));
+}
+.fb__viewer {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--bj-sp-4);
+}
+.fb__row {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bj-sp-3);
+}
+.fb__book-wrap {
+  /* largeur posée en inline par useBookFit ; fallback (height-based) avant la
+     1re mesure ResizeObserver → évite un flash de clip si le livre dépasse. */
+  flex: none;
+  width: min(100%, calc((82vh - 200px) * 1.414));
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ── Le livre ──────────────────────────────────────────────── */
+.fb-book {
+  position: relative;
+  width: 100%; /* largeur exacte posée en inline par useBookFit */
+  max-width: 100%;
+  margin: 0 auto;
+}
+.fb-book__glow {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.fb-book__shell {
+  position: relative;
+  padding: 12px;
+  background: var(--bj-cream-2);
+  box-shadow:
+    0 2px 4px rgba(28, 28, 28, 0.06),
+    0 8px 24px rgba(28, 28, 28, 0.1),
+    0 30px 70px rgba(28, 28, 28, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.fb-book__spine-l,
+.fb-book__spine-r,
+.fb-book__crease {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  z-index: 10;
+  pointer-events: none;
+}
+.fb-book__pages {
+  position: relative;
+  width: 100%;
+  background: var(--bj-cream-tint-1);
+  box-shadow: inset 0 0 0 1px rgba(28, 28, 28, 0.04);
+  overflow: hidden; /* clip : aucune image ne bave hors du livre */
+}
+.fb-book__inner {
+  position: absolute;
+  inset: 0;
+  padding: 12px;
+}
+
+/* ── La double-page : 2 demi-pages égales + gouttière centrale ── */
+.fb-spread {
+  display: grid;
+  grid-template-columns: 1fr var(--bj-sp-4) 1fr;
+  height: 100%;
+}
+.fb-spread__gutter { /* la gouttière alignée sur la reliure (colonne vide) */ }
+.fb-spread__page {
+  position: relative;
+  overflow: hidden; /* chaque page clippe son image */
+  background: var(--bj-cream);
+}
+.fb-spread__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* pages A4 déjà composées : on ne rogne RIEN */
+  display: block;
+}
+
+/* ── Flèches de navigation ─────────────────────────────────── */
+.fb-arrow {
+  flex-shrink: 0;
+  display: inline-flex;
+  padding: 12px;
+  border-radius: var(--bj-r-pill);
+  border: 1px solid var(--bj-glass-light-border);
+  background: var(--bj-glass-light-bg-active);
+  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+  backdrop-filter: blur(var(--bj-glass-blur));
+  color: var(--bj-text-soft);
+  cursor: pointer;
+  box-shadow: var(--bj-shadow-soft);
+}
+.fb-arrow:hover {
+  background: var(--bj-action-soft);
+  color: var(--bj-action);
+}
+.fb-arrow.is-disabled {
+  pointer-events: none;
+}
+
+/* ── Filmstrip (overlay bas) — taille FIXE ; seule la vignette survolée grossit
+   via transform (hors flux) → les voisines ne bougent pas d'un pixel. ── */
+.fb-film {
+  --thumb-w: 56px;
+  position: absolute;
+  left: var(--bj-sp-4);
+  right: var(--bj-sp-4);
+  bottom: var(--bj-sp-4);
+  z-index: 20;
+  border-radius: 18px;
+  border: 1px solid var(--bj-glass-light-border);
+  background: var(--bj-glass-light-bg-active);
+  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+  backdrop-filter: blur(var(--bj-glass-blur));
+  box-shadow: var(--bj-shadow-soft);
+  padding: 6px 12px;
+}
+.fb-film__scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.fb-film__scroll::-webkit-scrollbar {
+  display: none;
+}
+.fb-film__row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  min-width: max-content;
+  padding-top: 7px; /* place pour le scale au survol sans clip */
+}
+/* Puce de chapitre — décorative */
+.fb-film__chip {
+  align-self: stretch;
+  flex-shrink: 0;
+  width: 66px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--bj-glass-light-border);
+  border-radius: var(--bj-r-md);
+  background: var(--bj-glass-light-bg-active);
+  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+  backdrop-filter: blur(var(--bj-glass-blur));
+}
+.fb-film__chip-num {
+  font-family: var(--bj-font-ui);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+.fb-film__chip-title {
+  font-family: var(--bj-font-ui);
+  font-size: 9.5px;
+  line-height: 1.15;
+  text-align: center;
+  color: var(--bj-text-soft);
+}
+.fb-film__thumb {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: var(--thumb-w);
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.62;
+  transform-origin: center bottom;
+  transition: transform var(--bj-dur) var(--bj-ease), opacity var(--bj-dur) var(--bj-ease);
+}
+.fb-film__thumb:hover {
+  opacity: 1;
+  transform: scale(1.12);
+  z-index: 6;
+}
+.fb-film__thumb.is-active {
+  opacity: 1;
+}
+/* Mini = la double-page en réduction : page gauche | page droite */
+.fb-film__mini {
+  width: 100%;
+  height: 42px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 2px;
+  background: #fff;
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(28, 28, 28, 0.1);
+}
+/* Variante mobile : une seule page par vignette (1 cellule) */
+.fb-film__mini--single {
+  grid-template-columns: 1fr;
+}
+.fb-film__thumb.is-active .fb-film__mini {
+  box-shadow: 0 0 0 2px var(--bj-action), 0 4px 14px rgba(74, 144, 217, 0.25);
+}
+.fb-film__cell {
+  position: relative;
+  overflow: hidden;
+  background: var(--bj-cream-tint-3);
+}
+.fb-film__cell img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* miniatures : on ne rogne pas non plus */
+  display: block;
+}
+.fb-film__pages {
+  font-size: 9px;
+  color: var(--bj-text-soft);
+}
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE (≤ 767px) — UNE page à la fois, swipe horizontal.
+   DOM dédié (.fb-m) → ne touche pas au chemin desktop (.fb) ci-dessus.
+   Le livre est dimensionné par la LARGEUR (pas de useBookFit ici).
+   ════════════════════════════════════════════════════════════ */
+.fb-m {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+  gap: var(--bj-sp-4);
+}
+.fb-m__viewer {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* le swipe horizontal nous revient ; le scroll vertical reste natif */
+  touch-action: pan-y;
+}
+.fb-m__book {
+  position: relative;
+  width: clamp(240px, 84vw, 460px);
+  margin: 0 auto;
+}
+.fb-m__shell {
+  position: relative;
+  padding: 10px;
+  background: var(--bj-cream-2);
+  box-shadow:
+    0 2px 4px rgba(28, 28, 28, 0.06),
+    0 8px 24px rgba(28, 28, 28, 0.1),
+    0 22px 50px rgba(28, 28, 28, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.fb-m__pages {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 0.707 / 1; /* une page A4 portrait */
+  background: var(--bj-cream-tint-1);
+  overflow: hidden;
+}
+.fb-m__page {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bj-cream);
+}
+.fb-m__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* idem desktop : aucune page rognée */
+  display: block;
+}
+/* Filmstrip en mobile : sort de l'overlay absolu → flux normal sous le livre */
+.fb-m .fb-film {
+  position: static;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+}
+
+/* ════════════════════════════════════════════════════════════
+   prefers-reduced-motion — neutralise les transitions CSS.
+   (Les anim framer-motion sont neutralisées côté JS via useReducedMotion.)
+   ════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .fb-film__thumb {
+    transition: none;
+  }
+  .fb-film__thumb:hover {
+    transform: none;
+  }
+}

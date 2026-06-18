@@ -1,0 +1,89 @@
+/* ============================================================
+   S1b — « Feuilletez un album Bellajour »
+   Section dans le flux de scroll (hauteur CONTENUE, pas 100dvh),
+   insérée entre le Hero (S1) et S2. Charte --bj-*.
+   ============================================================ */
+
+.fbsec {
+  width: 100%;
+  max-width: var(--bj-max-width);
+  margin: 0 auto;
+  padding: var(--bj-section-padding-desktop) 5vw;
+  /* Apparition au scroll : fade + translateY (GPU-only : opacity + transform). */
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.7s var(--bj-ease),
+    transform 0.7s var(--bj-ease);
+  will-change: opacity, transform;
+}
+.fbsec.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.fbsec__head {
+  text-align: center;
+  margin-bottom: var(--bj-sp-6);
+}
+.fbsec__eyebrow {
+  margin: 0 0 var(--bj-sp-2);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bj-terracotta-2);
+}
+.fbsec__title {
+  margin: 0;
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: var(--bj-fs-h2);
+  color: var(--bj-text);
+  line-height: 1.1;
+}
+.fbsec__sub {
+  margin: var(--bj-sp-3) auto 0;
+  max-width: 46ch;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-lg);
+  color: var(--bj-text-soft);
+}
+
+/* Scène = parent qui DONNE la hauteur au flipbook (.fb lit height:100%).
+   Hauteur contenue : le livre tient en entier, la section respire dans le scroll. */
+.fbsec__stage {
+  position: relative;
+  width: 100%;
+  height: clamp(520px, 82vh, 880px);
+  display: flex;
+}
+
+/* ── Tablette ── */
+@media (max-width: 1279px) {
+  .fbsec { padding: var(--bj-section-padding-tablet) 5vw; }
+}
+
+/* ── Mobile (≤767px) : 1 page + swipe. La scène n'impose plus de hauteur fixe :
+   le livre (.fb-m) se dimensionne par la largeur, la section grandit avec lui. ── */
+@media (max-width: 767px) {
+  .fbsec { padding: var(--bj-section-padding-mobile) 5vw; }
+  .fbsec__head { margin-bottom: var(--bj-sp-5); }
+  .fbsec__title { font-size: var(--bj-fs-h1-screen); }
+  .fbsec__sub { font-size: var(--bj-fs-body); }
+  .fbsec__stage {
+    height: auto;
+    display: block;
+  }
+}
+
+/* ── prefers-reduced-motion : pas d'apparition animée ── */
+@media (prefers-reduced-motion: reduce) {
+  .fbsec {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    will-change: auto;
+  }
+}
