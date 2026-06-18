@@ -8,7 +8,9 @@
   width: 100%;
   max-width: var(--bj-max-width);
   margin: 0 auto;
-  padding: var(--bj-section-padding-desktop) 5vw;
+  /* Air généreux au-dessus du titre (la section suit le Hero) : padding-top
+     renforcé pour que le titre respire, cohérent avec les autres sections. */
+  padding: calc(var(--bj-section-padding-desktop) + var(--bj-sp-8)) 5vw var(--bj-section-padding-desktop);
   /* Apparition au scroll : fade + translateY (GPU-only : opacity + transform). */
   opacity: 0;
   transform: translateY(24px);
@@ -26,14 +28,6 @@
   text-align: center;
   margin-bottom: var(--bj-sp-6);
 }
-.fbsec__eyebrow {
-  margin: 0 0 var(--bj-sp-2);
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--bj-terracotta-2);
-}
 .fbsec__title {
   margin: 0;
   font-family: var(--bj-font-display);
@@ -42,13 +36,6 @@
   font-size: var(--bj-fs-h2);
   color: var(--bj-text);
   line-height: 1.1;
-}
-.fbsec__sub {
-  margin: var(--bj-sp-3) auto 0;
-  max-width: 46ch;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-lg);
-  color: var(--bj-text-soft);
 }
 
 /* Scène = parent qui DONNE la hauteur au flipbook (.fb lit height:100%).
@@ -71,7 +58,6 @@
   .fbsec { padding: var(--bj-section-padding-mobile) 5vw; }
   .fbsec__head { margin-bottom: var(--bj-sp-5); }
   .fbsec__title { font-size: var(--bj-fs-h1-screen); }
-  .fbsec__sub { font-size: var(--bj-fs-body); }
   .fbsec__stage {
     height: auto;
     display: block;

@@ -70,29 +70,21 @@ function Book({ spread, reduce }) {
       transition={reduce ? { duration: 0 } : { duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
       className="fb-book"
     >
-      {/* Ombre chaude sous le livre */}
-      <div
-        className="fb-book__glow"
-        style={{
-          bottom: '-28px',
-          width: '72%',
-          height: '48px',
-          background: 'radial-gradient(ellipse, rgba(188,151,125,0.28) 0%, transparent 70%)',
-          filter: 'blur(16px)',
-        }}
-      />
-
       <div className="fb-book__shell">
-        {/* Reliure 3 couches */}
+        {/* Reliure SUBTILE : deux versants très doux + une vallée centrale
+            dégradée (aucun trait net) → suggère le pli sans le souligner.
+            Gradients statiques : GPU-friendly, zéro reflow. */}
         <div
           className="fb-book__spine-l"
-          style={{ left: 'calc(50% - 60px)', width: '60px', background: 'linear-gradient(to right, transparent, rgba(28,28,28,0.14))' }}
+          style={{ left: 'calc(50% - 56px)', width: '56px', background: 'linear-gradient(to right, transparent, rgba(28,28,28,0.05))' }}
         />
-        <div className="fb-book__crease" style={{ left: '50%', width: '1px', background: 'rgba(28,28,28,0.30)', transform: 'translateX(-50%)' }} />
-        <div className="fb-book__crease" style={{ left: '50%', width: '1px', background: 'rgba(255,255,255,0.55)', transform: 'translateX(1px)' }} />
         <div
           className="fb-book__spine-r"
-          style={{ left: '50%', width: '50px', background: 'linear-gradient(to right, rgba(28,28,28,0.10), transparent)' }}
+          style={{ left: '50%', width: '56px', background: 'linear-gradient(to right, rgba(28,28,28,0.05), transparent)' }}
+        />
+        <div
+          className="fb-book__crease"
+          style={{ left: '50%', width: '24px', transform: 'translateX(-50%)', background: 'linear-gradient(to right, transparent 0%, rgba(28,28,28,0.08) 50%, transparent 100%)' }}
         />
 
         {/* Surface des pages — clip strict : aucune image ne bave hors du livre. */}

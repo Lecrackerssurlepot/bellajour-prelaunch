@@ -69,16 +69,10 @@
   max-width: 100%;
   margin: 0 auto;
 }
-.fb-book__glow {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  pointer-events: none;
-}
 .fb-book__shell {
   position: relative;
   padding: 12px;
-  background: var(--bj-cream-2);
+  background: #fff; /* surface du livre BLANCHE (intégration propre des pages) */
   box-shadow:
     0 2px 4px rgba(28, 28, 28, 0.06),
     0 8px 24px rgba(28, 28, 28, 0.1),
@@ -97,7 +91,7 @@
 .fb-book__pages {
   position: relative;
   width: 100%;
-  background: var(--bj-cream-tint-1);
+  background: #fff; /* fond pages BLANC */
   box-shadow: inset 0 0 0 1px rgba(28, 28, 28, 0.04);
   overflow: hidden; /* clip : aucune image ne bave hors du livre */
 }
@@ -117,7 +111,7 @@
 .fb-spread__page {
   position: relative;
   overflow: hidden; /* chaque page clippe son image */
-  background: var(--bj-cream);
+  background: #fff; /* fond page BLANC : les webp à bords clairs s'intègrent net */
 }
 .fb-spread__img {
   position: absolute;

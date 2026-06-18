@@ -51,11 +51,7 @@ export default function S1bAlbum() {
       className={`fbsec${revealed ? ' is-in' : ''}`}
     >
       <header className="fbsec__head">
-        <p className="fbsec__eyebrow">L’objet</p>
-        <h2 className="fbsec__title">Feuilletez un album Bellajour</h2>
-        <p className="fbsec__sub">
-          Pas une promesse : l’objet lui-même, page après page.
-        </p>
+        <h2 className="fbsec__title">Feuilletez un album Bellajour, page après page.</h2>
       </header>
 
       <div className="fbsec__stage">
