@@ -153,7 +153,7 @@ export default function ReservationModal({
           disabled={!prenomValid || !emailValid || !cgv || submitting}
           onClick={onSubmit}
         >
-          Réserver
+          Payer mon acompte
         </button>
       </div>
     </div>
