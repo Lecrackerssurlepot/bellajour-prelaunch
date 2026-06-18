@@ -96,9 +96,15 @@ export default function S1Hero() {
           <p className="s1-subtitle">Vivez, nous composons</p>
           {offer?.offerMode === 'founder' && (
             <p className="s1-places" aria-live="polite">
-              <span className="s1-places-lead">Plus que </span>
-              {placesRestantes(offer)} places Fondateur
-              <span className="s1-places-trail"> restantes</span>
+              {/* Texte groupé dans UN seul span : .s1-places est en flex (gap pour
+                  le point). Sans ce wrapper, chaque segment de texte deviendrait un
+                  flex item séparé par le gap → double espacement. Ici flux inline
+                  normal, les espaces en dur des spans servent de simples séparateurs. */}
+              <span className="s1-places-text">
+                <span className="s1-places-lead">Plus que </span>
+                {placesRestantes(offer)} places Fondateur
+                <span className="s1-places-trail"> restantes</span>
+              </span>
             </p>
           )}
           <button type="button" className="s1-cta" onClick={scrollToS4}>
