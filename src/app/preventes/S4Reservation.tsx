@@ -401,10 +401,10 @@ export default function S4Reservation() {
               ? 'Votre commande est validée !'
               : referrerPrenom
                 ? `${referrerPrenom} vous invite à pré-commander votre album`
-                : 'Pré-commandez dès maintenant votre album Bellajour'}
+                : 'Pré-commandez dès maintenant'}
           </h2>
           <p className="s4-subtitle">
-            Lancement le <strong>15 août</strong>, date à laquelle vous pourrez concevoir votre premier album
+            Vivez votre été, on créera votre album à la fin de vos vacances à partir du <strong>15 août</strong> !
           </p>
         </header>
 
