@@ -73,10 +73,14 @@
   position: relative;
   padding: 12px;
   background: #fff; /* surface du livre BLANCHE (intégration propre des pages) */
+  /* Ombre NEUTRE rééquilibrée pour détacher le livre du fond blanc TOUT AUTOUR :
+     hairline (bords nets) + halo ambiant quasi sans offset (haut/côtés) + drop
+     doux allégé (profondeur). Statique → GPU-friendly. */
   box-shadow:
-    0 2px 4px rgba(28, 28, 28, 0.06),
-    0 8px 24px rgba(28, 28, 28, 0.1),
-    0 30px 70px rgba(28, 28, 28, 0.16),
+    0 0 0 1px rgba(28, 28, 28, 0.05),
+    0 1px 16px rgba(28, 28, 28, 0.07),
+    0 12px 28px rgba(28, 28, 28, 0.10),
+    0 30px 60px rgba(28, 28, 28, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 .fb-book__spine-l,
@@ -87,6 +91,32 @@
   bottom: 12px;
   z-index: 10;
   pointer-events: none;
+}
+/* Titre de tranche : vertical, centré sur le pli, par-dessus la reliure.
+   Cormorant italic (--bj-font-display), bleu clair. Desktop uniquement. */
+.fb-book__title {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 11; /* au-dessus de la reliure (10) et des pages */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(11px, 1.05vw, 15px);
+  letter-spacing: 0.14em;
+  line-height: 1;
+  color: #c1e7ff;
+  /* Léger contraste pour rester lisible sur pli clair ou photo claire dessous. */
+  text-shadow: 0 1px 3px rgba(28, 28, 28, 0.35);
 }
 .fb-book__pages {
   position: relative;
