@@ -10,6 +10,17 @@
      Les tokens --bj-section-padding-* et --bj-max-width n'existent pas dans le
      repo (jamais définis) : on utilise le littéral clamp, comme S3/S5. */
   padding: clamp(56px, 9vh, 110px) 5vw;
+  /* Fond crème un cran plus profond (--bj-cream-2) DERRIÈRE le livre → le blanc
+     pur du livre ressort nettement. Fondu transparent en haut/bas : la zone
+     profonde n'apparaît qu'au centre et se raccorde en douceur au crème du body
+     (Hero au-dessus, S2 en dessous) → pas de bande dure. */
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--bj-cream-2) 18%,
+    var(--bj-cream-2) 82%,
+    transparent 100%
+  );
   /* Apparition au scroll : fade + translateY (GPU-only : opacity + transform). */
   opacity: 0;
   transform: translateY(24px);

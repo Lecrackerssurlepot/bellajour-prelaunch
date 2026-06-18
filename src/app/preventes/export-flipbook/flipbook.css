@@ -73,14 +73,15 @@
   position: relative;
   padding: 12px;
   background: #fff; /* surface du livre BLANCHE (intégration propre des pages) */
-  /* Ombre NEUTRE rééquilibrée pour détacher le livre du fond blanc TOUT AUTOUR :
-     hairline (bords nets) + halo ambiant quasi sans offset (haut/côtés) + drop
-     doux allégé (profondeur). Statique → GPU-friendly. */
+  /* Détachement du livre sur fond crème clair (faible contraste blanc/crème) :
+     - hairline de CONTOUR renforcé (0.10) → bord net tout autour, indép. du fond ;
+     - halo ambiant SANS offset (0 0) → les 4 côtés se détachent (pas que le bas) ;
+     - drop doux pour la profondeur. Statique → GPU-friendly. */
   box-shadow:
-    0 0 0 1px rgba(28, 28, 28, 0.05),
-    0 1px 16px rgba(28, 28, 28, 0.07),
-    0 12px 28px rgba(28, 28, 28, 0.10),
-    0 30px 60px rgba(28, 28, 28, 0.12),
+    0 0 0 1px rgba(28, 28, 28, 0.10),
+    0 0 18px rgba(28, 28, 28, 0.10),
+    0 10px 24px rgba(28, 28, 28, 0.12),
+    0 30px 60px rgba(28, 28, 28, 0.13),
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 .fb-book__spine-l,

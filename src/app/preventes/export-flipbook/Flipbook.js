@@ -87,8 +87,11 @@ function Book({ spread, reduce }) {
           style={{ left: '50%', width: '24px', transform: 'translateX(-50%)', background: 'linear-gradient(to right, transparent 0%, rgba(28,28,28,0.08) 50%, transparent 100%)' }}
         />
         {/* Titre de tranche, posé verticalement AU CENTRE du pli, par-dessus la
-            reliure. Cormorant (--bj-font-display). Desktop only (CSS). */}
-        <div className="fb-book__title" aria-hidden="true">Australie Bellajour</div>
+            reliure. Cormorant (--bj-font-display). UNIQUEMENT sur la couverture
+            (spread index 0 = [p39 | p01]). Desktop only (rendu dans Book). */}
+        {spread.index === 0 && (
+          <div className="fb-book__title" aria-hidden="true">Australie Bellajour</div>
+        )}
 
         {/* Surface des pages — clip strict : aucune image ne bave hors du livre.
             Ratio EXACT de 2 pages A4 côte à côte (1000×1414 chacune → 2000/1414)
