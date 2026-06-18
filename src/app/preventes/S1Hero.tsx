@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import './s1-hero.css'
+import { useOfferState } from './useOfferState'
+import { placesRestantes } from './offer-state'
 
 /* PRD §5.1 — S1 Hero plein page (header réel : fond mer + album centré).
    Logo blanc en barre fixe en haut / titre blanc / album centré / sous-titre + CTA.
@@ -19,6 +21,11 @@ const VIDEO_MQ =
 export default function S1Hero() {
   /* 'image' par défaut (SSR + mobile + reduced-motion) → aucune vidéo chargée. */
   const [bg, setBg] = useState<'image' | 'video'>('image')
+
+  /* Compteur places Fondateur — même source que la Section 4 (store dédupliqué,
+     aucun 2e fetch). Affiché UNIQUEMENT en mode founder ; rien tant que l'état
+     n'est pas arrivé (offer === null) → pas de flash. */
+  const offer = useOfferState()
 
   useEffect(() => {
     const mq = window.matchMedia(VIDEO_MQ)
@@ -87,6 +94,12 @@ export default function S1Hero() {
 
         <div className="s1-bottom">
           <p className="s1-subtitle">Vivez, nous composons</p>
+          {offer?.offerMode === 'founder' && (
+            <p className="s1-places" aria-live="polite">
+              <span className="s1-places-lead">Plus que </span>
+              {placesRestantes(offer)} places Fondateur
+            </p>
+          )}
           <button type="button" className="s1-cta" onClick={scrollToS4}>
             Participer aux préventes
           </button>

@@ -143,6 +143,39 @@
   .s1-bottom .s1-subtitle { display: none; }
 }
 
+/* ── Compteur places Fondateur ──
+   Pilule glass discrète posée au-dessus du CTA (rendu conditionnel : mode
+   founder uniquement). Sur photo (fond non plat) → le flou est un vrai effet,
+   pas un no-op : conforme à la règle anti-jank (élément petit, in-flow, pas fixe).
+   Texte blanc + point bleu action (rappel charte), ne vole pas la vedette au CTA. */
+.s1-places {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--bj-font-ui);
+  font-size: clamp(13px, 1.1vw, 15px);
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: #ffffff;
+  background: var(--bj-glass-light-bg);
+  border: 1px solid var(--bj-glass-light-border);
+  border-radius: var(--bj-r-pill);
+  padding: 7px 16px 7px 14px;
+  -webkit-backdrop-filter: blur(var(--bj-glass-blur-card));
+  backdrop-filter: blur(var(--bj-glass-blur-card));
+  /* Lisibilité sur ciel/mer clair, cohérent avec le sous-titre. */
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+/* Point bleu action — signale la rareté sans crier. */
+.s1-places::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--bj-action);
+}
+
 /* ── Bouton ghost / outline ── */
 .s1-cta {
   font-family: var(--bj-font-ui);
@@ -182,6 +215,12 @@
     font-size: var(--bj-fs-xs);
     letter-spacing: 0.14em;
   }
+  /* Mobile : wording court « {X} places Fondateur » (on masque « Plus que »). */
+  .s1-places {
+    font-size: 12.5px;
+    padding: 6px 14px 6px 12px;
+  }
+  .s1-places-lead { display: none; }
 }
 
 /* Écrans courts (paysage mobile, petits laptops) : on réduit encore l'album

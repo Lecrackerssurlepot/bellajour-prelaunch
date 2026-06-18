@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import './s4-reservation.css'
-import { DEFAULT_OFFER_STATE, PRIX_ALBUM_BASE, placesRestantes } from './offer-state'
-import type { OfferState } from './offer-state'
+import { PRIX_ALBUM_BASE, placesRestantes } from './offer-state'
+import { useOfferState, refetchOfferState } from './useOfferState'
 import { isValidRefCode } from '@/lib/validation'
 import ReservationModal from './ReservationModal'
 import InfoSheet from './InfoSheet'
@@ -217,7 +217,7 @@ function OffreCard({
 }
 
 export default function S4Reservation() {
-  const [offer, setOffer] = useState<OfferState | null>(null) // null = chargement (skeleton) — jamais d'offre flashée
+  const offer = useOfferState() // null = chargement (skeleton) — fetch dédupliqué, partagé avec le Hero. Jamais d'offre flashée
   const [cgv, setCgv] = useState(false)
   const [prenom, setPrenom] = useState('')
   const [email, setEmail] = useState('')
@@ -286,29 +286,9 @@ export default function S4Reservation() {
     return () => { cancelled = true }
   }, [])
 
-  /* État de l'offre = autorité serveur (GET /api/offer-state). Fallback résilient
-     si fetch KO → la page ne casse jamais. Réutilisé sur 409 offer_changed pour
-     réafficher la bonne offre. */
-  const refetchOffer = async () => {
-    try {
-      const res = await fetch('/api/offer-state')
-      if (!res.ok) throw new Error('offer-state ' + res.status)
-      const data = await res.json()
-      setOffer({
-        offerMode: data.offerMode,
-        foundersConfirmed: data.foundersConfirmed,
-        foundersTotal: data.foundersTotal,
-        influencer: null,
-      })
-    } catch (e) {
-      console.error('[s4] offer-state fetch failed', e)
-      setOffer(DEFAULT_OFFER_STATE)
-    }
-  }
-
-  useEffect(() => {
-    refetchOffer()
-  }, [])
+  /* État de l'offre = autorité serveur (GET /api/offer-state), via le store
+     partagé useOfferState (fetch dédupliqué, mutualisé avec le compteur Hero).
+     Fallback résilient géré dans le hook → la page ne casse jamais. */
 
   const emailValid = EMAIL_RE.test(email.trim())
   const prenomValid = prenom.trim().length > 0
@@ -344,7 +324,7 @@ export default function S4Reservation() {
       }
 
       if (res.status === 409 && data.error === 'offer_changed') {
-        await refetchOffer()
+        await refetchOfferState()
         setError("L’offre a changé entre-temps. Nous avons mis à jour l’offre affichée — vérifiez puis réessayez.")
       } else if (res.status === 409 && data.error === 'already_purchased') {
         setError('Cet email a déjà réservé son acompte. Aucun nouveau paiement n’est nécessaire.')
