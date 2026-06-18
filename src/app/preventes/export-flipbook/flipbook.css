@@ -152,7 +152,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain; /* demi-page = A4 exact → remplit sans bande ni rognage */
+  object-fit: cover; /* plein cadre bord à bord, zéro bande (léger rognage accepté) */
   display: block;
 }
 
@@ -360,7 +360,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain; /* idem desktop : aucune page rognée */
+  object-fit: cover; /* idem desktop : plein cadre bord à bord (léger rognage accepté) */
   display: block;
 }
 /* Filmstrip en mobile : sort de l'overlay absolu → flux normal sous le livre */
