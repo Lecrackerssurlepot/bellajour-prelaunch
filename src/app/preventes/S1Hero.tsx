@@ -98,6 +98,7 @@ export default function S1Hero() {
             <p className="s1-places" aria-live="polite">
               <span className="s1-places-lead">Plus que </span>
               {placesRestantes(offer)} places Fondateur
+              <span className="s1-places-trail"> restantes</span>
             </p>
           )}
           <button type="button" className="s1-cta" onClick={scrollToS4}>

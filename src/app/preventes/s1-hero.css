@@ -157,16 +157,17 @@
   font-weight: 500;
   letter-spacing: 0.03em;
   color: #ffffff;
-  background: var(--bj-glass-light-bg);
-  border: 1px solid var(--bj-glass-light-border);
+  /* Glass SOMBRE dense : reste lisible sur ciel clair ET sur fond sombre
+     (texte blanc garanti). Plus présent que l'ancien glass translucide, mais
+     reste secondaire vs le CTA (bouton outline plein, action n°1). */
+  background: rgba(28, 28, 28, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: var(--bj-r-pill);
   padding: 7px 16px 7px 14px;
   -webkit-backdrop-filter: blur(var(--bj-glass-blur-card));
   backdrop-filter: blur(var(--bj-glass-blur-card));
-  /* Lisibilité sur ciel/mer clair, cohérent avec le sous-titre. */
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
-/* Point bleu action — signale la rareté sans crier. */
+/* Point bleu action — signale la rareté ; pulse « live » (cf. keyframes). */
 .s1-places::before {
   content: '';
   flex: 0 0 auto;
@@ -174,6 +175,33 @@
   height: 7px;
   border-radius: 50%;
   background: var(--bj-action);
+  animation: s1-places-pulse 2s ease-in-out infinite;
+}
+
+/* Halo qui bat puis se dissout — effet « live » doux, jamais on/off brutal.
+   box-shadow only (autorisé), élément 7px → coût négligeable. */
+@keyframes s1-places-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(74, 144, 217, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(74, 144, 217, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(74, 144, 217, 0);
+  }
+}
+/* Accessibilité : pas d'animation si l'utilisateur la refuse. */
+@media (prefers-reduced-motion: reduce) {
+  .s1-places::before {
+    animation: none;
+  }
+}
+
+/* « restantes » : présent dans le DOM, affiché en mobile uniquement
+   (desktop = « Plus que {X} places Fondateur », sans « restantes »). */
+.s1-places-trail {
+  display: none;
 }
 
 /* ── Bouton ghost / outline ── */
@@ -215,12 +243,14 @@
     font-size: var(--bj-fs-xs);
     letter-spacing: 0.14em;
   }
-  /* Mobile : wording court « {X} places Fondateur » (on masque « Plus que »). */
+  /* Mobile : « {X} places Fondateur restantes » (on masque « Plus que »,
+     on affiche « restantes »). */
   .s1-places {
     font-size: 12.5px;
     padding: 6px 14px 6px 12px;
   }
   .s1-places-lead { display: none; }
+  .s1-places-trail { display: inline; }
 }
 
 /* Écrans courts (paysage mobile, petits laptops) : on réduit encore l'album
