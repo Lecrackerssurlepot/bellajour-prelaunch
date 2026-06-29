@@ -4,7 +4,7 @@
 .lyt {
   position: relative;
   width: 100%;
-  max-width: 720px;
+  max-width: 900px;
   aspect-ratio: 16 / 9;
   border-radius: var(--bj-r-md, 12px);
   overflow: hidden;

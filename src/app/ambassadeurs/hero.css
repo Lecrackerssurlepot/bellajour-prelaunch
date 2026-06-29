@@ -12,7 +12,7 @@
 }
 
 .amb-hero-inner {
-  max-width: 720px;
+  max-width: 900px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -32,24 +32,7 @@
   font-size: clamp(40px, 8vw, 72px);
   line-height: 1.04;
   color: var(--bj-text);
-  margin-bottom: clamp(16px, 2.6vh, 24px);
-}
-
-.amb-hero-tagline {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-size: clamp(20px, 3vw, 26px);
-  color: var(--bj-text-soft);
-  margin-bottom: clamp(10px, 1.6vh, 16px);
-}
-
-.amb-hero-sub {
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-lg);
-  line-height: 1.6;
-  color: var(--bj-text-soft);
-  max-width: 38ch;
-  margin-bottom: clamp(28px, 4.5vh, 44px);
+  margin-bottom: clamp(28px, 4.5vh, 48px);
 }
 
 .amb-hero-video {

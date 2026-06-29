@@ -24,8 +24,6 @@ export default function Hero() {
           decoding="sync"
         />
         <h1 className="amb-hero-title">Le Cercle Ambassadeur</h1>
-        <p className="amb-hero-tagline">Vivez, nous composons.</p>
-        <p className="amb-hero-sub">Votre engagement, et tout ce que vous y gagnez.</p>
         <div className="amb-hero-video">
           <LiteYouTube videoId={PRESENTATION_VIDEO_ID} title="Le Cercle Ambassadeur — présentation" />
         </div>
