@@ -1,0 +1,59 @@
+/* ════════════════ Façade YouTube ════════════════
+   Ratio 16:9, largeur contenue. Aucun box-shadow, aucun gradient. */
+
+.lyt {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--bj-r-md, 12px);
+  overflow: hidden;
+  background: #000;
+}
+
+.lyt-facade {
+  display: block;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+}
+
+.lyt-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lyt-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.lyt-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: opacity var(--bj-dur-fast, 0.2s) var(--bj-ease, ease);
+}
+
+.lyt-play-bg {
+  fill: #1c1c1c;
+  fill-opacity: 0.78;
+}
+
+.lyt-facade:hover .lyt-play {
+  opacity: 0.88;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lyt-play {
+    transition: none;
+  }
+}

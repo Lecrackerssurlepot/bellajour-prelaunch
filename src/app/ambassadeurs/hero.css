@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: center;
   background: var(--bj-cream);
-  padding: clamp(80px, 12vh, 140px) 5vw clamp(48px, 8vh, 96px);
+  padding: clamp(40px, 6vh, 72px) 5vw clamp(48px, 8vh, 96px);
 }
 
 .amb-hero-inner {
@@ -22,17 +22,7 @@
 .amb-hero-logo {
   height: clamp(56px, 9vw, 76px);
   width: auto;
-  margin-bottom: clamp(28px, 5vh, 48px);
-}
-
-.amb-hero-eyebrow {
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  font-weight: 500;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--bj-action);
-  margin-bottom: clamp(14px, 2.4vh, 22px);
+  margin-bottom: clamp(20px, 3.4vh, 34px);
 }
 
 .amb-hero-title {
@@ -60,6 +50,13 @@
   color: var(--bj-text-soft);
   max-width: 38ch;
   margin-bottom: clamp(28px, 4.5vh, 44px);
+}
+
+.amb-hero-video {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: clamp(32px, 5vh, 52px);
 }
 
 .amb-hero-cta {

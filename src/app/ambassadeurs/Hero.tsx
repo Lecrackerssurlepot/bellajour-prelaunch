@@ -1,9 +1,13 @@
 'use client'
 
 import './hero.css'
+import LiteYouTube from './LiteYouTube'
 
 /* Hero /ambassadeurs — fond crème, typo premium. id="amb-hero" : sentinelle de
    la navbar (masquée tant que le hero est visible). CTA → scroll #inscription. */
+
+// TODO: remplacer par l'ID réel de la vidéo YouTube de présentation.
+const PRESENTATION_VIDEO_ID = 'REPLACE_ME'
 
 export default function Hero() {
   const scrollToInscription = () => {
@@ -19,10 +23,12 @@ export default function Hero() {
           alt="Bellajour"
           decoding="sync"
         />
-        <p className="amb-hero-eyebrow">Cercle privé</p>
         <h1 className="amb-hero-title">Le Cercle Ambassadeur</h1>
         <p className="amb-hero-tagline">Vivez, nous composons.</p>
         <p className="amb-hero-sub">Votre engagement, et tout ce que vous y gagnez.</p>
+        <div className="amb-hero-video">
+          <LiteYouTube videoId={PRESENTATION_VIDEO_ID} title="Le Cercle Ambassadeur — présentation" />
+        </div>
         <button type="button" className="amb-hero-cta" onClick={scrollToInscription}>
           Rejoindre le Cercle
         </button>
