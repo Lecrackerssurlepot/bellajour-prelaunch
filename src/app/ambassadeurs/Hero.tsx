@@ -6,8 +6,8 @@ import LiteYouTube from './LiteYouTube'
 /* Hero /ambassadeurs — fond crème, typo premium. id="amb-hero" : sentinelle de
    la navbar (masquée tant que le hero est visible). CTA → scroll #inscription. */
 
-// TODO: remplacer par l'ID réel de la vidéo YouTube de présentation.
-const PRESENTATION_VIDEO_ID = 'REPLACE_ME'
+// ID de la vidéo YouTube de présentation du programme ambassadeur.
+const PRESENTATION_VIDEO_ID = 'N9JAcyut7kM'
 
 export default function Hero() {
   const scrollToInscription = () => {
