@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import AnnouncementBar from './AnnouncementBar'
 import Navbar from './Navbar'
 import S1Hero from './S1Hero'
 import S1bAlbum from './S1bAlbum'
@@ -41,7 +42,8 @@ export const metadata: Metadata = {
 
 export default function PreventesPage() {
   return (
-    <main>
+    <main className="pv-main">
+      <AnnouncementBar />
       <Navbar />
       <S1Hero />
       <S1bAlbum />

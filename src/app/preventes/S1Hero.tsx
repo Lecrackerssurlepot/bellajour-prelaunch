@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import './s1-hero.css'
+/* Compteur places Fondateur — déplacé dans le bandeau AnnouncementBar.
+   Réactiver ces imports pour réafficher le badge hero :
 import { useOfferState } from './useOfferState'
-import { placesRestantes } from './offer-state'
+import { placesRestantes } from './offer-state' */
 
 /* PRD §5.1 — S1 Hero plein page (header réel : fond mer + album centré).
    Logo blanc en barre fixe en haut / titre blanc / album centré / sous-titre + CTA.
@@ -25,7 +27,7 @@ export default function S1Hero() {
   /* Compteur places Fondateur — même source que la Section 4 (store dédupliqué,
      aucun 2e fetch). Affiché UNIQUEMENT en mode founder ; rien tant que l'état
      n'est pas arrivé (offer === null) → pas de flash. */
-  const offer = useOfferState()
+  // const offer = useOfferState() // déplacé → AnnouncementBar ; réactiver l'import + le bloc .s1-places pour réafficher le badge
 
   useEffect(() => {
     const mq = window.matchMedia(VIDEO_MQ)
@@ -94,19 +96,6 @@ export default function S1Hero() {
 
         <div className="s1-bottom">
           <p className="s1-subtitle">Vivez, nous composons</p>
-          {offer?.offerMode === 'founder' && (
-            <p className="s1-places" aria-live="polite">
-              {/* Texte groupé dans UN seul span : .s1-places est en flex (gap pour
-                  le point). Sans ce wrapper, chaque segment de texte deviendrait un
-                  flex item séparé par le gap → double espacement. Ici flux inline
-                  normal, les espaces en dur des spans servent de simples séparateurs. */}
-              <span className="s1-places-text">
-                <span className="s1-places-lead">Plus que </span>
-                {placesRestantes(offer)} places Fondateur
-                <span className="s1-places-trail"> restantes</span>
-              </span>
-            </p>
-          )}
           <button type="button" className="s1-cta" onClick={scrollToS4}>
             Participer aux préventes
           </button>

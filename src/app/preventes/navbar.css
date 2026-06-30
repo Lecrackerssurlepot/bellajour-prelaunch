@@ -6,7 +6,9 @@
 
 .pv-nav {
   position: fixed;
-  top: 0;
+  /* Empilée SOUS la barre d'annonce (--bj-bar-h) : barre + navbar = ensemble
+     cohérent, sans superposition. En état A, translateY(-100%) la masque. */
+  top: var(--bj-bar-h);
   left: 0;
   right: 0;
   height: var(--bj-topbar-h);
