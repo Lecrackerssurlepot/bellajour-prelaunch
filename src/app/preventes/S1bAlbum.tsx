@@ -10,6 +10,10 @@ import './s1b-album.css'
 
    La section vit dans le scroll (hauteur CONTENUE, pas 100dvh). */
 
+// SOCIAL PROOF COUNT — à brancher Supabase (compteur d'inscrits affiché dans
+// la 3e carte « +N » et la ligne « … et N autres »).
+const SOCIAL_PROOF_COUNT = 8
+
 export default function S1bAlbum() {
   const sectionRef = useRef<HTMLElement>(null)
   const [revealed, setRevealed] = useState(false)
@@ -61,7 +65,27 @@ export default function S1bAlbum() {
         />
       </div>
 
-      {/* PREUVE SOCIALE À VENIR */}
+      {/* PREUVE SOCIALE — 3 mini-cartes album empilées (overlap) + texte.
+          Mockups 100% CSS (zéro image). Apparition LUX FADE pilotée par
+          .fbsec.is-in (même IntersectionObserver que le titre). */}
+      <div
+        className="pv-sp"
+        aria-label={`Aude, Candice et ${SOCIAL_PROOF_COUNT} autres attendent déjà leur album`}
+      >
+        <div className="pv-sp__stack" aria-hidden="true">
+          <span className="pv-sp__card pv-sp__card--1">
+            <span className="pv-sp__album" />
+          </span>
+          <span className="pv-sp__card pv-sp__card--2">
+            <span className="pv-sp__album" />
+          </span>
+          <span className="pv-sp__card pv-sp__card--3">+{SOCIAL_PROOF_COUNT}</span>
+        </div>
+        <div className="pv-sp__text" aria-hidden="true">
+          <span className="pv-sp__line1">Aude, Candice et {SOCIAL_PROOF_COUNT} autres</span>
+          <span className="pv-sp__line2">attendent déjà leur album</span>
+        </div>
+      </div>
     </section>
   )
 }

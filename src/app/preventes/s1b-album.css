@@ -76,11 +76,109 @@
   display: block;
 }
 
+/* ════════════════════════════════════════════════════════════════════════
+   PREUVE SOCIALE — 3 mini-cartes album empilées (overlap) + texte.
+   Mockups 100% CSS (zéro image, zéro box-shadow). DM Sans (--bj-font-ui).
+   ════════════════════════════════════════════════════════════════════════ */
+.pv-sp {
+  /* Palette locale du bloc — mappée sur la charte Bellajour.
+     --bj-action / --bj-charcoal existent (tokens.css) ; --muted (#A89880) et
+     --ink-light (#F0EBE1) de la charte ne sont pas définis dans les tokens
+     prévente → déclarés ici (les seuls littéraux du bloc vivent dans ces vars). */
+  --sp-action: var(--bj-action);    /* #4a90d9 */
+  --sp-noir:   var(--bj-charcoal);  /* #1c1c1c */
+  --sp-muted:  #A89880;             /* charte --muted */
+  --sp-creme:  #F0EBE1;             /* charte --ink-light */
+  --sp-blanc:  #ffffff;             /* mini-album intérieur */
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 32px;
+
+  /* LUX FADE : opacity + translateY, GPU-only. Léger délai pour s'enchaîner
+     APRÈS l'apparition du titre/section. Déclenché par .fbsec.is-in. */
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.8s ease-out,
+    transform 0.8s ease-out;
+  transition-delay: 0.12s;
+  will-change: opacity, transform;
+}
+.fbsec.is-in .pv-sp {
+  opacity: 1;
+  transform: none;
+}
+
+.pv-sp__stack {
+  display: flex;
+  align-items: center;
+}
+
+/* Mini-carte album. Border 2px couleur fond de la bande (--bj-cream-2) →
+   effet « découpe » entre les cartes qui se chevauchent. */
+.pv-sp__card {
+  position: relative; /* requis pour z-index sur enfants flex */
+  box-sizing: border-box;
+  width: 40px;
+  height: 52px;
+  border-radius: 6px;
+  border: 2px solid var(--bj-cream-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pv-sp__card--1 { background: var(--sp-action); z-index: 3; }
+.pv-sp__card--2 { background: var(--sp-muted);  z-index: 2; margin-left: -10px; }
+.pv-sp__card--3 {
+  background: var(--sp-noir);
+  z-index: 1;
+  margin-left: -10px;
+  color: var(--sp-creme);
+  font-family: var(--bj-font-ui);
+  font-weight: 500;
+  font-size: 13px;
+}
+
+/* Album miniature (rectangle blanc) dans les cartes 1 & 2. */
+.pv-sp__album {
+  display: block;
+  width: 28px;
+  height: 36px;
+  border-radius: 2px;
+  background: var(--sp-blanc);
+}
+
+.pv-sp__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pv-sp__line1 {
+  font-family: var(--bj-font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sp-noir);
+}
+.pv-sp__line2 {
+  font-family: var(--bj-font-ui);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--sp-noir);
+  opacity: 0.6;
+  white-space: nowrap; /* la ligne 2 ne wrap pas ; seule la ligne 1 peut wrapper */
+}
+
 /* Tablette : le padding base clamp(56px, 9vh, 110px) est déjà responsive (9vh)
    → pas d'override dédié nécessaire. */
 
 /* ── Mobile (≤767px) : la vidéo prend toute la largeur disponible (moins les
-   marges 5vw de la section), ratio 16:9 maintenu via aspect-ratio. ── */
+   marges 5vw de la section), ratio 16:9 maintenu via aspect-ratio.
+   Le bloc preuve sociale tient sur une ligne (éléments petits) ; la ligne 1
+   peut wrapper en dernier recours sans casser le layout. ── */
 @media (max-width: 767px) {
   .fbsec__head { margin-bottom: var(--bj-sp-5); }
   .fbsec__title { font-size: var(--bj-fs-h1-screen); }
@@ -89,6 +187,12 @@
 /* ── prefers-reduced-motion : pas d'apparition animée ── */
 @media (prefers-reduced-motion: reduce) {
   .fbsec {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    will-change: auto;
+  }
+  .pv-sp {
     opacity: 1;
     transform: none;
     transition: none;
