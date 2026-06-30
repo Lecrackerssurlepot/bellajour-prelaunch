@@ -60,6 +60,10 @@
   margin: 0 auto;
   aspect-ratio: 16 / 9;
   background: #000;
+  /* Coins arrondis identiques à la vidéo /ambassadeurs (.lyt). overflow:hidden
+     pour que l'iframe respecte le radius (sinon elle déborde des coins). */
+  border-radius: var(--bj-r-md, 12px);
+  overflow: hidden;
   /* Espace de respiration sous la vidéo, prévu pour un futur bloc preuve sociale. */
   margin-bottom: clamp(24px, 5vh, 64px);
 }
