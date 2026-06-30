@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import type { MouseEvent as ReactMouseEvent } from 'react'
+import { usePathname } from 'next/navigation'
 import './announcement-bar.css'
 
 /* Barre d'annonce prévente — affichée AU-DESSUS de la Navbar (PRD bandeau).
@@ -11,26 +13,55 @@ import './announcement-bar.css'
    reset du timer). Pause au hover (desktop) ET au tap (mobile). prefers-reduced-motion
    → figé sur la frame 1, aucun timer auto (les flèches restent utilisables, sans anim).
 
-   Couleurs (variables repo only) : fond --bj-bar-bg, texte --bj-text, chiffres clés
-   --bj-action. Hauteur figée --bj-bar-h → compensée par l'offset .pv-main + hero (.s1). */
+   Chaque message tient sur UNE ligne (white-space:nowrap) : la frame 2 a un wording
+   court en mobile (<768px). Frame 1 : « ouvertes ! » = lien vers /preventes (scroll-to-top
+   si déjà sur la page). Couleurs (variables repo only) : fond --bj-bar-bg, texte
+   --bj-text, chiffres clés --bj-action. Hauteur figée --bj-bar-h (offset .pv-main + .s1). */
 
 const FRAME_COUNT = 3
 const ROTATE_MS = 5000
 
 /* Contenu d'une frame. Wording EXACT — ne pas paraphraser.
-     = espace insécable (entre le nombre et €, et avant le « ! »). */
-function FrameContent({ i }: { i: number }) {
-  if (i === 0) return <>Préventes Fondateur ouvertes{' !'}</>
+     = espace insécable (entre le nombre et €, avant « ! », avant « ↓ »). */
+function FrameContent({
+  i,
+  active,
+  onOpenLink,
+}: {
+  i: number
+  active: boolean
+  onOpenLink: (e: ReactMouseEvent<HTMLAnchorElement>) => void
+}) {
+  if (i === 0)
+    return (
+      <>
+        Préventes Fondateur{' '}
+        <a
+          className="ab-link"
+          href="/preventes"
+          onClick={onOpenLink}
+          tabIndex={active ? 0 : -1}
+        >
+          ouvertes{' !'}
+        </a>
+      </>
+    )
   if (i === 1)
     return (
       <>
-        Réservez pour <span className="ab-accent">{'25 €'}</span>, recevez{' '}
-        <span className="ab-accent">{'30 €'}</span> crédités
+        <span className="ab-d">
+          Réservez pour <span className="ab-accent">{'25 €'}</span>, recevez{' '}
+          <span className="ab-accent">{'30 €'}</span> crédités
+        </span>
+        <span className="ab-m">
+          <span className="ab-accent">{'25 €'}</span> déposés ={' '}
+          <span className="ab-accent">{'30 €'}</span> crédités
+        </span>
       </>
     )
   return (
     <>
-      Encore plus d&apos;avantages Fondateur{' '}
+      Encore plus d&apos;avantages Fondateur{' '}
       <span className="ab-arrow-down" aria-hidden="true">
         ↓
       </span>
@@ -48,6 +79,8 @@ export default function AnnouncementBar() {
   /* Préférences système (corrigées après montage — pas de mismatch d'hydratation). */
   const [motionOK, setMotionOK] = useState(true)
   const [canHover, setCanHover] = useState(false)
+
+  const pathname = usePathname()
 
   useEffect(() => {
     const mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -86,6 +119,16 @@ export default function AnnouncementBar() {
     document.getElementById('s4')?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  /* Lien « ouvertes ! » : stopPropagation (ne touche pas au tap-pause). Si on est
+     déjà sur /preventes, on annule la navigation et on remonte en haut (smooth). */
+  const onOpenLink = (e: ReactMouseEvent<HTMLAnchorElement>) => {
+    e.stopPropagation()
+    if (pathname === '/preventes') {
+      e.preventDefault()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
   return (
     <aside
       className="ab"
@@ -118,7 +161,7 @@ export default function AnnouncementBar() {
                 scrollToPrix()
               }}
             >
-              <FrameContent i={i} />
+              <FrameContent i={i} active={index === i} onOpenLink={onOpenLink} />
             </button>
           ) : (
             <span
@@ -127,7 +170,7 @@ export default function AnnouncementBar() {
               data-active={index === i}
               aria-hidden={index !== i}
             >
-              <FrameContent i={i} />
+              <FrameContent i={i} active={index === i} onOpenLink={onOpenLink} />
             </span>
           )
         )}

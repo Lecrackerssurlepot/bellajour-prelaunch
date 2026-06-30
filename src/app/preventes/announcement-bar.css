@@ -83,11 +83,16 @@
 .ab-frame {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  /* Bloc à ligne unique : centrage vertical par line-height, jamais de wrap.
+     white-space:nowrap garantit l'absence de 2e ligne quel que soit le device ;
+     text-overflow:ellipsis = garde-fou si un message dépasse malgré le wording court. */
+  display: block;
+  line-height: var(--bj-bar-h);
   text-align: center;
   padding: 0 1vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   opacity: 0;
   pointer-events: none;
   /* OPACITY uniquement — jamais translate/slide/width/height. */
@@ -96,6 +101,37 @@
 .ab-frame[data-active='true'] {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* Wording responsive : version longue desktop / version courte mobile.
+   Évite tout wrap de la frame 2 sur petits viewports (≤390px). */
+.ab-d {
+  display: inline;
+}
+.ab-m {
+  display: none;
+}
+@media (max-width: 767px) {
+  .ab-d {
+    display: none;
+  }
+  .ab-m {
+    display: inline;
+  }
+}
+
+/* Lien « ouvertes ! » (frame 1) → /preventes (scroll-to-top si déjà sur la page).
+   Souligné, même couleur que le texte ; hover = opacity seule (pas de couleur). */
+.ab-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.ab-link:hover,
+.ab-link:focus-visible {
+  opacity: 0.7;
 }
 
 /* Frame 3 = bouton scroll-to-prix : reset des styles natifs. */
