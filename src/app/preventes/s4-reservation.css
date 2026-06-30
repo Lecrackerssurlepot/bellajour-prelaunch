@@ -135,6 +135,30 @@
   color: var(--bj-text);
 }
 
+/* Mention prix d'appel album (« À partir de 49 € pour 30 pages »).
+   Discrète, atténuée, plus petite que l'acompte. Mobile (par défaut) : en flux,
+   sous le badge, avant le titre → jamais de chevauchement. Desktop : ancrée
+   haut-droite (card en position:relative). */
+.s4-card-from {
+  margin-top: -4px;
+  margin-bottom: 14px;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+  letter-spacing: 0.01em;
+}
+@media (min-width: 600px) {
+  .s4-card-from {
+    position: absolute;
+    top: clamp(24px, 3vw, 36px);
+    right: clamp(24px, 3vw, 36px);
+    margin: 0;
+    max-width: 44%;
+    text-align: right;
+    line-height: 1.3;
+  }
+}
+
 /* Prix */
 .s4-card-price {
   display: flex;

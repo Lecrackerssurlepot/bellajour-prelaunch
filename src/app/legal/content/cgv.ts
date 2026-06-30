@@ -204,7 +204,7 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Grille tarifaire — Album Bellajour Lancement (offre de base)` },
           { kind: 'p', value: `Prix catalogue standard, hors offre promotionnelle. Prix affichés en euros, toutes taxes comprises. TVA appliquée au taux du pays de résidence du consommateur (régime OSS-Union) après le seuil des 10 000 € de chiffre d'affaires.` },
           { kind: 'table', columns: [`Pagination`, `Prix TTC`], rows: [
-            [`30 pages (base)`, `64 €`],
+            [`30 pages (base)`, `49 €`],
             [`50 pages`, `82 €`],
             [`80 pages`, `120 €`],
             [`100 pages`, `146 €`],
@@ -401,7 +401,7 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Grelha tarifária — Álbum Bellajour Lançamento (oferta de base)` },
           { kind: 'p', value: `Preços de catálogo padrão, fora de oferta promocional. Preços exibidos em euros, com todos os impostos incluídos. IVA aplicado à taxa do país de residência do consumidor (regime OSS-União) após o limiar de 10 000 € de volume de negócios.` },
           { kind: 'table', columns: [`Paginação`, `Preço c/ IVA`], rows: [
-            [`30 páginas (base)`, `64 €`],
+            [`30 páginas (base)`, `49 €`],
             [`50 páginas`, `82 €`],
             [`80 páginas`, `120 €`],
             [`100 páginas`, `146 €`],
@@ -598,7 +598,7 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Price list — Bellajour Album Launch (base offer)` },
           { kind: 'p', value: `Standard catalogue prices, excluding promotional offers. Prices displayed in euros, inclusive of all taxes. VAT applied at the rate of the consumer's country of residence (OSS-Union scheme) after the €10,000 turnover threshold.` },
           { kind: 'table', columns: [`Pagination`, `Price incl. VAT`], rows: [
-            [`30 pages (base)`, `64 €`],
+            [`30 pages (base)`, `49 €`],
             [`50 pages`, `82 €`],
             [`80 pages`, `120 €`],
             [`100 pages`, `146 €`],

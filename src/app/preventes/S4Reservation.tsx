@@ -177,6 +177,11 @@ function OffreCard({
       aria-hidden={secondary || undefined}
     >
       {offre.badge && <span className="s4-card-badge">{offre.badge}</span>}
+      {/* Mention prix d'appel album : discrète, secondaire — ne concurrence pas le 25 €
+          d'acompte. Desktop : absolute haut-droite. Mobile : repliée sous le badge (flux). */}
+      {offre.type === 'founder' && (
+        <p className="s4-card-from">À partir de {PRIX_ALBUM_BASE} € pour 30 pages</p>
+      )}
       <h3 className="s4-card-nom">{offre.nom}</h3>
 
       <div className="s4-card-price">
