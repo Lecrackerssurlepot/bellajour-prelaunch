@@ -6,62 +6,80 @@ import './announcement-bar.css'
 /* Barre d'annonce prévente — affichée AU-DESSUS de la Navbar (PRD bandeau).
    3 leviers de conversion : ouverture des préventes · offre prix · teaser avantages.
 
-   Desktop (≥768px) : les 3 messages STATIQUES sur une seule ligne, séparés par « · ».
-                      Aucune rotation.
-   Mobile  (<768px)  : un seul message à la fois, crossfade OPACITY uniquement,
-                      5s/frame, transition 400ms. Tap = pause. prefers-reduced-motion
-                      → figé sur la frame 1, aucune rotation, aucun timer.
+   Rotation UNIFIÉE desktop + mobile : un seul message à la fois, crossfade OPACITY
+   uniquement, 5s/frame, transition 400ms. Flèches ‹ › = navigation manuelle (wrap,
+   reset du timer). Pause au hover (desktop) ET au tap (mobile). prefers-reduced-motion
+   → figé sur la frame 1, aucun timer auto (les flèches restent utilisables, sans anim).
 
-   Couleurs (variables repo only) : fond --bj-charcoal, texte --bj-glass-dark-text,
-   chiffres clés --bj-action. Hauteur figée --bj-bar-h → compensée par l'offset
-   .pv-main + hero (.s1) côté CSS (zéro scroll parasite sur les sections plein écran). */
+   Couleurs (variables repo only) : fond --bj-bar-bg, texte --bj-text, chiffres clés
+   --bj-action. Hauteur figée --bj-bar-h → compensée par l'offset .pv-main + hero (.s1). */
 
 const FRAME_COUNT = 3
 const ROTATE_MS = 5000
 
-/* Contenu d'une frame. Wording EXACT — ne pas paraphraser. */
+/* Contenu d'une frame. Wording EXACT — ne pas paraphraser.
+     = espace insécable (entre le nombre et €, et avant le « ! »). */
 function FrameContent({ i }: { i: number }) {
-  if (i === 0) return <>Préventes Fondateur ouvertes</>
+  if (i === 0) return <>Préventes Fondateur ouvertes{' !'}</>
   if (i === 1)
     return (
       <>
-        Réservez pour <span className="ab-accent">25€</span>, recevez{' '}
-        <span className="ab-accent">30€</span> crédités
+        Réservez pour <span className="ab-accent">{'25 €'}</span>, recevez{' '}
+        <span className="ab-accent">{'30 €'}</span> crédités
       </>
     )
-  return <>Encore plus d&apos;avantages Fondateur ↓</>
+  return (
+    <>
+      Encore plus d&apos;avantages Fondateur{' '}
+      <span className="ab-arrow-down" aria-hidden="true">
+        ↓
+      </span>
+    </>
+  )
 }
 
 export default function AnnouncementBar() {
   const [index, setIndex] = useState(0)
-  const [paused, setPaused] = useState(false)
-  /* rotate = vrai UNIQUEMENT sur mobile ET si l'utilisateur n'a pas demandé
-     « réduire les animations ». Réévalué si le viewport franchit 768px ou si la
-     préférence système change. */
-  const [rotate, setRotate] = useState(false)
+  /* Deux sources de pause indépendantes → combinées. */
+  const [hoverPaused, setHoverPaused] = useState(false)
+  const [tapPaused, setTapPaused] = useState(false)
+  /* nonce : bumpé à chaque navigation manuelle pour REDÉMARRER le timer (5s neuf). */
+  const [nonce, setNonce] = useState(0)
+  /* Préférences système (corrigées après montage — pas de mismatch d'hydratation). */
+  const [motionOK, setMotionOK] = useState(true)
+  const [canHover, setCanHover] = useState(false)
 
   useEffect(() => {
-    const mqDesktop = window.matchMedia('(min-width: 768px)')
     const mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const update = () => setRotate(!mqDesktop.matches && !mqReduce.matches)
+    const mqHover = window.matchMedia('(hover: hover)')
+    const update = () => {
+      setMotionOK(!mqReduce.matches)
+      setCanHover(mqHover.matches)
+    }
     update()
-    mqDesktop.addEventListener('change', update)
     mqReduce.addEventListener('change', update)
+    mqHover.addEventListener('change', update)
     return () => {
-      mqDesktop.removeEventListener('change', update)
       mqReduce.removeEventListener('change', update)
+      mqHover.removeEventListener('change', update)
     }
   }, [])
 
+  const paused = hoverPaused || tapPaused
+  /* Le timer auto ne tourne QUE si le mouvement est permis et qu'on n'est pas en pause. */
+  const autoRotate = motionOK && !paused
+
   useEffect(() => {
-    if (!rotate) {
-      setIndex(0) // figé sur frame 1 (desktop statique OU prefers-reduced-motion)
-      return
-    }
-    if (paused) return // pause au tap
+    if (!autoRotate) return // reduced-motion OU pause → aucun timer
     const id = setInterval(() => setIndex((i) => (i + 1) % FRAME_COUNT), ROTATE_MS)
     return () => clearInterval(id)
-  }, [rotate, paused])
+  }, [autoRotate, nonce])
+
+  /* Navigation manuelle (flèches) : change de frame (wrap) + reset du timer auto. */
+  const go = (dir: number) => {
+    setIndex((i) => (i + dir + FRAME_COUNT) % FRAME_COUNT)
+    setNonce((n) => n + 1)
+  }
 
   /* Scroll vers la section prix (#s4). Même pattern que la Navbar prévente. */
   const scrollToPrix = () => {
@@ -69,28 +87,23 @@ export default function AnnouncementBar() {
   }
 
   return (
-    <aside className="ab" aria-label="Annonce préventes Fondateur">
-      {/* ── Desktop ≥768px : 3 messages statiques sur une ligne ── */}
-      <div className="ab-desktop">
-        <span className="ab-msg">
-          <FrameContent i={0} />
-        </span>
-        <span className="ab-sep" aria-hidden="true">
-          ·
-        </span>
-        <span className="ab-msg">
-          <FrameContent i={1} />
-        </span>
-        <span className="ab-sep" aria-hidden="true">
-          ·
-        </span>
-        <button type="button" className="ab-cta" onClick={scrollToPrix}>
-          <FrameContent i={2} />
-        </button>
-      </div>
+    <aside
+      className="ab"
+      aria-label="Annonce préventes Fondateur"
+      onMouseEnter={() => canHover && setHoverPaused(true)}
+      onMouseLeave={() => canHover && setHoverPaused(false)}
+    >
+      <button
+        type="button"
+        className="ab-arrow"
+        aria-label="Message précédent"
+        onClick={() => go(-1)}
+      >
+        ‹
+      </button>
 
-      {/* ── Mobile <768px : 1 message à la fois, crossfade opacity. Tap = pause ── */}
-      <div className="ab-mobile" onClick={() => setPaused((p) => !p)}>
+      {/* Stage : frames empilées (crossfade opacity). Tap = pause (mobile). */}
+      <div className="ab-stage" onClick={() => setTapPaused((p) => !p)}>
         {[0, 1, 2].map((i) =>
           i === 2 ? (
             <button
@@ -99,6 +112,7 @@ export default function AnnouncementBar() {
               className="ab-frame ab-cta"
               data-active={index === i}
               aria-hidden={index !== i}
+              tabIndex={index === i ? 0 : -1}
               onClick={(e) => {
                 e.stopPropagation() // le CTA scrolle, ne met pas en pause
                 scrollToPrix()
@@ -118,6 +132,15 @@ export default function AnnouncementBar() {
           )
         )}
       </div>
+
+      <button
+        type="button"
+        className="ab-arrow"
+        aria-label="Message suivant"
+        onClick={() => go(1)}
+      >
+        ›
+      </button>
     </aside>
   )
 }

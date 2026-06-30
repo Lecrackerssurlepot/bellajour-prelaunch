@@ -141,4 +141,7 @@
      Compensée par l'offset .pv-main + hero (.s1) → aucune section plein écran
      ne déborde (bilan hauteur nul). Voir AnnouncementBar / announcement-bar.css. */
   --bj-bar-h: 36px;
+  /* Fond de la barre d'annonce : crème clair dédié (#f0ebe1). Token sémantique
+     isolé — ne touche pas la palette --bj-cream générale. Texte = --bj-text. */
+  --bj-bar-bg: #f0ebe1;
 }

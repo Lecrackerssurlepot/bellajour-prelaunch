@@ -3,6 +3,7 @@
    Fixe en haut, hauteur figée --bj-bar-h. L'offset (.pv-main + .s1)
    compense exactement cette hauteur → bilan hauteur document nul,
    aucune section plein écran (100dvh) ne déborde / ne crée de scroll.
+   Rotation crossfade unifiée desktop + mobile + flèches de navigation.
    Charte : variables repo uniquement, angles droits, zéro ombre/gradient.
    ════════════════════════════════════════════════════════════ */
 
@@ -16,15 +17,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bj-charcoal);
-  color: var(--bj-glass-dark-text);
+  gap: clamp(4px, 1.5vw, 12px);
+  background: var(--bj-bar-bg);
+  color: var(--bj-text);
+  border-bottom: 1px solid var(--bj-veil-8); /* séparation fine, sans box-shadow */
   font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-xs); /* ~13px */
   font-weight: 400;
   letter-spacing: 0.08em;
   line-height: 1;
-  padding: 0 4vw;
-  overflow: hidden;
+  padding: 0 2vw;
+  /* overflow VISIBLE : les flèches conservent un hit-area ≥44px (qui dépasse les
+     36px de la barre) sans être rognées. Le clipping du texte se fait sur .ab-stage. */
+  overflow: visible;
 }
 
 /* Offset prévente : le contenu démarre sous la barre. Le hero (.s1) est réduit
@@ -33,52 +38,48 @@
   padding-top: var(--bj-bar-h);
 }
 
-/* Chiffres / éléments clés (25€/30€, futur compteur) → accent bleu repo. */
+/* Chiffres / éléments clés (25 €/30 €, futur compteur) → accent bleu repo. */
 .ab-accent {
   color: var(--bj-action);
 }
 
-/* ── Élément cliquable « ↓ section prix » (desktop + mobile) ── */
-.ab-cta {
-  font: inherit;
-  letter-spacing: inherit;
-  color: inherit;
+/* ════════ Flèches de navigation manuelle ‹ › ════════ */
+.ab-arrow {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px; /* touch target ≥44px (dépasse la barre, transparent) */
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-lg); /* 18px — glyphe un cran plus grand que le texte */
+  line-height: 1;
+  color: var(--bj-text);
   background: none;
   border: none;
   padding: 0;
   margin: 0;
   cursor: pointer;
+  opacity: 0.5;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
-.ab-cta:hover {
-  color: var(--bj-action);
-}
-
-/* ════════ Desktop ≥768px : 3 messages statiques sur une ligne ════════ */
-.ab-desktop {
-  display: none; /* mobile-first : masqué tant qu'on n'est pas ≥768px */
-}
-.ab-sep {
-  margin: 0 0.6em;
-  opacity: 0.45;
-}
-@media (min-width: 768px) {
-  .ab-desktop {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap;
-  }
-  .ab-mobile {
-    display: none;
-  }
+.ab-arrow:hover,
+.ab-arrow:focus-visible,
+.ab-arrow:active {
+  opacity: 1;
 }
 
-/* ════════ Mobile <768px : 1 message à la fois, crossfade OPACITY ════════ */
-.ab-mobile {
+/* ════════ Stage : frames empilées (crossfade OPACITY) ════════ */
+.ab-stage {
   position: relative;
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   height: 100%;
+  overflow: hidden; /* clippe un message trop long sur écran étroit */
 }
+
 .ab-frame {
   position: absolute;
   inset: 0;
@@ -86,7 +87,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 0 2vw;
+  padding: 0 1vw;
   opacity: 0;
   pointer-events: none;
   /* OPACITY uniquement — jamais translate/slide/width/height. */
@@ -97,9 +98,45 @@
   pointer-events: auto;
 }
 
-/* prefers-reduced-motion : figé sur frame 1 (géré en JS) + zéro transition. */
+/* Frame 3 = bouton scroll-to-prix : reset des styles natifs. */
+button.ab-frame {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  margin: 0;
+  cursor: pointer;
+}
+button.ab-frame:hover {
+  color: var(--bj-action);
+}
+
+/* ════════ Animation de la flèche ↓ (frame 3 uniquement) ════════
+   translateY uniquement, 4px max, boucle. Liée au sélecteur [data-active] →
+   s'arrête net dès que la frame 3 sort (aucun timer JS résiduel). */
+.ab-arrow-down {
+  display: inline-block; /* requis pour translateY */
+}
+@keyframes abArrowBounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+.ab-frame[data-active='true'] .ab-arrow-down {
+  animation: abArrowBounce 1200ms cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+}
+
+/* prefers-reduced-motion : aucun crossfade, aucun rebond (rotation auto coupée en JS). */
 @media (prefers-reduced-motion: reduce) {
   .ab-frame {
     transition: none;
+  }
+  .ab-arrow-down {
+    animation: none;
   }
 }
