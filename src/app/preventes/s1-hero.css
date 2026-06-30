@@ -6,8 +6,10 @@
 .s1 {
   position: relative;
   width: 100%;
-  /* Dynamic viewport — JAMAIS 100vh (sinon la barre Safari iOS coupe le bas). */
-  height: 100dvh;
+  /* Dynamic viewport — JAMAIS 100vh (sinon la barre Safari iOS coupe le bas).
+     Réduit de --bj-bar-h : .pv-main ajoute ce padding-top en haut, on le retire
+     ici → barre + hero = exactement 100dvh, zéro scroll parasite. */
+  height: calc(100dvh - var(--bj-bar-h));
   min-height: 560px;
   overflow: hidden;
 }

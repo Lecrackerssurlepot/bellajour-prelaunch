@@ -1,0 +1,105 @@
+/* ════════════════════════════════════════════════════════════
+   PRÉVENTE — Barre d'annonce (au-dessus de la Navbar)
+   Fixe en haut, hauteur figée --bj-bar-h. L'offset (.pv-main + .s1)
+   compense exactement cette hauteur → bilan hauteur document nul,
+   aucune section plein écran (100dvh) ne déborde / ne crée de scroll.
+   Charte : variables repo uniquement, angles droits, zéro ombre/gradient.
+   ════════════════════════════════════════════════════════════ */
+
+.ab {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--bj-bar-h);
+  z-index: 60; /* au-dessus de la navbar (.pv-nav = 50), sous les modales (1000) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bj-charcoal);
+  color: var(--bj-glass-dark-text);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs); /* ~13px */
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 0 4vw;
+  overflow: hidden;
+}
+
+/* Offset prévente : le contenu démarre sous la barre. Le hero (.s1) est réduit
+   d'autant (calc(100dvh - var(--bj-bar-h))) → +bar-h ici, -bar-h là, net = 0. */
+.pv-main {
+  padding-top: var(--bj-bar-h);
+}
+
+/* Chiffres / éléments clés (25€/30€, futur compteur) → accent bleu repo. */
+.ab-accent {
+  color: var(--bj-action);
+}
+
+/* ── Élément cliquable « ↓ section prix » (desktop + mobile) ── */
+.ab-cta {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.ab-cta:hover {
+  color: var(--bj-action);
+}
+
+/* ════════ Desktop ≥768px : 3 messages statiques sur une ligne ════════ */
+.ab-desktop {
+  display: none; /* mobile-first : masqué tant qu'on n'est pas ≥768px */
+}
+.ab-sep {
+  margin: 0 0.6em;
+  opacity: 0.45;
+}
+@media (min-width: 768px) {
+  .ab-desktop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+  }
+  .ab-mobile {
+    display: none;
+  }
+}
+
+/* ════════ Mobile <768px : 1 message à la fois, crossfade OPACITY ════════ */
+.ab-mobile {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.ab-frame {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 2vw;
+  opacity: 0;
+  pointer-events: none;
+  /* OPACITY uniquement — jamais translate/slide/width/height. */
+  transition: opacity 400ms var(--bj-ease);
+}
+.ab-frame[data-active='true'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* prefers-reduced-motion : figé sur frame 1 (géré en JS) + zéro transition. */
+@media (prefers-reduced-motion: reduce) {
+  .ab-frame {
+    transition: none;
+  }
+}

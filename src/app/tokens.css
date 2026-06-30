@@ -137,4 +137,8 @@
 
   /* ─────────────── LAYOUT ─────────────── */
   --bj-topbar-h: 76px;
+  /* Barre d'annonce prévente (au-dessus de la navbar). Hauteur figée, compacte.
+     Compensée par l'offset .pv-main + hero (.s1) → aucune section plein écran
+     ne déborde (bilan hauteur nul). Voir AnnouncementBar / announcement-bar.css. */
+  --bj-bar-h: 36px;
 }

@@ -13,9 +13,10 @@
   min-height: 560px;
   display: flex;
   flex-direction: column;
-  /* padding-top = navbar fixe (--bj-topbar-h = 76px) + respiration → titre dégagé.
-     Bas réduit pour rendre de la hauteur au track. */
-  padding: calc(var(--bj-topbar-h) + clamp(12px, 2vh, 24px)) 0 clamp(24px, 4vh, 56px);
+  /* padding-top = barre annonce (--bj-bar-h) + navbar fixe (--bj-topbar-h = 76px)
+     + respiration → titre dégagé sous le chrome empilé. Bas réduit pour rendre
+     de la hauteur au track. */
+  padding: calc(var(--bj-bar-h) + var(--bj-topbar-h) + clamp(12px, 2vh, 24px)) 0 clamp(24px, 4vh, 56px);
   overflow: hidden;
 }
 
