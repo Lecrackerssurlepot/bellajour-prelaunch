@@ -74,10 +74,20 @@ export default function S1bAlbum() {
       >
         <div className="pv-sp__stack" aria-hidden="true">
           <span className="pv-sp__card pv-sp__card--1">
-            <span className="pv-sp__album" />
+            <img
+              className="pv-sp__cover"
+              src="/images/prevente/social-proof/aude.webp"
+              alt="Album de Aude"
+              loading="lazy"
+            />
           </span>
           <span className="pv-sp__card pv-sp__card--2">
-            <span className="pv-sp__album" />
+            <img
+              className="pv-sp__cover"
+              src="/images/prevente/social-proof/candice.webp"
+              alt="Album de Candice"
+              loading="lazy"
+            />
           </span>
           <span className="pv-sp__card pv-sp__card--3">+{SOCIAL_PROOF_COUNT}</span>
         </div>
