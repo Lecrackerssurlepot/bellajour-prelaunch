@@ -32,6 +32,12 @@
     -webkit-backdrop-filter 300ms var(--bj-ease);
 }
 
+/* ── Variante /preventes/prix : pas de barre d'annonce sur cette page →
+   la navbar se colle en haut (top:0) au lieu d'être empilée sous --bj-bar-h.
+   Scopé à .pv-nav--prix : .pv-nav partagée (top:var(--bj-bar-h)) reste intacte
+   pour /preventes, qui rend bien l'AnnouncementBar. */
+.pv-nav--prix { top: 0; }
+
 /* ── État B : navbar visible, fond glass + logo gauche / CTA droite ── */
 .pv-nav--solid {
   opacity: 1;

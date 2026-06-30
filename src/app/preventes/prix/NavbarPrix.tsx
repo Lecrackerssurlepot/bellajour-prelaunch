@@ -35,7 +35,7 @@ export default function NavbarPrix() {
 
   return (
     <nav
-      className={`pv-nav pv-nav--solid${flat ? ' pv-nav--flat' : ''}`}
+      className={`pv-nav pv-nav--solid pv-nav--prix${flat ? ' pv-nav--flat' : ''}`}
       aria-label="Navigation prix"
     >
       <a href={root} className="pv-nav-logo-btn" aria-label="Retour à la prévente">
