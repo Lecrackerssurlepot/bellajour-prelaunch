@@ -48,28 +48,38 @@
   line-height: 1.1;
 }
 
-/* Scène = parent qui DONNE la hauteur au flipbook (.fb lit height:100%).
-   Hauteur contenue : le livre tient en entier, la section respire dans le scroll. */
-.fbsec__stage {
+/* ── Vidéo « Découvrez Bellajour » ──────────────────────────────────────────
+   Embed YouTube responsive 16:9. Centré, max-width contenue (pas pleine
+   largeur — les marges 5vw de la section + ce max-width gardent le cadrage).
+   Fond #000 → pas de flash blanc au chargement. Angles droits (charte),
+   zéro ombre. Un padding-bottom réserve l'espace preuve sociale à venir. */
+.fbsec__video {
   position: relative;
   width: 100%;
-  height: clamp(520px, 82vh, 880px);
-  display: flex;
+  max-width: 920px;
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  /* Espace de respiration sous la vidéo, prévu pour un futur bloc preuve sociale. */
+  margin-bottom: clamp(24px, 5vh, 64px);
+}
+.fbsec__iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
 }
 
 /* Tablette : le padding base clamp(56px, 9vh, 110px) est déjà responsive (9vh)
    → pas d'override dédié nécessaire. */
 
-/* ── Mobile (≤767px) : 1 page + swipe. La scène n'impose plus de hauteur fixe :
-   le livre (.fb-m) se dimensionne par la largeur, la section grandit avec lui.
-   Le padding section reste le clamp de base (min 56px) — correct sur mobile. ── */
+/* ── Mobile (≤767px) : la vidéo prend toute la largeur disponible (moins les
+   marges 5vw de la section), ratio 16:9 maintenu via aspect-ratio. ── */
 @media (max-width: 767px) {
   .fbsec__head { margin-bottom: var(--bj-sp-5); }
   .fbsec__title { font-size: var(--bj-fs-h1-screen); }
-  .fbsec__stage {
-    height: auto;
-    display: block;
-  }
 }
 
 /* ── prefers-reduced-motion : pas d'apparition animée ── */
