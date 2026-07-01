@@ -196,10 +196,6 @@
   margin-top: clamp(14px, 2.4vh, 20px);
   min-height: 1.4em;
 }
-.amb-calc-bonus {
-  color: var(--bj-action);
-  font-weight: 500;
-}
 
 .amb-calc-valeur {
   font-family: var(--bj-font-display);

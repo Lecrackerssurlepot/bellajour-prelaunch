@@ -25,8 +25,10 @@ export const DEFAULT_OFFER_STATE: OfferState = {
   influencer: null,
 }
 
-/* D1 — prix album final, variable isolée (modif facile). */
-export const PRIX_ALBUM_BASE = 49
+/* D1 — prix album de base : ré-exporté depuis la SOURCE UNIQUE (./pricing).
+   Les consommateurs existants (S4Reservation, S5Garanties) continuent d'importer
+   PRIX_ALBUM_BASE depuis ce module — aucun changement côté appelants. */
+export { PRIX_ALBUM_BASE } from './pricing'
 
 /* PRD §3.2 — places restantes, jamais négatif. */
 export function placesRestantes(state: OfferState): number {

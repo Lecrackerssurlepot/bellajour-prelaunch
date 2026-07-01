@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import './prix.css'
 import { preventesHref } from './_ref'
+import { PRICE_LOOKUP } from '../pricing'
 
 /* Corps de la page /preventes/prix. Tout converge vers le SIMULATEUR.
    Page illustrative : aucun montant n'est envoyé au backend ; la grille ci-dessous
@@ -12,12 +13,10 @@ import { preventesHref } from './_ref'
    Remise parrainage = 5 €/proche, PLAFONNÉE à 20 € (jamais « à l'infini »).
    Parrainage actif au lancement, le 15 août. */
 
-/* Grille TTC, livraison incluse. step=10 sur [30,150] ⇒ chaque réglage du slider
-   tombe EXACTEMENT sur une clé ⇒ prix toujours défini, aucune interpolation. */
-const LOOKUP: Record<number, number> = {
-  30: 49, 40: 69, 50: 82, 60: 94, 70: 107, 80: 120, 90: 133,
-  100: 146, 110: 159, 120: 172, 130: 185, 140: 198, 150: 211,
-}
+/* Grille TTC, livraison incluse (SOURCE UNIQUE : ../pricing). step=10 sur [30,150]
+   ⇒ chaque réglage du slider tombe EXACTEMENT sur une clé ⇒ prix toujours défini,
+   aucune interpolation. */
+const LOOKUP = PRICE_LOOKUP
 
 const PAGES_MIN = 30
 const PAGES_MAX = 150
