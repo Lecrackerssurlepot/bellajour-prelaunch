@@ -38,10 +38,10 @@ const FACETTES: Facette[] = [
   {
     titre: 'Le format',
     accroche: 'Fait pour durer',
-    corps: '**A4 portrait**, 21 × 29,7 cm. Un format qui suit naturellement le regard, page après page. Couverture **rigide**, papier **170g**. Sur une base de **30 pages**, pour incarner l’essentiel de votre histoire.',
-    court: 'A4 portrait, 21 × 29,7 cm. Couverture rigide, papier 170g, 30 pages de base. Parce que 24, c’est trop peu pour raconter une histoire.',
+    corps: '**Format portrait**, 21 × 28 cm. Un format qui suit naturellement le regard, page après page. Couverture **rigide**, papier **170g**. Sur une base de **30 pages**, pour incarner l’essentiel de votre histoire.',
+    court: 'Format portrait, 21 × 28 cm. Couverture rigide, papier 170g, 30 pages de base. Parce que 24, c’est trop peu pour raconter une histoire.',
     img: '/images/prevente/objet/format.webp',
-    alt: 'Album photo Bellajour au format A4 portrait à couverture rigide',
+    alt: 'Album photo Bellajour au format portrait 21 × 28 cm à couverture rigide',
     ratio: '3 / 4',
   },
   {

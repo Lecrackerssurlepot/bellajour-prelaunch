@@ -55,7 +55,7 @@ export const CGV: LocalizedDoc = {
           {
             kind: 'p',
             value: [
-              `3.1 Description. L'album Bellajour est un livre relié à couverture rigide, imprimé en haute définition au format A4 portrait, comprenant une couverture illustrée unique (générée par IA), une mise en page composée par algorithme sous contrôle humain, et une version digitale HD incluse. Les caractéristiques techniques détaillées (format, pagination, papier, finitions) et la grille tarifaire par palier de pages figurent dans la `,
+              `3.1 Description. L'album Bellajour est un livre relié à couverture rigide, imprimé en haute définition au format portrait, comprenant une couverture illustrée unique (générée par IA), une mise en page composée par algorithme sous contrôle humain, et une version digitale HD incluse. Les caractéristiques techniques détaillées (format, pagination, papier, finitions) et la grille tarifaire par palier de pages figurent dans la `,
               { text: `Fiche produit`, href: `#fiche-produit` },
               `, document annexé aux présentes et reproduit en annexe ci-dessous. Ce document fait partie intégrante du contrat dans sa version en vigueur à la date de la commande (art. 13).`,
             ],
@@ -184,7 +184,7 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Caractéristiques techniques` },
           { kind: 'table', columns: [`Paramètre`, `Valeur`], rows: [
             [`Type`, `Livre photo relié, imprimé à la commande`],
-            [`Format`, `A4 portrait — 210 × 297 mm`],
+            [`Format`, `Portrait — 210 × 280 mm`],
             [`Reliure`, `Couverture rigide (hardcover)`],
             [`Pagination de base`, `30 pages`],
             [`Pagination min. / max.`, `30 pages min. — 200 pages max. (nombre de pages pair obligatoire)`],
@@ -252,7 +252,7 @@ export const CGV: LocalizedDoc = {
           {
             kind: 'p',
             value: [
-              `3.1 Descrição. O álbum Bellajour é um livro encadernado de capa dura, impresso em alta definição no formato A4 retrato, composto por uma capa ilustrada única (gerada por IA), uma paginação composta por algoritmo sob controlo humano e uma versão digital HD incluída. As características técnicas detalhadas (formato, paginação, papel, acabamentos) e a tabela de preços por escalão de páginas constam da `,
+              `3.1 Descrição. O álbum Bellajour é um livro encadernado de capa dura, impresso em alta definição no formato retrato, composto por uma capa ilustrada única (gerada por IA), uma paginação composta por algoritmo sob controlo humano e uma versão digital HD incluída. As características técnicas detalhadas (formato, paginação, papel, acabamentos) e a tabela de preços por escalão de páginas constam da `,
               { text: `Ficha de Produto`, href: `#fiche-produit` },
               `, documento anexo às presentes e reproduzido em anexo abaixo. Este documento faz parte integrante do contrato na versão em vigor à data da encomenda (art. 13.º).`,
             ],
@@ -381,7 +381,7 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Características técnicas` },
           { kind: 'table', columns: [`Parâmetro`, `Valor`], rows: [
             [`Tipo`, `Livro de fotografias encadernado, impresso por encomenda`],
-            [`Formato`, `A4 retrato — 210 × 297 mm`],
+            [`Formato`, `Retrato — 210 × 280 mm`],
             [`Encadernação`, `Capa dura (hardcover)`],
             [`Paginação de base`, `30 páginas`],
             [`Paginação mín. / máx.`, `mín. 30 páginas — máx. 200 páginas (número de páginas obrigatoriamente par)`],
@@ -449,7 +449,7 @@ export const CGV: LocalizedDoc = {
           {
             kind: 'p',
             value: [
-              `3.1 Description. The Bellajour album is a hardcover bound book, printed in high definition in A4 portrait format, comprising a unique illustrated cover (AI-generated), a layout composed by algorithm under human control, and an included HD digital version. The detailed technical specifications (format, pagination, paper, finishes) and the price list per page tier are set out in the `,
+              `3.1 Description. The Bellajour album is a hardcover bound book, printed in high definition in portrait format, comprising a unique illustrated cover (AI-generated), a layout composed by algorithm under human control, and an included HD digital version. The detailed technical specifications (format, pagination, paper, finishes) and the price list per page tier are set out in the `,
               { text: `Product Sheet`, href: `#fiche-produit` },
               `, a document annexed to these Terms and reproduced in the annex below. This document forms an integral part of the contract in the version in force on the date of the order (Art. 13).`,
             ],
@@ -578,7 +578,7 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Technical specifications` },
           { kind: 'table', columns: [`Parameter`, `Value`], rows: [
             [`Type`, `Bound photo book, printed on demand`],
-            [`Format`, `A4 portrait — 210 × 297 mm`],
+            [`Format`, `Portrait — 210 × 280 mm`],
             [`Binding`, `Hardcover`],
             [`Base pagination`, `30 pages`],
             [`Pagination min. / max.`, `min. 30 pages — max. 200 pages (page count must be even)`],

@@ -27,7 +27,7 @@ const REMISE_PAR_PROCHE = 5
 const REMISE_PLAFOND = 20
 
 const SPECS = [
-  'A4 portrait',
+  'Portrait 21 × 28 cm',
   'Couverture rigide',
   'Papier brillant 170 g',
   'Base 30 pages',
