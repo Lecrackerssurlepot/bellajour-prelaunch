@@ -51,7 +51,9 @@ export default function AmbassadeurNav({
   }
 
   const cls =
-    'pv-nav' + (heroOut ? ' pv-nav--solid' : '') + (flat ? ' pv-nav--flat' : '')
+    'pv-nav pv-nav--flush' +
+    (heroOut ? ' pv-nav--solid' : '') +
+    (flat ? ' pv-nav--flat' : '')
 
   return (
     <nav className={cls} aria-label="Navigation Cercle Ambassadeur">
