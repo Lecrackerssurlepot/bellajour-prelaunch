@@ -240,6 +240,11 @@
   color: var(--bj-text);
   text-align: right;
 }
+.s4-feat-bonus {
+  color: var(--bj-action);
+  font-weight: 500;
+  white-space: nowrap;
+}
 .s4-feat-yes { color: var(--bj-save-ok); font-weight: 600; }
 .s4-feat-no  { color: var(--bj-text-faint); }
 

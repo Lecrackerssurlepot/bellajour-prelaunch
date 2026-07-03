@@ -25,7 +25,7 @@ function capitalizePrenom(s: string | null): string | null {
    ⚠️ Seuls les montants client-facing sont ici. Aucune donnée interne (marges,
    commissions, coûts de production). */
 
-type FeatureValue = string | boolean
+type FeatureValue = string | boolean | React.JSX.Element
 
 interface Offre {
   type: 'founder' | 'standard' | 'influencer'
@@ -55,7 +55,14 @@ const OFFRE_FOUNDER: Offre = {
   acompte: 25,
   acompteBarre: 30,
   features: [
-    { label: FEATURE_LABELS.credite, value: '30 €' },
+    {
+      label: FEATURE_LABELS.credite,
+      value: (
+        <>
+          {'30\u00A0€'} <span className="s4-feat-bonus">{'(5\u00A0€ offerts)'}</span>
+        </>
+      ),
+    },
     { label: FEATURE_LABELS.illustration, value: true },
     { label: FEATURE_LABELS.instants, value: '200' },
     { label: FEATURE_LABELS.livraison, value: true },
