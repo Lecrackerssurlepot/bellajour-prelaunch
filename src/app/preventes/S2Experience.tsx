@@ -200,36 +200,36 @@ export default function S2Experience() {
                 <span className="s2-card-num">{c.num}</span>{' '}
                 <span className="s2-card-title">{c.label}</span>
               </span>
+              {c.cloture && <p className="s2-card-cloture">{c.cloture}</p>}
+              {/* Carte active : seule vidéo montée (autoPlay/loop) → joue.
+                  Cartes inactives : aucune vidéo montée, cover figée → perf, batterie,
+                  data ; rien ne tourne en fond. key=slug force le remount au swipe. */}
+              <div className="s2-card-media">
+                {i === activeIndex ? (
+                  <video
+                    key={c.slug}
+                    ref={videoRef}
+                    className="s2-card-video"
+                    src={`/images/prevente/parcours/${c.slug}.mp4`}
+                    poster={`/images/prevente/parcours/${c.slug}-cover.png`}
+                    muted
+                    autoPlay
+                    loop
+                    playsInline
+                    preload="metadata"
+                    aria-label={`Démo : ${c.label} sur Bellajour`}
+                  />
+                ) : (
+                  <img
+                    className="s2-card-cover"
+                    src={`/images/prevente/parcours/${c.slug}-cover.png`}
+                    alt=""
+                    aria-hidden="true"
+                  />
+                )}
+              </div>
               <p className="s2-card-ux">{c.ux}</p>
               <p className="s2-card-algo">{c.algo}</p>
-              {c.cloture && <p className="s2-card-cloture">{c.cloture}</p>}
-            </div>
-            {/* Carte active : seule vidéo montée (autoPlay/loop) → joue.
-                Cartes inactives : aucune vidéo montée, cover figée → perf, batterie,
-                data ; rien ne tourne en fond. key=slug force le remount au swipe. */}
-            <div className="s2-card-media">
-              {i === activeIndex ? (
-                <video
-                  key={c.slug}
-                  ref={videoRef}
-                  className="s2-card-video"
-                  src={`/images/prevente/parcours/${c.slug}.mp4`}
-                  poster={`/images/prevente/parcours/${c.slug}-cover.png`}
-                  muted
-                  autoPlay
-                  loop
-                  playsInline
-                  preload="metadata"
-                  aria-label={`Démo : ${c.label} sur Bellajour`}
-                />
-              ) : (
-                <img
-                  className="s2-card-cover"
-                  src={`/images/prevente/parcours/${c.slug}-cover.png`}
-                  alt=""
-                  aria-hidden="true"
-                />
-              )}
             </div>
           </article>
         ))}
