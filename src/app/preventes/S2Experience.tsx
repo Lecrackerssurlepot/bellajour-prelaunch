@@ -53,10 +53,34 @@ const CARTES: Carte[] = [
 const SWIPE_THRESHOLD = 50 // px
 
 export default function S2Experience() {
+  const sectionRef = useRef<HTMLElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const touchStartX = useRef<number | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [revealed, setRevealed] = useState(false)
+
+  // Reveal one-shot du header (titre + phrase éditeur) — même pattern que S1bAlbum.
+  // prefers-reduced-motion : contenu visible d'emblée, pas d'animation.
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setRevealed(true)
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setRevealed(true)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.15 }
+    )
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
 
   // Respect prefers-reduced-motion : on fige la démo (autoplay coupé) sur 1re frame.
   // Re-exécuté à chaque changement de carte active : seule la vidéo active est montée,
@@ -127,9 +151,20 @@ export default function S2Experience() {
   }
 
   return (
-    <section className="s2" data-section="s2-experience" data-theme="light">
+    <section
+      ref={sectionRef}
+      className={`s2${revealed ? ' is-in' : ''}`}
+      data-section="s2-experience"
+      data-theme="light"
+    >
       <div className="s2-head">
-        <h2 className="s2-title">Tout le parcours, sans la complexité.</h2>
+        <div className="s2-titles">
+          <h2 className="s2-title">Tout le parcours, sans la complexité.</h2>
+          <p className="s2-editor">
+            Un éditeur intelligent qui compose à votre place. Vous gardez le
+            dernier mot.
+          </p>
+        </div>
         <div className="s2-arrows">
           <button
             type="button"

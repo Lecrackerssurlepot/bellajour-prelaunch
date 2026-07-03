@@ -24,18 +24,26 @@
   flex: 0 0 auto;
   width: 100%;
   max-width: var(--bj-max-width, 1200px);
-  margin: 0 auto clamp(12px, 2vh, 22px); /* espace titre→cartes réduit */
+  /* Marge + gap resserrés pour compenser l'ajout de la phrase éditeur
+     (la section ne doit pas rallonger, surtout sur mobile). */
+  margin: 0 auto clamp(8px, 1.5vh, 16px);
   padding: 0 5vw;
   display: flex;
   flex-direction: column;
   align-items: center; /* titre centré, aligné avec la carte active centrée */
-  gap: clamp(10px, 1.5vh, 16px);
+  gap: clamp(8px, 1.2vh, 12px);
   /* Tête (titre + flèches) au-dessus du track dans l'ordre d'empilement :
      garantit que les flèches restent cliquables même si le scale de la carte
      active bave de quelques px dans le gap tête→track. Complète le align-start
      du track qui, lui, empêche la carte de remonter physiquement dans la tête. */
   position: relative;
   z-index: 3;
+}
+.s2-titles {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px; /* titre → phrase éditeur, compact */
 }
 .s2-title {
   font-family: var(--bj-font-display);
@@ -45,6 +53,34 @@
   line-height: 1.12;
   text-align: center;
   color: var(--bj-action); /* bleu Bellajour — même token que .s1-title / logo / CTA */
+}
+.s2-editor {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  line-height: 1.5;
+  text-align: center;
+  color: var(--bj-text);
+  opacity: 0.7;
+  max-width: 52ch;
+}
+
+/* Reveal one-shot du header (classe is-in posée par IntersectionObserver dans
+   S2Experience.tsx) : titre puis phrase avec un léger délai séquentiel. */
+.s2-title,
+.s2-editor {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.7s var(--bj-ease), transform 0.7s var(--bj-ease);
+  will-change: opacity, transform;
+}
+.s2.is-in .s2-title {
+  opacity: 1;
+  transform: none;
+}
+.s2.is-in .s2-editor {
+  opacity: 0.7; /* opacité de repos de la phrase — ne pas monter à 1 */
+  transform: none;
+  transition-delay: 0.12s;
 }
 
 /* ── Flèches ── */
@@ -243,5 +279,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .s2-track,
-  .s2-card { transition: none; }
+  .s2-card,
+  .s2-title,
+  .s2-editor { transition: none; }
 }
