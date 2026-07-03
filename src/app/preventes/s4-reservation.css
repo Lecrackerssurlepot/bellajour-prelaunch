@@ -275,16 +275,27 @@
 }
 .s4-parrain-link:hover { color: #357ec0; }
 
-/* ── Note crédit ── */
-.s4-credit-note {
-  max-width: 60ch;
+/* ── Bouton "En savoir plus sur les prix" ──
+   Même gabarit que .s4-reserver (font, taille, padding, radius) mais volontairement
+   secondaire : fond neutre carte + texte action, sans compétition avec le CTA bleu. */
+.s4-prix-btn {
+  display: block;
+  width: fit-content;
   margin: clamp(28px, 4vh, 44px) auto 0;
-  text-align: center;
   font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-body);
-  line-height: 1.6;
-  color: var(--bj-text-soft);
+  font-size: var(--bj-fs-lg);
+  font-weight: 500;
+  color: var(--bj-action);
+  background: var(--bj-cream-tint-1);
+  border: 1px solid var(--bj-veil-8);
+  border-radius: var(--bj-r-btn);
+  padding: 16px 32px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
 }
+.s4-prix-btn:hover { opacity: 0.85; }
 
 /* ── Checkout (CGV + bouton) — DANS l'encart actionnable ── */
 .s4-checkout {

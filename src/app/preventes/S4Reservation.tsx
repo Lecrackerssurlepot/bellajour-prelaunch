@@ -422,11 +422,9 @@ export default function S4Reservation() {
 
         {cards}
 
-        <p className="s4-credit-note">
-          Votre acompte est <strong>intégralement crédité</strong> sur la commande finale.
-          L’album se règle ensuite au prix grille selon le nombre de pages (base 30 pages),
-          à partir de {PRIX_ALBUM_BASE} €.
-        </p>
+        <a className="s4-prix-btn" href="/preventes/prix">
+          En savoir plus sur les prix
+        </a>
 
       </div>
     </section>
