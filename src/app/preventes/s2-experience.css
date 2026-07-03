@@ -7,10 +7,12 @@
 .s2 {
   width: 100%;
   background: var(--bj-cream);
-  /* Hauteur viewport — 100dvh (jamais 100vh) comme le hero. Colonne flex :
-     head (auto) + track (remplit le reste) → la carte tient dans la section. */
-  height: 100dvh;
-  min-height: 560px;
+  /* Plancher viewport — 100dvh (jamais 100vh) comme le hero. Colonne flex :
+     head (auto) + track (remplit le reste). height:auto + min-height → les
+     cartes réordonnées (vidéo au-dessus du texte) sont plus hautes que le
+     viewport : la section grandit avec elles au lieu de les rogner. */
+  height: auto;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   /* padding-top = barre annonce (--bj-bar-h) + navbar fixe (--bj-topbar-h = 76px)
