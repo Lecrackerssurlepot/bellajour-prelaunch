@@ -1,0 +1,245 @@
+{
+  "name": "Sync Supabase -> Notion",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "sched-sync",
+      "name": "Toutes les heures",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "getAll",
+        "tableId": "waitlist",
+        "returnAll": true,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "notion_synced",
+              "condition": "eq",
+              "keyValue": "false"
+            }
+          ]
+        }
+      },
+      "id": "supabase-get",
+      "name": "Waitlist non synchronisees",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "REPLACE_SUPABASE_CRED_ID",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "cond-amb",
+              "leftValue": "={{ $json.is_ambassadeur }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "cond-inf",
+              "leftValue": "={{ $json.offer_type }}",
+              "rightValue": "influencer",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "filter-amb",
+      "name": "Ambassadrice ou influenceuse",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        690,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "create",
+        "databaseId": {
+          "__rl": true,
+          "value": "a1f80a0ffa6749a69af6b600cbf094b1",
+          "mode": "id",
+          "cachedResultName": "CRM Influenceurs"
+        },
+        "title": "={{ $json.prenom }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Prénom|rich_text",
+              "textContent": "={{ $json.prenom }}"
+            },
+            {
+              "key": "Email|email",
+              "emailValue": "={{ $json.email }}"
+            },
+            {
+              "key": "Code promo|rich_text",
+              "textContent": "={{ $json.ref_code }}"
+            },
+            {
+              "key": "Type|select",
+              "selectValue": "={{ $json.is_ambassadeur === true ? 'Ambassadeur' : 'Influenceur' }}"
+            },
+            {
+              "key": "Statut|status",
+              "statusValue": "Vient de rejoindre"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notion-create",
+      "name": "Creer fiche CRM",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        930,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_NOTION_CRED_ID",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "tableId": "waitlist",
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Ambassadrice ou influenceuse').item.json.id }}"
+            }
+          ]
+        },
+        "dataToSend": "defineBelow",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "notion_synced",
+              "fieldValue": "={{ true }}"
+            }
+          ]
+        }
+      },
+      "id": "supabase-update",
+      "name": "Marquer notion_synced",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1170,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "REPLACE_SUPABASE_CRED_ID",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Toutes les heures": {
+      "main": [
+        [
+          {
+            "node": "Waitlist non synchronisees",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Waitlist non synchronisees": {
+      "main": [
+        [
+          {
+            "node": "Ambassadrice ou influenceuse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ambassadrice ou influenceuse": {
+      "main": [
+        [
+          {
+            "node": "Creer fiche CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creer fiche CRM": {
+      "main": [
+        [
+          {
+            "node": "Marquer notion_synced",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Lisbon"
+  },
+  "pinData": {},
+  "meta": {},
+  "tags": []
+}

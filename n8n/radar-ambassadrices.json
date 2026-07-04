@@ -1,0 +1,135 @@
+{
+  "name": "Radar ambassadrices",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "sched-radar",
+      "name": "Tous les jours 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "a1f80a0ffa6749a69af6b600cbf094b1",
+          "mode": "id",
+          "cachedResultName": "CRM Influenceurs"
+        },
+        "returnAll": true,
+        "simple": true,
+        "options": {}
+      },
+      "id": "notion-getall",
+      "name": "Fiches CRM Influenceurs",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        470,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_NOTION_CRED_ID",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Radar Bellajour — construit le corps du mail a partir des fiches Notion.\nconst items = $input.all();\n\nfunction toText(v) {\n  if (v === null || v === undefined) return '';\n  if (typeof v === 'string') return v;\n  if (typeof v === 'number' || typeof v === 'boolean') return String(v);\n  if (Array.isArray(v)) return v.map(toText).join(' ');\n  if (typeof v === 'object') {\n    if (typeof v.plain_text === 'string') return v.plain_text;\n    if (Array.isArray(v.title)) return v.title.map(t => t.plain_text || '').join('');\n    if (Array.isArray(v.rich_text)) return v.rich_text.map(t => t.plain_text || '').join('');\n    if (v.formula) return toText(v.formula.string ?? v.formula.number ?? v.formula.boolean ?? '');\n    if (v.select && v.select.name) return v.select.name;\n    if (v.status && v.status.name) return v.status.name;\n    if (v.date && v.date.start) return v.date.start;\n    if (typeof v.name === 'string') return v.name;\n    if (typeof v.string === 'string') return v.string;\n    if (typeof v.start === 'string') return v.start;\n    return '';\n  }\n  return '';\n}\n\nfunction getProp(row, name) {\n  const j = row.json || {};\n  if (j.properties && j.properties[name] !== undefined) return toText(j.properties[name]);\n  if (j[name] !== undefined) return toText(j[name]);\n  return '';\n}\n\nconst actions = [];\nconst relances = [];\n\nfor (const row of items) {\n  const action = getProp(row, '\\ud83d\\udc49 Prochaine action').trim();\n  if (!action) continue; // on ignore les fiches sans prochaine action\n  const qui = getProp(row, 'Qui');\n  const compte = getProp(row, 'Compte Instagram').trim();\n  const prenom = getProp(row, 'Prenom').trim() || getProp(row, 'Pr\\u00e9nom').trim();\n  const label = compte || prenom || 'Sans nom';\n  const dateStr = getProp(row, 'Derniere action le').trim() || getProp(row, 'Derni\\u00e8re action le').trim();\n  let ts = dateStr ? Date.parse(dateStr) : Number.POSITIVE_INFINITY;\n  if (isNaN(ts)) ts = Number.POSITIVE_INFINITY;\n  const entry = { label, action, ts };\n  if (qui.includes('faire (toi)')) actions.push(entry);\n  else if (qui.includes('relancer (elle)')) relances.push(entry);\n}\n\n// tri par derniere action croissant (plus ancien en haut)\nactions.sort((a, b) => a.ts - b.ts);\nrelances.sort((a, b) => a.ts - b.ts);\n\nconst dateJour = new Date().toLocaleDateString('fr-FR', { timeZone: 'Europe/Lisbon', day: '2-digit', month: '2-digit', year: 'numeric' });\n\nfunction render(list) {\n  if (!list.length) return \"Rien aujourd'hui \\u2728\";\n  return list.map(e => '\\u2022 ' + e.label + ' \\u2014 ' + e.action).join('\\n');\n}\n\nconst subject = '\\ud83c\\udfaf Radar Bellajour \\u2014 ' + dateJour;\nconst body = [\n  subject,\n  '',\n  '\\u2705 A FAIRE',\n  render(actions),\n  '',\n  '\\ud83d\\udd14 A RELANCER',\n  render(relances),\n  ''\n].join('\\n');\n\nreturn [{ json: { subject, body, actionsCount: actions.length, relancesCount: relances.length } }];\n"
+      },
+      "id": "code-radar",
+      "name": "Trie actions et relances",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "durandm@bellajour.com, lelonglg@bellajour.com",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.body }}",
+        "options": {}
+      },
+      "id": "gmail-radar",
+      "name": "Envoi mail Radar",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        930,
+        300
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Tous les jours 08:00": {
+      "main": [
+        [
+          {
+            "node": "Fiches CRM Influenceurs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fiches CRM Influenceurs": {
+      "main": [
+        [
+          {
+            "node": "Trie actions et relances",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trie actions et relances": {
+      "main": [
+        [
+          {
+            "node": "Envoi mail Radar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Lisbon"
+  },
+  "pinData": {},
+  "meta": {},
+  "tags": []
+}
