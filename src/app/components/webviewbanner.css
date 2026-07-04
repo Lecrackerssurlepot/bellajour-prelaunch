@@ -1,0 +1,118 @@
+/* ════════════════════════════════════════════════════════════
+   BANDEAU WEBVIEW INSTAGRAM / FACEBOOK — "Ouvrir dans le navigateur"
+   Fixe en bas d'écran, monté dans le layout racine (toutes les pages),
+   rendu uniquement dans le WebView Meta mobile (cf. WebViewBanner.tsx).
+   Charte stricte : palette #1C1C1C / #F0EBE1 / #A89880 / #B8834A,
+   DM Sans, angles droits, zéro ombre / gradient / glassmorphism
+   (pas de backdrop-filter sur un fixed → règle anti-jank prévente).
+   ════════════════════════════════════════════════════════════ */
+
+.wvb {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 90; /* au-dessus des navs (.ab = 60, .pv-nav = 50), sous les modales (1000) */
+  display: flex;
+  align-items: flex-start;
+  gap: 2vw;
+  background: #1c1c1c;
+  color: #f0ebe1;
+  border-top: 1px solid #b8834a; /* séparation fine, sans box-shadow */
+  font-family: var(--bj-font-ui);
+  padding: 2.4vh 5vw;
+  padding-bottom: calc(2.4vh + env(safe-area-inset-bottom));
+  animation: wvbRise 400ms cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+@keyframes wvbRise {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.wvb-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.6vh;
+}
+
+.wvb-text {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  color: #f0ebe1;
+}
+
+/* Instruction iOS (après appui sur le bouton) : ton secondaire, glyphe ⋯ accentué. */
+.wvb-text--help {
+  color: #a89880;
+}
+.wvb-glyph {
+  color: #b8834a;
+  font-weight: 500;
+}
+
+.wvb-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px; /* touch target */
+  padding: 0 5vw;
+  background: none;
+  border: 1px solid #b8834a;
+  color: #b8834a;
+  font-family: var(--bj-font-ui);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+  cursor: pointer;
+  transition: opacity 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.wvb-cta:active,
+.wvb-cta:focus-visible {
+  opacity: 0.7;
+}
+
+.wvb-close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px; /* touch target — déborde du padding via marges négatives */
+  margin: -1.2vh -2vw -1.2vh 0;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #a89880;
+  font-family: var(--bj-font-ui);
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.wvb-close:active,
+.wvb-close:focus-visible {
+  color: #f0ebe1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wvb {
+    animation: none;
+  }
+}

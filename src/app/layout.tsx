@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
 import './globals.css'
+import WebViewBanner from './components/WebViewBanner'
 
 /* Fonts DA (charte) chargées via next/font (self-host, zéro FOUC, pas de
    requête runtime vers fonts.gstatic.com). Exposées en variables CSS et
@@ -100,6 +101,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
+        {/* Bandeau WebView Instagram/Facebook — rend null hors WebView Meta mobile */}
+        <WebViewBanner />
       </body>
     </html>
   )
