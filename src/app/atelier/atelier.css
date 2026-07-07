@@ -96,6 +96,12 @@
 
 /* ---------- Typographie ---------- */
 
+/* globals.css pose h1 { font-style: italic } pour la landing —
+   neutralisé ici, l'italique atelier passe par .at-title--italic. */
+.at-scope h1 {
+  font-style: normal;
+}
+
 .at-title {
   font-family: var(--at-font-title);
   font-weight: 700;
