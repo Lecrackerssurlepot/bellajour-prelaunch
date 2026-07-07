@@ -22,9 +22,15 @@ export const DEFAULT_BINDING: BindingColorId = 'brume'
 export const ASSETS = {
   /* URL retournée par le mock generateIllustration — fichier pas encore livré */
   illustration: '/atelier-placeholder-illustration.jpg',
-  /* ex. '/images/atelier/mockup-album.webp' quand disponible */
+  /* Mockup album du hero — vrai asset (WebP transparent 1792×2390) */
+  mockupHero: '/images/atelier/album-hero.webp' as string | null,
+  /* ex. '/images/atelier/mockup-album.webp' quand disponible (S4/S5) */
   mockupAlbum: null as string | null,
 }
+
+/* Dimensions intrinsèques du mockup hero — posées en width/height sur
+   l'<img> pour réserver l'espace (zéro layout shift) */
+export const HERO_MOCKUP_SIZE = { width: 1792, height: 2390 }
 
 /* Ratio album portrait (~21×27) partagé par tous les placeholders */
 export const ALBUM_RATIO = '21 / 27'

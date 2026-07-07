@@ -5,7 +5,13 @@
    Variants : hero (grand, flottant) · editor (interactif S4) · thumb (mini S5). */
 
 import './album-mockup.css'
-import { ALBUM_RATIO, ASSETS, BINDING_COLORS, type BindingColorId } from '../constants'
+import {
+  ALBUM_RATIO,
+  ASSETS,
+  BINDING_COLORS,
+  HERO_MOCKUP_SIZE,
+  type BindingColorId,
+} from '../constants'
 
 interface AlbumMockupProps {
   variant: 'hero' | 'editor' | 'thumb'
@@ -23,6 +29,26 @@ export default function AlbumMockup({
   label = 'votre album',
 }: AlbumMockupProps) {
   const hex = couleur ? BINDING_COLORS.find((c) => c.id === couleur)?.hex : undefined
+
+  /* Hero : vrai asset (WebP transparent) — image en flux, dimensions
+     intrinsèques réservées, pas de lazy (image critique du hero).
+     Le float continu reste sur le conteneur. */
+  if (variant === 'hero' && ASSETS.mockupHero) {
+    return (
+      <div className={`at-mockup at-mockup--hero${float ? ' at-mockup--float' : ''}`}>
+        <img
+          className="at-mockup-hero-img"
+          src={ASSETS.mockupHero}
+          alt=""
+          width={HERO_MOCKUP_SIZE.width}
+          height={HERO_MOCKUP_SIZE.height}
+          fetchPriority="high"
+          decoding="async"
+          draggable={false}
+        />
+      </div>
+    )
+  }
 
   return (
     <div
