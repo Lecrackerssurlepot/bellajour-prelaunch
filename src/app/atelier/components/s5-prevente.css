@@ -1,0 +1,48 @@
+/* S5 — Prévente */
+
+.at-s5-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.at-s5-title {
+  margin: 0 0 clamp(32px, 6vh, 56px);
+  font-size: clamp(40px, 9vw, 88px);
+  line-height: 1.05;
+}
+
+.at-s5-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(24px, 5vw, 48px);
+  flex-wrap: wrap;
+}
+
+.at-s5-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  max-width: 40ch;
+}
+
+.at-s5-cta {
+  text-decoration: none;
+}
+
+.at-s5-rappel {
+  margin: 0;
+  font-family: var(--at-font-label);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--at-muted);
+}
+
+.at-s5-email {
+  color: var(--at-text);
+  font-style: normal;
+}

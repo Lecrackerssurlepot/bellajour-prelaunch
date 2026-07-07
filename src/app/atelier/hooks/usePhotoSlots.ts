@@ -31,7 +31,10 @@ export function usePhotoSlots(
 ) {
   const [errors, setErrors] = useState<SlotErrors>([null, null])
   const photosRef = useRef(photos)
-  photosRef.current = photos
+
+  useEffect(() => {
+    photosRef.current = photos
+  }, [photos])
 
   const setPhoto = useCallback(
     (index: 0 | 1, file: File) => {
