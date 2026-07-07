@@ -1,0 +1,183 @@
+/* ============================================================
+   /atelier — direction artistique dédiée (exception validée à la
+   charte landing : fond charbon unique, arrondis autorisés).
+   Tout est scopé à .at-scope : aucune fuite sur le reste du site.
+   ============================================================ */
+
+.at-scope {
+  /* Palette atelier */
+  --at-bg: #1c1c1c;
+  --at-text: #f0ebe1;
+  --at-accent: #778899;
+  --at-muted: #a89880; /* contraste sur --at-bg ≈ 6.0:1 — AA ok */
+  --at-panel: #232120; /* encarts, un cran au-dessus du fond */
+  --at-placeholder: #2a2828;
+  --at-line: rgba(240, 235, 225, 0.12);
+  --at-accent-soft: rgba(119, 136, 153, 0.16);
+  --at-accent-border: rgba(119, 136, 153, 0.45);
+
+  /* Fonts (chargées dans layout.tsx via next/font) */
+  --at-font-title: var(--font-at-title), 'Playfair Display', Georgia, serif;
+  --at-font-narrative: var(--font-at-narrative), 'Cormorant Garamond', Georgia, serif;
+  --at-font-label: var(--font-at-label), 'DM Sans', system-ui, sans-serif;
+
+  /* Rayons — exception volontaire et validée à la règle border-radius: 0 */
+  --at-r-md: 16px;
+  --at-r-lg: 24px;
+  --at-r-pill: 999px;
+
+  /* Motion — mobile = desktop (animations opacity/transform GPU-only).
+     Seul prefers-reduced-motion neutralise. */
+  --at-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --at-dur-hover: 200ms;
+  --at-dur: 600ms;
+  --at-dur-reveal: 800ms;
+  --at-dur-slow: 1800ms;
+  --at-float-cycle: 6s;
+  --at-hero-slide: 80px;
+
+  background: var(--at-bg);
+  color: var(--at-text);
+  font-family: var(--at-font-label);
+  font-weight: 300;
+  line-height: 1.7;
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* Ceinture de sécurité : aucun scroll horizontal pendant les slides du hero */
+  overflow-x: clip;
+}
+
+/* Concessions mobile (les deux SEULES — le reste du motion est identique) :
+   float du hero plus discret, slide des titres plus court. */
+@media (max-width: 768px) {
+  .at-scope {
+    --at-float-cycle: 8s;
+    --at-hero-slide: 40px;
+  }
+}
+
+/* prefers-reduced-motion : toutes les animations décoratives désactivées,
+   transitions instantanées, contenu toujours visible. */
+@media (prefers-reduced-motion: reduce) {
+  .at-scope {
+    --at-dur: 0ms;
+    --at-dur-reveal: 0ms;
+    --at-dur-slow: 0ms;
+  }
+  .at-scope *,
+  .at-scope *::before,
+  .at-scope *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Structure ---------- */
+
+.at-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(64px, 12vh, 140px) clamp(24px, 5vw, 80px);
+}
+
+/* Séparateur fin entre blocs (motion lexicon — fade separator) */
+.at-sep {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--at-line) 25%,
+    var(--at-line) 75%,
+    transparent 100%
+  );
+  margin: 0 clamp(24px, 5vw, 80px);
+}
+
+/* ---------- Typographie ---------- */
+
+.at-title {
+  font-family: var(--at-font-title);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  color: var(--at-text);
+}
+
+.at-title--italic {
+  font-weight: 400;
+  font-style: italic;
+}
+
+.at-narrative {
+  font-family: var(--at-font-narrative);
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.7;
+}
+
+.at-label {
+  font-family: var(--at-font-label);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--at-muted);
+}
+
+/* ---------- Boutons ---------- */
+
+.at-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  min-width: 44px;
+  padding: 0 32px;
+  border: 1px solid var(--at-accent-border);
+  border-radius: var(--at-r-pill);
+  background: var(--at-accent-soft);
+  color: var(--at-text);
+  font-family: var(--at-font-label);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition:
+    background-color var(--at-dur-hover) ease,
+    border-color var(--at-dur-hover) ease;
+}
+
+.at-btn:hover {
+  background: rgba(119, 136, 153, 0.28);
+}
+
+.at-btn:focus-visible {
+  outline: 2px solid var(--at-accent);
+  outline-offset: 3px;
+}
+
+.at-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ---------- Apparition au scroll (lux fade atelier) ----------
+   État initial caché, révélé par .is-visible (useReveal / IO threshold 0.15).
+   will-change actif uniquement avant/pendant la transition. */
+
+.at-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity var(--at-dur-reveal) var(--at-ease-out),
+    transform var(--at-dur-reveal) var(--at-ease-out);
+  will-change: opacity, transform;
+}
+
+.at-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
