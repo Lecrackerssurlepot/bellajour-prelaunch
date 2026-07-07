@@ -22,3 +22,8 @@
 .at-rotator-phrase.is-active {
   opacity: 1;
 }
+
+/* Cadence rapide (séquence d'analyse ~1,8 s) : crossfade raccourci. */
+.at-rotator--brisk .at-rotator-phrase {
+  transition-duration: 500ms;
+}

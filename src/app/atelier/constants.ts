@@ -46,28 +46,48 @@ export const ALBUM_RATIO = '21 / 27'
 
 export const TITLE_MAX_LENGTH = 30
 export const MAX_FILE_BYTES = 10 * 1024 * 1024 /* 10 Mo */
-export const ACCEPTED_MIME = ['image/jpeg', 'image/png', 'image/webp']
-export const ACCEPTED_EXT = /\.(jpe?g|png|webp)$/i
+export const ACCEPTED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+export const ACCEPTED_EXT = /\.(jpe?g|png|webp|heic|heif)$/i
 
-/* Délais simulés — voir lib/atelierApi.ts */
-export const ANALYSIS_DELAY_MS = 8000
+/* Analyse réelle — webhook N8N (public, CORS *, sans clé côté front) */
+export const ANALYSE_WEBHOOK_URL =
+  'https://n8n.srv1802624.hstgr.cloud/webhook/atelier-analyse'
+export const ANALYSIS_TIMEOUT_MS = 120_000 /* 120 s côté front */
+export const ANALYSIS_MIN_WAIT_MS = 6_000 /* plancher d'attente scénarisée */
+
+/* Préparation image avant envoi (canvas) */
+export const IMAGE_MAX_SIDE = 1568 /* côté long max */
+export const IMAGE_JPEG_QUALITY = 0.8
+/* Miniatures de reprise (sessionStorage, restore post-refresh) */
+export const THUMB_MAX_SIDE = 600
+export const THUMB_JPEG_QUALITY = 0.6
+
+/* Délais simulés — voir lib/atelierApi.ts (submitEmail / generateIllustration) */
 export const GENERATION_DELAY_MS = 15000
 export const EMAIL_DELAY_MS = 1000
 
-/* Garde-fou : max 2 analyses par session (1 reprise tolérée après un
-   reload accidentel pendant l'attente) */
-export const MAX_ANALYSIS_ATTEMPTS = 2
+/* Garde-fou consommation :
+   - 1 regard offert (consommé uniquement par un statut consomme:true)
+   - max 4 refus par visiteur (protège les coûts API)
+   - plafond d'envois (anti-spam reload) */
+export const MAX_REFUSALS = 4
+export const MAX_ANALYSIS_STARTS = 6
 
 /* Clés de stockage */
-export const SESSION_KEY = 'atelier_analysis' /* sessionStorage — snapshot parcours */
+export const SESSION_KEY = 'atelier_analysis' /* sessionStorage — snapshot parcours (éphémère) */
+export const VIGNETTES_KEY = 'atelier_vignettes' /* sessionStorage — miniatures de reprise */
+export const LOCK_KEY = 'atelier_regard' /* localStorage — verrou de coût (compteurs, survit à l'onglet) */
 export const INTERACTIONS_KEY = 'atelier_interactions' /* localStorage — saveInteraction */
 
 /* Attentes scénarisées */
 export const PHRASE_INTERVAL_MS = 4000
+export const ANALYSIS_PHRASE_MS = 1_800
 export const ANALYZING_PHRASES = [
-  'L’atelier observe vos photos…',
-  'La lumière, les couleurs, l’émotion…',
-  'Un instant encore.',
+  'L’atelier ouvre vos souvenirs…',
+  'On regarde la lumière.',
+  'On lit ce que l’instant raconte.',
+  'On cherche leur place dans l’album.',
+  'On écoute ce que les deux se disent.',
 ] as const
 export const GENERATING_PHRASES = [
   'Votre illustration prend forme…',
@@ -76,7 +96,28 @@ export const GENERATING_PHRASES = [
   'Encore quelques gestes.',
 ] as const
 
+/* Écrans verrouillés / messages doux (voix Bellajour, wording contractuel) */
 export const LOCKED_MESSAGE = 'L’atelier a déjà étudié vos photos durant cette session.'
+export const CONSUMED_MESSAGE =
+  'C’était votre regard offert — la suite se compose sur Bellajour.'
+export const RETURNING_MESSAGE =
+  'Votre regard a déjà été offert. Votre illustration vous attend dans vos mails.'
+export const REFUSAL_CAP_MESSAGE =
+  'L’atelier préfère s’arrêter là pour aujourd’hui. Revenez avec d’autres souvenirs — la suite se compose sur Bellajour.'
+export const NETWORK_ERROR_MESSAGE =
+  'L’atelier n’a pas pu ouvrir vos photos cette fois. Vérifiez votre connexion, puis réessayez.'
+export const HEIC_DECODE_MESSAGE =
+  'Votre navigateur ne parvient pas à lire cette photo. Pouvez-vous en choisir une autre, en JPG ou PNG ?'
+
+/* Reveal — intitulés et invitations fixes (wording contractuel) */
+export const GESTE_HEADING = 'Ce que l’atelier en ferait'
+export const DOUBLON_KEPT_BADGE = 'celle qu’on garde'
+export const REVEAL_CTA_COUVERTURE =
+  'Cette image pourrait devenir votre couverture. Voulez-vous voir ce que l’atelier en peindrait ?'
+export const REVEAL_CTA_DEFAULT =
+  'L’album ne fait que commencer. Découvrez l’illustration que l’atelier composerait pour le vôtre.'
 
 /* Ancre canonique de l’offre prévente (section S4Reservation) */
 export const PREVENTE_URL = '/preventes#s4'
+/* Ancre waitlist de la landing (CTA discret des écrans non-ok) */
+export const WAITLIST_URL = '/#waitlist'

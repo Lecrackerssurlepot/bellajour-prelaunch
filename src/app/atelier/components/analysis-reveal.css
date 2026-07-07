@@ -1,0 +1,222 @@
+/* Reveal de l'analyse — apparition étagée, transform/opacity uniquement
+   (jamais height/top → fluide iPhone). Réutilise le lexique de tokens --at-*
+   et les rayons de l'exception /atelier. Zéro box-shadow, zéro gradient. */
+
+@keyframes at-anl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.at-anl-rise {
+  animation: at-anl-rise var(--at-dur-reveal) var(--at-ease-out) both;
+  animation-delay: var(--anl-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.at-anl {
+  padding-top: clamp(24px, 5vh, 48px);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(28px, 6vh, 56px);
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* Deux colonnes dès qu'il y a la place ; paire/invite/CTA/message pleine largeur. */
+@media (min-width: 768px) {
+  .at-anl {
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(32px, 4vw, 56px) clamp(32px, 5vw, 64px);
+    align-items: start;
+    max-width: 960px;
+  }
+
+  .at-anl-paire,
+  .at-anl-invite,
+  .at-anl-cta,
+  .at-anl-message,
+  .at-anl-closure {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------- Carte photo ---------- */
+
+.at-anl-card {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 2.5vh, 20px);
+  text-align: left;
+}
+
+.at-anl-vignette {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-r-md);
+}
+
+.at-anl-titre {
+  margin: 0;
+  font-family: var(--at-font-title);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(24px, 5.5vw, 34px);
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  color: var(--at-text);
+}
+
+.at-anl-titre--sm {
+  font-size: clamp(20px, 4.5vw, 27px);
+}
+
+/* Observation — mise en exergue */
+.at-anl-observation {
+  margin: 0;
+  font-size: clamp(19px, 4.5vw, 24px);
+  line-height: 1.5;
+  color: var(--at-text);
+}
+
+.at-anl-texte {
+  margin: 0;
+  font-size: clamp(17px, 4vw, 20px);
+  line-height: 1.7;
+  color: var(--at-muted);
+}
+
+/* Bloc geste — encart posé un cran au-dessus du fond */
+.at-anl-geste {
+  margin-top: 4px;
+  padding: clamp(16px, 3vw, 22px);
+  background: var(--at-panel);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-r-md);
+}
+
+.at-anl-geste-label {
+  margin: 0 0 8px;
+}
+
+.at-anl-geste-texte {
+  margin: 0;
+  font-size: clamp(16px, 3.8vw, 19px);
+  line-height: 1.6;
+  color: var(--at-text);
+}
+
+/* Badge placement — pilule accent */
+.at-anl-place {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.at-anl-badge {
+  align-self: flex-start;
+  padding: 6px 16px;
+  border: 1px solid var(--at-accent-border);
+  border-radius: var(--at-r-pill);
+  background: var(--at-accent-soft);
+  font-family: var(--at-font-label);
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--at-text);
+}
+
+.at-anl-place-why {
+  margin: 0;
+  font-size: clamp(15px, 3.6vw, 18px);
+  line-height: 1.6;
+  color: var(--at-muted);
+}
+
+/* ---------- Paire / invitation / CTA ---------- */
+
+.at-anl-paire {
+  margin: 0;
+  justify-self: center;
+  max-width: 52ch;
+  text-align: center;
+  font-size: clamp(18px, 4.2vw, 23px);
+  line-height: 1.6;
+  color: var(--at-text);
+}
+
+.at-anl-invite {
+  margin: 0;
+  justify-self: center;
+  max-width: 48ch;
+  text-align: center;
+  font-size: clamp(17px, 4vw, 21px);
+  line-height: 1.6;
+  color: var(--at-muted);
+}
+
+.at-anl-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ---------- Doublon ---------- */
+
+.at-anl-card--doublon.is-dimmed {
+  opacity: 0.55;
+}
+
+.at-anl-card--doublon.is-kept .at-anl-vignette {
+  border-color: var(--at-accent-border);
+}
+
+.at-anl-badge--kept {
+  align-self: flex-start;
+}
+
+.at-anl-waitlist {
+  color: var(--at-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--at-dur-hover) ease;
+}
+
+.at-anl-waitlist:hover {
+  color: var(--at-text);
+}
+
+/* ---------- Écrans non-ok (même écrin, pas un bandeau d'erreur) ---------- */
+
+.at-anl--refus {
+  max-width: 620px;
+  text-align: center;
+}
+
+.at-anl-message {
+  margin: 0;
+  justify-self: center;
+  max-width: 52ch;
+  text-align: center;
+  font-size: clamp(18px, 4.3vw, 23px);
+  line-height: 1.6;
+  color: var(--at-text);
+}
+
+.at-anl-closure {
+  margin: 0;
+  justify-self: center;
+  max-width: 48ch;
+  text-align: center;
+  font-size: clamp(16px, 3.8vw, 19px);
+  line-height: 1.6;
+  color: var(--at-muted);
+}

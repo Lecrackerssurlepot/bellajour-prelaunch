@@ -5,9 +5,16 @@
    montage progressif des sections (toujours ajoutées SOUS le viewport). */
 
 import { useCallback, useEffect, useReducer, useRef } from 'react'
-import type { BindingColorId } from '../constants'
+import {
+  ANALYSIS_MIN_WAIT_MS,
+  MAX_ANALYSIS_STARTS,
+  MAX_REFUSALS,
+  NETWORK_ERROR_MESSAGE,
+  type BindingColorId,
+} from '../constants'
 import {
   analyzePhotos,
+  delay,
   generateIllustration,
   saveInteraction,
   submitEmail,
@@ -16,10 +23,16 @@ import {
   atelierReducer,
   canStartAnalysis,
   initialState,
+  readLock,
   readSnapshot,
+  readVignettes,
   restoreFromSnapshot,
+  writeLock,
   writeSnapshot,
+  writeVignettes,
+  type LockedReason,
 } from '../lib/atelierState'
+import { makeThumbnail } from '../lib/imagePrep'
 import { usePhotoSlots } from '../hooks/usePhotoSlots'
 import S1Hero from './S1Hero'
 import S2Selection from './S2Selection'
@@ -34,7 +47,7 @@ function motionAllowed(): boolean {
 
 export default function AtelierExperience() {
   const [state, dispatch] = useReducer(atelierReducer, initialState)
-  const { errors, setPhoto, removePhoto } = usePhotoSlots(state.photos, dispatch)
+  const { errors, pending, setPhoto, removePhoto } = usePhotoSlots(state.photos, dispatch)
   const s3Ref = useRef<HTMLDivElement>(null)
   const jobIdRef = useRef(state.jobId)
 
@@ -43,29 +56,77 @@ export default function AtelierExperience() {
   }, [state.jobId])
 
   /* Reprise de session (reload) — dans un effect, jamais en initializer,
-     pour éviter tout mismatch d'hydratation SSR. */
+     pour éviter tout mismatch d'hydratation SSR. Lit le verrou localStorage,
+     le snapshot session et les vignettes ; remet inFlight à false (une
+     analyse interrompue par un refresh est abandonnée). */
   useEffect(() => {
+    const lock = readLock()
     const snap = readSnapshot()
-    if (!snap) return
-    const restored = restoreFromSnapshot(snap)
+    const vignettes = readVignettes()
+    const restored = restoreFromSnapshot(lock, snap, vignettes)
     if (restored) dispatch({ type: 'SESSION_RESTORED', restored })
+    if (lock?.inFlight) writeLock({ inFlight: false })
   }, [])
 
-  /* Analyse — 8s simulées, annulée si navigation pendant l'attente */
+  /* Analyse réelle (webhook N8N), annulée si navigation pendant l'attente.
+     Plancher scénarisé : même si l'API répond avant 6 s, on attend la fin
+     de la séquence de phrases. Comptabilité du garde-fou au retour. */
   useEffect(() => {
     if (state.phase !== 'analyzing') return
     const [photo1, photo2] = state.photos
     if (!photo1 || !photo2) return
     const ac = new AbortController()
-    analyzePhotos(photo1.file, photo2.file, { signal: ac.signal })
-      .then((analysis) => {
-        writeSnapshot({ status: 'done', checkpoint: 'analysis', analysis })
-        dispatch({ type: 'ANALYSIS_DONE', analysis })
+    const startedAt = performance.now()
+    let cancelled = false
+
+    analyzePhotos(photo1.prepared, photo2.prepared, { signal: ac.signal })
+      .then(async (analysis) => {
+        const remaining = ANALYSIS_MIN_WAIT_MS - (performance.now() - startedAt)
+        if (remaining > 0) await delay(remaining, ac.signal)
+        if (cancelled) return
+
+        if (analysis.consomme) {
+          writeLock({ consumed: true, inFlight: false })
+          writeSnapshot({ checkpoint: 'analysis', analysis })
+          /* Miniatures de reprise — best-effort, ne bloque jamais le reveal */
+          try {
+            const [t1, t2] = await Promise.all([
+              makeThumbnail(photo1.prepared),
+              makeThumbnail(photo2.prepared),
+            ])
+            writeVignettes([t1, t2])
+          } catch {
+            /* pas de vignettes restaurables — dégradation prévue */
+          }
+        } else {
+          const lock = readLock()
+          writeLock({ refusals: (lock?.refusals ?? 0) + 1, inFlight: false })
+        }
+
+        const lock = readLock()
+        const lockedReason: LockedReason = lock?.consumed
+          ? 'consumed'
+          : lock && (lock.refusals >= MAX_REFUSALS || lock.starts >= MAX_ANALYSIS_STARTS)
+            ? 'refusals'
+            : null
+        dispatch({
+          type: 'ANALYSIS_DONE',
+          analysis,
+          locked: lockedReason !== null,
+          lockedReason,
+        })
       })
       .catch(() => {
-        /* abort à la navigation — rien à faire */
+        if (ac.signal.aborted || cancelled) return
+        /* Échec réseau / timeout : ni consommé ni refus, retour aux slots */
+        writeLock({ inFlight: false })
+        dispatch({ type: 'ANALYSIS_FAILED', message: NETWORK_ERROR_MESSAGE })
       })
-    return () => ac.abort()
+
+    return () => {
+      cancelled = true
+      ac.abort()
+    }
   }, [state.phase, state.photos])
 
   /* Génération — 15s simulées */
@@ -95,13 +156,18 @@ export default function AtelierExperience() {
     return () => cancelAnimationFrame(raf)
   }, [state.phase])
 
-  /* Garde-fou : verrou posé AU CLIC (status started, attempts+1).
-     Max 2 analyses/session — une reprise tolérée après reload accidentel. */
+  /* Garde-fou : incrément du compteur d'envois + drapeau inFlight AU CLIC
+     (détection du refresh mi-analyse). Le verrou de coût vit en localStorage. */
   const startAnalysis = useCallback(() => {
-    const snap = readSnapshot()
-    if (!canStartAnalysis(snap)) return
-    writeSnapshot({ status: 'started', attempts: (snap?.attempts ?? 0) + 1, checkpoint: null })
+    const lock = readLock()
+    if (!canStartAnalysis(lock)) return
+    writeLock({ starts: (lock?.starts ?? 0) + 1, inFlight: true })
+    writeSnapshot({ checkpoint: null })
     dispatch({ type: 'ANALYSIS_STARTED' })
+  }, [])
+
+  const retryAnalysis = useCallback(() => {
+    dispatch({ type: 'ANALYSIS_RETRY' })
   }, [])
 
   const openEmailGate = useCallback(() => {
@@ -144,12 +210,17 @@ export default function AtelierExperience() {
         phase={state.phase}
         photos={state.photos}
         analysis={state.analysis}
+        vignettes={state.vignettes}
         errors={errors}
+        pending={pending}
         locked={state.locked}
+        lockedReason={state.lockedReason}
+        analysisError={state.analysisError}
         onSelect={setPhoto}
         onRemove={removePhoto}
         onSubmit={startAnalysis}
         onDiscover={openEmailGate}
+        onRetry={retryAnalysis}
       />
       {showS3 && (
         <div ref={s3Ref}>

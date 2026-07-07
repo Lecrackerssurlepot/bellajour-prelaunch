@@ -169,6 +169,16 @@
   cursor: default;
 }
 
+/* Variante douce — écrans non-ok / secondaires (transparent, bord discret) */
+.at-btn--soft {
+  background: transparent;
+  border-color: var(--at-line);
+}
+
+.at-btn--soft:hover {
+  background: var(--at-accent-soft);
+}
+
 /* ---------- Apparition au scroll (lux fade atelier) ----------
    État initial caché, révélé par .is-visible (useReveal / IO threshold 0.15).
    will-change actif uniquement avant/pendant la transition. */

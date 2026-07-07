@@ -6,19 +6,53 @@
    ============================================================ */
 
 import {
-  ANALYSIS_DELAY_MS,
+  ANALYSE_WEBHOOK_URL,
+  ANALYSIS_TIMEOUT_MS,
   ASSETS,
   EMAIL_DELAY_MS,
   GENERATION_DELAY_MS,
   INTERACTIONS_KEY,
   type BindingColorId,
 } from '../constants'
+import { anySignal, blobToBase64, timeoutSignal } from './imagePrep'
 import { safeLocalAppend } from './storage'
 
+/* Contrat de réponse du webhook N8N (analyse vision Claude). */
+export type AnalyseStatut =
+  | 'ok'
+  | 'doublon'
+  | 'mixte'
+  | 'personnes'
+  | 'hors-sujet'
+  | 'sensible'
+  | 'matiere-insuffisante'
+
+export interface PhotoAnalyse {
+  ref: string
+  statut_photo: string
+  titre: string | null
+  observation: string | null
+  texte: string | null
+  geste: string | null
+  placement: string | null
+  placement_pourquoi: string | null
+}
+
 export interface AnalysisResult {
-  titre: string
-  texte: string
-  placement: string
+  statut: AnalyseStatut
+  consomme: boolean
+  paire: string | null
+  photos: PhotoAnalyse[]
+  message_front: string | null
+}
+
+/* Échec réseau / timeout / réponse invalide — À DISTINGUER d'un statut
+   non-ok, qui est une réponse parfaitement valide de l'atelier. */
+export class AnalysisNetworkError extends Error {
+  constructor(message = 'network') {
+    super(message)
+    this.name = 'AnalysisNetworkError'
+  }
 }
 
 export interface IllustrationResult {
@@ -30,8 +64,26 @@ export interface ApiOptions {
   signal?: AbortSignal
 }
 
-/* Délai annulable — remplacé par le vrai fetch(url, { signal }) au branchement. */
-function delay(ms: number, signal?: AbortSignal): Promise<void> {
+const STATUTS: readonly AnalyseStatut[] = [
+  'ok',
+  'doublon',
+  'mixte',
+  'personnes',
+  'hors-sujet',
+  'sensible',
+  'matiere-insuffisante',
+]
+
+function looksLikeAnalysis(x: unknown): x is Partial<AnalysisResult> {
+  if (!x || typeof x !== 'object') return false
+  const o = x as Record<string, unknown>
+  if (!STATUTS.includes(o.statut as AnalyseStatut)) return false
+  if (!Array.isArray(o.photos)) return false
+  return true
+}
+
+/* Délai annulable — réutilisé par l'orchestrateur pour le plancher d'attente. */
+export function delay(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
       reject(new DOMException('Aborted', 'AbortError'))
@@ -49,22 +101,57 @@ function delay(ms: number, signal?: AbortSignal): Promise<void> {
   })
 }
 
-/* L'atelier étudie les deux photos confiées.
-   V1 : réponse fixe après 8 s — les photos ne quittent jamais le navigateur.
-   // TODO: brancher webhook N8N (envoi des photos → analyse vision réelle) */
+/* L'atelier étudie les deux photos confiées → webhook N8N (Claude Vision).
+   Les deux blobs sont déjà redimensionnés (voir imagePrep). Timeout 120 s
+   composé avec le signal d'annulation de l'appelant (unmount / navigation). */
 export async function analyzePhotos(
-  photo1: File,
-  photo2: File,
+  photoA: Blob,
+  photoB: Blob,
   opts?: ApiOptions
 ): Promise<AnalysisResult> {
-  void photo1
-  void photo2
-  await delay(ANALYSIS_DELAY_MS, opts?.signal)
+  const [a, b] = await Promise.all([blobToBase64(photoA), blobToBase64(photoB)])
+  const timeout = timeoutSignal(ANALYSIS_TIMEOUT_MS)
+  const signal = opts?.signal ? anySignal([opts.signal, timeout]) : timeout
+
+  let res: Response
+  try {
+    res = await fetch(ANALYSE_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photoA: a, photoB: b }),
+      signal,
+    })
+  } catch (err) {
+    /* Vrai abort demandé par l'appelant (démontage) → on le laisse remonter.
+       Sinon : timeout 120 s ou coupure réseau → erreur métier. */
+    if (opts?.signal?.aborted) throw err
+    throw new AnalysisNetworkError('network')
+  }
+
+  if (!res.ok) throw new AnalysisNetworkError(`http ${res.status}`)
+
+  let data: unknown
+  try {
+    data = await res.json()
+  } catch {
+    throw new AnalysisNetworkError('invalid-json')
+  }
+  if (!looksLikeAnalysis(data)) throw new AnalysisNetworkError('invalid-shape')
+
+  /* `consomme` est en principe posé par le workflow ; on le dérive par
+     sécurité si absent (règle : ok/mixte consomment le regard offert). */
+  const parsed = data as AnalysisResult
+  const consomme =
+    typeof (data as Record<string, unknown>).consomme === 'boolean'
+      ? (data as Record<string, unknown>).consomme === true
+      : parsed.statut === 'ok' || parsed.statut === 'mixte'
+
   return {
-    titre: 'Lumière du soir sur la rade',
-    texte:
-      'Une composition qui respire. Cette lumière dorée mérite une pleine page, en ouverture de chapitre de votre album.',
-    placement: 'pleine-page',
+    statut: parsed.statut,
+    consomme,
+    paire: parsed.paire ?? null,
+    photos: Array.isArray(parsed.photos) ? parsed.photos : [],
+    message_front: parsed.message_front ?? null,
   }
 }
 

@@ -12,6 +12,7 @@ interface UploadSlotProps {
   photo: SlotPhoto | null
   error: string | null
   disabled?: boolean
+  pending?: boolean
   onSelect: (file: File) => void
   onRemove: () => void
 }
@@ -21,14 +22,16 @@ export default function UploadSlot({
   photo,
   error,
   disabled = false,
+  pending = false,
   onSelect,
   onRemove,
 }: UploadSlotProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
+  const busy = disabled || pending
 
   const handleFiles = (files: FileList | null) => {
-    if (disabled || !files || files.length === 0) return
+    if (busy || !files || files.length === 0) return
     /* Un fichier par slot — on ne garde que le premier déposé */
     onSelect(files[0])
   }
@@ -39,7 +42,7 @@ export default function UploadSlot({
         className={`at-slot${dragOver ? ' is-dragover' : ''}${photo ? ' has-photo' : ''}`}
         onDragOver={(e) => {
           e.preventDefault()
-          if (!disabled) setDragOver(true)
+          if (!busy) setDragOver(true)
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => {
@@ -57,7 +60,7 @@ export default function UploadSlot({
               decoding="async"
               draggable={false}
             />
-            {!disabled && (
+            {!busy && (
               <button
                 type="button"
                 className="at-slot-remove"
@@ -72,21 +75,23 @@ export default function UploadSlot({
           <button
             type="button"
             className="at-slot-trigger"
-            disabled={disabled}
+            disabled={busy}
             onClick={() => inputRef.current?.click()}
           >
             <span className="at-slot-plus" aria-hidden="true">
               +
             </span>
             <span className="at-label">Photo {index + 1}</span>
-            <span className="at-slot-hint">JPG · PNG · WebP — 10 Mo max</span>
+            <span className="at-slot-hint">
+              {pending ? 'Un instant…' : 'JPG · PNG · WebP · HEIC — 10 Mo max'}
+            </span>
           </button>
         )}
         <input
           ref={inputRef}
           className="at-slot-input"
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
           tabIndex={-1}
           aria-hidden="true"
           onChange={(e) => {

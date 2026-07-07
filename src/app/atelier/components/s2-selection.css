@@ -143,3 +143,11 @@
   margin-top: clamp(28px, 5vh, 44px);
   animation: at-s2-rise var(--at-dur-reveal) var(--at-ease-out) 240ms both;
 }
+
+/* Erreur réseau transitoire — message doux sous le bouton Envoyer */
+.at-s2-error {
+  margin: 16px auto 0;
+  max-width: 42ch;
+  font-size: clamp(15px, 3.6vw, 18px);
+  color: var(--at-muted);
+}
