@@ -1,0 +1,140 @@
+/* S1 — Hero atelier */
+
+.at-s1 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: clamp(32px, 6vh, 64px) clamp(24px, 5vw, 80px) clamp(24px, 4vh, 48px);
+  gap: clamp(24px, 4vh, 48px);
+}
+
+.at-s1-head {
+  width: 100%;
+  max-width: 1200px;
+  text-align: center;
+}
+
+.at-s1-eyebrow {
+  margin-bottom: clamp(16px, 3vh, 32px);
+  animation: at-s1-fade 800ms var(--at-ease-out) 500ms both;
+}
+
+/* Titre géant — deux mots, deux bords */
+.at-s1-title {
+  display: flex;
+  flex-direction: column;
+  font-size: clamp(52px, 11vw, 130px);
+  line-height: 1.02;
+}
+
+.at-s1-word {
+  display: block;
+}
+
+.at-s1-word--left {
+  align-self: flex-start;
+  animation: at-s1-slide-left 1000ms var(--at-ease-out) both;
+  will-change: opacity, transform;
+}
+
+.at-s1-word--right {
+  align-self: flex-end;
+  font-style: italic;
+  font-weight: 400;
+  animation: at-s1-slide-right 1000ms var(--at-ease-out) 150ms both;
+  will-change: opacity, transform;
+}
+
+/* Entrées one-shot au chargement — jamais de bounce.
+   Distance pilotée par --at-hero-slide (80px desktop / 40px mobile). */
+@keyframes at-s1-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(calc(-1 * var(--at-hero-slide)));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes at-s1-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(var(--at-hero-slide));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes at-s1-fade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.at-s1-mockup {
+  animation: at-s1-fade 800ms var(--at-ease-out) 350ms both;
+  will-change: opacity, transform;
+}
+
+/* Teaser bas de hero */
+.at-s1-teaser {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.at-s1-teaser-pair {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 3vw, 24px);
+}
+
+.at-s1-mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(84px, 18vw, 120px);
+  aspect-ratio: 3 / 4;
+  margin: 0;
+  padding: 0 8px;
+  background: var(--at-placeholder);
+  border: 1px solid var(--at-line);
+  border-radius: 10px;
+  text-align: center;
+}
+
+.at-s1-mini .at-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.at-s1-mini--album {
+  aspect-ratio: 21 / 27;
+  border-color: var(--at-accent-border);
+}
+
+.at-s1-teaser-arrow {
+  color: var(--at-muted);
+  font-size: 18px;
+}
+
+.at-s1-scroll {
+  margin-top: 4px;
+  color: var(--at-accent);
+  font-size: 20px;
+  line-height: 1;
+}

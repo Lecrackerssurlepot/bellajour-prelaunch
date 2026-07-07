@@ -1,0 +1,103 @@
+/* Mockup album — placeholder V1, ratio album portrait 21×27 */
+
+.at-mockup {
+  position: relative;
+  margin: 0 auto;
+}
+
+.at-mockup--hero {
+  width: min(64vw, 360px);
+}
+
+.at-mockup--editor {
+  width: min(72vw, 420px);
+}
+
+.at-mockup--thumb {
+  width: clamp(96px, 20vw, 150px);
+  margin: 0;
+}
+
+.at-mockup-cover {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--at-placeholder);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-r-md);
+  overflow: hidden;
+}
+
+.at-mockup--thumb .at-mockup-cover {
+  border-radius: 10px;
+}
+
+.at-mockup-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.at-mockup-note {
+  padding: 0 16px;
+  text-align: center;
+  opacity: 0.65;
+}
+
+.at-mockup--thumb .at-mockup-note {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+/* Tranche / reliure — la couleur choisie s'y dépose (transition 600ms) */
+.at-mockup-spine {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 8%;
+  background: var(--at-accent);
+  border-right: 1px solid rgba(28, 28, 28, 0.4);
+  transition: background-color var(--at-dur) var(--at-ease-out);
+}
+
+/* Titre composé sur la couverture — rendu live (S4/S5) */
+.at-mockup-titre {
+  position: absolute;
+  left: 18%;
+  right: 10%;
+  bottom: 12%;
+  font-family: var(--at-font-title);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(15px, 4.4vw, 24px);
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  color: var(--at-text);
+  overflow-wrap: break-word;
+}
+
+.at-mockup--thumb .at-mockup-titre {
+  font-size: clamp(9px, 2vw, 12px);
+}
+
+/* Flottement permanent (hero) — translateY ±6px + rotation ±0.5°,
+   transform only (compositor). Boucle infinie : exception validée par la
+   spec /atelier (précédent : anx-float sur la landing).
+   Neutralisé par prefers-reduced-motion (règle globale atelier.css). */
+@keyframes at-float {
+  0%,
+  100% {
+    transform: translateY(-6px) rotate(-0.5deg);
+  }
+  50% {
+    transform: translateY(6px) rotate(0.5deg);
+  }
+}
+
+.at-mockup--float {
+  animation: at-float var(--at-float-cycle) ease-in-out infinite;
+  will-change: transform;
+}
