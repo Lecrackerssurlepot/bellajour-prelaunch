@@ -1,0 +1,193 @@
+/* S3 — Gate email puis révélation */
+
+.at-s3 {
+  max-width: 720px;
+}
+
+/* --- Gate email --- */
+
+.at-s3-panel {
+  padding: clamp(28px, 6vw, 56px);
+  background: var(--at-panel);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-r-lg);
+  text-align: center;
+  animation: at-s3-rise var(--at-dur-reveal) var(--at-ease-out) both;
+}
+
+@keyframes at-s3-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.at-s3-title {
+  margin: 0 0 clamp(24px, 5vh, 40px);
+  font-size: clamp(26px, 6vw, 38px);
+  line-height: 1.2;
+}
+
+.at-s3-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.at-s3-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+/* font-size ≥16px : pas de zoom iOS au focus */
+.at-s3-input {
+  min-height: 52px;
+  padding: 0 18px;
+  background: transparent;
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-r-md);
+  color: var(--at-text);
+  font-family: var(--at-font-label);
+  font-size: 16px;
+  transition: border-color var(--at-dur-hover) ease;
+}
+
+.at-s3-input:focus {
+  outline: none;
+  border-color: var(--at-accent);
+}
+
+.at-s3-error {
+  margin: 16px 0 0;
+  font-family: var(--at-font-label);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--at-muted);
+}
+
+.at-s3-submit {
+  margin-top: clamp(24px, 4vh, 36px);
+}
+
+/* --- Révélation --- */
+
+.at-s3-reveal {
+  text-align: center;
+}
+
+.at-s3-dedicace {
+  margin: 0 0 clamp(20px, 4vh, 32px);
+  font-size: clamp(22px, 5.5vw, 32px);
+  color: var(--at-muted);
+  animation: at-s3-fade var(--at-dur-slow) var(--at-ease-out) both;
+}
+
+@keyframes at-s3-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Fade TRÈS lent 1800ms + scale 1.02 → 1.0 */
+@keyframes at-s3-reveal-anim {
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.at-s3-illustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(78vw, 440px);
+  aspect-ratio: 21 / 27;
+  margin: 0 auto;
+  background: var(--at-placeholder);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-r-md);
+  animation: at-s3-reveal-anim var(--at-dur-slow) var(--at-ease-out) both;
+  will-change: opacity, transform;
+}
+
+/* --- Avant / après + note d'intention --- */
+
+.at-s3-origin {
+  margin-top: clamp(40px, 8vh, 64px);
+  animation: at-s3-fade var(--at-dur-slow) var(--at-ease-out) 600ms both;
+}
+
+.at-s3-origin-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2.5vw, 20px);
+  margin-top: 18px;
+}
+
+.at-s3-origin-img {
+  width: clamp(64px, 15vw, 104px);
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border: 1px solid var(--at-line);
+  border-radius: 10px;
+}
+
+.at-s3-origin-img--ghost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--at-placeholder);
+  text-align: center;
+  padding: 0 6px;
+}
+
+.at-s3-origin-img--ghost .at-label,
+.at-s3-origin-mini .at-label {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.at-s3-origin-arrow {
+  color: var(--at-muted);
+  font-size: 18px;
+}
+
+.at-s3-origin-mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(64px, 15vw, 104px);
+  aspect-ratio: 21 / 27;
+  background: var(--at-placeholder);
+  border: 1px solid var(--at-accent-border);
+  border-radius: 10px;
+  padding: 0 6px;
+  text-align: center;
+}
+
+.at-s3-note {
+  max-width: 46ch;
+  margin: clamp(28px, 5vh, 44px) auto 0;
+}
+
+.at-s3-note-texte {
+  margin: 10px 0 0;
+  font-size: clamp(18px, 4.5vw, 22px);
+  color: var(--at-text);
+}
