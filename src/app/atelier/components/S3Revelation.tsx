@@ -4,8 +4,8 @@
    scénarisée 15s, puis l'illustration apparaît en fade très lent. */
 
 import './s3-revelation.css'
-import { useState } from 'react'
-import { GENERATING_PHRASES } from '../constants'
+import { useEffect, useState } from 'react'
+import { ASSETS, GENERATING_PHRASES, ILLUSTRATION_SIZE } from '../constants'
 import type { IllustrationResult } from '../lib/atelierApi'
 import type { AtelierPhase, AtelierState } from '../lib/atelierState'
 import PhraseRotator from './PhraseRotator'
@@ -34,6 +34,14 @@ export default function S3Revelation({
 
   const revealed = phase === 'revealed' || phase === 'editing'
   const hasPhotos = photos[0] !== null && photos[1] !== null
+
+  /* Préchargement de l'illustration pendant l'attente des 15s :
+     à la révélation, l'image est déjà en cache → fade 1800ms sans saut */
+  useEffect(() => {
+    if (phase !== 'generating') return
+    const preload = new Image()
+    preload.src = ASSETS.illustration
+  }, [phase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -109,11 +117,16 @@ export default function S3Revelation({
           <p className="at-narrative at-s3-dedicace">
             {prenom}, voici votre souvenir, peint.
           </p>
-          {/* Placeholder V1 — remplacé par <img src={illustration.illustrationUrl}>
-              quand le vrai visuel sera livré (chemin dans constants.ts) */}
-          <div className="at-s3-illustration">
-            <span className="at-label">votre illustration — visuel à venir</span>
-          </div>
+          {/* Préchargée pendant la phase generating — pas de lazy ici,
+              l'image doit être instantanée au moment du fade 1800ms */}
+          <img
+            className="at-s3-illustration"
+            src={illustration.illustrationUrl}
+            alt="Votre illustration peinte — démonstration"
+            decoding="async"
+            width={ILLUSTRATION_SIZE.width}
+            height={ILLUSTRATION_SIZE.height}
+          />
           <div className="at-s3-origin">
             <p className="at-label">De vos photos à votre illustration</p>
             <div className="at-s3-origin-row">

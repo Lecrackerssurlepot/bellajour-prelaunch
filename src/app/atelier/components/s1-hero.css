@@ -177,26 +177,19 @@
 }
 
 .at-s1-mini {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   width: clamp(84px, 18vw, 120px);
+  height: auto; /* neutralise le hint de l'attribut height → aspect-ratio s'applique */
   aspect-ratio: 3 / 4;
   margin: 0;
-  padding: 0 8px;
+  object-fit: cover;
   background: var(--at-placeholder);
   border: 1px solid var(--at-line);
   border-radius: 10px;
-  text-align: center;
-}
-
-.at-s1-mini .at-label {
-  font-size: 10px;
-  letter-spacing: 0.08em;
 }
 
 .at-s1-mini--album {
-  aspect-ratio: 21 / 27;
+  aspect-ratio: 2 / 3; /* ratio intrinsèque de l'illustration */
   border-color: var(--at-accent-border);
 }
 

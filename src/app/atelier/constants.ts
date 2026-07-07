@@ -20,17 +20,26 @@ export const DEFAULT_BINDING: BindingColorId = 'brume'
 /* Assets — placeholders V1. Quand un vrai fichier est livré, poser son
    chemin ici : les composants basculent du bloc placeholder vers <img>. */
 export const ASSETS = {
-  /* URL retournée par le mock generateIllustration — fichier pas encore livré */
-  illustration: '/atelier-placeholder-illustration.jpg',
+  /* Illustration de démonstration (révélation S3) — retournée par le mock
+     generateIllustration, préchargée pendant l'attente des 15s */
+  illustration: '/images/atelier/illustration-demo.png',
+  /* Teaser bas de hero : 2 photos « avant » → illustration « après »
+     (fichier réel .png, l'énoncé disait .jpg) */
+  teaserAvant1: '/images/atelier/exemple-avant-1.jpg',
+  teaserAvant2: '/images/atelier/exemple-avant-2.jpg',
+  teaserApres: '/images/atelier/exemple-apres.png',
   /* Mockup album du hero — vrai asset (WebP transparent 1792×2390) */
   mockupHero: '/images/atelier/album-hero.webp' as string | null,
-  /* ex. '/images/atelier/mockup-album.webp' quand disponible (S4/S5) */
+  /* Album vu de dos (S4/S5) — placeholder conservé, asset à venir */
   mockupAlbum: null as string | null,
 }
 
-/* Dimensions intrinsèques du mockup hero — posées en width/height sur
-   l'<img> pour réserver l'espace (zéro layout shift) */
+/* Dimensions intrinsèques — posées en width/height sur les <img>
+   pour réserver l'espace (zéro layout shift) */
 export const HERO_MOCKUP_SIZE = { width: 1792, height: 2390 }
+export const ILLUSTRATION_SIZE = { width: 1792, height: 2688 } /* 2:3 */
+export const TEASER_AVANT_1_SIZE = { width: 1284, height: 1712 }
+export const TEASER_AVANT_2_SIZE = { width: 1288, height: 1716 }
 
 /* Ratio album portrait (~21×27) partagé par tous les placeholders */
 export const ALBUM_RATIO = '21 / 27'

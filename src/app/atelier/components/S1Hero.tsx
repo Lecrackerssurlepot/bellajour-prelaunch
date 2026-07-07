@@ -7,6 +7,12 @@
 import './s1-hero.css'
 import { useEffect, useRef } from 'react'
 import { useReveal } from '@/hooks/useReveal'
+import {
+  ASSETS,
+  ILLUSTRATION_SIZE,
+  TEASER_AVANT_1_SIZE,
+  TEASER_AVANT_2_SIZE,
+} from '../constants'
 import AlbumMockup from './AlbumMockup'
 
 /* will-change retiré une fois la dérive (titres) / le fade (mockup) joués */
@@ -118,16 +124,38 @@ export default function S1Hero() {
         className={`at-s1-teaser at-reveal${teaser.isVisible ? ' is-visible' : ''}`}
       >
         <p className="at-label">Exemple de composition de votre album</p>
+        {/* Sous la ligne de flottaison → lazy ; espace réservé par aspect-ratio */}
         <div className="at-s1-teaser-pair">
-          <figure className="at-s1-mini">
-            <span className="at-label">vos photos</span>
-          </figure>
+          <img
+            className="at-s1-mini"
+            src={ASSETS.teaserAvant1}
+            alt="Photo confiée — exemple"
+            loading="lazy"
+            decoding="async"
+            width={TEASER_AVANT_1_SIZE.width}
+            height={TEASER_AVANT_1_SIZE.height}
+          />
+          <img
+            className="at-s1-mini"
+            src={ASSETS.teaserAvant2}
+            alt="Photo confiée — exemple"
+            loading="lazy"
+            decoding="async"
+            width={TEASER_AVANT_2_SIZE.width}
+            height={TEASER_AVANT_2_SIZE.height}
+          />
           <span className="at-s1-teaser-arrow" aria-hidden="true">
             →
           </span>
-          <figure className="at-s1-mini at-s1-mini--album">
-            <span className="at-label">votre illustration</span>
-          </figure>
+          <img
+            className="at-s1-mini at-s1-mini--album"
+            src={ASSETS.teaserApres}
+            alt="Illustration peinte — exemple"
+            loading="lazy"
+            decoding="async"
+            width={ILLUSTRATION_SIZE.width}
+            height={ILLUSTRATION_SIZE.height}
+          />
         </div>
         <div className="at-s1-scroll" aria-hidden="true">
           ↓

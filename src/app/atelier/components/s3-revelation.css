@@ -112,11 +112,9 @@
 }
 
 .at-s3-illustration {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   width: min(78vw, 440px);
-  aspect-ratio: 21 / 27;
+  height: auto; /* ratio intrinsèque 2:3 via width/height attributs */
   margin: 0 auto;
   background: var(--at-placeholder);
   border: 1px solid var(--at-line);
