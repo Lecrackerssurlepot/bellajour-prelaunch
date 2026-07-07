@@ -1,6 +1,13 @@
 /* S1 — Hero atelier */
 
 .at-s1 {
+  /* Réglages hero — ajuster ici */
+  --at-s1-mockup-w: min(74vw, 425px); /* ~+18% vs min(64vw, 360px) */
+  --at-s1-mockup-raise: clamp(20px, 7vh, 72px); /* remontée du mockup */
+  --at-hero-drift: 12px; /* dérive lente post-entrée des titres */
+  --at-hero-exit: 120px; /* distance de sortie des titres au scroll */
+  --at-hero-lift: 110px; /* montée du mockup au scroll */
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -11,7 +18,18 @@
   gap: clamp(24px, 4vh, 48px);
 }
 
+/* Amplitudes réduites sur mobile (aucun débordement horizontal) */
+@media (max-width: 768px) {
+  .at-s1 {
+    --at-hero-drift: 8px;
+    --at-hero-exit: 64px;
+    --at-hero-lift: 70px;
+  }
+}
+
 .at-s1-head {
+  position: relative;
+  z-index: 2; /* les titres restent lisibles au-dessus du mockup remonté */
   width: 100%;
   max-width: 1200px;
   text-align: center;
@@ -30,26 +48,47 @@
   line-height: 1.02;
 }
 
+/* Track : porteur du transform scroll-driven (inline, JS).
+   Le mot à l'intérieur porte l'entrée + la dérive (keyframes).
+   Jamais deux transforms sur le même élément. */
+.at-s1-track {
+  display: block;
+  will-change: transform;
+}
+
+.at-s1-track--left {
+  align-self: flex-start;
+}
+
+.at-s1-track--right {
+  align-self: flex-end;
+}
+
 .at-s1-word {
   display: block;
 }
 
+/* Entrée one-shot (1000ms) puis DÉRIVE lente enchaînée par animation-delay :
+   ±12px sur 9s, ease-out très doux, forwards — l'entrée ne s'arrête pas net,
+   elle s'éteint. Continuité : l'entrée finit à translateX(0), la dérive
+   repart implicitement de la valeur de base. Jamais de bounce. */
 .at-s1-word--left {
-  align-self: flex-start;
-  animation: at-s1-slide-left 1000ms var(--at-ease-out) both;
+  animation:
+    at-s1-slide-left 1000ms var(--at-ease-out) both,
+    at-s1-drift-left 9s cubic-bezier(0.05, 0.6, 0.2, 1) 1000ms forwards;
   will-change: opacity, transform;
 }
 
 .at-s1-word--right {
-  align-self: flex-end;
   font-style: italic;
   font-weight: 400;
-  animation: at-s1-slide-right 1000ms var(--at-ease-out) 150ms both;
+  animation:
+    at-s1-slide-right 1000ms var(--at-ease-out) 150ms both,
+    at-s1-drift-right 9s cubic-bezier(0.05, 0.6, 0.2, 1) 1150ms forwards;
   will-change: opacity, transform;
 }
 
-/* Entrées one-shot au chargement — jamais de bounce.
-   Distance pilotée par --at-hero-slide (80px desktop / 40px mobile). */
+/* Entrées — distance pilotée par --at-hero-slide (80px desktop / 40px mobile) */
 @keyframes at-s1-slide-left {
   from {
     opacity: 0;
@@ -72,6 +111,19 @@
   }
 }
 
+/* Dérive lente — one-shot, PAS de boucle */
+@keyframes at-s1-drift-left {
+  to {
+    transform: translateX(calc(-1 * var(--at-hero-drift)));
+  }
+}
+
+@keyframes at-s1-drift-right {
+  to {
+    transform: translateX(var(--at-hero-drift));
+  }
+}
+
 @keyframes at-s1-fade {
   from {
     opacity: 0;
@@ -83,9 +135,30 @@
   }
 }
 
+/* Wrapper scroll-driven du mockup : translateY de montée (inline, JS)
+   + remontée statique dans la composition. Le float continu reste sur
+   .at-mockup--float (enfant), le fade d'entrée sur .at-s1-mockup. */
+.at-s1-mockup-lift {
+  position: relative;
+  z-index: 1;
+  margin-top: calc(-1 * var(--at-s1-mockup-raise));
+  will-change: transform;
+}
+
 .at-s1-mockup {
   animation: at-s1-fade 800ms var(--at-ease-out) 350ms both;
   will-change: opacity, transform;
+}
+
+/* prefers-reduced-motion : entrée, dérive et fades décoratifs désactivés
+   (la sortie au scroll est gatée côté JS) */
+@media (prefers-reduced-motion: reduce) {
+  .at-s1-word--left,
+  .at-s1-word--right,
+  .at-s1-eyebrow,
+  .at-s1-mockup {
+    animation: none;
+  }
 }
 
 /* Teaser bas de hero */

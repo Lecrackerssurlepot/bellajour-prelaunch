@@ -6,7 +6,8 @@
 }
 
 .at-mockup--hero {
-  width: min(64vw, 360px);
+  /* Taille pilotée par le hero (--at-s1-mockup-w dans s1-hero.css) */
+  width: var(--at-s1-mockup-w, min(64vw, 360px));
 }
 
 .at-mockup--editor {
