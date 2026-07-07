@@ -1,0 +1,145 @@
+/* S2 — La sélection de l'atelier */
+
+.at-s2-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* Encart sombre arrondi 24px */
+.at-s2-panel {
+  padding: clamp(28px, 6vw, 56px);
+  background: var(--at-panel);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-r-lg);
+  text-align: center;
+  transition:
+    opacity var(--at-dur) var(--at-ease-out),
+    transform var(--at-dur) var(--at-ease-out);
+}
+
+.at-s2-panel.is-leaving {
+  opacity: 0;
+  transform: scale(0.98);
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+.at-s2-panel--locked {
+  padding: clamp(40px, 8vw, 64px);
+}
+
+.at-s2-locked-msg {
+  margin: 0;
+  font-size: clamp(18px, 4.5vw, 24px);
+  color: var(--at-muted);
+}
+
+.at-s2-title {
+  margin: 0 0 12px;
+  font-size: clamp(30px, 6.5vw, 44px);
+}
+
+.at-s2-sub {
+  margin: 0 auto clamp(24px, 5vh, 40px);
+  max-width: 42ch;
+  font-size: clamp(17px, 4vw, 20px);
+  color: var(--at-muted);
+}
+
+.at-s2-slots {
+  display: flex;
+  gap: clamp(12px, 3vw, 24px);
+  align-items: flex-start;
+}
+
+/* Le bouton Envoyer n'apparaît (fade 600ms) que quand les 2 photos sont là */
+.at-s2-send {
+  margin-top: clamp(24px, 5vh, 40px);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--at-dur) var(--at-ease-out),
+    visibility 0s linear var(--at-dur);
+}
+
+.at-s2-send.is-ready {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* Les deux photos restent seules et flottent pendant l'attente.
+   Boucle infinie : exception validée par la spec /atelier
+   (neutralisée par prefers-reduced-motion, règle globale). */
+@keyframes at-s2-float {
+  0%,
+  100% {
+    transform: translateY(-6px) rotate(-0.5deg);
+  }
+  50% {
+    transform: translateY(6px) rotate(0.5deg);
+  }
+}
+
+.at-s2-pair {
+  display: flex;
+  justify-content: center;
+  gap: clamp(16px, 4vw, 32px);
+  padding: clamp(16px, 3vh, 32px) 0;
+}
+
+.at-s2-pair-img {
+  width: clamp(120px, 34vw, 210px);
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-r-md);
+  animation: at-s2-float var(--at-float-cycle) ease-in-out infinite;
+  will-change: transform;
+}
+
+.at-s2-pair-img--b {
+  animation-delay: calc(var(--at-float-cycle) / -2);
+}
+
+/* L'analyse apparaît en stagger 120ms : titre → texte → CTA */
+@keyframes at-s2-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.at-s2-analysis {
+  padding-top: clamp(24px, 5vh, 48px);
+  text-align: center;
+}
+
+.at-s2-analysis-titre {
+  margin: 0 0 16px;
+  font-family: var(--at-font-title);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(30px, 7vw, 48px);
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  color: var(--at-text);
+  animation: at-s2-rise var(--at-dur-reveal) var(--at-ease-out) both;
+}
+
+.at-s2-analysis-texte {
+  margin: 0 auto;
+  max-width: 46ch;
+  font-size: clamp(19px, 4.5vw, 24px);
+  color: var(--at-muted);
+  animation: at-s2-rise var(--at-dur-reveal) var(--at-ease-out) 120ms both;
+}
+
+.at-s2-discover {
+  margin-top: clamp(28px, 5vh, 44px);
+  animation: at-s2-rise var(--at-dur-reveal) var(--at-ease-out) 240ms both;
+}

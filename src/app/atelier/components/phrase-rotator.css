@@ -1,0 +1,24 @@
+/* Rotation de phrases — les phrases sont empilées (grid) et se croisent
+   en pur opacity (compositor only), hauteur stable = zéro layout shift. */
+
+.at-rotator {
+  display: grid;
+  place-items: center;
+  min-height: 4.5em;
+  padding: clamp(24px, 5vh, 48px) 24px;
+  text-align: center;
+}
+
+.at-rotator-phrase {
+  grid-area: 1 / 1;
+  margin: 0;
+  max-width: 28ch;
+  font-size: clamp(20px, 5vw, 28px);
+  color: var(--at-muted);
+  opacity: 0;
+  transition: opacity var(--at-dur-reveal) var(--at-ease-out);
+}
+
+.at-rotator-phrase.is-active {
+  opacity: 1;
+}

@@ -1,0 +1,120 @@
+/* Slot photo — ratio 3:4 réservé (zéro layout shift) */
+
+.at-slot-wrap {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.at-slot {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border: 1px dashed var(--at-line);
+  border-radius: var(--at-r-md);
+  background: var(--at-placeholder);
+  overflow: hidden;
+  transition: border-color var(--at-dur-hover) ease;
+}
+
+.at-slot.is-dragover {
+  border-color: var(--at-accent);
+  border-style: solid;
+}
+
+.at-slot.has-photo {
+  border-style: solid;
+}
+
+.at-slot-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  min-height: 44px;
+  padding: 16px;
+  background: none;
+  border: 0;
+  color: var(--at-text);
+  cursor: pointer;
+}
+
+.at-slot-trigger:focus-visible {
+  outline: 2px solid var(--at-accent);
+  outline-offset: -4px;
+  border-radius: var(--at-r-md);
+}
+
+.at-slot-trigger:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.at-slot-plus {
+  font-family: var(--at-font-narrative);
+  font-size: 40px;
+  line-height: 1;
+  color: var(--at-accent);
+}
+
+.at-slot-hint {
+  font-family: var(--at-font-label);
+  font-weight: 300;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--at-muted);
+}
+
+.at-slot-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.at-slot-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-r-pill);
+  background: rgba(28, 28, 28, 0.65);
+  color: var(--at-text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--at-dur-hover) ease;
+}
+
+.at-slot-remove:hover {
+  background: rgba(28, 28, 28, 0.85);
+}
+
+.at-slot-remove:focus-visible {
+  outline: 2px solid var(--at-accent);
+  outline-offset: 2px;
+}
+
+.at-slot-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.at-slot-error {
+  margin: 10px 4px 0;
+  font-family: var(--at-font-label);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--at-muted);
+}
