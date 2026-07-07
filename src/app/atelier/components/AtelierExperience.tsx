@@ -10,6 +10,7 @@ import {
   MAX_ANALYSIS_STARTS,
   MAX_REFUSALS,
   NETWORK_ERROR_MESSAGE,
+  UNLIMITED_REGARDS,
   type BindingColorId,
 } from '../constants'
 import {
@@ -86,7 +87,9 @@ export default function AtelierExperience() {
         if (cancelled) return
 
         if (analysis.consomme) {
-          writeLock({ consumed: true, inFlight: false })
+          /* Phase de test : on ne pose pas consumed (regards illimités),
+             mais on garde le snapshot + vignettes pour la reprise. */
+          writeLock({ consumed: !UNLIMITED_REGARDS, inFlight: false })
           writeSnapshot({ checkpoint: 'analysis', analysis })
           /* Miniatures de reprise — best-effort, ne bloque jamais le reveal */
           try {
@@ -103,12 +106,16 @@ export default function AtelierExperience() {
           writeLock({ refusals: (lock?.refusals ?? 0) + 1, inFlight: false })
         }
 
+        /* Phase de test : aucun verrou calculé (les compteurs restent
+           inoffensifs). Sinon, garde-fou consommation habituel. */
         const lock = readLock()
-        const lockedReason: LockedReason = lock?.consumed
-          ? 'consumed'
-          : lock && (lock.refusals >= MAX_REFUSALS || lock.starts >= MAX_ANALYSIS_STARTS)
-            ? 'refusals'
-            : null
+        const lockedReason: LockedReason = UNLIMITED_REGARDS
+          ? null
+          : lock?.consumed
+            ? 'consumed'
+            : lock && (lock.refusals >= MAX_REFUSALS || lock.starts >= MAX_ANALYSIS_STARTS)
+              ? 'refusals'
+              : null
         dispatch({
           type: 'ANALYSIS_DONE',
           analysis,

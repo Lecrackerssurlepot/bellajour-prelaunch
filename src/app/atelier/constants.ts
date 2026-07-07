@@ -73,6 +73,12 @@ export const EMAIL_DELAY_MS = 1000
 export const MAX_REFUSALS = 4
 export const MAX_ANALYSIS_STARTS = 6
 
+/* Phase de test : neutralise le verrou « 1 regard offert » (regards
+   illimités). Le mécanisme reste intact derrière ce flag ; les compteurs
+   starts/refusals continuent de s'incrémenter mais ne verrouillent plus.
+   // TODO: passer à false avant le lancement public */
+export const UNLIMITED_REGARDS = true
+
 /* Clés de stockage */
 export const SESSION_KEY = 'atelier_analysis' /* sessionStorage — snapshot parcours (éphémère) */
 export const VIGNETTES_KEY = 'atelier_vignettes' /* sessionStorage — miniatures de reprise */

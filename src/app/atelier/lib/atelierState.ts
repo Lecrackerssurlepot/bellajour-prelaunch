@@ -9,6 +9,7 @@ import {
   MAX_REFUSALS,
   SESSION_KEY,
   TITLE_MAX_LENGTH,
+  UNLIMITED_REGARDS,
   VIGNETTES_KEY,
   type BindingColorId,
 } from '../constants'
@@ -248,6 +249,7 @@ export function writeVignettes(vignettes: [string, string]): void {
 
 /* Le prochain « Envoyer » est-il autorisé ? (garde-fou consommation) */
 export function canStartAnalysis(lock: AnalysisLock | null): boolean {
+  if (UNLIMITED_REGARDS) return true /* phase de test — verrou neutralisé */
   if (!lock) return true
   if (lock.consumed) return false
   if (lock.refusals >= MAX_REFUSALS) return false
@@ -262,6 +264,25 @@ export function restoreFromSnapshot(
   snap: AtelierSnapshot | null,
   vignettes: [string, string] | null
 ): Partial<AtelierState> | null {
+  /* Phase de test : on ignore les verrous consumed/returning/refusals.
+     On restaure toutefois une reprise après révélation (retour éditeur),
+     sans le verrou, pour ne pas casser la continuité du parcours. */
+  if (UNLIMITED_REGARDS) {
+    if (snap?.checkpoint === 'revealed' && snap.illustration && snap.analysis) {
+      return {
+        prenom: snap.prenom ?? '',
+        email: snap.email ?? '',
+        jobId: snap.jobId ?? null,
+        titre: snap.titre ?? '',
+        couleur: snap.couleur ?? DEFAULT_BINDING,
+        analysis: snap.analysis,
+        illustration: snap.illustration,
+        phase: 'revealed',
+      }
+    }
+    return null /* parcours vierge, aucun verrou */
+  }
+
   if (lock?.consumed) {
     const base: Partial<AtelierState> = {
       prenom: snap?.prenom ?? '',
