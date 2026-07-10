@@ -128,8 +128,13 @@ function DoublonCard({
           {photo.observation}
         </p>
       )}
-      {photo.geste && (
+      {photo.texte && (
         <p className="at-anl-texte at-narrative at-anl-rise" style={riseDelay(base + 480)}>
+          {photo.texte}
+        </p>
+      )}
+      {photo.geste && (
+        <p className="at-anl-texte at-narrative at-anl-rise" style={riseDelay(base + 600)}>
           {photo.geste}
         </p>
       )}
@@ -178,7 +183,9 @@ export default function AnalysisReveal({
     return (
       <div className="at-anl at-anl--doublon">
         {analysis.photos.map((photo, i) => {
-          const kept = photo.statut_photo === 'ok' && (photo.texte !== null || photo.placement !== null)
+          /* Seule la photo retenue reçoit un placement. Les deux reçoivent
+             désormais un titre et un texte de comparaison. */
+          const kept = photo.placement !== null
           return (
             <DoublonCard
               key={photo.ref || i}
