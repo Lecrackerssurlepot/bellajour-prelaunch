@@ -21,13 +21,15 @@ export const DEFAULT_BINDING: BindingColorId = 'brume'
    chemin ici : les composants basculent du bloc placeholder vers <img>. */
 export const ASSETS = {
   /* Illustration de démonstration (révélation S3) — retournée par le mock
-     generateIllustration, préchargée pendant l'attente des 15s */
-  illustration: '/images/atelier/illustration-demo.png',
-  /* Teaser bas de hero : 2 photos « avant » → illustration « après »
-     (fichier réel .png, l'énoncé disait .jpg) */
-  teaserAvant1: '/images/atelier/exemple-avant-1.jpg',
-  teaserAvant2: '/images/atelier/exemple-avant-2.jpg',
-  teaserApres: '/images/atelier/exemple-apres.png',
+     generateIllustration, préchargée pendant l'attente des 15s.
+     JPEG q85 (2,5 Mo) dérivé de illustration-demo.png (9,3 Mo, conservé). */
+  illustration: '/images/atelier/illustration-demo.jpg',
+  /* Teaser bas de hero : variantes optimisées (~480px, 56-94 Ko) — les
+     originaux exemple-*.jpg/png (0,5-7,4 Mo) sont dans le premier viewport
+     du hero 100dvh, ils plombaient le LCP mobile. */
+  teaserAvant1: '/images/atelier/teaser-avant-1.jpg',
+  teaserAvant2: '/images/atelier/teaser-avant-2.jpg',
+  teaserApres: '/images/atelier/teaser-apres.jpg',
   /* Mockup album du hero — vrai asset (WebP transparent 1792×2390) */
   mockupHero: '/images/atelier/album-hero.webp' as string | null,
   /* Album vu de dos (S4/S5) — placeholder conservé, asset à venir */
@@ -38,8 +40,9 @@ export const ASSETS = {
    pour réserver l'espace (zéro layout shift) */
 export const HERO_MOCKUP_SIZE = { width: 1792, height: 2390 }
 export const ILLUSTRATION_SIZE = { width: 1792, height: 2688 } /* 2:3 */
-export const TEASER_AVANT_1_SIZE = { width: 1284, height: 1712 }
-export const TEASER_AVANT_2_SIZE = { width: 1288, height: 1716 }
+export const TEASER_AVANT_1_SIZE = { width: 360, height: 480 }
+export const TEASER_AVANT_2_SIZE = { width: 360, height: 480 }
+export const TEASER_APRES_SIZE = { width: 320, height: 480 } /* 2:3 */
 
 /* Ratio album portrait (~21×27) partagé par tous les placeholders */
 export const ALBUM_RATIO = '21 / 27'

@@ -97,7 +97,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <script dangerouslySetInnerHTML={{ __html: APP_HEIGHT_SCRIPT }} />
-        <link rel="preload" as="image" href="/images/header-bellajour.webp" fetchPriority="high" />
+        {/* Preload du hero landing déplacé dans Hero.tsx (ReactDOM.preload) :
+            posé ici, il se chargeait en priorité haute sur TOUTES les routes,
+            /atelier compris (283 Ko volés au LCP de la page). */}
       </head>
       <body>
         {children}

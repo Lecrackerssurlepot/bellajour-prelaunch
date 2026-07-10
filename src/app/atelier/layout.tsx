@@ -7,12 +7,17 @@ import './atelier.css'
    (jamais sur <html>) → zéro impact sur la landing.
    Instances distinctes de celles du layout racine (--font-at-*, pas
    --font-display/--font-ui) pour éviter toute collision de variable. */
+/* preload: false sur les trois familles — les ~120 Ko de woff2 en priorité
+   haute saturaient le lien mobile devant le CSS render-blocking et le mockup
+   (LCP). display: swap peint le fallback métrique dès le premier paint,
+   adjustFontFallback (défaut next/font) garde le CLS à 0. */
 const playfair = Playfair_Display({
   subsets: ['latin'],
   weight: ['400', '700'],
   style: ['normal', 'italic'],
   variable: '--font-at-title',
   display: 'swap',
+  preload: false,
 })
 
 const cormorantNarrative = Cormorant_Garamond({
@@ -21,6 +26,7 @@ const cormorantNarrative = Cormorant_Garamond({
   style: ['italic'],
   variable: '--font-at-narrative',
   display: 'swap',
+  preload: false,
 })
 
 const dmSansLabel = DM_Sans({
@@ -29,6 +35,7 @@ const dmSansLabel = DM_Sans({
   style: ['normal', 'italic'],
   variable: '--font-at-label',
   display: 'swap',
+  preload: false,
 })
 
 export const metadata: Metadata = {

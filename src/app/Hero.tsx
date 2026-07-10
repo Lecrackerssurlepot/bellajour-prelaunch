@@ -1,10 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { preload } from 'react-dom'
 import './hero.css'
 
 export default function Hero() {
   const [scrolled, setScrolled] = useState(false)
+
+  /* Image critique du hero — preload émis dans le <head> au SSR de CETTE
+     page uniquement (remplace le <link> global du layout racine). */
+  preload('/images/header-bellajour.webp', { as: 'image', fetchPriority: 'high' })
 
   /* Navbar scroll-state — toggle .hero-nav--scrolled au-delà de 80px.
      Scroll listener throttled via rAF (1 update / frame max). */

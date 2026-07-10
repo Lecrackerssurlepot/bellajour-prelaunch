@@ -11,8 +11,8 @@ import { preload } from 'react-dom'
 import { useReveal } from '@/hooks/useReveal'
 import {
   ASSETS,
-  ILLUSTRATION_SIZE,
   INTRO_SEEN_KEY,
+  TEASER_APRES_SIZE,
   TEASER_AVANT_1_SIZE,
   TEASER_AVANT_2_SIZE,
 } from '../constants'
@@ -176,8 +176,8 @@ export default function S1Hero() {
             alt="Illustration peinte — exemple"
             loading="lazy"
             decoding="async"
-            width={ILLUSTRATION_SIZE.width}
-            height={ILLUSTRATION_SIZE.height}
+            width={TEASER_APRES_SIZE.width}
+            height={TEASER_APRES_SIZE.height}
           />
         </div>
         <div className="at-s1-scroll" aria-hidden="true">
