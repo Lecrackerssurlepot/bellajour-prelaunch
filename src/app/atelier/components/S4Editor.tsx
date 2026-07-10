@@ -47,7 +47,7 @@ export default function S4Editor({
   )
 
   return (
-    <section className="at-s4 at-section">
+    <section id="at-s4" className="at-s4 at-section at-section--screen">
       <div
         ref={reveal.ref}
         className={`at-s4-panel at-reveal${reveal.isVisible ? ' is-visible' : ''}`}

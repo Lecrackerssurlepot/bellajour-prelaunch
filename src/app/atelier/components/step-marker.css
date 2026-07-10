@@ -1,0 +1,91 @@
+/* Marqueur d'étapes — fixe à droite, centré verticalement.
+   Desktop : points + libellés au survol/actif. Mobile : points seuls,
+   zones tactiles ≥ 44px conservées. */
+
+.at-steps {
+  position: fixed;
+  right: clamp(8px, 2.5vw, 32px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  animation: at-steps-fade 800ms var(--at-ease-out) 1600ms both;
+}
+
+@keyframes at-steps-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.at-steps-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.at-steps-item:focus-visible {
+  outline: 2px solid var(--at-accent);
+  outline-offset: 2px;
+  border-radius: var(--at-r-pill);
+}
+
+.at-steps-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--at-line);
+  transition:
+    background-color var(--at-dur-hover) ease,
+    transform var(--at-dur-hover) ease;
+}
+
+.at-steps-item.is-active .at-steps-dot {
+  background: var(--at-accent);
+  transform: scale(1.5);
+}
+
+.at-steps-label {
+  font-family: var(--at-font-label);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--at-muted);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(6px);
+  transition:
+    opacity var(--at-dur-hover) ease,
+    transform var(--at-dur-hover) ease;
+}
+
+.at-steps-item.is-active .at-steps-label,
+.at-steps-item:hover .at-steps-label,
+.at-steps-item:focus-visible .at-steps-label {
+  opacity: 1;
+  transform: none;
+}
+
+/* Mobile : points seuls (libellés masqués), marqueur au ras du bord */
+@media (max-width: 768px) {
+  .at-steps {
+    right: 0;
+  }
+
+  .at-steps-label {
+    display: none;
+  }
+}

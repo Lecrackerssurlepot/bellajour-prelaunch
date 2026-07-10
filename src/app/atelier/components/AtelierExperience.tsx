@@ -4,7 +4,7 @@
    (useReducer), effets asynchrones annulables, reprise de session,
    montage progressif des sections (toujours ajoutées SOUS le viewport). */
 
-import { useCallback, useEffect, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import {
   ANALYSIS_MIN_WAIT_MS,
   MAX_ANALYSIS_STARTS,
@@ -40,6 +40,7 @@ import S2Selection from './S2Selection'
 import S3Revelation from './S3Revelation'
 import S4Editor from './S4Editor'
 import S5Prevente from './S5Prevente'
+import StepMarker, { type StepDef } from './StepMarker'
 
 function motionAllowed(): boolean {
   if (typeof window === 'undefined') return false
@@ -151,14 +152,15 @@ export default function AtelierExperience() {
     return () => ac.abort()
   }, [state.phase, state.jobId])
 
-  /* Scroll doux vers le gate quand il se monte (CTA « Découvrir ») */
+  /* Scroll doux vers le gate quand il se monte (CTA « Découvrir »).
+     window.scrollTo calculé — jamais scrollIntoView (fragile sur 100dvh). */
   useEffect(() => {
     if (state.phase !== 'emailGate') return
     const raf = requestAnimationFrame(() => {
-      s3Ref.current?.scrollIntoView({
-        behavior: motionAllowed() ? 'smooth' : 'auto',
-        block: 'start',
-      })
+      const el = s3Ref.current
+      if (!el) return
+      const top = el.getBoundingClientRect().top + window.scrollY
+      window.scrollTo({ top, behavior: motionAllowed() ? 'smooth' : 'auto' })
     })
     return () => cancelAnimationFrame(raf)
   }, [state.phase])
@@ -209,8 +211,26 @@ export default function AtelierExperience() {
     state.phase === 'editing'
   const showS4S5 = state.phase === 'revealed' || state.phase === 'editing'
 
+  /* Étapes du marqueur — seules les sections montées apparaissent.
+     Mémoïsé : StepMarker ne recrée son observer qu'à l'ouverture
+     d'une nouvelle étape du parcours. */
+  const steps = useMemo<StepDef[]>(() => {
+    const list: StepDef[] = [
+      { id: 'at-s1', label: 'L’atelier' },
+      { id: 'at-s2', label: 'Vos photos' },
+    ]
+    if (showS3) list.push({ id: 'at-s3', label: 'La révélation' })
+    if (showS4S5)
+      list.push(
+        { id: 'at-s4', label: 'La composition' },
+        { id: 'at-s5', label: 'Votre album' }
+      )
+    return list
+  }, [showS3, showS4S5])
+
   return (
     <main className="at-main">
+      <StepMarker steps={steps} />
       <S1Hero />
       <div className="at-sep" aria-hidden="true" />
       <S2Selection

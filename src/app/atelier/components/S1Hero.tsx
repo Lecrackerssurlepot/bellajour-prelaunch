@@ -112,7 +112,7 @@ export default function S1Hero() {
   }, [])
 
   return (
-    <section className={`at-s1${introSettled ? ' is-settled' : ''}`} ref={sectionRef}>
+    <section id="at-s1" className={`at-s1${introSettled ? ' is-settled' : ''}`} ref={sectionRef}>
       <header className="at-s1-head">
         <p className="at-label at-s1-eyebrow">Expérience gratuite — 2 minutes</p>
         <h1 className="at-title at-s1-title">

@@ -81,6 +81,17 @@
   padding: clamp(64px, 12vh, 140px) clamp(24px, 5vw, 80px);
 }
 
+/* Section plein écran : exactement un viewport quand le contenu tient,
+   contenu centré verticalement. min-height (jamais height) : le reveal
+   d'analyse peut dépasser un viewport mobile — on ne coupe rien. */
+.at-section--screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 /* Séparateur fin entre blocs (motion lexicon — fade separator) */
 .at-sep {
   height: 1px;

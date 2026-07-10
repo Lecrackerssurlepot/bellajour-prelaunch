@@ -95,7 +95,7 @@ export default function S2Selection({
   }
 
   return (
-    <section className="at-s2 at-section">
+    <section id="at-s2" className="at-s2 at-section at-section--screen">
       <div
         ref={reveal.ref}
         className={`at-s2-inner at-reveal${reveal.isVisible ? ' is-visible' : ''}`}

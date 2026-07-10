@@ -18,7 +18,7 @@ export default function S5Prevente({ titre, couleur, email }: S5PreventeProps) {
   const reveal = useReveal<HTMLDivElement>(0.15, '0px 0px -60px 0px')
 
   return (
-    <section className="at-s5 at-section">
+    <section id="at-s5" className="at-s5 at-section at-section--screen">
       <div
         ref={reveal.ref}
         className={`at-s5-inner at-reveal${reveal.isVisible ? ' is-visible' : ''}`}

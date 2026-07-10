@@ -66,7 +66,7 @@ export default function S3Revelation({
   }
 
   return (
-    <section className="at-s3 at-section">
+    <section id="at-s3" className="at-s3 at-section at-section--screen">
       {phase === 'emailGate' && (
         <form className="at-s3-panel" onSubmit={handleSubmit} noValidate>
           <h2 className="at-title at-title--italic at-s3-title">
