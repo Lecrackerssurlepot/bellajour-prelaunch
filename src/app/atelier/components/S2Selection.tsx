@@ -13,6 +13,7 @@ import {
   ANALYZING_PHRASES,
   CONSUMED_MESSAGE,
   LOCKED_MESSAGE,
+  MULTI_FILE_MESSAGE,
   REFUSAL_CAP_MESSAGE,
   RETURNING_MESSAGE,
 } from '../constants'
@@ -65,7 +66,24 @@ export default function S2Selection({
   onRetry,
 }: S2SelectionProps) {
   const [leaving, setLeaving] = useState(false)
+  const [multiNote, setMultiNote] = useState<string | null>(null)
   const reveal = useReveal<HTMLDivElement>(0.15, '0px 0px -60px 0px')
+
+  /* Répartition des fichiers sélectionnés : un seul → le slot d'origine
+     (remplacement individuel conservé) ; deux ou plus → slot 1 puis slot 2
+     (on garde les deux premiers, message doux au-delà). La validation,
+     la conversion HEIC et les erreurs restent gérées par slot. */
+  const handleSlotFiles = (index: 0 | 1) => (files: File[]) => {
+    if (files.length === 0) return
+    if (files.length === 1) {
+      onSelect(index, files[0])
+      setMultiNote(null)
+      return
+    }
+    onSelect(0, files[0])
+    onSelect(1, files[1])
+    setMultiNote(files.length > 2 ? MULTI_FILE_MESSAGE : null)
+  }
 
   /* L'encart réapparaît intact après un retour aux slots (Réessayer / échec). */
   useEffect(() => {
@@ -122,7 +140,7 @@ export default function S2Selection({
                 error={errors[0]}
                 pending={pending[0]}
                 disabled={leaving}
-                onSelect={(file) => onSelect(0, file)}
+                onSelect={handleSlotFiles(0)}
                 onRemove={() => onRemove(0)}
               />
               <UploadSlot
@@ -131,10 +149,15 @@ export default function S2Selection({
                 error={errors[1]}
                 pending={pending[1]}
                 disabled={leaving}
-                onSelect={(file) => onSelect(1, file)}
+                onSelect={handleSlotFiles(1)}
                 onRemove={() => onRemove(1)}
               />
             </div>
+            {multiNote && (
+              <p className="at-s2-note" role="status">
+                {multiNote}
+              </p>
+            )}
             <div className={`at-s2-send${bothReady ? ' is-ready' : ''}`}>
               <button
                 type="button"

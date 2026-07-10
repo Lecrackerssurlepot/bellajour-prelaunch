@@ -1,7 +1,9 @@
 'use client'
 
 /* Slot photo — drag & drop + clic, préview immédiate (objectURL).
-   Les photos restent en mémoire client, aucun envoi réseau. */
+   Les photos restent en mémoire client, aucun envoi réseau.
+   L'input accepte plusieurs fichiers : la répartition entre les deux
+   slots est décidée par le parent (S2Selection). */
 
 import './upload-slot.css'
 import { useRef, useState } from 'react'
@@ -13,7 +15,7 @@ interface UploadSlotProps {
   error: string | null
   disabled?: boolean
   pending?: boolean
-  onSelect: (file: File) => void
+  onSelect: (files: File[]) => void
   onRemove: () => void
 }
 
@@ -32,8 +34,7 @@ export default function UploadSlot({
 
   const handleFiles = (files: FileList | null) => {
     if (busy || !files || files.length === 0) return
-    /* Un fichier par slot — on ne garde que le premier déposé */
-    onSelect(files[0])
+    onSelect(Array.from(files))
   }
 
   return (
@@ -92,6 +93,7 @@ export default function UploadSlot({
           className="at-slot-input"
           type="file"
           accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+          multiple
           tabIndex={-1}
           aria-hidden="true"
           onChange={(e) => {

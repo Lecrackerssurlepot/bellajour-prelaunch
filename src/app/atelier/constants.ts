@@ -115,6 +115,8 @@ export const NETWORK_ERROR_MESSAGE =
   'L’atelier n’a pas pu ouvrir vos photos cette fois. Vérifiez votre connexion, puis réessayez.'
 export const HEIC_DECODE_MESSAGE =
   'Votre navigateur ne parvient pas à lire cette photo. Pouvez-vous en choisir une autre, en JPG ou PNG ?'
+export const MULTI_FILE_MESSAGE =
+  'Nous avons gardé vos deux premières photos — l’atelier n’en regarde que deux à la fois.'
 
 /* Reveal — intitulés et invitations fixes (wording contractuel) */
 export const GESTE_HEADING = 'Ce que l’atelier en ferait'
