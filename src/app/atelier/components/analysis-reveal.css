@@ -41,7 +41,8 @@
   .at-anl-invite,
   .at-anl-cta,
   .at-anl-message,
-  .at-anl-closure {
+  .at-anl-closure,
+  .at-anl-editor-note {
     grid-column: 1 / -1;
   }
 }

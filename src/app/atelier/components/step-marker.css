@@ -46,7 +46,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--at-line);
+  background: rgba(240, 235, 225, 0.28);
   transition:
     background-color var(--at-dur-hover) ease,
     transform var(--at-dur-hover) ease;
