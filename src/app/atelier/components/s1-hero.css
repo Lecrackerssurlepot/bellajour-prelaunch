@@ -2,7 +2,7 @@
 
 .at-s1 {
   /* Réglages hero — ajuster ici */
-  --at-s1-mockup-w: min(74vw, 425px); /* ~+18% vs min(64vw, 360px) */
+  --at-s1-mockup-w: min(82vw, 520px); /* livre agrandi (~+22% vs 425px) */
   --at-s1-mockup-raise: clamp(20px, 7vh, 72px); /* remontée du mockup */
   --at-hero-drift: 12px; /* dérive lente post-entrée des titres */
   --at-hero-exit: 120px; /* distance de sortie des titres au scroll */
@@ -37,14 +37,15 @@
 
 .at-s1-eyebrow {
   margin-bottom: clamp(16px, 3vh, 32px);
-  animation: at-s1-fade 800ms var(--at-ease-out) 500ms both;
+  animation: at-s1-fade 800ms var(--at-ease-out) 1400ms both;
 }
 
-/* Titre géant — deux mots, deux bords */
+/* Bloc de marque unique — deux mots resserrés, centrés, hiérarchie nette :
+   « L'atelier » display 700, « Bellajour » italic 400 un cran dessous. */
 .at-s1-title {
   display: flex;
   flex-direction: column;
-  font-size: clamp(52px, 11vw, 130px);
+  align-items: center;
   line-height: 1.02;
 }
 
@@ -56,35 +57,40 @@
   will-change: transform;
 }
 
-.at-s1-track--left {
-  align-self: flex-start;
-}
-
-.at-s1-track--right {
-  align-self: flex-end;
-}
-
 .at-s1-word {
   display: block;
 }
 
-/* Entrée one-shot (1000ms) puis DÉRIVE lente enchaînée par animation-delay :
-   ±12px sur 9s, ease-out très doux, forwards — l'entrée ne s'arrête pas net,
-   elle s'éteint. Continuité : l'entrée finit à translateX(0), la dérive
-   repart implicitement de la valeur de base. Jamais de bounce. */
+/* Chorégraphie d'arrivée (one-shot par session — voir .is-settled) :
+   livre (0ms) → marque (400/550ms) → tagline + eyebrow (~1200ms).
+   Entrée depuis les bords (1000ms) puis DÉRIVE lente enchaînée par
+   animation-delay : ±12px sur 9s, ease-out très doux, forwards — l'entrée
+   ne s'arrête pas net, elle s'éteint. Jamais de bounce. */
 .at-s1-word--left {
+  font-size: clamp(48px, 10vw, 112px);
   animation:
-    at-s1-slide-left 1000ms var(--at-ease-out) both,
-    at-s1-drift-left 9s cubic-bezier(0.05, 0.6, 0.2, 1) 1000ms forwards;
+    at-s1-slide-left 1000ms var(--at-ease-out) 400ms both,
+    at-s1-drift-left 9s cubic-bezier(0.05, 0.6, 0.2, 1) 1400ms forwards;
   will-change: opacity, transform;
 }
 
 .at-s1-word--right {
+  font-size: clamp(32px, 6.5vw, 68px);
   font-style: italic;
   font-weight: 400;
+  margin-top: -0.12em; /* resserre les deux mots en un seul bloc */
   animation:
-    at-s1-slide-right 1000ms var(--at-ease-out) 150ms both,
-    at-s1-drift-right 9s cubic-bezier(0.05, 0.6, 0.2, 1) 1150ms forwards;
+    at-s1-slide-right 1000ms var(--at-ease-out) 550ms both,
+    at-s1-drift-right 9s cubic-bezier(0.05, 0.6, 0.2, 1) 1550ms forwards;
+  will-change: opacity, transform;
+}
+
+/* Tagline sous la marque */
+.at-s1-tagline {
+  margin: clamp(12px, 2.5vh, 24px) 0 0;
+  font-size: clamp(18px, 4.2vw, 24px);
+  color: var(--at-muted);
+  animation: at-s1-fade 800ms var(--at-ease-out) 1200ms both;
   will-change: opacity, transform;
 }
 
@@ -146,8 +152,21 @@
 }
 
 .at-s1-mockup {
-  animation: at-s1-fade 800ms var(--at-ease-out) 350ms both;
+  /* Le livre ouvre la chorégraphie d'arrivée */
+  animation: at-s1-fade 800ms var(--at-ease-out) both;
   will-change: opacity, transform;
+}
+
+/* Arrivée déjà vue durant cette session : tout est figé à l'état final
+   (les keyframes 'both' partent de l'état caché ; sans animation, les
+   styles de base — visibles — s'appliquent immédiatement). */
+.at-s1.is-settled .at-s1-eyebrow,
+.at-s1.is-settled .at-s1-word--left,
+.at-s1.is-settled .at-s1-word--right,
+.at-s1.is-settled .at-s1-tagline,
+.at-s1.is-settled .at-s1-mockup {
+  animation: none;
+  will-change: auto; /* animationend ne viendra jamais retirer le hint */
 }
 
 /* prefers-reduced-motion : entrée, dérive et fades décoratifs désactivés
@@ -156,6 +175,7 @@
   .at-s1-word--left,
   .at-s1-word--right,
   .at-s1-eyebrow,
+  .at-s1-tagline,
   .at-s1-mockup {
     animation: none;
   }

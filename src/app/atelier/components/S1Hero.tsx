@@ -1,15 +1,18 @@
 'use client'
 
-/* S1 — Hero : titres qui glissent des deux bords puis dérivent lentement,
+/* S1 — Hero : bloc de marque unique (L'atelier / Bellajour resserrés),
+   entrée chorégraphiée one-shot par session (livre → marque → tagline),
    mockup album flottant, sortie scroll-driven réversible (titres vers les
    extrémités, mockup qui s'élève). Teaser avant/après en bas de hero. */
 
 import './s1-hero.css'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { preload } from 'react-dom'
 import { useReveal } from '@/hooks/useReveal'
 import {
   ASSETS,
   ILLUSTRATION_SIZE,
+  INTRO_SEEN_KEY,
   TEASER_AVANT_1_SIZE,
   TEASER_AVANT_2_SIZE,
 } from '../constants'
@@ -28,6 +31,22 @@ export default function S1Hero() {
   const leftTrackRef = useRef<HTMLSpanElement>(null)
   const rightTrackRef = useRef<HTMLSpanElement>(null)
   const liftRef = useRef<HTMLDivElement>(null)
+  /* Arrivée jouée une seule fois par session : au retour, .is-settled fige
+     les états finaux (pas de re-chorégraphie). false par défaut côté serveur
+     ET client → zéro mismatch d'hydratation. */
+  const [introSettled, setIntroSettled] = useState(false)
+
+  /* Image critique du hero — demandée dès le render (React 19 preload) */
+  if (ASSETS.mockupHero) preload(ASSETS.mockupHero, { as: 'image', fetchPriority: 'high' })
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(INTRO_SEEN_KEY)) setIntroSettled(true)
+      else sessionStorage.setItem(INTRO_SEEN_KEY, '1')
+    } catch {
+      /* stockage indisponible (navigation privée stricte) — l'arrivée rejoue */
+    }
+  }, [])
 
   /* Sortie au scroll — proportionnelle au progrès dans le hero, réversible.
      Pattern : scroll passif → UN requestAnimationFrame(update) dédupliqué
@@ -93,11 +112,12 @@ export default function S1Hero() {
   }, [])
 
   return (
-    <section className="at-s1" ref={sectionRef}>
+    <section className={`at-s1${introSettled ? ' is-settled' : ''}`} ref={sectionRef}>
       <header className="at-s1-head">
         <p className="at-label at-s1-eyebrow">Expérience gratuite — 2 minutes</p>
         <h1 className="at-title at-s1-title">
-          {/* track = transform scroll-driven (JS) · word = entrée + dérive (CSS) */}
+          {/* track = transform scroll-driven (JS) · word = entrée + dérive (CSS)
+              Les deux mots convergent en un seul bloc de marque centré. */}
           <span className="at-s1-track at-s1-track--left" ref={leftTrackRef}>
             <span className="at-s1-word at-s1-word--left" onAnimationEnd={settle}>
               L’atelier
@@ -109,6 +129,9 @@ export default function S1Hero() {
             </span>
           </span>
         </h1>
+        <p className="at-narrative at-s1-tagline" onAnimationEnd={settle}>
+          Vivez l’expérience de l’atelier
+        </p>
       </header>
 
       {/* lift = montée scroll-driven (JS) · .at-s1-mockup = fade d'entrée ·

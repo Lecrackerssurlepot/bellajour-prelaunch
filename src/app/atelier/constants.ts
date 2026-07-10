@@ -80,6 +80,7 @@ export const MAX_ANALYSIS_STARTS = 6
 export const UNLIMITED_REGARDS = true
 
 /* Clés de stockage */
+export const INTRO_SEEN_KEY = 'atelier_intro' /* sessionStorage — arrivée hero jouée (one-shot par session) */
 export const SESSION_KEY = 'atelier_analysis' /* sessionStorage — snapshot parcours (éphémère) */
 export const VIGNETTES_KEY = 'atelier_vignettes' /* sessionStorage — miniatures de reprise */
 export const LOCK_KEY = 'atelier_regard' /* localStorage — verrou de coût (compteurs, survit à l'onglet) */
