@@ -125,6 +125,8 @@ export const REVEAL_CTA_COUVERTURE =
   'Cette image pourrait devenir votre couverture. Voulez-vous voir ce que l’atelier en peindrait ?'
 export const REVEAL_CTA_DEFAULT =
   'L’album ne fait que commencer. Découvrez l’illustration que l’atelier composerait pour le vôtre.'
+export const REVEAL_EDITOR_NOTE =
+  'Jusqu’à 1000 photos seront analysées via l’éditeur Bellajour.'
 
 /* Ancre canonique de l’offre prévente (section S4Reservation) */
 export const PREVENTE_URL = '/preventes#s4'

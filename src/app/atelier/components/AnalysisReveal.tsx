@@ -15,6 +15,7 @@ import {
   REFUSAL_CAP_MESSAGE,
   REVEAL_CTA_COUVERTURE,
   REVEAL_CTA_DEFAULT,
+  REVEAL_EDITOR_NOTE,
   WAITLIST_URL,
 } from '../constants'
 import type { AnalysisResult, PhotoAnalyse } from '../lib/atelierApi'
@@ -174,6 +175,9 @@ export default function AnalysisReveal({
             Découvrir mon illustration
           </button>
         </div>
+        <p className="at-label at-anl-editor-note at-anl-rise" style={riseDelay(tail + 800)}>
+          {REVEAL_EDITOR_NOTE}
+        </p>
       </div>
     )
   }

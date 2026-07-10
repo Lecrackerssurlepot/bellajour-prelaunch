@@ -169,6 +169,13 @@
   gap: 16px;
 }
 
+/* Note discrète sous le CTA — promesse de l'éditeur */
+.at-anl-editor-note {
+  margin: -8px 0 0;
+  justify-self: center;
+  text-align: center;
+}
+
 /* ---------- Doublon ---------- */
 
 .at-anl-card--doublon.is-dimmed {
