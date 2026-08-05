@@ -24,6 +24,15 @@ export const GALERIE_COVERS: GalerieCover[] = [
   { src: '/images/lancement/galerie/barcelone.webp', destination: 'Barcelone' },
   { src: '/images/lancement/galerie/ile-maurice.webp', destination: 'Île Maurice' },
   { src: '/images/lancement/galerie/jordanie.webp', destination: 'Jordanie' },
+  { src: '/images/lancement/galerie/new-york.webp', destination: 'New York' },
+  { src: '/images/lancement/galerie/seychelles.webp', destination: 'Seychelles' },
+  { src: '/images/lancement/galerie/tanzanie.webp', destination: 'Tanzanie' },
+  { src: '/images/lancement/galerie/santorin.webp', destination: 'Santorin' },
+  { src: '/images/lancement/galerie/vietnam.webp', destination: 'Vietnam' },
+  { src: '/images/lancement/galerie/lisbonne.webp', destination: 'Lisbonne' },
+  { src: '/images/lancement/galerie/perou.webp', destination: 'Pérou' },
+  { src: '/images/lancement/galerie/tulum.webp', destination: 'Tulum' },
+  { src: '/images/lancement/galerie/thailande.webp', destination: 'Thaïlande' },
 ]
 
 /* Bande Instagram du footer. Vide = la bande ne se rend pas. */
