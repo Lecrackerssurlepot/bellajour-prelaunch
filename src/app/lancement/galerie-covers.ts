@@ -1,19 +1,32 @@
-/* ════════════════════════════════════════════════════════════
-   LANCEMENT — Données visuelles à fournir
-   Tant que le tableau est VIDE, la section Galerie ne se rend pas
-   (return null) : la page reste complète et propre. Le remplir quand
-   les couvertures sont prêtes — la section apparaît toute seule,
-   sans toucher aux composants.
-   ════════════════════════════════════════════════════════════ */
+/* Galerie de la homepage de lancement.
+   Couvertures : 450 x 675, ratio 2:3, webp, toutes sous 58 Ko.
+   Tableau VIDE = la section Galerie et le lien "Nos albums" de la navbar
+   ne se rendent pas. Ajouter une entree suffit a les faire apparaitre.
+   L'ordre est volontaire : deux couvertures voisines n'ont jamais la meme
+   dominante chromatique, c'est ce qui fait tenir le mur. */
 
-export interface GalerieCover {
-  /* Chemin public de la couverture, ex. '/images/lancement/galerie/bali.webp'
-     (format attendu : portrait 2/3). */
-  src: string
-  /* Destination affichée au survol, ex. 'Bali'. */
-  destination: string
-}
+export type GalerieCover = { src: string; destination: string }
 
-/* Mur de couvertures de la section « La galerie ».
-   Cible : ~36 couvertures (3 bandes de 12) dans public/images/lancement/galerie/. */
-export const GALERIE_COVERS: GalerieCover[] = []
+export const GALERIE_COVERS: GalerieCover[] = [
+  { src: '/images/lancement/galerie/bali.webp', destination: 'Bali' },
+  { src: '/images/lancement/galerie/dubai.webp', destination: 'Dubaï' },
+  { src: '/images/lancement/galerie/dubrovnik.webp', destination: 'Dubrovnik' },
+  { src: '/images/lancement/galerie/japon.webp', destination: 'Japon' },
+  { src: '/images/lancement/galerie/namibie.webp', destination: 'Namibie' },
+  { src: '/images/lancement/galerie/istanbul.webp', destination: 'Istanbul' },
+  { src: '/images/lancement/galerie/costa-rica.webp', destination: 'Costa Rica' },
+  { src: '/images/lancement/galerie/egypte.webp', destination: 'Égypte' },
+  { src: '/images/lancement/galerie/patagonie.webp', destination: 'Patagonie' },
+  { src: '/images/lancement/galerie/marrakech.webp', destination: 'Marrakech' },
+  { src: '/images/lancement/galerie/londres.webp', destination: 'Londres' },
+  { src: '/images/lancement/galerie/maldives.webp', destination: 'Maldives' },
+  { src: '/images/lancement/galerie/kenya.webp', destination: 'Kenya' },
+  { src: '/images/lancement/galerie/barcelone.webp', destination: 'Barcelone' },
+  { src: '/images/lancement/galerie/ile-maurice.webp', destination: 'Île Maurice' },
+  { src: '/images/lancement/galerie/jordanie.webp', destination: 'Jordanie' },
+]
+
+/* Bande Instagram du footer. Vide = la bande ne se rend pas. */
+export type InstagramPost = { src: string; href?: string }
+
+export const INSTAGRAM_POSTS: InstagramPost[] = []
