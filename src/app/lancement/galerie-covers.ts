@@ -1,9 +1,9 @@
 /* ════════════════════════════════════════════════════════════
    LANCEMENT — Données visuelles à fournir
-   Tant qu'un tableau est VIDE, la section correspondante ne se
-   rend pas (return null) : la page reste complète et propre.
-   Remplir les tableaux quand les visuels sont prêts — la section
-   apparaît toute seule, sans toucher aux composants.
+   Tant que le tableau est VIDE, la section Galerie ne se rend pas
+   (return null) : la page reste complète et propre. Le remplir quand
+   les couvertures sont prêtes — la section apparaît toute seule,
+   sans toucher aux composants.
    ════════════════════════════════════════════════════════════ */
 
 export interface GalerieCover {
@@ -17,13 +17,3 @@ export interface GalerieCover {
 /* Mur de couvertures de la section « La galerie ».
    Cible : ~36 couvertures (3 bandes de 12) dans public/images/lancement/galerie/. */
 export const GALERIE_COVERS: GalerieCover[] = []
-
-export interface InstagramPost {
-  /* Chemin public du visuel carré, ex. '/images/lancement/instagram/post-01.webp'. */
-  src: string
-  /* Lien du post (optionnel) — sinon le visuel n'est pas cliquable. */
-  href?: string
-}
-
-/* Bande Instagram en tête du footer (6 visuels carrés recommandés). */
-export const INSTAGRAM_POSTS: InstagramPost[] = []

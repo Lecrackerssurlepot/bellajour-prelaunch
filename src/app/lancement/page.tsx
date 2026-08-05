@@ -9,12 +9,17 @@ import Parcours from './components/Parcours'
 import PrixObjet from './components/PrixObjet'
 import Avis from './components/Avis'
 import FAQ from './components/FAQ'
-import Footer from './components/Footer'
+/* Footer PARTAGÉ avec /preventes (import direct, pas de copie) : le footer de
+   /lancement doit être EXACTEMENT celui de /preventes — un import ne peut pas
+   diverger, une copie si. Même catégorie d'exception que pricing.ts :
+   réutilisation en LECTURE SEULE, sections/Footer reste intouché. */
+import Footer from '../sections/Footer'
 import StickyCTA from './components/StickyCTA'
 
 /* Route /lancement — homepage de lancement (maquette
    docs/homepage-lancement-reference.html).
-   Composants DUPLIQUÉS depuis /preventes (namespace lc-), jamais partagés :
+   Composants DUPLIQUÉS depuis /preventes (namespace lc-), jamais partagés
+   (exceptions lecture seule : pricing.ts et sections/Footer) :
    /preventes continue de vendre et reste strictement intacte.
    NOINDEX jusqu'à la bascule du 10 août — cette route ne doit pas apparaître
    dans Google avant ; retirer robots (+ ajouter canonical/OG et l'entrée
