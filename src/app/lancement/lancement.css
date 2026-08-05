@@ -36,36 +36,29 @@
 .lc-sec--tint { background: var(--bj-cream-tint-1); }
 .lc-sec--deep { background: var(--bj-cream-tint-2); }
 
-/* Titres display — Cormorant italic (charte lancement). */
+/* Titres display — Cormorant italic. Échelle UNIQUE pour tous les titres de
+   section, alignée sur /preventes (.s2-title : clamp(26px, 3.6vw, 34px)). */
 .lc-h2 {
   font-family: var(--bj-font-display);
   font-style: italic;
   font-weight: 600;
-  font-size: clamp(30px, 4vw, 54px);
-  line-height: 1.08;
+  font-size: clamp(26px, 3.6vw, var(--bj-fs-h2));
+  line-height: 1.12;
   letter-spacing: -0.01em;
 }
-.lc-h3 {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 600;
-  font-size: clamp(19px, 1.6vw, 23px);
-  line-height: 1.2;
-}
-
-/* Sur-titre de section. */
+/* Sur-titre de section — noir charbon (seul accent : le bleu --bj-action). */
 .lc-eyebrow {
   font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-xxs);
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--bj-terracotta-2);
+  color: var(--bj-charcoal);
 }
 
-/* Chapo. */
+/* Chapo — même échelle partout (corps /preventes). */
 .lc-lede {
-  font-size: clamp(16px, 1.35vw, var(--bj-fs-lg));
+  font-size: var(--bj-fs-body);
   color: var(--bj-text-soft);
   max-width: 56ch;
 }
@@ -102,9 +95,3 @@
 }
 .lc-tlink:hover { border-bottom-color: var(--bj-action); }
 
-/* Mobile : le sticky CTA (76px de chrome bas) ne doit jamais recouvrir le
-   footer — la réserve vit sur .lc-main, PAS sur body (body est partagé entre
-   toutes les routes, un padding global fuirait sur /preventes). */
-@media (max-width: 900px) {
-  .lc-main { padding-bottom: 76px; }
-}

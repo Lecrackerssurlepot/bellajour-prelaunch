@@ -37,9 +37,9 @@
   padding-right: 18px; /* prolonge le gap entre les 2 moitiés (boucle continue) */
 }
 
+/* Deux bandes max en desktop — la 2e en sens inverse. */
 .lc-gal-row--1 { animation: lc-gal-slide-left 80s linear infinite; }
 .lc-gal-row--2 { animation: lc-gal-slide-right 96s linear infinite; }
-.lc-gal-row--3 { animation: lc-gal-slide-left 68s linear infinite; }
 
 /* Pause : hors écran (IntersectionObserver) ou prefers-reduced-motion (JS),
    ou survol de la bande. */
@@ -95,16 +95,29 @@
   margin-top: clamp(48px, 6vw, 76px);
 }
 
-/* ── Mobile : une seule bande, au doigt, pas d'auto-défilement ── */
+/* ── Mobile : une seule bande, défilement au doigt impeccable ──
+   scroll-snap PROXIMITY (jamais mandatory), barre de scroll masquée,
+   padding latéral pour que la première et la dernière carte respirent. */
 @media (max-width: 900px) {
-  .lc-gal-row--2,
-  .lc-gal-row--3 { display: none; }
+  .lc-gal-row--2 { display: none; }
   .lc-gal-row--1 {
     animation: none;
     width: auto;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 5vw;
     padding-bottom: 6px;
+    scrollbar-width: none; /* Firefox */
+  }
+  .lc-gal-row--1::-webkit-scrollbar {
+    display: none; /* Chrome / Safari */
+  }
+  .lc-gal-row--1 .lc-gal-half {
+    padding-inline: 5vw; /* respiration première / dernière carte */
+  }
+  .lc-gal-cov {
+    scroll-snap-align: start;
   }
   /* Pas de boucle animée → la 2e moitié dupliquée est inutile au doigt. */
   .lc-gal-row--1 .lc-gal-half[aria-hidden='true'] { display: none; }

@@ -6,7 +6,6 @@ import S1Hero from './components/S1Hero'
 import Reassurance from './components/Reassurance'
 import Galerie from './components/Galerie'
 import Parcours from './components/Parcours'
-import PrixObjet from './components/PrixObjet'
 import Avis from './components/Avis'
 import FAQ from './components/FAQ'
 /* Footer PARTAGÉ avec /preventes (import direct, pas de copie) : le footer de
@@ -14,7 +13,6 @@ import FAQ from './components/FAQ'
    diverger, une copie si. Même catégorie d'exception que pricing.ts :
    réutilisation en LECTURE SEULE, sections/Footer reste intouché. */
 import Footer from '../sections/Footer'
-import StickyCTA from './components/StickyCTA'
 
 /* Route /lancement — homepage de lancement (maquette
    docs/homepage-lancement-reference.html).
@@ -44,11 +42,9 @@ export default function LancementPage() {
       <Reassurance />
       <Galerie />
       <Parcours />
-      <PrixObjet />
       <Avis />
       <FAQ />
       <Footer />
-      <StickyCTA />
     </main>
   )
 }

@@ -1,51 +1,72 @@
 /* ════════════════════════════════════════════════════════════
-   LANCEMENT — Réassurance (maquette 03, redessinée)
-   Trois repères pictogramme au trait / titre / une ligne.
-   Fond --bj-cream-2, aucune bordure verticale.
+   LANCEMENT — Barre de réassurance FINE
+   Une seule ligne, padding vertical minimal, fond des sections
+   claires (--bj-cream-tint-1). Jamais de wrap : réduction typo
+   ≤390px, puis défilement horizontal au doigt sans barre visible.
    ════════════════════════════════════════════════════════════ */
 
 .lc-reas {
-  background: var(--bj-cream-2);
-  padding-block: clamp(44px, 5vw, 72px);
+  background: var(--bj-cream-tint-1);
+  padding-block: 13px;
 }
 
-.lc-reas-in {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: clamp(24px, 4vw, 64px);
-}
-
-.lc-reas-i {
-  text-align: center;
+/* La ligne : centrée, une seule ligne quoi qu'il arrive (nowrap).
+   Garde-fou petits écrans : elle devient scrollable au doigt,
+   barre de scroll masquée sur tous les moteurs. */
+.lc-reas-line {
+  margin: 0;
+  padding-inline: 5vw;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 12px;
-}
-
-.lc-reas-i svg {
-  width: 38px;
-  height: 38px;
-  stroke: var(--bj-terracotta);
-  stroke-width: 1.1;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.lc-reas-i .lc-h3 {
-  font-size: clamp(19px, 1.8vw, 24px);
-}
-
-.lc-reas-i p {
+  /* safe center : centrée quand ça tient, calée à GAUCHE quand ça déborde —
+     un centrage simple rendrait le début de ligne inatteignable au scroll. */
+  justify-content: center;
+  justify-content: safe center;
+  white-space: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-sm);
+  letter-spacing: 0.04em;
   color: var(--bj-text-soft);
-  max-width: 30ch;
+  line-height: 1;
+}
+.lc-reas-line::-webkit-scrollbar {
+  display: none; /* Chrome / Safari */
 }
 
-@media (max-width: 900px) {
-  .lc-reas-in {
-    grid-template-columns: 1fr;
-    gap: 34px;
+.lc-reas-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.lc-reas-sep {
+  color: var(--bj-text-faint);
+  margin-inline: clamp(8px, 1.6vw, 18px);
+}
+
+/* Drapeau européen : cercle d'étoiles simplifié, monochrome charbon. */
+.lc-reas-eu {
+  width: 14px;
+  height: 14px;
+  fill: var(--bj-charcoal);
+  flex: 0 0 auto;
+}
+
+/* ≤390px : on resserre la typo pour tenir en une ligne avant de laisser
+   le garde-fou overflow-x prendre le relais. */
+@media (max-width: 390px) {
+  .lc-reas-line {
+    font-size: var(--bj-fs-xxs);
+    letter-spacing: 0.01em;
+  }
+  .lc-reas-sep {
+    margin-inline: 7px;
+  }
+  .lc-reas-eu {
+    width: 12px;
+    height: 12px;
   }
 }

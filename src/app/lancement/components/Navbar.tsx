@@ -74,9 +74,6 @@ export default function Navbar() {
             Nos albums
           </a>
         )}
-        <a href="#prix" onClick={scrollTo('prix')}>
-          Prix
-        </a>
       </div>
 
       <div className="lc-nav-right">

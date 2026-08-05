@@ -45,10 +45,14 @@
 }
 .lc-parc-arrow:disabled { opacity: 0.3; cursor: default; }
 
-/* ── Rail + track ── */
+/* ── Rail + track ──
+   overflow VISIBLE : le clip horizontal vit sur .lc-parc (overflow:hidden),
+   exactement comme .s2 sur /preventes. Un hidden ici clippait AUSSI l'axe
+   vertical → ombre + scale(1.05) de la carte active rognés par la section
+   suivante. Le padding-block de .lc-sec absorbe le débordement vertical. */
 .lc-parc-rail {
   margin-top: clamp(30px, 3.6vw, 48px);
-  overflow: hidden;
+  overflow: visible;
 }
 .lc-parc-track {
   position: relative; /* offsetParent déterministe pour le centrage */
@@ -158,9 +162,10 @@
   object-fit: contain;
 }
 
-/* ── CTA sous le rail ── */
+/* ── CTA sous le rail : centré, desktop et mobile ── */
 .lc-parc-foot {
   margin-top: clamp(32px, 4vw, 48px);
+  text-align: center;
 }
 
 /* ── Mobile ── */

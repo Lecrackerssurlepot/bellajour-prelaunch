@@ -6,14 +6,11 @@
    composant ne code une destination en dur.
    ════════════════════════════════════════════════════════════ */
 
-/* CTA principal « Concevoir mon album » (navbar, hero, parcours, prix, avis, sticky). */
+/* CTA principal « Concevoir mon album » (navbar, hero, parcours, avis). */
 export const CTA_HREF = '#'
 
-/* « Connexion » (navbar) + « Mon compte » / « Ma bibliothèque » (footer). */
+/* « Connexion » (navbar). */
 export const LOGIN_HREF = '#'
 
 /* Lien éditorial sous la galerie « Voir comment naît une couverture ». */
 export const COVER_STORY_HREF = '#'
-
-/* « Voir le détail » sous le prix (future page prix du site de lancement). */
-export const PRICE_DETAIL_HREF = '#'
