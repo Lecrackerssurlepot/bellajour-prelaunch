@@ -1,0 +1,69 @@
+/* ════════════════════════════════════════════════════════════
+   LANCEMENT — FAQ (maquette 08)
+   Accordéon exclusif : question Cormorant italic, « + » qui pivote,
+   réponse en max-height (transition sur max-height + opacity).
+   ════════════════════════════════════════════════════════════ */
+
+.lc-faq-title {
+  margin: 14px 0 0;
+}
+
+.lc-faq-list {
+  margin-top: 36px;
+  border-top: 1px solid var(--bj-veil-12);
+}
+
+.lc-faq-q {
+  border-bottom: 1px solid var(--bj-veil-12);
+}
+
+/* Toute la ligne question est le bouton (hit-area maximale). */
+.lc-faq-h {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.lc-faq-t {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(18px, 1.7vw, 22px);
+  color: var(--bj-text);
+  flex: 1;
+}
+.lc-faq-p {
+  font-family: var(--bj-font-ui);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--bj-action);
+  transition: transform var(--bj-dur) var(--bj-ease);
+}
+.lc-faq-q--on .lc-faq-p {
+  transform: rotate(45deg);
+}
+
+.lc-faq-b {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 300ms var(--bj-ease);
+}
+.lc-faq-q--on .lc-faq-b {
+  max-height: 240px;
+}
+.lc-faq-b p {
+  padding: 0 0 20px;
+  font-size: var(--bj-fs-ui);
+  color: var(--bj-text-soft);
+  max-width: 70ch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lc-faq-b,
+  .lc-faq-p { transition: none; }
+}

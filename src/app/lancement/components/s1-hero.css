@@ -1,0 +1,188 @@
+/* ════════════════════════════════════════════════════════════
+   LANCEMENT — S1 Hero plein page (copie de preventes/s1-hero.css)
+   Titre 2 lignes forcées · sous-titre + CTA collés en bas.
+   ════════════════════════════════════════════════════════════ */
+
+.lc-s1 {
+  position: relative;
+  width: 100%;
+  /* Dynamic viewport — JAMAIS 100vh (sinon la barre Safari iOS coupe le bas).
+     Réduit de --bj-bar-h : .lc-main ajoute ce padding-top en haut, on le retire
+     ici → barre + hero = exactement 100dvh, zéro scroll parasite.
+     PAS de margin-top : c'est .lc-main qui pousse (le margin-top de la maquette
+     compensait l'absence de wrapper — le garder ici doublerait l'offset). */
+  height: calc(100dvh - var(--bj-bar-h));
+  min-height: 560px;
+  overflow: hidden;
+}
+
+/* ── Couche photo full-bleed ── */
+.lc-s1-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+/* S'applique au <video> ET au <img> de fond (même classe). */
+.lc-s1-bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 38%;
+  display: block;
+}
+
+/* Scrim : voile sombre léger (texte blanc sur ciel clair). */
+.lc-s1-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.22) 0%,
+    rgba(0, 0, 0, 0.1) 40%,
+    rgba(0, 0, 0, 0.12) 72%,
+    rgba(0, 0, 0, 0.18) 100%
+  );
+}
+
+/* ── Contenu superposé : 3 zones verticales ── */
+.lc-s1-content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(96px, 14vh, 150px) 6vw 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+}
+
+/* Barre logo : tout en haut du hero, centrée, hors du flux. */
+.lc-s1-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: clamp(16px, 2vh, 24px);
+  pointer-events: none;
+}
+.lc-s1-logo {
+  display: block;
+  width: auto;
+  height: clamp(72px, 8vw, 104px);
+}
+
+/* Zone centrale : titre + album. */
+.lc-s1-middle {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(20px, 3vh, 40px);
+  min-height: 0;
+}
+
+.lc-s1-title {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.06;
+  letter-spacing: -0.01em;
+  font-size: clamp(34px, 5.4vw, 80px);
+}
+.lc-s1-title-line {
+  display: block;
+  white-space: nowrap;
+}
+
+/* Album centré sous le titre, dimensionné par la hauteur. */
+.lc-s1-album {
+  display: block;
+  width: auto;
+  max-width: 86vw;
+  height: auto;
+  max-height: 48vh;
+  object-fit: contain;
+}
+
+/* Zone basse : sous-titre + bouton. */
+.lc-s1-bottom {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(16px, 2.5vh, 26px);
+  padding-bottom: clamp(28px, 5vh, 56px);
+}
+.lc-s1-subtitle {
+  font-family: var(--bj-font-ui);
+  font-size: clamp(15px, 1.4vw, 19px);
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* Desktop : sous-titre masqué (conservé dans le DOM pour le mobile). */
+@media (min-width: 768px) {
+  .lc-s1-bottom .lc-s1-subtitle { display: none; }
+}
+
+/* ── Bouton ghost / outline (action unique du hero) ── */
+.lc-s1-cta {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: transparent;
+  border: 1.5px solid #ffffff;
+  border-radius: var(--bj-r-pill);
+  padding: 15px 34px;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--bj-dur-fast) var(--bj-ease),
+    color var(--bj-dur-fast) var(--bj-ease);
+}
+.lc-s1-cta:hover {
+  background: #ffffff;
+  color: var(--bj-action);
+}
+
+/* ── Mobile ── */
+@media (max-width: 767px) {
+  .lc-s1-title {
+    font-size: clamp(28px, 8.4vw, 50px);
+  }
+  .lc-s1-album {
+    max-height: 42vh;
+    max-width: 78vw;
+  }
+  .lc-s1-cta {
+    padding: 12px 26px;
+    font-size: var(--bj-fs-xs);
+    letter-spacing: 0.14em;
+  }
+}
+
+/* Écrans courts : album réduit (jamais de chevauchement titre / album). */
+@media (max-height: 700px) {
+  .lc-s1-album { max-height: 38vh; }
+}
+
+/* Très petits écrans : wrap autorisé. */
+@media (max-width: 360px) {
+  .lc-s1-title-line { white-space: normal; }
+}

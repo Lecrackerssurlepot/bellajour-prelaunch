@@ -1,0 +1,100 @@
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import './galerie.css'
+import { GALERIE_COVERS, type GalerieCover } from '../galerie-covers'
+import { COVER_STORY_HREF } from '../links'
+
+/* LANCEMENT — La galerie (nouveau bloc, maquette 04).
+   Mur de couvertures défilant : 3 bandes (la 2e en sens inverse), chaque bande
+   dupliquée ×2 pour une boucle sans couture (translate3d 0 → -50%).
+   - Animation UNIQUEMENT sur transform translate3d (jamais left/margin).
+   - IntersectionObserver : défilement coupé hors écran (.lc-gal--paused).
+   - prefers-reduced-motion: reduce → pause complète, définitive.
+   - Mobile (CSS) : une seule bande, glissement au doigt, pas d'auto-défilement.
+   Tant que GALERIE_COVERS est vide, la section entière ne se rend pas. */
+
+/* Répartit les couvertures en 3 bandes équilibrées (bandes vides éliminées). */
+function splitRows(covers: GalerieCover[]): GalerieCover[][] {
+  const per = Math.ceil(covers.length / 3)
+  return [
+    covers.slice(0, per),
+    covers.slice(per, per * 2),
+    covers.slice(per * 2),
+  ].filter((row) => row.length > 0)
+}
+
+export default function Galerie() {
+  const sectionRef = useRef<HTMLElement>(null)
+  const [paused, setPaused] = useState(false)
+  const [reduced, setReduced] = useState(false)
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setReduced(true)
+      return
+    }
+    const section = sectionRef.current
+    if (!section) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setPaused(!entry.isIntersecting)
+    )
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
+
+  if (GALERIE_COVERS.length === 0) return null
+
+  const rows = splitRows(GALERIE_COVERS)
+
+  return (
+    <section
+      ref={sectionRef}
+      id="galerie"
+      className={`lc-sec lc-gal${paused || reduced ? ' lc-gal--paused' : ''}`}
+      data-section="galerie"
+      data-theme="light"
+    >
+      <div className="lc-wrap lc-gal-head">
+        <span className="lc-eyebrow">La galerie</span>
+        <h2 className="lc-h2">Aucune couverture ne ressemble à une autre</h2>
+        <p className="lc-lede">
+          Chaque couverture est peinte à partir de votre voyage, de ses couleurs
+          et de ses lumières. Elle n’existera qu’une fois.
+        </p>
+      </div>
+
+      <div className="lc-gal-rows">
+        {rows.map((row, r) => (
+          <div key={r} className={`lc-gal-row lc-gal-row--${r + 1}`}>
+            {/* Bande dupliquée ×2 : la boucle translate3d(-50%) est sans couture. */}
+            {[0, 1].map((dup) => (
+              <div
+                key={dup}
+                className="lc-gal-half"
+                aria-hidden={dup === 1 || undefined}
+              >
+                {row.map((cover, i) => (
+                  <figure key={`${dup}-${i}`} className="lc-gal-cov">
+                    <img
+                      src={cover.src}
+                      alt={dup === 0 ? `Couverture — ${cover.destination}` : ''}
+                      loading={r === 0 && dup === 0 && i < 8 ? 'eager' : 'lazy'}
+                    />
+                    <figcaption>{cover.destination}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <div className="lc-wrap lc-gal-foot">
+        <a className="lc-tlink" href={COVER_STORY_HREF}>
+          Voir comment naît une couverture
+        </a>
+      </div>
+    </section>
+  )
+}

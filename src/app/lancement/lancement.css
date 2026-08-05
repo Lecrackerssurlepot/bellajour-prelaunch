@@ -1,0 +1,110 @@
+/* ════════════════════════════════════════════════════════════
+   LANCEMENT — utilitaires partagés de la page /lancement
+   Namespace lc- STRICT : aucune classe ni keyframe ne recoupe
+   celles de /preventes (.pv-*, .s1-*, .s2-*…) — les CSS Next
+   étant globaux, c'est ce qui garantit que /preventes ne peut
+   pas être affectée par cette page (et réciproquement).
+   Toutes les valeurs viennent de src/app/tokens.css.
+   ════════════════════════════════════════════════════════════ */
+
+/* Conteneur de page : compense la barre d'annonce fixe (--bj-bar-h).
+   Le hero est réduit d'autant (calc(100dvh - var(--bj-bar-h))) → barre + hero
+   = exactement 100dvh, zéro scroll parasite (même mécanique que .pv-main). */
+.lc-main {
+  padding-top: var(--bj-bar-h);
+  background: var(--bj-cream);
+  color: var(--bj-text);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  line-height: 1.65;
+}
+
+/* Colonne de lecture. */
+.lc-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-inline: 6vw;
+}
+@media (min-width: 1340px) {
+  .lc-wrap { padding-inline: 0; }
+}
+
+/* Rythme vertical des sections. */
+.lc-sec {
+  padding-block: clamp(72px, 8.5vw, 128px);
+}
+.lc-sec--tint { background: var(--bj-cream-tint-1); }
+.lc-sec--deep { background: var(--bj-cream-tint-2); }
+
+/* Titres display — Cormorant italic (charte lancement). */
+.lc-h2 {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(30px, 4vw, 54px);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+}
+.lc-h3 {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(19px, 1.6vw, 23px);
+  line-height: 1.2;
+}
+
+/* Sur-titre de section. */
+.lc-eyebrow {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xxs);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bj-terracotta-2);
+}
+
+/* Chapo. */
+.lc-lede {
+  font-size: clamp(16px, 1.35vw, var(--bj-fs-lg));
+  color: var(--bj-text-soft);
+  max-width: 56ch;
+}
+
+/* ── Boutons ── */
+.lc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  line-height: 1;
+  padding: 15px 26px;
+  border-radius: var(--bj-r-pill);
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.lc-btn:hover { opacity: 0.88; }
+
+/* Lien texte souligné (accent bleu). */
+.lc-tlink {
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  color: var(--bj-action);
+  text-decoration: none;
+  border-bottom: 1px solid var(--bj-action-border);
+  padding-bottom: 2px;
+  transition: border-color var(--bj-dur-fast) var(--bj-ease);
+}
+.lc-tlink:hover { border-bottom-color: var(--bj-action); }
+
+/* Mobile : le sticky CTA (76px de chrome bas) ne doit jamais recouvrir le
+   footer — la réserve vit sur .lc-main, PAS sur body (body est partagé entre
+   toutes les routes, un padding global fuirait sur /preventes). */
+@media (max-width: 900px) {
+  .lc-main { padding-bottom: 76px; }
+}

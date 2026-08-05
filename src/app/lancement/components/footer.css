@@ -1,0 +1,78 @@
+/* ════════════════════════════════════════════════════════════
+   LANCEMENT — Footer sombre + bande Instagram (maquette 09)
+   Fond --bj-charcoal, textes --bj-glass-dark-text.
+   ════════════════════════════════════════════════════════════ */
+
+.lc-foot {
+  background: var(--bj-charcoal);
+  color: var(--bj-glass-dark-text);
+  padding-block: clamp(48px, 6vw, 76px);
+}
+
+/* Sur fond sombre, l'eyebrow passe sur le terracotta doux. */
+.lc-foot-eyebrow {
+  color: var(--bj-terracotta);
+}
+
+/* ── Bande Instagram ── */
+.lc-foot-insta {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin: 26px 0 clamp(40px, 5vw, 60px);
+}
+.lc-foot-insta img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: var(--bj-r-sm);
+  opacity: 0.86;
+  transition: opacity var(--bj-dur) var(--bj-ease);
+  display: block;
+}
+.lc-foot-insta img:hover { opacity: 1; }
+
+/* ── Bloc identité + liens ── */
+.lc-foot-in {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-top: clamp(32px, 4vw, 44px);
+  border-top: 1px solid var(--bj-glass-dark-border);
+}
+
+.lc-foot-logo {
+  height: 40px;
+  width: auto;
+  opacity: 0.9;
+  display: block;
+}
+.lc-foot-sign {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: 19px;
+  color: var(--bj-glass-dark-text);
+  opacity: 0.8;
+  margin-top: 10px;
+}
+
+.lc-foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: var(--bj-fs-xs);
+}
+.lc-foot-links a {
+  color: var(--bj-glass-dark-text);
+  opacity: 0.62;
+  text-decoration: none;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.lc-foot-links a:hover { opacity: 1; }
+
+/* ── Mobile ── */
+@media (max-width: 900px) {
+  .lc-foot-insta { grid-template-columns: repeat(3, 1fr); }
+}

@@ -1,0 +1,176 @@
+/* ════════════════════════════════════════════════════════════
+   LANCEMENT — Le parcours (maquette 05) — carrousel S2Experience
+   Desktop ~2,5 cartes visibles · Mobile 1 carte + peek.
+   Carrousel piloté par activeIndex → transform translateX (GPU only).
+   ════════════════════════════════════════════════════════════ */
+
+.lc-parc {
+  overflow: hidden;
+}
+
+/* ── Tête : eyebrow + titre à gauche, flèches à droite (maquette) ── */
+.lc-parc-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.lc-parc-title {
+  margin-top: 14px;
+}
+
+.lc-parc-arrows {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.lc-parc-arrow {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--bj-r-pill);
+  border: 1px solid var(--bj-veil-12);
+  background: transparent;
+  color: var(--bj-text);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background var(--bj-dur) var(--bj-ease),
+    border-color var(--bj-dur) var(--bj-ease);
+}
+.lc-parc-arrow:hover:not(:disabled) {
+  background: var(--bj-action-soft);
+  border-color: var(--bj-action-border);
+}
+.lc-parc-arrow:disabled { opacity: 0.3; cursor: default; }
+
+/* ── Rail + track ── */
+.lc-parc-rail {
+  margin-top: clamp(30px, 3.6vw, 48px);
+  overflow: hidden;
+}
+.lc-parc-track {
+  position: relative; /* offsetParent déterministe pour le centrage */
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(24px, 3vw, 44px);
+  padding: 0 5vw;
+  transform: translateX(var(--lc-parc-shift, 0px));
+  transition: transform 0.6s var(--bj-ease);
+  will-change: transform;
+}
+
+/* ── Carte glass (standard cartes prévente) ── */
+.lc-parc-card {
+  flex: 0 0 auto;
+  width: 90vw;
+  position: relative;
+  background: var(--bj-cream-tint-1);             /* fallback opaque */
+  border: 1px solid var(--bj-glass-light-border);
+  border-radius: var(--bj-r-lg);
+  box-shadow: var(--bj-glass-card-shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  opacity: 0.4;
+  cursor: pointer;
+  will-change: transform;
+  transition:
+    transform 0.6s var(--bj-ease),
+    opacity 0.6s var(--bj-ease),
+    background 0.6s var(--bj-ease),
+    box-shadow 0.6s var(--bj-ease);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lc-parc-card {
+    background: var(--bj-glass-light-bg);
+    -webkit-backdrop-filter: blur(var(--bj-glass-blur-card));
+    backdrop-filter: blur(var(--bj-glass-blur-card));
+  }
+}
+.lc-parc-card[data-active='true'] { opacity: 1; cursor: default; }
+
+@media (min-width: 768px) {
+  .lc-parc-card { width: 38vw; }
+}
+@media (min-width: 1100px) {
+  .lc-parc-card { width: clamp(440px, 40vw, 560px); }
+  /* Carte active centrée + agrandie (scale visuel, z-index au-dessus). */
+  .lc-parc-card {
+    transform: scale(0.93);
+    transform-origin: center;
+    opacity: 0.5;
+  }
+  .lc-parc-card[data-active='true'] {
+    transform: scale(1.05);
+    opacity: 1;
+    background: var(--bj-cream-2);
+    box-shadow: var(--bj-glass-card-shadow-active);
+    z-index: 2;
+  }
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .lc-parc-card[data-active='true'] { background: var(--bj-glass-light-bg-active); }
+  }
+}
+
+/* ── Corps : label → vidéo → texte ── */
+.lc-parc-card-body {
+  flex: 0 0 auto;
+  padding: clamp(20px, 3vw, 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.lc-parc-card-label {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: clamp(28px, 3.2vw, 40px);
+  line-height: 1.08;
+}
+.lc-parc-card-num { color: var(--bj-action-faint); }
+.lc-parc-card-title { color: var(--bj-text); }
+.lc-parc-card-texte {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  line-height: 1.5;
+  color: var(--bj-text-soft);
+}
+
+/* Cadre média : aspect-ratio commun aux 4 vidéos / covers (3024×1500). */
+.lc-parc-card-media {
+  flex: 0 0 auto;
+  aspect-ratio: 3024 / 1500;
+  margin: 0;
+  background: var(--bj-cream-tint-2);
+  border-radius: var(--bj-r-lg);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lc-parc-card-video,
+.lc-parc-card-cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--bj-r-lg);
+  object-fit: contain;
+}
+
+/* ── CTA sous le rail ── */
+.lc-parc-foot {
+  margin-top: clamp(32px, 4vw, 48px);
+}
+
+/* ── Mobile ── */
+@media (max-width: 767px) {
+  .lc-parc-card-media { max-height: 45dvh; }
+  .lc-parc-card-texte { font-size: var(--bj-fs-sm); line-height: 1.45; }
+  .lc-parc-card-label { font-size: clamp(22px, 6vw, 26px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lc-parc-track,
+  .lc-parc-card { transition: none; }
+}

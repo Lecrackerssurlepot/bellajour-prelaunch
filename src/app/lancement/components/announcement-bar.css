@@ -1,0 +1,38 @@
+/* ════════════════════════════════════════════════════════════
+   LANCEMENT — Barre d'annonce (copie simplifiée de la prévente)
+   Fixe en haut, hauteur figée --bj-bar-h, message statique unique.
+   ════════════════════════════════════════════════════════════ */
+
+.lc-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--bj-bar-h);
+  z-index: 60; /* au-dessus de la navbar (.lc-nav = 50) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bj-bar-bg);
+  color: var(--bj-text);
+  border-bottom: 1px solid var(--bj-veil-8);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 0 2vw;
+}
+
+.lc-bar-msg {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: var(--bj-bar-h);
+  padding: 0 1vw;
+}
+.lc-bar-msg b { font-weight: 600; }
+
+@media (max-width: 767px) {
+  .lc-bar { font-size: var(--bj-fs-xxs); }
+}

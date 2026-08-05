@@ -1,0 +1,111 @@
+/* ════════════════════════════════════════════════════════════
+   LANCEMENT — La galerie (maquette 04)
+   3 bandes de couvertures défilantes, boucle translate3d sans couture.
+   Keyframes préfixés lc- : les noms de keyframes sont GLOBAUX en CSS,
+   le préfixe de classe seul ne protège pas des collisions inter-pages.
+   ════════════════════════════════════════════════════════════ */
+
+.lc-gal {
+  overflow: hidden;
+}
+
+.lc-gal-head {
+  text-align: center;
+  max-width: 46ch;
+  margin: 0 auto clamp(40px, 5vw, 68px);
+}
+.lc-gal-head .lc-h2 { margin: 14px 0 16px; }
+.lc-gal-head .lc-lede { margin-inline: auto; }
+
+.lc-gal-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Une bande = 2 moitiés identiques mises bout à bout ; l'animation déplace la
+   bande de -50% (= une moitié exacte) puis boucle → aucune couture visible.
+   transform translate3d UNIQUEMENT — jamais left/margin (compositing GPU). */
+.lc-gal-row {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+.lc-gal-half {
+  display: flex;
+  gap: 18px;
+  padding-right: 18px; /* prolonge le gap entre les 2 moitiés (boucle continue) */
+}
+
+.lc-gal-row--1 { animation: lc-gal-slide-left 80s linear infinite; }
+.lc-gal-row--2 { animation: lc-gal-slide-right 96s linear infinite; }
+.lc-gal-row--3 { animation: lc-gal-slide-left 68s linear infinite; }
+
+/* Pause : hors écran (IntersectionObserver) ou prefers-reduced-motion (JS),
+   ou survol de la bande. */
+.lc-gal--paused .lc-gal-row,
+.lc-gal-row:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc-gal-row { animation: none; }
+}
+
+@keyframes lc-gal-slide-left {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+@keyframes lc-gal-slide-right {
+  from { transform: translate3d(-50%, 0, 0); }
+  to   { transform: translate3d(0, 0, 0); }
+}
+
+/* ── Couverture ── */
+.lc-gal-cov {
+  position: relative;
+  flex: 0 0 auto;
+  width: clamp(118px, 9vw, 150px);
+  margin: 0;
+  transition: transform 300ms var(--bj-ease);
+}
+.lc-gal-cov img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--bj-r-sm);
+  box-shadow: var(--bj-shadow-soft);
+  display: block;
+}
+.lc-gal-cov figcaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -22px;
+  text-align: center;
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+  opacity: 0;
+  transition: opacity var(--bj-dur) var(--bj-ease);
+}
+.lc-gal-cov:hover { transform: translate3d(0, -12px, 0); }
+.lc-gal-cov:hover figcaption { opacity: 1; }
+
+.lc-gal-foot {
+  text-align: center;
+  margin-top: clamp(48px, 6vw, 76px);
+}
+
+/* ── Mobile : une seule bande, au doigt, pas d'auto-défilement ── */
+@media (max-width: 900px) {
+  .lc-gal-row--2,
+  .lc-gal-row--3 { display: none; }
+  .lc-gal-row--1 {
+    animation: none;
+    width: auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+  }
+  /* Pas de boucle animée → la 2e moitié dupliquée est inutile au doigt. */
+  .lc-gal-row--1 .lc-gal-half[aria-hidden='true'] { display: none; }
+}

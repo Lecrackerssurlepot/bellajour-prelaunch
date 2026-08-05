@@ -1,0 +1,134 @@
+/* ════════════════════════════════════════════════════════════
+   LANCEMENT — Navbar transformante (copie du mécanisme .pv-nav)
+   État A : masquée (le hero porte son logo blanc).
+   État B (.lc-nav--solid) : logo gauche + liens centre + actions droite,
+   fond quasi-opaque (cream 82 %) — décision maquette : le verre à .32
+   ne tient pas au-dessus des visuels sombres de la page lancement.
+   ════════════════════════════════════════════════════════════ */
+
+.lc-nav {
+  position: fixed;
+  /* Empilée SOUS la barre d'annonce (--bj-bar-h). */
+  top: var(--bj-bar-h);
+  left: 0;
+  right: 0;
+  height: var(--bj-topbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(16px, 3vw, 40px);
+  padding: 0 5vw;
+  background: transparent;
+  z-index: 50;
+  /* État A : masquée, remontée hors champ. */
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-100%);
+  transition:
+    opacity 300ms var(--bj-ease),
+    transform 300ms var(--bj-ease),
+    background-color 300ms var(--bj-ease),
+    border-color 300ms var(--bj-ease),
+    backdrop-filter 300ms var(--bj-ease),
+    -webkit-backdrop-filter 300ms var(--bj-ease);
+}
+
+/* ── État B : visible, fond quasi-opaque ──
+   color-mix = --bj-cream (#f7f1e9) à 82 % ≡ rgba(247,241,233,.82) de la
+   maquette, sans couleur en dur. */
+.lc-nav--solid {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  background-color: color-mix(in srgb, var(--bj-cream) 82%, transparent);
+  border-bottom: 0.5px solid var(--bj-glass-light-border);
+  backdrop-filter: blur(var(--bj-glass-blur));
+  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+}
+
+/* ── Android only : blur remplacé par un fond quasi-opaque (anti-jank,
+   même mécanique que .pv-nav--flat). ── */
+.lc-nav--flat.lc-nav--solid {
+  background-color: var(--bj-nav-android-bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ── Logo ── */
+.lc-nav-logo-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: block;
+  flex: 0 0 auto;
+}
+.lc-nav-logo {
+  display: block;
+  height: 44px;
+  transition: height 300ms var(--bj-ease);
+}
+@media (min-width: 768px) {
+  .lc-nav-logo { height: 52px; }
+}
+
+/* ── Liens centraux ── */
+.lc-nav-mid {
+  display: flex;
+  gap: clamp(18px, 2.5vw, 28px);
+}
+.lc-nav-mid a {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text);
+  text-decoration: none;
+  opacity: 0.78;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.lc-nav-mid a:hover { opacity: 1; }
+
+/* ── Actions droite ── */
+.lc-nav-right {
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 2vw, 22px);
+  flex: 0 0 auto;
+}
+.lc-nav-login {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text);
+  text-decoration: none;
+  opacity: 0.78;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.lc-nav-login:hover { opacity: 1; }
+
+.lc-nav-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--bj-on-action);
+  background: var(--bj-action);
+  border: none;
+  border-radius: var(--bj-r-pill);
+  padding: 11px 20px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.lc-nav-cta:hover { opacity: 0.88; }
+
+/* Mobile : liens centraux masqués (maquette ≤900px), CTA compact. */
+@media (max-width: 900px) {
+  .lc-nav-mid { display: none; }
+}
+@media (max-width: 767px) {
+  .lc-nav-cta { padding: 9px 16px; font-size: var(--bj-fs-xs); }
+  .lc-nav-login { font-size: var(--bj-fs-xs); }
+}
