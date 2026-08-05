@@ -1,25 +1,27 @@
 /* ════════════════════════════════════════════════════════════
-   LANCEMENT — Barre de réassurance FINE
-   Une seule ligne, padding vertical minimal, fond des sections
-   claires (--bj-cream-tint-1). Jamais de wrap : réduction typo
-   ≤390px, puis défilement horizontal au doigt sans barre visible.
+   LANCEMENT — Barre de réassurance FINE, fond blanc
+   Une seule ligne : 4 mentions en gras avec picto au trait,
+   fond BLANC assumé (comme le blanc du hero — pas un token crème),
+   fine bordure basse pour se détacher du fond crème de la page.
+   Jamais de wrap : réduction typo ≤390px, puis défilement au doigt
+   sans barre visible.
    ════════════════════════════════════════════════════════════ */
 
 .lc-reas {
-  background: var(--bj-cream-tint-1);
+  background: #ffffff;
+  border-bottom: 1px solid var(--bj-veil-8);
   padding-block: 13px;
 }
 
-/* La ligne : centrée, une seule ligne quoi qu'il arrive (nowrap).
-   Garde-fou petits écrans : elle devient scrollable au doigt,
-   barre de scroll masquée sur tous les moteurs. */
+/* La ligne : une seule ligne quoi qu'il arrive (nowrap).
+   safe center : centrée quand ça tient, calée à GAUCHE quand ça déborde —
+   un centrage simple rendrait le début de ligne inatteignable au scroll.
+   Garde-fou petits écrans : scrollable au doigt, barre masquée partout. */
 .lc-reas-line {
   margin: 0;
   padding-inline: 5vw;
   display: flex;
   align-items: center;
-  /* safe center : centrée quand ça tient, calée à GAUCHE quand ça déborde —
-     un centrage simple rendrait le début de ligne inatteignable au scroll. */
   justify-content: center;
   justify-content: safe center;
   white-space: nowrap;
@@ -28,8 +30,9 @@
   scrollbar-width: none; /* Firefox */
   font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-sm);
-  letter-spacing: 0.04em;
-  color: var(--bj-text-soft);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--bj-charcoal);
   line-height: 1;
 }
 .lc-reas-line::-webkit-scrollbar {
@@ -39,33 +42,46 @@
 .lc-reas-item {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
 }
 
 .lc-reas-sep {
+  font-weight: 400;
   color: var(--bj-text-faint);
-  margin-inline: clamp(8px, 1.6vw, 18px);
+  margin-inline: clamp(8px, 1.6vw, 18px) clamp(2px, 0.4vw, 6px);
 }
 
-/* Drapeau européen : cercle d'étoiles simplifié, monochrome charbon. */
-.lc-reas-eu {
+/* Pictos au trait fin, alignés verticalement avec le texte. */
+.lc-reas-ico {
   width: 14px;
   height: 14px;
-  fill: var(--bj-charcoal);
   flex: 0 0 auto;
+  stroke: var(--bj-charcoal);
+  stroke-width: 1.2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* Drapeau UE : étoiles = points pleins, sans trait. */
+.lc-reas-ico--eu {
+  stroke: none;
+  fill: var(--bj-charcoal);
 }
 
-/* ≤390px : on resserre la typo pour tenir en une ligne avant de laisser
-   le garde-fou overflow-x prendre le relais. */
+/* ≤390px : typo puis gap réduits pour repousser le défilement ;
+   au-delà, le garde-fou overflow-x prend le relais. */
 @media (max-width: 390px) {
   .lc-reas-line {
     font-size: var(--bj-fs-xxs);
-    letter-spacing: 0.01em;
+    letter-spacing: 0;
+  }
+  .lc-reas-item {
+    gap: 5px;
   }
   .lc-reas-sep {
-    margin-inline: 7px;
+    margin-inline: 7px 3px;
   }
-  .lc-reas-eu {
+  .lc-reas-ico {
     width: 12px;
     height: 12px;
   }
