@@ -16,8 +16,9 @@
   gap: 24px;
   flex-wrap: wrap;
 }
+/* Écart sur-titre → titre : 8px, comme le gap de .s2-titles sur /preventes. */
 .lc-parc-title {
-  margin-top: 14px;
+  margin-top: 8px;
 }
 
 .lc-parc-arrows {

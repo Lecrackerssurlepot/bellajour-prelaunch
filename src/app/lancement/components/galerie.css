@@ -14,7 +14,8 @@
   max-width: 46ch;
   margin: 0 auto clamp(40px, 5vw, 68px);
 }
-.lc-gal-head .lc-h2 { margin: 14px 0 16px; }
+/* Écarts sur-titre → titre → sous-titre : 8px, comme .s2-titles sur /preventes. */
+.lc-gal-head .lc-h2 { margin: 8px 0 8px; }
 .lc-gal-head .lc-lede { margin-inline: auto; }
 
 .lc-gal-rows {

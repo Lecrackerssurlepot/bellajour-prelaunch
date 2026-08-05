@@ -4,8 +4,9 @@
    3 quand la photo de Marion existera) — data-count sur la grille.
    ════════════════════════════════════════════════════════════ */
 
+/* Écart sur-titre → titre : 8px, comme le gap de .s2-titles sur /preventes. */
 .lc-avis-title {
-  margin: 14px 0 0;
+  margin: 8px 0 0;
 }
 
 .lc-avis-grid {

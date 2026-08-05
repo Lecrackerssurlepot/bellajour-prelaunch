@@ -4,8 +4,9 @@
    réponse en max-height (transition sur max-height + opacity).
    ════════════════════════════════════════════════════════════ */
 
+/* Écart sur-titre → titre : 8px, comme le gap de .s2-titles sur /preventes. */
 .lc-faq-title {
-  margin: 14px 0 0;
+  margin: 8px 0 0;
 }
 
 .lc-faq-list {

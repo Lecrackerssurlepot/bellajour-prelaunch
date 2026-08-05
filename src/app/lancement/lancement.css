@@ -36,24 +36,27 @@
 .lc-sec--tint { background: var(--bj-cream-tint-1); }
 .lc-sec--deep { background: var(--bj-cream-tint-2); }
 
-/* Titres display — Cormorant italic. Échelle UNIQUE pour tous les titres de
-   section, alignée sur /preventes (.s2-title : clamp(26px, 3.6vw, 34px)). */
+/* Titres display — REPRIS de .s2-title (preventes/s2-experience.css) tel
+   quel : Cormorant italic 600, clamp(26px, 3.6vw, --bj-fs-h2), line-height
+   1.12, BLEU --bj-action. Échelle et couleur uniques pour tous les titres
+   de section — le bloc de titre doit être indistinguable de /preventes. */
 .lc-h2 {
   font-family: var(--bj-font-display);
   font-style: italic;
   font-weight: 600;
   font-size: clamp(26px, 3.6vw, var(--bj-fs-h2));
   line-height: 1.12;
-  letter-spacing: -0.01em;
+  color: var(--bj-action);
 }
-/* Sur-titre de section — noir charbon (seul accent : le bleu --bj-action). */
+/* Sur-titre de section — bleu --bj-action, comme les titres /preventes
+   (le charbon reste pour les pictos et accents hors blocs de titre). */
 .lc-eyebrow {
   font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-xxs);
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--bj-charcoal);
+  color: var(--bj-action);
 }
 
 /* Chapo — même échelle partout (corps /preventes). */
