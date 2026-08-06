@@ -7,6 +7,7 @@ import Reassurance from './components/Reassurance'
 import Galerie from './components/Galerie'
 import Parcours from './components/Parcours'
 import Avis from './components/Avis'
+import Presentation from './components/Presentation'
 import FAQ from './components/FAQ'
 /* Footer PARTAGÉ avec /preventes (import direct, pas de copie) : le footer de
    /lancement doit être EXACTEMENT celui de /preventes — un import ne peut pas
@@ -43,6 +44,7 @@ export default function LancementPage() {
       <Galerie />
       <Parcours />
       <Avis />
+      <Presentation />
       <FAQ />
       <Footer />
     </main>

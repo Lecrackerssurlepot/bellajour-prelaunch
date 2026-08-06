@@ -1,9 +1,8 @@
 /* ════════════════════════════════════════════════════════════
-   LANCEMENT — Barre d'annonce défilante (marquee)
-   Fixe en haut, hauteur figée --bj-bar-h, overflow hidden = masque.
-   Mobile/tablette (≤900px) : la piste défile en boucle sans couture
-   (2 copies, translate3d 0 → -50%, transform UNIQUEMENT).
-   Desktop (≥901px) + prefers-reduced-motion : statique centré.
+   LANCEMENT — Barre d'annonce : ancre fixe + piste défilante
+   [ ANCRE — statique, jamais tronquée ] · [ marquee sans couture ]
+   Hauteur figée --bj-bar-h, overflow hidden.
+   ≥1200px et prefers-reduced-motion : statique.
    Keyframe préfixé lc- : les noms de keyframes sont GLOBAUX en CSS.
    ════════════════════════════════════════════════════════════ */
 
@@ -14,7 +13,7 @@
   right: 0;
   height: var(--bj-bar-h);
   z-index: 60; /* au-dessus de la navbar (.lc-nav = 50) */
-  overflow: hidden; /* le masque du défilement */
+  overflow: hidden;
   background: var(--bj-bar-bg);
   color: var(--bj-text);
   border-bottom: 1px solid var(--bj-veil-8);
@@ -41,8 +40,44 @@
   }
 }
 
-/* ── Piste défilante ── */
+/* ── Rangée : ancre + séparateur + piste ── */
+.lc-bar-in {
+  display: flex;
+  align-items: center;
+  height: var(--bj-bar-h);
+  padding-inline: 3vw;
+}
+
+/* Ancre : STATIQUE, jamais animée, jamais tronquée, en gras. */
+.lc-bar-anchor {
+  flex: 0 0 auto;
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* Version courte ≤420px (bascule pur CSS — pas de JS, pas de mesure). */
+.lc-bar-anchor-short { display: none; }
+@media (max-width: 420px) {
+  .lc-bar-anchor-long { display: none; }
+  .lc-bar-anchor-short { display: inline; }
+}
+
+.lc-bar-anchor-sep {
+  flex: 0 0 auto;
+  color: var(--bj-veil-35);
+  margin-inline: clamp(8px, 1.6vw, 14px);
+}
+
+/* ── Piste : masque du défilement + fondu sur le bord droit ── */
 .lc-bar-track {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--bj-bar-h);
+  overflow: hidden;
+  /* le texte s'efface au lieu d'être coupé net */
+  -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
+  mask-image: linear-gradient(to right, #000 85%, transparent);
+}
+.lc-bar-scroll {
   display: flex;
   width: max-content;
   height: var(--bj-bar-h);
@@ -56,7 +91,6 @@
   align-items: center;
   white-space: nowrap;
 }
-
 .lc-bar-seg {
   display: inline-flex;
   align-items: center;
@@ -78,13 +112,17 @@
   .lc-bar { font-size: var(--bj-fs-xxs); }
 }
 
-/* ── Desktop ≥901px : le message tient largement → statique centré,
-   seconde copie et séparateur de jonction masqués. ── */
-@media (min-width: 901px) {
+/* ── ≥1200px : tout tient sur une ligne → statique, ensemble centré ── */
+@media (min-width: 1200px) {
+  .lc-bar-in { justify-content: center; }
   .lc-bar-track {
+    flex: 0 1 auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .lc-bar-scroll {
     animation: none;
-    width: 100%;
-    justify-content: center;
+    width: auto;
   }
   .lc-bar-copy[aria-hidden='true'],
   .lc-bar-sep--tail {
@@ -92,26 +130,15 @@
   }
 }
 
-/* ── prefers-reduced-motion : aucun défilement — message centré, tronqué
-   proprement (ellipsis) s'il ne tient pas. ── */
+/* ── prefers-reduced-motion : même comportement statique — l'ancre reste
+   visible, la piste ne défile plus (le fondu adoucit la coupe <1200px). ── */
 @media (prefers-reduced-motion: reduce) {
-  .lc-bar-track {
+  .lc-bar-scroll {
     animation: none;
-    width: 100%;
-    justify-content: center;
-    min-width: 0;
+    width: auto;
   }
   .lc-bar-copy[aria-hidden='true'],
   .lc-bar-sep--tail {
     display: none;
   }
-  .lc-bar-copy {
-    display: block;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: center;
-    line-height: var(--bj-bar-h);
-  }
-  .lc-bar-seg { display: inline; }
 }

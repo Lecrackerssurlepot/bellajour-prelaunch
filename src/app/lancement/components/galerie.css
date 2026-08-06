@@ -102,12 +102,11 @@
   margin-top: clamp(48px, 6vw, 76px);
 }
 
-/* ── Mobile : une seule bande, défilement au doigt impeccable ──
+/* ── Mobile : DEUX bandes au doigt, indépendantes et décalées ──
    scroll-snap PROXIMITY (jamais mandatory), barre de scroll masquée,
    padding latéral pour que la première et la dernière carte respirent. */
 @media (max-width: 900px) {
-  .lc-gal-row--2 { display: none; }
-  .lc-gal-row--1 {
+  .lc-gal-row {
     animation: none;
     width: auto;
     /* Défilement HORIZONTAL uniquement. overflow-x:auto seul rendrait
@@ -122,27 +121,41 @@
     scroll-snap-type: x proximity;
     scroll-padding-inline: 5vw;
     /* Hauteur = contenu (la moitié visible porte le padding-block qui
-       laisse passer l'ombre) — rien à rogner en haut ni en bas. */
+       laisse passer l'ombre + la légende) — rien à rogner, haut ou bas. */
     height: max-content;
     scrollbar-width: none; /* Firefox */
   }
-  .lc-gal-row--1::-webkit-scrollbar {
+  .lc-gal-row::-webkit-scrollbar {
     display: none; /* Chrome / Safari */
   }
-  .lc-gal-row--1 .lc-gal-half {
+  .lc-gal-row .lc-gal-half {
     padding-inline: 5vw; /* respiration première / dernière carte */
     /* L'ombre --bj-shadow-soft déborde de la couverture : sans réserve
        verticale, overflow-y:hidden la coupe. 12px suffisent. */
     padding-block: 12px;
     align-items: flex-start;
   }
+  /* 2e bande décalée : les couvertures ne s'alignent pas en colonnes —
+     c'est ce qui fait tenir le mur. */
+  .lc-gal-row--2 .lc-gal-half {
+    padding-inline-start: 18vw;
+  }
   .lc-gal-cov {
     scroll-snap-align: start;
   }
-  /* La légende (absolute, bottom:-22px) n'apparaît qu'au survol pointeur fin
-     → jamais au doigt. La laisser dans le flux créait 22px de scrollHeight
-     fantôme sous la bande (dérive verticale potentielle du scroller). */
-  .lc-gal-cov figcaption { display: none; }
   /* Pas de boucle animée → la 2e moitié dupliquée est inutile au doigt. */
-  .lc-gal-row--1 .lc-gal-half[aria-hidden='true'] { display: none; }
+  .lc-gal-row .lc-gal-half[aria-hidden='true'] { display: none; }
+}
+
+/* ── Tactile : le nom du lieu visible en permanence, sous la couverture,
+   en flux (le :hover n'existe pas au doigt). Le survol souris/trackpad
+   garde son comportement (bloc @media (hover:hover) and (pointer:fine)
+   plus haut). ── */
+@media (hover: none) {
+  .lc-gal-cov figcaption {
+    position: static;
+    opacity: 1;
+    margin-top: 8px;
+    text-align: center;
+  }
 }

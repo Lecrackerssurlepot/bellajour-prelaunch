@@ -1,19 +1,23 @@
 import './announcement-bar.css'
 import { PDP_HREF } from '../links'
 
-/* LANCEMENT — Barre d'annonce défilante.
+/* LANCEMENT — Barre d'annonce à deux zones :
+     [ ANCRE FIXE ] · [ PISTE DÉFILANTE ]
+   L'ancre « Le lancement est ouvert. » est le message le plus important de
+   la page : STATIQUE, jamais animée, jamais tronquée (version courte ≤420px,
+   bascule en pur CSS — deux <span>, pas de JS, pas de mesure au resize).
+   La piste fait défiler les segments secondaires en boucle sans couture
+   (2 copies, translate3d 0 → -50%, la 2e en aria-hidden). ≥1200px et
+   prefers-reduced-motion : tout est statique.
    Hauteur figée --bj-bar-h (compensée par .lc-main + le hero → bilan nul).
-   Le message est une liste de segments courts (SOURCE UNIQUE ci-dessous),
-   séparés par des points médians, dans une piste qui contient DEUX copies
-   identiques — la seconde en aria-hidden : la boucle translate3d(-50%) est
-   sans couture et le lecteur d'écran n'entend le message qu'une fois.
-   Desktop (≥901px) et prefers-reduced-motion : affichage statique centré,
-   seconde copie masquée (CSS).
 
    CLIQUABLE VERS LA PDP : bascule en UNE ligne — changer PDP_HREF dans
    links.ts. Tant qu'il vaut '#', la barre est un simple bandeau (aucun lien
-   mort, aucun curseur main). Dès qu'il pointe ailleurs, toute la surface
-   devient un lien + un chevron → apparaît après le dernier segment. */
+   mort, aucun curseur main). Dès qu'il pointe ailleurs : lien pleine
+   surface + chevron → après le dernier segment. */
+
+const ANCRE_LONGUE = 'Le lancement est ouvert.'
+const ANCRE_COURTE = 'Lancement ouvert'
 
 const SEGMENTS = [
   'Couverture peinte pour votre voyage',
@@ -24,8 +28,8 @@ const SEGMENTS = [
 
 /* Une copie de la piste. La 2e (hidden) ne sert qu'à la boucle sans couture.
    Le séparateur de queue (--tail) fait la jonction entre les deux copies en
-   mode défilant ; il est masqué en affichage statique (CSS). */
-function BarCopy({ hidden, clickable }: { hidden?: boolean; clickable: boolean }) {
+   mode défilant ; masqué en statique (CSS). */
+function TrackCopy({ hidden, clickable }: { hidden?: boolean; clickable: boolean }) {
   return (
     <span className="lc-bar-copy" aria-hidden={hidden || undefined}>
       {SEGMENTS.map((s, i) => (
@@ -53,10 +57,21 @@ function BarCopy({ hidden, clickable }: { hidden?: boolean; clickable: boolean }
 export default function AnnouncementBar() {
   const clickable = PDP_HREF !== '#'
 
-  const track = (
-    <div className="lc-bar-track">
-      <BarCopy clickable={clickable} />
-      <BarCopy hidden clickable={clickable} />
+  const inner = (
+    <div className="lc-bar-in">
+      <span className="lc-bar-anchor">
+        <span className="lc-bar-anchor-long">{ANCRE_LONGUE}</span>
+        <span className="lc-bar-anchor-short">{ANCRE_COURTE}</span>
+      </span>
+      <span className="lc-bar-anchor-sep" aria-hidden="true">
+        ·
+      </span>
+      <div className="lc-bar-track">
+        <div className="lc-bar-scroll">
+          <TrackCopy clickable={clickable} />
+          <TrackCopy hidden clickable={clickable} />
+        </div>
+      </div>
     </div>
   )
 
@@ -64,10 +79,10 @@ export default function AnnouncementBar() {
     <aside className="lc-bar" aria-label="Annonce">
       {clickable ? (
         <a className="lc-bar-link" href={PDP_HREF} aria-label="Découvrir l’album">
-          {track}
+          {inner}
         </a>
       ) : (
-        track
+        inner
       )}
     </aside>
   )

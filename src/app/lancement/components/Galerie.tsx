@@ -87,11 +87,16 @@ export default function Galerie() {
         ))}
       </div>
 
-      <div className="lc-wrap lc-gal-foot">
-        <a className="lc-tlink" href={COVER_STORY_HREF}>
-          Voir comment naît une couverture
-        </a>
-      </div>
+      {/* Lien vers la PDP (ancre illustration) — rendu UNIQUEMENT quand la
+          PDP existe (COVER_STORY_HREF dérivé de PDP_HREF dans links.ts).
+          Même règle que la barre d'annonce : rien de mort à l'écran. */}
+      {COVER_STORY_HREF !== '#' && (
+        <div className="lc-wrap lc-gal-foot">
+          <a className="lc-tlink" href={COVER_STORY_HREF}>
+            Voir comment naît une couverture
+          </a>
+        </div>
+      )}
     </section>
   )
 }
