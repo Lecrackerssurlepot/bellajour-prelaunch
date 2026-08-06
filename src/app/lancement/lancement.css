@@ -34,7 +34,6 @@
   padding-block: clamp(72px, 8.5vw, 128px);
 }
 .lc-sec--tint { background: var(--bj-cream-tint-1); }
-.lc-sec--deep { background: var(--bj-cream-tint-2); }
 
 /* Titres display — sur le modèle .s3-title / .s4-title / .s5-faq-title de
    /preventes : Cormorant 600 DROIT (pas d'italique), CHARBON --bj-text.

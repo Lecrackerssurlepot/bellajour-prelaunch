@@ -1,7 +1,8 @@
 /* ════════════════════════════════════════════════════════════
-   LANCEMENT — Les avis (maquette 07)
-   Cartes photo + citation. Grille = nombre d'avis rendus (2 aujourd'hui,
-   3 quand la photo de Marion existera) — data-count sur la grille.
+   LANCEMENT — Les avis « Elles l'ont déjà »
+   Desktop : grille de 3 cartes photo + citation (fond crème commun).
+   Mobile ≤900px : rail horizontal au doigt (snap mandatory), une
+   carte à la fois — jamais trois écrans d'empilement.
    ════════════════════════════════════════════════════════════ */
 
 /* Écart sur-titre → titre : 8px, comme le gap de .s2-titles sur /preventes. */
@@ -15,7 +16,7 @@
   gap: clamp(18px, 2.2vw, 30px);
   margin-top: 44px;
 }
-/* 2 avis seulement : deux colonnes centrées, pas de trou à droite. */
+/* 2 avis seulement (résilience photo manquante) : deux colonnes centrées. */
 .lc-avis-grid[data-count='2'] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   max-width: 820px;
@@ -49,9 +50,19 @@
   margin-bottom: 12px;
   quotes: '«\00a0\00a0' '\00a0\00a0»';
 }
+/* Prénom seul → gras lisible (un prénom en gris pâle se lit mal). */
 .lc-avis-meta {
   font-size: var(--bj-fs-xs);
+  font-weight: 600;
+  color: var(--bj-text);
+}
+
+/* Date de recueil, une fois pour tous les témoignages. */
+.lc-avis-note {
+  font-size: var(--bj-fs-xs);
   color: var(--bj-text-faint);
+  text-align: center;
+  margin-top: 18px;
 }
 
 /* ── Traction ── */
@@ -70,11 +81,46 @@
   margin-top: 24px;
 }
 
-/* ── Mobile ── */
+/* ── Mobile : rail horizontal au doigt, une carte à la fois ── */
 @media (max-width: 900px) {
   .lc-avis-grid,
   .lc-avis-grid[data-count='2'] {
-    grid-template-columns: 1fr;
+    display: flex;
+    grid-template-columns: none;
+    gap: 14px;
+    /* Défilement HORIZONTAL uniquement : pan-x renvoie le geste vertical
+       à la page (sinon le rail dérive en diagonale et rogne les cartes). */
+    overflow-x: auto;
+    overflow-y: hidden;
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 5vw;
+    scrollbar-width: none; /* Firefox */
+    /* Débordement pleine largeur, hors de la gouttière .lc-wrap :
+       le -6vw compense EXACTEMENT le padding-inline 6vw de .lc-wrap. */
+    margin-inline: -6vw;
+    padding-inline: 6vw;
+    /* laisse passer var(--bj-glass-card-shadow) sans la rogner */
+    padding-block: 8px 14px;
     max-width: none;
+  }
+  .lc-avis-grid::-webkit-scrollbar {
+    display: none; /* Chrome / Safari */
+  }
+
+  .lc-avis-c {
+    flex: 0 0 auto;
+    width: 74vw;
+    max-width: 320px;
+    scroll-snap-align: start;
+  }
+
+  /* Cartes plus compactes en mobile. */
+  .lc-avis-b {
+    padding: 16px 16px 18px;
+  }
+  .lc-avis-b q {
+    font-size: 17px;
   }
 }
