@@ -88,8 +88,14 @@
   opacity: 0;
   transition: opacity var(--bj-dur) var(--bj-ease);
 }
-.lc-gal-cov:hover { transform: translate3d(0, -12px, 0); }
-.lc-gal-cov:hover figcaption { opacity: 1; }
+/* Soulèvement + légende UNIQUEMENT au vrai survol (souris / trackpad).
+   Sans cette garde, le :hover se déclenche au toucher et RESTE collé au
+   doigt : la carte soulevée de 12px sort du conteneur mobile (overflow-y
+   hidden) qui la rogne par le haut. */
+@media (hover: hover) and (pointer: fine) {
+  .lc-gal-cov:hover { transform: translate3d(0, -12px, 0); }
+  .lc-gal-cov:hover figcaption { opacity: 1; }
+}
 
 .lc-gal-foot {
   text-align: center;
@@ -104,11 +110,20 @@
   .lc-gal-row--1 {
     animation: none;
     width: auto;
+    /* Défilement HORIZONTAL uniquement. overflow-x:auto seul rendrait
+       l'axe vertical implicitement scrollable (visible → auto quand l'autre
+       axe n'est pas visible) : un geste en diagonale déplaçait la bande
+       verticalement. touch-action:pan-x est le point clé — le navigateur
+       ne prend que le geste horizontal ici, le vertical repart à la page. */
     overflow-x: auto;
+    overflow-y: hidden;
+    touch-action: pan-x;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x proximity;
     scroll-padding-inline: 5vw;
-    padding-bottom: 6px;
+    /* Hauteur = contenu (la moitié visible porte le padding-block qui
+       laisse passer l'ombre) — rien à rogner en haut ni en bas. */
+    height: max-content;
     scrollbar-width: none; /* Firefox */
   }
   .lc-gal-row--1::-webkit-scrollbar {
@@ -116,10 +131,18 @@
   }
   .lc-gal-row--1 .lc-gal-half {
     padding-inline: 5vw; /* respiration première / dernière carte */
+    /* L'ombre --bj-shadow-soft déborde de la couverture : sans réserve
+       verticale, overflow-y:hidden la coupe. 12px suffisent. */
+    padding-block: 12px;
+    align-items: flex-start;
   }
   .lc-gal-cov {
     scroll-snap-align: start;
   }
+  /* La légende (absolute, bottom:-22px) n'apparaît qu'au survol pointeur fin
+     → jamais au doigt. La laisser dans le flux créait 22px de scrollHeight
+     fantôme sous la bande (dérive verticale potentielle du scroller). */
+  .lc-gal-cov figcaption { display: none; }
   /* Pas de boucle animée → la 2e moitié dupliquée est inutile au doigt. */
   .lc-gal-row--1 .lc-gal-half[aria-hidden='true'] { display: none; }
 }

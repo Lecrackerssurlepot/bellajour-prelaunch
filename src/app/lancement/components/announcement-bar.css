@@ -1,6 +1,10 @@
 /* ════════════════════════════════════════════════════════════
-   LANCEMENT — Barre d'annonce (copie simplifiée de la prévente)
-   Fixe en haut, hauteur figée --bj-bar-h, message statique unique.
+   LANCEMENT — Barre d'annonce défilante (marquee)
+   Fixe en haut, hauteur figée --bj-bar-h, overflow hidden = masque.
+   Mobile/tablette (≤900px) : la piste défile en boucle sans couture
+   (2 copies, translate3d 0 → -50%, transform UNIQUEMENT).
+   Desktop (≥901px) + prefers-reduced-motion : statique centré.
+   Keyframe préfixé lc- : les noms de keyframes sont GLOBAUX en CSS.
    ════════════════════════════════════════════════════════════ */
 
 .lc-bar {
@@ -10,9 +14,7 @@
   right: 0;
   height: var(--bj-bar-h);
   z-index: 60; /* au-dessus de la navbar (.lc-nav = 50) */
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden; /* le masque du défilement */
   background: var(--bj-bar-bg);
   color: var(--bj-text);
   border-bottom: 1px solid var(--bj-veil-8);
@@ -21,18 +23,95 @@
   font-weight: 400;
   letter-spacing: 0.08em;
   line-height: 1;
-  padding: 0 2vw;
 }
 
-.lc-bar-msg {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: var(--bj-bar-h);
-  padding: 0 1vw;
+/* Lien pleine surface (rendu uniquement quand PDP_HREF ≠ '#'). */
+.lc-bar-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--bj-dur-fast) var(--bj-ease);
 }
-.lc-bar-msg b { font-weight: 600; }
+@media (hover: hover) {
+  .lc-bar-link:hover {
+    /* fond légèrement plus soutenu — rien d'autre ne bouge */
+    background-color: var(--bj-cream-tint-3);
+  }
+}
+
+/* ── Piste défilante ── */
+.lc-bar-track {
+  display: flex;
+  width: max-content;
+  height: var(--bj-bar-h);
+  align-items: center;
+  will-change: transform;
+  animation: lc-bar-marquee 32s linear infinite;
+}
+
+.lc-bar-copy {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.lc-bar-seg {
+  display: inline-flex;
+  align-items: center;
+}
+.lc-bar-sep {
+  color: var(--bj-text-faint);
+  margin-inline: clamp(10px, 2vw, 18px);
+}
+.lc-bar-chevron {
+  margin-left: clamp(10px, 2vw, 18px);
+}
+
+@keyframes lc-bar-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
 
 @media (max-width: 767px) {
   .lc-bar { font-size: var(--bj-fs-xxs); }
+}
+
+/* ── Desktop ≥901px : le message tient largement → statique centré,
+   seconde copie et séparateur de jonction masqués. ── */
+@media (min-width: 901px) {
+  .lc-bar-track {
+    animation: none;
+    width: 100%;
+    justify-content: center;
+  }
+  .lc-bar-copy[aria-hidden='true'],
+  .lc-bar-sep--tail {
+    display: none;
+  }
+}
+
+/* ── prefers-reduced-motion : aucun défilement — message centré, tronqué
+   proprement (ellipsis) s'il ne tient pas. ── */
+@media (prefers-reduced-motion: reduce) {
+  .lc-bar-track {
+    animation: none;
+    width: 100%;
+    justify-content: center;
+    min-width: 0;
+  }
+  .lc-bar-copy[aria-hidden='true'],
+  .lc-bar-sep--tail {
+    display: none;
+  }
+  .lc-bar-copy {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    line-height: var(--bj-bar-h);
+  }
+  .lc-bar-seg { display: inline; }
 }
