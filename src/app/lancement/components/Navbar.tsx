@@ -3,15 +3,13 @@
 import { useEffect, useState } from 'react'
 import './navbar.css'
 import { CTA_HREF, LOGIN_HREF } from '../links'
-import { GALERIE_COVERS } from '../galerie-covers'
 
 /* LANCEMENT — Navbar (copie du mécanisme .pv-nav de la prévente).
    État A (hero visible) : masquée — le hero affiche son propre logo blanc.
    État B (hero sorti, IntersectionObserver sur #s1, threshold 0.12) : visible,
-   logo à gauche, liens au centre, Connexion + CTA à droite.
-   Ajouts lancement : liens « Nos albums » (#galerie) et « Prix » (#prix),
-   « Connexion », fond quasi-opaque (cream à 82 %) — le verre à .32 ne tient
-   pas au-dessus des visuels sombres de la page. */
+   logo à gauche, Connexion + CTA à droite (pas de lien central).
+   Fond quasi-opaque (cream à 82 %) — le verre à .32 ne tient pas au-dessus
+   des visuels sombres de la page. */
 
 export default function Navbar() {
   const [heroOut, setHeroOut] = useState(false)
@@ -34,10 +32,6 @@ export default function Navbar() {
     return () => observer.disconnect()
   }, [])
 
-  const scrollTo = (id: string) => (e: React.MouseEvent) => {
-    e.preventDefault()
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-  }
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -65,16 +59,6 @@ export default function Navbar() {
           decoding="sync"
         />
       </button>
-
-      <div className="lc-nav-mid">
-        {/* « Nos albums » n'existe que si la galerie a des couvertures à montrer
-            (section absente tant que GALERIE_COVERS est vide → pas d'ancre morte). */}
-        {GALERIE_COVERS.length > 0 && (
-          <a href="#galerie" onClick={scrollTo('galerie')}>
-            Nos albums
-          </a>
-        )}
-      </div>
 
       <div className="lc-nav-right">
         <a className="lc-nav-login" href={LOGIN_HREF}>

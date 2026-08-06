@@ -36,17 +36,18 @@
 .lc-sec--tint { background: var(--bj-cream-tint-1); }
 .lc-sec--deep { background: var(--bj-cream-tint-2); }
 
-/* Titres display — REPRIS de .s2-title (preventes/s2-experience.css) tel
-   quel : Cormorant italic 600, clamp(26px, 3.6vw, --bj-fs-h2), line-height
-   1.12, BLEU --bj-action. Échelle et couleur uniques pour tous les titres
-   de section — le bloc de titre doit être indistinguable de /preventes. */
+/* Titres display — sur le modèle .s3-title / .s4-title / .s5-faq-title de
+   /preventes : Cormorant 600 DROIT (pas d'italique), CHARBON --bj-text.
+   Échelle unique clamp(26px, 3.6vw, --bj-fs-h2) pour les quatre sections ;
+   les overrides locaux (.lc-parc-title, .lc-avis-title, .lc-faq-title,
+   .lc-gal-head .lc-h2) ne portent QUE des marges. */
 .lc-h2 {
   font-family: var(--bj-font-display);
-  font-style: italic;
+  font-style: normal;
   font-weight: 600;
   font-size: clamp(26px, 3.6vw, var(--bj-fs-h2));
   line-height: 1.12;
-  color: var(--bj-action);
+  color: var(--bj-text);
 }
 /* Sur-titre de section — bleu --bj-action, comme les titres /preventes
    (le charbon reste pour les pictos et accents hors blocs de titre). */

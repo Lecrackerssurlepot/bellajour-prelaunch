@@ -17,14 +17,13 @@ interface Avis {
 const AVIS: Avis[] = [
   {
     photo: '/images/prevente/social-proof/aude.webp',
-    citation:
-      'Je l’ai posé sur la table basse et personne n’a pu le laisser fermé.',
-    meta: 'Aude, Bordeaux · juillet 2026',
+    citation: 'Un de mes meilleurs souvenirs de La Réunion.',
+    meta: 'Aude · juin 2026',
   },
   {
     photo: '/images/prevente/social-proof/candice.webp',
     citation:
-      'J’avais quatre mille photos de ce voyage. Je n’en avais jamais revu une seule.',
+      'Mon voyage en Australie, avec mes six mille photos dont je ne savais pas quoi faire.',
     meta: 'Candice, Lyon · juillet 2026',
   },
   {

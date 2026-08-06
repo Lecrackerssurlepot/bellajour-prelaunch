@@ -72,21 +72,6 @@
   .lc-nav-logo { height: 52px; }
 }
 
-/* ── Liens centraux ── */
-.lc-nav-mid {
-  display: flex;
-  gap: clamp(18px, 2.5vw, 28px);
-}
-.lc-nav-mid a {
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text);
-  text-decoration: none;
-  opacity: 0.78;
-  transition: opacity var(--bj-dur-fast) var(--bj-ease);
-}
-.lc-nav-mid a:hover { opacity: 1; }
-
 /* ── Actions droite ── */
 .lc-nav-right {
   display: flex;
@@ -124,10 +109,7 @@
 }
 .lc-nav-cta:hover { opacity: 0.88; }
 
-/* Mobile : liens centraux masqués (maquette ≤900px), CTA compact. */
-@media (max-width: 900px) {
-  .lc-nav-mid { display: none; }
-}
+/* Mobile : CTA compact. */
 @media (max-width: 767px) {
   .lc-nav-cta { padding: 9px 16px; font-size: var(--bj-fs-xs); }
   .lc-nav-login { font-size: var(--bj-fs-xs); }
