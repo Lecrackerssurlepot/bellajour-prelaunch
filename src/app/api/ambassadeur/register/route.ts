@@ -3,7 +3,7 @@ import { canonicalizeEmail } from "@/lib/email";
 import { makeSupabase } from "@/lib/supabase";
 import { generateUniqueCode } from "@/lib/refcode";
 import { signToken, signTokenShort } from "@/lib/ambassadeur-token";
-import { sendBrevoEmail } from "@/lib/brevo";
+import { sendBrevoEmail, upsertBrevoContact } from "@/lib/brevo";
 
 /* POST /api/ambassadeur/register
    Inscription (ou ré-inscription) d'un ambassadeur du Cercle.
@@ -177,6 +177,18 @@ export async function POST(request: Request) {
     // découvre le parcours, convertit sur place ; S4Reservation capture ?ref= au mount →
     // attribution préservée). Forme identique au générateur de /api/ambassadeur/me.
     const shareUrl = refCode ? `${SITE_URL}/preventes?ref=${refCode}` : `${SITE_URL}/preventes`;
+
+    // Contact Brevo — cet endpoint insère en waitlist sans passer par /api/waitlist,
+    // donc sans /v3/contacts. Sans ceci l'ambassadeur reste hors de toute campagne.
+    await upsertBrevoContact({
+      label: "contact",
+      email: normalizedEmail,
+      prenom: cleanPrenom || null,
+      refCode: refCode || null,
+      refLink: shareUrl,
+      listId: Number(process.env.BREVO_WAITLIST_LIST_ID) || undefined,
+      apiKey: process.env.BREVO_API_KEY,
+    });
 
     // A1 (best-effort, jamais bloquant) — UNIQUEMENT pour un nouvel ambassadeur.
     // Dashboard via lien magique signé 7 j (builder existant signToken, inchangé).

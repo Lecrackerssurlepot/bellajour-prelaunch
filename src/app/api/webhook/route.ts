@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { makeSupabase } from "@/lib/supabase";
-import { sendBrevoEmail } from "@/lib/brevo";
+import { sendBrevoEmail, upsertBrevoContact } from "@/lib/brevo";
 import { signToken } from "@/lib/ambassadeur-token";
 import { canonicalizeEmail } from "@/lib/email";
 
@@ -41,6 +41,20 @@ async function sendPostPaymentEmails(
   const referredBy = (payer.referredBy || "").trim();
   const referred = referredBy.length > 0;
   const refLink = `${REF_LINK_BASE}/?ref=${refCode}`;
+
+  // 0. Contact Brevo — garantit que TOUT payeur existe dans la liste waitlist,
+  //    quel que soit l'endpoint d'entrée. /api/checkout et /api/ambassadeur/register
+  //    insèrent en base sans appeler /v3/contacts : sans ceci, un acheteur passé par
+  //    le tunnel de prévente n'est joignable par aucune campagne.
+  await upsertBrevoContact({
+    label: "contact",
+    email: payer.email,
+    prenom: prenom || null,
+    refCode: refCode || null,
+    refLink,
+    listId: Number(process.env.BREVO_WAITLIST_LIST_ID) || undefined,
+    apiKey,
+  });
 
   // 1. Payeur — F1 (founder) XOR S1 (standard).
   if (payer.offerType === "founder") {
@@ -395,15 +409,18 @@ async function handleCheckoutCompleted(
     .eq("filleul_email", email)
     .eq("status", "pending");
   if (creditErr) {
-    console.error("[webhook] confirm pages_credits échec", creditErr.code);
-    return false;
+    // BEST-EFFORT : un échec ici ne doit JAMAIS empêcher les envois de l'étape 5.
+    // Historique : un `return false` à cet endroit a coupé tous les mails post-paiement.
+    console.error("[webhook] confirm pages_credits échec (non bloquant)", creditErr.code);
   }
 
   // 4. Crédit ambassadeur niveau 2 (idempotente côté SQL).
   const { error: ambErr } = await supabase.rpc("credit_ambassador_level2");
   if (ambErr) {
-    console.error("[webhook] credit_ambassador_level2 échec", ambErr.code);
-    return false;
+    // BEST-EFFORT : cette RPC balaye TOUTE la base à chaque paiement. Une seule
+    // collision (UNIQUE(source) sur pages_credits) la faisait échouer pour tout le
+    // monde, et le `return false` coupait alors les mails de chaque acheteur suivant.
+    console.error("[webhook] credit_ambassador_level2 échec (non bloquant)", ambErr.code);
   }
 
   console.log(`[webhook] paiement confirmé (offer=${offerType})`);

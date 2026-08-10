@@ -61,3 +61,69 @@ export async function sendBrevoEmail(args: {
     console.error(`${tag} exception ${email}`, err);
   }
 }
+
+const BREVO_CONTACTS_URL = "https://api.brevo.com/v3/contacts";
+
+/**
+ * Crée ou met à jour un contact Brevo et l'ajoute à la liste waitlist.
+ *
+ * Pourquoi : /v3/contacts n'était appelé QUE depuis /api/waitlist. Les inscrits
+ * arrivés par /api/checkout (prévente) ou /api/ambassadeur/register entraient en
+ * base Supabase sans jamais devenir un contact Brevo — donc invisibles pour toute
+ * campagne marketing. Cette fonction referme le trou côté paiement.
+ *
+ * Mêmes garanties que sendBrevoEmail : ne throw JAMAIS, résout toujours void.
+ * Sûr à await dans un webhook. updateEnabled:true rend l'appel idempotent.
+ */
+export async function upsertBrevoContact(args: {
+  email: string;
+  prenom?: string | null;
+  refCode?: string | null;
+  refLink?: string | null;
+  listId: number | undefined | null;
+  apiKey: string | undefined | null;
+  label?: string;
+}): Promise<void> {
+  const { email, prenom, refCode, refLink, listId, apiKey, label } = args;
+  const tag = label ? `[brevo] ${label}` : "[brevo] contact";
+
+  if (!apiKey) {
+    console.error(`${tag} skip — BREVO_API_KEY manquante`);
+    return;
+  }
+  if (!listId) {
+    console.error(`${tag} skip — BREVO_WAITLIST_LIST_ID manquant`);
+    return;
+  }
+
+  const attributes: Record<string, string> = {};
+  if (prenom) attributes.PRENOM = prenom;
+  if (refCode) {
+    attributes.REF_CODE = refCode;
+    attributes.REF_LINK = refLink || `https://www.bellajour.fr/?ref=${refCode}`;
+  }
+
+  try {
+    const res = await fetch(BREVO_CONTACTS_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": apiKey,
+      },
+      body: JSON.stringify({
+        email,
+        attributes,
+        listIds: [listId],
+        updateEnabled: true,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`${tag} échec ${email} → ${res.status} ${body}`);
+    } else {
+      console.log(`${tag} OK ${email} (liste=${listId})`);
+    }
+  } catch (err) {
+    console.error(`${tag} exception ${email}`, err);
+  }
+}
