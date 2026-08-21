@@ -1,0 +1,51 @@
+.at-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px var(--pad);
+  border-bottom: 1px solid transparent;
+  transition: background var(--dur) var(--ease),
+              backdrop-filter var(--dur) var(--ease),
+              border-color var(--dur) var(--ease);
+}
+
+.at-nav.is-stuck {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur));
+  border-bottom-color: var(--c-line);
+}
+
+.at-nav-logo {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.02em;
+}
+
+/* Invariant nº5 : le libellé est le même partout, sans exception.
+   Écrit en (0,2,0) pour passer devant `.bj-atelier a { color: inherit }`. */
+.bj-atelier .at-nav-cta {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text);
+  border: 1px solid var(--c-line-strong);
+  border-radius: 999px;
+  padding: 9px 18px;
+  white-space: nowrap;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.at-nav-cta:hover {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+}
+
+@media (max-width: 560px) {
+  .at-nav-cta { font-size: 12px; padding: 8px 14px; }
+  .at-nav-logo { font-size: 19px; }
+}

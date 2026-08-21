@@ -1,0 +1,110 @@
+.at-s3-title { margin-top: 14px; }
+
+/* ---- les trois étapes ---- */
+.at-steps { margin-top: 48px; border-top: 1px solid var(--c-line); }
+
+.at-step {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 18px;
+  padding: 26px 0;
+  border-bottom: 1px solid var(--c-line);
+  transition: background var(--dur) var(--ease);
+}
+
+.at-step:hover { background: var(--c-veil-hover); }
+
+.at-step-n {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--c-accent);
+}
+
+.at-step b { display: block; font-weight: 500; font-size: 16px; }
+.at-step p { margin-top: 3px; font-weight: 300; font-size: 15px; color: var(--c-text-soft); }
+
+/* ---- les trois paliers ---- */
+.at-prices {
+  margin-top: 40px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.at-price {
+  padding: 22px 20px;
+  border: 1px solid var(--c-line);
+  border-radius: 16px;
+  background: var(--c-surface-1);
+  transition: border-color var(--dur) var(--ease),
+              background var(--dur) var(--ease),
+              transform var(--dur) var(--ease);
+}
+
+.at-price:hover {
+  border-color: var(--c-accent);
+  background: var(--c-surface-2);
+  transform: translateY(-3px);
+}
+
+.at-price-h {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.at-price-amt {
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: 44px;
+  line-height: 1.1;
+}
+
+.at-price-pp { font-size: 13px; font-weight: 300; color: var(--c-text-soft); }
+
+.at-fineprint {
+  margin-top: 18px;
+  max-width: 52ch;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+
+/* ---- FAQ ---- */
+.at-faq { margin-top: 48px; border-top: 1px solid var(--c-line); }
+.at-faq details { border-bottom: 1px solid var(--c-line); }
+
+.at-faq summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 22px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 16px;
+  transition: color var(--dur) var(--ease);
+}
+
+.at-faq summary::-webkit-details-marker { display: none; }
+.at-faq summary:hover { color: var(--c-accent-strong); }
+
+.at-faq-pl {
+  flex: 0 0 auto;
+  color: var(--c-text-faint);
+  transition: transform var(--dur) var(--ease);
+}
+
+.at-faq details[open] .at-faq-pl { transform: rotate(45deg); }
+
+.at-faq details p {
+  padding: 0 0 22px;
+  max-width: 60ch;
+  font-weight: 300;
+  color: var(--c-text-soft);
+}
+
+@media (max-width: 720px) {
+  .at-prices { grid-template-columns: 1fr; }
+}

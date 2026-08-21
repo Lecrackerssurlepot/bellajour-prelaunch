@@ -1,0 +1,52 @@
+.at-s2 { background: var(--c-bg); }
+.at-s2-title { margin-top: 14px; }
+.at-s2-lede { margin-top: 20px; }
+
+.at-shelf {
+  position: relative;
+  margin-top: 56px;
+  padding-bottom: 22px;
+  display: flex;
+  gap: 9px;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* Le trait de l'étagère. */
+.at-shelf::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--c-line-strong), transparent);
+}
+
+.at-spine {
+  width: clamp(34px, 7vw, 52px);
+  border-radius: 1px 1px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-soft);
+  /* PRD §15 : transform seul. L'ombre est posée, jamais animée. */
+  transition: transform var(--dur) var(--ease);
+}
+
+.at-spine:hover { transform: translateY(-14px); }
+
+.at-spine span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  padding: 14px 0;
+  font-family: var(--font-display);
+  font-size: clamp(12px, 2.4vw, 16px);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.at-spine--1 { background: var(--spine-1-bg); color: var(--c-text); }
+.at-spine--2 { background: var(--spine-2-bg); color: var(--paper-text); }
+.at-spine--3 { background: var(--spine-3-bg); color: var(--c-text-onaccent); }
+.at-spine--4 { background: var(--spine-4-bg); color: var(--c-text-soft); }
