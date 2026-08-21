@@ -48,3 +48,8 @@ next-env.d.ts
 # Sources vidéo brutes du parcours S2 — conservées en local, jamais déployées
 # (assets web = les .mp4 optimisés + covers .png commités à côté)
 /public/images/prevente/parcours/*.mov
+
+# Documents de travail internes — ne doivent jamais partir sur ce dépôt public
+upload-memo.md
+PRD-ATELIER.md
+bellajour-atelier-maquette-v2.html
