@@ -53,7 +53,10 @@
 .at-q-logo { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.02em; }
 
 /* ---- l'écran ---- */
-.at-q-scroll { flex: 1; overflow-y: auto; display: flex; }
+/* `min-height: 0` est obligatoire : un enfant flex qui défile a une taille
+   minimale automatique égale à son contenu, ce qui l'empêche de se comprimer
+   et fait déborder la colonne au lieu de la faire défiler. */
+.at-q-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; }
 
 .at-q-screen {
   width: 100%;

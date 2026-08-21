@@ -96,10 +96,14 @@ export default function Composer() {
     }
   }, [draft, aller])
 
-  /* Pré-rendu : la coquille sans contenu d'écran, pour ne jamais afficher
-     l'écran 1 une fraction de seconde avant de sauter à l'écran repris. */
-  if (!pret) return <div className="at-q" aria-busy="true" />
-
+  /* On rend TOUJOURS quelque chose, dès le serveur.
+     Un garde `if (!pret) return <coquille vide />` donnait un écran noir
+     entièrement vide tant que React n'avait pas hydraté — sur un téléphone
+     lent ou un réseau lent, ça se lit comme un site cassé.
+     Le rendu serveur part donc de l'écran 1 (EMPTY_DRAFT), identique au
+     premier rendu client : aucun décalage d'hydratation. L'effet de reprise
+     corrige ensuite l'écran. Un visiteur qui revient voit l'écran 1 une
+     frame avant de retomber sur le sien — infiniment préférable au vide. */
   const n = draft.screen
 
   return (

@@ -103,19 +103,22 @@
   font-weight: 400;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
+
+  /* Contexte d'empilement LOCAL — indispensable.
+     Sans lui, .bj-atelier est en position:relative sans z-index : il ne crée
+     aucun contexte, et les z-index de ses enfants (hero 0/1/2, nav 50) vont
+     concourir dans le contexte racine avec tout le reste de la page. C'est
+     ce qui a fait qu'un voile en z-index:-1 recouvrait tout sauf la nav sur
+     iPhone. `isolation` enferme la hiérarchie ici : aucun z-index de
+     l'atelier ne peut plus interagir avec l'extérieur, ni l'inverse. */
+  isolation: isolate;
 }
 
-/* Voile fixe : couvre le rebond de scroll iOS, sinon le crème du body
-   réapparaît en haut et en bas. z-index négatif → passe au-dessus du
-   fond de canvas, en dessous de tout le contenu. */
-.bj-atelier::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: var(--c-void);
-  pointer-events: none;
-}
+/* Le rebond de scroll iOS est déjà neutralisé en amont par
+   `overscroll-behavior-y: none` sur html+body (globals.css). Ne JAMAIS
+   remettre un voile plein écran en z-index négatif pour ça : sur iOS Safari
+   il repasse devant le contenu. Le fond de .bj-atelier ci-dessus suffit. */
+
 
 /* globals.css : h1 { font-style: italic } — l'atelier n'en veut pas. */
 .bj-atelier h1,
