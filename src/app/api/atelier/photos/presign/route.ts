@@ -11,8 +11,8 @@ import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { isValidNumeroToken } from "@/lib/atelier/token";
 import {
-  MAX_FILE_BYTES, MIMES_ACCEPTES, TAILLE_TOLERANCE,
-  cleR2, mimeDepuisNom, signerPut, tailleReelle,
+  MAX_FILE_BYTES, MIMES_ACCEPTES,
+  cleR2, mimeDepuisNom, signerPut,
 } from "@/lib/atelier/r2";
 
 export const runtime = "nodejs";
@@ -97,9 +97,9 @@ export async function POST(request: Request) {
 
         if (ligne) {
           /* Piège nº8 : redonner une URL à une photo DÉJÀ ARRIVÉE écraserait
-             l'objet référencé. On vérifie sur R2 avant de re-signer. */
-          const presente = await tailleReelle(ligne.r2_key);
-          if (presente !== null && ligne.taille !== null) {
+             l'objet référencé. `taille` non nulle = confirmée par le HEAD de
+             /complete : c'est le marqueur d'arrivée, on ne re-signe jamais. */
+          if (ligne.taille !== null) {
             resultats.push({ photoId: ligne.id, key: ligne.r2_key, deja: true });
             continue;
           }
@@ -129,9 +129,12 @@ export async function POST(request: Request) {
         numero_id: numero.id,
         r2_key: key,
         nom_origine: nom || null,
-        /* `taille` reste la taille DÉCLARÉE jusqu'à la confirmation, où elle
-           est remplacée par la taille réelle mesurée sur R2. */
-        taille,
+        /* `taille` RESTE NULL jusqu'à la confirmation, où /complete y écrit la
+           taille MESURÉE sur R2. C'est ce qui distingue une photo déclarée
+           d'une photo réellement arrivée — et donc ce qui permet à nb_photos
+           de ne compter que les vraies. Une ligne déclarée dont l'envoi
+           échoue ne gonfle jamais le compteur. */
+        taille: null,
         ordre,
       });
 
@@ -145,7 +148,7 @@ export async function POST(request: Request) {
       ordre++;
     }
 
-    return NextResponse.json({ resultats, tolerance: TAILLE_TOLERANCE }, { status: 200 });
+    return NextResponse.json({ resultats }, { status: 200 });
   } catch (err) {
     console.error("[presign] exception", (err as Error)?.message);
     return NextResponse.json({ error: "internal" }, { status: 500 });

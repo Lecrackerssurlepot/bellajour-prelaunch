@@ -14,7 +14,7 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { isValidNumeroToken } from "@/lib/atelier/token";
-import { TAILLE_TOLERANCE, supprimer, tailleReelle } from "@/lib/atelier/r2";
+import { MAX_FILE_BYTES, supprimer, tailleReelle } from "@/lib/atelier/r2";
 import { logEvenement } from "@/lib/atelier/evenements";
 
 export const runtime = "nodejs";
@@ -72,15 +72,20 @@ export async function POST(request: Request) {
              — une photo en échec est rouverte, jamais rejetée (piège nº9). */
           if (reelle === null) { absentes.push(l.id); return; }
 
-          const declaree = Number(l.taille) || 0;
-          if (declaree > 0 && reelle > declaree * TAILLE_TOLERANCE) {
+          /* Le plafond est verifie sur la taille MESUREE, pas sur celle
+             annoncee par le navigateur — seule la mesure fait foi.
+             R2 refuse deja un corps dont la longueur ne correspond pas a la
+             signature (verifie : PUT 403), mais on ne delegue pas le dernier
+             garde-fou au fournisseur. */
+          if (reelle > MAX_FILE_BYTES) {
             await supprimer(l.r2_key);
             await supabase.from("photos").delete().eq("id", l.id);
-            rejetees.push({ id: l.id, raison: "taille_hors_tolerance" });
+            rejetees.push({ id: l.id, raison: "trop_volumineuse" });
             return;
           }
 
-          /* La taille déclarée cède la place à la taille MESURÉE. */
+          /* `taille` passe de NULL a la taille mesuree : c'est le marqueur
+             « reellement arrivee sur R2 ». */
           await supabase.from("photos").update({ taille: reelle }).eq("id", l.id);
           confirmees.push(l.id);
         })
@@ -88,11 +93,16 @@ export async function POST(request: Request) {
     }
 
     /* nb_photos est recalculé depuis la base, jamais envoyé par le navigateur
-       (même logique que l'invariant nº2 sur le prix). */
+       (même logique que l'invariant nº2 sur le prix).
+       ⚠️ On ne compte QUE les photos confirmées (`taille` non nulle). Compter
+       les lignes déclarées gonflerait le compteur de tous les envois échoués —
+       et une cliente pourrait franchir le seuil des 40 photos sans les avoir
+       réellement déposées, donc se voir proposer un palier qu'elle n'a pas. */
     const { count } = await supabase
       .from("photos")
       .select("id", { count: "exact", head: true })
-      .eq("numero_id", numero.id);
+      .eq("numero_id", numero.id)
+      .not("taille", "is", null);
 
     const nbPhotos = count ?? 0;
     await supabase.from("numeros").update({ nb_photos: nbPhotos }).eq("id", numero.id);
