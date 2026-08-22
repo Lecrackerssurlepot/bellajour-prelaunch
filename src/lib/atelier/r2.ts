@@ -7,7 +7,7 @@
  * incidents déjà vécus en production, pas des précautions théoriques.
  */
 
-import { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { extensionDepuisMime } from "./formats";
 
@@ -99,6 +99,24 @@ export async function signerPut(
     ContentLength: contentLength,
   });
   return getSignedUrl(makeR2(), cmd, { expiresIn: PRESIGN_TTL_SECONDS });
+}
+
+/**
+ * URL GET signée — lecture d'un objet privé du coffre.
+ *
+ * Sert aux aperçus de l'état 2 : le bucket n'est PAS public, et il ne doit pas
+ * le devenir (les photos d'une inconnue y dorment dans le dossier voisin). La
+ * page d'état signe donc à chaque rendu, côté serveur, une URL de courte durée.
+ *
+ * TTL volontairement court et DÉCORRÉLÉ du TTL d'envoi : une URL d'aperçu se
+ * retrouve dans un historique de navigation, dans un partage de capture, dans
+ * un cache de proxy. Elle doit périmer avant de circuler.
+ */
+export const APERCU_TTL_SECONDS = 60 * 60; /* 1 h */
+
+export async function signerGet(key: string, ttl = APERCU_TTL_SECONDS): Promise<string> {
+  const cmd = new GetObjectCommand({ Bucket: bucket(), Key: key });
+  return getSignedUrl(makeR2(), cmd, { expiresIn: ttl });
 }
 
 /**

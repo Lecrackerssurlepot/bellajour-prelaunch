@@ -14,9 +14,8 @@ export function generateNumeroToken(): string {
   return randomBytes(24).toString("base64url");
 }
 
-/** Forme attendue d'un token — filtre avant toute requête en base. */
-export const NUMERO_TOKEN_PATTERN = /^[A-Za-z0-9_-]{32}$/;
-
-export function isValidNumeroToken(token: string): boolean {
-  return NUMERO_TOKEN_PATTERN.test(token);
-}
+/* Forme attendue d'un token — filtre avant toute requête en base. Définie
+   dans tokenForme.ts, module pur : ce fichier-ci importe node:crypto et ne
+   peut pas être lu par le navigateur. Ré-export pour ne rien casser des
+   importeurs serveur existants. */
+export { NUMERO_TOKEN_PATTERN, isValidNumeroToken } from "./tokenForme";

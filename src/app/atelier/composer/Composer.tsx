@@ -15,6 +15,7 @@ import Screen4Contact from './screens/Screen4Contact'
 import Screen5Depot from './screens/Screen5Depot'
 import Screen6Fin from './screens/Screen6Fin'
 import { EMPTY_DRAFT, loadDraft, saveDraft, type Draft } from './draft'
+import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import './composer.css'
 
 const TOTAL = 6
@@ -28,9 +29,26 @@ export default function Composer() {
   const scroller = useRef<HTMLDivElement>(null)
 
   /* Reprise au montage — jamais pendant le rendu serveur, sinon l'HTML
-     livré et l'HTML hydraté divergent. */
+     livré et l'HTML hydraté divergent.
+
+     `?reprendre=<token>` est le bouton « Ajouter des photos » de l'état 1b :
+     l'atelier a jugé le dépôt trop maigre, la cliente revient depuis sa page
+     d'état. On la repose directement à l'écran 5, sur SON dossier — le token
+     de l'URL prime sur celui du brouillon, qui peut appartenir à un numéro
+     plus ancien composé depuis le même téléphone.
+
+     Limite assumée : les photos déjà déposées ne se recomptent que si le
+     dépôt reprend sur le même appareil (la file vit en IndexedDB, clé par
+     token). Depuis un autre téléphone, le compteur repart de zéro à l'écran
+     tandis que nb_photos, lui, est recalculé en base à chaque envoi. */
   useEffect(() => {
-    setDraft(loadDraft())
+    const repris = loadDraft()
+    const reprendre = new URLSearchParams(window.location.search).get('reprendre')
+    setDraft(
+      reprendre && isValidNumeroToken(reprendre)
+        ? { ...repris, token: reprendre, screen: 5 }
+        : repris
+    )
     setPret(true)
   }, [])
 
@@ -182,10 +200,17 @@ export default function Composer() {
                 {envoi ? 'Un instant…' : 'Continuer'} <span className="at-cta-arrow">→</span>
               </button>
             )}
-            {n === 6 && (
-              <a className="at-cta" href="/atelier">
-                Revenir au site <span className="at-cta-arrow">→</span>
+            {/* Le lien de la page d'état est LE lien du numéro : elle le
+                recevra par mail (M1), mais elle est ici, maintenant, et
+                c'est le moment où elle peut le mettre en favori. Un seul
+                lien, toute la vie du numéro (PRD §6). */}
+            {n === 6 && draft.token && (
+              <a className="at-cta" href={`/numero/${draft.token}`}>
+                Suivre votre numéro <span className="at-cta-arrow">→</span>
               </a>
+            )}
+            {n === 6 && (
+              <a className="at-skip" href="/atelier">Revenir au site</a>
             )}
           </div>
           )}

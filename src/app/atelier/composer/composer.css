@@ -275,3 +275,8 @@
   .at-covers { gap: 10px; }
   .at-q-logo { font-size: 19px; }
 }
+
+/* Écran 6 : le lien discret cohabite avec le CTA dans la rangée d'actions.
+   (0,3,0) — passe devant .bj-atelier .at-skip, qui décale de 24 px un lien
+   normalement posé seul sous une question. */
+.bj-atelier .at-q-actions .at-skip { margin-top: 0; align-self: center; }

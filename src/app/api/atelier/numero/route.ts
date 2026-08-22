@@ -21,6 +21,9 @@ export const runtime = "nodejs";
    décourager le rejeu, jamais présenté comme une protection forte. */
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = process.env.NODE_ENV === "production" ? 5 : 30;
+/* PATCH ne crée rien et exige un token valide : le plafond y sert à couper un
+   script, pas à rationner une cliente indécise. */
+const RATE_LIMIT_MAX_PATCH = process.env.NODE_ENV === "production" ? 30 : 120;
 const RATE_LIMIT_WINDOW_MS = process.env.NODE_ENV === "production" ? 60_000 : 10_000;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -30,16 +33,20 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const MAX = { occasion: 120, histoire: 4000, titre: 34, prenom: 60, telephone: 30 };
 
 /* Sorti du corps de POST pour servir aussi à PATCH : les deux écrivent en
-   base et méritent le même garde-fou. */
-function depasseLePlafond(request: Request): boolean {
+   base et méritent le même garde-fou — mais pas le même plafond, et pas le
+   même compteur. Créer un dossier est rare ; cocher, décocher et recocher une
+   case de l'état 2 est le geste d'une cliente qui hésite avant de payer. Un
+   compteur commun lui répondrait « votre accord n'a pas pu être enregistré »
+   au troisième doute, juste avant l'acte d'achat. */
+function depasseLePlafond(request: Request, max = RATE_LIMIT_MAX): boolean {
   const now = Date.now();
   for (const [key, val] of rateLimitMap) {
     if (val.resetAt < now) rateLimitMap.delete(key);
   }
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const ip = `${request.method}:${request.headers.get("x-forwarded-for") ?? "unknown"}`;
   const entry = rateLimitMap.get(ip);
   if (entry && entry.resetAt > now) {
-    if (entry.count >= RATE_LIMIT_MAX) return true;
+    if (entry.count >= max) return true;
     entry.count++;
     return false;
   }
@@ -125,11 +132,21 @@ export async function POST(request: Request) {
  * construction de la PRD §5, la seule trace opposable d'un dossier. Ajouter
  * une colonne dupliquerait une information que le journal porte déjà mieux.
  *
+ * LES DEUX CASES DU PAIEMENT passent aussi par ici — `cgv_ok` et
+ * `renonciation_retractation`, cochées sur la page d'état 2 (PRD §8). Elles
+ * ont, elles, leur horodatage en colonne : c'est une mention légale opposable
+ * (article L221-28 3° du code de la consommation) et elle doit se lire sans
+ * dépouiller un journal. Elles ne sont acceptées que depuis l'état
+ * `apercu_pret` : après paiement, la reconnaissance est acquise et ne se
+ * rétracte pas d'un clic. Invariant nº3 — aucun paiement possible sans les
+ * deux cases cochées ET horodatées ; c'est /api/atelier/checkout qui le
+ * revérifie en base au moment de créer la session.
+ *
  * Le token fait foi : pas de compte, pas de session (PRD §7.5).
  */
 export async function PATCH(request: Request) {
   try {
-    if (depasseLePlafond(request)) {
+    if (depasseLePlafond(request, RATE_LIMIT_MAX_PATCH)) {
       return NextResponse.json({ error: "rate_limited" }, { status: 429 });
     }
 
@@ -140,7 +157,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "token_invalide" }, { status: 400 });
     }
 
-    const maj: Record<string, boolean> = {};
+    const maj: Record<string, boolean | string | null> = {};
     /* consent_photos ne se retire pas ici : il conditionne un dépôt déjà
        fait. Un retrait est une demande de suppression, pas une case à
        décocher — elle passe par l'atelier, pas par une requête. */
@@ -148,6 +165,23 @@ export async function PATCH(request: Request) {
     if (typeof body.consent_communication === "boolean") {
       maj.consent_communication = body.consent_communication;
     }
+
+    /* Les deux cases de l'état 2. Décocher efface l'horodatage : une date
+       d'acceptation qui survivrait au retrait de l'accord ne prouverait rien
+       et se retournerait contre nous. Le journal, lui, garde les deux gestes. */
+    const maintenant = new Date().toISOString();
+    let casesPaiement = false;
+    if (typeof body.cgv_ok === "boolean") {
+      casesPaiement = true;
+      maj.cgv_ok = body.cgv_ok;
+      maj.cgv_ok_at = body.cgv_ok ? maintenant : null;
+    }
+    if (typeof body.renonciation_retractation === "boolean") {
+      casesPaiement = true;
+      maj.renonciation_retractation = body.renonciation_retractation;
+      maj.renonciation_at = body.renonciation_retractation ? maintenant : null;
+    }
+
     if (!Object.keys(maj).length) {
       return NextResponse.json({ error: "rien_a_faire" }, { status: 400 });
     }
@@ -156,12 +190,18 @@ export async function PATCH(request: Request) {
 
     const { data: numero } = await supabase
       .from("numeros")
-      .select("id")
+      .select("id, etat")
       .eq("token", token)
-      .maybeSingle();
+      .maybeSingle<{ id: string; etat: string }>();
 
     /* Token inconnu → 404 sec, aucune information ne fuite (test §17.7). */
     if (!numero) return NextResponse.json({ error: "introuvable" }, { status: 404 });
+
+    /* Les cases du paiement n'existent qu'à l'état 2. Ailleurs, la demande
+       vient d'un onglet resté ouvert pendant que le dossier avançait. */
+    if (casesPaiement && numero.etat !== "apercu_pret") {
+      return NextResponse.json({ error: "etat_incompatible" }, { status: 409 });
+    }
 
     const { error } = await supabase.from("numeros").update(maj).eq("id", numero.id);
     if (error) {
