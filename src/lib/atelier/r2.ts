@@ -9,12 +9,22 @@
 
 import { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { extensionDepuisMime } from "./formats";
 
-/* Piège nº6 : dans l'autre dépôt, R2_MAX_FILE_SIZE_BYTES était chargée puis
-   jamais lue — la vraie limite était en dur, et la variable donnait l'illusion
-   d'un réglage. On assume la valeur en dur ICI, des deux côtés, plutôt que
-   d'entretenir une variable décorative. */
-export const MAX_FILE_BYTES = 50 * 1024 * 1024; /* 50 Mo par photo */
+/* Formats, plafond et résolution du MIME vivent désormais dans formats.ts —
+   fichier PUR, sans SDK, importable par le navigateur. Le client du dépôt doit
+   résoudre le type exactement comme le serveur : le Content-Type fait partie
+   de la signature. Ré-export pour ne rien casser des importeurs existants. */
+export {
+  MAX_FILE_BYTES,
+  MIMES_ACCEPTES,
+  EXTENSIONS_ACCEPTEES,
+  mimeDepuisNom,
+  extensionDepuisMime,
+  estMimeAccepte,
+  estHeic,
+  resoudreMime,
+} from "./formats";
 
 /* Piège nº7 : R2 n'impose pas la taille annoncée dans la signature — on peut
    pousser 40 Mo pour 1 Mo déclaré. Le HEAD de vérification refuse au-delà de
@@ -26,38 +36,6 @@ export const TAILLE_TOLERANCE = 1.05;
    la refaire signer — d'où deux valeurs distinctes. */
 export const PRESIGN_TTL_SECONDS = Number(process.env.R2_PRESIGNED_URL_TTL_SECONDS) || 3600;
 export const PRESIGN_REFRESH_AFTER_MS = 45 * 60 * 1000; /* 45 min */
-
-/* Formats acceptés. HEIC est OBLIGATOIRE (défaut iPhone, PRD §7.4). */
-export const MIMES_ACCEPTES = [
-  "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif",
-] as const;
-
-/* Piège nº17 : sur iCloud, le type du fichier arrive souvent VIDE. Sans repli
-   par extension, le vide remonte tel quel jusqu'à R2. */
-export const EXTENSIONS_ACCEPTEES = /\.(jpe?g|png|webp|heic|heif)$/i;
-
-export function mimeDepuisNom(nom: string): string | null {
-  const m = nom.toLowerCase().match(EXTENSIONS_ACCEPTEES);
-  if (!m) return null;
-  switch (m[1].toLowerCase()) {
-    case "jpg": case "jpeg": return "image/jpeg";
-    case "png": return "image/png";
-    case "webp": return "image/webp";
-    case "heic": return "image/heic";
-    case "heif": return "image/heif";
-    default: return null;
-  }
-}
-
-export function extensionDepuisMime(mime: string): string {
-  switch (mime) {
-    case "image/png": return "png";
-    case "image/webp": return "webp";
-    case "image/heic": return "heic";
-    case "image/heif": return "heif";
-    default: return "jpg";
-  }
-}
 
 let client: S3Client | null = null;
 

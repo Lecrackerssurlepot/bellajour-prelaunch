@@ -150,7 +150,14 @@ export default function Composer() {
               erreur={erreur}
             />
           )}
-          {n === 5 && <Screen5Depot token={draft.token} />}
+          {n === 5 && (
+            <Screen5Depot
+              token={draft.token}
+              consent={draft.consentPhotos}
+              onConsent={(v) => patch({ consentPhotos: v })}
+              onTermine={() => aller(6)}
+            />
+          )}
           {n === 6 && (
             <Screen6Fin
               titre={draft.titre}
@@ -159,6 +166,11 @@ export default function Composer() {
             />
           )}
 
+          {/* L'écran 5 porte son PROPRE bouton : lui seul sait si les photos
+              sont réellement arrivées, si l'accord est coché et si la
+              finalisation a abouti. Un bouton piloté d'ici ne pourrait
+              qu'être optimiste. */}
+          {n !== 5 && (
           <div className="at-q-actions">
             {n < 4 && (
               <button type="button" className="at-cta" onClick={() => aller(n + 1)}>
@@ -170,18 +182,13 @@ export default function Composer() {
                 {envoi ? 'Un instant…' : 'Continuer'} <span className="at-cta-arrow">→</span>
               </button>
             )}
-            {/* Le libellé du dépôt dit « Envoyer à l'atelier », jamais « Valider ». */}
-            {n === 5 && (
-              <button type="button" className="at-cta" onClick={() => aller(6)}>
-                Envoyer à l’atelier <span className="at-cta-arrow">→</span>
-              </button>
-            )}
             {n === 6 && (
               <a className="at-cta" href="/atelier">
                 Revenir au site <span className="at-cta-arrow">→</span>
               </a>
             )}
           </div>
+          )}
         </div>
       </div>
     </div>
