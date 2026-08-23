@@ -35,11 +35,44 @@ Garde-la de côté, elle sert au §3. Ne la colle nulle part dans le dépôt.
 
 ## 2. Ouvrir le tunnel webhook
 
-Dans un **premier terminal**, qu'on laisse tourner :
+### 2.0 D'abord : désactiver l'endpoint déjà enregistré
+
+⚠️ **À faire avant tout, sinon le §7 échouera pour une mauvaise raison.**
+
+Ton compte de test porte déjà un endpoint webhook enregistré, qui écoute les
+trois mêmes événements :
+
+```
+https://bellajour-prelaunch-git-prevente-…vercel.app/api/webhook
+```
+
+C'est une preview de la branche `prevente`, donc **le code d'avant le lot 6 —
+sans le tri**. Si on le laisse actif, Stripe enverra chaque événement de test à
+DEUX endroits : ton tunnel local, et cette preview. Elle prendrait le paiement
+de l'album, chercherait `test-lot6@bellajour.fr` dans `waitlist`, et
+confirmerait la ligne. Le §7 afficherait un échec alors que le nouveau code
+fonctionne.
+
+Dans le tableau de bord Stripe, **en mode test** :
+Developers → Webhooks → cet endpoint → **Disable**.
+
+À réactiver après le test si la preview `prevente` te sert encore. Note-le
+quelque part : c'est exactement le genre de chose qu'on oublie de remettre.
+
+### 2.1 Le tunnel
+
+Dans un **premier terminal**, qu'on laisse tourner — en collant ta clé de test
+(cf. §1) :
 
 ```bash
-stripe listen --forward-to localhost:3000/api/webhook --events checkout.session.completed,checkout.session.expired,charge.refunded
+stripe listen --api-key sk_test_COLLE_ICI --forward-to localhost:3000/api/webhook --events checkout.session.completed,checkout.session.expired,charge.refunded
 ```
+
+`--api-key` n'est pas décoratif : ton environnement de test est un **compte
+Stripe distinct** de la production (`acct_1Tg326…` contre `acct_1Tg31v…`). Sans
+ce drapeau, la CLI écoute le compte auquel elle est attachée par `stripe login`
+— qui peut très bien être l'autre. Passer la clé explicitement garantit que la
+CLI et le serveur regardent le même compte.
 
 La commande affiche une ligne du type
 `Ready! Your webhook signing secret is whsec_xxxxxxxx`.
