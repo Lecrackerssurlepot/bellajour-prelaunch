@@ -343,12 +343,52 @@ est toujours intacte.
 
 ## 9. La non-régression de la prévente
 
-Le lot a modifié un fichier partagé. Il faut prouver que l'ancien chemin marche
-toujours : passe un acompte de prévente en mode test depuis
-<http://localhost:3000/preventes>, avec une **autre** adresse mail, et vérifie
-que sa ligne `waitlist` passe bien en `confirmed`.
+### Pourquoi ce test est indispensable
 
-Sans ce test, on a sécurisé l'atelier en cassant peut-être la prévente.
+Le lot a modifié `/api/webhook`, qui encaisse **la prévente en production, avec
+de l'argent réel**. Tous les tests précédents prouvent que la nouvelle branche
+marche ; **aucun** ne prouve que l'ancienne marche encore.
+
+Le piège est précis : `handleCheckoutCompleted` et `handleCheckoutExpired` ont
+la MÊME signature `(supabase, session) => boolean`. Les intervertir en
+réécrivant le `switch` ne produirait aucune erreur de compilation, et tous les
+tests atelier passeraient quand même. Le seul symptôme serait une vraie cliente
+de prévente qui paie, n'est jamais confirmée, et ne reçoit ni numéro de
+fondateur ni mail.
+
+### ⚠️ NE PAS passer un vrai acompte de test
+
+Le premier jet de cette procédure demandait de payer un acompte depuis
+`/preventes`. **C'est une erreur, ne le fais pas.** `/api/checkout` résout
+l'offre côté serveur : tant que le plafond de 100 fondateurs n'est pas atteint,
+un paiement de test se résout en `founder` et **consomme un vrai numéro de
+fondateur** dans la séquence commerciale. (Au 23/08/2026 : 14 fondateurs
+confirmés, dernier numéro 15 — le test aurait pris le 16.)
+
+### Le test équivalent, sans pollution
+
+Deux événements synthétiques, sans métadonnée `atelier`. Comme la fixture de
+Stripe ne porte aucun email exploitable, les handlers de prévente sortent
+immédiatement : aucune écriture en base, aucun mail, aucun numéro consommé.
+
+```bash
+stripe trigger checkout.session.completed
+```
+```bash
+stripe trigger checkout.session.expired
+```
+
+Puis regarde le terminal du serveur (`npm run dev`). **Attendu, les deux
+lignes :**
+
+```
+[webhook] checkout.session.completed sans email exploitable
+[webhook] checkout.session.expired sans email — skip
+```
+
+Ces messages n'existent que dans les handlers de la PRÉVENTE. Les voir prouve
+que les événements non-atelier y arrivent toujours, et chacun dans le sien.
+Rien, ou un message parlant d'atelier, signifierait que le tri est inversé.
 
 ---
 
@@ -378,3 +418,28 @@ terminaux — les clés de test disparaissent avec eux.
 - **Les CGV** (lot 9). Le lien `/cgv` fonctionne, son contenu n'est pas à jour
   pour l'atelier : trois prix, rétractation sur bien personnalisé, réimpression.
   Obligation légale avant le premier paiement réel.
+
+---
+
+## Résultats — exécution du 23 août 2026, commit `f6fceeb`
+
+Les neuf sections passent.
+
+| § | Test | Résultat |
+|---|---|---|
+| 5 | trois refus (consentements / token / dossier inconnu) | 409, 400, 404 — aucune trace en base |
+| 6 | invariant nº2 : `euros:1` + `palier:p30` envoyés | Stripe affiche **40,00 €** |
+| 6 | zone de livraison | Belgium, France, Luxembourg — rien d'autre |
+| 6 | TVA | `Tax €0.00`, total 40 € — conforme à l'absence d'immatriculation |
+| **7** | **collision prévente / atelier** | **`waitlist` strictement intacte** ; atelier `payee`, adresse FR rangée, facture émise |
+| 8.1 | rejeu de l'événement | un seul `etat_change` |
+| 8.2 | paiement sur dossier déjà avancé | état préservé + `paiement_inattendu` avec alerte |
+| 8.3 | expiration forcée | reste en état 2, `checkout_expire` journalisé |
+| 8.4 | écran d'attente | s'affiche sans bouton, recharge seul, s'arrête à 5 essais |
+| 8.5 | remboursement | `remboursement` journalisé, **aucune transition automatique** |
+| 9 | non-régression prévente | les deux lignes de log attendues, 200 chacune |
+| 10 | nettoyage | 0 ligne de test, 0 événement orphelin, 14 fondateurs / n° 15 inchangés |
+
+Garantie supplémentaire relevée pendant l'exécution : **aucun endpoint webhook
+n'est enregistré sur ce compte en mode test**. Rien ne doublait le tunnel — le
+résultat du §7 est donc net, sans interférence possible.
