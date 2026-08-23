@@ -186,6 +186,38 @@ Réf : commit 246d8e5, tokens --bj-nav-android-bg, classe .pv-nav--flat.
 - A2 (Ambassadeur accès)     = template 21, env BREVO_TEMPLATE_A2_ID, déclencheur /ambassadeur/request-access (redemandable)
 - Relance (session.expired)  = template 23, env BREVO_TEMPLATE_RELANCE_ID, BRANCHÉ (case checkout.session.expired, garde-fou status='pending', params { PRENOM })
 - A3 (album offert au 6e = 30 pages niveau 1+2) = template 22, env BREVO_TEMPLATE_A3_ID, BRANCHÉ (étape 6 du handler completed, verrou atomique waitlist.a3_notified_at, couvre parrain direct niveau 1 + grand-parrain niveau 2, params { PRENOM, PAGES_TOTAL, DASHBOARD_URL })
+- M4 (Atelier — paiement reçu) = env BREVO_TEMPLATE_M4_ID, déclencheur webhook completed si metadata.kind==='atelier', CÂBLÉ mais template PAS ENCORE CRÉÉ (lot 8) → skip silencieux, params { PRENOM, TITRE, LIEN }
 - Anciens (waitlist, hors paiement) : W1, P1, P2 dans waitlist/route.ts
 Helper partagé : src/lib/brevo.ts → sendBrevoEmail({templateId,email,name,params,apiKey,label}), best-effort strict.
 Migration A3 : supabase/migrations/20260613_a3_notified_flag.sql (colonne waitlist.a3_notified_at timestamptz, flag anti-renvoi posé atomiquement à l'envoi).
+## Webhook Stripe PARTAGÉ — prévente + atelier (lot 6)
+`/api/webhook` sert DEUX produits qui n'ont aucune table en commun. Le tri se fait au
+`switch`, sur `metadata.kind === 'atelier'`, **avant tout accès en base** — les trois
+handlers de la prévente cherchent une ligne `waitlist` par email, et une cliente de
+l'atelier peut y être inscrite. Sans ce tri : un album payé la confirmerait fondatrice
+de la prévente (numéro de fondateur + mail F1), et un panier abandonné lui enverrait la
+relance d'acompte.
+- Discriminant posé par `/api/atelier/checkout` sur la session ET sur
+  `payment_intent_data.metadata` — une Charge ne porte pas les metadata de sa session,
+  donc `charge.refunded` se trie via le PaymentIntent.
+- Handlers atelier : `src/lib/atelier/paiement.ts` (`estSessionAtelier`,
+  `estChargeAtelier` = fonctions pures ; `traiterPaiementAtelier`,
+  `traiterExpirationAtelier`, `traiterRemboursementAtelier`).
+- Aucun handler de la prévente n'a été modifié.
+- Expiration = ne touche PAS à l'état : le numéro reste en état 2, réutilisable (PRD §9).
+- Remboursement = journalisé dans `evenements`, aucune transition automatique (un
+  remboursement avant impression et après livraison veulent dire l'inverse).
+
+## Atelier — prix, TVA, livraison (lot 6)
+- Prix : `src/lib/atelier/prix.ts`, table en dur `palier → euros`. Le navigateur n'envoie
+  QUE le token à `/api/atelier/checkout` (invariant nº2). Pas de `price_id` Stripe : une
+  seule source de vérité, pas de dérive test/prod.
+- Zone de livraison : `PAYS_LIVRAISON = FR, BE, LU`. Stripe exige une liste explicite ;
+  c'est aussi le garde-fou commercial. Prix identique dans toute la zone.
+  ⚠️ Les DOM passent au travers (adresse « FR » chez Stripe, hors territoire TVA UE,
+  port prohibitif) — traitement manuel dans /admin tant que le volume est faible.
+- TVA : `automatic_tax` activé, prix déclaré TTC (`tax_behavior: 'inclusive'`), code
+  fiscal `CODE_FISCAL_ALBUM`. **Stripe Tax est actif mais sans immatriculation → 0 € de
+  taxe calculé aujourd'hui.** Le câblage est inerte jusqu'à l'ajout de l'immatriculation
+  portugaise dans le tableau de bord, puis s'active sans redéploiement.
+  Question ouverte pour le comptable : album personnalisé = 23 % ou 6 % (livre) au PT ?

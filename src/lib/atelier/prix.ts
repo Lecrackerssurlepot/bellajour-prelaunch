@@ -54,3 +54,51 @@ export function centimesPour(palier: PalierCle | null | undefined): number | nul
 export function formaterEuros(euros: number): string {
   return `${euros} €`;
 }
+
+/* ─────────────────────────────── livraison ───────────────────────────────
+ *
+ * Zone de livraison au lancement (lot 6). Stripe EXIGE une liste explicite de
+ * pays : on ne peut pas dire « partout ». Cette liste est donc à la fois le
+ * menu déroulant « Pays » du paiement et notre garde-fou commercial.
+ *
+ * France, Belgique, Luxembourg. Trois pays de l'UE, tous couverts par
+ * Stripe Tax, tous à portée de la grille de port de l'imprimeur.
+ *
+ * ⚠️ LES DOM PASSENT AU TRAVERS. Une adresse à La Réunion ou en Guadeloupe est
+ * une adresse « FR » pour Stripe, alors que ces territoires sont exclus du
+ * territoire TVA de l'UE (et de Stripe Tax) et coûtent plusieurs fois le prix
+ * de l'album en port. Impossible de les écarter proprement ici — Checkout ne
+ * filtre pas par code postal. À faible volume, /admin les traite à la main ;
+ * si le cas devient fréquent, la règle se posera sur le code postal reçu dans
+ * `adresse_livraison`, pas sur cette liste.
+ *
+ * C'est la décision la plus réversible du lot : ajouter l'Espagne, c'est une
+ * chaîne de plus ici et un déploiement.
+ */
+export const PAYS_LIVRAISON = ["FR", "BE", "LU"] as const;
+
+/* Le prix est le même dans toute la zone — port compris, quelle que soit la
+ * destination. On absorbe l'écart de quelques euros entre Paris et Bruxelles
+ * plutôt que d'afficher trois prix pour un même album.
+ *
+ * SI CET ÉCART DEVIENT INTENABLE : la grille ci-dessus devient palier × zone,
+ * `eurosPour(palier)` prend un second argument, et /api/atelier/checkout le
+ * lit depuis... rien. Et c'est bien là le problème : le pays n'est connu
+ * qu'APRÈS, puisque c'est Stripe qui collecte l'adresse. Il faudrait alors
+ * demander le pays sur la page d'état 2, avant d'annoncer le prix. Ce n'est
+ * pas un réglage, c'est un changement de parcours — à décider en connaissance
+ * de cause, pas en ajoutant discrètement une colonne.
+ */
+
+/* Code fiscal Stripe de l'album — « biens matériels, général » (23 % au
+ * Portugal, siège fiscal déclaré du compte). Posé EXPLICITEMENT ici plutôt
+ * que laissé au réglage par défaut du tableau de bord : l'acompte de prévente
+ * et l'album sont deux produits différents et n'ont aucune raison de partager
+ * un réglage global.
+ *
+ * ⚠️ Le livre est à 6 % au Portugal. Un album photo personnalisé n'est très
+ * probablement pas un « livre » au sens fiscal — mais l'écart est de 17
+ * points sur chaque vente. Si le comptable tranche pour le taux réduit, c'est
+ * cette constante qui change, et rien d'autre.
+ */
+export const CODE_FISCAL_ALBUM = "txcd_99999999";

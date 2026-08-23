@@ -5,6 +5,13 @@ import { makeSupabase } from "@/lib/supabase";
 import { sendBrevoEmail, upsertBrevoContact } from "@/lib/brevo";
 import { signToken } from "@/lib/ambassadeur-token";
 import { canonicalizeEmail } from "@/lib/email";
+import {
+  estSessionAtelier,
+  estChargeAtelier,
+  traiterPaiementAtelier,
+  traiterExpirationAtelier,
+  traiterRemboursementAtelier,
+} from "@/lib/atelier/paiement";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
 const REF_LINK_BASE = "https://www.bellajour.fr";
@@ -603,21 +610,47 @@ export async function POST(request: Request) {
   try {
     let ok = true;
     switch (event.type) {
-      case "checkout.session.completed":
-        ok = await handleCheckoutCompleted(
-          supabase,
-          event.data.object as Stripe.Checkout.Session
-        );
+      /* ═══════════════ TRI PRÉVENTE / ATELIER ═══════════════════════════
+         Ce webhook sert DEUX produits qui n'ont aucune table en commun.
+
+         Le tri se fait ICI, sur `metadata.kind`, AVANT le moindre accès en
+         base — et c'est vital : les trois handlers de la prévente cherchent
+         tous une ligne `waitlist`, et une cliente de l'atelier peut très
+         bien être inscrite à la waitlist. Sans ce tri, un album payé 40 €
+         la confirmerait fondatrice de la prévente, avec attribution d'un
+         numéro de fondateur et envoi du mail F1 ; un panier d'album
+         abandonné lui enverrait la relance d'acompte.
+
+         `estSessionAtelier` et `estChargeAtelier` sont des fonctions PURES,
+         sans requête : c'est la condition pour trier avant tout le reste.
+
+         Aucun handler de la prévente n'a été modifié. Ils ne voient
+         simplement plus jamais un événement qui ne les concerne pas. */
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        ok = estSessionAtelier(session)
+          ? await traiterPaiementAtelier(supabase, session)
+          : await handleCheckoutCompleted(supabase, session);
         break;
-      case "checkout.session.expired":
-        ok = await handleCheckoutExpired(
-          supabase,
-          event.data.object as Stripe.Checkout.Session
-        );
+      }
+      case "checkout.session.expired": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        ok = estSessionAtelier(session)
+          ? await traiterExpirationAtelier(supabase, session)
+          : await handleCheckoutExpired(supabase, session);
         break;
-      case "charge.refunded":
-        ok = await handleChargeRefunded(supabase, event.data.object as Stripe.Charge);
+      }
+      case "charge.refunded": {
+        /* Ici le discriminant vient du PaymentIntent, pas de la session :
+           une Charge ne porte pas les métadonnées de la session qui l'a
+           créée. C'est /api/atelier/checkout qui les recopie sur le
+           PaymentIntent via `payment_intent_data.metadata`. */
+        const charge = event.data.object as Stripe.Charge;
+        ok = estChargeAtelier(charge)
+          ? await traiterRemboursementAtelier(supabase, charge)
+          : await handleChargeRefunded(supabase, charge);
         break;
+      }
       default:
         // Type non géré → 200, on ne demande pas de retry.
         return NextResponse.json({ received: true, ignored: event.type }, { status: 200 });

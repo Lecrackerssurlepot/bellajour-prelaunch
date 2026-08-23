@@ -25,6 +25,7 @@ import { resoudreApercu } from '@/lib/atelier/apercu'
 import { eurosPour, type PalierCle } from '@/lib/atelier/prix'
 import { ajouterJours, formaterJour } from '@/lib/atelier/dates'
 import CasesEtCommande from './CasesEtCommande'
+import AttentePaiement from './AttentePaiement'
 import BoutonValider from './BoutonValider'
 import '../numero.css'
 
@@ -118,8 +119,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default async function NumeroPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function NumeroPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>
+  searchParams: Promise<{ paiement?: string; essai?: string }>
+}) {
   const { token } = await params
+  const { paiement, essai } = await searchParams
 
   /* Test §17.7 : un token inexistant donne une page d'erreur propre, et
      AUCUNE information ne fuite. Forme invalide et dossier introuvable
@@ -144,6 +152,13 @@ export default async function NumeroPage({ params }: { params: Promise<{ token: 
   const titre = numero.titre?.trim() || 'Votre numéro'
   const apercu = numero.etat === 'apercu_pret' ? await resoudreApercu(numero.apercu_urls) : null
   const euros = eurosPour(numero.palier)
+
+  /* Retour de Stripe, webhook pas encore arrivé. Tant que l'état n'a pas
+     basculé, on masque le bouton de commande : le lui remontrer juste après
+     un paiement réussi, c'est l'inviter à payer deux fois. */
+  const retourDePaiement = paiement === 'ok' && numero.etat === 'apercu_pret'
+  const essaiNum = Number(essai) || 0
+  const ESSAIS_MAX = 5
 
   /* La ligne naît à la fin de l'écran 4, DÉJÀ en `photos_recues`, avant que la
      moindre photo n'existe. Une cliente qui abandonne à l'écran 5 puis rouvre
@@ -201,11 +216,41 @@ export default async function NumeroPage({ params }: { params: Promise<{ token: 
           La seule page où l'on a le droit d'être spectaculaire. */}
       {numero.etat === 'apercu_pret' && (
         <>
-          <p className="nu-mot">Votre couverture.</p>
-          <p className="nu-sub">
-            Composée à la main à partir de vos {numero.nb_photos} photos. Rien
-            n’est dû tant que vous n’avez pas dit oui.
-          </p>
+          {retourDePaiement ? (
+            <>
+              <p className="nu-mot">Paiement reçu.</p>
+              <p className="nu-sub">
+                {essaiNum < ESSAIS_MAX ? (
+                  <>
+                    On enregistre votre commande. Cette page se met à jour
+                    toute seule dans quelques secondes — vous pouvez la
+                    laisser ouverte.
+                  </>
+                ) : (
+                  <>
+                    Votre paiement est bien passé, mais l’enregistrement prend
+                    plus de temps que prévu. Rien n’est perdu et vous n’avez
+                    rien à refaire : votre numéro basculera tout seul. Si cette
+                    page n’a pas changé d’ici une heure, écrivez-nous à{' '}
+                    <b>{CONTACT_EMAIL}</b>.
+                  </>
+                )}
+              </p>
+              {essaiNum < ESSAIS_MAX && (
+                <AttentePaiement
+                  href={`/numero/${numero.token}?paiement=ok&essai=${essaiNum + 1}`}
+                />
+              )}
+            </>
+          ) : (
+            <>
+              <p className="nu-mot">Votre couverture.</p>
+              <p className="nu-sub">
+                Composée à la main à partir de vos {numero.nb_photos} photos. Rien
+                n’est dû tant que vous n’avez pas dit oui.
+              </p>
+            </>
+          )}
 
           <Reveal>
             <div className="nu-covers">
@@ -217,14 +262,16 @@ export default async function NumeroPage({ params }: { params: Promise<{ token: 
             </div>
           </Reveal>
 
-          <CasesEtCommande
-            token={numero.token}
-            titre={titre}
-            nbPages={numero.nb_pages}
-            euros={euros}
-            cgvOk={numero.cgv_ok}
-            renonciation={numero.renonciation_retractation}
-          />
+          {!retourDePaiement && (
+            <CasesEtCommande
+              token={numero.token}
+              titre={titre}
+              nbPages={numero.nb_pages}
+              euros={euros}
+              cgvOk={numero.cgv_ok}
+              renonciation={numero.renonciation_retractation}
+            />
+          )}
         </>
       )}
 
