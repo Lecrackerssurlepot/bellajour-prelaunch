@@ -16,9 +16,9 @@
 
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import Footer from '../../atelier/components/Footer'
-import Reveal from '../../atelier/components/Reveal'
-import { CTA_HREF, CTA_LABEL, CONTACT_EMAIL } from '../../atelier/content'
+import Footer from '../../(atelier)/components/Footer'
+import Reveal from '../../(atelier)/components/Reveal'
+import { CTA_HREF, CTA_LABEL, CONTACT_EMAIL } from '../../(atelier)/content'
 import { makeSupabase } from '@/lib/supabase'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { resoudreApercu } from '@/lib/atelier/apercu'

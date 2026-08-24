@@ -1,6 +1,6 @@
-/* Homepage de l'atelier — 4 sections (PRD §7.1).
-   Vit sous /atelier tant que la racine n'a pas basculé ; le redirect
-   `/` → /preventes de next.config.ts n'est pas touché. */
+/* LA HOMEPAGE DE BELLAJOUR — 4 sections (PRD §7.1).
+   Sert `/` depuis la bascule du 24/08/2026. `/atelier` y renvoie en 308
+   permanent (next.config.ts) : les liens déjà donnés continuent de marcher. */
 
 import type { Metadata } from 'next'
 import Nav from './components/Nav'

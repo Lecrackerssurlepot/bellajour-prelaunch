@@ -400,7 +400,11 @@ export default function S4Reservation() {
     cards = (
       <div className="s4-cards s4-cards--solo">
         <div className="s4-card s4-card--closed">
-          <p className="s4-closed-kicker">La prévente est terminée</p>
+          {/* Les liens vers `/` de cette page sont des <a>, pas des <Link> :
+              on quitte le monde crème de la prévente pour la racine sombre.
+              Rechargement voulu — stores et observateurs démontés net, et
+              aucun préfetch du bundle de la homepage depuis une page qui
+              ferme. */}
           <p className="s4-closed-text">
             Les albums de prévente sont tous réservés. Merci à celles et ceux qui
             en ont fait partie : vos commandes suivent leur cours et rien ne change
@@ -410,7 +414,8 @@ export default function S4Reservation() {
             Bellajour continue, autrement : vous composez désormais votre numéro
             quand vous voulez, et vous ne payez qu’après avoir vu votre couverture.
           </p>
-          <a className="s4-closed-cta" href="/atelier">Composer mon numéro</a>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a className="s4-closed-cta" href="/">Composer mon numéro</a>
         </div>
       </div>
     )
@@ -440,13 +445,20 @@ export default function S4Reservation() {
           <h2 className="s4-title">
             {orderConfirmed
               ? 'Votre commande est validée !'
-              : referrerPrenom
-                ? `${referrerPrenom} vous invite à pré-commander votre album`
-                : 'Pré-commandez dès maintenant'}
+              : offer?.offerMode === 'closed'
+                ? 'La prévente est terminée'
+                : referrerPrenom
+                  ? `${referrerPrenom} vous invite à pré-commander votre album`
+                  : 'Pré-commandez dès maintenant'}
           </h2>
-          <p className="s4-subtitle">
-            Vivez votre été, on créera votre album à la fin de vos vacances à partir du <strong>15 août</strong> !
-          </p>
+          {/* Le sous-titre annonce une date d'août et une promesse de réservation :
+              il n'a plus de sens une fois la caisse fermée. On le retire plutôt
+              que de le réécrire — l'encart en dessous dit déjà tout. */}
+          {offer?.offerMode !== 'closed' && (
+            <p className="s4-subtitle">
+              Vivez votre été, on créera votre album à la fin de vos vacances à partir du <strong>15 août</strong> !
+            </p>
+          )}
         </header>
 
         {cards}

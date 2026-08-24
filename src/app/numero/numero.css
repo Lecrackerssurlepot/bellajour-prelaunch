@@ -7,7 +7,7 @@
    mise en page qui tient debout avec une phrase comme avec trois visuels.
 
    Invariant nº1 : aucune couleur en dur. Tout vient de .bj-atelier
-   (src/app/atelier/theme.css), importé par le layout de /numero.
+   (src/app/(atelier)/theme.css), importé par le layout de /numero.
    ════════════════════════════════════════════════════════════ */
 
 .nu {

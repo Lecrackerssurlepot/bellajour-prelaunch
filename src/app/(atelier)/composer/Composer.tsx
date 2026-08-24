@@ -141,7 +141,12 @@ export default function Composer() {
           ← Retour
         </button>
         <span className="at-q-logo">Bellajour</span>
-        <a className="at-q-close" href="/atelier">Fermer ✕</a>
+        {/* <a> et non <Link> : quitter le questionnaire doit RECHARGER la page.
+            Le moteur d'envoi est un singleton hors React (depot/moteur.ts) ;
+            une navigation client le laisserait vivant en mémoire, avec ses
+            requêtes en vol, sur une page qui n'a plus rien à voir. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a className="at-q-close" href="/">Fermer ✕</a>
       </div>
 
       <div className="at-q-scroll" ref={scroller}>
@@ -209,8 +214,10 @@ export default function Composer() {
                 Suivre votre numéro <span className="at-cta-arrow">→</span>
               </a>
             )}
+            {/* Même raison que « Fermer ✕ » plus haut : rechargement voulu. */}
             {n === 6 && (
-              <a className="at-skip" href="/atelier">Revenir au site</a>
+              // eslint-disable-next-line @next/next/no-html-link-for-pages
+              <a className="at-skip" href="/">Revenir au site</a>
             )}
           </div>
           )}

@@ -10,7 +10,9 @@ import { isValidRefCode } from '@/lib/validation'
    État B (hero sorti du viewport) : navbar visible — logo foncé à gauche + CTA à
    droite, fond glass. Bascule pilotée par IntersectionObserver sur le hero (#s1). */
 
-export default function Navbar() {
+/* `fermee` : même raison qu'au hero. Fermé, le CTA de la navbar cesse
+   d'envoyer vers une caisse close et pointe la racine. */
+export default function Navbar({ fermee = false }: { fermee?: boolean }) {
   /* heroOut = true quand le hero n'est plus visible → état B. */
   const [heroOut, setHeroOut] = useState(false)
   /* s4In = true quand la Section 4 réservation est la section en focus → le CTA
@@ -80,7 +82,13 @@ export default function Navbar() {
       {/* CTA — visible uniquement en état B (hero sorti).
           En Section 4 : lien « En savoir plus sur les prix » → page prix (?ref préservé).
           Hors Section 4 : comportement inchangé (scroll vers #s4). */}
-      {s4In ? (
+      {/* `fermee` PASSE AVANT `s4In` : en section 4, la navbar propose sinon
+          « En savoir plus sur les prix », c'est-à-dire la grille tarifaire
+          d'une offre qui ne se vend plus. */}
+      {fermee ? (
+        // eslint-disable-next-line @next/next/no-html-link-for-pages
+        <a className="pv-nav-cta" href="/">Composer mon numéro</a>
+      ) : s4In ? (
         <a className="pv-nav-cta" href={prixHref}>
           En savoir plus sur les prix
         </a>

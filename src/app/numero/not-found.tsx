@@ -5,7 +5,7 @@
    n'existe pas » de « ce token a expiré » donnerait à qui essaie des liens au
    hasard un moyen de savoir lesquels ont existé. */
 
-import { CONTACT_EMAIL } from '../atelier/content'
+import { CONTACT_EMAIL } from '../(atelier)/content'
 import './numero.css'
 
 export default function NumeroIntrouvable() {

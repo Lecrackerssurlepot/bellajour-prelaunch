@@ -4,7 +4,7 @@
  * Existe pour la même raison que formats.ts face à r2.ts : `token.ts` importe
  * `node:crypto` pour fabriquer un token, et le navigateur n'a rien à faire de
  * ce module. Or l'écran 5 doit pouvoir VÉRIFIER un token repris depuis l'URL
- * (`/atelier/composer?reprendre=…`, bouton de l'état 1b). Une seule source de
+ * (`/composer?reprendre=…`, bouton de l'état 1b). Une seule source de
  * vérité pour la forme, deux mondes.
  */
 

@@ -1,7 +1,7 @@
-/* Layout de la page d'état — même frontière d'étanchéité que /atelier.
+/* Layout de la page d'état — même frontière d'étanchéité que la racine.
 
-   POURQUOI CE FICHIER EST UN QUASI-DOUBLON DE src/app/atelier/layout.tsx
-   /numero ne vit pas SOUS /atelier, et c'est voulu : le lien reçu par mail
+   POURQUOI CE FICHIER EST UN QUASI-DOUBLON DE src/app/(atelier)/layout.tsx
+   /numero ne vit pas dans le groupe (atelier), et c'est voulu : le lien reçu par mail
    accompagne le numéro pendant des semaines, il doit être court, stable, et
    ne rien dire du tunnel de vente. Il ne peut donc pas hériter du layout de
    l'atelier. On recopie ici les trois choses qui comptent — le scope
@@ -13,7 +13,7 @@
 
 import type { Metadata } from 'next'
 import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
-import '../atelier/theme.css'
+import '../(atelier)/theme.css'
 
 const atelierDisplay = Cormorant_Garamond({
   subsets: ['latin'],

@@ -4,7 +4,7 @@
    que déclaratif. Aucun bouton secondaire n'existe sur la homepage. */
 
 export const CTA_LABEL = 'Composer avec l’atelier'
-export const CTA_HREF = '/atelier/composer'
+export const CTA_HREF = '/composer'
 export const CTA_NOTE_PRICE = '30 €'
 
 export const CONTACT_EMAIL = 'contact@bellajour.com'
