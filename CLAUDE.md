@@ -210,6 +210,20 @@ M3b, M2, M5→M9, pas ailleurs.
 Logo des mails : `public/logo-mail-blanc.png` (signature blanche sur fond sombre), à
 distinguer de `public/logo-mail.png` (signature bleue, mails de la prévente).
 Migration A3 : supabase/migrations/20260613_a3_notified_flag.sql (colonne waitlist.a3_notified_at timestamptz, flag anti-renvoi posé atomiquement à l'envoi).
+## Webhook Stripe PARTAGÉ — le tri est EXPLICITE des deux côtés (24/08/2026)
+`/api/webhook` trie sur les métadonnées, avant tout accès en base, et **aucun produit n'est
+le cas par défaut** : `kind==='atelier'` → atelier, `offer_type` ∈ founder|standard|influencer
+→ prévente, ni l'un ni l'autre → `sessionOrpheline()` journalise et ignore (200).
+Pourquoi : le 24/08, un album de l'atelier payé en test a déclenché le mail S1 « bienvenue en
+prévente ». L'événement était routé vers un ANCIEN déploiement (point d'écoute du sandbox
+`acct_1Tg326…` qui pointait sur la preview de la branche `prevente`), donc du code sans le tri —
+et « sinon → prévente » faisait le reste, les handlers de session identifiant la cliente par
+email avec repli sur `session.customer_email`.
+⚠️ `charge.refunded` n'a PAS de garde `offer_type` : les Charges de la prévente ne portent
+aucune métadonnée, et `handleChargeRefunded` retrouve sa ligne par `stripe_payment_intent`
+(clé exacte, sort proprement si absente). Ajouter la garde bloquerait les remboursements des
+14 fondateurs sans rien protéger.
+
 ## Webhook Stripe PARTAGÉ — prévente + atelier (lot 6)
 `/api/webhook` sert DEUX produits qui n'ont aucune table en commun. Le tri se fait au
 `switch`, sur `metadata.kind === 'atelier'`, **avant tout accès en base** — les trois

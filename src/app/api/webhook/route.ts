@@ -193,6 +193,51 @@ type CheckoutMeta = {
   ref_influenceur?: string;
 };
 
+/* Les trois offres que /api/checkout sait créer. Toute session de prévente en
+   porte une : c'est SA signature, au même titre que `kind: "atelier"` est celle
+   de l'atelier. */
+const OFFRES_PREVENTE = ["founder", "standard", "influencer"];
+
+/**
+ * Cette session vient-elle de la prévente ? Fonction PURE, comme
+ * `estSessionAtelier` — elle doit pouvoir trier avant tout accès en base.
+ *
+ * POURQUOI CE PRÉDICAT EXISTE (incident du 24/08/2026)
+ * Le tri disait : « marqué atelier → atelier, SINON → prévente ». La prévente
+ * était le cas par défaut, et ses deux handlers de session identifient la
+ * cliente par EMAIL, en retombant au besoin sur `session.customer_email`.
+ * Conséquence : n'importe quelle session inconnue payée par quelqu'un
+ * d'inscrit à la waitlist se faisait adopter par la prévente. C'est
+ * exactement ce qui est arrivé — un album de l'atelier payé en test a
+ * déclenché « bienvenue en prévente » parce que l'événement était routé vers
+ * un ancien déploiement qui ignorait le tri de l'atelier.
+ *
+ * Désormais chaque produit doit se reconnaître explicitement, et une session
+ * que personne ne revendique n'est traitée par personne.
+ */
+function estSessionPrevente(session: Stripe.Checkout.Session): boolean {
+  const offre = (session.metadata as CheckoutMeta | null)?.offer_type;
+  return typeof offre === "string" && OFFRES_PREVENTE.includes(offre);
+}
+
+/**
+ * Une session que ni l'atelier ni la prévente ne revendique.
+ *
+ * On ne touche à RIEN et on renvoie 200 : rejouer n'ajouterait pas le
+ * marqueur manquant, ça bouclerait jusqu'à l'abandon de l'événement. Mais on
+ * crie dans les logs, parce que ce cas signale toujours quelque chose de
+ * réel — un point d'écoute Stripe qui pointe sur un vieux déploiement, un
+ * paiement créé à la main dans le tableau de bord, ou un produit neuf dont on
+ * a oublié de poser le discriminant.
+ */
+function sessionOrpheline(session: Stripe.Checkout.Session, quoi: string): boolean {
+  console.error(
+    `[webhook] ⚠️ session ${quoi} sans produit identifiable — ignorée. ` +
+      `session=${session.id} metadata=${JSON.stringify(session.metadata ?? {})}`
+  );
+  return true;
+}
+
 /* Extrait l'id (string) d'un champ Stripe qui peut être string | objet expansé. */
 function asId(v: string | { id: string } | null | undefined): string | null {
   if (!v) return null;
@@ -613,38 +658,69 @@ export async function POST(request: Request) {
       /* ═══════════════ TRI PRÉVENTE / ATELIER ═══════════════════════════
          Ce webhook sert DEUX produits qui n'ont aucune table en commun.
 
-         Le tri se fait ICI, sur `metadata.kind`, AVANT le moindre accès en
-         base — et c'est vital : les trois handlers de la prévente cherchent
-         tous une ligne `waitlist`, et une cliente de l'atelier peut très
-         bien être inscrite à la waitlist. Sans ce tri, un album payé 40 €
+         Le tri se fait ICI, sur les métadonnées, AVANT le moindre accès en
+         base — et c'est vital : les handlers de session de la prévente
+         identifient la cliente par EMAIL, et une cliente de l'atelier peut
+         très bien être inscrite à la waitlist. Sans tri, un album payé 40 €
          la confirmerait fondatrice de la prévente, avec attribution d'un
          numéro de fondateur et envoi du mail F1 ; un panier d'album
          abandonné lui enverrait la relance d'acompte.
 
-         `estSessionAtelier` et `estChargeAtelier` sont des fonctions PURES,
-         sans requête : c'est la condition pour trier avant tout le reste.
+         CHAQUE PRODUIT SE RECONNAÎT EXPLICITEMENT, aucun n'est le cas par
+         défaut :
+           `kind: "atelier"`  → handlers de l'atelier
+           `offer_type: …`    → handlers de la prévente
+           ni l'un ni l'autre → journalisé, ignoré, 200.
+
+         La troisième branche a été ajoutée après l'incident du 24/08/2026 :
+         « sinon → prévente » faisait de la prévente le dépotoir de tout
+         paiement non identifié. Elle a ainsi adopté un album de l'atelier
+         dont l'événement avait été routé vers un ancien déploiement, et
+         envoyé « bienvenue en prévente » à une cliente qui achetait un
+         magazine. Voir `estSessionPrevente` et `sessionOrpheline`.
+
+         Les trois prédicats sont des fonctions PURES, sans requête : c'est
+         la condition pour trier avant tout le reste.
 
          Aucun handler de la prévente n'a été modifié. Ils ne voient
          simplement plus jamais un événement qui ne les concerne pas. */
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        ok = estSessionAtelier(session)
-          ? await traiterPaiementAtelier(supabase, session)
-          : await handleCheckoutCompleted(supabase, session);
+        if (estSessionAtelier(session)) {
+          ok = await traiterPaiementAtelier(supabase, session);
+        } else if (estSessionPrevente(session)) {
+          ok = await handleCheckoutCompleted(supabase, session);
+        } else {
+          ok = sessionOrpheline(session, "completed");
+        }
         break;
       }
       case "checkout.session.expired": {
         const session = event.data.object as Stripe.Checkout.Session;
-        ok = estSessionAtelier(session)
-          ? await traiterExpirationAtelier(supabase, session)
-          : await handleCheckoutExpired(supabase, session);
+        if (estSessionAtelier(session)) {
+          ok = await traiterExpirationAtelier(supabase, session);
+        } else if (estSessionPrevente(session)) {
+          ok = await handleCheckoutExpired(supabase, session);
+        } else {
+          ok = sessionOrpheline(session, "expired");
+        }
         break;
       }
       case "charge.refunded": {
         /* Ici le discriminant vient du PaymentIntent, pas de la session :
            une Charge ne porte pas les métadonnées de la session qui l'a
            créée. C'est /api/atelier/checkout qui les recopie sur le
-           PaymentIntent via `payment_intent_data.metadata`. */
+           PaymentIntent via `payment_intent_data.metadata`.
+
+           ⚠️ PAS de garde `estChargePrevente` ici, et c'est délibéré : les
+           Charges de la prévente ne portent AUCUNE métadonnée (son
+           /api/checkout n'en recopie pas sur le PaymentIntent), une telle
+           garde bloquerait donc tous les remboursements des 14 fondateurs.
+           Elle serait de toute façon inutile : `handleChargeRefunded`
+           retrouve la ligne par `stripe_payment_intent`, une clé exacte, et
+           sort proprement quand il n'y en a pas. Il n'a jamais eu le défaut
+           que ce commit corrige — c'est l'identification par email qui
+           l'avait, et elle ne concerne que les deux événements de session. */
         const charge = event.data.object as Stripe.Charge;
         ok = estChargeAtelier(charge)
           ? await traiterRemboursementAtelier(supabase, charge)
