@@ -31,7 +31,30 @@
  * Lu à CHAQUE appel plutôt qu'au chargement du module : rebasculer la
  * variable sur Vercel prend effet au redéploiement, sans dépendre du cache
  * de module d'une instance déjà chaude.
+ *
+ * ⚠️ TOLÉRANT À LA CASSE, ET C'EST VOLONTAIRE. Une comparaison stricte à
+ * "true" laissait passer `True`, `TRUE`, `Oui` — et le mode d'échec était
+ * MUET : la caisse restait grande ouverte, la page continuait de vendre, et
+ * rien nulle part ne disait pourquoi. Sur un interrupteur qui décide si on
+ * encaisse ou non de l'argent, un silence pareil est inacceptable. On accepte
+ * donc les graphies raisonnables, et on CRIE sur tout ce qu'on ne comprend
+ * pas plutôt que de le traiter comme un « non ».
  */
+const OUI = new Set(["true", "1", "oui", "yes", "on"]);
+const NON = new Set(["", "false", "0", "non", "no", "off"]);
+
 export function preventeFermee(): boolean {
-  return process.env.PREVENTE_FERMEE === "true";
+  const brut = (process.env.PREVENTE_FERMEE ?? "").trim().toLowerCase();
+  if (OUI.has(brut)) return true;
+  if (NON.has(brut)) return false;
+
+  /* Valeur posée mais incompréhensible : quelqu'un a VOULU dire quelque
+     chose. Refuser de trancher au silence — on ferme, et on le dit. Une
+     prévente fermée par excès de prudence se rouvre d'un clic ; une prévente
+     ouverte par erreur encaisse de l'argent qu'il faudra rembourser. */
+  console.error(
+    `[prevente] PREVENTE_FERMEE="${process.env.PREVENTE_FERMEE}" n'est ni oui ni non — ` +
+      `on ferme par prudence. Valeurs acceptées : ${[...OUI].join(", ")}.`
+  );
+  return true;
 }
