@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import ActionRapide from "./ActionRapide";
 import Activite from "./Activite";
+import Flux from "./Flux";
 import Tableau from "./Tableau";
 import Vues, { useReglages } from "./Vues";
 import type { LigneDossier, VueListe } from "./types";
@@ -50,10 +51,11 @@ const SOUS_TITRE_PILE: Record<Pile, string> = {
 
 /* Les filtres du haut. « Tout ce qui bouge » est le filtre par défaut d'un
    lundi matin : il retire les livrés, qui n'ont plus rien à raconter. */
-type Filtre = "actifs" | "moi" | "tous";
+type Filtre = "actifs" | "moi" | "nouveaux" | "tous";
 const FILTRES: Array<{ cle: Filtre; label: string }> = [
   { cle: "actifs", label: "En cours" },
   { cle: "moi", label: "Ce qui m'attend" },
+  { cle: "nouveaux", label: "Jamais ouverts" },
   { cle: "tous", label: "Tout" },
 ];
 
@@ -92,6 +94,7 @@ function Ligne({
 
       <span className="ate-ligne-corps">
         <span className="ate-ligne-titre">
+          {l.nouveau ? <span className="ate-point-neuf" title="Jamais ouvert" aria-label="Jamais ouvert" /> : null}
           {l.titre?.trim() || <em className="ate-faint">Sans titre</em>}
           {l.rembourse ? <span className="ate-tag ate-tag--alerte">remboursé</span> : null}
         </span>
@@ -177,6 +180,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
       /* « Ce qui m'attend » = strictement ce sur quoi on peut agir. C'est le
          filtre qui répond à « par quoi je commence ». */
       if (filtre === "moi" && l.urgence.pile !== "retard" && l.urgence.pile !== "a_faire") return false;
+      if (filtre === "nouveaux" && !l.nouveau) return false;
       if (!q) return true;
       /* La recherche sert à UNE chose : retrouver en trois secondes la
          cliente qui écrit « bonjour, où en est mon album ? » sans rien
@@ -225,7 +229,9 @@ export default function Liste({ vue }: { vue: VueListe }) {
       ? "Aucun numéro pour l'instant."
       : recherche
         ? `Rien ne correspond à « ${recherche} ».`
-        : "Rien dans ce filtre.";
+        : filtre === "nouveaux"
+          ? "Tout a été regardé."
+          : "Rien dans ce filtre.";
 
   return (
     <div
@@ -276,6 +282,14 @@ export default function Liste({ vue }: { vue: VueListe }) {
         </nav>
       </header>
 
+      <Flux
+        flux={vue.flux}
+        tokens={filtrees.map((l) => l.token)}
+        demo={vue.demo}
+        actif={filtre === "nouveaux"}
+        onFiltrer={() => setFiltre(filtre === "nouveaux" ? "actifs" : "nouveaux")}
+      />
+
       <Activite activite={vue.activite} base={base} fetchedAt={vue.fetchedAt} />
 
       {/* Barre collante : les filtres et la recherche restent sous la main
@@ -292,6 +306,9 @@ export default function Liste({ vue }: { vue: VueListe }) {
               {f.label}
               {f.cle === "moi" && enRetard + aFaire > 0 ? (
                 <span className="ate-seg-compte">{enRetard + aFaire}</span>
+              ) : null}
+              {f.cle === "nouveaux" && vue.flux.nouveaux > 0 ? (
+                <span className="ate-seg-compte">{vue.flux.nouveaux}</span>
               ) : null}
             </button>
           ))}

@@ -75,6 +75,9 @@ export default function Tableau({
                   >
                     <Link href={`${base}/${l.token}`} className="ate-carte-d-lien">
                       <span className="ate-carte-d-titre">
+                        {l.nouveau ? (
+                          <span className="ate-point-neuf" title="Jamais ouvert" aria-label="Jamais ouvert" />
+                        ) : null}
                         {l.titre?.trim() || "Sans titre"}
                         {l.rembourse ? <span className="ate-tag ate-tag--alerte">remboursé</span> : null}
                       </span>

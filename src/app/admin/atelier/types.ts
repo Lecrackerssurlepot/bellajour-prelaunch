@@ -30,6 +30,8 @@ export type ActionVue = {
 };
 
 export type LigneDossier = {
+  /** Identifiant interne — sert au marqueur de lecture, jamais affiché. */
+  numeroId: string;
   token: string;
   titre: string | null;
   prenom: string | null;
@@ -47,6 +49,8 @@ export type LigneDossier = {
   sansPhotos: boolean;
   paye: boolean;
   rembourse: boolean;
+  /** Jamais ouvert par la personne connectée (cf. table `dossiers_vus`). */
+  nouveau: boolean;
   /**
    * Ce qu'on peut faire sur cette ligne, SANS l'ouvrir.
    *
@@ -173,6 +177,34 @@ export type ActiviteVue = {
   recit: Recit;
 };
 
+/**
+ * Le flux entrant, en tête de liste.
+ *
+ * « Arrivée » ne veut pas dire « demande » : un questionnaire rempli sans
+ * dépôt est un prospect à relancer, pas du travail d'atelier. Les compter
+ * ensemble gonfle le compteur du matin avec du vide, et un compteur qu'on ne
+ * croit plus ne sert à rien.
+ */
+export type FluxVue = {
+  /** Dossiers dont le dépôt est terminé, arrivés aujourd'hui. */
+  demandesAujourdhui: number;
+  /** Idem, depuis 7 jours. */
+  demandesSemaine: number;
+  /** Questionnaires remplis, dépôt jamais terminé (tous âges). */
+  sansDepot: number;
+  /** Jamais ouverts par la personne connectée. */
+  nouveaux: number;
+  /** 14 derniers jours, du plus ancien au plus récent, pour la frise. */
+  parJour: Array<{ date: string; demandes: number }>;
+  /**
+   * `true` quand la table `dossiers_vus` n'a pas encore été créée : la marque
+   * « nouveau » retombe alors sur « arrivé depuis moins de 24 h ». Affiché,
+   * jamais tu : une divergence silencieuse entre deux définitions de
+   * « nouveau » est exactement ce qui se paie six mois plus tard.
+   */
+  marqueurAbsent: boolean;
+};
+
 export type VueListe = {
   lignes: LigneDossier[];
   compteurs: Record<Pile, number>;
@@ -181,6 +213,7 @@ export type VueListe = {
   qui: string;
   colonnes: ColonneVue[];
   activite: ActiviteVue[];
+  flux: FluxVue;
   /** Mode démonstration : les actions ne partent jamais en base. */
   demo?: boolean;
 };

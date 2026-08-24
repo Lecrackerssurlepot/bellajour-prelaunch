@@ -28,6 +28,6 @@ export default async function PageAtelier() {
      matcher changerait sans que personne n'y pense. */
   if (!qui) redirect("/admin/login");
 
-  const vue = await chargerListe(prenomDe(qui));
+  const vue = await chargerListe({ cle: qui, prenom: prenomDe(qui) });
   return <Liste vue={vue} />;
 }

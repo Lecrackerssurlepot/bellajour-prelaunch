@@ -30,6 +30,7 @@ import { construireParcours } from "@/lib/atelier/parcours";
 import type {
   ActiviteVue,
   AdresseVue,
+  FluxVue,
   ColonneVue,
   ClientVue,
   EvenementVue,
@@ -59,7 +60,12 @@ type RangeeNumero = {
   stripe_payment_intent: string | null;
 };
 
-function versLigne(r: RangeeNumero, maintenant: Date, rembourse: boolean): LigneDossier {
+function versLigne(
+  r: RangeeNumero,
+  maintenant: Date,
+  rembourse: boolean,
+  nouveau = false,
+): LigneDossier {
   const nbPhotos = r.nb_photos ?? 0;
   /* « Sans photos » ne veut PAS dire « nb_photos = 0 » à tous les états : une
      fois l'aperçu publié, le compteur n'a plus de sens comme signal. Le cas
@@ -68,6 +74,7 @@ function versLigne(r: RangeeNumero, maintenant: Date, rembourse: boolean): Ligne
   const u = urgencePour(r.etat, r.etat_maj_le, maintenant, { sansPhotos });
 
   return {
+    numeroId: r.id ?? "",
     token: r.token,
     titre: r.titre,
     prenom: r.prenom,
@@ -90,6 +97,7 @@ function versLigne(r: RangeeNumero, maintenant: Date, rembourse: boolean): Ligne
     sansPhotos,
     paye: Boolean(r.stripe_payment_intent),
     rembourse,
+    nouveau,
     actions: actionsDepuis(r.etat).map((a) => ({
       cle: a.cle,
       libelle: a.libelle,
@@ -110,7 +118,7 @@ export const COLONNES: ColonneVue[] = ETATS.map((etat) => ({
 
 /* ─────────────────────────────── la liste ─────────────────────────────── */
 
-export async function chargerListe(qui: string): Promise<VueListe> {
+export async function chargerListe(identite: { cle: string; prenom: string }): Promise<VueListe> {
   const supabase = makeSupabase();
   const maintenant = new Date();
 
@@ -142,12 +150,13 @@ export async function chargerListe(qui: string): Promise<VueListe> {
   }
 
   const activite = await chargerActivite(supabase, rangees);
+  const { vus, marqueurAbsent } = await chargerVus(supabase, identite.cle);
 
   /* Une seule évaluation d'urgence par dossier : elle sert au tri, aux
      compteurs du bandeau et à l'affichage. La recalculer trois fois serait
      trois occasions de diverger. */
   const evaluees = rangees.map((r) => ({
-    ligne: versLigne(r, maintenant, r.id ? rembourses.has(r.id) : false),
+    ligne: versLigne(r, maintenant, r.id ? rembourses.has(r.id) : false, estNouveau(r, vus, marqueurAbsent, maintenant)),
     urgence: urgencePour(r.etat, r.etat_maj_le, maintenant, {
       sansPhotos: r.etat === "photos_recues" && (r.nb_photos ?? 0) === 0,
     }),
@@ -160,8 +169,124 @@ export async function chargerListe(qui: string): Promise<VueListe> {
     compteurs: compter(evaluees.map((e) => e.urgence)),
     colonnes: COLONNES,
     activite,
+    flux: mesurerFlux(evaluees.map((e) => e.ligne), rangees, maintenant, marqueurAbsent),
     fetchedAt: maintenant.toISOString(),
-    qui,
+    qui: identite.prenom,
+  };
+}
+
+/* ─────────────────────── le marqueur de lecture ─────────────────────── */
+
+/** Repli quand la table n'existe pas encore : « arrivé depuis moins de 24 h ». */
+const REPLI_NOUVEAU_H = 24;
+
+/**
+ * Ce que CETTE personne a déjà ouvert.
+ *
+ * Best-effort assumé : si la migration `dossiers_vus` n'a pas encore été
+ * appliquée, la requête échoue et on le DIT (`marqueurAbsent`), au lieu de
+ * rendre un ensemble vide qui ferait passer tous les dossiers pour neufs sans
+ * que personne ne comprenne pourquoi.
+ */
+async function chargerVus(
+  supabase: ReturnType<typeof makeSupabase>,
+  qui: string,
+): Promise<{ vus: Set<string>; marqueurAbsent: boolean }> {
+  try {
+    const { data, error } = await supabase
+      .from("dossiers_vus")
+      .select("numero_id")
+      .eq("qui", qui)
+      .returns<Array<{ numero_id: string }>>();
+
+    if (error) {
+      console.error("[admin/atelier] dossiers_vus indisponible", error.code, error.message);
+      return { vus: new Set(), marqueurAbsent: true };
+    }
+    return { vus: new Set((data ?? []).map((v) => v.numero_id)), marqueurAbsent: false };
+  } catch (err) {
+    console.error("[admin/atelier] dossiers_vus exception", (err as Error)?.message);
+    return { vus: new Set(), marqueurAbsent: true };
+  }
+}
+
+/**
+ * Un dossier est « nouveau » tant que la personne connectée n'a pas ouvert sa
+ * fiche.
+ *
+ * ⚠️ Un dossier dont le dépôt n'est pas terminé n'est JAMAIS marqué nouveau :
+ * il n'y a rien à y voir tant qu'elle n'a pas envoyé ses photos. Le compter
+ * remplirait le badge du matin de dossiers sur lesquels il n'y a rien à faire,
+ * et un compteur qu'on ne croit plus ne sert à rien.
+ */
+function estNouveau(
+  r: RangeeNumero,
+  vus: Set<string>,
+  marqueurAbsent: boolean,
+  maintenant: Date,
+): boolean {
+  if ((r.nb_photos ?? 0) === 0) return false;
+
+  if (marqueurAbsent) {
+    if (!r.created_at) return false;
+    const age = (maintenant.getTime() - new Date(r.created_at).getTime()) / 3_600_000;
+    return age >= 0 && age < REPLI_NOUVEAU_H;
+  }
+
+  return r.id ? !vus.has(r.id) : false;
+}
+
+/* ─────────────────────────────── le flux ─────────────────────────────── */
+
+/* Date civile Europe/Paris : le serveur tourne en UTC, et « arrivé
+   aujourd'hui » à 1 h du matin doit compter pour aujourd'hui à Lisbonne comme
+   à Paris, pas pour la veille. */
+const JOUR_PARIS = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Paris",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+const JOURS_FRISE = 14;
+
+function mesurerFlux(
+  lignes: LigneDossier[],
+  rangees: RangeeNumero[],
+  maintenant: Date,
+  marqueurAbsent: boolean,
+): FluxVue {
+  /* Une ARRIVÉE compte le jour où le dossier a été ouvert ; une DEMANDE est
+     une arrivée dont le dépôt est terminé. `nb_photos > 0` est le seul signal
+     dont on dispose rétrospectivement : `consent_photos` dit la même chose,
+     mais `nb_photos` se lit déjà dans la liste. */
+  const demandes = rangees.filter((r) => (r.nb_photos ?? 0) > 0 && r.created_at);
+
+  const aujourdhui = JOUR_PARIS.format(maintenant);
+  const ilYA = (jours: number) => JOUR_PARIS.format(new Date(maintenant.getTime() - jours * 86_400_000));
+
+  const compteParJour = new Map<string, number>();
+  for (const r of demandes) {
+    const j = JOUR_PARIS.format(new Date(r.created_at as string));
+    compteParJour.set(j, (compteParJour.get(j) ?? 0) + 1);
+  }
+
+  const parJour: FluxVue["parJour"] = [];
+  for (let i = JOURS_FRISE - 1; i >= 0; i--) {
+    const date = ilYA(i);
+    parJour.push({ date, demandes: compteParJour.get(date) ?? 0 });
+  }
+
+  const seuilSemaine = maintenant.getTime() - 7 * 86_400_000;
+
+  return {
+    demandesAujourdhui: compteParJour.get(aujourdhui) ?? 0,
+    demandesSemaine: demandes.filter((r) => new Date(r.created_at as string).getTime() >= seuilSemaine)
+      .length,
+    sansDepot: lignes.filter((l) => l.sansPhotos).length,
+    nouveaux: lignes.filter((l) => l.nouveau).length,
+    parJour,
+    marqueurAbsent,
   };
 }
 
@@ -250,6 +375,28 @@ function versAdresse(brut: unknown): AdresseVue | null {
     pays: s(a.country) ?? s(a.pays),
     dom: estDom(codePostal),
   };
+}
+
+/**
+ * « Cette personne a ouvert ce dossier. »
+ *
+ * SEULE ÉCRITURE de tout ce fichier, et elle ne touche à aucune donnée
+ * métier : c'est une marque de lecture, pas un état. Best-effort strict — un
+ * marqueur perdu fait réapparaître un badge, jamais plus.
+ *
+ * `upsert` plutôt qu'`insert` : rouvrir un dossier rafraîchit la date au lieu
+ * de renvoyer un doublon (23505) qu'il faudrait rattraper.
+ */
+export async function marquerVu(qui: string, numeroId: string): Promise<void> {
+  try {
+    const supabase = makeSupabase();
+    const { error } = await supabase
+      .from("dossiers_vus")
+      .upsert({ qui, numero_id: numeroId, vu_le: new Date().toISOString() }, { onConflict: "qui,numero_id" });
+    if (error) console.error("[admin/atelier] marquage vu échoué", error.code, error.message);
+  } catch (err) {
+    console.error("[admin/atelier] marquage vu exception", (err as Error)?.message);
+  }
 }
 
 export async function chargerFiche(token: string): Promise<Fiche | null> {

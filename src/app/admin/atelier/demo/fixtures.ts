@@ -263,6 +263,7 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
   return {
     urgence,
     ligne: {
+      numeroId: g.token,
       token: g.token,
       titre: g.titre === "Sans titre" ? null : g.titre,
       prenom: g.prenom,
@@ -285,6 +286,9 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
       sansPhotos,
       paye: Boolean(g.paye),
       rembourse: Boolean(g.rembourse),
+      /* En démonstration, « nouveau » = arrivé dans les deux derniers jours
+         et jamais ouvert : on veut voir le badge, pas simuler une table. */
+      nouveau: !sansPhotos && g.ouvertIlYA <= 2,
       actions: actionsDepuis(g.etat).map((a) => ({
         cle: a.cle,
         libelle: a.libelle,
@@ -330,6 +334,21 @@ export function listeDemo(qui: string): VueListe {
     compteurs: compter(evaluees.map((e) => e.urgence)),
     colonnes: COLONNES,
     activite,
+    flux: {
+      demandesAujourdhui: evaluees.filter((e) => e.ligne.nouveau).length,
+      demandesSemaine: GRAINES.filter((g) => g.nbPhotos > 0 && g.ouvertIlYA <= 7).length,
+      sansDepot: evaluees.filter((e) => e.ligne.sansPhotos).length,
+      nouveaux: evaluees.filter((e) => e.ligne.nouveau).length,
+      parJour: Array.from({ length: 14 }, (_, i) => {
+        const jours = 13 - i;
+        const d = new Date(maintenant.getTime() - jours * 86_400_000);
+        return {
+          date: d.toISOString().slice(0, 10),
+          demandes: GRAINES.filter((g) => g.nbPhotos > 0 && g.ouvertIlYA === jours).length,
+        };
+      }),
+      marqueurAbsent: false,
+    },
     fetchedAt: maintenant.toISOString(),
     qui,
     demo: true,

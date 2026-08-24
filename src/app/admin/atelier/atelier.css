@@ -139,6 +139,135 @@
   color: var(--bj-action);
 }
 
+/* ── le flux entrant ── */
+.ate-flux {
+  margin-bottom: var(--bj-sp-3);
+}
+.ate-flux-nombres {
+  display: flex;
+  align-items: stretch;
+  gap: var(--bj-sp-2);
+  flex-wrap: wrap;
+}
+.ate-flux-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 7.5rem;
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  border-radius: var(--bj-r-md);
+  border: 1px solid var(--bj-veil-8);
+  background: var(--ate-carte-bg);
+  text-align: left;
+  font-family: var(--bj-font-ui);
+  color: inherit;
+  cursor: pointer;
+  transition: border-color var(--bj-dur-fast) var(--bj-ease);
+}
+.ate-flux-item:hover:not(:disabled) {
+  border-color: var(--bj-action-border);
+}
+.ate-flux-item:disabled {
+  cursor: default;
+}
+.ate-flux-item--fixe {
+  cursor: default;
+}
+.ate-flux-item--actif {
+  border-color: var(--bj-action);
+  background: var(--bj-action-soft);
+}
+.ate-flux-item--pale {
+  background: transparent;
+  border-style: dashed;
+}
+.ate-flux-val {
+  font-family: var(--bj-font-display);
+  font-size: var(--bj-fs-h2);
+  line-height: 1;
+  color: var(--bj-text-soft);
+  font-variant-numeric: tabular-nums;
+}
+/* Un seul chiffre a le droit d'être en couleur : celui qui demande une
+   action. Trois chiffres colorés, et on ne sait plus lequel regarder. */
+.ate-flux-val--fort {
+  color: var(--bj-action);
+}
+.ate-flux-item--pale .ate-flux-val {
+  color: var(--bj-text-faint);
+}
+.ate-flux-label {
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+  line-height: 1.2;
+}
+
+/* Une silhouette, pas un graphique : ni axe, ni légende, ni valeur. On veut
+   voir si ça monte, pas relever une mesure. */
+.ate-flux-frise {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  flex: 1;
+  min-width: 8rem;
+  /* Hauteur FIXE : les barres sont dimensionnées en pourcentage, et un
+     conteneur qui s'adapte à son contenu rendrait ce pourcentage circulaire —
+     les barres se calaient alors sur la hauteur des cartes voisines. */
+  height: 4.5rem;
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  border-radius: var(--bj-r-md);
+  border: 1px solid var(--bj-veil-8);
+  background: var(--ate-carte-bg);
+}
+.ate-flux-barre {
+  flex: 1;
+  min-height: 3px;
+  border-radius: 2px;
+  background: var(--bj-veil-8);
+}
+.ate-flux-barre--pleine {
+  background: var(--bj-action-faint);
+}
+.ate-flux-frise .ate-flux-barre:last-child.ate-flux-barre--pleine {
+  background: var(--bj-action);
+}
+.ate-flux-vu {
+  align-self: center;
+  min-height: 34px;
+  padding: 0 var(--bj-sp-4);
+  border-radius: var(--bj-r-btn);
+  border: 1px solid var(--bj-veil-12);
+  background: transparent;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  cursor: pointer;
+}
+.ate-flux-vu:hover {
+  border-color: var(--bj-action-border);
+  color: var(--bj-action);
+}
+.ate-flux-note {
+  margin: var(--bj-sp-2) 0 0;
+  font-size: 11px;
+  color: var(--ate-orange);
+}
+.ate-flux-note code {
+  font-size: 11px;
+}
+
+/* La marque « jamais ouvert » : un point, pas une étiquette. Sur vingt
+   lignes, vingt étiquettes « NOUVEAU » deviennent du bruit ; vingt points
+   se comptent d'un regard. */
+.ate-point-neuf {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-action);
+}
+
 /* ── le fil d'activité ── */
 .ate-activite {
   margin-bottom: var(--bj-sp-3);
@@ -1629,6 +1758,24 @@
   }
   .ate-barre {
     gap: var(--bj-sp-2);
+  }
+  /* Sur téléphone, les quatre nombres passent en deux colonnes et la frise
+     prend la largeur : empilés, ils repousseraient la liste sous la ligne
+     de flottaison. */
+  .ate-flux-item {
+    flex: 1 1 calc(50% - var(--bj-sp-2));
+    min-width: 0;
+    padding: var(--bj-sp-2) var(--bj-sp-3);
+  }
+  .ate-flux-val {
+    font-size: var(--bj-fs-h1-screen);
+  }
+  .ate-flux-frise {
+    flex-basis: 100%;
+    height: 3.5rem;
+  }
+  .ate-flux-vu {
+    flex-basis: 100%;
   }
   .ate-recherche {
     min-width: 0;
