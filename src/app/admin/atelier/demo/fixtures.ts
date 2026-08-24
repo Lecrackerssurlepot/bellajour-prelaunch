@@ -23,6 +23,9 @@
 import { eurosPour } from "@/lib/atelier/prix";
 import { ETAPE_ETAT, LIBELLE_ETAT, actionsDepuis, type Etat } from "@/lib/atelier/transitions";
 import { compter, comparerUrgence, urgencePour } from "@/lib/atelier/urgence";
+import { raconter } from "@/lib/atelier/recit";
+import { construireParcours } from "@/lib/atelier/parcours";
+import { COLONNES } from "../donnees";
 import type { Fiche, LigneDossier, VueListe } from "../types";
 
 /* Des jetons de 32 caractères, comme les vrais : la fiche de démonstration
@@ -297,9 +300,36 @@ export function listeDemo(qui: string): VueListe {
   const maintenant = new Date();
   const evaluees = GRAINES.map((g) => ligneDe(g, maintenant));
   evaluees.sort((a, b) => comparerUrgence(a.urgence, b.urgence));
+
+  /* Un fil d'activité fabriqué : sans lui, la démonstration montrerait un
+     encart vide là où, en vrai, se lit la journée de l'atelier. */
+  const ilYA = (h: number) => new Date(maintenant.getTime() - h * 3_600_000).toISOString();
+  const activite: VueListe["activite"] = [
+    { t: T("demo1"), titre: "Notre été à Séville", h: 2, type: "etat_change", p: { vers: "payee", euros: 40 } },
+    { t: T("demo1"), titre: "Notre été à Séville", h: 2, type: "mail_envoye", p: { code: "M4" } },
+    { t: T("demo4"), titre: "Le mariage de Léa et Sam", h: 6, type: "mail_envoye", p: { code: "M3" } },
+    {
+      t: T("demo4"),
+      titre: "Le mariage de Léa et Sam",
+      h: 6,
+      type: "etat_change",
+      p: { vers: "apercu_pret", par: "Mathias", nbPages: 44, euros: 45 },
+    },
+    { t: T("demo9"), titre: "Marseille, encore", h: 20, type: "etat_change", p: { vers: "photos_insuffisantes", par: "Louis" } },
+    { t: T("demo3"), titre: "La maison de Kerlouan", h: 14, type: "consentements", p: { consent_photos: true } },
+    { t: T("demo8"), titre: "Le dernier été de Gribouille", h: 34, type: "etat_change", p: { vers: "expediee", par: "Louis", transporteur: "Colissimo" } },
+  ].map((e, i) => ({
+    id: `act-${i}`,
+    token: e.t,
+    titre: e.titre,
+    createdAt: ilYA(e.h),
+    recit: raconter(e.type, e.p as Record<string, unknown>),
+  }));
   return {
     lignes: evaluees.map((e) => e.ligne),
     compteurs: compter(evaluees.map((e) => e.urgence)),
+    colonnes: COLONNES,
+    activite,
     fetchedAt: maintenant.toISOString(),
     qui,
     demo: true,
@@ -358,8 +388,22 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
   }
   journal.push({ type: "etat_change", payload: { vers: g.etat, par: "Mathias" }, h: g.depuis });
 
+  /* `h` = « il y a tant d'heures », donc le plus PETIT h est le plus récent.
+     La vraie requête trie `created_at` décroissant : la démo doit lire dans
+     le même sens, sinon on met au point sur un ordre qui n'existe pas. */
+  const evenementsVus = journal
+    .sort((a, b) => a.h - b.h)
+    .map((e, i) => ({
+      id: `ev-${i}`,
+      type: e.type,
+      payload: e.payload,
+      createdAt: il(Math.max(e.h, 0)),
+      recit: raconter(e.type, e.payload),
+    }));
+
   return {
     ligne,
+    parcours: construireParcours(g.etat, evenementsVus),
     occasion: g.occasion,
     histoire: g.histoire || null,
     telephone: g.telephone || null,
@@ -398,14 +442,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
       taille: 2_400_000 + i * 130_000,
       url: PHOTOS[i % PHOTOS.length],
     })),
-    evenements: journal
-      .sort((a, b) => a.h - b.h)
-      .map((e, i) => ({
-        id: `ev-${i}`,
-        type: e.type,
-        payload: e.payload,
-        createdAt: il(Math.max(e.h, 0)),
-      })),
+    evenements: evenementsVus,
     mails: [
       ...(g.nbPhotos > 0 ? [{ code: "M1", templateId: 27, envoyeLe: il(g.ouvertIlYA * 24 - 2) }] : []),
       ...(publie ? [{ code: "M3", templateId: 28, envoyeLe: il(g.depuis + 48) }] : []),

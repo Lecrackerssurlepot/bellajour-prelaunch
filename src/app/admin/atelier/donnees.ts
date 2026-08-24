@@ -19,13 +19,18 @@ import { resoudreApercu } from "@/lib/atelier/apercu";
 import { eurosPour, type PalierCle } from "@/lib/atelier/prix";
 import {
   ETAPE_ETAT,
+  ETATS,
   LIBELLE_ETAT,
   actionsDepuis,
   type Etat,
 } from "@/lib/atelier/transitions";
 import { compter, comparerUrgence, urgencePour } from "@/lib/atelier/urgence";
+import { raconter } from "@/lib/atelier/recit";
+import { construireParcours } from "@/lib/atelier/parcours";
 import type {
+  ActiviteVue,
   AdresseVue,
+  ColonneVue,
   ClientVue,
   EvenementVue,
   Fiche,
@@ -95,6 +100,14 @@ function versLigne(r: RangeeNumero, maintenant: Date, rembourse: boolean): Ligne
   };
 }
 
+/* Les neuf colonnes, dans l'ordre du parcours. Constante : elles ne
+   dépendent d'aucune donnée. */
+export const COLONNES: ColonneVue[] = ETATS.map((etat) => ({
+  etat,
+  etape: ETAPE_ETAT[etat],
+  titre: LIBELLE_ETAT[etat],
+}));
+
 /* ─────────────────────────────── la liste ─────────────────────────────── */
 
 export async function chargerListe(qui: string): Promise<VueListe> {
@@ -128,6 +141,8 @@ export async function chargerListe(qui: string): Promise<VueListe> {
     for (const e of remb ?? []) rembourses.add(e.numero_id);
   }
 
+  const activite = await chargerActivite(supabase, rangees);
+
   /* Une seule évaluation d'urgence par dossier : elle sert au tri, aux
      compteurs du bandeau et à l'affichage. La recalculer trois fois serait
      trois occasions de diverger. */
@@ -143,9 +158,71 @@ export async function chargerListe(qui: string): Promise<VueListe> {
   return {
     lignes: evaluees.map((e) => e.ligne),
     compteurs: compter(evaluees.map((e) => e.urgence)),
+    colonnes: COLONNES,
+    activite,
     fetchedAt: maintenant.toISOString(),
     qui,
   };
+}
+
+/**
+ * Le fil d'activité de l'atelier — les deux derniers jours, tous dossiers
+ * confondus.
+ *
+ * ⚠️ Fenêtre de 48 h et plafond à 60 lignes. Le journal grossit sans fin :
+ * sans borne, cette requête deviendrait la plus lourde de la page, pour
+ * afficher des événements que personne ne relit. Deux jours couvrent le
+ * week-end et la question réelle — « qu'est-ce que j'ai fait, qu'est-ce qui
+ * est parti ».
+ *
+ * Best-effort : un fil vide ne doit jamais empêcher la table de travail de
+ * s'afficher.
+ */
+const FENETRE_ACTIVITE_H = 48;
+const MAX_ACTIVITE = 60;
+
+async function chargerActivite(
+  supabase: ReturnType<typeof makeSupabase>,
+  rangees: RangeeNumero[],
+): Promise<ActiviteVue[]> {
+  try {
+    const depuis = new Date(Date.now() - FENETRE_ACTIVITE_H * 3_600_000).toISOString();
+    const { data } = await supabase
+      .from("evenements")
+      .select("id, numero_id, type, payload, created_at")
+      .gte("created_at", depuis)
+      .order("created_at", { ascending: false })
+      .limit(MAX_ACTIVITE)
+      .returns<
+        Array<{
+          id: string;
+          numero_id: string;
+          type: string;
+          payload: Record<string, unknown>;
+          created_at: string;
+        }>
+      >();
+
+    const parId = new Map(rangees.filter((r) => r.id).map((r) => [r.id as string, r]));
+
+    return (data ?? [])
+      /* Un événement dont le dossier a disparu (suppression en cascade) n'a
+         plus de titre ni de lien : il ne raconte plus rien. */
+      .filter((e) => parId.has(e.numero_id))
+      .map((e) => {
+        const n = parId.get(e.numero_id)!;
+        return {
+          id: e.id,
+          token: n.token,
+          titre: n.titre,
+          createdAt: e.created_at,
+          recit: raconter(e.type, e.payload ?? {}),
+        };
+      });
+  } catch (err) {
+    console.error("[admin/atelier] fil d'activité indisponible", (err as Error)?.message);
+    return [];
+  }
 }
 
 /* ─────────────────────────────── la fiche ─────────────────────────────── */
@@ -230,8 +307,17 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
   const apercu = await resoudreApercu(n.apercu_urls);
   const brut = (n.apercu_urls && typeof n.apercu_urls === "object" ? n.apercu_urls : {}) as Record<string, string>;
 
+  const evenementsVus: EvenementVue[] = (evenements ?? []).map((e) => ({
+    id: e.id,
+    type: e.type,
+    payload: e.payload ?? {},
+    createdAt: e.created_at,
+    recit: raconter(e.type, e.payload ?? {}),
+  }));
+
   return {
     ligne: versLigne(rangee, maintenant, rembourse),
+    parcours: construireParcours(rangee.etat, evenementsVus),
     occasion: (n.occasion as string) ?? null,
     histoire: (n.histoire as string) ?? null,
     telephone: (n.telephone as string) ?? null,
@@ -255,14 +341,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     adresse: versAdresse(n.adresse_livraison),
     stripePaymentIntent: (n.stripe_payment_intent as string) ?? null,
     photos: photosVues,
-    evenements: (evenements ?? []).map(
-      (e): EvenementVue => ({
-        id: e.id,
-        type: e.type,
-        payload: e.payload ?? {},
-        createdAt: e.created_at,
-      }),
-    ),
+    evenements: evenementsVus,
     mails: (mails ?? []).map(
       (m): MailVue => ({ code: m.code, templateId: m.template_id, envoyeLe: m.envoye_le }),
     ),

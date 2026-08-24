@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import ActionRapide from "./ActionRapide";
+import Activite from "./Activite";
+import Tableau from "./Tableau";
+import Vues, { useReglages } from "./Vues";
 import type { LigneDossier, VueListe } from "./types";
 import type { Pile } from "@/lib/atelier/urgence";
 
@@ -135,7 +138,8 @@ function Ligne({
 export default function Liste({ vue }: { vue: VueListe }) {
   const [recherche, setRecherche] = useState("");
   const [filtre, setFiltre] = useState<Filtre>("actifs");
-  const [replies, setReplies] = useState<Set<Pile>>(new Set<Pile>(["dehors", "termine"]));
+  const [reglages, majReglages] = useReglages();
+  const [replies, setReplies] = useState<Set<string>>(new Set<string>(["dehors", "termine"]));
   const [toast, setToast] = useState<string | null>(null);
   const champRecherche = useRef<HTMLInputElement | null>(null);
 
@@ -181,22 +185,54 @@ export default function Liste({ vue }: { vue: VueListe }) {
     });
   }, [vue.lignes, recherche, filtre]);
 
+  /**
+   * Le regroupement, en une seule structure quel que soit le critère.
+   *
+   * `aucun` produit un unique groupe sans en-tête : une liste plate n'est pas
+   * un cas particulier, c'est un regroupement à un seul seau. Le rendu ne
+   * connaît donc qu'une forme.
+   */
   const groupes = useMemo(() => {
-    const g = new Map<Pile, LigneDossier[]>();
-    for (const l of filtrees) {
-      const arr = g.get(l.urgence.pile) ?? [];
-      arr.push(l);
-      g.set(l.urgence.pile, arr);
+    if (reglages.groupe === "aucun") {
+      return [{ cle: "tout", titre: null, sous: null, lignes: filtrees }];
     }
-    return g;
-  }, [filtrees]);
+
+    if (reglages.groupe === "etape") {
+      return vue.colonnes
+        .map((c) => ({
+          cle: c.etat,
+          titre: `${c.etape} · ${c.titre}`,
+          sous: null as string | null,
+          lignes: filtrees.filter((l) => l.etat === c.etat),
+        }))
+        .filter((g) => g.lignes.length > 0);
+    }
+
+    return ORDRE.map((pile) => ({
+      cle: pile,
+      titre: TITRE_PILE[pile],
+      sous: SOUS_TITRE_PILE[pile] as string | null,
+      lignes: filtrees.filter((l) => l.urgence.pile === pile),
+    })).filter((g) => g.lignes.length > 0);
+  }, [filtrees, reglages.groupe, vue.colonnes]);
 
   const base = vue.demo ? "/admin/atelier/demo" : "/admin/atelier";
   const aFaire = vue.compteurs.a_faire;
   const enRetard = vue.compteurs.retard;
+  const vide = filtrees.length === 0;
+  const messageVide =
+    vue.lignes.length === 0
+      ? "Aucun numéro pour l'instant."
+      : recherche
+        ? `Rien ne correspond à « ${recherche} ».`
+        : "Rien dans ce filtre.";
 
   return (
-    <div className="adm-root ate-root">
+    <div
+      className={`adm-root ate-root ate-root--${reglages.densite}${
+        reglages.mode === "liste" && reglages.groupe === "etape" ? " ate-root--groupe-etape" : ""
+      }`}
+    >
       {vue.demo ? (
         <div className="ate-demo-bar">
           Mode démonstration — dossiers fictifs, aucune action ne part en base.{" "}
@@ -240,6 +276,8 @@ export default function Liste({ vue }: { vue: VueListe }) {
         </nav>
       </header>
 
+      <Activite activite={vue.activite} base={base} fetchedAt={vue.fetchedAt} />
+
       {/* Barre collante : les filtres et la recherche restent sous la main
           quand on descend dans une longue liste. */}
       <div className="ate-barre">
@@ -259,79 +297,88 @@ export default function Liste({ vue }: { vue: VueListe }) {
           ))}
         </div>
 
-        <div className="ate-recherche-boite">
-          <input
-            ref={champRecherche}
-            className="adm-input ate-recherche"
-            type="search"
-            placeholder="Prénom, titre, email, lien…"
-            value={recherche}
-            onChange={(e) => setRecherche(e.target.value)}
-          />
-          {recherche ? (
-            <span className="ate-recherche-compte">{filtrees.length}</span>
-          ) : (
-            <kbd className="ate-kbd">/</kbd>
-          )}
+        <div className="ate-barre-droite">
+          <Vues reglages={reglages} onChange={majReglages} />
+          <div className="ate-recherche-boite">
+            <input
+              ref={champRecherche}
+              className="adm-input ate-recherche"
+              type="search"
+              placeholder="Prénom, titre, email, lien…"
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+            />
+            {recherche ? (
+              <span className="ate-recherche-compte">{filtrees.length}</span>
+            ) : (
+              <kbd className="ate-kbd">/</kbd>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* En-tête de colonnes, aligné sur la grille des lignes. */}
-      <div className="ate-entete" aria-hidden>
-        <span />
-        <span>Dossier</span>
-        <span>État</span>
-        <span>Délai</span>
-        <span className="ate-date">Ouvert</span>
-        <span>Action</span>
-      </div>
+      {reglages.mode === "liste" ? (
+        <>
+          {/* En-tête de colonnes, aligné sur la grille des lignes. */}
+          <div className="ate-entete" aria-hidden>
+            <span />
+            <span>Dossier</span>
+            <span>État</span>
+            <span>Délai</span>
+            <span className="ate-date">Ouvert</span>
+            <span>Action</span>
+          </div>
 
-      {filtrees.length === 0 ? (
-        <p className="ate-vide">
-          {vue.lignes.length === 0
-            ? "Aucun numéro pour l'instant."
-            : recherche
-              ? `Rien ne correspond à « ${recherche} ».`
-              : "Rien dans ce filtre."}
-        </p>
-      ) : null}
+          {vide ? <p className="ate-vide">{messageVide}</p> : null}
 
-      {ORDRE.map((pile) => {
-        const lignes = groupes.get(pile);
-        if (!lignes?.length) return null;
-        const replie = replies.has(pile);
-        return (
-          <section key={pile} className={`ate-pile ate-pile--${pile}`}>
-            <button
-              type="button"
-              className="ate-pile-tete"
-              onClick={() =>
-                setReplies((s) => {
-                  const n = new Set(s);
-                  if (n.has(pile)) n.delete(pile);
-                  else n.add(pile);
-                  return n;
-                })
-              }
-              aria-expanded={!replie}
-            >
-              <span className="ate-pile-titre">{TITRE_PILE[pile]}</span>
-              <span className="ate-pile-compte">{lignes.length}</span>
-              <span className="ate-pile-sous">{SOUS_TITRE_PILE[pile]}</span>
-              <span className="ate-chevron" aria-hidden>
-                {replie ? "▸" : "▾"}
-              </span>
-            </button>
-            {replie ? null : (
-              <div className="ate-lignes">
-                {lignes.map((l) => (
-                  <Ligne key={l.token} l={l} base={base} demo={vue.demo} onFait={setToast} />
-                ))}
-              </div>
-            )}
-          </section>
-        );
-      })}
+          {groupes.map((g) => {
+            const replie = replies.has(g.cle);
+            return (
+              <section key={g.cle} className={`ate-pile ate-pile--${g.cle}`}>
+                {g.titre ? (
+                  <button
+                    type="button"
+                    className="ate-pile-tete"
+                    onClick={() =>
+                      setReplies((s) => {
+                        const n = new Set(s);
+                        if (n.has(g.cle)) n.delete(g.cle);
+                        else n.add(g.cle);
+                        return n;
+                      })
+                    }
+                    aria-expanded={!replie}
+                  >
+                    <span className="ate-pile-titre">{g.titre}</span>
+                    <span className="ate-pile-compte">{g.lignes.length}</span>
+                    <span className="ate-pile-sous">{g.sous}</span>
+                    <span className="ate-chevron" aria-hidden>
+                      {replie ? "▸" : "▾"}
+                    </span>
+                  </button>
+                ) : null}
+                {replie ? null : (
+                  <div className="ate-lignes">
+                    {g.lignes.map((l) => (
+                      <Ligne key={l.token} l={l} base={base} demo={vue.demo} onFait={setToast} />
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+        </>
+      ) : (
+        <>
+          {vide ? <p className="ate-vide">{messageVide}</p> : null}
+          <Tableau
+            lignes={filtrees}
+            colonnes={vue.colonnes}
+            demo={vue.demo}
+            onFait={setToast}
+          />
+        </>
+      )}
 
       <p className="adm-fetched ate-pied">
         Lu le{" "}

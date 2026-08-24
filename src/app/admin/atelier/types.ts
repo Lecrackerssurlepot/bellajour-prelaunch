@@ -9,6 +9,8 @@
 
 import type { Pile } from "@/lib/atelier/urgence";
 import type { Etat } from "@/lib/atelier/transitions";
+import type { Recit } from "@/lib/atelier/recit";
+import type { Parcours } from "@/lib/atelier/parcours";
 
 export type UrgenceVue = {
   pile: Pile;
@@ -68,6 +70,8 @@ export type EvenementVue = {
   type: string;
   payload: Record<string, unknown>;
   createdAt: string;
+  /** La même chose, en français (cf. lib/atelier/recit.ts). */
+  recit: Recit;
 };
 
 export type MailVue = {
@@ -114,6 +118,8 @@ export type ClientVue = {
 
 export type Fiche = {
   ligne: LigneDossier;
+  /** Les huit jalons : ce qui est fait, où on en est, ce qui vient. */
+  parcours: Parcours;
   occasion: string | null;
   histoire: string | null;
   telephone: string | null;
@@ -141,12 +147,40 @@ export type Fiche = {
   actions: ActionVue[];
 };
 
+/**
+ * Les colonnes de la vue tableau, et les groupes de la vue liste quand on
+ * regroupe par étape.
+ *
+ * Calculées côté serveur pour la même raison que les actions : les libellés
+ * vivent dans transitions.ts, qui importe la grille de prix. Recopier neuf
+ * chaînes dans le composant client aurait été plus court et aurait créé une
+ * seconde vérité à maintenir.
+ */
+export type ColonneVue = { etat: Etat; etape: string; titre: string };
+
+/**
+ * Une ligne du fil d'activité de l'atelier.
+ *
+ * Le journal d'un dossier répond à « qu'est-il arrivé à CELUI-LÀ ». Celui-ci
+ * répond à l'autre question, celle qu'on se pose le soir : « qu'est-ce qu'on
+ * a fait aujourd'hui, et qu'est-ce qui est parti ».
+ */
+export type ActiviteVue = {
+  id: string;
+  token: string;
+  titre: string | null;
+  createdAt: string;
+  recit: Recit;
+};
+
 export type VueListe = {
   lignes: LigneDossier[];
   compteurs: Record<Pile, number>;
   fetchedAt: string;
   /** Prénom de la personne connectée — affiché, et écrit dans le journal. */
   qui: string;
+  colonnes: ColonneVue[];
+  activite: ActiviteVue[];
   /** Mode démonstration : les actions ne partent jamais en base. */
   demo?: boolean;
 };

@@ -53,6 +53,28 @@ export const DELAIS: Partial<Record<Etat, Delai>> = {
   validee: { joursOuvres: 1, promesse: "Départ à l'impression sous 1 jour ouvré" },
 };
 
+/**
+ * Qui doit jouer pour sortir de cet état.
+ *
+ * Exporté parce que trois écrans posent la même question sous trois formes :
+ * la liste (dans quelle pile ranger la ligne), le parcours (qui attend, à
+ * cette étape) et la fiche (est-ce mon tour). Une seule réponse, un seul
+ * endroit — sinon les trois finissent par se contredire.
+ */
+export type Camp = "atelier" | "cliente" | "dehors" | "fini";
+
+export const QUI_ATTEND: Record<Etat, Camp> = {
+  photos_recues: "atelier",
+  photos_insuffisantes: "cliente",
+  apercu_pret: "cliente",
+  payee: "atelier",
+  maquette_prete: "cliente",
+  validee: "atelier",
+  en_production: "dehors",
+  expediee: "dehors",
+  livree: "fini",
+};
+
 /** Le camp où se trouve la balle, quand aucun compte à rebours ne court. */
 const CAMP: Record<Etat, Pile> = {
   photos_recues: "a_faire",

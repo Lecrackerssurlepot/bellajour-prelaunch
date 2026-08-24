@@ -139,6 +139,84 @@
   color: var(--bj-action);
 }
 
+/* ── le fil d'activité ── */
+.ate-activite {
+  margin-bottom: var(--bj-sp-3);
+  border-radius: var(--bj-r-md);
+  border: 1px solid var(--bj-veil-8);
+  background: var(--ate-carte-bg);
+  overflow: hidden;
+}
+.ate-activite-tete {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  width: 100%;
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.ate-activite-titre {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: var(--bj-fs-lg);
+}
+.ate-activite-compte {
+  flex: 1;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+.ate-activite-corps {
+  padding: 0 var(--bj-sp-4) var(--bj-sp-3);
+  max-height: 24rem;
+  overflow-y: auto;
+}
+.ate-activite-jour + .ate-activite-jour {
+  margin-top: var(--bj-sp-4);
+}
+.ate-activite-jour-titre {
+  margin: 0 0 var(--bj-sp-1);
+  font-size: var(--bj-fs-xxs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--bj-text-faint);
+  font-weight: 500;
+}
+.ate-activite-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* Le fil réutilise la mise en forme du journal d'une fiche : c'est le même
+   objet, lu à une autre échelle. Deux styles auraient divergé. */
+.ate-activite-liste .ate-ev {
+  display: flex;
+  align-items: baseline;
+  gap: var(--bj-sp-3);
+  padding: var(--bj-sp-2) 0;
+  font-size: var(--bj-fs-xs);
+  border-bottom: var(--ate-ligne-h);
+}
+.ate-activite-liste .ate-ev:last-child {
+  border-bottom: none;
+}
+.ate-activite-lien {
+  color: var(--bj-action);
+  text-decoration: none;
+}
+.ate-activite-lien:hover {
+  text-decoration: underline;
+}
+.ate-activite-pied {
+  margin: var(--bj-sp-3) 0 0;
+  font-size: 11px;
+  color: var(--bj-text-faint);
+}
+
 /* ── barre collante : filtres + recherche ── */
 .ate-barre {
   position: sticky;
@@ -218,6 +296,127 @@
 }
 .ate-recherche-compte {
   font-variant-numeric: tabular-nums;
+}
+
+/* ── le réglage de vue ── */
+.ate-barre-droite {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+}
+.ate-vues {
+  position: relative;
+}
+.ate-vues-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  min-height: 38px;
+  padding: 0 var(--bj-sp-4);
+  border-radius: var(--bj-r-btn);
+  border: 1px solid var(--bj-veil-12);
+  background: transparent;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  cursor: pointer;
+}
+.ate-vues-btn--ouvert,
+.ate-vues-btn:hover {
+  border-color: var(--bj-action-border);
+  color: var(--bj-text);
+}
+.ate-vues-etat {
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-action);
+}
+.ate-vues-panneau {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  width: 17rem;
+  padding: var(--bj-sp-4);
+  border-radius: var(--bj-r-md);
+  border: 1px solid var(--bj-veil-12);
+  background: var(--bj-cream);
+  box-shadow: var(--bj-shadow-pop);
+}
+.ate-vues-bloc + .ate-vues-bloc {
+  margin-top: var(--bj-sp-4);
+  padding-top: var(--bj-sp-4);
+  border-top: var(--ate-ligne-h);
+}
+.ate-vues-titre {
+  display: block;
+  margin-bottom: var(--bj-sp-2);
+  font-size: var(--bj-fs-xxs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--bj-text-faint);
+  font-weight: 500;
+}
+.ate-vues-options {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-veil-6);
+}
+.ate-vues-option {
+  flex: 1;
+  min-height: 30px;
+  border: none;
+  border-radius: var(--bj-r-pill);
+  background: transparent;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  cursor: pointer;
+}
+.ate-vues-option--actif {
+  background: var(--bj-cream);
+  color: var(--bj-text);
+  font-weight: 500;
+  box-shadow: 0 1px 2px var(--bj-veil-8);
+}
+.ate-vues-aide {
+  display: block;
+  margin-top: var(--bj-sp-2);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--bj-text-faint);
+}
+
+/* ── densité ──
+   Compact ne change QUE des espacements : ni la taille du texte, ni le
+   nombre de colonnes. Une vue dense qu'il faut plisser les yeux pour lire
+   n'est pas une vue dense, c'est une vue illisible. */
+.ate-root--compact .ate-ligne,
+.ate-root--compact .ate-entete {
+  padding-top: var(--bj-sp-2);
+  padding-bottom: var(--bj-sp-2);
+}
+.ate-root--compact .ate-ligne-sous {
+  margin-top: 0;
+}
+.ate-root--compact .ate-pile {
+  margin-bottom: var(--bj-sp-5);
+}
+.ate-root--compact .ate-delai-sub {
+  display: none;
+}
+
+/* Regroupé par étape, la pastille d'état répète le titre du groupe sur
+   chaque ligne. On retire la colonne, on ne la vide pas : une colonne vide
+   laisse un trou qui se lit comme une donnée manquante. */
+.ate-root--groupe-etape .ate-ligne,
+.ate-root--groupe-etape .ate-entete {
+  grid-template-columns: 2rem minmax(0, 1fr) 9.5rem 3.5rem 12rem;
+}
+.ate-root--groupe-etape .ate-ligne > .ate-etat,
+.ate-root--groupe-etape .ate-entete > span:nth-child(3) {
+  display: none;
 }
 
 /* ── en-tête de colonnes ── */
@@ -435,6 +634,113 @@
   word-break: break-all;
 }
 
+/* ─────────────────────────── la vue tableau ─────────────────────────── */
+
+.ate-tableau {
+  display: grid;
+  grid-auto-flow: column;
+  /* Huit colonnes ne tiennent pas sur un écran : on défile horizontalement
+     plutôt que d'écraser les cartes jusqu'à l'illisible. */
+  grid-auto-columns: minmax(15rem, 1fr);
+  gap: var(--bj-sp-3);
+  overflow-x: auto;
+  padding-bottom: var(--bj-sp-4);
+  scrollbar-width: thin;
+}
+.ate-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ate-col-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bj-sp-2);
+  padding-bottom: var(--bj-sp-2);
+  border-bottom: var(--ate-ligne-h);
+  margin-bottom: var(--bj-sp-3);
+}
+.ate-col-compte {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.ate-col-retard {
+  font-size: 10px;
+  color: var(--ate-rouge);
+}
+.ate-col-corps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-2);
+}
+.ate-col-vide {
+  margin: 0;
+  padding: var(--bj-sp-4) 0;
+  text-align: center;
+  color: var(--bj-veil-16);
+}
+
+.ate-carte-d {
+  position: relative;
+  border-radius: var(--bj-r-sm);
+  border: 1px solid var(--bj-veil-8);
+  background: var(--ate-carte-bg);
+  transition: border-color var(--bj-dur-fast) var(--bj-ease);
+}
+.ate-carte-d:hover {
+  border-color: var(--bj-action-border);
+}
+.ate-carte-d--retard {
+  box-shadow: inset 2px 0 0 var(--ate-rouge);
+}
+.ate-carte-d-lien {
+  display: block;
+  padding: var(--bj-sp-3);
+  text-decoration: none;
+  color: inherit;
+}
+.ate-carte-d-titre {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  line-height: 1.3;
+}
+.ate-carte-d-sous {
+  display: block;
+  margin: 2px 0 var(--bj-sp-2);
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+}
+.ate-carte-d-act {
+  padding: 0 var(--bj-sp-3) var(--bj-sp-3);
+}
+/* Sur une carte, l'action est toujours visible : il n'y a pas de « ligne
+   survolée » sur laquelle se reposer. */
+.ate-carte-d .ate-act-btn--principal {
+  width: 100%;
+  border-color: var(--bj-action-border);
+  color: var(--bj-action);
+}
+.ate-carte-d:hover .ate-act-btn--principal {
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+}
+/* Le panneau armé sort de la carte : sans ça il serait rogné par la colonne
+   suivante et son défilement horizontal. */
+.ate-carte-d:has(.ate-act-boite) {
+  z-index: 30;
+}
+.ate-carte-d .ate-act-boite {
+  width: 19rem;
+}
+
 /* ─────────────────────── l'action sur la ligne ─────────────────────── */
 
 .ate-act {
@@ -639,6 +945,155 @@
   color: var(--ate-rouge);
 }
 .ate-bandeau--attention {
+  background: var(--bj-warn-soft);
+  color: var(--ate-orange);
+}
+
+/* ─────────────────────── la frise du dossier ─────────────────────── */
+
+.ate-parcours {
+  margin-bottom: var(--bj-sp-5);
+  padding: var(--bj-sp-4) var(--bj-sp-5);
+  border-radius: var(--bj-r-md);
+  border: 1px solid var(--bj-veil-8);
+  background: var(--ate-carte-bg);
+}
+.ate-frise {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  /* Huit jalons tiennent large sur un Mac et jamais sur un téléphone :
+     on défile plutôt que d'écraser des libellés en trois lettres. */
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.ate-jalon {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 6.5rem;
+  padding: 0 var(--bj-sp-1);
+  text-align: center;
+}
+/* La barre relie les pastilles : elle part du centre du jalon précédent. */
+.ate-jalon-barre {
+  position: absolute;
+  top: 11px;
+  right: 50%;
+  left: -50%;
+  height: 2px;
+  background: var(--bj-veil-8);
+}
+.ate-jalon:first-child .ate-jalon-barre {
+  display: none;
+}
+.ate-jalon--fait .ate-jalon-barre,
+.ate-jalon--encours .ate-jalon-barre {
+  background: var(--bj-action-border);
+}
+.ate-jalon-pastille {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--bj-r-pill);
+  border: 2px solid var(--bj-veil-12);
+  background: var(--bj-cream);
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--bj-text-faint);
+}
+.ate-jalon--fait .ate-jalon-pastille {
+  border-color: var(--bj-action-border);
+  background: var(--bj-action-soft);
+  color: var(--bj-action);
+  font-family: var(--bj-font-ui);
+  font-style: normal;
+}
+/* Le SEUL élément en couleur pleine de toute la frise. Si tout est coloré,
+   plus rien ne dit « c'est ici ». */
+.ate-jalon--encours .ate-jalon-pastille {
+  border-color: var(--bj-action);
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+  font-style: normal;
+  font-family: var(--bj-font-ui);
+  font-weight: 500;
+}
+.ate-jalon-titre {
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  line-height: 1.25;
+}
+.ate-jalon--encours .ate-jalon-titre {
+  color: var(--bj-text);
+  font-weight: 500;
+}
+.ate-jalon--avenir .ate-jalon-titre {
+  color: var(--bj-text-faint);
+}
+.ate-jalon-note {
+  font-size: 11px;
+  color: var(--bj-text-faint);
+  line-height: 1.2;
+}
+.ate-jalon--encours .ate-jalon-note strong {
+  color: var(--bj-action);
+  font-weight: 500;
+}
+.ate-jalon-par {
+  color: var(--bj-text-faint);
+}
+
+.ate-detour {
+  margin: var(--bj-sp-4) 0 0;
+  padding: var(--bj-sp-2) var(--bj-sp-3);
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-veil-6);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  line-height: 1.5;
+}
+.ate-detour--actif {
+  background: var(--bj-warn-soft);
+  color: var(--ate-orange);
+}
+
+.ate-suite {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  margin: var(--bj-sp-4) 0 0;
+  padding-top: var(--bj-sp-4);
+  border-top: var(--ate-ligne-h);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text);
+}
+.ate-suite-qui {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: var(--bj-r-pill);
+  font-size: var(--bj-fs-xxs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--bj-veil-8);
+  color: var(--bj-text-faint);
+}
+.ate-suite-qui--atelier {
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+}
+.ate-suite-qui--cliente {
   background: var(--bj-warn-soft);
   color: var(--ate-orange);
 }
@@ -1045,7 +1500,7 @@
 .ate-ev-tete {
   display: flex;
   align-items: baseline;
-  gap: var(--bj-sp-2);
+  gap: var(--bj-sp-3);
   width: 100%;
   padding: var(--bj-sp-2) 0;
   background: none;
@@ -1055,23 +1510,51 @@
   color: inherit;
   font-size: var(--bj-fs-xs);
 }
+/* Un point coloré par acteur : d'un coup d'œil vertical, on voit qui a fait
+   avancer le dossier et à quel rythme les échanges se sont enchaînés. */
+.ate-ev-point {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-top: 5px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-veil-16);
+}
+.ate-ev--nous .ate-ev-point {
+  background: var(--bj-action);
+}
+.ate-ev--elle .ate-ev-point {
+  background: var(--ate-orange);
+}
+.ate-ev--mail .ate-ev-point {
+  background: var(--ate-vert);
+}
+.ate-ev--alerte .ate-ev-point {
+  background: var(--ate-rouge);
+}
+.ate-ev-corps {
+  flex: 1;
+  min-width: 0;
+}
+.ate-ev-texte {
+  display: block;
+  color: var(--bj-text);
+  line-height: 1.4;
+}
+.ate-ev--alerte .ate-ev-texte {
+  color: var(--ate-rouge);
+}
+.ate-ev-detail {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  color: var(--bj-text-faint);
+}
 .ate-ev-date {
+  flex: none;
   color: var(--bj-text-faint);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-.ate-ev-type {
-  flex: 1;
-}
-.ate-ev-par {
-  color: var(--bj-action);
-}
-.ate-ev-plus {
-  color: var(--bj-text-faint);
-}
-.ate-ev--mail_echec .ate-ev-type,
-.ate-ev--remboursement .ate-ev-type {
-  color: var(--ate-rouge);
 }
 .ate-ev-payload {
   margin: 0 0 var(--bj-sp-2);
@@ -1088,6 +1571,14 @@
 @media (max-width: 900px) {
   .ate-colonnes {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .ate-parcours {
+    padding: var(--bj-sp-4) var(--bj-sp-3);
+  }
+  .ate-suite {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--bj-sp-2);
   }
 }
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import PanneauAction from "./PanneauAction";
+import Parcours from "./Parcours";
 import type { EvenementVue, Fiche as FicheVue } from "../types";
 
 /**
@@ -33,36 +34,31 @@ function poids(o: number | null): string {
   return o > 1024 * 1024 ? `${(o / 1024 / 1024).toFixed(1)} Mo` : `${Math.round(o / 1024)} Ko`;
 }
 
-const LIBELLE_EVENEMENT: Record<string, string> = {
-  numero_cree: "Dossier créé",
-  etat_change: "Changement d'état",
-  apercu_corrige: "Aperçu corrigé",
-  consentements: "Consentements",
-  mail_envoye: "Mail parti",
-  mail_echec: "Mail en échec",
-  paiement: "Paiement",
-  paiement_inattendu: "Paiement inattendu",
-  checkout_expire: "Panier expiré",
-  remboursement: "Remboursement",
-};
-
+/**
+ * Une ligne du journal, en français.
+ *
+ * Le payload brut n'est pas supprimé, il est REPLIÉ : la phrase sert à
+ * comprendre, le JSON sert à déboguer. Les deux ont leur usage, à deux
+ * moments différents, et un seul doit être visible par défaut.
+ */
 function Evenement({ e }: { e: EvenementVue }) {
   const [ouvert, setOuvert] = useState(false);
   const details = Object.keys(e.payload ?? {}).length > 0;
   return (
-    <li className={`ate-ev ate-ev--${e.type}`}>
+    <li className={`ate-ev ate-ev--${e.recit.ton}`}>
       <button
         type="button"
         className="ate-ev-tete"
         onClick={() => details && setOuvert((o) => !o)}
         aria-expanded={ouvert}
+        title={details ? "Voir le détail technique" : undefined}
       >
+        <span className="ate-ev-point" aria-hidden />
+        <span className="ate-ev-corps">
+          <span className="ate-ev-texte">{e.recit.texte}</span>
+          {e.recit.detail ? <span className="ate-ev-detail">{e.recit.detail}</span> : null}
+        </span>
         <span className="ate-ev-date">{fmt(e.createdAt)}</span>
-        <span className="ate-ev-type">{LIBELLE_EVENEMENT[e.type] ?? e.type}</span>
-        {typeof e.payload?.par === "string" ? (
-          <span className="ate-ev-par">{e.payload.par as string}</span>
-        ) : null}
-        {details ? <span className="ate-ev-plus">{ouvert ? "−" : "+"}</span> : null}
       </button>
       {ouvert ? <pre className="ate-ev-payload">{JSON.stringify(e.payload, null, 2)}</pre> : null}
     </li>
@@ -131,6 +127,8 @@ export default function Fiche({ fiche, demo }: { fiche: FicheVue; demo?: boolean
           </a>
         </p>
       </header>
+
+      <Parcours parcours={fiche.parcours} />
 
       {l.rembourse ? (
         <div className="ate-bandeau ate-bandeau--alerte">
@@ -357,7 +355,7 @@ export default function Fiche({ fiche, demo }: { fiche: FicheVue; demo?: boolean
           </section>
 
           <section className="ate-carte">
-            <h2 className="ate-carte-titre">Le journal</h2>
+            <h2 className="ate-carte-titre">Ce qui s&apos;est passé</h2>
             <ul className="ate-journal">
               {fiche.evenements.map((e) => (
                 <Evenement key={e.id} e={e} />
