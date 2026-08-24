@@ -90,15 +90,16 @@ export const PAYS_LIVRAISON = ["FR", "BE", "LU"] as const;
  * de cause, pas en ajoutant discrètement une colonne.
  */
 
-/* Code fiscal Stripe de l'album — « biens matériels, général » (23 % au
- * Portugal, siège fiscal déclaré du compte). Posé EXPLICITEMENT ici plutôt
- * que laissé au réglage par défaut du tableau de bord : l'acompte de prévente
- * et l'album sont deux produits différents et n'ont aucune raison de partager
- * un réglage global.
+/* Code fiscal Stripe de l'album — « biens matériels, général », soit le taux
+ * normal : 23 % au Portugal continental, siège fiscal déclaré du compte.
  *
- * ⚠️ Le livre est à 6 % au Portugal. Un album photo personnalisé n'est très
- * probablement pas un « livre » au sens fiscal — mais l'écart est de 17
- * points sur chaque vente. Si le comptable tranche pour le taux réduit, c'est
- * cette constante qui change, et rien d'autre.
+ * TRANCHÉ LE 24/08/2026 : c'est bien 23 %, et non les 6 % du livre. Un album
+ * photo personnalisé n'est pas un livre au sens fiscal. La question méritait
+ * d'être posée — 17 points d'écart sur chaque vente — elle ne se repose plus.
+ *
+ * Posé EXPLICITEMENT ici plutôt que laissé au réglage par défaut du tableau
+ * de bord : l'acompte de prévente et l'album sont deux produits différents et
+ * n'ont aucune raison de partager un réglage global. Changer de taux, si le
+ * droit fiscal évoluait, ne demanderait que cette constante.
  */
 export const CODE_FISCAL_ALBUM = "txcd_99999999";

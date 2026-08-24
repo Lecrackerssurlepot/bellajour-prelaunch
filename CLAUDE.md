@@ -220,4 +220,23 @@ relance d'acompte.
   fiscal `CODE_FISCAL_ALBUM`. **Stripe Tax est actif mais sans immatriculation → 0 € de
   taxe calculé aujourd'hui.** Le câblage est inerte jusqu'à l'ajout de l'immatriculation
   portugaise dans le tableau de bord, puis s'active sans redéploiement.
-  Question ouverte pour le comptable : album personnalisé = 23 % ou 6 % (livre) au PT ?
+  Taux TRANCHÉ le 24/08/2026 : 23 % (taux normal PT). Pas les 6 % du livre — un album
+  photo personnalisé n'est pas un livre au sens fiscal.
+
+## CGV v3.0 — l'Atelier au present, la prevente en regime transitoire
+Depuis le 24/08/2026, `src/app/legal/content/cgv.ts` (FR/PT/EN, **le PT fait juridiquement foi**) :
+- art. 4 bis = les commandes Atelier (paiement integral, pas d'acompte ni d'Instants, prix par
+  palier, zone FR/BE/LU, delai 10 j, deux cases prealables, remboursement possible jusqu'a la maquette)
+- art. 5.0 = chapeau qui limite TOUT l'article 5 (acompte, Instants, offres) aux commandes de
+  prevente du 13/06 au 15/08/2026. On CADRE, on ne supprime pas : 14 fondateurs ont contracte
+  sous la v2.5 et l'art. 8.8 interdit l'effet retroactif.
+- art. 5 bis = imputation du credit de 30 € par code Stripe nominatif a usage unique, apres
+  verification manuelle de `waitlist`. Instants et pages de parrainage CONSERVES (ni imputes ni
+  convertis), delai de 12 mois SUSPENDU jusqu'a l'ouverture de l'espace client.
+- annexe = DEUX grilles, une par regime. Atelier : 30 € (20-28 p.) / 40 € (30-38 p.) / 45 € (40-50 p.)
+- La version digitale HD reste INCLUSE pour toutes les commandes (art. 1.2), Atelier compris.
+⚠️ `legal-source/*.docx` ont une version de retard — resynchroniser apres relecture juridique.
+⚠️ La case de l'etat 2 ne fait PAS renoncer : l'art. 8.3 fixe l'extinction du droit de retractation
+   a la VALIDATION DE LA MAQUETTE (etat 4). Ce qu'on recueille a l'etat 2 est l'information
+   prealable de l'art. 8.5. Le libelle a ete corrige en consequence (le PRD §8 citait le droit
+   FRANCAIS L221-28 ; le droit applicable est portugais, DL 24/2014 art. 17.º/1 c)).
