@@ -1,7 +1,28 @@
-/* Footer sombre — PRD §14 amendée.
-   Le footer crème de la landing (src/app/sections/Footer.tsx) reste en place
-   sur /preventes ; il n'a pas sa place au bas d'un site noir. On reprend les
-   MÊMES liens légaux et les MÊMES URL, dans la charte de l'atelier. */
+/* Footer — STRUCTURE reprise de celle de la landing (src/app/sections/Footer.tsx),
+   transposée dans la charte sombre.
+   Décision de Mathias, 24/08/2026 : garder la composition qui fait la
+   signature de la marque — deux colonnes, tagline en haut à gauche, Instagram
+   et copyright à droite, et le mot « Bellajour » géant coupé par le bas —
+   plutôt que la ligne unique de liens qu'avait l'atelier.
+
+   TROIS ÉCARTS VOLONTAIRES AVEC L'ORIGINAL
+
+   1. Le lien « Espace ambassadeur » n'est pas repris (demandé). Il mène à
+      l'espace des ambassadeurs de la prévente, qui n'a rien à faire au bas de
+      la page d'accueil d'un produit qui, lui, se vend aujourd'hui. La page
+      reste en ligne pour ceux qui ont son adresse.
+
+   2. Le lien Instagram est écrit ICI plutôt qu'importé de
+      src/app/components/InstagramLink.tsx. Ce composant-là est peint avec
+      `--bj-muted`, un token de la palette crème qui n'existe plus dans
+      tokens.css : sa couleur est aujourd'hui héritée par accident. L'importer
+      ferait dépendre le monde sombre d'un bug du monde crème. Le SVG est
+      identique, les tokens sont ceux de l'atelier.
+
+   3. Le mot géant est en graisse 400, pas 700 : le layout de ce groupe ne
+      charge QUE la 400 de Cormorant Garamond (une seule graisse, normal +
+      italique). Demander 700 donnerait un faux gras synthétisé par le
+      navigateur — épais, sale, et différent d'un appareil à l'autre. */
 
 import { CONTACT_EMAIL } from '../content'
 import './footer.css'
@@ -16,15 +37,56 @@ const LIENS = [
 export default function Footer() {
   return (
     <footer className="at-footer">
-      <div className="at-wrap at-footer-inner">
-        <span>Bellajour — composé à la main, en France</span>
-        <nav className="at-footer-links" aria-label="Liens légaux">
-          {LIENS.map((l) => (
-            <a key={l.href} href={l.href}>{l.label}</a>
-          ))}
-        </nav>
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+      <div className="at-wrap at-footer-top">
+
+        {/* Gauche — tagline, invitation à écrire, liens */}
+        <div className="at-footer-left">
+          <p className="at-footer-tagline">Vivez. Nous composons.</p>
+          <p className="at-footer-label">Une question&nbsp;? Écrivez-nous&nbsp;:</p>
+          <nav className="at-footer-links" aria-label="Liens de bas de page">
+            <a className="at-footer-mail" href={`mailto:${CONTACT_EMAIL}`}>
+              {CONTACT_EMAIL}
+            </a>
+            {LIENS.map((l) => (
+              <span key={l.href} className="at-footer-item">
+                <span className="at-footer-sep" aria-hidden="true">·</span>
+                <a href={l.href}>{l.label}</a>
+              </span>
+            ))}
+          </nav>
+        </div>
+
+        {/* Droite — Instagram, copyright */}
+        <div className="at-footer-right">
+          <a
+            className="at-footer-insta"
+            href="https://www.instagram.com/bellajour__/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Bellajour sur Instagram"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+              <circle cx="12" cy="12" r="4" />
+              <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
+            </svg>
+            <span>@bellajour__</span>
+          </a>
+          <p className="at-footer-copy">©&nbsp;2026 Bellajour</p>
+        </div>
+
       </div>
+
+      {/* Le mot, coupé par le bas — la signature du footer. */}
+      <p className="at-footer-word" aria-hidden="true">Bellajour</p>
     </footer>
   )
 }
