@@ -183,6 +183,19 @@ export async function POST(request: Request) {
            pas complète, et Stripe Tax a besoin d'une adresse pour trancher.
            Checkout propose « identique à la livraison » — un clic. */
         billing_address_collection: "required",
+
+        /* Le crédit de prévente (CGV art. 5 bis). Les 14 fondateurs ont versé
+           25 € en juin contre un crédit de 30 € : la prévente est close, mais
+           ce crédit reste dû. Il s'impute ICI, par un code nominatif à usage
+           unique généré au cas par cas après vérification de la ligne
+           `waitlist` — et non par une lecture automatique de la base.
+           POURQUOI PAS AUTOMATIQUE : le tunnel de l'atelier n'a aucune
+           authentification. L'email du dossier est saisi à l'écran 4, par qui
+           veut. Accorder 30 € sur la seule foi d'un email tapé au clavier
+           reviendrait à distribuer la remise à qui devine l'adresse d'une
+           fondatrice. Un code envoyé à la personne vérifiée ferme cette porte.
+           Ils sont quatorze : le geste manuel est tenable, et il est sûr. */
+        allow_promotion_codes: true,
         automatic_tax: { enabled: true },
 
         line_items: [

@@ -19,7 +19,7 @@ import type { LocalizedDoc } from '../types'
 export const CGV: LocalizedDoc = {
   fr: {
     title: `Conditions générales de vente`,
-    lastUpdated: `Version 2.5 — En vigueur le 13/06/2026`,
+    lastUpdated: `Version 3.0 — En vigueur le 24/08/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `Traduction française à titre informatif. La version juridiquement prévalente est le texte portugais ; en cas de divergence, ce dernier prime.`,
@@ -81,8 +81,38 @@ export const CGV: LocalizedDoc = {
         ],
       },
       {
-        heading: `Article 5 — Commande, prévente, acompte et crédit (Instants)`,
+        heading: `Article 4 bis — Commandes passées via l'Atelier (offre en vigueur)`,
         blocks: [
+          { kind: 'p', value: `4bis.1 Champ d'application. Le présent article régit les commandes passées via l'Atelier sur bellajour.fr, seul mode de commande ouvert depuis le 24 août 2026. Les articles 5 et 5 bis ne concernent que les commandes de prévente passées entre le 13 juin et le 15 août 2026.` },
+          { kind: 'p', value: `4bis.2 Parcours de commande. Le client renseigne un questionnaire, dépose ses photographies, puis reçoit sous 48 heures un aperçu de sa couverture sur une page personnelle accessible par un lien unique adressé par e-mail. Aucune somme n'est demandée avant que cet aperçu et le prix ferme n'aient été portés à sa connaissance.` },
+          { kind: 'p', value: `4bis.3 Paiement intégral, sans acompte. La commande passée via l'Atelier ne donne lieu à aucun acompte, à aucune réservation et à aucun crédit (Instants). Le prix est payé en une seule fois au moment de la commande.` },
+          {
+            kind: 'p',
+            value: [
+              `4bis.4 Prix par palier de pagination. Le prix est déterminé par le nombre de pages effectivement composé par l'atelier, selon la grille « Offre Atelier » figurant dans la `,
+              { text: `Fiche produit`, href: `#fiche-produit` },
+              `. Il est ferme, affiché toutes taxes comprises, et comprend l'impression et la livraison. Le nombre de pages n'est ni choisi ni saisi par le client : il résulte du nombre et de la qualité des photographies déposées, et lui est communiqué avec le prix avant tout paiement.`,
+            ],
+          },
+          { kind: 'h3', text: `Ce que comprend une commande Atelier` },
+          { kind: 'list', items: [
+            `L'album physique relié, composé à partir des photographies déposées`,
+            `La couverture illustrée sur mesure`,
+            `La mise en page composée par algorithme sous contrôle humain`,
+            `La version digitale HD (article 1.2)`,
+            `L'impression et la livraison dans la zone définie au 4bis.6`,
+          ] },
+          { kind: 'p', value: `4bis.5 Aucun avantage de prévente n'est attaché à une commande Atelier : ni Instants, ni pages offertes, ni bonus de parrainage. L'imputation d'un crédit de prévente obéit à l'article 5 bis.` },
+          { kind: 'p', value: `4bis.6 Zone de livraison. Les commandes Atelier sont livrées en France, en Belgique et au Luxembourg. L'adresse de livraison est collectée au moment du paiement par le prestataire de paiement ; aucun pays hors de cette zone n'est proposé et aucune commande ne peut y être livrée. Cette zone peut être étendue ; l'extension s'apprécie à la date de la commande.` },
+          { kind: 'p', value: `4bis.7 Délai de livraison. Le délai court à compter de la validation de la maquette. Il est estimé à 10 jours et n'excède en tout état de cause pas 30 jours, conformément à l'article 10.1 et à l'article 9.º du DL 24/2014.` },
+          { kind: 'p', value: `4bis.8 Cases préalables au paiement. Avant tout paiement, le client coche deux cases distinctes, décochées par défaut et horodatées : (i) l'acceptation des présentes Conditions ; (ii) la reconnaissance, au sens de l'article 8.5, de ce que son album est manifestement personnalisé et de ce que son droit de libre résolution s'éteindra à la validation de la maquette, conformément à l'article 8.3. Le paiement est techniquement impossible tant que ces deux cases ne sont pas cochées et horodatées.` },
+          { kind: 'p', value: `4bis.9 Faculté de remboursement jusqu'à la maquette. Nonobstant le paiement intégral, et conformément aux articles 8.2 et 8.3, le client conserve jusqu'à la validation de sa maquette la faculté d'obtenir le remboursement intégral des sommes versées, sans retenue, sans frais et sans pénalité. Cette faculté disparaît à la validation de la maquette, qui rend la commande définitive.` },
+        ],
+      },
+      {
+        heading: `Article 5 — Commande, prévente, acompte et crédit (Instants) — régime transitoire`,
+        blocks: [
+          { kind: 'p', value: `5.0 Champ d'application. Le présent article et l'article 5 bis régissent exclusivement les commandes de prévente passées entre le 13 juin et le 15 août 2026. Ces offres sont closes et ne peuvent plus être souscrites. Elles demeurent intégralement applicables aux clients qui en ont bénéficié, jusqu'à épuisement ou expiration de leurs droits, sans qu'aucune modification ultérieure des présentes Conditions ne puisse réduire les avantages déjà acquis (article 8.8). Les commandes passées depuis le 24 août 2026 relèvent de l'article 4 bis.` },
           { kind: 'p', value: `5.1 Formation du contrat. La commande est conclue lorsque le client valide son paiement après acceptation des présentes Conditions. Un e-mail de confirmation récapitule la commande.` },
           { kind: 'p', value: `5.2 Nature du versement initial (acompte). La somme versée à la réservation (Fondateur : 25 € ; Standard : 30 € ; Code influenceur : 25 €) est un acompte — paiement partiel anticipé imputé sur le prix total. Elle ne constitue pas un sinal (arrhes) au sens des articles 440.º à 442.º du Código Civil : aucune partie ne peut s'en prévaloir à titre de pénalité et sa remise n'emporte aucun effet de double restitution.` },
           { kind: 'p', value: `5.3 Conversion en crédit (Instants). Dès son encaissement, l'acompte est immédiatement converti en crédit (Instants) porté sur le compte du client rattaché à son adresse e-mail, à hauteur de 30 € quelle que soit l'offre. Ce crédit de 30 € est un avantage commercial, et non un paiement : seul le montant effectivement versé au titre de l'acompte (25 € ou 30 € selon l'offre) fait l'objet d'un encaissement et d'une facture ; la fraction de bonus (5 € pour les offres Fondateur et influenceur) constitue une remise commerciale conditionnelle, jamais encaissée et non facturée. Ce crédit : (i) est nominatif et non cessible ; (ii) n'est pas remboursable en numéraire, sauf dans les conditions prévues aux articles 5.4 et 8.2 ; (iii) expire 12 mois après son attribution ; (iv) s'impute sur le prix de la commande finale. Les offres et codes ne sont pas cumulables entre eux.` },
@@ -96,6 +126,16 @@ export const CGV: LocalizedDoc = {
             `Parrainage : à compter du 15 août 2026. Le parrainage donne 5 pages offertes au parrain et 3 pages offertes au filleul. Ces pages sont mises en attente sur le compte dès l'inscription et définitivement acquises lorsque les deux acomptes ont été versés et ne sont plus remboursables (c'est-à-dire après validation de la maquette de chacun). Tant que cette condition n'est pas remplie, les pages restent en attente ; elles sont annulées si l'un des deux acomptes est remboursé.`,
           ] },
           { kind: 'p', value: `Le fichier digital HD est inclus pour toutes les offres.` },
+        ],
+      },
+      {
+        heading: `Article 5 bis — Imputation du crédit de prévente sur une commande Atelier`,
+        blocks: [
+          { kind: 'p', value: `5bis.1 Principe. Le crédit de 30 € attribué au titre de l'article 5.3 s'impute sur le prix d'une commande passée via l'Atelier. La clôture de la prévente est sans effet sur ce droit.` },
+          { kind: 'p', value: `5bis.2 Modalités. Le client en fait la demande à contact@bellajour.com. Après vérification de ses droits, Bellajour lui adresse un code de réduction nominatif, à usage unique et non cessible, d'un montant de 30 €. Le client le saisit au moment du paiement de sa commande Atelier ; la réduction s'applique immédiatement sur le montant dû. Bellajour ne peut refuser l'imputation à un client dont les droits sont vérifiés.` },
+          { kind: 'p', value: `5bis.3 Usage unique. Un seul code est attribué par client. Il ne peut être ni fractionné, ni cumulé avec un autre code, ni échangé contre des espèces. Si le prix de la commande est inférieur au montant du crédit, la différence n'est ni remboursée ni reportée.` },
+          { kind: 'p', value: `5bis.4 Expiration. Le crédit expire 12 mois après son attribution, conformément à l'article 5.5, dont la suspension prévue au bénéfice du client s'applique dans les mêmes termes. Bellajour adresse une relance par e-mail avant l'échéance.` },
+          { kind: 'p', value: `5bis.5 Avantages conservés — Instants et pages de parrainage. Les Instants attribués en bonus (article 5.6) et les pages offertes au titre du parrainage ne s'imputent pas sur une commande Atelier et ne sont pas convertis en réduction. Ils sont conservés au crédit nominatif du client, sans perte, sans conversion et sans réduction de leur quantité, et deviendront utilisables à l'ouverture de l'espace client. Leurs conditions d'utilisation seront publiées à cette occasion et ne pourront réduire les avantages déjà acquis. Pour ces seuls avantages, le délai de 12 mois de l'article 5.5 est suspendu jusqu'à cette ouverture : aucun ne peut expirer avant d'avoir été rendu utilisable.` },
         ],
       },
       {
@@ -124,7 +164,7 @@ export const CGV: LocalizedDoc = {
           { kind: 'p', value: `8.4 Maquette validée = référence contractuelle. La maquette validée et horodatée constitue la référence de la commande. Toute appréciation de conformité de l'album livré s'effectue par comparaison avec cette maquette validée, à l'exclusion de toute attente subjective non reflétée dans la maquette.` },
           { kind: 'p', value: `8.5 Information préalable. La perte du droit de libre résolution est portée à la connaissance du client de façon claire et lisible, dans un encadré distinct, dès la page de l'offre et dans le récapitulatif précédant le bouton « Commander avec obligation de paiement », conformément à l'article 4.º, n.º 1, alinéa n), du DL 24/2014. À défaut d'information préalable, l'exception n'est pas opposable.` },
           { kind: 'p', value: `8.6 Preuve. Bellajour conserve, pendant 10 ans (Código Comercial, article 40.º), les éléments de preuve : version des Conditions acceptée et horodatage de l'acceptation à l'acompte, horodatage du téléversement, horodatage et version de la validation de la maquette, et identifiant de transaction Stripe.` },
-          { kind: 'p', value: `8.7 Montant et défaillance de Bellajour. Le remboursement porte sur le montant effectivement versé (Fondateur 25 € ; influenceur 25 €) ; les bonifications jamais décaissées (5 €) ne sont pas remboursables. Si Bellajour ne peut produire ou livrer (défaillance interne, défaillance de l'imprimeur partenaire, force majeure, cessation d'activité), toute somme versée est intégralement remboursée en numéraire sur le moyen de paiement initial, au plus tard 14 jours après acceptation de la demande ou constatation de la défaillance (article 12.º du DL 24/2014). Sur le plan comptable, ce remboursement donne lieu à l'émission d'une note de crédit annulant la facture d'acompte ; la note de crédit est un document comptable et non un mode de remboursement se substituant au versement en numéraire.` },
+          { kind: 'p', value: `8.7 Montant et défaillance de Bellajour. Pour une commande Atelier (article 4 bis), le remboursement porte sur le prix intégralement payé. Pour une commande de prévente (article 5), il porte sur le montant effectivement versé (Fondateur 25 € ; influenceur 25 €) ; les bonifications jamais décaissées (5 €) ne sont pas remboursables. Si Bellajour ne peut produire ou livrer (défaillance interne, défaillance de l'imprimeur partenaire, force majeure, cessation d'activité), toute somme versée est intégralement remboursée en numéraire sur le moyen de paiement initial, au plus tard 14 jours après acceptation de la demande ou constatation de la défaillance (article 12.º du DL 24/2014). Sur le plan comptable, ce remboursement donne lieu à l'émission d'une note de crédit annulant la facture d'acompte ; la note de crédit est un document comptable et non un mode de remboursement se substituant au versement en numéraire.` },
           { kind: 'p', value: `8.8 Versioning. La version des présentes Conditions opposable au client est celle qu'il a acceptée à la commande ; pour les préventes Fondateurs, celle acceptée au versement de l'acompte. Toute modification ultérieure est sans effet rétroactif sur sa commande.` },
         ],
       },
@@ -178,7 +218,7 @@ export const CGV: LocalizedDoc = {
         ],
       },
       {
-        heading: `Annexe — Fiche produit (Album Bellajour au Lancement, offre de base)`,
+        heading: `Annexe — Fiche produit (Album Bellajour)`,
         id: `fiche-produit`,
         blocks: [
           { kind: 'h3', text: `Caractéristiques techniques` },
@@ -186,8 +226,8 @@ export const CGV: LocalizedDoc = {
             [`Type`, `Livre photo relié, imprimé à la commande`],
             [`Format`, `Portrait — 210 × 280 mm`],
             [`Reliure`, `Couverture rigide (hardcover)`],
-            [`Pagination de base`, `30 pages`],
-            [`Pagination min. / max.`, `30 pages min. — 200 pages max. (nombre de pages pair obligatoire)`],
+            [`Pagination — Offre Atelier`, `20 pages min. — 50 pages max. (nombre de pages pair obligatoire)`],
+            [`Pagination — Prévente (13/06–15/08/2026)`, `30 pages min. — 200 pages max. (nombre de pages pair obligatoire)`],
             [`Couverture`, `Illustrée, unique, générée par IA dans un style propre à la marque`],
             [`Impression`, `Quadrichromie, 300 DPI, profil colorimétrique FOGRA 39`],
           ] },
@@ -201,8 +241,15 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Spécifications des fichiers fournis par le client` },
           { kind: 'p', value: `Résolution minimum : 800 × 800 pixels. En deçà du seuil, la photo est rejetée ou rétrogradée vers un emplacement plus petit. Un écart colorimétrique normal existe entre l'affichage écran (RVB) et l'impression papier ; il ne constitue pas un défaut.` },
           { kind: 'p', value: `Formats de fichiers acceptés : JPEG, PNG, HEIC, HEIF, WebP.` },
-          { kind: 'h3', text: `Grille tarifaire — Album Bellajour Lancement (offre de base)` },
-          { kind: 'p', value: `Prix catalogue standard, hors offre promotionnelle. Prix affichés en euros, toutes taxes comprises. TVA appliquée au taux du pays de résidence du consommateur (régime OSS-Union) après le seuil des 10 000 € de chiffre d'affaires.` },
+          { kind: 'h3', text: `Grille tarifaire — Offre Atelier (en vigueur depuis le 24/08/2026)` },
+          { kind: 'p', value: `Grille applicable à toute commande passée via l'Atelier (article 4 bis). Prix fermes, affichés en euros, toutes taxes comprises, impression et livraison comprises dans la zone France, Belgique, Luxembourg. Le palier est déterminé par le nombre de pages composé par l'atelier, jamais saisi par le client.` },
+          { kind: 'table', columns: [`Pagination composée`, `Prix TTC, tout compris`], rows: [
+            [`20 à 28 pages`, `30 €`],
+            [`30 à 38 pages`, `40 €`],
+            [`40 à 50 pages`, `45 €`],
+          ] },
+          { kind: 'h3', text: `Grille tarifaire — Prévente (commandes du 13/06 au 15/08/2026)` },
+          { kind: 'p', value: `Grille close, conservée pour les seules commandes de prévente (article 5). Prix catalogue standard, hors offre promotionnelle, affichés en euros, toutes taxes comprises. TVA appliquée au taux du pays de résidence du consommateur (régime OSS-Union) après le seuil des 10 000 € de chiffre d'affaires.` },
           { kind: 'table', columns: [`Pagination`, `Prix TTC`], rows: [
             [`30 pages (base)`, `49 €`],
             [`50 pages`, `82 €`],
@@ -216,7 +263,7 @@ export const CGV: LocalizedDoc = {
   },
   pt: {
     title: `Condições gerais de venda`,
-    lastUpdated: `Versão 2.5 — Em vigor em 13/06/2026`,
+    lastUpdated: `Versão 3.0 — Em vigor em 24/08/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `Texto de referência (versão portuguesa), juridicamente prevalecente. As traduções para francês e inglês são meramente informativas; em caso de divergência, prevalece o presente texto português.`,
@@ -278,8 +325,38 @@ export const CGV: LocalizedDoc = {
         ],
       },
       {
-        heading: `Artigo 5.º — Encomenda, pré-venda, adiantamento e crédito (Instants)`,
+        heading: `Artigo 4.º-A — Encomendas efetuadas através do Atelier (oferta em vigor)`,
         blocks: [
+          { kind: 'p', value: `4.º-A.1 Âmbito. O presente artigo rege as encomendas efetuadas através do Atelier em bellajour.fr, único modo de encomenda aberto desde 24 de agosto de 2026. Os artigos 5.º e 5.º-A respeitam exclusivamente às encomendas de pré-venda efetuadas entre 13 de junho e 15 de agosto de 2026.` },
+          { kind: 'p', value: `4.º-A.2 Percurso de encomenda. O cliente preenche um questionário, carrega as suas fotografias e recebe, no prazo de 48 horas, uma pré-visualização da sua capa numa página pessoal acessível por hiperligação única enviada por correio eletrónico. Nenhuma quantia é solicitada antes de essa pré-visualização e o preço firme lhe terem sido dados a conhecer.` },
+          { kind: 'p', value: `4.º-A.3 Pagamento integral, sem adiantamento. A encomenda efetuada através do Atelier não dá lugar a qualquer adiantamento, reserva ou crédito (Instants). O preço é pago de uma só vez no momento da encomenda.` },
+          {
+            kind: 'p',
+            value: [
+              `4.º-A.4 Preço por escalão de paginação. O preço é determinado pelo número de páginas efetivamente composto pelo atelier, de acordo com a grelha «Oferta Atelier» constante da `,
+              { text: `Ficha de Produto`, href: `#fiche-produit` },
+              `. É firme, exibido com todos os impostos incluídos e inclui a impressão e a entrega. O número de páginas não é escolhido nem introduzido pelo cliente: resulta do número e da qualidade das fotografias carregadas e é-lhe comunicado juntamente com o preço antes de qualquer pagamento.`,
+            ],
+          },
+          { kind: 'h3', text: `O que inclui uma encomenda Atelier` },
+          { kind: 'list', items: [
+            `O álbum físico encadernado, composto a partir das fotografias carregadas`,
+            `A capa ilustrada à medida`,
+            `A paginação composta por algoritmo sob controlo humano`,
+            `A versão digital HD (artigo 1.2)`,
+            `A impressão e a entrega na zona definida em 4.º-A.6`,
+          ] },
+          { kind: 'p', value: `4.º-A.5 Nenhuma vantagem de pré-venda está associada a uma encomenda Atelier: nem Instants, nem páginas oferecidas, nem bónus de indicação. A imputação de um crédito de pré-venda rege-se pelo artigo 5.º-A.` },
+          { kind: 'p', value: `4.º-A.6 Zona de entrega. As encomendas Atelier são entregues em França, na Bélgica e no Luxemburgo. O endereço de entrega é recolhido no momento do pagamento pelo prestador de pagamento; nenhum país fora desta zona é proposto e nenhuma encomenda pode aí ser entregue. Esta zona pode ser alargada; o alargamento afere-se à data da encomenda.` },
+          { kind: 'p', value: `4.º-A.7 Prazo de entrega. O prazo conta-se a partir da validação da maquete. Estima-se em 10 dias e não excede, em caso algum, 30 dias, nos termos do artigo 10.1 e do artigo 9.º do DL 24/2014.` },
+          { kind: 'p', value: `4.º-A.8 Caixas prévias ao pagamento. Antes de qualquer pagamento, o cliente assinala duas caixas distintas, não assinaladas por defeito e com registo de data e hora: (i) a aceitação das presentes Condições; (ii) o reconhecimento, na aceção do artigo 8.5, de que o seu álbum é manifestamente personalizado e de que o seu direito de livre resolução se extinguirá com a validação da maquete, nos termos do artigo 8.3. O pagamento é tecnicamente impossível enquanto ambas as caixas não estiverem assinaladas e registadas.` },
+          { kind: 'p', value: `4.º-A.9 Faculdade de reembolso até à maquete. Não obstante o pagamento integral, e nos termos dos artigos 8.2 e 8.3, o cliente conserva, até à validação da sua maquete, a faculdade de obter o reembolso integral das quantias pagas, sem retenção, sem encargos e sem penalização. Esta faculdade extingue-se com a validação da maquete, que torna a encomenda definitiva.` },
+        ],
+      },
+      {
+        heading: `Artigo 5.º — Encomenda, pré-venda, adiantamento e crédito (Instants) — regime transitório`,
+        blocks: [
+          { kind: 'p', value: `5.0 Âmbito de aplicação. O presente artigo e o artigo 5.º-A regem exclusivamente as encomendas de pré-venda efetuadas entre 13 de junho e 15 de agosto de 2026. Estas ofertas estão encerradas e já não podem ser subscritas. Mantêm-se integralmente aplicáveis aos clientes que delas beneficiaram, até ao esgotamento ou caducidade dos seus direitos, sem que qualquer alteração posterior das presentes Condições possa reduzir as vantagens já adquiridas (artigo 8.8). As encomendas efetuadas desde 24 de agosto de 2026 regem-se pelo artigo 4.º-A.` },
           { kind: 'p', value: `5.1 Formação do contrato. A encomenda conclui-se quando o cliente valida o pagamento após aceitação das presentes Condições. Um e-mail de confirmação resume a encomenda.` },
           { kind: 'p', value: `5.2 Natureza do pagamento inicial (adiantamento). A quantia paga na reserva (Fundador: 25 €; Standard: 30 €; Código influenciador: 25 €) é um adiantamento — pagamento parcial antecipado imputado no preço total. Não constitui sinal na aceção dos artigos 440.º a 442.º do Código Civil: nenhuma das partes a pode invocar a título de penalização e a sua entrega não produz qualquer efeito de restituição em dobro.` },
           { kind: 'p', value: `5.3 Conversão em crédito (Instants). Logo que recebido, o adiantamento é imediatamente convertido em crédito (Instants) lançado na conta do cliente associada ao seu endereço de correio eletrónico, no valor de 30 € independentemente da oferta. Este crédito de 30 € é uma vantagem comercial e não um pagamento: apenas o montante efetivamente pago a título de adiantamento (25 € ou 30 € consoante a oferta) é objeto de recebimento e de fatura; a fração de bónus (5 € nas ofertas Fundador e influenciador) constitui um desconto comercial condicional, nunca recebido e não faturado. Este crédito: (i) é nominativo e não cessível; (ii) não é reembolsável em numerário, salvo nas condições previstas nos artigos 5.4 e 8.2; (iii) caduca 12 meses após a sua atribuição; (iv) é imputado no preço da encomenda final. As ofertas e códigos não são cumuláveis entre si.` },
@@ -293,6 +370,16 @@ export const CGV: LocalizedDoc = {
             `Indicação (apadrinhamento): a partir de 15 de agosto de 2026. A indicação confere 5 páginas oferecidas ao padrinho e 3 páginas oferecidas ao afilhado. Estas páginas ficam em espera na conta desde a inscrição e são definitivamente adquiridas quando ambos os adiantamentos tiverem sido pagos e deixarem de ser reembolsáveis (ou seja, após a validação da maquete de cada um). Enquanto esta condição não estiver preenchida, as páginas permanecem em espera; são anuladas se um dos dois adiantamentos for reembolsado.`,
           ] },
           { kind: 'p', value: `O ficheiro digital HD está incluído em todas as ofertas.` },
+        ],
+      },
+      {
+        heading: `Artigo 5.º-A — Imputação do crédito de pré-venda numa encomenda Atelier`,
+        blocks: [
+          { kind: 'p', value: `5.º-A.1 Princípio. O crédito de 30 € atribuído ao abrigo do artigo 5.3 é imputado no preço de uma encomenda efetuada através do Atelier. O encerramento da pré-venda não produz qualquer efeito sobre este direito.` },
+          { kind: 'p', value: `5.º-A.2 Modalidades. O cliente solicita-o através de contact@bellajour.com. Após verificação dos seus direitos, a Bellajour envia-lhe um código de desconto nominativo, de utilização única e não cessível, no valor de 30 €. O cliente introduz o código no momento do pagamento da sua encomenda Atelier; o desconto aplica-se imediatamente ao montante devido. A Bellajour não pode recusar a imputação a um cliente cujos direitos tenham sido verificados.` },
+          { kind: 'p', value: `5.º-A.3 Utilização única. É atribuído um único código por cliente. Não pode ser fracionado, cumulado com outro código nem trocado por numerário. Se o preço da encomenda for inferior ao montante do crédito, a diferença não é reembolsada nem transitada.` },
+          { kind: 'p', value: `5.º-A.4 Caducidade. O crédito caduca 12 meses após a sua atribuição, nos termos do artigo 5.5, cuja suspensão prevista em benefício do cliente se aplica nos mesmos termos. A Bellajour envia um aviso por correio eletrónico antes do termo do prazo.` },
+          { kind: 'p', value: `5.º-A.5 Vantagens conservadas — Instants e páginas de indicação. Os Instants atribuídos a título de bónus (artigo 5.6) e as páginas oferecidas a título de indicação não são imputados numa encomenda Atelier nem convertidos em desconto. São conservados a crédito nominativo do cliente, sem perda, sem conversão e sem redução da sua quantidade, e tornar-se-ão utilizáveis com a abertura da área de cliente. As respetivas condições de utilização serão publicadas nessa ocasião e não poderão reduzir as vantagens já adquiridas. Apenas quanto a estas vantagens, o prazo de 12 meses do artigo 5.5 fica suspenso até essa abertura: nenhuma pode caducar antes de ter sido tornada utilizável.` },
         ],
       },
       {
@@ -321,7 +408,7 @@ export const CGV: LocalizedDoc = {
           { kind: 'p', value: `8.4 Maquete validada = referência contratual. A maquete validada e datada constitui a referência da encomenda. Qualquer apreciação de conformidade do álbum entregue é efetuada por comparação com essa maquete validada, com exclusão de qualquer expectativa subjetiva não refletida na maquete.` },
           { kind: 'p', value: `8.5 Informação prévia. A perda do direito de livre resolução é dada a conhecer ao cliente de forma clara e legível, em destaque próprio, desde a página da oferta e no resumo que antecede o botão «Encomendar com obrigação de pagamento», nos termos do artigo 4.º, n.º 1, alínea n), do DL 24/2014. Na falta de informação prévia, a exceção não é oponível.` },
           { kind: 'p', value: `8.6 Prova. A Bellajour conserva, durante 10 anos (Código Comercial, artigo 40.º), os elementos de prova: versão das Condições aceite e registo temporal da aceitação no adiantamento, registo temporal do carregamento, registo temporal e versão da validação da maquete, e identificador da transação Stripe.` },
-          { kind: 'p', value: `8.7 Montante e incumprimento da Bellajour. O reembolso incide sobre o montante efetivamente pago (Fundador 25 €; influenciador 25 €); as bonificações nunca desembolsadas (5 €) não são reembolsáveis. Se a Bellajour não puder produzir ou entregar (falha interna, falha do impressor parceiro, força maior, cessação de atividade), qualquer quantia paga é integralmente reembolsada em numerário no meio de pagamento original, no prazo máximo de 14 dias após a aceitação do pedido ou a constatação da falha (artigo 12.º do DL 24/2014). No plano contabilístico, este reembolso dá lugar à emissão de uma nota de crédito que anula a fatura de adiantamento; a nota de crédito é um documento contabilístico e não um modo de reembolso que substitua o pagamento em numerário.` },
+          { kind: 'p', value: `8.7 Montante e incumprimento da Bellajour. Numa encomenda Atelier (artigo 4.º-A), o reembolso incide sobre o preço integralmente pago. Numa encomenda de pré-venda (artigo 5.º), incide sobre o montante efetivamente pago (Fundador 25 €; influenciador 25 €); as bonificações nunca desembolsadas (5 €) não são reembolsáveis. Se a Bellajour não puder produzir ou entregar (falha interna, falha do impressor parceiro, força maior, cessação de atividade), qualquer quantia paga é integralmente reembolsada em numerário no meio de pagamento original, no prazo máximo de 14 dias após a aceitação do pedido ou a constatação da falha (artigo 12.º do DL 24/2014). No plano contabilístico, este reembolso dá lugar à emissão de uma nota de crédito que anula a fatura de adiantamento; a nota de crédito é um documento contabilístico e não um modo de reembolso que substitua o pagamento em numerário.` },
           { kind: 'p', value: `8.8 Versionamento. A versão das presentes Condições oponível ao cliente é a que aceitou no momento da encomenda; nas pré-vendas Fundadores, a aceite no momento do pagamento do adiantamento. Qualquer alteração posterior não tem efeito retroativo sobre a sua encomenda.` },
         ],
       },
@@ -375,7 +462,7 @@ export const CGV: LocalizedDoc = {
         ],
       },
       {
-        heading: `Anexo — Ficha de produto (Álbum Bellajour no Lançamento, oferta de base)`,
+        heading: `Anexo — Ficha de produto (Álbum Bellajour)`,
         id: `fiche-produit`,
         blocks: [
           { kind: 'h3', text: `Características técnicas` },
@@ -383,8 +470,8 @@ export const CGV: LocalizedDoc = {
             [`Tipo`, `Livro de fotografias encadernado, impresso por encomenda`],
             [`Formato`, `Retrato — 210 × 280 mm`],
             [`Encadernação`, `Capa dura (hardcover)`],
-            [`Paginação de base`, `30 páginas`],
-            [`Paginação mín. / máx.`, `mín. 30 páginas — máx. 200 páginas (número de páginas obrigatoriamente par)`],
+            [`Paginação — Oferta Atelier`, `mín. 20 páginas — máx. 50 páginas (número de páginas obrigatoriamente par)`],
+            [`Paginação — Pré-venda (13/06–15/08/2026)`, `mín. 30 páginas — máx. 200 páginas (número de páginas obrigatoriamente par)`],
             [`Capa`, `Ilustrada, única, gerada por IA num estilo próprio da marca`],
             [`Impressão`, `Quadricromia, 300 DPI, perfil colorimétrico FOGRA 39`],
           ] },
@@ -398,8 +485,15 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Especificações dos ficheiros fornecidos pelo cliente` },
           { kind: 'p', value: `Resolução mínima: 800 × 800 píxeis. Abaixo deste limiar, a fotografia é rejeitada ou remetida para um espaço mais pequeno. Existe uma diferença de cor normal entre a exibição no ecrã (RGB) e a impressão em papel; esta não constitui um defeito.` },
           { kind: 'p', value: `Formatos de ficheiro aceites: JPEG, PNG, HEIC, HEIF, WebP.` },
-          { kind: 'h3', text: `Grelha tarifária — Álbum Bellajour Lançamento (oferta de base)` },
-          { kind: 'p', value: `Preços de catálogo padrão, fora de oferta promocional. Preços exibidos em euros, com todos os impostos incluídos. IVA aplicado à taxa do país de residência do consumidor (regime OSS-União) após o limiar de 10 000 € de volume de negócios.` },
+          { kind: 'h3', text: `Grelha tarifária — Oferta Atelier (em vigor desde 24/08/2026)` },
+          { kind: 'p', value: `Grelha aplicável a qualquer encomenda efetuada através do Atelier (artigo 4.º-A). Preços firmes, exibidos em euros, com todos os impostos incluídos, impressão e entrega incluídas na zona França, Bélgica, Luxemburgo. O escalão é determinado pelo número de páginas composto pelo atelier, nunca introduzido pelo cliente.` },
+          { kind: 'table', columns: [`Paginação composta`, `Preço c/ IVA, tudo incluído`], rows: [
+            [`20 a 28 páginas`, `30 €`],
+            [`30 a 38 páginas`, `40 €`],
+            [`40 a 50 páginas`, `45 €`],
+          ] },
+          { kind: 'h3', text: `Grelha tarifária — Pré-venda (encomendas de 13/06 a 15/08/2026)` },
+          { kind: 'p', value: `Grelha encerrada, conservada apenas para as encomendas de pré-venda (artigo 5.º). Preços de catálogo padrão, fora de oferta promocional, exibidos em euros, com todos os impostos incluídos. IVA aplicado à taxa do país de residência do consumidor (regime OSS-União) após o limiar de 10 000 € de volume de negócios.` },
           { kind: 'table', columns: [`Paginação`, `Preço c/ IVA`], rows: [
             [`30 páginas (base)`, `49 €`],
             [`50 páginas`, `82 €`],
@@ -413,7 +507,7 @@ export const CGV: LocalizedDoc = {
   },
   en: {
     title: `Terms and Conditions of Sale`,
-    lastUpdated: `Version 2.5 — Effective 13/06/2026`,
+    lastUpdated: `Version 3.0 — Effective 24/08/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `English translation for information only. The legally prevailing version is the Portuguese text; in the event of any discrepancy, the Portuguese text prevails.`,
@@ -475,8 +569,38 @@ export const CGV: LocalizedDoc = {
         ],
       },
       {
-        heading: `Article 5 — Order, pre-sale, deposit and credit (Instants)`,
+        heading: `Article 4a — Orders placed through the Atelier (offer in force)`,
         blocks: [
+          { kind: 'p', value: `4a.1 Scope. This Article governs orders placed through the Atelier on bellajour.fr, the only ordering channel open since 24 August 2026. Articles 5 and 5a concern exclusively the pre-sale orders placed between 13 June and 15 August 2026.` },
+          { kind: 'p', value: `4a.2 Ordering journey. The customer completes a questionnaire, uploads their photographs, and within 48 hours receives a preview of their cover on a personal page accessible via a unique link sent by email. No amount is requested before that preview and the firm price have been brought to their attention.` },
+          { kind: 'p', value: `4a.3 Payment in full, no deposit. An order placed through the Atelier gives rise to no deposit, no reservation and no credit (Instants). The price is paid in a single instalment at the time of the order.` },
+          {
+            kind: 'p',
+            value: [
+              `4a.4 Price by pagination tier. The price is determined by the number of pages actually composed by the atelier, according to the "Atelier offer" price list set out in the `,
+              { text: `Product Sheet`, href: `#fiche-produit` },
+              `. It is firm, displayed inclusive of all taxes, and includes printing and delivery. The page count is neither chosen nor entered by the customer: it results from the number and quality of the photographs uploaded, and is communicated to them together with the price before any payment.`,
+            ],
+          },
+          { kind: 'h3', text: `What an Atelier order includes` },
+          { kind: 'list', items: [
+            `The physical bound album, composed from the uploaded photographs`,
+            `The bespoke illustrated cover`,
+            `The layout composed by algorithm under human control`,
+            `The HD digital version (Article 1.2)`,
+            `Printing and delivery within the zone defined in 4a.6`,
+          ] },
+          { kind: 'p', value: `4a.5 No pre-sale benefit attaches to an Atelier order: no Instants, no free pages, no referral bonus. The crediting of a pre-sale credit is governed by Article 5a.` },
+          { kind: 'p', value: `4a.6 Delivery zone. Atelier orders are delivered to France, Belgium and Luxembourg. The delivery address is collected at the time of payment by the payment provider; no country outside this zone is offered and no order may be delivered there. This zone may be extended; any extension is assessed as at the date of the order.` },
+          { kind: 'p', value: `4a.7 Delivery time. Time runs from validation of the proof. It is estimated at 10 days and shall in no event exceed 30 days, in accordance with Article 10.1 and Article 9 of DL 24/2014.` },
+          { kind: 'p', value: `4a.8 Checkboxes preceding payment. Before any payment, the customer ticks two separate checkboxes, unticked by default and timestamped: (i) acceptance of these Conditions; (ii) acknowledgement, within the meaning of Article 8.5, that their album is clearly personalised and that their right of withdrawal will be extinguished upon validation of the proof, in accordance with Article 8.3. Payment is technically impossible until both boxes are ticked and timestamped.` },
+          { kind: 'p', value: `4a.9 Right to a refund until the proof. Notwithstanding payment in full, and in accordance with Articles 8.2 and 8.3, the customer retains, until validation of their proof, the right to obtain a full refund of the amounts paid, with no deduction, no charge and no penalty. This right is extinguished upon validation of the proof, which makes the order definitive.` },
+        ],
+      },
+      {
+        heading: `Article 5 — Order, pre-sale, deposit and credit (Instants) — transitional regime`,
+        blocks: [
+          { kind: 'p', value: `5.0 Scope. This Article and Article 5a govern exclusively the pre-sale orders placed between 13 June and 15 August 2026. Those offers are closed and can no longer be subscribed to. They remain fully applicable to the customers who benefited from them, until their rights are exhausted or expire, and no subsequent amendment to these Conditions may reduce benefits already acquired (Article 8.8). Orders placed since 24 August 2026 are governed by Article 4a.` },
           { kind: 'p', value: `5.1 Formation of the contract. The order is concluded when the customer validates payment after accepting these Terms. A confirmation email summarises the order.` },
           { kind: 'p', value: `5.2 Nature of the initial payment (deposit). The amount paid at reservation (Founder: €25; Standard: €30; Influencer code: €25) is a deposit — an advance partial payment credited against the total price. It does not constitute a sinal (earnest money) within the meaning of Articles 440 to 442 of the Civil Code: neither party may invoke it as a penalty, and its payment produces no double-restitution effect.` },
           { kind: 'p', value: `5.3 Conversion into credit (Instants). As soon as it is received, the deposit is immediately converted into credit (Instants) posted to the customer's account linked to their email address, in the amount of €30 regardless of the offer. This €30 credit is a commercial benefit and not a payment: only the amount actually paid as a deposit (€25 or €30 depending on the offer) is collected and invoiced; the bonus portion (€5 on the Founder and influencer offers) constitutes a conditional commercial discount, never collected and not invoiced. This credit: (i) is personal and non-transferable; (ii) is not refundable in cash, except under the conditions set out in Articles 5.4 and 8.2; (iii) expires 12 months after it is granted; (iv) is credited against the price of the final order. Offers and codes cannot be combined with one another.` },
@@ -490,6 +614,16 @@ export const CGV: LocalizedDoc = {
             `Referral: from 15 August 2026. The referral grants 5 free pages to the referrer and 3 free pages to the referred customer. These pages are placed on hold in the account from sign-up and are definitively earned once both deposits have been paid and are no longer refundable (i.e. after each party's proof has been validated). Until this condition is met, the pages remain on hold; they are cancelled if either of the two deposits is refunded.`,
           ] },
           { kind: 'p', value: `The HD digital file is included with all offers.` },
+        ],
+      },
+      {
+        heading: `Article 5a — Crediting the pre-sale credit against an Atelier order`,
+        blocks: [
+          { kind: 'p', value: `5a.1 Principle. The €30 credit granted under Article 5.3 is credited against the price of an order placed through the Atelier. The closure of the pre-sale has no effect on this right.` },
+          { kind: 'p', value: `5a.2 Procedure. The customer requests it at contact@bellajour.com. After verification of their entitlement, Bellajour sends them a personal, single-use and non-transferable discount code in the amount of €30. The customer enters it at the time of payment of their Atelier order; the discount applies immediately to the amount due. Bellajour may not refuse the crediting to a customer whose entitlement has been verified.` },
+          { kind: 'p', value: `5a.3 Single use. One code is granted per customer. It may not be split, combined with another code, or exchanged for cash. If the order price is lower than the credit amount, the difference is neither refunded nor carried over.` },
+          { kind: 'p', value: `5a.4 Expiry. The credit expires 12 months after it is granted, in accordance with Article 5.5, the suspension provided for in the customer's favour applying on the same terms. Bellajour sends a reminder by email before the deadline.` },
+          { kind: 'p', value: `5a.5 Preserved benefits — Instants and referral pages. Instants granted as a bonus (Article 5.6) and pages granted through referral are not credited against an Atelier order and are not converted into a discount. They are preserved to the customer's personal credit, without loss, without conversion and without reduction in quantity, and will become usable upon the opening of the customer area. Their terms of use will be published on that occasion and may not reduce benefits already acquired. For these benefits alone, the 12-month period in Article 5.5 is suspended until that opening: none may expire before it has been made usable.` },
         ],
       },
       {
@@ -518,7 +652,7 @@ export const CGV: LocalizedDoc = {
           { kind: 'p', value: `8.4 Validated proof = contractual reference. The validated, timestamped proof constitutes the reference for the order. Any assessment of conformity of the delivered album is carried out by comparison with this validated proof, excluding any subjective expectation not reflected in the proof.` },
           { kind: 'p', value: `8.5 Prior information. The loss of the right of withdrawal is brought to the customer's attention clearly and legibly, in a separate box, from the offer page and in the summary preceding the "Order with obligation to pay" button, in accordance with Article 4(1)(n) of DL 24/2014. Without prior information, the exception is not enforceable.` },
           { kind: 'p', value: `8.6 Evidence. Bellajour retains, for 10 years (Commercial Code, Article 40), the evidence: version of the Terms accepted and timestamp of acceptance at deposit, timestamp of upload, timestamp and version of proof validation, and Stripe transaction identifier.` },
-          { kind: 'p', value: `8.7 Amount and Bellajour's default. The refund covers the amount actually paid (Founder €25; influencer €25); bonuses never disbursed (€5) are not refundable. If Bellajour cannot produce or deliver (internal failure, failure of the partner printer, force majeure, cessation of business), any amount paid is refunded in full, in cash, to the original means of payment, no later than 14 days after acceptance of the request or finding of the default (Article 12 of DL 24/2014). For accounting purposes, this refund gives rise to the issuance of a credit note cancelling the deposit invoice; the credit note is an accounting document and not a method of refund replacing the cash payment.` },
+          { kind: 'p', value: `8.7 Amount and Bellajour's default. For an Atelier order (Article 4a), the refund covers the price paid in full. For a pre-sale order (Article 5), it covers the amount actually paid (Founder €25; influencer €25); bonuses never disbursed (€5) are not refundable. If Bellajour cannot produce or deliver (internal failure, failure of the partner printer, force majeure, cessation of business), any amount paid is refunded in full, in cash, to the original means of payment, no later than 14 days after acceptance of the request or finding of the default (Article 12 of DL 24/2014). For accounting purposes, this refund gives rise to the issuance of a credit note cancelling the deposit invoice; the credit note is an accounting document and not a method of refund replacing the cash payment.` },
           { kind: 'p', value: `8.8 Versioning. The version of these Terms enforceable against the customer is the one they accepted at the order; for Founder pre-sales, the one accepted at payment of the deposit. Any subsequent amendment has no retroactive effect on their order.` },
         ],
       },
@@ -572,7 +706,7 @@ export const CGV: LocalizedDoc = {
         ],
       },
       {
-        heading: `Annex — Product Sheet (Bellajour Album at Launch, base offer)`,
+        heading: `Annex — Product Sheet (Bellajour Album)`,
         id: `fiche-produit`,
         blocks: [
           { kind: 'h3', text: `Technical specifications` },
@@ -580,8 +714,8 @@ export const CGV: LocalizedDoc = {
             [`Type`, `Bound photo book, printed on demand`],
             [`Format`, `Portrait — 210 × 280 mm`],
             [`Binding`, `Hardcover`],
-            [`Base pagination`, `30 pages`],
-            [`Pagination min. / max.`, `min. 30 pages — max. 200 pages (page count must be even)`],
+            [`Pagination — Atelier offer`, `min. 20 pages — max. 50 pages (page count must be even)`],
+            [`Pagination — Pre-sale (13/06–15/08/2026)`, `min. 30 pages — max. 200 pages (page count must be even)`],
             [`Cover`, `Illustrated, unique, AI-generated in a style specific to the brand`],
             [`Printing`, `Four-colour (CMYK), 300 DPI, FOGRA 39 colour profile`],
           ] },
@@ -595,8 +729,15 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Specifications for customer-provided files` },
           { kind: 'p', value: `Minimum resolution: 800 × 800 pixels. Below this threshold, the photo is rejected or downgraded to a smaller slot. A normal colour difference exists between on-screen display (RGB) and paper printing; this does not constitute a defect.` },
           { kind: 'p', value: `Accepted file formats: JPEG, PNG, HEIC, HEIF, WebP.` },
-          { kind: 'h3', text: `Price list — Bellajour Album Launch (base offer)` },
-          { kind: 'p', value: `Standard catalogue prices, excluding promotional offers. Prices displayed in euros, inclusive of all taxes. VAT applied at the rate of the consumer's country of residence (OSS-Union scheme) after the €10,000 turnover threshold.` },
+          { kind: 'h3', text: `Price list — Atelier offer (in force since 24/08/2026)` },
+          { kind: 'p', value: `Price list applicable to any order placed through the Atelier (Article 4a). Firm prices, displayed in euros, inclusive of all taxes, printing and delivery included within the France, Belgium, Luxembourg zone. The tier is determined by the page count composed by the atelier, never entered by the customer.` },
+          { kind: 'table', columns: [`Composed pagination`, `Price incl. VAT, all-inclusive`], rows: [
+            [`20 to 28 pages`, `€30`],
+            [`30 to 38 pages`, `€40`],
+            [`40 to 50 pages`, `€45`],
+          ] },
+          { kind: 'h3', text: `Price list — Pre-sale (orders from 13/06 to 15/08/2026)` },
+          { kind: 'p', value: `Closed price list, retained for pre-sale orders only (Article 5). Standard catalogue prices, excluding promotional offers, displayed in euros, inclusive of all taxes. VAT applied at the rate of the consumer's country of residence (OSS-Union scheme) after the €10,000 turnover threshold.` },
           { kind: 'table', columns: [`Pagination`, `Price incl. VAT`], rows: [
             [`30 pages (base)`, `49 €`],
             [`50 pages`, `82 €`],

@@ -6,10 +6,21 @@
  * « Aucun paiement possible sans les deux cases cochées et horodatées. »
  * Elles sont donc écrites EN BASE au clic, pas seulement dans le composant :
  * une case qui ne vit que dans le navigateur ne prouve rien le jour où une
- * cliente conteste la fabrication d'un bien personnalisé. La seconde case
- * repose sur l'article L221-28 3° du code de la consommation — sans
- * reconnaissance explicite AVANT paiement, elle conserve 14 jours de
- * rétractation sur un objet qui ne peut être revendu à personne.
+ * cliente conteste la fabrication d'un bien personnalisé.
+ *
+ * LA SECONDE CASE relève de l'article 17.º, nº 1, alinéa c), du DL 24/2014 —
+ * droit PORTUGAIS, le vendeur étant établi à Lisbonne et les CGV désignant ce
+ * droit. (Le PRD §8 citait l'article L221-28 3° français : même règle
+ * européenne, directive 2011/83/UE, mais ce n'est pas notre texte applicable.)
+ *
+ * ⚠️ ELLE NE FAIT PAS RENONCER ICI. L'article 8.3 des CGV fixe l'extinction du
+ * droit de rétractation à la VALIDATION DE LA MAQUETTE — état 4, pas état 2.
+ * Le libellé précédent (« la fabrication démarre immédiatement ») était donc
+ * faux deux fois : rien ne part en fabrication au paiement, on compose d'abord
+ * la maquette ; et la renonciation ne mordait pas encore. Ce qui est recueilli
+ * ici est l'information préalable exigée par l'article 8.5 — sans laquelle
+ * l'exception ne serait pas opposable du tout. Jusqu'à la validation, la
+ * cliente garde droit au remboursement intégral (CGV art. 4bis.9 et 8.2).
  *
  * Si l'enregistrement échoue, la case revient à sa position précédente. Une
  * case cochée à l'écran mais absente en base est le pire des deux mondes :
@@ -127,8 +138,9 @@ export default function CasesEtCommande({
             onChange={(e) => enregistrer('renonciation_retractation', e.target.checked)}
           />
           <span>
-            J’accepte que la fabrication démarre immédiatement et renonce à mon droit
-            de rétractation, ce numéro étant personnalisé.
+            Je reconnais que ce numéro est personnalisé et que mon droit de
+            rétractation s’éteindra au moment où je validerai la maquette.
+            Jusque-là, je peux demander le remboursement intégral.
           </span>
         </label>
       </div>
