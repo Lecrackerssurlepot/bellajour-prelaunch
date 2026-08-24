@@ -231,6 +231,43 @@ export async function PATCH(request: Request) {
       await envoyerMailAtelier(supabase, "M1", numero);
     }
 
+    /* ── LE RETOUR DE L'ÉTAT 1b (PRD §6 : « 1b → retour à 1 ») ──────────
+       Sans ce bloc, l'état 1b est un cul-de-sac : l'atelier demande plus de
+       photos, la cliente en redépose, et le dossier reste marqué « photos
+       insuffisantes ». Personne ne voit rien remonter dans la table de
+       travail, elle attend une couverture qui ne viendra jamais.
+
+       Le dépôt accepte déjà les états 1 et 1b (photos/presign) et sa page lui
+       propose bien de reprendre — il ne manquait que le chemin du retour.
+
+       `etat_maj_le` repart de zéro : c'est lui qui fait courir les 48 h de la
+       promesse. Un dossier revenu doit avoir un délai neuf, pas celui de son
+       premier passage.
+
+       Pas de mail : M1 est déjà parti au premier dépôt et son verrou tient.
+       Le signal, c'est la remontée dans /admin. */
+    if (maj.consent_photos === true && numero.etat === "photos_insuffisantes") {
+      const { data: retour } = await supabase
+        .from("numeros")
+        .update({ etat: "photos_recues", etat_maj_le: maintenant })
+        .eq("id", numero.id)
+        .eq("etat", "photos_insuffisantes")
+        .select("id");
+
+      /* Invariant nº6 — et zéro ligne touchée veut dire que l'atelier est
+         passé entre-temps : on ne rejournalise pas une transition qui n'a
+         pas eu lieu. */
+      if (retour?.length) {
+        await logEvenement(supabase, numero.id, "etat_change", {
+          de: "photos_insuffisantes",
+          vers: "photos_recues",
+          par: "cliente",
+          source: "depot_repris",
+          nb_photos: numero.nb_photos,
+        });
+      }
+    }
+
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (err) {
     console.error("[atelier/numero] exception PATCH", (err as Error)?.message);

@@ -192,3 +192,60 @@ export async function envoyerMailAtelier(
     return { statut: "echec" };
   }
 }
+
+/* ───────────────────────── la relève d'UN dossier ─────────────────────────
+ *
+ * Ce que /admin appelle en fin de transition (lot 7).
+ *
+ * Il n'y a PAS de logique d'envoi ici : tout passe par `envoyerMailAtelier`,
+ * donc par le même verrou et les mêmes garanties que le balayage de
+ * /api/atelier/mails/relever. Deux appelants, un seul chemin. /admin ne
+ * réécrit rien, il déclenche.
+ *
+ * Le balayage garde sa boucle propre parce qu'il traite 200 dossiers d'un
+ * coup et pré-charge les verrous en une requête : sur UN dossier, cette
+ * optimisation n'a pas de sens, et la partager coûterait plus de complexité
+ * qu'elle n'en épargne.
+ */
+
+/** Le mail attaché à un état, ou null. Aligné sur le balayage. */
+export function codeMailPourEtat(etat: string): CodeMail | null {
+  if (etat === "photos_recues") return "M1";
+  if (etat === "apercu_pret") return "M3";
+  /* M4 part au webhook Stripe. M5 à M9 sont du lot 8 : tant qu'ils ne sont
+     pas là, aucune transition ne prévient la cliente, et /admin le DIT à
+     l'écran avant de confirmer (cf. transitions.ts, `mail.absent`). */
+  return null;
+}
+
+export type Releve =
+  | { code: CodeMail; resultat: Resultat }
+  | { code: null; resultat: null };
+
+export async function releverDossier(
+  supabase: SupabaseClient,
+  numeroId: string
+): Promise<Releve> {
+  try {
+    const { data } = await supabase
+      .from("numeros")
+      .select(`${CHAMPS_MAIL}, consent_photos`)
+      .eq("id", numeroId)
+      .maybeSingle<NumeroPourMail & { etat: string; consent_photos: boolean | null }>();
+
+    if (!data) return { code: null, resultat: null };
+
+    const code = codeMailPourEtat(data.etat);
+    if (!code) return { code: null, resultat: null };
+
+    /* Même garde-fou que le balayage : sans `consent_photos`, elle est encore
+       en train de choisir ses photos, et « vos photos sont à l'atelier »
+       serait faux. */
+    if (code === "M1" && data.consent_photos !== true) return { code: null, resultat: null };
+
+    return { code, resultat: await envoyerMailAtelier(supabase, code, data) };
+  } catch (err) {
+    console.error("[atelier/mails] relève d'un dossier échouée", (err as Error)?.message);
+    return { code: null, resultat: null };
+  }
+}

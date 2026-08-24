@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
-import { ADMIN_COOKIE, ADMIN_TTL_MS, signAdminCookie } from "@/lib/admin-auth";
+import { ADMIN_COOKIE, ADMIN_TTL_MS, comptesAdmin, signAdminCookie } from "@/lib/admin-auth";
 
 /**
- * POST /api/admin/login — valide le mot de passe partagé et pose le cookie de session.
+ * POST /api/admin/login — vérifie un compte nominatif et pose le cookie signé.
  *
- * Le mot de passe (ADMIN_PASSWORD) n'arrive JAMAIS au client : seul le booléen
- * de réussite et, si OK, le cookie httpOnly signé. Comparaison timing-safe.
+ * Aucun mot de passe ne repart vers le client : seul le booléen de réussite
+ * et, si OK, le cookie httpOnly. Comparaison timing-safe.
+ *
+ * ⚠️ La réponse ne distingue JAMAIS « compte inconnu » de « mauvais mot de
+ * passe » : sinon le formulaire devient un annuaire des comptes valides.
+ * D'où le mot de passe témoin comparé quand même sur un compte inconnu — la
+ * durée de la réponse ne trahit pas non plus l'existence du compte.
  */
 export const runtime = "nodejs";
+
+const TEMOIN = "0".repeat(32);
 
 function timingSafeCompare(a: string, b: string): boolean {
   const ba = Buffer.from(a, "utf8");
@@ -20,32 +27,36 @@ function timingSafeCompare(a: string, b: string): boolean {
 }
 
 export async function POST(req: Request) {
-  const password = process.env.ADMIN_PASSWORD;
-  if (!password) {
-    console.error("[admin/login] ADMIN_PASSWORD absent — accès refusé");
+  const comptes = comptesAdmin();
+  if (!Object.keys(comptes).length) {
+    console.error("[admin/login] aucun compte configuré — accès refusé");
     return NextResponse.json({ error: "config" }, { status: 500 });
   }
 
   let submitted = "";
+  let qui = "";
   try {
     const ct = req.headers.get("content-type") || "";
     if (ct.includes("application/json")) {
-      const body = (await req.json()) as { password?: unknown };
+      const body = (await req.json()) as { password?: unknown; qui?: unknown };
       submitted = typeof body.password === "string" ? body.password : "";
+      qui = typeof body.qui === "string" ? body.qui.trim().toLowerCase() : "";
     } else {
       const form = await req.formData();
       submitted = String(form.get("password") ?? "");
+      qui = String(form.get("qui") ?? "").trim().toLowerCase();
     }
   } catch {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }
 
-  if (!timingSafeCompare(submitted, password)) {
+  const attendu = comptes[qui];
+  if (!timingSafeCompare(submitted, attendu ?? TEMOIN) || !attendu) {
     return NextResponse.json({ error: "invalid" }, { status: 401 });
   }
 
   const expMs = Date.now() + ADMIN_TTL_MS;
-  const value = await signAdminCookie(password, expMs);
+  const value = await signAdminCookie(qui, attendu, expMs);
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set(ADMIN_COOKIE, value, {
