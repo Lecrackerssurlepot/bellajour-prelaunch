@@ -1,0 +1,11 @@
+.at-final {
+  text-align: center;
+  padding: clamp(90px, 16vw, 160px) 0;
+}
+
+.at-final-actions { margin-top: 34px; }
+
+/* Cormorant Garamond sort des chiffres elzéviriens par défaut : « 01 » se lit
+   « oı ». Élégant sur un prix, illisible sur un numéro. On force les chiffres
+   alignés ICI seulement — la grille de prix garde les elzéviriens. */
+.at-final h2 { font-variant-numeric: lining-nums; font-feature-settings: 'lnum' 1; }

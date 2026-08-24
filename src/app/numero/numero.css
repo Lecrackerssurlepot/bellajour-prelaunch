@@ -1,0 +1,329 @@
+/* ════════════════════════════════════════════════════════════
+   LA PAGE D'ÉTAT — /numero/[token] (PRD §7.5 et §8).
+
+   Une seule page, huit rendus. C'est le seul lien que la cliente possède :
+   elle le reçoit une fois, elle le garde, et il remplace un espace client
+   sans en coder un. Il sera rouvert dix fois en trois semaines — d'où une
+   mise en page qui tient debout avec une phrase comme avec trois visuels.
+
+   Invariant nº1 : aucune couleur en dur. Tout vient de .bj-atelier
+   (src/app/(atelier)/theme.css), importé par le layout de /numero.
+   ════════════════════════════════════════════════════════════ */
+
+.nu {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/* ---- barre haute : le nom, rien d'autre ----
+   Pas de CTA ici. Invariant nº5 : un seul libellé de bouton sur tout le
+   site, et il n'a rien à faire au-dessus d'un dossier en cours. */
+.nu-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px var(--pad);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.nu-top-logo {
+  font-family: var(--font-display);
+  font-size: 21px;
+  letter-spacing: 0.02em;
+}
+
+.nu-top-ref {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.nu-main {
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: clamp(48px, 10vw, 96px) var(--pad) clamp(72px, 12vw, 130px);
+}
+
+/* Le titre du numéro. (0,2,0) — passe devant `.bj-atelier h1` (0,1,1),
+   qui vaut clamp(56px,15vw,150px) : la taille du hero écraserait une page
+   qui n'est pas une page d'accueil. */
+.bj-atelier .nu-titre {
+  font-size: clamp(40px, 9vw, 78px);
+  margin-top: 10px;
+}
+
+/* ---- le fil : où en est le numéro ----
+   Cinq jalons, jamais huit : la cliente ne connaît pas notre machine à
+   états, elle veut savoir si c'est fini. */
+.nu-fil {
+  display: flex;
+  margin: clamp(32px, 6vw, 52px) 0 clamp(36px, 7vw, 60px);
+  padding: 0;
+  list-style: none;
+}
+
+.nu-fil li {
+  flex: 1;
+  position: relative;
+  padding-top: 20px;
+  font-size: 11px;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  color: var(--c-text-faint);
+  text-align: left;
+}
+
+/* Le filet qui relie les jalons — posé, jamais animé (PRD §15). */
+.nu-fil li::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--c-line-md);
+}
+
+.nu-fil li:first-child::before { left: 5px; }
+.nu-fil li:last-child::before { right: calc(100% - 6px); }
+
+.nu-fil li::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1px solid var(--c-line-strong);
+  background: var(--c-bg);
+}
+
+.nu-fil .is-fait { color: var(--c-text-soft); }
+.nu-fil .is-fait::after { background: var(--c-text-soft); border-color: var(--c-text-soft); }
+.nu-fil .is-fait::before { background: var(--c-text-faint); }
+
+.nu-fil .is-now { color: var(--c-accent); }
+.nu-fil .is-now::after {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  box-shadow: var(--glow-accent);
+}
+
+/* ---- le mot d'état : la phrase que la cliente vient lire ---- */
+.nu-mot {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 5.4vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  max-width: 20ch;
+}
+
+.nu-sub {
+  margin-top: 16px;
+  max-width: 52ch;
+  font-weight: 300;
+  color: var(--c-text-soft);
+  font-size: clamp(15px, 4vw, 17px);
+}
+
+.nu-sub b { color: var(--c-text); font-weight: 400; }
+
+.nu-actions { margin-top: clamp(30px, 6vw, 44px); }
+
+/* ---- encart secondaire (suivi, adresse, rappel) ---- */
+.nu-carte {
+  margin-top: clamp(28px, 5vw, 40px);
+  padding: 22px 24px;
+  border: 1px solid var(--c-line);
+  border-radius: 16px;
+  background: var(--c-surface-1);
+}
+
+.nu-carte dt {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.nu-carte dd {
+  margin: 4px 0 0;
+  font-size: 16px;
+  color: var(--c-text);
+}
+
+.nu-carte dd + dt { margin-top: 16px; }
+
+/* ---- l'état 2 : la page qui vend (PRD §8) ----
+   La seule page où l'on a le droit d'être spectaculaire. */
+.nu-covers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(10px, 2.5vw, 22px);
+  margin-top: clamp(30px, 6vw, 48px);
+}
+
+.nu-double { margin-top: clamp(10px, 2.5vw, 22px); }
+
+.nu-vue {
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--c-void);
+  box-shadow: var(--shadow-float);
+}
+
+.nu-vue img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Jamais de case cassée : sans visuel, un cadre de la charte et un mot.
+   Un aperçu publié sans image reste rare, mais il ne doit pas se lire
+   comme un site en panne. */
+.nu-vue--vide {
+  display: grid;
+  place-items: center;
+  /* 2/3 — le format du produit, celui des couvertures d'exemple de
+     l'écran 3 (.at-cov). Un cadre vide au mauvais format ferait mentir
+     la page sur ce qu'elle attend. */
+  aspect-ratio: 2 / 3;
+  background: var(--grad-cover);
+  box-shadow: var(--shadow-soft);
+}
+
+.nu-double .nu-vue--vide { aspect-ratio: 3 / 2; }
+
+.nu-vue-legende {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-overlay-faint);
+}
+
+.nu-prix {
+  margin-top: clamp(34px, 6vw, 52px);
+  font-family: var(--font-display);
+  font-size: clamp(22px, 4.4vw, 30px);
+  line-height: 1.25;
+  max-width: 26ch;
+}
+
+.nu-prix b { font-weight: 400; color: var(--c-accent); }
+
+.nu-prix-sub { margin-top: 10px; font-size: 15px; font-weight: 300; color: var(--c-text-soft); }
+
+/* ---- les deux cases obligatoires (invariant nº3) ---- */
+.nu-cases { margin-top: clamp(28px, 5vw, 38px); display: grid; gap: 14px; }
+
+.nu-check {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1.5;
+  color: var(--c-text-soft);
+  max-width: 60ch;
+}
+
+.nu-check input {
+  margin-top: 3px;
+  flex: 0 0 auto;
+  accent-color: var(--c-accent);
+  width: 17px;
+  height: 17px;
+}
+
+.nu-check:hover { color: var(--c-text); }
+
+/* ---- le bouton de paiement ----
+   --c-order est RÉSERVÉ à ce bouton et à lui seul (PRD §4). */
+.nu-order {
+  margin-top: clamp(26px, 5vw, 36px);
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--c-order);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 500;
+  padding: 18px 34px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease), background var(--dur) var(--ease);
+  will-change: transform;
+}
+
+.bj-atelier .nu-order { color: var(--c-text-pure); }
+
+.nu-order:hover:not([disabled]) { background: var(--c-order-strong); transform: scale(1.02); }
+.nu-order:active:not([disabled]) { transform: scale(0.98); }
+.nu-order[disabled] { opacity: 0.32; cursor: not-allowed; transform: none; }
+
+.nu-note { margin-top: 18px; font-size: 13px; color: var(--c-text-faint); max-width: 46ch; }
+
+.nu-erreur { margin-top: 16px; font-size: 14px; color: var(--c-accent-strong); }
+
+/* ---- l'état 4 : maquette feuilletable + Canva en commentaire ---- */
+.nu-pdf {
+  margin-top: clamp(28px, 5vw, 40px);
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  border: 1px solid var(--c-line-md);
+  border-radius: 12px;
+  background: var(--c-surface-1);
+}
+
+.nu-liens {
+  margin-top: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+/* Lien secondaire — texte souligné, jamais un second bouton (invariant nº5). */
+.bj-atelier .nu-lien {
+  font-size: 14px;
+  color: var(--c-text-soft);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--c-line-strong);
+  transition: color var(--dur) var(--ease);
+}
+
+.bj-atelier .nu-lien:hover { color: var(--c-text); }
+
+/* ---- page inconnue (token faux ou expiré) ---- */
+.nu-perdu {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-height: 100dvh;
+  padding: var(--pad);
+}
+
+/* Les largeurs de lecture de .nu-mot / .nu-sub sont pensées pour une colonne
+   alignée à gauche — ici elles doivent se recentrer avec le bloc. */
+.nu-perdu .nu-mot,
+.nu-perdu .nu-sub { margin-left: auto; margin-right: auto; }
+
+/* Les deux couvertures restent CÔTE À CÔTE jusqu'en bas de l'échelle
+   (PRD §8) : c'est le couple C1/C4 qui se lit comme un objet, pas deux
+   images empilées. Sur 375 px cela fait deux vignettes de 160 px — petites,
+   mais justes. */
+@media (max-width: 600px) {
+  .nu-fil li { font-size: 10px; letter-spacing: 0; padding-right: 6px; }
+}
+
+@media (hover: none) {
+  .nu-order:active:not([disabled]) { transform: scale(0.98); transition-duration: 120ms; }
+}

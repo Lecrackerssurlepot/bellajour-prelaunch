@@ -29,14 +29,17 @@ const APP_HEIGHT_SCRIPT = `(function(){var d=document.documentElement,w=window;f
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.bellajour.fr'),
-  title: "Bellajour — Vos souvenirs méritent un album d'exception",
+  title: "Bellajour — chaque moment mérite son numéro",
   description:
-    "Maison d'édition du souvenir. Bellajour compose vos photos en albums d'exception sublimés par une couverture unique. Vivez. Nous composons.",
+    "Vous envoyez vos photos, l’atelier compose un vrai magazine imprimé. Un numéro par moment. À partir de 30 €, aperçu gratuit avant de payer.",
+  /* Le défaut de tout le site depuis la bascule du 24/08/2026. Les pages qui
+     ont leur propre `metadata` (la racine, /preventes) l'emportent ; c'est ce
+     bloc que voient /merci, /inviter et les pages légales. */
   keywords: [
-    'album photo',
+    'magazine photo',
+    'magazine personnalisé',
+    'album photo imprimé',
     'maison édition souvenir',
-    'album imprimé',
-    'photos personnalisé',
     'bellajour',
   ],
   authors: [{ name: 'Bellajour' }],
@@ -48,16 +51,16 @@ export const metadata: Metadata = {
     locale: 'fr_FR',
     url: 'https://www.bellajour.fr',
     siteName: 'Bellajour',
-    title: "Bellajour — Vos souvenirs méritent un album d'exception",
+    title: "Bellajour — chaque moment mérite son numéro",
     description:
-      "Maison d'édition du souvenir. Bellajour compose vos photos en albums d'exception sublimés par une couverture unique. Vivez. Nous composons.",
+      "Vous envoyez vos photos, l’atelier compose un vrai magazine imprimé. Un numéro par moment. À partir de 30 €, aperçu gratuit avant de payer.",
   },
 
   twitter: {
     card: 'summary_large_image',
-    title: "Bellajour — Vos souvenirs méritent un album d'exception",
+    title: "Bellajour — chaque moment mérite son numéro",
     description:
-      "Maison d'édition du souvenir. Bellajour compose vos photos en albums d'exception sublimés par une couverture unique. Vivez. Nous composons.",
+      "Vous envoyez vos photos, l’atelier compose un vrai magazine imprimé. Un numéro par moment. À partir de 30 €, aperçu gratuit avant de payer.",
   },
 
   icons: {

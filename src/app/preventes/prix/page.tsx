@@ -9,6 +9,12 @@ import Footer from '../../sections/Footer'
    réel reste décidé par /api/checkout côté prévente. */
 
 export const metadata: Metadata = {
+  /* NOINDEX depuis la clôture de la prévente (24/08/2026), comme /preventes :
+     cette grille est celle des acomptes, pas celle des numéros de l'atelier.
+     La laisser indexée, c'est laisser Google répondre « Bellajour prix » par
+     des montants qui ne sont plus les nôtres. */
+  robots: { index: false, follow: true },
+
   title: 'Nos prix — Bellajour',
   description:
     'Le prix que vous voyez est le prix que vous payez. Pas de frais cachés, pas de promotions gonflées. Composez votre album et voyez votre prix se dessiner.',

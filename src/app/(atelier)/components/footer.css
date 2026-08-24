@@ -1,0 +1,173 @@
+/* ════════════════════════════════════════════════════════════
+   FOOTER — structure de la landing, charte sombre.
+   Aucune valeur hexadécimale ici : tout vient de theme.css (invariant nº1).
+   ════════════════════════════════════════════════════════════ */
+
+.at-footer {
+  position: relative;
+  border-top: 1px solid var(--c-line);
+  /* Le fond de page est un dégradé qui finit sur --c-void : poser --c-void
+     ici scelle le bas de page sans qu'aucune couture ne se voie. */
+  background: var(--c-void);
+  padding-top: clamp(28px, 5vh, 44px);
+  /* Le mot géant déborde par le bas — c'est tout l'effet. Sans ce
+     `overflow: hidden`, il pousse une barre de défilement horizontale sur
+     mobile et allonge la page de 200 px de vide. */
+  overflow: hidden;
+}
+
+/* ── Deux colonnes ──────────────────────────────────────────────────── */
+.at-footer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: clamp(24px, 4vw, 48px);
+  padding-bottom: clamp(28px, 6vh, 60px);
+  position: relative;
+  z-index: 1;
+}
+
+.at-footer-left {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vh, 16px);
+}
+
+/* La seule ligne de caractère du footer : Cormorant italique, terracotta.
+   `--c-accent` est réservé aux moments forts (PRD §4) — la signature de la
+   maison en est un. */
+.at-footer-tagline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(17px, 1.5vw, 22px);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--c-accent);
+}
+
+.at-footer-label {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  color: var(--c-text-faint);
+}
+
+.at-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 10px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.at-footer-links a {
+  color: var(--c-text-faint);
+  text-decoration: none;
+  transition: color var(--dur) var(--ease);
+}
+.at-footer-links a:hover { color: var(--c-text); }
+
+/* L'adresse mail est le lien qu'on veut voir en premier : c'est la seule
+   action possible ici, et le reste n'est que mentions obligatoires. */
+.at-footer-mail { font-weight: 500; }
+
+.at-footer-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.at-footer-sep {
+  color: var(--c-line-strong);
+  font-size: 0.9em;
+}
+
+/* ── Colonne droite ─────────────────────────────────────────────────── */
+.at-footer-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: clamp(8px, 1.4vh, 14px);
+}
+
+.at-footer-insta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+  color: var(--c-text-faint);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  transition: color var(--dur) var(--ease);
+}
+.at-footer-insta:hover { color: var(--c-text); }
+
+.at-footer-insta svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.at-footer-copy {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-align: right;
+  color: var(--c-text-faint);
+  opacity: 0.7;
+}
+
+/* ── Le mot géant, coupé par le bas ─────────────────────────────────── */
+.at-footer-word {
+  display: block;
+  width: 100%;
+  margin: clamp(24px, 4vh, 48px) 0 0;
+  padding: 0 var(--pad);
+  font-family: var(--font-display);
+  /* 400 et pas 700 : le layout ne charge que cette graisse. Demander un gras
+     déclencherait un faux gras synthétisé, épais et irrégulier. */
+  font-weight: 400;
+  font-size: clamp(108px, 16vw, 196px);
+  line-height: 1;
+  white-space: nowrap;
+  /* Le geste : le mot descend sous le bord, l'`overflow: hidden` du footer
+     le coupe. Sur fond clair il était à pleine encre ; sur fond noir, la
+     même intensité éblouirait — --c-surface-4 le laisse deviner, comme un
+     gaufrage dans le papier. */
+  color: var(--c-surface-4);
+  transform: translateY(0.2em);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .at-footer-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: clamp(28px, 5vh, 40px);
+  }
+
+  .at-footer-right { align-items: flex-start; }
+
+  .at-footer-copy { text-align: left; }
+
+  /* Empilés, les séparateurs « · » n'ont plus rien à séparer. */
+  .at-footer-links {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .at-footer-sep { display: none; }
+
+  .at-footer-word {
+    font-size: clamp(64px, 18vw, 90px);
+  }
+}

@@ -7,9 +7,13 @@
  * Garanties :
  * - templateId absent/0 → skip propre (log, pas d'envoi, pas d'erreur).
  * - apiKey absente → skip propre.
- * - tout échec réseau / HTTP est CATCHÉ et loggé : la fonction ne THROW JAMAIS et
- *   résout toujours `void`. Sûr à `await` dans un webhook sans risque de bloquer
- *   la réponse 200 ni la logique métier.
+ * - tout échec réseau / HTTP est CATCHÉ et loggé : la fonction ne THROW JAMAIS.
+ *   Sûr à `await` dans un webhook sans risque de bloquer la réponse 200 ni la
+ *   logique métier.
+ * - elle résout `true` si Brevo a accepté le message, `false` sinon (échec,
+ *   skip, exception). Les appelants historiques ignorent la valeur : leur
+ *   comportement est inchangé. Les mails de l'atelier, eux, s'en servent pour
+ *   rendre leur verrou d'envoi et réessayer plus tard (cf. atelier/mails.ts).
  *
  * ⚠️ Ne modifie pas les fonctions existantes de waitlist/route.ts (W1/P1/P2) —
  * celles-ci gardent leur implémentation propre.
@@ -25,17 +29,17 @@ export async function sendBrevoEmail(args: {
   apiKey: string | undefined | null;
   /** Étiquette de log (ex. "F1", "S1", "P3") pour tracer l'envoi. */
   label?: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const { templateId, email, name, params, apiKey, label } = args;
   const tag = label ? `[brevo] ${label}` : "[brevo]";
 
   if (!templateId) {
     console.error(`${tag} skip — templateId manquant`);
-    return;
+    return false;
   }
   if (!apiKey) {
     console.error(`${tag} skip — BREVO_API_KEY manquante`);
-    return;
+    return false;
   }
 
   try {
@@ -54,11 +58,13 @@ export async function sendBrevoEmail(args: {
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       console.error(`${tag} échec ${email} → ${res.status} ${body}`);
-    } else {
-      console.log(`${tag} envoyé ${email} (template=${templateId})`);
+      return false;
     }
+    console.log(`${tag} envoyé ${email} (template=${templateId})`);
+    return true;
   } catch (err) {
     console.error(`${tag} exception ${email}`, err);
+    return false;
   }
 }
 

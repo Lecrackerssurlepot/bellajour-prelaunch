@@ -20,7 +20,12 @@ import { placesRestantes } from './offer-state' */
 const VIDEO_MQ =
   '(min-width: 768px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)'
 
-export default function S1Hero() {
+/* `fermee` vient du serveur (cf. page.tsx) : la prévente est close, plus
+   rien n'est à réserver. Le CTA ne disparaît pas — un hero sans action est
+   une impasse — il mène là où il y a quelque chose à faire. Même libellé que
+   l'encart de clôture et que la homepage : un seul libellé de CTA sur tout le
+   site (invariant nº5 du PRD Atelier). */
+export default function S1Hero({ fermee = false }: { fermee?: boolean }) {
   /* 'image' par défaut (SSR + mobile + reduced-motion) → aucune vidéo chargée. */
   const [bg, setBg] = useState<'image' | 'video'>('image')
 
@@ -96,9 +101,14 @@ export default function S1Hero() {
 
         <div className="s1-bottom">
           <p className="s1-subtitle">Vivez, nous composons</p>
-          <button type="button" className="s1-cta" onClick={scrollToS4}>
-            Participer aux préventes
-          </button>
+          {fermee ? (
+            // eslint-disable-next-line @next/next/no-html-link-for-pages
+            <a className="s1-cta" href="/">Composer mon numéro</a>
+          ) : (
+            <button type="button" className="s1-cta" onClick={scrollToS4}>
+              Participer aux préventes
+            </button>
+          )}
         </div>
       </div>
     </section>

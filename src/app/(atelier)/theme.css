@@ -1,0 +1,254 @@
+/* ════════════════════════════════════════════════════════════
+   ATELIER — tokens de la charte sombre.
+   PRD §4 amendée : le bloc vit sur .bj-atelier, JAMAIS sur :root global.
+   Poser ces tokens en global repeindrait /preventes, /ambassadeurs, /merci,
+   /inviter et les 4 pages légales, qui sont en crème et qui encaissent.
+   Même principe que .at-scope — zéro fuite dans les deux sens.
+
+   Invariant nº1 inchangé : aucune couleur en dur hors de ce bloc.
+   Toute valeur hexadécimale ailleurs dans /atelier est un bug.
+   ════════════════════════════════════════════════════════════ */
+
+.bj-atelier {
+  /* ---- surfaces ---- */
+  --c-void: #020202;
+  --c-bg: #070708;
+  --c-surface-1: #0e0e10;
+  --c-surface-2: #161618;
+  --c-surface-3: #1f1f22;
+  --c-surface-4: #29292e;
+
+  /* ---- texte ---- */
+  --c-text: #f5f0e7;
+  --c-text-soft: #c7c2b8;
+  --c-text-faint: #928d84;
+  --c-text-onaccent: #1a1210;
+  --c-text-pure: #ffffff;              /* hover du CTA primaire, lui seul */
+
+  /* ---- accents ----
+     --c-accent : moments forts et états actifs.
+     --c-order  : RÉSERVÉ au seul bouton de paiement (PRD §4). */
+  --c-accent: #d68a63;
+  --c-accent-strong: #e39a73;
+  --c-accent-soft: rgba(214, 138, 99, 0.14);
+  --c-order: #4a90d9;
+  --c-order-strong: #5aa0e6;
+
+  /* ---- filets ---- */
+  --c-line: rgba(255, 255, 255, 0.07);
+  --c-line-md: rgba(255, 255, 255, 0.11);
+  --c-line-strong: rgba(255, 255, 255, 0.16);
+  --c-veil-hover: rgba(255, 255, 255, 0.02);
+  --c-overlay-text: rgba(255, 255, 255, 0.55);
+  --c-overlay-faint: rgba(255, 255, 255, 0.45);
+  --c-overlay-mid: rgba(255, 255, 255, 0.5);
+
+  /* ---- verre ---- */
+  --glass-bg: rgba(22, 22, 26, 0.55);
+  --glass-bg-strong: rgba(16, 16, 18, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-blur: 20px;
+
+  /* ---- ombres (posées, jamais animées — PRD §15) ---- */
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --shadow-pop: 0 20px 60px rgba(0, 0, 0, 0.6);
+  --shadow-float: 0 24px 70px rgba(0, 0, 0, 0.7);
+  --glow-accent: 0 0 28px rgba(214, 138, 99, 0.35);
+
+  /* ---- dégradés ---- */
+  --grad-ambient: radial-gradient(120% 120% at 50% -10%, #0e0e12 0%, #020202 60%);
+  --grad-hero-veil: radial-gradient(75% 60% at 50% 45%,
+      rgba(2, 2, 2, 0.62) 0%, rgba(2, 2, 2, 0.86) 55%, #020202 100%);
+  --grad-slot: linear-gradient(135deg, #cdbfae, #a89482 60%, #8e7a68);
+  --grad-thumb: linear-gradient(135deg, #cdbfae, #8e7a68);
+  --grad-cover: linear-gradient(160deg, #8e7a68, #4a4038 55%, #211d1a);
+
+  /* ---- les quatre dos de l'étagère (S2) ---- */
+  --spine-1-bg: linear-gradient(180deg, #2b2b30, #17171a);
+  --spine-2-bg: linear-gradient(180deg, #e7dfd2, #cbbfae);
+  --spine-3-bg: linear-gradient(180deg, #d68a63, #a85f3f);
+  --spine-4-bg: linear-gradient(180deg, #1f1f22, #0e0e10);
+
+  /* ---- papier (pages du magazine en fond de hero) ---- */
+  --paper: #f7f1e9;
+  --paper-2: #efe6d8;
+  --paper-text: #1c1c1c;
+  --paper-text-soft: #5b554d;
+
+  /* ---- typographie ---- */
+  --font-display: var(--font-atelier-display), 'Cormorant Garamond', Georgia, serif;
+  --font-ui: var(--font-atelier-ui), 'DM Sans', system-ui, sans-serif;
+
+  /* ---- motion (PRD §15) ---- */
+  --dur: 240ms;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---- gouttière ---- */
+  --pad: clamp(20px, 6vw, 80px);
+}
+
+/* ════════════════════════════════════════════════════════════
+   NEUTRALISATION DE globals.css
+   Le layout racine pose un fond crème sur html+body, une italique
+   globale sur h1 et un bleu --bj-action sur les liens. On les annule
+   ICI, dans le scope, sans jamais toucher au fichier global.
+   ════════════════════════════════════════════════════════════ */
+
+.bj-atelier {
+  position: relative;
+  min-height: 100dvh;
+  background: var(--grad-ambient);
+  color: var(--c-text);
+  font-family: var(--font-ui);
+  font-weight: 400;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+
+  /* Contexte d'empilement LOCAL — indispensable.
+     Sans lui, .bj-atelier est en position:relative sans z-index : il ne crée
+     aucun contexte, et les z-index de ses enfants (hero 0/1/2, nav 50) vont
+     concourir dans le contexte racine avec tout le reste de la page. C'est
+     ce qui a fait qu'un voile en z-index:-1 recouvrait tout sauf la nav sur
+     iPhone. `isolation` enferme la hiérarchie ici : aucun z-index de
+     l'atelier ne peut plus interagir avec l'extérieur, ni l'inverse. */
+  isolation: isolate;
+}
+
+/* Le rebond de scroll iOS est déjà neutralisé en amont par
+   `overscroll-behavior-y: none` sur html+body (globals.css). Ne JAMAIS
+   remettre un voile plein écran en z-index négatif pour ça : sur iOS Safari
+   il repasse devant le contenu. Le fond de .bj-atelier ci-dessus suffit. */
+
+
+/* globals.css : h1 { font-style: italic } — l'atelier n'en veut pas. */
+.bj-atelier h1,
+.bj-atelier h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+.bj-atelier h1 { font-size: clamp(56px, 15vw, 150px); }
+.bj-atelier h2 { font-size: clamp(32px, 7vw, 60px); }
+
+.bj-atelier p,
+.bj-atelier figure,
+.bj-atelier ul { margin: 0; padding: 0; }
+
+/* globals.css : a { color: var(--bj-action) } — bleu prévente, hors charte ici.
+   ATTENTION SPÉCIFICITÉ : `.bj-atelier a` vaut (0,1,1) et battrait une règle
+   de composant en classe simple comme `.at-cta` (0,1,0) — le texte du CTA
+   passerait en crème sur fond crème. Les composants qui portent une couleur
+   propre sont donc écrits `.bj-atelier .at-x` (0,2,0). */
+.bj-atelier a { color: inherit; text-decoration: none; }
+
+.bj-atelier :focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 4px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   PRIMITIVES PARTAGÉES
+   ════════════════════════════════════════════════════════════ */
+
+.at-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: var(--pad);
+  padding-right: var(--pad);
+}
+
+.at-pad {
+  padding-top: clamp(80px, 14vw, 150px);
+  padding-bottom: clamp(80px, 14vw, 150px);
+}
+
+.at-kicker {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  font-weight: 500;
+}
+
+/* PRD §4 amendée : 300 est la graisse du texte ÉDITORIAL (maquette v2).
+   400 est réservé aux champs de formulaire et aux libellés d'action. */
+.at-lede {
+  color: var(--c-text-soft);
+  font-size: clamp(15px, 4vw, 18px);
+  max-width: 46ch;
+  font-weight: 300;
+}
+
+/* ---- CTA : un seul libellé sur tout le site, « Composer avec l'atelier » ---- */
+.at-cta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--c-text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 500;
+  padding: 17px 30px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease), background var(--dur) var(--ease);
+  will-change: transform;
+}
+
+/* PRD §15 : box-shadow ne s'anime jamais. La lueur est posée sur un
+   pseudo-élément à ombre FIXE dont on anime la seule opacité. */
+/* (0,2,0) — passe devant le reset de lien ci-dessus. */
+.bj-atelier .at-cta { color: var(--c-text-onaccent); }
+
+.at-cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--glow-accent);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+  pointer-events: none;
+}
+
+.at-cta:hover:not([disabled]) { background: var(--c-text-pure); transform: scale(1.02); }
+.at-cta:hover:not([disabled])::after { opacity: 1; }
+.at-cta:active:not([disabled]) { transform: scale(0.98); }
+.at-cta[disabled] { opacity: 0.35; cursor: not-allowed; transform: none; }
+.at-cta[disabled]::after { opacity: 0; }
+
+.at-cta-arrow { transition: transform var(--dur) var(--ease); }
+.at-cta:hover:not([disabled]) .at-cta-arrow { transform: translateX(4px); }
+
+.at-cta-note { margin-top: 16px; font-size: 13px; color: var(--c-text-faint); }
+.at-cta-note b { color: var(--c-text-soft); font-weight: 400; }
+
+/* ---- révélation au scroll (PRD §15 : translateY 24px + opacité, une seule fois) ---- */
+.at-rv {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 700ms var(--ease), transform 700ms var(--ease);
+}
+.at-rv.is-in { opacity: 1; transform: none; }
+
+/* ---- appui mobile : scale(.98), retour 120ms (PRD §15) ---- */
+@media (hover: none) {
+  .at-cta:active:not([disabled]) { transform: scale(0.98); transition-duration: 120ms; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bj-atelier *,
+  .bj-atelier *::before,
+  .bj-atelier *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .at-rv { opacity: 1; transform: none; }
+}

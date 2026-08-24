@@ -338,6 +338,12 @@ export default function S4Reservation() {
       if (res.status === 409 && data.error === 'offer_changed') {
         await refetchOfferState()
         setError("L’offre a changé entre-temps. Nous avons mis à jour l’offre affichée — vérifiez puis réessayez.")
+      } else if (res.status === 410 && data.error === 'prevente_fermee') {
+        /* La caisse a fermé pendant que l'onglet était ouvert. On resynchronise
+           l'affichage plutôt que de laisser une erreur sans suite : au refetch,
+           offerMode passe à 'closed' et la section se réécrit toute seule. */
+        await refetchOfferState()
+        setError('La prévente est terminée. Vous pouvez désormais composer votre numéro à tout moment.')
       } else if (res.status === 409 && data.error === 'already_purchased') {
         setError('Cet email a déjà réservé son acompte. Aucun nouveau paiement n’est nécessaire.')
       } else if (res.status === 400 && data.error === 'invalid_email') {
@@ -385,6 +391,34 @@ export default function S4Reservation() {
         <OffreCard offre={OFFRE_STANDARD} secondary onInfo={setInfo} referrerPrenom={referrerPrenom} />
       </div>
     )
+  } else if (offer.offerMode === 'closed') {
+    /* Prévente terminée (PREVENTE_FERMEE côté serveur). On ne rend AUCUNE
+       carte actionnable : pas de bouton mort, pas de modal qui s'ouvre sur
+       une caisse fermée. La page reste en ligne — les mails déjà envoyés
+       pointent dessus — et annonce elle-même la clôture, en renvoyant vers
+       ce qui se vend aujourd'hui. */
+    cards = (
+      <div className="s4-cards s4-cards--solo">
+        <div className="s4-card s4-card--closed">
+          {/* Les liens vers `/` de cette page sont des <a>, pas des <Link> :
+              on quitte le monde crème de la prévente pour la racine sombre.
+              Rechargement voulu — stores et observateurs démontés net, et
+              aucun préfetch du bundle de la homepage depuis une page qui
+              ferme. */}
+          <p className="s4-closed-text">
+            Les albums de prévente sont tous réservés. Merci à celles et ceux qui
+            en ont fait partie : vos commandes suivent leur cours et rien ne change
+            pour vous.
+          </p>
+          <p className="s4-closed-text">
+            Bellajour continue, autrement : vous composez désormais votre numéro
+            quand vous voulez, et vous ne payez qu’après avoir vu votre couverture.
+          </p>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a className="s4-closed-cta" href="/">Composer mon numéro</a>
+        </div>
+      </div>
+    )
   } else if (offer.offerMode === 'soldout') {
     cards = (
       <div className="s4-cards s4-cards--solo">
@@ -411,13 +445,20 @@ export default function S4Reservation() {
           <h2 className="s4-title">
             {orderConfirmed
               ? 'Votre commande est validée !'
-              : referrerPrenom
-                ? `${referrerPrenom} vous invite à pré-commander votre album`
-                : 'Pré-commandez dès maintenant'}
+              : offer?.offerMode === 'closed'
+                ? 'La prévente est terminée'
+                : referrerPrenom
+                  ? `${referrerPrenom} vous invite à pré-commander votre album`
+                  : 'Pré-commandez dès maintenant'}
           </h2>
-          <p className="s4-subtitle">
-            Vivez votre été, on créera votre album à la fin de vos vacances à partir du <strong>15 août</strong> !
-          </p>
+          {/* Le sous-titre annonce une date d'août et une promesse de réservation :
+              il n'a plus de sens une fois la caisse fermée. On le retire plutôt
+              que de le réécrire — l'encart en dessous dit déjà tout. */}
+          {offer?.offerMode !== 'closed' && (
+            <p className="s4-subtitle">
+              Vivez votre été, on créera votre album à la fin de vos vacances à partir du <strong>15 août</strong> !
+            </p>
+          )}
         </header>
 
         {cards}

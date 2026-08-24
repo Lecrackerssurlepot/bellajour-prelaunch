@@ -385,3 +385,49 @@
 @media (prefers-reduced-motion: reduce) {
   .s4-cards-skeleton { animation: none; }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   CLÔTURE DE LA PRÉVENTE (offerMode === 'closed')
+
+   La page reste en ligne parce que les mails déjà partis pointent dessus :
+   un 404 sur un lien reçu par mail, c'est une lectrice perdue. Elle annonce
+   donc elle-même la fermeture, sans bouton mort, et renvoie vers ce qui se
+   vend aujourd'hui.
+
+   Aucun token nouveau, aucune couleur en dur : même gabarit que .s4-card,
+   et le CTA reprend exactement .s4-reserver (fond --bj-action, texte
+   --bj-on-action) pour ne pas inventer un troisième style de bouton.
+   ───────────────────────────────────────────────────────────────────────── */
+.s4-card--closed { text-align: center; }
+
+.s4-closed-kicker {
+  margin: 0 0 clamp(14px, 2vh, 20px);
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: var(--bj-fs-h2);
+  line-height: 1.15;
+  color: var(--bj-action);
+}
+
+.s4-closed-text {
+  margin: 0 0 14px;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-body);
+  line-height: 1.7;
+  color: var(--bj-text-soft);
+}
+
+.s4-closed-cta {
+  display: inline-block;
+  margin-top: clamp(18px, 2.5vh, 26px);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-lg);
+  font-weight: 500;
+  color: var(--bj-on-action);
+  background: var(--bj-action);
+  border-radius: var(--bj-r-btn);
+  padding: 16px 32px;
+  text-decoration: none;
+  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+}
+.s4-closed-cta:hover { opacity: 0.88; }

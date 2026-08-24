@@ -54,10 +54,28 @@ Playfair Display : NON chargée sur la landing — utilisée uniquement dans l'O
 - Animations scroll-driven → uniquement requestAnimationFrame + JS
 - Système de thèmes via data-theme="light" / data-theme="dark" sur les sections
 
+## Bascule du 24/08/2026 — bellajour.fr EST l'Atelier
+- `/` = la homepage de l'Atelier (`src/app/(atelier)/page.tsx`), `/composer` = le questionnaire.
+  Le groupe de routes `(atelier)` ne crée AUCUN segment d'URL ; il isole le thème sombre et les
+  deux polices, pendant que /preventes, /merci et les pages légales restent en dehors.
+- 308 permanentes `/atelier` → `/` et `/atelier/composer` → `/composer` (next.config.ts).
+  ⚠️ Une 308 se met en cache côté navigateur : ne pas les inverser à la légère.
+- L'ancienne landing waitlist (`src/app/page.tsx`) est SUPPRIMÉE du routage. Composants orphelins
+  restant sur le disque : Anxiete, BrandIntro, Solution, Album, FinalWaitlist, StickyVText,
+  StickyJoinCTA (leur CSS n'est plus servi — il est importé par les composants eux-mêmes).
+  Hero et FAQ restent utilisés (ambassadeurs, S5Garanties), Footer par 8 fichiers.
+- `/preventes` et `/preventes/prix` : `noindex, follow`. Sitemap = `/` + pages légales.
+- Fermeture de la prévente : drapeau `PREVENTE_FERMEE=true` (src/lib/prevente.ts), lu CÔTÉ SERVEUR.
+  Ferme `/api/checkout` (410) et bascule `/api/offer-state` en `offerMode: 'closed'` ; le bandeau
+  d'annonce disparaît, les CTA pointent `/`, la section 4 rend un encart de clôture.
+  Ne touche JAMAIS `/api/webhook`, `/merci`, les pages légales ni les crédits — 14 fondateurs ont
+  des droits ouverts et les CGV v3.0 les maintiennent en régime transitoire.
+
 ## Structure fichiers
 src/app/layout.tsx        → <head> fonts + metadata
 src/app/globals.css       → tokens + reset + imports CSS sections
-src/app/page.tsx          → assemblage sections dans l'ordre
+src/app/(atelier)/page.tsx → LA homepage (sert `/`)
+src/app/(atelier)/composer → le questionnaire (sert `/composer`)
 src/app/hero.css          → styles Hero
 src/app/Hero.tsx          → composant Hero
 src/app/sections/         → une section = un .tsx + un .css
@@ -186,6 +204,91 @@ Réf : commit 246d8e5, tokens --bj-nav-android-bg, classe .pv-nav--flat.
 - A2 (Ambassadeur accès)     = template 21, env BREVO_TEMPLATE_A2_ID, déclencheur /ambassadeur/request-access (redemandable)
 - Relance (session.expired)  = template 23, env BREVO_TEMPLATE_RELANCE_ID, BRANCHÉ (case checkout.session.expired, garde-fou status='pending', params { PRENOM })
 - A3 (album offert au 6e = 30 pages niveau 1+2) = template 22, env BREVO_TEMPLATE_A3_ID, BRANCHÉ (étape 6 du handler completed, verrou atomique waitlist.a3_notified_at, couvre parrain direct niveau 1 + grand-parrain niveau 2, params { PRENOM, PAGES_TOTAL, DASHBOARD_URL })
+- M1 (Atelier — dépôt terminé) = template 27, env BREVO_TEMPLATE_M1_ID, déclencheur PATCH /api/atelier/numero branche consent_photos (le SEUL signal serveur de fin de dépôt, posé par depot/moteur.ts finaliser()), params { PRENOM, TITRE, NB_PHOTOS, LIEN }
+- M3 (Atelier — la couverture, état 2) = template 28, env BREVO_TEMPLATE_M3_ID, déclencheur /api/atelier/mails/relever (PAS un webhook : le passage en état 2 se fait à la main en SQL tant que /admin n'existe pas), params { PRENOM, TITRE, NB_PAGES, PRIX, LIEN }
+- M4 (Atelier — paiement reçu) = template 29, env BREVO_TEMPLATE_M4_ID, déclencheur webhook completed si metadata.kind==='atelier', params { PRENOM, TITRE, NB_PAGES, PRIX, LIEN }
 - Anciens (waitlist, hors paiement) : W1, P1, P2 dans waitlist/route.ts
-Helper partagé : src/lib/brevo.ts → sendBrevoEmail({templateId,email,name,params,apiKey,label}), best-effort strict.
+Helper partagé : src/lib/brevo.ts → sendBrevoEmail({templateId,email,name,params,apiKey,label}), best-effort strict, résout true/false (les appelants historiques ignorent la valeur).
+
+## Atelier — mails M1/M3/M4 (lot 8 partiel)
+Tout passe par `src/lib/atelier/mails.ts` → `envoyerMailAtelier(supabase, code, numero)`.
+Trois garanties, dans cet ordre : (1) jamais un mail qui tombe sur une page vide —
+`manquePour()` vérifie apercu_urls/palier/nb_pages avant tout ; (2) jamais deux fois —
+l'insertion dans `mails_envoyes` (unique numero_id+code) EST le verrou, posée AVANT
+l'appel Brevo ; (3) un échec Brevo retire le verrou et journalise `mail_echec`, la
+relève suivante réessaie. Le journal `evenements` garde le récit (`mail_envoye`), la
+table de verrou se nettoie sans remords pour relancer un mail à la main.
+Migration : supabase/migrations/20260824_atelier_mails_envoyes.sql (table + index partiel
+`numeros_apercu_pret_idx`).
+La relève `/api/atelier/mails/relever` (POST ou GET, en-tête `x-atelier-secret` ou
+`Authorization: Bearer`, 404 si le secret manque) balaie états 1 et 2, rattrape M1 et
+envoie M3, et REND COMPTE des dossiers incomplets. Idempotente. C'est là que viendront
+M3b, M2, M5→M9, pas ailleurs.
+⚠️ Rien dans les textes ne porte de tiret (—, –) : consigne explicite de Mathias.
+Logo des mails : `public/logo-mail-blanc.png` (signature blanche sur fond sombre), à
+distinguer de `public/logo-mail.png` (signature bleue, mails de la prévente).
 Migration A3 : supabase/migrations/20260613_a3_notified_flag.sql (colonne waitlist.a3_notified_at timestamptz, flag anti-renvoi posé atomiquement à l'envoi).
+## Webhook Stripe PARTAGÉ — le tri est EXPLICITE des deux côtés (24/08/2026)
+`/api/webhook` trie sur les métadonnées, avant tout accès en base, et **aucun produit n'est
+le cas par défaut** : `kind==='atelier'` → atelier, `offer_type` ∈ founder|standard|influencer
+→ prévente, ni l'un ni l'autre → `sessionOrpheline()` journalise et ignore (200).
+Pourquoi : le 24/08, un album de l'atelier payé en test a déclenché le mail S1 « bienvenue en
+prévente ». L'événement était routé vers un ANCIEN déploiement (point d'écoute du sandbox
+`acct_1Tg326…` qui pointait sur la preview de la branche `prevente`), donc du code sans le tri —
+et « sinon → prévente » faisait le reste, les handlers de session identifiant la cliente par
+email avec repli sur `session.customer_email`.
+⚠️ `charge.refunded` n'a PAS de garde `offer_type` : les Charges de la prévente ne portent
+aucune métadonnée, et `handleChargeRefunded` retrouve sa ligne par `stripe_payment_intent`
+(clé exacte, sort proprement si absente). Ajouter la garde bloquerait les remboursements des
+14 fondateurs sans rien protéger.
+
+## Webhook Stripe PARTAGÉ — prévente + atelier (lot 6)
+`/api/webhook` sert DEUX produits qui n'ont aucune table en commun. Le tri se fait au
+`switch`, sur `metadata.kind === 'atelier'`, **avant tout accès en base** — les trois
+handlers de la prévente cherchent une ligne `waitlist` par email, et une cliente de
+l'atelier peut y être inscrite. Sans ce tri : un album payé la confirmerait fondatrice
+de la prévente (numéro de fondateur + mail F1), et un panier abandonné lui enverrait la
+relance d'acompte.
+- Discriminant posé par `/api/atelier/checkout` sur la session ET sur
+  `payment_intent_data.metadata` — une Charge ne porte pas les metadata de sa session,
+  donc `charge.refunded` se trie via le PaymentIntent.
+- Handlers atelier : `src/lib/atelier/paiement.ts` (`estSessionAtelier`,
+  `estChargeAtelier` = fonctions pures ; `traiterPaiementAtelier`,
+  `traiterExpirationAtelier`, `traiterRemboursementAtelier`).
+- Aucun handler de la prévente n'a été modifié.
+- Expiration = ne touche PAS à l'état : le numéro reste en état 2, réutilisable (PRD §9).
+- Remboursement = journalisé dans `evenements`, aucune transition automatique (un
+  remboursement avant impression et après livraison veulent dire l'inverse).
+
+## Atelier — prix, TVA, livraison (lot 6)
+- Prix : `src/lib/atelier/prix.ts`, table en dur `palier → euros`. Le navigateur n'envoie
+  QUE le token à `/api/atelier/checkout` (invariant nº2). Pas de `price_id` Stripe : une
+  seule source de vérité, pas de dérive test/prod.
+- Zone de livraison : `PAYS_LIVRAISON = FR, BE, LU`. Stripe exige une liste explicite ;
+  c'est aussi le garde-fou commercial. Prix identique dans toute la zone.
+  ⚠️ Les DOM passent au travers (adresse « FR » chez Stripe, hors territoire TVA UE,
+  port prohibitif) — traitement manuel dans /admin tant que le volume est faible.
+- TVA : `automatic_tax` activé, prix déclaré TTC (`tax_behavior: 'inclusive'`), code
+  fiscal `CODE_FISCAL_ALBUM`. **Stripe Tax est actif mais sans immatriculation → 0 € de
+  taxe calculé aujourd'hui.** Le câblage est inerte jusqu'à l'ajout de l'immatriculation
+  portugaise dans le tableau de bord, puis s'active sans redéploiement.
+  Taux TRANCHÉ le 24/08/2026 : 23 % (taux normal PT). Pas les 6 % du livre — un album
+  photo personnalisé n'est pas un livre au sens fiscal.
+
+## CGV v3.0 — l'Atelier au present, la prevente en regime transitoire
+Depuis le 24/08/2026, `src/app/legal/content/cgv.ts` (FR/PT/EN, **le PT fait juridiquement foi**) :
+- art. 4 bis = les commandes Atelier (paiement integral, pas d'acompte ni d'Instants, prix par
+  palier, zone FR/BE/LU, delai 10 j, deux cases prealables, remboursement possible jusqu'a la maquette)
+- art. 5.0 = chapeau qui limite TOUT l'article 5 (acompte, Instants, offres) aux commandes de
+  prevente du 13/06 au 15/08/2026. On CADRE, on ne supprime pas : 14 fondateurs ont contracte
+  sous la v2.5 et l'art. 8.8 interdit l'effet retroactif.
+- art. 5 bis = imputation du credit de 30 € par code Stripe nominatif a usage unique, apres
+  verification manuelle de `waitlist`. Instants et pages de parrainage CONSERVES (ni imputes ni
+  convertis), delai de 12 mois SUSPENDU jusqu'a l'ouverture de l'espace client.
+- annexe = DEUX grilles, une par regime. Atelier : 30 € (20-28 p.) / 40 € (30-38 p.) / 45 € (40-50 p.)
+- La version digitale HD reste INCLUSE pour toutes les commandes (art. 1.2), Atelier compris.
+⚠️ `legal-source/*.docx` ont une version de retard — resynchroniser apres relecture juridique.
+⚠️ La case de l'etat 2 ne fait PAS renoncer : l'art. 8.3 fixe l'extinction du droit de retractation
+   a la VALIDATION DE LA MAQUETTE (etat 4). Ce qu'on recueille a l'etat 2 est l'information
+   prealable de l'art. 8.5. Le libelle a ete corrige en consequence (le PRD §8 citait le droit
+   FRANCAIS L221-28 ; le droit applicable est portugais, DL 24/2014 art. 17.º/1 c)).
