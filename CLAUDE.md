@@ -186,9 +186,29 @@ Réf : commit 246d8e5, tokens --bj-nav-android-bg, classe .pv-nav--flat.
 - A2 (Ambassadeur accès)     = template 21, env BREVO_TEMPLATE_A2_ID, déclencheur /ambassadeur/request-access (redemandable)
 - Relance (session.expired)  = template 23, env BREVO_TEMPLATE_RELANCE_ID, BRANCHÉ (case checkout.session.expired, garde-fou status='pending', params { PRENOM })
 - A3 (album offert au 6e = 30 pages niveau 1+2) = template 22, env BREVO_TEMPLATE_A3_ID, BRANCHÉ (étape 6 du handler completed, verrou atomique waitlist.a3_notified_at, couvre parrain direct niveau 1 + grand-parrain niveau 2, params { PRENOM, PAGES_TOTAL, DASHBOARD_URL })
-- M4 (Atelier — paiement reçu) = env BREVO_TEMPLATE_M4_ID, déclencheur webhook completed si metadata.kind==='atelier', CÂBLÉ mais template PAS ENCORE CRÉÉ (lot 8) → skip silencieux, params { PRENOM, TITRE, LIEN }
+- M1 (Atelier — dépôt terminé) = template 27, env BREVO_TEMPLATE_M1_ID, déclencheur PATCH /api/atelier/numero branche consent_photos (le SEUL signal serveur de fin de dépôt, posé par depot/moteur.ts finaliser()), params { PRENOM, TITRE, NB_PHOTOS, LIEN }
+- M3 (Atelier — la couverture, état 2) = template 28, env BREVO_TEMPLATE_M3_ID, déclencheur /api/atelier/mails/relever (PAS un webhook : le passage en état 2 se fait à la main en SQL tant que /admin n'existe pas), params { PRENOM, TITRE, NB_PAGES, PRIX, LIEN }
+- M4 (Atelier — paiement reçu) = template 29, env BREVO_TEMPLATE_M4_ID, déclencheur webhook completed si metadata.kind==='atelier', params { PRENOM, TITRE, NB_PAGES, PRIX, LIEN }
 - Anciens (waitlist, hors paiement) : W1, P1, P2 dans waitlist/route.ts
-Helper partagé : src/lib/brevo.ts → sendBrevoEmail({templateId,email,name,params,apiKey,label}), best-effort strict.
+Helper partagé : src/lib/brevo.ts → sendBrevoEmail({templateId,email,name,params,apiKey,label}), best-effort strict, résout true/false (les appelants historiques ignorent la valeur).
+
+## Atelier — mails M1/M3/M4 (lot 8 partiel)
+Tout passe par `src/lib/atelier/mails.ts` → `envoyerMailAtelier(supabase, code, numero)`.
+Trois garanties, dans cet ordre : (1) jamais un mail qui tombe sur une page vide —
+`manquePour()` vérifie apercu_urls/palier/nb_pages avant tout ; (2) jamais deux fois —
+l'insertion dans `mails_envoyes` (unique numero_id+code) EST le verrou, posée AVANT
+l'appel Brevo ; (3) un échec Brevo retire le verrou et journalise `mail_echec`, la
+relève suivante réessaie. Le journal `evenements` garde le récit (`mail_envoye`), la
+table de verrou se nettoie sans remords pour relancer un mail à la main.
+Migration : supabase/migrations/20260824_atelier_mails_envoyes.sql (table + index partiel
+`numeros_apercu_pret_idx`).
+La relève `/api/atelier/mails/relever` (POST ou GET, en-tête `x-atelier-secret` ou
+`Authorization: Bearer`, 404 si le secret manque) balaie états 1 et 2, rattrape M1 et
+envoie M3, et REND COMPTE des dossiers incomplets. Idempotente. C'est là que viendront
+M3b, M2, M5→M9, pas ailleurs.
+⚠️ Rien dans les textes ne porte de tiret (—, –) : consigne explicite de Mathias.
+Logo des mails : `public/logo-mail-blanc.png` (signature blanche sur fond sombre), à
+distinguer de `public/logo-mail.png` (signature bleue, mails de la prévente).
 Migration A3 : supabase/migrations/20260613_a3_notified_flag.sql (colonne waitlist.a3_notified_at timestamptz, flag anti-renvoi posé atomiquement à l'envoi).
 ## Webhook Stripe PARTAGÉ — prévente + atelier (lot 6)
 `/api/webhook` sert DEUX produits qui n'ont aucune table en commun. Le tri se fait au

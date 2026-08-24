@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logEvenement } from "./evenements";
-import { sendBrevoEmail } from "@/lib/brevo";
+import { CHAMPS_MAIL, envoyerMailAtelier, type NumeroPourMail } from "./mails";
 
 /**
  * Les deux handlers de webhook de l'atelier (PRD §9).
@@ -27,8 +27,6 @@ import { sendBrevoEmail } from "@/lib/brevo";
  *           jamais sur une donnée manquante : un rejeu ne la fera pas
  *           apparaître, il bouclerait jusqu'à l'abandon de l'événement.
  */
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
 
 /** Discriminant posé par /api/atelier/checkout sur la session ET sur le PaymentIntent. */
 export const KIND_ATELIER = "atelier";
@@ -87,19 +85,14 @@ export async function traiterPaiementAtelier(
     return true;
   }
 
+  /* Les colonnes du mail (titre, pagination, palier) plutôt qu'une liste
+     locale : M4 annonce la même pagination et le même prix que la page
+     d'état 2, et les trois mails de l'atelier partagent le même jeu. */
   const { data: numero, error: lectureErr } = await supabase
     .from("numeros")
-    .select("id, token, etat, titre, prenom, email, stripe_session_id")
+    .select(`${CHAMPS_MAIL}, stripe_session_id`)
     .eq("id", numeroId)
-    .maybeSingle<{
-      id: string;
-      token: string;
-      etat: string;
-      titre: string | null;
-      prenom: string | null;
-      email: string | null;
-      stripe_session_id: string | null;
-    }>();
+    .maybeSingle<NumeroPourMail & { etat: string; stripe_session_id: string | null }>();
 
   if (lectureErr) {
     console.error("[atelier/paiement] lecture numero échouée", lectureErr.code);
@@ -179,22 +172,10 @@ export async function traiterPaiementAtelier(
     pays_livraison: adresse?.address?.country ?? null,
   });
 
-  /* M4 « C'est parti pour {{titre}} » (PRD §10). Le lot 8 créera le template ;
-     tant que BREVO_TEMPLATE_M4_ID est absent, sendBrevoEmail saute proprement,
-     sans erreur et sans bloquer. Câbler maintenant coûte zéro et évite de
-     rouvrir ce fichier plus tard. */
-  await sendBrevoEmail({
-    label: "M4",
-    templateId: Number(process.env.BREVO_TEMPLATE_M4_ID) || undefined,
-    email: numero.email ?? "",
-    name: numero.prenom ?? undefined,
-    apiKey: process.env.BREVO_API_KEY,
-    params: {
-      PRENOM: numero.prenom ?? "",
-      TITRE: numero.titre?.trim() || "votre numéro",
-      LIEN: `${SITE_URL}/numero/${numero.token}`,
-    },
-  });
+  /* M4 « {{titre}}, nous composons » (PRD §10). Passe par le helper commun :
+     même verrou anti-doublon que M1 et M3 (Stripe rejoue volontiers ses
+     webhooks), même repli de titre, même trace dans le journal. */
+  await envoyerMailAtelier(supabase, "M4", numero);
 
   return true;
 }

@@ -14,6 +14,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
 import { generateNumeroToken, isValidNumeroToken } from "@/lib/atelier/token";
 import { logEvenement } from "@/lib/atelier/evenements";
+import { CHAMPS_MAIL, envoyerMailAtelier, type NumeroPourMail } from "@/lib/atelier/mails";
 
 export const runtime = "nodejs";
 
@@ -188,11 +189,15 @@ export async function PATCH(request: Request) {
 
     const supabase = makeSupabase();
 
+    /* On lit d'emblée de quoi écrire un mail : la branche consent_photos
+       ci-dessous déclenche M1, et repasser une requête pour aller chercher le
+       titre et le nombre de photos ne servirait qu'à doubler la latence du
+       geste le plus fragile du parcours. */
     const { data: numero } = await supabase
       .from("numeros")
-      .select("id, etat")
+      .select(CHAMPS_MAIL)
       .eq("token", token)
-      .maybeSingle<{ id: string; etat: string }>();
+      .maybeSingle<NumeroPourMail & { etat: string }>();
 
     /* Token inconnu → 404 sec, aucune information ne fuite (test §17.7). */
     if (!numero) return NextResponse.json({ error: "introuvable" }, { status: 404 });
@@ -211,6 +216,20 @@ export async function PATCH(request: Request) {
 
     /* Invariant nº6 — et ici, c'est aussi l'horodatage. */
     await logEvenement(supabase, numero.id, "consentements", maj);
+
+    /* M1 « {{titre}}, c'est parti » (PRD §10) — LA FIN DU DÉPÔT.
+       C'est le seul signal serveur qui dit « elle a terminé » : le moteur
+       d'upload pose consent_photos au clic sur « Envoyer à l'atelier »
+       (depot/moteur.ts, finaliser()), après confirmation des photos et
+       recomptage de nb_photos. Il n'y a rien d'autre à écouter.
+
+       Le rejeu est inoffensif : le verrou de `mails_envoyes` fait qu'un
+       réessai réseau du navigateur n'envoie pas un second mail. L'envoi ne
+       throw jamais et n'est pas awaité pour sa valeur : quoi qu'il arrive,
+       la cliente voit son écran 6. */
+    if (maj.consent_photos === true && numero.etat === "photos_recues") {
+      await envoyerMailAtelier(supabase, "M1", numero);
+    }
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (err) {
