@@ -139,26 +139,162 @@
   color: var(--bj-action);
 }
 
+/* ── barre collante : filtres + recherche ── */
+.ate-barre {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bj-sp-4);
+  flex-wrap: wrap;
+  padding: var(--bj-sp-3) 0;
+  margin-bottom: var(--bj-sp-2);
+  background: var(--bj-cream);
+  border-bottom: var(--ate-ligne-h);
+}
+.ate-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-veil-6);
+}
+.ate-seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px var(--bj-sp-4);
+  min-height: 34px;
+  border: none;
+  border-radius: var(--bj-r-pill);
+  background: transparent;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  cursor: pointer;
+  transition: background var(--bj-dur-fast) var(--bj-ease);
+}
+.ate-seg-btn:hover {
+  color: var(--bj-text);
+}
+.ate-seg-btn--actif {
+  background: var(--bj-cream);
+  color: var(--bj-text);
+  font-weight: 500;
+  box-shadow: 0 1px 2px var(--bj-veil-8);
+}
+.ate-seg-compte {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  padding: 0 6px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+}
+.ate-recherche-boite {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ate-recherche {
+  min-width: 17rem;
+  padding-right: 2.6rem;
+}
+.ate-kbd,
+.ate-recherche-compte {
+  position: absolute;
+  right: var(--bj-sp-3);
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+  pointer-events: none;
+}
+.ate-kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--bj-veil-12);
+  border-radius: 4px;
+  font-family: var(--bj-font-ui);
+}
+.ate-recherche-compte {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── en-tête de colonnes ── */
+.ate-entete {
+  padding-top: 0;
+  padding-bottom: var(--bj-sp-1);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--bj-text-faint);
+}
+.ate-entete > span:last-child {
+  text-align: right;
+}
+
 /* ─────────────────────────── une ligne ─────────────────────────── */
 
 .ate-lignes {
   display: flex;
   flex-direction: column;
 }
-.ate-ligne {
+/* La grille est déclarée une fois et servie deux fois : aux lignes et à
+   l'en-tête de colonnes. Deux déclarations, c'est deux alignements qui
+   divergent au premier ajustement. */
+.ate-ligne,
+.ate-entete {
   display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr) 11rem 10rem 4rem;
+  grid-template-columns: 2rem minmax(0, 1fr) 10.5rem 9.5rem 3.5rem 12rem;
   align-items: center;
   gap: var(--bj-sp-3);
   padding: var(--bj-sp-3) var(--bj-sp-2);
+}
+.ate-ligne {
+  position: relative;
   border-bottom: var(--ate-ligne-h);
-  text-decoration: none;
   color: inherit;
   transition: background var(--bj-dur-fast) var(--bj-ease);
 }
-.ate-ligne:hover {
+.ate-ligne:hover,
+.ate-ligne:focus-within {
   background: var(--bj-action-soft);
 }
+/* Le lien couvre la ligne mais s'arrête avant la zone d'action : sans ça,
+   viser un bouton, c'est ouvrir la fiche. */
+.ate-ligne-lien {
+  position: absolute;
+  inset: 0 12.5rem 0 0;
+  z-index: 0;
+}
+.ate-ligne-lien:focus-visible {
+  outline: 2px solid var(--bj-action);
+  outline-offset: -2px;
+  border-radius: var(--bj-r-sm);
+}
+.ate-ligne > span {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+/* ⚠️ Sélecteur volontairement lourd : `.ate-ligne > span` (0,1,1) l'emporte
+   sur `.ate-ligne-act` (0,1,0), et la zone d'action héritait donc du
+   `pointer-events: none` qui neutralise le texte au-dessus du lien. Le bouton
+   affichait son survol et refusait le clic. */
+.ate-ligne > span.ate-ligne-act {
+  pointer-events: auto;
+  justify-self: end;
+}
+/* La ligne qui porte un panneau ouvert doit passer AU-DESSUS de ses voisines.
+   Sans ça, chaque ligne étant `position: relative`, les suivantes se peignent
+   par-dessus et le panneau apparaît transpercé par le texte du dessous — un
+   z-index à 20 n'y change rien, il ne vaut que dans son propre contexte
+   d'empilement. C'est le contexte qu'il faut hausser, pas l'enfant. */
+.ate-ligne:has(.ate-act-boite),
+.ate-ligne:has(.ate-act-menu) {
+  z-index: 30;
+}
+
 .ate-ligne--retard {
   box-shadow: inset 2px 0 0 var(--ate-rouge);
 }
@@ -297,6 +433,184 @@
   font-variant-numeric: tabular-nums;
   font-size: var(--bj-fs-xs);
   word-break: break-all;
+}
+
+/* ─────────────────────── l'action sur la ligne ─────────────────────── */
+
+.ate-act {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.ate-act-rien {
+  color: var(--bj-veil-16);
+  font-size: var(--bj-fs-xs);
+}
+.ate-act-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 var(--bj-sp-3);
+  border-radius: var(--bj-r-btn);
+  border: 1px solid var(--bj-veil-12);
+  background: var(--bj-cream);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all var(--bj-dur-fast) var(--bj-ease);
+}
+/* Discret au repos, net au survol de la ligne : l'action ne doit pas hurler
+   sur vingt lignes à la fois, mais elle doit être là quand on arrive dessus. */
+.ate-ligne:hover .ate-act-btn--principal,
+.ate-ligne:focus-within .ate-act-btn--principal {
+  border-color: var(--bj-action-border);
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+}
+.ate-act-btn:focus-visible {
+  outline: 2px solid var(--bj-action);
+  outline-offset: 2px;
+}
+.ate-act-btn--plus {
+  padding: 0 8px;
+  letter-spacing: 0.1em;
+}
+.ate-act-plus {
+  position: relative;
+}
+.ate-act-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  min-width: 13rem;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border-radius: var(--bj-r-sm);
+  border: 1px solid var(--bj-veil-12);
+  background: var(--bj-cream);
+  box-shadow: var(--bj-shadow-soft);
+}
+.ate-act-menu button {
+  display: block;
+  width: 100%;
+  padding: var(--bj-sp-2) var(--bj-sp-3);
+  border: none;
+  border-radius: 8px;
+  background: none;
+  text-align: left;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text);
+  cursor: pointer;
+}
+.ate-act-menu button:hover {
+  background: var(--bj-action-soft);
+}
+
+/* ── l'action armée ──
+   Une boîte, ancrée à droite de la ligne, qui dit ce qui va se passer et
+   attend un second geste. Échap ou un clic ailleurs la referme. */
+.ate-act-boite {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  width: 20rem;
+  padding: var(--bj-sp-3);
+  border-radius: var(--bj-r-md);
+  border: 1px solid var(--bj-action-border);
+  background: var(--bj-cream);
+  box-shadow: var(--bj-shadow-pop);
+  text-align: left;
+  white-space: normal;
+}
+.ate-act-quoi {
+  margin: 0 0 var(--bj-sp-2);
+  font-size: var(--bj-fs-xs);
+  line-height: 1.45;
+  color: var(--bj-text-soft);
+}
+.ate-act-input {
+  width: 100%;
+  margin-bottom: var(--bj-sp-2);
+  font-size: var(--bj-fs-xs);
+}
+.ate-act-mail {
+  margin: 0 0 var(--bj-sp-3);
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+  line-height: 1.4;
+}
+.ate-act-erreur {
+  margin: 0 0 var(--bj-sp-2);
+  font-size: var(--bj-fs-xxs);
+  color: var(--ate-rouge);
+}
+.ate-act-boutons {
+  display: flex;
+  gap: var(--bj-sp-2);
+  justify-content: flex-end;
+}
+.ate-act-btn--annuler {
+  background: transparent;
+}
+.ate-act-btn--confirmer {
+  background: var(--bj-action);
+  border-color: var(--bj-action);
+  color: var(--bj-on-action);
+  font-weight: 500;
+}
+.ate-act-btn--confirmer:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ─────────────────────────── le toast ─────────────────────────── */
+
+.ate-toast-zone {
+  position: fixed;
+  left: 50%;
+  bottom: var(--bj-sp-5);
+  transform: translateX(-50%);
+  z-index: 60;
+  pointer-events: none;
+}
+.ate-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-charcoal);
+  color: var(--bj-glass-dark-text);
+  font-size: var(--bj-fs-sm);
+  box-shadow: var(--bj-shadow-pop);
+  pointer-events: auto;
+  animation: ate-toast-entre var(--bj-dur) var(--bj-ease);
+}
+.ate-toast button {
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: var(--bj-fs-lg);
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.6;
+}
+@keyframes ate-toast-entre {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ate-toast { animation: none; }
 }
 
 /* ─────────────────────────── bandeaux ─────────────────────────── */
@@ -789,8 +1103,9 @@
     grid-template-columns: 2rem minmax(0, 1fr) auto;
     grid-template-areas:
       "avatar corps etat"
-      ". delai delai";
-    row-gap: var(--bj-sp-1);
+      ". delai delai"
+      "action action action";
+    row-gap: var(--bj-sp-2);
     padding-top: var(--bj-sp-3);
     padding-bottom: var(--bj-sp-3);
   }
@@ -800,6 +1115,38 @@
   .ate-delai { grid-area: delai; flex-direction: row; gap: var(--bj-sp-2); }
   .ate-date { display: none; }
   .ate-delai-sub { display: none; }
+  .ate-entete { display: none; }
+
+  /* Au doigt, il n'y a pas de survol : le bouton est visible en permanence,
+     à hauteur de pouce, et la boîte armée occupe toute la largeur. */
+  .ate-ligne > span.ate-ligne-act {
+    grid-area: action;
+    justify-self: stretch;
+    position: relative;
+    z-index: 2;
+  }
+  .ate-ligne-lien { inset: 0; }
+  .ate-act { justify-content: stretch; }
+  .ate-act-btn--principal {
+    flex: 1;
+    min-height: 40px;
+    border-color: var(--bj-action-border);
+    color: var(--bj-action);
+  }
+  .ate-act-boite {
+    width: min(20rem, calc(100vw - var(--bj-sp-6)));
+  }
+  .ate-barre {
+    gap: var(--bj-sp-2);
+  }
+  .ate-recherche {
+    min-width: 0;
+    width: 100%;
+  }
+  .ate-recherche-boite {
+    width: 100%;
+  }
+  .ate-kbd { display: none; }
 
   .ate-slots {
     grid-template-columns: minmax(0, 1fr);

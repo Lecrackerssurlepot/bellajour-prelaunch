@@ -19,6 +19,14 @@ export type UrgenceVue = {
   age: number;
 };
 
+export type ActionVue = {
+  cle: string;
+  libelle: string;
+  explication: string;
+  vers: Etat;
+  mail: { code: string; absent: boolean } | null;
+};
+
 export type LigneDossier = {
   token: string;
   titre: string | null;
@@ -37,6 +45,15 @@ export type LigneDossier = {
   sansPhotos: boolean;
   paye: boolean;
   rembourse: boolean;
+  /**
+   * Ce qu'on peut faire sur cette ligne, SANS l'ouvrir.
+   *
+   * Calculé côté serveur, pas dans le navigateur : `actionsDepuis` vient de
+   * transitions.ts, qui importe la grille de prix. L'appeler depuis un
+   * composant client embarquerait les trois montants dans le bundle et
+   * casserait l'invariant nº2 pour afficher un libellé de bouton.
+   */
+  actions: ActionVue[];
 };
 
 export type PhotoVue = {
@@ -93,14 +110,6 @@ export type ClientVue = {
     estAmbassadeur: boolean;
     pagesCredits: number;
   } | null;
-};
-
-export type ActionVue = {
-  cle: string;
-  libelle: string;
-  explication: string;
-  vers: Etat;
-  mail: { code: string; absent: boolean } | null;
 };
 
 export type Fiche = {

@@ -85,6 +85,13 @@ function versLigne(r: RangeeNumero, maintenant: Date, rembourse: boolean): Ligne
     sansPhotos,
     paye: Boolean(r.stripe_payment_intent),
     rembourse,
+    actions: actionsDepuis(r.etat).map((a) => ({
+      cle: a.cle,
+      libelle: a.libelle,
+      explication: a.explication,
+      vers: a.vers,
+      mail: a.mail,
+    })),
   };
 }
 
@@ -260,13 +267,9 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
       (m): MailVue => ({ code: m.code, templateId: m.template_id, envoyeLe: m.envoye_le }),
     ),
     client: await chargerClient(rangee),
-    actions: actionsDepuis(rangee.etat).map((a) => ({
-      cle: a.cle,
-      libelle: a.libelle,
-      explication: a.explication,
-      vers: a.vers,
-      mail: a.mail,
-    })),
+    /* Les mêmes que sur la ligne : une seule source, pas deux listes à
+       garder d'accord. */
+    actions: versLigne(rangee, maintenant, rembourse).actions,
   };
 }
 

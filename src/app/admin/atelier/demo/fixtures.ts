@@ -282,6 +282,13 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
       sansPhotos,
       paye: Boolean(g.paye),
       rembourse: Boolean(g.rembourse),
+      actions: actionsDepuis(g.etat).map((a) => ({
+        cle: a.cle,
+        libelle: a.libelle,
+        explication: a.explication,
+        vers: a.vers,
+        mail: a.mail,
+      })),
     },
   };
 }
@@ -428,12 +435,6 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
           }
         : null,
     },
-    actions: actionsDepuis(g.etat).map((a) => ({
-      cle: a.cle,
-      libelle: a.libelle,
-      explication: a.explication,
-      vers: a.vers,
-      mail: a.mail,
-    })),
+    actions: ligne.actions,
   };
 }

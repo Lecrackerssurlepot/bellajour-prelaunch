@@ -1,20 +1,30 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import ActionRapide from "./ActionRapide";
 import type { LigneDossier, VueListe } from "./types";
 import type { Pile } from "@/lib/atelier/urgence";
 
 /**
  * La table de travail (PRD §12).
  *
- * Trois idées, et rien d'autre :
+ * ══════════════════════════════════════════════════════════════════════════
+ * CE QU'ON PEUT FAIRE SANS OUVRIR UN DOSSIER
+ *
+ * Un back-office se juge à ce qu'il évite : ici, l'aller-retour. Chaque ligne
+ * porte son action, armée en deux temps (cf. ActionRapide). Seule la
+ * publication d'un aperçu ouvre la fiche, parce qu'elle demande trois images
+ * et qu'elle engage un prix.
+ *
+ * TROIS AUTRES IDÉES, ET RIEN D'AUTRE
  *   1. les dossiers sont groupés par QUI ATTEND QUOI, pas par date ;
  *   2. le bandeau du matin dit en une phrase s'il y a du travail ;
  *   3. tout ce qui tourne sans nous est replié par défaut.
  *
- * Aucun appel réseau ici : la page serveur a déjà tout calculé. Ce composant
- * filtre, cherche et affiche.
+ * Aucune lecture réseau ici : la page serveur a tout calculé, y compris les
+ * actions possibles. Ce composant filtre, cherche, affiche et déclenche.
+ * ══════════════════════════════════════════════════════════════════════════
  */
 
 const ORDRE: Pile[] = ["retard", "a_faire", "attente_cliente", "dehors", "termine"];
@@ -35,6 +45,15 @@ const SOUS_TITRE_PILE: Record<Pile, string> = {
   termine: "Livrés.",
 };
 
+/* Les filtres du haut. « Tout ce qui bouge » est le filtre par défaut d'un
+   lundi matin : il retire les livrés, qui n'ont plus rien à raconter. */
+type Filtre = "actifs" | "moi" | "tous";
+const FILTRES: Array<{ cle: Filtre; label: string }> = [
+  { cle: "actifs", label: "En cours" },
+  { cle: "moi", label: "Ce qui m'attend" },
+  { cle: "tous", label: "Tout" },
+];
+
 function initiales(l: LigneDossier): string {
   const p = (l.prenom || "").trim();
   return p ? p[0].toUpperCase() : "·";
@@ -47,12 +66,23 @@ function fmtJour(iso: string | null): string {
   return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
 }
 
-function Ligne({ l, base }: { l: LigneDossier; base: string }) {
+function Ligne({
+  l,
+  base,
+  demo,
+  onFait,
+}: {
+  l: LigneDossier;
+  base: string;
+  demo?: boolean;
+  onFait: (m: string) => void;
+}) {
   return (
-    <Link
-      href={`${base}/${l.token}`}
-      className={l.urgence.enRetard ? "ate-ligne ate-ligne--retard" : "ate-ligne"}
-    >
+    <div className={l.urgence.enRetard ? "ate-ligne ate-ligne--retard" : "ate-ligne"}>
+      {/* Le lien couvre toute la ligne SAUF la zone d'action : un bouton
+          imbriqué dans un <a> n'est ni valide ni utilisable au clavier. */}
+      <Link href={`${base}/${l.token}`} className="ate-ligne-lien" aria-label={l.titre ?? "Dossier"} />
+
       <span className="ate-avatar" aria-hidden>
         {initiales(l)}
       </span>
@@ -94,25 +124,62 @@ function Ligne({ l, base }: { l: LigneDossier; base: string }) {
       </span>
 
       <span className="ate-date">{fmtJour(l.createdAt)}</span>
-    </Link>
+
+      <span className="ate-ligne-act">
+        <ActionRapide ligne={l} demo={demo} onFait={onFait} />
+      </span>
+    </div>
   );
 }
 
 export default function Liste({ vue }: { vue: VueListe }) {
   const [recherche, setRecherche] = useState("");
+  const [filtre, setFiltre] = useState<Filtre>("actifs");
   const [replies, setReplies] = useState<Set<Pile>>(new Set<Pile>(["dehors", "termine"]));
+  const [toast, setToast] = useState<string | null>(null);
+  const champRecherche = useRef<HTMLInputElement | null>(null);
+
+  /* « / » met le curseur dans la recherche, comme partout ailleurs. Le
+     raccourci est ignoré si on est déjà en train d'écrire, sinon il volerait
+     la barre oblique d'une URL de suivi collée dans une action. */
+  useEffect(() => {
+    const surTouche = (e: KeyboardEvent) => {
+      const cible = e.target as HTMLElement | null;
+      const enSaisie =
+        cible?.tagName === "INPUT" || cible?.tagName === "TEXTAREA" || cible?.isContentEditable;
+      if (e.key === "/" && !enSaisie) {
+        e.preventDefault();
+        champRecherche.current?.focus();
+      }
+      if (e.key === "Escape" && cible === champRecherche.current) {
+        setRecherche("");
+        champRecherche.current?.blur();
+      }
+    };
+    document.addEventListener("keydown", surTouche);
+    return () => document.removeEventListener("keydown", surTouche);
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 6000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const filtrees = useMemo(() => {
     const q = recherche.trim().toLowerCase();
-    if (!q) return vue.lignes;
-    /* La recherche sert à UNE chose : retrouver en trois secondes la cliente
-       qui vient d'écrire « bonjour, où en est mon album ? » sans rien
-       préciser. Elle porte donc sur tout ce qu'elle peut avoir mentionné,
-       token compris (elle colle parfois son lien). */
-    return vue.lignes.filter((l) =>
-      [l.titre, l.prenom, l.email, l.token].some((v) => (v || "").toLowerCase().includes(q)),
-    );
-  }, [vue.lignes, recherche]);
+    return vue.lignes.filter((l) => {
+      if (filtre === "actifs" && l.urgence.pile === "termine") return false;
+      /* « Ce qui m'attend » = strictement ce sur quoi on peut agir. C'est le
+         filtre qui répond à « par quoi je commence ». */
+      if (filtre === "moi" && l.urgence.pile !== "retard" && l.urgence.pile !== "a_faire") return false;
+      if (!q) return true;
+      /* La recherche sert à UNE chose : retrouver en trois secondes la
+         cliente qui écrit « bonjour, où en est mon album ? » sans rien
+         préciser. Token compris — elle colle parfois son lien. */
+      return [l.titre, l.prenom, l.email, l.token].some((v) => (v || "").toLowerCase().includes(q));
+    });
+  }, [vue.lignes, recherche, filtre]);
 
   const groupes = useMemo(() => {
     const g = new Map<Pile, LigneDossier[]>();
@@ -162,28 +229,71 @@ export default function Liste({ vue }: { vue: VueListe }) {
           </p>
         </div>
 
-        <div className="ate-header-outils">
+        <nav className="ate-liens">
+          <Link href="/admin">Prévente</Link>
+          {vue.demo ? null : <Link href="/admin/atelier/demo">Démo</Link>}
+          <form action="/api/admin/logout" method="post" className="adm-logout-form">
+            <button className="adm-btn adm-btn--ghost" type="submit">
+              Quitter
+            </button>
+          </form>
+        </nav>
+      </header>
+
+      {/* Barre collante : les filtres et la recherche restent sous la main
+          quand on descend dans une longue liste. */}
+      <div className="ate-barre">
+        <div className="ate-seg">
+          {FILTRES.map((f) => (
+            <button
+              key={f.cle}
+              type="button"
+              className={filtre === f.cle ? "ate-seg-btn ate-seg-btn--actif" : "ate-seg-btn"}
+              onClick={() => setFiltre(f.cle)}
+            >
+              {f.label}
+              {f.cle === "moi" && enRetard + aFaire > 0 ? (
+                <span className="ate-seg-compte">{enRetard + aFaire}</span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+
+        <div className="ate-recherche-boite">
           <input
+            ref={champRecherche}
             className="adm-input ate-recherche"
             type="search"
             placeholder="Prénom, titre, email, lien…"
             value={recherche}
             onChange={(e) => setRecherche(e.target.value)}
           />
-          <nav className="ate-liens">
-            <Link href="/admin">Prévente</Link>
-            {vue.demo ? null : <Link href="/admin/atelier/demo">Démo</Link>}
-            <form action="/api/admin/logout" method="post" className="adm-logout-form">
-              <button className="adm-btn adm-btn--ghost" type="submit">
-                Quitter
-              </button>
-            </form>
-          </nav>
+          {recherche ? (
+            <span className="ate-recherche-compte">{filtrees.length}</span>
+          ) : (
+            <kbd className="ate-kbd">/</kbd>
+          )}
         </div>
-      </header>
+      </div>
 
-      {vue.lignes.length === 0 ? (
-        <p className="ate-vide">Aucun numéro pour l&apos;instant.</p>
+      {/* En-tête de colonnes, aligné sur la grille des lignes. */}
+      <div className="ate-entete" aria-hidden>
+        <span />
+        <span>Dossier</span>
+        <span>État</span>
+        <span>Délai</span>
+        <span className="ate-date">Ouvert</span>
+        <span>Action</span>
+      </div>
+
+      {filtrees.length === 0 ? (
+        <p className="ate-vide">
+          {vue.lignes.length === 0
+            ? "Aucun numéro pour l'instant."
+            : recherche
+              ? `Rien ne correspond à « ${recherche} ».`
+              : "Rien dans ce filtre."}
+        </p>
       ) : null}
 
       {ORDRE.map((pile) => {
@@ -215,7 +325,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
             {replie ? null : (
               <div className="ate-lignes">
                 {lignes.map((l) => (
-                  <Ligne key={l.token} l={l} base={base} />
+                  <Ligne key={l.token} l={l} base={base} demo={vue.demo} onFait={setToast} />
                 ))}
               </div>
             )}
@@ -232,6 +342,19 @@ export default function Liste({ vue }: { vue: VueListe }) {
           minute: "2-digit",
         })}
       </p>
+
+      {/* `aria-live` : le retour d'une action doit être annoncé, pas seulement
+          affiché — c'est la seule confirmation qu'un mail est parti. */}
+      <div className="ate-toast-zone" aria-live="polite">
+        {toast ? (
+          <div className="ate-toast">
+            {toast}
+            <button type="button" onClick={() => setToast(null)} aria-label="Fermer">
+              ×
+            </button>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
