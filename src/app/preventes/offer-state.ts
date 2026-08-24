@@ -7,7 +7,12 @@
    ne doit jamais afficher une page cassée.
    ════════════════════════════════════════════════════════════ */
 
-export type OfferMode = 'founder' | 'soldout' | 'influencer'
+/* 'closed' = la prévente est terminée (drapeau serveur PREVENTE_FERMEE, cf.
+   src/lib/prevente.ts). Distinct de 'soldout', qui veut dire « les 100 places
+   de fondateur sont prises, l'offre Standard reste achetable ». Ici plus rien
+   n'est achetable, et c'est le SERVEUR qui le dit — le front n'invente pas
+   cette décision, il la rend (PRD §3.3). */
+export type OfferMode = 'founder' | 'soldout' | 'influencer' | 'closed'
 
 export interface OfferState {
   offerMode: OfferMode

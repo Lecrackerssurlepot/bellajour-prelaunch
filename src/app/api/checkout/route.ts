@@ -5,6 +5,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
 import { isValidRefCode } from "@/lib/validation";
 import { FOUNDER_CAP, countConfirmedFounders } from "@/lib/founder";
+import { preventeFermee } from "@/lib/prevente";
 import { generateUniqueCode } from "@/lib/refcode";
 import { createPendingReferralCredits } from "@/lib/referral-credits";
 
@@ -87,6 +88,18 @@ async function resolveRefCode(supabase: SupabaseClient, prenom: string): Promise
 }
 
 export async function POST(request: Request) {
+  /* 0. LA CAISSE EST-ELLE OUVERTE ? ---------------------------------------
+     Tout premier geste de la route : avant le parse du corps, avant toute
+     lecture en base, avant la moindre ligne écrite. Tant que cette route
+     répond, quelqu'un muni d'un vieux lien peut encore payer — fermer la
+     page de vente sans fermer la caisse ne ferme rien.
+     410 « Gone » et non 403 : la ressource a existé, elle n'existe plus.
+     Le front le lit et affiche la clôture au lieu d'une erreur générique. */
+  if (preventeFermee()) {
+    console.log("[checkout] refus — la prévente est fermée (PREVENTE_FERMEE)");
+    return NextResponse.json({ error: "prevente_fermee" }, { status: 410 });
+  }
+
   // 1. Parse + validation d'entrée -----------------------------------------
   let body: Record<string, unknown>;
   try {

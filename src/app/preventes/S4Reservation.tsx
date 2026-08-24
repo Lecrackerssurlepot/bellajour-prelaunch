@@ -338,6 +338,12 @@ export default function S4Reservation() {
       if (res.status === 409 && data.error === 'offer_changed') {
         await refetchOfferState()
         setError("L’offre a changé entre-temps. Nous avons mis à jour l’offre affichée — vérifiez puis réessayez.")
+      } else if (res.status === 410 && data.error === 'prevente_fermee') {
+        /* La caisse a fermé pendant que l'onglet était ouvert. On resynchronise
+           l'affichage plutôt que de laisser une erreur sans suite : au refetch,
+           offerMode passe à 'closed' et la section se réécrit toute seule. */
+        await refetchOfferState()
+        setError('La prévente est terminée. Vous pouvez désormais composer votre numéro à tout moment.')
       } else if (res.status === 409 && data.error === 'already_purchased') {
         setError('Cet email a déjà réservé son acompte. Aucun nouveau paiement n’est nécessaire.')
       } else if (res.status === 400 && data.error === 'invalid_email') {
@@ -383,6 +389,29 @@ export default function S4Reservation() {
         {/* Standard — repoussoir visuel (desktop only). Masquée mobile, non actionnable
             (aucun bouton). Réactivable plus tard pour la rendre visible sur mobile. */}
         <OffreCard offre={OFFRE_STANDARD} secondary onInfo={setInfo} referrerPrenom={referrerPrenom} />
+      </div>
+    )
+  } else if (offer.offerMode === 'closed') {
+    /* Prévente terminée (PREVENTE_FERMEE côté serveur). On ne rend AUCUNE
+       carte actionnable : pas de bouton mort, pas de modal qui s'ouvre sur
+       une caisse fermée. La page reste en ligne — les mails déjà envoyés
+       pointent dessus — et annonce elle-même la clôture, en renvoyant vers
+       ce qui se vend aujourd'hui. */
+    cards = (
+      <div className="s4-cards s4-cards--solo">
+        <div className="s4-card s4-card--closed">
+          <p className="s4-closed-kicker">La prévente est terminée</p>
+          <p className="s4-closed-text">
+            Les albums de prévente sont tous réservés. Merci à celles et ceux qui
+            en ont fait partie : vos commandes suivent leur cours et rien ne change
+            pour vous.
+          </p>
+          <p className="s4-closed-text">
+            Bellajour continue, autrement : vous composez désormais votre numéro
+            quand vous voulez, et vous ne payez qu’après avoir vu votre couverture.
+          </p>
+          <a className="s4-closed-cta" href="/atelier">Composer mon numéro</a>
+        </div>
       </div>
     )
   } else if (offer.offerMode === 'soldout') {
