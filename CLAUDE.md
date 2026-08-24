@@ -54,10 +54,28 @@ Playfair Display : NON chargée sur la landing — utilisée uniquement dans l'O
 - Animations scroll-driven → uniquement requestAnimationFrame + JS
 - Système de thèmes via data-theme="light" / data-theme="dark" sur les sections
 
+## Bascule du 24/08/2026 — bellajour.fr EST l'Atelier
+- `/` = la homepage de l'Atelier (`src/app/(atelier)/page.tsx`), `/composer` = le questionnaire.
+  Le groupe de routes `(atelier)` ne crée AUCUN segment d'URL ; il isole le thème sombre et les
+  deux polices, pendant que /preventes, /merci et les pages légales restent en dehors.
+- 308 permanentes `/atelier` → `/` et `/atelier/composer` → `/composer` (next.config.ts).
+  ⚠️ Une 308 se met en cache côté navigateur : ne pas les inverser à la légère.
+- L'ancienne landing waitlist (`src/app/page.tsx`) est SUPPRIMÉE du routage. Composants orphelins
+  restant sur le disque : Anxiete, BrandIntro, Solution, Album, FinalWaitlist, StickyVText,
+  StickyJoinCTA (leur CSS n'est plus servi — il est importé par les composants eux-mêmes).
+  Hero et FAQ restent utilisés (ambassadeurs, S5Garanties), Footer par 8 fichiers.
+- `/preventes` et `/preventes/prix` : `noindex, follow`. Sitemap = `/` + pages légales.
+- Fermeture de la prévente : drapeau `PREVENTE_FERMEE=true` (src/lib/prevente.ts), lu CÔTÉ SERVEUR.
+  Ferme `/api/checkout` (410) et bascule `/api/offer-state` en `offerMode: 'closed'` ; le bandeau
+  d'annonce disparaît, les CTA pointent `/`, la section 4 rend un encart de clôture.
+  Ne touche JAMAIS `/api/webhook`, `/merci`, les pages légales ni les crédits — 14 fondateurs ont
+  des droits ouverts et les CGV v3.0 les maintiennent en régime transitoire.
+
 ## Structure fichiers
 src/app/layout.tsx        → <head> fonts + metadata
 src/app/globals.css       → tokens + reset + imports CSS sections
-src/app/page.tsx          → assemblage sections dans l'ordre
+src/app/(atelier)/page.tsx → LA homepage (sert `/`)
+src/app/(atelier)/composer → le questionnaire (sert `/composer`)
 src/app/hero.css          → styles Hero
 src/app/Hero.tsx          → composant Hero
 src/app/sections/         → une section = un .tsx + un .css
