@@ -205,10 +205,16 @@ bouton « Envoyer à l'atelier » était relégué SOUS la grille, donc trois é
 sous la ligne de flottaison. Tout disait « c'est fait » sauf la seule chose qui
 comptait.
 
-**Ce qui a changé** : « déposées » devient « prêtes » ; la barre d'envoi colle
-au bas de l'écran dès la première photo ; une phrase dit enfin ce qui n'est PAS
-fait (« l'atelier ne les a pas encore reçues ») ; et fermer l'onglet avec des
-photos non envoyées demande confirmation.
+**Ce qui a changé** : « déposées » devient « prêtes » ; **la grille se replie
+à cinq grandes vignettes et une case « + 49 »**, ce qui règle la cause — l'écran
+tient d'un bloc et le bouton n'est plus enterré ; une phrase dit enfin ce qui
+n'est PAS fait (« l'atelier ne les a pas encore reçues ») ; et fermer l'onglet
+avec des photos non envoyées demande confirmation.
+
+⚠️ La barre du bas **n'est pas collante**, à la demande de Mathias : la grille
+repliée suffit. Une version `sticky` a été essayée puis retirée — elle exigeait
+de figer la hauteur du questionnaire, une modification dont plus rien n'avait
+besoin une fois la cause réglée.
 
 ⚠️ **Un défaut de mise en page découvert en le faisant** : `.at-q` était en
 `min-height`, donc la colonne grandissait avec son contenu, le DOCUMENT

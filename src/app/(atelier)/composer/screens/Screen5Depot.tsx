@@ -27,6 +27,16 @@ import '../depot/depot.css'
 
 const ACCEPTE = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif'
 
+/**
+ * Combien de vignettes avant de replier.
+ *
+ * Une grille de cinquante-cinq cases minuscules ne se regarde pas : elle se
+ * subit. Et elle repoussait le seul geste de l'écran hors de vue. Cinq
+ * vignettes GRANDES disent mieux « vos photos sont là » que cinquante-cinq
+ * timbres-poste, et la sixième case dit combien il y en a derrière.
+ */
+const VIGNETTES_VISIBLES = 5
+
 const RAISONS: Record<string, string> = {
   format: 'format non accepté',
   taille: 'plus de 50 Mo',
@@ -45,6 +55,7 @@ export default function Screen5Depot({
   const [refus, setRefus] = useState<Refus[]>([])
   const [erreur, setErreur] = useState<string | null>(null)
   const [survol, setSurvol] = useState(false)
+  const [toutesVisibles, setToutesVisibles] = useState(false)
   const [envoi, setEnvoi] = useState(false)
   const champ = useRef<HTMLInputElement>(null)
 
@@ -62,6 +73,24 @@ export default function Screen5Depot({
      atteint, plus rien n'est en vol, et l'accord est donné. Ouvrir plus tôt,
      c'est promettre à l'atelier des photos qui ne sont pas là. */
   const pretAEnvoyer = vue.confirmees >= MIN_PHOTOS && vue.enVol === 0 && consent && !envoi
+
+  /**
+   * Ce qu'on montre, et ce qu'on replie.
+   *
+   * ⚠️ UNE PHOTO EN ERREUR N'EST JAMAIS REPLIÉE. Elle porte le seul bouton
+   * « Reprendre » de l'écran : la cacher derrière un « + 49 », c'est cacher la
+   * réparation elle-même, et laisser partir un dépôt amputé sans que personne
+   * ne s'en aperçoive. Elle remonte donc dans les visibles, où qu'elle soit.
+   */
+  const enErreur = vue.photos.filter((p) => p.etat === 'erreur')
+  const visibles = toutesVisibles
+    ? vue.photos
+    : (() => {
+        const tete = vue.photos.slice(0, VIGNETTES_VISIBLES)
+        const dedans = new Set(tete.map((p) => p.id))
+        return [...tete, ...enErreur.filter((p) => !dedans.has(p.id))]
+      })()
+  const repliees = vue.photos.length - visibles.length
 
   /**
    * Le dernier filet : prévenir avant de fermer l'onglet.
@@ -222,8 +251,8 @@ export default function Screen5Depot({
 
       {/* ── la grille ─────────────────────────────────────────────────── */}
       {vue.photos.length > 0 && (
-        <ul className="at-d-grille">
-          {vue.photos.map((p) => (
+        <ul className={toutesVisibles ? 'at-d-grille at-d-grille--toutes' : 'at-d-grille'}>
+          {visibles.map((p) => (
             <li key={p.id} className="at-d-tuile" data-etat={p.etat}>
               {p.apercu ? (
                 <img
@@ -275,7 +304,24 @@ export default function Screen5Depot({
               </button>
             </li>
           ))}
+
+          {/* La case qui compte le reste. Dans la grille et non sous elle :
+              c'est une vignette de plus, elle se lit du même coup d'oeil. */}
+          {repliees > 0 && (
+            <li className="at-d-tuile at-d-tuile--plus">
+              <button type="button" onClick={() => setToutesVisibles(true)}>
+                <b>+&nbsp;{repliees}</b>
+                <small>voir toutes</small>
+              </button>
+            </li>
+          )}
         </ul>
+      )}
+
+      {toutesVisibles && vue.photos.length > VIGNETTES_VISIBLES && (
+        <button type="button" className="at-d-replier" onClick={() => setToutesVisibles(false)}>
+          Replier
+        </button>
       )}
 
       {erreur && <p className="at-erreur" role="alert">{erreur}</p>}

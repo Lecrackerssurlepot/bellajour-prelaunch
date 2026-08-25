@@ -180,19 +180,20 @@ Le lien permanent est rappelé en pied de page à tous les états, et sur l'écr
 La cause du dépôt abandonné, en amont du mail M2b. L'écran 5 affirmait la fin par
 quatre signaux à la fois : compteur « 55 photos **déposées** » (le mot de l'étape),
 un ✓ vert par vignette, jauge pleine, et le bouton « Envoyer à l'atelier » relégué
-SOUS la grille — trois écrans sous la ligne de flottaison.
+SOUS une planche de 55 vignettes — trois écrans sous la ligne de flottaison.
 - « déposées » → « prêtes ». Le mot laisse le geste devant.
-- La barre d'envoi (phrase + case + bouton) est `position: sticky; bottom: 0` dès
-  qu'il y a une photo : `.at-d-envoi--collee`.
+- **La grille se replie à 5 grandes vignettes + une case « + 49 »** (`VIGNETTES_VISIBLES`).
+  C'est ce qui règle la cause : l'écran tient d'un bloc, le bouton n'est plus enterré.
+  ⚠️ Une photo `etat === 'erreur'` n'est JAMAIS repliée — elle porte le seul bouton
+  « Reprendre », la cacher c'est cacher la réparation.
+  ⚠️ La règle mobile qui resserre à 78 px ne vaut QUE pour la grille dépliée
+  (`.at-d-grille--toutes`) : c'est sur un téléphone que « plus grosses » compte le plus.
 - Une phrase dit ce qui N'EST PAS fait : « l'atelier ne les a pas encore reçues ».
 - `beforeunload` prévient si on ferme l'onglet avec des photos non envoyées.
-- ⚠️ **`.at-q` est passée de `min-height` à `height`.** En `min-height`, la colonne
-  grandissait avec son contenu : avec 55 vignettes le DOCUMENT défilait, `.at-q-scroll`
-  ne défilait plus, et le sticky n'avait aucun scrollport — la barre restait 876 px sous
-  la fenêtre. Mesuré, pas supposé.
-- ⚠️ **`height: 100dvh` seulement sous `(pointer: fine)`.** `--app-height` est figée et
-  n'est recalculée qu'au changement de LARGEUR (layout.tsx, anti-saut de la barre iOS) :
-  en hauteur fixe, un redimensionnement vertical à la souris laisserait un trou.
+- ⚠️ **La barre du bas n'est PAS collante, et c'est voulu** (décision de Mathias) : la
+  grille repliée suffit. Une barre `sticky` a été essayée puis retirée — elle exigeait
+  de passer `.at-q` en `height` fixe, une modification de mise en page dont plus rien
+  n'avait besoin une fois la cause réglée.
 M2b reste, comme filet. Mais un mail de relance qui part à tout le monde n'est pas une
 solution : c'est le constat qu'on laisse partir tout le monde.
 

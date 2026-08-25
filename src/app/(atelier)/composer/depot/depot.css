@@ -183,13 +183,23 @@
    <ul> est annulée SANS ERREUR : la règle existe, elle perd. D'où le préfixe
    `.bj-atelier` sur tout ce qui touche à la marge d'un p ou d'un ul —
    même piège que celui documenté dans theme.css pour `.bj-atelier a`. */
+/* ── LA GRILLE ──
+   Repliée par défaut : cinq GRANDES vignettes et une case « + 49 ». Une
+   planche de cinquante-cinq timbres-poste ne se regarde pas, elle se subit —
+   et elle repoussait le seul geste de l'écran hors de vue. Dépliée, on
+   retombe sur la planche contact, qui est alors ce qu'on est venu chercher. */
 .bj-atelier .at-d-grille {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(96px, 26vw, 150px), 1fr));
+  gap: 10px;
   margin-top: 30px;
   max-width: 900px;
   list-style: none;
+}
+
+.bj-atelier .at-d-grille--toutes {
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
 }
 
 .at-d-tuile {
@@ -206,6 +216,53 @@
 }
 
 .at-d-tuile[data-etat='confirmee'] { opacity: 1; }
+
+/* La case qui compte le reste. Une vignette de plus, pas un lien sous la
+   grille : elle se lit du même coup d'oeil que les photos. */
+.at-d-tuile--plus {
+  opacity: 1;
+  border-style: dashed;
+  border-color: var(--c-line-strong);
+  background: transparent;
+}
+
+.at-d-tuile--plus button {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  color: var(--c-text-soft);
+  transition: color var(--dur) var(--ease);
+}
+
+.at-d-tuile--plus button:hover { color: var(--c-text); }
+.at-d-tuile--plus b { font-size: 20px; font-weight: 400; }
+.at-d-tuile--plus small {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.at-d-replier {
+  margin-top: 14px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--c-line-md);
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--c-text-soft);
+  cursor: pointer;
+}
+.at-d-replier:hover { color: var(--c-text); border-color: var(--c-line-strong); }
 .at-d-tuile[data-etat='erreur'] { opacity: 1; border-color: var(--c-accent); }
 
 .at-d-img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -328,33 +385,22 @@
 .at-d-bloc { font-size: 13px; font-weight: 300; color: var(--c-text-faint); }
 
 /* ── LA BARRE D'ENVOI ──
-   Elle vivait en bas de page, sous la grille. Avec cinquante-cinq vignettes,
-   le seul geste de l'écran se retrouvait trois écrans sous la ligne de
-   flottaison, pendant que la jauge pleine et les ✓ verts affirmaient que
-   c'était fini. Elle colle maintenant au bas de la zone qui défile.
+   Elle a été collante un moment, parce qu'avec cinquante-cinq vignettes le
+   bouton se retrouvait trois écrans sous la ligne de flottaison. La grille
+   repliée règle la cause : l'écran tient désormais d'un bloc, et le bouton
+   est là où il doit être — en bas de ce qu'on vient de faire, pas plaqué
+   par-dessus. Une barre collante prendrait de la hauteur pour rien.
 
-   `sticky` et non `fixed` : elle appartient à la colonne du questionnaire et
-   ne se superpose à rien d'autre. Sans photo, elle redevient un bloc normal —
-   il n'y a rien à retenir tant qu'il n'y a rien à perdre. */
+   La classe `--collee` reste posée par le composant quand il y a des photos :
+   elle ne sert plus qu'à séparer le bloc du reste par un filet. */
 .at-d-envoi {
   margin-top: 34px;
 }
 
 .at-d-envoi--collee {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
   margin-top: 34px;
-  /* Les marges négatives ramènent le fond jusqu'aux bords de la colonne :
-     sans elles, la grille défilerait dans la gouttière, à côté de la barre. */
-  margin-left: calc(-1 * var(--pad));
-  margin-right: calc(-1 * var(--pad));
-  padding: 20px var(--pad) 22px;
+  padding-top: 26px;
   border-top: 1px solid var(--c-line-md);
-  /* Opaque, pas dépoli : un verre dépoli sur un fond quasi noir ne floute
-     rien de visible et coûte une re-rastérisation à chaque frame de défilement
-     (règle anti-jank de la maison). */
-  background: var(--c-bg);
 }
 
 /* La phrase qui manquait : ce qui n'est PAS encore fait. */
@@ -370,9 +416,12 @@
 .at-d-envoi .at-d-actions { margin-top: 20px; }
 
 @media (max-width: 560px) {
-  .bj-atelier .at-d-grille { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
+  /* ⚠️ NE PAS remettre les 78 px sur la grille REPLIÉE : c'est sur un
+     téléphone que « plus grosses » compte le plus. Deux vignettes par
+     rangée, larges, valent mieux que quatre timbres-poste. Le resserrement
+     ne vaut que pour la planche contact dépliée. */
+  .bj-atelier .at-d-grille--toutes { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
   .at-d-zone { padding: 30px 20px; }
-  .at-d-envoi--collee { padding: 16px var(--pad) 18px; }
   .at-d-pasparti { font-size: 13px; }
   .at-d-envoi .at-d-actions { margin-top: 14px; }
 }
