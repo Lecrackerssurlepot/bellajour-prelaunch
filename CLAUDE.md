@@ -129,6 +129,26 @@ pages_credits  — crédits de parrainage
   filleul_email, status [pending|confirmed|applied], created_at, applique
 admin_last_seen  — singleton interne (timestamp "dernière visite" du dashboard /admin)
 
+## L'Atelier — le back-office (lot 7, en production depuis le 25/08/2026)
+`/admin/atelier` remplace l'UPDATE SQL par cliente. Liste triée par urgence, fiche avec la
+frise des 8 jalons, actions armées en deux temps, carnet de l'éditeur, page santé, métriques.
+Deux fichiers PURS portent les règles et ne doivent pas être contournés :
+- `src/lib/atelier/transitions.ts` — LA table des transitions autorisées. Ajouter une action =
+  une entrée, jamais un fichier. Le mail annoncé par l'écran est DÉRIVÉ de `codesPour`, jamais
+  déclaré : une déclaration à la main mentait déjà sur 3 actions sur 7.
+- `src/lib/atelier/urgence.ts` — les délais qu'on promet à la cliente. Changer une valeur ici
+  sans changer la page publique, c'est mentir à l'une des deux.
+⚠️ **Garde-fou de chaîne** : un mail ne part QUE si son prédécesseur est parti (`codesPour`).
+Motivé par un cas réel — un dossier en état « validée » sans aucun mail recevait « part à
+l'impression ». Seul M2 n'a pas de prédécesseur : il porte la seule borne de date, réglable par
+`ATELIER_M2_DEPUIS` (reculée sur Preview pour le rendre testable).
+⚠️ **La relève doit tourner tous les jours** (`vercel.json`, 7 h UTC, `CRON_SECRET`). Sans elle,
+M2, M3b, M8 et l'auto-validation à J+7 ne partent JAMAIS.
+Vérifications : `npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts` (47 assertions,
+sans base ni réseau) et `scripts/verif-mails-brevo.ts` (les variables des templates).
+Le TEXTE des mails vit dans `scripts/mails-atelier.mjs`, versionné, pas dans Brevo.
+**Ce qui reste à faire : `docs/ATELIER-A-FAIRE.md`.** Recette : `docs/RECETTE-PARCOURS.md`.
+
 ## Dashboard interne /admin
 - /admin : dashboard interne LECTURE SEULE (inscrits / clients / ambassadeurs,
   KPI, graphique inscrits/jour, export CSV). Non lié dans la nav publique.
