@@ -284,11 +284,19 @@ export function verifierForme(mail) {
 
 /* ─────────────────────────────── exécution ─────────────────────────────── */
 
+/* ⚠️ Les valeurs de .env.local peuvent être entre guillemets : dotenv les
+   retire, un `split("=")` maison non. Une clé lue avec ses guillemets produit
+   une erreur incompréhensible loin d'ici (« Invalid supabaseUrl »). */
+function sansGuillemets(v) {
+  const t = v.trim();
+  return t.length > 1 && (t[0] === '"' || t[0] === "'") && t.at(-1) === t[0] ? t.slice(1, -1) : t;
+}
+
 function cleBrevo() {
   const env = readFileSync(resolve(RACINE, ".env.local"), "utf8");
   const m = env.match(/^BREVO_API_KEY=(.*)$/m);
   if (!m) throw new Error("BREVO_API_KEY absente de .env.local");
-  return m[1].trim();
+  return sansGuillemets(m[1]);
 }
 
 async function main() {

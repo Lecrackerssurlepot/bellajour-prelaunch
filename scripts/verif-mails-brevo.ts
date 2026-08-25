@@ -51,10 +51,15 @@ const DOSSIER: NumeroPourMail = {
   ...({ etat_maj_le: new Date().toISOString(), transporteur: "Colissimo", tracking_url: "https://x" } as object),
 } as NumeroPourMail;
 
+/* ⚠️ Les valeurs de .env.local peuvent être entre guillemets : dotenv les
+   retire, un lecteur maison non. */
 function env(nom: string): string | undefined {
   const brut = readFileSync(".env.local", "utf8");
   const m = brut.match(new RegExp(`^${nom}=(.*)$`, "m"));
-  return m?.[1]?.trim() || undefined;
+  if (!m) return undefined;
+  const t = m[1].trim();
+  const v = t.length > 1 && (t[0] === '"' || t[0] === "'") && t.at(-1) === t[0] ? t.slice(1, -1) : t;
+  return v || undefined;
 }
 
 function cleBrevo(): string {

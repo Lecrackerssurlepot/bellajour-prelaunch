@@ -332,8 +332,24 @@ export async function envoyerMailAtelier(
  * sur lequel s'appuyer, et la base contenait des questionnaires abandonnés
  * vieux de plusieurs jours au moment du branchement. Les relancer aurait été
  * absurde — et pour certains, gênant.
+ *
+ * ⚠️ RÉGLABLE PAR ENVIRONNEMENT (`ATELIER_M2_DEPUIS`), et ce n'est pas une
+ * commodité de test : une date de mise en service EST un réglage. Écrite en
+ * dur, elle rendait M2 impossible à éprouver — pour qu'un dossier soit à la
+ * fois postérieur à la borne et vieux de plus de 24 h, il fallait attendre le
+ * lendemain de la borne. Sur la preview, on recule la borne et M2 se teste en
+ * deux minutes ; la production garde la sienne.
+ *
+ * Valeur illisible ou absente : on retombe sur la date réelle de mise en
+ * service. Jamais d'ouverture par défaut sur un mail de relance.
  */
-const MISE_EN_SERVICE_M2 = Date.parse("2026-08-25T00:00:00Z");
+const MISE_EN_SERVICE_PAR_DEFAUT = "2026-08-25T00:00:00Z";
+
+function miseEnServiceM2(): number {
+  const brut = process.env.ATELIER_M2_DEPUIS;
+  const pose = brut ? Date.parse(brut) : NaN;
+  return Number.isNaN(pose) ? Date.parse(MISE_EN_SERVICE_PAR_DEFAUT) : pose;
+}
 
 const HEURE = 3_600_000;
 const JOUR = 24 * HEURE;
@@ -372,7 +388,7 @@ export function codesPour(
       else if (
         (n.nb_photos ?? 0) === 0 &&
         n.created_at &&
-        Date.parse(n.created_at) >= MISE_EN_SERVICE_M2 &&
+        Date.parse(n.created_at) >= miseEnServiceM2() &&
         maintenant.getTime() - Date.parse(n.created_at) >= JOUR
       ) {
         dus.push("M2");
