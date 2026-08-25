@@ -19,7 +19,7 @@
  * couverture », jamais un montant sec qui se lirait comme un engagement.
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDepot } from '../depot/useDepot'
 import { MAX_PHOTOS, MIN_PHOTOS, manquantes, palierPour, restantes } from '../depot/paliers'
 import type { Refus } from '../depot/moteur'
@@ -62,6 +62,31 @@ export default function Screen5Depot({
      atteint, plus rien n'est en vol, et l'accord est donné. Ouvrir plus tôt,
      c'est promettre à l'atelier des photos qui ne sont pas là. */
   const pretAEnvoyer = vue.confirmees >= MIN_PHOTOS && vue.enVol === 0 && consent && !envoi
+
+  /**
+   * Le dernier filet : prévenir avant de fermer l'onglet.
+   *
+   * C'est exactement ce qui s'est produit le 25/08 — cinquante-cinq photos
+   * montées, l'onglet fermé, et personne pour s'en apercevoir. La relance M2b
+   * rattrape le lendemain, mais un mail de relance envoyé à tout le monde
+   * n'est pas une solution : c'est le constat qu'on laisse partir tout le
+   * monde. Mieux vaut retenir la cliente une seconde que lui écrire un jour
+   * plus tard.
+   *
+   * Le navigateur impose son propre libellé — on ne choisit pas le texte, on
+   * choisit seulement de poser la question. Elle n'est posée que s'il y a
+   * quelque chose à perdre, et l'écran 6 démonte l'effet en se démontant.
+   */
+  useEffect(() => {
+    if (vue.photos.length === 0) return
+    const avantFermeture = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      /* Toujours exigé par Chrome, malgré sa dépréciation dans la spec. */
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', avantFermeture)
+    return () => window.removeEventListener('beforeunload', avantFermeture)
+  }, [vue.photos.length])
 
   const envoyer = useCallback(async () => {
     if (!pretAEnvoyer) return
@@ -139,9 +164,13 @@ export default function Screen5Depot({
 
       {/* ── compteur, jauge, palier ───────────────────────────────────── */}
       <div className="at-d-etat">
+        {/* « déposées » était le mot du problème : c'est le nom de l'étape,
+            et il se lit comme un état final. Après cinquante-cinq photos
+            cochées vertes, « 55 photos déposées » veut dire « j'ai fini ».
+            « prêtes » dit la même vérité et laisse le geste devant. */}
         <div className="at-d-compteur">
           <b>{compteur}</b>
-          <span>{compteur > 1 ? 'photos déposées' : 'photo déposée'}</span>
+          <span>{compteur > 1 ? 'photos prêtes' : 'photo prête'}</span>
         </div>
 
         {/* PRD §15 : scaleX, jamais width. Le repère marque le seuil des 40. */}
@@ -249,38 +278,60 @@ export default function Screen5Depot({
         </ul>
       )}
 
-      {/* ── consentement, obligatoire ─────────────────────────────────── */}
-      <label className="at-check at-d-consent">
-        <input
-          type="checkbox"
-          checked={consent}
-          onChange={(e) => onConsent(e.target.checked)}
-        />
-        <span>Vous confirmez avoir le droit d’utiliser ces photos.</span>
-      </label>
-
       {erreur && <p className="at-erreur" role="alert">{erreur}</p>}
 
-      <div className="at-q-actions">
-        <button type="button" className="at-cta" onClick={envoyer} disabled={!pretAEnvoyer}>
-          {envoi ? 'Un instant…' : 'Envoyer à l’atelier'}
-          <span className="at-cta-arrow">→</span>
-        </button>
+      {/* ── LA BARRE D'ENVOI, COLLANTE ────────────────────────────────
+          Elle était en bas de page, sous la grille. Avec cinquante-cinq
+          vignettes, le seul geste de l'écran se retrouvait à trois écrans
+          sous la ligne de flottaison — invisible. Pendant ce temps la jauge
+          était pleine, chaque tuile portait son ✓ vert et le compteur disait
+          « déposées ». Tout affirmait que c'était fini.
 
-        {/* Un bouton gris sans explication est une impasse : on dit toujours
-            ce qui manque, et une chose à la fois. */}
-        {!pretAEnvoyer && !envoi && (
-          <span className="at-d-bloc">
-            {ilManque > 0
-              ? `Encore ${ilManque} photo${ilManque > 1 ? 's' : ''}.`
-              : vue.enVol > 0
-                ? 'Envoi en cours — quelques secondes.'
-                : !consent
-                  ? 'Cochez la ligne au-dessus.'
-                  : null}
-          </span>
+          Elle colle donc au bas de la zone de défilement dès qu'il y a une
+          photo. `position: sticky` et non `fixed` : elle appartient à la
+          colonne qui défile, elle ne se superpose pas au reste du site. */}
+      <div className={vue.photos.length > 0 ? 'at-d-envoi at-d-envoi--collee' : 'at-d-envoi'}>
+        {/* La phrase qui manquait. Elle ne dit pas ce qui est fait, elle dit
+            ce qui ne l'est pas encore — c'est la seule information que
+            l'écran ne portait nulle part. */}
+        {vue.photos.length > 0 && (
+          <p className="at-d-pasparti">
+            Vos photos sont arrivées chez nous, mais <b>l’atelier ne les a pas encore
+            reçues</b> : rien ne part tant que vous n’avez pas cliqué.
+          </p>
         )}
+
+        <label className="at-check at-d-consent">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => onConsent(e.target.checked)}
+          />
+          <span>Vous confirmez avoir le droit d’utiliser ces photos.</span>
+        </label>
+
+        <div className="at-q-actions at-d-actions">
+          <button type="button" className="at-cta" onClick={envoyer} disabled={!pretAEnvoyer}>
+            {envoi ? 'Un instant…' : 'Envoyer à l’atelier'}
+            <span className="at-cta-arrow">→</span>
+          </button>
+
+          {/* Un bouton gris sans explication est une impasse : on dit toujours
+              ce qui manque, et une chose à la fois. */}
+          {!pretAEnvoyer && !envoi && (
+            <span className="at-d-bloc">
+              {ilManque > 0
+                ? `Encore ${ilManque} photo${ilManque > 1 ? 's' : ''}.`
+                : vue.enVol > 0
+                  ? 'Envoi en cours — quelques secondes.'
+                  : !consent
+                    ? 'Cochez la ligne au-dessus.'
+                    : null}
+            </span>
+          )}
+        </div>
       </div>
+
     </>
   )
 }

@@ -323,11 +323,56 @@
 
 /* ── consentement et blocage ───────────────────────────────────────────── */
 
-.at-d-consent { margin-top: 34px; }
+.at-d-consent { margin-top: 22px; }
 
 .at-d-bloc { font-size: 13px; font-weight: 300; color: var(--c-text-faint); }
+
+/* ── LA BARRE D'ENVOI ──
+   Elle vivait en bas de page, sous la grille. Avec cinquante-cinq vignettes,
+   le seul geste de l'écran se retrouvait trois écrans sous la ligne de
+   flottaison, pendant que la jauge pleine et les ✓ verts affirmaient que
+   c'était fini. Elle colle maintenant au bas de la zone qui défile.
+
+   `sticky` et non `fixed` : elle appartient à la colonne du questionnaire et
+   ne se superpose à rien d'autre. Sans photo, elle redevient un bloc normal —
+   il n'y a rien à retenir tant qu'il n'y a rien à perdre. */
+.at-d-envoi {
+  margin-top: 34px;
+}
+
+.at-d-envoi--collee {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: 34px;
+  /* Les marges négatives ramènent le fond jusqu'aux bords de la colonne :
+     sans elles, la grille défilerait dans la gouttière, à côté de la barre. */
+  margin-left: calc(-1 * var(--pad));
+  margin-right: calc(-1 * var(--pad));
+  padding: 20px var(--pad) 22px;
+  border-top: 1px solid var(--c-line-md);
+  /* Opaque, pas dépoli : un verre dépoli sur un fond quasi noir ne floute
+     rien de visible et coûte une re-rastérisation à chaque frame de défilement
+     (règle anti-jank de la maison). */
+  background: var(--c-bg);
+}
+
+/* La phrase qui manquait : ce qui n'est PAS encore fait. */
+.at-d-pasparti {
+  max-width: 56ch;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--c-text-soft);
+}
+.at-d-pasparti b { font-weight: 400; color: var(--c-accent); }
+
+.at-d-envoi .at-d-actions { margin-top: 20px; }
 
 @media (max-width: 560px) {
   .bj-atelier .at-d-grille { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
   .at-d-zone { padding: 30px 20px; }
+  .at-d-envoi--collee { padding: 16px var(--pad) 18px; }
+  .at-d-pasparti { font-size: 13px; }
+  .at-d-envoi .at-d-actions { margin-top: 14px; }
 }

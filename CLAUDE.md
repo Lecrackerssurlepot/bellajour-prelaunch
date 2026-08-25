@@ -176,6 +176,26 @@ l'atelier utilise pour trier sa journée. Les deux écrans ne peuvent donc pas s
 Un dépôt non terminé est FORCÉ chez la cliente, quoi qu'en dise l'état.
 Le lien permanent est rappelé en pied de page à tous les états, et sur l'écran 6.
 
+### L'écran de dépôt disait « c'est fait » alors que rien n'était parti (26/08/2026)
+La cause du dépôt abandonné, en amont du mail M2b. L'écran 5 affirmait la fin par
+quatre signaux à la fois : compteur « 55 photos **déposées** » (le mot de l'étape),
+un ✓ vert par vignette, jauge pleine, et le bouton « Envoyer à l'atelier » relégué
+SOUS la grille — trois écrans sous la ligne de flottaison.
+- « déposées » → « prêtes ». Le mot laisse le geste devant.
+- La barre d'envoi (phrase + case + bouton) est `position: sticky; bottom: 0` dès
+  qu'il y a une photo : `.at-d-envoi--collee`.
+- Une phrase dit ce qui N'EST PAS fait : « l'atelier ne les a pas encore reçues ».
+- `beforeunload` prévient si on ferme l'onglet avec des photos non envoyées.
+- ⚠️ **`.at-q` est passée de `min-height` à `height`.** En `min-height`, la colonne
+  grandissait avec son contenu : avec 55 vignettes le DOCUMENT défilait, `.at-q-scroll`
+  ne défilait plus, et le sticky n'avait aucun scrollport — la barre restait 876 px sous
+  la fenêtre. Mesuré, pas supposé.
+- ⚠️ **`height: 100dvh` seulement sous `(pointer: fine)`.** `--app-height` est figée et
+  n'est recalculée qu'au changement de LARGEUR (layout.tsx, anti-saut de la barre iOS) :
+  en hauteur fixe, un redimensionnement vertical à la souris laisserait un trou.
+M2b reste, comme filet. Mais un mail de relance qui part à tout le monde n'est pas une
+solution : c'est le constat qu'on laisse partir tout le monde.
+
 ### « Dépôt terminé » n'est PAS « a des photos » (26/08/2026)
 Incident du 25/08 : un dossier de 55 photos trônait dans la pile « à faire » avec un compte
 à rebours de 48 h. La cliente avait fermé l'onglet avant le dernier bouton. Conséquences :

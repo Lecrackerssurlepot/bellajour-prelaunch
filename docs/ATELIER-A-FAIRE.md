@@ -191,6 +191,34 @@ que si un mail EST DÛ maintenant. Et elle comptait des « dossiers oubliés » 
 
 ---
 
+### ✅ Fait le 25/08 au soir — la cause, pas le symptôme
+
+Remarque de Mathias après avoir reçu M2b : **« c'est plus important que juste
+mettre un mail. Sinon tout le monde va recevoir ce mail. »** Il a raison. M2b
+rattrape ; il ne répare rien. Si l'écran laisse croire que c'est fini, la
+relance part à tout le monde et devient de la friction.
+
+**Pourquoi on abandonnait.** L'écran 5 affirmait la fin par quatre signaux
+simultanés : le compteur disait « 55 photos **déposées** » — le mot même de
+l'étape —, chaque vignette portait un ✓ vert, la jauge était pleine, et le
+bouton « Envoyer à l'atelier » était relégué SOUS la grille, donc trois écrans
+sous la ligne de flottaison. Tout disait « c'est fait » sauf la seule chose qui
+comptait.
+
+**Ce qui a changé** : « déposées » devient « prêtes » ; la barre d'envoi colle
+au bas de l'écran dès la première photo ; une phrase dit enfin ce qui n'est PAS
+fait (« l'atelier ne les a pas encore reçues ») ; et fermer l'onglet avec des
+photos non envoyées demande confirmation.
+
+⚠️ **Un défaut de mise en page découvert en le faisant** : `.at-q` était en
+`min-height`, donc la colonne grandissait avec son contenu, le DOCUMENT
+défilait, `.at-q-scroll` ne défilait plus — et le `sticky` n'avait aucun
+scrollport contre lequel coller. La barre restait 876 px sous la fenêtre.
+Mesuré, pas supposé. Corrigé en `height`, et scopé à `(pointer: fine)` pour
+`100dvh` parce que `--app-height` est figée exprès contre la barre d'iOS.
+
+---
+
 ### ✅ Fait le 25/08 au soir — les deux gestes manuels
 
 **La migration `20260826_atelier_en_charge.sql` est passée** sur

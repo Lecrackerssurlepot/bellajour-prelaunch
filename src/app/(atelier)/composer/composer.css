@@ -1,9 +1,35 @@
 /* Questionnaire — 6 écrans plein écran, dans le scope .bj-atelier. */
 
+/* HAUTEUR FIXE, et non `min-height`.
+   Le questionnaire est une colonne d'écran : une barre de progression et un
+   en-tête figés, et UNE zone qui défile entre les deux (.at-q-scroll). C'est
+   ce que son commentaire annonce déjà.
+
+   En `min-height`, la colonne grandissait avec son contenu : sur l'écran 5
+   avec cinquante-cinq vignettes, .at-q faisait 2158 px, c'était le DOCUMENT
+   qui défilait, et .at-q-scroll ne défilait plus du tout. Conséquences : la
+   barre de progression et l'en-tête partaient vers le haut, et surtout la
+   barre d'envoi collante n'avait plus de scrollport contre lequel coller —
+   elle restait 876 px sous la fenêtre, exactement le défaut qu'on répare.
+
+   `--app-height` est figée en pixels avant le premier paint (layout.tsx) :
+   la barre d'adresse d'iOS qui se replie ne fait donc pas sauter la colonne. */
 .at-q {
   display: flex;
   flex-direction: column;
-  min-height: var(--app-height, 100dvh);
+  height: var(--app-height, 100dvh);
+}
+
+/* ⚠️ `--app-height` est FIGÉE, et volontairement : layout.tsx ne la recalcule
+   qu'au changement de LARGEUR, pour que la barre d'adresse d'iOS qui se replie
+   ne fasse pas sauter la page. Excellent au doigt, faux à la souris — un
+   redimensionnement vertical de la fenêtre laisserait la colonne à son
+   ancienne hauteur, donc un trou ou un débordement.
+
+   Sur un pointeur fin il n'y a pas de barre d'adresse qui se replie : `100dvh`
+   y est exact et suit le redimensionnement. Chacun sa règle. */
+@media (pointer: fine) {
+  .at-q { height: 100dvh; }
 }
 
 /* ---- barre de progression ----
