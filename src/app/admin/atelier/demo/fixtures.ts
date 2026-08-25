@@ -294,7 +294,8 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
         libelle: a.libelle,
         explication: a.explication,
         vers: a.vers,
-        mail: a.mail,
+        /* La démonstration montre le cas nominal : tous les templates posés. */
+        mail: a.mail ? { code: a.mail.code, absent: false } : null,
       })),
     },
   };

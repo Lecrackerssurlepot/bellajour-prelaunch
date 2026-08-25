@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { logEvenement } from "./evenements";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { eurosPour, type PalierCle } from "./prix";
+import { ajouterJours, formaterJour } from "./dates";
 
 /**
  * Les mails de l'atelier (PRD §10) — un seul chemin d'envoi pour tous.
@@ -34,11 +35,12 @@ import { eurosPour, type PalierCle } from "./prix";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
 
-export type CodeMail = "M1" | "M3" | "M4";
+export type CodeMail = "M1" | "M2" | "M3" | "M3b" | "M4" | "M5" | "M6" | "M7" | "M8" | "M9";
 
 /** Les colonnes de `numeros` que tout envoi doit avoir sous la main. */
 export const CHAMPS_MAIL =
-  "id, token, etat, titre, prenom, email, nb_photos, nb_pages, palier, apercu_urls";
+  "id, token, etat, titre, prenom, email, nb_photos, nb_pages, palier, apercu_urls, " +
+  "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, stripe_payment_intent";
 
 export type NumeroPourMail = {
   id: string;
@@ -50,6 +52,17 @@ export type NumeroPourMail = {
   nb_pages: number | null;
   palier: PalierCle | null;
   apercu_urls: unknown;
+};
+
+/** Ce qu'il faut EN PLUS pour décider quels mails sont dus (cf. codesPour). */
+export type NumeroPourReleve = NumeroPourMail & {
+  etat: string;
+  consent_photos: boolean | null;
+  created_at: string | null;
+  etat_maj_le: string | null;
+  transporteur: string | null;
+  tracking_url: string | null;
+  stripe_payment_intent: string | null;
 };
 
 export type Resultat =
@@ -66,11 +79,43 @@ export type Resultat =
 function templatePour(code: CodeMail): number | undefined {
   const brut = {
     M1: process.env.BREVO_TEMPLATE_M1_ID,
+    M2: process.env.BREVO_TEMPLATE_M2_ID,
     M3: process.env.BREVO_TEMPLATE_M3_ID,
+    M3b: process.env.BREVO_TEMPLATE_M3B_ID,
     M4: process.env.BREVO_TEMPLATE_M4_ID,
+    M5: process.env.BREVO_TEMPLATE_M5_ID,
+    M6: process.env.BREVO_TEMPLATE_M6_ID,
+    M7: process.env.BREVO_TEMPLATE_M7_ID,
+    M8: process.env.BREVO_TEMPLATE_M8_ID,
+    M9: process.env.BREVO_TEMPLATE_M9_ID,
   }[code];
   return Number(brut) || undefined;
 }
+
+/**
+ * Le template de ce mail est-il configuré ?
+ *
+ * Sert à /admin : l'écran de confirmation doit dire « elle ne sera PAS
+ * prévenue » quand le template manque encore. Un drapeau écrit en dur dans la
+ * table des transitions mentirait le jour où la variable arrive.
+ */
+export function templateExiste(code: string): boolean {
+  return templatePour(code as CodeMail) !== undefined;
+}
+
+/** Ce que chaque mail annonce, pour l'afficher à l'atelier. */
+export const OBJET_MAIL: Record<CodeMail, string> = {
+  M1: "c'est parti, nous avons vos photos",
+  M2: "il manque les photos",
+  M3: "votre couverture est prête",
+  M3b: "relance, votre numéro vous attend",
+  M4: "paiement reçu",
+  M5: "la maquette complète",
+  M6: "départ à l'impression",
+  M7: "votre numéro est en route",
+  M8: "le prochain moment ?",
+  M9: "quelques photos de plus ?",
+};
 
 /**
  * Le titre tel qu'il se lit dans un objet de mail.
@@ -91,11 +136,19 @@ export function manquePour(code: CodeMail, n: NumeroPourMail): string[] {
   const manque: string[] = [];
   if (!n.email) manque.push("email");
 
-  if (code === "M3" || code === "M4") {
+  /* Tous les mails postérieurs à la publication de l'aperçu annoncent une
+     pagination et un prix : sans eux, la page sur laquelle ils envoient est
+     muette sur ce qui a été acheté. */
+  if (["M3", "M3b", "M4", "M5", "M6", "M7"].includes(code)) {
     if (!n.nb_pages) manque.push("nb_pages");
     if (!n.palier) manque.push("palier");
   }
-  if (code === "M3") {
+  /* M7 annonce un transporteur : sans lui, « votre numéro est en route » ne
+     dit pas par qui, et la cliente n'a rien à suivre. */
+  if (code === "M7" && !(n as Partial<NumeroPourReleve>).transporteur) {
+    manque.push("transporteur");
+  }
+  if (code === "M3" || code === "M3b") {
     const a = n.apercu_urls;
     const vide =
       !a ||
@@ -106,20 +159,49 @@ export function manquePour(code: CodeMail, n: NumeroPourMail): string[] {
   return manque;
 }
 
+/** L'échéance d'auto-validation annoncée par M5 (PRD §11). */
+export const JOURS_AVANT_AUTO_VALIDATION = 7;
+
 function paramsPour(code: CodeMail, n: NumeroPourMail): Record<string, unknown> {
+  const r = n as Partial<NumeroPourReleve>;
   const communs = {
     PRENOM: n.prenom ?? "",
     TITRE: titrePourMail(n.titre),
     LIEN: `${SITE_URL}/numero/${n.token}`,
   };
 
-  if (code === "M1") {
+  if (code === "M1" || code === "M2" || code === "M9") {
     return { ...communs, NB_PHOTOS: n.nb_photos ?? 0 };
   }
-  /* M3 et M4 affichent tous les deux la pagination et le prix. Le montant
-     vient de la grille serveur, jamais du navigateur (invariant nº2) — c'est
-     exactement celui que la page d'état 2 a annoncé. */
-  return { ...communs, NB_PAGES: n.nb_pages ?? 0, PRIX: eurosPour(n.palier) ?? "" };
+
+  /* Tout ce qui suit affiche la pagination et le prix. Le montant vient de la
+     grille SERVEUR, jamais du navigateur (invariant nº2) — c'est exactement
+     celui que la page d'état 2 a annoncé. */
+  const achat = { NB_PAGES: n.nb_pages ?? 0, PRIX: eurosPour(n.palier) ?? "" };
+
+  if (code === "M5") {
+    /* La date que M5 annonce EST celle que la relève appliquera : les deux
+       lisent `etat_maj_le` et la même constante. Une date de courtoisie qui
+       ne correspondrait pas à la bascule réelle serait pire que pas de date. */
+    return {
+      ...communs,
+      ...achat,
+      DATE_LIMITE: r.etat_maj_le
+        ? formaterJour(ajouterJours(r.etat_maj_le, JOURS_AVANT_AUTO_VALIDATION))
+        : "",
+    };
+  }
+
+  if (code === "M7") {
+    return {
+      ...communs,
+      ...achat,
+      TRANSPORTEUR: r.transporteur ?? "",
+      SUIVI: r.tracking_url ?? "",
+    };
+  }
+
+  return { ...communs, ...achat };
 }
 
 /**
@@ -208,19 +290,163 @@ export async function envoyerMailAtelier(
  * qu'elle n'en épargne.
  */
 
-/** Le mail attaché à un état, ou null. Aligné sur le balayage. */
-export function codeMailPourEtat(etat: string): CodeMail | null {
-  if (etat === "photos_recues") return "M1";
-  if (etat === "apercu_pret") return "M3";
-  /* M4 part au webhook Stripe. M5 à M9 sont du lot 8 : tant qu'ils ne sont
-     pas là, aucune transition ne prévient la cliente, et /admin le DIT à
-     l'écran avant de confirmer (cf. transitions.ts, `mail.absent`). */
-  return null;
+/* ═════════════════════════════════════════════════════════════════════════
+ * QUELS MAILS SONT DUS — LA RÈGLE, ÉCRITE UNE FOIS
+ *
+ * Utilisée par les DEUX appelants : /admin après une transition (le mail part
+ * dans la seconde) et le balayage (le filet, plus les mails à retardement que
+ * personne ne peut déclencher — M2, M3b, M8). Une seule table de règles, donc
+ * aucun risque que le bouton et le balayage ne soient pas d'accord.
+ *
+ * ── LE GARDE-FOU DE CHAÎNE ───────────────────────────────────────────────
+ * Un mail ne part QUE si son prédécesseur est parti.
+ *
+ * Ce n'est pas de la prudence abstraite : au moment de brancher M5→M9, la
+ * base contenait un dossier en état « validée » qui n'avait JAMAIS reçu le
+ * moindre mail (état forcé à la main pendant les tests, jamais payé). Sans
+ * cette règle, le premier balayage lui envoyait « votre numéro part à
+ * l'impression » — à une vraie adresse, pour un album qui n'existe pas.
+ *
+ * La règle est aussi juste sur le fond : on n'annonce pas « votre maquette
+ * est prête » à quelqu'un à qui on n'a jamais dit « paiement reçu ». Elle
+ * remplace avantageusement une date de mise en service en dur, qui serait
+ * devenue un mystère dans six mois.
+ *
+ * Seul M2 n'a pas de prédécesseur (il part AVANT tout autre mail). Il porte
+ * donc la seule borne de date du fichier, et elle est nommée.
+ * ═════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Date de mise en service des mails à retardement.
+ *
+ * Uniquement pour M2 : « J+1 sans photo déposée » n'a aucun mail antérieur
+ * sur lequel s'appuyer, et la base contenait des questionnaires abandonnés
+ * vieux de plusieurs jours au moment du branchement. Les relancer aurait été
+ * absurde — et pour certains, gênant.
+ */
+const MISE_EN_SERVICE_M2 = Date.parse("2026-08-25T00:00:00Z");
+
+const HEURE = 3_600_000;
+const JOUR = 24 * HEURE;
+
+/** Ce que le balayage sait des mails déjà partis pour un dossier. */
+export type Envoyes = Map<string, string>; /* code -> envoye_le (ISO) */
+
+function partiDepuis(envoyes: Envoyes, code: CodeMail, maintenant: Date): number | null {
+  const quand = envoyes.get(code);
+  if (!quand) return null;
+  const t = Date.parse(quand);
+  return Number.isNaN(t) ? null : maintenant.getTime() - t;
+}
+
+/**
+ * Les codes dus pour ce dossier, maintenant. Fonction PURE.
+ *
+ * Peut en rendre DEUX (un aperçu publié il y a quatre jours doit M3 — s'il
+ * avait échoué — et M3b). L'ordre est celui de l'envoi.
+ */
+export function codesPour(
+  n: NumeroPourReleve,
+  envoyes: Envoyes,
+  maintenant: Date,
+): CodeMail[] {
+  const dus: CodeMail[] = [];
+  const deja = (code: CodeMail) => envoyes.has(code);
+  const ageEtat = n.etat_maj_le ? maintenant.getTime() - Date.parse(n.etat_maj_le) : 0;
+
+  switch (n.etat) {
+    case "photos_recues": {
+      /* Le dépôt est terminé : `consent_photos` est le SEUL signal serveur
+         qui le dit (posé par depot/moteur.ts au clic « Envoyer à l'atelier »). */
+      if (n.consent_photos === true && (n.nb_photos ?? 0) > 0) dus.push("M1");
+      /* Questionnaire rempli, dépôt jamais fait, plus de 24 h. */
+      else if (
+        (n.nb_photos ?? 0) === 0 &&
+        n.created_at &&
+        Date.parse(n.created_at) >= MISE_EN_SERVICE_M2 &&
+        maintenant.getTime() - Date.parse(n.created_at) >= JOUR
+      ) {
+        dus.push("M2");
+      }
+      break;
+    }
+
+    case "photos_insuffisantes":
+      if (deja("M1")) dus.push("M9");
+      break;
+
+    case "apercu_pret": {
+      dus.push("M3");
+      /* M3b — « le mail qui rapporte le plus de tout le système » (PRD §10).
+         Trois jours après M3, si elle n'a toujours pas payé. */
+      const ageM3 = partiDepuis(envoyes, "M3", maintenant);
+      if (ageM3 !== null && ageM3 >= 3 * JOUR && !n.stripe_payment_intent) dus.push("M3b");
+      break;
+    }
+
+    /* État 3 : M4 part au webhook Stripe, à la seconde du paiement. Le
+       balayage ne le rattrape volontairement PAS — il enverrait « paiement
+       reçu » avec des jours de retard aux dossiers passés en payée à la main
+       pendant les tests. */
+    case "payee":
+      break;
+
+    case "maquette_prete":
+      if (deja("M4")) dus.push("M5");
+      break;
+
+    case "validee":
+      if (deja("M5")) dus.push("M6");
+      break;
+
+    case "en_production":
+      break;
+
+    case "expediee":
+      if (deja("M6")) dus.push("M7");
+      break;
+
+    case "livree":
+      /* J+3 après livraison, pas le jour même : « le prochain moment ? » le
+         jour où le colis arrive, c'est vendre avant d'avoir laissé ouvrir. */
+      if (deja("M7") && ageEtat >= 3 * JOUR) dus.push("M8");
+      break;
+  }
+
+  return dus.filter((c) => !deja(c));
+}
+
+/**
+ * Le dossier doit-il basculer en validation automatique ? (PRD §11)
+ *
+ * « L'auto-validation à J+7 est indispensable : sans elle, une part des
+ * dossiers payés dort indéfiniment et la production ne se ferme jamais. »
+ *
+ * ⚠️ Conditionnée à l'envoi RÉEL de M5. Valider automatiquement un dossier à
+ * qui l'on n'a jamais annoncé la maquette, c'est imprimer sans que personne
+ * ait rien vu — et l'échéance annoncée dans M5 est justement celle-ci.
+ */
+export function doitAutoValider(n: NumeroPourReleve, envoyes: Envoyes, maintenant: Date): boolean {
+  if (n.etat !== "maquette_prete" || !envoyes.has("M5") || !n.etat_maj_le) return false;
+  return maintenant.getTime() - Date.parse(n.etat_maj_le) >= JOURS_AVANT_AUTO_VALIDATION * JOUR;
 }
 
 export type Releve =
   | { code: CodeMail; resultat: Resultat }
   | { code: null; resultat: null };
+
+/** Ce qui est déjà parti pour un dossier, avec les dates (M3b en a besoin). */
+export async function lireEnvoyes(
+  supabase: SupabaseClient,
+  numeroId: string
+): Promise<Envoyes> {
+  const { data } = await supabase
+    .from("mails_envoyes")
+    .select("code, envoye_le")
+    .eq("numero_id", numeroId)
+    .returns<Array<{ code: string; envoye_le: string }>>();
+  return new Map((data ?? []).map((m) => [m.code, m.envoye_le]));
+}
 
 export async function releverDossier(
   supabase: SupabaseClient,
@@ -229,20 +455,19 @@ export async function releverDossier(
   try {
     const { data } = await supabase
       .from("numeros")
-      .select(`${CHAMPS_MAIL}, consent_photos`)
+      .select(CHAMPS_MAIL)
       .eq("id", numeroId)
-      .maybeSingle<NumeroPourMail & { etat: string; consent_photos: boolean | null }>();
+      .maybeSingle<NumeroPourReleve>();
 
     if (!data) return { code: null, resultat: null };
 
-    const code = codeMailPourEtat(data.etat);
-    if (!code) return { code: null, resultat: null };
+    const codes = codesPour(data, await lireEnvoyes(supabase, numeroId), new Date());
+    if (!codes.length) return { code: null, resultat: null };
 
-    /* Même garde-fou que le balayage : sans `consent_photos`, elle est encore
-       en train de choisir ses photos, et « vos photos sont à l'atelier »
-       serait faux. */
-    if (code === "M1" && data.consent_photos !== true) return { code: null, resultat: null };
-
+    /* Après une transition, un seul mail est dû en pratique. S'il y en avait
+       deux (cas d'un rattrapage), on envoie le premier ici et le balayage
+       prendra le second : /admin n'a pas à devenir un moteur d'envoi. */
+    const code = codes[0];
     return { code, resultat: await envoyerMailAtelier(supabase, code, data) };
   } catch (err) {
     console.error("[atelier/mails] relève d'un dossier échouée", (err as Error)?.message);

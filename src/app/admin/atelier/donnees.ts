@@ -26,6 +26,7 @@ import {
 } from "@/lib/atelier/transitions";
 import { compter, comparerUrgence, urgencePour } from "@/lib/atelier/urgence";
 import { raconter } from "@/lib/atelier/recit";
+import { templateExiste } from "@/lib/atelier/mails";
 import { construireParcours } from "@/lib/atelier/parcours";
 import type {
   ActiviteVue,
@@ -103,7 +104,10 @@ function versLigne(
       libelle: a.libelle,
       explication: a.explication,
       vers: a.vers,
-      mail: a.mail,
+      /* `absent` est une vérité D'EXÉCUTION : le template existe-t-il dans
+         CET environnement, maintenant ? L'écran de confirmation en dépend
+         pour dire « elle ne sera PAS prévenue ». */
+      mail: a.mail ? { code: a.mail.code, absent: !templateExiste(a.mail.code) } : null,
     })),
   };
 }

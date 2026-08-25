@@ -102,11 +102,14 @@ export type Action = {
   vers: Etat;
   /**
    * Le mail que cette étape déclenche (PRD §10). `null` = aucun mail prévu.
-   * `absent: true` = le PRD en prévoit un, il n'est PAS encore câblé — c'est
-   * le lot 8. L'écran le dit noir sur blanc avant de confirmer : sans ça,
-   * l'atelier croit que la cliente est prévenue alors que personne ne part.
+   *
+   * ⚠️ On ne dit PAS ici si le mail partira vraiment : ça dépend de la
+   * présence du template Brevo dans l'environnement, qui change sans que ce
+   * fichier bouge. C'est `donnees.ts` qui interroge `templateExiste()` au
+   * moment du rendu et remplit `absent`. Un drapeau écrit en dur mentirait le
+   * jour où la variable arrive — ou pire, le jour où elle disparaît.
    */
-  mail: { code: string; absent: boolean } | null;
+  mail: { code: string } | null;
   /** Une transition « sur place » ne rejournalise pas un changement d'état. */
   surPlace?: boolean;
 };
@@ -119,7 +122,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
       "Ouvre la page qui vend : elle découvre sa couverture, son nombre de pages et son prix, et peut payer.",
     de: ["photos_recues", "photos_insuffisantes"],
     vers: "apercu_pret",
-    mail: { code: "M3", absent: false },
+    mail: { code: "M3" },
   },
 
   /* Corriger sans refaire l'histoire. Une coquille dans la pagination ou une
@@ -145,7 +148,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
       "Sa page lui propose de reprendre le dépôt. Le dossier revient ici dès qu'elle a rajouté ses photos.",
     de: ["photos_recues"],
     vers: "photos_insuffisantes",
-    mail: { code: "M9", absent: true },
+    mail: { code: "M9" },
   },
 
   publier_maquette: {
@@ -155,7 +158,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
       "Elle découvre le numéro complet et le bouton « Tout est bon, imprimez ». Rien ne part à l'impression avant.",
     de: ["payee"],
     vers: "maquette_prete",
-    mail: { code: "M5", absent: true },
+    mail: { code: "M5" },
   },
 
   envoyer_impression: {
@@ -165,7 +168,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
       "À faire une fois la commande passée chez l'imprimeur. Le numéro de suivi se saisit à l'étape suivante.",
     de: ["validee"],
     vers: "en_production",
-    mail: { code: "M6", absent: true },
+    mail: { code: "M6" },
   },
 
   marquer_expediee: {
@@ -174,7 +177,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
     explication: "Affiche le transporteur et le lien de suivi sur sa page.",
     de: ["en_production"],
     vers: "expediee",
-    mail: { code: "M7", absent: true },
+    mail: { code: "M7" },
   },
 
   marquer_livree: {
@@ -183,7 +186,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
     explication: "Clôt le numéro et lui propose le prochain moment.",
     de: ["expediee"],
     vers: "livree",
-    mail: { code: "M8", absent: true },
+    mail: { code: "M8" },
   },
 };
 
