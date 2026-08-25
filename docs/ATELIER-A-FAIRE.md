@@ -47,38 +47,71 @@ débogage.
 
 **La grille de photos** se replie à douze vignettes.
 
+### ✅ Fait le 26/08 — le lot de photos et le brief
+
+**Télécharger le lot descend les VRAIES photos.** C'était le plus bloquant.
+Sur Chrome et Edge, `showDirectoryPicker()` : l'éditeur désigne un dossier une
+fois (Chrome y revient tout seul ensuite), et chaque photo descend du coffre en
+flux directement sur le disque. Rien ne passe par Vercel, la taille du lot n'a
+plus de limite, et la barre dit où on en est avec un bouton pour arrêter.
+Ailleurs, repli sur le `.txt` — devenu une liste NUE, parce que les trois
+lignes de commentaire `#` de l'ancienne version la rendaient inconsommable :
+`xargs` passait le dièse à `curl` comme une adresse. La commande s'affiche
+maintenant à l'écran, où elle se copie.
+
+Trois décisions qui ne se devinent pas en relisant le code :
+- **les noms de fichiers sont calculés dans un module pur** (`src/lib/atelier/lot.ts`)
+  et signés dans l'URL via `ResponseContentDisposition`. Les deux chemins
+  produisent donc les mêmes noms. Sans ça, `curl -O` écrasait trente-neuf
+  photos sur quarante : la clé du coffre finit par `original.jpg` pour chacune.
+- **le préfixe numéroté** (`01-`, `02-`) préserve l'ordre du dépôt, que le
+  Finder détruirait en triant `IMG_4207` avant `IMG_988`.
+- **le dossier s'appelle « Camille - Séville, dix jours »**, la cliente
+  d'abord : le dossier de travail se range par personne, et un titre seul ne
+  dit pas de qui il s'agit. Ce nom n'est PAS unique, et c'est voulu —
+  retélécharger le même numéro doit retomber sur le même dossier et réécrire
+  par-dessus, ce qu'on veut après un lot interrompu. Le revers : deux numéros
+  d'une même cliente portant le même titre se mélangeraient.
+- **les liens sont refaits au clic** (`POST /api/admin/atelier/lot`), jamais
+  ceux de la page : une fiche ouverte depuis deux heures aurait écrit quarante
+  fichiers vides sans que rien ne le signale.
+
+⚠️ Tout cela repose sur le CORS du bucket R2, qui autorise aujourd'hui
+`GET` depuis bellajour.fr, `*.vercel.app` et localhost. S'il change, le
+téléchargement direct tombe en panne d'un bloc.
+
+**Les notes voyagent avec les photos.** Un `00-BRIEF.txt` est écrit dans le
+dossier, en tête : occasion, histoire dans ses mots, carnet de l'éditeur en
+ordre chronologique, lien Canva de travail. Il est aussi téléchargeable seul
+(bouton « Le brief »), pour les navigateurs sans sélecteur de dossier et pour
+le relire sans reprendre le lot. `src/lib/atelier/brief.ts`, module pur.
+
+Ce qui reste à trancher sur ce sujet : le **récapitulatif imprimable** évoqué
+en recette. Le fichier texte sert celui qui compose écran contre écran ; une
+feuille A4 servirait celui qui travaille papier à côté du clavier. Les deux ne
+s'excluent pas, mais la seconde ne vaut la peine que si quelqu'un imprime
+vraiment. À décider en regardant travailler, pas en réunion.
+
+⚠️ « Copier les liens » a disparu. Il ne servait qu'à coller dans un terminal,
+ce que le `.txt` fait mieux maintenant.
+
 ### ⚠️ À faire — par ordre d'importance
 
-**1. Télécharger réellement les photos.** *Le plus bloquant pour l'éditeur.*
-« Télécharger le lot » ne produit qu'un fichier texte de liens signés, et
-« Copier les liens » ne sert que si on colle dans un terminal. Le raisonnement
-d'origine (ne pas faire passer 200 Mo par une fonction Vercel) était bon, le
-résultat est inutilisable.
-→ **Solution retenue** : `showDirectoryPicker()` de Chrome. L'éditeur choisit
-un dossier sur son Mac, les photos s'y écrivent directement, sans serveur et
-sans limite de mémoire. Repli sur le `.txt` actuel pour les autres navigateurs.
-
-**2. Les notes doivent voyager avec les photos.** Elles ne sortent aujourd'hui
-nulle part : il faut ouvrir la fiche pour les lire. Pour servir à celui qui
-compose dans Canva, elles doivent accompagner le lot téléchargé — un
-`notes.txt` dans le dossier, ou un récapitulatif imprimable reprenant occasion,
-histoire, titre et notes. **Sujet ouvert, à trancher en réunion.**
-
-**3. La case « montrer des extraits » est mal placée.** Sur l'écran 6, qui
+**1. La case « montrer des extraits » est mal placée.** Sur l'écran 6, qui
 ressemble à une validation, elle a l'air obligatoire. Elle est purement
 facultative et sans effet sur la commande (`consent_communication`, PRD §14).
 → Soit un libellé qui dise franchement « ça ne change rien à votre commande »,
 soit la déplacer.
 
-**4. Le crédit fondateur est entièrement manuel.** L'admin affiche « 30 € à
+**2. Le crédit fondateur est entièrement manuel.** L'admin affiche « 30 € à
 imputer » (CGV art. 5 bis) mais il faut créer un code Stripe nominatif à usage
 unique et l'envoyer à la main. Tenable à deux fondateurs, pas au-delà.
 
-**5. Les mails tombent dans l'onglet Promotions de Gmail.** Un M3 en Promotions
+**3. Les mails tombent dans l'onglet Promotions de Gmail.** Un M3 en Promotions
 est une vente perdue. Chantier à part : DNS, contenu, réputation.
 Cf. [[dns-et-delivrabilite]] en mémoire.
 
-**6. Rappeler à la cliente de garder son lien.** Sa page suit l'état et le lien
+**4. Rappeler à la cliente de garder son lien.** Sa page suit l'état et le lien
 est permanent, mais rien ne le lui dit. À intégrer à la relecture des mails.
 
 ---
@@ -132,7 +165,7 @@ node scripts/recette.mjs pousser "Test 1" M3b     # force un mail à retardement
 node scripts/recette.mjs relever                  # déclenche la relève
 node scripts/recette.mjs nettoyer --depuis=2026-08-26
 
-npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts       # 47 assertions
+npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts       # 62 assertions
 npx tsx --tsconfig tsconfig.json scripts/verif-mails-brevo.ts   # variables des templates
 
 node scripts/mails-atelier.mjs                    # aperçus HTML des 7 mails

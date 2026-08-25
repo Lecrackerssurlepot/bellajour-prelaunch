@@ -144,8 +144,35 @@ l'impression ». Seul M2 n'a pas de prédécesseur : il porte la seule borne de 
 `ATELIER_M2_DEPUIS` (reculée sur Preview pour le rendre testable).
 ⚠️ **La relève doit tourner tous les jours** (`vercel.json`, 7 h UTC, `CRON_SECRET`). Sans elle,
 M2, M3b, M8 et l'auto-validation à J+7 ne partent JAMAIS.
-Vérifications : `npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts` (47 assertions,
+Vérifications : `npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts` (62 assertions,
 sans base ni réseau) et `scripts/verif-mails-brevo.ts` (les variables des templates).
+
+### Télécharger le lot de photos (26/08/2026)
+« Télécharger le lot » écrit les VRAIES photos sur le disque, plus un fichier de liens.
+- Chrome/Edge : `showDirectoryPicker()` → l'éditeur choisit un dossier, chaque photo descend
+  du coffre en flux (`fetch` → `pipeTo`) et va droit sur le disque. Rien ne passe par Vercel,
+  aucune limite de taille. `src/app/admin/atelier/[token]/telechargement.ts`.
+  ⚠️ Le sélecteur s'ouvre AVANT tout `await` — Chrome exige une activation utilisateur fraîche.
+- Ailleurs : repli sur un `.txt` de liens NUS (les lignes `#` de l'ancienne version cassaient
+  `xargs`, qui passait le dièse à `curl`), la commande est affichée à l'écran.
+- Le dossier créé s'appelle « Prénom - Titre » (`nomDossier`), volontairement NON unique :
+  retélécharger le même numéro réécrit par-dessus, ce qu'on veut après un lot interrompu.
+- Les noms de fichiers sont calculés UNE fois, dans le module pur `src/lib/atelier/lot.ts`,
+  et signés dans l'URL (`ResponseContentDisposition`) : les deux chemins produisent les mêmes
+  noms. Sans ça, `curl -O` écrasait tout — la clé du coffre finit par `original.jpg` pour
+  chaque photo.
+- Les liens sont TOUJOURS refaits au clic via `POST /api/admin/atelier/lot` (TTL 2 h). Ceux de
+  la page sont signés au rendu et une fiche reste ouverte toute la matinée.
+- ⚠️ **Dépend du CORS du bucket R2** : `GET` doit être autorisé pour l'origine (c'est le cas
+  aujourd'hui — PUT/GET/HEAD sur bellajour.fr, `*.vercel.app`, localhost:3000). Sans lui, le
+  `fetch` échoue et toutes les photos partent en « ratées ».
+
+### Les notes de l'éditeur voyagent avec les photos
+`src/lib/atelier/brief.ts` (PUR) compose `00-BRIEF.txt`, écrit dans le dossier téléchargé et
+téléchargeable seul par le bouton « Le brief » : occasion, histoire, carnet de l'éditeur,
+lien Canva de travail. Motif : celui qui compose travaille dans Canva, pas dans la fiche ;
+une note qui exige un aller-retour par onglet finit par ne plus être lue.
+⚠️ Fichier INTERNE. Il porte des notes que la cliente ne doit jamais lire, rien ne l'envoie.
 Le TEXTE des mails vit dans `scripts/mails-atelier.mjs`, versionné, pas dans Brevo.
 **Ce qui reste à faire : `docs/ATELIER-A-FAIRE.md`.** Recette : `docs/RECETTE-PARCOURS.md`.
 

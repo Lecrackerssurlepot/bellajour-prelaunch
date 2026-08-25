@@ -25,6 +25,8 @@ import {
   type Envoyes,
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
+import { nomsDeFichiers, nomDossier } from "@/lib/atelier/lot";
+import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 
 let ko = 0;
 const ok = (n: string, c: boolean) => {
@@ -145,6 +147,62 @@ ok("M7 sans transporteur : signale", manquePour("M7", d({ transporteur: null }))
 ok("M7 avec transporteur : complet", manquePour("M7", d({ transporteur: "Colissimo" })).length === 0);
 ok("M5 sans pagination : signale", manquePour("M5", d({ nb_pages: null })).includes("nb_pages"));
 ok("M2 sans pagination : normal, il n'en parle pas", manquePour("M2", d({ nb_pages: null, palier: null })).length === 0);
+
+/* ═══════════════════════ LE LOT ET LE BRIEF ═══════════════════════ */
+
+titre("— les noms de fichiers d'un lot —");
+const nomsSimples = nomsDeFichiers([{ nom: "IMG_988.jpg" }, { nom: "IMG_4207.jpg" }]);
+ok("l'ordre du depot est prefixe, pas l'ordre alphabetique",
+   nomsSimples[0] === "01-IMG_988.jpg" && nomsSimples[1] === "02-IMG_4207.jpg");
+ok("largeur du prefixe suivant la taille du lot",
+   nomsDeFichiers(Array.from({ length: 120 }, () => ({ nom: "a.jpg" })))[0] === "001-a.jpg");
+const doublons = nomsDeFichiers([{ nom: "photo.jpg" }, { nom: "photo.jpg" }]);
+ok("deux noms d'origine identiques ne s'ecrasent pas",
+   doublons[0] !== doublons[1] && new Set(doublons).size === 2);
+ok("nom absent : un nom quand meme", nomsDeFichiers([{ nom: null }])[0] === "01-photo-1");
+ok("une barre oblique ne cree pas de sous-dossier", !nomsDeFichiers([{ nom: "ete/2026.jpg" }])[0].includes("/"));
+ok("le nom du brief est reserve", nomsDeFichiers([{ nom: NOM_BRIEF }])[0] !== NOM_BRIEF);
+ok("le dossier porte la cliente puis le titre",
+   nomDossier("Camille", "Seville, dix jours", "abcdef0123") === "Camille - Seville, dix jours");
+ok("un titre a rallonge ne fabrique pas un dossier illisible",
+   nomDossier("Camille", "x".repeat(200), "abcdef0123").length < 110);
+ok("sans prenom : le titre suffit", nomDossier(null, "Nos dimanches", "abcdef0123") === "Nos dimanches");
+ok("sans rien : le token identifie quand meme", nomDossier(null, null, "abcdef0123") === "numero (abcdef)");
+ok("une barre oblique dans le titre ne cree pas de sous-dossier",
+   !nomDossier("Camille", "ete 2026/2027", "abcdef0123").includes("/"));
+
+titre("— le brief qui part avec les photos —");
+const MATIERE: MatiereBrief = {
+  titre: "Seville, dix jours",
+  prenom: "Camille",
+  email: "camille@exemple.fr",
+  token: "abcdef0123456789",
+  libelleEtat: "Photos recues",
+  nbPhotos: 41,
+  nbPages: 34,
+  palier: "p40",
+  euros: 40,
+  createdAt: "2026-08-12T09:00:00.000Z",
+  occasion: "Un anniversaire",
+  histoire: "On a marche des kilometres dans Triana.",
+  canvaTravail: "https://canva.com/design/interne",
+  notes: [
+    { prenom: "Louis", texte: "Deux enfants, n'en faire disparaitre aucun.", createdAt: "2026-08-14T10:00:00.000Z" },
+    { prenom: "Mathias", texte: "Ton chaud, eviter les cadres blancs.", createdAt: "2026-08-13T10:00:00.000Z" },
+  ],
+};
+const BRIEF = composerBrief(MATIERE, new Date("2026-08-25T08:00:00.000Z"));
+ok("le brief porte l'histoire", BRIEF.includes("Triana"));
+ok("le brief porte les DEUX notes", BRIEF.includes("cadres blancs") && BRIEF.includes("disparaitre"));
+ok("le carnet est chronologique, la plus ancienne d'abord",
+   BRIEF.indexOf("cadres blancs") < BRIEF.indexOf("disparaitre"));
+ok("le brief porte le lien Canva de travail", BRIEF.includes("canva.com/design/interne"));
+ok("aucun tiret cadratin (consigne de la maison)", !/[\u2013\u2014]/.test(BRIEF));
+ok("aucune ligne au dela de 80 colonnes sauf les liens",
+   BRIEF.split("\n").every((l) => l.length <= 80 || l.includes("http")));
+const VIDE = composerBrief({ ...MATIERE, occasion: null, histoire: null, notes: [] }, new Date("2026-08-25T08:00:00.000Z"));
+ok("un dossier sans matiere le DIT au lieu de rendre un fichier vide",
+   VIDE.includes("Rien de not\u00e9.") && VIDE.includes("Elle n'a rien \u00e9crit."));
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
 process.exit(ko === 0 ? 0 : 1);

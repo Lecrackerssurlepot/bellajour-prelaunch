@@ -1,11 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import PanneauAction from "./PanneauAction";
 import Parcours from "./Parcours";
 import Carnet from "./Carnet";
 import type { EvenementVue, Fiche as FicheVue } from "../types";
+import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
+import {
+  choisirDossier,
+  ecrireLot,
+  listeDesLiens,
+  supporteDossier,
+  telechargerTexte,
+  COMMANDE_REPLI,
+  type PhotoLot,
+} from "./telechargement";
 
 /**
  * La fiche dossier — tout ce qu'il faut pour composer un numéro et le faire
@@ -71,6 +81,43 @@ function Evenement({ e }: { e: EvenementVue }) {
    ligne de flottaison et transforment l'outil en galerie. */
 const VIGNETTES_VISIBLES = 12;
 
+/**
+ * Ce que le téléchargement raconte à l'écran.
+ *
+ * Un lot de deux cents photos prend des minutes. Un bouton qui ne dit rien
+ * pendant deux minutes est un bouton cassé : on le reclique, et on repart
+ * pour un tour. La phase est donc affichée en toutes lettres, avec un moyen
+ * d'arrêter.
+ */
+type EtatLot =
+  | { phase: "repos" }
+  | { phase: "prepare" }
+  | { phase: "ecrit"; faites: number; total: number; enCours: string }
+  | { phase: "fini"; dossier: string; ecrites: number; ratees: string[]; interrompu: boolean }
+  | { phase: "repli"; fichier: string }
+  | { phase: "erreur"; message: string };
+
+/** La fiche vue par le brief. Le brief ne connaît pas la fiche : il demande. */
+function matiereDe(fiche: FicheVue): MatiereBrief {
+  const l = fiche.ligne;
+  return {
+    titre: l.titre,
+    prenom: l.prenom,
+    email: l.email,
+    token: l.token,
+    libelleEtat: l.libelleEtat,
+    nbPhotos: fiche.photos.length,
+    nbPages: l.nbPages,
+    palier: fiche.palier,
+    euros: l.euros,
+    createdAt: l.createdAt,
+    occasion: fiche.occasion,
+    histoire: fiche.histoire,
+    canvaTravail: fiche.canvaTravail,
+    notes: fiche.notes.map((n) => ({ prenom: n.prenom, texte: n.texte, createdAt: n.createdAt })),
+  };
+}
+
 export default function Fiche({
   fiche,
   moi,
@@ -81,38 +128,91 @@ export default function Fiche({
   moi: string;
   demo?: boolean;
 }) {
-  const [copie, setCopie] = useState(false);
   const [toutesLesPhotos, setToutesLesPhotos] = useState(false);
-  const l = fiche.ligne;
-  const liens = fiche.photos.map((p) => p.url).filter(Boolean) as string[];
-  const base = demo ? "/admin/atelier/demo" : "/admin/atelier";
+  const [lot, setLot] = useState<EtatLot>({ phase: "repos" });
+  /* `supporteDossier()` lit `window` : appelé au rendu, il rendrait `false`
+     côté serveur et `true` ensuite, et React refuserait l'hydratation. On
+     décide donc APRÈS le premier rendu, ce qui affiche brièvement le libellé
+     de repli et n'a jamais trompé personne. */
+  const [ecritDirect, setEcritDirect] = useState(false);
+  useEffect(() => setEcritDirect(supporteDossier()), []);
+  const arret = useRef<AbortController | null>(null);
 
-  function copierLiens() {
-    navigator.clipboard?.writeText(liens.join("\n")).then(
-      () => {
-        setCopie(true);
-        setTimeout(() => setCopie(false), 2500);
-      },
-      () => setCopie(false),
-    );
+  const l = fiche.ligne;
+  const base = demo ? "/admin/atelier/demo" : "/admin/atelier";
+  const occupe = lot.phase === "prepare" || lot.phase === "ecrit";
+
+  /**
+   * Les liens, refaits à l'instant.
+   *
+   * Ceux de la page ont été signés au rendu, pour deux heures. La fiche reste
+   * ouverte toute la matinée : on ne télécharge JAMAIS avec les liens
+   * affichés, sous peine d'écrire quarante fichiers de zéro octet sans que
+   * rien ne le signale.
+   *
+   * En démonstration, les photos sont des images de /public : même origine,
+   * aucune signature à refaire, et surtout aucun appel qui toucherait la base.
+   */
+  async function liensFrais(): Promise<PhotoLot[]> {
+    if (demo) return fiche.photos;
+    const r = await fetch("/api/admin/atelier/lot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: l.token }),
+    });
+    if (!r.ok) throw new Error("Les liens du coffre n'ont pas pu être refaits.");
+    const d = (await r.json()) as { photos?: PhotoLot[] };
+    if (!d.photos?.length) throw new Error("Le coffre n'a rendu aucune photo.");
+    return d.photos;
   }
 
-  /* Le lot de photos en un fichier. Pas de ZIP côté serveur : 80 photos de
-     5 Mo dans une fonction Vercel, c'est une panne à retardement. Un .txt de
-     liens signés, une ligne de commande à coller, et le téléchargement se
-     fait à pleine vitesse depuis le coffre. */
-  function telechargerListe() {
-    const contenu =
-      `# ${l.titre ?? "numéro"} — ${fiche.photos.length} photos\n` +
-      `# Liens valables une heure. Pour tout récupérer :\n` +
-      `#   xargs -n1 curl -sO < photos.txt\n\n` +
-      liens.join("\n");
-    const url = URL.createObjectURL(new Blob([contenu], { type: "text/plain;charset=utf-8" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `photos-${l.token.slice(0, 8)}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+  function leBrief(): string {
+    return composerBrief(matiereDe(fiche), new Date());
+  }
+
+  /**
+   * Le lot sur le disque (Chrome, Edge).
+   *
+   * ⚠️ Le sélecteur de dossier s'ouvre AVANT tout `await` : Chrome exige une
+   * activation utilisateur fraîche, et un aller-retour réseau la consomme.
+   */
+  async function telechargerDossier() {
+    const racine = await choisirDossier();
+    if (!racine) return;
+
+    const ctrl = new AbortController();
+    arret.current = ctrl;
+    setLot({ phase: "prepare" });
+    try {
+      const photos = await liensFrais();
+      const r = await ecrireLot(racine, {
+        prenom: l.prenom,
+        titre: l.titre,
+        token: l.token,
+        photos,
+        brief: leBrief(),
+        signal: ctrl.signal,
+        onProgres: (p) => setLot({ phase: "ecrit", ...p }),
+      });
+      setLot({ phase: "fini", ...r });
+    } catch (err) {
+      setLot({ phase: "erreur", message: (err as Error)?.message || "Le téléchargement a échoué." });
+    } finally {
+      arret.current = null;
+    }
+  }
+
+  /** Le repli : une liste nue de liens, pour `curl`. */
+  async function telechargerListe() {
+    setLot({ phase: "prepare" });
+    try {
+      const photos = await liensFrais();
+      const fichier = `photos-${l.token.slice(0, 8)}.txt`;
+      telechargerTexte(fichier, listeDesLiens(photos));
+      setLot({ phase: "repli", fichier });
+    } catch (err) {
+      setLot({ phase: "erreur", message: (err as Error)?.message || "Le téléchargement a échoué." });
+    }
   }
 
   return (
@@ -191,15 +291,81 @@ export default function Fiche({
               </h2>
               {fiche.photos.length ? (
                 <div className="ate-carte-outils">
-                  <button className="adm-btn adm-btn--ghost" type="button" onClick={copierLiens}>
-                    {copie ? "Copié" : "Copier les liens"}
+                  <button
+                    className="adm-btn adm-btn--ghost"
+                    type="button"
+                    onClick={() => telechargerTexte(NOM_BRIEF, leBrief())}
+                    title="L'occasion, son histoire et le carnet, en un fichier texte"
+                  >
+                    Le brief
                   </button>
-                  <button className="adm-btn adm-btn--ghost" type="button" onClick={telechargerListe}>
-                    Télécharger le lot
+                  <button
+                    className="adm-btn"
+                    type="button"
+                    disabled={occupe}
+                    onClick={ecritDirect ? telechargerDossier : telechargerListe}
+                  >
+                    {ecritDirect ? "Télécharger le lot" : "Télécharger les liens"}
                   </button>
                 </div>
               ) : null}
             </div>
+
+            {lot.phase !== "repos" ? (
+              <div className={`ate-lot ate-lot--${lot.phase}`} role="status" aria-live="polite">
+                {lot.phase === "prepare" ? <p>Préparation des liens...</p> : null}
+
+                {lot.phase === "ecrit" ? (
+                  <>
+                    <div className="ate-lot-barre">
+                      <span
+                        className="ate-lot-jauge"
+                        style={{ width: `${Math.round((lot.faites / Math.max(1, lot.total)) * 100)}%` }}
+                      />
+                    </div>
+                    <p>
+                      {`${lot.faites} / ${lot.total} photos écrites. En cours : ${lot.enCours}`}
+                      <button
+                        type="button"
+                        className="ate-lot-arret"
+                        onClick={() => arret.current?.abort()}
+                      >
+                        Arrêter
+                      </button>
+                    </p>
+                  </>
+                ) : null}
+
+                {lot.phase === "fini" ? (
+                  <p>
+                    {lot.interrompu
+                      ? `Arrêté. ${lot.ecrites} photos écrites dans « ${lot.dossier} ».`
+                      : `${lot.ecrites} photos et le brief écrits dans « ${lot.dossier} ».`}
+                    {lot.ratees.length ? (
+                      <span className="ate-lot-ratees">
+                        {` ${lot.ratees.length} n'ont pas pu être écrites : ${lot.ratees.join(", ")}. Relance le téléchargement, elles seules manqueront.`}
+                      </span>
+                    ) : null}
+                  </p>
+                ) : null}
+
+                {/* Le repli. La commande vit ICI et non dans le fichier : une
+                    ligne de commentaire dans le .txt le rendait inconsommable
+                    par xargs, qui passait le dièse à curl comme une adresse. */}
+                {lot.phase === "repli" ? (
+                  <p>
+                    {`${lot.fichier} téléchargé. Dans un dossier vide, ouvre le Terminal et colle :`}
+                    <code className="ate-lot-cmd">{`${COMMANDE_REPLI} ~/Downloads/${lot.fichier}`}</code>
+                    <span className="ate-faint">
+                      Les noms de fichiers sont les mêmes que par le dossier. Les liens valent deux
+                      heures.
+                    </span>
+                  </p>
+                ) : null}
+
+                {lot.phase === "erreur" ? <p className="ate-lot-ratees">{lot.message}</p> : null}
+              </div>
+            ) : null}
 
             {fiche.photos.length === 0 ? (
               <p className="ate-faint">Aucune photo déposée.</p>

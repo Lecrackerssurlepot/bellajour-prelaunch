@@ -114,9 +114,53 @@ export async function signerPut(
  */
 export const APERCU_TTL_SECONDS = 60 * 60; /* 1 h */
 
-export async function signerGet(key: string, ttl = APERCU_TTL_SECONDS): Promise<string> {
-  const cmd = new GetObjectCommand({ Bucket: bucket(), Key: key });
+/**
+ * TTL des liens d'un LOT téléchargé depuis /admin/atelier.
+ *
+ * Plus long que l'aperçu, et pour une raison opposée : ces liens ne circulent
+ * pas, ils sont consommés dans la minute par un navigateur qui écrit sur un
+ * disque. Ce qui les menace, ce n'est pas la fuite, c'est la lenteur : deux
+ * cents photos sur une connexion d'hôtel dépassent l'heure, et une signature
+ * qui périme en cours d'écriture produit des fichiers vides sans erreur
+ * visible. Deux heures couvrent le pire cas mesurable.
+ */
+export const LOT_TTL_SECONDS = 2 * 60 * 60; /* 2 h */
+
+export async function signerGet(
+  key: string,
+  ttl = APERCU_TTL_SECONDS,
+  /**
+   * Nom de fichier imposé au téléchargement.
+   *
+   * Sans lui, toutes les photos d'un numéro descendent sous LE MÊME NOM : la
+   * clé du coffre finit par `original.jpg` pour chacune, et `curl -O` en
+   * écrase trente-neuf sur quarante. Le nom vient de `lot.ts`, le même que
+   * celui qu'écrit le chemin Chrome.
+   */
+  nomFichier?: string
+): Promise<string> {
+  const cmd = new GetObjectCommand({
+    Bucket: bucket(),
+    Key: key,
+    ...(nomFichier ? { ResponseContentDisposition: disposition(nomFichier) } : {}),
+  });
   return getSignedUrl(makeR2(), cmd, { expiresIn: ttl });
+}
+
+/**
+ * Un en-tête `Content-Disposition` que les deux consommateurs comprennent.
+ *
+ * Un en-tête HTTP est de l'ASCII : « Été à Séville.jpg » posé tel quel dans
+ * `filename=` produit des octets que chacun interprète à sa façon. D'où les
+ * deux formes de la RFC 6266 : `filename` replié en ASCII, que `curl -J` sait
+ * lire, et `filename*` en UTF-8 pourcent-encodé, que les navigateurs
+ * préfèrent. Les guillemets et les antislashs sortent : ils fermeraient la
+ * valeur au milieu.
+ */
+function disposition(nom: string): string {
+  const propre = nom.replace(/["\\]/g, "");
+  const ascii = propre.replace(/[^\x20-\x7e]/g, "-");
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(propre)}`;
 }
 
 /**
