@@ -78,6 +78,15 @@ export type EvenementVue = {
   recit: Recit;
 };
 
+export type NoteVue = {
+  id: string;
+  /** Identifiant du compte — sert à savoir si on peut la supprimer. */
+  qui: string;
+  prenom: string;
+  texte: string;
+  createdAt: string;
+};
+
 export type MailVue = {
   code: string;
   templateId: number | null;
@@ -135,6 +144,8 @@ export type Fiche = {
   renonciationAt: string | null;
   palier: string | null;
   canvaUrl: string | null;
+  /** Le lien d'ÉDITION, interne. Ne part jamais nulle part (PRD §11). */
+  canvaTravail: string | null;
   maquettePdfUrl: string | null;
   transporteur: string | null;
   trackingUrl: string | null;
@@ -147,6 +158,9 @@ export type Fiche = {
   photos: PhotoVue[];
   evenements: EvenementVue[];
   mails: MailVue[];
+  notes: NoteVue[];
+  /** La migration `notes` n'est pas passée : l'écran le dit au lieu de mentir. */
+  notesIndisponibles: boolean;
   client: ClientVue;
   actions: ActionVue[];
 };

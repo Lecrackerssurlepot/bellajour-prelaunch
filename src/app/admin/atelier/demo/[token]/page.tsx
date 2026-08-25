@@ -18,5 +18,5 @@ export default async function PageFicheDemo({ params }: { params: Promise<{ toke
   const fiche = ficheDemo(token);
   if (!fiche) notFound();
 
-  return <Fiche fiche={fiche} demo />;
+  return <Fiche fiche={fiche} moi={qui} demo />;
 }

@@ -1078,6 +1078,53 @@
   color: var(--ate-orange);
 }
 
+/* ─────────────────────────── la page santé ─────────────────────────── */
+
+.ate-sante {
+  margin-bottom: var(--bj-sp-4);
+}
+/* Le liseré porte la gravité, pas le fond : quatre cartes rouge plein, et on
+   arrête de lire la page. */
+.ate-sante--rouge {
+  box-shadow: inset 3px 0 0 var(--ate-rouge);
+}
+.ate-sante--rouge .ate-carte-titre {
+  color: var(--ate-rouge);
+}
+.ate-sante--orange {
+  box-shadow: inset 3px 0 0 var(--ate-orange);
+}
+.ate-sante--orange .ate-carte-titre {
+  color: var(--ate-orange);
+}
+.ate-sante-ok .ate-carte-titre {
+  color: var(--ate-vert);
+}
+.ate-sante-remede {
+  margin: 0 0 var(--bj-sp-3);
+  font-size: var(--bj-fs-sm);
+  line-height: 1.5;
+  color: var(--bj-text-soft);
+}
+.ate-sante-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--bj-fs-sm);
+}
+.ate-sante-liste li {
+  padding: var(--bj-sp-2) 0;
+  border-top: var(--ate-ligne-h);
+}
+.ate-sante-liste a {
+  color: var(--bj-text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--bj-action-border);
+}
+.ate-sante-liste a:hover {
+  color: var(--bj-action);
+}
+
 /* ─────────────────────── la frise du dossier ─────────────────────── */
 
 .ate-parcours {
@@ -1613,6 +1660,77 @@
   justify-content: space-between;
   gap: var(--bj-sp-2);
   padding: var(--bj-sp-1) 0;
+}
+
+/* ── le carnet de l'éditeur ── */
+.ate-carnet-lien {
+  display: flex;
+  gap: var(--bj-sp-2);
+  align-items: center;
+}
+.ate-carnet-lien .adm-input {
+  flex: 1;
+  min-width: 0;
+}
+.ate-note-saisie {
+  display: flex;
+  gap: var(--bj-sp-2);
+  align-items: flex-end;
+  margin-bottom: var(--bj-sp-3);
+}
+.ate-note-champ {
+  flex: 1;
+  min-width: 0;
+  resize: vertical;
+  font-family: var(--bj-font-ui);
+  line-height: 1.45;
+}
+.ate-notes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ate-note {
+  padding: var(--bj-sp-3) 0;
+  border-top: var(--ate-ligne-h);
+}
+.ate-note-texte {
+  margin: 0;
+  font-size: var(--bj-fs-sm);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.ate-note-pied {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  margin: var(--bj-sp-1) 0 0;
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+}
+.ate-note-qui {
+  color: var(--bj-action);
+  font-weight: 500;
+}
+/* Discret par défaut : effacer une note est rare, et un × noir sur chaque
+   ligne transforme un carnet en formulaire. */
+.ate-note-suppr {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--bj-veil-16);
+  font-size: var(--bj-fs-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+.ate-note:hover .ate-note-suppr {
+  color: var(--bj-text-faint);
+}
+.ate-note-suppr:hover {
+  color: var(--ate-rouge);
+}
+.ate-canva-partage {
+  font-size: var(--bj-fs-sm);
 }
 
 /* ── le journal ── */

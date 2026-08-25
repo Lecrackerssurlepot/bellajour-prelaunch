@@ -27,5 +27,5 @@ export default async function PageFiche({ params }: { params: Promise<{ token: s
      « dernière visite » globale, qu'un simple rechargement fait avancer. */
   await marquerVu(qui, fiche.ligne.numeroId);
 
-  return <Fiche fiche={fiche} />;
+  return <Fiche fiche={fiche} moi={qui} />;
 }

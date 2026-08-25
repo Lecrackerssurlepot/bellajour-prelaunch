@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import PanneauAction from "./PanneauAction";
 import Parcours from "./Parcours";
+import Carnet from "./Carnet";
 import type { EvenementVue, Fiche as FicheVue } from "../types";
 
 /**
@@ -65,7 +66,16 @@ function Evenement({ e }: { e: EvenementVue }) {
   );
 }
 
-export default function Fiche({ fiche, demo }: { fiche: FicheVue; demo?: boolean }) {
+export default function Fiche({
+  fiche,
+  moi,
+  demo,
+}: {
+  fiche: FicheVue;
+  /** Identifiant du compte connecté — décide qui peut supprimer ses notes. */
+  moi: string;
+  demo?: boolean;
+}) {
   const [copie, setCopie] = useState(false);
   const l = fiche.ligne;
   const liens = fiche.photos.map((p) => p.url).filter(Boolean) as string[];
@@ -148,6 +158,15 @@ export default function Fiche({ fiche, demo }: { fiche: FicheVue; demo?: boolean
       <div className="ate-colonnes">
         <div className="ate-colonne">
           <PanneauAction fiche={fiche} demo={demo} />
+
+          <Carnet
+            token={l.token}
+            notes={fiche.notes}
+            indisponibles={fiche.notesIndisponibles}
+            canvaTravail={fiche.canvaTravail}
+            moi={moi}
+            demo={demo}
+          />
 
           {/* ── la matière première ── */}
           <section className="ate-carte">
@@ -329,10 +348,11 @@ export default function Fiche({ fiche, demo }: { fiche: FicheVue; demo?: boolean
             ) : null}
 
             {fiche.canvaUrl ? (
-              <p>
+              <p className="ate-canva-partage">
                 <a href={fiche.canvaUrl} target="_blank" rel="noreferrer">
                   Canva partagé ↗
                 </a>
+                <span className="ate-faint"> — celui qu&apos;elle a reçu, en commentaire</span>
               </p>
             ) : null}
           </section>

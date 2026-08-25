@@ -28,6 +28,7 @@ import { compter, comparerUrgence, urgencePour } from "@/lib/atelier/urgence";
 import { raconter } from "@/lib/atelier/recit";
 import { templateExiste } from "@/lib/atelier/mails";
 import { construireParcours } from "@/lib/atelier/parcours";
+import { prenomDe } from "@/lib/admin-auth";
 import type {
   ActiviteVue,
   AdresseVue,
@@ -38,6 +39,7 @@ import type {
   Fiche,
   LigneDossier,
   MailVue,
+  NoteVue,
   PhotoVue,
   VueListe,
 } from "./types";
@@ -418,7 +420,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
   const id = String(n.id);
   const rangee = n as unknown as RangeeNumero;
 
-  const [{ data: photos }, { data: evenements }, { data: mails }] = await Promise.all([
+  const [{ data: photos }, { data: evenements }, { data: mails }, notesLues] = await Promise.all([
     supabase
       .from("photos")
       .select("id, r2_key, nom_origine, taille, ordre")
@@ -438,6 +440,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
       .eq("numero_id", id)
       .order("envoye_le", { ascending: false })
       .returns<Array<{ code: string; template_id: number | null; envoye_le: string }>>(),
+    chargerNotes(supabase, id),
   ]);
 
   const rembourse = (evenements ?? []).some((e) => e.type === "remboursement");
@@ -480,6 +483,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     renonciationAt: (n.renonciation_at as string) ?? null,
     palier: (n.palier as string) ?? null,
     canvaUrl: (n.canva_url as string) ?? null,
+    canvaTravail: (n.canva_travail as string) ?? null,
     maquettePdfUrl: (n.maquette_pdf_url as string) ?? null,
     transporteur: (n.transporteur as string) ?? null,
     trackingUrl: (n.tracking_url as string) ?? null,
@@ -496,11 +500,52 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     mails: (mails ?? []).map(
       (m): MailVue => ({ code: m.code, templateId: m.template_id, envoyeLe: m.envoye_le }),
     ),
+    notes: notesLues.notes,
+    notesIndisponibles: notesLues.indisponible,
     client: await chargerClient(rangee),
     /* Les mêmes que sur la ligne : une seule source, pas deux listes à
        garder d'accord. */
     actions: versLigne(rangee, maintenant, rembourse).actions,
   };
+}
+
+/**
+ * Le carnet de l'éditeur pour ce dossier.
+ *
+ * Dégrade au lieu de tomber : tant que la migration `notes` n'est pas passée,
+ * la requête échoue, la fiche s'affiche quand même et le bloc DIT pourquoi il
+ * est vide. Une carte silencieusement vide ferait croire qu'on n'a rien écrit.
+ */
+async function chargerNotes(
+  supabase: ReturnType<typeof makeSupabase>,
+  numeroId: string,
+): Promise<{ notes: NoteVue[]; indisponible: boolean }> {
+  try {
+    const { data, error } = await supabase
+      .from("notes")
+      .select("id, qui, texte, created_at")
+      .eq("numero_id", numeroId)
+      .order("created_at", { ascending: false })
+      .returns<Array<{ id: string; qui: string; texte: string; created_at: string }>>();
+
+    if (error) {
+      console.error("[admin/atelier] notes indisponibles", error.code, error.message);
+      return { notes: [], indisponible: true };
+    }
+    return {
+      notes: (data ?? []).map((n) => ({
+        id: n.id,
+        qui: n.qui,
+        prenom: prenomDe(n.qui),
+        texte: n.texte,
+        createdAt: n.created_at,
+      })),
+      indisponible: false,
+    };
+  } catch (err) {
+    console.error("[admin/atelier] notes exception", (err as Error)?.message);
+    return { notes: [], indisponible: true };
+  }
 }
 
 /* ────────────────────────────── la cliente ────────────────────────────── */

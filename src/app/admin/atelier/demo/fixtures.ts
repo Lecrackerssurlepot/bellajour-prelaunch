@@ -437,6 +437,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     canvaUrl: ["maquette_prete", "validee", "en_production", "expediee", "livree"].includes(g.etat)
       ? "https://www.canva.com/design/DEMO/view?mode=comment"
       : null,
+    canvaTravail: publie ? "https://www.canva.com/design/DEMO/edit" : null,
     maquettePdfUrl: null,
     transporteur: ["expediee", "livree"].includes(g.etat) ? "Colissimo" : null,
     trackingUrl: ["expediee", "livree"].includes(g.etat) ? "https://www.laposte.fr/outils/suivre-vos-envois" : null,
@@ -468,6 +469,26 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
       ...(publie ? [{ code: "M3", templateId: 28, envoyeLe: il(g.depuis + 48) }] : []),
       ...(g.paye ? [{ code: "M4", templateId: 29, envoyeLe: il(g.depuis + 24) }] : []),
     ],
+    notes: g.histoire
+      ? [
+          {
+            id: "note-1",
+            qui: "mathias",
+            prenom: "Mathias",
+            texte:
+              "Ton chaud, beaucoup d'intérieur. Éviter les cadres blancs, ça casse la lumière.",
+            createdAt: il(g.depuis + 20),
+          },
+          {
+            id: "note-2",
+            qui: "louis",
+            prenom: "Louis",
+            texte: "Attention : deux enfants sur les photos, ne pas en faire disparaître un.",
+            createdAt: il(g.depuis + 6),
+          },
+        ]
+      : [],
+    notesIndisponibles: false,
     client: {
       autres:
         g.token === T("demo1")
