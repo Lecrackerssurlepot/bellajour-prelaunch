@@ -427,6 +427,21 @@
 }
 
 /* ── Boutons (refresh, export CSV) ── */
+/* Visible des seuls lecteurs d'écran. Une silhouette de chargement ne dit
+   rien à qui ne la voit pas : sans cette ligne, l'écran d'attente est un
+   silence total. */
+.adm-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 .adm-btn {
   appearance: none;
   font-family: var(--bj-font-ui);

@@ -5,6 +5,7 @@ import Link from "next/link";
 import ActionRapide from "./ActionRapide";
 import Activite from "./Activite";
 import Flux from "./Flux";
+import Rafraichissement from "./Rafraichissement";
 import Tableau from "./Tableau";
 import Vues, { useReglages } from "./Vues";
 import type { LigneDossier, VueListe } from "./types";
@@ -399,15 +400,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
         </>
       )}
 
-      <p className="adm-fetched ate-pied">
-        Lu le{" "}
-        {new Date(vue.fetchedAt).toLocaleString("fr-FR", {
-          day: "2-digit",
-          month: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
-      </p>
+      <Rafraichissement fetchedAt={vue.fetchedAt} demo={vue.demo} />
 
       {/* `aria-live` : le retour d'une action doit être annoncé, pas seulement
           affiché — c'est la seule confirmation qu'un mail est parti. */}

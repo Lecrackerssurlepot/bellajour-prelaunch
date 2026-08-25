@@ -756,6 +756,47 @@
 }
 .ate-pied {
   margin-top: var(--bj-sp-6);
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  flex-wrap: wrap;
+}
+
+/* Le pouls de la relecture automatique. Discret par principe : il dit que
+   l'écran est vivant, il ne réclame pas l'attention. */
+.ate-pouls {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bj-veil-12);
+  flex: none;
+}
+.ate-pouls--actif {
+  background: var(--bj-action);
+  animation: ate-pouls-bat 900ms var(--bj-ease) infinite;
+}
+@keyframes ate-pouls-bat {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.ate-pied-btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--bj-action);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ate-pied-btn:disabled {
+  color: var(--bj-text-faint);
+  cursor: default;
+  text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ate-pouls--actif { animation: none; }
 }
 .ate-mono {
   font-variant-numeric: tabular-nums;
@@ -1429,6 +1470,55 @@
 .ate-lien-page {
   color: var(--bj-action);
   text-decoration: none;
+}
+
+/* ── Les silhouettes de chargement (loading.tsx) ──
+   Elles ont la FORME de l'écran qui arrive, pas un mot « Chargement ». Ce
+   qu'on répare, c'est l'impression de clic mort ; un décalage de mise en page
+   à l'arrivée la recréerait. */
+.ate-squelette {
+  /* Aucune interaction possible pendant l'attente : on ne veut pas d'un
+     curseur de texte sur une silhouette. */
+  user-select: none;
+}
+
+.ate-sq {
+  display: block;
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-veil-8);
+  animation: ate-sq-pulse 1400ms var(--bj-ease) infinite;
+}
+
+.ate-sq--texte { width: 42%; height: var(--bj-fs-sm); }
+.ate-sq--titre { width: 34%; height: 1em; }
+.ate-sq--flux { height: 5.5rem; margin-bottom: var(--bj-sp-4); }
+.ate-sq--barre { height: 2.6rem; margin-bottom: var(--bj-sp-4); }
+.ate-sq--frise { height: 6rem; margin-bottom: var(--bj-sp-5); }
+.ate-sq--carte { height: 12rem; }
+.ate-sq--carte-haute { height: 22rem; }
+
+.ate-sq-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-2);
+}
+.ate-sq--ligne { height: 3.4rem; }
+
+/* Les lignes ne battent pas toutes ensemble : un décalage court suffit à ce
+   que la liste respire au lieu de clignoter d'un bloc. */
+.ate-sq-liste li:nth-child(2n) { animation-delay: 160ms; }
+.ate-sq-liste li:nth-child(3n) { animation-delay: 320ms; }
+
+@keyframes ate-sq-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ate-sq { animation: none; }
 }
 
 .ate-colonnes {
