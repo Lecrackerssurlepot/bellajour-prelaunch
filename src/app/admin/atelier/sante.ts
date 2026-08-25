@@ -174,6 +174,11 @@ export async function chargerSante(): Promise<Sante> {
   for (const d of lignes) {
     const delai = DELAIS[d.etat as Etat];
     if (!delai || !d.etat_maj_le) continue;
+    /* Un questionnaire dont le dépôt n'a jamais eu lieu attend LA CLIENTE, pas
+       nous. Le compter parmi les oubliés ferait crier la page pour des
+       dossiers sur lesquels il n'y a rien à faire — et une page santé qui
+       crie pour rien cesse d'être crue. Même règle que la table de travail. */
+    if ((d.nb_photos ?? 0) === 0) continue;
     const echeance = echeancePour(d.etat as Etat, d.etat_maj_le);
     if (!echeance) continue;
     const depasse = maintenant.getTime() - echeance.getTime();

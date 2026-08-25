@@ -272,6 +272,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
         </div>
 
         <nav className="ate-liens">
+          <Link href="/admin/atelier/metriques">Métriques</Link>
           <Link href="/admin/atelier/sante">Santé</Link>
           <Link href="/admin">Prévente</Link>
           {vue.demo ? null : <Link href="/admin/atelier/demo">Démo</Link>}

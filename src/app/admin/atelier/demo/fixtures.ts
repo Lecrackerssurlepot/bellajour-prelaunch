@@ -406,7 +406,12 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
   if (g.rembourse) {
     journal.push({ type: "remboursement", payload: { montant: eurosPour(g.palier) }, h: g.depuis + 2 });
   }
-  journal.push({ type: "etat_change", payload: { vers: g.etat, par: "Mathias" }, h: g.depuis });
+  /* L'état courant, SAUF s'il vient déjà d'être poussé au-dessus : pour un
+     dossier « payée », la boucle produisait deux « Paiement reçu » à la
+     suite, ce qui donnait à la démonstration l'air d'un bug du journal. */
+  if (!journal.some((e) => e.payload?.vers === g.etat)) {
+    journal.push({ type: "etat_change", payload: { vers: g.etat, par: "Mathias" }, h: g.depuis });
+  }
 
   /* `h` = « il y a tant d'heures », donc le plus PETIT h est le plus récent.
      La vraie requête trie `created_at` décroissant : la démo doit lire dans
