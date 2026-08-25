@@ -1,0 +1,167 @@
+/* ════════════════════════════════════════════════════════════
+   LA LOUPE — vue plein écran d'un visuel (composants/Loupe.tsx).
+
+   Ce fichier est le SEUL endroit où ses couleurs sont écrites. La loupe
+   sert deux chartes opposées (la page sombre de la cliente, l'admin en
+   crème) : elle ne peut emprunter les tokens ni de l'une ni de l'autre.
+   Elle pose donc les siens, ici, et nulle part ailleurs.
+
+   Positions en vw/vh (CLAUDE.md). Le seul px est l'épaisseur d'un filet.
+   ════════════════════════════════════════════════════════════ */
+
+.bj-loupe {
+  --loupe-fond: rgba(2, 2, 2, 0.94);
+  --loupe-texte: #f5f0e7;
+  --loupe-faint: rgba(245, 240, 231, 0.55);
+  --loupe-verre: rgba(255, 255, 255, 0.08);
+  --loupe-filet: rgba(255, 255, 255, 0.16);
+
+  position: fixed;
+  inset: 0;
+  /* Au-dessus de tout, y compris du CTA collant de l'admin. */
+  z-index: 999;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1.5vw;
+  padding: 6vh 3vw;
+  background: var(--loupe-fond);
+  color: var(--loupe-texte);
+  /* La police vient de l'écran qui l'accueille : DM Sans dans les deux
+     chartes, mais chacune la déclare sous son propre nom. */
+  font-family: inherit;
+  animation: bj-loupe-entre 180ms ease-out;
+}
+
+@keyframes bj-loupe-entre {
+  from {
+    opacity: 0;
+  }
+}
+
+.bj-loupe-scene {
+  grid-column: 2;
+  display: grid;
+  justify-items: center;
+  gap: 2.2vh;
+  margin: 0;
+  min-width: 0;
+}
+
+.bj-loupe-scene img {
+  display: block;
+  max-width: 100%;
+  /* La légende et les marges prennent le reste : l'image ne doit jamais
+     pousser son propre nom hors de l'écran. */
+  max-height: 76vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 0.3vh;
+}
+
+.bj-loupe-legende {
+  display: flex;
+  align-items: center;
+  gap: 1.2vw;
+  font-size: clamp(11px, 1.1vw, 13px);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--loupe-texte);
+  text-align: center;
+}
+
+.bj-loupe-rang {
+  color: var(--loupe-faint);
+  letter-spacing: 0.1em;
+}
+
+/* ---- les commandes ---- */
+.bj-loupe-fermer,
+.bj-loupe-nav {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--loupe-filet);
+  border-radius: 50%;
+  background: var(--loupe-verre);
+  color: var(--loupe-texte);
+  cursor: pointer;
+  line-height: 1;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.bj-loupe-fermer:hover,
+.bj-loupe-nav:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
+.bj-loupe-nav {
+  grid-row: 1;
+  width: clamp(38px, 4vw, 52px);
+  height: clamp(38px, 4vw, 52px);
+  font-size: clamp(22px, 2.4vw, 30px);
+  /* Le chevron typographique ne tombe pas sur son centre optique. */
+  padding-bottom: 0.4vh;
+}
+
+.bj-loupe-nav--prec {
+  grid-column: 1;
+}
+
+.bj-loupe-nav--suiv {
+  grid-column: 3;
+}
+
+.bj-loupe-fermer {
+  position: absolute;
+  top: 2.4vh;
+  right: 2.4vw;
+  width: clamp(34px, 3.4vw, 44px);
+  height: clamp(34px, 3.4vw, 44px);
+  font-size: clamp(20px, 2vw, 26px);
+  padding-bottom: 0.3vh;
+}
+
+/* ---- téléphone : les flèches sous l'image, jamais sur les bords ----
+   À 375 px de large, deux ronds de 40 px mangent un cinquième de la
+   photo. On les descend et l'image reprend toute la largeur. */
+@media (max-width: 620px) {
+  .bj-loupe {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+    padding: 8vh 4vw 4vh;
+    gap: 2vh;
+  }
+
+  .bj-loupe-scene {
+    grid-column: 1;
+    align-content: center;
+  }
+
+  .bj-loupe-scene img {
+    max-height: 62vh;
+  }
+
+  .bj-loupe-nav {
+    grid-row: 2;
+    justify-self: center;
+  }
+
+  .bj-loupe-nav--prec {
+    grid-column: 1;
+    justify-self: start;
+  }
+
+  .bj-loupe-nav--suiv {
+    grid-column: 1;
+    justify-self: end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bj-loupe {
+    animation: none;
+  }
+}

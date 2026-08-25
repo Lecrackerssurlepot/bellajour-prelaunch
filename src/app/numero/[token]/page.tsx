@@ -17,7 +17,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Footer from '../../(atelier)/components/Footer'
-import Reveal from '../../(atelier)/components/Reveal'
 import { CTA_HREF, CTA_LABEL, CONTACT_EMAIL } from '../../(atelier)/content'
 import { makeSupabase } from '@/lib/supabase'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
@@ -27,6 +26,7 @@ import { ajouterJours, formaterJour } from '@/lib/atelier/dates'
 import CasesEtCommande from './CasesEtCommande'
 import AttentePaiement from './AttentePaiement'
 import BoutonValider from './BoutonValider'
+import Apercu from './Apercu'
 import '../numero.css'
 
 /* L'état change dans le dos de la cliente — un mail la ramène ici juste après
@@ -252,15 +252,11 @@ export default async function NumeroPage({
             </>
           )}
 
-          <Reveal>
-            <div className="nu-covers">
-              <Vue src={apercu?.c1 ?? null} legende="Couverture" />
-              <Vue src={apercu?.c4 ?? null} legende="Quatrième" />
-            </div>
-            <div className="nu-double">
-              <Vue src={apercu?.double ?? null} legende="Double page" />
-            </div>
-          </Reveal>
+          <Apercu
+            c1={apercu?.c1 ?? null}
+            c4={apercu?.c4 ?? null}
+            double={apercu?.double ?? null}
+          />
 
           {!retourDePaiement && (
             <CasesEtCommande
@@ -412,25 +408,5 @@ function Coquille({
 
       <Footer />
     </div>
-  )
-}
-
-/* Une vue d'aperçu. Sans image, un cadre de la charte et un mot — jamais une
-   case cassée, même règle qu'au dépôt. */
-function Vue({ src, legende }: { src: string | null; legende: string }) {
-  if (!src) {
-    /* Le format du cadre vide vient du CSS (.nu-double .nu-vue--vide) :
-       aucune règle de mise en page ne descend dans le JSX. */
-    return (
-      <div className="nu-vue nu-vue--vide">
-        <span className="nu-vue-legende">{legende}</span>
-      </div>
-    )
-  }
-  return (
-    <figure className="nu-vue">
-      {/* <img> plain — next/image est proscrit sur ce dépôt (CLAUDE.md). */}
-      <img src={src} alt={legende} loading="lazy" decoding="async" />
-    </figure>
   )
 }

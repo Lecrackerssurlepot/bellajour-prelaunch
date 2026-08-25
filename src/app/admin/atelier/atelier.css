@@ -1789,6 +1789,32 @@
   color: var(--bj-text-faint);
 }
 
+/* Cliquable, comme chez la cliente. La fiche et sa page montrent le même
+   visuel : elles doivent l'ouvrir de la même façon, sinon on juge une
+   vignette de 140 px ce qu'elle voit en plein écran. */
+.ate-apercu-clic {
+  appearance: none;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+  border-radius: var(--bj-r-sm);
+}
+.ate-apercu-clic:hover img,
+.ate-apercu-clic:focus-visible img {
+  outline: 2px solid var(--bj-action);
+  outline-offset: 2px;
+}
+
+/* Le chapeau d'une carte : une phrase qui dit à quoi sert ce qu'on regarde. */
+.ate-carte-sous {
+  margin: calc(-1 * var(--bj-sp-1)) 0 var(--bj-sp-3);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+
 .ate-autres {
   list-style: none;
   margin: 0;

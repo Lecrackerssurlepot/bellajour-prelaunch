@@ -95,6 +95,31 @@ vraiment. À décider en regardant travailler, pas en réunion.
 ⚠️ « Copier les liens » a disparu. Il ne servait qu'à coller dans un terminal,
 ce que le `.txt` fait mieux maintenant.
 
+### ✅ Fait le 26/08 — voir les visuels en grand, et savoir ce qu'on regarde
+
+**La page de la cliente ne nommait pas ce qu'elle montrait.** La légende
+n'existait QUE sur le cadre vide : dès qu'il y avait une image, plus un mot.
+Trois rectangles, et personne pour dire lequel était le dos du numéro. Elle est
+désormais SOUS chaque visuel, toujours.
+
+**Les visuels s'ouvrent en grand**, des deux côtés : la page de la cliente et la
+fiche de l'atelier. Un seul composant, `src/app/components/Loupe.tsx`, parce que
+ce qui est délicat n'est pas le décor mais l'échappement au clavier, le retour du
+focus là où on l'avait pris et le blocage du défilement derrière. On y passe
+d'un visuel à l'autre (flèches, clavier, cyclique) : c'est en enchaînant
+couverture puis quatrième qu'on comprend qu'il s'agit des deux faces du même
+objet. Un agrandissement isolé n'aurait pas répondu à la remarque.
+
+**« C1 » et « C4 » ont disparu de l'admin.** C'était du jargon d'imprimeur, et
+l'encart était jugé « pas clair » des deux côtés. La fiche dit maintenant
+« La couverture », « La quatrième », « Une double page » — LES MÊMES MOTS que la
+cliente lit sur sa page. Deux personnes qui regardent le même visuel doivent le
+nommer pareil, sinon le téléphone avec la cliente devient une traduction.
+
+⚠️ Ce qui n'est PAS fait dans ce lot : l'upload unique C1+C4 découpé à
+l'affichage, pour montrer une couverture qu'on retourne. C'est un vrai chantier
+(dépôt, stockage et rendu), à cadrer sur une maquette avant d'écrire une ligne.
+
 ### ⚠️ À faire — par ordre d'importance
 
 **1. La case « montrer des extraits » est mal placée.** Sur l'écran 6, qui

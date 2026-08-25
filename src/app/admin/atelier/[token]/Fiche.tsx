@@ -6,6 +6,7 @@ import PanneauAction from "./PanneauAction";
 import Parcours from "./Parcours";
 import Carnet from "./Carnet";
 import type { EvenementVue, Fiche as FicheVue } from "../types";
+import Loupe, { type VueLoupe } from "@/app/components/Loupe";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import {
   choisirDossier,
@@ -82,6 +83,20 @@ function Evenement({ e }: { e: EvenementVue }) {
 const VIGNETTES_VISIBLES = 12;
 
 /**
+ * Les trois visuels de l'aperçu, nommés COMME LA CLIENTE LES VOIT.
+ *
+ * « C1 » et « C4 » sont du jargon d'imprimeur : à la recette du 25/08, l'encart
+ * a été jugé « pas clair » des deux côtés. Deux personnes qui regardent le
+ * même visuel doivent le nommer pareil, sinon le téléphone avec la cliente
+ * devient une traduction.
+ */
+const APERCU_VUES = [
+  { cle: "c1", legende: "La couverture" },
+  { cle: "c4", legende: "La quatrième" },
+  { cle: "double", legende: "Une double page" },
+] as const;
+
+/**
  * Ce que le téléchargement raconte à l'écran.
  *
  * Un lot de deux cents photos prend des minutes. Un bouton qui ne dit rien
@@ -130,6 +145,7 @@ export default function Fiche({
 }) {
   const [toutesLesPhotos, setToutesLesPhotos] = useState(false);
   const [lot, setLot] = useState<EtatLot>({ phase: "repos" });
+  const [apercuOuvert, setApercuOuvert] = useState<number | null>(null);
   /* `supporteDossier()` lit `window` : appelé au rendu, il rendrait `false`
      côté serveur et `true` ensuite, et React refuserait l'hydratation. On
      décide donc APRÈS le premier rendu, ce qui affiche brièvement le libellé
@@ -141,6 +157,13 @@ export default function Fiche({
   const l = fiche.ligne;
   const base = demo ? "/admin/atelier/demo" : "/admin/atelier";
   const occupe = lot.phase === "prepare" || lot.phase === "ecrit";
+
+  /* La loupe ne connaît que ce qui existe : un visuel manquant n'est pas une
+     étape de la visite. Ses index ne sont donc PAS ceux de la grille. */
+  const apercuAgrandissable: VueLoupe[] = APERCU_VUES.flatMap(({ cle, legende }) => {
+    const src = fiche.apercu[cle];
+    return src ? [{ src, legende }] : [];
+  });
 
   /**
    * Les liens, refaits à l'instant.
@@ -404,28 +427,45 @@ export default function Fiche({
             ) : null}
           </section>
 
-          {fiche.apercu.c1 || fiche.apercu.c4 || fiche.apercu.double ? (
+          {apercuAgrandissable.length ? (
             <section className="ate-carte">
               <h2 className="ate-carte-titre">L&apos;aperçu publié</h2>
+              <p className="ate-carte-sous">
+                Ce que la cliente voit sur sa page, dans le même ordre et avec les mêmes mots.
+              </p>
               <div className="ate-apercu">
-                {[
-                  ["C1", fiche.apercu.c1],
-                  ["C4", fiche.apercu.c4],
-                  ["Double", fiche.apercu.double],
-                ].map(([nom, src]) => (
-                  <figure key={nom as string} className="ate-apercu-item">
-                    {src ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={src as string} alt="" />
-                    ) : (
-                      <span className="ate-photo-vide">manquant</span>
-                    )}
-                    <figcaption>{nom as string}</figcaption>
-                  </figure>
-                ))}
+                {APERCU_VUES.map(({ cle, legende }) => {
+                  const src = fiche.apercu[cle];
+                  const rang = apercuAgrandissable.findIndex((v) => v.legende === legende);
+                  return (
+                    <figure key={cle} className="ate-apercu-item">
+                      {src ? (
+                        <button
+                          type="button"
+                          className="ate-apercu-clic"
+                          onClick={() => setApercuOuvert(rang)}
+                          aria-label={`Agrandir : ${legende}`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={src} alt={legende} />
+                        </button>
+                      ) : (
+                        <span className="ate-photo-vide">manquant</span>
+                      )}
+                      <figcaption>{legende}</figcaption>
+                    </figure>
+                  );
+                })}
               </div>
             </section>
           ) : null}
+
+          <Loupe
+            vues={apercuAgrandissable}
+            index={apercuOuvert}
+            onIndex={setApercuOuvert}
+            onFermer={() => setApercuOuvert(null)}
+          />
         </div>
 
         <div className="ate-colonne ate-colonne--cote">

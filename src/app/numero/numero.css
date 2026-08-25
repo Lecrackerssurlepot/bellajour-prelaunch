@@ -170,8 +170,19 @@
 
 .nu-double { margin-top: clamp(10px, 2.5vw, 22px); }
 
+.nu-cadre {
+  margin: 0;
+  display: grid;
+  gap: clamp(8px, 1.4vw, 12px);
+  min-width: 0;
+}
+
 .nu-vue {
   position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
   overflow: hidden;
   border-radius: 4px;
   background: var(--c-void);
@@ -184,9 +195,50 @@
   height: auto;
 }
 
+/* ---- cliquable : la vue s'ouvre en grand ----
+   Recette du 25/08 : « il doit pouvoir les voir en grand en cliquant
+   dessus ». Un <button> et non un <a> : rien ne se charge, une vue
+   s'ouvre. Le curseur l'annonce avant même le survol du libellé. */
+.nu-vue--clic {
+  cursor: zoom-in;
+  appearance: none;
+  color: inherit;
+  font: inherit;
+}
+
+.nu-vue-loupe {
+  position: absolute;
+  right: 3%;
+  bottom: 3.5%;
+  padding: 0.7vh 1.6vh;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur));
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.nu-vue--clic:hover .nu-vue-loupe,
+.nu-vue--clic:focus-visible .nu-vue-loupe {
+  opacity: 1;
+}
+
+/* Au doigt, il n'y a pas de survol : le libellé reste posé, discrètement.
+   Sans lui, rien n'indiquerait sur téléphone que l'image s'ouvre. */
+@media (hover: none) {
+  .nu-vue-loupe {
+    opacity: 0.85;
+  }
+}
+
 /* Jamais de case cassée : sans visuel, un cadre de la charte et un mot.
-   Un aperçu publié sans image reste rare, mais il ne doit pas se lire
-   comme un site en panne. */
+   Un aperçu publié sans image reste rare (les trois visuels sont exigés
+   à la publication), mais il ne doit pas se lire comme un site en panne. */
 .nu-vue--vide {
   display: grid;
   place-items: center;
@@ -200,11 +252,21 @@
 
 .nu-double .nu-vue--vide { aspect-ratio: 3 / 2; }
 
-.nu-vue-legende {
+.nu-vue-attente {
   font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--c-overlay-faint);
+}
+
+/* La légende, SOUS le visuel et toujours présente. Avant, elle n'existait
+   que sur le cadre vide : trois images sans un mot, et personne ne savait
+   laquelle était le dos du numéro. */
+.nu-vue-legende {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
 }
 
 .nu-prix {
