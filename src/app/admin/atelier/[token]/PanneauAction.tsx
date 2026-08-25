@@ -22,7 +22,7 @@ import type { ActionVue, Fiche } from "../types";
  */
 
 type Verif = {
-  action: { cle: string; libelle: string; vers: string; mail: { code: string; absent: boolean } | null };
+  action: { cle: string; libelle: string; vers: string; note?: string };
   resume: { nbPages?: number; palier?: string; euros?: number };
   destinataire: { prenom: string | null; email: string | null; titre: string | null };
 };
@@ -130,7 +130,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
       /* En démonstration, la vérification est simulée pour que le parcours
          se déroule en entier ; rien ne part, ni en base, ni chez Brevo. */
       setVerif({
-        action: { cle: choisie.cle, libelle: choisie.libelle, vers: choisie.vers, mail: choisie.mail },
+        action: { cle: choisie.cle, libelle: choisie.libelle, vers: choisie.vers, note: choisie.note },
         resume: simulerResume(choisie.cle, saisie.nb_pages),
         destinataire: {
           prenom: fiche.ligne.prenom,
@@ -384,18 +384,24 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                 </dd>
                 <dt>Mail</dt>
                 <dd>
-                  {verif.action.mail ? (
-                    verif.action.mail.absent ? (
+                  {/* Le mail vient de la RÈGLE d'envoi, projetée sur ce
+                      dossier : ce qui est annoncé ici est ce qui partira une
+                      seconde plus tard, pas ce qu'une table déclarait. */}
+                  {choisie.mail ? (
+                    choisie.mail.absent ? (
                       <span className="ate-alerte">
-                        {verif.action.mail.code} n&apos;est pas encore câblé — elle ne sera PAS
-                        prévenue. Préviens-la à la main.
+                        {choisie.mail.code} n&apos;est pas encore câblé — elle ne sera PAS prévenue.
+                        Préviens-la à la main.
                       </span>
                     ) : (
-                      <>Le mail {verif.action.mail.code} partira maintenant.</>
+                      <>Le mail {choisie.mail.code} partira maintenant.</>
                     )
                   ) : (
-                    "Aucun mail à cette étape."
+                    "Aucun mail ne partira maintenant."
                   )}
+                  {verif.action.note ? (
+                    <span className="ate-faint"> {verif.action.note}</span>
+                  ) : null}
                 </dd>
               </dl>
 

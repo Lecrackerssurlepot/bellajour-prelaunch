@@ -28,6 +28,18 @@ import { construireParcours } from "@/lib/atelier/parcours";
 import { COLONNES } from "../donnees";
 import type { Fiche, LigneDossier, VueListe } from "../types";
 
+/* En démonstration, la règle d'envoi n'est pas rejouée : on montre le mail
+   attendu à l'arrivée de chaque état. Sur un vrai dossier, c'est `codesPour`
+   qui tranche (cf. donnees.ts, mailDeLAction). */
+const MAIL_A_L_ARRIVEE: Partial<Record<Etat, string>> = {
+  photos_recues: "M1",
+  photos_insuffisantes: "M9",
+  apercu_pret: "M3",
+  maquette_prete: "M5",
+  validee: "M6",
+  expediee: "M7",
+};
+
 /* Des jetons de 32 caractères, comme les vrais : la fiche de démonstration
    se partage par URL et doit avoir la même tête qu'un vrai lien. */
 const T = (n: string) => (n + "0".repeat(32)).slice(0, 32);
@@ -294,8 +306,10 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
         libelle: a.libelle,
         explication: a.explication,
         vers: a.vers,
-        /* La démonstration montre le cas nominal : tous les templates posés. */
-        mail: a.mail ? { code: a.mail.code, absent: false } : null,
+        /* La démonstration montre le cas nominal : tous les templates posés,
+           et le mail de l'état d'arrivée sur le point de partir. */
+        mail: MAIL_A_L_ARRIVEE[a.vers] ? { code: MAIL_A_L_ARRIVEE[a.vers]!, absent: false } : null,
+        note: a.note,
       })),
     },
   };

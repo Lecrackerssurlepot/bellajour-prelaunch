@@ -177,7 +177,7 @@ export const MAILS = [
     preheader: "Votre couverture est prête depuis quelques jours.",
     titreHtml: "Votre numéro vous attend",
     h1: "Votre numéro<br />vous attend.",
-    sous: `${PRENOM}, votre couverture est prête depuis quelques jours. Elle vous attend exactement là où vous l&rsquo;avez laissée, avec sa pagination et son prix.`,
+    sous: `${PRENOM}, votre couverture est prête depuis quelques jours. Elle vous attend exactement là où vous l’avez laissée, avec sa pagination et son prix.`,
     carte: carteChiffres(
       { valeur: "{{ params.NB_PAGES }}", legende: "pages", grand: true },
       { valeur: "{{ params.PRIX }}&nbsp;&euro;", legende: "tout compris", grand: true },
@@ -202,19 +202,19 @@ export const MAILS = [
     ),
     cta: "Voir ma maquette",
     lien: LIEN,
-    pied: "Sans réponse de votre part d&rsquo;ici le {{ params.DATE_LIMITE }}, nous lançons l&rsquo;impression telle quelle.",
+    pied: "Sans réponse de votre part d’ici le {{ params.DATE_LIMITE }}, nous lançons l’impression telle quelle.",
   },
   {
     code: "M6",
     nom: "M6 · Atelier · Départ à l'impression",
-    sujet: `${TITRE} part à l&rsquo;impression`,
+    sujet: `${TITRE} part à l’impression`,
     preheader: "Votre numéro est entre les mains de l'imprimeur.",
     titreHtml: "Départ à l'impression",
-    h1: "C&rsquo;est parti<br />à l&rsquo;impression.",
-    sous: `${PRENOM}, votre numéro a quitté l&rsquo;atelier pour l&rsquo;imprimeur. À partir de maintenant, plus rien ne peut être modifié : c&rsquo;est ce qui garantit qu&rsquo;il arrivera exactement tel que vous l&rsquo;avez validé.`,
+    h1: "C’est parti<br />à l’impression.",
+    sous: `${PRENOM}, votre numéro a quitté l’atelier pour l’imprimeur. À partir de maintenant, plus rien ne peut être modifié : c’est ce qui garantit qu’il arrivera exactement tel que vous l’avez validé.`,
     cta: "Suivre mon numéro",
     lien: LIEN,
-    pied: "Comptez une dizaine de jours avant de l&rsquo;avoir entre les mains. Nous vous écrivons dès qu&rsquo;il part.",
+    pied: "Comptez une dizaine de jours avant de l’avoir entre les mains. Nous vous écrivons dès qu’il part.",
   },
   {
     code: "M7",
@@ -223,7 +223,7 @@ export const MAILS = [
     preheader: "Il a quitté l'atelier.",
     titreHtml: "Votre numéro est en route",
     h1: "Votre numéro<br />est en route.",
-    sous: `${PRENOM}, il est parti. Confié à {{ params.TRANSPORTEUR }}, il voyage vers l&rsquo;adresse que vous nous avez donnée.`,
+    sous: `${PRENOM}, il est parti. Confié à {{ params.TRANSPORTEUR }}, il voyage vers l’adresse que vous nous avez donnée.`,
     cta: "Suivre mon numéro",
     lien: LIEN,
     pied: "Le suivi se met à jour sur votre page, au fil des jours.",
@@ -237,7 +237,7 @@ export const MAILS = [
     h1: "Et le prochain<br />moment ?",
     /* Nomme l'album : une cliente qui en a composé deux ne doit pas avoir à
        deviner duquel on parle. Le sujet, lui, reste celui du PRD. */
-    sous: `${PRENOM}, ${TITRE} est arrivé, et nous espérons qu&rsquo;il vous ressemble. Il y en aura d&rsquo;autres : un été, un anniversaire, une année entière. Nous serons là pour les composer.`,
+    sous: `${PRENOM}, ${TITRE} est arrivé, et nous espérons qu’il vous ressemble. Il y en aura d’autres : un été, un anniversaire, une année entière. Nous serons là pour les composer.`,
     cta: "Composer un nouveau numéro",
     lien: "https://www.bellajour.fr/",
     pied: "Si quelque chose ne va pas, répondez à ce message. Nous préférons le savoir.",
@@ -267,7 +267,15 @@ export function verifierForme(mail) {
   const fautes = [];
   for (const champ of CHAMPS_TEXTE) {
     const v = mail[champ];
-    if (typeof v === "string" && /[—–]/.test(v)) fautes.push(`${champ} contient un tiret`);
+    if (typeof v !== "string") continue;
+    if (/[—–]/.test(v)) fautes.push(`${champ} contient un tiret`);
+    /* ⚠️ AUCUNE ENTITÉ HTML DANS LES TEXTES. Elles se décodent dans le corps
+       du mail et PAS dans l'objet, qui est du texte brut : un « &rsquo; »
+       dans un sujet s'affiche tel quel dans la boîte de réception. Vu en
+       vrai sur M6 — « Berghain part à l&rsquo;impression ». Les caractères
+       réels (’, é, €) fonctionnent partout, l'UTF-8 est déclaré. */
+    const entite = v.match(/&[a-zA-Z]+;|&#\d+;/);
+    if (entite) fautes.push(`${champ} contient l'entité HTML ${entite[0]}`);
   }
   if (/cliquez ici/i.test(JSON.stringify(mail))) fautes.push("« Cliquez ici » interdit");
   if (/bonne r[ée]ception/i.test(JSON.stringify(mail))) fautes.push("« Bonne réception » interdit");

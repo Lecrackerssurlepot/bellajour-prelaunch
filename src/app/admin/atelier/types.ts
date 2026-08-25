@@ -26,7 +26,14 @@ export type ActionVue = {
   libelle: string;
   explication: string;
   vers: Etat;
+  /**
+   * Le mail qui partira VRAIMENT, dérivé de la règle d'envoi en projetant le
+   * dossier dans son état d'arrivée. `null` = rien ne part maintenant.
+   * `absent` = le template Brevo n'existe pas dans cet environnement.
+   */
   mail: { code: string; absent: boolean } | null;
+  /** Ce que la règle ne dit pas : pourquoi rien ne part, ou quand ça partira. */
+  note?: string;
 };
 
 export type LigneDossier = {

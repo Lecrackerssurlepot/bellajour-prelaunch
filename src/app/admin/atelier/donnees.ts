@@ -26,7 +26,13 @@ import {
 } from "@/lib/atelier/transitions";
 import { compter, comparerUrgence, urgencePour } from "@/lib/atelier/urgence";
 import { raconter } from "@/lib/atelier/recit";
-import { templateExiste } from "@/lib/atelier/mails";
+import {
+  CHAMPS_MAIL,
+  codesPour,
+  templateExiste,
+  type Envoyes,
+  type NumeroPourReleve,
+} from "@/lib/atelier/mails";
 import { construireParcours } from "@/lib/atelier/parcours";
 import { prenomDe } from "@/lib/admin-auth";
 import type {
@@ -63,11 +69,39 @@ type RangeeNumero = {
   stripe_payment_intent: string | null;
 };
 
+/**
+ * Ce qui partira si on déclenche cette action, MAINTENANT, sur CE dossier.
+ *
+ * On ne le déclare pas : on le demande à la règle d'envoi, en projetant le
+ * dossier dans son état d'arrivée. C'est la seule façon d'être d'accord avec
+ * ce qui se passera réellement une seconde plus tard — une liste écrite à la
+ * main mentait déjà sur trois actions sur sept.
+ *
+ * `etat_maj_le` est projeté à maintenant, sinon un mail conditionné à l'âge
+ * de l'état (M8, trois jours après la livraison) serait annoncé comme
+ * immédiat.
+ */
+function mailDeLAction(
+  vers: Etat,
+  r: RangeeNumero,
+  envoyes: Envoyes,
+  maintenant: Date,
+): { code: string; absent: boolean } | null {
+  const projete = {
+    ...(r as unknown as NumeroPourReleve),
+    etat: vers,
+    etat_maj_le: maintenant.toISOString(),
+  };
+  const code = codesPour(projete, envoyes, maintenant)[0];
+  return code ? { code, absent: !templateExiste(code) } : null;
+}
+
 function versLigne(
   r: RangeeNumero,
   maintenant: Date,
   rembourse: boolean,
   nouveau = false,
+  envoyes: Envoyes = new Map(),
 ): LigneDossier {
   const nbPhotos = r.nb_photos ?? 0;
   /* « Sans photos » ne veut PAS dire « nb_photos = 0 » à tous les états : une
@@ -106,10 +140,8 @@ function versLigne(
       libelle: a.libelle,
       explication: a.explication,
       vers: a.vers,
-      /* `absent` est une vérité D'EXÉCUTION : le template existe-t-il dans
-         CET environnement, maintenant ? L'écran de confirmation en dépend
-         pour dire « elle ne sera PAS prévenue ». */
-      mail: a.mail ? { code: a.mail.code, absent: !templateExiste(a.mail.code) } : null,
+      mail: mailDeLAction(a.vers, r, envoyes, maintenant),
+      note: a.note,
     })),
   };
 }
@@ -157,12 +189,21 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
 
   const activite = await chargerActivite(supabase, rangees);
   const { vus, marqueurAbsent } = await chargerVus(supabase, identite.cle);
+  /* Ce qui est déjà parti, pour TOUS les dossiers en une requête : la règle
+     d'envoi en a besoin pour dire, ligne par ligne, quel mail partirait. */
+  const envoyesPar = await chargerEnvoyes(supabase, rangees.map((r) => r.id).filter(Boolean) as string[]);
 
   /* Une seule évaluation d'urgence par dossier : elle sert au tri, aux
      compteurs du bandeau et à l'affichage. La recalculer trois fois serait
      trois occasions de diverger. */
   const evaluees = rangees.map((r) => ({
-    ligne: versLigne(r, maintenant, r.id ? rembourses.has(r.id) : false, estNouveau(r, vus, marqueurAbsent, maintenant)),
+    ligne: versLigne(
+      r,
+      maintenant,
+      r.id ? rembourses.has(r.id) : false,
+      estNouveau(r, vus, marqueurAbsent, maintenant),
+      envoyesPar.get(r.id ?? "") ?? new Map(),
+    ),
     urgence: urgencePour(r.etat, r.etat_maj_le, maintenant, {
       sansPhotos: r.etat === "photos_recues" && (r.nb_photos ?? 0) === 0,
     }),
@@ -179,6 +220,30 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
     fetchedAt: maintenant.toISOString(),
     qui: identite.prenom,
   };
+}
+
+/** Les mails déjà partis, par dossier, avec leurs dates (M3b en dépend). */
+async function chargerEnvoyes(
+  supabase: ReturnType<typeof makeSupabase>,
+  ids: string[],
+): Promise<Map<string, Envoyes>> {
+  const par = new Map<string, Envoyes>();
+  if (!ids.length) return par;
+  try {
+    const { data } = await supabase
+      .from("mails_envoyes")
+      .select("numero_id, code, envoye_le")
+      .in("numero_id", ids)
+      .returns<Array<{ numero_id: string; code: string; envoye_le: string }>>();
+    for (const e of data ?? []) {
+      const m = par.get(e.numero_id) ?? new Map<string, string>();
+      m.set(e.code, e.envoye_le);
+      par.set(e.numero_id, m);
+    }
+  } catch (err) {
+    console.error("[admin/atelier] envois illisibles", (err as Error)?.message);
+  }
+  return par;
 }
 
 /* ─────────────────────── le marqueur de lecture ─────────────────────── */
@@ -505,7 +570,13 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     client: await chargerClient(rangee),
     /* Les mêmes que sur la ligne : une seule source, pas deux listes à
        garder d'accord. */
-    actions: versLigne(rangee, maintenant, rembourse).actions,
+    actions: versLigne(
+      rangee,
+      maintenant,
+      rembourse,
+      false,
+      new Map((mails ?? []).map((m) => [m.code, m.envoye_le])),
+    ).actions,
   };
 }
 

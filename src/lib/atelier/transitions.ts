@@ -101,15 +101,20 @@ export type Action = {
   de: Etat[];
   vers: Etat;
   /**
-   * Le mail que cette étape déclenche (PRD §10). `null` = aucun mail prévu.
+   * Ce qu'il faut savoir sur les mails de cette étape, quand la règle ne
+   * suffit pas à le dire.
    *
-   * ⚠️ On ne dit PAS ici si le mail partira vraiment : ça dépend de la
-   * présence du template Brevo dans l'environnement, qui change sans que ce
-   * fichier bouge. C'est `donnees.ts` qui interroge `templateExiste()` au
-   * moment du rendu et remplit `absent`. Un drapeau écrit en dur mentirait le
-   * jour où la variable arrive — ou pire, le jour où elle disparaît.
+   * ⚠️ LE MAIL QUI PART N'EST PAS DÉCLARÉ ICI. Il est DÉRIVÉ de `codesPour`
+   * (mails.ts) au moment du rendu, en projetant le dossier dans son état
+   * d'arrivée. Une déclaration à la main créait une seconde vérité, et elle
+   * mentait déjà sur trois actions : « Envoyer à l'impression » annonçait M6
+   * alors qu'il était parti à la validation, « Marquer livrée » annonçait M8
+   * alors qu'il part trois jours plus tard, et « Corriger l'aperçu »
+   * annonçait « aucun » alors qu'une relance pouvait partir.
+   *
+   * Ce champ ne sert donc qu'à EXPLIQUER, jamais à promettre.
    */
-  mail: { code: string } | null;
+  note?: string;
   /** Une transition « sur place » ne rejournalise pas un changement d'état. */
   surPlace?: boolean;
 };
@@ -122,7 +127,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
       "Ouvre la page qui vend : elle découvre sa couverture, son nombre de pages et son prix, et peut payer.",
     de: ["photos_recues", "photos_insuffisantes"],
     vers: "apercu_pret",
-    mail: { code: "M3" },
+    note: "Elle découvre son prix et peut payer dans la foulée.",
   },
 
   /* Corriger sans refaire l'histoire. Une coquille dans la pagination ou une
@@ -137,7 +142,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
       "Remplace les visuels ou la pagination d'un aperçu déjà publié. Le prix suit. Aucun mail n'est renvoyé.",
     de: ["apercu_pret"],
     vers: "apercu_pret",
-    mail: null,
+    note: "Le mail d'annonce ne repart pas : il est déjà parti. Une relance peut en revanche être due si elle n'a toujours pas payé.",
     surPlace: true,
   },
 
@@ -148,7 +153,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
       "Sa page lui propose de reprendre le dépôt. Le dossier revient ici dès qu'elle a rajouté ses photos.",
     de: ["photos_recues"],
     vers: "photos_insuffisantes",
-    mail: { code: "M9" },
+    note: "Ses photos déjà déposées sont conservées.",
   },
 
   publier_maquette: {
@@ -158,7 +163,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
       "Elle découvre le numéro complet et le bouton « Tout est bon, imprimez ». Rien ne part à l'impression avant.",
     de: ["payee"],
     vers: "maquette_prete",
-    mail: { code: "M5" },
+    note: "L'échéance d'auto-validation à J+7 part de maintenant.",
   },
 
   envoyer_impression: {
@@ -168,7 +173,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
       "À faire une fois la commande passée chez l'imprimeur. Le numéro de suivi se saisit à l'étape suivante.",
     de: ["validee"],
     vers: "en_production",
-    mail: { code: "M6" },
+    note: "Elle a déjà été prévenue au moment où elle a validé : rien de nouveau ne part ici.",
   },
 
   marquer_expediee: {
@@ -177,7 +182,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
     explication: "Affiche le transporteur et le lien de suivi sur sa page.",
     de: ["en_production"],
     vers: "expediee",
-    mail: { code: "M7" },
+    note: "Le suivi apparaît aussi sur sa page.",
   },
 
   marquer_livree: {
@@ -186,7 +191,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
     explication: "Clôt le numéro et lui propose le prochain moment.",
     de: ["expediee"],
     vers: "livree",
-    mail: { code: "M8" },
+    note: "Le message « et le prochain moment ? » part trois jours plus tard, pas maintenant.",
   },
 };
 

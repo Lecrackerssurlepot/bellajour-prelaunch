@@ -124,7 +124,7 @@ export async function POST(request: Request) {
         {
           ok: true,
           verification: true,
-          action: { cle: action.cle, libelle: action.libelle, vers: action.vers, mail: action.mail },
+          action: { cle: action.cle, libelle: action.libelle, vers: action.vers, note: action.note },
           resume: prepa.resume,
           /* Ce que la cliente lira dans le mail, si mail il y a. Le vrai
              rendu est chez Brevo — ici on garantit au moins que le bon

@@ -216,6 +216,9 @@ export default function ActionRapide({
 
         {/* Le mail est le vrai enjeu : ce qu'elle va recevoir, ou ne pas
             recevoir. C'est la dernière chose lue avant de confirmer. */}
+        {/* Ce qui partira VRAIMENT : la règle d'envoi appliquée à ce dossier,
+            pas une déclaration. La note explique le reste — pourquoi rien ne
+            part, ou quand ça partira. */}
         <p className="ate-act-mail">
           {armee.mail ? (
             armee.mail.absent ? (
@@ -224,8 +227,9 @@ export default function ActionRapide({
               <>Le mail {armee.mail.code} partira.</>
             )
           ) : (
-            "Aucun mail à cette étape."
+            "Aucun mail ne partira maintenant."
           )}
+          {armee.note ? <span className="ate-faint"> {armee.note}</span> : null}
         </p>
 
         {erreur ? <p className="ate-act-erreur">{erreur}</p> : null}
