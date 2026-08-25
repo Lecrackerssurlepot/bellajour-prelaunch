@@ -178,7 +178,11 @@ export default function Composer() {
               token={draft.token}
               consent={draft.consentPhotos}
               onConsent={(v) => patch({ consentPhotos: v })}
-              onTermine={() => aller(6)}
+              /* Une seule écriture d'état : marquer terminé ET passer à
+                 l'écran 6. Deux setDraft successifs se seraient écrasés. */
+              onTermine={() =>
+                setDraft((d) => ({ ...d, termine: true, screen: 6 }))
+              }
             />
           )}
           {n === 6 && (

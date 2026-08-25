@@ -24,6 +24,9 @@ export type Draft = {
   token: string | null
   consentPhotos: boolean
   consentCommunication: boolean
+  /* Posé à l'arrivée sur l'écran 6, quand le dépôt est réellement envoyé.
+     Un brouillon terminé n'est plus un brouillon : voir loadDraft. */
+  termine: boolean
 }
 
 export const EMPTY_DRAFT: Draft = {
@@ -37,6 +40,7 @@ export const EMPTY_DRAFT: Draft = {
   token: null,
   consentPhotos: false,
   consentCommunication: false,
+  termine: false,
 }
 
 export function loadDraft(): Draft {
@@ -45,6 +49,23 @@ export function loadDraft(): Draft {
     const raw = window.localStorage.getItem(KEY)
     if (!raw) return EMPTY_DRAFT
     const parsed = JSON.parse(raw) as Partial<Draft>
+
+    /* ── UN BROUILLON TERMINÉ N'EST PLUS UN BROUILLON ──────────────────
+       Le dépôt est parti : son dossier vit désormais sur /numero/<token>,
+       et c'est là que son mail l'envoie. Revenir sur le questionnaire ne
+       peut donc vouloir dire qu'une chose : composer un AUTRE numéro.
+
+       Sans cette ligne, le token du premier numéro survivait indéfiniment
+       dans le navigateur, et `creerNumero` refusait d'en créer un second —
+       une cliente ne pouvait composer qu'UN SEUL numéro par appareil, à
+       vie. Sur un produit dont le modèle est « un numéro par moment » et
+       dont le dernier mail dit « composer un nouveau numéro », c'était la
+       boucle de retour toute entière qui était coupée.
+
+       Reprendre un dépôt INACHEVÉ reste possible : son brouillon n'est pas
+       terminé, et sa page d'état propose de toute façon `?reprendre=`. */
+    if (parsed.termine) return EMPTY_DRAFT
+
     /* Fusion sur EMPTY_DRAFT : un brouillon d'une version antérieure à qui
        il manque un champ ne fait pas planter l'écran, il repart à vide. */
     return { ...EMPTY_DRAFT, ...parsed }
