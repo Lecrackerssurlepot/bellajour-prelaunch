@@ -276,6 +276,26 @@ export default function Fiche({
         </div>
       ) : null}
 
+      {/* ── LE DÉPÔT N'EST PAS TERMINÉ ──────────────────────────────
+          Le cas qui a coûté cher le 25/08 : 55 photos dans le coffre, un
+          dossier en tête de pile « à faire », et personne pour remarquer que
+          la cliente n'avait jamais cliqué « Envoyer ». Composer là-dessus,
+          c'est utiliser des photos sans le droit d'usage.
+
+          On AVERTIT, on ne bloque pas : un coup de téléphone peut très bien
+          justifier d'avancer quand même, et une machine qui refuse sans
+          pouvoir écouter finit contournée en SQL. */}
+      {l.depot !== "termine" ? (
+        <div className="ate-bandeau ate-bandeau--alerte">
+          <strong>Elle n&apos;a jamais envoyé son dépôt.</strong>{" "}
+          {l.depot === "abandonne"
+            ? `Les ${l.nbPhotos} photos sont bien arrivées dans le coffre, mais le droit d'usage n'a pas été donné : elle a fermé l'onglet avant le dernier bouton. Ne compose rien tant qu'elle n'a pas terminé.`
+            : "Le questionnaire est rempli, aucune photo n'a été déposée."}{" "}
+          Sa page lui propose de finir en un clic, et la relance part
+          automatiquement le lendemain de l&apos;ouverture du dossier.
+        </div>
+      ) : null}
+
       {fiche.adresse?.dom ? (
         <div className="ate-bandeau ate-bandeau--attention">
           Adresse en {fiche.adresse.codePostal} — département d&apos;outre-mer. Stripe l&apos;a

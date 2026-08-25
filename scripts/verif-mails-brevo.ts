@@ -25,6 +25,7 @@ import { parametresPour, type CodeMail, type NumeroPourMail } from "@/lib/atelie
 const CODES: Array<{ code: CodeMail; env: string }> = [
   { code: "M1", env: "BREVO_TEMPLATE_M1_ID" },
   { code: "M2", env: "BREVO_TEMPLATE_M2_ID" },
+  { code: "M2b", env: "BREVO_TEMPLATE_M2B_ID" },
   { code: "M3", env: "BREVO_TEMPLATE_M3_ID" },
   { code: "M3b", env: "BREVO_TEMPLATE_M3B_ID" },
   { code: "M4", env: "BREVO_TEMPLATE_M4_ID" },

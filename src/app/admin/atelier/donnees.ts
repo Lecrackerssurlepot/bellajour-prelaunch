@@ -24,7 +24,7 @@ import {
   actionsDepuis,
   type Etat,
 } from "@/lib/atelier/transitions";
-import { compter, comparerUrgence, urgencePour } from "@/lib/atelier/urgence";
+import { compter, comparerUrgence, urgencePour, etapeDepot, type EtapeDepot } from "@/lib/atelier/urgence";
 import { raconter } from "@/lib/atelier/recit";
 import {
   CHAMPS_MAIL,
@@ -51,7 +51,7 @@ import type {
 } from "./types";
 
 const CHAMPS_LIGNE =
-  "token, titre, prenom, email, email_canonical, etat, nb_photos, nb_pages, palier, created_at, etat_maj_le, stripe_payment_intent";
+  "token, titre, prenom, email, email_canonical, etat, nb_photos, nb_pages, palier, consent_photos, created_at, etat_maj_le, stripe_payment_intent";
 
 type RangeeNumero = {
   id?: string;
@@ -64,6 +64,8 @@ type RangeeNumero = {
   nb_photos: number | null;
   nb_pages: number | null;
   palier: PalierCle | null;
+  /* Le SEUL signal serveur du dépôt terminé (cf. urgence.ts, etapeDepot). */
+  consent_photos: boolean | null;
   created_at: string | null;
   etat_maj_le: string | null;
   stripe_payment_intent: string | null;
@@ -104,11 +106,12 @@ function versLigne(
   envoyes: Envoyes = new Map(),
 ): LigneDossier {
   const nbPhotos = r.nb_photos ?? 0;
-  /* « Sans photos » ne veut PAS dire « nb_photos = 0 » à tous les états : une
-     fois l'aperçu publié, le compteur n'a plus de sens comme signal. Le cas
-     visé est précis — questionnaire rempli, dépôt jamais terminé. */
-  const sansPhotos = r.etat === "photos_recues" && nbPhotos === 0;
-  const u = urgencePour(r.etat, r.etat_maj_le, maintenant, { sansPhotos });
+  /* La question ne se pose QU'À L'ÉTAT 1 : une fois l'aperçu publié, ni le
+     compteur de photos ni le consentement ne disent plus rien de l'avancement.
+     Ailleurs, le dépôt est terminé par construction. */
+  const depot: EtapeDepot =
+    r.etat === "photos_recues" ? etapeDepot(r.consent_photos ?? null, nbPhotos) : "termine";
+  const u = urgencePour(r.etat, r.etat_maj_le, maintenant, { depot });
 
   return {
     numeroId: r.id ?? "",
@@ -131,7 +134,7 @@ function versLigne(
       enRetard: u.pile === "retard",
       age: u.age,
     },
-    sansPhotos,
+    depot,
     paye: Boolean(r.stripe_payment_intent),
     rembourse,
     nouveau,
@@ -205,7 +208,10 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
       envoyesPar.get(r.id ?? "") ?? new Map(),
     ),
     urgence: urgencePour(r.etat, r.etat_maj_le, maintenant, {
-      sansPhotos: r.etat === "photos_recues" && (r.nb_photos ?? 0) === 0,
+      depot:
+        r.etat === "photos_recues"
+          ? etapeDepot(r.consent_photos ?? null, r.nb_photos ?? 0)
+          : "termine",
     }),
   }));
 
@@ -328,10 +334,12 @@ function mesurerFlux(
   marqueurAbsent: boolean,
 ): FluxVue {
   /* Une ARRIVÉE compte le jour où le dossier a été ouvert ; une DEMANDE est
-     une arrivée dont le dépôt est terminé. `nb_photos > 0` est le seul signal
-     dont on dispose rétrospectivement : `consent_photos` dit la même chose,
-     mais `nb_photos` se lit déjà dans la liste. */
-  const demandes = rangees.filter((r) => (r.nb_photos ?? 0) > 0 && r.created_at);
+     une arrivée dont le dépôt est TERMINÉ.
+     ⚠️ C'était `nb_photos > 0`, avec en commentaire « consent_photos dit la
+     même chose ». Il ne dit PAS la même chose : le 25/08, un dossier de 55
+     photos jamais envoyées comptait comme une demande du jour. Une cliente
+     qui a fermé l'onglet avant le dernier bouton n'a rien demandé. */
+  const demandes = rangees.filter((r) => r.consent_photos === true && r.created_at);
 
   const aujourdhui = JOUR_PARIS.format(maintenant);
   const ilYA = (jours: number) => JOUR_PARIS.format(new Date(maintenant.getTime() - jours * 86_400_000));
@@ -354,7 +362,7 @@ function mesurerFlux(
     demandesAujourdhui: compteParJour.get(aujourdhui) ?? 0,
     demandesSemaine: demandes.filter((r) => new Date(r.created_at as string).getTime() >= seuilSemaine)
       .length,
-    sansDepot: lignes.filter((l) => l.sansPhotos).length,
+    sansDepot: lignes.filter((l) => l.depot !== "termine").length,
     nouveaux: lignes.filter((l) => l.nouveau).length,
     parJour,
     marqueurAbsent,

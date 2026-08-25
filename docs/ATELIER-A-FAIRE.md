@@ -120,6 +120,47 @@ nommer pareil, sinon le téléphone avec la cliente devient une traduction.
 l'affichage, pour montrer une couverture qu'on retourne. C'est un vrai chantier
 (dépôt, stockage et rendu), à cadrer sur une maquette avant d'écrire une ligne.
 
+### ✅ Fait le 26/08 — le dépôt qui n'en était pas un
+
+Signalé par Mathias : « j'ai reçu une demande d'un test, mais je n'ai pas validé
+à la fin les photos ». Le dossier « joelle » : 55 photos dans le coffre,
+`consent_photos = false`, aucun mail parti.
+
+**Ce qui se passait.** « A des photos » avait été confondu avec « a terminé son
+dépôt ». Trois dégâts en même temps :
+1. le dossier trônait dans la pile « à faire » avec un compte à rebours de 48 h,
+   contre une promesse que personne ne lui avait faite ;
+2. l'atelier s'apprêtait à composer un album à partir de photos dont **le droit
+   d'usage n'avait jamais été donné** ;
+3. la relance M2 exigeait `nb_photos === 0` : elle ne recevait donc **rien**.
+   Ni M1, ni M2. Le silence complet, pour la prospect la plus engagée qui soit.
+   Et sa page lui affichait « l'atelier a vos 55 photos, couverture sous 48 h ».
+   Elle n'avait plus aucune raison de revenir.
+
+**Ce qui a changé.** `consent_photos` est le seul signal du dépôt terminé, et
+c'est désormais écrit une fois pour toutes dans une fonction pure,
+`etapeDepot()` (urgence.ts) : `termine`, `vide`, `abandonne`.
+- la pile, le compteur du flux et le tri s'appuient dessus ;
+- la fiche AVERTIT (sans bloquer : un coup de fil peut justifier d'avancer) ;
+- sa page dit la vérité et lui propose de **terminer en un clic**, depuis son
+  lien permanent — pas depuis le composeur, dont la grille dépend de la copie
+  locale du navigateur, absente sur un autre appareil ;
+- nouveau mail **M2b** « vos photos sont arrivées », J+1. Lui envoyer M2 (« il
+  manque vos photos, son dossier est encore vide ») après cinquante-cinq
+  photos, c'était lui dire qu'on les avait perdues.
+
+⚠️ **M2b n'a pas encore de template Brevo.** Tant que `BREVO_TEMPLATE_M2B_ID`
+manque, la relève le signale « sans_template » et n'envoie rien. Pour l'armer :
+
+```bash
+node scripts/mails-atelier.mjs --pousser
+```
+
+puis coller l'ID rendu dans `.env.local` et dans Vercel (Preview + Production).
+
+⚠️ Le dossier « joelle » est TOUJOURS dans cet état en base. Une fois M2b armé,
+la relève du lendemain le relancera toute seule.
+
 ### ⚠️ À faire — par ordre d'importance
 
 **1. La case « montrer des extraits » est mal placée.** Sur l'écran 6, qui

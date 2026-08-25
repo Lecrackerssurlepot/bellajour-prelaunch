@@ -94,12 +94,20 @@ export default function Flux({
           <span className="ate-flux-label">sur 7 jours</span>
         </div>
 
-        {/* Ce n'est PAS du travail d'atelier : un questionnaire sans dépôt est
-            une relance. Affiché à part, en gris, pour qu'on ne le compte
-            jamais dans la charge. */}
-        <div className="ate-flux-item ate-flux-item--fixe ate-flux-item--pale">
+        {/* Ce n'est PAS du travail d'atelier : un dépôt non terminé est une
+            relance. Affiché à part, en gris, pour qu'on ne le compte jamais
+            dans la charge.
+
+            « Dépôt non terminé » et non « sans photos » : le compteur
+            regroupe deux situations, et l'une d'elles porte cinquante-cinq
+            photos. L'ancien libellé faisait lire « dossier vide » sur un
+            dossier plein, et personne ne rappelait la cliente. */}
+        <div
+          className="ate-flux-item ate-flux-item--fixe ate-flux-item--pale"
+          title="Questionnaire rempli, dépôt jamais envoyé. Photos ou pas : elle n'a pas cliqué."
+        >
           <span className="ate-flux-val">{flux.sansDepot}</span>
-          <span className="ate-flux-label">sans photos</span>
+          <span className="ate-flux-label">dépôt non terminé</span>
         </div>
 
         <div className="ate-flux-frise" aria-hidden title="Demandes reçues, 14 derniers jours">

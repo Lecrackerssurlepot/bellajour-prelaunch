@@ -17,7 +17,7 @@
  */
 
 import { preparerTransition, actionsDepuis } from "@/lib/atelier/transitions";
-import { urgencePour, comparerUrgence } from "@/lib/atelier/urgence";
+import { urgencePour, comparerUrgence, etapeDepot } from "@/lib/atelier/urgence";
 import {
   codesPour,
   doitAutoValider,
@@ -72,7 +72,21 @@ titre("— l'urgence : qui attend quoi —");
 ok("etat 1 depuis 61 h = EN RETARD (promesse 48 h)", urgencePour("photos_recues", ilYAh(61), NOW).pile === "retard");
 ok("etat 1 depuis 14 h = a faire", urgencePour("photos_recues", ilYAh(14), NOW).pile === "a_faire");
 ok("etat 2 depuis 8 j = chez la cliente, JAMAIS un retard", urgencePour("apercu_pret", ilYAh(200), NOW).pile === "attente_cliente");
-ok("questionnaire sans depot = a relancer, pas a traiter", urgencePour("photos_recues", ilYAh(300), NOW, { sansPhotos: true }).pile === "attente_cliente");
+ok("questionnaire sans depot = a relancer, pas a traiter", urgencePour("photos_recues", ilYAh(300), NOW, { depot: "vide" }).pile === "attente_cliente");
+
+titre("— le depot inacheve (incident du 25/08) —");
+ok("55 photos jamais envoyees : PAS du travail d'atelier",
+   urgencePour("photos_recues", ilYAh(26), NOW, { depot: "abandonne" }).pile === "attente_cliente");
+ok("55 photos jamais envoyees : AUCUN compte a rebours de 48 h",
+   urgencePour("photos_recues", ilYAh(26), NOW, { depot: "abandonne" }).reste === null);
+ok("le libelle dit qu'il y a des photos, pas qu'il en manque",
+   urgencePour("photos_recues", ilYAh(26), NOW, { depot: "abandonne" }).libelle.includes("jamais envoyees".replace("envoyees", "envoy\u00e9es")));
+ok("depot termine : la pile normale reprend",
+   urgencePour("photos_recues", ilYAh(2), NOW, { depot: "termine" }).pile === "a_faire");
+ok("etapeDepot : consent pose = termine", etapeDepot(true, 0) === "termine");
+ok("etapeDepot : pas de consent, des photos = abandonne", etapeDepot(false, 55) === "abandonne");
+ok("etapeDepot : pas de consent, pas de photo = vide", etapeDepot(null, 0) === "vide");
+ok("etapeDepot : le consentement PRIME sur le compteur", etapeDepot(true, 0) === "termine");
 
 titre("— les jours ouvres —");
 // Paye jeudi 20 a 12 h. +3 jours ouvres = vendredi, lundi, MARDI 25.
@@ -122,6 +136,23 @@ ok("0 photo cree apres, vieux de 2 j : M2 part",
    codesPour(d({ nb_photos: 0, consent_photos: false, created_at: ilYA(2) }), env(), MAINTENANT).join() === "M2");
 ok("0 photo cree il y a 3 h : trop tot",
    codesPour(d({ nb_photos: 0, consent_photos: false, created_at: new Date(MAINTENANT.getTime() - 3 * 3_600_000).toISOString() }), env(), MAINTENANT).length === 0);
+
+titre("— M2b, le depot reste en plan (incident du 25/08) —");
+ok("55 photos, pas de consentement, 26 h : M2b et pas M2",
+   codesPour(d({ nb_photos: 55, consent_photos: false, created_at: ilYA(2) }), env(), MAINTENANT).join() === "M2b");
+ok("0 photo, pas de consentement, 26 h : M2 et pas M2b",
+   codesPour(d({ nb_photos: 0, consent_photos: false, created_at: ilYA(2) }), env(), MAINTENANT).join() === "M2");
+ok("55 photos sans consentement, 3 h : trop tot, elle est peut-etre en train",
+   codesPour(d({ nb_photos: 55, consent_photos: false, created_at: new Date(MAINTENANT.getTime() - 3 * 3_600_000).toISOString() }), env(), MAINTENANT).length === 0);
+ok("consentement pose : M1, et surtout AUCUNE relance",
+   codesPour(d({ nb_photos: 55, consent_photos: true, created_at: ilYA(9) }), env(), MAINTENANT).join() === "M1");
+ok("consentement pose mais compteur a zero : silence, pas de relance",
+   codesPour(d({ nb_photos: 0, consent_photos: true, created_at: ilYA(9) }), env(), MAINTENANT).length === 0);
+ok("M2b deja parti : rien",
+   codesPour(d({ nb_photos: 55, consent_photos: false, created_at: ilYA(9) }), env(["M2b", ilYA(1)]), MAINTENANT).length === 0);
+ok("M2b sans photo : refuse plutot que de promettre du vide",
+   manquePour("M2b", d({ nb_photos: 0 })).includes("nb_photos"));
+ok("M2b avec photos : complet", manquePour("M2b", d({ nb_photos: 55 })).length === 0);
 
 titre("— M3b, le mail qui rapporte le plus —");
 ok("apercu publie, M3 il y a 4 j, non paye : M3b", codesPour(d({ etat: "apercu_pret" }), env(["M3", ilYA(4)]), MAINTENANT).join() === "M3b");

@@ -22,7 +22,7 @@
 
 import { eurosPour } from "@/lib/atelier/prix";
 import { ETAPE_ETAT, LIBELLE_ETAT, actionsDepuis, type Etat } from "@/lib/atelier/transitions";
-import { compter, comparerUrgence, urgencePour } from "@/lib/atelier/urgence";
+import { compter, comparerUrgence, urgencePour, etapeDepot, type EtapeDepot } from "@/lib/atelier/urgence";
 import { raconter } from "@/lib/atelier/recit";
 import { construireParcours } from "@/lib/atelier/parcours";
 import { COLONNES } from "../donnees";
@@ -64,6 +64,12 @@ type Graine = {
   rembourse?: boolean;
   dom?: boolean;
   fondatrice?: number;
+  /**
+   * Photos montées, bouton final jamais cliqué (cf. urgence.ts, etapeDepot).
+   * Cas réel du 25/08 : sans lui, la démonstration ne montre jamais l'état
+   * où le compteur de photos et l'avancement réel se contredisent.
+   */
+  depotAbandonne?: boolean;
 };
 
 const GRAINES: Graine[] = [
@@ -229,6 +235,22 @@ const GRAINES: Graine[] = [
     ouvertIlYA: 1,
   },
   {
+    token: T("demoD"),
+    titre: "Joëlle, quatre-vingts ans",
+    prenom: "Sophie",
+    email: "sophie.leroy@example.com",
+    telephone: "06 22 33 44 55",
+    occasion: "Un anniversaire",
+    histoire: "Toute la famille pour ses quatre-vingts ans, dans le jardin de Vendée.",
+    etat: "photos_recues",
+    nbPhotos: 55,
+    nbPages: null,
+    palier: null,
+    depuis: 26,
+    ouvertIlYA: 1,
+    depotAbandonne: true,
+  },
+  {
     token: T("demoB"),
     titre: "Le tour du Mont-Blanc",
     prenom: "Paul",
@@ -269,8 +291,9 @@ const J = 86_400_000;
 function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: ReturnType<typeof urgencePour> } {
   const etatMajLe = new Date(maintenant.getTime() - g.depuis * H).toISOString();
   const createdAt = new Date(maintenant.getTime() - g.ouvertIlYA * J).toISOString();
-  const sansPhotos = g.etat === "photos_recues" && g.nbPhotos === 0;
-  const urgence = urgencePour(g.etat, etatMajLe, maintenant, { sansPhotos });
+  const depot: EtapeDepot =
+    g.etat === "photos_recues" ? etapeDepot(g.depotAbandonne ? null : true, g.nbPhotos) : "termine";
+  const urgence = urgencePour(g.etat, etatMajLe, maintenant, { depot });
 
   return {
     urgence,
@@ -295,12 +318,12 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
         enRetard: urgence.pile === "retard",
         age: urgence.age,
       },
-      sansPhotos,
+      depot,
       paye: Boolean(g.paye),
       rembourse: Boolean(g.rembourse),
       /* En démonstration, « nouveau » = arrivé dans les deux derniers jours
          et jamais ouvert : on veut voir le badge, pas simuler une table. */
-      nouveau: !sansPhotos && g.ouvertIlYA <= 2,
+      nouveau: depot === "termine" && g.ouvertIlYA <= 2,
       actions: actionsDepuis(g.etat).map((a) => ({
         cle: a.cle,
         libelle: a.libelle,
@@ -352,7 +375,7 @@ export function listeDemo(qui: string): VueListe {
     flux: {
       demandesAujourdhui: evaluees.filter((e) => e.ligne.nouveau).length,
       demandesSemaine: GRAINES.filter((g) => g.nbPhotos > 0 && g.ouvertIlYA <= 7).length,
-      sansDepot: evaluees.filter((e) => e.ligne.sansPhotos).length,
+      sansDepot: evaluees.filter((e) => e.ligne.depot !== "termine").length,
       nouveaux: evaluees.filter((e) => e.ligne.nouveau).length,
       parJour: Array.from({ length: 14 }, (_, i) => {
         const jours = 13 - i;
@@ -446,7 +469,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     occasion: g.occasion,
     histoire: g.histoire || null,
     telephone: g.telephone || null,
-    consentPhotos: g.nbPhotos > 0,
+    consentPhotos: !g.depotAbandonne && g.nbPhotos > 0,
     consentCommunication: g.nbPhotos > 40,
     cgvOk: Boolean(g.paye),
     cgvOkAt: g.paye ? il(g.depuis + 25) : null,

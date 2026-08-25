@@ -31,6 +31,46 @@ export const LIBELLE_PILE: Record<Pile, string> = {
   termine: "Terminés",
 };
 
+/**
+ * Où en est le DÉPÔT, quand le dossier est encore à l'état 1.
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ * TROIS SITUATIONS QUE `nb_photos` NE DISTINGUE PAS
+ *
+ * Le 25/08, un dossier est arrivé dans la pile « à faire » avec 55 photos et
+ * un compte à rebours de 48 h. Personne ne l'avait envoyé : la cliente avait
+ * fermé l'onglet avant le dernier bouton. L'atelier s'apprêtait donc à
+ * composer un album à partir de photos dont l'accord d'usage n'avait jamais
+ * été donné, contre une promesse de délai que personne ne lui avait faite.
+ * Et comme la relance M2 exigeait `nb_photos === 0`, elle ne recevait rien
+ * non plus. Silence des deux côtés, pour la prospect la plus engagée qui
+ * soit : celle qui a déjà monté 55 photos.
+ *
+ * La cause : « a des photos » avait été confondu avec « a terminé son
+ * dépôt ». Ce sont deux questions différentes, et le seul signal serveur du
+ * dépôt terminé est `consent_photos`, posé au clic « Envoyer à l'atelier »
+ * (moteur.ts → finaliser()). C'est déjà la règle de M1 dans mails.ts ; elle
+ * manquait ici.
+ *
+ *   termine    — elle a cliqué. C'est du travail d'atelier.
+ *   vide       — questionnaire rempli, pas une photo. Relance M2.
+ *   abandonne  — les photos sont montées, le bouton jamais cliqué. Relance
+ *                M2b, qui ne dit surtout pas « il manque vos photos ».
+ * ══════════════════════════════════════════════════════════════════════════
+ */
+export type EtapeDepot = "termine" | "vide" | "abandonne";
+
+/**
+ * Fonction PURE, une seule vérité pour les trois écrans et pour la relève.
+ *
+ * `consentPhotos` prime toujours : une fois le dépôt terminé, le compteur de
+ * photos ne dit plus rien d'utile sur l'avancement.
+ */
+export function etapeDepot(consentPhotos: boolean | null, nbPhotos: number): EtapeDepot {
+  if (consentPhotos === true) return "termine";
+  return nbPhotos > 0 ? "abandonne" : "vide";
+}
+
 type Delai = {
   /** Le compte à rebours de l'atelier. */
   heures?: number;
@@ -135,17 +175,18 @@ function formaterDuree(heures: number): string {
 /**
  * L'urgence d'une ligne.
  *
- * `sansPhotos` : un dossier créé au questionnaire mais dont le dépôt n'a
- * jamais eu lieu n'est PAS du travail d'atelier — c'est une relance (M2). Le
- * mélanger à la pile « à faire » gonflerait le compteur du matin avec des
- * dossiers sur lesquels il n'y a rien à faire, et le compteur cesserait
- * d'être cru. Il part chez la cliente, quel que soit son âge.
+ * `depot` : un dossier dont le dépôt n'est pas TERMINÉ n'est pas du travail
+ * d'atelier — c'est une relance. Le mélanger à la pile « à faire » gonflerait
+ * le compteur du matin avec des dossiers sur lesquels il n'y a rien à faire,
+ * et le compteur cesserait d'être cru. Pire, il ferait courir un compte à
+ * rebours de 48 h contre une promesse que personne n'a faite à la cliente.
+ * Il part chez elle, quel que soit son âge.
  */
 export function urgencePour(
   etat: Etat,
   etatMajLe: string | null,
   maintenant: Date,
-  options: { sansPhotos?: boolean } = {}
+  options: { depot?: EtapeDepot } = {}
 ): Urgence {
   const depuis = etatMajLe ? new Date(etatMajLe) : null;
   const age =
@@ -153,14 +194,20 @@ export function urgencePour(
       ? (maintenant.getTime() - depuis.getTime()) / 3_600_000
       : 0;
 
-  if (options.sansPhotos) {
+  if (options.depot && options.depot !== "termine") {
     return {
       pile: "attente_cliente",
       age,
       reste: null,
       echeance: null,
       promesse: null,
-      libelle: `en attente de ses photos depuis ${formaterDuree(age)}`,
+      /* Le libellé DIT laquelle des deux situations c'est. « En attente de
+         ses photos » sur un dossier qui en porte 55 est un mensonge qui coûte
+         cher : on le lit comme un dossier vide et on ne rappelle personne. */
+      libelle:
+        options.depot === "abandonne"
+          ? `photos déposées mais jamais envoyées, depuis ${formaterDuree(age)}`
+          : `en attente de ses photos depuis ${formaterDuree(age)}`,
       /* Trié par ancienneté à l'intérieur de sa pile, jamais devant du vrai
          travail : le décalage +1000 tient toutes les piles non urgentes
          derrière les retards et les à-faire, sans arithmétique fragile. */

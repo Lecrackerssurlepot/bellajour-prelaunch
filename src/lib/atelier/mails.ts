@@ -3,6 +3,7 @@ import { logEvenement } from "./evenements";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { eurosPour, type PalierCle } from "./prix";
 import { ajouterJours, formaterJour } from "./dates";
+import { etapeDepot } from "./urgence";
 
 /**
  * Les mails de l'atelier (PRD §10) — un seul chemin d'envoi pour tous.
@@ -35,7 +36,19 @@ import { ajouterJours, formaterJour } from "./dates";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
 
-export type CodeMail = "M1" | "M2" | "M3" | "M3b" | "M4" | "M5" | "M6" | "M7" | "M8" | "M9";
+export type CodeMail =
+  | "M1"
+  | "M2"
+  /* M2b — le dépôt resté en plan. Voir codesPour, case "photos_recues". */
+  | "M2b"
+  | "M3"
+  | "M3b"
+  | "M4"
+  | "M5"
+  | "M6"
+  | "M7"
+  | "M8"
+  | "M9";
 
 /** Les colonnes de `numeros` que tout envoi doit avoir sous la main. */
 export const CHAMPS_MAIL =
@@ -80,6 +93,7 @@ function templatePour(code: CodeMail): number | undefined {
   const brut = {
     M1: process.env.BREVO_TEMPLATE_M1_ID,
     M2: process.env.BREVO_TEMPLATE_M2_ID,
+    M2b: process.env.BREVO_TEMPLATE_M2B_ID,
     M3: process.env.BREVO_TEMPLATE_M3_ID,
     M3b: process.env.BREVO_TEMPLATE_M3B_ID,
     M4: process.env.BREVO_TEMPLATE_M4_ID,
@@ -107,6 +121,7 @@ export function templateExiste(code: string): boolean {
 export const OBJET_MAIL: Record<CodeMail, string> = {
   M1: "c'est parti, nous avons vos photos",
   M2: "il manque les photos",
+  M2b: "vos photos sont là, il manque votre accord",
   M3: "votre couverture est prête",
   M3b: "relance, votre numéro vous attend",
   M4: "paiement reçu",
@@ -143,6 +158,10 @@ export function manquePour(code: CodeMail, n: NumeroPourMail): string[] {
     if (!n.nb_pages) manque.push("nb_pages");
     if (!n.palier) manque.push("palier");
   }
+  /* M2b dit « vos N photos sont arrivées ». À zéro, il devient M2 et ce
+     n'est plus le même mail : on refuse plutôt que de promettre du vide. */
+  if (code === "M2b" && !(n.nb_photos ?? 0)) manque.push("nb_photos");
+
   /* M7 annonce un transporteur : sans lui, « votre numéro est en route » ne
      dit pas par qui, et la cliente n'a rien à suivre. */
   if (code === "M7" && !(n as Partial<NumeroPourReleve>).transporteur) {
@@ -179,7 +198,7 @@ export function parametresPour(code: CodeMail, n: NumeroPourMail): Record<string
     LIEN: `${SITE_URL}/numero/${n.token}`,
   };
 
-  if (code === "M1" || code === "M2" || code === "M9") {
+  if (code === "M1" || code === "M2" || code === "M2b" || code === "M9") {
     return { ...communs, NB_PHOTOS: n.nb_photos ?? 0 };
   }
 
@@ -383,15 +402,33 @@ export function codesPour(
     case "photos_recues": {
       /* Le dépôt est terminé : `consent_photos` est le SEUL signal serveur
          qui le dit (posé par depot/moteur.ts au clic « Envoyer à l'atelier »). */
-      if (n.consent_photos === true && (n.nb_photos ?? 0) > 0) dus.push("M1");
-      /* Questionnaire rempli, dépôt jamais fait, plus de 24 h. */
-      else if (
-        (n.nb_photos ?? 0) === 0 &&
+      const depot = etapeDepot(n.consent_photos, n.nb_photos ?? 0);
+
+      if (depot === "termine") {
+        if ((n.nb_photos ?? 0) > 0) dus.push("M1");
+        /* Dépôt terminé : plus AUCUNE relance, même si le compteur est à zéro.
+           Elle a fait ce qu'on lui demandait ; le trou est de notre côté. */
+        break;
+      }
+
+      /* ── la relance, à J+1 ──────────────────────────────────────────
+         Deux situations, deux mails, et surtout PAS le même texte.
+
+         Avant le 25/08, la relance exigeait `nb_photos === 0`. Une cliente
+         qui avait monté 55 photos sans cliquer « Envoyer » ne recevait donc
+         rien : ni M1 (pas de consentement), ni M2 (elle a des photos). Le
+         silence complet, pour la prospect la plus engagée qui soit.
+
+         Et lui envoyer M2 tel quel aurait été pire que le silence : « il
+         manque vos photos, son dossier est encore vide » à quelqu'un qui
+         vient d'en monter cinquante-cinq, c'est lui dire qu'on les a
+         perdues. D'où M2b, qui dit l'inverse : elles sont là. */
+      if (
         n.created_at &&
         Date.parse(n.created_at) >= miseEnServiceM2() &&
         maintenant.getTime() - Date.parse(n.created_at) >= JOUR
       ) {
-        dus.push("M2");
+        dus.push(depot === "abandonne" ? "M2b" : "M2");
       }
       break;
     }

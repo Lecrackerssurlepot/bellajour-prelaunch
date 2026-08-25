@@ -32,14 +32,15 @@
  *
  *    Les mails immédiats (M1, M3, M5, M6, M7, M9) partent déjà au moment du
  *    geste ; la relève est leur FILET, pour le jour où Brevo tousse. Les
- *    mails à retardement (M2 à J+1, M3b à J+3, M8 à J+3 après livraison)
+ *    mails à retardement (M2 et M2b à J+1, M3b à J+3, M8 à J+3 après
+ *    livraison)
  *    n'ont AUCUN déclencheur possible : ils n'existent que par ce balayage.
  *
  * 2. FERMER LA PRODUCTION. L'auto-validation à J+7 (PRD §11) : sans elle,
  *    « une part des dossiers payés dort indéfiniment et la production ne se
  *    ferme jamais ». C'est la seule ÉCRITURE d'état de cette route.
  *
- * ⚠️ ELLE DOIT DONC TOURNER TOUS LES JOURS. Sans cron, M2, M3b, M8 et
+ * ⚠️ ELLE DOIT DONC TOURNER TOUS LES JOURS. Sans cron, M2, M2b, M3b, M8 et
  * l'auto-validation ne partent jamais — et M3b est le mail qui rapporte le
  * plus de tout le système. Un cron Vercel quotidien suffit (plan Hobby).
  * ══════════════════════════════════════════════════════════════════════════

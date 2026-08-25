@@ -7,7 +7,7 @@
  * rendre EXACTEMENT les mêmes écrans avec des données fabriquées.
  */
 
-import type { Pile } from "@/lib/atelier/urgence";
+import type { Pile, EtapeDepot } from "@/lib/atelier/urgence";
 import type { Etat } from "@/lib/atelier/transitions";
 import type { Recit } from "@/lib/atelier/recit";
 import type { Parcours } from "@/lib/atelier/parcours";
@@ -52,8 +52,11 @@ export type LigneDossier = {
   createdAt: string | null;
   etatMajLe: string | null;
   urgence: UrgenceVue;
-  /** Questionnaire rempli, dépôt jamais terminé : à relancer, pas à traiter. */
-  sansPhotos: boolean;
+  /**
+   * Où en est le dépôt. Tant qu'il n'est pas « termine », le dossier est une
+   * relance, pas du travail d'atelier — même s'il porte déjà 55 photos.
+   */
+  depot: EtapeDepot;
   paye: boolean;
   rembourse: boolean;
   /** Jamais ouvert par la personne connectée (cf. table `dossiers_vus`). */

@@ -171,6 +171,18 @@ export const MAILS = [
     pied: "Une hésitation avant de vous lancer ? Répondez à ce message, nous vous répondrons nous-mêmes.",
   },
   {
+    code: "M2b",
+    nom: "M2b · Atelier · Vos photos sont arrivées",
+    sujet: `Vos photos sont arrivées, ${TITRE} attend un mot de vous`,
+    preheader: "Elles sont bien chez nous. Il ne manque que votre accord.",
+    titreHtml: "Vos photos sont arrivées",
+    h1: "Vos photos<br />sont arrivées.",
+    sous: `${PRENOM}, vos {{ params.NB_PHOTOS }} photos sont bien dans nos mains, en sécurité. Il ne manque qu'un geste : votre accord pour qu'on s'en serve. Un clic, et l'atelier commence.`,
+    cta: "Terminer mon dépôt",
+    lien: LIEN,
+    pied: "Vous n'avez rien à redéposer : tout est déjà là. Une question ? Répondez à ce message, nous vous répondrons nous-mêmes.",
+  },
+  {
     code: "M3b",
     nom: "M3b · Atelier · Votre numéro vous attend",
     sujet: `${TITRE} vous attend`,

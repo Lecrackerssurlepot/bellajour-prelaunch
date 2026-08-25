@@ -147,6 +147,28 @@ M2, M3b, M8 et l'auto-validation à J+7 ne partent JAMAIS.
 Vérifications : `npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts` (62 assertions,
 sans base ni réseau) et `scripts/verif-mails-brevo.ts` (les variables des templates).
 
+### « Dépôt terminé » n'est PAS « a des photos » (26/08/2026)
+Incident du 25/08 : un dossier de 55 photos trônait dans la pile « à faire » avec un compte
+à rebours de 48 h. La cliente avait fermé l'onglet avant le dernier bouton. Conséquences :
+l'atelier s'apprêtait à composer sans le droit d'usage des photos, contre une promesse jamais
+faite, et la relance M2 ne partait pas non plus (elle exigeait `nb_photos === 0`). Silence
+total pour la prospect la plus engagée qui soit.
+- **`consent_photos` est le SEUL signal du dépôt terminé.** C'était déjà la règle de M1 ;
+  elle manquait partout ailleurs. Une fonction pure porte désormais les trois cas :
+  `etapeDepot(consentPhotos, nbPhotos)` dans `src/lib/atelier/urgence.ts` →
+  `termine` | `vide` (relance M2) | `abandonne` (relance M2b).
+- `urgencePour(..., { depot })` remplace `{ sansPhotos }`. Un dépôt non terminé va TOUJOURS
+  dans « Chez la cliente », sans compte à rebours, quel que soit son nombre de photos.
+- `LigneDossier.depot` remplace `LigneDossier.sansPhotos`. Le compteur du flux dit
+  « dépôt non terminé », plus « sans photos » — il regroupe un dossier vide et un dossier
+  de 55 photos.
+- La fiche AVERTIT sans bloquer : un coup de téléphone peut justifier d'avancer, et une
+  machine qui refuse sans pouvoir écouter finit contournée en SQL.
+- Sa page d'état lui propose de **terminer en un clic** (`BoutonEnvoyer.tsx` → le même
+  `PATCH /api/atelier/numero { consent_photos: true }` que le composeur, donc le même M1).
+  Volontairement depuis SA page et non depuis le composeur : la grille du composeur se
+  reconstruit depuis la copie LOCALE du navigateur, absente sur un autre appareil.
+
 ### Télécharger le lot de photos (26/08/2026)
 « Télécharger le lot » écrit les VRAIES photos sur le disque, plus un fichier de liens.
 - Chrome/Edge : `showDirectoryPicker()` → l'éditeur choisit un dossier, chaque photo descend
@@ -251,6 +273,11 @@ Réf : commit 246d8e5, tokens --bj-nav-android-bg, classe .pv-nav--flat.
 - A2 (Ambassadeur accès)     = template 21, env BREVO_TEMPLATE_A2_ID, déclencheur /ambassadeur/request-access (redemandable)
 - Relance (session.expired)  = template 23, env BREVO_TEMPLATE_RELANCE_ID, BRANCHÉ (case checkout.session.expired, garde-fou status='pending', params { PRENOM })
 - A3 (album offert au 6e = 30 pages niveau 1+2) = template 22, env BREVO_TEMPLATE_A3_ID, BRANCHÉ (étape 6 du handler completed, verrou atomique waitlist.a3_notified_at, couvre parrain direct niveau 1 + grand-parrain niveau 2, params { PRENOM, PAGES_TOTAL, DASHBOARD_URL })
+- M2b (Atelier — dépôt resté en plan) = env BREVO_TEMPLATE_M2B_ID, **template à créer**
+  (`node scripts/mails-atelier.mjs --pousser`, puis coller l'ID dans .env.local et Vercel).
+  Déclencheur : relève quotidienne, J+1, dossier état 1 avec des photos ET sans consent_photos.
+  Params { PRENOM, TITRE, NB_PHOTOS, LIEN }. Tant que l'env manque, la relève le signale
+  « sans_template » et n'envoie rien.
 - M1 (Atelier — dépôt terminé) = template 27, env BREVO_TEMPLATE_M1_ID, déclencheur PATCH /api/atelier/numero branche consent_photos (le SEUL signal serveur de fin de dépôt, posé par depot/moteur.ts finaliser()), params { PRENOM, TITRE, NB_PHOTOS, LIEN }
 - M3 (Atelier — la couverture, état 2) = template 28, env BREVO_TEMPLATE_M3_ID, déclencheur /api/atelier/mails/relever (PAS un webhook : le passage en état 2 se fait à la main en SQL tant que /admin n'existe pas), params { PRENOM, TITRE, NB_PAGES, PRIX, LIEN }
 - M4 (Atelier — paiement reçu) = template 29, env BREVO_TEMPLATE_M4_ID, déclencheur webhook completed si metadata.kind==='atelier', params { PRENOM, TITRE, NB_PAGES, PRIX, LIEN }

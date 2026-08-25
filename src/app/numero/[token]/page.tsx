@@ -22,10 +22,13 @@ import { makeSupabase } from '@/lib/supabase'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { resoudreApercu } from '@/lib/atelier/apercu'
 import { eurosPour, type PalierCle } from '@/lib/atelier/prix'
+import { etapeDepot, type EtapeDepot } from '@/lib/atelier/urgence'
+import { MIN_PHOTOS } from '../../(atelier)/composer/depot/paliers'
 import { ajouterJours, formaterJour } from '@/lib/atelier/dates'
 import CasesEtCommande from './CasesEtCommande'
 import AttentePaiement from './AttentePaiement'
 import BoutonValider from './BoutonValider'
+import BoutonEnvoyer from './BoutonEnvoyer'
 import Apercu from './Apercu'
 import '../numero.css'
 
@@ -58,6 +61,8 @@ type Numero = {
   canva_url: string | null
   cgv_ok: boolean
   renonciation_retractation: boolean
+  /* Le SEUL signal serveur du dépôt terminé (cf. lib/atelier/urgence.ts). */
+  consent_photos: boolean | null
   transporteur: string | null
   tracking_url: string | null
   valide_le: string | null
@@ -66,7 +71,7 @@ type Numero = {
 
 const CHAMPS =
   'token, etat, titre, prenom, nb_photos, nb_pages, palier, apercu_urls, ' +
-  'maquette_pdf_url, canva_url, cgv_ok, renonciation_retractation, ' +
+  'maquette_pdf_url, canva_url, cgv_ok, renonciation_retractation, consent_photos, ' +
   'transporteur, tracking_url, valide_le, etat_maj_le'
 
 /* Cinq jalons, pas huit. La cliente ne connaît pas notre machine à états :
@@ -162,20 +167,67 @@ export default async function NumeroPage({
 
   /* La ligne naît à la fin de l'écran 4, DÉJÀ en `photos_recues`, avant que la
      moindre photo n'existe. Une cliente qui abandonne à l'écran 5 puis rouvre
-     son lien lirait sinon « l'atelier a vos 0 photos ». C'est aussi l'état que
-     vise le mail M2 (« il manque les photos »), qui ramène ici. */
-  const sansPhotos = numero.etat === 'photos_recues' && numero.nb_photos === 0
+     son lien lirait sinon « l'atelier a vos 0 photos ».
+
+     ⚠️ 25/08 : le compteur de photos ne dit PAS si le dépôt est terminé. Une
+     cliente avait monté 55 photos sans jamais cliquer « Envoyer », et cette
+     page lui annonçait « l'atelier a vos 55 photos, couverture sous 48 h ».
+     C'était faux, et c'est le pire des mensonges possibles ici : elle n'avait
+     plus aucune raison de revenir, et personne ne composait rien. */
+  const depot: EtapeDepot =
+    numero.etat === 'photos_recues'
+      ? etapeDepot(numero.consent_photos, numero.nb_photos ?? 0)
+      : 'termine'
+  const aTerminer = depot === 'abandonne'
+  const aAssezDePhotos = (numero.nb_photos ?? 0) >= MIN_PHOTOS
+  const sansPhotos = depot === 'vide'
   const attendPhotos = sansPhotos || numero.etat === 'photos_insuffisantes'
 
   return (
-    <Coquille titre={titre} avancement={attendPhotos ? 0 : AVANCEMENT[numero.etat] ?? 0}>
-      {numero.etat === 'photos_recues' && !sansPhotos && (
+    <Coquille titre={titre} avancement={attendPhotos || aTerminer ? 0 : AVANCEMENT[numero.etat] ?? 0}>
+      {numero.etat === 'photos_recues' && depot === 'termine' && (
         <>
           <p className="nu-mot">L’atelier a vos {numero.nb_photos} photos.</p>
           <p className="nu-sub">
             Votre couverture arrive <b>sous 48 h</b>, par mail et sur cette page.
             Vous ne payez qu’après l’avoir vue — et seulement si elle vous plaît.
           </p>
+        </>
+      )}
+
+      {/* ── LE DÉPÔT RESTÉ EN PLAN ──────────────────────────────────
+          Ses photos sont arrivées, son accord non. On le lui dit dans cet
+          ordre : d'abord la bonne nouvelle (rien n'est perdu), ensuite le
+          geste qui manque. L'inverse se lit comme un reproche. */}
+      {aTerminer && (
+        <>
+          <p className="nu-mot">
+            {aAssezDePhotos ? 'Vos photos sont arrivées.' : 'Vos photos sont arrivées, il en manque un peu.'}
+          </p>
+          <p className="nu-sub">
+            {aAssezDePhotos ? (
+              <>
+                Vos <b>{numero.nb_photos} photos</b> sont bien dans nos mains, en sécurité. Il ne
+                manque qu’un geste : votre accord pour qu’on s’en serve. Un clic, et
+                l’atelier commence.
+              </>
+            ) : (
+              <>
+                Nous en avons <b>{numero.nb_photos}</b>, et rien n’est perdu. Il en faut{' '}
+                <b>{MIN_PHOTOS}</b> pour composer un vrai numéro sans répéter deux fois le
+                même moment. Reprenez là où vous vous êtes arrêtée.
+              </>
+            )}
+          </p>
+          {aAssezDePhotos ? (
+            <BoutonEnvoyer token={numero.token} nbPhotos={numero.nb_photos ?? 0} />
+          ) : (
+            <div className="nu-actions">
+              <a className="at-cta" href={`${CTA_HREF}?reprendre=${numero.token}`}>
+                Ajouter des photos <span className="at-cta-arrow">→</span>
+              </a>
+            </div>
+          )}
         </>
       )}
 
@@ -190,12 +242,12 @@ export default async function NumeroPage({
             {sansPhotos ? (
               <>
                 Le dossier est ouvert, votre titre est réservé. Il faut{' '}
-                <b>40 photos</b> au minimum pour composer un numéro — comptez
+                <b>{MIN_PHOTOS} photos</b> au minimum pour composer un numéro — comptez
                 deux minutes depuis votre téléphone.
               </>
             ) : (
               <>
-                Nous en avons {numero.nb_photos}. À partir de <b>40</b>, il y a de
+                Nous en avons {numero.nb_photos}. À partir de <b>{MIN_PHOTOS}</b>, il y a de
                 quoi composer un vrai numéro sans répéter deux fois le même
                 moment. Reprenez là où vous vous étiez arrêtée.
               </>
