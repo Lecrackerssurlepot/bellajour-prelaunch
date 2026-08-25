@@ -144,7 +144,7 @@ l'impression ». Seul M2 n'a pas de prédécesseur : il porte la seule borne de 
 `ATELIER_M2_DEPUIS` (reculée sur Preview pour le rendre testable).
 ⚠️ **La relève doit tourner tous les jours** (`vercel.json`, 7 h UTC, `CRON_SECRET`). Sans elle,
 M2, M3b, M8 et l'auto-validation à J+7 ne partent JAMAIS.
-Vérifications : `npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts` (62 assertions,
+Vérifications : `npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts` (81 assertions,
 sans base ni réseau) et `scripts/verif-mails-brevo.ts` (les variables des templates).
 
 ### « Dépôt terminé » n'est PAS « a des photos » (26/08/2026)

@@ -231,7 +231,7 @@ node scripts/recette.mjs pousser "Test 1" M3b     # force un mail à retardement
 node scripts/recette.mjs relever                  # déclenche la relève
 node scripts/recette.mjs nettoyer --depuis=2026-08-26
 
-npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts       # 62 assertions
+npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts       # 81 assertions
 npx tsx --tsconfig tsconfig.json scripts/verif-mails-brevo.ts   # variables des templates
 
 node scripts/mails-atelier.mjs                    # aperçus HTML des 7 mails
