@@ -147,6 +147,35 @@ M2, M3b, M8 et l'auto-validation à J+7 ne partent JAMAIS.
 Vérifications : `npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts` (81 assertions,
 sans base ni réseau) et `scripts/verif-mails-brevo.ts` (les variables des templates).
 
+### Qui a le dossier en main (26/08/2026)
+`numeros.en_charge` (migration `20260826_atelier_en_charge.sql`) porte la CLÉ du compte,
+comme `notes.qui`. Bouton en tête de fiche, marque sur la ligne, filtre « Les miens ».
+- On peut REPRENDRE un dossier à quelqu'un (c'est le mot « relais »), on ne peut PAS
+  affecter quelqu'un d'autre. Chaque geste écrit `prise_en_charge` dans `evenements`.
+- « Ce qui m'attend » (urgence) et « Les miens » (affectation) sont deux filtres distincts.
+- ⚠️ `donnees.ts → lireNumeros()` tente le select AVEC la colonne et retombe SANS sur un
+  42703. Sans ce repli, la table de travail entière tomberait pendant la fenêtre entre le
+  déploiement et la migration. Ne pas simplifier.
+
+### La liste se rafraîchit seule, et n'attend plus en silence (26/08/2026)
+- `Rafraichissement.tsx` : `router.refresh()` chaque minute, RIEN quand l'onglet est caché
+  (`force-dynamic` = une requête par passage), rattrapage au retour avec 20 s de repos.
+  Jamais `location.reload()` : il perdrait la recherche et le formulaire en cours.
+- `loading.tsx` sur la liste et sur la fiche. Sans eux, Next garde l'écran précédent figé
+  et le clic paraît mort. Les silhouettes ont la FORME de l'écran qui arrive.
+
+### La loupe (26/08/2026)
+`src/app/components/Loupe.tsx` sert la page cliente (charte sombre) ET l'admin (crème) :
+elle pose ses propres couleurs sur `.bj-loupe`, sans emprunter aux tokens de l'un ou de
+l'autre. On y navigue entre les visuels. Le vocabulaire est le MÊME des deux côtés
+(« La couverture », « La quatrième », « Une double page ») — plus de C1/C4.
+
+### La page cliente dit de QUI c'est le tour (26/08/2026)
+Une ligne sous le fil des jalons, lue depuis `QUI_ATTEND` (urgence.ts) — la même table que
+l'atelier utilise pour trier sa journée. Les deux écrans ne peuvent donc pas se contredire.
+Un dépôt non terminé est FORCÉ chez la cliente, quoi qu'en dise l'état.
+Le lien permanent est rappelé en pied de page à tous les états, et sur l'écran 6.
+
 ### « Dépôt terminé » n'est PAS « a des photos » (26/08/2026)
 Incident du 25/08 : un dossier de 55 photos trônait dans la pile « à faire » avec un compte
 à rebours de 48 h. La cliente avait fermé l'onglet avant le dernier bouton. Conséquences :

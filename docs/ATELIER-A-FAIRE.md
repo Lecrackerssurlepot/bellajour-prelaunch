@@ -161,24 +161,78 @@ puis coller l'ID rendu dans `.env.local` et dans Vercel (Preview + Production).
 ⚠️ Le dossier « joelle » est TOUJOURS dans cet état en base. Une fois M2b armé,
 la relève du lendemain le relancera toute seule.
 
+### ✅ Fait le 26/08 — la fluidité et le relais
+
+**Les visuels se nomment et s'ouvrent en grand**, des deux côtés. « C1 » et
+« C4 » ont quitté l'admin : la fiche emploie les mots que la cliente lit sur sa
+page. Détail : on passe d'un visuel à l'autre dans la loupe, ce qui est la
+seule façon de comprendre que couverture et quatrième sont les deux faces du
+même objet.
+
+**La liste se met à jour toute seule**, chaque minute, et se tait quand
+l'onglet est caché (elle est en `force-dynamic` : un onglet oublié tout un
+week-end, c'est des milliers de requêtes pour personne). Rattrapage immédiat au
+retour sur l'onglet, avec un repos de 20 s. Pied de page vivant, avec un lien
+« relire maintenant ».
+
+**Le retour à la liste ne fige plus.** La durée n'était pas le vrai problème :
+c'est que rien ne se passait pendant ce temps. Deux `loading.tsx`, qui ont la
+FORME de l'écran qui arrive et pas un mot « Chargement ».
+
+**Qui a ce dossier en main.** Un bouton en tête de fiche, une marque sur chaque
+ligne, un filtre « Les miens ». On peut reprendre un dossier à quelqu'un (c'est
+le mot « relais »), on ne peut pas affecter quelqu'un d'autre à sa place. Chaque
+passage est journalisé : « Louis a repris le dossier à Mathias ».
+⚠️ **Demande la migration ci-dessous.**
+
+**La page Santé ne crie plus pour rien.** Le silence de la relève n'est suspect
+que si un mail EST DÛ maintenant. Et elle comptait des « dossiers oubliés » sur
+`nb_photos === 0` : le même raccourci que celui du bug ci-dessus.
+
+---
+
+### ⚠️ À FAIRE À LA MAIN, AVANT DE TESTER
+
+Deux gestes que le code ne peut pas faire tout seul. Rien ne casse sans eux —
+mais deux choses resteront inertes.
+
+**1. Passer la migration.**
+`supabase/migrations/20260826_atelier_en_charge.sql` — une colonne nullable et
+un index partiel. Tant qu'elle n'est pas passée, le sélecteur « qui a ce
+dossier en main » et le filtre « Les miens » n'apparaissent pas. Le reste du
+back-office fonctionne normalement : la lecture retombe sur une requête sans la
+colonne.
+
+**2. Créer le template Brevo de M2b.**
+
+```bash
+node scripts/mails-atelier.mjs --pousser
+```
+
+puis coller l'ID rendu dans `.env.local` ET dans Vercel (Preview + Production),
+sous `BREVO_TEMPLATE_M2B_ID`. Tant qu'il manque, la page Santé l'affiche en
+orange et la relève ne l'envoie pas — sans poser de verrou, donc il partira
+tout seul dès que la variable existe.
+
+⚠️ Le dossier « joelle » (55 photos, jamais envoyées) attend ce mail.
+
+---
+
 ### ⚠️ À faire — par ordre d'importance
 
-**1. La case « montrer des extraits » est mal placée.** Sur l'écran 6, qui
-ressemble à une validation, elle a l'air obligatoire. Elle est purement
-facultative et sans effet sur la commande (`consent_communication`, PRD §14).
-→ Soit un libellé qui dise franchement « ça ne change rien à votre commande »,
-soit la déplacer.
-
-**2. Le crédit fondateur est entièrement manuel.** L'admin affiche « 30 € à
+**1. Le crédit fondateur est entièrement manuel.** L'admin affiche « 30 € à
 imputer » (CGV art. 5 bis) mais il faut créer un code Stripe nominatif à usage
 unique et l'envoyer à la main. Tenable à deux fondateurs, pas au-delà.
 
-**3. Les mails tombent dans l'onglet Promotions de Gmail.** Un M3 en Promotions
+**2. Les mails tombent dans l'onglet Promotions de Gmail.** Un M3 en Promotions
 est une vente perdue. Chantier à part : DNS, contenu, réputation.
 Cf. [[dns-et-delivrabilite]] en mémoire.
 
-**4. Rappeler à la cliente de garder son lien.** Sa page suit l'état et le lien
-est permanent, mais rien ne le lui dit. À intégrer à la relecture des mails.
+**3. C1 + C4 en un seul envoi, découpé à l'affichage.** Pour que la cliente
+voie une vraie couverture qu'on retourne. Ça change le dépôt admin, le stockage
+et le rendu : à cadrer sur une maquette avant d'écrire une ligne. La loupe en
+donne déjà une bonne part de l'effet — à regarder avant de décider si le
+chantier vaut encore le coup.
 
 ---
 

@@ -52,7 +52,7 @@ export type Sante = {
 
 /* Les mails que la relève peut avoir à envoyer un jour. M4 est exclu : il
    part au webhook et n'est jamais rattrapé (cf. codesPour). */
-const CODES_ATTENDUS: CodeMail[] = ["M1", "M2", "M3", "M3b", "M5", "M6", "M7", "M8", "M9"];
+const CODES_ATTENDUS: CodeMail[] = ["M1", "M2", "M2b", "M3", "M3b", "M5", "M6", "M7", "M8", "M9"];
 
 /* Au-delà de deux fois le délai annoncé, ce n'est plus du retard, c'est un
    dossier oublié. Le seuil est volontairement large : la page santé doit
