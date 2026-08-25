@@ -30,7 +30,7 @@ import {
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
 import { LIBELLE_ETAT, type Etat } from "@/lib/atelier/transitions";
-import { DELAIS, echeancePour } from "@/lib/atelier/urgence";
+import { DELAIS, echeancePour, etapeDepot } from "@/lib/atelier/urgence";
 
 export type Constat = {
   /** `rouge` = quelqu'un attend pour rien. `orange` = ça va le devenir. */
@@ -147,10 +147,20 @@ export async function chargerSante(): Promise<Sante> {
      Le cas le plus coûteux : le dossier a l'air normal dans la liste, mais
      la cliente n'a rien reçu et n'a aucune raison de revenir. */
   const incomplets: Constat["lignes"] = [];
+  /* Combien de mails la relève DEVRAIT envoyer à cet instant. Sert deux fois :
+     ici pour ceux qui sont bloqués, et au constat nº6 pour savoir si le
+     silence de la relève est suspect ou parfaitement normal. */
+  let dusMaintenant = 0;
   for (const d of lignes) {
     const envoyes = envoyesPar.get(d.id) ?? new Map<string, string>();
     for (const code of codesPour(d, envoyes, maintenant)) {
       const manque = manquePour(code, d);
+      /* On ne compte comme « dû » que ce que la relève pourrait RÉELLEMENT
+         envoyer. Un mail bloqué faute de pagination, ou sans template Brevo,
+         n'accuse pas la relève : il a déjà son propre constat au-dessus.
+         Les compter ici ferait dire à la page « la relève se tait » alors
+         que la relève fait exactement ce qu'on lui demande. */
+      if (!manque.length && templateExiste(code)) dusMaintenant++;
       if (manque.length) {
         incomplets.push({
           token: d.token,
@@ -174,11 +184,17 @@ export async function chargerSante(): Promise<Sante> {
   for (const d of lignes) {
     const delai = DELAIS[d.etat as Etat];
     if (!delai || !d.etat_maj_le) continue;
-    /* Un questionnaire dont le dépôt n'a jamais eu lieu attend LA CLIENTE, pas
-       nous. Le compter parmi les oubliés ferait crier la page pour des
-       dossiers sur lesquels il n'y a rien à faire — et une page santé qui
-       crie pour rien cesse d'être crue. Même règle que la table de travail. */
-    if ((d.nb_photos ?? 0) === 0) continue;
+    /* Un dépôt non terminé attend LA CLIENTE, pas nous. Le compter parmi les
+       oubliés ferait crier la page pour des dossiers sur lesquels il n'y a
+       rien à faire — et une page santé qui crie pour rien cesse d'être crue.
+       Même règle que la table de travail.
+
+       ⚠️ C'était `nb_photos === 0`. Un dossier de 55 photos jamais envoyées
+       passait donc le filtre et se retrouvait « oublié » à 96 h, alors que la
+       balle n'a jamais été dans notre camp (incident du 25/08). */
+    if (d.etat === "photos_recues" && etapeDepot(d.consent_photos, d.nb_photos ?? 0) !== "termine") {
+      continue;
+    }
     const echeance = echeancePour(d.etat as Etat, d.etat_maj_le);
     if (!echeance) continue;
     const depasse = maintenant.getTime() - echeance.getTime();
@@ -214,23 +230,32 @@ export async function chargerSante(): Promise<Sante> {
   }
 
   /* ── 6. la relève tourne-t-elle ? ──────────────────────────────────
-     M2, M3b, M8 et l'auto-validation n'existent QUE par elle. Une relève
-     muette depuis une semaine, c'est du chiffre d'affaires qui ne part pas. */
+     M2, M2b, M3b, M8 et l'auto-validation n'existent QUE par elle. Une relève
+     muette depuis une semaine, c'est du chiffre d'affaires qui ne part pas.
+
+     ⚠️ LE GARDE-FOU A CHANGÉ. Il était « au moins un dossier existe » : sur
+     une base vidée, ou pendant une semaine calme, la page criait « aucun mail
+     parti depuis longtemps » alors qu'il n'y avait strictement rien à
+     envoyer. Une alerte qui se déclenche sans raison apprend à être ignorée,
+     et le jour où la relève tombe vraiment, personne ne la lit.
+
+     Le silence n'est suspect que si un mail EST DÛ MAINTENANT et n'est pas
+     parti. Là, ce n'est plus du calme : c'est une panne. */
   const silence = dernierMail
     ? (maintenant.getTime() - Date.parse(dernierMail)) / 86_400_000
     : null;
-  if (lignes.length > 0 && (silence === null || silence > 7)) {
+  if (dusMaintenant > 0 && (silence === null || silence > 1)) {
     constats.push({
-      gravite: "orange",
-      titre: "Aucun mail parti depuis longtemps",
+      gravite: "rouge",
+      titre: `${dusMaintenant} mail${dusMaintenant > 1 ? "s sont dus" : " est dû"} et la relève se tait`,
       remede:
-        "Vérifier que la relève tourne (cron quotidien sur /api/atelier/mails/relever). Sans elle, M3b — le mail qui rapporte le plus — ne part jamais.",
+        "Vérifier que le cron quotidien tourne (/api/atelier/mails/relever, vercel.json, CRON_SECRET). Sans lui, M3b — le mail qui rapporte le plus — ne part jamais. En attendant : `node scripts/recette.mjs relever`.",
       lignes: [
         {
           token: null,
           quoi: dernierMail
-            ? `Dernier envoi il y a ${Math.round(silence as number)} jours`
-            : "Aucun mail n'a jamais été envoyé",
+            ? `Dernier envoi il y a ${Math.round(silence as number)} jour(s), alors que ${dusMaintenant} mail(s) attendent`
+            : `Aucun mail n'a jamais été envoyé, alors que ${dusMaintenant} mail(s) attendent`,
         },
       ],
     });
