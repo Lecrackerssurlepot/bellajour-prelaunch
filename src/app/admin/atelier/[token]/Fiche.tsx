@@ -66,6 +66,11 @@ function Evenement({ e }: { e: EvenementVue }) {
   );
 }
 
+/* Combien de vignettes avant de replier. Trois lignes de grille suffisent à
+   juger d'un lot ; quarante vignettes repoussent le reste de la fiche sous la
+   ligne de flottaison et transforment l'outil en galerie. */
+const VIGNETTES_VISIBLES = 12;
+
 export default function Fiche({
   fiche,
   moi,
@@ -77,6 +82,7 @@ export default function Fiche({
   demo?: boolean;
 }) {
   const [copie, setCopie] = useState(false);
+  const [toutesLesPhotos, setToutesLesPhotos] = useState(false);
   const l = fiche.ligne;
   const liens = fiche.photos.map((p) => p.url).filter(Boolean) as string[];
   const base = demo ? "/admin/atelier/demo" : "/admin/atelier";
@@ -199,7 +205,7 @@ export default function Fiche({
               <p className="ate-faint">Aucune photo déposée.</p>
             ) : (
               <div className="ate-photos">
-                {fiche.photos.map((p) => (
+                {(toutesLesPhotos ? fiche.photos : fiche.photos.slice(0, VIGNETTES_VISIBLES)).map((p) => (
                   <a
                     key={p.id}
                     className="ate-photo"
@@ -218,6 +224,18 @@ export default function Fiche({
                 ))}
               </div>
             )}
+
+            {fiche.photos.length > VIGNETTES_VISIBLES ? (
+              <button
+                type="button"
+                className="ate-photos-plus"
+                onClick={() => setToutesLesPhotos((v) => !v)}
+              >
+                {toutesLesPhotos
+                  ? "Replier"
+                  : `Voir les ${fiche.photos.length - VIGNETTES_VISIBLES} autres`}
+              </button>
+            ) : null}
           </section>
 
           {fiche.apercu.c1 || fiche.apercu.c4 || fiche.apercu.double ? (

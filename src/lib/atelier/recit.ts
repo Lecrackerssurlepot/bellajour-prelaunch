@@ -177,6 +177,24 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         ton: "neutre",
       };
 
+    case "canva_travail":
+      return {
+        texte: payload.pose
+          ? `${qui ?? "L'atelier"} a ouvert un document de travail`
+          : `${qui ?? "L'atelier"} a retiré le document de travail`,
+        detail: "Interne, jamais partagé avec elle",
+        ton: "nous",
+      };
+
+    /* Retiré du récit à l'affichage (cf. donnees.ts), mais un vieux dossier
+       peut encore en porter : autant qu'il se lise. */
+    case "photos_confirmees":
+      return {
+        texte: `${payload.combien ?? ""} photo(s) reçues`.trim(),
+        detail: null,
+        ton: "elle",
+      };
+
     case "checkout_expire":
       return { texte: "Panier abandonné (session expirée)", detail: "Le numéro reste commandable", ton: "neutre" };
 

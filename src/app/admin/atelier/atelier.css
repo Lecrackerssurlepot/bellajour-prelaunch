@@ -1690,6 +1690,21 @@
   object-fit: cover;
   display: block;
 }
+.ate-photos-plus {
+  margin-top: var(--bj-sp-3);
+  padding: var(--bj-sp-2) var(--bj-sp-4);
+  border-radius: var(--bj-r-btn);
+  border: 1px solid var(--bj-veil-12);
+  background: transparent;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  cursor: pointer;
+}
+.ate-photos-plus:hover {
+  border-color: var(--bj-action-border);
+  color: var(--bj-action);
+}
 .ate-photo-vide {
   font-size: var(--bj-fs-xs);
   color: var(--bj-text-faint);

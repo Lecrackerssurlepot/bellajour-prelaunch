@@ -386,6 +386,9 @@ async function chargerActivite(
     const { data } = await supabase
       .from("evenements")
       .select("id, numero_id, type, payload, created_at")
+      /* Même raison que sur la fiche : onze lignes d'upload noieraient la
+         journée de l'atelier. */
+      .neq("type", "photos_confirmees")
       .gte("created_at", depuis)
       .order("created_at", { ascending: false })
       .limit(MAX_ACTIVITE)
@@ -526,7 +529,18 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
   const apercu = await resoudreApercu(n.apercu_urls);
   const brut = (n.apercu_urls && typeof n.apercu_urls === "object" ? n.apercu_urls : {}) as Record<string, string>;
 
-  const evenementsVus: EvenementVue[] = (evenements ?? []).map((e) => ({
+  /* ── ce qui n'est PAS du récit ────────────────────────────────────
+     `photos_confirmees` est écrit à chaque lot d'envoi : 41 photos en
+     produisent onze lignes identiques, qui noient les quatre événements qui
+     racontent vraiment le dossier. C'est une trace d'upload, précieuse pour
+     déboguer une photo manquante, illisible dans une histoire.
+
+     On la RETIRE de l'affichage, on ne la supprime pas de la table : le jour
+     où une photo manque, c'est elle qu'on ira lire. Le nombre de photos, lui,
+     est déjà écrit en toutes lettres au-dessus. */
+  const HORS_RECIT = new Set(["photos_confirmees"]);
+
+  const evenementsVus: EvenementVue[] = (evenements ?? []).filter((e) => !HORS_RECIT.has(e.type)).map((e) => ({
     id: e.id,
     type: e.type,
     payload: e.payload ?? {},
