@@ -738,6 +738,57 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* La marque « qui a ce dossier en main » (migration 20260826). Discrète :
+   elle informe, elle ne réclame pas. La sienne se distingue au premier
+   coup d'oeil — c'est le seul cas où on veut être arrêté. */
+.ate-tag--moi {
+  color: var(--bj-action);
+  background: var(--bj-action-soft);
+  border-color: var(--bj-action-border);
+}
+
+/* Le sélecteur, en tête de fiche. */
+.ate-charge {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--bj-sp-4);
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  border: 1px solid var(--bj-veil-12);
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-veil-8);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+}
+.ate-charge-etat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  margin-right: auto;
+}
+.ate-charge-etat strong {
+  color: var(--bj-text);
+  font-weight: 500;
+}
+.ate-charge-pastille {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bj-text-faint);
+  flex: none;
+}
+.ate-charge-pastille--moi {
+  background: var(--bj-action);
+}
+.ate-charge-erreur {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-save-warn);
+}
+
 .ate-tag {
   font-size: 10px;
   text-transform: uppercase;

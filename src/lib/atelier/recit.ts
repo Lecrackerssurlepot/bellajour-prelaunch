@@ -177,6 +177,23 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         ton: "neutre",
       };
 
+    /* Le passage de relais. Il fait partie de l'histoire du dossier au même
+       titre qu'un changement d'état : « personne n'a rien fait pendant six
+       jours » et « il est passé de l'un à l'autre trois fois » ne racontent
+       pas la même semaine. */
+    case "prise_en_charge": {
+      const par = typeof payload.par === "string" ? payload.par : "Quelqu'un";
+      if (payload.relache) {
+        return { texte: `${par} a relâché le dossier`, detail: "Il n'est plus à personne", ton: "nous" };
+      }
+      const repris = typeof payload.repris_a === "string" ? payload.repris_a : null;
+      return {
+        texte: repris ? `${par} a repris le dossier à ${repris}` : `${par} a pris le dossier en main`,
+        detail: null,
+        ton: "nous",
+      };
+    }
+
     case "canva_travail":
       return {
         texte: payload.pose

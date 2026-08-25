@@ -12,6 +12,7 @@
  * maintenir. Le jour où ça pique, ce sera une bonne nouvelle.
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
 import { signerGet } from "@/lib/atelier/r2";
@@ -69,6 +70,9 @@ type RangeeNumero = {
   created_at: string | null;
   etat_maj_le: string | null;
   stripe_payment_intent: string | null;
+  /* Clé du compte qui a le dossier en main, ou null. Absente tant que la
+     migration 20260826 n'est pas passée (cf. lireNumeros). */
+  en_charge?: string | null;
 };
 
 /**
@@ -135,6 +139,7 @@ function versLigne(
       age: u.age,
     },
     depot,
+    enCharge: r.en_charge ?? null,
     paye: Boolean(r.stripe_payment_intent),
     rembourse,
     nouveau,
@@ -157,22 +162,63 @@ export const COLONNES: ColonneVue[] = ETATS.map((etat) => ({
   titre: LIBELLE_ETAT[etat],
 }));
 
+/**
+ * Les dossiers, avec `en_charge` si la colonne existe.
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ * POURQUOI CE REPLI PLUTÔT QU'UN SIMPLE SELECT
+ *
+ * `en_charge` arrive par la migration 20260826. Entre le déploiement du code
+ * et le passage de la migration, il y a une fenêtre — quelques minutes, ou
+ * quelques heures si personne n'est devant sa machine. Un `select` qui nomme
+ * une colonne absente ne dégrade pas : PostgREST répond 42703 et la requête
+ * ENTIÈRE échoue. Toute la table de travail tomberait, pas seulement le
+ * sélecteur de la personne en charge.
+ *
+ * On tente donc avec, et on retombe sans. Une requête dans le cas normal,
+ * deux seulement pendant la fenêtre. C'est le même principe que
+ * `notesIndisponibles` : l'écran dit ce qui manque au lieu de mentir ou de
+ * s'effondrer.
+ * ══════════════════════════════════════════════════════════════════════════
+ */
+async function lireNumeros(
+  supabase: SupabaseClient,
+): Promise<{ rangees: RangeeNumero[]; enChargeAbsent: boolean }> {
+  const avec = await supabase
+    .from("numeros")
+    .select(`id, ${CHAMPS_LIGNE}, en_charge`)
+    .order("etat_maj_le", { ascending: true })
+    .returns<RangeeNumero[]>();
+
+  if (!avec.error) return { rangees: avec.data ?? [], enChargeAbsent: false };
+
+  /* 42703 = undefined_column. Toute autre erreur est une vraie panne : on la
+     journalise et on rend une liste vide, comme avant. */
+  if (avec.error.code !== "42703") {
+    console.error("[admin/atelier] lecture liste échouée", avec.error.code, avec.error.message);
+    return { rangees: [], enChargeAbsent: false };
+  }
+
+  const sans = await supabase
+    .from("numeros")
+    .select(`id, ${CHAMPS_LIGNE}`)
+    .order("etat_maj_le", { ascending: true })
+    .returns<RangeeNumero[]>();
+
+  if (sans.error) {
+    console.error("[admin/atelier] lecture liste échouée", sans.error.code, sans.error.message);
+    return { rangees: [], enChargeAbsent: true };
+  }
+  return { rangees: sans.data ?? [], enChargeAbsent: true };
+}
+
 /* ─────────────────────────────── la liste ─────────────────────────────── */
 
 export async function chargerListe(identite: { cle: string; prenom: string }): Promise<VueListe> {
   const supabase = makeSupabase();
   const maintenant = new Date();
 
-  const { data, error } = await supabase
-    .from("numeros")
-    .select(`id, ${CHAMPS_LIGNE}`)
-    .order("etat_maj_le", { ascending: true })
-    .returns<RangeeNumero[]>();
-
-  if (error) {
-    console.error("[admin/atelier] lecture liste échouée", error.code, error.message);
-  }
-  const rangees = data ?? [];
+  const { rangees, enChargeAbsent } = await lireNumeros(supabase);
 
   /* Un remboursement ne change AUCUN état, volontairement : rembourser avant
      impression et après livraison ne veulent pas dire la même chose (cf.
@@ -221,10 +267,12 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
     lignes: evaluees.map((e) => e.ligne),
     compteurs: compter(evaluees.map((e) => e.urgence)),
     colonnes: COLONNES,
+    enChargeAbsent,
     activite,
     flux: mesurerFlux(evaluees.map((e) => e.ligne), rangees, maintenant, marqueurAbsent),
     fetchedAt: maintenant.toISOString(),
     qui: identite.prenom,
+    quiCle: identite.cle,
   };
 }
 
@@ -589,6 +637,8 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     ),
     notes: notesLues.notes,
     notesIndisponibles: notesLues.indisponible,
+    /* `select("*")` : la colonne arrive d'elle-même quand elle existe. */
+    enChargeAbsent: !("en_charge" in n),
     client: await chargerClient(rangee),
     /* Les mêmes que sur la ligne : une seule source, pas deux listes à
        garder d'accord. */

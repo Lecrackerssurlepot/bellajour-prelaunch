@@ -10,6 +10,7 @@ import Tableau from "./Tableau";
 import Vues, { useReglages } from "./Vues";
 import type { LigneDossier, VueListe } from "./types";
 import type { Pile } from "@/lib/atelier/urgence";
+import { PRENOM_COMPTE } from "@/lib/admin-auth";
 
 /**
  * La table de travail (PRD §12).
@@ -52,10 +53,15 @@ const SOUS_TITRE_PILE: Record<Pile, string> = {
 
 /* Les filtres du haut. « Tout ce qui bouge » est le filtre par défaut d'un
    lundi matin : il retire les livrés, qui n'ont plus rien à raconter. */
-type Filtre = "actifs" | "moi" | "nouveaux" | "tous";
+/* « Ce qui m'attend » et « Les miens » ne sont PAS la même question. Le
+   premier trie par urgence (que dois-je faire maintenant), le second par
+   affectation (de quoi me suis-je chargé). Les confondre ferait disparaître
+   de la vue un dossier qu'on a pris et qui attend la cliente. */
+type Filtre = "actifs" | "moi" | "aMoi" | "nouveaux" | "tous";
 const FILTRES: Array<{ cle: Filtre; label: string }> = [
   { cle: "actifs", label: "En cours" },
   { cle: "moi", label: "Ce qui m'attend" },
+  { cle: "aMoi", label: "Les miens" },
   { cle: "nouveaux", label: "Jamais ouverts" },
   { cle: "tous", label: "Tout" },
 ];
@@ -77,11 +83,16 @@ function Ligne({
   base,
   demo,
   onFait,
+  moiCle,
+  prenoms,
 }: {
   l: LigneDossier;
   base: string;
   demo?: boolean;
   onFait: (m: string) => void;
+  /** Clé du compte connecté — pour dire « à moi » plutôt que « Mathias ». */
+  moiCle: string;
+  prenoms: Record<string, string>;
 }) {
   return (
     <div className={l.urgence.enRetard ? "ate-ligne ate-ligne--retard" : "ate-ligne"}>
@@ -98,6 +109,17 @@ function Ligne({
           {l.nouveau ? <span className="ate-point-neuf" title="Jamais ouvert" aria-label="Jamais ouvert" /> : null}
           {l.titre?.trim() || <em className="ate-faint">Sans titre</em>}
           {l.rembourse ? <span className="ate-tag ate-tag--alerte">remboursé</span> : null}
+          {/* Qui l'a en main. Sans cette marque, à deux, on compose deux fois
+              le même numéro — ou aucun, chacun croyant que l'autre s'en
+              occupe. La seconde est la plus probable, et la plus silencieuse. */}
+          {l.enCharge ? (
+            <span
+              className={l.enCharge === moiCle ? "ate-tag ate-tag--moi" : "ate-tag"}
+              title={`En main : ${prenoms[l.enCharge] ?? l.enCharge}`}
+            >
+              {l.enCharge === moiCle ? "à moi" : (prenoms[l.enCharge] ?? l.enCharge)}
+            </span>
+          ) : null}
         </span>
         <span className="ate-ligne-sous">
           {l.prenom || "—"}
@@ -181,6 +203,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
       /* « Ce qui m'attend » = strictement ce sur quoi on peut agir. C'est le
          filtre qui répond à « par quoi je commence ». */
       if (filtre === "moi" && l.urgence.pile !== "retard" && l.urgence.pile !== "a_faire") return false;
+      if (filtre === "aMoi" && l.enCharge !== vue.quiCle) return false;
       if (filtre === "nouveaux" && !l.nouveau) return false;
       if (!q) return true;
       /* La recherche sert à UNE chose : retrouver en trois secondes la
@@ -188,7 +211,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
          préciser. Token compris — elle colle parfois son lien. */
       return [l.titre, l.prenom, l.email, l.token].some((v) => (v || "").toLowerCase().includes(q));
     });
-  }, [vue.lignes, recherche, filtre]);
+  }, [vue.lignes, vue.quiCle, recherche, filtre]);
 
   /**
    * Le regroupement, en une seule structure quel que soit le critère.
@@ -224,6 +247,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
   const base = vue.demo ? "/admin/atelier/demo" : "/admin/atelier";
   const aFaire = vue.compteurs.a_faire;
   const enRetard = vue.compteurs.retard;
+  const aMoiCompte = vue.lignes.filter((l) => l.enCharge === vue.quiCle).length;
   const vide = filtrees.length === 0;
   const messageVide =
     vue.lignes.length === 0
@@ -299,7 +323,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
           quand on descend dans une longue liste. */}
       <div className="ate-barre">
         <div className="ate-seg">
-          {FILTRES.map((f) => (
+          {FILTRES.filter((f) => f.cle !== "aMoi" || !vue.enChargeAbsent).map((f) => (
             <button
               key={f.cle}
               type="button"
@@ -309,6 +333,9 @@ export default function Liste({ vue }: { vue: VueListe }) {
               {f.label}
               {f.cle === "moi" && enRetard + aFaire > 0 ? (
                 <span className="ate-seg-compte">{enRetard + aFaire}</span>
+              ) : null}
+              {f.cle === "aMoi" && aMoiCompte > 0 ? (
+                <span className="ate-seg-compte">{aMoiCompte}</span>
               ) : null}
               {f.cle === "nouveaux" && vue.flux.nouveaux > 0 ? (
                 <span className="ate-seg-compte">{vue.flux.nouveaux}</span>
@@ -380,7 +407,15 @@ export default function Liste({ vue }: { vue: VueListe }) {
                 {replie ? null : (
                   <div className="ate-lignes">
                     {g.lignes.map((l) => (
-                      <Ligne key={l.token} l={l} base={base} demo={vue.demo} onFait={setToast} />
+                      <Ligne
+                        key={l.token}
+                        l={l}
+                        base={base}
+                        demo={vue.demo}
+                        onFait={setToast}
+                        moiCle={vue.quiCle}
+                        prenoms={PRENOM_COMPTE}
+                      />
                     ))}
                   </div>
                 )}

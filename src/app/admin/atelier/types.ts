@@ -57,6 +57,14 @@ export type LigneDossier = {
    * relance, pas du travail d'atelier — même s'il porte déjà 55 photos.
    */
   depot: EtapeDepot;
+  /**
+   * Clé du compte qui a ce dossier en main ('mathias', 'louis'), ou null.
+   *
+   * `null` n'est PAS un défaut : la plupart des dossiers n'ont besoin de
+   * personne tant qu'on ne les ouvre pas. On ne prend un dossier que pour
+   * dire à l'autre « celui-là, je m'en occupe ».
+   */
+  enCharge: string | null;
   paye: boolean;
   rembourse: boolean;
   /** Jamais ouvert par la personne connectée (cf. table `dossiers_vus`). */
@@ -171,6 +179,8 @@ export type Fiche = {
   notes: NoteVue[];
   /** La migration `notes` n'est pas passée : l'écran le dit au lieu de mentir. */
   notesIndisponibles: boolean;
+  /** Idem pour la colonne `en_charge` (migration 20260826). */
+  enChargeAbsent: boolean;
   client: ClientVue;
   actions: ActionVue[];
 };
@@ -235,9 +245,17 @@ export type VueListe = {
   fetchedAt: string;
   /** Prénom de la personne connectée — affiché, et écrit dans le journal. */
   qui: string;
+  /** Sa CLÉ de compte ('mathias'), pour comparer à `LigneDossier.enCharge`. */
+  quiCle: string;
   colonnes: ColonneVue[];
   activite: ActiviteVue[];
   flux: FluxVue;
+  /**
+   * `true` quand la migration 20260826 n'est pas passée : le sélecteur de la
+   * personne en charge disparaît au lieu de tomber en panne. Affiché, jamais
+   * tu — cf. `notesIndisponibles`.
+   */
+  enChargeAbsent: boolean;
   /** Mode démonstration : les actions ne partent jamais en base. */
   demo?: boolean;
 };

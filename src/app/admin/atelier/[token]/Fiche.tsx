@@ -7,6 +7,8 @@ import Parcours from "./Parcours";
 import Carnet from "./Carnet";
 import type { EvenementVue, Fiche as FicheVue } from "../types";
 import Loupe, { type VueLoupe } from "@/app/components/Loupe";
+import EnCharge from "./EnCharge";
+import { PRENOM_COMPTE } from "@/lib/admin-auth";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import {
   choisirDossier,
@@ -266,6 +268,19 @@ export default function Fiche({
           </a>
         </p>
       </header>
+
+      {/* Qui s'en occupe, tout en haut : c'est la première chose à savoir
+          avant de toucher au dossier, pas une information de bas de page.
+          Absent tant que la migration 20260826 n'est pas passée. */}
+      {fiche.enChargeAbsent ? null : (
+        <EnCharge
+          token={l.token}
+          enCharge={l.enCharge}
+          moi={moi}
+          prenoms={PRENOM_COMPTE}
+          demo={demo}
+        />
+      )}
 
       <Parcours parcours={fiche.parcours} />
 

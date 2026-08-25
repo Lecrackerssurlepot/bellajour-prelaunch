@@ -64,6 +64,8 @@ type Graine = {
   rembourse?: boolean;
   dom?: boolean;
   fondatrice?: number;
+  /** Qui a le dossier en main, pour montrer la marque en démonstration. */
+  enCharge?: string;
   /**
    * Photos montées, bouton final jamais cliqué (cf. urgence.ts, etapeDepot).
    * Cas réel du 25/08 : sans lui, la démonstration ne montre jamais l'état
@@ -249,6 +251,7 @@ const GRAINES: Graine[] = [
     depuis: 26,
     ouvertIlYA: 1,
     depotAbandonne: true,
+    enCharge: "louis",
   },
   {
     token: T("demoB"),
@@ -319,6 +322,7 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
         age: urgence.age,
       },
       depot,
+      enCharge: g.enCharge ?? null,
       paye: Boolean(g.paye),
       rembourse: Boolean(g.rembourse),
       /* En démonstration, « nouveau » = arrivé dans les deux derniers jours
@@ -371,6 +375,8 @@ export function listeDemo(qui: string): VueListe {
     lignes: evaluees.map((e) => e.ligne),
     compteurs: compter(evaluees.map((e) => e.urgence)),
     colonnes: COLONNES,
+    enChargeAbsent: false,
+    quiCle: "mathias",
     activite,
     flux: {
       demandesAujourdhui: evaluees.filter((e) => e.ligne.nouveau).length,
@@ -531,6 +537,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
         ]
       : [],
     notesIndisponibles: false,
+    enChargeAbsent: false,
     client: {
       autres:
         g.token === T("demo1")
