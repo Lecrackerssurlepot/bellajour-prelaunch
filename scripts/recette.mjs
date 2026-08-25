@@ -70,6 +70,20 @@ const LEVIERS = {
       sb.from("numeros").update({ created_at: new Date(Date.now() - 26 * H).toISOString() }).eq("id", n.id),
     note: "⚠️ La borne de mise en service doit être antérieure : poser ATELIER_M2_DEPUIS sur Preview.",
   },
+  M2b: {
+    quoi: "relance « vos photos sont arrivées », normalement à J+1",
+    /* Le cas du 25/08 : les photos sont montées, le dernier bouton jamais
+       cliqué. C'est `consent_photos` qui tranche, jamais le compteur. */
+    verifier: (n) =>
+      !n.nb_photos
+        ? "aucune photo déposée : c'est M2 qui relance, pas M2b"
+        : n.consent_photos
+          ? "le dépôt est terminé : M2b ne concerne que les dépôts restés en plan"
+          : null,
+    vieillir: async (sb, n) =>
+      sb.from("numeros").update({ created_at: new Date(Date.now() - 26 * H).toISOString() }).eq("id", n.id),
+    note: "⚠️ Même borne que M2 : ATELIER_M2_DEPUIS doit être antérieure sur Preview.",
+  },
   M3b: {
     quoi: "relance « votre numéro vous attend », normalement à J+3 après M3",
     verifier: (n) =>
@@ -120,7 +134,7 @@ function sb() {
 async function lire(client, titre) {
   let q = client
     .from("numeros")
-    .select("id, token, titre, prenom, email, etat, nb_photos, nb_pages, palier, created_at, etat_maj_le, stripe_payment_intent")
+    .select("id, token, titre, prenom, email, etat, nb_photos, consent_photos, nb_pages, palier, created_at, etat_maj_le, stripe_payment_intent")
     .order("created_at", { ascending: false });
   if (titre) q = q.ilike("titre", titre);
   const { data, error } = await q;
@@ -210,7 +224,25 @@ if (commande === "etat") {
   console.log(`\n  Relève sur ${cible} :`);
   console.log(`  ${JSON.stringify(await relever(cible))}\n`);
 } else if (commande === "nettoyer") {
-  const dossiers = await lire(client, "test%");
+  /* Deux façons de désigner ce qu'on efface, parce que la convention de
+     titre ne survit pas au contact du réel : en pleine séance, on tape ce
+     qui passe par la tête, pas « Test 1 ».
+       par défaut   : les titres commençant par « test »
+       --depuis=... : tout ce qui a été créé depuis cette date (ISO ou AAAA-MM-JJ)
+     La seconde est la plus sûre pour une séance : elle ne dépend d'aucune
+     discipline de nommage. */
+  const depuis = args.find((a) => a.startsWith("--depuis="))?.split("=")[1];
+  let dossiers;
+  if (depuis) {
+    const t = Date.parse(depuis.length <= 10 ? `${depuis}T00:00:00Z` : depuis);
+    if (Number.isNaN(t)) {
+      console.error(`\n  Date illisible : ${depuis}. Exemple : --depuis=2026-08-25\n`);
+      process.exit(1);
+    }
+    dossiers = (await lire(client, null)).filter((d) => Date.parse(d.created_at) >= t);
+  } else {
+    dossiers = await lire(client, "test%");
+  }
   if (!dossiers.length) {
     console.log("\n  Aucun dossier « test… » à supprimer.\n");
     process.exit(0);

@@ -191,30 +191,24 @@ que si un mail EST DÛ maintenant. Et elle comptait des « dossiers oubliés » 
 
 ---
 
-### ⚠️ À FAIRE À LA MAIN, AVANT DE TESTER
+### ✅ Fait le 25/08 au soir — les deux gestes manuels
 
-Deux gestes que le code ne peut pas faire tout seul. Rien ne casse sans eux —
-mais deux choses resteront inertes.
+**La migration `20260826_atelier_en_charge.sql` est passée** sur
+`lxkivqbcegursmxshmoc`. Vérifié : la colonne se lit, les trois dossiers sont à
+`null` (personne), et le bouton a déjà servi.
 
-**1. Passer la migration.**
-`supabase/migrations/20260826_atelier_en_charge.sql` — une colonne nullable et
-un index partiel. Tant qu'elle n'est pas passée, le sélecteur « qui a ce
-dossier en main » et le filtre « Les miens » n'apparaissent pas. Le reste du
-back-office fonctionne normalement : la lecture retombe sur une requête sans la
-colonne.
+**Le template M2b est créé dans Brevo : template 37.**
+`BREVO_TEMPLATE_M2B_ID=37` est posé dans `.env.local`.
 
-**2. Créer le template Brevo de M2b.**
+⚠️ **RESTE À POSER SUR VERCEL** : `BREVO_TEMPLATE_M2B_ID=37`, sur **Preview ET
+Production**. Sans lui, M2b ne partira pas en ligne — la page Santé l'affichera
+en orange, sans poser de verrou : il partira tout seul dès que la variable
+existe.
 
-```bash
-node scripts/mails-atelier.mjs --pousser
-```
-
-puis coller l'ID rendu dans `.env.local` ET dans Vercel (Preview + Production),
-sous `BREVO_TEMPLATE_M2B_ID`. Tant qu'il manque, la page Santé l'affiche en
-orange et la relève ne l'envoie pas — sans poser de verrou, donc il partira
-tout seul dès que la variable existe.
-
-⚠️ Le dossier « joelle » (55 photos, jamais envoyées) attend ce mail.
+Les sept autres templates ont été remis à jour au passage (mêmes ID, textes
+resynchronisés depuis `scripts/mails-atelier.mjs`).
+`verif-mails-brevo.ts` : aucun trou de variable, M2b reçoit bien
+LIEN, NB_PHOTOS, PRENOM, TITRE.
 
 ---
 
@@ -282,6 +276,7 @@ est dans [`RECETTE-PARCOURS.md`](./RECETTE-PARCOURS.md).
 ```bash
 node scripts/recette.mjs etat                     # l'état de tous les dossiers
 node scripts/recette.mjs pousser "Test 1" M3b     # force un mail à retardement
+node scripts/recette.mjs pousser "X" M2b          # dépôt resté en plan, relance à J+1
 node scripts/recette.mjs relever                  # déclenche la relève
 node scripts/recette.mjs nettoyer --depuis=2026-08-26
 
