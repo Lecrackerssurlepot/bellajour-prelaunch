@@ -166,6 +166,17 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         ton: "alerte",
       };
 
+    /* Une relance retiree A LA MAIN. Le verrou dans `mails_envoyes` suffit a
+       ce que le mail ne parte pas, mais il ne dit RIEN : le journal est le
+       seul endroit ou l'on saura, dans six mois, pourquoi cette cliente n'a
+       jamais ete relancee. */
+    case "relance_annulee":
+      return {
+        texte: `Relance ${String(payload.code ?? "")} retirée à la main${qui ? ` par ${qui}` : ""}`,
+        detail: typeof payload.raison === "string" ? (payload.raison as string) : null,
+        ton: "neutre",
+      };
+
     case "checkout_expire":
       return { texte: "Panier abandonné (session expirée)", detail: "Le numéro reste commandable", ton: "neutre" };
 
