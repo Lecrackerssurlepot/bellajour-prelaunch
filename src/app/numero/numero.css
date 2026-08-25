@@ -269,6 +269,41 @@
   color: var(--c-text-faint);
 }
 
+/* ── De qui c'est le tour ──
+   Le fil des jalons dit OÙ on en est ; il ne dit pas QUI DOIT JOUER. C'est
+   pourtant la seule question de quelqu'un qui rouvre son lien. */
+.nu-camp {
+  margin-top: clamp(18px, 3vw, 26px);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+}
+
+/* ── Gardez ce lien ──
+   Pas de compte, pas de mot de passe : ce lien EST son espace client. Posé en
+   pied de page, présent à tous les états, jamais dans le chemin de lecture. */
+.nu-garde {
+  margin-top: clamp(48px, 9vw, 84px);
+  padding-top: clamp(20px, 4vw, 28px);
+  border-top: 1px solid var(--c-line);
+  max-width: 56ch;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+.nu-garde b { font-weight: 400; color: var(--c-text-soft); }
+
+.nu-garde-url {
+  display: block;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--c-text-soft);
+  word-break: break-all;
+  /* Un lien qu'on veut copier se sélectionne d'un geste, pas de trois. */
+  user-select: all;
+}
+
 .nu-prix {
   margin-top: clamp(34px, 6vw, 52px);
   font-family: var(--font-display);

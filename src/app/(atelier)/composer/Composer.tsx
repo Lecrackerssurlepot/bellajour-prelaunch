@@ -188,6 +188,7 @@ export default function Composer() {
           {n === 6 && (
             <Screen6Fin
               titre={draft.titre}
+              token={draft.token}
               consentCommunication={draft.consentCommunication}
               onConsent={(v) => patch({ consentCommunication: v })}
             />

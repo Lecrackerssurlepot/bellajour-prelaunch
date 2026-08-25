@@ -22,7 +22,7 @@ import { makeSupabase } from '@/lib/supabase'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { resoudreApercu } from '@/lib/atelier/apercu'
 import { eurosPour, type PalierCle } from '@/lib/atelier/prix'
-import { etapeDepot, type EtapeDepot } from '@/lib/atelier/urgence'
+import { etapeDepot, QUI_ATTEND, type Camp, type EtapeDepot } from '@/lib/atelier/urgence'
 import { MIN_PHOTOS } from '../../(atelier)/composer/depot/paliers'
 import { ajouterJours, formaterJour } from '@/lib/atelier/dates'
 import CasesEtCommande from './CasesEtCommande'
@@ -31,6 +31,11 @@ import BoutonValider from './BoutonValider'
 import BoutonEnvoyer from './BoutonEnvoyer'
 import Apercu from './Apercu'
 import '../numero.css'
+
+/* L'adresse publique du site, pour écrire le lien EN TOUTES LETTRES sous les
+   yeux de la cliente. Même valeur que celle des mails (mails.ts) : le lien
+   qu'elle lit ici doit être exactement celui qu'elle a reçu. */
+const SITE_URL_PUBLIC = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.bellajour.fr'
 
 /* L'état change dans le dos de la cliente — un mail la ramène ici juste après
    une action de l'atelier. Aucune mise en cache : une page d'état périmée est
@@ -73,6 +78,27 @@ const CHAMPS =
   'token, etat, titre, prenom, nb_photos, nb_pages, palier, apercu_urls, ' +
   'maquette_pdf_url, canva_url, cgv_ok, renonciation_retractation, consent_photos, ' +
   'transporteur, tracking_url, valide_le, etat_maj_le'
+
+/**
+ * De qui c'est le tour, en une phrase.
+ *
+ * Recette du 25/08 : « sur la page client on ne comprend pas trop si c'est
+ * validé, on dirait que je dois encore faire l'étape ». Le fil des jalons dit
+ * OÙ on en est ; il ne dit pas QUI DOIT JOUER. Or c'est la seule question que
+ * se pose quelqu'un qui rouvre son lien : est-ce que j'attends, ou est-ce
+ * qu'on m'attend ?
+ *
+ * La réponse ne se réinvente pas ici : `QUI_ATTEND` (urgence.ts) la donne déjà
+ * à l'atelier pour trier sa journée. Les deux écrans lisent la même table, et
+ * ne peuvent donc pas se contredire — la cliente ne peut pas lire « c'est à
+ * nous » pendant que la table de travail range son dossier chez elle.
+ */
+const MOT_DU_CAMP: Record<Camp, string | null> = {
+  atelier: 'C’est à nous. On vous écrit dès que c’est prêt.',
+  cliente: 'C’est à vous.',
+  dehors: 'C’est en route. Rien à faire de votre côté.',
+  fini: null,
+}
 
 /* Cinq jalons, pas huit. La cliente ne connaît pas notre machine à états :
    elle veut savoir où en est son numéro, pas dans quelle case il dort. */
@@ -144,7 +170,7 @@ export default async function NumeroPage({
 
   if (numero === 'panne') {
     return (
-      <Coquille titre="Votre numéro" avancement={-1}>
+      <Coquille titre="Votre numéro" avancement={-1} camp="fini" token={token}>
         <p className="nu-mot">La page ne répond pas.</p>
         <p className="nu-sub">
           Le dossier est intact — c’est l’affichage qui bloque. Rechargez dans
@@ -183,8 +209,16 @@ export default async function NumeroPage({
   const sansPhotos = depot === 'vide'
   const attendPhotos = sansPhotos || numero.etat === 'photos_insuffisantes'
 
+  /* Un dépôt resté en plan est chez la cliente, quoi qu'en dise l'état : la
+     ligne est en `photos_recues`, mais la balle n'est pas dans notre camp
+     tant qu'elle n'a pas envoyé. Même correction que dans la pile de
+     l'atelier — c'est le même mensonge des deux côtés. */
+  const camp: Camp = depot === 'termine' ? QUI_ATTEND[numero.etat] : 'cliente'
+
   return (
-    <Coquille titre={titre} avancement={attendPhotos || aTerminer ? 0 : AVANCEMENT[numero.etat] ?? 0}>
+    <Coquille titre={titre} avancement={attendPhotos || aTerminer ? 0 : AVANCEMENT[numero.etat] ?? 0}
+      camp={camp}
+      token={numero.token}>
       {numero.etat === 'photos_recues' && depot === 'termine' && (
         <>
           <p className="nu-mot">L’atelier a vos {numero.nb_photos} photos.</p>
@@ -422,12 +456,16 @@ export default async function NumeroPage({
 function Coquille({
   titre,
   avancement,
+  camp,
+  token,
   children,
 }: {
   titre: string
   /* -1 = on ne sait pas où en est le dossier : le fil disparaît plutôt que
      de mentir. */
   avancement: number
+  camp: Camp
+  token: string
   children: React.ReactNode
 }) {
   return (
@@ -455,7 +493,19 @@ function Coquille({
           </ol>
         )}
 
+        {MOT_DU_CAMP[camp] && <p className="nu-camp">{MOT_DU_CAMP[camp]}</p>}
+
         {children}
+
+        {/* ── LE LIEN, ET LA CONSIGNE DE LE GARDER ──────────────────────
+            Il n'y a pas de compte, pas de mot de passe : ce lien EST son
+            espace client (PRD §7.5). Elle le reçoit une fois, dans un mail
+            qui peut tomber en Promotions. Rien ne le lui disait. */}
+        <p className="nu-garde">
+          <b>Gardez ce lien.</b> C’est le seul, il suit votre numéro jusqu’à la livraison, et
+          il ne demande ni compte ni mot de passe. Ajoutez-le à vos favoris, ou gardez le mail.
+          <span className="nu-garde-url">{`${SITE_URL_PUBLIC}/numero/${token}`}</span>
+        </p>
       </main>
 
       <Footer />
