@@ -1,0 +1,717 @@
+/**
+ * Tout ce que le back-office de l'atelier LIT.
+ *
+ * Service key, donc strictement serveur : ce fichier n'est importé QUE par des
+ * composants serveur (aucun "use client" dans la chaîne d'import), et il tire
+ * @/lib/supabase, qui lit SUPABASE_SERVICE_KEY. Une seule règle qui ne bouge pas :
+ * ce fichier ne fait AUCUNE écriture. Les écritures vivent dans
+ * /api/admin/atelier/*, et nulle part ailleurs.
+ *
+ * Le volume est faible (quelques dizaines de dossiers) : on lit large et on
+ * agrège en mémoire plutôt que d'empiler des vues SQL qu'il faudrait
+ * maintenir. Le jour où ça pique, ce sera une bonne nouvelle.
+ */
+
+import { makeSupabase } from "@/lib/supabase";
+import { canonicalizeEmail } from "@/lib/email";
+import { signerGet } from "@/lib/atelier/r2";
+import { resoudreApercu } from "@/lib/atelier/apercu";
+import { eurosPour, type PalierCle } from "@/lib/atelier/prix";
+import {
+  ETAPE_ETAT,
+  ETATS,
+  LIBELLE_ETAT,
+  actionsDepuis,
+  type Etat,
+} from "@/lib/atelier/transitions";
+import { compter, comparerUrgence, urgencePour } from "@/lib/atelier/urgence";
+import { raconter } from "@/lib/atelier/recit";
+import {
+  CHAMPS_MAIL,
+  codesPour,
+  templateExiste,
+  type Envoyes,
+  type NumeroPourReleve,
+} from "@/lib/atelier/mails";
+import { construireParcours } from "@/lib/atelier/parcours";
+import { prenomDe } from "@/lib/admin-auth";
+import type {
+  ActiviteVue,
+  AdresseVue,
+  FluxVue,
+  ColonneVue,
+  ClientVue,
+  EvenementVue,
+  Fiche,
+  LigneDossier,
+  MailVue,
+  NoteVue,
+  PhotoVue,
+  VueListe,
+} from "./types";
+
+const CHAMPS_LIGNE =
+  "token, titre, prenom, email, email_canonical, etat, nb_photos, nb_pages, palier, created_at, etat_maj_le, stripe_payment_intent";
+
+type RangeeNumero = {
+  id?: string;
+  token: string;
+  titre: string | null;
+  prenom: string | null;
+  email: string | null;
+  email_canonical: string | null;
+  etat: Etat;
+  nb_photos: number | null;
+  nb_pages: number | null;
+  palier: PalierCle | null;
+  created_at: string | null;
+  etat_maj_le: string | null;
+  stripe_payment_intent: string | null;
+};
+
+/**
+ * Ce qui partira si on déclenche cette action, MAINTENANT, sur CE dossier.
+ *
+ * On ne le déclare pas : on le demande à la règle d'envoi, en projetant le
+ * dossier dans son état d'arrivée. C'est la seule façon d'être d'accord avec
+ * ce qui se passera réellement une seconde plus tard — une liste écrite à la
+ * main mentait déjà sur trois actions sur sept.
+ *
+ * `etat_maj_le` est projeté à maintenant, sinon un mail conditionné à l'âge
+ * de l'état (M8, trois jours après la livraison) serait annoncé comme
+ * immédiat.
+ */
+function mailDeLAction(
+  vers: Etat,
+  r: RangeeNumero,
+  envoyes: Envoyes,
+  maintenant: Date,
+): { code: string; absent: boolean } | null {
+  const projete = {
+    ...(r as unknown as NumeroPourReleve),
+    etat: vers,
+    etat_maj_le: maintenant.toISOString(),
+  };
+  const code = codesPour(projete, envoyes, maintenant)[0];
+  return code ? { code, absent: !templateExiste(code) } : null;
+}
+
+function versLigne(
+  r: RangeeNumero,
+  maintenant: Date,
+  rembourse: boolean,
+  nouveau = false,
+  envoyes: Envoyes = new Map(),
+): LigneDossier {
+  const nbPhotos = r.nb_photos ?? 0;
+  /* « Sans photos » ne veut PAS dire « nb_photos = 0 » à tous les états : une
+     fois l'aperçu publié, le compteur n'a plus de sens comme signal. Le cas
+     visé est précis — questionnaire rempli, dépôt jamais terminé. */
+  const sansPhotos = r.etat === "photos_recues" && nbPhotos === 0;
+  const u = urgencePour(r.etat, r.etat_maj_le, maintenant, { sansPhotos });
+
+  return {
+    numeroId: r.id ?? "",
+    token: r.token,
+    titre: r.titre,
+    prenom: r.prenom,
+    email: r.email,
+    etat: r.etat,
+    etape: ETAPE_ETAT[r.etat] ?? "?",
+    libelleEtat: LIBELLE_ETAT[r.etat] ?? r.etat,
+    nbPhotos,
+    nbPages: r.nb_pages,
+    euros: eurosPour(r.palier),
+    createdAt: r.created_at,
+    etatMajLe: r.etat_maj_le,
+    urgence: {
+      pile: u.pile,
+      libelle: u.libelle,
+      promesse: u.promesse,
+      enRetard: u.pile === "retard",
+      age: u.age,
+    },
+    sansPhotos,
+    paye: Boolean(r.stripe_payment_intent),
+    rembourse,
+    nouveau,
+    actions: actionsDepuis(r.etat).map((a) => ({
+      cle: a.cle,
+      libelle: a.libelle,
+      explication: a.explication,
+      vers: a.vers,
+      mail: mailDeLAction(a.vers, r, envoyes, maintenant),
+      note: a.note,
+    })),
+  };
+}
+
+/* Les neuf colonnes, dans l'ordre du parcours. Constante : elles ne
+   dépendent d'aucune donnée. */
+export const COLONNES: ColonneVue[] = ETATS.map((etat) => ({
+  etat,
+  etape: ETAPE_ETAT[etat],
+  titre: LIBELLE_ETAT[etat],
+}));
+
+/* ─────────────────────────────── la liste ─────────────────────────────── */
+
+export async function chargerListe(identite: { cle: string; prenom: string }): Promise<VueListe> {
+  const supabase = makeSupabase();
+  const maintenant = new Date();
+
+  const { data, error } = await supabase
+    .from("numeros")
+    .select(`id, ${CHAMPS_LIGNE}`)
+    .order("etat_maj_le", { ascending: true })
+    .returns<RangeeNumero[]>();
+
+  if (error) {
+    console.error("[admin/atelier] lecture liste échouée", error.code, error.message);
+  }
+  const rangees = data ?? [];
+
+  /* Un remboursement ne change AUCUN état, volontairement : rembourser avant
+     impression et après livraison ne veulent pas dire la même chose (cf.
+     paiement.ts). Conséquence : rien ne le montre nulle part. On va donc le
+     chercher dans le journal, en une requête, pour l'afficher. */
+  const rembourses = new Set<string>();
+  const ids = rangees.map((r) => r.id).filter(Boolean) as string[];
+  if (ids.length) {
+    const { data: remb } = await supabase
+      .from("evenements")
+      .select("numero_id")
+      .eq("type", "remboursement")
+      .in("numero_id", ids)
+      .returns<Array<{ numero_id: string }>>();
+    for (const e of remb ?? []) rembourses.add(e.numero_id);
+  }
+
+  const activite = await chargerActivite(supabase, rangees);
+  const { vus, marqueurAbsent } = await chargerVus(supabase, identite.cle);
+  /* Ce qui est déjà parti, pour TOUS les dossiers en une requête : la règle
+     d'envoi en a besoin pour dire, ligne par ligne, quel mail partirait. */
+  const envoyesPar = await chargerEnvoyes(supabase, rangees.map((r) => r.id).filter(Boolean) as string[]);
+
+  /* Une seule évaluation d'urgence par dossier : elle sert au tri, aux
+     compteurs du bandeau et à l'affichage. La recalculer trois fois serait
+     trois occasions de diverger. */
+  const evaluees = rangees.map((r) => ({
+    ligne: versLigne(
+      r,
+      maintenant,
+      r.id ? rembourses.has(r.id) : false,
+      estNouveau(r, vus, marqueurAbsent, maintenant),
+      envoyesPar.get(r.id ?? "") ?? new Map(),
+    ),
+    urgence: urgencePour(r.etat, r.etat_maj_le, maintenant, {
+      sansPhotos: r.etat === "photos_recues" && (r.nb_photos ?? 0) === 0,
+    }),
+  }));
+
+  evaluees.sort((a, b) => comparerUrgence(a.urgence, b.urgence));
+
+  return {
+    lignes: evaluees.map((e) => e.ligne),
+    compteurs: compter(evaluees.map((e) => e.urgence)),
+    colonnes: COLONNES,
+    activite,
+    flux: mesurerFlux(evaluees.map((e) => e.ligne), rangees, maintenant, marqueurAbsent),
+    fetchedAt: maintenant.toISOString(),
+    qui: identite.prenom,
+  };
+}
+
+/** Les mails déjà partis, par dossier, avec leurs dates (M3b en dépend). */
+async function chargerEnvoyes(
+  supabase: ReturnType<typeof makeSupabase>,
+  ids: string[],
+): Promise<Map<string, Envoyes>> {
+  const par = new Map<string, Envoyes>();
+  if (!ids.length) return par;
+  try {
+    const { data } = await supabase
+      .from("mails_envoyes")
+      .select("numero_id, code, envoye_le")
+      .in("numero_id", ids)
+      .returns<Array<{ numero_id: string; code: string; envoye_le: string }>>();
+    for (const e of data ?? []) {
+      const m = par.get(e.numero_id) ?? new Map<string, string>();
+      m.set(e.code, e.envoye_le);
+      par.set(e.numero_id, m);
+    }
+  } catch (err) {
+    console.error("[admin/atelier] envois illisibles", (err as Error)?.message);
+  }
+  return par;
+}
+
+/* ─────────────────────── le marqueur de lecture ─────────────────────── */
+
+/** Repli quand la table n'existe pas encore : « arrivé depuis moins de 24 h ». */
+const REPLI_NOUVEAU_H = 24;
+
+/**
+ * Ce que CETTE personne a déjà ouvert.
+ *
+ * Best-effort assumé : si la migration `dossiers_vus` n'a pas encore été
+ * appliquée, la requête échoue et on le DIT (`marqueurAbsent`), au lieu de
+ * rendre un ensemble vide qui ferait passer tous les dossiers pour neufs sans
+ * que personne ne comprenne pourquoi.
+ */
+async function chargerVus(
+  supabase: ReturnType<typeof makeSupabase>,
+  qui: string,
+): Promise<{ vus: Set<string>; marqueurAbsent: boolean }> {
+  try {
+    const { data, error } = await supabase
+      .from("dossiers_vus")
+      .select("numero_id")
+      .eq("qui", qui)
+      .returns<Array<{ numero_id: string }>>();
+
+    if (error) {
+      console.error("[admin/atelier] dossiers_vus indisponible", error.code, error.message);
+      return { vus: new Set(), marqueurAbsent: true };
+    }
+    return { vus: new Set((data ?? []).map((v) => v.numero_id)), marqueurAbsent: false };
+  } catch (err) {
+    console.error("[admin/atelier] dossiers_vus exception", (err as Error)?.message);
+    return { vus: new Set(), marqueurAbsent: true };
+  }
+}
+
+/**
+ * Un dossier est « nouveau » tant que la personne connectée n'a pas ouvert sa
+ * fiche.
+ *
+ * ⚠️ Un dossier dont le dépôt n'est pas terminé n'est JAMAIS marqué nouveau :
+ * il n'y a rien à y voir tant qu'elle n'a pas envoyé ses photos. Le compter
+ * remplirait le badge du matin de dossiers sur lesquels il n'y a rien à faire,
+ * et un compteur qu'on ne croit plus ne sert à rien.
+ */
+function estNouveau(
+  r: RangeeNumero,
+  vus: Set<string>,
+  marqueurAbsent: boolean,
+  maintenant: Date,
+): boolean {
+  if ((r.nb_photos ?? 0) === 0) return false;
+
+  if (marqueurAbsent) {
+    if (!r.created_at) return false;
+    const age = (maintenant.getTime() - new Date(r.created_at).getTime()) / 3_600_000;
+    return age >= 0 && age < REPLI_NOUVEAU_H;
+  }
+
+  return r.id ? !vus.has(r.id) : false;
+}
+
+/* ─────────────────────────────── le flux ─────────────────────────────── */
+
+/* Date civile Europe/Paris : le serveur tourne en UTC, et « arrivé
+   aujourd'hui » à 1 h du matin doit compter pour aujourd'hui à Lisbonne comme
+   à Paris, pas pour la veille. */
+const JOUR_PARIS = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Paris",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+const JOURS_FRISE = 14;
+
+function mesurerFlux(
+  lignes: LigneDossier[],
+  rangees: RangeeNumero[],
+  maintenant: Date,
+  marqueurAbsent: boolean,
+): FluxVue {
+  /* Une ARRIVÉE compte le jour où le dossier a été ouvert ; une DEMANDE est
+     une arrivée dont le dépôt est terminé. `nb_photos > 0` est le seul signal
+     dont on dispose rétrospectivement : `consent_photos` dit la même chose,
+     mais `nb_photos` se lit déjà dans la liste. */
+  const demandes = rangees.filter((r) => (r.nb_photos ?? 0) > 0 && r.created_at);
+
+  const aujourdhui = JOUR_PARIS.format(maintenant);
+  const ilYA = (jours: number) => JOUR_PARIS.format(new Date(maintenant.getTime() - jours * 86_400_000));
+
+  const compteParJour = new Map<string, number>();
+  for (const r of demandes) {
+    const j = JOUR_PARIS.format(new Date(r.created_at as string));
+    compteParJour.set(j, (compteParJour.get(j) ?? 0) + 1);
+  }
+
+  const parJour: FluxVue["parJour"] = [];
+  for (let i = JOURS_FRISE - 1; i >= 0; i--) {
+    const date = ilYA(i);
+    parJour.push({ date, demandes: compteParJour.get(date) ?? 0 });
+  }
+
+  const seuilSemaine = maintenant.getTime() - 7 * 86_400_000;
+
+  return {
+    demandesAujourdhui: compteParJour.get(aujourdhui) ?? 0,
+    demandesSemaine: demandes.filter((r) => new Date(r.created_at as string).getTime() >= seuilSemaine)
+      .length,
+    sansDepot: lignes.filter((l) => l.sansPhotos).length,
+    nouveaux: lignes.filter((l) => l.nouveau).length,
+    parJour,
+    marqueurAbsent,
+  };
+}
+
+/**
+ * Le fil d'activité de l'atelier — les deux derniers jours, tous dossiers
+ * confondus.
+ *
+ * ⚠️ Fenêtre de 48 h et plafond à 60 lignes. Le journal grossit sans fin :
+ * sans borne, cette requête deviendrait la plus lourde de la page, pour
+ * afficher des événements que personne ne relit. Deux jours couvrent le
+ * week-end et la question réelle — « qu'est-ce que j'ai fait, qu'est-ce qui
+ * est parti ».
+ *
+ * Best-effort : un fil vide ne doit jamais empêcher la table de travail de
+ * s'afficher.
+ */
+const FENETRE_ACTIVITE_H = 48;
+const MAX_ACTIVITE = 60;
+
+async function chargerActivite(
+  supabase: ReturnType<typeof makeSupabase>,
+  rangees: RangeeNumero[],
+): Promise<ActiviteVue[]> {
+  try {
+    const depuis = new Date(Date.now() - FENETRE_ACTIVITE_H * 3_600_000).toISOString();
+    const { data } = await supabase
+      .from("evenements")
+      .select("id, numero_id, type, payload, created_at")
+      .gte("created_at", depuis)
+      .order("created_at", { ascending: false })
+      .limit(MAX_ACTIVITE)
+      .returns<
+        Array<{
+          id: string;
+          numero_id: string;
+          type: string;
+          payload: Record<string, unknown>;
+          created_at: string;
+        }>
+      >();
+
+    const parId = new Map(rangees.filter((r) => r.id).map((r) => [r.id as string, r]));
+
+    return (data ?? [])
+      /* Un événement dont le dossier a disparu (suppression en cascade) n'a
+         plus de titre ni de lien : il ne raconte plus rien. */
+      .filter((e) => parId.has(e.numero_id))
+      .map((e) => {
+        const n = parId.get(e.numero_id)!;
+        return {
+          id: e.id,
+          token: n.token,
+          titre: n.titre,
+          createdAt: e.created_at,
+          recit: raconter(e.type, e.payload ?? {}),
+        };
+      });
+  } catch (err) {
+    console.error("[admin/atelier] fil d'activité indisponible", (err as Error)?.message);
+    return [];
+  }
+}
+
+/* ─────────────────────────────── la fiche ─────────────────────────────── */
+
+/** Les DOM passent chez Stripe pour de la France (cf. prix.ts). Ici, on le voit. */
+function estDom(codePostal: string | null): boolean {
+  return Boolean(codePostal && /^9[78]/.test(codePostal.trim()));
+}
+
+function versAdresse(brut: unknown): AdresseVue | null {
+  if (!brut || typeof brut !== "object") return null;
+  const o = brut as Record<string, unknown>;
+  /* Stripe renvoie soit { name, address: {...} }, soit l'adresse à plat selon
+     l'endroit d'où on la recopie. On accepte les deux plutôt que d'imposer
+     une forme à un objet qu'on ne fabrique pas. */
+  const a = (o.address && typeof o.address === "object" ? o.address : o) as Record<string, unknown>;
+  const s = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+  const codePostal = s(a.postal_code) ?? s(a.code_postal);
+  return {
+    nom: s(o.name) ?? s(o.nom),
+    ligne1: s(a.line1) ?? s(a.ligne1),
+    ligne2: s(a.line2) ?? s(a.ligne2),
+    codePostal,
+    ville: s(a.city) ?? s(a.ville),
+    pays: s(a.country) ?? s(a.pays),
+    dom: estDom(codePostal),
+  };
+}
+
+/**
+ * « Cette personne a ouvert ce dossier. »
+ *
+ * SEULE ÉCRITURE de tout ce fichier, et elle ne touche à aucune donnée
+ * métier : c'est une marque de lecture, pas un état. Best-effort strict — un
+ * marqueur perdu fait réapparaître un badge, jamais plus.
+ *
+ * `upsert` plutôt qu'`insert` : rouvrir un dossier rafraîchit la date au lieu
+ * de renvoyer un doublon (23505) qu'il faudrait rattraper.
+ */
+export async function marquerVu(qui: string, numeroId: string): Promise<void> {
+  try {
+    const supabase = makeSupabase();
+    const { error } = await supabase
+      .from("dossiers_vus")
+      .upsert({ qui, numero_id: numeroId, vu_le: new Date().toISOString() }, { onConflict: "qui,numero_id" });
+    if (error) console.error("[admin/atelier] marquage vu échoué", error.code, error.message);
+  } catch (err) {
+    console.error("[admin/atelier] marquage vu exception", (err as Error)?.message);
+  }
+}
+
+export async function chargerFiche(token: string): Promise<Fiche | null> {
+  const supabase = makeSupabase();
+  const maintenant = new Date();
+
+  const { data: n } = await supabase
+    .from("numeros")
+    .select("*")
+    .eq("token", token)
+    .maybeSingle<Record<string, unknown>>();
+
+  if (!n) return null;
+
+  const id = String(n.id);
+  const rangee = n as unknown as RangeeNumero;
+
+  const [{ data: photos }, { data: evenements }, { data: mails }, notesLues] = await Promise.all([
+    supabase
+      .from("photos")
+      .select("id, r2_key, nom_origine, taille, ordre")
+      .eq("numero_id", id)
+      .order("ordre", { ascending: true })
+      .returns<Array<{ id: string; r2_key: string; nom_origine: string | null; taille: number | null }>>(),
+    supabase
+      .from("evenements")
+      .select("id, type, payload, created_at")
+      .eq("numero_id", id)
+      .order("created_at", { ascending: false })
+      .limit(200)
+      .returns<Array<{ id: string; type: string; payload: Record<string, unknown>; created_at: string }>>(),
+    supabase
+      .from("mails_envoyes")
+      .select("code, template_id, envoye_le")
+      .eq("numero_id", id)
+      .order("envoye_le", { ascending: false })
+      .returns<Array<{ code: string; template_id: number | null; envoye_le: string }>>(),
+    chargerNotes(supabase, id),
+  ]);
+
+  const rembourse = (evenements ?? []).some((e) => e.type === "remboursement");
+
+  /* Les vignettes. Une URL signée par photo, en parallèle : sur 80 photos,
+     en série, l'ouverture de la fiche prendrait plusieurs secondes. Une
+     signature qui échoue rend `null` et laisse un cadre vide — jamais une
+     fiche en erreur. */
+  const photosVues: PhotoVue[] = await Promise.all(
+    (photos ?? []).map(async (p) => ({
+      id: p.id,
+      nom: p.nom_origine,
+      taille: p.taille,
+      url: await signerGet(p.r2_key).catch(() => null),
+    })),
+  );
+
+  const apercu = await resoudreApercu(n.apercu_urls);
+  const brut = (n.apercu_urls && typeof n.apercu_urls === "object" ? n.apercu_urls : {}) as Record<string, string>;
+
+  const evenementsVus: EvenementVue[] = (evenements ?? []).map((e) => ({
+    id: e.id,
+    type: e.type,
+    payload: e.payload ?? {},
+    createdAt: e.created_at,
+    recit: raconter(e.type, e.payload ?? {}),
+  }));
+
+  return {
+    ligne: versLigne(rangee, maintenant, rembourse),
+    parcours: construireParcours(rangee.etat, evenementsVus),
+    occasion: (n.occasion as string) ?? null,
+    histoire: (n.histoire as string) ?? null,
+    telephone: (n.telephone as string) ?? null,
+    consentPhotos: n.consent_photos === true,
+    consentCommunication: n.consent_communication === true,
+    cgvOk: n.cgv_ok === true,
+    cgvOkAt: (n.cgv_ok_at as string) ?? null,
+    renonciation: n.renonciation_retractation === true,
+    renonciationAt: (n.renonciation_at as string) ?? null,
+    palier: (n.palier as string) ?? null,
+    canvaUrl: (n.canva_url as string) ?? null,
+    canvaTravail: (n.canva_travail as string) ?? null,
+    maquettePdfUrl: (n.maquette_pdf_url as string) ?? null,
+    transporteur: (n.transporteur as string) ?? null,
+    trackingUrl: (n.tracking_url as string) ?? null,
+    apercu,
+    apercuBrut: {
+      c1: brut.c1 ?? null,
+      c4: brut.c4 ?? null,
+      double: brut.double ?? null,
+    },
+    adresse: versAdresse(n.adresse_livraison),
+    stripePaymentIntent: (n.stripe_payment_intent as string) ?? null,
+    photos: photosVues,
+    evenements: evenementsVus,
+    mails: (mails ?? []).map(
+      (m): MailVue => ({ code: m.code, templateId: m.template_id, envoyeLe: m.envoye_le }),
+    ),
+    notes: notesLues.notes,
+    notesIndisponibles: notesLues.indisponible,
+    client: await chargerClient(rangee),
+    /* Les mêmes que sur la ligne : une seule source, pas deux listes à
+       garder d'accord. */
+    actions: versLigne(
+      rangee,
+      maintenant,
+      rembourse,
+      false,
+      new Map((mails ?? []).map((m) => [m.code, m.envoye_le])),
+    ).actions,
+  };
+}
+
+/**
+ * Le carnet de l'éditeur pour ce dossier.
+ *
+ * Dégrade au lieu de tomber : tant que la migration `notes` n'est pas passée,
+ * la requête échoue, la fiche s'affiche quand même et le bloc DIT pourquoi il
+ * est vide. Une carte silencieusement vide ferait croire qu'on n'a rien écrit.
+ */
+async function chargerNotes(
+  supabase: ReturnType<typeof makeSupabase>,
+  numeroId: string,
+): Promise<{ notes: NoteVue[]; indisponible: boolean }> {
+  try {
+    const { data, error } = await supabase
+      .from("notes")
+      .select("id, qui, texte, created_at")
+      .eq("numero_id", numeroId)
+      .order("created_at", { ascending: false })
+      .returns<Array<{ id: string; qui: string; texte: string; created_at: string }>>();
+
+    if (error) {
+      console.error("[admin/atelier] notes indisponibles", error.code, error.message);
+      return { notes: [], indisponible: true };
+    }
+    return {
+      notes: (data ?? []).map((n) => ({
+        id: n.id,
+        qui: n.qui,
+        prenom: prenomDe(n.qui),
+        texte: n.texte,
+        createdAt: n.created_at,
+      })),
+      indisponible: false,
+    };
+  } catch (err) {
+    console.error("[admin/atelier] notes exception", (err as Error)?.message);
+    return { notes: [], indisponible: true };
+  }
+}
+
+/* ────────────────────────────── la cliente ────────────────────────────── */
+
+/**
+ * Qui est-elle, au-delà de ce dossier.
+ *
+ * ⚠️ SEUL ENDROIT DU BACK-OFFICE DE L'ATELIER QUI LIT LA PRÉVENTE, et
+ * uniquement en lecture. La raison est contractuelle : les CGV v3.0 art. 5
+ * bis accordent 30 EUR de crédit aux fondateurs, « après vérification
+ * manuelle » de `waitlist`. Sans cette ligne à l'écran, la vérification se
+ * fait en SQL à chaque commande, et un jour on l'oublie.
+ *
+ * Aucune écriture, jamais. Un échec de lecture rend `null` : la fiche
+ * s'affiche sans le bloc, elle ne tombe pas.
+ */
+async function chargerClient(r: RangeeNumero): Promise<ClientVue> {
+  const supabase = makeSupabase();
+  const canonique = r.email_canonical ?? (r.email ? canonicalizeEmail(r.email) : null);
+  const vide: ClientVue = { autres: [], totalPaye: 0, prevente: null };
+  if (!canonique) return vide;
+
+  try {
+    const [{ data: autres }, { data: wl }] = await Promise.all([
+      supabase
+        .from("numeros")
+        .select("token, titre, etat, created_at, palier, stripe_payment_intent")
+        .eq("email_canonical", canonique)
+        .neq("token", r.token)
+        .order("created_at", { ascending: false })
+        .returns<
+          Array<{
+            token: string;
+            titre: string | null;
+            etat: Etat;
+            created_at: string | null;
+            palier: PalierCle | null;
+            stripe_payment_intent: string | null;
+          }>
+        >(),
+      supabase
+        .from("waitlist")
+        .select("email, offer_type, numero_fondateur, status, is_ambassadeur")
+        .eq("email_canonical", canonique)
+        .maybeSingle<{
+          email: string;
+          offer_type: string | null;
+          numero_fondateur: number | null;
+          status: string | null;
+          is_ambassadeur: boolean | null;
+        }>(),
+    ]);
+
+    let pagesCredits = 0;
+    if (wl?.email) {
+      const { data: credits } = await supabase
+        .from("pages_credits")
+        .select("montant, status")
+        .eq("email", wl.email)
+        .returns<Array<{ montant: number | null; status: string | null }>>();
+      pagesCredits = (credits ?? [])
+        .filter((c) => c.status === "confirmed")
+        .reduce((s, c) => s + (c.montant ?? 0), 0);
+    }
+
+    const lignesAutres = (autres ?? []).map((a) => ({
+      token: a.token,
+      titre: a.titre,
+      libelleEtat: LIBELLE_ETAT[a.etat] ?? a.etat,
+      createdAt: a.created_at,
+      euros: eurosPour(a.palier),
+    }));
+
+    /* Le total déjà encaissé : uniquement les numéros réellement payés. Un
+       aperçu publié n'est pas un chiffre d'affaires. */
+    const totalPaye = (autres ?? [])
+      .filter((a) => a.stripe_payment_intent)
+      .reduce((s, a) => s + (eurosPour(a.palier) ?? 0), 0)
+      + (r.stripe_payment_intent ? (eurosPour(r.palier) ?? 0) : 0);
+
+    return {
+      autres: lignesAutres,
+      totalPaye,
+      prevente: wl
+        ? {
+            offerType: wl.offer_type,
+            numeroFondateur: wl.numero_fondateur,
+            status: wl.status,
+            estAmbassadeur: wl.is_ambassadeur === true,
+            pagesCredits,
+          }
+        : null,
+    };
+  } catch (err) {
+    console.error("[admin/atelier] fiche cliente incomplète", (err as Error)?.message);
+    return vide;
+  }
+}

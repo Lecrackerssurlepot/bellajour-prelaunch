@@ -1,0 +1,2059 @@
+/* ════════════════════════════════════════════════════════════════════════
+   L'ATELIER — back-office.
+
+   Un outil de travail, pas une vitrine. Il suit la charte (tokens --bj-*)
+   mais avec ses propres règles, assumées :
+     — DENSE. On lit vingt dossiers d'un coup d'œil, pas trois.
+     — CALME. Une seule couleur d'accent (--bj-action), une seule couleur
+       d'alerte. Un tableau de bord où tout crie ne dit plus rien.
+     — ZÉRO EFFET. Aucun glass, aucune ombre portée sur les données. Le verre
+       dépoli est pour la cliente ; ici il ne fait que ralentir le scroll.
+     — LE POUCE D'ABORD. La liste se lit et s'ouvre depuis un téléphone au
+       réveil ; la publication se fait au calme sur le Mac.
+
+   Aucun hex de charte recodé en dur : tout vient de tokens.css. Les seules
+   couleurs nommées ici sont les sémantiques d'état (retard, payé, terminé),
+   qui n'existent pas dans la charte publique et n'ont rien à y faire.
+   ════════════════════════════════════════════════════════════════════════ */
+
+.ate-root {
+  --ate-rouge: #c0392b;
+  --ate-rouge-fond: rgba(192, 57, 43, 0.08);
+  --ate-vert: var(--bj-save-ok);
+  --ate-orange: var(--bj-save-warn);
+  --ate-ligne-h: 1px solid var(--bj-veil-8);
+  --ate-carte-bg: rgba(255, 255, 255, 0.62);
+
+  max-width: 1240px;
+  margin: 0 auto;
+  padding-top: var(--bj-sp-5);
+}
+
+/* ─────────────────────────── en-tête ─────────────────────────── */
+
+.ate-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--bj-sp-4);
+  margin-bottom: var(--bj-sp-6);
+}
+.ate-h1 {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(1.9rem, 4vw, var(--bj-fs-h2));
+  line-height: 1.05;
+  color: var(--bj-action);
+  margin: 0;
+}
+.ate-bonjour {
+  margin: var(--bj-sp-1) 0 0;
+  font-size: var(--bj-fs-ui);
+  color: var(--bj-text-soft);
+}
+.ate-bonjour strong {
+  color: var(--bj-text);
+  font-weight: 500;
+}
+.ate-alerte {
+  color: var(--ate-rouge);
+}
+
+.ate-header-outils {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  flex-wrap: wrap;
+}
+.ate-recherche {
+  min-width: 15rem;
+}
+.ate-liens {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  font-size: var(--bj-fs-sm);
+}
+.ate-liens a {
+  color: var(--bj-text-soft);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.ate-liens a:hover {
+  color: var(--bj-action);
+  border-bottom-color: var(--bj-action-border);
+}
+.ate-liens .adm-logout-form {
+  margin: 0;
+}
+
+/* ─────────────────────────── les piles ─────────────────────────── */
+
+.ate-pile {
+  margin-bottom: var(--bj-sp-6);
+}
+.ate-pile-tete {
+  display: flex;
+  align-items: baseline;
+  gap: var(--bj-sp-3);
+  width: 100%;
+  padding: 0 0 var(--bj-sp-2);
+  background: none;
+  border: none;
+  border-bottom: var(--ate-ligne-h);
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.ate-pile-titre {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: var(--bj-fs-lg);
+}
+.ate-pile-compte {
+  font-size: var(--bj-fs-xxs);
+  font-weight: 500;
+  padding: 1px 8px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-veil-8);
+  color: var(--bj-text-soft);
+}
+.ate-pile-sous {
+  flex: 1;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+.ate-chevron {
+  color: var(--bj-text-faint);
+  font-size: var(--bj-fs-xs);
+}
+/* Les deux piles qui appellent une action se distinguent par leur titre,
+   pas par un fond coloré : un bloc rouge de dix lignes cesse d'alerter. */
+.ate-pile--retard .ate-pile-titre {
+  color: var(--ate-rouge);
+}
+.ate-pile--a_faire .ate-pile-titre {
+  color: var(--bj-action);
+}
+
+/* ── le flux entrant ── */
+.ate-flux {
+  margin-bottom: var(--bj-sp-3);
+}
+.ate-flux-nombres {
+  display: flex;
+  align-items: stretch;
+  gap: var(--bj-sp-2);
+  flex-wrap: wrap;
+}
+.ate-flux-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 7.5rem;
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  border-radius: var(--bj-r-md);
+  border: 1px solid var(--bj-veil-8);
+  background: var(--ate-carte-bg);
+  text-align: left;
+  font-family: var(--bj-font-ui);
+  color: inherit;
+  cursor: pointer;
+  transition: border-color var(--bj-dur-fast) var(--bj-ease);
+}
+.ate-flux-item:hover:not(:disabled) {
+  border-color: var(--bj-action-border);
+}
+.ate-flux-item:disabled {
+  cursor: default;
+}
+.ate-flux-item--fixe {
+  cursor: default;
+}
+.ate-flux-item--actif {
+  border-color: var(--bj-action);
+  background: var(--bj-action-soft);
+}
+.ate-flux-item--pale {
+  background: transparent;
+  border-style: dashed;
+}
+.ate-flux-val {
+  font-family: var(--bj-font-display);
+  font-size: var(--bj-fs-h2);
+  line-height: 1;
+  color: var(--bj-text-soft);
+  font-variant-numeric: tabular-nums;
+}
+/* Un seul chiffre a le droit d'être en couleur : celui qui demande une
+   action. Trois chiffres colorés, et on ne sait plus lequel regarder. */
+.ate-flux-val--fort {
+  color: var(--bj-action);
+}
+.ate-flux-item--pale .ate-flux-val {
+  color: var(--bj-text-faint);
+}
+.ate-flux-label {
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+  line-height: 1.2;
+}
+
+/* Une silhouette, pas un graphique : ni axe, ni légende, ni valeur. On veut
+   voir si ça monte, pas relever une mesure. */
+.ate-flux-frise {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  flex: 1;
+  min-width: 8rem;
+  /* Hauteur FIXE : les barres sont dimensionnées en pourcentage, et un
+     conteneur qui s'adapte à son contenu rendrait ce pourcentage circulaire —
+     les barres se calaient alors sur la hauteur des cartes voisines. */
+  height: 4.5rem;
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  border-radius: var(--bj-r-md);
+  border: 1px solid var(--bj-veil-8);
+  background: var(--ate-carte-bg);
+}
+.ate-flux-barre {
+  flex: 1;
+  min-height: 3px;
+  border-radius: 2px;
+  background: var(--bj-veil-8);
+}
+.ate-flux-barre--pleine {
+  background: var(--bj-action-faint);
+}
+.ate-flux-frise .ate-flux-barre:last-child.ate-flux-barre--pleine {
+  background: var(--bj-action);
+}
+.ate-flux-vu {
+  align-self: center;
+  min-height: 34px;
+  padding: 0 var(--bj-sp-4);
+  border-radius: var(--bj-r-btn);
+  border: 1px solid var(--bj-veil-12);
+  background: transparent;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  cursor: pointer;
+}
+.ate-flux-vu:hover {
+  border-color: var(--bj-action-border);
+  color: var(--bj-action);
+}
+.ate-flux-note {
+  margin: var(--bj-sp-2) 0 0;
+  font-size: 11px;
+  color: var(--ate-orange);
+}
+.ate-flux-note code {
+  font-size: 11px;
+}
+
+/* La marque « jamais ouvert » : un point, pas une étiquette. Sur vingt
+   lignes, vingt étiquettes « NOUVEAU » deviennent du bruit ; vingt points
+   se comptent d'un regard. */
+.ate-point-neuf {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-action);
+}
+
+/* ── le fil d'activité ── */
+.ate-activite {
+  margin-bottom: var(--bj-sp-3);
+  border-radius: var(--bj-r-md);
+  border: 1px solid var(--bj-veil-8);
+  background: var(--ate-carte-bg);
+  overflow: hidden;
+}
+.ate-activite-tete {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  width: 100%;
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.ate-activite-titre {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: var(--bj-fs-lg);
+}
+.ate-activite-compte {
+  flex: 1;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+.ate-activite-corps {
+  padding: 0 var(--bj-sp-4) var(--bj-sp-3);
+  max-height: 24rem;
+  overflow-y: auto;
+}
+.ate-activite-jour + .ate-activite-jour {
+  margin-top: var(--bj-sp-4);
+}
+.ate-activite-jour-titre {
+  margin: 0 0 var(--bj-sp-1);
+  font-size: var(--bj-fs-xxs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--bj-text-faint);
+  font-weight: 500;
+}
+.ate-activite-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* Le fil réutilise la mise en forme du journal d'une fiche : c'est le même
+   objet, lu à une autre échelle. Deux styles auraient divergé. */
+.ate-activite-liste .ate-ev {
+  display: flex;
+  align-items: baseline;
+  gap: var(--bj-sp-3);
+  padding: var(--bj-sp-2) 0;
+  font-size: var(--bj-fs-xs);
+  border-bottom: var(--ate-ligne-h);
+}
+.ate-activite-liste .ate-ev:last-child {
+  border-bottom: none;
+}
+.ate-activite-lien {
+  color: var(--bj-action);
+  text-decoration: none;
+}
+.ate-activite-lien:hover {
+  text-decoration: underline;
+}
+.ate-activite-pied {
+  margin: var(--bj-sp-3) 0 0;
+  font-size: 11px;
+  color: var(--bj-text-faint);
+}
+
+/* ── barre collante : filtres + recherche ── */
+.ate-barre {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bj-sp-4);
+  flex-wrap: wrap;
+  padding: var(--bj-sp-3) 0;
+  margin-bottom: var(--bj-sp-2);
+  background: var(--bj-cream);
+  border-bottom: var(--ate-ligne-h);
+}
+.ate-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-veil-6);
+}
+.ate-seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px var(--bj-sp-4);
+  min-height: 34px;
+  border: none;
+  border-radius: var(--bj-r-pill);
+  background: transparent;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  cursor: pointer;
+  transition: background var(--bj-dur-fast) var(--bj-ease);
+}
+.ate-seg-btn:hover {
+  color: var(--bj-text);
+}
+.ate-seg-btn--actif {
+  background: var(--bj-cream);
+  color: var(--bj-text);
+  font-weight: 500;
+  box-shadow: 0 1px 2px var(--bj-veil-8);
+}
+.ate-seg-compte {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  padding: 0 6px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+}
+.ate-recherche-boite {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ate-recherche {
+  min-width: 17rem;
+  padding-right: 2.6rem;
+}
+.ate-kbd,
+.ate-recherche-compte {
+  position: absolute;
+  right: var(--bj-sp-3);
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+  pointer-events: none;
+}
+.ate-kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--bj-veil-12);
+  border-radius: 4px;
+  font-family: var(--bj-font-ui);
+}
+.ate-recherche-compte {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── le réglage de vue ── */
+.ate-barre-droite {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+}
+.ate-vues {
+  position: relative;
+}
+.ate-vues-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  min-height: 38px;
+  padding: 0 var(--bj-sp-4);
+  border-radius: var(--bj-r-btn);
+  border: 1px solid var(--bj-veil-12);
+  background: transparent;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  cursor: pointer;
+}
+.ate-vues-btn--ouvert,
+.ate-vues-btn:hover {
+  border-color: var(--bj-action-border);
+  color: var(--bj-text);
+}
+.ate-vues-etat {
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-action);
+}
+.ate-vues-panneau {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  width: 17rem;
+  padding: var(--bj-sp-4);
+  border-radius: var(--bj-r-md);
+  border: 1px solid var(--bj-veil-12);
+  background: var(--bj-cream);
+  box-shadow: var(--bj-shadow-pop);
+}
+.ate-vues-bloc + .ate-vues-bloc {
+  margin-top: var(--bj-sp-4);
+  padding-top: var(--bj-sp-4);
+  border-top: var(--ate-ligne-h);
+}
+.ate-vues-titre {
+  display: block;
+  margin-bottom: var(--bj-sp-2);
+  font-size: var(--bj-fs-xxs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--bj-text-faint);
+  font-weight: 500;
+}
+.ate-vues-options {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-veil-6);
+}
+.ate-vues-option {
+  flex: 1;
+  min-height: 30px;
+  border: none;
+  border-radius: var(--bj-r-pill);
+  background: transparent;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  cursor: pointer;
+}
+.ate-vues-option--actif {
+  background: var(--bj-cream);
+  color: var(--bj-text);
+  font-weight: 500;
+  box-shadow: 0 1px 2px var(--bj-veil-8);
+}
+.ate-vues-aide {
+  display: block;
+  margin-top: var(--bj-sp-2);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--bj-text-faint);
+}
+
+/* ── densité ──
+   Compact ne change QUE des espacements : ni la taille du texte, ni le
+   nombre de colonnes. Une vue dense qu'il faut plisser les yeux pour lire
+   n'est pas une vue dense, c'est une vue illisible. */
+.ate-root--compact .ate-ligne,
+.ate-root--compact .ate-entete {
+  padding-top: var(--bj-sp-2);
+  padding-bottom: var(--bj-sp-2);
+}
+.ate-root--compact .ate-ligne-sous {
+  margin-top: 0;
+}
+.ate-root--compact .ate-pile {
+  margin-bottom: var(--bj-sp-5);
+}
+.ate-root--compact .ate-delai-sub {
+  display: none;
+}
+
+/* Regroupé par étape, la pastille d'état répète le titre du groupe sur
+   chaque ligne. On retire la colonne, on ne la vide pas : une colonne vide
+   laisse un trou qui se lit comme une donnée manquante. */
+.ate-root--groupe-etape .ate-ligne,
+.ate-root--groupe-etape .ate-entete {
+  grid-template-columns: 2rem minmax(0, 1fr) 9.5rem 3.5rem 12rem;
+}
+.ate-root--groupe-etape .ate-ligne > .ate-etat,
+.ate-root--groupe-etape .ate-entete > span:nth-child(3) {
+  display: none;
+}
+
+/* ── en-tête de colonnes ── */
+.ate-entete {
+  padding-top: 0;
+  padding-bottom: var(--bj-sp-1);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--bj-text-faint);
+}
+.ate-entete > span:last-child {
+  text-align: right;
+}
+
+/* ─────────────────────────── une ligne ─────────────────────────── */
+
+.ate-lignes {
+  display: flex;
+  flex-direction: column;
+}
+/* La grille est déclarée une fois et servie deux fois : aux lignes et à
+   l'en-tête de colonnes. Deux déclarations, c'est deux alignements qui
+   divergent au premier ajustement. */
+.ate-ligne,
+.ate-entete {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) 10.5rem 9.5rem 3.5rem 12rem;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  padding: var(--bj-sp-3) var(--bj-sp-2);
+}
+.ate-ligne {
+  position: relative;
+  border-bottom: var(--ate-ligne-h);
+  color: inherit;
+  transition: background var(--bj-dur-fast) var(--bj-ease);
+}
+.ate-ligne:hover,
+.ate-ligne:focus-within {
+  background: var(--bj-action-soft);
+}
+/* Le lien couvre la ligne mais s'arrête avant la zone d'action : sans ça,
+   viser un bouton, c'est ouvrir la fiche. */
+.ate-ligne-lien {
+  position: absolute;
+  inset: 0 12.5rem 0 0;
+  z-index: 0;
+}
+.ate-ligne-lien:focus-visible {
+  outline: 2px solid var(--bj-action);
+  outline-offset: -2px;
+  border-radius: var(--bj-r-sm);
+}
+.ate-ligne > span {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+/* ⚠️ Sélecteur volontairement lourd : `.ate-ligne > span` (0,1,1) l'emporte
+   sur `.ate-ligne-act` (0,1,0), et la zone d'action héritait donc du
+   `pointer-events: none` qui neutralise le texte au-dessus du lien. Le bouton
+   affichait son survol et refusait le clic. */
+.ate-ligne > span.ate-ligne-act {
+  pointer-events: auto;
+  justify-self: end;
+}
+/* La ligne qui porte un panneau ouvert doit passer AU-DESSUS de ses voisines.
+   Sans ça, chaque ligne étant `position: relative`, les suivantes se peignent
+   par-dessus et le panneau apparaît transpercé par le texte du dessous — un
+   z-index à 20 n'y change rien, il ne vaut que dans son propre contexte
+   d'empilement. C'est le contexte qu'il faut hausser, pas l'enfant. */
+.ate-ligne:has(.ate-act-boite),
+.ate-ligne:has(.ate-act-menu) {
+  z-index: 30;
+}
+
+.ate-ligne--retard {
+  box-shadow: inset 2px 0 0 var(--ate-rouge);
+}
+
+.ate-avatar {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-veil-8);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  color: var(--bj-text-soft);
+}
+
+.ate-ligne-corps {
+  min-width: 0;
+}
+.ate-ligne-titre {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  font-size: var(--bj-fs-ui);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ate-ligne-sous {
+  display: block;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+  margin-top: 1px;
+}
+.ate-sep {
+  margin: 0 6px;
+  opacity: 0.5;
+}
+
+/* ── pastille d'état ──
+   Neuf états, mais TROIS couleurs : bleu = on travaille, ambre = on attend
+   quelqu'un, vert = c'est fini. Neuf couleurs, ce serait un arc-en-ciel
+   qu'il faudrait apprendre par cœur. */
+.ate-etat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 4px;
+  border-radius: var(--bj-r-pill);
+  font-size: var(--bj-fs-xxs);
+  font-weight: 500;
+  background: var(--bj-veil-6);
+  color: var(--bj-text-soft);
+  white-space: nowrap;
+  width: fit-content;
+}
+.ate-etape {
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-cream);
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: 11px;
+}
+.ate-etat--photos_recues,
+.ate-etat--payee,
+.ate-etat--validee {
+  background: var(--bj-action-soft);
+  color: var(--bj-action);
+}
+.ate-etat--photos_insuffisantes,
+.ate-etat--apercu_pret,
+.ate-etat--maquette_prete {
+  background: var(--bj-warn-soft);
+  color: var(--ate-orange);
+}
+.ate-etat--livree {
+  background: rgba(63, 166, 106, 0.12);
+  color: var(--ate-vert);
+}
+
+.ate-delai {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.ate-delai-val {
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  font-variant-numeric: tabular-nums;
+}
+.ate-delai-val--retard {
+  color: var(--ate-rouge);
+  font-weight: 500;
+}
+.ate-delai-sub {
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ate-date {
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ate-tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 1px 6px;
+  border-radius: var(--bj-r-pill);
+}
+.ate-tag--alerte {
+  background: var(--ate-rouge-fond);
+  color: var(--ate-rouge);
+}
+
+.ate-vide,
+.ate-faint {
+  color: var(--bj-text-faint);
+}
+.ate-pied {
+  margin-top: var(--bj-sp-6);
+}
+.ate-mono {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--bj-fs-xs);
+  word-break: break-all;
+}
+
+/* ─────────────────────────── la vue tableau ─────────────────────────── */
+
+.ate-tableau {
+  display: grid;
+  grid-auto-flow: column;
+  /* Huit colonnes ne tiennent pas sur un écran : on défile horizontalement
+     plutôt que d'écraser les cartes jusqu'à l'illisible. */
+  grid-auto-columns: minmax(15rem, 1fr);
+  gap: var(--bj-sp-3);
+  overflow-x: auto;
+  padding-bottom: var(--bj-sp-4);
+  scrollbar-width: thin;
+}
+.ate-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ate-col-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bj-sp-2);
+  padding-bottom: var(--bj-sp-2);
+  border-bottom: var(--ate-ligne-h);
+  margin-bottom: var(--bj-sp-3);
+}
+.ate-col-compte {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.ate-col-retard {
+  font-size: 10px;
+  color: var(--ate-rouge);
+}
+.ate-col-corps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-2);
+}
+.ate-col-vide {
+  margin: 0;
+  padding: var(--bj-sp-4) 0;
+  text-align: center;
+  color: var(--bj-veil-16);
+}
+
+.ate-carte-d {
+  position: relative;
+  border-radius: var(--bj-r-sm);
+  border: 1px solid var(--bj-veil-8);
+  background: var(--ate-carte-bg);
+  transition: border-color var(--bj-dur-fast) var(--bj-ease);
+}
+.ate-carte-d:hover {
+  border-color: var(--bj-action-border);
+}
+.ate-carte-d--retard {
+  box-shadow: inset 2px 0 0 var(--ate-rouge);
+}
+.ate-carte-d-lien {
+  display: block;
+  padding: var(--bj-sp-3);
+  text-decoration: none;
+  color: inherit;
+}
+.ate-carte-d-titre {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+  line-height: 1.3;
+}
+.ate-carte-d-sous {
+  display: block;
+  margin: 2px 0 var(--bj-sp-2);
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+}
+.ate-carte-d-act {
+  padding: 0 var(--bj-sp-3) var(--bj-sp-3);
+}
+/* Sur une carte, l'action est toujours visible : il n'y a pas de « ligne
+   survolée » sur laquelle se reposer. */
+.ate-carte-d .ate-act-btn--principal {
+  width: 100%;
+  border-color: var(--bj-action-border);
+  color: var(--bj-action);
+}
+.ate-carte-d:hover .ate-act-btn--principal {
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+}
+/* Le panneau armé sort de la carte : sans ça il serait rogné par la colonne
+   suivante et son défilement horizontal. */
+.ate-carte-d:has(.ate-act-boite) {
+  z-index: 30;
+}
+.ate-carte-d .ate-act-boite {
+  width: 19rem;
+}
+
+/* ─────────────────────── l'action sur la ligne ─────────────────────── */
+
+.ate-act {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.ate-act-rien {
+  color: var(--bj-veil-16);
+  font-size: var(--bj-fs-xs);
+}
+.ate-act-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 var(--bj-sp-3);
+  border-radius: var(--bj-r-btn);
+  border: 1px solid var(--bj-veil-12);
+  background: var(--bj-cream);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all var(--bj-dur-fast) var(--bj-ease);
+}
+/* Discret au repos, net au survol de la ligne : l'action ne doit pas hurler
+   sur vingt lignes à la fois, mais elle doit être là quand on arrive dessus. */
+.ate-ligne:hover .ate-act-btn--principal,
+.ate-ligne:focus-within .ate-act-btn--principal {
+  border-color: var(--bj-action-border);
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+}
+.ate-act-btn:focus-visible {
+  outline: 2px solid var(--bj-action);
+  outline-offset: 2px;
+}
+.ate-act-btn--plus {
+  padding: 0 8px;
+  letter-spacing: 0.1em;
+}
+.ate-act-plus {
+  position: relative;
+}
+.ate-act-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  min-width: 13rem;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border-radius: var(--bj-r-sm);
+  border: 1px solid var(--bj-veil-12);
+  background: var(--bj-cream);
+  box-shadow: var(--bj-shadow-soft);
+}
+.ate-act-menu button {
+  display: block;
+  width: 100%;
+  padding: var(--bj-sp-2) var(--bj-sp-3);
+  border: none;
+  border-radius: 8px;
+  background: none;
+  text-align: left;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text);
+  cursor: pointer;
+}
+.ate-act-menu button:hover {
+  background: var(--bj-action-soft);
+}
+
+/* ── l'action armée ──
+   Une boîte, ancrée à droite de la ligne, qui dit ce qui va se passer et
+   attend un second geste. Échap ou un clic ailleurs la referme. */
+.ate-act-boite {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  width: 20rem;
+  padding: var(--bj-sp-3);
+  border-radius: var(--bj-r-md);
+  border: 1px solid var(--bj-action-border);
+  background: var(--bj-cream);
+  box-shadow: var(--bj-shadow-pop);
+  text-align: left;
+  white-space: normal;
+}
+.ate-act-quoi {
+  margin: 0 0 var(--bj-sp-2);
+  font-size: var(--bj-fs-xs);
+  line-height: 1.45;
+  color: var(--bj-text-soft);
+}
+.ate-act-input {
+  width: 100%;
+  margin-bottom: var(--bj-sp-2);
+  font-size: var(--bj-fs-xs);
+}
+.ate-act-mail {
+  margin: 0 0 var(--bj-sp-3);
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+  line-height: 1.4;
+}
+.ate-act-erreur {
+  margin: 0 0 var(--bj-sp-2);
+  font-size: var(--bj-fs-xxs);
+  color: var(--ate-rouge);
+}
+.ate-act-boutons {
+  display: flex;
+  gap: var(--bj-sp-2);
+  justify-content: flex-end;
+}
+.ate-act-btn--annuler {
+  background: transparent;
+}
+.ate-act-btn--confirmer {
+  background: var(--bj-action);
+  border-color: var(--bj-action);
+  color: var(--bj-on-action);
+  font-weight: 500;
+}
+.ate-act-btn--confirmer:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ─────────────────────────── le toast ─────────────────────────── */
+
+.ate-toast-zone {
+  position: fixed;
+  left: 50%;
+  bottom: var(--bj-sp-5);
+  transform: translateX(-50%);
+  z-index: 60;
+  pointer-events: none;
+}
+.ate-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-charcoal);
+  color: var(--bj-glass-dark-text);
+  font-size: var(--bj-fs-sm);
+  box-shadow: var(--bj-shadow-pop);
+  pointer-events: auto;
+  animation: ate-toast-entre var(--bj-dur) var(--bj-ease);
+}
+.ate-toast button {
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: var(--bj-fs-lg);
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.6;
+}
+@keyframes ate-toast-entre {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ate-toast { animation: none; }
+}
+
+/* ─────────────────────────── bandeaux ─────────────────────────── */
+
+.ate-demo-bar {
+  margin-bottom: var(--bj-sp-4);
+  padding: var(--bj-sp-2) var(--bj-sp-4);
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-action-soft);
+  border: 1px solid var(--bj-action-border);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-action);
+}
+.ate-demo-bar a {
+  color: inherit;
+}
+.ate-bandeau {
+  margin-bottom: var(--bj-sp-4);
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  border-radius: var(--bj-r-sm);
+  font-size: var(--bj-fs-sm);
+  line-height: 1.5;
+}
+.ate-bandeau--alerte {
+  background: var(--ate-rouge-fond);
+  color: var(--ate-rouge);
+}
+.ate-bandeau--attention {
+  background: var(--bj-warn-soft);
+  color: var(--ate-orange);
+}
+
+/* ─────────────────────────── les métriques ─────────────────────────── */
+
+.ate-m-avertissement {
+  margin: 0 0 var(--bj-sp-4);
+  padding: var(--bj-sp-2) var(--bj-sp-3);
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-veil-6);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  line-height: 1.5;
+}
+.ate-m-colonnes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: var(--bj-sp-4);
+  margin: var(--bj-sp-4) 0;
+}
+.ate-m-entonnoir {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--bj-sp-4);
+}
+.ate-m-etape,
+.ate-m-mesure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ate-m-mesure + .ate-m-mesure {
+  margin-top: var(--bj-sp-4);
+  padding-top: var(--bj-sp-4);
+  border-top: var(--ate-ligne-h);
+}
+.ate-m-mesure-titre {
+  font-size: var(--bj-fs-xxs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--bj-text-faint);
+  order: -1;
+}
+.ate-m-val {
+  display: flex;
+  align-items: baseline;
+  gap: var(--bj-sp-2);
+  font-family: var(--bj-font-display);
+  font-size: var(--bj-fs-h2);
+  line-height: 1.1;
+  color: var(--bj-text);
+  font-variant-numeric: tabular-nums;
+}
+.ate-m-sous {
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+  line-height: 1.4;
+}
+/* « pas encore » n'est PAS un zéro : un zéro se lirait comme une
+   contre-performance, alors qu'il ne dit que « pas assez de dossiers ». */
+.ate-m-vide {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: var(--bj-fs-lg);
+  color: var(--bj-text-faint);
+}
+.ate-m-ok {
+  color: var(--ate-vert);
+}
+.ate-m-ko {
+  color: var(--ate-orange);
+}
+.ate-m-ecart {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+.ate-m-ecart--bon {
+  color: var(--ate-vert);
+}
+.ate-m-ecart--mauvais {
+  color: var(--ate-rouge);
+}
+
+.ate-m-courbe {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 8rem;
+  padding-top: var(--bj-sp-2);
+}
+.ate-m-jour {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 100%;
+  min-width: 0;
+}
+.ate-m-barre {
+  flex: 1;
+  min-height: 2px;
+  border-radius: 2px 2px 0 0;
+}
+.ate-m-barre--arrivees {
+  background: var(--bj-action-faint);
+}
+.ate-m-barre--paiements {
+  background: var(--ate-vert);
+}
+.ate-m-legende {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  margin: var(--bj-sp-3) 0 0;
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+}
+.ate-m-puce {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-left: var(--bj-sp-3);
+}
+.ate-m-puce--arrivees {
+  background: var(--bj-action-faint);
+  margin-left: 0;
+}
+.ate-m-puce--paiements {
+  background: var(--ate-vert);
+}
+
+/* ─────────────────────────── la page santé ─────────────────────────── */
+
+.ate-sante {
+  margin-bottom: var(--bj-sp-4);
+}
+/* Le liseré porte la gravité, pas le fond : quatre cartes rouge plein, et on
+   arrête de lire la page. */
+.ate-sante--rouge {
+  box-shadow: inset 3px 0 0 var(--ate-rouge);
+}
+.ate-sante--rouge .ate-carte-titre {
+  color: var(--ate-rouge);
+}
+.ate-sante--orange {
+  box-shadow: inset 3px 0 0 var(--ate-orange);
+}
+.ate-sante--orange .ate-carte-titre {
+  color: var(--ate-orange);
+}
+.ate-sante-ok .ate-carte-titre {
+  color: var(--ate-vert);
+}
+.ate-sante-remede {
+  margin: 0 0 var(--bj-sp-3);
+  font-size: var(--bj-fs-sm);
+  line-height: 1.5;
+  color: var(--bj-text-soft);
+}
+.ate-sante-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--bj-fs-sm);
+}
+.ate-sante-liste li {
+  padding: var(--bj-sp-2) 0;
+  border-top: var(--ate-ligne-h);
+}
+.ate-sante-liste a {
+  color: var(--bj-text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--bj-action-border);
+}
+.ate-sante-liste a:hover {
+  color: var(--bj-action);
+}
+
+/* ─────────────────────── la frise du dossier ─────────────────────── */
+
+.ate-parcours {
+  margin-bottom: var(--bj-sp-5);
+  padding: var(--bj-sp-4) var(--bj-sp-5);
+  border-radius: var(--bj-r-md);
+  border: 1px solid var(--bj-veil-8);
+  background: var(--ate-carte-bg);
+}
+.ate-frise {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  /* Huit jalons tiennent large sur un Mac et jamais sur un téléphone :
+     on défile plutôt que d'écraser des libellés en trois lettres. */
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.ate-jalon {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 6.5rem;
+  padding: 0 var(--bj-sp-1);
+  text-align: center;
+}
+/* La barre relie les pastilles : elle part du centre du jalon précédent. */
+.ate-jalon-barre {
+  position: absolute;
+  top: 11px;
+  right: 50%;
+  left: -50%;
+  height: 2px;
+  background: var(--bj-veil-8);
+}
+.ate-jalon:first-child .ate-jalon-barre {
+  display: none;
+}
+.ate-jalon--fait .ate-jalon-barre,
+.ate-jalon--encours .ate-jalon-barre {
+  background: var(--bj-action-border);
+}
+.ate-jalon-pastille {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--bj-r-pill);
+  border: 2px solid var(--bj-veil-12);
+  background: var(--bj-cream);
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--bj-text-faint);
+}
+.ate-jalon--fait .ate-jalon-pastille {
+  border-color: var(--bj-action-border);
+  background: var(--bj-action-soft);
+  color: var(--bj-action);
+  font-family: var(--bj-font-ui);
+  font-style: normal;
+}
+/* Le SEUL élément en couleur pleine de toute la frise. Si tout est coloré,
+   plus rien ne dit « c'est ici ». */
+.ate-jalon--encours .ate-jalon-pastille {
+  border-color: var(--bj-action);
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+  font-style: normal;
+  font-family: var(--bj-font-ui);
+  font-weight: 500;
+}
+.ate-jalon-titre {
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  line-height: 1.25;
+}
+.ate-jalon--encours .ate-jalon-titre {
+  color: var(--bj-text);
+  font-weight: 500;
+}
+.ate-jalon--avenir .ate-jalon-titre {
+  color: var(--bj-text-faint);
+}
+.ate-jalon-note {
+  font-size: 11px;
+  color: var(--bj-text-faint);
+  line-height: 1.2;
+}
+.ate-jalon--encours .ate-jalon-note strong {
+  color: var(--bj-action);
+  font-weight: 500;
+}
+.ate-jalon-par {
+  color: var(--bj-text-faint);
+}
+
+.ate-detour {
+  margin: var(--bj-sp-4) 0 0;
+  padding: var(--bj-sp-2) var(--bj-sp-3);
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-veil-6);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  line-height: 1.5;
+}
+.ate-detour--actif {
+  background: var(--bj-warn-soft);
+  color: var(--ate-orange);
+}
+
+.ate-suite {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  margin: var(--bj-sp-4) 0 0;
+  padding-top: var(--bj-sp-4);
+  border-top: var(--ate-ligne-h);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text);
+}
+.ate-suite-qui {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: var(--bj-r-pill);
+  font-size: var(--bj-fs-xxs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--bj-veil-8);
+  color: var(--bj-text-faint);
+}
+.ate-suite-qui--atelier {
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+}
+.ate-suite-qui--cliente {
+  background: var(--bj-warn-soft);
+  color: var(--ate-orange);
+}
+
+/* ─────────────────────────── la fiche ─────────────────────────── */
+
+.ate-fiche-tete {
+  margin-bottom: var(--bj-sp-5);
+}
+.ate-retour {
+  display: inline-block;
+  margin-bottom: var(--bj-sp-3);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  text-decoration: none;
+}
+.ate-retour:hover {
+  color: var(--bj-action);
+}
+.ate-fiche-sous {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--bj-sp-3);
+  margin: var(--bj-sp-2) 0 0;
+  font-size: var(--bj-fs-sm);
+}
+.ate-lien-page {
+  color: var(--bj-action);
+  text-decoration: none;
+}
+
+.ate-colonnes {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: var(--bj-sp-5);
+  align-items: start;
+}
+.ate-colonne {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-4);
+  min-width: 0;
+}
+
+.ate-carte {
+  background: var(--ate-carte-bg);
+  border: 1px solid var(--bj-veil-8);
+  border-radius: var(--bj-r-md);
+  padding: var(--bj-sp-4) var(--bj-sp-5);
+}
+.ate-carte-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--bj-sp-3);
+  flex-wrap: wrap;
+}
+.ate-carte-titre {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: var(--bj-fs-display-sm);
+  margin: 0 0 var(--bj-sp-3);
+  color: var(--bj-text);
+}
+.ate-carte-tete .ate-carte-titre {
+  margin-bottom: var(--bj-sp-3);
+}
+.ate-carte-outils {
+  display: flex;
+  gap: var(--bj-sp-2);
+}
+.ate-compte {
+  font-family: var(--bj-font-ui);
+  font-style: normal;
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+}
+.ate-sous-titre {
+  margin: var(--bj-sp-4) 0 var(--bj-sp-2);
+  font-size: var(--bj-fs-xxs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--bj-text-faint);
+  font-weight: 500;
+}
+
+/* ── l'action du moment : la seule carte qui a le droit d'attirer l'œil ── */
+.ate-action {
+  border-color: var(--bj-action-border);
+  background: var(--bj-action-soft);
+}
+.ate-action-explication {
+  margin: 0 0 var(--bj-sp-4);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  line-height: 1.5;
+}
+.ate-choix {
+  display: flex;
+  gap: var(--bj-sp-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--bj-sp-4);
+}
+.ate-choix-btn {
+  padding: var(--bj-sp-2) var(--bj-sp-4);
+  border-radius: var(--bj-r-pill);
+  border: 1px solid var(--bj-veil-12);
+  background: transparent;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  cursor: pointer;
+}
+.ate-choix-btn--actif {
+  background: var(--bj-action);
+  border-color: var(--bj-action);
+  color: var(--bj-on-action);
+}
+
+.ate-champ {
+  display: block;
+  margin-bottom: var(--bj-sp-4);
+}
+.ate-champ--court .adm-input {
+  max-width: 9rem;
+}
+.ate-champ-label {
+  display: block;
+  font-size: var(--bj-fs-xs);
+  font-weight: 500;
+  margin-bottom: var(--bj-sp-1);
+}
+.ate-champ-aide {
+  display: block;
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+  margin-top: var(--bj-sp-1);
+}
+.ate-champ-aide--attention {
+  color: var(--ate-orange);
+}
+.ate-erreur {
+  display: block;
+  margin-top: var(--bj-sp-1);
+  font-size: var(--bj-fs-xs);
+  color: var(--ate-rouge);
+}
+.ate-erreur--bloc {
+  margin: var(--bj-sp-3) 0;
+}
+
+/* ── les trois cadres de la couverture ── */
+.ate-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--bj-sp-3);
+  margin-bottom: var(--bj-sp-4);
+}
+.ate-slot-label {
+  display: block;
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-soft);
+  margin-bottom: var(--bj-sp-1);
+}
+.ate-slot-zone {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 0;
+  border: 1px dashed var(--bj-action-border);
+  border-radius: var(--bj-r-sm);
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+}
+.ate-slot-zone--pleine {
+  border-style: solid;
+}
+.ate-slot-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ate-slot-vide {
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+  padding: var(--bj-sp-2);
+  text-align: center;
+}
+/* La double page est un paysage : lui imposer le format d'une couverture la
+   rendrait illisible dans son cadre. */
+.ate-slot:last-child .ate-slot-zone {
+  aspect-ratio: 3 / 2;
+}
+
+/* ── l'écran de confirmation ── */
+.ate-confirm {
+  margin-top: var(--bj-sp-4);
+  padding: var(--bj-sp-4);
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-cream);
+  border: 1px solid var(--bj-veil-12);
+}
+.ate-confirm-titre {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: var(--bj-fs-lg);
+  margin: 0 0 var(--bj-sp-3);
+}
+.ate-confirm-liste {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: var(--bj-sp-2) var(--bj-sp-3);
+  margin: 0 0 var(--bj-sp-4);
+  font-size: var(--bj-fs-sm);
+}
+.ate-confirm-liste dt {
+  color: var(--bj-text-faint);
+  font-size: var(--bj-fs-xs);
+}
+.ate-confirm-liste dd {
+  margin: 0;
+}
+.ate-confirm-prix {
+  font-size: var(--bj-fs-lg);
+  font-weight: 500;
+}
+.ate-confirm-boutons {
+  display: flex;
+  gap: var(--bj-sp-3);
+  flex-wrap: wrap;
+}
+.ate-btn-preparer,
+.ate-btn-valider {
+  min-height: 44px; /* la cible du pouce */
+}
+.ate-fait {
+  margin: var(--bj-sp-3) 0 0;
+  font-size: var(--bj-fs-sm);
+  color: var(--ate-vert);
+}
+
+/* ── contenus ── */
+.ate-defs {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: var(--bj-sp-2) var(--bj-sp-3);
+  margin: 0;
+  font-size: var(--bj-fs-sm);
+}
+.ate-defs dt {
+  color: var(--bj-text-faint);
+  font-size: var(--bj-fs-xs);
+}
+.ate-defs dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ate-histoire {
+  margin: var(--bj-sp-4) 0 0;
+  padding-top: var(--bj-sp-4);
+  border-top: var(--ate-ligne-h);
+  font-size: var(--bj-fs-body);
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.ate-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: var(--bj-sp-2);
+}
+.ate-photo {
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-veil-6);
+  display: grid;
+  place-items: center;
+}
+.ate-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ate-photo-vide {
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+
+.ate-apercu {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--bj-sp-3);
+}
+.ate-apercu-item {
+  margin: 0;
+}
+.ate-apercu-item img {
+  width: 100%;
+  border-radius: var(--bj-r-sm);
+  display: block;
+}
+.ate-apercu-item figcaption {
+  margin-top: var(--bj-sp-1);
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+}
+
+.ate-autres {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--bj-fs-sm);
+}
+.ate-autres li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--bj-sp-2);
+  padding: var(--bj-sp-2) 0;
+  border-bottom: var(--ate-ligne-h);
+}
+.ate-autres .ate-faint {
+  font-size: var(--bj-fs-xs);
+  white-space: nowrap;
+}
+.ate-prevente {
+  margin-top: var(--bj-sp-3);
+  padding-top: var(--bj-sp-3);
+  border-top: var(--ate-ligne-h);
+}
+.ate-credit {
+  margin: 0;
+  font-size: var(--bj-fs-sm);
+  line-height: 1.5;
+  color: var(--bj-action);
+}
+
+.ate-accords {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--bj-fs-sm);
+}
+.ate-accords li {
+  padding: var(--bj-sp-1) 0 var(--bj-sp-1) 1.4rem;
+  position: relative;
+}
+.ate-accords li::before {
+  position: absolute;
+  left: 0;
+  font-size: var(--bj-fs-xs);
+}
+.ate-oui::before {
+  content: "✓";
+  color: var(--ate-vert);
+}
+.ate-non::before {
+  content: "—";
+  color: var(--bj-text-faint);
+}
+.ate-non {
+  color: var(--bj-text-faint);
+}
+.ate-adresse {
+  font-style: normal;
+  font-size: var(--bj-fs-sm);
+  line-height: 1.5;
+}
+.ate-pi {
+  margin-top: var(--bj-sp-3);
+}
+
+.ate-mails {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--bj-fs-sm);
+}
+.ate-mails li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--bj-sp-2);
+  padding: var(--bj-sp-1) 0;
+}
+
+/* ── le carnet de l'éditeur ── */
+.ate-carnet-lien {
+  display: flex;
+  gap: var(--bj-sp-2);
+  align-items: center;
+}
+.ate-carnet-lien .adm-input {
+  flex: 1;
+  min-width: 0;
+}
+.ate-note-saisie {
+  display: flex;
+  gap: var(--bj-sp-2);
+  align-items: flex-end;
+  margin-bottom: var(--bj-sp-3);
+}
+.ate-note-champ {
+  flex: 1;
+  min-width: 0;
+  resize: vertical;
+  font-family: var(--bj-font-ui);
+  line-height: 1.45;
+}
+.ate-notes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ate-note {
+  padding: var(--bj-sp-3) 0;
+  border-top: var(--ate-ligne-h);
+}
+.ate-note-texte {
+  margin: 0;
+  font-size: var(--bj-fs-sm);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.ate-note-pied {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  margin: var(--bj-sp-1) 0 0;
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+}
+.ate-note-qui {
+  color: var(--bj-action);
+  font-weight: 500;
+}
+/* Discret par défaut : effacer une note est rare, et un × noir sur chaque
+   ligne transforme un carnet en formulaire. */
+.ate-note-suppr {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--bj-veil-16);
+  font-size: var(--bj-fs-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+.ate-note:hover .ate-note-suppr {
+  color: var(--bj-text-faint);
+}
+.ate-note-suppr:hover {
+  color: var(--ate-rouge);
+}
+.ate-canva-partage {
+  font-size: var(--bj-fs-sm);
+}
+
+/* ── le journal ── */
+.ate-journal {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 26rem;
+  overflow-y: auto;
+}
+.ate-ev {
+  border-bottom: var(--ate-ligne-h);
+}
+.ate-ev-tete {
+  display: flex;
+  align-items: baseline;
+  gap: var(--bj-sp-3);
+  width: 100%;
+  padding: var(--bj-sp-2) 0;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font-size: var(--bj-fs-xs);
+}
+/* Un point coloré par acteur : d'un coup d'œil vertical, on voit qui a fait
+   avancer le dossier et à quel rythme les échanges se sont enchaînés. */
+.ate-ev-point {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-top: 5px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-veil-16);
+}
+.ate-ev--nous .ate-ev-point {
+  background: var(--bj-action);
+}
+.ate-ev--elle .ate-ev-point {
+  background: var(--ate-orange);
+}
+.ate-ev--mail .ate-ev-point {
+  background: var(--ate-vert);
+}
+.ate-ev--alerte .ate-ev-point {
+  background: var(--ate-rouge);
+}
+.ate-ev-corps {
+  flex: 1;
+  min-width: 0;
+}
+.ate-ev-texte {
+  display: block;
+  color: var(--bj-text);
+  line-height: 1.4;
+}
+.ate-ev--alerte .ate-ev-texte {
+  color: var(--ate-rouge);
+}
+.ate-ev-detail {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  color: var(--bj-text-faint);
+}
+.ate-ev-date {
+  flex: none;
+  color: var(--bj-text-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ate-ev-payload {
+  margin: 0 0 var(--bj-sp-2);
+  padding: var(--bj-sp-2);
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-veil-6);
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+/* ─────────────────────────── le pouce ─────────────────────────── */
+
+@media (max-width: 900px) {
+  .ate-colonnes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ate-parcours {
+    padding: var(--bj-sp-4) var(--bj-sp-3);
+  }
+  .ate-suite {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--bj-sp-2);
+  }
+}
+
+@media (max-width: 680px) {
+  .ate-root {
+    padding-left: var(--bj-sp-4);
+    padding-right: var(--bj-sp-4);
+  }
+  /* Sur téléphone, la ligne perd la date de création et le libellé de la
+     promesse : ce qui reste (qui, où on en est, combien de temps) suffit à
+     décider si on ouvre. */
+  .ate-ligne {
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
+    grid-template-areas:
+      "avatar corps etat"
+      ". delai delai"
+      "action action action";
+    row-gap: var(--bj-sp-2);
+    padding-top: var(--bj-sp-3);
+    padding-bottom: var(--bj-sp-3);
+  }
+  .ate-avatar { grid-area: avatar; }
+  .ate-ligne-corps { grid-area: corps; }
+  .ate-etat { grid-area: etat; }
+  .ate-delai { grid-area: delai; flex-direction: row; gap: var(--bj-sp-2); }
+  .ate-date { display: none; }
+  .ate-delai-sub { display: none; }
+  .ate-entete { display: none; }
+
+  /* Au doigt, il n'y a pas de survol : le bouton est visible en permanence,
+     à hauteur de pouce, et la boîte armée occupe toute la largeur. */
+  .ate-ligne > span.ate-ligne-act {
+    grid-area: action;
+    justify-self: stretch;
+    position: relative;
+    z-index: 2;
+  }
+  .ate-ligne-lien { inset: 0; }
+  .ate-act { justify-content: stretch; }
+  .ate-act-btn--principal {
+    flex: 1;
+    min-height: 40px;
+    border-color: var(--bj-action-border);
+    color: var(--bj-action);
+  }
+  .ate-act-boite {
+    width: min(20rem, calc(100vw - var(--bj-sp-6)));
+  }
+  .ate-barre {
+    gap: var(--bj-sp-2);
+  }
+  /* Sur téléphone, les quatre nombres passent en deux colonnes et la frise
+     prend la largeur : empilés, ils repousseraient la liste sous la ligne
+     de flottaison. */
+  .ate-flux-item {
+    flex: 1 1 calc(50% - var(--bj-sp-2));
+    min-width: 0;
+    padding: var(--bj-sp-2) var(--bj-sp-3);
+  }
+  .ate-flux-val {
+    font-size: var(--bj-fs-h1-screen);
+  }
+  .ate-flux-frise {
+    flex-basis: 100%;
+    height: 3.5rem;
+  }
+  .ate-flux-vu {
+    flex-basis: 100%;
+  }
+  .ate-recherche {
+    min-width: 0;
+    width: 100%;
+  }
+  .ate-recherche-boite {
+    width: 100%;
+  }
+  .ate-kbd { display: none; }
+
+  .ate-slots {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ate-slot:last-child .ate-slot-zone,
+  .ate-slot-zone {
+    aspect-ratio: 3 / 2;
+  }
+  .ate-carte {
+    padding: var(--bj-sp-4);
+  }
+  .ate-confirm-liste {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--bj-sp-1);
+  }
+  .ate-confirm-liste dt {
+    margin-top: var(--bj-sp-2);
+  }
+  .ate-header-outils {
+    width: 100%;
+  }
+  .ate-recherche {
+    flex: 1;
+  }
+}

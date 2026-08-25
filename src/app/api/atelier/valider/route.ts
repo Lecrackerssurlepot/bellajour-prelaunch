@@ -20,6 +20,7 @@ import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { isValidNumeroToken } from "@/lib/atelier/token";
 import { logEvenement } from "@/lib/atelier/evenements";
+import { releverDossier } from "@/lib/atelier/mails";
 
 export const runtime = "nodejs";
 
@@ -89,6 +90,19 @@ export async function POST(request: Request) {
         par: "cliente",
         source: "page_numero",
       });
+
+      /* ── M6, dans la seconde ────────────────────────────────────────
+         C'est la SEULE transition que la cliente déclenche elle-même, donc
+         le seul endroit où quelqu'un attend une confirmation en regardant
+         son écran. Sans cet appel, elle cliquait « imprimez » et n'avait
+         rien avant le balayage du lendemain : le doute exact que ce mail
+         existe pour lever.
+
+         Même chemin partagé que /admin et que la relève — même verrou,
+         mêmes contrôles. Ne throw jamais : une validation réussie ne doit
+         pas être rendue en erreur parce que Brevo tousse, et le balayage
+         rattrapera. */
+      await releverDossier(supabase, numero.id);
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });

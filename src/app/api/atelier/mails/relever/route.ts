@@ -23,24 +23,41 @@
  * dix fois de suite ne renvoie rien. Le verrou vit dans `mails_envoyes`.
  * ══════════════════════════════════════════════════════════════════════════
  *
- * Elle relève DEUX mails :
- *   M1 — dossiers en état 1 dont le dépôt est terminé. Doublon volontaire du
- *        déclencheur de /api/atelier/numero : si Brevo était en panne au
- *        moment du dépôt, c'est ici que le mail est rattrapé.
- *   M3 — dossiers en état 2. Le déclencheur principal, et le seul chemin.
+ * ══════════════════════════════════════════════════════════════════════════
+ * ELLE FAIT DEUX CHOSES, ET RIEN D'AUTRE
  *
- * M3b (relance J+3), M2, M5 à M9 viendront s'ajouter ici, pas ailleurs.
+ * 1. ENVOYER CE QUI EST DÛ. La règle vit dans `codesPour` (mails.ts), pas
+ *    ici : /admin l'utilise aussi après une transition, et deux copies de la
+ *    règle finiraient par diverger. Ce fichier ne fait que balayer.
+ *
+ *    Les mails immédiats (M1, M3, M5, M6, M7, M9) partent déjà au moment du
+ *    geste ; la relève est leur FILET, pour le jour où Brevo tousse. Les
+ *    mails à retardement (M2 à J+1, M3b à J+3, M8 à J+3 après livraison)
+ *    n'ont AUCUN déclencheur possible : ils n'existent que par ce balayage.
+ *
+ * 2. FERMER LA PRODUCTION. L'auto-validation à J+7 (PRD §11) : sans elle,
+ *    « une part des dossiers payés dort indéfiniment et la production ne se
+ *    ferme jamais ». C'est la seule ÉCRITURE d'état de cette route.
+ *
+ * ⚠️ ELLE DOIT DONC TOURNER TOUS LES JOURS. Sans cron, M2, M3b, M8 et
+ * l'auto-validation ne partent jamais — et M3b est le mail qui rapporte le
+ * plus de tout le système. Un cron Vercel quotidien suffit (plan Hobby).
+ * ══════════════════════════════════════════════════════════════════════════
  */
 
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import {
   CHAMPS_MAIL,
+  codesPour,
+  doitAutoValider,
   envoyerMailAtelier,
   manquePour,
   type CodeMail,
-  type NumeroPourMail,
+  type Envoyes,
+  type NumeroPourReleve,
 } from "@/lib/atelier/mails";
+import { logEvenement } from "@/lib/atelier/evenements";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,18 +81,41 @@ function memeSecret(a: string, b: string): boolean {
    Deux formes acceptées — `Authorization: Bearer …` (ce qu'envoie le cron
    Vercel) et `x-atelier-secret` (plus court à taper dans un curl). */
 function autorise(request: Request): boolean {
-  const attendu = process.env.ATELIER_MAILS_SECRET;
-  if (!attendu) {
-    console.error("[atelier/relever] ATELIER_MAILS_SECRET absent — accès refusé");
-    return false; // jamais d'ouverture par défaut
+  /* DEUX secrets acceptés, et c'est délibéré :
+       ATELIER_MAILS_SECRET — le nôtre, pour un curl à la main ;
+       CRON_SECRET          — celui que Vercel envoie AUTOMATIQUEMENT en
+                              `Authorization: Bearer` sur ses tâches planifiées.
+     Sans le second, il faudrait donner à CRON_SECRET la même valeur que la
+     nôtre pour que le cron passe : une duplication de secret que personne ne
+     penserait à refaire le jour d'une rotation. Ici, chacun garde le sien.
+
+     ⚠️ Si AUCUN des deux n'est posé, la route est fermée. Jamais d'ouverture
+     par défaut sur un chemin qui envoie des mails à des clientes. */
+  const attendus = [process.env.ATELIER_MAILS_SECRET, process.env.CRON_SECRET].filter(
+    (v): v is string => Boolean(v),
+  );
+  if (!attendus.length) {
+    console.error("[atelier/relever] ni ATELIER_MAILS_SECRET ni CRON_SECRET — accès refusé");
+    return false;
   }
   const entete = request.headers.get("authorization") ?? "";
   const bearer = entete.toLowerCase().startsWith("bearer ") ? entete.slice(7) : "";
   const direct = request.headers.get("x-atelier-secret") ?? "";
-  return memeSecret(bearer, attendu) || memeSecret(direct, attendu);
+  return attendus.some((a) => memeSecret(bearer, a) || memeSecret(direct, a));
 }
 
-type Ligne = NumeroPourMail & { etat: string; consent_photos: boolean | null };
+/* Tous les états où un mail peut être dû. `payee` en est absent : M4 part au
+   webhook, et le rattraper ici enverrait « paiement reçu » avec des jours de
+   retard aux dossiers passés à la main pendant les tests. */
+const ETATS_BALAYES = [
+  "photos_recues",
+  "photos_insuffisantes",
+  "apercu_pret",
+  "maquette_prete",
+  "validee",
+  "expediee",
+  "livree",
+];
 
 async function relever(request: Request) {
   if (!autorise(request)) {
@@ -87,81 +127,104 @@ async function relever(request: Request) {
   try {
     const supabase = makeSupabase();
 
-    /* Les deux populations en une requête. `etat_maj_le` croissant : le
-       dossier qui attend depuis le plus longtemps passe en premier, c'est
-       aussi l'ordre d'urgence de /admin (PRD §12). */
+    /* `etat_maj_le` croissant : le dossier qui attend depuis le plus
+       longtemps passe en premier — c'est aussi l'ordre d'urgence de /admin. */
     const { data: dossiers, error: errSel } = await supabase
       .from("numeros")
-      .select(`${CHAMPS_MAIL}, consent_photos`)
-      .in("etat", ["photos_recues", "apercu_pret"])
+      .select(CHAMPS_MAIL)
+      .in("etat", ETATS_BALAYES)
       .order("etat_maj_le", { ascending: true })
       .limit(MAX_DOSSIERS)
-      .returns<Ligne[]>();
+      .returns<NumeroPourReleve[]>();
 
     if (errSel) {
       console.error("[atelier/relever] lecture échouée", errSel.code, errSel.message);
       return NextResponse.json({ error: "internal" }, { status: 500 });
     }
 
-    /* Un dossier en état 1 n'a terminé son dépôt que si consent_photos est
-       posé : sans ça, elle est encore en train de choisir ses photos, et lui
-       écrire « vos photos sont à l'atelier » serait faux. */
-    const candidats = (dossiers ?? [])
-      .map((d) => ({
-        d,
-        code: (d.etat === "photos_recues" ? "M1" : "M3") as CodeMail,
-      }))
-      .filter(({ d, code }) => code !== "M1" || d.consent_photos === true);
+    const lignes = dossiers ?? [];
 
-    /* Un seul aller-retour pour savoir ce qui est déjà parti. Sans ça, on
-       tenterait une insertion de verrou par dossier à chaque relève : ça
-       marcherait (le doublon est géré) mais ça écrirait pour rien. */
-    const dejaPartis = new Set<string>();
-    if (candidats.length) {
+    /* Un seul aller-retour pour TOUT ce qui est déjà parti, avec les dates :
+       M3b se décide sur l'âge de M3, et le garde-fou de chaîne sur la simple
+       présence du prédécesseur. Sans ce pré-chargement, il faudrait une
+       requête par dossier. */
+    const envoyesParDossier = new Map<string, Envoyes>();
+    if (lignes.length) {
       const { data: envois } = await supabase
         .from("mails_envoyes")
-        .select("numero_id, code")
-        .in("numero_id", candidats.map(({ d }) => d.id))
-        .returns<Array<{ numero_id: string; code: string }>>();
-      for (const e of envois ?? []) dejaPartis.add(`${e.numero_id}:${e.code}`);
+        .select("numero_id, code, envoye_le")
+        .in("numero_id", lignes.map((d) => d.id))
+        .returns<Array<{ numero_id: string; code: string; envoye_le: string }>>();
+      for (const e of envois ?? []) {
+        const m = envoyesParDossier.get(e.numero_id) ?? new Map<string, string>();
+        m.set(e.code, e.envoye_le);
+        envoyesParDossier.set(e.numero_id, m);
+      }
     }
 
+    const maintenant = new Date();
     const envoyes: Array<{ code: string; token: string; titre: string | null }> = [];
     const incomplets: Array<{ code: string; token: string; manque: string[] }> = [];
     const echecs: Array<{ code: string; token: string }> = [];
-    let deja = 0;
+    const autoValides: Array<{ token: string; titre: string | null }> = [];
 
-    for (const { d, code } of candidats) {
-      if (dejaPartis.has(`${d.id}:${code}`)) {
-        deja++;
+    for (const d of lignes) {
+      const dejaPartis = envoyesParDossier.get(d.id) ?? new Map<string, string>();
+
+      /* ── l'auto-validation, AVANT les mails ───────────────────────────
+         Le dossier change d'état : lui envoyer M5 dans la même passe serait
+         annoncer une maquette qu'on vient de valider d'office. M6 partira au
+         balayage suivant, une fois l'état stabilisé — c'est le prix d'une
+         règle simple, et il se compte en heures. */
+      if (doitAutoValider(d, dejaPartis, maintenant)) {
+        const quand = maintenant.toISOString();
+        const { data: maj } = await supabase
+          .from("numeros")
+          .update({ etat: "validee", valide_le: quand, valide_par: "auto", etat_maj_le: quand })
+          .eq("id", d.id)
+          .eq("etat", "maquette_prete")
+          .select("id");
+
+        if (maj?.length) {
+          /* Invariant nº6 — et ici, c'est la seule trace qu'une impression a
+             été lancée sans réponse de la cliente. */
+          await logEvenement(supabase, d.id, "etat_change", {
+            de: "maquette_prete",
+            vers: "validee",
+            par: "auto",
+            source: "releve_j7",
+          });
+          autoValides.push({ token: d.token, titre: d.titre });
+        }
         continue;
       }
 
-      /* Signalé plutôt qu'envoyé. C'est le cas le plus utile de toute la
-         route : un dossier passé en état 2 sans son aperçu ou sans son
-         palier ressort ici, et l'atelier voit tout de suite ce qui manque
-         au lieu d'attendre un mail qui ne partira jamais. */
-      const manque = manquePour(code, d);
-      if (manque.length) {
-        incomplets.push({ code, token: d.token, manque });
-        continue;
-      }
+      for (const code of codesPour(d, dejaPartis, maintenant)) {
+        /* Signalé plutôt qu'envoyé. C'est le cas le plus utile de toute la
+           route : un dossier passé en état 2 sans son aperçu ou sans son
+           palier ressort ici, et l'atelier voit tout de suite ce qui manque
+           au lieu d'attendre un mail qui ne partira jamais. */
+        const manque = manquePour(code as CodeMail, d);
+        if (manque.length) {
+          incomplets.push({ code, token: d.token, manque });
+          continue;
+        }
 
-      const r = await envoyerMailAtelier(supabase, code, d);
-      if (r.statut === "envoye") envoyes.push({ code, token: d.token, titre: d.titre });
-      else if (r.statut === "deja_envoye") deja++;
-      else echecs.push({ code, token: d.token });
+        const r = await envoyerMailAtelier(supabase, code as CodeMail, d);
+        if (r.statut === "envoye") envoyes.push({ code, token: d.token, titre: d.titre });
+        else if (r.statut !== "deja_envoye") echecs.push({ code, token: d.token });
+      }
     }
 
     const resume = {
-      examines: candidats.length,
+      examines: lignes.length,
       envoyes,
-      deja,
+      autoValides,
       incomplets,
       echecs,
       /* Le balayage a-t-il été tronqué ? Un plafond silencieux se lirait
          comme « tout est traité ». */
-      tronque: (dossiers?.length ?? 0) >= MAX_DOSSIERS,
+      tronque: lignes.length >= MAX_DOSSIERS,
     };
     console.log("[atelier/relever]", JSON.stringify(resume));
 
