@@ -162,7 +162,16 @@ export function manquePour(code: CodeMail, n: NumeroPourMail): string[] {
 /** L'échéance d'auto-validation annoncée par M5 (PRD §11). */
 export const JOURS_AVANT_AUTO_VALIDATION = 7;
 
-function paramsPour(code: CodeMail, n: NumeroPourMail): Record<string, unknown> {
+/**
+ * Les variables envoyées à Brevo pour ce mail.
+ *
+ * Exportée pour être VÉRIFIÉE : `scripts/verif-mails-brevo.mjs` compare cette
+ * liste aux `{{ params.X }}` réellement présents dans chaque template. Un
+ * template qui attend une variable que le code n'envoie pas produit un trou
+ * silencieux dans le mail — pas une erreur, juste un mot manquant que
+ * personne ne remarque avant qu'une cliente le signale.
+ */
+export function parametresPour(code: CodeMail, n: NumeroPourMail): Record<string, unknown> {
   const r = n as Partial<NumeroPourReleve>;
   const communs = {
     PRENOM: n.prenom ?? "",
@@ -250,7 +259,7 @@ export async function envoyerMailAtelier(
       email: numero.email ?? "",
       name: numero.prenom ?? undefined,
       apiKey: process.env.BREVO_API_KEY,
-      params: paramsPour(code, numero),
+      params: parametresPour(code, numero),
     });
 
     if (!envoye) {

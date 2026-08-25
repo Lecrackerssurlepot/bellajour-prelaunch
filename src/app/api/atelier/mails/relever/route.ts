@@ -81,15 +81,27 @@ function memeSecret(a: string, b: string): boolean {
    Deux formes acceptées — `Authorization: Bearer …` (ce qu'envoie le cron
    Vercel) et `x-atelier-secret` (plus court à taper dans un curl). */
 function autorise(request: Request): boolean {
-  const attendu = process.env.ATELIER_MAILS_SECRET;
-  if (!attendu) {
-    console.error("[atelier/relever] ATELIER_MAILS_SECRET absent — accès refusé");
-    return false; // jamais d'ouverture par défaut
+  /* DEUX secrets acceptés, et c'est délibéré :
+       ATELIER_MAILS_SECRET — le nôtre, pour un curl à la main ;
+       CRON_SECRET          — celui que Vercel envoie AUTOMATIQUEMENT en
+                              `Authorization: Bearer` sur ses tâches planifiées.
+     Sans le second, il faudrait donner à CRON_SECRET la même valeur que la
+     nôtre pour que le cron passe : une duplication de secret que personne ne
+     penserait à refaire le jour d'une rotation. Ici, chacun garde le sien.
+
+     ⚠️ Si AUCUN des deux n'est posé, la route est fermée. Jamais d'ouverture
+     par défaut sur un chemin qui envoie des mails à des clientes. */
+  const attendus = [process.env.ATELIER_MAILS_SECRET, process.env.CRON_SECRET].filter(
+    (v): v is string => Boolean(v),
+  );
+  if (!attendus.length) {
+    console.error("[atelier/relever] ni ATELIER_MAILS_SECRET ni CRON_SECRET — accès refusé");
+    return false;
   }
   const entete = request.headers.get("authorization") ?? "";
   const bearer = entete.toLowerCase().startsWith("bearer ") ? entete.slice(7) : "";
   const direct = request.headers.get("x-atelier-secret") ?? "";
-  return memeSecret(bearer, attendu) || memeSecret(direct, attendu);
+  return attendus.some((a) => memeSecret(bearer, a) || memeSecret(direct, a));
 }
 
 /* Tous les états où un mail peut être dû. `payee` en est absent : M4 part au

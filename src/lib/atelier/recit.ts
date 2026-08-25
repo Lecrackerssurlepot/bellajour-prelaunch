@@ -18,6 +18,7 @@
  */
 
 import { LIBELLE_ETAT, type Etat } from "./transitions";
+import { OBJET_MAIL } from "./mails";
 
 /** Qui a agi : ça décide de la couleur et du verbe. */
 export type Ton = "nous" | "elle" | "mail" | "alerte" | "neutre";
@@ -30,22 +31,13 @@ export type Recit = {
 };
 
 /* Ce que chaque mail dit vraiment. « M3 est parti » n'apprend rien à qui n'a
-   pas le PRD sous les yeux. */
-const OBJET_MAIL: Record<string, string> = {
-  M1: "c'est parti, nous avons vos photos",
-  M2: "il manque les photos",
-  M3: "votre couverture est prête",
-  M3b: "relance, votre numéro vous attend",
-  M4: "paiement reçu",
-  M5: "la maquette complète",
-  M6: "départ à l'impression",
-  M7: "votre numéro est en route",
-  M8: "le prochain moment ?",
-  M9: "quelques photos de plus ?",
-};
+   pas le PRD sous les yeux.
 
+   ⚠️ La table vit dans mails.ts, pas ici : elle y sert aussi à la page santé,
+   et deux copies des mêmes dix libellés auraient divergé au premier mail
+   dont on change le propos. */
 function texteMail(code: string): string {
-  const objet = OBJET_MAIL[code];
+  const objet = OBJET_MAIL[code as keyof typeof OBJET_MAIL];
   return objet ? `${code} — « ${objet} »` : code;
 }
 
