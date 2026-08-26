@@ -297,6 +297,82 @@ LIEN, NB_PHOTOS, PRENOM, TITRE.
 
 ---
 
+## Retours de la recette « Test 2 » du 26/08 — avec les solutions proposées
+
+Huit retours de Mathias, consignés pendant la séance. Ce qui marche a été dit
+aussi : le téléchargement du lot, la fluidité de l'admin, la reprise du dépôt
+depuis le mail. Les retours, par ordre du parcours :
+
+**T2-1. L'écran « C'est fait » a trop de texte, et la case reste peu claire.**
+La page devrait juste dire que l'atelier s'en occupe.
+→ *Proposition* : réduire l'écran 6 à trois éléments — le ✓, « {titre} est
+entre nos mains, couverture sous 48 h », et le bouton « Suivre votre numéro ».
+La case « montrer des extraits » QUITTE cet écran : elle part sur la page
+/numero (bloc facultatif en pied, déjà stylé) où elle a du contexte et du
+temps, au lieu d'encombrer un moment de conclusion. Le rappel « gardez ce
+lien » se résume à une ligne.
+
+**T2-2. C1 + C4 en un seul envoi, au format d'une couverture à plat.**
+Reconfirmé (c'était déjà noté). Le client verrait : première, quatrième, les
+deux dos, la double page — « une belle prés comme la version éditeur ».
+→ *Proposition* : l'admin téléverse UN fichier « couverture à plat »
+(C4 | dos | C1, le format d'export naturel de Canva) + la double page. Le
+serveur garde le fichier entier ; l'affichage découpe en CSS (`object-fit:
+cover` + `object-position`) : vue C1, vue C4, vue à plat. Aucune retouche
+d'image côté serveur, la loupe montre l'objet entier. Migration douce : les
+dossiers à trois visuels continuent de s'afficher comme aujourd'hui.
+Chantier moyen : dépôt admin + `apercu_urls` + rendu des deux pages.
+
+**T2-3. M9 devrait porter un mot de l'atelier.** Le cas réel : le problème
+était la QUALITÉ des photos, pas leur nombre — le mail générique tombe à côté.
+→ *Proposition* : un champ de texte facultatif sur l'action « Demander plus de
+photos » (PanneauAction), envoyé comme paramètre `MOT` du template M9, affiché
+dans un encart « Un mot de l'atelier » si non vide. Le même mécanisme servira
+à M3 plus tard. Petit chantier : transitions.ts accepte un champ, la route le
+passe à l'envoi, le template gagne un bloc conditionnel.
+
+**T2-4. La reprise de dépôt doit montrer qu'il y a déjà des photos.** Le lien
+du mail ramène au bon endroit, mais l'écran ressemble à un premier dépôt.
+→ *Proposition* : en mode reprise, un bandeau en tête de l'écran 5 — « Vos 65
+photos sont déjà chez nous. Celles-ci s'AJOUTENT. » — et le compteur repart de
+l'existant (il le fait déjà côté serveur, c'est l'affichage qui ne le dit pas).
+Petit chantier.
+
+**T2-5. L'admin doit distinguer l'AJOUT du premier dépôt.** Un séparateur dans
+la grille, et pouvoir télécharger seulement les nouvelles.
+→ *Proposition* : les photos portent déjà `ordre` et leur date — un filet
+« ajoutées le 26/08 » dans la grille au premier changement de session de
+dépôt, et un bouton « Télécharger les N nouvelles » à côté de « Télécharger le
+lot » (même mécanique, filtrée). Moyen : il faut décider ce qui fait
+« session » (l'événement `consentements` fait un bon séparateur).
+
+**T2-6. Après publication, « L'action du moment » doit changer de visage.**
+Les champs de la couverture devraient descendre dans un encart propre, en bas.
+Et la disposition générale (infos client, notes en colonne) est à revoir —
+noté comme NON prioritaire par Mathias.
+→ *Proposition* : à l'état 2+, le panneau d'action montre l'action suivante en
+grand et replie le formulaire de correction (« Corriger l'aperçu ») derrière
+un lien discret. La refonte de la disposition attendra un croquis.
+
+**T2-7. Le mail M3 devrait être plus visuel** (visuels cliquables, titres).
+→ *Contrainte à connaître* : les visuels du coffre sont signés avec une durée
+de vie d'une heure — embarqués dans un mail, ils seraient MORTS à l'ouverture.
+On n'embarque donc pas l'aperçu réel dans M3.
+→ *Proposition* : soigner le mail autrement — un bloc visuel générique
+(illustration de couverture), un bouton unique et grand « Découvrir ma
+couverture », et le reste au minimum. La page fait le spectacle, le mail fait
+le clic.
+
+**T2-8. Les délais annoncés à l'état 2 doivent dire la suite.** « Chez vous
+sous 10 jours après validation » laisse croire que tout est prêt, alors que la
+maquette complète reste à composer.
+→ *Proposition* : sous le prix, une ligne en deux temps — « Après votre
+paiement : votre numéro complet sous 3 jours ouvrés. Puis chez vous sous 10
+jours après votre validation. » Les chiffres viennent de `DELAIS` (urgence.ts),
+jamais en dur : ce sont les promesses que l'admin surveille déjà.
+
+---
+
 ### ⚠️ À faire — par ordre d'importance
 
 **1. Le crédit fondateur est entièrement manuel.** L'admin affiche « 30 € à
