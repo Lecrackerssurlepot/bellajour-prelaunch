@@ -17,9 +17,22 @@
 
 import { signerGet } from "./r2";
 
-export type Apercu = { c1: string | null; c4: string | null; double: string | null };
+/**
+ * `plat` (T2-2) : la couverture À PLAT, C4 | dos | C1 dans un seul fichier —
+ * le format d'export naturel de Canva et le format normal des nouvelles
+ * publications. Quand il est présent, c1/c4 sont null par construction
+ * (transitions.ts n'écrit jamais les deux formats ensemble) ; les dossiers
+ * publiés avant ce format portent c1/c4 et un plat null. L'affichage choisit
+ * son rendu sur cette seule distinction.
+ */
+export type Apercu = {
+  plat: string | null;
+  c1: string | null;
+  c4: string | null;
+  double: string | null;
+};
 
-const VIDE: Apercu = { c1: null, c4: null, double: null };
+const VIDE: Apercu = { plat: null, c1: null, c4: null, double: null };
 
 function lire(source: Record<string, unknown>, ...noms: string[]): string | null {
   for (const nom of noms) {
@@ -46,11 +59,12 @@ export async function resoudreApercu(brut: unknown): Promise<Apercu> {
   if (!brut || typeof brut !== "object" || Array.isArray(brut)) return VIDE;
   const source = brut as Record<string, unknown>;
 
-  const [c1, c4, double] = await Promise.all([
+  const [plat, c1, c4, double] = await Promise.all([
+    resoudre(lire(source, "plat", "couverture_plat", "a_plat")),
     resoudre(lire(source, "c1", "couverture", "recto")),
     resoudre(lire(source, "c4", "dos", "verso")),
     resoudre(lire(source, "double", "double_page", "doublePage")),
   ]);
 
-  return { c1, c4, double };
+  return { plat, c1, c4, double };
 }

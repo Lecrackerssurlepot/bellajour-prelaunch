@@ -656,6 +656,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     retouchesLe: (n.retouches_demandees_le as string) ?? null,
     apercu,
     apercuBrut: {
+      plat: brut.plat ?? null,
       c1: brut.c1 ?? null,
       c4: brut.c4 ?? null,
       double: brut.double ?? null,

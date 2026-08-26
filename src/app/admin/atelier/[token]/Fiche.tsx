@@ -98,6 +98,34 @@ const APERCU_VUES = [
   { cle: "double", legende: "Une double page" },
 ] as const;
 
+/* Une vue de l'encart aperçu. `loupe` est la légende de la vue que le clic
+   agrandit : en mode à plat (T2-2), les deux faces découpées ouvrent le même
+   objet entier, et la loupe navigue par légende — il lui faut des légendes
+   uniques. */
+type ApercuVue = {
+  cle: string;
+  src: string | null;
+  legende: string;
+  loupe: string;
+  decoupe?: "droite" | "gauche";
+};
+
+/* Le même choix de rendu que la page cliente (Apercu.tsx) : un dossier au
+   format à plat montre deux faces DÉCOUPÉES du même fichier plus l'objet
+   entier ; un dossier historique montre ses trois fichiers. Mêmes mots des
+   deux côtés, toujours. */
+function vuesDeLApercu(apercu: FicheVue["apercu"]): ApercuVue[] {
+  if (apercu.plat) {
+    return [
+      { cle: "plat-c1", src: apercu.plat, legende: "La couverture", loupe: "La couverture à plat", decoupe: "droite" },
+      { cle: "plat-c4", src: apercu.plat, legende: "La quatrième", loupe: "La couverture à plat", decoupe: "gauche" },
+      { cle: "plat", src: apercu.plat, legende: "La couverture à plat", loupe: "La couverture à plat" },
+      { cle: "double", src: apercu.double, legende: "Une double page", loupe: "Une double page" },
+    ];
+  }
+  return APERCU_VUES.map(({ cle, legende }) => ({ cle, src: apercu[cle], legende, loupe: legende }));
+}
+
 /**
  * Ce que le téléchargement raconte à l'écran.
  *
@@ -160,12 +188,15 @@ export default function Fiche({
   const base = demo ? "/admin/atelier/demo" : "/admin/atelier";
   const occupe = lot.phase === "prepare" || lot.phase === "ecrit";
 
-  /* La loupe ne connaît que ce qui existe : un visuel manquant n'est pas une
-     étape de la visite. Ses index ne sont donc PAS ceux de la grille. */
-  const apercuAgrandissable: VueLoupe[] = APERCU_VUES.flatMap(({ cle, legende }) => {
-    const src = fiche.apercu[cle];
-    return src ? [{ src, legende }] : [];
-  });
+  /* La loupe ne connaît que ce qui existe, une fois chacun : un visuel
+     manquant n'est pas une étape de la visite, et l'objet à plat n'y figure
+     qu'une fois même s'il remplit trois cadres. Ses index ne sont donc PAS
+     ceux de la grille. */
+  const apercuVues = vuesDeLApercu(fiche.apercu);
+  const apercuAgrandissable: VueLoupe[] = apercuVues
+    .filter((v): v is ApercuVue & { src: string } => Boolean(v.src))
+    .filter((v, i, tous) => tous.findIndex((a) => a.loupe === v.loupe) === i)
+    .map((v) => ({ src: v.src, legende: v.loupe }));
 
   /**
    * Les liens, refaits à l'instant.
@@ -482,15 +513,18 @@ export default function Fiche({
                 Ce que la cliente voit sur sa page, dans le même ordre et avec les mêmes mots.
               </p>
               <div className="ate-apercu">
-                {APERCU_VUES.map(({ cle, legende }) => {
-                  const src = fiche.apercu[cle];
-                  const rang = apercuAgrandissable.findIndex((v) => v.legende === legende);
+                {apercuVues.map(({ cle, src, legende, loupe, decoupe }) => {
+                  const rang = apercuAgrandissable.findIndex((v) => v.legende === loupe);
                   return (
                     <figure key={cle} className="ate-apercu-item">
                       {src ? (
                         <button
                           type="button"
-                          className="ate-apercu-clic"
+                          className={
+                            decoupe
+                              ? `ate-apercu-clic ate-apercu-decoupe ate-apercu-decoupe--${decoupe}`
+                              : "ate-apercu-clic"
+                          }
                           onClick={() => setApercuOuvert(rang)}
                           aria-label={`Agrandir : ${legende}`}
                         >

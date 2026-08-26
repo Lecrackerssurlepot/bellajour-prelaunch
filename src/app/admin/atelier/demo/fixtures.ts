@@ -494,9 +494,11 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     trackingUrl: ["expediee", "livree"].includes(g.etat) ? "https://www.laposte.fr/outils/suivre-vos-envois" : null,
     retouchesLe: null,
     apercu: publie
-      ? { c1: PHOTOS[0], c4: PHOTOS[1], double: PHOTOS[2] }
-      : { c1: null, c4: null, double: null },
-    apercuBrut: publie ? { c1: PHOTOS[0], c4: PHOTOS[1], double: PHOTOS[2] } : { c1: null, c4: null, double: null },
+      ? { plat: null, c1: PHOTOS[0], c4: PHOTOS[1], double: PHOTOS[2] }
+      : { plat: null, c1: null, c4: null, double: null },
+    apercuBrut: publie
+      ? { plat: null, c1: PHOTOS[0], c4: PHOTOS[1], double: PHOTOS[2] }
+      : { plat: null, c1: null, c4: null, double: null },
     adresse: g.paye
       ? {
           nom: `${g.prenom} ${g.email.split("@")[0].split(".")[1] ?? ""}`.trim(),

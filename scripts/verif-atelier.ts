@@ -181,6 +181,23 @@ ok("maquette + M5 + 8 j : valide d'office", doitAutoValider(d({ etat: "maquette_
 ok("maquette + M5 + 5 j : elle a encore le temps", !doitAutoValider(d({ etat: "maquette_prete", etat_maj_le: ilYA(5) }), env(["M5", ilYA(5)]), MAINTENANT));
 ok("maquette SANS M5 + 30 j : on n'imprime PAS en silence", !doitAutoValider(d({ etat: "maquette_prete", etat_maj_le: ilYA(30) }), env(), MAINTENANT));
 
+titre("— l'apercu a plat (T2-2) —");
+const pPlat = preparerTransition("publier_apercu", "photos_recues", {
+  nb_pages: 34, apercu_plat: "k/plat.jpg", apercu_double: "k/d.jpg",
+});
+ok("plat + double : accepte, deux cles en base",
+   pPlat.ok && JSON.stringify(pPlat.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg", double: "k/d.jpg" }));
+ok("plat sans double : refuse",
+   !preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, apercu_plat: "k/plat.jpg" }).ok);
+const pTrio = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, ...VISUELS });
+ok("le trio historique reste accepte (correction d'anciens dossiers)",
+   pTrio.ok && JSON.stringify(pTrio.patch.apercu_urls) === JSON.stringify({ c1: "k/c1.jpg", c4: "k/c4.jpg", double: "k/d.jpg" }));
+const pMixte = preparerTransition("publier_apercu", "photos_recues", {
+  nb_pages: 34, apercu_plat: "k/plat.jpg", apercu_double: "k/d.jpg", ...({ apercu_c1: "k/c1.jpg" }),
+});
+ok("plat fourni : c1 est ignore, jamais de melange des deux formats",
+   pMixte.ok && JSON.stringify(pMixte.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg", double: "k/d.jpg" }));
+
 titre("— retouches demandees (T2-13) —");
 ok("maquette + M5 + 8 j + retouches : SUSPENDU, on n'imprime pas par-dessus",
    !doitAutoValider(d({ etat: "maquette_prete", etat_maj_le: ilYA(8), retouches_demandees_le: ilYA(3) }), env(["M5", ilYA(8)]), MAINTENANT));

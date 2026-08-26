@@ -173,10 +173,11 @@ export type Fiche = {
   trackingUrl: string | null;
   /** T2-13 — la date du clic « j'ai noté des retouches », ou null. */
   retouchesLe: string | null;
-  /** Signés pour l'affichage (URL courtes, régénérées à chaque rendu). */
-  apercu: { c1: string | null; c4: string | null; double: string | null };
+  /** Signés pour l'affichage (URL courtes, régénérées à chaque rendu).
+      `plat` (T2-2) : la couverture à plat — présent, il remplace c1/c4. */
+  apercu: { plat: string | null; c1: string | null; c4: string | null; double: string | null };
   /** Les valeurs brutes (clés de coffre), pour préremplir le formulaire. */
-  apercuBrut: { c1: string | null; c4: string | null; double: string | null };
+  apercuBrut: { plat: string | null; c1: string | null; c4: string | null; double: string | null };
   adresse: AdresseVue | null;
   stripePaymentIntent: string | null;
   photos: PhotoVue[];

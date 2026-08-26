@@ -40,7 +40,17 @@ type Verif = {
 
 type Erreur = { champ: string; message: string };
 
-const SLOTS = [
+/* T2-2 — le format normal : la couverture à plat (l'export naturel de Canva)
+   plus la double page. La page cliente découpe les deux faces en CSS. */
+const SLOTS_PLAT = [
+  { cle: "apercu_plat", json: "plat", label: "La couverture à plat (C4 | dos | C1)" },
+  { cle: "apercu_double", json: "double", label: "La double page" },
+] as const;
+
+/* L'ancien format, en trois fichiers. Il ne s'affiche QUE pour corriger un
+   dossier publié avant la couverture à plat : deux formats au choix sur un
+   dossier neuf, c'est un formulaire qui demande de choisir sans raison. */
+const SLOTS_HISTORIQUE = [
   { cle: "apercu_c1", json: "c1", label: "Première de couverture" },
   { cle: "apercu_c4", json: "c4", label: "Quatrième de couverture" },
   { cle: "apercu_double", json: "double", label: "La double page" },
@@ -53,6 +63,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
   );
   const [saisie, setSaisie] = useState<Record<string, string>>({
     nb_pages: fiche.ligne.nbPages ? String(fiche.ligne.nbPages) : "",
+    apercu_plat: fiche.apercuBrut.plat ?? "",
     apercu_c1: fiche.apercuBrut.c1 ?? "",
     apercu_c4: fiche.apercuBrut.c4 ?? "",
     apercu_double: fiche.apercuBrut.double ?? "",
@@ -65,6 +76,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
     tracking_url: fiche.trackingUrl ?? "",
   });
   const [apercus, setApercus] = useState<Record<string, string>>({
+    apercu_plat: fiche.apercu.plat ?? "",
     apercu_c1: fiche.apercu.c1 ?? "",
     apercu_c4: fiche.apercu.c4 ?? "",
     apercu_double: fiche.apercu.double ?? "",
@@ -141,6 +153,13 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
 
       set(champ, data.key);
       setApercus((a) => ({ ...a, [champ]: URL.createObjectURL(file) }));
+
+      /* T2-2 — un plat qui arrive vide c1/c4 de la saisie : le serveur les
+         ignorerait de toute façon (le plat gagne), mais une saisie qui porte
+         les deux formats à la fois finirait par mentir à quelqu'un. */
+      if (champ === "apercu_plat") {
+        setSaisie((s) => ({ ...s, apercu_c1: "", apercu_c4: "" }));
+      }
     } catch {
       setErreurs((e) => [...e, { champ, message: "Envoi interrompu. Réessaie." }]);
     } finally {
@@ -293,6 +312,12 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
 
   const besoinApercu = choisie?.cle === "publier_apercu" || choisie?.cle === "corriger_apercu";
 
+  /* T2-2 — quel jeu de cadres ? Le format à plat, sauf pour corriger un
+     dossier publié en trois fichiers avant ce format (c1/c4 en base, pas de
+     plat) : là, on corrige dans son format d'origine. */
+  const modeHistorique = !fiche.apercuBrut.plat && Boolean(fiche.apercuBrut.c1 || fiche.apercuBrut.c4);
+  const slotsApercu = modeHistorique ? SLOTS_HISTORIQUE : SLOTS_PLAT;
+
   return (
     <section className="ate-carte ate-action">
       <h2 className="ate-carte-titre">L&apos;action du moment</h2>
@@ -323,7 +348,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
           {besoinApercu ? (
             <>
               <div className="ate-slots">
-                {SLOTS.map((s) => (
+                {slotsApercu.map((s) => (
                   <div key={s.cle} className="ate-slot">
                     <span className="ate-slot-label">{s.label}</span>
                     <button

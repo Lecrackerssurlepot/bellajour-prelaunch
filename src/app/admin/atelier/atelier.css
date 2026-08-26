@@ -1930,6 +1930,18 @@
   color: var(--bj-text-faint);
 }
 
+/* La couverture a plat, decoupee (T2-2) — meme principe que chez la cliente
+   (.nu-vue--decoupe) : un fichier C4 | dos | C1, chaque face est un CADRAGE
+   du meme objet. Le cadre prend le format d'une couverture, object-position
+   choisit le cote. */
+.ate-apercu-decoupe { aspect-ratio: 2 / 3; }
+.ate-apercu-decoupe img {
+  height: 100%;
+  object-fit: cover;
+}
+.ate-apercu-decoupe--droite img { object-position: right center; }
+.ate-apercu-decoupe--gauche img { object-position: left center; }
+
 /* Cliquable, comme chez la cliente. La fiche et sa page montrent le même
    visuel : elles doivent l'ouvrir de la même façon, sinon on juge une
    vignette de 140 px ce qu'elle voit en plein écran. */

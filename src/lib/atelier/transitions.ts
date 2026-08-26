@@ -82,6 +82,11 @@ export type ActionCle =
    navigateur : la conversion et le contrôle se font ICI, une seule fois. */
 export type Saisie = {
   nb_pages?: string | number | null;
+  /* T2-2 — LE format de dépôt : la couverture à plat (C4 | dos | C1), telle
+     que Canva l'exporte. S'il est fourni, il gagne : c1/c4 sont ignorés.
+     Les deux cadres séparés restent acceptés pour corriger un dossier
+     publié avant ce format. */
+  apercu_plat?: string | null;
   apercu_c1?: string | null;
   apercu_c4?: string | null;
   apercu_double?: string | null;
@@ -298,22 +303,38 @@ export function preparerTransition(
       }
     }
 
-    /* ── les trois visuels ────────────────────────────────────────────
+    /* ── les visuels ──────────────────────────────────────────────────
        Clé d'objet du coffre (dépôt depuis /admin) ou adresse absolue :
-       `resoudreApercu` sait lire les deux. Les trois sont obligatoires —
-       une page qui vend avec un cadre vide ne vend pas. */
-    const visuels: Array<[keyof Saisie, string, string]> = [
-      ["apercu_c1", "c1", "la première de couverture"],
-      ["apercu_c4", "c4", "la quatrième de couverture"],
-      ["apercu_double", "double", "la double page"],
-    ];
-    const apercu: Record<string, string> = {};
-    for (const [champ, cleJson, nom] of visuels) {
-      const v = texte(saisie[champ], 600);
-      if (!v) erreurs.push({ champ, message: `Il manque ${nom}.` });
-      else apercu[cleJson] = v;
+       `resoudreApercu` sait lire les deux. Une page qui vend avec un cadre
+       vide ne vend pas — tout ce que le format choisi exige est obligatoire.
+
+       T2-2 : le format normal est la couverture À PLAT (C4 | dos | C1, un
+       seul fichier, l'export naturel de Canva) plus la double page. La page
+       cliente en découpe les deux faces en CSS et la loupe montre l'objet
+       entier — une vraie couverture qu'on retourne. Le trio historique
+       c1 + c4 + double reste accepté UNIQUEMENT pour corriger un dossier
+       publié avant ce format : si `apercu_plat` est fourni, il gagne et
+       c1/c4 sont ignorés (jamais de mélange des deux formats en base). */
+    const plat = texte(saisie.apercu_plat, 600);
+    const doublePage = texte(saisie.apercu_double, 600);
+
+    if (plat) {
+      if (!doublePage) erreurs.push({ champ: "apercu_double", message: "Il manque la double page." });
+      else patch.apercu_urls = { plat, double: doublePage };
+    } else {
+      const visuels: Array<[keyof Saisie, string, string]> = [
+        ["apercu_c1", "c1", "la couverture à plat (ou, à défaut, la première de couverture)"],
+        ["apercu_c4", "c4", "la quatrième de couverture"],
+        ["apercu_double", "double", "la double page"],
+      ];
+      const apercu: Record<string, string> = {};
+      for (const [champ, cleJson, nom] of visuels) {
+        const v = texte(saisie[champ], 600);
+        if (!v) erreurs.push({ champ, message: `Il manque ${nom}.` });
+        else apercu[cleJson] = v;
+      }
+      if (Object.keys(apercu).length === 3) patch.apercu_urls = apercu;
     }
-    if (Object.keys(apercu).length === 3) patch.apercu_urls = apercu;
   }
 
   if (cle === "publier_maquette") {

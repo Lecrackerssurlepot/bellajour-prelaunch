@@ -130,7 +130,8 @@ export async function POST(request: Request) {
           {
             error: "saisie",
             erreurs: absents.map((nom) => ({
-              champ: { c1: "apercu_c1", c4: "apercu_c4", double: "apercu_double" }[nom] ?? nom,
+              champ:
+                { plat: "apercu_plat", c1: "apercu_c1", c4: "apercu_c4", double: "apercu_double" }[nom] ?? nom,
               message: "L'image n'est pas arrivée dans le coffre. Redépose-la.",
             })),
           },
