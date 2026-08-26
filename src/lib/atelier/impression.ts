@@ -276,18 +276,29 @@ export type EffetSignal = "expedier" | "alerte" | "journal";
  *
  *   expedier — ItemShipped : le seul qui change l'état (6 → 7). Il porte le
  *              transporteur et le suivi ; M7 part dans la foulée.
- *   alerte   — ItemError / ItemCanceled : journalisés en ton d'alerte, AUCUN
- *              changement d'état. Un problème d'impression se traite au
+ *   alerte   — un échec : journalisé en ton d'alerte, AUCUN changement
+ *              d'état. Un problème d'impression ou de livraison se traite au
  *              téléphone et au dashboard, pas par une machine qui déciderait
  *              seule de reculer un dossier.
  *   journal  — tout le reste (validation, production, emballage…) : le fil
  *              de production devient lisible dans le Parcours, rien ne bouge.
  *
+ * La liste vient de l'écran d'abonnement du dashboard (Signal Interface
+ * Method 2.1, relevé le 26/08/2026) — plus complète que la doc v1.1.
  * Un type inconnu tombe en `journal` : un signal d'une version future de
  * leur API ne doit ni casser le webhook ni disparaître du récit.
+ * `ItemDeliveryCompleted` reste volontairement au journal : le passage en
+ * « livrée » (qui arme M8) demeure un geste de l'atelier.
  */
+const SIGNAUX_ALERTE = new Set([
+  "ItemError",
+  "ItemCanceled",
+  "CloudprinterOrderCanceled",
+  "ItemDeliveryFailed",
+]);
+
 export function interpreterSignal(type: string): { effet: EffetSignal } {
   if (type === "ItemShipped") return { effet: "expedier" };
-  if (type === "ItemError" || type === "ItemCanceled") return { effet: "alerte" };
+  if (SIGNAUX_ALERTE.has(type)) return { effet: "alerte" };
   return { effet: "journal" };
 }

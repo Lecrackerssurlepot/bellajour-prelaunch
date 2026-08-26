@@ -247,9 +247,12 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
       const SIGNAUX: Record<string, string> = {
         CloudprinterOrderValidated: "L'imprimeur a validé la commande",
         CloudprinterItemValidated: "L'imprimeur a validé les fichiers",
+        ItemValidated: "L'imprimeur a validé les fichiers",
         ItemProduce: "La production a commencé",
         ItemProduced: "L'impression est terminée",
         ItemPacked: "Le colis est emballé",
+        ItemDeliveryStarted: "Le transporteur a pris le colis",
+        ItemDeliveryCompleted: "Le transporteur annonce la livraison",
       };
       const type = String(payload.type ?? "");
       return {
@@ -259,17 +262,20 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
       };
     }
 
-    case "cloudprinter_erreur":
+    case "cloudprinter_erreur": {
+      const TYPES_ALERTE: Record<string, string> = {
+        ItemCanceled: "L'imprimeur a ANNULÉ la production",
+        CloudprinterOrderCanceled: "L'imprimeur a ANNULÉ la commande",
+        ItemDeliveryFailed: "La LIVRAISON a échoué",
+      };
       return {
-        texte:
-          String(payload.type ?? "") === "ItemCanceled"
-            ? "L'imprimeur a ANNULÉ la production"
-            : "L'imprimeur signale un problème",
+        texte: TYPES_ALERTE[String(payload.type ?? "")] ?? "L'imprimeur signale un problème",
         detail:
           [payload.cause, payload.message].filter((v) => typeof v === "string" && v).join(" · ") ||
           "À traiter à la main, avec leur dashboard",
         ton: "alerte",
       };
+    }
 
     case "cloudprinter_echec":
       return {

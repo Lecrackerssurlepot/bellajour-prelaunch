@@ -337,7 +337,11 @@ titre("— les signaux CloudSignal —");
 ok("ItemShipped expedie", interpreterSignal("ItemShipped").effet === "expedier");
 ok("ItemError alerte sans changer l'etat", interpreterSignal("ItemError").effet === "alerte");
 ok("ItemCanceled alerte", interpreterSignal("ItemCanceled").effet === "alerte");
+ok("CloudprinterOrderCanceled alerte", interpreterSignal("CloudprinterOrderCanceled").effet === "alerte");
+ok("ItemDeliveryFailed alerte", interpreterSignal("ItemDeliveryFailed").effet === "alerte");
 ok("ItemPacked se journalise seulement", interpreterSignal("ItemPacked").effet === "journal");
+ok("ItemDeliveryCompleted ne livre PAS tout seul (M8 reste un geste de l'atelier)",
+   interpreterSignal("ItemDeliveryCompleted").effet === "journal");
 ok("un type inconnu tombe au journal, jamais en erreur", interpreterSignal("ItemFutur2027").effet === "journal");
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
