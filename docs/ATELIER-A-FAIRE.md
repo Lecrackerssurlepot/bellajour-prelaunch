@@ -462,10 +462,19 @@ référence déduite de la pagination), et
 `/api/cloudprinter/webhook` reçoit les signaux (ItemShipped → état 7 +
 transporteur + M7 ; erreurs → journal, traitement manuel). Sans
 `CLOUDPRINTER_API_KEY`, mode manuel : l'action redevient un simple
-changement d'état. Reste à faire : créer les interfaces au dashboard
-(CloudCore Sandbox pour la preview + CloudSignal), poser les deux clés,
-dérouler la recette §10, puis trancher les finitions (grammage/pelliculage)
-avec l'étude de prix et régénérer la clé qui a circulé en clair.
+changement d'état.
+**RECETTE SANDBOX PROUVÉE le 26/08 après-midi sur « Test 2 »** : commande passée
+(re-commande sous référence dérivée après une annulation — une référence ne se
+réutilise jamais chez eux), fichiers téléchargés avec leurs md5, CP Check passé
+avec des PDF au gabarit (216x303 mm bloc, 431x303 mm couverture enveloppante),
+signaux reçus, ItemShipped a basculé l'état 6 vers 7 tout seul et M7 est parti.
+Trois leçons payées pendant la recette : `phone` est OBLIGATOIRE dans l'adresse
+(le téléphone du dossier part, repli sur le numéro de la maison) ; leur format
+d'erreur est `{error:{type,info}}` ; le champ `order` des signaux ne porte pas
+notre référence telle quelle (résolution multi-candidats dans le webhook).
+Reste à faire : pousser Test 2 jusqu'à « Livrée » + M8, trancher les finitions
+(grammage/pelliculage) avec l'étude de prix, RÉGÉNÉRER la clé API qui a circulé
+en clair, et le jour du lancement créer l'interface Live + ses clés en Production.
 
 **Deux lints pré-existants**, hors périmètre du lot 7 :
 `src/app/admin/page.tsx:145` (`Date.now()` pendant le rendu) et
