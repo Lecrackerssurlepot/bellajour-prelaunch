@@ -108,7 +108,8 @@ export async function POST(request: Request) {
          atterrirait ici — rien à faire chez nous. Le payload est journalisé
          en console (SANS la clé) : si un signal légitime tombe ici, il faut
          pouvoir lire ce qu'il portait au lieu de le deviner. */
-      const { apikey: _apikey, ...sansCle } = body;
+      const sansCle = { ...body };
+      delete sansCle.apikey;
       console.log("[cloudprinter/webhook] signal sans dossier", JSON.stringify(sansCle).slice(0, 800));
       return new NextResponse(null, { status: 204 });
     }
