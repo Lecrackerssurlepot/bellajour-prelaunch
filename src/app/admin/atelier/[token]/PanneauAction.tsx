@@ -25,6 +25,9 @@ import { SLOTS_IMPRESSION } from "@/lib/atelier/impression";
 type Verif = {
   action: { cle: string; libelle: string; vers: string; note?: string };
   resume: { nbPages?: number; palier?: string; euros?: number };
+  /* T2-3 — le mot de l'atelier tel que le serveur l'a retenu : c'est LUI qui
+     partira dans M9, pas la saisie locale. */
+  mot?: string;
   destinataire: { prenom: string | null; email: string | null; titre: string | null };
   /* Le récap d'impression, calculé par le serveur (jamais ici) : ce qui va
      réellement partir chez Cloudprinter au clic suivant. */
@@ -523,6 +526,25 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
             </>
           ) : null}
 
+          {choisie.cle === "photos_insuffisantes" ? (
+            <label className="ate-champ">
+              <span className="ate-champ-label">Un mot pour elle (facultatif)</span>
+              <textarea
+                className="adm-input ate-mot"
+                rows={3}
+                maxLength={500}
+                value={saisie.mot ?? ""}
+                onChange={(e) => set("mot", e.target.value)}
+                placeholder="Ex. : vos photos sont belles mais trop sombres pour l'impression, si vous avez les originaux…"
+              />
+              {/* T2-3 — le cas réel : le problème était la QUALITÉ des photos,
+                  pas leur nombre. Le mail générique tombait à côté. */}
+              <span className="ate-champ-aide">
+                Affiché dans M9, encart « Un mot de l&apos;atelier ». Vide : le mail part sans encart.
+              </span>
+            </label>
+          ) : null}
+
           {erreurDe("action") ? <p className="ate-erreur ate-erreur--bloc">{erreurDe("action")}</p> : null}
           {erreurDe("etat") ? <p className="ate-erreur ate-erreur--bloc">{erreurDe("etat")}</p> : null}
 
@@ -582,6 +604,12 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                         <dd>La commande partira chez Cloudprinter au clic suivant.</dd>
                       </>
                     )}
+                  </>
+                ) : null}
+                {verif.mot ? (
+                  <>
+                    <dt>Votre mot</dt>
+                    <dd>« {verif.mot} »</dd>
                   </>
                 ) : null}
                 <dt>Destinataire</dt>

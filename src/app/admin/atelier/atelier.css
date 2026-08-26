@@ -1930,6 +1930,13 @@
   color: var(--bj-text-faint);
 }
 
+/* T2-3 — le mot de l'atelier (textarea sur l'action Demander plus de photos). */
+.ate-mot {
+  resize: vertical;
+  min-height: 72px;
+  font: inherit;
+}
+
 /* La couverture a plat, decoupee (T2-2) — meme principe que chez la cliente
    (.nu-vue--decoupe) : un fichier C4 | dos | C1, chaque face est un CADRAGE
    du meme objet. Le cadre prend le format d'une couverture, object-position

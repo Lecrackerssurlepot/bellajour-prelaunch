@@ -22,6 +22,7 @@ import {
   codesPour,
   doitAutoValider,
   manquePour,
+  parametresPour,
   type Envoyes,
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
@@ -197,6 +198,19 @@ const pMixte = preparerTransition("publier_apercu", "photos_recues", {
 });
 ok("plat fourni : c1 est ignore, jamais de melange des deux formats",
    pMixte.ok && JSON.stringify(pMixte.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg", double: "k/d.jpg" }));
+
+titre("— le mot de l'atelier (T2-3) —");
+const avecMot = preparerTransition("photos_insuffisantes", "photos_recues", { mot: "Trop sombres pour l'impression." });
+ok("un mot saisi part en params.MOT, jamais en patch",
+   avecMot.ok && avecMot.params?.MOT === "Trop sombres pour l'impression." && !("mot" in avecMot.patch));
+const sansMot = preparerTransition("photos_insuffisantes", "photos_recues", {});
+ok("sans mot : pas de params", sansMot.ok && sansMot.params === undefined);
+const motVide = preparerTransition("photos_insuffisantes", "photos_recues", { mot: "   " });
+ok("des espaces seuls ne sont pas un mot", motVide.ok && motVide.params === undefined);
+ok("le mot ne fuit pas sur une autre action",
+   (() => { const p = preparerTransition("publier_maquette", "payee", { canva_url: "https://www.canva.com/x", mot: "coucou" }); return p.ok && p.params === undefined; })());
+ok("M9 declare MOT vide par defaut (verif-mails-brevo reste juste)",
+   parametresPour("M9", d({})).MOT === "");
 
 titre("— retouches demandees (T2-13) —");
 ok("maquette + M5 + 8 j + retouches : SUSPENDU, on n'imprime pas par-dessus",

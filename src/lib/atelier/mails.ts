@@ -201,7 +201,14 @@ export function parametresPour(code: CodeMail, n: NumeroPourMail): Record<string
   };
 
   if (code === "M1" || code === "M2" || code === "M2b" || code === "M9") {
-    return { ...communs, NB_PHOTOS: n.nb_photos ?? 0 };
+    const avecPhotos = { ...communs, NB_PHOTOS: n.nb_photos ?? 0 };
+    /* M9 (T2-3) : MOT est le mot facultatif de l'atelier, saisi sur l'action
+       « Demander plus de photos » et passé en `extra` à l'envoi immédiat.
+       Vide par défaut : le template le rend conditionnellement, et la liste
+       vérifiée par verif-mails-brevo reste complète. Si l'envoi immédiat
+       échoue et que la relève rattrape, le mot est perdu (il ne vit pas en
+       base) — accepté, il reste lisible dans le journal de la transition. */
+    return code === "M9" ? { ...avecPhotos, MOT: "" } : avecPhotos;
   }
 
   /* Tout ce qui suit affiche la pagination et le prix. Le montant vient de la
@@ -243,7 +250,10 @@ export function parametresPour(code: CodeMail, n: NumeroPourMail): Record<string
 export async function envoyerMailAtelier(
   supabase: SupabaseClient,
   code: CodeMail,
-  numero: NumeroPourMail
+  numero: NumeroPourMail,
+  /** Paramètres de template en PLUS de `parametresPour` (T2-3 : le MOT de
+      M9). Fusionnés par-dessus — un extra peut préciser, jamais retirer. */
+  extra?: Record<string, unknown>
 ): Promise<Resultat> {
   try {
     const manque = manquePour(code, numero);
@@ -280,7 +290,7 @@ export async function envoyerMailAtelier(
       email: numero.email ?? "",
       name: numero.prenom ?? undefined,
       apiKey: process.env.BREVO_API_KEY,
-      params: parametresPour(code, numero),
+      params: { ...parametresPour(code, numero), ...extra },
     });
 
     if (!envoye) {
@@ -520,7 +530,10 @@ export async function lireEnvoyes(
 
 export async function releverDossier(
   supabase: SupabaseClient,
-  numeroId: string
+  numeroId: string,
+  /** Passés à l'envoi du premier code dû (T2-3 : le MOT de M9, connu du seul
+      appel immédiat de la transition — le balayage n'en a pas). */
+  extra?: Record<string, unknown>
 ): Promise<Releve> {
   try {
     const { data } = await supabase
@@ -538,7 +551,7 @@ export async function releverDossier(
        deux (cas d'un rattrapage), on envoie le premier ici et le balayage
        prendra le second : /admin n'a pas à devenir un moteur d'envoi. */
     const code = codes[0];
-    return { code, resultat: await envoyerMailAtelier(supabase, code, data) };
+    return { code, resultat: await envoyerMailAtelier(supabase, code, data, extra) };
   } catch (err) {
     console.error("[atelier/mails] relève d'un dossier échouée", (err as Error)?.message);
     return { code: null, resultat: null };

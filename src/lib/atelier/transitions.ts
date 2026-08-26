@@ -100,6 +100,9 @@ export type Saisie = {
   pdf_interieur?: string | null;
   transporteur?: string | null;
   tracking_url?: string | null;
+  /* T2-3 — le mot facultatif de l'atelier sur « Demander plus de photos ».
+     Il part dans M9 (param MOT), jamais en base : ce n'est pas une colonne. */
+  mot?: string | null;
 };
 
 export type Action = {
@@ -228,6 +231,9 @@ export type Preparation =
       patch: Record<string, unknown>;
       /** Ce que l'écran de confirmation annonce (jamais recalculé ailleurs). */
       resume: { nbPages?: number; palier?: PalierCle; euros?: number };
+      /** Paramètres de template en PLUS de `parametresPour` (T2-3 : le MOT
+          de M9). Jamais dans `patch` — rien de tout ça n'est une colonne. */
+      params?: Record<string, string>;
     }
   | { ok: false; erreurs: Erreur[] };
 
@@ -409,9 +415,19 @@ export function preparerTransition(
     }
   }
 
+  /* T2-3 — le mot de l'atelier, facultatif, sur « Demander plus de photos ».
+     Le cas réel : le problème était la QUALITÉ des photos, pas leur nombre —
+     le mail générique tombait à côté. Le mot part dans M9 (encart « Un mot
+     de l'atelier ») ; des espaces seuls ne sont pas un mot. */
+  let params: Record<string, string> | undefined;
+  if (cle === "photos_insuffisantes") {
+    const mot = texte(saisie.mot, 500);
+    if (mot) params = { MOT: mot };
+  }
+
   if (erreurs.length) return { ok: false, erreurs };
 
   if (!action.surPlace) patch.etat = action.vers;
 
-  return { ok: true, action, patch, resume };
+  return { ok: true, action, patch, resume, ...(params ? { params } : {}) };
 }

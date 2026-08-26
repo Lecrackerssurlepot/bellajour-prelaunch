@@ -64,6 +64,48 @@ ${
 </td></tr>`;
 }
 
+/**
+ * La carte-couverture de M3 (T2-7) : un bloc TYPOGRAPHIQUE, pas une image.
+ *
+ * L'aperçu réel ne peut pas être embarqué : les visuels du coffre sont signés
+ * pour une heure, ils seraient morts à l'ouverture du mail. Et une image
+ * hébergée serait masquée par Gmail au premier affichage. Le titre du numéro
+ * dans un cadre au format d'une couverture évoque l'objet sans rien promettre
+ * de faux. La page fait le spectacle, le mail fait le clic.
+ */
+function carteCouverture(titre) {
+  return `<tr><td align="center" class="px-mobile" style="padding: 0 40px 46px 40px;">
+<table role="presentation" width="250" cellpadding="0" cellspacing="0" border="0" style="width: 250px; max-width: 250px; background-color: #161618; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px;">
+<tr><td align="center" style="padding: 58px 26px 14px 26px;">
+<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Le num&eacute;ro</div>
+</td></tr>
+<tr><td align="center" style="padding: 0 26px 58px 26px;">
+<div style="font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 32px; font-weight: 500; color: #f5f0e7; line-height: 1.2;">${titre}</div>
+</td></tr>
+<tr><td align="center" style="padding: 0 26px 24px 26px;">
+<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #d68a63;">Bellajour</div>
+</td></tr>
+</table>
+</td></tr>`;
+}
+
+/**
+ * L'encart « Un mot de l'atelier » de M9 (T2-3), rendu SEULEMENT si le mot
+ * existe : la syntaxe conditionnelle est celle des templates Brevo.
+ */
+function encartMot() {
+  return `{% if params.MOT %}<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border-left: 2px solid #d68a63; border-radius: 0 12px 12px 0;">
+<tr><td style="padding: 24px 26px 8px 26px;">
+<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Un mot de l&rsquo;atelier</div>
+</td></tr>
+<tr><td style="padding: 0 26px 24px 26px;">
+<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">{{ params.MOT }}</p>
+</td></tr>
+</table>
+</td></tr>{% endif %}`;
+}
+
 function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pied }) {
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
@@ -155,7 +197,9 @@ const LIEN = "{{ params.LIEN }}";
 const PRENOM = "{{ params.PRENOM }}";
 const TITRE = "{{ params.TITRE }}";
 
-/* ─────────────────────────── les sept mails ─────────────────────────── */
+/* ─────────────────────────── les huit mails ───────────────────────────
+   (M1 et M4 préexistent dans Brevo et n'ont pas encore été rapatriés ici ;
+   M3 l'a été le 26/08 pour le retour T2-7.) */
 
 export const MAILS = [
   {
@@ -181,6 +225,23 @@ export const MAILS = [
     cta: "Terminer mon dépôt",
     lien: LIEN,
     pied: "Vous n'avez rien à redéposer : tout est déjà là. Une question ? Répondez à ce message, nous vous répondrons nous-mêmes.",
+  },
+  {
+    /* T2-7 : M3 est LE mail qui vend, et il vivait dans Brevo seul (template
+       28, jamais versionné). Il entre ici avec un parti pris : un seul grand
+       geste. La carte-couverture évoque l'objet, le bouton fait le reste, la
+       page fait le spectacle. */
+    code: "M3",
+    nom: "M3 · Atelier · Votre couverture est prête",
+    sujet: `${TITRE} : votre couverture est prête`,
+    preheader: "Elle vous attend, avec sa pagination et son prix.",
+    titreHtml: "Votre couverture est prête",
+    h1: "Votre couverture<br />est prête.",
+    sous: `${PRENOM}, l'atelier a composé la couverture de votre numéro. Elle vous attend sur votre page, avec sa quatrième, une double page, sa pagination et son prix.`,
+    carte: carteCouverture(TITRE),
+    cta: "Découvrir ma couverture",
+    lien: LIEN,
+    pied: "{{ params.NB_PAGES }} pages, {{ params.PRIX }} € tout compris, impression et livraison incluses. Vous ne payez que si elle vous plaît.",
   },
   {
     code: "M3b",
@@ -210,7 +271,7 @@ export const MAILS = [
     carte: carteChiffres(
       { valeur: "{{ params.NB_PAGES }}", legende: "pages composées", grand: true },
       { valeur: "{{ params.DATE_LIMITE }}", legende: "date limite", grand: false },
-      "Une correction à demander ? Écrivez-la directement dans le document, nous repassons dessus.",
+      "Une correction à demander ? Écrivez-la dans le document, puis dites-le nous depuis votre page : nous repassons dessus.",
     ),
     cta: "Voir ma maquette",
     lien: LIEN,
@@ -262,6 +323,10 @@ export const MAILS = [
     titreHtml: "Quelques photos de plus",
     h1: "On peut faire<br />encore mieux.",
     sous: `${PRENOM}, vous nous avez confié {{ params.NB_PHOTOS }} photos, et nous pouvons déjà en faire quelque chose. Mais avec quelques dizaines de plus, votre numéro respirera vraiment.`,
+    /* T2-3 : le mot saisi par l'atelier au moment de demander plus de photos.
+       Le cas réel qui l'a motivé : le problème était la QUALITÉ des photos,
+       pas leur nombre, et le mail générique tombait à côté. */
+    carte: encartMot(),
     cta: "Ajouter des photos",
     lien: LIEN,
     pied: "Celles que vous avez déjà déposées sont conservées : vous complétez, vous ne recommencez pas.",

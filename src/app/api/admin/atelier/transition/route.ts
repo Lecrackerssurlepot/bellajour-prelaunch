@@ -239,6 +239,7 @@ export async function POST(request: Request) {
           verification: true,
           action: { cle: action.cle, libelle: action.libelle, vers: action.vers, note: action.note },
           resume: prepa.resume,
+          ...(prepa.params?.MOT ? { mot: prepa.params.MOT } : {}),
           ...(impression ? { impression } : {}),
           /* Ce que la cliente lira dans le mail, si mail il y a. Le vrai
              rendu est chez Brevo — ici on garantit au moins que le bon
@@ -384,6 +385,9 @@ export async function POST(request: Request) {
         par: prenomDe(qui),
         source: republicationRetouches ? "republication_retouches" : "admin",
         ...prepa.resume,
+        /* T2-3 — le mot de M9 ne vit pas en base : le journal est sa seule
+           trace pérenne (le mail, lui, peut être perdu par la cliente). */
+        ...(prepa.params?.MOT ? { mot: prepa.params.MOT } : {}),
       },
     );
 
@@ -423,7 +427,7 @@ export async function POST(request: Request) {
     /* Le mail, par le chemin partagé : même verrou, mêmes contrôles que le
        balayage. Ne throw jamais — une transition réussie ne doit pas être
        rendue en erreur parce que Brevo tousse. Le balayage rattrapera. */
-    const releve = await releverDossier(supabase, numero.id);
+    const releve = await releverDossier(supabase, numero.id, prepa.params);
 
     return NextResponse.json(
       {
