@@ -13,39 +13,45 @@ production** : `main` s'arrête à `f856f50`, c'est-à-dire l'état d'avant ces
 corrections. La prochaine étape est une recette complète sur la preview,
 paiement de test compris, puis la fusion dans `main`.
 
-### ⛔ LE BLOCAGE À LEVER AVANT TOUTE RECETTE
+### ⚠️ Si un paiement ou un mail ne remonte pas, TESTER CECI D'ABORD
 
-**La preview répond 403 à tout ce qui n'est pas un navigateur.** En-tête
-`x-vercel-mitigated: challenge` — c'est le pare-feu de Vercel (« Security
-Checkpoint ») qui sert une page de défi JavaScript.
+La preview peut se mettre à répondre **403** à tout client qui n'est pas un
+navigateur — en-tête `x-vercel-mitigated: challenge`. Ce n'est pas un réglage :
+c'est la **mitigation automatique** de Vercel, qui se déclenche sur un trafic
+qu'elle juge robotique et s'éteint seule au bout de quelques minutes.
 
-Un navigateur passe sans s'en apercevoir. **Stripe, non.** Conséquence directe
-sur une recette de bout en bout : le paiement de test réussira chez Stripe,
-mais l'événement `checkout.session.completed` recevra un 403, le numéro restera
-en état 2, M4 ne partira pas, et le parcours s'arrêtera là — sans rien dans les
-journaux qui l'explique.
+Un navigateur passe sans s'en apercevoir. **Stripe et `scripts/recette.mjs`,
+non.** Pendant l'épisode : un paiement de test réussit chez Stripe,
+`checkout.session.completed` prend un 403, le numéro reste en état 2, M4 ne
+part pas — et rien dans les journaux ne l'explique.
 
-→ **Vercel → le projet → Firewall → couper « Attack Challenge Mode »** (ou la
-règle qui met en défi), puis revérifier :
+C'est arrivé le 25/08 au soir, provoqué par les sondages automatisés de l'agent
+lui-même (une boucle toutes les 8 s). Le test :
 
 ```bash
 curl -s -o /dev/null -w '%{http_code}\n' -X POST \
   https://bellajour-prelaunch-git-cha-a10ca9-lecrackerssurlepots-projects.vercel.app/api/webhook
 ```
 
-**400 = bon** (la route répond, elle refuse une requête sans signature).
-**403 = le défi est toujours là.**
+**400 = tout va bien** — la route répond et refuse une requête non signée.
+Le pare-feu n'y est pour rien, chercher ailleurs.
+**403 = c'est lui** — attendre quelques minutes, ne rien désactiver.
 
-⚠️ Le point d'écoute Stripe du sandbox (`acct_1Tg326KtRuvOSF41`) pointe bien
-sur cette preview et écoute les trois événements attendus (`completed`,
-`expired`, `charge.refunded`) — vérifié le 26/08. Le problème n'est pas le
-routage, c'est le pare-feu.
+⚠️ **Ne PAS couper le pare-feu Vercel pour ça.** Vérifié le 25/08 : la
+protection de déploiement du projet est déjà entièrement désactivée, il n'y a
+aucun réglage en cause. Et un éventuel « Attack Challenge Mode » est au niveau
+du PROJET : le couper retirerait aussi la protection de bellajour.fr.
 
-⚠️ Si le paiement a déjà été fait avant de lever le blocage : Stripe réessaie
-pendant trois jours, et le tableau de bord permet de renvoyer l'événement à la
-main (Developers → Webhooks → l'événement → *Resend*).
+⚠️ Si un paiement a été fait pendant un épisode : Stripe réessaie pendant trois
+jours, et le tableau de bord permet de renvoyer l'événement à la main
+(Developers → Webhooks → l'événement → *Resend*).
 
-⚠️ `scripts/recette.mjs relever --sur=preview` est bloqué par la même cause.
+**État vérifié le 25/08 au soir, après extinction :** webhook en 400 sur la
+preview ET sur la production, pages publiques en 200, et les trois marqueurs
+des derniers commits (`photos prêtes`, `at-d-tuile--plus`, `pas encore reçues`)
+présents dans le bundle servi. Le point d'écoute Stripe du sandbox
+(`acct_1Tg326KtRuvOSF41`) vise bien cette preview, sur les trois événements
+attendus.
 
 ---
 
