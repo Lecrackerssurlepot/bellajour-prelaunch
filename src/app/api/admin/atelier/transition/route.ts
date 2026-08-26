@@ -78,7 +78,7 @@ export async function POST(request: Request) {
 
     const { data: numero, error: lecture } = await supabase
       .from("numeros")
-      .select("id, etat, titre, prenom, email, nb_pages, adresse_livraison, cloudprinter_order_id")
+      .select("id, etat, titre, prenom, email, telephone, nb_pages, adresse_livraison, cloudprinter_order_id")
       .eq("token", token)
       .maybeSingle<{
         id: string;
@@ -86,6 +86,7 @@ export async function POST(request: Request) {
         titre: string | null;
         prenom: string | null;
         email: string | null;
+        telephone: string | null;
         nb_pages: number | null;
         adresse_livraison: unknown;
         cloudprinter_order_id: string | null;
@@ -178,7 +179,7 @@ export async function POST(request: Request) {
 
       /* L'adresse vient de Stripe et de nulle part ailleurs (PRD §9). Si elle
          est incomplète, ça se corrige en base, pas en devinant ici. */
-      const adr = adresseCloudprinter(numero.adresse_livraison, numero.email ?? "");
+      const adr = adresseCloudprinter(numero.adresse_livraison, numero.email ?? "", numero.telephone);
       if (!adr.ok) {
         erreurs.push({
           champ: "action",
@@ -260,7 +261,7 @@ export async function POST(request: Request) {
           md5: f.md5,
         };
       }
-      const adr = adresseCloudprinter(numero.adresse_livraison, numero.email ?? "");
+      const adr = adresseCloudprinter(numero.adresse_livraison, numero.email ?? "", numero.telephone);
       if (!adr.ok) {
         /* Déjà contrôlée plus haut — ceinture pour le typage. */
         return NextResponse.json({ error: "internal" }, { status: 500 });

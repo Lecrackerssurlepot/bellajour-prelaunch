@@ -102,6 +102,15 @@ export const SHIPPING_LEVEL = "cp_saver";
  */
 export const EMAIL_CONTACT = "contact@bellajour.com";
 
+/**
+ * Le repli quand le dossier n'a pas de téléphone : celui de la maison.
+ * `phone` est OBLIGATOIRE chez Cloudprinter (vérifié le 26/08/2026 : leur
+ * orders/add répond `missing_required_parameter 'phone'`) — c'est le numéro
+ * que le transporteur appelle si la livraison coince, donc celui du dossier
+ * d'abord, le nôtre à défaut : mieux vaut nous qu'un refus de commande.
+ */
+export const TELEPHONE_CONTACT = "+33680009071";
+
 /* ─────────────────────────── le fichier ─────────────────────────── */
 
 /**
@@ -152,11 +161,13 @@ function s(v: unknown): string {
  *
  * Stripe ne fournit ni découpage prénom/nom ni téléphone : le `name` est
  * coupé au premier espace (un seul mot sert deux fois — Cloudprinter exige
- * les deux champs), le téléphone est simplement absent.
+ * les deux champs), et le téléphone vient du DOSSIER (le questionnaire le
+ * collecte), avec `TELEPHONE_CONTACT` en repli — leur API l'exige.
  */
 export function adresseCloudprinter(
   brut: unknown,
-  email: string
+  email: string,
+  telephone?: string | null
 ): { ok: true; adresse: AdresseCp } | { ok: false; manque: string[] } {
   const o = (brut && typeof brut === "object" ? brut : {}) as Brut;
   const a = (o.address && typeof o.address === "object" ? o.address : o) as Brut;
@@ -182,6 +193,9 @@ export function adresseCloudprinter(
   const firstname = mots[0];
   const lastname = mots.length > 1 ? mots.slice(1).join(" ") : mots[0];
 
+  /* Un numéro collé avec des espaces ou des points reste un numéro. */
+  const tel = (telephone ?? "").replace(/[^\d+]/g, "");
+
   return {
     ok: true,
     adresse: {
@@ -195,6 +209,7 @@ export function adresseCloudprinter(
       ...(etat ? { state: etat } : {}),
       country: pays,
       email,
+      phone: tel || TELEPHONE_CONTACT,
     },
   };
 }
