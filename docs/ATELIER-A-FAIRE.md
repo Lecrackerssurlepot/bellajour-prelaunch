@@ -379,6 +379,43 @@ et que M4 était parti. C'est exactement le moment où l'on regarde une fiche.
 rien quand l'onglet est caché, rattrapage au retour). Petit chantier — le
 composant existe, il n'est juste rendu que par la liste.
 
+**T2-10. La page d'après-paiement doit REMERCIER, proprement.** « Reçu. On
+compose. » est sec pour quelqu'un qui vient de payer 40 €, et le bloc manque
+d'air (retours à la ligne).
+→ *Proposition* : « Merci. » en grand, puis trois lignes aérées — c'est payé,
+voilà ce qui se passe maintenant (numéro complet sous 3 jours ouvrés), voilà
+comment demander un détail. La facture y est mentionnée avec nuance (cf. T2-11).
+
+**T2-11. « J'ai pas reçu de facture » — c'est le mode test, VÉRIFIÉ.** La
+facture existe bien chez Stripe (`XJCEXVTX-0005`, 40 €, payée, adresse et nom
+corrects, PDF généré) : `invoice_creation` est actif. Mais **Stripe n'envoie
+AUCUN mail en mode test** — en réel, elle partira. Rien à corriger au code.
+→ *Amélioration possible* : afficher un lien « Votre facture » sur la page
+d'après-paiement (`hosted_invoice_url`, stable, hébergée par Stripe) — plus
+sûr qu'un mail qui peut tomber en Promotions.
+
+**T2-12. Le lien permanent, personne ne va l'enregistrer tel quel.** L'URL
+brute en pied de page est illisible et ne donne aucun geste à faire.
+→ *Proposition* : remplacer l'URL affichée par deux boutons — « Copier mon
+lien » (navigator.clipboard) et, sur téléphone, « Partager » (navigator.share,
+qui ouvre le menu natif « Notes, Messages, favoris… »). L'URL n'apparaît plus
+en toutes lettres.
+
+**T2-13. Il manque le troisième geste de l'état 4 : « j'ai demandé des
+retouches ».** Aujourd'hui la cliente ne peut que valider ou commenter dans
+Canva — et l'atelier ne SAIT PAS qu'elle a commenté.
+→ *Proposition* : un bouton « J'ai noté des retouches dans le Canva » qui
+journalise `retouches_demandees`, fait remonter le dossier dans la pile
+« à faire » de l'admin, et **suspend l'auto-validation à J+7** — imprimer
+d'office un numéro dont la cliente a demandé la correction serait exactement
+le genre de silence qui coûte. L'échéance repart quand l'atelier republie.
+C'est le retour le plus structurant du lot : il touche urgence.ts et la relève.
+
+*Vérifié, pas un bug* : le lien Canva de l'état 4 porte déjà `target="_blank"`
+— il s'ouvre dans un nouvel onglet. Si Mathias l'a vu s'ouvrir dans la même
+page, c'était probablement le navigateur intégré de Gmail ; à retester dans un
+vrai navigateur avant de toucher quoi que ce soit.
+
 ---
 
 ### ⚠️ À faire — par ordre d'importance
