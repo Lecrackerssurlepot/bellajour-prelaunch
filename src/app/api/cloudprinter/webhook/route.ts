@@ -123,7 +123,13 @@ export async function POST(request: Request) {
          `tracking` est parfois un code, parfois une URL : l'URL s'affiche
          cliquable chez la cliente, le code reste lisible au journal. */
       const tracking = s(body.tracking);
-      const transporteur = s(body.shipping_option) || "Transporteur";
+      /* `shipping_option` arrive sous sa forme machine (« dpd_france ») :
+         c'est ce mot qui part dans M7 et s'affiche chez la cliente — on le
+         rend lisible (« DPD France »). Vécu au premier ItemShipped du 26/08. */
+      const brutTransporteur = s(body.shipping_option).replace(/_/g, " ").trim();
+      const transporteur = brutTransporteur
+        ? brutTransporteur.replace(/(^|\s)\S/g, (c) => c.toUpperCase()).replace(/^Dpd\b/, "DPD")
+        : "Transporteur";
       const maintenant = new Date().toISOString();
 
       const { data: maj, error } = await supabase
