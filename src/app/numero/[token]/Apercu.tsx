@@ -1,20 +1,24 @@
 'use client'
 
 /**
- * Les trois visuels de l'état 2, sur la page de la cliente.
+ * Les visuels de l'état 2, sur la page de la cliente.
  *
  * ══════════════════════════════════════════════════════════════════════════
- * CE QUI A CHANGÉ, ET POURQUOI
+ * DEUX FORMATS, UN SEUL ÉCRAN (T2-2)
  *
- * Avant, la légende n'existait QUE sur le cadre vide : dès qu'il y avait une
- * image, plus un mot. La cliente voyait trois rectangles sans savoir lequel
- * était la couverture, lequel le dos, lequel une page intérieure. C'est la
- * page qui vend, et elle ne nommait pas ce qu'elle montrait.
+ * Le format normal est la couverture À PLAT : un seul fichier C4 | dos | C1,
+ * l'export naturel de Canva. On n'en montre pas trois copies — on la DÉCOUPE
+ * en CSS : la vue « La couverture » cadre la moitié droite, « La quatrième »
+ * la moitié gauche, et la vue à plat montre l'objet entier, dos compris.
+ * C'est la présentation de la version éditeur : une couverture qu'on
+ * retourne, pas trois rectangles sans lien.
  *
- * Maintenant la légende est SOUS chaque visuel, toujours, image ou pas, et le
- * visuel s'ouvre en grand — d'où l'on passe de l'un à l'autre, ce qui est la
- * seule façon de comprendre que la couverture et la quatrième sont les deux
- * faces du même objet.
+ * Les dossiers publiés avant ce format portent trois fichiers séparés
+ * (c1, c4, double) et se rendent comme avant. Aucune retouche d'image côté
+ * serveur, dans les deux cas.
+ *
+ * Et depuis la recette du 25/08 : la légende est SOUS chaque visuel, toujours,
+ * image ou pas — c'est la page qui vend, elle nomme ce qu'elle montre.
  * ══════════════════════════════════════════════════════════════════════════
  *
  * Composant client : la page /numero est un composant serveur, et l'ouverture
@@ -26,10 +30,12 @@ import Reveal from '../../(atelier)/components/Reveal'
 import Loupe, { type VueLoupe } from '../../components/Loupe'
 
 export default function Apercu({
+  plat,
   c1,
   c4,
   double,
 }: {
+  plat: string | null
   c1: string | null
   c4: string | null
   double: string | null
@@ -38,36 +44,56 @@ export default function Apercu({
 
   /* Les mots de la cliente, pas les nôtres : « C1 » et « C4 » sont du jargon
      d'imprimeur. Le même vocabulaire est repris dans la fiche de l'atelier —
-     deux personnes qui regardent le même visuel doivent le nommer pareil. */
-  const declares: Array<{ src: string | null; legende: string }> = [
-    { src: c1, legende: 'La couverture' },
-    { src: c4, legende: 'La quatrième' },
-    { src: double, legende: 'Une double page' },
-  ]
+     deux personnes qui regardent le même visuel doivent le nommer pareil.
 
-  /* La loupe ne connaît que ce qui existe : un cadre vide n'est pas une étape
-     de la visite. Les index de la loupe ne sont donc PAS ceux de la grille. */
+     `loupe` : la légende de la vue que le clic agrandit. En mode à plat, les
+     deux faces découpées ouvrent le MÊME objet entier — la loupe navigue par
+     légende (findIndex), il lui faut donc des légendes uniques. */
+  const declares: Array<{
+    src: string | null
+    legende: string
+    loupe: string
+    decoupe?: 'droite' | 'gauche'
+  }> = plat
+    ? [
+        { src: plat, legende: 'La couverture', loupe: 'La couverture à plat', decoupe: 'droite' },
+        { src: plat, legende: 'La quatrième', loupe: 'La couverture à plat', decoupe: 'gauche' },
+        { src: plat, legende: 'La couverture à plat', loupe: 'La couverture à plat' },
+        { src: double, legende: 'Une double page', loupe: 'Une double page' },
+      ]
+    : [
+        { src: c1, legende: 'La couverture', loupe: 'La couverture' },
+        { src: c4, legende: 'La quatrième', loupe: 'La quatrième' },
+        { src: double, legende: 'Une double page', loupe: 'Une double page' },
+      ]
+
+  /* La loupe ne connaît que ce qui existe, une fois chacun : un cadre vide
+     n'est pas une étape de la visite, et l'objet à plat n'y figure qu'une
+     fois même s'il remplit trois cadres. */
   const agrandissables: VueLoupe[] = declares
-    .filter((v): v is VueLoupe => Boolean(v.src))
-    .map((v) => ({ src: v.src, legende: v.legende }))
+    .filter((v): v is typeof v & { src: string } => Boolean(v.src))
+    .filter((v, i, tous) => tous.findIndex((a) => a.loupe === v.loupe) === i)
+    .map((v) => ({ src: v.src, legende: v.loupe }))
 
-  function ouvrir(legende: string) {
-    const i = agrandissables.findIndex((v) => v.legende === legende)
+  function ouvrir(loupe: string) {
+    const i = agrandissables.findIndex((v) => v.legende === loupe)
     if (i >= 0) setOuvert(i)
   }
 
-  const [couverture, quatrieme, doublePage] = declares
+  const [premiere, seconde, ...larges] = declares
 
   return (
     <>
       <Reveal>
         <div className="nu-covers">
-          <Vue vue={couverture} onOuvrir={ouvrir} />
-          <Vue vue={quatrieme} onOuvrir={ouvrir} />
+          <Vue vue={premiere} onOuvrir={ouvrir} />
+          <Vue vue={seconde} onOuvrir={ouvrir} />
         </div>
-        <div className="nu-double">
-          <Vue vue={doublePage} onOuvrir={ouvrir} />
-        </div>
+        {larges.map((v) => (
+          <div className="nu-double" key={v.legende}>
+            <Vue vue={v} onOuvrir={ouvrir} />
+          </div>
+        ))}
       </Reveal>
 
       {/* Hors du Reveal : une vue plein écran ne doit dépendre d'aucune
@@ -78,21 +104,25 @@ export default function Apercu({
 }
 
 /* Une vue d'aperçu. Sans image, un cadre de la charte et un mot — jamais une
-   case cassée, même règle qu'au dépôt. */
+   case cassée, même règle qu'au dépôt. `decoupe` cadre une face de la
+   couverture à plat : l'image déborde du cadre, le CSS choisit le côté. */
 function Vue({
   vue,
   onOuvrir,
 }: {
-  vue: { src: string | null; legende: string }
-  onOuvrir: (legende: string) => void
+  vue: { src: string | null; legende: string; loupe: string; decoupe?: 'droite' | 'gauche' }
+  onOuvrir: (loupe: string) => void
 }) {
+  const classes = ['nu-vue', 'nu-vue--clic']
+  if (vue.decoupe) classes.push('nu-vue--decoupe', `nu-vue--${vue.decoupe}`)
+
   return (
     <figure className="nu-cadre">
       {vue.src ? (
         <button
           type="button"
-          className="nu-vue nu-vue--clic"
-          onClick={() => onOuvrir(vue.legende)}
+          className={classes.join(' ')}
+          onClick={() => onOuvrir(vue.loupe)}
           aria-label={`Agrandir : ${vue.legende}`}
         >
           {/* <img> plain — next/image est proscrit sur ce dépôt (CLAUDE.md). */}

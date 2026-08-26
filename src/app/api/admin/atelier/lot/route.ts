@@ -30,11 +30,18 @@ export async function POST(request: Request) {
   if (!qui) return NextResponse.json({ error: "non_authentifie" }, { status: 401 });
 
   try {
-    const body = (await request.json()) as { token?: unknown };
+    const body = (await request.json()) as { token?: unknown; ids?: unknown };
     const token = typeof body.token === "string" ? body.token.trim() : "";
     if (!isValidNumeroToken(token)) {
       return NextResponse.json({ error: "token_invalide" }, { status: 400 });
     }
+
+    /* T2-5 — un SOUS-ENSEMBLE du lot (« télécharger les N nouvelles »).
+       Les ids inconnus sont ignorés en silence : un id périmé ne doit pas
+       faire échouer les autres. Sans `ids`, le lot entier, comme avant. */
+    const ids = Array.isArray(body.ids)
+      ? new Set(body.ids.filter((v): v is string => typeof v === "string"))
+      : null;
 
     const supabase = makeSupabase();
     const { data: numero } = await supabase
@@ -60,19 +67,26 @@ export async function POST(request: Request) {
     /* Le nom du fichier est calculé ICI, par le module pur, et signé dans
        l'URL : le chemin `curl` écrit donc exactement les mêmes noms que le
        chemin Chrome (cf. lot.ts). Une seule règle de nommage, deux
-       consommateurs. */
+       consommateurs.
+       ⚠️ Les noms sont calculés sur le lot COMPLET, PUIS filtrés (T2-5) :
+       la numérotation `01-`, `02-` reste celle du dépôt d'origine, et un
+       lot partiel COMPLÈTE le même dossier au lieu de le renuméroter. */
     const rangees = photos ?? [];
     const noms = nomsDeFichiers(rangees.map((p) => ({ nom: p.nom_origine })));
+    const retenues = rangees
+      .map((p, i) => ({ ...p, nomFichier: noms[i] }))
+      .filter((p) => !ids || ids.has(p.id));
 
     /* Une signature qui échoue rend `null` : le navigateur écrira les autres
        et dira laquelle manque. Un lot de quarante photos ne doit pas être
        perdu parce que la trente-septième a une clé bancale. */
     const lignes = await Promise.all(
-      rangees.map(async (p, i) => ({
+      retenues.map(async (p) => ({
         id: p.id,
         nom: p.nom_origine,
         taille: p.taille,
-        url: await signerGet(p.r2_key, LOT_TTL_SECONDS, noms[i]).catch(() => null),
+        nomFichier: p.nomFichier,
+        url: await signerGet(p.r2_key, LOT_TTL_SECONDS, p.nomFichier).catch(() => null),
       })),
     );
 

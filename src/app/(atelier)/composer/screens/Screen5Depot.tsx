@@ -44,9 +44,11 @@ const RAISONS: Record<string, string> = {
 }
 
 export default function Screen5Depot({
-  token, consent, onConsent, onTermine,
+  token, reprise, consent, onConsent, onTermine,
 }: {
   token: string | null
+  /** T2-4 — arrivée par `?reprendre=` : des photos sont déjà chez nous. */
+  reprise?: boolean
   consent: boolean
   onConsent: (v: boolean) => void
   onTermine: () => void
@@ -147,6 +149,18 @@ export default function Screen5Depot({
       <p className="at-lede at-q-lede">
         Entre {MIN_PHOTOS} et {MAX_PHOTOS}. Ne triez pas trop — le tri, c’est notre métier.
       </p>
+
+      {/* ── T2-4 : LA REPRISE DIT CE QUI EST DÉJÀ LÀ ──────────────────
+          Le lien du mail ramène au bon endroit, mais sans cette ligne
+          l'écran ressemble à un premier dépôt : on croit devoir tout
+          recommencer. Le compte vient du SERVEUR (vue.serveur) — la grille
+          locale ne connaît que cet appareil. */}
+      {reprise && (vue.serveur ?? 0) > 0 && (
+        <p className="at-d-avis at-d-avis--reprise" role="status">
+          <b>Vos {vue.serveur} photos sont déjà chez nous.</b> Celles que vous
+          déposez maintenant s’ajoutent, rien n’est à refaire.
+        </p>
+      )}
 
       {vue.stockageDegrade && (
         <p className="at-d-avis">

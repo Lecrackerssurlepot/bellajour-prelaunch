@@ -22,7 +22,8 @@ import { makeSupabase } from '@/lib/supabase'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { resoudreApercu } from '@/lib/atelier/apercu'
 import { eurosPour, type PalierCle } from '@/lib/atelier/prix'
-import { etapeDepot, QUI_ATTEND, type Camp, type EtapeDepot } from '@/lib/atelier/urgence'
+import { DELAIS, JOURS_LIVRAISON, etapeDepot, QUI_ATTEND, type Camp, type EtapeDepot } from '@/lib/atelier/urgence'
+import { JOURS_AVANT_AUTO_VALIDATION } from '@/lib/atelier/mails'
 import { MIN_PHOTOS } from '../../(atelier)/composer/depot/paliers'
 import { ajouterJours, formaterJour } from '@/lib/atelier/dates'
 import CasesEtCommande from './CasesEtCommande'
@@ -30,6 +31,8 @@ import AttentePaiement from './AttentePaiement'
 import BoutonValider from './BoutonValider'
 import BoutonEnvoyer from './BoutonEnvoyer'
 import Apercu from './Apercu'
+import LienPartage from '../../components/LienPartage'
+import ConsentCommunication from './ConsentCommunication'
 import '../numero.css'
 
 /* L'adresse publique du site, pour écrire le lien EN TOUTES LETTRES sous les
@@ -72,12 +75,19 @@ type Numero = {
   tracking_url: string | null
   valide_le: string | null
   etat_maj_le: string
+  /* T2-13 — la date du clic « j'ai noté des retouches », ou null. */
+  retouches_demandees_le: string | null
+  /* T2-1 — la case facultative « montrer des extraits », affichée en pied. */
+  consent_communication: boolean | null
+  /* T2-11 — hosted_invoice_url de Stripe, capté au webhook (best-effort). */
+  facture_url: string | null
 }
 
 const CHAMPS =
   'token, etat, titre, prenom, nb_photos, nb_pages, palier, apercu_urls, ' +
   'maquette_pdf_url, canva_url, cgv_ok, renonciation_retractation, consent_photos, ' +
-  'transporteur, tracking_url, valide_le, etat_maj_le'
+  'transporteur, tracking_url, valide_le, etat_maj_le, retouches_demandees_le, ' +
+  'consent_communication, facture_url'
 
 /**
  * De qui c'est le tour, en une phrase.
@@ -116,11 +126,13 @@ const AVANCEMENT: Record<Etat, number> = {
   livree: 5,
 }
 
-/* Délai d'auto-validation (PRD §11). Sans lui, une part des dossiers payés
-   dort indéfiniment et la production ne se ferme jamais. */
-const JOURS_AUTO_VALIDATION = 7
-/* Annoncé au public : 10 jours après validation (PRD §13, marge incluse). */
-const JOURS_LIVRAISON = 10
+/* Délai d'auto-validation (PRD §11) : la MÊME constante que celle que la
+   relève applique et que M5 annonce — deux copies avaient fini par exister,
+   et une date de courtoisie qui ne correspond pas à la bascule réelle est
+   pire que pas de date. Idem pour la livraison (T2-8) : les chiffres promis
+   ici sont ceux que l'admin surveille. */
+const JOURS_AUTO_VALIDATION = JOURS_AVANT_AUTO_VALIDATION
+const JOURS_COMPOSITION = DELAIS.payee?.joursOuvres ?? 3
 
 async function lireNumero(token: string): Promise<Numero | null | 'panne'> {
   try {
@@ -213,12 +225,17 @@ export default async function NumeroPage({
      ligne est en `photos_recues`, mais la balle n'est pas dans notre camp
      tant qu'elle n'a pas envoyé. Même correction que dans la pile de
      l'atelier — c'est le même mensonge des deux côtés. */
-  const camp: Camp = depot === 'termine' ? QUI_ATTEND[numero.etat] : 'cliente'
+  /* T2-13 — même logique, dans l'autre sens : des retouches demandées à
+     l'état 4 remettent la balle chez l'atelier, et la ligne « c'est à vous »
+     mentirait. La table de travail fait la même bascule (donnees.ts). */
+  const retouches = numero.etat === 'maquette_prete' && Boolean(numero.retouches_demandees_le)
+  const camp: Camp = depot !== 'termine' ? 'cliente' : retouches ? 'atelier' : QUI_ATTEND[numero.etat]
 
   return (
     <Coquille titre={titre} avancement={attendPhotos || aTerminer ? 0 : AVANCEMENT[numero.etat] ?? 0}
       camp={camp}
-      token={numero.token}>
+      token={numero.token}
+      consentCommunication={numero.consent_communication === true}>
       {numero.etat === 'photos_recues' && depot === 'termine' && (
         <>
           <p className="nu-mot">L’atelier a vos {numero.nb_photos} photos.</p>
@@ -339,6 +356,7 @@ export default async function NumeroPage({
           )}
 
           <Apercu
+            plat={apercu?.plat ?? null}
             c1={apercu?.c1 ?? null}
             c4={apercu?.c4 ?? null}
             double={apercu?.double ?? null}
@@ -352,18 +370,36 @@ export default async function NumeroPage({
               euros={euros}
               cgvOk={numero.cgv_ok}
               renonciation={numero.renonciation_retractation}
+              joursComposition={JOURS_COMPOSITION}
+              joursLivraison={JOURS_LIVRAISON}
             />
           )}
         </>
       )}
 
       {numero.etat === 'payee' && (
+        /* T2-10 — « Reçu. On compose. » était sec pour quelqu'un qui vient
+           de payer 40 €. On remercie, puis trois lignes aérées : c'est payé,
+           voilà ce qui se passe, voilà comment demander un détail. Les
+           chiffres viennent de DELAIS, jamais en dur. */
         <>
-          <p className="nu-mot">Reçu. On compose.</p>
+          <p className="nu-mot">Merci.</p>
           <p className="nu-sub">
-            Votre numéro complet vous attend ici <b>sous 3 jours ouvrés</b>. Votre
-            facture est partie par mail au moment du paiement.
+            Votre paiement est bien reçu. L’atelier compose maintenant votre
+            numéro complet.
           </p>
+          <p className="nu-sub">
+            Il vous attend ici <b>sous {JOURS_COMPOSITION} jours ouvrés</b>, et
+            vous serez prévenue par mail.
+          </p>
+          {numero.facture_url && (
+            <p className="nu-sub">
+              <a className="nu-lien" href={numero.facture_url} target="_blank" rel="noopener noreferrer">
+                Votre facture
+              </a>
+              , hébergée par Stripe, reste accessible ici à tout moment.
+            </p>
+          )}
           <p className="nu-note">
             Un détail à changer ? Répondez au mail, on ajuste sans frais.
           </p>
@@ -382,6 +418,7 @@ export default async function NumeroPage({
             pdfUrl={numero.maquette_pdf_url}
             canvaUrl={numero.canva_url}
             dateAuto={formaterJour(ajouterJours(numero.etat_maj_le, JOURS_AUTO_VALIDATION))}
+            retouchesLe={numero.retouches_demandees_le}
           />
         </>
       )}
@@ -458,6 +495,7 @@ function Coquille({
   avancement,
   camp,
   token,
+  consentCommunication = null,
   children,
 }: {
   titre: string
@@ -466,6 +504,9 @@ function Coquille({
   avancement: number
   camp: Camp
   token: string
+  /* T2-1 — la valeur en base de « montrer des extraits », ou null pour ne
+     pas afficher la case (page en panne : on ne connaît pas la vérité). */
+  consentCommunication?: boolean | null
   children: React.ReactNode
 }) {
   return (
@@ -497,14 +538,21 @@ function Coquille({
 
         {children}
 
+        {/* ── T2-1 : la case facultative, ici où elle a du contexte ──── */}
+        {consentCommunication !== null && (
+          <ConsentCommunication token={token} valeur={consentCommunication} />
+        )}
+
         {/* ── LE LIEN, ET LA CONSIGNE DE LE GARDER ──────────────────────
             Il n'y a pas de compte, pas de mot de passe : ce lien EST son
             espace client (PRD §7.5). Elle le reçoit une fois, dans un mail
-            qui peut tomber en Promotions. Rien ne le lui disait. */}
+            qui peut tomber en Promotions.
+            T2-12 : l'URL en toutes lettres ne donnait aucun geste à faire —
+            deux boutons le donnent, l'URL n'apparaît plus en clair. */}
         <p className="nu-garde">
           <b>Gardez ce lien.</b> C’est le seul, il suit votre numéro jusqu’à la livraison, et
-          il ne demande ni compte ni mot de passe. Ajoutez-le à vos favoris, ou gardez le mail.
-          <span className="nu-garde-url">{`${SITE_URL_PUBLIC}/numero/${token}`}</span>
+          il ne demande ni compte ni mot de passe.
+          <LienPartage url={`${SITE_URL_PUBLIC}/numero/${token}`} />
         </p>
       </main>
 

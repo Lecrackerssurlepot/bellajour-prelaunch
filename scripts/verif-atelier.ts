@@ -22,6 +22,7 @@ import {
   codesPour,
   doitAutoValider,
   manquePour,
+  parametresPour,
   type Envoyes,
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
@@ -123,6 +124,7 @@ const base: NumeroPourReleve = {
   nb_photos: 40, nb_pages: 34, palier: "p40", apercu_urls: { c1: "a", c4: "b", double: "c" },
   etat: "photos_recues", consent_photos: true, created_at: ilYA(10), etat_maj_le: ilYA(1),
   transporteur: null, tracking_url: null, stripe_payment_intent: null,
+  retouches_demandees_le: null,
 };
 const d = (p: Partial<NumeroPourReleve>): NumeroPourReleve => ({ ...base, ...p });
 
@@ -180,6 +182,62 @@ ok("maquette + M5 + 8 j : valide d'office", doitAutoValider(d({ etat: "maquette_
 ok("maquette + M5 + 5 j : elle a encore le temps", !doitAutoValider(d({ etat: "maquette_prete", etat_maj_le: ilYA(5) }), env(["M5", ilYA(5)]), MAINTENANT));
 ok("maquette SANS M5 + 30 j : on n'imprime PAS en silence", !doitAutoValider(d({ etat: "maquette_prete", etat_maj_le: ilYA(30) }), env(), MAINTENANT));
 
+titre("— l'apercu a plat (T2-2) —");
+const pPlat = preparerTransition("publier_apercu", "photos_recues", {
+  nb_pages: 34, apercu_plat: "k/plat.jpg", apercu_double: "k/d.jpg",
+});
+ok("plat + double : accepte, deux cles en base",
+   pPlat.ok && JSON.stringify(pPlat.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg", double: "k/d.jpg" }));
+ok("plat sans double : refuse",
+   !preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, apercu_plat: "k/plat.jpg" }).ok);
+const pTrio = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, ...VISUELS });
+ok("le trio historique reste accepte (correction d'anciens dossiers)",
+   pTrio.ok && JSON.stringify(pTrio.patch.apercu_urls) === JSON.stringify({ c1: "k/c1.jpg", c4: "k/c4.jpg", double: "k/d.jpg" }));
+const pMixte = preparerTransition("publier_apercu", "photos_recues", {
+  nb_pages: 34, apercu_plat: "k/plat.jpg", apercu_double: "k/d.jpg", ...({ apercu_c1: "k/c1.jpg" }),
+});
+ok("plat fourni : c1 est ignore, jamais de melange des deux formats",
+   pMixte.ok && JSON.stringify(pMixte.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg", double: "k/d.jpg" }));
+
+titre("— le mot de l'atelier (T2-3) —");
+const avecMot = preparerTransition("photos_insuffisantes", "photos_recues", { mot: "Trop sombres pour l'impression." });
+ok("un mot saisi part en params.MOT, jamais en patch",
+   avecMot.ok && avecMot.params?.MOT === "Trop sombres pour l'impression." && !("mot" in avecMot.patch));
+const sansMot = preparerTransition("photos_insuffisantes", "photos_recues", {});
+ok("sans mot : pas de params", sansMot.ok && sansMot.params === undefined);
+const motVide = preparerTransition("photos_insuffisantes", "photos_recues", { mot: "   " });
+ok("des espaces seuls ne sont pas un mot", motVide.ok && motVide.params === undefined);
+ok("le mot ne fuit pas sur une autre action",
+   (() => { const p = preparerTransition("publier_maquette", "payee", { canva_url: "https://www.canva.com/x", mot: "coucou" }); return p.ok && p.params === undefined; })());
+ok("M9 declare MOT vide par defaut (verif-mails-brevo reste juste)",
+   parametresPour("M9", d({})).MOT === "");
+
+titre("— retouches demandees (T2-13) —");
+ok("maquette + M5 + 8 j + retouches : SUSPENDU, on n'imprime pas par-dessus",
+   !doitAutoValider(d({ etat: "maquette_prete", etat_maj_le: ilYA(8), retouches_demandees_le: ilYA(3) }), env(["M5", ilYA(8)]), MAINTENANT));
+ok("meme dossier sans retouches : valide d'office (temoin)",
+   doitAutoValider(d({ etat: "maquette_prete", etat_maj_le: ilYA(8), retouches_demandees_le: null }), env(["M5", ilYA(8)]), MAINTENANT));
+ok("retouches demandees : le dossier remonte dans A FAIRE",
+   urgencePour("maquette_prete", ilYAh(50), NOW, { retouches: true }).pile === "a_faire");
+ok("retouches demandees : pas de compte a rebours, le libelle dit quoi",
+   urgencePour("maquette_prete", ilYAh(50), NOW, { retouches: true }).reste === null
+   && urgencePour("maquette_prete", ilYAh(50), NOW, { retouches: true }).libelle.includes("retouches"));
+ok("retouches passent devant un a-faire confortable",
+   urgencePour("maquette_prete", ilYAh(5), NOW, { retouches: true }).rang
+   < urgencePour("photos_recues", ilYAh(2), NOW).rang);
+ok("sans l'option : l'etat 4 reste chez la cliente (temoin)",
+   urgencePour("maquette_prete", ilYAh(50), NOW).pile === "attente_cliente");
+const republi = preparerTransition("publier_maquette", "maquette_prete", { canva_url: "https://www.canva.com/x" });
+ok("republier la maquette depuis l'etat 4 : accepte",
+   republi.ok);
+ok("republier leve la suspension dans le patch",
+   republi.ok && republi.patch.retouches_demandees_le === null && "retouches_demandees_le" in republi.patch);
+const premierePubli = preparerTransition("publier_maquette", "payee", { canva_url: "https://www.canva.com/x" });
+ok("premiere publication : leve aussi la suspension (sans danger)",
+   premierePubli.ok && premierePubli.patch.retouches_demandees_le === null);
+ok("publier la maquette depuis l'etat 2 : toujours refuse",
+   !preparerTransition("publier_maquette", "apercu_pret", { canva_url: "https://www.canva.com/x" }).ok);
+
 titre("— ce qui manque pour envoyer —");
 ok("M7 sans transporteur : signale", manquePour("M7", d({ transporteur: null })).includes("transporteur"));
 ok("M7 avec transporteur : complet", manquePour("M7", d({ transporteur: "Colissimo" })).length === 0);
@@ -187,6 +245,16 @@ ok("M5 sans pagination : signale", manquePour("M5", d({ nb_pages: null })).inclu
 ok("M2 sans pagination : normal, il n'en parle pas", manquePour("M2", d({ nb_pages: null, palier: null })).length === 0);
 
 /* ═══════════════════════ LE LOT ET LE BRIEF ═══════════════════════ */
+
+titre("— le lot partiel (T2-5) —");
+/* La route calcule les noms sur le lot COMPLET puis filtre : un sous-ensemble
+   garde la numerotation d'origine et COMPLETE le dossier deja telecharge.
+   Nommer apres filtrage renumeroterait a 01- et melangerait tout. */
+const lotComplet = nomsDeFichiers([{ nom: "a.jpg" }, { nom: "b.jpg" }, { nom: "c.jpg" }]);
+ok("nommer PUIS filtrer garde le rang d'origine (03- pour la troisieme)",
+   lotComplet[2] === "03-c.jpg");
+ok("filtrer puis nommer renumeroterait (la preuve du danger)",
+   nomsDeFichiers([{ nom: "c.jpg" }])[0] === "01-c.jpg");
 
 titre("— les noms de fichiers d'un lot —");
 const nomsSimples = nomsDeFichiers([{ nom: "IMG_988.jpg" }, { nom: "IMG_4207.jpg" }]);

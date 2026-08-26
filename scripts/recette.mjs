@@ -118,7 +118,9 @@ const LEVIERS = {
         ? `le dossier est en « ${n.etat} », l'auto-validation attend l'état « maquette prête »`
         : !n.mails.M5
           ? "M5 n'est jamais parti : on ne valide pas d'office un numéro jamais annoncé"
-          : null,
+          : n.retouches_demandees_le
+            ? "des retouches sont demandées : l'auto-validation est suspendue (republier la maquette pour reprendre)"
+            : null,
     vieillir: async (sb, n) =>
       sb.from("numeros").update({ etat_maj_le: new Date(Date.now() - 8 * J).toISOString() }).eq("id", n.id),
   },
@@ -134,7 +136,7 @@ function sb() {
 async function lire(client, titre) {
   let q = client
     .from("numeros")
-    .select("id, token, titre, prenom, email, etat, nb_photos, consent_photos, nb_pages, palier, created_at, etat_maj_le, stripe_payment_intent")
+    .select("id, token, titre, prenom, email, etat, nb_photos, consent_photos, nb_pages, palier, created_at, etat_maj_le, stripe_payment_intent, retouches_demandees_le")
     .order("created_at", { ascending: false });
   if (titre) q = q.ilike("titre", titre);
   const { data, error } = await q;

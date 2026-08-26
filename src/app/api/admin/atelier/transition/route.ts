@@ -78,7 +78,7 @@ export async function POST(request: Request) {
 
     const { data: numero, error: lecture } = await supabase
       .from("numeros")
-      .select("id, etat, titre, prenom, email, telephone, nb_pages, adresse_livraison, cloudprinter_order_id")
+      .select("id, etat, titre, prenom, email, telephone, nb_pages, adresse_livraison, cloudprinter_order_id, retouches_demandees_le")
       .eq("token", token)
       .maybeSingle<{
         id: string;
@@ -90,6 +90,7 @@ export async function POST(request: Request) {
         nb_pages: number | null;
         adresse_livraison: unknown;
         cloudprinter_order_id: string | null;
+        retouches_demandees_le: string | null;
       }>();
 
     if (lecture) {
@@ -129,7 +130,8 @@ export async function POST(request: Request) {
           {
             error: "saisie",
             erreurs: absents.map((nom) => ({
-              champ: { c1: "apercu_c1", c4: "apercu_c4", double: "apercu_double" }[nom] ?? nom,
+              champ:
+                { plat: "apercu_plat", c1: "apercu_c1", c4: "apercu_c4", double: "apercu_double" }[nom] ?? nom,
               message: "L'image n'est pas arrivée dans le coffre. Redépose-la.",
             })),
           },
@@ -237,6 +239,7 @@ export async function POST(request: Request) {
           verification: true,
           action: { cle: action.cle, libelle: action.libelle, vers: action.vers, note: action.note },
           resume: prepa.resume,
+          ...(prepa.params?.MOT ? { mot: prepa.params.MOT } : {}),
           ...(impression ? { impression } : {}),
           /* Ce que la cliente lira dans le mail, si mail il y a. Le vrai
              rendu est chez Brevo — ici on garantit au moins que le bon
@@ -322,6 +325,14 @@ export async function POST(request: Request) {
       prepa.patch.cloudprinter_order_id = orderIdCommande;
     }
 
+    /* T2-13 — une REpublication de maquette après des retouches demandées.
+       La garde sur la colonne compte : une republication de confort (sans
+       retouches) ne doit pas faire repartir M5. */
+    const republicationRetouches =
+      cle === "publier_maquette" &&
+      numero.etat === "maquette_prete" &&
+      Boolean(numero.retouches_demandees_le);
+
     const maintenant = new Date().toISOString();
 
     /* Verrou atomique : le `.eq('etat', …)` fait de la mise à jour elle-même
@@ -372,8 +383,11 @@ export async function POST(request: Request) {
         de: numero.etat,
         vers: action.vers,
         par: prenomDe(qui),
-        source: "admin",
+        source: republicationRetouches ? "republication_retouches" : "admin",
         ...prepa.resume,
+        /* T2-3 — le mot de M9 ne vit pas en base : le journal est sa seule
+           trace pérenne (le mail, lui, peut être perdu par la cliente). */
+        ...(prepa.params?.MOT ? { mot: prepa.params.MOT } : {}),
       },
     );
 
@@ -395,10 +409,25 @@ export async function POST(request: Request) {
       });
     }
 
+    /* T2-13 — republier après retouches doit RENVOYER M5 : la maquette a
+       changé, et l'échéance d'auto-validation annoncée dans le mail aussi.
+       Retirer le verrou est le mécanisme sanctionné (le même que celui d'un
+       échec Brevo) : la relève ci-dessous renverra M5 avec la nouvelle
+       DATE_LIMITE. Journalisé, sinon deux « Mail parti : M5 » se suivraient
+       sans explication. */
+    if (republicationRetouches) {
+      await supabase.from("mails_envoyes").delete().eq("numero_id", numero.id).eq("code", "M5");
+      await logEvenement(supabase, numero.id, "mail_reouvert", {
+        code: "M5",
+        cause: "republication_retouches",
+        par: prenomDe(qui),
+      });
+    }
+
     /* Le mail, par le chemin partagé : même verrou, mêmes contrôles que le
        balayage. Ne throw jamais — une transition réussie ne doit pas être
        rendue en erreur parce que Brevo tousse. Le balayage rattrapera. */
-    const releve = await releverDossier(supabase, numero.id);
+    const releve = await releverDossier(supabase, numero.id, prepa.params);
 
     return NextResponse.json(
       {

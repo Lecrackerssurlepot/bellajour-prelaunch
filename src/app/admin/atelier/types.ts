@@ -84,6 +84,8 @@ export type PhotoVue = {
   id: string;
   nom: string | null;
   taille: number | null;
+  /** T2-5 — la date d'arrivée : sépare le premier dépôt des ajouts. */
+  ajouteLe: string | null;
   url: string | null;
 };
 
@@ -171,10 +173,16 @@ export type Fiche = {
   cloudprinterOrderId: string | null;
   transporteur: string | null;
   trackingUrl: string | null;
-  /** Signés pour l'affichage (URL courtes, régénérées à chaque rendu). */
-  apercu: { c1: string | null; c4: string | null; double: string | null };
+  /** T2-13 — la date du clic « j'ai noté des retouches », ou null. */
+  retouchesLe: string | null;
+  /** T2-5 — la fin du PREMIER dépôt (événement consentements) : toute photo
+      arrivée après est un AJOUT, séparé dans la grille. */
+  depotInitialJusqua: string | null;
+  /** Signés pour l'affichage (URL courtes, régénérées à chaque rendu).
+      `plat` (T2-2) : la couverture à plat — présent, il remplace c1/c4. */
+  apercu: { plat: string | null; c1: string | null; c4: string | null; double: string | null };
   /** Les valeurs brutes (clés de coffre), pour préremplir le formulaire. */
-  apercuBrut: { c1: string | null; c4: string | null; double: string | null };
+  apercuBrut: { plat: string | null; c1: string | null; c4: string | null; double: string | null };
   adresse: AdresseVue | null;
   stripePaymentIntent: string | null;
   photos: PhotoVue[];

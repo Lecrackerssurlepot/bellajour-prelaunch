@@ -195,6 +195,21 @@
   height: auto;
 }
 
+/* ---- la couverture a plat, decoupee (T2-2) ----
+   UN fichier C4 | dos | C1 ; chaque face est un CADRAGE du meme objet, pas
+   une image a part. Le cadre prend le format d'une couverture, l'image le
+   remplit en hauteur et deborde en largeur, object-position choisit le cote.
+   Decoupe approximative assumee (le dos est dans le fichier) : la vue a plat
+   et la loupe montrent l'objet entier, exact. */
+.nu-vue--decoupe { aspect-ratio: 2 / 3; }
+.nu-vue--decoupe img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.nu-vue--droite img { object-position: right center; }
+.nu-vue--gauche img { object-position: left center; }
+
 /* ---- cliquable : la vue s'ouvre en grand ----
    Recette du 25/08 : « il doit pouvoir les voir en grand en cliquant
    dessus ». Un <button> et non un <a> : rien ne se charge, une vue
@@ -370,6 +385,33 @@
 
 .nu-erreur { margin-top: 16px; font-size: 14px; color: var(--c-accent-strong); }
 
+/* ---- la case facultative « montrer des extraits » (T2-1) ----
+   Venue de l'ecran 6 du composeur (.at-facultatif) : ici elle a du contexte
+   et du temps, en pied de page, au-dessus de la consigne du lien. */
+.nu-facultatif {
+  margin-top: clamp(48px, 9vw, 84px);
+  padding-top: clamp(20px, 4vw, 28px);
+  border-top: 1px solid var(--c-line);
+  max-width: 52ch;
+}
+.nu-facultatif + .nu-garde { margin-top: clamp(24px, 5vw, 40px); }
+
+.nu-facultatif-titre {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.nu-facultatif-note {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+
+.nu-facultatif .nu-check { margin-top: 16px; }
+
 /* ---- l'état 4 : maquette feuilletable + Canva en commentaire ---- */
 .nu-pdf {
   margin-top: clamp(28px, 5vw, 40px);
@@ -398,6 +440,18 @@
 }
 
 .bj-atelier .nu-lien:hover { color: var(--c-text); }
+
+/* T2-13 — le troisieme geste de l'etat 4 est un <button>, pas un <a> :
+   on lui retire l'habit de bouton pour qu'il se lise comme les liens voisins. */
+.bj-atelier .nu-retouches {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+}
+.bj-atelier .nu-retouches:disabled { opacity: 0.5; cursor: default; }
 
 /* ---- page inconnue (token faux ou expiré) ---- */
 .nu-perdu {

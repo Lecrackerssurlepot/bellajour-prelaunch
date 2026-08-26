@@ -82,6 +82,11 @@ export type ActionCle =
    navigateur : la conversion et le contrôle se font ICI, une seule fois. */
 export type Saisie = {
   nb_pages?: string | number | null;
+  /* T2-2 — LE format de dépôt : la couverture à plat (C4 | dos | C1), telle
+     que Canva l'exporte. S'il est fourni, il gagne : c1/c4 sont ignorés.
+     Les deux cadres séparés restent acceptés pour corriger un dossier
+     publié avant ce format. */
+  apercu_plat?: string | null;
   apercu_c1?: string | null;
   apercu_c4?: string | null;
   apercu_double?: string | null;
@@ -95,6 +100,9 @@ export type Saisie = {
   pdf_interieur?: string | null;
   transporteur?: string | null;
   tracking_url?: string | null;
+  /* T2-3 — le mot facultatif de l'atelier sur « Demander plus de photos ».
+     Il part dans M9 (param MOT), jamais en base : ce n'est pas une colonne. */
+  mot?: string | null;
 };
 
 export type Action = {
@@ -162,14 +170,19 @@ export const ACTIONS: Record<ActionCle, Action> = {
     note: "Ses photos déjà déposées sont conservées.",
   },
 
+  /* Depuis « payee » : la première publication. Depuis « maquette_prete » :
+     la REpublication après des retouches (T2-13) — même écran, même saisie,
+     et l'échéance d'auto-validation repart de zéro puisque `etat_maj_le` est
+     réécrit par la route. La suspension posée par « j'ai demandé des
+     retouches » est levée dans le patch, ici même (module pur). */
   publier_maquette: {
     cle: "publier_maquette",
     libelle: "Publier la maquette",
     explication:
       "Elle découvre le numéro complet et le bouton « Tout est bon, imprimez ». Rien ne part à l'impression avant.",
-    de: ["payee"],
+    de: ["payee", "maquette_prete"],
     vers: "maquette_prete",
-    note: "L'échéance d'auto-validation à J+7 part de maintenant.",
+    note: "L'échéance d'auto-validation à J+7 part de maintenant. Republier après des retouches lève leur suspension.",
   },
 
   envoyer_impression: {
@@ -218,6 +231,9 @@ export type Preparation =
       patch: Record<string, unknown>;
       /** Ce que l'écran de confirmation annonce (jamais recalculé ailleurs). */
       resume: { nbPages?: number; palier?: PalierCle; euros?: number };
+      /** Paramètres de template en PLUS de `parametresPour` (T2-3 : le MOT
+          de M9). Jamais dans `patch` — rien de tout ça n'est une colonne. */
+      params?: Record<string, string>;
     }
   | { ok: false; erreurs: Erreur[] };
 
@@ -293,22 +309,38 @@ export function preparerTransition(
       }
     }
 
-    /* ── les trois visuels ────────────────────────────────────────────
+    /* ── les visuels ──────────────────────────────────────────────────
        Clé d'objet du coffre (dépôt depuis /admin) ou adresse absolue :
-       `resoudreApercu` sait lire les deux. Les trois sont obligatoires —
-       une page qui vend avec un cadre vide ne vend pas. */
-    const visuels: Array<[keyof Saisie, string, string]> = [
-      ["apercu_c1", "c1", "la première de couverture"],
-      ["apercu_c4", "c4", "la quatrième de couverture"],
-      ["apercu_double", "double", "la double page"],
-    ];
-    const apercu: Record<string, string> = {};
-    for (const [champ, cleJson, nom] of visuels) {
-      const v = texte(saisie[champ], 600);
-      if (!v) erreurs.push({ champ, message: `Il manque ${nom}.` });
-      else apercu[cleJson] = v;
+       `resoudreApercu` sait lire les deux. Une page qui vend avec un cadre
+       vide ne vend pas — tout ce que le format choisi exige est obligatoire.
+
+       T2-2 : le format normal est la couverture À PLAT (C4 | dos | C1, un
+       seul fichier, l'export naturel de Canva) plus la double page. La page
+       cliente en découpe les deux faces en CSS et la loupe montre l'objet
+       entier — une vraie couverture qu'on retourne. Le trio historique
+       c1 + c4 + double reste accepté UNIQUEMENT pour corriger un dossier
+       publié avant ce format : si `apercu_plat` est fourni, il gagne et
+       c1/c4 sont ignorés (jamais de mélange des deux formats en base). */
+    const plat = texte(saisie.apercu_plat, 600);
+    const doublePage = texte(saisie.apercu_double, 600);
+
+    if (plat) {
+      if (!doublePage) erreurs.push({ champ: "apercu_double", message: "Il manque la double page." });
+      else patch.apercu_urls = { plat, double: doublePage };
+    } else {
+      const visuels: Array<[keyof Saisie, string, string]> = [
+        ["apercu_c1", "c1", "la couverture à plat (ou, à défaut, la première de couverture)"],
+        ["apercu_c4", "c4", "la quatrième de couverture"],
+        ["apercu_double", "double", "la double page"],
+      ];
+      const apercu: Record<string, string> = {};
+      for (const [champ, cleJson, nom] of visuels) {
+        const v = texte(saisie[champ], 600);
+        if (!v) erreurs.push({ champ, message: `Il manque ${nom}.` });
+        else apercu[cleJson] = v;
+      }
+      if (Object.keys(apercu).length === 3) patch.apercu_urls = apercu;
     }
-    if (Object.keys(apercu).length === 3) patch.apercu_urls = apercu;
   }
 
   if (cle === "publier_maquette") {
@@ -326,6 +358,11 @@ export function preparerTransition(
     } else if (pdf) {
       patch.maquette_pdf_url = pdf;
     }
+
+    /* T2-13 : publier (ou republier) la maquette lève la suspension posée
+       par « j'ai demandé des retouches ». L'échéance J+7 repart avec le
+       `etat_maj_le` que la route ajoute au patch. */
+    patch.retouches_demandees_le = null;
   }
 
   if (cle === "envoyer_impression") {
@@ -378,9 +415,19 @@ export function preparerTransition(
     }
   }
 
+  /* T2-3 — le mot de l'atelier, facultatif, sur « Demander plus de photos ».
+     Le cas réel : le problème était la QUALITÉ des photos, pas leur nombre —
+     le mail générique tombait à côté. Le mot part dans M9 (encart « Un mot
+     de l'atelier ») ; des espaces seuls ne sont pas un mot. */
+  let params: Record<string, string> | undefined;
+  if (cle === "photos_insuffisantes") {
+    const mot = texte(saisie.mot, 500);
+    if (mot) params = { MOT: mot };
+  }
+
   if (erreurs.length) return { ok: false, erreurs };
 
   if (!action.surPlace) patch.etat = action.vers;
 
-  return { ok: true, action, patch, resume };
+  return { ok: true, action, patch, resume, ...(params ? { params } : {}) };
 }

@@ -1,0 +1,37 @@
+/* ════════════════════════════════════════════════════════════
+   LE LIEN PERMANENT EN DEUX GESTES (composants/LienPartage.tsx, T2-12).
+
+   Comme la loupe, ce composant sert deux ecrans (la page /numero et
+   l'ecran 6 du composeur) : il pose ses propres couleurs sur .bj-lienpartage
+   et n'emprunte aux tokens d'aucun des deux. Charte sombre des pages de
+   l'atelier, la seule ou il apparait.
+   ════════════════════════════════════════════════════════════ */
+
+.bj-lienpartage {
+  --lp-texte: #f5f0e7;
+  --lp-filet: rgba(245, 240, 231, 0.28);
+  --lp-verre: rgba(255, 255, 255, 0.06);
+
+  display: inline-flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.bj-lienpartage-btn {
+  appearance: none;
+  cursor: pointer;
+  padding: 9px 18px;
+  background: var(--lp-verre);
+  border: 1px solid var(--lp-filet);
+  border-radius: 999px;
+  color: var(--lp-texte);
+  font: inherit;
+  font-size: 13px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.bj-lienpartage-btn:hover,
+.bj-lienpartage-btn:focus-visible {
+  border-color: var(--lp-texte);
+  background: rgba(255, 255, 255, 0.1);
+}

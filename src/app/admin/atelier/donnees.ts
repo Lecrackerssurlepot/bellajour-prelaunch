@@ -52,7 +52,7 @@ import type {
 } from "./types";
 
 const CHAMPS_LIGNE =
-  "token, titre, prenom, email, email_canonical, etat, nb_photos, nb_pages, palier, consent_photos, created_at, etat_maj_le, stripe_payment_intent";
+  "token, titre, prenom, email, email_canonical, etat, nb_photos, nb_pages, palier, consent_photos, created_at, etat_maj_le, stripe_payment_intent, retouches_demandees_le";
 
 type RangeeNumero = {
   id?: string;
@@ -70,6 +70,8 @@ type RangeeNumero = {
   created_at: string | null;
   etat_maj_le: string | null;
   stripe_payment_intent: string | null;
+  /* T2-13 — la date du clic « j'ai noté des retouches », ou null. */
+  retouches_demandees_le?: string | null;
   /* Clé du compte qui a le dossier en main, ou null. Absente tant que la
      migration 20260826 n'est pas passée (cf. lireNumeros). */
   en_charge?: string | null;
@@ -102,6 +104,14 @@ function mailDeLAction(
   return code ? { code, absent: !templateExiste(code) } : null;
 }
 
+/* Une copie de la carte des envois, sans un code — pour projeter la levée
+   d'un verrou (republication après retouches) sans toucher l'original. */
+function sans(envoyes: Envoyes, code: string): Envoyes {
+  const copie = new Map(envoyes);
+  copie.delete(code);
+  return copie;
+}
+
 function versLigne(
   r: RangeeNumero,
   maintenant: Date,
@@ -115,7 +125,10 @@ function versLigne(
      Ailleurs, le dépôt est terminé par construction. */
   const depot: EtapeDepot =
     r.etat === "photos_recues" ? etapeDepot(r.consent_photos ?? null, nbPhotos) : "termine";
-  const u = urgencePour(r.etat, r.etat_maj_le, maintenant, { depot });
+  /* T2-13 — la question ne se pose qu'à l'état 4 : ailleurs la colonne est
+     un reliquat (elle est remise à null à la republication). */
+  const retouches = r.etat === "maquette_prete" && Boolean(r.retouches_demandees_le);
+  const u = urgencePour(r.etat, r.etat_maj_le, maintenant, { depot, retouches });
 
   return {
     numeroId: r.id ?? "",
@@ -148,7 +161,15 @@ function versLigne(
       libelle: a.libelle,
       explication: a.explication,
       vers: a.vers,
-      mail: mailDeLAction(a.vers, r, envoyes, maintenant),
+      /* T2-13 — republier après retouches lèvera le verrou M5 (la route le
+         supprime avant la relève) : la projection doit le savoir, sinon
+         l'écran annoncerait « aucun mail » alors que M5 repart. */
+      mail: mailDeLAction(
+        a.vers,
+        r,
+        a.cle === "publier_maquette" && retouches ? sans(envoyes, "M5") : envoyes,
+        maintenant,
+      ),
       note: a.note,
     })),
   };
@@ -547,10 +568,10 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
   const [{ data: photos }, { data: evenements }, { data: mails }, notesLues] = await Promise.all([
     supabase
       .from("photos")
-      .select("id, r2_key, nom_origine, taille, ordre")
+      .select("id, r2_key, nom_origine, taille, ordre, created_at")
       .eq("numero_id", id)
       .order("ordre", { ascending: true })
-      .returns<Array<{ id: string; r2_key: string; nom_origine: string | null; taille: number | null }>>(),
+      .returns<Array<{ id: string; r2_key: string; nom_origine: string | null; taille: number | null; created_at: string | null }>>(),
     supabase
       .from("evenements")
       .select("id, type, payload, created_at")
@@ -578,9 +599,27 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
       id: p.id,
       nom: p.nom_origine,
       taille: p.taille,
+      ajouteLe: p.created_at,
       url: await signerGet(p.r2_key).catch(() => null),
     })),
   );
+
+  /* ── T2-5 : où finit le PREMIER dépôt ─────────────────────────────
+     L'événement `consentements` avec consent_photos=true est LE moment où
+     elle a cliqué « Envoyer à l'atelier » : toute photo arrivée APRÈS est
+     un ajout (reprise 1b, complément). Requête dédiée plutôt que la liste
+     d'affichage — celle-ci est triée desc et plafonnée à 200, un vieux
+     dossier bavard aurait pu faire sortir l'événement de la fenêtre. */
+  const { data: finsDepot } = await supabase
+    .from("evenements")
+    .select("payload, created_at")
+    .eq("numero_id", id)
+    .eq("type", "consentements")
+    .order("created_at", { ascending: true })
+    .limit(20)
+    .returns<Array<{ payload: Record<string, unknown>; created_at: string }>>();
+  const depotInitialJusqua =
+    (finsDepot ?? []).find((e) => e.payload?.consent_photos === true)?.created_at ?? null;
 
   const apercu = await resoudreApercu(n.apercu_urls);
   const brut = (n.apercu_urls && typeof n.apercu_urls === "object" ? n.apercu_urls : {}) as Record<string, string>;
@@ -632,8 +671,11 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     cloudprinterOrderId: (n.cloudprinter_order_id as string) ?? null,
     transporteur: (n.transporteur as string) ?? null,
     trackingUrl: (n.tracking_url as string) ?? null,
+    retouchesLe: (n.retouches_demandees_le as string) ?? null,
+    depotInitialJusqua,
     apercu,
     apercuBrut: {
+      plat: brut.plat ?? null,
       c1: brut.c1 ?? null,
       c4: brut.c4 ?? null,
       double: brut.double ?? null,

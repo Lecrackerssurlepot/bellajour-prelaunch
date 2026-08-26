@@ -53,7 +53,8 @@ export type CodeMail =
 /** Les colonnes de `numeros` que tout envoi doit avoir sous la main. */
 export const CHAMPS_MAIL =
   "id, token, etat, titre, prenom, email, nb_photos, nb_pages, palier, apercu_urls, " +
-  "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, stripe_payment_intent";
+  "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, stripe_payment_intent, " +
+  "retouches_demandees_le";
 
 export type NumeroPourMail = {
   id: string;
@@ -76,6 +77,7 @@ export type NumeroPourReleve = NumeroPourMail & {
   transporteur: string | null;
   tracking_url: string | null;
   stripe_payment_intent: string | null;
+  retouches_demandees_le: string | null;
 };
 
 export type Resultat =
@@ -199,7 +201,14 @@ export function parametresPour(code: CodeMail, n: NumeroPourMail): Record<string
   };
 
   if (code === "M1" || code === "M2" || code === "M2b" || code === "M9") {
-    return { ...communs, NB_PHOTOS: n.nb_photos ?? 0 };
+    const avecPhotos = { ...communs, NB_PHOTOS: n.nb_photos ?? 0 };
+    /* M9 (T2-3) : MOT est le mot facultatif de l'atelier, saisi sur l'action
+       « Demander plus de photos » et passé en `extra` à l'envoi immédiat.
+       Vide par défaut : le template le rend conditionnellement, et la liste
+       vérifiée par verif-mails-brevo reste complète. Si l'envoi immédiat
+       échoue et que la relève rattrape, le mot est perdu (il ne vit pas en
+       base) — accepté, il reste lisible dans le journal de la transition. */
+    return code === "M9" ? { ...avecPhotos, MOT: "" } : avecPhotos;
   }
 
   /* Tout ce qui suit affiche la pagination et le prix. Le montant vient de la
@@ -241,7 +250,10 @@ export function parametresPour(code: CodeMail, n: NumeroPourMail): Record<string
 export async function envoyerMailAtelier(
   supabase: SupabaseClient,
   code: CodeMail,
-  numero: NumeroPourMail
+  numero: NumeroPourMail,
+  /** Paramètres de template en PLUS de `parametresPour` (T2-3 : le MOT de
+      M9). Fusionnés par-dessus — un extra peut préciser, jamais retirer. */
+  extra?: Record<string, unknown>
 ): Promise<Resultat> {
   try {
     const manque = manquePour(code, numero);
@@ -278,7 +290,7 @@ export async function envoyerMailAtelier(
       email: numero.email ?? "",
       name: numero.prenom ?? undefined,
       apiKey: process.env.BREVO_API_KEY,
-      params: parametresPour(code, numero),
+      params: { ...parametresPour(code, numero), ...extra },
     });
 
     if (!envoye) {
@@ -489,6 +501,12 @@ export function codesPour(
  * ait rien vu — et l'échéance annoncée dans M5 est justement celle-ci.
  */
 export function doitAutoValider(n: NumeroPourReleve, envoyes: Envoyes, maintenant: Date): boolean {
+  /* T2-13 : elle a dit « j'ai noté des retouches dans le Canva ». Imprimer
+     d'office par-dessus des demandes de correction serait exactement le
+     silence qui coûte : l'échéance est SUSPENDUE tant que l'atelier n'a pas
+     republié la maquette (la republication remet ce champ à null et fait
+     repartir etat_maj_le, donc les 7 jours). */
+  if (n.retouches_demandees_le) return false;
   if (n.etat !== "maquette_prete" || !envoyes.has("M5") || !n.etat_maj_le) return false;
   return maintenant.getTime() - Date.parse(n.etat_maj_le) >= JOURS_AVANT_AUTO_VALIDATION * JOUR;
 }
@@ -512,7 +530,10 @@ export async function lireEnvoyes(
 
 export async function releverDossier(
   supabase: SupabaseClient,
-  numeroId: string
+  numeroId: string,
+  /** Passés à l'envoi du premier code dû (T2-3 : le MOT de M9, connu du seul
+      appel immédiat de la transition — le balayage n'en a pas). */
+  extra?: Record<string, unknown>
 ): Promise<Releve> {
   try {
     const { data } = await supabase
@@ -530,7 +551,7 @@ export async function releverDossier(
        deux (cas d'un rattrapage), on envoie le premier ici et le balayage
        prendra le second : /admin n'a pas à devenir un moteur d'envoi. */
     const code = codes[0];
-    return { code, resultat: await envoyerMailAtelier(supabase, code, data) };
+    return { code, resultat: await envoyerMailAtelier(supabase, code, data, extra) };
   } catch (err) {
     console.error("[atelier/mails] relève d'un dossier échouée", (err as Error)?.message);
     return { code: null, resultat: null };

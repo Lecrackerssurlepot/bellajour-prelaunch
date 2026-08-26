@@ -27,7 +27,10 @@ import { signerPut, MAX_FILE_BYTES, resoudreMime, extensionDepuisMime } from "@/
 
 export const runtime = "nodejs";
 
-const SLOTS = new Set(["c1", "c4", "double"]);
+/* `plat` (T2-2) : la couverture à plat C4 | dos | C1, le format normal des
+   nouvelles publications. c1/c4 restent acceptés pour corriger les dossiers
+   publiés avant ce format. */
+const SLOTS = new Set(["plat", "c1", "c4", "double"]);
 
 export async function POST(request: Request) {
   const qui = await quiEstConnecteRequete(request);

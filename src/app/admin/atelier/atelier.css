@@ -1930,6 +1930,59 @@
   color: var(--bj-text-faint);
 }
 
+/* T2-5 — le filet qui separe le premier depot des ajouts, dans la grille
+   des photos. Pleine largeur de la grille. */
+.ate-photos-filet {
+  grid-column: 1 / -1;
+  padding-top: var(--bj-sp-2);
+  border-top: 1px solid var(--bj-veil-12);
+  font-size: var(--bj-fs-xxs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bj-text-faint);
+}
+
+/* T2-6 — l'etat 2 attend le paiement : le panneau le dit en grand, la
+   correction se replie derriere un lien discret. */
+.ate-attente {
+  font-size: var(--bj-fs-lg);
+  font-weight: 500;
+  margin: var(--bj-sp-2) 0 var(--bj-sp-1);
+}
+.ate-lien-discret {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: var(--bj-sp-3);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ate-lien-discret:hover { color: var(--bj-text); }
+
+/* T2-3 — le mot de l'atelier (textarea sur l'action Demander plus de photos). */
+.ate-mot {
+  resize: vertical;
+  min-height: 72px;
+  font: inherit;
+}
+
+/* La couverture a plat, decoupee (T2-2) — meme principe que chez la cliente
+   (.nu-vue--decoupe) : un fichier C4 | dos | C1, chaque face est un CADRAGE
+   du meme objet. Le cadre prend le format d'une couverture, object-position
+   choisit le cote. */
+.ate-apercu-decoupe { aspect-ratio: 2 / 3; }
+.ate-apercu-decoupe img {
+  height: 100%;
+  object-fit: cover;
+}
+.ate-apercu-decoupe--droite img { object-position: right center; }
+.ate-apercu-decoupe--gauche img { object-position: left center; }
+
 /* Cliquable, comme chez la cliente. La fiche et sa page montrent le même
    visuel : elles doivent l'ouvrir de la même façon, sinon on juge une
    vignette de 140 px ce qu'elle voit en plein écran. */

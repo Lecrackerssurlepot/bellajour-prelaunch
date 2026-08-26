@@ -113,6 +113,11 @@ export type Vue = {
   /** Le serveur a refusé pour de bon : plus rien ne repartira. */
   clos: boolean
   bandeau: string | null
+  /** T2-4 — ce que le SERVEUR sait d'un passage précédent (autre appareil,
+      autre session), ou null tant qu'il n'a pas parlé. La grille locale ne
+      montre que cette session : ce compte est le seul témoin des photos
+      déjà chez nous. */
+  serveur: number | null
 }
 
 export type Refus = { nom: string; raison: string }
@@ -771,6 +776,7 @@ class Moteur {
       reductionDegradee: poolIndisponible(),
       clos: this.arrete,
       bandeau: this.bandeau,
+      serveur: this.nbServeur,
     }
   }
 
