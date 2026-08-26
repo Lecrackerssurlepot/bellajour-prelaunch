@@ -7,11 +7,18 @@ Ce document est le point de reprise : il suppose qu'on ne se souvient de rien.
 
 ## Où on en est, en trois phrases
 
-Le lot 7 est en production depuis le 25/08. Douze commits de corrections sont
-sur la branche **`chantier/atelier`** (donc sur la preview), **pas en
-production** : `main` s'arrête à `f856f50`, c'est-à-dire l'état d'avant ces
-corrections. La prochaine étape est une recette complète sur la preview,
-paiement de test compris, puis la fusion dans `main`.
+Les corrections de recette sont **fusionnées dans `main` et en production**
+depuis le 26/08 au matin. La recette « Test 2 » a prouvé le parcours de bout
+en bout sur la preview : dépôt → 1b et retour → aperçu → **paiement test →
+webhook → M4** → maquette → validation → production, avec M1, M9, M3, M4, M5
+et M6 partis au bon moment. Restent JAMAIS testés en vrai : **M7 (expédiée),
+M8 (J+3 après livraison) et l'auto-validation à J+7** — le dossier « Test 2 »
+est resté en état 6, il suffit de le pousser jusqu'au bout pour les couvrir.
+
+**Le prochain lot est tout trouvé : les retours T2-1 à T2-13** (section
+« Retours de la recette Test 2 » ci-dessous), chacun avec sa solution
+proposée. Le plus structurant est T2-13 — le bouton « j'ai demandé des
+retouches » qui doit suspendre l'auto-validation.
 
 ### ⚠️ Si un paiement ou un mail ne remonte pas, TESTER CECI D'ABORD
 
@@ -55,21 +62,12 @@ attendus.
 
 ---
 
-## Ce qui n'a JAMAIS été vérifié à l'écran
+## Ce qui n'a pas encore été vu
 
-À dire franchement à qui reprend : deux pans entiers n'ont pas été vus.
-
-**Tout le back-office.** `/admin/atelier` demande un mot de passe, et l'agent
-qui a écrit ces corrections n'en saisit pas. La liste, la fiche, le bandeau du
-dépôt non terminé, le bouton « Je m'en occupe », le rafraîchissement
-automatique, les silhouettes de chargement, la loupe de l'aperçu, le
-téléchargement du lot : tout cela compile, passe tsc, eslint et les 81
-assertions, mais **personne ne l'a regardé**.
-
-**Le dépôt réel avec de vraies photos.** L'injection de fichiers ne passe pas
-dans un navigateur piloté. La grille repliée, la case « + 49 » et la barre
-d'envoi ont été vérifiées sur une grille simulée et mesurées au pixel, mais le
-composant React n'a jamais tourné avec un vrai lot.
+La recette Test 2 a couvert le back-office et le dépôt réel — les deux angles
+morts de la veille sont levés. Ce qui reste sans preuve : M7, M8,
+l'auto-validation, et le remboursement (`charge.refunded` atelier, journalisé
+sans transition).
 
 ---
 
