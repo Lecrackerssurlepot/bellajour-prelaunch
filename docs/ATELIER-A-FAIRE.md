@@ -371,6 +371,14 @@ paiement : votre numéro complet sous 3 jours ouvrés. Puis chez vous sous 10
 jours après votre validation. » Les chiffres viennent de `DELAIS` (urgence.ts),
 jamais en dur : ce sont les promesses que l'admin surveille déjà.
 
+**T2-9. Le rafraîchissement automatique doit couvrir la FICHE, pas seulement
+la liste.** Vécu en séance : Mathias attendait le paiement la fiche ouverte —
+elle est restée figée sur l'état 2 alors que la base était déjà en « payée »
+et que M4 était parti. C'est exactement le moment où l'on regarde une fiche.
+→ *Proposition* : monter `Rafraichissement` dans la page fiche (mêmes règles :
+rien quand l'onglet est caché, rattrapage au retour). Petit chantier — le
+composant existe, il n'est juste rendu que par la liste.
+
 ---
 
 ### ⚠️ À faire — par ordre d'importance
