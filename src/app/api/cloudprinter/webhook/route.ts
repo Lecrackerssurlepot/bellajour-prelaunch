@@ -71,31 +71,45 @@ export async function POST(request: Request) {
   try {
     const supabase = makeSupabase();
 
-    /* La doc ne tranche pas si `order` est NOTRE référence (l'id du numéro)
-       ou LEUR identifiant : le double chemin absorbe les deux. Le premier
-       signal sandbox, journalisé intégralement, dira lequel joue. */
-    const parId = UUID.test(ordre)
-      ? await supabase
-          .from("numeros")
-          .select("id, etat")
-          .eq("id", ordre)
-          .maybeSingle<{ id: string; etat: string }>()
-      : { data: null };
+    /* La doc ne tranche pas ce que `order` porte : NOTRE référence (l'id du
+       numéro), la référence de l'ITEM (« <id>-1 »), ou un identifiant à eux.
+       On essaie donc les candidats du plus probable au moins probable —
+       chaque forme uuid par la clé primaire, les autres par
+       `cloudprinter_order_id`. Le premier signal réel du 26/08 est reparti
+       en « commande inconnue » : c'est ce qui a payé cette liste. */
+    const candidats = [
+      ...new Set(
+        [
+          ordre,
+          ordre.replace(/-\d+$/, ""),
+          s(body.order_reference),
+          s(body.reference),
+          item.replace(/-\d+$/, ""),
+        ].filter(Boolean),
+      ),
+    ];
 
-    const numero =
-      parId.data ??
-      (
-        await supabase
-          .from("numeros")
-          .select("id, etat")
-          .eq("cloudprinter_order_id", ordre)
-          .maybeSingle<{ id: string; etat: string }>()
-      ).data;
+    let numero: { id: string; etat: string } | null = null;
+    for (const candidat of candidats) {
+      const requete = supabase.from("numeros").select("id, etat");
+      const { data } = await (UUID.test(candidat)
+        ? requete.eq("id", candidat)
+        : requete.eq("cloudprinter_order_id", candidat)
+      ).maybeSingle<{ id: string; etat: string }>();
+      if (data) {
+        numero = data;
+        break;
+      }
+    }
 
     if (!numero) {
       /* 204, le code CloudSignal pour « commande inconnue » : ils arrêtent
          de réessayer. Un signal d'un AUTRE client de la même interface
-         atterrirait ici — rien à faire chez nous. */
+         atterrirait ici — rien à faire chez nous. Le payload est journalisé
+         en console (SANS la clé) : si un signal légitime tombe ici, il faut
+         pouvoir lire ce qu'il portait au lieu de le deviner. */
+      const { apikey: _apikey, ...sansCle } = body;
+      console.log("[cloudprinter/webhook] signal sans dossier", JSON.stringify(sansCle).slice(0, 800));
       return new NextResponse(null, { status: 204 });
     }
 
