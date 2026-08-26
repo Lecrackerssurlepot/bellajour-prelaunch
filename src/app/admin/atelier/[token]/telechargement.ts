@@ -29,7 +29,16 @@
 import { NOM_BRIEF } from "@/lib/atelier/brief";
 import { nomsDeFichiers, nomDossier } from "@/lib/atelier/lot";
 
-export type PhotoLot = { id: string; nom: string | null; taille: number | null; url: string | null };
+export type PhotoLot = {
+  id: string;
+  nom: string | null;
+  taille: number | null;
+  /** T2-5 — le nom calculé par la route sur le lot COMPLET : sur un lot
+      partiel, il préserve la numérotation d'origine. Absent (mode démo,
+      vieux appels) : recalculé localement. */
+  nomFichier?: string | null;
+  url: string | null;
+};
 
 /* Le sélecteur de dossier n'est pas typé par lib.dom. On déclare le strict
    nécessaire plutôt que d'élargir Window à `any` : le jour où TypeScript
@@ -133,7 +142,10 @@ export async function ecrireLot(
 
   await ecrireFichier(dossier, NOM_BRIEF, new Blob([brief], { type: "text/plain;charset=utf-8" }));
 
-  const noms = nomsDeFichiers(photos);
+  /* T2-5 — le nom de la route d'abord (numérotation du lot COMPLET, stable
+     sur un lot partiel), le calcul local en repli (mode démo). */
+  const nomsCalcules = nomsDeFichiers(photos);
+  const noms = photos.map((p, i) => p.nomFichier ?? nomsCalcules[i]);
   const ratees: string[] = [];
   let faites = 0;
   let curseur = 0;

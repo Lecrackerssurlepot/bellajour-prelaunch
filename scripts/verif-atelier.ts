@@ -246,6 +246,16 @@ ok("M2 sans pagination : normal, il n'en parle pas", manquePour("M2", d({ nb_pag
 
 /* ═══════════════════════ LE LOT ET LE BRIEF ═══════════════════════ */
 
+titre("— le lot partiel (T2-5) —");
+/* La route calcule les noms sur le lot COMPLET puis filtre : un sous-ensemble
+   garde la numerotation d'origine et COMPLETE le dossier deja telecharge.
+   Nommer apres filtrage renumeroterait a 01- et melangerait tout. */
+const lotComplet = nomsDeFichiers([{ nom: "a.jpg" }, { nom: "b.jpg" }, { nom: "c.jpg" }]);
+ok("nommer PUIS filtrer garde le rang d'origine (03- pour la troisieme)",
+   lotComplet[2] === "03-c.jpg");
+ok("filtrer puis nommer renumeroterait (la preuve du danger)",
+   nomsDeFichiers([{ nom: "c.jpg" }])[0] === "01-c.jpg");
+
 titre("— les noms de fichiers d'un lot —");
 const nomsSimples = nomsDeFichiers([{ nom: "IMG_988.jpg" }, { nom: "IMG_4207.jpg" }]);
 ok("l'ordre du depot est prefixe, pas l'ordre alphabetique",

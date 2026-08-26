@@ -493,6 +493,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     transporteur: ["expediee", "livree"].includes(g.etat) ? "Colissimo" : null,
     trackingUrl: ["expediee", "livree"].includes(g.etat) ? "https://www.laposte.fr/outils/suivre-vos-envois" : null,
     retouchesLe: null,
+    depotInitialJusqua: null,
     apercu: publie
       ? { plat: null, c1: PHOTOS[0], c4: PHOTOS[1], double: PHOTOS[2] }
       : { plat: null, c1: null, c4: null, double: null },
@@ -515,6 +516,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
       id: `demo-${i}`,
       nom: `IMG_${4200 + i}.HEIC`,
       taille: 2_400_000 + i * 130_000,
+      ajouteLe: null,
       url: PHOTOS[i % PHOTOS.length],
     })),
     evenements: evenementsVus,

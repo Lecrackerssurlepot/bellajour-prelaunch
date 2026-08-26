@@ -568,10 +568,10 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
   const [{ data: photos }, { data: evenements }, { data: mails }, notesLues] = await Promise.all([
     supabase
       .from("photos")
-      .select("id, r2_key, nom_origine, taille, ordre")
+      .select("id, r2_key, nom_origine, taille, ordre, created_at")
       .eq("numero_id", id)
       .order("ordre", { ascending: true })
-      .returns<Array<{ id: string; r2_key: string; nom_origine: string | null; taille: number | null }>>(),
+      .returns<Array<{ id: string; r2_key: string; nom_origine: string | null; taille: number | null; created_at: string | null }>>(),
     supabase
       .from("evenements")
       .select("id, type, payload, created_at")
@@ -599,9 +599,27 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
       id: p.id,
       nom: p.nom_origine,
       taille: p.taille,
+      ajouteLe: p.created_at,
       url: await signerGet(p.r2_key).catch(() => null),
     })),
   );
+
+  /* ── T2-5 : où finit le PREMIER dépôt ─────────────────────────────
+     L'événement `consentements` avec consent_photos=true est LE moment où
+     elle a cliqué « Envoyer à l'atelier » : toute photo arrivée APRÈS est
+     un ajout (reprise 1b, complément). Requête dédiée plutôt que la liste
+     d'affichage — celle-ci est triée desc et plafonnée à 200, un vieux
+     dossier bavard aurait pu faire sortir l'événement de la fenêtre. */
+  const { data: finsDepot } = await supabase
+    .from("evenements")
+    .select("payload, created_at")
+    .eq("numero_id", id)
+    .eq("type", "consentements")
+    .order("created_at", { ascending: true })
+    .limit(20)
+    .returns<Array<{ payload: Record<string, unknown>; created_at: string }>>();
+  const depotInitialJusqua =
+    (finsDepot ?? []).find((e) => e.payload?.consent_photos === true)?.created_at ?? null;
 
   const apercu = await resoudreApercu(n.apercu_urls);
   const brut = (n.apercu_urls && typeof n.apercu_urls === "object" ? n.apercu_urls : {}) as Record<string, string>;
@@ -654,6 +672,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     transporteur: (n.transporteur as string) ?? null,
     trackingUrl: (n.tracking_url as string) ?? null,
     retouchesLe: (n.retouches_demandees_le as string) ?? null,
+    depotInitialJusqua,
     apercu,
     apercuBrut: {
       plat: brut.plat ?? null,

@@ -61,8 +61,14 @@ const SLOTS_HISTORIQUE = [
 
 export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: boolean }) {
   const router = useRouter();
+  /* T2-6 — à l'état 2, la seule action est « Corriger l'aperçu » : une
+     correction, pas l'étape suivante. La présélectionner déployait son
+     formulaire en pleine page alors qu'on attend le paiement — le panneau
+     dit d'abord QUI on attend, la correction se déplie derrière un lien. */
   const [choisie, setChoisie] = useState<ActionVue | null>(
-    fiche.actions.length === 1 ? fiche.actions[0] : null,
+    fiche.actions.length === 1 && fiche.actions[0].cle !== "corriger_apercu"
+      ? fiche.actions[0]
+      : null,
   );
   const [saisie, setSaisie] = useState<Record<string, string>>({
     nb_pages: fiche.ligne.nbPages ? String(fiche.ligne.nbPages) : "",
@@ -342,6 +348,30 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
             </button>
           ))}
         </div>
+      ) : null}
+
+      {/* ── T2-6 : l'état 2 attend LE PAIEMENT, pas un geste de l'atelier.
+          Les mots viennent de la même vérité que la page cliente (« c'est à
+          elle ») ; la correction reste à un clic, repliée. */}
+      {!choisie && fiche.actions.length === 1 && fiche.actions[0].cle === "corriger_apercu" ? (
+        <>
+          <p className="ate-attente">On attend son paiement.</p>
+          <p className="ate-faint">
+            Sa page montre la couverture, la pagination et le prix. La relance M3b
+            partira toute seule si elle tarde.
+          </p>
+          <button
+            type="button"
+            className="ate-lien-discret"
+            onClick={() => {
+              setChoisie(fiche.actions[0]);
+              setVerif(null);
+              setErreurs([]);
+            }}
+          >
+            Corriger l&apos;aperçu (visuels ou pagination)
+          </button>
+        </>
       ) : null}
 
       {choisie ? (

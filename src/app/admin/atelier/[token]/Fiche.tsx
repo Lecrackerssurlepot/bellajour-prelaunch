@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import PanneauAction from "./PanneauAction";
 import Parcours from "./Parcours";
@@ -188,6 +188,19 @@ export default function Fiche({
   const base = demo ? "/admin/atelier/demo" : "/admin/atelier";
   const occupe = lot.phase === "prepare" || lot.phase === "ecrit";
 
+  /* ── T2-5 : le premier dépôt et les AJOUTS ────────────────────────
+     Toute photo arrivée après la fin du premier dépôt (l'événement
+     `consentements`, cf. donnees.ts) est un ajout : reprise 1b, complément.
+     Comparaison lexicographique volontaire — deux ISO 8601 UTC s'ordonnent
+     comme des chaînes. */
+  const finDepot = fiche.depotInitialJusqua;
+  const nouvelles = finDepot
+    ? fiche.photos.filter((p) => p.ajouteLe && p.ajouteLe > finDepot)
+    : [];
+  const premiereNouvelle = nouvelles.length
+    ? fiche.photos.findIndex((p) => p.id === nouvelles[0].id)
+    : -1;
+
   /* La loupe ne connaît que ce qui existe, une fois chacun : un visuel
      manquant n'est pas une étape de la visite, et l'objet à plat n'y figure
      qu'une fois même s'il remplit trois cadres. Ses index ne sont donc PAS
@@ -209,12 +222,14 @@ export default function Fiche({
    * En démonstration, les photos sont des images de /public : même origine,
    * aucune signature à refaire, et surtout aucun appel qui toucherait la base.
    */
-  async function liensFrais(): Promise<PhotoLot[]> {
-    if (demo) return fiche.photos;
+  async function liensFrais(ids?: string[]): Promise<PhotoLot[]> {
+    if (demo) return ids ? fiche.photos.filter((p) => ids.includes(p.id)) : fiche.photos;
     const r = await fetch("/api/admin/atelier/lot", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: l.token }),
+      /* T2-5 — `ids` restreint aux nouvelles ; la route calcule les noms
+         sur le lot COMPLET avant de filtrer, la numérotation tient. */
+      body: JSON.stringify({ token: l.token, ...(ids ? { ids } : {}) }),
     });
     if (!r.ok) throw new Error("Les liens du coffre n'ont pas pu être refaits.");
     const d = (await r.json()) as { photos?: PhotoLot[] };
@@ -232,7 +247,7 @@ export default function Fiche({
    * ⚠️ Le sélecteur de dossier s'ouvre AVANT tout `await` : Chrome exige une
    * activation utilisateur fraîche, et un aller-retour réseau la consomme.
    */
-  async function telechargerDossier() {
+  async function telechargerDossier(ids?: string[]) {
     const racine = await choisirDossier();
     if (!racine) return;
 
@@ -240,7 +255,7 @@ export default function Fiche({
     arret.current = ctrl;
     setLot({ phase: "prepare" });
     try {
-      const photos = await liensFrais();
+      const photos = await liensFrais(ids);
       const r = await ecrireLot(racine, {
         prenom: l.prenom,
         titre: l.titre,
@@ -259,10 +274,10 @@ export default function Fiche({
   }
 
   /** Le repli : une liste nue de liens, pour `curl`. */
-  async function telechargerListe() {
+  async function telechargerListe(ids?: string[]) {
     setLot({ phase: "prepare" });
     try {
-      const photos = await liensFrais();
+      const photos = await liensFrais(ids);
       const fichier = `photos-${l.token.slice(0, 8)}.txt`;
       telechargerTexte(fichier, listeDesLiens(photos));
       setLot({ phase: "repli", fichier });
@@ -401,11 +416,28 @@ export default function Fiche({
                   >
                     Le brief
                   </button>
+                  {/* T2-5 — après un ajout, on ne veut souvent QUE les
+                      nouvelles : même mécanique, filtrée, et la numérotation
+                      reste celle du lot complet (la route y veille). */}
+                  {nouvelles.length > 0 && nouvelles.length < fiche.photos.length ? (
+                    <button
+                      className="adm-btn adm-btn--ghost"
+                      type="button"
+                      disabled={occupe}
+                      onClick={() => {
+                        const ids = nouvelles.map((p) => p.id);
+                        if (ecritDirect) telechargerDossier(ids);
+                        else telechargerListe(ids);
+                      }}
+                    >
+                      Les {nouvelles.length} nouvelles
+                    </button>
+                  ) : null}
                   <button
                     className="adm-btn"
                     type="button"
                     disabled={occupe}
-                    onClick={ecritDirect ? telechargerDossier : telechargerListe}
+                    onClick={() => (ecritDirect ? telechargerDossier() : telechargerListe())}
                   >
                     {ecritDirect ? "Télécharger le lot" : "Télécharger les liens"}
                   </button>
@@ -473,22 +505,32 @@ export default function Fiche({
               <p className="ate-faint">Aucune photo déposée.</p>
             ) : (
               <div className="ate-photos">
-                {(toutesLesPhotos ? fiche.photos : fiche.photos.slice(0, VIGNETTES_VISIBLES)).map((p) => (
-                  <a
-                    key={p.id}
-                    className="ate-photo"
-                    href={p.url ?? "#"}
-                    target="_blank"
-                    rel="noreferrer"
-                    title={`${p.nom ?? ""} ${poids(p.taille)}`}
-                  >
-                    {p.url ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={p.url} alt="" loading="lazy" />
-                    ) : (
-                      <span className="ate-photo-vide">?</span>
-                    )}
-                  </a>
+                {(toutesLesPhotos ? fiche.photos : fiche.photos.slice(0, VIGNETTES_VISIBLES)).map((p, i) => (
+                  <Fragment key={p.id}>
+                    {/* T2-5 — le filet qui sépare le premier dépôt des
+                        ajouts. Grille triée par ordre de dépôt : les ajouts
+                        arrivent après, un seul filet suffit. */}
+                    {i === premiereNouvelle && i > 0 && p.ajouteLe ? (
+                      <span className="ate-photos-filet">
+                        Ajoutées le{" "}
+                        {new Date(p.ajouteLe).toLocaleDateString("fr-FR", { day: "2-digit", month: "long" })}
+                      </span>
+                    ) : null}
+                    <a
+                      className="ate-photo"
+                      href={p.url ?? "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={`${p.nom ?? ""} ${poids(p.taille)}`}
+                    >
+                      {p.url ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={p.url} alt="" loading="lazy" />
+                      ) : (
+                        <span className="ate-photo-vide">?</span>
+                      )}
+                    </a>
+                  </Fragment>
                 ))}
               </div>
             )}
