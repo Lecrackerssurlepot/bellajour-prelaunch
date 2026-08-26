@@ -1,24 +1,39 @@
 # L'Atelier — ce qui reste à faire
 
-Mis à jour le 26/08/2026 au matin, à la clôture de la séance de correction.
+Mis à jour le 26/08/2026 au soir, à la clôture du lot des retours T2.
 Ce document est le point de reprise : il suppose qu'on ne se souvient de rien.
 
 ---
 
 ## Où on en est, en trois phrases
 
-Les corrections de recette sont **fusionnées dans `main` et en production**
-depuis le 26/08 au matin. La recette « Test 2 » a prouvé le parcours de bout
-en bout sur la preview : dépôt → 1b et retour → aperçu → **paiement test →
-webhook → M4** → maquette → validation → production, avec M1, M9, M3, M4, M5
-et M6 partis au bon moment. Restent JAMAIS testés en vrai : **M7 (expédiée),
-M8 (J+3 après livraison) et l'auto-validation à J+7** — le dossier « Test 2 »
-est resté en état 6, il suffit de le pousser jusqu'au bout pour les couvrir.
+**Les treize retours T2-1 → T2-13 sont FAITS, fusionnés dans `main` et
+déployés** (production + preview) le 26/08 au soir, en sept commits (moteur
+T2-13, routes et écrans T2-13, couverture à plat, mails M9/M3, parcours
+cliente, /numero états 2-3, admin). Migration `20260828` appliquée
+(`retouches_demandees_le` + `facture_url` sur `numeros`). Les templates
+Brevo ont été repoussés (M3 refondu, M9 avec l'encart MOT, M5 avec la
+nouvelle note) et `verif-mails-brevo` ne signale aucun trou.
 
-**Le prochain lot est tout trouvé : les retours T2-1 à T2-13** (section
-« Retours de la recette Test 2 » ci-dessous), chacun avec sa solution
-proposée. Le plus structurant est T2-13 — le bouton « j'ai demandé des
-retouches » qui doit suspendre l'auto-validation.
+**L'auto-validation à J+7 est PROUVÉE sur la preview** (dossier « Test auto
+J7 » : M5 → vieilli 8 j → `validee` par la relève, journal
+`releve_j7`, M6 au balayage suivant), **et sa suspension T2-13 aussi**
+(« Test retouches » : clic du vrai bouton cliente → refus du levier `auto`,
+relève muette sur un dossier de 8 j ; republication → M5 repart avec la
+nouvelle échéance → l'auto-validation repasse). La relève de PRODUCTION
+répond comme le cron l'appelle (404 non signé, 200 + résumé en Bearer) et
+`CRON_SECRET` est posé.
+
+**Reste UNE preuve : le remboursement.** Le connecteur Stripe de Claude
+était invalidé et la clé du sandbox (`acct_1Tg326…`) est marquée
+« sensitive » chez Vercel : personne n'a pu déclencher le refund test sur
+le paiement de « Test 2 » (`pi_3U8cOuKtRuvOSF410Nen0ojb`). Un clic
+« Rembourser » dans le dashboard Stripe SANDBOX suffit — puis vérifier dans
+`evenements` de Test 2 : une ligne `remboursement`
+(`a_verifier_a_la_main: true`) et AUCUN changement d'état. À voir aussi à
+la prochaine recette : le clic « Publier la maquette » depuis l'état 4
+(la republication après retouches — le moteur est prouvé, l'écran pas
+encore cliqué).
 
 ### ⚠️ Si un paiement ou un mail ne remonte pas, TESTER CECI D'ABORD
 
@@ -64,10 +79,18 @@ attendus.
 
 ## Ce qui n'a pas encore été vu
 
-La recette Test 2 a couvert le back-office et le dépôt réel — les deux angles
-morts de la veille sont levés. Ce qui reste sans preuve : M7, M8,
-l'auto-validation, et le remboursement (`charge.refunded` atelier, journalisé
-sans transition).
+Mis à jour le 26/08 au soir : M7 et M8 ont été couverts par la recette
+Cloudprinter, l'auto-validation et sa suspension sont prouvées (voir en
+tête). Reste sans preuve : **le remboursement** (`charge.refunded` atelier,
+journalisé sans transition) — un clic Rembourser au dashboard sandbox — et
+le clic « Publier la maquette » depuis l'état 4 (republication après
+retouches, moteur prouvé, écran pas encore cliqué).
+
+⚠️ Ménage en attente : les 4 dossiers « Test… » + « Essai M2b » (qui
+échappe à `nettoyer` : son `created_at` a été reculé de 26 h par le levier
+M2b ET son titre ne commence pas par « test »). Les dossiers « Notre
+histoire », « joelle » et les trois « (sans titre) » ressemblent à de vrais
+prospects : ne JAMAIS les passer dans un `nettoyer --depuis`.
 
 ---
 
@@ -295,11 +318,37 @@ LIEN, NB_PHOTOS, PRENOM, TITRE.
 
 ---
 
-## Retours de la recette « Test 2 » du 26/08 — avec les solutions proposées
+## Retours de la recette « Test 2 » du 26/08 — ✅ TOUS FAITS le 26/08 au soir
 
-Huit retours de Mathias, consignés pendant la séance. Ce qui marche a été dit
-aussi : le téléchargement du lot, la fluidité de l'admin, la reprise du dépôt
-depuis le mail. Les retours, par ordre du parcours :
+Les treize sont implémentés tels que proposés (avec les décisions de
+Mathias : T2-2 = remplacement complet des deux cadres par la couverture à
+plat, migration douce pour l'existant ; T2-7 = bloc typographique sans
+image). Ce qu'il faut retenir au-delà du texte d'origine, conservé
+ci-dessous :
+
+- **T2-13** : `retouches_demandees_le` (migration 20260828) est LE signal.
+  `doitAutoValider` refuse tant qu'elle est posée ; `urgencePour` a l'option
+  `retouches` (pile À FAIRE, rang 1000-age, devant les à-faire confortables) ;
+  `publier_maquette` accepte l'état 4 et sa `preparerTransition` remet la
+  colonne à null ; la ROUTE lève le verrou M5 (journal `mail_reouvert`)
+  seulement si des retouches étaient posées — une republication de confort ne
+  renvoie rien. Le PATCH cliente est une branche dédiée, atomique et
+  idempotente (`.is(null)`), journal `retouches_demandees`.
+- **T2-2** : `apercu_urls` = `{plat, double}` pour les nouvelles
+  publications ; les dossiers `{c1, c4, double}` rendent comme avant, et le
+  formulaire ne montre le trio historique QUE pour les corriger. Découpe
+  CSS (`object-position`), la loupe montre l'objet entier avec des légendes
+  UNIQUES (elle navigue par légende).
+- **T2-3** : le MOT vit dans `Preparation.params`, jamais en base ; s'il
+  faut que la relève rattrape un échec Brevo, M9 repart SANS le mot
+  (accepté, la trace est dans le journal `etat_change`).
+- **T2-5** : les noms d'un lot partiel sont calculés sur le lot COMPLET puis
+  filtrés — un sous-ensemble complète le dossier téléchargé au lieu de le
+  renuméroter.
+- **T2-11** : `facture_url` est capté best-effort au webhook ; facture pas
+  encore finalisée = pas de lien, jamais de blocage.
+
+Le texte d'origine des retours, pour mémoire :
 
 **T2-1. L'écran « C'est fait » a trop de texte, et la case reste peu claire.**
 La page devrait juste dire que l'atelier s'en occupe.
