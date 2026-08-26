@@ -53,7 +53,8 @@ export type CodeMail =
 /** Les colonnes de `numeros` que tout envoi doit avoir sous la main. */
 export const CHAMPS_MAIL =
   "id, token, etat, titre, prenom, email, nb_photos, nb_pages, palier, apercu_urls, " +
-  "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, stripe_payment_intent";
+  "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, stripe_payment_intent, " +
+  "retouches_demandees_le";
 
 export type NumeroPourMail = {
   id: string;
@@ -76,6 +77,7 @@ export type NumeroPourReleve = NumeroPourMail & {
   transporteur: string | null;
   tracking_url: string | null;
   stripe_payment_intent: string | null;
+  retouches_demandees_le: string | null;
 };
 
 export type Resultat =
@@ -489,6 +491,12 @@ export function codesPour(
  * ait rien vu — et l'échéance annoncée dans M5 est justement celle-ci.
  */
 export function doitAutoValider(n: NumeroPourReleve, envoyes: Envoyes, maintenant: Date): boolean {
+  /* T2-13 : elle a dit « j'ai noté des retouches dans le Canva ». Imprimer
+     d'office par-dessus des demandes de correction serait exactement le
+     silence qui coûte : l'échéance est SUSPENDUE tant que l'atelier n'a pas
+     republié la maquette (la republication remet ce champ à null et fait
+     repartir etat_maj_le, donc les 7 jours). */
+  if (n.retouches_demandees_le) return false;
   if (n.etat !== "maquette_prete" || !envoyes.has("M5") || !n.etat_maj_le) return false;
   return maintenant.getTime() - Date.parse(n.etat_maj_le) >= JOURS_AVANT_AUTO_VALIDATION * JOUR;
 }

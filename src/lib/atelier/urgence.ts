@@ -181,18 +181,41 @@ function formaterDuree(heures: number): string {
  * et le compteur cesserait d'être cru. Pire, il ferait courir un compte à
  * rebours de 48 h contre une promesse que personne n'a faite à la cliente.
  * Il part chez elle, quel que soit son âge.
+ *
+ * `retouches` (T2-13) : à l'état 4, elle a cliqué « j'ai noté des retouches
+ * dans le Canva ». La balle CHANGE de camp : ce n'est plus « chez la
+ * cliente », c'est une cliente qui attend une réponse de l'atelier. Le
+ * dossier remonte donc dans « à faire », et l'auto-validation à J+7 est
+ * suspendue (doitAutoValider, mails.ts) tant que la maquette n'est pas
+ * republiée.
  */
 export function urgencePour(
   etat: Etat,
   etatMajLe: string | null,
   maintenant: Date,
-  options: { depot?: EtapeDepot } = {}
+  options: { depot?: EtapeDepot; retouches?: boolean } = {}
 ): Urgence {
   const depuis = etatMajLe ? new Date(etatMajLe) : null;
   const age =
     depuis && !Number.isNaN(depuis.getTime())
       ? (maintenant.getTime() - depuis.getTime()) / 3_600_000
       : 0;
+
+  if (options.retouches) {
+    return {
+      pile: "a_faire",
+      age,
+      reste: null,
+      echeance: null,
+      promesse: null,
+      libelle: `retouches demandées depuis ${formaterDuree(age)}`,
+      /* Devant les à-faire au compte à rebours confortable (rangés à
+         1000 + reste), derrière les retards : une cliente qui attend une
+         réponse passe avant un dossier qui a encore deux jours de marge.
+         Triées entre elles du plus ancien au plus récent. */
+      rang: 1000 - age,
+    };
+  }
 
   if (options.depot && options.depot !== "termine") {
     return {

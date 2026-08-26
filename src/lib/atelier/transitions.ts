@@ -162,14 +162,19 @@ export const ACTIONS: Record<ActionCle, Action> = {
     note: "Ses photos déjà déposées sont conservées.",
   },
 
+  /* Depuis « payee » : la première publication. Depuis « maquette_prete » :
+     la REpublication après des retouches (T2-13) — même écran, même saisie,
+     et l'échéance d'auto-validation repart de zéro puisque `etat_maj_le` est
+     réécrit par la route. La suspension posée par « j'ai demandé des
+     retouches » est levée dans le patch, ici même (module pur). */
   publier_maquette: {
     cle: "publier_maquette",
     libelle: "Publier la maquette",
     explication:
       "Elle découvre le numéro complet et le bouton « Tout est bon, imprimez ». Rien ne part à l'impression avant.",
-    de: ["payee"],
+    de: ["payee", "maquette_prete"],
     vers: "maquette_prete",
-    note: "L'échéance d'auto-validation à J+7 part de maintenant.",
+    note: "L'échéance d'auto-validation à J+7 part de maintenant. Republier après des retouches lève leur suspension.",
   },
 
   envoyer_impression: {
@@ -326,6 +331,11 @@ export function preparerTransition(
     } else if (pdf) {
       patch.maquette_pdf_url = pdf;
     }
+
+    /* T2-13 : publier (ou republier) la maquette lève la suspension posée
+       par « j'ai demandé des retouches ». L'échéance J+7 repart avec le
+       `etat_maj_le` que la route ajoute au patch. */
+    patch.retouches_demandees_le = null;
   }
 
   if (cle === "envoyer_impression") {
