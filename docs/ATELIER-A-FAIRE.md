@@ -1,24 +1,69 @@
 # L'Atelier — ce qui reste à faire
 
-Écrit le 25/08/2026, à la clôture de la séance de recette. Ce document est le
-point de reprise : il suppose qu'on ne se souvient de rien.
+Mis à jour le 26/08/2026 au matin, à la clôture de la séance de correction.
+Ce document est le point de reprise : il suppose qu'on ne se souvient de rien.
 
 ---
 
-## Où on en est
+## Où on en est, en trois phrases
 
-Le lot 7 du PRD est **en production** (merge `bf40c9d` puis correctifs).
-`/admin/atelier` remplace l'UPDATE SQL, les neuf mails du PRD §10 existent,
-la relève quotidienne est déclarée et armée.
+Le lot 7 est en production depuis le 25/08. Douze commits de corrections sont
+sur la branche **`chantier/atelier`** (donc sur la preview), **pas en
+production** : `main` s'arrête à `f856f50`, c'est-à-dire l'état d'avant ces
+corrections. La prochaine étape est une recette complète sur la preview,
+paiement de test compris, puis la fusion dans `main`.
 
-**La base de l'atelier a été vidée le 25/08** à la demande de Mathias : tous
-les dossiers étaient des tests. `numeros`, `photos`, `evenements`,
-`mails_envoyes`, `notes`, `dossiers_vus` sont à zéro. La prévente est intacte
-(48 inscrits, 21 crédits, 16 factures) et n'a jamais été touchée.
+### ⛔ LE BLOCAGE À LEVER AVANT TOUTE RECETTE
 
-**Conséquence** : les métriques repartent de zéro, et **734 photos sont
-orphelines dans le coffre R2** — plus aucune ligne ne les référence. À purger
-à froid.
+**La preview répond 403 à tout ce qui n'est pas un navigateur.** En-tête
+`x-vercel-mitigated: challenge` — c'est le pare-feu de Vercel (« Security
+Checkpoint ») qui sert une page de défi JavaScript.
+
+Un navigateur passe sans s'en apercevoir. **Stripe, non.** Conséquence directe
+sur une recette de bout en bout : le paiement de test réussira chez Stripe,
+mais l'événement `checkout.session.completed` recevra un 403, le numéro restera
+en état 2, M4 ne partira pas, et le parcours s'arrêtera là — sans rien dans les
+journaux qui l'explique.
+
+→ **Vercel → le projet → Firewall → couper « Attack Challenge Mode »** (ou la
+règle qui met en défi), puis revérifier :
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+  https://bellajour-prelaunch-git-cha-a10ca9-lecrackerssurlepots-projects.vercel.app/api/webhook
+```
+
+**400 = bon** (la route répond, elle refuse une requête sans signature).
+**403 = le défi est toujours là.**
+
+⚠️ Le point d'écoute Stripe du sandbox (`acct_1Tg326KtRuvOSF41`) pointe bien
+sur cette preview et écoute les trois événements attendus (`completed`,
+`expired`, `charge.refunded`) — vérifié le 26/08. Le problème n'est pas le
+routage, c'est le pare-feu.
+
+⚠️ Si le paiement a déjà été fait avant de lever le blocage : Stripe réessaie
+pendant trois jours, et le tableau de bord permet de renvoyer l'événement à la
+main (Developers → Webhooks → l'événement → *Resend*).
+
+⚠️ `scripts/recette.mjs relever --sur=preview` est bloqué par la même cause.
+
+---
+
+## Ce qui n'a JAMAIS été vérifié à l'écran
+
+À dire franchement à qui reprend : deux pans entiers n'ont pas été vus.
+
+**Tout le back-office.** `/admin/atelier` demande un mot de passe, et l'agent
+qui a écrit ces corrections n'en saisit pas. La liste, la fiche, le bandeau du
+dépôt non terminé, le bouton « Je m'en occupe », le rafraîchissement
+automatique, les silhouettes de chargement, la loupe de l'aperçu, le
+téléchargement du lot : tout cela compile, passe tsc, eslint et les 81
+assertions, mais **personne ne l'a regardé**.
+
+**Le dépôt réel avec de vraies photos.** L'injection de fichiers ne passe pas
+dans un navigateur piloté. La grille repliée, la case « + 49 » et la barre
+d'envoi ont été vérifiées sur une grille simulée et mesurées au pixel, mais le
+composant React n'a jamais tourné avec un vrai lot.
 
 ---
 
@@ -47,7 +92,7 @@ débogage.
 
 **La grille de photos** se replie à douze vignettes.
 
-### ✅ Fait le 26/08 — le lot de photos et le brief
+### ✅ Fait le 25/08 — le lot de photos et le brief
 
 **Télécharger le lot descend les VRAIES photos.** C'était le plus bloquant.
 Sur Chrome et Edge, `showDirectoryPicker()` : l'éditeur désigne un dossier une
@@ -95,7 +140,7 @@ vraiment. À décider en regardant travailler, pas en réunion.
 ⚠️ « Copier les liens » a disparu. Il ne servait qu'à coller dans un terminal,
 ce que le `.txt` fait mieux maintenant.
 
-### ✅ Fait le 26/08 — voir les visuels en grand, et savoir ce qu'on regarde
+### ✅ Fait le 25/08 — voir les visuels en grand, et savoir ce qu'on regarde
 
 **La page de la cliente ne nommait pas ce qu'elle montrait.** La légende
 n'existait QUE sur le cadre vide : dès qu'il y avait une image, plus un mot.
@@ -120,7 +165,7 @@ nommer pareil, sinon le téléphone avec la cliente devient une traduction.
 l'affichage, pour montrer une couverture qu'on retourne. C'est un vrai chantier
 (dépôt, stockage et rendu), à cadrer sur une maquette avant d'écrire une ligne.
 
-### ✅ Fait le 26/08 — le dépôt qui n'en était pas un
+### ✅ Fait le 25/08 — le dépôt qui n'en était pas un
 
 Signalé par Mathias : « j'ai reçu une demande d'un test, mais je n'ai pas validé
 à la fin les photos ». Le dossier « joelle » : 55 photos dans le coffre,
@@ -161,7 +206,7 @@ puis coller l'ID rendu dans `.env.local` et dans Vercel (Preview + Production).
 ⚠️ Le dossier « joelle » est TOUJOURS dans cet état en base. Une fois M2b armé,
 la relève du lendemain le relancera toute seule.
 
-### ✅ Fait le 26/08 — la fluidité et le relais
+### ✅ Fait le 25/08 — la fluidité et le relais
 
 **Les visuels se nomment et s'ouvrent en grand**, des deux côtés. « C1 » et
 « C4 » ont quitté l'admin : la fiche emploie les mots que la cliente lit sur sa
@@ -191,7 +236,7 @@ que si un mail EST DÛ maintenant. Et elle comptait des « dossiers oubliés » 
 
 ---
 
-### ✅ Fait le 25/08 au soir — la cause, pas le symptôme
+### ✅ Fait le 25/08 en soirée — la cause, pas le symptôme
 
 Remarque de Mathias après avoir reçu M2b : **« c'est plus important que juste
 mettre un mail. Sinon tout le monde va recevoir ce mail. »** Il a raison. M2b
@@ -225,7 +270,7 @@ Mesuré, pas supposé. Corrigé en `height`, et scopé à `(pointer: fine)` pour
 
 ---
 
-### ✅ Fait le 25/08 au soir — les deux gestes manuels
+### ✅ Fait le 25/08 en soirée — les deux gestes manuels
 
 **La migration `20260826_atelier_en_charge.sql` est passée** sur
 `lxkivqbcegursmxshmoc`. Vérifié : la colonne se lit, les trois dossiers sont à
@@ -295,15 +340,43 @@ dans la machine à états (`envoyer_impression`).
 
 ## Pour reprendre
 
-**Tester** : sur la preview, jamais en production pour l'étape paiement —
-Stripe y est en mode réel.
+### La recette complète, dans l'ordre
+
+**Toujours sur la preview. JAMAIS sur bellajour.fr — Stripe y est en mode réel.**
 
 ```
 https://bellajour-prelaunch-git-cha-a10ca9-lecrackerssurlepots-projects.vercel.app
 ```
 
-Carte de test : `4242 4242 4242 4242`. La feuille de route complète du parcours
-est dans [`RECETTE-PARCOURS.md`](./RECETTE-PARCOURS.md).
+0. Lever le blocage du pare-feu (voir tout en haut). Sans ça, le paiement ne
+   remontera jamais.
+1. `/composer` — le questionnaire, puis **au moins 40 photos**. Regarder si les
+   cinq grandes vignettes et la case « + X » donnent envie, et surtout si le
+   bouton « Envoyer à l'atelier » est évident sans qu'on le montre.
+2. Fermer l'onglet AVANT d'envoyer, une fois, pour voir la demande de
+   confirmation. Rouvrir, envoyer.
+3. Vérifier M1 dans la boîte, et la page `/numero/<token>`.
+4. `/admin/atelier` — le dossier doit être en « à faire ». Prendre le dossier
+   en main, télécharger le lot, lire le `00-BRIEF.txt`.
+5. Publier l'aperçu (trois visuels + une pagination). M3 part.
+6. Sur sa page : les trois visuels nommés, la loupe, les deux cases, puis
+   **payer avec `4242 4242 4242 4242`**.
+7. C'est ICI que le pare-feu se venge s'il n'a pas été coupé : le numéro doit
+   passer en « payée » et M4 doit partir.
+8. Publier la maquette (M5), valider côté cliente (M6), envoyer à l'impression,
+   marquer expédiée (M7), marquer livrée.
+9. Les mails à retardement se forcent : `pousser "<titre>" M3b`, `M8`, `auto`.
+
+La feuille de route détaillée est dans [`RECETTE-PARCOURS.md`](./RECETTE-PARCOURS.md).
+
+### Le ménage après
+
+```bash
+node scripts/recette.mjs nettoyer --depuis=2026-08-26
+```
+
+⚠️ Un dossier de test traîne déjà : **« Essai M2b »**, créé le 25/08 à 18h17
+pour prouver le mail M2b. Un dépôt volontairement resté en plan, une photo.
 
 **Les commandes utiles** :
 

@@ -129,6 +129,17 @@ pages_credits  — crédits de parrainage
   filleul_email, status [pending|confirmed|applied], created_at, applique
 admin_last_seen  — singleton interne (timestamp "dernière visite" du dashboard /admin)
 
+## ⛔ La preview met les machines en défi (constaté le 26/08/2026)
+`bellajour-prelaunch-git-cha-a10ca9-…vercel.app` répond **403** à tout client qui n'est
+pas un navigateur — en-tête `x-vercel-mitigated: challenge`, pare-feu Vercel.
+Un navigateur passe sans le voir ; **Stripe et `scripts/recette.mjs` non**.
+Effet sur une recette : le paiement de test réussit, `checkout.session.completed` prend un
+403, le numéro reste en état 2 et M4 ne part jamais — sans trace explicative.
+→ Vercel → Firewall → couper le défi, puis `curl -X POST …/api/webhook` doit rendre **400**
+(la route répond et refuse une requête non signée), jamais 403.
+Le point d'écoute du sandbox `acct_1Tg326KtRuvOSF41` vise bien cette preview et les trois
+bons événements : le problème n'est pas le routage (contrairement au 24/08), c'est le pare-feu.
+
 ## L'Atelier — le back-office (lot 7, en production depuis le 25/08/2026)
 `/admin/atelier` remplace l'UPDATE SQL par cliente. Liste triée par urgence, fiche avec la
 frise des 8 jalons, actions armées en deux temps, carnet de l'éditeur, page santé, métriques.
