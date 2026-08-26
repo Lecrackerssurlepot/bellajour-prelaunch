@@ -181,6 +181,34 @@ elle pose ses propres couleurs sur `.bj-loupe`, sans emprunter aux tokens de l'u
 l'autre. On y navigue entre les visuels. Le vocabulaire est le MÊME des deux côtés
 (« La couverture », « La quatrième », « Une double page ») — plus de C1/C4.
 
+### Les retouches suspendent l'auto-validation (26/08/2026, T2-13)
+`numeros.retouches_demandees_le` (migration 20260828) est LE signal du troisième
+geste de l'état 4 : « J'ai noté des retouches dans le Canva » (bouton cliente,
+PATCH dédié atomique et idempotent, journal `retouches_demandees`).
+- `doitAutoValider` (mails.ts) refuse tant que la colonne est posée — imprimer
+  d'office par-dessus des demandes de correction est le silence qui coûte.
+- `urgencePour(..., { retouches })` : pile À FAIRE, rang `1000 - age` (devant
+  les à-faire au compte à rebours confortable). La page cliente bascule le
+  camp en « C'est à nous » — même vérité des deux côtés.
+- La reprise = REPUBLIER la maquette (`publier_maquette` accepte l'état 4) :
+  le patch PUR remet la colonne à null, `etat_maj_le` repart, et la ROUTE lève
+  le verrou M5 (journal `mail_reouvert`) SEULEMENT si des retouches étaient
+  posées — une republication de confort ne renvoie rien.
+- PROUVÉ le 26/08 sur la preview : suspension (levier `auto` refuse, relève
+  muette à 8 j) ET reprise (M5 repart avec la nouvelle échéance, puis
+  l'auto-validation passe). L'auto-validation nominale aussi (journal
+  `releve_j7`, M6 au balayage suivant).
+
+### L'aperçu à plat (26/08/2026, T2-2)
+Les nouvelles publications déposent UN fichier « couverture à plat »
+(C4 | dos | C1, l'export naturel de Canva) + la double page :
+`apercu_urls = {plat, double}`. Les dossiers historiques `{c1, c4, double}`
+rendent comme avant (migration douce, `resoudreApercu`), et le formulaire ne
+montre le trio QUE pour les corriger. L'affichage découpe en CSS
+(`object-position`), AUCUNE retouche d'image serveur ; la loupe montre l'objet
+entier, avec des légendes UNIQUES (elle navigue par légende — deux légendes
+égales rendent un visuel inatteignable).
+
 ### La page cliente dit de QUI c'est le tour (26/08/2026)
 Une ligne sous le fil des jalons, lue depuis `QUI_ATTEND` (urgence.ts) — la même table que
 l'atelier utilise pour trier sa journée. Les deux écrans ne peuvent donc pas se contredire.
