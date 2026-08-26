@@ -267,27 +267,36 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "internal" }, { status: 500 });
       }
 
-      const commande = await creerCommande(
+      const corpsPour = (reference: string) =>
         payloadCommande({
           /* La référence est NOTRE id (jamais le token, qui est le lien
              magique de la cliente). Son unicité chez Cloudprinter est le
              verrou distant contre le double-envoi. */
-          reference: numero.id,
+          reference,
           emailContact: EMAIL_CONTACT,
           adresse: adr.adresse,
           produit: produitPour(numero.nb_pages)!,
           pages: numero.nb_pages!,
           fichiers: fichiersSignes,
           titre: numero.titre,
-        }),
-      );
+        });
+
+      let commande = await creerCommande(corpsPour(numero.id));
 
       if (!commande.ok && commande.code === "reference_existante") {
-        /* Deux clics en course : la commande existe déjà chez eux. On va
-           chercher son identifiant et on poursuit — rien n'est dupliqué. */
+        /* La référence a déjà servi. Deux histoires possibles :
+           — la commande est VIVANTE : deux clics en course, on adopte son
+             numéro et rien n'est dupliqué ;
+           — elle est ANNULÉE (fichiers refusés puis orders/cancel, vécu le
+             26/08) : une référence ne se réutilise jamais chez eux, on
+             recommande sous une référence dérivée, unique à cet essai. */
         const info = await infoCommande(numero.id);
-        if (info.ok) orderIdCommande = info.orderId;
-        else {
+        if (info.ok && /cancel/i.test(String(info.corps.state_code ?? ""))) {
+          const referenceBis = `${numero.id}-r${Date.now().toString(36)}`;
+          commande = await creerCommande(corpsPour(referenceBis));
+        } else if (info.ok) {
+          orderIdCommande = info.orderId;
+        } else {
           await logEvenement(supabase, numero.id, "cloudprinter_echec", {
             etape: "orders/info", message: info.message,
           });
@@ -296,7 +305,11 @@ export async function POST(request: Request) {
             { status: 502 },
           );
         }
-      } else if (!commande.ok) {
+      }
+
+      if (commande.ok) {
+        orderIdCommande = commande.orderId;
+      } else if (!orderIdCommande) {
         await logEvenement(supabase, numero.id, "cloudprinter_echec", {
           etape: "orders/add", code: commande.code, message: commande.message,
         });
@@ -304,8 +317,6 @@ export async function POST(request: Request) {
           { error: "cloudprinter", message: `Cloudprinter a refusé la commande : ${commande.message}` },
           { status: 502 },
         );
-      } else {
-        orderIdCommande = commande.orderId;
       }
 
       prepa.patch.cloudprinter_order_id = orderIdCommande;
