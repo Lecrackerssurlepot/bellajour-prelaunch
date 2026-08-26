@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ActionVue, Fiche } from "../types";
+import { SLOTS_IMPRESSION } from "@/lib/atelier/impression";
 
 /**
  * L'action du moment — le geste que ce lot remplace.
@@ -25,6 +26,16 @@ type Verif = {
   action: { cle: string; libelle: string; vers: string; note?: string };
   resume: { nbPages?: number; palier?: string; euros?: number };
   destinataire: { prenom: string | null; email: string | null; titre: string | null };
+  /* Le récap d'impression, calculé par le serveur (jamais ici) : ce qui va
+     réellement partir chez Cloudprinter au clic suivant. */
+  impression?: {
+    modeManuel: boolean;
+    produit: string | null;
+    produitLibelle: string | null;
+    shippingLevel: string;
+    fichiers: Array<{ type: string; cle: string; taille: number; md5: string }>;
+    adresse: { nom: string; ville: string; pays: string } | null;
+  };
 };
 
 type Erreur = { champ: string; message: string };
@@ -47,6 +58,9 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
     apercu_double: fiche.apercuBrut.double ?? "",
     canva_url: fiche.canvaUrl ?? "",
     maquette_pdf_url: fiche.maquettePdfUrl ?? "",
+    pdf_produit: fiche.impressionFichiers.product ?? "",
+    pdf_couverture: fiche.impressionFichiers.cover ?? "",
+    pdf_interieur: fiche.impressionFichiers.book ?? "",
     transporteur: fiche.transporteur ?? "",
     tracking_url: fiche.trackingUrl ?? "",
   });
@@ -56,6 +70,16 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
     apercu_double: fiche.apercu.double ?? "",
   });
   const [envoiEnCours, setEnvoiEnCours] = useState<string | null>(null);
+  /* Les noms lisibles des PDF d'impression déposés — une clé de coffre seule
+     ne dit rien à l'écran. Préremplis depuis la fiche si un dépôt a eu lieu. */
+  const [pdfNoms, setPdfNoms] = useState<Record<string, string>>(() => {
+    const noms: Record<string, string> = {};
+    for (const s of SLOTS_IMPRESSION) {
+      const cle = fiche.impressionFichiers[s.type];
+      if (cle) noms[s.cle] = cle.split("/").pop() ?? cle;
+    }
+    return noms;
+  });
   const [erreurs, setErreurs] = useState<Erreur[]>([]);
   const [verif, setVerif] = useState<Verif | null>(null);
   const [occupe, setOccupe] = useState(false);
@@ -124,6 +148,54 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
     }
   }
 
+  /* ── le dépôt du PDF print-ready ───────────────────────────────────
+     Même mécanique que les visuels, autre route : PDF seulement, plafond
+     dédié, et l'envoi DOIT rester un seul PUT — l'empreinte md5 qui part
+     chez Cloudprinter est l'ETag de cet objet. */
+  async function televerserPdf(champ: string, slot: string, file: File) {
+    setEnvoiEnCours(champ);
+    setErreurs((e) => e.filter((x) => x.champ !== champ));
+    try {
+      const r = await fetch("/api/admin/atelier/impression/presign", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          token: fiche.ligne.token,
+          slot,
+          nom: file.name,
+          type: file.type,
+          taille: file.size,
+        }),
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        const messages: Record<string, string> = {
+          format_refuse: "PDF uniquement.",
+          taille_refusee: "Fichier trop lourd (200 Mo maximum).",
+        };
+        setErreurs((e) => [...e, { champ, message: messages[data?.error] ?? "Envoi impossible." }]);
+        return;
+      }
+
+      const put = await fetch(data.url, {
+        method: "PUT",
+        headers: { "content-type": data.contentType },
+        body: file,
+      });
+      if (!put.ok) {
+        setErreurs((e) => [...e, { champ, message: "Le coffre a refusé le fichier." }]);
+        return;
+      }
+
+      set(champ, data.key);
+      setPdfNoms((n) => ({ ...n, [champ]: `${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} Mo)` }));
+    } catch {
+      setErreurs((e) => [...e, { champ, message: "Envoi interrompu. Réessaie." }]);
+    } finally {
+      setEnvoiEnCours(null);
+    }
+  }
+
   async function appeler(verifier: boolean) {
     if (!choisie) return;
     if (demo) {
@@ -163,12 +235,24 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
         return;
       }
       if (r.status === 409) {
-        setFait("Le dossier a changé pendant que tu remplissais. La page se recharge.");
+        setFait(
+          data?.error === "deja_commande"
+            ? `La commande d'impression est déjà passée (nº ${data.orderId}). La page se recharge.`
+            : "Le dossier a changé pendant que tu remplissais. La page se recharge.",
+        );
         router.refresh();
         return;
       }
       if (!r.ok) {
-        setErreurs([{ champ: "action", message: "L'opération a échoué. Rien n'a été écrit." }]);
+        setErreurs([
+          {
+            champ: "action",
+            message:
+              data?.error === "cloudprinter" && data?.message
+                ? `${data.message} Rien n'a été écrit.`
+                : "L'opération a échoué. Rien n'a été écrit.",
+          },
+        ]);
         return;
       }
 
@@ -330,6 +414,64 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
             </>
           ) : null}
 
+          {choisie.cle === "envoyer_impression" ? (
+            fiche.cloudprinterOrderId ? (
+              /* Jamais deux commandes : si le numéro en porte déjà une, le
+                 bouton disparaît et l'écran dit laquelle. */
+              <p className="ate-fait">
+                Commande nº {fiche.cloudprinterOrderId} déjà passée chez l&apos;imprimeur.
+              </p>
+            ) : (
+              <>
+                <div className="ate-slots">
+                  {/* Quels cadres ? Ceux du produit : l'agrafé (20 p.) prend UN
+                      PDF complet, le dos carré prend la couverture enveloppante
+                      ET le bloc. Le serveur revalide — ici on n'affiche que les
+                      cadres utiles pour ne pas faire déposer un fichier de trop. */}
+                  {SLOTS_IMPRESSION.filter((s) =>
+                    fiche.ligne.nbPages === 20 ? s.type === "product" : s.type !== "product",
+                  ).map((s) => (
+                    <div key={s.cle} className="ate-slot">
+                      <span className="ate-slot-label">{s.label}</span>
+                      <button
+                        type="button"
+                        className={saisie[s.cle] ? "ate-slot-zone ate-slot-zone--pleine" : "ate-slot-zone"}
+                        onClick={() => inputs.current[s.cle]?.click()}
+                        disabled={envoiEnCours !== null}
+                      >
+                        {envoiEnCours === s.cle ? (
+                          <span className="ate-slot-vide">Envoi…</span>
+                        ) : pdfNoms[s.cle] ? (
+                          <span className="ate-slot-vide">{pdfNoms[s.cle]}</span>
+                        ) : (
+                          <span className="ate-slot-vide">Choisir le fichier</span>
+                        )}
+                      </button>
+                      <input
+                        ref={(el) => {
+                          inputs.current[s.cle] = el;
+                        }}
+                        type="file"
+                        accept="application/pdf"
+                        hidden
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) televerserPdf(s.cle, s.slot, f);
+                          e.target.value = "";
+                        }}
+                      />
+                      {erreurDe(s.cle) ? <span className="ate-erreur">{erreurDe(s.cle)}</span> : null}
+                    </div>
+                  ))}
+                </div>
+                <span className="ate-champ-aide">
+                  Les fichiers print-ready, pas le feuilletable : ce sont EUX qui partent chez
+                  l&apos;imprimeur, avec l&apos;adresse collectée par Stripe.
+                </span>
+              </>
+            )
+          ) : null}
+
           {choisie.cle === "marquer_expediee" ? (
             <>
               <label className="ate-champ ate-champ--court">
@@ -375,6 +517,46 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                     <dd className="ate-confirm-prix">
                       {verif.resume.euros}&nbsp;€ <span className="ate-faint">({verif.resume.palier})</span>
                     </dd>
+                  </>
+                ) : null}
+                {verif.impression ? (
+                  <>
+                    <dt>Produit</dt>
+                    <dd>
+                      {verif.impression.produitLibelle}{" "}
+                      <span className="ate-faint">({verif.impression.produit})</span>
+                    </dd>
+                    <dt>{verif.impression.fichiers.length > 1 ? "Fichiers" : "Fichier"}</dt>
+                    <dd>
+                      {verif.impression.fichiers.length
+                        ? verif.impression.fichiers
+                            .map((f) => `${f.type} : ${(f.taille / (1024 * 1024)).toFixed(1)} Mo`)
+                            .join(" · ") + ", empreintes vérifiées"
+                        : "—"}
+                    </dd>
+                    <dt>Livraison</dt>
+                    <dd>
+                      {verif.impression.adresse
+                        ? `${verif.impression.adresse.nom}, ${verif.impression.adresse.ville} (${verif.impression.adresse.pays})`
+                        : "—"}{" "}
+                      <span className="ate-faint">{verif.impression.shippingLevel}</span>
+                    </dd>
+                    {verif.impression.modeManuel ? (
+                      <>
+                        <dt>Imprimeur</dt>
+                        <dd>
+                          <span className="ate-alerte">
+                            Cloudprinter n&apos;est pas branché (clé absente) : la commande est à
+                            passer À LA MAIN sur leur interface. Seul l&apos;état changera ici.
+                          </span>
+                        </dd>
+                      </>
+                    ) : (
+                      <>
+                        <dt>Imprimeur</dt>
+                        <dd>La commande partira chez Cloudprinter au clic suivant.</dd>
+                      </>
+                    )}
                   </>
                 ) : null}
                 <dt>Destinataire</dt>
@@ -424,7 +606,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                 </button>
               </div>
             </div>
-          ) : (
+          ) : choisie.cle === "envoyer_impression" && fiche.cloudprinterOrderId ? null : (
             <button
               className="adm-btn ate-btn-preparer"
               type="button"

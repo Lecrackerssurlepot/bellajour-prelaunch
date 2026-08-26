@@ -620,6 +620,16 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     canvaUrl: (n.canva_url as string) ?? null,
     canvaTravail: (n.canva_travail as string) ?? null,
     maquettePdfUrl: (n.maquette_pdf_url as string) ?? null,
+    /* La colonne `impression_fichiers` (migration 20260827) arrive d'elle-même
+       avec le select("*") ; avant la migration, les trois champs sont null. */
+    impressionFichiers: (() => {
+      const brut = (n.impression_fichiers && typeof n.impression_fichiers === "object"
+        ? n.impression_fichiers
+        : {}) as Record<string, unknown>;
+      const cle = (k: string) => (typeof brut[k] === "string" ? (brut[k] as string) : null);
+      return { product: cle("product"), cover: cle("cover"), book: cle("book") };
+    })(),
+    cloudprinterOrderId: (n.cloudprinter_order_id as string) ?? null,
     transporteur: (n.transporteur as string) ?? null,
     trackingUrl: (n.tracking_url as string) ?? null,
     apercu,

@@ -225,6 +225,78 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
     case "paiement_inattendu":
       return { texte: "Paiement inattendu", detail: "À vérifier chez Stripe", ton: "alerte" };
 
+    /* ── Cloudprinter (PRD §13 phase 2) ─────────────────────────────────
+       La commande, puis le fil de production poussé par leurs webhooks.
+       Un seul signal change l'état (ItemShipped → « Expédié », rendu par
+       etat_change ci-dessus) ; le reste raconte. */
+    case "cloudprinter_commande":
+      return {
+        texte: fait(qui, "a passé la commande chez l'imprimeur", "Commande passée chez l'imprimeur"),
+        detail: typeof payload.orderId === "string" ? `nº ${payload.orderId}` : null,
+        ton: "nous",
+      };
+
+    case "cloudprinter_manuel":
+      return {
+        texte: fait(qui, "a lancé l'impression en mode manuel", "Impression lancée en mode manuel"),
+        detail: "Cloudprinter n'est pas branché : la commande est à passer à la main",
+        ton: "neutre",
+      };
+
+    case "cloudprinter_signal": {
+      const SIGNAUX: Record<string, string> = {
+        CloudprinterOrderValidated: "L'imprimeur a validé la commande",
+        CloudprinterItemValidated: "L'imprimeur a validé les fichiers",
+        ItemProduce: "La production a commencé",
+        ItemProduced: "L'impression est terminée",
+        ItemPacked: "Le colis est emballé",
+      };
+      const type = String(payload.type ?? "");
+      return {
+        texte: SIGNAUX[type] ?? `Signal de l'imprimeur : ${type.replace(/_/g, " ")}`,
+        detail: null,
+        ton: "neutre",
+      };
+    }
+
+    case "cloudprinter_erreur":
+      return {
+        texte:
+          String(payload.type ?? "") === "ItemCanceled"
+            ? "L'imprimeur a ANNULÉ la production"
+            : "L'imprimeur signale un problème",
+        detail:
+          [payload.cause, payload.message].filter((v) => typeof v === "string" && v).join(" · ") ||
+          "À traiter à la main, avec leur dashboard",
+        ton: "alerte",
+      };
+
+    case "cloudprinter_echec":
+      return {
+        texte: "La commande d'impression n'est PAS partie",
+        detail: typeof payload.message === "string" ? (payload.message as string) : null,
+        ton: "alerte",
+      };
+
+    /* La commande existe chez Cloudprinter mais n'a pas pu être enregistrée
+       ici (course perdue sur l'écriture). Rarissime, et c'est exactement
+       pour ce cas que le journal existe : elle s'annule à leur dashboard. */
+    case "cloudprinter_orpheline":
+      return {
+        texte: "Commande d'impression ORPHELINE",
+        detail:
+          (typeof payload.orderId === "string" ? `nº ${payload.orderId} — ` : "") +
+          "passée chez Cloudprinter mais non enregistrée ici : à vérifier ou annuler sur leur dashboard",
+        ton: "alerte",
+      };
+
+    case "cloudprinter_signal_inattendu":
+      return {
+        texte: "Signal d'expédition inattendu",
+        detail: `Le dossier n'était pas en production (état « ${String(payload.etat ?? "?")} »)`,
+        ton: "alerte",
+      };
+
     default:
       /* Un événement d'un lot futur ne doit pas disparaître du journal. */
       return { texte: type.replace(/_/g, " "), detail: null, ton: "neutre" };

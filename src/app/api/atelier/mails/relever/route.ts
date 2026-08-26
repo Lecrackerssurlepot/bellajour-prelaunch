@@ -59,6 +59,7 @@ import {
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
 import { logEvenement } from "@/lib/atelier/evenements";
+import { memeSecret } from "@/lib/atelier/secret";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,15 +68,6 @@ export const dynamic = "force-dynamic";
    d'anormal, et envoyer mille mails d'un coup serait le pire des remèdes.
    Le reste part à la relève suivante. */
 const MAX_DOSSIERS = 200;
-
-/* Comparaison à durée constante : un secret comparé avec === se devine
-   caractère par caractère au chronomètre. Coût nul, réflexe systématique. */
-function memeSecret(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
 
 /* Le secret passe par un EN-TÊTE, jamais par l'URL : une URL se retrouve
    dans les logs Vercel, dans l'historique du shell et dans le referer.

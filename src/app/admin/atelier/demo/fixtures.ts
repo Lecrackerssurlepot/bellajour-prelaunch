@@ -487,6 +487,9 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
       : null,
     canvaTravail: publie ? "https://www.canva.com/design/DEMO/edit" : null,
     maquettePdfUrl: null,
+    /* La demo ne branche pas Cloudprinter : mode manuel partout. */
+    impressionFichiers: { product: null, cover: null, book: null },
+    cloudprinterOrderId: null,
     transporteur: ["expediee", "livree"].includes(g.etat) ? "Colissimo" : null,
     trackingUrl: ["expediee", "livree"].includes(g.etat) ? "https://www.laposte.fr/outils/suivre-vos-envois" : null,
     apercu: publie

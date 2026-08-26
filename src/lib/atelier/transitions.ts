@@ -87,6 +87,12 @@ export type Saisie = {
   apercu_double?: string | null;
   canva_url?: string | null;
   maquette_pdf_url?: string | null;
+  /* Les PDF print-ready, clés du coffre. Le produit décide desquels il a
+     besoin (impression.ts) : `pdf_produit` seul pour l'agrafé,
+     `pdf_couverture` + `pdf_interieur` pour le dos carré. */
+  pdf_produit?: string | null;
+  pdf_couverture?: string | null;
+  pdf_interieur?: string | null;
   transporteur?: string | null;
   tracking_url?: string | null;
 };
@@ -170,7 +176,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
     cle: "envoyer_impression",
     libelle: "Envoyer à l'impression",
     explication:
-      "À faire une fois la commande passée chez l'imprimeur. Le numéro de suivi se saisit à l'étape suivante.",
+      "Passe la commande chez l'imprimeur : le PDF et l'adresse de livraison partent chez Cloudprinter. Le suivi arrivera tout seul.",
     de: ["validee"],
     vers: "en_production",
     note: "Elle a déjà été prévenue au moment où elle a validé : rien de nouveau ne part ici.",
@@ -320,6 +326,43 @@ export function preparerTransition(
     } else if (pdf) {
       patch.maquette_pdf_url = pdf;
     }
+  }
+
+  if (cle === "envoyer_impression") {
+    /* ── les PDF print-ready ──────────────────────────────────────────
+       Des clés du coffre, JAMAIS des adresses externes : Cloudprinter exige
+       l'empreinte md5 de chaque fichier, et on ne sait la donner que pour un
+       objet qui est à nous (son ETag). LESQUELS sont requis dépend du
+       produit, donc de la pagination — que ce module ne connaît pas : la
+       route complète le contrôle (fichiers requis + présence au coffre),
+       comme elle vérifie déjà le coffre des aperçus. Ici : au moins un
+       fichier, et chacun est une clé sûre.
+       ⚠️ Ces fichiers ne sont PAS `maquette_pdf_url` (le feuilletable de la
+       cliente) : l'un se regarde, les autres s'impriment. */
+    const fournis: Array<[string, string]> = [];
+    for (const [champ, cleJson] of [
+      ["pdf_produit", "product"],
+      ["pdf_couverture", "cover"],
+      ["pdf_interieur", "book"],
+    ] as const) {
+      const v = texte(saisie[champ], 600);
+      if (!v) continue;
+      if (/^https?:\/\//i.test(v) || v.includes("..")) {
+        erreurs.push({
+          champ,
+          message: "Dépose le PDF dans le coffre : un lien externe ne peut pas partir à l'impression.",
+        });
+      } else {
+        fournis.push([cleJson, v]);
+      }
+    }
+    if (!fournis.length && !erreurs.length) {
+      erreurs.push({ champ: "pdf_produit", message: "Dépose le ou les PDF d'impression." });
+    }
+    if (fournis.length) patch.impression_fichiers = Object.fromEntries(fournis);
+    /* `cloudprinter_order_id` n'est PAS posé ici : la commande est un appel
+       réseau, et ce module n'en fait aucun. La route l'ajoute au patch une
+       fois la commande passée, comme elle ajoute `etat_maj_le`. */
   }
 
   if (cle === "marquer_expediee") {

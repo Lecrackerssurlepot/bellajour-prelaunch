@@ -363,6 +363,36 @@ M3b, M2, M5→M9, pas ailleurs.
 Logo des mails : `public/logo-mail-blanc.png` (signature blanche sur fond sombre), à
 distinguer de `public/logo-mail.png` (signature bleue, mails de la prévente).
 Migration A3 : supabase/migrations/20260613_a3_notified_flag.sql (colonne waitlist.a3_notified_at timestamptz, flag anti-renvoi posé atomiquement à l'envoi).
+## Cloudprinter — l'impression commandée par l'API (26/08/2026, PRD §13 phase 2)
+« Envoyer à l'impression » COMMANDE réellement : dépôt des PDF print-ready sur la fiche,
+puis `orders/add` avec l'adresse Stripe et la référence déduite de la pagination.
+⚠️ Les fichiers dépendent du produit (products/info fait foi, vérifié le 26/08) :
+l'agrafé prend UN PDF `product` (couverture intégrée), le dos carré prend DEUX PDF
+`cover` (couverture enveloppante avec le dos) + `book` (le bloc) — la couverture d'un
+dos carré ne peut physiquement pas vivre dans le même PDF que les pages.
+- `src/lib/atelier/impression.ts` (PUR, testé dans verif-atelier) : table produit
+  (20 p. → `magazine_sas_a4_p_fc` agrafé ; 22-50 p. → `magazine_pb_a4_p_fc` dos carré),
+  adresse Stripe → Cloudprinter, payload orders/add, interprétation des signaux.
+  ⚠️ Finitions par défaut (`pageblock_130mcs`, `cover_250mcs`) : l'étude de prix de
+  Mathias tranchera — cette table est LE seul endroit à retoucher.
+- `src/lib/atelier/cloudprinter.ts` (réseau, ne throw jamais) : la clé API n'entre que là.
+- Le md5 exigé par Cloudprinter = l'ETag R2 du PUT single-part (`empreinteObjet`, r2.ts).
+  Un ETag multipart (tiret) → redépôt exigé, jamais d'empreinte fausse.
+- Verrous anti double-commande : pré-contrôle `cloudprinter_order_id` → 409 ;
+  `.is("cloudprinter_order_id", null)` sur l'update atomique ; unicité de la référence
+  (= id du numéro, JAMAIS le token) chez Cloudprinter, rattrapée par orders/info.
+- `/api/cloudprinter/webhook` (HORS middleware, clé CloudSignal comparée à durée
+  constante, 404 fermée par défaut) : ItemShipped → état 7 + transporteur + tracking
+  DANS LE MÊME update (M7 l'exige) + releverDossier ; ItemError/ItemCanceled → journal
+  d'alerte SANS changement d'état ; le reste → journal. 204 si commande inconnue,
+  500 volontaire sur erreur base (leurs retries ×100/7 j sont le filet).
+- Sans `CLOUDPRINTER_API_KEY` : MODE MANUEL, l'action redevient un simple changement
+  d'état (rien ne casse en prod). Sandbox/Live = propriété de l'INTERFACE au dashboard.
+- Recette : `node scripts/recette.mjs signal "Test 1" ItemShipped` forge un webhook ;
+  `scripts/cloudprinter-produits.mjs` lit le catalogue (⚠️ API très rationnée).
+- Migration : supabase/migrations/20260827_atelier_cloudprinter.sql (impression_fichiers
+  jsonb + index partiel sur cloudprinter_order_id) — appliquée par Mathias.
+
 ## Webhook Stripe PARTAGÉ — le tri est EXPLICITE des deux côtés (24/08/2026)
 `/api/webhook` trie sur les métadonnées, avant tout accès en base, et **aucun produit n'est
 le cas par défaut** : `kind==='atelier'` → atelier, `offer_type` ∈ founder|standard|influencer

@@ -454,8 +454,18 @@ J+7 — cette dernière ne peut se tester que sur un dossier en état 4.
 **Les CGV v3.0 n'ont pas été relues par un juriste.** Elles encadrent de vrais
 encaissements. Le portugais fait foi.
 
-**Cloudprinter** : phase 2 du PRD, pas commencé. La place du bouton est réservée
-dans la machine à états (`envoyer_impression`).
+**Cloudprinter** : BRANCHÉ le 26/08/2026 (phase 2 du PRD). « Envoyer à
+l'impression » passe la commande (orders/add : fichiers selon le produit —
+20 p. agrafé `magazine_sas_a4_p_fc` = UN PDF type `product` ; 22-50 p. dos
+carré `magazine_pb_a4_p_fc` = DEUX PDF `cover` + `book` —, adresse Stripe,
+référence déduite de la pagination), et
+`/api/cloudprinter/webhook` reçoit les signaux (ItemShipped → état 7 +
+transporteur + M7 ; erreurs → journal, traitement manuel). Sans
+`CLOUDPRINTER_API_KEY`, mode manuel : l'action redevient un simple
+changement d'état. Reste à faire : créer les interfaces au dashboard
+(CloudCore Sandbox pour la preview + CloudSignal), poser les deux clés,
+dérouler la recette §10, puis trancher les finitions (grammage/pelliculage)
+avec l'étude de prix et régénérer la clé qui a circulé en clair.
 
 **Deux lints pré-existants**, hors périmètre du lot 7 :
 `src/app/admin/page.tsx:145` (`Date.now()` pendant le rendu) et

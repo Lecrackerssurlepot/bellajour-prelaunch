@@ -153,13 +153,47 @@ Deux façons, à tester séparément.
 - [ ] le journal dit « Validée automatiquement (sans réponse) »
 - [ ] **mail M6** part ensuite
 
-### 10 · Impression et expédition
+### 10 · Impression et expédition — Cloudprinter
 
-Admin : *Envoyer à l'impression*, puis *Marquer expédiée* (transporteur + suivi).
+**Une fois, avant la séance** (dashboard Cloudprinter, par Mathias) :
+une interface CloudCore en mode **SANDBOX** (sa clé → `CLOUDPRINTER_API_KEY`
+dans les env Vercel de la preview) et une interface CloudSignal pointant
+`https://<preview>/api/cloudprinter/webhook` (sa clé →
+`CLOUDPRINTER_WEBHOOK_KEY`). Sandbox = commandes gratuites, jamais
+imprimées, signaux simulés en quelques minutes.
+⚠️ Vérifier le mode de l'interface AVANT le premier envoi : une clé Live
+passerait une vraie commande payante.
 
-- [ ] « Envoyer à l'impression » annonce honnêtement qu'aucun mail ne part
-- [ ] **mail M7** reçu à l'expédition, avec le transporteur
+Admin, sur la fiche : *Envoyer à l'impression* → déposer les **PDF
+d'impression** (20 pages = UN PDF complet couverture intégrée ; dos carré
+= DEUX PDF, la couverture enveloppante avec le dos + le bloc intérieur —
+c'est l'exigence de leurs produits) → *Préparer* → *Confirmer*.
+
+- [ ] *Préparer* affiche le produit déduit de la pagination (20 p. = agrafé,
+      sinon dos carré), la taille du fichier et l'adresse Stripe
+- [ ] sans PDF déposé, chaque cadre manquant est nommé ; une adresse incomplète est
+      nommée champ par champ
+- [ ] *Confirmer* : le journal dit « a passé la commande chez l'imprimeur
+      (nº …) », l'état passe à « En production », aucun mail ne part
+- [ ] re-cliquer *Envoyer à l'impression* → « Commande nº … déjà passée »,
+      pas de second envoi
+- [ ] la commande apparaît dans le dashboard Cloudprinter (sandbox)
+- [ ] dans les minutes qui suivent, les signaux sandbox remplissent le
+      journal (« L'imprimeur a validé les fichiers », « La production a
+      commencé »…)
+- [ ] au signal d'expédition, l'état passe SEUL à « Expédiée », avec le
+      transporteur — **mail M7** reçu
 - [ ] **sa page** affiche le suivi
+- [ ] filet sans sandbox : `node scripts/recette.mjs signal "Test 1" ItemShipped`
+      rejoue le webhook ; un second envoi est ignoré sans bruit
+- [ ] si les signaux n'arrivent pas : dashboard Cloudprinter → CloudSignal →
+      Logs → Resend (la preview peut 403er les robots, cf. la mitigation
+      Vercel — leurs retries et le Resend rattrapent)
+
+*Marquer expédiée* reste disponible en manuel : c'est le filet si le
+webhook ne vient jamais. Et sans `CLOUDPRINTER_API_KEY` posée, le bouton
+redevient ce qu'il était : un simple changement d'état (mode manuel,
+annoncé à l'écran de confirmation).
 
 ### 11 · Livraison
 

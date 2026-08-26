@@ -223,6 +223,39 @@ if (commande === "etat") {
 } else if (commande === "relever") {
   console.log(`\n  Relève sur ${cible} :`);
   console.log(`  ${JSON.stringify(await relever(cible))}\n`);
+} else if (commande === "signal") {
+  /* Forge un signal CloudSignal et le poste sur notre webhook — la recette
+     du RETOUR Cloudprinter sans dépendre de leur sandbox. Le payload a la
+     forme documentée (apikey, type, order, item, datetime + tracking pour
+     ItemShipped) ; `order` = l'id du dossier, le chemin de résolution nº1. */
+  const [titre, type = "ItemShipped"] = args.filter((a) => !a.startsWith("--"));
+  const cle = env("CLOUDPRINTER_WEBHOOK_KEY");
+  if (!cle) {
+    console.error("\n  CLOUDPRINTER_WEBHOOK_KEY absente de .env.local — le webhook répondrait 404.\n");
+    process.exit(1);
+  }
+  const [n] = await lire(client, `%${titre}%`);
+  if (!n) {
+    console.error(`\n  Aucun dossier ne correspond à « ${titre} ».\n`);
+    process.exit(1);
+  }
+  const corps = {
+    apikey: cle,
+    type,
+    order: n.id,
+    item: `${n.id}-1`,
+    datetime: new Date().toISOString(),
+    ...(type === "ItemShipped" ? { tracking: "TEST123456789FR", shipping_option: "Colissimo suivi" } : {}),
+    ...(type === "ItemError" ? { cause: "recette", message: "Signal forge par scripts/recette.mjs" } : {}),
+  };
+  console.log(`\n  ${type} → ${cible}/api/cloudprinter/webhook pour « ${n.titre} » (${n.etat})`);
+  const r = await fetch(`${cible}/api/cloudprinter/webhook`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(corps),
+  });
+  const texte = await r.text();
+  console.log(`  HTTP ${r.status} ${texte.slice(0, 200)}\n`);
 } else if (commande === "nettoyer") {
   /* Deux façons de désigner ce qu'on efface, parce que la convention de
      titre ne survit pas au contact du réel : en pleine séance, on tape ce
@@ -260,6 +293,8 @@ if (commande === "etat") {
   node scripts/recette.mjs etat [titre]              état des dossiers
   node scripts/recette.mjs pousser <titre> <code>    force un mail à retardement
   node scripts/recette.mjs relever                   déclenche la relève
+  node scripts/recette.mjs signal <titre> [type]     forge un webhook Cloudprinter
+                                                     (types : ItemShipped, ItemProduced, ItemError…)
   node scripts/recette.mjs nettoyer [--vraiment]     supprime les dossiers « test… »
 
   Codes poussables : ${Object.keys(LEVIERS).join(", ")}

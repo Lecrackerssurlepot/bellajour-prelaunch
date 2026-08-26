@@ -165,6 +165,10 @@ export type Fiche = {
   /** Le lien d'ÉDITION, interne. Ne part jamais nulle part (PRD §11). */
   canvaTravail: string | null;
   maquettePdfUrl: string | null;
+  /** Les clés de coffre des PDF print-ready, par type Cloudprinter. */
+  impressionFichiers: { product: string | null; cover: string | null; book: string | null };
+  /** Posé quand la commande est partie chez Cloudprinter — jamais deux fois. */
+  cloudprinterOrderId: string | null;
   transporteur: string | null;
   trackingUrl: string | null;
   /** Signés pour l'affichage (URL courtes, régénérées à chaque rendu). */

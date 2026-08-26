@@ -126,6 +126,18 @@ export const APERCU_TTL_SECONDS = 60 * 60; /* 1 h */
  */
 export const LOT_TTL_SECONDS = 2 * 60 * 60; /* 2 h */
 
+/**
+ * TTL des liens envoyés à Cloudprinter dans `orders/add`.
+ *
+ * Cloudprinter télécharge le PDF de façon ASYNCHRONE après la commande, avec
+ * des reprises — potentiellement des heures plus tard si leur file est
+ * chargée. Une signature d'une heure produirait une commande acceptée dont le
+ * fichier ne descend jamais, sans autre trace qu'un ItemError tardif.
+ * Vingt-quatre heures couvrent leurs reprises, loin sous la limite de
+ * sept jours des signatures S3.
+ */
+export const IMPRESSION_TTL_SECONDS = 24 * 60 * 60; /* 24 h */
+
 export async function signerGet(
   key: string,
   ttl = APERCU_TTL_SECONDS,
@@ -172,6 +184,32 @@ export async function tailleReelle(key: string): Promise<number | null> {
   try {
     const r = await makeR2().send(new HeadObjectCommand({ Bucket: bucket(), Key: key }));
     return typeof r.ContentLength === "number" ? r.ContentLength : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * HEAD complet : taille ET empreinte md5 d'un objet du coffre.
+ *
+ * Cloudprinter exige un `md5sum` par fichier de commande. Pour un objet
+ * déposé par notre PUT presigné — un envoi SINGLE-PART — l'ETag S3/R2 EST
+ * le md5 du contenu : aucun téléchargement, un simple HEAD.
+ *
+ * ⚠️ Un envoi multipart casse cette égalité (l'ETag prend un suffixe
+ * `-<n>`) : dans ce cas `md5` est null et l'appelant doit exiger un
+ * redépôt plutôt que d'envoyer une empreinte fausse — Cloudprinter
+ * refuserait le fichier après l'avoir téléchargé, en silence pour nous.
+ */
+export async function empreinteObjet(
+  key: string
+): Promise<{ taille: number; md5: string | null } | null> {
+  try {
+    const r = await makeR2().send(new HeadObjectCommand({ Bucket: bucket(), Key: key }));
+    const taille = typeof r.ContentLength === "number" ? r.ContentLength : 0;
+    const etag = (r.ETag ?? "").replace(/"/g, "");
+    const md5 = /^[a-f0-9]{32}$/i.test(etag) ? etag.toLowerCase() : null;
+    return { taille, md5 };
   } catch {
     return null;
   }

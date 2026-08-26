@@ -36,8 +36,10 @@ const CHAMPS: Record<string, Array<{ cle: string; label: string; requis: boolean
   ],
 };
 
-/* Celles qui ne peuvent pas se faire ici : elles ouvrent la fiche. */
-const SUR_LA_FICHE = new Set(["publier_apercu", "corriger_apercu"]);
+/* Celles qui ne peuvent pas se faire ici : elles ouvrent la fiche.
+   « Envoyer à l'impression » en fait partie depuis le branchement
+   Cloudprinter : elle exige le dépôt d'un PDF, et elle COMMANDE. */
+const SUR_LA_FICHE = new Set(["publier_apercu", "corriger_apercu", "envoyer_impression"]);
 
 export default function ActionRapide({
   ligne,

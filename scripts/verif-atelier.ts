@@ -27,6 +27,13 @@ import {
 } from "@/lib/atelier/mails";
 import { nomsDeFichiers, nomDossier } from "@/lib/atelier/lot";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
+import {
+  adresseCloudprinter,
+  estCleImpression,
+  interpreterSignal,
+  payloadCommande,
+  produitPour,
+} from "@/lib/atelier/impression";
 
 let ko = 0;
 const ok = (n: string, c: boolean) => {
@@ -234,6 +241,104 @@ ok("aucune ligne au dela de 80 colonnes sauf les liens",
 const VIDE = composerBrief({ ...MATIERE, occasion: null, histoire: null, notes: [] }, new Date("2026-08-25T08:00:00.000Z"));
 ok("un dossier sans matiere le DIT au lieu de rendre un fichier vide",
    VIDE.includes("Rien de not\u00e9.") && VIDE.includes("Elle n'a rien \u00e9crit."));
+
+/* ════════════════════════════ IMPRESSION ════════════════════════════ */
+
+titre("— la reference produit se deduit de la pagination —");
+ok("20 pages -> agrafe", produitPour(20)?.produit === "magazine_sas_a4_p_fc");
+ok("24 pages -> dos carre", produitPour(24)?.produit === "magazine_pb_a4_p_fc");
+ok("50 pages -> dos carre", produitPour(50)?.produit === "magazine_pb_a4_p_fc");
+ok("18 pages -> aucun produit", produitPour(18) === null);
+ok("52 pages -> aucun produit", produitPour(52) === null);
+ok("pagination absente -> aucun produit", produitPour(null) === null);
+
+titre("— la saisie d'impression —");
+ok("l'agrafe exige UN fichier product", produitPour(20)!.fichiers.join(",") === "product");
+ok("le dos carre exige couverture ET bloc", produitPour(32)!.fichiers.join(",") === "cover,book");
+const sansPdf = preparerTransition("envoyer_impression", "validee", {});
+ok("sans PDF refuse, champ nomme", !sansPdf.ok && sansPdf.erreurs[0].champ === "pdf_produit");
+ok("un lien externe refuse (pas de md5 possible)",
+   !preparerTransition("envoyer_impression", "validee", { pdf_produit: "https://x.fr/a.pdf" }).ok);
+const avecPdf = preparerTransition("envoyer_impression", "validee", { pdf_produit: "numeros/x/impression/produit-a1.pdf" });
+ok("une cle de coffre acceptee, patch pose sous son type Cloudprinter",
+   avecPdf.ok && (avecPdf.patch.impression_fichiers as { product: string }).product === "numeros/x/impression/produit-a1.pdf");
+const deuxPdf = preparerTransition("envoyer_impression", "validee", {
+  pdf_couverture: "numeros/x/impression/couverture-a1.pdf",
+  pdf_interieur: "numeros/x/impression/interieur-b2.pdf",
+});
+ok("le duo couverture + bloc du dos carre est patche sous cover et book",
+   deuxPdf.ok
+     && (deuxPdf.patch.impression_fichiers as { cover: string }).cover === "numeros/x/impression/couverture-a1.pdf"
+     && (deuxPdf.patch.impression_fichiers as { book: string }).book === "numeros/x/impression/interieur-b2.pdf");
+ok("estCleImpression refuse les remontees de chemin", !estCleImpression("../autre/objet.pdf"));
+
+titre("— l'adresse Stripe devient une adresse Cloudprinter —");
+const ADRESSE_STRIPE = {
+  name: "Marie Dupont",
+  address: { line1: "12 rue des Lilas", line2: null, city: "Paris", postal_code: "75011", state: null, country: "fr" },
+};
+const adr = adresseCloudprinter(ADRESSE_STRIPE, "marie@exemple.fr");
+ok("adresse complete acceptee", adr.ok);
+ok("le nom est decoupe prenom / nom", adr.ok && adr.adresse.firstname === "Marie" && adr.adresse.lastname === "Dupont");
+ok("le pays est normalise en majuscules", adr.ok && adr.adresse.country === "FR");
+const adrMono = adresseCloudprinter({ name: "Madonna", address: { line1: "1 rue X", city: "Lille", postal_code: "59000", country: "FR" } }, "m@x.fr");
+ok("un nom d'un seul mot sert deux fois", adrMono.ok && adrMono.adresse.lastname === "Madonna");
+const adrIncomplete = adresseCloudprinter({ name: "Marie", address: { line1: "12 rue X", country: "FR" } }, "m@x.fr");
+ok("les manques sont nommes un par un",
+   !adrIncomplete.ok && adrIncomplete.manque.includes("code postal") && adrIncomplete.manque.includes("ville"));
+ok("une adresse vide dit tout ce qui manque", !adresseCloudprinter(null, "").ok);
+
+titre("— le corps de la commande orders/add —");
+const ADR_OK = (adr as { ok: true; adresse: import("@/lib/atelier/impression").AdresseCp }).adresse;
+const MD5 = "d41d8cd98f00b204e9800998ecf8427e";
+const CORPS = payloadCommande({
+  reference: "0b0e8400-e29b-41d4-a716-446655440000",
+  emailContact: "contact@bellajour.com",
+  adresse: ADR_OK,
+  produit: produitPour(32)!,
+  pages: 32,
+  fichiers: {
+    cover: { url: "https://coffre.example/c.pdf?sig", md5: MD5 },
+    book: { url: "https://coffre.example/b.pdf?sig", md5: MD5 },
+  },
+  titre: "Seville, aout 2026",
+});
+ok("un seul item, count en chaine", CORPS.items.length === 1 && CORPS.items[0].count === "1");
+ok("le dos carre envoie DEUX fichiers, cover puis book",
+   CORPS.items[0].files.map((f) => f.type).join(",") === "cover,book");
+ok("le md5 part avec chaque fichier", CORPS.items[0].files.every((f) => f.md5sum.length === 32));
+ok("l'option total_pages porte la pagination",
+   CORPS.items[0].options.some((o) => o.type === "total_pages" && o.count === "32"));
+ok("le papier interieur est compte en pages",
+   CORPS.items[0].options.some((o) => o.type.startsWith("pageblock_") && o.count === "32"));
+ok("l'adresse est de type delivery", CORPS.addresses[0].type === "delivery");
+ok("la cle API n'est PAS dans le payload", !("apikey" in CORPS));
+const CORPS_SAS = payloadCommande({
+  reference: "0b0e8400-e29b-41d4-a716-446655440000",
+  emailContact: "contact@bellajour.com",
+  adresse: ADR_OK,
+  produit: produitPour(20)!,
+  pages: 20,
+  fichiers: { product: { url: "https://coffre.example/p.pdf?sig", md5: MD5 } },
+});
+ok("l'agrafe envoie UN fichier de type product",
+   CORPS_SAS.items[0].files.length === 1 && CORPS_SAS.items[0].files[0].type === "product");
+let jete = false;
+try {
+  payloadCommande({
+    reference: "x", emailContact: "c@b.com", adresse: ADR_OK,
+    produit: produitPour(32)!, pages: 32,
+    fichiers: { cover: { url: "https://x/c.pdf", md5: MD5 } },
+  });
+} catch { jete = true; }
+ok("un fichier requis manquant est une erreur franche, jamais une commande partielle", jete);
+
+titre("— les signaux CloudSignal —");
+ok("ItemShipped expedie", interpreterSignal("ItemShipped").effet === "expedier");
+ok("ItemError alerte sans changer l'etat", interpreterSignal("ItemError").effet === "alerte");
+ok("ItemCanceled alerte", interpreterSignal("ItemCanceled").effet === "alerte");
+ok("ItemPacked se journalise seulement", interpreterSignal("ItemPacked").effet === "journal");
+ok("un type inconnu tombe au journal, jamais en erreur", interpreterSignal("ItemFutur2027").effet === "journal");
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
 process.exit(ko === 0 ? 0 : 1);

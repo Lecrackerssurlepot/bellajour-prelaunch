@@ -1,0 +1,189 @@
+/**
+ * POST /api/cloudprinter/webhook — les signaux de production CloudSignal.
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ * C'est le RETOUR de la phase 2 du PRD §13 : une fois la commande passée
+ * (« Envoyer à l'impression »), Cloudprinter pousse ici l'avancement —
+ * validation, production, emballage, expédition. Un seul signal change
+ * l'état chez nous : `ItemShipped` (6 → 7), qui porte le transporteur et le
+ * suivi, et fait partir M7. Tout le reste s'inscrit au journal du dossier.
+ *
+ * AUTH — le modèle de la relève (mails/relever) : cette route vit HORS du
+ * middleware (`/api/admin/*` seulement), elle porte donc sa propre porte.
+ * CloudSignal n'a pas de signature HMAC : chaque payload porte l'`apikey`
+ * de l'interface webhook, comparée à durée constante. Clé absente de l'env
+ * → 404, fermée par défaut. Clé fausse → 404 aussi : une route
+ * d'administration n'a pas à confirmer son existence.
+ *
+ * CONTRAT CLOUDSIGNAL — 200 = reçu, 204 = commande inconnue chez nous,
+ * tout autre code = ils réessaient (100 tentatives sur 7 jours). D'où le
+ * 500 VOLONTAIRE sur une erreur de base : leur retry est notre filet.
+ * IDEMPOTENT : leurs signaux se rejouent (retry, Resend du dashboard) —
+ * l'update `.eq("etat", "en_production")` fait qu'un second ItemShipped ne
+ * réécrit rien et ne renvoie pas M7 (verrou de mails_envoyes en second
+ * rideau).
+ * ══════════════════════════════════════════════════════════════════════════
+ */
+
+import { NextResponse } from "next/server";
+import { makeSupabase } from "@/lib/supabase";
+import { memeSecret } from "@/lib/atelier/secret";
+import { logEvenement } from "@/lib/atelier/evenements";
+import { releverDossier } from "@/lib/atelier/mails";
+import { interpreterSignal } from "@/lib/atelier/impression";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function s(v: unknown): string {
+  return typeof v === "string" ? v.trim() : "";
+}
+
+export async function POST(request: Request) {
+  const attendu = process.env.CLOUDPRINTER_WEBHOOK_KEY;
+  if (!attendu) {
+    /* Fermée par défaut : jamais d'ouverture sur un chemin qui change des
+       états et envoie des mails à des clientes. */
+    console.error("[cloudprinter/webhook] CLOUDPRINTER_WEBHOOK_KEY absente — accès refusé");
+    return NextResponse.json({ error: "introuvable" }, { status: 404 });
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
+  }
+
+  if (!memeSecret(s(body.apikey), attendu)) {
+    return NextResponse.json({ error: "introuvable" }, { status: 404 });
+  }
+
+  const type = s(body.type);
+  const ordre = s(body.order);
+  const item = s(body.item);
+  if (!type || !ordre) {
+    return NextResponse.json({ error: "signal_incomplet" }, { status: 400 });
+  }
+
+  try {
+    const supabase = makeSupabase();
+
+    /* La doc ne tranche pas si `order` est NOTRE référence (l'id du numéro)
+       ou LEUR identifiant : le double chemin absorbe les deux. Le premier
+       signal sandbox, journalisé intégralement, dira lequel joue. */
+    const parId = UUID.test(ordre)
+      ? await supabase
+          .from("numeros")
+          .select("id, etat")
+          .eq("id", ordre)
+          .maybeSingle<{ id: string; etat: string }>()
+      : { data: null };
+
+    const numero =
+      parId.data ??
+      (
+        await supabase
+          .from("numeros")
+          .select("id, etat")
+          .eq("cloudprinter_order_id", ordre)
+          .maybeSingle<{ id: string; etat: string }>()
+      ).data;
+
+    if (!numero) {
+      /* 204, le code CloudSignal pour « commande inconnue » : ils arrêtent
+         de réessayer. Un signal d'un AUTRE client de la même interface
+         atterrirait ici — rien à faire chez nous. */
+      return new NextResponse(null, { status: 204 });
+    }
+
+    const { effet } = interpreterSignal(type);
+
+    if (effet === "expedier") {
+      /* Transporteur et suivi dans le MÊME update que l'état : M7 exige un
+         transporteur (manquePour, mails.ts) — un update en deux temps
+         laisserait la relève signaler un incomplet entre les deux.
+         `tracking` est parfois un code, parfois une URL : l'URL s'affiche
+         cliquable chez la cliente, le code reste lisible au journal. */
+      const tracking = s(body.tracking);
+      const transporteur = s(body.shipping_option) || "Transporteur";
+      const maintenant = new Date().toISOString();
+
+      const { data: maj, error } = await supabase
+        .from("numeros")
+        .update({
+          etat: "expediee",
+          transporteur,
+          tracking_url: /^https?:\/\//i.test(tracking) ? tracking : null,
+          etat_maj_le: maintenant,
+        })
+        .eq("id", numero.id)
+        .eq("etat", "en_production")
+        .select("id");
+
+      if (error) {
+        console.error("[cloudprinter/webhook] update échoué", error.code, error.message);
+        /* 500 volontaire : Cloudprinter réessaie, la base se remettra. */
+        return NextResponse.json({ error: "internal" }, { status: 500 });
+      }
+
+      if (!maj?.length) {
+        /* Le dossier n'était pas « en production ». Rejeu d'un signal déjà
+           traité : silence. Autre état : anormal, ça se lit au journal —
+           l'idiome de `paiement_inattendu`. */
+        if (numero.etat !== "expediee" && numero.etat !== "livree") {
+          await logEvenement(supabase, numero.id, "cloudprinter_signal_inattendu", {
+            type, etat: numero.etat, tracking, transporteur,
+          });
+        }
+        return NextResponse.json({ received: true, ignored: true }, { status: 200 });
+      }
+
+      /* Invariant nº6 : chaque transition écrit dans `evenements`. */
+      await logEvenement(supabase, numero.id, "etat_change", {
+        de: "en_production",
+        vers: "expediee",
+        par: "cloudprinter",
+        source: "webhook",
+        transporteur,
+        ...(tracking ? { tracking } : {}),
+      });
+
+      /* M7 part par le chemin partagé — même verrou, mêmes contrôles que la
+         relève. Ne throw jamais. */
+      await releverDossier(supabase, numero.id);
+
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+
+    if (effet === "alerte") {
+      /* Un problème d'impression ne recule JAMAIS un dossier tout seul :
+         un remboursement avant impression et une réimpression après défaut
+         se décident au téléphone, pas par une machine (même philosophie que
+         le remboursement Stripe). Le journal alerte, l'atelier tranche. */
+      await logEvenement(supabase, numero.id, "cloudprinter_erreur", {
+        type,
+        ...(s(body.cause) ? { cause: s(body.cause) } : {}),
+        ...(s(body.message) ? { message: s(body.message) } : {}),
+        ...(typeof body.delay === "number" ? { delay: body.delay } : {}),
+        ...(item ? { item } : {}),
+      });
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+
+    /* Le fil de production, pour le Parcours de la fiche : validé, en
+       presse, emballé… Le premier signal de la sandbox est aussi notre
+       vérité sur la forme réelle des payloads — d'où le brut conservé. */
+    await logEvenement(supabase, numero.id, "cloudprinter_signal", {
+      type,
+      ...(s(body.datetime) ? { datetime: s(body.datetime) } : {}),
+      ...(item ? { item } : {}),
+    });
+    return NextResponse.json({ received: true }, { status: 200 });
+  } catch (err) {
+    console.error("[cloudprinter/webhook] exception", (err as Error)?.message);
+    return NextResponse.json({ error: "internal" }, { status: 500 });
+  }
+}
