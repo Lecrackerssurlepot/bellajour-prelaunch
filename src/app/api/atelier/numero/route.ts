@@ -183,7 +183,13 @@ export async function PATCH(request: Request) {
       maj.renonciation_at = body.renonciation_retractation ? maintenant : null;
     }
 
-    if (!Object.keys(maj).length) {
+    /* T2-13 — « j'ai noté des retouches dans le Canva », le troisième geste
+       de l'état 4. Branche DÉDIÉE, jamais dans `maj` : le journal
+       `consentements` raconte des cases cochées, pas une demande de
+       correction, et les deux gestes ne doivent pas se mélanger. */
+    const demandeRetouches = body.retouches_demandees === true;
+
+    if (!Object.keys(maj).length && !demandeRetouches) {
       return NextResponse.json({ error: "rien_a_faire" }, { status: 400 });
     }
 
@@ -208,14 +214,44 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "etat_incompatible" }, { status: 409 });
     }
 
-    const { error } = await supabase.from("numeros").update(maj).eq("id", numero.id);
-    if (error) {
-      console.error("[atelier/numero] patch consentements échoué", error.code);
-      return NextResponse.json({ error: "internal" }, { status: 500 });
+    /* Les retouches n'existent qu'à l'état 4 : ailleurs, la demande vient
+       d'un onglet resté ouvert pendant que le dossier avançait. */
+    if (demandeRetouches && numero.etat !== "maquette_prete") {
+      return NextResponse.json({ error: "etat_incompatible" }, { status: 409 });
     }
 
-    /* Invariant nº6 — et ici, c'est aussi l'horodatage. */
-    await logEvenement(supabase, numero.id, "consentements", maj);
+    if (demandeRetouches) {
+      /* Atomique et idempotent : le `.is(null)` fait qu'un second clic (ou un
+         rejeu réseau) ne réécrit pas la date et ne rejournalise rien. La
+         suspension de l'auto-validation à J+7 découle de cette colonne
+         (doitAutoValider, mails.ts) ; elle est levée quand l'atelier republie
+         la maquette. */
+      const { data: pose } = await supabase
+        .from("numeros")
+        .update({ retouches_demandees_le: maintenant })
+        .eq("id", numero.id)
+        .eq("etat", "maquette_prete")
+        .is("retouches_demandees_le", null)
+        .select("id");
+
+      /* Invariant nº6 — seulement si le geste a réellement eu lieu. */
+      if (pose?.length) {
+        await logEvenement(supabase, numero.id, "retouches_demandees", {
+          source: "page_numero",
+        });
+      }
+    }
+
+    if (Object.keys(maj).length) {
+      const { error } = await supabase.from("numeros").update(maj).eq("id", numero.id);
+      if (error) {
+        console.error("[atelier/numero] patch consentements échoué", error.code);
+        return NextResponse.json({ error: "internal" }, { status: 500 });
+      }
+
+      /* Invariant nº6 — et ici, c'est aussi l'horodatage. */
+      await logEvenement(supabase, numero.id, "consentements", maj);
+    }
 
     /* M1 « {{titre}}, c'est parti » (PRD §10) — LA FIN DU DÉPÔT.
        C'est le seul signal serveur qui dit « elle a terminé » : le moteur

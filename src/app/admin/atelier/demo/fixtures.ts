@@ -492,6 +492,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     cloudprinterOrderId: null,
     transporteur: ["expediee", "livree"].includes(g.etat) ? "Colissimo" : null,
     trackingUrl: ["expediee", "livree"].includes(g.etat) ? "https://www.laposte.fr/outils/suivre-vos-envois" : null,
+    retouchesLe: null,
     apercu: publie
       ? { c1: PHOTOS[0], c4: PHOTOS[1], double: PHOTOS[2] }
       : { c1: null, c4: null, double: null },

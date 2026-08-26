@@ -72,12 +72,14 @@ type Numero = {
   tracking_url: string | null
   valide_le: string | null
   etat_maj_le: string
+  /* T2-13 — la date du clic « j'ai noté des retouches », ou null. */
+  retouches_demandees_le: string | null
 }
 
 const CHAMPS =
   'token, etat, titre, prenom, nb_photos, nb_pages, palier, apercu_urls, ' +
   'maquette_pdf_url, canva_url, cgv_ok, renonciation_retractation, consent_photos, ' +
-  'transporteur, tracking_url, valide_le, etat_maj_le'
+  'transporteur, tracking_url, valide_le, etat_maj_le, retouches_demandees_le'
 
 /**
  * De qui c'est le tour, en une phrase.
@@ -213,7 +215,11 @@ export default async function NumeroPage({
      ligne est en `photos_recues`, mais la balle n'est pas dans notre camp
      tant qu'elle n'a pas envoyé. Même correction que dans la pile de
      l'atelier — c'est le même mensonge des deux côtés. */
-  const camp: Camp = depot === 'termine' ? QUI_ATTEND[numero.etat] : 'cliente'
+  /* T2-13 — même logique, dans l'autre sens : des retouches demandées à
+     l'état 4 remettent la balle chez l'atelier, et la ligne « c'est à vous »
+     mentirait. La table de travail fait la même bascule (donnees.ts). */
+  const retouches = numero.etat === 'maquette_prete' && Boolean(numero.retouches_demandees_le)
+  const camp: Camp = depot !== 'termine' ? 'cliente' : retouches ? 'atelier' : QUI_ATTEND[numero.etat]
 
   return (
     <Coquille titre={titre} avancement={attendPhotos || aTerminer ? 0 : AVANCEMENT[numero.etat] ?? 0}
@@ -382,6 +388,7 @@ export default async function NumeroPage({
             pdfUrl={numero.maquette_pdf_url}
             canvaUrl={numero.canva_url}
             dateAuto={formaterJour(ajouterJours(numero.etat_maj_le, JOURS_AUTO_VALIDATION))}
+            retouchesLe={numero.retouches_demandees_le}
           />
         </>
       )}

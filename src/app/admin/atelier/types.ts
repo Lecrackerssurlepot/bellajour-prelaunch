@@ -171,6 +171,8 @@ export type Fiche = {
   cloudprinterOrderId: string | null;
   transporteur: string | null;
   trackingUrl: string | null;
+  /** T2-13 — la date du clic « j'ai noté des retouches », ou null. */
+  retouchesLe: string | null;
   /** Signés pour l'affichage (URL courtes, régénérées à chaque rendu). */
   apercu: { c1: string | null; c4: string | null; double: string | null };
   /** Les valeurs brutes (clés de coffre), pour préremplir le formulaire. */

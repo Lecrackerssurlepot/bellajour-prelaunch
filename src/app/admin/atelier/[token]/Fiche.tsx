@@ -319,6 +319,19 @@ export default function Fiche({
         </div>
       ) : null}
 
+      {/* ── T2-13 : DES RETOUCHES ATTENDENT ─────────────────────────
+          L'auto-validation à J+7 est suspendue tant que la maquette n'est
+          pas republiée — republier lève la suspension et renvoie M5 avec la
+          nouvelle échéance. */}
+      {l.etat === "maquette_prete" && fiche.retouchesLe ? (
+        <div className="ate-bandeau ate-bandeau--attention">
+          <strong>Elle a noté des retouches dans le Canva</strong> le{" "}
+          {new Date(fiche.retouchesLe).toLocaleDateString("fr-FR", { day: "2-digit", month: "long" })}.
+          L&apos;auto-validation à J+7 est suspendue : relis ses commentaires, corrige, puis
+          republie la maquette — M5 repartira avec la nouvelle échéance.
+        </div>
+      ) : null}
+
       <div className="ate-colonnes">
         <div className="ate-colonne">
           <PanneauAction fiche={fiche} demo={demo} />

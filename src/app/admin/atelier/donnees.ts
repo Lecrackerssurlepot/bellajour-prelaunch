@@ -52,7 +52,7 @@ import type {
 } from "./types";
 
 const CHAMPS_LIGNE =
-  "token, titre, prenom, email, email_canonical, etat, nb_photos, nb_pages, palier, consent_photos, created_at, etat_maj_le, stripe_payment_intent";
+  "token, titre, prenom, email, email_canonical, etat, nb_photos, nb_pages, palier, consent_photos, created_at, etat_maj_le, stripe_payment_intent, retouches_demandees_le";
 
 type RangeeNumero = {
   id?: string;
@@ -70,6 +70,8 @@ type RangeeNumero = {
   created_at: string | null;
   etat_maj_le: string | null;
   stripe_payment_intent: string | null;
+  /* T2-13 — la date du clic « j'ai noté des retouches », ou null. */
+  retouches_demandees_le?: string | null;
   /* Clé du compte qui a le dossier en main, ou null. Absente tant que la
      migration 20260826 n'est pas passée (cf. lireNumeros). */
   en_charge?: string | null;
@@ -102,6 +104,14 @@ function mailDeLAction(
   return code ? { code, absent: !templateExiste(code) } : null;
 }
 
+/* Une copie de la carte des envois, sans un code — pour projeter la levée
+   d'un verrou (republication après retouches) sans toucher l'original. */
+function sans(envoyes: Envoyes, code: string): Envoyes {
+  const copie = new Map(envoyes);
+  copie.delete(code);
+  return copie;
+}
+
 function versLigne(
   r: RangeeNumero,
   maintenant: Date,
@@ -115,7 +125,10 @@ function versLigne(
      Ailleurs, le dépôt est terminé par construction. */
   const depot: EtapeDepot =
     r.etat === "photos_recues" ? etapeDepot(r.consent_photos ?? null, nbPhotos) : "termine";
-  const u = urgencePour(r.etat, r.etat_maj_le, maintenant, { depot });
+  /* T2-13 — la question ne se pose qu'à l'état 4 : ailleurs la colonne est
+     un reliquat (elle est remise à null à la republication). */
+  const retouches = r.etat === "maquette_prete" && Boolean(r.retouches_demandees_le);
+  const u = urgencePour(r.etat, r.etat_maj_le, maintenant, { depot, retouches });
 
   return {
     numeroId: r.id ?? "",
@@ -148,7 +161,15 @@ function versLigne(
       libelle: a.libelle,
       explication: a.explication,
       vers: a.vers,
-      mail: mailDeLAction(a.vers, r, envoyes, maintenant),
+      /* T2-13 — republier après retouches lèvera le verrou M5 (la route le
+         supprime avant la relève) : la projection doit le savoir, sinon
+         l'écran annoncerait « aucun mail » alors que M5 repart. */
+      mail: mailDeLAction(
+        a.vers,
+        r,
+        a.cle === "publier_maquette" && retouches ? sans(envoyes, "M5") : envoyes,
+        maintenant,
+      ),
       note: a.note,
     })),
   };
@@ -632,6 +653,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     cloudprinterOrderId: (n.cloudprinter_order_id as string) ?? null,
     transporteur: (n.transporteur as string) ?? null,
     trackingUrl: (n.tracking_url as string) ?? null,
+    retouchesLe: (n.retouches_demandees_le as string) ?? null,
     apercu,
     apercuBrut: {
       c1: brut.c1 ?? null,

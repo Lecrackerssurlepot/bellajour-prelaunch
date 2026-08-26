@@ -114,6 +114,15 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         return { texte: "Paiement reçu", detail: euros ? `${euros} €` : null, ton: "elle" };
       }
       if (vers === "maquette_prete") {
+        /* Une republication après retouches n'est pas une première annonce :
+           la nuance dit à celui qui relit pourquoi il y a deux publications. */
+        if (source === "republication_retouches") {
+          return {
+            texte: fait(qui, "a republié la maquette", "Maquette republiée"),
+            detail: "Après ses retouches. L'échéance J+7 repart de maintenant",
+            ton: "nous",
+          };
+        }
         return { texte: fait(qui, "a publié la maquette", "Maquette publiée"), detail: null, ton: "nous" };
       }
       if (vers === "validee") {
@@ -164,6 +173,25 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         texte: `Mail NON parti : ${texteMail(String(payload.code ?? ""))}`,
         detail: "La relève réessaiera",
         ton: "alerte",
+      };
+
+    /* T2-13 — le troisième geste de l'état 4. Il fait basculer le dossier
+       dans la pile « à faire » et suspend l'auto-validation à J+7. */
+    case "retouches_demandees":
+      return {
+        texte: "Elle a noté des retouches dans le Canva",
+        detail: "L'auto-validation à J+7 est suspendue jusqu'à la republication",
+        ton: "elle",
+      };
+
+    /* Le verrou d'un mail a été retiré pour qu'il reparte — aujourd'hui M5,
+       à la republication d'une maquette corrigée. Sans cette ligne, deux
+       « Mail parti : M5 » se suivraient sans explication. */
+    case "mail_reouvert":
+      return {
+        texte: `Mail réarmé : ${texteMail(String(payload.code ?? ""))}`,
+        detail: "Il repartira avec la nouvelle échéance",
+        ton: "neutre",
       };
 
     /* Une relance retiree A LA MAIN. Le verrou dans `mails_envoyes` suffit a
