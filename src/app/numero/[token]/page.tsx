@@ -22,7 +22,8 @@ import { makeSupabase } from '@/lib/supabase'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { resoudreApercu } from '@/lib/atelier/apercu'
 import { eurosPour, type PalierCle } from '@/lib/atelier/prix'
-import { etapeDepot, QUI_ATTEND, type Camp, type EtapeDepot } from '@/lib/atelier/urgence'
+import { DELAIS, JOURS_LIVRAISON, etapeDepot, QUI_ATTEND, type Camp, type EtapeDepot } from '@/lib/atelier/urgence'
+import { JOURS_AVANT_AUTO_VALIDATION } from '@/lib/atelier/mails'
 import { MIN_PHOTOS } from '../../(atelier)/composer/depot/paliers'
 import { ajouterJours, formaterJour } from '@/lib/atelier/dates'
 import CasesEtCommande from './CasesEtCommande'
@@ -78,13 +79,15 @@ type Numero = {
   retouches_demandees_le: string | null
   /* T2-1 — la case facultative « montrer des extraits », affichée en pied. */
   consent_communication: boolean | null
+  /* T2-11 — hosted_invoice_url de Stripe, capté au webhook (best-effort). */
+  facture_url: string | null
 }
 
 const CHAMPS =
   'token, etat, titre, prenom, nb_photos, nb_pages, palier, apercu_urls, ' +
   'maquette_pdf_url, canva_url, cgv_ok, renonciation_retractation, consent_photos, ' +
   'transporteur, tracking_url, valide_le, etat_maj_le, retouches_demandees_le, ' +
-  'consent_communication'
+  'consent_communication, facture_url'
 
 /**
  * De qui c'est le tour, en une phrase.
@@ -123,11 +126,13 @@ const AVANCEMENT: Record<Etat, number> = {
   livree: 5,
 }
 
-/* Délai d'auto-validation (PRD §11). Sans lui, une part des dossiers payés
-   dort indéfiniment et la production ne se ferme jamais. */
-const JOURS_AUTO_VALIDATION = 7
-/* Annoncé au public : 10 jours après validation (PRD §13, marge incluse). */
-const JOURS_LIVRAISON = 10
+/* Délai d'auto-validation (PRD §11) : la MÊME constante que celle que la
+   relève applique et que M5 annonce — deux copies avaient fini par exister,
+   et une date de courtoisie qui ne correspond pas à la bascule réelle est
+   pire que pas de date. Idem pour la livraison (T2-8) : les chiffres promis
+   ici sont ceux que l'admin surveille. */
+const JOURS_AUTO_VALIDATION = JOURS_AVANT_AUTO_VALIDATION
+const JOURS_COMPOSITION = DELAIS.payee?.joursOuvres ?? 3
 
 async function lireNumero(token: string): Promise<Numero | null | 'panne'> {
   try {
@@ -365,18 +370,36 @@ export default async function NumeroPage({
               euros={euros}
               cgvOk={numero.cgv_ok}
               renonciation={numero.renonciation_retractation}
+              joursComposition={JOURS_COMPOSITION}
+              joursLivraison={JOURS_LIVRAISON}
             />
           )}
         </>
       )}
 
       {numero.etat === 'payee' && (
+        /* T2-10 — « Reçu. On compose. » était sec pour quelqu'un qui vient
+           de payer 40 €. On remercie, puis trois lignes aérées : c'est payé,
+           voilà ce qui se passe, voilà comment demander un détail. Les
+           chiffres viennent de DELAIS, jamais en dur. */
         <>
-          <p className="nu-mot">Reçu. On compose.</p>
+          <p className="nu-mot">Merci.</p>
           <p className="nu-sub">
-            Votre numéro complet vous attend ici <b>sous 3 jours ouvrés</b>. Votre
-            facture est partie par mail au moment du paiement.
+            Votre paiement est bien reçu. L’atelier compose maintenant votre
+            numéro complet.
           </p>
+          <p className="nu-sub">
+            Il vous attend ici <b>sous {JOURS_COMPOSITION} jours ouvrés</b>, et
+            vous serez prévenue par mail.
+          </p>
+          {numero.facture_url && (
+            <p className="nu-sub">
+              <a className="nu-lien" href={numero.facture_url} target="_blank" rel="noopener noreferrer">
+                Votre facture
+              </a>
+              , hébergée par Stripe, reste accessible ici à tout moment.
+            </p>
+          )}
           <p className="nu-note">
             Un détail à changer ? Répondez au mail, on ajuste sans frais.
           </p>

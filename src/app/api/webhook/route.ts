@@ -687,7 +687,7 @@ export async function POST(request: Request) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         if (estSessionAtelier(session)) {
-          ok = await traiterPaiementAtelier(supabase, session);
+          ok = await traiterPaiementAtelier(supabase, session, stripe);
         } else if (estSessionPrevente(session)) {
           ok = await handleCheckoutCompleted(supabase, session);
         } else {

@@ -41,10 +41,15 @@ type Props = {
   euros: number | null
   cgvOk: boolean
   renonciation: boolean
+  /* T2-8 — les deux temps de la promesse, calculés par la page depuis
+     DELAIS et JOURS_LIVRAISON (urgence.ts) : jamais de chiffre en dur ici,
+     ce sont les délais que l'admin surveille déjà. */
+  joursComposition: number
+  joursLivraison: number
 }
 
 export default function CasesEtCommande({
-  token, titre, nbPages, euros, cgvOk, renonciation,
+  token, titre, nbPages, euros, cgvOk, renonciation, joursComposition, joursLivraison,
 }: Props) {
   const [cgv, setCgv] = useState(cgvOk)
   const [reno, setReno] = useState(renonciation)
@@ -109,10 +114,18 @@ export default function CasesEtCommande({
           <>Votre numéro est en cours de chiffrage.</>
         )}
       </p>
+      {/* T2-8 — « chez vous sous 10 jours » seul laissait croire que tout
+          était prêt, alors que la maquette complète reste à composer. La
+          promesse se dit en deux temps, dans l'ordre où elle se vivra. */}
       <p className="nu-prix-sub">
-        {prixConnu
-          ? 'Chez vous sous 10 jours après validation.'
-          : 'Le prix vous sera confirmé par mail, avant tout paiement.'}
+        {prixConnu ? (
+          <>
+            Après votre paiement : votre numéro complet sous {joursComposition} jours
+            ouvrés. Puis chez vous sous {joursLivraison} jours après votre validation.
+          </>
+        ) : (
+          'Le prix vous sera confirmé par mail, avant tout paiement.'
+        )}
       </p>
 
       <div className="nu-cases">

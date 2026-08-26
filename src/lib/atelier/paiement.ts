@@ -63,7 +63,10 @@ function asId(v: string | { id: string } | null | undefined): string | null {
  */
 export async function traiterPaiementAtelier(
   supabase: SupabaseClient,
-  session: Stripe.Checkout.Session
+  session: Stripe.Checkout.Session,
+  /** T2-11 : le client Stripe de la route, pour aller chercher le lien de la
+      facture. Optionnel — sans lui, tout marche, le lien n'apparaît pas. */
+  stripe?: Stripe
 ): Promise<boolean> {
   const meta = (session.metadata ?? {}) as MetaAtelier;
   const numeroId = (meta.numero_id || "").trim();
@@ -108,6 +111,24 @@ export async function traiterPaiementAtelier(
      est passée sous `collected_information`. */
   const adresse = session.collected_information?.shipping_details ?? null;
 
+  /* ── T2-11 : le lien « Votre facture » ──────────────────────────────
+     `invoice_creation` est actif : Stripe émet une facture, mais son URL
+     n'était captée nulle part et la page d'après-paiement promettait un mail
+     que Stripe n'envoie pas toujours (jamais en mode test, et Promotions en
+     réel). Best-effort STRICT : la facture peut ne pas être finalisée à
+     l'instant du webhook — le lien manque alors, la page l'omet, rien ne
+     bloque un paiement pour un lien de confort. */
+  let factureUrl: string | null = null;
+  const factureId = asId(session.invoice as string | { id: string } | null);
+  if (stripe && factureId) {
+    try {
+      const facture = await stripe.invoices.retrieve(factureId);
+      factureUrl = facture.hosted_invoice_url ?? null;
+    } catch (err) {
+      console.error("[atelier/paiement] facture introuvable (non bloquant)", (err as Error)?.message);
+    }
+  }
+
   const maintenant = new Date().toISOString();
 
   /* Transition atomique — même idiome que /api/atelier/valider : le `.eq` sur
@@ -121,6 +142,7 @@ export async function traiterPaiementAtelier(
       stripe_payment_intent: asId(session.payment_intent),
       adresse_livraison: adresse,
       etat_maj_le: maintenant,
+      ...(factureUrl ? { facture_url: factureUrl } : {}),
     })
     .eq("id", numero.id)
     .eq("etat", "apercu_pret")

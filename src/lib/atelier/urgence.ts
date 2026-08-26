@@ -94,6 +94,15 @@ export const DELAIS: Partial<Record<Etat, Delai>> = {
 };
 
 /**
+ * La promesse de livraison annoncée au public : « chez vous sous 10 jours
+ * après validation » (PRD §13, marge incluse). Pas dans DELAIS : ce délai
+ * appartient à l'imprimeur et au transporteur, aucun compte à rebours de
+ * l'atelier ne court dessus. Exportée pour que la page /numero et les CGV ne
+ * puissent pas dire un chiffre différent de celui-ci.
+ */
+export const JOURS_LIVRAISON = 10;
+
+/**
  * Qui doit jouer pour sortir de cet état.
  *
  * Exporté parce que trois écrans posent la même question sous trois formes :
