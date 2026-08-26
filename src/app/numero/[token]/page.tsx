@@ -30,6 +30,8 @@ import AttentePaiement from './AttentePaiement'
 import BoutonValider from './BoutonValider'
 import BoutonEnvoyer from './BoutonEnvoyer'
 import Apercu from './Apercu'
+import LienPartage from '../../components/LienPartage'
+import ConsentCommunication from './ConsentCommunication'
 import '../numero.css'
 
 /* L'adresse publique du site, pour écrire le lien EN TOUTES LETTRES sous les
@@ -74,12 +76,15 @@ type Numero = {
   etat_maj_le: string
   /* T2-13 — la date du clic « j'ai noté des retouches », ou null. */
   retouches_demandees_le: string | null
+  /* T2-1 — la case facultative « montrer des extraits », affichée en pied. */
+  consent_communication: boolean | null
 }
 
 const CHAMPS =
   'token, etat, titre, prenom, nb_photos, nb_pages, palier, apercu_urls, ' +
   'maquette_pdf_url, canva_url, cgv_ok, renonciation_retractation, consent_photos, ' +
-  'transporteur, tracking_url, valide_le, etat_maj_le, retouches_demandees_le'
+  'transporteur, tracking_url, valide_le, etat_maj_le, retouches_demandees_le, ' +
+  'consent_communication'
 
 /**
  * De qui c'est le tour, en une phrase.
@@ -224,7 +229,8 @@ export default async function NumeroPage({
   return (
     <Coquille titre={titre} avancement={attendPhotos || aTerminer ? 0 : AVANCEMENT[numero.etat] ?? 0}
       camp={camp}
-      token={numero.token}>
+      token={numero.token}
+      consentCommunication={numero.consent_communication === true}>
       {numero.etat === 'photos_recues' && depot === 'termine' && (
         <>
           <p className="nu-mot">L’atelier a vos {numero.nb_photos} photos.</p>
@@ -466,6 +472,7 @@ function Coquille({
   avancement,
   camp,
   token,
+  consentCommunication = null,
   children,
 }: {
   titre: string
@@ -474,6 +481,9 @@ function Coquille({
   avancement: number
   camp: Camp
   token: string
+  /* T2-1 — la valeur en base de « montrer des extraits », ou null pour ne
+     pas afficher la case (page en panne : on ne connaît pas la vérité). */
+  consentCommunication?: boolean | null
   children: React.ReactNode
 }) {
   return (
@@ -505,14 +515,21 @@ function Coquille({
 
         {children}
 
+        {/* ── T2-1 : la case facultative, ici où elle a du contexte ──── */}
+        {consentCommunication !== null && (
+          <ConsentCommunication token={token} valeur={consentCommunication} />
+        )}
+
         {/* ── LE LIEN, ET LA CONSIGNE DE LE GARDER ──────────────────────
             Il n'y a pas de compte, pas de mot de passe : ce lien EST son
             espace client (PRD §7.5). Elle le reçoit une fois, dans un mail
-            qui peut tomber en Promotions. Rien ne le lui disait. */}
+            qui peut tomber en Promotions.
+            T2-12 : l'URL en toutes lettres ne donnait aucun geste à faire —
+            deux boutons le donnent, l'URL n'apparaît plus en clair. */}
         <p className="nu-garde">
           <b>Gardez ce lien.</b> C’est le seul, il suit votre numéro jusqu’à la livraison, et
-          il ne demande ni compte ni mot de passe. Ajoutez-le à vos favoris, ou gardez le mail.
-          <span className="nu-garde-url">{`${SITE_URL_PUBLIC}/numero/${token}`}</span>
+          il ne demande ni compte ni mot de passe.
+          <LienPartage url={`${SITE_URL_PUBLIC}/numero/${token}`} />
         </p>
       </main>
 

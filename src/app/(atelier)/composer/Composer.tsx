@@ -26,6 +26,10 @@ export default function Composer() {
   const [pret, setPret] = useState(false)
   const [envoi, setEnvoi] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
+  /* T2-4 — vrai quand on est arrivé par `?reprendre=` : l'écran 5 doit dire
+     que des photos sont DÉJÀ chez nous, sinon il ressemble à un premier
+     dépôt et laisse croire qu'il faut tout recommencer. */
+  const [reprise, setReprise] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
 
   /* Reprise au montage — jamais pendant le rendu serveur, sinon l'HTML
@@ -44,11 +48,9 @@ export default function Composer() {
   useEffect(() => {
     const repris = loadDraft()
     const reprendre = new URLSearchParams(window.location.search).get('reprendre')
-    setDraft(
-      reprendre && isValidNumeroToken(reprendre)
-        ? { ...repris, token: reprendre, screen: 5 }
-        : repris
-    )
+    const estReprise = Boolean(reprendre && isValidNumeroToken(reprendre))
+    setDraft(estReprise ? { ...repris, token: reprendre, screen: 5 } : repris)
+    setReprise(estReprise)
     setPret(true)
   }, [])
 
@@ -176,6 +178,7 @@ export default function Composer() {
           {n === 5 && (
             <Screen5Depot
               token={draft.token}
+              reprise={reprise}
               consent={draft.consentPhotos}
               onConsent={(v) => patch({ consentPhotos: v })}
               /* Une seule écriture d'état : marquer terminé ET passer à
@@ -186,12 +189,10 @@ export default function Composer() {
             />
           )}
           {n === 6 && (
-            <Screen6Fin
-              titre={draft.titre}
-              token={draft.token}
-              consentCommunication={draft.consentCommunication}
-              onConsent={(v) => patch({ consentCommunication: v })}
-            />
+            /* T2-1 : la case « montrer des extraits » a quitté cet écran
+               pour la page /numero (ConsentCommunication.tsx) — un moment
+               de conclusion ne se partage pas. */
+            <Screen6Fin titre={draft.titre} token={draft.token} />
           )}
 
           {/* L'écran 5 porte son PROPRE bouton : lui seul sait si les photos

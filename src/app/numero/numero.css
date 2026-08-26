@@ -385,6 +385,33 @@
 
 .nu-erreur { margin-top: 16px; font-size: 14px; color: var(--c-accent-strong); }
 
+/* ---- la case facultative « montrer des extraits » (T2-1) ----
+   Venue de l'ecran 6 du composeur (.at-facultatif) : ici elle a du contexte
+   et du temps, en pied de page, au-dessus de la consigne du lien. */
+.nu-facultatif {
+  margin-top: clamp(48px, 9vw, 84px);
+  padding-top: clamp(20px, 4vw, 28px);
+  border-top: 1px solid var(--c-line);
+  max-width: 52ch;
+}
+.nu-facultatif + .nu-garde { margin-top: clamp(24px, 5vw, 40px); }
+
+.nu-facultatif-titre {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.nu-facultatif-note {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+
+.nu-facultatif .nu-check { margin-top: 16px; }
+
 /* ---- l'état 4 : maquette feuilletable + Canva en commentaire ---- */
 .nu-pdf {
   margin-top: clamp(28px, 5vw, 40px);

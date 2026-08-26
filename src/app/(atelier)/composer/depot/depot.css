@@ -165,6 +165,10 @@
   color: var(--c-text-soft);
 }
 
+/* T2-4 — la reprise n'est pas un avertissement : c'est une bonne nouvelle
+   (vos photos sont la), elle parle avec la voix du texte, pas de l'alerte. */
+.bj-atelier .at-d-avis--reprise b { font-weight: 400; color: var(--c-text); }
+
 .bj-atelier .at-d-refus {
   margin-top: 18px;
   max-width: 56ch;
