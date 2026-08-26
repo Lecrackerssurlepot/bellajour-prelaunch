@@ -277,10 +277,15 @@ const ADRESSE_STRIPE = {
   name: "Marie Dupont",
   address: { line1: "12 rue des Lilas", line2: null, city: "Paris", postal_code: "75011", state: null, country: "fr" },
 };
-const adr = adresseCloudprinter(ADRESSE_STRIPE, "marie@exemple.fr");
+const adr = adresseCloudprinter(ADRESSE_STRIPE, "marie@exemple.fr", "06 12 34 56 78");
 ok("adresse complete acceptee", adr.ok);
 ok("le nom est decoupe prenom / nom", adr.ok && adr.adresse.firstname === "Marie" && adr.adresse.lastname === "Dupont");
 ok("le pays est normalise en majuscules", adr.ok && adr.adresse.country === "FR");
+ok("le telephone du dossier part, nettoye (exige par leur API)",
+   adr.ok && adr.adresse.phone === "0612345678");
+const adrSansTel = adresseCloudprinter(ADRESSE_STRIPE, "marie@exemple.fr");
+ok("sans telephone au dossier : repli sur le numero de la maison, jamais un refus",
+   adrSansTel.ok && typeof adrSansTel.adresse.phone === "string" && adrSansTel.adresse.phone.length > 5);
 const adrMono = adresseCloudprinter({ name: "Madonna", address: { line1: "1 rue X", city: "Lille", postal_code: "59000", country: "FR" } }, "m@x.fr");
 ok("un nom d'un seul mot sert deux fois", adrMono.ok && adrMono.adresse.lastname === "Madonna");
 const adrIncomplete = adresseCloudprinter({ name: "Marie", address: { line1: "12 rue X", country: "FR" } }, "m@x.fr");

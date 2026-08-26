@@ -56,10 +56,15 @@ async function poster(chemin: string, corps: Record<string, unknown>): Promise<
 
     if (reponse.ok) return { ok: true, statut: reponse.status, corps: json };
 
+    /* Leur format d'erreur réel (vérifié le 26/08) est
+       `{"error": {"type": "...", "info": "..."}}` — la doc montrait un
+       `message` plat. On lit les deux : un refus doit se LIRE à l'écran,
+       pas s'afficher en « HTTP 400 » muet. */
+    const erreur = (json.error && typeof json.error === "object" ? json.error : {}) as Record<string, unknown>;
     const message =
-      typeof json.message === "string" && json.message
-        ? json.message
-        : `HTTP ${reponse.status}`;
+      (typeof json.message === "string" && json.message) ||
+      [erreur.type, erreur.info].filter((v) => typeof v === "string" && v).join(" : ") ||
+      `HTTP ${reponse.status}`;
 
     /* La commande existe déjà sous cette référence : ce n'est PAS un échec,
        c'est notre idempotence distante qui joue (deux clics en course). Le
