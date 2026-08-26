@@ -391,7 +391,21 @@ dos carré ne peut physiquement pas vivre dans le même PDF que les pages.
 - Recette : `node scripts/recette.mjs signal "Test 1" ItemShipped` forge un webhook ;
   `scripts/cloudprinter-produits.mjs` lit le catalogue (⚠️ API très rationnée).
 - Migration : supabase/migrations/20260827_atelier_cloudprinter.sql (impression_fichiers
-  jsonb + index partiel sur cloudprinter_order_id) — appliquée par Mathias.
+  jsonb + index partiel sur cloudprinter_order_id) — APPLIQUÉE en production le 26/08.
+- **PROUVÉ DE BOUT EN BOUT le 26/08 en sandbox** (commande → signaux → état 7 automatique
+  → M7, puis livrée → M8). Cinq leçons payées en vrai, toutes dans le code :
+  (1) `phone` OBLIGATOIRE dans l'adresse — téléphone du dossier, repli TELEPHONE_CONTACT ;
+  (2) leur format d'erreur est `{error:{type,info}}`, pas `message` ;
+  (3) le champ `order` des signaux ne porte pas notre référence telle quelle — résolution
+  multi-candidats dans le webhook, payload des orphelins en console ;
+  (4) une référence de commande ne se RÉUTILISE JAMAIS, même annulée (`orders/cancel` par
+  API seulement, aucun bouton au dashboard) — re-commande sous `<id>-r<epoch36>`,
+  `cloudprinter_order_id` stocke la référence réellement utilisée ;
+  (5) `shipping_option` arrive en forme machine (`dpd_france`) — rendue lisible avant M7.
+- Dashboard : interface CloudCore = « My API interface » (PAS les « CloudApps Quick
+  Order ») ; webhook CloudSignal = « Bellajour preview » → la preview. La sandbox déroule
+  commande→shipped en ~45 s. Clés régénérées le 26/08 (les premières avaient circulé en
+  clair). Au lancement : interface Live + un webhook vers bellajour.fr + clés en Production.
 
 ## Webhook Stripe PARTAGÉ — le tri est EXPLICITE des deux côtés (24/08/2026)
 `/api/webhook` trie sur les métadonnées, avant tout accès en base, et **aucun produit n'est
