@@ -341,49 +341,22 @@ ne fait pas d'erreur, il fait un silence.
   env ADMIN_PASSWORD (Vercel Preview + Production). Service key strictement server-side.
 - Seule écriture autorisée : admin_last_seen. Ne touche jamais aux données métier.
 
-## Sections landing page (ordre d'affichage)
-1. Hero      — photos flottantes + headline + formulaire waitlist
-              fond : --cream (#EAE3D8) | data-theme="light"
-2. Anxiete   — scroll storytelling, grid photos, texte séquentiel
-              fond : --dark (#1C1C1C) | data-theme="dark"
-3. Solution  — comment ça marche (01 Upload, 02 Questionnaire, 03 La sélection, 04 La mise en page)
-              fond : --cream | data-theme="light"
-4. Album     — preuve visuelle produit (section manquante — à construire)
-              fond : à définir
-5. Waitlist  — CTA final + compteur inscrits + avantages Fondateurs
-              fond : --cream | data-theme="light"
-6. FAQ       — accordion questions/réponses
-              fond : --cream | data-theme="light"
-7. Footer    — "© 2026 Bellajour. Vivez. Nous composons."
+## ⚠️ Sections de l'ANCIENNE landing waitlist — historique, hors routage
+Ce qui suit décrit la landing de prévente, SUPPRIMÉE du routage depuis la bascule
+du 24/08/2026. Conservé parce que Hero et FAQ servent encore `/ambassadeurs` et
+`S5Garanties`, et que le Footer de `sections/` est importé par 8 fichiers.
+Ordre historique : Hero (crème) · Anxiete (sombre) · Solution (crème) · Album
+(jamais construite) · Waitlist · FAQ · Footer.
+Orphelins sur le disque, jamais servis : Anxiete, BrandIntro, Solution, Album,
+FinalWaitlist, StickyVText, StickyJoinCTA.
 
-## Statut sections
-✅ Hero        — validé (Hero.tsx + hero.css)
-✅ Anxiete     — validé (Anxiete.tsx + anxiete.css)
-✅ Solution    — validé (sections/solution)
-⏳ Album       — à construire (section produit manquante)
-✅ Waitlist    — validé
-✅ FAQ         — validé
-✅ Footer      — validé
-
-
-ls .claude/worktrees/friendly-banach/ 
-## Règles absolues de sécurité
-- Clés API jamais dans le code → variables Vercel uniquement
-- Rate limiting sur /api/waitlist (max 3 req/min par IP)
-- Signatures Stripe webhooks vérifiées
-- Supabase RLS activé sur toutes les tables
-- Git commit après chaque section validée
-
-## Comportement attendu de Claude Code
-- Toujours lire CLAUDE.md en début de session
-- Vérifier les fichiers existants avant d'écrire
-- Ne jamais inventer un chemin image → vérifier dans /public/
-- Positions CSS en vw/vh uniquement
-- En cas de doute → demander plutôt qu'inventer
-- Committer sur Git après chaque bloc validé
-- Ne jamais réécrire un fichier entier pour une correction partielle
-- Montrer les lignes exactes à modifier avant d'appliquer
-- Respecter data-theme="light/dark" sur chaque section
+## Statut de l'accueil (depuis le 27/08/2026)
+✅ Ouverture — la couverture qui se pose puis s'ouvre (Ouverture.tsx + ouverture.css)
+✅ Univers   — les sept pages du récit (Univers.tsx + univers.css)
+✅ Nav       — zone de verre, sans filet, ne se cache jamais
+✅ Footer    — inchangé (components/Footer.tsx)
+⏳ Page produit — à construire. C'est elle qui recevra le contenu des composants
+   orphelins S2Collection (l'étagère), S3Method (les trois temps), S4Final (les paliers).
 
 ## Cleanup post-launch
 - Supprimer src/app/components/ReferralSheet.tsx + referralsheet.css (orphelins, jamais importés).
