@@ -4,8 +4,11 @@
    pendant tout le récit, et c'est la seule porte vers le questionnaire
    une fois l'ouverture passée.
    ⚠️ backdrop-filter sur un position:fixed rame sur Chrome/Android (note
-   anti-jank de CLAUDE.md). Tenable ici parce que la barre est courte et
-   sans ombre ; à re-vérifier sur un Android réel. */
+   anti-jank de CLAUDE.md, MESURÉE en juin sur /preventes/prix, commit
+   246d8e5, avec un flou de 18 px là où celui-ci est à 20). Le repli n'est
+   PAS posé et le risque est accepté en connaissance de cause : voir D5
+   dans DECISIONS.md. La correction est le patron .pv-nav--flat, écrite
+   d'avance, à poser dès qu'un Android passe à portée. */
 .at-nav {
   position: fixed;
   top: 0;

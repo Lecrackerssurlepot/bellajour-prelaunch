@@ -110,7 +110,8 @@ que `/composer` partage.
 **La barre de tête ne se cache jamais** et n'a aucun filet : une zone de verre
 (`--glass-bg-strong` + blur 20). C'est la seule porte vers `/composer` une fois
 l'ouverture passée. ⚠️ `backdrop-filter` sur un `position:fixed` rame sur
-Chrome/Android (voir la règle anti-jank plus bas) : à re-vérifier sur un Android réel.
+Chrome/Android (règle anti-jank plus bas, mesurée en juin). Le repli n'est PAS posé,
+le risque est accepté : **D5 dans DECISIONS.md**, avec la correction toute prête.
 
 Le prototype de référence, avec ses variantes, vit dans
 `design-explorations/landing/` (non versionné).

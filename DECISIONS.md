@@ -39,3 +39,20 @@ portent la direction artistique, le wording verrouillé et les 60 polices libres
 Un `git clean` les efface sans avertissement.
 **Conséquence :** à trancher avant toute autre session. Voir D2 pour la règle des
 licences.
+
+D5 (27/08/2026) — L'accueil est fusionné dans `main` SANS que la barre de tête ait été
+vue sur un Android réel : aucun appareil sous la main, et l'émulation ne reproduit pas
+le défaut (le coût est une rastérisation sur le GPU du téléphone, pas sur celui du Mac).
+Le repli anti-jank n'est donc PAS posé : `.at-nav` reste en `backdrop-filter: blur(20px)`
+sur un `position: fixed`, la construction exacte diagnostiquée sur `/preventes/prix` en
+juin (commit 246d8e5), avec un flou plus lourd de 2 px. La règle de CLAUDE.md ne dit pas
+« risque » mais « jank garanti ». Risque accepté en connaissance de cause. Ceci lève la
+réserve de D3, sans la satisfaire.
+**Conséquence :** la correction est écrite d'avance, il n'y a qu'à la poser — le patron
+`.pv-nav--flat` (détection UA scopée à la page, fond quasi-opaque, blur retiré sur
+Android SEUL, desktop et Safari iOS pixel-identiques), déjà en place à trois endroits.
+À poser dès qu'un Android passe à portée, ou au premier signalement d'une barre qui
+accroche au défilement. ⚠️ Web Analytics n'est pas activé sur le projet : on n'a
+aujourd'hui AUCUN moyen de voir un décrochage Android. Une visiteuse qui subit le jank
+ne le signale pas, elle part. L'activer est le préalable pour que cette décision soit
+surveillable autrement qu'au hasard d'un prêt de téléphone.
