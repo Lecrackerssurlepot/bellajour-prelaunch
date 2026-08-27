@@ -93,3 +93,25 @@ worker produit DÉJÀ une vignette de 320 px (`reduire.worker.js`) : il suffirai
 déposer en second objet `vignettes/<r2_key>` au moment du dépôt et de la signer à côté de
 l'original dans `donnees.ts`. Migration à prévoir pour les dossiers existants. En attendant,
 paginer le dépliage par tranches de douze divise le pic par huit, sans rien toucher d'autre.
+
+D8 (27/08/2026) — INCIDENT, et il change le contexte de D4. Pendant l'audit, des
+`git add -A` ont fait entrer dans les commits de la branche les quatre dossiers
+volontairement non versionnés : `design-explorations/`, `assets/typo/`,
+`legal-source/` et `bellajour_layout_template.schema/`. La branche a été poussée sur
+GitHub, qui est PUBLIC. Elle a depuis été supprimée du dépôt distant et le travail
+rejoué sur une branche propre ; `main` n'a jamais été touchée.
+Ce qui a tenu : le `.gitignore` de D2. Les 76 polices non redistribuables ont bien
+été écartées, seules les 60 libres sont montées. Aucune violation de licence.
+Ce qui est passé : les explorations de direction artistique, les sources légales
+`.docx` et le schéma de gabarits.
+**Conséquence :** deux règles pour la suite. (1) Ne JAMAIS faire `git add -A` à la
+racine de ce dépôt tant que D4 n'est pas tranchée — nommer les chemins, ou passer
+par `git add -p`. (2) Ces dossiers sont désormais SUIVIS par un commit qui a existé
+publiquement : si D4 conclut à ne pas les publier, en tenir compte, une suppression
+de branche ne réécrit pas ce qui a pu être cloné.
+⚠️ Corollaire du même incident : un `git reset --hard` a effacé
+`design-explorations/` du disque, parce que le commit accidentel l'avait rendu
+suivi. Restauré et recompté (123 fichiers, 958 polices). C'est exactement le
+scénario contre lequel D4 met en garde, et il s'est produit PARCE QUE les dossiers
+avaient été commités par erreur. Un dossier non versionné est plus sûr qu'un
+dossier versionné à moitié.
