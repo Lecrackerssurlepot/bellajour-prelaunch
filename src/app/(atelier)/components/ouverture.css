@@ -234,7 +234,16 @@
    elle prend le traitement plein, et le corps d'un titre de section.
    C'est la promesse du brief tenue autrement : un seul geste offert,
    aucune hesitation possible. */
-.at-accueil .acte{position:relative;display:inline-flex;align-items:center;gap:1.2vw;padding:0;opacity:0}
+/* C'est un <button> : sans remise a zero, le navigateur pose son `buttonface`
+   gris-blanc et sa bordure, et le libelle creme disparait dedans. Rien ne
+   reinitialise les boutons globalement (le preflight Tailwind n'est pas
+   importe dans globals.css), donc chaque bouton porte son propre reset.
+   Meme jeu de declarations que `.suite` dans univers.css. */
+.at-accueil .acte{
+  position:relative;display:inline-flex;align-items:center;gap:1.2vw;
+  padding:0;background:none;border:0;cursor:pointer;color:inherit;font:inherit;
+  opacity:0;
+}
 .at-accueil .acte .mot{
   font-family:var(--font-display);font-style:italic;font-weight:400;line-height:1.1;
   transition:color var(--t-reveal) var(--ease);
