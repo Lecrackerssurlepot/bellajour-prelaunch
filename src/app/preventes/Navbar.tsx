@@ -18,6 +18,18 @@ export default function Navbar({ fermee = false }: { fermee?: boolean }) {
   /* s4In = true quand la Section 4 réservation est la section en focus → le CTA
      devient un lien vers la page prix (inutile de « scroller vers #s4 » quand on y est). */
   const [s4In, setS4In] = useState(false)
+  /* Android (Chromium) : on retire le backdrop-filter de la barre FIXE, qui y
+     est re-rasterise a chaque frame de defilement (regle anti-jank de
+     CLAUDE.md, mesuree en juin, commit 246d8e5). Le repli existait deja mais
+     seulement sur /preventes/prix — cette barre-ci, qui reste solide sur tout
+     le parcours des que le hero sort, ne l'avait jamais eu. Detecte apres le
+     montage : `false` a l'initiale = rendu serveur inchange, aucune erreur
+     d'hydratation. Bureau et Safari iOS gardent le verre depoli. */
+  const [flat, setFlat] = useState(false)
+
+  useEffect(() => {
+    setFlat(/Android/i.test(navigator.userAgent))
+  }, [])
 
   useEffect(() => {
     const hero = document.getElementById('s1')
@@ -62,7 +74,7 @@ export default function Navbar({ fermee = false }: { fermee?: boolean }) {
 
   return (
     <nav
-      className={heroOut ? 'pv-nav pv-nav--solid' : 'pv-nav'}
+      className={`pv-nav${heroOut ? ' pv-nav--solid' : ''}${flat ? ' pv-nav--flat' : ''}`}
       aria-label="Navigation prévente"
     >
       <button
@@ -75,7 +87,9 @@ export default function Navbar({ fermee = false }: { fermee?: boolean }) {
           src="/images/ui/logo.webp"
           className="pv-nav-logo"
           alt="Bellajour"
-          decoding="sync"
+          width="204"
+          height="144"
+          decoding="async"
         />
       </button>
 

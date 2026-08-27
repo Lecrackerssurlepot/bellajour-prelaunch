@@ -20,9 +20,13 @@ import Footer from '../sections/Footer'
    Composants DUPLIQUÉS depuis /preventes (namespace lc-), jamais partagés
    (exceptions lecture seule : pricing.ts et sections/Footer) :
    /preventes continue de vendre et reste strictement intacte.
-   NOINDEX jusqu'à la bascule du 10 août — cette route ne doit pas apparaître
-   dans Google avant ; retirer robots (+ ajouter canonical/OG et l'entrée
-   sitemap) au moment de la mise en ligne officielle. */
+   ⚠️ CONSIGNE PERIMEE, NE PAS SUIVRE. Cette route portait « retirer robots au
+   moment de la mise en ligne officielle ». La bascule a bien eu lieu, le
+   24/08/2026 — mais c'est `(atelier)/page.tsx` qui a gagne `/`. Suivre
+   l'ancienne consigne donnerait DEUX pages d'accueil concurrentes, dont la
+   fausse porte le positionnement d'avant (« album d'exception » au lieu de
+   « magazine »).
+   Le `noindex` RESTE. Route conservee pour ses composants, pas pour son URL. */
 
 export const metadata: Metadata = {
   title: "Bellajour — Vos photos composées en album d'exception",

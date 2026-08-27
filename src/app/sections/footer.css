@@ -4,7 +4,10 @@
 
 .footer {
   width: 100%;
-  background: #EAE3D8;
+  /* #EAE3D8 etait le beige de la charte waitlist, ecrit en dur, alors que le
+     <body> de ces 8 pages est un degrade creme (--bj-cream -> --bj-cream-2) :
+     il y avait une couture de couleur visible entre la page et son pied. */
+  background: var(--bj-cream-2);
   padding: clamp(28px, 5vh, 44px) clamp(32px, 6vw, 96px) 0;
   overflow: hidden;
 }
@@ -28,21 +31,21 @@
 
 .footer-tagline {
   margin: 0;
-  font-family: var(--bj-font-serif);
+  font-family: var(--bj-font-display);
   font-style: italic;
   font-weight: 300;
   font-size: clamp(15px, 1.35vw, 21px);
-  color: var(--bj-gold);
+  color: var(--bj-terracotta);
   letter-spacing: 0.01em;
   line-height: 1.2;
 }
 
 .footer-contact-label {
   margin: 0;
-  font-family: var(--bj-font-sans);
+  font-family: var(--bj-font-ui);
   font-size: clamp(13px, 0.85vw, 13px);
   letter-spacing: 0.02em;
-  color: var(--bj-muted);
+  color: var(--bj-text-soft);
   line-height: 1.4;
 }
 
@@ -54,10 +57,10 @@
 }
 
 .footer-link {
-  font-family: var(--bj-font-sans);
+  font-family: var(--bj-font-ui);
   font-size: clamp(13px, 0.85vw, 13px);
   letter-spacing: 0.02em;
-  color: var(--bj-muted);
+  color: var(--bj-text-soft);
   text-decoration: none;
   transition: color 0.22s;
 }
@@ -83,7 +86,7 @@
 
 .footer-copy {
   margin: 0;
-  font-family: var(--bj-font-sans);
+  font-family: var(--bj-font-ui);
   font-size: clamp(13px, 0.85vw, 13px);
   letter-spacing: 0.02em;
   color: rgba(28, 28, 28, 0.35);

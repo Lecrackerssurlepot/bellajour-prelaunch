@@ -33,10 +33,37 @@ const DESCRIPTION =
   'l’atelier compose le magazine de cet instant de vie. ' +
   'Premier aperçu gratuit, votre magazine sur-mesure dès 30 €.'
 
+/* ⚠️ `openGraph` REMPLACE celui du layout racine, Next ne fusionne pas en
+   profondeur. Un bloc partiel effacait donc og:image, og:url, og:site_name et
+   og:locale — et surtout empechait l'injection de l'image generee par
+   opengraph-image.tsx. Resultat verifie le 27/08/2026 : l'accueil etait la
+   SEULE page du site sans apercu de partage. Un lien colle dans une story ou
+   un DM Instagram, c'est-a-dire le premier canal d'acquisition, montrait un
+   rectangle vide. Tout ce qui est ecrase doit donc etre redeclare ici. */
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
-  openGraph: { title: TITLE, description: DESCRIPTION, type: 'website' },
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    locale: 'fr_FR',
+    url: 'https://www.bellajour.fr',
+    siteName: 'Bellajour',
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [{
+      url: '/opengraph-image',
+      width: 1200,
+      height: 630,
+      alt: 'Bellajour — vos meilleurs moments méritent leur magazine',
+    }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ['/opengraph-image'],
+  },
 }
 
 /* Données structurées Product + Offer (PRD §16). Le prix affiché est le
@@ -49,19 +76,42 @@ const JSON_LD = {
     'Magazine photo imprimé, composé à la main à partir de vos photos. ' +
     'Un numéro par moment.',
   brand: { '@type': 'Brand', name: 'Bellajour' },
+  /* AggregateOffer et NON Offer : `lowPrice`/`highPrice` n'existent pas sur
+     Offer, le test des resultats enrichis les rejetait en bloc. Trois paliers
+     (src/lib/atelier/prix.ts), zone de livraison FR/BE/LU. */
   offers: {
-    '@type': 'Offer',
+    '@type': 'AggregateOffer',
     priceCurrency: 'EUR',
     lowPrice: '30',
     highPrice: '45',
-    price: '30',
+    offerCount: 3,
     availability: 'https://schema.org/InStock',
+    url: 'https://www.bellajour.fr/composer',
+    areaServed: ['FR', 'BE', 'LU'],
   },
+  url: 'https://www.bellajour.fr',
+  image: ['https://www.bellajour.fr/images/lancement/galerie/marrakech.webp'],
 }
 
 export default function AtelierHome() {
   return (
     <>
+      {/* L'image de couverture est l'element LCP de la page : elle occupe tout
+          l'ecran des la premiere seconde. On la demande donc AVANT que le
+          navigateur ait fini de lire Ouverture.tsx, qui est un composant client.
+          React 19 remonte ce <link> dans le <head> tout seul.
+          ⚠️ Ce prechargement vit ICI et pas dans le layout racine : le layout
+          sert AUSSI /composer, /preventes et les pages legales, qui n'affichent
+          pas cette image. Un prechargement pose trop haut est un telechargement
+          offert a des pages qui n'en veulent pas. C'etait le cas jusqu'au
+          27/08/2026 avec header-bellajour.webp (283 Ko, sur tout le site, pour
+          un Hero qui n'est plus route nulle part). */}
+      <link
+        rel="preload"
+        as="image"
+        href="/images/brand/brand-01.webp"
+        fetchPriority="high"
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
@@ -71,7 +121,7 @@ export default function AtelierHome() {
         {/* Le grain : aucun aplat parfaitement plat. Fixe, par-dessus tout,
             insensible au pointeur. C'est une turbulence SVG en ligne, pas
             une image — voir ouverture.css. */}
-        <div className="grain grain--vif" aria-hidden="true" />
+        <div className="grain" aria-hidden="true" />
         {/* Le curseur qui légende : au survol d'un visuel il en donne le
             nom. Desktop et pointeur fin uniquement, monté vide et piloté
             par Ouverture. */}

@@ -45,9 +45,14 @@ export default function Univers() {
     const mot3 = un<HTMLElement>('[data-lettres]')
     if (mot3) {
       const texte = (mot3.textContent || '').trim()
-      mot3.setAttribute('aria-label', texte)
-      mot3.innerHTML = [...texte]
-        .map((c) => '<span class="c" aria-hidden="true">' + c + '</span>').join('')
+      /* Une copie LISIBLE a cote des lettres. `aria-label` ne suffit pas :
+         .m3 est un <span> nu, donc de role generic, et ARIA 1.2 interdit le
+         nommage sur generic — les lecteurs d'ecran l'ignorent. Sans cette
+         copie, les dix lettres etant toutes aria-hidden, le troisieme mot du
+         triptyque n'existait plus du tout pour qui ecoute la page. */
+      mot3.innerHTML =
+        '<span class="sr-only">' + texte + '</span>' +
+        [...texte].map((c) => '<span class="c" aria-hidden="true">' + c + '</span>').join('')
     }
 
     /* ── le compteur mécanique (PRD §15, mouvement nº5) ──
@@ -198,7 +203,14 @@ export default function Univers() {
         })
       })
       let dedans = false
+      /* UN seul tableau, vide a chaque passage. Empiler les annulations dans
+         `menage` y ajoutait dix fermetures a chaque SORTIE de la page, sans
+         jamais les retirer : cent allers-retours retenaient mille fermetures
+         jusqu'au demontage. */
+      let minuteurs: number[] = []
+      const purger = () => { minuteurs.forEach(clearTimeout); minuteurs = [] }
       const oeil3 = new IntersectionObserver((e) => {
+        purger()
         if (e[0].isIntersecting) {
           dedans = true
           lettres.forEach((c) => c.classList.remove('parti'))
@@ -206,10 +218,10 @@ export default function Univers() {
         }
         if (!dedans) return
         lettres.forEach((c, i) => {
-          const id = window.setTimeout(() => c.classList.add('parti'), i * 90)
-          menage.push(() => clearTimeout(id))
+          minuteurs.push(window.setTimeout(() => c.classList.add('parti'), i * 90))
         })
       }, { threshold: 0.35 })
+      menage.push(purger)
       oeil3.observe(page3)
       menage.push(() => oeil3.disconnect())
     }
@@ -233,7 +245,14 @@ export default function Univers() {
       const y = window.scrollY
       const h = window.innerHeight
       verifierVisibles()
-      if (y !== derniereY || fin) {
+      /* Ce qui depend du DEFILEMENT ne se recalcule que si l'on a defile.
+         `fin` (bureau + pointeur precis) est une CONSTANTE vraie : la laisser
+         dans cette condition faisait tourner le bloc entier a chaque frame,
+         page immobile comprise — soit une ecriture de mise en page suivie de
+         neuf lectures de geometrie, 60 fois par seconde, indefiniment et meme
+         quand l'univers est hors ecran. Les deux effets de souris, eux,
+         doivent bien suivre chaque frame : ils sont sortis plus bas. */
+      if (y !== derniereY) {
         derniereY = y
 
         if (rail) {
@@ -241,44 +260,50 @@ export default function Univers() {
           const hh = hote.offsetHeight
           rail.classList.toggle('on', y > haut - h * 0.5 && y < haut + hh - h * 0.4)
           const p = borne((y - haut + h * 0.5) / (hh - h * 0.4), 0, 1)
-          if (jauge) jauge.style.height = (p * 100).toFixed(2) + '%'
+          if (jauge) jauge.style.transform = 'scaleY(' + p.toFixed(4) + ')'
           let actif = 0
           pages.forEach((el, i) => { if (el.getBoundingClientRect().top <= h * 0.5) actif = i })
           items.forEach((li, i) => li.classList.toggle('actif', i === actif))
         }
+      }
 
-        /* « impalpables » se dérobe : plus la souris approche, plus il
-           s'écarte. On ne l'attrape jamais. C'est le mot qui joue son
-           sens, pas une décoration. */
-        if (impalp && fin && !doux) {
-          const r = impalp.getBoundingClientRect()
-          const cx = r.left + r.width / 2
-          const cy = r.top + r.height / 2
-          const dx = souris.x - cx
-          const dy = souris.y - cy
-          const dist = Math.hypot(dx, dy)
-          const portee = Math.max(r.width * 0.75, 320)
-          if (souris.x >= 0 && dist < portee && dist > 0) {
-            const f = 1 - dist / portee
-            impalp.style.setProperty('--dx', (-dx / dist * f * 46).toFixed(1) + 'px')
-            impalp.style.setProperty('--dy', (-dy / dist * f * 26).toFixed(1) + 'px')
-          } else {
-            impalp.style.setProperty('--dx', '0px')
-            impalp.style.setProperty('--dy', '0px')
-          }
-        }
+      /* Les deux effets qui suivent le POINTEUR, eux, doivent bien etre
+         recalcules a chaque frame : la souris bouge sans qu'on defile.
+         `fin` les reserve deja au bureau muni d'un pointeur precis, donc
+         un telephone ne paie rien ici. */
 
-        /* le numéro s'incline vers la souris : on a envie de le prendre */
-        if (numero && fin && !doux && souris.x >= 0) {
-          const r = numero.getBoundingClientRect()
-          if (r.top < h && r.bottom > 0) {
-            const nx = borne((souris.x - (r.left + r.width / 2)) / (r.width * 1.6), -1, 1)
-            const ny = borne((souris.y - (r.top + r.height / 2)) / (r.height * 1.6), -1, 1)
-            numero.style.setProperty('--ry', (nx * 9).toFixed(2) + 'deg')
-            numero.style.setProperty('--rx', (-ny * 6).toFixed(2) + 'deg')
-          }
+      /* « impalpables » se dérobe : plus la souris approche, plus il
+         s'écarte. On ne l'attrape jamais. C'est le mot qui joue son
+         sens, pas une décoration. */
+      if (impalp && fin && !doux) {
+        const r = impalp.getBoundingClientRect()
+        const cx = r.left + r.width / 2
+        const cy = r.top + r.height / 2
+        const dx = souris.x - cx
+        const dy = souris.y - cy
+        const dist = Math.hypot(dx, dy)
+        const portee = Math.max(r.width * 0.75, 320)
+        if (souris.x >= 0 && dist < portee && dist > 0) {
+          const f = 1 - dist / portee
+          impalp.style.setProperty('--dx', (-dx / dist * f * 46).toFixed(1) + 'px')
+          impalp.style.setProperty('--dy', (-dy / dist * f * 26).toFixed(1) + 'px')
+        } else {
+          impalp.style.setProperty('--dx', '0px')
+          impalp.style.setProperty('--dy', '0px')
         }
       }
+
+      /* le numéro s'incline vers la souris : on a envie de le prendre */
+      if (numero && fin && !doux && souris.x >= 0) {
+        const r = numero.getBoundingClientRect()
+        if (r.top < h && r.bottom > 0) {
+          const nx = borne((souris.x - (r.left + r.width / 2)) / (r.width * 1.6), -1, 1)
+          const ny = borne((souris.y - (r.top + r.height / 2)) / (r.height * 1.6), -1, 1)
+          numero.style.setProperty('--ry', (nx * 9).toFixed(2) + 'deg')
+          numero.style.setProperty('--rx', (-ny * 6).toFixed(2) + 'deg')
+        }
+      }
+
       frame = requestAnimationFrame(boucle)
     }
     frame = requestAnimationFrame(boucle)
@@ -320,7 +345,7 @@ export default function Univers() {
           </div>
           </div>
 
-          <button className="suite" data-vers="#u2" data-t="4400">
+          <button type="button" className="suite" aria-label="Tourner la page — Le constat" data-vers="#u2" data-t="4400">
             <span className="mot">Tourner la page</span>
             <span className="rond" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v13"/><path d="M6 11.5 12 17.5l6-6"/></svg></span>
           </button>
@@ -328,20 +353,21 @@ export default function Univers() {
 
         {/* ─────────── 02 · LE CONSTAT ─────────── */}
         <section className="sl sl2" id="u2" data-page="02">
+          <h2 className="sr-only">Le constat</h2>
           <div className="sl-corps">
           <div className="sl2-scene" aria-hidden="true">
-            <figure className="v v1" data-t="1900"><span className="ph"><img src="/images/solution/solution-upload-02.webp" alt="" /></span></figure>
+            <figure className="v v1" data-t="1900"><span className="ph"><img src="/images/univers/solution-upload-02.webp" alt="" width="480" height="640" fetchPriority="low" decoding="async" /></span></figure>
             <figure className="v v2" data-t="2500">
-              <span className="ph"><img src="/images/anxiete/grid-03.webp" alt="" /></span>
+              <span className="ph"><img src="/images/univers/grid-03.webp" alt="" width="600" height="800" fetchPriority="low" decoding="async" /></span>
               <span className="v-video"><i></i><b>0:24</b></span>
             </figure>
             <figure className="v v3" data-t="3100">
               <span className="v-mot"><s></s><s></s><em>♥ 12</em></span>
             </figure>
-            <figure className="v v4" data-t="3700"><span className="ph"><img src="/images/solution/solution-upload-05.webp" alt="" /></span></figure>
+            <figure className="v v4" data-t="3700"><span className="ph"><img src="/images/univers/solution-upload-05.webp" alt="" width="400" height="300" fetchPriority="low" decoding="async" /></span></figure>
             <figure className="v v5" data-t="4300">
               <span className="v-story"><i></i><i></i><i></i></span>
-              <span className="ph"><img src="/images/solution/solution-upload-09.webp" alt="" /></span>
+              <span className="ph"><img src="/images/univers/solution-upload-09.webp" alt="" width="400" height="534" fetchPriority="low" decoding="async" /></span>
             </figure>
           </div>
 
@@ -357,7 +383,7 @@ export default function Univers() {
           </div>
           </div>
 
-          <button className="suite" data-vers="#u3" data-t="7600">
+          <button type="button" className="suite" aria-label="Tourner la page — Les trois mots" data-vers="#u3" data-t="7600">
             <span className="mot">Tourner la page</span>
             <span className="rond" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v13"/><path d="M6 11.5 12 17.5l6-6"/></svg></span>
           </button>
@@ -365,6 +391,7 @@ export default function Univers() {
 
         {/* ─────────── 03 · LES TROIS MOTS ─────────── */}
         <section className="sl sl3" id="u3" data-page="03">
+          <h2 className="sr-only">Les trois mots</h2>
           <div className="sl-corps">
           <p className="sl3-avant" data-t="200">Donc instantanés et rendus le plus simple et le plus accessible possible ; prendre une photo n’a jamais été aussi simple. Mais par conséquent</p>
 
@@ -377,7 +404,7 @@ export default function Univers() {
           <p className="sl3-apres" data-t="6400">Un souvenir qui n’est pas gravé et rappelé à notre esprit, est de plus en plus imprécis et finit, petit à petit, par le quitter.</p>
           </div>
 
-          <button className="suite" data-vers="#u4" data-t="7600">
+          <button type="button" className="suite" aria-label="Tourner la page — L’admiration" data-vers="#u4" data-t="7600">
             <span className="mot">Tourner la page</span>
             <span className="rond" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v13"/><path d="M6 11.5 12 17.5l6-6"/></svg></span>
           </button>
@@ -385,26 +412,27 @@ export default function Univers() {
 
         {/* ─────────── 04 · L’ADMIRATION ─────────── */}
         <section className="sl sl4" id="u4" data-page="04">
+          <h2 className="sr-only">L’admiration</h2>
           <div className="sl-corps">
           <p className="sl4-texte" data-t="200">Admiratifs devant les magazines, les BDs, les affiches de films, les albums photos, et tout simplement tout ce qui symbolisait <em>un moment fort en une seule image</em>, ou une série de pages.</p>
 
           <div className="sl4-bande" data-t="900">
             <div className="sl4-rail">
-              <figure><span className="ph" data-legende="Un magazine"><img src="/images/lancement/galerie/marrakech.webp" alt="" /></span></figure>
-              <figure><span className="ph" data-legende="Une BD"><img src="/images/lancement/galerie/japon.webp" alt="" /></span></figure>
-              <figure><span className="ph" data-legende="Une affiche"><img src="/images/lancement/galerie/patagonie.webp" alt="" /></span></figure>
-              <figure><span className="ph" data-legende="Un album photos"><img src="/images/lancement/galerie/lisbonne.webp" alt="" /></span></figure>
-              <figure><span className="ph" data-legende="Une série de pages"><img src="/images/lancement/galerie/santorin.webp" alt="" /></span></figure>
-              <figure aria-hidden="true"><span className="ph" data-legende="Un magazine"><img src="/images/lancement/galerie/marrakech.webp" alt="" /></span></figure>
-              <figure aria-hidden="true"><span className="ph" data-legende="Une BD"><img src="/images/lancement/galerie/japon.webp" alt="" /></span></figure>
-              <figure aria-hidden="true"><span className="ph" data-legende="Une affiche"><img src="/images/lancement/galerie/patagonie.webp" alt="" /></span></figure>
-              <figure aria-hidden="true"><span className="ph" data-legende="Un album photos"><img src="/images/lancement/galerie/lisbonne.webp" alt="" /></span></figure>
-              <figure aria-hidden="true"><span className="ph" data-legende="Une série de pages"><img src="/images/lancement/galerie/santorin.webp" alt="" /></span></figure>
+              <figure><span className="ph" data-legende="Un magazine"><img src="/images/lancement/galerie/marrakech.webp" alt="Un numéro Bellajour consacré à un voyage à Marrakech" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
+              <figure><span className="ph" data-legende="Une BD"><img src="/images/lancement/galerie/japon.webp" alt="Un numéro Bellajour consacré à un voyage au Japon" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
+              <figure><span className="ph" data-legende="Une affiche"><img src="/images/lancement/galerie/patagonie.webp" alt="Un numéro Bellajour consacré à un voyage en Patagonie" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
+              <figure><span className="ph" data-legende="Un album photos"><img src="/images/lancement/galerie/lisbonne.webp" alt="Un numéro Bellajour consacré à un séjour à Lisbonne" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
+              <figure><span className="ph" data-legende="Une série de pages"><img src="/images/lancement/galerie/santorin.webp" alt="Un numéro Bellajour consacré à un séjour à Santorin" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
+              <figure aria-hidden="true"><span className="ph" data-legende="Un magazine"><img src="/images/lancement/galerie/marrakech.webp" alt="" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
+              <figure aria-hidden="true"><span className="ph" data-legende="Une BD"><img src="/images/lancement/galerie/japon.webp" alt="" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
+              <figure aria-hidden="true"><span className="ph" data-legende="Une affiche"><img src="/images/lancement/galerie/patagonie.webp" alt="" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
+              <figure aria-hidden="true"><span className="ph" data-legende="Un album photos"><img src="/images/lancement/galerie/lisbonne.webp" alt="" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
+              <figure aria-hidden="true"><span className="ph" data-legende="Une série de pages"><img src="/images/lancement/galerie/santorin.webp" alt="" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
             </div>
           </div>
           </div>
 
-          <button className="suite" data-vers="#u5" data-t="2600">
+          <button type="button" className="suite" aria-label="Tourner la page — Le concept" data-vers="#u5" data-t="2600">
             <span className="mot">Tourner la page</span>
             <span className="rond" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v13"/><path d="M6 11.5 12 17.5l6-6"/></svg></span>
           </button>
@@ -434,7 +462,7 @@ export default function Univers() {
             <p className="sl5-film" data-t="4700"><em>Comme si notre vie était un film</em></p>
           </div>
 
-          <button className="suite" data-vers="#u6" data-t="5600">
+          <button type="button" className="suite" aria-label="Tourner la page — La citation" data-vers="#u6" data-t="5600">
             <span className="mot">Tourner la page</span>
             <span className="rond" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v13"/><path d="M6 11.5 12 17.5l6-6"/></svg></span>
           </button>
@@ -454,7 +482,7 @@ export default function Univers() {
           <p className="sl6-chute" data-t="3400">Qui sait, votre premier numéro vous poussera à vivre le prochain.</p>
           </div>
 
-          <button className="suite" data-vers="#u7" data-t="4200">
+          <button type="button" className="suite" aria-label="Tourner la page — Le numéro" data-vers="#u7" data-t="4200">
             <span className="mot">Tourner la page</span>
             <span className="rond" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v13"/><path d="M6 11.5 12 17.5l6-6"/></svg></span>
           </button>
@@ -465,7 +493,7 @@ export default function Univers() {
           <div className="sl7-obj" data-t="600">
             <div className="numero" data-legende="Votre numéro 01">
               <div className="n-plat">
-                <img src="/images/lancement/galerie/marrakech.webp" alt="Un numéro Bellajour" />
+                <img src="/images/lancement/galerie/marrakech.webp" alt="Un numéro Bellajour" width="450" height="675" loading="lazy" decoding="async" />
                 <div className="n-voile"></div>
                 <div className="n-tete"><span className="n-masthead">Bellajour</span><span className="n-no">N° 01</span></div>
                 <div className="n-pied">

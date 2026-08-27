@@ -84,6 +84,11 @@ function Evenement({ e }: { e: EvenementVue }) {
    ligne de flottaison et transforment l'outil en galerie. */
 const VIGNETTES_VISIBLES = 12;
 
+/* Combien de vignettes s'ajoutent a chaque clic. Voir le commentaire de
+   `visibles` plus bas : tant que la grille sert les originaux, deplier tout
+   un lot d'un coup fige l'onglet. */
+const TRANCHE_PHOTOS = 12;
+
 /**
  * Les trois visuels de l'aperçu, nommés COMME LA CLIENTE LES VOIT.
  *
@@ -173,7 +178,16 @@ export default function Fiche({
   moi: string;
   demo?: boolean;
 }) {
-  const [toutesLesPhotos, setToutesLesPhotos] = useState(false);
+  /* Un COMPTE, pas un booleen. La grille sert les ORIGINAUX R2 (plafond
+     5200 px, plusieurs Mo piece) dans des cases de 84 px : deplier d'un coup
+     un lot de cent, c'etait des centaines de Mo a decoder sur le thread
+     principal, et l'onglet qui se fige. On deplie par tranches.
+     ⚠️ Ce n'est PAS le vrai correctif, seulement le pic divise. La cause est
+     qu'aucune vignette n'existe cote serveur : le worker en fabrique bien une
+     de 320 px (composer/depot/reduire.worker.js) mais elle ne quitte jamais
+     le navigateur. La deposer sur R2 au moment du depot et la signer a cote
+     de l'original est le vrai chemin — voir D7 dans DECISIONS.md. */
+  const [visibles, setVisibles] = useState(VIGNETTES_VISIBLES);
   const [lot, setLot] = useState<EtatLot>({ phase: "repos" });
   const [apercuOuvert, setApercuOuvert] = useState<number | null>(null);
   /* `supporteDossier()` lit `window` : appelé au rendu, il rendrait `false`
@@ -505,7 +519,7 @@ export default function Fiche({
               <p className="ate-faint">Aucune photo déposée.</p>
             ) : (
               <div className="ate-photos">
-                {(toutesLesPhotos ? fiche.photos : fiche.photos.slice(0, VIGNETTES_VISIBLES)).map((p, i) => (
+                {fiche.photos.slice(0, visibles).map((p, i) => (
                   <Fragment key={p.id}>
                     {/* T2-5 — le filet qui sépare le premier dépôt des
                         ajouts. Grille triée par ordre de dépôt : les ajouts
@@ -524,8 +538,7 @@ export default function Fiche({
                       title={`${p.nom ?? ""} ${poids(p.taille)}`}
                     >
                       {p.url ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={p.url} alt="" loading="lazy" />
+                        <img src={p.url} alt="" width="84" height="84" loading="lazy" decoding="async" />
                       ) : (
                         <span className="ate-photo-vide">?</span>
                       )}
@@ -539,11 +552,16 @@ export default function Fiche({
               <button
                 type="button"
                 className="ate-photos-plus"
-                onClick={() => setToutesLesPhotos((v) => !v)}
+                onClick={() =>
+                  setVisibles((n) =>
+                    n >= fiche.photos.length ? VIGNETTES_VISIBLES : n + TRANCHE_PHOTOS,
+                  )
+                }
               >
-                {toutesLesPhotos
+                {visibles >= fiche.photos.length
                   ? "Replier"
-                  : `Voir les ${fiche.photos.length - VIGNETTES_VISIBLES} autres`}
+                  : `Voir ${Math.min(TRANCHE_PHOTOS, fiche.photos.length - visibles)} de plus` +
+                    ` (${fiche.photos.length - visibles} restantes)`}
               </button>
             ) : null}
           </section>
@@ -570,7 +588,6 @@ export default function Fiche({
                           onClick={() => setApercuOuvert(rang)}
                           aria-label={`Agrandir : ${legende}`}
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={src} alt={legende} />
                         </button>
                       ) : (

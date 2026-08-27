@@ -12,6 +12,15 @@ const cormorant = Cormorant_Garamond({
   style: ['normal', 'italic'],
   variable: '--font-display',
   display: 'swap',
+  /* PAS de prechargement : ces deux faces (500 romain + 500 italique, 75 Ko)
+     servent /preventes, /ambassadeurs, /admin, /legal, /merci, /inviter et
+     /lancement, mais JAMAIS la page d'accueil ni /composer, qui redefinissent
+     --font-display sur .bj-atelier vers Cormorant 400 ((atelier)/layout.tsx).
+     Le layout etant RACINE, prechargement = 75 Ko en priorite haute sur toutes
+     les pages, dont celles qui ne peindront jamais ces faces. Mesure du
+     27/08/2026. Contrepartie assumee : un echange de police au premier
+     affichage des pages qui s'en servent vraiment, deja en `display: swap`. */
+  preload: false,
 })
 
 const dmSans = DM_Sans({
@@ -100,7 +109,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <script dangerouslySetInnerHTML={{ __html: APP_HEIGHT_SCRIPT }} />
-        <link rel="preload" as="image" href="/images/header-bellajour.webp" fetchPriority="high" />
       </head>
       <body>
         {children}

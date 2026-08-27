@@ -208,6 +208,12 @@
   height: auto;
 }
 
+/* La double page reserve sa place AVANT le decodage. Sans ratio, le cadre
+   valait 0 de haut puis sautait a sa hauteur reelle, poussant tout le bas de
+   la page de plusieurs centaines de pixels sous les yeux de la cliente. Seule
+   la variante « decoupe » en avait un. */
+.nu-double .nu-vue { aspect-ratio: 3 / 2; }
+
 /* ---- la couverture a plat, decoupee (T2-2) ----
    UN fichier C4 | dos | C1 ; chaque face est un CADRAGE du meme objet, pas
    une image a part. Le cadre prend le format d'une couverture, l'image le

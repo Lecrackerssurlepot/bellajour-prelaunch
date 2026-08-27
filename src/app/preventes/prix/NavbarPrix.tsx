@@ -43,7 +43,7 @@ export default function NavbarPrix() {
           src="/images/ui/logo.webp"
           className="pv-nav-logo"
           alt="Bellajour"
-          decoding="sync"
+          decoding="async"
         />
       </a>
 

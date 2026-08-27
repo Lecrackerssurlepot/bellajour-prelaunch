@@ -63,7 +63,7 @@ export default function BoutonEnvoyer({ token, nbPhotos }: { token: string; nbPh
         </button>
       </div>
 
-      {erreur && <p className="nu-erreur">{erreur}</p>}
+      {erreur && <p className="nu-erreur" role="alert">{erreur}</p>}
 
       <p className="nu-note">
         En envoyant, vous nous autorisez à utiliser ces photos pour composer votre numéro, et

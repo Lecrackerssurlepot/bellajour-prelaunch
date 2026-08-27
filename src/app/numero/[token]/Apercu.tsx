@@ -126,7 +126,6 @@ function Vue({
           aria-label={`Agrandir : ${vue.legende}`}
         >
           {/* <img> plain — next/image est proscrit sur ce dépôt (CLAUDE.md). */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={vue.src} alt={vue.legende} loading="lazy" decoding="async" />
           <span className="nu-vue-loupe" aria-hidden="true">
             Agrandir

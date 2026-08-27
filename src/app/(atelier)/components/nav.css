@@ -23,7 +23,11 @@
   background: var(--glass-bg-strong);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
-  transition: padding var(--t-lent) var(--ease), background var(--t-lent) var(--ease);
+  /* On n'anime PAS le `padding` : c'est une propriete de mise en page, et la
+     barre est fixe avec un flou d'arriere-plan — chaque frame de la transition
+     forcait une re-rasterisation du flou sur toute la largeur. La hauteur
+     change donc d'un coup, le fond, lui, fond. Voir D5 dans DECISIONS.md. */
+  transition: background var(--t-lent) var(--ease);
 }
 
 /* dès 40 px : la barre ne se cache jamais, donc sans un voile plus dense
@@ -60,5 +64,4 @@
 
 @media (max-width: 560px) {
   .at-nav-cta { font-size: 12px; padding: 8px 14px; }
-  .at-nav-logo { font-size: 19px; }
 }

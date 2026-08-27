@@ -195,7 +195,7 @@ export default function Ouverture() {
              qui bouge : aucune deformation, et la meme photographie sert le
              bandeau puis le plein ecran. */}
         <div className="h-plein" aria-hidden="true">
-          <img src="/images/brand/brand-01.webp" alt="" />
+          <img src="/images/brand/brand-01.webp" alt="" width="1200" height="1600" fetchPriority="high" decoding="async" />
           <div className="h-grad"></div>
           <div className="h-rake"></div>
           <div className="h-voile"></div>

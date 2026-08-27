@@ -30,7 +30,14 @@ html, body {
   overflow-x: clip;
   overflow-anchor: none;
   overscroll-behavior-y: none;
-  scroll-padding-top: var(--bj-nav-h);
+  /* ⚠️ --bj-nav-h N'EST DEFINI NULLE PART (verifie le 27/08/2026 : neuf
+     usages, zero declaration). Une variable inconnue rend la declaration
+     invalide EN SILENCE, donc cette ligne ne faisait rien et une ancre
+     atterrissait sous la barre fixe. Valeur explicite plutot que token :
+     definir --bj-nav-h reparerait AUSSI le `main { padding-top }` ci-dessous,
+     qui vaut 0 depuis toujours et sur lequel toutes les pages plein ecran
+     sont batties. Reparer les deux d'un coup les decalerait toutes. */
+  scroll-padding-top: var(--bj-topbar-h);
 }
 
 /* Réactive le ré-ancrage scroll de Chrome sur la route /preventes/prix UNIQUEMENT.
@@ -41,9 +48,16 @@ html, body {
    html.px-anchor body (0,1,2) > html, body (0,0,1) → écrase le none, prix seul. */
 html.px-anchor, html.px-anchor body { overflow-anchor: auto; }
 
-/* Offset pour la navbar fixe : le contenu démarre sous la navbar.
-   Hero compense avec calc(var(--app-height) - var(--bj-nav-h)) pour plein écran. */
-main { padding-top: var(--bj-nav-h); }
+/* ⚠️ NE PAS « REPARER » CECI EN DEFINISSANT --bj-nav-h.
+   L'intention d'origine etait de faire demarrer le contenu sous la barre fixe.
+   Mais --bj-nav-h n'a jamais ete declare : la regle est invalide, le padding
+   vaut 0, et TOUTES les pages plein ecran (l'accueil et ses sept pages, le
+   composer) sont composees avec ce 0. Poser le token ferait descendre chaque
+   <main> du site d'un coup. La declaration est retiree parce qu'une regle
+   morte qui casse le site quand on la repare est pire que pas de regle.
+   Les pages qui ont besoin de cet ecart le posent elles-memes. */
+
+main { padding-top: 0; }
 
 * { box-sizing: border-box; }
 

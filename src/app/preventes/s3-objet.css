@@ -175,7 +175,9 @@
   opacity: 0;
   transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
               opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform, opacity;
+  /* pas de `will-change` permanent : c'etait CINQ textures d'images de
+     1600 a 2133 px maintenues en memoire GPU en continu. Les transitions
+     ci-dessus promeuvent deja, le temps qu'elles durent. */
 }
 .s3-layer[data-state='before'] { transform: translateX(-8%); opacity: 0; }
 .s3-layer[data-state='after']  { transform: translateX(8%);  opacity: 0; }

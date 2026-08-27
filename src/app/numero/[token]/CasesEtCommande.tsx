@@ -162,7 +162,7 @@ export default function CasesEtCommande({
         {occupe ? 'Un instant…' : `Commander ${titre}${prixConnu ? ` — ${formaterEuros(euros)}` : ''}`}
       </button>
 
-      {erreur && <p className="nu-erreur">{erreur}</p>}
+      {erreur && <p className="nu-erreur" role="alert">{erreur}</p>}
 
       <p className="nu-note">Un détail à changer ? Répondez au mail, on ajuste sans frais.</p>
     </>

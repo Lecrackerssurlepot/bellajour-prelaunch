@@ -7,7 +7,7 @@
   align-items: center;
   gap: 7px;
   text-decoration: none;
-  color: var(--bj-muted);
+  color: var(--bj-text-soft);
   transition: color 0.22s;
 }
 
@@ -20,7 +20,7 @@
 }
 
 .bj-insta span {
-  font-family: var(--bj-font-sans);
+  font-family: var(--bj-font-ui);
   font-size: clamp(13px, 0.85vw, 13px);
   letter-spacing: 0.04em;
 }

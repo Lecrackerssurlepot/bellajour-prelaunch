@@ -61,7 +61,7 @@ export default function ConsentCommunication({
         Cochée ou non, cela ne change rien à votre numéro, ni à son prix, ni à son délai.
         Vous pouvez changer d’avis quand vous voulez.
       </p>
-      {erreur && <p className="nu-erreur">{erreur}</p>}
+      {erreur && <p className="nu-erreur" role="alert">{erreur}</p>}
     </div>
   )
 }

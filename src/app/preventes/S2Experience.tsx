@@ -225,6 +225,12 @@ export default function S2Experience() {
                     src={`/images/prevente/parcours/${c.slug}-cover.png`}
                     alt=""
                     aria-hidden="true"
+                    /* Quatre affiches PNG de 1502 Ko partaient AVIDEMENT, sous
+                       la ligne de flottaison, en concurrence directe de
+                       l'image LCP. Pas de decalage a craindre : .s2-card-media
+                       porte deja son aspect-ratio (s2-experience.css). */
+                    loading="lazy"
+                    decoding="async"
                   />
                 )}
               </div>

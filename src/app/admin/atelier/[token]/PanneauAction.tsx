@@ -393,7 +393,6 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                       disabled={envoiEnCours !== null}
                     >
                       {apercus[s.cle] ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={apercus[s.cle]} alt="" className="ate-slot-img" />
                       ) : envoiEnCours === s.cle ? (
                         <span className="ate-slot-vide">Envoi…</span>

@@ -63,7 +63,12 @@ Playfair Display : NON chargée sur la landing — utilisée uniquement dans l'O
 - L'ancienne landing waitlist (`src/app/page.tsx`) est SUPPRIMÉE du routage. Composants orphelins
   restant sur le disque : Anxiete, BrandIntro, Solution, Album, FinalWaitlist, StickyVText,
   StickyJoinCTA (leur CSS n'est plus servi — il est importé par les composants eux-mêmes).
-  Hero et FAQ restent utilisés (ambassadeurs, S5Garanties), Footer par 8 fichiers.
+  ⚠️ CORRIGÉ le 27/08/2026 : `src/app/Hero.tsx` et `src/app/sections/FAQ.tsx` sont
+  ORPHELINS eux aussi. `/ambassadeurs` importe son PROPRE `ambassadeurs/Hero.tsx`,
+  et `S5Garanties.tsx` déclare sa PROPRE `const FAQ` en local — deux fichiers
+  différents, même nom. Seul `sections/Footer.tsx` est vivant (8 fichiers).
+  Ce que cette phrase affirmait a coûté un préchargement de 283 Ko sur tout le
+  site pour une image que rien n'affiche.
 - `/preventes` et `/preventes/prix` : `noindex, follow`. Sitemap = `/` + pages légales.
 - Fermeture de la prévente : drapeau `PREVENTE_FERMEE=true` (src/lib/prevente.ts), lu CÔTÉ SERVEUR.
   Ferme `/api/checkout` (410) et bascule `/api/offer-state` en `offerMode: 'closed'` ; le bandeau
@@ -344,8 +349,9 @@ ne fait pas d'erreur, il fait un silence.
 
 ## ⚠️ Sections de l'ANCIENNE landing waitlist — historique, hors routage
 Ce qui suit décrit la landing de prévente, SUPPRIMÉE du routage depuis la bascule
-du 24/08/2026. Conservé parce que Hero et FAQ servent encore `/ambassadeurs` et
-`S5Garanties`, et que le Footer de `sections/` est importé par 8 fichiers.
+du 24/08/2026. Conservé parce que le Footer de `sections/` est importé par
+8 fichiers. ⚠️ Hero et FAQ, eux, ne servent PLUS rien (voir la correction
+ci-dessus) : `/ambassadeurs` et `S5Garanties` ont chacun leur propre copie.
 Ordre historique : Hero (crème) · Anxiete (sombre) · Solution (crème) · Album
 (jamais construite) · Waitlist · FAQ · Footer.
 Orphelins sur le disque, jamais servis : Anxiete, BrandIntro, Solution, Album,

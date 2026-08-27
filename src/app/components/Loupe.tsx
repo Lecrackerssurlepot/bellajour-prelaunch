@@ -61,6 +61,25 @@ export default function Loupe({
     [index, onIndex, vues.length],
   )
 
+  /* Les callbacks passent par une ref, et l'effet ne depend plus QUE de
+     `ouverte`. Avant, ses dependances etaient [ouverte, bouger, onFermer] :
+     `bouger` change des que `index` change, et `onFermer` est une fleche
+     ECRITE EN LIGNE aux deux sites d'appel (numero/Apercu.tsx et
+     admin/Fiche.tsx), donc une nouvelle fonction a chaque rendu du parent.
+     L'effet se demontait et se remontait a chaque rendu, loupe ouverte :
+     l'ecouteur clavier tournait a vide, et surtout le focus faisait
+     l'aller-retour (restauration sur l'element precedent, puis retour sur
+     Fermer) a CHAQUE fois. Cote admin c'est visible : la fiche vit sous un
+     rafraichissement toutes les 60 s et un tic de rendu toutes les 30 s. */
+  const rappels = useRef({ onFermer, bouger })
+  /* Mise a jour dans un effet SANS tableau de dependances : il tourne apres
+     chaque rendu, donc la ref reste fraiche, et on n'ecrit jamais pendant le
+     rendu (ce que `react-hooks/refs` interdit, a raison : reactCompiler est
+     actif dans next.config.ts). */
+  useEffect(() => {
+    rappels.current = { onFermer, bouger }
+  })
+
   useEffect(() => {
     if (!ouverte) return
 
@@ -74,9 +93,9 @@ export default function Loupe({
     document.body.style.overflow = 'hidden'
 
     function auClavier(e: KeyboardEvent) {
-      if (e.key === 'Escape') onFermer()
-      else if (e.key === 'ArrowRight') bouger(1)
-      else if (e.key === 'ArrowLeft') bouger(-1)
+      if (e.key === 'Escape') rappels.current.onFermer()
+      else if (e.key === 'ArrowRight') rappels.current.bouger(1)
+      else if (e.key === 'ArrowLeft') rappels.current.bouger(-1)
     }
     window.addEventListener('keydown', auClavier)
 
@@ -86,7 +105,7 @@ export default function Loupe({
       const cible = focusAvant.current
       if (cible instanceof HTMLElement) cible.focus()
     }
-  }, [ouverte, bouger, onFermer])
+  }, [ouverte])
 
   if (!ouverte) return null
 
@@ -128,7 +147,6 @@ export default function Loupe({
 
       <figure className="bj-loupe-scene">
         {/* <img> plain — next/image est proscrit sur ce dépôt (CLAUDE.md). */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={vue.src} alt={vue.legende} />
         <figcaption className="bj-loupe-legende">
           {vue.legende}

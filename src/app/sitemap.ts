@@ -16,30 +16,45 @@ import type { MetadataRoute } from 'next'
  *     reviendrait à publier les dossiers de toutes les clientes.
  *   — `/atelier` : n'existe plus que comme redirection 308 vers `/`.
  */
+/* Des dates REELLES, pas `new Date()`. Un sitemap qui declare toutes ses
+   pages modifiees a la seconde de la requete apprend a Google que son
+   `lastmod` ne veut rien dire — y compris le jour ou une page changera
+   vraiment. A remettre a jour quand on touche a la page concernee. */
+const MAJ_ACCUEIL = new Date('2026-08-27')   // refonte de l'accueil
+const MAJ_LEGALES = new Date('2026-08-24')   // bascule + CGV v3.0
+
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date()
   return [
     {
       url: 'https://www.bellajour.fr',
-      lastModified: now,
+      lastModified: MAJ_ACCUEIL,
       changeFrequency: 'weekly',
       priority: 1,
     },
     {
       url: 'https://www.bellajour.fr/cgv',
-      lastModified: now,
+      lastModified: MAJ_LEGALES,
       changeFrequency: 'yearly',
       priority: 0.3,
     },
     {
       url: 'https://www.bellajour.fr/confidentialite',
-      lastModified: now,
+      lastModified: MAJ_LEGALES,
       changeFrequency: 'yearly',
       priority: 0.3,
     },
     {
       url: 'https://www.bellajour.fr/mentions-legales',
-      lastModified: now,
+      lastModified: MAJ_LEGALES,
+      changeFrequency: 'yearly',
+      priority: 0.2,
+    },
+    /* La quatrieme page legale. Elle repond 200, elle est indexable, elle a
+       son canonical et elle est liee depuis le pied de page de l'accueil :
+       elle etait simplement oubliee ici. */
+    {
+      url: 'https://www.bellajour.fr/remboursement',
+      lastModified: MAJ_LEGALES,
       changeFrequency: 'yearly',
       priority: 0.2,
     },

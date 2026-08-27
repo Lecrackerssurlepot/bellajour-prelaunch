@@ -107,7 +107,7 @@ export default function BoutonValider({
         )}
       </div>
 
-      {erreur && <p className="nu-erreur">{erreur}</p>}
+      {erreur && <p className="nu-erreur" role="alert">{erreur}</p>}
 
       {retouchesDites ? (
         <p className="nu-note">

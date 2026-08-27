@@ -239,6 +239,20 @@
    reinitialise les boutons globalement (le preflight Tailwind n'est pas
    importe dans globals.css), donc chaque bouton porte son propre reset.
    Meme jeu de declarations que `.suite` dans univers.css. */
+/* globals.css pose `overflow-wrap: anywhere !important` sur tous les h1..h4 et
+   p sous 767 px — une regle de securite ecrite pour la landing waitlist, qui
+   autorise une coupure AU MILIEU D'UN MOT, sans cesure. Sur les titres geants
+   de l'accueil (jusqu'a 12,4vw) ce serait le premier mot un peu long qui
+   casse. Mesure le 27/08/2026 en 375 px : avec ou sans la regle, RIEN ne
+   deborde sur cette page. Elle n'apporte donc aucun benefice ici, seulement
+   le risque. Il faut un !important pour repondre au sien. */
+@media (max-width: 767px) {
+  .at-accueil h1, .at-accueil h2, .at-accueil h3, .at-accueil p {
+    word-wrap: normal !important;
+    overflow-wrap: normal !important;
+  }
+}
+
 .at-accueil .acte{
   position:relative;display:inline-flex;align-items:center;gap:1.2vw;
   padding:0;background:none;border:0;cursor:pointer;color:inherit;font:inherit;
@@ -346,7 +360,6 @@
 }
 
 @media (prefers-reduced-motion:reduce){
-  .at-accueil .grain--vif{animation:none}
   /* pas de mouvement : on se pose d'emblee sur l'etat d'arrivee, pour que
      tout le monde voie la meme composition. */
   .at-accueil .h-plein{clip-path:inset(0) !important;transition:none !important}

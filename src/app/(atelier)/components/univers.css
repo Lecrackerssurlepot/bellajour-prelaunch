@@ -21,7 +21,6 @@
 
 .bj-atelier{
   /* la courbe d'entree du recit : forte, jamais molle (jamais ease-in) */
-  --e-recit:cubic-bezier(.23,1,.32,1);
   --mg-u:19vw;   /* marge gauche : le chemin de fer ET son libelle vivent dedans */
   --md-u:8vw;
 }
@@ -98,7 +97,15 @@
 }
 .at-accueil .pas li.actif .t{opacity:1;transform:none;color:var(--c-text-soft)}
 .at-accueil .pas-jauge{margin-top:1.4dvh;width:1px;height:12dvh;background:var(--c-line);position:relative}
-.at-accueil .pas-jauge i{position:absolute;top:0;left:0;width:1px;height:0;background:var(--c-accent);display:block}
+/* Pleine hauteur, ecrasee a zero, et c'est l'ECHELLE qui monte. Piloter
+   `height` obligeait le navigateur a recalculer la mise en page a chaque
+   frame de defilement — juste avant les neuf lectures de geometrie qui
+   suivent dans la boucle (Univers.tsx). Une echelle ne coute que le
+   compositeur. */
+.at-accueil .pas-jauge i{
+  position:absolute;top:0;left:0;width:1px;height:100%;display:block;
+  background:var(--c-accent);transform:scaleY(0);transform-origin:top center;
+}
 
 /* ─────────── TOURNER LA PAGE ───────────
    Meme famille que l'action de l'ouverture, un cran plus bas : rond
@@ -338,8 +345,29 @@
    parce qu'un defilement qui commence et finit dans la marge n'est plus un
    defilement, c'est une liste. */
 .at-accueil .sl4-bande{margin:6dvh calc(var(--md-u) * -1) 0 calc(var(--mg-u) * -1);overflow:hidden}
+/* La bande ne tourne QUE lorsque sa page a joue. Elle demarrait au
+   chargement et ne s'arretait jamais, a quatre ecrans de la, en tenant une
+   couche GPU en permanence (`will-change`) pour dix images qui portent
+   chacune une ombre portee et un filtre. */
+/* Un element du sequenceur est a `opacity:0` jusqu'a ce que sa page joue.
+   Au clavier, on pouvait donc poser son focus sur un bouton entierement
+   invisible et floute — sur la page 02, pendant 7,6 s. Il se rallume des
+   qu'il recoit le focus. Aucun effet a la souris. */
+.at-accueil [data-t]:focus-visible,
+.at-accueil [data-t]:has(:focus-visible){
+  opacity:1 !important;filter:none !important;transform:none !important;
+}
+/* Le chemin de fer est masque tant que le rail n'est pas actif : ses sept
+   arrets de tabulation etaient donc invisibles eux aussi. */
+.at-accueil .pas:focus-within{opacity:1;pointer-events:auto}
+
 .at-accueil .sl4-rail{display:flex;gap:1.8vw;width:max-content;padding-left:var(--mg-u);
-  animation:defile 58s linear infinite;will-change:transform}
+  animation:defile 58s linear infinite;animation-play-state:paused}
+.at-accueil .sl4.joue .sl4-rail{animation-play-state:running}
+/* WCAG 2.2.2 : un defilement automatique de plus de 5 s doit pouvoir etre
+   arrete par un moyen present SUR LA PAGE. La pause au survol n'existe pas
+   au clavier, ni sur un telephone — c'est-a-dire sur l'essentiel du trafic. */
+.at-accueil .sl4-bande:focus-within .sl4-rail{animation-play-state:paused}
 @keyframes defile{
   from{transform:translateX(0)}
   to{transform:translateX(calc(-50% - .9vw))}

@@ -56,3 +56,40 @@ accroche au défilement. ⚠️ Web Analytics n'est pas activé sur le projet : 
 aujourd'hui AUCUN moyen de voir un décrochage Android. Une visiteuse qui subit le jank
 ne le signale pas, elle part. L'activer est le préalable pour que cette décision soit
 surveillable autrement qu'au hasard d'un prêt de téléphone.
+
+D6 (27/08/2026) — Audit d'optimisation du site, mené sur la branche `optim/audit-27-08`
+et PAS sur `main` : les correctifs de performance touchent le footer de huit pages qui
+vendent et la barre de la prévente. Le poids du premier chargement de l'accueil passe de
+1719 Ko à environ 670 Ko, mesuré en production avant, calculé après.
+**Conséquence :** trois pièges découverts ne doivent JAMAIS être « réparés » par le geste
+intuitif.
+1. `--bj-nav-h` est référencé onze fois et défini nulle part. Le définir ferait descendre
+   les treize `<main>` du site de 76 px d'un coup, en plus de la compensation que chaque
+   page pose déjà. Le token vivant s'appelle `--bj-topbar-h`. Une variable fantôme dont
+   la définition casse la page est pire qu'une variable fantôme.
+2. `/lancement` porte encore le squelette d'une deuxième page d'accueil complète, en
+   `noindex`. Son commentaire disait « retirer robots au moment de la mise en ligne » ;
+   la consigne est périmée et désamorcée sur place. Suivre l'ancienne donnerait deux
+   accueils concurrents, dont le faux vend « l'album d'exception ».
+3. Un bloc `openGraph` posé sur une page REMPLACE celui du layout racine, Next ne fusionne
+   pas en profondeur. Un bloc partiel efface l'image de partage. C'est ce qui privait
+   l'accueil d'aperçu sur Instagram, premier canal d'acquisition.
+⚠️ Arbitrage assumé, facile à défaire : `preload: false` sur Cormorant 500/600
+(`layout.tsx`) retire 75 Ko du chargement de TOUTES les pages, au prix d'un échange de
+police au premier affichage de /preventes, /ambassadeurs, /admin, /legal, /merci,
+/inviter et /lancement — les seules qui peignent vraiment ces faces. Si l'effet déplaît,
+retirer la ligne suffit.
+⚠️ Quarante-cinq erreurs `react-hooks` subsistent dans dix-huit composants routés, et
+`reactCompiler` est ACTIF dans `next.config.ts`. Elles ne cassent rien aujourd'hui, mais
+ce sont les règles sur lesquelles le compilateur décide de mémoïser : le genre de bug qui
+n'apparaît qu'en production. Non corrigées volontairement, chacune a sa raison propre.
+
+D7 (27/08/2026) — La grille de photos de `/admin/atelier/[token]` sert les ORIGINAUX R2
+(plafond 5200 px, plusieurs Mo pièce) dans des vignettes de 84 px. À l'ouverture d'une
+fiche c'est de l'ordre de 35 à 45 Mo, et 250 à 350 Mo une fois la grille dépliée, décodés
+sur le thread principal. C'est l'écran que l'atelier laisse ouvert toute la journée.
+**Conséquence :** NON CORRIGÉ, parce que le bon correctif touche la chaîne d'envoi. Le
+worker produit DÉJÀ une vignette de 320 px (`reduire.worker.js`) : il suffirait de la
+déposer en second objet `vignettes/<r2_key>` au moment du dépôt et de la signer à côté de
+l'original dans `donnees.ts`. Migration à prévoir pour les dossiers existants. En attendant,
+paginer le dépliage par tranches de douze divise le pic par huit, sans rien toucher d'autre.
