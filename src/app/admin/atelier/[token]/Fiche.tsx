@@ -691,6 +691,43 @@ export default function Fiche({
               </>
             ) : null}
 
+            {/* ── le colis ──
+                Rempli tout seul par le webhook Cloudprinter (ItemShipped) :
+                le transporteur, le lien de suivi, et le NUMÉRO de suivi qui
+                se recopie. Affiché ici, à côté de l'adresse : c'est la même
+                question — où va ce colis, et où en est-il ? */}
+            {fiche.transporteur || fiche.trackingUrl || fiche.trackingCode ? (
+              <>
+                <h3 className="ate-sous-titre">Le colis</h3>
+                <dl className="ate-defs">
+                  <dt>Transporteur</dt>
+                  <dd>{fiche.transporteur || "—"}</dd>
+                  {fiche.trackingCode ? (
+                    <>
+                      <dt>Numéro de suivi</dt>
+                      <dd className="ate-mono">{fiche.trackingCode}</dd>
+                    </>
+                  ) : null}
+                  {fiche.trackingUrl ? (
+                    <>
+                      <dt>Suivi</dt>
+                      <dd>
+                        <a href={fiche.trackingUrl} target="_blank" rel="noreferrer">
+                          Suivre le colis ↗
+                        </a>
+                      </dd>
+                    </>
+                  ) : null}
+                </dl>
+                {fiche.cloudprinterOrderId && !fiche.trackingUrl && fiche.trackingCode ? (
+                  <p className="ate-faint">
+                    Pas de lien de suivi pour ce transporteur : c&apos;est le numéro qui part chez
+                    elle, sur sa page.
+                  </p>
+                ) : null}
+              </>
+            ) : null}
+
             {fiche.stripePaymentIntent ? (
               <p className="ate-mono ate-faint ate-pi">{fiche.stripePaymentIntent}</p>
             ) : null}

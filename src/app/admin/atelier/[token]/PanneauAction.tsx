@@ -82,7 +82,9 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
     pdf_couverture: fiche.impressionFichiers.cover ?? "",
     pdf_interieur: fiche.impressionFichiers.book ?? "",
     transporteur: fiche.transporteur ?? "",
-    tracking_url: fiche.trackingUrl ?? "",
+    /* Le champ accepte les deux formes : on repropose le numéro s'il
+       existe, l'adresse sinon. */
+    tracking_url: fiche.trackingCode ?? fiche.trackingUrl ?? "",
   });
   const [apercus, setApercus] = useState<Record<string, string>>({
     apercu_plat: fiche.apercu.plat ?? "",
@@ -543,14 +545,17 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                 {erreurDe("transporteur") ? <span className="ate-erreur">{erreurDe("transporteur")}</span> : null}
               </label>
               <label className="ate-champ">
-                <span className="ate-champ-label">Lien de suivi (facultatif)</span>
+                <span className="ate-champ-label">Numéro ou lien de suivi (facultatif)</span>
                 <input
                   className="adm-input"
-                  type="url"
                   value={saisie.tracking_url}
                   onChange={(e) => set("tracking_url", e.target.value)}
-                  placeholder="https://…"
+                  placeholder="6A123456789FR"
                 />
+                <span className="ate-champ-aide">
+                  Le numéro suffit : il devient un lien de suivi quand le transporteur est connu,
+                  et reste écrit sur sa page dans tous les cas.
+                </span>
                 {erreurDe("tracking_url") ? <span className="ate-erreur">{erreurDe("tracking_url")}</span> : null}
               </label>
             </>

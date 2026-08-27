@@ -19,6 +19,7 @@
  */
 
 import { palierPourPages, eurosPour, type PalierCle } from "./prix";
+import { lireSuivi } from "./suivi";
 
 export type Etat =
   | "photos_recues"
@@ -99,6 +100,7 @@ export type Saisie = {
   pdf_couverture?: string | null;
   pdf_interieur?: string | null;
   transporteur?: string | null;
+  /** Un numéro de suivi OU une adresse : les deux sont acceptés (suivi.ts). */
   tracking_url?: string | null;
   /* T2-3 — le mot facultatif de l'atelier sur « Demander plus de photos ».
      Il part dans M9 (param MOT), jamais en base : ce n'est pas une colonne. */
@@ -407,11 +409,27 @@ export function preparerTransition(
     if (!t) erreurs.push({ champ: "transporteur", message: "Indique le transporteur." });
     else patch.transporteur = t;
 
-    const suivi = texte(saisie.tracking_url, 600);
-    if (suivi && !estUrlSure(suivi)) {
-      erreurs.push({ champ: "tracking_url", message: "Ce lien n'est pas une adresse valide." });
-    } else if (suivi) {
-      patch.tracking_url = suivi;
+    /* Le champ accepte les DEUX formes, parce que c'est ce qu'un transporteur
+       donne : un numéro le plus souvent, une adresse parfois. Un numéro seul
+       devient un lien quand on connaît le transporteur (suivi.ts), et reste
+       de toute façon écrit sur la page de la cliente. C'est le même chemin
+       que celui du webhook Cloudprinter : une seule règle de suivi, valable
+       que le colis parte tout seul ou à la main.
+       Un numéro de suivi ne contient ni « : » ni « / » : ce qui en porte est
+       une adresse, et une adresse doit être sûre (un `javascript:` recopié
+       par mégarde finirait cliquable chez une cliente). */
+    const brut = texte(saisie.tracking_url, 600);
+    if (brut && /[:/]/.test(brut) && !estUrlSure(brut)) {
+      erreurs.push({
+        champ: "tracking_url",
+        message: "Ce lien n'est pas une adresse valide. Le numéro de suivi seul suffit.",
+      });
+    } else if (brut && t) {
+      const suivi = lireSuivi(t, brut);
+      /* Le transporteur reste ÉCRIT COMME L'ATELIER L'A TAPÉ : suivi.ts sert
+         ici à construire le lien, pas à corriger l'orthographe de personne. */
+      patch.tracking_url = suivi.url;
+      patch.tracking_code = suivi.code;
     }
   }
 

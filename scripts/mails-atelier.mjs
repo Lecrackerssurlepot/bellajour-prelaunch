@@ -106,6 +106,33 @@ function encartMot() {
 </td></tr>{% endif %}`;
 }
 
+/**
+ * L'encart de suivi de M7, rendu SEULEMENT si on a une adresse de suivi.
+ *
+ * Le motif est celui de la recette du 26/08 : Cloudprinter donne un NUMÉRO
+ * de suivi, pas une adresse. Le mail partait donc avec sa jolie phrase
+ * « confié à DPD » et aucun moyen de suivre quoi que ce soit, et la cliente
+ * devait deviner qu'il fallait retourner sur sa page. Depuis suivi.ts, le
+ * numéro devient un lien : voici où il se voit.
+ *
+ * Conditionnel : un transporteur dont on ne sait pas construire l'adresse de
+ * suivi ne doit pas produire un bouton qui ne mène nulle part. Dans ce cas
+ * l'encart disparaît et le bouton principal ramène sur la page, où le numéro
+ * de suivi est écrit en toutes lettres.
+ */
+function encartSuivi() {
+  return `{% if params.SUIVI %}<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border-left: 2px solid #d68a63; border-radius: 0 12px 12px 0;">
+<tr><td style="padding: 24px 26px 8px 26px;">
+<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Le suivi</div>
+</td></tr>
+<tr><td style="padding: 0 26px 24px 26px;">
+<p style="margin: 0; font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.7; color: #c7c2b8;"><a href="{{ params.SUIVI }}" style="color: #d68a63; text-decoration: underline;">Suivre le colis chez {{ params.TRANSPORTEUR }}</a></p>
+</td></tr>
+</table>
+</td></tr>{% endif %}`;
+}
+
 function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pied }) {
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
@@ -297,6 +324,7 @@ export const MAILS = [
     titreHtml: "Votre numéro est en route",
     h1: "Votre numéro<br />est en route.",
     sous: `${PRENOM}, il est parti. Confié à {{ params.TRANSPORTEUR }}, il voyage vers l’adresse que vous nous avez donnée.`,
+    carte: encartSuivi(),
     cta: "Suivre mon numéro",
     lien: LIEN,
     pied: "Le suivi se met à jour sur votre page, au fil des jours.",
@@ -404,6 +432,7 @@ async function main() {
     NB_PHOTOS: "12",
     PRIX: "40",
     TRANSPORTEUR: "Colissimo",
+    SUIVI: "https://www.laposte.fr/outils/suivre-vos-envois?code=6A123456789FR",
     DATE_LIMITE: "3 septembre",
     LIEN: "https://www.bellajour.fr/numero/apercu",
   };

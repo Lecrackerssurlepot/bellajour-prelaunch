@@ -671,6 +671,9 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     cloudprinterOrderId: (n.cloudprinter_order_id as string) ?? null,
     transporteur: (n.transporteur as string) ?? null,
     trackingUrl: (n.tracking_url as string) ?? null,
+    /* Le NUMÉRO de suivi (migration 20260829) : il arrive avec le select("*")
+       et vaut null tant que la migration n'est pas passée. */
+    trackingCode: (n.tracking_code as string) ?? null,
     retouchesLe: (n.retouches_demandees_le as string) ?? null,
     depotInitialJusqua,
     apercu,

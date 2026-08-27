@@ -155,7 +155,7 @@ l'impression ». Seul M2 n'a pas de prédécesseur : il porte la seule borne de 
 `ATELIER_M2_DEPUIS` (reculée sur Preview pour le rendre testable).
 ⚠️ **La relève doit tourner tous les jours** (`vercel.json`, 7 h UTC, `CRON_SECRET`). Sans elle,
 M2, M3b, M8 et l'auto-validation à J+7 ne partent JAMAIS.
-Vérifications : `npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts` (81 assertions,
+Vérifications : `npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts` (153 assertions,
 sans base ni réseau) et `scripts/verif-mails-brevo.ts` (les variables des templates).
 
 ### Qui a le dossier en main (26/08/2026)
@@ -434,6 +434,26 @@ dos carré ne peut physiquement pas vivre dans le même PDF que les pages.
   Order ») ; webhook CloudSignal = « Bellajour preview » → la preview. La sandbox déroule
   commande→shipped en ~45 s. Clés régénérées le 26/08 (les premières avaient circulé en
   clair). Au lancement : interface Live + un webhook vers bellajour.fr + clés en Production.
+
+### Le suivi du colis se remplit tout seul (27/08/2026)
+`src/lib/atelier/suivi.ts` (PUR) est LE seul endroit qui interprète un envoi.
+Motif : Cloudprinter annonce l'expédition avec un `tracking` qui est un NUMÉRO
+(« TEST123456789FR »), pas une adresse. Le webhook ne gardait que les `https://…`,
+donc ne gardait rien du cas courant : fiche vide, page cliente sans suivi, M7 avec
+un lien vide. Depuis :
+- `lireSuivi(shipping_option, tracking)` → `{ transporteur, code, url }`. Le numéro
+  devient un lien pour les transporteurs de la table (Colissimo/La Poste, Chronopost,
+  DPD, Mondial Relay, GLS, UPS, DHL, FedEx, bpost) et reste TOUJOURS conservé.
+  ⚠️ Aucune adresse n'est inventée : un transporteur inconnu donne `url: null` et le
+  numéro seul. Ajouter un transporteur = une entrée dans la table, jamais ailleurs.
+- Nouvelle colonne `numeros.tracking_code` (migration 20260829). Le webhook ET la
+  route de transition retombent sur un update SANS elle en 42703 : une expédition ne
+  doit pas être bloquée par une colonne d'affichage pendant la fenêtre migration/déploiement.
+- Le champ « Numéro ou lien de suivi » de *Marquer expédiée* accepte les DEUX formes
+  et passe par le même `lireSuivi` : une seule règle, que le colis parte tout seul ou à la main.
+- M7 porte un encart conditionnel « Suivre le colis chez … » (`{% if params.SUIVI %}`),
+  poussé par `node scripts/mails-atelier.mjs --pousser`. Sans lien constructible,
+  l'encart disparaît et le bouton ramène sur la page, où le numéro est écrit en clair.
 
 ## Webhook Stripe PARTAGÉ — le tri est EXPLICITE des deux côtés (24/08/2026)
 `/api/webhook` trie sur les métadonnées, avant tout accès en base, et **aucun produit n'est

@@ -31,6 +31,7 @@ import { memeSecret } from "@/lib/atelier/secret";
 import { logEvenement } from "@/lib/atelier/evenements";
 import { releverDossier } from "@/lib/atelier/mails";
 import { interpreterSignal } from "@/lib/atelier/impression";
+import { lireSuivi } from "@/lib/atelier/suivi";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -120,29 +121,46 @@ export async function POST(request: Request) {
       /* Transporteur et suivi dans le MÊME update que l'état : M7 exige un
          transporteur (manquePour, mails.ts) — un update en deux temps
          laisserait la relève signaler un incomplet entre les deux.
-         `tracking` est parfois un code, parfois une URL : l'URL s'affiche
-         cliquable chez la cliente, le code reste lisible au journal. */
-      const tracking = s(body.tracking);
-      /* `shipping_option` arrive sous sa forme machine (« dpd_france ») :
-         c'est ce mot qui part dans M7 et s'affiche chez la cliente — on le
-         rend lisible (« DPD France »). Vécu au premier ItemShipped du 26/08. */
-      const brutTransporteur = s(body.shipping_option).replace(/_/g, " ").trim();
-      const transporteur = brutTransporteur
-        ? brutTransporteur.replace(/(^|\s)\S/g, (c) => c.toUpperCase()).replace(/^Dpd\b/, "DPD")
-        : "Transporteur";
+
+         Tout ce qui est INTERPRÉTATION vit dans suivi.ts (pur, testé) :
+         « dpd_france » devient « DPD », et le `tracking` — un NUMÉRO neuf
+         fois sur dix, pas une adresse — est gardé tel quel ET transformé en
+         lien cliquable. L'ancienne version ne gardait que les `https://…`,
+         donc ne gardait rien du cas courant : ni la fiche, ni la page de la
+         cliente, ni M7 n'avaient de suivi à montrer. */
+      const suivi = lireSuivi(s(body.shipping_option), s(body.tracking));
+      const transporteur = suivi.transporteur;
+      const tracking = suivi.code ?? suivi.url ?? "";
       const maintenant = new Date().toISOString();
 
-      const { data: maj, error } = await supabase
-        .from("numeros")
-        .update({
-          etat: "expediee",
-          transporteur,
-          tracking_url: /^https?:\/\//i.test(tracking) ? tracking : null,
-          etat_maj_le: maintenant,
-        })
-        .eq("id", numero.id)
-        .eq("etat", "en_production")
-        .select("id");
+      const colonnes = {
+        etat: "expediee",
+        transporteur,
+        tracking_url: suivi.url,
+        tracking_code: suivi.code,
+        etat_maj_le: maintenant,
+      };
+
+      const expedier = (patch: Record<string, unknown>) =>
+        supabase
+          .from("numeros")
+          .update(patch)
+          .eq("id", numero!.id)
+          .eq("etat", "en_production")
+          .select("id");
+
+      let { data: maj, error } = await expedier(colonnes);
+
+      if (error?.code === "42703") {
+        /* 42703 = colonne absente : la migration `tracking_code` n'est pas
+           encore passée. Le même repli que `lireNumeros` pour `en_charge` —
+           entre le déploiement et la migration, l'expédition doit continuer
+           d'arriver, quitte à perdre le numéro de suivi (le lien, lui, est
+           déjà dans `tracking_url`). */
+        const sansColonne: Record<string, unknown> = { ...colonnes };
+        delete sansColonne.tracking_code;
+        ({ data: maj, error } = await expedier(sansColonne));
+      }
 
       if (error) {
         console.error("[cloudprinter/webhook] update échoué", error.code, error.message);

@@ -491,7 +491,10 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     impressionFichiers: { product: null, cover: null, book: null },
     cloudprinterOrderId: null,
     transporteur: ["expediee", "livree"].includes(g.etat) ? "Colissimo" : null,
-    trackingUrl: ["expediee", "livree"].includes(g.etat) ? "https://www.laposte.fr/outils/suivre-vos-envois" : null,
+    trackingUrl: ["expediee", "livree"].includes(g.etat)
+      ? "https://www.laposte.fr/outils/suivre-vos-envois?code=6A123456789FR"
+      : null,
+    trackingCode: ["expediee", "livree"].includes(g.etat) ? "6A123456789FR" : null,
     retouchesLe: null,
     depotInitialJusqua: null,
     apercu: publie

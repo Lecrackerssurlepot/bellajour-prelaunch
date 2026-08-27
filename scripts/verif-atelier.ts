@@ -27,6 +27,7 @@ import {
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
 import { nomsDeFichiers, nomDossier } from "@/lib/atelier/lot";
+import { lireSuivi, nomTransporteur } from "@/lib/atelier/suivi";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import {
   adresseCloudprinter,
@@ -416,6 +417,37 @@ ok("ItemPacked se journalise seulement", interpreterSignal("ItemPacked").effet =
 ok("ItemDeliveryCompleted ne livre PAS tout seul (M8 reste un geste de l'atelier)",
    interpreterSignal("ItemDeliveryCompleted").effet === "journal");
 ok("un type inconnu tombe au journal, jamais en erreur", interpreterSignal("ItemFutur2027").effet === "journal");
+
+titre("— le suivi du colis : un numero doit devenir un lien —");
+const dpd = lireSuivi("dpd_france", "250A4B7C1234");
+ok("dpd_france se lit DPD", dpd.transporteur === "DPD");
+ok("le numero est CONSERVE", dpd.code === "250A4B7C1234");
+ok("le numero devient un lien", dpd.url === "https://www.dpd.fr/trace/250A4B7C1234");
+const colis = lireSuivi("Colissimo suivi", "TEST123456789FR");
+ok("colissimo passe par La Poste",
+   colis.url === "https://www.laposte.fr/outils/suivre-vos-envois?code=TEST123456789FR");
+const urlDonnee = lireSuivi("chronopost", "https://www.chronopost.fr/xyz");
+ok("une adresse donnee est prise telle quelle", urlDonnee.url === "https://www.chronopost.fr/xyz");
+const inconnu = lireSuivi("transporteur_local_38", "ABC123");
+ok("transporteur inconnu : AUCUN lien invente", inconnu.url === null);
+ok("transporteur inconnu : le numero reste lisible", inconnu.code === "ABC123");
+ok("un transporteur vide ne laisse jamais M7 sans mot", nomTransporteur("") === "Transporteur");
+ok("le numero est nettoye avant d'entrer dans l'URL",
+   lireSuivi("ups", " 1Z 999 AA1 ").code === "1Z999AA1");
+
+titre("— l'expedition a la main accepte les DEUX formes —");
+const parNumero = preparerTransition("marquer_expediee", "en_production", {
+  transporteur: "Colissimo", tracking_url: "6A123456789FR",
+});
+ok("un numero seul suffit et produit un lien",
+   parNumero.ok && parNumero.patch.tracking_url === "https://www.laposte.fr/outils/suivre-vos-envois?code=6A123456789FR");
+ok("le numero est ecrit a part", parNumero.ok && parNumero.patch.tracking_code === "6A123456789FR");
+ok("le transporteur reste ecrit comme l'atelier l'a tape",
+   parNumero.ok && parNumero.patch.transporteur === "Colissimo");
+ok("un javascript: reste refuse",
+   !preparerTransition("marquer_expediee", "en_production", {
+     transporteur: "X", tracking_url: "javascript:alert(1)",
+   }).ok);
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
 process.exit(ko === 0 ? 0 : 1);

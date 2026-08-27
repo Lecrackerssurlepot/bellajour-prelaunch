@@ -32,7 +32,7 @@ const CHAMPS: Record<string, Array<{ cle: string; label: string; requis: boolean
   ],
   marquer_expediee: [
     { cle: "transporteur", label: "Transporteur", requis: true },
-    { cle: "tracking_url", label: "Lien de suivi (facultatif)", requis: false, type: "url" },
+    { cle: "tracking_url", label: "Numéro ou lien de suivi (facultatif)", requis: false },
   ],
 };
 

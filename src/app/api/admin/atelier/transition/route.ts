@@ -342,15 +342,27 @@ export async function POST(request: Request) {
        Pour l'impression, un second verrou : `cloudprinter_order_id` doit
        encore être vide — la ceinture locale du verrou distant (référence
        unique chez Cloudprinter). */
-    let majQuery = supabase
-      .from("numeros")
-      .update({ ...prepa.patch, etat_maj_le: maintenant })
-      .eq("id", numero.id)
-      .eq("etat", numero.etat);
-    if (cle === "envoyer_impression") {
-      majQuery = majQuery.is("cloudprinter_order_id", null);
+    const ecrire = (patch: Record<string, unknown>) => {
+      let q = supabase
+        .from("numeros")
+        .update({ ...patch, etat_maj_le: maintenant })
+        .eq("id", numero.id)
+        .eq("etat", numero.etat);
+      if (cle === "envoyer_impression") q = q.is("cloudprinter_order_id", null);
+      return q.select("id, etat");
+    };
+
+    let { data: maj, error } = await ecrire(prepa.patch);
+
+    if (error?.code === "42703" && "tracking_code" in prepa.patch) {
+      /* 42703 = colonne absente : la migration `tracking_code` (20260829)
+         n'est pas encore passée. Une expédition ne doit pas être bloquée par
+         une colonne d'affichage — on écrit sans elle, le lien de suivi
+         (`tracking_url`) part quand même. Même repli que le webhook. */
+      const sansColonne: Record<string, unknown> = { ...prepa.patch };
+      delete sansColonne.tracking_code;
+      ({ data: maj, error } = await ecrire(sansColonne));
     }
-    const { data: maj, error } = await majQuery.select("id, etat");
 
     if (error) {
       console.error("[admin/transition] update échoué", cle, error.code, error.message);

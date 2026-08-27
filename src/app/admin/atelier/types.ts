@@ -173,6 +173,7 @@ export type Fiche = {
   cloudprinterOrderId: string | null;
   transporteur: string | null;
   trackingUrl: string | null;
+  trackingCode: string | null;
   /** T2-13 — la date du clic « j'ai noté des retouches », ou null. */
   retouchesLe: string | null;
   /** T2-5 — la fin du PREMIER dépôt (événement consentements) : toute photo

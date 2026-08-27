@@ -159,6 +159,19 @@
 
 .nu-carte dd + dt { margin-top: 16px; }
 
+/* Le numero de suivi : celui qu'on recopie dans l'appli du transporteur.
+   Selectionnable d'un geste, et lisible chiffre par chiffre (un 0 et un O
+   ne se confondent pas dans une chasse fixe). */
+.nu-suivi-code {
+  display: block;
+  margin-top: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: var(--c-text-soft);
+  user-select: all;
+}
+
 /* ---- l'état 2 : la page qui vend (PRD §8) ----
    La seule page où l'on a le droit d'être spectaculaire. */
 .nu-covers {

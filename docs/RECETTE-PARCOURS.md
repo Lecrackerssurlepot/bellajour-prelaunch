@@ -183,7 +183,11 @@ c'est l'exigence de leurs produits) → *Préparer* → *Confirmer*.
       commencé »…)
 - [ ] au signal d'expédition, l'état passe SEUL à « Expédiée », avec le
       transporteur — **mail M7** reçu
-- [ ] **sa page** affiche le suivi
+- [ ] la **fiche admin** montre « Le colis » : transporteur, numéro de suivi
+      et lien, remplis sans qu'on ait rien tapé
+- [ ] **le mail M7** porte le lien « Suivre le colis chez … » (il n'apparaît
+      que si on sait construire l'adresse de suivi du transporteur)
+- [ ] **sa page** affiche le suivi : le lien ET le numéro écrit en clair
 - [ ] filet sans sandbox : `node scripts/recette.mjs signal "Test 1" ItemShipped`
       rejoue le webhook ; un second envoi est ignoré sans bruit
 - [ ] si les signaux n'arrivent pas : dashboard Cloudprinter → CloudSignal →

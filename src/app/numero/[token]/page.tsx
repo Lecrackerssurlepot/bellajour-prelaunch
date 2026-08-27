@@ -73,6 +73,9 @@ type Numero = {
   consent_photos: boolean | null
   transporteur: string | null
   tracking_url: string | null
+  /* Le NUMÉRO de suivi (le lien, lui, est dans `tracking_url`). Cloudprinter
+     donne presque toujours un numéro : sans cette colonne, il se perdait. */
+  tracking_code: string | null
   valide_le: string | null
   etat_maj_le: string
   /* T2-13 — la date du clic « j'ai noté des retouches », ou null. */
@@ -88,6 +91,11 @@ const CHAMPS =
   'maquette_pdf_url, canva_url, cgv_ok, renonciation_retractation, consent_photos, ' +
   'transporteur, tracking_url, valide_le, etat_maj_le, retouches_demandees_le, ' +
   'consent_communication, facture_url'
+
+/* `tracking_code` est arrivé après les autres : tant que sa migration n'est
+   pas passée, PostgREST répond 42703 et la page entière tomberait pour une
+   colonne d'affichage. Le repli est celui de `lireNumeros` côté atelier. */
+const CHAMPS_SANS_CODE_SUIVI = CHAMPS
 
 /**
  * De qui c'est le tour, en une phrase.
@@ -137,11 +145,13 @@ const JOURS_COMPOSITION = DELAIS.payee?.joursOuvres ?? 3
 async function lireNumero(token: string): Promise<Numero | null | 'panne'> {
   try {
     const supabase = makeSupabase()
-    const { data, error } = await supabase
-      .from('numeros')
-      .select(CHAMPS)
-      .eq('token', token)
-      .maybeSingle<Numero>()
+    const lire = (champs: string) =>
+      supabase.from('numeros').select(champs).eq('token', token).maybeSingle<Numero>()
+
+    let { data, error } = await lire(`${CHAMPS}, tracking_code`)
+    if (error?.code === '42703') {
+      ;({ data, error } = await lire(CHAMPS_SANS_CODE_SUIVI))
+    }
 
     if (error) {
       console.error('[numero] lecture échouée', error.code, error.message)
@@ -451,18 +461,27 @@ export default async function NumeroPage({
           <dl className="nu-carte">
             <dt>Transporteur</dt>
             <dd>{numero.transporteur?.trim() || 'En cours d’attribution'}</dd>
-            {numero.tracking_url && (
+            {(numero.tracking_url || numero.tracking_code) && (
               <>
                 <dt>Suivi</dt>
                 <dd>
-                  <a
-                    className="nu-lien"
-                    href={numero.tracking_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Suivre le colis
-                  </a>
+                  {numero.tracking_url ? (
+                    <a
+                      className="nu-lien"
+                      href={numero.tracking_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Suivre le colis
+                    </a>
+                  ) : null}
+                  {/* Le numéro reste écrit même quand le lien existe : c'est
+                      lui qu'on recopie dans l'application du transporteur, et
+                      c'est tout ce qui reste quand on ne sait pas construire
+                      le lien. */}
+                  {numero.tracking_code ? (
+                    <span className="nu-suivi-code">{numero.tracking_code}</span>
+                  ) : null}
                 </dd>
               </>
             )}
