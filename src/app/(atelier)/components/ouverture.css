@@ -1,0 +1,350 @@
+/* ════════════════════════════════════════════════════════════
+   L'OUVERTURE — la couverture qui se pose, puis s'ouvre
+   Portée du prototype design-explorations/landing/v2-descente, validé le
+   27/08/2026. Tous les tokens viennent de theme.css : aucune valeur
+   hexadécimale ici (invariant nº1).
+
+   POURQUOI TOUT EST SOUS .at-accueil
+   Le prototype nomme ses classes court (.hero, .in, .ligne, .ph). Sous
+   .bj-atelier, que /composer partage, ces noms-là entreraient en
+   collision un jour. Le scope de page les enferme : rien de cette
+   feuille ne peut peindre autre chose que l'accueil, et rien d'ailleurs
+   ne peut peindre l'accueil.
+
+   Le grain et la fibre du papier sont des turbulences SVG en ligne, pas
+   des images : 283 et 454 Ko de texture décorative à chaque chargement,
+   ce n'était pas tenable.
+   ════════════════════════════════════════════════════════════ */
+
+/* L'accueil est en noir plein. Le dégradé ambiant de .bj-atelier
+   éclaircit le haut de page, ce que la couverture ne supporte pas. On le
+   neutralise pour cette page seule, sans toucher au thème partagé. */
+.bj-atelier:has(> .at-accueil) { background: var(--c-void); }
+.at-accueil { position: relative; }
+
+/* ---- grain de surface : aucun aplat parfaitement plat ---- */
+.at-accueil .grain{
+  position:fixed;inset:0;z-index:900;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:160px 160px;
+  mix-blend-mode:soft-light;opacity:.5;
+}
+
+/* ---- lexique typographique ---- */
+.at-accueil .chapeau{
+  font-family:var(--font-ui);font-size:clamp(10px,.78vw,12px);font-weight:400;
+  letter-spacing:.44em;text-transform:uppercase;color:var(--c-text-faint);
+}
+.at-accueil .chapeau .p{color:var(--c-accent)}
+.at-accueil .corps{
+  font-size:clamp(15px,1.06vw,19px);font-weight:300;line-height:1.78;color:var(--c-text-soft);
+  max-width:34em;
+}
+.at-accueil .mention{font-size:clamp(12px,.76vw,13.5px);font-weight:300;color:var(--c-text-faint);text-wrap:pretty}
+.at-accueil .mention b{color:var(--c-text-soft);font-weight:400}
+.at-accueil .legende{
+  font-family:var(--font-display);font-style:italic;
+  font-size:clamp(15px,1.1vw,20px);line-height:1.45;color:var(--c-text-soft);
+}
+.at-accueil .legende b{
+  display:block;margin-bottom:.9vh;font-family:var(--font-ui);font-style:normal;font-weight:400;
+  font-size:clamp(9px,.62vw,10.5px);letter-spacing:.36em;text-transform:uppercase;color:var(--c-text-faint);
+}
+
+/* ---- le seul bouton plein ---- */
+.at-accueil .cta{
+  display:inline-flex;align-items:center;gap:1vw;
+  height:clamp(48px,3.9vw,62px);padding:0 clamp(20px,1.9vw,36px);
+  border-radius:999px;background:var(--c-accent);color:var(--c-text-onaccent);
+  font-size:clamp(11px,.8vw,13.5px);font-weight:500;letter-spacing:.11em;text-transform:uppercase;
+  box-shadow:0 2vh 4vh -2.4vh rgba(214,138,99,.75);
+  transition:background var(--t-reveal) var(--ease), transform var(--t-reveal) var(--ease-spring);
+}
+.at-accueil .cta:hover{background:var(--c-accent-strong);transform:translateY(-2px)}
+.at-accueil .cta .fl{transition:transform var(--t-reveal) var(--ease-spring)}
+.at-accueil .cta:hover .fl{transform:translateX(.4vw)}
+
+/* ---- photographies : matiere, lumiere dirigee, grain ---- */
+.at-accueil .ph{position:relative;overflow:hidden;background:var(--c-surface-1)}
+.at-accueil .ph>img{width:100%;height:100%;object-fit:cover;
+  filter:saturate(.56) contrast(1.09) brightness(.79) sepia(.19)}
+.at-accueil .ph::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:
+    radial-gradient(78% 62% at 74% 8%, rgba(227,154,115,.16), rgba(227,154,115,0) 62%),
+    radial-gradient(128% 116% at 30% 20%, rgba(7,7,8,0) 30%, rgba(7,7,8,.66) 100%),
+    linear-gradient(180deg, rgba(7,7,8,.06), rgba(7,7,8,.44));}
+.at-accueil .ph::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");background-size:140px 140px;
+  mix-blend-mode:overlay;opacity:.2}
+.at-accueil .ph--douce>img{filter:saturate(.62) contrast(1.05) brightness(.86) sepia(.14)}
+.at-accueil .ph--sombre>img{filter:saturate(.4) contrast(1.12) brightness(.52) sepia(.24)}
+
+/* ---- filets ---- */
+.at-accueil .filet{height:1px;background:var(--c-line-md);transform-origin:left center}
+
+/* ════════════════════════════════════════════════════════════
+   VERSION 2 · LA DESCENTE
+   L'ouverture est une COUVERTURE : le bandeau d'image est pose
+   DANS le titre, entre ses deux lignes, et s'ouvre depuis son pli
+   median. Le recit n'est pas a cote, il est DESSOUS : on y descend
+   par un seuil, et un chemin de fer tient le compte des sept pages.
+   Contraste voulu avec la version 1, qui elle se feuillette.
+   ════════════════════════════════════════════════════════════ */
+
+/* ═══════════ L'OUVERTURE ═══════════ */
+/* Deux marges `auto` partagent l'espace libre : une au dessus du titre,
+   une entre le titre et le bas de page. Le titre se pose au tiers haut,
+   le bloc de texte et l'action descendent contre le pied. */
+.at-accueil .hero{
+  position:relative;min-height:100vh;padding:11vh var(--md) 10vh var(--mg);
+  display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;
+}
+.at-accueil .h-titre{margin-top:auto}
+.at-accueil .h-bas{margin-top:auto}
+
+/* Une seule mention en petites capitales dans toute l'ouverture. Le nom de
+   la maison est deja dans la barre de tete : le repeter ici, c'est du bruit. */
+/* ─────────── LE TITRE ───────────
+   Revelation par masque, mouvement nº1 du systeme : chaque ligne vit
+   dans un conteneur en overflow hidden et monte depuis le bas. C'est
+   l'encre qui se depose, et c'est ce mouvement qui porte l'essentiel de
+   l'ecart de qualite percue. La seconde ligne est ferree a droite :
+   c'est elle qui empeche la couverture d'etre symetrique. */
+.at-accueil .h-titre{font-size:clamp(36px,6.4vw,122px);line-height:1}
+.at-accueil .h-titre .ligne{display:block;overflow:hidden;padding-bottom:.1em;margin-bottom:-.07em}
+.at-accueil .h-titre .in{display:block;transform:translateY(112%);opacity:0}
+.at-accueil.pret .h-titre .in{transform:none;opacity:1;
+  transition:transform 900ms cubic-bezier(.23,1,.32,1), opacity 800ms var(--ease-out)}
+.at-accueil.pret .h-titre .l1 .in{transition-delay:340ms}
+.at-accueil.pret .h-titre .l2 .in{transition-delay:430ms}
+.at-accueil .h-titre .l2{text-align:right}
+.at-accueil .h-titre em{color:var(--c-accent-strong)}
+
+/* Quand l'image prend l'ecran, le titre change de regime : il grandit de
+   8 %, ses deux lignes se rapprochent, et elles rentrent vers le centre
+   sans perdre leur ferrage (gauche pour la premiere, droite pour la
+   seconde). Le deplacement horizontal compense EXACTEMENT l'ecartement
+   du zoom : 3,5vw contre les 4 % de chaque cote qu'ajoute le scale, donc
+   les marges de fond de page ne bougent pas d'un pixel.
+   `translate` et non `transform` : la boucle de defilement occupe deja
+   `transform` sur ces memes lignes, les deux proprietes cohabitent. */
+.at-accueil .h-titre{transition:transform 1600ms var(--ease-spring), translate 1600ms var(--ease-spring)}
+.at-accueil .h-titre .ligne{transition:translate 1600ms var(--ease-spring)}
+.at-accueil.plein .h-titre{transform:scale(1.08);translate:0 -1.2vh}
+.at-accueil.plein .h-titre .l1{translate:3.5vw 5.5vh}
+.at-accueil.plein .h-titre .l2{translate:-3.5vw -5.5vh}
+
+/* ─────────── LA COUVERTURE QUI S'OUVRE ───────────
+   L'image est posee EN PLEIN, derriere toute l'ouverture, et c'est sa
+   DECOUPE qui joue : d'abord un pli median, puis le rectangle du bandeau,
+   puis l'ecran entier. On n'anime jamais la geometrie de l'image, donc
+   elle ne se deforme pas et son cadrage ne bouge pas d'un pixel. */
+.at-accueil .h-plein{
+  position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  clip-path:inset(50% 0 50% 0);
+  transition:clip-path 1700ms var(--ease-spring) 120ms;
+}
+.at-accueil .h-plein>img{
+  width:100%;height:100%;object-fit:cover;object-position:50% 56%;
+  filter:saturate(.56) contrast(1.09) brightness(.79) sepia(.19);
+  transform:scale(1.16);
+}
+.at-accueil.pret .h-plein>img{transform:none;transition:transform 2600ms var(--ease) 120ms}
+
+/* le modele de lumiere du bandeau, conserve tel quel */
+.at-accueil .h-grad{position:absolute;inset:0;
+  background:
+    radial-gradient(78% 62% at 74% 8%, rgba(227,154,115,.16), rgba(227,154,115,0) 62%),
+    radial-gradient(128% 116% at 30% 20%, rgba(7,7,8,0) 30%, rgba(7,7,8,.66) 100%),
+    linear-gradient(180deg, rgba(7,7,8,.06), rgba(7,7,8,.44));}
+
+/* Le voile n'arrive qu'au plein ecran : avant, le texte est a cote de
+   l'image, pas dessus, et n'a besoin de rien. */
+.at-accueil .h-voile{
+  position:absolute;inset:0;opacity:0;
+  background:linear-gradient(180deg,
+    rgba(2,2,2,.80) 0%, rgba(2,2,2,.54) 30%, rgba(2,2,2,.60) 60%, rgba(2,2,2,.93) 100%);
+  transition:opacity 1500ms var(--ease-out);
+}
+.at-accueil.plein .h-voile{opacity:1}
+
+/* la decoupe s'ouvre a l'ecran entier, une seconde apres s'etre posee */
+.at-accueil.plein .h-plein{transition:clip-path 1600ms var(--ease-spring)}
+
+/* une seule lumiere rasante traverse l'image, puis plus jamais */
+.at-accueil .h-rake{position:absolute;inset:0;overflow:hidden;opacity:0}
+.at-accueil .h-rake::after{
+  content:"";position:absolute;top:-20%;bottom:-20%;left:-40%;width:34%;
+  background:linear-gradient(100deg,rgba(255,241,226,0),rgba(255,241,226,.16),rgba(255,241,226,0));
+  transform:translateX(-60%) skewX(-14deg);
+}
+.at-accueil.pret .h-rake{opacity:1;transition:opacity 1ms 700ms}
+.at-accueil.pret .h-rake::after{animation:rake 1900ms var(--ease) 760ms 1 both}
+@keyframes rake{from{transform:translateX(-60%) skewX(-14deg)}to{transform:translateX(400%) skewX(-14deg)}}
+
+/* Le bandeau ne porte plus rien : il ne fait que RESERVER le rectangle
+   que la decoupe vient occuper, et il reste en place quand l'image passe
+   au plein ecran. C'est ce qui garde les deux lignes du titre a leur
+   place pendant tout le mouvement. */
+.at-accueil .h-bandeau{display:block;height:19vh;min-height:128px;margin:2vh 0 2.2vh}
+
+/* le titre et le bas passent DEVANT l'image */
+.at-accueil .h-titre,
+.at-accueil .h-bas{position:relative;z-index:2}
+
+/* le bas : la lede a gauche, les actions a droite, sur la meme ligne de pied */
+.at-accueil .h-bas{display:flex;justify-content:space-between;align-items:flex-end;gap:6vw}
+.at-accueil .h-gauche{max-width:35vw}
+
+/* La phrase de Mathais n'est pas reecrite : elle est MISE EN PAGE. Son
+   premier souffle passe en display italique, le reste reste du corps.
+   C'est le chapo de revue, la ou il y avait un paragraphe d'interface. */
+/* ─────────── LES DEUX VOIX DU BAS DE PAGE ───────────
+   Cormorant porte ce qui se DIT (le chapo, le prix, l'action), DM Sans
+   porte ce qui s'EXPLIQUE (le corps, la reassurance). Le corps etait trop
+   petit et trop gris pour tenir tete a l'italique : il monte d'un cran en
+   taille et en clarte. Et le montant passe en Cormorant italique au milieu
+   de la ligne en DM Sans : c'est la, sur trois caracteres, que les deux
+   polices se repondent vraiment. */
+.at-accueil .h-amorce{
+  font-family:var(--font-display);font-style:italic;font-weight:400;
+  font-size:clamp(23px,2.3vw,44px);line-height:1.14;letter-spacing:-.01em;
+  color:var(--c-text);opacity:0;transform:translateY(1.6vh);
+}
+.at-accueil .h-lede{
+  margin-top:2vh;opacity:0;transform:translateY(1.6vh);
+  font-size:clamp(16px,1.3vw,22px);line-height:1.64;color:var(--c-text-soft);
+}
+.at-accueil .h-note{font-size:clamp(13px,1vw,17px);font-weight:400;color:var(--c-text-soft)}
+.at-accueil .h-note b{
+  font-family:var(--font-display);font-style:italic;font-weight:400;
+  font-size:1.42em;letter-spacing:0;color:var(--c-accent-strong);
+}
+.at-accueil .h-droite{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:2.4vh}
+.at-accueil .h-note{margin-top:2.6vh;opacity:0;transform:translateY(1.6vh)}
+.at-accueil.pret .h-amorce{opacity:1;transform:none;transition:opacity var(--t-lux) var(--ease-out) 760ms,transform var(--t-lux) var(--ease-out) 760ms}
+.at-accueil.pret .h-lede{opacity:1;transform:none;transition:opacity var(--t-lux) var(--ease-out) 880ms,transform var(--t-lux) var(--ease-out) 880ms}
+.at-accueil.pret .h-note{opacity:1;transform:none;transition:opacity var(--t-lux) var(--ease-out) 1180ms,transform var(--t-lux) var(--ease-out) 1180ms}
+.at-accueil .cta:active{transform:translateY(1px) scale(.99)}
+
+/* ─────────── L'ACTION DE L'OUVERTURE ───────────
+   Il n'y en a plus qu'une. « Composer avec l'atelier » vit dans la barre
+   de tete, ou il reste atteignable a chaque instant ; l'ouverture, elle,
+   ne propose qu'une chose : entrer dans le recit. Une seule action, donc
+   elle prend le traitement plein, et le corps d'un titre de section.
+   C'est la promesse du brief tenue autrement : un seul geste offert,
+   aucune hesitation possible. */
+.at-accueil .acte{position:relative;display:inline-flex;align-items:center;gap:1.2vw;padding:0;opacity:0}
+.at-accueil .acte .mot{
+  font-family:var(--font-display);font-style:italic;font-weight:400;line-height:1.1;
+  transition:color var(--t-reveal) var(--ease);
+}
+.at-accueil .acte .rond{
+  position:relative;display:grid;place-items:center;flex:none;border-radius:50%;
+  transition:background var(--t-reveal) var(--ease), color var(--t-reveal) var(--ease),
+             transform var(--t-reveal) var(--ease-spring);
+}
+
+.at-accueil .acte--seul .mot{font-size:clamp(23px,2.4vw,42px);color:var(--c-text)}
+.at-accueil .acte--seul .rond{
+  width:clamp(50px,4.2vw,74px);height:clamp(50px,4.2vw,74px);
+  background:var(--c-accent);color:var(--c-text-onaccent);
+}
+/* PRD §15 : la lueur est POSEE sur un pseudo, on n'anime que son opacite. */
+.at-accueil .acte--seul .rond::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:var(--glow-accent);opacity:0;
+  transition:opacity var(--t-reveal) var(--ease);
+}
+.at-accueil .acte--seul:hover .rond{background:var(--c-accent-strong);transform:translateY(4px)}
+.at-accueil .acte--seul:hover .rond::after{opacity:1}
+.at-accueil .acte--seul:active .rond{transform:translateY(4px) scale(.96)}
+
+.at-accueil.pret .acte--seul{opacity:1;transition:opacity var(--t-lux) var(--ease-out) 1000ms}
+
+/* Le fil tombe du rond : ca continue dessous. */
+.at-accueil .descente .fil{
+  position:absolute;right:calc(clamp(50px,4.2vw,74px) / 2);top:calc(100% + 1.4vh);
+  display:block;width:1px;height:0;
+  background:linear-gradient(180deg,var(--c-line-strong),rgba(255,255,255,0));
+  transition:background var(--t-reveal) var(--ease);
+}
+.at-accueil.pret .descente .fil{height:7vh;transition:height var(--t-tres-lent) var(--ease-out) 1300ms}
+.at-accueil .descente .fil i{
+  position:absolute;left:-2px;top:0;width:5px;height:5px;border-radius:50%;
+  background:var(--c-accent);opacity:0;
+}
+.at-accueil .descente:hover .fil{background:linear-gradient(180deg,var(--c-accent),rgba(214,138,99,0))}
+.at-accueil .descente:hover .fil i{opacity:1;animation:goutte 1400ms var(--ease) infinite}
+@keyframes goutte{
+  0%{opacity:0;transform:translateY(0)}
+  22%{opacity:1} 78%{opacity:1}
+  100%{opacity:0;transform:translateY(7vh)}
+}
+
+/* ─────────── le curseur qui legende (desktop seul) ───────────
+   Mouvement nº 6 : au survol d'une image, le curseur devient sa
+   legende. C'est le detail qui fait basculer « soigne » en « remarquable ». */
+.at-accueil .curseur{position:fixed;left:0;top:0;z-index:950;pointer-events:none;opacity:0;
+  transform:translate3d(-50%,-50%,0);display:none}
+.at-accueil .curseur.on{opacity:1;transition:opacity 240ms var(--ease)}
+.at-accueil .curseur i{display:block;width:7px;height:7px;border-radius:50%;background:var(--c-accent);
+  transition:transform 240ms var(--ease-spring),opacity 180ms var(--ease)}
+.at-accueil .curseur b{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);
+  white-space:nowrap;padding:.9vh 1.1vw;border-radius:999px;
+  background:var(--c-accent);color:var(--c-text-onaccent);
+  font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+  opacity:0;transition:opacity 240ms var(--ease),transform 240ms var(--ease-spring);
+}
+.at-accueil .curseur.legende i{transform:scale(0);opacity:0}
+.at-accueil .curseur.legende b{opacity:1;transform:translate(-50%,-50%) scale(1)}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  .at-accueil .curseur{display:block}
+}
+
+/* ═══════════ ECRANS ETROITS ═══════════
+   Le trafic vient d'Instagram sur iPhone : c'est la que ca se joue.
+   Le bandeau reste dans le titre, le chemin de fer se retire, les
+   marges se resserrent. Le mouvement, lui, ne se coupe jamais. */
+@media (max-width:1000px){
+  .bj-atelier{--mg:7vw;--md:7vw}
+  /* ─── L'OUVERTURE TIENT DANS L'ECRAN, sans un pixel de defilement ───
+     Tout en dvh : c'est la seule unite qui suit la barre d'adresse de
+     Safari iOS. En vh, l'ouverture depasse des que la barre se retracte.
+     Le folio disparait : sur un telephone, chaque ligne coute un ecran. */
+  .at-accueil .hero{min-height:100dvh;padding:10dvh var(--md) 5dvh var(--mg);justify-content:flex-start}
+  .at-accueil .h-titre{font-size:clamp(30px,9.2vw,54px)}
+  .at-accueil .h-titre .l2{text-align:left}
+  /* les deux lignes sont ferrees a gauche ici : les rentrer horizontalement
+     les desalignerait. Seul le resserrement vertical joue. */
+  .at-accueil.plein .h-titre{transform:scale(1.05);translate:0 0}
+  .at-accueil.plein .h-titre .l1{translate:0 6dvh}
+  .at-accueil.plein .h-titre .l2{translate:0 -6dvh}
+  .at-accueil .h-bandeau{height:26dvh;min-height:0;margin:1.6dvh 0 1.8dvh}
+  .at-accueil .h-bas{flex-direction:column;align-items:stretch;gap:2.8dvh;margin-top:3dvh}
+  .at-accueil .h-gauche{max-width:none}
+  .at-accueil .h-amorce{font-size:clamp(20px,5.9vw,28px)}
+  .at-accueil .h-lede{margin-top:1.4dvh;font-size:clamp(14px,3.9vw,17px);line-height:1.62}
+  .at-accueil .h-note{margin-top:1.8dvh;text-align:left;font-size:clamp(12px,3.3vw,14px)}
+  /* l'action unique se met au centre : c'est la seule chose a faire ici. */
+  .at-accueil .h-droite{width:100%;display:flex;justify-content:center}
+  .at-accueil .acte{gap:4.4vw}
+  .at-accueil .acte--seul .mot{font-size:clamp(21px,6.2vw,30px)}
+  .at-accueil .acte--seul .rond{width:clamp(48px,14vw,60px);height:clamp(48px,14vw,60px)}
+  .at-accueil .descente .fil{right:calc(clamp(48px,14vw,60px) / 2)}
+  .at-accueil.pret .descente .fil{height:3dvh}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .at-accueil .grain--vif{animation:none}
+  /* pas de mouvement : on se pose d'emblee sur l'etat d'arrivee, pour que
+     tout le monde voie la meme composition. */
+  .at-accueil .h-plein{clip-path:inset(0) !important;transition:none !important}
+  .at-accueil .h-voile{opacity:1 !important}
+
+  .at-accueil .h-titre .in,
+.at-accueil .pg h2 .in{transform:none !important;opacity:1 !important}
+  .at-accueil .descente .fil{height:7vh !important}
+  .at-accueil .descente:hover .fil i{animation:none}
+}

@@ -1,3 +1,11 @@
+/* Une ZONE de verre sombre, jamais un filet : c'est le flou qui la
+   détache du contenu, pas un trait. Décision de Mathias, 27/08/2026.
+   Elle ne se cache jamais — « Composer avec l'atelier » reste atteignable
+   pendant tout le récit, et c'est la seule porte vers le questionnaire
+   une fois l'ouverture passée.
+   ⚠️ backdrop-filter sur un position:fixed rame sur Chrome/Android (note
+   anti-jank de CLAUDE.md). Tenable ici parce que la barre est courte et
+   sans ombre ; à re-vérifier sur un Android réel. */
 .at-nav {
   position: fixed;
   top: 0;
@@ -8,23 +16,25 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px var(--pad);
-  border-bottom: 1px solid transparent;
-  transition: background var(--dur) var(--ease),
-              backdrop-filter var(--dur) var(--ease),
-              border-color var(--dur) var(--ease);
+  padding: 2.6dvh var(--md) 2.6dvh var(--mg);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
+  transition: padding var(--t-lent) var(--ease), background var(--t-lent) var(--ease);
 }
 
+/* dès 40 px : la barre ne se cache jamais, donc sans un voile plus dense
+   le contenu de l'ouverture lui défilerait au travers. */
 .at-nav.is-stuck {
-  background: var(--glass-bg-strong);
-  backdrop-filter: blur(var(--glass-blur));
-  border-bottom-color: var(--c-line);
+  padding-top: 1.9dvh;
+  padding-bottom: 1.9dvh;
+  background: var(--glass-bg-plein);
 }
 
 .at-nav-logo {
-  font-family: var(--font-display);
-  font-size: 22px;
-  letter-spacing: 0.02em;
+  height: clamp(20px, 1.6vw, 28px);
+  width: auto;
+  opacity: 0.94;
 }
 
 /* Invariant nº5 : le libellé est le même partout, sans exception.

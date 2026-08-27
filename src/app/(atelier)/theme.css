@@ -83,6 +83,28 @@
   --dur: 240ms;
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
 
+  /* Courbes et durées du RÉCIT (ouverture + univers). Les courbes natives
+     du CSS sont trop molles pour une entrée, elles manquent de tenue.
+     `--ease-recit` est celle de la révélation par masque (PRD §15,
+     mouvement nº1). Aucune n'est un `ease-in` : une interface qui démarre
+     lentement paraît lente à l'instant où l'œil regarde le plus. */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-recit: cubic-bezier(0.23, 1, 0.32, 1);
+  --t-reveal: 700ms;
+  --t-lux: 800ms;
+  --t-lent: 1200ms;
+  --t-tres-lent: 1700ms;
+
+  /* Verre plein : la barre de tête une fois l'ouverture quittée. Un cran
+     plus opaque que --glass-bg-strong, jamais un aplat. */
+  --glass-bg-plein: rgba(10, 10, 12, 0.86);
+
+  /* Gouttières du récit. --pad sert les sections existantes ; l'ouverture
+     et l'univers ont leur propre grille, volontairement asymétrique. */
+  --mg: 8vw;
+  --md: 5.4vw;
+
   /* ---- gouttière ---- */
   --pad: clamp(20px, 6vw, 80px);
 }

@@ -1,0 +1,573 @@
+/* ════════════════════════════════════════════════════════════
+   L'UNIVERS BELLAJOUR — sept pages enchaînées comme une projection
+   Chaque page tient dans l'écran, joue sa séquence quand elle entre, puis
+   offre le bouton pour tourner. Le défilement normal marche toujours : le
+   bouton est un raccourci, jamais une serrure, et le texte reste dans le
+   document, donc indexable.
+   Règle de lisibilité : aucun texte de récit sous 19 px, aucun libellé de
+   repérage sous 12 px.
+   ════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════
+   L'UNIVERS BELLAJOUR · sept pages
+   Une projection, pas une page qui defile. Chaque page tient dans
+   l'ecran, joue sa sequence quand elle entre, puis offre le bouton
+   pour tourner. Le defilement normal continue de marcher : le bouton
+   est un raccourci, jamais une serrure, et le texte reste dans le
+   document (indexable).
+   Regle de lisibilite : AUCUN texte de recit sous 19 px. Les libelles
+   de reperage ne descendent pas sous 12 px.
+   ════════════════════════════════════════════════════════════ */
+
+.bj-atelier{
+  /* la courbe d'entree du recit : forte, jamais molle (jamais ease-in) */
+  --e-recit:cubic-bezier(.23,1,.32,1);
+  --mg-u:19vw;   /* marge gauche : le chemin de fer ET son libelle vivent dedans */
+  --md-u:8vw;
+}
+
+/* ─────────── LE SOCLE D'UNE PAGE ─────────── */
+.at-accueil .univers{position:relative}
+
+/* Le cadre, puis DEUX rangees : le corps, qui se centre dans ce qui reste,
+   et le bouton, qui vit DANS le cadre et non dans la marge du bas. La
+   marge du bouton est un ecart garanti : le texte ne peut plus venir se
+   coller a lui, quelle que soit sa longueur. */
+.at-accueil .sl{
+  position:relative;min-height:100dvh;
+  padding:12dvh var(--md-u) 9dvh var(--mg-u);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.at-accueil .sl-corps{flex:1 1 0;min-height:0;display:flex;flex-direction:column;justify-content:center}
+
+/* ─────────── LA REVELATION PAR JALONS ───────────
+   Un `data-t` = un instant, en millisecondes, dans la sequence de la
+   page. Le sequenceur pose le retard et la classe ; le CSS decide de
+   la forme du mouvement. Le flou masque le raccord : sans lui on voit
+   deux etats se superposer au lieu d'un seul objet qui arrive. */
+.at-accueil [data-t]{opacity:0;transform:translateY(22px);filter:blur(8px)}
+.at-accueil [data-t].vu{
+  opacity:1;transform:none;filter:none;
+  transition:opacity 1100ms var(--ease-recit), transform 1100ms var(--ease-recit),
+             filter 850ms var(--ease-recit);
+}
+.at-accueil [data-t].fini{will-change:auto;filter:none}
+
+/* les titres composes ligne a ligne : masque, jamais fondu */
+.at-accueil .sl .ligne{display:block;overflow:hidden;padding-bottom:.11em;margin-bottom:-.08em}
+.at-accueil .sl .ligne .in{display:block;transform:translateY(112%);opacity:0}
+.at-accueil .sl.joue .ligne .in{
+  transform:none;opacity:1;
+  transition:transform 1150ms var(--ease-recit), opacity 950ms var(--ease-recit);
+}
+.at-accueil .sl.joue .ligne:nth-of-type(1) .in{transition-delay:240ms}
+.at-accueil .sl.joue .ligne:nth-of-type(2) .in{transition-delay:400ms}
+.at-accueil .sl.joue .ligne:nth-of-type(3) .in{transition-delay:560ms}
+
+/* ─────────── LE CHEMIN DE FER ───────────
+   A gauche, il tient le compte des sept pages. La ligne courante
+   grandit et donne son titre ; les autres restent des chiffres. */
+.at-accueil .pas{
+  position:fixed;left:3.4vw;top:50dvh;transform:translateY(-50%);
+  z-index:400;display:flex;flex-direction:column;gap:2dvh;
+  opacity:0;pointer-events:none;transition:opacity var(--t-lent) var(--ease);
+}
+.at-accueil .pas.on{opacity:1;pointer-events:auto}
+.at-accueil .pas ol{list-style:none;display:flex;flex-direction:column;gap:1.7dvh;margin:0;padding:0}
+.at-accueil .pas li{
+  position:relative;display:flex;align-items:center;gap:.9vw;cursor:pointer;
+  padding:2px 0;
+}
+.at-accueil .pas .n{
+  font-size:13px;letter-spacing:.18em;color:var(--c-text-faint);
+  font-variant-numeric:tabular-nums;min-width:2.6ch;
+  transition:color 240ms var(--ease), font-size 240ms var(--ease);
+}
+.at-accueil .pas .t{
+  position:absolute;left:calc(100% + .9vw);top:50%;translate:0 -50%;
+  white-space:nowrap;font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--c-text-faint);opacity:0;transform:translateX(-.5vw);
+  transition:opacity 240ms var(--ease), transform 240ms var(--ease), color 240ms var(--ease);
+}
+.at-accueil .pas li:hover .n{color:var(--c-text-soft)}
+.at-accueil .pas li:hover .t{opacity:.75;transform:none}
+.at-accueil .pas li.actif .n{
+  color:var(--c-accent);font-family:var(--font-display);font-style:italic;
+  font-size:22px;letter-spacing:.03em;
+}
+.at-accueil .pas li.actif .t{opacity:1;transform:none;color:var(--c-text-soft)}
+.at-accueil .pas-jauge{margin-top:1.4dvh;width:1px;height:12dvh;background:var(--c-line);position:relative}
+.at-accueil .pas-jauge i{position:absolute;top:0;left:0;width:1px;height:0;background:var(--c-accent);display:block}
+
+/* ─────────── TOURNER LA PAGE ───────────
+   Meme famille que l'action de l'ouverture, un cran plus bas : rond
+   OUVERT ici, rond PLEIN pour la seule action qui vend. */
+.at-accueil .suite{
+  position:relative;z-index:5;flex:none;align-self:flex-end;margin-top:5dvh;
+  display:inline-flex;align-items:center;gap:1vw;padding:0;background:none;border:0;
+  cursor:pointer;color:inherit;font:inherit;
+}
+.at-accueil .suite .mot{
+  font-family:var(--font-display);font-style:italic;font-size:clamp(19px,1.6vw,29px);
+  line-height:1.1;color:var(--c-text-soft);transition:color 200ms var(--ease);
+}
+.at-accueil .suite .rond{
+  display:grid;place-items:center;flex:none;
+  width:clamp(46px,3.4vw,60px);height:clamp(46px,3.4vw,60px);
+  border:1px solid var(--c-line-strong);border-radius:50%;color:var(--c-text-soft);
+  transition:border-color 200ms var(--ease), background 200ms var(--ease),
+             color 200ms var(--ease), transform 200ms var(--ease-recit);
+}
+.at-accueil .suite .rond svg{width:40%;height:40%}
+.at-accueil .suite:hover .mot{color:var(--c-text)}
+.at-accueil .suite:hover .rond{border-color:var(--c-accent);background:var(--c-accent);
+  color:var(--c-text-onaccent);transform:translateY(3px)}
+.at-accueil .suite:active .rond{transform:translateY(3px) scale(.97)}
+
+/* Le battement : une fois le bouton pose, la fleche descend d'un cheveu
+   toutes les cinq secondes. C'est ce qui dit « quand tu veux » sans
+   presser. Sur un transform, jamais sur une ombre (PRD §15). */
+.at-accueil .suite.vu .rond svg{animation:appel 5s var(--ease) 1.6s infinite}
+@keyframes appel{
+  0%,86%,100%{transform:translateY(0)}
+  91%{transform:translateY(3px)}
+}
+
+/* ─────────── 01 · LA COLLECTION ───────────
+   La camera recule : le bloc se pose depuis un tres leger avant-plan.
+   2,6 s, assez lent pour qu'on le RESSENTE sans le voir. */
+.at-accueil .sl1-camera{transform:scale(1.055) translateY(2.4dvh);transform-origin:22% 50%}
+.at-accueil .sl1.joue .sl1-camera{transform:none;transition:transform 2600ms var(--ease-recit)}
+.at-accueil .geant{
+  font-family:var(--font-display);font-weight:400;font-style:normal;
+  font-size:clamp(44px,8.2vw,176px);line-height:1.02;letter-spacing:-.028em;margin:0;
+}
+.at-accueil .geant em{font-style:italic;color:var(--c-accent)}
+.at-accueil .sl1-note{
+  margin:4dvh 0 0;max-width:26ch;margin-left:auto;text-align:right;
+  font-size:clamp(19px,1.4vw,25px);line-height:1.6;font-weight:300;color:var(--c-text-soft);
+}
+.at-accueil .sl1-note em{font-family:var(--font-display);font-style:italic;font-size:1.24em;color:var(--c-text)}
+/* « d'un manque » quitte la ligne et arrive seul, en dernier : c'est la
+   chute de la phrase, elle a besoin de son propre silence. */
+.at-accueil .sl1-manque{
+  margin:1.6dvh 0 0;text-align:right;
+  font-family:var(--font-display);font-style:italic;font-weight:400;
+  font-size:clamp(26px,2.4vw,46px);line-height:1.1;letter-spacing:-.01em;color:var(--c-text);
+}
+.at-accueil .sl1-manque em{font-style:italic}
+
+/* ─────────── 02 · LE CONSTAT ───────────
+   Le texte tient la colonne de gauche ; a chaque mot qui s'allume,
+   un objet vient trouver sa place a droite, depuis la profondeur. */
+
+.at-accueil .sl2-texte{
+  position:relative;z-index:3;max-width:24ch;margin:0;
+  font-family:var(--font-display);font-weight:400;
+  font-size:clamp(23px,2.35vw,48px);line-height:1.26;letter-spacing:-.012em;
+  color:var(--c-text-soft);
+}
+/* les mots cles ne bougent pas : deplacer un mot en ligne casserait le
+   paragraphe. Ils s'ALLUMENT, au moment ou leur objet se pose. */
+/* les paliers de lecture : une inline ne se DEPLACE pas, elle s'allume.
+   Sinon le paragraphe se recompose a chaque palier. */
+.at-accueil .sl2-texte .bloc[data-t]{display:inline;opacity:0;transform:none;filter:none}
+.at-accueil .sl2-texte .bloc[data-t].vu{opacity:1;transition:opacity 1000ms var(--ease-recit)}
+.at-accueil .sl2-texte em[data-t],
+.at-accueil .sl2-texte b[data-t]{
+  opacity:1;transform:none;filter:none;font-style:normal;font-weight:400;
+  color:var(--c-text-faint);transition:color 900ms var(--ease-recit);
+}
+.at-accueil .sl2-texte em[data-t].vu{color:var(--c-accent-strong)}
+
+/* « restent numériques » n'existe pas avant son tour. Il apparait par une
+   panne d'affichage : trois copies decalees, des bandes qui sautent, puis
+   tout se remet en place. Le mot dit « numerique », l'apparition aussi. */
+.at-accueil .sl2-texte b.glitch{
+  position:relative;display:inline-block;opacity:0;transform:none;filter:none;
+  font-weight:400;font-style:italic;color:var(--c-text);
+}
+.at-accueil .sl2-texte b.glitch.vu{opacity:1;animation:glitch-mot 900ms steps(1,end) var(--retard,0ms) both}
+.at-accueil .sl2-texte b.glitch.vu::before,
+.at-accueil .sl2-texte b.glitch.vu::after{
+  content:attr(data-texte);position:absolute;left:0;top:0;width:100%;
+  pointer-events:none;overflow:hidden;
+}
+.at-accueil .sl2-texte b.glitch.vu::before{color:var(--c-accent);animation:glitch-a 900ms steps(1,end) var(--retard,0ms) both}
+.at-accueil .sl2-texte b.glitch.vu::after{color:#6fa8c8;animation:glitch-b 900ms steps(1,end) var(--retard,0ms) both}
+@keyframes glitch-mot{
+  0%{opacity:0;clip-path:inset(46% 0 50% 0)}
+  8%{opacity:1;clip-path:inset(46% 0 50% 0)}
+  16%{clip-path:inset(12% 0 62% 0)}
+  26%{clip-path:inset(70% 0 8% 0)}
+  36%{clip-path:inset(0 0 0 0)}
+  44%{clip-path:inset(34% 0 44% 0)}
+  54%{clip-path:inset(0 0 0 0)}
+  100%{opacity:1;clip-path:inset(0 0 0 0)}
+}
+@keyframes glitch-a{
+  0%,54%{opacity:.85;transform:translate(-3px,1px);clip-path:inset(18% 0 54% 0)}
+  22%{transform:translate(4px,-2px);clip-path:inset(62% 0 12% 0)}
+  40%{transform:translate(-5px,0);clip-path:inset(38% 0 40% 0)}
+  62%{opacity:.4;transform:translate(2px,0)}
+  76%,100%{opacity:0;transform:none}
+}
+@keyframes glitch-b{
+  0%,48%{opacity:.6;transform:translate(3px,-1px);clip-path:inset(56% 0 18% 0)}
+  20%{transform:translate(-4px,2px);clip-path:inset(8% 0 66% 0)}
+  38%{transform:translate(5px,0);clip-path:inset(44% 0 34% 0)}
+  60%{opacity:.3}
+  72%,100%{opacity:0;transform:none}
+}
+
+.at-accueil .sl2-scene{position:absolute;inset:0;z-index:1;pointer-events:none}
+.at-accueil .sl2-scene .v{position:absolute;margin:0;transform-origin:50% 50%}
+.at-accueil .sl2-scene .v[data-t]{transform:translateY(30px) scale(.9);filter:blur(16px)}
+.at-accueil .sl2-scene .v[data-t].vu{
+  transform:none;filter:none;
+  transition:opacity 1200ms var(--ease-recit), transform 1200ms var(--ease-recit),
+             filter 1000ms var(--ease-recit);
+}
+.at-accueil .sl2-scene .ph{display:block;overflow:hidden;border-radius:4px;box-shadow:var(--shadow-float)}
+.at-accueil .sl2-scene .ph img{width:100%;height:100%;object-fit:cover;display:block;
+  filter:saturate(.5) contrast(1.08) brightness(.72) sepia(.2)}
+
+.at-accueil .v1{right:7vw;top:8dvh;width:15vw;min-width:150px;rotate:-3deg}
+.at-accueil .v1 .ph{aspect-ratio:3/4}
+.at-accueil .v2{right:26vw;top:30dvh;width:19vw;min-width:190px;rotate:2deg}
+.at-accueil .v2 .ph{aspect-ratio:16/9}
+.at-accueil .v2 .v-video{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;
+  display:flex;align-items:center;gap:10px;
+  background:linear-gradient(180deg,rgba(2,2,2,0),rgba(2,2,2,.82))}
+.at-accueil .v2 .v-video i{flex:1;height:2px;background:rgba(255,255,255,.28);position:relative;border-radius:2px}
+.at-accueil .v2 .v-video i::after{content:'';position:absolute;left:0;top:0;bottom:0;width:38%;
+  background:var(--c-accent);border-radius:2px}
+.at-accueil .v2 .v-video b{font-size:12px;font-weight:400;letter-spacing:.08em;color:var(--c-text)}
+.at-accueil .v3{right:5vw;top:42dvh;width:17vw;min-width:180px;rotate:-1.5deg}
+.at-accueil .v3 .v-mot{display:block;padding:16px 18px;border-radius:12px;
+  background:var(--c-surface-2);border:1px solid var(--c-line-md);box-shadow:var(--shadow-soft)}
+.at-accueil .v3 .v-mot s{display:block;height:7px;border-radius:4px;background:var(--c-surface-4);
+  text-decoration:none;margin-bottom:8px}
+.at-accueil .v3 .v-mot s:nth-child(2){width:62%}
+.at-accueil .v3 .v-mot em{font-size:13px;font-style:normal;color:var(--c-accent);letter-spacing:.06em}
+.at-accueil .v4{right:29vw;top:50dvh;width:12vw;min-width:120px;rotate:3.5deg}
+.at-accueil .v4 .ph{aspect-ratio:1/1}
+.at-accueil .v5{right:13vw;top:54dvh;width:9vw;min-width:104px;rotate:-2deg}
+.at-accueil .v5 .ph{aspect-ratio:9/16}
+.at-accueil .v5 .v-story{position:absolute;left:8px;right:8px;top:8px;z-index:2;display:flex;gap:4px}
+.at-accueil .v5 .v-story i{flex:1;height:2px;border-radius:2px;background:rgba(255,255,255,.3)}
+.at-accueil .v5 .v-story i:first-child{background:var(--c-text)}
+
+.at-accueil .sl2-compte{position:relative;z-index:3;margin-top:5dvh;max-width:30vw}
+/* Le compteur mecanique (PRD, mouvement nº5) : chaque colonne de chiffres
+   ROULE jusqu'a sa valeur, la gauche d'abord. On ne compte pas, on
+   accumule, et ca se voit. */
+.at-accueil .sl2-compte .g{
+  --cell:1.3em;   /* la fenetre d'un chiffre : plus haute que son glyphe */
+  margin:0;font-family:var(--font-display);font-size:clamp(46px,5.6vw,110px);
+  line-height:1;color:var(--c-text);display:flex;align-items:flex-start;
+}
+.at-accueil .sl2-compte .d{display:block;height:var(--cell);overflow:hidden}
+.at-accueil .sl2-compte .col{display:block;transform:translateY(0);
+  transition:transform 220ms cubic-bezier(.23,1,.32,1)}
+.at-accueil .sl2-compte .col i{
+  display:block;height:var(--cell);line-height:var(--cell);
+  font-style:normal;text-align:center;font-variant-numeric:tabular-nums;
+}
+.at-accueil .sl2-compte .esp{display:block;width:.3em}
+.at-accueil .sl2-compte .l{margin:1.2dvh 0 0;font-size:clamp(13px,1vw,17px);letter-spacing:.3em;
+  text-transform:uppercase;color:var(--c-text-faint)}
+
+/* ─────────── 03 · LES TROIS MOTS ───────────
+   Chaque mot joue son propre sens. C'est le seul endroit du site ou
+   quelque chose se degrade sous les yeux. */
+.at-accueil .sl3-avant,
+.at-accueil .sl3-apres{
+  max-width:38ch;font-size:clamp(19px,1.5vw,27px);line-height:1.62;font-weight:300;
+  color:var(--c-text-soft);margin:0;
+}
+.at-accueil .sl3-apres{margin-top:3.5dvh;margin-left:auto;text-align:right}
+.at-accueil .sl3-mots{margin:3dvh 0 0;display:flex;flex-direction:column;gap:.2dvh}
+.at-accueil .sl3-mots .m{
+  font-family:var(--font-display);font-style:italic;font-weight:400;
+  font-size:clamp(38px,7vw,138px);line-height:1.06;letter-spacing:-.02em;
+  color:var(--c-accent);position:relative;display:block;width:max-content;max-width:100%;
+}
+.at-accueil .sl3-mots .m2{margin-left:8vw}
+.at-accueil .sl3-mots .m3{margin-left:16vw}
+
+/* immateriel : il laisse partir son double, perd sa matiere, et se
+   brouille des qu'on pose la souris dessus. On ne peut pas le fixer. */
+@media (hover:hover) and (pointer:fine){
+  .at-accueil .m1:hover{filter:blur(6px)}
+}
+.at-accueil .m1{transition:filter 700ms var(--ease)}
+
+.at-accueil .m1 .fantome{
+  position:absolute;left:0;top:0;font-style:italic;color:var(--c-accent);
+  opacity:0;pointer-events:none;
+}
+.at-accueil .sl3.joue .m1{animation:dematerialise 2600ms var(--ease-recit) 1600ms both}
+.at-accueil .sl3.joue .m1 .fantome{animation:sen-va 2600ms var(--ease-recit) 1600ms both}
+@keyframes dematerialise{from{opacity:1}to{opacity:.42}}
+@keyframes sen-va{
+  0%{opacity:.5;transform:none;filter:blur(0)}
+  100%{opacity:0;transform:translateY(-5dvh) scale(1.04);filter:blur(9px)}
+}
+
+/* impalpable : il se derobe. Le curseur ne l'attrape jamais. */
+.at-accueil .m2{translate:var(--dx,0) var(--dy,0);transition:translate 900ms cubic-bezier(.16,1,.3,1)}
+
+/* oubliable : il ne s'efface pas tout seul. Une lettre part quand on la
+   FROLE, et le reste part quand on quitte la page. Un souvenir ne
+   s'efface pas a l'heure dite : il s'efface quand on y touche, et quand
+   on passe a autre chose. */
+.at-accueil .m3 .c{display:inline-block;
+  transition:opacity 900ms var(--ease), transform 900ms var(--ease), filter 900ms var(--ease)}
+.at-accueil .m3 .c.parti{opacity:0;transform:translateY(-1.4dvh);filter:blur(10px)}
+
+/* ─────────── 04 · L'ADMIRATION ─────────── */
+.at-accueil .sl4-texte{
+  max-width:34ch;margin:0;font-family:var(--font-display);font-weight:400;
+  font-size:clamp(23px,2.3vw,46px);line-height:1.3;letter-spacing:-.012em;
+  color:var(--c-text-soft);
+}
+.at-accueil .sl4-texte em{font-style:italic;color:var(--c-text)}
+/* La bande ne se pose pas, elle PASSE. Elle sort du cadre des deux cotes
+   parce qu'un defilement qui commence et finit dans la marge n'est plus un
+   defilement, c'est une liste. */
+.at-accueil .sl4-bande{margin:6dvh calc(var(--md-u) * -1) 0 calc(var(--mg-u) * -1);overflow:hidden}
+.at-accueil .sl4-rail{display:flex;gap:1.8vw;width:max-content;padding-left:var(--mg-u);
+  animation:defile 58s linear infinite;will-change:transform}
+@keyframes defile{
+  from{transform:translateX(0)}
+  to{transform:translateX(calc(-50% - .9vw))}
+}
+.at-accueil .sl4-rail figure{margin:0;flex:none;width:15vw;min-width:152px}
+@media (hover:hover) and (pointer:fine){
+  .at-accueil .sl4-bande:hover .sl4-rail{animation-play-state:paused}
+}
+.at-accueil .sl4-rail .ph{display:block;aspect-ratio:2/3;overflow:hidden;border-radius:3px;
+  box-shadow:var(--shadow-float);transition:transform 400ms var(--ease-recit)}
+.at-accueil .sl4-rail .ph img{width:100%;height:100%;object-fit:cover;display:block;
+  filter:saturate(.72) contrast(1.05) brightness(.86)}
+
+@media (hover:hover) and (pointer:fine){
+  .at-accueil .sl4-rail figure:hover .ph{transform:translateY(-8px)}
+}
+
+/* ─────────── 05 · LE CONCEPT ───────────
+   La seule page du recit qui soit dans l'axe. C'est voulu : apres quatre
+   pages ferrees a gauche, le centre est un evenement, et c'est ici que
+   l'idee se dit. L'enumeration devient un nuage : chaque moment a
+   l'echelle qu'il merite, aucun n'est une ligne de liste. */
+.at-accueil .sl5{text-align:center}
+.at-accueil .sl5-amorce{margin:0;font-size:clamp(13px,1vw,17px);letter-spacing:.3em;
+  text-transform:uppercase;color:var(--c-text-faint)}
+.at-accueil .sl5-titre{
+  margin:2.6dvh 0 0;font-family:var(--font-display);font-weight:400;
+  font-size:clamp(32px,4.4vw,88px);line-height:1.04;letter-spacing:-.024em;
+}
+.at-accueil .sl5-titre em{font-style:italic;color:var(--c-accent)}
+
+/* Le nuage : flex centre, chaque moment a sa taille, sa police et son
+   ton. Pas de rotation : la charte n'a qu'un axe, le vertical. */
+.at-accueil .sl5-nuage{
+  display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;
+  gap:.5em 1.6vw;margin:5dvh auto 0;max-width:52vw;
+}
+.at-accueil .sl5-nuage span{display:inline-block;line-height:1.16}
+.at-accueil .sl5-nuage .n1{
+  font-family:var(--font-display);font-style:italic;font-size:clamp(30px,3.4vw,68px);
+  color:var(--c-text);flex-basis:100%;
+}
+.at-accueil .sl5-nuage .n2,
+.at-accueil .sl5-nuage .n3{
+  font-family:var(--font-display);font-size:clamp(24px,2.5vw,50px);color:var(--c-text-soft);
+}
+.at-accueil .sl5-nuage .n4{
+  font-family:var(--font-display);font-style:italic;font-size:clamp(28px,3.1vw,62px);
+  color:var(--c-accent);
+}
+.at-accueil .sl5-nuage .n5{
+  font-size:clamp(17px,1.35vw,24px);font-weight:300;color:var(--c-text-faint);
+  flex-basis:100%;letter-spacing:.01em;
+}
+.at-accueil .sl5-nuage .n6{
+  font-family:var(--font-display);font-style:italic;font-size:clamp(22px,2.2vw,44px);
+  color:var(--c-text-soft);flex-basis:100%;
+}
+
+.at-accueil .sl5-cadre{margin:5dvh auto 0;max-width:56ch;font-size:clamp(17px,1.3vw,23px);
+  line-height:1.55;font-weight:300;color:var(--c-text-soft)}
+.at-accueil .sl5-film{margin:3dvh 0 0}
+.at-accueil .sl5-film em{
+  font-family:var(--font-display);font-style:italic;font-weight:400;
+  font-size:clamp(26px,3vw,58px);line-height:1.1;letter-spacing:-.016em;color:var(--c-accent);
+}
+/* la page est dans l'axe, mais le bouton reste a sa place : c'est un
+   repere, il ne suit pas la composition. */
+.at-accueil .sl5 .suite{text-align:left}
+
+/* ─────────── 06 · LA CITATION ─────────── */
+.at-accueil .sl6-amorce{margin:0;font-size:clamp(13px,1vw,17px);letter-spacing:.3em;
+  text-transform:uppercase;color:var(--c-text-faint)}
+.at-accueil .sl6-cit{
+  position:relative;margin:4dvh 0 0;max-width:20ch;
+  font-family:var(--font-display);font-style:italic;font-weight:400;
+  font-size:clamp(34px,5.4vw,108px);line-height:1.12;letter-spacing:-.02em;color:var(--c-text);
+}
+.at-accueil .sl6-cit .guill-f{margin-left:.06em;color:var(--c-accent)}
+.at-accueil .sl6-cit .guill{
+  position:absolute;left:-.62em;top:-.16em;font-size:1.5em;color:var(--c-accent);
+  line-height:1;
+}
+/* une seule lueur traverse la citation, puis plus jamais */
+.at-accueil .sl6-cit .lueur{position:absolute;inset:-8% -4%;pointer-events:none;overflow:hidden;opacity:0}
+.at-accueil .sl6-cit .lueur::after{content:'';position:absolute;top:0;bottom:0;left:-45%;width:38%;
+  background:linear-gradient(100deg,rgba(255,241,226,0),rgba(255,241,226,.14),rgba(255,241,226,0));
+  transform:translateX(-60%) skewX(-12deg)}
+.at-accueil .sl6.joue .sl6-cit .lueur{opacity:1;transition:opacity 1ms 1600ms}
+.at-accueil .sl6.joue .sl6-cit .lueur::after{animation:passe-lumiere 2200ms var(--ease) 1700ms 1 both}
+@keyframes passe-lumiere{
+  from{transform:translateX(-60%) skewX(-12deg)}
+  to{transform:translateX(420%) skewX(-12deg)}
+}
+.at-accueil .sl6-suite{margin:6dvh 0 0;max-width:36ch;font-size:clamp(19px,1.5vw,27px);line-height:1.6;
+  font-weight:300;color:var(--c-text-soft)}
+.at-accueil .sl6-suite em{font-family:var(--font-display);font-style:italic;font-size:1.26em;color:var(--c-text)}
+.at-accueil .sl6-chute{margin:3dvh 0 0;max-width:36ch;font-size:clamp(15px,1.15vw,20px);line-height:1.6;
+  font-weight:300;color:var(--c-text-faint)}
+
+/* ─────────── 07 · VOTRE NUMÉRO 1 ─────────── */
+.at-accueil .sl7{display:grid;grid-template-columns:26vw 1fr;gap:6vw;align-items:center;
+  justify-content:center;padding-top:13dvh;padding-bottom:11dvh}
+.at-accueil .sl7-obj{grid-column:1}
+.at-accueil .sl7-txt{grid-column:2;max-width:30ch}
+.at-accueil .sl7-titre{margin:0;font-family:var(--font-display);font-weight:400;
+  font-size:clamp(38px,5.6vw,112px);line-height:1.04;letter-spacing:-.024em}
+.at-accueil .sl7-titre em{font-style:italic;color:var(--c-accent)}
+.at-accueil .sl7-cta{margin-top:6dvh;display:inline-flex}
+.at-accueil .sl7-note{margin-top:2.6dvh;font-size:clamp(13px,1vw,17px);font-weight:400;color:var(--c-text-soft)}
+.at-accueil .sl7-note b{font-family:var(--font-display);font-style:italic;font-weight:400;
+  font-size:1.42em;color:var(--c-accent-strong)}
+
+/* ── LE NUMÉRO ──
+   Une vraie couverture : bandeau de titre en tete, filet, titre du
+   numero en pied. Papier, tranche, dos. Il s'incline sous la souris. */
+.at-accueil .numero{position:relative;width:100%;aspect-ratio:1/1.414;
+  transform-style:preserve-3d;
+  transform:perspective(1400px) rotateY(var(--ry,0deg)) rotateX(var(--rx,0deg));
+  transition:transform 700ms var(--ease-recit)}
+.at-accueil .n-plat{position:relative;width:100%;height:100%;overflow:hidden;border-radius:2px 9px 9px 2px;
+  box-shadow:0 8dvh 11dvh -5dvh rgba(0,0,0,.96), 0 1.6dvh 4dvh -1.6dvh rgba(0,0,0,.8)}
+.at-accueil .n-plat>img{width:100%;height:100%;object-fit:cover;
+  filter:saturate(.86) contrast(1.04) brightness(.94)}
+.at-accueil .n-voile{position:absolute;inset:0;z-index:2;
+  background:linear-gradient(180deg,rgba(2,2,2,.5) 0%,rgba(2,2,2,.1) 26%,
+    rgba(2,2,2,.14) 52%,rgba(2,2,2,.78) 100%)}
+.at-accueil .n-tete{position:absolute;left:8%;right:8%;top:5.4%;z-index:5;
+  display:flex;align-items:baseline;justify-content:space-between;
+  padding-bottom:3%;border-bottom:1px solid rgba(246,241,232,.36)}
+.at-accueil .n-masthead{font-family:var(--font-display);font-size:clamp(15px,1.5vw,30px);
+  letter-spacing:.3em;text-transform:uppercase;color:#f8f3eb}
+.at-accueil .n-no{font-size:clamp(8px,.62vw,12px);letter-spacing:.26em;text-transform:uppercase;
+  color:rgba(246,241,232,.7)}
+.at-accueil .n-pied{position:absolute;left:8%;right:8%;bottom:6.5%;z-index:5}
+.at-accueil .n-filet{display:block;width:34%;height:1px;background:var(--c-accent);margin-bottom:4%}
+.at-accueil .n-titre{display:block;font-family:var(--font-display);font-style:italic;
+  font-size:clamp(17px,1.8vw,36px);line-height:1.12;color:#f8f3eb;
+  text-shadow:0 2px 16px rgba(0,0,0,.6)}
+.at-accueil .n-sous{display:block;margin-top:4%;font-size:clamp(8px,.6vw,12px);letter-spacing:.24em;
+  text-transform:uppercase;color:rgba(246,241,232,.62)}
+.at-accueil .n-lum{position:absolute;inset:0;z-index:6;
+  background:linear-gradient(114deg,rgba(255,242,228,.2) 0%,rgba(255,242,228,.05) 22%,
+    rgba(7,7,8,0) 48%,rgba(7,7,8,.28) 84%,rgba(7,7,8,.52) 100%)}
+.at-accueil .n-fibre{position:absolute;inset:0;z-index:7;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04 0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23p)'/%3E%3C/svg%3E");background-size:220px 220px;
+  mix-blend-mode:overlay;opacity:.3}
+.at-accueil .n-dos{position:absolute;left:0;top:0;bottom:0;width:1.8%;z-index:8;
+  background:linear-gradient(90deg,rgba(0,0,0,.86) 0%,rgba(0,0,0,.4) 46%,
+    rgba(255,247,238,.18) 88%,rgba(255,247,238,.04) 100%)}
+.at-accueil .n-tranche{position:absolute;top:1%;bottom:1%;right:-1.2%;width:1.2%;z-index:4;
+  border-radius:0 4px 4px 0;
+  background:repeating-linear-gradient(180deg,rgba(246,241,232,.72) 0 1px,rgba(116,108,98,.42) 1px 2px);
+  box-shadow:inset -.4dvh 0 .9dvh -.2dvh rgba(0,0,0,.72)}
+
+/* ─────────── ECRANS ETROITS ───────────
+   Le chemin de fer se retire, les marges se resserrent, les tailles
+   restent GRANDES : c'est sur un telephone qu'un texte trop petit
+   devient illisible. */
+@media (max-width:1000px){
+  .bj-atelier{--mg-u:7vw;--md-u:7vw}
+  .at-accueil .pas{display:none}
+  .at-accueil .sl{padding:11dvh var(--md-u) 7dvh var(--mg-u);min-height:100dvh}
+  .at-accueil .suite{align-self:flex-start;margin-top:4.5dvh}
+  .at-accueil .geant{font-size:clamp(40px,12.4vw,78px)}
+  .at-accueil .sl1-note{margin-left:0;text-align:left;max-width:none;font-size:clamp(17px,4.6vw,22px)}
+  .at-accueil .sl2{padding-right:var(--md-u)}
+  .at-accueil .sl2-texte{max-width:none;font-size:clamp(21px,5.6vw,30px)}
+  .at-accueil .sl2-scene{position:relative;inset:auto;margin-top:4dvh;height:26dvh}
+  .at-accueil .sl2-scene .v{position:absolute}
+  .at-accueil .v1{right:2vw;top:0;width:30vw}
+  .at-accueil .v2{right:34vw;top:5dvh;width:36vw}
+  .at-accueil .v3{right:4vw;top:13dvh;width:34vw}
+  .at-accueil .v4{display:none}
+  .at-accueil .v5{right:42vw;top:14dvh;width:20vw}
+  .at-accueil .sl2-compte{margin-top:4dvh}
+  .at-accueil .sl2-compte .g{font-size:clamp(40px,13vw,68px)}
+  .at-accueil .sl3-avant,
+.at-accueil .sl3-apres{max-width:none;font-size:clamp(17px,4.6vw,22px)}
+  .at-accueil .sl3-apres{text-align:left;margin-left:0}
+  .at-accueil .sl3-mots .m{font-size:clamp(34px,11.6vw,66px)}
+  .at-accueil .sl3-mots .m2{margin-left:5vw}
+  .at-accueil .sl3-mots .m3{margin-left:10vw}
+  .at-accueil .sl4-texte{max-width:none;font-size:clamp(21px,5.4vw,28px)}
+  .at-accueil .sl4-bande{margin-top:4dvh}
+  .at-accueil .sl4-rail{gap:3.4vw;padding-left:var(--mg-u)}
+  .at-accueil .sl4-rail figure{width:38vw;min-width:0}
+  @keyframes defile{from{transform:translateX(0)}to{transform:translateX(calc(-50% - 1.7vw))}}
+  .at-accueil .sl5-titre{font-size:clamp(29px,8.4vw,50px)}
+  .at-accueil .sl5-nuage{max-width:none;gap:.45em 3vw;margin-top:3.4dvh}
+  .at-accueil .sl5-nuage .n1{font-size:clamp(24px,7.2vw,38px)}
+  .at-accueil .sl5-nuage .n2,
+.at-accueil .sl5-nuage .n3{font-size:clamp(20px,5.6vw,30px)}
+  .at-accueil .sl5-nuage .n4{font-size:clamp(23px,6.6vw,34px)}
+  .at-accueil .sl5-nuage .n5{font-size:clamp(15px,4vw,18px)}
+  .at-accueil .sl5-nuage .n6{font-size:clamp(19px,5.2vw,28px)}
+  .at-accueil .sl5-cadre{font-size:clamp(16px,4.1vw,20px);margin-top:3.4dvh;max-width:none}
+  .at-accueil .sl5-film{margin-top:2.4dvh}
+  .at-accueil .sl5-film em{font-size:clamp(22px,6.4vw,32px)}
+  .at-accueil .sl6{text-align:center}
+  .at-accueil .sl6-cit{max-width:none;font-size:clamp(30px,9.2vw,52px);text-align:center}
+  .at-accueil .sl6-cit .guill{position:static;font-size:1em;margin-right:.04em}
+  .at-accueil .sl6-suite,
+.at-accueil .sl6-chute{margin-left:auto;margin-right:auto;text-align:center}
+  .at-accueil .sl6-suite{font-size:clamp(17px,4.6vw,22px);max-width:none}
+  .at-accueil .sl6-chute{max-width:none}
+  .at-accueil .sl7{grid-template-columns:1fr;gap:5dvh;padding-top:13dvh}
+  .at-accueil .sl7-obj{grid-column:1;width:52vw;margin:0 auto}
+  .at-accueil .sl7-txt{grid-column:1;max-width:none}
+  .at-accueil .sl7-titre{font-size:clamp(34px,10vw,58px)}
+  .at-accueil .numero{transform:none}
+}
+
+/* ─────────── REGLAGE SYSTEME ───────────
+   Mouvement reduit ne veut pas dire aucune animation : on garde les
+   fondus, qui aident a comprendre, on retire les deplacements. */
+@media (prefers-reduced-motion:reduce){
+  .at-accueil [data-t]{transform:none !important;filter:none !important}
+  .at-accueil .sl .ligne .in{transform:none !important}
+  .at-accueil .sl1-camera{transform:none !important}
+  .at-accueil .sl3.joue .m1,
+.at-accueil .sl3.joue .m1 .fantome,
+.at-accueil .sl3.joue .m3 .c,
+.at-accueil .sl6.joue .sl6-cit .lueur::after,
+.at-accueil .suite.vu .rond svg{animation:none !important}
+  .at-accueil .sl3.joue .m3 .c{animation:none !important}
+  .at-accueil .m3 .c{opacity:.28}
+  .at-accueil .m1 .fantome{display:none}
+  .at-accueil .m2{translate:none !important}
+  .at-accueil .numero{transform:none !important}
+}

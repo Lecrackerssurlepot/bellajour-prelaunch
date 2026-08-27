@@ -31,7 +31,14 @@ export default function Nav() {
 
   return (
     <nav className={`at-nav ${stuck ? 'is-stuck' : ''}`}>
-      <span className="at-nav-logo">Bellajour</span>
+      <img
+        className="at-nav-logo"
+        src="/images/ui/signature-blanche.webp"
+        alt="Bellajour"
+        width={320}
+        height={122}
+        decoding="sync"
+      />
       <a className="at-nav-cta" href={CTA_HREF}>{CTA_LABEL}</a>
     </nav>
   )

@@ -71,6 +71,50 @@ Playfair Display : NON chargée sur la landing — utilisée uniquement dans l'O
   Ne touche JAMAIS `/api/webhook`, `/merci`, les pages légales ni les crédits — 14 fondateurs ont
   des droits ouverts et les CGV v3.0 les maintiennent en régime transitoire.
 
+## Refonte de l'accueil — 27/08/2026 : l'ouverture, puis l'univers
+`/` n'est plus quatre sections empilées. C'est une COUVERTURE qui se pose puis s'ouvre
+en plein écran, suivie du récit de marque en SEPT pages plein écran enchaînées.
+- `components/Ouverture.tsx` + `ouverture.css` — le premier écran.
+- `components/Univers.tsx` + `univers.css` — les sept pages et leur séquenceur.
+- `page.tsx` reste un composant SERVEUR (métadonnées + JSON-LD dans le document) ;
+  seuls Ouverture et Univers sont clients.
+
+⚠️ **`.at-accueil` n'est pas décoratif.** Les deux feuilles sont ENTIÈREMENT scopées
+dessous, parce que le prototype nomme ses classes court (`.hero`, `.in`, `.ligne`,
+`.ph`, `.c`, `.d`) et que `.bj-atelier` est partagé avec `/composer`. Retirer ce
+conteneur dépeindrait toute la page. C'est aussi lui qui porte les états `pret` et
+`plein` de la séquence d'ouverture.
+
+⚠️ **Les anciens composants ne sont pas supprimés.** `S1Hero`, `S2Collection`,
+`S3Method`, `S4Final` restent sur le disque, hors routage : l'étagère des quatre
+numéros, les trois temps du parcours et la grille des paliers serviront la page
+produit. Les effacer, c'est réécrire ce texte une deuxième fois.
+
+**Le séquenceur.** Un `data-t` sur un élément = son instant, en millisecondes, dans
+la séquence de SA page. Pour régler un timing, un seul attribut change dans le
+balisage. Le déclencheur normal est un IntersectionObserver ; la boucle unique le
+double d'un filet (une page qui n'a pas joué est une page VIDE, pas une page sobre —
+un onglet occulté suffit à geler l'observateur).
+⚠️ Le séquenceur pose `transition-delay` ET une propriété `--retard` : le glitch de
+la page 02 est une ANIMATION, qui ignore `transition-delay`, et il vit sur trois
+couches dont deux pseudo-éléments. Seule une propriété personnalisée descend jusqu'à
+eux.
+
+**Le fond est noir plein** (`--c-void`), pas le dégradé ambiant de `.bj-atelier` :
+neutralisé par `:has(> .at-accueil)`, pour cette page seule, sans toucher au thème
+que `/composer` partage.
+
+**Grain et fibre du papier sont des turbulences SVG en ligne**, pas des images :
+283 et 454 Ko de texture décorative à chaque chargement, ce n'était pas tenable.
+
+**La barre de tête ne se cache jamais** et n'a aucun filet : une zone de verre
+(`--glass-bg-strong` + blur 20). C'est la seule porte vers `/composer` une fois
+l'ouverture passée. ⚠️ `backdrop-filter` sur un `position:fixed` rame sur
+Chrome/Android (voir la règle anti-jank plus bas) : à re-vérifier sur un Android réel.
+
+Le prototype de référence, avec ses variantes, vit dans
+`design-explorations/landing/` (non versionné).
+
 ## Structure fichiers
 src/app/layout.tsx        → <head> fonts + metadata
 src/app/globals.css       → tokens + reset + imports CSS sections
