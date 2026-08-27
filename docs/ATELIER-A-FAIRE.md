@@ -524,6 +524,17 @@ notre référence telle quelle (résolution multi-candidats dans le webhook).
 Reste à faire : pousser Test 2 jusqu'à « Livrée » + M8, trancher les finitions
 (grammage/pelliculage) avec l'étude de prix, RÉGÉNÉRER la clé API qui a circulé
 en clair, et le jour du lancement créer l'interface Live + ses clés en Production.
+**Le suivi du colis se remplit désormais tout seul** (27/08, `src/lib/atelier/suivi.ts`) :
+Cloudprinter donne un NUMÉRO et pas une adresse, il était jeté — fiche vide, page
+cliente sans suivi, M7 avec un lien vide. Le numéro est conservé
+(`numeros.tracking_code`, migration 20260829) et devient un lien pour les
+transporteurs de la table.
+
+**La bascule en LIVE a sa propre liste : `docs/BASCULE-LANCEMENT.md`.** Cinq tiers
+(Stripe, Cloudprinter, Brevo, Supabase, R2), chacun avec son interrupteur et sa
+vérification. À ouvrir le jour du lancement officiel, pas la veille au soir : deux
+points (l'immatriculation portugaise chez Stripe Tax, les finitions Cloudprinter)
+se décident avant.
 
 **Deux lints pré-existants**, hors périmètre du lot 7 :
 `src/app/admin/page.tsx:145` (`Date.now()` pendant le rendu) et

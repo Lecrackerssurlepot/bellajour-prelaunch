@@ -286,6 +286,9 @@ une note qui exige un aller-retour par onglet finit par ne plus être lue.
 ⚠️ Fichier INTERNE. Il porte des notes que la cliente ne doit jamais lire, rien ne l'envoie.
 Le TEXTE des mails vit dans `scripts/mails-atelier.mjs`, versionné, pas dans Brevo.
 **Ce qui reste à faire : `docs/ATELIER-A-FAIRE.md`.** Recette : `docs/RECETTE-PARCOURS.md`.
+**Bascule en LIVE (le jour du lancement officiel) : `docs/BASCULE-LANCEMENT.md`** — les cinq
+tiers à faire passer en production, et comment vérifier chacun. Un mode test resté branché
+ne fait pas d'erreur, il fait un silence.
 
 ## Dashboard interne /admin
 - /admin : dashboard interne LECTURE SEULE (inscrits / clients / ambassadeurs,
@@ -433,7 +436,7 @@ dos carré ne peut physiquement pas vivre dans le même PDF que les pages.
 - Dashboard : interface CloudCore = « My API interface » (PAS les « CloudApps Quick
   Order ») ; webhook CloudSignal = « Bellajour preview » → la preview. La sandbox déroule
   commande→shipped en ~45 s. Clés régénérées le 26/08 (les premières avaient circulé en
-  clair). Au lancement : interface Live + un webhook vers bellajour.fr + clés en Production.
+  clair). Au lancement : interface Live + un webhook vers bellajour.fr + clés en Production. Cf. `docs/BASCULE-LANCEMENT.md` §2.
 
 ### Le suivi du colis se remplit tout seul (27/08/2026)
 `src/lib/atelier/suivi.ts` (PUR) est LE seul endroit qui interprète un envoi.
