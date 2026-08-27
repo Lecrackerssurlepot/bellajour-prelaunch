@@ -24,16 +24,14 @@ nouvelle échéance → l'auto-validation repasse). La relève de PRODUCTION
 répond comme le cron l'appelle (404 non signé, 200 + résumé en Bearer) et
 `CRON_SECRET` est posé.
 
-**Reste UNE preuve : le remboursement.** Le connecteur Stripe de Claude
-était invalidé et la clé du sandbox (`acct_1Tg326…`) est marquée
-« sensitive » chez Vercel : personne n'a pu déclencher le refund test sur
-le paiement de « Test 2 » (`pi_3U8cOuKtRuvOSF410Nen0ojb`). Un clic
-« Rembourser » dans le dashboard Stripe SANDBOX suffit — puis vérifier dans
-`evenements` de Test 2 : une ligne `remboursement`
-(`a_verifier_a_la_main: true`) et AUCUN changement d'état. À voir aussi à
-la prochaine recette : le clic « Publier la maquette » depuis l'état 4
-(la republication après retouches — le moteur est prouvé, l'écran pas
-encore cliqué).
+**Le remboursement est PROUVÉ le 27/08 au matin** : clic « Rembourser » de
+Mathias au dashboard sandbox sur le paiement de Test 2 → `charge.refunded`
+→ une ligne `remboursement` dans `evenements` à la seconde (40 €,
+`integralement_rembourse`, `a_verifier_a_la_main: true`) et AUCUN
+changement d'état ; le tri atelier/prévente a tenu (aucune ligne
+`waitlist` touchée). Il ne reste à voir en vrai que le clic « Publier la
+maquette » depuis l'état 4 (la republication après retouches — moteur
+prouvé, écran pas encore cliqué).
 
 ### ⚠️ Si un paiement ou un mail ne remonte pas, TESTER CECI D'ABORD
 
@@ -79,18 +77,20 @@ attendus.
 
 ## Ce qui n'a pas encore été vu
 
-Mis à jour le 26/08 au soir : M7 et M8 ont été couverts par la recette
-Cloudprinter, l'auto-validation et sa suspension sont prouvées (voir en
-tête). Reste sans preuve : **le remboursement** (`charge.refunded` atelier,
-journalisé sans transition) — un clic Rembourser au dashboard sandbox — et
-le clic « Publier la maquette » depuis l'état 4 (republication après
-retouches, moteur prouvé, écran pas encore cliqué).
+Mis à jour le 27/08 au matin : TOUT est couvert — M7/M8 (recette
+Cloudprinter), l'auto-validation et sa suspension, et le remboursement
+(voir en tête). Seul le clic « Publier la maquette » depuis l'état 4
+(republication après retouches) reste à voir en vrai.
 
-⚠️ Ménage en attente : les 4 dossiers « Test… » + « Essai M2b » (qui
-échappe à `nettoyer` : son `created_at` a été reculé de 26 h par le levier
-M2b ET son titre ne commence pas par « test »). Les dossiers « Notre
-histoire », « joelle » et les trois « (sans titre) » ressemblent à de vrais
-prospects : ne JAMAIS les passer dans un `nettoyer --depuis`.
+**Ménage FAIT le 27/08** (accord explicite de Mathias) : les 9 dossiers de
+test supprimés, y compris « Essai M2b » qui échappait à `nettoyer` (son
+`created_at` avait été reculé de 26 h par le levier M2b).
+
+⚠️ **IL RESTE UN SEUL DOSSIER, ET C'EST UN VRAI : « Notre histoire », de
+Marjorie** (fondatrice curieuse, marjo3122@gmail.com, 49 photos, dépôt
+TERMINÉ, M1 parti). Il est dans « À faire » avec la promesse « couverture
+sous 48 h » qui court depuis le 25/08 au soir : sa couverture est LA
+priorité du jour.
 
 ---
 
