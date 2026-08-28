@@ -88,7 +88,7 @@ export default function Univers() {
           c.col.style.transform = 'translateY(calc(var(--cell) * -' + d + '))'
         }
       })
-      if (doux) { poser(String(cible)); return }
+      if (doux || (!pilote && vitesse > VITESSE_PRESSEE)) { poser(String(cible)); return }
       const duree = 1500
       const t0 = performance.now()
       const pas = (t: number) => {
@@ -99,15 +99,39 @@ export default function Univers() {
       requestAnimationFrame(() => requestAnimationFrame(pas))
     }
 
+    /* ── à quelle vitesse le lecteur descend-il ? ──
+       Mesurée en pixels par seconde dans la boucle unique, plus bas. Une
+       lecture normale tourne autour de 300 à 800 ; une chiquenaude monte
+       à plusieurs milliers. Au-delà du seuil, la personne ne lit pas, elle
+       cherche le bas de la page : lui jouer une chorégraphie de sept
+       secondes ne lui montre RIEN, elle traverse des écrans vides.
+       On ne lui prend pas le défilement pour autant — on lui donne la page
+       déjà composée. */
+    const VITESSE_PRESSEE = 1800
+    let vitesse = 0
+    /* ⚠️ « Tourner la page » fait DEFILER, et son amorti part vite : au
+       moment ou la page suivante franchit le seuil de l'observateur, la
+       vitesse frole encore les 2000 px/s. Sans ce drapeau, quelqu'un qui
+       CLIQUE pour voir la page serait classe presse et perdrait justement
+       la choregraphie qu'il vient de demander. Un defilement pilote n'est
+       jamais un lecteur qui fuit. */
+    let pilote = false
+
     /* ── le déclencheur ── */
     const jouee = new WeakSet<Element>()
     let restantes = pages.length
     const lancer = (page: HTMLElement) => {
       if (jouee.has(page)) return
       jouee.add(page); restantes -= 1
+      /* La décision se prend À L'ENTRÉE de la page et ne se rejoue pas :
+         `lancer` ne passe qu'une fois. Une page traversée en trombe reste
+         donc composée si l'on y revient — c'est ce qu'on veut, on ne
+         redéroule pas une séquence sous les yeux de quelqu'un qui remonte. */
+      const presse = !pilote && vitesse > VITESSE_PRESSEE
       page.classList.add('joue')
+      if (presse) page.classList.add('vite')
       tous<HTMLElement>('[data-t]', page).forEach((el) => {
-        const retard = doux ? Math.min(Number(el.dataset.t), 600) : Number(el.dataset.t)
+        const retard = presse ? 0 : doux ? Math.min(Number(el.dataset.t), 600) : Number(el.dataset.t)
         el.style.transitionDelay = retard + 'ms'
         el.style.setProperty('--retard', retard + 'ms')
         el.classList.add('vu')
@@ -117,7 +141,7 @@ export default function Univers() {
          son bloc se dévoile, et on ne voit jamais le nombre grandir. */
       tous<HTMLElement>('[data-compte]', page).forEach((el) => {
         const conteneur = el.closest('[data-t]') as HTMLElement | null
-        const retard = conteneur
+        const retard = presse ? 0 : conteneur
           ? (doux ? Math.min(Number(conteneur.dataset.t), 600) : Number(conteneur.dataset.t))
           : 0
         const id = window.setTimeout(() => lancerCompte(el), retard + 260)
@@ -162,12 +186,13 @@ export default function Univers() {
       const rac = document.documentElement
       const memoire = rac.style.scrollBehavior
       rac.style.scrollBehavior = 'auto'
+      pilote = true
       const pas = (t: number) => {
         const p = borne((t - t0) / duree, 0, 1)
         const e = 1 - Math.pow(1 - p, 4)
         window.scrollTo({ top: depart + d * e, behavior: 'instant' as ScrollBehavior })
         if (p < 1) requestAnimationFrame(pas)
-        else rac.style.scrollBehavior = memoire
+        else { rac.style.scrollBehavior = memoire; pilote = false }
       }
       requestAnimationFrame(pas)
     }
@@ -241,9 +266,17 @@ export default function Univers() {
 
     let derniereY = -1
     let frame = 0
+    let vY = window.scrollY
+    let vT = performance.now()
     const boucle = () => {
       const y = window.scrollY
       const h = window.innerHeight
+      /* La vitesse se mesure AVANT `verifierVisibles`, qui peut declencher
+         une page dans la meme image : elle doit deja etre a jour quand
+         `lancer` la lit. */
+      const t = performance.now()
+      const dt = t - vT
+      if (dt >= 8) { vitesse = Math.abs(y - vY) / dt * 1000; vY = y; vT = t }
       verifierVisibles()
       /* Ce qui depend du DEFILEMENT ne se recalcule que si l'on a defile.
          `fin` (bureau + pointeur precis) est une CONSTANTE vraie : la laisser

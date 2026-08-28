@@ -53,6 +53,25 @@
 }
 .at-accueil [data-t].fini{will-change:auto;filter:none}
 
+/* LE LECTEUR PRESSE. Quand une page entre alors qu'on descend a plusieurs
+   milliers de pixels par seconde, le sequenceur pose `.vite` : les retards
+   tombent a zero (Univers.tsx) et le fondu se reduit ici a une duree de
+   reaction. La page est donc DEJA COMPOSEE quand elle passe, au lieu de
+   derouler sept secondes de choregraphie pour un ecran vide.
+   On ne supprime pas le fondu : un texte qui surgit d'un coup fait un
+   a-coup plus violent que le vide qu'on corrige. On le raccourcit. */
+/* ⚠️ `!important` assume. Plusieurs pages surchargent la transition de
+   leurs propres elements (`.sl2-scene .v[data-t].vu`, `.sl2-texte .bloc…`)
+   avec la MEME specificite et plus loin dans le fichier : elles gagnaient
+   donc a l'anciennete, et le lecteur presse subissait quand meme 1,2 s de
+   fondu par element. Une valeur unique couvre toutes les proprietes
+   declarees, quelles qu'elles soient, y compris celles qu'une page
+   ajouterait demain. C'est le seul endroit du fichier ou l'on veut que
+   RIEN ne prime. */
+.at-accueil .sl.vite [data-t].vu{
+  transition-duration:var(--dur) !important;
+}
+
 /* les titres composes ligne a ligne : masque, jamais fondu */
 .at-accueil .sl .ligne{display:block;overflow:hidden;padding-bottom:.11em;margin-bottom:-.08em}
 .at-accueil .sl .ligne .in{display:block;transform:translateY(112%);opacity:0}
@@ -450,13 +469,24 @@
 .at-accueil .sl5-nuage span{position:relative;z-index:1;display:inline-block;line-height:1.16}
 
 /* Les decalages. Lus de haut en bas ils alternent, pour que l'oeil
-   descende en zigzag au lieu de tomber tout droit. */
+   descende en zigzag au lieu de tomber tout droit.
+
+   ⚠️ LE DECALAGE HORIZONTAL EST RESERVE AUX MOTS SEULS SUR LEUR LIGNE.
+   `translate` ne change PAS la mise en page : deux mots qui partagent une
+   ligne continuent d'etre poses bord a bord par le flex, et les decaler
+   l'un vers l'autre les fait se CHEVAUCHER — « ce week-end » recouvrait
+   « ce concert » sur 69 px. n2, n3 et n4 sont sur la meme ligne : ils ne
+   recoivent qu'un decalage VERTICAL, qui ne peut rien percuter puisque
+   l'ecart entre lignes le compense. Le zigzag tient quand meme : trois
+   lignes sur quatre sont deplacees. */
 .at-accueil .sl5-nuage .n1{translate:-7vw -.1em}
-.at-accueil .sl5-nuage .n2{translate:5vw .34em}
-.at-accueil .sl5-nuage .n3{translate:-2vw -.16em}
-.at-accueil .sl5-nuage .n4{translate:9vw .1em}
-.at-accueil .sl5-nuage .n5{translate:-6vw .5em}
-.at-accueil .sl5-nuage .n6{translate:6vw .3em}
+.at-accueil .sl5-nuage .n5{translate:-6vw .34em}
+.at-accueil .sl5-nuage .n6{translate:6vw .22em}
+
+/* la ligne partagee : vertical seulement */
+.at-accueil .sl5-nuage .n2{translate:0 .3em}
+.at-accueil .sl5-nuage .n3{translate:0 -.12em}
+.at-accueil .sl5-nuage .n4{translate:0 .12em}
 .at-accueil .sl5-nuage .n1{
   font-family:var(--font-display);font-style:italic;font-size:clamp(30px,3.4vw,68px);
   color:var(--c-text);flex-basis:100%;
@@ -641,11 +671,11 @@
      l'amplitude. Le champ de lumiere, lui, se resserre. */
   .at-accueil .sl5-nuage::before{width:112%;height:140%}
   .at-accueil .sl5-nuage .n1{translate:-2vw -.06em}
-  .at-accueil .sl5-nuage .n2{translate:2.5vw .26em}
-  .at-accueil .sl5-nuage .n3{translate:-1.5vw -.1em}
-  .at-accueil .sl5-nuage .n4{translate:3vw .06em}
-  .at-accueil .sl5-nuage .n5{translate:-2vw .34em}
-  .at-accueil .sl5-nuage .n6{translate:2vw .2em}
+  .at-accueil .sl5-nuage .n5{translate:-2vw .26em}
+  .at-accueil .sl5-nuage .n6{translate:2vw .16em}
+  .at-accueil .sl5-nuage .n2{translate:0 .22em}
+  .at-accueil .sl5-nuage .n3{translate:0 -.08em}
+  .at-accueil .sl5-nuage .n4{translate:0 .1em}
   .at-accueil .sl5-nuage .n1{font-size:clamp(24px,7.2vw,38px)}
   .at-accueil .sl5-nuage .n2,
 .at-accueil .sl5-nuage .n3{font-size:clamp(20px,5.6vw,30px)}
