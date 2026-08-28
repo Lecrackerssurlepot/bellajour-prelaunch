@@ -20,6 +20,13 @@ const eslintConfig = defineConfig([
     "**/node_modules/**",
     ".claude/**",
     "next-env.d.ts",
+    /* L'ancienne landing de prevente, rangee et non supprimee (voir
+       archive/landing-waitlist/README.md). Rien ne l'importe : elle ne part
+       dans aucun bundle. Elle portait 32 des 55 problemes du depot, dont TOUS
+       les react-hooks/refs, exhaustive-deps et immutability. Corriger des
+       regles de memoisation dans du code qu'aucun compilateur ne voit passer,
+       c'est payer un travail pour un gain nul. */
+    "archive/**",
   ]),
 
   /* `no-img-element` reproche d'appliquer la regle maison : ZERO next/image,

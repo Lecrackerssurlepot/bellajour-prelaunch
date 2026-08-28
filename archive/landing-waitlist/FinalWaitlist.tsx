@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef, type ReactNode } from 'react'
-import ReferralCard from '../components/ReferralCard'
-import InstagramLink from '../components/InstagramLink'
+import ReferralCard from '@/app/components/ReferralCard'
+import InstagramLink from '@/app/components/InstagramLink'
 import './finalwaitlist.css'
 
 /* ── Données ── */
