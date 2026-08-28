@@ -115,3 +115,14 @@ suivi. Restauré et recompté (123 fichiers, 958 polices). C'est exactement le
 scénario contre lequel D4 met en garde, et il s'est produit PARCE QUE les dossiers
 avaient été commités par erreur. Un dossier non versionné est plus sûr qu'un
 dossier versionné à moitié.
+
+D9 (28/08/2026) — Le footer crème (`src/app/sections/Footer.tsx`, servi par `/preventes`,
+`/preventes/prix`, `/merci`, les trois pages ambassadeurs et `/lancement`) a VOCATION À
+DISPARAÎTRE. Décision de Mathias. C'est pourquoi le lien TikTok n'y a pas été posé alors
+qu'il l'a été dans le footer sombre de l'accueil.
+**Conséquence :** ne rien y investir. Les correctifs de tokens du 27/08 qui le remettent
+d'aplomb restent utiles tant qu'il est servi, mais toute nouvelle fonctionnalité va dans
+`(atelier)/components/Footer.tsx` uniquement. Le jour où les pages qu'il sert seront
+retirées ou refondues, il part avec elles — ainsi que le composant partagé
+`components/InstagramLink.tsx`, dont il est le dernier appelant routé (les trois autres
+sont hors routage, sauf `/inviter`).

@@ -38,11 +38,38 @@
   background: var(--glass-bg-plein);
 }
 
+/* ⚠️ Remise a zero OBLIGATOIRE : sans elle le navigateur pose son fond
+   `buttonface` gris-blanc et sa bordure sur tout <button>. C'est exactement
+   la panne qui a rendu le bouton de descente invisible le 27/08. Rien ne
+   reinitialise les boutons globalement (le preflight Tailwind n'est pas
+   importe), donc chaque bouton porte son propre reset. */
+.at-nav-logo-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+  /* La signature ne fait que 20 px de haut : la cible tactile serait deux
+     fois trop petite. Le rembourrage l'agrandit a 44 px, la marge negative
+     de meme valeur annule son effet sur la mise en page — la barre garde
+     exactement la meme hauteur, seul le doigt y gagne. */
+  padding: 12px 14px;
+  margin: -12px -14px;
+}
+
 .at-nav-logo {
   height: clamp(20px, 1.6vw, 28px);
   width: auto;
   opacity: 0.94;
+  transition: opacity var(--dur) var(--ease);
 }
+
+.at-nav-logo-btn:hover .at-nav-logo,
+.at-nav-logo-btn:focus-visible .at-nav-logo { opacity: 1; }
 
 /* Invariant nº5 : le libellé est le même partout, sans exception.
    Écrit en (0,2,0) pour passer devant `.bj-atelier a { color: inherit }`. */
