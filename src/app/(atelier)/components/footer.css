@@ -115,7 +115,21 @@
   letter-spacing: 0.04em;
   transition: color var(--dur) var(--ease);
 }
+/* Les deux lignes ne font que 22 px de haut, sous le minimum de 24 px
+   (WCAG 2.5.8). Meme remede que la signature de la barre : du rembourrage
+   annule par une marge negative de meme valeur — la cible grandit, la mise
+   en page ne bouge pas d'un pixel.
+   ⚠️ La valeur est PLAFONNEE a 3 px, et ce n'est pas de la timidite : les
+   deux liens sont espaces de 7 px, donc separes de 29 px d'axe en axe.
+   Au-dela de 3 px leurs zones de touche se CHEVAUCHERAIENT, et le doigt qui
+   vise Instagram ouvrirait TikTok (le dernier du flux passe devant). Pour
+   viser 44 px il faudrait ecarter les deux lignes, ce qui se verrait. */
 .at-footer-lien-social:hover { color: var(--c-text); }
+
+.at-footer-lien-social {
+  padding: 3px 0;
+  margin: -3px 0;
+}
 
 .at-footer-lien-social svg {
   width: 15px;
