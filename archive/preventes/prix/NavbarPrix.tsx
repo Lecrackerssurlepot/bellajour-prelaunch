@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import '../navbar.css'
+import '@/app/components/navbar.css'
 import { preventesHref, preventesRootHref } from './_ref'
 import { useAndroid, useValeurClient } from '@/hooks/useClient'
 

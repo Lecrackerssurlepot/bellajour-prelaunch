@@ -4,7 +4,7 @@ import { useState } from 'react'
 import './faq.css'
 /* Prix et bornes interpolés depuis la grille (source unique) — AUCUN montant
    ni nombre de pages en dur. */
-import { ALBUM_PAGES, PRICE_LOOKUP, PRIX_ALBUM_BASE } from '../../preventes/pricing'
+import { ALBUM_PAGES, PRICE_LOOKUP, PRIX_ALBUM_BASE } from '@/lib/pricing'
 
 /* Plafond de pages dérivé de la grille elle-même. */
 const PAGES_MAX = Math.max(...Object.keys(PRICE_LOOKUP).map(Number))

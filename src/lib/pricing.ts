@@ -1,9 +1,17 @@
 /* ════════════════════════════════════════════════════════════
    PRÉVENTE — Grille tarifaire (SOURCE UNIQUE)
-   Une seule table de prix pour TOUT le site : simulateur /preventes/prix,
-   encart + note S4, FAQ, calculateur ambassadeur.
    ⚠️ Ne JAMAIS redéclarer ces chiffres ailleurs — importer depuis ce module.
    Grille TTC, livraison incluse, par pas de 2 pages sur [30, 200].
+
+   ⚠️ DÉPLACÉ le 28/08/2026 depuis `src/app/preventes/pricing.ts`, quand
+   /preventes a été retirée de la ligne. Ce n'est PAS un rangement de confort :
+   `ambassadeurs/Calculateur.tsx` s'en sert encore, et le laisser sous une route
+   archivée aurait fait tomber le calculateur avec elle. Une donnée que
+   plusieurs pages partagent n'appartient à aucune d'elles.
+
+   Seul consommateur vivant aujourd'hui : le calculateur ambassadeur
+   (`composeAlbums`). Le reste de la grille sert l'historique — les 14
+   fondateurs ont contracté sur ces prix, ne pas les réécrire.
    ════════════════════════════════════════════════════════════ */
 
 export const PRICE_LOOKUP: Record<number, number> = {

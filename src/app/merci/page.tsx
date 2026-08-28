@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Stripe from 'stripe'
 import { makeSupabase } from '@/lib/supabase'
-import Navbar from '../preventes/Navbar'
+import Link from 'next/link'
+import Navbar from './Navbar'
 import Footer from '../sections/Footer'
 import MerciReferral from './MerciReferral'
 import MerciBackLink from './MerciBackLink'
@@ -135,9 +136,9 @@ export default async function MerciPage({
                 Nous n&rsquo;avons pas pu afficher le détail de votre pré-commande ici. Si vous venez
                 de régler votre acompte, votre e-mail de confirmation vous parviendra sous peu.
               </p>
-              <a className="merci-back" href="/preventes">
-                Retour aux préventes
-              </a>
+              <Link className="merci-back" href="/">
+                Retour à Bellajour
+              </Link>
             </>
           )}
         </div>

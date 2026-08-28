@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { preventesRootHref } from '../preventes/prix/_ref'
-import '../preventes/navbar.css'
-import { useAndroid, useValeurClient } from '@/hooks/useClient'
+import '../components/navbar.css'
+import { useAndroid } from '@/hooks/useClient'
 
 /* Top bar /ambassadeurs — réutilise EXACTEMENT navbar.css (.pv-nav).
    Page principale (variant="page") : masquée sur le hero (#amb-hero), glass une fois
@@ -18,9 +17,11 @@ export default function AmbassadeurNav({
 }) {
   const [heroOut, setHeroOut] = useState(variant === 'espace')
   const flat = useAndroid()
-  // Cible du logo → /preventes (?ref préservé). Client-only (lit window) :
-  // le serveur sert /preventes nu, jamais cassé, seulement sans le code parrain.
-  const logoHref = useValeurClient(() => preventesRootHref(), '/preventes')
+  /* Le logo ramène à l'ACCUEIL. Il pointait la racine de la prévente en
+     préservant le code parrain ; /preventes a été retirée de la ligne le
+     28/08/2026, et un code de parrainage de prévente n'a rien à dire à
+     l'Atelier. Plus de lecture d'URL, plus de valeur calculée : une adresse. */
+  const logoHref = '/'
 
   useEffect(() => {
     if (variant === 'espace') return // toujours solide, pas de sentinelle
@@ -65,7 +66,7 @@ export default function AmbassadeurNav({
       <a
         href={logoHref}
         className="pv-nav-logo-btn"
-        aria-label="Aller à la prévente Bellajour"
+        aria-label="Accueil Bellajour"
       >
         <img
           src="/images/ui/logo.webp"

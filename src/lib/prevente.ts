@@ -16,9 +16,18 @@
  *    échoué, un cas particulier à repasser. Une variable se rebascule ;
  *    un code supprimé se réécrit.
  * 3. Les mails déjà partis (W6, P1, P2) pointent sur /preventes. Un 404 sur
- *    un lien reçu par mail, c'est une lectrice perdue pour rien : la page
- *    reste en ligne et annonce elle-même la clôture.
+ *    un lien reçu par mail, c'est une lectrice perdue pour rien.
  * ══════════════════════════════════════════════════════════════════════════
+ *
+ * ⚠️ MISE À JOUR DU 28/08/2026 — le point 3 a changé de forme, pas de fond.
+ * La page ne « reste plus en ligne pour annoncer la clôture » : /preventes,
+ * /preventes/prix et /lancement ont été RETIRÉES (307 vers `/`, code dans
+ * `archive/preventes/`). Le lien reçu par mail n'aboutit donc plus sur un
+ * encart de clôture, il aboutit sur l'Atelier — mais il aboutit, et c'est
+ * tout ce que le point 3 exigeait.
+ * Les points 1 et 2, eux, sont INTACTS et ce drapeau reste indispensable :
+ * il ferme `/api/checkout` et bascule `/api/offer-state`, deux routes qui
+ * n'ont pas bougé et que d'autres chemins peuvent encore atteindre.
  *
  * Ce que le drapeau ferme, et RIEN d'autre :
  *   — /api/checkout : plus aucune session Stripe créée (410) ;

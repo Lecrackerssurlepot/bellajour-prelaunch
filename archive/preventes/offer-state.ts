@@ -33,7 +33,7 @@ export const DEFAULT_OFFER_STATE: OfferState = {
 /* D1 — prix album de base : ré-exporté depuis la SOURCE UNIQUE (./pricing).
    Les consommateurs existants (S4Reservation, S5Garanties) continuent d'importer
    PRIX_ALBUM_BASE depuis ce module — aucun changement côté appelants. */
-export { PRIX_ALBUM_BASE } from './pricing'
+export { PRIX_ALBUM_BASE } from '@/lib/pricing'
 
 /* PRD §3.2 — places restantes, jamais négatif. */
 export function placesRestantes(state: OfferState): number {

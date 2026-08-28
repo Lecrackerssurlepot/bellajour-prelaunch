@@ -230,3 +230,34 @@ ramener, c'est reprendre le travail où il s'est arrêté.
 ⚠️ `sections/Footer.tsx` n'est PAS parti : sept pages le servent encore (D9).
 ⚠️ `S1Hero`, `S2Collection`, `S3Method`, `S4Final` non plus : ils portent le texte de la
 future page produit (voir CLAUDE.md), ils ne sont pas orphelins par accident.
+
+D13 (28/08/2026) — `/preventes`, `/preventes/prix` et `/lancement` sont RETIRÉES de la
+ligne. Décision de Mathias : « /preventes c'est du passé, on ne l'utilisera plus. »
+Trois **307 temporaires vers `/`** dans `next.config.ts`, et le code dans
+`archive/preventes/` et `archive/lancement/` (chacun son README).
+**Pourquoi 307 et non 308 :** une permanente se grave dans le cache des navigateurs pour
+des mois. Le jour où l'on voudrait rouvrir l'une de ces URL, les visiteurs déjà passés
+continueraient d'être renvoyés sur `/` sans qu'aucun déploiement n'y puisse rien. Trois
+lignes se retirent en dix secondes ; une 308 ne se retire pas du navigateur d'autrui.
+**Pourquoi une redirection et non un 410 :** les mails déjà partis (W6, P1, P2) pointent
+sur /preventes, et 14 fondateurs peuvent rouvrir un vieux message n'importe quand. C'est
+l'argument que `lib/prevente.ts` oppose depuis le début au 404.
+**Conséquence — trois choses vivaient dans `preventes/` et servaient AILLEURS.** Sorties
+avant l'archivage, sans quoi `/ambassadeurs` et `/merci` seraient tombées avec :
+- `pricing.ts` → `src/lib/pricing.ts` (le calculateur ambassadeur s'en sert) ;
+- `navbar.css` → `src/app/components/navbar.css` (`AmbassadeurNav` et `/merci`) ;
+- `Navbar.tsx` → RÉÉCRIT en `src/app/merci/Navbar.tsx`. Pas recopié : celui de la
+  prévente observe `#s1` pour devenir solide et fait défiler vers `#s4`, dont aucun
+  n'existe sur /merci. L'observateur ne s'armait jamais, la barre restait transparente
+  au-dessus d'un fond crème, et « Participer aux préventes » menait à rien.
+Le logo de `AmbassadeurNav` pointe désormais `/` tout court (il préservait le `?ref` vers
+la racine de la prévente ; un code de parrainage de prévente n'a rien à dire à l'Atelier).
+Les liens de `/merci` aussi.
+⚠️ **Le drapeau `PREVENTE_FERMEE` reste indispensable.** Il ferme `/api/checkout` et
+bascule `/api/offer-state` — deux routes qui n'ont PAS bougé. Vérifié en production le
+28/08 : `offerMode: "closed"`, 100 fondateurs sur 100.
+⚠️ **Ne pas confondre retirer les pages et effacer la prévente du produit.** Les CGV v3.0
+maintiennent 14 fondateurs en régime transitoire. `/api/webhook` (les remboursements),
+`/merci`, `/inviter`, les pages légales, les crédits de parrainage et `lib/prevente.ts`
+sont intacts. Ce qui est archivé, ce sont les pages de VENTE, pas le contrat.
+

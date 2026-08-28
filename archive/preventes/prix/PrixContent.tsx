@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useValeurClient } from '@/hooks/useClient'
 import './prix.css'
 import { preventesHref } from './_ref'
-import { PRICE_LOOKUP } from '../pricing'
+import { PRICE_LOOKUP } from '@/lib/pricing'
 
 /* Corps de la page /preventes/prix. Tout converge vers le SIMULATEUR.
    Page illustrative : aucun montant n'est envoyé au backend ; la grille ci-dessous

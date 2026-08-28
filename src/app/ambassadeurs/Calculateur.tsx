@@ -2,13 +2,13 @@
 
 import { useEffect, useRef } from 'react'
 import './calculateur.css'
-import { composeAlbums } from '../preventes/pricing'
+import { composeAlbums } from '@/lib/pricing'
 
 /* Calculateur de pages/albums gagnés. Deux curseurs (directs 0→25, indirects 0→50).
    Calcul temps réel SANS re-render React : on lit les <input range> et on écrit le
    résultat dans le DOM via refs, coalescé par requestAnimationFrame (transform/opacity
    seulement côté anim, ici simple textContent).
-   Valeur € = composeAlbums() de la SOURCE UNIQUE (../preventes/pricing) : RÈGLE B
+   Valeur € = composeAlbums() de la SOURCE UNIQUE (@/lib/pricing) : RÈGLE B
    (max d'albums de 30 pages, le reste grossit le dernier) valorisée à la grille. */
 
 const NUM_FR = [

@@ -7,7 +7,7 @@ import S2Experience from './S2Experience'
 import S3Objet from './S3Objet'
 import S4Reservation from './S4Reservation'
 import S5Garanties from './S5Garanties'
-import Footer from '../sections/Footer'
+import Footer from '@/app/sections/Footer'
 import { preventeFermee } from '@/lib/prevente'
 
 /* Route /preventes — page prévente (PRD §2).

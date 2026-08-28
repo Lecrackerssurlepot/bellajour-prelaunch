@@ -7,9 +7,10 @@ import type { MetadataRoute } from 'next'
  *   — les pages légales, que Google aime trouver et qui rassurent.
  *
  * Volontairement ABSENTS :
- *   — `/preventes` et `/preventes/prix` : passés en noindex à la clôture.
- *     Un sitemap qui liste une page noindex envoie deux signaux
- *     contradictoires ; on ne garde qu'un seul.
+ *   — `/preventes`, `/preventes/prix` et `/lancement` : RETIRÉES le 28/08/2026.
+ *     Elles étaient déjà absentes d'ici (noindex à la clôture) ; elles
+ *     répondent désormais une 307 vers `/`. Rien à changer, et surtout rien
+ *     à y remettre.
  *   — `/composer` : un questionnaire à six écrans n'a rien à faire dans un
  *     résultat de recherche, il n'a de sens qu'après la page d'accueil.
  *   — `/numero/[token]` : chaque adresse est un secret. La lister

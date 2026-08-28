@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import NavbarPrix from './NavbarPrix'
 import PrixContent from './PrixContent'
-import Footer from '../../sections/Footer'
+import Footer from '@/app/sections/Footer'
 
 /* Route /preventes/prix — page « Nos prix » de la prévente (charte --bj-*).
    Page courte, aérée, dont la pièce maîtresse est le simulateur de prix.

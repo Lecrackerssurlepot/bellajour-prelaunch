@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import './navbar.css'
+import '@/app/components/navbar.css'
 import { isValidRefCode } from '@/lib/validation'
 import { useAndroid, useValeurClient } from '@/hooks/useClient'
 

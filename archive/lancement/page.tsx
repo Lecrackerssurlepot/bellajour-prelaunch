@@ -13,7 +13,7 @@ import FAQ from './components/FAQ'
    /lancement doit être EXACTEMENT celui de /preventes — un import ne peut pas
    diverger, une copie si. Même catégorie d'exception que pricing.ts :
    réutilisation en LECTURE SEULE, sections/Footer reste intouché. */
-import Footer from '../sections/Footer'
+import Footer from '@/app/sections/Footer'
 
 /* Route /lancement — homepage de lancement (maquette
    docs/homepage-lancement-reference.html).

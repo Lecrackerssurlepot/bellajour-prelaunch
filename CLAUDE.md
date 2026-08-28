@@ -74,7 +74,13 @@ Playfair Display : NON chargée sur la landing — utilisée uniquement dans l'O
   `git mv`. `sections/` ne contient plus que `Footer.tsx` + `footer.css`, et
   `src/app/hero.css` n'existe plus (ne pas confondre avec `ambassadeurs/hero.css`,
   vivant, ni `public/hero.css`, servi à `preview-anxiete.html`).
-- `/preventes` et `/preventes/prix` : `noindex, follow`. Sitemap = `/` + pages légales.
+- `/preventes`, `/preventes/prix` et `/lancement` : **RETIRÉES de la ligne le 28/08/2026**
+  (D13). Trois 307 TEMPORAIRES vers `/` dans next.config.ts, code dans `archive/preventes/`
+  et `archive/lancement/`. Sitemap = `/` + pages légales, inchangé.
+  ⚠️ Trois modules vivaient dans `preventes/` et servaient AILLEURS — sortis avant
+  l'archivage : `pricing.ts` → `src/lib/pricing.ts`, `navbar.css` →
+  `src/app/components/navbar.css`, et `Navbar.tsx` RÉÉCRIT en `src/app/merci/Navbar.tsx`.
+  Sans ça, `/ambassadeurs` et `/merci` tombaient avec la prévente.
 - Fermeture de la prévente : drapeau `PREVENTE_FERMEE=true` (src/lib/prevente.ts), lu CÔTÉ SERVEUR.
   Ferme `/api/checkout` (410) et bascule `/api/offer-state` en `offerMode: 'closed'` ; le bandeau
   d'annonce disparaît, les CTA pointent `/`, la section 4 rend un encart de clôture.
@@ -406,11 +412,15 @@ a vocation à disparaître (D9).
 - ~~Supprimer src/app/components/ReferralSheet.tsx + referralsheet.css~~ — FAIT : ces
   fichiers n'existent plus sur le disque (vérifié le 28/08/2026).
 
-## Prévente — Section 4
+## Prévente — Section 4 (page ARCHIVÉE depuis le 28/08/2026, cf. D13)
 - Le prix/offre d'acompte est TOUJOURS décidé par le backend (/api/checkout). Le front envoie expected_offer (affichage seulement) et gère le 409 offer_changed. Ne jamais hardcoder un montant ni le seuil FOUNDER_CAP côté front.
+- ⚠️ La règle reste vraie pour l'API, qui n'a PAS bougé. Seule la page a été retirée.
 
-## Perf / animations — backdrop-filter (règle anti-jank prévente)
-Sur les pages prévente, ne JAMAIS poser `backdrop-filter: blur()` sur :
+## Perf / animations — backdrop-filter (règle anti-jank)
+⚠️ Née sur la prévente, mais elle ne meurt PAS avec elle : `AmbassadeurNav` et la barre
+de tête de l'accueil sont exactement les cas qu'elle vise. La détection Android vit
+désormais dans `useAndroid()` (`src/hooks/useClient.ts`), un seul endroit.
+Ne JAMAIS poser `backdrop-filter: blur()` sur :
 - un élément en flux large posé sur un fond PLAT (couleur uniforme, ex. --bj-cream) :
   flouter une couleur uniforme = no-op visuel, mais Chrome la re-rastérise à chaque
   frame de scroll = jank. → retirer le blur, le rendu est identique.
