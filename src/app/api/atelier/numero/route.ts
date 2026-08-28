@@ -15,6 +15,11 @@ import { canonicalizeEmail } from "@/lib/email";
 import { generateNumeroToken, isValidNumeroToken } from "@/lib/atelier/token";
 import { logEvenement } from "@/lib/atelier/evenements";
 import { CHAMPS_MAIL, envoyerMailAtelier, type NumeroPourMail } from "@/lib/atelier/mails";
+import {
+  CHAMPS_QUESTIONNAIRE,
+  normaliserTelephone,
+  premierManquant,
+} from "@/lib/atelier/questionnaire";
 
 export const runtime = "nodejs";
 
@@ -26,8 +31,6 @@ const RATE_LIMIT_MAX = process.env.NODE_ENV === "production" ? 5 : 30;
    script, pas à rationner une cliente indécise. */
 const RATE_LIMIT_MAX_PATCH = process.env.NODE_ENV === "production" ? 30 : 120;
 const RATE_LIMIT_WINDOW_MS = process.env.NODE_ENV === "production" ? 60_000 : 10_000;
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /* Plafonds de saisie — coupent au lieu de rejeter : personne ne perd son
    texte parce qu'il a écrit trois lignes de trop. */
@@ -70,33 +73,63 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as Record<string, unknown>;
 
-    const email = clean(body.email, 200).toLowerCase();
-    if (!EMAIL_PATTERN.test(email)) {
-      return NextResponse.json({ error: "invalid_email" }, { status: 400 });
+    /* ── TOUTES LES RÉPONSES, OU RIEN ──────────────────────────────────
+       Jusqu'au 28/08/2026, seuls le prénom et l'email étaient exigés :
+       l'occasion, l'histoire et le titre pouvaient arriver vides, et le
+       premier dossier venu de l'extérieur est arrivé sans titre. Un
+       questionnaire dont on peut sauter les questions n'est pas un
+       questionnaire, c'est un formulaire de contact.
+
+       La règle est celle de questionnaire.ts, la MÊME que celle du
+       navigateur. On la revérifie ici parce qu'un navigateur ne garantit
+       rien : brouillon d'une version antérieure, onglet resté ouvert
+       pendant un déploiement, appel direct. C'est cette route qui décide
+       de ce qui entre en base.
+
+       On renvoie LE champ fautif : le questionnaire repose alors la
+       cliente sur le bon écran, au lieu d'un « réessayez » devant un
+       formulaire qui a l'air complet. */
+    const valeurs = {
+      occasion: clean(body.occasion, MAX.occasion),
+      histoire: clean(body.histoire, MAX.histoire),
+      titre: clean(body.titre, MAX.titre),
+      prenom: clean(body.prenom, MAX.prenom),
+      email: clean(body.email, 200).toLowerCase(),
+      telephone: normaliserTelephone(clean(body.telephone, MAX.telephone)),
+    };
+
+    const manquant = premierManquant(CHAMPS_QUESTIONNAIRE, (c) => valeurs[c]);
+    if (manquant) {
+      return NextResponse.json(
+        { error: "champ_manquant", champ: manquant },
+        { status: 400 },
+      );
     }
 
-    const prenom = clean(body.prenom, MAX.prenom);
-    if (!prenom) {
-      return NextResponse.json({ error: "prenom_required" }, { status: 400 });
-    }
+    const { email, prenom } = valeurs;
 
     const supabase = makeSupabase();
     const token = generateNumeroToken();
 
-    /* Le titre peut être vide : l'écran 3 laisse explicitement le choix de
-       « Je ne sais pas encore, choisissez pour moi ». L'atelier tranchera. */
+    /* Plus aucun `|| null` : les six champs ont été validés juste au-dessus,
+       et une colonne nulle ne peut donc plus vouloir dire « elle a sauté la
+       question ». Un null qui subsisterait en base est désormais un dossier
+       ANTÉRIEUR au 28/08, jamais un dossier neuf.
+       Le téléphone est enregistré NORMALISÉ (« +33769710686 ») : c'est cette
+       forme que Cloudprinter attend, et la normaliser au moment de la
+       commande obligerait à refaire le même travail des deux côtés. */
     const { data, error } = await supabase
       .from("numeros")
       .insert({
         token,
         etat: "photos_recues",
-        occasion: clean(body.occasion, MAX.occasion) || null,
-        histoire: clean(body.histoire, MAX.histoire) || null,
-        titre: clean(body.titre, MAX.titre) || null,
+        occasion: valeurs.occasion,
+        histoire: valeurs.histoire,
+        titre: valeurs.titre,
         prenom,
         email,
         email_canonical: canonicalizeEmail(email),
-        telephone: clean(body.telephone, MAX.telephone) || null,
+        telephone: valeurs.telephone,
       })
       .select("id, token")
       .single();
@@ -110,6 +143,44 @@ export async function POST(request: Request) {
     await logEvenement(supabase, data.id, "numero_cree", {
       etat: "photos_recues",
       source: "questionnaire_ecran_4",
+    });
+
+    /* ══════════════════════════════════════════════════════════════════
+       M0 — L'ACCUSÉ, DANS LA SECONDE.
+
+       Jusqu'ici, rien ne partait ici. Le premier mail du parcours était M1,
+       et M1 exige `consent_photos`, c'est-à-dire un dépôt TERMINÉ. Une
+       cliente qui s'arrêtait à l'écran 5 donnait donc son adresse et
+       recevait le silence : le seul filet était M2, entre 24 et 46 h plus
+       tard selon l'heure d'inscription. Le 27/08, une cliente a rempli le
+       questionnaire, n'a jamais déposé de photo, et a très probablement cru
+       sa demande terminée. Personne, des deux côtés, n'avait de quoi s'en
+       apercevoir le jour même.
+
+       M0 fait deux choses qu'aucun autre mail ne peut faire :
+         — il dit, tant que c'est encore frais, que le dossier attend ses
+           photos. C'est la seule correction possible d'un malentendu qui
+           naît à l'écran 4 ;
+         — il lui met le LIEN PERMANENT en main tout de suite. Avant lui, le
+           token ne vivait que dans le localStorage de son appareil : onglet
+           fermé, et le dossier devenait injoignable jusqu'à M2.
+
+       Best-effort, comme tous les envois de l'atelier : le verrou de
+       `mails_envoyes` empêche le doublon, un échec Brevo est journalisé et
+       la relève réessaiera tant que le dossier a moins de 24 h (codesPour).
+       Quoi qu'il arrive, la cliente voit son écran 5 — on ne fait jamais
+       échouer une création de dossier sur un mail.
+       ══════════════════════════════════════════════════════════════════ */
+    await envoyerMailAtelier(supabase, "M0", {
+      id: data.id,
+      token: data.token,
+      titre: valeurs.titre,
+      prenom,
+      email,
+      nb_photos: 0,
+      nb_pages: null,
+      palier: null,
+      apercu_urls: null,
     });
 
     return NextResponse.json({ token: data.token }, { status: 201 });

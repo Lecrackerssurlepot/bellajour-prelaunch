@@ -381,10 +381,84 @@ lien Canva de travail. Motif : celui qui compose travaille dans Canva, pas dans 
 une note qui exige un aller-retour par onglet finit par ne plus être lue.
 ⚠️ Fichier INTERNE. Il porte des notes que la cliente ne doit jamais lire, rien ne l'envoie.
 Le TEXTE des mails vit dans `scripts/mails-atelier.mjs`, versionné, pas dans Brevo.
+⚠️ `--pousser` réécrit les DIX templates : bon défaut quand on retouche la maquette
+commune, mauvais quand on n'ajoute qu'un mail (on repasse sur neuf templates qui
+n'avaient rien demandé). `--pousser --seulement M0` borne le geste.
 **Ce qui reste à faire : `docs/ATELIER-A-FAIRE.md`.** Recette : `docs/RECETTE-PARCOURS.md`.
 **Bascule en LIVE (le jour du lancement officiel) : `docs/BASCULE-LANCEMENT.md`** — les cinq
 tiers à faire passer en production, et comment vérifier chacun. Un mode test resté branché
 ne fait pas d'erreur, il fait un silence.
+
+## Le questionnaire n'a plus de question facultative (28/08/2026, D14)
+Six champs EXIGÉS : occasion, histoire (20 caractères), titre, prénom, email, téléphone.
+La règle vit dans **`src/lib/atelier/questionnaire.ts`** (module PUR), lue par le
+questionnaire ET par `POST /api/atelier/numero`. Ajouter ou assouplir un champ = une
+entrée dans ce fichier, jamais dans un écran.
+- Le serveur revérifie TOUT et renvoie `{ error: "champ_manquant", champ }` ; le
+  questionnaire repose alors la cliente sur l'écran concerné (`ecranDuChamp`).
+  ⚠️ Ce n'est pas une ceinture de sécurité théorique : un brouillon localStorage
+  d'avant le 28/08 peut arriver à l'écran 4 avec une occasion et un titre vides.
+- ⚠️ **Le saut de l'écran 3 a été RETIRÉ.** « Je ne sais pas encore, choisissez pour
+  moi » posait un titre nul, et personne ne choisissait à sa place : le dossier
+  s'appelait « Sans titre » dans la table de travail. La promesse était creuse, et
+  elle a été prise au mot par le premier dossier venu de l'extérieur.
+- ⚠️ **Le téléphone est stocké NORMALISÉ** (`normaliserTelephone`, « 0769710686 »
+  depuis « 07 69 71 06 86 »). C'est la forme que Cloudprinter attend — il l'EXIGE
+  dans l'adresse, et le repli `TELEPHONE_CONTACT` faisait appeler l'atelier par le
+  transporteur. L'écran 4 dit à quoi le numéro sert : un champ obligatoire dont on
+  tait la raison se lit comme un fichier qu'on constitue.
+- Le seuil de 20 caractères sur l'histoire est calé sur un dossier RÉEL (35
+  caractères, 25/08). Le remonter bloquerait de vraies clientes.
+- Vérifications : `npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts`
+  (section « QUESTIONNAIRE : PLUS DE TROU », qui rejoue le dossier du 27/08).
+### La cliente doit SAVOIR qu'elle n'a pas fini (28/08/2026)
+Le vrai coût du dossier du 27/08 n'est pas le titre manquant : c'est qu'elle a
+probablement cru sa demande terminée. Trois choses le lui disaient mal.
+- **L'écran 4 se refermait sur lui-même.** « Vous la recevez sous 48 h. Gratuitement,
+  sans engagement. » se lit comme une FIN : coordonnées données, couverture promise.
+  Une phrase annonce désormais l'étape (« Il reste une étape après celle-ci : vos
+  photos »), et le bouton la NOMME — « Passer à mes photos », plus « Continuer ».
+- **M0, l'accusé, part à la seconde où le dossier existe** (POST /api/atelier/numero).
+  Il ne remercie pas, il dit ce qui manque : un accusé qui dirait « nous avons bien
+  reçu votre demande » confirmerait le malentendu au lieu de le lever. Il porte aussi
+  le LIEN PERMANENT — avant lui, le token ne vivait que dans le localStorage de son
+  appareil, et un onglet fermé rendait le dossier injoignable jusqu'à M2.
+  ⚠️ Best-effort, comme tout envoi de l'atelier : une création de dossier ne doit
+  JAMAIS échouer sur un mail. Tant que `BREVO_TEMPLATE_M0_ID` manque dans un
+  environnement, rien n'y part et `/admin/atelier/sante` affiche « 1 mail sans
+  template » — c'est le cas de la PRODUCTION jusqu'à ce que la variable y soit posée.
+- **L'écran 6 nomme ce qui est arrivé.** « {{titre}} est entre nos mains » est une
+  belle phrase et une phrase vague. Une ligne dit désormais les DEUX choses reçues
+  (les photos, AVEC leur nombre, et la demande) et ce qui commence. Le nombre est
+  celui CONFIRMÉ par le serveur, remonté du moteur de dépôt par `onTermine(nb)` ;
+  à zéro il n'est pas affiché plutôt que d'être inventé.
+- **La phrase du bas de l'écran 5 se contredisait.** « Vos photos sont arrivées chez
+  nous, mais l'atelier ne les a pas encore reçues » : exact (elles sont sur le coffre,
+  pas dans la pile), illisible sans le schéma en tête. Remplacée par UNE idée qui
+  désigne le bouton — « Il reste un geste. » Le bouton, lui, disait déjà « Envoyer à
+  l'atelier ».
+  ⚠️ `at-d-envoi--collee` NE COLLE RIEN malgré son nom : elle ne pose qu'un filet de
+  séparation (depot.css). Ce qui garde le bouton en vue, c'est la grille repliée.
+- **La ligne de l'admin porte le tag « dépôt non terminé »** (Liste.tsx), à côté du
+  titre. L'état de naissance s'appelle `photos_recues` et s'affiche « Photos reçues »
+  alors qu'aucune photo n'est arrivée : le tag lève la contradiction d'un coup d'œil.
+  Le libellé de l'état n'a PAS bougé — changer la valeur de l'enum demanderait une
+  migration pour un problème d'affichage.
+**Recette de bout en bout, faite le 28/08 sur localhost** : dossier créé (M0 parti en
+0,3 s), 42 photos montées et confirmées avec leurs 42 vignettes, bouton bloqué tant que
+la case n'est pas cochée, « Envoyer à l'atelier » → `consent_photos`, M1, écran 6
+annonçant « vos 42 photos ». Dossier, photos, mails, journal et les 84 objets R2
+supprimés après coup.
+⚠️ **LES PHOTOS ARRIVENT AVANT LA VALIDATION, ET C'EST NORMAL.** Chaque photo part sur
+R2 dès qu'elle est choisie et `nb_photos` monte au fil de l'eau : sur la recette,
+42 photos étaient comptées 48 secondes AVANT le clic sur « Envoyer à l'atelier ».
+Pendant cette fenêtre l'admin affiche un dossier plein qui n'est pas validé — c'est
+exactement ce qui fait lire un dépôt en cours comme une demande finie. Le seul signal
+de fin reste `consent_photos`, et c'est le tag « dépôt non terminé » qui le dit.
+⚠️ **Ce qui reste ouvert.** M2 arrive encore entre 24 h et 46 h selon l'heure
+d'inscription (seuil à 24 h, relève une fois par jour à 7 h UTC), une seule relance
+part à vie (`sante.ts` exclut volontairement le dépôt non terminé des « oubliés »), et
+aucun rebond Brevo n'est traité : une adresse mal tapée tue le dossier en silence.
 
 ## Dashboard interne /admin
 - /admin : dashboard interne LECTURE SEULE (inscrits / clients / ambassadeurs,
@@ -485,6 +559,12 @@ Réf : commit 246d8e5, tokens --bj-nav-android-bg, classe .pv-nav--flat.
 - A2 (Ambassadeur accès)     = template 21, env BREVO_TEMPLATE_A2_ID, déclencheur /ambassadeur/request-access (redemandable)
 - Relance (session.expired)  = template 23, env BREVO_TEMPLATE_RELANCE_ID, BRANCHÉ (case checkout.session.expired, garde-fou status='pending', params { PRENOM })
 - A3 (album offert au 6e = 30 pages niveau 1+2) = template 22, env BREVO_TEMPLATE_A3_ID, BRANCHÉ (étape 6 du handler completed, verrou atomique waitlist.a3_notified_at, couvre parrain direct niveau 1 + grand-parrain niveau 2, params { PRENOM, PAGES_TOTAL, DASHBOARD_URL })
+- M0 (Atelier — l'accusé, fin de l'écran 4) = **template 38**, env BREVO_TEMPLATE_M0_ID,
+  poussé et vérifié le 28/08/2026 (posé dans .env.local ; **reste à poser sur Vercel**).
+  Déclencheur : POST /api/atelier/numero, dans la seconde où le dossier existe.
+  Params { PRENOM, TITRE, LIEN } — aucun chiffre, nb_photos vaut zéro par construction.
+  Filet : la relève le rattrape tant que le dossier a MOINS de 24 h. Au-delà, M2 dit la
+  même chose en mieux, et un accusé tardif ferait deux mails pour un seul message.
 - M2b (Atelier — dépôt resté en plan) = env BREVO_TEMPLATE_M2B_ID, **template à créer**
   (`node scripts/mails-atelier.mjs --pousser`, puis coller l'ID dans .env.local et Vercel).
   Déclencheur : relève quotidienne, J+1, dossier état 1 avec des photos ET sans consent_photos.

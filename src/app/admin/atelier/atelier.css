@@ -800,6 +800,13 @@
   background: var(--ate-rouge-fond);
   color: var(--ate-rouge);
 }
+/* « dépôt non terminé » — un fait, pas une alarme : la balle est chez la
+   cliente et il n'y a rien à réparer de notre côté. Orange, donc, et pas le
+   rouge de « remboursé ». */
+.ate-tag--attente {
+  background: color-mix(in srgb, var(--ate-orange) 12%, transparent);
+  color: var(--ate-orange);
+}
 
 .ate-vide,
 .ate-faint {

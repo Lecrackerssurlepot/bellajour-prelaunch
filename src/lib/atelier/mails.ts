@@ -37,6 +37,9 @@ import { etapeDepot } from "./urgence";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
 
 export type CodeMail =
+  /* M0 — l'accusé, parti à la SECONDE où le dossier existe (fin de l'écran 4).
+     Voir la route POST /api/atelier/numero. */
+  | "M0"
   | "M1"
   | "M2"
   /* M2b — le dépôt resté en plan. Voir codesPour, case "photos_recues". */
@@ -93,6 +96,7 @@ export type Resultat =
    sur Vercel prenne effet au redéploiement sans dépendre du cache de module. */
 function templatePour(code: CodeMail): number | undefined {
   const brut = {
+    M0: process.env.BREVO_TEMPLATE_M0_ID,
     M1: process.env.BREVO_TEMPLATE_M1_ID,
     M2: process.env.BREVO_TEMPLATE_M2_ID,
     M2b: process.env.BREVO_TEMPLATE_M2B_ID,
@@ -121,6 +125,7 @@ export function templateExiste(code: string): boolean {
 
 /** Ce que chaque mail annonce, pour l'afficher à l'atelier. */
 export const OBJET_MAIL: Record<CodeMail, string> = {
+  M0: "votre numéro est ouvert, il attend vos photos",
   M1: "c'est parti, nous avons vos photos",
   M2: "il manque les photos",
   M2b: "vos photos sont là, il manque votre accord",
@@ -199,6 +204,11 @@ export function parametresPour(code: CodeMail, n: NumeroPourMail): Record<string
     TITRE: titrePourMail(n.titre),
     LIEN: `${SITE_URL}/numero/${n.token}`,
   };
+
+  /* M0 ne dit AUCUN chiffre : il part quand nb_photos vaut zéro par
+     construction, et « vos 0 photos » n'est pas une phrase. Les trois
+     communs suffisent, et le template n'attend rien d'autre. */
+  if (code === "M0") return communs;
 
   if (code === "M1" || code === "M2" || code === "M2b" || code === "M9") {
     const avecPhotos = { ...communs, NB_PHOTOS: n.nb_photos ?? 0 };
@@ -420,6 +430,23 @@ export function codesPour(
         if ((n.nb_photos ?? 0) > 0) dus.push("M1");
         /* Dépôt terminé : plus AUCUNE relance, même si le compteur est à zéro.
            Elle a fait ce qu'on lui demandait ; le trou est de notre côté. */
+        break;
+      }
+
+      /* ── M0, LE FILET DE L'ACCUSÉ ───────────────────────────────────
+         M0 part normalement dans la seconde, depuis POST /api/atelier/numero.
+         Ici, on ne rattrape QUE le cas où cet envoi a échoué — et seulement
+         tant que M2 n'est pas dû. Passé 24 h, M2 dit la même chose en mieux :
+         faire arriver « votre numéro est ouvert » la veille du jour où l'on
+         écrit « il manque vos photos » ne servirait qu'à écrire deux fois.
+         ⚠️ Cette borne exclut d'office tous les dossiers ANTÉRIEURS au
+         branchement de M0 : aucun accusé rétroactif à quelqu'un qui attend
+         depuis une semaine. */
+      const ageDossier = n.created_at
+        ? maintenant.getTime() - Date.parse(n.created_at)
+        : 0;
+      if (!deja("M0") && ageDossier < JOUR) {
+        dus.push("M0");
         break;
       }
 

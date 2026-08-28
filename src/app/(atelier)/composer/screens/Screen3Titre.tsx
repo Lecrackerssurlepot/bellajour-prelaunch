@@ -3,6 +3,12 @@
 /* Écran 3 — « Comment s'appelle ce numéro ? »
    Le champ écrit EN DIRECT dans les deux couvertures d'exemple.
 
+   ⚠️ LE SAUT A ÉTÉ RETIRÉ (28/08/2026). « Je ne sais pas encore, choisissez
+   pour moi » posait un titre nul en base, et l'atelier héritait d'un dossier
+   nommé « Sans titre » dans sa table de travail. Personne ne choisissait à sa
+   place : la promesse était creuse, et elle a été prise au mot dès le premier
+   dossier venu de l'extérieur. Le titre se change de toute façon plus tard.
+
    Elles ne sont pas un choix : cliquer n'enregistre rien et n'a aucune
    conséquence produit (PRD §7.3). L'état `survol` est purement décoratif —
    il n'existe aucun champ `modele` en base, et c'est volontaire. */
@@ -11,8 +17,8 @@ import { useState } from 'react'
 import { COVER_MODELS, TITRE_MAX, TITRE_PLACEHOLDER } from '../coverModels'
 
 export default function Screen3Titre({
-  value, onChange, onSkip,
-}: { value: string; onChange: (v: string) => void; onSkip: () => void }) {
+  value, onChange,
+}: { value: string; onChange: (v: string) => void }) {
   /* Purement visuel. Jamais lu ailleurs, jamais envoyé au serveur. */
   const [miseEnAvant, setMiseEnAvant] = useState(COVER_MODELS[0].id)
   const affiche = value.trim() || TITRE_PLACEHOLDER
@@ -60,10 +66,6 @@ export default function Screen3Titre({
           </button>
         ))}
       </div>
-
-      <button type="button" className="at-skip" onClick={onSkip}>
-        Je ne sais pas encore, choisissez pour moi
-      </button>
     </>
   )
 }

@@ -134,6 +134,11 @@
   color: var(--c-text-faint);
 }
 
+/* Écran 4 — pourquoi on demande le téléphone. Même discrétion que .at-hint,
+   mais DROIT : l'italique de l'écran 2 dit « exemple », et cette phrase-là
+   n'est pas un exemple, c'est une raison. */
+.at-hint--calme { font-style: normal; }
+
 .at-erreur { margin-top: 20px; font-size: 14px; color: var(--c-accent-strong); }
 
 /* ---- suggestions de l'écran 1 ---- */
@@ -317,3 +322,9 @@
    (0,3,0) — passe devant .bj-atelier .at-skip, qui décale de 24 px un lien
    normalement posé seul sous une question. */
 .bj-atelier .at-q-actions .at-skip { margin-top: 0; align-self: center; }
+
+/* Écrans 1 à 3 : le refus se pose DANS la rangée d'actions, à côté du bouton
+   qui vient d'être refusé — c'est là que le regard est. Les 20 px de
+   .at-erreur sont faits pour un message posé sous un formulaire (écran 4) ;
+   dans une rangée centrée, ils le décalent vers le bas sans raison. */
+.at-q-actions .at-erreur { margin-top: 0; }

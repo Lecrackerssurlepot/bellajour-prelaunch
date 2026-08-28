@@ -261,3 +261,78 @@ maintiennent 14 fondateurs en régime transitoire. `/api/webhook` (les rembourse
 `/merci`, `/inviter`, les pages légales, les crédits de parrainage et `lib/prevente.ts`
 sont intacts. Ce qui est archivé, ce sont les pages de VENTE, pas le contrat.
 
+
+D14 (28/08/2026) — **Le questionnaire n'a plus de question facultative.** Déclenché par un
+dossier réel : le 27/08, une cliente venue de l'extérieur a rempli l'occasion et l'histoire,
+puis est arrivée dans l'atelier **sans titre et sans une seule photo**. Rien n'avait échoué.
+Les écrans 1, 2 et 3 laissaient passer un champ vide, l'écran 3 proposait même explicitement
+« Je ne sais pas encore, choisissez pour moi », et `POST /api/atelier/numero` n'exigeait que
+le prénom et l'email. Un dossier incomplet n'était pas un accident : c'était le comportement
+normal.
+**Ce qui est exigé désormais** — occasion, histoire (20 caractères), titre, prénom, email,
+téléphone. Les six, des deux côtés.
+**Une seule source : `src/lib/atelier/questionnaire.ts`**, module PUR, lu par le
+questionnaire ET par la route. Deux copies de la règle auraient divergé au premier
+ajustement, et la divergence se serait vue au pire endroit : un écran qui dit « c'est bon »
+suivi d'un serveur qui répond « non ».
+**Pourquoi le serveur revérifie tout.** Un navigateur ne garantit rien : un brouillon
+localStorage d'une version antérieure (créé quand l'occasion et le titre étaient
+facultatifs), un onglet resté ouvert pendant un déploiement, un appel direct. La route
+renvoie `{ error: "champ_manquant", champ }` et le questionnaire repose la cliente sur
+l'écran concerné — un « réessayez » devant un formulaire qui a l'air complet ne se répare
+pas tout seul.
+**Pourquoi 20 caractères pour l'histoire, et pas plus.** Le seuil est calé sur un dossier
+RÉEL : la cliente du 25/08 a écrit « On doit ressentir les 9 ans d'amour » (35 caractères).
+C'est court, et c'est un vrai brief. Un seuil à 60 l'aurait renvoyée à son clavier pour rien.
+**Le téléphone n'est plus facultatif** (décision de Mathias, avec l'explication à l'écran).
+Cloudprinter l'EXIGE dans l'adresse de commande : sans lui, on envoyait le numéro de
+l'atelier à sa place (repli `TELEPHONE_CONTACT`, impression.ts) et le transporteur appelait
+donc Bellajour le jour où il ne trouvait pas la porte. Il est stocké NORMALISÉ
+(« 0769710686 » depuis « 07 69 71 06 86 ») : c'est la forme que Cloudprinter attend, et la
+normaliser au moment de la commande obligerait à refaire le même travail des deux côtés.
+Une phrase à l'écran dit à quoi il sert — un champ obligatoire dont on tait la raison se lit
+comme un fichier qu'on constitue.
+⚠️ **Cela ne répare PAS la cause des photos manquantes.** Les six champs sont remplis avant
+l'écran 5 ; l'abandon, lui, a lieu APRÈS. Ce qui manque est ailleurs et reste à faire : rien
+ne part au moment de la création du dossier (elle donne son email et reçoit le silence), et
+M2 arrive entre 24 h et 46 h plus tard selon l'heure d'inscription, parce que le seuil est à
+24 h et que la relève passe une fois par jour à 7 h UTC.
+
+D15 (28/08/2026) — **Elle croyait avoir fini.** Suite de D14, et c'est la partie qui
+coûtait le plus. Le dossier du 27/08 n'était pas seulement incomplet côté atelier : la
+cliente n'avait aucune raison de se douter qu'il manquait quelque chose. Trois causes,
+trois correctifs.
+**1. L'écran 4 se refermait sur lui-même.** « Où vous envoyons-nous votre couverture ? /
+Vous la recevez sous 48 h. Gratuitement, sans engagement. » — on donne ses coordonnées, on
+reçoit sa couverture. Rien n'annonçait le dépôt. La promesse reste, mais une phrase
+annonce l'étape suivante et le bouton la NOMME : « Passer à mes photos », plus
+« Continuer », qui sur un dernier écran de coordonnées se lit comme « valider ma demande ».
+**2. M0, l'accusé, part maintenant à la création du dossier.** Avant, le premier mail du
+parcours était M1, qui exige un dépôt TERMINÉ : une cliente qui s'arrêtait à l'écran 5
+donnait son adresse et recevait le silence, jusqu'à M2 le lendemain (voire le
+surlendemain).
+Il **ne remercie pas, il dit ce qui manque** : un accusé « nous avons bien reçu votre
+demande » confirmerait le malentendu au lieu de le lever. Il porte aussi le lien permanent
+du numéro — avant lui, le token ne vivait que dans le localStorage de son appareil, et un
+onglet fermé rendait le dossier injoignable.
+**Template Brevo 38**, poussé et vérifié le 28/08 (`node scripts/mails-atelier.mjs
+--pousser --seulement M0` — le drapeau `--seulement` est né ici : `--pousser` seul
+réécrit les dix templates, dont neuf qui n'avaient rien demandé). `BREVO_TEMPLATE_M0_ID`
+est posé en local ; **tant qu'il ne l'est pas sur Vercel, M0 ne part pas en production**
+et la page santé l'annonce.
+**Ses bornes, tenues par verif-atelier :** la relève ne le rattrape que si le dossier a
+MOINS de 24 h (au-delà, M2 dit la même chose en mieux) ; jamais deux fois (verrou
+`mails_envoyes`) ; jamais à un dépôt terminé ; jamais rétroactivement aux dossiers
+antérieurs au branchement. Best-effort strict : une création de dossier ne doit jamais
+échouer sur un mail.
+**3. L'admin affichait « Photos reçues » avec zéro photo.** C'est l'état de NAISSANCE d'un
+dossier (`photos_recues`), posé à la fin de l'écran 4, bien avant le dépôt — et c'est ce
+qui a fait lire un dossier ouvert comme une demande complète. La ligne porte désormais le
+tag « dépôt non terminé » à côté du titre, avec deux libellés distincts au survol (aucune
+photo / photos là mais jamais envoyées). Le libellé de l'état n'a PAS bougé : changer la
+valeur de l'enum demanderait une migration pour un problème d'affichage.
+⚠️ **Ce qui reste ouvert et n'est PAS traité ici** — M2 arrive encore entre 24 h et 46 h
+selon l'heure d'inscription ; une seule relance part à vie (`sante.ts` exclut volontairement
+le dépôt non terminé des « oubliés », correction du 25/08 qu'il ne faut pas défaire à la
+légère) ; aucun rebond Brevo n'est traité, donc une adresse mal tapée tue le dossier en
+silence.

@@ -230,6 +230,28 @@ const TITRE = "{{ params.TITRE }}";
 
 export const MAILS = [
   {
+    /* M0 — l'accusé, parti à la seconde où le dossier existe (fin de l'écran 4).
+       Il ne remercie pas : il DIT CE QUI MANQUE. C'est sa seule raison d'être.
+       Le 27/08, une cliente a rempli le questionnaire, n'a jamais déposé de
+       photo, et a très probablement cru sa demande terminée — l'écran 4
+       promettait la couverture sous 48 h sans annoncer la suite. Un accusé
+       qui dirait « nous avons bien reçu votre demande » confirmerait le
+       malentendu au lieu de le lever.
+       Il porte aussi le LIEN PERMANENT. Avant lui, le token ne vivait que
+       dans le localStorage de son appareil : onglet fermé, dossier
+       injoignable jusqu'à M2, le lendemain. */
+    code: "M0",
+    nom: "M0 · Atelier · Votre numéro est ouvert",
+    sujet: `${TITRE} est ouvert, il attend vos photos`,
+    preheader: "Votre dossier existe. Il lui manque encore la matière.",
+    titreHtml: "Votre numéro est ouvert",
+    h1: "Votre numéro<br />est ouvert.",
+    sous: `${PRENOM}, nous avons votre histoire et votre titre. Il manque encore l'essentiel : vos photos. Tant qu'elles ne sont pas chez nous, l'atelier ne peut rien composer. Comptez quelques minutes, et vous pouvez vous arrêter puis reprendre plus tard, depuis ce même lien.`,
+    cta: "Déposer mes photos",
+    lien: LIEN,
+    pied: "Gardez ce message : le lien ci-dessus est celui de votre numéro, pour toute sa vie. Une question ? Répondez-y, nous vous répondrons nous-mêmes.",
+  },
+  {
     code: "M2",
     nom: "M2 · Atelier · Il manque les photos",
     sujet: `Il manque les photos de ${TITRE}`,
@@ -407,6 +429,36 @@ function cleBrevo() {
 async function main() {
   const pousser = process.argv.includes("--pousser");
 
+  /* ── POUSSER UN SEUL MAIL ──────────────────────────────────────────────
+     `--pousser` réécrit les DIX templates. C'est le bon défaut quand on
+     retouche la maquette commune, et le mauvais quand on n'ajoute qu'un
+     mail : on repasse alors sur neuf templates qui n'avaient rien demandé,
+     et une retouche faite directement dans Brevo entre-temps disparaît sans
+     un mot. `--seulement M0` (ou `--seulement M0,M2b`) borne le geste.
+     La vérification de forme, elle, reste sur les DIX : une faute ailleurs
+     doit se voir même quand on ne pousse qu'un mail. */
+  const iSeulement = process.argv.indexOf("--seulement");
+  const seulement =
+    iSeulement === -1
+      ? null
+      : new Set(
+          (process.argv[iSeulement + 1] ?? "")
+            .split(",")
+            .map((c) => c.trim())
+            .filter(Boolean),
+        );
+  if (seulement && !seulement.size) {
+    console.error("--seulement attend un code : --seulement M0");
+    process.exit(1);
+  }
+  if (seulement) {
+    const inconnus = [...seulement].filter((c) => !MAILS.some((m) => m.code === c));
+    if (inconnus.length) {
+      console.error(`Code inconnu : ${inconnus.join(", ")}. Connus : ${MAILS.map((m) => m.code).join(", ")}`);
+      process.exit(1);
+    }
+  }
+
   let fautes = 0;
   for (const mail of MAILS) {
     const f = verifierForme(mail);
@@ -463,7 +515,12 @@ async function main() {
     return m?.[1]?.trim() || null;
   };
 
-  for (const mail of MAILS) {
+  const aPousser = seulement ? MAILS.filter((m) => seulement.has(m.code)) : MAILS;
+  if (seulement) {
+    console.log(`\nPoussée BORNÉE à : ${aPousser.map((m) => m.code).join(", ")}. Les autres ne sont pas touchés.`);
+  }
+
+  for (const mail of aPousser) {
     const corps = {
       templateName: mail.nom,
       subject: mail.sujet,

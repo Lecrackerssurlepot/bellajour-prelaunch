@@ -108,6 +108,28 @@ function Ligne({
         <span className="ate-ligne-titre">
           {l.nouveau ? <span className="ate-point-neuf" title="Jamais ouvert" aria-label="Jamais ouvert" /> : null}
           {l.titre?.trim() || <em className="ate-faint">Sans titre</em>}
+          {/* ── « PHOTOS REÇUES » AVEC ZÉRO PHOTO ─────────────────────────
+              L'état de naissance d'un dossier s'appelle `photos_recues`, et
+              l'écran l'affiche donc « Photos reçues » alors qu'aucune photo
+              n'est arrivée : le dossier est créé à la fin de l'écran 4, bien
+              avant le dépôt. Le 27/08, un dossier ouvert et jamais rempli
+              s'est lu comme une demande complète, et la question posée était
+              « pourquoi n'avons-nous pas ses photos ? ».
+              Le compteur du flux disait déjà « dépôt non terminé » ; la ligne,
+              elle, ne disait rien. Elle le dit maintenant, à côté du titre —
+              là où l'œil se pose, pas trois colonnes plus loin. */}
+          {l.depot !== "termine" ? (
+            <span
+              className="ate-tag ate-tag--attente"
+              title={
+                l.depot === "abandonne"
+                  ? "Ses photos sont chez nous, elle n'a pas cliqué « Envoyer »"
+                  : "Le questionnaire est rempli, aucune photo n'a été déposée"
+              }
+            >
+              dépôt non terminé
+            </span>
+          ) : null}
           {l.rembourse ? <span className="ate-tag ate-tag--alerte">remboursé</span> : null}
           {/* Qui l'a en main. Sans cette marque, à deux, on compose deux fois
               le même numéro — ou aucun, chacun croyant que l'autre s'en

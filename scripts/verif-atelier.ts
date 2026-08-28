@@ -27,6 +27,13 @@ import {
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
 import { nomsDeFichiers, nomDossier } from "@/lib/atelier/lot";
+import {
+  CHAMPS_PAR_ECRAN,
+  CHAMPS_QUESTIONNAIRE,
+  normaliserTelephone,
+  premierManquant,
+  reponseValide,
+} from "@/lib/atelier/questionnaire";
 import { lireSuivi, nomTransporteur } from "@/lib/atelier/suivi";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import {
@@ -144,8 +151,12 @@ ok("0 photo cree le 21/08 (avant mise en service) : PAS de relance",
    codesPour(d({ nb_photos: 0, consent_photos: false, created_at: "2026-08-21T10:00:00Z" }), env(), MAINTENANT).length === 0);
 ok("0 photo cree apres, vieux de 2 j : M2 part",
    codesPour(d({ nb_photos: 0, consent_photos: false, created_at: ilYA(2) }), env(), MAINTENANT).join() === "M2");
-ok("0 photo cree il y a 3 h : trop tot",
-   codesPour(d({ nb_photos: 0, consent_photos: false, created_at: new Date(MAINTENANT.getTime() - 3 * 3_600_000).toISOString() }), env(), MAINTENANT).length === 0);
+/* M0 est parti à la création (env), donc ce qu'on éprouve ici est bien la
+   RELANCE : à 3 h, elle est peut-être encore en train de choisir ses photos. */
+ok("0 photo cree il y a 3 h : trop tot pour relancer",
+   codesPour(d({ nb_photos: 0, consent_photos: false, created_at: new Date(MAINTENANT.getTime() - 3 * 3_600_000).toISOString() }), env(["M0", ilYA(0)]), MAINTENANT).length === 0);
+ok("... mais l'accuse, lui, est du tout de suite",
+   codesPour(d({ nb_photos: 0, consent_photos: false, created_at: new Date(MAINTENANT.getTime() - 3 * 3_600_000).toISOString() }), env(), MAINTENANT).join() === "M0");
 
 titre("— M2b, le depot reste en plan (incident du 25/08) —");
 ok("55 photos, pas de consentement, 26 h : M2b et pas M2",
@@ -153,7 +164,7 @@ ok("55 photos, pas de consentement, 26 h : M2b et pas M2",
 ok("0 photo, pas de consentement, 26 h : M2 et pas M2b",
    codesPour(d({ nb_photos: 0, consent_photos: false, created_at: ilYA(2) }), env(), MAINTENANT).join() === "M2");
 ok("55 photos sans consentement, 3 h : trop tot, elle est peut-etre en train",
-   codesPour(d({ nb_photos: 55, consent_photos: false, created_at: new Date(MAINTENANT.getTime() - 3 * 3_600_000).toISOString() }), env(), MAINTENANT).length === 0);
+   codesPour(d({ nb_photos: 55, consent_photos: false, created_at: new Date(MAINTENANT.getTime() - 3 * 3_600_000).toISOString() }), env(["M0", ilYA(0)]), MAINTENANT).length === 0);
 ok("consentement pose : M1, et surtout AUCUNE relance",
    codesPour(d({ nb_photos: 55, consent_photos: true, created_at: ilYA(9) }), env(), MAINTENANT).join() === "M1");
 ok("consentement pose mais compteur a zero : silence, pas de relance",
@@ -448,6 +459,101 @@ ok("un javascript: reste refuse",
    !preparerTransition("marquer_expediee", "en_production", {
      transporteur: "X", tracking_url: "javascript:alert(1)",
    }).ok);
+
+/* ════════════════════ M0 : L'ACCUSÉ, ET SES BORNES ════════════════════
+   M0 part de la route de création, dans la seconde. Ici on éprouve son
+   FILET : ce que la relève rattrape, et surtout ce qu'elle NE rattrape pas.
+   Réutilise `d()`, `env()` et `MAINTENANT` déclarés plus haut. */
+
+const H = 3_600_000;
+/* Un dépôt jamais commencé, ouvert il y a `heures` heures. */
+const ouvert = (heures: number): NumeroPourReleve =>
+  d({
+    etat: "photos_recues", consent_photos: false, nb_photos: 0,
+    created_at: new Date(MAINTENANT.getTime() - heures * H).toISOString(),
+    etat_maj_le: new Date(MAINTENANT.getTime() - heures * H).toISOString(),
+  });
+
+titre("— M0 : le filet rattrape un envoi immediat rate —");
+ok("dossier de 2 h sans M0 : la releve l'envoie",
+   codesPour(ouvert(2), env(), MAINTENANT).includes("M0"));
+ok("M0 deja parti : JAMAIS deux fois",
+   !codesPour(ouvert(2), env(["M0", ilYA(0)]), MAINTENANT).includes("M0"));
+
+titre("— M0 ne double JAMAIS M2 —");
+const dusVieux = codesPour(ouvert(30), env(), MAINTENANT);
+ok("passe 24 h : M2 seul, pas d'accuse tardif",
+   dusVieux.includes("M2") && !dusVieux.includes("M0"));
+ok("un dossier ANTERIEUR au branchement ne recoit aucun accuse retroactif",
+   !codesPour(ouvert(9 * 24), env(), MAINTENANT).includes("M0"));
+
+titre("— M0 ne parle jamais a qui a fini —");
+const dusFini = codesPour(
+  d({ etat: "photos_recues", consent_photos: true, nb_photos: 49, created_at: ilYA(0) }),
+  env(), MAINTENANT,
+);
+ok("depot termine : M1, et surtout pas M0",
+   dusFini.includes("M1") && !dusFini.includes("M0"));
+
+titre("— M0 n'annonce aucun chiffre —");
+const paramsM0 = parametresPour("M0", ouvert(1));
+ok("trois variables, et pas une de plus",
+   Object.keys(paramsM0).sort().join() === "LIEN,PRENOM,TITRE");
+ok("le lien est celui du numero", String(paramsM0.LIEN).endsWith("/numero/t"));
+ok("rien ne manque pour l'envoyer", manquePour("M0", ouvert(1)).length === 0);
+ok("sans adresse, M0 est REFUSE",
+   manquePour("M0", { ...ouvert(1), email: null }).includes("email"));
+
+/* ═════════════════════ QUESTIONNAIRE : PLUS DE TROU ═════════════════════
+   Reproduit le dossier reellement arrive le 27/08 : occasion et histoire
+   remplies, AUCUN titre, aucune photo. Il entrait en base sans un mot. */
+
+titre("— le dossier du 27/08 ne passerait plus —");
+const flore = {
+  occasion: "Un voyage",
+  histoire: "Un road trip au Maroc avec Mathilde. Des paysages de dingue.",
+  titre: "",
+  prenom: "Flore",
+  email: "flore@example.com",
+  telephone: "0769710686",
+};
+ok("sans titre : REFUSE, et on dit lequel",
+   premierManquant(CHAMPS_QUESTIONNAIRE, (c) => flore[c]) === "titre");
+ok("avec un titre : accepte",
+   premierManquant(CHAMPS_QUESTIONNAIRE, (c) => ({ ...flore, titre: "Maroc" })[c]) === null);
+
+titre("— le PREMIER champ fautif, pas un bilan —");
+ok("occasion avant histoire",
+   premierManquant(CHAMPS_QUESTIONNAIRE, () => "") === "occasion");
+ok("chaque ecran connait ses champs",
+   CHAMPS_PAR_ECRAN[1].length === 1 && CHAMPS_PAR_ECRAN[4].length === 3);
+ok("les six champs sont couverts par les quatre ecrans",
+   Object.values(CHAMPS_PAR_ECRAN).flat().sort().join() ===
+     [...CHAMPS_QUESTIONNAIRE].sort().join());
+
+titre("— l'histoire : un brief court passe, un mot jete non —");
+ok("« ok » refuse", !reponseValide("histoire", "ok"));
+ok("le brief REEL du 25/08 passe (35 caracteres)",
+   reponseValide("histoire", "On doit ressentir les 9 ans d'amour"));
+ok("les espaces ne comptent pas pour du texte",
+   !reponseValide("histoire", "                              "));
+
+titre("— le telephone, exige mais pas tatillon —");
+ok("format francais espace", reponseValide("telephone", "07 69 71 06 86"));
+ok("format international", reponseValide("telephone", "+33 7 69 71 06 86"));
+ok("points et tirets", reponseValide("telephone", "07.69.71-06.86"));
+ok("vide : REFUSE", !reponseValide("telephone", ""));
+ok("trois chiffres : REFUSE", !reponseValide("telephone", "123"));
+ok("un texte : REFUSE", !reponseValide("telephone", "je n'en ai pas"));
+ok("normalise pour Cloudprinter",
+   normaliserTelephone("+33 (0)7 69.71-06 86") === "+330769710686");
+ok("le + de tete est conserve, et lui seul",
+   normaliserTelephone("00 351 912 345 678") === "00351912345678");
+
+titre("— l'email : la meme regle des deux cotes —");
+ok("adresse normale", reponseValide("email", "flore@example.com"));
+ok("sans arobase : REFUSE", !reponseValide("email", "flore.example.com"));
+ok("sans domaine : REFUSE", !reponseValide("email", "flore@example"));
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
 process.exit(ko === 0 ? 0 : 1);

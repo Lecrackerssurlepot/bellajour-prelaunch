@@ -51,7 +51,10 @@ export default function Screen5Depot({
   reprise?: boolean
   consent: boolean
   onConsent: (v: boolean) => void
-  onTermine: () => void
+  /** Le nombre RÉELLEMENT confirmé, pour que l'écran 6 puisse le nommer.
+      Il ne vit que dans le moteur de dépôt : sans ce passage de relais,
+      l'écran de fin ne peut que rester vague. */
+  onTermine: (nbPhotos: number) => void
 }) {
   const { vue, compteur, ajouter, supprimer, reprendrePhoto, finaliser } = useDepot(token)
   const [refus, setRefus] = useState<Refus[]>([])
@@ -126,8 +129,8 @@ export default function Screen5Depot({
     const r = await finaliser()
     setEnvoi(false)
     if (!r.ok) { setErreur(r.message ?? 'Réessayez dans un instant.'); return }
-    onTermine()
-  }, [pretAEnvoyer, finaliser, onTermine])
+    onTermine(vue.confirmees)
+  }, [pretAEnvoyer, finaliser, onTermine, vue.confirmees])
 
   if (!token) {
     return (
@@ -340,24 +343,32 @@ export default function Screen5Depot({
 
       {erreur && <p className="at-erreur" role="alert">{erreur}</p>}
 
-      {/* ── LA BARRE D'ENVOI, COLLANTE ────────────────────────────────
-          Elle était en bas de page, sous la grille. Avec cinquante-cinq
-          vignettes, le seul geste de l'écran se retrouvait à trois écrans
-          sous la ligne de flottaison — invisible. Pendant ce temps la jauge
-          était pleine, chaque tuile portait son ✓ vert et le compteur disait
-          « déposées ». Tout affirmait que c'était fini.
+      {/* ── LA BARRE D'ENVOI ──────────────────────────────────────────
+          Elle était noyée sous la grille. Avec cinquante-cinq vignettes, le
+          seul geste de l'écran se retrouvait à trois écrans sous la ligne de
+          flottaison — invisible. Pendant ce temps la jauge était pleine,
+          chaque tuile portait son ✓ vert et le compteur disait « déposées ».
+          Tout affirmait que c'était fini.
 
-          Elle colle donc au bas de la zone de défilement dès qu'il y a une
-          photo. `position: sticky` et non `fixed` : elle appartient à la
-          colonne qui défile, elle ne se superpose pas au reste du site. */}
+          Ce qui règle la cause, c'est la grille REPLIÉE (VIGNETTES_VISIBLES)
+          : l'écran tient d'un bloc et le bouton reste en vue.
+          ⚠️ `--collee` ne colle RIEN, malgré son nom : elle ne pose qu'un
+          filet de séparation (depot.css). Une vraie barre `sticky` a été
+          essayée puis retirée — elle exigeait de passer `.at-q` en hauteur
+          fixe, une refonte dont plus rien n'avait besoin. */}
       <div className={vue.photos.length > 0 ? 'at-d-envoi at-d-envoi--collee' : 'at-d-envoi'}>
-        {/* La phrase qui manquait. Elle ne dit pas ce qui est fait, elle dit
-            ce qui ne l'est pas encore — c'est la seule information que
-            l'écran ne portait nulle part. */}
+        {/* Elle dit ce qui n'est PAS encore fait — la seule information que
+            l'écran ne portait nulle part avant le 25/08.
+            ⚠️ Sa première rédaction se contredisait en une ligne : « vos
+            photos sont arrivées chez nous, mais l'atelier ne les a pas encore
+            reçues ». Techniquement exact (elles sont sur le coffre, pas dans
+            la pile de l'atelier), illisible pour qui n'a pas le schéma en
+            tête : arrivées ou pas ? UNE seule idée désormais, et elle
+            désigne le bouton. */}
         {vue.photos.length > 0 && (
           <p className="at-d-pasparti">
-            Vos photos sont arrivées chez nous, mais <b>l’atelier ne les a pas encore
-            reçues</b> : rien ne part tant que vous n’avez pas cliqué.
+            <b>Il reste un geste.</b> Vos photos ne partent à l’atelier qu’au clic
+            sur le bouton ci-dessous.
           </p>
         )}
 

@@ -16,10 +16,17 @@ import Screen5Depot from './screens/Screen5Depot'
 import Screen6Fin from './screens/Screen6Fin'
 import { EMPTY_DRAFT, loadDraft, saveDraft, type Draft } from './draft'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
+import {
+  CHAMPS_PAR_ECRAN,
+  CHAMPS_QUESTIONNAIRE,
+  MESSAGE_DU_CHAMP,
+  ecranDuChamp,
+  premierManquant,
+  type ChampQuestionnaire,
+} from '@/lib/atelier/questionnaire'
 import './composer.css'
 
 const TOTAL = 6
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 export default function Composer() {
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT)
@@ -30,6 +37,11 @@ export default function Composer() {
      que des photos sont DÉJÀ chez nous, sinon il ressemble à un premier
      dépôt et laisse croire qu'il faut tout recommencer. */
   const [reprise, setReprise] = useState(false)
+  /* Le compte réellement parti, remonté par l'écran 5 au moment de l'envoi.
+     Il ne vit PAS dans le brouillon : un brouillon terminé est effacé
+     (loadDraft), et ce chiffre n'a de sens que sur l'écran 6 de CETTE
+     session. À zéro, l'écran de fin dit la même chose sans le nombre. */
+  const [photosEnvoyees, setPhotosEnvoyees] = useState(0)
   const scroller = useRef<HTMLDivElement>(null)
 
   /* Reprise au montage — jamais pendant le rendu serveur, sinon l'HTML
@@ -70,14 +82,37 @@ export default function Composer() {
     scroller.current?.scrollTo({ top: 0 })
   }, [])
 
+  /* ── AVANCER, SEULEMENT SI L'ÉCRAN A SA RÉPONSE ────────────────────────
+     Le 27/08, un dossier est arrivé sans titre et sans photo. Rien n'avait
+     échoué : les écrans 1 à 3 laissaient simplement passer un champ vide.
+     Un dossier incomplet coûte une relance, un aller-retour, et parfois la
+     cliente. La règle vit dans questionnaire.ts, partagée avec la route :
+     cet écran ne fait que la consulter et dire ce qu'il attend.
+
+     Reculer ne valide RIEN — on ne retient personne en arrière. */
+  const avancer = useCallback((n: number) => {
+    const manquant = premierManquant(
+      CHAMPS_PAR_ECRAN[n] ?? [],
+      (c) => draft[c],
+    )
+    if (manquant) { setErreur(MESSAGE_DU_CHAMP[manquant]); return }
+    aller(n + 1)
+  }, [draft, aller])
+
   /* Fin d'écran 4 : création du dossier. Idempotent par le token. */
   const creerNumero = useCallback(async () => {
-    if (!draft.prenom.trim()) {
-      setErreur('Il nous faut votre prénom pour vous écrire.')
-      return
-    }
-    if (!EMAIL_PATTERN.test(draft.email.trim())) {
-      setErreur('Cette adresse email ne semble pas valide.')
+    /* Tous les champs, pas seulement ceux de l'écran 4 : c'est ici que le
+       dossier est écrit en base, donc le dernier moment où un brouillon
+       d'une version antérieure (créé quand l'occasion et le titre étaient
+       facultatifs) peut encore être complété sans rien perdre. */
+    const manquant = premierManquant(CHAMPS_QUESTIONNAIRE, (c) => draft[c])
+    if (manquant) {
+      setErreur(MESSAGE_DU_CHAMP[manquant])
+      const ecran = ecranDuChamp(manquant)
+      if (ecran !== draft.screen) {
+        setDraft((d) => ({ ...d, screen: ecran }))
+        scroller.current?.scrollTo({ top: 0 })
+      }
       return
     }
     if (draft.token) { aller(5); return }
@@ -97,9 +132,23 @@ export default function Composer() {
           telephone: draft.telephone,
         }),
       })
-      const data = (await res.json()) as { token?: string; error?: string }
+      const data = (await res.json()) as {
+        token?: string
+        error?: string
+        champ?: ChampQuestionnaire
+      }
 
       if (!res.ok || !data.token) {
+        if (data.error === 'champ_manquant' && data.champ && MESSAGE_DU_CHAMP[data.champ]) {
+          /* Le serveur a le dernier mot, et il dit LEQUEL. On repose la
+             cliente sur l'écran concerné : un « réessayez » devant un
+             formulaire qui a l'air complet ne se répare pas tout seul. */
+          setErreur(MESSAGE_DU_CHAMP[data.champ])
+          const ecran = ecranDuChamp(data.champ)
+          setDraft((d) => ({ ...d, screen: ecran }))
+          scroller.current?.scrollTo({ top: 0 })
+          return
+        }
         setErreur(
           data.error === 'rate_limited'
             ? 'Trop de tentatives. Réessayez dans un instant.'
@@ -160,11 +209,7 @@ export default function Composer() {
             <Screen2Histoire value={draft.histoire} onChange={(v) => patch({ histoire: v })} />
           )}
           {n === 3 && (
-            <Screen3Titre
-              value={draft.titre}
-              onChange={(v) => patch({ titre: v })}
-              onSkip={() => { patch({ titre: '' }); aller(4) }}
-            />
+            <Screen3Titre value={draft.titre} onChange={(v) => patch({ titre: v })} />
           )}
           {n === 4 && (
             <Screen4Contact
@@ -183,16 +228,17 @@ export default function Composer() {
               onConsent={(v) => patch({ consentPhotos: v })}
               /* Une seule écriture d'état : marquer terminé ET passer à
                  l'écran 6. Deux setDraft successifs se seraient écrasés. */
-              onTermine={() =>
+              onTermine={(nb) => {
+                setPhotosEnvoyees(nb)
                 setDraft((d) => ({ ...d, termine: true, screen: 6 }))
-              }
+              }}
             />
           )}
           {n === 6 && (
             /* T2-1 : la case « montrer des extraits » a quitté cet écran
                pour la page /numero (ConsentCommunication.tsx) — un moment
                de conclusion ne se partage pas. */
-            <Screen6Fin titre={draft.titre} token={draft.token} />
+            <Screen6Fin titre={draft.titre} token={draft.token} nbPhotos={photosEnvoyees} />
           )}
 
           {/* L'écran 5 porte son PROPRE bouton : lui seul sait si les photos
@@ -202,13 +248,22 @@ export default function Composer() {
           {n !== 5 && (
           <div className="at-q-actions">
             {n < 4 && (
-              <button type="button" className="at-cta" onClick={() => aller(n + 1)}>
+              <button type="button" className="at-cta" onClick={() => avancer(n)}>
                 Continuer <span className="at-cta-arrow">→</span>
               </button>
             )}
+            {/* L'écran 4 affiche l'erreur lui-même, sous ses champs. Les
+                écrans 1 à 3 n'en avaient jamais : il faut bien la poser
+                quelque part, et c'est sous le bouton qui vient d'être
+                refusé. */}
+            {erreur && n < 4 && <p className="at-erreur" role="alert">{erreur}</p>}
+            {/* Le bouton NOMME l'étape suivante. « Continuer » sur le dernier
+                écran de coordonnées peut se lire comme « valider ma demande » —
+                et il s'est lu comme ça le 27/08. */}
             {n === 4 && (
               <button type="button" className="at-cta" onClick={creerNumero} disabled={envoi}>
-                {envoi ? 'Un instant…' : 'Continuer'} <span className="at-cta-arrow">→</span>
+                {envoi ? 'Un instant…' : 'Passer à mes photos'}{' '}
+                <span className="at-cta-arrow">→</span>
               </button>
             )}
             {/* Le lien de la page d'état est LE lien du numéro : elle le
