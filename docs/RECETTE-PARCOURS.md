@@ -251,3 +251,47 @@ par « test »**. Rien n'est touché tant que vous n'ajoutez pas `--vraiment`.
 
 Les photos déposées restent dans le coffre : sans importance, elles ne sont
 plus référencées.
+
+---
+
+# Annexe — le câblage de la page produit (28/08/2026)
+
+`/magazine` est en ligne, et **tous** les CTA du site y mènent. Ce qui suit
+n'est pas la recette du tunnel, c'est la recette du CÂBLAGE : cinq minutes,
+sans rien créer en base, à refaire après toute modification de `CTA_HREF`,
+`COMPOSER_HREF` ou de `Nav`.
+
+## Ce qui a été vérifié en production le 28/08
+
+- [x] `/` → « Composer avec l'atelier » → `/magazine`
+- [x] `/magazine` → « Composer avec l'atelier » → `/composer`, écran 1 sur 6
+- [x] `/magazine` → la signature → `/`
+- [x] les trois CTA de `/magazine` (barre, kiosque, acte final) pointent tous `/composer`
+- [x] `/composer` répond `noindex, nofollow`
+- [x] `<h1>`, canonical, les trois blocs JSON-LD, description à 155 caractères
+
+## ⚠️ CE QUI N'A PAS ÉTÉ TESTÉ, ET QUI COMPTE LE PLUS
+
+**La reprise d'un dépôt en cours.** Il faut un vrai dossier, donc un token.
+
+- [ ] ouvrir `/numero/<token>` d'un dossier en état 1, dépôt non terminé
+- [ ] cliquer « Reprendre mon dépôt » (ou le bouton équivalent de l'écran d'état)
+- [ ] **vérifier qu'on arrive sur `/composer?reprendre=<token>`**, et que le
+      questionnaire retrouve le dossier au lieu d'en ouvrir un vide
+
+Pourquoi c'est le point sensible : ces liens sont construits en
+`` `${COMPOSER_HREF}?reprendre=${token}` ``. Si quelqu'un les recâble un jour
+sur `CTA_HREF`, ils arriveront sur la page produit, **qui ne lit pas ce
+paramètre**. Rien ne plantera, rien ne s'affichera en rouge : la cliente
+repartira simplement sur un dépôt vide en croyant reprendre le sien. C'est
+exactement le genre de panne qu'on ne découvre que par un appel.
+
+Le garde-fou est écrit dans `content.ts`, au-dessus des deux constantes. Il
+n'empêche rien mécaniquement — d'où cette case à cocher.
+
+## Les autres liens à re-cliquer si `Nav` change
+
+- [ ] la signature sur `/` doit REMONTER la page (c'est un `<button>`), pas
+      naviguer — c'est le seul endroit où ce geste a ce sens
+- [ ] la signature partout ailleurs doit être un `<a href="/">` : clic milieu
+      et « ouvrir dans un nouvel onglet » doivent fonctionner

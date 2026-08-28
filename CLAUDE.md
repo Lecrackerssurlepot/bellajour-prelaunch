@@ -450,6 +450,11 @@ a vocation à disparaître (D9).
    Toute la respiration du kiosque est en `dvh`, pas en `vw` : la contrainte
    est de tenir en HAUTEUR. Relevé après coup — bouton visible à 1440×900,
    1440×720, 768×1024, 375×812, 375×667 et 320×568.
+   **Recette du câblage : `docs/RECETTE-PARCOURS.md`, annexe en fin de fichier.**
+   Le parcours `/` → `/magazine` → `/composer` a été cliqué en production le
+   28/08. Ce qui N'A PAS été testé, et qui compte le plus : la reprise d'un
+   dépôt (`/numero/<token>` → `/composer?reprendre=<token>`), qui demande un
+   vrai dossier.
 
 ## Cleanup post-launch
 - ~~Supprimer src/app/components/ReferralSheet.tsx + referralsheet.css~~ — FAIT : ces
