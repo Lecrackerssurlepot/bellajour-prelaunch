@@ -89,7 +89,7 @@ export default function Univers() {
         }
       })
       if (doux) { poser(String(cible)); return }
-      const duree = 2600
+      const duree = 1500
       const t0 = performance.now()
       const pas = (t: number) => {
         const p = borne((t - t0) / duree, 0, 1)
@@ -372,18 +372,24 @@ export default function Univers() {
           </div>
 
           <p className="sl2-texte">
-            <span className="bloc" data-t="300">Nous vivons l’époque où l’on documente le plus notre vie ;</span>
+            {/* ⚠️ `&#8239;` est l'espace fine INSECABLE (U+202F), celle que la
+                 typographie francaise met devant `;`. Elle n'est pas
+                 decorative : elle EMPECHE le point-virgule de basculer seul
+                 en debut de ligne. Une espace normale le laisserait partir. */}
+            <span className="bloc" data-t="300">Nous vivons l’époque où l’on documente le plus notre vie&#8239;;</span>
             <span className="bloc" data-t="1500"><em data-t="1900">photos</em>, <em data-t="2500">vidéos</em>, <em data-t="3100">commentaires</em>, <em data-t="3700">publications</em> et <em data-t="4300">stories</em> sur les réseaux sociaux…</span>
-            <span className="bloc" data-t="5200">mais que tous ces moments de vie ; ces périodes, ces souvenirs ;</span>
-            <b className="glitch" data-t="6100" data-texte="restent numériques…">restent numériques…</b></p>
+            <span className="bloc" data-t="5200">mais que tous ces moments de vie&#8239;; ces périodes, ces souvenirs&#8239;;</span>
+            {/* la chute respire : 1400 ms apres la phrase qui la prepare,
+                 au lieu de 900. C'est le seul mot qui doit surprendre. */}
+            <b className="glitch" data-t="6600" data-texte="restent numériques…">restent numériques…</b></p>
 
-          <div className="sl2-compte" data-t="6700">
+          <div className="sl2-compte" data-t="7200">
             <p className="g" data-compte="12480">0</p>
             <p className="l">photos sur son téléphone</p>
           </div>
           </div>
 
-          <button type="button" className="suite" aria-label="Tourner la page — Les trois mots" data-vers="#u3" data-t="7600">
+          <button type="button" className="suite" aria-label="Tourner la page — Les trois mots" data-vers="#u3" data-t="8100">
             <span className="mot">Tourner la page</span>
             <span className="rond" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v13"/><path d="M6 11.5 12 17.5l6-6"/></svg></span>
           </button>
@@ -396,7 +402,7 @@ export default function Univers() {
           <p className="sl3-avant" data-t="200">Donc instantanés et rendus le plus simple et le plus accessible possible ; prendre une photo n’a jamais été aussi simple. Mais par conséquent</p>
 
           <div className="sl3-mots">
-            <span className="m m1" data-t="1400">immatériels,<i className="fantome" aria-hidden="true">immatériels,</i></span>
+            <span className="m m1" data-t="1400">immatériels,</span>
             <span className="m m2" data-t="3000">impalpables,</span>
             <span className="m m3" data-t="4600" data-lettres>oubliables</span>
           </div>
@@ -471,18 +477,28 @@ export default function Univers() {
         {/* ─────────── 06 · LA CITATION ─────────── */}
         <section className="sl sl6" id="u6" data-page="06">
           <div className="sl-corps">
+          {/* LA HIERARCHIE EST INVERSEE (Mathias, 28/08/2026).
+               La citation est empruntee : c'est la mise en place, pas la
+               chute. Elle recule donc — plus petite, en gris — et c'est la
+               REPONSE de Bellajour qui prend la taille, la pleine encre et
+               la lueur qui traverse. Une page qui donne le premier role a
+               la phrase d'un autre vend la phrase d'un autre. */}
           <p className="sl6-amorce" data-t="200">Nous sommes très attachés à la citation :</p>
           <blockquote className="sl6-cit">
             <span className="guill" aria-hidden="true" data-t="700">«</span>
             <span className="ligne"><span className="in">Il ne faut pas confondre</span></span>
             <span className="ligne"><span className="in">rêver sa vie et vivre ses rêves<span className="guill-f" aria-hidden="true">»</span></span></span>
-            <span className="lueur" aria-hidden="true"></span>
           </blockquote>
-          <p className="sl6-suite" data-t="2600">Nous, on veut proposer les deux :<br /><em>Vivez un rêve, puis rêvez votre vie dans vos magazines</em></p>
-          <p className="sl6-chute" data-t="3400">Qui sait, votre premier numéro vous poussera à vivre le prochain.</p>
+
+          <p className="sl6-bascule" data-t="2600">Nous, on veut proposer les deux&#8239;:</p>
+          <p className="sl6-reponse" data-t="3200">
+            Vivez un rêve, puis <em>rêvez votre vie</em> dans vos magazines
+            <span className="lueur" aria-hidden="true"></span>
+          </p>
+          <p className="sl6-chute" data-t="4600">Qui sait, votre premier numéro vous poussera à vivre le prochain.</p>
           </div>
 
-          <button type="button" className="suite" aria-label="Tourner la page — Le numéro" data-vers="#u7" data-t="4200">
+          <button type="button" className="suite" aria-label="Tourner la page — Le numéro" data-vers="#u7" data-t="5400">
             <span className="mot">Tourner la page</span>
             <span className="rond" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v13"/><path d="M6 11.5 12 17.5l6-6"/></svg></span>
           </button>

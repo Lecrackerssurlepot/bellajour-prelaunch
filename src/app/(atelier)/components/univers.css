@@ -304,23 +304,17 @@
 .at-accueil .sl3-mots .m2{margin-left:8vw}
 .at-accueil .sl3-mots .m3{margin-left:16vw}
 
-/* immateriel : il laisse partir son double, perd sa matiere, et se
-   brouille des qu'on pose la souris dessus. On ne peut pas le fixer. */
+/* immateriel : il s'affiche comme les deux autres, sans rien de special.
+   Sa nature ne se montre QU'AU CONTACT — pose la souris dessus, il se
+   brouille ; retire-la, il revient. On ne peut pas le fixer, mais il ne
+   se degrade pas tout seul.
+   Decision de Mathias, 28/08/2026. Avant, il partait en fondu jusqu'a
+   42 % d'opacite ET laissait s'envoler un double : l'effet se jouait sans
+   qu'on ait rien demande, et il laissait le mot definitivement pose a
+   2,08:1 de contraste — sous le seuil lisible, sans moyen de le retablir. */
+.at-accueil .m1{transition:filter 700ms var(--ease)}
 @media (hover:hover) and (pointer:fine){
   .at-accueil .m1:hover{filter:blur(6px)}
-}
-.at-accueil .m1{transition:filter 700ms var(--ease)}
-
-.at-accueil .m1 .fantome{
-  position:absolute;left:0;top:0;font-style:italic;color:var(--c-accent);
-  opacity:0;pointer-events:none;
-}
-.at-accueil .sl3.joue .m1{animation:dematerialise 2600ms var(--ease-recit) 1600ms both}
-.at-accueil .sl3.joue .m1 .fantome{animation:sen-va 2600ms var(--ease-recit) 1600ms both}
-@keyframes dematerialise{from{opacity:1}to{opacity:.42}}
-@keyframes sen-va{
-  0%{opacity:.5;transform:none;filter:blur(0)}
-  100%{opacity:0;transform:translateY(-5dvh) scale(1.04);filter:blur(9px)}
 }
 
 /* impalpable : il se derobe. Le curseur ne l'attrape jamais. */
@@ -399,13 +393,45 @@
 }
 .at-accueil .sl5-titre em{font-style:italic;color:var(--c-accent)}
 
-/* Le nuage : flex centre, chaque moment a sa taille, sa police et son
-   ton. Pas de rotation : la charte n'a qu'un axe, le vertical. */
+/* LE NUAGE — il devait se demarquer du texte structure, pas seulement
+   varier de taille (Mathias, 28/08/2026). Trois gestes, aucune rotation :
+   la charte n'a qu'un axe, et on n'y touche pas.
+
+   1. IL SORT DE L'AXE. Toute la page 05 est centree ; le nuage est le seul
+      element qui ne s'aligne sur rien. Chaque moment prend son propre
+      decalage horizontal, aucun ne partage un bord avec un autre. C'est ce
+      qui le fait lire comme un objet et non comme un paragraphe centre.
+   2. IL PERD SA LIGNE DE BASE. L'ecart vertical tombe a presque rien et ce
+      sont les decalages qui font le rythme : les grands mots en italique
+      s'emboitent dans les creux des petits, au lieu de s'empiler en lignes.
+   3. IL A UN CHAMP, PAS UN CADRE. Une lueur tres basse le borne sans le
+      cerner — la charte n'a pas de boites, et un trait ferait une boite.
+
+   ⚠️ Les decalages sont poses en `translate` et NON en `transform` : le
+   sequenceur se sert de `transform` pour l'entree, et le bloc de mouvement
+   reduit le neutralise. Ces decalages-la sont de la COMPOSITION, pas du
+   mouvement — ils doivent survivre aux deux. */
 .at-accueil .sl5-nuage{
+  position:relative;
   display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;
-  gap:.5em 1.6vw;margin:5dvh auto 0;max-width:52vw;
+  gap:.12em 1.6vw;margin:5dvh auto 0;max-width:52vw;
 }
-.at-accueil .sl5-nuage span{display:inline-block;line-height:1.16}
+.at-accueil .sl5-nuage::before{
+  content:'';position:absolute;left:50%;top:50%;translate:-50% -50%;
+  width:124%;height:165%;pointer-events:none;z-index:0;
+  background:radial-gradient(56% 50% at 50% 50%,
+    rgba(214,138,99,.11), rgba(214,138,99,.04) 46%, rgba(214,138,99,0) 74%);
+}
+.at-accueil .sl5-nuage span{position:relative;z-index:1;display:inline-block;line-height:1.16}
+
+/* Les decalages. Lus de haut en bas ils alternent, pour que l'oeil
+   descende en zigzag au lieu de tomber tout droit. */
+.at-accueil .sl5-nuage .n1{translate:-7vw -.1em}
+.at-accueil .sl5-nuage .n2{translate:5vw .34em}
+.at-accueil .sl5-nuage .n3{translate:-2vw -.16em}
+.at-accueil .sl5-nuage .n4{translate:9vw .1em}
+.at-accueil .sl5-nuage .n5{translate:-6vw .5em}
+.at-accueil .sl5-nuage .n6{translate:6vw .3em}
 .at-accueil .sl5-nuage .n1{
   font-family:var(--font-display);font-style:italic;font-size:clamp(30px,3.4vw,68px);
   color:var(--c-text);flex-basis:100%;
@@ -441,31 +467,58 @@
 /* ─────────── 06 · LA CITATION ─────────── */
 .at-accueil .sl6-amorce{margin:0;font-size:clamp(13px,1vw,17px);letter-spacing:.3em;
   text-transform:uppercase;color:var(--c-text-faint)}
+/* La citation EST une citation : on l'entend, on ne la vend pas. Elle
+   recule d'un cran en taille et d'un ton en couleur. */
 .at-accueil .sl6-cit{
-  position:relative;margin:4dvh 0 0;max-width:20ch;
+  position:relative;margin:3.4dvh 0 0;max-width:22ch;
   font-family:var(--font-display);font-style:italic;font-weight:400;
-  font-size:clamp(34px,5.4vw,108px);line-height:1.12;letter-spacing:-.02em;color:var(--c-text);
+  font-size:clamp(21px,2.5vw,44px);line-height:1.16;letter-spacing:-.014em;
+  color:var(--c-text-soft);
 }
-.at-accueil .sl6-cit .guill-f{margin-left:.06em;color:var(--c-accent)}
+
+/* LES DEUX GUILLEMETS SONT A LA MEME DISTANCE DU TEXTE, et c'est garanti
+   par la construction, pas par un reglage a l'oeil : un seul ecart est
+   declare, les deux s'y referent. L'ouvrant se pose a `100% + ecart` A
+   GAUCHE du bloc, donc l'ecart ne depend PAS de la largeur du glyphe.
+   Avant, l'ouvrant etait a 1,5em et cale par un `left` en dur pendant que
+   le fermant vivait a 1em avec sa propre marge : deux tailles, deux
+   ecarts, aucune symetrie possible. */
+.at-accueil .sl6-cit{--guill-ecart:.16em}
 .at-accueil .sl6-cit .guill{
-  position:absolute;left:-.62em;top:-.16em;font-size:1.5em;color:var(--c-accent);
-  line-height:1;
+  position:absolute;right:calc(100% + var(--guill-ecart));top:0;
+  font-size:1em;line-height:inherit;color:var(--c-accent);
 }
-/* une seule lueur traverse la citation, puis plus jamais */
-.at-accueil .sl6-cit .lueur{position:absolute;inset:-8% -4%;pointer-events:none;overflow:hidden;opacity:0}
-.at-accueil .sl6-cit .lueur::after{content:'';position:absolute;top:0;bottom:0;left:-45%;width:38%;
+.at-accueil .sl6-cit .guill-f{margin-left:var(--guill-ecart);color:var(--c-accent)}
+
+/* La bascule : la phrase courte qui annonce la reponse. */
+.at-accueil .sl6-bascule{
+  margin:5dvh 0 0;font-size:clamp(13px,1vw,17px);letter-spacing:.3em;
+  text-transform:uppercase;color:var(--c-text-faint);
+}
+
+/* LA REPONSE — le premier role de la page. C'est elle qui porte la
+   pleine encre, la taille, et la lueur qui ne passe qu'une fois. */
+.at-accueil .sl6-reponse{
+  position:relative;margin:2dvh 0 0;max-width:17ch;
+  font-family:var(--font-display);font-style:italic;font-weight:400;
+  font-size:clamp(30px,4.4vw,80px);line-height:1.1;letter-spacing:-.02em;
+  color:var(--c-text);
+}
+.at-accueil .sl6-reponse em{font-style:italic;color:var(--c-accent)}
+
+/* une seule lueur traverse LA REPONSE, puis plus jamais */
+.at-accueil .sl6-reponse .lueur{position:absolute;inset:-8% -4%;pointer-events:none;overflow:hidden;opacity:0}
+.at-accueil .sl6-reponse .lueur::after{content:'';position:absolute;top:0;bottom:0;left:-45%;width:38%;
   background:linear-gradient(100deg,rgba(255,241,226,0),rgba(255,241,226,.14),rgba(255,241,226,0));
   transform:translateX(-60%) skewX(-12deg)}
-.at-accueil .sl6.joue .sl6-cit .lueur{opacity:1;transition:opacity 1ms 1600ms}
-.at-accueil .sl6.joue .sl6-cit .lueur::after{animation:passe-lumiere 2200ms var(--ease) 1700ms 1 both}
+.at-accueil .sl6.joue .sl6-reponse .lueur{opacity:1;transition:opacity 1ms 4200ms}
+.at-accueil .sl6.joue .sl6-reponse .lueur::after{animation:passe-lumiere 2200ms var(--ease) 4300ms 1 both}
 @keyframes passe-lumiere{
   from{transform:translateX(-60%) skewX(-12deg)}
   to{transform:translateX(420%) skewX(-12deg)}
 }
-.at-accueil .sl6-suite{margin:6dvh 0 0;max-width:36ch;font-size:clamp(19px,1.5vw,27px);line-height:1.6;
-  font-weight:300;color:var(--c-text-soft)}
-.at-accueil .sl6-suite em{font-family:var(--font-display);font-style:italic;font-size:1.26em;color:var(--c-text)}
-.at-accueil .sl6-chute{margin:3dvh 0 0;max-width:36ch;font-size:clamp(15px,1.15vw,20px);line-height:1.6;
+
+.at-accueil .sl6-chute{margin:3.4dvh 0 0;max-width:36ch;font-size:clamp(15px,1.15vw,20px);line-height:1.6;
   font-weight:300;color:var(--c-text-faint)}
 
 /* ─────────── 07 · VOTRE NUMÉRO 1 ─────────── */
@@ -557,7 +610,17 @@
   .at-accueil .sl4-rail figure{width:38vw;min-width:0}
   @keyframes defile{from{transform:translateX(0)}to{transform:translateX(calc(-50% - 1.7vw))}}
   .at-accueil .sl5-titre{font-size:clamp(29px,8.4vw,50px)}
-  .at-accueil .sl5-nuage{max-width:none;gap:.45em 3vw;margin-top:3.4dvh}
+  .at-accueil .sl5-nuage{max-width:none;gap:.2em 3vw;margin-top:3.4dvh}
+  /* Les mots occupent deja presque toute la largeur : le decalage se dit
+     du bout des levres, sinon il deborde. On garde le principe, pas
+     l'amplitude. Le champ de lumiere, lui, se resserre. */
+  .at-accueil .sl5-nuage::before{width:112%;height:140%}
+  .at-accueil .sl5-nuage .n1{translate:-2vw -.06em}
+  .at-accueil .sl5-nuage .n2{translate:2.5vw .26em}
+  .at-accueil .sl5-nuage .n3{translate:-1.5vw -.1em}
+  .at-accueil .sl5-nuage .n4{translate:3vw .06em}
+  .at-accueil .sl5-nuage .n5{translate:-2vw .34em}
+  .at-accueil .sl5-nuage .n6{translate:2vw .2em}
   .at-accueil .sl5-nuage .n1{font-size:clamp(24px,7.2vw,38px)}
   .at-accueil .sl5-nuage .n2,
 .at-accueil .sl5-nuage .n3{font-size:clamp(20px,5.6vw,30px)}
@@ -568,11 +631,11 @@
   .at-accueil .sl5-film{margin-top:2.4dvh}
   .at-accueil .sl5-film em{font-size:clamp(22px,6.4vw,32px)}
   .at-accueil .sl6{text-align:center}
-  .at-accueil .sl6-cit{max-width:none;font-size:clamp(30px,9.2vw,52px);text-align:center}
+  .at-accueil .sl6-cit{max-width:none;font-size:clamp(19px,5vw,26px);text-align:center}
   .at-accueil .sl6-cit .guill{position:static;font-size:1em;margin-right:.04em}
-  .at-accueil .sl6-suite,
-.at-accueil .sl6-chute{margin-left:auto;margin-right:auto;text-align:center}
-  .at-accueil .sl6-suite{font-size:clamp(17px,4.6vw,22px);max-width:none}
+  .at-accueil .sl6-reponse,
+  .at-accueil .sl6-chute{margin-left:auto;margin-right:auto;text-align:center}
+  .at-accueil .sl6-reponse{font-size:clamp(27px,7.6vw,44px);max-width:none}
   .at-accueil .sl6-chute{max-width:none}
   .at-accueil .sl7{grid-template-columns:1fr;gap:5dvh;padding-top:13dvh}
   .at-accueil .sl7-obj{grid-column:1;width:52vw;margin:0 auto}
@@ -588,14 +651,13 @@
   .at-accueil [data-t]{transform:none !important;filter:none !important}
   .at-accueil .sl .ligne .in{transform:none !important}
   .at-accueil .sl1-camera{transform:none !important}
-  .at-accueil .sl3.joue .m1,
-.at-accueil .sl3.joue .m1 .fantome,
-.at-accueil .sl3.joue .m3 .c,
-.at-accueil .sl6.joue .sl6-cit .lueur::after,
-.at-accueil .suite.vu .rond svg{animation:none !important}
-  .at-accueil .sl3.joue .m3 .c{animation:none !important}
-  .at-accueil .m3 .c{opacity:.28}
-  .at-accueil .m1 .fantome{display:none}
+  .at-accueil .sl3.joue .m3 .c,
+  .at-accueil .sl6.joue .sl6-reponse .lueur::after,
+  .at-accueil .suite.vu .rond svg{animation:none !important}
+  /* « oubliables » ne se disperse plus, mais il doit rester LISIBLE : a
+     .28 le mot tombait a 1,50:1, sous le seuil, et definitivement puisque
+     rien ne venait le retablir. .58 le remonte a 3,08:1. */
+  .at-accueil .m3 .c{opacity:.58}
   .at-accueil .m2{translate:none !important}
   .at-accueil .numero{transform:none !important}
 }
