@@ -312,9 +312,22 @@
    42 % d'opacite ET laissait s'envoler un double : l'effet se jouait sans
    qu'on ait rien demande, et il laissait le mot definitivement pose a
    2,08:1 de contraste — sous le seuil lisible, sans moyen de le retablir. */
-.at-accueil .m1{transition:filter 700ms var(--ease)}
+/* ⚠️ LE SURVOL EST POSE SUR LE CONTENU, PAS SUR LE MOT, et ce n'est pas
+   un detail de style. Le mot porte `data-t`, donc la regle commune
+   `[data-t].vu` lui impose SA transition — `filter 850ms`, calibree pour
+   une entree en scene. Plus specifique que `.m1`, c'est elle qui pilotait
+   le survol : le flou mettait presque une seconde a venir, et autant a
+   repartir. Ecraser cette transition sur `.m1` aurait aussi emporte
+   `opacity` et `transform`, donc casse l'entree du mot.
+   En descendant d'un cran, les deux mecaniques cessent de se disputer la
+   meme propriete : l'entree reste sur le mot, la reaction au pointeur vit
+   sur son contenu, au rythme --dur, celui de tous les survols du site. */
+.at-accueil .m1 .dedans{
+  display:inline-block;
+  transition:filter var(--dur) var(--ease);
+}
 @media (hover:hover) and (pointer:fine){
-  .at-accueil .m1:hover{filter:blur(6px)}
+  .at-accueil .m1:hover .dedans{filter:blur(6px)}
 }
 
 /* impalpable : il se derobe. Le curseur ne l'attrape jamais. */

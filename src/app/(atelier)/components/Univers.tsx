@@ -402,7 +402,7 @@ export default function Univers() {
           <p className="sl3-avant" data-t="200">Donc instantanés et rendus le plus simple et le plus accessible possible ; prendre une photo n’a jamais été aussi simple. Mais par conséquent</p>
 
           <div className="sl3-mots">
-            <span className="m m1" data-t="1400">immatériels,</span>
+            <span className="m m1" data-t="1400"><span className="dedans">immatériels,</span></span>
             <span className="m m2" data-t="3000">impalpables,</span>
             <span className="m m3" data-t="4600" data-lettres>oubliables</span>
           </div>
