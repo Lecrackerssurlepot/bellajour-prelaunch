@@ -150,6 +150,9 @@ export default function Ouverture() {
       clearTimeout(minuteur)
       removeEventListener('resize', surRedimension)
       nettoyage.forEach((f) => f())
+      /* meme raison que dans Univers.tsx : un drapeau oublie desactiverait
+         le mode « lecteur presse » en silence. */
+      delete document.documentElement.dataset.pilote
     }
   }, [])
 
@@ -171,6 +174,15 @@ export default function Ouverture() {
     const racine = document.documentElement
     const memoire = racine.style.scrollBehavior
     racine.style.scrollBehavior = 'auto'
+    /* ⚠️ On se declare DEFILEMENT PILOTE le temps du geste. Le sequenceur
+       de l'univers compose une page d'emblee, sans sa choregraphie, quand
+       il voit descendre a plus de 900 px/s — pour qu'un lecteur presse ne
+       traverse pas des ecrans vides. Or cette descente-ci depasse ce seuil
+       en debut de course : sans ce drapeau, quelqu'un qui CLIQUE sur
+       « Decouvrir l'univers » perdrait l'entree de la page 01, celle qu'il
+       vient precisement de demander. Le drapeau vit sur <html> parce que
+       le sequenceur est dans un autre composant (Univers.tsx). */
+    racine.dataset.pilote = '1'
     const pas = (t: number) => {
       const p = Math.min(Math.max((t - t0) / duree, 0), 1)
       const e = 1 - Math.pow(1 - p, 4)
@@ -182,6 +194,7 @@ export default function Ouverture() {
         hero.style.transform = ''
         hero.style.opacity = ''
         racine.style.scrollBehavior = memoire
+        delete racine.dataset.pilote
       }
     }
     requestAnimationFrame(pas)

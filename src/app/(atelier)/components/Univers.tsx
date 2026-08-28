@@ -88,7 +88,7 @@ export default function Univers() {
           c.col.style.transform = 'translateY(calc(var(--cell) * -' + d + '))'
         }
       })
-      if (doux || (!pilote && vitesse > VITESSE_PRESSEE)) { poser(String(cible)); return }
+      if (doux || (!estPilote() && vitesse > VITESSE_PRESSEE)) { poser(String(cible)); return }
       const duree = 1500
       const t0 = performance.now()
       const pas = (t: number) => {
@@ -107,15 +107,27 @@ export default function Univers() {
        secondes ne lui montre RIEN, elle traverse des écrans vides.
        On ne lui prend pas le défilement pour autant — on lui donne la page
        déjà composée. */
-    const VITESSE_PRESSEE = 1800
+    /* Une page de l'univers fait environ 800 px de haut. La traverser en
+       moins d'une seconde, ce n'est deja plus la lire — d'ou ce seuil.
+       Il etait a 1800 : il ne se declenchait qu'a la chiquenaude franche,
+       et le rythme courant (« un peu vite ») passait juste en dessous, donc
+       subissait sept secondes de choregraphie pour rien. Retour de Mathias
+       du 28/08/2026. La valeur n'est tenable que parce que la mesure est
+       LISSEE (voir la boucle) : sur une vitesse brute, un seul pic de
+       molette suffirait a la franchir. */
+    const VITESSE_PRESSEE = 900
     let vitesse = 0
-    /* ⚠️ « Tourner la page » fait DEFILER, et son amorti part vite : au
-       moment ou la page suivante franchit le seuil de l'observateur, la
-       vitesse frole encore les 2000 px/s. Sans ce drapeau, quelqu'un qui
-       CLIQUE pour voir la page serait classe presse et perdrait justement
-       la choregraphie qu'il vient de demander. Un defilement pilote n'est
-       jamais un lecteur qui fuit. */
-    let pilote = false
+    /* ⚠️ UN DEFILEMENT PILOTE N'EST JAMAIS UN LECTEUR QUI FUIT.
+       Les deux boutons qui font tourner les pages defilent eux-memes, avec
+       un amorti qui part vite : au moment ou la page suivante franchit le
+       seuil de l'observateur, la vitesse depasse largement 900 px/s. Sans
+       ce drapeau, quelqu'un qui CLIQUE pour voir la page perdrait
+       justement la choregraphie qu'il vient de demander.
+       Le drapeau est pose sur <html> et NON dans ce module, parce que
+       l'un des deux boutons vit dans Ouverture.tsx (« Decouvrir l'univers
+       Bellajour », qui amene la page 01). Deux composants, un seul etat :
+       le document est le seul terrain qu'ils partagent. */
+    const estPilote = () => document.documentElement.dataset.pilote === '1'
 
     /* ── le déclencheur ── */
     const jouee = new WeakSet<Element>()
@@ -127,7 +139,7 @@ export default function Univers() {
          `lancer` ne passe qu'une fois. Une page traversée en trombe reste
          donc composée si l'on y revient — c'est ce qu'on veut, on ne
          redéroule pas une séquence sous les yeux de quelqu'un qui remonte. */
-      const presse = !pilote && vitesse > VITESSE_PRESSEE
+      const presse = !estPilote() && vitesse > VITESSE_PRESSEE
       page.classList.add('joue')
       if (presse) page.classList.add('vite')
       tous<HTMLElement>('[data-t]', page).forEach((el) => {
@@ -186,13 +198,13 @@ export default function Univers() {
       const rac = document.documentElement
       const memoire = rac.style.scrollBehavior
       rac.style.scrollBehavior = 'auto'
-      pilote = true
+      document.documentElement.dataset.pilote = '1'
       const pas = (t: number) => {
         const p = borne((t - t0) / duree, 0, 1)
         const e = 1 - Math.pow(1 - p, 4)
         window.scrollTo({ top: depart + d * e, behavior: 'instant' as ScrollBehavior })
         if (p < 1) requestAnimationFrame(pas)
-        else { rac.style.scrollBehavior = memoire; pilote = false }
+        else { rac.style.scrollBehavior = memoire; delete document.documentElement.dataset.pilote }
       }
       requestAnimationFrame(pas)
     }
@@ -276,7 +288,19 @@ export default function Univers() {
          `lancer` la lit. */
       const t = performance.now()
       const dt = t - vT
-      if (dt >= 8) { vitesse = Math.abs(y - vY) / dt * 1000; vY = y; vT = t }
+      if (dt >= 8) {
+        /* LISSEE, pas brute. Le defilement arrive par a-coups : un cran de
+           molette, un doigt qui repart, et la mesure d'une seule image
+           s'envole sans que la personne ait change de rythme. Le lissage
+           exponentiel ignore le pic isole et suit le mouvement soutenu ;
+           il rejoint sa valeur en quatre a cinq images, soit moins de
+           80 ms — bien avant qu'une page n'atteigne le seuil de
+           l'observateur. Sans lui, on ne pourrait pas descendre le seuil
+           sans couper la choregraphie d'un lecteur calme. */
+        const brute = Math.abs(y - vY) / dt * 1000
+        vitesse = vitesse * 0.72 + brute * 0.28
+        vY = y; vT = t
+      }
       verifierVisibles()
       /* Ce qui depend du DEFILEMENT ne se recalcule que si l'on a defile.
          `fin` (bureau + pointeur precis) est une CONSTANTE vraie : la laisser
@@ -361,6 +385,10 @@ export default function Univers() {
     return () => {
       cancelAnimationFrame(frame)
       menage.forEach((f) => f())
+      /* Un demontage pendant un defilement pilote laisserait le drapeau
+         pose sur <html>, ce qui desactiverait le mode « lecteur presse »
+         pour toujours, en silence. */
+      delete document.documentElement.dataset.pilote
     }
   }, [])
 
