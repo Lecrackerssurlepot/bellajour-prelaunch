@@ -95,7 +95,16 @@
   gap: clamp(8px, 1.4vh, 14px);
 }
 
-.at-footer-insta {
+/* Les reseaux : une liste, donc un ecart PROPRE, plus serre que celui qui
+   separe les blocs de `.at-footer-right`. */
+.at-footer-social {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+}
+
+.at-footer-lien-social {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -106,9 +115,9 @@
   letter-spacing: 0.04em;
   transition: color var(--dur) var(--ease);
 }
-.at-footer-insta:hover { color: var(--c-text); }
+.at-footer-lien-social:hover { color: var(--c-text); }
 
-.at-footer-insta svg {
+.at-footer-lien-social svg {
   width: 15px;
   height: 15px;
   flex-shrink: 0;
@@ -155,7 +164,8 @@
     gap: clamp(28px, 5vh, 40px);
   }
 
-  .at-footer-right { align-items: flex-start; }
+  .at-footer-right,
+  .at-footer-social { align-items: flex-start; }
 
   .at-footer-copy { text-align: left; }
 

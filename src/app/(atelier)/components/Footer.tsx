@@ -56,30 +56,62 @@ export default function Footer() {
           </nav>
         </div>
 
-        {/* Droite — Instagram, copyright */}
+        {/* Droite — les reseaux, puis le copyright.
+             Les deux liens sont groupes pour respirer ensemble : sans ce
+             conteneur ils heriteraient de l'ecart de `.at-footer-right`, qui
+             est calibre pour separer des BLOCS, pas deux lignes d'une meme
+             liste. Le dessin des deux icones est en TRAIT, jamais en aplat :
+             c'est ce qui les fait tenir ensemble a 15 px. */}
         <div className="at-footer-right">
-          <a
-            className="at-footer-insta"
-            href="https://www.instagram.com/bellajour__/"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Bellajour sur Instagram"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+          <div className="at-footer-social">
+            <a
+              className="at-footer-lien-social"
+              href="https://www.instagram.com/bellajour__/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Bellajour sur Instagram"
             >
-              <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-              <circle cx="12" cy="12" r="4" />
-              <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
-            </svg>
-            <span>@bellajour__</span>
-          </a>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                <circle cx="12" cy="12" r="4" />
+                <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
+              </svg>
+              <span>@bellajour__</span>
+            </a>
+
+            <a
+              className="at-footer-lien-social"
+              href="https://www.tiktok.com/@bellajourmagazine"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Bellajour sur TikTok"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                {/* la hampe, puis la tete de note */}
+                <path d="M13.2 3v12.1a3.6 3.6 0 1 1-3.6-3.6c.31 0 .61.04.9.12" />
+                {/* le crochet vers le haut a droite */}
+                <path d="M13.2 3c.35 2.5 2.4 4.4 4.9 4.6" />
+              </svg>
+              <span>@bellajourmagazine</span>
+            </a>
+          </div>
+
           <p className="at-footer-copy">©&nbsp;2026 Bellajour</p>
         </div>
 
