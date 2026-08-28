@@ -74,6 +74,13 @@
 /* Invariant nº5 : le libellé est le même partout, sans exception.
    Écrit en (0,2,0) pour passer devant `.bj-atelier a { color: inherit }`. */
 .bj-atelier .at-nav-cta {
+  /* 44 px de haut : le plancher d'une cible tactile. Le rembourrage seul
+     donnait 42 px — deux pixels sous le minimum, sur le SEUL bouton visible
+     en permanence pendant tout le récit. `inline-flex` pour que le libellé
+     reste centré quand la hauteur ne vient plus du texte. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-size: 13px;
   font-weight: 500;
   color: var(--c-text);

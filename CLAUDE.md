@@ -137,6 +137,9 @@ src/app/layout.tsx        → <head> fonts + metadata
 src/app/globals.css       → tokens + reset + imports CSS sections
 src/app/(atelier)/page.tsx → LA homepage (sert `/`)
 src/app/(atelier)/composer → le questionnaire (sert `/composer`)
+src/app/(atelier)/magazine → LA PAGE PRODUIT (sert `/magazine`) :
+                            page.tsx (métadonnées + 3 blocs JSON-LD) + Kiosque.tsx
+                            + Corps.tsx + pdp.css
 src/app/hero.css          → styles Hero
 src/app/Hero.tsx          → composant Hero
 src/app/sections/         → une section = un .tsx + un .css
@@ -151,6 +154,16 @@ public/preview-anxiete.html → preview HTML statique section Anxiété (référ
 NE PAS modifier — sert de référence visuelle uniquement
 
 ## Composants UI transversaux
+- ⚠️ **UN LIBELLÉ, DEUX DESTINATIONS** (30/08/2026). L'invariant nº5 tient :
+  « Composer avec l'atelier » est écrit UNE fois, dans content.ts. Mais depuis
+  l'ouverture de la page produit, la destination dépend d'où l'on part :
+  `CTA_HREF` = `/magazine` (accueil, barre de tête, page 07 de l'univers) et
+  `COMPOSER_HREF` = `/composer` (la page produit, et /numero/[token]).
+  `Nav` prend un `href` optionnel pour ça — l'accueil garde le défaut, la page
+  produit passe COMPOSER_HREF.
+  ⚠️ Ne JAMAIS recâbler `?reprendre=<token>` sur CTA_HREF : le paramètre n'est
+  lu que par /composer. Sur la page produit il serait ignoré EN SILENCE, et la
+  cliente repartirait sur un dépôt vide en croyant reprendre le sien.
 - Sticky CTA bouton gauche : class="sjc" — visible sur toutes les sections
 - Modal parrainage : class="rs-backdrop" — s'ouvre après inscription waitlist
 - Sticky nav verticale gauche/droite : "MAISON D'ÉDITION DU SOUVENIR" / "VIVEZ, NOUS COMPOSONS"
@@ -405,8 +418,38 @@ a vocation à disparaître (D9).
    tourner-page, qui défilent eux-mêmes trop vite pour être distingués d'un lecteur
    pressé — et ils vivent dans deux composants différents. Voir D10, cinq
    conséquences à respecter.
-⏳ Page produit — à construire. C'est elle qui recevra le contenu des composants
-   orphelins S2Collection (l'étagère), S3Method (les trois temps), S4Final (les paliers).
+✅ Page produit — `/magazine`, EN LIGNE depuis le 30/08/2026. Direction
+   « Le Kiosque » : le mot géant, le collage qui lui passe devant, et dans la
+   colonne de droite le récit, le parcours, la grille et l'acte. Elle a recueilli
+   le contenu des orphelins S2Collection (l'étagère), S3Method (les trois temps
+   et les paliers) et S4Final (l'acte final) — tous LISENT content.ts, il n'y a
+   donc toujours qu'une source. Ces quatre fichiers ont fini leur office et sont
+   désormais candidats à `archive/`.
+   ⚠️ `.at-pdp` n'est pas décoratif : toute pdp.css y est scopée et ses classes
+   sont courtes (.mot, .pas, .prix, .double). Le retirer repeindrait /composer.
+   ⚠️ Le mot géant est dimensionné AU CALCUL, pas à l'œil : Cormorant Garamond
+   rend « MAGAZINE » à 5,29 × la taille de police (mesuré), la colonne fait
+   622 px à 1440. Remonter le plafond de 110 px sans remesurer le fait déborder
+   — et sous 767 px, `overflow-wrap: anywhere !important` (globals.css) ne le
+   fait pas déborder : il le COUPE au milieu du mot.
+   ⚠️ Le <h1> est la PHRASE (« Un moment de vie »), pas le mot géant, qui est
+   un <p> masthead. Un h1 « MAGAZINE » dirait à Google que la page parle de
+   magazines en général.
+   ⚠️ **LE PREMIER ÉCRAN VA JUSQU'AU BOUTON** (exigence de Mathias, 30/08).
+   Deux mécaniques le tiennent, et se cassent en silence :
+   1. `--nav-h` (pdp.css) REDIT la hauteur de la barre, parce qu'elle est en
+      `position: fixed` et que rien dans le flux ne la connaît. Mesurée : 91 px
+      à 1440×900, 86 px sur un téléphone. Une estimation à 70 px avait fait
+      passer le chapeau et le haut du masthead SOUS la barre — un élément
+      recouvert ne déborde pas, il disparaît. Si nav.css change, cette ligne
+      doit suivre.
+   2. Le parcours est en `order: 5`, donc SOUS l'acte, desktop et mobile. Il
+      coûte 330 px et repoussait le bouton 119 px hors de l'écran. Fait en
+      `order`, jamais en dupliquant le balisage : l'ordre au clavier et au
+      lecteur d'écran suit le DOM.
+   Toute la respiration du kiosque est en `dvh`, pas en `vw` : la contrainte
+   est de tenir en HAUTEUR. Relevé après coup — bouton visible à 1440×900,
+   1440×720, 768×1024, 375×812, 375×667 et 320×568.
 
 ## Cleanup post-launch
 - ~~Supprimer src/app/components/ReferralSheet.tsx + referralsheet.css~~ — FAIT : ces

@@ -17,7 +17,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Footer from '../../(atelier)/components/Footer'
-import { CTA_HREF, CTA_LABEL, CONTACT_EMAIL } from '../../(atelier)/content'
+import { COMPOSER_HREF, CTA_LABEL, CONTACT_EMAIL } from '../../(atelier)/content'
 import { makeSupabase } from '@/lib/supabase'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { resoudreApercu } from '@/lib/atelier/apercu'
@@ -284,7 +284,7 @@ export default async function NumeroPage({
             <BoutonEnvoyer token={numero.token} nbPhotos={numero.nb_photos ?? 0} />
           ) : (
             <div className="nu-actions">
-              <a className="at-cta" href={`${CTA_HREF}?reprendre=${numero.token}`}>
+              <a className="at-cta" href={`${COMPOSER_HREF}?reprendre=${numero.token}`}>
                 Ajouter des photos <span className="at-cta-arrow">→</span>
               </a>
             </div>
@@ -317,7 +317,7 @@ export default async function NumeroPage({
           <div className="nu-actions">
             {/* Reprise du dépôt sur le MÊME dossier : le token voyage dans
                 l'URL, l'écran 5 le reconnaît et ne recrée rien. */}
-            <a className="at-cta" href={`${CTA_HREF}?reprendre=${numero.token}`}>
+            <a className="at-cta" href={`${COMPOSER_HREF}?reprendre=${numero.token}`}>
               {sansPhotos ? 'Déposer mes photos' : 'Ajouter des photos'}{' '}
               <span className="at-cta-arrow">→</span>
             </a>
@@ -497,7 +497,7 @@ export default async function NumeroPage({
             au deuxième.
           </p>
           <div className="nu-actions">
-            <a className="at-cta" href={CTA_HREF}>
+            <a className="at-cta" href={COMPOSER_HREF}>
               {CTA_LABEL} <span className="at-cta-arrow">→</span>
             </a>
           </div>

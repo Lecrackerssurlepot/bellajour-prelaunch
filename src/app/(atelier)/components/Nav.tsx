@@ -8,7 +8,30 @@ import { useEffect, useRef, useState } from 'react'
 import { CTA_HREF, CTA_LABEL } from '../content'
 import './nav.css'
 
-export default function Nav() {
+/* DEUX RÉGLAGES, PARCE QUE LA BARRE SERT DEUX PAGES.
+
+   `href` — la destination du bouton. Par défaut CTA_HREF (l'accueil → la page
+   produit) ; la page produit passe COMPOSER_HREF, parce qu'elle EST la page
+   produit et que son bouton doit ouvrir le questionnaire. Le LIBELLÉ, lui, ne
+   se paramètre pas : invariant nº5.
+
+   `retour` — ce que fait la SIGNATURE. Sur l'accueil, elle ne quitte pas la
+   page : elle remonte à la couverture, et c'est tout le sens du geste dans un
+   récit qui se lit en descendant. Ailleurs, ce même geste ne mène nulle part —
+   sur la page produit, cliquer le logo faisait défiler vers le haut d'une page
+   qu'on venait d'ouvrir, c'est-à-dire rien. Toute page qui n'est pas l'accueil
+   passe donc `retour="/"`, et la signature redevient ce qu'un logo est partout
+   ailleurs : le chemin du retour à l'accueil.
+   ⚠️ Ce n'est pas un <button> stylé en lien : c'est un VRAI <a href>. Le clic
+   milieu, le « ouvrir dans un nouvel onglet » et le survol qui montre l'adresse
+   en dépendent, et un bouton qui appelle router.push ne les rend pas. */
+export default function Nav({
+  href = CTA_HREF,
+  retour,
+}: {
+  href?: string
+  retour?: string
+}) {
   const [stuck, setStuck] = useState(false)
   const frame = useRef(0)
 
@@ -59,25 +82,40 @@ export default function Nav() {
 
   return (
     <nav className={`at-nav ${stuck ? 'is-stuck' : ''}`}>
-      {/* ⚠️ C'est un <button> : il porte sa propre remise a zero dans nav.css.
-          Sans elle le navigateur pose son fond `buttonface` gris-blanc — la
-          panne exacte corrigee le 27/08 sur le bouton de descente. */}
-      <button
-        type="button"
-        className="at-nav-logo-btn"
-        onClick={remonter}
-        aria-label="Bellajour, revenir en haut de la page"
-      >
-        <img
-          className="at-nav-logo"
-          src="/images/ui/signature-blanche.webp"
-          alt=""
-          width={320}
-          height={122}
-          decoding="sync"
-        />
-      </button>
-      <a className="at-nav-cta" href={CTA_HREF}>{CTA_LABEL}</a>
+      {/* ⚠️ Le <button> porte sa propre remise a zero dans nav.css. Sans elle
+          le navigateur pose son fond `buttonface` gris-blanc — la panne exacte
+          corrigee le 27/08 sur le bouton de descente. Le <a> partage la meme
+          classe : la remise a zero ne lui nuit pas, et la cible tactile de
+          44 px vaut pour les deux. */}
+      {retour ? (
+        <a className="at-nav-logo-btn" href={retour} aria-label="Bellajour, retour à l’accueil">
+          <img
+            className="at-nav-logo"
+            src="/images/ui/signature-blanche.webp"
+            alt=""
+            width={320}
+            height={122}
+            decoding="sync"
+          />
+        </a>
+      ) : (
+        <button
+          type="button"
+          className="at-nav-logo-btn"
+          onClick={remonter}
+          aria-label="Bellajour, revenir en haut de la page"
+        >
+          <img
+            className="at-nav-logo"
+            src="/images/ui/signature-blanche.webp"
+            alt=""
+            width={320}
+            height={122}
+            decoding="sync"
+          />
+        </button>
+      )}
+      <a className="at-nav-cta" href={href}>{CTA_LABEL}</a>
     </nav>
   )
 }

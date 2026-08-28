@@ -4,7 +4,27 @@
    que déclaratif. Aucun bouton secondaire n'existe sur la homepage. */
 
 export const CTA_LABEL = 'Composer avec l’atelier'
-export const CTA_HREF = '/composer'
+/* DEUX ADRESSES, UN SEUL LIBELLÉ (30/08/2026).
+   L'invariant nº5 n'a pas bougé : « Composer avec l'atelier » est écrit ici et
+   nulle part ailleurs, et reste le seul libellé de bouton du site. Ce qui
+   change, c'est la DESTINATION selon l'endroit d'où l'on part.
+
+   CTA_HREF — la porte du récit. Depuis l'accueil, la barre de tête et la
+   page 07 de l'univers, le bouton mène désormais à la PAGE PRODUIT, pas au
+   questionnaire. Qui vient de lire sept pages de récit ne connaît toujours ni
+   le prix, ni le papier, ni le délai : l'envoyer droit dans un formulaire à
+   six écrans, c'est lui demander de s'engager avant d'avoir vu ce qu'il achète.
+
+   COMPOSER_HREF — l'entrée du questionnaire. Utilisée par la page produit,
+   dernier écran où l'on peut encore hésiter, et par /numero/[token], où la
+   cliente REPREND un dépôt en cours : lui repasser par la page produit serait
+   lui vendre ce qu'elle a déjà payé.
+
+   ⚠️ Ne jamais recâbler `?reprendre=` sur CTA_HREF. Le paramètre n'est lu que
+   par /composer ; sur la page produit il serait ignoré EN SILENCE, et la
+   cliente repartirait sur un dépôt vide en croyant reprendre le sien. */
+export const CTA_HREF = '/magazine'
+export const COMPOSER_HREF = '/composer'
 export const CTA_NOTE_PRICE = '30 €'
 
 export const CONTACT_EMAIL = 'contact@bellajour.com'
@@ -26,7 +46,7 @@ export const ETAPES = [
   },
   {
     titre: 'Vous déposez vos photos',
-    texte: 'De 40 à 100, directement depuis le téléphone. Ne triez pas trop.',
+    texte: 'De 40 à 100, directement depuis le téléphone.',
   },
   {
     titre: 'Vous recevez votre couverture',

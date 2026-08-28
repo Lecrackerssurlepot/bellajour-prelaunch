@@ -86,7 +86,10 @@ const JSON_LD = {
     highPrice: '45',
     offerCount: 3,
     availability: 'https://schema.org/InStock',
-    url: 'https://www.bellajour.fr/composer',
+    /* La page qui PORTE l'offre depuis le 30/08/2026. Elle pointait sur
+       /composer, qui est en noindex : on donnait a Google une adresse qu'on
+       lui interdit de lire. */
+    url: 'https://www.bellajour.fr/magazine',
     areaServed: ['FR', 'BE', 'LU'],
   },
   url: 'https://www.bellajour.fr',

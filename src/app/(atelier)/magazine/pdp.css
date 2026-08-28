@@ -1,0 +1,660 @@
+/* ════════════════════════════════════════════════════════════
+   LA PAGE PRODUIT — direction « Le Kiosque » (nuit).
+   Validée sur maquette le 30/08/2026.
+
+   ⚠️ TOUT EST SCOPÉ SOUS .at-pdp, comme .at-accueil pour l'accueil.
+   Les noms de classes sont courts (.mot, .collage, .pas, .prix) et
+   .bj-atelier est partagé avec /composer et /numero : sans ce conteneur,
+   cette feuille repeindrait le questionnaire et les pages clientes.
+
+   INVARIANT Nº1 — aucune couleur en dur ici. Tout vient de theme.css.
+   Une valeur hexadécimale dans ce fichier est un bug.
+
+   ⚠️ globals.css impose, sous 767px :
+       h1,h2,h3,h4,p { overflow-wrap: anywhere !important }
+   C'est un filet anti-débordement, pas une mise en page : il coupe un mot
+   AU MILIEU. Le mot géant est donc dimensionné pour tenir À COUP SÛR dans
+   sa colonne, police de repli comprise (Georgia est ~12 % plus large que
+   Cormorant Garamond) — voir le calcul sur .at-pdp .mot.
+   ════════════════════════════════════════════════════════════ */
+
+.at-pdp {
+  position: relative;
+  /* Gouttière unique de la page. Identique à --pad (theme.css) : la page
+     produit n'invente pas sa propre grille, elle suit celle des sections. */
+  --g: clamp(20px, 6vw, 80px);
+  /* Respiration verticale entre deux sections. */
+  --v: clamp(72px, 11vw, 132px);
+
+  /* ⚠️ LA HAUTEUR DE LA BARRE DE TÊTE, RECONSTITUÉE.
+     `.at-nav` est en `position: fixed` : elle RECOUVRE le haut de la page,
+     elle ne le pousse pas. Rien dans le flux ne connaît sa hauteur, il faut
+     donc la redire ici — c'est 2 × 2,6dvh de rembourrage (nav.css) plus le
+     bouton du logo, dont la cible tactile fait 44 px et grandit avec la
+     signature sur grand écran.
+     MESURÉ : 91 px à 1440×900, 86 px sur un téléphone de 812. Une estimation
+     à 70 px avait fait passer le chapeau ET le haut du masthead sous la
+     barre, sans que rien ne le signale — un élément recouvert ne déborde
+     pas, il disparaît.
+     ⚠️ Si nav.css change son rembourrage ou la taille de la signature, cette
+     ligne doit suivre. C'est le prix d'une barre fixe. */
+  --nav-h: calc(5.2dvh + clamp(44px, 1.6vw + 24px, 52px));
+}
+
+/* Fond noir plein, comme l'accueil : le dégradé ambiant de .bj-atelier est
+   fait pour un écran de récit, pas pour une page qu'on parcourt. */
+.bj-atelier:has(> .at-pdp) { background: var(--c-void); }
+
+.at-pdp section { max-width: 100%; }
+
+/* Une seule largeur de contenu pour toute la page. */
+.at-pdp .wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-left: var(--g);
+  padding-right: var(--g);
+}
+
+.at-pdp .filet { border-top: 1px solid var(--c-line); }
+
+/* ─────────────────────────── 01 · LE KIOSQUE ─────────────────────────── */
+
+.at-pdp .kiosque {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 38%);
+  gap: clamp(26px, 4vw, 64px);
+  /* `stretch` et non `start` : la colonne de droite (récit + parcours +
+     grille + acte) fait 1116 px là où la gauche en fait 715. Alignées en
+     haut, cela laissait 400 px de noir sous le collage. Les deux colonnes
+     font désormais la même hauteur, et la note descend se poser au pied de
+     la gauche — elle légende le collage au lieu de flotter sous lui. */
+  align-items: stretch;
+  /* ⚠️ LA BARRE DE TÊTE EST `position: fixed` : elle ne pousse rien, elle
+     recouvre. Ce rembourrage n'est pas décoratif, c'est lui qui empêche le
+     masthead de passer dessous. Il doit rester supérieur à la hauteur de la
+     barre (5,2dvh + la signature, soit ~62 px sur un téléphone de 812).
+     ⚠️ Tout le reste du kiosque est indexé sur la HAUTEUR de la fenêtre et
+     non sur sa largeur : la contrainte n'est pas « tenir dans la colonne »,
+     c'est « aller jusqu'au bouton sans défiler ». Sur un écran court, la
+     page se resserre au lieu de repousser le bouton hors de vue. */
+  padding-top: calc(var(--nav-h) + clamp(8px, 1.4dvh, 24px));
+  padding-bottom: var(--v);
+}
+
+/* ---- le mot géant ----
+   LE CALCUL, à refaire si l'on retouche la taille. MESURÉ dans le navigateur,
+   pas estimé : Cormorant Garamond rend « MAGAZINE » à 5,29 × la taille de
+   police, Georgia (le repli, visible le temps du swap) à ~5,9 ×.
+   À 1440 px la colonne gauche fait 622 px. Un plafond à 124 px donnait
+   655 px de texte : le mot débordait de 33 px dans la gouttière, et le repli
+   Georgia serait allé mordre la colonne de droite. À 110 px il mesure
+   582 px (Cormorant) et 649 px (Georgia, dans la gouttière mais sans jamais
+   toucher le texte d'à côté).
+   ⚠️ Ne pas remonter ce plafond sans remesurer : sous 767 px, globals.css
+   impose `overflow-wrap: anywhere !important`, et un mot trop grand ne
+   déborde pas — il se coupe en deux au milieu d'une syllabe. */
+.at-pdp .mot {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: min(7.6vw, 110px);
+  line-height: 0.94;
+  letter-spacing: 0.012em;
+  color: var(--c-text);
+  /* Le mot ne se coupe jamais en syllabes : il est dimensionné pour tenir. */
+  overflow-wrap: normal;
+}
+
+.at-pdp .kicker {
+  margin: 0 0 clamp(6px, 1vw, 12px);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+/* ---- le collage ----
+   Il passe DEVANT le mot (z-index) mais ne le mange pas : la remontée est
+   volontairement faible. Sur la maquette elle était de 52 px et couvrait
+   78 % des lettres — le mot n'était plus lisible.
+   Positions en pourcentages du conteneur, jamais en pixels (CLAUDE.md). */
+.at-pdp .collage {
+  position: relative;
+  z-index: 2;
+  margin-top: -2.2vw;
+  /* Hauteur en ratio : le collage est une composition, elle doit garder ses
+     proportions à toutes les largeurs. */
+  aspect-ratio: 749 / 574;
+}
+
+.at-pdp .collage figure {
+  position: absolute;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 2px;
+  box-shadow: var(--shadow-float);
+}
+
+.at-pdp .collage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.at-pdp .c1 { left: 0;     top: 0;     width: 39.5%; height: 72.8%; transform: rotate(-1.6deg); }
+.at-pdp .c2 { left: 35.5%; top: -1.4%; width: 44%;   height: 39.7%; transform: rotate(1.1deg); }
+.at-pdp .c3 { left: 43%;   top: 37.6%; width: 35%;   height: 61.3%; transform: rotate(-0.8deg); }
+
+.at-pdp .c2 img { object-position: 50% 38%; }
+
+.at-pdp .kiosque > div { display: flex; flex-direction: column; }
+
+/* ── L'ORDRE DE LA COLONNE DROITE ──
+   MESURÉ : à 1440 × 900, le parcours coûte 330 px à lui seul et repoussait le
+   bouton 119 px sous la ligne de flottaison. Sur un portable réel, où le
+   chrome du navigateur mange encore 120 px, on ne voyait même plus les prix.
+
+   Ce qui DOIT être dans le premier écran, c'est la décision : ce que ça
+   coûte, et le bouton pour y aller. Le parcours est de la réassurance — on le
+   lit après avoir eu envie, pas avant. Il passe donc sous l'acte, et la ligne
+   de flottaison le coupe en deux : c'est ce qui donne envie de descendre.
+
+   Même règle sur desktop et sur mobile, volontairement : deux ordres de
+   lecture différents selon la largeur, c'est deux pages à vérifier.
+
+   ⚠️ Fait en `order`, JAMAIS en dupliquant le balisage. L'ordre de lecture au
+   clavier et au lecteur d'écran suit le DOM, pas la mise en page : deux
+   copies du même bloc énonceraient deux fois le même texte, et un utilisateur
+   au clavier tabulerait dans un bloc invisible. */
+.at-pdp .kiosque > div:last-child > .at-rv:first-child { order: 1; }
+.at-pdp .bloc-prix { order: 2; }
+.at-pdp .bloc-acte { order: 3; }
+.at-pdp .bloc-pas  { order: 4; margin-top: clamp(22px, 3.4dvh, 40px); }
+
+.at-pdp .kiosque-note {
+  /* `auto` en haut : la note se pose au PIED de la colonne. Le padding
+     garantit qu'elle ne colle jamais au collage quand la page est courte. */
+  margin: auto 0 0;
+  padding-top: clamp(28px, 4vw, 44px);
+  max-width: 34ch;
+  font-size: clamp(14px, 1.1vw, 15px);
+  font-weight: 300;
+  line-height: 1.75;
+  color: var(--c-text-faint);
+}
+
+/* ---- colonne droite ---- */
+.at-pdp .titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(34px, 3.9vw, 56px);
+  line-height: 1.04;
+  letter-spacing: -0.015em;
+}
+
+/* Le gras du corps de texte : 500, la graisse la plus lourde chargée pour
+   DM Sans, et la couleur pleine plutôt que le gris du paragraphe. À 300 sur
+   300, un « gras » ne se voit pas — c'est la couleur qui fait la moitié du
+   travail. (Écart assumé avec la règle « 300 pour l'éditorial » : ici le gras
+   porte la phrase qui dit ce qu'on vend.) */
+.at-pdp .lede b,
+.at-pdp .gages b { font-weight: 500; color: var(--c-text); }
+
+.at-pdp .lede {
+  margin: clamp(10px, 1.7dvh, 20px) 0 0;
+  max-width: 46ch;
+  font-size: clamp(15px, 1.25vw, 18px);
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--c-text-soft);
+}
+
+/* ---- les trois étapes ----
+   Mêmes métriques que .at-step (s3-method.css) : c'est le même objet, il
+   n'a aucune raison de changer de taille parce qu'il change de page. */
+.at-pdp .pas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--c-line);
+}
+
+.at-pdp .pas li {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: baseline;
+  padding: clamp(9px, 1.5dvh, 18px) 0;
+  border-bottom: 1px solid var(--c-line);
+  list-style: none;
+}
+
+.at-pdp .pas .n {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--c-accent);
+}
+
+.at-pdp .pas b { display: block; font-weight: 500; font-size: 16px; line-height: 1.4; }
+.at-pdp .pas p { margin: 3px 0 0; font-weight: 300; font-size: 15px; line-height: 1.6; color: var(--c-text-soft); }
+
+.at-pdp .pas .quand {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--c-text-faint);
+  white-space: nowrap;
+}
+
+.at-pdp .pas li:last-child .quand { color: var(--c-accent); }
+
+/* ---- les trois paliers ---- */
+.at-pdp .prix {
+  margin-top: clamp(14px, 2.2dvh, 30px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.at-pdp .prix li {
+  padding: clamp(12px, 1.8dvh, 20px) 18px;
+  border: 1px solid var(--c-line);
+  border-radius: 16px;
+  background: var(--c-surface-1);
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+/* Pas de translateY au survol : la carte vit dans une colonne serrée, et un
+   décalage de 3 px y lit comme un défaut d'alignement, pas comme un état. */
+.at-pdp .prix li:hover { border-color: var(--c-accent); background: var(--c-surface-2); }
+
+/* ⚠️ `block` OBLIGATOIRE sur les trois. Ce sont des <span>, donc en ligne
+   par défaut : les trois lignes se seraient suivies sur une seule, et
+   surtout `margin-top` sur .euros n'aurait RIEN fait — une marge verticale
+   est ignorée sur un élément en ligne. Le défaut ne se voit pas en lisant
+   le CSS, il se voit à l'écran. */
+.at-pdp .prix .combien,
+.at-pdp .prix .euros,
+.at-pdp .prix .pages { display: block; }
+
+.at-pdp .prix .combien {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  line-height: 1.5;
+}
+
+.at-pdp .prix .euros {
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: clamp(34px, 3.1vw, 44px);
+  line-height: 1.1;
+}
+
+.at-pdp .prix .pages { font-size: 13px; font-weight: 300; color: var(--c-text-soft); }
+
+.at-pdp .mention {
+  margin: clamp(14px, 2vw, 20px) 0 0;
+  max-width: 52ch;
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.6;
+  color: var(--c-text-faint);
+}
+
+/* ---- l'acte ----
+   .at-cta (theme.css) porte déjà le fond, le rayon et la lueur. On n'ajoute
+   ici que la cible tactile : 52 px de haut, au-dessus du minimum de 44. */
+.at-pdp .acte { margin-top: clamp(14px, 2.2dvh, 28px); display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.at-pdp .acte .at-cta { min-height: 52px; }
+/* ---- les deux gages sous le bouton ----
+   Ce ne sont pas des puces décoratives : ce sont les deux objections qu'on a
+   la main sur la souris. Picto à l'accent, texte en gris clair, 13 px. */
+.at-pdp .gages {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.at-pdp .gages li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.4;
+  color: var(--c-text-soft);
+}
+
+.at-pdp .gages svg {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  color: var(--c-accent);
+}
+
+/* ─────────────────────────── 02 · L'OBJET ─────────────────────────── */
+
+.at-pdp .objet {
+  padding-top: var(--v);
+  padding-bottom: var(--v);
+  background: var(--c-bg);
+}
+
+.at-pdp .objet-grille {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 36%);
+  gap: clamp(36px, 5vw, 72px);
+  align-items: center;
+}
+
+/* La double page, construite en CSS : aucune image de maquette à charger. */
+.at-pdp .double {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--paper);
+  border-radius: 3px;
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+  aspect-ratio: 760 / 474;
+}
+
+.at-pdp .double .gauche { position: relative; overflow: hidden; }
+.at-pdp .double .gauche img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.at-pdp .double .droite {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: clamp(12px, 2vw, 24px);
+  padding: clamp(18px, 3vw, 44px) clamp(16px, 2.8vw, 40px);
+  background: linear-gradient(90deg, var(--paper-2) 0%, var(--paper) 22%);
+  color: var(--paper-text);
+}
+
+.at-pdp .double .chapitre {
+  margin: 0;
+  font-size: clamp(8px, 0.72vw, 10px);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-text-soft);
+}
+
+.at-pdp .double .phrase {
+  margin: clamp(8px, 1.2vw, 16px) 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(15px, 2.1vw, 30px);
+  line-height: 1.2;
+  color: var(--paper-text);
+  text-wrap: pretty;
+}
+
+.at-pdp .double .vignettes { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(6px, 0.9vw, 12px); }
+.at-pdp .double .vignettes img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; border-radius: 1px; }
+
+.at-pdp .double .folio {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: clamp(8px, 0.78vw, 11px);
+  letter-spacing: 0.1em;
+  color: var(--paper-text-soft);
+}
+
+/* Le pli central. Décoratif, insensible au pointeur. */
+.at-pdp .double .pli {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 7.4%;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.22) 48%,
+    rgba(0, 0, 0, 0.10) 52%,
+    rgba(0, 0, 0, 0) 100%);
+  pointer-events: none;
+}
+
+/* ---- ce qui est compris ---- */
+.at-pdp .compris { margin: clamp(24px, 3vw, 34px) 0 0; padding: 0; list-style: none; border-top: 1px solid var(--c-line); }
+
+.at-pdp .compris li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--c-line);
+  font-size: clamp(14px, 1.15vw, 15px);
+  font-weight: 300;
+  line-height: 1.6;
+  color: var(--c-text-soft);
+}
+
+.at-pdp .compris svg { margin-top: 3px; color: var(--c-accent); }
+
+/* ── 03 · LA COLLECTION — RETIRÉE le 30/08/2026 ──
+   Les règles de l'étagère (.collection, .etagere, .dos, .couv) sont parties
+   avec la section : du CSS qui ne peint plus rien est un piège pour qui lira
+   ce fichier ensuite. Le dessin d'origine est intact dans
+   components/s2-collection.css. */
+
+/* ─────────────────────────── 04 · QUESTIONS ─────────────────────────── */
+
+.at-pdp .questions { padding-top: var(--v); padding-bottom: var(--v); background: var(--c-bg); }
+
+.at-pdp .questions-grille {
+  display: grid;
+  grid-template-columns: minmax(0, 26%) minmax(0, 1fr);
+  gap: clamp(28px, 5vw, 72px);
+  align-items: start;
+}
+
+.at-pdp .faq { border-top: 1px solid var(--c-line); }
+.at-pdp .faq details { border-bottom: 1px solid var(--c-line); }
+
+.at-pdp .faq summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 20px 0;
+  min-height: 44px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  font-size: clamp(15px, 1.2vw, 17px);
+  transition: color var(--dur) var(--ease);
+}
+
+.at-pdp .faq summary::-webkit-details-marker { display: none; }
+.at-pdp .faq summary:hover { color: var(--c-accent-strong); }
+
+.at-pdp .faq .plus {
+  flex: 0 0 auto;
+  color: var(--c-text-faint);
+  transition: transform var(--dur) var(--ease);
+}
+
+.at-pdp .faq details[open] .plus { transform: rotate(45deg); }
+
+.at-pdp .faq details p {
+  margin: 0;
+  padding: 0 0 22px;
+  max-width: 60ch;
+  font-weight: 300;
+  font-size: clamp(15px, 1.15vw, 16px);
+  line-height: 1.7;
+  color: var(--c-text-soft);
+}
+
+/* ─────────────────────────── 05 · L'ACTE FINAL ─────────────────────────── */
+
+.at-pdp .final { padding-top: var(--v); padding-bottom: var(--v); text-align: center; }
+
+.at-pdp .final h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(46px, 6vw, 82px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  /* Cormorant sort des chiffres elzéviriens : « 1 » se lit comme un « i ».
+     Même correctif que .at-final h2 (s4-final.css). */
+  font-variant-numeric: lining-nums;
+  font-feature-settings: 'lnum' 1;
+}
+
+.at-pdp .final .acte { margin-top: clamp(26px, 3.4vw, 38px); align-items: center; }
+.at-pdp .final .acte p { text-align: center; }
+
+/* ════════════════════════════════════════════════════════════
+   ADAPTATIONS — le point de bascule est 900 px : c'est la largeur à
+   laquelle la colonne droite du kiosque passe sous 340 px, où les cartes
+   de prix ne tiennent plus leurs trois colonnes.
+   ════════════════════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .at-pdp .kiosque { gap: clamp(14px, 3vw, 26px); }
+
+  .at-pdp .kiosque,
+  .at-pdp .objet-grille,
+  .at-pdp .questions-grille {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Le collage passe SOUS le mot en pleine largeur, et le mot grandit :
+     c'est le premier écran d'un téléphone, il doit porter. */
+  .at-pdp .mot { font-size: 14.2vw; }
+
+  /* Le collage se couche. En colonne unique il gardait ses proportions de
+     desktop (330 × 253) et mangeait à lui seul un tiers de l'écran, ce qui
+     repoussait le bouton hors de vue. Recadré en bandeau, il montre la même
+     chose en 80 px de moins — les photos sont en `object-fit: cover`, elles
+     se recadrent, elles ne se déforment pas. */
+  /* ── LE COLLAGE AUSSI ──
+     En desktop les trois photos s'arrêtent à 78 % de la colonne : la
+     composition respire vers la droite. Sur un téléphone cette respiration
+     devient une bande noire à droite, et le collage paraît décentré. Les
+     trois cadres sont donc redéployés de 0 à 100 %.
+     La HAUTEUR ne bouge pas — même `aspect-ratio` qu'avant. C'est elle qui
+     décide si le bouton reste dans l'écran : on élargit, on ne grandit pas. */
+  .at-pdp .collage { margin-top: -3.4vw; aspect-ratio: 11 / 5; }
+
+  .at-pdp .c1 { left: 0;   top: 7%;  width: 36%; height: 88%; }
+  .at-pdp .c2 { left: 33%; top: 0;   width: 36%; height: 74%; }
+  .at-pdp .c3 { left: 65%; top: 15%; width: 35%; height: 85%; }
+
+  .at-pdp .kiosque-note { display: none; }
+
+  /* Le premier écran d'un téléphone se compte au pixel. Chaque valeur
+     ci-dessous a été prise sur une mesure, pas au jugé — voir le relevé dans
+     le commentaire de `order` plus haut. */
+  /* ── LE MOT PREND TOUTE LA LARGEUR ──
+     Sur un téléphone, le masthead n'est plus une colonne d'une composition à
+     deux colonnes : c'est la couverture. Il occupe donc la laisse entière et
+     se centre.
+     MESURÉ : 16,3vw remplit 97 % de la laisse, pas 100. La marge restante
+     absorbe l'écart de chasse entre la vraie Cormorant Garamond et la police
+     de repli que Next calcule (`size-adjust`), le temps du swap.
+     ⚠️ `overflow-wrap: normal !important` n'est pas de la coquetterie : sous
+     767 px, globals.css impose `anywhere !important` à tout <p>. Sans ce
+     contre-ordre, le jour où le mot dépasse d'un pixel il ne déborde pas —
+     il se coupe en « MAGAZI / NE ». */
+  .at-pdp .mot {
+    font-size: 16.3vw;
+    text-align: center;
+    overflow-wrap: normal !important;
+  }
+
+
+}
+
+@media (max-width: 720px) {
+  /* ── TROIS ENCARTS, CÔTE À CÔTE ──
+     Décision de Mathias, 30/08 : des encarts, pas des filets de séparation.
+     Ils restent donc trois cartes comme en desktop — fond, bordure, rayon —
+     mais en trois colonnes et non empilées : empilées, elles coûtaient 260 px
+     et le bouton sortait de l'écran.
+     Chaque carte fait ~104 px de large sur un téléphone de 375. Les tailles
+     ci-dessous sont calées pour que ça reste LISIBLE à cette largeur, sans
+     qu'aucune ligne ne se coupe :
+       — « 40 à 59 photos » se replie sur deux lignes (line-height 1,45) ;
+       — « 20 à 28 pages » tient sur une, à 11 px ;
+       — le prix reste ce qu'on lit en premier, à 8vw.
+     Rayon à 12 px et non 16 : sur une carte de 104 px, un rayon de 16
+     ressemble à une pastille, pas à un encart. */
+  .at-pdp .prix {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .at-pdp .prix li {
+    padding: clamp(11px, 1.7dvh, 15px) 9px;
+    border-radius: 12px;
+    text-align: center;
+  }
+
+  .at-pdp .prix .combien { font-size: 10px; letter-spacing: 0.08em; line-height: 1.45; }
+  .at-pdp .prix .euros { margin-top: 5px; font-size: clamp(24px, 8vw, 32px); }
+  .at-pdp .prix .pages { margin-top: 1px; font-size: 11px; line-height: 1.35; }
+
+  /* Le compte à rebours de l'étape passe à la ligne : sur 320 px, la
+     troisième colonne écrasait le titre de l'étape. */
+  .at-pdp .pas li { grid-template-columns: 38px minmax(0, 1fr); }
+  .at-pdp .pas .quand { grid-column: 2; margin-top: 6px; }
+
+  /* Le bouton prend toute la largeur : c'est la cible la plus importante
+     de la page, et un bouton centré de 240 px sur un écran de 360 laisse
+     deux zones mortes de part et d'autre. */
+  .at-pdp .acte { align-self: stretch; }
+  .at-pdp .acte .at-cta { width: 100%; justify-content: center; }
+
+  .at-pdp .double .vignettes { display: none; }
+}
+
+/* ── ÉCRANS COURTS ──
+   Un iPhone SE fait 667 px de haut, un SE de première génération 568. À cette
+   hauteur, la composition normale pousse le bouton dehors. On resserre encore
+   plutôt que de le laisser sortir : c'est la seule chose de cet écran qui ne
+   se négocie pas.
+   La borne est en `max-height` et non en largeur — un téléphone couché a la
+   largeur d'une tablette et la hauteur d'un timbre, et c'est la hauteur qui
+   décide ici. */
+@media (max-width: 900px) and (max-height: 700px) {
+  .at-pdp .kiosque { padding-top: calc(var(--nav-h) + 8px); gap: 10px; }
+  .at-pdp .collage { aspect-ratio: 5 / 2; }
+  /* ⚠️ LE MASTHEAD NE RECULE PAS ICI, et c'est un choix mesuré. Le réduire à
+     13,6vw rendait 8 px — pas assez pour faire entrer le bouton dans un écran
+     de 568 px (il restait à 569), et le mot tombait à 81 % de la laisse au
+     lieu de 97. On perdait l'allure sans rien gagner. Sur cet écran-là — un
+     iPhone SE de 2016 — le bouton demande une dizaine de pixels de
+     défilement, et c'est assumé. */
+  .at-pdp .lede { font-size: 14px; }
+  .at-pdp .prix li { padding: 8px 8px; }
+  .at-pdp .prix .euros { font-size: 26px; }
+  .at-pdp .acte { margin-top: 10px; }
+}
+
+/* ── La double page ne survit pas à un écran étroit ──
+   À 380 px de large, chaque feuillet fait 170 px : la phrase du feuillet
+   droit y tient en quatre mots par ligne et le folio touche le pli. On ne
+   montre plus qu'UNE page — celle qui porte la photo, qui est ce qu'on
+   vient voir. */
+@media (max-width: 560px) {
+  .at-pdp .double { grid-template-columns: 1fr; aspect-ratio: 3 / 4; }
+  .at-pdp .double .droite,
+  .at-pdp .double .pli { display: none; }
+}

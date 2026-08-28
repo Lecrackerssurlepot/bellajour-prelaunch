@@ -23,6 +23,7 @@ import type { MetadataRoute } from 'next'
    vraiment. A remettre a jour quand on touche a la page concernee. */
 const MAJ_ACCUEIL = new Date('2026-08-27')   // refonte de l'accueil
 const MAJ_LEGALES = new Date('2026-08-24')   // bascule + CGV v3.0
+const MAJ_PRODUIT = new Date('2026-08-30')   // ouverture de /magazine
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
@@ -31,6 +32,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: MAJ_ACCUEIL,
       changeFrequency: 'weekly',
       priority: 1,
+    },
+    /* La page produit. Elle porte le prix, le papier, le delai et la FAQ :
+       c'est elle qui repond a une recherche « magazine photo personnalise »,
+       pas l'accueil, qui raconte la marque. Priorite juste sous l'accueil. */
+    {
+      url: 'https://www.bellajour.fr/magazine',
+      lastModified: MAJ_PRODUIT,
+      changeFrequency: 'monthly',
+      priority: 0.9,
     },
     {
       url: 'https://www.bellajour.fr/cgv',
