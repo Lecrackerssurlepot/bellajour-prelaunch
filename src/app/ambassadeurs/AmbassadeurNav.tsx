@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { preventesRootHref } from '../preventes/prix/_ref'
 import '../preventes/navbar.css'
+import { useAndroid, useValeurClient } from '@/hooks/useClient'
 
 /* Top bar /ambassadeurs — réutilise EXACTEMENT navbar.css (.pv-nav).
    Page principale (variant="page") : masquée sur le hero (#amb-hero), glass une fois
@@ -16,20 +17,24 @@ export default function AmbassadeurNav({
   variant?: 'page' | 'espace'
 }) {
   const [heroOut, setHeroOut] = useState(variant === 'espace')
-  const [flat, setFlat] = useState(false)
-  // Cible du logo → /preventes (?ref préservé). Client-only (lit window), donc
-  // calculée après montage pour rester SSR-safe ; fallback /preventes nu au SSR.
-  const [logoHref, setLogoHref] = useState('/preventes')
-
-  useEffect(() => {
-    setFlat(/Android/i.test(navigator.userAgent))
-    setLogoHref(preventesRootHref())
-  }, [])
+  const flat = useAndroid()
+  // Cible du logo → /preventes (?ref préservé). Client-only (lit window) :
+  // le serveur sert /preventes nu, jamais cassé, seulement sans le code parrain.
+  const logoHref = useValeurClient(() => preventesRootHref(), '/preventes')
 
   useEffect(() => {
     if (variant === 'espace') return // toujours solide, pas de sentinelle
     const hero = document.getElementById('amb-hero')
     if (!hero) {
+      /* Filet, et il reste tel quel. `react-hooks/set-state-in-effect` a
+         raison en général, pas ici : cette branche ne s'exécute JAMAIS en
+         pratique — `variant="page"` n'est rendu que par `ambassadeurs/page.tsx`,
+         qui rend le Hero portant `#amb-hero` juste à côté. Et si la sentinelle
+         disparaissait un jour, ce setState est ce qui empêche la barre de
+         rester invisible pour toujours : le seul rendu qu'il coûte est celui
+         qui répare la page. Le contourner demanderait de lire le DOM pendant
+         le rendu, ce qui serait un vrai défaut pour éviter un faux. */
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHeroOut(true)
       return
     }

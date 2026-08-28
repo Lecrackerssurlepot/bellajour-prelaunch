@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useMouvementReduit } from '@/hooks/useClient'
 import './galerie.css'
 import { GALERIE_COVERS, type GalerieCover } from '../galerie-covers'
 import { COVER_STORY_HREF } from '../links'
@@ -27,13 +28,13 @@ function splitRows(covers: GalerieCover[]): GalerieCover[][] {
 export default function Galerie() {
   const sectionRef = useRef<HTMLElement>(null)
   const [paused, setPaused] = useState(false)
-  const [reduced, setReduced] = useState(false)
+  /* SUIVI, et non lu une fois au montage : quelqu'un qui coupe les animations
+     pendant sa visite veut que le défilement s'arrête, pas qu'il s'arrête au
+     prochain rechargement. */
+  const reduced = useMouvementReduit()
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setReduced(true)
-      return
-    }
+    if (reduced) return
     const section = sectionRef.current
     if (!section) return
     const observer = new IntersectionObserver(
@@ -41,7 +42,7 @@ export default function Galerie() {
     )
     observer.observe(section)
     return () => observer.disconnect()
-  }, [])
+  }, [reduced])
 
   if (GALERIE_COVERS.length === 0) return null
 

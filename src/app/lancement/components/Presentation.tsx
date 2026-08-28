@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useMouvementReduit } from '@/hooks/useClient'
 import './presentation.css'
 
 /* LANCEMENT — La présentation (dupliqué de preventes/S1bAlbum, jamais
@@ -29,7 +30,12 @@ const EMBED_SRC =
 
 export default function Presentation() {
   const sectionRef = useRef<HTMLElement>(null)
-  const [revealed, setRevealed] = useState(false)
+  /* `revealed` est CALCULÉ : vu au défilement, OU mouvement refusé (le contenu
+     est alors visible d'emblée). Le second terme est un fait du navigateur, pas
+     un état à poser. */
+  const mouvementReduit = useMouvementReduit()
+  const [vu, setVu] = useState(false)
+  const revealed = vu || mouvementReduit
   const [activated, setActivated] = useState(false)
   const [poster, setPoster] = useState(POSTER_MAISON)
 
@@ -47,15 +53,11 @@ export default function Presentation() {
      prefers-reduced-motion : contenu visible d'emblée, pas d'animation. */
   useEffect(() => {
     const el = sectionRef.current
-    if (!el) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setRevealed(true)
-      return
-    }
+    if (!el || mouvementReduit) return
     const io = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          setRevealed(true)
+          setVu(true)
           io.disconnect()
         }
       },
@@ -63,7 +65,7 @@ export default function Presentation() {
     )
     io.observe(el)
     return () => io.disconnect()
-  }, [])
+  }, [mouvementReduit])
 
   return (
     <section

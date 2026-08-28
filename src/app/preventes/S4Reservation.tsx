@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import './s4-reservation.css'
+import { useValeurClient } from '@/hooks/useClient'
 import { PRIX_ALBUM_BASE, placesRestantes } from './offer-state'
 import { useOfferState, refetchOfferState } from './useOfferState'
 import { isValidRefCode } from '@/lib/validation'
@@ -17,6 +18,34 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 function capitalizePrenom(s: string | null): string | null {
   const t = (s ?? '').trim()
   return t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : null
+}
+
+const CLE_PARRAINAGE = 'bellajour_referral'
+
+/* Le cache de session, ou null. Safari en navigation privée refuse
+   sessionStorage : ce n'est pas une panne, c'est un visiteur sans cache. */
+function referralStocke(): { code?: string; prenom?: string | null } | null {
+  try {
+    const raw = sessionStorage.getItem(CLE_PARRAINAGE)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+/* Le code parrain courant, ou null.
+   Depuis la bascule du 13 juin, les liens partagés pointent directement vers
+   /preventes (/preventes?ref=BJ-XXXX) : le ?ref= est donc normalement PRÉSENT.
+   Source PRINCIPALE = l'URL ; repli sur le cache de session (posé par la landing
+   tant qu'elle existait, ou conservé après la redirection 307 / → /preventes).
+   On ne retient qu'un code bien formé ; le backend re-valide de toute façon.
+   ⚠️ Lu à CHAQUE rendu comme instantané client : il doit rendre une chaîne ou
+   null, jamais un objet neuf, sinon le rendu boucle. Et il reste stable même
+   après que `finalize` a réécrit le cache — seul le prénom y change. */
+function codeParrainCourant(): string | null {
+  const urlRef = new URLSearchParams(window.location.search).get('ref')
+  const code = (urlRef || referralStocke()?.code || '').trim()
+  return code && isValidRefCode(code) ? code : null
 }
 
 /* PRD §5.4 + §3 — S4 Réservation fondatrice (handoff).
@@ -235,68 +264,54 @@ export default function S4Reservation() {
   const [email, setEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [referredBy, setReferredBy] = useState<string | null>(null)
+  /* Parrainage CLIENT : le code transmis au checkout. Un fait du navigateur,
+     immuable pour la vie de la page — donc lu, pas posé par un effet. */
+  const referredBy = useValeurClient(codeParrainCourant, null)
   const [referrerPrenom, setReferrerPrenom] = useState<string | null>(null) // prénom parrain (affichage seulement)
-  const [orderConfirmed, setOrderConfirmed] = useState(false) // retour depuis /merci (?merci=1) → titre « commande validée »
+  /* Retour depuis /merci : MerciBackLink navigue vers /preventes?merci=1 après
+     paiement. Ce marqueur bascule le titre S4 en « Votre commande est
+     validée ! » (prime sur tout). */
+  const orderConfirmed = useValeurClient(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('merci') === '1'
+    } catch {
+      return false /* URL indispo */
+    }
+  }, false)
   const [modalOpen, setModalOpen] = useState(false) // encart de réservation (prénom/email/CGV)
   const [info, setInfo] = useState<InfoKind | null>(null) // encart info (Instants / parrainage)
 
-  /* Retour depuis /merci : MerciBackLink navigue vers /preventes?merci=1 après paiement.
-     Ce marqueur bascule le titre S4 en « Votre commande est validée ! » (prime sur tout). */
+  /* Résolution du PRÉNOM parrain (affichage SEULEMENT) — même mécanisme que la
+     waitlist (FinalWaitlist + GET /api/referrer). Le code transmis au checkout
+     (`referredBy` ci-dessus) ne dépend pas de ce qui suit : le prénom ne sert
+     qu'au wording de S4, et son absence n'empêche jamais une réservation.
+     C'est ce qui RESTE légitimement un effet : un appel réseau, annulable. */
   useEffect(() => {
-    try {
-      if (new URLSearchParams(window.location.search).get('merci') === '1') {
-        setOrderConfirmed(true)
-      }
-    } catch { /* URL indispo — no-op */ }
-  }, [])
-
-  /* Parrainage CLIENT : retrouver le code parrain pour le transmettre au checkout.
-     Depuis la bascule du 13 juin, les liens partagés pointent directement vers /preventes
-     (/preventes?ref=BJ-XXXX) — le ?ref= est donc normalement PRÉSENT dans l'URL. Source
-     PRINCIPALE = ?ref= URL ; fallback sessionStorage « bellajour_referral » (posé par la
-     landing tant qu'elle existe, ou conservé après la redirection 307 / → /preventes,
-     même clé/forme {code, prenom} que FinalWaitlist). On ne retient qu'un code bien formé
-     (isValidRefCode, préfixe BJ-) ; le backend re-valide de toute façon. */
-  useEffect(() => {
-    const urlRef = new URLSearchParams(window.location.search).get('ref')
-    let stored: { code?: string; prenom?: string | null } | null = null
-    try {
-      const raw = sessionStorage.getItem('bellajour_referral')
-      if (raw) stored = JSON.parse(raw)
-    } catch { /* sessionStorage indispo (Safari privé) — no-op */ }
-
-    const code = (urlRef || stored?.code || '').trim()
-    if (!code || !isValidRefCode(code)) return
-
-    setReferredBy(code)
-
-    /* Résolution du PRÉNOM parrain (affichage seulement) — même mécanisme que la
-       waitlist (FinalWaitlist + GET /api/referrer). Le code transmis au checkout
-       (referredBy ci-dessus) est inchangé : le prénom ne sert qu'au wording S4. */
+    if (!referredBy) return
     let cancelled = false
 
     const finalize = (prenom: string | null) => {
       if (cancelled) return
       setReferrerPrenom(capitalizePrenom(prenom))
       try {
-        sessionStorage.setItem('bellajour_referral', JSON.stringify({ code, prenom }))
+        sessionStorage.setItem(CLE_PARRAINAGE, JSON.stringify({ code: referredBy, prenom }))
       } catch { /* no-op */ }
     }
 
     // Prénom déjà en cache pour ce même code → pas de fetch.
-    if (stored?.code === code && typeof stored.prenom !== 'undefined') {
+    const stored = referralStocke()
+    if (stored?.code === referredBy && typeof stored.prenom !== 'undefined') {
       finalize(stored.prenom ?? null)
       return () => { cancelled = true }
     }
 
-    fetch(`/api/referrer?code=${encodeURIComponent(code)}`)
+    fetch(`/api/referrer?code=${encodeURIComponent(referredBy)}`)
       .then(r => r.json())
       .then(d => finalize(typeof d?.prenom === 'string' ? d.prenom : null))
       .catch(() => finalize(null))
 
     return () => { cancelled = true }
-  }, [])
+  }, [referredBy])
 
   /* État de l'offre = autorité serveur (GET /api/offer-state), via le store
      partagé useOfferState (fetch dédupliqué, mutualisé avec le compteur Hero).

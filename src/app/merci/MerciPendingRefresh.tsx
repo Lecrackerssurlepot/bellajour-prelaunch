@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 /**
  * Fenêtre webhook : le client peut atterrir sur /merci AVANT que le webhook
@@ -19,20 +19,21 @@ export default function MerciPendingRefresh({
   maxAttempts?: number
   delayMs?: number
 }) {
-  const [exhausted, setExhausted] = useState(false)
+  /* CALCULÉ, pas stocké. `exhausted` était un état posé par un effet, alors
+     qu'il ne dit rien de plus que la comparaison de deux props : le rendu qui
+     décidait d'attendre était toujours suivi d'un second rendu qui décidait
+     d'abandonner. Deux passes pour une information connue dès la première. */
+  const exhausted = attempt >= maxAttempts
 
   useEffect(() => {
-    if (attempt >= maxAttempts) {
-      setExhausted(true)
-      return
-    }
+    if (exhausted) return
     const t = setTimeout(() => {
       const url = new URL(window.location.href)
       url.searchParams.set('try', String(attempt + 1))
       window.location.replace(url.toString())
     }, delayMs)
     return () => clearTimeout(t)
-  }, [attempt, maxAttempts, delayMs])
+  }, [exhausted, attempt, delayMs])
 
   if (exhausted) {
     return (

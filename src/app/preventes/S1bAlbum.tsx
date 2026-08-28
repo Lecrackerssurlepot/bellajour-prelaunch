@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useValeurClient } from '@/hooks/useClient'
 import './s1b-album.css'
 
 /* PRD — S2 « Découvrez Bellajour ».
@@ -16,21 +17,26 @@ const SOCIAL_PROOF_COUNT = 8
 
 export default function S1bAlbum() {
   const sectionRef = useRef<HTMLElement>(null)
-  const [revealed, setRevealed] = useState(false)
+  /* Filet : sans IntersectionObserver, rien ne s'arme et la section resterait
+     invisible à vie. Lu comme un fait du navigateur, pas posé par un effet —
+     `false` côté serveur veut dire « l'observateur existe », donc le HTML servi
+     cache la section exactement comme avant. */
+  const sansObserver = useValeurClient(
+    () => typeof IntersectionObserver === 'undefined',
+    false,
+  )
+  const [vu, setVu] = useState(false)
+  const revealed = vu || sansObserver
 
   // Apparition au scroll (fade + translateY léger), GPU-only, one-shot.
   // prefers-reduced-motion neutralisé en CSS (cf. s1b-album.css).
   useEffect(() => {
     const el = sectionRef.current
-    if (!el) return
-    if (typeof IntersectionObserver === 'undefined') {
-      setRevealed(true)
-      return
-    }
+    if (!el || sansObserver) return
     const io = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          setRevealed(true)
+          setVu(true)
           io.disconnect()
         }
       },
@@ -38,7 +44,7 @@ export default function S1bAlbum() {
     )
     io.observe(el)
     return () => io.disconnect()
-  }, [])
+  }, [sansObserver])
 
   return (
     <section

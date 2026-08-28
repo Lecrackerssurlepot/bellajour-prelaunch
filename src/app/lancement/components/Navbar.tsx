@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import './navbar.css'
 import { CTA_HREF, LOGIN_HREF } from '../links'
+import { useAndroid } from '@/hooks/useClient'
 
 /* LANCEMENT — Navbar (copie du mécanisme .pv-nav de la prévente).
    État A (hero visible) : masquée — le hero affiche son propre logo blanc.
@@ -17,10 +18,9 @@ export default function Navbar() {
   /* Android : le backdrop-filter d'un position:fixed est re-rastérisé à chaque
      frame de scroll sur Chrome/Android = jank. Fallback fond quasi-opaque,
      même mécanique que .pv-nav--flat (détection UA scopée à la page). */
-  const [isAndroid, setIsAndroid] = useState(false)
+  const isAndroid = useAndroid()
 
   useEffect(() => {
-    setIsAndroid(/Android/i.test(navigator.userAgent))
     const hero = document.getElementById('s1')
     if (!hero) return
     const observer = new IntersectionObserver(

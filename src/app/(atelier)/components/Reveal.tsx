@@ -6,8 +6,8 @@
    l'unobserve dès la première intersection.
    Le respect de prefers-reduced-motion est porté par .at-rv dans theme.css. */
 
-import { useEffect, useState } from 'react'
 import { useReveal } from '@/hooks/useReveal'
+import { useValeurClient } from '@/hooks/useClient'
 
 export default function Reveal({
   children,
@@ -21,11 +21,14 @@ export default function Reveal({
   const { ref, isVisible } = useReveal<HTMLDivElement>(0.15)
 
   /* Filet : sans IntersectionObserver, le hook n'arme rien et le contenu
-     resterait invisible à vie. Même garde que PrixContent.tsx. */
-  const [sansObserver, setSansObserver] = useState(false)
-  useEffect(() => {
-    if (typeof IntersectionObserver === 'undefined') setSansObserver(true)
-  }, [])
+     resterait invisible à vie. Même garde que S1bAlbum.tsx.
+     `false` côté serveur = « l'observateur existe » : le HTML servi cache le
+     contenu, comme aujourd'hui. Un navigateur sans observateur le découvre à
+     son premier rendu et montre tout. */
+  const sansObserver = useValeurClient(
+    () => typeof IntersectionObserver === 'undefined',
+    false,
+  )
 
   const affiche = isVisible || sansObserver
 

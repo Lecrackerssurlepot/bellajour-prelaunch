@@ -178,13 +178,6 @@ function detectUniqueCollision(err: { details?: string | null; message?: string 
   return "unknown";
 }
 
-function randomCode(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let code = "BJ-";
-  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
-}
-
 export async function POST(request: Request) {
   try {
     const now = Date.now();

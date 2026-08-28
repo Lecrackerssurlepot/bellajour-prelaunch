@@ -141,8 +141,12 @@ export default async function AdminPage() {
       .maybeSingle();
     prevSeen = data?.last_seen_at ?? null;
   }
-  // Edge case : table vide / ligne absente → on ne badge rien (référence = maintenant).
-  const prevSeenMs = prevSeen ? new Date(prevSeen).getTime() : Date.now();
+  // Edge case : table vide / ligne absente → on ne badge rien.
+  // L'infini DIT cette règle, là où `Date.now()` la simulait : les trois usages
+  // ci-dessous sont des comparaisons `>`, et rien n'est postérieur à l'infini.
+  // Au passage, plus de lecture d'horloge pendant un rendu (react-hooks/purity)
+  // ni de dépendance à une dérive entre l'heure du serveur et celle de la base.
+  const prevSeenMs = prevSeen ? new Date(prevSeen).getTime() : Number.POSITIVE_INFINITY;
 
   // 2. Fetch tout (volume faible).
   const [{ data: waitlistData }, { data: creditsData }] = await Promise.all([

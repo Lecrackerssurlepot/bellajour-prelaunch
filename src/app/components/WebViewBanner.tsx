@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import './webviewbanner.css'
+import { useAndroid, useValeurClient } from '@/hooks/useClient'
 
 /* Détecteur WebView Instagram / Facebook.
    Dans le navigateur intégré des apps Meta, l'autofill CB et Apple Pay ne
@@ -11,43 +12,50 @@ import './webviewbanner.css'
      vers le lien https si Chrome est absent).
    - iOS → Apple interdit toute redirection sortante depuis le WebView : le
      bouton affiche l'instruction manuelle (menu ⋯ → « Ouvrir dans Safari »).
-   Monté une seule fois dans le layout racine ; rend null partout hors WebView
-   (détection dans useEffect → zéro rendu SSR, zéro flash). */
+   Monté une seule fois dans le layout racine ; rend null partout hors WebView.
+   La détection est un instantané CLIENT (useValeurClient) : le serveur rend
+   null, le navigateur tranche au premier rendu. Zéro rendu SSR, zéro flash,
+   et zéro effet — c'est une lecture, pas une synchronisation. */
 
 const DISMISS_KEY = 'bj-webview-dismissed'
 
 export default function WebViewBanner() {
-  const [shown, setShown] = useState(false)
-  const [isAndroid, setIsAndroid] = useState(false)
+  /* Instagram signe son WebView avec "Instagram", Facebook/Messenger avec
+     FBAN / FBAV / FB_IAB. Double verrou mobile : ces WebViews n'existent que
+     sur iOS/Android, tout UA desktop est exclu d'office. */
+  const dansWebViewMeta = useValeurClient(() => {
+    const ua = navigator.userAgent
+    return /Instagram|FBAN|FBAV|FB_IAB/i.test(ua) && /Android|iPhone|iPad|iPod/i.test(ua)
+  }, false)
+
+  const isAndroid = useAndroid()
+
+  /* Renvoyé lors d'une visite précédente de la même session. */
+  const dejaRenvoye = useValeurClient(() => {
+    try {
+      return sessionStorage.getItem(DISMISS_KEY) !== null
+    } catch {
+      /* sessionStorage indisponible dans certains WebViews → on affiche */
+      return false
+    }
+  }, false)
+
+  /* Renvoyé À L'INSTANT, par le bouton. Distinct du précédent, et pas
+     redondant : c'est lui qui fait disparaître le bandeau quand l'écriture
+     dans sessionStorage échoue — le cas même que le catch ci-dessus couvre. */
+  const [ferme, setFerme] = useState(false)
   const [showIosHelp, setShowIosHelp] = useState(false)
 
-  useEffect(() => {
-    const ua = navigator.userAgent
-    /* Instagram signe son WebView avec "Instagram", Facebook/Messenger avec
-       FBAN / FBAV / FB_IAB. Double verrou mobile : ces WebViews n'existent que
-       sur iOS/Android, tout UA desktop est exclu d'office. */
-    const isMetaWebView = /Instagram|FBAN|FBAV|FB_IAB/i.test(ua)
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(ua)
-    if (!isMetaWebView || !isMobile) return
-    try {
-      if (sessionStorage.getItem(DISMISS_KEY)) return
-    } catch {
-      /* sessionStorage peut être indisponible dans certains WebViews → on affiche */
-    }
-    setIsAndroid(/Android/i.test(ua))
-    setShown(true)
-  }, [])
-
-  if (!shown) return null
-
   const dismiss = () => {
-    setShown(false)
+    setFerme(true)
     try {
       sessionStorage.setItem(DISMISS_KEY, '1')
     } catch {
       /* best-effort : sans storage, le bandeau reviendra au prochain chargement */
     }
   }
+
+  if (!dansWebViewMeta || dejaRenvoye || ferme) return null
 
   const openInBrowser = () => {
     if (isAndroid) {

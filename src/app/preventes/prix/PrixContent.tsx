@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useValeurClient } from '@/hooks/useClient'
 import './prix.css'
 import { preventesHref } from './_ref'
 import { PRICE_LOOKUP } from '../pricing'
@@ -77,8 +78,7 @@ export default function PrixContent() {
   const reste = Math.max(0, prix - ACOMPTE - remise)
 
   /* CTA final + (implicite) navbar partagent preventesHref ; résolu client. */
-  const [ctaHref, setCtaHref] = useState('/preventes#s4')
-  useEffect(() => setCtaHref(preventesHref()), [])
+  const ctaHref = useValeurClient(() => preventesHref(), '/preventes#s4')
 
   const decr = () => setProches((n) => Math.max(0, n - 1))
   const incr = () => setProches((n) => Math.min(PROCHES_MAX, n + 1))

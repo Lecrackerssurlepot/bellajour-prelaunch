@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useValeurClient } from '@/hooks/useClient'
 import './s5-garanties.css'
 import { PRIX_ALBUM_BASE } from './offer-state'
 import { isValidRefCode } from '@/lib/validation'
@@ -52,14 +53,15 @@ export default function S5Garanties() {
   const [open, setOpen] = useState<number | null>(null)
   const toggle = (i: number) => setOpen((prev) => (prev === i ? null : i))
 
-  /* Lien prix avec ?ref préservé (lecture URL uniquement, pas de storage). */
-  const [prixHref, setPrixHref] = useState('/preventes/prix')
-  useEffect(() => {
+  /* Lien prix avec ?ref préservé (lecture URL uniquement, pas de storage).
+     Le serveur sert le lien nu : jamais cassé, seulement sans le code parrain
+     le temps du premier rendu. */
+  const prixHref = useValeurClient(() => {
     const ref = (new URLSearchParams(window.location.search).get('ref') || '').trim()
-    if (ref && isValidRefCode(ref)) {
-      setPrixHref(`/preventes/prix?ref=${encodeURIComponent(ref)}`)
-    }
-  }, [])
+    return ref && isValidRefCode(ref)
+      ? `/preventes/prix?ref=${encodeURIComponent(ref)}`
+      : '/preventes/prix'
+  }, '/preventes/prix')
 
   return (
     <section className="s5" data-section="s5-garanties" data-theme="light">

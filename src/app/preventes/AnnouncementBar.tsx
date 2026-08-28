@@ -81,9 +81,12 @@ export default function AnnouncementBar() {
   /* Préférences système (corrigées après montage — pas de mismatch d'hydratation). */
   const [motionOK, setMotionOK] = useState(true)
   const [canHover, setCanHover] = useState(false)
-  /* #s4 visible → frame 1 retirée de la rotation. State (rendu + effet forcé) + ref
-     (lecture synchrone par le timer/les flèches sans recréer leurs closures). */
-  const [s4Visible, setS4Visible] = useState(false)
+  /* #s4 visible → frame 1 retirée de la rotation. UNE REF, PAS UN ÉTAT : rien
+     dans le rendu n'en dépend, seuls le timer et les flèches la lisent, et de
+     façon synchrone sans recréer leurs closures. L'état qui la doublait
+     n'existait que pour réveiller un effet ; il faisait re-rendre la barre à
+     chaque entrée et chaque sortie de la section des prix, pour peindre
+     exactement la même chose. */
   const s4VisibleRef = useRef(false)
 
   useEffect(() => {
@@ -109,19 +112,24 @@ export default function AnnouncementBar() {
     const obs = new IntersectionObserver(
       ([entry]) => {
         s4VisibleRef.current = entry.isIntersecting
-        setS4Visible(entry.isIntersecting)
+
+        /* Quand #s4 devient visible alors que la frame 1 est affichée →
+           bascule immédiate vers la frame 2 (crossfade normal, jamais de
+           frame vide) : la frame 0 ne fait plus partie de l'ordre.
+           ⚠️ ICI, dans le rappel de l'observateur, et non dans un effet qui
+           surveillerait `s4Visible` et `activeId`. C'est le moment où le
+           monde extérieur change, donc le seul endroit où l'on a le droit
+           d'écrire un état — un effet qui compare deux états produisait un
+           rendu de plus à chaque passage devant la section des prix.
+           La forme fonctionnelle est indispensable : le rappel survit à ses
+           closures, `activeId` lu par valeur y serait périmé. */
+        if (entry.isIntersecting) setActiveId((curr) => (curr === 0 ? 1 : curr))
       },
       { threshold: 0.1 }
     )
     obs.observe(el)
     return () => obs.disconnect()
   }, [])
-
-  /* Quand #s4 devient visible alors que la frame 1 est affichée → bascule immédiate
-     vers la frame 2 (crossfade normal, jamais de frame vide). */
-  useEffect(() => {
-    if (s4Visible && activeId === 0) setActiveId(1)
-  }, [s4Visible, activeId])
 
   /* Avance/recule dans l'ordre COURANT (lu via ref). Ordre = [1,2] si #s4 visible,
      [0,1,2] sinon. Si la frame courante n'est plus dans l'ordre → première active. */

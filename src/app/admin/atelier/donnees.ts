@@ -28,7 +28,6 @@ import {
 import { compter, comparerUrgence, urgencePour, etapeDepot, type EtapeDepot } from "@/lib/atelier/urgence";
 import { raconter } from "@/lib/atelier/recit";
 import {
-  CHAMPS_MAIL,
   codesPour,
   templateExiste,
   type Envoyes,

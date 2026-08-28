@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import '../navbar.css'
 import { preventesHref, preventesRootHref } from './_ref'
+import { useAndroid, useValeurClient } from '@/hooks/useClient'
 
 /* Navbar de la page /preventes/prix.
    Réutilise les classes navbar.css de la prévente (.pv-nav, .pv-nav--solid,
@@ -14,21 +15,20 @@ import { preventesHref, preventesRootHref } from './_ref'
    fallback SSR = liens sans ref (jamais cassés). */
 
 export default function NavbarPrix() {
-  const [root, setRoot] = useState('/preventes')
-  const [cta, setCta] = useState('/preventes#s4')
+  const root = useValeurClient(() => preventesRootHref(), '/preventes')
+  const cta = useValeurClient(() => preventesHref(), '/preventes#s4')
   /* Android (Chromium) : on retire le backdrop-filter live de la navbar fixe
-     (re-rastérisé à chaque frame = jank). Détecté post-montage → initial false =
-     rendu SSR, aucune erreur d'hydratation. Desktop + Safari iOS inchangés. */
-  const [flat, setFlat] = useState(false)
+     (re-rastérisé à chaque frame = jank). Desktop + Safari iOS inchangés. */
+  const flat = useAndroid()
 
+  /* Ce qui RESTE un effet, et doit le rester : celui-ci ne lit rien, il ÉCRIT
+     dans le document, et son nettoyage est obligatoire. C'est exactement le
+     travail d'un effet — synchroniser React avec un système extérieur.
+     Réactive le ré-ancrage scroll de Chrome sur cette route (cf. globals.css
+     html.px-anchor) : sans ça, la barre d'URL Chrome/Android fait sauter le
+     contenu. Sans le nettoyage, la classe fuite en navigation SPA vers le
+     landing, qui a besoin de overflow-anchor: none pour son scroll-jacking. */
   useEffect(() => {
-    setRoot(preventesRootHref())
-    setCta(preventesHref())
-    setFlat(/Android/i.test(navigator.userAgent))
-    /* Réactive le ré-ancrage scroll de Chrome sur cette route (cf. globals.css
-       html.px-anchor) : sans ça, la barre d'URL Chrome/Android fait sauter le
-       contenu. Cleanup obligatoire → ne pas fuiter la classe en nav SPA vers le
-       landing (qui a besoin de overflow-anchor: none pour son scroll-jacking). */
     document.documentElement.classList.add('px-anchor')
     return () => document.documentElement.classList.remove('px-anchor')
   }, [])

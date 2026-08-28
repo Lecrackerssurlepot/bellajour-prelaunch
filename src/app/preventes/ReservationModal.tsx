@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useValeurClient } from '@/hooks/useClient'
 import { currentRef } from './prix/_ref'
 import './reservation-modal.css'
 
@@ -43,11 +44,10 @@ export default function ReservationModal({
   /* Lien CGV : ?ref préservé (parrain) depuis l'URL courante. Calculé côté client
      (currentRef lit window) ; valeur SSR-safe par défaut = /cgv. Ouvert dans un
      nouvel onglet → l'état du checkout (prénom/email/CGV) n'est pas perdu. */
-  const [cgvHref, setCgvHref] = useState('/cgv')
-  useEffect(() => {
+  const cgvHref = useValeurClient(() => {
     const ref = currentRef()
-    setCgvHref(ref ? `/cgv?ref=${encodeURIComponent(ref)}` : '/cgv')
-  }, [])
+    return ref ? `/cgv?ref=${encodeURIComponent(ref)}` : '/cgv'
+  }, '/cgv')
 
   /* Fermeture clavier (Échap). Actif uniquement quand le modal est ouvert. */
   useEffect(() => {

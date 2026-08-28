@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useMouvementReduit } from '@/hooks/useClient'
 import './s2-experience.css'
 
 /* PRD §5.2 — S2 Expérience Bellajour.
@@ -58,21 +59,22 @@ export default function S2Experience() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const touchStartX = useRef<number | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
-  const [revealed, setRevealed] = useState(false)
+  /* `revealed` est CALCULÉ : vu au défilement, OU mouvement refusé (le contenu
+     est alors visible d'emblée). Une seule lecture de la préférence dans ce
+     fichier, partagée avec la vidéo plus bas. */
+  const mouvementReduit = useMouvementReduit()
+  const [vu, setVu] = useState(false)
+  const revealed = vu || mouvementReduit
 
   // Reveal one-shot du header (titre + phrase éditeur) — même pattern que S1bAlbum.
   // prefers-reduced-motion : contenu visible d'emblée, pas d'animation.
   useEffect(() => {
     const section = sectionRef.current
-    if (!section) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setRevealed(true)
-      return
-    }
+    if (!section || mouvementReduit) return
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
-          setRevealed(true)
+          setVu(true)
           observer.disconnect()
         }
       },
@@ -80,7 +82,7 @@ export default function S2Experience() {
     )
     observer.observe(section)
     return () => observer.disconnect()
-  }, [])
+  }, [mouvementReduit])
 
   // Respect prefers-reduced-motion : on fige la démo (autoplay coupé) sur 1re frame.
   // Re-exécuté à chaque changement de carte active : seule la vidéo active est montée,
@@ -88,15 +90,12 @@ export default function S2Experience() {
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const apply = () => {
-      if (mq.matches) video.pause()
-      else video.play().catch(() => {})
-    }
-    apply()
-    mq.addEventListener('change', apply)
-    return () => mq.removeEventListener('change', apply)
-  }, [activeIndex])
+    /* La préférence vient du crochet partagé, qui écoute déjà ses changements :
+       cet effet se rejoue quand elle bascule. Il posait auparavant son PROPRE
+       écouteur sur la même media query, en double du reveal ci-dessus. */
+    if (mouvementReduit) video.pause()
+    else video.play().catch(() => {})
+  }, [activeIndex, mouvementReduit])
 
   const goTo = useCallback((index: number) => {
     setActiveIndex((prev) => {

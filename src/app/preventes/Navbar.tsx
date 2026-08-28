@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import './navbar.css'
 import { isValidRefCode } from '@/lib/validation'
+import { useAndroid, useValeurClient } from '@/hooks/useClient'
 
 /* PRD §4 — Top bar prévente.
    État A (hero visible) : navbar MASQUÉE — le hero affiche son propre logo blanc
@@ -25,11 +26,7 @@ export default function Navbar({ fermee = false }: { fermee?: boolean }) {
      le parcours des que le hero sort, ne l'avait jamais eu. Detecte apres le
      montage : `false` a l'initiale = rendu serveur inchange, aucune erreur
      d'hydratation. Bureau et Safari iOS gardent le verre depoli. */
-  const [flat, setFlat] = useState(false)
-
-  useEffect(() => {
-    setFlat(/Android/i.test(navigator.userAgent))
-  }, [])
+  const flat = useAndroid()
 
   useEffect(() => {
     const hero = document.getElementById('s1')
@@ -56,14 +53,15 @@ export default function Navbar({ fermee = false }: { fermee?: boolean }) {
     return () => observer.disconnect()
   }, [])
 
-  /* Lien page prix avec ?ref préservé (lecture URL uniquement, même pattern que S5). */
-  const [prixHref, setPrixHref] = useState('/preventes/prix')
-  useEffect(() => {
+  /* Lien page prix avec ?ref préservé (lecture URL uniquement, même pattern que S5).
+     Le lien SANS ref est ce que sert le serveur : jamais cassé, seulement moins
+     complet le temps d'un rendu. */
+  const prixHref = useValeurClient(() => {
     const ref = (new URLSearchParams(window.location.search).get('ref') || '').trim()
-    if (ref && isValidRefCode(ref)) {
-      setPrixHref(`/preventes/prix?ref=${encodeURIComponent(ref)}`)
-    }
-  }, [])
+    return ref && isValidRefCode(ref)
+      ? `/preventes/prix?ref=${encodeURIComponent(ref)}`
+      : '/preventes/prix'
+  }, '/preventes/prix')
 
   const scrollToS4 = () => {
     document.getElementById('s4')?.scrollIntoView({ behavior: 'smooth' })

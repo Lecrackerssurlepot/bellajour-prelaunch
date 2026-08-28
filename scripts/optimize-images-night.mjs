@@ -67,9 +67,11 @@ async function run() {
   for (const { f, long, q } of PLAN) {
     const src = path.join(PUB, f)
     const bak = path.join(BACKUP, f)
-    let before, beforeDim
+    let beforeDim
     try {
-      before = (await fs.stat(src)).size
+      // metadata() suffit a prouver le fichier lisible ET a donner ses dimensions.
+      // Le stat() qui le precedait mesurait une taille que le rapport n'utilise
+      // pas : les colonnes before/after viennent de bakSize, la sauvegarde.
       const m = await sharp(src).metadata()
       beforeDim = `${m.width}x${m.height}`
     } catch (e) {
