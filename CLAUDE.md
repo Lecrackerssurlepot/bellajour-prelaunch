@@ -357,11 +357,23 @@ Ordre historique : Hero (crème) · Anxiete (sombre) · Solution (crème) · Alb
 Orphelins sur le disque, jamais servis : Anxiete, BrandIntro, Solution, Album,
 FinalWaitlist, StickyVText, StickyJoinCTA.
 
-## Statut de l'accueil (depuis le 27/08/2026)
+## Statut de l'accueil (EN PRODUCTION depuis le 28/08/2026)
 ✅ Ouverture — la couverture qui se pose puis s'ouvre (Ouverture.tsx + ouverture.css)
 ✅ Univers   — les sept pages du récit (Univers.tsx + univers.css)
-✅ Nav       — zone de verre, sans filet, ne se cache jamais
-✅ Footer    — inchangé (components/Footer.tsx)
+✅ Nav       — zone de verre, sans filet, ne se cache jamais. La signature ramène à
+   la couverture. ⚠️ C'est un <button> avec sa PROPRE remise à zéro dans nav.css :
+   rien ne réinitialise les boutons globalement (le preflight Tailwind n'est jamais
+   importé), et sans elle le navigateur pose son fond `buttonface` gris-blanc.
+✅ Footer    — components/Footer.tsx. Instagram ET TikTok, écrits ICI et non importés
+   du composant partagé, qui dépend de la palette crème.
+   ⚠️ Le footer CRÈME (sections/Footer.tsx, 7 pages) a vocation à disparaître : ne
+   rien y investir de neuf. Voir D9.
+✅ Défilement rapide — la révélation s'adapte au rythme du lecteur au lieu de lui
+   prendre le défilement. Au-delà de 900 px/s (vitesse LISSÉE) la page arrive déjà
+   composée. ⚠️ Le drapeau `data-pilote` sur <html> exclut les DEUX boutons de
+   tourner-page, qui défilent eux-mêmes trop vite pour être distingués d'un lecteur
+   pressé — et ils vivent dans deux composants différents. Voir D10, cinq
+   conséquences à respecter.
 ⏳ Page produit — à construire. C'est elle qui recevra le contenu des composants
    orphelins S2Collection (l'étagère), S3Method (les trois temps), S4Final (les paliers).
 
