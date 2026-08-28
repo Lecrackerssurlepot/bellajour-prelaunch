@@ -37,8 +37,14 @@ D4 (27/08/2026) — Le prototype de référence (`design-explorations/`) et la
 bibliothèque typographique (`assets/typo/`) ne sont TOUJOURS PAS versionnés. Ils
 portent la direction artistique, le wording verrouillé et les 60 polices libres.
 Un `git clean` les efface sans avertissement.
-**Conséquence :** à trancher avant toute autre session. Voir D2 pour la règle des
-licences.
+**TRANCHÉ le 28/08/2026 : on ne les versionne pas.** Décision de Mathias, prise en
+connaissance du risque, après qu'il lui a été présenté deux fois.
+**Conséquence :** ne PAS reposer la question. Ces dossiers restent hors git et donc sans
+sauvegarde : un `git clean`, un disque perdu ou un changement de machine les efface. Voir
+D8 pour la règle qui protège du reste (`git add -A` interdit à la racine). Si le sujet
+revient un jour, la proposition qui était sur la table était de versionner les 5 Mo de
+sources de `design-explorations/` sans les 52 Mo d'exports, que `artboards/scripts/`
+sait refabriquer.
 
 D5 (27/08/2026) — L'accueil est fusionné dans `main` SANS que la barre de tête ait été
 vue sur un Android réel : aucun appareil sous la main, et l'émulation ne reproduit pas
