@@ -132,3 +132,50 @@ d'aplomb restent utiles tant qu'il est servi, mais toute nouvelle fonctionnalit�
 retirées ou refondues, il part avec elles — ainsi que le composant partagé
 `components/InstagramLink.tsx`, dont il est le dernier appelant routé (les trois autres
 sont hors routage, sauf `/inviter`).
+
+D10 (28/08/2026) — Le récit de l'univers garde le DÉFILEMENT NATIF. Le problème posé
+était réel : qui descendait vite déclenchait sept secondes de chorégraphie et traversait
+des écrans à moitié écrits. Trois pistes ont été pesées, deux écartées.
+- **Forcer le clic, supprimer le défilement** : écarté. C'est la famille de bugs que ce
+  dépôt connaît déjà — `globals.css` porte un `overflow-anchor:none` posé À CAUSE du
+  défilement piloté de la prévente, qu'il a fallu réactiver sur `/preventes/prix` parce
+  que la barre d'URL de Chrome/Android faisait sauter le contenu. S'y ajoute la casse du
+  clavier, de Page suivante, de la recherche dans la page et des lecteurs d'écran — sur
+  un trafic majoritairement tactile, le pire terrain possible.
+- **N'ouvrir le défilement qu'une fois tout chargé** : écarté. Ne traite pas la cause. Le
+  problème n'est pas le chargement, c'est une chorégraphie qui démarre sans son lecteur.
+- **RETENU : la révélation s'adapte au rythme du lecteur.** Le séquenceur mesure la
+  vitesse de défilement ; au-delà du seuil, la page pose `.vite`, ses retards tombent à
+  zéro et son fondu se réduit à `--dur`. Elle est donc DÉJÀ COMPOSÉE quand elle passe.
+  En dessous, la chorégraphie complète, inchangée.
+**Conséquences, dans l'ordre où elles se casseraient :**
+1. ⚠️ **Le drapeau `data-pilote` sur `<html>` n'est pas un détail.** Les DEUX boutons qui
+   tournent les pages défilent eux-mêmes, à plus de 1600 px/s au moment où la page
+   suivante franchit le seuil de l'observateur. Sans lui, un clic supprime la
+   chorégraphie qu'il demande. Il vit sur le document parce que les deux boutons sont
+   dans des composants DIFFÉRENTS (`Ouverture.tsx` et `Univers.tsx`) : aucun ne peut lire
+   l'état local de l'autre. Les deux le posent, le retirent, et le nettoient au démontage.
+2. ⚠️ **La vitesse est LISSÉE, et le seuil de 900 px/s n'est tenable que grâce à ça.** Le
+   défilement arrive par à-coups : sur une mesure brute, un seul cran de molette suffirait
+   à franchir 900 en pleine lecture calme. Ne pas retirer le lissage sans remonter le seuil.
+3. ⚠️ **Le `!important` sur `transition-duration` est délibéré.** Plusieurs pages
+   surchargent la transition de leurs propres éléments avec la MÊME spécificité et plus
+   loin dans le fichier (`.sl2-scene .v[data-t].vu`) : elles gagnaient à l'ancienneté. Une
+   valeur unique couvre toutes les propriétés déclarées, y compris celles qu'une page
+   ajouterait demain.
+4. Le fondu n'est pas supprimé, seulement raccourci : un texte qui surgit d'un coup fait
+   un à-coup plus violent que le vide qu'on corrige.
+5. La décision se prend à l'entrée et ne se rejoue pas : une page traversée vite reste
+   composée si l'on y revient. On ne redéroule pas une séquence sous les yeux de
+   quelqu'un qui remonte.
+
+D11 (28/08/2026) — Vérifier une mise en production sur `bellajour.fr` juste après un push
+peut montrer L'ANCIENNE VERSION pendant plusieurs minutes, sans que rien ne soit cassé :
+le cache de périphérie de Vercel sert une copie (`x-vercel-cache: HIT`, `age` de plusieurs
+centaines de secondes) qui référence les anciens fichiers. Ce n'est PAS Cloudflare, qui
+répond `cf-cache-status: DYNAMIC` sur cette page.
+**Conséquence :** le juge de paix est l'URL de déploiement Vercel
+(`bellajour-prelaunch-git-main-….vercel.app`), qui contourne ce cache. Et un test
+d'attente doit chercher un marqueur qui n'existe QUE dans la nouvelle version — chercher
+une chaîne présente des deux côtés fait croire au succès immédiat. Les deux erreurs ont
+été commises le 28/08.
