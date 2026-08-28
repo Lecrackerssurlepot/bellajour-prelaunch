@@ -202,6 +202,61 @@ export const COLONNES: ColonneVue[] = ETATS.map((etat) => ({
  * s'effondrer.
  * ══════════════════════════════════════════════════════════════════════════
  */
+type RangeePhoto = {
+  id: string;
+  r2_key: string;
+  nom_origine: string | null;
+  taille: number | null;
+  created_at: string | null;
+  /* D7 — absente tant que la migration 20260830 n'est pas passée. */
+  vignette_key?: string | null;
+};
+
+/**
+ * Les photos d'un dossier, avec `vignette_key` si la colonne existe.
+ *
+ * Même repli que `lireNumeros()`, pour la même raison et avec un enjeu plus
+ * direct : un `select` qui nomme une colonne absente échoue ENTIÈREMENT
+ * (PostgREST, 42703). Sans ce repli, la fiche d'un dossier n'afficherait
+ * AUCUNE photo entre le déploiement du code et le passage de la migration —
+ * pas « des photos sans vignettes », zéro photo.
+ *
+ * Une requête dans le cas normal, deux pendant la fenêtre. Le jour où la
+ * migration est acquise partout, ce repli peut disparaître ; il ne coûte
+ * rien en attendant.
+ */
+async function lirePhotos(
+  supabase: SupabaseClient,
+  numeroId: string,
+): Promise<{ data: RangeePhoto[] | null }> {
+  const avec = await supabase
+    .from("photos")
+    .select("id, r2_key, nom_origine, taille, ordre, created_at, vignette_key")
+    .eq("numero_id", numeroId)
+    .order("ordre", { ascending: true })
+    .returns<RangeePhoto[]>();
+
+  if (!avec.error) return { data: avec.data };
+
+  if (avec.error.code !== "42703") {
+    console.error("[admin/atelier] lecture photos échouée", avec.error.code, avec.error.message);
+    return { data: [] };
+  }
+
+  const sans = await supabase
+    .from("photos")
+    .select("id, r2_key, nom_origine, taille, ordre, created_at")
+    .eq("numero_id", numeroId)
+    .order("ordre", { ascending: true })
+    .returns<RangeePhoto[]>();
+
+  if (sans.error) {
+    console.error("[admin/atelier] lecture photos échouée", sans.error.code, sans.error.message);
+    return { data: [] };
+  }
+  return { data: sans.data };
+}
+
 async function lireNumeros(
   supabase: SupabaseClient,
 ): Promise<{ rangees: RangeeNumero[]; enChargeAbsent: boolean }> {
@@ -566,12 +621,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
   const rangee = n as unknown as RangeeNumero;
 
   const [{ data: photos }, { data: evenements }, { data: mails }, notesLues] = await Promise.all([
-    supabase
-      .from("photos")
-      .select("id, r2_key, nom_origine, taille, ordre, created_at")
-      .eq("numero_id", id)
-      .order("ordre", { ascending: true })
-      .returns<Array<{ id: string; r2_key: string; nom_origine: string | null; taille: number | null; created_at: string | null }>>(),
+    lirePhotos(supabase, id),
     supabase
       .from("evenements")
       .select("id, type, payload, created_at")
@@ -593,7 +643,13 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
   /* Les vignettes. Une URL signée par photo, en parallèle : sur 80 photos,
      en série, l'ouverture de la fiche prendrait plusieurs secondes. Une
      signature qui échoue rend `null` et laisse un cadre vide — jamais une
-     fiche en erreur. */
+     fiche en erreur.
+
+     D7 — DEUX signatures par photo quand la vignette existe : l'original pour
+     la loupe et le téléchargement, la vignette de 320 px pour la grille. Le
+     coût est une signature de plus, calculée en local, sans appel réseau. Le
+     gain est de servir ~20 Ko au lieu de plusieurs Mo dans une case de 84 px,
+     sur l'écran que l'atelier laisse ouvert toute la journée. */
   const photosVues: PhotoVue[] = await Promise.all(
     (photos ?? []).map(async (p) => ({
       id: p.id,
@@ -601,6 +657,9 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
       taille: p.taille,
       ajouteLe: p.created_at,
       url: await signerGet(p.r2_key).catch(() => null),
+      urlVignette: p.vignette_key
+        ? await signerGet(p.vignette_key).catch(() => null)
+        : null,
     })),
   );
 

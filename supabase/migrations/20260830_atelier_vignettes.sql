@@ -1,0 +1,27 @@
+-- La vignette de 320 px, à côté de l'original.
+--
+-- La grille de /admin/atelier/[token] sert les ORIGINAUX R2 (plafond 5200 px,
+-- plusieurs Mo pièce) dans des cases de 84 px. À l'ouverture d'une fiche c'est
+-- de l'ordre de 35 à 45 Mo décodés sur le thread principal, et 250 à 350 Mo une
+-- fois la grille dépliée. C'est l'écran que l'atelier laisse ouvert toute la
+-- journée. Voir D7 dans DECISIONS.md.
+--
+-- La vignette existe DÉJÀ : `composer/depot/reduire.worker.js` en fabrique une
+-- de 320 px pour l'aperçu du dépôt, elle dort dans IndexedDB et ne quitte
+-- jamais le navigateur. Cette colonne est l'endroit où l'on note qu'elle a
+-- aussi été déposée sur R2.
+--
+-- ⚠️ NULLABLE, et ça n'est pas une facilité de migration : une vignette peut
+-- légitimement ne jamais exister. Un HEIC sous Chrome ne se décode pas, un
+-- worker indisponible ne produit rien, un PUT de confort peut échouer sans
+-- qu'on veuille perdre la photo pour autant. `null` veut dire « sers
+-- l'original », ce que faisaient toutes les fiches avant aujourd'hui.
+--
+-- ⚠️ Écrite par /api/atelier/photos/complete APRÈS un HEAD, jamais sur la
+-- déclaration du navigateur — même règle que `taille` : seule la mesure fait
+-- foi. Une colonne posée sur une promesse produirait des cases vides.
+--
+-- Pas d'index : rien ne cherche une photo par sa vignette. La clé est dérivée
+-- de l'id de la photo, son unicité est structurelle.
+alter table public.photos
+  add column if not exists vignette_key text null;

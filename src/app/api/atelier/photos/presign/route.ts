@@ -11,8 +11,8 @@ import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { isValidNumeroToken } from "@/lib/atelier/token";
 import {
-  MAX_FILE_BYTES, MIMES_ACCEPTES,
-  cleR2, mimeDepuisNom, signerPut,
+  MAX_FILE_BYTES, MIMES_ACCEPTES, MAX_VIGNETTE_BYTES, MIME_VIGNETTE,
+  cleR2, cleVignetteR2, mimeDepuisNom, signerPut,
 } from "@/lib/atelier/r2";
 
 export const runtime = "nodejs";
@@ -23,7 +23,38 @@ export const runtime = "nodejs";
 const MAX_PAR_LOT = 100;
 const MAX_PHOTOS_PAR_NUMERO = 100;
 
-type Demande = { id?: string; nom?: string; taille?: number; type?: string };
+type Demande = {
+  id?: string; nom?: string; taille?: number; type?: string;
+  /* D7 — la taille de la vignette de 320 px que le worker a déjà fabriquée.
+     Absente si le décodage a échoué (HEIC sous Chrome, worker indisponible) :
+     ce n'est pas une erreur, la fiche servira l'original comme avant. */
+  tailleVignette?: number;
+};
+
+/**
+ * URL PUT de la vignette, ou null.
+ *
+ * Rendue à côté de celle de l'original, jamais à sa place : une vignette est
+ * un CONFORT d'affichage pour l'atelier, elle ne doit pouvoir bloquer ni un
+ * dépôt ni une déclaration. Toute anomalie ici rend `null`, et le navigateur
+ * se contente d'envoyer l'original.
+ */
+async function signerVignette(
+  numeroId: string,
+  photoId: string,
+  taille: unknown
+): Promise<{ vignetteKey: string; urlVignette: string } | null> {
+  const t = Number(taille);
+  if (!Number.isFinite(t) || t <= 0 || t > MAX_VIGNETTE_BYTES) return null;
+
+  const vignetteKey = cleVignetteR2(numeroId, photoId);
+  try {
+    return { vignetteKey, urlVignette: await signerPut(vignetteKey, MIME_VIGNETTE, t) };
+  } catch (err) {
+    console.error("[presign] signature vignette échouée", (err as Error)?.message);
+    return null;
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -110,6 +141,7 @@ export async function POST(request: Request) {
             photoId: ligne.id,
             key: ligne.r2_key,
             url: await signerPut(ligne.r2_key, mime, taille),
+            ...(await signerVignette(numero.id, ligne.id, f.tailleVignette)),
           });
           continue;
         }
@@ -144,7 +176,16 @@ export async function POST(request: Request) {
         continue;
       }
 
-      resultats.push({ photoId, key, url: await signerPut(key, mime, taille) });
+      resultats.push({
+        photoId,
+        key,
+        url: await signerPut(key, mime, taille),
+        /* D7 — la vignette voyage avec l'original, pas après coup. Sa clé
+           n'est PAS écrite en base ici : /complete l'y pose une fois l'objet
+           MESURÉ sur R2, comme pour `taille`. Une colonne remplie sur une
+           promesse produirait des cases vides dans la fiche. */
+        ...(await signerVignette(numero.id, photoId, f.tailleVignette)),
+      });
       ordre++;
     }
 

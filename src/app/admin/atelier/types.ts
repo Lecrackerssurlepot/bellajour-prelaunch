@@ -86,7 +86,17 @@ export type PhotoVue = {
   taille: number | null;
   /** T2-5 — la date d'arrivée : sépare le premier dépôt des ajouts. */
   ajouteLe: string | null;
+  /** L'ORIGINAL. La loupe et le téléchargement du lot ne veulent que lui. */
   url: string | null;
+  /**
+   * D7 — la vignette de 320 px, quand elle existe.
+   *
+   * `null` sur tous les dossiers antérieurs au 30/08/2026, sur les photos que
+   * le navigateur n'a pas su décoder (HEIC sous Chrome), et pendant la fenêtre
+   * où la migration `vignette_key` n'est pas passée. La grille retombe alors
+   * sur `url` — c'est ce qu'elle faisait pour toutes les photos jusqu'ici.
+   */
+  urlVignette: string | null;
 };
 
 export type EvenementVue = {

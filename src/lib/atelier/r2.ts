@@ -79,6 +79,38 @@ export function cleR2(numeroId: string, photoId: string, mime: string): string {
 }
 
 /**
+ * Clé de la VIGNETTE d'une photo — l'original en 320 px de côté (D7).
+ *
+ * Voisine de l'original, dans le même dossier : une suppression de photo qui
+ * balaie le préfixe emporte les deux, et un dossier de coffre reste lisible à
+ * l'œil.
+ *
+ * ⚠️ Toujours `.jpg`, quel que soit le format d'origine. Ce n'est PAS une
+ * approximation : la vignette n'est jamais une copie du fichier déposé, c'est
+ * un canvas ré-encodé — `reduire.worker.js` la produit avec
+ * `convertToBlob({ type: 'image/jpeg' })`, y compris pour un HEIC ou un PNG.
+ * Dériver son extension du MIME d'origine annoncerait un `.heic` qui
+ * contiendrait du JPEG, et le Content-Type de la signature ne collerait plus.
+ */
+export function cleVignetteR2(numeroId: string, photoId: string): string {
+  return `numeros/${numeroId}/photos/${photoId}/vignette.jpg`;
+}
+
+/** Le seul type qu'une vignette porte, côté signature comme côté HEAD. */
+export const MIME_VIGNETTE = "image/jpeg";
+
+/**
+ * Plafond d'une vignette : 512 Ko.
+ *
+ * Une 320 px en qualité 0,72 pèse ~20 Ko. Le plafond n'est pas là pour
+ * cadrer le cas normal mais pour empêcher qu'une URL signée « vignette »
+ * serve à pousser un second original dans le coffre — la signature porte la
+ * taille déclarée, et R2 ne l'impose pas (piège nº7). Vingt-cinq fois la
+ * taille attendue laisse toute la marge utile et ferme la porte.
+ */
+export const MAX_VIGNETTE_BYTES = 512 * 1024;
+
+/**
  * URL PUT signée.
  *
  * ⚠️ La signature porte le ContentType ET le ContentLength : la taille annoncée

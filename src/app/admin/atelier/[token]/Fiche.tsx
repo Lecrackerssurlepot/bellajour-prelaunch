@@ -178,15 +178,17 @@ export default function Fiche({
   moi: string;
   demo?: boolean;
 }) {
-  /* Un COMPTE, pas un booleen. La grille sert les ORIGINAUX R2 (plafond
+  /* Un COMPTE, pas un booleen. La grille servait les ORIGINAUX R2 (plafond
      5200 px, plusieurs Mo piece) dans des cases de 84 px : deplier d'un coup
      un lot de cent, c'etait des centaines de Mo a decoder sur le thread
      principal, et l'onglet qui se fige. On deplie par tranches.
-     ⚠️ Ce n'est PAS le vrai correctif, seulement le pic divise. La cause est
-     qu'aucune vignette n'existe cote serveur : le worker en fabrique bien une
-     de 320 px (composer/depot/reduire.worker.js) mais elle ne quitte jamais
-     le navigateur. La deposer sur R2 au moment du depot et la signer a cote
-     de l'original est le vrai chemin — voir D7 dans DECISIONS.md. */
+     ⚠️ LA CAUSE EST REGLEE DEPUIS LE 30/08 (D7) : le navigateur depose sa
+     vignette de 320 px a cote de l'original, et `urlVignette` la sert ici.
+     Ce depliage par tranches RESTE, parce que les dossiers anterieurs n'ont
+     pas de vignette tant que `scripts/vignettes-rattrapage.ts` n'est pas
+     passe, et parce qu'un HEIC que le navigateur n'a pas su decoder n'en
+     aura jamais. Le retirer, c'est parier que toutes les photos de toutes
+     les fiches sont legeres. */
   const [visibles, setVisibles] = useState(VIGNETTES_VISIBLES);
   const [lot, setLot] = useState<EtatLot>({ phase: "repos" });
   const [apercuOuvert, setApercuOuvert] = useState<number | null>(null);
@@ -537,8 +539,20 @@ export default function Fiche({
                       rel="noreferrer"
                       title={`${p.nom ?? ""} ${poids(p.taille)}`}
                     >
-                      {p.url ? (
-                        <img src={p.url} alt="" width="84" height="84" loading="lazy" decoding="async" />
+                      {/* D7 — la vignette de 320 px si elle existe, l'original
+                          sinon (dossiers antérieurs au 30/08, photos que le
+                          navigateur n'a pas su décoder). Le lien du cadre,
+                          lui, pointe TOUJOURS l'original : on clique pour voir
+                          la photo, pas son timbre-poste. */}
+                      {p.urlVignette ?? p.url ? (
+                        <img
+                          src={(p.urlVignette ?? p.url) as string}
+                          alt=""
+                          width="84"
+                          height="84"
+                          loading="lazy"
+                          decoding="async"
+                        />
                       ) : (
                         <span className="ate-photo-vide">?</span>
                       )}

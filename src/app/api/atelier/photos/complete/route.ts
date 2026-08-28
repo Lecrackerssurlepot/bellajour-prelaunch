@@ -14,7 +14,10 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { isValidNumeroToken } from "@/lib/atelier/token";
-import { MAX_FILE_BYTES, supprimer, tailleReelle } from "@/lib/atelier/r2";
+import {
+  MAX_FILE_BYTES, MAX_VIGNETTE_BYTES,
+  cleVignetteR2, supprimer, tailleReelle,
+} from "@/lib/atelier/r2";
 import { logEvenement } from "@/lib/atelier/evenements";
 
 export const runtime = "nodejs";
@@ -26,6 +29,81 @@ export const runtime = "nodejs";
 const MAX_PAR_LOT = 50;
 /* Piège nº10 : par tranches, pour ne pas saturer R2 de HEAD simultanés. */
 const TRANCHE_HEAD = 8;
+
+/**
+ * D7 — la vignette est-elle bien arrivée, et est-elle bien une vignette ?
+ *
+ * Rend la clé à écrire en base, ou null. Un `null` n'est jamais une panne :
+ * il veut dire « la fiche servira l'original », ce que faisaient toutes les
+ * fiches avant cette colonne.
+ *
+ * ⚠️ Le plafond est vérifié sur la taille MESURÉE, comme pour l'original :
+ * R2 n'impose pas la taille annoncée dans la signature (piège nº7), et une
+ * URL signée « vignette » pousserait sinon un second original dans le coffre.
+ * Hors plafond, l'objet est supprimé — le garder, ce serait payer le stockage
+ * d'un fichier que rien ne lira jamais.
+ *
+ * ⚠️ Aucun `await` de ce chemin ne doit pouvoir faire échouer la confirmation
+ * de la photo elle-même : la photo est arrivée, c'est tout ce qui compte.
+ */
+async function vignetteArrivee(
+  numeroId: string,
+  photoId: string
+): Promise<string | null> {
+  const key = cleVignetteR2(numeroId, photoId);
+  try {
+    const reelle = await tailleReelle(key);
+    if (reelle === null) return null;
+    if (reelle > MAX_VIGNETTE_BYTES) {
+      await supprimer(key);
+      return null;
+    }
+    return key;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * L'écriture qui fait passer une photo de « déclarée » à « arrivée ».
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ * POURQUOI CE REPLI PLUTÔT QU'UN SIMPLE UPDATE
+ *
+ * `vignette_key` arrive par la migration 20260830. Entre le déploiement du
+ * code et le passage de la migration, il y a une fenêtre. Un `update` qui
+ * nomme une colonne absente ne dégrade pas : PostgREST répond 42703 et
+ * l'écriture ENTIÈRE échoue — `taille` resterait NULL, la photo ne serait
+ * jamais confirmée, et le navigateur la réessaierait indéfiniment. Un dépôt
+ * en cours pendant la fenêtre serait bloqué, pas seulement sans vignettes.
+ *
+ * On tente donc avec, et on retombe sans. Même principe que `lireNumeros()`
+ * dans /admin/atelier : la migration en retard fait perdre un confort, jamais
+ * le geste de la cliente.
+ * ══════════════════════════════════════════════════════════════════════════
+ */
+async function marquerArrivee(
+  supabase: ReturnType<typeof makeSupabase>,
+  photoId: string,
+  taille: number,
+  vignetteKey: string | null
+): Promise<void> {
+  if (vignetteKey) {
+    const avec = await supabase
+      .from("photos")
+      .update({ taille, vignette_key: vignetteKey })
+      .eq("id", photoId);
+
+    if (!avec.error) return;
+    if (avec.error.code !== "42703") {
+      console.error("[complete] update photo échoué", avec.error.code);
+      return;
+    }
+  }
+
+  const sans = await supabase.from("photos").update({ taille }).eq("id", photoId);
+  if (sans.error) console.error("[complete] update photo échoué", sans.error.code);
+}
 
 export async function POST(request: Request) {
   try {
@@ -85,8 +163,15 @@ export async function POST(request: Request) {
           }
 
           /* `taille` passe de NULL a la taille mesuree : c'est le marqueur
-             « reellement arrivee sur R2 ». */
-          await supabase.from("photos").update({ taille: reelle }).eq("id", l.id);
+             « reellement arrivee sur R2 ». La vignette, elle, n'est HEADée
+             qu'ici — apres l'original, jamais en parallele : le piege nº10
+             plafonne les HEAD simultanes, et une photo absente n'en declenche
+             aucun. Une photo confirmee ne repasse jamais par la, le cout est
+             paye une fois. */
+          await marquerArrivee(
+            supabase, l.id, reelle,
+            await vignetteArrivee(numero.id, l.id)
+          );
           confirmees.push(l.id);
         })
       );

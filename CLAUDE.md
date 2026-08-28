@@ -69,6 +69,11 @@ Playfair Display : NON chargée sur la landing — utilisée uniquement dans l'O
   différents, même nom. Seul `sections/Footer.tsx` est vivant (8 fichiers).
   Ce que cette phrase affirmait a coûté un préchargement de 283 Ko sur tout le
   site pour une image que rien n'affiche.
+  ⚠️ **DÉPLACÉS le 28/08/2026 → `archive/landing-waitlist/`** (D12), hors ESLint et
+  hors `tsconfig`. Archivés, PAS supprimés : ils s'ouvrent et reviennent par un
+  `git mv`. `sections/` ne contient plus que `Footer.tsx` + `footer.css`, et
+  `src/app/hero.css` n'existe plus (ne pas confondre avec `ambassadeurs/hero.css`,
+  vivant, ni `public/hero.css`, servi à `preview-anxiete.html`).
 - `/preventes` et `/preventes/prix` : `noindex, follow`. Sitemap = `/` + pages légales.
 - Fermeture de la prévente : drapeau `PREVENTE_FERMEE=true` (src/lib/prevente.ts), lu CÔTÉ SERVEUR.
   Ferme `/api/checkout` (410) et bascule `/api/offer-state` en `offerMode: 'closed'` ; le bandeau
@@ -308,6 +313,28 @@ total pour la prospect la plus engagée qui soit.
   Volontairement depuis SA page et non depuis le composeur : la grille du composeur se
   reconstruit depuis la copie LOCALE du navigateur, absente sur un autre appareil.
 
+### La grille de l'atelier sert des vignettes, plus des originaux (28/08/2026, D7)
+Le worker du dépôt fabriquait DÉJÀ une vignette de 320 px (`reduire.worker.js`) pour
+l'aperçu local ; elle dormait dans IndexedDB. Elle part désormais sur R2 en SECOND objet,
+`numeros/<id>/photos/<photoId>/vignette.jpg` (`cleVignetteR2`), et `donnees.ts` la signe à
+côté de l'original. La fiche servait 35 à 45 Mo d'originaux dans des cases de 84 px.
+- **`vignette_key` est écrite par `/api/atelier/photos/complete` APRÈS un HEAD**, jamais sur
+  la déclaration du navigateur — même règle que `taille`, seule la mesure fait foi.
+- **La vignette part avant que la photo compte comme `envoyee`**, sur le même `item.xhr`
+  (donc sous le même chien de garde). En tâche de fond elle courrait contre la confirmation.
+  Cette voie **ne peut pas échouer** : toutes les issues mènent à `envoyee`, aucune ne passe
+  par `echecEnvoi()`. Perdre une photo pour un fichier de 20 Ko serait absurde.
+- **`lirePhotos()` et `marquerArrivee()` ont chacun leur repli 42703.** Sans eux, pendant la
+  fenêtre déploiement/migration, une fiche n'afficherait AUCUNE photo et un dépôt en cours
+  ne se confirmerait jamais.
+- **La grille prend `urlVignette ?? url`.** Le lien du cadre, la loupe et le téléchargement
+  du lot gardent l'ORIGINAL. Le dépliage par tranches de douze reste : les dossiers
+  antérieurs et les HEIC indécodables n'ont pas de vignette.
+- Migration : `supabase/migrations/20260830_atelier_vignettes.sql`.
+  Rattrapage des dossiers existants : `npx tsx --tsconfig tsconfig.json
+  scripts/vignettes-rattrapage.ts` (`--essai` pour compter sans écrire). Idempotent,
+  lancé à la main — pas de relève quotidienne qui téléchargerait des originaux.
+
 ### Télécharger le lot de photos (26/08/2026)
 « Télécharger le lot » écrit les VRAIES photos sur le disque, plus un fichier de liens.
 - Chrome/Edge : `showDirectoryPicker()` → l'éditeur choisit un dossier, chaque photo descend
@@ -347,15 +374,13 @@ ne fait pas d'erreur, il fait un silence.
   env ADMIN_PASSWORD (Vercel Preview + Production). Service key strictement server-side.
 - Seule écriture autorisée : admin_last_seen. Ne touche jamais aux données métier.
 
-## ⚠️ Sections de l'ANCIENNE landing waitlist — historique, hors routage
-Ce qui suit décrit la landing de prévente, SUPPRIMÉE du routage depuis la bascule
-du 24/08/2026. Conservé parce que le Footer de `sections/` est importé par
-8 fichiers. ⚠️ Hero et FAQ, eux, ne servent PLUS rien (voir la correction
-ci-dessus) : `/ambassadeurs` et `S5Garanties` ont chacun leur propre copie.
+## ⚠️ Sections de l'ANCIENNE landing waitlist — ARCHIVÉES le 28/08/2026
+Elles vivent dans `archive/landing-waitlist/`, avec leur propre README. Hors
+routage depuis la bascule du 24/08, hors ESLint et hors `tsconfig` depuis le 28.
 Ordre historique : Hero (crème) · Anxiete (sombre) · Solution (crème) · Album
 (jamais construite) · Waitlist · FAQ · Footer.
-Orphelins sur le disque, jamais servis : Anxiete, BrandIntro, Solution, Album,
-FinalWaitlist, StickyVText, StickyJoinCTA.
+Seul `sections/Footer.tsx` est resté dans `src/` : 8 fichiers l'importent, et il
+a vocation à disparaître (D9).
 
 ## Statut de l'accueil (EN PRODUCTION depuis le 28/08/2026)
 ✅ Ouverture — la couverture qui se pose puis s'ouvre (Ouverture.tsx + ouverture.css)
@@ -378,7 +403,8 @@ FinalWaitlist, StickyVText, StickyJoinCTA.
    orphelins S2Collection (l'étagère), S3Method (les trois temps), S4Final (les paliers).
 
 ## Cleanup post-launch
-- Supprimer src/app/components/ReferralSheet.tsx + referralsheet.css (orphelins, jamais importés).
+- ~~Supprimer src/app/components/ReferralSheet.tsx + referralsheet.css~~ — FAIT : ces
+  fichiers n'existent plus sur le disque (vérifié le 28/08/2026).
 
 ## Prévente — Section 4
 - Le prix/offre d'acompte est TOUJOURS décidé par le backend (/api/checkout). Le front envoie expected_offer (affichage seulement) et gère le 409 offer_changed. Ne jamais hardcoder un montant ni le seuil FOUNDER_CAP côté front.

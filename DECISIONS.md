@@ -85,20 +85,57 @@ intuitif.
 police au premier affichage de /preventes, /ambassadeurs, /admin, /legal, /merci,
 /inviter et /lancement — les seules qui peignent vraiment ces faces. Si l'effet déplaît,
 retirer la ligne suffit.
-⚠️ Quarante-cinq erreurs `react-hooks` subsistent dans dix-huit composants routés, et
-`reactCompiler` est ACTIF dans `next.config.ts`. Elles ne cassent rien aujourd'hui, mais
-ce sont les règles sur lesquelles le compilateur décide de mémoïser : le genre de bug qui
-n'apparaît qu'en production. Non corrigées volontairement, chacune a sa raison propre.
+⚠️ Des erreurs `react-hooks` subsistent, et `reactCompiler` est ACTIF dans
+`next.config.ts`. Elles ne cassent rien aujourd'hui, mais ce sont les règles sur lesquelles
+le compilateur décide de mémoïser : le genre de bug qui n'apparaît qu'en production.
+⚠️ **CORRIGÉ le 28/08 : « dix-huit composants routés » était faux.** Trente-deux des
+cinquante-cinq problèmes vivaient dans sept fichiers que RIEN n'importait — l'ancienne
+landing de prévente — dont la TOTALITÉ des `react-hooks/refs`, `exhaustive-deps` et
+`immutability`. Aucun compilateur ne les voyait passer. Ces fichiers sont désormais dans
+`archive/landing-waitlist/` (voir D12). Restent 23 problèmes en code servi : 19
+`set-state-in-effect`, 1 `purity`, 3 variables mortes.
 
 D7 (27/08/2026) — La grille de photos de `/admin/atelier/[token]` sert les ORIGINAUX R2
 (plafond 5200 px, plusieurs Mo pièce) dans des vignettes de 84 px. À l'ouverture d'une
 fiche c'est de l'ordre de 35 à 45 Mo, et 250 à 350 Mo une fois la grille dépliée, décodés
 sur le thread principal. C'est l'écran que l'atelier laisse ouvert toute la journée.
-**Conséquence :** NON CORRIGÉ, parce que le bon correctif touche la chaîne d'envoi. Le
-worker produit DÉJÀ une vignette de 320 px (`reduire.worker.js`) : il suffirait de la
-déposer en second objet `vignettes/<r2_key>` au moment du dépôt et de la signer à côté de
-l'original dans `donnees.ts`. Migration à prévoir pour les dossiers existants. En attendant,
-paginer le dépliage par tranches de douze divise le pic par huit, sans rien toucher d'autre.
+**Conséquence :** CORRIGÉ le 28/08/2026, par le chemin qui était annoncé ici. Le worker
+produisait déjà une vignette de 320 px (`reduire.worker.js`) ; elle dormait dans IndexedDB
+et ne quittait jamais le navigateur. Elle part désormais sur R2 en second objet, à côté de
+l'original (`cleVignetteR2`, `numeros/<id>/photos/<photoId>/vignette.jpg`), et `donnees.ts`
+la signe à côté. La grille sert ~20 Ko par case au lieu de plusieurs Mo.
+Six points à ne pas défaire :
+1. **La vignette part AVANT que la photo compte comme envoyée**, dans la foulée du PUT de
+   l'original et sur le même `item.xhr`. Lâchée en tâche de fond, elle courrait contre la
+   confirmation : `/complete` ferait son HEAD, ne trouverait rien, et l'objet arriverait
+   une seconde plus tard — payé au stockage, lu par personne.
+2. **Cette voie ne peut pas échouer.** Succès, refus, réseau coupé, chien de garde : toutes
+   les issues mènent à `envoyee`, et aucune ne passe par `echecEnvoi()`, qui renverrait
+   l'original tout entier. Perdre une photo pour un fichier de 20 Ko serait absurde.
+3. **`vignette_key` est écrite par `/complete` après un HEAD**, jamais sur la déclaration du
+   navigateur. Même règle que `taille` : seule la mesure fait foi. Une colonne remplie sur
+   une promesse produit des cases vides, ce qui est pire que l'original lourd.
+4. **Les deux lectures ont leur repli 42703** (`lirePhotos`, `marquerArrivee`). Sans eux,
+   pendant la fenêtre entre le déploiement et la migration, une fiche n'afficherait AUCUNE
+   photo et un dépôt en cours ne se confirmerait jamais — pas « sans vignettes », bloqué.
+5. **La vignette est toujours `.jpg`**, quel que soit le format d'origine : ce n'est pas une
+   copie du fichier déposé, c'est un canvas ré-encodé. Dériver son extension du MIME
+   d'origine annoncerait un `.heic` contenant du JPEG.
+6. **Le dépliage par tranches de douze RESTE.** Les dossiers antérieurs n'ont pas de
+   vignette tant que `scripts/vignettes-rattrapage.ts` n'est pas passé, et un HEIC que le
+   navigateur n'a pas su décoder n'en aura jamais — la fiche retombe alors sur l'original,
+   exactement comme avant.
+Rattrapage des dossiers existants : `npx tsx --tsconfig tsconfig.json
+scripts/vignettes-rattrapage.ts` (`--essai` pour compter sans écrire). Idempotent, ne se
+lance pas tout seul : une relève quotidienne qui télécharge des originaux serait une
+facture de sortie R2 récurrente pour un travail qui, par nature, se termine.
+⚠️ Le script verse `.env.local` dans `process.env` avant tout appel à `r2.ts`. Sans ce
+geste il annonce ses photos puis s'arrête sur « R2_ENDPOINT manquant » : `r2.ts` est écrit
+pour Next, qui charge le fichier tout seul — un script lancé par tsx n'a pas ce service.
+**MESURÉ le 28/08 sur la base de production**, migration appliquée et rattrapage passé :
+49 photos confirmées, **66,2 Mo d'originaux contre 0,62 Mo de vignettes — 107 fois plus
+léger**. Aucune photo indécodable. Seconde exécution : « rien à rattraper », l'idempotence
+tient.
 
 D8 (27/08/2026) — INCIDENT, et il change le contexte de D4. Pendant l'audit, des
 `git add -A` ont fait entrer dans les commits de la branche les quatre dossiers
@@ -179,3 +216,17 @@ répond `cf-cache-status: DYNAMIC` sur cette page.
 d'attente doit chercher un marqueur qui n'existe QUE dans la nouvelle version — chercher
 une chaîne présente des deux côtés fait croire au succès immédiat. Les deux erreurs ont
 été commises le 28/08.
+
+D12 (28/08/2026) — Les sept fichiers de l'ancienne landing de prévente que plus rien
+n'importait (`Hero`, `Anxiete`, `BrandIntro`, `Solution` et ses trois visuels, `Album`,
+`FinalWaitlist`, `FAQ`, `StickyVText`, `StickyJoinCTA`) sont ARCHIVÉS, pas supprimés :
+`archive/landing-waitlist/`, hors du périmètre d'ESLint et de `tsconfig`. Décision de
+Mathias : « les supprimer, ce n'est plus jamais les retrouver ».
+Ils portaient 32 des 55 problèmes ESLint du dépôt pour un gain nul — aucun bundle ne les
+contient. Le lint ne parle désormais que du code qui tourne.
+**Conséquence :** un fichier archivé s'ouvre, se lit, et revient par un `git mv`. Mais il
+ne suit plus rien : ni les corrections de tokens du 27/08, ni les règles React. Le
+ramener, c'est reprendre le travail où il s'est arrêté.
+⚠️ `sections/Footer.tsx` n'est PAS parti : sept pages le servent encore (D9).
+⚠️ `S1Hero`, `S2Collection`, `S3Method`, `S4Final` non plus : ils portent le texte de la
+future page produit (voir CLAUDE.md), ils ne sont pas orphelins par accident.

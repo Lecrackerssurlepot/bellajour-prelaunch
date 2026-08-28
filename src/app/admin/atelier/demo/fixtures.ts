@@ -521,6 +521,10 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
       taille: 2_400_000 + i * 130_000,
       ajouteLe: null,
       url: PHOTOS[i % PHOTOS.length],
+      /* La démonstration sert des images de /public : elles sont déjà légères,
+         il n'y a pas de seconde version à montrer. Le repli sur `url` est
+         exactement ce que fait une fiche réelle sans vignette. */
+      urlVignette: null,
     })),
     evenements: evenementsVus,
     mails: [

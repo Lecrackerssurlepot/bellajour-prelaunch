@@ -77,8 +77,16 @@ type Item = {
   charge: Blob | null
   taille: number
   apercu: string | null
+  /* D7 — la vignette de 320 px fabriquée par le worker. Elle sert déjà
+     l'aperçu local (`apercu` est un objectURL posé dessus) ; elle part
+     désormais AUSSI sur R2, pour la grille de l'atelier, qui servait jusqu'ici
+     des originaux de plusieurs Mo dans des cases de 84 px. Gardée jusqu'à la
+     confirmation, comme `charge` : un réessai doit avoir de quoi renvoyer.
+     `null` est un cas normal — HEIC sous Chrome, worker indisponible. */
+  vignette: Blob | null
   photoId: string | null
   url: string | null
+  urlVignette: string | null
   urlSigneeA: number
   etat: EtatPhoto
   octetsEnvoyes: number
@@ -196,8 +204,13 @@ class Moteur {
         charge,
         taille: rec.taille,
         apercu: rec.vignette ? URL.createObjectURL(rec.vignette) : null,
+        /* La reprise récupère la vignette du coffre local : après un
+           rechargement, une photo non confirmée peut encore déposer la
+           sienne. Une photo confirmée n'en a plus l'usage. */
+        vignette: confirmee ? null : rec.vignette,
         photoId: rec.photoId,
         url: null,
+        urlVignette: null,
         urlSigneeA: 0,
         /* Même une photo qui semblait envoyée repart par la déclaration :
            c'est le serveur qui tranche (`deja: true`), jamais le navigateur. */
@@ -257,8 +270,10 @@ class Moteur {
         charge: null,
         taille: rembale.size,
         apercu: null,
+        vignette: null,
         photoId: null,
         url: null,
+        urlVignette: null,
         urlSigneeA: 0,
         etat: 'attente',
         octetsEnvoyes: 0,
@@ -374,6 +389,9 @@ class Moteur {
            définitivement. Jamais de case cassée, jamais de bascule d'aspect
            après la confirmation. */
         if (r.vignette) vivant.apercu = URL.createObjectURL(r.vignette)
+        /* D7 — on la GARDE, en plus de l'objectURL. L'aperçu et le dépôt sur
+           R2 sont deux usages du même blob : un objectURL ne se relit pas. */
+        vivant.vignette = r.vignette
 
         vivant.etat = 'prete'
         void this.persister(vivant, r.vignette)
@@ -401,6 +419,9 @@ class Moteur {
   private async declarer(lot: Item[]): Promise<void> {
     type Resultat = {
       photoId?: string; key?: string; url?: string; deja?: boolean; erreur?: string
+      /* D7 — absente si le worker n'a pas produit de vignette, ou si le
+         serveur n'a pas su la signer. Ce n'est jamais une erreur. */
+      urlVignette?: string
     }
 
     let resultats: Resultat[]
@@ -418,6 +439,10 @@ class Moteur {
             nom: i.nom,
             taille: i.taille,
             type: i.mime,
+            /* D7 — la taille FAIT PARTIE de la signature (piège nº1), même
+               pour une vignette. Elle est connue : un item n'est déclaré
+               qu'à l'état `prete`, donc après le passage du worker. */
+            tailleVignette: i.vignette?.size,
           })),
         }),
       })
@@ -479,9 +504,14 @@ class Moteur {
       if (!res.url) { item.etat = 'erreur'; item.message = 'Aucune adresse d’envoi'; return }
 
       item.url = res.url
+      item.urlVignette = res.urlVignette ?? null
       item.urlSigneeA = maintenant
       item.etat = 'declaree'
-      void this.persister(item, null)
+      /* La vignette est RÉÉCRITE, pas effacée. `persister` remplace tout
+         l'enregistrement : passer `null` ici la supprimait du coffre local,
+         et une reprise après rechargement rendait des tuiles sans aperçu —
+         puis, depuis D7, une photo qui ne pouvait plus déposer la sienne. */
+      void this.persister(item, item.vignette)
     })
 
     this.changement()
@@ -525,10 +555,10 @@ class Moteur {
       item.xhr = null
       if (xhr.status >= 200 && xhr.status < 300) {
         item.octetsEnvoyes = item.taille
-        item.etat = 'envoyee'
         /* La mémoire N'EST PAS libérée ici. Le PUT a réussi côté réseau, mais
            le serveur n'a pas encore mesuré l'objet : tant qu'il n'a pas dit
            oui, il faut de quoi recommencer (piège nº18). */
+        this.envoyerVignette(item)
       } else {
         this.echecEnvoi(item, xhr.status)
       }
@@ -545,6 +575,62 @@ class Moteur {
     } catch {
       item.xhr = null
       this.echecEnvoi(item, 0)
+    }
+  }
+
+  /**
+   * D7 — le second objet : la vignette de 320 px, dans la foulée de l'original.
+   *
+   * ══════════════════════════════════════════════════════════════════════════
+   * POURQUOI AVANT `envoyee`, ET NON EN TÂCHE DE FOND
+   *
+   * La confirmation part sur son propre rythme, par lots. Une vignette lâchée
+   * en parallèle courrait contre elle : /complete ferait son HEAD, ne
+   * trouverait rien, et `vignette_key` resterait nulle pendant que l'objet
+   * arrive une seconde plus tard — un fichier payé au stockage que rien ne
+   * lira jamais. En la posant AVANT de marquer la photo envoyée, la question
+   * est tranchée quand le serveur la pose.
+   *
+   * ⚠️ Cette voie ne peut PAS échouer. Une vignette est un confort pour
+   * l'atelier ; perdre une photo pour un fichier de 20 Ko serait absurde.
+   * Toutes les issues — succès, refus, réseau coupé, chien de garde —
+   * mènent à `envoyee`. Et elle ne passe JAMAIS par `echecEnvoi()`, qui
+   * renverrait l'original tout entier une seconde fois.
+   *
+   * ⚠️ `item.xhr` est bien réassigné : c'est le contrat du chien de garde.
+   * Une voie suspendue doit rester interruptible (piège nº22), et un
+   * `dernierProgres` laissé en arrière la ferait couper aussitôt.
+   * ══════════════════════════════════════════════════════════════════════════
+   */
+  private envoyerVignette(item: Item): void {
+    if (!item.urlVignette || !item.vignette) { item.etat = 'envoyee'; return }
+
+    const xhr = new XMLHttpRequest()
+    item.xhr = xhr
+    item.dernierProgres = Date.now()
+
+    const fini = () => {
+      item.xhr = null
+      item.urlVignette = null
+      /* Le blob est relâché quoi qu'il arrive : il n'y a pas de réessai. */
+      item.vignette = null
+      item.etat = 'envoyee'
+      this.changement()
+      this.pompe()
+    }
+
+    xhr.open('PUT', item.urlVignette, true)
+    xhr.setRequestHeader('Content-Type', 'image/jpeg')
+    xhr.upload.onprogress = () => { item.dernierProgres = Date.now() }
+    xhr.onload = fini
+    xhr.onerror = fini
+    xhr.ontimeout = fini
+    xhr.onabort = fini
+
+    try {
+      xhr.send(item.vignette)
+    } catch {
+      fini()
     }
   }
 
@@ -801,6 +887,11 @@ class Moteur {
   private liberer(item: Item): void {
     item.original = null
     item.charge = null
+    /* La vignette suit le même sort que la charge : plus rien ne l'enverra.
+       L'objectURL de `apercu`, lui, RESTE — c'est ce que la grille affiche,
+       et il est révoqué par `detruire()`. */
+    item.vignette = null
+    item.urlVignette = null
     item.xhr = null
   }
 
