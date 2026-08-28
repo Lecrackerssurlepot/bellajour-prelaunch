@@ -258,8 +258,25 @@ export default function Univers() {
         if (rail) {
           const haut = hote.offsetTop
           const hh = hote.offsetHeight
-          rail.classList.toggle('on', y > haut - h * 0.5 && y < haut + hh - h * 0.4)
-          const p = borne((y - haut + h * 0.5) / (hh - h * 0.4), 0, 1)
+          /* Le chemin de fer ne vit QUE pendant le récit. Il compte les sept
+             pages : le montrer ailleurs, c'est compter des pages qui n'existent
+             pas. Deux bornes, et la jauge se cale sur les mêmes — sinon elle
+             finirait sa course avant ou après la disparition du rail.
+             — il s'allume une fois DANS l'univers (0,10 écran après son
+               début), plus 0,15 avant : il se montrait pendant qu'on
+               regardait encore la couverture, et il fallait qu'il ait
+               disparu avant de la retrouver en remontant ;
+             — il s'éteint 1,15 écran avant la fin, soit un dixième d'écran
+               avant que le pied de page ne pointe. Le seuil précédent
+               (1,05) était déjà presque juste : ce qui le trahissait était
+               le fondu de 1200 ms, qui laissait le rail s'effacer par
+               dessus le footer. La sortie est maintenant vive (voir
+               univers.css), et ce dixième d'écran est la marge qui rend la
+               chose franche même en défilement rapide. */
+          const debutRail = haut + h * 0.10
+          const finRail = haut + hh - h * 1.15
+          rail.classList.toggle('on', y > debutRail && y < finRail)
+          const p = borne((y - debutRail) / Math.max(1, finRail - debutRail), 0, 1)
           if (jauge) jauge.style.transform = 'scaleY(' + p.toFixed(4) + ')'
           let actif = 0
           pages.forEach((el, i) => { if (el.getBoundingClientRect().top <= h * 0.5) actif = i })

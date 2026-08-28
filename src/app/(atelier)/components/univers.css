@@ -70,9 +70,21 @@
 .at-accueil .pas{
   position:fixed;left:3.4vw;top:50dvh;transform:translateY(-50%);
   z-index:400;display:flex;flex-direction:column;gap:2dvh;
-  opacity:0;pointer-events:none;transition:opacity var(--t-lent) var(--ease);
+  opacity:0;pointer-events:none;
+  /* ⚠️ LE FONDU EST ASYMETRIQUE, ET C'EST LE POINT IMPORTANT.
+     Il arrive lentement — c'est un objet qui se pose, il a droit a sa
+     seconde. Il part VITE : les derniers pixels avant le pied de page se
+     franchissent en une fraction de seconde, et un fondu de 1200 ms dans
+     les deux sens laissait le rail visible EN PLEIN SUR LE FOOTER, alors
+     meme que son seuil d'extinction etait deja atteint. Le seuil n'etait
+     pas le probleme, la duree l'etait.
+     La sortie est portee par la regle de base, l'entree par `.on`. */
+  transition:opacity var(--dur) var(--ease);
 }
-.at-accueil .pas.on{opacity:1;pointer-events:auto}
+.at-accueil .pas.on{
+  opacity:1;pointer-events:auto;
+  transition:opacity var(--t-lent) var(--ease);
+}
 .at-accueil .pas ol{list-style:none;display:flex;flex-direction:column;gap:1.7dvh;margin:0;padding:0}
 .at-accueil .pas li{
   position:relative;display:flex;align-items:center;gap:.9vw;cursor:pointer;
