@@ -1,5 +1,7 @@
 ---
 description: Prend le ticket suivant du backlog (ou celui donné en argument), le vérifie, le fait, le teste.
+argument-hint: "[T-0xx]"
+disable-model-invocation: true
 ---
 
 Cible : **$ARGUMENTS** — si vide, prends dans `docs/backlog/INDEX.md` le premier ticket `nouveau`
