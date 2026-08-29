@@ -23,7 +23,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 | Cloudprinter | branché, **sandbox** | recette de bout en bout le 26/08/2026 |
 | Stripe | branché | prévente depuis juin, atelier depuis le 24/08 |
 | Prévente (`/preventes`, `/lancement`) | retirées, 307 vers `/` | 28/08/2026 |
-| Rebonds Brevo (`/api/brevo/webhook`) | **code prêt, PAS encore actif** | écrit le 29/08/2026 |
+| Rebonds Brevo (`/api/brevo/webhook`) | **actif**, webhook Brevo id 2158565 | prouvé le 29/08/2026 à 10:14 |
 
 Quatorze fondateurs ont des droits ouverts sous les CGV v2.5, maintenus en régime transitoire.
 
@@ -34,22 +34,35 @@ M7=34 · M8=35 · M9=36. Prévente : F1=17 · S1=18 · P3=19 · A1=20 · A2=21 �
 Le texte est versionné dans `scripts/mails-atelier.mjs`, pas dans l'interface Brevo.
 `--pousser` réécrit les DIX templates de l'atelier ; borner avec `--seulement <CODE>`.
 
-## Les rebonds — ce qu'il reste à brancher (29/08/2026)
+## Les rebonds — actifs, et prouvés de bout en bout (29/08/2026)
 
-La route `/api/brevo/webhook` est écrite, testée en local (cinq portes + chemin réel + rejeu) et
-déployable. **Elle ne reçoit rien tant que deux gestes manquent** :
-1. `BREVO_WEBHOOK_SECRET` dans les variables Vercel (Production), puis **redéployer** — une
-   variable Vercel n'entre en vigueur qu'au déploiement suivant. La valeur est déjà dans
-   `.env.local`, à recopier telle quelle.
-2. Créer le webhook chez Brevo : `POST /v3/webhooks`, type `transactional`, événements
-   `hardBounce`, `blocked`, `invalid`, `spam`, en-tête `x-bellajour-secret` avec la même valeur.
-Sans le premier geste, Brevo appellera et recevra un 404 : la route est fermée par défaut.
+`BREVO_WEBHOOK_SECRET` est posé sur Vercel (Production) et le webhook Brevo existe :
+**id 2158565**, type `transactional`, événements `hardBounce` / `blocked` / `invalid` / `spam`,
+en-tête `x-bellajour-secret`.
 
-Le garde-fou de saisie (`suggestionEmail`, écran 4), lui, est autonome : il part avec le
-déploiement du questionnaire, sans variable ni configuration.
+**Recette réelle, pas simulée.** Un dossier créé sur `rebond-test@bellajour.com` — boîte
+inexistante de notre propre domaine, donc aucun tiers impliqué et aucune adresse inventée chez
+un fournisseur qui abîmerait la réputation d'expéditeur :
 
-**Jamais envoyés en vrai** : M3b, M9, et l'auto-validation à J+7. M5, M6, M7, M8 sont prouvés
-(M7 et M8 par la recette Cloudprinter du 26/08). Voir T-025.
+| | |
+|---|---|
+| 10:14:41 | dossier créé |
+| 10:14:42 | M0 part |
+| **10:14:56** | **`email_rebond` au journal**, motif SMTP complet (`550 5.1.1 … User doesn't exist`) |
+
+Quatorze secondes. Dossier de test supprimé ensuite (1 mail, 3 événements, 1 numéro).
+
+⚠️ **Brevo n'a AUCUN endpoint de test de webhook** (`POST /v3/webhooks/{id}/test` → 404). La
+seule façon d'éprouver cette chaîne est de provoquer un vrai rebond.
+
+⚠️ **Le branchement rend RÉELS deux défauts relevés en relecture** : T-036 (la graphie `invalid`
+pourrait être ignorée en silence) et T-038 (la route rend 200 même si l'écriture au journal a
+échoué, donc Brevo ne réessaie pas). T-038 était théorique tant que la route rendait 404 ; elle
+ne l'est plus.
+
+Le garde-fou de saisie (`suggestionEmail`, écran 4) est autonome : aucune variable, aucune
+configuration. Vérifié en production le 29/08 — `flore@gmial.com` propose `flore@gmail.com`,
+`m.durand@bellajour.com` est laissé tranquille.
 
 ## Migrations
 
