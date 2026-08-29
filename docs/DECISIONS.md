@@ -361,3 +361,40 @@ d'une relance, sans rien dans les logs pour le dire. Les deux bornes lisent dés
 MÊME constante et ne peuvent bouger qu'ensemble. Cinq assertions le verrouillent
 (« aucun trou entre l'accusé et la relance »), dont une qui rejoue le dossier réel du
 27/08.
+
+D17 (29/08/2026) — **Les rebonds Brevo sont écoutés, et la faute de frappe attrapée
+avant.** `sendBrevoEmail` ne savait qu'une chose : Brevo a ACCEPTÉ le mail. Le verrou de
+`mails_envoyes` l'enregistrait comme « envoyé », alors que le verdict réel (arrivé,
+rebondi, bloqué) tombe quelques secondes plus tard et que personne ne l'écoutait.
+Conséquence d'une adresse mal tapée : M0 rebondit, la cliente ne reçoit jamais son lien,
+ne dépose rien, M2 rebondit à son tour, et comme une seule relance part à vie, le dossier
+meurt. Dans l'atelier, il ressemblait à une cliente qui prend son temps. **C'était le seul
+point du parcours qui échouait sans laisser de trace nulle part.**
+**Deux couches, et l'ordre compte.** Le garde-fou de saisie évite ; le webhook rattrape.
+Aucun des deux ne suffit seul : un garde-fou ne connaît pas les domaines d'entreprise
+morts, et un webhook n'arrive qu'après.
+**La règle vit dans un module PUR** (`rebond.ts`) : `hard_bounce`, `blocked`,
+`invalid_email` → adresse morte ; `spam` → elle a REÇU (deux phrases différentes dans le
+journal, sinon on appelle une cliente pour lui dire qu'on n'arrive pas à la joindre) ;
+`soft_bounce` et `deferred` → ignorés, ils sont temporaires et Brevo réessaie.
+**Le secret reste dans un en-tête.** Brevo ne signe pas ses webhooks, mais il accepte des
+en-têtes personnalisés (vérifié dans leur documentation avant d'écrire la route) : la
+règle du projet tient, aucun secret dans l'URL.
+**Le webhook ne décide RIEN** — aucun changement d'état, aucun mail. Selon le dossier, la
+bonne suite est un coup de téléphone, une adresse corrigée à la main, ou rien. Une machine
+qui trancherait se tromperait, et en silence.
+**Aucune migration** : `evenements` porte le signal, comme `remboursement`. La liste le lit
+dans la MÊME requête que les remboursements — deux allers-retours pour une poignée de
+lignes auraient coûté la même latence deux fois à chaque ouverture de la table de travail.
+⚠️ **Damerau et pas Levenshtein**, et ce n'est pas de l'académisme : l'inversion de deux
+lettres voisines est la faute de frappe la plus fréquente, et Levenshtein la compte pour
+DEUX opérations. Avec un plafond à 1, le garde-fou ratait `gmial.com` — le cas nº1 qu'il
+était censé attraper. Mesuré, corrigé, verrouillé par assertion.
+⚠️ **Le plafond reste à UN caractère.** À deux, on se met à « corriger » des domaines
+parfaitement réels (`free.fr` vers `live.fr`), et une suggestion fausse est pire que pas
+de suggestion : elle invite la cliente à casser une adresse qui marchait.
+**Éprouvé en local** : les cinq portes du webhook (sans secret 404, mauvais secret 404,
+`delivered` ignoré sans toucher la base, adresse inconnue 204, corps illisible 400), le
+chemin réel (1 dossier journalisé) et son REJEU (0, idempotence par `message-id`). La
+fausse alerte de test a été retirée du journal — l'adresse de Flore fonctionne, son M2 a
+été remis le 29/08 à 08:20.

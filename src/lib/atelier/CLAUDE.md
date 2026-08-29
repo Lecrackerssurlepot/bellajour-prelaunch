@@ -14,7 +14,8 @@ neuf états, et à chaque passage un mail part vers une vraie cliente.
   contredire. Changer une valeur ici sans changer la page publique, c'est mentir à l'une des deux.
 
 Les autres purs : `prix.ts` (grille 30/40/45 €, **serveur uniquement**), `questionnaire.ts` (les
-6 champs exigés), `parcours.ts` (les 8 jalons), `impression.ts` (table produit Cloudprinter),
+6 champs exigés + `suggestionEmail`), `rebond.ts` (ce qu'un signal Brevo dit d'une adresse),
+`parcours.ts` (les 8 jalons), `impression.ts` (table produit Cloudprinter),
 `suivi.ts` (transporteur + code), `recit.ts`, `brief.ts`, `lot.ts`, `formats.ts`, `dates.ts`,
 `token.ts` / `tokenForme.ts` (jumeau navigateur), `secret.ts`.
 Les modules à effets : `mails.ts`, `r2.ts`, `cloudprinter.ts`, `paiement.ts`, `evenements.ts`,
@@ -53,6 +54,15 @@ qui le montre. Le texte des mails est versionné dans `scripts/mails-atelier.mjs
   La reprise = REPUBLIER la maquette, ce qui remet la colonne à null et lève le verrou M5.
 - **L'état s'appelle `photos_recues` avant qu'aucune photo n'arrive.** Le tag « dépôt non terminé »
   de l'admin lève la contradiction. Ne pas changer la valeur de l'enum pour un problème d'affichage.
+- **Un mail « envoyé » n'est pas un mail arrivé.** `rebond.ts` porte la règle : `hard_bounce`,
+  `blocked` et `invalid_email` → l'adresse est morte ; `spam` → elle a REÇU, c'est autre chose
+  (deux phrases distinctes dans le journal, sinon on appelle une cliente pour lui dire qu'on
+  n'arrive pas à la joindre) ; `soft_bounce` et `deferred` → ignorés, temporaires, Brevo réessaie.
+  Les graphies `snake_case` (payload) et `camelCase` (config du webhook) sont normalisées.
+- **`suggestionEmail` corrige en Damerau, pas en Levenshtein.** L'inversion de deux lettres
+  voisines est la faute la plus fréquente et Levenshtein la compte pour DEUX : à un caractère de
+  plafond, le garde-fou ratait `gmial.com`, le cas nº1 qu'il visait. ⚠️ Plafond à UN caractère, et
+  on SUGGÈRE sans jamais bloquer : à deux, on « corrige » `free.fr` en `live.fr`.
 
 ## Paiement et impression
 

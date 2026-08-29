@@ -17,6 +17,9 @@ Chargé dès qu'on touche une route.
 - **`/api/webhook`** (Stripe) — signature `constructEvent` + `STRIPE_WEBHOOK_SECRET`.
 - **`/api/cloudprinter/webhook`** — `CLOUDPRINTER_WEBHOOK_KEY`, HORS middleware, **fermée par
   défaut si la clé manque** (refus, pas ouverture).
+- **`/api/brevo/webhook`** — `BREVO_WEBHOOK_SECRET`, HORS middleware, fermée par défaut. Brevo ne
+  signe pas ses webhooks mais accepte des **en-têtes personnalisés** : le secret reste dans un
+  en-tête (`x-bellajour-secret` ou Bearer), jamais dans l'URL.
 
 ## Les effets de bord, par ordre de gravité
 
@@ -28,14 +31,20 @@ Chargé dès qu'on touche une route.
 | `/api/atelier/numero` | crée le dossier + **M0 dans la seconde** |
 | `/api/atelier/checkout`, `/api/checkout` | sessions Stripe |
 | `/api/atelier/photos/supprimer` | DELETE R2 irréversible |
+| `/api/brevo/webhook` | **rien qu'une ligne de journal** : aucun état, aucun mail |
 
 ## Règles
 
 - **Le prix vient du serveur, jamais du client.** Le front envoie `expected_offer` pour l'affichage
   seul et gère le 409 `offer_changed`. Ne jamais coder en dur un montant ni `FOUNDER_CAP` côté front.
 - **Un envoi de mail ne doit jamais faire échouer une action métier.** `sendBrevoEmail` est
-  best-effort strict : elle ne throw jamais. Corollaire à connaître : **un mail non parti ne
-  remonte nulle part sauf dans les logs Vercel.**
+  best-effort strict : elle ne throw jamais. Corollaire : **un mail non parti ne remonte nulle
+  part sauf dans les logs Vercel.**
+- **« Accepté par Brevo » n'est pas « arrivé ».** C'est tout ce que rend `sendBrevoEmail`, et
+  c'est ce que le verrou de `mails_envoyes` enregistre sous le nom « envoyé ». Le verdict réel
+  arrive plus tard, par `/api/brevo/webhook`. Un rebond n'y déclenche **aucune décision** —
+  ni état, ni mail : appeler, corriger l'adresse ou ne rien faire dépend du dossier, et une
+  machine qui trancherait se tromperait en silence.
 - **Toute écriture est journalisée** dans `evenements` (append-only). C'est le récit du dossier ;
   l'admin le relit via `recit.ts`.
 - Validation d'entrée à la main (`isValidNumeroToken`, `isValidRefCode`, `canonicalizeEmail`) :

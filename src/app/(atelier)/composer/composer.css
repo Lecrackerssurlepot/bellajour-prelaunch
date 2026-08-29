@@ -328,3 +328,23 @@
    .at-erreur sont faits pour un message posé sous un formulaire (écran 4) ;
    dans une rangée centrée, ils le décalent vers le bas sans raison. */
 .at-q-actions .at-erreur { margin-top: 0; }
+
+/* Écran 4 — la correction proposée sur l'adresse email. Discrète : c'est une
+   question, pas un reproche. Le domaine corrigé est un bouton, souligné, pour
+   qu'on voie qu'il se clique. */
+.at-d-suggestion {
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--c-text-soft);
+}
+.bj-atelier .at-d-suggestion button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--c-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

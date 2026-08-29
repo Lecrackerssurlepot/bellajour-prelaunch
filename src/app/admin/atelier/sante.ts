@@ -229,6 +229,48 @@ export async function chargerSante(): Promise<Sante> {
     });
   }
 
+  /* ── 5 bis. les adresses qui ne reçoivent pas ──────────────────────
+     Le pire cas de toute cette page, et le seul qui soit strictement
+     invisible partout ailleurs : le dossier a une adresse, elle a l'air
+     normale, et aucun de nos mails n'arrive. Avant le webhook Brevo
+     (29/08/2026), rien nulle part ne le disait.
+     ⚠️ On lit SANS borne de date, contrairement aux mails en échec juste
+     au-dessus : un rebond n'est pas un incident passager qui se périme au
+     bout d'une semaine, c'est un dossier durablement injoignable. Tant que
+     l'atelier n'a pas corrigé l'adresse, il doit rester sous les yeux. */
+  const rebonds: Constat["lignes"] = [];
+  if (ids.length) {
+    const { data: evts } = await supabase
+      .from("evenements")
+      .select("numero_id, payload")
+      .eq("type", "email_rebond")
+      .in("numero_id", ids)
+      .returns<Array<{ numero_id: string; payload: Record<string, unknown> | null }>>();
+
+    const parId = new Map(lignes.map((d) => [d.id, d]));
+    const vus = new Set<string>();
+    for (const e of evts ?? []) {
+      if (vus.has(e.numero_id)) continue;
+      const d = parId.get(e.numero_id);
+      if (!d) continue;
+      vus.add(e.numero_id);
+      const raison = typeof e.payload?.raison === "string" ? e.payload.raison.trim() : "";
+      rebonds.push({
+        token: d.token,
+        quoi: `${d.email ?? "—"} — ${d.titre?.trim() || "sans titre"}${raison ? ` (${raison})` : ""}`,
+      });
+    }
+  }
+  if (rebonds.length) {
+    constats.push({
+      gravite: "rouge",
+      titre: `${rebonds.length} adresse${rebonds.length > 1 ? "s ne reçoivent" : " ne reçoit"} pas nos mails`,
+      remede:
+        "Elles n'ont RIEN reçu et ne recevront rien. Corriger l'adresse sur la fiche, ou appeler.",
+      lignes: rebonds,
+    });
+  }
+
   /* ── 6. la relève tourne-t-elle ? ──────────────────────────────────
      M2, M2b, M3b, M8 et l'auto-validation n'existent QUE par elle. Une relève
      muette depuis une semaine, c'est du chiffre d'affaires qui ne part pas.

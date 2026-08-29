@@ -4,6 +4,8 @@
    Aucun champ d'adresse ici, ni nulle part dans le questionnaire : c'est Stripe
    qui collectera l'adresse de livraison le moment venu (PRD §9). */
 
+import { suggestionEmail } from '@/lib/atelier/questionnaire'
+
 export default function Screen4Contact({
   prenom, email, telephone, onChange, erreur,
 }: {
@@ -13,6 +15,11 @@ export default function Screen4Contact({
   onChange: (champ: 'prenom' | 'email' | 'telephone', v: string) => void
   erreur: string | null
 }) {
+  /* Calculé à chaque frappe : la fonction sort sur une comparaison de chaîne
+     pour l'immense majorité des saisies (domaine déjà courant), et ne calcule
+     de distance que sur les quelques autres. */
+  const suggestion = suggestionEmail(email)
+
   return (
     <>
       <p className="at-kicker">Étape 4 sur 6</p>
@@ -51,6 +58,24 @@ export default function Screen4Contact({
         inputMode="email"
         aria-label="Email"
       />
+      {/* ── LA FAUTE DE FRAPPE, ATTRAPÉE AVANT L'ENVOI ────────────────
+          Une adresse mal tapée est le seul échec du parcours qui ne se voit
+          nulle part : le dossier se crée, elle ne reçoit rien, et elle croit
+          que c'est nous qui ne répondons pas. Le webhook Brevo le rattrape
+          APRÈS coup ; ceci l'évite avant.
+          ⚠️ C'est un bouton, pas un blocage : la correction ne s'applique que
+          si elle clique. Refuser une adresse valide mais rare coûterait bien
+          plus cher que le rebond qu'on évite. */}
+      {suggestion && (
+        <p className="at-d-suggestion" role="status">
+          Vouliez-vous dire{' '}
+          <button type="button" onClick={() => onChange('email', suggestion)}>
+            {suggestion}
+          </button>{' '}
+          ?
+        </p>
+      )}
+
       <input
         className="at-inp"
         type="tel"

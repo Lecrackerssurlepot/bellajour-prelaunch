@@ -253,6 +253,31 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
     case "paiement_inattendu":
       return { texte: "Paiement inattendu", detail: "À vérifier chez Stripe", ton: "alerte" };
 
+    /* ── les rebonds (webhook Brevo) ────────────────────────────────────
+       « hard_bounce » ne dit rien à qui n'a pas la doc de Brevo sous les
+       yeux. La phrase dit la CONSÉQUENCE, parce que c'est elle qui décide
+       de ce qu'on fait : appeler, ou corriger l'adresse. */
+    case "email_rebond": {
+      const raison = typeof payload.raison === "string" ? payload.raison.trim() : "";
+      return {
+        texte: "Cette adresse ne reçoit pas nos mails",
+        detail: raison || "Rebond définitif : à corriger ou à appeler",
+        ton: "alerte",
+      };
+    }
+
+    /* Elle a bien reçu — et l'a signalé comme indésirable. Le dossier reste
+       joignable, mais les mails suivants risquent le dossier spam. Deux
+       situations différentes, deux phrases différentes : confondre les deux
+       ferait appeler une cliente pour lui dire qu'on n'arrive pas à la
+       joindre. */
+    case "email_plainte":
+      return {
+        texte: "Un de nos mails a été marqué comme indésirable",
+        detail: "L'adresse fonctionne, mais les suivants risquent le dossier spam",
+        ton: "alerte",
+      };
+
     /* ── Cloudprinter (PRD §13 phase 2) ─────────────────────────────────
        La commande, puis le fil de production poussé par leurs webhooks.
        Un seul signal change l'état (ItemShipped → « Expédié », rendu par

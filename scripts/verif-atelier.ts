@@ -33,7 +33,9 @@ import {
   normaliserTelephone,
   premierManquant,
   reponseValide,
+  suggestionEmail,
 } from "@/lib/atelier/questionnaire";
+import { lireSignal, suitePour, typeEvenement } from "@/lib/atelier/rebond";
 import { lireSuivi, nomTransporteur } from "@/lib/atelier/suivi";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import {
@@ -573,6 +575,66 @@ titre("— l'email : la meme regle des deux cotes —");
 ok("adresse normale", reponseValide("email", "flore@example.com"));
 ok("sans arobase : REFUSE", !reponseValide("email", "flore.example.com"));
 ok("sans domaine : REFUSE", !reponseValide("email", "flore@example"));
+
+/* ═══════════════ LES REBONDS : CE QU'ON ECOUTE, ET CE QU'ON JETTE ═══════
+   Le seul echec du parcours qui ne laissait aucune trace. */
+
+titre("— les trois facons dont une adresse est morte —");
+ok("hard_bounce (payload)", suitePour("hard_bounce") === "rebond");
+ok("hardBounce (configuration)", suitePour("hardBounce") === "rebond");
+ok("blocked : le plus sournois, aucune tentative", suitePour("blocked") === "rebond");
+ok("invalid_email", suitePour("invalid_email") === "rebond");
+
+titre("— ce qui n'est PAS un rebond —");
+ok("spam : elle a RECU, c'est autre chose", suitePour("spam") === "plainte");
+ok("soft_bounce : temporaire, Brevo reessaie", suitePour("soft_bounce") === "ignore");
+ok("deferred : temporaire aussi", suitePour("deferred") === "ignore");
+ok("delivered : rien a ecrire", suitePour("delivered") === "ignore");
+ok("opened / click : rien a ecrire", suitePour("click") === "ignore");
+ok("un evenement inconnu ne declenche RIEN", suitePour("chose_nouvelle") === "ignore");
+
+titre("— le type de journal suit la decision —");
+ok("rebond -> email_rebond", typeEvenement("rebond") === "email_rebond");
+ok("plainte -> email_plainte", typeEvenement("plainte") === "email_plainte");
+ok("ignore -> aucune ecriture", typeEvenement("ignore") === null);
+
+titre("— lecture du signal Brevo —");
+const sig = lireSignal({
+  event: "hard_bounce", email: "  Marie@Gmial.COM ", reason: "unknown user",
+  subject: "Votre numero est ouvert", "message-id": "<abc@brevo>",
+});
+ok("l'adresse est normalisee", sig?.email === "marie@gmial.com");
+ok("le motif est conserve tel quel", sig?.raison === "unknown user");
+ok("le message-id a tiret est lu", sig?.messageId === "<abc@brevo>");
+ok("message_id a souligne est lu aussi",
+   lireSignal({ event: "blocked", email: "a@b.co", message_id: "<x>" })?.messageId === "<x>");
+ok("sans evenement : refuse", lireSignal({ email: "a@b.co" }) === null);
+ok("sans adresse : refuse", lireSignal({ event: "hard_bounce" }) === null);
+ok("un motif absent n'est pas invente", lireSignal({ event: "blocked", email: "a@b.co" })?.raison === null);
+
+/* ═════════════ LA FAUTE DE FRAPPE, ATTRAPEE AVANT L'ENVOI ══════════════
+   ⚠️ Les faux positifs comptent PLUS que les vrais : suggerer de corriger
+   une adresse qui marchait invite la cliente a la casser. */
+
+titre("— les fautes qu'on attrape —");
+ok("gmial.com", suggestionEmail("marie@gmial.com") === "marie@gmail.com");
+ok("gmai.com", suggestionEmail("marie@gmai.com") === "marie@gmail.com");
+ok("gmail.co", suggestionEmail("marie@gmail.co") === "marie@gmail.com");
+ok("hotmial.fr", suggestionEmail("marie@hotmial.fr") === "marie@hotmail.fr");
+ok("outlok.com", suggestionEmail("marie@outlok.com") === "marie@outlook.com");
+ok("la casse et les espaces ne genent pas",
+   suggestionEmail("  Marie@GMIAL.com ") === "marie@gmail.com");
+
+titre("— ce qu'on ne touche SURTOUT PAS —");
+ok("une adresse juste : aucune suggestion", suggestionEmail("marie@gmail.com") === null);
+ok("free.fr n'est pas « corrige » en live.fr", suggestionEmail("marie@free.fr") === null);
+ok("un domaine d'entreprise est laisse tranquille",
+   suggestionEmail("m.durand@bellajour.com") === null);
+ok("un domaine rare est laisse tranquille", suggestionEmail("x@laboite-a-outils.coop") === null);
+ok("deux fautes : on n'invente pas", suggestionEmail("marie@gmiil.co") === null);
+ok("sans arobase : rien", suggestionEmail("marie.gmail.com") === null);
+ok("arobase en tete : rien", suggestionEmail("@gmail.com") === null);
+ok("domaine vide : rien", suggestionEmail("marie@") === null);
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
 process.exit(ko === 0 ? 0 : 1);

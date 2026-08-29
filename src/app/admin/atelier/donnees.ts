@@ -117,6 +117,7 @@ function versLigne(
   rembourse: boolean,
   nouveau = false,
   envoyes: Envoyes = new Map(),
+  emailRebond = false,
 ): LigneDossier {
   const nbPhotos = r.nb_photos ?? 0;
   /* La question ne se pose QU'À L'ÉTAT 1 : une fois l'aperçu publié, ni le
@@ -154,6 +155,7 @@ function versLigne(
     enCharge: r.en_charge ?? null,
     paye: Boolean(r.stripe_payment_intent),
     rembourse,
+    emailRebond,
     nouveau,
     actions: actionsDepuis(r.etat).map((a) => ({
       cle: a.cle,
@@ -300,15 +302,25 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
      paiement.ts). Conséquence : rien ne le montre nulle part. On va donc le
      chercher dans le journal, en une requête, pour l'afficher. */
   const rembourses = new Set<string>();
+  /* Même raison, même forme : un rebond ne change aucun état non plus. Sans
+     cette lecture, un dossier dont l'adresse est morte se présente comme
+     n'importe quel autre — c'est exactement ce qui le rend coûteux. Les deux
+     types partent dans LA MÊME requête : ils se lisent au même endroit, et
+     doubler l'aller-retour pour une poignée de lignes serait payer deux fois
+     la même latence à chaque ouverture de la table de travail. */
+  const rebonds = new Set<string>();
   const ids = rangees.map((r) => r.id).filter(Boolean) as string[];
   if (ids.length) {
     const { data: remb } = await supabase
       .from("evenements")
-      .select("numero_id")
-      .eq("type", "remboursement")
+      .select("numero_id, type")
+      .in("type", ["remboursement", "email_rebond"])
       .in("numero_id", ids)
-      .returns<Array<{ numero_id: string }>>();
-    for (const e of remb ?? []) rembourses.add(e.numero_id);
+      .returns<Array<{ numero_id: string; type: string }>>();
+    for (const e of remb ?? []) {
+      if (e.type === "remboursement") rembourses.add(e.numero_id);
+      else rebonds.add(e.numero_id);
+    }
   }
 
   const activite = await chargerActivite(supabase, rangees);
@@ -327,6 +339,7 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
       r.id ? rembourses.has(r.id) : false,
       estNouveau(r, vus, marqueurAbsent, maintenant),
       envoyesPar.get(r.id ?? "") ?? new Map(),
+      r.id ? rebonds.has(r.id) : false,
     ),
     urgence: urgencePour(r.etat, r.etat_maj_le, maintenant, {
       depot:
@@ -638,6 +651,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
   ]);
 
   const rembourse = (evenements ?? []).some((e) => e.type === "remboursement");
+  const emailRebond = (evenements ?? []).some((e) => e.type === "email_rebond");
 
   /* Les vignettes. Une URL signée par photo, en parallèle : sur 80 photos,
      en série, l'ouverture de la fiche prendrait plusieurs secondes. Une
@@ -702,7 +716,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
   }));
 
   return {
-    ligne: versLigne(rangee, maintenant, rembourse),
+    ligne: versLigne(rangee, maintenant, rembourse, false, new Map(), emailRebond),
     parcours: construireParcours(rangee.etat, evenementsVus),
     occasion: (n.occasion as string) ?? null,
     histoire: (n.histoire as string) ?? null,

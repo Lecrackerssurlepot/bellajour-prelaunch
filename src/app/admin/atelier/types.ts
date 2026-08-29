@@ -67,6 +67,14 @@ export type LigneDossier = {
   enCharge: string | null;
   paye: boolean;
   rembourse: boolean;
+  /**
+   * Un de nos mails a définitivement rebondi sur cette adresse.
+   *
+   * Vient du journal (`email_rebond`, posé par le webhook Brevo), comme
+   * `rembourse` : aucune colonne, aucune migration. C'est le seul signal qui
+   * dit qu'un dossier apparemment normal est en réalité INJOIGNABLE.
+   */
+  emailRebond: boolean;
   /** Jamais ouvert par la personne connectée (cf. table `dossiers_vus`). */
   nouveau: boolean;
   /**
