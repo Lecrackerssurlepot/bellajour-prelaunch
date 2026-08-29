@@ -583,7 +583,13 @@ titre("— les trois facons dont une adresse est morte —");
 ok("hard_bounce (payload)", suitePour("hard_bounce") === "rebond");
 ok("hardBounce (configuration)", suitePour("hardBounce") === "rebond");
 ok("blocked : le plus sournois, aucune tentative", suitePour("blocked") === "rebond");
-ok("invalid_email", suitePour("invalid_email") === "rebond");
+ok("invalid_email (graphie payload)", suitePour("invalid_email") === "rebond");
+/* T-036 — on s'abonne a `invalid` dans la configuration du webhook et la
+   documentation nomme `invalid_email` dans le payload. Rien ne permet de
+   trancher laquelle arrive : les DEUX doivent passer, sinon un rebond est
+   classe « ignore » et personne ne le sait. */
+ok("invalid (graphie configuration)", suitePour("invalid") === "rebond");
+ok("invalidEmail (camelCase)", suitePour("invalidEmail") === "rebond");
 
 titre("— ce qui n'est PAS un rebond —");
 ok("spam : elle a RECU, c'est autre chose", suitePour("spam") === "plainte");

@@ -59,6 +59,8 @@ qui le montre. Le texte des mails est versionné dans `scripts/mails-atelier.mjs
   (deux phrases distinctes dans le journal, sinon on appelle une cliente pour lui dire qu'on
   n'arrive pas à la joindre) ; `soft_bounce` et `deferred` → ignorés, temporaires, Brevo réessaie.
   Les graphies `snake_case` (payload) et `camelCase` (config du webhook) sont normalisées.
+  ⚠️ `invalid` ET `invalidemail` sont acceptés tous les deux : on s'abonne au premier, la doc
+  nomme le second, et rien ne permet de savoir lequel arrive. Ne pas « nettoyer » ce doublon.
 - **`suggestionEmail` corrige en Damerau, pas en Levenshtein.** L'inversion de deux lettres
   voisines est la faute la plus fréquente et Levenshtein la compte pour DEUX : à un caractère de
   plafond, le garde-fou ratait `gmial.com`, le cas nº1 qu'il visait. ⚠️ Plafond à UN caractère, et

@@ -45,14 +45,22 @@ function normaliser(evenement: string): string {
   return evenement.toLowerCase().replace(/[\s_-]/g, "");
 }
 
-/* Les trois façons dont une adresse peut être morte.
-   — hardbounce   : le serveur d'en face dit « cette boîte n'existe pas » ;
-   — invalidemail : Brevo refuse l'adresse elle-même (mal formée) ;
-   — blocked      : Brevo REFUSE D'ENVOYER, en général parce qu'un rebond dur
-                    antérieur l'a mise sur sa liste noire. C'est le plus
-                    sournois des trois : il n'y a même pas de tentative, et
-                    tous les mails suivants échouent en silence. */
-const REBONDS = new Set(["hardbounce", "invalidemail", "blocked"]);
+/* Les façons dont une adresse peut être morte.
+   — hardbounce            : le serveur d'en face dit « cette boîte n'existe pas » ;
+   — invalid / invalidemail : Brevo refuse l'adresse elle-même (mal formée) ;
+   — blocked               : Brevo REFUSE D'ENVOYER, en général parce qu'un
+                    rebond dur antérieur l'a mise sur sa liste noire. C'est le
+                    plus sournois : il n'y a même pas de tentative, et tous les
+                    mails suivants échouent en silence.
+
+   ⚠️ DEUX GRAPHIES POUR « INVALID », ET C'EST VOULU (T-036). On s'abonne à
+   l'événement `invalid` dans la configuration du webhook, mais la
+   documentation de Brevo nomme `invalid_email` dans le payload. Rien sur le
+   disque ne permet de trancher laquelle arrive réellement, et se tromper
+   coûterait exactement ce que ce module existe pour empêcher : un rebond
+   classé « ignore », rien d'écrit, personne au courant. Une entrée de plus
+   dans un ensemble de chaînes ne coûte rien ; une cliente injoignable, si. */
+const REBONDS = new Set(["hardbounce", "invalid", "invalidemail", "blocked"]);
 
 const PLAINTES = new Set(["spam", "complaint"]);
 
