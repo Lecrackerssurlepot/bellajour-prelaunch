@@ -71,6 +71,29 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
    n'est lu que par `/composer`, il serait ignoré EN SILENCE et la cliente repartirait sur un
    dépôt vide en croyant reprendre le sien.
 
+## Le questionnaire — chaque phrase est un correctif, pas du style
+
+`(atelier)/composer/` — six écrans. **Aucune de ces formulations n'est décorative** : chacune
+répare une perte mesurée sur un vrai dossier (D14, D15). Les réécrire « pour faire plus court »
+rouvre le trou.
+
+1. **L'écran 4 annonce l'étape suivante.** « Vous la recevez sous 48 h » se refermait sur
+   lui-même : on donne ses coordonnées, on reçoit sa couverture. Une cliente a rempli cet écran
+   et n'a jamais déposé une photo. D'où « **Il reste une étape après celle-ci : vos photos** » et
+   le bouton qui la NOMME (« Passer à mes photos », pas « Continuer »).
+2. **L'écran 3 n'a plus de bouton pour sauter.** « Je ne sais pas encore, choisissez pour moi »
+   posait un titre nul, et personne ne choisissait à sa place.
+3. **L'écran 5 dit UNE idée.** Sa phrase disait « vos photos sont arrivées chez nous, mais
+   l'atelier ne les a pas encore reçues » : exact, et illisible. ⚠️ `at-d-envoi--collee` NE COLLE
+   RIEN malgré son nom ; ce qui garde le bouton en vue, c'est la grille repliée
+   (`VIGNETTES_VISIBLES`), et une photo en erreur n'est JAMAIS repliée.
+4. **L'écran 6 nomme ce qui est arrivé**, avec le compte CONFIRMÉ par le serveur (remonté par
+   `onTermine(nb)`). À zéro il n'est pas affiché plutôt qu'inventé.
+5. **Le téléphone est obligatoire, et l'écran dit pourquoi.** Cloudprinter l'exige dans l'adresse ;
+   un champ obligatoire dont on tait la raison se lit comme un fichier qu'on constitue.
+6. **La validation vient de `@/lib/atelier/questionnaire`**, jamais réécrite dans un écran : la
+   route POST lit LA MÊME règle et renvoie `{ error: "champ_manquant", champ }`.
+
 ## Ce qui est mort — ne pas ressusciter
 
 Classes `sjc`, `rs-backdrop`, `hero-count-dot`, la nav verticale « MAISON D'ÉDITION DU SOUVENIR »,
