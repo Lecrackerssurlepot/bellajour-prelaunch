@@ -53,8 +53,8 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-038 | Le webhook des rebonds dit oui à Brevo même quand il n'a rien écrit | atelier | serieux | libre | **fermé** |
 | T-039 | Le webhook des rebonds n'écoute rien tant qu'il n'est pas branché | exploitation | serieux | avis-requis | **fermé** |
 | T-040 | N'importe qui peut se déclarer ambassadeur à la place d'une cliente | paiement | bloquant | avis-requis | nouveau |
-| T-041 | La relève quotidienne écrit les tokens des clientes dans les logs | atelier | serieux | libre | nouveau |
-| T-042 | La vignette d'une photo supprimée reste dans le coffre | donnees | serieux | libre | nouveau |
+| T-041 | La relève quotidienne écrit les tokens des clientes dans les logs | atelier | serieux | libre | **fermé** |
+| T-042 | La vignette d'une photo supprimée reste dans le coffre | donnees | serieux | libre | **fermé** |
 | T-043 | Une panne de base fait dire à la cliente que son dossier n'existe pas | atelier | serieux | libre | nouveau |
 | T-044 | Deux colonnes récentes n'ont pas le filet que toutes leurs voisines ont | donnees | serieux | libre | nouveau |
 | T-045 | On peut savoir qui est cliente de Bellajour, avec son prénom | paiement | serieux | libre | nouveau |

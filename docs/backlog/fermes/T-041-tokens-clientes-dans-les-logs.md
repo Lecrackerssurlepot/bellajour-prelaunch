@@ -5,6 +5,7 @@ domaine: atelier
 gravite: serieux
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-29
 ---
 ## Ce que Mathias a dit
 Rien — audit de sécurité du 29/08/2026.
@@ -24,4 +25,10 @@ Journaliser l'identifiant interne du numéro, ou un préfixe de six caractères,
 entier. Le résumé sert à savoir combien et lesquels ont bougé — un identifiant suffit, et l'admin
 retrouve le dossier avec.
 ## Ce qui a été fait
-—
+Fait le 29/08/2026. Le journal de la relève ne porte plus qu'un préfixe de six caractères
+(`abrege()`), assez pour rapprocher une ligne de journal d'un dossier dans l'atelier, pas assez
+pour y entrer.
+⚠️ **La réponse HTTP garde les tokens entiers, et c'est délibéré** : elle n'est lisible qu'avec le
+secret de la relève, et changer sa forme casserait ce qui la consomme. Seul le `console.log` était
+la fuite — c'est lui qui part dans les journaux Vercel et dans tout collecteur branché dessus.
+Vérifié : types et lint au vert.

@@ -219,7 +219,27 @@ async function relever(request: Request) {
          comme « tout est traité ». */
       tronque: lignes.length >= MAX_DOSSIERS,
     };
-    console.log("[atelier/relever]", JSON.stringify(resume));
+    /* ⚠️ Le journal ne porte JAMAIS un token entier (T-041). `src/app/api/CLAUDE.md` :
+       « le token de 32 caracteres EST l'identite. Ne jamais l'exposer dans une URL
+       partageable, UN LOG ou un mail autre que celui de sa cliente. » La releve
+       balaie jusqu'a 200 dossiers chaque matin : les journaux Vercel accumulaient
+       le mot de passe permanent de chaque cliente, et qui les lit ouvre son dossier,
+       ses photos et son adresse.
+       Six caracteres suffisent a rapprocher une ligne de journal d'un dossier dans
+       l'atelier, et ne permettent pas d'y entrer.
+       La REPONSE, elle, garde les tokens entiers : elle n'est lisible qu'avec le
+       secret, et changer sa forme casserait ce qui la consomme. */
+    const abrege = (s: string) => `${s.slice(0, 6)}…`;
+    console.log(
+      "[atelier/relever]",
+      JSON.stringify({
+        ...resume,
+        envoyes: resume.envoyes.map((e) => ({ ...e, token: abrege(e.token) })),
+        incomplets: resume.incomplets.map((e) => ({ ...e, token: abrege(e.token) })),
+        echecs: resume.echecs.map((e) => ({ ...e, token: abrege(e.token) })),
+        autoValides: resume.autoValides.map((e) => ({ ...e, token: abrege(e.token) })),
+      }),
+    );
 
     return NextResponse.json(resume, { status: 200 });
   } catch (err) {

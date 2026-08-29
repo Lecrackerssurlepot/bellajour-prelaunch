@@ -5,6 +5,7 @@ domaine: donnees
 gravite: serieux
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-29
 ---
 ## Ce que Mathias a dit
 Rien — audit de sécurité du 29/08/2026.
@@ -22,4 +23,15 @@ fausse et invérifiable**.
 Supprimer la vignette dans les deux chemins, avant la ligne, comme l'original. Puis étendre le
 script de purge de T-023 aux vignettes orphelines.
 ## Ce qui a été fait
-—
+Fait le 29/08/2026. La vignette part avec l'original dans **les deux** chemins de suppression :
+`photos/supprimer/route.ts:81` (retrait par la cliente) et `photos/complete/route.ts:163` (rejet
+d'une photo mesurée trop lourde).
+Sans condition sur `vignette_key` : la clé est déterministe (`cleVignetteR2`), et un DELETE sur un
+objet absent ne coûte rien et ne lève rien — donc les dossiers antérieurs à D7, qui n'ont pas de
+vignette, passent sans traitement particulier.
+L'ordre du commentaire d'origine est respecté : les objets d'abord, la ligne ensuite.
+⚠️ Ne règle que l'avenir. Les vignettes déjà orphelines restent à purger avec T-023, dont le script
+devra les compter aussi.
+⚠️ Ne règle pas T-048 : `supprimer()` avale toujours son échec, donc « c'est supprimé » reste
+invérifiable. Les deux tickets se complètent.
+Vérifié : types et lint au vert.

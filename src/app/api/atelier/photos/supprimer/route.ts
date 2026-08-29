@@ -16,7 +16,7 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { isValidNumeroToken } from "@/lib/atelier/token";
-import { supprimer } from "@/lib/atelier/r2";
+import { supprimer, cleVignetteR2 } from "@/lib/atelier/r2";
 import { logEvenement } from "@/lib/atelier/evenements";
 
 export const runtime = "nodejs";
@@ -69,6 +69,16 @@ export async function POST(request: Request) {
        aucun ménage ne le retrouverait jamais. Une ligne sans objet, elle, se
        rattrape (la photo se re-déclare et se renvoie). */
     await supprimer(photo.r2_key);
+    /* ET sa vignette (T-042). Depuis D7 chaque photo depose DEUX objets ; seul
+       l'original etait efface. La ligne disparaissait, l'original aussi, et une
+       copie 320 px restait dans le coffre sans plus aucune ligne pour la
+       retrouver — donc invisible, donc eternelle, exactement ce que le
+       commentaire ci-dessus cherche a eviter.
+       Ce n'est pas qu'une question de menage : le jour ou quelqu'un demande
+       l'effacement de ses donnees, « c'est supprime » doit etre VRAI.
+       Sans condition sur `vignette_key` : la cle est deterministe, et un DELETE
+       sur un objet absent ne coute rien et ne leve rien. */
+    await supprimer(cleVignetteR2(numero.id, photo.id));
 
     const { error: errDel } = await supabase.from("photos").delete().eq("id", photo.id);
     if (errDel) {
