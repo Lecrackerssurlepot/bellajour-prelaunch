@@ -229,6 +229,9 @@ l'impression ». Seul M2 n'a pas de prédécesseur : il porte la seule borne de 
 `ATELIER_M2_DEPUIS` (reculée sur Preview pour le rendre testable).
 ⚠️ **La relève doit tourner tous les jours** (`vercel.json`, 7 h UTC, `CRON_SECRET`). Sans elle,
 M2, M3b, M8 et l'auto-validation à J+7 ne partent JAMAIS.
+✅ **ARMÉE ET PROUVÉE le 29/08/2026** : M2 est parti tout seul à 07:20:12 UTC sur le dossier
+resté vide du 27/08. `CRON_SECRET` est donc bien posé en production. Vercel déclenche dans
+l'heure qui suit l'horaire déclaré, pas à la minute — 7 h 20 est normal, pas un retard.
 Vérifications : `npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts` (153 assertions,
 sans base ni réseau) et `scripts/verif-mails-brevo.ts` (les variables des templates).
 
@@ -426,7 +429,7 @@ probablement cru sa demande terminée. Trois choses le lui disaient mal.
   ⚠️ Best-effort, comme tout envoi de l'atelier : une création de dossier ne doit
   JAMAIS échouer sur un mail. Tant que `BREVO_TEMPLATE_M0_ID` manque dans un
   environnement, rien n'y part et `/admin/atelier/sante` affiche « 1 mail sans
-  template » — c'est le cas de la PRODUCTION jusqu'à ce que la variable y soit posée.
+  template ».
 - **L'écran 6 nomme ce qui est arrivé.** « {{titre}} est entre nos mains » est une
   belle phrase et une phrase vague. Une ligne dit désormais les DEUX choses reçues
   (les photos, AVEC leur nombre, et la demande) et ce qui commence. Le nombre est
@@ -560,7 +563,10 @@ Réf : commit 246d8e5, tokens --bj-nav-android-bg, classe .pv-nav--flat.
 - Relance (session.expired)  = template 23, env BREVO_TEMPLATE_RELANCE_ID, BRANCHÉ (case checkout.session.expired, garde-fou status='pending', params { PRENOM })
 - A3 (album offert au 6e = 30 pages niveau 1+2) = template 22, env BREVO_TEMPLATE_A3_ID, BRANCHÉ (étape 6 du handler completed, verrou atomique waitlist.a3_notified_at, couvre parrain direct niveau 1 + grand-parrain niveau 2, params { PRENOM, PAGES_TOTAL, DASHBOARD_URL })
 - M0 (Atelier — l'accusé, fin de l'écran 4) = **template 38**, env BREVO_TEMPLATE_M0_ID,
-  poussé et vérifié le 28/08/2026 (posé dans .env.local ; **reste à poser sur Vercel**).
+  **ACTIF EN PRODUCTION depuis le 29/08/2026** (vérifié de bout en bout sur bellajour.fr :
+  dossier créé → `mail_envoye {code:"M0", template_id:38}`, puis dossier supprimé).
+  ⚠️ Une variable d'environnement Vercel n'entre en vigueur qu'au déploiement SUIVANT :
+  poser la variable ne suffit pas, il faut redéployer (commit vide c2440d7).
   Déclencheur : POST /api/atelier/numero, dans la seconde où le dossier existe.
   Params { PRENOM, TITRE, LIEN } — aucun chiffre, nb_photos vaut zéro par construction.
   Filet : la relève le rattrape tant que le dossier a MOINS de 24 h. Au-delà, M2 dit la

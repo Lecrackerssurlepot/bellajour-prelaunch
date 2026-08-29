@@ -18,7 +18,20 @@ Les autres mails (M1, M3, M5, M6, M7, M9) partent au moment du geste, depuis
 `/admin`. Pour eux, la relève n'est qu'un filet : le jour où Brevo tousse,
 c'est elle qui rattrape.
 
-## Ce qu'il reste à faire pour l'armer
+## ✅ ARMÉE — prouvé le 29/08/2026
+
+`CRON_SECRET` est posé en production. La preuve n'est pas un réglage vu dans une
+interface, c'est un mail : **M2 est parti tout seul à 07:20:12 UTC** sur le dossier
+resté vide du 27/08. Si le secret avait manqué, la route aurait répondu 404 et ce
+mail n'existerait pas.
+
+⚠️ Vercel déclenche **dans l'heure qui suit** l'horaire déclaré, pas à la minute :
+7 h 20 pour un cron à 7 h est normal, ce n'est pas un retard.
+
+La procédure ci-dessous est conservée pour le jour d'une rotation de secret ou d'un
+nouveau projet.
+
+## Comment on l'arme (référence)
 
 La route refuse tout appel non signé. Vercel signe ses tâches planifiées
 **uniquement si `CRON_SECRET` existe** dans les variables d'environnement.
