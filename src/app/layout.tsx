@@ -34,6 +34,19 @@ const dmSans = DM_Sans({
    Posé au load = innerHeight (viewport de layout, stable). Mis à jour UNIQUEMENT
    si la LARGEUR change (rotation / vrai changement de layout) + orientationchange.
    La barre d'outils iOS ne change que la hauteur → ignorée → plus de saut. */
+/* Pose `data-anim` sur <html> AVANT le premier affichage. Tout le CSS qui
+   cache du contenu en attendant la sequence est conditionne a sa presence
+   (voir les filets en fin de theme.css, univers.css et ouverture.css).
+   S'il est absent, c'est que ce script n'a pas tourne : la page reste
+   entierement lisible, sans mouvement. Motif : T-050 — sans JavaScript, le
+   site servait un ecran NOIR, et sur /numero/<token> la couverture etait
+   invisible pendant que le bouton « Commander » restait visible.
+   Le chien de garde couvre le second cas, plus vicieux : le script en ligne
+   passe mais le bundle n'arrive jamais (chunk en 404 pendant un deploiement,
+   navigateur integre qui etouffe le module). Au bout de 5 s sans signature
+   du code client, on rend la page plutot que de garder un ecran vide. */
+const ANIM_SCRIPT = `(function(){var d=document.documentElement;d.setAttribute('data-anim','');setTimeout(function(){if(!d.hasAttribute('data-anim-ok')){d.removeAttribute('data-anim');}},5000);})();`
+
 const APP_HEIGHT_SCRIPT = `(function(){var d=document.documentElement,w=window;function s(){d.style.setProperty('--app-height',Math.round(w.innerHeight)+'px');}s();var lw=w.innerWidth;w.addEventListener('resize',function(){if(w.innerWidth!==lw){lw=w.innerWidth;s();}},{passive:true});w.addEventListener('orientationchange',function(){lw=w.innerWidth;s();},{passive:true});})();`
 
 export const metadata: Metadata = {
@@ -108,6 +121,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <script dangerouslySetInnerHTML={{ __html: ANIM_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: APP_HEIGHT_SCRIPT }} />
       </head>
       <body>

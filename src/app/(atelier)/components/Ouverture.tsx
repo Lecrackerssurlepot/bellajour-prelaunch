@@ -23,6 +23,13 @@ const PLI = 120, FONDU = 1700, BATTEMENT = 1000
 export default function Ouverture() {
   const cadre = useRef<HTMLElement>(null)
 
+  /* Signe au chien de garde du layout racine que le code client tourne.
+     Sans cette signature, `data-anim` serait retire au bout de 5 s et la
+     page s'afficherait d'un coup, sans animation (T-050). */
+  useEffect(() => {
+    document.documentElement.setAttribute('data-anim-ok', '')
+  }, [])
+
   useEffect(() => {
     const cadreEl = cadre.current
     const accueil = cadreEl?.closest('.at-accueil') as HTMLElement | null

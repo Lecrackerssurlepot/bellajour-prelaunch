@@ -62,7 +62,7 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-047 | Un paiement sous alias n'attribuerait aucun numéro de fondateur | paiement | confort | avis-requis | nouveau |
 | T-048 | La garantie « pas d'objet sans ligne » n'existe pas vraiment | donnees | confort | libre | nouveau |
 | T-049 | L'adresse de retour après paiement n'est pas vérifiée | paiement | serieux | avis-requis | nouveau |
-| T-050 | Sans JavaScript, le site sert un écran noir — y compris la page qui fait payer | front | bloquant | libre | nouveau |
+| T-050 | Sans JavaScript, le site sert un écran noir — y compris la page qui fait payer | front | bloquant | libre | **fermé** |
 | T-051 | Le questionnaire est muet pour qui n'utilise pas la souris | front | serieux | libre | nouveau |
 | T-052 | On refuse une histoire trop courte sans jamais dire qu'elle est trop courte | front | serieux | libre | nouveau |
 | T-053 | Les seuls libellés de l'écran des coordonnées sont illisibles | front | serieux | libre | nouveau |

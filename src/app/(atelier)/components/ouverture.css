@@ -370,3 +370,35 @@
   .at-accueil .descente .fil{height:7vh !important}
   .at-accueil .descente:hover .fil i{animation:none}
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FILET SANS JAVASCRIPT (T-050, 29/08/2026)
+   Ce qui suit ne modifie AUCUNE regle ci-dessus : il les annule quand, et
+   seulement quand, `data-anim` est absent de <html>.
+   L'attribut est pose par un script EN LIGNE dans le layout racine, donc
+   avant le premier affichage. S'il n'est pas la, c'est que le script n'a
+   pas tourne : la page doit alors etre entierement LISIBLE, simplement
+   sans mouvement.
+   Motif : le CSS cachait tout par `opacity:0` et seul le bundle revelait.
+   Un script etouffe (navigateur integre d'Instagram, chunk en 404 pendant
+   un deploiement, JS coupe) servait un ECRAN NOIR. Le trafic vient
+   d'Instagram : c'est exactement la population concernee.
+   ⚠️ Un chien de garde retire l'attribut au bout de 5 s si le code client
+   n'a jamais signe. Consequence assumee : sur une liaison tres lente, on
+   perd l'animation et on garde la page. C'est le bon sens de l'echange.
+   ═══════════════════════════════════════════════════════════════════════ */
+html:not([data-anim]) .at-accueil .h-titre .in,
+html:not([data-anim]) .at-accueil .h-amorce,
+html:not([data-anim]) .at-accueil .h-lede,
+html:not([data-anim]) .at-accueil .h-note,
+html:not([data-anim]) .at-accueil .acte{
+  opacity:1 !important; transform:none !important;
+}
+/* La couverture est decoupee a hauteur nulle tant que la sequence n'a pas
+   joue : sans JS elle doit occuper l'ecran, comme apres l'ouverture. */
+html:not([data-anim]) .at-accueil .h-plein{
+  clip-path:none !important; transition:none !important;
+}
+/* Le voile suit la couverture : sans lui, le texte se poserait sur la
+   photo en pleine lumiere et deviendrait illisible. */
+html:not([data-anim]) .at-accueil .h-voile{opacity:1 !important}
