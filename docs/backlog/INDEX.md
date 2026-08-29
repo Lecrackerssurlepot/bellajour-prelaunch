@@ -43,3 +43,8 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-028 | La page produit affirme un grammage qu'on n'a pas mesuré | produit | serieux | avis-requis | nouveau |
 | T-029 | Deux avertissements de lint traînent depuis le lot 7 | exploitation | confort | libre | nouveau |
 | T-030 | Vérifier si la couverture d'un seul tenant est déjà livrée | atelier | confort | libre | nouveau |
+| T-031 | Une erreur en production n'est vue par personne | exploitation | serieux | avis-requis | nouveau |
+| T-032 | On n'a jamais vérifié qu'une sauvegarde se restaure | donnees | serieux | avis-requis | nouveau |
+| T-033 | Aucun processus pour effacer les données d'une cliente | donnees | serieux | avis-requis | nouveau |
+| T-034 | Aucun plan de retour arrière si un déploiement casse la vente | exploitation | confort | libre | nouveau |
+| T-035 | Le chemin qui encaisse n'a aucun filet automatique | paiement | serieux | libre | nouveau |

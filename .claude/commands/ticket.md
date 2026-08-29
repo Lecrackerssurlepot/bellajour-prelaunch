@@ -1,5 +1,6 @@
 ---
 description: Ouvre un ou plusieurs tickets à partir d'un texte libre. Classe, date, et écrit dans le backlog.
+argument-hint: "<ce que tu constates, en texte libre>"
 ---
 
 Mathias vient de dire : **$ARGUMENTS**

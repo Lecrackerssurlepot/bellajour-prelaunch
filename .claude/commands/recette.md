@@ -1,5 +1,6 @@
 ---
 description: La liste des vérifications visuelles que Mathias peut faire lui-même, avec les URL et ce qu'il doit voir.
+argument-hint: "[zone, ex. magazine]"
 ---
 
 Cible : **$ARGUMENTS** — si vide, la recette complète.

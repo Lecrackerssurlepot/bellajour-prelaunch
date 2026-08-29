@@ -21,6 +21,7 @@ et `docs/reference/ETAT-PRODUCTION.md` pour ce qui doit être posé sur Vercel.
 | Question | Fichier |
 |---|---|
 | Les règles du projet, et où vit chaque savoir | `CLAUDE.md` |
+| Pourquoi la doc est rangée ainsi, avec les sources officielles | `docs/ARCHITECTURE-CONTEXTE.md` |
 | Le travail restant, priorisé | `docs/backlog/INDEX.md` |
 | L'état daté du système (ce qui est branché, ce qui manque) | `docs/reference/ETAT-PRODUCTION.md` |
 | Ce qu'on a tranché, et pourquoi | `docs/DECISIONS.md` |
