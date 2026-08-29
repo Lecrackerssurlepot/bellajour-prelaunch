@@ -27,8 +27,13 @@ Déroule, sans sauter d'étape :
    ET en desktop. Ajoute au ticket, dans « Ce qui a été fait », ce que tu as changé et ce que tu
    as observé — pas ce que tu espérais.
 
-**5. Classer.** Passe le ticket en `fait`, ajoute `ferme: <date>`, déplace le fichier dans
-   `docs/backlog/fermes/`, retire la ligne de l'index. Ajoute une ligne à
+**5. Classer.** Ajoute `ferme: <date>` à l'en-tête, déplace le fichier dans
+   `docs/backlog/fermes/`, et marque la ligne de l'index `**fermé**` — **on ne la retire pas** :
+   l'index doit garder la trace de ce qui a été traité, sinon deux sessions rouvrent le même sujet.
+   ⚠️ **« Ce qui a été fait » ne se ferme JAMAIS sur un tiret.** Un ticket fermé sans compte rendu
+   est un geste sans trace — c'est arrivé le 29/08 sur T-039, un ticket qui touchait la production.
+   Si le compte rendu détaillé vit ailleurs (`ETAT-PRODUCTION.md` pour un fait daté), la section
+   porte le lien et le résumé, pas le vide. Ajoute une ligne à
    `docs/journal/<AAAA-MM-JJ>.md` : le ticket, ce qui a changé, ce qui reste douteux.
    Si le ticket a produit un choix qui coûterait cher à redécouvrir, ajoute une entrée à
    `docs/DECISIONS.md`. Si l'état du système a changé, mets à jour

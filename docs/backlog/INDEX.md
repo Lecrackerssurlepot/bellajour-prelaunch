@@ -22,8 +22,8 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-007 | Un mail sans template se saute en silence, à l'infini | atelier | serieux | libre | nouveau |
 | T-008 | Le rate-limit ne limite rien sur Vercel | paiement | serieux | libre | nouveau |
 | T-009 | Aucune page n'a de canonical | front | serieux | libre | nouveau |
-| T-010 | Rien ne vérifie le code avant un commit | exploitation | serieux | libre | nouveau |
-| T-011 | `.env.example` cache douze variables vivantes | exploitation | serieux | libre | nouveau |
+| T-010 | Rien ne vérifie le code avant un commit | exploitation | serieux | libre | **fermé** |
+| T-011 | `.env.example` cache douze variables vivantes | exploitation | serieux | libre | **fermé** |
 | T-012 | Trente `catch` muets sur des chemins qui écrivent | atelier | serieux | libre | nouveau |
 | T-013 | Les pages animées ignorent « réduire les animations » | front | confort | libre | nouveau |
 | T-014 | Le sitemap ment sur ses dates | front | confort | libre | nouveau |
@@ -41,7 +41,7 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-026 | Les CGV v3.0 n'ont pas été relues par un juriste | produit | serieux | avis-requis | nouveau |
 | T-027 | Les finitions d'impression sont posées par défaut, pas choisies | produit | serieux | avis-requis | nouveau |
 | T-028 | La page produit affirme un grammage qu'on n'a pas mesuré | produit | serieux | avis-requis | nouveau |
-| T-029 | Deux avertissements de lint traînent depuis le lot 7 | exploitation | confort | libre | nouveau |
+| T-029 | Deux avertissements de lint traînent depuis le lot 7 | exploitation | confort | libre | **fermé** |
 | T-030 | Vérifier si la couverture d'un seul tenant est déjà livrée | atelier | confort | libre | nouveau |
 | T-031 | Une erreur en production n'est vue par personne | exploitation | serieux | avis-requis | nouveau |
 | T-032 | On n'a jamais vérifié qu'une sauvegarde se restaure | donnees | serieux | avis-requis | nouveau |

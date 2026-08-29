@@ -29,4 +29,15 @@ dans l'atelier.
 **Question pour Mathias** : tu poses la variable et tu crées le webhook chez Brevo, ou tu veux
 que je te prépare les valeurs exactes à coller ?
 ## Ce qui a été fait
-—
+Fermé le 29/08/2026 par une session parallèle. Le compte rendu complet vit dans
+`docs/reference/ETAT-PRODUCTION.md` § « Les rebonds — actifs, et prouvés de bout en bout » :
+`BREVO_WEBHOOK_SECRET` posée sur Vercel en Production, webhook Brevo **id 2158565** créé sur
+`hardBounce` / `blocked` / `invalid` / `spam` avec l'en-tête `x-bellajour-secret`, et une recette
+RÉELLE — dossier sur une boîte inexistante de notre propre domaine, `email_rebond` au journal
+quatorze secondes plus tard, motif SMTP complet, dossier de test supprimé.
+À retenir : Brevo n'a aucun endpoint de test de webhook, la seule façon d'éprouver la chaîne est
+de provoquer un vrai rebond.
+
+⚠️ Cette section était vide à la fermeture : le compte rendu était allé dans ETAT-PRODUCTION
+sans qu'un lien soit laissé ici. Comblé le 29/08. La règle de la commande `/travailler` a été
+précisée en conséquence — voir aussi la note sur T-036 et la double graphie de `invalid`.

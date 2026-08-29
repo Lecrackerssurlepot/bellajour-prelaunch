@@ -32,6 +32,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...sauf le modèle, qui n'a d'intérêt que partagé. Il n'a JAMAIS ete versionne
+# jusqu'au 29/08/2026 : la regle `.env*` l'attrapait, donc la seule liste des
+# variables du projet vivait sur un seul disque. Exception bornee au fichier
+# exact : `.env.local` et tout le reste restent exclus.
+!.env.example
 
 # vercel
 .vercel
