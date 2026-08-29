@@ -23,6 +23,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 | Cloudprinter | branché, **sandbox** | recette de bout en bout le 26/08/2026 |
 | Stripe | branché | prévente depuis juin, atelier depuis le 24/08 |
 | Prévente (`/preventes`, `/lancement`) | retirées, 307 vers `/` | 28/08/2026 |
+| Rebonds Brevo (`/api/brevo/webhook`) | **code prêt, PAS encore actif** | écrit le 29/08/2026 |
 
 Quatorze fondateurs ont des droits ouverts sous les CGV v2.5, maintenus en régime transitoire.
 
@@ -32,6 +33,20 @@ Atelier (les douze) : M0=38 · M1=27 · M2=30 · M2b=37 · M3=28 · M3b=31 · M4
 M7=34 · M8=35 · M9=36. Prévente : F1=17 · S1=18 · P3=19 · A1=20 · A2=21 · A3=22 · Relance=23.
 Le texte est versionné dans `scripts/mails-atelier.mjs`, pas dans l'interface Brevo.
 `--pousser` réécrit les DIX templates de l'atelier ; borner avec `--seulement <CODE>`.
+
+## Les rebonds — ce qu'il reste à brancher (29/08/2026)
+
+La route `/api/brevo/webhook` est écrite, testée en local (cinq portes + chemin réel + rejeu) et
+déployable. **Elle ne reçoit rien tant que deux gestes manquent** :
+1. `BREVO_WEBHOOK_SECRET` dans les variables Vercel (Production), puis **redéployer** — une
+   variable Vercel n'entre en vigueur qu'au déploiement suivant. La valeur est déjà dans
+   `.env.local`, à recopier telle quelle.
+2. Créer le webhook chez Brevo : `POST /v3/webhooks`, type `transactional`, événements
+   `hardBounce`, `blocked`, `invalid`, `spam`, en-tête `x-bellajour-secret` avec la même valeur.
+Sans le premier geste, Brevo appellera et recevra un 404 : la route est fermée par défaut.
+
+Le garde-fou de saisie (`suggestionEmail`, écran 4), lui, est autonome : il part avec le
+déploiement du questionnaire, sans variable ni configuration.
 
 **Jamais envoyés en vrai** : M3b, M9, et l'auto-validation à J+7. M5, M6, M7, M8 sont prouvés
 (M7 et M8 par la recette Cloudprinter du 26/08). Voir T-025.

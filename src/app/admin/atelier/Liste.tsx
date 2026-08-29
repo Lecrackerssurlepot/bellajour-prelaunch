@@ -131,6 +131,18 @@ function Ligne({
             </span>
           ) : null}
           {l.rembourse ? <span className="ate-tag ate-tag--alerte">remboursé</span> : null}
+          {/* Le seul marqueur qui dise qu'un dossier d'apparence normale est
+              en réalité INJOIGNABLE. Rouge, comme « remboursé » : ce n'est pas
+              une attente, c'est une panne, et elle ne se répare pas toute
+              seule. */}
+          {l.emailRebond ? (
+            <span
+              className="ate-tag ate-tag--alerte"
+              title="Un de nos mails a définitivement rebondi : corriger l'adresse ou appeler"
+            >
+              ne reçoit pas
+            </span>
+          ) : null}
           {/* Qui l'a en main. Sans cette marque, à deux, on compose deux fois
               le même numéro — ou aucun, chacun croyant que l'autre s'en
               occupe. La seconde est la plus probable, et la plus silencieuse. */}

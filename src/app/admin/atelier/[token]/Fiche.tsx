@@ -353,6 +353,33 @@ export default function Fiche({
         </div>
       ) : null}
 
+      {/* ── L'ADRESSE NE REÇOIT PAS ──────────────────────────────────
+          Le bandeau le plus important de la fiche, parce que c'est le seul
+          problème que RIEN d'autre ne montre. Tant qu'on ne l'écoutait pas,
+          une faute de frappe sur l'adresse produisait un dossier parfaitement
+          normal à l'écran, et un silence total chez la cliente.
+
+          Il porte le téléphone, quand il y en a un : sans lui, le bandeau
+          annonce un problème et laisse chercher la solution ailleurs. Le
+          téléphone est obligatoire depuis le 28/08, donc les dossiers récents
+          l'ont tous. */}
+      {l.emailRebond ? (
+        <div className="ate-bandeau ate-bandeau--alerte">
+          <b>Cette adresse ne reçoit pas nos mails.</b> Un envoi a définitivement
+          rebondi sur {l.email || "cette adresse"} — elle n&apos;a donc reçu aucun
+          de nos messages, et n&apos;en recevra aucun. Le détail est dans le journal,
+          en bas de cette fiche.
+          {fiche.telephone ? (
+            <>
+              {" "}
+              Son téléphone : <b>{fiche.telephone}</b>.
+            </>
+          ) : (
+            " Ce dossier ne porte pas de téléphone : il n'y a aucun autre moyen de la joindre."
+          )}
+        </div>
+      ) : null}
+
       {/* ── LE DÉPÔT N'EST PAS TERMINÉ ──────────────────────────────
           Le cas qui a coûté cher le 25/08 : 55 photos dans le coffre, un
           dossier en tête de pile « à faire », et personne pour remarquer que

@@ -33,6 +33,11 @@ pas une intention. Cookie HMAC `bj_admin`, comparaison `timingSafeEqual`. Le nom
   téléchargement gardent l'ORIGINAL. Les dossiers anciens et les HEIC n'ont pas de vignette.
 - **« Télécharger le lot »** ouvre le sélecteur de dossier AVANT tout `await` : Chrome exige une
   activation utilisateur fraîche. Dépend du CORS du bucket R2 en GET.
+- **Le tag rouge « ne reçoit pas »** est le seul marqueur qui dise qu'un dossier d'apparence
+  normale est INJOIGNABLE (journal `email_rebond`, posé par le webhook Brevo). Lu dans la MÊME
+  requête que les remboursements, sans colonne ni migration. La fiche en fait un bandeau qui
+  rappelle le téléphone ; la page santé le remonte en ROUGE **sans borne de date** — un rebond ne
+  se périme pas au bout d'une semaine, contrairement aux mails en échec.
 
 ## Écrans
 

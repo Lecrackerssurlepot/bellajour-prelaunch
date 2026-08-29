@@ -325,6 +325,9 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
       enCharge: g.enCharge ?? null,
       paye: Boolean(g.paye),
       rembourse: Boolean(g.rembourse),
+      /* La démo ne met en scène aucun rebond : elle sert à montrer le
+         parcours nominal, pas ses pannes. */
+      emailRebond: false,
       /* En démonstration, « nouveau » = arrivé dans les deux derniers jours
          et jamais ouvert : on veut voir le badge, pas simuler une table. */
       nouveau: depot === "termine" && g.ouvertIlYA <= 2,

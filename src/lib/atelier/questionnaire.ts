@@ -162,3 +162,105 @@ export function premierManquant(
   }
   return null;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LE GARDE-FOU DE LA FAUTE DE FRAPPE
+
+   Une adresse mal tapée est le seul point du parcours qui échoue sans rien
+   laisser voir : le dossier est créé, la cliente ne reçoit rien, et elle
+   pense que c'est nous qui ne répondons pas. Le webhook Brevo le RATTRAPE
+   après coup ; ces quelques lignes l'évitent avant.
+
+   ⚠️ ON SUGGÈRE, ON NE BLOQUE JAMAIS. Un domaine rare, un domaine
+   d'entreprise, un nouveau fournisseur : refuser une adresse valide coûte
+   une cliente, bien plus cher que le rebond qu'on essaie d'éviter. La
+   correction est PROPOSÉE, et c'est elle qui clique.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Les domaines qui couvrent l'écrasante majorité du courrier des particuliers
+ * en France. La liste ne sert QU'À MESURER UNE DISTANCE : elle n'autorise
+ * rien et n'interdit rien. Une adresse dont le domaine n'y ressemble pas du
+ * tout passe sans un mot.
+ */
+const DOMAINES_COURANTS = [
+  "gmail.com",
+  "hotmail.com", "hotmail.fr",
+  "outlook.com", "outlook.fr",
+  "yahoo.com", "yahoo.fr",
+  "orange.fr", "wanadoo.fr",
+  "free.fr", "sfr.fr", "laposte.net",
+  "live.fr", "live.com",
+  "icloud.com", "me.com",
+  "bbox.fr", "numericable.fr", "aol.com", "protonmail.com", "proton.me",
+];
+
+/**
+ * Distance de Damerau-Levenshtein (alignement optimal), bornée.
+ *
+ * ⚠️ DAMERAU, ET PAS LEVENSHTEIN : la différence n'est pas académique, c'est
+ * tout l'intérêt de la fonction. Levenshtein compte l'inversion de deux
+ * lettres pour DEUX opérations, donc « gmial.com » y est à distance 2 de
+ * « gmail.com » — et l'inversion de deux lettres voisines est précisément la
+ * faute de frappe la plus fréquente. Avec Levenshtein et un plafond de 1, le
+ * garde-fou ratait le cas nº1 qu'il était censé attraper (mesuré : gmial et
+ * hotmial passaient au travers). Damerau la compte pour une.
+ */
+function distance(a: string, b: string, max: number): number {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+
+  /* Trois lignes suffisent : l'avant-précédente ne sert qu'à la transposition. */
+  let avant: number[] = [];
+  let precedente = Array.from({ length: b.length + 1 }, (_, i) => i);
+
+  for (let i = 1; i <= a.length; i++) {
+    const courante = [i];
+    let meilleure = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cout = a[i - 1] === b[j - 1] ? 0 : 1;
+      let v = Math.min(
+        precedente[j] + 1,
+        courante[j - 1] + 1,
+        precedente[j - 1] + cout,
+      );
+      /* La transposition : « ia » lu là où on attendait « ai ». */
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        v = Math.min(v, avant[j - 2] + 1);
+      }
+      courante[j] = v;
+      if (v < meilleure) meilleure = v;
+    }
+    /* Toute la ligne dépasse déjà le plafond : aucune suite ne peut redescendre. */
+    if (meilleure > max) return max + 1;
+    avant = precedente;
+    precedente = courante;
+  }
+  return precedente[b.length];
+}
+
+/**
+ * L'adresse corrigée si le domaine ressemble de très près à un domaine
+ * courant sans en être un, sinon `null`.
+ *
+ * Un seul caractère d'écart, jamais deux : à distance 2, on commence à
+ * « corriger » des domaines parfaitement réels (`free.fr` vers `live.fr`), et
+ * une suggestion fausse est pire qu'aucune suggestion — elle invite la
+ * cliente à casser une adresse qui marchait.
+ */
+export function suggestionEmail(valeur: string): string | null {
+  const v = valeur.trim().toLowerCase();
+  const at = v.lastIndexOf("@");
+  if (at <= 0 || at === v.length - 1) return null;
+
+  const local = v.slice(0, at);
+  const domaine = v.slice(at + 1);
+
+  /* Déjà un domaine courant : rien à dire. C'est le cas de l'immense
+     majorité des saisies, et il doit coûter une comparaison, pas un calcul. */
+  if (DOMAINES_COURANTS.includes(domaine)) return null;
+
+  for (const candidat of DOMAINES_COURANTS) {
+    if (distance(domaine, candidat, 1) <= 1) return `${local}@${candidat}`;
+  }
+  return null;
+}
