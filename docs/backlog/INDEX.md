@@ -48,7 +48,7 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-033 | Aucun processus pour effacer les données d'une cliente | donnees | serieux | avis-requis | nouveau |
 | T-034 | Aucun plan de retour arrière si un déploiement casse la vente | exploitation | confort | libre | nouveau |
 | T-035 | Le chemin qui encaisse n'a aucun filet automatique | paiement | serieux | libre | nouveau |
-| T-036 | Un rebond « invalid » pourrait être ignoré en silence | atelier | serieux | libre | nouveau |
+| T-036 | Un rebond « invalid » pourrait être ignoré en silence | atelier | serieux | libre | **fermé** |
 | T-037 | Un signalement en spam est enregistré mais invisible | admin | serieux | libre | nouveau |
-| T-038 | Le webhook des rebonds dit oui à Brevo même quand il n'a rien écrit | atelier | serieux | libre | nouveau |
-| T-039 | Le webhook des rebonds n'écoute rien tant qu'il n'est pas branché | exploitation | serieux | avis-requis | nouveau |
+| T-038 | Le webhook des rebonds dit oui à Brevo même quand il n'a rien écrit | atelier | serieux | libre | **fermé** |
+| T-039 | Le webhook des rebonds n'écoute rien tant qu'il n'est pas branché | exploitation | serieux | avis-requis | **fermé** |

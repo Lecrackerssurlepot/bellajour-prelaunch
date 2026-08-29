@@ -126,26 +126,52 @@ export async function POST(request: Request) {
        double qu'un rebond perdu. */
     let dejaVus = new Set<string>();
     if (signal.messageId) {
-      const { data: connus } = await supabase
+      const { data: connus, error: errDedup } = await supabase
         .from("evenements")
         .select("numero_id")
         .eq("type", type)
         .eq("payload->>message_id", signal.messageId)
         .in("numero_id", lignes.map((l) => l.id))
         .returns<Array<{ numero_id: string }>>();
+
+      /* T-038 — son erreur était jetée. Une lecture en échec rendait un
+         ensemble VIDE, donc une ligne en double, sans un mot. On préfère
+         faire réessayer Brevo : un doublon silencieux dans le journal est
+         plus difficile à voir qu'un retry. */
+      if (errDedup) {
+        console.error("[brevo/webhook] dédoublonnage échoué", errDedup.code, errDedup.message);
+        return NextResponse.json({ error: "internal" }, { status: 500 });
+      }
       dejaVus = new Set((connus ?? []).map((c) => c.numero_id));
     }
 
+    /* ── T-038 : ON LIT CE QUE L'ÉCRITURE RÉPOND ────────────────────────
+       `logEvenement` est best-effort strict et ne throw JAMAIS. Ignorer sa
+       valeur revenait à répondre 200 à Brevo sur une écriture ratée — et
+       Brevo ne réessaie que sur un code d'erreur, donc le rebond était perdu
+       DÉFINITIVEMENT. C'était le mode de panne exact que cette route existe
+       pour supprimer, reproduit dans la route elle-même.
+       Un seul échec suffit à faire rendre 500 : leur rejeu est le filet, et
+       les lignes déjà écrites sont protégées du doublon par `message-id`. */
     const ecrits: string[] = [];
+    let echec = false;
     for (const ligne of lignes) {
       if (dejaVus.has(ligne.id)) continue;
-      await logEvenement(supabase, ligne.id, type, {
+      const ok = await logEvenement(supabase, ligne.id, type, {
         evenement: signal.evenement,
         raison: signal.raison,
         sujet: signal.sujet,
         message_id: signal.messageId,
       });
-      ecrits.push(ligne.token);
+      if (ok) ecrits.push(ligne.token);
+      else echec = true;
+    }
+
+    if (echec) {
+      console.error(
+        `[brevo/webhook] ${signal.evenement} : écriture partielle (${ecrits.length}/${lignes.length}) — 500 pour que Brevo réessaie`,
+      );
+      return NextResponse.json({ error: "journal_incomplet" }, { status: 500 });
     }
 
     console.log(

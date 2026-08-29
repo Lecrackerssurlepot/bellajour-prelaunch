@@ -33,6 +33,11 @@ Chargé dès qu'on touche une route.
 | `/api/atelier/photos/supprimer` | DELETE R2 irréversible |
 | `/api/brevo/webhook` | **rien qu'une ligne de journal** : aucun état, aucun mail |
 
+⚠️ **Un webhook ne doit jamais mentir sur son succès.** `logEvenement` est best-effort et ne
+throw pas : ignorer sa valeur, c'est répondre 200 sur une écriture ratée, et Brevo comme
+Cloudprinter ne réessaient que sur un code d'erreur — le signal est alors perdu DÉFINITIVEMENT.
+Lire le résultat, rendre 500 sinon (T-038).
+
 ## Règles
 
 - **Le prix vient du serveur, jamais du client.** Le front envoie `expected_offer` pour l'affichage
