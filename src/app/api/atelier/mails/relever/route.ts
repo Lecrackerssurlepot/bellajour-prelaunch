@@ -32,8 +32,8 @@
  *
  *    Les mails immédiats (M1, M3, M5, M6, M7, M9) partent déjà au moment du
  *    geste ; la relève est leur FILET, pour le jour où Brevo tousse. Les
- *    mails à retardement (M2 et M2b à J+1, M3b à J+3, M8 à J+3 après
- *    livraison)
+ *    mails à retardement (M2 et M2b passé 12 h — DELAI_RELANCE_DEPOT dans
+ *    mails.ts, pas ici —, M3b à J+3, M8 à J+3 après livraison)
  *    n'ont AUCUN déclencheur possible : ils n'existent que par ce balayage.
  *
  * 2. FERMER LA PRODUCTION. L'auto-validation à J+7 (PRD §11) : sans elle,

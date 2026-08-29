@@ -336,3 +336,28 @@ selon l'heure d'inscription ; une seule relance part à vie (`sante.ts` exclut v
 le dépôt non terminé des « oubliés », correction du 25/08 qu'il ne faut pas défaire à la
 légère) ; aucun rebond Brevo n'est traité, donc une adresse mal tapée tue le dossier en
 silence.
+
+D16 (29/08/2026) — **Le seuil de relance du dépôt passe de 24 h à 12 h.**
+`DELAI_RELANCE_DEPOT`, dans mails.ts, nommé plutôt que laissé en `JOUR` : c'est un
+réglage produit, pas une unité de temps.
+**Pourquoi.** Le seuil n'est PAS le délai réel. La relève ne passe qu'une fois par jour
+(7 h UTC, et Vercel déclenche dans l'heure qui suit) : le mail part au premier balayage
+POSTÉRIEUR au seuil. À 24 h, le « J+1 » annoncé valait donc entre 24 h et 46 h selon
+l'heure d'inscription. Cas mesuré, et c'est le dossier qui a lancé tout ce chantier :
+ouvert le 27/08 à 10 h 24 UTC, il n'avait que 20,6 h au balayage du 28/08 à 7 h — rien
+n'est parti ; sa relance n'est tombée que le 29/08 à 7 h 20, quarante-cinq heures plus
+tard. Deux jours de silence pour quelqu'un qui venait de laisser son adresse.
+À 12 h, toute inscription d'avant ~19 h est relancée le lendemain matin, et le pire cas
+retombe à ~31 h.
+**Pourquoi pas plus bas.** En dessous, ce n'est plus le seuil qui borne mais le passage
+quotidien de la relève : on gagnerait zéro minute. Et le plancher est humain — quelqu'un
+qui commence son dépôt le soir doit pouvoir le finir le lendemain sans avoir été relancé
+entre-temps.
+⚠️ **LE FILET DE M0 A DÛ SUIVRE, ET C'EST LE VRAI PIÈGE DE CE CHANGEMENT.** Le bloc qui
+rattrape un M0 raté se termine par un `break`. Sa borne était `JOUR` : la laisser là
+pendant que M2 descendait à 12 h aurait créé une fenêtre de douze heures où un dossier
+partait avec M0 et **n'atteignait jamais la relance** — un mail d'accusé à la place
+d'une relance, sans rien dans les logs pour le dire. Les deux bornes lisent désormais la
+MÊME constante et ne peuvent bouger qu'ensemble. Cinq assertions le verrouillent
+(« aucun trou entre l'accusé et la relance »), dont une qui rejoue le dossier réel du
+27/08.

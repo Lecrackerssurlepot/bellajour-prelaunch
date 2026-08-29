@@ -395,6 +395,28 @@ function miseEnServiceM2(): number {
 const HEURE = 3_600_000;
 const JOUR = 24 * HEURE;
 
+/**
+ * L'âge à partir duquel un dépôt inachevé mérite une relance.
+ *
+ * ⚠️ CE N'EST PAS LE DÉLAI RÉEL DE LA RELANCE. La relève ne passe qu'une fois
+ * par jour (vercel.json, 7 h UTC, et Vercel déclenche dans l'heure qui suit) :
+ * le mail part au premier balayage POSTÉRIEUR à ce seuil, pas à l'heure pile.
+ *
+ * À 24 h, le « J+1 » annoncé valait en réalité entre 24 h et 46 h selon
+ * l'heure d'inscription. Cas mesuré — un dossier ouvert le 27/08 à 10 h 24
+ * UTC : au balayage du 28/08 à 7 h, 20,6 h s'étaient écoulées, donc rien ; sa
+ * relance n'est partie que le 29/08 à 7 h 20, quarante-cinq heures plus tard.
+ * Deux jours de silence pour quelqu'un qui venait de laisser son adresse.
+ *
+ * À 12 h, toute inscription d'avant ~19 h est relancée le lendemain matin, et
+ * le pire cas retombe à ~31 h. Descendre plus bas ne gagnerait rien : ce n'est
+ * plus le seuil qui borne, c'est le passage quotidien de la relève.
+ *
+ * Le plancher, lui, est humain : quelqu'un qui commence son dépôt le soir doit
+ * pouvoir le finir le lendemain sans avoir été relancé entre-temps.
+ */
+const DELAI_RELANCE_DEPOT = 12 * HEURE;
+
 /** Ce que le balayage sait des mails déjà partis pour un dossier. */
 export type Envoyes = Map<string, string>; /* code -> envoye_le (ISO) */
 
@@ -436,21 +458,26 @@ export function codesPour(
       /* ── M0, LE FILET DE L'ACCUSÉ ───────────────────────────────────
          M0 part normalement dans la seconde, depuis POST /api/atelier/numero.
          Ici, on ne rattrape QUE le cas où cet envoi a échoué — et seulement
-         tant que M2 n'est pas dû. Passé 24 h, M2 dit la même chose en mieux :
-         faire arriver « votre numéro est ouvert » la veille du jour où l'on
-         écrit « il manque vos photos » ne servirait qu'à écrire deux fois.
+         tant que M2 n'est pas dû. Au-delà, M2 dit la même chose en mieux :
+         faire arriver « votre numéro est ouvert » juste avant « il manque vos
+         photos » ne servirait qu'à écrire deux fois.
          ⚠️ Cette borne exclut d'office tous les dossiers ANTÉRIEURS au
          branchement de M0 : aucun accusé rétroactif à quelqu'un qui attend
-         depuis une semaine. */
+         depuis une semaine.
+         ⚠️ LA BORNE EST LA MÊME QUE CELLE DE LA RELANCE, et ce n'est pas une
+         coquetterie : ce bloc se termine par un `break`. Si le filet allait
+         plus loin que le seuil de M2, un dossier situé entre les deux
+         partirait avec M0 et la relance ne serait JAMAIS atteinte. Les deux
+         bornes ne peuvent que bouger ensemble. */
       const ageDossier = n.created_at
         ? maintenant.getTime() - Date.parse(n.created_at)
         : 0;
-      if (!deja("M0") && ageDossier < JOUR) {
+      if (!deja("M0") && ageDossier < DELAI_RELANCE_DEPOT) {
         dus.push("M0");
         break;
       }
 
-      /* ── la relance, à J+1 ──────────────────────────────────────────
+      /* ── la relance, passé DELAI_RELANCE_DEPOT ──────────────────────
          Deux situations, deux mails, et surtout PAS le même texte.
 
          Avant le 25/08, la relance exigeait `nb_photos === 0`. Une cliente
@@ -465,7 +492,7 @@ export function codesPour(
       if (
         n.created_at &&
         Date.parse(n.created_at) >= miseEnServiceM2() &&
-        maintenant.getTime() - Date.parse(n.created_at) >= JOUR
+        maintenant.getTime() - Date.parse(n.created_at) >= DELAI_RELANCE_DEPOT
       ) {
         dus.push(depot === "abandonne" ? "M2b" : "M2");
       }

@@ -9,7 +9,7 @@ Quatre choses n'existent QUE par elle :
 
 | | Ce qui ne partirait jamais sans le cron |
 |---|---|
-| **M2** | « Il manque les photos », à J+1 d'un questionnaire sans dépôt |
+| **M2** | « Il manque les photos », passé 12 h sur un questionnaire sans dépôt |
 | **M3b** | La relance à J+3 — *« le mail qui rapporte le plus de tout le système »* (PRD §10) |
 | **M8** | « Le prochain moment ? », à J+3 après livraison |
 | **Auto-validation J+7** | Sans elle, « une part des dossiers payés dort indéfiniment et la production ne se ferme jamais » (PRD §11) |

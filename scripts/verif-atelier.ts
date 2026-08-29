@@ -482,8 +482,27 @@ ok("M0 deja parti : JAMAIS deux fois",
 
 titre("— M0 ne double JAMAIS M2 —");
 const dusVieux = codesPour(ouvert(30), env(), MAINTENANT);
-ok("passe 24 h : M2 seul, pas d'accuse tardif",
+ok("passe le seuil : M2 seul, pas d'accuse tardif",
    dusVieux.includes("M2") && !dusVieux.includes("M0"));
+
+/* ⚠️ LE PIEGE DU `break`. Le filet M0 se termine par un `break` : si sa borne
+   depassait le seuil de relance, un dossier situe ENTRE les deux partirait
+   avec M0 et n'atteindrait jamais M2. Ces trois lignes verrouillent la
+   coincidence exacte des deux bornes, seuil de 12 h compris. */
+titre("— aucun trou entre l'accuse et la relance (seuil 12 h) —");
+ok("11 h : l'accuse, pas encore la relance",
+   codesPour(ouvert(11), env(), MAINTENANT).join() === "M0");
+ok("13 h sans M0 : la RELANCE, et le filet ne l'avale pas",
+   codesPour(ouvert(13), env(), MAINTENANT).join() === "M2");
+ok("13 h avec M0 deja parti : la relance aussi",
+   codesPour(ouvert(13), env(["M0", ilYA(0)]), MAINTENANT).join() === "M2");
+ok("13 h, 55 photos jamais envoyees : M2b, jamais M0",
+   codesPour(d({ etat: "photos_recues", consent_photos: false, nb_photos: 55,
+     created_at: new Date(MAINTENANT.getTime() - 13 * H).toISOString(),
+     etat_maj_le: new Date(MAINTENANT.getTime() - 13 * H).toISOString() }),
+     env(), MAINTENANT).join() === "M2b");
+ok("le dossier reel du 27/08 (45 h) serait relance des le premier balayage",
+   codesPour(ouvert(45), env(), MAINTENANT).join() === "M2");
 ok("un dossier ANTERIEUR au branchement ne recoit aucun accuse retroactif",
    !codesPour(ouvert(9 * 24), env(), MAINTENANT).includes("M0"));
 

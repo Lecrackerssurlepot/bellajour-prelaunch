@@ -458,10 +458,14 @@ R2 dès qu'elle est choisie et `nb_photos` monte au fil de l'eau : sur la recett
 Pendant cette fenêtre l'admin affiche un dossier plein qui n'est pas validé — c'est
 exactement ce qui fait lire un dépôt en cours comme une demande finie. Le seul signal
 de fin reste `consent_photos`, et c'est le tag « dépôt non terminé » qui le dit.
-⚠️ **Ce qui reste ouvert.** M2 arrive encore entre 24 h et 46 h selon l'heure
-d'inscription (seuil à 24 h, relève une fois par jour à 7 h UTC), une seule relance
-part à vie (`sante.ts` exclut volontairement le dépôt non terminé des « oubliés »), et
-aucun rebond Brevo n'est traité : une adresse mal tapée tue le dossier en silence.
+**Seuil de relance abaissé à 12 h le 29/08/2026** (`DELAI_RELANCE_DEPOT`, mails.ts).
+À 24 h, le « J+1 » annoncé valait en pratique 24 à 46 h selon l'heure d'inscription :
+le dossier du 27/08 (10 h 24 UTC) a attendu 45 heures. À 12 h, toute inscription
+d'avant ~19 h est relancée le lendemain matin, pire cas ~31 h. Descendre plus bas ne
+gagnerait rien : ce n'est plus le seuil qui borne, c'est le passage quotidien.
+⚠️ **Ce qui reste ouvert.** Une seule relance part à vie (`sante.ts` exclut
+volontairement le dépôt non terminé des « oubliés »), et aucun rebond Brevo n'est
+traité : une adresse mal tapée tue le dossier en silence.
 
 ## Dashboard interne /admin
 - /admin : dashboard interne LECTURE SEULE (inscrits / clients / ambassadeurs,
@@ -569,11 +573,15 @@ Réf : commit 246d8e5, tokens --bj-nav-android-bg, classe .pv-nav--flat.
   poser la variable ne suffit pas, il faut redéployer (commit vide c2440d7).
   Déclencheur : POST /api/atelier/numero, dans la seconde où le dossier existe.
   Params { PRENOM, TITRE, LIEN } — aucun chiffre, nb_photos vaut zéro par construction.
-  Filet : la relève le rattrape tant que le dossier a MOINS de 24 h. Au-delà, M2 dit la
-  même chose en mieux, et un accusé tardif ferait deux mails pour un seul message.
+  Filet : la relève le rattrape tant que le dossier a MOINS de `DELAI_RELANCE_DEPOT`
+  (12 h). Au-delà, M2 dit la même chose en mieux.
+  ⚠️ **CETTE BORNE EST LA MÊME QUE CELLE DE M2, ET DOIT LE RESTER** : le bloc du filet
+  se termine par un `break`. Si le filet allait plus loin que le seuil de relance, un
+  dossier situé entre les deux partirait avec M0 et n'atteindrait JAMAIS M2. Les deux
+  bornes ne bougent qu'ensemble (assertions « aucun trou entre l'accusé et la relance »).
 - M2b (Atelier — dépôt resté en plan) = env BREVO_TEMPLATE_M2B_ID, **template à créer**
   (`node scripts/mails-atelier.mjs --pousser`, puis coller l'ID dans .env.local et Vercel).
-  Déclencheur : relève quotidienne, J+1, dossier état 1 avec des photos ET sans consent_photos.
+  Déclencheur : relève quotidienne, dossier état 1 de plus de 12 h avec des photos ET sans consent_photos.
   Params { PRENOM, TITRE, NB_PHOTOS, LIEN }. Tant que l'env manque, la relève le signale
   « sans_template » et n'envoie rien.
 - M1 (Atelier — dépôt terminé) = template 27, env BREVO_TEMPLATE_M1_ID, déclencheur PATCH /api/atelier/numero branche consent_photos (le SEUL signal serveur de fin de dépôt, posé par depot/moteur.ts finaliser()), params { PRENOM, TITRE, NB_PHOTOS, LIEN }
