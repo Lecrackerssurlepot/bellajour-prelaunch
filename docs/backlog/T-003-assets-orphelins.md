@@ -19,6 +19,14 @@ visiteuse (rien ne les demande), donc ce n'est pas un problème de vitesse de pa
 poids de build et de dépôt.
 ⚠️ `public/images/lancement/galerie/` est VIVANT (`Univers.tsx:505`, `Corps.tsx:109`) : ne pas
 emporter tout `lancement/`.
+⚠️ **PIÈGE DÉCOUVERT LE 29/08, à lire avant tout déplacement.**
+`src/app/opengraph-image.tsx:34-35` lit `public/images/ui/logo.webp` ET
+`public/images/header-bellajour.webp` via sharp, **avec un `throw` en cas d'échec**.
+`header-bellajour.webp` n'est référencée QUE par ce fichier et `(atelier)/page.tsx` : elle a donc
+tout d'une orpheline, et la déplacer **ferait échouer le build entier** — y compris celui qui
+porterait un correctif urgent sur la vente. Voir T-069, qui propose de remplacer ces `throw` par
+un repli. **Traiter T-069 AVANT ce ticket.**
+
 ## Ce que je propose
 Déplacer les dossiers orphelins vers `archive/assets/` avec un README, après un grep de
 confirmation fichier par fichier. Jamais de suppression.

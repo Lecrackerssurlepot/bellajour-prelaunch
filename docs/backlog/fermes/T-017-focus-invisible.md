@@ -5,6 +5,7 @@ domaine: front
 gravite: confort
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-29
 ---
 ## Ce que Mathias a dit
 Rien — audit du 29/08/2026.
@@ -19,4 +20,13 @@ Un anneau de focus commun, une fois, dans `globals.css`, dérivé de `--bj-actio
 `--c-accent` côté sombre — puis retirer les surcharges locales qui l'annulent. Vérifier à la
 tabulation sur `/`, `/magazine`, `/composer` et une page légale.
 ## Ce qui a été fait
-—
+**Périmé — vérifié le 29/08/2026.** Un anneau de focus existe bien : `globals.css:69`
+(`:focus-visible { outline: 2px solid var(--bj-action) }`) pour le monde crème, et
+`theme.css:170` (`.bj-atelier :focus-visible`) pour le monde sombre. Le ticket comptait des
+feuilles sans règle locale, alors que la règle est globale et héritée.
+
+⚠️ Ce qui reste vrai, et qui est ailleurs : la loupe ne piège pas le `Tab` et laisse atteindre le
+bouton de paiement sous son fond noir (**T-055**), et le questionnaire ne déplace jamais le focus
+d'un écran à l'autre (**T-051**). Ce sont de vrais défauts de navigation au clavier — mais pas
+un défaut de visibilité du focus.
+Fermé ici, poursuivi là-bas.

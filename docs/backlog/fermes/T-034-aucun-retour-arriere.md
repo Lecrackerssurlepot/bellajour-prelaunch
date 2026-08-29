@@ -5,6 +5,7 @@ domaine: exploitation
 gravite: confort
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-29
 ---
 ## Ce que Mathias a dit
 Rien — angle mort identifié le 29/08 en revue de préparation au lancement.
@@ -20,4 +21,13 @@ comment vérifier sur l'URL de déploiement plutôt que sur bellajour.fr, et les
 plus probables avec leur premier geste (paiement qui ne remonte pas, mail qui ne part pas,
 impression bloquée). Je peux l'écrire seul à partir de ce qui est déjà documenté.
 ## Ce qui a été fait
-—
+Fait le 29/08/2026 : `docs/reference/RUNBOOK.md`.
+Le retour arrière lui-même est un clic chez Vercel — l'intérêt du document est ailleurs : il dit
+**ce qui NE revient pas** (migration appliquée, template Brevo poussé, commande Cloudprinter
+passée, variable changée, mail parti), parce que revenir sur le code seul peut alors aggraver la
+panne. Plus les deux pièges de diagnostic (le cache qui sert l'ancienne version, la mitigation
+403 qui ne touche que les clients non-navigateurs), les trois pannes les plus probables avec
+leur premier geste, et une section franche sur ce qu'on ne sait pas voir aujourd'hui.
+Le premier réflexe pointe vers `/admin/atelier/sante`, qui porte déjà huit constats et leur remède.
+⚠️ Non vérifié en situation : aucun retour arrière n'a jamais été fait sur ce projet. Le document
+décrit la marche à suivre, il ne l'a pas éprouvée.
