@@ -29,6 +29,9 @@ Documents lus à la demande, jamais chargés d'office :
 - `docs/reference/ETAT-PRODUCTION.md` — l'état daté du système (ce qui est branché, ce qui manque).
   Tout fait périssable va LÀ, jamais dans un `CLAUDE.md`.
 - `docs/reference/RECETTE-VISUELLE.md` — les tests que Mathias peut faire à l'œil.
+- `docs/reference/PARCOURS-INVARIANTS.md` — les onze garanties du tunnel et les cinq pièges qui
+  ressemblent à du ménage. **À lire avant tout déplacement de fichier ou réécriture de texte
+  dans `/composer` → `/numero` → `/admin/atelier`.**
 - `docs/DECISIONS.md` — ce qu'on a tranché et pourquoi. À lire avant de rouvrir un débat.
 - `docs/produit/VISION.md` et `ROADMAP.md` — où on va, et dans quel ordre.
 
