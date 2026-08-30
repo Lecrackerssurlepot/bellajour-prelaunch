@@ -1,5 +1,5 @@
 /**
- * Les métriques de l'atelier.
+ * Les métriques de l'atelier — la couche qui va chercher, pas celle qui juge.
  *
  * ══════════════════════════════════════════════════════════════════════════
  * D'OÙ VIENNENT LES CHIFFRES — ET POURQUOI L'HISTOIRE COMMENCE AUJOURD'HUI
@@ -17,11 +17,30 @@
  * On ne fabrique pas non plus les chiffres manquants : une mesure sans
  * échantillon rend `null`, et l'écran affiche « pas encore » plutôt qu'un
  * zéro qui se lirait comme une contre-performance.
+ *
+ * Les RÈGLES (jalons, étapes, entonnoir, seaux, constats) vivent dans
+ * `@/lib/atelier/mesure` — module pur, éprouvé par scripts/verif-atelier.ts.
+ * Ce fichier ne fait que lire la base et poser les fenêtres.
  * ══════════════════════════════════════════════════════════════════════════
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { makeSupabase } from "@/lib/supabase";
 import { eurosPour, type PalierCle } from "@/lib/atelier/prix";
+import {
+  TYPES_MESURE,
+  reconstruireJalons,
+  dureesEtapes,
+  compterEntonnoir,
+  reactiviteConversion,
+  composerConstats,
+  ENTONNOIR,
+  type EvenementMesure,
+  type Jalons,
+  type EtapeVieCle,
+  type DureeEtape,
+  type Seau,
+} from "@/lib/atelier/mesure";
 
 export type Periode = "7" | "30" | "90" | "tout";
 
@@ -32,7 +51,7 @@ export const PERIODES: Array<{ cle: Periode; label: string; jours: number | null
   { cle: "tout", label: "Tout", jours: null },
 ];
 
-/** Une mesure de durée : sans échantillon, on ne rend PAS un zéro. */
+/** Une mesure de durée PROMISE : sans échantillon, on ne rend PAS un zéro. */
 export type Duree = {
   mediane: number | null; // heures
   tenus: number | null; // % dans le délai promis
@@ -44,7 +63,10 @@ export type Chiffres = {
   questionnaires: number;
   depots: number;
   apercus: number;
+  checkouts: number;
   payes: number;
+  validees: number;
+  livrees: number;
   ca: number;
   panierMoyen: number | null;
   paliers: Record<PalierCle, number>;
@@ -52,6 +74,10 @@ export type Chiffres = {
   couverture: Duree; // dépôt terminé → aperçu publié
   maquette: Duree; // paiement → maquette publiée
   production: Duree; // dépôt terminé → livré
+  /** Toutes les étapes de la vie d'un dossier : médiane + effectif. */
+  etapes: Record<EtapeVieCle, DureeEtape>;
+  /** Réactivité ↔ conversion : les trois seaux de délai de couverture. */
+  seaux: Seau[];
 };
 
 export type Metriques = {
@@ -61,6 +87,8 @@ export type Metriques = {
   /** La même fenêtre, juste avant. `null` pour « Tout » : rien à comparer. */
   precedent: Chiffres | null;
   parJour: Array<{ date: string; arrivees: number; paiements: number }>;
+  /** Les constats calculés — des faits chiffrés, jamais une recommandation. */
+  lecture: string[];
   /** Première transition jamais journalisée — le début mesurable. */
   debutMesurable: string | null;
   fetchedAt: string;
@@ -76,13 +104,6 @@ const JOUR_PARIS = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 });
 
-type Evt = {
-  numero_id: string;
-  type: string;
-  payload: Record<string, unknown>;
-  created_at: string;
-};
-
 function mediane(valeurs: number[]): number | null {
   if (!valeurs.length) return null;
   const t = [...valeurs].sort((a, b) => a - b);
@@ -97,44 +118,6 @@ function mesurer(durees: number[], promesseH: number): Duree {
     echantillon: durees.length,
     promesseH,
   };
-}
-
-/**
- * Les jalons datés d'un dossier, reconstruits depuis le journal.
- *
- * `depot` vient de l'événement `consentements` porteur de consent_photos —
- * le seul signal serveur de fin de dépôt (cf. mails.ts). Les autres viennent
- * des `etat_change`. Un jalon absent reste absent : c'est ce qui permet de
- * distinguer « pas encore mesurable » de « zéro ».
- */
-type Jalons = {
-  cree?: number;
-  depot?: number;
-  apercu?: number;
-  paye?: number;
-  maquette?: number;
-  livre?: number;
-};
-
-function reconstruire(evts: Evt[]): Map<string, Jalons> {
-  const par = new Map<string, Jalons>();
-  /* Chronologique : sur un aller-retour (1b puis retour en 1), c'est le
-     DERNIER passage qui compte — c'est celui qui a produit la couverture. */
-  for (const e of [...evts].sort((a, b) => a.created_at.localeCompare(b.created_at))) {
-    const j = par.get(e.numero_id) ?? {};
-    const t = Date.parse(e.created_at);
-    if (e.type === "numero_cree") j.cree = t;
-    else if (e.type === "consentements" && e.payload?.consent_photos === true) j.depot = t;
-    else if (e.type === "etat_change") {
-      const vers = e.payload?.vers;
-      if (vers === "apercu_pret") j.apercu = t;
-      else if (vers === "payee") j.paye = t;
-      else if (vers === "maquette_prete") j.maquette = t;
-      else if (vers === "livree") j.livre = t;
-    }
-    par.set(e.numero_id, j);
-  }
-  return par;
 }
 
 /* Les promesses, en heures. Mêmes valeurs que la table des délais de
@@ -154,10 +137,6 @@ function calculer(
 ): Chiffres {
   const dans = (t?: number) => t !== undefined && t >= debut && t < fin;
 
-  let questionnaires = 0;
-  let depots = 0;
-  let apercus = 0;
-  let payes = 0;
   let ca = 0;
   const paliers: Record<PalierCle, number> = { p30: 0, p40: 0, p45: 0 };
   const dCouverture: number[] = [];
@@ -165,11 +144,7 @@ function calculer(
   const dProduction: number[] = [];
 
   for (const [id, j] of jalons) {
-    if (dans(j.cree)) questionnaires++;
-    if (dans(j.depot)) depots++;
-    if (dans(j.apercu)) apercus++;
     if (dans(j.paye)) {
-      payes++;
       const p = palierPar.get(id) ?? null;
       const e = eurosPour(p);
       if (e) ca += e;
@@ -180,14 +155,20 @@ function calculer(
        qu'on a appris si la promesse était tenue. */
     if (dans(j.apercu) && j.depot !== undefined) dCouverture.push((j.apercu! - j.depot) / H);
     if (dans(j.maquette) && j.paye !== undefined) dMaquette.push((j.maquette! - j.paye) / H);
-    if (dans(j.livre) && j.depot !== undefined) dProduction.push((j.livre! - j.depot) / H);
+    if (dans(j.livree) && j.depot !== undefined) dProduction.push((j.livree! - j.depot) / H);
   }
 
+  const compte = compterEntonnoir(jalons, debut, fin);
+  const payes = compte.paye;
+
   return {
-    questionnaires,
-    depots,
-    apercus,
+    questionnaires: compte.cree,
+    depots: compte.depot,
+    apercus: compte.apercu,
+    checkouts: compte.checkout,
     payes,
+    validees: compte.validee,
+    livrees: compte.livree,
     ca,
     panierMoyen: payes ? Math.round((ca / payes) * 10) / 10 : null,
     paliers,
@@ -195,26 +176,63 @@ function calculer(
     couverture: mesurer(dCouverture, PROMESSE_COUVERTURE_H),
     maquette: mesurer(dMaquette, PROMESSE_MAQUETTE_H),
     production: mesurer(dProduction, PROMESSE_PRODUCTION_H),
+    etapes: dureesEtapes(jalons, debut, fin),
+    seaux: reactiviteConversion(jalons, debut, fin),
   };
 }
 
-export async function chargerMetriques(periode: Periode): Promise<Metriques> {
-  const supabase = makeSupabase();
-  const maintenant = new Date();
-  const fin = maintenant.getTime();
+/* ─────────────────────────── lecture de la base ────────────────────────── */
 
-  const def = PERIODES.find((p) => p.cle === periode) ?? PERIODES[1];
-  const debut = def.jours ? fin - def.jours * J : 0;
+/**
+ * ⚠️ LE PIÈGE DU PLAFOND. La première version posait `.limit(5000)` : au-delà
+ * de 5000 événements, les plus récents seraient tombés du calcul SANS que
+ * rien ne le dise — des médianes justes sur un journal tronqué. On pagine
+ * donc par tranches, ordonnées par (created_at, id) : le `id` départage les
+ * lignes nées à la même milliseconde, sans quoi une tranche pourrait en
+ * sauter une à la frontière. Le garde-fou MAX_PAGES borne le pire (100 000
+ * événements) et se signale en console au lieu de tronquer en silence.
+ */
+const PAGE_EVENEMENTS = 1000;
+const MAX_PAGES = 100;
 
-  const [{ data: evts }, { data: numeros }, { data: relances }] = await Promise.all([
-    supabase
+async function chargerEvenements(supabase: SupabaseClient): Promise<EvenementMesure[]> {
+  const tout: EvenementMesure[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const de = page * PAGE_EVENEMENTS;
+    const { data, error } = await supabase
       .from("evenements")
       .select("numero_id, type, payload, created_at")
-      .in("type", ["numero_cree", "consentements", "etat_change"])
+      .in("type", [...TYPES_MESURE])
       .order("created_at", { ascending: true })
-      .limit(5000)
-      .returns<Evt[]>(),
-    supabase.from("numeros").select("id, palier").returns<Array<{ id: string; palier: PalierCle | null }>>(),
+      .order("id", { ascending: true })
+      .range(de, de + PAGE_EVENEMENTS - 1)
+      .returns<EvenementMesure[]>();
+    if (error) {
+      console.error("[metriques] lecture evenements échouée", error.code, error.message);
+      break;
+    }
+    tout.push(...(data ?? []));
+    if (!data || data.length < PAGE_EVENEMENTS) return tout;
+  }
+  console.error(`[metriques] plus de ${MAX_PAGES * PAGE_EVENEMENTS} événements : calcul sur un journal tronqué`);
+  return tout;
+}
+
+type NumeroLeger = { id: string; token: string; palier: PalierCle | null };
+
+type Matiere = {
+  evts: EvenementMesure[];
+  jalons: Map<string, Jalons>;
+  numeros: NumeroLeger[];
+  palierPar: Map<string, PalierCle | null>;
+  relancesT: number[];
+};
+
+async function chargerMatiere(): Promise<Matiere> {
+  const supabase = makeSupabase();
+  const [evts, { data: numeros }, { data: relances }] = await Promise.all([
+    chargerEvenements(supabase),
+    supabase.from("numeros").select("id, token, palier").returns<NumeroLeger[]>(),
     supabase
       .from("mails_envoyes")
       .select("envoye_le")
@@ -222,9 +240,24 @@ export async function chargerMetriques(periode: Periode): Promise<Metriques> {
       .returns<Array<{ envoye_le: string }>>(),
   ]);
 
-  const jalons = reconstruire(evts ?? []);
-  const palierPar = new Map((numeros ?? []).map((n) => [n.id, n.palier]));
-  const relancesT = (relances ?? []).map((r) => Date.parse(r.envoye_le));
+  return {
+    evts,
+    jalons: reconstruireJalons(evts),
+    numeros: numeros ?? [],
+    palierPar: new Map((numeros ?? []).map((n) => [n.id, n.palier])),
+    relancesT: (relances ?? []).map((r) => Date.parse(r.envoye_le)),
+  };
+}
+
+function bornes(periode: Periode): { def: (typeof PERIODES)[number]; debut: number; fin: number } {
+  const fin = Date.now();
+  const def = PERIODES.find((p) => p.cle === periode) ?? PERIODES[1];
+  return { def, debut: def.jours ? fin - def.jours * J : 0, fin };
+}
+
+export async function chargerMetriques(periode: Periode): Promise<Metriques> {
+  const { def, debut, fin } = bornes(periode);
+  const { evts, jalons, palierPar, relancesT } = await chargerMatiere();
 
   const courant = calculer(jalons, palierPar, relancesT, debut, fin);
 
@@ -259,9 +292,19 @@ export async function chargerMetriques(periode: Periode): Promise<Metriques> {
     });
   }
 
+  /* Les constats : la règle vit dans mesure.ts, on ne lui passe que les
+     chiffres déjà calculés — rien n'est inventé ici. */
+  const compte = compterEntonnoir(jalons, debut, fin);
+  const lecture = composerConstats({
+    seaux: courant.seaux,
+    entonnoir: ENTONNOIR.map((e) => ({ label: e.label, n: compte[e.cle] })),
+    boutEnBout: courant.etapes.depot_livree,
+    checkoutPaye: courant.etapes.checkout_paye,
+  });
+
   /* Le début mesurable : la première transition jamais journalisée. C'est
      lui qui justifie les « pas encore » de la page. */
-  const premiere = (evts ?? []).find((e) => e.type === "etat_change");
+  const premiere = evts.find((e) => e.type === "etat_change");
 
   return {
     periode: def.cle,
@@ -269,7 +312,50 @@ export async function chargerMetriques(periode: Periode): Promise<Metriques> {
     courant,
     precedent,
     parJour,
+    lecture,
     debutMesurable: premiere?.created_at ?? null,
-    fetchedAt: maintenant.toISOString(),
+    fetchedAt: new Date().toISOString(),
   };
+}
+
+/* ────────────────────────── le rapport (export CSV) ────────────────────── */
+
+export type LigneDossier = {
+  /** Le token COURT (6 caractères) : identifie sans ouvrir la porte — un
+      token tronqué ne donne accès à rien. */
+  reference: string;
+  jalons: Jalons;
+  palier: PalierCle | null;
+  paye: boolean;
+};
+
+export type Rapport = {
+  metriques: Metriques;
+  /** Une ligne par dossier dont AU MOINS un jalon tombe dans la période. */
+  lignes: LigneDossier[];
+};
+
+export async function chargerRapport(periode: Periode): Promise<Rapport> {
+  const { debut, fin } = bornes(periode);
+  /* Deux lectures de la base plutôt qu'une matière partagée : le rapport
+     est un geste rare (un clic le vendredi), la simplicité gagne. */
+  const [metriques, matiere] = await Promise.all([chargerMetriques(periode), chargerMatiere()]);
+
+  const lignes: LigneDossier[] = [];
+  for (const n of matiere.numeros) {
+    const j = matiere.jalons.get(n.id);
+    if (!j) continue;
+    const dansFenetre = Object.values(j).some((t) => t !== undefined && t >= debut && t < fin);
+    if (!dansFenetre) continue;
+    lignes.push({
+      reference: n.token.slice(0, 6),
+      jalons: j,
+      palier: n.palier,
+      paye: j.paye !== undefined,
+    });
+  }
+  /* Les plus récents d'abord : c'est l'ordre dans lequel on relit. */
+  lignes.sort((a, b) => (b.jalons.cree ?? 0) - (a.jalons.cree ?? 0));
+
+  return { metriques, lignes };
 }
