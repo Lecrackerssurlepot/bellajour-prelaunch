@@ -5,7 +5,7 @@ domaine: paiement
 gravite: bloquant
 autonomie: avis-requis
 ouvert: 2026-08-29
-ferme: 2026-08-29
+ferme: 2026-08-30
 ---
 ## Ce que Mathias a dit
 Rien — audit de sécurité du 29/08/2026.
@@ -44,7 +44,7 @@ Mais ce raisonnement ne pèse que la LECTURE. Il ne dit rien de l'ÉCRITURE — 
 le défaut : fabriquer une signature de charte horodatée sur la ligne de quelqu'un d'autre.
 
 ## Ce qui a été fait
-Fait le 29/08/2026, avec l'accord de Mathias.
+Fait le 30/08/2026, avec l'accord de Mathias.
 
 **Une adresse déjà connue ne se promeut plus depuis le formulaire.** Aucune écriture, aucun
 `ref_code` rendu (ce serait le même aveu d'existence que T-045), aucun lien d'accès dans la

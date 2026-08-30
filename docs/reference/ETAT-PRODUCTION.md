@@ -1,4 +1,4 @@
-# État du système — au 29/08/2026
+# État du système — au 30/08/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -87,7 +87,7 @@ vivantes y manquent (voir T-011). **Une variable absente ne casse pas : elle fai
 `ADMIN_PASSWORD_MATHIAS`, `ADMIN_PASSWORD_LOUIS`, `CRON_SECRET`, `ATELIER_MAILS_SECRET`,
 `CLOUDPRINTER_API_KEY` + `CLOUDPRINTER_WEBHOOK_KEY`, les cinq `R2_*`, `PREVENTE_FERMEE`.
 
-## ⚠️ L'atelier n'est pas encore en fonctionnement (29/08/2026)
+## ⚠️ L'atelier n'est pas encore en fonctionnement (30/08/2026)
 
 Le tunnel est OUVERT au public et il crée de vrais dossiers, mais **l'atelier ne compose pas
 encore**. Des clientes s'inscrivent en avance ; leurs numéros seront faits plus tard, et elles
@@ -96,7 +96,8 @@ sont prévenues à la main par mail.
 **À lire avant de crier au dossier oublié.** Au 29/08, quatre dossiers sont en base, tous à
 l'état `photos_recues`, trois avec leur dépôt terminé. Le plus ancien (Marjorie, 49 photos, 25/08)
 attend depuis cinq jours alors que `DELAIS.photos_recues` promet « Couverture sous 48 h ».
-**Ce n'est pas une défaillance** : c'est une inscription anticipée, et Mathias l'a prévenue.
+**Ce n'est pas une défaillance** : c'est une inscription anticipée, et Mathias l'a prévenue
+par mail — c'est Marjorie, « Notre histoire », 49 photos.
 `/admin/atelier/sante` les comptera pourtant comme « oubliés », puisqu'il ne connaît que la
 promesse. Le constat est juste selon sa règle, et faux selon la réalité.
 
@@ -109,6 +110,38 @@ Deux conséquences à garder en tête tant que l'atelier n'a pas ouvert :
    côté »). C'est le bon comportement, et il tient pendant cette période.
 
 À supprimer de ce fichier le jour où l'atelier compose vraiment.
+
+## 🔴 EN ATTENTE — un correctif fusionné mais JAMAIS déployé (30/08/2026, 18h50 UTC)
+
+**`main` est en avance sur la production.** À reprendre en priorité à la prochaine séance.
+
+| | |
+|---|---|
+| `main` pointe sur | `86fb3e2` (fusion de la PR #11, le compteur) |
+| Dernier déploiement de PRODUCTION | `5c170a72` — la PR #10, les titres |
+| Déploiement pour `86fb3e2` | **aucun**, douze minutes après la fusion |
+
+Ce n'est ni une file d'attente ni un échec de compilation : Vercel n'a créé **aucun**
+déploiement pour cette fusion — pas de trace réussie, annulée ni en erreur. La fusion
+précédente (PR #10) avait produit le sien en quelques minutes.
+
+**Conséquence visible** : sur bellajour.fr, le compteur de la page 02 affiche encore `0`
+sans JavaScript, alors que le correctif est dans `main`.
+
+**Comment reprendre** : tableau de bord Vercel → Deployments → le déploiement de production
+le plus récent → les trois points → **Redeploy**, en décochant « Use existing build cache ».
+Cela reconstruit depuis l'état actuel de `main`, qui contient déjà le correctif.
+
+⚠️ Ne PAS forcer avec un commit vide sur `main` : c'est un push sur `main`, interdit par le
+socle, et le garde-fou le refuse. Un problème d'infrastructure ne justifie pas de contourner
+la règle qui protège la production.
+
+**À vérifier une fois redéployé** — la commande qui tranche, cache contourné :
+```bash
+curl -s -H "Cache-Control: no-cache" "https://www.bellajour.fr/?v=$(date +%s)" | grep -o 'data-compte="12480">[^<]*<'
+```
+Doit rendre `12 480`, pas `0`. ⚠️ Ne pas chercher `12` dans la ligne entière : `12480` est
+déjà dans l'attribut, un test naïf conclut à la réussite quoi qu'il arrive.
 
 ## Ce qui n'est pas mesuré
 
