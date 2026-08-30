@@ -124,10 +124,20 @@
 .at-area:focus,
 .at-inp:focus { outline: none; border-bottom-color: var(--c-accent); }
 
-/* Exemple non modifiable de l'écran 2 — texte éditorial, donc 300. */
+/* Le wrapper du layout composer qui porte --font-composer-italique.
+   `display: contents` : il n'ajoute aucune boîte au flux, il ne fait que
+   descendre la variable de police jusqu'aux écrans. */
+.at-portee-italique { display: contents; }
+
+/* Exemple non modifiable de l'écran 2 — texte éditorial, donc 300.
+   La famille italique est déclarée dans composer/layout.tsx et n'existe
+   QUE sous /composer : le reste du site ne paie plus ce fichier. DM Sans
+   en repli nommé, puis system-ui — qui donnerait un oblique synthétique
+   si la police ne venait pas, ce qui reste un italique lisible. */
 .at-hint {
   margin-top: 14px;
   max-width: 56ch;
+  font-family: var(--font-composer-italique), 'DM Sans', system-ui, sans-serif;
   font-size: 13px;
   font-weight: 300;
   font-style: italic;
@@ -136,8 +146,11 @@
 
 /* Écran 4 — pourquoi on demande le téléphone. Même discrétion que .at-hint,
    mais DROIT : l'italique de l'écran 2 dit « exemple », et cette phrase-là
-   n'est pas un exemple, c'est une raison. */
-.at-hint--calme { font-style: normal; }
+   n'est pas un exemple, c'est une raison.
+   ⚠️ La famille aussi doit revenir à --font-ui : --font-composer-italique
+   n'a QU'une face italique, et une famille sans face droite rend ses
+   glyphes penchés même sous `font-style: normal`. */
+.at-hint--calme { font-style: normal; font-family: var(--font-ui); }
 
 .at-erreur { margin-top: 20px; font-size: 14px; color: var(--c-accent-strong); }
 

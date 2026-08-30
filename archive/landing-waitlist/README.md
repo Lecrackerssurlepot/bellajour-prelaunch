@@ -47,3 +47,12 @@ l'archive — ils le restent depuis `src/app/sections/` aussi, il n'y a donc rie
 
 Et attendre du travail : ces fichiers n'ont pas suivi les corrections de tokens
 du 27/08 ni les règles React d'aujourd'hui.
+
+## Le CSS global de ces sections (ajout du 30/08/2026)
+
+`globals-selecteurs-morts.css` : les sélecteurs que `src/app/globals.css`
+portait encore pour ces composants (bj-section, anx-*, alb-*, sol-sticky,
+reveal-*, hero-photo, px-anchor, le cadrage de solution-casting-03, le bloc
+« desktop fixes »), retirés le 30/08/2026 (T-063) après preuve par grep
+qu'aucun fichier de `src/` ne les consommait plus. Si un composant ressort
+de cette archive, son CSS global est là.

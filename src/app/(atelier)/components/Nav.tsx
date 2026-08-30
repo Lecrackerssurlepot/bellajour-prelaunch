@@ -95,7 +95,7 @@ export default function Nav({
             alt=""
             width={320}
             height={122}
-            decoding="sync"
+            decoding="async"
           />
         </a>
       ) : (
@@ -111,7 +111,7 @@ export default function Nav({
             alt=""
             width={320}
             height={122}
-            decoding="sync"
+            decoding="async"
           />
         </button>
       )}

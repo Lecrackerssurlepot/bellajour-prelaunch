@@ -290,6 +290,25 @@ export default function Univers() {
     let frame = 0
     let vY = window.scrollY
     let vT = performance.now()
+
+    /* ── le rail n'existe pas sous 1000 px ──
+       univers.css le cache (`@media (max-width:1000px){ .pas{display:none} }`),
+       mais le bloc rail de la boucle payait quand meme offsetTop, offsetHeight
+       et sept getBoundingClientRect a CHAQUE frame de defilement — sur
+       telephone, c'est-a-dire pour le trafic Instagram, pour peindre un
+       element invisible. Miroir JS EXACT de la media query, evalue une fois
+       et tenu a jour par `change` : au franchissement de la borne en
+       redimensionnant, `derniereY` est remis a -1 pour que le rail se
+       recompose des la frame suivante au retour bureau. */
+    const etroit = window.matchMedia('(max-width: 1000px)')
+    let sansRail = etroit.matches
+    const surEtroit = () => {
+      sansRail = etroit.matches
+      derniereY = -1
+    }
+    etroit.addEventListener('change', surEtroit)
+    menage.push(() => etroit.removeEventListener('change', surEtroit))
+
     const boucle = () => {
       const y = window.scrollY
       const h = window.innerHeight
@@ -322,7 +341,7 @@ export default function Univers() {
       if (y !== derniereY) {
         derniereY = y
 
-        if (rail) {
+        if (rail && !sansRail) {
           const haut = hote.offsetTop
           const hh = hote.offsetHeight
           /* Le chemin de fer ne vit QUE pendant le récit. Il compte les sept
@@ -391,6 +410,34 @@ export default function Univers() {
       frame = requestAnimationFrame(boucle)
     }
     frame = requestAnimationFrame(boucle)
+
+    /* ── la boucle s'arrete quand l'univers est hors ecran ──
+       Elle tournait en permanence, meme pendant qu'on lit la couverture ou
+       le pied de page. A la SORTIE : cancelAnimationFrame. A l'ENTREE :
+       resynchroniser le lissage AVANT de relancer — `vY`/`vT` datent de la
+       mise en pause, et un grand dt combine a un grand deplacement
+       fabriquerait un pic de vitesse fantome qui ferait passer un lecteur
+       calme pour un lecteur presse. `derniereY = -1` force le bloc
+       defilement (rail, jauge, page active) a se recomposer des la
+       premiere frame de reprise. Le filet `verifierVisibles` ne perd
+       rien : univers hors ecran, aucune page ne peut occuper la moitie
+       de l'ecran ; et onglet occulte, le rAF etait deja gele. */
+    let boucleActive = true
+    const oeilBoucle = new IntersectionObserver((entrees) => {
+      const visible = entrees[0].isIntersecting
+      if (visible === boucleActive) return
+      boucleActive = visible
+      if (visible) {
+        vY = window.scrollY
+        vT = performance.now()
+        derniereY = -1
+        frame = requestAnimationFrame(boucle)
+      } else {
+        cancelAnimationFrame(frame)
+      }
+    })
+    oeilBoucle.observe(hote)
+    menage.push(() => oeilBoucle.disconnect())
 
     return () => {
       cancelAnimationFrame(frame)

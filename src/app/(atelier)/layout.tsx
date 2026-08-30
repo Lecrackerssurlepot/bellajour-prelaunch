@@ -28,11 +28,14 @@ const atelierDisplay = Cormorant_Garamond({
 })
 
 /* UI : DM Sans est variable (axe opsz 9..40) — on ne fige aucune graisse,
-   ce qui donne 300/400/500 en 2 fichiers au lieu de 6 statiques.
-   L'italique sert au texte d'exemple de l'écran 2 (.at-hint). */
+   ce qui donne 300/400/500 en UN fichier au lieu de 6 statiques.
+   ⚠️ PAS d'italique ici : la seule consommatrice du fichier italique
+   (39,8 Ko précargés sur TOUTES les pages du groupe) est `.at-hint`,
+   l'exemple de l'écran 2 de /composer. L'instance italique vit donc dans
+   composer/layout.tsx, et nulle part ailleurs. `preload: false` a été
+   essayé et prouvé inopérant — ne pas y revenir. */
 const atelierUi = DM_Sans({
   subsets: ['latin'],
-  style: ['normal', 'italic'],
   variable: '--font-atelier-ui',
   display: 'swap',
 })

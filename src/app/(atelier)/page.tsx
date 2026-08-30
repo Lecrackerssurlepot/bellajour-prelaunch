@@ -109,10 +109,16 @@ export default function AtelierHome() {
           offert a des pages qui n'en veulent pas. C'etait le cas jusqu'au
           27/08/2026 avec header-bellajour.webp (283 Ko, sur tout le site, pour
           un Hero qui n'est plus route nulle part). */}
+      {/* ⚠️ imageSrcSet/imageSizes MIROIRS EXACTS du srcSet/sizes de l'<img>
+          d'Ouverture.tsx : si l'un des deux cotes change sans l'autre, le
+          navigateur precharge une variante et en affiche une autre, et
+          l'element LCP est telecharge DEUX fois. */}
       <link
         rel="preload"
         as="image"
         href="/images/brand/brand-01.webp"
+        imageSrcSet="/images/brand/brand-01-640.webp 640w, /images/brand/brand-01-960.webp 960w, /images/brand/brand-01.webp 1200w"
+        imageSizes="100vw"
         fetchPriority="high"
       />
       <script

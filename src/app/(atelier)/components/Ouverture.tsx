@@ -115,6 +115,29 @@ export default function Ouverture() {
     }
     frame = requestAnimationFrame(boucle)
 
+    /* ── la boucle s'arrete quand la couverture est hors ecran ──
+       Elle tournait en permanence, y compris pendant la lecture des sept
+       pages de l'univers, pour surveiller un parallaxe qu'on ne voit plus.
+       A la sortie : cancelAnimationFrame. A l'entree : `derniereY = -1`
+       force la recomposition des trois transformations a la premiere frame
+       — sans risque de saut, `p` etant borne a 1 des qu'on a depasse un
+       ecran, l'etat fige est deja l'etat juste. Pas de vitesse a
+       resynchroniser ici : cette boucle ne mesure rien dans le temps. */
+    let boucleActive = true
+    const oeilBoucle = new IntersectionObserver((entrees) => {
+      const visible = entrees[0].isIntersecting
+      if (visible === boucleActive) return
+      boucleActive = visible
+      if (visible) {
+        derniereY = -1
+        frame = requestAnimationFrame(boucle)
+      } else {
+        cancelAnimationFrame(frame)
+      }
+    })
+    oeilBoucle.observe(cadreEl)
+    nettoyage.push(() => oeilBoucle.disconnect())
+
     /* ── le curseur qui légende (desktop seul, PRD §15 mouvement nº6) ──
        C'est lui qui porte le nom des visuels depuis qu'ils n'ont plus de
        légende écrite : une légende qui défile sous une affiche en
@@ -215,7 +238,16 @@ export default function Ouverture() {
              qui bouge : aucune deformation, et la meme photographie sert le
              bandeau puis le plein ecran. */}
         <div className="h-plein" aria-hidden="true">
-          <img src="/images/brand/brand-01.webp" alt="" width="1200" height="1600" fetchPriority="high" decoding="async" />
+          {/* ⚠️ Le srcset DOIT rester identique a celui du <link rel="preload">
+               de page.tsx (imagesrcset/imagesizes) : s'ils divergent, le
+               navigateur precharge un fichier et en affiche un autre — double
+               telechargement de l'element LCP. Variantes : scripts, sharp
+               q85, memes reglages que optimize-images.mjs. */}
+          <img
+            src="/images/brand/brand-01.webp"
+            srcSet="/images/brand/brand-01-640.webp 640w, /images/brand/brand-01-960.webp 960w, /images/brand/brand-01.webp 1200w"
+            sizes="100vw"
+            alt="" width="1200" height="1600" fetchPriority="high" decoding="async" />
           <div className="h-grad"></div>
           <div className="h-rake"></div>
           <div className="h-voile"></div>
