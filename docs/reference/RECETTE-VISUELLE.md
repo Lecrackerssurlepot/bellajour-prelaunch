@@ -69,3 +69,35 @@ Elles demandent un vrai dossier, un vrai paiement ou un vrai appareil. Ce sont c
 Je joins une capture. Si je ne peux pas la faire, je le dis et j'explique ce qui m'en empêche.
 Si une modification touche le mobile, je la montre en 375 px de large — c'est la taille d'un
 iPhone, et le trafic vient d'Instagram.
+
+---
+
+## Ajouts du 30/08 au soir — la nuit autonome
+
+**A. Le dashboard métriques — `/admin/atelier/metriques`**
+✅ Bon : un entonnoir en barres (création → dépôt → aperçu → checkout → payé → validée →
+livrée), la durée médiane de **chaque** étape avec son effectif « n= », une section
+« Répondre vite fait-il vendre ? » à trois lignes, un bloc « Lecture » en phrases, et un lien
+« Télécharger le rapport (CSV) » qui donne un fichier ouvrable dans Excel/Numbers.
+❌ Défaut : une barre qui déborde, un chiffre sans son « n= », ou un CSV illisible.
+
+**B. La fiche d'un dossier qui a des PDF d'impression déposés**
+✅ Bon : une carte « Les fichiers d'impression » avec, par fichier, « Ouvrir » et un aperçu
+repliable ; le bouton « Contrôler les fichiers » rend pages, format en mm et verdict.
+❌ Défaut : une fiche qui plante, ou un contrôle qui tourne sans fin.
+
+**C. La fiche d'un dossier fondatrice**
+✅ Bon : dans le bloc fondatrice, un bouton « Créer le code de 30 € » ; après clic, un code
+`FONDATRICE-…` copiable avec sa date. Un second clic redonne LE MÊME code.
+⚠️ Le premier clic crée réellement le code chez Stripe — le faire d'abord sur un dossier test.
+
+**D. Les mails, après déploiement ET après le `--pousser` (avec ton accord)**
+✅ Bon : le logo du mail est lisible **aussi** dans Gmail téléphone en mode sombre (il repose
+désormais sur son propre cartouche sombre, cuit dans l'image).
+❌ Défaut : un logo invisible ou un rectangle vide à la place.
+
+**E. L'accueil et le récit, après les corrections de performance**
+✅ Bon : rien n'a changé à l'œil — la couverture s'ouvre pareil, les sept pages s'enchaînent
+pareil, l'italique de l'écran 2 du questionnaire est toujours penchée, l'écran 4 toujours droit.
+❌ Défaut : toute différence visuelle. Ces corrections ne devaient toucher que le coût, jamais
+le rendu. À regarder surtout sur téléphone (375 px).

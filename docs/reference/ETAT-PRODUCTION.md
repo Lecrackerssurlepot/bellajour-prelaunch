@@ -143,6 +143,19 @@ curl -s -H "Cache-Control: no-cache" "https://www.bellajour.fr/?v=$(date +%s)" |
 Doit rendre `12 480`, pas `0`. ⚠️ Ne pas chercher `12` dans la ligne entière : `12480` est
 déjà dans l'attribut, un test naïf conclut à la réussite quoi qu'il arrive.
 
+## 🌙 Nuit autonome du 30/08 — une branche prête, PAS déployée
+
+`chantier/nuit-autonome-30-08` porte 7 commits (recette VERTE : types, lint, build, harnais) :
+logo mail opaque + M7 avec numéro de suivi · dashboard métriques complet (entonnoir, durées,
+réactivité↔conversion, export CSV) · aperçu + contrôle des PDF d'impression sur la fiche ·
+code fondatrice en un clic (T-021) · verrou multi-exemplaires (T-073) · 5 corrections de
+performance mobile · 8 tickets neufs (T-072→T-079) · specs Cloudprinter relevées
+(`SPECS-CLOUDPRINTER.md` : les produits font 210×297, les CGV disent 210×280 — T-077).
+
+**Rien n'est actif tant que** : (1) la PR n'est pas fusionnée et déployée ; (2) pour les mails,
+`node scripts/mails-atelier.mjs --pousser` n'est pas lancé avec l'accord de Mathias (M1/M4,
+hors script, sont couverts par le simple déploiement du PNG opaque).
+
 ## Ce qui n'est pas mesuré
 
 Aucun traceur d'audience. On ne sait pas combien de visiteuses arrivent, sur quel appareil, ni où
