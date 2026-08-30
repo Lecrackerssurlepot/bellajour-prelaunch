@@ -157,6 +157,13 @@ export async function POST(request: Request) {
            entre le déploiement et la migration, l'expédition doit continuer
            d'arriver, quitte à perdre le numéro de suivi (le lien, lui, est
            déjà dans `tracking_url`). */
+        /* ⚠️ Ce repli EFFACE une donnée : il doit CRIER (T-001, 29/08/2026).
+           Muet, il a fait perdre le numéro de suivi de chaque colis pendant
+           une semaine sans qu'aucune alerte ne se déclenche. */
+        console.error(
+          "[cloudprinter/webhook] ⚠️ REPLI 42703 : tracking_code absent en base, le numéro de suivi n'est PAS enregistré. Appliquer supabase/migrations/20260829_atelier_tracking_code.sql.",
+          { numero: numero!.id },
+        );
         const sansColonne: Record<string, unknown> = { ...colonnes };
         delete sansColonne.tracking_code;
         ({ data: maj, error } = await expedier(sansColonne));

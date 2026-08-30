@@ -50,6 +50,25 @@ export function signTokenShort(emailCanonical: string): string {
 }
 
 /**
+ * Token de CONFIRMATION d'inscription ambassadeur (T-040).
+ *
+ * Porte une intention (`p: "confirm"`) que `verifyToken` ignore et que seul
+ * `verifyTokenConfirmation` accepte. C'est ce qui empêche un simple lien
+ * d'accès — celui de `request-access`, que N'IMPORTE QUI peut faire envoyer à
+ * n'importe quelle adresse — de promouvoir sa destinataire en ambassadrice
+ * sans qu'elle l'ait demandé.
+ *
+ * L'inverse est volontairement permis : un token de confirmation ouvre aussi
+ * l'espace, puisque la personne vient d'y être admise.
+ */
+export function signTokenConfirmation(emailCanonical: string): string {
+  const secret = getSecret();
+  const exp = Math.floor(Date.now() / 1000) + TTL_SECONDS;
+  const payloadB64 = b64urlEncode(JSON.stringify({ e: emailCanonical, exp, p: "confirm" }));
+  return `${payloadB64}.${sign(payloadB64, secret)}`;
+}
+
+/**
  * Vérifie signature + expiration. Renvoie `email_canonical` si valide, sinon `null`.
  * Ne throw jamais (secret manquant, token malformé, signature fausse, expiré → null).
  */
@@ -86,4 +105,26 @@ export function verifyToken(token: string | null | undefined): string | null {
   if (exp < Math.floor(Date.now() / 1000)) return null; // expiré
 
   return e;
+}
+
+/**
+ * Comme `verifyToken`, mais n'accepte QUE les tokens de confirmation (T-040).
+ * Renvoie `email_canonical` si le token est valide, non expiré ET porte
+ * l'intention `confirm`. Sinon `null`.
+ */
+export function verifyTokenConfirmation(token: string | null | undefined): string | null {
+  const email = verifyToken(token);
+  if (!email || typeof token !== "string") return null;
+
+  /* La signature et l'expiration sont deja verifiees ci-dessus : il ne reste
+     qu'a lire l'intention dans une charge utile dont l'authenticite est acquise. */
+  try {
+    const payloadB64 = token.slice(0, token.indexOf("."));
+    const payload: { p?: unknown } = JSON.parse(
+      Buffer.from(payloadB64, "base64url").toString("utf8"),
+    );
+    return payload.p === "confirm" ? email : null;
+  } catch {
+    return null;
+  }
 }

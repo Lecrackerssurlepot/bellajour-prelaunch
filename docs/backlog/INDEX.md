@@ -13,7 +13,7 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
 | id | titre | domaine | gravite | autonomie | etat |
 |---|---|---|---|---|---|
-| T-001 | Le numéro de suivi n'est jamais enregistré | donnees | bloquant | avis-requis | nouveau |
+| T-001 | Le numéro de suivi n'est jamais enregistré | donnees | bloquant | avis-requis | **fermé** |
 | T-002 | Les liens de parrainage des mails vivants sont morts | contenu | bloquant | avis-requis | nouveau |
 | T-003 | 101 Mo d'images orphelines déployées à chaque build | front | serieux | libre | nouveau |
 | T-004 | La page d'état de la cliente est indexable par Google | front | serieux | libre | nouveau |
@@ -52,7 +52,7 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-037 | Un signalement en spam est enregistré mais invisible | admin | serieux | libre | nouveau |
 | T-038 | Le webhook des rebonds dit oui à Brevo même quand il n'a rien écrit | atelier | serieux | libre | **fermé** |
 | T-039 | Le webhook des rebonds n'écoute rien tant qu'il n'est pas branché | exploitation | serieux | avis-requis | **fermé** |
-| T-040 | N'importe qui peut se déclarer ambassadeur à la place d'une cliente | paiement | bloquant | avis-requis | nouveau |
+| T-040 | N'importe qui peut se déclarer ambassadeur à la place d'une cliente | paiement | bloquant | avis-requis | **fermé** |
 | T-041 | La relève quotidienne écrit les tokens des clientes dans les logs | atelier | serieux | libre | **fermé** |
 | T-042 | La vignette d'une photo supprimée reste dans le coffre | donnees | serieux | libre | **fermé** |
 | T-043 | Une panne de base fait dire à la cliente que son dossier n'existe pas | atelier | serieux | libre | nouveau |
@@ -82,5 +82,5 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-067 | Une page indexable vend encore un programme qu'on n'honore plus | produit | serieux | avis-requis | nouveau |
 | T-068 | Le site déclare deux fiches produit concurrentes pour un seul produit | front | serieux | libre | nouveau |
 | T-069 | L'image de partage promet un album, et peut casser le déploiement entier | front | serieux | avis-requis | nouveau |
-| T-070 | Le retour des pages légales renvoie sur une page supprimée | front | confort | libre | nouveau |
+| T-070 | Le retour des pages légales renvoie sur une page supprimée | front | confort | libre | **fermé** |
 | T-071 | Personne ne serait prévenu si Google rejetait le site | exploitation | confort | avis-requis | nouveau |
