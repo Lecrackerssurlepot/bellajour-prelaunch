@@ -68,8 +68,8 @@ configuration. Vérifié en production le 29/08 — `flore@gmial.com` propose `f
 
 18 fichiers sur disque, 16 dans l'historique appliqué.
 
-🔴 **`20260829_atelier_tracking_code.sql` n'est PAS appliquée** — `numeros.tracking_code` n'existe
-pas en production, et le repli 42703 efface la donnée en silence. C'est T-001, bloquant.
+`20260829_atelier_tracking_code.sql` **appliquée et vérifiée le 30/08/2026** (T-001 fermé,
+fiche `docs/backlog/fermes/`). La preuve de bout en bout avec un vrai colis reste à faire.
 
 Trois anciennes (`20260528_g1_email_canonical`, `20260528_g3_pages_credits_unique_source`,
 `20260704_notion_synced`) sont absentes de l'historique mais leurs colonnes existent : appliquées
