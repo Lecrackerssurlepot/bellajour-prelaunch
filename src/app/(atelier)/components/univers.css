@@ -736,3 +736,18 @@
 html:not([data-anim]) .at-accueil [data-t]{
   opacity:1 !important; transform:none !important; filter:none !important;
 }
+/* ⚠️ `data-t` ne suffit PAS, et ça s'est vu en production le 29/08 : les
+   titres des sept pages sont composés LIGNE A LIGNE par `.ligne .in`, qui
+   cache par un translate de 112 % sous un masque, sans porter `data-t`.
+   Sans cette regle, les pages du recit arrivaient vides de leur titre.
+   Idem pour le mot en `glitch` de la page 02 : cache, il laisse un TROU au
+   milieu d'une phrase, ce qui est pire qu'une page nue. */
+html:not([data-anim]) .at-accueil .sl .ligne .in{
+  opacity:1 !important; transform:none !important;
+}
+html:not([data-anim]) .at-accueil .sl2-texte b.glitch{
+  opacity:1 !important;
+}
+/* Restent volontairement CACHES sans JavaScript, parce que les montrer figes
+   serait pire que de les taire : le rail `.pas` (une navigation que rien ne
+   pilote), le balayage `.h-rake`, le curseur, et les halos decoratifs. */
