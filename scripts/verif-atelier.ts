@@ -140,7 +140,7 @@ const base: NumeroPourReleve = {
   id: "x", token: "t", titre: "Un titre", prenom: "Camille", email: "c@example.com",
   nb_photos: 40, nb_pages: 34, palier: "p40", apercu_urls: { c1: "a", c4: "b", double: "c" },
   etat: "photos_recues", consent_photos: true, created_at: ilYA(10), etat_maj_le: ilYA(1),
-  transporteur: null, tracking_url: null, stripe_payment_intent: null,
+  transporteur: null, tracking_url: null, tracking_code: null, stripe_payment_intent: null,
   retouches_demandees_le: null,
 };
 const d = (p: Partial<NumeroPourReleve>): NumeroPourReleve => ({ ...base, ...p });
@@ -264,6 +264,19 @@ ok("M7 sans transporteur : signale", manquePour("M7", d({ transporteur: null }))
 ok("M7 avec transporteur : complet", manquePour("M7", d({ transporteur: "Colissimo" })).length === 0);
 ok("M5 sans pagination : signale", manquePour("M5", d({ nb_pages: null })).includes("nb_pages"));
 ok("M2 sans pagination : normal, il n'en parle pas", manquePour("M2", d({ nb_pages: null, palier: null })).length === 0);
+
+titre("— M7 : un numero de suivi sans URL doit quand meme se voir —");
+/* Le cas reel : suivi.ts ne sait pas construire l'adresse de certains
+   transporteurs (url: null). Le template ne rendait l'encart que sur SUIVI :
+   la cliente recevait « confie a DPD » et RIEN a suivre. CODE_SUIVI porte le
+   numero en texte ; le template l'affiche quand le lien manque. */
+const m7SansUrl = parametresPour("M7", d({ transporteur: "DPD", tracking_url: null, tracking_code: "ABC123" }));
+ok("sans URL, le CODE_SUIVI porte le numero", m7SansUrl.CODE_SUIVI === "ABC123");
+ok("sans URL, SUIVI est vide (pas de lien invente)", m7SansUrl.SUIVI === "");
+ok("le transporteur accompagne le numero", m7SansUrl.TRANSPORTEUR === "DPD");
+const m7AvecUrl = parametresPour("M7", d({ transporteur: "Colissimo", tracking_url: "https://x", tracking_code: "6A1" }));
+ok("avec URL, les deux voyagent (le template prefere le lien)",
+   m7AvecUrl.SUIVI === "https://x" && m7AvecUrl.CODE_SUIVI === "6A1");
 
 /* ═══════════════════════ LE LOT ET LE BRIEF ═══════════════════════ */
 
