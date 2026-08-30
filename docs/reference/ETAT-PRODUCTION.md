@@ -87,6 +87,29 @@ vivantes y manquent (voir T-011). **Une variable absente ne casse pas : elle fai
 `ADMIN_PASSWORD_MATHIAS`, `ADMIN_PASSWORD_LOUIS`, `CRON_SECRET`, `ATELIER_MAILS_SECRET`,
 `CLOUDPRINTER_API_KEY` + `CLOUDPRINTER_WEBHOOK_KEY`, les cinq `R2_*`, `PREVENTE_FERMEE`.
 
+## ⚠️ L'atelier n'est pas encore en fonctionnement (29/08/2026)
+
+Le tunnel est OUVERT au public et il crée de vrais dossiers, mais **l'atelier ne compose pas
+encore**. Des clientes s'inscrivent en avance ; leurs numéros seront faits plus tard, et elles
+sont prévenues à la main par mail.
+
+**À lire avant de crier au dossier oublié.** Au 29/08, quatre dossiers sont en base, tous à
+l'état `photos_recues`, trois avec leur dépôt terminé. Le plus ancien (Marjorie, 49 photos, 25/08)
+attend depuis cinq jours alors que `DELAIS.photos_recues` promet « Couverture sous 48 h ».
+**Ce n'est pas une défaillance** : c'est une inscription anticipée, et Mathias l'a prévenue.
+`/admin/atelier/sante` les comptera pourtant comme « oubliés », puisqu'il ne connaît que la
+promesse. Le constat est juste selon sa règle, et faux selon la réalité.
+
+Deux conséquences à garder en tête tant que l'atelier n'a pas ouvert :
+1. La page `/numero/<token>` annonce « Votre couverture arrive **sous 48 h** » **sans condition** —
+   la même phrase après deux heures et après cinq jours. C'est le seul endroit où le site dit
+   autre chose que ce que Mathias écrit à la main.
+2. Rien ne part automatiquement pour contredire un mail manuel : `mails.ts` arrête toute relance
+   dès que le dépôt est terminé (« Elle a fait ce qu'on lui demandait ; le trou est de notre
+   côté »). C'est le bon comportement, et il tient pendant cette période.
+
+À supprimer de ce fichier le jour où l'atelier compose vraiment.
+
 ## Ce qui n'est pas mesuré
 
 Aucun traceur d'audience. On ne sait pas combien de visiteuses arrivent, sur quel appareil, ni où
