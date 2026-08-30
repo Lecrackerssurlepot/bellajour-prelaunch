@@ -557,6 +557,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
         ]
       : [],
     notesIndisponibles: false,
+    codeFondatrice: null,
     enChargeAbsent: false,
     client: {
       autres:

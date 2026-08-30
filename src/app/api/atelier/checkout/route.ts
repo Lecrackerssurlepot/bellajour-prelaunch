@@ -5,7 +5,7 @@ import { isValidNumeroToken } from "@/lib/atelier/token";
 import { logEvenement } from "@/lib/atelier/evenements";
 import { KIND_ATELIER } from "@/lib/atelier/paiement";
 import {
-  centimesPour,
+  totalPour,
   PAYS_LIVRAISON,
   CODE_FISCAL_ALBUM,
   type PalierCle,
@@ -147,8 +147,12 @@ export async function POST(request: Request) {
     /* Le prix vient de `palier`, jamais de la requête. Palier absent =
        l'atelier n'a pas encore saisi le nombre de pages : la page d'état
        affiche « en cours de chiffrage » et le bouton n'aurait pas dû être
-       actif. On refuse plutôt que d'inventer un montant. */
-    const centimes = centimesPour(numero.palier);
+       actif. On refuse plutôt que d'inventer un montant.
+
+       `totalPour(palier, 1)` : UN exemplaire, toujours — le verrou T-073
+       (QUANTITE_MAX, prix.ts) tient tant que les paliers dégressifs ne sont
+       pas décidés. À 1, le montant est exactement la grille, au centime. */
+    const centimes = totalPour(numero.palier, 1);
     if (centimes === null) {
       console.error("[atelier/checkout] palier absent ou inconnu", numero.id, numero.palier);
       return NextResponse.json({ error: "prix_indisponible" }, { status: 409 });

@@ -43,6 +43,8 @@ import {
   suggestionEmail,
 } from "@/lib/atelier/questionnaire";
 import { lireSignal, suitePour, typeEvenement } from "@/lib/atelier/rebond";
+import { totalPour, centimesPour, QUANTITE_MAX, type PalierCle } from "@/lib/atelier/prix";
+import { raconter } from "@/lib/atelier/recit";
 import { lireSuivi, nomTransporteur } from "@/lib/atelier/suivi";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import {
@@ -890,6 +892,54 @@ const cRien = composerConstats({
 });
 ok("rien a lire : UNE phrase qui le dit, pas une page vide",
    cRien.length === 1 && cRien[0].includes("Pas encore assez"));
+
+/* ══════════════════ MULTI-EXEMPLAIRES (T-073) : LE VERROU ══════════════════
+   Les paliers dégressifs ne sont PAS décidés (interdit nº5 : jamais inventer
+   une remise). La structure `totalPour` existe, verrouillée à 1 exemplaire :
+   à 1, elle DOIT rendre la grille actuelle au centime, et tout le reste DOIT
+   être refusé. Lever le verrou = QUANTITE_MAX dans prix.ts, quand Mathias
+   donne les paliers — et ces tests changeront AVEC lui, pas avant. */
+
+titre("— multi-exemplaires (T-073) : verrouille a 1 —");
+ok("QUANTITE_MAX vaut 1 (verrou T-073, leve par Mathias seulement)", QUANTITE_MAX === 1);
+const GRILLE_ACTUELLE: Array<[PalierCle, number]> = [
+  ["p30", 3000],
+  ["p40", 4000],
+  ["p45", 4500],
+];
+for (const [palier, attendu] of GRILLE_ACTUELLE) {
+  ok(
+    `totalPour(${palier}, 1) = ${attendu} centimes, la grille au centime`,
+    totalPour(palier, 1) === attendu && totalPour(palier, 1) === centimesPour(palier),
+  );
+}
+ok("2 exemplaires : REFUSE tant que le verrou tient (pas de remise inventee)",
+   totalPour("p30", 2) === null);
+ok("quantite nulle ou negative : refusee", totalPour("p40", 0) === null && totalPour("p40", -1) === null);
+ok("quantite non entiere : refusee", totalPour("p45", 1.5) === null);
+ok("palier absent : null, on ne facture pas sans chiffrage",
+   totalPour(null, 1) === null && totalPour(undefined, 1) === null);
+
+/* ═══════════════ LE CODE FONDATRICE (T-021) : LE RECIT ═══════════════
+   La route /api/admin/atelier/fondatrice-code écrit `code_fondatrice_cree`
+   au journal — c'est sa persistance ET son verrou d'idempotence. La part
+   pure testable ici : la phrase du journal existe, dit le montant, et ne
+   REVELE PAS le code (il reste dans le payload replie). */
+
+titre("— le code fondatrice (T-021) au journal —");
+const rCode = raconter("code_fondatrice_cree", {
+  code: "FONDATRICE-3-XYZW",
+  montant: 3000,
+  numero_fondateur: 3,
+  par: "Mathias",
+});
+ok("la phrase nomme le geste et le montant",
+   rCode.texte.includes("30") && rCode.texte.toLowerCase().includes("code fondatrice"));
+ok("la phrase porte son auteur", rCode.texte.includes("Mathias"));
+ok("le code lui-meme n'est PAS dans la phrase ni le detail",
+   !rCode.texte.includes("FONDATRICE-3-XYZW") && !(rCode.detail ?? "").includes("FONDATRICE-3-XYZW"));
+ok("sans auteur, la phrase reste correcte",
+   raconter("code_fondatrice_cree", { montant: 3000 }).texte.length > 0);
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
 process.exit(ko === 0 ? 0 : 1);

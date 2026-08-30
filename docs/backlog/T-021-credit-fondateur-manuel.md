@@ -19,4 +19,13 @@ avec vérification préalable dans `waitlist` (comme l'exige l'article). Le gest
 **Question pour Mathias** : combien de fondateurs ont déjà été servis à la main ? Le seuil qui
 rend l'automatisation rentable, c'est le nombre restant.
 ## Ce qui a été fait
-—
+30/08 : la création du code est automatisée, le geste reste humain. Route POST
+`/api/admin/atelier/fondatrice-code` (auth admin) : re-vérifie `waitlist`
+(founder + confirmed + email canonique) côté serveur, crée le coupon Stripe (30 €, `once`)
+et le promotion code `FONDATRICE-<nº>-<4 car.>` (`max_redemptions: 1`), journalise
+`code_fondatrice_cree` dans `evenements` — qui sert aussi de verrou d'idempotence (un second
+clic REND le code existant). Aucune migration, aucune colonne. La fiche admin affiche le code
+en copiable avec sa date, ou le bouton « Créer le code de 30 € ». Le code ne part dans AUCUN
+mail. Erreur Stripe = rien au journal ; clé absente = message clair.
+RESTE À TRANCHER par Mathias : l'envoi à la cliente (automatique ou manuel) — l'UI le dit en
+toutes lettres. NON TESTÉ contre l'API Stripe réelle : premier clic à faire par l'admin.

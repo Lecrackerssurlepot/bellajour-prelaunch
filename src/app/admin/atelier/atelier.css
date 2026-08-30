@@ -2130,6 +2130,27 @@
   line-height: 1.5;
   color: var(--bj-action);
 }
+/* T-021 — le code fondatrice, créé et copié depuis la fiche. */
+.ate-code-fondatrice {
+  margin-top: var(--bj-sp-2);
+}
+.ate-code-fondatrice .ate-faint,
+.ate-code-fondatrice .ate-erreur {
+  margin: var(--bj-sp-1) 0 0;
+  font-size: var(--bj-fs-xs);
+  line-height: 1.5;
+}
+.ate-code-ligne {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  flex-wrap: wrap;
+}
+.ate-code-ligne code {
+  font-size: var(--bj-fs-sm);
+  overflow-wrap: anywhere;
+}
 
 .ate-accords {
   list-style: none;

@@ -216,6 +216,12 @@ export type Fiche = {
   notes: NoteVue[];
   /** La migration `notes` n'est pas passée : l'écran le dit au lieu de mentir. */
   notesIndisponibles: boolean;
+  /**
+   * T-021 — le code Stripe de 30 € des fondatrices, s'il a déjà été frappé.
+   * Lu dans le journal (`code_fondatrice_cree`), AUCUNE colonne : le journal
+   * est la persistance ET le verrou d'idempotence de la route.
+   */
+  codeFondatrice: { code: string; creeLe: string } | null;
   /** Idem pour la colonne `en_charge` (migration 20260826). */
   enChargeAbsent: boolean;
   client: ClientVue;
