@@ -55,6 +55,16 @@ export default function Univers() {
         [...texte].map((c) => '<span class="c" aria-hidden="true">' + c + '</span>').join('')
     }
 
+    /* Le compteur porte son nombre FINAL dans le balisage — même parti pris
+       que le mot ci-dessus : sans JavaScript il doit se LIRE, pas afficher 0.
+       On le remet à zéro ICI, au tout début de l'effet, donc avant que sa page
+       ne se dévoile. Sinon le nombre final resterait affiché 260 ms avant que
+       la montée ne reparte de zéro, et on gâcherait le seul mouvement de la
+       page 02. Avec script, l'état initial est donc exactement celui d'avant. */
+    tous<HTMLElement>('[data-compte]').forEach((el) => {
+      el.textContent = '0'
+    })
+
     /* ── le compteur mécanique (PRD §15, mouvement nº5) ──
        Le NOMBRE monte réellement, et chaque colonne roule quand son
        chiffre change. Les unités tournent sans arrêt, les milliers ne
@@ -462,7 +472,7 @@ export default function Univers() {
             <b className="glitch" data-t="6600" data-texte="restent numériques…">restent numériques…</b></p>
 
           <div className="sl2-compte" data-t="7200">
-            <p className="g" data-compte="12480">0</p>
+            <p className="g" data-compte="12480">12 480</p>
             <p className="l">photos sur son téléphone</p>
           </div>
           </div>
