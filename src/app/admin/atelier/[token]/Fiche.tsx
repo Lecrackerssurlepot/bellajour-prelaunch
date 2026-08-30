@@ -5,6 +5,8 @@ import Link from "next/link";
 import PanneauAction from "./PanneauAction";
 import Parcours from "./Parcours";
 import Carnet from "./Carnet";
+import Impression, { type FichierImpression } from "./Impression";
+import { SLOTS_IMPRESSION } from "@/lib/atelier/impression";
 import type { EvenementVue, Fiche as FicheVue } from "../types";
 import Loupe, { type VueLoupe } from "@/app/components/Loupe";
 import EnCharge from "./EnCharge";
@@ -424,6 +426,20 @@ export default function Fiche({
       <div className="ate-colonnes">
         <div className="ate-colonne">
           <PanneauAction fiche={fiche} demo={demo} />
+
+          {/* Les PDF print-ready déposés, enfin VISIBLES avant d'appuyer sur
+              « Envoyer à l'impression ». La carte n'existe que s'il y a au
+              moins un fichier au coffre — les labels viennent de la même
+              table que les cadres de dépôt (SLOTS_IMPRESSION). */}
+          <Impression
+            token={l.token}
+            fichiers={SLOTS_IMPRESSION.flatMap((s): FichierImpression[] => {
+              const cle = fiche.impressionFichiers[s.type];
+              return cle
+                ? [{ type: s.type, label: s.label, cle, url: fiche.impressionUrls[s.type] }]
+                : [];
+            })}
+          />
 
           <Carnet
             token={l.token}

@@ -187,6 +187,12 @@ export type Fiche = {
   maquettePdfUrl: string | null;
   /** Les clés de coffre des PDF print-ready, par type Cloudprinter. */
   impressionFichiers: { product: string | null; cover: string | null; book: string | null };
+  /**
+   * Les MÊMES PDF, en URL GET signées au rendu (1 h) : le bucket est privé,
+   * et l'atelier doit pouvoir OUVRIR ce qui va partir chez l'imprimeur —
+   * jusqu'ici les fichiers partaient sans avoir jamais été revus.
+   */
+  impressionUrls: { product: string | null; cover: string | null; book: string | null };
   /** Posé quand la commande est partie chez Cloudprinter — jamais deux fois. */
   cloudprinterOrderId: string | null;
   transporteur: string | null;

@@ -247,6 +247,25 @@ export async function empreinteObjet(
   }
 }
 
+/**
+ * Lecture COMPLÈTE d'un objet du coffre, côté serveur.
+ *
+ * Sert au contrôle technique des PDF print-ready : pdf-lib a besoin des
+ * octets, pas d'une URL. L'appelant est responsable de borner AVANT l'appel
+ * (HEAD sur la taille) et de passer un signal d'interruption : un PDF de
+ * 200 Mo sur une file lente ne doit pas retenir une fonction serverless
+ * au-delà de son budget. Les erreurs REMONTENT — c'est à la route de les
+ * traduire en message d'écran, jamais à ce module de les taire.
+ */
+export async function lireObjet(key: string, abortSignal?: AbortSignal): Promise<Uint8Array> {
+  const r = await makeR2().send(
+    new GetObjectCommand({ Bucket: bucket(), Key: key }),
+    abortSignal ? { abortSignal } : undefined
+  );
+  if (!r.Body) throw new Error(`objet sans corps : ${key}`);
+  return r.Body.transformToByteArray();
+}
+
 /** Suppression — utilisée quand le HEAD révèle une taille hors tolérance. */
 export async function supprimer(key: string): Promise<void> {
   try {

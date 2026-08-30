@@ -740,6 +740,17 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
       const cle = (k: string) => (typeof brut[k] === "string" ? (brut[k] as string) : null);
       return { product: cle("product"), cover: cle("cover"), book: cle("book") };
     })(),
+    /* Les mêmes PDF, signés pour l'écran (1 h, comme les photos) : une
+       signature qui échoue rend null et laisse le lien absent — jamais une
+       fiche en erreur. */
+    impressionUrls: await (async () => {
+      const brut = (n.impression_fichiers && typeof n.impression_fichiers === "object"
+        ? n.impression_fichiers
+        : {}) as Record<string, unknown>;
+      const url = async (k: string) =>
+        typeof brut[k] === "string" ? await signerGet(brut[k] as string).catch(() => null) : null;
+      return { product: await url("product"), cover: await url("cover"), book: await url("book") };
+    })(),
     cloudprinterOrderId: (n.cloudprinter_order_id as string) ?? null,
     transporteur: (n.transporteur as string) ?? null,
     trackingUrl: (n.tracking_url as string) ?? null,
