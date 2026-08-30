@@ -24,6 +24,10 @@ export default function Inscription() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState<SuccessData | null>(null)
+  /* Adresse deja connue : on n'ecrit plus rien et on envoie un lien par mail
+     (T-040). Ecran distinct, car il n'y a ni code ni lien de partage a montrer
+     tant que la personne n'a pas prouve qu'elle tient la boite. */
+  const [enAttenteMail, setEnAttenteMail] = useState(false)
   const [copied, setCopied] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,6 +52,10 @@ export default function Inscription() {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         setError(data.message || 'Une erreur s’est glissée. Réessayez dans un instant.')
+        return
+      }
+      if (data.pending_confirmation === true) {
+        setEnAttenteMail(true)
         return
       }
       setSuccess({
@@ -77,7 +85,17 @@ export default function Inscription() {
   return (
     <section id="inscription" className="amb-reg" data-section="amb-inscription" data-theme="light">
       <div className="amb-reg-inner">
-        {success ? (
+        {enAttenteMail ? (
+          <div className="amb-reg-success" aria-live="polite">
+            <p className="amb-reg-eyebrow">Une dernière étape</p>
+            <h2 className="amb-reg-title">Regardez votre boîte mail.</h2>
+            <p className="amb-reg-sub">
+              Nous venons de vous envoyer un lien à l’adresse indiquée. Ouvrez-le
+              pour rejoindre le Cercle et découvrir votre code de parrainage.
+              Si vous ne le voyez pas, pensez à vérifier vos spams.
+            </p>
+          </div>
+        ) : success ? (
           <div className="amb-reg-success" aria-live="polite">
             {success.already_ambassador ? (
               <>

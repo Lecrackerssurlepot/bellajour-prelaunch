@@ -6,6 +6,7 @@
    l'unobserve dès la première intersection.
    Le respect de prefers-reduced-motion est porté par .at-rv dans theme.css. */
 
+import { useEffect } from 'react'
 import { useReveal } from '@/hooks/useReveal'
 import { useValeurClient } from '@/hooks/useClient'
 
@@ -19,6 +20,13 @@ export default function Reveal({
   className?: string
 }) {
   const { ref, isVisible } = useReveal<HTMLDivElement>(0.15)
+
+  /* Signe au chien de garde du layout racine que le code client tourne.
+     Reveal est monte sur /magazine et sur /numero/<token> : c'est le point
+     commun des deux pages qui cachent du contenu en attendant le JS (T-050). */
+  useEffect(() => {
+    document.documentElement.setAttribute('data-anim-ok', '')
+  }, [])
 
   /* Filet : sans IntersectionObserver, le hook n'arme rien et le contenu
      resterait invisible à vie. Même garde que S1bAlbum.tsx.

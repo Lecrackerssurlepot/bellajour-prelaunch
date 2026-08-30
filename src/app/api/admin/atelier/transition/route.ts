@@ -359,6 +359,15 @@ export async function POST(request: Request) {
          n'est pas encore passée. Une expédition ne doit pas être bloquée par
          une colonne d'affichage — on écrit sans elle, le lien de suivi
          (`tracking_url`) part quand même. Même repli que le webhook. */
+      /* ⚠️ Ce repli EFFACE une donnée. Il doit donc CRIER (T-001, 29/08/2026) :
+         muet, il transforme une panne bruyante en donnée perdue. C'est
+         exactement ce qui est arrivé — la migration n'a jamais été appliquée,
+         le geste réussissait, et aucun colis n'a eu son numéro de suivi
+         pendant une semaine sans que rien ne le signale nulle part. */
+      console.error(
+        "[admin/transition] ⚠️ REPLI 42703 : tracking_code absent en base, le numéro de suivi n'est PAS enregistré. Appliquer supabase/migrations/20260829_atelier_tracking_code.sql.",
+        { numero: numero.id, geste: cle },
+      );
       const sansColonne: Record<string, unknown> = { ...prepa.patch };
       delete sansColonne.tracking_code;
       ({ data: maj, error } = await ecrire(sansColonne));

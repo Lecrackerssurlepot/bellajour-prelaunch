@@ -33,6 +33,9 @@ function nextPalierInfo(parrainages: number) {
 export default function Espace() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
+  /* Drapeau du lien de confirmation (T-040), lu hors de l'effet : c'est une
+     valeur d'URL, pas une dependance vivante. */
+  const doitConfirmer = searchParams.get('confirmer') === '1'
 
   const [status, setStatus] = useState<'loading' | 'ok' | 'request'>(
     token ? 'loading' : 'request',
@@ -50,6 +53,20 @@ export default function Espace() {
     let cancelled = false
     ;(async () => {
       try {
+        /* Lien de CONFIRMATION d'inscription (T-040) : c'est ici que la
+           personne devient reellement ambassadrice, apres avoir prouve
+           qu'elle tient la boite en ouvrant le lien. La route est idempotente,
+           et son echec n'est pas bloquant : /me tranchera juste apres. */
+        if (doitConfirmer) {
+          try {
+            await fetch('/api/ambassadeur/confirmer', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token }),
+            })
+          } catch { /* /me dira si l'acces est ouvert ou non */ }
+        }
+
         const res = await fetch(`/api/ambassadeur/me?token=${encodeURIComponent(token)}`)
         if (cancelled) return
         if (res.ok) {
@@ -66,7 +83,7 @@ export default function Espace() {
     return () => {
       cancelled = true
     }
-  }, [token])
+  }, [token, doitConfirmer])
 
   const copyLink = async () => {
     if (!data) return

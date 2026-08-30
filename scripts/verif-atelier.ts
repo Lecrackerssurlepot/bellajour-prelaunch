@@ -28,6 +28,13 @@ import {
 } from "@/lib/atelier/mails";
 import { nomsDeFichiers, nomDossier } from "@/lib/atelier/lot";
 import {
+  signToken,
+  signTokenShort,
+  signTokenConfirmation,
+  verifyToken,
+  verifyTokenConfirmation,
+} from "@/lib/ambassadeur-token";
+import {
   CHAMPS_PAR_ECRAN,
   CHAMPS_QUESTIONNAIRE,
   normaliserTelephone,
@@ -641,6 +648,31 @@ ok("deux fautes : on n'invente pas", suggestionEmail("marie@gmiil.co") === null)
 ok("sans arobase : rien", suggestionEmail("marie.gmail.com") === null);
 ok("arobase en tete : rien", suggestionEmail("@gmail.com") === null);
 ok("domaine vide : rien", suggestionEmail("marie@") === null);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   T-040 — un lien d'ACCÈS ne doit jamais pouvoir promouvoir en ambassadrice
+
+   La propriété qui compte : `request-access` envoie un lien magique a
+   N'IMPORTE QUELLE adresse saisie par n'importe qui. Si ce lien pouvait
+   confirmer une inscription, on aurait juste déplacé la faille au lieu de la
+   fermer — la destinataire deviendrait ambassadrice sans l'avoir demandé,
+   et sa signature de charte serait de nouveau fabriquée par un tiers.
+   ───────────────────────────────────────────────────────────────────────── */
+process.env.AMBASSADEUR_LINK_SECRET =
+  process.env.AMBASSADEUR_LINK_SECRET || "secret-de-verification-local";
+
+ok("un token de confirmation confirme",
+   verifyTokenConfirmation(signTokenConfirmation("marie@exemple.fr")) === "marie@exemple.fr");
+ok("⚠️ un token d'ACCES 7 j ne confirme PAS",
+   verifyTokenConfirmation(signToken("marie@exemple.fr")) === null);
+ok("⚠️ un token d'acces court 1 h ne confirme PAS",
+   verifyTokenConfirmation(signTokenShort("marie@exemple.fr")) === null);
+ok("un token de confirmation ouvre aussi l'espace (la personne vient d'y entrer)",
+   verifyToken(signTokenConfirmation("marie@exemple.fr")) === "marie@exemple.fr");
+ok("un token trafique ne confirme rien",
+   verifyTokenConfirmation(signTokenConfirmation("marie@exemple.fr").slice(0, -3) + "aaa") === null);
+ok("rien du tout ne confirme rien", verifyTokenConfirmation(null) === null);
+ok("une chaine quelconque ne confirme rien", verifyTokenConfirmation("nimportequoi") === null);
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
 process.exit(ko === 0 ? 0 : 1);

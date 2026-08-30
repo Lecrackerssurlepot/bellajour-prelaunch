@@ -13,7 +13,7 @@ import './legal.css'
    Chrome à la charte --bj-* : fond crème, titres Cormorant italic, corps DM Sans.
    - searchParams (Next 16, déjà awaité par la route) → langue + ref préservés.
    - Sélecteur de langue : FR rendu, EN/PT activés dès que la clé locale existe.
-   - Lien retour : /preventes?ref=… si parrain présent, sinon accueil. */
+   - Lien retour : /inviter?ref=… si parrain présent, sinon accueil (T-070). */
 
 type RawParams = { [key: string]: string | string[] | undefined }
 
@@ -33,7 +33,7 @@ export default function LegalPage({ slug, doc, params }: LegalPageProps) {
       <div className="lg-inner">
 
         <header className="lg-head">
-          <a href={backHref(ref)} className="lg-back">← Retour</a>
+          <a href={backHref()} className="lg-back">← Retour</a>
 
           <nav className="lg-langs" aria-label="Langue du document">
             {LOCALES.map((loc) => {

@@ -434,18 +434,18 @@ export default function Univers() {
           <h2 className="sr-only">Le constat</h2>
           <div className="sl-corps">
           <div className="sl2-scene" aria-hidden="true">
-            <figure className="v v1" data-t="1900"><span className="ph"><img src="/images/univers/solution-upload-02.webp" alt="" width="480" height="640" fetchPriority="low" decoding="async" /></span></figure>
+            <figure className="v v1" data-t="1900"><span className="ph"><img src="/images/univers/solution-upload-02.webp" alt="" width="480" height="640" loading="lazy" fetchPriority="low" decoding="async" /></span></figure>
             <figure className="v v2" data-t="2500">
-              <span className="ph"><img src="/images/univers/grid-03.webp" alt="" width="600" height="800" fetchPriority="low" decoding="async" /></span>
+              <span className="ph"><img src="/images/univers/grid-03.webp" alt="" width="600" height="800" loading="lazy" fetchPriority="low" decoding="async" /></span>
               <span className="v-video"><i></i><b>0:24</b></span>
             </figure>
             <figure className="v v3" data-t="3100">
               <span className="v-mot"><s></s><s></s><em>♥ 12</em></span>
             </figure>
-            <figure className="v v4" data-t="3700"><span className="ph"><img src="/images/univers/solution-upload-05.webp" alt="" width="400" height="300" fetchPriority="low" decoding="async" /></span></figure>
+            <figure className="v v4" data-t="3700"><span className="ph"><img src="/images/univers/solution-upload-05.webp" alt="" width="400" height="300" loading="lazy" fetchPriority="low" decoding="async" /></span></figure>
             <figure className="v v5" data-t="4300">
               <span className="v-story"><i></i><i></i><i></i></span>
-              <span className="ph"><img src="/images/univers/solution-upload-09.webp" alt="" width="400" height="534" fetchPriority="low" decoding="async" /></span>
+              <span className="ph"><img src="/images/univers/solution-upload-09.webp" alt="" width="400" height="534" loading="lazy" fetchPriority="low" decoding="async" /></span>
             </figure>
           </div>
 

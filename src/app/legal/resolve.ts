@@ -39,7 +39,17 @@ export function legalHref(slug: string, lang?: Locale | null, ref?: string | nul
   return q ? `/${slug}?${q}` : `/${slug}`
 }
 
-/* Lien « retour » : vers la prévente si un ref est présent, sinon l'accueil. */
-export function backHref(ref?: string | null): string {
-  return ref ? `/preventes?ref=${encodeURIComponent(ref)}` : '/'
+/* Lien « retour » : l'accueil, toujours.
+   ⚠️ Pointait vers `/preventes?ref=…` (T-070). Cette page est retiree de la
+   ligne depuis le 28/08 : le bouton « Retour » des quatre pages legales menait
+   donc a une redirection, et la fondatrice atterrissait sur l'accueil avec son
+   code evapore — c'etait le dernier lien interne du site vers une redirection.
+   On ne le remplace PAS par `/inviter?ref=` : cette page appartient a la
+   MARRAINE (« Prenom, partagez votre code avec vos proches »), pas a la
+   personne qui a recu son lien. L'y envoyer lui montrerait le code de
+   quelqu'un d'autre comme si c'etait le sien.
+   Aujourd'hui aucune page n'accueille une filleule : voir T-002, qui attend
+   une decision produit. En attendant, l'accueil est la reponse honnete. */
+export function backHref(): string {
+  return '/'
 }

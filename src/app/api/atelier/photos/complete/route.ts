@@ -157,6 +157,10 @@ export async function POST(request: Request) {
              garde-fou au fournisseur. */
           if (reelle > MAX_FILE_BYTES) {
             await supprimer(l.r2_key);
+            /* ET sa vignette (T-042) : elle a pu monter avant que l'original
+               ne soit mesure trop lourd. Meme raison qu'en suppression
+               manuelle — un objet sans ligne est invisible et eternel. */
+            await supprimer(cleVignetteR2(numero.id, l.id));
             await supabase.from("photos").delete().eq("id", l.id);
             rejetees.push({ id: l.id, raison: "trop_volumineuse" });
             return;

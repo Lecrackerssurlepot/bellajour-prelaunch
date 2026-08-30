@@ -1,0 +1,39 @@
+# Le filet qu'on ne peut pas sauter.
+#
+# Il ne fait PAS `next build` : Vercel construit déjà chaque envoi, et
+# dupliquer trois minutes de compilation ne dirait rien de neuf. Ce workflow
+# couvre exactement ce que Vercel ne regarde pas — les types, le lint, et le
+# harnais de logique pure de l'atelier (transitions, urgence, mails, prix).
+#
+# Aucune variable d'environnement n'est nécessaire : les trois vérifications
+# tournent sans base, sans réseau et sans secret. C'est ce qui les rend
+# utilisables sur une pull request venue de n'importe où.
+
+name: Vérifications
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Alignée sur la machine de développement (v24).
+          # ⚠️ À garder alignée sur la version que Vercel utilise pour ce
+          # projet : une divergence ferait passer ici ce qui casse là-bas.
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Types et lint
+        run: npm run verif
+
+      - name: Harnais de l'atelier
+        run: npm run verif:atelier

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { canonicalizeEmail } from "@/lib/email";
 import { makeSupabase } from "@/lib/supabase";
 import { generateUniqueCode } from "@/lib/refcode";
-import { signToken, signTokenShort } from "@/lib/ambassadeur-token";
+import { signToken, signTokenShort, signTokenConfirmation } from "@/lib/ambassadeur-token";
 import { sendBrevoEmail, upsertBrevoContact } from "@/lib/brevo";
 
 /* POST /api/ambassadeur/register
@@ -83,35 +83,58 @@ export async function POST(request: Request) {
       .eq("email_canonical", emailCanonical)
       .maybeSingle();
 
-    // État AVANT cet appel : la personne était-elle déjà ambassadeur ?
-    // (le SELECT lit l'état antérieur à tout UPDATE ci-dessous → ordre correct)
-    const wasAlreadyAmbassador = existing?.is_ambassadeur === true;
+    /* ════════════════════════════════════════════════════════════════════
+       UNE ADRESSE DÉJÀ CONNUE NE SE PROMEUT PLUS ICI (T-040, 29/08/2026)
+       ════════════════════════════════════════════════════════════════════
+       Avant : ce formulaire posait `is_ambassadeur`, `ambassadeur_consent_at`
+       et `ambassadeur_charte_version` sur la ligne de N'IMPORTE QUELLE
+       adresse saisie, sans aucune preuve de possession, et rendait dans la
+       réponse HTTP un lien d'accès valable une heure.
+       Deux dommages, dont le second est le plus grave :
+       - on lisait le tableau de bord d'une cliente (son prénom, son code, les
+         prénoms de ses filleules) en une requête ;
+       - on FABRIQUAIT une signature de charte horodatée qu'elle n'avait jamais
+         donnée, et qu'on aurait produite comme preuve si elle contestait. Et
+         si elle était déjà ambassadrice, A1 ne partait pas : elle ne
+         l'apprenait jamais.
+       Le commentaire de l'ancien `dashboard_url` assumait le premier risque
+       (« le dashboard ne révèle que des prénoms »). Il ne disait rien du
+       second, et c'est celui-là qui n'était pas défendable.
 
+       Désormais : aucune écriture, aucun `ref_code` rendu (ce serait le même
+       aveu d'existence que T-045), et le lien part par MAIL. La promotion a
+       lieu dans /api/ambassadeur/confirmer, quand la personne ouvre le lien —
+       donc quand elle a prouvé qu'elle tient la boîte.
+       La réponse est la MÊME que la ligne existe ou non côté « déjà inscrite »,
+       pour ne rien révéler à qui sonderait des adresses. */
+    if (existing) {
+      try {
+        const lienConfirmation =
+          `${SITE_URL}/ambassadeurs/espace` +
+          `?token=${signTokenConfirmation(emailCanonical)}&confirmer=1`;
+        await sendBrevoEmail({
+          templateId: Number(process.env.BREVO_TEMPLATE_A2_ID) || undefined,
+          email: normalizedEmail,
+          name: existing.prenom || cleanPrenom,
+          params: { PRENOM: existing.prenom || cleanPrenom, DASHBOARD_URL: lienConfirmation },
+          apiKey: process.env.BREVO_API_KEY,
+          label: "A2-confirmation",
+        });
+      } catch (err) {
+        /* Best-effort, comme tout envoi : ne jamais faire échouer l'action
+           métier. ⚠️ Contrepartie connue : un mail qui ne part pas ne remonte
+           que dans les journaux Vercel. */
+        console.error("[ambassadeur] A2 de confirmation échec (non bloquant)", err);
+      }
+      return NextResponse.json({ pending_confirmation: true }, { status: 200 });
+    }
+
+    /* À partir d'ici, la ligne n'existait PAS : on la crée. Rien à usurper,
+       donc le consentement saisi dans le formulaire est bien celui de la
+       personne qui vient d'ouvrir ce compte. */
     let refCode: string;
 
-    if (existing) {
-      // UPDATE — on PROMEUT en ambassadeur sans toucher status / offer_type / numero_fondateur.
-      // prenom seulement s'il était vide (on ne réécrit pas un prénom déjà saisi).
-      const updatePayload: Record<string, unknown> = {
-        is_ambassadeur: true,
-        ambassadeur_consent_at: new Date().toISOString(),
-        ambassadeur_charte_version: CHARTE_VERSION,
-      };
-      if (!existing.prenom) updatePayload.prenom = cleanPrenom;
-
-      const { error: updateError } = await supabase
-        .from("waitlist")
-        .update(updatePayload)
-        .eq("email_canonical", emailCanonical);
-      if (updateError) {
-        console.error("[ambassadeur] update échec", updateError);
-        return NextResponse.json(
-          { message: "Une erreur s'est glissée. Réessayez dans un instant." },
-          { status: 500 },
-        );
-      }
-      refCode = existing.ref_code;
-    } else {
+    {
       // INSERT — nouvelle ligne waitlist directement marquée ambassadeur.
       // Retry ciblé sur collision ref_code (23505), comme /api/waitlist.
       let ref = await generateUniqueCode(supabase, cleanPrenom);
@@ -192,7 +215,7 @@ export async function POST(request: Request) {
 
     // A1 (best-effort, jamais bloquant) — UNIQUEMENT pour un nouvel ambassadeur.
     // Dashboard via lien magique signé 7 j (builder existant signToken, inchangé).
-    if (!wasAlreadyAmbassador) {
+    {
       try {
         const dashboardUrl = `${SITE_URL}/ambassadeurs/espace?token=${signToken(emailCanonical)}`;
         await sendBrevoEmail({
@@ -211,17 +234,20 @@ export async function POST(request: Request) {
     // Accès direct « Voir mon espace » depuis l'écran de succès, sans attendre le mail.
     // URL RELATIVE (pas de SITE_URL) → le bouton reste sur l'origine courante (preview
     // ou prod), évitant un 404 en preview. Le mail, lui, garde l'URL absolue ci-dessus.
-    // ⚠️ Sécurité : cet accès NE prouve PAS la possession de l'email. On l'accepte car
-    // le dashboard ne révèle que des prénoms et un nombre de pages (jamais d'email), et
-    // le token est court (1 h) pour limiter le risque. L'accès durable reste le lien
-    // magique 7 j envoyé par mail.
+    // ⚠️ Sécurité : cet accès ne prouve pas la possession de l'email. Le risque
+    // était réel tant que ce chemin servait AUSSI les adresses déjà connues —
+    // on lisait alors le tableau de bord d'une cliente en une requête (T-040).
+    // Depuis le 29/08 il n'est atteint que pour une ligne qu'on vient de CRÉER :
+    // il n'y a rien à usurper, la personne consulte ce qu'elle vient de saisir.
+    // Une adresse déjà connue passe par le mail et /api/ambassadeur/confirmer.
+    // Le token reste court (1 h) ; l'accès durable est le lien magique 7 j.
     const dashboardUrlShort = `/ambassadeurs/espace?token=${signTokenShort(emailCanonical)}`;
 
     return NextResponse.json(
       {
         ref_code: refCode,
         share_url: shareUrl,
-        already_ambassador: wasAlreadyAmbassador,
+        already_ambassador: false,
         dashboard_url: dashboardUrlShort,
       },
       { status: 200 },
