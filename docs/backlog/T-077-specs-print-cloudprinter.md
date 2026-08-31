@@ -26,3 +26,8 @@ T-006/T-028. La formule d'épaisseur du dos manque encore (zip de gabarits offic
 ## Ce qui a été fait
 30/08 : specs relevées via l'API (products/info) et consignées dans
 `docs/reference/SPECS-CLOUDPRINTER.md` ; le contrôle PDF de la fiche admin les utilise.
+
+## 01/09 — Mathias : la correction attendra la refonte complète des CGV
+« On corrigera avec l'intégralité des CGV (prix, papier, grammage…) ». Le format 210×297 ne
+part donc pas seul : il rejoint le lot CGV avec les prix finaux (T-072), le grammage réel
+(T-028) et les finitions (T-027). À traiter d'un bloc, avec relecture juriste (T-026).

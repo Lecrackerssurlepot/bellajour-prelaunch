@@ -34,3 +34,8 @@ décor plutôt que de faire tomber le déploiement), et rendre son image à `/am
 **Question pour Mathias** : quelle phrase veux-tu sur l'image de partage ?
 ## Ce qui a été fait
 —
+
+## 01/09 — Mathias : ça viendra avec le chantier visuels
+« Il faut effectivement changer cela. Ça viendra quand on s'occupera des visuels. » Le ticket
+reste ouvert et continue de bloquer le nettoyage des 101 Mo d'images orphelines (T-003) :
+le `throw` de opengraph-image.tsx sur fichier manquant casse le build si on déplace avant.
