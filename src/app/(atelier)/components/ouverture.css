@@ -341,11 +341,39 @@
      l'ecran, et plus rien ne bouge pendant qu'on defile.
      Le folio disparait : sur un telephone, chaque ligne coute un ecran. */
   .at-accueil .hero{min-height:var(--app-height);padding:calc(10 * var(--uh)) var(--md) calc(5 * var(--uh)) var(--mg);justify-content:flex-start}
-  .at-accueil .h-titre{font-size:clamp(30px,9.2vw,54px)}
+  /* ─── LA TAILLE DU TITRE EST BORNEE PAR LA LARGEUR DE L'ECRAN ───
+     Ce n'est pas un reglage libre : « Vos meilleurs moments » doit tenir sur
+     UNE ligne, et c'est elle la plus longue. MESURE le 31/08/2026 a 390 px,
+     Cormorant Garamond a 35,88 px : le texte fait 313,4 px pour 335
+     disponibles entre les marges de 7vw. Le rapport largeur/corps de cette
+     ligne est de 8,735 — il ne depend pas de l'ecran, donc la borne s'ecrit
+     en vw : 335/8,735 = 38,35 px, soit 9,83vw. C'est le plafond absolu.
+     9,6vw retenu = 97,6 % d'occupation, huit pixels de reserve. La reserve
+     n'est pas cosmetique : pendant le chargement des polices, c'est le repli
+     genere par next/font qui rend le titre. MESURE aussi : 314,7 px contre
+     313,4 pour la vraie, 0,4 % d'ecart — le `size-adjust` de next/font fait
+     son travail. Sans cette reserve, un ecart de 3 % renverrait la ligne, et
+     `globals.css` coupe alors le mot EN PLEIN MILIEU sous 767 px
+     (overflow-wrap:anywhere !important, piege nº1 de src/app/CLAUDE.md).
+     ⚠️ Si le texte du titre change, ce nombre doit etre remesure. Georgia,
+     dernier repli de la pile, fait 361,9 px — 15 % de plus : il renverrait.
+     Le plafond de 54px est inchange : au-dela de 562 px de large on n'est
+     plus sur un telephone, et le grand ecran reprend la main a 1000 px. */
+  .at-accueil .h-titre{font-size:clamp(30px,9.6vw,54px)}
   .at-accueil .h-titre .l2{text-align:left}
   /* les deux lignes sont ferrees a gauche ici : les rentrer horizontalement
      les desalignerait. Seul le resserrement vertical joue. */
-  .at-accueil.plein .h-titre{transform:scale(1.05);translate:0 0}
+  /* L'agrandissement final passe par l'ECHELLE, et c'est ce qui permet
+     d'aller plus loin que 9,6vw : un `scale` ne recompose pas le texte, la
+     ligne ne peut donc pas se renvoyer, quelle que soit la valeur. Seul
+     l'ecran borne : 327 px de texte × 1,12 = 366 px, soit douze pixels de
+     marge de chaque cote sur un telephone de 390. Le titre deborde des 7vw
+     du hero — c'est voulu, la couverture est ouverte en plein ecran a ce
+     moment-la et un titre qui va au bord est ce qu'on demande a une une.
+     ⚠️ NE PAS depasser 1,15 : `globals.css` pose `overflow-x: clip` sur le
+     corps sous 767 px. Un titre plus large que l'ecran ne deborderait pas,
+     il serait COUPE. */
+  .at-accueil.plein .h-titre{transform:scale(1.12);translate:0 0}
   /* ─── LES DEUX LIGNES SE REJOIGNENT EN UN SEUL TITRE ───
      Entre elles vit `.h-bandeau` : 26 unites de hauteur, plus ses marges,
      soit 29,4 au total. Tant que la couverture est repliee, cet ecart EST la
