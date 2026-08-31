@@ -105,9 +105,13 @@ export const metadata: Metadata = {
     },
   },
 
-  alternates: {
-    canonical: 'https://www.bellajour.fr',
-  },
+  /* PAS d'`alternates.canonical` ici (T-009, 31/08/2026). Next herite les
+     metadonnees champ par champ : un canonical pose dans le layout RACINE se
+     retrouvait sur toute page qui n'en declarait pas — c'est-a-dire justement
+     les pages en noindex (/merci, /inviter, /numero/<token>, /composer,
+     l'admin), qui declaraient alors « ma version de reference est l'accueil »
+     tout en demandant a ne pas etre indexees. Signaux contradictoires.
+     Chaque page publique indexable porte son propre canonical explicite. */
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

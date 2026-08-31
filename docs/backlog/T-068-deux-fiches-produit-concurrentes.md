@@ -32,4 +32,23 @@ Un seul `Product`, sur `/magazine`, qui est la page produit. Sur `/`, garder au 
 de réassurance.
 ⚠️ Ne jamais déclarer un prix absent de la page rendue — c'est ce qui fait rejeter le balisage.
 ## Ce qui a été fait
-—
+**31/08/2026 — CONFIRMÉ, le doublon est levé ; deux points restent ouverts.**
+Fait, dans `src/app/(atelier)/page.tsx` :
+- Le `Product` + `AggregateOffer` de l'accueil est REMPLACÉ par `Organization` + `WebSite`.
+  Il déclarait un `highPrice: 45` invisible sur la page rendue (seul « dès 30 € » s'affiche) —
+  motif de rejet du résultat enrichi — et concurrençait la fiche de `/magazine`.
+- `Organization.sameAs` relie enfin le domaine aux comptes réels de `Footer.tsx` :
+  `instagram.com/bellajour__/` et `tiktok.com/@bellajourmagazine`. `logo` = `/icon-512.png`,
+  qui existe (déclaré dans `layout.tsx:92`). Rien d'inventé.
+Le `Product` unique vit sur `/magazine` (`magazine/page.tsx:102-123`), la page qui rend les
+trois prix (lus depuis `PALIERS`, même source que l'affichage).
+Preuves (build du 31/08) : `index.html` → un seul ld+json, `[Organization, WebSite]`, zéro
+`Product` ; `magazine.html` → exactement 1 occurrence de `"@type":"Product"`.
+Reste ouvert, et ce n'est pas un oubli :
+- **L'image produit** : TOUTE la galerie est en 450×675 (vérifié par `sips` sur les 25 webp de
+  `public/images/lancement/galerie/`). Aucune source plus grande dans le dépôt — il faut un
+  asset de Mathias, pas une invention.
+- **`hasMerchantReturnPolicy` / `shippingDetails`** : les déclarer exige d'affirmer des
+  conditions (délai de retour, gratuité de livraison) que la page rendue n'affiche pas —
+  « livraison comprise » a justement disparu de la PDP (point non tranché). Même famille de
+  non-conformité que le `highPrice` fantôme : à faire quand la PDP l'affichera.

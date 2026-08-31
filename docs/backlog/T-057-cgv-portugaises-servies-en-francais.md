@@ -22,4 +22,15 @@ Deux dommages :
 Poser `lang` sur le conteneur du document légal en fonction de la langue servie — deux lignes, et
 c'est le plus urgent. Puis, séparément, des URL distinctes par langue avec leurs `alternates`.
 ## Ce qui a été fait
-—
+**31/08/2026 — CONFIRMÉ, la partie urgente est corrigée.**
+`src/app/legal/LegalPage.tsx` : `lang={lang}` posé sur le `<main class="lg">`, où `lang` est
+la langue EFFECTIVEMENT servie (celle de `resolveDoc`, pas celle demandée : `?lang=de`
+retombe sur le texte français, l'attribut suit). Aucun texte légal modifié — seul l'attribut
+de langue a bougé, conformément à l'interdit nº2.
+Preuves (build de production + `next start`, 31/08) :
+- `/cgv?lang=pt` → `<main class="lg" lang="pt" …>`
+- `/cgv?lang=en` → `<main class="lg" lang="en" …>`
+- `/cgv` → `<main class="lg" lang="fr" …>`
+Reste ouvert (seconde partie de la proposition, non faite) : des URL distinctes par langue
+avec `alternates.languages` — la version PT n'est toujours ni indexable ni signalée à Google,
+les trois langues vivant sur la même URL à canonical unique.
