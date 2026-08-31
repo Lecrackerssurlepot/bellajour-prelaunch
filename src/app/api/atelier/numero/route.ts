@@ -234,6 +234,28 @@ export async function PATCH(request: Request) {
        fait. Un retrait est une demande de suppression, pas une case à
        décocher — elle passe par l'atelier, pas par une requête. */
     if (body.consent_photos === true) maj.consent_photos = true;
+
+    /* ── LE TÉMOIN DU DÉPÔT INCOMPLET (01/09) ─────────────────────────
+       Depuis que le bouton « Envoyer à l'atelier » s'ouvre sans attendre la
+       fin des transferts, le clic peut arriver alors que des photos montent
+       encore. Elles montent DEPUIS LE NAVIGATEUR : onglet fermé, elles
+       s'arrêtent, et aucun serveur ne peut les reprendre.
+
+       Le navigateur annonce donc combien il comptait en envoyer. Ce nombre
+       n'entre PAS dans `numeros` (aucune colonne, aucune migration) : il va
+       au journal, qui est append-only et fait foi (PRD §5). L'écart entre lui
+       et `nb_photos` est la seule chose qui distingue « elle voulait 40
+       photos » de « elle en voulait 78 et l'onglet s'est fermé ». Sans lui,
+       les deux dossiers sont identiques à l'écran de l'atelier.
+
+       Jamais cru comme une vérité : plafonné, entier, et seulement s'il
+       dépasse le compte déjà en base. */
+    const attendues =
+      typeof body.photos_attendues === "number" &&
+      Number.isFinite(body.photos_attendues) &&
+      body.photos_attendues > 0
+        ? Math.min(Math.floor(body.photos_attendues), 500)
+        : null;
     if (typeof body.consent_communication === "boolean") {
       maj.consent_communication = body.consent_communication;
     }
@@ -328,8 +350,18 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: "internal" }, { status: 500 });
       }
 
-      /* Invariant nº6 — et ici, c'est aussi l'horodatage. */
-      await logEvenement(supabase, numero.id, "consentements", maj);
+      /* Invariant nº6 — et ici, c'est aussi l'horodatage.
+         ⚠️ `photos_attendues` s'ajoute au payload SANS jamais passer par
+         `maj` : `maj` part en UPDATE sur `numeros`, et cette colonne
+         n'existe pas. La clé reste absente quand le navigateur n'a rien
+         annoncé — un dossier antérieur au 01/09 n'en portera jamais, et
+         l'admin sait lire cette absence. */
+      await logEvenement(supabase, numero.id, "consentements", {
+        ...maj,
+        ...(maj.consent_photos === true && attendues !== null
+          ? { photos_attendues: attendues }
+          : {}),
+      });
     }
 
     /* M1 « {{titre}}, c'est parti » (PRD §10) — LA FIN DU DÉPÔT.
@@ -341,7 +373,24 @@ export async function PATCH(request: Request) {
        Le rejeu est inoffensif : le verrou de `mails_envoyes` fait qu'un
        réessai réseau du navigateur n'envoie pas un second mail. L'envoi ne
        throw jamais et n'est pas awaité pour sa valeur : quoi qu'il arrive,
-       la cliente voit son écran 6. */
+       la cliente voit son écran 6.
+
+       ⚠️ SON COMPTE DE PHOTOS, DEPUIS LE 01/09. Le clic peut désormais
+       arriver avec des transferts en cours : `NB_PHOTOS` est alors un
+       PLANCHER, pas un total. C'est assumé, et c'est le moindre mal.
+         — Le chiffre vient de `numero.nb_photos`, relu en base juste
+           au-dessus : c'est ce que le serveur a réellement mesuré sur R2 à
+           cet instant. Il n'invente rien, et il ne peut que SOUS-estimer,
+           jamais sur-promettre. Une cliente qui lit « vos 42 photos » et en
+           retrouve 55 sur sa page n'a perdu personne ; l'inverse, si.
+         — Attendre la fin des transferts pour l'envoyer rouvrirait le trou
+           que M0 a été écrit pour boucher : jusqu'à 24 h de silence après le
+           clic le plus décisif du parcours, dans le cas exact où l'onglet se
+           ferme. Le filet existe (codesPour rend M1 tant qu'il n'est pas
+           parti), mais un filet à 24 h n'est pas un accusé.
+         — Le seuil de faisabilité, lui, est compté sur les photos
+           CONFIRMÉES (paliers.ts) : ce plancher vaut donc toujours au moins
+           MIN_PHOTOS. Il n'y a pas de « vos 3 photos ». */
     if (maj.consent_photos === true && numero.etat === "photos_recues") {
       await envoyerMailAtelier(supabase, "M1", numero);
     }

@@ -502,6 +502,9 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     trackingCode: ["expediee", "livree"].includes(g.etat) ? "6A123456789FR" : null,
     retouchesLe: null,
     depotInitialJusqua: null,
+    /* La démo ne joue pas le dépôt interrompu : `null` veut dire « aucun
+       témoin », donc aucune alerte — exactement ce qu'on veut par défaut. */
+    photosAttendues: null,
     apercu: publie
       ? { plat: null, c1: PHOTOS[0], c4: PHOTOS[1], double: PHOTOS[2] }
       : { plat: null, c1: null, c4: null, double: null },

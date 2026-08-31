@@ -21,7 +21,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDepot } from '../depot/useDepot'
-import { MAX_PHOTOS, MIN_PHOTOS, manquantes, palierPour, restantes } from '../depot/paliers'
+import {
+  MAX_PHOTOS, MIN_PHOTOS, blocageEnvoi, manquantes, palierPour, peutEnvoyer, restantes,
+} from '../depot/paliers'
 import type { Refus } from '../depot/moteur'
 import '../depot/depot.css'
 
@@ -77,10 +79,13 @@ export default function Screen5Depot({
   const ilManque = manquantes(vue.confirmees)
   const ilReste = restantes(vue.confirmees)
 
-  /* Bouton ouvert seulement quand tout est vraiment arrivé : le seuil est
-     atteint, plus rien n'est en vol, et l'accord est donné. Ouvrir plus tôt,
-     c'est promettre à l'atelier des photos qui ne sont pas là. */
-  const pretAEnvoyer = vue.confirmees >= MIN_PHOTOS && vue.enVol === 0 && consent && !envoi
+  /* La règle vit dans paliers.ts (peutEnvoyer / blocageEnvoi), pure et
+     testée par le harnais : le seuil de faisabilité compté sur les photos
+     CONFIRMÉES par le serveur, plus l'accord. Ce qui reste en vol n'est plus
+     un blocage — il continue en tâche de fond après le clic. */
+  const etatEnvoi = { confirmees: vue.confirmees, enVol: vue.enVol, consent, envoiEnCours: envoi }
+  const pretAEnvoyer = peutEnvoyer(etatEnvoi)
+  const blocage = blocageEnvoi(etatEnvoi)
 
   /**
    * Ce qu'on montre, et ce qu'on replie.
@@ -421,6 +426,22 @@ export default function Screen5Depot({
           </p>
         )}
 
+        {/* ── CE QUE FAIT LE CLIC QUAND IL RESTE DES PHOTOS EN ROUTE ────
+            Nouveau le 01/09. Le bouton ne se ferme plus pendant les
+            transferts : il fallait dire, à cet endroit exact, ce qu'on fait
+            de celles qui n'ont pas fini. La phrase ne promet PAS qu'elles
+            arriveront — elles partent du navigateur, et un onglet fermé les
+            arrête. Elle dit les deux faits : le dossier part maintenant, le
+            reste continue tant que la page est là. */}
+        {pretAEnvoyer && vue.enVol > 0 && (
+          <p className="at-d-pasparti at-d-pasparti--fond" role="status">
+            {vue.enVol === 1 ? 'Une photo finit' : `${vue.enVol} photos finissent`} d’arriver.
+            Vous pouvez envoyer dès maintenant : nous ouvrons votre dossier, et
+            {vue.enVol === 1 ? ' elle continue' : ' elles continuent'} de monter
+            tant que cette page reste ouverte.
+          </p>
+        )}
+
         <label className="at-check at-d-consent">
           <input
             type="checkbox"
@@ -437,26 +458,29 @@ export default function Screen5Depot({
               est à un geste, et l'alerte ci-dessus la désigne.
               Seulement à partir du seuil : sous les 40, le bouton est de
               toute façon fermé et « Envoyer 0 photo sur 1 » ne dirait rien. */}
+          {/* ⚠️ Le décompte « X sur Y » ne s'affiche QUE file au repos.
+              Avec des photos encore en vol, Y bougerait à chaque
+              confirmation : un libellé de bouton qui change tout seul deux
+              fois par seconde ne se lit pas, et fait douter du geste. */}
           <button type="button" className="at-cta" onClick={envoyer} disabled={!pretAEnvoyer}>
             {envoi
               ? 'Un instant…'
-              : enErreur.length > 0 && vue.confirmees >= MIN_PHOTOS
+              : enErreur.length > 0 && vue.enVol === 0 && vue.confirmees >= MIN_PHOTOS
                 ? `Envoyer ${vue.confirmees} photos sur ${vue.confirmees + enErreur.length} à l’atelier`
                 : 'Envoyer à l’atelier'}
             <span className="at-cta-arrow">→</span>
           </button>
 
           {/* Un bouton gris sans explication est une impasse : on dit toujours
-              ce qui manque, et une chose à la fois. */}
-          {!pretAEnvoyer && !envoi && (
+              ce qui manque, et une chose à la fois. « Envoi en cours » a
+              disparu de cette liste le 01/09 : ce n'est plus un blocage. */}
+          {blocage && (
             <span className="at-d-bloc">
-              {ilManque > 0
+              {blocage === 'photos'
                 ? `Encore ${ilManque} photo${ilManque > 1 ? 's' : ''}.`
-                : vue.enVol > 0
-                  ? 'Envoi en cours — quelques secondes.'
-                  : !consent
-                    ? 'Cochez la ligne au-dessus.'
-                    : null}
+                : blocage === 'attente'
+                  ? `Vous en avez assez : ${ilManque === 1 ? 'la dernière arrive' : `les ${ilManque} dernières arrivent`}.`
+                  : 'Cochez la ligne au-dessus.'}
             </span>
           )}
         </div>

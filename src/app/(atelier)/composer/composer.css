@@ -342,6 +342,19 @@
 }
 .at-q-note b { font-weight: 400; color: var(--c-text); }
 
+/* 01/09 — la queue de transfert sur l'écran 6. Elle apparaît puis disparaît
+   toute seule quand la dernière photo est confirmée : sans cadre, le
+   paragraphe suivant remonterait d'un bond sans qu'on comprenne pourquoi.
+   Palette SOMBRE (--c-*) : cet écran vit sous .bj-atelier. */
+.at-fin-queue {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border-left: 2px solid var(--c-accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--c-surface-2);
+}
+.at-fin-queue b { color: var(--c-accent); }
+
 .at-check {
   display: flex;
   align-items: flex-start;

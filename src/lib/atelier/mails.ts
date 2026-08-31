@@ -4,6 +4,14 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { eurosPour, type PalierCle } from "./prix";
 import { ajouterJours, formaterJour } from "./dates";
 import { etapeDepot } from "./urgence";
+import { creditDuPourMail, parametreCredit } from "./fondatrice";
+import {
+  dateDeCloture,
+  doitPrevenirCloture,
+  meriteUnRegardDeRetention,
+  type Jalons,
+  type NumeroPourRetention,
+} from "./retention";
 
 /**
  * Les mails de l'atelier (PRD §10) — un seul chemin d'envoi pour tous.
@@ -51,7 +59,11 @@ export type CodeMail =
   | "M6"
   | "M7"
   | "M8"
-  | "M9";
+  | "M9"
+  /* M10 — le préavis de fermeture (T-076). Le seul mail qui annonce une
+     PERTE, et le seul, avec M2, à n'avoir aucun prédécesseur. Voir codesPour,
+     case "photos_recues", et src/lib/atelier/retention.ts. */
+  | "M10";
 
 /** Les colonnes de `numeros` que tout envoi doit avoir sous la main. */
 export const CHAMPS_MAIL =
@@ -111,6 +123,7 @@ function templatePour(code: CodeMail): number | undefined {
     M7: process.env.BREVO_TEMPLATE_M7_ID,
     M8: process.env.BREVO_TEMPLATE_M8_ID,
     M9: process.env.BREVO_TEMPLATE_M9_ID,
+    M10: process.env.BREVO_TEMPLATE_M10_ID,
   }[code];
   return Number(brut) || undefined;
 }
@@ -140,6 +153,7 @@ export const OBJET_MAIL: Record<CodeMail, string> = {
   M7: "votre numéro est en route",
   M8: "le prochain moment ?",
   M9: "quelques photos de plus ?",
+  M10: "votre numéro va se refermer",
 };
 
 /**
@@ -200,7 +214,17 @@ export const JOURS_AVANT_AUTO_VALIDATION = 7;
  * silencieux dans le mail — pas une erreur, juste un mot manquant que
  * personne ne remarque avant qu'une cliente le signale.
  */
-export function parametresPour(code: CodeMail, n: NumeroPourMail): Record<string, unknown> {
+export function parametresPour(
+  code: CodeMail,
+  n: NumeroPourMail,
+  /**
+   * Ce que la base seule ne dit pas, parce que ça ne vit pas sur `numeros` :
+   * le crédit fondatrice, qui est dans `waitlist` (T-021), et les jalons de
+   * rétention, qui sont dans `evenements` et `photos` (T-076). Optionnel, et
+   * la fonction reste PURE — c'est l'appelant qui va lire, pas elle.
+   */
+  contexte?: { creditFondatriceEuros?: number | null; jalons?: Jalons },
+): Record<string, unknown> {
   const r = n as Partial<NumeroPourReleve>;
   const communs = {
     PRENOM: n.prenom ?? "",
@@ -224,10 +248,63 @@ export function parametresPour(code: CodeMail, n: NumeroPourMail): Record<string
     return code === "M9" ? { ...avecPhotos, MOT: "" } : avecPhotos;
   }
 
+  /* ── M10, le préavis de fermeture (T-076) ────────────────────────────
+     Ni pagination ni prix : rien n'a été composé, rien n'est à vendre. Deux
+     paramètres à lui :
+
+     DATE_CLOTURE — la date RÉELLE de fermeture, calculée par la même
+     fonction que le script d'anonymisation (retention.ts). Même règle que
+     le DATE_LIMITE de M5 : une échéance annoncée qui ne serait pas celle
+     appliquée serait pire que pas d'échéance du tout.
+
+     PHOTOS_DEPOSEES — une CHAÎNE, vide quand il n'y en a aucune, et c'est
+     délibéré : le `{% if params.X %}` des templates Brevo traite la chaîne
+     vide comme faux, et zéro comme VRAI. Passer le nombre ferait apparaître
+     « vos 0 photos seront effacées » sur tous les dossiers vides. Le cas
+     utile est celui du dépôt resté en plan (M2b) : quarante photos sont
+     bien chez nous, et ce mail est le dernier avertissement avant qu'elles
+     ne partent. Il doit le dire. */
+  if (code === "M10") {
+    const cloture = dateDeCloture(r as NumeroPourRetention, contexte?.jalons);
+    /* T-076, 01/09 : la population B. Une couverture composée, jamais
+       achetée. Ce mail est son dernier rappel, et donc la dernière chance de
+       vente du dossier : il rappelle la pagination et le prix, exactement
+       comme M3b, plutôt que de parler d'un dépôt qu'elle a pourtant terminé.
+       Le drapeau est une CHAÎNE vide/non vide, comme PHOTOS_DEPOSEES. */
+    const couverturePrete = r.etat === "apercu_pret" && Boolean(n.nb_pages && n.palier);
+    return {
+      ...communs,
+      DATE_CLOTURE: cloture ? formaterJour(cloture) : "",
+      PHOTOS_DEPOSEES: (n.nb_photos ?? 0) > 0 ? String(n.nb_photos) : "",
+      COUVERTURE_PRETE: couverturePrete ? "oui" : "",
+      NB_PAGES: n.nb_pages ?? 0,
+      PRIX: eurosPour(n.palier) ?? "",
+    };
+  }
+
   /* Tout ce qui suit affiche la pagination et le prix. Le montant vient de la
      grille SERVEUR, jamais du navigateur (invariant nº2) — c'est exactement
      celui que la page d'état 2 a annoncé. */
   const achat = { NB_PAGES: n.nb_pages ?? 0, PRIX: eurosPour(n.palier) ?? "" };
+
+  /* ── T-021 : les deux mails qui portent le LIEN DE PAIEMENT ──────────
+     M3 (« votre couverture est prête ») et M3b (sa relance) sont les seuls
+     mails envoyés AVANT le paiement. Une fondatrice qui les reçoit doit lire
+     que ses 30 € sont déjà déduits — sinon elle voit 40 € annoncés, clique,
+     et découvre 10 € chez Stripe. Une bonne surprise reste une surprise, et
+     une surprise sur un prix fait douter.
+
+     ⚠️ Le paramètre est TOUJOURS présent sur ces deux codes, vide quand il
+     n'y a rien à dire : le `{% if params.CREDIT_FONDATRICE %}` du template
+     traite la chaîne vide comme faux, le bloc disparaît, et la liste
+     vérifiée par verif-mails-brevo reste stable d'un dossier à l'autre. */
+  if (code === "M3" || code === "M3b") {
+    return {
+      ...communs,
+      ...achat,
+      CREDIT_FONDATRICE: parametreCredit(contexte?.creditFondatriceEuros),
+    };
+  }
 
   if (code === "M5") {
     /* La date que M5 annonce EST celle que la relève appliquera : les deux
@@ -315,7 +392,11 @@ export async function envoyerMailAtelier(
   numero: NumeroPourMail,
   /** Paramètres de template en PLUS de `parametresPour` (T2-3 : le MOT de
       M9). Fusionnés par-dessus — un extra peut préciser, jamais retirer. */
-  extra?: Record<string, unknown>
+  extra?: Record<string, unknown>,
+  /** T-076 — les dates de rétention hors `numeros`. Utile au seul M10 ; les
+      autres codes les ignorent, et les appelants qui n'envoient jamais M10
+      (le webhook Stripe, le dépôt) n'ont rien à charger. */
+  jalons?: Jalons,
 ): Promise<Resultat> {
   try {
     const manque = manquePour(code, numero);
@@ -351,13 +432,30 @@ export async function envoyerMailAtelier(
       return { statut: "echec" };
     }
 
+    /* T-021 — le crédit fondatrice, LU seulement (aucun objet créé chez
+       Stripe : un envoi de mail n'écrit jamais chez un tiers). Ne concerne
+       que M3 et M3b ; ailleurs, aucune requête n'est faite. Un échec de
+       lecture rend null et le mail part sans la phrase — jamais l'inverse. */
+    const creditFondatriceEuros =
+      code === "M3" || code === "M3b"
+        ? await creditDuPourMail(supabase, {
+            id: numero.id,
+            prenom: numero.prenom,
+            email: numero.email,
+            /* `CHAMPS_MAIL` ne rapporte pas `email_canonical` : le module
+               canonicalise `email` lui-même, avec la MÊME fonction que celle
+               qui a rempli la colonne côté prévente. */
+            email_canonical: null,
+          })
+        : null;
+
     const envoye = await sendBrevoEmail({
       label: code,
       templateId: template,
       email: numero.email ?? "",
       name: numero.prenom ?? undefined,
       apiKey: process.env.BREVO_API_KEY,
-      params: { ...parametresPour(code, numero), ...extra },
+      params: { ...parametresPour(code, numero, { creditFondatriceEuros, jalons }), ...extra },
     });
 
     if (!envoye) {
@@ -494,6 +592,15 @@ export function codesPour(
   n: NumeroPourReleve,
   envoyes: Envoyes,
   maintenant: Date,
+  /**
+   * T-076 — les dates qui ne sont pas sur `numeros` (le clic « Envoyer à
+   * l'atelier » dans `evenements`, la dernière photo dans `photos`). Chargées
+   * par l'appelant, et SEULEMENT pour les dossiers que
+   * `meriteUnRegardDeRetention` a retenus : deux requêtes pour trois dossiers,
+   * pas pour deux cents. Absentes, M10 ne part pas pour un dépôt terminé —
+   * jamais d'échéance annoncée qu'on ne saurait pas calculer.
+   */
+  jalons?: Jalons,
 ): CodeMail[] {
   const dus: CodeMail[] = [];
   const deja = (code: CodeMail) => envoyes.has(code);
@@ -553,6 +660,7 @@ export function codesPour(
       ) {
         dus.push(depot === "abandonne" ? "M2b" : "M2");
       }
+
       break;
     }
 
@@ -598,6 +706,37 @@ export function codesPour(
       break;
   }
 
+  /* ══ M10, LE PRÉAVIS DE FERMETURE — T-076 ═══════════════════════════════
+     HORS DU SWITCH, et c'est la décision du 01/09 qui l'y a sorti. Il visait
+     d'abord le seul questionnaire abandonné (`photos_recues`) ; depuis que le
+     dépôt terminé se referme aussi, il doit atteindre `photos_recues`,
+     `photos_insuffisantes` ET `apercu_pret` — trois branches du switch qui
+     n'ont rien d'autre en commun. Le poser ici plutôt que de le recopier
+     trois fois évite qu'une branche l'oublie le jour où on en ajoute une.
+
+     C'est SANS RISQUE pour les états engagés : `doitPrevenirCloture` refuse
+     tout ce qui est payé ou en fabrication, avec exactement les mêmes gardes
+     que l'effacement. La règle vit entièrement dans `retention.ts` — deux
+     copies auraient fini par annoncer une fermeture qui n'arrive pas, ou
+     pire, par effacer sans avoir prévenu.
+
+     ⚠️ M10 EST LE SECOND MAIL SANS PRÉDÉCESSEUR, après M2, et c'est assumé.
+     Le garde-fou de chaîne existe pour ne pas dire « votre numéro part à
+     l'impression » à quelqu'un qui n'a jamais rien reçu ; ici c'est
+     l'inverse. Un dossier de trois mois à qui aucun mail n'est jamais parti
+     (template absent, Brevo en panne, dossier antérieur au branchement) est
+     précisément celui qu'il ne faut PAS refermer en silence : M10 est alors
+     le seul avertissement qu'elle aura, et il porte son lien de reprise. Pas
+     de borne de mise en service non plus, pour la même raison : le jour où ce
+     mail s'active, tous les vieux dossiers doivent le recevoir, sinon plus
+     rien ne s'anonymise jamais.
+
+     ⚠️ La condition sur l'adresse n'est pas un doublon de `manquePour`. Elle
+     évite qu'un dossier DÉJÀ anonymisé (email vidé, état inchangé) ressorte
+     « incomplet » à chaque relève, tous les jours, pour un mail qu'on ne veut
+     plus envoyer. */
+  if (n.email && doitPrevenirCloture(n, maintenant, jalons)) dus.push("M10");
+
   return dus.filter((c) => !deja(c));
 }
 
@@ -639,6 +778,64 @@ export async function lireEnvoyes(
   return new Map((data ?? []).map((m) => [m.code, m.envoye_le]));
 }
 
+/**
+ * T-076 — les jalons de rétention d'un lot de dossiers, en DEUX requêtes.
+ *
+ * Vit ici et non dans `retention.ts` parce que ce module-là est pur et le
+ * reste : la règle ne lit pas la base, elle reçoit des dates.
+ *
+ * ⚠️ N'appeler QUE sur les dossiers retenus par `meriteUnRegardDeRetention`.
+ * Le balayage voit jusqu'à 200 dossiers par matin, presque tous récents et
+ * bavards en photos : charger leurs jalons à tous, ce serait des dizaines de
+ * milliers de lignes pour une réponse qui est toujours « non ».
+ *
+ * ⚠️ `depotLe` prend le PLUS RÉCENT des `consentements`, là où `donnees.ts`
+ * (T2-5) prend le premier. Les deux ont raison pour leur question : T2-5
+ * cherche où finit le premier dépôt, la rétention cherche la dernière
+ * activité. Un retour de 1b qui redépose est une activité.
+ *
+ * Best-effort : une lecture qui échoue rend une map vide, donc aucun préavis
+ * pour les dépôts terminés et aucune fermeture. Jamais l'inverse.
+ */
+export async function lireJalons(
+  supabase: SupabaseClient,
+  ids: string[],
+): Promise<Map<string, Jalons>> {
+  const par = new Map<string, Jalons>();
+  if (!ids.length) return par;
+
+  const poser = (id: string, patch: Jalons) =>
+    par.set(id, { ...(par.get(id) ?? {}), ...patch });
+
+  const { data: consentements, error: errC } = await supabase
+    .from("evenements")
+    .select("numero_id, payload, created_at")
+    .eq("type", "consentements")
+    .in("numero_id", ids)
+    .order("created_at", { ascending: true })
+    .returns<Array<{ numero_id: string; payload: Record<string, unknown>; created_at: string }>>();
+  if (errC) console.error("[atelier/mails] jalons — consentements", errC.code, errC.message);
+
+  /* Trié croissant, on écrase : le dernier vu est le plus récent. Et seuls
+     ceux qui portent `consent_photos: true` comptent — la même ligne
+     `consentements` sert aussi aux cases du paiement et à consent_communication. */
+  for (const e of consentements ?? []) {
+    if (e.payload?.consent_photos === true) poser(e.numero_id, { depotLe: e.created_at });
+  }
+
+  const { data: photos, error: errP } = await supabase
+    .from("photos")
+    .select("numero_id, created_at")
+    .in("numero_id", ids)
+    .order("created_at", { ascending: true })
+    .returns<Array<{ numero_id: string; created_at: string }>>();
+  if (errP) console.error("[atelier/mails] jalons — photos", errP.code, errP.message);
+
+  for (const p of photos ?? []) poser(p.numero_id, { dernierePhotoLe: p.created_at });
+
+  return par;
+}
+
 export async function releverDossier(
   supabase: SupabaseClient,
   numeroId: string,
@@ -655,14 +852,23 @@ export async function releverDossier(
 
     if (!data) return { code: null, resultat: null };
 
-    const codes = codesPour(data, await lireEnvoyes(supabase, numeroId), new Date());
+    /* T-076 — les deux requêtes de jalons ne partent que si ce dossier peut
+       être concerné par la rétention. Après une transition ordinaire (une
+       publication d'aperçu, une expédition), le pré-tri répond non et rien
+       n'est lu : /admin ne paie pas pour une règle qui ne le regarde pas. */
+    const maintenant = new Date();
+    const jalons = meriteUnRegardDeRetention(data, maintenant)
+      ? (await lireJalons(supabase, [numeroId])).get(numeroId)
+      : undefined;
+
+    const codes = codesPour(data, await lireEnvoyes(supabase, numeroId), maintenant, jalons);
     if (!codes.length) return { code: null, resultat: null };
 
     /* Après une transition, un seul mail est dû en pratique. S'il y en avait
        deux (cas d'un rattrapage), on envoie le premier ici et le balayage
        prendra le second : /admin n'a pas à devenir un moteur d'envoi. */
     const code = codes[0];
-    return { code, resultat: await envoyerMailAtelier(supabase, code, data, extra) };
+    return { code, resultat: await envoyerMailAtelier(supabase, code, data, extra, jalons) };
   } catch (err) {
     console.error("[atelier/mails] relève d'un dossier échouée", (err as Error)?.message);
     return { code: null, resultat: null };

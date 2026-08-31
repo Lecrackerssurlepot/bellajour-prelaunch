@@ -690,8 +690,22 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     .order("created_at", { ascending: true })
     .limit(20)
     .returns<Array<{ payload: Record<string, unknown>; created_at: string }>>();
-  const depotInitialJusqua =
-    (finsDepot ?? []).find((e) => e.payload?.consent_photos === true)?.created_at ?? null;
+  const finDepot = (finsDepot ?? []).find((e) => e.payload?.consent_photos === true);
+  const depotInitialJusqua = finDepot?.created_at ?? null;
+
+  /* ── 01/09 : COMBIEN ELLE COMPTAIT EN ENVOYER ─────────────────────
+     Le bouton « Envoyer à l'atelier » ne demande plus la fin des transferts.
+     Le navigateur annonce donc, dans CE MÊME événement, le nombre de photos
+     que sa file portait au clic. Si l'onglet s'est fermé avant la fin, la
+     différence avec `nb_photos` est tout ce qui reste du trou : la fiche
+     l'affiche, sinon un dépôt amputé est rigoureusement indiscernable d'un
+     dépôt voulu tel quel.
+     ⚠️ Absent = on ne conclut RIEN (dossier antérieur, ou navigateur qui n'a
+     pas envoyé la clé). Jamais d'alerte fabriquée à partir d'un `null`. */
+  const photosAttendues =
+    typeof finDepot?.payload?.photos_attendues === "number"
+      ? (finDepot.payload.photos_attendues as number)
+      : null;
 
   /* ── T-021 : le code fondatrice, s'il a déjà été frappé ───────────
      Même raison que `finsDepot` pour la requête dédiée : la liste
@@ -778,6 +792,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     trackingCode: (n.tracking_code as string) ?? null,
     retouchesLe: (n.retouches_demandees_le as string) ?? null,
     depotInitialJusqua,
+    photosAttendues,
     apercu,
     apercuBrut: {
       plat: brut.plat ?? null,

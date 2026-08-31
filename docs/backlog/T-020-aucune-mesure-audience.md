@@ -127,20 +127,35 @@ côté serveur par Vercel et la géolocalisation à la ville sont les deux point
 trancher seul. Je n'affirme pas que c'est exempté ; je dis que rien n'écrit sur le poste de la
 visiteuse et que le code ne pose aucun cookie.
 
-### ⚠️ Reste à faire, par toi — le texte légal (je n'y ai pas touché, interdit nº2)
+### ✅ Le texte légal est à jour — 01/09/2026, sur ton accord explicite
 
-`src/app/legal/content/confidentialite.ts` ne mentionne **aucune mesure d'audience**. Deux
-endroits devraient bouger, dans les **trois langues** (FR / PT / EN), avant d'activer :
-- le tableau des sous-traitants : la ligne `Vercel` dit aujourd'hui « Hébergement du site »
-  seulement (lignes ~120 FR, ~262 PT, ~404 EN) ;
-- le §8 « Cookies et communications marketing » (lignes ~98 FR, ~240 PT, ~382 EN) : il décrit un
-  site avec un pixel Meta et un bandeau de consentement. **Ni l'un ni l'autre n'existe dans le
-  code** (zéro `fbq(`, zéro bandeau) — écart antérieur à ce ticket, à traiter à part, mais qui
-  rend le §8 illisible tel quel pour y ajouter une ligne.
+« Alors on y va pour les cookies » (conversation du 01/09). Périmètre strictement tenu à ça.
 
-Tant que ce texte n'a pas bougé, on peut activer techniquement, mais la politique de
-confidentialité ne décrira pas ce que fait le site. **Ma recommandation : faire relire les deux
-paragraphes avant de cliquer Enable**, pas après.
+`src/app/legal/content/confidentialite.ts` a bougé à **deux endroits, dans les trois langues** :
+- **tableau des sous-traitants (§9)** — la ligne `Vercel` passe de « Hébergement du site » à
+  « Hébergement du site et mesure d'audience (Vercel Web Analytics) ». Localisation, transfert
+  hors UE et encadrement DPF/CCT inchangés : Vercel était déjà déclaré.
+- **§8.1, un paragraphe ajouté en fin de section** (après celui du bandeau, avant 8.2 Meta) :
+  mesure d'audience sans cookie ni identifiant persistant ; la liste exacte de ce qui est
+  collecté (page consultée, référent, pays/ville, appareil, navigateur, système) ; le fait que
+  **les identifiants secrets de nos liens sont retirés de l'adresse avant tout envoi** — c'est
+  `beforeSend` + `src/lib/analytics/chemin.ts`, donc une phrase que le code tient vraiment ;
+  pas de revente, pas de recoupement entre sites ; Vercel = sous-traitant, renvoi au §9.
+
+**Ce qui n'a PAS été écrit, volontairement** : nulle part il n'est dit qu'aucun consentement
+n'est requis. Ce point reste non tranché (voir « Supposé, pas prouvé » ci-dessus) et une
+politique de confidentialité n'est pas l'endroit où l'on tranche ça tout seul.
+
+**Ce qui n'a PAS été touché** : le pixel Meta (Mathias le garde, il fera de la publicité), le
+bandeau de consentement décrit mais inexistant, le §3, le numéro de version (3.1) et sa date.
+Ces quatre points partent dans **`docs/produit/LOT-JURIDIQUE.md`**, avec le reste de la refonte
+CGV (format 210×297, prix, grammage, finitions, relecture juriste, palier 29 pages, rétention
+90 jours de T-076).
+
+**Réserve** : Speed Insights, monté par le même composant, n'est pas mentionné — c'est de la
+mesure de performance, hors périmètre de l'accord du 01/09. Consigné dans le lot juridique.
+
+Tu peux donc cliquer **Enable** : le texte décrit maintenant ce que fait le site.
 
 ### Coût — vérifié dans la doc tarifaire Vercel le 01/09/2026
 

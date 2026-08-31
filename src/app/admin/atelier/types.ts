@@ -203,6 +203,12 @@ export type Fiche = {
   /** T2-5 — la fin du PREMIER dépôt (événement consentements) : toute photo
       arrivée après est un AJOUT, séparé dans la grille. */
   depotInitialJusqua: string | null;
+  /** 01/09 — combien de photos le navigateur comptait envoyer au moment du
+      clic « Envoyer à l'atelier ». Le bouton s'ouvre désormais avant la fin
+      des transferts : si l'onglet s'est fermé en route, l'écart avec
+      `nbPhotos` est la SEULE trace du trou. `null` = le navigateur n'a rien
+      annoncé (dossier antérieur au 01/09) : on ne conclut rien. */
+  photosAttendues: number | null;
   /** Signés pour l'affichage (URL courtes, régénérées à chaque rendu).
       `plat` (T2-2) : la couverture à plat — présent, il remplace c1/c4. */
   apercu: { plat: string | null; c1: string | null; c4: string | null; double: string | null };

@@ -58,7 +58,11 @@ export type Sante = {
 
 /* Les mails que la relève peut avoir à envoyer un jour. M4 est exclu : il
    part au webhook et n'est jamais rattrapé (cf. codesPour). */
-const CODES_ATTENDUS: CodeMail[] = ["M0", "M1", "M2", "M2b", "M3", "M3b", "M5", "M6", "M7", "M8", "M9"];
+/* ⚠️ M10 (T-076) y est, et c'est sa raison d'être : sans son template, le
+   préavis de fermeture ne part jamais, donc PLUS AUCUN dossier abandonné ne
+   s'anonymise (preavisRespecte refuse). Une rétention qui ne retient plus
+   rien, sans une erreur nulle part. Cet écran est le seul à pouvoir le dire. */
+const CODES_ATTENDUS: CodeMail[] = ["M0", "M1", "M2", "M2b", "M3", "M3b", "M5", "M6", "M7", "M8", "M9", "M10"];
 
 /* Au-delà de deux fois le délai annoncé, ce n'est plus du retard, c'est un
    dossier oublié. Le seuil est volontairement large : la page santé doit

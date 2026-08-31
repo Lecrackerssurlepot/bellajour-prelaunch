@@ -7,7 +7,15 @@ import type { LocalizedDoc } from '../types'
    ci-dessous). Normalisations source→gabarit FR : §1 et §4, paragraphes sortis
    des listes pour coller au FR.
    EN : transcription fidèle de legal-source/confidentialite/EN/PRIVACY POLICY —
-   BELLAJOUR.docx (clé `en` ci-dessous ; mêmes normalisations §1/§4). */
+   BELLAJOUR.docx (clé `en` ci-dessous ; mêmes normalisations §1/§4).
+
+   01/09/2026 — ÉCART ASSUMÉ AVEC LES .docx : ajout de la mesure d'audience
+   Vercel Web Analytics (ligne « Vercel » du tableau §9 et paragraphe final du
+   §8.1), dans les trois langues, sur accord explicite de Mathias. Le code est
+   la source de vérité ; les .docx ont désormais une version de retard sur ce
+   point. Le numéro de version (3.1) n'a PAS été bougé : il sert de preuve
+   d'acceptation, sa bascule se décide avec la refonte des CGV — voir
+   docs/produit/LOT-JURIDIQUE.md. */
 
 export const CONFIDENTIALITE: LocalizedDoc = {
   fr: {
@@ -103,6 +111,7 @@ export const CONFIDENTIALITE: LocalizedDoc = {
             `le pixel publicitaire Meta (Meta Ads / Meta Pixel), cookie marketing soumis à consentement préalable.`,
           ] },
           { kind: 'p', value: `Le bandeau de consentement permet d'accepter, refuser ou personnaliser avec la même facilité (pas de dark patterns). Le pixel Meta n'est activé qu'après votre consentement. La preuve du choix (date, version) est conservée et le consentement est re-sollicité périodiquement. Une politique cookies détaillée est accessible via le bandeau.` },
+          { kind: 'p', value: `Mesure d'audience sans cookie (Vercel Web Analytics). Le site mesure sa fréquentation via Vercel Web Analytics, qui ne dépose aucun cookie et n'utilise aucun identifiant persistant. Les données collectées sont : la page consultée — les identifiants secrets figurant dans certains de nos liens (accès à votre commande, reprise d'un dépôt) sont retirés de l'adresse avant tout envoi —, le site ou le lien d'où vous venez (référent), le pays et la ville, le type d'appareil, le navigateur et le système d'exploitation. Ces données ne sont pas revendues et ne sont pas recoupées avec celles d'autres sites : aucun identifiant ne permet de vous suivre d'un site à l'autre. Vercel intervient ici comme sous-traitant (§9).` },
           { kind: 'p', value: `8.2 Partage avec Meta. Lorsque vous y consentez, certaines données de navigation sont transmises à Meta Platforms Ireland à des fins de mesure et de ciblage publicitaires ; Meta peut les transférer aux États-Unis, transfert couvert par le Data Privacy Framework (DPF). Pour ces opérations, Bellajour et Meta peuvent agir en responsables conjoints dans les limites définies par Meta.` },
           { kind: 'p', value: `8.3 Newsletter. L'inscription à la newsletter (gérée via Brevo) repose sur une case de consentement dédiée, non pré-cochée ; pour un client existant, un soft opt-in est possible (Lei 41/2004, art. 13.º, n.º 2). Chaque message comporte un lien de désinscription simple.` },
         ],
@@ -117,7 +126,7 @@ export const CONFIDENTIALITE: LocalizedDoc = {
             [`InvoiceXpress`, `Facturation certifiée`, `UE (Portugal)`, `Non`],
             [`Supabase`, `Base de données / registres de preuve`, `Union européenne`, `Non`],
             [`Cloudflare R2`, `Stockage des photos et du fichier HD`, `UE (restriction de juridiction UE) ; Cloudflare, Inc. établie aux États-Unis`, `Encadré DPF / CCT par précaution`],
-            [`Vercel`, `Hébergement du site`, `États-Unis`, `Oui — DPF / CCT`],
+            [`Vercel`, `Hébergement du site et mesure d'audience (Vercel Web Analytics)`, `États-Unis`, `Oui — DPF / CCT`],
             [`Brevo`, `E-mails transactionnels et newsletter`, `UE (France)`, `Non`],
             [`Imprimeur / sous-traitant de production`, `Production physique des albums`, `Union européenne`, `Non`],
             [`OpenAI`, `Analyse et préparation de la couverture illustrée`, `États-Unis`, `Oui — CCT`],
@@ -245,6 +254,7 @@ export const CONFIDENTIALITE: LocalizedDoc = {
             `o pixel publicitário Meta (Meta Ads / Meta Pixel), cookie de marketing sujeito a consentimento prévio.`,
           ] },
           { kind: 'p', value: `O banner de consentimento permite aceitar, recusar ou personalizar com a mesma facilidade (sem dark patterns). O pixel Meta só é ativado após o seu consentimento. A prova da escolha (data, versão) é conservada e o consentimento é novamente solicitado periodicamente. Uma política de cookies detalhada está acessível através do banner.` },
+          { kind: 'p', value: `Medição de audiência sem cookies (Vercel Web Analytics). O sítio mede a sua audiência através do Vercel Web Analytics, que não deposita qualquer cookie nem utiliza qualquer identificador persistente. Os dados recolhidos são: a página consultada — os identificadores secretos que figuram em algumas das nossas ligações (acesso à sua encomenda, retoma de um carregamento) são retirados do endereço antes de qualquer envio —, o sítio ou a ligação de proveniência (referenciador), o país e a cidade, o tipo de dispositivo, o navegador e o sistema operativo. Estes dados não são vendidos nem cruzados com os de outros sítios: nenhum identificador permite segui-lo de um sítio para outro. A Vercel intervém aqui na qualidade de subcontratante (§9).` },
           { kind: 'p', value: `8.2 Partilha com a Meta. Quando consente, certos dados de navegação são transmitidos à Meta Platforms Ireland para fins de medição e de direcionamento publicitário; a Meta pode transferi-los para os Estados Unidos, transferência coberta pelo Data Privacy Framework (DPF). Para estas operações, a Bellajour e a Meta podem agir como responsáveis conjuntos nos limites definidos pela Meta.` },
           { kind: 'p', value: `8.3 Newsletter. A inscrição na newsletter (gerida através da Brevo) assenta numa caixa de consentimento dedicada, não pré-selecionada; para um cliente existente, é possível um soft opt-in (Lei 41/2004, art. 13.º, n.º 2). Cada mensagem inclui uma ligação de cancelamento de subscrição simples.` },
         ],
@@ -259,7 +269,7 @@ export const CONFIDENTIALITE: LocalizedDoc = {
             [`InvoiceXpress`, `Faturação certificada`, `UE (Portugal)`, `Não`],
             [`Supabase`, `Base de dados / registos de prova`, `União Europeia`, `Não`],
             [`Cloudflare R2`, `Armazenamento das fotografias e do ficheiro HD`, `UE (restrição de jurisdição UE); Cloudflare, Inc. estabelecida nos Estados Unidos`, `Enquadrado DPF / CCT por precaução`],
-            [`Vercel`, `Alojamento do sítio`, `Estados Unidos`, `Sim — DPF / CCT`],
+            [`Vercel`, `Alojamento do sítio e medição de audiência (Vercel Web Analytics)`, `Estados Unidos`, `Sim — DPF / CCT`],
             [`Brevo`, `E-mails transacionais e newsletter`, `UE (França)`, `Não`],
             [`Impressor / subcontratante de produção`, `Produção física dos álbuns`, `União Europeia`, `Não`],
             [`OpenAI`, `Análise e preparação da capa ilustrada`, `Estados Unidos`, `Sim — CCT`],
@@ -387,6 +397,7 @@ export const CONFIDENTIALITE: LocalizedDoc = {
             `the Meta advertising pixel (Meta Ads / Meta Pixel), a marketing cookie subject to prior consent.`,
           ] },
           { kind: 'p', value: `The consent banner allows you to accept, refuse or customise with the same ease (no dark patterns). The Meta pixel is activated only after your consent. Proof of the choice (date, version) is kept and consent is re-requested periodically. A detailed cookie policy is accessible via the banner.` },
+          { kind: 'p', value: `Audience measurement without cookies (Vercel Web Analytics). The site measures its audience via Vercel Web Analytics, which sets no cookie and uses no persistent identifier. The data collected is: the page viewed — the secret identifiers appearing in some of our links (access to your order, resuming an upload) are removed from the address before any transmission —, the referring site or link, the country and city, the device type, the browser and the operating system. This data is not sold and is not cross-referenced with data from other sites: no identifier makes it possible to track you from one site to another. Vercel acts here as a processor (§9).` },
           { kind: 'p', value: `8.2 Sharing with Meta. When you consent, certain browsing data is transmitted to Meta Platforms Ireland for ad measurement and targeting purposes; Meta may transfer it to the United States, a transfer covered by the Data Privacy Framework (DPF). For these operations, Bellajour and Meta may act as joint controllers within the limits defined by Meta.` },
           { kind: 'p', value: `8.3 Newsletter. Subscription to the newsletter (managed via Brevo) relies on a dedicated consent checkbox, not pre-ticked; for an existing customer, a soft opt-in is possible (Law 41/2004, Art. 13(2)). Each message includes a simple unsubscribe link.` },
         ],
@@ -401,7 +412,7 @@ export const CONFIDENTIALITE: LocalizedDoc = {
             [`InvoiceXpress`, `Certified invoicing`, `EU (Portugal)`, `No`],
             [`Supabase`, `Database / evidence records`, `European Union`, `No`],
             [`Cloudflare R2`, `Storage of photos and HD file`, `EU (EU jurisdiction restriction); Cloudflare, Inc. established in the United States`, `Framed by DPF / SCC as a precaution`],
-            [`Vercel`, `Website hosting`, `United States`, `Yes — DPF / SCC`],
+            [`Vercel`, `Website hosting and audience measurement (Vercel Web Analytics)`, `United States`, `Yes — DPF / SCC`],
             [`Brevo`, `Transactional emails and newsletter`, `EU (France)`, `No`],
             [`Printer / production subcontractor`, `Physical production of the albums`, `European Union`, `No`],
             [`OpenAI`, `Analysis and preparation of the illustrated cover`, `United States`, `Yes — SCC`],

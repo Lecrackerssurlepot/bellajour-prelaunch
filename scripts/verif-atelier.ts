@@ -56,6 +56,17 @@ import {
   type PalierCle,
 } from "@/lib/atelier/prix";
 import { raconter } from "@/lib/atelier/recit";
+import {
+  codeDansLeJournal,
+  codesPossibles,
+  creditEncoreDu,
+  estCollisionDeCode,
+  numeroFondatricePour,
+  parametreCredit,
+  CREDIT_FONDATRICE_CENTIMES,
+  CREDIT_FONDATRICE_EUROS,
+  type LigneWaitlist,
+} from "@/lib/atelier/fondatrice";
 import { lireSuivi, nomTransporteur } from "@/lib/atelier/suivi";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import {
@@ -98,6 +109,24 @@ import {
   type Seau,
 } from "@/lib/atelier/mesure";
 import { estAbsenceR2 } from "@/lib/atelier/r2";
+import { formaterJour } from "@/lib/atelier/dates";
+import {
+  ETATS_ENGAGES,
+  PREAVIS_A_JOURS,
+  PREAVIS_JOURS,
+  RETENTION_JOURS,
+  TITRE_ANONYME,
+  dateDeCloture,
+  doitPrevenirCloture,
+  estAnonymisable,
+  joursDInactivite,
+  meriteUnRegardDeRetention,
+  patchAnonymisation,
+  preavisRespecte,
+  verdictRetention,
+  type NumeroPourRetention,
+} from "@/lib/atelier/retention";
+import { cheminPublic, MASQUE } from "@/lib/analytics/chemin";
 
 let ko = 0;
 const ok = (n: string, c: boolean) => {
@@ -969,6 +998,129 @@ ok("le code lui-meme n'est PAS dans la phrase ni le detail",
 ok("sans auteur, la phrase reste correcte",
    raconter("code_fondatrice_cree", { montant: 3000 }).texte.length > 0);
 
+titre("— T-021 : les deux nouveaux evenements du credit se racontent —");
+const rApplique = raconter("credit_fondatrice_applique", {
+  code: "FONDATRICE-MARIE30",
+  montant: 3000,
+  numero_fondateur: 3,
+  session_id: "cs_test_1",
+  par: "auto",
+});
+ok("« applique » dit le montant et l'automatisme",
+   rApplique.texte.includes("30") && /automatique/i.test(rApplique.texte));
+ok("« applique » ne revele pas le code",
+   !rApplique.texte.includes("FONDATRICE-MARIE30")
+   && !(rApplique.detail ?? "").includes("FONDATRICE-MARIE30"));
+const rConsomme = raconter("credit_fondatrice_consomme", { code: "X", montant: 3000 });
+ok("« consomme » dit que le droit est solde",
+   /d[ée]pens/i.test(rConsomme.texte) && (rConsomme.detail ?? "").includes("30"));
+
+/* ═══════════ T-021 : LE CREDIT FONDATRICE, LA REGLE PURE ═══════════
+   Depuis le 01/09 la remise s'applique TOUTE SEULE au checkout. Trois choses
+   doivent tenir sans base ni reseau : QUI y a droit (eligibilite), COMBIEN
+   (montant borne), et UNE SEULE FOIS (unicite). Le reste — la frappe du
+   coupon, la lecture de `waitlist` — est a effets et n'a pas sa place ici. */
+
+titre("— T-021 : l'eligibilite, LES TROIS conditions —");
+const wl = (o: Partial<LigneWaitlist>): LigneWaitlist => ({
+  offer_type: "founder",
+  status: "confirmed",
+  numero_fondateur: 3,
+  ...o,
+});
+ok("founder + confirmed + numero : fondatrice nº3", numeroFondatricePour(wl({})) === 3);
+ok("pas de ligne waitlist : personne", numeroFondatricePour(null) === null
+   && numeroFondatricePour(undefined) === null);
+ok("offre standard : PAS fondatrice (elle n'a jamais verse les 25 EUR)",
+   numeroFondatricePour(wl({ offer_type: "standard" })) === null);
+ok("influenceuse : PAS fondatrice",
+   numeroFondatricePour(wl({ offer_type: "influencer" })) === null);
+ok("founder mais status pending : PAS fondatrice (paiement jamais alle au bout)",
+   numeroFondatricePour(wl({ status: "pending" })) === null);
+ok("founder confirmed SANS numero attribue : on ne devine pas une place",
+   numeroFondatricePour(wl({ numero_fondateur: null })) === null);
+ok("numero a 0 ou negatif : colonne mal initialisee, pas un droit",
+   numeroFondatricePour(wl({ numero_fondateur: 0 })) === null
+   && numeroFondatricePour(wl({ numero_fondateur: -2 })) === null);
+ok("numero non entier : refuse",
+   numeroFondatricePour(wl({ numero_fondateur: 3.5 })) === null);
+
+titre("— T-021 : le montant, borne et jamais invente —");
+ok("le credit vaut 3000 centimes, soit 30 EUR (CGV art. 5 bis)",
+   CREDIT_FONDATRICE_CENTIMES === 3000 && CREDIT_FONDATRICE_EUROS === 30);
+ok("le parametre du mail rend « 30 » quand le credit est du",
+   parametreCredit(CREDIT_FONDATRICE_EUROS) === "30");
+ok("il rend une chaine VIDE sans credit (le bloc Brevo disparait)",
+   parametreCredit(null) === "" && parametreCredit(undefined) === ""
+   && parametreCredit(0) === "");
+ok("une valeur absurde ne devient jamais une remise",
+   parametreCredit(-30) === "" && parametreCredit(Number.NaN) === ""
+   && parametreCredit(Number.POSITIVE_INFINITY) === "");
+
+titre("— T-021 : l'unicite, cote Stripe (l'autorite) —");
+ok("code actif, jamais utilise : le credit est du",
+   creditEncoreDu({ active: true, max_redemptions: 1, times_redeemed: 0 }));
+ok("code deja utilise une fois : PLUS de credit",
+   !creditEncoreDu({ active: true, max_redemptions: 1, times_redeemed: 1 }));
+ok("code desactive a la main chez Stripe : plus de credit",
+   !creditEncoreDu({ active: false, max_redemptions: 1, times_redeemed: 0 }));
+ok("aucune reponse de Stripe : PAS de credit (on ne devine jamais une remise)",
+   !creditEncoreDu(null));
+ok("sans plafond declare, un code actif reste utilisable",
+   creditEncoreDu({ active: true, max_redemptions: null, times_redeemed: 4 }));
+
+titre("— T-021 : l'unicite, cote journal (le raccourci) —");
+const ligneJournal = (payload: Record<string, unknown>, created_at = "2026-09-01T10:00:00Z") =>
+  ({ payload, created_at });
+ok("le PREMIER code du journal fait foi",
+   codeDansLeJournal([
+     ligneJournal({ code: "FONDATRICE-MARIE30", promotion_code_id: "promo_1" }, "2026-09-01T10:00:00Z"),
+     ligneJournal({ code: "FONDATRICE-MARIE30-N3", promotion_code_id: "promo_2" }, "2026-09-02T10:00:00Z"),
+   ])?.code === "FONDATRICE-MARIE30");
+ok("l'identifiant de promotion code remonte avec lui",
+   codeDansLeJournal([ligneJournal({ code: "C", promotion_code_id: "promo_1", coupon_id: "co_1" })])
+     ?.promotionCodeId === "promo_1");
+ok("journal vide : rien trouve (donc creation, qui est reparable)",
+   codeDansLeJournal([]) === null && codeDansLeJournal(null) === null
+   && codeDansLeJournal(undefined) === null);
+ok("payload sans code lisible : ignore, jamais de code fantome",
+   codeDansLeJournal([ligneJournal({ montant: 3000 }), ligneJournal({ code: "   " })]) === null);
+ok("une vieille ligne sans promotion_code_id rend le code mais pas d'id",
+   codeDansLeJournal([ligneJournal({ code: "FONDATRICE-N3-30" })])?.promotionCodeId === null);
+
+titre("— T-021 : le code lisible, et sa collision —");
+ok("prenom accentue : FONDATRICE-CHLOE30",
+   codesPossibles("Chloé", 3).voulu === "FONDATRICE-CHLOE30");
+ok("prenom compose : les espaces et tirets sautent",
+   codesPossibles("Marie-Anne", 7).voulu === "FONDATRICE-MARIEANNE30");
+ok("le repli porte le numero de fondatrice (deux homonymes possibles)",
+   codesPossibles("Marie", 7).repli === "FONDATRICE-MARIE30-N7");
+ok("prenom absent ou illisible : on retombe sur le numero seul",
+   codesPossibles(null, 12).voulu === "FONDATRICE-N12-30"
+   && codesPossibles("123", 12).voulu === "FONDATRICE-N12-30");
+ok("Stripe dit « already exists » : c'est une collision, on tente le repli",
+   estCollisionDeCode({ type: "invalid_request_error", message: "A promotion code with that code already exists." }));
+ok("toute autre erreur Stripe n'est PAS une collision (elle doit ressortir)",
+   !estCollisionDeCode({ type: "api_error", message: "service unavailable" })
+   && !estCollisionDeCode(null) && !estCollisionDeCode(new Error("")));
+
+titre("— T-021 : ce que M3 et M3b envoient a Brevo —");
+const dossierM3 = d({ etat: "apercu_pret", nb_pages: 34, palier: "p40" });
+for (const c of ["M3", "M3b"] as const) {
+  const sans = parametresPour(c, dossierM3);
+  ok(`${c} : CREDIT_FONDATRICE est TOUJOURS envoye (liste stable)`,
+     "CREDIT_FONDATRICE" in sans);
+  ok(`${c} : vide pour une cliente ordinaire`, sans.CREDIT_FONDATRICE === "");
+  const avec = parametresPour(c, dossierM3, { creditFondatriceEuros: 30 });
+  ok(`${c} : « 30 » pour une fondatrice`, avec.CREDIT_FONDATRICE === "30");
+  ok(`${c} : le prix affiche reste celui de la grille, jamais diminue`,
+     avec.PRIX === 40 && sans.PRIX === 40);
+}
+ok("M5 n'annonce AUCUN credit (elle a deja paye)",
+   !("CREDIT_FONDATRICE" in parametresPour("M5", dossierM3, { creditFondatriceEuros: 30 })));
+ok("M0 non plus (aucun prix, aucun paiement en vue)",
+   !("CREDIT_FONDATRICE" in parametresPour("M0", dossierM3, { creditFondatriceEuros: 30 })));
+
 /* ═══════════ LE TRI DU WEBHOOK PARTAGÉ (T-035, incident du 24/08) ═══════════
    /api/webhook sert DEUX produits. Le tri se fait sur les métadonnées, AVANT
    tout accès en base, et AUCUN produit n'est le cas par défaut : le 24/08, un
@@ -1117,6 +1269,316 @@ const verifierT005 = async () => {
   if (sauvegarde.louis === undefined) delete process.env.ADMIN_PASSWORD_LOUIS;
 };
 
+/* ═════════════════════════════════════════════════════════════════════════
+ * T-076 : LA RETENTION A 90 JOURS
+ *
+ * La moitie utile de cette section est celle des EPARGNES. Ce module commande
+ * une suppression irreversible de photos de clientes : ce qu'il faut prouver
+ * en premier, ce n'est pas qu'il mord, c'est qu'il ne mord PAS sur ce qu'il
+ * ne doit pas toucher. Un faux positif ici ne se rattrape par aucun backup.
+ * ═════════════════════════════════════════════════════════════════════════ */
+
+titre("— T-076 : les constantes viennent d'un seul endroit —");
+ok("retention a 90 jours (decision de Mathias, 01/09)", RETENTION_JOURS === 90);
+ok("preavis a 7 jours", PREAVIS_JOURS === 7);
+ok("le jour du preavis est DERIVE, jamais ecrit en dur",
+   PREAVIS_A_JOURS === RETENTION_JOURS - PREAVIS_JOURS && PREAVIS_A_JOURS === 83);
+
+const T76 = new Date("2026-12-01T12:00:00Z");
+const ilYAj = (j: number) => new Date(T76.getTime() - j * 86_400_000).toISOString();
+
+/* Le cas nominal : questionnaire rempli, depot jamais termine, jamais paye,
+   plus rien depuis. C'est la SEULE population que ce module vise. */
+const abandonne = (p: Partial<NumeroPourRetention> = {}): NumeroPourRetention => ({
+  etat: "photos_recues",
+  consent_photos: false,
+  stripe_payment_intent: null,
+  created_at: ilYAj(120),
+  etat_maj_le: ilYAj(120),
+  anonymise_le: null,
+  ...p,
+});
+
+/** Le motif d'epargne, ou "" si le dossier est anonymisable. Rend les tests
+    lisibles : le verdict est une union, et le `as` inline la noyait. */
+const motifDe = (
+  n: NumeroPourRetention,
+  quand: Date,
+  jalons?: { depotLe?: string | null; dernierePhotoLe?: string | null },
+): string => {
+  const v = verdictRetention(n, quand, jalons);
+  return v.anonymisable ? "" : v.motif;
+};
+
+titre("— T-076 : CE QU'ON N'EFFACE JAMAIS (le coeur du sujet) —");
+ok("un dossier PAYE n'est jamais anonymise, meme vieux de 120 jours",
+   verdictRetention(abandonne({ stripe_payment_intent: "pi_123" }), T76).anonymisable === false);
+ok("... et le motif le dit : obligations comptables",
+   motifDe(abandonne({ stripe_payment_intent: "pi_123" }), T76) === "paye");
+for (const etat of ETATS_ENGAGES) {
+  ok(`etat « ${etat} » : jamais anonymise, meme sans intent Stripe`,
+     !estAnonymisable(abandonne({ etat, consent_photos: true }), T76));
+}
+/* ⚠️ LE CAS QUI PROUVE QU'IL FAUT DEUX GARDES ET PAS UNE. Au palier 30 EUR,
+   le credit d'une fondatrice couvre TOUT le prix : la session Stripe se solde
+   en `no_payment_required` et le dossier n'a AUCUN payment_intent. Sur la
+   seule garde Stripe, une fondatrice servie gratuitement se faisait refermer
+   son dossier. C'est l'etat qui la sauve. */
+ok("fondatrice au palier 30 EUR : payee mais SANS payment_intent, epargnee quand meme",
+   !estAnonymisable(abandonne({ etat: "payee", consent_photos: true, stripe_payment_intent: null }), T76,
+                    { depotLe: ilYAj(200) }));
+ok("deja anonymise : on ne repasse pas dessus",
+   !estAnonymisable(abandonne({ anonymise_le: ilYAj(10) }), T76));
+ok("aucune date lisible : on ne touche pas a ce qu'on ne date pas",
+   verdictRetention({ etat: "photos_recues", consent_photos: false, stripe_payment_intent: null,
+                      created_at: null, etat_maj_le: null }, T76).anonymisable === false);
+
+titre("— T-076 : la borne exacte des 90 jours —");
+ok("119 jours d'inactivite : anonymisable", estAnonymisable(abandonne(), T76));
+ok("90,0 jours PILE : anonymisable (la borne est incluse)",
+   estAnonymisable(abandonne({ created_at: ilYAj(90), etat_maj_le: ilYAj(90) }), T76));
+ok("89,9 jours : PAS anonymisable",
+   !estAnonymisable(abandonne({ created_at: ilYAj(89.9), etat_maj_le: ilYAj(89.9) }), T76));
+ok("... et le motif est « encore dans les 90 jours »",
+   motifDe(abandonne({ created_at: ilYAj(89.9), etat_maj_le: ilYAj(89.9) }), T76) === "dans_la_retention");
+ok("un dossier d'hier : evidemment pas", !estAnonymisable(abandonne({ created_at: ilYAj(1), etat_maj_le: ilYAj(1) }), T76));
+
+/* ═════════ T-076 (01/09) : LA POPULATION B ═════════
+   Mathias a tranche le trou laisse par la premiere version : « On fait 90
+   jours apres le depot, cela me parait bien. » Un depot TERMINE mais jamais
+   paye devient donc eligible, 90 jours apres la date du depot — celle du
+   journal (`evenements` type `consentements`), la seule qui existe. */
+
+titre("— T-076 : population B, 90 jours apres LE DEPOT —");
+/* Le depot terminé, en attente de l'atelier ou d'un achat. */
+const depose = (p: Partial<NumeroPourRetention> = {}): NumeroPourRetention =>
+  abandonne({ consent_photos: true, etat: "apercu_pret", ...p });
+
+ok("couverture publiee, jamais payee, depot il y a 120 j : ANONYMISABLE",
+   estAnonymisable(depose({ created_at: ilYAj(200), etat_maj_le: ilYAj(120) }), T76,
+                   { depotLe: ilYAj(120) }));
+ok("meme dossier, depot il y a 40 j : epargne",
+   !estAnonymisable(depose({ created_at: ilYAj(60), etat_maj_le: ilYAj(40) }), T76,
+                    { depotLe: ilYAj(40) }));
+ok("... et le motif distingue les deux populations (dry-run lisible)",
+   motifDe(depose({ created_at: ilYAj(60), etat_maj_le: ilYAj(40) }), T76, { depotLe: ilYAj(40) }) === "depot_termine"
+   && motifDe(abandonne({ created_at: ilYAj(40), etat_maj_le: ilYAj(40) }), T76) === "dans_la_retention");
+ok("depot terminé en attente de l'atelier (etat 1) : eligible aussi",
+   estAnonymisable(depose({ etat: "photos_recues", created_at: ilYAj(200), etat_maj_le: ilYAj(200) }), T76,
+                   { depotLe: ilYAj(200) }));
+ok("1b « photos insuffisantes » reste sans reponse 120 j : eligible aussi",
+   estAnonymisable(depose({ etat: "photos_insuffisantes", created_at: ilYAj(200), etat_maj_le: ilYAj(200) }), T76,
+                   { depotLe: ilYAj(200) }));
+
+/* L'atelier qui publie une couverture REPOUSSE l'echeance : elle a 90 jours
+   pour se decider a partir de la, pas a partir de son depot. */
+ok("depot il y a 200 j mais apercu publie il y a 10 j : epargne",
+   !estAnonymisable(depose({ created_at: ilYAj(250), etat_maj_le: ilYAj(10) }), T76,
+                    { depotLe: ilYAj(200) }));
+ok("un redepot (1b) remet le compteur : depot il y a 5 j, dossier de 300 j",
+   !estAnonymisable(depose({ created_at: ilYAj(300), etat_maj_le: ilYAj(300) }), T76,
+                    { depotLe: ilYAj(5) }));
+
+titre("— T-076 : sans date de depot, ON GARDE (le repli honnete) —");
+ok("depot termine, 200 j, AUCUN evenement `consentements` : on ne ferme pas",
+   !estAnonymisable(depose({ created_at: ilYAj(200), etat_maj_le: ilYAj(200) }), T76));
+ok("... et le motif ne ment pas sur la raison",
+   motifDe(depose({ created_at: ilYAj(200), etat_maj_le: ilYAj(200) }), T76) === "depot_sans_date");
+/* Sans ce test, un depot termine du jour ressortait « SANS date dans le
+   journal » dans le dry-run : ca ressemble a une panne alors que tout va
+   bien. L'age se teste AVANT la date de depot. */
+ok("un depot termine RECENT sans jalons dit « encore dans les 90 jours », pas « sans date »",
+   motifDe(depose({ created_at: ilYAj(3), etat_maj_le: ilYAj(3) }), T76) === "depot_termine");
+ok("pas de preavis non plus sans date de depot (on n'annonce pas une date inconnue)",
+   !doitPrevenirCloture(depose({ created_at: ilYAj(200), etat_maj_le: ilYAj(200) }), T76));
+ok("avec la date, le preavis redevient du",
+   doitPrevenirCloture(depose({ created_at: ilYAj(200), etat_maj_le: ilYAj(200) }), T76,
+                       { depotLe: ilYAj(200) }));
+
+titre("— T-076 : le pre-tri bon marche ne laisse rien passer —");
+/* Il calcule l'age SANS jalons, donc sur un MAJORANT : tout ce qu'il ecarte
+   est forcement hors de portee une fois les vraies dates connues. */
+ok("un dossier de 200 j merite un regard (on ira lire ses jalons)",
+   meriteUnRegardDeRetention(abandonne(), T76));
+ok("un dossier de 83 j pile aussi (c'est le jour du preavis)",
+   meriteUnRegardDeRetention(abandonne({ created_at: ilYAj(83), etat_maj_le: ilYAj(83) }), T76));
+ok("un dossier de 82 j : pas encore, on ne paie pas les requetes",
+   !meriteUnRegardDeRetention(abandonne({ created_at: ilYAj(82), etat_maj_le: ilYAj(82) }), T76));
+ok("un dossier paye n'est jamais regarde",
+   !meriteUnRegardDeRetention(abandonne({ stripe_payment_intent: "pi_1" }), T76));
+ok("un depot termine de 200 j EST regarde (c'est la population B)",
+   meriteUnRegardDeRetention(depose({ created_at: ilYAj(200), etat_maj_le: ilYAj(200) }), T76));
+/* La demonstration, en acte : un jalon ne peut que RAJEUNIR. Tout dossier
+   anonymisable AVEC jalons passe donc le pre-tri SANS. */
+ok("tout dossier eligible avec jalons passe le pre-tri sans jalons",
+   [ilYAj(90), ilYAj(120), ilYAj(300)].every((quand) =>
+     !estAnonymisable(depose({ created_at: ilYAj(400), etat_maj_le: ilYAj(400) }), T76, { depotLe: quand })
+     || meriteUnRegardDeRetention(depose({ created_at: ilYAj(400), etat_maj_le: ilYAj(400) }), T76)));
+
+titre("— T-076 : la DERNIERE activite, pas la creation —");
+ok("cree il y a 200 j mais etat repasse il y a 10 j : epargne",
+   !estAnonymisable(abandonne({ created_at: ilYAj(200), etat_maj_le: ilYAj(10) }), T76));
+/* Le vrai piege : deposer une photo n'ecrit AUCUNE date sur `numeros`. Sans
+   ce troisieme argument, une cliente qui monte 40 photos au 85e jour voit son
+   depot efface cinq jours plus tard, en pleine activite. */
+ok("cree il y a 200 j, DERNIERE PHOTO il y a 5 j : epargne",
+   !estAnonymisable(abandonne({ created_at: ilYAj(200), etat_maj_le: ilYAj(200) }), T76, { dernierePhotoLe: ilYAj(5) }));
+ok("cree il y a 200 j, derniere photo il y a 95 j : anonymisable",
+   estAnonymisable(abandonne({ created_at: ilYAj(200), etat_maj_le: ilYAj(200) }), T76, { dernierePhotoLe: ilYAj(95) }));
+ok("une photo PLUS VIEILLE que le dossier ne rallonge rien",
+   estAnonymisable(abandonne(), T76, { dernierePhotoLe: ilYAj(300) }));
+ok("joursDInactivite compte bien depuis la plus recente des quatre",
+   Math.round(joursDInactivite(abandonne({ created_at: ilYAj(200), etat_maj_le: ilYAj(140) }), T76,
+                               { dernierePhotoLe: ilYAj(120) }) ?? 0) === 120);
+
+titre("— T-076 : la date de cloture annoncee EST celle appliquee —");
+{
+  const d = abandonne({ created_at: ilYAj(100), etat_maj_le: ilYAj(100) });
+  const cloture = dateDeCloture(d);
+  ok("cloture = derniere activite + 90 jours",
+     cloture !== null
+     && Math.round((cloture.getTime() - Date.parse(ilYAj(100))) / 86_400_000) === RETENTION_JOURS);
+  ok("a la date de cloture, le dossier est effectivement anonymisable",
+     cloture !== null && estAnonymisable(d, cloture));
+  ok("la veille, il ne l'est pas encore",
+     cloture !== null && !estAnonymisable(d, new Date(cloture.getTime() - 3_600_000)));
+  ok("sans aucune date : pas de date de cloture (et donc DATE_CLOTURE vide dans M10)",
+     dateDeCloture({ etat: "photos_recues", consent_photos: false, stripe_payment_intent: null,
+                     created_at: null, etat_maj_le: null }) === null);
+}
+
+titre("— T-076 : le preavis M10, a J-83 —");
+ok("83 jours PILE : le preavis est du",
+   doitPrevenirCloture(abandonne({ created_at: ilYAj(83), etat_maj_le: ilYAj(83) }), T76));
+ok("82,9 jours : trop tot",
+   !doitPrevenirCloture(abandonne({ created_at: ilYAj(82.9), etat_maj_le: ilYAj(82.9) }), T76));
+ok("120 jours et toujours pas prevenue : le preavis reste DU (jamais de fermeture muette)",
+   doitPrevenirCloture(abandonne(), T76));
+ok("un dossier paye ne recoit JAMAIS ce mail",
+   !doitPrevenirCloture(abandonne({ stripe_payment_intent: "pi_1" }), T76));
+ok("un depot termine non plus (ce serait une frayeur doublee d'un mensonge)",
+   !doitPrevenirCloture(abandonne({ consent_photos: true }), T76));
+ok("un dossier deja anonymise non plus",
+   !doitPrevenirCloture(abandonne({ anonymise_le: ilYAj(5) }), T76));
+
+titre("— T-076 : M10 dans la releve —");
+{
+  const vieux = { created_at: ilYAj(90), etat_maj_le: ilYAj(90) };
+  const dossierM10 = (p: Partial<NumeroPourReleve> = {}): NumeroPourReleve =>
+    ({ ...base, nb_photos: 0, consent_photos: false, ...vieux, ...p });
+  ok("dossier abandonne de 90 j, M2 deja parti : M10 part",
+     codesPour(dossierM10(), env(["M0", ilYAj(90)], ["M2", ilYAj(89)]), T76).join() === "M10");
+  ok("M10 deja parti : rien (le verrou de mails_envoyes fait le reste)",
+     codesPour(dossierM10(), env(["M2", ilYAj(89)], ["M10", ilYAj(3)]), T76).length === 0);
+  ok("M10 n'a PAS de predecesseur : un dossier sans aucun mail le recoit quand meme",
+     codesPour(dossierM10(), env(), T76).includes("M10"));
+  ok("depot termine : M1 et surtout PAS de M10",
+     codesPour(dossierM10({ consent_photos: true, nb_photos: 40 }), env(), T76).join() === "M1");
+  ok("dossier de 40 jours : ni M10 ni rien",
+     codesPour(dossierM10({ created_at: ilYAj(40), etat_maj_le: ilYAj(40) }),
+               env(["M0", ilYAj(40)], ["M2", ilYAj(39)]), T76).length === 0);
+  /* Un dossier deja anonymise garde son etat et son age : sans la garde sur
+     l'adresse, il ressortirait « incomplet » a CHAQUE releve, tous les jours,
+     pour un mail qu'on ne veut plus envoyer. */
+  ok("dossier deja anonymise (email vide) : la releve n'a plus rien a en dire",
+     codesPour(dossierM10({ email: null }), env(["M2", ilYAj(89)]), T76).length === 0);
+  /* T-076 (01/09) — M10 est SORTI du switch sur l'etat : la population B vit
+     dans trois branches differentes (photos_recues, photos_insuffisantes,
+     apercu_pret) qui n'ont rien d'autre en commun. */
+  const vieuxDepot = { depotLe: ilYAj(120) };
+  ok("apercu publie, jamais paye, depot il y a 120 j : M10 part",
+     codesPour(dossierM10({ etat: "apercu_pret", consent_photos: true, nb_photos: 42,
+                            created_at: ilYAj(200), etat_maj_le: ilYAj(120) }),
+               env(["M3", ilYAj(119)], ["M3b", ilYAj(116)]), T76, vieuxDepot).join() === "M10");
+  ok("1b sans reponse depuis 120 j : M10 part aussi",
+     codesPour(dossierM10({ etat: "photos_insuffisantes", consent_photos: true, nb_photos: 12,
+                            created_at: ilYAj(200), etat_maj_le: ilYAj(120) }),
+               env(["M1", ilYAj(121)], ["M9", ilYAj(120)]), T76, vieuxDepot).join() === "M10");
+  ok("depot terminé en attente de l'atelier depuis 120 j : M10 part (M1 deja parti)",
+     codesPour(dossierM10({ consent_photos: true, nb_photos: 40,
+                            created_at: ilYAj(200), etat_maj_le: ilYAj(120) }),
+               env(["M1", ilYAj(120)]), T76, vieuxDepot).join() === "M10");
+  ok("SANS la date de depot, aucun M10 pour un depot termine",
+     codesPour(dossierM10({ etat: "apercu_pret", consent_photos: true,
+                            created_at: ilYAj(200), etat_maj_le: ilYAj(120) }),
+               env(["M3", ilYAj(119)], ["M3b", ilYAj(116)]), T76).length === 0);
+  /* Le garde-fou absolu : aucun etat engage ne recoit ce mail, meme tres
+     vieux, meme avec tous les jalons du monde. */
+  for (const etat of ETATS_ENGAGES) {
+    ok(`etat « ${etat} » : jamais de M10, meme a 120 jours`,
+       !codesPour(dossierM10({ etat, consent_photos: true,
+                               created_at: ilYAj(200), etat_maj_le: ilYAj(120) }),
+                  env(["M4", ilYAj(120)], ["M5", ilYAj(119)], ["M6", ilYAj(118)],
+                      ["M7", ilYAj(117)], ["M8", ilYAj(110)]), T76, vieuxDepot).includes("M10"));
+  }
+  ok("M10 exige une adresse comme tous les autres",
+     manquePour("M10", d({ email: null })).includes("email"));
+  ok("M10 n'exige ni pagination ni prix (rien n'a ete compose)",
+     manquePour("M10", d({ email: "c@example.com", nb_pages: null, palier: null })).length === 0);
+}
+
+titre("— T-076 : les parametres de M10 —");
+{
+  const pM10 = parametresPour("M10", d({ nb_photos: 0, created_at: ilYAj(83), etat_maj_le: ilYAj(83) }));
+  ok("il porte le lien permanent du numero", String(pM10.LIEN).includes("/numero/"));
+  ok("il annonce une date de cloture non vide", String(pM10.DATE_CLOTURE).length > 0);
+  /* Le zero est VRAI pour le `{% if %}` de Brevo : passer un nombre ferait
+     apparaitre « vos 0 photos seront effacees » sur tous les dossiers vides. */
+  ok("aucune photo : PHOTOS_DEPOSEES est la chaine vide, pas 0",
+     pM10.PHOTOS_DEPOSEES === "");
+  ok("des photos : PHOTOS_DEPOSEES est une chaine non vide",
+     parametresPour("M10", d({ nb_photos: 42, created_at: ilYAj(83), etat_maj_le: ilYAj(83) })).PHOTOS_DEPOSEES === "42");
+  /* T-076 (01/09) : le questionnaire abandonne n'a pas de couverture, donc
+     pas d'encart de vente. Le drapeau est une CHAINE vide, pas un booleen :
+     `{% if %}` de Brevo traite "" comme faux et 0 comme VRAI. */
+  ok("questionnaire abandonne : pas d'encart couverture",
+     pM10.COUVERTURE_PRETE === "");
+
+  /* La population B : couverture publiee, jamais achetee. M10 est son dernier
+     rappel, donc sa derniere chance de vente : il redit pages et prix. */
+  const pM10b = parametresPour("M10", d({
+    etat: "apercu_pret", nb_pages: 34, palier: "p40", nb_photos: 42,
+    created_at: ilYAj(200), etat_maj_le: ilYAj(120),
+  }), { jalons: { depotLe: ilYAj(120) } });
+  ok("couverture prete : l'encart de vente s'allume",
+     pM10b.COUVERTURE_PRETE === "oui");
+  ok("... et il porte la pagination et le prix, comme M3b",
+     pM10b.NB_PAGES === 34 && pM10b.PRIX === 40);
+  ok("... et la date de cloture suit LE DEPOT, pas la creation du dossier",
+     pM10b.DATE_CLOTURE === formaterJour(new Date(Date.parse(ilYAj(120)) + 90 * 86_400_000)));
+  ok("un apercu sans palier n'allume pas l'encart (jamais de prix vide affiche)",
+     parametresPour("M10", d({ etat: "apercu_pret", nb_pages: 34, palier: null })).COUVERTURE_PRETE === "");
+}
+
+titre("— T-076 : jamais de fermeture sans avertissement —");
+ok("preavis parti il y a 7 jours pile : on peut refermer",
+   preavisRespecte(ilYAj(7), true, T76));
+ok("preavis parti il y a 6,9 jours : on attend",
+   !preavisRespecte(ilYAj(6.9), true, T76));
+ok("preavis JAMAIS parti : on ne referme pas, meme a 120 jours",
+   !preavisRespecte(null, true, T76));
+ok("preavis illisible : on ne referme pas",
+   !preavisRespecte("pas-une-date", true, T76));
+ok("aucune adresse ou ecrire : rien a attendre, on peut refermer",
+   preavisRespecte(null, false, T76));
+
+titre("— T-076 : ce que l'anonymisation ecrit, et surtout ce qu'elle N'ECRIT PAS —");
+{
+  const patch = patchAnonymisation();
+  for (const champ of ["email", "email_canonical", "prenom", "telephone", "occasion", "histoire", "adresse_livraison"]) {
+    ok(`${champ} part`, champ in patch && patch[champ] === null);
+  }
+  ok("le titre devient un marqueur lisible, pas ses mots a elle",
+     patch.titre === TITRE_ANONYME && !String(patch.titre).includes("Seville"));
+  /* Les metriques se calculent sur ces colonnes : les toucher reecrirait
+     l'histoire du produit dans /admin/atelier/metriques. */
+  for (const intouchable of ["created_at", "etat_maj_le", "etat", "nb_photos", "nb_pages",
+                             "palier", "token", "consent_photos", "id"]) {
+    ok(`${intouchable} n'est PAS dans le patch (les metriques restent justes)`,
+       !(intouchable in patch));
+  }
+}
+
 /* ═════════ T-046 : LE FREIN DU LOGIN ADMIN (regle pure) ═════════
    La Map vit dans la route ; ici on eprouve la REGLE : delai croissant et
    plafonne, blocage au seuil, oubli apres la fenetre, journalisation des
@@ -1169,6 +1631,57 @@ ok("500 R2 : une panne",
    !estAbsenceR2({ name: "InternalError", $metadata: { httpStatusCode: 500 } }));
 ok("null/undefined ne sont jamais une absence (pas de silence par defaut)",
    !estAbsenceR2(null) && !estAbsenceR2(undefined));
+
+/* ════════ T-020 : ce qui a le droit de partir chez Vercel Analytics ════════ */
+
+titre("— T-020 : cheminPublic masque le token AVANT tout envoi —");
+
+const TOKEN = "aB3xY9kLmN0pQ7rS2tU4vW6zC8dE1fG5"; // 32 caracteres base64url
+const O = "https://www.bellajour.fr";
+
+const urlNumero = cheminPublic(`${O}/numero/${TOKEN}`);
+ok("/numero/<token> devient /numero/[token]",
+   urlNumero === `${O}/numero/${MASQUE}`);
+ok("le token n'apparait NULLE PART dans l'URL rendue",
+   urlNumero !== null && !urlNumero.includes(TOKEN));
+ok("le retour de paiement ne traine pas le token non plus",
+   cheminPublic(`${O}/numero/${TOKEN}?paiement=ok`) === `${O}/numero/${MASQUE}`);
+
+ok("/composer?reprendre=<token> : le lien de reprise est jete",
+   cheminPublic(`${O}/composer?reprendre=${TOKEN}`) === `${O}/composer`);
+ok("/ambassadeurs/espace?token=… : le jeton d'ambassadrice est jete",
+   cheminPublic(`${O}/ambassadeurs/espace?token=${TOKEN}&confirmer=1`)
+   === `${O}/ambassadeurs/espace`);
+ok("le fragment (#…) ne part jamais",
+   cheminPublic(`${O}/magazine#tarifs`) === `${O}/magazine`);
+
+ok("/admin/atelier/<token> : rien ne part du tout",
+   cheminPublic(`${O}/admin/atelier/${TOKEN}`) === null);
+ok("/admin/atelier/metriques : l'arriere-boutique ne se mesure pas",
+   cheminPublic(`${O}/admin/atelier/metriques`) === null);
+ok("/admin tout court : rien non plus",
+   cheminPublic(`${O}/admin`) === null);
+
+ok("une page publique passe intacte",
+   cheminPublic(`${O}/magazine`) === `${O}/magazine`
+   && cheminPublic(`${O}/`) === `${O}/`);
+ok("un nom de route long n'est PAS pris pour un token",
+   cheminPublic(`${O}/mentions-legales`) === `${O}/mentions-legales`
+   && cheminPublic(`${O}/ambassadeurs/espace`) === `${O}/ambassadeurs/espace`);
+
+ok("les utm_* survivent (attribution de campagne)",
+   cheminPublic(`${O}/?utm_source=instagram&utm_campaign=lancement`)
+   === `${O}/?utm_source=instagram&utm_campaign=lancement`);
+ok("tout autre parametre tombe, meme a cote d'un utm_*",
+   cheminPublic(`${O}/inviter?ref=marie&utm_source=story`)
+   === `${O}/inviter?utm_source=story`);
+ok("un utm_* demesure (> 64 car.) est jete plutot que recopie",
+   cheminPublic(`${O}/?utm_source=${"x".repeat(65)}`) === `${O}/`);
+
+ok("filet generique : une future route dynamique est masquee d'office",
+   cheminPublic(`${O}/cadeau/aB3xY9kLmN0pQ7rS`) === `${O}/cadeau/${MASQUE}`);
+ok("une URL illisible n'envoie RIEN (le doute profite a la cliente)",
+   cheminPublic("pas-une-url") === null && cheminPublic("") === null);
 
 void verifierT005().then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

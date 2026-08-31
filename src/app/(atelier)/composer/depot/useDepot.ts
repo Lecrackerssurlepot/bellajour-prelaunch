@@ -20,7 +20,8 @@ import { moteurPour, type Refus, type Vue } from './moteur'
 const VUE_VIDE: Vue = {
   photos: [], confirmees: 0, enVol: 0, erreurs: 0,
   octetsEnvoyes: 0, octetsTotal: 0, stockageDegrade: false,
-  reductionDegradee: false, clos: false, bandeau: null, serveur: null,
+  reductionDegradee: false, clos: false, finalise: false, attendues: 0,
+  bandeau: null, serveur: null,
 }
 
 export function useDepot(token: string | null) {
@@ -92,7 +93,13 @@ export function useDepot(token: string | null) {
     /* Piège nº23 : iOS ignore cet avertissement. On le pose pour les autres,
        et l'écran ne promet jamais que la sauvegarde a eu lieu. */
     const avantFermeture = (e: BeforeUnloadEvent) => {
-      if (enVol > 0) e.preventDefault()
+      if (enVol === 0) return
+      e.preventDefault()
+      /* Toujours exigé par Chrome, malgré sa dépréciation dans la spec.
+         Il manquait ici : sur l'écran 6, ce garde-fou est désormais le SEUL
+         (celui de Screen5Depot est parti avec son composant), et c'est
+         précisément le moment où des transferts continuent en tâche de fond. */
+      e.returnValue = ''
     }
     window.addEventListener('beforeunload', avantFermeture)
 

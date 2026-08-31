@@ -60,14 +60,17 @@ function poids(o: number | null): string {
 /**
  * T-021 — le code Stripe de 30 € des fondatrices (CGV art. 5 bis).
  *
+ * ⚠️ CE BOUTON N'EST PLUS NÉCESSAIRE AU PARCOURS NORMAL. Depuis le 01/09, la
+ * remise s'applique toute seule au moment du paiement : la cliente clique
+ * « Commander » et voit « -30,00 € » chez Stripe, sans rien taper. Ce bouton
+ * reste le FILET — pour dicter le code au téléphone, ou le donner à une
+ * fondatrice qui commande autrement.
+ *
  * Le clic appelle /api/admin/atelier/fondatrice-code, qui re-vérifie
  * `waitlist` côté serveur avant de frapper le code : la fiche PROPOSE, le
  * serveur DÉCIDE. Un code déjà créé (journal `code_fondatrice_cree`) arrive
  * par la prop `existant` et le bouton disparaît — un crédit contractuel ne
- * se frappe qu'une fois.
- *
- * Le code ne part dans AUCUN mail : automatique ou manuel, l'envoi n'est
- * pas tranché (T-021). Ici on le crée et on le copie, rien d'autre.
+ * se frappe qu'une fois, et le même code sert au checkout automatique.
  */
 function CodeFondatrice({
   token,
@@ -84,6 +87,10 @@ function CodeFondatrice({
   const [erreur, setErreur] = useState<string | null>(null);
   const [copie, setCopie] = useState(false);
   const [sansJournal, setSansJournal] = useState(false);
+  /* Le crédit a déjà servi (Stripe dit `times_redeemed >= max_redemptions`).
+     On montre quand même le code : c'est la réponse à « pourquoi a-t-elle
+     payé plein tarif sur ce numéro-ci ». */
+  const [consomme, setConsomme] = useState(false);
 
   async function creer() {
     if (demo) {
@@ -102,8 +109,9 @@ function CodeFondatrice({
         code?: string;
         creeLe?: string;
         journalEcrit?: boolean;
+        consomme?: boolean;
         error?: string;
-        message?: string;
+        pourquoi?: string;
       };
       if (!r.ok || !corps.code) {
         if (corps.error === "config") {
@@ -112,8 +120,10 @@ function CodeFondatrice({
           setErreur(
             "Le serveur ne trouve pas de fondatrice confirmée pour cet email : rien n'a été créé.",
           );
-        } else if (corps.error === "stripe") {
-          setErreur(`Stripe a refusé (${corps.message ?? "sans détail"}) : rien n'a été créé.`);
+        } else if (corps.error === "indisponible") {
+          setErreur(
+            `Impossible de vérifier le crédit (${corps.pourquoi ?? "sans détail"}) : rien n'a été créé. Réessayez.`,
+          );
         } else {
           setErreur("Le code n'a pas pu être créé.");
         }
@@ -122,6 +132,7 @@ function CodeFondatrice({
       setCode(corps.code);
       setCreeLe(corps.creeLe ?? null);
       setSansJournal(corps.journalEcrit === false);
+      setConsomme(corps.consomme === true);
     } catch {
       setErreur("Réseau interrompu.");
     } finally {
@@ -150,8 +161,11 @@ function CodeFondatrice({
           </button>
         </p>
         <p className="ate-faint">
-          Créé le {fmt(creeLe)}. À transmettre à la cliente — l&apos;envoi automatique n&apos;est
-          pas encore tranché.
+          {consomme
+            ? "Ce crédit a déjà été dépensé sur une commande. Il ne s'appliquera plus."
+            : "Créé le " +
+              fmt(creeLe) +
+              ". Rien à envoyer : la remise de 30 € s'applique toute seule quand elle paie. Ce code ne sert qu'à le lui dire de vive voix."}
         </p>
         {sansJournal ? (
           <p className="ate-erreur">
@@ -515,6 +529,38 @@ export default function Fiche({
             : "Le questionnaire est rempli, aucune photo n'a été déposée."}{" "}
           Sa page lui propose de finir en un clic, et la relance part
           automatiquement le lendemain de l&apos;ouverture du dossier.
+        </div>
+      ) : null}
+
+      {/* ── LE DÉPÔT EST VALIDÉ, MAIS IL EN MANQUE ──────────────────
+          Nouveau le 01/09. Le bouton « Envoyer à l'atelier » s'ouvre dès que
+          le seuil de photos CONFIRMÉES est atteint, sans attendre la fin des
+          transferts. Le reste monte en tâche de fond depuis le navigateur de
+          la cliente : si elle ferme l'onglet, ces photos-là ne viendront
+          jamais, et personne ne peut les reprendre à sa place.
+
+          Le dossier, lui, est bien à nous : elle a donné le droit d'usage, il
+          y a de quoi composer. Ce n'est donc PAS l'alerte du dépôt non
+          terminé, et surtout pas un blocage — c'est une information, et la
+          seule qui existe. Sans elle, « 42 photos » se lit comme un choix.
+
+          ⚠️ Silencieux quand `photosAttendues` est nul : les dossiers
+          antérieurs au 01/09 n'ont jamais porté ce témoin, et un écart
+          fabriqué à partir d'une absence ferait crier la fiche pour rien —
+          une fiche qui crie pour rien cesse d'être crue. */}
+      {l.depot === "termine" &&
+      fiche.photosAttendues !== null &&
+      fiche.photosAttendues > l.nbPhotos ? (
+        <div className="ate-bandeau ate-bandeau--attention">
+          <strong>
+            Son dépôt s&apos;est interrompu : {l.nbPhotos} photos sur les{" "}
+            {fiche.photosAttendues} qu&apos;elle envoyait.
+          </strong>{" "}
+          Elle a bien validé (le droit d&apos;usage est donné, le dossier est à
+          nous), puis elle a quitté la page avant la fin du transfert. Les{" "}
+          {fiche.photosAttendues - l.nbPhotos} manquantes sont restées sur son
+          téléphone et ne reviendront pas toutes seules. Compose avec ce qu&apos;on
+          a, ou propose-lui d&apos;en redéposer (« Demander plus de photos »).
         </div>
       ) : null}
 

@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logEvenement } from "./evenements";
 import { CHAMPS_MAIL, envoyerMailAtelier, type NumeroPourMail } from "./mails";
+import { EVT_CREDIT_CONSOMME } from "./fondatrice";
 
 /**
  * Les deux handlers de webhook de l'atelier (PRD §9).
@@ -36,6 +37,11 @@ type MetaAtelier = {
   numero_id?: string;
   token?: string;
   palier?: string;
+  /* T-021 — posées par /api/atelier/checkout quand la remise fondatrice est
+     appliquée d'office. Absentes autrement. */
+  credit_fondatrice?: string;
+  credit_fondatrice_numero?: string;
+  credit_fondatrice_centimes?: string;
 };
 
 /**
@@ -224,6 +230,41 @@ export async function traiterPaiementAtelier(
        Absente quand tout va bien : une clé qui ne dit rien n'encombre pas. */
     ...(factureUrlPerdue ? { facture_url_perdue_42703: true } : {}),
   });
+
+  /* ── T-021 : le crédit fondatrice est DÉPENSÉ ────────────────────────
+     Écrit seulement si la session portait notre métadonnée ET que Stripe a
+     bien décompté quelque chose. La double condition n'est pas de la
+     coquetterie : `amount_discount` seul serait vrai pour n'importe quel
+     code promo tapé à la main, et la métadonnée seule serait vraie même si
+     la remise avait sauté.
+
+     C'est ce que relit `creditDuPourMail` : sans cette ligne, M3 d'un SECOND
+     numéro commandé par la même fondatrice promettrait une remise déjà
+     dépensée. Le verrou dur reste `max_redemptions: 1` chez Stripe ; ceci
+     est ce qui nous permet de le SAVOIR sans l'interroger.
+     `numero_fondateur` est en NOMBRE (les métadonnées Stripe sont des
+     chaînes) : c'est la clé de recherche du journal, elle doit être du même
+     type que celle écrite par `code_fondatrice_cree`. */
+  const codeCredit = (meta.credit_fondatrice || "").trim();
+  const numeroFondateur = Number(meta.credit_fondatrice_numero);
+  if (codeCredit && (session.total_details?.amount_discount ?? 0) > 0) {
+    await logEvenement(supabase, numero.id, EVT_CREDIT_CONSOMME, {
+      code: codeCredit,
+      montant: session.total_details?.amount_discount ?? null,
+      ...(Number.isInteger(numeroFondateur) && numeroFondateur > 0
+        ? { numero_fondateur: numeroFondateur }
+        : {}),
+      session_id: session.id,
+    });
+  } else if (codeCredit) {
+    /* La remise était posée sur la session et n'a rien décompté : elle a
+       sauté quelque part. La cliente a payé plein tarif alors qu'elle avait
+       droit à 30 € — ça se rembourse, encore faut-il le voir. */
+    console.error(
+      `[atelier/paiement] ⚠️ crédit fondatrice ${codeCredit} posé mais AUCUNE remise appliquée`,
+      session.id,
+    );
+  }
 
   /* M4 « {{titre}}, nous composons » (PRD §10). Passe par le helper commun :
      même verrou anti-doublon que M1 et M3 (Stripe rejoue volontiers ses

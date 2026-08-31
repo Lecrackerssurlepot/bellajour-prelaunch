@@ -35,7 +35,7 @@ Chargé dès qu'on touche une route.
 | `/api/webhook` | mails F1/S1/P3/A3/relance, `assign_numero_fondateur`, crédits de parrainage |
 | `/api/atelier/mails/relever` | **envois multiples** en un passage |
 | `/api/atelier/numero` | crée le dossier + **M0 dans la seconde** |
-| `/api/atelier/checkout`, `/api/checkout` | sessions Stripe |
+| `/api/atelier/checkout`, `/api/checkout` | sessions Stripe + **coupon fondatrice frappé chez Stripe** et remise de 30 € appliquée d'office (T-021) |
 | `/api/atelier/photos/supprimer` | DELETE R2 irréversible |
 | `/api/brevo/webhook` | **rien qu'une ligne de journal** : aucun état, aucun mail |
 
@@ -48,6 +48,11 @@ Lire le résultat, rendre 500 sinon (T-038).
 
 - **Le prix vient du serveur, jamais du client.** Le front envoie `expected_offer` pour l'affichage
   seul et gère le 409 `offer_changed`. Ne jamais coder en dur un montant ni `FOUNDER_CAP` côté front.
+- **La remise fondatrice aussi.** `/api/atelier/checkout` relit `waitlist` lui-même et pose
+  `discounts` sur la session (T-021, 01/09). ⚠️ **`discounts` et `allow_promotion_codes` sont
+  incompatibles chez Stripe** : les deux ensemble font échouer la création de session, donc
+  empêchent de payer. La règle vit dans `@/lib/atelier/fondatrice`, avec le risque assumé (tunnel
+  sans authentification) et ses quatre bornes. Ne jamais la réécrire dans une route.
 - **Un envoi de mail ne doit jamais faire échouer une action métier.** `sendBrevoEmail` est
   best-effort strict : elle ne throw jamais. Corollaire : **un mail non parti ne remonte nulle
   part sauf dans les logs Vercel.**
