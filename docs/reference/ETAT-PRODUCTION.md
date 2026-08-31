@@ -111,9 +111,11 @@ Deux conséquences à garder en tête tant que l'atelier n'a pas ouvert :
 
 À supprimer de ce fichier le jour où l'atelier compose vraiment.
 
-## 🔴 EN ATTENTE — un correctif fusionné mais JAMAIS déployé (30/08/2026, 18h50 UTC)
+## ✅ RÉSOLU le 31/08 — le correctif du compteur est déployé
 
-**`main` est en avance sur la production.** À reprendre en priorité à la prochaine séance.
+L'épisode du 30/08 (aucun déploiement créé pour la fusion de la PR #11) s'est refermé avec
+la fusion de la PR #13 : Vercel a déployé le nouveau `main` normalement, compteur compris.
+Historique conservé ci-dessous pour mémoire du symptôme.
 
 | | |
 |---|---|
@@ -143,7 +145,21 @@ curl -s -H "Cache-Control: no-cache" "https://www.bellajour.fr/?v=$(date +%s)" |
 Doit rendre `12 480`, pas `0`. ⚠️ Ne pas chercher `12` dans la ligne entière : `12480` est
 déjà dans l'attribut, un test naïf conclut à la réussite quoi qu'il arrive.
 
-## 🌙 Nuit autonome du 30/08 — une branche prête, PAS déployée
+## 🌙 Nuit autonome du 30/08 — fusionnée et DÉPLOYÉE le 31/08 à 07:32 UTC
+
+PR #13 fusionnée par Mathias ; Vercel a déployé `473bf0c` en production dans la foulée
+(vérifié : le compteur rend `12 480`, cache contourné). Le retard de déploiement de la
+PR #11 est résolu du même coup — l'épisode « aucun déploiement créé » du 30/08 ne s'est
+pas reproduit. ⚠️ Leçon au passage : le bouton **Redeploy** de Vercel reconstruit le MÊME
+commit que la ligne choisie, il ne prend PAS le main courant — pour déployer main sans
+nouvelle fusion, c'est « Create Deployment » (menu ⋯), pas Redeploy.
+
+Reste UN interrupteur : `node scripts/mails-atelier.mjs --pousser` (feu vert Mathias
+attendu) pour que les templates Brevo prennent la maquette au logo `logo-mail-fond.png`
+et l'encart CODE_SUIVI de M7. Les PNG réparés sont déjà en ligne : M1 et M4 (qui
+référencent l'ancienne URL `logo-mail-blanc.png`, désormais opaque) sont couverts.
+
+### Le détail de ce que portait la branche (mémo)
 
 `chantier/nuit-autonome-30-08` porte 7 commits (recette VERTE : types, lint, build, harnais) :
 logo mail opaque + M7 avec numéro de suivi · dashboard métriques complet (entonnoir, durées,
