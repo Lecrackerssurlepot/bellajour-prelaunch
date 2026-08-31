@@ -110,7 +110,14 @@
    l'encre qui se depose, et c'est ce mouvement qui porte l'essentiel de
    l'ecart de qualite percue. La seconde ligne est ferree a droite :
    c'est elle qui empeche la couverture d'etre symetrique. */
-.at-accueil .h-titre{font-size:clamp(36px,6.4vw,122px);line-height:1}
+/* Le titre de couverture est le SEUL element du site en 600 : c'est lui qui
+   porte l'effet « une de magazine ». La graisse est chargee par page.tsx, sur
+   l'accueil seul. Le repli garde la chaine complete : si le 600 n'arrive pas,
+   le 400 du layout prend la suite plutot qu'une graisse fabriquee. */
+.at-accueil .h-titre{
+  font-family:var(--font-titre-fort),var(--font-atelier-display),Georgia,serif;
+  font-weight:600;
+  font-size:clamp(36px,6.4vw,122px);line-height:1}
 .at-accueil .h-titre .ligne{display:block;overflow:hidden;padding-bottom:.1em;margin-bottom:-.07em}
 .at-accueil .h-titre .in{display:block;transform:translateY(112%);opacity:0}
 .at-accueil.pret .h-titre .in{transform:none;opacity:1;
@@ -349,7 +356,21 @@
      la hauteur du jour au chargement, barre visible : l'ouverture tient dans
      l'ecran, et plus rien ne bouge pendant qu'on defile.
      Le folio disparait : sur un telephone, chaque ligne coute un ecran. */
-  .at-accueil .hero{min-height:var(--app-height);padding:calc(10 * var(--uh)) var(--md) calc(5 * var(--uh)) var(--mg);justify-content:flex-start}
+  /* ⚠️ LE REMBOURRAGE HAUT DOIT PASSER SOUS LA BARRE, QUOI QU'IL ARRIVE.
+     La barre est `position: fixed` : elle recouvre, elle ne pousse pas. Ce
+     rembourrage valait 10 unites de hauteur — proportionnel a l'ecran, donc
+     PLUS PETIT que la barre des que le viewport est court. MESURE le
+     31/08/2026 sur des hauteurs de vrai telephone, barre de Safari comprise :
+       375x553  titre a 50 px, barre jusqu'a 73  → 23 px avalés
+       390x620  titre a 57 px, barre jusqu'a 76  → 19 px
+       430x745  titre a 69 px, barre jusqu'a 83  → 14 px
+     Signale par Mathias, apparu avec la troisieme ligne — mais le defaut
+     etait la depuis toujours, la ligne l'a seulement rendu visible.
+     `max()` garde la respiration voulue sur les ecrans hauts et impose le
+     plancher sur les courts : jamais moins que la barre plus douze pixels. */
+  .at-accueil .hero{min-height:var(--app-height);
+    padding:max(calc(10 * var(--uh)), calc(var(--nav-h) + 12px)) var(--md) calc(5 * var(--uh)) var(--mg);
+    justify-content:flex-start}
   /* ─── LA TAILLE DU TITRE EST BORNEE PAR LA LARGEUR DE L'ECRAN ───
      Ce n'est pas un reglage libre : la ligne la plus longue doit tenir sur
      UNE ligne, et c'est elle qui borne le corps. Depuis le passage a trois
@@ -357,8 +378,11 @@
      largeur/corps 7,01 la ou « Vos meilleurs moments » valait 8,73 — c'est
      tout le gain du decoupage, 25 %. Le rapport ne depend pas de l'ecran,
      donc la borne s'ecrit en vw : a 390 px, 335 disponibles entre les marges
-     de 7vw donnent 335/7,01 = 47,8 px, soit 12,25vw. C'est le plafond.
-     11,9vw retenu = 97,5 % d'occupation, huit pixels de reserve. La reserve
+     de 7vw donnent 335/7,01 = 47,8 px, soit 12,25vw — et un peu moins en 600,
+     la graisse elargissant le texte de 1 %. On ne prend PAS ce plafond :
+     11vw retenu, 92 % d'occupation. Les trois points laisses la sont ce que
+     Mathias a demande — le titre etait colle au bord — et ce qui paie ce
+     recul, c'est la graisse, pas la taille. La reserve
      n'est pas cosmetique : pendant le chargement des polices, c'est le repli
      genere par next/font qui rend le titre. MESURE aussi : 314,7 px contre
      313,4 pour la vraie, 0,4 % d'ecart — le `size-adjust` de next/font fait
@@ -367,11 +391,10 @@
      (overflow-wrap:anywhere !important, piege nº1 de src/app/CLAUDE.md).
      ⚠️ Si le texte du titre change, ce nombre doit etre remesure. Georgia,
      dernier repli de la pile, fait 361,9 px — 15 % de plus : il renverrait.
-     Le plafond passe de 54 a 67 px dans la meme proportion que le corps
-     (11,9/9,6) : sans quoi il mordrait des 454 px de large, en plein dans
-     les grands telephones. Il ne joue donc qu'a partir de la tablette, et le
+     Le plafond suit le corps dans la meme proportion (62 px pour 11vw) :
+     sans quoi il mordrait en plein dans les grands telephones. Il ne joue donc qu'a partir de la tablette, et le
      grand ecran reprend la main a 1000 px. */
-  .at-accueil .h-titre{font-size:clamp(30px,11.9vw,67px)}
+  .at-accueil .h-titre{font-size:clamp(30px,11vw,62px)}
   .at-accueil .h-titre .l2,
   .at-accueil .h-titre .l3{text-align:left}
   /* les deux lignes sont ferrees a gauche ici : les rentrer horizontalement
@@ -379,14 +402,15 @@
   /* L'agrandissement final passe par l'ECHELLE, et c'est ce qui permet
      d'aller plus loin que 9,6vw : un `scale` ne recompose pas le texte, la
      ligne ne peut donc pas se renvoyer, quelle que soit la valeur. Seul
-     l'ecran borne : 327 px de texte × 1,12 = 366 px, soit douze pixels de
-     marge de chaque cote sur un telephone de 390. Le titre deborde des 7vw
-     du hero — c'est voulu, la couverture est ouverte en plein ecran a ce
-     moment-la et un titre qui va au bord est ce qu'on demande a une une.
+     Elle etait a 1,12, ce qui posait le bord gauche du titre a 7 px de
+     l'ecran quand le texte en dessous commence a 27 : colle, signale par
+     Mathias. A 1,06 ce bord revient a 17 px — le titre deborde encore un peu
+     de la colonne de texte, ce qui se lit comme une une, sans toucher le
+     bord. Ce que l'echelle ne donne plus, la graisse 600 le rend.
      ⚠️ NE PAS depasser 1,15 : `globals.css` pose `overflow-x: clip` sur le
      corps sous 767 px. Un titre plus large que l'ecran ne deborderait pas,
      il serait COUPE. */
-  .at-accueil.plein .h-titre{transform:scale(1.12);translate:0 0}
+  .at-accueil.plein .h-titre{transform:scale(1.06);translate:0 0}
   /* ─── LES DEUX LIGNES SE REJOIGNENT EN UN SEUL TITRE ───
      Entre elles vit `.h-bandeau` : 26 unites de hauteur, plus ses marges,
      soit 29,4 au total. Tant que la couverture est repliee, cet ecart EST la
@@ -396,26 +420,47 @@
      deux lignes restaient a 140 px l'une de l'autre pour un corps de 36 px,
      presque quatre fois la hauteur du texte. On lisait deux phrases, pas un
      titre.
-     14,7 unites chacune, soit exactement la moitie des 29,4 : l'ecart se
+     La moitie de l'ecart exactement — bandeau plus ses deux marges — calculee
+     et non recopiee, pour que les deux ne puissent plus diverger. L'ecart se
      referme au complet et l'interlignage retombe a ~1,08, contre 1,17 a 14,5
      et 3,9 avant. Le naturel de ce titre est 1,03 (line-height 1, plus le
      rembourrage du masque de reveal) : le cheveu qui reste est de l'air
      voulu entre deux lignes de 36 px, pas un reliquat. La valeur est en
      unites de hauteur comme le bandeau qu'elle compense — les deux suivent
      la meme echelle, l'ecart reste juste sur tous les telephones.
-     ⚠️ Si `.h-bandeau` change de hauteur (ligne 347), ces deux valeurs
-     doivent suivre : c'est 29,4/2 moins un cheveu, pas un nombre libre.
+     ⚠️ Si `.h-bandeau` change de hauteur, ces deux valeurs doivent suivre :
+     c'est sa hauteur totale divisee par deux, pas un nombre libre.
      ⚠️ `translate` ne retire aucune place : la boite du titre garde sa
      hauteur, et la photographie occupe l'espace laisse libre sous les deux
      lignes. C'est voulu — animer une hauteur ferait une mise en page a
      chaque frame (PRD §15). */
-  .at-accueil.plein .h-titre .l1{translate:0 calc(14.7 * var(--uh))}
-  .at-accueil.plein .h-titre .l2{translate:0 calc(-14.7 * var(--uh))}
+  .at-accueil.plein .h-titre .l1{translate:0 calc((var(--bandeau-h) + 3.4 * var(--uh)) / 2)}
+  .at-accueil.plein .h-titre .l2{translate:0 calc((var(--bandeau-h) + 3.4 * var(--uh)) / -2)}
   /* l3 monte AUTANT que l2 : elle est deja collee sous elle, elle doit
      rester collee. Une valeur differente ouvrirait un trou entre les deux
      lignes basses. */
-  .at-accueil.plein .h-titre .l3{translate:0 calc(-14.7 * var(--uh))}
-  .at-accueil .h-bandeau{height:calc(26 * var(--uh));min-height:0;margin:calc(1.6 * var(--uh)) 0 calc(1.8 * var(--uh))}
+  .at-accueil.plein .h-titre .l3{translate:0 calc((var(--bandeau-h) + 3.4 * var(--uh)) / -2)}
+  /* ─── LE BANDEAU ABSORBE CE QUI RESTE ───
+     Il est le poste vertical le plus lourd du hero et le seul qu'on puisse
+     rendre : le titre et le bloc de texte sont indexes sur la LARGEUR, ils ne
+     retrecissent pas quand l'ecran est court. MESURE le 31/08/2026, hero
+     entier moins le bandeau : 524 px a 375 de large, 526 a 390, 552 a 430.
+     D'ou la soustraction ci-dessous — le bandeau prend la place qui reste,
+     sans jamais depasser 14 unites de hauteur ni descendre sous 4.
+       375x553  la troisieme ligne faisait deborder de 67 px, bouton sous la
+                ligne de flottaison ; la version a deux lignes debordait deja
+                de 13. Le bandeau se replie a 22 px et le bouton revient.
+       390x760  la soustraction donne 210, le plafond de 14 unites tient : la
+                composition des grands ecrans n'est pas touchee.
+     ⚠️ `--app-height` et NON une media query sur la hauteur : c'est la
+     hauteur GELEE au chargement. Une `@media (max-height)` se re-evaluerait
+     quand la barre d'adresse bouge, et rejouerait exactement le saut qu'on
+     vient de supprimer.
+     Le rapprochement des lignes se calcule desormais A PARTIR de cette
+     hauteur (la moitie de l'ecart total), au lieu d'un nombre a tenir a jour
+     a la main : les deux ne peuvent plus se desynchroniser. */
+  .at-accueil{--bandeau-h:clamp(calc(4 * var(--uh)), calc(var(--app-height) - 550px), calc(14 * var(--uh)))}
+  .at-accueil .h-bandeau{height:var(--bandeau-h);min-height:0;margin:calc(1.6 * var(--uh)) 0 calc(1.8 * var(--uh))}
   .at-accueil .h-bas{flex-direction:column;align-items:stretch;gap:calc(2.8 * var(--uh));margin-top:calc(3 * var(--uh))}
   .at-accueil .h-gauche{max-width:none}
   .at-accueil .h-amorce{font-size:clamp(20px,5.9vw,28px)}

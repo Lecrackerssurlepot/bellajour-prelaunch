@@ -26,19 +26,13 @@
   /* Respiration verticale entre deux sections. */
   --v: clamp(72px, 11vw, 132px);
 
-  /* ⚠️ LA HAUTEUR DE LA BARRE DE TÊTE, RECONSTITUÉE.
-     `.at-nav` est en `position: fixed` : elle RECOUVRE le haut de la page,
-     elle ne le pousse pas. Rien dans le flux ne connaît sa hauteur, il faut
-     donc la redire ici — c'est 2 × 2,6 unités de hauteur de rembourrage (nav.css) plus le
-     bouton du logo, dont la cible tactile fait 44 px et grandit avec la
-     signature sur grand écran.
-     MESURÉ : 91 px à 1440×900, 86 px sur un téléphone de 812. Une estimation
-     à 70 px avait fait passer le chapeau ET le haut du masthead sous la
-     barre, sans que rien ne le signale — un élément recouvert ne déborde
-     pas, il disparaît.
-     ⚠️ Si nav.css change son rembourrage ou la taille de la signature, cette
-     ligne doit suivre. C'est le prix d'une barre fixe. */
-  --nav-h: calc(5.2 * var(--uh) + clamp(44px, 1.6vw + 24px, 52px));
+  /* `--nav-h` n'est PLUS redit ici : il est pose par nav.css sur .bj-atelier,
+     la ou vit le rembourrage qu'il mesure, et hérité jusqu'ici. La copie qui
+     se trouvait a cette ligne portait son propre avertissement (« si nav.css
+     change, cette ligne doit suivre ») — c'est exactement le genre de dette
+     qu'une seule declaration supprime. Une estimation a 70 px avait un jour
+     fait passer le chapeau ET le haut du masthead sous la barre, sans que
+     rien ne le signale : un element recouvert ne deborde pas, il disparait. */
 }
 
 /* Fond noir plein, comme l'accueil : le dégradé ambiant de .bj-atelier est
