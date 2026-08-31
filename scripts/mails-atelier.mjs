@@ -181,7 +181,7 @@ a { text-decoration: none; }
 <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width: 600px; max-width: 600px;">
 
 <tr><td align="center" class="px-mobile" style="padding: 0 40px 30px 40px;">
-<a href="https://www.bellajour.fr/"><img src="https://www.bellajour.fr/logo-mail-fond.png" width="170" alt="Bellajour" style="display: block; width: 170px; max-width: 170px; height: auto; border: 0; margin: 0 auto;" /></a>
+<a href="https://www.bellajour.fr/"><img src="https://www.bellajour.fr/logo-mail-cuivre.png" width="170" alt="Bellajour" style="display: block; width: 170px; max-width: 170px; height: auto; border: 0; margin: 0 auto;" /></a>
 </td></tr>
 
 <tr><td align="center" style="padding: 0 40px 54px 40px;">
