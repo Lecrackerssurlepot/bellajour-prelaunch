@@ -490,8 +490,10 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
       : null,
     canvaTravail: publie ? "https://www.canva.com/design/DEMO/edit" : null,
     maquettePdfUrl: null,
-    /* La demo ne branche pas Cloudprinter : mode manuel partout. */
+    /* La demo ne branche pas Cloudprinter : mode manuel partout, et aucun
+       PDF au coffre — la carte des fichiers d'impression ne s'affiche pas. */
     impressionFichiers: { product: null, cover: null, book: null },
+    impressionUrls: { product: null, cover: null, book: null },
     cloudprinterOrderId: null,
     transporteur: ["expediee", "livree"].includes(g.etat) ? "Colissimo" : null,
     trackingUrl: ["expediee", "livree"].includes(g.etat)
@@ -555,6 +557,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
         ]
       : [],
     notesIndisponibles: false,
+    codeFondatrice: null,
     enChargeAbsent: false,
     client: {
       autres:

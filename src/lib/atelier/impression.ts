@@ -81,6 +81,43 @@ const DOS_CARRE: ProduitImpression = {
   ],
 };
 
+/* ─────────── ce que Cloudprinter attend d'un PDF (les SPECS) ───────────
+   Source UNIQUE : docs/reference/SPECS-CLOUDPRINTER.md, relevé products/info
+   du 30/08/2026 — ces chiffres font foi, ne jamais les remplacer par une
+   supposition. Les deux produits partagent le même format. */
+
+/** Format fini (après rognage) : A4 exact, 210 × 297 mm. */
+export const FORMAT_FINI_MM = { largeur: 210, hauteur: 297 } as const;
+
+/** Fond perdu exigé : 3 mm de chaque côté. */
+export const FOND_PERDU_MM = 3;
+
+/** La page PDF attendue = fini + fond perdu : 216 × 303 mm. */
+export const FORMAT_PAGE_PDF_MM = {
+  largeur: FORMAT_FINI_MM.largeur + 2 * FOND_PERDU_MM,
+  hauteur: FORMAT_FINI_MM.hauteur + 2 * FOND_PERDU_MM,
+} as const;
+
+/**
+ * Tolérance de comparaison, en mm. Ce n'est PAS une spec Cloudprinter :
+ * c'est la marge d'arrondi d'un export (un MediaBox en points flottants
+ * converti en mm ne tombe jamais pile). Un demi-millimètre absorbe
+ * l'arrondi sans laisser passer un vrai mauvais format.
+ */
+export const TOLERANCE_FORMAT_MM = 0.5;
+
+/**
+ * La règle de pagination du FICHIER intérieur, par produit (même source) :
+ *   agrafé    — le PDF `product` doit compter un multiple de 4 pages,
+ *               8 au minimum (une feuille agrafée = 4 faces) ;
+ *   dos carré — le PDF `book` doit compter un multiple de 2.
+ * La couverture (`cover`) n'a pas de règle de compte relevée.
+ */
+export const REGLE_PAGES_FICHIER: Record<string, { multiple: number; min: number | null }> = {
+  magazine_sas_a4_p_fc: { multiple: 4, min: 8 },
+  magazine_pb_a4_p_fc: { multiple: 2, min: null },
+};
+
 export function produitPour(nbPages: number | null | undefined): ProduitImpression | null {
   if (typeof nbPages !== "number" || !Number.isInteger(nbPages)) return null;
   if (nbPages === 20) return AGRAFE;
@@ -128,6 +165,114 @@ export const MAX_PDF_BYTES = 200 * 1024 * 1024; /* 200 Mo */
  */
 export function estCleImpression(v: string): boolean {
   return v.length > 0 && !/^https?:\/\//i.test(v) && !v.includes("..");
+}
+
+/* ─────────────────────── le contrôle du PDF ─────────────────────── */
+
+/**
+ * Un point PDF = 1/72 de pouce, un pouce = 25,4 mm. Arrondi au dixième de
+ * millimètre : c'est la précision qu'un œil d'atelier peut exploiter, et
+ * elle absorbe les flottants d'un MediaBox exporté par Canva ou InDesign
+ * (`841.8897…` doit se lire 297,0 et pas 296,99999).
+ */
+export function pointsEnMm(points: number): number {
+  return Math.round((points * 25.4 * 10) / 72) / 10;
+}
+
+/**
+ * Ce que le contrôle technique peut DIRE du nombre de pages d'un PDF face
+ * au DOSSIER, et rien de plus.
+ *
+ *   product / book — la pagination du dossier (`nb_pages`) est l'attente
+ *   naturelle : c'est elle qui part chez Cloudprinter en `total_pages`.
+ *   Écart ≠ refus : l'écran signale, l'atelier tranche — un `product`
+ *   agrafé peut légitimement porter ses faces de couverture en plus, et le
+ *   relevé products/info ne dit pas comment `total_pages` les compte.
+ *
+ *   cover — AUCUNE attente de compte relevée (SPECS-CLOUDPRINTER.md) :
+ *   on constate, on ne juge pas.
+ */
+export type VerdictPages =
+  | { genre: "conforme"; attendu: number }
+  | { genre: "ecart"; attendu: number }
+  | { genre: "constat" };
+
+export function verdictPagesPdf(
+  type: TypeFichier,
+  nbPagesFichier: number,
+  nbPagesDossier: number | null | undefined
+): VerdictPages {
+  if (type === "cover") return { genre: "constat" };
+  if (typeof nbPagesDossier !== "number" || !Number.isInteger(nbPagesDossier) || nbPagesDossier <= 0) {
+    /* Dossier sans pagination : rien à quoi comparer, on constate. */
+    return { genre: "constat" };
+  }
+  return nbPagesFichier === nbPagesDossier
+    ? { genre: "conforme", attendu: nbPagesDossier }
+    : { genre: "ecart", attendu: nbPagesDossier };
+}
+
+/**
+ * Le verdict de FORMAT d'une page, contre les specs relevées
+ * (SPECS-CLOUDPRINTER.md, 30/08/2026) :
+ *
+ *   conforme        — ~216 × 303 mm : le fini plus les 3 mm de fond perdu,
+ *                     ce que Cloudprinter attend ;
+ *   sans_fond_perdu — ~210 × 297 mm : le format FINI. Imprimable, mais le
+ *                     rognage mordra dans l'image au bord ;
+ *   hors_format     — ni l'un ni l'autre ;
+ *   constat         — la LARGEUR d'une `cover` de dos carré dépend de
+ *                     l'épaisseur du dos, dont la formule n'est pas dans
+ *                     products/info (T-078) : on juge sa hauteur, on
+ *                     constate sa largeur.
+ */
+export type VerdictTaille = "conforme" | "sans_fond_perdu" | "hors_format" | "constat";
+
+function proche(a: number, b: number): boolean {
+  return Math.abs(a - b) <= TOLERANCE_FORMAT_MM;
+}
+
+export function verdictTaillePage(
+  type: TypeFichier,
+  largeurMm: number,
+  hauteurMm: number
+): VerdictTaille {
+  if (type === "cover") {
+    /* Seule la hauteur est jugeable : fini + fond perdu, ou fini nu. */
+    if (proche(hauteurMm, FORMAT_PAGE_PDF_MM.hauteur)) return "constat";
+    if (proche(hauteurMm, FORMAT_FINI_MM.hauteur)) return "sans_fond_perdu";
+    return "hors_format";
+  }
+  if (proche(largeurMm, FORMAT_PAGE_PDF_MM.largeur) && proche(hauteurMm, FORMAT_PAGE_PDF_MM.hauteur)) {
+    return "conforme";
+  }
+  if (proche(largeurMm, FORMAT_FINI_MM.largeur) && proche(hauteurMm, FORMAT_FINI_MM.hauteur)) {
+    return "sans_fond_perdu";
+  }
+  return "hors_format";
+}
+
+/**
+ * Le compte de pages du fichier respecte-t-il la règle du PRODUIT
+ * (multiple de 4 min 8 pour l'agrafé, multiple de 2 pour le dos carré) ?
+ * `null` quand aucune règle ne s'applique : une `cover`, ou un dossier
+ * dont la pagination ne désigne aucun produit.
+ */
+export function verdictMultiplePages(
+  type: TypeFichier,
+  nbPagesFichier: number,
+  produit: ProduitImpression | null
+): { ok: boolean; regle: string } | null {
+  if (type === "cover" || !produit) return null;
+  const regle = REGLE_PAGES_FICHIER[produit.produit];
+  if (!regle) return null;
+  const libelle =
+    regle.min !== null
+      ? `multiple de ${regle.multiple}, minimum ${regle.min}`
+      : `multiple de ${regle.multiple}`;
+  const ok =
+    nbPagesFichier % regle.multiple === 0 && (regle.min === null || nbPagesFichier >= regle.min);
+  return { ok, regle: libelle };
 }
 
 /* ─────────────────────────── l'adresse ─────────────────────────── */

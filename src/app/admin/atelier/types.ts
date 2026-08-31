@@ -187,6 +187,12 @@ export type Fiche = {
   maquettePdfUrl: string | null;
   /** Les clés de coffre des PDF print-ready, par type Cloudprinter. */
   impressionFichiers: { product: string | null; cover: string | null; book: string | null };
+  /**
+   * Les MÊMES PDF, en URL GET signées au rendu (1 h) : le bucket est privé,
+   * et l'atelier doit pouvoir OUVRIR ce qui va partir chez l'imprimeur —
+   * jusqu'ici les fichiers partaient sans avoir jamais été revus.
+   */
+  impressionUrls: { product: string | null; cover: string | null; book: string | null };
   /** Posé quand la commande est partie chez Cloudprinter — jamais deux fois. */
   cloudprinterOrderId: string | null;
   transporteur: string | null;
@@ -210,6 +216,12 @@ export type Fiche = {
   notes: NoteVue[];
   /** La migration `notes` n'est pas passée : l'écran le dit au lieu de mentir. */
   notesIndisponibles: boolean;
+  /**
+   * T-021 — le code Stripe de 30 € des fondatrices, s'il a déjà été frappé.
+   * Lu dans le journal (`code_fondatrice_cree`), AUCUNE colonne : le journal
+   * est la persistance ET le verrou d'idempotence de la route.
+   */
+  codeFondatrice: { code: string; creeLe: string } | null;
   /** Idem pour la colonne `en_charge` (migration 20260826). */
   enChargeAbsent: boolean;
   client: ClientVue;

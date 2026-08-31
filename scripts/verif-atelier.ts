@@ -43,6 +43,8 @@ import {
   suggestionEmail,
 } from "@/lib/atelier/questionnaire";
 import { lireSignal, suitePour, typeEvenement } from "@/lib/atelier/rebond";
+import { totalPour, centimesPour, QUANTITE_MAX, type PalierCle } from "@/lib/atelier/prix";
+import { raconter } from "@/lib/atelier/recit";
 import { lireSuivi, nomTransporteur } from "@/lib/atelier/suivi";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import {
@@ -50,8 +52,24 @@ import {
   estCleImpression,
   interpreterSignal,
   payloadCommande,
+  pointsEnMm,
   produitPour,
+  verdictMultiplePages,
+  verdictPagesPdf,
+  verdictTaillePage,
 } from "@/lib/atelier/impression";
+import {
+  reconstruireJalons,
+  dureeEtape,
+  dureesEtapes,
+  compterEntonnoir,
+  reactiviteConversion,
+  composerConstats,
+  ETAPES_VIE,
+  ENTONNOIR,
+  type EvenementMesure,
+  type Seau,
+} from "@/lib/atelier/mesure";
 
 let ko = 0;
 const ok = (n: string, c: boolean) => {
@@ -140,7 +158,7 @@ const base: NumeroPourReleve = {
   id: "x", token: "t", titre: "Un titre", prenom: "Camille", email: "c@example.com",
   nb_photos: 40, nb_pages: 34, palier: "p40", apercu_urls: { c1: "a", c4: "b", double: "c" },
   etat: "photos_recues", consent_photos: true, created_at: ilYA(10), etat_maj_le: ilYA(1),
-  transporteur: null, tracking_url: null, stripe_payment_intent: null,
+  transporteur: null, tracking_url: null, tracking_code: null, stripe_payment_intent: null,
   retouches_demandees_le: null,
 };
 const d = (p: Partial<NumeroPourReleve>): NumeroPourReleve => ({ ...base, ...p });
@@ -265,6 +283,19 @@ ok("M7 avec transporteur : complet", manquePour("M7", d({ transporteur: "Colissi
 ok("M5 sans pagination : signale", manquePour("M5", d({ nb_pages: null })).includes("nb_pages"));
 ok("M2 sans pagination : normal, il n'en parle pas", manquePour("M2", d({ nb_pages: null, palier: null })).length === 0);
 
+titre("— M7 : un numero de suivi sans URL doit quand meme se voir —");
+/* Le cas reel : suivi.ts ne sait pas construire l'adresse de certains
+   transporteurs (url: null). Le template ne rendait l'encart que sur SUIVI :
+   la cliente recevait « confie a DPD » et RIEN a suivre. CODE_SUIVI porte le
+   numero en texte ; le template l'affiche quand le lien manque. */
+const m7SansUrl = parametresPour("M7", d({ transporteur: "DPD", tracking_url: null, tracking_code: "ABC123" }));
+ok("sans URL, le CODE_SUIVI porte le numero", m7SansUrl.CODE_SUIVI === "ABC123");
+ok("sans URL, SUIVI est vide (pas de lien invente)", m7SansUrl.SUIVI === "");
+ok("le transporteur accompagne le numero", m7SansUrl.TRANSPORTEUR === "DPD");
+const m7AvecUrl = parametresPour("M7", d({ transporteur: "Colissimo", tracking_url: "https://x", tracking_code: "6A1" }));
+ok("avec URL, les deux voyagent (le template prefere le lien)",
+   m7AvecUrl.SUIVI === "https://x" && m7AvecUrl.CODE_SUIVI === "6A1");
+
 /* ═══════════════════════ LE LOT ET LE BRIEF ═══════════════════════ */
 
 titre("— le lot partiel (T2-5) —");
@@ -340,6 +371,53 @@ ok("50 pages -> dos carre", produitPour(50)?.produit === "magazine_pb_a4_p_fc");
 ok("18 pages -> aucun produit", produitPour(18) === null);
 ok("52 pages -> aucun produit", produitPour(52) === null);
 ok("pagination absente -> aucun produit", produitPour(null) === null);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Le controle technique du PDF print-ready (route impression/controle).
+   Les attendus viennent du releve products/info du 30/08/2026
+   (docs/reference/SPECS-CLOUDPRINTER.md) : 210 x 297 fini + 3 mm de fond
+   perdu = page PDF de 216 x 303 ; agrafe en multiples de 4 (min 8), dos
+   carre en multiples de 2.
+   ───────────────────────────────────────────────────────────────────────── */
+titre("— le controle technique du PDF : points -> mm —");
+ok("un A4 en points rend 210 x 297", pointsEnMm(595.276) === 210 && pointsEnMm(841.89) === 297);
+ok("la page avec fond perdu rend 216 x 303", pointsEnMm(612.283) === 216 && pointsEnMm(858.898) === 303);
+ok("arrondi au dixieme de mm", pointsEnMm(600) === 211.7);
+
+titre("— le compte de pages face au dossier —");
+ok("book a la pagination du dossier -> conforme",
+   verdictPagesPdf("book", 32, 32).genre === "conforme");
+const ecart = verdictPagesPdf("book", 30, 32);
+ok("book en ecart le DIT avec l'attendu", ecart.genre === "ecart" && ecart.attendu === 32);
+ok("product compare aussi au dossier", verdictPagesPdf("product", 24, 20).genre === "ecart");
+ok("cover : constat, jamais de verdict", verdictPagesPdf("cover", 1, 32).genre === "constat");
+ok("dossier sans pagination : constat", verdictPagesPdf("book", 32, null).genre === "constat");
+
+titre("— le format de page face aux specs relevees —");
+ok("216 x 303 (fini + fond perdu) -> conforme", verdictTaillePage("book", 216, 303) === "conforme");
+ok("la tolerance absorbe l'arrondi d'export (0,4 mm)",
+   verdictTaillePage("book", 216.4, 302.6) === "conforme");
+ok("210 x 297 -> signale SANS fond perdu", verdictTaillePage("product", 210, 297) === "sans_fond_perdu");
+ok("largeur bonne mais hauteur fausse -> hors format", verdictTaillePage("book", 216, 297) === "hors_format");
+ok("un A5 -> hors format", verdictTaillePage("product", 148, 210) === "hors_format");
+ok("cover : largeur libre (le dos), hauteur 303 -> constat",
+   verdictTaillePage("cover", 450.5, 303) === "constat");
+ok("cover au fini sans fond perdu -> signale", verdictTaillePage("cover", 438, 297) === "sans_fond_perdu");
+ok("cover de mauvaise hauteur -> hors format", verdictTaillePage("cover", 450, 200) === "hors_format");
+
+titre("— la regle de compte du produit —");
+ok("agrafe : 20 pages (multiple de 4, >= 8) -> ok",
+   verdictMultiplePages("product", 20, produitPour(20))?.ok === true);
+ok("agrafe : 22 pages -> refuse (pas multiple de 4)",
+   verdictMultiplePages("product", 22, produitPour(20))?.ok === false);
+ok("agrafe : 4 pages -> refuse (minimum 8)",
+   verdictMultiplePages("product", 4, produitPour(20))?.ok === false);
+ok("dos carre : 32 pages (multiple de 2) -> ok",
+   verdictMultiplePages("book", 32, produitPour(32))?.ok === true);
+ok("dos carre : 33 pages -> refuse",
+   verdictMultiplePages("book", 33, produitPour(32))?.ok === false);
+ok("cover : aucune regle de compte", verdictMultiplePages("cover", 1, produitPour(32)) === null);
+ok("produit inconnu : aucune regle", verdictMultiplePages("book", 32, null) === null);
 
 titre("— la saisie d'impression —");
 ok("l'agrafe exige UN fichier product", produitPour(20)!.fichiers.join(",") === "product");
@@ -673,6 +751,195 @@ ok("un token trafique ne confirme rien",
    verifyTokenConfirmation(signTokenConfirmation("marie@exemple.fr").slice(0, -3) + "aaa") === null);
 ok("rien du tout ne confirme rien", verifyTokenConfirmation(null) === null);
 ok("une chaine quelconque ne confirme rien", verifyTokenConfirmation("nimportequoi") === null);
+
+/* ═══════════════ LA MESURE : JALONS, ETAPES, ENTONNOIR, SEAUX ═══════════════
+   Les règles de /admin/atelier/metriques et de l'export CSV. Tout est dérivé
+   du journal `evenements` ; les dossiers avancés en SQL n'ont pas de jalons,
+   et la mesure doit les IGNORER au lieu d'inventer des durées. */
+
+const T0 = Date.parse("2026-08-01T08:00:00Z");
+const evt = (numero: string, type: string, h: number, payload: Record<string, unknown> = {}): EvenementMesure => ({
+  numero_id: numero, type, payload, created_at: new Date(T0 + h * H).toISOString(),
+});
+const vers = (numero: string, etat: string, h: number) => evt(numero, "etat_change", h, { de: "x", vers: etat });
+
+/* A : la vie complete. B : couverte en 30 h, jamais payee. C : couverte en
+   60 h, payee APRES la fenetre. D : avancee en SQL, aucun depot journalise.
+   E : consentement REFUSE. F : aller-retour, l'apercu republie a 30 h.
+   G : couverte en 24 h pile (borne de seau). */
+const JOURNAL: EvenementMesure[] = [
+  evt("A", "numero_cree", 0),
+  evt("A", "consentements", 10, { consent_photos: true }),
+  vers("A", "apercu_pret", 20),
+  evt("A", "checkout_ouvert", 25),
+  vers("A", "payee", 30),
+  vers("A", "maquette_prete", 60),
+  vers("A", "validee", 80),
+  vers("A", "en_production", 90),
+  vers("A", "expediee", 120),
+  vers("A", "livree", 150),
+  evt("B", "numero_cree", 1),
+  evt("B", "consentements", 5, { consent_photos: true }),
+  vers("B", "apercu_pret", 35),
+  evt("C", "numero_cree", 2),
+  evt("C", "consentements", 5, { consent_photos: true }),
+  vers("C", "apercu_pret", 65),
+  evt("C", "checkout_ouvert", 68),
+  vers("C", "payee", 70),
+  vers("D", "apercu_pret", 40),
+  evt("E", "numero_cree", 3),
+  evt("E", "consentements", 4, { consent_photos: false }),
+  vers("F", "apercu_pret", 10),
+  vers("F", "apercu_pret", 30),
+  evt("G", "consentements", 0, { consent_photos: true }),
+  vers("G", "apercu_pret", 24),
+];
+/* Le journal arrive MELANGE : la reconstruction doit trier elle-meme. */
+const JALONS = reconstruireJalons([...JOURNAL].reverse());
+const FIN = T0 + 200 * H;
+
+titre("— la reconstruction des jalons —");
+const jA = JALONS.get("A")!;
+ok("la vie complete pose ses dix jalons",
+   jA.cree !== undefined && jA.depot !== undefined && jA.apercu !== undefined && jA.checkout !== undefined
+   && jA.paye !== undefined && jA.maquette !== undefined && jA.validee !== undefined
+   && jA.production !== undefined && jA.expediee !== undefined && jA.livree !== undefined);
+ok("un consentement REFUSE ne pose pas le depot", JALONS.get("E")!.depot === undefined);
+ok("aller-retour : le DERNIER passage compte", JALONS.get("F")!.apercu === T0 + 30 * H);
+ok("un dossier avance en SQL n'a pas de depot", JALONS.get("D")!.depot === undefined);
+
+titre("— les durees d'etape —");
+ok("la table couvre les neuf paires plus le bout-en-bout", ETAPES_VIE.length === 10);
+ok("une duree negative n'est pas une duree (aller-retour)",
+   dureeEtape({ depot: T0 + 100 * H, apercu: T0 + 50 * H }, "depot", "apercu") === null);
+ok("un jalon manquant : pas de duree inventee", dureeEtape({ apercu: T0 }, "depot", "apercu") === null);
+const ETAPES = dureesEtapes(JALONS, 0, FIN);
+ok("depot -> apercu : mediane sur A(10) B(30) C(60) G(24), F et D ignores",
+   ETAPES.depot_apercu.echantillon === 4 && ETAPES.depot_apercu.mediane === 27);
+ok("checkout -> paye : A(5) et C(2), mediane 3,5 h",
+   ETAPES.checkout_paye.echantillon === 2 && ETAPES.checkout_paye.mediane === 3.5);
+ok("bout-en-bout depot -> livree : A seul (140 h)",
+   ETAPES.depot_livree.echantillon === 1 && ETAPES.depot_livree.mediane === 140);
+ok("sans echantillon : mediane null, JAMAIS zero",
+   dureesEtapes(JALONS, 0, T0).depot_apercu.mediane === null);
+const FENETRE_COURTE = dureesEtapes(JALONS, 0, T0 + 21 * H);
+ok("une duree est comptee dans la fenetre ou elle S'ACHEVE",
+   FENETRE_COURTE.depot_apercu.echantillon === 1 && FENETRE_COURTE.depot_apercu.mediane === 10);
+
+titre("— l'entonnoir —");
+ok("les marches vont de la creation a la livraison",
+   ENTONNOIR[0].cle === "cree" && ENTONNOIR[ENTONNOIR.length - 1].cle === "livree");
+const COMPTE = compterEntonnoir(JALONS, 0, FIN);
+ok("crees : A B C E (D et F sans numero_cree, G sans non plus)", COMPTE.cree === 4);
+ok("depots : A B C G (le refus de E ne compte pas)", COMPTE.depot === 4);
+ok("apercus : A B C D F G", COMPTE.apercu === 6);
+ok("checkouts ouverts : A et C", COMPTE.checkout === 2);
+ok("payes : A et C, livree : A seule", COMPTE.paye === 2 && COMPTE.livree === 1);
+
+titre("— reactivite <-> conversion (LE chiffre qui dit si repondre vite vend) —");
+/* Fenetre close a 66 h : l'apercu de C (65 h) est dedans, son paiement
+   (70 h) est DEHORS — et il doit compter quand meme. */
+const SEAUX = reactiviteConversion(JALONS, 0, T0 + 66 * H);
+ok("A (10 h) tombe dans moins de 24 h", SEAUX[0].n === 1);
+ok("G (24 h pile) tombe dans 24-48 h, la borne est stricte", SEAUX[1].n === 2);
+ok("C (60 h) tombe dans plus de 48 h", SEAUX[2].n === 1);
+ok("D (pas de depot journalise) n'entre dans aucun seau",
+   SEAUX[0].n + SEAUX[1].n + SEAUX[2].n === 4);
+ok("le paiement compte A CE JOUR, meme hors fenetre (C)", SEAUX[2].payes === 1 && SEAUX[2].taux === 100);
+ok("B et G jamais payees : 0 % dans leur seau", SEAUX[1].payes === 0 && SEAUX[1].taux === 0);
+ok("un seau vide rend null, pas 0 %", reactiviteConversion(JALONS, 0, T0)[0].taux === null);
+
+titre("— les constats : des faits, jamais une conclusion sans effectif —");
+const SEAUX_MAIGRES: Seau[] = [
+  { cle: "moins24", label: "Couverte en moins de 24 h", n: 1, payes: 1, taux: 100 },
+  { cle: "de24a48", label: "Couverte entre 24 et 48 h", n: 0, payes: 0, taux: null },
+  { cle: "plus48", label: "Couverte en plus de 48 h", n: 1, payes: 0, taux: 0 },
+];
+const VIDE_ENTONNOIR = ENTONNOIR.map((e) => ({ label: e.label, n: 0 }));
+const cMaigres = composerConstats({
+  seaux: SEAUX_MAIGRES, entonnoir: VIDE_ENTONNOIR,
+  boutEnBout: { mediane: null, echantillon: 0 }, checkoutPaye: { mediane: null, echantillon: 0 },
+});
+ok("2 apercus seulement : la phrase DIT que c'est trop tot, sans conclure",
+   cMaigres.some((c) => c.includes("Trop tôt")));
+ok("aucun taux n'est affirme sur un seau maigre", !cMaigres.some((c) => c.includes("100 %")));
+const SEAUX_PLEINS: Seau[] = [
+  { cle: "moins24", label: "Couverte en moins de 24 h", n: 4, payes: 3, taux: 75 },
+  { cle: "de24a48", label: "Couverte entre 24 et 48 h", n: 2, payes: 1, taux: 50 },
+  { cle: "plus48", label: "Couverte en plus de 48 h", n: 3, payes: 1, taux: 33 },
+];
+const cPleins = composerConstats({
+  seaux: SEAUX_PLEINS,
+  entonnoir: [{ label: "Dossiers créés", n: 10 }, { label: "Dépôts terminés", n: 8 }, { label: "Payés", n: 2 }],
+  boutEnBout: { mediane: 200, echantillon: 3 },
+  checkoutPaye: { mediane: 2, echantillon: 5 },
+});
+ok("3 par seau : le constat compare les taux avec leurs n=",
+   cPleins.some((c) => c.includes("75 %") && c.includes("33 %") && c.includes("n=4") && c.includes("n=3")));
+ok("la pire marche de l'entonnoir est nommee avec son taux",
+   cPleins.some((c) => c.includes("25 %") && c.includes("Payés")));
+ok("le bout-en-bout passe en jours au-dela de 48 h", cPleins.some((c) => c.includes("8 j")));
+ok("jamais plus de quatre constats", cPleins.length <= 4);
+const cRien = composerConstats({
+  seaux: [
+    { cle: "moins24", label: "x", n: 0, payes: 0, taux: null },
+    { cle: "de24a48", label: "y", n: 0, payes: 0, taux: null },
+    { cle: "plus48", label: "z", n: 0, payes: 0, taux: null },
+  ],
+  entonnoir: VIDE_ENTONNOIR,
+  boutEnBout: { mediane: null, echantillon: 0 },
+  checkoutPaye: { mediane: null, echantillon: 0 },
+});
+ok("rien a lire : UNE phrase qui le dit, pas une page vide",
+   cRien.length === 1 && cRien[0].includes("Pas encore assez"));
+
+/* ══════════════════ MULTI-EXEMPLAIRES (T-073) : LE VERROU ══════════════════
+   Les paliers dégressifs ne sont PAS décidés (interdit nº5 : jamais inventer
+   une remise). La structure `totalPour` existe, verrouillée à 1 exemplaire :
+   à 1, elle DOIT rendre la grille actuelle au centime, et tout le reste DOIT
+   être refusé. Lever le verrou = QUANTITE_MAX dans prix.ts, quand Mathias
+   donne les paliers — et ces tests changeront AVEC lui, pas avant. */
+
+titre("— multi-exemplaires (T-073) : verrouille a 1 —");
+ok("QUANTITE_MAX vaut 1 (verrou T-073, leve par Mathias seulement)", QUANTITE_MAX === 1);
+const GRILLE_ACTUELLE: Array<[PalierCle, number]> = [
+  ["p30", 3000],
+  ["p40", 4000],
+  ["p45", 4500],
+];
+for (const [palier, attendu] of GRILLE_ACTUELLE) {
+  ok(
+    `totalPour(${palier}, 1) = ${attendu} centimes, la grille au centime`,
+    totalPour(palier, 1) === attendu && totalPour(palier, 1) === centimesPour(palier),
+  );
+}
+ok("2 exemplaires : REFUSE tant que le verrou tient (pas de remise inventee)",
+   totalPour("p30", 2) === null);
+ok("quantite nulle ou negative : refusee", totalPour("p40", 0) === null && totalPour("p40", -1) === null);
+ok("quantite non entiere : refusee", totalPour("p45", 1.5) === null);
+ok("palier absent : null, on ne facture pas sans chiffrage",
+   totalPour(null, 1) === null && totalPour(undefined, 1) === null);
+
+/* ═══════════════ LE CODE FONDATRICE (T-021) : LE RECIT ═══════════════
+   La route /api/admin/atelier/fondatrice-code écrit `code_fondatrice_cree`
+   au journal — c'est sa persistance ET son verrou d'idempotence. La part
+   pure testable ici : la phrase du journal existe, dit le montant, et ne
+   REVELE PAS le code (il reste dans le payload replie). */
+
+titre("— le code fondatrice (T-021) au journal —");
+const rCode = raconter("code_fondatrice_cree", {
+  code: "FONDATRICE-3-XYZW",
+  montant: 3000,
+  numero_fondateur: 3,
+  par: "Mathias",
+});
+ok("la phrase nomme le geste et le montant",
+   rCode.texte.includes("30") && rCode.texte.toLowerCase().includes("code fondatrice"));
+ok("la phrase porte son auteur", rCode.texte.includes("Mathias"));
+ok("le code lui-meme n'est PAS dans la phrase ni le detail",
+   !rCode.texte.includes("FONDATRICE-3-XYZW") && !(rCode.detail ?? "").includes("FONDATRICE-3-XYZW"));
+ok("sans auteur, la phrase reste correcte",
+   raconter("code_fondatrice_cree", { montant: 3000 }).texte.length > 0);
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
 process.exit(ko === 0 ? 0 : 1);

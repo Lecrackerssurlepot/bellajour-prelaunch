@@ -693,6 +693,25 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
   const depotInitialJusqua =
     (finsDepot ?? []).find((e) => e.payload?.consent_photos === true)?.created_at ?? null;
 
+  /* ── T-021 : le code fondatrice, s'il a déjà été frappé ───────────
+     Même raison que `finsDepot` pour la requête dédiée : la liste
+     d'affichage est triée desc et plafonnée à 200, un vieux dossier
+     bavard pourrait faire sortir l'événement de la fenêtre — et un code
+     « oublié » ferait recréer un second crédit de 30 €. */
+  const { data: codesFondatrice } = await supabase
+    .from("evenements")
+    .select("payload, created_at")
+    .eq("numero_id", id)
+    .eq("type", "code_fondatrice_cree")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .returns<Array<{ payload: Record<string, unknown>; created_at: string }>>();
+  const brutCode = codesFondatrice?.[0];
+  const codeFondatrice =
+    brutCode && typeof brutCode.payload?.code === "string"
+      ? { code: brutCode.payload.code, creeLe: brutCode.created_at }
+      : null;
+
   const apercu = await resoudreApercu(n.apercu_urls);
   const brut = (n.apercu_urls && typeof n.apercu_urls === "object" ? n.apercu_urls : {}) as Record<string, string>;
 
@@ -740,6 +759,17 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
       const cle = (k: string) => (typeof brut[k] === "string" ? (brut[k] as string) : null);
       return { product: cle("product"), cover: cle("cover"), book: cle("book") };
     })(),
+    /* Les mêmes PDF, signés pour l'écran (1 h, comme les photos) : une
+       signature qui échoue rend null et laisse le lien absent — jamais une
+       fiche en erreur. */
+    impressionUrls: await (async () => {
+      const brut = (n.impression_fichiers && typeof n.impression_fichiers === "object"
+        ? n.impression_fichiers
+        : {}) as Record<string, unknown>;
+      const url = async (k: string) =>
+        typeof brut[k] === "string" ? await signerGet(brut[k] as string).catch(() => null) : null;
+      return { product: await url("product"), cover: await url("cover"), book: await url("book") };
+    })(),
     cloudprinterOrderId: (n.cloudprinter_order_id as string) ?? null,
     transporteur: (n.transporteur as string) ?? null,
     trackingUrl: (n.tracking_url as string) ?? null,
@@ -764,6 +794,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     ),
     notes: notesLues.notes,
     notesIndisponibles: notesLues.indisponible,
+    codeFondatrice,
     /* `select("*")` : la colonne arrive d'elle-même quand elle existe. */
     enChargeAbsent: !("en_charge" in n),
     client: await chargerClient(rangee),

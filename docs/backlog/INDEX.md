@@ -84,3 +84,12 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-069 | L'image de partage promet un album, et peut casser le déploiement entier | front | serieux | avis-requis | nouveau |
 | T-070 | Le retour des pages légales renvoie sur une page supprimée | front | confort | libre | **fermé** |
 | T-071 | Personne ne serait prévenu si Google rejetait le site | exploitation | confort | avis-requis | nouveau |
+| T-072 | Les prix finaux du magazine ne sont pas tranchés | paiement | serieux | avis-requis | nouveau |
+| T-073 | Commander plusieurs exemplaires, avec des paliers dégressifs à fournir | paiement | serieux | avis-requis | nouveau |
+| T-074 | Un prix selon le pays de livraison exige de demander le pays avant le prix | produit | serieux | avis-requis | nouveau |
+| T-075 | Les ventes de l'atelier ne passent pas par la comptabilité InvoiceXpress | paiement | serieux | avis-requis | nouveau |
+| T-076 | Les dossiers abandonnés gardent leurs données personnelles sans limite de durée | donnees | serieux | avis-requis | nouveau |
+| T-077 | Les specs d'impression des deux produits Cloudprinter ne sont pas sur le disque | produit | serieux | avis-requis | nouveau |
+| T-078 | Aucun moteur ne transforme les gabarits de mise en page en PDF imprimable | atelier | serieux | avis-requis | nouveau |
+| T-079 | Le dashboard métriques n'a pas d'insights ni de stratégie assistés par IA | admin | confort | avis-requis | nouveau |
+| T-080 | Le dashboard métriques mérite un vrai design de tableau de bord | admin | confort | libre | nouveau |

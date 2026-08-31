@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
+import { ETAPES_VIE, SEUIL_CONCLUANT, type DureeEtape, type Seau } from "@/lib/atelier/mesure";
 import { PERIODES, chargerMetriques, type Chiffres, type Duree, type Periode } from "../metriques";
 import "../../admin.css";
 import "../atelier.css";
@@ -15,7 +16,8 @@ import "../atelier.css";
  *
  * Règle de lecture appliquée partout : une mesure sans échantillon affiche
  * « pas encore », jamais un zéro. Un zéro se lit comme une contre-performance,
- * alors qu'il ne dit que « on n'a pas encore assez de dossiers ».
+ * alors qu'il ne dit que « on n'a pas encore assez de dossiers ». Et chaque
+ * médiane porte son n= : une médiane sur 2 dossiers doit se voir.
  */
 
 export const runtime = "nodejs";
@@ -42,7 +44,7 @@ function dureePromesse(h: number): string {
 }
 
 /** L'écart avec la période précédente, avec son sens. */
-function Ecart({ a, b, inverse }: { a: number; b: number | undefined; inverse?: boolean }) {
+function Ecart({ a, b, inverse, unite }: { a: number; b: number | undefined; inverse?: boolean; unite?: string }) {
   if (b === undefined) return null;
   const delta = a - b;
   if (delta === 0) return <span className="ate-m-ecart">=</span>;
@@ -53,6 +55,7 @@ function Ecart({ a, b, inverse }: { a: number; b: number | undefined; inverse?: 
     <span className={bon ? "ate-m-ecart ate-m-ecart--bon" : "ate-m-ecart ate-m-ecart--mauvais"}>
       {delta > 0 ? "+" : ""}
       {delta}
+      {unite ?? ""}
     </span>
   );
 }
@@ -70,7 +73,7 @@ function Mesure({ d, titre }: { d: Duree; titre: string }) {
         <>
           <span className="ate-m-val">{duree(d.mediane)}</span>
           <span className="ate-m-sous">
-            {`médiane sur ${d.echantillon} dossier${d.echantillon > 1 ? "s" : ""} · `}
+            {`médiane · n=${d.echantillon} · `}
             <strong className={(d.tenus ?? 0) >= 80 ? "ate-m-ok" : "ate-m-ko"}>{`${d.tenus} %`}</strong>
             {` dans la promesse de ${dureePromesse(d.promesseH)}`}
           </span>
@@ -80,29 +83,94 @@ function Mesure({ d, titre }: { d: Duree; titre: string }) {
   );
 }
 
+/**
+ * Une étape de la vie du dossier, sans promesse attachée : la médiane, son
+ * effectif, et l'écart (en heures) avec la fenêtre précédente quand les deux
+ * fenêtres ont mesuré quelque chose.
+ */
+function Etape({ d, avant, titre }: { d: DureeEtape; avant: DureeEtape | undefined; titre: string }) {
+  return (
+    <div className="ate-m-etape">
+      <span className="ate-m-mesure-titre">{titre}</span>
+      {d.mediane === null ? (
+        <span className="ate-m-vide">pas encore</span>
+      ) : (
+        <>
+          <span className="ate-m-val">
+            {duree(d.mediane)}
+            {avant && avant.mediane !== null ? (
+              <Ecart a={Math.round(d.mediane)} b={Math.round(avant.mediane)} inverse unite=" h" />
+            ) : null}
+          </span>
+          <span className="ate-m-sous">
+            {`médiane · n=${d.echantillon}`}
+            {d.echantillon < SEUIL_CONCLUANT ? " — échantillon trop petit pour conclure" : ""}
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* L'entonnoir : une barre par marche, en simple largeur CSS — même recette
+   que la courbe jour par jour, aucune librairie. Le taux affiché est celui
+   entre DEUX marches, pas depuis le début : c'est celui sur lequel on peut
+   agir cette semaine. Chaîne construite d'un bloc — un texte JSX coupé par
+   une expression perd son espace au passage à la ligne. */
 function Entonnoir({ c, p }: { c: Chiffres; p: Chiffres | null }) {
   const etapes = [
-    { label: "Questionnaires ouverts", n: c.questionnaires, avant: p?.questionnaires, sur: null },
-    { label: "Dépôts terminés", n: c.depots, avant: p?.depots, sur: c.questionnaires },
-    { label: "Aperçus publiés", n: c.apercus, avant: p?.apercus, sur: c.depots },
-    { label: "Payés", n: c.payes, avant: p?.payes, sur: c.apercus },
+    { label: "Dossiers créés", n: c.questionnaires, avant: p?.questionnaires },
+    { label: "Dépôts terminés", n: c.depots, avant: p?.depots },
+    { label: "Aperçus publiés", n: c.apercus, avant: p?.apercus },
+    { label: "Checkouts ouverts", n: c.checkouts, avant: p?.checkouts },
+    { label: "Payés", n: c.payes, avant: p?.payes },
+    { label: "Validées", n: c.validees, avant: p?.validees },
+    { label: "Livrées", n: c.livrees, avant: p?.livrees },
   ];
+  const max = Math.max(1, ...etapes.map((e) => e.n));
   return (
-    <div className="ate-m-entonnoir">
-      {etapes.map((e) => (
-        <div key={e.label} className="ate-m-etape">
-          <span className="ate-m-val">
+    <div className="ate-m-fun">
+      {etapes.map((e, i) => (
+        <div key={e.label} className="ate-m-fun-ligne">
+          <span className="ate-m-mesure-titre ate-m-fun-titre">{e.label}</span>
+          <span className="ate-m-fun-n">
             {e.n}
             <Ecart a={e.n} b={e.avant} />
           </span>
-          <span className="ate-m-mesure-titre">{e.label}</span>
-          {/* Le taux entre DEUX étapes, pas depuis le début : c'est celui sur
-              lequel on peut agir cette semaine. Chaîne construite d'un bloc —
-              un texte JSX coupé par une expression perd son espace au passage
-              à la ligne (le « 69 %de l'étape » vu à l'écran). */}
-          {e.sur !== null ? (
-            <span className="ate-m-sous">{`${pct(e.n, e.sur)} de l\u2019étape précédente`}</span>
-          ) : null}
+          <span className="ate-m-sous ate-m-fun-taux">
+            {i > 0 ? `${pct(e.n, etapes[i - 1].n)} de l’étape précédente` : " "}
+          </span>
+          <div className="ate-m-fun-piste">
+            <span className="ate-m-fun-barre" style={{ width: `${(e.n / max) * 100}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * LE croisement qui dit si répondre vite fait vendre : le taux de paiement
+ * par délai de couverture. Un seau maigre s'affiche quand même — avec sa
+ * réserve écrite, parce qu'un taux sur 2 dossiers n'est pas une tendance.
+ */
+function Seaux({ seaux }: { seaux: Seau[] }) {
+  return (
+    <div className="ate-m-entonnoir">
+      {seaux.map((s) => (
+        <div key={s.cle} className="ate-m-etape">
+          <span className="ate-m-mesure-titre">{s.label}</span>
+          {s.n === 0 ? (
+            <span className="ate-m-vide">pas encore</span>
+          ) : (
+            <>
+              <span className="ate-m-val">{`${s.taux} %`}</span>
+              <span className="ate-m-sous">
+                {`${s.payes} payé${s.payes > 1 ? "s" : ""} sur ${s.n} · n=${s.n}`}
+                {s.n < SEUIL_CONCLUANT ? " — échantillon trop petit pour conclure" : ""}
+              </span>
+            </>
+          )}
         </div>
       ))}
     </div>
@@ -150,6 +218,10 @@ export default async function PageMetriques({
             </Link>
           ))}
         </div>
+        {/* Un <a> nu, pas un <Link> : la route rend un fichier, pas une page. */}
+        <a className="ate-m-export" href={`/api/admin/atelier/metriques/export?p=${periode}`}>
+          Télécharger le rapport (CSV)
+        </a>
       </div>
 
       {/* La mise en garde qui rend le reste lisible. Sans elle, une médiane
@@ -158,7 +230,7 @@ export default async function PageMetriques({
         <p className="ate-m-avertissement">
           {`Les délais ne remontent pas avant le ${new Date(m.debutMesurable).toLocaleDateString(
             "fr-FR",
-          )} : les dossiers avancés à la main en base n\u2019ont pas journalisé leurs transitions.`}
+          )} : les dossiers avancés à la main en base n’ont pas journalisé leurs transitions.`}
         </p>
       ) : (
         <p className="ate-m-avertissement">
@@ -170,6 +242,18 @@ export default async function PageMetriques({
       <section className="ate-carte">
         <h2 className="ate-carte-titre">Le parcours</h2>
         <Entonnoir c={c} p={prec} />
+      </section>
+
+      {/* Les constats calculés — des faits dérivés des chiffres de la page,
+          composés par mesure.ts. Jamais une recommandation, jamais un chiffre
+          qui ne soit pas calculé plus haut. */}
+      <section className="ate-carte">
+        <h2 className="ate-carte-titre">Lecture</h2>
+        <ul className="ate-m-lecture">
+          {m.lecture.map((phrase) => (
+            <li key={phrase}>{phrase}</li>
+          ))}
+        </ul>
       </section>
 
       <div className="ate-m-colonnes">
@@ -212,6 +296,24 @@ export default async function PageMetriques({
           <Mesure d={c.production} titre="Dépôt → album livré" />
         </section>
       </div>
+
+      <section className="ate-carte">
+        <h2 className="ate-carte-titre">Chaque étape, en médiane</h2>
+        <div className="ate-m-etapes">
+          {ETAPES_VIE.map((e) => (
+            <Etape key={e.cle} titre={e.label} d={c.etapes[e.cle]} avant={prec?.etapes[e.cle]} />
+          ))}
+        </div>
+      </section>
+
+      <section className="ate-carte">
+        <h2 className="ate-carte-titre">Répondre vite fait-il vendre&nbsp;?</h2>
+        <p className="ate-m-sous ate-m-seaux-chapeau">
+          Taux de paiement des aperçus publiés sur la période, selon le délai entre le dépôt et la
+          couverture.
+        </p>
+        <Seaux seaux={c.seaux} />
+      </section>
 
       <section className="ate-carte">
         <h2 className="ate-carte-titre">Jour par jour</h2>

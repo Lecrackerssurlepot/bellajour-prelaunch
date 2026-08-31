@@ -5,7 +5,7 @@ domaine: donnees
 gravite: bloquant
 autonomie: avis-requis
 ouvert: 2026-08-29
-ferme: 2026-08-29
+ferme: 2026-08-30
 ---
 
 ## Ce que Mathias a dit
@@ -39,7 +39,7 @@ la colonne. Les replis 42703 restent en place : ils protègent la prochaine fen�
 fait, je vérifie de bout en bout et je ferme le ticket.
 
 ## Ce qui a été fait
-Fait le 29/08/2026, avec l'accord explicite de Mathias.
+Fait le 30/08/2026, avec l'accord explicite de Mathias.
 **Migration appliquée en production** (`atelier_tracking_code`). Vérifié auprès de la base :
 `numeros.tracking_code` existe, type `text`, nullable. La cause racine est levée — le repli 42703
 ne se déclenchera plus, et le numéro de suivi sera enregistré.

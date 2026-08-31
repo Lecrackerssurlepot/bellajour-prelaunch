@@ -115,22 +115,33 @@ function encartMot() {
  * devait deviner qu'il fallait retourner sur sa page. Depuis suivi.ts, le
  * numéro devient un lien : voici où il se voit.
  *
- * Conditionnel : un transporteur dont on ne sait pas construire l'adresse de
- * suivi ne doit pas produire un bouton qui ne mène nulle part. Dans ce cas
- * l'encart disparaît et le bouton principal ramène sur la page, où le numéro
- * de suivi est écrit en toutes lettres.
+ * Trois cas, dans l'ordre : une adresse de suivi (SUIVI) donne un lien ; un
+ * simple numéro (CODE_SUIVI, transporteur dont suivi.ts ne sait pas
+ * construire l'adresse) s'affiche en texte copiable, avec le transporteur ;
+ * rien du tout, et l'encart disparaît. Avant le troisième paramètre, le cas
+ * du milieu tombait dans le troisième : le mail disait « confié à DPD » et
+ * n'offrait RIEN à suivre, la cliente devait deviner qu'il fallait retourner
+ * sur sa page. Un bouton qui ne mène nulle part reste interdit : sans URL,
+ * on montre le numéro, pas un lien.
  */
 function encartSuivi() {
-  return `{% if params.SUIVI %}<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
+  const cadre = (contenu) => `<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border-left: 2px solid #d68a63; border-radius: 0 12px 12px 0;">
 <tr><td style="padding: 24px 26px 8px 26px;">
 <div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Le suivi</div>
 </td></tr>
 <tr><td style="padding: 0 26px 24px 26px;">
-<p style="margin: 0; font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.7; color: #c7c2b8;"><a href="{{ params.SUIVI }}" style="color: #d68a63; text-decoration: underline;">Suivre le colis chez {{ params.TRANSPORTEUR }}</a></p>
+${contenu}
 </td></tr>
 </table>
-</td></tr>{% endif %}`;
+</td></tr>`;
+
+  return `{% if params.SUIVI %}${cadre(
+    `<p style="margin: 0; font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.7; color: #c7c2b8;"><a href="{{ params.SUIVI }}" style="color: #d68a63; text-decoration: underline;">Suivre le colis chez {{ params.TRANSPORTEUR }}</a></p>`,
+  )}{% elif params.CODE_SUIVI %}${cadre(
+    `<p style="margin: 0; font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.7; color: #c7c2b8;">Votre num&eacute;ro de suivi chez {{ params.TRANSPORTEUR }} :</p>
+<p style="margin: 8px 0 0 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-size: 24px; font-weight: 500; letter-spacing: 1px; color: #f5f0e7;">{{ params.CODE_SUIVI }}</p>`,
+  )}{% endif %}`;
 }
 
 function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pied }) {
@@ -170,7 +181,7 @@ a { text-decoration: none; }
 <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width: 600px; max-width: 600px;">
 
 <tr><td align="center" class="px-mobile" style="padding: 0 40px 30px 40px;">
-<a href="https://www.bellajour.fr/"><img src="https://www.bellajour.fr/logo-mail-blanc.png" width="170" alt="Bellajour" style="display: block; width: 170px; max-width: 170px; height: auto; border: 0; margin: 0 auto;" /></a>
+<a href="https://www.bellajour.fr/"><img src="https://www.bellajour.fr/logo-mail-fond.png" width="170" alt="Bellajour" style="display: block; width: 170px; max-width: 170px; height: auto; border: 0; margin: 0 auto;" /></a>
 </td></tr>
 
 <tr><td align="center" style="padding: 0 40px 54px 40px;">
@@ -485,6 +496,7 @@ async function main() {
     PRIX: "40",
     TRANSPORTEUR: "Colissimo",
     SUIVI: "https://www.laposte.fr/outils/suivre-vos-envois?code=6A123456789FR",
+    CODE_SUIVI: "6A123456789FR",
     DATE_LIMITE: "3 septembre",
     LIEN: "https://www.bellajour.fr/numero/apercu",
   };

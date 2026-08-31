@@ -5,6 +5,8 @@ import Link from "next/link";
 import PanneauAction from "./PanneauAction";
 import Parcours from "./Parcours";
 import Carnet from "./Carnet";
+import Impression, { type FichierImpression } from "./Impression";
+import { SLOTS_IMPRESSION } from "@/lib/atelier/impression";
 import type { EvenementVue, Fiche as FicheVue } from "../types";
 import Loupe, { type VueLoupe } from "@/app/components/Loupe";
 import EnCharge from "./EnCharge";
@@ -55,6 +57,122 @@ function poids(o: number | null): string {
  * comprendre, le JSON sert à déboguer. Les deux ont leur usage, à deux
  * moments différents, et un seul doit être visible par défaut.
  */
+/**
+ * T-021 — le code Stripe de 30 € des fondatrices (CGV art. 5 bis).
+ *
+ * Le clic appelle /api/admin/atelier/fondatrice-code, qui re-vérifie
+ * `waitlist` côté serveur avant de frapper le code : la fiche PROPOSE, le
+ * serveur DÉCIDE. Un code déjà créé (journal `code_fondatrice_cree`) arrive
+ * par la prop `existant` et le bouton disparaît — un crédit contractuel ne
+ * se frappe qu'une fois.
+ *
+ * Le code ne part dans AUCUN mail : automatique ou manuel, l'envoi n'est
+ * pas tranché (T-021). Ici on le crée et on le copie, rien d'autre.
+ */
+function CodeFondatrice({
+  token,
+  existant,
+  demo,
+}: {
+  token: string;
+  existant: { code: string; creeLe: string } | null;
+  demo?: boolean;
+}) {
+  const [code, setCode] = useState(existant?.code ?? null);
+  const [creeLe, setCreeLe] = useState(existant?.creeLe ?? null);
+  const [occupe, setOccupe] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [copie, setCopie] = useState(false);
+  const [sansJournal, setSansJournal] = useState(false);
+
+  async function creer() {
+    if (demo) {
+      setErreur("Démonstration : rien n'est créé.");
+      return;
+    }
+    setOccupe(true);
+    setErreur(null);
+    try {
+      const r = await fetch("/api/admin/atelier/fondatrice-code", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const corps = (await r.json().catch(() => ({}))) as {
+        code?: string;
+        creeLe?: string;
+        journalEcrit?: boolean;
+        error?: string;
+        message?: string;
+      };
+      if (!r.ok || !corps.code) {
+        if (corps.error === "config") {
+          setErreur("Clé Stripe absente sur le serveur (STRIPE_SECRET_KEY) : rien n'a été créé.");
+        } else if (corps.error === "pas_fondatrice") {
+          setErreur(
+            "Le serveur ne trouve pas de fondatrice confirmée pour cet email : rien n'a été créé.",
+          );
+        } else if (corps.error === "stripe") {
+          setErreur(`Stripe a refusé (${corps.message ?? "sans détail"}) : rien n'a été créé.`);
+        } else {
+          setErreur("Le code n'a pas pu être créé.");
+        }
+        return;
+      }
+      setCode(corps.code);
+      setCreeLe(corps.creeLe ?? null);
+      setSansJournal(corps.journalEcrit === false);
+    } catch {
+      setErreur("Réseau interrompu.");
+    } finally {
+      setOccupe(false);
+    }
+  }
+
+  async function copier() {
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopie(true);
+      setTimeout(() => setCopie(false), 2000);
+    } catch {
+      /* Le code reste affiché : la sélection à la main marche toujours. */
+    }
+  }
+
+  if (code) {
+    return (
+      <div className="ate-code-fondatrice">
+        <p className="ate-code-ligne">
+          <code className="ate-mono">{code}</code>
+          <button type="button" className="adm-btn adm-btn--ghost" onClick={copier}>
+            {copie ? "Copié" : "Copier"}
+          </button>
+        </p>
+        <p className="ate-faint">
+          Créé le {fmt(creeLe)}. À transmettre à la cliente — l&apos;envoi automatique n&apos;est
+          pas encore tranché.
+        </p>
+        {sansJournal ? (
+          <p className="ate-erreur">
+            Le journal n&apos;a pas enregistré ce code : notez-le maintenant, un nouveau clic en
+            créerait un second.
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="ate-code-fondatrice">
+      <button type="button" className="adm-btn" onClick={creer} disabled={occupe}>
+        {occupe ? "Création chez Stripe…" : "Créer le code de 30 €"}
+      </button>
+      {erreur ? <p className="ate-erreur">{erreur}</p> : null}
+    </div>
+  );
+}
+
 function Evenement({ e }: { e: EvenementVue }) {
   const [ouvert, setOuvert] = useState(false);
   const details = Object.keys(e.payload ?? {}).length > 0;
@@ -425,6 +543,20 @@ export default function Fiche({
         <div className="ate-colonne">
           <PanneauAction fiche={fiche} demo={demo} />
 
+          {/* Les PDF print-ready déposés, enfin VISIBLES avant d'appuyer sur
+              « Envoyer à l'impression ». La carte n'existe que s'il y a au
+              moins un fichier au coffre — les labels viennent de la même
+              table que les cadres de dépôt (SLOTS_IMPRESSION). */}
+          <Impression
+            token={l.token}
+            fichiers={SLOTS_IMPRESSION.flatMap((s): FichierImpression[] => {
+              const cle = fiche.impressionFichiers[s.type];
+              return cle
+                ? [{ type: s.type, label: s.label, cle, url: fiche.impressionUrls[s.type] }]
+                : [];
+            })}
+          />
+
           <Carnet
             token={l.token}
             notes={fiche.notes}
@@ -693,10 +825,18 @@ export default function Fiche({
               <div className="ate-prevente">
                 <h3 className="ate-sous-titre">Prévente</h3>
                 {fiche.client.prevente.numeroFondateur ? (
-                  <p className="ate-credit">
-                    Fondatrice nº{fiche.client.prevente.numeroFondateur} — <strong>30 € de crédit</strong>{" "}
-                    à imputer (CGV art. 5 bis), code Stripe nominatif à usage unique.
-                  </p>
+                  <>
+                    <p className="ate-credit">
+                      Fondatrice nº{fiche.client.prevente.numeroFondateur} —{" "}
+                      <strong>30 € de crédit</strong> à imputer (CGV art. 5 bis), code Stripe
+                      nominatif à usage unique.
+                    </p>
+                    <CodeFondatrice
+                      token={l.token}
+                      existant={fiche.codeFondatrice}
+                      demo={demo}
+                    />
+                  </>
                 ) : (
                   <p className="ate-faint">
                     Inscrite en prévente ({fiche.client.prevente.status ?? "—"}), sans place de

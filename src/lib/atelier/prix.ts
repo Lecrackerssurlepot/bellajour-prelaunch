@@ -50,6 +50,40 @@ export function centimesPour(palier: PalierCle | null | undefined): number | nul
   return e === null ? null : e * 100;
 }
 
+/* ─────────────────────────── multi-exemplaires ───────────────────────────
+ *
+ * Verrou T-073 : lever quand Mathias donne les paliers. Tant qu'il vaut 1,
+ * le checkout garde `quantity: 1` et aucun `adjustable_quantity` — le
+ * comportement est strictement celui d'avant, au centime près.
+ *
+ * Les prix dégressifs ne sont PAS décidés (interdit nº5 : on n'invente
+ * jamais une remise). La structure existe pour que le jour venu, le
+ * branchement se fasse ICI et nulle part ailleurs.
+ */
+export const QUANTITE_MAX = 1;
+
+/**
+ * Le total en CENTIMES pour `quantite` exemplaires d'un même numéro.
+ *
+ * Aujourd'hui : `quantite × prix unitaire`, SANS remise. Les paliers
+ * dégressifs de T-073 se brancheront dans CETTE fonction et nulle part
+ * ailleurs — pas dans le checkout, pas dans un écran.
+ *
+ * Refuse (null) plutôt que d'inventer : palier inconnu, quantité non
+ * entière, hors de [1, QUANTITE_MAX]. Tant que le verrou tient, seul
+ * `totalPour(palier, 1)` peut rendre un montant — exactement la grille.
+ */
+export function totalPour(
+  palier: PalierCle | null | undefined,
+  quantite: number
+): number | null {
+  if (!Number.isInteger(quantite) || quantite < 1 || quantite > QUANTITE_MAX) {
+    return null;
+  }
+  const centimes = centimesPour(palier);
+  return centimes === null ? null : centimes * quantite;
+}
+
 /** « 40 € ». Espace insécable : un prix ne se coupe jamais en fin de ligne. */
 export function formaterEuros(euros: number): string {
   return `${euros} €`;

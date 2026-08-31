@@ -1306,6 +1306,92 @@
   background: var(--ate-vert);
 }
 
+/* L'entonnoir en barres : même recette que la courbe jour par jour — une
+   largeur en pourcentage, aucune librairie. Deux lignes par marche (libellé +
+   chiffres, puis la barre) : ça tient sur un téléphone sans media query. */
+.ate-m-fun {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-3);
+}
+.ate-m-fun-ligne {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "titre n"
+    "taux n"
+    "piste piste";
+  column-gap: var(--bj-sp-3);
+  align-items: baseline;
+}
+.ate-m-fun-titre {
+  grid-area: titre;
+}
+.ate-m-fun-n {
+  grid-area: n;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: var(--bj-sp-2);
+  font-family: var(--bj-font-display);
+  font-size: var(--bj-fs-lg);
+  line-height: 1.1;
+  color: var(--bj-text);
+  font-variant-numeric: tabular-nums;
+}
+.ate-m-fun-taux {
+  grid-area: taux;
+}
+.ate-m-fun-piste {
+  grid-area: piste;
+  height: 10px;
+  margin-top: var(--bj-sp-1);
+  border-radius: 3px;
+  background: var(--bj-veil-6);
+  overflow: hidden;
+}
+.ate-m-fun-barre {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 3px;
+  background: var(--bj-action-faint);
+}
+
+/* Les étapes de la vie d'un dossier : une grille de médianes, chacune avec
+   son n= — une médiane sur deux dossiers doit se voir. */
+.ate-m-etapes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: var(--bj-sp-5) var(--bj-sp-4);
+}
+
+/* La lecture : des phrases calculées, pas un tableau. */
+.ate-m-lecture {
+  margin: 0;
+  padding-left: 1.1em;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-2);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  line-height: 1.5;
+}
+
+.ate-m-seaux-chapeau {
+  margin: 0 0 var(--bj-sp-4);
+}
+
+/* Le rapport CSV : un lien discret dans la barre, à droite des périodes. */
+.ate-m-export {
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-action);
+  text-decoration: none;
+}
+.ate-m-export:hover {
+  text-decoration: underline;
+}
+
 /* ─────────────────────────── la page santé ─────────────────────────── */
 
 .ate-sante {
@@ -2044,6 +2130,27 @@
   line-height: 1.5;
   color: var(--bj-action);
 }
+/* T-021 — le code fondatrice, créé et copié depuis la fiche. */
+.ate-code-fondatrice {
+  margin-top: var(--bj-sp-2);
+}
+.ate-code-fondatrice .ate-faint,
+.ate-code-fondatrice .ate-erreur {
+  margin: var(--bj-sp-1) 0 0;
+  font-size: var(--bj-fs-xs);
+  line-height: 1.5;
+}
+.ate-code-ligne {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  flex-wrap: wrap;
+}
+.ate-code-ligne code {
+  font-size: var(--bj-fs-sm);
+  overflow-wrap: anywhere;
+}
 
 .ate-accords {
   list-style: none;
@@ -2358,4 +2465,99 @@
   .ate-recherche {
     flex: 1;
   }
+}
+
+/* ── les fichiers d'impression : voir AVANT d'envoyer ─────────────────
+   La carte des PDF print-ready déposés. Sobre exprès : c'est une table de
+   contrôle, pas une galerie — le seul relief est celui des verdicts. */
+.ate-impr-liste {
+  list-style: none;
+  margin: 0 0 var(--bj-sp-4);
+  padding: 0;
+  display: grid;
+  gap: var(--bj-sp-4);
+}
+.ate-impr-item {
+  border: 1px solid var(--bj-veil-12);
+  border-radius: var(--bj-r-sm);
+  padding: var(--bj-sp-3);
+}
+.ate-impr-tete {
+  display: flex;
+  align-items: baseline;
+  gap: var(--bj-sp-3);
+  flex-wrap: wrap;
+}
+.ate-impr-label {
+  font-size: var(--bj-fs-sm);
+  font-weight: 500;
+}
+.ate-impr-nom {
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+  overflow-wrap: anywhere;
+}
+.ate-impr-tete .ate-lien-page {
+  margin-left: auto;
+}
+.ate-impr-plis {
+  margin-top: var(--bj-sp-2);
+}
+.ate-impr-plis summary {
+  cursor: pointer;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+}
+/* Le cadre de l'aperçu : assez haut pour juger une double page, jamais plus
+   haut que l'écran — le PDF a son propre ascenseur dans le cadre. */
+.ate-impr-cadre {
+  display: block;
+  width: 100%;
+  height: min(70vh, 40rem);
+  margin-top: var(--bj-sp-2);
+  border: 1px solid var(--bj-veil-12);
+  border-radius: var(--bj-r-sm);
+  background: rgba(255, 255, 255, 0.5);
+}
+.ate-impr-verdicts {
+  list-style: none;
+  margin: var(--bj-sp-2) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--bj-sp-1);
+}
+.ate-impr-verdict {
+  font-size: var(--bj-fs-xs);
+  line-height: 1.5;
+  padding-left: var(--bj-sp-4);
+  position: relative;
+}
+.ate-impr-verdict::before {
+  content: "•";
+  position: absolute;
+  left: var(--bj-sp-1);
+}
+.ate-impr-verdict--ok::before {
+  content: "✓";
+  color: var(--ate-vert);
+}
+.ate-impr-verdict--attention {
+  color: var(--ate-orange);
+}
+.ate-impr-verdict--attention::before {
+  content: "!";
+  color: var(--ate-orange);
+}
+.ate-impr-verdict--alerte {
+  color: var(--ate-rouge);
+}
+.ate-impr-verdict--alerte::before {
+  content: "✕";
+  color: var(--ate-rouge);
+}
+.ate-impr-outils {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  flex-wrap: wrap;
 }

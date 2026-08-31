@@ -56,8 +56,8 @@ export type CodeMail =
 /** Les colonnes de `numeros` que tout envoi doit avoir sous la main. */
 export const CHAMPS_MAIL =
   "id, token, etat, titre, prenom, email, nb_photos, nb_pages, palier, apercu_urls, " +
-  "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, stripe_payment_intent, " +
-  "retouches_demandees_le";
+  "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, tracking_code, " +
+  "stripe_payment_intent, retouches_demandees_le";
 
 export type NumeroPourMail = {
   id: string;
@@ -79,6 +79,9 @@ export type NumeroPourReleve = NumeroPourMail & {
   etat_maj_le: string | null;
   transporteur: string | null;
   tracking_url: string | null;
+  /* ⚠️ Colonne de la migration 20260829, appliquée et vérifiée le 30/08.
+     Avant elle, un select de CHAMPS_MAIL serait tombé en 42703. */
+  tracking_code: string | null;
   stripe_payment_intent: string | null;
   retouches_demandees_le: string | null;
 };
@@ -245,6 +248,12 @@ export function parametresPour(code: CodeMail, n: NumeroPourMail): Record<string
       ...achat,
       TRANSPORTEUR: r.transporteur ?? "",
       SUIVI: r.tracking_url ?? "",
+      /* Certains transporteurs n'ont pas d'adresse de suivi constructible
+         (suivi.ts rend url: null) : sans CODE_SUIVI, l'encart de M7
+         disparaissait ENTIÈREMENT et la cliente n'avait rien à suivre.
+         Le template affiche le lien si SUIVI existe, sinon le numéro en
+         texte copiable. */
+      CODE_SUIVI: r.tracking_code ?? "",
     };
   }
 

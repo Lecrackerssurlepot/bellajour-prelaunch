@@ -23,9 +23,15 @@ const atelierDisplay = Cormorant_Garamond({
   display: 'swap',
 })
 
+/* ⚠️ PAS d'italique — et ce n'est pas qu'une affaire de /numero. Cette
+   declaration DOIT rester la jumelle exacte de celle de (atelier)/layout.tsx :
+   Turbopack fusionne les modules de police dans un chunk CSS partage, et une
+   face italique declaree ICI se retrouvait prechargee (39,8 Ko) sur `/` et
+   /magazine, qui ne la peignent jamais (T-059). /numero non plus, d'ailleurs :
+   zero `font-style` et zero <em> dans tout le dossier (verifie le 30/08/2026).
+   La seule consommatrice du site est `.at-hint`, servie par composer/layout. */
 const atelierUi = DM_Sans({
   subsets: ['latin'],
-  style: ['normal', 'italic'],
   variable: '--font-atelier-ui',
   display: 'swap',
 })

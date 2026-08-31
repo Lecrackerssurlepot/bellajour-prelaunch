@@ -50,7 +50,7 @@ const DOSSIER: NumeroPourMail = {
   palier: "p40",
   apercu_urls: { c1: "a", c4: "b", double: "c" },
   // Champs de NumeroPourReleve utilisés par parametresPour :
-  ...({ etat_maj_le: new Date().toISOString(), transporteur: "Colissimo", tracking_url: "https://x" } as object),
+  ...({ etat_maj_le: new Date().toISOString(), transporteur: "Colissimo", tracking_url: "https://x", tracking_code: "6A123456789FR" } as object),
 } as NumeroPourMail;
 
 /* ⚠️ Les valeurs de .env.local peuvent être entre guillemets : dotenv les

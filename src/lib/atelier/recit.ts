@@ -250,6 +250,22 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         ton: "alerte",
       };
 
+    /* T-021 — le crédit contractuel des fondatrices (CGV art. 5 bis). Le
+       code lui-même est dans le payload replié : la phrase dit le geste,
+       pas le secret. */
+    case "code_fondatrice_cree": {
+      const nf = payload.numero_fondateur;
+      return {
+        texte: fait(
+          auteur(payload),
+          "a créé le code fondatrice de 30 €",
+          "Code fondatrice de 30 € créé",
+        ),
+        detail: typeof nf === "number" ? `Fondatrice nº${nf}, à usage unique` : "À usage unique",
+        ton: "nous",
+      };
+    }
+
     case "paiement_inattendu":
       return { texte: "Paiement inattendu", detail: "À vérifier chez Stripe", ton: "alerte" };
 
