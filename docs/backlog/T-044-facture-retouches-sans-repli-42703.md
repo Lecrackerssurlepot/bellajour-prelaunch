@@ -28,4 +28,14 @@ Poser le repli aux deux endroits, comme ailleurs. ⚠️ Et poser en même temps
 T-001 a révélé : le repli fait DISPARAÎTRE le champ en silence, donc il doit journaliser qu'il
 s'est déclenché. Un filet muet transforme une panne bruyante en donnée perdue.
 ## Ce qui a été fait
-—
+31/08/2026 — CONFIRMÉ pour `paiement.ts` : repli 42703 posé sur l'update de confirmation de
+paiement, même idiome que `transition/route.ts` (helper `ecrire`, réécriture sans
+`facture_url`). Le filet CRIE comme exigé : `console.error` nommant la migration
+`20260828_atelier_retouches_et_facture.sql`, ET une clé `facture_url_perdue_42703: true` dans
+le payload de l'événement `etat_change` — la console Vercel s'efface, `evenements` non.
+Un lien de facture est un confort : il ne bloque plus jamais le passage en `payee` ni M4.
+Aucune migration à écrire : `20260828_atelier_retouches_et_facture.sql` existe sur disque et
+la fiche atteste qu'elle est appliquée (vérifié le 29/08).
+NON TRAITÉ, hors périmètre de la séance : `mails.ts:60` (`retouches_demandees_le` dans
+`CHAMPS_MAIL`) — le fichier est réservé à un autre chantier le 31/08. Le repli côté lectures
+de `CHAMPS_MAIL` (relever, sante, numero, mails.ts:652) reste à poser dans un ticket suivant.

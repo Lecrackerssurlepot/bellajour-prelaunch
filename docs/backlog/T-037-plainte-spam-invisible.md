@@ -22,4 +22,11 @@ Le faire remonter là où on regarde : un compteur sur la page Santé, distinct 
 tag rouge sur la ligne — une plainte n'est pas une panne, c'est une information sur nos mails,
 pas sur cette cliente-là.
 ## Ce qui a été fait
-—
+31/08/2026 — CONFIRMÉ : le webhook écrit `email_plainte` (route `brevo/webhook`, via
+`rebond.ts`), le récit le raconte (`recit.ts:305`), mais ni la Santé ni la liste ne le
+lisaient. Ajouté le constat « 5 ter » sur `/admin/atelier/sante` (`sante.ts`) : les plaintes
+sont lues dans la MÊME requête que les rebonds (`.in("type", [...])`, dédoublonnées par
+dossier) mais rendues dans un constat SÉPARÉ, ORANGE, au vocabulaire de la délivrabilité
+(« l'adresse fonctionne : elle a reçu ») — jamais mêlées au rouge « ne reçoit pas ».
+Conformément à la fiche : pas de tag sur la ligne de la liste, aucune décision automatique,
+affichage seul. La fiche du dossier continue de le montrer par la frise du récit.

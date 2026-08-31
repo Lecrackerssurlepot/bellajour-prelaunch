@@ -152,8 +152,8 @@ export default function Corps() {
       {/* ─────────── 03 · LA COLLECTION — RETIRÉE le 30/08/2026 ───────────
           « On n'attend plus le mariage » et l'étagère des quatre dos sont
           sorties de la page produit (décision de Mathias). Rien n'est perdu :
-          le dessin d'origine vit toujours dans components/S2Collection.tsx et
-          s2-collection.css, hors routage, et les quatre dos restent déclarés
+          le dessin d'origine vit dans archive/accueil-v1/S2Collection.tsx et
+          s2-collection.css (T-016), et les quatre dos restent déclarés
           dans content.ts → SPINES. Remettre la section, c'est reprendre ce
           composant-là, pas le réécrire. */}
 

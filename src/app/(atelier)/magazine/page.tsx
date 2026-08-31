@@ -12,8 +12,8 @@
    ⚠️ ELLE RECUEILLE LE CONTENU DES COMPOSANTS ORPHELINS. L'étagère des quatre
    dos (S2Collection), les trois temps du parcours (S3Method) et la grille des
    paliers vivent maintenant ici, et lisent la MÊME source — content.ts. Les
-   fichiers S1Hero/S2Collection/S3Method/S4Final restent sur le disque, hors
-   routage : ils ont fini leur office, ils sont candidats à `archive/`.
+   fichiers S1Hero/S2Collection/S3Method/S4Final ont fini leur office : ils
+   vivent dans `archive/accueil-v1/` depuis le 31/08/2026 (T-016).
 
    Composant SERVEUR. Les métadonnées et les trois blocs JSON-LD doivent être
    DANS le document, pas montés par le navigateur. Seuls Nav et Reveal sont

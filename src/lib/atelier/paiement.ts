@@ -134,19 +134,47 @@ export async function traiterPaiementAtelier(
   /* Transition atomique — même idiome que /api/atelier/valider : le `.eq` sur
      l'état courant EST le verrou. Deux webhooks concurrents (Stripe rejoue
      volontiers), un seul passe, un seul journalise, un seul mail. */
-  const { data: maj, error: majErr } = await supabase
-    .from("numeros")
-    .update({
+  const ecrire = (patch: Record<string, unknown>) =>
+    supabase
+      .from("numeros")
+      .update(patch)
+      .eq("id", numero.id)
+      .eq("etat", "apercu_pret")
+      .select("id");
+
+  let { data: maj, error: majErr } = await ecrire({
+    etat: "payee",
+    stripe_session_id: session.id,
+    stripe_payment_intent: asId(session.payment_intent),
+    adresse_livraison: adresse,
+    etat_maj_le: maintenant,
+    ...(factureUrl ? { facture_url: factureUrl } : {}),
+  });
+
+  /* T-044 — repli 42703, comme ses voisines (donnees.ts, transition,
+     cloudprinter/webhook) : si la colonne `facture_url` (migration 20260828)
+     manquait en base, l'update entier tomberait, la route rendrait 500,
+     Stripe rejouerait en boucle et le dossier resterait en `apercu_pret` —
+     la cliente a payé et sa page affiche toujours « Commander ». Un lien de
+     confort ne bloque pas un paiement : on réécrit sans lui.
+     ⚠️ Ce repli EFFACE une donnée. Il doit donc CRIER (leçon T-001) : la
+     console d'abord, et le journal ensuite — la console Vercel s'efface,
+     `evenements` est le seul dossier consultable. */
+  let factureUrlPerdue = false;
+  if (majErr?.code === "42703" && factureUrl) {
+    console.error(
+      "[atelier/paiement] ⚠️ REPLI 42703 : facture_url absente en base, le lien de facture n'est PAS enregistré. Appliquer supabase/migrations/20260828_atelier_retouches_et_facture.sql.",
+      { numero: numero.id, session: session.id },
+    );
+    factureUrlPerdue = true;
+    ({ data: maj, error: majErr } = await ecrire({
       etat: "payee",
       stripe_session_id: session.id,
       stripe_payment_intent: asId(session.payment_intent),
       adresse_livraison: adresse,
       etat_maj_le: maintenant,
-      ...(factureUrl ? { facture_url: factureUrl } : {}),
-    })
-    .eq("id", numero.id)
-    .eq("etat", "apercu_pret")
-    .select("id");
+    }));
+  }
 
   if (majErr) {
     console.error("[atelier/paiement] update échoué", majErr.code, majErr.message);
@@ -192,6 +220,9 @@ export async function traiterPaiementAtelier(
     devise: session.currency,
     tva: session.total_details?.amount_tax ?? null,
     pays_livraison: adresse?.address?.country ?? null,
+    /* T-044 — la trace du repli, dans le seul dossier qui ne s'efface pas.
+       Absente quand tout va bien : une clé qui ne dit rien n'encombre pas. */
+    ...(factureUrlPerdue ? { facture_url_perdue_42703: true } : {}),
   });
 
   /* M4 « {{titre}}, nous composons » (PRD §10). Passe par le helper commun :

@@ -213,7 +213,7 @@
 }
 
 /* ---- les trois étapes ----
-   Mêmes métriques que .at-step (s3-method.css) : c'est le même objet, il
+   Mêmes métriques que .at-step (archive/accueil-v1/s3-method.css) : c'est le même objet, il
    n'a aucune raison de changer de taille parce qu'il change de page. */
 .at-pdp .pas {
   margin: 0;
@@ -450,7 +450,7 @@
    Les règles de l'étagère (.collection, .etagere, .dos, .couv) sont parties
    avec la section : du CSS qui ne peint plus rien est un piège pour qui lira
    ce fichier ensuite. Le dessin d'origine est intact dans
-   components/s2-collection.css. */
+   archive/accueil-v1/s2-collection.css. */
 
 /* ─────────────────────────── 04 · QUESTIONS ─────────────────────────── */
 
@@ -512,7 +512,7 @@
   line-height: 1.02;
   letter-spacing: -0.015em;
   /* Cormorant sort des chiffres elzéviriens : « 1 » se lit comme un « i ».
-     Même correctif que .at-final h2 (s4-final.css). */
+     Même correctif que .at-final h2 (archive/accueil-v1/s4-final.css). */
   font-variant-numeric: lining-nums;
   font-feature-settings: 'lnum' 1;
 }

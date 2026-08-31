@@ -19,4 +19,12 @@ Effet : aucun danger identifié, mais ce sont des pages du passé servies sous n
 Lire le fichier UUID avant tout geste — il peut porter n'importe quoi. Puis déplacer les trois
 vers `archive/`, ajouter `.DS_Store` au `.gitignore` et les retirer de l'index.
 ## Ce qui a été fait
-—
+31/08/2026 — CONFIRMÉ pour les trois fichiers de `public/` : `git mv` vers
+`archive/public-orphelins/`, avec README. Le fichier UUID a été lu AVANT le geste : il ne
+contient que son propre UUID (36 octets) — signature d'un fichier de **vérification de
+domaine** (Brevo/Meta/TikTok, mécanisme « hébergez ce fichier »). ⚠️ Si un service re-vérifie
+le domaine et échoue, le remettre dans `public/` par `git mv` inverse ; le README d'archive le
+dit. `bellajour-atelier-maquette-v2.html` (racine, gitignoré) déplacé aussi — il reste ignoré,
+la règle du `.gitignore` (ligne 60, sans slash) le suit dans `archive/`.
+INFIRMÉ pour les `.DS_Store` : déjà dans `.gitignore` (lignes 24 et 48) et absents de l'index
+(`git ls-files` ne les liste pas) — rien à retirer, les fichiers disque sont inoffensifs.
