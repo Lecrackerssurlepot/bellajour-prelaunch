@@ -29,7 +29,7 @@
   /* ⚠️ LA HAUTEUR DE LA BARRE DE TÊTE, RECONSTITUÉE.
      `.at-nav` est en `position: fixed` : elle RECOUVRE le haut de la page,
      elle ne le pousse pas. Rien dans le flux ne connaît sa hauteur, il faut
-     donc la redire ici — c'est 2 × 2,6dvh de rembourrage (nav.css) plus le
+     donc la redire ici — c'est 2 × 2,6 unités de hauteur de rembourrage (nav.css) plus le
      bouton du logo, dont la cible tactile fait 44 px et grandit avec la
      signature sur grand écran.
      MESURÉ : 91 px à 1440×900, 86 px sur un téléphone de 812. Une estimation
@@ -38,7 +38,7 @@
      pas, il disparaît.
      ⚠️ Si nav.css change son rembourrage ou la taille de la signature, cette
      ligne doit suivre. C'est le prix d'une barre fixe. */
-  --nav-h: calc(5.2dvh + clamp(44px, 1.6vw + 24px, 52px));
+  --nav-h: calc(5.2 * var(--uh) + clamp(44px, 1.6vw + 24px, 52px));
 }
 
 /* Fond noir plein, comme l'accueil : le dégradé ambiant de .bj-atelier est
@@ -72,12 +72,12 @@
   /* ⚠️ LA BARRE DE TÊTE EST `position: fixed` : elle ne pousse rien, elle
      recouvre. Ce rembourrage n'est pas décoratif, c'est lui qui empêche le
      masthead de passer dessous. Il doit rester supérieur à la hauteur de la
-     barre (5,2dvh + la signature, soit ~62 px sur un téléphone de 812).
+     barre (5,2 unités de hauteur + la signature, ~62 px sur un téléphone de 812).
      ⚠️ Tout le reste du kiosque est indexé sur la HAUTEUR de la fenêtre et
      non sur sa largeur : la contrainte n'est pas « tenir dans la colonne »,
      c'est « aller jusqu'au bouton sans défiler ». Sur un écran court, la
      page se resserre au lieu de repousser le bouton hors de vue. */
-  padding-top: calc(var(--nav-h) + clamp(8px, 1.4dvh, 24px));
+  padding-top: calc(var(--nav-h) + clamp(8px, calc(1.4 * var(--uh)), 24px));
   padding-bottom: var(--v);
 }
 
@@ -171,7 +171,7 @@
 .at-pdp .kiosque > div:last-child > .at-rv:first-child { order: 1; }
 .at-pdp .bloc-prix { order: 2; }
 .at-pdp .bloc-acte { order: 3; }
-.at-pdp .bloc-pas  { order: 4; margin-top: clamp(22px, 3.4dvh, 40px); }
+.at-pdp .bloc-pas  { order: 4; margin-top: clamp(22px, calc(3.4 * var(--uh)), 40px); }
 
 .at-pdp .kiosque-note {
   /* `auto` en haut : la note se pose au PIED de la colonne. Le padding
@@ -204,7 +204,7 @@
 .at-pdp .gages b { font-weight: 500; color: var(--c-text); }
 
 .at-pdp .lede {
-  margin: clamp(10px, 1.7dvh, 20px) 0 0;
+  margin: clamp(10px, calc(1.7 * var(--uh)), 20px) 0 0;
   max-width: 46ch;
   font-size: clamp(15px, 1.25vw, 18px);
   font-weight: 300;
@@ -227,7 +227,7 @@
   grid-template-columns: 44px minmax(0, 1fr) auto;
   gap: 18px;
   align-items: baseline;
-  padding: clamp(9px, 1.5dvh, 18px) 0;
+  padding: clamp(9px, calc(1.5 * var(--uh)), 18px) 0;
   border-bottom: 1px solid var(--c-line);
   list-style: none;
 }
@@ -253,7 +253,7 @@
 
 /* ---- les trois paliers ---- */
 .at-pdp .prix {
-  margin-top: clamp(14px, 2.2dvh, 30px);
+  margin-top: clamp(14px, calc(2.2 * var(--uh)), 30px);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
@@ -262,7 +262,7 @@
 }
 
 .at-pdp .prix li {
-  padding: clamp(12px, 1.8dvh, 20px) 18px;
+  padding: clamp(12px, calc(1.8 * var(--uh)), 20px) 18px;
   border: 1px solid var(--c-line);
   border-radius: 16px;
   background: var(--c-surface-1);
@@ -311,7 +311,7 @@
 /* ---- l'acte ----
    .at-cta (theme.css) porte déjà le fond, le rayon et la lueur. On n'ajoute
    ici que la cible tactile : 52 px de haut, au-dessus du minimum de 44. */
-.at-pdp .acte { margin-top: clamp(14px, 2.2dvh, 28px); display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.at-pdp .acte { margin-top: clamp(14px, calc(2.2 * var(--uh)), 28px); display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
 .at-pdp .acte .at-cta { min-height: 52px; }
 /* ---- les deux gages sous le bouton ----
    Ce ne sont pas des puces décoratives : ce sont les deux objections qu'on a
@@ -602,7 +602,7 @@
   }
 
   .at-pdp .prix li {
-    padding: clamp(11px, 1.7dvh, 15px) 9px;
+    padding: clamp(11px, calc(1.7 * var(--uh)), 15px) 9px;
     border-radius: 12px;
     text-align: center;
   }

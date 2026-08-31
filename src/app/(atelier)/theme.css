@@ -118,7 +118,7 @@
 
 .bj-atelier {
   position: relative;
-  min-height: 100dvh;
+  min-height: var(--app-height);
   background: var(--grad-ambient);
   color: var(--c-text);
   font-family: var(--font-ui);

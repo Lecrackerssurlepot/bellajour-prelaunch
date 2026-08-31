@@ -19,7 +19,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 2.6dvh var(--md) 2.6dvh var(--mg);
+  padding: calc(2.6 * var(--uh)) var(--md) calc(2.6 * var(--uh)) var(--mg);
   background: var(--glass-bg-strong);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
@@ -33,8 +33,8 @@
 /* dès 40 px : la barre ne se cache jamais, donc sans un voile plus dense
    le contenu de l'ouverture lui défilerait au travers. */
 .at-nav.is-stuck {
-  padding-top: 1.9dvh;
-  padding-bottom: 1.9dvh;
+  padding-top: calc(1.9 * var(--uh));
+  padding-bottom: calc(1.9 * var(--uh));
   background: var(--glass-bg-plein);
 }
 

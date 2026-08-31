@@ -333,30 +333,34 @@
 @media (max-width:1000px){
   .bj-atelier{--mg:7vw;--md:7vw}
   /* ─── L'OUVERTURE TIENT DANS L'ECRAN, sans un pixel de defilement ───
-     Tout en dvh : c'est la seule unite qui suit la barre d'adresse de
-     Safari iOS. En vh, l'ouverture depasse des que la barre se retracte.
+     Tout en --uh (hauteur gelee au chargement, cf. globals.css) : en vh,
+     l'ouverture depassait des que la barre d'adresse se retractait ; en dvh,
+     elle ne depassait plus mais TOUTE LA PAGE se redimensionnait a chaque
+     mouvement de cette barre, et le contenu sautait sous le doigt. --uh vaut
+     la hauteur du jour au chargement, barre visible : l'ouverture tient dans
+     l'ecran, et plus rien ne bouge pendant qu'on defile.
      Le folio disparait : sur un telephone, chaque ligne coute un ecran. */
-  .at-accueil .hero{min-height:100dvh;padding:10dvh var(--md) 5dvh var(--mg);justify-content:flex-start}
+  .at-accueil .hero{min-height:var(--app-height);padding:calc(10 * var(--uh)) var(--md) calc(5 * var(--uh)) var(--mg);justify-content:flex-start}
   .at-accueil .h-titre{font-size:clamp(30px,9.2vw,54px)}
   .at-accueil .h-titre .l2{text-align:left}
   /* les deux lignes sont ferrees a gauche ici : les rentrer horizontalement
      les desalignerait. Seul le resserrement vertical joue. */
   .at-accueil.plein .h-titre{transform:scale(1.05);translate:0 0}
-  .at-accueil.plein .h-titre .l1{translate:0 6dvh}
-  .at-accueil.plein .h-titre .l2{translate:0 -6dvh}
-  .at-accueil .h-bandeau{height:26dvh;min-height:0;margin:1.6dvh 0 1.8dvh}
-  .at-accueil .h-bas{flex-direction:column;align-items:stretch;gap:2.8dvh;margin-top:3dvh}
+  .at-accueil.plein .h-titre .l1{translate:0 calc(6 * var(--uh))}
+  .at-accueil.plein .h-titre .l2{translate:0 calc(-6 * var(--uh))}
+  .at-accueil .h-bandeau{height:calc(26 * var(--uh));min-height:0;margin:calc(1.6 * var(--uh)) 0 calc(1.8 * var(--uh))}
+  .at-accueil .h-bas{flex-direction:column;align-items:stretch;gap:calc(2.8 * var(--uh));margin-top:calc(3 * var(--uh))}
   .at-accueil .h-gauche{max-width:none}
   .at-accueil .h-amorce{font-size:clamp(20px,5.9vw,28px)}
-  .at-accueil .h-lede{margin-top:1.4dvh;font-size:clamp(14px,3.9vw,17px);line-height:1.62}
-  .at-accueil .h-note{margin-top:1.8dvh;text-align:left;font-size:clamp(12px,3.3vw,14px)}
+  .at-accueil .h-lede{margin-top:calc(1.4 * var(--uh));font-size:clamp(14px,3.9vw,17px);line-height:1.62}
+  .at-accueil .h-note{margin-top:calc(1.8 * var(--uh));text-align:left;font-size:clamp(12px,3.3vw,14px)}
   /* l'action unique se met au centre : c'est la seule chose a faire ici. */
   .at-accueil .h-droite{width:100%;display:flex;justify-content:center}
   .at-accueil .acte{gap:4.4vw}
   .at-accueil .acte--seul .mot{font-size:clamp(21px,6.2vw,30px)}
   .at-accueil .acte--seul .rond{width:clamp(48px,14vw,60px);height:clamp(48px,14vw,60px)}
   .at-accueil .descente .fil{right:calc(clamp(48px,14vw,60px) / 2)}
-  .at-accueil.pret .descente .fil{height:3dvh}
+  .at-accueil.pret .descente .fil{height:calc(3 * var(--uh))}
 }
 
 @media (prefers-reduced-motion:reduce){

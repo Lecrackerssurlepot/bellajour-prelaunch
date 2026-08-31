@@ -13,7 +13,7 @@
 .nu {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  min-height: var(--app-height);
 }
 
 /* ---- barre haute : le nom, rien d'autre ----
@@ -477,7 +477,7 @@
   display: grid;
   place-items: center;
   text-align: center;
-  min-height: 100dvh;
+  min-height: var(--app-height);
   padding: var(--pad);
 }
 

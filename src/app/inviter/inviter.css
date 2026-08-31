@@ -6,7 +6,7 @@
    ════════════════════ */
 
 .inviter {
-  min-height: 100dvh;
+  min-height: var(--app-height);
   background: var(--bj-cream);
   color: var(--bj-text);
   display: flex;

@@ -3,7 +3,7 @@
 .at-q {
   display: flex;
   flex-direction: column;
-  min-height: var(--app-height, 100dvh);
+  min-height: var(--app-height);
 }
 
 /* ---- barre de progression ----

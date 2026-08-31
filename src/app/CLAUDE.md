@@ -43,16 +43,21 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
   **retirer le conteneur repeint les autres pages.**
 - Les ombres existent (`--bj-shadow-soft`, `--bj-shadow-pop`, les `--bj-glass-*-shadow`) : la
   vieille consigne « zéro ombre » ne vaut plus. Sur fond sombre, préférer un voile à une ombre.
-- Positions fluides : `dvh`/`vw`/`clamp()`. Le neuf est en `dvh` — la contrainte réelle est de
-  tenir en HAUTEUR sur un téléphone, pas en largeur.
+- Positions fluides : `calc(N * var(--uh))`/`vw`/`clamp()` — la contrainte réelle est de tenir
+  en HAUTEUR sur un téléphone, pas en largeur.
+- **`dvh` est INTERDIT dans tout le site** (retiré des 95 usages le 31/08/2026). Il suit la barre
+  d'adresse : elle se rétracte dès qu'on descend, la page grandit d'un coup de ~60 px, et tout
+  ce qui est sous le doigt saute. `--uh` (globals.css) vaut un centième de `--app-height`, gelé
+  en px au chargement par le script inline de `layout.tsx` et remis à jour seulement si la
+  LARGEUR change. Un plein écran s'écrit `var(--app-height)`, jamais `100dvh` ni `100vh`.
 
 ## Les pièges qui cassent en silence
 
 1. **`globals.css:183` pose `overflow-wrap: anywhere !important` sur `h1..h4, p`.** Trois feuilles
    doivent le contourner. Sous 767 px, un mot trop grand n'est pas débordé : il est **coupé au
    milieu**. Toujours vérifier un titre géant sur 375 px de large.
-2. **`pdp.css` REDIT la hauteur de la barre dans `--nav-h`** (une formule fluide `calc(5.2dvh +
-   clamp(...))`), parce que la barre est `position: fixed` et que rien dans le flux ne la connaît.
+2. **`pdp.css` REDIT la hauteur de la barre dans `--nav-h`** (une formule fluide
+   `calc(5.2 * var(--uh) + clamp(...))`), parce que la barre est `position: fixed` et que rien dans le flux ne la connaît.
    Si `nav.css` change de hauteur, cette ligne doit suivre — sinon le chapeau passe SOUS la barre
    et disparaît sans déborder. Exigence tenue : **le premier écran de `/magazine` va jusqu'au
    bouton**, ce qui impose aussi l'`order: 5` du parcours (jamais en dupliquant le balisage).
