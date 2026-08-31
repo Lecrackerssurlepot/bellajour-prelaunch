@@ -154,10 +154,11 @@ pas reproduit. ⚠️ Leçon au passage : le bouton **Redeploy** de Vercel recon
 commit que la ligne choisie, il ne prend PAS le main courant — pour déployer main sans
 nouvelle fusion, c'est « Create Deployment » (menu ⋯), pas Redeploy.
 
-Reste UN interrupteur : `node scripts/mails-atelier.mjs --pousser` (feu vert Mathias
-attendu) pour que les templates Brevo prennent la maquette au logo `logo-mail-fond.png`
-et l'encart CODE_SUIVI de M7. Les PNG réparés sont déjà en ligne : M1 et M4 (qui
-référencent l'ancienne URL `logo-mail-blanc.png`, désormais opaque) sont couverts.
+`--pousser` FAIT le 31/08 vers 07:50 UTC, sur feu vert explicite de Mathias : les 10
+templates (mêmes IDs, aucune variable Vercel à changer) portent la maquette au logo
+`logo-mail-fond.png` et l'encart CODE_SUIVI de M7. `verif-mails-brevo.ts` après coup :
+« Aucun trou de variable ». Trois mails de test envoyés à Mathias (M0, M7 avec lien,
+M7 numéro seul). M1 et M4, hors script, sont couverts par le PNG opaque déjà en ligne.
 
 ### Le détail de ce que portait la branche (mémo)
 
