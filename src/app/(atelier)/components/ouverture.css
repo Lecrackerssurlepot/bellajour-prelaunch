@@ -465,14 +465,49 @@
   .at-accueil .h-gauche{max-width:none}
   .at-accueil .h-amorce{font-size:clamp(20px,5.9vw,28px)}
   .at-accueil .h-lede{margin-top:calc(1.4 * var(--uh));font-size:clamp(14px,3.9vw,17px);line-height:1.62}
-  .at-accueil .h-note{margin-top:calc(1.8 * var(--uh));text-align:left;font-size:clamp(12px,3.3vw,14px)}
+  /* ─── LA MENTION DE PRIX SORT DU HERO, SUR TELEPHONE SEUL ───
+     « Premier apercu gratuit · Votre magazine sur-mesure des 30 € » disait
+     vrai, mais dans une ouverture ou tout se dispute quatre cents pixels de
+     haut, elle etait la quatrieme ligne de texte apres le titre, l'amorce et
+     le chapeau. Decision de Mathias, 31/08/2026 : l'information n'est pas
+     necessaire ICI, elle est donnee en toutes lettres au premier ecran de
+     /composer, ou la personne va de toute facon.
+     ⚠️ `display:none` et non un retrait du balisage : le grand ecran la garde,
+     il a la place. Le texte reste donc dans le document — pour le retirer
+     partout, c'est une ligne dans Ouverture.tsx, pas ici. */
+  .at-accueil .h-note{display:none}
   /* l'action unique se met au centre : c'est la seule chose a faire ici. */
-  .at-accueil .h-droite{width:100%;display:flex;justify-content:center}
-  .at-accueil .acte{gap:4.4vw}
-  .at-accueil .acte--seul .mot{font-size:clamp(21px,6.2vw,30px)}
-  .at-accueil .acte--seul .rond{width:clamp(48px,14vw,60px);height:clamp(48px,14vw,60px)}
-  .at-accueil .descente .fil{right:calc(clamp(48px,14vw,60px) / 2)}
-  .at-accueil.pret .descente .fil{height:calc(3 * var(--uh))}
+  /* ⚠️ `.h-droite` est en COLONNE (regle de base, ligne ~239). Dans une
+     colonne, `justify-content` commande l'axe VERTICAL : la regle qui etait
+     ecrite ici pour centrer le bouton ne centrait donc rien du tout, et
+     personne ne pouvait le voir puisqu'un seul enfant occupe la colonne.
+     C'est `align-items` qui place sur l'axe horizontal. */
+  .at-accueil .h-droite{width:100%;display:flex;align-items:center;justify-content:center}
+  /* ─── LE CTA DEVIENT UNE PILULE, COMME CELUI DE LA BARRE ───
+     Il etait un mot en italique de 30 px suivi d'un disque plein de 60 :
+     deux objets, et le plus gros bloc de l'ouverture apres le titre. Demande
+     de Mathias : la meme pilule que « Composer avec l'atelier » dans la
+     barre, avec la fleche RANGEE DEDANS au lieu de trainer a cote.
+     Les valeurs sont celles de `.at-nav-cta` (nav.css) et pas des voisines :
+     bordure d'un pixel en --c-line-strong, rayon 999, 44 px de haut au
+     minimum — le plancher d'une cible tactile. Le disque d'accent ne
+     disparait pas, il rentre : 34 px au lieu de 60. C'est lui qui garde au
+     bouton sa couleur d'action, que la barre n'a pas besoin d'avoir.
+     Le libelle reste en italique de titrage : le hero parle, la barre
+     etiquette. Meme forme, deux voix — sans quoi deux boutons identiques
+     feraient croire a la meme destination. */
+  .at-accueil .acte--seul{
+    gap:12px;min-height:44px;padding:7px 8px 7px 20px;
+    border:1px solid var(--c-line-strong);border-radius:999px;
+    transition:border-color var(--t-reveal) var(--ease)}
+  .at-accueil .acte--seul:hover{border-color:var(--c-accent)}
+  .at-accueil .acte--seul .mot{font-size:clamp(15px,4.3vw,19px)}
+  .at-accueil .acte--seul .rond{width:34px;height:34px}
+  .at-accueil .acte--seul .rond svg{width:19px;height:19px}
+  /* Le fil qui tombait du disque n'a plus de point de chute : le bouton est
+     centre, le disque n'est plus a son bord. Il disparait sur telephone —
+     c'etait de toute facon un trait de plus dans une ouverture qu'on allege. */
+  .at-accueil .descente .fil{display:none}
 }
 
 @media (prefers-reduced-motion:reduce){
