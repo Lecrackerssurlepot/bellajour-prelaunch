@@ -14,7 +14,7 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | id | titre | domaine | gravite | autonomie | etat |
 |---|---|---|---|---|---|
 | T-001 | Le numéro de suivi n'est jamais enregistré | donnees | bloquant | avis-requis | **fermé** |
-| T-002 | Les liens de parrainage des mails vivants sont morts | contenu | bloquant | avis-requis | nouveau |
+| T-002 | Les liens de parrainage des mails vivants sont morts | contenu | serieux | avis-requis | en pause (31/08, stratégie consignée) |
 | T-003 | 101 Mo d'images orphelines déployées à chaque build | front | serieux | libre | nouveau |
 | T-004 | La page d'état de la cliente est indexable par Google | front | serieux | libre | nouveau |
 | T-005 | L'ancien mot de passe admin partagé ouvre encore la porte | admin | serieux | libre | nouveau |

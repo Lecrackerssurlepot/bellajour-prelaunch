@@ -68,3 +68,10 @@ Trois pistes, par coût croissant :
    et le bloc parrainage disparaît de W1, P1 et P2.
 Tant que ce n'est pas tranché, les liens restent cassés — mais au moins ils ne mènent pas au
 mauvais endroit.
+
+## Tranché le 31/08/2026 — EN PAUSE
+Mathias : « On met en pause le lien de parrainage, on verra dans notre stratégie si on
+l'active. » La stratégie complète (héritage, 4 décisions, déploiement en 3 étapes, questions
+ouvertes) est consignée dans `docs/produit/STRATEGIE-PARRAINAGE.md`. Les liens déjà partis
+mènent à l'accueil sans effet ; les droits acquis restent honorés à la main. Le ticket sort
+du rang des bloquants : rien n'est promis publiquement tant que la pause tient.
