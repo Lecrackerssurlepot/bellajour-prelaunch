@@ -73,10 +73,13 @@ export default function Kiosque() {
           </div>
         </Reveal>
 
-        <p className="kiosque-note">
-          Un album, on en fait un dans sa vie. Un numéro, on en fait un par
-          moment. Le festival de juin, l’été, la soirée d’octobre…
-        </p>
+        {/* La note qui legendait le collage a ete RETIREE le 31/08/2026, sur
+            demande de Mathias : « Un album, on en fait un dans sa vie. Un
+            numero, on en fait un par moment. Le festival de juin, l'ete, la
+            soiree d'octobre… ». Elle ne paraissait que sur grand ecran — le
+            telephone la masquait deja. L'argument qu'elle portait n'est pas
+            perdu : « Un numero par moment » vit dans la description de la
+            page, dans le partage social et sur /numero. */}
       </div>
 
       {/* ── colonne droite : le récit, le parcours, la grille, l'acte ── */}

@@ -167,18 +167,6 @@
 .at-pdp .bloc-acte { order: 3; }
 .at-pdp .bloc-pas  { order: 4; margin-top: clamp(22px, calc(3.4 * var(--uh)), 40px); }
 
-.at-pdp .kiosque-note {
-  /* `auto` en haut : la note se pose au PIED de la colonne. Le padding
-     garantit qu'elle ne colle jamais au collage quand la page est courte. */
-  margin: auto 0 0;
-  padding-top: clamp(28px, 4vw, 44px);
-  max-width: 34ch;
-  font-size: clamp(14px, 1.1vw, 15px);
-  font-weight: 300;
-  line-height: 1.75;
-  color: var(--c-text-faint);
-}
-
 /* ---- colonne droite ---- */
 .at-pdp .titre {
   margin: 0;
@@ -551,7 +539,6 @@
   .at-pdp .c2 { left: 33%; top: 0;   width: 36%; height: 74%; }
   .at-pdp .c3 { left: 65%; top: 15%; width: 35%; height: 85%; }
 
-  .at-pdp .kiosque-note { display: none; }
 
   /* Le premier écran d'un téléphone se compte au pixel. Chaque valeur
      ci-dessous a été prise sur une mesure, pas au jugé — voir le relevé dans
