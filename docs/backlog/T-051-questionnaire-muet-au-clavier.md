@@ -28,4 +28,18 @@ l'écran atteint, une clé qui change sur le message d'erreur pour forcer l'anno
 `aria-live` sur les refus. Le compteur de palier passe en `aria-live="off"` : il est utile à
 l'œil, pas à l'oreille.
 ## Ce qui a été fait
-—
+**31/08/2026 — confirmé (les quatre points), corrigé.** Les anneaux de focus existaient déjà
+(T-017 : `theme.css:170`), c'est le DÉPLACEMENT du focus qui manquait :
+1. `Composer.tsx` : à chaque changement d'écran, le focus va sur le `<h2>` de l'écran atteint
+   (`tabindex="-1"` posé au vol, `preventScroll`), jamais au premier rendu. Une région live
+   unique (`.sr-only`, `aria-live="polite"`, présente dès le premier rendu) annonce « Étape N
+   sur 6 » / « C'est fait — dernier écran ». L'écran 6 est donc énoncé.
+2. `Composer.tsx` + `Screen4Contact.tsx` + `Screen5Depot.tsx` : une clé (`erreurCle`) change à
+   chaque refus — le même message est REMONTÉ par React et ré-annoncé (vérifié : nœud recréé,
+   texte identique, `role="alert"`).
+3. `Screen5Depot.tsx:` le palier perd son `role="status"` : jusqu'à 40 annonces d'affilée qui
+   noyaient les alertes. Utile à l'œil, pas à l'oreille.
+4. Les refus à l'entrée vivent dans une enveloppe `aria-live="polite"` TOUJOURS rendue (une
+   région créée en même temps que son contenu n'est pas annoncée).
+Vérifié au navigateur (375 px et desktop) : focus sur H2 mesuré à chaque transition 1↔4, région
+live mise à jour, ré-annonce du refus prouvée au DOM. Parcours 1→5 inchangé par ailleurs.

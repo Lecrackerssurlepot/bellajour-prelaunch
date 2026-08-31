@@ -116,9 +116,28 @@
 .bj-atelier .at-inp { max-width: 420px; margin-top: 22px; padding: 12px 0; font-size: 17px; }
 .bj-atelier .at-inp--wide { max-width: 560px; }
 
+/* T-053 — l'opacité était à 0.42 : #928d84 à 42 % sur #020202 donne 1,90:1,
+   pour un seuil de 4,5:1. À 0.85 on tient ≈ 4,9:1, et le gris reste un gris :
+   un placeholder ne se confond pas avec du texte saisi (--c-text est crème). */
 .at-field::placeholder,
 .at-area::placeholder,
-.at-inp::placeholder { color: var(--c-text-faint); opacity: 0.42; }
+.at-inp::placeholder { color: var(--c-text-faint); opacity: 0.85; }
+
+/* T-053 — les libellés de l'écran 4. Visibles, et qui le RESTENT une fois le
+   champ rempli — c'est toute leur raison d'être face au placeholder. */
+.at-lbl {
+  display: block;
+  margin-top: 26px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-text-soft);
+}
+
+/* Le champ colle à son libellé : les 22 px de .at-inp valent pour un champ
+   orphelin, pas pour un champ titré. (0,2,0) pour battre .bj-atelier .at-inp. */
+.bj-atelier .at-lbl + .at-inp { margin-top: 8px; }
 
 .at-field:focus,
 .at-area:focus,
@@ -153,6 +172,17 @@
 .at-hint--calme { font-style: normal; font-family: var(--font-ui); }
 
 .at-erreur { margin-top: 20px; font-size: 14px; color: var(--c-accent-strong); }
+
+/* T-052 — le compteur de l'écran 2. Discret : il informe, il ne gronde pas.
+   Préfixé .bj-atelier : theme.css pose `.bj-atelier p { margin: 0 }` en
+   (0,2,0), une classe simple perdrait sa marge sans erreur. */
+.bj-atelier .at-compte {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--c-text-faint);
+  font-variant-numeric: tabular-nums;
+}
 
 /* ---- suggestions de l'écran 1 ---- */
 .at-chips { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 26px; max-width: 640px; }

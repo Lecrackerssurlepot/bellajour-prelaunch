@@ -22,4 +22,13 @@ Des libellés visibles au-dessus des champs, et le placeholder remonté au-dessu
 supprimé, puisqu'il devient redondant). Le libellé visible sert aussi à qui ne voit pas bien :
 il reste affiché quand le champ est rempli, contrairement au placeholder.
 ## Ce qui a été fait
-—
+**31/08/2026 — confirmé, corrigé.** Sans toucher aux textes :
+- `Screen4Contact.tsx` : « Prénom », « Email », « Téléphone » sont désormais de vrais `<label>`
+  visibles (`htmlFor` → `id`, liaison vérifiée), qui restent affichés champ rempli. Les
+  placeholders et `aria-label`, devenus redondants, sont partis.
+- `composer.css` : `.at-lbl` (12 px, capitales espacées, `--c-text-soft` ≈ 10:1 sur le fond) ;
+  le champ colle à son libellé (`.bj-atelier .at-lbl + .at-inp`). Les placeholders RESTANTS
+  (écrans 1, 2, 3) passent de 0.42 à 0.85 d'opacité : ≈ 4,9:1 au lieu de 1,90:1, et le gris
+  reste distinct du texte saisi (crème).
+Vérifié au navigateur, 375 px (capture : trois libellés lisibles au-dessus de leurs filets) et
+desktop (liaison label/champ + couleurs mesurées au DOM).

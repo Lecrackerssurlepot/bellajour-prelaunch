@@ -49,6 +49,8 @@ export default function Loupe({
   /* Là où le focus était avant l'ouverture. Le rendre est ce qui distingue
      une vue modale d'une trappe : sans ça, on rouvre la page au tout début. */
   const focusAvant = useRef<Element | null>(null)
+  /* T-055 — la racine de la loupe, pour rendre `inert` tout le reste. */
+  const racine = useRef<HTMLDivElement>(null)
 
   const ouverte = index !== null && index >= 0 && index < vues.length
 
@@ -86,6 +88,28 @@ export default function Loupe({
     focusAvant.current = document.activeElement
     fermeture.current?.focus()
 
+    /* ── T-055 : CE QUI EST SOUS LA LOUPE N'EST NI CLIQUABLE NI FOCUSABLE ──
+       Sans ça, trois Tab posaient le focus sur les deux cases puis sur le
+       bouton « Commander », invisibles sous le fond noir — un Entrée de trop
+       et Stripe s'ouvrait pendant qu'on regardait une image.
+       `inert` est posé sur les FRÈRES de chaque ancêtre de la loupe (jamais
+       sur ses ancêtres eux-mêmes, qui la rendraient inerte avec eux). On ne
+       marque que ce qu'on a gelé soi-même, pour ne pas réveiller à la
+       fermeture un élément que quelqu'un d'autre aurait rendu inerte. */
+    const geles: HTMLElement[] = []
+    let noeud: HTMLElement | null = racine.current
+    while (noeud && noeud !== document.body) {
+      const parent: HTMLElement | null = noeud.parentElement
+      if (!parent) break
+      for (const frere of Array.from(parent.children)) {
+        if (frere !== noeud && frere instanceof HTMLElement && !frere.inert) {
+          frere.inert = true
+          geles.push(frere)
+        }
+      }
+      noeud = parent
+    }
+
     /* Le fond ne doit pas défiler pendant qu'on regarde : sur mobile, un
        glissement vertical déplacerait la page sous la loupe et on la
        retrouverait ailleurs en refermant. */
@@ -102,6 +126,9 @@ export default function Loupe({
     return () => {
       window.removeEventListener('keydown', auClavier)
       document.body.style.overflow = avant
+      /* Dégeler AVANT de rendre le focus : un élément encore inerte
+         refuserait de le reprendre. */
+      for (const el of geles) el.inert = false
       const cible = focusAvant.current
       if (cible instanceof HTMLElement) cible.focus()
     }
@@ -114,6 +141,7 @@ export default function Loupe({
 
   return (
     <div
+      ref={racine}
       className="bj-loupe"
       role="dialog"
       aria-modal="true"

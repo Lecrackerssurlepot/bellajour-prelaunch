@@ -101,7 +101,11 @@ export function ecranDuChamp(champ: ChampQuestionnaire): number {
  */
 export const MESSAGE_DU_CHAMP: Record<ChampQuestionnaire, string> = {
   occasion: "Dites-nous en quelques mots ce que c’était.",
-  histoire: "Racontez-nous ce moment, en une phrase au moins. C’est là-dessus que l’atelier compose.",
+  /* T-052 — le refus DIT la règle. « En une phrase au moins » seul refusait
+     « Super week-end » puis « C'était génial » à l'identique, sans jamais
+     dire que c'est la longueur qu'on reproche. Le nombre vient de
+     MIN_HISTOIRE : une seule source, jamais de copie qui dérive. */
+  histoire: `Racontez-nous ce moment, en une phrase au moins — il en faut ${MIN_HISTOIRE} caractères. C’est là-dessus que l’atelier compose.`,
   titre: "Donnez-lui un titre. Vous pourrez le changer plus tard.",
   prenom: "Il nous faut votre prénom pour vous écrire.",
   email: "Cette adresse email ne semble pas valide.",

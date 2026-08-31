@@ -21,4 +21,13 @@ est trop fine pour être devinée.
 Un compteur discret sous le champ, et un message de refus qui dit la règle. Ne pas remonter le
 seuil (D14 : il bloquerait de vraies clientes), le rendre visible.
 ## Ce qui a été fait
-—
+**31/08/2026 — confirmé, corrigé.** Le seuil reste à 20 (D14), il devient VISIBLE :
+- `questionnaire.ts` : le message de refus dit la règle — « Racontez-nous ce moment, en une
+  phrase au moins — il en faut 20 caractères. C'est là-dessus que l'atelier compose. » Le nombre
+  vient de `MIN_HISTOIRE` en gabarit, jamais recopié. Rien de l'ancien texte n'a été retiré.
+- `Screen2Histoire.tsx` : compteur discret sous le champ (« 14 caractères — il en faut au
+  moins 20. »), importé de `MIN_HISTOIRE`, affiché seulement entre 1 et 19 caractères, sans
+  région live (une annonce par frappe serait du bruit). Style `.at-compte` dans composer.css,
+  préfixé `.bj-atelier` (piège de la marge des <p>).
+Vérifié au navigateur, 375 px et desktop : compteur sous le champ, refus explicite au clic,
+compteur disparu à 20+. Harnais : TOUT PASSE (les 223 assertions ne figent pas ce message).

@@ -177,10 +177,10 @@ export default async function NumeroPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ paiement?: string; essai?: string }>
+  searchParams: Promise<{ paiement?: string }>
 }) {
   const { token } = await params
-  const { paiement, essai } = await searchParams
+  const { paiement } = await searchParams
 
   /* Test §17.7 : un token inexistant donne une page d'erreur propre, et
      AUCUNE information ne fuite. Forme invalide et dossier introuvable
@@ -208,10 +208,11 @@ export default async function NumeroPage({
 
   /* Retour de Stripe, webhook pas encore arrivé. Tant que l'état n'a pas
      basculé, on masque le bouton de commande : le lui remontrer juste après
-     un paiement réussi, c'est l'inviter à payer deux fois. */
+     un paiement réussi, c'est l'inviter à payer deux fois.
+     T-056 — le compte d'essais vit dans AttentePaiement (état client), plus
+     dans l'URL : la page ne se recharge plus, elle se rafraîchit. Un vieux
+     lien portant `?essai=` reste inoffensif, le paramètre est ignoré. */
   const retourDePaiement = paiement === 'ok' && numero.etat === 'apercu_pret'
-  const essaiNum = Number(essai) || 0
-  const ESSAIS_MAX = 5
 
   /* La ligne naît à la fin de l'écran 4, DÉJÀ en `photos_recues`, avant que la
      moindre photo n'existe. Une cliente qui abandonne à l'écran 5 puis rouvre
@@ -332,28 +333,11 @@ export default async function NumeroPage({
           {retourDePaiement ? (
             <>
               <p className="nu-mot">Paiement reçu.</p>
-              <p className="nu-sub">
-                {essaiNum < ESSAIS_MAX ? (
-                  <>
-                    On enregistre votre commande. Cette page se met à jour
-                    toute seule dans quelques secondes — vous pouvez la
-                    laisser ouverte.
-                  </>
-                ) : (
-                  <>
-                    Votre paiement est bien passé, mais l’enregistrement prend
-                    plus de temps que prévu. Rien n’est perdu et vous n’avez
-                    rien à refaire : votre numéro basculera tout seul. Si cette
-                    page n’a pas changé d’ici une heure, écrivez-nous à{' '}
-                    <b>{CONTACT_EMAIL}</b>.
-                  </>
-                )}
-              </p>
-              {essaiNum < ESSAIS_MAX && (
-                <AttentePaiement
-                  href={`/numero/${numero.token}?paiement=ok&essai=${essaiNum + 1}`}
-                />
-              )}
+              {/* Les deux textes (l'attente, puis « plus long que prévu »)
+                  vivent dans AttentePaiement : c'est lui qui sait où en sont
+                  les essais, et le lecteur d'écran doit entendre le
+                  basculement sans que la page ne bouge. */}
+              <AttentePaiement contactEmail={CONTACT_EMAIL} />
             </>
           ) : (
             <>

@@ -59,6 +59,9 @@ export default function Screen5Depot({
   const { vue, compteur, ajouter, supprimer, reprendrePhoto, finaliser } = useDepot(token)
   const [refus, setRefus] = useState<Refus[]>([])
   const [erreur, setErreur] = useState<string | null>(null)
+  /* T-051 — même clé de ré-annonce que dans Composer : deux échecs
+     identiques de finalisation doivent parler deux fois. */
+  const [erreurCle, setErreurCle] = useState(0)
   const [survol, setSurvol] = useState(false)
   const [toutesVisibles, setToutesVisibles] = useState(false)
   const [envoi, setEnvoi] = useState(false)
@@ -128,7 +131,11 @@ export default function Screen5Depot({
     setErreur(null)
     const r = await finaliser()
     setEnvoi(false)
-    if (!r.ok) { setErreur(r.message ?? 'Réessayez dans un instant.'); return }
+    if (!r.ok) {
+      setErreur(r.message ?? 'Réessayez dans un instant.')
+      setErreurCle((c) => c + 1)
+      return
+    }
     onTermine(vue.confirmees)
   }, [pretAEnvoyer, finaliser, onTermine, vue.confirmees])
 
@@ -225,7 +232,10 @@ export default function Screen5Depot({
           <u style={{ left: `${(MIN_PHOTOS / MAX_PHOTOS) * 100}%` }} />
         </div>
 
-        <p className="at-d-palier" role="status">
+        {/* T-051 — plus de role="status" ici : le palier changeait à CHAQUE
+            photo confirmée, jusqu'à 40 annonces d'affilée qui noyaient les
+            vraies alertes. Utile à l'œil, pas à l'oreille. */}
+        <p className="at-d-palier">
           {ilManque > 0 ? (
             <>encore <b>{ilManque}</b> pour composer un numéro</>
           ) : palier ? (
@@ -254,17 +264,24 @@ export default function Screen5Depot({
         )}
       </div>
 
-      {/* ── refus à l'entrée ──────────────────────────────────────────── */}
-      {refus.length > 0 && (
-        <ul className="at-d-refus">
-          {refus.slice(0, 5).map((r, i) => (
-            <li key={`${r.nom}-${i}`}>
-              {r.nom} — {RAISONS[r.raison] ?? 'non acceptée'}
-            </li>
-          ))}
-          {refus.length > 5 && <li>et {refus.length - 5} autre(s).</li>}
-        </ul>
-      )}
+      {/* ── refus à l'entrée ──────────────────────────────────────────────
+          T-051 — l'enveloppe est TOUJOURS rendue, et c'est elle qui est
+          live : une région créée en même temps que son contenu n'est pas
+          annoncée. Ici la région existe d'avance, et les refus qui y
+          apparaissent sont lus — 8 photos écartées sur 60 ne passent plus
+          en silence. */}
+      <div aria-live="polite">
+        {refus.length > 0 && (
+          <ul className="at-d-refus">
+            {refus.slice(0, 5).map((r, i) => (
+              <li key={`${r.nom}-${i}`}>
+                {r.nom} — {RAISONS[r.raison] ?? 'non acceptée'}
+              </li>
+            ))}
+            {refus.length > 5 && <li>et {refus.length - 5} autre(s).</li>}
+          </ul>
+        )}
+      </div>
 
       {/* ── la grille ─────────────────────────────────────────────────── */}
       {vue.photos.length > 0 && (
@@ -297,6 +314,13 @@ export default function Screen5Depot({
               )}
 
               {p.etat === 'confirmee' && <span className="at-d-ok" aria-hidden="true">✓</span>}
+
+              {/* T-054 — l'échec se lit SANS la couleur : la bordure accent ne
+                  suffit ni à une cliente daltonienne ni à un lecteur d'écran.
+                  Un mot sur la tuile, là où le ✓ dit l'inverse. */}
+              {p.etat === 'erreur' && (
+                <span className="at-d-panne">Pas partie</span>
+              )}
 
               {/* Pas de « Reprendre » quand le serveur a refusé pour de bon :
                   un bouton qui ne fait rien est pire que pas de bouton. */}
@@ -341,7 +365,32 @@ export default function Screen5Depot({
         </button>
       )}
 
-      {erreur && <p className="at-erreur" role="alert">{erreur}</p>}
+      {/* ── T-054 : L'ÉCHEC EST DIT, PAS SEULEMENT BORDÉ ──────────────
+          `role="alert"` : annoncé dès qu'une photo échoue, sans voler le
+          focus. La photo en erreur n'est jamais repliée (règle plus haut) :
+          la phrase désigne donc quelque chose qui est réellement à l'écran. */}
+      {enErreur.length > 0 && (
+        <p className="at-erreur" role="alert">
+          {enErreur.length === 1 ? (
+            <>
+              Une photo n’est pas partie. Elle reste dans la grille
+              {vue.clos
+                ? ' — « ✕ » la retire.'
+                : ' : « ↻ Reprendre » relance l’envoi, « ✕ » la retire.'}
+            </>
+          ) : (
+            <>
+              {enErreur.length} photos ne sont pas parties. Elles restent dans
+              la grille
+              {vue.clos
+                ? ' — « ✕ » les retire.'
+                : ' : « ↻ Reprendre » relance l’envoi, « ✕ » les retire.'}
+            </>
+          )}
+        </p>
+      )}
+
+      {erreur && <p key={erreurCle} className="at-erreur" role="alert">{erreur}</p>}
 
       {/* ── LA BARRE D'ENVOI ──────────────────────────────────────────
           Elle était noyée sous la grille. Avec cinquante-cinq vignettes, le
@@ -382,8 +431,18 @@ export default function Screen5Depot({
         </label>
 
         <div className="at-q-actions at-d-actions">
+          {/* T-054 — quand des photos ont échoué, le bouton dit ce qu'il va
+              VRAIMENT faire : envoyer les confirmées, pas la totalité.
+              Bloquer sans expliquer serait pire — la réparation (Reprendre)
+              est à un geste, et l'alerte ci-dessus la désigne.
+              Seulement à partir du seuil : sous les 40, le bouton est de
+              toute façon fermé et « Envoyer 0 photo sur 1 » ne dirait rien. */}
           <button type="button" className="at-cta" onClick={envoyer} disabled={!pretAEnvoyer}>
-            {envoi ? 'Un instant…' : 'Envoyer à l’atelier'}
+            {envoi
+              ? 'Un instant…'
+              : enErreur.length > 0 && vue.confirmees >= MIN_PHOTOS
+                ? `Envoyer ${vue.confirmees} photos sur ${vue.confirmees + enErreur.length} à l’atelier`
+                : 'Envoyer à l’atelier'}
             <span className="at-cta-arrow">→</span>
           </button>
 
