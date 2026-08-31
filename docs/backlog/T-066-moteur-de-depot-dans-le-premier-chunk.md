@@ -24,4 +24,23 @@ remplir couvre largement son chargement.
 ⚠️ Vérifier que le worker de vignettage et la reprise `?reprendre=` survivent au découpage — c'est
 la partie délicate.
 ## Ce qui a été fait
-—
+**31/08 — vérifié, PAS commencé (séance close avant ; consigne : ne pas laisser un découpage à
+moitié fait).** Le constat tient : `Composer.tsx:11-16` importe les six écrans statiquement, et
+`Screen5Depot` tire `useDepot` → `moteur.ts`/`pool.ts`/`stockage.ts`/`paliers.ts` + `depot.css`.
+Aucun changement de code — rien à annuler.
+
+Repérage fait pour la prochaine séance :
+- `next/dynamic` sur le seul `Screen5Depot` (ssr: false acceptable, purement client). Le
+  fallback doit être discret et dans le ton (l'écran 5 n'est atteint qu'après 4 écrans remplis).
+- **Piège worker** : `pool.ts:103` charge `new Worker(new URL('./reduire.worker.js',
+  import.meta.url))` — un `.js` nu recopié brut par Turbopack. Après découpage, vérifier que
+  l'URL émise existe toujours ET que le ping du pool passe (le pool a un garde-fou : un worker
+  muet au ping = renonciation propre, donc l'échec serait SILENCIEUX à l'écran — tester un vrai
+  dépôt de fichier en local).
+- **Piège reprise** : `?reprendre=<token>` saute à l'écran 5 (`Composer.tsx:83` :
+  `{ ...repris, token: reprendre, screen: 5 }`) → le chunk dynamique se charge alors SANS le
+  temps de couverture des 4 écrans : le fallback doit tenir ce cas. L'écran « lien abîmé »
+  (T-058, `lienAbime`) sort AVANT tout rendu d'écran et ne dépend pas de Screen5Depot — à
+  re-vérifier quand même avec `/composer?reprendre=tronque123`.
+- Preuve attendue : la chaîne « Réponse incomplète » (`moteur.ts:486`) absente des scripts
+  initiaux de composer.html, présente dans un chunk chargé au passage à l'écran 5.
