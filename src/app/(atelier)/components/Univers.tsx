@@ -559,16 +559,36 @@ export default function Univers() {
 
           <div className="sl4-bande" data-t="900">
             <div className="sl4-rail">
-              <figure><span className="ph" data-legende="Un magazine"><img src="/images/lancement/galerie/marrakech.webp" alt="Un numéro Bellajour consacré à un voyage à Marrakech" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
-              <figure><span className="ph" data-legende="Une BD"><img src="/images/lancement/galerie/japon.webp" alt="Un numéro Bellajour consacré à un voyage au Japon" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
-              <figure><span className="ph" data-legende="Une affiche"><img src="/images/lancement/galerie/patagonie.webp" alt="Un numéro Bellajour consacré à un voyage en Patagonie" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
-              <figure><span className="ph" data-legende="Un album photos"><img src="/images/lancement/galerie/lisbonne.webp" alt="Un numéro Bellajour consacré à un séjour à Lisbonne" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
-              <figure><span className="ph" data-legende="Une série de pages"><img src="/images/lancement/galerie/santorin.webp" alt="Un numéro Bellajour consacré à un séjour à Santorin" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
-              <figure aria-hidden="true"><span className="ph" data-legende="Un magazine"><img src="/images/lancement/galerie/marrakech.webp" alt="" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
-              <figure aria-hidden="true"><span className="ph" data-legende="Une BD"><img src="/images/lancement/galerie/japon.webp" alt="" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
-              <figure aria-hidden="true"><span className="ph" data-legende="Une affiche"><img src="/images/lancement/galerie/patagonie.webp" alt="" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
-              <figure aria-hidden="true"><span className="ph" data-legende="Un album photos"><img src="/images/lancement/galerie/lisbonne.webp" alt="" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
-              <figure aria-hidden="true"><span className="ph" data-legende="Une série de pages"><img src="/images/lancement/galerie/santorin.webp" alt="" width="450" height="675" loading="lazy" decoding="async" /></span></figure>
+              {/* T-065 (31/08/2026) — le srcset colle a la taille PEINTE : les
+                  figures font 15vw au-dela de 1000px, 38vw en dessous
+                  (univers.css). Variantes -240/-360 par scripts/images-galerie.mjs ;
+                  l'original 450 reste le plafond pour les iPhone 3x.
+                  La seconde serie, aria-hidden, est la copie qui rend la bande
+                  infinie : memes fichiers, donc aucun octet de plus. */}
+              {[false, true].map((copie) =>
+                ([
+                  ['marrakech', 'Un magazine', 'Un numéro Bellajour consacré à un voyage à Marrakech'],
+                  ['japon', 'Une BD', 'Un numéro Bellajour consacré à un voyage au Japon'],
+                  ['patagonie', 'Une affiche', 'Un numéro Bellajour consacré à un voyage en Patagonie'],
+                  ['lisbonne', 'Un album photos', 'Un numéro Bellajour consacré à un séjour à Lisbonne'],
+                  ['santorin', 'Une série de pages', 'Un numéro Bellajour consacré à un séjour à Santorin'],
+                ] as const).map(([fichier, legende, alt]) => (
+                  <figure key={`${fichier}${copie ? '-copie' : ''}`} aria-hidden={copie || undefined}>
+                    <span className="ph" data-legende={legende}>
+                      <img
+                        src={`/images/lancement/galerie/${fichier}.webp`}
+                        srcSet={`/images/lancement/galerie/${fichier}-240.webp 240w, /images/lancement/galerie/${fichier}-360.webp 360w, /images/lancement/galerie/${fichier}.webp 450w`}
+                        sizes="(max-width: 1000px) 38vw, 15vw"
+                        alt={copie ? '' : alt}
+                        width="450"
+                        height="675"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </span>
+                  </figure>
+                ))
+              )}
             </div>
           </div>
           </div>
