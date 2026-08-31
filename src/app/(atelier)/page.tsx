@@ -9,10 +9,10 @@
    s'enchaînent comme une projection.
 
    Les anciens composants (S1Hero, S2Collection, S3Method, S4Final) ne sont
-   PAS supprimés : ils restent sur le disque, hors routage, parce que leur
-   contenu — l'étagère des quatre numéros, les trois temps du parcours,
-   la grille des paliers — servira la page produit. Les effacer, c'est
-   réécrire ce texte-là une deuxième fois.
+   PAS supprimés : ils vivent dans archive/accueil-v1/ (T-016, 31/08/2026),
+   parce que leur contenu — l'étagère des quatre numéros, les trois temps du
+   parcours, la grille des paliers — est passé dans la page produit. Les
+   effacer, c'est réécrire ce texte-là une deuxième fois.
 
    Ce fichier reste un composant SERVEUR : les métadonnées et le JSON-LD
    doivent être dans le document, pas montés par le navigateur. Seuls
@@ -66,35 +66,35 @@ export const metadata: Metadata = {
   },
 }
 
-/* Données structurées Product + Offer (PRD §16). Le prix affiché est le
-   plancher de la grille ; le prix ferme se décide côté serveur à l'état 2. */
-const JSON_LD = {
-  '@context': 'https://schema.org',
-  '@type': 'Product',
-  name: 'Numéro Bellajour',
-  description:
-    'Magazine photo imprimé, composé à la main à partir de vos photos. ' +
-    'Un numéro par moment.',
-  brand: { '@type': 'Brand', name: 'Bellajour' },
-  /* AggregateOffer et NON Offer : `lowPrice`/`highPrice` n'existent pas sur
-     Offer, le test des resultats enrichis les rejetait en bloc. Trois paliers
-     (src/lib/atelier/prix.ts), zone de livraison FR/BE/LU. */
-  offers: {
-    '@type': 'AggregateOffer',
-    priceCurrency: 'EUR',
-    lowPrice: '30',
-    highPrice: '45',
-    offerCount: 3,
-    availability: 'https://schema.org/InStock',
-    /* La page qui PORTE l'offre depuis le 30/08/2026. Elle pointait sur
-       /composer, qui est en noindex : on donnait a Google une adresse qu'on
-       lui interdit de lire. */
-    url: 'https://www.bellajour.fr/magazine',
-    areaServed: ['FR', 'BE', 'LU'],
+/* Données structurées Organization + WebSite — PAS de Product ici (T-068).
+   Jusqu'au 31/08/2026 cette page déclarait un second `Product` du même
+   magazine que celui de /magazine, sans `@id` pour les relier : deux fiches
+   concurrentes pour un seul produit, et Google pouvait retenir celle-ci —
+   envoyant l'acheteuse sur le récit de marque, sans prix ni acte d'achat.
+   De plus son `highPrice: 45` n'apparaît nulle part sur la page rendue
+   (seul « dès 30 € » est visible, Ouverture.tsx) : balisage non conforme,
+   motif de rejet du résultat enrichi. LE Product vit sur /magazine, la page
+   qui porte les trois prix. Ici, la marque : `sameAs` relie le domaine aux
+   comptes réels écrits en dur dans Footer.tsx. */
+const JSON_LD = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Bellajour',
+    url: 'https://www.bellajour.fr',
+    logo: 'https://www.bellajour.fr/icon-512.png',
+    sameAs: [
+      'https://www.instagram.com/bellajour__/',
+      'https://www.tiktok.com/@bellajourmagazine',
+    ],
   },
-  url: 'https://www.bellajour.fr',
-  image: ['https://www.bellajour.fr/images/lancement/galerie/marrakech.webp'],
-}
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Bellajour',
+    url: 'https://www.bellajour.fr',
+  },
+]
 
 export default function AtelierHome() {
   return (

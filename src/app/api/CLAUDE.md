@@ -9,6 +9,12 @@ Chargé dès qu'on touche une route.
   route via `quiEstConnecteRequete`. Défense en profondeur volontaire : le matcher du middleware
   ne couvre que `/admin` et `/api/admin`, donc **une route d'écriture posée ailleurs serait
   ouverte au premier venu**. Toute nouvelle route qui écrit va sous `/api/admin/`.
+- **`/api/admin/login`** — hors middleware (sinon on ne se connecte jamais) ; comparaison à durée
+  constante + frein `@/lib/frein-login` (délai croissant par échec, 429 au seuil, `console.warn`
+  dès la 3e récidive). La règle du frein vit dans le module pur ET dans `verif-atelier.ts`.
+- **`/api/waitlist`** — réponse **indistinguable** qu'un email soit en base ou non (T-045) :
+  même statut, même corps, durée rapprochée par `delaiNeutre`. Ne jamais y remettre
+  `already_registered`, `ref_code` ou `prenom` — un « déjà inscrite » se dit par MAIL.
 - **`/api/atelier/*`** — pas d'authentification : **le token de 32 caractères EST l'identité**.
   C'est la seule barrière. Ne jamais exposer un token dans une URL partageable, un log ou un mail
   autre que celui de sa cliente.

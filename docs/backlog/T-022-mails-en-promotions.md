@@ -23,4 +23,28 @@ Trois fronts, dans cet ordre, parce qu'ils ne coûtent pas la même chose :
 **Question pour Mathias** : as-tu accès au tableau de bord DNS Cloudflare pour que je te dise
 quoi vérifier, ou veux-tu que je te prépare les enregistrements exacts à comparer ?
 ## Ce qui a été fait
-—
+31/08 — **le front 1 (DNS) est clos : tout est bon.** Relevé réel sur bellajour.com :
+SPF `v=spf1 include:_spf.mail.hostinger.com include:spf.brevo.com ~all` ✓ ·
+DKIM brevo1/brevo2 en CNAME vers Brevo, clés répondantes ✓ ·
+DMARC `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` ✓.
+Gmail authentifie donc parfaitement nos mails — le classement en Promotions vient du
+**front 2 (contenu)** : la maquette (grande image, bouton, HTML soigné) ressemble à du
+marketing pour son classifieur. Vérifié dans la boîte de Mathias : 5 fils en Promotions,
+tous par ailleurs marqués « importants » et livrés.
+
+Ce qui reste, par coût croissant :
+a) **Le geste utilisateur** (fait faire à Mathias le 31/08) : glisser un mail Bellajour en
+   Principale + « toujours faire cela » — règle SA boîte, et chaque cliente qui le fait
+   entraîne Gmail globalement. On peut l'encourager dans l'écran 6 du questionnaire
+   (« si notre mail est en Promotions, glissez-le en Principale ») — micro-copie à trancher.
+b) **Durcir DMARC** `p=none` → `p=quarantine` quand on est sûrs que TOUT part via
+   Brevo/Hostinger (protège du spam-spoofing, pas des onglets) — geste Cloudflare de Mathias.
+c) **Schema.org dans les templates** (JSON-LD `ParcelDelivery` sur M7, `EmailMessage` sur les
+   autres) : marque les mails comme transactionnels pour Gmail — gain plausible, pas garanti.
+d) **Alléger les signaux promo** de la maquette (plus de texte, moins de bouton) — en tension
+   directe avec la marque, à ne faire que si a-c ne suffisent pas.
+Aucun de ces leviers n'est un interrupteur magique : les onglets Gmail sont un classement
+appris par utilisateur, et le front 3 (réputation) se construit avec le volume.
+31/08, tranché par Mathias : la maquette reste telle quelle (« c'est déjà sobre »), pas de
+version dépouillée de M4/M7. La réputation se construira avec le volume. Leviers a-c
+disponibles si le besoin remonte. Le ticket passe en attente volontaire.

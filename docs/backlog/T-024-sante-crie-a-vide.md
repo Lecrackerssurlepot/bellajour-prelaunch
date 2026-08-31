@@ -18,4 +18,15 @@ Distinguer « rien à envoyer » de « quelque chose aurait dû partir » : le c
 que s'il existe au moins un dossier éligible. Vérifier au passage les autres constats de la page
 pour la même faute.
 ## Ce qui a été fait
-—
+31/08/2026 — PARTIELLEMENT INFIRMÉ, puis complété. Le grief d'origine (« aucun mail parti
+depuis longtemps » sur base vide) était DÉJÀ réparé par le commit `cf41203` : le constat nº6 ne
+se déclenche que si `dusMaintenant > 0` (`sante.ts`, garde commentée « LE GARDE-FOU A CHANGÉ »).
+Les autres constats ne poussent que sur des lignes existantes — aucun ne crie à vide.
+Ce qui manquait encore : sur une base SANS dossier, « Rien à signaler » se lisait comme un bilan
+(« tous les mails dus sont partis ») alors qu'il n'y avait rien à vérifier. Ajouté
+`Sante.nbDossiers` et, sur `sante/page.tsx`, un écran calme distinct à zéro dossier (« Rien à
+surveiller pour l'instant… aucun dossier n'est encore ouvert ») ; le pied passe de « aucun mail
+jamais envoyé » à « aucun mail encore envoyé » dans ce cas.
+NON TRAITÉ, assumé : le constat nº4 « oubliés » comptera les inscriptions anticipées tant que
+l'atelier n'a pas ouvert (ETAT-PRODUCTION §atelier pas encore ouvert) — le distinguer exigerait
+un réglage « date d'ouverture » qui n'existe pas et que seul Mathias peut poser.

@@ -38,12 +38,18 @@ export async function POST(request: Request) {
 
     const supabase = makeSupabase();
 
-    const { data: numero } = await supabase
+    const { data: numero, error: errNum } = await supabase
       .from("numeros")
       .select("id, etat")
       .eq("token", token)
       .maybeSingle();
 
+    /* T-043 — une panne de base n'est PAS un token inconnu : un 404 dirait à
+       la cliente que son dossier a disparu. Même règle que /presign. */
+    if (errNum) {
+      console.error("[supprimer] lookup numero échoué", errNum.code);
+      return NextResponse.json({ error: "internal" }, { status: 500 });
+    }
     /* Token inconnu → 404 sec, aucune information ne fuite (test §17.7). */
     if (!numero) return NextResponse.json({ error: "introuvable" }, { status: 404 });
 
@@ -55,13 +61,18 @@ export async function POST(request: Request) {
 
     /* La double condition id + numero_id est la seule autorisation qui vaille :
        un photoId volé ne suffit pas, il faut aussi le token du bon dossier. */
-    const { data: photo } = await supabase
+    const { data: photo, error: errPhoto } = await supabase
       .from("photos")
       .select("id, r2_key")
       .eq("id", photoId)
       .eq("numero_id", numero.id)
       .maybeSingle();
 
+    /* T-043 — même distinction : la panne se retente, l'absence est sèche. */
+    if (errPhoto) {
+      console.error("[supprimer] lookup photo échoué", errPhoto.code);
+      return NextResponse.json({ error: "internal" }, { status: 500 });
+    }
     if (!photo) return NextResponse.json({ error: "introuvable" }, { status: 404 });
 
     /* L'objet D'ABORD, la ligne ensuite. Dans l'autre ordre, un échec entre

@@ -50,7 +50,11 @@ async function resolveState(sessionId: string | undefined): Promise<MerciState> 
     )
       .trim()
       .toLowerCase()
-  } catch {
+  } catch (err) {
+    /* T-012 — deux cas se cachaient ici sans un mot : un session_id bidon
+       (absence, normal) et une panne Stripe qui montre « lien invalide » à
+       quelqu'un qui vient de PAYER. L'écran ne change pas, le log distingue. */
+    console.error('[merci] lecture session Stripe échouée', (err as Error)?.message)
     return { kind: 'invalid' }
   }
   if (!email) return { kind: 'invalid' }
@@ -59,7 +63,8 @@ async function resolveState(sessionId: string | undefined): Promise<MerciState> 
   let supabase
   try {
     supabase = makeSupabase()
-  } catch {
+  } catch (err) {
+    console.error('[merci] makeSupabase échec', (err as Error)?.message)
     return { kind: 'invalid' }
   }
 
@@ -69,6 +74,10 @@ async function resolveState(sessionId: string | undefined): Promise<MerciState> 
     .eq('email', email)
     .maybeSingle()
 
+  /* Panne ≠ absence (T-043) : l'écran rend « invalid » dans les deux cas
+     (inchangé), mais seule la panne se logge — une ligne introuvable est
+     une réponse, pas un incident. */
+  if (error) console.error('[merci] lecture waitlist échouée', error.code)
   if (error || !row || !row.ref_code) return { kind: 'invalid' }
   if (row.status !== 'confirmed') return { kind: 'pending' }
 

@@ -23,4 +23,16 @@ Distinguer les deux cas, comme les routes voisines : une erreur de base rend 500
 dans un instant »), une absence de ligne rend 404. Deux issues différentes pour deux causes
 différentes.
 ## Ce qui a été fait
-—
+31/08/2026 — confirmé, corrigé. Trois routes clientes confondaient panne et absence (l'`error`
+de `maybeSingle` était jetée, puis `!data` → 404 « introuvable ») :
+- `api/atelier/numero/route.ts` (PATCH, la lecture avant consentements/M1) ;
+- `api/atelier/photos/complete/route.ts` (le lookup du numéro) ;
+- `api/atelier/photos/supprimer/route.ts` (les DEUX lookups, numéro et photo).
+Chacune rend désormais 500 `internal` sur une erreur de lecture, 404 seulement sur une vraie
+absence — même règle que `/valider`, `/checkout` et `/presign` qui la portaient déjà.
+Côté cliente, rien à changer : le moteur du dépôt traite déjà le 404 comme définitif
+(« reprenez le questionnaire ») et le 500 comme retentable avec backoff et messages sobres
+(« Connexion instable — l'envoi reprend tout seul », « L'atelier n'a pas pu enregistrer votre
+accord. Réessayez. »). La page `/numero/[token]` distinguait déjà (`lireNumero` → `'panne'` →
+« La page ne répond pas. Le dossier est intact… »). Pas de test harnais : la distinction vit
+dans les routes (I/O), pas dans un module pur.

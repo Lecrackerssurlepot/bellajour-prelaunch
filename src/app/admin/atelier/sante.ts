@@ -45,6 +45,12 @@ export type Sante = {
   constats: Constat[];
   /** Tout va bien : on le dit, plutôt que d'afficher une page vide. */
   toutVaBien: boolean;
+  /** Combien de dossiers existent. T-024 : « rien à signaler » ne veut pas
+      dire la même chose sur une base vide (« il n'y a encore rien ») et sur
+      une base pleine (« tout ce qui devait partir est parti »). L'écran doit
+      pouvoir dire lequel des deux, sinon le calme d'avant l'ouverture se lit
+      comme une vérification qui n'a pas eu lieu. */
+  nbDossiers: number;
   /** Dernier mail effectivement parti — le pouls de la relève. */
   dernierMail: string | null;
   fetchedAt: string;
@@ -239,26 +245,35 @@ export async function chargerSante(): Promise<Sante> {
      bout d'une semaine, c'est un dossier durablement injoignable. Tant que
      l'atelier n'a pas corrigé l'adresse, il doit rester sous les yeux. */
   const rebonds: Constat["lignes"] = [];
+  /* T-037 — les plaintes, dans la MÊME requête mais jamais dans le même
+     constat : « spam » veut dire qu'elle a REÇU, confondre les deux ferait
+     appeler une cliente pour lui dire qu'on n'arrive pas à la joindre. */
+  const plaintes: Constat["lignes"] = [];
   if (ids.length) {
     const { data: evts } = await supabase
       .from("evenements")
-      .select("numero_id, payload")
-      .eq("type", "email_rebond")
+      .select("numero_id, type, payload")
+      .in("type", ["email_rebond", "email_plainte"])
       .in("numero_id", ids)
-      .returns<Array<{ numero_id: string; payload: Record<string, unknown> | null }>>();
+      .returns<
+        Array<{ numero_id: string; type: string; payload: Record<string, unknown> | null }>
+      >();
 
     const parId = new Map(lignes.map((d) => [d.id, d]));
     const vus = new Set<string>();
     for (const e of evts ?? []) {
-      if (vus.has(e.numero_id)) continue;
+      const cle = `${e.type}:${e.numero_id}`;
+      if (vus.has(cle)) continue;
       const d = parId.get(e.numero_id);
       if (!d) continue;
-      vus.add(e.numero_id);
+      vus.add(cle);
       const raison = typeof e.payload?.raison === "string" ? e.payload.raison.trim() : "";
-      rebonds.push({
+      const ligne = {
         token: d.token,
         quoi: `${d.email ?? "—"} — ${d.titre?.trim() || "sans titre"}${raison ? ` (${raison})` : ""}`,
-      });
+      };
+      if (e.type === "email_rebond") rebonds.push(ligne);
+      else plaintes.push(ligne);
     }
   }
   if (rebonds.length) {
@@ -268,6 +283,24 @@ export async function chargerSante(): Promise<Sante> {
       remede:
         "Elles n'ont RIEN reçu et ne recevront rien. Corriger l'adresse sur la fiche, ou appeler.",
       lignes: rebonds,
+    });
+  }
+
+  /* ── 5 ter. les mails marqués comme indésirables ───────────────────
+     T-037 — le webhook Brevo journalise `email_plainte` depuis le 29/08,
+     mais rien ne le montrait hors de la frise du récit, qu'il faut ouvrir
+     dossier par dossier. Or c'est le signal le plus direct qu'on ait sur
+     notre délivrabilité. ORANGE, pas rouge, et rien sur la ligne de la
+     liste : une plainte n'est pas une panne de CE dossier, c'est une
+     information sur NOS mails — l'adresse a bien reçu. Aucune décision
+     automatique : un rebond ou une plainte ne déclenche ni état ni mail. */
+  if (plaintes.length) {
+    constats.push({
+      gravite: "orange",
+      titre: `${plaintes.length} mail${plaintes.length > 1 ? "s ont été marqués" : " a été marqué"} comme indésirable${plaintes.length > 1 ? "s" : ""}`,
+      remede:
+        "L'adresse fonctionne : elle a reçu, puis cliqué « indésirable ». Rien à réparer sur le dossier — c'est un signal sur la délivrabilité de nos mails, les suivants risquent le dossier spam.",
+      lignes: plaintes,
     });
   }
 
@@ -306,6 +339,7 @@ export async function chargerSante(): Promise<Sante> {
   return {
     constats,
     toutVaBien: constats.length === 0,
+    nbDossiers: lignes.length,
     dernierMail,
     fetchedAt: maintenant.toISOString(),
   };

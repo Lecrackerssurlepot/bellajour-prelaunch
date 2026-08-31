@@ -17,19 +17,19 @@ import type { MetadataRoute } from 'next'
  *     reviendrait à publier les dossiers de toutes les clientes.
  *   — `/atelier` : n'existe plus que comme redirection 308 vers `/`.
  */
-/* Des dates REELLES, pas `new Date()`. Un sitemap qui declare toutes ses
-   pages modifiees a la seconde de la requete apprend a Google que son
-   `lastmod` ne veut rien dire — y compris le jour ou une page changera
-   vraiment. A remettre a jour quand on touche a la page concernee. */
-const MAJ_ACCUEIL = new Date('2026-08-27')   // refonte de l'accueil
-const MAJ_LEGALES = new Date('2026-08-24')   // bascule + CGV v3.0
-const MAJ_PRODUIT = new Date('2026-08-30')   // ouverture de /magazine
-
+/* PAS de `lastModified`, et c'est un choix (T-014, 31/08/2026).
+   `new Date()` a chaque build est un mensonge evident ; des constantes ecrites
+   a la main sont un mensonge lent — elles ne bougent que si quelqu'un y pense,
+   et elles derivaient deja (l'accueil refondu date du 28/08, la constante
+   disait le 27). Les deriver de git au build est fragile sur Vercel (clone
+   superficiel : la date rendue serait celle du dernier commit visible, pas du
+   dernier vrai changement). Un `lastmod` faux apprend a Google a l'ignorer,
+   y compris le jour ou une page changera vraiment : un champ absent vaut
+   mieux qu'un champ faux. Sur six URL, Google recrawle tres bien sans. */
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
       url: 'https://www.bellajour.fr',
-      lastModified: MAJ_ACCUEIL,
       changeFrequency: 'weekly',
       priority: 1,
     },
@@ -38,25 +38,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
        pas l'accueil, qui raconte la marque. Priorite juste sous l'accueil. */
     {
       url: 'https://www.bellajour.fr/magazine',
-      lastModified: MAJ_PRODUIT,
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.bellajour.fr/cgv',
-      lastModified: MAJ_LEGALES,
       changeFrequency: 'yearly',
       priority: 0.3,
     },
     {
       url: 'https://www.bellajour.fr/confidentialite',
-      lastModified: MAJ_LEGALES,
       changeFrequency: 'yearly',
       priority: 0.3,
     },
     {
       url: 'https://www.bellajour.fr/mentions-legales',
-      lastModified: MAJ_LEGALES,
       changeFrequency: 'yearly',
       priority: 0.2,
     },
@@ -65,7 +61,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
        elle etait simplement oubliee ici. */
     {
       url: 'https://www.bellajour.fr/remboursement',
-      lastModified: MAJ_LEGALES,
       changeFrequency: 'yearly',
       priority: 0.2,
     },

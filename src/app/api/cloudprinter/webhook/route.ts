@@ -180,14 +180,22 @@ export async function POST(request: Request) {
            traité : silence. Autre état : anormal, ça se lit au journal —
            l'idiome de `paiement_inattendu`. */
         if (numero.etat !== "expediee" && numero.etat !== "livree") {
-          await logEvenement(supabase, numero.id, "cloudprinter_signal_inattendu", {
+          /* T-038 — le journal est ici le SEUL effet : répondre 200 sur une
+             écriture ratée perdrait le signal, Cloudprinter ne réessaie que
+             sur un code d'erreur. */
+          const ok = await logEvenement(supabase, numero.id, "cloudprinter_signal_inattendu", {
             type, etat: numero.etat, tracking, transporteur,
           });
+          if (!ok) return NextResponse.json({ error: "journal_incomplet" }, { status: 500 });
         }
         return NextResponse.json({ received: true, ignored: true }, { status: 200 });
       }
 
-      /* Invariant nº6 : chaque transition écrit dans `evenements`. */
+      /* Invariant nº6 : chaque transition écrit dans `evenements`.
+         Résultat VOLONTAIREMENT ignoré (pas de 500) : l'état est déjà écrit,
+         et un rejeu tomberait sur la garde d'idempotence sans réécrire cette
+         ligne — un 500 ferait réessayer Cloudprinter pour rien. logEvenement
+         logge lui-même son échec. */
       await logEvenement(supabase, numero.id, "etat_change", {
         de: "en_production",
         vers: "expediee",
@@ -208,25 +216,30 @@ export async function POST(request: Request) {
       /* Un problème d'impression ne recule JAMAIS un dossier tout seul :
          un remboursement avant impression et une réimpression après défaut
          se décident au téléphone, pas par une machine (même philosophie que
-         le remboursement Stripe). Le journal alerte, l'atelier tranche. */
-      await logEvenement(supabase, numero.id, "cloudprinter_erreur", {
+         le remboursement Stripe). Le journal alerte, l'atelier tranche.
+         T-038 — cette ligne est le SEUL effet du signal : si elle rate, 500,
+         et le retry de Cloudprinter (100 tentatives sur 7 jours) la réécrira. */
+      const ok = await logEvenement(supabase, numero.id, "cloudprinter_erreur", {
         type,
         ...(s(body.cause) ? { cause: s(body.cause) } : {}),
         ...(s(body.message) ? { message: s(body.message) } : {}),
         ...(typeof body.delay === "number" ? { delay: body.delay } : {}),
         ...(item ? { item } : {}),
       });
+      if (!ok) return NextResponse.json({ error: "journal_incomplet" }, { status: 500 });
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
     /* Le fil de production, pour le Parcours de la fiche : validé, en
        presse, emballé… Le premier signal de la sandbox est aussi notre
-       vérité sur la forme réelle des payloads — d'où le brut conservé. */
-    await logEvenement(supabase, numero.id, "cloudprinter_signal", {
+       vérité sur la forme réelle des payloads — d'où le brut conservé.
+       T-038 — journal = seul effet : écriture ratée, 500, leur retry rejoue. */
+    const inscrit = await logEvenement(supabase, numero.id, "cloudprinter_signal", {
       type,
       ...(s(body.datetime) ? { datetime: s(body.datetime) } : {}),
       ...(item ? { item } : {}),
     });
+    if (!inscrit) return NextResponse.json({ error: "journal_incomplet" }, { status: 500 });
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (err) {
     console.error("[cloudprinter/webhook] exception", (err as Error)?.message);

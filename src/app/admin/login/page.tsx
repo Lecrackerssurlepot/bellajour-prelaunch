@@ -8,7 +8,9 @@ import "../admin.css";
  * Composant serveur pour UNE raison : les comptes proposés doivent être ceux
  * qui existent RÉELLEMENT dans l'environnement. Une liste écrite en dur dans
  * le composant client afficherait « Mathias » et « Louis » sur un déploiement
- * où seul l'ancien ADMIN_PASSWORD est posé — et personne ne pourrait entrer.
+ * où une des variables manque — et cette personne croirait à un mauvais mot
+ * de passe alors que son compte n'existe pas. (L'ancien ADMIN_PASSWORD
+ * partagé n'est plus lu du tout depuis le 31/08/2026, T-005.)
  *
  * Aucun mot de passe ne traverse : seuls les identifiants et les prénoms.
  */

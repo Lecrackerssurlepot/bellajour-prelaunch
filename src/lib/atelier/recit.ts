@@ -175,6 +175,21 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         ton: "alerte",
       };
 
+    /* T-007 — la variable BREVO_TEMPLATE_<CODE>_ID manque : le mail saute à
+       CHAQUE relève, sans erreur, et rien ne le rattrapera tant que la
+       variable n'est pas posée sur Vercel. Écrit UNE fois par dossier+code
+       (mails.ts, signalerSansTemplate). Le détail nomme la variable : c'est
+       la réparation, pas un indice. */
+    case "mail_sans_template":
+      return {
+        texte: `Mail sauté, template absent : ${texteMail(String(payload.code ?? ""))}`,
+        detail:
+          typeof payload.variable === "string"
+            ? `${payload.variable} manque sur Vercel — la relève ressautera tant qu'elle manque`
+            : "La variable du template manque sur Vercel",
+        ton: "alerte",
+      };
+
     /* T2-13 — le troisième geste de l'état 4. Il fait basculer le dossier
        dans la pile « à faire » et suspend l'auto-validation à J+7. */
     case "retouches_demandees":

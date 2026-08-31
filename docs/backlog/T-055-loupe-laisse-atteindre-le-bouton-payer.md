@@ -20,4 +20,13 @@ Stripe s'ouvre alors qu'elle regardait une image.
 `inert` sur le reste de la page pendant l'ouverture (une ligne, largement supporté), ce qui règle
 le piège de focus et l'annonce du lecteur d'écran d'un seul geste.
 ## Ce qui a été fait
-—
+**31/08/2026 — confirmé, corrigé.** `Loupe.tsx` : pendant l'ouverture, `inert` est posé sur les
+FRÈRES de chaque ancêtre de la loupe (jamais sur les ancêtres eux-mêmes, qui la gèleraient avec
+eux) — tout ce qui est sous le fond noir cesse d'être focusable et cliquable, et les lecteurs
+d'écran le sortent de l'arbre. On ne marque que ce qu'on a gelé soi-même ; à la fermeture on
+dégèle AVANT de rendre le focus (un élément encore inerte le refuserait). Aucun changement de
+structure ni de style : la loupe reste où elle est, dans les deux chartes.
+Vérifié : tsc, lint, build ; l'algorithme exact rejoué à la main sur le DOM réel de l'écran 5
+(24 éléments gelés, le `.at-cta` devient inerte, la cible reste vivante, tout revient à la
+fermeture). **Le composant lui-même n'a pas été vu ouvert** : il faut un dossier en `apercu_pret`
+(ou la fiche admin, derrière l'auth) — à recetter à l'œil sur le prochain aperçu publié.

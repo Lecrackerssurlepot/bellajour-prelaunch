@@ -20,4 +20,18 @@ Journaliser un `evenements` de type `mail_sans_template` au premier saut (pas à
 et faire remonter le compte dans le retour de la relève. Le silence est le vrai défaut, pas le
 mail manquant.
 ## Ce qui a été fait
-—
+31/08/2026 — confirmé, corrigé. Le saut reste NON bloquant (un mail ne fait jamais échouer une
+action métier), mais il laisse désormais deux traces :
+- `mails.ts` : `signalerSansTemplate` journalise un événement `mail_sans_template` (payload :
+  `code` + `variable`) — UNE fois par dossier+code, dédoublonné par lecture préalable du journal
+  (pas de contrainte unique sur `evenements`, donc pas de verrou 23505 possible ; une course
+  entre deux relèves écrit au pire deux lignes, jamais une par jour). Si la lecture de
+  dédoublonnage échoue, on n'écrit pas — le `console.error` par relève, lui, reste.
+- Le `console.error` existant nomme maintenant la vraie variable (`M2b` → `BREVO_TEMPLATE_M2B_ID`,
+  majuscules).
+- `relever/route.ts` : le résumé de la relève sépare `sansTemplate` des `echecs` — un échec Brevo
+  se réessaie tout seul, un template absent ne guérit jamais sans un geste sur Vercel.
+- `recit.ts` : la phrase du journal (`ton: alerte`) nomme le mail ET la variable à poser.
+- `verif-atelier.ts` : la phrase du journal et `templateExiste` (absent / posé / illisible).
+`src/lib/brevo.ts` loggue déjà son skip avec le label (`[brevo] F1 skip — templateId manquant`) :
+pas touché. Aucun événement pour la prévente (`waitlist` n'a pas de journal par dossier).

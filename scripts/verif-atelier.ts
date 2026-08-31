@@ -18,14 +18,17 @@
 
 import { preparerTransition, actionsDepuis } from "@/lib/atelier/transitions";
 import { urgencePour, comparerUrgence, etapeDepot } from "@/lib/atelier/urgence";
+import type Stripe from "stripe";
 import {
   codesPour,
   doitAutoValider,
   manquePour,
   parametresPour,
+  templateExiste,
   type Envoyes,
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
+import { estSessionAtelier, estChargeAtelier, KIND_ATELIER } from "@/lib/atelier/paiement";
 import { nomsDeFichiers, nomDossier } from "@/lib/atelier/lot";
 import {
   signToken,
@@ -43,7 +46,15 @@ import {
   suggestionEmail,
 } from "@/lib/atelier/questionnaire";
 import { lireSignal, suitePour, typeEvenement } from "@/lib/atelier/rebond";
-import { totalPour, centimesPour, QUANTITE_MAX, type PalierCle } from "@/lib/atelier/prix";
+import {
+  totalPour,
+  centimesPour,
+  eurosPour,
+  palierPourPages,
+  PAYS_LIVRAISON,
+  QUANTITE_MAX,
+  type PalierCle,
+} from "@/lib/atelier/prix";
 import { raconter } from "@/lib/atelier/recit";
 import { lireSuivi, nomTransporteur } from "@/lib/atelier/suivi";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
@@ -59,6 +70,22 @@ import {
   verdictTaillePage,
 } from "@/lib/atelier/impression";
 import {
+  comptesAdmin,
+  PRENOM_COMPTE,
+  signAdminCookie,
+  verifierCookieAdmin,
+} from "@/lib/admin-auth";
+import {
+  apresEchec,
+  delaiPourEchecs,
+  doitJournaliser,
+  estBloque,
+  DELAI_MAX_MS,
+  FENETRE_FREIN_MS,
+  SEUIL_BLOCAGE,
+  SEUIL_JOURNAL,
+} from "@/lib/frein-login";
+import {
   reconstruireJalons,
   dureeEtape,
   dureesEtapes,
@@ -70,6 +97,7 @@ import {
   type EvenementMesure,
   type Seau,
 } from "@/lib/atelier/mesure";
+import { estAbsenceR2 } from "@/lib/atelier/r2";
 
 let ko = 0;
 const ok = (n: string, c: boolean) => {
@@ -941,5 +969,208 @@ ok("le code lui-meme n'est PAS dans la phrase ni le detail",
 ok("sans auteur, la phrase reste correcte",
    raconter("code_fondatrice_cree", { montant: 3000 }).texte.length > 0);
 
-console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
-process.exit(ko === 0 ? 0 : 1);
+/* ═══════════ LE TRI DU WEBHOOK PARTAGÉ (T-035, incident du 24/08) ═══════════
+   /api/webhook sert DEUX produits. Le tri se fait sur les métadonnées, AVANT
+   tout accès en base, et AUCUN produit n'est le cas par défaut : le 24/08, un
+   album de l'atelier payé en test a déclenché « bienvenue en prévente » parce
+   qu'un ancien déploiement faisait de la prévente le dépotoir de tout paiement
+   non identifié. Le correctif est en place ; ces lignes garantissent qu'il le
+   RESTE. Les objets sont construits à la main : aucune clé, aucun réseau. */
+
+const sessionStripe = (metadata: Record<string, string> | null) =>
+  ({ metadata }) as unknown as Stripe.Checkout.Session;
+const chargeStripe = (metadata: Record<string, string> | null) =>
+  ({ metadata }) as unknown as Stripe.Charge;
+
+titre("— le tri du webhook : chaque produit se reconnait EXPLICITEMENT —");
+ok("session atelier (kind: atelier) : revendiquee",
+   estSessionAtelier(sessionStripe({ kind: "atelier", numero_id: "n1", token: "t" })));
+ok("session prevente (offer_type: founder, sans kind) : PAS l'atelier",
+   !estSessionAtelier(sessionStripe({ offer_type: "founder", email: "m@x.fr" })));
+ok("session orpheline (aucune metadonnee) : PAS l'atelier",
+   !estSessionAtelier(sessionStripe({})));
+ok("metadata null : PAS l'atelier, pas d'exception",
+   !estSessionAtelier(sessionStripe(null)));
+ok("un kind approchant ne suffit pas", !estSessionAtelier(sessionStripe({ kind: "ateliers" })));
+ok("le discriminant est la constante que /api/atelier/checkout pose", KIND_ATELIER === "atelier");
+ok("charge atelier (metadata du PaymentIntent) : revendiquee",
+   estChargeAtelier(chargeStripe({ kind: "atelier", numero_id: "n1" })));
+ok("charge de la prevente (JAMAIS de metadonnees) : PAS l'atelier",
+   !estChargeAtelier(chargeStripe({})));
+ok("charge metadata null : PAS l'atelier, pas d'exception",
+   !estChargeAtelier(chargeStripe(null)));
+
+/* ═════════ LA GRILLE FACE À L'ANNEXE DES CGV (T-035) ═════════
+   Annexe « Grille tarifaire — Offre Atelier » (src/app/legal/content/cgv.ts) :
+   20 à 28 pages -> 30 €, 30 à 38 -> 40 €, 40 à 50 -> 45 €. TTC, impression et
+   livraison comprises. Un écart entre prix.ts et cette annexe est un mensonge
+   opposable — c'est le test qui aurait attrapé T-006 tout seul. */
+
+titre("— la grille de prix face a l'annexe des CGV —");
+ok("p30 = 30 EUR (annexe : 20 a 28 pages)", eurosPour("p30") === 30);
+ok("p40 = 40 EUR (annexe : 30 a 38 pages)", eurosPour("p40") === 40);
+ok("p45 = 45 EUR (annexe : 40 a 50 pages)", eurosPour("p45") === 45);
+ok("les bornes de palier suivent l'annexe (pages paires)",
+   palierPourPages(20) === "p30" && palierPourPages(28) === "p30"
+   && palierPourPages(30) === "p40" && palierPourPages(38) === "p40"
+   && palierPourPages(40) === "p45" && palierPourPages(50) === "p45");
+ok("hors grille : aucun palier, donc aucun prix invente",
+   palierPourPages(18) === null && palierPourPages(52) === null);
+ok("palier absent : null, on ne facture pas sans chiffrage",
+   eurosPour(null) === null && eurosPour(undefined) === null);
+
+titre("— la zone de livraison (CGV 4bis.6) —");
+/* Stripe EXIGE une liste explicite : cette constante EST le menu « Pays » du
+   paiement. Un pays hors liste ne peut pas etre saisi — c'est tout le
+   comportement hors zone, et il vit dans cette liste. */
+ok("exactement la zone des CGV : Belgique, France, Luxembourg",
+   [...PAYS_LIVRAISON].sort().join() === "BE,FR,LU");
+ok("aucun pays hors zone ne s'est glisse dans la liste envoyee a Stripe",
+   !(PAYS_LIVRAISON as readonly string[]).includes("DE")
+   && !(PAYS_LIVRAISON as readonly string[]).includes("CH")
+   && !(PAYS_LIVRAISON as readonly string[]).includes("MC"));
+
+/* ═════════ T-007 : LE SAUT « SANS TEMPLATE » LAISSE UNE TRACE ═════════
+   La part pure : la phrase du journal existe, nomme le mail ET la variable a
+   poser, et sonne comme une alerte. L'ecriture elle-meme (une fois par
+   dossier+code, jamais a chaque releve) vit dans mails.ts,
+   signalerSansTemplate — deduplication par lecture prealable, sur le modele
+   du verrou de mails_envoyes. */
+
+titre("— T-007 : le mail saute sans template se lit dans le journal —");
+const rSaut = raconter("mail_sans_template", { code: "M2b", variable: "BREVO_TEMPLATE_M2B_ID" });
+ok("la phrase nomme le mail saute", rSaut.texte.includes("M2b"));
+ok("le detail nomme la variable a poser (la reparation, pas un indice)",
+   (rSaut.detail ?? "").includes("BREVO_TEMPLATE_M2B_ID"));
+ok("c'est une alerte, pas une ligne neutre", rSaut.ton === "alerte");
+ok("sans variable dans le payload, la phrase tient quand meme",
+   raconter("mail_sans_template", { code: "M0" }).texte.includes("M0"));
+
+titre("— templateExiste suit la variable d'environnement —");
+ok("variable absente : le template n'existe pas",
+   (() => { delete process.env.BREVO_TEMPLATE_M9_ID; return !templateExiste("M9"); })());
+ok("variable posee : le template existe (sans redemarrage de module)",
+   (() => {
+     process.env.BREVO_TEMPLATE_M9_ID = "123";
+     const la = templateExiste("M9");
+     delete process.env.BREVO_TEMPLATE_M9_ID;
+     return la;
+   })());
+ok("variable illisible : le template n'existe pas",
+   (() => {
+     process.env.BREVO_TEMPLATE_M9_ID = "pas-un-nombre";
+     const la = templateExiste("M9");
+     delete process.env.BREVO_TEMPLATE_M9_ID;
+     return !la;
+   })());
+
+/* ═════════ T-005 : L'ANCIEN MOT DE PASSE PARTAGÉ N'OUVRE PLUS ═════════
+   comptesAdmin() lit process.env à CHAQUE appel : on pose les variables ici,
+   on vérifie, on remet tout en place. Web Crypto est global en Node 20+,
+   aucun réseau. Le point dangereux : que quelqu'un « répare » un jour le
+   repli ADMIN_PASSWORD en croyant débloquer un déploiement — ces lignes
+   crieraient. */
+
+/* Le script sort en CJS sous tsx : pas de top-level await. La section vit
+   dans une IIFE async, et c'est ELLE qui porte la conclusion et l'exit —
+   le compteur `ko` n'est arrêté qu'une fois ces await rendus. */
+const verifierT005 = async () => {
+  titre("— T-005 : le mot de passe partage est mort —");
+  const sauvegarde = {
+    mathias: process.env.ADMIN_PASSWORD_MATHIAS,
+    louis: process.env.ADMIN_PASSWORD_LOUIS,
+    partage: process.env.ADMIN_PASSWORD,
+  };
+  process.env.ADMIN_PASSWORD_MATHIAS = "mdp-de-mathias-pour-le-test";
+  process.env.ADMIN_PASSWORD_LOUIS = "mdp-de-louis-pour-le-test";
+  process.env.ADMIN_PASSWORD = "l-ancien-secret-partage";
+
+  const comptes = comptesAdmin();
+  ok("les deux comptes nominatifs ouvrent", "mathias" in comptes && "louis" in comptes);
+  ok("ADMIN_PASSWORD pose dans l'env : le compte « atelier » n'existe QUAND MEME pas",
+     !("atelier" in comptes));
+
+  /* Une session « atelier » signée avec l'ancien secret — exactement le
+     cookie qu'aurait un porteur de l'ancien mot de passe — ne valide plus. */
+  const dansUneSemaine = Date.now() + 6 * 86_400_000;
+  const cookieAtelier = await signAdminCookie("atelier", "l-ancien-secret-partage", dansUneSemaine);
+  ok("un cookie « atelier » signe de l'ancien secret est REFUSE",
+     (await verifierCookieAdmin(cookieAtelier)) === null);
+
+  /* Les sessions nominatives en cours, elles, ne bougent pas. */
+  const cookieMathias = await signAdminCookie("mathias", "mdp-de-mathias-pour-le-test", dansUneSemaine);
+  ok("la session de Mathias reste valide (rien ne casse pour lui)",
+     (await verifierCookieAdmin(cookieMathias)) === "mathias");
+  const cookieLouis = await signAdminCookie("louis", "mdp-de-louis-pour-le-test", dansUneSemaine);
+  ok("celle de Louis aussi", (await verifierCookieAdmin(cookieLouis)) === "louis");
+
+  /* Le journal d'avant le 31/08 porte la clé « atelier » : elle doit encore
+     s'AFFICHER, sans pour autant authentifier. */
+  ok("« atelier » s'affiche encore dans le journal (PRENOM_COMPTE), sans ouvrir",
+     PRENOM_COMPTE.atelier === "Atelier");
+
+  process.env.ADMIN_PASSWORD_MATHIAS = sauvegarde.mathias;
+  process.env.ADMIN_PASSWORD_LOUIS = sauvegarde.louis;
+  if (sauvegarde.partage === undefined) delete process.env.ADMIN_PASSWORD;
+  else process.env.ADMIN_PASSWORD = sauvegarde.partage;
+  if (sauvegarde.mathias === undefined) delete process.env.ADMIN_PASSWORD_MATHIAS;
+  if (sauvegarde.louis === undefined) delete process.env.ADMIN_PASSWORD_LOUIS;
+};
+
+/* ═════════ T-046 : LE FREIN DU LOGIN ADMIN (regle pure) ═════════
+   La Map vit dans la route ; ici on eprouve la REGLE : delai croissant et
+   plafonne, blocage au seuil, oubli apres la fenetre, journalisation des
+   recidives. Rappel honnete : par instance Vercel, ca decourage un script
+   naif, ca n'arrete pas une attaque (cf. src/app/api/CLAUDE.md). */
+
+titre("— T-046 : le frein du login admin —");
+const T0_FREIN = 1_000_000_000;
+ok("zero echec : zero delai", delaiPourEchecs(0) === 0);
+ok("le delai croit avec les echecs",
+   delaiPourEchecs(1) > 0 && delaiPourEchecs(2) > delaiPourEchecs(1)
+   && delaiPourEchecs(5) > delaiPourEchecs(2));
+ok(`le delai plafonne a ${DELAI_MAX_MS} ms (une lambda n'attend pas des minutes)`,
+   delaiPourEchecs(1_000) === DELAI_MAX_MS && delaiPourEchecs(SEUIL_BLOCAGE * 100) === DELAI_MAX_MS);
+ok("un compte d'echecs absurde ne casse rien",
+   delaiPourEchecs(-3) === 0 && delaiPourEchecs(Number.NaN) === 0);
+
+let frein = apresEchec(undefined, T0_FREIN);
+ok("premier echec : compteur a 1, fenetre ouverte",
+   frein.echecs === 1 && frein.resetAt === T0_FREIN + FENETRE_FREIN_MS);
+for (let i = 1; i < SEUIL_BLOCAGE; i++) frein = apresEchec(frein, T0_FREIN + i);
+ok(`au ${SEUIL_BLOCAGE}e echec dans la fenetre : bloque (429)`,
+   frein.echecs === SEUIL_BLOCAGE && estBloque(frein, T0_FREIN + SEUIL_BLOCAGE));
+ok("juste avant le seuil : pas bloque",
+   !estBloque({ echecs: SEUIL_BLOCAGE - 1, resetAt: T0_FREIN + FENETRE_FREIN_MS }, T0_FREIN + 1));
+ok("fenetre expiree : le blocage tombe, l'ardoise repart de 1",
+   !estBloque(frein, T0_FREIN + FENETRE_FREIN_MS)
+   && apresEchec(frein, T0_FREIN + FENETRE_FREIN_MS).echecs === 1);
+ok("aucun etat : pas bloque (jamais de verrouillage par defaut)",
+   !estBloque(undefined, T0_FREIN));
+ok(`les logs Vercel parlent a partir du ${SEUIL_JOURNAL}e echec, pas avant`,
+   !doitJournaliser(SEUIL_JOURNAL - 1) && doitJournaliser(SEUIL_JOURNAL)
+   && doitJournaliser(SEUIL_JOURNAL + 5));
+
+/* ════════ T-012 : un HEAD R2 qui echoue — absence ou panne ? ════════ */
+
+titre("— T-012 : estAbsenceR2 distingue « pas la » (silence) de « panne » (log) —");
+
+ok("NotFound (objet absent) : une absence, silence voulu",
+   estAbsenceR2({ name: "NotFound", $metadata: { httpStatusCode: 404 } }));
+ok("NoSuchKey : une absence aussi",
+   estAbsenceR2({ name: "NoSuchKey" }));
+ok("un 404 sans nom d'erreur reste une absence",
+   estAbsenceR2({ $metadata: { httpStatusCode: 404 } }));
+ok("reseau coupe (TypeError fetch failed) : une PANNE, elle doit parler",
+   !estAbsenceR2(new TypeError("fetch failed")));
+ok("403 AccessDenied (config) : une panne, pas une absence",
+   !estAbsenceR2({ name: "AccessDenied", $metadata: { httpStatusCode: 403 } }));
+ok("500 R2 : une panne",
+   !estAbsenceR2({ name: "InternalError", $metadata: { httpStatusCode: 500 } }));
+ok("null/undefined ne sont jamais une absence (pas de silence par defaut)",
+   !estAbsenceR2(null) && !estAbsenceR2(undefined));
+
+void verifierT005().then(() => {
+  console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
+  process.exit(ko === 0 ? 0 : 1);
+});

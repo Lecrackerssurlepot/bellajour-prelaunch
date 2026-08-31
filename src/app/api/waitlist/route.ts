@@ -14,6 +14,16 @@ const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = process.env.NODE_ENV === 'production' ? 3 : 20;
 const RATE_LIMIT_WINDOW_MS = process.env.NODE_ENV === 'production' ? 60_000 : 10_000;
 
+/* T-045 — quand l'email est déjà en base, on répond comme un succès mais le
+   chemin est bien plus court (pas d'insert, pas d'appels Brevo). Ce délai
+   RAPPROCHE les durées pour qu'un chronomètre ne remplace pas la réponse.
+   Approximatif par nature : les appels Brevo varient ; l'objectif est de
+   noyer la différence, pas de la faire disparaître au milliseconde près. */
+function delaiNeutre(): Promise<void> {
+  const ms = 500 + Math.random() * 700;
+  return new Promise((r) => setTimeout(r, ms));
+}
+
 async function sendWelcomeEmailW1(
   email: string,
   prenom: string,
@@ -229,6 +239,24 @@ export async function POST(request: Request) {
       );
     }
 
+    /* ══════════════ ANTI-ÉNUMÉRATION (T-045, 31/08/2026) ══════════════
+       Avant : `check_only` répondait `already_registered` + ref_code, et un
+       POST normal ajoutait le prénom — un tiers passait une liste d'adresses
+       et apprenait qui est cliente, avec son prénom. Depuis : la réponse
+       publique est INDISTINGABLE, email connu ou non (même statut, même
+       forme, et une durée rapprochée par `delaiNeutre`). Personne côté front
+       ne consommait la différence : le seul appelant de `check_only` /
+       `already_registered` est la landing ARCHIVÉE
+       (archive/landing-waitlist/FinalWaitlist.tsx). Si elle ressuscite, le
+       « vous êtes déjà inscrite » devra passer par un MAIL à l'intéressée,
+       jamais par cette réponse. */
+
+    // Mode vérification seule — réponse neutre AVANT toute lecture en base :
+    // connue ou non, l'adresse reçoit exactement la même réponse.
+    if (check_only) {
+      return NextResponse.json({ ok: true }, { status: 200 });
+    }
+
     // Forme canonique anti-alias (Gmail dots + tags). Sert UNIQUEMENT à la
     // déduplication et à l'anti-auto-parrainage. L'email d'origine reste la
     // valeur stockée pour l'affichage et envoyée à Brevo.
@@ -239,23 +267,17 @@ export async function POST(request: Request) {
     // Vérifier si l'email est déjà enregistré (comparaison canonique)
     const { data: existing } = await supabase
       .from("waitlist")
-      .select("ref_code, prenom")
+      .select("id")
       .eq("email_canonical", emailCanonical)
       .maybeSingle();
 
     if (existing) {
-      if (check_only) {
-        return NextResponse.json({ error: "already_registered", ref_code: existing.ref_code }, { status: 200 });
-      }
-      return NextResponse.json(
-        { success: false, error: "already_registered", ref_code: existing.ref_code, prenom: existing.prenom ?? null },
-        { status: 200 }
-      );
-    }
-
-    // Mode vérification seule — pas d'insertion
-    if (check_only) {
-      return NextResponse.json({ available: true }, { status: 200 });
+      /* Même corps que le succès d'une vraie inscription. Le délai rapproche
+         la durée de celle du chemin complet (insert + appels Brevo) — c'est
+         approximatif, pas parfait, et c'est dit. Aucun mail ne repart : la
+         personne est déjà inscrite, W1 est déjà passé. */
+      await delaiNeutre();
+      return NextResponse.json({ success: true }, { status: 200 });
     }
 
     const apiKey = process.env.BREVO_API_KEY;
@@ -299,20 +321,10 @@ export async function POST(request: Request) {
     }
 
     if (raceAlreadyRegistered) {
-      const { data: existingRace } = await supabase
-        .from("waitlist")
-        .select("ref_code, prenom")
-        .eq("email_canonical", emailCanonical)
-        .maybeSingle();
-      return NextResponse.json(
-        {
-          success: false,
-          error: "already_registered",
-          ref_code: existingRace?.ref_code ?? null,
-          prenom: existingRace?.prenom ?? null,
-        },
-        { status: 200 }
-      );
+      /* T-045 : même neutralité que le chemin « déjà inscrite » ordinaire —
+         un autre worker a gagné la course, la réponse reste celle d'un succès. */
+      await delaiNeutre();
+      return NextResponse.json({ success: true }, { status: 200 });
     }
 
     if (insertError) {
@@ -417,7 +429,10 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ success: true, ref_code }, { status: 200 });
+    /* T-045 : le ref_code ne repart plus dans la réponse — sinon sa présence
+       distinguerait une inscription neuve d'une adresse déjà connue. La
+       personne le reçoit là où il a toujours compté : dans le mail W1/P1. */
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
     console.error("[/api/waitlist] ERREUR:", error);
     return NextResponse.json(

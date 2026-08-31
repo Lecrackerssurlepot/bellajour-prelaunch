@@ -16,4 +16,6 @@ Effet : un agent ou un humain qui les lit croit qu'ils servent, et peut les « c
 `git mv` vers `archive/`, avec une ligne dans le README d'archive disant d'où ils viennent.
 Jamais de suppression.
 ## Ce qui a été fait
-—
+31/08/2026 — CONFIRMÉ (grep exhaustif sur `src/`, `scripts/`, `supabase/`, `n8n/` : la seule
+occurrence de chaque nom était sa propre déclaration). `git mv` des deux fichiers vers
+`archive/modules-morts/`, avec un README qui dit d'où ils viennent et pourquoi. Rien supprimé.

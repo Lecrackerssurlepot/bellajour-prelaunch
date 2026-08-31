@@ -29,7 +29,12 @@ export default function LegalPage({ slug, doc, params }: LegalPageProps) {
   const { doc: content, lang } = resolveDoc(doc, requested)
 
   return (
-    <main className="lg" data-theme="light" data-section="legal">
+    /* `lang` = la langue SERVIE (T-057) : le layout racine fixe lang="fr" en
+       dur, et `/cgv?lang=pt` servait le texte opposable en portugais dans un
+       document déclaré français — lu par une voix de synthèse française au
+       lecteur d'écran. On pose la langue résolue par resolveDoc (jamais la
+       demandée : une locale absente retombe sur fr, l'attribut doit suivre). */
+    <main className="lg" lang={lang} data-theme="light" data-section="legal">
       <div className="lg-inner">
 
         <header className="lg-head">

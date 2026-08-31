@@ -270,12 +270,20 @@ export async function PATCH(request: Request) {
        ci-dessous déclenche M1, et repasser une requête pour aller chercher le
        titre et le nombre de photos ne servirait qu'à doubler la latence du
        geste le plus fragile du parcours. */
-    const { data: numero } = await supabase
+    const { data: numero, error: lecture } = await supabase
       .from("numeros")
       .select(CHAMPS_MAIL)
       .eq("token", token)
       .maybeSingle<NumeroPourMail & { etat: string }>();
 
+    /* T-043 — une panne de base n'est PAS un token inconnu. Répondre 404 ici
+       ferait dire à la cliente que son dossier n'existe pas, au moment même où
+       elle clique « Envoyer à l'atelier » : elle n'aurait aucune raison de
+       réessayer. Même règle que /valider, /checkout et /presign. */
+    if (lecture) {
+      console.error("[atelier/numero] lecture échouée", lecture.code, lecture.message);
+      return NextResponse.json({ error: "internal" }, { status: 500 });
+    }
     /* Token inconnu → 404 sec, aucune information ne fuite (test §17.7). */
     if (!numero) return NextResponse.json({ error: "introuvable" }, { status: 404 });
 

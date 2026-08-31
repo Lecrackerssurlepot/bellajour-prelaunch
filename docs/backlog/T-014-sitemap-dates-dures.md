@@ -16,4 +16,13 @@ Soit les dériver du dernier commit touchant chaque zone, soit les retirer : un 
 faux est pire qu'absent. Je penche pour le retrait, sauf si Google en tire un bénéfice mesurable
 sur un site de six URL — il n'en tire aucun.
 ## Ce qui a été fait
-—
+**31/08/2026 — CONFIRMÉ, corrigé par le retrait.**
+Les constantes dérivaient déjà : `MAJ_ACCUEIL` disait le 27/08 alors que la refonte de
+l'accueil est en production depuis le 28/08. C'est exactement la panne annoncée : une date
+écrite à la main ne bouge que si quelqu'un y pense.
+Dériver du dernier commit a été écarté : Vercel builde sur un clone superficiel, `git log`
+y renverrait la date du dernier commit visible — un mensonge neuf, silencieux lui aussi.
+Fait : retrait pur et simple des trois constantes et de tous les `lastModified`
+(`src/app/sitemap.ts`), commentaire posé qui explique le choix. `changeFrequency` et
+`priority` inchangés.
+Preuve : `.next/server/app/sitemap.xml.body` du build du 31/08 — six `<url>`, zéro `<lastmod>`.

@@ -38,13 +38,27 @@ export default async function PageSante() {
       </header>
 
       {sante.toutVaBien ? (
-        <section className="ate-carte ate-sante-ok">
-          <h2 className="ate-carte-titre">Rien à signaler</h2>
-          <p>
-            Tous les mails dus sont partis, aucun dossier n&apos;attend un envoi impossible, et
-            aucun n&apos;a dépassé le double de son délai.
-          </p>
-        </section>
+        /* T-024 — deux calmes très différents. Sur une base vide, « tous les
+           mails dus sont partis » se lirait comme une vérification qui n'a pas
+           eu lieu : il n'y avait rien à vérifier. On le dit tel quel, sur le
+           ton du « pas encore », pas sur celui du bilan. */
+        sante.nbDossiers === 0 ? (
+          <section className="ate-carte ate-sante-ok">
+            <h2 className="ate-carte-titre">Rien à surveiller pour l&apos;instant</h2>
+            <p>
+              Aucun dossier n&apos;est encore ouvert : rien ne peut être en retard ni en échec.
+              Cette page se remplira d&apos;elle-même quand les premières clientes arriveront.
+            </p>
+          </section>
+        ) : (
+          <section className="ate-carte ate-sante-ok">
+            <h2 className="ate-carte-titre">Rien à signaler</h2>
+            <p>
+              Tous les mails dus sont partis, aucun dossier n&apos;attend un envoi impossible, et
+              aucun n&apos;a dépassé le double de son délai.
+            </p>
+          </section>
+        )
       ) : (
         sante.constats.map((c, i) => (
           <section key={i} className={`ate-carte ate-sante ate-sante--${c.gravite}`}>
@@ -75,7 +89,9 @@ export default async function PageSante() {
         })}
         {sante.dernierMail
           ? ` · dernier mail parti le ${new Date(sante.dernierMail).toLocaleDateString("fr-FR")}`
-          : " · aucun mail jamais envoyé"}
+          : sante.nbDossiers === 0
+            ? " · aucun mail encore envoyé"
+            : " · aucun mail jamais envoyé"}
       </p>
     </div>
   );

@@ -261,6 +261,49 @@ export function parametresPour(code: CodeMail, n: NumeroPourMail): Record<string
 }
 
 /**
+ * T-007 — la trace du saut « sans template », UNE fois par dossier+code.
+ *
+ * Un `BREVO_TEMPLATE_<CODE>_ID` absent fait sauter le mail SANS poser le
+ * verrou : la relève suivante ressaute, indéfiniment, et seul
+ * /admin/atelier/sante le montrait. C'est ce qui est arrivé à M0 jusqu'au
+ * 28/08 — la variable manquait en production, personne ne le savait.
+ *
+ * Le silence est le vrai défaut, pas le mail manquant : on journalise donc
+ * dans `evenements`, mais UNE seule fois par dossier+code — le même principe
+ * que le verrou de `mails_envoyes`, sauf qu'ici la table n'a pas de contrainte
+ * unique : le dédoublonnage est une lecture préalable. Une course entre deux
+ * relèves peut écrire deux lignes, jamais une par jour.
+ *
+ * Best-effort strict : si la lecture échoue, on n'écrit PAS (écrire sans
+ * savoir, c'est spammer le journal à chaque relève) — le console.error de
+ * l'appelant reste, lui, à chaque passage.
+ */
+async function signalerSansTemplate(
+  supabase: SupabaseClient,
+  code: CodeMail,
+  numeroId: string
+): Promise<void> {
+  const { data: deja, error } = await supabase
+    .from("evenements")
+    .select("id")
+    .eq("numero_id", numeroId)
+    .eq("type", "mail_sans_template")
+    .contains("payload", { code })
+    .limit(1);
+
+  if (error) {
+    console.error("[atelier/mails] lecture mail_sans_template échouée", error.code);
+    return;
+  }
+  if (deja?.length) return;
+
+  await logEvenement(supabase, numeroId, "mail_sans_template", {
+    code,
+    variable: `BREVO_TEMPLATE_${code.toUpperCase()}_ID`,
+  });
+}
+
+/**
  * Envoie un mail de l'atelier, une fois et une seule.
  *
  * Ne throw jamais — même contrat que sendBrevoEmail et logEvenement : aucun
@@ -284,8 +327,13 @@ export async function envoyerMailAtelier(
     const template = templatePour(code);
     if (!template) {
       /* Pas de verrou posé : le jour où la variable arrive, le mail partira.
-         C'est ce qui permet de câbler un mail avant que son template existe. */
-      console.error(`[atelier/mails] ${code} sauté — BREVO_TEMPLATE_${code}_ID absent`);
+         C'est ce qui permet de câbler un mail avant que son template existe.
+         ⚠️ La variable est en MAJUSCULES (M2b → BREVO_TEMPLATE_M2B_ID) : le
+         message doit nommer celle qui manque vraiment, pas une approximation. */
+      console.error(`[atelier/mails] ${code} sauté — BREVO_TEMPLATE_${code.toUpperCase()}_ID absent`);
+      /* T-007 — le saut reste non bloquant, mais il laisse une trace dans le
+         dossier (une fois, pas à chaque relève). */
+      await signalerSansTemplate(supabase, code, numero.id);
       return { statut: "sans_template" };
     }
 

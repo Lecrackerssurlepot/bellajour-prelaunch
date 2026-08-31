@@ -7,13 +7,15 @@
 import { suggestionEmail } from '@/lib/atelier/questionnaire'
 
 export default function Screen4Contact({
-  prenom, email, telephone, onChange, erreur,
+  prenom, email, telephone, onChange, erreur, erreurCle,
 }: {
   prenom: string
   email: string
   telephone: string
   onChange: (champ: 'prenom' | 'email' | 'telephone', v: string) => void
   erreur: string | null
+  /** T-051 — change à chaque refus : le même message est ré-annoncé. */
+  erreurCle: number
 }) {
   /* Calculé à chaque frappe : la fonction sort sur une comparaison de chaîne
      pour l'immense majorité des saisies (domaine déjà courant), et ne calcule
@@ -40,23 +42,31 @@ export default function Screen4Contact({
         que l’atelier compose.
       </p>
 
+      {/* ── T-053 : DES LIBELLÉS VISIBLES, PAS DES PLACEHOLDERS ─────────
+          « Prénom », « Email », « Téléphone » n'existaient qu'en placeholder
+          (1,90:1 de contraste, pour un seuil de 4,5:1) et en aria-label que
+          l'œil ne lit pas. Trois traits gris au soleil : on inversait email
+          et téléphone sans savoir lequel corriger. Les mêmes mots, désormais
+          en <label> — qui reste affiché quand le champ est rempli, ce qu'un
+          placeholder ne sait pas faire. Les placeholders, devenus redondants,
+          sont partis. */}
+      <label className="at-lbl" htmlFor="at-c-prenom">Prénom</label>
       <input
+        id="at-c-prenom"
         className="at-inp"
         value={prenom}
         onChange={(e) => onChange('prenom', e.target.value)}
-        placeholder="Prénom"
         autoComplete="given-name"
-        aria-label="Prénom"
       />
+      <label className="at-lbl" htmlFor="at-c-email">Email</label>
       <input
+        id="at-c-email"
         className="at-inp"
         type="email"
         value={email}
         onChange={(e) => onChange('email', e.target.value)}
-        placeholder="Email"
         autoComplete="email"
         inputMode="email"
-        aria-label="Email"
       />
       {/* ── LA FAUTE DE FRAPPE, ATTRAPÉE AVANT L'ENVOI ────────────────
           Une adresse mal tapée est le seul échec du parcours qui ne se voit
@@ -76,15 +86,15 @@ export default function Screen4Contact({
         </p>
       )}
 
+      <label className="at-lbl" htmlFor="at-c-telephone">Téléphone</label>
       <input
+        id="at-c-telephone"
         className="at-inp"
         type="tel"
         value={telephone}
         onChange={(e) => onChange('telephone', e.target.value)}
-        placeholder="Téléphone"
         autoComplete="tel"
         inputMode="tel"
-        aria-label="Téléphone"
       />
 
       <p className="at-hint at-hint--calme">
@@ -93,7 +103,7 @@ export default function Screen4Contact({
         pour vous vendre quoi que ce soit.
       </p>
 
-      {erreur && <p className="at-erreur" role="alert">{erreur}</p>}
+      {erreur && <p key={erreurCle} className="at-erreur" role="alert">{erreur}</p>}
     </>
   )
 }

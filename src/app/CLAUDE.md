@@ -98,6 +98,7 @@ rouvre le trou.
 
 Classes `sjc`, `rs-backdrop`, `hero-count-dot`, la nav verticale « MAISON D'ÉDITION DU SOUVENIR »,
 le système `data-theme="light|dark"` : zéro occurrence. Le thème réel se fait par scope de layout.
-`S1Hero`, `S2Collection`, `S3Method`, `S4Final` (`(atelier)/components/`) : zéro import, leur
-contenu est passé dans `/magazine`. ⚠️ Trois fichiers différents portent le nom `S1Hero.tsx`
-(ici, `archive/preventes/`, `archive/lancement/`) — vérifier le chemin avant d'ouvrir.
+`S1Hero`, `S2Collection`, `S3Method`, `S4Final` : zéro import, leur contenu est passé dans
+`/magazine` ; archivés dans `archive/accueil-v1/` le 31/08/2026 (T-016). ⚠️ Trois fichiers
+différents portent le nom `S1Hero.tsx` (`archive/accueil-v1/`, `archive/preventes/`,
+`archive/lancement/`) — vérifier le chemin avant d'ouvrir.

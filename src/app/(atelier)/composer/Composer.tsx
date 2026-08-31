@@ -33,10 +33,21 @@ export default function Composer() {
   const [pret, setPret] = useState(false)
   const [envoi, setEnvoi] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
+  /* T-051 — la clé qui force la ré-annonce. Deuxième clic, même erreur :
+     la MÊME chaîne ne re-rend pas le <p role="alert">, et le lecteur d'écran
+     ne dit rien — on conclut que le bouton est cassé. La clé change à chaque
+     refus, React remonte l'élément, l'alerte repart. */
+  const [erreurCle, setErreurCle] = useState(0)
   /* T2-4 — vrai quand on est arrivé par `?reprendre=` : l'écran 5 doit dire
      que des photos sont DÉJÀ chez nous, sinon il ressemble à un premier
      dépôt et laisse croire qu'il faut tout recommencer. */
   const [reprise, setReprise] = useState(false)
+  /* T-058 — un `?reprendre=` PRÉSENT mais illisible (un client mail qui coupe
+     l'URL à 32 caractères suffit). Poursuivre en silence renvoyait la cliente
+     à l'écran 1 : elle refaisait tout, et `creerNumero` fabriquait un SECOND
+     dossier — deux demandes, deux M0, et personne ne sait lequel porte ses
+     photos. On s'arrête et on le dit. */
+  const [lienAbime, setLienAbime] = useState(false)
   /* Le compte réellement parti, remonté par l'écran 5 au moment de l'envoi.
      Il ne vit PAS dans le brouillon : un brouillon terminé est effacé
      (loadDraft), et ce chiffre n'a de sens que sur l'écran 6 de CETTE
@@ -61,6 +72,14 @@ export default function Composer() {
     const repris = loadDraft()
     const reprendre = new URLSearchParams(window.location.search).get('reprendre')
     const estReprise = Boolean(reprendre && isValidNumeroToken(reprendre))
+    /* T-058 — le paramètre est là mais sa forme est fausse : le lien a été
+       coupé en route. On n'avance PAS (`pret` reste faux, donc le brouillon
+       local n'est jamais réécrit) : avancer, c'était créer un doublon en bout
+       de course. */
+    if (reprendre !== null && !estReprise) {
+      setLienAbime(true)
+      return
+    }
     setDraft(estReprise ? { ...repris, token: reprendre, screen: 5 } : repris)
     setReprise(estReprise)
     setPret(true)
@@ -74,6 +93,34 @@ export default function Composer() {
   const patch = useCallback((p: Partial<Draft>) => {
     setDraft((d) => ({ ...d, ...p }))
   }, [])
+
+  const signalerErreur = useCallback((texte: string) => {
+    setErreur(texte)
+    setErreurCle((c) => c + 1)
+  }, [])
+
+  /* ── T-051 : CHAQUE CHANGEMENT D'ÉCRAN A UN POINT DE FOCUS ─────────────
+     Le changement d'écran remonte tout le sous-arbre : sans ça, le focus
+     retombait sur <body> sans un mot, et l'écran 6 — celui qui dit que les
+     photos sont parties — n'était jamais énoncé. Le titre de l'écran atteint
+     prend le focus (tabindex -1 : atteignable au code, pas au Tab), donc le
+     lecteur d'écran le lit, et le clavier repart du haut de l'écran.
+     Jamais au premier rendu : on ne vole pas le focus à qui arrive. */
+  const ecranPrecedent = useRef<number | null>(null)
+  useEffect(() => {
+    if (!pret) return
+    if (ecranPrecedent.current === null) {
+      ecranPrecedent.current = draft.screen
+      return
+    }
+    if (ecranPrecedent.current === draft.screen) return
+    ecranPrecedent.current = draft.screen
+    const titre = scroller.current?.querySelector('h2')
+    if (titre instanceof HTMLElement) {
+      titre.setAttribute('tabindex', '-1')
+      titre.focus({ preventScroll: true })
+    }
+  }, [draft.screen, pret])
 
   const aller = useCallback((n: number) => {
     if (n < 1 || n > TOTAL) return
@@ -95,9 +142,9 @@ export default function Composer() {
       CHAMPS_PAR_ECRAN[n] ?? [],
       (c) => draft[c],
     )
-    if (manquant) { setErreur(MESSAGE_DU_CHAMP[manquant]); return }
+    if (manquant) { signalerErreur(MESSAGE_DU_CHAMP[manquant]); return }
     aller(n + 1)
-  }, [draft, aller])
+  }, [draft, aller, signalerErreur])
 
   /* Fin d'écran 4 : création du dossier. Idempotent par le token. */
   const creerNumero = useCallback(async () => {
@@ -107,7 +154,7 @@ export default function Composer() {
        facultatifs) peut encore être complété sans rien perdre. */
     const manquant = premierManquant(CHAMPS_QUESTIONNAIRE, (c) => draft[c])
     if (manquant) {
-      setErreur(MESSAGE_DU_CHAMP[manquant])
+      signalerErreur(MESSAGE_DU_CHAMP[manquant])
       const ecran = ecranDuChamp(manquant)
       if (ecran !== draft.screen) {
         setDraft((d) => ({ ...d, screen: ecran }))
@@ -143,13 +190,13 @@ export default function Composer() {
           /* Le serveur a le dernier mot, et il dit LEQUEL. On repose la
              cliente sur l'écran concerné : un « réessayez » devant un
              formulaire qui a l'air complet ne se répare pas tout seul. */
-          setErreur(MESSAGE_DU_CHAMP[data.champ])
+          signalerErreur(MESSAGE_DU_CHAMP[data.champ])
           const ecran = ecranDuChamp(data.champ)
           setDraft((d) => ({ ...d, screen: ecran }))
           scroller.current?.scrollTo({ top: 0 })
           return
         }
-        setErreur(
+        signalerErreur(
           data.error === 'rate_limited'
             ? 'Trop de tentatives. Réessayez dans un instant.'
             : 'L’atelier n’a pas pu enregistrer votre demande. Réessayez.'
@@ -159,11 +206,11 @@ export default function Composer() {
       setDraft((d) => ({ ...d, token: data.token!, screen: 5 }))
       scroller.current?.scrollTo({ top: 0 })
     } catch {
-      setErreur('Connexion perdue. Vérifiez votre réseau, puis réessayez.')
+      signalerErreur('Connexion perdue. Vérifiez votre réseau, puis réessayez.')
     } finally {
       setEnvoi(false)
     }
-  }, [draft, aller])
+  }, [draft, aller, signalerErreur])
 
   /* On rend TOUJOURS quelque chose, dès le serveur.
      Un garde `if (!pret) return <coquille vide />` donnait un écran noir
@@ -175,8 +222,52 @@ export default function Composer() {
      frame avant de retomber sur le sien — infiniment préférable au vide. */
   const n = draft.screen
 
+  /* ── T-058 : LE LIEN DE REPRISE ABÎMÉ S'ARRÊTE ICI ─────────────────────
+     Le dossier existe toujours côté atelier : c'est le lien qui a perdu des
+     caractères en route. Repartir à l'écran 1 aurait créé un second dossier
+     en bout de course. On le dit, et on renvoie vers le lien entier — celui
+     du mail, ou celui de la page « Votre numéro ». */
+  if (lienAbime) {
+    return (
+      <div className="at-q">
+        <div className="at-bar"><i style={{ transform: 'scaleX(0)' }} /></div>
+        <div className="at-q-top">
+          <span className="at-q-logo">Bellajour</span>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a className="at-q-close" href="/">Fermer ✕</a>
+        </div>
+        <div className="at-q-scroll">
+          <div className="at-q-screen">
+            <p className="at-kicker">Un instant</p>
+            <h2>Ce lien de reprise<br />est abîmé.</h2>
+            <p className="at-lede at-q-lede" role="alert">
+              Il lui manque des caractères — les applications mail coupent
+              parfois les liens longs. Votre dossier, lui, est intact :
+              rouvrez le lien depuis votre mail Bellajour, en entier, et vous
+              retomberez exactement où vous en étiez.
+            </p>
+            {/* Un nouveau départ reste possible, mais discret : recommencer
+                ici, c'est précisément le doublon qu'on vient d'éviter.
+                <a> nu, rechargement voulu : il purge le `?reprendre=` cassé. */}
+            <a className="at-skip" href="/composer">
+              Composer un autre numéro
+            </a>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="at-q">
+      {/* T-051 — la région live UNIQUE : l'écran atteint est annoncé, une
+          fois, poliment. Elle existe dès le premier rendu (une région créée
+          en même temps que son contenu n'est pas annoncée) et ne change
+          qu'au changement d'écran. */}
+      <p className="sr-only" aria-live="polite">
+        {n === 6 ? 'C’est fait — dernier écran.' : `Étape ${n} sur ${TOTAL}`}
+      </p>
+
       {/* PRD §15 : la barre ne s'anime jamais en width — scaleX seul. */}
       <div className="at-bar">
         <i style={{ transform: `scaleX(${n / TOTAL})` }} />
@@ -218,6 +309,7 @@ export default function Composer() {
               telephone={draft.telephone}
               onChange={(champ, v) => patch({ [champ]: v } as Partial<Draft>)}
               erreur={erreur}
+              erreurCle={erreurCle}
             />
           )}
           {n === 5 && (
@@ -256,7 +348,10 @@ export default function Composer() {
                 écrans 1 à 3 n'en avaient jamais : il faut bien la poser
                 quelque part, et c'est sous le bouton qui vient d'être
                 refusé. */}
-            {erreur && n < 4 && <p className="at-erreur" role="alert">{erreur}</p>}
+            {/* T-051 — key : même message deux fois de suite = deux annonces
+                quand même. Sans elle, React ne re-rend pas et le lecteur
+                d'écran se tait. */}
+            {erreur && n < 4 && <p key={erreurCle} className="at-erreur" role="alert">{erreur}</p>}
             {/* Le bouton NOMME l'étape suivante. « Continuer » sur le dernier
                 écran de coordonnées peut se lire comme « valider ma demande » —
                 et il s'est lu comme ça le 27/08. */}

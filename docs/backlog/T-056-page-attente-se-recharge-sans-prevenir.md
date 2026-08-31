@@ -21,4 +21,14 @@ Rafraîchir les données sans recharger la page (`router.refresh()`, déjà le p
 avec `Rafraichissement.tsx`, et pour la même raison : ne pas perdre ce que la personne a sous les
 yeux). Annoncer l'attente une fois, dans une région polie.
 ## Ce qui a été fait
-—
+**31/08/2026 — confirmé, corrigé.** `AttentePaiement.tsx` réécrit sur le parti pris de l'admin
+(`Rafraichissement.tsx`) : `router.refresh()` toutes les 4 s, cinq fois, au lieu de cinq
+`window.location.replace` — la page ne bouge plus sous les yeux, seuls les composants serveur
+sont réévalués, et la branche disparaît d'elle-même quand le webhook a basculé l'état. Le compte
+d'essais vit en état client (il survit aux refresh), plus dans l'URL : `?essai=` a disparu de
+`page.tsx` (un vieux lien qui le porte est simplement ignoré). Les DEUX textes existants sont
+repris à l'identique dans une région `role="status"` : l'attente est annoncée une fois, et le
+passage au message « plus long que prévu » aussi. Même résultat final, mêmes bornes (5 × 4 s).
+Vérifié : tsc, lint, build, `/numero/<token invalide>` rend toujours son 404 propre. **Non vu en
+conditions réelles** : la branche exige un dossier en `apercu_pret` + retour Stripe, qu'on ne
+fabrique pas sans écrire en base — à recetter au prochain paiement sandbox.

@@ -105,10 +105,20 @@ export default function Corps() {
                     reprenait la vallée.
                   </p>
                 </div>
+                {/* T-065 (31/08/2026) — deux timbres decoratifs d'environ
+                    145 px CSS (un quart de la double page, ~10vw), caches sous
+                    720px (pdp.css). Le 450x675 plein coutait 2,4 Mo de bitmap :
+                    le srcset sert la variante 360 aux ecrans 2x, l'original ne
+                    reste que pour un improbable bureau 3x. Variantes par
+                    scripts/images-galerie.mjs. */}
                 <div className="vignettes" aria-hidden="true">
-                  <img src="/images/lancement/galerie/tulum.webp" alt=""
+                  <img src="/images/lancement/galerie/tulum.webp"
+                       srcSet="/images/lancement/galerie/tulum-240.webp 240w, /images/lancement/galerie/tulum-360.webp 360w, /images/lancement/galerie/tulum.webp 450w"
+                       sizes="10vw" alt=""
                        width={450} height={675} loading="lazy" decoding="async" />
-                  <img src="/images/lancement/galerie/lisbonne.webp" alt=""
+                  <img src="/images/lancement/galerie/lisbonne.webp"
+                       srcSet="/images/lancement/galerie/lisbonne-240.webp 240w, /images/lancement/galerie/lisbonne-360.webp 360w, /images/lancement/galerie/lisbonne.webp 450w"
+                       sizes="10vw" alt=""
                        width={450} height={675} loading="lazy" decoding="async" />
                 </div>
                 <div className="folio" aria-hidden="true">
@@ -152,8 +162,8 @@ export default function Corps() {
       {/* ─────────── 03 · LA COLLECTION — RETIRÉE le 30/08/2026 ───────────
           « On n'attend plus le mariage » et l'étagère des quatre dos sont
           sorties de la page produit (décision de Mathias). Rien n'est perdu :
-          le dessin d'origine vit toujours dans components/S2Collection.tsx et
-          s2-collection.css, hors routage, et les quatre dos restent déclarés
+          le dessin d'origine vit dans archive/accueil-v1/S2Collection.tsx et
+          s2-collection.css (T-016), et les quatre dos restent déclarés
           dans content.ts → SPINES. Remettre la section, c'est reprendre ce
           composant-là, pas le réécrire. */}
 

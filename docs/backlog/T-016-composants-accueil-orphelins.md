@@ -19,4 +19,9 @@ qu'une source de texte.
 ## Ce que je propose
 `git mv` vers `archive/accueil-v1/` avec un README. Ils reviennent par un `git mv` inverse.
 ## Ce qui a été fait
-—
+31/08/2026 — CONFIRMÉ (zéro import ; seules mentions : des commentaires). `git mv` des huit
+fichiers (4 `.tsx` + 4 `.css`) depuis `src/app/(atelier)/components/` — et UNIQUEMENT de là,
+les deux autres `S1Hero.tsx` d'`archive/` n'ont pas bougé — vers `archive/accueil-v1/`, avec
+README. Les commentaires qui pointaient vers l'ancien emplacement ont été suivis :
+`(atelier)/page.tsx`, `magazine/page.tsx`, `magazine/Corps.tsx`, `magazine/pdp.css` (×3),
+et le paragraphe « Ce qui est mort » de `src/app/CLAUDE.md`.
