@@ -45,3 +45,6 @@ d) **Alléger les signaux promo** de la maquette (plus de texte, moins de bouton
    directe avec la marque, à ne faire que si a-c ne suffisent pas.
 Aucun de ces leviers n'est un interrupteur magique : les onglets Gmail sont un classement
 appris par utilisateur, et le front 3 (réputation) se construit avec le volume.
+31/08, tranché par Mathias : la maquette reste telle quelle (« c'est déjà sobre »), pas de
+version dépouillée de M4/M7. La réputation se construira avec le volume. Leviers a-c
+disponibles si le besoin remonte. Le ticket passe en attente volontaire.
