@@ -29,7 +29,6 @@
 
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { randomInt } from "node:crypto";
 import { makeSupabase } from "@/lib/supabase";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
 import { prenomDe } from "@/lib/admin-auth";
@@ -42,16 +41,17 @@ export const runtime = "nodejs";
 /** Le montant contractuel, en centimes. CGV v3.0 art. 5 bis : 30 €, point. */
 const MONTANT_CENTIMES = 3000;
 
-/* Sans I, L, O, 0 ni 1 : un code se dicte parfois au téléphone, et une
-   fondatrice ne doit pas avoir à deviner si c'est un O ou un zéro. */
-const ALPHABET_SUFFIXE = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-
-function suffixeAleatoire(): string {
-  let s = "";
-  for (let i = 0; i < 4; i++) {
-    s += ALPHABET_SUFFIXE[randomInt(ALPHABET_SUFFIXE.length)];
-  }
-  return s;
+/* Le code porte le PRÉNOM de la fondatrice (décision de Mathias, 31/08) :
+   `FONDATRICE-MARIE30`. Le prénom passe en majuscules sans accents ni
+   espaces — Stripe n'accepte que des codes simples, et un code se dicte
+   parfois au téléphone. */
+function prenomPourCode(prenom: string | null): string {
+  if (!prenom) return "";
+  return prenom
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "");
 }
 
 type EvenementCode = {
@@ -73,9 +73,14 @@ export async function POST(request: Request) {
     const supabase = makeSupabase();
     const { data: numero, error: lectureErr } = await supabase
       .from("numeros")
-      .select("id, email, email_canonical")
+      .select("id, email, email_canonical, prenom")
       .eq("token", token)
-      .maybeSingle<{ id: string; email: string | null; email_canonical: string | null }>();
+      .maybeSingle<{
+        id: string;
+        email: string | null;
+        email_canonical: string | null;
+        prenom: string | null;
+      }>();
 
     if (lectureErr) {
       console.error("[admin/fondatrice-code] lecture échouée", lectureErr.code);
@@ -154,8 +159,17 @@ export async function POST(request: Request) {
 
     /* ── Stripe : un coupon à usage unique, un code nominatif ─────────
        `duration: "once"` : le crédit s'impute sur UNE commande.
-       `max_redemptions: 1` : le code ne sert qu'une fois, même partagé. */
-    const codeLisible = `FONDATRICE-${fondatrice.numero_fondateur}-${suffixeAleatoire()}`;
+       `max_redemptions: 1` : le code ne sert qu'une fois, même partagé.
+       Format : `FONDATRICE-MARIE30`. Deux fondatrices peuvent partager un
+       prénom et Stripe refuse deux codes identiques : le repli ajoute le
+       numéro de fondatrice (`FONDATRICE-MARIE30-N3`). Un prénom vide (ou
+       réduit à rien une fois nettoyé) retombe sur le numéro seul. */
+    const prenomCode = prenomPourCode(numero.prenom);
+    const codeVoulu = prenomCode
+      ? `FONDATRICE-${prenomCode}30`
+      : `FONDATRICE-N${fondatrice.numero_fondateur}-30`;
+    const codeRepli = `FONDATRICE-${prenomCode || "X"}30-N${fondatrice.numero_fondateur}`;
+    let codeLisible = codeVoulu;
     let coupon: Stripe.Coupon;
     let promo: Stripe.PromotionCode;
     try {
@@ -169,17 +183,30 @@ export async function POST(request: Request) {
           numero_fondateur: String(fondatrice.numero_fondateur),
         },
       });
-      try {
-        promo = await stripe.promotionCodes.create({
+      const creerPromo = (code: string) =>
+        stripe.promotionCodes.create({
           /* stripe-node v22 : le coupon se référence via `promotion`. */
           promotion: { type: "coupon", coupon: coupon.id },
-          code: codeLisible,
+          code,
           max_redemptions: 1,
           metadata: {
             numero_id: numero.id,
             numero_fondateur: String(fondatrice.numero_fondateur),
           },
         });
+      try {
+        try {
+          promo = await creerPromo(codeVoulu);
+        } catch (collisionErr) {
+          /* Code déjà pris (une homonyme) : UNE tentative de repli, avec le
+             numéro de fondatrice. Toute autre erreur ressort telle quelle. */
+          const dejaPris =
+            collisionErr instanceof Stripe.errors.StripeInvalidRequestError &&
+            /already exists|existing promotion code/i.test(collisionErr.message);
+          if (!dejaPris) throw collisionErr;
+          codeLisible = codeRepli;
+          promo = await creerPromo(codeRepli);
+        }
       } catch (promoErr) {
         /* Le coupon seul est inerte (rien ne le référence dans un checkout),
            mais on ne laisse pas traîner un objet orphelin chez Stripe. */

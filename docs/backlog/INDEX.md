@@ -92,3 +92,4 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-077 | Les specs d'impression des deux produits Cloudprinter ne sont pas sur le disque | produit | serieux | avis-requis | nouveau |
 | T-078 | Aucun moteur ne transforme les gabarits de mise en page en PDF imprimable | atelier | serieux | avis-requis | nouveau |
 | T-079 | Le dashboard métriques n'a pas d'insights ni de stratégie assistés par IA | admin | confort | avis-requis | nouveau |
+| T-080 | Le dashboard métriques mérite un vrai design de tableau de bord | admin | confort | libre | nouveau |
