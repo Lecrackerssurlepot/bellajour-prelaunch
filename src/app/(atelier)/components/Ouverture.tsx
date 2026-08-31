@@ -253,10 +253,26 @@ export default function Ouverture() {
           <div className="h-voile"></div>
         </div>
 
+        {/* TROIS LIGNES, et le decoupage n'est pas un gout : c'est lui qui
+            fixe la taille possible. La ligne la plus longue borne le corps,
+            puisqu'aucune ne doit se renvoyer. MESURE le 31/08/2026 (rapport
+            largeur/corps, police reelle) :
+              « Vos meilleurs moments »   8,73  ← l'ancienne ligne 1
+              « moments meritent »        7,01  ← la plus longue des trois
+            Casser « Vos meilleurs moments » rend donc 25 % de corps. Les
+            decoupages qui la gardent entiere n'en rendent aucun : garder la
+            phrase en 21/13/8 laisse le plafond ou il etait.
+            Le point final est retire — il ne servait rien et, contrairement a
+            ce qu'on pourrait croire, il ne rendait pas un pixel : il vivait
+            sur la ligne 2, qui n'a jamais ete la ligne qui borne (8,57
+            contre 8,73).
+            ⚠️ Toute retouche de ce texte change les trois nombres, donc la
+            taille : elle se remesure, elle ne s'estime pas (ouverture.css). */}
         <h1 className="h-titre">
-          <span className="ligne l1"><span className="in">Vos meilleurs moments</span></span>
+          <span className="ligne l1"><span className="in">Vos meilleurs</span></span>
           <span className="h-bandeau" aria-hidden="true"></span>
-          <span className="ligne l2"><span className="in">méritent leur <em>magazine</em>.</span></span>
+          <span className="ligne l2"><span className="in">moments méritent</span></span>
+          <span className="ligne l3"><span className="in">leur <em>magazine</em></span></span>
         </h1>
 
         <div className="h-bas">

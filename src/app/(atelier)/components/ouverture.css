@@ -117,7 +117,13 @@
   transition:transform 900ms cubic-bezier(.23,1,.32,1), opacity 800ms var(--ease-out)}
 .at-accueil.pret .h-titre .l1 .in{transition-delay:340ms}
 .at-accueil.pret .h-titre .l2 .in{transition-delay:430ms}
-.at-accueil .h-titre .l2{text-align:right}
+/* La troisieme ligne entre apres les deux autres, au meme intervalle : les
+   trois se posent l'une apres l'autre, jamais ensemble. */
+.at-accueil.pret .h-titre .l3 .in{transition-delay:520ms}
+/* Les deux lignes basses sont ferrees a droite : c'est ce qui empeche la
+   couverture d'etre symetrique. */
+.at-accueil .h-titre .l2,
+.at-accueil .h-titre .l3{text-align:right}
 .at-accueil .h-titre em{color:var(--c-accent-strong)}
 
 /* Quand l'image prend l'ecran, le titre change de regime : il grandit de
@@ -133,6 +139,9 @@
 .at-accueil.plein .h-titre{transform:scale(1.08);translate:0 -1.2vh}
 .at-accueil.plein .h-titre .l1{translate:3.5vw 5.5vh}
 .at-accueil.plein .h-titre .l2{translate:-3.5vw -5.5vh}
+/* l3 se deplace EXACTEMENT comme l2 : les deux lignes basses sont collees
+   l'une a l'autre, les separer d'un pixel casserait le bloc. */
+.at-accueil.plein .h-titre .l3{translate:-3.5vw -5.5vh}
 
 /* ─────────── LA COUVERTURE QUI S'OUVRE ───────────
    L'image est posee EN PLEIN, derriere toute l'ouverture, et c'est sa
@@ -342,13 +351,14 @@
      Le folio disparait : sur un telephone, chaque ligne coute un ecran. */
   .at-accueil .hero{min-height:var(--app-height);padding:calc(10 * var(--uh)) var(--md) calc(5 * var(--uh)) var(--mg);justify-content:flex-start}
   /* ─── LA TAILLE DU TITRE EST BORNEE PAR LA LARGEUR DE L'ECRAN ───
-     Ce n'est pas un reglage libre : « Vos meilleurs moments » doit tenir sur
-     UNE ligne, et c'est elle la plus longue. MESURE le 31/08/2026 a 390 px,
-     Cormorant Garamond a 35,88 px : le texte fait 313,4 px pour 335
-     disponibles entre les marges de 7vw. Le rapport largeur/corps de cette
-     ligne est de 8,735 — il ne depend pas de l'ecran, donc la borne s'ecrit
-     en vw : 335/8,735 = 38,35 px, soit 9,83vw. C'est le plafond absolu.
-     9,6vw retenu = 97,6 % d'occupation, huit pixels de reserve. La reserve
+     Ce n'est pas un reglage libre : la ligne la plus longue doit tenir sur
+     UNE ligne, et c'est elle qui borne le corps. Depuis le passage a trois
+     lignes (31/08/2026) la plus longue est « moments meritent », de rapport
+     largeur/corps 7,01 la ou « Vos meilleurs moments » valait 8,73 — c'est
+     tout le gain du decoupage, 25 %. Le rapport ne depend pas de l'ecran,
+     donc la borne s'ecrit en vw : a 390 px, 335 disponibles entre les marges
+     de 7vw donnent 335/7,01 = 47,8 px, soit 12,25vw. C'est le plafond.
+     11,9vw retenu = 97,5 % d'occupation, huit pixels de reserve. La reserve
      n'est pas cosmetique : pendant le chargement des polices, c'est le repli
      genere par next/font qui rend le titre. MESURE aussi : 314,7 px contre
      313,4 pour la vraie, 0,4 % d'ecart — le `size-adjust` de next/font fait
@@ -357,10 +367,13 @@
      (overflow-wrap:anywhere !important, piege nº1 de src/app/CLAUDE.md).
      ⚠️ Si le texte du titre change, ce nombre doit etre remesure. Georgia,
      dernier repli de la pile, fait 361,9 px — 15 % de plus : il renverrait.
-     Le plafond de 54px est inchange : au-dela de 562 px de large on n'est
-     plus sur un telephone, et le grand ecran reprend la main a 1000 px. */
-  .at-accueil .h-titre{font-size:clamp(30px,9.6vw,54px)}
-  .at-accueil .h-titre .l2{text-align:left}
+     Le plafond passe de 54 a 67 px dans la meme proportion que le corps
+     (11,9/9,6) : sans quoi il mordrait des 454 px de large, en plein dans
+     les grands telephones. Il ne joue donc qu'a partir de la tablette, et le
+     grand ecran reprend la main a 1000 px. */
+  .at-accueil .h-titre{font-size:clamp(30px,11.9vw,67px)}
+  .at-accueil .h-titre .l2,
+  .at-accueil .h-titre .l3{text-align:left}
   /* les deux lignes sont ferrees a gauche ici : les rentrer horizontalement
      les desalignerait. Seul le resserrement vertical joue. */
   /* L'agrandissement final passe par l'ECHELLE, et c'est ce qui permet
@@ -398,6 +411,10 @@
      chaque frame (PRD §15). */
   .at-accueil.plein .h-titre .l1{translate:0 calc(14.7 * var(--uh))}
   .at-accueil.plein .h-titre .l2{translate:0 calc(-14.7 * var(--uh))}
+  /* l3 monte AUTANT que l2 : elle est deja collee sous elle, elle doit
+     rester collee. Une valeur differente ouvrirait un trou entre les deux
+     lignes basses. */
+  .at-accueil.plein .h-titre .l3{translate:0 calc(-14.7 * var(--uh))}
   .at-accueil .h-bandeau{height:calc(26 * var(--uh));min-height:0;margin:calc(1.6 * var(--uh)) 0 calc(1.8 * var(--uh))}
   .at-accueil .h-bas{flex-direction:column;align-items:stretch;gap:calc(2.8 * var(--uh));margin-top:calc(3 * var(--uh))}
   .at-accueil .h-gauche{max-width:none}
