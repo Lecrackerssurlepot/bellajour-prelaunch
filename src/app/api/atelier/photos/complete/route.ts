@@ -118,11 +118,20 @@ export async function POST(request: Request) {
 
     const supabase = makeSupabase();
 
-    const { data: numero } = await supabase
+    const { data: numero, error: errNum } = await supabase
       .from("numeros")
       .select("id")
       .eq("token", token)
       .maybeSingle();
+
+    /* T-043 — une panne de base n'est PAS un token inconnu. Le moteur du
+       dépôt traite le 404 comme DÉFINITIF (« reprenez le questionnaire ») et
+       s'arrête, alors que ses photos dorment déjà sur R2 ; le 500, lui, se
+       retente avec backoff. Même règle que /presign juste à côté. */
+    if (errNum) {
+      console.error("[complete] lookup numero échoué", errNum.code);
+      return NextResponse.json({ error: "internal" }, { status: 500 });
+    }
     if (!numero) return NextResponse.json({ error: "introuvable" }, { status: 404 });
 
     const { data: lignes, error: errSel } = await supabase

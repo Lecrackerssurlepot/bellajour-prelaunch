@@ -20,13 +20,14 @@
  *   — supprimer la variable révoque l'accès au redéploiement suivant ;
  *   — un prénom recopié à la main dans le cookie ne signe rien.
  *
- * ADMIN_PASSWORD (l'ancien mot de passe partagé) reste accepté sous le nom
- * « atelier » : sans lui, un déploiement qui n'a pas encore les nouvelles
- * variables se verrouille tout seul. Il disparaîtra quand les deux comptes
- * seront posés sur Vercel.
- *
- * ⚠️ Le format du cookie a changé (une part de plus). Les sessions ouvertes
- * avant ce déploiement ne valident plus : une reconnexion, une seule fois.
+ * ADMIN_PASSWORD (l'ancien mot de passe partagé, compte « atelier ») n'est
+ * PLUS accepté depuis le 31/08/2026 (T-005) : les deux comptes nominatifs
+ * sont posés sur Vercel en Production ET en Preview, le repli n'avait plus
+ * de raison d'être — et il donnait un accès complet, non attribuable, à
+ * quiconque avait connu l'ancien secret. Les sessions signées « atelier »
+ * cessent de valider au déploiement (compte inconnu ⇒ null) ; celles de
+ * Mathias et Louis ne bougent pas. La variable peut rester sur Vercel : le
+ * code ne la lit plus.
  * ══════════════════════════════════════════════════════════════════════════
  *
  * Format : "<expMs>.<qui>.<hmac_base64url>"
@@ -51,11 +52,15 @@ export function comptesAdmin(): Record<string, string> {
   const comptes: Record<string, string> = {};
   if (process.env.ADMIN_PASSWORD_MATHIAS) comptes.mathias = process.env.ADMIN_PASSWORD_MATHIAS;
   if (process.env.ADMIN_PASSWORD_LOUIS) comptes.louis = process.env.ADMIN_PASSWORD_LOUIS;
-  if (process.env.ADMIN_PASSWORD) comptes.atelier = process.env.ADMIN_PASSWORD;
+  /* ADMIN_PASSWORD (partagé, compte « atelier ») n'est volontairement PAS lu :
+     retiré le 31/08/2026 (T-005). Ne pas le remettre. */
   return comptes;
 }
 
-/** Le prénom tel qu'il s'affiche. Le reste du code ne manipule que la clé. */
+/** Le prénom tel qu'il s'affiche. Le reste du code ne manipule que la clé.
+ *  « atelier » reste ICI (et seulement ici) : le journal et les notes d'avant
+ *  le 31/08 portent cette clé, et leurs lignes doivent continuer à s'afficher
+ *  « Atelier ». Ça n'ouvre aucune porte : seul `comptesAdmin()` authentifie. */
 export const PRENOM_COMPTE: Record<string, string> = {
   mathias: "Mathias",
   louis: "Louis",

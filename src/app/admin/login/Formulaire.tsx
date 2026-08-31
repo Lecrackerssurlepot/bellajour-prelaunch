@@ -11,13 +11,13 @@ import "../admin.css";
 export default function Formulaire({ comptes }: { comptes: Array<{ cle: string; prenom: string }> }) {
   const [qui, setQui] = useState(comptes[0]?.cle ?? "");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<null | "invalide" | "freine">(null);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setError(false);
+    setError(null);
     try {
       const res = await fetch("/api/admin/login", {
         method: "POST",
@@ -28,9 +28,11 @@ export default function Formulaire({ comptes }: { comptes: Array<{ cle: string; 
         window.location.assign("/admin/atelier");
         return;
       }
-      setError(true);
+      /* 429 = le frein (T-046), pas un mauvais mot de passe : le dire, sinon
+         la personne freinée retape « son » mot de passe en le croyant faux. */
+      setError(res.status === 429 ? "freine" : "invalide");
     } catch {
-      setError(true);
+      setError("invalide");
     }
     setLoading(false);
   }
@@ -42,8 +44,8 @@ export default function Formulaire({ comptes }: { comptes: Array<{ cle: string; 
         <p className="adm-login-sub">Qui est là ?</p>
 
         {/* Un seul compte configuré : pas de choix à faire, pas de bouton à
-            afficher. C'est le cas d'un déploiement qui n'a encore que
-            l'ancien ADMIN_PASSWORD partagé. */}
+            afficher. C'est le cas d'un environnement où une seule des deux
+            variables nominatives est posée. */}
         {comptes.length > 1 ? (
         <div className="adm-seg adm-login-seg">
           {comptes.map((c) => (
@@ -53,7 +55,7 @@ export default function Formulaire({ comptes }: { comptes: Array<{ cle: string; 
               className={qui === c.cle ? "adm-seg-btn adm-seg-btn--active" : "adm-seg-btn"}
               onClick={() => {
                 setQui(c.cle);
-                if (error) setError(false);
+                if (error) setError(null);
               }}
             >
               {c.prenom}
@@ -71,12 +73,15 @@ export default function Formulaire({ comptes }: { comptes: Array<{ cle: string; 
           value={password}
           onChange={(e) => {
             setPassword(e.target.value);
-            if (error) setError(false);
+            if (error) setError(null);
           }}
         />
         {/* Le message ne distingue pas compte inconnu de mauvais mot de passe :
             la réponse serveur ne le fait pas non plus, volontairement. */}
-        {error ? <p className="adm-login-error">Identifiants incorrects.</p> : null}
+        {error === "invalide" ? <p className="adm-login-error">Identifiants incorrects.</p> : null}
+        {error === "freine" ? (
+          <p className="adm-login-error">Trop de tentatives. Réessayez dans un quart d&apos;heure.</p>
+        ) : null}
         <button
           className="adm-btn adm-login-btn"
           type="submit"

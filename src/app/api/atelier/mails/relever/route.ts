@@ -159,6 +159,11 @@ async function relever(request: Request) {
     const envoyes: Array<{ code: string; token: string; titre: string | null }> = [];
     const incomplets: Array<{ code: string; token: string; manque: string[] }> = [];
     const echecs: Array<{ code: string; token: string }> = [];
+    /* T-007 — le mail dont la variable BREVO_TEMPLATE_<CODE>_ID manque. Rangé
+       À PART des échecs : un échec Brevo se réessaie tout seul, un template
+       absent ne guérira JAMAIS sans un geste sur Vercel. Les confondre, c'est
+       attendre une guérison qui ne viendra pas. */
+    const sansTemplate: Array<{ code: string; token: string }> = [];
     const autoValides: Array<{ token: string; titre: string | null }> = [];
 
     for (const d of lignes) {
@@ -205,6 +210,7 @@ async function relever(request: Request) {
 
         const r = await envoyerMailAtelier(supabase, code as CodeMail, d);
         if (r.statut === "envoye") envoyes.push({ code, token: d.token, titre: d.titre });
+        else if (r.statut === "sans_template") sansTemplate.push({ code, token: d.token });
         else if (r.statut !== "deja_envoye") echecs.push({ code, token: d.token });
       }
     }
@@ -215,6 +221,7 @@ async function relever(request: Request) {
       autoValides,
       incomplets,
       echecs,
+      sansTemplate,
       /* Le balayage a-t-il été tronqué ? Un plafond silencieux se lirait
          comme « tout est traité ». */
       tronque: lignes.length >= MAX_DOSSIERS,
@@ -237,6 +244,7 @@ async function relever(request: Request) {
         envoyes: resume.envoyes.map((e) => ({ ...e, token: abrege(e.token) })),
         incomplets: resume.incomplets.map((e) => ({ ...e, token: abrege(e.token) })),
         echecs: resume.echecs.map((e) => ({ ...e, token: abrege(e.token) })),
+        sansTemplate: resume.sansTemplate.map((e) => ({ ...e, token: abrege(e.token) })),
         autoValides: resume.autoValides.map((e) => ({ ...e, token: abrege(e.token) })),
       }),
     );

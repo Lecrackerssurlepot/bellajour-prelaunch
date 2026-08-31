@@ -19,4 +19,17 @@ attribués à « atelier », donc à personne.
 Retirer le repli. Vérifier d'abord que `ADMIN_PASSWORD_MATHIAS` et `_LOUIS` sont bien posés sur
 Vercel en Production ET en Preview, sinon la porte se ferme sur nous.
 ## Ce qui a été fait
-—
+31/08/2026 — Confirmé (`src/lib/admin-auth.ts:54` lisait encore `ADMIN_PASSWORD` sous le compte
+« atelier »), puis corrigé :
+- Vérifié AVANT de couper : `vercel env ls` montre `ADMIN_PASSWORD_MATHIAS` et
+  `ADMIN_PASSWORD_LOUIS` posés en **Production ET Preview** — la porte ne se referme sur personne.
+- `comptesAdmin()` ne lit plus `ADMIN_PASSWORD` (commentaire « ne pas le remettre » sur place).
+  La variable peut rester sur Vercel : le code l'ignore.
+- Les sessions signées « atelier » cessent de valider au déploiement (compte inconnu ⇒ null) ;
+  celles de Mathias et Louis ne bougent pas — le format du cookie n'a pas changé.
+- `PRENOM_COMPTE.atelier` est conservé UNIQUEMENT pour afficher les vieilles lignes du journal.
+- Commentaires devenus faux mis à jour (`admin-auth.ts`, `login/page.tsx`, `login/Formulaire.tsx`,
+  `src/app/admin/CLAUDE.md`).
+- Harnais : section « T-005 : le mot de passe partage est mort » dans `scripts/verif-atelier.ts` —
+  même avec `ADMIN_PASSWORD` posé dans l'env, aucun compte « atelier » n'existe, et un cookie
+  signé de l'ancien secret est refusé. Tout passe.

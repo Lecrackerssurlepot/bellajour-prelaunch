@@ -10,8 +10,10 @@ Deux dashboards distincts sous le même mot. Chargé dès qu'on touche l'admin.
 ## Auth
 
 Comptes **nominatifs** : `ADMIN_PASSWORD_MATHIAS`, `ADMIN_PASSWORD_LOUIS`. L'ancien
-`ADMIN_PASSWORD` partagé est **encore accepté** sous le compte `atelier` — c'est une dette connue,
-pas une intention. Cookie HMAC `bj_admin`, comparaison `timingSafeEqual`. Le nom du compte est
+`ADMIN_PASSWORD` partagé **n'est plus lu** depuis le 31/08/2026 (T-005) ; `PRENOM_COMPTE` garde
+la clé `atelier` uniquement pour afficher les vieilles lignes du journal. Cookie HMAC `bj_admin`,
+comparaison `timingSafeEqual`, et un frein sur `/api/admin/login` (délai croissant par échec,
+T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du compte est
 écrit dans `notes.qui`, `numeros.en_charge` et le journal : les gestes sont attribuables.
 
 ## Ce qui se casserait sans qu'on le voie
