@@ -97,6 +97,7 @@ import {
   type EvenementMesure,
   type Seau,
 } from "@/lib/atelier/mesure";
+import { estAbsenceR2 } from "@/lib/atelier/r2";
 
 let ko = 0;
 const ok = (n: string, c: boolean) => {
@@ -1149,6 +1150,25 @@ ok("aucun etat : pas bloque (jamais de verrouillage par defaut)",
 ok(`les logs Vercel parlent a partir du ${SEUIL_JOURNAL}e echec, pas avant`,
    !doitJournaliser(SEUIL_JOURNAL - 1) && doitJournaliser(SEUIL_JOURNAL)
    && doitJournaliser(SEUIL_JOURNAL + 5));
+
+/* ════════ T-012 : un HEAD R2 qui echoue — absence ou panne ? ════════ */
+
+titre("— T-012 : estAbsenceR2 distingue « pas la » (silence) de « panne » (log) —");
+
+ok("NotFound (objet absent) : une absence, silence voulu",
+   estAbsenceR2({ name: "NotFound", $metadata: { httpStatusCode: 404 } }));
+ok("NoSuchKey : une absence aussi",
+   estAbsenceR2({ name: "NoSuchKey" }));
+ok("un 404 sans nom d'erreur reste une absence",
+   estAbsenceR2({ $metadata: { httpStatusCode: 404 } }));
+ok("reseau coupe (TypeError fetch failed) : une PANNE, elle doit parler",
+   !estAbsenceR2(new TypeError("fetch failed")));
+ok("403 AccessDenied (config) : une panne, pas une absence",
+   !estAbsenceR2({ name: "AccessDenied", $metadata: { httpStatusCode: 403 } }));
+ok("500 R2 : une panne",
+   !estAbsenceR2({ name: "InternalError", $metadata: { httpStatusCode: 500 } }));
+ok("null/undefined ne sont jamais une absence (pas de silence par defaut)",
+   !estAbsenceR2(null) && !estAbsenceR2(undefined));
 
 void verifierT005().then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

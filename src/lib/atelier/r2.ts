@@ -208,6 +208,24 @@ function disposition(nom: string): string {
 }
 
 /**
+ * Un HEAD qui échoue ne dit pas toujours la même chose (T-012, T-043).
+ *
+ * « NotFound » (404) est une ABSENCE : l'objet n'est pas là, c'est une réponse
+ * normale — le « pas encore arrivée » du dépôt. Tout le reste (réseau coupé,
+ * 403 de configuration, 500 R2) est une PANNE. Les confondre fait croire
+ * « photo pas encore montée » pendant une panne R2, sans une ligne de log.
+ * PURE : testée dans scripts/verif-atelier.ts.
+ */
+export function estAbsenceR2(err: unknown): boolean {
+  const e = err as { name?: unknown; $metadata?: { httpStatusCode?: unknown } } | null;
+  return (
+    e?.name === "NotFound" ||
+    e?.name === "NoSuchKey" ||
+    e?.$metadata?.httpStatusCode === 404
+  );
+}
+
+/**
  * HEAD de vérification (piège nº7). Renvoie la taille réelle de l'objet, ou
  * null s'il est absent — c'est ainsi qu'on distingue « pas encore arrivé » de
  * « arrivé mais faux ».
@@ -216,7 +234,12 @@ export async function tailleReelle(key: string): Promise<number | null> {
   try {
     const r = await makeR2().send(new HeadObjectCommand({ Bucket: bucket(), Key: key }));
     return typeof r.ContentLength === "number" ? r.ContentLength : null;
-  } catch {
+  } catch (err) {
+    /* Absence (404) : silence voulu, c'est la réponse attendue. Panne : elle
+       PARLE mais rend toujours null — l'appelant réessaie, rien ne casse. */
+    if (!estAbsenceR2(err)) {
+      console.error("[r2] HEAD échoué (panne, pas absence)", key, (err as Error)?.message);
+    }
     return null;
   }
 }
@@ -242,7 +265,13 @@ export async function empreinteObjet(
     const etag = (r.ETag ?? "").replace(/"/g, "");
     const md5 = /^[a-f0-9]{32}$/i.test(etag) ? etag.toLowerCase() : null;
     return { taille, md5 };
-  } catch {
+  } catch (err) {
+    /* Même règle que tailleReelle : l'absence se tait, la panne parle. Ici la
+       confusion coûterait un « fichier manquant » à l'écran d'impression
+       pendant une panne R2 — le PDF est là, seul le HEAD a échoué. */
+    if (!estAbsenceR2(err)) {
+      console.error("[r2] HEAD empreinte échoué (panne, pas absence)", key, (err as Error)?.message);
+    }
     return null;
   }
 }

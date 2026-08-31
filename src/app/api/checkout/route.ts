@@ -137,7 +137,9 @@ export async function POST(request: Request) {
   let supabase: SupabaseClient;
   try {
     supabase = makeSupabase();
-  } catch {
+  } catch (err) {
+    /* T-012 — une panne de config muette ressemblait à un refus de paiement. */
+    console.error("[checkout] makeSupabase échec", (err as Error)?.message);
     return NextResponse.json({ error: "internal" }, { status: 500 });
   }
 
