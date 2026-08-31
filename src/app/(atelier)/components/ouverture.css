@@ -346,8 +346,30 @@
   /* les deux lignes sont ferrees a gauche ici : les rentrer horizontalement
      les desalignerait. Seul le resserrement vertical joue. */
   .at-accueil.plein .h-titre{transform:scale(1.05);translate:0 0}
-  .at-accueil.plein .h-titre .l1{translate:0 calc(6 * var(--uh))}
-  .at-accueil.plein .h-titre .l2{translate:0 calc(-6 * var(--uh))}
+  /* ─── LES DEUX LIGNES SE REJOIGNENT EN UN SEUL TITRE ───
+     Entre elles vit `.h-bandeau` : 26 unites de hauteur, plus ses marges,
+     soit 29,4 au total. Tant que la couverture est repliee, cet ecart EST la
+     composition — le bandeau y montre la photographie. Une fois ouverte,
+     l'image passe en plein ecran et le bandeau ne montre plus rien : l'ecart
+     devient un trou au milieu du titre. MESURE le 31/08/2026 a 390 px : les
+     deux lignes restaient a 140 px l'une de l'autre pour un corps de 36 px,
+     presque quatre fois la hauteur du texte. On lisait deux phrases, pas un
+     titre.
+     14,7 unites chacune, soit exactement la moitie des 29,4 : l'ecart se
+     referme au complet et l'interlignage retombe a ~1,08, contre 1,17 a 14,5
+     et 3,9 avant. Le naturel de ce titre est 1,03 (line-height 1, plus le
+     rembourrage du masque de reveal) : le cheveu qui reste est de l'air
+     voulu entre deux lignes de 36 px, pas un reliquat. La valeur est en
+     unites de hauteur comme le bandeau qu'elle compense — les deux suivent
+     la meme echelle, l'ecart reste juste sur tous les telephones.
+     ⚠️ Si `.h-bandeau` change de hauteur (ligne 347), ces deux valeurs
+     doivent suivre : c'est 29,4/2 moins un cheveu, pas un nombre libre.
+     ⚠️ `translate` ne retire aucune place : la boite du titre garde sa
+     hauteur, et la photographie occupe l'espace laisse libre sous les deux
+     lignes. C'est voulu — animer une hauteur ferait une mise en page a
+     chaque frame (PRD §15). */
+  .at-accueil.plein .h-titre .l1{translate:0 calc(14.7 * var(--uh))}
+  .at-accueil.plein .h-titre .l2{translate:0 calc(-14.7 * var(--uh))}
   .at-accueil .h-bandeau{height:calc(26 * var(--uh));min-height:0;margin:calc(1.6 * var(--uh)) 0 calc(1.8 * var(--uh))}
   .at-accueil .h-bas{flex-direction:column;align-items:stretch;gap:calc(2.8 * var(--uh));margin-top:calc(3 * var(--uh))}
   .at-accueil .h-gauche{max-width:none}
