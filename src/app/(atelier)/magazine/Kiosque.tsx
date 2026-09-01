@@ -73,14 +73,23 @@ export default function Kiosque() {
           </div>
         </Reveal>
 
-        <p className="kiosque-note">
-          Un album, on en fait un dans sa vie. Un numéro, on en fait un par
-          moment. Le festival de juin, l’été, la soirée d’octobre…
-        </p>
+        {/* La note qui legendait le collage a ete RETIREE le 31/08/2026, sur
+            demande de Mathias : « Un album, on en fait un dans sa vie. Un
+            numero, on en fait un par moment. Le festival de juin, l'ete, la
+            soiree d'octobre… ». Elle ne paraissait que sur grand ecran — le
+            telephone la masquait deja. L'argument qu'elle portait n'est pas
+            perdu : « Un numero par moment » vit dans la description de la
+            page, dans le partage social et sur /numero. */}
       </div>
 
-      {/* ── colonne droite : le récit, le parcours, la grille, l'acte ── */}
-      <div>
+      {/* ── colonne droite : le récit, la grille, l'acte ──
+          Le parcours n'est plus ici : il est sorti en bande pleine largeur
+          sous les deux colonnes (voir plus bas).
+          ⚠️ La classe n'est pas decorative. Le CSS visait cette colonne par
+          `.kiosque > div:last-child`, ce qui designait le DERNIER enfant de
+          la section : des qu'on en ajoute un troisieme, la regle change de
+          cible en silence. */}
+      <div className="colonne-recit">
         <Reveal>
           {/* Sur UNE ligne, sans retour forcé : à gauche le masthead dit
               « MAGAZINE », ici la phrase dit de quoi il est le magazine. Les
@@ -97,21 +106,6 @@ export default function Kiosque() {
             <b>L’atelier compose votre magazine personnalisé</b>, imprimé page
             à page. Vous voyez la couverture avant de décider.
           </p>
-        </Reveal>
-
-        <Reveal delay={70} className="bloc-pas">
-          <ol className="pas">
-            {ETAPES.map((e, i) => (
-              <li key={e.titre}>
-                <span className="n" aria-hidden="true">{i + 1}</span>
-                <span>
-                  <b>{e.titre}</b>
-                  <p>{e.texte}</p>
-                </span>
-                <span className="quand">{RYTHME[i]}</span>
-              </li>
-            ))}
-          </ol>
         </Reveal>
 
         <Reveal delay={140} className="bloc-prix">
@@ -171,6 +165,32 @@ export default function Kiosque() {
           </div>
         </Reveal>
       </div>
+
+      {/* ── le parcours, en bande sous les deux colonnes ──
+          Il etait la quatrieme chose de la colonne de droite, remise APRES le
+          bouton par un `order` pour ne pas manger le premier ecran. Demande
+          de Mathias, 31/08/2026 : qu'il sorte carrement de la composition a
+          deux colonnes et passe dessous, en ligne. Deux choses s'ensuivent —
+          le premier ecran ne montre plus que les images et le texte, chacun
+          sur toute la hauteur ; et les trois etapes se lisent cote a cote, ce
+          qui est leur forme naturelle : elles sont paralleles, pas empilees.
+          ⚠️ Il reste APRES la colonne de droite dans le DOM, donc apres le
+          bouton pour le clavier et le lecteur d'ecran — c'est l'ordre de
+          lecture voulu, et il n'a plus besoin d'`order` pour l'obtenir. */}
+      <Reveal delay={70} className="bloc-pas">
+        <ol className="pas">
+          {ETAPES.map((e, i) => (
+            <li key={e.titre}>
+              <span className="n" aria-hidden="true">{i + 1}</span>
+              <span>
+                <b>{e.titre}</b>
+                <p>{e.texte}</p>
+              </span>
+              <span className="quand">{RYTHME[i]}</span>
+            </li>
+          ))}
+        </ol>
+      </Reveal>
     </section>
   )
 }

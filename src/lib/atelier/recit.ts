@@ -281,6 +281,33 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
       };
     }
 
+    /* T-021 — la remise posée D'OFFICE sur la session de paiement (01/09).
+       C'est la ligne qui répond à « pourquoi a-t-elle payé 10 € ». Le code
+       reste dans le payload replié : la phrase dit le geste, pas le secret. */
+    case "credit_fondatrice_applique": {
+      const nf = payload.numero_fondateur;
+      return {
+        texte: "Crédit fondatrice de 30 € appliqué automatiquement",
+        detail:
+          (typeof nf === "number" ? `Fondatrice nº${nf}. ` : "") +
+          "Elle n'a rien eu à saisir : la remise était déjà sur sa page de paiement",
+        ton: "nous",
+      };
+    }
+
+    /* Le paiement est passé AVEC la remise : le droit contractuel est soldé.
+       Écrit par le webhook Stripe, jamais par nous. */
+    case "credit_fondatrice_consomme": {
+      const m = payload.montant;
+      return {
+        texte: "Crédit fondatrice dépensé",
+        detail:
+          (typeof m === "number" ? `${(m / 100).toFixed(0)} € déduits. ` : "") +
+          "Le droit de l'article 5 bis est soldé : il ne s'appliquera plus",
+        ton: "neutre",
+      };
+    }
+
     case "paiement_inattendu":
       return { texte: "Paiement inattendu", detail: "À vérifier chez Stripe", ton: "alerte" };
 
@@ -385,6 +412,24 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         texte: "Signal d'expédition inattendu",
         detail: `Le dossier n'était pas en production (état « ${String(payload.etat ?? "?")} »)`,
         ton: "alerte",
+      };
+
+    /* T-076 — le dossier a été refermé au bout de 90 jours sans activité.
+       C'est la SEULE trace lisible de ce qui a disparu : la ligne, elle, ne
+       dit plus rien (email, prénom, histoire et titre sont partis). Le
+       nombre de photos effacées et la date du préavis y sont, parce que
+       « qu'aviez-vous sur moi, et quand l'avez-vous effacé » est une
+       question à laquelle il faut savoir répondre. */
+    case "dossier_anonymise":
+      return {
+        texte: "Dossier refermé et anonymisé",
+        detail:
+          `${payload.jours_inactivite ?? "?"} jours sans activité, ` +
+          `${payload.photos_effacees ?? 0} objet(s) effacé(s) du coffre` +
+          (typeof payload.preavis_le === "string" && payload.preavis_le.includes("-")
+            ? ` — préavis M10 parti le ${payload.preavis_le.slice(0, 10)}`
+            : ""),
+        ton: "neutre",
       };
 
     default:

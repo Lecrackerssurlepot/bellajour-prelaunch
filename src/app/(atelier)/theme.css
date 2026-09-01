@@ -9,9 +9,32 @@
    Toute valeur hexadécimale ailleurs dans /atelier est un bug.
    ════════════════════════════════════════════════════════════ */
 
+/* ── LE FOND DE PAGE N'EST PAS LE FOND DU BLOC ──
+   `html`/`body` portent le degrade CREME de la prevente (globals.css). Il
+   reste dessous quand l'atelier est noir, et il se montre partout ou la page
+   ne couvre pas exactement l'ecran : sous la barre d'outils de Chrome iOS
+   quand elle se retracte, dans la zone sure du bas (le document est en
+   `viewport-fit=cover`), au-dela de la fin du document. Sur Chrome iPhone
+   cela donne un lisere creme en bas d'un site noir — signale par Mathias le
+   31/08/2026, sur les trois pages a la fois. Meme defaut qu'en mai sur les
+   preventes, ou un wrapper transparent laissait filtrer le creme aux
+   jonctions (commit b03a954).
+
+   ⚠️ Le fond de page appartient a <html> : il ne peut PAS heriter d'un
+   descendant, donc `--c-void` pose sur `.bj-atelier` lui est invisible. D'ou
+   ce jeton unique sur :root, dont `--c-void` derive juste en dessous — un
+   seul noir, une seule source. Il ne repeint rien tout seul : seule la regle
+   `:has()` le consomme, et elle ne s'applique qu'aux routes ou l'atelier est
+   present. /preventes, /merci, /inviter et les pages legales restent creme.
+   C'est la seule entorse au « aucun jeton de la charte sur :root », et elle
+   est technique, pas esthetique. */
+:root { --c-atelier-void: #020202; }
+html:has(.bj-atelier),
+body:has(.bj-atelier) { background: var(--c-atelier-void); }
+
 .bj-atelier {
   /* ---- surfaces ---- */
-  --c-void: #020202;
+  --c-void: var(--c-atelier-void);
   --c-bg: #070708;
   --c-surface-1: #0e0e10;
   --c-surface-2: #161618;
@@ -118,7 +141,7 @@
 
 .bj-atelier {
   position: relative;
-  min-height: 100dvh;
+  min-height: var(--app-height);
   background: var(--grad-ambient);
   color: var(--c-text);
   font-family: var(--font-ui);

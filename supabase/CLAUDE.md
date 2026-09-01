@@ -38,6 +38,7 @@ Après toute migration, vérifier que la donnée arrive vraiment — pas seuleme
 
 ## État connu
 
-18 fichiers sur disque, 16 dans l'historique appliqué. Trois anciennes (`20260528_*`,
+19 fichiers sur disque, 16 dans l'historique appliqué. `20260901_atelier_retention.sql`
+(colonne `numeros.anonymise_le`, T-076) est écrite mais **pas encore appliquée**. Trois anciennes (`20260528_*`,
 `20260704_notion_synced`) sont absentes de l'historique mais leurs colonnes existent : appliquées
 hors CLI. Le détail à jour, avec ce qui manque, est dans `docs/reference/ETAT-PRODUCTION.md`.

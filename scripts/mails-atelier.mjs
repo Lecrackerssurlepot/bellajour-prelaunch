@@ -107,6 +107,91 @@ function encartMot() {
 }
 
 /**
+ * L'encart du crédit fondatrice (T-021), sur M3 et M3b.
+ *
+ * Rendu SEULEMENT pour les quatorze fondatrices, dont le crédit de 30 € (CGV
+ * v3.0 art. 5 bis) n'a pas encore été dépensé. `parametresPour` envoie une
+ * chaîne VIDE pour tout le monde d'autre, et le `{% if %}` la traite comme
+ * faux : le bloc disparaît, personne d'autre n'apprend qu'il existe.
+ *
+ * Pourquoi ça compte : le pied du mail annonce « 40 € tout compris ». Une
+ * fondatrice qui clique et découvre 10 € chez Stripe a une bonne surprise,
+ * mais une surprise quand même, et une surprise sur un prix fait douter au
+ * pire moment. Le mail annonce donc la remise AVANT le clic.
+ *
+ * Le mot « code » n'apparaît nulle part, volontairement : il n'y a rien à
+ * saisir, et suggérer un champ à remplir ferait chercher un champ qui
+ * n'existe plus sur l'écran de Stripe.
+ */
+function encartCredit() {
+  return `{% if params.CREDIT_FONDATRICE %}<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border-left: 2px solid #d68a63; border-radius: 0 12px 12px 0;">
+<tr><td style="padding: 24px 26px 8px 26px;">
+<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Votre cr&eacute;dit de fondatrice</div>
+</td></tr>
+<tr><td style="padding: 0 26px 24px 26px;">
+<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Vos {{ params.CREDIT_FONDATRICE }}&nbsp;&euro; de cr&eacute;dit sont d&eacute;j&agrave; d&eacute;duits du prix ci-dessous. Vous n&rsquo;avez rien &agrave; saisir : la remise vous attend sur la page de paiement.</p>
+</td></tr>
+</table>
+</td></tr>{% endif %}`;
+}
+
+/**
+ * L'encart de M10 (T-076, 01/09) : la couverture qui attend toujours.
+ *
+ * La population B de la rétention, c'est très majoritairement une couverture
+ * composée et jamais achetée. Pour elle, M10 n'est pas seulement un préavis :
+ * c'est LA DERNIÈRE CHANCE DE VENTE du dossier, et le dernier mail qu'elle
+ * recevra à son sujet. Lui répéter la pagination et le prix, comme le fait
+ * M3b, coûte deux lignes et peut sauver la commande.
+ *
+ * ⚠️ Il ne remplace pas le préavis, il s'ajoute avant lui. L'ordre compte :
+ * ce qu'elle gagne à revenir, puis ce qu'elle perd à ne pas revenir. Dire la
+ * perte d'abord ferait un mail qui menace ; dire l'offre d'abord fait un mail
+ * qui rappelle.
+ */
+function encartCouverturePrete() {
+  return `{% if params.COUVERTURE_PRETE %}<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border-left: 2px solid #d68a63; border-radius: 0 12px 12px 0;">
+<tr><td style="padding: 24px 26px 8px 26px;">
+<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Votre couverture vous attend</div>
+</td></tr>
+<tr><td style="padding: 0 26px 24px 26px;">
+<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Elle est prête depuis longtemps, et elle n&rsquo;a pas bougé. {{ params.NB_PAGES }} pages, {{ params.PRIX }}&nbsp;&euro; tout compris, impression et livraison incluses.</p>
+</td></tr>
+</table>
+</td></tr>{% endif %}`;
+}
+
+/**
+ * L'encart de M10 (T-076) : les photos qui vont partir avec le dossier.
+ *
+ * Rendu SEULEMENT s'il y a des photos. Le cas visé est celui du dépôt resté
+ * en plan (celui de M2b) : quarante photos sont montées sur le coffre, le
+ * dernier bouton n'a jamais été cliqué, et la cliente les croit en sécurité.
+ * Refermer son dossier sans lui avoir écrit qu'elles seraient effacées serait
+ * la seule chose vraiment indéfendable de tout ce fichier.
+ *
+ * ⚠️ PHOTOS_DEPOSEES est une CHAÎNE, vide quand il n'y en a pas. Le nombre 0
+ * est VRAI pour ce `{% if %}` : passer un entier ferait apparaître « vos 0
+ * photos seront effacées » sur tous les questionnaires abandonnés à vide,
+ * c'est-à-dire sur la majorité d'entre eux. Même mécanique que
+ * CREDIT_FONDATRICE et MOT, pour la même raison.
+ */
+function encartPhotosEnAttente() {
+  return `{% if params.PHOTOS_DEPOSEES %}<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border-left: 2px solid #d68a63; border-radius: 0 12px 12px 0;">
+<tr><td style="padding: 24px 26px 8px 26px;">
+<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Vos photos sont encore l&agrave;</div>
+</td></tr>
+<tr><td style="padding: 0 26px 24px 26px;">
+<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">{{ params.PHOTOS_DEPOSEES }} photos vous attendent dans ce num&eacute;ro. Elles seront effac&eacute;es en m&ecirc;me temps que le dossier, et nous n&rsquo;en garderons aucune copie.</p>
+</td></tr>
+</table>
+</td></tr>{% endif %}`;
+}
+
+/**
  * L'encart de suivi de M7, rendu SEULEMENT si on a une adresse de suivi.
  *
  * Le motif est celui de la recette du 26/08 : Cloudprinter donne un NUMÉRO
@@ -275,13 +360,23 @@ export const MAILS = [
     pied: "Une hésitation avant de vous lancer ? Répondez à ce message, nous vous répondrons nous-mêmes.",
   },
   {
+    /* ⚠️ CE MAIL NE PARLE PAS DE DROITS (correctif du 01/09, validé par
+       Mathias). Sa première rédaction disait « il manque votre accord pour
+       qu'on s'en serve » : exact au regard de consent_photos, et illisible
+       pour elle. On lit un problème juridique, une case à signer, un doute
+       sur ce qu'on va faire de ses photos. Or il n'y a rien de tout ça :
+       elle a simplement quitté l'écran 5 avant le dernier bouton, et son
+       dépôt n'est pas parti. Le mail dit donc l'étape, pas le droit.
+       Même consigne qu'à l'écran 5 : UNE seule idée, et elle désigne le
+       bouton. On ne rouvre jamais la question « sont-elles arrivées ou
+       pas » — elles le sont, c'est le titre du mail. */
     code: "M2b",
     nom: "M2b · Atelier · Vos photos sont arrivées",
-    sujet: `Vos photos sont arrivées, ${TITRE} attend un mot de vous`,
-    preheader: "Elles sont bien chez nous. Il ne manque que votre accord.",
+    sujet: `Vos photos sont arrivées, ${TITRE} attend le dernier geste`,
+    preheader: "Elles sont bien chez nous. Votre dépôt n'est pas encore parti.",
     titreHtml: "Vos photos sont arrivées",
     h1: "Vos photos<br />sont arrivées.",
-    sous: `${PRENOM}, vos {{ params.NB_PHOTOS }} photos sont bien dans nos mains, en sécurité. Il ne manque qu'un geste : votre accord pour qu'on s'en serve. Un clic, et l'atelier commence.`,
+    sous: `${PRENOM}, vos {{ params.NB_PHOTOS }} photos sont bien dans nos mains, en sécurité. Il reste le dernier geste du dépôt, celui qui les confie à l'atelier. Un clic, et nous commençons.`,
     cta: "Terminer mon dépôt",
     lien: LIEN,
     pied: "Vous n'avez rien à redéposer : tout est déjà là. Une question ? Répondez à ce message, nous vous répondrons nous-mêmes.",
@@ -298,7 +393,9 @@ export const MAILS = [
     titreHtml: "Votre couverture est prête",
     h1: "Votre couverture<br />est prête.",
     sous: `${PRENOM}, l'atelier a composé la couverture de votre numéro. Elle vous attend sur votre page, avec sa quatrième, une double page, sa pagination et son prix.`,
-    carte: carteCouverture(TITRE),
+    /* T-021 : la carte-couverture, puis le crédit fondatrice quand il est dû.
+       Dans cet ordre : on montre l'objet, ensuite on parle d'argent. */
+    carte: carteCouverture(TITRE) + encartCredit(),
     cta: "Découvrir ma couverture",
     lien: LIEN,
     pied: "{{ params.NB_PAGES }} pages, {{ params.PRIX }} € tout compris, impression et livraison incluses. Vous ne payez que si elle vous plaît.",
@@ -311,11 +408,14 @@ export const MAILS = [
     titreHtml: "Votre numéro vous attend",
     h1: "Votre numéro<br />vous attend.",
     sous: `${PRENOM}, votre couverture est prête depuis quelques jours. Elle vous attend exactement là où vous l’avez laissée, avec sa pagination et son prix.`,
-    carte: carteChiffres(
-      { valeur: "{{ params.NB_PAGES }}", legende: "pages", grand: true },
-      { valeur: "{{ params.PRIX }}&nbsp;&euro;", legende: "tout compris", grand: true },
-      "Impression et livraison comprises. Chez vous sous 10 jours après validation.",
-    ),
+    /* M3b porte le MÊME lien de paiement que M3 : s'il taisait le crédit
+       alors que M3 l'annonçait, la relance contredirait le premier mail. */
+    carte:
+      carteChiffres(
+        { valeur: "{{ params.NB_PAGES }}", legende: "pages", grand: true },
+        { valeur: "{{ params.PRIX }}&nbsp;&euro;", legende: "tout compris", grand: true },
+        "Impression et livraison comprises. Chez vous sous 10 jours après validation.",
+      ) + encartCredit(),
     cta: "Revoir ma couverture",
     lien: LIEN,
     pied: "Un détail à changer avant de vous décider ? Répondez à ce message, on ajuste sans frais.",
@@ -391,6 +491,48 @@ export const MAILS = [
     cta: "Ajouter des photos",
     lien: LIEN,
     pied: "Celles que vous avez déjà déposées sont conservées : vous complétez, vous ne recommencez pas.",
+  },
+  {
+    /* M10 — T-076, le préavis de fermeture. LE SEUL MAIL DE TOUTE LA SÉRIE
+       QUI ANNONCE UNE PERTE, et il faut donc l'écrire à l'envers des autres.
+
+       Ce qu'il ne fait PAS, et chaque point est une décision :
+       — il ne culpabilise pas. Trois mois plus tard, personne ne se souvient
+         d'avoir commencé quelque chose. Le ton est celui d'un rangement, pas
+         d'un reproche ;
+       — il ne menace pas d'une échéance vague. Il donne LA date, celle que
+         le script appliquera vraiment (retention.ts, une seule fonction) ;
+       — il ne demande rien d'autre qu'un clic. Le lien est le lien permanent
+         de son numéro, celui de M0 : elle retombe exactement où elle s'était
+         arrêtée, avec ses photos si elle en avait déposé.
+
+       Ce qu'il fait, et qui est obligatoire : il dit que les photos seront
+       effacées. Un dépôt resté en plan peut contenir quarante photos qu'elle
+       croit en sécurité chez nous. Les effacer sans l'avoir écrit noir sur
+       blanc serait indéfendable. D'où l'encart conditionnel. */
+    code: "M10",
+    nom: "M10 · Atelier · Votre numéro va se refermer",
+    sujet: `${TITRE} va se refermer`,
+    preheader: "Sans nouvelles de vous, nous refermerons son dossier.",
+    titreHtml: "Votre numéro va se refermer",
+    h1: "Votre numéro<br />va se refermer.",
+    /* ⚠️ CE TEXTE NE DIT PLUS « votre dépôt n'a jamais été terminé ».
+       Depuis la décision du 01/09, M10 part AUSSI aux dossiers dont le dépôt
+       est terminé : celui que l'atelier n'a jamais composé, le 1b resté sans
+       réponse, et surtout la couverture publiée jamais achetée. Leur écrire
+       qu'ils n'ont pas fini serait leur reprocher notre propre silence.
+       La phrase commune ne parle donc que du TEMPS, qui est vrai dans tous
+       les cas ; ce qui distingue les situations vit dans les deux encarts
+       conditionnels, pas dans le texte de base. */
+    sous: `${PRENOM}, votre numéro n'a plus bougé depuis trois mois. Sans nouvelles de vous d'ici le {{ params.DATE_CLOTURE }}, nous refermons son dossier et nous effaçons ce que vous nous aviez confié. D'ici là, rien n'a changé : votre lien vous ramène exactement où vous vous étiez arrêtée.`,
+    /* Deux encarts, jamais les mêmes selon le dossier. Ils peuvent coexister
+       (une couverture prête ET des photos au coffre) et se lisent alors dans
+       le bon ordre : ce qu'elle gagne à revenir, puis ce qu'elle perd à ne
+       pas revenir. */
+    carte: encartCouverturePrete() + encartPhotosEnAttente(),
+    cta: "Reprendre mon numéro",
+    lien: LIEN,
+    pied: "Si vous préférez que nous refermions ce dossier, vous n'avez rien à faire. Et si vous voulez le reprendre plus tard, dites-le nous : répondez à ce message, nous vous répondrons nous-mêmes.",
   },
 ];
 
@@ -498,6 +640,15 @@ async function main() {
     SUIVI: "https://www.laposte.fr/outils/suivre-vos-envois?code=6A123456789FR",
     CODE_SUIVI: "6A123456789FR",
     DATE_LIMITE: "3 septembre",
+    DATE_CLOTURE: "12 décembre",
+    /* T-076 : le cas à REGARDER dans l'aperçu de M10 est celui où il y a des
+       photos, parce que c'est le seul où le mail annonce une perte concrète.
+       Le cas vide se lit en supprimant la ligne. */
+    PHOTOS_DEPOSEES: "42",
+    /* L'aperçu montre la population B, celle qui a une couverture prête : le
+       cas le plus riche des deux, et celui qu'il faut juger à l'oeil. Le cas
+       du questionnaire abandonné se lit en vidant cette valeur. */
+    COUVERTURE_PRETE: "oui",
     LIEN: "https://www.bellajour.fr/numero/apercu",
   };
   const remplir = (html) =>

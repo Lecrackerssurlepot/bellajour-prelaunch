@@ -4,7 +4,7 @@
 
 .lg {
   width: 100%;
-  min-height: 100dvh;
+  min-height: var(--app-height);
   background: linear-gradient(180deg, var(--bj-cream) 0%, var(--bj-cream-2) 100%);
   color: var(--bj-text);
   font-family: var(--bj-font-ui);

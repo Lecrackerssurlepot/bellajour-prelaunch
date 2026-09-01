@@ -9,6 +9,19 @@
    PAS posé et le risque est accepté en connaissance de cause : voir D5
    dans DECISIONS.md. La correction est le patron .pv-nav--flat, écrite
    d'avance, à poser dès qu'un Android passe à portée. */
+/* ⚠️ LA HAUTEUR DE LA BARRE, DITE UNE SEULE FOIS.
+   `.at-nav` est `position: fixed` : elle RECOUVRE le haut de la page, rien
+   dans le flux ne connait sa hauteur. Chaque page qui doit demarrer dessous
+   la reconstituait donc dans son coin — pdp.css le faisait, avec un
+   avertissement disant que la valeur devait suivre nav.css a la main. Elle
+   est desormais posee ICI, ou vit le rembourrage qu'elle mesure : 2 × 2,6
+   unites de hauteur, plus le bouton du logo dont la cible tactile fait 44 px
+   et grandit avec la signature. MESURE : 91 px a 1440x900, 86 px sur un
+   telephone de 812, 76 px sur un viewport de 620.
+   ⚠️ Si le rembourrage ci-dessous change, cette ligne doit suivre — mais
+   elle seule, et plus une copie ailleurs. */
+.bj-atelier { --nav-h: calc(5.2 * var(--uh) + clamp(44px, 1.6vw + 24px, 52px)); }
+
 .at-nav {
   position: fixed;
   top: 0;
@@ -19,7 +32,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 2.6dvh var(--md) 2.6dvh var(--mg);
+  padding: calc(2.6 * var(--uh)) var(--md) calc(2.6 * var(--uh)) var(--mg);
   background: var(--glass-bg-strong);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
@@ -33,8 +46,8 @@
 /* dès 40 px : la barre ne se cache jamais, donc sans un voile plus dense
    le contenu de l'ouverture lui défilerait au travers. */
 .at-nav.is-stuck {
-  padding-top: 1.9dvh;
-  padding-bottom: 1.9dvh;
+  padding-top: calc(1.9 * var(--uh));
+  padding-bottom: calc(1.9 * var(--uh));
   background: var(--glass-bg-plein);
 }
 

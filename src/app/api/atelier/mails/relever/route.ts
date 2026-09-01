@@ -53,11 +53,13 @@ import {
   codesPour,
   doitAutoValider,
   envoyerMailAtelier,
+  lireJalons,
   manquePour,
   type CodeMail,
   type Envoyes,
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
+import { meriteUnRegardDeRetention, type Jalons } from "@/lib/atelier/retention";
 import { logEvenement } from "@/lib/atelier/evenements";
 import { memeSecret } from "@/lib/atelier/secret";
 
@@ -156,6 +158,19 @@ async function relever(request: Request) {
     }
 
     const maintenant = new Date();
+
+    /* ── T-076 : les jalons de rétention, pour les seuls dossiers concernés ──
+       La date du dépôt vit dans `evenements` et celle de la dernière photo
+       dans `photos` : deux requêtes de plus. Le pré-tri les évite pour la
+       quasi-totalité du balayage — il calcule l'âge sans elles, ce qui est un
+       MAJORANT (un jalon ne peut que rajeunir un dossier), donc rien ne peut
+       passer au travers. Sur une base de dossiers récents, la liste est vide
+       et aucune des deux requêtes ne part. */
+    const candidats = lignes.filter((d) => meriteUnRegardDeRetention(d, maintenant));
+    const jalonsPar: Map<string, Jalons> = candidats.length
+      ? await lireJalons(supabase, candidats.map((d) => d.id))
+      : new Map();
+
     const envoyes: Array<{ code: string; token: string; titre: string | null }> = [];
     const incomplets: Array<{ code: string; token: string; manque: string[] }> = [];
     const echecs: Array<{ code: string; token: string }> = [];
@@ -197,7 +212,11 @@ async function relever(request: Request) {
         continue;
       }
 
-      for (const code of codesPour(d, dejaPartis, maintenant)) {
+      /* Vide pour l'immense majorité des dossiers : seuls ceux qui approchent
+         des 90 jours ont vu leurs jalons chargés. */
+      const jalons = jalonsPar.get(d.id);
+
+      for (const code of codesPour(d, dejaPartis, maintenant, jalons)) {
         /* Signalé plutôt qu'envoyé. C'est le cas le plus utile de toute la
            route : un dossier passé en état 2 sans son aperçu ou sans son
            palier ressort ici, et l'atelier voit tout de suite ce qui manque
@@ -208,7 +227,7 @@ async function relever(request: Request) {
           continue;
         }
 
-        const r = await envoyerMailAtelier(supabase, code as CodeMail, d);
+        const r = await envoyerMailAtelier(supabase, code as CodeMail, d, undefined, jalons);
         if (r.statut === "envoye") envoyes.push({ code, token: d.token, titre: d.titre });
         else if (r.statut === "sans_template") sansTemplate.push({ code, token: d.token });
         else if (r.statut !== "deja_envoye") echecs.push({ code, token: d.token });

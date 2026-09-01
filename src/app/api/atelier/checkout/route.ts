@@ -10,6 +10,12 @@ import {
   CODE_FISCAL_ALBUM,
   type PalierCle,
 } from "@/lib/atelier/prix";
+import {
+  assurerCreditFondatrice,
+  CREDIT_FONDATRICE_CENTIMES,
+  EVT_CREDIT_APPLIQUE,
+  META_CREDIT,
+} from "@/lib/atelier/fondatrice";
 
 /**
  * POST /api/atelier/checkout — le bouton « Commander » de l'état 2 (PRD §8, §9).
@@ -34,6 +40,12 @@ import {
  * tableau de bord, ces mêmes 40 € se découpent tout seuls en 32,52 € HT +
  * 7,48 € de TVA sur la facture — sans redéploiement, sans changement de prix,
  * sans toucher à ce fichier. C'est toute la raison de le câbler maintenant.
+ *
+ * LE CRÉDIT FONDATRICE (T-021, 01/09). La remise de 30 € des quatorze
+ * fondatrices s'applique TOUTE SEULE : le serveur relit `waitlist`, réutilise
+ * ou frappe le code à usage unique, et le pose sur la session. La cliente ne
+ * tape rien. Le pourquoi, les bornes et le risque assumé sont écrits en tête
+ * de src/lib/atelier/fondatrice.ts — c'est là que vit la règle, pas ici.
  *
  * La route ne CONFIRME rien : le passage à l'état `payee` appartient au
  * webhook (src/lib/atelier/paiement.ts). Ici on ne fait qu'ouvrir une porte.
@@ -73,6 +85,7 @@ type Ligne = {
   titre: string | null;
   prenom: string | null;
   email: string | null;
+  email_canonical: string | null;
   nb_pages: number | null;
   palier: PalierCle | null;
   cgv_ok: boolean;
@@ -103,7 +116,7 @@ export async function POST(request: Request) {
     const { data: numero, error: lectureErr } = await supabase
       .from("numeros")
       .select(
-        "id, token, etat, titre, prenom, email, nb_pages, palier, " +
+        "id, token, etat, titre, prenom, email, email_canonical, nb_pages, palier, " +
           "cgv_ok, cgv_ok_at, renonciation_retractation, renonciation_at"
       )
       .eq("token", token)
@@ -162,6 +175,40 @@ export async function POST(request: Request) {
     const origin = request.headers.get("origin") || SITE_URL;
     const stripe = new Stripe(stripeKey);
 
+    /* ─── Le crédit fondatrice, appliqué D'OFFICE (T-021, 01/09) ──────────
+       Décision de Mathias : la cliente ne tape rien. Le serveur relit
+       `waitlist` lui-même, réutilise ou frappe le code, et pose la remise
+       sur la session. Toute la règle vit dans `fondatrice.ts` — y compris
+       le raisonnement de sécurité, qu'il faut avoir lu avant de toucher à
+       ces vingt lignes.
+
+       Ne peut pas faire échouer un paiement : `assurerCreditFondatrice` ne
+       throw pas et rend « indisponible » dès qu'un doute existe. Dans ce
+       cas la cliente paie plein tarif, ce qui se rembourse — l'inverse, une
+       session qui n'existe pas, ne se rattrape pas. */
+    const credit = await assurerCreditFondatrice(supabase, stripe, {
+      id: numero.id,
+      prenom: numero.prenom,
+      email: numero.email,
+      email_canonical: numero.email_canonical,
+    });
+    /* ⚠️ LE PALIER À 30 € TOMBE À ZÉRO. Un numéro de 20 à 28 pages coûte
+       exactement 30 € : avec le crédit, la fondatrice n'a plus rien à payer.
+       Stripe l'accepte (il n'affiche alors aucun moyen de paiement et la
+       session se solde en `payment_status: "no_payment_required"`), le
+       webhook la fait passer en `payee` comme les autres — mais elle
+       n'aura AUCUN `payment_intent`. C'est voulu : le crédit est dû, on ne
+       va pas lui facturer un euro symbolique. À surveiller au premier cas
+       réel : c'est le seul chemin du tunnel où l'on encaisse zéro. */
+    const remiseAppliquee = credit.statut === "pret";
+    if (credit.statut === "indisponible") {
+      console.error(
+        "[atelier/checkout] crédit fondatrice indisponible, plein tarif appliqué",
+        numero.id,
+        credit.pourquoi,
+      );
+    }
+
     let session: Stripe.Checkout.Session;
     try {
       session = await stripe.checkout.sessions.create({
@@ -190,16 +237,26 @@ export async function POST(request: Request) {
 
         /* Le crédit de prévente (CGV art. 5 bis). Les 14 fondateurs ont versé
            25 € en juin contre un crédit de 30 € : la prévente est close, mais
-           ce crédit reste dû. Il s'impute ICI, par un code nominatif à usage
-           unique généré au cas par cas après vérification de la ligne
-           `waitlist` — et non par une lecture automatique de la base.
-           POURQUOI PAS AUTOMATIQUE : le tunnel de l'atelier n'a aucune
-           authentification. L'email du dossier est saisi à l'écran 4, par qui
-           veut. Accorder 30 € sur la seule foi d'un email tapé au clavier
-           reviendrait à distribuer la remise à qui devine l'adresse d'une
-           fondatrice. Un code envoyé à la personne vérifiée ferme cette porte.
-           Ils sont quatorze : le geste manuel est tenable, et il est sûr. */
-        allow_promotion_codes: true,
+           ce crédit reste dû, et depuis le 01/09 il s'impute TOUT SEUL.
+
+           ⚠️ STRIPE INTERDIT `discounts` ET `allow_promotion_codes` SUR LA
+           MÊME SESSION. Ce n'est pas un détail de style : les poser tous les
+           deux fait échouer la création de session, donc empêche la cliente
+           de payer. Quand la remise est d'office, le champ « code promo »
+           disparaît de l'écran Stripe — elle n'en a plus besoin, la ligne
+           « -30,00 € » est déjà là. Sans crédit, on garde le champ, parce
+           que le filet manuel (l'admin frappe un code et le dicte) doit
+           rester utilisable.
+
+           POURQUOI AUTOMATIQUE, malgré l'absence d'authentification du
+           tunnel : le raisonnement complet et ses quatre bornes sont écrits
+           en tête de `src/lib/atelier/fondatrice.ts`. En deux lignes : le
+           droit est contractuel, et un droit qui dépend d'un geste humain
+           n'est pas un droit ; le risque (deviner l'email d'une des quatorze
+           fondatrices) est borné à 30 € une fois, tracé, et réparable. */
+        ...(remiseAppliquee
+          ? { discounts: [{ promotion_code: credit.promotionCodeId }] }
+          : { allow_promotion_codes: true }),
         automatic_tax: { enabled: true },
 
         line_items: [
@@ -231,6 +288,19 @@ export async function POST(request: Request) {
           numero_id: numero.id,
           token: numero.token,
           palier: numero.palier ?? "",
+          /* T-021 — la remise se lit DANS STRIPE, pas seulement chez nous :
+             le code apparaît sur la session et sur la facture. C'est aussi
+             ce que le webhook relit pour savoir que le crédit a été dépensé
+             (et non un code promo quelconque tapé à la main). Vide quand il
+             n'y a pas de remise d'office : une métadonnée qui ne dit rien
+             n'encombre pas la lecture. */
+          ...(remiseAppliquee
+            ? {
+                [META_CREDIT]: credit.code,
+                credit_fondatrice_numero: String(credit.numeroFondateur),
+                credit_fondatrice_centimes: String(CREDIT_FONDATRICE_CENTIMES),
+              }
+            : {}),
         },
         /* Le même discriminant sur le PaymentIntent, donc sur la Charge.
            `charge.refunded` ne porte AUCUNE métadonnée de session : sans
@@ -279,10 +349,40 @@ export async function POST(request: Request) {
        le plus important du dossier : le jour où une cliente dit « j'ai payé »
        sans trace de paiement, c'est cette ligne qui dit si elle a seulement
        atteint la page de Stripe. */
+    /* T-021 — la remise posée d'office, dans le récit du dossier. Écrite
+       APRÈS la session : on ne raconte que ce qui a réellement eu lieu.
+       Ce n'est PAS le verrou d'unicité (Stripe l'est, via max_redemptions),
+       c'est la trace qui permettra de dire à une cliente, dans six mois,
+       quel code a été appliqué à quelle commande. */
+    if (remiseAppliquee) {
+      await logEvenement(supabase, numero.id, EVT_CREDIT_APPLIQUE, {
+        code: credit.code,
+        montant: CREDIT_FONDATRICE_CENTIMES,
+        numero_fondateur: credit.numeroFondateur,
+        session_id: session.id,
+        code_deja_frappe: credit.deja,
+        par: "auto",
+      });
+      if (!credit.journalEcrit) {
+        /* Le code existe chez Stripe mais n'est pas au journal : notre
+           idempotence est cassée pour cette fondatrice. Stripe tient encore
+           (max_redemptions: 1), mais un second passage frapperait un second
+           code, inutilisable, qui polluerait le tableau de bord. */
+        console.error(
+          "[atelier/checkout] ⚠️ code fondatrice non journalisé — idempotence cassée",
+          numero.id,
+          credit.code,
+        );
+      }
+    }
+
     await logEvenement(supabase, numero.id, "checkout_ouvert", {
       session_id: session.id,
       palier: numero.palier,
       montant_centimes: centimes,
+      /* Ce qu'elle paiera vraiment. Sans cette ligne, le journal dirait 40 €
+         et Stripe 10 € : la première contradiction qu'on chercherait. */
+      credit_fondatrice_centimes: remiseAppliquee ? CREDIT_FONDATRICE_CENTIMES : 0,
       nb_pages: numero.nb_pages,
     });
 

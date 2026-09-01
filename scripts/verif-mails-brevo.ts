@@ -35,6 +35,7 @@ const CODES: Array<{ code: CodeMail; env: string }> = [
   { code: "M7", env: "BREVO_TEMPLATE_M7_ID" },
   { code: "M8", env: "BREVO_TEMPLATE_M8_ID" },
   { code: "M9", env: "BREVO_TEMPLATE_M9_ID" },
+  { code: "M10", env: "BREVO_TEMPLATE_M10_ID" },
 ];
 
 /* Un dossier complet : on veut la liste des variables ENVOYABLES, pas le

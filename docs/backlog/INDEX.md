@@ -32,8 +32,8 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-017 | Le focus au clavier est invisible sur la moitié du site | front | confort | libre | **fermé** |
 | T-018 | Trois fichiers sans rôle sont servis publiquement | exploitation | confort | libre | nouveau |
 | T-019 | La barre de l'accueil n'a pas son repli Android | front | confort | avis-requis | nouveau |
-| T-020 | On ne saurait pas qu'une visiteuse décroche | exploitation | serieux | avis-requis | nouveau |
-| T-021 | Le crédit fondateur de 30 € est entièrement manuel | paiement | serieux | avis-requis | nouveau |
+| T-020 | On ne saurait pas qu'une visiteuse décroche | exploitation | serieux | avis-requis | branché et inerte (01/09) — attend le clic « Enable » de Mathias |
+| T-021 | Le crédit fondateur de 30 € est entièrement manuel | paiement | serieux | avis-requis | fait, à éprouver chez Stripe |
 | T-022 | Les mails tombent dans l'onglet Promotions de Gmail | exploitation | serieux | avis-requis | nouveau |
 | T-023 | 734 photos orphelines dorment sur R2 | donnees | confort | avis-requis | nouveau |
 | T-024 | La page Santé crie sur une base vide | admin | confort | libre | nouveau |

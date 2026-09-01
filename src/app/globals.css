@@ -13,6 +13,14 @@
      sections plein écran lisent var(--app-height) — jamais d'unité viewport
      directe, pour que la barre iOS ne redimensionne plus rien. */
   --app-height: 100lvh;
+
+  /* Un centieme de --app-height : « 1dvh, mais gele ». TOUTE longueur
+     VERTICALE de mise en page s'ecrit calc(N * var(--uh)) et jamais Ndvh.
+     dvh suit la barre d'adresse : elle se retracte des qu'on descend, la
+     page grandit de ~60 px, tout ce qui est en dessous se decale — c'est le
+     saut qu'on voit sur iPhone. --uh vaut la meme chose au chargement et ne
+     bouge plus ensuite (sauf rotation). */
+  --uh: calc(var(--app-height) / 100);
 }
 
 html, body {
@@ -28,7 +36,16 @@ html, body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
-  overflow-anchor: none;
+  /* ⚠️ NE PAS REMETTRE `overflow-anchor: none` ICI.
+     Il n'a jamais existe que pour le scroll-jacking de la landing waitlist,
+     rangee dans archive/landing-waitlist/ le 24/08/2026. Tant qu'il tenait,
+     Chrome ne re-ancrait plus le contenu quand la barre d'URL redimensionne
+     le viewport : le contenu sautait a chaque changement de sens de
+     defilement. Diagnostic et correctif prouves le 13/06 sur /preventes/prix
+     (commit b05abeb), qui devait alors s'en exempter route par route.
+     Retire le 31/08/2026 : plus une seule page du site ne detourne le
+     defilement. Safari, lui, n'implemente pas overflow-anchor — sa part du
+     saut vient des dvh, traitee par --uh ci-dessus. */
   overscroll-behavior-y: none;
   /* ⚠️ --bj-nav-h N'EST DEFINI NULLE PART (verifie le 27/08/2026 : neuf
      usages, zero declaration). Une variable inconnue rend la declaration

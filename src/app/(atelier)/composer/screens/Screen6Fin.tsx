@@ -25,10 +25,20 @@
    Le nombre vient du moteur de dépôt, remonté par `onTermine` : c'est le
    compte CONFIRMÉ par le serveur, pas celui de la grille. À zéro (reprise
    d'une session perdue), la phrase se dit sans lui plutôt que de mentir.
+   ⚠️ AJOUT DU 01/09 : LA QUEUE DE TRANSFERT.
+   Depuis que le bouton de l'écran 5 s'ouvre sans attendre la fin des envois,
+   cet écran peut être atteint avec des photos encore en route. Le moteur de
+   dépôt est un singleton hors React : il SURVIT au démontage de l'écran 5 et
+   continue de pomper. Cet écran s'y rabranche pour dire, honnêtement, ce qui
+   se passe — sans jamais promettre que tout arrivera : le transfert part du
+   NAVIGATEUR, et fermer l'onglet l'arrête. Aucun serveur ne peut le reprendre.
    ══════════════════════════════════════════════════════════════════════════ */
+
+'use client'
 
 import LienPartage from '../../../components/LienPartage'
 import { TITRE_PLACEHOLDER } from '../coverModels'
+import { useDepot } from '../depot/useDepot'
 
 export default function Screen6Fin({
   titre, token, nbPhotos,
@@ -36,10 +46,22 @@ export default function Screen6Fin({
   titre: string
   /** Le dossier existe depuis l'écran 4 : sans token, pas de lien à garder. */
   token: string | null
-  /** Le compte confirmé par le serveur. Zéro = inconnu, on n'invente pas. */
+  /** Le compte confirmé par le serveur au clic. Zéro = inconnu, on n'invente pas. */
   nbPhotos: number
 }) {
   const nom = titre.trim() || TITRE_PLACEHOLDER
+
+  /* Le MÊME moteur que l'écran 5 (singleton par token) : ce hook ne recrée
+     rien, il se rabranche et republie l'instantané une fois par frame.
+     `reprendre()` re-lit le coffre local et ne fait rien de plus — chaque
+     entrée y est déjà connue du moteur. */
+  const { vue } = useDepot(token)
+
+  /* Le compte au clic est un plancher : il ne peut que monter pendant que la
+     queue finit. On garde le plus grand des deux, jamais un chiffre qui
+     descendrait sous les yeux de la cliente. */
+  const arrivees = Math.max(vue.confirmees, nbPhotos)
+  const enRoute = vue.enVol
 
   return (
     <>
@@ -48,11 +70,30 @@ export default function Screen6Fin({
       <h2>{nom}<br />est entre nos mains.</h2>
       <p className="at-lede at-q-lede">
         <b>
-          L’atelier a bien reçu {nbPhotos > 0 ? <>vos {nbPhotos} photos</> : <>vos photos</>}{' '}
+          L’atelier a bien reçu {arrivees > 0 ? <>vos {arrivees} photos</> : <>vos photos</>}{' '}
           et votre demande.
         </b>{' '}
         Nous commençons à composer votre numéro.
       </p>
+
+      {/* ── LA QUEUE, DITE SANS DRAMATISER ET SANS PROMETTRE ──────────
+          Une seule idée : le dossier est parti, le reste monte encore, et
+          fermer maintenant coûte ces photos-là. On ne dit surtout pas « vous
+          pouvez fermer, nous avons l'essentiel » tout court : ce serait vrai
+          pour le numéro et faux pour ses photos. */}
+      {enRoute > 0 && (
+        <p className="at-lede at-q-lede at-fin-queue" role="status">
+          <b>
+            {enRoute === 1
+              ? 'Une dernière photo monte encore.'
+              : `${enRoute} dernières photos montent encore.`}
+          </b>{' '}
+          Laissez cette page ouverte une minute et elles nous rejoindront. Si
+          vous partez maintenant, nous composerons avec les {arrivees} qui sont
+          déjà là.
+        </p>
+      )}
+
       <p className="at-lede at-q-lede">
         Votre couverture arrive sous 48 h par mail. Vous ne payez qu’après
         l’avoir vue — et seulement si elle vous plaît.

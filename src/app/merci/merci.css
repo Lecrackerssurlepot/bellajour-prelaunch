@@ -7,7 +7,7 @@
 
 .merci {
   width: 100%;
-  min-height: 100dvh;
+  min-height: var(--app-height);
   background: linear-gradient(180deg, var(--bj-cream) 0%, var(--bj-cream-2) 100%);
   /* padding-top généreux : dégage la navbar fixe (état A, logo centré). */
   padding: clamp(120px, 18vh, 180px) 6vw clamp(56px, 9vh, 100px);

@@ -13,6 +13,31 @@ neuf états, et à chaque passage un mail part vers une vraie cliente.
   `QUI_ATTEND` est lu par l'admin ET par la page cliente : les deux écrans ne peuvent donc pas se
   contredire. Changer une valeur ici sans changer la page publique, c'est mentir à l'une des deux.
 
+- **`fondatrice.ts`** — le crédit de 30 € des quatorze fondatrices (CGV art. 5 bis), et son
+  raisonnement de sécurité en tête de fichier. Deux appelants, une seule logique :
+  `/api/atelier/checkout` (la remise s'applique **d'office**, la cliente ne tape rien) et
+  `/api/admin/atelier/fondatrice-code` (le filet manuel). ⚠️ L'unicité est portée par
+  `max_redemptions: 1` chez Stripe (l'autorité) ET par `evenements`, **indexé par
+  `numero_fondateur`, jamais par dossier** : le crédit appartient à la personne, pas au magazine.
+  ⚠️ Stripe **interdit `discounts` et `allow_promotion_codes` sur la même session** : poser les
+  deux empêche la cliente de payer.
+
+- **`retention.ts`** — les 90 jours de rétention (T-076, décision de Mathias du 01/09) et le
+  préavis à J-7. `RETENTION_JOURS` et `PREAVIS_JOURS` sont les deux seuls réglages, `PREAVIS_A_JOURS`
+  en est **dérivé**. **Deux populations, deux horloges** : le dépôt jamais terminé se compte depuis
+  la dernière activité ; le dépôt terminé jamais payé (dont l'aperçu publié) se compte **depuis la
+  date du dépôt**. ⚠️ Cette date **n'est pas une colonne** : `consent_photos` n'a pas d'horodatage,
+  elle vit dans `evenements` type `consentements` (même source que `donnees.ts` T2-5 et `mesure.ts`).
+  Sans elle, **on ne ferme pas** (`depot_sans_date`) — `created_at` est antérieur au dépôt et
+  `etat_maj_le` peut lui être bien postérieur, aucune des deux n'est la bonne.
+  Restent absolus : jamais un dossier payé, jamais un état engagé (`ETATS_ENGAGES`), jamais deux
+  fois, **jamais sans préavis M10 vieux de 7 jours**. ⚠️ La garde « payé » est **double** parce
+  qu'au palier 30 € une fondatrice n'a **aucun `payment_intent`** : c'est l'état qui la sauve.
+  Les dates hors `numeros` transitent par le type `Jalons`, chargées par `lireJalons` (mails.ts)
+  **uniquement** pour les dossiers retenus par `meriteUnRegardDeRetention` — un pré-tri qui calcule
+  sur un majorant, donc ne peut rien laisser passer. Le module qui AGIT est
+  `scripts/anonymiser-dossiers.ts`, et lui seul : aucune route web, aucun cron.
+
 Les autres purs : `prix.ts` (grille 30/40/45 €, **serveur uniquement**), `questionnaire.ts` (les
 6 champs exigés + `suggestionEmail`), `rebond.ts` (ce qu'un signal Brevo dit d'une adresse),
 `parcours.ts` (les 8 jalons), `impression.ts` (table produit Cloudprinter),
@@ -24,7 +49,7 @@ et `scripts/verif-atelier.ts` le prouve à chaque exécution.
 
 ## Les mails — trois garanties, dans cet ordre
 
-`mails.ts → envoyerMailAtelier(supabase, code, numero)`, codes M0 → M9.
+`mails.ts → envoyerMailAtelier(supabase, code, numero)`, codes M0 → M10.
 1. **Jamais un mail qui tombe sur une page vide** : `manquePour()` vérifie les données avant tout.
 2. **Jamais deux fois** : l'insertion dans `mails_envoyes` (unique `numero_id`+`code`) EST le
    verrou, posée AVANT l'appel Brevo.
@@ -33,6 +58,11 @@ et `scripts/verif-atelier.ts` le prouve à chaque exécution.
 ⚠️ **Garde-fou de chaîne** : un mail ne part QUE si son prédécesseur est parti. Motivé par un cas
 réel — un dossier « validée » sans aucun mail recevait « part à l'impression ». Seul M2 n'a pas de
 prédécesseur ; il porte la seule borne de date, réglable par `ATELIER_M2_DEPUIS`.
+**M10 est la seconde exception, et pour la raison inverse** : un dossier de trois mois à qui aucun
+mail n'est jamais parti est précisément celui qu'il ne faut pas refermer en silence. Il n'a pas de
+borne de mise en service non plus, sinon plus rien ne s'anonymiserait jamais.
+⚠️ **Sans `BREVO_TEMPLATE_M10_ID`, la rétention de 90 jours ne s'applique pas du tout** :
+le script refuse de refermer un dossier qui n'a pas été prévenu (`preavisRespecte`).
 
 ⚠️ **La relève doit tourner tous les jours** (`vercel.json`, 7 h UTC). Sans elle, M2, M3b, M8 et
 l'auto-validation à J+7 ne partent JAMAIS.
@@ -70,6 +100,10 @@ qui le montre. Le texte des mails est versionné dans `scripts/mails-atelier.mjs
 
 - **Le prix est TOUJOURS calculé côté serveur** depuis `prix.ts`. Le navigateur n'envoie que le
   token. Pas de `price_id` Stripe : une seule source de vérité, pas de dérive test/prod.
+- **La remise fondatrice aussi vient du serveur** (`fondatrice.ts`, 01/09) : la ligne `waitlist`
+  est relue à l'instant du clic, jamais crue depuis un écran. ⚠️ Au palier 30 €, le crédit couvre
+  TOUT le prix : la session Stripe tombe à zéro, se solde en `no_payment_required`, et le dossier
+  n'a alors **aucun `payment_intent`**.
 - Zone `FR, BE, LU`. TVA : `automatic_tax` + prix TTC, 23 % (taux normal PT) — le câblage est
   inerte tant que l'immatriculation n'est pas posée chez Stripe, puis s'active sans redéploiement.
 - **Cloudprinter** : les fichiers dépendent du produit. L'agrafé (20 p.) prend UN PDF `product` ;

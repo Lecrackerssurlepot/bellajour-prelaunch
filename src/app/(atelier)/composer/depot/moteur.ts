@@ -120,6 +120,10 @@ export type Vue = {
   reductionDegradee: boolean
   /** Le serveur a refusé pour de bon : plus rien ne repartira. */
   clos: boolean
+  /** Le clic « Envoyer à l'atelier » a abouti : le dossier est chez nous. */
+  finalise: boolean
+  /** Combien de photos la file portait au moment de ce clic. */
+  attendues: number
   bandeau: string | null
   /** T2-4 — ce que le SERVEUR sait d'un passage précédent (autre appareil,
       autre session), ou null tant qu'il n'a pas parlé. La grille locale ne
@@ -146,6 +150,11 @@ class Moteur {
   private prochaineDeclarationA = 0
 
   private nbServeur: number | null = null
+  /* Le clic a abouti (consent_photos posé en base). Le moteur continue de
+     pomper : c'est tout l'objet du changement du 01/09. */
+  private finalise = false
+  private attendues = 0
+  private purgeFaite = false
   private bandeau: string | null = null
   private stockageDegrade = false
   private minuteur: ReturnType<typeof setInterval> | null = null
@@ -346,11 +355,12 @@ class Moteur {
   /* ── l'orchestrateur ────────────────────────────────────────────────── */
 
   private pompe(): void {
-    if (this.arrete) return
+    if (this.arrete) { this.purgerSiTermine(); return }
     this.etageReduction()
     this.etageDeclaration()
     this.etageEnvoi()
     this.etageConfirmation()
+    this.purgerSiTermine()
   }
 
   /* Étage R — réduire. Le pool se charge de sa propre concurrence ; on
@@ -799,21 +809,71 @@ class Moteur {
    * Clic sur « Envoyer à l'atelier ». Le consentement au droit d'usage des
    * photos est horodaté en base ICI : il ne doit pas exister uniquement en
    * mémoire d'un onglet.
+   *
+   * ══════════════════════════════════════════════════════════════════════════
+   * LE CLIC N'ATTEND PLUS LA FIN DES TRANSFERTS (01/09)
+   *
+   * Le dossier ENTRE dans le travail de l'atelier à cet instant : c'est
+   * `consent_photos` qui le décide, et lui seul (invariant nº7). Ce qui reste
+   * en vol continue de monter tant que l'onglet vit — le moteur est un
+   * singleton hors React, il survit au passage à l'écran 6.
+   *
+   * ⚠️ LE COFFRE LOCAL N'EST PLUS PURGÉ ICI. Il l'était, et c'était sans
+   * conséquence tant que le clic exigeait `enVol === 0`. Aujourd'hui il reste
+   * des charges à envoyer : les effacer, c'est perdre la reprise après un
+   * rechargement, et perdre les blobs qu'un réessai devrait renvoyer. La purge
+   * a lieu quand plus rien ne peut partir (`purgerSiTermine`).
+   *
+   * ⚠️ `photos_attendues` n'est PAS une promesse, c'est un témoin. Le serveur
+   * ne s'en sert que pour le journal : si l'onglet se ferme en route, l'écart
+   * entre ce nombre et `nb_photos` est la SEULE trace qui dise à l'atelier
+   * qu'il manque quelque chose. Sans lui, un dépôt amputé ressemble trait pour
+   * trait à un dépôt de quarante photos voulu tel quel.
+   * ══════════════════════════════════════════════════════════════════════════
    */
   async finaliser(): Promise<{ ok: boolean; message?: string }> {
+    /* Tout ce qui a une chance d'arriver : les confirmées, plus ce qui est
+       encore en route. Les photos en échec définitif n'en sont pas — elles
+       ont déjà été décomptées sur le libellé du bouton. */
+    const attendues = Math.max(
+      this.compte((i) => i.etat !== 'erreur'),
+      this.nbServeur ?? 0,
+    )
+
     try {
       const r = await fetch('/api/atelier/numero', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: this.token, consent_photos: true }),
+        body: JSON.stringify({
+          token: this.token,
+          consent_photos: true,
+          photos_attendues: attendues,
+        }),
       })
       if (!r.ok) return { ok: false, message: 'L’atelier n’a pas pu enregistrer votre accord. Réessayez.' }
     } catch {
       return { ok: false, message: 'Connexion perdue. Vérifiez votre réseau, puis réessayez.' }
     }
 
-    await stockage.purgerToken(this.token)
+    this.finalise = true
+    this.attendues = attendues
+    this.changement()
+    /* Rien en vol : le cas d'avant, la purge tombe tout de suite. */
+    this.purgerSiTermine()
     return { ok: true }
+  }
+
+  /**
+   * Le coffre local ne se vide qu'une fois le dossier parti ET la file
+   * épuisée. Appelé à chaque tour de pompe : c'est le seul endroit qui voit
+   * passer la dernière confirmation, quel que soit le chemin (succès, échec
+   * définitif, refus serveur).
+   */
+  private purgerSiTermine(): void {
+    if (!this.finalise || this.purgeFaite) return
+    if (this.compte((i) => i.etat !== 'confirmee' && i.etat !== 'erreur') > 0) return
+    this.purgeFaite = true
+    void stockage.purgerToken(this.token)
   }
 
   /* ── instantané ─────────────────────────────────────────────────────── */
@@ -861,6 +921,8 @@ class Moteur {
          plusieurs fois plus d'octets sur un forfait mobile. Ça se dit. */
       reductionDegradee: poolIndisponible(),
       clos: this.arrete,
+      finalise: this.finalise,
+      attendues: this.attendues,
       bandeau: this.bandeau,
       serveur: this.nbServeur,
     }

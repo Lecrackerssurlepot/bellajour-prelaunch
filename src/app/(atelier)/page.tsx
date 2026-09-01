@@ -22,10 +22,29 @@
    page y sont entièrement scopées. Le retirer dépeindrait tout. */
 
 import type { Metadata } from 'next'
+import { Cormorant_Garamond } from 'next/font/google'
 import Nav from './components/Nav'
 import Ouverture from './components/Ouverture'
 import Univers from './components/Univers'
 import Footer from './components/Footer'
+
+/* LE GRAS DU TITRE DE COUVERTURE, ET LUI SEUL.
+   Cormorant Garamond n'est pas variable chez Google : chaque graisse est un
+   fichier. Le layout du groupe ne charge que le 400 (normal + italique) pour
+   les trois routes ; demander le 600 la-haut le servirait aussi a /magazine
+   et /composer, qui n'en ont pas l'usage. Il est donc demande ICI, sur la
+   seule page qui l'affiche — meme raison et meme geste que l'italique du
+   questionnaire, isole dans composer/layout.tsx.
+   L'italique du 600 est indispensable : « magazine » est en <em>, et sans
+   elle le navigateur fabriquerait une italique penchee a la main sur un
+   serif a fort contraste — ce qui se voit immediatement. */
+const titreFort = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['600'],
+  style: ['normal', 'italic'],
+  variable: '--font-titre-fort',
+  display: 'swap',
+})
 
 const TITLE = 'L’atelier Bellajour — vos meilleurs moments méritent leur magazine'
 const DESCRIPTION =
@@ -126,7 +145,7 @@ export default function AtelierHome() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
       <Nav />
-      <div className="at-accueil">
+      <div className={`at-accueil ${titreFort.variable}`}>
         {/* Le grain : aucun aplat parfaitement plat. Fixe, par-dessus tout,
             insensible au pointeur. C'est une turbulence SVG en ligne, pas
             une image — voir ouverture.css. */}

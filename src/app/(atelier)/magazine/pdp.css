@@ -26,19 +26,13 @@
   /* Respiration verticale entre deux sections. */
   --v: clamp(72px, 11vw, 132px);
 
-  /* ⚠️ LA HAUTEUR DE LA BARRE DE TÊTE, RECONSTITUÉE.
-     `.at-nav` est en `position: fixed` : elle RECOUVRE le haut de la page,
-     elle ne le pousse pas. Rien dans le flux ne connaît sa hauteur, il faut
-     donc la redire ici — c'est 2 × 2,6dvh de rembourrage (nav.css) plus le
-     bouton du logo, dont la cible tactile fait 44 px et grandit avec la
-     signature sur grand écran.
-     MESURÉ : 91 px à 1440×900, 86 px sur un téléphone de 812. Une estimation
-     à 70 px avait fait passer le chapeau ET le haut du masthead sous la
-     barre, sans que rien ne le signale — un élément recouvert ne déborde
-     pas, il disparaît.
-     ⚠️ Si nav.css change son rembourrage ou la taille de la signature, cette
-     ligne doit suivre. C'est le prix d'une barre fixe. */
-  --nav-h: calc(5.2dvh + clamp(44px, 1.6vw + 24px, 52px));
+  /* `--nav-h` n'est PLUS redit ici : il est pose par nav.css sur .bj-atelier,
+     la ou vit le rembourrage qu'il mesure, et hérité jusqu'ici. La copie qui
+     se trouvait a cette ligne portait son propre avertissement (« si nav.css
+     change, cette ligne doit suivre ») — c'est exactement le genre de dette
+     qu'une seule declaration supprime. Une estimation a 70 px avait un jour
+     fait passer le chapeau ET le haut du masthead sous la barre, sans que
+     rien ne le signale : un element recouvert ne deborde pas, il disparait. */
 }
 
 /* Fond noir plein, comme l'accueil : le dégradé ambiant de .bj-atelier est
@@ -72,12 +66,12 @@
   /* ⚠️ LA BARRE DE TÊTE EST `position: fixed` : elle ne pousse rien, elle
      recouvre. Ce rembourrage n'est pas décoratif, c'est lui qui empêche le
      masthead de passer dessous. Il doit rester supérieur à la hauteur de la
-     barre (5,2dvh + la signature, soit ~62 px sur un téléphone de 812).
+     barre (5,2 unités de hauteur + la signature, ~62 px sur un téléphone de 812).
      ⚠️ Tout le reste du kiosque est indexé sur la HAUTEUR de la fenêtre et
      non sur sa largeur : la contrainte n'est pas « tenir dans la colonne »,
      c'est « aller jusqu'au bouton sans défiler ». Sur un écran court, la
      page se resserre au lieu de repousser le bouton hors de vue. */
-  padding-top: calc(var(--nav-h) + clamp(8px, 1.4dvh, 24px));
+  padding-top: calc(var(--nav-h) + clamp(8px, calc(1.4 * var(--uh)), 24px));
   padding-bottom: var(--v);
 }
 
@@ -168,22 +162,13 @@
    clavier et au lecteur d'écran suit le DOM, pas la mise en page : deux
    copies du même bloc énonceraient deux fois le même texte, et un utilisateur
    au clavier tabulerait dans un bloc invisible. */
-.at-pdp .kiosque > div:last-child > .at-rv:first-child { order: 1; }
+.at-pdp .colonne-recit > .at-rv:first-child { order: 1; }
 .at-pdp .bloc-prix { order: 2; }
 .at-pdp .bloc-acte { order: 3; }
-.at-pdp .bloc-pas  { order: 4; margin-top: clamp(22px, 3.4dvh, 40px); }
-
-.at-pdp .kiosque-note {
-  /* `auto` en haut : la note se pose au PIED de la colonne. Le padding
-     garantit qu'elle ne colle jamais au collage quand la page est courte. */
-  margin: auto 0 0;
-  padding-top: clamp(28px, 4vw, 44px);
-  max-width: 34ch;
-  font-size: clamp(14px, 1.1vw, 15px);
-  font-weight: 300;
-  line-height: 1.75;
-  color: var(--c-text-faint);
-}
+/* `.bloc-pas` n'a plus d'`order` : il n'est plus dans la colonne, il est le
+   troisieme enfant de la section et vient donc apres elle de lui-meme.
+   Et le selecteur ci-dessus ne dit plus `div:last-child` mais la classe de la
+   colonne : le dernier enfant de la section, c'est desormais le parcours. */
 
 /* ---- colonne droite ---- */
 .at-pdp .titre {
@@ -204,7 +189,7 @@
 .at-pdp .gages b { font-weight: 500; color: var(--c-text); }
 
 .at-pdp .lede {
-  margin: clamp(10px, 1.7dvh, 20px) 0 0;
+  margin: clamp(10px, calc(1.7 * var(--uh)), 20px) 0 0;
   max-width: 46ch;
   font-size: clamp(15px, 1.25vw, 18px);
   font-weight: 300;
@@ -214,7 +199,14 @@
 
 /* ---- les trois étapes ----
    Mêmes métriques que .at-step (archive/accueil-v1/s3-method.css) : c'est le même objet, il
-   n'a aucune raison de changer de taille parce qu'il change de page. */
+   n'a aucune raison de changer de taille parce qu'il change de page.
+   ⚠️ CE BLOC-CI EST LA VERSION TELEPHONE : trois lignes empilees, le numero
+   a gauche du texte. La version large — trois colonnes cote a cote — est
+   ecrite plus bas dans un `@media (min-width: 768px)`, et c'est volontaire
+   alors que tout le fichier est ecrit large-d'abord : mettre la nouvelle
+   composition dans une requete qui ne s'applique QU'AU-DESSUS de 768 px est
+   la seule facon de garantir, sans rien remesurer, que le premier ecran du
+   telephone n'a pas bouge d'un pixel. */
 .at-pdp .pas {
   margin: 0;
   padding: 0;
@@ -227,7 +219,7 @@
   grid-template-columns: 44px minmax(0, 1fr) auto;
   gap: 18px;
   align-items: baseline;
-  padding: clamp(9px, 1.5dvh, 18px) 0;
+  padding: clamp(9px, calc(1.5 * var(--uh)), 18px) 0;
   border-bottom: 1px solid var(--c-line);
   list-style: none;
 }
@@ -251,9 +243,90 @@
 
 .at-pdp .pas li:last-child .quand { color: var(--c-accent); }
 
+/* ══════════════════════════════════════════════════════════════
+   LE PARCOURS EN BANDE, SOUS LES DEUX COLONNES (ecrans larges)
+   Demande de Mathias, 31/08/2026. Il occupait 330 px mesures dans la colonne
+   de droite et devait etre repousse sous le bouton par un `order` pour ne pas
+   manger le premier ecran ; il sort maintenant de la composition a deux
+   colonnes. Ce qu'on y gagne : le premier ecran ne montre plus que le collage
+   et le recit, chacun sur toute la hauteur, et les trois etapes se lisent
+   cote a cote — leur forme naturelle, puisqu'elles sont paralleles.
+   Le filet du haut est porte par la liste, pas par chaque etape : un trait
+   continu au-dessus des trois colonnes, et rien entre elles que le blanc.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 768px) {
+  /* Toute la largeur de la grille, quelle que soit sa definition. */
+  .at-pdp .bloc-pas { grid-column: 1 / -1; margin-top: clamp(56px, 6.5vw, 110px); }
+
+  .at-pdp .pas {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(24px, 3.2vw, 64px);
+  }
+
+  /* L'etape n'est plus une ligne (numero | texte | delai) mais une colonne :
+     le numero, puis le titre, puis la phrase, puis le delai. Les trois
+     enfants du <li> s'empilent d'eux-memes des que la grille n'a qu'une
+     colonne — le balisage ne change pas. */
+  .at-pdp .pas li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    align-items: start;
+    padding: clamp(16px, 1.8vw, 24px) 0 0;
+    border-bottom: 0;
+  }
+
+  .at-pdp .pas .n {
+    display: block;
+    margin-bottom: clamp(10px, 1.1vw, 16px);
+    font-size: clamp(30px, 2.6vw, 40px);
+  }
+
+  .at-pdp .pas .quand {
+    display: block;
+    margin-top: clamp(10px, 1.1vw, 14px);
+    text-transform: uppercase;
+  }
+
+  /* ── LA COLONNE DE DROITE OCCUPE TOUTE LA HAUTEUR ──
+     Les deux colonnes sont a la meme hauteur (`align-items: stretch`), et
+     celle de droite vient de perdre les 330 px du parcours : elle laissait
+     donc autant de noir sous le bouton. `space-between` redistribue cet
+     espace ENTRE les blocs au lieu de l'accumuler en bas — le titre reste en
+     haut, le bouton descend se poser au niveau du bas du collage, et les
+     prix respirent au milieu. C'est ce que Mathias demande : que les deux
+     colonnes prennent la page entiere.
+     Sans effet sur telephone, ou la colonne fait sa hauteur de contenu. */
+  .at-pdp .colonne-recit { justify-content: space-between; }
+
+  /* ── LES DEUX COLONNES REMPLISSENT L'ECRAN, LE PARCOURS TOMBE DESSOUS ──
+     Sans ce plancher, le parcours commencait a 841 px sur un ecran de 900 :
+     on en voyait la premiere bande, ce qui est exactement ce que Mathias ne
+     veut plus. La hauteur demandee est ce qui reste sous la barre de tete,
+     soit la hauteur de fenetre moins le rembourrage haut du kiosque — les
+     colonnes finissent donc pile au bas de l'ecran, et le parcours part une
+     gouttiere plus bas.
+     ⚠️ `--app-height` (hauteur GELEE au chargement) et jamais `vh` ni `dvh` :
+     sur telephone ces unites suivent la barre d'adresse et feraient sauter la
+     page a chaque changement de sens de defilement. Ici on est au-dessus de
+     768 px, mais la regle de la maison vaut partout.
+     La colonne de gauche CENTRE son contenu dans la hauteur ainsi gagnee :
+     le mot et le collage restent solidaires — leur chevauchement EST la
+     composition — au lieu de laisser un trou sous le collage. */
+  .at-pdp .kiosque > div {
+    /* Le dernier terme est de l'air : sans lui, le bloc du bouton finissait
+       PILE au bas de l'ecran (mesure : 900 sur 900) et les deux gages
+       touchaient le bord. Une trentaine de pixels suffisent a ce que rien ne
+       soit a ras — et le parcours descend d'autant. */
+    min-height: calc(var(--app-height) - var(--nav-h)
+      - clamp(8px, calc(1.4 * var(--uh)), 24px) - clamp(18px, 2.2vw, 36px));
+  }
+  .at-pdp .kiosque > div:first-child { justify-content: center; }
+}
+
 /* ---- les trois paliers ---- */
 .at-pdp .prix {
-  margin-top: clamp(14px, 2.2dvh, 30px);
+  margin-top: clamp(14px, calc(2.2 * var(--uh)), 30px);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
@@ -262,7 +335,7 @@
 }
 
 .at-pdp .prix li {
-  padding: clamp(12px, 1.8dvh, 20px) 18px;
+  padding: clamp(12px, calc(1.8 * var(--uh)), 20px) 18px;
   border: 1px solid var(--c-line);
   border-radius: 16px;
   background: var(--c-surface-1);
@@ -311,7 +384,7 @@
 /* ---- l'acte ----
    .at-cta (theme.css) porte déjà le fond, le rayon et la lueur. On n'ajoute
    ici que la cible tactile : 52 px de haut, au-dessus du minimum de 44. */
-.at-pdp .acte { margin-top: clamp(14px, 2.2dvh, 28px); display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.at-pdp .acte { margin-top: clamp(14px, calc(2.2 * var(--uh)), 28px); display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
 .at-pdp .acte .at-cta { min-height: 52px; }
 /* ---- les deux gages sous le bouton ----
    Ce ne sont pas des puces décoratives : ce sont les deux objections qu'on a
@@ -557,7 +630,6 @@
   .at-pdp .c2 { left: 33%; top: 0;   width: 36%; height: 74%; }
   .at-pdp .c3 { left: 65%; top: 15%; width: 35%; height: 85%; }
 
-  .at-pdp .kiosque-note { display: none; }
 
   /* Le premier écran d'un téléphone se compte au pixel. Chaque valeur
      ci-dessous a été prise sur une mesure, pas au jugé — voir le relevé dans
@@ -602,7 +674,7 @@
   }
 
   .at-pdp .prix li {
-    padding: clamp(11px, 1.7dvh, 15px) 9px;
+    padding: clamp(11px, calc(1.7 * var(--uh)), 15px) 9px;
     border-radius: 12px;
     text-align: center;
   }

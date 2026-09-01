@@ -434,6 +434,20 @@
 }
 .at-d-pasparti b { font-weight: 400; color: var(--c-accent); }
 
+/* 01/09 — la ligne « X photos finissent d'arriver », sous « Il reste un
+   geste ». Elle apparaît et disparaît au fil des confirmations : un filet à
+   gauche et un fond très léger la tiennent en place plutôt que de la laisser
+   se confondre avec la phrase du dessus. Palette SOMBRE (--c-*), scope
+   .bj-atelier : jamais un token --bj-* ici. */
+.at-d-pasparti--fond {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-left: 2px solid var(--c-accent);
+  border-radius: 0 6px 6px 0;
+  background: var(--c-surface-2);
+  color: var(--c-text);
+}
+
 .at-d-envoi .at-d-actions { margin-top: 20px; }
 
 @media (max-width: 560px) {
