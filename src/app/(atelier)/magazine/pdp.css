@@ -316,12 +316,34 @@
   .at-pdp .kiosque > div {
     /* Le dernier terme est de l'air : sans lui, le bloc du bouton finissait
        PILE au bas de l'ecran (mesure : 900 sur 900) et les deux gages
-       touchaient le bord. Une trentaine de pixels suffisent a ce que rien ne
-       soit a ras — et le parcours descend d'autant. */
+       touchaient le bord. Il a ete double depuis que le collage remplit la
+       hauteur : sa marge negative — celle qui le fait chevaucher le mot — le
+       fait deborder de 24 px sous le bas de la colonne, et il ne restait que
+       huit pixels avant la ligne de flottaison. Avec 4,4vw, le collage finit
+       une quarantaine de pixels au-dessus, et le parcours descend d'autant. */
     min-height: calc(var(--app-height) - var(--nav-h)
-      - clamp(8px, calc(1.4 * var(--uh)), 24px) - clamp(18px, 2.2vw, 36px));
+      - clamp(8px, calc(1.4 * var(--uh)), 24px) - clamp(40px, 4.4vw, 72px));
   }
-  .at-pdp .kiosque > div:first-child { justify-content: center; }
+
+  /* ── LE COLLAGE PREND LA HAUTEUR QUI RESTE ──
+     Il gardait ses proportions de maquette (749 / 574) et faisait 488 px de
+     haut dans une colonne qui en fait 794 : deux cent pixels de noir sous
+     lui. Il occupe desormais tout ce qui reste sous le masthead.
+     C'est possible sans toucher a la composition parce que les trois cadres
+     sont positionnes en POURCENTAGES du conteneur (regle de la maison) : ils
+     grandissent ensemble, l'agencement est le meme a toutes les hauteurs. Et
+     les photos sont en `object-fit: cover` — elles se recadrent, elles ne se
+     deforment jamais. Ce sont des portraits 450x675 : un cadre plus haut leur
+     rend de la matiere au lieu de leur en couper.
+     `aspect-ratio: auto` est INDISPENSABLE : sans lui le ratio garde la main
+     sur la hauteur et le `flex: 1` ne peut rien.
+     `min-height: 0` aussi : un enfant flexible ne descend pas sous sa taille
+     de contenu sans lui, et le collage refuserait de se comprimer sur un
+     ecran court. La colonne ne centre donc plus rien — il n'y a plus de vide
+     a repartir. */
+  .at-pdp .kiosque > div:first-child { justify-content: flex-start; }
+  .at-pdp .bloc-collage { flex: 1; min-height: 0; display: flex; }
+  .at-pdp .collage { flex: 1; min-height: 0; aspect-ratio: auto; }
 }
 
 /* ---- les trois paliers ---- */
