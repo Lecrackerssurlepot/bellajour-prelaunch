@@ -38,7 +38,7 @@ export default function Kiosque() {
           <p className="mot">MAGAZINE</p>
         </Reveal>
 
-        <Reveal delay={90}>
+        <Reveal delay={90} className="bloc-collage">
           <div className="collage">
             <figure className="c1">
               <img
