@@ -71,10 +71,13 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
    page 02 est une ANIMATION (qui ignore `transition-delay`) vivant sur deux pseudo-éléments.
 5. **Grain et fibre du papier sont des turbulences SVG en ligne**, pas des images : les textures
    pesaient 283 et 454 Ko par chargement.
-6. **Un libellé, deux destinations** : `CTA_HREF = /magazine`, `COMPOSER_HREF = /composer`
-   (`(atelier)/content.ts`). Ne JAMAIS accrocher `?reprendre=<token>` à `CTA_HREF` : le paramètre
-   n'est lu que par `/composer`, il serait ignoré EN SILENCE et la cliente repartirait sur un
-   dépôt vide en croyant reprendre le sien.
+6. **Le libellé suit la destination** (depuis le 01/09/2026, fin de l'ancien invariant « un seul
+   libellé ») : `CTA_HREF = /magazine` porte `CTA_MAGAZINE_LABEL` (« Découvrir les magazines »),
+   `COMPOSER_HREF = /composer` porte `CTA_LABEL` (« Composer avec l'atelier ») —
+   les deux dans `(atelier)/content.ts`. `Nav` prend `href` ET `label` ENSEMBLE : régler l'un sans
+   l'autre fait mentir le bouton sur la marche. Ne JAMAIS accrocher `?reprendre=<token>` à
+   `CTA_HREF` : le paramètre n'est lu que par `/composer`, il serait ignoré EN SILENCE et la
+   cliente repartirait sur un dépôt vide en croyant reprendre le sien.
 
 ## Le questionnaire — chaque phrase est un correctif, pas du style
 

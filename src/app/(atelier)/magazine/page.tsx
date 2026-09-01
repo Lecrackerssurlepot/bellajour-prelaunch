@@ -24,7 +24,7 @@ import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import Kiosque from './Kiosque'
 import Corps from './Corps'
-import { COMPOSER_HREF, FAQ, PALIERS } from '../content'
+import { COMPOSER_HREF, CTA_LABEL, FAQ, PALIERS } from '../content'
 import './pdp.css'
 
 const URL = 'https://www.bellajour.fr/magazine'
@@ -167,7 +167,7 @@ export default function PageProduit() {
           `retour` rend à la signature son rôle de logo : ici elle ramène à
           l'accueil. Sur l'accueil, elle remonte à la couverture — c'est là,
           et là seulement, que le geste a un sens sans quitter la page. */}
-      <Nav href={COMPOSER_HREF} retour="/" />
+      <Nav href={COMPOSER_HREF} label={CTA_LABEL} retour="/" />
 
       {/* ⚠️ `.at-pdp` n'est pas décoratif : toute pdp.css y est scopée, et les
           noms de classes y sont courts (.mot, .pas, .prix). Le retirer
