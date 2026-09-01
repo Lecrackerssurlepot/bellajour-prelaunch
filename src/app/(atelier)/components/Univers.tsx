@@ -31,6 +31,20 @@ export default function Univers() {
     if (!hote) return
     const doux = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const fin = window.matchMedia('(min-width:1001px) and (hover:hover) and (pointer:fine)').matches
+    /* ── mobile : on ne tourne pas la page, on la descend ──
+       Sous 1000 px il n'y a pas de bouton « Tourner la page » (masqué en
+       CSS) : la personne SCROLLE. Une chorégraphie étalée se jouerait alors
+       pendant qu'elle traverse la slide, et elle ne verrait qu'un écran à
+       moitié composé. On met donc TOUS les retards à zéro : chaque élément
+       de la page apparaît ensemble, d'un coup, dès qu'elle entre — un simple
+       fondu court (univers.css) garde la chose propre, sans stagger. */
+    const petit = window.matchMedia('(max-width:1000px)').matches
+    /* ── le tempo desktop ──
+       Sur desktop la séquence se joue en entier (les `data-t` bruts, jusqu'à
+       ~8 s sur la page 02). Mathias la veut plus vive : on RESSERRE tous les
+       retards d'un même facteur. Le stagger et l'ordre restent identiques —
+       c'est le rythme qui accélère, pas la chorégraphie qui change. */
+    const RYTHME_DESKTOP = 0.6
     const un = <T extends Element>(s: string) => hote.querySelector<T>(s)
     const tous = <T extends Element>(s: string, r: ParentNode = hote) => [...r.querySelectorAll<T>(s)]
     const borne = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v))
@@ -153,7 +167,10 @@ export default function Univers() {
       page.classList.add('joue')
       if (presse) page.classList.add('vite')
       tous<HTMLElement>('[data-t]', page).forEach((el) => {
-        const retard = presse ? 0 : doux ? Math.min(Number(el.dataset.t), 600) : Number(el.dataset.t)
+        const retard = presse ? 0
+          : petit ? 0
+          : doux ? Math.min(Number(el.dataset.t), 600)
+          : Number(el.dataset.t) * RYTHME_DESKTOP
         el.style.transitionDelay = retard + 'ms'
         el.style.setProperty('--retard', retard + 'ms')
         el.classList.add('vu')
@@ -163,8 +180,9 @@ export default function Univers() {
          son bloc se dévoile, et on ne voit jamais le nombre grandir. */
       tous<HTMLElement>('[data-compte]', page).forEach((el) => {
         const conteneur = el.closest('[data-t]') as HTMLElement | null
-        const retard = presse ? 0 : conteneur
-          ? (doux ? Math.min(Number(conteneur.dataset.t), 600) : Number(conteneur.dataset.t))
+        const retard = presse || petit ? 0 : conteneur
+          ? (doux ? Math.min(Number(conteneur.dataset.t), 600)
+            : Number(conteneur.dataset.t) * RYTHME_DESKTOP)
           : 0
         const id = window.setTimeout(() => lancerCompte(el), retard + 260)
         menage.push(() => clearTimeout(id))
