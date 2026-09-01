@@ -5,6 +5,7 @@ domaine: front
 gravite: serieux
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-31
 ---
 ## Ce que Mathias a dit
 Rien — audit d'accessibilité du 29/08/2026.
@@ -30,3 +31,7 @@ Vérifié : tsc, lint, build ; l'algorithme exact rejoué à la main sur le DOM 
 (24 éléments gelés, le `.at-cta` devient inerte, la cible reste vivante, tout revient à la
 fermeture). **Le composant lui-même n'a pas été vu ouvert** : il faut un dossier en `apercu_pret`
 (ou la fiche admin, derrière l'auth) — à recetter à l'œil sur le prochain aperçu publié.
+
+**Fermé le 01/09/2026.** Le correctif est posé et éprouvé sur le DOM réel. Le seul reste est un
+coup d'œil humain, et un coup d'œil humain ne se garde pas dans le backlog : il est inscrit dans
+`docs/reference/RECETTE-VISUELLE.md` § « Ajouts du 31/08 et du 01/09 ».

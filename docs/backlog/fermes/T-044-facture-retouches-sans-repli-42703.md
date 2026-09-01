@@ -5,6 +5,7 @@ domaine: donnees
 gravite: serieux
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-31
 ---
 ## Ce que Mathias a dit
 Rien — audit de sécurité du 29/08/2026.
@@ -39,3 +40,6 @@ la fiche atteste qu'elle est appliquée (vérifié le 29/08).
 NON TRAITÉ, hors périmètre de la séance : `mails.ts:60` (`retouches_demandees_le` dans
 `CHAMPS_MAIL`) — le fichier est réservé à un autre chantier le 31/08. Le repli côté lectures
 de `CHAMPS_MAIL` (relever, sante, numero, mails.ts:652) reste à poser dans un ticket suivant.
+
+**Fermé le 01/09/2026.** `paiement.ts` — le chemin qui encaisse, le seul urgent — porte son
+repli. Le ticket suivant annoncé ci-dessus existe : **T-082**.

@@ -5,6 +5,7 @@ domaine: paiement
 gravite: serieux
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-31
 ---
 ## Ce que Mathias a dit
 Rien — angle mort identifié le 29/08 en revue de préparation au lancement.
@@ -43,3 +44,7 @@ d'écriture (lecture `:100-103`, update `:151-154`) et la route webhook rend alo
 RESTANT (non local, non tranché) : aucun alerting externe ni cron de réconciliation
 Stripe ↔ base (comparer les sessions payées aux dossiers en état ≥ payée) — demanderait un
 appel réseau Stripe et une décision de Mathias sur le canal d'alerte.
+
+**Fermé le 01/09/2026.** Les trois points de la fiche sont couverts par le harnais. Le reste
+n'était pas ce ticket : l'alerting vit dans **T-031**, la réconciliation Stripe ↔ base est
+partie dans **T-081**, ouvert ce jour.

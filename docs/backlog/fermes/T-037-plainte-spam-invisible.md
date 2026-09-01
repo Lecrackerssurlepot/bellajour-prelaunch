@@ -5,6 +5,7 @@ domaine: admin
 gravite: serieux
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-31
 ---
 ## Ce que Mathias a dit
 Rien — trouvé en relisant le commit des rebonds Brevo.

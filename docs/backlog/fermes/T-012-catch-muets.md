@@ -5,6 +5,7 @@ domaine: atelier
 gravite: serieux
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-31
 ---
 ## Ce que Mathias a dit
 Rien — audit du 29/08/2026.
@@ -60,3 +61,9 @@ Restants, assumés muets ou hors périmètre (rien d'écrit chez un tiers) :
   commentés, best-effort local sans écriture distante ;
 - `photos/complete:62` (`vignetteArrivee`) — route photos traitée le 30/08, fait foi ; gagne au
   passage la voix de `tailleReelle` sans avoir été touchée.
+
+**Fermé le 01/09/2026.** Il ne reste aucun `catch` muet sur un chemin qui écrit — c'était le
+titre du ticket. Les restants listés ci-dessus ne sont pas un reliquat de travail : ce sont des
+silences VOULUS, chacun commenté sur place, et rouvrir ce ticket pour eux reviendrait à demander
+de faire parler des validations pures. S'ils redeviennent un problème, ce sera pour une autre
+raison, donc un autre ticket.

@@ -5,6 +5,7 @@ domaine: front
 gravite: serieux
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-31
 ---
 ## Ce que Mathias a dit
 Rien — audit du 29/08/2026.
@@ -35,3 +36,7 @@ Au passage (T-009) : la page héritait d'un `canonical → https://www.bellajour
 layout racine — signal contradictoire avec son noindex, retiré le 31/08.
 À signaler hors ticket : `/admin` (le dashboard racine, `src/app/admin/page.tsx`) n'a AUCUN
 metadata robots, contrairement à toutes les autres pages admin. Non touché ici (hors périmètre).
+
+**Fermé en `refuse` le 01/09/2026** — le défaut décrit par le titre n'existe pas, et la preuve
+est ci-dessus : le `noindex` était là depuis le commit de création de la page. Un ticket infirmé
+se ferme, il ne se corrige pas.

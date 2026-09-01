@@ -29,7 +29,16 @@ déjà, aujourd'hui, dans la base de production.
 
 Corollaire utile : **les migrations n'ont pas à être rejouées.** Il n'y a
 qu'une base, ce qui est appliqué l'est pour les deux. Vérifier tout de même
-que la dernière est bien passée (aujourd'hui : `20260829_atelier_tracking_code`).
+que la dernière est bien passée — aujourd'hui **`20260901_atelier_retention`**
+(colonne `numeros.anonymise_le`), et elle **n'est PAS appliquée** au 01/09.
+
+- [ ] `20260901_atelier_retention.sql` appliquée, **puis vérifié que la donnée
+      arrive** : le dry-run de `scripts/anonymiser-dossiers.ts` doit cesser
+      d'écrire « la colonne anonymise_le n'existe pas encore ». ⚠️ Le repli
+      42703 efface en silence : tant qu'on ne fait pas ce contrôle, on ne sait
+      pas si la migration a servi.
+- [ ] `20260830_atelier_vignettes.sql` : rien dans le dépôt n'atteste son
+      application. À contrôler au même passage.
 
 ---
 
@@ -124,9 +133,19 @@ signal "…" ItemShipped` forge un webhook, mais il ne prouve que notre moitié.
 ## 3 · Brevo
 
 - [ ] `BREVO_API_KEY` en Production
-- [ ] Les identifiants de template, tous, en Production :
-      `M1=27  M2=30  M2B=37  M3=28  M3B=31  M4=29  M5=32  M6=33  M7=34  M8=35  M9=36`
+- [ ] Les identifiants de template, **les treize**, en Production :
+      `M0=38  M1=27  M2=30  M2B=37  M3=28  M3B=31  M4=29  M5=32  M6=33  M7=34  M8=35  M9=36`
       (atelier) et `W1  P1  P2  P3  F1  S1  A1  A2  A3  RELANCE` (prévente)
+- [ ] ⚠️ **`BREVO_TEMPLATE_M0_ID` était absent de cette liste** — corrigé le
+      01/09. C'est l'accusé qui part à la SECONDE où le dossier existe, le
+      premier mail que voit une cliente. Sans lui : silence complet entre
+      l'écran 4 et la relance du lendemain.
+- [ ] ⚠️ **`BREVO_TEMPLATE_M10_ID` n'existe pas encore.** Le treizième mail —
+      le préavis de fermeture de la rétention à 90 jours (T-076) — n'a jamais
+      été poussé chez Brevo : `node scripts/mails-atelier.mjs --pousser
+      --seulement M10`, puis poser l'ID qu'il affiche. **Tant qu'il manque,
+      `scripts/anonymiser-dossiers.ts` n'anonymise RIEN** : il refuse de
+      refermer un dossier qui n'a pas été prévenu. Toute la rétention en dépend.
 - [ ] ⚠️ `BREVO_TEMPLATE_M2B_ID` : longtemps « à créer », il existe (37).
       Tant qu'il manque sur Vercel, la relève signale `sans_template` et
       **n'envoie rien** — sans autre bruit.
@@ -160,12 +179,16 @@ l'œil.
 - [ ] **Le cron tourne en Production.** `vercel.json` le déclare (7 h UTC,
       `/api/atelier/mails/relever`) mais un cron déclaré n'est pas un cron qui
       tourne : le vérifier dans l'onglet Cron Jobs, et lire la dernière
-      exécution. ⚠️ **Sans lui, M2, M2b, M3b, M8 et l'auto-validation à J+7 ne
-      partent JAMAIS.** C'est la panne la plus coûteuse de la liste, et la
-      plus invisible.
+      exécution. ⚠️ **Sans lui, M2, M2b, M3b, M8, M10 et l'auto-validation à
+      J+7 ne partent JAMAIS** — donc, depuis M10, **toute la rétention à
+      90 jours ne s'applique pas non plus** : le préavis ne part pas, et le
+      script d'anonymisation refuse de refermer un dossier non prévenu.
+      C'est la panne la plus coûteuse de la liste, et la plus invisible.
+      Le détail : `docs/reference/CRON-RELEVE.md`.
 - [ ] `CRON_SECRET` (envoyé automatiquement par Vercel) **ou**
       `ATELIER_MAILS_SECRET` posé. Si aucun des deux n'existe, la route répond
-      404 et le cron échoue en silence.
+      404 et le cron échoue en silence — et avec lui M2, M2b, M3b, M8, **M10 et
+      donc toute la rétention à 90 jours**, plus l'auto-validation à J+7.
 - [ ] `ATELIER_M2_DEPUIS` **absent en Production**, ou posé à la date
       d'ouverture. Il est reculé sur la preview pour rendre M2 testable ;
       reculé en prod, il relance des dossiers abandonnés vieux de plusieurs
@@ -177,8 +200,10 @@ l'œil.
       cliente sur une preview.
 - [ ] `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` (strictement server-side)
 - [ ] `R2_ENDPOINT`, `R2_BUCKET_NAME`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`
-- [ ] `ADMIN_PASSWORD` + les nominatifs `ADMIN_PASSWORD_MATHIAS`,
-      `ADMIN_PASSWORD_LOUIS` (le prénom au journal en dépend)
+- [ ] Les nominatifs `ADMIN_PASSWORD_MATHIAS`, `ADMIN_PASSWORD_LOUIS` (le
+      prénom au journal en dépend). ⚠️ `ADMIN_PASSWORD`, l'ancien mot de passe
+      partagé, **n'est plus lu par le code depuis le 31/08** (T-005) : la
+      poser n'ouvre plus rien, et la retirer ne ferme rien.
 - [ ] `AMBASSADEUR_LINK_SECRET`, `INFLUENCER_CODES` si la prévente garde ses droits
 - [ ] Protection de déploiement désactivée sur le domaine public (sinon Stripe
       et Cloudprinter prennent un 403 à chaque signal)
