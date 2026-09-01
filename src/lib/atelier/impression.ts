@@ -297,6 +297,39 @@ function s(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
+/* Les indicatifs des SEULS pays où l'on livre (PAYS_LIVRAISON). Des faits, pas
+   une invention : +33 France, +32 Belgique, +352 Luxembourg. Un pays hors de
+   cette liste ne devrait jamais arriver ici (Stripe ne collecte que ces trois),
+   et s'il arrivait on ne devinerait pas son indicatif. */
+const INDICATIFS_PAYS: Record<string, string> = { FR: "33", BE: "32", LU: "352" };
+
+/**
+ * Le téléphone en E.164 (« +33612345678 »), à l'aide du PAYS de livraison.
+ *
+ * ⚠️ POURQUOI ICI, ET PAS AU QUESTIONNAIRE. On ne peut normaliser un numéro
+ * national qu'en connaissant le pays — et le pays n'est PAS connu à l'écran 4
+ * (le questionnaire ne le demande pas) : il n'arrive qu'avec l'adresse que
+ * Stripe collecte au paiement. Ce module-ci est donc le premier endroit du
+ * parcours qui a les deux à la fois. `normaliserTelephone` (questionnaire.ts)
+ * se contente d'enlever les séparateurs ; la mise au format international se
+ * fait ici, au moment de composer la commande Cloudprinter.
+ *
+ * Règles : déjà en « +… » → gardé tel quel (la cliente a saisi l'international).
+ * « 00xx… » (préfixe international composé) → « +xx… ». Sinon, numéro national :
+ * on retire le zéro de tête et on préfixe l'indicatif du pays. Pays hors zone
+ * ou numéro vide → on rend ce qu'on a sans deviner. Fonction PURE, éprouvée
+ * par verif-atelier.ts.
+ */
+export function telephoneE164(brut: string, pays: string): string {
+  const p = (brut ?? "").replace(/[^\d+]/g, "");
+  if (!p) return "";
+  if (p.startsWith("+")) return p;
+  if (p.startsWith("00")) return "+" + p.slice(2);
+  const indicatif = INDICATIFS_PAYS[(pays ?? "").toUpperCase()];
+  if (!indicatif) return p; // pays inconnu : mieux vaut le national que l'invention
+  return "+" + indicatif + p.replace(/^0+/, "");
+}
+
 /**
  * Le blob Stripe (`adresse_livraison`) devient une adresse Cloudprinter — ou
  * la liste de ce qui manque, champ par champ, pour que l'écran le dise.
@@ -338,8 +371,10 @@ export function adresseCloudprinter(
   const firstname = mots[0];
   const lastname = mots.length > 1 ? mots.slice(1).join(" ") : mots[0];
 
-  /* Un numéro collé avec des espaces ou des points reste un numéro. */
-  const tel = (telephone ?? "").replace(/[^\d+]/g, "");
+  /* Le numéro au format international, avec le pays qu'on vient de lire :
+     « 0612345678 » livré en France devient « +33612345678 ». C'est ici, et
+     nulle part avant, qu'on connaît le pays (telephoneE164, plus haut). */
+  const tel = telephoneE164(telephone ?? "", pays);
 
   return {
     ok: true,
