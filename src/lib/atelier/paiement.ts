@@ -231,6 +231,57 @@ export async function traiterPaiementAtelier(
     ...(factureUrlPerdue ? { facture_url_perdue_42703: true } : {}),
   });
 
+  /* ── T-075 : la vente entre en comptabilité (invoice_jobs) ───────────
+     Best-effort STRICT, calqué À L'IDENTIQUE sur le bloc de la prévente
+     (/api/webhook, handler waitlist) : mêmes colonnes, même calcul de
+     montant, même upsert idempotent. L'atelier devient le seul tunnel de
+     vente de la maison ; ses ventes doivent donc entrer dans la compta
+     certifiée InvoiceXpress comme le faisaient celles de la prévente. On
+     n'émet AUCUNE fatura ici : on insère juste une ligne `pending`
+     idempotente que la Edge Function `emit-invoices` ramassera plus tard.
+     Un échec ici ne doit JAMAIS casser la confirmation du paiement ni le
+     mail M4 : on log et on continue (pas de return false, pas de throw).
+
+     GARDE MODE TEST : un paiement Stripe en mode test (livemode === false)
+     ne doit RIEN pousser vers la facturation. InvoiceXpress n'a aucun moyen
+     de savoir que le paiement était fictif ; une fatura finalisée à partir
+     d'un test est un vrai document fiscal qu'il faut ensuite annuler à la
+     main. Le reste du tunnel (transition, mail M4) tourne quand même.
+
+     GARDE 0 € (fondatrice) : au palier 30 €, le crédit couvre tout le prix,
+     la session se solde en `no_payment_required` et il n'y a AUCUN
+     payment_intent. Or la colonne `stripe_payment_intent` est NOT NULL, et
+     la facturation d'un album à 0 € est une question comptable non tranchée.
+     On saute et on signale plutôt que d'inventer une ligne. */
+  try {
+    const paymentIntent = asId(session.payment_intent);
+    if (session.livemode === false) {
+      console.log("[atelier/paiement] invoice_jobs sauté — paiement en mode test (livemode=false)");
+    } else if (!paymentIntent) {
+      console.warn("[atelier/paiement] invoice_jobs sauté — pas de payment_intent (cas fondatrice 0 €)");
+    } else if (session.amount_total == null) {
+      console.warn("[atelier/paiement] invoice_jobs sauté — amount_total manquant");
+    } else {
+      const montantTtc = session.amount_total / 100; // amount_total en centimes
+      const montantHt = Math.round((montantTtc / 1.23) * 100) / 100; // TVA 23 % (PT)
+      const montantTva = Math.round((montantTtc - montantHt) * 100) / 100;
+
+      const { error: invErr } = await supabase.from("invoice_jobs").upsert(
+        {
+          stripe_payment_intent: paymentIntent,
+          montant_ht: montantHt,
+          montant_tva: montantTva,
+        },
+        { onConflict: "stripe_payment_intent", ignoreDuplicates: true }
+      );
+      if (invErr) {
+        console.error("[atelier/paiement] insert invoice_jobs échec (non bloquant)", invErr.code);
+      }
+    }
+  } catch (err) {
+    console.error("[atelier/paiement] invoice_jobs exception (non bloquant)", (err as Error)?.message);
+  }
+
   /* ── T-021 : le crédit fondatrice est DÉPENSÉ ────────────────────────
      Écrit seulement si la session portait notre métadonnée ET que Stripe a
      bien décompté quelque chose. La double condition n'est pas de la
