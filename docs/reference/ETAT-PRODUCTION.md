@@ -20,12 +20,50 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 | Page cliente (`/numero/<token>`) | en ligne | 21/08/2026 |
 | Back-office (`/admin/atelier`) | en ligne | 25/08/2026 |
 | Relève quotidienne des mails | armée, 7 h UTC | prouvée le 29/08/2026 à 07:20 |
-| Cloudprinter | branché, **sandbox** | recette de bout en bout le 26/08/2026 |
+| Cloudprinter | branché, **sandbox** (clés posées en Production le 01/09) | recette 26/08 ; **suivi vérifié sur la prod le 01/09** |
 | Stripe | branché | prévente depuis juin, atelier depuis le 24/08 |
 | Prévente (`/preventes`, `/lancement`) | retirées, 307 vers `/` | 28/08/2026 |
 | Rebonds Brevo (`/api/brevo/webhook`) | **actif**, webhook Brevo id 2158565 | prouvé le 29/08/2026 à 10:14 |
 
 Quatorze fondateurs ont des droits ouverts sous les CGV v2.5, maintenus en régime transitoire.
+
+## Recette de bout en bout de l'Atelier — 01/09/2026 (après-midi)
+
+Tunnel complet éprouvé, du questionnaire à l'expédition, avec un dossier « Test premier
+septembre » (mdurand085@gmail.com, fondatrice nº2). Fait en LOCAL (clés Stripe **test**,
+`sk_test_`) contre la vraie base de prod, paiement réel dans le Checkout Stripe hosted.
+
+Ce qui est prouvé :
+- **Mails M0 → M7** partis à chaque transition (M0 création · M1 dépôt · M3 lien de paiement ·
+  M4 paiement · M5 maquette · M6 validation · M7 expédition). La chaîne tient de bout en bout.
+- **Crédit fondatrice automatique** : `FONDATRICE-MATHIAS30` frappé et appliqué d'office au
+  checkout (−30 €), consommé au paiement. Palier p40 (32 pages) → **10 € réellement payés**.
+- **Garde InvoiceXpress prouvée** (sur le code de la branche `fix/atelier-invoice-jobs`, en
+  local) : un paiement `livemode=false` n'insère AUCUNE ligne `invoice_jobs` → aucune fatura.
+  ⚠️ Rappel : cette chaîne compta atelier n'est PAS encore déployée en prod (commit dad0730
+  branché uniquement, « NE PAS DEPLOYER avant immatriculation TVA »).
+- **Facture Stripe** : `invoice_creation` finalise la facture mais Stripe NE LIVRE PAS le mail
+  en mode test (normal, pas un bug) — le lien `hosted_invoice_url` est rangé dans
+  `numeros.facture_url`. En live, le mail partira.
+- **Cloudprinter sandbox** : commande passée (`orders/add`) + signaux de retour reçus
+  (`CloudprinterOrderValidated`, `ItemValidated`, `ItemShipped`).
+
+⚠️ **Trou trouvé ET RÉGLÉ le 01/09 : les clés Cloudprinter manquaient en PRODUCTION sur Vercel.**
+`CLOUDPRINTER_API_KEY` et `CLOUDPRINTER_WEBHOOK_KEY` n'existaient QU'EN PREVIEW. Conséquences en
+prod : webhook fermé (les logs runtime criaient « CLOUDPRINTER_WEBHOOK_KEY absente », donc aucun
+suivi ni M7) ET « Envoyer à l'impression » en mode manuel (`cloudprinterConfigure().pret=false`,
+pas de commande auto). Le CODE était bon depuis toujours (prouvé par rejeu). Fix appliqué :
+les deux variables ajoutées en **Production** (valeurs **sandbox**) + redéploiement.
+**Vérifié bout en bout sur la prod réelle** : un `ItemShipped` rejoué → dossier `expediee`,
+transporteur « DPD », `tracking_url`/`tracking_code` remplis.
+
+**Téléphone en E.164 (PR #22 mergée et déployée le 01/09, commit `6d7a946`)** : le numéro part
+chez Cloudprinter au format international (`+33…`), normalisé avec le pays de livraison Stripe
+(`telephoneE164` dans `impression.ts`). Avant, il partait en national (« 0680009071 »).
+
+**Ménage admin** : les 4 dossiers de test de mdurand085 supprimés (sauvegarde JSON hors dépôt).
+Restent en base : Marjorie, Flore, **Klervie** (« MADRID », fondatrice nº13, demande réelle
+arrivée le 01/09) et le dossier de test « Test premier septembre » (état `expediee`, gardé).
 
 ## Fusionné le 01/09/2026 (PR #16) — et ce qui dort dedans
 
@@ -127,7 +165,10 @@ doit cesser d'écrire « la colonne anonymise_le n'existe pas encore ». Un repl
 efface la donnée en silence : sans ce contrôle, on croit avoir un filet quand on a une amnésie.
 
 `20260829_atelier_tracking_code.sql` **appliquée et vérifiée le 30/08/2026** (T-001 fermé,
-fiche `docs/backlog/fermes/`). La preuve de bout en bout avec un vrai colis reste à faire.
+fiche `docs/backlog/fermes/`). ✅ **Preuve de bout en bout faite le 01/09** : un signal
+`ItemShipped` rejoué sur la prod a rempli `tracking_url` + `tracking_code` (transporteur
+« DPD ») — une fois les clés Cloudprinter posées en Production (voir la section « Recette de
+bout en bout » plus haut). Reste à confirmer un jour avec un VRAI colis d'un vrai client.
 
 ⚠️ `20260830_atelier_vignettes.sql` (colonne `photos.vignette_key`) : **rien dans le dépôt
 n'atteste son application**, ni sa fiche (T-042), ni D7. À vérifier au même passage que la
@@ -154,7 +195,8 @@ et T-011 est fermé. (Le code lit une 49e chose, `NODE_ENV`, qui n'est pas une v
 **`BREVO_TEMPLATE_M10_ID`** (celle-ci n'existe encore nulle part : il faut d'abord pousser le
 template — sans elle, aucune rétention ne s'applique), `ADMIN_PASSWORD_MATHIAS`,
 `ADMIN_PASSWORD_LOUIS`, `CRON_SECRET`, `ATELIER_MAILS_SECRET`, `CLOUDPRINTER_API_KEY` +
-`CLOUDPRINTER_WEBHOOK_KEY`, les cinq `R2_*`, `PREVENTE_FERMEE`.
+`CLOUDPRINTER_WEBHOOK_KEY` (**posées en Production le 01/09, valeurs SANDBOX — elles n'étaient
+qu'en Preview jusque-là ; à basculer en LIVE au lancement**), les cinq `R2_*`, `PREVENTE_FERMEE`.
 ⚠️ `ADMIN_PASSWORD` (l'ancien mot de passe partagé) peut rester posée : depuis le 31/08 le code
 l'ignore complètement (T-005). Elle n'ouvre plus rien.
 
