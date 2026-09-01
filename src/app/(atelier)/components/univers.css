@@ -638,8 +638,33 @@
 @media (max-width:1000px){
   .bj-atelier{--mg-u:7vw;--md-u:7vw}
   .at-accueil .pas{display:none}
-  .at-accueil .sl{padding:calc(11 * var(--uh)) var(--md-u) calc(7 * var(--uh)) var(--mg-u);min-height:var(--app-height)}
-  .at-accueil .suite{align-self:flex-start;margin-top:calc(4.5 * var(--uh))}
+  /* ── LE RYTHME MOBILE ──
+     Sur mobile on scrolle, on ne tourne pas la page : forcer chaque section
+     à la hauteur de l'écran laissait un demi-écran vide au-dessus et au-
+     dessous du contenu — un « trou » d'une page entière entre deux blocs.
+     On repasse donc en hauteur-de-CONTENU (règle UX mobile courante), avec
+     un padding vertical SYMÉTRIQUE et identique pour les sept pages : l'écart
+     entre deux sections est le même partout, franc et régulier, sans jamais
+     un écran mort. (sl7 garde son propre padding-haut, plus bas.) */
+  .at-accueil .sl{padding:calc(10 * var(--uh)) var(--md-u);min-height:0}
+  /* Le corps ne se centre plus dans un écran plein : il prend sa hauteur de
+     contenu (sinon `flex:1 1 0` l'écrase à zéro quand la section suit son
+     contenu, et `overflow:hidden` masquerait tout). */
+  .at-accueil .sl-corps{flex:0 0 auto;justify-content:flex-start}
+  /* Sur mobile on ne tourne pas la page, on la descend : le bouton
+     « Tourner la page » n'a plus de rôle et volait de la place. On le
+     retire ; le défilement natif enchaîne les slides. Le CTA final
+     (.sl7-cta, classe .acte) reste, lui — ce n'est pas un .suite. */
+  .at-accueil .suite{display:none}
+  /* La révélation se fait plus courte et plus vive : moins de déplacement,
+     moins de flou (coûteux sur GPU mobile), pour que chaque page arrive
+     « propre » pendant qu'on scrolle. Les retards, eux, sont comprimés
+     côté séquenceur (Univers.tsx). */
+  .at-accueil [data-t]{transform:translateY(14px);filter:blur(5px)}
+  .at-accueil [data-t].vu{
+    transition:opacity 720ms var(--ease-recit), transform 720ms var(--ease-recit),
+               filter 560ms var(--ease-recit);
+  }
   .at-accueil .geant{font-size:clamp(40px,12.4vw,78px)}
   .at-accueil .sl1-note{margin-left:0;text-align:left;max-width:none;font-size:clamp(17px,4.6vw,22px)}
   .at-accueil .sl2{padding-right:var(--md-u)}

@@ -289,6 +289,13 @@
   width:clamp(50px,4.2vw,74px);height:clamp(50px,4.2vw,74px);
   background:var(--c-accent);color:var(--c-text-onaccent);
 }
+/* La flèche doit tenir sa proportion dans le disque. Sans taille, un <svg>
+   qui ne porte QUE son viewBox s'étire à 100 % du cercle : sur desktop la
+   flèche remplissait le disque et, son dessin étant légèrement haut dans le
+   viewBox (24×24), elle paraissait décentrée. Une taille en pourcentage la
+   pose au même rapport que sur mobile (≤1000 px la règle plus bas fixe 19 px,
+   qui l'emporte dans sa plage). S'applique aussi au CTA final .sl7-cta. */
+.at-accueil .acte--seul .rond svg{width:42%;height:42%}
 /* PRD §15 : la lueur est POSEE sur un pseudo, on n'anime que son opacite. */
 .at-accueil .acte--seul .rond::after{
   content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
@@ -319,6 +326,25 @@
   0%{opacity:0;transform:translateY(0)}
   22%{opacity:1} 78%{opacity:1}
   100%{opacity:0;transform:translateY(7vh)}
+}
+
+/* ── Le CTA du header, IDENTIQUE au mobile jusque sur desktop (Mathias) ──
+   Au-dessus de 1000 px le bouton n'était que du texte nu suivi du disque,
+   avec le fil qui tombe. On lui donne la MÊME pastille bordée compacte que
+   sous 1000 px : mêmes valeurs, trait pour trait, que le bloc mobile plus
+   bas. On borne à `min-width:1001px` pour ne rien toucher au mobile, et on
+   ne vise que `.descente` — le CTA final (.sl7-cta) garde sa grande forme. */
+@media (min-width:1001px){
+  .at-accueil .descente{
+    gap:12px;min-height:44px;padding:7px 8px 7px 20px;
+    border:1px solid var(--c-line-strong);border-radius:999px;
+    transition:border-color var(--t-reveal) var(--ease);
+  }
+  .at-accueil .descente:hover{border-color:var(--c-accent)}
+  .at-accueil .descente .mot{font-size:19px}
+  .at-accueil .descente .rond{width:34px;height:34px}
+  .at-accueil .descente .rond svg{width:19px;height:19px}
+  .at-accueil .descente .fil{display:none}
 }
 
 /* ─────────── le curseur qui legende (desktop seul) ───────────
