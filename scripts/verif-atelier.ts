@@ -71,6 +71,7 @@ import { lireSuivi, nomTransporteur } from "@/lib/atelier/suivi";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import {
   adresseCloudprinter,
+  telephoneE164,
   estCleImpression,
   interpreterSignal,
   payloadCommande,
@@ -429,6 +430,19 @@ ok("18 pages -> aucun produit", produitPour(18) === null);
 ok("52 pages -> aucun produit", produitPour(52) === null);
 ok("pagination absente -> aucun produit", produitPour(null) === null);
 
+titre("— le telephone Cloudprinter passe en E.164 avec le pays (test 01/09) —");
+ok("national FR -> +33, zero de tete retire", telephoneE164("0680009071", "FR") === "+33680009071");
+ok("national BE -> +32", telephoneE164("0470123456", "BE") === "+32470123456");
+ok("national LU -> +352 (pas de zero national a retirer)", telephoneE164("621123456", "LU") === "+352621123456");
+ok("deja en +... : garde tel quel", telephoneE164("+33612345678", "FR") === "+33612345678");
+ok("prefixe 00 -> +", telephoneE164("0033612345678", "FR") === "+33612345678");
+ok("separateurs (espaces/points) nettoyes", telephoneE164("06 80 00 90 71", "FR") === "+33680009071");
+ok("pays hors zone : on ne devine pas, on rend le national", telephoneE164("0680009071", "US") === "0680009071");
+ok("numero vide -> chaine vide (le repli TELEPHONE_CONTACT joue ailleurs)", telephoneE164("", "FR") === "");
+ok("adresseCloudprinter met le telephone en E.164",
+   (() => { const r = adresseCloudprinter({ name: "Mathias Durand", address: { line1: "12 rue du Test", postal_code: "75001", city: "Paris", country: "FR" } }, "mdurand085@gmail.com", "0680009071");
+            return r.ok && r.adresse.phone === "+33680009071"; })());
+
 /* ─────────────────────────────────────────────────────────────────────────
    Le controle technique du PDF print-ready (route impression/controle).
    Les attendus viennent du releve products/info du 30/08/2026
@@ -505,8 +519,8 @@ const adr = adresseCloudprinter(ADRESSE_STRIPE, "marie@exemple.fr", "06 12 34 56
 ok("adresse complete acceptee", adr.ok);
 ok("le nom est decoupe prenom / nom", adr.ok && adr.adresse.firstname === "Marie" && adr.adresse.lastname === "Dupont");
 ok("le pays est normalise en majuscules", adr.ok && adr.adresse.country === "FR");
-ok("le telephone du dossier part, nettoye (exige par leur API)",
-   adr.ok && adr.adresse.phone === "0612345678");
+ok("le telephone du dossier part en E.164 (national FR -> +33, exige par leur API)",
+   adr.ok && adr.adresse.phone === "+33612345678");
 const adrSansTel = adresseCloudprinter(ADRESSE_STRIPE, "marie@exemple.fr");
 ok("sans telephone au dossier : repli sur le numero de la maison, jamais un refus",
    adrSansTel.ok && typeof adrSansTel.adresse.phone === "string" && adrSansTel.adresse.phone.length > 5);
