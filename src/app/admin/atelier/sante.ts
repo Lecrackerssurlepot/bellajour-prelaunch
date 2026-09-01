@@ -222,7 +222,7 @@ export async function chargerSante(): Promise<Sante> {
     constats.push({
       gravite: "rouge",
       titre: `${oublies.length} dossier${oublies.length > 1 ? "s" : ""} oublié${oublies.length > 1 ? "s" : ""}`,
-      remede: "Traiter, ou prévenir la cliente d'un délai. Le silence est ce qui coûte le plus.",
+      remede: "Traiter, ou prévenir le client d'un délai. Le silence est ce qui coûte le plus.",
       lignes: oublies,
     });
   }

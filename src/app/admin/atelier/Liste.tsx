@@ -38,15 +38,15 @@ const ORDRE: Pile[] = ["retard", "a_faire", "attente_cliente", "dehors", "termin
 const TITRE_PILE: Record<Pile, string> = {
   retard: "En retard",
   a_faire: "À faire",
-  attente_cliente: "Chez la cliente",
+  attente_cliente: "Chez le client",
   dehors: "En route",
   termine: "Terminés",
 };
 
 const SOUS_TITRE_PILE: Record<Pile, string> = {
-  retard: "La promesse faite à la cliente est dépassée.",
+  retard: "La promesse faite au client est dépassée.",
   a_faire: "La balle est dans notre camp.",
-  attente_cliente: "Elle doit payer, valider, ou compléter ses photos.",
+  attente_cliente: "Le client doit payer, valider, ou compléter ses photos.",
   dehors: "Chez l'imprimeur ou chez le transporteur.",
   termine: "Livrés.",
 };

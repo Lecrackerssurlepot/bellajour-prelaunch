@@ -91,8 +91,8 @@ export function numeroFondatricePour(w: LigneWaitlist | null | undefined): numbe
   return n;
 }
 
-/* Le code porte le PRÉNOM de la fondatrice (décision de Mathias, 31/08) :
-   `FONDATRICE-MARIE30`. Le prénom passe en majuscules sans accents ni
+/* Le code porte le PRÉNOM du fondateur (décision de Mathias, 31/08) :
+   `FONDATEUR-MARIE30`. Le prénom passe en majuscules sans accents ni
    espaces — Stripe n'accepte que des codes simples, et un code se dicte
    parfois au téléphone. */
 export function prenomPourCode(prenom: string | null | undefined): string {
@@ -117,8 +117,8 @@ export function codesPossibles(
 ): { voulu: string; repli: string } {
   const p = prenomPourCode(prenom);
   return {
-    voulu: p ? `FONDATRICE-${p}30` : `FONDATRICE-N${numeroFondateur}-30`,
-    repli: `FONDATRICE-${p || "X"}30-N${numeroFondateur}`,
+    voulu: p ? `FONDATEUR-${p}30` : `FONDATEUR-N${numeroFondateur}-30`,
+    repli: `FONDATEUR-${p || "X"}30-N${numeroFondateur}`,
   };
 }
 
@@ -333,7 +333,7 @@ async function frapperLeCode(
     amount_off: CREDIT_FONDATRICE_CENTIMES,
     currency: "eur",
     duration: "once",
-    name: `Crédit fondatrice nº${d.numeroFondateur} (CGV art. 5 bis)`,
+    name: `Crédit fondateur nº${d.numeroFondateur} (CGV art. 5 bis)`,
     metadata,
   });
 
