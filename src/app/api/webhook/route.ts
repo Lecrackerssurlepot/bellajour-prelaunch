@@ -414,8 +414,17 @@ async function handleCheckoutCompleted(
   //     tard via une Edge Function. On insère juste une ligne `pending` idempotente.
   //     Un échec ici ne doit JAMAIS casser la confirmation ni les emails : on log
   //     et on continue (pas de return false, pas de throw). pays_client laissé null.
+  //
+  //     GARDE MODE TEST : un paiement Stripe en mode test (session.livemode === false)
+  //     ne doit RIEN pousser vers la facturation. InvoiceXpress n'a aucun moyen de
+  //     savoir que le paiement était fictif : une fatura-recibo finalisée à partir
+  //     d'un test est un vrai document fiscal qu'il faut ensuite annuler à la main.
+  //     Le reste du tunnel (confirmation, mails, numéro) tourne quand même, pour
+  //     qu'un test de bout en bout reste possible sans polluer la compta.
   try {
-    if (session.amount_total != null && row.id) {
+    if (session.livemode === false) {
+      console.log("[webhook] invoice_jobs sauté — paiement en mode test (livemode=false)");
+    } else if (session.amount_total != null && row.id) {
       const montantTtc = session.amount_total / 100; // amount_total en centimes
       const montantHt = Math.round((montantTtc / 1.23) * 100) / 100; // TVA 23 % (PT)
       const montantTva = Math.round((montantTtc - montantHt) * 100) / 100;
