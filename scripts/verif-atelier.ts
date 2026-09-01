@@ -985,22 +985,22 @@ ok("palier absent : null, on ne facture pas sans chiffrage",
 
 titre("— le code fondatrice (T-021) au journal —");
 const rCode = raconter("code_fondatrice_cree", {
-  code: "FONDATRICE-3-XYZW",
+  code: "FONDATEUR-3-XYZW",
   montant: 3000,
   numero_fondateur: 3,
   par: "Mathias",
 });
 ok("la phrase nomme le geste et le montant",
-   rCode.texte.includes("30") && rCode.texte.toLowerCase().includes("code fondatrice"));
+   rCode.texte.includes("30") && rCode.texte.toLowerCase().includes("code fondateur"));
 ok("la phrase porte son auteur", rCode.texte.includes("Mathias"));
 ok("le code lui-meme n'est PAS dans la phrase ni le detail",
-   !rCode.texte.includes("FONDATRICE-3-XYZW") && !(rCode.detail ?? "").includes("FONDATRICE-3-XYZW"));
+   !rCode.texte.includes("FONDATEUR-3-XYZW") && !(rCode.detail ?? "").includes("FONDATEUR-3-XYZW"));
 ok("sans auteur, la phrase reste correcte",
    raconter("code_fondatrice_cree", { montant: 3000 }).texte.length > 0);
 
 titre("— T-021 : les deux nouveaux evenements du credit se racontent —");
 const rApplique = raconter("credit_fondatrice_applique", {
-  code: "FONDATRICE-MARIE30",
+  code: "FONDATEUR-MARIE30",
   montant: 3000,
   numero_fondateur: 3,
   session_id: "cs_test_1",
@@ -1009,8 +1009,8 @@ const rApplique = raconter("credit_fondatrice_applique", {
 ok("« applique » dit le montant et l'automatisme",
    rApplique.texte.includes("30") && /automatique/i.test(rApplique.texte));
 ok("« applique » ne revele pas le code",
-   !rApplique.texte.includes("FONDATRICE-MARIE30")
-   && !(rApplique.detail ?? "").includes("FONDATRICE-MARIE30"));
+   !rApplique.texte.includes("FONDATEUR-MARIE30")
+   && !(rApplique.detail ?? "").includes("FONDATEUR-MARIE30"));
 const rConsomme = raconter("credit_fondatrice_consomme", { code: "X", montant: 3000 });
 ok("« consomme » dit que le droit est solde",
    /d[ée]pens/i.test(rConsomme.texte) && (rConsomme.detail ?? "").includes("30"));
@@ -1089,15 +1089,15 @@ ok("une vieille ligne sans promotion_code_id rend le code mais pas d'id",
    codeDansLeJournal([ligneJournal({ code: "FONDATRICE-N3-30" })])?.promotionCodeId === null);
 
 titre("— T-021 : le code lisible, et sa collision —");
-ok("prenom accentue : FONDATRICE-CHLOE30",
-   codesPossibles("Chloé", 3).voulu === "FONDATRICE-CHLOE30");
+ok("prenom accentue : FONDATEUR-CHLOE30",
+   codesPossibles("Chloé", 3).voulu === "FONDATEUR-CHLOE30");
 ok("prenom compose : les espaces et tirets sautent",
-   codesPossibles("Marie-Anne", 7).voulu === "FONDATRICE-MARIEANNE30");
-ok("le repli porte le numero de fondatrice (deux homonymes possibles)",
-   codesPossibles("Marie", 7).repli === "FONDATRICE-MARIE30-N7");
+   codesPossibles("Marie-Anne", 7).voulu === "FONDATEUR-MARIEANNE30");
+ok("le repli porte le numero de fondateur (deux homonymes possibles)",
+   codesPossibles("Marie", 7).repli === "FONDATEUR-MARIE30-N7");
 ok("prenom absent ou illisible : on retombe sur le numero seul",
-   codesPossibles(null, 12).voulu === "FONDATRICE-N12-30"
-   && codesPossibles("123", 12).voulu === "FONDATRICE-N12-30");
+   codesPossibles(null, 12).voulu === "FONDATEUR-N12-30"
+   && codesPossibles("123", 12).voulu === "FONDATEUR-N12-30");
 ok("Stripe dit « already exists » : c'est une collision, on tente le repli",
    estCollisionDeCode({ type: "invalid_request_error", message: "A promotion code with that code already exists." }));
 ok("toute autre erreur Stripe n'est PAS une collision (elle doit ressortir)",

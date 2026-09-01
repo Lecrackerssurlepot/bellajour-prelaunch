@@ -78,12 +78,12 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
       /* Le seul signal serveur de fin de dépôt (cf. mails.ts) : c'est le
          moment où elle a vraiment envoyé ses photos. */
       if (payload.consent_photos === true) {
-        return { texte: "Elle a terminé son dépôt", detail: null, ton: "elle" };
+        return { texte: "Le client a terminé son dépôt", detail: null, ton: "elle" };
       }
       if ("cgv_ok" in payload || "renonciation_retractation" in payload) {
         const coche = payload.cgv_ok === true || payload.renonciation_retractation === true;
         return {
-          texte: coche ? "Elle a coché les cases avant paiement" : "Elle a décoché une case",
+          texte: coche ? "Le client a coché les cases avant paiement" : "Le client a décoché une case",
           detail: null,
           ton: "elle",
         };
@@ -108,7 +108,7 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         };
       }
       if (vers === "photos_recues" && source === "depot_repris") {
-        return { texte: "Elle a redéposé ses photos", detail: null, ton: "elle" };
+        return { texte: "Le client a redéposé ses photos", detail: null, ton: "elle" };
       }
       if (vers === "payee") {
         return { texte: "Paiement reçu", detail: euros ? `${euros} €` : null, ton: "elle" };
@@ -129,7 +129,7 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         /* Le PRD prévoit une validation automatique à J+7 : la distinction
            compte, c'est la différence entre un accord et un silence. */
         return {
-          texte: qui === "auto" ? "Validée automatiquement (sans réponse)" : "Elle a validé la maquette",
+          texte: qui === "auto" ? "Validée automatiquement (sans réponse)" : "Le client a validé la maquette",
           detail: null,
           ton: qui === "auto" ? "neutre" : "elle",
         };
@@ -194,7 +194,7 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
        dans la pile « à faire » et suspend l'auto-validation à J+7. */
     case "retouches_demandees":
       return {
-        texte: "Elle a noté des retouches dans le Canva",
+        texte: "Le client a noté des retouches dans le Canva",
         detail: "L'auto-validation à J+7 est suspendue jusqu'à la republication",
         ton: "elle",
       };
@@ -242,7 +242,7 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         texte: payload.pose
           ? `${qui ?? "L'atelier"} a ouvert un document de travail`
           : `${qui ?? "L'atelier"} a retiré le document de travail`,
-        detail: "Interne, jamais partagé avec elle",
+        detail: "Interne, jamais partagé avec le client",
         ton: "nous",
       };
 
@@ -273,10 +273,10 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
       return {
         texte: fait(
           auteur(payload),
-          "a créé le code fondatrice de 30 €",
-          "Code fondatrice de 30 € créé",
+          "a créé le code fondateur de 30 €",
+          "Code fondateur de 30 € créé",
         ),
-        detail: typeof nf === "number" ? `Fondatrice nº${nf}, à usage unique` : "À usage unique",
+        detail: typeof nf === "number" ? `Fondateur nº${nf}, à usage unique` : "À usage unique",
         ton: "nous",
       };
     }
@@ -287,10 +287,10 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
     case "credit_fondatrice_applique": {
       const nf = payload.numero_fondateur;
       return {
-        texte: "Crédit fondatrice de 30 € appliqué automatiquement",
+        texte: "Crédit fondateur de 30 € appliqué automatiquement",
         detail:
-          (typeof nf === "number" ? `Fondatrice nº${nf}. ` : "") +
-          "Elle n'a rien eu à saisir : la remise était déjà sur sa page de paiement",
+          (typeof nf === "number" ? `Fondateur nº${nf}. ` : "") +
+          "Rien à saisir : la remise était déjà sur la page de paiement",
         ton: "nous",
       };
     }
@@ -300,7 +300,7 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
     case "credit_fondatrice_consomme": {
       const m = payload.montant;
       return {
-        texte: "Crédit fondatrice dépensé",
+        texte: "Crédit fondateur dépensé",
         detail:
           (typeof m === "number" ? `${(m / 100).toFixed(0)} € déduits. ` : "") +
           "Le droit de l'article 5 bis est soldé : il ne s'appliquera plus",

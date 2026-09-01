@@ -127,7 +127,7 @@ function encartCredit() {
   return `{% if params.CREDIT_FONDATRICE %}<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border-left: 2px solid #d68a63; border-radius: 0 12px 12px 0;">
 <tr><td style="padding: 24px 26px 8px 26px;">
-<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Votre cr&eacute;dit de fondatrice</div>
+<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Votre cr&eacute;dit de fondateur</div>
 </td></tr>
 <tr><td style="padding: 0 26px 24px 26px;">
 <p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Vos {{ params.CREDIT_FONDATRICE }}&nbsp;&euro; de cr&eacute;dit sont d&eacute;j&agrave; d&eacute;duits du prix ci-dessous. Vous n&rsquo;avez rien &agrave; saisir : la remise vous attend sur la page de paiement.</p>
