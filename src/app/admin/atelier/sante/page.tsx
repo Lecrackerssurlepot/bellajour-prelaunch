@@ -47,7 +47,7 @@ export default async function PageSante() {
             <h2 className="ate-carte-titre">Rien à surveiller pour l&apos;instant</h2>
             <p>
               Aucun dossier n&apos;est encore ouvert : rien ne peut être en retard ni en échec.
-              Cette page se remplira d&apos;elle-même quand les premières clientes arriveront.
+              Cette page se remplira d&apos;elle-même quand les premiers clients arriveront.
             </p>
           </section>
         ) : (

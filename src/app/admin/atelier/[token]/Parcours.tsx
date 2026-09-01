@@ -19,7 +19,7 @@ import type { Camp } from "@/lib/atelier/urgence";
 
 const QUI: Record<Camp, string> = {
   atelier: "à nous",
-  cliente: "à elle",
+  cliente: "au client",
   dehors: "en dehors",
   fini: "terminé",
 };

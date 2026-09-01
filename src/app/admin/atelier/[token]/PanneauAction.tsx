@@ -562,7 +562,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
 
           {choisie.cle === "photos_insuffisantes" ? (
             <label className="ate-champ">
-              <span className="ate-champ-label">Un mot pour elle (facultatif)</span>
+              <span className="ate-champ-label">Un mot pour le client (facultatif)</span>
               <textarea
                 className="adm-input ate-mot"
                 rows={3}

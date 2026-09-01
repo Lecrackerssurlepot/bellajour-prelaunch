@@ -86,9 +86,9 @@ livrée), la durée médiane de **chaque** étape avec son effectif « n= », un
 repliable ; le bouton « Contrôler les fichiers » rend pages, format en mm et verdict.
 ❌ Défaut : une fiche qui plante, ou un contrôle qui tourne sans fin.
 
-**C. La fiche d'un dossier fondatrice**
-✅ Bon : dans le bloc fondatrice, un bouton « Créer le code de 30 € » ; après clic, un code
-`FONDATRICE-…` copiable avec sa date. Un second clic redonne LE MÊME code.
+**C. La fiche d'un dossier fondateur**
+✅ Bon : dans le bloc fondateur, un bouton « Créer le code de 30 € » ; après clic, un code
+`FONDATEUR-…` copiable avec sa date. Un second clic redonne LE MÊME code.
 ⚠️ Le premier clic crée réellement le code chez Stripe — le faire d'abord sur un dossier test.
 
 **D. Les mails, après déploiement ET après le `--pousser` (avec ton accord)**

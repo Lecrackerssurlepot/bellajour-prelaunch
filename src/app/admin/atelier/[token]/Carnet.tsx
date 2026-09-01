@@ -138,7 +138,7 @@ export default function Carnet({
           ) : null}
         </div>
         <span className="ate-champ-aide">
-          Ne part jamais chez la cliente. Le lien partagé, en commentaire, se saisit au moment de
+          Ne part jamais chez le client. Le lien partagé, en commentaire, se saisit au moment de
           publier la maquette.
         </span>
         {lienEtat === "enregistre" ? <span className="ate-fait">Enregistré.</span> : null}

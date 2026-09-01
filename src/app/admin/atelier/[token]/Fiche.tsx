@@ -118,7 +118,7 @@ function CodeFondatrice({
           setErreur("Clé Stripe absente sur le serveur (STRIPE_SECRET_KEY) : rien n'a été créé.");
         } else if (corps.error === "pas_fondatrice") {
           setErreur(
-            "Le serveur ne trouve pas de fondatrice confirmée pour cet email : rien n'a été créé.",
+            "Le serveur ne trouve pas de fondateur confirmé pour cet email : rien n'a été créé.",
           );
         } else if (corps.error === "indisponible") {
           setErreur(
@@ -165,7 +165,7 @@ function CodeFondatrice({
             ? "Ce crédit a déjà été dépensé sur une commande. Il ne s'appliquera plus."
             : "Créé le " +
               fmt(creeLe) +
-              ". Rien à envoyer : la remise de 30 € s'applique toute seule quand elle paie. Ce code ne sert qu'à le lui dire de vive voix."}
+              ". Rien à envoyer : la remise de 30 € s'applique toute seule au moment du paiement. Ce code ne sert qu'à l'annoncer de vive voix."}
         </p>
         {sansJournal ? (
           <p className="ate-erreur">
@@ -507,7 +507,7 @@ export default function Fiche({
               Son téléphone : <b>{fiche.telephone}</b>.
             </>
           ) : (
-            " Ce dossier ne porte pas de téléphone : il n'y a aucun autre moyen de la joindre."
+            " Ce dossier ne porte pas de téléphone : il n'y a aucun autre moyen de le joindre."
           )}
         </div>
       ) : null}
@@ -523,9 +523,9 @@ export default function Fiche({
           pouvoir écouter finit contournée en SQL. */}
       {l.depot !== "termine" ? (
         <div className="ate-bandeau ate-bandeau--alerte">
-          <strong>Elle n&apos;a jamais envoyé son dépôt.</strong>{" "}
+          <strong>Le client n&apos;a jamais envoyé son dépôt.</strong>{" "}
           {l.depot === "abandonne"
-            ? `Les ${l.nbPhotos} photos sont bien arrivées dans le coffre, mais le droit d'usage n'a pas été donné : elle a fermé l'onglet avant le dernier bouton. Ne compose rien tant qu'elle n'a pas terminé.`
+            ? `Les ${l.nbPhotos} photos sont bien arrivées dans le coffre, mais le droit d'usage n'a pas été donné : il a fermé l'onglet avant le dernier bouton. Ne compose rien tant qu'il n'a pas terminé.`
             : "Le questionnaire est rempli, aucune photo n'a été déposée."}{" "}
           Sa page lui propose de finir en un clic, et la relance part
           automatiquement le lendemain de l&apos;ouverture du dossier.
@@ -554,10 +554,10 @@ export default function Fiche({
         <div className="ate-bandeau ate-bandeau--attention">
           <strong>
             Son dépôt s&apos;est interrompu : {l.nbPhotos} photos sur les{" "}
-            {fiche.photosAttendues} qu&apos;elle envoyait.
+            {fiche.photosAttendues} qu&apos;il envoyait.
           </strong>{" "}
-          Elle a bien validé (le droit d&apos;usage est donné, le dossier est à
-          nous), puis elle a quitté la page avant la fin du transfert. Les{" "}
+          Il a bien validé (le droit d&apos;usage est donné, le dossier est à
+          nous), puis il a quitté la page avant la fin du transfert. Les{" "}
           {fiche.photosAttendues - l.nbPhotos} manquantes sont restées sur son
           téléphone et ne reviendront pas toutes seules. Compose avec ce qu&apos;on
           a, ou propose-lui d&apos;en redéposer (« Demander plus de photos »).
@@ -578,7 +578,7 @@ export default function Fiche({
           nouvelle échéance. */}
       {l.etat === "maquette_prete" && fiche.retouchesLe ? (
         <div className="ate-bandeau ate-bandeau--attention">
-          <strong>Elle a noté des retouches dans le Canva</strong> le{" "}
+          <strong>Le client a noté des retouches dans le Canva</strong> le{" "}
           {new Date(fiche.retouchesLe).toLocaleDateString("fr-FR", { day: "2-digit", month: "long" })}.
           L&apos;auto-validation à J+7 est suspendue : relis ses commentaires, corrige, puis
           republie la maquette — M5 repartira avec la nouvelle échéance.
@@ -619,7 +619,7 @@ export default function Fiche({
               <dt>Occasion</dt>
               <dd>{fiche.occasion || "—"}</dd>
             </dl>
-            <p className="ate-histoire">{fiche.histoire || "Elle n'a rien écrit."}</p>
+            <p className="ate-histoire">{fiche.histoire || "Le client n'a rien écrit."}</p>
           </section>
 
           <section className="ate-carte">
@@ -789,7 +789,7 @@ export default function Fiche({
             <section className="ate-carte">
               <h2 className="ate-carte-titre">L&apos;aperçu publié</h2>
               <p className="ate-carte-sous">
-                Ce que la cliente voit sur sa page, dans le même ordre et avec les mêmes mots.
+                Ce que le client voit sur sa page, dans le même ordre et avec les mêmes mots.
               </p>
               <div className="ate-apercu">
                 {apercuVues.map(({ cle, src, legende, loupe, decoupe }) => {
@@ -831,7 +831,7 @@ export default function Fiche({
         <div className="ate-colonne ate-colonne--cote">
           {/* ── la cliente ── */}
           <section className="ate-carte">
-            <h2 className="ate-carte-titre">{l.prenom || "La cliente"}</h2>
+            <h2 className="ate-carte-titre">{l.prenom || "Le client"}</h2>
             <dl className="ate-defs">
               <dt>Email</dt>
               <dd className="ate-mono">{l.email || "—"}</dd>
@@ -873,7 +873,7 @@ export default function Fiche({
                 {fiche.client.prevente.numeroFondateur ? (
                   <>
                     <p className="ate-credit">
-                      Fondatrice nº{fiche.client.prevente.numeroFondateur} —{" "}
+                      Fondateur nº{fiche.client.prevente.numeroFondateur} —{" "}
                       <strong>30 € de crédit</strong> à imputer (CGV art. 5 bis), code Stripe
                       nominatif à usage unique.
                     </p>
@@ -885,13 +885,13 @@ export default function Fiche({
                   </>
                 ) : (
                   <p className="ate-faint">
-                    Inscrite en prévente ({fiche.client.prevente.status ?? "—"}), sans place de
-                    fondatrice.
+                    Inscrit en prévente ({fiche.client.prevente.status ?? "—"}), sans place de
+                    fondateur.
                   </p>
                 )}
                 {fiche.client.prevente.estAmbassadeur ? (
                   <p className="ate-faint">
-                    Ambassadrice · {fiche.client.prevente.pagesCredits} pages de parrainage acquises.
+                    Ambassadeur · {fiche.client.prevente.pagesCredits} pages de parrainage acquises.
                   </p>
                 ) : null}
               </div>
@@ -981,7 +981,7 @@ export default function Fiche({
                 <a href={fiche.canvaUrl} target="_blank" rel="noreferrer">
                   Canva partagé ↗
                 </a>
-                <span className="ate-faint"> — celui qu&apos;elle a reçu, en commentaire</span>
+                <span className="ate-faint"> — celui qu&apos;il a reçu, en commentaire</span>
               </p>
             ) : null}
           </section>
