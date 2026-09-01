@@ -5,6 +5,7 @@ domaine: atelier
 gravite: serieux
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-31
 ---
 ## Ce que Mathias a dit
 Rien — audit d'accessibilité du 29/08/2026.
@@ -32,3 +33,7 @@ Vérifié au navigateur (`/composer?reprendre=tronque123`, 375 px et desktop) : 
 aucun doublon possible.
 **Reste ouvert** : le filet côté atelier (détecter deux dossiers ouverts pour la même adresse)
 n'est pas fait — il touche l'admin, hors périmètre de cette passe.
+
+**Fermé le 01/09/2026.** Le doublon ne peut plus naître par un lien tronqué, qui était la cause
+nommée par le titre. Le filet côté atelier — deux dossiers ouverts sur la même adresse, quelle
+qu'en soit la cause — est parti dans **T-084**.

@@ -5,6 +5,7 @@ domaine: front
 gravite: serieux
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-31
 ---
 ## Ce que Mathias a dit
 Rien — audit d'accessibilité du 29/08/2026.
@@ -32,3 +33,6 @@ passage au message « plus long que prévu » aussi. Même résultat final, mêm
 Vérifié : tsc, lint, build, `/numero/<token invalide>` rend toujours son 404 propre. **Non vu en
 conditions réelles** : la branche exige un dossier en `apercu_pret` + retour Stripe, qu'on ne
 fabrique pas sans écrire en base — à recetter au prochain paiement sandbox.
+
+**Fermé le 01/09/2026.** Même raison que T-055 : le code est fait, il ne reste qu'un œil humain,
+inscrit dans `docs/reference/RECETTE-VISUELLE.md` § « Ajouts du 31/08 et du 01/09 ».

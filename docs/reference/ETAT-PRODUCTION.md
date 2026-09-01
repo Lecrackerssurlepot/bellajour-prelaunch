@@ -1,4 +1,4 @@
-# État du système — au 30/08/2026
+# État du système — au 01/09/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -27,12 +27,61 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 Quatorze fondateurs ont des droits ouverts sous les CGV v2.5, maintenus en régime transitoire.
 
+## Fusionné le 01/09/2026 (PR #16) — et ce qui dort dedans
+
+Quatre choses sont entrées dans `main` ce jour-là. **Trois sur quatre ne font encore RIEN**, et
+c'est le genre de silence que ce fichier existe pour empêcher.
+
+| Quoi | État réel | Ce qui manque pour que ça vive |
+|---|---|---|
+| **Le crédit fondatrice s'applique tout seul** | actif dès le déploiement | rien — mais **jamais éprouvé contre l'API Stripe réelle** (T-021) |
+| **La mesure d'audience** | branchée, **inerte** | le clic « Enable » de Web Analytics au tableau de bord Vercel (T-020) |
+| **La rétention à 90 jours** | livrée, **inerte** | la migration `20260901`, le template M10 poussé, `BREVO_TEMPLATE_M10_ID` (T-076) |
+| **Le dépôt se valide sans attendre la fin des transferts** | actif dès le déploiement | rien — à voir à l'œil sur un vrai dépôt de 80 photos en 4G |
+
+**Le crédit fondatrice, en détail.** Il ne se tape plus : `/api/atelier/checkout` relit
+`waitlist` lui-même et pose `discounts: [{ promotion_code }]` sur la session Stripe. La règle
+vit dans `src/lib/atelier/fondatrice.ts`, unique pour les deux appelants (le checkout, et le
+bouton admin gardé comme filet). ⚠️ `allow_promotion_codes` est RETIRÉ dans ce cas : Stripe
+interdit les deux ensemble, les laisser ferait échouer le paiement. ⚠️ Au palier 30 €, le
+crédit couvre TOUT le prix : la session se solde en `no_payment_required` et le dossier n'a
+**aucun `payment_intent`** — plusieurs gardes ailleurs dans le code en dépendent.
+
+**Le dépôt validable sans attendre, en détail.** Le bouton « Envoyer à l'atelier » ne demande
+plus `enVol === 0` (`composer/depot/paliers.ts`). Le seuil de 40 reste compté sur les photos
+**confirmées par le serveur**, jamais sur celles qui sont en vol. Le navigateur annonce au clic
+combien il comptait en envoyer (`photos_attendues`, dans l'événement `consentements` — un
+témoin, pas une promesse) : l'écart avec `nb_photos` est la seule trace qui dise à l'atelier
+qu'un onglet s'est fermé en route. La fiche admin l'affiche, et ne conclut RIEN quand il est
+absent (dossier antérieur au 01/09).
+
+⚠️ **Le déploiement Vercel de cette fusion n'a pas été vérifié** par la passe documentaire du
+01/09. La leçon du 30/08 tient : une fusion ne prouve pas un déploiement, et le cache de
+bellajour.fr peut servir l'ancienne version plusieurs minutes.
+
 ## Mails Brevo — identifiants réels
 
-Atelier (les douze) : M0=38 · M1=27 · M2=30 · M2b=37 · M3=28 · M3b=31 · M4=29 · M5=32 · M6=33 ·
-M7=34 · M8=35 · M9=36. Prévente : F1=17 · S1=18 · P3=19 · A1=20 · A2=21 · A3=22 · Relance=23.
+L'atelier compte **treize** codes de mail (`CodeMail`, `src/lib/atelier/mails.ts`) — recomptés
+le 01/09, la doc en annonçait douze avant M10 :
+
+| | |
+|---|---|
+| Douze avec un identifiant Brevo | M0=38 · M1=27 · M2=30 · M2b=37 · M3=28 · M3b=31 · M4=29 · M5=32 · M6=33 · M7=34 · M8=35 · M9=36 |
+| **Un sans identifiant** | **M10** — le préavis de fermeture (T-076). Le template n'a **jamais été poussé** chez Brevo et `BREVO_TEMPLATE_M10_ID` n'existe nulle part. |
+
+Prévente : F1=17 · S1=18 · P3=19 · A1=20 · A2=21 · A3=22 · Relance=23 · W1=5 · P1=10 · P2=11.
+
 Le texte est versionné dans `scripts/mails-atelier.mjs`, pas dans l'interface Brevo.
-`--pousser` réécrit les DIX templates de l'atelier ; borner avec `--seulement <CODE>`.
+`--pousser` réécrit les **onze** templates que porte le tableau `MAILS` du script
+(M0, M2, M2b, M3, M3b, M5, M6, M7, M8, M9, **M10**) ; borner avec `--seulement <CODE>`.
+⚠️ **M1 et M4 ne sont PAS dans ce script** et ne sont donc jamais réécrits par `--pousser` :
+leur maquette se met à jour par le simple déploiement des images qu'elle référence. C'est la
+raison pour laquelle « les dix templates » et « les douze mails » ne se recoupaient pas — deux
+comptes différents, aucun des deux n'étant le nombre de mails.
+
+⚠️ **Ce que coûte l'absence de M10** : `scripts/anonymiser-dossiers.ts` exige que le préavis
+soit parti depuis 7 jours avant de refermer quoi que ce soit. Sans la variable, aucun M10 ne
+part, donc **rien ne s'anonymise du tout** — la rétention de 90 jours est livrée et inerte.
 
 ## Les rebonds — actifs, et prouvés de bout en bout (29/08/2026)
 
@@ -66,10 +115,24 @@ configuration. Vérifié en production le 29/08 — `flore@gmial.com` propose `f
 
 ## Migrations
 
-18 fichiers sur disque, 16 dans l'historique appliqué.
+**19 fichiers sur disque** (recomptés le 01/09/2026 : `ls supabase/migrations/*.sql`). Le compte
+de l'historique appliqué — 16 entrées — date du 30/08 et **n'a pas été re-mesuré depuis** : le
+vérifier demande d'interroger la base, ce que cette passe documentaire n'a pas fait.
+
+⚠️ **`20260901_atelier_retention.sql` (colonne `numeros.anonymise_le`) N'EST PAS APPLIQUÉE.**
+C'est le geste de Mathias, personne d'autre ne roule les migrations. Le repli 42703 est
+volontairement asymétrique : le dry-run d'`anonymiser-dossiers.ts` continue de fonctionner en
+lecture, l'écriture REFUSE. **Après application, vérifier que la donnée arrive** — le dry-run
+doit cesser d'écrire « la colonne anonymise_le n'existe pas encore ». Un repli qui se déclenche
+efface la donnée en silence : sans ce contrôle, on croit avoir un filet quand on a une amnésie.
 
 `20260829_atelier_tracking_code.sql` **appliquée et vérifiée le 30/08/2026** (T-001 fermé,
 fiche `docs/backlog/fermes/`). La preuve de bout en bout avec un vrai colis reste à faire.
+
+⚠️ `20260830_atelier_vignettes.sql` (colonne `photos.vignette_key`) : **rien dans le dépôt
+n'atteste son application**, ni sa fiche (T-042), ni D7. À vérifier au même passage que la
+précédente. Les deux lectures concernées ont leur repli 42703 (D7 §4), donc l'absence ne casse
+rien — elle fait juste retomber les fiches sur les originaux lourds, exactement comme avant.
 
 Trois anciennes (`20260528_g1_email_canonical`, `20260528_g3_pages_credits_unique_source`,
 `20260704_notion_synced`) sont absentes de l'historique mais leurs colonnes existent : appliquées
@@ -78,16 +141,24 @@ crée `waitlist`, `pages_credits`, `invoice_jobs`) et `fondateur_assign_by_email
 
 ## Variables d'environnement
 
-47 sont réellement lues par le code. `.env.example` en documente une partie seulement — douze
-vivantes y manquent (voir T-011). **Une variable absente ne casse pas : elle fait un silence.**
+**48 sont réellement lues** par `src/` et `scripts/`, et **toutes les 48 sont documentées dans
+`.env.example`** — rediffé le 01/09/2026, l'écart est nul dans les deux sens : aucune variable
+lue n'y manque, aucune variable morte n'y traîne. Le trou de douze relevé par T-011 est bouché,
+et T-011 est fermé. (Le code lit une 49e chose, `NODE_ENV`, qui n'est pas une variable à poser.)
+
+**Une variable absente ne casse pas : elle fait un silence.**
 `/admin/atelier/sante` est le seul écran qui montre un mail sans template.
 
 À vérifier sur Vercel, Production ET Preview, avant le lancement :
 `BREVO_TEMPLATE_M0_ID` (posée le 28/08), les onze autres templates de l'atelier,
-`ADMIN_PASSWORD_MATHIAS`, `ADMIN_PASSWORD_LOUIS`, `CRON_SECRET`, `ATELIER_MAILS_SECRET`,
-`CLOUDPRINTER_API_KEY` + `CLOUDPRINTER_WEBHOOK_KEY`, les cinq `R2_*`, `PREVENTE_FERMEE`.
+**`BREVO_TEMPLATE_M10_ID`** (celle-ci n'existe encore nulle part : il faut d'abord pousser le
+template — sans elle, aucune rétention ne s'applique), `ADMIN_PASSWORD_MATHIAS`,
+`ADMIN_PASSWORD_LOUIS`, `CRON_SECRET`, `ATELIER_MAILS_SECRET`, `CLOUDPRINTER_API_KEY` +
+`CLOUDPRINTER_WEBHOOK_KEY`, les cinq `R2_*`, `PREVENTE_FERMEE`.
+⚠️ `ADMIN_PASSWORD` (l'ancien mot de passe partagé) peut rester posée : depuis le 31/08 le code
+l'ignore complètement (T-005). Elle n'ouvre plus rien.
 
-## ⚠️ L'atelier n'est pas encore en fonctionnement (30/08/2026)
+## ⚠️ L'atelier n'est pas encore en fonctionnement (30/08/2026, tenu au 01/09)
 
 Le tunnel est OUVERT au public et il crée de vrais dossiers, mais **l'atelier ne compose pas
 encore**. Des clientes s'inscrivent en avance ; leurs numéros seront faits plus tard, et elles
@@ -100,6 +171,15 @@ attend depuis cinq jours alors que `DELAIS.photos_recues` promet « Couverture s
 par mail — c'est Marjorie, « Notre histoire », 49 photos.
 `/admin/atelier/sante` les comptera pourtant comme « oubliés », puisqu'il ne connaît que la
 promesse. Le constat est juste selon sa règle, et faux selon la réalité.
+
+**Au 01/09, la base porte six dossiers** (compte relevé par le dry-run de
+`scripts/anonymiser-dossiers.ts` : cinq au dépôt terminé, un jamais terminé, aucun à refermer).
+
+⚠️ **C'est ici, et nulle part ailleurs, que vit le constat nº4 de la page Santé.** T-024 est
+fermé : la page ne crie plus sur une base vide. Ce qui reste — « oubliés » compte les
+inscriptions anticipées — n'est pas un défaut de code, c'est cette période-ci. Le distinguer
+demanderait un réglage « date d'ouverture » qui n'existe pas et que seul Mathias peut poser. Le
+jour où l'atelier compose, le constat redevient vrai tout seul.
 
 Deux conséquences à garder en tête tant que l'atelier n'a pas ouvert :
 1. La page `/numero/<token>` annonce « Votre couverture arrive **sous 48 h** » **sans condition** —
@@ -173,11 +253,31 @@ performance mobile · 8 tickets neufs (T-072→T-079) · specs Cloudprinter rele
 `node scripts/mails-atelier.mjs --pousser` n'est pas lancé avec l'accord de Mathias (M1/M4,
 hors script, sont couverts par le simple déploiement du PNG opaque).
 
-## Ce qui n'est pas mesuré
+## Ce qui n'est pas mesuré — corrigé le 01/09/2026
 
-Aucun traceur d'audience. On ne sait pas combien de visiteuses arrivent, sur quel appareil, ni où
-elles partent. Aucun rebond Brevo n'est traité : une adresse mal tapée tue un dossier en silence.
-Aucune remontée d'erreur serveur autre que les logs Vercel. Voir T-020.
+Ce paragraphe disait deux choses fausses ; elles ont pourri sur place parce qu'elles n'ont pas
+été relues quand le code a bougé. L'état réel :
+
+**Le traceur d'audience EXISTE, et il ne compte encore rien.** `<Mesure />` est posé dans
+`src/app/layout.tsx`, sur `@vercel/analytics`. Il rend `null` hors production et **reste inerte
+tant que Web Analytics n'est pas activé dans le tableau de bord Vercel** — c'est un clic de
+Mathias, pas un déploiement. Le filtre de fuite est en place et testé :
+`src/lib/analytics/chemin.ts` masque tout segment porteur d'un jeton (`/numero/[token]`,
+`?reprendre=`, `?token=`), ne laisse passer que les `utm_*`, exclut `/admin/**` en entier, et
+n'envoie RIEN d'une URL qu'il n'a pas su lire. Voir T-020.
+⚠️ Tant que le clic n'a pas eu lieu, **on ne sait toujours pas** combien de visiteuses arrivent
+ni où elles partent : le résultat pratique est le même qu'avant, la cause est différente.
+
+**Les rebonds Brevo SONT traités** depuis le 29/08 — voir la section « Les rebonds » plus haut,
+dans ce même fichier, qui le dit et le prouve depuis toujours. Ce paragraphe la contredisait.
+Le webhook (id 2158565) écrit `email_rebond` et `email_plainte` au journal, la page Santé les
+montre depuis le 31/08 dans deux constats séparés (T-037).
+
+**Ce qui manque vraiment, aujourd'hui :**
+- aucune remontée d'erreur serveur autre que les logs Vercel (T-031) ;
+- rien ne compare les paiements Stripe aux dossiers de la base (T-081) — le seul silence de la
+  liste où l'argent est déjà encaissé ;
+- personne ne serait prévenu si Google rejetait le site (T-071).
 
 ## Le piège de la mitigation Vercel
 

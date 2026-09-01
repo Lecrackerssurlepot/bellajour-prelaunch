@@ -5,6 +5,7 @@ domaine: front
 gravite: serieux
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-31
 ---
 ## Ce que Mathias a dit
 Rien — audit de référencement du 29/08/2026.
@@ -52,3 +53,8 @@ Reste ouvert, et ce n'est pas un oubli :
   conditions (délai de retour, gratuité de livraison) que la page rendue n'affiche pas —
   « livraison comprise » a justement disparu de la PDP (point non tranché). Même famille de
   non-conformité que le `highPrice` fantôme : à faire quand la PDP l'affichera.
+
+**Fermé le 01/09/2026.** Les deux fiches concurrentes n'existent plus : c'était le ticket. Les
+deux manques ci-dessus — l'image ≥ 1200 px et les conditions marchandes — sont partis dans
+**T-085**, parce qu'ils attendent tous les deux quelque chose qui n'est pas du code : un asset
+de Mathias, et une PDP qui affiche ce qu'on baliserait.

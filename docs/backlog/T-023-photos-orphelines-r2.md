@@ -18,5 +18,14 @@ toucher, puis la suppression réelle sur accord explicite. **Aucune suppression 
 ait lu la liste** : une photo de cliente effacée par erreur ne se récupère pas.
 Croiser R2 avec la table `photos` — un objet sans ligne est orphelin, une ligne sans objet est un
 bug plus grave à signaler séparément.
+
+⚠️ **À NE PAS OUBLIER, ajouté le 01/09/2026 (vient de T-076).** Le script devra **ignorer les
+dossiers dont `numeros.anonymise_le` est posé**. La rétention à 90 jours efface les objets R2
+sans supprimer les lignes `photos` : sur ces dossiers-là, « une ligne sans objet » est le
+comportement NORMAL, alors que partout ailleurs c'est précisément le bug grave que ce ticket
+cherche. Sans ce filtre, chaque dossier refermé produirait autant de fausses alertes qu'il avait
+de photos, et le rapport deviendrait illisible le jour où il compte.
+Il devra aussi compter les **vignettes** orphelines (`vignette.jpg` à côté de l'original),
+héritage de T-042.
 ## Ce qui a été fait
 —

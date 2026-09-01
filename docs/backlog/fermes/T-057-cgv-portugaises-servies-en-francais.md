@@ -5,6 +5,7 @@ domaine: produit
 gravite: serieux
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-31
 ---
 ## Ce que Mathias a dit
 Rien — audits accessibilité ET référencement du 29/08/2026, qui le trouvent tous les deux.
@@ -34,3 +35,6 @@ Preuves (build de production + `next start`, 31/08) :
 Reste ouvert (seconde partie de la proposition, non faite) : des URL distinctes par langue
 avec `alternates.languages` — la version PT n'est toujours ni indexable ni signalée à Google,
 les trois langues vivant sur la même URL à canonical unique.
+
+**Fermé le 01/09/2026.** Le grief du titre — un texte portugais servi dans un document déclaré
+français — n'existe plus. La seconde partie, purement SEO, est partie dans **T-083**.

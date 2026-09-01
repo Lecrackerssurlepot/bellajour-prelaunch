@@ -5,6 +5,7 @@ domaine: admin
 gravite: confort
 autonomie: libre
 ouvert: 2026-08-29
+ferme: 2026-08-31
 ---
 ## Ce que Mathias a dit
 « Elle signale "aucun mail parti depuis longtemps" quand il n'y a plus aucun dossier. Le constat
@@ -30,3 +31,10 @@ jamais envoyé » à « aucun mail encore envoyé » dans ce cas.
 NON TRAITÉ, assumé : le constat nº4 « oubliés » comptera les inscriptions anticipées tant que
 l'atelier n'a pas ouvert (ETAT-PRODUCTION §atelier pas encore ouvert) — le distinguer exigerait
 un réglage « date d'ouverture » qui n'existe pas et que seul Mathias peut poser.
+
+**Fermé le 01/09/2026.** La page ne crie plus sur une base vide, ce que disait le titre. Le
+constat nº4 n'est pas un ticket orphelin : il est faux **uniquement** pendant la période où
+l'atelier ne compose pas encore, et cette période est déjà consignée, avec son effet exact sur
+la page Santé, dans `docs/reference/ETAT-PRODUCTION.md` § « L'atelier n'est pas encore en
+fonctionnement ». Le jour où l'atelier ouvre, le constat redevient vrai tout seul et il n'y a
+rien à coder. Si Mathias veut le réglage avant, c'est un ticket neuf, pas celui-ci.
