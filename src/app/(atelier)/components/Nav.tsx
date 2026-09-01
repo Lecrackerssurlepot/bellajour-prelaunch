@@ -5,15 +5,20 @@
    listener ne fait que lever un drapeau, la mesure a lieu dans la frame. */
 
 import { useEffect, useRef, useState } from 'react'
-import { CTA_HREF, CTA_LABEL } from '../content'
+import { CTA_HREF, CTA_MAGAZINE_LABEL } from '../content'
 import './nav.css'
 
 /* DEUX RÉGLAGES, PARCE QUE LA BARRE SERT DEUX PAGES.
 
    `href` — la destination du bouton. Par défaut CTA_HREF (l'accueil → la page
    produit) ; la page produit passe COMPOSER_HREF, parce qu'elle EST la page
-   produit et que son bouton doit ouvrir le questionnaire. Le LIBELLÉ, lui, ne
-   se paramètre pas : invariant nº5.
+   produit et que son bouton doit ouvrir le questionnaire.
+
+   `label` — le libellé, désormais couplé à la destination (01/09/2026, fin de
+   l'ancien invariant nº5). Par défaut CTA_MAGAZINE_LABEL (« Découvrir les
+   magazines »), qui va de pair avec CTA_HREF ; la page produit passe CTA_LABEL
+   (« Composer avec l'atelier ») en même temps que COMPOSER_HREF. Les deux se
+   règlent toujours ENSEMBLE : un href sans son libellé ment sur la marche.
 
    `retour` — ce que fait la SIGNATURE. Sur l'accueil, elle ne quitte pas la
    page : elle remonte à la couverture, et c'est tout le sens du geste dans un
@@ -27,9 +32,11 @@ import './nav.css'
    en dépendent, et un bouton qui appelle router.push ne les rend pas. */
 export default function Nav({
   href = CTA_HREF,
+  label = CTA_MAGAZINE_LABEL,
   retour,
 }: {
   href?: string
+  label?: string
   retour?: string
 }) {
   const [stuck, setStuck] = useState(false)
@@ -115,7 +122,7 @@ export default function Nav({
           />
         </button>
       )}
-      <a className="at-nav-cta" href={href}>{CTA_LABEL}</a>
+      <a className="at-nav-cta" href={href}>{label}</a>
     </nav>
   )
 }

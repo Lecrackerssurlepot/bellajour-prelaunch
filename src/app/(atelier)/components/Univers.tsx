@@ -20,7 +20,7 @@
    ════════════════════════════════════════════════════════════ */
 
 import { useEffect, useRef } from 'react'
-import { CTA_HREF } from '../content'
+import { CTA_HREF, CTA_MAGAZINE_LABEL } from '../content'
 import './univers.css'
 
 export default function Univers() {
@@ -702,7 +702,7 @@ export default function Univers() {
               <span className="ligne"><span className="in"><em>numéro 1</em> ?</span></span>
             </h2>
             <a className="acte acte--seul sl7-cta" href={CTA_HREF} data-t="1800">
-              <span className="mot">Composer avec l’atelier</span>
+              <span className="mot">{CTA_MAGAZINE_LABEL}</span>
               <span className="rond" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12h13"/><path d="M11.5 6 17.5 12l-6 6"/></svg></span>
             </a>
             <p className="mention sl7-note" data-t="2200">Premier aperçu gratuit · Votre magazine sur-mesure dès <b>30 €</b>.</p>

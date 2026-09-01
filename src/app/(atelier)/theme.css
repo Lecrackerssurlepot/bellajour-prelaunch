@@ -228,7 +228,8 @@ body:has(.bj-atelier) { background: var(--c-atelier-void); }
   font-weight: 300;
 }
 
-/* ---- CTA : un seul libellé sur tout le site, « Composer avec l'atelier » ---- */
+/* ---- CTA : deux libellés selon la destination (« Découvrir les magazines »
+   vers /magazine, « Composer avec l'atelier » vers /composer) ---- */
 .at-cta {
   position: relative;
   display: inline-flex;
