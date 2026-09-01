@@ -10,7 +10,8 @@ import { pickLang, pickRef, resolveDoc, legalHref, backHref } from './resolve'
 import './legal.css'
 
 /* Composant partagé des pages légales (Server Component, zéro JS client).
-   Chrome à la charte --bj-* : fond crème, titres Cormorant italic, corps DM Sans.
+   Chrome à la charte SOMBRE de l'Atelier : fond quasi-noir, titres Cormorant
+   italic, corps DM Sans, accent terracotta (voir legal.css).
    - searchParams (Next 16, déjà awaité par la route) → langue + ref préservés.
    - Sélecteur de langue : FR rendu, EN/PT activés dès que la clé locale existe.
    - Lien retour : /inviter?ref=… si parrain présent, sinon accueil (T-070). */
@@ -34,7 +35,7 @@ export default function LegalPage({ slug, doc, params }: LegalPageProps) {
        document déclaré français — lu par une voix de synthèse française au
        lecteur d'écran. On pose la langue résolue par resolveDoc (jamais la
        demandée : une locale absente retombe sur fr, l'attribut doit suivre). */
-    <main className="lg" lang={lang} data-theme="light" data-section="legal">
+    <main className="lg" lang={lang} data-theme="dark" data-section="legal">
       <div className="lg-inner">
 
         <header className="lg-head">

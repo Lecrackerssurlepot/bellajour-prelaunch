@@ -1,11 +1,43 @@
-/* Pages légales — charte --bj-* (cf. tokens.css). Fond crème, titres Cormorant
-   italic, corps DM Sans. Zéro box-shadow, positions en %/vw. Lecture longue :
-   colonne unique centrée, interligne aéré. */
+/* Pages légales — charte SOMBRE de l'Atelier (« la charte avec le noir »).
+   Bascule du monde crème vers la palette sombre le 01/09/2026 : fond quasi-noir,
+   texte crème, accent terracotta. Titres Cormorant italic, corps DM Sans. Zéro
+   box-shadow, positions en %/vw. Lecture longue : colonne unique centrée,
+   interligne aéré.
+
+   POURQUOI ON NE PASSE PAS PAR .bj-atelier
+   Le thème sombre (theme.css) n'est chargé que par le layout du groupe
+   (atelier) ; les pages légales vivent sous le layout RACINE. Envelopper .lg
+   dans .bj-atelier tirerait aussi ses règles de base — h1/h2 en
+   clamp(56px..150px), reset des liens — qui se battraient avec la mise en page
+   de lecture. On REMAPPE donc ici, sur le seul scope .lg, les tokens --bj-* que
+   ce fichier consomme vers les valeurs EXACTES de la charte (theme.css).
+   Aucune couleur en dur dans les règles : tout passe par ces tokens.
+
+   LE LISERÉ CRÈME — même piège que l'atelier, signalé par Mathias le 31/08
+   html/body portent le dégradé crème de globals.css. Sous un site noir il
+   déborde aux jonctions (barre iOS rétractée, safe-area, fin de document).
+   `html:has(.lg)` repeint le fond de page en noir sur les seules routes
+   légales — même technique que `html:has(.bj-atelier)` dans theme.css. */
+
+:root { --lg-void: #020202; }
+html:has(.lg),
+body:has(.lg) { background: var(--lg-void); }
 
 .lg {
+  /* ── Remap vers la charte sombre (valeurs de theme.css) ── */
+  --bj-text:          #f5f0e7;
+  --bj-text-soft:     #c7c2b8;
+  --bj-text-faint:    #928d84;
+  --bj-action:        #d68a63;                    /* terracotta : liens + langue active.
+                                                     Le bleu est RÉSERVÉ au bouton de paiement (PRD §4). */
+  --bj-action-border: rgba(214, 138, 99, 0.40);
+  --bj-veil-8:        rgba(255, 255, 255, 0.11);
+  --bj-veil-6:        rgba(255, 255, 255, 0.06);
+  --lg-grad:          radial-gradient(120% 120% at 50% -10%, #0e0e12 0%, #020202 60%);
+
   width: 100%;
   min-height: var(--app-height);
-  background: linear-gradient(180deg, var(--bj-cream) 0%, var(--bj-cream-2) 100%);
+  background: var(--lg-grad);
   color: var(--bj-text);
   font-family: var(--bj-font-ui);
   padding: clamp(88px, 12vh, 140px) 6vw clamp(56px, 9vh, 100px);
