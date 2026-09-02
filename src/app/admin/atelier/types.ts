@@ -210,10 +210,12 @@ export type Fiche = {
       annoncé (dossier antérieur au 01/09) : on ne conclut rien. */
   photosAttendues: number | null;
   /** Signés pour l'affichage (URL courtes, régénérées à chaque rendu).
-      `plat` (T2-2) : la couverture à plat — présent, il remplace c1/c4. */
-  apercu: { plat: string | null; c1: string | null; c4: string | null; double: string | null };
+      `plat` (T2-2) : la couverture à plat — présent, il remplace c1/c4.
+      `doubles` (T-090) : 0 à trois doubles pages, dans l'ordre d'affichage ;
+      `double` reste `doubles[0]` pour les écrans non encore migrés. */
+  apercu: { plat: string | null; c1: string | null; c4: string | null; doubles: string[]; double: string | null };
   /** Les valeurs brutes (clés de coffre), pour préremplir le formulaire. */
-  apercuBrut: { plat: string | null; c1: string | null; c4: string | null; double: string | null };
+  apercuBrut: { plat: string | null; c1: string | null; c4: string | null; doubles: string[]; double: string | null };
   adresse: AdresseVue | null;
   stripePaymentIntent: string | null;
   photos: PhotoVue[];

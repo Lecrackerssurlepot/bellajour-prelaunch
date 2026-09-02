@@ -1832,6 +1832,127 @@
   aspect-ratio: 3 / 2;
 }
 
+/* ══ T-090 : la planche + les doubles pages ═══════════════════════════════
+   L'écran que l'atelier ouvre vingt fois par jour. La planche large en haut,
+   les doubles pages réordonnables en dessous. */
+.ate-maquette {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-4);
+  margin-bottom: var(--bj-sp-4);
+}
+
+/* ── la planche : 4e · dos · 1re en un fichier large ── */
+.ate-planche-zone {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 0;
+  border: 1px dashed var(--bj-action-border);
+  border-radius: var(--bj-r-sm);
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.ate-planche-zone:hover:not(:disabled) {
+  border-color: var(--bj-action);
+  background: rgba(255, 255, 255, 0.75);
+}
+/* La planche est montrée ENTIÈRE (contain) : l'atelier doit voir que la coupe
+   tombe pile au centre, jamais un bord rogné. */
+.ate-planche-zone .ate-slot-img {
+  object-fit: contain;
+}
+
+/* ── les doubles pages ── */
+.ate-doubles-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bj-sp-3);
+  margin-top: var(--bj-sp-1);
+}
+.ate-double {
+  position: relative;
+  width: clamp(96px, 28%, 150px);
+  cursor: grab;
+}
+.ate-double:active {
+  cursor: grabbing;
+}
+.ate-double--ajout {
+  cursor: default;
+}
+.ate-double-zone {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--bj-action-border);
+  border-radius: var(--bj-r-sm);
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+}
+.ate-double-zone--ajout {
+  border-style: dashed;
+  cursor: pointer;
+}
+.ate-double-zone--ajout:hover:not(:disabled) {
+  border-color: var(--bj-action);
+  background: rgba(255, 255, 255, 0.75);
+}
+.ate-double-plus {
+  font-size: var(--bj-fs-lg);
+  line-height: 1;
+  color: var(--bj-text-faint);
+}
+/* Le rang, en pastille : c'est l'ordre exact que verra la cliente. */
+.ate-double-rang {
+  position: absolute;
+  left: var(--bj-sp-1);
+  bottom: var(--bj-sp-1);
+  min-width: 1.3rem;
+  padding: 0 0.3rem;
+  font-size: var(--bj-fs-xxs);
+  line-height: 1.3rem;
+  text-align: center;
+  border-radius: 999px;
+  background: rgba(28, 28, 28, 0.72);
+  color: #fff;
+}
+/* Le × de retrait, coin haut-droit, toujours atteignable au doigt. */
+.ate-double-retirer {
+  position: absolute;
+  top: calc(-1 * var(--bj-sp-2));
+  right: calc(-1 * var(--bj-sp-2));
+  width: 1.6rem;
+  height: 1.6rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: var(--bj-fs-sm);
+  line-height: 1;
+  border: 1px solid var(--bj-action-border);
+  border-radius: 999px;
+  background: var(--bj-cream);
+  color: var(--bj-charcoal);
+  cursor: pointer;
+  box-shadow: var(--bj-shadow-soft);
+}
+.ate-double-retirer:hover:not(:disabled) {
+  border-color: var(--bj-terracotta);
+  color: var(--bj-terracotta);
+}
+.ate-double-retirer:disabled,
+.ate-double-zone:disabled,
+.ate-planche-zone:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* ── l'écran de confirmation ── */
 .ate-confirm {
   margin-top: var(--bj-sp-4);

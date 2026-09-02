@@ -108,30 +108,45 @@ export async function POST(request: Request) {
 
     const action = prepa.action;
 
-    /* ── les trois visuels sont-ils VRAIMENT dans le coffre ? ───────────
+    /* ── les visuels sont-ils VRAIMENT dans le coffre ? ─────────────────
        Un envoi peut échouer en silence côté navigateur (onglet fermé, réseau
        coupé au dernier octet) et laisser une clé qui ne désigne rien. Publier
        dessus, c'est envoyer M3 « votre couverture » vers une page à cadres
        vides — exactement la garantie nº1 de mails.ts, mais un cran plus tôt.
        Un HEAD par visuel, sur une action qu'on déclenche trois fois par jour :
        le coût est nul, la protection est réelle.
+       La planche et les faces séparées sont des clés simples ; les doubles
+       pages (T-090) arrivent en TABLEAU sous `doubles` — chacune est vérifiée,
+       et son erreur pointe la vignette exacte (`apercu_double_<rang>`).
        Les adresses absolues ne sont pas vérifiées : elles ne sont pas à nous. */
     if (prepa.patch.apercu_urls) {
-      const visuels = prepa.patch.apercu_urls as Record<string, string>;
+      const visuels = prepa.patch.apercu_urls as Record<string, unknown>;
+      const aVerifier: Array<{ champ: string; valeur: string }> = [];
+      for (const [nom, valeur] of Object.entries(visuels)) {
+        if (nom === "doubles" && Array.isArray(valeur)) {
+          valeur.forEach((v, i) => {
+            if (typeof v === "string") aVerifier.push({ champ: `apercu_double_${i}`, valeur: v });
+          });
+        } else if (typeof valeur === "string") {
+          const champ =
+            { plat: "apercu_plat", c1: "apercu_c1", c4: "apercu_c4", double: "apercu_double" }[nom] ?? nom;
+          aVerifier.push({ champ, valeur });
+        }
+      }
+
       const absents: string[] = [];
       await Promise.all(
-        Object.entries(visuels).map(async ([nom, valeur]) => {
+        aVerifier.map(async ({ champ, valeur }) => {
           if (/^https?:\/\//i.test(valeur)) return;
-          if ((await tailleReelle(valeur)) === null) absents.push(nom);
+          if ((await tailleReelle(valeur)) === null) absents.push(champ);
         }),
       );
       if (absents.length) {
         return NextResponse.json(
           {
             error: "saisie",
-            erreurs: absents.map((nom) => ({
-              champ:
-                { plat: "apercu_plat", c1: "apercu_c1", c4: "apercu_c4", double: "apercu_double" }[nom] ?? nom,
+            erreurs: absents.map((champ) => ({
+              champ,
               message: "L'image n'est pas arrivée dans le coffre. Redépose-la.",
             })),
           },
