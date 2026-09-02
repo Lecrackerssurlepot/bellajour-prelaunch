@@ -33,10 +33,10 @@
 
 import { useCallback, useState } from 'react'
 import { formaterEuros } from '@/lib/atelier/prix'
+import FeuilleAjustement from './FeuilleAjustement'
 
 type Props = {
   token: string
-  titre: string
   nbPages: number | null
   euros: number | null
   cgvOk: boolean
@@ -49,12 +49,14 @@ type Props = {
 }
 
 export default function CasesEtCommande({
-  token, titre, nbPages, euros, cgvOk, renonciation, joursComposition, joursLivraison,
+  token, nbPages, euros, cgvOk, renonciation, joursComposition, joursLivraison,
 }: Props) {
   const [cgv, setCgv] = useState(cgvOk)
   const [reno, setReno] = useState(renonciation)
   const [erreur, setErreur] = useState<string | null>(null)
   const [occupe, setOccupe] = useState(false)
+  const [confirmer, setConfirmer] = useState(false)
+  const [feuille, setFeuille] = useState(false)
 
   const enregistrer = useCallback(
     async (champ: 'cgv_ok' | 'renonciation_retractation', valeur: boolean) => {
@@ -100,23 +102,102 @@ export default function CasesEtCommande({
   }, [token])
 
   const prixConnu = euros !== null
-  const pret = cgv && reno && prixConnu && !occupe
+  const accepte = cgv && reno
+
+  /* T2 — refonte mobile (02/09) : sous la visionneuse, l'écran reste dégagé —
+     le prix et « Commander », rien d'autre. Les deux accords obligatoires sont
+     RÉVÉLÉS au tap, de façon compacte, avant le paiement (ils restent cochés ET
+     enregistrés en base avant tout checkout : le serveur les revérifie de son
+     côté). Une cliente qui a déjà accepté (retour sur la page) paie d'un seul
+     geste. */
+  const onCommander = useCallback(() => {
+    setErreur(null)
+    if (!prixConnu || occupe) return
+    if (accepte) void commander()
+    else setConfirmer(true)
+  }, [accepte, prixConnu, occupe, commander])
 
   return (
     <>
-      <p className="nu-prix">
-        {prixConnu && nbPages ? (
-          <>
-            Votre numéro fera {nbPages} pages — <b>{formaterEuros(euros)}</b>,
-            impression et livraison comprises.
-          </>
-        ) : (
-          <>Votre numéro est en cours de chiffrage.</>
-        )}
-      </p>
-      {/* T2-8 — « chez vous sous 10 jours » seul laissait croire que tout
-          était prêt, alors que la maquette complète reste à composer. La
-          promesse se dit en deux temps, dans l'ordre où elle se vivra. */}
+      {/* L'encart tarif : pages + prix, l'ancre visuelle sous la visionneuse
+          (« comme sur desktop » — 02/09). Verre dépoli, le montant en accent,
+          « Commander » posé à droite. Sur mobile, il passe en colonne et le
+          bouton prend toute la largeur (CSS). */}
+      <div className="nu-tarif">
+        <div className="nu-tarif-p">
+          {prixConnu && nbPages ? (
+            <>
+              <span className="nu-tarif-label">Impression et livraison comprises</span>
+              <span className="nu-tarif-value">
+                <b>{nbPages}</b> pages<span className="nu-tarif-sep"> · </span>
+                <b className="nu-tarif-prix">{formaterEuros(euros)}</b>
+              </span>
+            </>
+          ) : (
+            <span className="nu-tarif-value">Votre numéro est en cours de chiffrage.</span>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className="nu-order"
+          onClick={confirmer ? () => void commander() : onCommander}
+          disabled={occupe || !prixConnu || (confirmer && !accepte)}
+        >
+          {occupe
+            ? 'Un instant…'
+            : confirmer
+              ? `Payer${prixConnu ? ` — ${formaterEuros(euros)}` : ''}`
+              : 'Commander'}
+        </button>
+      </div>
+
+      {/* Révélé au tap sur « Commander », directement sous l'encart. Replié, il
+          ne prend aucune place et n'est pas focusable (tabIndex -1). Le texte
+          des cases est INCHANGÉ — il porte l'information légale de l'art. 8.5. */}
+      <div className={`nu-confirmer${confirmer ? ' is-open' : ''}`} aria-hidden={!confirmer}>
+       <div className="nu-confirmer-inner">
+        <p className="nu-confirmer-titre">Deux accords, puis le paiement.</p>
+        <div className="nu-cases">
+          <label className="nu-check">
+            <input
+              type="checkbox"
+              checked={cgv}
+              onChange={(e) => enregistrer('cgv_ok', e.target.checked)}
+              tabIndex={confirmer ? 0 : -1}
+            />
+            <span>
+              J’accepte les{' '}
+              <a className="nu-lien" href="/cgv" target="_blank" rel="noopener noreferrer">
+                conditions générales de vente
+              </a>
+              .
+            </span>
+          </label>
+
+          <label className="nu-check">
+            <input
+              type="checkbox"
+              checked={reno}
+              onChange={(e) => enregistrer('renonciation_retractation', e.target.checked)}
+              tabIndex={confirmer ? 0 : -1}
+            />
+            <span>
+              Je reconnais que ce numéro est personnalisé et que mon droit de
+              rétractation s’éteindra au moment où je validerai la maquette.
+              Jusque-là, je peux demander le remboursement intégral.
+            </span>
+          </label>
+        </div>
+       </div>
+      </div>
+
+      {confirmer && !accepte && (
+        <p className="nu-confirmer-aide">Cochez les deux accords pour continuer.</p>
+      )}
+
+      {/* T2-8 — la promesse en deux temps (composition, puis livraison après
+          validation), dans l'ordre où elle se vivra. */}
       <p className="nu-prix-sub">
         {prixConnu ? (
           <>
@@ -128,43 +209,15 @@ export default function CasesEtCommande({
         )}
       </p>
 
-      <div className="nu-cases">
-        <label className="nu-check">
-          <input
-            type="checkbox"
-            checked={cgv}
-            onChange={(e) => enregistrer('cgv_ok', e.target.checked)}
-          />
-          <span>
-            J’accepte les{' '}
-            <a className="nu-lien" href="/cgv" target="_blank" rel="noopener noreferrer">
-              conditions générales de vente
-            </a>
-            .
-          </span>
-        </label>
-
-        <label className="nu-check">
-          <input
-            type="checkbox"
-            checked={reno}
-            onChange={(e) => enregistrer('renonciation_retractation', e.target.checked)}
-          />
-          <span>
-            Je reconnais que ce numéro est personnalisé et que mon droit de
-            rétractation s’éteindra au moment où je validerai la maquette.
-            Jusque-là, je peux demander le remboursement intégral.
-          </span>
-        </label>
-      </div>
-
-      <button type="button" className="nu-order" onClick={commander} disabled={!pret}>
-        {occupe ? 'Un instant…' : `Commander ${titre}${prixConnu ? ` — ${formaterEuros(euros)}` : ''}`}
-      </button>
-
       {erreur && <p className="nu-erreur" role="alert">{erreur}</p>}
 
-      <p className="nu-note">Un détail à changer ? Répondez au mail, on ajuste sans frais.</p>
+      {/* T-091 — la porte de sortie douce : plus « répondez au mail », mais une
+          feuille d'ajustement en deux gestes, sans écrire de mail. */}
+      <button type="button" className="nu-ajuster" onClick={() => setFeuille(true)}>
+        Ce n’est pas tout à fait ça&nbsp;? Dites-le-nous.
+      </button>
+
+      <FeuilleAjustement token={token} ouvert={feuille} onFermer={() => setFeuille(false)} />
     </>
   )
 }

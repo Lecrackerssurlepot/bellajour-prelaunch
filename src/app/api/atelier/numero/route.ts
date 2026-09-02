@@ -282,7 +282,23 @@ export async function PATCH(request: Request) {
        correction, et les deux gestes ne doivent pas se mélanger. */
     const demandeRetouches = body.retouches_demandees === true;
 
-    if (!Object.keys(maj).length && !demandeRetouches) {
+    /* T-091 — la « feuille d'ajustement » de l'état 2 : la cliente pas tout à
+       fait convaincue par sa couverture nous laisse un mot AVANT de payer,
+       plutôt que de partir. Motifs (chips) + un mot libre, tous deux
+       facultatifs mais au moins l'un des deux requis. Branche DÉDIÉE, jamais
+       dans `maj` : c'est une demande, pas une case cochée. Journalisée dans
+       `evenements` (append-only) — aucun mail, aucun changement d'état. */
+    const ajustementMot =
+      typeof body.ajustement_mot === "string" ? body.ajustement_mot.trim().slice(0, 2000) : "";
+    const ajustementMotifs = Array.isArray(body.ajustement_motifs)
+      ? body.ajustement_motifs
+          .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+          .map((x) => x.trim().slice(0, 80))
+          .slice(0, 8)
+      : [];
+    const demandeAjustement = ajustementMot.length > 0 || ajustementMotifs.length > 0;
+
+    if (!Object.keys(maj).length && !demandeRetouches && !demandeAjustement) {
       return NextResponse.json({ error: "rien_a_faire" }, { status: 400 });
     }
 
@@ -325,6 +341,12 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "etat_incompatible" }, { status: 409 });
     }
 
+    /* La feuille d'ajustement n'a de sens qu'à l'état 2, devant la couverture
+       qu'on propose. Ailleurs, c'est un onglet resté ouvert. */
+    if (demandeAjustement && numero.etat !== "apercu_pret") {
+      return NextResponse.json({ error: "etat_incompatible" }, { status: 409 });
+    }
+
     if (demandeRetouches) {
       /* Atomique et idempotent : le `.is(null)` fait qu'un second clic (ou un
          rejeu réseau) ne réécrit pas la date et ne rejournalise rien. La
@@ -345,6 +367,17 @@ export async function PATCH(request: Request) {
           source: "page_numero",
         });
       }
+    }
+
+    if (demandeAjustement) {
+      /* Le journal est le seul endroit où l'atelier lira ce mot : pas de
+         colonne, pas de migration. Il apparaît dans le récit du dossier
+         (recit.ts, cas « ajustement_demande »). */
+      await logEvenement(supabase, numero.id, "ajustement_demande", {
+        source: "page_numero",
+        ...(ajustementMot ? { mot: ajustementMot } : {}),
+        ...(ajustementMotifs.length ? { motifs: ajustementMotifs } : {}),
+      });
     }
 
     if (Object.keys(maj).length) {
