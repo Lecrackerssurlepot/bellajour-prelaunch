@@ -31,6 +31,8 @@ import {
 } from "@/lib/atelier/mails";
 import { LIBELLE_ETAT, type Etat } from "@/lib/atelier/transitions";
 import { DELAIS, echeancePour, etapeDepot } from "@/lib/atelier/urgence";
+import { ETATS_ENGAGES } from "@/lib/atelier/retention";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type Constat = {
   /** `rouge` = quelqu'un attend pour rien. `orange` = ça va le devenir. */
@@ -68,6 +70,76 @@ const CODES_ATTENDUS: CodeMail[] = ["M0", "M1", "M2", "M2b", "M3", "M3b", "M5", 
    dossier oublié. Le seuil est volontairement large : la page santé doit
    crier rarement pour qu'on la croie quand elle crie. */
 const FACTEUR_OUBLI = 2;
+
+type RangeeDoublon = {
+  token: string;
+  titre: string | null;
+  email_canonical: string | null;
+  etat: string;
+  /* Colonne fraîche (migration 20260901, T-076) : absente pendant la fenêtre
+     déploiement→migration. Optionnelle exprès, cf. le repli 42703 ci-dessous. */
+  anonymise_le?: string | null;
+};
+
+/**
+ * Les adresses portant PLUS D'UN dossier non payé et non anonymisé (T-084).
+ *
+ * On SIGNALE, on ne fusionne jamais : deux dossiers sur la même adresse sont
+ * souvent légitimes — un second numéro pour un autre moment est le rachat que
+ * M8 cherche. Un dossier payé (état engagé) n'entre pas dans le compte, il est
+ * légitime par construction. Le rapprochement se fait sur `email_canonical`,
+ * jamais sur `email` brut : les alias (`m.durand+bj@`) sont le cas où la
+ * cliente se croit la même et où nous, non (cf. T-047).
+ *
+ * Repli 42703 sur `anonymise_le` (même raison que `donnees.ts`) : à défaut, on
+ * ne filtre pas dessus. Montrer un doublon de trop ne coûte rien à un signal ;
+ * en manquer un, si.
+ */
+async function lireDoublonsAdresse(supabase: SupabaseClient): Promise<Constat["lignes"]> {
+  const CHAMPS = "token, titre, email_canonical, etat";
+  const avec = await supabase
+    .from("numeros")
+    .select(`${CHAMPS}, anonymise_le`)
+    .order("created_at", { ascending: true })
+    .returns<RangeeDoublon[]>();
+
+  let rangees: RangeeDoublon[];
+  if (!avec.error) {
+    rangees = avec.data ?? [];
+  } else if (avec.error.code === "42703") {
+    const sans = await supabase
+      .from("numeros")
+      .select(CHAMPS)
+      .order("created_at", { ascending: true })
+      .returns<RangeeDoublon[]>();
+    if (sans.error) {
+      console.error("[admin/atelier] lecture doublons échouée", sans.error.code, sans.error.message);
+      return [];
+    }
+    rangees = sans.data ?? [];
+  } else {
+    console.error("[admin/atelier] lecture doublons échouée", avec.error.code, avec.error.message);
+    return [];
+  }
+
+  const engages = new Set<string>(ETATS_ENGAGES as readonly string[]);
+  const parAdresse = new Map<string, string[]>();
+  for (const d of rangees) {
+    if (!d.email_canonical) continue;
+    if (d.anonymise_le) continue;
+    if (engages.has(d.etat)) continue;
+    const liste = parAdresse.get(d.email_canonical) ?? [];
+    liste.push(d.titre?.trim() || "sans titre");
+    parAdresse.set(d.email_canonical, liste);
+  }
+
+  const lignes: Constat["lignes"] = [];
+  for (const [email, titres] of parAdresse) {
+    if (titres.length < 2) continue;
+    lignes.push({ token: null, quoi: `${email} — ${titres.join(", ")}` });
+  }
+  return lignes;
+}
 
 export async function chargerSante(): Promise<Sante> {
   const supabase = makeSupabase();
@@ -307,6 +379,24 @@ export async function chargerSante(): Promise<Sante> {
       remede:
         "L'adresse fonctionne : elle a reçu, puis cliqué « indésirable ». Rien à réparer sur le dossier — c'est un signal sur la délivrabilité de nos mails, les suivants risquent le dossier spam.",
       lignes: plaintes,
+    });
+  }
+
+  /* ── 5 quater. deux dossiers pour la même adresse (T-084) ──────────
+     Le tunnel n'a aucune authentification : une cliente qui ne retrouve
+     pas son mail recommence, et rien ne le dit. Ce qui coûte, dans l'ordre :
+     deux relances en parallèle sur la même personne, un dépôt de photos
+     réparti sur deux dossiers dont aucun n'atteint le seuil, et l'atelier
+     qui compose le dossier vide en ignorant que les photos sont à côté.
+     ORANGE : c'est un doute à lever avant de composer, pas une panne. */
+  const doublons = await lireDoublonsAdresse(supabase);
+  if (doublons.length) {
+    constats.push({
+      gravite: "orange",
+      titre: `${doublons.length} adresse${doublons.length > 1 ? "s portent" : " porte"} plusieurs dossiers non payés`,
+      remede:
+        "Vérifier AVANT de composer : les photos peuvent être réparties sur deux dossiers dont aucun n'atteint le seuil. Ne pas fusionner à l'aveugle — un second numéro pour un autre moment est légitime.",
+      lignes: doublons,
     });
   }
 
