@@ -37,5 +37,21 @@ attendue, comme le filet de T-044.
 arrive vraiment**. Un repli qui se déclenche efface le champ en silence ; sans ce contrôle, on
 croit avoir un filet quand on a une amnésie.
 À faire quand `mails.ts` n'est plus réservé à un autre chantier.
-## Ce qui a été fait
-—
+## Ce qui a été fait (02/09)
+Helper **`lireNumerosMail`** ajouté dans `src/lib/atelier/mails.ts`, à côté de `CHAMPS_MAIL` et
+d'un nouveau **`CHAMPS_MAIL_REPLI`** (= `CHAMPS_MAIL` moins la colonne la plus fraîche,
+`tracking_code`). Il tente le select complet, retombe sur le repli sur `42703`, et **crie** un
+`console.error` nommant la migration attendue. Toute autre erreur est rendue telle quelle : chaque
+appelant garde son propre traitement (single/list, filtres, colonne `stripe_session_id` en plus).
+
+Les **5 lieux de lecture** basculés sur le helper : `lib/atelier/mails.ts` (envoi),
+`lib/atelier/paiement.ts` (confirmation de paiement, + `stripe_session_id`),
+`api/atelier/numero/route.ts` (création), `admin/atelier/sante.ts` (Santé),
+`api/atelier/mails/relever/route.ts` (relève quotidienne).
+
+**Dormant tant que les colonnes existent** (le cas normal) : une requête, pas deux. Le repli
+n'existe que pour la fenêtre entre un déploiement et sa migration. ⚠️ **En ajoutant une colonne à
+`CHAMPS_MAIL`, la retirer aussi de `CHAMPS_MAIL_REPLI`** — commentaire posé dans le code.
+
+Vérifié : `tsc` 0 erreur (le générique Supabase tient), `verif-atelier` TOUT PASSE, `lint` propre,
+`build` succès. Rien commité ni déployé.

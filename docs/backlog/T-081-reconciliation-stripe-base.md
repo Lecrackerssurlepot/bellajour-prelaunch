@@ -35,5 +35,23 @@ Un balayage de réconciliation, à trancher sur trois points par Mathias :
 ⚠️ Ne PAS écrire en base depuis ce balayage dans une première version : il constate, il ne
 répare pas. Faire basculer un état d'après une lecture Stripe, c'est se donner le droit de
 marquer « payée » une commande qu'on a mal lue.
-## Ce qui a été fait
-—
+## Ce qui a été fait (02/09)
+**`scripts/reconcilier-stripe.ts`** — le balayage de réconciliation, **lecture seule**, exactement
+comme cadré ci-dessus (aucune écriture, pas de `--vraiment` puisqu'il n'agit jamais).
+- **Sens principal** Stripe → base : liste les sessions `complete` ET réglées (`paid` ou
+  `no_payment_required` pour le cas fondatrice) estampillées `kind: atelier` sur N jours (défaut 30,
+  `--jours=N`), et vérifie que chaque token a un dossier en état ∈ `ETATS_ENGAGES` (source unique,
+  `retention.ts` — pas de liste redéclarée).
+- **Sens léger** base → Stripe : un dossier « payée » sans aucun lien Stripe (ni session ni
+  payment_intent) est signalé (anormal). Pas plus, pour éviter les faux positifs des paiements plus
+  vieux que la fenêtre.
+- **Garde `livemode`** comme le webhook : par défaut il ignore le mode test (`--avec-test` pour
+  l'inclure). ⚠️ En local la clé est `sk_test` : pour rapprocher les VRAIS paiements (`sk_live`), le
+  lancer là où la clé live est posée (Vercel), ou temporairement avec la clé live.
+- `process.exitCode = 1` s'il trouve un écart (prêt pour un futur cron / T-031).
+- Vérifié : `tsc` 0 erreur, `lint` propre. Premier run réel (`--avec-test`, données de test) : 2
+  paiements, 1 rapproché, 1 écart correctement détecté (un `cs_test_` sans dossier — dossier de test
+  nettoyé). Le détecteur fonctionne.
+
+**Reste** : le lancer sur les vrais paiements (clé live), puis décider (T-031) d'un canal d'alerte
+et éventuellement d'un cron une fois la sortie éprouvée sur plusieurs passages.

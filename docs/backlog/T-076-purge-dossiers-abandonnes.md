@@ -103,8 +103,17 @@ Le repli 42703 s'est déclenché comme prévu. Aucun `depot_sans_date` : le jour
 événements `consentements`.
 
 ## Ce qui reste
-- Appliquer la migration, puis vérifier que `anonymise_le` arrive.
-- Pousser le template M10 chez Brevo (`--pousser --seulement M10`) et poser la variable.
+- ~~Appliquer la migration, puis vérifier que `anonymise_le` arrive.~~ **FAIT le 02/09** :
+  migration appliquée via l'outil Supabase (projet Bellajour-waitlist), colonne `anonymise_le`
+  présente et vérifiée par introspection. Dry-run du 02/09 : 4 dossiers, 0 à refermer.
+- ~~Pousser le template M10 chez Brevo (`--pousser --seulement M10`) et poser la variable.~~
+  **FAIT le 02/09** : template M10 poussé chez Brevo (`BREVO_TEMPLATE_M10_ID=40`), variable posée
+  dans `.env.local` ET dans Vercel (Production), production redéployée (commit `5d157cd`, main).
+  **Vérifié** : `/admin/atelier/sante` n'affiche plus aucun « mail sans template » — la page
+  contrôle proactivement `CODES_ATTENDUS` (M10 inclus), donc l'absence d'alerte prouve que la
+  variable est live. Portée à l'activation : plus vieux dossier 8 j, M10 à J-83 → **0 mail immédiat**.
+
+  **➜ RÉTENTION RGPD 90 JOURS ARMÉE DE BOUT EN BOUT.**
 - Un cron, une fois la rétention éprouvée sur plusieurs passages réels. Pas avant.
 - **T-023** devra ignorer les dossiers dont `anonymise_le` est posé : une ligne `photos` sans
   objet R2 y est normale, alors qu'ailleurs c'est le bug grave que ce ticket cherche.
