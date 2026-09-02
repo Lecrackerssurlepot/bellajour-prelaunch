@@ -31,4 +31,24 @@ un repli. **Traiter T-069 AVANT ce ticket.**
 Déplacer les dossiers orphelins vers `archive/assets/` avec un README, après un grep de
 confirmation fichier par fichier. Jamais de suppression.
 ## Ce qui a été fait
-—
+**02/09/2026 — fait (branche `chore/nettoyage-assets-orphelins`).**
+
+Prérequis levé : T-069 a retiré le `throw` de `opengraph-image.tsx` (repli, 01/09) — un asset
+manquant ne casse plus le build. Vérifié dans le code avant de bouger.
+
+**Le constat « 101 Mo » était périmé.** Au 02/09, `public/` ne pesait plus que 22 Mo : les gros
+orphelins du 29/08 (`Préventes-Section-2/` 23 Mo, les `.mov`, `lancement/avis/Margaux.png`,
+`Aude.jpg`) avaient **déjà** disparu. Restaient deux dossiers, tous deux sans aucune référence
+dans `src/` (grep confirmé) :
+- `public/images/prevente/` (~10 Mo, dont **5 vidéos `.mp4`**),
+- `public/images/solution/` (~2,2 Mo).
+
+Les deux ont été **déplacés** (`git mv`, jamais supprimés) vers `archive/public-orphelins/`, avec
+les lignes correspondantes ajoutées à son README. `public/` passe de ~22 Mo à **~9 Mo** ; plus
+aucune vidéo n'est transportée dans le déploiement.
+
+**Non touchés, car vivants** : `lancement/galerie/` (`Univers.tsx`, `Corps.tsx`),
+`header-bellajour.webp` et `ui/logo.webp` (`opengraph-image.tsx`).
+
+Vérifié : `tsc`, `lint`, `build` verts — l'image OG se prérend, preuve que les assets qu'elle lit
+sont intacts. **Ticket à fermer.**
