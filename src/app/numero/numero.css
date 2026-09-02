@@ -438,6 +438,35 @@
 
 .nu-erreur { margin-top: 16px; font-size: 14px; color: var(--c-accent-strong); }
 
+/* T2 refonte mobile (02/09) — les deux accords obligatoires, repliés jusqu'au
+   tap sur « Commander », révélés d'un coup avant le paiement. Sous la
+   visionneuse, l'écran reste dégagé : le prix et un seul bouton. Le texte des
+   cases est INCHANGÉ (information légale, CGV art. 8.5). Repli/ouverture par la
+   hauteur de grille (0fr -> 1fr), animée vers la hauteur réelle. */
+.nu-confirmer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur) var(--ease);
+}
+.nu-confirmer.is-open { grid-template-rows: 1fr; }
+.nu-confirmer-inner { overflow: hidden; min-height: 0; }
+.nu-confirmer.is-open .nu-confirmer-inner { padding-top: clamp(22px, 5vw, 34px); }
+.nu-confirmer-titre {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-size: clamp(19px, 3.4vw, 24px);
+  color: var(--c-text);
+}
+.nu-confirmer .nu-cases { margin-top: 0; }
+.nu-confirmer-aide { margin-top: 12px; font-size: 13px; color: var(--c-text-faint); }
+
+/* Sur petit écran, la scène de la visionneuse un peu plus courte : la
+   couverture reste immersive, mais le prix et « Commander » arrivent plus vite
+   (moins de scroll). */
+@media (max-width: 520px) {
+  .nu-viz-scene { height: min(calc(58 * var(--uh)), 480px); }
+}
+
 /* ---- la case facultative « montrer des extraits » (T2-1) ----
    Venue de l'ecran 6 du composeur (.at-facultatif) : ici elle a du contexte
    et du temps, en pied de page, au-dessus de la consigne du lien. */
