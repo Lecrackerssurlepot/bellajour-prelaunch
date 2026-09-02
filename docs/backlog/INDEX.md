@@ -28,7 +28,7 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 |---|---|---|---|---|---|
 | T-001 | Le numéro de suivi n'est jamais enregistré | donnees | bloquant | avis-requis | **fermé** |
 | T-002 | Les liens de parrainage des mails vivants sont morts | contenu | serieux | avis-requis | en pause (31/08, stratégie consignée dans la fiche) |
-| T-003 | 101 Mo d'images orphelines déployées à chaque build | front | serieux | libre | nouveau |
+| T-003 | 101 Mo d'images orphelines déployées à chaque build | front | serieux | libre | **à fermer** — fait le 02/09 : `prevente/` (dont 5 `.mp4`) et `solution/` déplacés en `archive/public-orphelins/`, `public/` de 22→9 Mo. Le « 101 Mo » était périmé (le gros avait déjà disparu). tsc+lint+build verts |
 | T-004 | La page d'état de la cliente est indexable par Google | front | serieux | libre | **refuse** (31/08, le noindex existait déjà) |
 | T-005 | L'ancien mot de passe admin partagé ouvre encore la porte | admin | serieux | libre | **fermé** |
 | T-006 | Un album de 29 pages n'est couvert par aucune ligne des CGV | produit | serieux | avis-requis | nouveau |
