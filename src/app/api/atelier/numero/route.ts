@@ -14,7 +14,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
 import { generateNumeroToken, isValidNumeroToken } from "@/lib/atelier/token";
 import { logEvenement } from "@/lib/atelier/evenements";
-import { CHAMPS_MAIL, envoyerMailAtelier, type NumeroPourMail } from "@/lib/atelier/mails";
+import { lireNumerosMail, envoyerMailAtelier, type NumeroPourMail } from "@/lib/atelier/mails";
 import {
   CHAMPS_QUESTIONNAIRE,
   normaliserTelephone,
@@ -292,11 +292,15 @@ export async function PATCH(request: Request) {
        ci-dessous déclenche M1, et repasser une requête pour aller chercher le
        titre et le nombre de photos ne servirait qu'à doubler la latence du
        geste le plus fragile du parcours. */
-    const { data: numero, error: lecture } = await supabase
-      .from("numeros")
-      .select(CHAMPS_MAIL)
-      .eq("token", token)
-      .maybeSingle<NumeroPourMail & { etat: string }>();
+    const { data: numero, error: lecture } = await lireNumerosMail<
+      (NumeroPourMail & { etat: string }) | null
+    >((champs) =>
+      supabase
+        .from("numeros")
+        .select(champs)
+        .eq("token", token)
+        .maybeSingle<NumeroPourMail & { etat: string }>(),
+    );
 
     /* T-043 — une panne de base n'est PAS un token inconnu. Répondre 404 ici
        ferait dire à la cliente que son dossier n'existe pas, au moment même où

@@ -295,11 +295,23 @@ export async function lireObjet(key: string, abortSignal?: AbortSignal): Promise
   return r.Body.transformToByteArray();
 }
 
-/** Suppression — utilisée quand le HEAD révèle une taille hors tolérance. */
-export async function supprimer(key: string): Promise<void> {
+/**
+ * Suppression d'un objet du coffre.
+ *
+ * Rend `true` quand l'objet est bien parti — y compris s'il était **déjà
+ * absent** : un DELETE S3 sur une clé inconnue réussit sans lever. Rend
+ * `false` sur un échec RÉEL (panne R2, réseau). L'appelant s'appuie dessus
+ * pour ne retirer la ligne en base QUE si l'objet est parti (T-048) : sinon
+ * un objet sans ligne resterait invisible et éternel, l'inverse exact de ce
+ * que l'ordre « objet d'abord, ligne ensuite » cherche à garantir. Même
+ * patron que `effacerDuCoffre()` de `scripts/anonymiser-dossiers.ts`.
+ */
+export async function supprimer(key: string): Promise<boolean> {
   try {
     await makeR2().send(new DeleteObjectCommand({ Bucket: bucket(), Key: key }));
+    return true;
   } catch (err) {
     console.error("[r2] suppression échouée", key, (err as Error)?.message);
+    return false;
   }
 }

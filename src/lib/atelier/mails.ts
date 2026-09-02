@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient, PostgrestError } from "@supabase/supabase-js";
 import { logEvenement } from "./evenements";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { eurosPour, type PalierCle } from "./prix";
@@ -70,6 +70,48 @@ export const CHAMPS_MAIL =
   "id, token, etat, titre, prenom, email, nb_photos, nb_pages, palier, apercu_urls, " +
   "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, tracking_code, " +
   "stripe_payment_intent, retouches_demandees_le";
+
+/**
+ * `CHAMPS_MAIL` sans sa colonne la plus fraîche (`tracking_code`, migration
+ * 20260829) — le REPLI du select ci-dessous. Si la migration qui ajoute la
+ * dernière colonne de `CHAMPS_MAIL` n'est pas encore passée, PostgREST répond
+ * 42703 et le select ENTIER échoue : la relève quotidienne, la page Santé et
+ * la page cliente `/numero` tomberaient toutes pour une colonne dont l'absence
+ * ne devrait vider qu'une phrase.
+ * ⚠️ En AJOUTANT une colonne à `CHAMPS_MAIL`, la retirer ICI aussi : le repli
+ * doit rester « CHAMPS_MAIL moins la colonne dont la migration peut manquer ».
+ */
+export const CHAMPS_MAIL_REPLI =
+  "id, token, etat, titre, prenom, email, nb_photos, nb_pages, palier, apercu_urls, " +
+  "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, " +
+  "stripe_payment_intent, retouches_demandees_le";
+
+/**
+ * Lit `numeros` avec `CHAMPS_MAIL`, et RETOMBE sur `CHAMPS_MAIL_REPLI` quand
+ * une colonne fraîche manque encore (PostgREST 42703, `undefined_column`).
+ * Même idiome que `donnees.ts::lireNumeros` (T-082). Toute autre erreur est
+ * rendue telle quelle : chaque appelant garde son propre traitement.
+ *
+ * Dormant dans le cas normal — toutes les colonnes existent, une requête et
+ * pas deux. Il ne sert qu'à la fenêtre entre un déploiement et sa migration,
+ * où il empêche « une colonne manque » de devenir « aucun mail ne part ».
+ *
+ * `requete` reçoit la liste de colonnes et rend la requête Supabase déjà
+ * filtrée ET exécutée (l'appelant garde ses `.eq`/`.in`/`.maybeSingle`/
+ * `.returns`). Elle DOIT reconstruire la requête à chaque appel : un builder
+ * Supabase ne se rejoue pas.
+ */
+export async function lireNumerosMail<D>(
+  requete: (champs: string) => PromiseLike<{ data: D; error: PostgrestError | null }>,
+): Promise<{ data: D; error: PostgrestError | null }> {
+  const avec = await requete(CHAMPS_MAIL);
+  if (!avec.error || avec.error.code !== "42703") return avec;
+  console.error(
+    "[atelier/mails] 42703 sur CHAMPS_MAIL : une colonne fraîche manque, repli sur CHAMPS_MAIL_REPLI. " +
+      "Vérifier que la dernière migration de `numeros` est appliquée (le champ absent restera vide jusque-là).",
+  );
+  return requete(CHAMPS_MAIL_REPLI);
+}
 
 export type NumeroPourMail = {
   id: string;
@@ -844,11 +886,9 @@ export async function releverDossier(
   extra?: Record<string, unknown>
 ): Promise<Releve> {
   try {
-    const { data } = await supabase
-      .from("numeros")
-      .select(CHAMPS_MAIL)
-      .eq("id", numeroId)
-      .maybeSingle<NumeroPourReleve>();
+    const { data } = await lireNumerosMail<NumeroPourReleve | null>((champs) =>
+      supabase.from("numeros").select(champs).eq("id", numeroId).maybeSingle<NumeroPourReleve>(),
+    );
 
     if (!data) return { code: null, resultat: null };
 
