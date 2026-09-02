@@ -1,6 +1,11 @@
 'use client'
 
 /**
+ * ⚠️ PLUS RENDU SUR /numero DEPUIS LE 02/09 (retiré par Mathias : trop de
+ * texte sur la page qui vend). Le composant est conservé, pas supprimé —
+ * la demande « montrer un extrait » repart dans un MAIL, après livraison,
+ * là où elle a du temps et zéro poids sur l'achat. Voir le ticket dédié.
+ *
  * La case FACULTATIVE « montrer des extraits » (PRD §14), sur la page du
  * numéro — plus sur l'écran 6 du composeur (T2-1).
  *

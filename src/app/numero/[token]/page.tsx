@@ -32,7 +32,6 @@ import BoutonValider from './BoutonValider'
 import BoutonEnvoyer from './BoutonEnvoyer'
 import Apercu from './Apercu'
 import LienPartage from '../../components/LienPartage'
-import ConsentCommunication from './ConsentCommunication'
 import '../numero.css'
 
 /* L'adresse publique du site, pour écrire le lien EN TOUTES LETTRES sous les
@@ -245,8 +244,8 @@ export default async function NumeroPage({
   return (
     <Coquille titre={titre} avancement={attendPhotos || aTerminer ? 0 : AVANCEMENT[numero.etat] ?? 0}
       camp={camp}
-      token={numero.token}
-      consentCommunication={numero.consent_communication === true}>
+      montrerCamp={numero.etat !== 'apercu_pret'}
+      token={numero.token}>
       {numero.etat === 'photos_recues' && depot === 'termine' && (
         <>
           <p className="nu-mot">L’atelier a vos {numero.nb_photos} photos.</p>
@@ -497,8 +496,8 @@ function Coquille({
   titre,
   avancement,
   camp,
+  montrerCamp = true,
   token,
-  consentCommunication = null,
   children,
 }: {
   titre: string
@@ -506,10 +505,11 @@ function Coquille({
      de mentir. */
   avancement: number
   camp: Camp
+  /* Le mot « c'est à vous / à nous » a du sens sur les étapes d'attente ;
+     sur la page qui vend (apercu_pret), il double le titre « Votre couverture »
+     et sonne comme un slogan. La page le masque là (02/09). */
+  montrerCamp?: boolean
   token: string
-  /* T2-1 — la valeur en base de « montrer des extraits », ou null pour ne
-     pas afficher la case (page en panne : on ne connaît pas la vérité). */
-  consentCommunication?: boolean | null
   children: React.ReactNode
 }) {
   return (
@@ -537,14 +537,9 @@ function Coquille({
           </ol>
         )}
 
-        {MOT_DU_CAMP[camp] && <p className="nu-camp">{MOT_DU_CAMP[camp]}</p>}
+        {montrerCamp && MOT_DU_CAMP[camp] && <p className="nu-camp">{MOT_DU_CAMP[camp]}</p>}
 
         {children}
-
-        {/* ── T2-1 : la case facultative, ici où elle a du contexte ──── */}
-        {consentCommunication !== null && (
-          <ConsentCommunication token={token} valeur={consentCommunication} />
-        )}
 
         {/* ── LE LIEN, ET LA CONSIGNE DE LE GARDER ──────────────────────
             Il n'y a pas de compte, pas de mot de passe : ce lien EST son

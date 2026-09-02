@@ -372,15 +372,23 @@
   user-select: all;
 }
 
+/* Sous la visionneuse, le prix est l'ancre : pages + montant portent la page
+   (02/09, « on met pages et prix plus en avant »). Ligne agrandie, montant
+   détaché en accent. */
 .nu-prix {
-  margin-top: clamp(34px, 6vw, 52px);
+  margin-top: clamp(30px, 5.5vw, 48px);
   font-family: var(--font-display);
-  font-size: clamp(22px, 4.4vw, 30px);
-  line-height: 1.25;
-  max-width: 26ch;
+  font-size: clamp(26px, 5.2vw, 36px);
+  line-height: 1.2;
+  max-width: 24ch;
 }
 
-.nu-prix b { font-weight: 400; color: var(--c-accent); }
+.nu-prix b {
+  font-weight: 500;
+  color: var(--c-accent);
+  font-size: 1.12em;
+  white-space: nowrap;
+}
 
 .nu-prix-sub { margin-top: 10px; font-size: 15px; font-weight: 300; color: var(--c-text-soft); }
 
