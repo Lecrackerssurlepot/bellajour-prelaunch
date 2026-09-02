@@ -172,135 +172,169 @@
   user-select: all;
 }
 
-/* ---- l'état 2 : la page qui vend (PRD §8) ----
-   La seule page où l'on a le droit d'être spectaculaire. */
-.nu-covers {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(10px, 2.5vw, 22px);
-  margin-top: clamp(30px, 6vw, 48px);
+/* ---- l'état 2 : la maquette, en VISIONNEUSE magazine (T-089, 02/09) ----
+   Les pages au cœur : une scène, une page à la fois, qu'on feuillette (glissé
+   au doigt, flèches, points). La couverture À PLAT (C4 | dos | C1) reste un
+   seul fichier ; « La couverture »/« La quatrième » sont des CADRAGES du même
+   objet (object-position), jamais des images à part. Le reste du parcours (les
+   deux cases, le paiement) vit en dessous, inchangé. */
+.nu-viz { margin-top: clamp(28px, 6vw, 46px); }
+
+/* Pas de dvh/vh (socle) : la hauteur vient de --uh, gelée au chargement. */
+.nu-viz-scene {
+  position: relative;
+  overflow: hidden;
+  height: min(calc(64 * var(--uh)), 560px);
+  border-radius: 6px;
+  touch-action: pan-y;
 }
 
-.nu-double { margin-top: clamp(10px, 2.5vw, 22px); }
-
-.nu-cadre {
-  margin: 0;
-  display: grid;
-  gap: clamp(8px, 1.4vw, 12px);
-  min-width: 0;
+.nu-viz-track {
+  display: flex;
+  height: 100%;
+  transition: transform 620ms var(--ease-spring);
+  will-change: transform;
 }
 
-.nu-vue {
+.nu-viz-slide {
+  flex: 0 0 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: clamp(4px, 1.4vw, 14px);
+}
+
+/* La page : un bouton (rien ne se charge, la loupe s'ouvre). */
+.nu-viz-page {
   position: relative;
   display: block;
-  width: 100%;
+  margin: 0;
   padding: 0;
   border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: zoom-in;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 3px;
   overflow: hidden;
-  border-radius: 4px;
-  background: var(--c-void);
   box-shadow: var(--shadow-float);
 }
 
-.nu-vue img {
-  display: block;
-  width: 100%;
-  height: auto;
+/* Couvertures portrait : le cadre prend le format 2/3, l'image le remplit et
+   déborde en largeur, object-position choisit la face (découpe assumée). */
+.nu-viz-page--droite,
+.nu-viz-page--gauche {
+  height: 100%;
+  aspect-ratio: 2 / 3;
+  background: var(--c-void);
 }
-
-/* La double page reserve sa place AVANT le decodage. Sans ratio, le cadre
-   valait 0 de haut puis sautait a sa hauteur reelle, poussant tout le bas de
-   la page de plusieurs centaines de pixels sous les yeux de la cliente. Seule
-   la variante « decoupe » en avait un. */
-.nu-double .nu-vue { aspect-ratio: 3 / 2; }
-
-/* ---- la couverture a plat, decoupee (T2-2) ----
-   UN fichier C4 | dos | C1 ; chaque face est un CADRAGE du meme objet, pas
-   une image a part. Le cadre prend le format d'une couverture, l'image le
-   remplit en hauteur et deborde en largeur, object-position choisit le cote.
-   Decoupe approximative assumee (le dos est dans le fichier) : la vue a plat
-   et la loupe montrent l'objet entier, exact. */
-.nu-vue--decoupe { aspect-ratio: 2 / 3; }
-.nu-vue--decoupe img {
+.nu-viz-page--droite img,
+.nu-viz-page--gauche img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.nu-vue--droite img { object-position: right center; }
-.nu-vue--gauche img { object-position: left center; }
+.nu-viz-page--droite img { object-position: right center; }
+.nu-viz-page--gauche img { object-position: left center; }
 
-/* ---- cliquable : la vue s'ouvre en grand ----
-   Recette du 25/08 : « il doit pouvoir les voir en grand en cliquant
-   dessus ». Un <button> et non un <a> : rien ne se charge, une vue
-   s'ouvre. Le curseur l'annonce avant même le survol du libellé. */
-.nu-vue--clic {
-  cursor: zoom-in;
-  appearance: none;
-  color: inherit;
-  font: inherit;
+/* Vues au format naturel : la planche à plat, les doubles pages, et les
+   couvertures PLEINES des anciens dossiers (c1/c4 séparés). L'image entière,
+   cadrée dans la scène. */
+.nu-viz-page--large img,
+.nu-viz-page--pleine img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
 }
 
-.nu-vue-loupe {
+/* Le badge « Agrandir », comme sur les anciennes vues. */
+.nu-viz-zoom {
   position: absolute;
-  right: 3%;
-  bottom: 3.5%;
-  padding: 0.7vh 1.6vh;
+  right: 10px;
+  bottom: 10px;
+  padding: 7px 14px;
   border-radius: 999px;
   border: 1px solid var(--glass-border);
   background: var(--glass-bg-strong);
   backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--c-text);
   opacity: 0;
   transition: opacity var(--dur) var(--ease);
+  pointer-events: none;
+}
+.nu-viz-page:hover .nu-viz-zoom,
+.nu-viz-page:focus-visible .nu-viz-zoom { opacity: 1; }
+/* Au doigt, pas de survol : le badge reste posé, discrètement. */
+@media (hover: none) { .nu-viz-zoom { opacity: 0.85; } }
+
+/* Feuilleter : flèches au pointeur, points partout, glissé au doigt. */
+.nu-viz-fleche {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--c-text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--dur) var(--ease), opacity var(--dur) var(--ease);
+}
+.nu-viz-fleche:hover { background: var(--glass-border); }
+.nu-viz-fleche:disabled { opacity: 0.3; cursor: default; }
+.nu-viz-fleche--prev { left: 12px; }
+.nu-viz-fleche--next { right: 12px; }
+@media (hover: hover) and (pointer: fine) { .nu-viz-fleche { display: flex; } }
+
+/* Sous la scène : le nom de la vue, et les points. Minimal. */
+.nu-viz-bas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: clamp(14px, 3vw, 20px);
+}
+.nu-viz-nom {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(17px, 2.6vw, 22px);
+  color: var(--c-text);
+}
+.nu-viz-points { display: flex; gap: 8px; }
+.nu-viz-point {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--c-line-strong);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.nu-viz-point[aria-current='true'] {
+  background: var(--c-accent);
+  transform: scale(1.3);
 }
 
-.nu-vue--clic:hover .nu-vue-loupe,
-.nu-vue--clic:focus-visible .nu-vue-loupe {
-  opacity: 1;
-}
-
-/* Au doigt, il n'y a pas de survol : le libellé reste posé, discrètement.
-   Sans lui, rien n'indiquerait sur téléphone que l'image s'ouvre. */
-@media (hover: none) {
-  .nu-vue-loupe {
-    opacity: 0.85;
-  }
-}
-
-/* Jamais de case cassée : sans visuel, un cadre de la charte et un mot.
-   Un aperçu publié sans image reste rare (les trois visuels sont exigés
-   à la publication), mais il ne doit pas se lire comme un site en panne. */
-.nu-vue--vide {
-  display: grid;
-  place-items: center;
-  /* 2/3 — le format du produit, celui des couvertures d'exemple de
-     l'écran 3 (.at-cov). Un cadre vide au mauvais format ferait mentir
-     la page sur ce qu'elle attend. */
-  aspect-ratio: 2 / 3;
-  background: var(--grad-cover);
-  box-shadow: var(--shadow-soft);
-}
-
-.nu-double .nu-vue--vide { aspect-ratio: 3 / 2; }
-
-.nu-vue-attente {
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--c-overlay-faint);
-}
-
-/* La légende, SOUS le visuel et toujours présente. Avant, elle n'existait
-   que sur le cadre vide : trois images sans un mot, et personne ne savait
-   laquelle était le dos du numéro. */
-.nu-vue-legende {
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
+@media (prefers-reduced-motion: reduce) {
+  .nu-viz-track { transition-duration: 0.01ms; }
 }
 
 /* ── De qui c'est le tour ──

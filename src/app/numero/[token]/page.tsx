@@ -353,7 +353,7 @@ export default async function NumeroPage({
             plat={apercu?.plat ?? null}
             c1={apercu?.c1 ?? null}
             c4={apercu?.c4 ?? null}
-            double={apercu?.double ?? null}
+            doubles={apercu?.doubles ?? []}
           />
 
           {!retourDePaiement && (
