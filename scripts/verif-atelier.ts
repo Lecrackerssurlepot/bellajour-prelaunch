@@ -18,6 +18,7 @@
 
 import { preparerTransition, actionsDepuis } from "@/lib/atelier/transitions";
 import { urgencePour, comparerUrgence, etapeDepot } from "@/lib/atelier/urgence";
+import { lireDoublesBrutes, MAX_DOUBLES } from "@/lib/atelier/apercu";
 import type Stripe from "stripe";
 import {
   codesPour,
@@ -154,6 +155,22 @@ ok("52 pages refusees (hors grille)", !p52.ok && p52.erreurs[0].champ === "nb_pa
 ok("12 pages refusees", !preparerTransition("publier_apercu", "photos_recues", { nb_pages: 12, ...VISUELS }).ok);
 const sansImg = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, apercu_c1: "k/c1.jpg" });
 ok("2 visuels manquants nommes un par un", !sansImg.ok && sansImg.erreurs.length === 2);
+
+/* ── apercu : 1 a 3 doubles pages, avec repli sur l'ancien format (T-089) ── */
+ok("doubles : le nouveau format tableau est lu dans l'ordre",
+   JSON.stringify(lireDoublesBrutes({ doubles: ["a", "b", "c"] })) === JSON.stringify(["a", "b", "c"]));
+ok(`doubles : borne a ${MAX_DOUBLES} (l'admin n'en publie pas plus que ce qu'on montre)`,
+   lireDoublesBrutes({ doubles: ["a", "b", "c", "d"] }).length === MAX_DOUBLES);
+ok("doubles : l'ancien format `double` unique devient une liste d'un element",
+   JSON.stringify(lireDoublesBrutes({ double: "x" })) === JSON.stringify(["x"]));
+ok("doubles : le tableau prime sur la valeur unique",
+   JSON.stringify(lireDoublesBrutes({ doubles: ["a"], double: "z" })) === JSON.stringify(["a"]));
+ok("doubles : vides et non-chaines ignores, chaines rognees",
+   JSON.stringify(lireDoublesBrutes({ doubles: ["a", "", 5, "  b  "] })) === JSON.stringify(["a", "b"]));
+ok("doubles : rien -> liste vide",
+   lireDoublesBrutes({}).length === 0 && lireDoublesBrutes({ double: "" }).length === 0);
+ok("doubles : alias `double_page` accepte",
+   JSON.stringify(lireDoublesBrutes({ double_page: "y" })) === JSON.stringify(["y"]));
 const mauvaisEtat = preparerTransition("publier_maquette", "photos_recues", { canva_url: "https://x.fr" });
 ok("publier la maquette depuis l'etat 1 refuse", !mauvaisEtat.ok && mauvaisEtat.erreurs[0].champ === "etat");
 ok("lien javascript: refuse", !preparerTransition("publier_maquette", "payee", { canva_url: "javascript:alert(1)" }).ok);
