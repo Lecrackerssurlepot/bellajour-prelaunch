@@ -27,3 +27,11 @@ C'est le chantier qui sort l'atelier de Canva — plusieurs séances, à planifi
 **Question pour Mathias** : d'accord pour versionner les gabarits (étape 2) ?
 ## Ce qui a été fait
 30/08 : étape 0 livrée (aperçu des PDF déposés + contrôle pages/dimensions sur la fiche).
+
+02/09 : **la formule d'épaisseur du dos est trouvée** (le verrou géométrique le plus dur), via la
+doc Cloudprinter atteinte par le gabarit `templates/2216`. Consignée dans
+`docs/reference/SPECS-CLOUDPRINTER.md` avec sa source, ses coefficients (bulk, terme couverture) et
+l'application chiffrée (24 p → 2,40 mm, 32 p → 2,87 mm, 50 p → 3,93 mm). Le `constat` de largeur
+`cover` d'`impression.ts:224-227` pourra donc devenir un **vrai calcul**
+(`largeur_cover = 2×(210+3) + dos_mm`), paramétré par le grammage (T-028 non tranché). Profil
+couleur exigé : Coated FOGRA39. Restent : versionner les gabarits (étape 2) et le moteur de rendu.

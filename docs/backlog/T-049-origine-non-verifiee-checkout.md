@@ -25,5 +25,18 @@ incomplète ne dégrade rien — elle casse le paiement pour tout le monde. À f
 vérification en preview avant la production.
 **Question pour Mathias** : la liste ci-dessus est-elle complète ? Utilises-tu un autre domaine
 (un lien Instagram, un raccourcisseur, un domaine de test) qui appellerait cette route ?
-## Ce qui a été fait
-—
+## Ce qui a été fait (02/09)
+Helper **`originDeConfiance(brut)`** ajouté dans `src/app/api/atelier/checkout/route.ts` : il
+n'accepte l'`Origin` que si elle est connue (l'origine de `SITE_URL`, `bellajour.fr`,
+`www.bellajour.fr`, un preview `bellajour-prelaunch*.vercel.app`, ou `localhost` hors production)
+ET en https (ou localhost). Sinon, **repli gracieux sur `SITE_URL`** — le paiement d'une cliente
+légitime ne casse jamais, au pire il la redirige vers le site canonique. C'est ce repli qui lève
+la réserve « une liste incomplète casse le paiement pour tout le monde » : ici elle ne casse rien.
+
+⚠️ **`/api/checkout` (prévente) a le MÊME défaut** (`:274`), mais **dormant** : la prévente est
+close depuis le 01/09. Non corrigé pour garder la PR ciblée sur le chemin vivant ; à traiter avec
+le même helper (extrait en util partagé) si la prévente rouvre.
+
+Vérifié : `tsc` 0 erreur, `lint` propre, `build` succès, `verif-atelier` TOUT PASSE.
+⚠️ **À revérifier en preview avant merge** : ouvrir un vrai checkout depuis une URL de preview et
+confirmer que le retour `success_url` fonctionne (l'origine preview est dans la liste blanche).

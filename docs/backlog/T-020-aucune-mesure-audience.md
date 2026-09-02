@@ -24,6 +24,13 @@ bandeau de consentement à ajouter. C'est le minimum pour que les décisions ces
 et c'est ta décision. Si tu préfères un outil sans traceur tiers, dis-le — il en existe.
 ## Ce qui a été fait
 
+### 02/09/2026 — ACTIVÉ et vérifié
+Web Analytics ET Speed Insights sont activés sur Vercel. Vérifié le 02/09 : sur `www.bellajour.fr`,
+`/_vercel/insights/script.js` et `/_vercel/speed-insights/script.js` répondent **200** (ils
+répondaient 404 tant que rien n'était activé). La mesure tourne en production. Le masquage des
+tokens (`beforeSend` + `src/lib/analytics/chemin.ts`) est dans le code livré et testé.
+⚠️ Speed Insights = ~10 $/mois SI le compte est Pro (gratuit sur Hobby) — à confirmer dans Billing.
+
 ### 01/09/2026 — le branchement est posé, RIEN n'est activé
 
 Le code est en place et inerte. Aucun clic n'a été fait sur Vercel : c'est à toi.

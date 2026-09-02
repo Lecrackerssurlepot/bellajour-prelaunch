@@ -36,5 +36,16 @@ plaintes de T-037 : on montre, on ne tranche pas.
 3. Le rapprochement se fait sur `email_canonical`, jamais sur `email` brut : les alias
    (`m.durand+bj@`) sont précisément le cas où la cliente croit être la même personne et où
    nous, non (cf. T-047).
-## Ce qui a été fait
-—
+## Ce qui a été fait (02/09, PR #27)
+**Part 1 — le signalement sur `/admin/atelier/sante`.** Helper `lireDoublonsAdresse` dans
+`sante.ts` : groupe par `email_canonical` les dossiers **non payés** (état hors `ETATS_ENGAGES`) et
+**non anonymisés** (`anonymise_le` null, avec repli 42703 sur la colonne fraîche). Un constat orange
+« N adresses portent plusieurs dossiers non payés » quand une adresse en porte ≥ 2. **Signalement
+seul, jamais de fusion.**
+
+**Part 2 — la ligne sur la fiche existait DÉJÀ** : `chargerClient`/`autres` (`donnees.ts`) charge les
+autres numéros de la même `email_canonical` (`.eq(email_canonical).neq(token)`), et `Fiche.tsx` les
+affiche sous « Ses autres numéros » avec le lien. Rien à ajouter.
+
+Vérifié : `tsc`, `lint`, `verif-atelier` verts ; requête de détection **validée sur la base** en
+lecture seule — 0 doublon aujourd'hui, aucun faux positif.
