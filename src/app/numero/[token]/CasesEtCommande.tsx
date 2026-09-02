@@ -33,10 +33,10 @@
 
 import { useCallback, useState } from 'react'
 import { formaterEuros } from '@/lib/atelier/prix'
+import FeuilleAjustement from './FeuilleAjustement'
 
 type Props = {
   token: string
-  titre: string
   nbPages: number | null
   euros: number | null
   cgvOk: boolean
@@ -49,13 +49,14 @@ type Props = {
 }
 
 export default function CasesEtCommande({
-  token, titre, nbPages, euros, cgvOk, renonciation, joursComposition, joursLivraison,
+  token, nbPages, euros, cgvOk, renonciation, joursComposition, joursLivraison,
 }: Props) {
   const [cgv, setCgv] = useState(cgvOk)
   const [reno, setReno] = useState(renonciation)
   const [erreur, setErreur] = useState<string | null>(null)
   const [occupe, setOccupe] = useState(false)
   const [confirmer, setConfirmer] = useState(false)
+  const [feuille, setFeuille] = useState(false)
 
   const enregistrer = useCallback(
     async (champ: 'cgv_ok' | 'renonciation_retractation', valeur: boolean) => {
@@ -118,32 +119,42 @@ export default function CasesEtCommande({
 
   return (
     <>
-      <p className="nu-prix">
-        {prixConnu && nbPages ? (
-          <>
-            Votre numéro fera {nbPages} pages — <b>{formaterEuros(euros)}</b>,
-            impression et livraison comprises.
-          </>
-        ) : (
-          <>Votre numéro est en cours de chiffrage.</>
-        )}
-      </p>
-      {/* T2-8 — la promesse en deux temps (composition, puis livraison après
-          validation), dans l'ordre où elle se vivra. */}
-      <p className="nu-prix-sub">
-        {prixConnu ? (
-          <>
-            Après votre paiement : votre numéro complet sous {joursComposition} jours
-            ouvrés. Puis chez vous sous {joursLivraison} jours après votre validation.
-          </>
-        ) : (
-          'Le prix vous sera confirmé par mail, avant tout paiement.'
-        )}
-      </p>
+      {/* L'encart tarif : pages + prix, l'ancre visuelle sous la visionneuse
+          (« comme sur desktop » — 02/09). Verre dépoli, le montant en accent,
+          « Commander » posé à droite. Sur mobile, il passe en colonne et le
+          bouton prend toute la largeur (CSS). */}
+      <div className="nu-tarif">
+        <div className="nu-tarif-p">
+          {prixConnu && nbPages ? (
+            <>
+              <span className="nu-tarif-label">Impression et livraison comprises</span>
+              <span className="nu-tarif-value">
+                <b>{nbPages}</b> pages<span className="nu-tarif-sep"> · </span>
+                <b className="nu-tarif-prix">{formaterEuros(euros)}</b>
+              </span>
+            </>
+          ) : (
+            <span className="nu-tarif-value">Votre numéro est en cours de chiffrage.</span>
+          )}
+        </div>
 
-      {/* Révélé au tap sur « Commander ». Replié, il ne prend aucune place et
-          n'est pas focusable (tabIndex -1). Le texte des cases est INCHANGÉ —
-          il porte l'information légale de l'article 8.5 des CGV. */}
+        <button
+          type="button"
+          className="nu-order"
+          onClick={confirmer ? () => void commander() : onCommander}
+          disabled={occupe || !prixConnu || (confirmer && !accepte)}
+        >
+          {occupe
+            ? 'Un instant…'
+            : confirmer
+              ? `Payer${prixConnu ? ` — ${formaterEuros(euros)}` : ''}`
+              : 'Commander'}
+        </button>
+      </div>
+
+      {/* Révélé au tap sur « Commander », directement sous l'encart. Replié, il
+          ne prend aucune place et n'est pas focusable (tabIndex -1). Le texte
+          des cases est INCHANGÉ — il porte l'information légale de l'art. 8.5. */}
       <div className={`nu-confirmer${confirmer ? ' is-open' : ''}`} aria-hidden={!confirmer}>
        <div className="nu-confirmer-inner">
         <p className="nu-confirmer-titre">Deux accords, puis le paiement.</p>
@@ -181,26 +192,32 @@ export default function CasesEtCommande({
        </div>
       </div>
 
-      <button
-        type="button"
-        className="nu-order"
-        onClick={confirmer ? () => void commander() : onCommander}
-        disabled={occupe || !prixConnu || (confirmer && !accepte)}
-      >
-        {occupe
-          ? 'Un instant…'
-          : confirmer
-            ? `Payer${prixConnu ? ` — ${formaterEuros(euros)}` : ''}`
-            : `Commander ${titre}${prixConnu ? ` — ${formaterEuros(euros)}` : ''}`}
-      </button>
-
       {confirmer && !accepte && (
         <p className="nu-confirmer-aide">Cochez les deux accords pour continuer.</p>
       )}
 
+      {/* T2-8 — la promesse en deux temps (composition, puis livraison après
+          validation), dans l'ordre où elle se vivra. */}
+      <p className="nu-prix-sub">
+        {prixConnu ? (
+          <>
+            Après votre paiement : votre numéro complet sous {joursComposition} jours
+            ouvrés. Puis chez vous sous {joursLivraison} jours après votre validation.
+          </>
+        ) : (
+          'Le prix vous sera confirmé par mail, avant tout paiement.'
+        )}
+      </p>
+
       {erreur && <p className="nu-erreur" role="alert">{erreur}</p>}
 
-      <p className="nu-note">Un détail à changer ? Répondez au mail, on ajuste sans frais.</p>
+      {/* T-091 — la porte de sortie douce : plus « répondez au mail », mais une
+          feuille d'ajustement en deux gestes, sans écrire de mail. */}
+      <button type="button" className="nu-ajuster" onClick={() => setFeuille(true)}>
+        Ce n’est pas tout à fait ça&nbsp;? Dites-le-nous.
+      </button>
+
+      <FeuilleAjustement token={token} ouvert={feuille} onFermer={() => setFeuille(false)} />
     </>
   )
 }

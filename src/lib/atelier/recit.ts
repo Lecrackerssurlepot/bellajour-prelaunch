@@ -199,6 +199,20 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         ton: "elle",
       };
 
+    /* T-091 — la feuille d'ajustement de l'état 2 : un mot laissé AVANT le
+       paiement, plutôt que de partir. Motifs cochés et/ou mot libre. */
+    case "ajustement_demande": {
+      const motifs = Array.isArray(payload.motifs)
+        ? (payload.motifs as unknown[]).filter((m): m is string => typeof m === "string").join(" · ")
+        : "";
+      const mot = typeof payload.mot === "string" ? (payload.mot as string) : "";
+      return {
+        texte: "Le client a demandé un ajustement avant de payer",
+        detail: [motifs, mot].filter(Boolean).join(" — ") || null,
+        ton: "elle",
+      };
+    }
+
     /* Le verrou d'un mail a été retiré pour qu'il reparte — aujourd'hui M5,
        à la republication d'une maquette corrigée. Sans cette ligne, deux
        « Mail parti : M5 » se suivraient sans explication. */

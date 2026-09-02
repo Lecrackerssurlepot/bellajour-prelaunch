@@ -358,7 +358,6 @@ export default async function NumeroPage({
           {!retourDePaiement && (
             <CasesEtCommande
               token={numero.token}
-              titre={titre}
               nbPages={numero.nb_pages}
               euros={euros}
               cgvOk={numero.cgv_ok}
