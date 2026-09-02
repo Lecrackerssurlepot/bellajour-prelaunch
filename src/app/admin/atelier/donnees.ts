@@ -16,7 +16,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
 import { signerGet } from "@/lib/atelier/r2";
-import { resoudreApercu } from "@/lib/atelier/apercu";
+import { resoudreApercu, lireDoublesBrutes } from "@/lib/atelier/apercu";
 import { eurosPour, type PalierCle } from "@/lib/atelier/prix";
 import {
   ETAPE_ETAT,
@@ -848,6 +848,10 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
       plat: brut.plat ?? null,
       c1: brut.c1 ?? null,
       c4: brut.c4 ?? null,
+      /* T-090 — les clés brutes des doubles pages, dans l'ordre, pour
+         préremplir le formulaire de correction (le même lecteur que la page
+         cliente : tableau `doubles` neuf ou `double` unique historique). */
+      doubles: lireDoublesBrutes(brut),
       double: brut.double ?? null,
     },
     adresse: versAdresse(n.adresse_livraison),

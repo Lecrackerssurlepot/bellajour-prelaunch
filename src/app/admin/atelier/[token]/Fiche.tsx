@@ -253,12 +253,19 @@ type ApercuVue = {
    deux côtés, toujours. */
 function vuesDeLApercu(apercu: FicheVue["apercu"]): ApercuVue[] {
   if (apercu.plat) {
-    return [
+    /* T-090 — la planche découpée en trois faces, puis 0 à trois doubles
+       pages dans l'ordre. Les légendes sont uniques (« Double page 1/2/… »
+       s'il y en a plusieurs) : la loupe navigue par légende. */
+    const vues: ApercuVue[] = [
       { cle: "plat-c1", src: apercu.plat, legende: "La couverture", loupe: "La couverture à plat", decoupe: "droite" },
       { cle: "plat-c4", src: apercu.plat, legende: "La quatrième", loupe: "La couverture à plat", decoupe: "gauche" },
       { cle: "plat", src: apercu.plat, legende: "La couverture à plat", loupe: "La couverture à plat" },
-      { cle: "double", src: apercu.double, legende: "Une double page", loupe: "Une double page" },
     ];
+    apercu.doubles.forEach((src, i) => {
+      const nom = apercu.doubles.length > 1 ? `Double page ${i + 1}` : "Une double page";
+      vues.push({ cle: `double-${i}`, src, legende: nom, loupe: nom });
+    });
+    return vues;
   }
   return APERCU_VUES.map(({ cle, legende }) => ({ cle, src: apercu[cle], legende, loupe: legende }));
 }

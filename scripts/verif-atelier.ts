@@ -305,22 +305,33 @@ ok("maquette + M5 + 8 j : valide d'office", doitAutoValider(d({ etat: "maquette_
 ok("maquette + M5 + 5 j : elle a encore le temps", !doitAutoValider(d({ etat: "maquette_prete", etat_maj_le: ilYA(5) }), env(["M5", ilYA(5)]), MAINTENANT));
 ok("maquette SANS M5 + 30 j : on n'imprime PAS en silence", !doitAutoValider(d({ etat: "maquette_prete", etat_maj_le: ilYA(30) }), env(), MAINTENANT));
 
-titre("— l'apercu a plat (T2-2) —");
+titre("— la planche a plat + 0 a 3 doubles pages (T2-2 / T-090) —");
 const pPlat = preparerTransition("publier_apercu", "photos_recues", {
-  nb_pages: 34, apercu_plat: "k/plat.jpg", apercu_double: "k/d.jpg",
+  nb_pages: 34, apercu_plat: "k/plat.jpg", apercu_doubles: ["k/d1.jpg", "k/d2.jpg"],
 });
-ok("plat + double : accepte, deux cles en base",
-   pPlat.ok && JSON.stringify(pPlat.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg", double: "k/d.jpg" }));
-ok("plat sans double : refuse",
-   !preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, apercu_plat: "k/plat.jpg" }).ok);
+ok("planche + doubles : la liste ordonnee entre en base",
+   pPlat.ok && JSON.stringify(pPlat.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg", doubles: ["k/d1.jpg", "k/d2.jpg"] }));
+const pPlatSeule = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, apercu_plat: "k/plat.jpg" });
+ok("planche SEULE : acceptee, `doubles` absent (0 double permis, decision 02/09)",
+   pPlatSeule.ok && JSON.stringify(pPlatSeule.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg" }));
+const pPlat4 = preparerTransition("publier_apercu", "photos_recues", {
+  nb_pages: 34, apercu_plat: "k/plat.jpg", apercu_doubles: ["a", "b", "c", "d"],
+});
+ok("planche + 4 doubles : rognee a 3 a l'ecriture",
+   pPlat4.ok && (pPlat4.patch.apercu_urls as { doubles: string[] }).doubles.length === MAX_DOUBLES);
+const pPlatVides = preparerTransition("publier_apercu", "photos_recues", {
+  nb_pages: 34, apercu_plat: "k/plat.jpg", apercu_doubles: ["", "  k/d.jpg  ", null as unknown as string],
+});
+ok("planche + doubles vides/espaces : ignorees et rognees",
+   pPlatVides.ok && JSON.stringify(pPlatVides.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg", doubles: ["k/d.jpg"] }));
 const pTrio = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, ...VISUELS });
 ok("le trio historique reste accepte (correction d'anciens dossiers)",
    pTrio.ok && JSON.stringify(pTrio.patch.apercu_urls) === JSON.stringify({ c1: "k/c1.jpg", c4: "k/c4.jpg", double: "k/d.jpg" }));
 const pMixte = preparerTransition("publier_apercu", "photos_recues", {
-  nb_pages: 34, apercu_plat: "k/plat.jpg", apercu_double: "k/d.jpg", ...({ apercu_c1: "k/c1.jpg" }),
+  nb_pages: 34, apercu_plat: "k/plat.jpg", apercu_doubles: ["k/d1.jpg"], ...({ apercu_c1: "k/c1.jpg" }),
 });
-ok("plat fourni : c1 est ignore, jamais de melange des deux formats",
-   pMixte.ok && JSON.stringify(pMixte.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg", double: "k/d.jpg" }));
+ok("planche fournie : c1 est ignore, jamais de melange des deux formats",
+   pMixte.ok && JSON.stringify(pMixte.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg", doubles: ["k/d1.jpg"] }));
 
 titre("— le mot de l'atelier (T2-3) —");
 const avecMot = preparerTransition("photos_insuffisantes", "photos_recues", { mot: "Trop sombres pour l'impression." });

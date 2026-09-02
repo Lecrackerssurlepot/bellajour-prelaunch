@@ -91,6 +91,11 @@ export type Saisie = {
   apercu_c1?: string | null;
   apercu_c4?: string | null;
   apercu_double?: string | null;
+  /* T-090 — la liste ORDONNÉE des doubles pages (0 à trois), clés du coffre,
+     telles que l'atelier les a montées et rangées. Ne vaut que pour le format
+     à plat ; le trio historique garde sa `double` unique. Elle arrive en
+     tableau depuis le navigateur. */
+  apercu_doubles?: string[];
   canva_url?: string | null;
   maquette_pdf_url?: string | null;
   /* Les PDF print-ready, clés du coffre. Le produit décide desquels il a
@@ -243,6 +248,20 @@ function texte(v: unknown, max = 500): string {
   return typeof v === "string" ? v.trim().slice(0, max) : "";
 }
 
+/* T-090 — les doubles pages d'une planche, telles que l'atelier les a montées :
+   des clés de coffre, dans l'ordre, les vides ignorées. Bornées à trois — c'est
+   MAX_DOUBLES (apercu.ts), redit ici plutôt qu'importé pour garder ce module
+   PUR (apercu.ts importe r2, donc l'environnement). Le lecteur borne de nouveau
+   à la résolution : ceci est l'hygiène d'écriture, pas la seule garde. */
+const MAX_DOUBLES_ADMIN = 3;
+function doublesDeSaisie(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+    .map((x) => x.trim().slice(0, 600))
+    .slice(0, MAX_DOUBLES_ADMIN);
+}
+
 /* Une adresse collée depuis Canva ou un transporteur. On refuse tout ce qui
    n'est pas http(s) : un `javascript:` recopié par mégarde finirait cliquable
    sur la page d'une cliente. */
@@ -316,19 +335,23 @@ export function preparerTransition(
        `resoudreApercu` sait lire les deux. Une page qui vend avec un cadre
        vide ne vend pas — tout ce que le format choisi exige est obligatoire.
 
-       T2-2 : le format normal est la couverture À PLAT (C4 | dos | C1, un
-       seul fichier, l'export naturel de Canva) plus la double page. La page
-       cliente en découpe les deux faces en CSS et la loupe montre l'objet
-       entier — une vraie couverture qu'on retourne. Le trio historique
-       c1 + c4 + double reste accepté UNIQUEMENT pour corriger un dossier
-       publié avant ce format : si `apercu_plat` est fourni, il gagne et
-       c1/c4 sont ignorés (jamais de mélange des deux formats en base). */
+       T2-2 / T-090 : le format normal est LA PLANCHE À PLAT (C4 | dos | C1,
+       un seul fichier, l'export naturel de Canva) plus 0 à trois doubles
+       pages. La page cliente découpe les deux faces de la planche en CSS et la
+       loupe montre l'objet entier — une vraie couverture qu'on retourne. Zéro
+       double page est permis (décision de Mathias, 02/09) : une planche seule
+       est publiable, la visionneuse montre alors ses trois faces. Le trio
+       historique c1 + c4 + double reste accepté UNIQUEMENT pour corriger un
+       dossier publié avant ce format : si `apercu_plat` est fourni, il gagne
+       et c1/c4 sont ignorés (jamais de mélange des deux formats en base). */
     const plat = texte(saisie.apercu_plat, 600);
-    const doublePage = texte(saisie.apercu_double, 600);
 
     if (plat) {
-      if (!doublePage) erreurs.push({ champ: "apercu_double", message: "Il manque la double page." });
-      else patch.apercu_urls = { plat, double: doublePage };
+      /* Les doubles pages dans l'ordre monté par l'atelier. On n'écrit la clé
+         `doubles` que s'il y en a : une liste vide ne dit rien en base, et la
+         planche seule reste un aperçu complet. */
+      const doubles = doublesDeSaisie(saisie.apercu_doubles);
+      patch.apercu_urls = { plat, ...(doubles.length ? { doubles } : {}) };
     } else {
       const visuels: Array<[keyof Saisie, string, string]> = [
         ["apercu_c1", "c1", "la couverture à plat (ou, à défaut, la première de couverture)"],
