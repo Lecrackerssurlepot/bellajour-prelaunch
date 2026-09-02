@@ -79,7 +79,6 @@ export async function POST(request: Request) {
        les deux laisserait un objet sans ligne — donc invisible, donc éternel :
        aucun ménage ne le retrouverait jamais. Une ligne sans objet, elle, se
        rattrape (la photo se re-déclare et se renvoie). */
-    await supprimer(photo.r2_key);
     /* ET sa vignette (T-042). Depuis D7 chaque photo depose DEUX objets ; seul
        l'original etait efface. La ligne disparaissait, l'original aussi, et une
        copie 320 px restait dans le coffre sans plus aucune ligne pour la
@@ -89,7 +88,19 @@ export async function POST(request: Request) {
        l'effacement de ses donnees, « c'est supprime » doit etre VRAI.
        Sans condition sur `vignette_key` : la cle est deterministe, et un DELETE
        sur un objet absent ne coute rien et ne leve rien. */
-    await supprimer(cleVignetteR2(numero.id, photo.id));
+    const objetParti = await supprimer(photo.r2_key);
+    const vignettePartie = await supprimer(cleVignetteR2(numero.id, photo.id));
+
+    /* T-048 — on ne retire la ligne QUE si les objets sont vraiment partis.
+       Avant, la ligne disparaissait même sur un échec R2 réel (panne, pas
+       absence) : l'objet restait alors sans ligne, invisible et éternel.
+       Sur échec, 500 : la ligne reste (elle, se rattrape — la photo se
+       re-déclare), la cliente réessaie, et rien n'est orphelin. L'opération
+       est idempotente — un DELETE sur un objet déjà parti réussit. */
+    if (!objetParti || !vignettePartie) {
+      console.error("[supprimer] objet R2 non confirmé parti", photo.id);
+      return NextResponse.json({ error: "internal" }, { status: 500 });
+    }
 
     const { error: errDel } = await supabase.from("photos").delete().eq("id", photo.id);
     if (errDel) {

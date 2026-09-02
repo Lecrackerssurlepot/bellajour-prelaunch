@@ -7,25 +7,42 @@ export const alt = "Bellajour — Maison d'édition du souvenir"
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-async function loadGoogleFont(family: string, weight = 400, italic = false): Promise<ArrayBuffer> {
-  const axis = italic ? `ital,wght@1,${weight}` : `wght@${weight}`
-  const cssUrl = `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, '+')}:${axis}&display=swap`
-  const css = await (await fetch(cssUrl)).text()
-  const match = css.match(/src:\s*url\(([^)]+)\)\s*format\('(?:truetype|opentype)'\)/)
-  if (!match) throw new Error(`Font file not found for ${family}`)
-  const fontRes = await fetch(match[1])
-  if (!fontRes.ok) throw new Error(`Failed to fetch ${family}`)
-  return fontRes.arrayBuffer()
+/* T-069 — aucun de ces chargements ne DOIT faire tomber le build. Un fichier
+   décor déplacé (le ménage T-003 vise header-bellajour.webp) ou une police
+   Google injoignable rendait tout le déploiement en échec — y compris celui
+   qui porterait un correctif urgent sur la page qui fait payer. On rend donc
+   `null` en cas d'échec et l'image se fabrique sans le décor manquant. */
+async function loadGoogleFont(family: string, weight = 400, italic = false): Promise<ArrayBuffer | null> {
+  try {
+    const axis = italic ? `ital,wght@1,${weight}` : `wght@${weight}`
+    const cssUrl = `https://fonts.googleapis.com/css2?family=${family.replace(/ /g, '+')}:${axis}&display=swap`
+    const css = await (await fetch(cssUrl)).text()
+    const match = css.match(/src:\s*url\(([^)]+)\)\s*format\('(?:truetype|opentype)'\)/)
+    if (!match) return null
+    const fontRes = await fetch(match[1])
+    if (!fontRes.ok) return null
+    return await fontRes.arrayBuffer()
+  } catch (err) {
+    console.error('[og] police indisponible, image sans elle', family, (err as Error)?.message)
+    return null
+  }
 }
 
-async function webpToPngDataUrl(publicPath: string, targetWidth: number): Promise<string> {
-  const buf = await readFile(join(process.cwd(), 'public', publicPath))
-  const png = await sharp(buf, { limitInputPixels: false })
-    .resize({ width: targetWidth })
-    .png()
-    .toBuffer()
-  return `data:image/png;base64,${png.toString('base64')}`
+async function webpToPngDataUrl(publicPath: string, targetWidth: number): Promise<string | null> {
+  try {
+    const buf = await readFile(join(process.cwd(), 'public', publicPath))
+    const png = await sharp(buf, { limitInputPixels: false })
+      .resize({ width: targetWidth })
+      .png()
+      .toBuffer()
+    return `data:image/png;base64,${png.toString('base64')}`
+  } catch (err) {
+    console.error('[og] décor indisponible, image sans lui', publicPath, (err as Error)?.message)
+    return null
+  }
 }
+
+type FontEntry = { name: string; data: ArrayBuffer; weight: 400 | 700; style: 'normal' | 'italic' }
 
 export default async function OpengraphImage() {
   const [playfairBold, cormorantItalic, signatureSrc, calanqueSrc] = await Promise.all([
@@ -34,6 +51,10 @@ export default async function OpengraphImage() {
     webpToPngDataUrl('images/ui/logo.webp', 520),
     webpToPngDataUrl('images/header-bellajour.webp', 426),
   ])
+
+  const fonts: FontEntry[] = []
+  if (playfairBold) fonts.push({ name: 'Playfair Display', data: playfairBold, weight: 700, style: 'normal' })
+  if (cormorantItalic) fonts.push({ name: 'Cormorant', data: cormorantItalic, weight: 400, style: 'italic' })
 
   return new ImageResponse(
     (
@@ -71,23 +92,27 @@ export default async function OpengraphImage() {
             padding: '32px 0',
           }}
         >
-          {/* signature cursive bleue */}
-          <img
-            src={signatureSrc}
-            width={200}
-            height={142}
-            style={{ objectFit: 'contain' }}
-            alt=""
-          />
+          {/* signature cursive bleue — omise si le décor est indisponible */}
+          {signatureSrc && (
+            <img
+              src={signatureSrc}
+              width={200}
+              height={142}
+              style={{ objectFit: 'contain' }}
+              alt=""
+            />
+          )}
 
           {/* illustration calanque verticale, bords déchirés intégrés au PNG */}
-          <img
-            src={calanqueSrc}
-            width={187}
-            height={280}
-            style={{ objectFit: 'contain' }}
-            alt=""
-          />
+          {calanqueSrc && (
+            <img
+              src={calanqueSrc}
+              width={187}
+              height={280}
+              style={{ objectFit: 'contain' }}
+              alt=""
+            />
+          )}
 
           {/* titre en deux temps, sous l'illustration, distinct pour la lisibilité */}
           <div
@@ -127,10 +152,7 @@ export default async function OpengraphImage() {
     ),
     {
       ...size,
-      fonts: [
-        { name: 'Playfair Display', data: playfairBold, weight: 700, style: 'normal' },
-        { name: 'Cormorant', data: cormorantItalic, weight: 400, style: 'italic' },
-      ],
+      ...(fonts.length > 0 ? { fonts } : {}),
     },
   )
 }

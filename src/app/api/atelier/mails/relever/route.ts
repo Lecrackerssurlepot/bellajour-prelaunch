@@ -49,7 +49,7 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import {
-  CHAMPS_MAIL,
+  lireNumerosMail,
   codesPour,
   doitAutoValider,
   envoyerMailAtelier,
@@ -124,13 +124,15 @@ async function relever(request: Request) {
 
     /* `etat_maj_le` croissant : le dossier qui attend depuis le plus
        longtemps passe en premier — c'est aussi l'ordre d'urgence de /admin. */
-    const { data: dossiers, error: errSel } = await supabase
-      .from("numeros")
-      .select(CHAMPS_MAIL)
-      .in("etat", ETATS_BALAYES)
-      .order("etat_maj_le", { ascending: true })
-      .limit(MAX_DOSSIERS)
-      .returns<NumeroPourReleve[]>();
+    const { data: dossiers, error: errSel } = await lireNumerosMail<NumeroPourReleve[] | null>((champs) =>
+      supabase
+        .from("numeros")
+        .select(champs)
+        .in("etat", ETATS_BALAYES)
+        .order("etat_maj_le", { ascending: true })
+        .limit(MAX_DOSSIERS)
+        .returns<NumeroPourReleve[]>(),
+    );
 
     if (errSel) {
       console.error("[atelier/relever] lecture échouée", errSel.code, errSel.message);

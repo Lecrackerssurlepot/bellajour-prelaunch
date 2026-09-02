@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logEvenement } from "./evenements";
-import { CHAMPS_MAIL, envoyerMailAtelier, type NumeroPourMail } from "./mails";
+import { lireNumerosMail, envoyerMailAtelier, type NumeroPourMail } from "./mails";
 import { EVT_CREDIT_CONSOMME } from "./fondatrice";
 
 /**
@@ -97,11 +97,15 @@ export async function traiterPaiementAtelier(
   /* Les colonnes du mail (titre, pagination, palier) plutôt qu'une liste
      locale : M4 annonce la même pagination et le même prix que la page
      d'état 2, et les trois mails de l'atelier partagent le même jeu. */
-  const { data: numero, error: lectureErr } = await supabase
-    .from("numeros")
-    .select(`${CHAMPS_MAIL}, stripe_session_id`)
-    .eq("id", numeroId)
-    .maybeSingle<NumeroPourMail & { etat: string; stripe_session_id: string | null }>();
+  const { data: numero, error: lectureErr } = await lireNumerosMail<
+    (NumeroPourMail & { etat: string; stripe_session_id: string | null }) | null
+  >((champs) =>
+    supabase
+      .from("numeros")
+      .select(`${champs}, stripe_session_id`)
+      .eq("id", numeroId)
+      .maybeSingle<NumeroPourMail & { etat: string; stripe_session_id: string | null }>(),
+  );
 
   if (lectureErr) {
     console.error("[atelier/paiement] lecture numero échouée", lectureErr.code);

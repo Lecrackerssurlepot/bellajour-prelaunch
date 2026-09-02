@@ -55,6 +55,39 @@ export const runtime = "nodejs";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
 
+/**
+ * T-049 — l'en-tête `Origin` est ce que le client VEUT bien envoyer : un client
+ * HTTP la pose à sa guise. Recopiée telle quelle dans `success_url`, elle
+ * laissait renvoyer une cliente qui vient de payer POUR DE VRAI vers un domaine
+ * étranger imitant « Votre numéro », qui lui redemande ses coordonnées.
+ *
+ * On n'accepte donc qu'une origine connue, et on retombe SANS BRUIT sur
+ * `SITE_URL` sinon : le paiement d'une cliente légitime n'échoue jamais — au
+ * pire il la redirige vers le site canonique au lieu de son origine exacte.
+ * Un rejet dur casserait le paiement pour tout le monde à la moindre origine
+ * oubliée ; ce repli, non.
+ */
+function originDeConfiance(brut: string | null): string {
+  if (!brut) return SITE_URL;
+  let u: URL;
+  try {
+    u = new URL(brut);
+  } catch {
+    return SITE_URL;
+  }
+  const h = u.hostname;
+  const httpsOuLocal = u.protocol === "https:" || h === "localhost";
+  const connu =
+    httpsOuLocal &&
+    (u.origin === new URL(SITE_URL).origin ||
+      h === "bellajour.fr" ||
+      h === "www.bellajour.fr" ||
+      /* les déploiements de preview du projet, pour tester le paiement */
+      (h.endsWith(".vercel.app") && h.startsWith("bellajour-prelaunch")) ||
+      (h === "localhost" && process.env.NODE_ENV !== "production"));
+  return connu ? u.origin : SITE_URL;
+}
+
 /* Même garde-fou mémoire que /api/atelier/numero. Généreux à dessein : la
    cliente qui hésite, ouvre le paiement, revient, reclique, est une cliente
    normale — pas un script. On coupe l'acharnement, pas l'hésitation. */
@@ -172,7 +205,7 @@ export async function POST(request: Request) {
     }
 
     const titre = numero.titre?.trim() || "Votre numéro";
-    const origin = request.headers.get("origin") || SITE_URL;
+    const origin = originDeConfiance(request.headers.get("origin"));
     const stripe = new Stripe(stripeKey);
 
     /* ─── Le crédit fondatrice, appliqué D'OFFICE (T-021, 01/09) ──────────

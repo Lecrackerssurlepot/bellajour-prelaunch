@@ -20,7 +20,7 @@
 
 import { makeSupabase } from "@/lib/supabase";
 import {
-  CHAMPS_MAIL,
+  lireNumerosMail,
   OBJET_MAIL,
   codesPour,
   manquePour,
@@ -88,11 +88,13 @@ export async function chargerSante(): Promise<Sante> {
     });
   }
 
-  const { data: dossiers } = await supabase
-    .from("numeros")
-    .select(CHAMPS_MAIL)
-    .order("etat_maj_le", { ascending: true })
-    .returns<NumeroPourReleve[]>();
+  const { data: dossiers } = await lireNumerosMail<NumeroPourReleve[] | null>((champs) =>
+    supabase
+      .from("numeros")
+      .select(champs)
+      .order("etat_maj_le", { ascending: true })
+      .returns<NumeroPourReleve[]>(),
+  );
 
   const lignes = dossiers ?? [];
   const ids = lignes.map((d) => d.id);
