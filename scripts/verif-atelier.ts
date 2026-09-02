@@ -190,6 +190,15 @@ titre("— l'urgence : qui attend quoi —");
 ok("etat 1 depuis 61 h = EN RETARD (promesse 48 h)", urgencePour("photos_recues", ilYAh(61), NOW).pile === "retard");
 ok("etat 1 depuis 14 h = a faire", urgencePour("photos_recues", ilYAh(14), NOW).pile === "a_faire");
 ok("etat 2 depuis 8 j = chez la cliente, JAMAIS un retard", urgencePour("apercu_pret", ilYAh(200), NOW).pile === "attente_cliente");
+// T-091 — la feuille d'ajustement de l'etat 2 fait remonter le dossier en A FAIRE.
+ok("etat 2 + ajustement demande = remonte en A FAIRE (la balle change de camp)",
+   urgencePour("apercu_pret", ilYAh(200), NOW, { ajustement: true, ajustementLe: ilYAh(3) }).pile === "a_faire");
+ok("ajustement : le libelle le dit",
+   urgencePour("apercu_pret", ilYAh(200), NOW, { ajustement: true, ajustementLe: ilYAh(3) }).libelle.startsWith("ajustement demand"));
+ok("ajustement : date depuis la DEMANDE, pas depuis l'entree dans l'etat",
+   urgencePour("apercu_pret", ilYAh(200), NOW, { ajustement: true, ajustementLe: ilYAh(3) }).libelle.includes("3 h"));
+ok("ajustement : sans demande, l'etat 2 reste chez la cliente",
+   urgencePour("apercu_pret", ilYAh(200), NOW, { ajustement: false }).pile === "attente_cliente");
 ok("questionnaire sans depot = a relancer, pas a traiter", urgencePour("photos_recues", ilYAh(300), NOW, { depot: "vide" }).pile === "attente_cliente");
 
 titre("— le depot inacheve (incident du 25/08) —");
