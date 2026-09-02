@@ -202,7 +202,17 @@ export function urgencePour(
   etat: Etat,
   etatMajLe: string | null,
   maintenant: Date,
-  options: { depot?: EtapeDepot; retouches?: boolean } = {}
+  options: {
+    depot?: EtapeDepot;
+    retouches?: boolean;
+    /* T-091 : à l'état 2, la cliente a envoyé la feuille d'ajustement (« ce
+       n'est pas tout à fait ça »). La balle passe chez l'atelier AVANT le
+       paiement — le dossier remonte donc dans « à faire », comme une retouche.
+       `ajustementLe` = l'instant de la demande (journal), pour dater le libellé
+       à partir de la demande et non de l'entrée dans l'état. */
+    ajustement?: boolean;
+    ajustementLe?: string | null;
+  } = {}
 ): Urgence {
   const depuis = etatMajLe ? new Date(etatMajLe) : null;
   const age =
@@ -223,6 +233,28 @@ export function urgencePour(
          réponse passe avant un dossier qui a encore deux jours de marge.
          Triées entre elles du plus ancien au plus récent. */
       rang: 1000 - age,
+    };
+  }
+
+  if (options.ajustement) {
+    /* Daté depuis la demande elle-même, pas depuis l'entrée dans l'état : une
+       couverture proposée il y a huit jours et ajustée ce matin est un travail
+       de ce matin. */
+    const depuisAjust = options.ajustementLe ? new Date(options.ajustementLe) : null;
+    const ageAjust =
+      depuisAjust && !Number.isNaN(depuisAjust.getTime())
+        ? (maintenant.getTime() - depuisAjust.getTime()) / 3_600_000
+        : age;
+    return {
+      pile: "a_faire",
+      age: ageAjust,
+      reste: null,
+      echeance: null,
+      promesse: null,
+      libelle: `ajustement demandé depuis ${formaterDuree(ageAjust)}`,
+      /* Même priorité qu'une retouche : une cliente qui attend une réponse
+         avant de payer passe devant les à-faire au délai confortable. */
+      rang: 1000 - ageAjust,
     };
   }
 

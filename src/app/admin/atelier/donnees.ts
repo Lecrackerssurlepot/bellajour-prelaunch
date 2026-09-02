@@ -118,6 +118,11 @@ function versLigne(
   nouveau = false,
   envoyes: Envoyes = new Map(),
   emailRebond = false,
+  /* T-091 — la cliente a envoyé la feuille d'ajustement à l'état 2. Non porté
+     par une colonne : lu dans le journal (evenements), comme le remboursement
+     et le rebond. `ajustementLe` date le libellé depuis la demande. */
+  aAjustement = false,
+  ajustementLe: string | null = null,
 ): LigneDossier {
   const nbPhotos = r.nb_photos ?? 0;
   /* La question ne se pose QU'À L'ÉTAT 1 : une fois l'aperçu publié, ni le
@@ -128,7 +133,13 @@ function versLigne(
   /* T2-13 — la question ne se pose qu'à l'état 4 : ailleurs la colonne est
      un reliquat (elle est remise à null à la republication). */
   const retouches = r.etat === "maquette_prete" && Boolean(r.retouches_demandees_le);
-  const u = urgencePour(r.etat, r.etat_maj_le, maintenant, { depot, retouches });
+  const ajustement = r.etat === "apercu_pret" && aAjustement;
+  const u = urgencePour(r.etat, r.etat_maj_le, maintenant, {
+    depot,
+    retouches,
+    ajustement,
+    ajustementLe,
+  });
 
   return {
     numeroId: r.id ?? "",
@@ -309,17 +320,28 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
      doubler l'aller-retour pour une poignée de lignes serait payer deux fois
      la même latence à chaque ouverture de la table de travail. */
   const rebonds = new Set<string>();
+  /* T-091 — la feuille d'ajustement de l'état 2 ne pose AUCUNE colonne : elle
+     vit dans le journal, comme le remboursement et le rebond. On garde, par
+     dossier, la date de la DERNIÈRE demande, pour dater le libellé de la pile.
+     Lue dans la MÊME requête : un aller-retour de plus par ouverture de la
+     table de travail se paie à chaque fois. */
+  const ajustements = new Map<string, string>();
   const ids = rangees.map((r) => r.id).filter(Boolean) as string[];
   if (ids.length) {
     const { data: remb } = await supabase
       .from("evenements")
-      .select("numero_id, type")
-      .in("type", ["remboursement", "email_rebond"])
+      .select("numero_id, type, created_at")
+      .in("type", ["remboursement", "email_rebond", "ajustement_demande"])
       .in("numero_id", ids)
-      .returns<Array<{ numero_id: string; type: string }>>();
+      .returns<Array<{ numero_id: string; type: string; created_at: string }>>();
     for (const e of remb ?? []) {
       if (e.type === "remboursement") rembourses.add(e.numero_id);
-      else rebonds.add(e.numero_id);
+      else if (e.type === "email_rebond") rebonds.add(e.numero_id);
+      else {
+        /* Plusieurs demandes possibles : on garde la plus récente. */
+        const vu = ajustements.get(e.numero_id);
+        if (!vu || e.created_at > vu) ajustements.set(e.numero_id, e.created_at);
+      }
     }
   }
 
@@ -332,22 +354,33 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
   /* Une seule évaluation d'urgence par dossier : elle sert au tri, aux
      compteurs du bandeau et à l'affichage. La recalculer trois fois serait
      trois occasions de diverger. */
-  const evaluees = rangees.map((r) => ({
-    ligne: versLigne(
-      r,
-      maintenant,
-      r.id ? rembourses.has(r.id) : false,
-      estNouveau(r, vus, marqueurAbsent, maintenant),
-      envoyesPar.get(r.id ?? "") ?? new Map(),
-      r.id ? rebonds.has(r.id) : false,
-    ),
-    urgence: urgencePour(r.etat, r.etat_maj_le, maintenant, {
-      depot:
-        r.etat === "photos_recues"
-          ? etapeDepot(r.consent_photos ?? null, r.nb_photos ?? 0)
-          : "termine",
-    }),
-  }));
+  const evaluees = rangees.map((r) => {
+    const ajustementLe = r.id ? ajustements.get(r.id) ?? null : null;
+    return {
+      ligne: versLigne(
+        r,
+        maintenant,
+        r.id ? rembourses.has(r.id) : false,
+        estNouveau(r, vus, marqueurAbsent, maintenant),
+        envoyesPar.get(r.id ?? "") ?? new Map(),
+        r.id ? rebonds.has(r.id) : false,
+        ajustementLe !== null,
+        ajustementLe,
+      ),
+      /* Le tri et les compteurs lisent la MÊME urgence que l'affichage : la
+         balle qui change de camp (retouches à l'état 4, ajustement à l'état 2)
+         doit faire remonter le dossier, pas seulement changer son libellé. */
+      urgence: urgencePour(r.etat, r.etat_maj_le, maintenant, {
+        depot:
+          r.etat === "photos_recues"
+            ? etapeDepot(r.consent_photos ?? null, r.nb_photos ?? 0)
+            : "termine",
+        retouches: r.etat === "maquette_prete" && Boolean(r.retouches_demandees_le),
+        ajustement: r.etat === "apercu_pret" && ajustementLe !== null,
+        ajustementLe,
+      }),
+    };
+  });
 
   evaluees.sort((a, b) => comparerUrgence(a.urgence, b.urgence));
 
@@ -652,6 +685,14 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
 
   const rembourse = (evenements ?? []).some((e) => e.type === "remboursement");
   const emailRebond = (evenements ?? []).some((e) => e.type === "email_rebond");
+  /* T-091 — la dernière feuille d'ajustement envoyée à l'état 2, pour que le
+     bandeau de la fiche dise la même chose que la pile (« à faire »). */
+  const ajustementLe =
+    (evenements ?? [])
+      .filter((e) => e.type === "ajustement_demande")
+      .map((e) => e.created_at as string)
+      .sort()
+      .at(-1) ?? null;
 
   /* Les vignettes. Une URL signée par photo, en parallèle : sur 80 photos,
      en série, l'ouverture de la fiche prendrait plusieurs secondes. Une
@@ -749,7 +790,16 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
   }));
 
   return {
-    ligne: versLigne(rangee, maintenant, rembourse, false, new Map(), emailRebond),
+    ligne: versLigne(
+      rangee,
+      maintenant,
+      rembourse,
+      false,
+      new Map(),
+      emailRebond,
+      ajustementLe !== null,
+      ajustementLe,
+    ),
     parcours: construireParcours(rangee.etat, evenementsVus),
     occasion: (n.occasion as string) ?? null,
     histoire: (n.histoire as string) ?? null,
