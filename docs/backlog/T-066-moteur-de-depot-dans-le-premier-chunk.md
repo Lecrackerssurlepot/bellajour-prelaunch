@@ -44,3 +44,23 @@ Repérage fait pour la prochaine séance :
   re-vérifier quand même avec `/composer?reprendre=tronque123`.
 - Preuve attendue : la chaîne « Réponse incomplète » (`moteur.ts:486`) absente des scripts
   initiaux de composer.html, présente dans un chunk chargé au passage à l'écran 5.
+
+## 02/09 — fait (branche `chore/composer-depot-a-la-demande`)
+`next/dynamic` (`ssr: false`) sur `Screen5Depot`. **Piège découvert : il fallait AUSSI**
+`Screen6Fin`, importé statiquement, qui tire `useDepot` → `moteur`/`pool`/`stockage` par la porte
+de derrière (il s'y rabranche pour dire combien de photos montent encore). Tant qu'il restait
+statique, le moteur revenait dans le chunk initial et le découpage ne servait à rien — vérifié au
+build (moteur et Composer dans le même chunk), puis au runtime (chunk moteur chargé dès l'écran 1).
+Les DEUX écrans sont donc dynamiques ; l'écran 6 n'arrive qu'après le 5, leur moteur commun part
+dans un chunk chargé dès l'écran 5.
+
+Vérifié sur le build de PRODUCTION (`next start`) :
+- Écran 1 : les chunks du moteur ne sont **pas** chargés (performance API : absents).
+- Écran 5 (via `?reprendre=<token 32c>`) : le chunk moteur se charge à la demande, la zone de
+  dépôt s'affiche, l'intake fonctionne (appel `photos/presign` déclenché).
+- **Piège worker levé** : le chunk découpé référence le bon asset émis
+  (`static/media/reduire.worker.0lo5yya.2971f.js`) et cet asset est **servi en 200** — le
+  `new Worker(new URL(...))` survit au découpage.
+- **Piège reprise levé** : `?reprendre=tronque123` (mauvais format) affiche « Ce lien de reprise
+  est abîmé » sans charger le moteur ; un token bien formé saute à l'écran 5 et charge le chunk.
+- `tsc`, `lint`, `build` verts. **Ticket à fermer.**

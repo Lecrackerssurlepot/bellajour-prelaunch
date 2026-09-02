@@ -8,12 +8,51 @@
    jamais, même si la cliente revient en arrière puis ré-avance. */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import Screen1Occasion from './screens/Screen1Occasion'
 import Screen2Histoire from './screens/Screen2Histoire'
 import Screen3Titre from './screens/Screen3Titre'
 import Screen4Contact from './screens/Screen4Contact'
-import Screen5Depot from './screens/Screen5Depot'
-import Screen6Fin from './screens/Screen6Fin'
+
+/* T-066 — le sous-arbre du dépôt (moteur d'envoi, pool de workers, couche
+   IndexedDB, écran de dépôt) tire à lui seul 72 % de la source de la page. Il
+   n'est atteint qu'après quatre écrans remplis : on le charge à la demande
+   plutôt que de le faire descendre à qui ouvre le questionnaire pour cocher
+   « un mariage ».
+
+   DEUX écrans touchent le moteur : l'écran 5 (le dépôt) ET l'écran 6, qui s'y
+   rabranche pour dire combien de photos montent encore. Les DEUX doivent être
+   dynamiques — sinon l'écran 6, importé statiquement, retire le moteur du
+   chunk initial par la porte de derrière (`useDepot` → `moteur`/`pool`/
+   `stockage`) et le découpage ne sert à rien. L'écran 6 n'arrive qu'après le
+   5 : leur dépendance commune (le moteur) part dans un chunk chargé dès
+   l'écran 5, donc déjà là au 6.
+
+   `ssr: false` : purement client (workers, IndexedDB), rien n'a jamais été
+   rendu au serveur. Le repli est discret et dans le ton — le chunk arrive
+   largement pendant qu'on remplit les quatre écrans, et tient aussi le cas
+   `?reprendre=` qui saute directement à l'écran 5. */
+const Screen5Depot = dynamic(() => import('./screens/Screen5Depot'), {
+  ssr: false,
+  loading: () => (
+    <>
+      <p className="at-kicker">Vos photos</p>
+      <h2>On prépare votre dépôt…</h2>
+      <p className="at-lede at-q-lede" aria-live="polite">Un instant.</p>
+    </>
+  ),
+})
+
+const Screen6Fin = dynamic(() => import('./screens/Screen6Fin'), {
+  ssr: false,
+  loading: () => (
+    <>
+      <div className="at-done" aria-hidden="true">✓</div>
+      <p className="at-kicker">C’est fait</p>
+      <h2>Un instant…</h2>
+    </>
+  ),
+})
 import { EMPTY_DRAFT, loadDraft, saveDraft, type Draft } from './draft'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import {

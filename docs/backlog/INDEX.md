@@ -91,7 +91,7 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-063 | 62 % de la feuille servie sur tout le site vise des pages archivées | front | confort | libre | en cours — dead code retiré (30/08) ; restent 2 règles globales, `/magazine` déjà protégé (audit 01/09) |
 | T-064 | Trente déclarations de police jamais peintes bloquent le rendu de chaque page | front | confort | libre | nouveau — constat re-vérifié le 31/08, correctif non commencé |
 | T-065 | Aucune image du site n'a de variante pour téléphone | front | serieux | libre | **fermé** |
-| T-066 | Ouvrir le questionnaire télécharge tout le moteur d'envoi de photos | front | serieux | libre | nouveau — repéré le 31/08 (pièges notés), découpage non commencé |
+| T-066 | Ouvrir le questionnaire télécharge tout le moteur d'envoi de photos | front | serieux | libre | **à fermer** — fait le 02/09 : écrans 5 ET 6 en `next/dynamic` (l'écran 6 tirait aussi le moteur), moteur absent du chunk initial, worker servi en 200, reprise OK. Vérifié sur build prod. tsc+lint+build verts |
 | T-067 | Une page indexable vend encore un programme qu'on n'honore plus | produit | serieux | avis-requis | nouveau |
 | T-068 | Le site déclare deux fiches produit concurrentes pour un seul produit | front | serieux | libre | **fermé** (le reste → T-085) |
 | T-069 | L'image de partage promet un album, et peut casser le déploiement entier | front | serieux | avis-requis | en cours — le `throw` qui cassait le build est retiré (repli, 01/09) ; **reste le visuel** (avec le chantier visuels) + rendre son image à `/ambassadeurs` |
