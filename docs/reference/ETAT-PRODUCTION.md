@@ -100,19 +100,20 @@ bellajour.fr peut servir l'ancienne version plusieurs minutes.
 
 ## Mails Brevo — identifiants réels
 
-L'atelier compte **treize** codes de mail (`CodeMail`, `src/lib/atelier/mails.ts`) — recomptés
-le 01/09, la doc en annonçait douze avant M10 :
+L'atelier compte **quatorze** codes de mail (`CodeMail`, `src/lib/atelier/mails.ts`) —
+recomptés le 03/09 dans le code, M7b venant de s'ajouter :
 
 | | |
 |---|---|
-| Douze avec un identifiant Brevo | M0=38 · M1=27 · M2=30 · M2b=37 · M3=28 · M3b=31 · M4=29 · M5=32 · M6=33 · M7=34 · M8=35 · M9=36 |
+| Treize avec un identifiant Brevo | M0=38 · M1=27 · M2=30 · M2b=37 · M3=28 · M3b=31 · M4=29 · M5=32 · M6=33 · M7=34 · **M7b=41** · M8=35 · M9=36 |
 | **Un sans identifiant** | **M10** — le préavis de fermeture (T-076). Le template n'a **jamais été poussé** chez Brevo et `BREVO_TEMPLATE_M10_ID` n'existe nulle part. |
 
 Prévente : F1=17 · S1=18 · P3=19 · A1=20 · A2=21 · A3=22 · Relance=23 · W1=5 · P1=10 · P2=11.
 
 Le texte est versionné dans `scripts/mails-atelier.mjs`, pas dans l'interface Brevo.
-`--pousser` réécrit les **onze** templates que porte le tableau `MAILS` du script
-(M0, M2, M2b, M3, M3b, M5, M6, M7, M8, M9, **M10**) ; borner avec `--seulement <CODE>`.
+`--pousser` réécrit les **douze** templates que porte le tableau `MAILS` du script
+(M0, M2, M2b, M3, M3b, M5, M6, M7, **M7b**, M8, M9, **M10**) ; borner avec
+`--seulement <CODE>`.
 ⚠️ **M1 et M4 ne sont PAS dans ce script** et ne sont donc jamais réécrits par `--pousser` :
 leur maquette se met à jour par le simple déploiement des images qu'elle référence. C'est la
 raison pour laquelle « les dix templates » et « les douze mails » ne se recoupaient pas — deux
@@ -209,13 +210,13 @@ l'ignore complètement (T-005). Elle n'ouvre plus rien.
 
 ## ✅ Le PDF souvenir et la livraison automatique — EN PRODUCTION depuis le 03/09/2026
 
-PR #39, mergée et déployée le 03/09 à 12h46 UTC. Trois choses arrivent ensemble :
-le signal Cloudprinter `ItemDeliveryCompleted` passe le dossier en « livrée » tout seul
-(le geste manuel « Marquer livrée » reste en repli) ; un mail **M7b « votre magazine est
-arrivé »** part à ce moment-là ; il porte le lien du **PDF souvenir** — les PDF d'impression
-fusionnés en un fichier feuilletable (1re de couv + bloc + 4e découpées de la feuille
-enveloppante, rognées au format fini, CMJN gardé tel quel, poids d'impression affiché
-avant le clic).
+PR #39, mergée et déployée le 03/09 à 12h46 UTC, puis **#41 et #42 le même jour** (voir
+« Les deux correctifs » plus bas). Trois choses arrivent ensemble : le signal Cloudprinter
+`ItemDeliveryCompleted` passe le dossier en « livrée » tout seul (le geste manuel
+« Marquer livrée » reste en repli) ; un mail **M7b « votre magazine est arrivé »** part à ce
+moment-là ; son bouton mène à `/numero/<token>`, où la cliente télécharge le **PDF
+souvenir** — les PDF d'impression fusionnés en un fichier feuilletable (1re de couv + bloc +
+4e découpées de la feuille enveloppante, rognées au format fini, CMJN gardé tel quel).
 
 **Ce qui est PROUVÉ, sur la base de production (dossier de test « test PDF souvenir 03-09 ») :**
 - fusion déclenchée par le bouton de la fiche admin : **34 pages, toutes au format fini
@@ -243,13 +244,35 @@ avant le clic).
    d'idempotence a joué (le dossier était déjà livré). Si les deux clés avaient divergé, le
    webhook aurait répondu 404 **en silence** et aucune livraison n'aurait jamais basculé.
 
-⚠️ **Le dossier de test « test PDF souvenir 03-09 » est encore en base**, en état livrée,
-avec son PDF au coffre. Il est inerte (verrou M7b posé), mais il apparaît dans la table de
-travail. À supprimer une fois la recette close.
+✅ **Le dossier de test « test PDF souvenir 03-09 » a été SUPPRIMÉ le 03/09**, recette close :
+ses 3 objets R2 d'abord (souvenir + les 2 PDF d'impression, absence vérifiée après coup),
+puis ses lignes (2 mails, 26 événements, le dossier). La base est revenue à ses 6 dossiers
+réels — 4 en `photos_recues`, 2 en `apercu_pret`. **Aucun dossier n'est donc en état livrée
+aujourd'hui** : la prochaine preuve de bout en bout viendra d'un vrai colis.
+
+## Les deux correctifs du 03/09, après la mise en ligne
+
+**PR #41 — le mail atterrissait sur un onglet blanc.** Le bouton pointait le fichier
+directement : il téléchargeait bien, mais ne rendait AUCUNE page (`Content-Disposition:
+attachment`). La cliente se retrouvait devant un onglet vide. Le bouton mène désormais à
+`/numero/<token>`, ce que la doctrine disait déjà — « le mail fait le clic, la page fait le
+spectacle ». Une assertion du harnais monte la garde sur la régression exacte : aucun lien
+direct vers `/api/atelier/souvenir` dans le mail.
+
+**PR #42 — l'état livrée répétait la vente.** Deux CTA pleins identiques l'un sous l'autre,
+et le magazine offert perdait la vedette. La relance (« Et le prochain moment ? ») est passée
+en pied de page, derrière un filet, avec un bouton cuivre cerné ; le téléchargement du
+magazine est le seul geste plein de la page. Le **poids du fichier n'est plus montré à la
+cliente** (décision de Mathias : contrainte technique à l'instant d'offrir un cadeau) — il
+reste lisible côté atelier, sur la fiche. Et « Gardez ce lien » disparaît **à l'état livrée
+seulement** : ailleurs, ce lien est la seule porte du dossier (ni compte ni mot de passe,
+PRD §7.5) et une cliente qui perd son mail perdrait son numéro.
 
 ⚠️ **Ce qui n'est PAS fait, et c'est assumé** : aucune conversion CMJN → RVB, aucune
-recompression. Le souvenir pèse le poids du fichier d'impression, et ce poids est annoncé
-au client avant le clic. Une version allégée demande le moteur de rendu de **T-078**.
+recompression. Le souvenir pèse le poids du fichier d'impression — plutôt 150 à 200 Mo qu'une
+dizaine — et depuis la #42 ce poids n'est **plus annoncé à la cliente**, seulement à l'atelier.
+Si un téléchargement interminable est signalé un jour, c'est là qu'il faut regarder. Une
+version allégée demande le moteur de rendu de **T-078**.
 
 ## ⚠️ L'atelier n'est pas encore en fonctionnement (30/08/2026, tenu au 01/09)
 
