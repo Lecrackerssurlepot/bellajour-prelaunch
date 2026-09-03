@@ -161,12 +161,19 @@ export async function POST(request: Request) {
       .select("id, token")
       .single();
 
-    /* T-044 — repli 42703, comme partout (donnees.ts, paiement.ts, mails.ts) :
-       entre le déploiement du code et le passage de la migration, la colonne
-       manque et l'insert ENTIER échoue. On réessaie sans elles — le dossier
-       vaut infiniment plus que deux mentions facultatives — et le journal
-       ci-dessous les garde quand même. */
-    if (insertion.error?.code === "42703" && Object.keys(colonnesCouverture).length > 0) {
+    /* Repli « colonne inconnue », comme partout (donnees.ts, paiement.ts,
+       mails.ts) : entre le déploiement du code et le passage de la migration,
+       la colonne manque et l'insert ENTIER échoue. On réessaie sans elles —
+       le dossier vaut infiniment plus que deux mentions facultatives — et le
+       journal ci-dessous les garde quand même.
+       ⚠️ DEUX CODES, PAS UN. PostgREST répond 42703 quand on LIT une colonne
+       inconnue, mais PGRST204 (« Could not find the column in the schema
+       cache ») quand on l'ÉCRIT. Prouvé en production le 03/09 sur ce dossier
+       même : le repli borné à 42703 laissait le 500 passer. Tout repli
+       d'ÉCRITURE doit attraper les deux. */
+    const colonneInconnue =
+      insertion.error?.code === "42703" || insertion.error?.code === "PGRST204";
+    if (colonneInconnue && Object.keys(colonnesCouverture).length > 0) {
       console.error(
         "[atelier/numero] ⚠️ REPLI 42703 : sous_titre/mot_quatrieme absentes en base, les mots de couverture ne sont PAS en colonne (le journal les garde). Appliquer supabase/migrations/20260903_composer_mots_couverture.sql.",
       );

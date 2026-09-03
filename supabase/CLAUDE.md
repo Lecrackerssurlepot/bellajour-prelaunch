@@ -27,10 +27,14 @@ Si une doc ou un prototype les cite, c'est une invention à corriger.
 Je n'applique JAMAIS une migration en production sans son accord explicite dans la conversation.
 
 Conséquence directe, et c'est la plus importante de ce fichier :
-**tout code qui lit ou écrit une colonne fraîche DOIT prévoir le repli sur l'erreur PostgreSQL
-`42703` (colonne inconnue)** — un second select, ou un update sans la colonne. Sinon, pendant la
+**tout code qui lit ou écrit une colonne fraîche DOIT prévoir le repli sur l'erreur « colonne
+inconnue »** — un second select, ou un insert/update sans la colonne. Sinon, pendant la
 fenêtre entre le déploiement du code et l'application de la migration, la fonctionnalité tombe.
 Ce repli existe déjà dans `donnees.ts`, le webhook Cloudprinter et la route de transition.
+⚠️ **Le code d'erreur n'est pas le même en lecture et en écriture** (prouvé en prod le
+03/09/2026) : un SELECT d'une colonne inconnue rend `42703`, mais un INSERT/UPDATE qui la
+nomme rend **`PGRST204`** (« Could not find the column in the schema cache »). Un repli
+d'écriture borné à `42703` ne se déclenche jamais — attraper LES DEUX.
 
 ⚠️ **Le repli a un revers, et il a déjà mordu** : il fait DISPARAÎTRE le champ du patch en silence.
 Une colonne jamais migrée donne un code qui « marche » et une donnée qui n'est jamais enregistrée.
@@ -39,6 +43,7 @@ Après toute migration, vérifier que la donnée arrive vraiment — pas seuleme
 ## État connu
 
 19 fichiers sur disque, 16 dans l'historique appliqué. `20260901_atelier_retention.sql`
-(colonne `numeros.anonymise_le`, T-076) est écrite mais **pas encore appliquée**. Trois anciennes (`20260528_*`,
+(colonne `numeros.anonymise_le`, T-076) a été **appliquée le 02/09/2026** (colonne présente, vérifiée).
+Trois anciennes (`20260528_*`,
 `20260704_notion_synced`) sont absentes de l'historique mais leurs colonnes existent : appliquées
 hors CLI. Le détail à jour, avec ce qui manque, est dans `docs/reference/ETAT-PRODUCTION.md`.
