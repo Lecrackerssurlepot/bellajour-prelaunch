@@ -254,6 +254,7 @@ export default async function NumeroPage({
     <Coquille titre={titre} avancement={attendPhotos || aTerminer ? 0 : AVANCEMENT[numero.etat] ?? 0}
       camp={camp}
       montrerCamp={numero.etat !== 'apercu_pret'}
+      montrerGardeLien={numero.etat !== 'livree'}
       token={numero.token}>
       {numero.etat === 'photos_recues' && depot === 'termine' && (
         <>
@@ -490,32 +491,35 @@ export default async function NumeroPage({
                spectacle — la doctrine de mails-atelier.mjs.
 
                Le lien passe par la route qui re-signe au clic, jamais une URL
-               R2 : elle serait morte à la réouverture. Le poids est annoncé —
-               c'est le fichier d'impression, lourd, et un téléphone en 4G doit
-               le savoir avant de lancer le téléchargement. */
+               R2 : elle serait morte à la réouverture. Le poids du fichier
+               n'est PLUS annoncé ici (décision de Mathias, 03/09) : la phrase
+               parlait de contrainte technique au moment d'offrir un cadeau. */
             <>
               <p className="nu-mot">{titre} est chez vous.</p>
               <p className="nu-sub">
-                Il existe aussi en numérique : le même magazine, en PDF, à
-                garder et à faire suivre.
-                {numero.souvenir_pdf_octets
-                  ? ` Le fichier pèse ${Math.max(1, Math.round(numero.souvenir_pdf_octets / (1024 * 1024)))} Mo : le wifi lui va mieux.`
-                  : ''}
+                Il existe aussi en numérique ! Vous pouvez le télécharger en
+                cliquant sur le bouton ci-dessous.
               </p>
-              <div className="nu-actions nu-actions--suivi-dun-bloc">
+              <div className="nu-actions">
                 <a className="at-cta" href={`/api/atelier/souvenir?token=${numero.token}`}>
                   Télécharger mon magazine en PDF
                 </a>
               </div>
             </>
           )}
-          <p className="nu-mot">Et le prochain moment ?</p>
-          <p className="nu-sub">
-            {numero.souvenir_pdf_key ? '' : `${titre} est chez vous. `}
-            Un numéro par moment : la collection commence au deuxième.
-          </p>
-          <div className="nu-actions">
-            <a className="at-cta" href={COMPOSER_HREF}>
+          {/* La relance, en PIED DE PAGE et non en second bouton (03/09).
+              Deux CTA pleins identiques l'un sous l'autre se lisaient comme
+              une répétition, et le magazine offert perdait la vedette au
+              profit de la vente. Ici : un filet séparateur, un ton plus bas,
+              et un bouton d'une autre couleur — celui du magazine reste le
+              seul geste plein de la page. */}
+          <div className="nu-relance">
+            <p className="nu-relance-mot">Et le prochain moment ?</p>
+            <p className="nu-relance-sub">
+              {numero.souvenir_pdf_key ? '' : `${titre} est chez vous. `}
+              Un numéro par moment : la collection commence au deuxième.
+            </p>
+            <a className="nu-cta-second" href={COMPOSER_HREF}>
               {CTA_LABEL} <span className="at-cta-arrow">→</span>
             </a>
           </div>
@@ -532,6 +536,7 @@ function Coquille({
   avancement,
   camp,
   montrerCamp = true,
+  montrerGardeLien = true,
   token,
   children,
 }: {
@@ -544,6 +549,13 @@ function Coquille({
      sur la page qui vend (apercu_pret), il double le titre « Votre couverture »
      et sonne comme un slogan. La page le masque là (02/09). */
   montrerCamp?: boolean
+  /* Le rappel « gardez ce lien » n'a de sens que TANT QUE le lien sert : il
+     est la seule porte du dossier, sans compte ni mot de passe (PRD §7.5).
+     À l'état livrée le parcours est fini, plus rien ne se joue derrière ce
+     lien, et la consigne devient du bruit. Masqué LÀ SEULEMENT (03/09,
+     décision de Mathias) : sur les états d'attente, une cliente qui perd le
+     mail perd son dossier, et c'est cette phrase qui l'en empêche. */
+  montrerGardeLien?: boolean
   token: string
   children: React.ReactNode
 }) {
@@ -582,11 +594,13 @@ function Coquille({
             qui peut tomber en Promotions.
             T2-12 : l'URL en toutes lettres ne donnait aucun geste à faire —
             deux boutons le donnent, l'URL n'apparaît plus en clair. */}
-        <p className="nu-garde">
-          <b>Gardez ce lien.</b> C’est le seul, il suit votre numéro jusqu’à la livraison, et
-          il ne demande ni compte ni mot de passe.
-          <LienPartage url={`${SITE_URL_PUBLIC}/numero/${token}`} />
-        </p>
+        {montrerGardeLien && (
+          <p className="nu-garde">
+            <b>Gardez ce lien.</b> C’est le seul, il suit votre numéro jusqu’à la livraison, et
+            il ne demande ni compte ni mot de passe.
+            <LienPartage url={`${SITE_URL_PUBLIC}/numero/${token}`} />
+          </p>
+        )}
       </main>
 
       <Footer />
