@@ -482,27 +482,38 @@ export default async function NumeroPage({
 
       {numero.etat === 'livree' && (
         <>
+          {numero.souvenir_pdf_key && (
+            /* Le magazine numérique (03/09). C'est ICI que M7b atterrit : le
+               mail n'envoie plus sur le fichier lui-même, qui se téléchargeait
+               en laissant un onglet BLANC (Content-Disposition: attachment ne
+               rend aucune page). Le mail fait le clic, la page fait le
+               spectacle — la doctrine de mails-atelier.mjs.
+
+               Le lien passe par la route qui re-signe au clic, jamais une URL
+               R2 : elle serait morte à la réouverture. Le poids est annoncé —
+               c'est le fichier d'impression, lourd, et un téléphone en 4G doit
+               le savoir avant de lancer le téléchargement. */
+            <>
+              <p className="nu-mot">{titre} est chez vous.</p>
+              <p className="nu-sub">
+                Il existe aussi en numérique : le même magazine, en PDF, à
+                garder et à faire suivre.
+                {numero.souvenir_pdf_octets
+                  ? ` Le fichier pèse ${Math.max(1, Math.round(numero.souvenir_pdf_octets / (1024 * 1024)))} Mo : le wifi lui va mieux.`
+                  : ''}
+              </p>
+              <div className="nu-actions nu-actions--suivi-dun-bloc">
+                <a className="at-cta" href={`/api/atelier/souvenir?token=${numero.token}`}>
+                  Télécharger mon magazine en PDF
+                </a>
+              </div>
+            </>
+          )}
           <p className="nu-mot">Et le prochain moment ?</p>
           <p className="nu-sub">
-            {titre} est chez vous. Un numéro par moment : la collection commence
-            au deuxième.
+            {numero.souvenir_pdf_key ? '' : `${titre} est chez vous. `}
+            Un numéro par moment : la collection commence au deuxième.
           </p>
-          {numero.souvenir_pdf_key && (
-            /* Le magazine numérique (03/09). Le lien passe par la route qui
-               re-signe au clic — jamais une URL R2, elle serait morte à la
-               réouverture. Le poids est annoncé : c'est le fichier
-               d'impression, lourd, et un téléphone en 4G doit le savoir. */
-            <p className="nu-sub">
-              Il existe aussi en numérique, pour toujours :{' '}
-              <a className="nu-lien" href={`/api/atelier/souvenir?token=${numero.token}`}>
-                télécharger {titre} en PDF
-              </a>
-              {numero.souvenir_pdf_octets
-                ? ` (${Math.max(1, Math.round(numero.souvenir_pdf_octets / (1024 * 1024)))} Mo, mieux en wifi)`
-                : ''}
-              .
-            </p>
-          )}
           <div className="nu-actions">
             <a className="at-cta" href={COMPOSER_HREF}>
               {CTA_LABEL} <span className="at-cta-arrow">→</span>

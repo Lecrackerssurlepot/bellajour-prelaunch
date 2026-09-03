@@ -473,9 +473,12 @@ export const MAILS = [
     /* M7b — la livraison, avec le magazine numérique (03/09). Part quand le
        colis est chez le client (signal Cloudprinter ItemDeliveryCompleted,
        ou le geste manuel de l'atelier). Le CTA est le téléchargement
-       lui-même : LIEN_PDF est la route stable /api/atelier/souvenir, qui
-       re-signe au clic. JAMAIS une URL R2 signée dans un mail : elle serait
-       morte à la réouverture. */
+       ⚠️ Le bouton envoie sur LIEN, la PAGE du numéro, et pas sur le fichier.
+       Pointer le PDF directement téléchargeait bien, mais laissait la cliente
+       sur un onglet BLANC : une réponse en pièce jointe ne rend aucune page.
+       Constaté en production le 03/09. La page porte le même bouton, le poids
+       du fichier, et le reste de son numéro. « Le mail fait le clic, la page
+       fait le spectacle. » */
     code: "M7b",
     nom: "M7b · Atelier · Votre magazine est arrivé",
     sujet: `${TITRE} est chez vous`,
@@ -483,8 +486,8 @@ export const MAILS = [
     titreHtml: "Votre magazine est arrivé",
     h1: "Votre magazine<br />est arrivé.",
     sous: `${PRENOM}, ${TITRE} est chez vous, et nous espérons qu’il trouve sa place. Il existe aussi en numérique : le même magazine, en PDF, que vous pouvez télécharger directement.`,
-    cta: "Télécharger mon magazine en PDF",
-    lien: "{{ params.LIEN_PDF }}",
+    cta: "Récupérer mon magazine en PDF",
+    lien: LIEN,
     /* Pas de pied, décision de Mathias (03/09) : le bouton se suffit. Le poids
        du fichier est annoncé sur la page du numéro, là où il sert vraiment. */
   },
@@ -676,8 +679,6 @@ async function main() {
        du questionnaire abandonné se lit en vidant cette valeur. */
     COUVERTURE_PRETE: "oui",
     LIEN: "https://www.bellajour.fr/numero/apercu",
-    /* M7b : la route stable de téléchargement du PDF souvenir. */
-    LIEN_PDF: "https://www.bellajour.fr/api/atelier/souvenir?token=apercu",
   };
   const remplir = (html) =>
     html.replace(/\{\{\s*params\.([A-Z_]+)\s*\}\}/g, (t, cle) => EXEMPLE[cle] ?? t);

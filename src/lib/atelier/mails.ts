@@ -398,14 +398,14 @@ export function parametresPour(
 
   if (code === "M7b") {
     /* Ni pagination ni prix : le magazine est payé et entre ses mains, ce
-       mail OFFRE, il ne vend rien. Le lien du PDF est la ROUTE stable,
-       jamais une URL R2 signée : une signature expire en heures, et un mail
-       se rouvre des mois plus tard. La route re-signe à chaque clic (même
-       motif que M3 qui n'embarque pas l'aperçu réel). */
-    return {
-      ...communs,
-      LIEN_PDF: `${SITE_URL}/api/atelier/souvenir?token=${n.token}`,
-    };
+       mail OFFRE, il ne vend rien. Les trois communs suffisent.
+
+       ⚠️ Le bouton envoie sur LIEN (la page du numéro), PAS sur le fichier.
+       Pointer le PDF directement téléchargeait bien, mais laissait la
+       cliente sur un ONGLET BLANC : une réponse en pièce jointe ne rend
+       aucune page. Constaté en production le 03/09. La page porte le même
+       bouton, le poids du fichier, et le reste de son numéro. */
+    return communs;
   }
 
   return { ...communs, ...achat };

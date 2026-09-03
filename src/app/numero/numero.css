@@ -135,6 +135,13 @@
 
 .nu-actions { margin-top: clamp(30px, 6vw, 44px); }
 
+/* L'état « livrée » est le SEUL à porter deux actions de suite (télécharger
+   son magazine, puis composer le prochain). Sans cette respiration, le
+   bouton du PDF colle au titre de la section suivante et les deux blocs se
+   lisent comme un seul. Modificateur plutôt que règle générale : partout
+   ailleurs, `nu-actions` ferme la page et n'a rien sous lui. */
+.nu-actions--suivi-dun-bloc { margin-bottom: clamp(38px, 7vw, 56px); }
+
 /* ---- encart secondaire (suivi, adresse, rappel) ---- */
 .nu-carte {
   margin-top: clamp(28px, 5vw, 40px);
