@@ -135,12 +135,56 @@
 
 .nu-actions { margin-top: clamp(30px, 6vw, 44px); }
 
-/* L'état « livrée » est le SEUL à porter deux actions de suite (télécharger
-   son magazine, puis composer le prochain). Sans cette respiration, le
-   bouton du PDF colle au titre de la section suivante et les deux blocs se
-   lisent comme un seul. Modificateur plutôt que règle générale : partout
-   ailleurs, `nu-actions` ferme la page et n'a rien sous lui. */
-.nu-actions--suivi-dun-bloc { margin-bottom: clamp(38px, 7vw, 56px); }
+/* ── La relance, en pied de page (état livrée) ──────────────────────────
+   03/09 : deux CTA pleins identiques l'un sous l'autre se lisaient comme
+   une répétition, et le magazine offert perdait la vedette au profit de la
+   vente. La relance descend donc au rang d'un pied de page — même patron
+   que `.nu-garde` : un filet, un ton plus bas, des tailles réduites.
+   Le bouton du magazine reste le SEUL geste plein de la page. */
+.nu-relance {
+  margin-top: clamp(48px, 9vw, 84px);
+  padding-top: clamp(24px, 4.5vw, 32px);
+  border-top: 1px solid var(--c-line);
+  max-width: 56ch;
+}
+.nu-relance-mot {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 3.6vw, 26px);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--c-text-soft);
+}
+.nu-relance-sub {
+  margin-top: 10px;
+  font-size: clamp(14px, 3.4vw, 15px);
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+
+/* Le second geste : cuivre et cerné, jamais plein. La couleur le distingue
+   du bouton du magazine, et le contour dit « c'est une proposition », pas
+   « c'est l'action de cette page ». Scopé `.bj-atelier` comme `.nu-lien` :
+   les tokens `--c-*` n'existent que sous ce conteneur. */
+.bj-atelier .nu-cta-second {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: clamp(18px, 3.5vw, 24px);
+  padding: 13px 24px;
+  border: 1px solid var(--c-accent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--c-accent);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.bj-atelier .nu-cta-second:hover {
+  background: var(--c-accent-soft);
+  color: var(--c-accent-strong);
+}
 
 /* ---- encart secondaire (suivi, adresse, rappel) ---- */
 .nu-carte {
