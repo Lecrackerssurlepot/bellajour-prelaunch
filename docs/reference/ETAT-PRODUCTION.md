@@ -24,7 +24,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 | Stripe | branché | prévente depuis juin, atelier depuis le 24/08 |
 | Prévente (`/preventes`, `/lancement`) | retirées, 307 vers `/` | 28/08/2026 |
 | Rebonds Brevo (`/api/brevo/webhook`) | **actif**, webhook Brevo id 2158565 | prouvé le 29/08/2026 à 10:14 |
-| PDF souvenir + mail M7b à la livraison | en ligne ; ⚠️ abonnement Cloudprinter au signal non vérifié | 03/09/2026 (PR #39) |
+| PDF souvenir + mail M7b à la livraison | en ligne, chaîne complète vérifiée | 03/09/2026 (PR #39) |
 
 Quatorze fondateurs ont des droits ouverts sous les CGV v2.5, maintenus en régime transitoire.
 
@@ -235,11 +235,13 @@ avant le clic).
    `souvenir_pdf_octets`) **appliquée le 03/09**, colonnes vérifiées en base ;
 2. template Brevo M7b poussé (id **41**) et `BREVO_TEMPLATE_M7B_ID=41` posée sur Vercel
    Preview + Production le 03/09 ;
-3. ⚠️ **abonnement Cloudprinter au signal `ItemDeliveryCompleted` : NON VÉRIFIÉ.** C'est le
-   seul maillon qui n'a jamais été contrôlé — il vit dans leur dashboard. Sans lui, tout
-   fonctionne mais **la livraison reste un geste manuel** : il faut cliquer « Marquer
-   livrée » pour que M7b parte. La liste d'abonnement relevée le 26/08 l'incluait, sans
-   confirmation depuis.
+3. ✅ **abonnement Cloudprinter au signal `ItemDeliveryCompleted` : VÉRIFIÉ le 03/09.**
+   Webhook nº 5255, endpoint `www.bellajour.fr/api/cloudprinter/webhook`, les douze signaux
+   cochés dont `ItemDeliveryCompleted`. Et la clé a été éprouvée de bout en bout : un signal
+   réel posté sur la PRODUCTION a répondu `{"received":true,"ignored":true}` — donc la clé
+   du dashboard et `CLOUDPRINTER_WEBHOOK_KEY` sur Vercel sont bien la même, et la garde
+   d'idempotence a joué (le dossier était déjà livré). Si les deux clés avaient divergé, le
+   webhook aurait répondu 404 **en silence** et aucune livraison n'aurait jamais basculé.
 
 ⚠️ **Le dossier de test « test PDF souvenir 03-09 » est encore en base**, en état livrée,
 avec son PDF au coffre. Il est inerte (verrou M7b posé), mais il apparaît dans la table de
