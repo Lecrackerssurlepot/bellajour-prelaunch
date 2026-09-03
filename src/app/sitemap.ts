@@ -1,4 +1,9 @@
 import type { MetadataRoute } from 'next'
+import { legalLanguages } from './legal/resolve'
+import { CGV } from './legal/content/cgv'
+import { CONFIDENTIALITE } from './legal/content/confidentialite'
+import { MENTIONS_LEGALES } from './legal/content/mentions-legales'
+import { REMBOURSEMENT } from './legal/content/remboursement'
 
 /* Le plan du site, refait à la bascule du 24/08/2026.
  *
@@ -41,20 +46,28 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.9,
     },
+    /* T-083 — chaque page legale existe en fr, en et pt, sur des adresses
+       distinctes (`/cgv`, `/en/cgv`, `/pt/cgv`). On declare la famille par
+       `alternates.languages` (hreflang, x-default sur le francais) : la version
+       portugaise, qui fait foi, devient indexable et rattachee aux autres. Une
+       seule entree par document, l'URL francaise en tete. */
     {
       url: 'https://www.bellajour.fr/cgv',
       changeFrequency: 'yearly',
       priority: 0.3,
+      alternates: { languages: legalLanguages('cgv', CGV) },
     },
     {
       url: 'https://www.bellajour.fr/confidentialite',
       changeFrequency: 'yearly',
       priority: 0.3,
+      alternates: { languages: legalLanguages('confidentialite', CONFIDENTIALITE) },
     },
     {
       url: 'https://www.bellajour.fr/mentions-legales',
       changeFrequency: 'yearly',
       priority: 0.2,
+      alternates: { languages: legalLanguages('mentions-legales', MENTIONS_LEGALES) },
     },
     /* La quatrieme page legale. Elle repond 200, elle est indexable, elle a
        son canonical et elle est liee depuis le pied de page de l'accueil :
@@ -63,6 +76,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: 'https://www.bellajour.fr/remboursement',
       changeFrequency: 'yearly',
       priority: 0.2,
+      alternates: { languages: legalLanguages('remboursement', REMBOURSEMENT) },
     },
   ]
 }

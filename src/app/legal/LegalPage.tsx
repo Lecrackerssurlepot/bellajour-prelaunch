@@ -4,6 +4,7 @@ import {
   LOCALE_LABEL,
   type Block,
   type Para,
+  type Locale,
   type LocalizedDoc,
 } from './types'
 import { pickLang, pickRef, resolveDoc, legalHref, backHref } from './resolve'
@@ -22,10 +23,14 @@ interface LegalPageProps {
   slug: string
   doc: LocalizedDoc
   params: RawParams
+  /* T-083 — imposé par les routes par langue (`/en/cgv`, `/pt/cgv`) : la
+     langue vient alors de l'ADRESSE, pas de `?lang=`. Absent sur `/cgv`
+     (français), où `?lang=` sert encore de repli avant la redirection. */
+  forceLang?: Locale
 }
 
-export default function LegalPage({ slug, doc, params }: LegalPageProps) {
-  const requested = pickLang(params)
+export default function LegalPage({ slug, doc, params, forceLang }: LegalPageProps) {
+  const requested = forceLang ?? pickLang(params)
   const ref = pickRef(params)
   const { doc: content, lang } = resolveDoc(doc, requested)
 

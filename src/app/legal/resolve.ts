@@ -1,5 +1,8 @@
+import type { Metadata } from 'next'
 import { isValidRefCode } from '@/lib/validation'
 import { LOCALES, type Locale, type LegalDoc, type LocalizedDoc } from './types'
+
+const SITE = 'https://www.bellajour.fr'
 
 /* Helpers SERVEUR pour les pages légales. searchParams (Next 16) fournit lang ET
    ref → on construit les liens (retour, sélecteur de langue) côté serveur, en
@@ -30,13 +33,48 @@ export function resolveDoc(doc: LocalizedDoc, lang: Locale): { doc: LegalDoc; la
   return available ? { doc: available, lang } : { doc: doc.fr, lang: 'fr' }
 }
 
-/* Lien vers une route légale avec lang + ref préservés (params vides omis). */
+/* T-083 — chaque langue a son ADRESSE, plus un paramètre de requête.
+   Le français vit sur `/cgv` (racine, canonical du site) ; l'anglais et le
+   portugais sur `/en/cgv` et `/pt/cgv`. Un moteur voit alors trois pages
+   distinctes au lieu d'une seule à trois `?lang=` — et la version portugaise,
+   qui fait foi en cas de litige, devient enfin indexable. */
+export function legalPath(slug: string, lang: Locale): string {
+  return lang === 'fr' ? `/${slug}` : `/${lang}/${slug}`
+}
+
+/* Lien vers une route légale, chemin par langue, `ref` préservé s'il existe. */
 export function legalHref(slug: string, lang?: Locale | null, ref?: string | null): string {
-  const qs = new URLSearchParams()
-  if (lang && lang !== 'fr') qs.set('lang', lang)
-  if (ref) qs.set('ref', ref)
-  const q = qs.toString()
-  return q ? `/${slug}?${q}` : `/${slug}`
+  const path = legalPath(slug, lang ?? 'fr')
+  return ref ? `${path}?ref=${encodeURIComponent(ref)}` : path
+}
+
+/* Les alternates d'une page légale : le canonical pointe sur ELLE-MÊME (la
+   langue servie), et `languages` déclare les trois versions les unes aux autres
+   (hreflang), avec `x-default` sur le français. On ne liste QUE les langues qui
+   existent pour ce document — un hreflang vers une page absente est une erreur
+   que Search Console signale. */
+export function legalLanguages(slug: string, doc: LocalizedDoc): Record<string, string> {
+  const languages: Record<string, string> = {}
+  for (const loc of LOCALES) {
+    if (doc[loc]) languages[loc] = SITE + legalPath(slug, loc)
+  }
+  languages['x-default'] = SITE + legalPath(slug, 'fr')
+  return languages
+}
+
+export function legalAlternates(slug: string, servedLang: Locale, doc: LocalizedDoc): Metadata['alternates'] {
+  return { canonical: SITE + legalPath(slug, servedLang), languages: legalLanguages(slug, doc) }
+}
+
+/* Métadonnées d'une route légale par langue (EN/PT). Le titre vient du contenu
+   déjà traduit (jamais réécrit ici, T-083 ne touche aucun texte légal) ; les
+   alternates rattachent la page à sa famille. */
+export function legalRouteMetadata(slug: string, lang: Locale, doc: LocalizedDoc): Metadata {
+  const d = doc[lang] ?? doc.fr
+  return {
+    title: `${d.title} — Bellajour`,
+    alternates: legalAlternates(slug, lang, doc),
+  }
 }
 
 /* Lien « retour » : l'accueil, toujours.
