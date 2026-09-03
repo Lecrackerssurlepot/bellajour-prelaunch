@@ -83,6 +83,10 @@ type Numero = {
   consent_communication: boolean | null
   /* T2-11 — hosted_invoice_url de Stripe, capté au webhook (best-effort). */
   facture_url: string | null
+  /* Le magazine numérique (03/09) : clé R2 du PDF souvenir, et son poids —
+     affiché avant le clic, le fichier garde le poids d'impression. */
+  souvenir_pdf_key: string | null
+  souvenir_pdf_octets: number | null
 }
 
 const CHAMPS =
@@ -91,10 +95,12 @@ const CHAMPS =
   'transporteur, tracking_url, valide_le, etat_maj_le, retouches_demandees_le, ' +
   'consent_communication, facture_url'
 
-/* `tracking_code` est arrivé après les autres : tant que sa migration n'est
-   pas passée, PostgREST répond 42703 et la page entière tomberait pour une
-   colonne d'affichage. Le repli est celui de `lireNumeros` côté atelier. */
-const CHAMPS_SANS_CODE_SUIVI = CHAMPS
+/* Les colonnes arrivées après les autres (`tracking_code`, puis le souvenir
+   20260903) : tant qu'une migration n'est pas passée, PostgREST répond 42703
+   et la page entière tomberait pour une colonne d'affichage. Le repli est
+   celui de `lireNumeros` côté atelier — d'abord sans le souvenir, puis sans
+   rien de frais. */
+const CHAMPS_AVEC_SUIVI = `${CHAMPS}, tracking_code`
 
 /**
  * De qui c'est le tour, en une phrase.
@@ -147,9 +153,12 @@ async function lireNumero(token: string): Promise<Numero | null | 'panne'> {
     const lire = (champs: string) =>
       supabase.from('numeros').select(champs).eq('token', token).maybeSingle<Numero>()
 
-    let { data, error } = await lire(`${CHAMPS}, tracking_code`)
+    let { data, error } = await lire(`${CHAMPS_AVEC_SUIVI}, souvenir_pdf_key, souvenir_pdf_octets`)
     if (error?.code === '42703') {
-      ;({ data, error } = await lire(CHAMPS_SANS_CODE_SUIVI))
+      ;({ data, error } = await lire(CHAMPS_AVEC_SUIVI))
+    }
+    if (error?.code === '42703') {
+      ;({ data, error } = await lire(CHAMPS))
     }
 
     if (error) {
@@ -478,6 +487,22 @@ export default async function NumeroPage({
             {titre} est chez vous. Un numéro par moment : la collection commence
             au deuxième.
           </p>
+          {numero.souvenir_pdf_key && (
+            /* Le magazine numérique (03/09). Le lien passe par la route qui
+               re-signe au clic — jamais une URL R2, elle serait morte à la
+               réouverture. Le poids est annoncé : c'est le fichier
+               d'impression, lourd, et un téléphone en 4G doit le savoir. */
+            <p className="nu-sub">
+              Il existe aussi en numérique, pour toujours :{' '}
+              <a className="nu-lien" href={`/api/atelier/souvenir?token=${numero.token}`}>
+                télécharger {titre} en PDF
+              </a>
+              {numero.souvenir_pdf_octets
+                ? ` (${Math.max(1, Math.round(numero.souvenir_pdf_octets / (1024 * 1024)))} Mo, mieux en wifi)`
+                : ''}
+              .
+            </p>
+          )}
           <div className="nu-actions">
             <a className="at-cta" href={COMPOSER_HREF}>
               {CTA_LABEL} <span className="at-cta-arrow">→</span>

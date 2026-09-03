@@ -193,6 +193,10 @@ export type Fiche = {
    * jusqu'ici les fichiers partaient sans avoir jamais été revus.
    */
   impressionUrls: { product: string | null; cover: string | null; book: string | null };
+  /** Le PDF souvenir (03/09) : la clé du fichier fusionné offert au client
+      à la livraison (mail M7b), et son poids. Null tant qu'il n'est pas
+      généré — M7b attend, la carte Impression porte le bouton. */
+  souvenir: { cle: string; octets: number | null } | null;
   /** Posé quand la commande est partie chez Cloudprinter — jamais deux fois. */
   cloudprinterOrderId: string | null;
   transporteur: string | null;

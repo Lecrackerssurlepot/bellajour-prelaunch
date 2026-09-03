@@ -108,15 +108,27 @@ function lignePages(r: ControleFichier & { lisible: true }): { texte: string; to
   return { texte: `${r.nbPages} page${r.nbPages > 1 ? "s" : ""} constatée${r.nbPages > 1 ? "s" : ""}.`, ton: "ok" };
 }
 
+type EtatSouvenir =
+  | { phase: "repos" }
+  | { phase: "encours" }
+  | { phase: "fini"; octets: number }
+  | { phase: "erreur"; message: string };
+
 export default function Impression({
   token,
   fichiers,
+  souvenir,
+  demo,
 }: {
   token: string;
   fichiers: FichierImpression[];
+  /** Le PDF souvenir déjà au coffre (clé + poids), ou null. */
+  souvenir: { cle: string; octets: number | null } | null;
+  demo?: boolean;
 }) {
   const [controle, setControle] = useState<EtatControle>({ phase: "repos" });
   const [ouverts, setOuverts] = useState<Record<string, boolean>>({});
+  const [genere, setGenere] = useState<EtatSouvenir>({ phase: "repos" });
 
   if (!fichiers.length) return null;
 
@@ -145,6 +157,41 @@ export default function Impression({
 
   const resultatPour = (cle: string): ControleFichier | null =>
     controle.phase === "fini" ? (controle.fichiers.find((f) => f.cle === cle) ?? null) : null;
+
+  /* Le PDF souvenir (03/09) : la fusion tourne d'elle-même après « Envoyer à
+     l'impression » ; ce bouton est la REPRISE (raté, ou fichier redéposé). */
+  async function genererSouvenir() {
+    if (demo) {
+      setGenere({ phase: "erreur", message: "Rien n'a été généré : c'est la démonstration." });
+      return;
+    }
+    setGenere({ phase: "encours" });
+    try {
+      const r = await fetch("/api/admin/atelier/souvenir", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const data = (await r.json().catch(() => ({}))) as { octets?: number; detail?: string; error?: string };
+      if (!r.ok) {
+        setGenere({
+          phase: "erreur",
+          message:
+            data.detail ??
+            (data.error === "migration_manquante"
+              ? "La colonne du souvenir n'existe pas encore en base (migration 20260903 à appliquer)."
+              : "La génération a échoué. Les fichiers déposés n'ont pas bougé, réessaie."),
+        });
+        return;
+      }
+      setGenere({ phase: "fini", octets: data.octets ?? 0 });
+    } catch {
+      setGenere({ phase: "erreur", message: "Réseau interrompu pendant la génération. Réessaie." });
+    }
+  }
+
+  const octetsSouvenir = genere.phase === "fini" ? genere.octets : (souvenir?.octets ?? null);
+  const souvenirExiste = genere.phase === "fini" || souvenir !== null;
 
   return (
     <section className="ate-carte">
@@ -244,6 +291,35 @@ export default function Impression({
       {controle.phase === "fini" && controle.fichiers.length === 0 ? (
         <p className="ate-faint">Aucun PDF au coffre pour ce dossier.</p>
       ) : null}
+
+      {/* Le PDF souvenir — le magazine numérique offert au client à la
+          livraison (mail M7b). Fabriqué d'office après la commande ; ici,
+          l'état et la reprise. */}
+      <div className="ate-impr-outils">
+        <button
+          type="button"
+          className="adm-btn"
+          disabled={genere.phase === "encours"}
+          onClick={genererSouvenir}
+        >
+          {genere.phase === "encours"
+            ? "Génération en cours…"
+            : souvenirExiste
+              ? "Régénérer le PDF souvenir"
+              : "Générer le PDF souvenir"}
+        </button>
+        <span className="ate-faint">
+          {souvenirExiste
+            ? `PDF souvenir au coffre${octetsSouvenir ? ` (${Math.max(1, Math.round(octetsSouvenir / (1024 * 1024)))} Mo)` : ""} : il partira au client avec le mail M7b, à la livraison.`
+            : "Pas encore généré : le mail M7b attendra ce fichier pour partir."}
+        </span>
+      </div>
+      {genere.phase === "encours" ? (
+        <p className="ate-faint" role="status">
+          Le serveur fusionne les PDF déposés — quelques dizaines de secondes pour un gros fichier.
+        </p>
+      ) : null}
+      {genere.phase === "erreur" ? <p className="ate-erreur ate-erreur--bloc">{genere.message}</p> : null}
     </section>
   );
 }

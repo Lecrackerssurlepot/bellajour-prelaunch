@@ -145,6 +145,12 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         };
       }
       if (vers === "livree") {
+        /* Le webhook signe `par: "cloudprinter"` : « cloudprinter a marqué
+           le numéro livré » se lirait comme un geste humain — on nomme le
+           fait, pas la machine. */
+        if (qui === "cloudprinter") {
+          return { texte: "Le colis est arrivé (signal Cloudprinter)", detail: null, ton: "neutre" };
+        }
         return { texte: fait(qui, "a marqué le numéro livré", "Livré"), detail: null, ton: "nous" };
       }
       return {

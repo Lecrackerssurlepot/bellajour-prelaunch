@@ -4,9 +4,11 @@
  * ══════════════════════════════════════════════════════════════════════════
  * C'est le RETOUR de la phase 2 du PRD §13 : une fois la commande passée
  * (« Envoyer à l'impression »), Cloudprinter pousse ici l'avancement —
- * validation, production, emballage, expédition. Un seul signal change
- * l'état chez nous : `ItemShipped` (6 → 7), qui porte le transporteur et le
- * suivi, et fait partir M7. Tout le reste s'inscrit au journal du dossier.
+ * validation, production, emballage, expédition, livraison. Deux signaux
+ * changent l'état chez nous : `ItemShipped` (6 → 7), qui porte le
+ * transporteur et le suivi et fait partir M7, et `ItemDeliveryCompleted`
+ * (7 → 8, décision du 03/09), qui fait partir M7b « votre magazine est
+ * arrivé ». Tout le reste s'inscrit au journal du dossier.
  *
  * AUTH — le modèle de la relève (mails/relever) : cette route vit HORS du
  * middleware (`/api/admin/*` seulement), elle porte donc sa propre porte.
@@ -207,6 +209,60 @@ export async function POST(request: Request) {
 
       /* M7 part par le chemin partagé — même verrou, mêmes contrôles que la
          relève. Ne throw jamais. */
+      await releverDossier(supabase, numero.id);
+
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+
+    if (effet === "livrer") {
+      /* ItemDeliveryCompleted : le colis est chez le client (7 → 8).
+         Même idiome qu'`expedier`, en plus simple — aucune donnée annexe à
+         écrire, donc pas de repli 42703. L'idempotence est dans l'update
+         lui-même : un rejeu ne bouge rien. */
+      const { data: maj, error } = await supabase
+        .from("numeros")
+        .update({ etat: "livree", etat_maj_le: new Date().toISOString() })
+        .eq("id", numero.id)
+        .eq("etat", "expediee")
+        .select("id");
+
+      if (error) {
+        console.error("[cloudprinter/webhook] update livraison échoué", error.code, error.message);
+        /* 500 volontaire : Cloudprinter réessaie, la base se remettra. */
+        return NextResponse.json({ error: "internal" }, { status: 500 });
+      }
+
+      if (!maj?.length) {
+        /* Rejeu d'un signal déjà traité : silence. Autre état : anormal —
+           typiquement un dossier resté `en_production` parce qu'ItemShipped
+           n'est jamais arrivé. La doctrine tient : un webhook n'avance
+           jamais un dossier de deux crans tout seul, l'atelier tranche au
+           journal (l'idiome de `paiement_inattendu`). */
+        if (numero.etat !== "livree") {
+          /* T-038 — le journal est le SEUL effet : répondre 200 sur une
+             écriture ratée perdrait le signal. */
+          const ok = await logEvenement(supabase, numero.id, "cloudprinter_signal_inattendu", {
+            type, etat: numero.etat,
+          });
+          if (!ok) return NextResponse.json({ error: "journal_incomplet" }, { status: 500 });
+        }
+        return NextResponse.json({ received: true, ignored: true }, { status: 200 });
+      }
+
+      /* Invariant nº6 : chaque transition écrit dans `evenements`. Cette
+         ligne n'est PAS décorative : `reconstruireJalons` (mesure.ts) relit
+         `vers: "livree"` pour les métriques — sans elle, « Livrées » et les
+         durées de livraison tombent à zéro en silence. Résultat ignoré
+         volontairement, comme pour l'expédition (l'état est déjà écrit). */
+      await logEvenement(supabase, numero.id, "etat_change", {
+        de: "expediee",
+        vers: "livree",
+        par: "cloudprinter",
+        source: "webhook",
+      });
+
+      /* M7b part par le chemin partagé — même verrou, mêmes contrôles que
+         la relève. Ne throw jamais. */
       await releverDossier(supabase, numero.id);
 
       return NextResponse.json({ received: true }, { status: 200 });

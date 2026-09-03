@@ -33,6 +33,7 @@ const CODES: Array<{ code: CodeMail; env: string }> = [
   { code: "M5", env: "BREVO_TEMPLATE_M5_ID" },
   { code: "M6", env: "BREVO_TEMPLATE_M6_ID" },
   { code: "M7", env: "BREVO_TEMPLATE_M7_ID" },
+  { code: "M7b", env: "BREVO_TEMPLATE_M7B_ID" },
   { code: "M8", env: "BREVO_TEMPLATE_M8_ID" },
   { code: "M9", env: "BREVO_TEMPLATE_M9_ID" },
   { code: "M10", env: "BREVO_TEMPLATE_M10_ID" },
@@ -51,7 +52,7 @@ const DOSSIER: NumeroPourMail = {
   palier: "p40",
   apercu_urls: { c1: "a", c4: "b", double: "c" },
   // Champs de NumeroPourReleve utilisés par parametresPour :
-  ...({ etat_maj_le: new Date().toISOString(), transporteur: "Colissimo", tracking_url: "https://x", tracking_code: "6A123456789FR" } as object),
+  ...({ etat_maj_le: new Date().toISOString(), transporteur: "Colissimo", tracking_url: "https://x", tracking_code: "6A123456789FR", souvenir_pdf_key: "numeros/x/souvenir/abcd1234.pdf" } as object),
 } as NumeroPourMail;
 
 /* ⚠️ Les valeurs de .env.local peuvent être entre guillemets : dotenv les

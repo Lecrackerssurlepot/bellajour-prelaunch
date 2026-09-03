@@ -385,6 +385,19 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
               : `C'est fait, mais le mail ${mail.code} n'est pas parti (${mail.statut}). La relève réessaiera.`
           : "C'est fait. Aucun mail n'était prévu à cette étape.",
       );
+
+      /* Le PDF souvenir se fabrique dans la foulée de la commande (03/09) :
+         les fichiers sont désormais en base, la fusion peut lire le coffre.
+         BEST-EFFORT strict — un raté ne touche pas la transition : la carte
+         Impression porte le bouton de reprise, et M7b attend le fichier. */
+      if (choisie.cle === "envoyer_impression") {
+        fetch("/api/admin/atelier/souvenir", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ token: fiche.ligne.token }),
+        }).catch(() => {});
+      }
+
       setVerif(null);
       router.refresh();
     } catch {
