@@ -392,10 +392,16 @@ ok("M7b sans PDF souvenir : signale (jamais un lien vers un 404)",
 ok("M7b avec PDF souvenir : complet",
    manquePour("M7b", d({ souvenir_pdf_key: "numeros/x/souvenir/a1b2c3d4.pdf" })).length === 0);
 
-titre("— M7b : le lien du PDF est la route stable, jamais une URL signee —");
+/* Retournee le 03/09, apres un constat en PRODUCTION : le bouton pointait le
+   FICHIER, qui se telechargeait en laissant un onglet blanc (une reponse en
+   piece jointe ne rend aucune page). Il envoie desormais sur la PAGE, qui
+   porte le meme bouton et le poids du fichier. */
+titre("— M7b : le bouton envoie sur la PAGE, jamais sur le fichier —");
 const m7b = parametresPour("M7b", d({ souvenir_pdf_key: "numeros/x/souvenir/a1b2c3d4.pdf" }));
-ok("LIEN_PDF pointe sur /api/atelier/souvenir avec le token",
-   typeof m7b.LIEN_PDF === "string" && m7b.LIEN_PDF.includes("/api/atelier/souvenir?token=t"));
+ok("LIEN pointe sur la page du numero",
+   typeof m7b.LIEN === "string" && m7b.LIEN.includes("/numero/t"));
+ok("aucun lien direct vers le fichier (l'onglet blanc de production)",
+   !JSON.stringify(m7b).includes("/api/atelier/souvenir"));
 ok("la cle R2 ne voyage jamais dans le mail",
    !JSON.stringify(m7b).includes("a1b2c3d4"));
 
