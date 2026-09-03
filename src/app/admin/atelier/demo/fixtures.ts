@@ -38,6 +38,7 @@ const MAIL_A_L_ARRIVEE: Partial<Record<Etat, string>> = {
   maquette_prete: "M5",
   validee: "M6",
   expediee: "M7",
+  livree: "M7b",
 };
 
 /* Des jetons de 32 caractères, comme les vrais : la fiche de démonstration
@@ -494,6 +495,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
        PDF au coffre — la carte des fichiers d'impression ne s'affiche pas. */
     impressionFichiers: { product: null, cover: null, book: null },
     impressionUrls: { product: null, cover: null, book: null },
+    souvenir: null,
     cloudprinterOrderId: null,
     transporteur: ["expediee", "livree"].includes(g.etat) ? "Colissimo" : null,
     trackingUrl: ["expediee", "livree"].includes(g.etat)

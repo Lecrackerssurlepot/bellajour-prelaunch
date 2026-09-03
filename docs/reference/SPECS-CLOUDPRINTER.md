@@ -32,8 +32,34 @@ Les CGV v3.0 annoncent **210 × 280 mm** (`src/app/legal/content/cgv.ts:227-232`
 réellement fabriqué fait **210 × 297 mm**. Corriger les CGV = texte légal = accord explicite
 de Mathias (interdit nº2). Voir T-077.
 
-## Ce que ce relevé ne donne pas
+## Formule d'épaisseur du dos (spine) — TROUVÉE le 02/09/2026
 
-La **formule d'épaisseur du dos** (spine) pour la couverture enveloppante du dos carré n'est
-pas dans `products/info` — elle est vraisemblablement dans le zip de gabarits officiel
-(templates/2216). À relever avant de générer une couverture `cover` automatiquement (T-078).
+Pas dans `products/info` ; atteinte via un lien-annotation du gabarit `templates/2216` renvoyant à
+la doc officielle Cloudprinter (`docs.cloudprinter.com/client/how-to-calculate-spine-width` +
+`/spine-width-calculator/`). **Source qui fait foi, à recopier telle quelle :**
+
+```
+dos_mm = (grammage_gsm × bulk × (nb_pages / 2)) / 1000  +  (2 × épaisseur_couverture_mm)
+```
+
+- **Bulk du papier** (valeurs moyennes Cloudprinter, peuvent varier selon l'imprimeur) :
+  MCG (gloss) 0,80 · **MCS (silk) 0,90** · ECB 1,20 · OFF 1,22.
+- **Terme couverture `2 × épaisseur`** selon la reliure : Case Wrap 3 mm → 6,0 · Case Wrap 2 mm →
+  4,0 · **Perfect Binding / Softcover → 1,0** (2 × 0,5). Notre `magazine_pb_a4_p_fc` est un
+  **softcover → terme +1,0 mm**.
+
+**Appliqué au produit Bellajour** (`pageblock_130mcs` = 130 gsm MCS bulk 0,90, softcover +1,0) :
+24 p → **2,404 mm** · 32 p → **2,872 mm** · 50 p (max) → **3,925 mm**. Ces valeurs sortent de la
+formule, elles ne sont pas inventées.
+
+⚠️ **Rester paramétré par le grammage** : 130 gsm est le défaut posé (`impression.ts:79`) mais non
+tranché (T-028 ; défaut Cloudprinter = 90 gsm). Ne pas figer 130 dans la formule.
+
+**Largeur de la couverture enveloppante** = `2 × (210 + 3) + dos_mm` (fini+bleed des deux faces +
+dos). Cloudprinter attend qu'on la **régénère à chaque commande** — c'est le sens de T-078. Le
+gabarit `magazine_pb_a4_p_fc_cover.pdf` a une largeur nominale dessinée (~5,2 mm de dos), à ne pas
+prendre pour la formule.
+
+**Autres specs du gabarit** : profil couleur **Coated FOGRA39 (ISO 12647-2:2004)** ;
+zone de collage du dos = 3 mm à l'intérieur de la couverture (déjà noté). Zip exact (URL de l'API,
+le CDN refuse les URL devinées) : `resources.cloudprinter.com/templates/2216/magazine_pb_a4_p_fc_product.zip`.

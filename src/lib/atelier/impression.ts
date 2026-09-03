@@ -464,13 +464,18 @@ export function payloadCommande(args: {
 
 /* ─────────────────────────── les signaux ─────────────────────────── */
 
-export type EffetSignal = "expedier" | "alerte" | "journal";
+export type EffetSignal = "expedier" | "livrer" | "alerte" | "journal";
 
 /**
- * Ce qu'un signal CloudSignal FAIT chez nous. Trois effets seulement :
+ * Ce qu'un signal CloudSignal FAIT chez nous. Quatre effets seulement :
  *
- *   expedier — ItemShipped : le seul qui change l'état (6 → 7). Il porte le
- *              transporteur et le suivi ; M7 part dans la foulée.
+ *   expedier — ItemShipped : 6 → 7. Il porte le transporteur et le suivi ;
+ *              M7 part dans la foulée.
+ *   livrer   — ItemDeliveryCompleted : 7 → 8 (décision de Mathias, 03/09).
+ *              Le colis est chez le client ; M7b « votre magazine est
+ *              arrivé » part dans la foulée, M8 s'arme pour J+3. Le geste
+ *              manuel « Marquer livrée » RESTE le repli : transporteur sans
+ *              signal, ou mode manuel sans CLOUDPRINTER_API_KEY.
  *   alerte   — un échec : journalisé en ton d'alerte, AUCUN changement
  *              d'état. Un problème d'impression ou de livraison se traite au
  *              téléphone et au dashboard, pas par une machine qui déciderait
@@ -482,8 +487,6 @@ export type EffetSignal = "expedier" | "alerte" | "journal";
  * Method 2.1, relevé le 26/08/2026) — plus complète que la doc v1.1.
  * Un type inconnu tombe en `journal` : un signal d'une version future de
  * leur API ne doit ni casser le webhook ni disparaître du récit.
- * `ItemDeliveryCompleted` reste volontairement au journal : le passage en
- * « livrée » (qui arme M8) demeure un geste de l'atelier.
  */
 const SIGNAUX_ALERTE = new Set([
   "ItemError",
@@ -494,6 +497,7 @@ const SIGNAUX_ALERTE = new Set([
 
 export function interpreterSignal(type: string): { effet: EffetSignal } {
   if (type === "ItemShipped") return { effet: "expedier" };
+  if (type === "ItemDeliveryCompleted") return { effet: "livrer" };
   if (SIGNAUX_ALERTE.has(type)) return { effet: "alerte" };
   return { effet: "journal" };
 }

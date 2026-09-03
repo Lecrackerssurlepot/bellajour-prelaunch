@@ -58,6 +58,11 @@ export type CodeMail =
   | "M5"
   | "M6"
   | "M7"
+  /* M7b — « votre magazine est arrivé » (03/09). Part au passage en
+     `livree` (signal Cloudprinter ItemDeliveryCompleted, ou geste manuel),
+     avec le lien du PDF souvenir. Exige `souvenir_pdf_key` : jamais un mail
+     vers un fichier qui n'existe pas. */
+  | "M7b"
   | "M8"
   | "M9"
   /* M10 — le préavis de fermeture (T-076). Le seul mail qui annonce une
@@ -69,21 +74,24 @@ export type CodeMail =
 export const CHAMPS_MAIL =
   "id, token, etat, titre, prenom, email, nb_photos, nb_pages, palier, apercu_urls, " +
   "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, tracking_code, " +
-  "stripe_payment_intent, retouches_demandees_le";
+  "stripe_payment_intent, retouches_demandees_le, souvenir_pdf_key";
 
 /**
- * `CHAMPS_MAIL` sans sa colonne la plus fraîche (`tracking_code`, migration
- * 20260829) — le REPLI du select ci-dessous. Si la migration qui ajoute la
+ * `CHAMPS_MAIL` sans sa colonne la plus fraîche (`souvenir_pdf_key`, migration
+ * 20260903) — le REPLI du select ci-dessous. Si la migration qui ajoute la
  * dernière colonne de `CHAMPS_MAIL` n'est pas encore passée, PostgREST répond
  * 42703 et le select ENTIER échoue : la relève quotidienne, la page Santé et
  * la page cliente `/numero` tomberaient toutes pour une colonne dont l'absence
- * ne devrait vider qu'une phrase.
+ * ne devrait vider qu'une phrase. (Sans elle, M7b se signale « incomplet » et
+ * attend la migration : le comportement sûr.)
  * ⚠️ En AJOUTANT une colonne à `CHAMPS_MAIL`, la retirer ICI aussi : le repli
  * doit rester « CHAMPS_MAIL moins la colonne dont la migration peut manquer ».
+ * (`tracking_code`, migration 20260829 appliquée et vérifiée le 30/08, est
+ * donc revenue dans le repli.)
  */
 export const CHAMPS_MAIL_REPLI =
   "id, token, etat, titre, prenom, email, nb_photos, nb_pages, palier, apercu_urls, " +
-  "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, " +
+  "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, tracking_code, " +
   "stripe_payment_intent, retouches_demandees_le";
 
 /**
@@ -138,6 +146,10 @@ export type NumeroPourReleve = NumeroPourMail & {
   tracking_code: string | null;
   stripe_payment_intent: string | null;
   retouches_demandees_le: string | null;
+  /* ⚠️ Colonne de la migration 20260903 (PDF souvenir). Absente en base, le
+     repli CHAMPS_MAIL_REPLI la laisse `undefined` : M7b reste « incomplet »
+     jusqu'à la migration, et c'est voulu. */
+  souvenir_pdf_key: string | null;
 };
 
 export type Resultat =
@@ -163,6 +175,7 @@ function templatePour(code: CodeMail): number | undefined {
     M5: process.env.BREVO_TEMPLATE_M5_ID,
     M6: process.env.BREVO_TEMPLATE_M6_ID,
     M7: process.env.BREVO_TEMPLATE_M7_ID,
+    M7b: process.env.BREVO_TEMPLATE_M7B_ID,
     M8: process.env.BREVO_TEMPLATE_M8_ID,
     M9: process.env.BREVO_TEMPLATE_M9_ID,
     M10: process.env.BREVO_TEMPLATE_M10_ID,
@@ -193,6 +206,7 @@ export const OBJET_MAIL: Record<CodeMail, string> = {
   M5: "la maquette complète",
   M6: "départ à l'impression",
   M7: "votre numéro est en route",
+  M7b: "votre magazine est arrivé, avec son PDF",
   M8: "le prochain moment ?",
   M9: "quelques photos de plus ?",
   M10: "votre numéro va se refermer",
@@ -232,6 +246,12 @@ export function manquePour(code: CodeMail, n: NumeroPourMail): string[] {
      dit pas par qui, et la cliente n'a rien à suivre. */
   if (code === "M7" && !(n as Partial<NumeroPourReleve>).transporteur) {
     manque.push("transporteur");
+  }
+  /* M7b offre le magazine en PDF : sans le fichier au coffre, le lien du
+     mail tomberait sur un 404. Même règle que le transporteur pour M7 —
+     jamais un mail qui promet ce qui n'existe pas. */
+  if (code === "M7b" && !(n as Partial<NumeroPourReleve>).souvenir_pdf_key) {
+    manque.push("souvenir_pdf_key");
   }
   if (code === "M3" || code === "M3b") {
     const a = n.apercu_urls;
@@ -373,6 +393,18 @@ export function parametresPour(
          Le template affiche le lien si SUIVI existe, sinon le numéro en
          texte copiable. */
       CODE_SUIVI: r.tracking_code ?? "",
+    };
+  }
+
+  if (code === "M7b") {
+    /* Ni pagination ni prix : le magazine est payé et entre ses mains, ce
+       mail OFFRE, il ne vend rien. Le lien du PDF est la ROUTE stable,
+       jamais une URL R2 signée : une signature expire en heures, et un mail
+       se rouvre des mois plus tard. La route re-signe à chaque clic (même
+       motif que M3 qui n'embarque pas l'aperçu réel). */
+    return {
+      ...communs,
+      LIEN_PDF: `${SITE_URL}/api/atelier/souvenir?token=${n.token}`,
     };
   }
 
@@ -742,8 +774,16 @@ export function codesPour(
       break;
 
     case "livree":
+      /* M7b — « votre magazine est arrivé », le jour même, avec le PDF
+         souvenir (03/09). Chaîné sur M7, comme la livraison suit
+         l'expédition. */
+      if (deja("M7")) dus.push("M7b");
       /* J+3 après livraison, pas le jour même : « le prochain moment ? » le
-         jour où le colis arrive, c'est vendre avant d'avoir laissé ouvrir. */
+         jour où le colis arrive, c'est vendre avant d'avoir laissé ouvrir.
+         ⚠️ M8 reste chaîné sur M7, PAS sur M7b, et c'est délibéré : un PDF
+         souvenir jamais généré retiendrait M7b (manquePour), et rechaîner
+         M8 dessus le bloquerait pour toujours. Les deux mails sont
+         indépendants — l'un offre le numérique, l'autre relance. */
       if (deja("M7") && ageEtat >= 3 * JOUR) dus.push("M8");
       break;
   }

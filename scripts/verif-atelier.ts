@@ -69,6 +69,7 @@ import {
   type LigneWaitlist,
 } from "@/lib/atelier/fondatrice";
 import { lireSuivi, nomTransporteur } from "@/lib/atelier/suivi";
+import { boiteRognee, decouperCouverture, nomFichierSouvenir } from "@/lib/atelier/souvenir";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import {
   adresseCloudprinter,
@@ -243,7 +244,7 @@ const base: NumeroPourReleve = {
   nb_photos: 40, nb_pages: 34, palier: "p40", apercu_urls: { c1: "a", c4: "b", double: "c" },
   etat: "photos_recues", consent_photos: true, created_at: ilYA(10), etat_maj_le: ilYA(1),
   transporteur: null, tracking_url: null, tracking_code: null, stripe_payment_intent: null,
-  retouches_demandees_le: null,
+  retouches_demandees_le: null, souvenir_pdf_key: null,
 };
 const d = (p: Partial<NumeroPourReleve>): NumeroPourReleve => ({ ...base, ...p });
 
@@ -292,9 +293,18 @@ ok("apercu publie, M3 il y a 4 j, PAYE : pas de relance", codesPour(d({ etat: "a
 ok("apercu publie, M3 il y a 1 j : trop tot", codesPour(d({ etat: "apercu_pret" }), env(["M3", ilYA(1)]), MAINTENANT).length === 0);
 ok("apercu publie, M3 jamais parti : c'est M3 qui part", codesPour(d({ etat: "apercu_pret" }), env(), MAINTENANT).join() === "M3");
 
-titre("— M8, apres livraison —");
-ok("livree il y a 4 j avec M7 : M8", codesPour(d({ etat: "livree", etat_maj_le: ilYA(4) }), env(["M7", ilYA(4)]), MAINTENANT).join() === "M8");
-ok("livree aujourd'hui : on ne vend pas avant qu'elle ouvre", codesPour(d({ etat: "livree", etat_maj_le: ilYA(0) }), env(["M7", ilYA(0)]), MAINTENANT).length === 0);
+titre("— M7b et M8, apres livraison —");
+ok("livree sans M7 : rien ne part (chaine)", codesPour(d({ etat: "livree", etat_maj_le: ilYA(0) }), env(), MAINTENANT).length === 0);
+ok("livree aujourd'hui avec M7 : M7b part, la vente attend",
+   codesPour(d({ etat: "livree", etat_maj_le: ilYA(0) }), env(["M7", ilYA(0)]), MAINTENANT).join() === "M7b");
+ok("M7b deja parti, livree aujourd'hui : rien",
+   codesPour(d({ etat: "livree", etat_maj_le: ilYA(0) }), env(["M7", ilYA(0)], ["M7b", ilYA(0)]), MAINTENANT).length === 0);
+/* M8 reste chaine sur M7, PAS sur M7b : un souvenir jamais genere retiendrait
+   M7b, et rechainer M8 dessus le bloquerait pour toujours. */
+ok("livree il y a 4 j, M7b jamais parti : M7b puis M8 (M8 n'attend pas M7b)",
+   codesPour(d({ etat: "livree", etat_maj_le: ilYA(4) }), env(["M7", ilYA(4)]), MAINTENANT).join() === "M7b,M8");
+ok("livree il y a 4 j, M7b parti : M8",
+   codesPour(d({ etat: "livree", etat_maj_le: ilYA(4) }), env(["M7", ilYA(4)], ["M7b", ilYA(4)]), MAINTENANT).join() === "M8");
 
 titre("— jamais deux fois —");
 ok("M1 deja parti : rien", codesPour(d({}), env(["M1", ilYA(1)]), MAINTENANT).length === 0);
@@ -377,6 +387,17 @@ ok("M7 sans transporteur : signale", manquePour("M7", d({ transporteur: null }))
 ok("M7 avec transporteur : complet", manquePour("M7", d({ transporteur: "Colissimo" })).length === 0);
 ok("M5 sans pagination : signale", manquePour("M5", d({ nb_pages: null })).includes("nb_pages"));
 ok("M2 sans pagination : normal, il n'en parle pas", manquePour("M2", d({ nb_pages: null, palier: null })).length === 0);
+ok("M7b sans PDF souvenir : signale (jamais un lien vers un 404)",
+   manquePour("M7b", d({ souvenir_pdf_key: null })).includes("souvenir_pdf_key"));
+ok("M7b avec PDF souvenir : complet",
+   manquePour("M7b", d({ souvenir_pdf_key: "numeros/x/souvenir/a1b2c3d4.pdf" })).length === 0);
+
+titre("— M7b : le lien du PDF est la route stable, jamais une URL signee —");
+const m7b = parametresPour("M7b", d({ souvenir_pdf_key: "numeros/x/souvenir/a1b2c3d4.pdf" }));
+ok("LIEN_PDF pointe sur /api/atelier/souvenir avec le token",
+   typeof m7b.LIEN_PDF === "string" && m7b.LIEN_PDF.includes("/api/atelier/souvenir?token=t"));
+ok("la cle R2 ne voyage jamais dans le mail",
+   !JSON.stringify(m7b).includes("a1b2c3d4"));
 
 titre("— M7 : un numero de suivi sans URL doit quand meme se voir —");
 /* Le cas reel : suivi.ts ne sait pas construire l'adresse de certains
@@ -620,9 +641,52 @@ ok("ItemCanceled alerte", interpreterSignal("ItemCanceled").effet === "alerte");
 ok("CloudprinterOrderCanceled alerte", interpreterSignal("CloudprinterOrderCanceled").effet === "alerte");
 ok("ItemDeliveryFailed alerte", interpreterSignal("ItemDeliveryFailed").effet === "alerte");
 ok("ItemPacked se journalise seulement", interpreterSignal("ItemPacked").effet === "journal");
-ok("ItemDeliveryCompleted ne livre PAS tout seul (M8 reste un geste de l'atelier)",
-   interpreterSignal("ItemDeliveryCompleted").effet === "journal");
+/* Retournee le 03/09 (decision de Mathias) : la livraison passe l'etat en
+   « livree » toute seule et fait partir M7b. L'ancienne assertion disait
+   l'inverse — c'etait la regle d'avant, pas un oubli. */
+ok("ItemDeliveryCompleted livre (7 vers 8, M7b part)",
+   interpreterSignal("ItemDeliveryCompleted").effet === "livrer");
 ok("un type inconnu tombe au journal, jamais en erreur", interpreterSignal("ItemFutur2027").effet === "journal");
+
+/* ═══════════════ LE PDF SOUVENIR — la geometrie (03/09) ═══════════════ */
+
+titre("— le PDF souvenir : rognage au format fini —");
+const PTS = (mm: number) => (mm * 72) / 25.4;
+/* Une page de bloc 216 x 303 (fini + 3 mm de fond perdu partout). */
+const rognee = boiteRognee(PTS(216), PTS(303));
+ok("216 x 303 : rognee a 210 x 297", pointsEnMm(rognee.largeur) === 210 && pointsEnMm(rognee.hauteur) === 297);
+ok("le rognage est centre (3 mm de chaque cote)", pointsEnMm(rognee.x) === 3 && pointsEnMm(rognee.y) === 3);
+/* Une page deja au format fini : rien a couper. */
+const finie = boiteRognee(PTS(210), PTS(297));
+ok("210 x 297 : laissee telle quelle", finie.x === 0 && pointsEnMm(finie.largeur) === 210);
+/* Un format inattendu : on ne charcute pas, on rend la page entiere. */
+const bizarre = boiteRognee(PTS(180), PTS(240));
+ok("format inconnu : page entiere, jamais amputee", bizarre.x === 0 && bizarre.largeur === PTS(180));
+
+titre("— le PDF souvenir : la couverture enveloppante se decoupe —");
+/* 24 pages : dos 2,404 mm (SPECS-CLOUDPRINTER.md) -> largeur 428,4, hauteur 303. */
+const feuille24 = decouperCouverture(PTS(2 * 213 + 2.404), PTS(303));
+ok("feuille 24 p : decoupee", feuille24 !== null);
+ok("le dos est MESURE sur la feuille, pas calcule au grammage",
+   feuille24 !== null && Math.abs(feuille24.dosMm - 2.404) < 0.05);
+ok("la 1re de couv est le panneau de DROITE, au format fini",
+   feuille24 !== null &&
+     pointsEnMm(feuille24.c1.largeur) === 210 &&
+     feuille24.c1.x > feuille24.c4.x);
+ok("la 4e est le panneau de gauche, apres le fond perdu",
+   feuille24 !== null && pointsEnMm(feuille24.c4.x) === 3);
+/* 50 pages : dos 3,925 mm. */
+const feuille50 = decouperCouverture(PTS(2 * 213 + 3.925), PTS(303));
+ok("feuille 50 p : dos plus epais, decoupe toujours juste",
+   feuille50 !== null && Math.abs(feuille50.dosMm - 3.925) < 0.05);
+/* Une feuille trop etroite pour deux faces : refus, jamais de charcutage. */
+ok("feuille trop etroite : refus propre", decouperCouverture(PTS(216), PTS(303)) === null);
+ok("hauteur impossible : refus propre", decouperCouverture(PTS(428.4), PTS(200)) === null);
+
+titre("— le PDF souvenir : le nom de fichier —");
+ok("le titre entre dans le nom", nomFichierSouvenir("Notre été à Séville") === "Bellajour - Notre été à Séville.pdf");
+ok("sans titre, un nom digne quand meme", nomFichierSouvenir(null) === "Bellajour - Votre numero.pdf");
+ok("les caracteres interdits d'un nom de fichier sautent", !nomFichierSouvenir('a/b:c"d').includes("/"));
 
 titre("— le suivi du colis : un numero doit devenir un lien —");
 const dpd = lireSuivi("dpd_france", "250A4B7C1234");

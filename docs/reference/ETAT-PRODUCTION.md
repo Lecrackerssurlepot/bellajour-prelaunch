@@ -191,7 +191,8 @@ et T-011 est fermé. (Le code lit une 49e chose, `NODE_ENV`, qui n'est pas une v
 `/admin/atelier/sante` est le seul écran qui montre un mail sans template.
 
 À vérifier sur Vercel, Production ET Preview, avant le lancement :
-`BREVO_TEMPLATE_M0_ID` (posée le 28/08), les onze autres templates de l'atelier,
+`BREVO_TEMPLATE_M0_ID` (posée le 28/08), les douze autres templates de l'atelier
+(dont `BREVO_TEMPLATE_M7B_ID`, le magazine numérique — voir la section du 03/09),
 **`BREVO_TEMPLATE_M10_ID`** (celle-ci n'existe encore nulle part : il faut d'abord pousser le
 template — sans elle, aucune rétention ne s'applique), `ADMIN_PASSWORD_MATHIAS`,
 `ADMIN_PASSWORD_LOUIS`, `CRON_SECRET`, `ATELIER_MAILS_SECRET`, `CLOUDPRINTER_API_KEY` +
@@ -199,6 +200,28 @@ template — sans elle, aucune rétention ne s'applique), `ADMIN_PASSWORD_MATHIA
 qu'en Preview jusque-là ; à basculer en LIVE au lancement**), les cinq `R2_*`, `PREVENTE_FERMEE`.
 ⚠️ `ADMIN_PASSWORD` (l'ancien mot de passe partagé) peut rester posée : depuis le 31/08 le code
 l'ignore complètement (T-005). Elle n'ouvre plus rien.
+
+## Le PDF souvenir et la livraison automatique — codé le 03/09/2026, PAS ENCORE ACTIF
+
+Branche `feat/pdf-au-client-a-la-livraison`. Trois choses arrivent ensemble :
+le signal Cloudprinter `ItemDeliveryCompleted` passe le dossier en « livrée » tout seul
+(le geste manuel reste en repli) ; un mail **M7b « votre magazine est arrivé »** part à ce
+moment-là ; il porte le lien du **PDF souvenir** — les PDF d'impression fusionnés en un
+fichier feuilletable (1re de couv + bloc + 4e découpées de la feuille enveloppante,
+rognées au format fini, CMJN gardé tel quel, poids d'impression affiché avant le clic).
+La géométrie est prouvée par le harnais (536 assertions) et par une fusion réelle pdf-lib.
+
+**Trois gestes de Mathias avant que quoi que ce soit ne parte :**
+1. appliquer `supabase/migrations/20260903_atelier_souvenir.sql` (colonnes
+   `souvenir_pdf_key` + `souvenir_pdf_octets`) — sans elle, la génération refuse en criant ;
+2. pousser le template : `node scripts/mails-atelier.mjs --pousser --seulement M7b`, puis
+   poser `BREVO_TEMPLATE_M7B_ID` sur Vercel (Preview ET Production) — sans elle, M7b est
+   sauté sans verrou, visible sur /sante ;
+3. vérifier au dashboard Cloudprinter que l'interface webhook est abonnée à
+   `ItemDeliveryCompleted` (la liste du 26/08 l'incluait).
+
+Tant que rien de tout ça n'est fait, le déploiement est inerte : seule la bascule
+automatique en « livrée » fonctionnera dès la mise en ligne.
 
 ## ⚠️ L'atelier n'est pas encore en fonctionnement (30/08/2026, tenu au 01/09)
 

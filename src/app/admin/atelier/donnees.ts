@@ -834,6 +834,16 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
         typeof brut[k] === "string" ? await signerGet(brut[k] as string).catch(() => null) : null;
       return { product: await url("product"), cover: await url("cover"), book: await url("book") };
     })(),
+    /* Le PDF souvenir (migration 20260903) : il arrive avec le select("*")
+       et vaut null tant que la migration n'est pas passée ou que la fusion
+       n'a pas tourné. */
+    souvenir:
+      typeof n.souvenir_pdf_key === "string" && n.souvenir_pdf_key
+        ? {
+            cle: n.souvenir_pdf_key,
+            octets: typeof n.souvenir_pdf_octets === "number" ? n.souvenir_pdf_octets : null,
+          }
+        : null,
     cloudprinterOrderId: (n.cloudprinter_order_id as string) ?? null,
     transporteur: (n.transporteur as string) ?? null,
     trackingUrl: (n.tracking_url as string) ?? null,

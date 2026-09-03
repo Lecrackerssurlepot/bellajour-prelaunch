@@ -217,7 +217,10 @@ export const ACTIONS: Record<ActionCle, Action> = {
     explication: "Clôt le numéro et lui propose le prochain moment.",
     de: ["expediee"],
     vers: "livree",
-    note: "Le message « et le prochain moment ? » part trois jours plus tard, pas maintenant.",
+    /* Le repli manuel du signal ItemDeliveryCompleted (03/09) : transporteur
+       sans signal, ou mode manuel sans clé Cloudprinter. Le webhook fait le
+       même geste tout seul quand le signal arrive. */
+    note: "Le mail du magazine numérique part maintenant ; « et le prochain moment ? » suit trois jours plus tard.",
   },
 };
 

@@ -608,6 +608,8 @@ export default function Fiche({
                 ? [{ type: s.type, label: s.label, cle, url: fiche.impressionUrls[s.type] }]
                 : [];
             })}
+            souvenir={fiche.souvenir}
+            demo={demo}
           />
 
           <Carnet

@@ -296,6 +296,31 @@ export async function lireObjet(key: string, abortSignal?: AbortSignal): Promise
 }
 
 /**
+ * Écriture COMPLÈTE d'un objet du coffre, côté serveur.
+ *
+ * La première du module — jusqu'ici seul `signerPut` écrivait, par
+ * procuration du navigateur. Sert au PDF souvenir : la fusion se fait dans
+ * la fonction serverless, les octets sont déjà là, un aller-retour de
+ * signature n'aurait pas de sens.
+ *
+ * PUT SINGLE-PART, volontairement : l'ETag d'un objet single-part EST son
+ * md5 (cf. `empreinteObjet`), et tout le coffre repose sur cette égalité.
+ * Un souvenir n'ira jamais chez Cloudprinter, mais un coffre à deux régimes
+ * d'empreinte finirait par tromper quelqu'un. Les erreurs REMONTENT.
+ */
+export async function ecrireObjet(key: string, octets: Uint8Array, contentType: string): Promise<void> {
+  await makeR2().send(
+    new PutObjectCommand({
+      Bucket: bucket(),
+      Key: key,
+      Body: octets,
+      ContentType: contentType,
+      ContentLength: octets.byteLength,
+    })
+  );
+}
+
+/**
  * Suppression d'un objet du coffre.
  *
  * Rend `true` quand l'objet est bien parti — y compris s'il était **déjà

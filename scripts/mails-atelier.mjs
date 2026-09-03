@@ -293,10 +293,17 @@ ${bloc(
 <!--<![endif]-->`,
 )}
 
-${bloc(
-  `<p style="margin: 0; font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.8; color: #928d84;">${pied}</p>`,
-  56,
-)}
+${
+  /* Le pied est FACULTATIF depuis le 03/09 (M7b n'en veut pas) : sans lui, le
+     bloc entier disparaît. Le rendre vide laisserait une réserve de 56 px sous
+     le bouton, et l'oeil la lirait comme un défaut de maquette. */
+  pied
+    ? bloc(
+        `<p style="margin: 0; font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.8; color: #928d84;">${pied}</p>`,
+        56,
+      )
+    : ""
+}
 
 <tr><td align="center" style="padding: 0 40px 26px 40px;">
 <table role="presentation" width="52" cellpadding="0" cellspacing="0" border="0"><tr><td height="1" bgcolor="#26262a" style="background-color: #26262a; height: 1px; line-height: 1px; font-size: 1px;">&nbsp;</td></tr></table>
@@ -461,6 +468,25 @@ export const MAILS = [
     cta: "Suivre mon numéro",
     lien: LIEN,
     pied: "Le suivi se met à jour sur votre page, au fil des jours.",
+  },
+  {
+    /* M7b — la livraison, avec le magazine numérique (03/09). Part quand le
+       colis est chez le client (signal Cloudprinter ItemDeliveryCompleted,
+       ou le geste manuel de l'atelier). Le CTA est le téléchargement
+       lui-même : LIEN_PDF est la route stable /api/atelier/souvenir, qui
+       re-signe au clic. JAMAIS une URL R2 signée dans un mail : elle serait
+       morte à la réouverture. */
+    code: "M7b",
+    nom: "M7b · Atelier · Votre magazine est arrivé",
+    sujet: `${TITRE} est chez vous`,
+    preheader: "Et sa version numérique vous attend.",
+    titreHtml: "Votre magazine est arrivé",
+    h1: "Votre magazine<br />est arrivé.",
+    sous: `${PRENOM}, ${TITRE} est chez vous, et nous espérons qu’il trouve sa place. Il existe aussi en numérique : le même magazine, en PDF, à garder pour toujours et à faire circuler.`,
+    cta: "Télécharger mon magazine en PDF",
+    lien: "{{ params.LIEN_PDF }}",
+    /* Pas de pied, décision de Mathias (03/09) : le bouton se suffit. Le poids
+       du fichier est annoncé sur la page du numéro, là où il sert vraiment. */
   },
   {
     code: "M8",
@@ -650,6 +676,8 @@ async function main() {
        du questionnaire abandonné se lit en vidant cette valeur. */
     COUVERTURE_PRETE: "oui",
     LIEN: "https://www.bellajour.fr/numero/apercu",
+    /* M7b : la route stable de téléchargement du PDF souvenir. */
+    LIEN_PDF: "https://www.bellajour.fr/api/atelier/souvenir?token=apercu",
   };
   const remplir = (html) =>
     html.replace(/\{\{\s*params\.([A-Z_]+)\s*\}\}/g, (t, cle) => EXEMPLE[cle] ?? t);
