@@ -701,9 +701,15 @@
     text-align: center;
   }
 
-  .at-pdp .prix .combien { font-size: 10px; letter-spacing: 0.08em; line-height: 1.45; }
+  /* T-087 — les deux libellés remontent au minimum lisible (Mathias, 01/09 :
+     « trop dense sur téléphone »). `.combien` 10 -> 11 px (il se replie déjà
+     sur deux lignes, aucun risque de coupe nouvelle) et `.pages` 11 -> 12 px.
+     Le prix en euros était déjà grand (8vw) : ce n'est pas lui qui manquait de
+     lisibilité mais les mentions au-dessus et en dessous. Interlignes resserrés
+     d'un cran pour absorber la hausse sans repousser le bouton hors de l'écran. */
+  .at-pdp .prix .combien { font-size: 11px; letter-spacing: 0.08em; line-height: 1.3; }
   .at-pdp .prix .euros { margin-top: 5px; font-size: clamp(24px, 8vw, 32px); }
-  .at-pdp .prix .pages { margin-top: 1px; font-size: 11px; line-height: 1.35; }
+  .at-pdp .prix .pages { margin-top: 1px; font-size: 12px; line-height: 1.25; }
 
   /* Le compte à rebours de l'étape passe à la ligne : sur 320 px, la
      troisième colonne écrasait le titre de l'étape. */
