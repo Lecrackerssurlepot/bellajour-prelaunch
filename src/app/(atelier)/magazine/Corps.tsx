@@ -8,7 +8,8 @@
    Le balisage FAQPage de page.tsx décrit CE contenu-là, pas un autre. */
 
 import Reveal from '../components/Reveal'
-import { COMPOSER_HREF, CTA_LABEL, CTA_NOTE_PRICE, FAQ } from '../content'
+import { CTA_NOTE_PRICE, FAQ } from '../content'
+import LienComposer from '../components/LienComposer'
 
 /* Ce qui est compris. Chaque ligne doit rester tenue par quelque chose :
    l'impression au plus près vient du réseau de l'imprimeur, qui route la
@@ -208,9 +209,7 @@ export default function Corps() {
           </Reveal>
           <Reveal delay={70}>
             <div className="acte">
-              <a className="at-cta" href={COMPOSER_HREF}>
-                {CTA_LABEL} <span className="at-cta-arrow" aria-hidden="true">→</span>
-              </a>
+              <LienComposer />
               <p>
                 Premier aperçu gratuit · Votre magazine sur-mesure dès{' '}
                 <b>{CTA_NOTE_PRICE}</b>.

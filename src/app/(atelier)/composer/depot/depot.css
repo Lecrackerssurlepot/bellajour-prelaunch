@@ -401,28 +401,96 @@
 
 /* ── consentement et blocage ───────────────────────────────────────────── */
 
-.at-d-consent { margin-top: 22px; }
-
 .at-d-bloc { font-size: 13px; font-weight: 300; color: var(--c-text-faint); }
 
-/* ── LA BARRE D'ENVOI ──
-   Elle a été collante un moment, parce qu'avec cinquante-cinq vignettes le
-   bouton se retrouvait trois écrans sous la ligne de flottaison. La grille
-   repliée règle la cause : l'écran tient désormais d'un bloc, et le bouton
-   est là où il doit être — en bas de ce qu'on vient de faire, pas plaqué
-   par-dessus. Une barre collante prendrait de la hauteur pour rien.
-
-   La classe `--collee` reste posée par le composant quand il y a des photos :
-   elle ne sert plus qu'à séparer le bloc du reste par un filet. */
-.at-d-envoi {
-  margin-top: 34px;
+/* ── LA BARRE FIXE DU DÉPÔT (03/09) ──
+   L'ancienne barre en flux (`.at-d-envoi`) est partie : consentement et
+   bouton vivent dans la barre fixe partagée (.at-q-barre, composer.css),
+   toujours visibles. C'est elle qui règle définitivement le bouton noyé
+   du 25/08 — la phrase « Il reste un geste » compensait, la barre rend
+   la compensation inutile. */
+.at-q-barre--depot .at-d-consent {
+  margin-top: 0;
+  max-width: 40ch;
 }
 
-.at-d-envoi--collee {
-  margin-top: 34px;
-  padding-top: 26px;
-  border-top: 1px solid var(--c-line-md);
+.at-q-barre--depot .at-d-pasparti--fond {
+  max-width: 1200px;
+  margin: 0 auto 12px;
 }
+
+/* ── le seuil atteint : le badge (03/09) ──
+   Remplace la jauge sur 100, qui à 55 photos se lisait comme « pas assez
+   rempli ». À partir de 40, le manque n'existe plus : on le dit. */
+.at-d-pret {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 14px;
+  padding: 6px 14px;
+  border: 1px solid var(--c-accent);
+  border-radius: 999px;
+  background: var(--c-accent-soft);
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--c-accent-strong);
+}
+
+.at-d-pret i { font-style: normal; color: var(--c-accent); }
+
+/* ── la tuile d'ajout (03/09) ──
+   « Compléter avec d'autres photos » : une vignette de plus dans la grille,
+   même famille que « + 49 », à la place de la grande zone de dépôt. */
+.at-d-tuile--ajout {
+  opacity: 1;
+  border-style: dashed;
+  border-color: var(--c-line-strong);
+  background: transparent;
+}
+
+.at-d-tuile--ajout button {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  color: var(--c-text-soft);
+  transition: color var(--dur) var(--ease);
+}
+
+.at-d-tuile--ajout button:hover { color: var(--c-text); }
+.at-d-tuile--ajout b { font-size: 20px; font-weight: 400; color: var(--c-accent); }
+.at-d-tuile--ajout small {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.5;
+  color: var(--c-text-faint);
+}
+
+/* Le rappel du glisser-déposer plein écran — un geste de bureau. */
+.bj-atelier .at-d-glisser {
+  margin-top: 16px;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+
+/* Tout l'écran accepte le dépôt : le survol d'un fichier se voit. */
+.at-d-page.is-survol { outline: 1px dashed var(--c-accent); outline-offset: -1px; border-radius: 12px; }
+
+/* La barre du dépôt est plus haute que les autres (consentement + bouton,
+   parfois la note de transfert) : l'écran réserve un cran de plus que le
+   padding commun de .at-q-screen. */
+.at-d-page { padding-bottom: 90px; }
 
 /* La phrase qui manquait : ce qui n'est PAS encore fait. */
 .at-d-pasparti {
@@ -448,8 +516,6 @@
   color: var(--c-text);
 }
 
-.at-d-envoi .at-d-actions { margin-top: 20px; }
-
 @media (max-width: 560px) {
   /* ⚠️ NE PAS remettre les 78 px sur la grille REPLIÉE : c'est sur un
      téléphone que « plus grosses » compte le plus. Deux vignettes par
@@ -458,5 +524,15 @@
   .bj-atelier .at-d-grille--toutes { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
   .at-d-zone { padding: 30px 20px; }
   .at-d-pasparti { font-size: 13px; }
-  .at-d-envoi .at-d-actions { margin-top: 14px; }
+}
+
+@media (max-width: 760px) {
+  /* Le badge passe sous le compteur plutôt que de casser la ligne. */
+  .at-d-compteur { flex-wrap: wrap; row-gap: 10px; }
+  .at-d-pret { margin-left: 0; }
+  /* Glisser-déposer : un geste de bureau, pas de doigt. */
+  .bj-atelier .at-d-glisser { display: none; }
+  /* L'écran du dépôt réserve plus de bas de page : sa barre porte deux
+     rangées (consentement + bouton pleine largeur). */
+  .at-q-barre--depot .at-d-consent { max-width: none; font-size: 12.5px; }
 }

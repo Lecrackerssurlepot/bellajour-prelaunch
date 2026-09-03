@@ -10,7 +10,8 @@
    elles arrivent sous la ligne de flottaison. */
 
 import Reveal from '../components/Reveal'
-import { COMPOSER_HREF, CTA_LABEL, ETAPES, PALIERS } from '../content'
+import { ETAPES, PALIERS } from '../content'
+import LienComposer from '../components/LienComposer'
 
 /* Le rythme annoncé à chaque étape. Il vit ICI et non dans content.ts : ce
    sont des repères d'affichage. Les délais OPPOSABLES, eux, sont dans
@@ -124,9 +125,7 @@ export default function Kiosque() {
 
         <Reveal delay={210} className="bloc-acte">
           <div className="acte">
-            <a className="at-cta" href={COMPOSER_HREF}>
-              {CTA_LABEL} <span className="at-cta-arrow" aria-hidden="true">→</span>
-            </a>
+            <LienComposer />
             {/* DEUX GAGES, PAS UN PARAGRAPHE.
                 La phrase qui tenait cette place (« Premier aperçu gratuit ·
                 Votre magazine sur-mesure dès 30 € ») et la mention qui la

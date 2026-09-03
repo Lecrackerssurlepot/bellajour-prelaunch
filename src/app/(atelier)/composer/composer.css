@@ -6,37 +6,30 @@
   min-height: var(--app-height);
 }
 
-/* ---- barre de progression ----
-   PRD §15 : jamais d'animation de width. La barre est posée à 100 % et
-   comprimée en scaleX depuis la gauche — même rendu, coût de composition
-   au lieu d'un reflow à chaque frame. */
-.at-bar {
-  flex: 0 0 auto;
-  height: 2px;
-  background: var(--c-line);
-}
-
-.at-bar i {
-  display: block;
-  height: 100%;
-  width: 100%;
-  transform-origin: left;
-  background: var(--c-accent);
-  transition: transform 400ms var(--ease);
-}
-
-/* ---- barre du haut ---- */
+/* ---- barre du haut ----
+   Depuis le 03/09 : le logo officiel (le même fichier que Nav.tsx) au
+   centre, le retour à gauche, la croix à droite. L'ancienne barre de
+   progression 2px est partie avec lui — le sommaire nommé la remplace. */
 .at-q-top {
   flex: 0 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: 14px var(--pad);
+  padding: 10px var(--pad);
 }
 
-.bj-atelier .at-q-back,
-.bj-atelier .at-q-close {
+.at-q-logo-img {
+  height: 30px;
+  width: auto;
+  display: block;
+}
+
+/* L'équilibre de la barre quand un côté est vide (écran 6, lien abîmé) :
+   une cale de la taille de la croix, pour que le logo reste centré. */
+.at-q-cote { width: 38px; height: 38px; flex: 0 0 auto; }
+
+.bj-atelier .at-q-back {
   background: none;
   border: none;
   padding: 6px;
@@ -47,10 +40,85 @@
   transition: color var(--dur) var(--ease);
 }
 
-.bj-atelier .at-q-back:hover,
-.bj-atelier .at-q-close:hover { color: var(--c-text); }
+.bj-atelier .at-q-close {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 1px solid var(--c-line-md);
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1;
+  color: var(--c-text-faint);
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
 
-.at-q-logo { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.02em; }
+.bj-atelier .at-q-back:hover { color: var(--c-text); }
+.bj-atelier .at-q-close:hover { color: var(--c-text); border-color: var(--c-line-strong); }
+
+/* ---- le sommaire nommé (Option A, maquettes du 03/09) ----
+   Desktop : les cinq noms, l'étape courante soulignée accent, les faites en
+   retrait avec leur coche. Mobile : cinq segments + « n / 5 · nom ». Les
+   deux vivent dans le DOM, le CSS n'en montre qu'un. */
+.at-q-etapes { flex: 0 0 auto; padding: 6px var(--pad) 0; }
+
+.at-q-etapes-noms {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
+}
+
+.at-q-etape {
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--c-text-faint);
+  opacity: 0.55;
+  padding-bottom: 5px;
+}
+
+.at-q-etape.is-fait { opacity: 1; }
+.at-q-etape.is-la {
+  opacity: 1;
+  color: var(--c-accent-strong);
+  border-bottom: 1px solid var(--c-accent);
+}
+
+.at-q-etape-v { font-style: normal; color: var(--c-accent); }
+
+.at-q-etapes-mini { display: none; align-items: center; gap: 10px; }
+
+.at-q-segments { display: flex; gap: 5px; flex: 1; }
+
+.at-q-segments i {
+  display: block;
+  height: 2px;
+  flex: 1;
+  border-radius: 2px;
+  background: var(--c-line-md);
+}
+
+.at-q-segments i.is-fait { background: var(--c-accent); }
+
+.at-q-etapes-ou {
+  flex: 0 0 auto;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--c-text-faint);
+}
+
+@media (max-width: 760px) {
+  .at-q-etapes-noms { display: none; }
+  .at-q-etapes-mini { display: flex; }
+}
 
 /* ---- l'écran ---- */
 /* `min-height: 0` est obligatoire : un enfant flex qui défile a une taille
@@ -62,7 +130,9 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px var(--pad) 70px;
+  /* Le bas dégage la BARRE FIXE (03/09) : sans cette réserve, la fin du
+     contenu passerait sous le verre. env() : la zone sûre de l'iPhone. */
+  padding: 20px var(--pad) calc(110px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -78,7 +148,95 @@
 
 .at-q-screen h2 { margin-top: 12px; }
 .at-q-lede { margin-top: 14px; }
-.at-q-actions { margin-top: 38px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.at-q-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+
+/* ---- LA BARRE FIXE (03/09) ----
+   Le geste de l'écran, toujours visible, desktop et mobile. Verre plein
+   (--glass-bg-plein) : assez opaque pour rester lisible sur n'importe quel
+   contenu. ⚠️ backdrop-filter sur un position:fixed rame sur Chrome/Android
+   (piège nº3 du CLAUDE.md front) — même risque accepté que la barre de
+   l'accueil (D5), à revoir au premier signalement. */
+.at-q-barre {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  background: var(--glass-bg-plein);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
+  backdrop-filter: blur(20px) saturate(1.1);
+  border-top: 1px solid var(--glass-border);
+  padding: 14px var(--pad) calc(14px + env(safe-area-inset-bottom, 0px));
+}
+
+.at-q-barre-int {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.at-q-barre-note {
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+
+/* Sous 760 px la barre se résume au geste : le retour vit déjà en haut,
+   la note d'enregistrement n'a pas la place — le CTA prend toute la
+   largeur, dans la zone du pouce. */
+@media (max-width: 760px) {
+  .at-q-barre-note,
+  .at-q-barre-retour { display: none; }
+  .at-q-barre-int { flex-direction: column; align-items: stretch; gap: 10px; }
+  .at-q-barre .at-q-actions { flex-direction: column; align-items: stretch; gap: 10px; }
+  .at-q-barre .at-cta { justify-content: center; }
+  .at-q-barre .at-erreur { text-align: center; }
+}
+
+/* ---- la confirmation de sortie (03/09) ---- */
+.at-q-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(2, 2, 2, 0.55);
+}
+
+.at-q-quitter {
+  width: min(480px, 100%);
+  padding: 40px 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: var(--glass-bg-plein);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
+  backdrop-filter: blur(20px) saturate(1.1);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-float);
+}
+
+.at-q-quitter h2 { font-size: clamp(26px, 6vw, 32px); }
+
+.bj-atelier .at-q-quitter p {
+  margin-top: 16px;
+  max-width: 38ch;
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 1.65;
+  color: var(--c-text-soft);
+}
+
+.bj-atelier .at-q-quitter-reste { margin-top: 30px; width: 100%; justify-content: center; }
+.bj-atelier .at-q-quitter .at-q-quitter-part { margin-top: 16px; align-self: center; }
 
 /* ---- champs ---- */
 .bj-atelier .at-field,
@@ -342,6 +500,36 @@
 }
 .at-q-note b { font-weight: 400; color: var(--c-text); }
 
+/* ── Écran 6 : la carte du lien (03/09) ──
+   LA chose à emporter de l'écran de fin. Verre discret, un libellé, les
+   deux gestes (LienPartage), une note. */
+.at-fin-carte {
+  margin-top: 34px;
+  width: 100%;
+  max-width: 560px;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+.at-fin-carte-label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--c-text-faint);
+}
+
+.at-fin-carte-note {
+  font-size: 12.5px;
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+
 /* 01/09 — la queue de transfert sur l'écran 6. Elle apparaît puis disparaît
    toute seule quand la dernière photo est confirmée : sans cadre, le
    paragraphe suivant remonterait d'un bond sans qu'on comprenne pourquoi.
@@ -371,7 +559,64 @@
 
 @media (max-width: 560px) {
   .at-covers { gap: 10px; }
-  .at-q-logo { font-size: 19px; }
+  .at-q-logo-img { height: 26px; }
+}
+
+/* ---- écran 3 : les mots de couverture facultatifs (03/09) ----
+   Un déplieur discret sous le titre : la question de l'écran reste LE titre,
+   les deux champs n'apparaissent qu'à qui les demande. */
+.at-extras {
+  margin-top: 30px;
+  max-width: 520px;
+  padding-top: 20px;
+  border-top: 1px solid var(--c-line);
+}
+
+.bj-atelier .at-extras-ouvrir {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--c-text-faint);
+  cursor: pointer;
+  transition: color var(--dur) var(--ease);
+}
+
+.bj-atelier .at-extras-ouvrir:hover { color: var(--c-text-soft); }
+.at-extras-ouvrir span { color: var(--c-accent); font-size: 15px; }
+
+.at-extras-titre {
+  display: block;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+
+/* ---- écran 3 : la grille d'inspiration dit son statut (03/09) ----
+   Mathias a constaté que les deux couvertures se lisaient comme un choix à
+   faire. Le chapeau au-dessus et la note en dessous ferment la question. */
+.bj-atelier .at-covers-chapeau {
+  margin-top: 34px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--c-text-faint);
+}
+
+.bj-atelier .at-covers-chapeau + .at-covers { margin-top: 14px; }
+
+.bj-atelier .at-covers-note {
+  margin-top: 12px;
+  max-width: 44ch;
+  font-size: 12.5px;
+  font-weight: 300;
+  color: var(--c-text-faint);
 }
 
 /* Écran 6 : le lien discret cohabite avec le CTA dans la rangée d'actions.

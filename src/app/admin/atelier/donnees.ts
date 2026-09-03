@@ -803,6 +803,10 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     parcours: construireParcours(rangee.etat, evenementsVus),
     occasion: (n.occasion as string) ?? null,
     histoire: (n.histoire as string) ?? null,
+    /* Les mots de couverture (migration 20260903) : ils arrivent avec le
+       select("*") et valent null tant qu'elle n'est pas passée. */
+    sousTitre: (n.sous_titre as string) ?? null,
+    motQuatrieme: (n.mot_quatrieme as string) ?? null,
     telephone: (n.telephone as string) ?? null,
     consentPhotos: n.consent_photos === true,
     consentCommunication: n.consent_communication === true,

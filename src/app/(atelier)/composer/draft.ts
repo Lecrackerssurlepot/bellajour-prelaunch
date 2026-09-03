@@ -16,6 +16,10 @@ export type Draft = {
   occasion: string
   histoire: string
   titre: string
+  /* Les deux mots de couverture FACULTATIFS de l'écran 3 (03/09/2026).
+     Vides par défaut : un brouillon antérieur fusionne sans casse. */
+  sousTitre: string
+  motQuatrieme: string
   prenom: string
   email: string
   telephone: string
@@ -34,6 +38,8 @@ export const EMPTY_DRAFT: Draft = {
   occasion: '',
   histoire: '',
   titre: '',
+  sousTitre: '',
+  motQuatrieme: '',
   prenom: '',
   email: '',
   telephone: '',
@@ -82,6 +88,26 @@ export function saveDraft(draft: Draft): void {
     /* Quota plein ou storage refusé : on continue sans reprise.
        L'écran ne promet jamais que la sauvegarde a eu lieu. */
   }
+}
+
+/**
+ * Une composition est-elle en cours sur CET appareil ?
+ *
+ * Sert au CTA de la page produit : « Composer avec l'atelier » devient
+ * « Continuer la composition » quand un brouillon vivant existe. Un brouillon
+ * terminé rend déjà EMPTY_DRAFT (loadDraft), donc il ne compte pas.
+ * Le seuil est volontairement bas : avoir avancé d'un écran ou écrit un mot
+ * suffit — c'est exactement ce que « continuer » promet de retrouver.
+ */
+export function draftEnCours(): boolean {
+  const d = loadDraft()
+  return Boolean(
+    d.token ||
+    d.screen > 1 ||
+    d.occasion.trim() ||
+    d.histoire.trim() ||
+    d.titre.trim(),
+  )
 }
 
 export function clearDraft(): void {

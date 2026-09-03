@@ -5,6 +5,11 @@
 
 export const CTA_LABEL = 'Composer avec l’atelier'
 export const CTA_MAGAZINE_LABEL = 'Découvrir les magazines'
+/* Quand un brouillon vit sur l'appareil (draftEnCours), les boutons vers
+   /composer disent la reprise plutôt que le départ (03/09/2026). Le brouillon
+   reprend tout seul à l'ouverture de /composer : même adresse, aucun
+   paramètre — ne JAMAIS y accrocher `?reprendre=`, voir plus bas. */
+export const CTA_REPRISE_LABEL = 'Continuer la composition'
 /* DEUX ADRESSES, DEUX LIBELLÉS (01/09/2026).
    Jusqu'ici un seul libellé (« Composer avec l'atelier ») servait les deux
    destinations : l'ancien invariant nº5. Il tombe, à la demande de Mathias, car

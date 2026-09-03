@@ -15,8 +15,21 @@
  *
  * Et une règle de fond : le palier affiché ici est un ORDRE DE GRANDEUR. Le
  * prix ferme naît côté serveur, du nombre de pages saisi par l'atelier
- * (invariant nº2). D'où « autour de 40 € · prix confirmé avec votre
+ * (invariant nº2). D'où « autour de 30 € · prix confirmé avec votre
  * couverture », jamais un montant sec qui se lirait comme un engagement.
+ *
+ * REFONTE DU 03/09 (maquettes validées par Mathias) :
+ * — la grande zone de dépôt n'existe qu'AVANT la première photo ; ensuite
+ *   l'ajout est une tuile discrète dans la grille, et le glisser-déposer
+ *   couvre tout l'écran ;
+ * — la jauge sur 100 disparaît : elle se lisait comme « pas assez rempli ».
+ *   Sous 40, une barre graduée sur 40 et « encore X pour composer » ; à
+ *   partir de 40, un badge « De quoi composer » — le manque n'existe plus ;
+ * — le consentement et « Envoyer à l'atelier » vivent dans la barre fixe,
+ *   toujours visibles. « Il reste un geste » est parti AVEC la cause : la
+ *   phrase compensait un bouton hors de vue (25/08), la barre le rend
+ *   permanent. Cocher ne se rappelle qu'au clic : cliquer sans avoir coché
+ *   affiche l'erreur à ce moment-là, rien avant (décision Mathias).
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -80,12 +93,14 @@ export default function Screen5Depot({
   const ilReste = restantes(vue.confirmees)
 
   /* La règle vit dans paliers.ts (peutEnvoyer / blocageEnvoi), pure et
-     testée par le harnais : le seuil de faisabilité compté sur les photos
-     CONFIRMÉES par le serveur, plus l'accord. Ce qui reste en vol n'est plus
-     un blocage — il continue en tâche de fond après le clic. */
-  const etatEnvoi = { confirmees: vue.confirmees, enVol: vue.enVol, consent, envoiEnCours: envoi }
-  const pretAEnvoyer = peutEnvoyer(etatEnvoi)
-  const blocage = blocageEnvoi(etatEnvoi)
+     testée par le harnais. Depuis le 03/09, le CONSENTEMENT ne ferme plus le
+     bouton : il se vérifie AU CLIC (décision Mathias — rien d'affiché tant
+     qu'on n'a pas cliqué sans cocher). Le bouton ne reste fermé que pour ce
+     qui ne dépend pas d'un geste immédiat : pas assez de photos confirmées,
+     ou un envoi déjà en cours. */
+  const etatHorsConsent = { confirmees: vue.confirmees, enVol: vue.enVol, consent: true, envoiEnCours: envoi }
+  const pretHorsConsent = peutEnvoyer(etatHorsConsent)
+  const blocage = blocageEnvoi(etatHorsConsent)
 
   /**
    * Ce qu'on montre, et ce qu'on replie.
@@ -131,7 +146,13 @@ export default function Screen5Depot({
   }, [vue.photos.length])
 
   const envoyer = useCallback(async () => {
-    if (!pretAEnvoyer) return
+    if (!pretHorsConsent) return
+    /* Le rappel du consentement, AU CLIC et jamais avant (03/09). */
+    if (!consent) {
+      setErreur('Cochez d’abord la case au-dessus du bouton : elle confirme votre droit d’utiliser ces photos.')
+      setErreurCle((c) => c + 1)
+      return
+    }
     setEnvoi(true)
     setErreur(null)
     const r = await finaliser()
@@ -142,28 +163,50 @@ export default function Screen5Depot({
       return
     }
     onTermine(vue.confirmees)
-  }, [pretAEnvoyer, finaliser, onTermine, vue.confirmees])
+  }, [pretHorsConsent, consent, finaliser, onTermine, vue.confirmees])
 
   if (!token) {
     return (
       <>
-        <p className="at-kicker">Étape 5 sur 6</p>
+        <p className="at-kicker">Vos photos</p>
         <h2>Un instant.</h2>
         <p className="at-lede at-q-lede">
           Votre dossier n’a pas encore été créé. Revenez à l’écran précédent
-          pour nous laisser vos coordonnées — c’est là que tout commence.
+          pour nous laisser vos coordonnées, c’est là que tout commence.
         </p>
       </>
     )
   }
 
   return (
-    <>
-      <p className="at-kicker">Étape 5 sur 6</p>
+    /* Le glisser-déposer couvre TOUT l'écran depuis que la grande zone
+       disparaît avec la première photo : on lâche ses fichiers n'importe où. */
+    <div
+      className={`at-d-page${survol ? ' is-survol' : ''}`}
+      onDragOver={(e) => { e.preventDefault(); setSurvol(true) }}
+      onDragLeave={() => setSurvol(false)}
+      onDrop={(e) => { e.preventDefault(); setSurvol(false); recevoir(e.dataTransfer.files) }}
+    >
+      <p className="at-kicker">Vos photos</p>
       <h2>Vos photos,<br />maintenant.</h2>
-      <p className="at-lede at-q-lede">
-        Entre {MIN_PHOTOS} et {MAX_PHOTOS}. Ne triez pas trop — le tri, c’est notre métier.
-      </p>
+      <p className="at-lede at-q-lede">Entre {MIN_PHOTOS} et {MAX_PHOTOS} photos.</p>
+
+      {/* Le champ natif, hors de la zone : la tuile « Compléter » et le
+          bouton de la zone vide déclenchent le même sélecteur. */}
+      <input
+        ref={champ}
+        type="file"
+        multiple
+        accept={ACCEPTE}
+        className="at-d-input"
+        onChange={(e) => {
+          recevoir(e.target.files)
+          /* Remis à zéro : sans ça, re-choisir exactement la même photo
+             n'émet aucun événement et l'écran a l'air de ne rien faire. */
+          e.target.value = ''
+        }}
+        aria-label="Choisir des photos"
+      />
 
       {/* ── T2-4 : LA REPRISE DIT CE QUI EST DÉJÀ LÀ ──────────────────
           Le lien du mail ramène au bon endroit, mais sans cette ligne
@@ -191,36 +234,26 @@ export default function Screen5Depot({
       )}
       {vue.bandeau && <p className="at-d-avis" role="status">{vue.bandeau}</p>}
 
-      {/* ── zone de dépôt ─────────────────────────────────────────────── */}
-      <div
-        className={`at-d-zone${survol ? ' is-survol' : ''}`}
-        onDragOver={(e) => { e.preventDefault(); setSurvol(true) }}
-        onDragLeave={() => setSurvol(false)}
-        onDrop={(e) => { e.preventDefault(); setSurvol(false); recevoir(e.dataTransfer.files) }}
-      >
-        <input
-          ref={champ}
-          type="file"
-          multiple
-          accept={ACCEPTE}
-          className="at-d-input"
-          onChange={(e) => {
-            recevoir(e.target.files)
-            /* Remis à zéro : sans ça, re-choisir exactement la même photo
-               n'émet aucun événement et l'écran a l'air de ne rien faire. */
-            e.target.value = ''
-          }}
-          aria-label="Choisir des photos"
-        />
-        <button type="button" className="at-d-parcourir" onClick={() => champ.current?.click()}>
-          Choisir des photos
-        </button>
-        <span className="at-d-zone-note">
-          JPG, PNG et HEIC — le format par défaut de l’iPhone. 50 Mo par photo.
-        </span>
-      </div>
+      {/* ── la zone de dépôt : le PREMIER geste seulement ───────────────
+          Dès qu'une photo est là, elle laisse la place à la grille — la
+          tuile « Compléter » et le glisser-déposer plein écran prennent
+          le relais (03/09). */}
+      {vue.photos.length === 0 && (
+        <div className={`at-d-zone${survol ? ' is-survol' : ''}`}>
+          <button type="button" className="at-d-parcourir" onClick={() => champ.current?.click()}>
+            Choisir des photos
+          </button>
+          <span className="at-d-zone-note">
+            JPG, PNG et HEIC (le format par défaut de l’iPhone). 50 Mo par photo.
+          </span>
+        </div>
+      )}
 
-      {/* ── compteur, jauge, palier ───────────────────────────────────── */}
+      {/* ── compteur et seuil ─────────────────────────────────────────────
+          Plus de jauge sur 100 (03/09) : pleine aux deux tiers, elle se
+          lisait comme « il en manque ». Sous le seuil, la barre est graduée
+          sur 40 — l'objectif, pas le plafond. Au-dessus, un badge le dit en
+          toutes lettres et le manque disparaît de l'écran. */}
       <div className="at-d-etat">
         {/* « déposées » était le mot du problème : c'est le nom de l'étape,
             et il se lit comme un état final. Après cinquante-cinq photos
@@ -229,29 +262,34 @@ export default function Screen5Depot({
         <div className="at-d-compteur">
           <b>{compteur}</b>
           <span>{compteur > 1 ? 'photos prêtes' : 'photo prête'}</span>
-        </div>
-
-        {/* PRD §15 : scaleX, jamais width. Le repère marque le seuil des 40. */}
-        <div className="at-d-jauge" aria-hidden="true">
-          <i style={{ transform: `scaleX(${Math.min(1, vue.confirmees / MAX_PHOTOS)})` }} />
-          <u style={{ left: `${(MIN_PHOTOS / MAX_PHOTOS) * 100}%` }} />
-        </div>
-
-        {/* T-051 — plus de role="status" ici : le palier changeait à CHAQUE
-            photo confirmée, jusqu'à 40 annonces d'affilée qui noyaient les
-            vraies alertes. Utile à l'œil, pas à l'oreille. */}
-        <p className="at-d-palier">
-          {ilManque > 0 ? (
-            <>encore <b>{ilManque}</b> pour composer un numéro</>
-          ) : palier ? (
-            <>
-              <b>{palier.pages}</b> · {palier.autour}
-              <em> · prix confirmé avec votre couverture</em>
-            </>
-          ) : (
-            <>le numéro est complet</>
+          {ilManque === 0 && (
+            <span className="at-d-pret" role="status">
+              <i aria-hidden="true">✓</i>{' '}
+              {ilReste > 0 ? <>De quoi composer · encore {ilReste} de libre</> : <>Le numéro est complet</>}
+            </span>
           )}
-        </p>
+        </div>
+
+        {ilManque > 0 && (
+          <>
+            <div className="at-d-jauge" aria-hidden="true">
+              <i style={{ transform: `scaleX(${Math.min(1, vue.confirmees / MIN_PHOTOS)})` }} />
+            </div>
+            {/* T-051 — pas de role="status" : le compte changeait à CHAQUE
+                photo confirmée, jusqu'à 40 annonces d'affilée qui noyaient
+                les vraies alertes. Utile à l'œil, pas à l'oreille. */}
+            <p className="at-d-palier">
+              encore <b>{ilManque}</b> pour composer un numéro
+            </p>
+          </>
+        )}
+
+        {ilManque === 0 && palier && (
+          <p className="at-d-palier">
+            <b>{palier.pages}</b> · {palier.autour}
+            <em> · prix confirmé avec votre couverture</em>
+          </p>
+        )}
 
         {vue.enVol > 0 && (
           <div className="at-d-transfert">
@@ -262,10 +300,6 @@ export default function Screen5Depot({
             </div>
             <span>{vue.enVol} en cours d’envoi</span>
           </div>
-        )}
-
-        {ilManque === 0 && ilReste > 0 && ilReste <= 10 && (
-          <p className="at-d-reste">Encore {ilReste} de libre avant le plafond.</p>
         )}
       </div>
 
@@ -361,6 +395,18 @@ export default function Screen5Depot({
               </button>
             </li>
           )}
+
+          {/* L'ajout, devenu discret (03/09) : une tuile de plus, pas un
+              panneau. Fermée quand le numéro est complet — un geste qui ne
+              peut qu'être refusé ne se propose pas. */}
+          {ilReste > 0 && (
+            <li className="at-d-tuile at-d-tuile--ajout">
+              <button type="button" onClick={() => champ.current?.click()}>
+                <b aria-hidden="true">+</b>
+                <small>Compléter avec d’autres photos</small>
+              </button>
+            </li>
+          )}
         </ul>
       )}
 
@@ -368,6 +414,10 @@ export default function Screen5Depot({
         <button type="button" className="at-d-replier" onClick={() => setToutesVisibles(false)}>
           Replier
         </button>
+      )}
+
+      {vue.photos.length > 0 && (
+        <p className="at-d-glisser">Ou glissez-les n’importe où sur cette page.</p>
       )}
 
       {/* ── T-054 : L'ÉCHEC EST DIT, PAS SEULEMENT BORDÉ ──────────────
@@ -395,45 +445,17 @@ export default function Screen5Depot({
         </p>
       )}
 
-      {erreur && <p key={erreurCle} className="at-erreur" role="alert">{erreur}</p>}
-
-      {/* ── LA BARRE D'ENVOI ──────────────────────────────────────────
-          Elle était noyée sous la grille. Avec cinquante-cinq vignettes, le
-          seul geste de l'écran se retrouvait à trois écrans sous la ligne de
-          flottaison — invisible. Pendant ce temps la jauge était pleine,
-          chaque tuile portait son ✓ vert et le compteur disait « déposées ».
-          Tout affirmait que c'était fini.
-
-          Ce qui règle la cause, c'est la grille REPLIÉE (VIGNETTES_VISIBLES)
-          : l'écran tient d'un bloc et le bouton reste en vue.
-          ⚠️ `--collee` ne colle RIEN, malgré son nom : elle ne pose qu'un
-          filet de séparation (depot.css). Une vraie barre `sticky` a été
-          essayée puis retirée — elle exigeait de passer `.at-q` en hauteur
-          fixe, une refonte dont plus rien n'avait besoin. */}
-      <div className={vue.photos.length > 0 ? 'at-d-envoi at-d-envoi--collee' : 'at-d-envoi'}>
-        {/* Elle dit ce qui n'est PAS encore fait — la seule information que
-            l'écran ne portait nulle part avant le 25/08.
-            ⚠️ Sa première rédaction se contredisait en une ligne : « vos
-            photos sont arrivées chez nous, mais l'atelier ne les a pas encore
-            reçues ». Techniquement exact (elles sont sur le coffre, pas dans
-            la pile de l'atelier), illisible pour qui n'a pas le schéma en
-            tête : arrivées ou pas ? UNE seule idée désormais, et elle
-            désigne le bouton. */}
-        {vue.photos.length > 0 && (
-          <p className="at-d-pasparti">
-            <b>Il reste un geste.</b> Vos photos ne partent à l’atelier qu’au clic
-            sur le bouton ci-dessous.
-          </p>
-        )}
-
+      {/* ── LA BARRE FIXE DU DÉPÔT (03/09) ─────────────────────────────
+          Consentement + bouton, toujours visibles — c'est elle qui règle
+          définitivement le bouton noyé du 25/08. Rien d'autre : l'erreur du
+          consentement n'apparaît qu'au clic (plus haut, envoyer()). */}
+      <div className="at-q-barre at-q-barre--depot">
         {/* ── CE QUE FAIT LE CLIC QUAND IL RESTE DES PHOTOS EN ROUTE ────
-            Nouveau le 01/09. Le bouton ne se ferme plus pendant les
-            transferts : il fallait dire, à cet endroit exact, ce qu'on fait
-            de celles qui n'ont pas fini. La phrase ne promet PAS qu'elles
-            arriveront — elles partent du navigateur, et un onglet fermé les
-            arrête. Elle dit les deux faits : le dossier part maintenant, le
-            reste continue tant que la page est là. */}
-        {pretAEnvoyer && vue.enVol > 0 && (
+            La phrase ne promet PAS qu'elles arriveront — elles partent du
+            navigateur, et un onglet fermé les arrête. Elle dit les deux
+            faits : le dossier part maintenant, le reste continue tant que
+            la page est là. */}
+        {pretHorsConsent && vue.enVol > 0 && (
           <p className="at-d-pasparti at-d-pasparti--fond" role="status">
             {vue.enVol === 1 ? 'Une photo finit' : `${vue.enVol} photos finissent`} d’arriver.
             Vous pouvez envoyer dès maintenant : nous ouvrons votre dossier, et
@@ -442,50 +464,49 @@ export default function Screen5Depot({
           </p>
         )}
 
-        <label className="at-check at-d-consent">
-          <input
-            type="checkbox"
-            checked={consent}
-            onChange={(e) => onConsent(e.target.checked)}
-          />
-          <span>Vous confirmez avoir le droit d’utiliser ces photos.</span>
-        </label>
+        <div className="at-q-barre-int">
+          <label className="at-check at-d-consent">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => onConsent(e.target.checked)}
+            />
+            <span>Vous confirmez avoir le droit d’utiliser ces photos.</span>
+          </label>
 
-        <div className="at-q-actions at-d-actions">
-          {/* T-054 — quand des photos ont échoué, le bouton dit ce qu'il va
-              VRAIMENT faire : envoyer les confirmées, pas la totalité.
-              Bloquer sans expliquer serait pire — la réparation (Reprendre)
-              est à un geste, et l'alerte ci-dessus la désigne.
-              Seulement à partir du seuil : sous les 40, le bouton est de
-              toute façon fermé et « Envoyer 0 photo sur 1 » ne dirait rien. */}
-          {/* ⚠️ Le décompte « X sur Y » ne s'affiche QUE file au repos.
-              Avec des photos encore en vol, Y bougerait à chaque
-              confirmation : un libellé de bouton qui change tout seul deux
-              fois par seconde ne se lit pas, et fait douter du geste. */}
-          <button type="button" className="at-cta" onClick={envoyer} disabled={!pretAEnvoyer}>
-            {envoi
-              ? 'Un instant…'
-              : enErreur.length > 0 && vue.enVol === 0 && vue.confirmees >= MIN_PHOTOS
-                ? `Envoyer ${vue.confirmees} photos sur ${vue.confirmees + enErreur.length} à l’atelier`
-                : 'Envoyer à l’atelier'}
-            <span className="at-cta-arrow">→</span>
-          </button>
+          <div className="at-q-actions at-d-actions">
+            {erreur && <p key={erreurCle} className="at-erreur" role="alert">{erreur}</p>}
+            {/* T-054 — quand des photos ont échoué, le bouton dit ce qu'il va
+                VRAIMENT faire : envoyer les confirmées, pas la totalité.
+                Bloquer sans expliquer serait pire — la réparation (Reprendre)
+                est à un geste, et l'alerte ci-dessus la désigne.
+                ⚠️ Le décompte « X sur Y » ne s'affiche QUE file au repos :
+                avec des photos encore en vol, Y bougerait à chaque
+                confirmation, et un libellé de bouton qui change tout seul
+                deux fois par seconde ne se lit pas. */}
+            <button type="button" className="at-cta" onClick={envoyer} disabled={!pretHorsConsent}>
+              {envoi
+                ? 'Un instant…'
+                : enErreur.length > 0 && vue.enVol === 0 && vue.confirmees >= MIN_PHOTOS
+                  ? `Envoyer ${vue.confirmees} photos sur ${vue.confirmees + enErreur.length} à l’atelier`
+                  : 'Envoyer à l’atelier'}
+              <span className="at-cta-arrow">→</span>
+            </button>
 
-          {/* Un bouton gris sans explication est une impasse : on dit toujours
-              ce qui manque, et une chose à la fois. « Envoi en cours » a
-              disparu de cette liste le 01/09 : ce n'est plus un blocage. */}
-          {blocage && (
-            <span className="at-d-bloc">
-              {blocage === 'photos'
-                ? `Encore ${ilManque} photo${ilManque > 1 ? 's' : ''}.`
-                : blocage === 'attente'
-                  ? `Vous en avez assez : ${ilManque === 1 ? 'la dernière arrive' : `les ${ilManque} dernières arrivent`}.`
-                  : 'Cochez la ligne au-dessus.'}
-            </span>
-          )}
+            {/* Un bouton gris sans explication est une impasse : on dit
+                toujours ce qui manque, et une chose à la fois. Le
+                consentement n'apparaît plus ici (03/09) : il se dit au clic. */}
+            {blocage && (
+              <span className="at-d-bloc">
+                {blocage === 'photos'
+                  ? `Encore ${ilManque} photo${ilManque > 1 ? 's' : ''}.`
+                  : `Vous en avez assez : ${ilManque === 1 ? 'la dernière arrive' : `les ${ilManque} dernières arrivent`}.`}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-    </>
+    </div>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-/* Écran 3 — « Comment s'appelle ce numéro ? »
+/* Écran 3 — « Donnez un titre à votre numéro. »
    Le champ écrit EN DIRECT dans les deux couvertures d'exemple.
 
    ⚠️ LE SAUT A ÉTÉ RETIRÉ (28/08/2026). « Je ne sais pas encore, choisissez
@@ -9,26 +9,45 @@
    place : la promesse était creuse, et elle a été prise au mot dès le premier
    dossier venu de l'extérieur. Le titre se change de toute façon plus tard.
 
-   Elles ne sont pas un choix : cliquer n'enregistre rien et n'a aucune
-   conséquence produit (PRD §7.3). L'état `survol` est purement décoratif —
-   il n'existe aucun champ `modele` en base, et c'est volontaire. */
+   Les couvertures ne sont pas un choix : cliquer n'enregistre rien et n'a
+   aucune conséquence produit (PRD §7.3). Depuis le 03/09 l'écran LE DIT
+   au-dessus de la grille (« Pour l'inspiration, ce n'est pas un choix ») —
+   Mathias a constaté qu'elles se lisaient comme une sélection. L'état
+   `miseEnAvant` est purement décoratif — il n'existe aucun champ `modele`
+   en base, et c'est volontaire.
+
+   NOUVEAU 03/09 — les mots de couverture facultatifs : un sous-titre pour la
+   première de couverture, un mot pour la quatrième. Repliés par défaut
+   derrière un déplieur discret : la question de l'écran reste LE titre. */
 
 import { useState } from 'react'
 import { COVER_MODELS, TITRE_MAX, TITRE_PLACEHOLDER } from '../coverModels'
 
+export const SOUS_TITRE_MAX = 80
+export const MOT_QUATRIEME_MAX = 160
+
 export default function Screen3Titre({
-  value, onChange,
-}: { value: string; onChange: (v: string) => void }) {
+  value, onChange, sousTitre, motQuatrieme, onExtra,
+}: {
+  value: string
+  onChange: (v: string) => void
+  sousTitre: string
+  motQuatrieme: string
+  onExtra: (champ: 'sousTitre' | 'motQuatrieme', v: string) => void
+}) {
   /* Purement visuel. Jamais lu ailleurs, jamais envoyé au serveur. */
   const [miseEnAvant, setMiseEnAvant] = useState(COVER_MODELS[0].id)
+  /* Déplié d'office si un brouillon porte déjà un des deux mots : un champ
+     rempli ne doit jamais être caché derrière son propre déplieur. */
+  const [extras, setExtras] = useState(() => Boolean(sousTitre || motQuatrieme))
   const affiche = value.trim() || TITRE_PLACEHOLDER
 
   return (
     <>
-      <p className="at-kicker">Étape 3 sur 6</p>
-      <h2>Comment s’appelle<br />ce numéro ?</h2>
+      <p className="at-kicker">Le titre</p>
+      <h2>Donnez un titre<br />à votre numéro.</h2>
       <p className="at-lede at-q-lede">
-        Il sera imprimé sur la couverture. Vous pourrez le changer plus tard.
+        Il sera imprimé sur la couverture. Vous pourrez encore le changer plus tard.
       </p>
 
       <input
@@ -41,6 +60,38 @@ export default function Screen3Titre({
         aria-label="Titre du numéro"
       />
 
+      <div className="at-extras">
+        {!extras ? (
+          <button type="button" className="at-extras-ouvrir" onClick={() => setExtras(true)}>
+            <span aria-hidden="true">+</span> D’autres mots sur la couverture (facultatif)
+          </button>
+        ) : (
+          <>
+            <span className="at-extras-titre">D’autres mots sur la couverture (facultatif)</span>
+            <label className="at-lbl" htmlFor="at-t-soustitre">Sous-titre · première de couverture</label>
+            <input
+              id="at-t-soustitre"
+              className="at-inp"
+              value={sousTitre}
+              onChange={(e) => onExtra('sousTitre', e.target.value)}
+              maxLength={SOUS_TITRE_MAX}
+              autoComplete="off"
+            />
+            <label className="at-lbl" htmlFor="at-t-quatrieme">Un mot · quatrième de couverture</label>
+            <input
+              id="at-t-quatrieme"
+              className="at-inp"
+              value={motQuatrieme}
+              onChange={(e) => onExtra('motQuatrieme', e.target.value)}
+              placeholder="« À la bande. »"
+              maxLength={MOT_QUATRIEME_MAX}
+              autoComplete="off"
+            />
+          </>
+        )}
+      </div>
+
+      <p className="at-covers-chapeau">Pour l’inspiration, ce n’est pas un choix</p>
       <div className="at-covers">
         {COVER_MODELS.map((m) => (
           <button
@@ -66,6 +117,9 @@ export default function Screen3Titre({
           </button>
         ))}
       </div>
+      <p className="at-covers-note">
+        Deux styles parmi d’autres. L’atelier composera le vôtre avec vos photos.
+      </p>
     </>
   )
 }

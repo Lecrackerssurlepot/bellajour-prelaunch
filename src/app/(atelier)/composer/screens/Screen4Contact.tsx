@@ -24,7 +24,7 @@ export default function Screen4Contact({
 
   return (
     <>
-      <p className="at-kicker">Étape 4 sur 6</p>
+      <p className="at-kicker">Vous</p>
       <h2>Où vous envoyons-nous<br />votre couverture ?</h2>
       {/* ── CE QUI RESTE À FAIRE, DIT ICI ────────────────────────────────
           « Vous la recevez sous 48 h, gratuitement, sans engagement » se
