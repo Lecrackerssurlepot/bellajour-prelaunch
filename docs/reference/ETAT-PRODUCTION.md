@@ -1,4 +1,4 @@
-# État du système — au 01/09/2026
+# État du système — au 03/09/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -24,6 +24,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 | Stripe | branché | prévente depuis juin, atelier depuis le 24/08 |
 | Prévente (`/preventes`, `/lancement`) | retirées, 307 vers `/` | 28/08/2026 |
 | Rebonds Brevo (`/api/brevo/webhook`) | **actif**, webhook Brevo id 2158565 | prouvé le 29/08/2026 à 10:14 |
+| PDF souvenir + mail M7b à la livraison | en ligne, chaîne complète vérifiée | 03/09/2026 (PR #39) |
 
 Quatorze fondateurs ont des droits ouverts sous les CGV v2.5, maintenus en régime transitoire.
 
@@ -153,27 +154,31 @@ configuration. Vérifié en production le 29/08 — `flore@gmial.com` propose `f
 
 ## Migrations
 
-**19 fichiers sur disque** (recomptés le 01/09/2026 : `ls supabase/migrations/*.sql`). Le compte
-de l'historique appliqué — 16 entrées — date du 30/08 et **n'a pas été re-mesuré depuis** : le
-vérifier demande d'interroger la base, ce que cette passe documentaire n'a pas fait.
+**20 fichiers sur disque, 19 entrées dans l'historique appliqué** (mesuré le 03/09/2026 :
+`ls supabase/migrations/*.sql` et la table des migrations Supabase). La correspondance
+fichier ↔ entrée n'a PAS été ré-auditée une par une ; ce qui suit l'a été, colonne par colonne.
 
-⚠️ **`20260901_atelier_retention.sql` (colonne `numeros.anonymise_le`) N'EST PAS APPLIQUÉE.**
-C'est le geste de Mathias, personne d'autre ne roule les migrations. Le repli 42703 est
-volontairement asymétrique : le dry-run d'`anonymiser-dossiers.ts` continue de fonctionner en
-lecture, l'écriture REFUSE. **Après application, vérifier que la donnée arrive** — le dry-run
-doit cesser d'écrire « la colonne anonymise_le n'existe pas encore ». Un repli qui se déclenche
-efface la donnée en silence : sans ce contrôle, on croit avoir un filet quand on a une amnésie.
+✅ **Les colonnes fraîches existent toutes en production** (vérifiées le 03/09 dans
+`information_schema.columns`, pas déduites d'un ticket) :
 
-`20260829_atelier_tracking_code.sql` **appliquée et vérifiée le 30/08/2026** (T-001 fermé,
-fiche `docs/backlog/fermes/`). ✅ **Preuve de bout en bout faite le 01/09** : un signal
-`ItemShipped` rejoué sur la prod a rempli `tracking_url` + `tracking_code` (transporteur
-« DPD ») — une fois les clés Cloudprinter posées en Production (voir la section « Recette de
-bout en bout » plus haut). Reste à confirmer un jour avec un VRAI colis d'un vrai client.
+| Colonne | Migration | État |
+|---|---|---|
+| `numeros.anonymise_le` | `atelier_retention` | ✅ appliquée le 02/09 |
+| `photos.vignette_key` | `atelier_vignettes` | ✅ appliquée |
+| `numeros.tracking_code` | `atelier_tracking_code` | ✅ appliquée le 30/08 |
+| `numeros.souvenir_pdf_key` + `souvenir_pdf_octets` | `atelier_souvenir` | ✅ appliquée le 03/09 |
 
-⚠️ `20260830_atelier_vignettes.sql` (colonne `photos.vignette_key`) : **rien dans le dépôt
-n'atteste son application**, ni sa fiche (T-042), ni D7. À vérifier au même passage que la
-précédente. Les deux lectures concernées ont leur repli 42703 (D7 §4), donc l'absence ne casse
-rien — elle fait juste retomber les fiches sur les originaux lourds, exactement comme avant.
+Les deux avertissements qui vivaient ici — « `atelier_retention` N'EST PAS APPLIQUÉE » et
+« rien n'atteste l'application d'`atelier_vignettes` » — **sont levés** : les colonnes sont là.
+
+⚠️ **Le revers du repli 42703 reste vrai et vaut pour toute migration future** : un repli qui
+se déclenche fait disparaître le champ en silence. Après CHAQUE migration, vérifier que la
+donnée arrive vraiment, pas seulement que la page s'affiche. Pour `anonymise_le`, le contrôle
+est que le dry-run d'`anonymiser-dossiers.ts` cesse d'écrire « la colonne n'existe pas encore ».
+
+`atelier_tracking_code` : ✅ **preuve de bout en bout faite le 01/09** — un signal `ItemShipped`
+rejoué sur la prod a rempli `tracking_url` + `tracking_code` (transporteur « DPD »), une fois
+les clés Cloudprinter posées en Production. Reste à confirmer un jour avec un VRAI colis.
 
 Trois anciennes (`20260528_g1_email_canonical`, `20260528_g3_pages_credits_unique_source`,
 `20260704_notion_synced`) sont absentes de l'historique mais leurs colonnes existent : appliquées
@@ -192,7 +197,8 @@ et T-011 est fermé. (Le code lit une 49e chose, `NODE_ENV`, qui n'est pas une v
 
 À vérifier sur Vercel, Production ET Preview, avant le lancement :
 `BREVO_TEMPLATE_M0_ID` (posée le 28/08), les douze autres templates de l'atelier
-(dont `BREVO_TEMPLATE_M7B_ID`, le magazine numérique — voir la section du 03/09),
+— dont **`BREVO_TEMPLATE_M7B_ID` = 41**, le magazine numérique, ✅ **posée en Production et
+Preview le 03/09** (voir la section du 03/09) —
 **`BREVO_TEMPLATE_M10_ID`** (celle-ci n'existe encore nulle part : il faut d'abord pousser le
 template — sans elle, aucune rétention ne s'applique), `ADMIN_PASSWORD_MATHIAS`,
 `ADMIN_PASSWORD_LOUIS`, `CRON_SECRET`, `ATELIER_MAILS_SECRET`, `CLOUDPRINTER_API_KEY` +
@@ -201,27 +207,49 @@ qu'en Preview jusque-là ; à basculer en LIVE au lancement**), les cinq `R2_*`,
 ⚠️ `ADMIN_PASSWORD` (l'ancien mot de passe partagé) peut rester posée : depuis le 31/08 le code
 l'ignore complètement (T-005). Elle n'ouvre plus rien.
 
-## Le PDF souvenir et la livraison automatique — codé le 03/09/2026, PAS ENCORE ACTIF
+## ✅ Le PDF souvenir et la livraison automatique — EN PRODUCTION depuis le 03/09/2026
 
-Branche `feat/pdf-au-client-a-la-livraison`. Trois choses arrivent ensemble :
+PR #39, mergée et déployée le 03/09 à 12h46 UTC. Trois choses arrivent ensemble :
 le signal Cloudprinter `ItemDeliveryCompleted` passe le dossier en « livrée » tout seul
-(le geste manuel reste en repli) ; un mail **M7b « votre magazine est arrivé »** part à ce
-moment-là ; il porte le lien du **PDF souvenir** — les PDF d'impression fusionnés en un
-fichier feuilletable (1re de couv + bloc + 4e découpées de la feuille enveloppante,
-rognées au format fini, CMJN gardé tel quel, poids d'impression affiché avant le clic).
-La géométrie est prouvée par le harnais (536 assertions) et par une fusion réelle pdf-lib.
+(le geste manuel « Marquer livrée » reste en repli) ; un mail **M7b « votre magazine est
+arrivé »** part à ce moment-là ; il porte le lien du **PDF souvenir** — les PDF d'impression
+fusionnés en un fichier feuilletable (1re de couv + bloc + 4e découpées de la feuille
+enveloppante, rognées au format fini, CMJN gardé tel quel, poids d'impression affiché
+avant le clic).
 
-**Trois gestes de Mathias avant que quoi que ce soit ne parte :**
-1. appliquer `supabase/migrations/20260903_atelier_souvenir.sql` (colonnes
-   `souvenir_pdf_key` + `souvenir_pdf_octets`) — sans elle, la génération refuse en criant ;
-2. pousser le template : `node scripts/mails-atelier.mjs --pousser --seulement M7b`, puis
-   poser `BREVO_TEMPLATE_M7B_ID` sur Vercel (Preview ET Production) — sans elle, M7b est
-   sauté sans verrou, visible sur /sante ;
-3. vérifier au dashboard Cloudprinter que l'interface webhook est abonnée à
-   `ItemDeliveryCompleted` (la liste du 26/08 l'incluait).
+**Ce qui est PROUVÉ, sur la base de production (dossier de test « test PDF souvenir 03-09 ») :**
+- fusion déclenchée par le bouton de la fiche admin : **34 pages, toutes au format fini
+  210 × 297**, dos écarté, fond perdu rogné. Dos **mesuré** à 2,9 mm sur la feuille réelle
+  (jamais calculé au grammage : T-028 n'est pas tranché) ;
+- bascule automatique `expediee → livree` sur le signal, avec l'événement `etat_change`
+  — obligatoire, `mesure.ts` en dépend pour les métriques de livraison ;
+- **M7b réellement envoyé et reçu** (template Brevo **41**) ;
+- téléchargement en production : `www.bellajour.fr/api/atelier/souvenir?token=…` → **302** ;
+  token faux, token absent, dossier non livré → **404** indistinct ;
+- rejeu du même signal : ignoré, aucun doublon.
 
-Tant que rien de tout ça n'est fait, le déploiement est inerte : seule la bascule
-automatique en « livrée » fonctionnera dès la mise en ligne.
+`tsc` + `lint` + `build` verts, harnais à **549 assertions**, toutes vertes.
+
+**Les trois gestes de mise en service sont FAITS :**
+1. migration `20260903_atelier_souvenir.sql` (colonnes `souvenir_pdf_key` +
+   `souvenir_pdf_octets`) **appliquée le 03/09**, colonnes vérifiées en base ;
+2. template Brevo M7b poussé (id **41**) et `BREVO_TEMPLATE_M7B_ID=41` posée sur Vercel
+   Preview + Production le 03/09 ;
+3. ✅ **abonnement Cloudprinter au signal `ItemDeliveryCompleted` : VÉRIFIÉ le 03/09.**
+   Webhook nº 5255, endpoint `www.bellajour.fr/api/cloudprinter/webhook`, les douze signaux
+   cochés dont `ItemDeliveryCompleted`. Et la clé a été éprouvée de bout en bout : un signal
+   réel posté sur la PRODUCTION a répondu `{"received":true,"ignored":true}` — donc la clé
+   du dashboard et `CLOUDPRINTER_WEBHOOK_KEY` sur Vercel sont bien la même, et la garde
+   d'idempotence a joué (le dossier était déjà livré). Si les deux clés avaient divergé, le
+   webhook aurait répondu 404 **en silence** et aucune livraison n'aurait jamais basculé.
+
+⚠️ **Le dossier de test « test PDF souvenir 03-09 » est encore en base**, en état livrée,
+avec son PDF au coffre. Il est inerte (verrou M7b posé), mais il apparaît dans la table de
+travail. À supprimer une fois la recette close.
+
+⚠️ **Ce qui n'est PAS fait, et c'est assumé** : aucune conversion CMJN → RVB, aucune
+recompression. Le souvenir pèse le poids du fichier d'impression, et ce poids est annoncé
+au client avant le clic. Une version allégée demande le moteur de rendu de **T-078**.
 
 ## ⚠️ L'atelier n'est pas encore en fonctionnement (30/08/2026, tenu au 01/09)
 
