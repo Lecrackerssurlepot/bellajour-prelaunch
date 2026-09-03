@@ -27,3 +27,19 @@ Deux pistes, **risque FAIBLE** (mesures locales à un breakpoint, aucune dépend
 ⚠️ **Lié à T-072** : les 3 prix affichés sont FAUX/provisoires (`paliers.ts`). Le jour du barème
 dégressif, l'affichage du prix sur la PDP change de toute façon — autant traiter la lisibilité à ce
 moment-là si Mathias préfère un seul chantier.
+
+## Ce qui a été fait
+**03/09/2026 — fait (branche `fix/pdp-prix-lisibilite`).** La première piste, au plus léger et
+**sans changer la mise en page** : les deux mentions des cartes de prix remontent au minimum
+lisible — `.combien` 10 → 11 px, `.pages` 11 → 12 px (`pdp.css`, bloc `@media max-width:720px`).
+Le prix en euros n'a pas bougé : il était déjà grand (8vw), ce n'est pas lui qui manquait de
+lisibilité mais les libellés au-dessus et en dessous.
+
+**L'invariant « premier écran jusqu'au bouton » est intact** : les interlignes sont resserrés d'un
+cran (`.combien` 1,45 → 1,3 ; `.pages` 1,35 → 1,25) pour absorber la hausse. Mesuré au navigateur
+(375×667) : hauteur du bloc prix et position du bouton **identiques au pixel** avant/après (delta 0).
+
+Cas étroits vérifiés : à 360 px `.pages` tient sur une ligne à 12 px ; à 320 px (iPhone SE 2016) il
+se repliait **déjà** sur deux lignes à 11 px, donc aucune coupe nouvelle et hauteur inchangée.
+`build` vert. **À fermer.** (Le stacking sous 360 px n'a pas été retenu : inutile, et il ajoutait
+du défilement pour un gain nul. La refonte T-072 reste indépendante.)
