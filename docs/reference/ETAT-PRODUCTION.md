@@ -155,9 +155,11 @@ configuration. Vérifié en production le 29/08 — `flore@gmial.com` propose `f
 
 ## Migrations
 
-**20 fichiers sur disque, 19 entrées dans l'historique appliqué** (mesuré le 03/09/2026 :
-`ls supabase/migrations/*.sql` et la table des migrations Supabase). La correspondance
-fichier ↔ entrée n'a PAS été ré-auditée une par une ; ce qui suit l'a été, colonne par colonne.
+**21 fichiers sur disque, 19 entrées dans l'historique appliqué** (mesuré le 03/09/2026 au
+soir : `ls supabase/migrations/*.sql` et `supabase_migrations.schema_migrations`). L'écart de
+deux vient des migrations passées par l'éditeur SQL du dashboard, qui n'écrit pas l'historique.
+La correspondance fichier ↔ entrée n'a PAS été ré-auditée une par une ; ce qui suit l'a été,
+colonne par colonne.
 
 ✅ **Les colonnes fraîches existent toutes en production** (vérifiées le 03/09 dans
 `information_schema.columns`, pas déduites d'un ticket) :
@@ -168,6 +170,7 @@ fichier ↔ entrée n'a PAS été ré-auditée une par une ; ce qui suit l'a ét
 | `photos.vignette_key` | `atelier_vignettes` | ✅ appliquée |
 | `numeros.tracking_code` | `atelier_tracking_code` | ✅ appliquée le 30/08 |
 | `numeros.souvenir_pdf_key` + `souvenir_pdf_octets` | `atelier_souvenir` | ✅ appliquée le 03/09 |
+| `numeros.sous_titre` + `mot_quatrieme` | `composer_mots_couverture` | ✅ appliquée le 03/09, **écriture prouvée** (dossier de test créé par la route de prod, les deux colonnes remplies, dossier supprimé) |
 
 Les deux avertissements qui vivaient ici — « `atelier_retention` N'EST PAS APPLIQUÉE » et
 « rien n'atteste l'application d'`atelier_vignettes` » — **sont levés** : les colonnes sont là.
