@@ -67,7 +67,7 @@ export default function Screen6Fin({
     <>
       <div className="at-done" aria-hidden="true">✓</div>
       <p className="at-kicker">C’est fait</p>
-      <h2>{nom}<br />est entre nos mains.</h2>
+      <h2>« {nom} »<br />est entre nos mains.</h2>
       <p className="at-lede at-q-lede">
         <b>
           L’atelier a bien reçu {arrivees > 0 ? <>vos {arrivees} photos</> : <>vos photos</>}{' '}
@@ -96,19 +96,22 @@ export default function Screen6Fin({
 
       <p className="at-lede at-q-lede">
         Votre couverture arrive sous 48 h par mail. Vous ne payez qu’après
-        l’avoir vue — et seulement si elle vous plaît.
+        l’avoir vue, et seulement si elle vous plaît.
       </p>
 
       {/* Elle est ici, maintenant, et c'est le meilleur moment pour lui dire
           de garder son lien : il n'y a ni compte ni mot de passe, ce lien EST
           son espace client, et le mail qui le porte peut tomber en
-          Promotions. */}
+          Promotions. Une carte (03/09) plutôt qu'une ligne : c'est LA chose
+          à emporter de cet écran, elle mérite un cadre. */}
       {token && (
-        <p className="at-q-note">
-          <b>Gardez votre lien.</b> C’est le seul, il suit votre numéro jusqu’à la livraison.
-          <br />
+        <div className="at-fin-carte">
+          <span className="at-fin-carte-label">Votre lien, le seul. Gardez-le</span>
           <LienPartage url={`/numero/${token}`} />
-        </p>
+          <span className="at-fin-carte-note">
+            Il suit votre numéro jusqu’à la livraison. Vous le recevez aussi par mail.
+          </span>
+        </div>
       )}
     </>
   )

@@ -302,6 +302,8 @@ function matiereDe(fiche: FicheVue): MatiereBrief {
     createdAt: l.createdAt,
     occasion: fiche.occasion,
     histoire: fiche.histoire,
+    sousTitre: fiche.sousTitre,
+    motQuatrieme: fiche.motQuatrieme,
     canvaTravail: fiche.canvaTravail,
     notes: fiche.notes.map((n) => ({ prenom: n.prenom, texte: n.texte, createdAt: n.createdAt })),
   };
@@ -627,6 +629,21 @@ export default function Fiche({
             <dl className="ate-defs">
               <dt>Occasion</dt>
               <dd>{fiche.occasion || "—"}</dd>
+              {/* Les mots de couverture facultatifs (03/09) : rien à afficher
+                  quand il n'y en a pas — la plupart des dossiers n'en ont pas,
+                  deux lignes de tirets diraient qu'il manque quelque chose. */}
+              {fiche.sousTitre && (
+                <>
+                  <dt>Sous-titre (1re de couverture)</dt>
+                  <dd>{fiche.sousTitre}</dd>
+                </>
+              )}
+              {fiche.motQuatrieme && (
+                <>
+                  <dt>Quatrième de couverture</dt>
+                  <dd>{fiche.motQuatrieme}</dd>
+                </>
+              )}
             </dl>
             <p className="ate-histoire">{fiche.histoire || "Le client n'a rien écrit."}</p>
           </section>

@@ -33,8 +33,19 @@ const RATE_LIMIT_MAX_PATCH = process.env.NODE_ENV === "production" ? 30 : 120;
 const RATE_LIMIT_WINDOW_MS = process.env.NODE_ENV === "production" ? 60_000 : 10_000;
 
 /* Plafonds de saisie — coupent au lieu de rejeter : personne ne perd son
-   texte parce qu'il a écrit trois lignes de trop. */
-const MAX = { occasion: 120, histoire: 4000, titre: 34, prenom: 60, telephone: 30 };
+   texte parce qu'il a écrit trois lignes de trop.
+   `occasion` est passé de 120 à 240 le 03/09 : l'écran 1 joint désormais des
+   mots-clés cumulables (« Un road trip · Les amis · … ») et douze mots plus
+   un texte libre dépassaient l'ancien plafond en silence. */
+const MAX = {
+  occasion: 240,
+  histoire: 4000,
+  titre: 34,
+  sous_titre: 80,
+  mot_quatrieme: 160,
+  prenom: 60,
+  telephone: 30,
+};
 
 /* Sorti du corps de POST pour servir aussi à PATCH : les deux écrivent en
    base et méritent le même garde-fou — mais pas le même plafond, et pas le
@@ -98,6 +109,12 @@ export async function POST(request: Request) {
       telephone: normaliserTelephone(clean(body.telephone, MAX.telephone)),
     };
 
+    /* Les deux mots de couverture FACULTATIFS de l'écran 3 (03/09). Hors de
+       `valeurs` : premierManquant ne les connaît pas, et ne doit jamais les
+       connaître — vides est leur état normal. */
+    const sousTitre = clean(body.sous_titre, MAX.sous_titre);
+    const motQuatrieme = clean(body.mot_quatrieme, MAX.mot_quatrieme);
+
     const manquant = premierManquant(CHAMPS_QUESTIONNAIRE, (c) => valeurs[c]);
     if (manquant) {
       return NextResponse.json(
@@ -118,31 +135,59 @@ export async function POST(request: Request) {
        Le téléphone est enregistré NORMALISÉ (« +33769710686 ») : c'est cette
        forme que Cloudprinter attend, et la normaliser au moment de la
        commande obligerait à refaire le même travail des deux côtés. */
-    const { data, error } = await supabase
+    const ligne = {
+      token,
+      etat: "photos_recues",
+      occasion: valeurs.occasion,
+      histoire: valeurs.histoire,
+      titre: valeurs.titre,
+      prenom,
+      email,
+      email_canonical: canonicalizeEmail(email),
+      telephone: valeurs.telephone,
+    };
+
+    /* Les mots de couverture ne rejoignent l'insert que s'ils existent : un
+       dossier sans eux ne nomme jamais les colonnes, donc ne dépend pas de
+       la migration. */
+    const colonnesCouverture = {
+      ...(sousTitre ? { sous_titre: sousTitre } : {}),
+      ...(motQuatrieme ? { mot_quatrieme: motQuatrieme } : {}),
+    };
+
+    let insertion = await supabase
       .from("numeros")
-      .insert({
-        token,
-        etat: "photos_recues",
-        occasion: valeurs.occasion,
-        histoire: valeurs.histoire,
-        titre: valeurs.titre,
-        prenom,
-        email,
-        email_canonical: canonicalizeEmail(email),
-        telephone: valeurs.telephone,
-      })
+      .insert({ ...ligne, ...colonnesCouverture })
       .select("id, token")
       .single();
+
+    /* T-044 — repli 42703, comme partout (donnees.ts, paiement.ts, mails.ts) :
+       entre le déploiement du code et le passage de la migration, la colonne
+       manque et l'insert ENTIER échoue. On réessaie sans elles — le dossier
+       vaut infiniment plus que deux mentions facultatives — et le journal
+       ci-dessous les garde quand même. */
+    if (insertion.error?.code === "42703" && Object.keys(colonnesCouverture).length > 0) {
+      console.error(
+        "[atelier/numero] ⚠️ REPLI 42703 : sous_titre/mot_quatrieme absentes en base, les mots de couverture ne sont PAS en colonne (le journal les garde). Appliquer supabase/migrations/20260903_composer_mots_couverture.sql.",
+      );
+      insertion = await supabase.from("numeros").insert(ligne).select("id, token").single();
+    }
+
+    const { data, error } = insertion;
 
     if (error || !data) {
       console.error("[atelier/numero] insert échoué", error?.code, error?.message);
       return NextResponse.json({ error: "internal" }, { status: 500 });
     }
 
-    /* Invariant nº6 — le dossier commence par une ligne de journal. */
+    /* Invariant nº6 — le dossier commence par une ligne de journal. Les mots
+       de couverture y figurent quand ils existent : même si le repli 42703
+       vient de les perdre en colonne, l'atelier peut les relire ici. */
     await logEvenement(supabase, data.id, "numero_cree", {
       etat: "photos_recues",
       source: "questionnaire_ecran_4",
+      ...(sousTitre ? { sous_titre: sousTitre } : {}),
+      ...(motQuatrieme ? { mot_quatrieme: motQuatrieme } : {}),
     });
 
     /* ══════════════════════════════════════════════════════════════════

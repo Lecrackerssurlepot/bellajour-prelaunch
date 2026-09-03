@@ -4,9 +4,12 @@
    Lecture du scroll via requestAnimationFrame (règle CLAUDE.md) : le
    listener ne fait que lever un drapeau, la mesure a lieu dans la frame. */
 
-import { useEffect, useRef, useState } from 'react'
-import { CTA_HREF, CTA_MAGAZINE_LABEL } from '../content'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { COMPOSER_HREF, CTA_HREF, CTA_MAGAZINE_LABEL, CTA_REPRISE_LABEL } from '../content'
+import { draftEnCours } from '../composer/draft'
 import './nav.css'
+
+const RIEN = () => () => {}
 
 /* DEUX RÉGLAGES, PARCE QUE LA BARRE SERT DEUX PAGES.
 
@@ -41,6 +44,15 @@ export default function Nav({
 }) {
   const [stuck, setStuck] = useState(false)
   const frame = useRef(0)
+
+  /* Le libellé conscient du brouillon (03/09) : quand le bouton mène à
+     /composer et qu'une composition est en cours sur l'appareil, il dit la
+     reprise. Même mécanique que `navigator.share` dans LienPartage : le
+     serveur rend `false` (le libellé de départ), le client la vérité —
+     sans setState d'hydratation. La destination, elle, ne change pas :
+     /composer rouvre le brouillon tout seul. */
+  const reprise = useSyncExternalStore(RIEN, draftEnCours, () => false)
+  const labelAffiche = href === COMPOSER_HREF && reprise ? CTA_REPRISE_LABEL : label
 
   useEffect(() => {
     const read = () => {
@@ -122,7 +134,7 @@ export default function Nav({
           />
         </button>
       )}
-      <a className="at-nav-cta" href={href}>{label}</a>
+      <a className="at-nav-cta" href={href}>{labelAffiche}</a>
     </nav>
   )
 }

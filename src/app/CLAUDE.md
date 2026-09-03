@@ -75,9 +75,12 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
    libellé ») : `CTA_HREF = /magazine` porte `CTA_MAGAZINE_LABEL` (« Découvrir les magazines »),
    `COMPOSER_HREF = /composer` porte `CTA_LABEL` (« Composer avec l'atelier ») —
    les deux dans `(atelier)/content.ts`. `Nav` prend `href` ET `label` ENSEMBLE : régler l'un sans
-   l'autre fait mentir le bouton sur la marche. Ne JAMAIS accrocher `?reprendre=<token>` à
-   `CTA_HREF` : le paramètre n'est lu que par `/composer`, il serait ignoré EN SILENCE et la
-   cliente repartirait sur un dépôt vide en croyant reprendre le sien.
+   l'autre fait mentir le bouton sur la marche. Depuis le 03/09, un brouillon vivant sur
+   l'appareil (`draftEnCours`, composer/draft.ts) fait dire aux boutons vers `/composer`
+   « Continuer la composition » (`CTA_REPRISE_LABEL`) — `Nav` et `LienComposer` le font par
+   `useSyncExternalStore`, jamais par setState d'hydratation. Ne JAMAIS accrocher
+   `?reprendre=<token>` à `CTA_HREF` : le paramètre n'est lu que par `/composer`, il serait
+   ignoré EN SILENCE et la cliente repartirait sur un dépôt vide en croyant reprendre le sien.
 
 ## Le questionnaire — chaque phrase est un correctif, pas du style
 
@@ -91,10 +94,12 @@ rouvre le trou.
    le bouton qui la NOMME (« Passer à mes photos », pas « Continuer »).
 2. **L'écran 3 n'a plus de bouton pour sauter.** « Je ne sais pas encore, choisissez pour moi »
    posait un titre nul, et personne ne choisissait à sa place.
-3. **L'écran 5 dit UNE idée.** Sa phrase disait « vos photos sont arrivées chez nous, mais
-   l'atelier ne les a pas encore reçues » : exact, et illisible. ⚠️ `at-d-envoi--collee` NE COLLE
-   RIEN malgré son nom ; ce qui garde le bouton en vue, c'est la grille repliée
-   (`VIGNETTES_VISIBLES`), et une photo en erreur n'est JAMAIS repliée.
+3. **L'écran 5 : le geste vit dans la barre FIXE** (`.at-q-barre--depot`, refonte du 03/09) —
+   consentement + « Envoyer à l'atelier », toujours visibles, ce qui règle définitivement le
+   bouton noyé du 25/08. La grille repliée (`VIGNETTES_VISIBLES`) reste, et une photo en erreur
+   n'est JAMAIS repliée. Le rappel du consentement ne se dit qu'AU CLIC sans coche (décision
+   Mathias) ; « Il reste un geste » est parti AVEC sa cause. Plus de jauge sur 100 : sous 40 une
+   barre graduée sur 40, au-dessus le badge « De quoi composer ».
 4. **L'écran 6 nomme ce qui est arrivé**, avec le compte CONFIRMÉ par le serveur (remonté par
    `onTermine(nb)`). À zéro il n'est pas affiché plutôt qu'inventé.
 5. **Le téléphone est obligatoire, et l'écran dit pourquoi.** Cloudprinter l'exige dans l'adresse ;

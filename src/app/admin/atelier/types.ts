@@ -173,6 +173,11 @@ export type Fiche = {
   parcours: Parcours;
   occasion: string | null;
   histoire: string | null;
+  /** Les mots de couverture facultatifs de l'écran 3 (03/09). Null tant que
+      la migration 20260903_composer_mots_couverture n'est pas passée, ou
+      que le client n'a rien écrit — les deux se lisent pareil : rien. */
+  sousTitre: string | null;
+  motQuatrieme: string | null;
   telephone: string | null;
   consentPhotos: boolean;
   consentCommunication: boolean;

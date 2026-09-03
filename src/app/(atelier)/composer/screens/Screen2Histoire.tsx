@@ -15,10 +15,11 @@ export default function Screen2Histoire({
 
   return (
     <>
-      <p className="at-kicker">Étape 2 sur 6</p>
-      <h2>Racontez.</h2>
+      <p className="at-kicker">L’histoire</p>
+      <h2>Racontez-nous ce moment.</h2>
       <p className="at-lede at-q-lede">
-        Où, quand, avec qui. Ce qu’on doit ressentir en tournant les pages.
+        Trois phrases suffisent. Le lieu, ceux qui étaient là, et ce qu’on doit
+        ressentir en tournant les pages.
       </p>
 
       <textarea
@@ -35,13 +36,14 @@ export default function Screen2Histoire({
           porte déjà la règle. */}
       {longueur > 0 && manque > 0 && (
         <p className="at-compte">
-          {longueur} caractère{longueur > 1 ? 's' : ''} — il en faut au moins {MIN_HISTOIRE}.
+          {longueur} caractère{longueur > 1 ? 's' : ''}, il en faut au moins {MIN_HISTOIRE}.
         </p>
       )}
 
       <p className="at-hint">
-        « Quatre jours à Sonar avec la bande. Beaucoup de nuit, un peu de piscine,
-        zéro sommeil. Je veux que ça respire l’été et le bordel. »
+        « Quatre jours de festival avec la bande. Des concerts jusqu’au bout de
+        la nuit, des siestes au soleil, des fous rires. Je veux que ça respire
+        l’été et l’insouciance. »
       </p>
     </>
   )

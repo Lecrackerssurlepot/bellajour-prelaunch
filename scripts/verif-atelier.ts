@@ -465,6 +465,8 @@ const MATIERE: MatiereBrief = {
   createdAt: "2026-08-12T09:00:00.000Z",
   occasion: "Un anniversaire",
   histoire: "On a marche des kilometres dans Triana.",
+  sousTitre: null,
+  motQuatrieme: null,
   canvaTravail: "https://canva.com/design/interne",
   notes: [
     { prenom: "Louis", texte: "Deux enfants, n'en faire disparaitre aucun.", createdAt: "2026-08-14T10:00:00.000Z" },
@@ -478,6 +480,16 @@ ok("le carnet est chronologique, la plus ancienne d'abord",
    BRIEF.indexOf("cadres blancs") < BRIEF.indexOf("disparaitre"));
 ok("le brief porte le lien Canva de travail", BRIEF.includes("canva.com/design/interne"));
 ok("aucun tiret cadratin (consigne de la maison)", !/[\u2013\u2014]/.test(BRIEF));
+ok("sans mots de couverture, le bloc n'existe pas", !BRIEF.includes("LES MOTS DE COUVERTURE"));
+
+/* Les mots de couverture (03/09) : pr\u00e9sents, ils forment leur bloc. */
+const BRIEF_COUVERTURE = composerBrief(
+  { ...MATIERE, sousTitre: "Seville, juin 2026", motQuatrieme: "A la bande." },
+  new Date("2026-08-25T08:00:00.000Z"),
+);
+ok("le brief porte le sous-titre de couverture", BRIEF_COUVERTURE.includes("Seville, juin 2026"));
+ok("le brief porte le mot de quatrieme", BRIEF_COUVERTURE.includes("A la bande."));
+ok("le bloc des mots de couverture est nomme", BRIEF_COUVERTURE.includes("LES MOTS DE COUVERTURE"));
 ok("aucune ligne au dela de 80 colonnes sauf les liens",
    BRIEF.split("\n").every((l) => l.length <= 80 || l.includes("http")));
 const VIDE = composerBrief({ ...MATIERE, occasion: null, histoire: null, notes: [] }, new Date("2026-08-25T08:00:00.000Z"));

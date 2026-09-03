@@ -41,6 +41,10 @@ export type MatiereBrief = {
   createdAt: string | null;
   occasion: string | null;
   histoire: string | null;
+  /** Les mots de couverture facultatifs de l'écran 3 (03/09). Null la
+      plupart du temps : le bloc n'apparaît dans le brief que s'ils existent. */
+  sousTitre: string | null;
+  motQuatrieme: string | null;
   /** Le lien d'ÉDITION, interne (PRD §11). Il ne part jamais chez la cliente. */
   canvaTravail: string | null;
   notes: Array<{ prenom: string; texte: string; createdAt: string }>;
@@ -133,6 +137,17 @@ export function composerBrief(m: MatiereBrief, maintenant: Date): string {
   morceaux.push("");
 
   morceaux.push(bloc("L'OCCASION", plier(m.occasion?.trim() || "Elle ne l'a pas précisée.")));
+
+  /* Les mots de couverture : un bloc SEULEMENT s'il y a quelque chose à
+     composer. La plupart des dossiers n'en ont pas, et un bloc vide se
+     lirait comme un oubli. */
+  const motsCouverture = [
+    m.sousTitre?.trim() ? `Sous-titre (1re de couverture) : ${m.sousTitre.trim()}` : "",
+    m.motQuatrieme?.trim() ? `Quatrième de couverture : ${m.motQuatrieme.trim()}` : "",
+  ].filter(Boolean);
+  if (motsCouverture.length) {
+    morceaux.push(bloc("LES MOTS DE COUVERTURE", plier(motsCouverture.join("\n"))));
+  }
 
   morceaux.push(
     bloc("SON HISTOIRE, DANS SES MOTS", plier(m.histoire?.trim() || "Elle n'a rien écrit.")),
