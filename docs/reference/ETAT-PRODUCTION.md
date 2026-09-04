@@ -56,6 +56,13 @@ disent l'état final.
   l'écran sans scroller** : ils tombaient 33 px trop bas sur 1280 × 800 ; il reste 66 px de marge
   là, et 112 px sur un téléphone de 375 × 780. ⚠️ Le resserrage vit dans `compte.css`, jamais
   dans `numero.css` — la page de suivi n'a pas ce problème et n'a pas à payer pour lui.
+- ⚠️ **Les flèches de la visionneuse sont désormais visibles AU DOIGT AUSSI** (3e retour de
+  Mathias, 04/09). Elles étaient réservées au pointeur fin ; au doigt il ne restait que le
+  glissé, un geste qui ne s'annonce pas. **Ce changement touche `/numero`, qui est EN
+  PRODUCTION** — c'est voulu, les deux pages partagent le composant. Sur téléphone le bouton
+  garde ses 44 × 44 (plancher tactile du dépôt) mais perd sa pastille de verre : le chevron
+  seul, sur une ombre portée, parce que deux pastilles mangeraient un tiers d'un magazine large
+  de 300 px sur un écran de 375. Vérifié sur les deux pages, sans débordement.
 - **La barre ne devine plus** : un seul numéro en cours → « Suivre mon numéro » y mène ;
   plusieurs → « Mes numéros » ouvre le compte. Et **sur mobile la barre ne porte que le compte**.
 - **Le jeton du compte montre la photo Google** (ou l'initiale) une fois connectée.
