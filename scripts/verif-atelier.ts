@@ -139,6 +139,7 @@ import {
   type DossierDuCompte,
 } from "@/lib/compte/rattachement";
 import { suiteSure } from "@/lib/compte/garde";
+import { compteOuvert } from "@/lib/compte/session";
 
 let ko = 0;
 const ok = (n: string, c: boolean) => {
@@ -1909,6 +1910,47 @@ ok("le plus recemment remue vient en tete",
    ])[0].token === "w".repeat(32));
 ok("aucun dossier actif : rien dans la barre",
    numerosEnCours([]).length === 0);
+
+titre("— l'espace compte ne s'ouvre QUE quand il peut tenir sa promesse —");
+{
+  /* La regle lit process.env : on la met en scene, puis on rend l'env. */
+  const sauve = {
+    url: process.env.SUPABASE_URL,
+    anon: process.env.SUPABASE_ANON_KEY,
+    c1: process.env.BREVO_TEMPLATE_C1_ID,
+    c2: process.env.BREVO_TEMPLATE_C2_ID,
+    node: process.env.NODE_ENV,
+  };
+  const poser = (v: Record<string, string | undefined>) => {
+    for (const [k, val] of Object.entries(v)) {
+      if (val === undefined) delete process.env[k];
+      else process.env[k] = val;
+    }
+  };
+  const posNode = (v: string | undefined) => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = v;
+  };
+  posNode("production");
+
+  poser({ SUPABASE_URL: "u", SUPABASE_ANON_KEY: undefined, BREVO_TEMPLATE_C1_ID: "1", BREVO_TEMPLATE_C2_ID: "2" });
+  ok("prod sans cle anon : ferme", compteOuvert() === false);
+
+  poser({ SUPABASE_ANON_KEY: "k", BREVO_TEMPLATE_C1_ID: undefined, BREVO_TEMPLATE_C2_ID: undefined });
+  ok("prod sans les mails : FERME — c'etait l'etat de la prod le 04/09", compteOuvert() === false);
+
+  poser({ BREVO_TEMPLATE_C1_ID: "1" });
+  ok("prod avec un seul mail : ferme (le reset resterait muet)", compteOuvert() === false);
+
+  poser({ BREVO_TEMPLATE_C2_ID: "2" });
+  ok("prod avec tout : OUVERT, sans rien redeployer", compteOuvert() === true);
+
+  posNode("development");
+  poser({ BREVO_TEMPLATE_C1_ID: undefined, BREVO_TEMPLATE_C2_ID: undefined });
+  ok("en developpement, la cle anon suffit (on veut pouvoir regarder)", compteOuvert() === true);
+
+  poser({ SUPABASE_URL: sauve.url, SUPABASE_ANON_KEY: sauve.anon, BREVO_TEMPLATE_C1_ID: sauve.c1, BREVO_TEMPLATE_C2_ID: sauve.c2 });
+  posNode(sauve.node);
+}
 
 titre("— ?suite= : jamais une redirection ouverte —");
 

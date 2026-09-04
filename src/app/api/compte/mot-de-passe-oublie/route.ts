@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { envoyerC2Reinitialisation } from "@/lib/compte/mails";
+import { compteOuvert } from "@/lib/compte/session";
 import { creerPlafond, delaiNeutre, emailPlausible } from "@/lib/compte/garde";
 
 /**
@@ -16,6 +17,9 @@ export const runtime = "nodejs";
 const depasseLePlafond = creerPlafond(3);
 
 export async function POST(request: Request) {
+  if (!compteOuvert()) {
+    return NextResponse.json({ error: "indisponible" }, { status: 404 });
+  }
   if (depasseLePlafond(request)) {
     return NextResponse.json({ error: "trop_de_tentatives" }, { status: 429 });
   }

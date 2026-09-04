@@ -25,9 +25,40 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 | Prévente (`/preventes`, `/lancement`) | retirées, 307 vers `/` | 28/08/2026 |
 | Rebonds Brevo (`/api/brevo/webhook`) | **actif**, webhook Brevo id 2158565 | prouvé le 29/08/2026 à 10:14 |
 | PDF souvenir + mail M7b à la livraison | en ligne, chaîne complète vérifiée | 03/09/2026 (PR #39) |
-| Compte cliente (`/compte`) | **écrit et éprouvé en local, PAS déployé** — six gestes de mise en service en attente (voir plus bas) | 04/09/2026 |
+| Compte cliente (`/compte`) | **déployé (PR #52) mais FERMÉ au public** : il s'ouvrira tout seul quand les trois variables seront posées (voir plus bas) | 04/09/2026 |
 
 Quatorze fondateurs ont des droits ouverts sous les CGV v2.5, maintenus en régime transitoire.
+
+## ⚠️ L'incident du 04/09 — dix minutes de porte ouverte sur du vide
+
+**Ce qui s'est passé.** La PR #52 a été fusionnée et déployée. La brique compte s'est retrouvée
+en production avec `SUPABASE_ANON_KEY` posée (elle l'était déjà) mais **sans les templates
+Brevo** — qui n'ont jamais été poussés, faute d'accord. Résultat, pour une vraie visiteuse :
+l'icône de compte apparaissait dans la barre ; « Continuer avec Google » menait à une page
+d'erreur JSON de Supabase (`provider is not enabled`, vérifié) ; et surtout **une inscription
+aurait créé un compte dont le mail de confirmation ne serait jamais parti** — une personne
+coincée avec un compte inutilisable, et une ligne orpheline dans `auth.users`.
+
+**Pourquoi la règle du dépôt n'a pas suffi.** « Une variable absente ne fait pas d'erreur, elle
+fait un silence » vaut pour un mail qui ne part pas. Elle ne vaut PAS pour une porte
+d'inscription : là, le silence fabrique un dégât.
+
+**Le correctif (`compteOuvert()`, `src/lib/compte/session.ts`).** En production, l'espace
+n'existe pour personne tant que les trois variables ne sont pas posées : pas d'entrée dans la
+barre, pas d'invitation sur `/numero`, `/compte/*` en 404, routes d'écriture en 404, et le
+bouton Google renvoie à l'accueil au lieu de partir chez Supabase. Le jour où Mathias pose les
+variables, **l'espace s'ouvre tout seul, sans redéploiement**. En développement, la clé anon
+suffit — on veut pouvoir regarder l'espace sans configurer Brevo.
+Second garde-fou, celui-ci dans les deux mondes : `envoyerC1Inscription` **ne crée aucun compte**
+si `BREVO_TEMPLATE_C1_ID` est absente.
+
+Vérifié en simulant les conditions exactes de la production : `statut → ouvert:false`,
+`/compte` `/compte/connexion` `/compte/mot-de-passe-oublie` et `POST /api/compte/inscription`
+tous en **404**, Google renvoyé à l'accueil, et `/numero` rendue **intacte** (visionneuse et
+flèches présentes, aucune mention de compte). Cinq assertions au harnais couvrent la règle.
+
+⚠️ **Poser les trois variables OUVRE la porte au public.** Activer le provider Google dans
+Supabase AVANT, sinon « Continuer avec Google » mène à une erreur qu'on ne peut pas habiller.
 
 ## Le compte cliente — écrit le 04/09, en attente de mise en service
 

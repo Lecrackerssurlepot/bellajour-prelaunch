@@ -24,6 +24,15 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
 /** C1 — crée le compte (email non confirmé) et envoie le lien de confirmation. */
 export async function envoyerC1Inscription(email: string, password: string): Promise<void> {
   try {
+    /* ⚠️ JAMAIS DE COMPTE SANS MAIL DE CONFIRMATION. Sans le template, le
+       compte serait bien créé et le lien ne partirait jamais : la personne
+       ne pourrait ni le confirmer ni s'en servir, et nous garderions une
+       ligne que personne ne réclame. On préfère ne rien créer du tout — la
+       réponse HTTP, elle, reste la même (anti-énumération). */
+    if (!Number(process.env.BREVO_TEMPLATE_C1_ID)) {
+      console.error("[compte] C1 IMPOSSIBLE — BREVO_TEMPLATE_C1_ID absente : aucun compte créé");
+      return;
+    }
     const admin = clientAuthAdmin();
     const { data, error } = await admin.auth.admin.generateLink({
       type: "signup",

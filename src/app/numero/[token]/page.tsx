@@ -32,7 +32,7 @@ import BoutonValider from './BoutonValider'
 import BoutonEnvoyer from './BoutonEnvoyer'
 import Apercu from './Apercu'
 import LienPartage from '../../components/LienPartage'
-import { utilisateurConnecte } from '@/lib/compte/session'
+import { compteOuvert, utilisateurConnecte } from '@/lib/compte/session'
 import { rattacherParToken } from '@/lib/compte/donnees'
 import '../numero.css'
 
@@ -222,8 +222,10 @@ export default async function NumeroPage({
      (rattacherParToken), et la bande le dit. Un dossier qui n'est pas le
      sien : la bande se tait — le token affiche la page, le compte n'a rien
      à y dire. */
-  const qui = await utilisateurConnecte()
-  const compte: 'invite' | 'lie' | null = !qui
+  const qui = compteOuvert() ? await utilisateurConnecte() : null
+  const compte: 'invite' | 'lie' | null = !compteOuvert()
+    ? null /* l'espace n'est pas ouvert : on ne propose rien, on ne promet rien */
+    : !qui
     ? 'invite'
     : (await rattacherParToken(makeSupabase(), qui, token)) === 'lie'
       ? 'lie'

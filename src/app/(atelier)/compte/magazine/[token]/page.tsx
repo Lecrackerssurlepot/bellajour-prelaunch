@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { makeSupabase } from '@/lib/supabase'
-import { utilisateurConnecte } from '@/lib/compte/session'
+import { compteOuvert, utilisateurConnecte } from '@/lib/compte/session'
 import { lireDossiersDuCompte } from '@/lib/compte/donnees'
 import { resoudreApercu } from '@/lib/atelier/apercu'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
@@ -30,6 +30,10 @@ export default async function MagazinePage({
 }: {
   params: Promise<{ token: string }>
 }) {
+  /* L'espace n'est pas encore ouvert au public (compteOuvert) : cette
+     page n'existe pas. */
+  if (!compteOuvert()) notFound()
+
   const { token } = await params
   if (!isValidNumeroToken(token)) notFound()
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { clientCompte } from "@/lib/compte/session";
+import { clientCompte, compteOuvert } from "@/lib/compte/session";
 import { COOKIE_SUITE, suiteSure } from "@/lib/compte/garde";
 
 /**
@@ -24,6 +24,9 @@ export const runtime = "nodejs";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
 
 export async function GET(request: Request) {
+  if (!compteOuvert()) {
+    return NextResponse.redirect(new URL("/", SITE_URL));
+  }
   const client = await clientCompte();
   if (!client) {
     return NextResponse.redirect(new URL("/compte/connexion?erreur=indisponible", SITE_URL));
