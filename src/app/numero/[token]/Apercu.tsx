@@ -121,18 +121,17 @@ export default function Apercu({
                   aria-label={`Agrandir : ${v.legende}`}
                   tabIndex={k === idx ? 0 : -1}
                 >
-                  {/* L'OBJET magazine : la face porte le visuel et ses voiles
-                      (dos ou pli, lumière), les épaisseurs se dessinent
-                      derrière elle (pseudo-éléments de .nu-viz-mag) et la
-                      tranche des pages déborde de la face — d'où un bouton
-                      SANS overflow:hidden, c'est la face qui rogne. */}
+                  {/* L'OBJET magazine, version SOBRE (retour Mathias 04/09) :
+                      la face porte le visuel, l'épaisseur du papier se
+                      dessine derrière elle (pseudo-éléments de .nu-viz-mag),
+                      angles droits partout — d'où un bouton SANS
+                      overflow:hidden, c'est la face qui rogne. Le pli ne
+                      s'affiche QUE sur la double ouverte. */}
                   <span className="nu-viz-mag">
-                    <span className="nu-viz-mag-tranche" aria-hidden="true" />
                     <span className="nu-viz-mag-face">
                       {/* <img> plain — next/image est proscrit sur ce dépôt (CLAUDE.md). */}
                       <img src={v.src} alt={v.legende} loading={k === 0 ? 'eager' : 'lazy'} decoding="async" />
-                      <span className="nu-viz-mag-dos" aria-hidden="true" />
-                      <span className="nu-viz-mag-lumiere" aria-hidden="true" />
+                      <span className="nu-viz-mag-pli" aria-hidden="true" />
                     </span>
                   </span>
                   <span className="nu-viz-zoom" aria-hidden="true">Agrandir</span>
