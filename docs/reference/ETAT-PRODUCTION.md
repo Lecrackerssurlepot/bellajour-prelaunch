@@ -116,11 +116,11 @@ fiche admin affiche « crédit consommé le … » à la place du bouton de frap
 **ne bouge pas** : un fondateur dont le crédit est dépensé reste fondateur, pour la segmentation
 des campagnes. La source de vérité reste le journal `evenements` ; ces colonnes sont un miroir.
 
-⚠️ **Comptes de test du 04/09.** Celui de la première recette (`mdurand085+test@gmail.com`) a
-été supprimé, `auth.users` était revenu à zéro. **Un second, `mdurand085+demo@gmail.com`, est
-ENCORE EN BASE** : il sert à Mathias pour regarder l'espace en local (Gmail ignore le `+demo`,
-donc il voit ses vrais dossiers). À supprimer quand il aura fini de regarder.
-Aucun événement `compte_rattache` n'a été écrit à ce jour (la migration n'est pas passée).
+✅ **Les deux comptes de test du 04/09 sont supprimés** (`mdurand085+test@gmail.com` après la
+recette, `mdurand085+demo@gmail.com` après la relecture de Mathias). **`auth.users` est à ZÉRO
+compte**, et aucun événement `compte_rattache` n'a jamais été écrit — la migration n'étant pas
+passée, les replis 42703/PGRST204 ont joué à chaque fois. La base est exactement dans l'état
+d'avant ce chantier.
 
 ## Recette de bout en bout de l'Atelier — 01/09/2026 (après-midi)
 
