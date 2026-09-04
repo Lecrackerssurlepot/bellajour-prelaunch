@@ -1,4 +1,4 @@
-# État du système — au 03/09/2026
+# État du système — au 04/09/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -25,8 +25,65 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 | Prévente (`/preventes`, `/lancement`) | retirées, 307 vers `/` | 28/08/2026 |
 | Rebonds Brevo (`/api/brevo/webhook`) | **actif**, webhook Brevo id 2158565 | prouvé le 29/08/2026 à 10:14 |
 | PDF souvenir + mail M7b à la livraison | en ligne, chaîne complète vérifiée | 03/09/2026 (PR #39) |
+| Compte cliente (`/compte`) | **écrit et éprouvé en local, PAS déployé** — six gestes de mise en service en attente (voir plus bas) | 04/09/2026 |
 
 Quatorze fondateurs ont des droits ouverts sous les CGV v2.5, maintenus en régime transitoire.
+
+## Le compte cliente — écrit le 04/09, en attente de mise en service
+
+Supabase Auth en « identité seulement » : Google **et** email + mot de passe, avec mot de passe
+oublié. Le compte **s'ajoute** au lien `/numero/<token>`, il ne le remplace jamais — une cliente
+qui n'en veut pas ne voit rien changer, et le token reste l'unique identité des routes
+`/api/atelier/*`. `/compte` liste ses numéros en trois sections (à terminer · en cours à
+l'atelier · sa bibliothèque, avec le PDF souvenir). La barre du site gagne un coin compte et,
+quand un numéro est en cours, un « Suivre mon numéro » qui **s'ajoute** au CTA marketing (lequel
+ne disparaît jamais) ; sous 470 px il devient une pastille courte et prend l'unique emplacement.
+
+**Ce qui est PROUVÉ en local, contre la base de production (04/09) :**
+- connexion par mot de passe → cookie de session **`HttpOnly`** (aucun client Supabase dans le
+  navigateur, la clé anon reste serveur), `/api/compte/statut` répond le numéro en cours ;
+- réinitialisation complète : lien `generateLink(recovery)` → nouveau mot de passe → l'ancien est
+  refusé (401), le nouveau passe (200), **aucun cookie de session laissé derrière**, et rejouer
+  le même lien est refusé (400) ;
+- réponses **indistinctes** sur inscription et mot de passe oublié (adresse inconnue ou déjà
+  prise : 200 dans les deux cas) ;
+- `/compte` déconnectée redirige vers `/compte/connexion?suite=%2Fcompte` ;
+- `/numero/<token>` inchangée sans compte, et connectée elle affiche « ce numéro est rattaché » ;
+- téléchargement du PDF depuis la bibliothèque : `/api/atelier/souvenir?token=…` → **302** vers R2 ;
+- `tsc`, `lint`, `build` verts ; harnais à **575 assertions** (26 neuves sur le compte : qui voit
+  quoi, les trois sections, le numéro en cours, et `?suite=` qui ne peut pas sortir du site),
+  toutes vertes.
+
+⚠️ **Les deux migrations ne sont PAS appliquées** (`20260904_compte_id`,
+`20260905_waitlist_credit_consomme`) : le code tourne quand même grâce aux replis `42703`/
+`PGRST204`, mais **le rattachement explicite ne s'écrit pas** — le rapprochement par
+`email_canonical` fait tout le travail en attendant. C'est exactement le revers documenté dans
+`supabase/CLAUDE.md` : après la migration, vérifier que `numeros.compte_id` se remplit vraiment.
+
+**Les six gestes de mise en service, tous à faire par Mathias :**
+1. Google Cloud → « ID client OAuth » (application web), URI de redirection autorisée
+   `https://lxkivqbcegursmxshmoc.supabase.co/auth/v1/callback`.
+2. Dashboard Supabase → Authentication → Providers → **Google** : coller l'ID et le secret.
+3. Dashboard Supabase → Authentication → URL Configuration : Site URL `https://www.bellajour.fr`,
+   et en Redirect URLs `https://www.bellajour.fr/compte/callback` + `http://localhost:3000/compte/callback`.
+4. Vercel (Production **et** Preview) : `SUPABASE_ANON_KEY`, puis `BREVO_TEMPLATE_C1_ID` et
+   `BREVO_TEMPLATE_C2_ID` une fois les templates poussés.
+5. Appliquer les deux migrations.
+6. Pousser les deux mails, **sur accord explicite** : `node scripts/mails-atelier.mjs --pousser
+   --seulement C1` puis `--seulement C2` (jamais `--pousser` nu : il réécrit les quatorze).
+
+Et, quand tout ci-dessus est en place, la pré-création silencieuse des comptes fondateurs :
+`npx tsx --tsconfig tsconfig.json scripts/creer-comptes-fondateurs.ts` (dry-run) puis
+`--vraiment`. **Aucun mail ne part** : chacun entre par « mot de passe oublié » ou par Google.
+
+**Le crédit fondateur consommé devient visible** (même chantier) : le webhook écrit
+`waitlist.credit_consomme_le` + `credit_code` au moment du paiement, en best-effort absolu, et la
+fiche admin affiche « crédit consommé le … » à la place du bouton de frappe. ⚠️ `offer_type`
+**ne bouge pas** : un fondateur dont le crédit est dépensé reste fondateur, pour la segmentation
+des campagnes. La source de vérité reste le journal `evenements` ; ces colonnes sont un miroir.
+
+⚠️ **Compte de test du 04/09 : supprimé après recette** (`mdurand085+test@gmail.com`).
+`auth.users` est revenu à **zéro compte**, et aucun événement `compte_rattache` n'a été écrit.
 
 ## Recette de bout en bout de l'Atelier — 01/09/2026 (après-midi)
 
