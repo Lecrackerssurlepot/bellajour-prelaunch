@@ -43,10 +43,19 @@ disent l'état final.
   sections empilées : chaque onglet est un moment, et ils n'ont rien à voir.
 - **La bibliothèque est une étagère de couvertures** (grille de vignettes au format A4, titre et
   année en haut, geste en bas) — la vraie couverture publiée par l'atelier, pas un aplat.
-- **Nouvelle page `/compte/magazine/<token>`**, dans l'ordre voulu : on REGARDE le magazine
-  (visionneuse : couverture, doubles, quatrième), puis on lit sa fiche, puis on télécharge le
-  PDF **en bas**. ⚠️ Elle passe par `lireDossiersDuCompte` : un token collé d'ailleurs rend 404,
-  contrairement à `/numero/<token>` qui reste la porte publique du lien.
+- **Nouvelle page `/compte/magazine/<token>`**, dans l'ordre voulu : on REGARDE le magazine,
+  puis on lit sa fiche, puis on télécharge le PDF **en bas**. ⚠️ Elle passe par
+  `lireDossiersDuCompte` : un token collé d'ailleurs rend 404, contrairement à `/numero/<token>`
+  qui reste la porte publique du lien.
+- **Sa visionneuse EST le composant `Apercu` de la page de suivi, pas une seconde** (2e retour de
+  Mathias, 04/09) : flèches, glissé, loupe, et le support magazine validé (fermé pour les
+  couvertures, ouvert avec pli pour les doubles). Sa scène a une hauteur FIXE, donc **passer
+  d'une A4 à une double page ne fait plus sauter la page** — prouvé : couverture → quatrième →
+  double, scène à 440 px et bas de visionneuse immobile à 678 px. La page resserre `--viz-h`
+  sous `.cpt--mag` (55 unités au lieu de 64) pour que **les points de feuilletage tiennent dans
+  l'écran sans scroller** : ils tombaient 33 px trop bas sur 1280 × 800 ; il reste 66 px de marge
+  là, et 112 px sur un téléphone de 375 × 780. ⚠️ Le resserrage vit dans `compte.css`, jamais
+  dans `numero.css` — la page de suivi n'a pas ce problème et n'a pas à payer pour lui.
 - **La barre ne devine plus** : un seul numéro en cours → « Suivre mon numéro » y mène ;
   plusieurs → « Mes numéros » ouvre le compte. Et **sur mobile la barre ne porte que le compte**.
 - **Le jeton du compte montre la photo Google** (ou l'initiale) une fois connectée.

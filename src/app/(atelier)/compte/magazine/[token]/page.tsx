@@ -7,7 +7,8 @@ import { resoudreApercu } from '@/lib/atelier/apercu'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { FORMAT_FINI_MM } from '@/lib/atelier/impression'
 import { eurosPour, type PalierCle } from '@/lib/atelier/prix'
-import Visionneuse, { type Planche } from './Visionneuse'
+import Apercu from '@/app/numero/[token]/Apercu'
+import '@/app/numero/numero.css'
 import '../../compte.css'
 
 /**
@@ -42,24 +43,7 @@ export default async function MagazinePage({
   const apercu = await resoudreApercu(dossier.apercu_urls)
   const titre = dossier.titre?.trim() || 'Votre numéro'
 
-  /* Les planches, dans l'ordre de lecture d'un magazine : la couverture,
-     puis les doubles pages, puis la quatrième. Une planche absente est
-     simplement absente — jamais un cadre vide. */
-  const planches: Planche[] = [
-    ...(apercu.plat
-      ? [{ src: apercu.plat, nom: 'La couverture, à plat', large: true }]
-      : apercu.c1
-        ? [{ src: apercu.c1, nom: 'La couverture', large: false }]
-        : []),
-    ...apercu.doubles.map((src, i) => ({
-      src,
-      nom: `Double page ${i + 1}`,
-      large: true,
-    })),
-    ...(apercu.c4 && !apercu.plat
-      ? [{ src: apercu.c4, nom: 'La quatrième', large: false }]
-      : []),
-  ]
+  const aDesVisuels = Boolean(apercu.plat || apercu.c1 || apercu.c4 || apercu.doubles.length)
 
   const euros = eurosPour(dossier.palier as PalierCle | null)
   const livreLe = dossier.etat_maj_le
@@ -96,9 +80,15 @@ export default async function MagazinePage({
           {dossier.nb_pages ? ` · ${dossier.nb_pages} pages` : ''}
         </p>
 
-        {/* 1 — LE MAGAZINE. C'est ce qu'on vient voir : il passe avant tout. */}
-        {planches.length > 0 ? (
-          <Visionneuse planches={planches} titre={titre} />
+        {/* 1 — LE MAGAZINE. C'est ce qu'on vient voir : il passe avant tout.
+            ⚠️ C'est LE MÊME composant que la page de suivi (`Apercu`), et
+            c'est voulu : il porte le support magazine validé le 04/09 (objet
+            fermé pour les couvertures, ouvert avec pli pour les doubles), les
+            flèches, le glissé au doigt, la loupe, et surtout une scène à
+            HAUTEUR FIXE — une A4 et une double page ne font plus sauter la
+            page. Deux visionneuses auraient divergé au premier réglage. */}
+        {aDesVisuels ? (
+          <Apercu plat={apercu.plat} c1={apercu.c1} c4={apercu.c4} doubles={apercu.doubles} />
         ) : (
           <p className="cpt-mag-sans-visuel">
             Les visuels de ce numéro ne sont plus en ligne. Votre PDF, lui, reste disponible

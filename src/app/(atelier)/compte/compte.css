@@ -481,76 +481,26 @@
 .cpt-mag {
   max-width: 940px;
   margin: 0 auto;
-  padding: clamp(28px, 5vw, 48px) var(--pad) clamp(64px, 10vw, 110px);
+  padding: clamp(18px, 3vw, 28px) var(--pad) clamp(64px, 10vw, 110px);
 }
 
-.cpt .cpt-mag-titre { font-size: clamp(30px, 5vw, 44px); }
+.cpt .cpt-mag-titre { font-size: clamp(26px, 4vw, 38px); }
 
-.cpt-viz { margin-top: clamp(24px, 4vw, 36px); }
+/* ⚠️ LA VISIONNEUSE TIENT DANS L'ÉCRAN, POINTS COMPRIS (Mathias, 04/09 :
+   « on doit avoir accès à tout, même le prévisualisateur, sans scroller »).
+   numero.css donne à la scène 64 unités de hauteur ; cette page porte un
+   titre et une fiche au-dessus, donc les points de feuilletage tombaient
+   33 px sous la ligne de flottaison (mesuré sur 1280 × 800). On resserre
+   ICI, jamais dans numero.css — la page de suivi n'a pas ce problème et
+   n'a pas à payer pour celui-ci. */
+.cpt--mag .nu-viz-scene { --viz-h: min(calc(55 * var(--uh)), 470px); }
 
-.cpt-viz-scene {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(14px, 3vw, 28px);
-  border: 1px solid var(--c-line);
-  border-radius: 18px;
-  background: var(--c-surface-1);
-}
-
-.cpt-viz-img {
-  display: block;
-  max-width: 100%;
-  /* Borne en HAUTEUR : sans elle, une planche haute pousse la fiche et le
-     téléchargement hors de l'écran. Même leçon que la visionneuse de
-     /numero (#49). Jamais de dvh. */
-  max-height: min(66vh, 620px);
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  border-radius: 4px;
-}
-
-.cpt-viz-nom {
-  margin-top: 12px;
-  text-align: center;
-  font-family: var(--font-ui);
-  font-size: 12.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
-}
-
-.cpt-viz-file {
-  margin-top: 18px;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.cpt .cpt-viz-onglet {
-  appearance: none;
-  padding: 0;
-  background: none;
-  border: 1px solid var(--c-line-md);
-  border-radius: 6px;
-  overflow: hidden;
-  width: 54px;
-  height: 76px;
-  cursor: pointer;
-  opacity: 0.6;
-  transition: opacity var(--dur) var(--ease), border-color var(--dur) var(--ease);
-}
-
-.cpt .cpt-viz-onglet:hover { opacity: 0.9; }
-
-.cpt .cpt-viz-onglet.est-actif {
-  opacity: 1;
-  border-color: var(--c-accent);
-}
-
-.cpt-viz-onglet img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* ⚠️ LA VISIONNEUSE N'A PAS DE STYLE ICI. Elle est le composant `Apercu`
+   de la page de suivi, et son habillage vit dans numero.css (.nu-viz-*),
+   importé par cette page. Une seconde visionneuse aurait divergé de la
+   première au premier réglage — et c'est la même cliente qui regarde le
+   même magazine. Le réglage propre à cet écran (la hauteur de scène) est
+   plus bas, sur `.cpt--mag`. */
 
 .cpt-mag-sans-visuel {
   margin-top: 28px;
