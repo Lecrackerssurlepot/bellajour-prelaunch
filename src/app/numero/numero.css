@@ -249,11 +249,18 @@
    deux cases, le paiement) vit en dessous, inchangé. */
 .nu-viz { margin-top: clamp(28px, 6vw, 46px); }
 
-/* Pas de dvh/vh (socle) : la hauteur vient de --uh, gelée au chargement. */
+/* Pas de dvh/vh (socle) : la hauteur vient de --uh, gelée au chargement.
+   La hauteur et la gouttière vivent en variables : les vues « fit »
+   (pleine, large) en ont besoin plus bas pour borner leur image — un
+   max-height en % ne se résout pas dans un bouton en hauteur auto, et
+   l'overflow:hidden COUPAIT la photo (constaté par Mathias le 04/09 sur
+   Test soir 4 : les deux tiers du visuel hors champ). */
 .nu-viz-scene {
+  --viz-h: min(calc(64 * var(--uh)), 560px);
+  --viz-pad: clamp(4px, 1.4vw, 14px);
   position: relative;
   overflow: hidden;
-  height: min(calc(64 * var(--uh)), 560px);
+  height: var(--viz-h);
   border-radius: 6px;
   touch-action: pan-y;
 }
@@ -270,7 +277,7 @@
   height: 100%;
   display: grid;
   place-items: center;
-  padding: clamp(4px, 1.4vw, 14px);
+  padding: var(--viz-pad);
 }
 
 /* La page : un bouton (rien ne se charge, la loupe s'ouvre). */
@@ -309,13 +316,17 @@
 .nu-viz-page--gauche img { object-position: left center; }
 
 /* Vues au format naturel : la planche à plat, les doubles pages, et les
-   couvertures PLEINES des anciens dossiers (c1/c4 séparés). L'image entière,
-   cadrée dans la scène. */
+   couvertures PLEINES des anciens dossiers (c1/c4 séparés). L'image ENTIÈRE,
+   cadrée dans la scène — jamais coupée.
+   ⚠️ Pas de max-height en % ici : le bouton est en hauteur auto, le % ne se
+   résout pas, l'image sort du bouton et overflow:hidden la tronque (défaut
+   du 04/09). La borne est donc la hauteur RÉELLE de la scène moins la
+   gouttière, par les variables posées sur .nu-viz-scene — une seule source. */
 .nu-viz-page--large img,
 .nu-viz-page--pleine img {
   display: block;
   max-width: 100%;
-  max-height: 100%;
+  max-height: calc(var(--viz-h) - 2 * var(--viz-pad));
   width: auto;
   height: auto;
 }
@@ -715,7 +726,8 @@
    couverture reste immersive, mais le prix et « Commander » arrivent plus vite
    (moins de scroll). */
 @media (max-width: 520px) {
-  .nu-viz-scene { height: min(calc(58 * var(--uh)), 480px); }
+  /* La variable, pas la propriété : la borne des vues « fit » doit suivre. */
+  .nu-viz-scene { --viz-h: min(calc(58 * var(--uh)), 480px); }
 }
 
 /* ---- la case facultative « montrer des extraits » (T2-1) ----
