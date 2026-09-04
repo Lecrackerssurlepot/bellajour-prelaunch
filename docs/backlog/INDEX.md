@@ -119,3 +119,5 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-091 | Réagir à la maquette, pas seulement partir — thèmes + freestyle | produit | serieux | avis-requis | nouveau (02/09) |
 | T-092 | Refonte du parcours questionnaire — logo officiel + Q1 à Q5 | front | serieux | avis-requis | nouveau (02/09, cahier des charges de Mathias) |
 | T-093 | Plusieurs couvertures proposées, la cliente choisit sa préférée | produit | serieux | avis-requis | nouveau (02/09) ; mot « tout reste modifiable » déjà dans le prototype |
+| T-094 | La demande « montrer un extrait » repart dans un mail, plus sur /numero | backend | mineur | avis-requis | nouveau (02/09) — la fiche existait, la ligne d'index manquait ; réparé le 04/09 |
+| T-095 | En reprise sur un autre appareil, le dépôt affiche zéro photo et verrouille l'envoi | front | serieux | libre | en cours — corrigé le 04/09 (GET compte serveur + moteur), prouvé au navigateur, PR à merger |
