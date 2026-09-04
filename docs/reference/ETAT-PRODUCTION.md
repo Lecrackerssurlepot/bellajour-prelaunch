@@ -280,6 +280,14 @@ recomptés le 03/09 dans le code, M7b venant de s'ajouter :
 
 Prévente : F1=17 · S1=18 · P3=19 · A1=20 · A2=21 · A3=22 · Relance=23 · W1=5 · P1=10 · P2=11.
 
+**Compte cliente : C1=42 · C2=43**, poussés chez Brevo le 04/09 sur accord de Mathias.
+Vérifiés après création : expéditeur `Bellajour <contact@bellajour.com>`, sujets, lien
+`{{ params.URL }}` présent, boutons « Activer mon compte » et « Choisir mon mot de passe ».
+⚠️ **Les variables `BREVO_TEMPLATE_C1_ID` / `C2_ID` ne sont PAS sur Vercel, volontairement** :
+les poser OUVRE l'espace compte au public (`compteOuvert()`), or le provider Google n'est pas
+encore activé. Elles vivent dans le `.env.local` de Mathias — l'espace est donc ouvert en
+développement seulement.
+
 Le texte est versionné dans `scripts/mails-atelier.mjs`, pas dans l'interface Brevo.
 `--pousser` réécrit les **douze** templates que porte le tableau `MAILS` du script
 (M0, M2, M2b, M3, M3b, M5, M6, M7, **M7b**, M8, M9, **M10**) ; borner avec
