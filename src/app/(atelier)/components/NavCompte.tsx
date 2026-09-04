@@ -23,6 +23,7 @@ import { useEffect, useState } from 'react'
  */
 
 type Statut = {
+  ouvert: boolean
   connecte: boolean
   enCours: number
   token: string | null
@@ -38,7 +39,7 @@ export default function NavCompte() {
     fetch('/api/compte/statut', { cache: 'no-store' })
       .then((r) => (r.ok ? (r.json() as Promise<Statut>) : null))
       .then((s) => {
-        if (vivant && s?.connecte) setStatut(s)
+        if (vivant && s?.ouvert) setStatut(s)
       })
       .catch(() => {
         /* La barre ne casse jamais une page : sans réponse, l'icône reste. */
@@ -47,6 +48,12 @@ export default function NavCompte() {
       vivant = false
     }
   }, [])
+
+  /* ⚠️ Tant que /api/compte/statut n'a pas dit « ouvert », la barre ne
+     montre AUCUNE entrée de compte : proposer une porte qui ne s'ouvre pas
+     est pire que ne rien proposer. La place reste réservée pour que le CTA
+     ne saute pas à l'arrivée de la réponse. */
+  if (!statut?.ouvert) return <span className="at-nav-perso at-nav-perso--vide" />
 
   const suivi =
     statut && statut.enCours > 0
@@ -67,13 +74,13 @@ export default function NavCompte() {
       ) : null}
 
       <a
-        className={`at-nav-compte${statut ? ' est-connecte' : ''}`}
+        className={`at-nav-compte${statut.connecte ? ' est-connecte' : ''}`}
         href="/compte"
-        aria-label={statut ? 'Mon compte, connectée' : 'Mon compte'}
+        aria-label={statut.connecte ? 'Mon compte, connectée' : 'Mon compte'}
       >
-        {statut?.photo ? (
+        {statut.photo ? (
           <img className="at-nav-avatar" src={statut.photo} alt="" width={28} height={28} />
-        ) : statut?.initiale ? (
+        ) : statut.connecte && statut.initiale ? (
           <span className="at-nav-initiale" aria-hidden="true">
             {statut.initiale}
           </span>

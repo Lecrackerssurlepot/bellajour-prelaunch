@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { compteOuvert } from '@/lib/compte/session'
 import FormulaireOubli from './FormulaireOubli'
 import '../compte.css'
 
@@ -11,6 +13,8 @@ import '../compte.css'
 export const dynamic = 'force-dynamic'
 
 export default function MotDePasseOubliePage() {
+  if (!compteOuvert()) notFound()
+
   return (
     <div className="bj-atelier cpt cpt--porte">
       <header className="cpt-top">

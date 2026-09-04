@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { utilisateurConnecte } from '@/lib/compte/session'
+import { notFound, redirect } from 'next/navigation'
+import { compteOuvert, utilisateurConnecte } from '@/lib/compte/session'
 import { suiteSure } from '@/lib/compte/garde'
 import FormulaireConnexion from './FormulaireConnexion'
 import '../compte.css'
@@ -27,6 +27,10 @@ export default async function ConnexionPage({
 }: {
   searchParams: Promise<{ suite?: string; erreur?: string }>
 }) {
+  /* L'espace n'est pas encore ouvert au public (compteOuvert) : cette
+     page n'existe pas. */
+  if (!compteOuvert()) notFound()
+
   const params = await searchParams
   const suite = suiteSure(params.suite)
 

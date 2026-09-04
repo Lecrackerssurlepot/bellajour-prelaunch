@@ -62,6 +62,39 @@ export function initialeDe(qui: { nom: string | null; email: string }): string {
   return (lettre ?? "?").toUpperCase();
 }
 
+/**
+ * L'espace compte est-il OUVERT au public ?
+ *
+ * ⚠️ CETTE GARDE EXISTE PARCE QUE LE SILENCE NE SUFFIT PAS ICI. La règle du
+ * dépôt — « une variable absente ne fait pas d'erreur, elle fait un
+ * silence » — vaut pour un mail qui ne part pas. Elle ne vaut PAS pour une
+ * porte d'inscription : sans `BREVO_TEMPLATE_C1_ID`, un compte se crée et
+ * son mail de confirmation ne part jamais. La personne se retrouve avec un
+ * compte qu'elle ne peut ni confirmer ni utiliser, et nous avec une ligne
+ * dans `auth.users` que personne ne réclamera. Constaté en PRODUCTION le
+ * 04/09, quelques minutes après la fusion : la brique était en ligne et
+ * les templates n'existaient pas encore.
+ *
+ * Tant que les trois variables ne sont pas posées, l'espace n'existe pas
+ * pour les visiteuses : pas d'entrée dans la barre, pas d'invitation sur
+ * la page du numéro, et `/compte/*` rend 404. Le jour où Mathias les pose,
+ * il s'ouvre tout seul — rien à redéployer.
+ *
+ * ⚠️ Poser les variables ouvre la porte : activer le provider Google dans
+ * Supabase AVANT, sinon « Continuer avec Google » mène à une page d'erreur
+ * de Supabase que nous ne pouvons pas habiller.
+ *
+ * En DÉVELOPPEMENT, seule la clé anon est exigée : on veut pouvoir
+ * regarder l'espace sans configurer Brevo. Le garde-fou qui compte —
+ * jamais de compte créé sans mail de confirmation — est posé ailleurs
+ * (`envoyerC1Inscription`) et vaut, LUI, dans les deux mondes.
+ */
+export function compteOuvert(): boolean {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) return false;
+  if (process.env.NODE_ENV !== "production") return true;
+  return Boolean(process.env.BREVO_TEMPLATE_C1_ID && process.env.BREVO_TEMPLATE_C2_ID);
+}
+
 function configAnon(): { url: string; key: string } | null {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_ANON_KEY;

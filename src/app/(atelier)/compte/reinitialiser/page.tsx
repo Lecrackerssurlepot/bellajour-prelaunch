@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { compteOuvert } from '@/lib/compte/session'
 import FormulaireReinitialisation from './FormulaireReinitialisation'
 import '../compte.css'
 
@@ -16,6 +18,8 @@ export default async function ReinitialiserPage({
 }: {
   searchParams: Promise<{ token_hash?: string }>
 }) {
+  if (!compteOuvert()) notFound()
+
   const params = await searchParams
   const tokenHash = typeof params.token_hash === 'string' ? params.token_hash : ''
 

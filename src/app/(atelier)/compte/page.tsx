@@ -1,6 +1,6 @@
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { makeSupabase } from '@/lib/supabase'
-import { initialeDe, utilisateurConnecte } from '@/lib/compte/session'
+import { compteOuvert, initialeDe, utilisateurConnecte } from '@/lib/compte/session'
 import { epinglerDossiers, lireDossiersDuCompte } from '@/lib/compte/donnees'
 import { classerDossiers } from '@/lib/compte/rattachement'
 import { LIBELLE_ETAT, type Etat } from '@/lib/atelier/transitions'
@@ -58,6 +58,10 @@ function dateLongue(iso: string | null): string | null {
 }
 
 export default async function ComptePage() {
+  /* L'espace n'est pas encore ouvert au public (compteOuvert) : cette
+     page n'existe pas. */
+  if (!compteOuvert()) notFound()
+
   const qui = await utilisateurConnecte()
   if (!qui) redirect('/compte/connexion?suite=%2Fcompte')
 

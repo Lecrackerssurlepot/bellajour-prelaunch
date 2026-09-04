@@ -139,6 +139,12 @@
   min-width: 0;
 }
 
+/* ⚠️ La barre est rendue AVANT que /api/compte/statut ait répondu, et
+   l'espace peut être fermé (compteOuvert) : le coin garde alors sa largeur
+   plutôt que d'apparaître d'un coup et de pousser le CTA. Zéro quand il
+   n'y aura rien à montrer, c'est le prix d'un bouton qui ne saute pas. */
+.at-nav-perso--vide { width: 0; }
+
 /* Le jeton du compte : cible tactile de 44 px, jamais de fond…
    ⚠️ `flex: 0 0 auto` : sans lui l'item se laisse écraser par ses voisins
    et tombe à 2 px de large — mesuré le 04/09 à 375 px. */

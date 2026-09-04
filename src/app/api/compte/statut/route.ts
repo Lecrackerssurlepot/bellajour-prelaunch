@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
-import { initialeDe, utilisateurConnecte } from "@/lib/compte/session";
+import { compteOuvert, initialeDe, utilisateurConnecte } from "@/lib/compte/session";
 import { lireDossiersDuCompte } from "@/lib/compte/donnees";
 import { numerosEnCours } from "@/lib/compte/rattachement";
 
@@ -25,10 +25,15 @@ import { numerosEnCours } from "@/lib/compte/rattachement";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const SANS_COMPTE = { connecte: false as const, enCours: 0, token: null, photo: null, initiale: null };
+const FERME = { ouvert: false as const, connecte: false as const, enCours: 0, token: null, photo: null, initiale: null };
+const SANS_COMPTE = { ...FERME, ouvert: true as const };
 
 export async function GET() {
   try {
+    /* L'espace pas encore ouvert : la barre n'affiche RIEN (compteOuvert). */
+    if (!compteOuvert()) {
+      return NextResponse.json(FERME, { headers: { "Cache-Control": "no-store" } });
+    }
     const qui = await utilisateurConnecte();
     if (!qui) {
       return NextResponse.json(SANS_COMPTE, { headers: { "Cache-Control": "no-store" } });
@@ -37,6 +42,7 @@ export async function GET() {
     const enCours = numerosEnCours(dossiers);
     return NextResponse.json(
       {
+        ouvert: true,
         connecte: true,
         enCours: enCours.length,
         token: enCours.length === 1 ? enCours[0].token : null,
