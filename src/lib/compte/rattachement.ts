@@ -89,17 +89,19 @@ export function classerDossiers<T extends DossierDuCompte>(
 }
 
 /**
- * Le « numéro en cours » de la barre de navigation : le dossier actif le
- * plus récemment remué. Un dossier livré est fini — il vit dans la
- * bibliothèque, pas dans la barre.
+ * Les numéros ENCORE EN VIE, du plus récemment remué au plus ancien — ceux
+ * que la barre de navigation propose de suivre. Un dossier livré est fini :
+ * il vit dans la bibliothèque, pas dans la barre.
+ *
+ * On rend la LISTE, pas un élu. La barre s'en sert pour trancher : un seul
+ * numéro, elle y mène directement ; plusieurs, elle mène au compte. Élire
+ * « le plus récent » quand il y en a deux, c'est deviner à la place de la
+ * cliente (décision de Mathias, 04/09).
  */
-export function choisirNumeroEnCours<T extends DossierDuCompte>(dossiers: T[]): T | null {
-  let choisi: T | null = null;
-  for (const d of dossiers) {
-    if (d.etat === "livree") continue;
-    if (!choisi || (d.etat_maj_le ?? "") > (choisi.etat_maj_le ?? "")) choisi = d;
-  }
-  return choisi;
+export function numerosEnCours<T extends DossierDuCompte>(dossiers: T[]): T[] {
+  return dossiers
+    .filter((d) => d.etat !== "livree")
+    .sort((a, b) => (b.etat_maj_le ?? "").localeCompare(a.etat_maj_le ?? ""));
 }
 
 /** Réexporté pour que les écrans du compte parlent la même langue. */

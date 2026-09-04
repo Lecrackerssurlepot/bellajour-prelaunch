@@ -135,7 +135,7 @@ import {
   doitEpingler,
   sectionPour,
   classerDossiers,
-  choisirNumeroEnCours,
+  numerosEnCours,
   type DossierDuCompte,
 } from "@/lib/compte/rattachement";
 import { suiteSure } from "@/lib/compte/garde";
@@ -1891,17 +1891,24 @@ ok("classerDossiers ne perd ni ne duplique aucun dossier",
    ranges.aTerminer.length === 1 && ranges.enCours.length === 1
    && ranges.bibliotheque.length === 1);
 
-titre("— le numero en cours de la barre de navigation —");
+titre("— les numeros en cours : la barre ne devine JAMAIS a sa place —");
 
-ok("un dossier livre n'est jamais le numero en cours",
-   choisirNumeroEnCours([dossierCompte({ etat: "livree" })]) === null);
-ok("le plus recemment remue gagne",
-   choisirNumeroEnCours([
+ok("un dossier livre n'est jamais « en cours »",
+   numerosEnCours([dossierCompte({ etat: "livree" })]).length === 0);
+ok("un seul en cours : la barre peut y mener",
+   numerosEnCours([dossierCompte({ etat: "apercu_pret" })]).length === 1);
+ok("DEUX en cours : la barre en voit deux, donc elle menera au compte",
+   numerosEnCours([
      dossierCompte({ token: "v".repeat(32), etat_maj_le: "2026-09-01T00:00:00Z" }),
      dossierCompte({ token: "w".repeat(32), etat: "apercu_pret", etat_maj_le: "2026-09-03T00:00:00Z" }),
-   ])?.token === "w".repeat(32));
+   ]).length === 2);
+ok("le plus recemment remue vient en tete",
+   numerosEnCours([
+     dossierCompte({ token: "v".repeat(32), etat_maj_le: "2026-09-01T00:00:00Z" }),
+     dossierCompte({ token: "w".repeat(32), etat: "apercu_pret", etat_maj_le: "2026-09-03T00:00:00Z" }),
+   ])[0].token === "w".repeat(32));
 ok("aucun dossier actif : rien dans la barre",
-   choisirNumeroEnCours([]) === null);
+   numerosEnCours([]).length === 0);
 
 titre("— ?suite= : jamais une redirection ouverte —");
 

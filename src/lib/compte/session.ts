@@ -44,7 +44,23 @@ export type Connectee = {
   email: string;
   /** Faux tant que l'adresse n'a pas été prouvée (invariant nº2). */
   emailConfirme: boolean;
+  /**
+   * La photo du compte Google, quand il y en a une. Google la range sous
+   * `avatar_url` ou `picture` selon les versions — on lit les deux. Null
+   * pour un compte créé par mot de passe : l'écran montre alors l'initiale,
+   * et la cliente comprend quand même qu'elle est connectée.
+   */
+  photo: string | null;
+  /** Le prénom Google, quand il existe — sinon l'écran se rabat sur l'email. */
+  nom: string | null;
 };
+
+/** L'initiale affichée à défaut de photo. Toujours une lettre, jamais vide. */
+export function initialeDe(qui: { nom: string | null; email: string }): string {
+  const source = (qui.nom || qui.email).trim();
+  const lettre = source.match(/\p{L}/u)?.[0];
+  return (lettre ?? "?").toUpperCase();
+}
 
 function configAnon(): { url: string; key: string } | null {
   const url = process.env.SUPABASE_URL;
@@ -115,9 +131,16 @@ export async function utilisateurConnecte(): Promise<Connectee | null> {
   if (!client) return null;
   const { data, error } = await client.auth.getUser();
   if (error || !data.user || !data.user.email) return null;
+  const meta = (data.user.user_metadata ?? {}) as Record<string, unknown>;
+  const texte = (cle: string): string | null => {
+    const v = meta[cle];
+    return typeof v === "string" && v.trim() ? v.trim() : null;
+  };
   return {
     id: data.user.id,
     email: data.user.email,
     emailConfirme: Boolean(data.user.email_confirmed_at),
+    photo: texte("avatar_url") ?? texte("picture"),
+    nom: texte("given_name") ?? texte("name") ?? texte("full_name"),
   };
 }

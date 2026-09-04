@@ -17,24 +17,99 @@
   --pad: clamp(20px, 5vw, 48px);
 }
 
-/* ── Le bandeau du haut — sobre, comme nu-top ─────────────────────── */
+/* ── La barre du haut : marque · onglets · moi ────────────────────────
+   Deux onglets et pas trois sections empilées (Mathias, 04/09) : « Mes
+   numéros » et « Ma bibliothèque » n'ont rien à voir, l'un est une liste de
+   choses à faire, l'autre une étagère. */
 
 .cpt-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px var(--pad);
+  gap: 16px;
+  padding: 14px var(--pad);
   border-bottom: 1px solid var(--c-line);
 }
 
+.cpt-top-marque { display: inline-flex; align-items: center; }
+
 .cpt-top-logo {
   display: block;
-  height: 30px;
+  height: 28px;
   width: auto;
 }
 
-@media (max-width: 640px) {
-  .cpt-top-logo { height: 24px; }
+.cpt-top-moi {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Le jeton du compte : la photo Google, ou l'initiale. La cliente voit
+   d'un coup d'œil qu'elle est chez elle. */
+.cpt-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  border: 1px solid rgba(214, 138, 99, 0.55);
+  overflow: hidden;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-accent-strong);
+}
+
+.cpt-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.cpt-onglets {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(14px, 3vw, 30px);
+  min-width: 0;
+}
+
+.cpt .cpt-onglet {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 6px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--c-text-faint);
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.cpt .cpt-onglet:hover { color: var(--c-text-soft); }
+
+.cpt .cpt-onglet.est-actif {
+  color: var(--c-text);
+  border-bottom-color: var(--c-accent);
+}
+
+.cpt-onglet-nb {
+  font-style: normal;
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: var(--c-surface-3);
+  color: var(--c-text-faint);
+}
+
+.cpt-onglet.est-actif .cpt-onglet-nb {
+  background: var(--c-accent-soft);
+  color: var(--c-accent-strong);
 }
 
 .cpt .cpt-deconnexion {
@@ -53,6 +128,43 @@
 .cpt .cpt-deconnexion:hover {
   color: var(--c-text-soft);
   border-color: var(--c-line-strong);
+}
+
+/* Le retour, sur la page d'un magazine — un vrai chemin de retour, pas un
+   lien perdu dans une ligne de service (reproche de Mathias, 04/09). */
+.bj-atelier .cpt-retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px 0 10px;
+  border: 1px solid var(--c-line-md);
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--c-text-soft);
+  white-space: nowrap;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.bj-atelier .cpt-retour:hover {
+  color: var(--c-text);
+  border-color: var(--c-accent);
+}
+
+.cpt-top-vide { width: 1px; }
+
+@media (max-width: 760px) {
+  .cpt-top {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    row-gap: 10px;
+  }
+  /* Les onglets passent sous la marque, sur toute la largeur. */
+  .cpt-onglets { order: 3; width: 100%; }
+  .cpt-top-logo { height: 24px; }
+  .cpt .cpt-deconnexion { padding: 8px 12px; font-size: 12px; }
+  .cpt-top-vide { display: none; }
 }
 
 /* ── La page ──────────────────────────────────────────────────────── */
@@ -247,61 +359,252 @@
   }
 }
 
-/* ── La bibliothèque — l'étagère ──────────────────────────────────── */
+/* ── L'ÉTAGÈRE — la bibliothèque en couvertures ───────────────────────
+   Structure voulue par Mathias (04/09, référence à l'appui) : une grille de
+   couvertures, titre et année en haut de carte, une action en bas. On ne
+   décrit pas un magazine avec du texte : on le montre. */
 
-/* Les livres respirent plus que les dossiers en cours : la couverture prend
-   84 px sur la gauche, et « Télécharger le PDF » doit tenir sur UNE ligne à
-   côté (mesuré le 04/09 : à 300 px de colonne, il se coupait en deux). */
-.cpt-grille--livres { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
-
-.cpt-carte--livre { flex-direction: row; gap: 18px; }
-
-.cpt-livre-visuel {
-  flex: 0 0 84px;
-  position: relative;
-  /* ⚠️ SANS `align-self`, l'item flex s'étire sur toute la hauteur de la
-     carte et le dos (inset: 0) descend bien plus bas que la couverture —
-     un rectangle gris sous le livre. Vu le 04/09. */
-  align-self: flex-start;
-  width: 84px;
-  aspect-ratio: 210 / 297;
+.cpt-etagere {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: clamp(14px, 2vw, 22px);
 }
 
-.cpt-livre-dos {
-  position: absolute;
-  inset: 0;
-  transform: translate(5px, 4px);
-  border-radius: 3px 8px 8px 3px;
-  background: var(--c-surface-3);
-}
-
-.cpt-livre-face {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  box-sizing: border-box;
-  width: 84px;
-  aspect-ratio: 210 / 297;
-  padding: 8px;
-  border-radius: 3px 8px 8px 3px;
-  background: var(--grad-cover);
-  font-family: var(--font-atelier-display), Georgia, serif;
-  font-size: 10px;
-  line-height: 1.2;
-  color: rgba(255, 255, 255, 0.85);
-  overflow: hidden;
-}
-
-.cpt-livre-corps {
-  min-width: 0;
+.bj-atelier .cpt-livre {
   display: flex;
   flex-direction: column;
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-line);
+  border-radius: 16px;
+  padding: 14px;
+  color: inherit;
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
 
-.cpt-carte--livre .cpt-cta { white-space: nowrap; }
+.bj-atelier .cpt-livre:hover {
+  border-color: var(--c-line-strong);
+  transform: translateY(-2px);
+}
 
-@media (max-width: 420px) {
-  .cpt-carte--livre { flex-direction: column; }
+.cpt-livre-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 2px 12px;
+}
+
+.cpt-livre-titre {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cpt-livre-annee {
+  flex: 0 0 auto;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--c-text-faint);
+}
+
+/* Le cadre garde le format d'un magazine (A4) quelle que soit l'image :
+   une étagère dont les livres n'ont pas la même hauteur n'est pas une
+   étagère. */
+.cpt-livre-cadre {
+  display: block;
+  position: relative;
+  aspect-ratio: 210 / 297;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--grad-cover);
+}
+
+.cpt-livre-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* La planche entière (C4 · dos · C1) : sa couverture est à DROITE. On la
+   cadre là plutôt que de montrer le dos au milieu de l'étagère. */
+.cpt-livre-img.est-planche { object-position: right center; }
+
+.cpt-livre-vide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 12px;
+  font-family: var(--font-atelier-display), Georgia, serif;
+  font-size: 14px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cpt-livre-pied {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 2px 2px;
+}
+
+.cpt-livre-meta {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--c-text-faint);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cpt-livre-geste {
+  flex: 0 0 auto;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--c-accent-strong);
+}
+
+/* ── La page d'un magazine : le voir, le lire, l'emporter ─────────────
+   L'ordre est celui de Mathias : la visionneuse d'abord, la fiche ensuite,
+   le téléchargement en bas. */
+
+.cpt-mag {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: clamp(28px, 5vw, 48px) var(--pad) clamp(64px, 10vw, 110px);
+}
+
+.cpt .cpt-mag-titre { font-size: clamp(30px, 5vw, 44px); }
+
+.cpt-viz { margin-top: clamp(24px, 4vw, 36px); }
+
+.cpt-viz-scene {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(14px, 3vw, 28px);
+  border: 1px solid var(--c-line);
+  border-radius: 18px;
+  background: var(--c-surface-1);
+}
+
+.cpt-viz-img {
+  display: block;
+  max-width: 100%;
+  /* Borne en HAUTEUR : sans elle, une planche haute pousse la fiche et le
+     téléchargement hors de l'écran. Même leçon que la visionneuse de
+     /numero (#49). Jamais de dvh. */
+  max-height: min(66vh, 620px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.cpt-viz-nom {
+  margin-top: 12px;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.cpt-viz-file {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cpt .cpt-viz-onglet {
+  appearance: none;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--c-line-md);
+  border-radius: 6px;
+  overflow: hidden;
+  width: 54px;
+  height: 76px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.cpt .cpt-viz-onglet:hover { opacity: 0.9; }
+
+.cpt .cpt-viz-onglet.est-actif {
+  opacity: 1;
+  border-color: var(--c-accent);
+}
+
+.cpt-viz-onglet img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.cpt-mag-sans-visuel {
+  margin-top: 28px;
+  padding: 24px;
+  border: 1px dashed var(--c-line-md);
+  border-radius: 16px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--c-text-faint);
+}
+
+.cpt-mag-infos { margin-top: clamp(40px, 7vw, 64px); }
+
+.cpt-fiche {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: minmax(110px, 160px) 1fr;
+  gap: 12px 24px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cpt-fiche dt { color: var(--c-text-faint); }
+.cpt-fiche dd { margin: 0; color: var(--c-text-soft); }
+
+.cpt-mag-pdf {
+  margin-top: clamp(40px, 7vw, 64px);
+  padding-top: clamp(28px, 5vw, 40px);
+  border-top: 1px solid var(--c-line);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.cpt-mag-pdf-mot {
+  font-family: var(--font-atelier-display), Georgia, serif;
+  font-size: clamp(21px, 3.4vw, 27px);
+  line-height: 1.25;
+  color: var(--c-text);
+}
+
+.cpt-mag-pdf-sub {
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--c-text-faint);
+}
+
+@media (max-width: 560px) {
+  .cpt-fiche { grid-template-columns: 1fr; gap: 4px 0; }
+  .cpt-fiche dd { margin-bottom: 12px; }
 }
 
 /* ── L'état vide ──────────────────────────────────────────────────── */

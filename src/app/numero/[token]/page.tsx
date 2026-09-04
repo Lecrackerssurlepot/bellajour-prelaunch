@@ -587,6 +587,19 @@ function Coquille({
           La cliente arrive ici depuis le questionnaire : même maison, même
           seuil. */}
       <header className="nu-top">
+        {/* Connectée, le haut de page porte un VRAI chemin de retour vers son
+            espace — un bouton cerné, à gauche du logo. La ligne de service
+            qui tenait ce rôle était « peu visible et pas sexy » (Mathias,
+            04/09) : une cliente qui vient du compte doit pouvoir y revenir
+            sans chercher, et sans la touche « précédent ». */}
+        {compte === 'lie' ? (
+          <a className="nu-retour" href="/compte">
+            <span aria-hidden="true">←</span>
+            <span className="nu-retour-mot">Mon compte</span>
+          </a>
+        ) : (
+          <span className="nu-top-cale" />
+        )}
         <img
           className="nu-top-logo-img"
           src="/images/ui/signature-blanche.webp"
@@ -595,22 +608,19 @@ function Coquille({
           height={122}
           decoding="async"
         />
+        <span className="nu-top-cale" />
       </header>
 
-      {/* La bande compte (04/09). Une ligne, jamais un mur : le compte est
-          une commodité qui s'ajoute au lien, pas une marche du parcours. */}
+      {/* L'invitation, pour qui n'a pas de compte. Une ligne, jamais un mur :
+          le compte est une commodité qui s'ajoute au lien, pas une marche du
+          parcours. Rien de tel une fois connectée : le bouton de retour
+          ci-dessus dit déjà tout ce qu'il y a à dire. */}
       {compte === 'invite' && (
         <p className="nu-compte">
           <a href={`/compte/connexion?suite=${encodeURIComponent(`/numero/${token}`)}`}>
             Créez un compte
           </a>{' '}
           pour retrouver ce lien à tout moment, sur tous vos appareils.
-        </p>
-      )}
-      {compte === 'lie' && (
-        <p className="nu-compte nu-compte--lie">
-          <i aria-hidden="true">✓</i> Ce numéro est rattaché à votre compte ·{' '}
-          <a href="/compte">Mon compte</a>
         </p>
       )}
 

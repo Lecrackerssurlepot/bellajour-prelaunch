@@ -34,10 +34,24 @@ Quatorze fondateurs ont des droits ouverts sous les CGV v2.5, maintenus en régi
 Supabase Auth en « identité seulement » : Google **et** email + mot de passe, avec mot de passe
 oublié. Le compte **s'ajoute** au lien `/numero/<token>`, il ne le remplace jamais — une cliente
 qui n'en veut pas ne voit rien changer, et le token reste l'unique identité des routes
-`/api/atelier/*`. `/compte` liste ses numéros en trois sections (à terminer · en cours à
-l'atelier · sa bibliothèque, avec le PDF souvenir). La barre du site gagne un coin compte et,
-quand un numéro est en cours, un « Suivre mon numéro » qui **s'ajoute** au CTA marketing (lequel
-ne disparaît jamais) ; sous 470 px il devient une pastille courte et prend l'unique emplacement.
+`/api/atelier/*`. `/compte` range ses numéros en **deux onglets** (« Mes numéros » · « Ma
+bibliothèque »), et la barre du site gagne un coin compte — voir les retouches ci-dessous, qui
+disent l'état final.
+
+**Retouches du 04/09 (après-midi), demandées par Mathias en regardant l'écran :**
+- `/compte` passe à **DEUX ONGLETS** (« Mes numéros » · « Ma bibliothèque ») au lieu de trois
+  sections empilées : chaque onglet est un moment, et ils n'ont rien à voir.
+- **La bibliothèque est une étagère de couvertures** (grille de vignettes au format A4, titre et
+  année en haut, geste en bas) — la vraie couverture publiée par l'atelier, pas un aplat.
+- **Nouvelle page `/compte/magazine/<token>`**, dans l'ordre voulu : on REGARDE le magazine
+  (visionneuse : couverture, doubles, quatrième), puis on lit sa fiche, puis on télécharge le
+  PDF **en bas**. ⚠️ Elle passe par `lireDossiersDuCompte` : un token collé d'ailleurs rend 404,
+  contrairement à `/numero/<token>` qui reste la porte publique du lien.
+- **La barre ne devine plus** : un seul numéro en cours → « Suivre mon numéro » y mène ;
+  plusieurs → « Mes numéros » ouvre le compte. Et **sur mobile la barre ne porte que le compte**.
+- **Le jeton du compte montre la photo Google** (ou l'initiale) une fois connectée.
+- **`/numero` a un vrai retour** « ← Mon compte » dans son en-tête quand on est connectée ; la
+  ligne de service « ce numéro est rattaché » a disparu avec sa raison d'être.
 
 **Ce qui est PROUVÉ en local, contre la base de production (04/09) :**
 - connexion par mot de passe → cookie de session **`HttpOnly`** (aucun client Supabase dans le
@@ -48,11 +62,15 @@ ne disparaît jamais) ; sous 470 px il devient une pastille courte et prend l'un
 - réponses **indistinctes** sur inscription et mot de passe oublié (adresse inconnue ou déjà
   prise : 200 dans les deux cas) ;
 - `/compte` déconnectée redirige vers `/compte/connexion?suite=%2Fcompte` ;
-- `/numero/<token>` inchangée sans compte, et connectée elle affiche « ce numéro est rattaché » ;
+- `/numero/<token>` inchangée sans compte ; connectée, son en-tête porte le retour « ← Mon
+  compte » et le logo reste centré au pixel (mesuré : 500 sur un viewport de 1000) ;
+- les deux onglets, l'étagère de couvertures (vraies images R2 chargées, vérifié par
+  `naturalWidth`) et la page magazine, sur 1000 px comme sur 375 px, sans débordement ;
+- barre mobile à 375 px : signature + jeton du compte + CTA, le raccourci de suivi masqué ;
 - téléchargement du PDF depuis la bibliothèque : `/api/atelier/souvenir?token=…` → **302** vers R2 ;
-- `tsc`, `lint`, `build` verts ; harnais à **575 assertions** (26 neuves sur le compte : qui voit
-  quoi, les trois sections, le numéro en cours, et `?suite=` qui ne peut pas sortir du site),
-  toutes vertes.
+- `tsc`, `lint`, `build` verts ; harnais à **577 assertions** (28 neuves sur le compte : qui voit
+  quoi, le classement des trois piles, les numéros en cours, et `?suite=` qui ne peut pas sortir
+  du site), toutes vertes.
 
 ⚠️ **Les deux migrations ne sont PAS appliquées** (`20260904_compte_id`,
 `20260905_waitlist_credit_consomme`) : le code tourne quand même grâce aux replis `42703`/
@@ -82,8 +100,11 @@ fiche admin affiche « crédit consommé le … » à la place du bouton de frap
 **ne bouge pas** : un fondateur dont le crédit est dépensé reste fondateur, pour la segmentation
 des campagnes. La source de vérité reste le journal `evenements` ; ces colonnes sont un miroir.
 
-⚠️ **Compte de test du 04/09 : supprimé après recette** (`mdurand085+test@gmail.com`).
-`auth.users` est revenu à **zéro compte**, et aucun événement `compte_rattache` n'a été écrit.
+⚠️ **Comptes de test du 04/09.** Celui de la première recette (`mdurand085+test@gmail.com`) a
+été supprimé, `auth.users` était revenu à zéro. **Un second, `mdurand085+demo@gmail.com`, est
+ENCORE EN BASE** : il sert à Mathias pour regarder l'espace en local (Gmail ignore le `+demo`,
+donc il voit ses vrais dossiers). À supprimer quand il aura fini de regarder.
+Aucun événement `compte_rattache` n'a été écrit à ce jour (la migration n'est pas passée).
 
 ## Recette de bout en bout de l'Atelier — 01/09/2026 (après-midi)
 

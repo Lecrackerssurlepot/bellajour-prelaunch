@@ -37,18 +37,22 @@ export type DossierAffiche = DossierDuCompte & {
   tracking_url: string | null;
   transporteur: string | null;
   anonymise_le: string | null;
+  /* Les visuels publiés par l'atelier — la vraie couverture de la
+     bibliothèque, et les pages de la visionneuse. jsonb libre, résolu par
+     `resoudreApercu` (apercu.ts) : jamais lu à la main. */
+  apercu_urls: unknown;
 };
 
 const CHAMPS_COMPTE =
   "id, token, etat, titre, occasion, palier, nb_pages, nb_photos, consent_photos, " +
   "compte_id, email_canonical, created_at, etat_maj_le, souvenir_pdf_key, " +
-  "tracking_url, transporteur, anonymise_le";
+  "tracking_url, transporteur, anonymise_le, apercu_urls";
 
 /* Identique moins compte_id — le repli tant que 20260904 n'est pas passée. */
 const CHAMPS_COMPTE_REPLI =
   "id, token, etat, titre, occasion, palier, nb_pages, nb_photos, consent_photos, " +
   "email_canonical, created_at, etat_maj_le, souvenir_pdf_key, " +
-  "tracking_url, transporteur, anonymise_le";
+  "tracking_url, transporteur, anonymise_le, apercu_urls";
 
 export function regardDe(qui: Connectee): Regard {
   return {

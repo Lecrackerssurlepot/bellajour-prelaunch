@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
-import { utilisateurConnecte } from "@/lib/compte/session";
+import { initialeDe, utilisateurConnecte } from "@/lib/compte/session";
 import { lireDossiersDuCompte } from "@/lib/compte/donnees";
-import { choisirNumeroEnCours } from "@/lib/compte/rattachement";
+import { numerosEnCours } from "@/lib/compte/rattachement";
 
 /**
  * GET /api/compte/statut — ce que la barre de navigation a besoin de savoir.
@@ -10,18 +10,22 @@ import { choisirNumeroEnCours } from "@/lib/compte/rattachement";
  * Les cookies de session sont httpOnly : Nav (composant client) ne peut pas
  * les lire, et les pages / et /magazine restent STATIQUES (aucune lecture
  * de cookie au rendu). Cette route est donc le seul pont : un fetch après
- * chargement, no-store, qui répond « connectée ou non, et le numéro actif
- * le plus récent ». Déconnectée : { connecte: false }, 200 — ce n'est pas
- * une erreur, c'est la réponse.
+ * chargement, no-store. Déconnectée : { connecte: false }, 200 — ce n'est
+ * pas une erreur, c'est la réponse.
  *
- * On ne rend QUE le token et l'état du dossier choisi — le token appartient
- * à sa propriétaire (c'est sa propre session qui le demande), jamais plus.
+ * ⚠️ `enCours` est un NOMBRE, et le token n'est donné QUE s'il vaut 1.
+ * Avec deux numéros en fabrication, « suivre mon numéro » désignerait un
+ * dossier au hasard : la barre mène alors au compte, qui les montre tous
+ * (décision de Mathias, 04/09).
+ *
+ * On ne rend rien de plus que ce que la barre affiche : un token (le sien),
+ * une photo, une initiale. Jamais l'adresse, jamais une liste.
  */
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const SANS_COMPTE = { connecte: false as const, numeroEnCours: null };
+const SANS_COMPTE = { connecte: false as const, enCours: 0, token: null, photo: null, initiale: null };
 
 export async function GET() {
   try {
@@ -30,11 +34,14 @@ export async function GET() {
       return NextResponse.json(SANS_COMPTE, { headers: { "Cache-Control": "no-store" } });
     }
     const dossiers = await lireDossiersDuCompte(makeSupabase(), qui);
-    const enCours = choisirNumeroEnCours(dossiers);
+    const enCours = numerosEnCours(dossiers);
     return NextResponse.json(
       {
         connecte: true,
-        numeroEnCours: enCours ? { token: enCours.token, etat: enCours.etat } : null,
+        enCours: enCours.length,
+        token: enCours.length === 1 ? enCours[0].token : null,
+        photo: qui.photo,
+        initiale: initialeDe(qui),
       },
       { headers: { "Cache-Control": "no-store" } },
     );

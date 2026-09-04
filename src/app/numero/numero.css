@@ -40,10 +40,39 @@
   .nu-top-logo-img { height: 26px; }
 }
 
-/* ── La bande compte (04/09) — une ligne discrète sous le seuil ────────
-   Le compte s'AJOUTE au lien, il ne le remplace pas : une phrase, un lien
-   souligné, aucun bouton. (0,2,0) sur le <a> pour passer devant le reset
-   de lien de theme.css. */
+/* ── Le retour au compte, et l'invitation (04/09) ─────────────────────
+   Le haut de page devient : [retour] · logo centré · [cale]. Les deux cales
+   de même largeur gardent le logo au MILIEU du viewport, pas au milieu de
+   ce qui reste — sinon il se décale dès que le bouton apparaît. */
+.nu-top-cale { flex: 1 1 0; min-width: 0; }
+
+.bj-atelier .nu-retour {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 40px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--c-text-soft);
+  white-space: nowrap;
+  transition: color var(--dur) var(--ease);
+}
+
+.bj-atelier .nu-retour:hover { color: var(--c-text); }
+
+.nu-retour-mot {
+  padding: 7px 14px 7px 4px;
+  border-radius: 999px;
+}
+
+/* Sur un téléphone, la flèche seule : le logo garde sa place centrale et
+   le mot ne pousse personne. La cible tactile reste à 40 px. */
+@media (max-width: 520px) {
+  .nu-retour-mot { display: none; }
+}
+
 .nu-compte {
   text-align: center;
   padding: 8px var(--pad);
@@ -61,11 +90,6 @@
 }
 
 .bj-atelier .nu-compte a:hover { color: var(--c-text); }
-
-.nu-compte--lie i {
-  font-style: normal;
-  color: var(--c-accent);
-}
 
 .nu-main {
   flex: 1 0 auto;
