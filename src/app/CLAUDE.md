@@ -82,6 +82,15 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
    `?reprendre=<token>` à `CTA_HREF` : le paramètre n'est lu que par `/composer`, il serait
    ignoré EN SILENCE et la cliente repartirait sur un dépôt vide en croyant reprendre le sien.
 
+7. **La barre a TROIS éléments depuis le 04/09** : la signature, puis `.at-nav-droite` qui porte
+   le coin compte (`NavCompte`) ET le CTA. ⚠️ **Le CTA marketing ne disparaît jamais** (décision
+   de Mathias) : « Suivre mon numéro » s'AJOUTE quand une cliente connectée a un numéro en cours.
+   Les cookies de session sont `httpOnly` — la barre ne peut donc pas les lire : elle interroge
+   `/api/compte/statut` après le montage, ce qui garde `/` et `/magazine` **statiques**. Sous
+   470 px, la pastille passe au libellé court et le coin compte n'a plus qu'UN emplacement
+   (l'icône cède la place) : les trois éléments en toutes lettres font 446 px, mesuré, pour
+   375 px de large.
+
 ## Le questionnaire — chaque phrase est un correctif, pas du style
 
 `(atelier)/composer/` — six écrans. **Aucune de ces formulations n'est décorative** : chacune

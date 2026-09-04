@@ -5,6 +5,7 @@ On vend un magazine photo personnalisé : la cliente dépose ses photos et son h
 l'atelier compose, on imprime et on livre. Premium, jamais solennel.
 **bellajour.fr sert l'Atelier** depuis le 24/08/2026 : `/` accueil, `/magazine` page produit,
 `/composer` questionnaire + dépôt, `/numero/<token>` la page d'état de la cliente,
+`/compte` l'espace personnel (facultatif — le lien du numéro suffit toujours),
 `/admin/atelier` le back-office.
 
 Ce fichier est le SEUL chargé à chaque session. Tout le reste se charge quand on en a besoin.
@@ -83,5 +84,8 @@ Next.js 16.2.3 (App Router, `reactCompiler`) · React 19.2.4 · TypeScript stric
 Supabase (service key, RLS contournée côté serveur) · Stripe · Brevo · Cloudflare R2 ·
 Cloudprinter · Vercel. **Tailwind est installé mais aucune directive n'est importée : il ne
 produit rien.** Tout le style est du CSS vanilla, un fichier par section.
-Auth : cookie HMAC maison pour l'admin, token d'URL de 32 caractères pour la cliente.
-Il n'y a **ni magic link Supabase, ni ORM, ni framework de test, ni CI**.
+Auth : cookie HMAC maison pour l'admin, token d'URL de 32 caractères pour la cliente, et depuis
+le 04/09 **Supabase Auth pour le compte cliente** (Google + mot de passe) — en « identité
+seulement » : aucun client Supabase dans le navigateur, les données passent toujours par la
+service key côté serveur, et **le compte ne remplace jamais le token**.
+Il n'y a **ni ORM, ni framework de test, ni CI**.

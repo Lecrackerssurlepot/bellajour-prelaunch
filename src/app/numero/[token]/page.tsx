@@ -32,6 +32,8 @@ import BoutonValider from './BoutonValider'
 import BoutonEnvoyer from './BoutonEnvoyer'
 import Apercu from './Apercu'
 import LienPartage from '../../components/LienPartage'
+import { utilisateurConnecte } from '@/lib/compte/session'
+import { rattacherParToken } from '@/lib/compte/donnees'
 import '../numero.css'
 
 /* L'adresse publique du site, pour écrire le lien EN TOUTES LETTRES sous les
@@ -214,6 +216,19 @@ export default async function NumeroPage({
   const apercu = numero.etat === 'apercu_pret' ? await resoudreApercu(numero.apercu_urls) : null
   const euros = eurosPour(numero.palier)
 
+  /* Le COMPTE (04/09) — il s'AJOUTE au token, jamais il ne le remplace.
+     Déconnectée : une invitation discrète (« ce lien, à l'abri d'un compte »).
+     Connectée : le dossier s'épingle au compte tout seul, best-effort
+     (rattacherParToken), et la bande le dit. Un dossier qui n'est pas le
+     sien : la bande se tait — le token affiche la page, le compte n'a rien
+     à y dire. */
+  const qui = await utilisateurConnecte()
+  const compte: 'invite' | 'lie' | null = !qui
+    ? 'invite'
+    : (await rattacherParToken(makeSupabase(), qui, token)) === 'lie'
+      ? 'lie'
+      : null
+
   /* Retour de Stripe, webhook pas encore arrivé. Tant que l'état n'a pas
      basculé, on masque le bouton de commande : le lui remontrer juste après
      un paiement réussi, c'est l'inviter à payer deux fois.
@@ -255,6 +270,7 @@ export default async function NumeroPage({
       camp={camp}
       montrerCamp={numero.etat !== 'apercu_pret'}
       montrerGardeLien={numero.etat !== 'livree'}
+      compte={compte}
       token={numero.token}>
       {numero.etat === 'photos_recues' && depot === 'termine' && (
         <>
@@ -537,6 +553,7 @@ function Coquille({
   camp,
   montrerCamp = true,
   montrerGardeLien = true,
+  compte = null,
   token,
   children,
 }: {
@@ -556,6 +573,10 @@ function Coquille({
      décision de Mathias) : sur les états d'attente, une cliente qui perd le
      mail perd son dossier, et c'est cette phrase qui l'en empêche. */
   montrerGardeLien?: boolean
+  /* La bande compte (04/09) : 'invite' (déconnectée, on propose), 'lie'
+     (connectée, le dossier est épinglé au compte), null (rien à dire —
+     dossier d'une autre, brique compte absente, ou page en panne). */
+  compte?: 'invite' | 'lie' | null
   token: string
   children: React.ReactNode
 }) {
@@ -575,6 +596,23 @@ function Coquille({
           decoding="async"
         />
       </header>
+
+      {/* La bande compte (04/09). Une ligne, jamais un mur : le compte est
+          une commodité qui s'ajoute au lien, pas une marche du parcours. */}
+      {compte === 'invite' && (
+        <p className="nu-compte">
+          <a href={`/compte/connexion?suite=${encodeURIComponent(`/numero/${token}`)}`}>
+            Créez un compte
+          </a>{' '}
+          pour retrouver ce lien à tout moment, sur tous vos appareils.
+        </p>
+      )}
+      {compte === 'lie' && (
+        <p className="nu-compte nu-compte--lie">
+          <i aria-hidden="true">✓</i> Ce numéro est rattaché à votre compte ·{' '}
+          <a href="/compte">Mon compte</a>
+        </p>
+      )}
 
       {/* Le sommaire du questionnaire, transposé aux cinq jalons du suivi
           (04/09, maquettes validées). Desktop : les noms, le courant souligné

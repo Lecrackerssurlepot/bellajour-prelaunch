@@ -444,5 +444,10 @@ export function patchAnonymisation(): Record<string, string | null> {
     titre: TITRE_ANONYME,
     /* Vide sur un dossier jamais payé, mais on ne parie pas là-dessus. */
     adresse_livraison: null,
+    /* Le compte cliente (20260904) : un dossier refermé ne doit plus
+       désigner personne, ni par l'adresse ni par le lien de compte —
+       sinon « anonymisé » resterait nominatif via /compte. Le script
+       d'anonymisation replie en 42703 tant que la colonne n'existe pas. */
+    compte_id: null,
   };
 }

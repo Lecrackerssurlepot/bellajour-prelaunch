@@ -1,0 +1,460 @@
+/* ═══════════════════════════════════════════════════════════════════
+   /compte — l'espace de la cliente. Monde SOMBRE (tokens --c-* de
+   theme.css), tout est scopé sous .cpt : retirer ce conteneur repeint
+   d'autres pages, ne pas le faire.
+
+   Pièges honorés :
+   - .bj-atelier h1 fait 150px (hero) : .cpt .cpt-titre le recadre.
+   - globals.css coupe les mots sous 767px (overflow-wrap anywhere) :
+     les titres de cartes posent leur propre overflow-wrap.
+   - jamais de dvh ; les hauteurs pleines n'existent pas ici, la page
+     défile normalement.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cpt {
+  min-height: 100vh;
+  background: var(--grad-ambient);
+  --pad: clamp(20px, 5vw, 48px);
+}
+
+/* ── Le bandeau du haut — sobre, comme nu-top ─────────────────────── */
+
+.cpt-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px var(--pad);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.cpt-top-logo {
+  display: block;
+  height: 30px;
+  width: auto;
+}
+
+@media (max-width: 640px) {
+  .cpt-top-logo { height: 24px; }
+}
+
+.cpt .cpt-deconnexion {
+  appearance: none;
+  background: none;
+  border: 1px solid var(--c-line-md);
+  border-radius: 999px;
+  color: var(--c-text-faint);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.cpt .cpt-deconnexion:hover {
+  color: var(--c-text-soft);
+  border-color: var(--c-line-strong);
+}
+
+/* ── La page ──────────────────────────────────────────────────────── */
+
+.cpt-main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(36px, 7vw, 72px) var(--pad) clamp(64px, 10vw, 120px);
+}
+
+.cpt-main--etroit { max-width: 460px; }
+
+.cpt .cpt-titre {
+  font-family: var(--font-atelier-display), Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(34px, 6vw, 52px);
+  line-height: 1.1;
+  color: var(--c-text);
+}
+
+.cpt .cpt-sous-titre {
+  margin-top: 10px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--c-text-faint);
+}
+
+/* ── Les sections du dashboard ────────────────────────────────────── */
+
+.cpt-section { margin-top: clamp(40px, 7vw, 64px); }
+
+.cpt .cpt-section-titre {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--c-line);
+}
+
+.cpt-grille {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
+}
+
+/* ── Les cartes ───────────────────────────────────────────────────── */
+
+.cpt-carte {
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-line);
+  border-radius: 16px;
+  padding: clamp(20px, 4vw, 28px);
+  display: flex;
+  flex-direction: column;
+}
+
+.cpt-carte--attente { border-color: rgba(214, 138, 99, 0.35); }
+
+/* ⚠️ L'ÉTIQUETTE EST AU-DESSUS DU TITRE, PAS À CÔTÉ. Côte à côte dans un
+   flex, le badge (« UN GESTE VOUS ATTEND », nowrap) gardait sa largeur et
+   écrasait le titre : dans une carte de 316 px il restait ~130 px, et
+   « TEST ADMIN PRES » se cassait en « TEST ADMI N PRES ». Mesuré le 04/09.
+   Empilés, le titre a toute la largeur de la carte, quel que soit le badge. */
+.cpt-carte-tete {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.cpt .cpt-carte-titre {
+  font-family: var(--font-atelier-display), Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(21px, 3vw, 26px);
+  line-height: 1.15;
+  color: var(--c-text);
+  /* `break-word` et pas `anywhere` : on coupe un mot SEULEMENT s'il ne
+     tient pas seul sur une ligne (globals.css impose `anywhere` sous
+     767 px, qui couperait « Madrid » au milieu). */
+  overflow-wrap: break-word;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.cpt-carte-camp {
+  order: -1; /* l'étiquette se lit avant le titre */
+  flex: 0 0 auto;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  border: 1px solid var(--c-line-md);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.cpt-carte-camp--vous {
+  color: var(--c-accent);
+  border-color: rgba(214, 138, 99, 0.4);
+}
+
+.cpt-carte-etat {
+  margin-top: 10px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--c-text-soft);
+}
+
+/* (Les titres ci-dessus sont en (0,2,0) : .bj-atelier h2/h3 pose des
+   tailles de hero en (0,1,1), et un selecteur simple perdrait.) */
+
+/* La jauge : cinq segments, le vocabulaire de /numero en miniature. */
+.cpt-jauge {
+  display: flex;
+  gap: 5px;
+  margin-top: 16px;
+}
+
+.cpt-jauge i {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--c-surface-3);
+}
+
+.cpt-jauge i.is-fait { background: var(--c-accent); }
+
+.cpt-carte-jalons {
+  margin-top: 8px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--c-text-faint);
+}
+
+.cpt-carte-gestes {
+  margin-top: auto;
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.cpt .cpt-cta {
+  font-size: 14px;
+  padding: 14px 24px;
+}
+
+.cpt .cpt-cta--pleine {
+  width: 100%;
+  justify-content: center;
+}
+
+.cpt .cpt-lien {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--c-text-faint);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease);
+}
+
+.cpt .cpt-lien:hover { color: var(--c-text-soft); }
+
+/* globals.css pose `overflow-wrap: anywhere !important` sur h1..h4 et p sous
+   767 px — une règle de sécurité de la landing waitlist, qui coupe AU MILIEU
+   D'UN MOT, sans césure. Sur un titre de numéro (« Madrid », « Nuit Sonore »)
+   c'est une coupure gratuite : les cartes ont une largeur confortable et un
+   `break-word` normal suffit. Même contournement que `.at-accueil` dans
+   ouverture.css, et il faut un !important pour répondre au sien.
+   ⚠️ Les titres seulement : les paragraphes de carte gardent la règle, un
+   token ou une adresse mail y débordait vraiment. */
+@media (max-width: 767px) {
+  .cpt .cpt-carte-titre,
+  .cpt .cpt-titre,
+  .cpt .cpt-envoye-mot {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+}
+
+/* ── La bibliothèque — l'étagère ──────────────────────────────────── */
+
+/* Les livres respirent plus que les dossiers en cours : la couverture prend
+   84 px sur la gauche, et « Télécharger le PDF » doit tenir sur UNE ligne à
+   côté (mesuré le 04/09 : à 300 px de colonne, il se coupait en deux). */
+.cpt-grille--livres { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
+
+.cpt-carte--livre { flex-direction: row; gap: 18px; }
+
+.cpt-livre-visuel {
+  flex: 0 0 84px;
+  position: relative;
+  /* ⚠️ SANS `align-self`, l'item flex s'étire sur toute la hauteur de la
+     carte et le dos (inset: 0) descend bien plus bas que la couverture —
+     un rectangle gris sous le livre. Vu le 04/09. */
+  align-self: flex-start;
+  width: 84px;
+  aspect-ratio: 210 / 297;
+}
+
+.cpt-livre-dos {
+  position: absolute;
+  inset: 0;
+  transform: translate(5px, 4px);
+  border-radius: 3px 8px 8px 3px;
+  background: var(--c-surface-3);
+}
+
+.cpt-livre-face {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  box-sizing: border-box;
+  width: 84px;
+  aspect-ratio: 210 / 297;
+  padding: 8px;
+  border-radius: 3px 8px 8px 3px;
+  background: var(--grad-cover);
+  font-family: var(--font-atelier-display), Georgia, serif;
+  font-size: 10px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.85);
+  overflow: hidden;
+}
+
+.cpt-livre-corps {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cpt-carte--livre .cpt-cta { white-space: nowrap; }
+
+@media (max-width: 420px) {
+  .cpt-carte--livre { flex-direction: column; }
+}
+
+/* ── L'état vide ──────────────────────────────────────────────────── */
+
+.cpt-vide {
+  margin-top: clamp(40px, 8vw, 72px);
+  text-align: center;
+  border: 1px dashed var(--c-line-md);
+  border-radius: 20px;
+  padding: clamp(36px, 8vw, 72px) var(--pad);
+}
+
+.cpt .cpt-vide-mot {
+  font-family: var(--font-atelier-display), Georgia, serif;
+  font-size: clamp(20px, 3.4vw, 26px);
+  line-height: 1.4;
+  color: var(--c-text-soft);
+  max-width: 460px;
+  margin: 0 auto 24px;
+}
+
+/* ── La porte : connexion, oubli, réinitialisation ────────────────── */
+
+.cpt-porte { margin-top: clamp(28px, 5vw, 40px); }
+
+.cpt .cpt-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 15px 24px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 999px;
+  background: var(--c-surface-2);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--c-text);
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.cpt .cpt-google:hover {
+  background: var(--c-surface-3);
+  border-color: var(--c-line-strong);
+}
+
+.cpt-ou {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 22px 0;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.cpt-ou::before,
+.cpt-ou::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--c-line);
+}
+
+.cpt-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cpt-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.cpt-champ span {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--c-text-soft);
+}
+
+.cpt-champ input {
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--c-line-md);
+  border-radius: 12px;
+  background: var(--c-surface-1);
+  font-family: var(--font-ui);
+  font-size: 16px; /* < 16px : iOS zoome au focus, la page saute */
+  color: var(--c-text);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.cpt-champ input:focus {
+  outline: none;
+  border-color: var(--c-accent);
+}
+
+.cpt-alerte {
+  margin-top: 14px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--c-accent-strong);
+  background: var(--c-accent-soft);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.cpt-porte-pied {
+  margin-top: 22px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* ── L'écran « mail parti » ───────────────────────────────────────── */
+
+.cpt-envoye {
+  margin-top: clamp(28px, 5vw, 40px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid var(--c-line-md);
+  border-radius: 16px;
+  padding: clamp(22px, 4vw, 30px);
+  background: var(--c-surface-1);
+}
+
+.cpt .cpt-envoye-mot {
+  font-family: var(--font-atelier-display), Georgia, serif;
+  font-size: clamp(19px, 3vw, 23px);
+  line-height: 1.35;
+  color: var(--c-text);
+  overflow-wrap: break-word;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cpt-envoye-mot b { font-weight: 400; color: var(--c-accent-strong); }
+
+.cpt-envoye-sub {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--c-text-faint);
+}

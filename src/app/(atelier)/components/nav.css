@@ -112,3 +112,106 @@
 @media (max-width: 560px) {
   .at-nav-cta { font-size: 12px; padding: 8px 14px; }
 }
+
+/* ── Le coin compte (04/09) ─────────────────────────────────────────────
+   La droite de la barre devient un groupe : [compte] [CTA marketing].
+   Le CTA ne disparaît JAMAIS (décision de Mathias). Le coin compte a deux
+   visages selon ce que /api/compte/statut a répondu (classe .a-suivi posée
+   par NavCompte) :
+   - grand écran : lien texte cuivre « Suivre mon numéro » + icône compte ;
+   - sous 560 px : UN SEUL emplacement — la pastille « Suivre mon numéro »
+     remplace l'icône (l'accès au compte vit sur la page du numéro). */
+
+.at-nav-droite {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(8px, 1.4vw, 18px);
+  min-width: 0;
+}
+
+.at-nav-perso {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(6px, 1vw, 14px);
+  min-width: 0;
+}
+
+/* L'icône : discrète, cible tactile de 44 px, jamais de fond. */
+.bj-atelier .at-nav-compte {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -6px 0;
+  border-radius: 999px;
+  color: var(--c-text-soft);
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.bj-atelier .at-nav-compte:hover {
+  color: var(--c-text);
+  background: var(--c-veil-hover);
+}
+
+/* Le lien de suivi : du texte cuivre et un point vivant, pas un bouton —
+   le seul bouton de la barre reste le CTA. (0,2,0) pour passer devant le
+   reset de lien de theme.css.
+   ⚠️ `flex: 0 0 auto` sur lui ET sur le CTA : un item flex qui rétrécit
+   sous son texte `nowrap` ne wrappe pas, il DÉBORDE sur son voisin — le
+   chevauchement exact vu le 04/09 à 375 px. */
+.bj-atelier .at-nav-suivi {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-accent-strong);
+  white-space: nowrap;
+  transition: color var(--dur) var(--ease);
+}
+
+.at-nav-droite .at-nav-cta { flex: 0 0 auto; }
+
+/* Deux libellés, un seul visible : le plein d'abord, le court sous 470 px. */
+.at-nav-suivi-court { display: none; }
+
+.bj-atelier .at-nav-suivi:hover { color: var(--c-text); }
+
+.at-nav-suivi-point {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--c-accent);
+  flex: 0 0 auto;
+}
+
+@media (max-width: 560px) {
+  /* Un seul emplacement : la pastille prend la place de l'icône. */
+  .at-nav-perso.a-suivi .at-nav-compte { display: none; }
+
+  .bj-atelier .at-nav-suivi {
+    font-size: 12px;
+    border: 1px solid rgba(214, 138, 99, 0.45);
+    border-radius: 999px;
+    padding: 8px 12px;
+  }
+}
+
+/* Sous 470 px, « logo + Suivre mon numéro + Découvrir les magazines » ne
+   tient plus (mesuré le 04/09 : ~446 px de contenu pour 375 de large).
+   La pastille passe au libellé court — MÊME destination, l'aria-label dit
+   toujours la phrase entière — et la barre se resserre, mais SEULEMENT
+   quand la pastille est là (:has), pour ne rien changer aux visiteuses. */
+@media (max-width: 470px) {
+  .at-nav-perso.a-suivi .at-nav-suivi-long { display: none; }
+  .at-nav-perso.a-suivi .at-nav-suivi-court { display: inline; }
+  .bj-atelier .at-nav-perso.a-suivi .at-nav-suivi { font-size: 11px; padding: 7px 10px; gap: 6px; }
+
+  .at-nav:has(.a-suivi) { padding-left: 14px; padding-right: 14px; gap: 8px; }
+  .at-nav:has(.a-suivi) .at-nav-droite { gap: 8px; }
+  .at-nav:has(.a-suivi) .at-nav-cta { font-size: 11px; padding: 7px 10px; }
+  .at-nav:has(.a-suivi) .at-nav-logo { height: 18px; }
+}

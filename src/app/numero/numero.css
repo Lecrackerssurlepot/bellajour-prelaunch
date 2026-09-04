@@ -40,6 +40,33 @@
   .nu-top-logo-img { height: 26px; }
 }
 
+/* ── La bande compte (04/09) — une ligne discrète sous le seuil ────────
+   Le compte s'AJOUTE au lien, il ne le remplace pas : une phrase, un lien
+   souligné, aucun bouton. (0,2,0) sur le <a> pour passer devant le reset
+   de lien de theme.css. */
+.nu-compte {
+  text-align: center;
+  padding: 8px var(--pad);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--c-text-faint);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.bj-atelier .nu-compte a {
+  color: var(--c-accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.bj-atelier .nu-compte a:hover { color: var(--c-text); }
+
+.nu-compte--lie i {
+  font-style: normal;
+  color: var(--c-accent);
+}
+
 .nu-main {
   flex: 1 0 auto;
   width: 100%;
