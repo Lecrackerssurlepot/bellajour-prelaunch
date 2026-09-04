@@ -16,28 +16,28 @@
   min-height: var(--app-height);
 }
 
-/* ---- barre haute : le nom, rien d'autre ----
-   Pas de CTA ici. Invariant nº5 : un seul libellé de bouton sur tout le
-   site, et il n'a rien à faire au-dessus d'un dossier en cours. */
+/* ---- barre haute : le logo du parcours, rien d'autre ----
+   04/09 (maquettes validées) : le logo officiel centré — le même fichier et
+   les mêmes cotes que la barre du questionnaire (composer.css, .at-q-logo-img).
+   Le mot « Bellajour » en toutes lettres et le rappel « Votre numéro » sont
+   partis avec l'ancien dessin. Pas de CTA ici. Invariant nº5 : un seul
+   libellé de bouton sur tout le site, et il n'a rien à faire au-dessus d'un
+   dossier en cours. */
 .nu-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 22px var(--pad);
-  border-bottom: 1px solid var(--c-line);
+  justify-content: center;
+  padding: 10px var(--pad);
 }
 
-.nu-top-logo {
-  font-family: var(--font-display);
-  font-size: 21px;
-  letter-spacing: 0.02em;
+.nu-top-logo-img {
+  height: 30px;
+  width: auto;
+  display: block;
 }
 
-.nu-top-ref {
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
+@media (max-width: 560px) {
+  .nu-top-logo-img { height: 26px; }
 }
 
 .nu-main {
@@ -56,62 +56,68 @@
   margin-top: 10px;
 }
 
-/* ---- le fil : où en est le numéro ----
+/* ---- le sommaire des jalons (04/09, maquettes validées) ----
    Cinq jalons, jamais huit : la cliente ne connaît pas notre machine à
-   états, elle veut savoir si c'est fini. */
-.nu-fil {
+   états, elle veut savoir si c'est fini. Le dessin est CELUI du sommaire du
+   questionnaire (composer.css, .at-q-etapes) : desktop les cinq noms avec
+   leur coche et le courant souligné accent, mobile cinq segments +
+   « n / 5 · nom ». Les deux vivent dans le DOM, le CSS n'en montre qu'un.
+   Sous le logo, hors de la colonne de lecture — comme dans le parcours.
+   L'ancien fil à pastilles (.nu-fil) est parti avec cette refonte. */
+.nu-etapes { flex: 0 0 auto; padding: 6px var(--pad) 0; }
+
+.nu-etapes-noms {
   display: flex;
-  margin: clamp(32px, 6vw, 52px) 0 clamp(36px, 7vw, 60px);
-  padding: 0;
-  list-style: none;
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
 }
 
-.nu-fil li {
-  flex: 1;
-  position: relative;
-  padding-top: 20px;
-  font-size: 11px;
-  line-height: 1.35;
-  letter-spacing: 0.04em;
+.nu-etape {
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
   color: var(--c-text-faint);
-  text-align: left;
+  opacity: 0.55;
+  padding-bottom: 5px;
 }
 
-/* Le filet qui relie les jalons — posé, jamais animé (PRD §15). */
-.nu-fil li::before {
-  content: '';
-  position: absolute;
-  top: 5px;
-  left: 0;
-  right: 0;
-  height: 1px;
+.nu-etape.is-fait { opacity: 1; }
+.nu-etape.is-la {
+  opacity: 1;
+  color: var(--c-accent-strong);
+  border-bottom: 1px solid var(--c-accent);
+}
+
+.nu-etape-v { font-style: normal; color: var(--c-accent); }
+
+.nu-etapes-mini { display: none; align-items: center; gap: 10px; }
+
+.nu-segments { display: flex; gap: 5px; flex: 1; }
+
+.nu-segments i {
+  display: block;
+  height: 2px;
+  flex: 1;
+  border-radius: 2px;
   background: var(--c-line-md);
 }
 
-.nu-fil li:first-child::before { left: 5px; }
-.nu-fil li:last-child::before { right: calc(100% - 6px); }
+.nu-segments i.is-fait { background: var(--c-accent); }
 
-.nu-fil li::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  border: 1px solid var(--c-line-strong);
-  background: var(--c-bg);
+.nu-etapes-ou {
+  flex: 0 0 auto;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--c-text-faint);
 }
 
-.nu-fil .is-fait { color: var(--c-text-soft); }
-.nu-fil .is-fait::after { background: var(--c-text-soft); border-color: var(--c-text-soft); }
-.nu-fil .is-fait::before { background: var(--c-text-faint); }
-
-.nu-fil .is-now { color: var(--c-accent); }
-.nu-fil .is-now::after {
-  background: var(--c-accent);
-  border-color: var(--c-accent);
-  box-shadow: var(--glow-accent);
+@media (max-width: 760px) {
+  .nu-etapes-noms { display: none; }
+  .nu-etapes-mini { display: flex; }
 }
 
 /* ---- le mot d'état : la phrase que la cliente vient lire ---- */
@@ -122,6 +128,18 @@
   letter-spacing: -0.015em;
   max-width: 20ch;
 }
+
+/* ⚠️ Spécificité : `.bj-atelier p { margin: 0 }` (theme.css, 0-1-1) écrase
+   la marge d'une classe seule (0-1-0) — une marge posée sur `.nu-mot` nu
+   n'existe pas. Les marges des <p> de la colonne vivent donc ICI, en
+   (0-2-0) — même parade que `.bj-atelier .at-cta` (theme.css).
+   Le sommaire ayant quitté la colonne (il vit sous le logo depuis le
+   04/09), c'est la marge du mot qui aère l'espace sous le titre ; le mot
+   qui suit « c'est à vous / à nous » se resserre, sinon elles s'empilent. */
+.bj-atelier .nu-mot { margin-top: clamp(28px, 6vw, 48px); }
+.bj-atelier .nu-camp { margin-top: clamp(28px, 6vw, 48px); }
+.bj-atelier .nu-camp + .nu-mot { margin-top: clamp(12px, 2.5vw, 18px); }
+.bj-atelier .nu-sub { margin-top: 16px; }
 
 .nu-sub {
   margin-top: 16px;
@@ -392,7 +410,7 @@
    Le fil des jalons dit OÙ on en est ; il ne dit pas QUI DOIT JOUER. C'est
    pourtant la seule question de quelqu'un qui rouvre son lien. */
 .nu-camp {
-  margin-top: clamp(18px, 3vw, 26px);
+  /* La marge vit en (0-2-0) près de .nu-mot — voir la note spécificité. */
   font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -572,6 +590,19 @@
 }
 .nu-feuille-sub { color: var(--c-text-soft); font-size: 14px; line-height: 1.5; max-width: 44ch; }
 .nu-feuille-chips { display: flex; flex-wrap: wrap; gap: 9px; margin: 20px 0 18px; }
+
+/* 04/09 — le groupe « La longueur du numéro » sous les motifs : un intitulé
+   discret, puis les deux sens (un seul cochable à la fois, l'exclusivité est
+   dans le composant). Les marges recousent le rythme de la feuille. */
+.nu-feuille-chips--motifs { margin-bottom: 0; }
+.bj-atelier .nu-feuille-groupe {
+  margin: 18px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+.nu-feuille-chips--longueur { margin: 10px 0 18px; }
 .nu-feuille-chip {
   appearance: none;
   cursor: pointer;
@@ -768,14 +799,6 @@
    alignée à gauche — ici elles doivent se recentrer avec le bloc. */
 .nu-perdu .nu-mot,
 .nu-perdu .nu-sub { margin-left: auto; margin-right: auto; }
-
-/* Les deux couvertures restent CÔTE À CÔTE jusqu'en bas de l'échelle
-   (PRD §8) : c'est le couple C1/C4 qui se lit comme un objet, pas deux
-   images empilées. Sur 375 px cela fait deux vignettes de 160 px — petites,
-   mais justes. */
-@media (max-width: 600px) {
-  .nu-fil li { font-size: 10px; letter-spacing: 0; padding-right: 6px; }
-}
 
 @media (hover: none) {
   .nu-order:active:not([disabled]) { transform: scale(0.98); transition-duration: 120ms; }
