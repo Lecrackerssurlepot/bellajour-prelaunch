@@ -167,6 +167,20 @@ export default function FeuilleAjustement({
               ))}
             </div>
 
+            {/* Le prix suit le nombre de pages (paliers, lib/atelier/prix.ts) :
+                demander plus court ou plus long peut changer de palier. On le
+                DIT ici plutôt que de laisser la cliente le découvrir sur la
+                nouvelle version — une surprise sur un prix coûte plus cher
+                qu'une phrase. La promesse « rien n'est dû tant que vous
+                n'avez pas dit oui » tient : ce texte ne fait que la répéter
+                à l'endroit où la question se pose. (Décision Mathias, 04/09.) */}
+            {longueur && (
+              <p className="nu-feuille-note">
+                Le nombre de pages peut changer le prix — on vous le confirme
+                avant tout paiement.
+              </p>
+            )}
+
             <textarea
               className="nu-feuille-mot"
               value={mot}

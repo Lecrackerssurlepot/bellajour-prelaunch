@@ -711,6 +711,18 @@
   color: var(--c-text-faint);
 }
 .nu-feuille-chips--longueur { margin: 10px 0 18px; }
+
+/* La mention du prix, sous les deux sens : elle n'apparaît qu'une fois un
+   sens choisi, et se lit comme une note — jamais comme un avertissement.
+   (0-2-0) : `.bj-atelier p { margin: 0 }` battrait une classe seule. */
+.bj-atelier .nu-feuille-note {
+  margin: -8px 0 18px;
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.5;
+  color: var(--c-text-faint);
+  max-width: 44ch;
+}
 .nu-feuille-chip {
   appearance: none;
   cursor: pointer;
