@@ -592,6 +592,10 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
             status: "confirmed",
             estAmbassadeur: true,
             pagesCredits: 15,
+            /* La démo montre le crédit ENCORE DÛ : c'est l'écran où le
+               bouton « frapper le code » se voit. */
+            creditConsommeLe: null,
+            creditCode: null,
           }
         : null,
     },

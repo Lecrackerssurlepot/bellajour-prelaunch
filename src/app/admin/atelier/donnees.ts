@@ -952,8 +952,39 @@ async function chargerClient(r: RangeeNumero): Promise<ClientVue> {
   const vide: ClientVue = { autres: [], totalPaye: 0, prevente: null };
   if (!canonique) return vide;
 
+  /* `credit_consomme_le` + `credit_code` (20260905) : repli 42703 tant que
+     la migration n'est pas passée — la fiche vit alors sur ses colonnes
+     d'avant, et le crédit s'affiche « à imputer » comme toujours. */
+  type LigneWaitlist = {
+    email: string;
+    offer_type: string | null;
+    numero_fondateur: number | null;
+    status: string | null;
+    is_ambassadeur: boolean | null;
+    credit_consomme_le?: string | null;
+    credit_code?: string | null;
+  };
+  const lireWaitlist = async (): Promise<LigneWaitlist | null> => {
+    const lire = (champs: string) =>
+      supabase
+        .from("waitlist")
+        .select(champs)
+        .eq("email_canonical", canonique)
+        .maybeSingle<LigneWaitlist>();
+    let { data, error } = await lire(
+      "email, offer_type, numero_fondateur, status, is_ambassadeur, credit_consomme_le, credit_code",
+    );
+    if (error?.code === "42703") {
+      ({ data, error } = await lire(
+        "email, offer_type, numero_fondateur, status, is_ambassadeur",
+      ));
+    }
+    if (error) throw new Error(error.message);
+    return data ?? null;
+  };
+
   try {
-    const [{ data: autres }, { data: wl }] = await Promise.all([
+    const [{ data: autres }, wl] = await Promise.all([
       supabase
         .from("numeros")
         .select("token, titre, etat, created_at, palier, stripe_payment_intent")
@@ -970,17 +1001,7 @@ async function chargerClient(r: RangeeNumero): Promise<ClientVue> {
             stripe_payment_intent: string | null;
           }>
         >(),
-      supabase
-        .from("waitlist")
-        .select("email, offer_type, numero_fondateur, status, is_ambassadeur")
-        .eq("email_canonical", canonique)
-        .maybeSingle<{
-          email: string;
-          offer_type: string | null;
-          numero_fondateur: number | null;
-          status: string | null;
-          is_ambassadeur: boolean | null;
-        }>(),
+      lireWaitlist(),
     ]);
 
     let pagesCredits = 0;
@@ -1020,6 +1041,8 @@ async function chargerClient(r: RangeeNumero): Promise<ClientVue> {
             status: wl.status,
             estAmbassadeur: wl.is_ambassadeur === true,
             pagesCredits,
+            creditConsommeLe: wl.credit_consomme_le ?? null,
+            creditCode: wl.credit_code ?? null,
           }
         : null,
     };

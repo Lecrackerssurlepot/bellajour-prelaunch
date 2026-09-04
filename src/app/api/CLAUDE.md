@@ -1,6 +1,6 @@
 # API — effets de bord et surfaces exposées
 
-27 routes. Beaucoup écrivent en base, envoient des mails, encaissent ou commandent une impression.
+34 routes. Beaucoup écrivent en base, envoient des mails, encaissent ou commandent une impression.
 Chargé dès qu'on touche une route.
 
 ## Qui est protégé par quoi
@@ -26,6 +26,16 @@ Chargé dès qu'on touche une route.
 - **`/api/brevo/webhook`** — `BREVO_WEBHOOK_SECRET`, HORS middleware, fermée par défaut. Brevo ne
   signe pas ses webhooks mais accepte des **en-têtes personnalisés** : le secret reste dans un
   en-tête (`x-bellajour-secret` ou Bearer), jamais dans l'URL.
+- **`/api/compte/*`** — session Supabase Auth lue par `utilisateurConnecte()`
+  (`@/lib/compte/session`), **jamais par le middleware** : sa branche `/compte` ne fait que
+  RAFRAÎCHIR les jetons, elle ne garde rien. Chaque route porte donc sa propre garde, et
+  `/compte` (la page) redirige elle-même vers la connexion. Trois règles qui ne se négocient pas :
+  **(1)** inscription, connexion et mot de passe oublié répondent de façon **indistincte**
+  (patron `/api/waitlist`, `delaiNeutre` de `@/lib/compte/garde`) — une inscription qui dit
+  « ce compte existe » est un annuaire des clientes ; **(2)** la réinitialisation appelle
+  `signOut()` **dans tous les cas** : un lien de mail n'ouvre jamais de session durable ;
+  **(3)** le compte n'a AUCUN pouvoir sur les routes `/api/atelier/*` — le token y reste
+  l'unique identité, avec ou sans compte.
 
 ## Les effets de bord, par ordre de gravité
 
@@ -38,6 +48,7 @@ Chargé dès qu'on touche une route.
 | `/api/atelier/checkout`, `/api/checkout` | sessions Stripe + **coupon fondatrice frappé chez Stripe** et remise de 30 € appliquée d'office (T-021) |
 | `/api/atelier/photos/supprimer` | DELETE R2 irréversible |
 | `/api/brevo/webhook` | **rien qu'une ligne de journal** : aucun état, aucun mail |
+| `/api/compte/inscription`, `/api/compte/mot-de-passe-oublie` | crée un compte `auth.users` et **envoie C1/C2 par Brevo** (lien frappé par `generateLink`, URL du site, jamais celle de Supabase) |
 
 ⚠️ **Un webhook ne doit jamais mentir sur son succès.** `logEvenement` est best-effort et ne
 throw pas : ignorer sa valeur, c'est répondre 200 sur une écriture ratée, et Brevo comme

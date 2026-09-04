@@ -1,0 +1,713 @@
+/* ═══════════════════════════════════════════════════════════════════
+   /compte — l'espace de la cliente. Monde SOMBRE (tokens --c-* de
+   theme.css), tout est scopé sous .cpt : retirer ce conteneur repeint
+   d'autres pages, ne pas le faire.
+
+   Pièges honorés :
+   - .bj-atelier h1 fait 150px (hero) : .cpt .cpt-titre le recadre.
+   - globals.css coupe les mots sous 767px (overflow-wrap anywhere) :
+     les titres de cartes posent leur propre overflow-wrap.
+   - jamais de dvh ; les hauteurs pleines n'existent pas ici, la page
+     défile normalement.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cpt {
+  min-height: 100vh;
+  background: var(--grad-ambient);
+  --pad: clamp(20px, 5vw, 48px);
+}
+
+/* ── La barre du haut : marque · onglets · moi ────────────────────────
+   Deux onglets et pas trois sections empilées (Mathias, 04/09) : « Mes
+   numéros » et « Ma bibliothèque » n'ont rien à voir, l'un est une liste de
+   choses à faire, l'autre une étagère. */
+
+.cpt-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px var(--pad);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.cpt-top-marque { display: inline-flex; align-items: center; }
+
+.cpt-top-logo {
+  display: block;
+  height: 28px;
+  width: auto;
+}
+
+.cpt-top-moi {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Le jeton du compte : la photo Google, ou l'initiale. La cliente voit
+   d'un coup d'œil qu'elle est chez elle. */
+.cpt-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  border: 1px solid rgba(214, 138, 99, 0.55);
+  overflow: hidden;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-accent-strong);
+}
+
+.cpt-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.cpt-onglets {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(14px, 3vw, 30px);
+  min-width: 0;
+}
+
+.cpt .cpt-onglet {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 6px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--c-text-faint);
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.cpt .cpt-onglet:hover { color: var(--c-text-soft); }
+
+.cpt .cpt-onglet.est-actif {
+  color: var(--c-text);
+  border-bottom-color: var(--c-accent);
+}
+
+.cpt-onglet-nb {
+  font-style: normal;
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: var(--c-surface-3);
+  color: var(--c-text-faint);
+}
+
+.cpt-onglet.est-actif .cpt-onglet-nb {
+  background: var(--c-accent-soft);
+  color: var(--c-accent-strong);
+}
+
+.cpt .cpt-deconnexion {
+  appearance: none;
+  background: none;
+  border: 1px solid var(--c-line-md);
+  border-radius: 999px;
+  color: var(--c-text-faint);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.cpt .cpt-deconnexion:hover {
+  color: var(--c-text-soft);
+  border-color: var(--c-line-strong);
+}
+
+/* Le retour, sur la page d'un magazine — un vrai chemin de retour, pas un
+   lien perdu dans une ligne de service (reproche de Mathias, 04/09). */
+.bj-atelier .cpt-retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px 0 10px;
+  border: 1px solid var(--c-line-md);
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--c-text-soft);
+  white-space: nowrap;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.bj-atelier .cpt-retour:hover {
+  color: var(--c-text);
+  border-color: var(--c-accent);
+}
+
+.cpt-top-vide { width: 1px; }
+
+@media (max-width: 760px) {
+  .cpt-top {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    row-gap: 10px;
+  }
+  /* Les onglets passent sous la marque, sur toute la largeur. */
+  .cpt-onglets { order: 3; width: 100%; }
+  .cpt-top-logo { height: 24px; }
+  .cpt .cpt-deconnexion { padding: 8px 12px; font-size: 12px; }
+  .cpt-top-vide { display: none; }
+}
+
+/* ── La page ──────────────────────────────────────────────────────── */
+
+.cpt-main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(36px, 7vw, 72px) var(--pad) clamp(64px, 10vw, 120px);
+}
+
+.cpt-main--etroit { max-width: 460px; }
+
+.cpt .cpt-titre {
+  font-family: var(--font-atelier-display), Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(34px, 6vw, 52px);
+  line-height: 1.1;
+  color: var(--c-text);
+}
+
+.cpt .cpt-sous-titre {
+  margin-top: 10px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--c-text-faint);
+}
+
+/* ── Les sections du dashboard ────────────────────────────────────── */
+
+.cpt-section { margin-top: clamp(40px, 7vw, 64px); }
+
+.cpt .cpt-section-titre {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--c-line);
+}
+
+.cpt-grille {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
+}
+
+/* ── Les cartes ───────────────────────────────────────────────────── */
+
+.cpt-carte {
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-line);
+  border-radius: 16px;
+  padding: clamp(20px, 4vw, 28px);
+  display: flex;
+  flex-direction: column;
+}
+
+.cpt-carte--attente { border-color: rgba(214, 138, 99, 0.35); }
+
+/* ⚠️ L'ÉTIQUETTE EST AU-DESSUS DU TITRE, PAS À CÔTÉ. Côte à côte dans un
+   flex, le badge (« UN GESTE VOUS ATTEND », nowrap) gardait sa largeur et
+   écrasait le titre : dans une carte de 316 px il restait ~130 px, et
+   « TEST ADMIN PRES » se cassait en « TEST ADMI N PRES ». Mesuré le 04/09.
+   Empilés, le titre a toute la largeur de la carte, quel que soit le badge. */
+.cpt-carte-tete {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.cpt .cpt-carte-titre {
+  font-family: var(--font-atelier-display), Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(21px, 3vw, 26px);
+  line-height: 1.15;
+  color: var(--c-text);
+  /* `break-word` et pas `anywhere` : on coupe un mot SEULEMENT s'il ne
+     tient pas seul sur une ligne (globals.css impose `anywhere` sous
+     767 px, qui couperait « Madrid » au milieu). */
+  overflow-wrap: break-word;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.cpt-carte-camp {
+  order: -1; /* l'étiquette se lit avant le titre */
+  flex: 0 0 auto;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  border: 1px solid var(--c-line-md);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.cpt-carte-camp--vous {
+  color: var(--c-accent);
+  border-color: rgba(214, 138, 99, 0.4);
+}
+
+.cpt-carte-etat {
+  margin-top: 10px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--c-text-soft);
+}
+
+/* (Les titres ci-dessus sont en (0,2,0) : .bj-atelier h2/h3 pose des
+   tailles de hero en (0,1,1), et un selecteur simple perdrait.) */
+
+/* La jauge : cinq segments, le vocabulaire de /numero en miniature. */
+.cpt-jauge {
+  display: flex;
+  gap: 5px;
+  margin-top: 16px;
+}
+
+.cpt-jauge i {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--c-surface-3);
+}
+
+.cpt-jauge i.is-fait { background: var(--c-accent); }
+
+.cpt-carte-jalons {
+  margin-top: 8px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--c-text-faint);
+}
+
+.cpt-carte-gestes {
+  margin-top: auto;
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.cpt .cpt-cta {
+  font-size: 14px;
+  padding: 14px 24px;
+}
+
+.cpt .cpt-cta--pleine {
+  width: 100%;
+  justify-content: center;
+}
+
+.cpt .cpt-lien {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--c-text-faint);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease);
+}
+
+.cpt .cpt-lien:hover { color: var(--c-text-soft); }
+
+/* globals.css pose `overflow-wrap: anywhere !important` sur h1..h4 et p sous
+   767 px — une règle de sécurité de la landing waitlist, qui coupe AU MILIEU
+   D'UN MOT, sans césure. Sur un titre de numéro (« Madrid », « Nuit Sonore »)
+   c'est une coupure gratuite : les cartes ont une largeur confortable et un
+   `break-word` normal suffit. Même contournement que `.at-accueil` dans
+   ouverture.css, et il faut un !important pour répondre au sien.
+   ⚠️ Les titres seulement : les paragraphes de carte gardent la règle, un
+   token ou une adresse mail y débordait vraiment. */
+@media (max-width: 767px) {
+  .cpt .cpt-carte-titre,
+  .cpt .cpt-titre,
+  .cpt .cpt-envoye-mot {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+}
+
+/* ── L'ÉTAGÈRE — la bibliothèque en couvertures ───────────────────────
+   Structure voulue par Mathias (04/09, référence à l'appui) : une grille de
+   couvertures, titre et année en haut de carte, une action en bas. On ne
+   décrit pas un magazine avec du texte : on le montre. */
+
+.cpt-etagere {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: clamp(14px, 2vw, 22px);
+}
+
+.bj-atelier .cpt-livre {
+  display: flex;
+  flex-direction: column;
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-line);
+  border-radius: 16px;
+  padding: 14px;
+  color: inherit;
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+.bj-atelier .cpt-livre:hover {
+  border-color: var(--c-line-strong);
+  transform: translateY(-2px);
+}
+
+.cpt-livre-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 2px 12px;
+}
+
+.cpt-livre-titre {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cpt-livre-annee {
+  flex: 0 0 auto;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--c-text-faint);
+}
+
+/* Le cadre garde le format d'un magazine (A4) quelle que soit l'image :
+   une étagère dont les livres n'ont pas la même hauteur n'est pas une
+   étagère. */
+.cpt-livre-cadre {
+  display: block;
+  position: relative;
+  aspect-ratio: 210 / 297;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--grad-cover);
+}
+
+.cpt-livre-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* La planche entière (C4 · dos · C1) : sa couverture est à DROITE. On la
+   cadre là plutôt que de montrer le dos au milieu de l'étagère. */
+.cpt-livre-img.est-planche { object-position: right center; }
+
+.cpt-livre-vide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 12px;
+  font-family: var(--font-atelier-display), Georgia, serif;
+  font-size: 14px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cpt-livre-pied {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 2px 2px;
+}
+
+.cpt-livre-meta {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--c-text-faint);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cpt-livre-geste {
+  flex: 0 0 auto;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--c-accent-strong);
+}
+
+/* ── La page d'un magazine : le voir, le lire, l'emporter ─────────────
+   L'ordre est celui de Mathias : la visionneuse d'abord, la fiche ensuite,
+   le téléchargement en bas. */
+
+.cpt-mag {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: clamp(18px, 3vw, 28px) var(--pad) clamp(64px, 10vw, 110px);
+}
+
+.cpt .cpt-mag-titre { font-size: clamp(26px, 4vw, 38px); }
+
+/* ⚠️ LA VISIONNEUSE TIENT DANS L'ÉCRAN, POINTS COMPRIS (Mathias, 04/09 :
+   « on doit avoir accès à tout, même le prévisualisateur, sans scroller »).
+   numero.css donne à la scène 64 unités de hauteur ; cette page porte un
+   titre et une fiche au-dessus, donc les points de feuilletage tombaient
+   33 px sous la ligne de flottaison (mesuré sur 1280 × 800). On resserre
+   ICI, jamais dans numero.css — la page de suivi n'a pas ce problème et
+   n'a pas à payer pour celui-ci. */
+.cpt--mag .nu-viz-scene { --viz-h: min(calc(55 * var(--uh)), 470px); }
+
+/* ⚠️ LA VISIONNEUSE N'A PAS DE STYLE ICI. Elle est le composant `Apercu`
+   de la page de suivi, et son habillage vit dans numero.css (.nu-viz-*),
+   importé par cette page. Une seconde visionneuse aurait divergé de la
+   première au premier réglage — et c'est la même cliente qui regarde le
+   même magazine. Le réglage propre à cet écran (la hauteur de scène) est
+   plus bas, sur `.cpt--mag`. */
+
+.cpt-mag-sans-visuel {
+  margin-top: 28px;
+  padding: 24px;
+  border: 1px dashed var(--c-line-md);
+  border-radius: 16px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--c-text-faint);
+}
+
+.cpt-mag-infos { margin-top: clamp(40px, 7vw, 64px); }
+
+.cpt-fiche {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: minmax(110px, 160px) 1fr;
+  gap: 12px 24px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cpt-fiche dt { color: var(--c-text-faint); }
+.cpt-fiche dd { margin: 0; color: var(--c-text-soft); }
+
+.cpt-mag-pdf {
+  margin-top: clamp(40px, 7vw, 64px);
+  padding-top: clamp(28px, 5vw, 40px);
+  border-top: 1px solid var(--c-line);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.cpt-mag-pdf-mot {
+  font-family: var(--font-atelier-display), Georgia, serif;
+  font-size: clamp(21px, 3.4vw, 27px);
+  line-height: 1.25;
+  color: var(--c-text);
+}
+
+.cpt-mag-pdf-sub {
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--c-text-faint);
+}
+
+@media (max-width: 560px) {
+  .cpt-fiche { grid-template-columns: 1fr; gap: 4px 0; }
+  .cpt-fiche dd { margin-bottom: 12px; }
+}
+
+/* ── L'état vide ──────────────────────────────────────────────────── */
+
+.cpt-vide {
+  margin-top: clamp(40px, 8vw, 72px);
+  text-align: center;
+  border: 1px dashed var(--c-line-md);
+  border-radius: 20px;
+  padding: clamp(36px, 8vw, 72px) var(--pad);
+}
+
+.cpt .cpt-vide-mot {
+  font-family: var(--font-atelier-display), Georgia, serif;
+  font-size: clamp(20px, 3.4vw, 26px);
+  line-height: 1.4;
+  color: var(--c-text-soft);
+  max-width: 460px;
+  margin: 0 auto 24px;
+}
+
+/* ── La porte : connexion, oubli, réinitialisation ────────────────── */
+
+.cpt-porte { margin-top: clamp(28px, 5vw, 40px); }
+
+.cpt .cpt-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 15px 24px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 999px;
+  background: var(--c-surface-2);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--c-text);
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.cpt .cpt-google:hover {
+  background: var(--c-surface-3);
+  border-color: var(--c-line-strong);
+}
+
+.cpt-ou {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 22px 0;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.cpt-ou::before,
+.cpt-ou::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--c-line);
+}
+
+.cpt-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cpt-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.cpt-champ span {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--c-text-soft);
+}
+
+.cpt-champ input {
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--c-line-md);
+  border-radius: 12px;
+  background: var(--c-surface-1);
+  font-family: var(--font-ui);
+  font-size: 16px; /* < 16px : iOS zoome au focus, la page saute */
+  color: var(--c-text);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.cpt-champ input:focus {
+  outline: none;
+  border-color: var(--c-accent);
+}
+
+.cpt-alerte {
+  margin-top: 14px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--c-accent-strong);
+  background: var(--c-accent-soft);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.cpt-porte-pied {
+  margin-top: 22px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* ── L'écran « mail parti » ───────────────────────────────────────── */
+
+.cpt-envoye {
+  margin-top: clamp(28px, 5vw, 40px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid var(--c-line-md);
+  border-radius: 16px;
+  padding: clamp(22px, 4vw, 30px);
+  background: var(--c-surface-1);
+}
+
+.cpt .cpt-envoye-mot {
+  font-family: var(--font-atelier-display), Georgia, serif;
+  font-size: clamp(19px, 3vw, 23px);
+  line-height: 1.35;
+  color: var(--c-text);
+  overflow-wrap: break-word;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cpt-envoye-mot b { font-weight: 400; color: var(--c-accent-strong); }
+
+.cpt-envoye-sub {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--c-text-faint);
+}

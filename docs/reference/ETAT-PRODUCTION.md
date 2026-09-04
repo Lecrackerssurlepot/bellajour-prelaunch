@@ -1,4 +1,4 @@
-# État du système — au 03/09/2026
+# État du système — au 04/09/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -25,8 +25,102 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 | Prévente (`/preventes`, `/lancement`) | retirées, 307 vers `/` | 28/08/2026 |
 | Rebonds Brevo (`/api/brevo/webhook`) | **actif**, webhook Brevo id 2158565 | prouvé le 29/08/2026 à 10:14 |
 | PDF souvenir + mail M7b à la livraison | en ligne, chaîne complète vérifiée | 03/09/2026 (PR #39) |
+| Compte cliente (`/compte`) | **écrit et éprouvé en local, PAS déployé** — six gestes de mise en service en attente (voir plus bas) | 04/09/2026 |
 
 Quatorze fondateurs ont des droits ouverts sous les CGV v2.5, maintenus en régime transitoire.
+
+## Le compte cliente — écrit le 04/09, en attente de mise en service
+
+Supabase Auth en « identité seulement » : Google **et** email + mot de passe, avec mot de passe
+oublié. Le compte **s'ajoute** au lien `/numero/<token>`, il ne le remplace jamais — une cliente
+qui n'en veut pas ne voit rien changer, et le token reste l'unique identité des routes
+`/api/atelier/*`. `/compte` range ses numéros en **deux onglets** (« Mes numéros » · « Ma
+bibliothèque »), et la barre du site gagne un coin compte — voir les retouches ci-dessous, qui
+disent l'état final.
+
+**Retouches du 04/09 (après-midi), demandées par Mathias en regardant l'écran :**
+- `/compte` passe à **DEUX ONGLETS** (« Mes numéros » · « Ma bibliothèque ») au lieu de trois
+  sections empilées : chaque onglet est un moment, et ils n'ont rien à voir.
+- **La bibliothèque est une étagère de couvertures** (grille de vignettes au format A4, titre et
+  année en haut, geste en bas) — la vraie couverture publiée par l'atelier, pas un aplat.
+- **Nouvelle page `/compte/magazine/<token>`**, dans l'ordre voulu : on REGARDE le magazine,
+  puis on lit sa fiche, puis on télécharge le PDF **en bas**. ⚠️ Elle passe par
+  `lireDossiersDuCompte` : un token collé d'ailleurs rend 404, contrairement à `/numero/<token>`
+  qui reste la porte publique du lien.
+- **Sa visionneuse EST le composant `Apercu` de la page de suivi, pas une seconde** (2e retour de
+  Mathias, 04/09) : flèches, glissé, loupe, et le support magazine validé (fermé pour les
+  couvertures, ouvert avec pli pour les doubles). Sa scène a une hauteur FIXE, donc **passer
+  d'une A4 à une double page ne fait plus sauter la page** — prouvé : couverture → quatrième →
+  double, scène à 440 px et bas de visionneuse immobile à 678 px. La page resserre `--viz-h`
+  sous `.cpt--mag` (55 unités au lieu de 64) pour que **les points de feuilletage tiennent dans
+  l'écran sans scroller** : ils tombaient 33 px trop bas sur 1280 × 800 ; il reste 66 px de marge
+  là, et 112 px sur un téléphone de 375 × 780. ⚠️ Le resserrage vit dans `compte.css`, jamais
+  dans `numero.css` — la page de suivi n'a pas ce problème et n'a pas à payer pour lui.
+- ⚠️ **Les flèches de la visionneuse sont désormais visibles AU DOIGT AUSSI** (3e retour de
+  Mathias, 04/09). Elles étaient réservées au pointeur fin ; au doigt il ne restait que le
+  glissé, un geste qui ne s'annonce pas. **Ce changement touche `/numero`, qui est EN
+  PRODUCTION** — c'est voulu, les deux pages partagent le composant. Sur téléphone le bouton
+  garde ses 44 × 44 (plancher tactile du dépôt) mais perd sa pastille de verre : le chevron
+  seul, sur une ombre portée, parce que deux pastilles mangeraient un tiers d'un magazine large
+  de 300 px sur un écran de 375. Vérifié sur les deux pages, sans débordement.
+- **La barre ne devine plus** : un seul numéro en cours → « Suivre mon numéro » y mène ;
+  plusieurs → « Mes numéros » ouvre le compte. Et **sur mobile la barre ne porte que le compte**.
+- **Le jeton du compte montre la photo Google** (ou l'initiale) une fois connectée.
+- **`/numero` a un vrai retour** « ← Mon compte » dans son en-tête quand on est connectée ; la
+  ligne de service « ce numéro est rattaché » a disparu avec sa raison d'être.
+
+**Ce qui est PROUVÉ en local, contre la base de production (04/09) :**
+- connexion par mot de passe → cookie de session **`HttpOnly`** (aucun client Supabase dans le
+  navigateur, la clé anon reste serveur), `/api/compte/statut` répond le numéro en cours ;
+- réinitialisation complète : lien `generateLink(recovery)` → nouveau mot de passe → l'ancien est
+  refusé (401), le nouveau passe (200), **aucun cookie de session laissé derrière**, et rejouer
+  le même lien est refusé (400) ;
+- réponses **indistinctes** sur inscription et mot de passe oublié (adresse inconnue ou déjà
+  prise : 200 dans les deux cas) ;
+- `/compte` déconnectée redirige vers `/compte/connexion?suite=%2Fcompte` ;
+- `/numero/<token>` inchangée sans compte ; connectée, son en-tête porte le retour « ← Mon
+  compte » et le logo reste centré au pixel (mesuré : 500 sur un viewport de 1000) ;
+- les deux onglets, l'étagère de couvertures (vraies images R2 chargées, vérifié par
+  `naturalWidth`) et la page magazine, sur 1000 px comme sur 375 px, sans débordement ;
+- barre mobile à 375 px : signature + jeton du compte + CTA, le raccourci de suivi masqué ;
+- téléchargement du PDF depuis la bibliothèque : `/api/atelier/souvenir?token=…` → **302** vers R2 ;
+- `tsc`, `lint`, `build` verts ; harnais à **577 assertions** (28 neuves sur le compte : qui voit
+  quoi, le classement des trois piles, les numéros en cours, et `?suite=` qui ne peut pas sortir
+  du site), toutes vertes.
+
+⚠️ **Les deux migrations ne sont PAS appliquées** (`20260904_compte_id`,
+`20260905_waitlist_credit_consomme`) : le code tourne quand même grâce aux replis `42703`/
+`PGRST204`, mais **le rattachement explicite ne s'écrit pas** — le rapprochement par
+`email_canonical` fait tout le travail en attendant. C'est exactement le revers documenté dans
+`supabase/CLAUDE.md` : après la migration, vérifier que `numeros.compte_id` se remplit vraiment.
+
+**Les six gestes de mise en service, tous à faire par Mathias :**
+1. Google Cloud → « ID client OAuth » (application web), URI de redirection autorisée
+   `https://lxkivqbcegursmxshmoc.supabase.co/auth/v1/callback`.
+2. Dashboard Supabase → Authentication → Providers → **Google** : coller l'ID et le secret.
+3. Dashboard Supabase → Authentication → URL Configuration : Site URL `https://www.bellajour.fr`,
+   et en Redirect URLs `https://www.bellajour.fr/compte/callback` + `http://localhost:3000/compte/callback`.
+4. Vercel (Production **et** Preview) : `SUPABASE_ANON_KEY`, puis `BREVO_TEMPLATE_C1_ID` et
+   `BREVO_TEMPLATE_C2_ID` une fois les templates poussés.
+5. Appliquer les deux migrations.
+6. Pousser les deux mails, **sur accord explicite** : `node scripts/mails-atelier.mjs --pousser
+   --seulement C1` puis `--seulement C2` (jamais `--pousser` nu : il réécrit les quatorze).
+
+Et, quand tout ci-dessus est en place, la pré-création silencieuse des comptes fondateurs :
+`npx tsx --tsconfig tsconfig.json scripts/creer-comptes-fondateurs.ts` (dry-run) puis
+`--vraiment`. **Aucun mail ne part** : chacun entre par « mot de passe oublié » ou par Google.
+
+**Le crédit fondateur consommé devient visible** (même chantier) : le webhook écrit
+`waitlist.credit_consomme_le` + `credit_code` au moment du paiement, en best-effort absolu, et la
+fiche admin affiche « crédit consommé le … » à la place du bouton de frappe. ⚠️ `offer_type`
+**ne bouge pas** : un fondateur dont le crédit est dépensé reste fondateur, pour la segmentation
+des campagnes. La source de vérité reste le journal `evenements` ; ces colonnes sont un miroir.
+
+✅ **Les deux comptes de test du 04/09 sont supprimés** (`mdurand085+test@gmail.com` après la
+recette, `mdurand085+demo@gmail.com` après la relecture de Mathias). **`auth.users` est à ZÉRO
+compte**, et aucun événement `compte_rattache` n'a jamais été écrit — la migration n'étant pas
+passée, les replis 42703/PGRST204 ont joué à chaque fois. La base est exactement dans l'état
+d'avant ce chantier.
 
 ## Recette de bout en bout de l'Atelier — 01/09/2026 (après-midi)
 

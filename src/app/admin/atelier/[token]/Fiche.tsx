@@ -897,18 +897,37 @@ export default function Fiche({
               <div className="ate-prevente">
                 <h3 className="ate-sous-titre">Prévente</h3>
                 {fiche.client.prevente.numeroFondateur ? (
-                  <>
+                  fiche.client.prevente.creditConsommeLe ? (
+                    /* Le miroir 20260905 : le crédit est DÉPENSÉ. Le statut
+                       fondateur, lui, ne bouge jamais — c'est voulu
+                       (segmentation de campagnes). Plus rien à frapper :
+                       le bouton du code disparaît avec sa raison d'être. */
                     <p className="ate-credit">
                       Fondateur nº{fiche.client.prevente.numeroFondateur} —{" "}
-                      <strong>30 € de crédit</strong> à imputer (CGV art. 5 bis), code Stripe
-                      nominatif à usage unique.
+                      <strong>crédit de 30 € consommé</strong> le{" "}
+                      {new Date(fiche.client.prevente.creditConsommeLe).toLocaleDateString(
+                        "fr-FR",
+                        { day: "numeric", month: "long", year: "numeric" },
+                      )}
+                      {fiche.client.prevente.creditCode
+                        ? ` (code ${fiche.client.prevente.creditCode})`
+                        : ""}
+                      . Le statut fondateur reste acquis.
                     </p>
-                    <CodeFondatrice
-                      token={l.token}
-                      existant={fiche.codeFondatrice}
-                      demo={demo}
-                    />
-                  </>
+                  ) : (
+                    <>
+                      <p className="ate-credit">
+                        Fondateur nº{fiche.client.prevente.numeroFondateur} —{" "}
+                        <strong>30 € de crédit</strong> à imputer (CGV art. 5 bis), code Stripe
+                        nominatif à usage unique.
+                      </p>
+                      <CodeFondatrice
+                        token={l.token}
+                        existant={fiche.codeFondatrice}
+                        demo={demo}
+                      />
+                    </>
+                  )
                 ) : (
                   <p className="ate-faint">
                     Inscrit en prévente ({fiche.client.prevente.status ?? "—"}), sans place de

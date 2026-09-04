@@ -406,10 +406,21 @@ async function main(): Promise<void> {
       continue;
     }
 
-    const { error } = await supabase
+    let { error } = await supabase
       .from("numeros")
       .update({ ...patchAnonymisation(), anonymise_le: maintenant.toISOString() })
       .eq("id", x.d.id);
+    if (error && (error.code === "42703" || error.code === "PGRST204")) {
+      /* Repli : `compte_id` (migration 20260904) peut ne pas exister encore.
+         On rejoue SANS elle — les objets R2 sont déjà effacés, laisser la
+         ligne nominative serait bien pire qu'un lien de compte survivant. */
+      const { compte_id: _ignore, ...patchSansCompte } = patchAnonymisation();
+      void _ignore;
+      ({ error } = await supabase
+        .from("numeros")
+        .update({ ...patchSansCompte, anonymise_le: maintenant.toISOString() })
+        .eq("id", x.d.id));
+    }
     if (error) {
       console.error(`  ✗ ${x.d.titre ?? x.d.token} — base : ${error.code} ${error.message}`);
       console.error(`     ${effaces} objet(s) déjà effacé(s) du coffre : relancer le script.`);

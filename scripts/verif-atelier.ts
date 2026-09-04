@@ -130,6 +130,15 @@ import {
   type NumeroPourRetention,
 } from "@/lib/atelier/retention";
 import { cheminPublic, MASQUE } from "@/lib/analytics/chemin";
+import {
+  peutVoirDossier,
+  doitEpingler,
+  sectionPour,
+  classerDossiers,
+  numerosEnCours,
+  type DossierDuCompte,
+} from "@/lib/compte/rattachement";
+import { suiteSure } from "@/lib/compte/garde";
 
 let ko = 0;
 const ok = (n: string, c: boolean) => {
@@ -1698,7 +1707,7 @@ ok("aucune adresse ou ecrire : rien a attendre, on peut refermer",
 titre("— T-076 : ce que l'anonymisation ecrit, et surtout ce qu'elle N'ECRIT PAS —");
 {
   const patch = patchAnonymisation();
-  for (const champ of ["email", "email_canonical", "prenom", "telephone", "occasion", "histoire", "adresse_livraison"]) {
+  for (const champ of ["email", "email_canonical", "prenom", "telephone", "occasion", "histoire", "adresse_livraison", "compte_id"]) {
     ok(`${champ} part`, champ in patch && patch[champ] === null);
   }
   ok("le titre devient un marqueur lisible, pas ses mots a elle",
@@ -1815,6 +1824,102 @@ ok("filet generique : une future route dynamique est masquee d'office",
    cheminPublic(`${O}/cadeau/aB3xY9kLmN0pQ7rS`) === `${O}/cadeau/${MASQUE}`);
 ok("une URL illisible n'envoie RIEN (le doute profite a la cliente)",
    cheminPublic("pas-une-url") === null && cheminPublic("") === null);
+
+/* ════════════════════════ LE COMPTE CLIENTE ════════════════════════ */
+
+titre("— le compte : qui voit quoi (invariant no2 de session.ts) —");
+
+const dossierCompte = (extra: Partial<DossierDuCompte>): DossierDuCompte => ({
+  token: "t".repeat(32),
+  etat: "photos_recues",
+  compte_id: null,
+  email_canonical: "lea@gmail.com",
+  consent_photos: true,
+  nb_photos: 42,
+  etat_maj_le: "2026-09-01T00:00:00Z",
+  ...extra,
+});
+
+const regardLea = { uid: "uid-lea", canon: "lea@gmail.com", emailConfirme: true };
+
+ok("le lien explicite (compte_id) suffit, meme si l'email a change",
+   peutVoirDossier(dossierCompte({ compte_id: "uid-lea", email_canonical: "autre@x.fr" }), regardLea));
+ok("l'email qui concorde suffit, s'il est CONFIRME",
+   peutVoirDossier(dossierCompte({}), regardLea));
+ok("un email non confirme ne montre RIEN (anti-usurpation)",
+   !peutVoirDossier(dossierCompte({}), { ...regardLea, emailConfirme: false }));
+ok("ni lien ni email : porte fermee",
+   !peutVoirDossier(dossierCompte({ email_canonical: "autre@x.fr" }), regardLea));
+ok("un dossier anonymise (email_canonical null) ne se rapproche plus",
+   !peutVoirDossier(dossierCompte({ email_canonical: null }), regardLea));
+ok("le compte_id d'une AUTRE ne s'ouvre pas par email non plus",
+   !peutVoirDossier(
+     dossierCompte({ compte_id: "uid-autre", email_canonical: "autre@x.fr" }),
+     regardLea,
+   ));
+
+ok("on epingle un dossier vu par email et pas encore lie",
+   doitEpingler(dossierCompte({}), regardLea));
+ok("on n'epingle jamais deux fois (compte_id deja pose)",
+   !doitEpingler(dossierCompte({ compte_id: "uid-lea" }), regardLea));
+ok("on n'epingle pas ce qu'on ne voit pas",
+   !doitEpingler(dossierCompte({ email_canonical: "autre@x.fr" }), regardLea));
+
+titre("— le dashboard : trois sections, chacune sa regle —");
+
+ok("livree -> bibliotheque",
+   sectionPour(dossierCompte({ etat: "livree" })) === "bibliotheque");
+ok("depot non termine -> a terminer (la balle est chez la cliente)",
+   sectionPour(dossierCompte({ consent_photos: false, nb_photos: 3 })) === "a_terminer"
+   && sectionPour(dossierCompte({ consent_photos: false, nb_photos: 0 })) === "a_terminer");
+ok("depot termine -> en cours, meme a l'etat photos_recues",
+   sectionPour(dossierCompte({})) === "en_cours");
+ok("photos_insuffisantes -> en cours (c'est l'atelier qui redemande)",
+   sectionPour(dossierCompte({ etat: "photos_insuffisantes", consent_photos: false })) === "en_cours");
+ok("apercu_pret, payee, expediee -> en cours",
+   sectionPour(dossierCompte({ etat: "apercu_pret" })) === "en_cours"
+   && sectionPour(dossierCompte({ etat: "payee" })) === "en_cours"
+   && sectionPour(dossierCompte({ etat: "expediee" })) === "en_cours");
+
+const troisDossiers = [
+  dossierCompte({ token: "a".repeat(32), etat: "livree" }),
+  dossierCompte({ token: "b".repeat(32), consent_photos: false }),
+  dossierCompte({ token: "c".repeat(32), etat: "apercu_pret" }),
+];
+const ranges = classerDossiers(troisDossiers);
+ok("classerDossiers ne perd ni ne duplique aucun dossier",
+   ranges.aTerminer.length === 1 && ranges.enCours.length === 1
+   && ranges.bibliotheque.length === 1);
+
+titre("— les numeros en cours : la barre ne devine JAMAIS a sa place —");
+
+ok("un dossier livre n'est jamais « en cours »",
+   numerosEnCours([dossierCompte({ etat: "livree" })]).length === 0);
+ok("un seul en cours : la barre peut y mener",
+   numerosEnCours([dossierCompte({ etat: "apercu_pret" })]).length === 1);
+ok("DEUX en cours : la barre en voit deux, donc elle menera au compte",
+   numerosEnCours([
+     dossierCompte({ token: "v".repeat(32), etat_maj_le: "2026-09-01T00:00:00Z" }),
+     dossierCompte({ token: "w".repeat(32), etat: "apercu_pret", etat_maj_le: "2026-09-03T00:00:00Z" }),
+   ]).length === 2);
+ok("le plus recemment remue vient en tete",
+   numerosEnCours([
+     dossierCompte({ token: "v".repeat(32), etat_maj_le: "2026-09-01T00:00:00Z" }),
+     dossierCompte({ token: "w".repeat(32), etat: "apercu_pret", etat_maj_le: "2026-09-03T00:00:00Z" }),
+   ])[0].token === "w".repeat(32));
+ok("aucun dossier actif : rien dans la barre",
+   numerosEnCours([]).length === 0);
+
+titre("— ?suite= : jamais une redirection ouverte —");
+
+ok("un chemin interne passe",
+   suiteSure("/numero/abc") === "/numero/abc" && suiteSure("/compte") === "/compte");
+ok("une URL absolue, un protocole ou un vide retombent sur /compte",
+   suiteSure("https://evil.example") === "/compte"
+   && suiteSure("//evil.example") === "/compte"
+   && suiteSure("") === "/compte"
+   && suiteSure(null) === "/compte"
+   && suiteSure(undefined) === "/compte");
 
 void verifierT005().then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

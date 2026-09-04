@@ -260,6 +260,35 @@ export async function traiterPaiementAtelier(
         : {}),
       session_id: session.id,
     });
+
+    /* Miroir lisible sur `waitlist` (20260905) : `credit_consomme_le` +
+       `credit_code`. DÉNORMALISATION d'affichage — le journal ci-dessus
+       reste la source de vérité, et RIEN ici ne fait échouer le webhook :
+       un 42703 (migration pas encore passée) ou toute autre panne se
+       loggue et c'est tout. `offer_type` ne bouge jamais : consommer son
+       crédit ne défait pas un fondateur (segmentation de campagnes). Le
+       `is null` garde la PREMIÈRE date — un webhook rejoué ne la déplace
+       pas. */
+    if (Number.isInteger(numeroFondateur) && numeroFondateur > 0) {
+      try {
+        const { error: errMiroir } = await supabase
+          .from("waitlist")
+          .update({ credit_consomme_le: new Date().toISOString(), credit_code: codeCredit })
+          .eq("numero_fondateur", numeroFondateur)
+          .is("credit_consomme_le", null);
+        if (errMiroir && errMiroir.code !== "42703" && errMiroir.code !== "PGRST204") {
+          console.error(
+            "[atelier/paiement] miroir credit_consomme_le en panne :",
+            errMiroir.message,
+          );
+        }
+      } catch (e) {
+        console.error(
+          "[atelier/paiement] miroir credit_consomme_le :",
+          e instanceof Error ? e.message : e,
+        );
+      }
+    }
   } else if (codeCredit) {
     /* La remise était posée sur la session et n'a rien décompté : elle a
        sauté quelque part. La cliente a payé plein tarif alors qu'elle avait

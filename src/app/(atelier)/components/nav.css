@@ -112,3 +112,115 @@
 @media (max-width: 560px) {
   .at-nav-cta { font-size: 12px; padding: 8px 14px; }
 }
+
+/* ── Le coin compte (04/09) ─────────────────────────────────────────────
+   La droite de la barre est un groupe : [coin compte] [CTA marketing].
+
+   TROIS RÈGLES DE MATHIAS, et elles vivent ici :
+   1. Le CTA marketing ne disparaît JAMAIS — le coin compte s'AJOUTE.
+   2. Sous 560 px, la barre ne porte QUE le compte : le raccourci de suivi
+      est masqué (il vit dans la page compte, qui a la place de le dire).
+      C'est ce qui règle définitivement les 446 px de contenu pour 375 px
+      de large, mesurés le 04/09.
+   3. Connectée, l'icône devient la PHOTO du compte Google, ou l'initiale :
+      la barre dit « vous êtes chez vous » sans un mot. */
+
+.at-nav-droite {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(8px, 1.4vw, 18px);
+  min-width: 0;
+}
+
+.at-nav-perso {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(6px, 1vw, 14px);
+  min-width: 0;
+}
+
+/* Le jeton du compte : cible tactile de 44 px, jamais de fond…
+   ⚠️ `flex: 0 0 auto` : sans lui l'item se laisse écraser par ses voisins
+   et tombe à 2 px de large — mesuré le 04/09 à 375 px. */
+.bj-atelier .at-nav-compte {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  margin: -6px 0;
+  border-radius: 999px;
+  color: var(--c-text-soft);
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.bj-atelier .at-nav-compte:hover {
+  color: var(--c-text);
+  background: var(--c-veil-hover);
+}
+
+/* … sauf connectée : là, un cercle net, cerné de cuivre. C'est le seul
+   endroit du site où l'on montre quelque chose d'elle. */
+.bj-atelier .at-nav-compte.est-connecte {
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  border: 1px solid rgba(214, 138, 99, 0.55);
+  overflow: hidden;
+}
+
+.at-nav-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.at-nav-initiale {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--c-accent-strong);
+}
+
+/* Le raccourci de suivi : du texte cuivre et un point vivant, pas un bouton —
+   le seul bouton de la barre reste le CTA. (0,2,0) pour passer devant le
+   reset de lien de theme.css.
+   ⚠️ `flex: 0 0 auto` sur lui ET sur le CTA : un item flex qui rétrécit
+   sous son texte `nowrap` ne wrappe pas, il DÉBORDE sur son voisin — le
+   chevauchement exact vu le 04/09 à 375 px. */
+.bj-atelier .at-nav-suivi {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-accent-strong);
+  white-space: nowrap;
+  transition: color var(--dur) var(--ease);
+}
+
+.bj-atelier .at-nav-suivi:hover { color: var(--c-text); }
+
+.at-nav-droite .at-nav-cta { flex: 0 0 auto; }
+
+.at-nav-suivi-point {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--c-accent);
+  flex: 0 0 auto;
+}
+
+/* Règle nº2 : sur mobile, la barre ne porte que le compte.
+   ⚠️ Écrit en (0,2,0) : `.bj-atelier .at-nav-suivi` pose `inline-flex` avec
+   cette spécificité, et un `display:none` en classe seule (0,1,0) perdait —
+   une media query ne change pas la spécificité. Le raccourci restait donc
+   affiché et CHEVAUCHAIT le CTA (vu le 04/09 à 375 px). */
+@media (max-width: 560px) {
+  .bj-atelier .at-nav-suivi { display: none; }
+}

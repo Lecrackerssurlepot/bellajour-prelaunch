@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { COMPOSER_HREF, CTA_HREF, CTA_MAGAZINE_LABEL, CTA_REPRISE_LABEL } from '../content'
 import { draftEnCours } from '../composer/draft'
+import NavCompte from './NavCompte'
 import './nav.css'
 
 const RIEN = () => () => {}
@@ -134,7 +135,13 @@ export default function Nav({
           />
         </button>
       )}
-      <a className="at-nav-cta" href={href}>{labelAffiche}</a>
+      {/* La droite de la barre : le coin compte (icône, et « Suivre mon
+          numéro » quand un magazine est en fabrication), puis le CTA
+          marketing — qui ne disparaît JAMAIS (décision de Mathias, 04/09). */}
+      <span className="at-nav-droite">
+        <NavCompte />
+        <a className="at-nav-cta" href={href}>{labelAffiche}</a>
+      </span>
     </nav>
   )
 }

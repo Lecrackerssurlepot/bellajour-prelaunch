@@ -327,9 +327,10 @@ const LIEN = "{{ params.LIEN }}";
 const PRENOM = "{{ params.PRENOM }}";
 const TITRE = "{{ params.TITRE }}";
 
-/* ─────────────────────────── les huit mails ───────────────────────────
-   (M1 et M4 préexistent dans Brevo et n'ont pas encore été rapatriés ici ;
-   M3 l'a été le 26/08 pour le retour T2-7.) */
+/* ─────────────────────────── les mails versionnés ───────────────────────────
+   Douze mails de l'atelier + les deux du compte (C1 inscription, C2 mot de
+   passe — 04/09). M1 et M4 préexistent dans Brevo et n'ont pas encore été
+   rapatriés ici ; M3 l'a été le 26/08 pour le retour T2-7. */
 
 export const MAILS = [
   {
@@ -562,6 +563,42 @@ export const MAILS = [
     cta: "Reprendre mon numéro",
     lien: LIEN,
     pied: "Si vous préférez que nous refermions ce dossier, vous n'avez rien à faire. Et si vous voulez le reprendre plus tard, dites-le nous : répondez à ce message, nous vous répondrons nous-mêmes.",
+  },
+  {
+    /* C1 — la confirmation d'inscription au COMPTE (04/09). Hors machine à
+       états : pas de dossier, pas de TITRE ni de PRENOM (à l'inscription on
+       ne connaît qu'une adresse), pas de verrou mails_envoyes. Le lien vient
+       de auth.admin.generateLink (src/lib/compte/mails.ts) et pointe NOTRE
+       page /compte/confirmer, jamais le domaine Supabase. L'expiration
+       annoncée est le réglage « Email OTP expiry » du dashboard (une heure) :
+       si Mathias le change là-bas, cette phrase doit suivre. */
+    code: "C1",
+    nom: "C1 · Compte · Votre espace vous attend",
+    sujet: "Votre espace Bellajour vous attend",
+    preheader: "Un lien pour l'activer, et tous vos numéros au même endroit.",
+    titreHtml: "Votre espace vous attend",
+    h1: "Votre espace<br />vous attend.",
+    sous: "Bonjour, il ne manque qu'un geste pour activer votre compte Bellajour. Vous y retrouverez tous vos numéros : le suivi, les anciens projets, les magazines à télécharger. Ce lien est valable une heure.",
+    cta: "Activer mon compte",
+    lien: "{{ params.URL }}",
+    pied: "Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message : rien ne sera créé. Une question ? Répondez-y, nous vous répondrons nous-mêmes.",
+  },
+  {
+    /* C2 — la réinitialisation du mot de passe (04/09). Même famille que C1 :
+       hors machine à états, lien frappé par generateLink(recovery), URL de
+       NOTRE page /compte/reinitialiser. Le clic n'ouvre aucune session : le
+       nouveau mot de passe se choisit sur la page, et c'est lui qui compte
+       (invariant nº4, src/lib/compte/session.ts). */
+    code: "C2",
+    nom: "C2 · Compte · Choisir un nouveau mot de passe",
+    sujet: "Votre nouveau mot de passe Bellajour",
+    preheader: "Un lien pour le choisir. Il est valable une heure.",
+    titreHtml: "Un nouveau mot de passe",
+    h1: "Un nouveau<br />mot de passe.",
+    sous: "Bonjour, vous avez demandé à changer le mot de passe de votre compte Bellajour. Choisissez-le derrière ce lien : il est valable une heure, et ne sert qu'une fois.",
+    cta: "Choisir mon mot de passe",
+    lien: "{{ params.URL }}",
+    pied: "Si vous n'avez rien demandé, ignorez ce message : votre mot de passe actuel reste inchangé. Une question ? Répondez-y, nous vous répondrons nous-mêmes.",
   },
 ];
 

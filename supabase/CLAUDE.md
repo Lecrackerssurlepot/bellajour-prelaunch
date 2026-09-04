@@ -18,6 +18,14 @@ Chargé dès qu'on touche une migration ou le dossier supabase.
 
 RPC : `assign_numero_fondateur(p_email)`, appelée par `/api/webhook`.
 
+**Le schéma `auth` est entré dans le produit le 04/09** (comptes clientes) : `auth.users` est
+géré par Supabase Auth, jamais par une migration à nous. On n'y touche que par l'API admin
+(`auth.admin.createUser`, `generateLink` — `@/lib/compte/session`). Deux points d'accroche dans
+le schéma public : `numeros.compte_id` (FK vers `auth.users`, `on delete set null`) et le miroir
+`waitlist.credit_consomme_le` / `credit_code`. ⚠️ **`compte_id` n'est PAS la seule façon de voir
+ses dossiers** : le rapprochement par `email_canonical` opère aussi, à condition que l'email du
+compte soit confirmé. La règle vit dans `@/lib/compte/rattachement`, pas dans une requête.
+
 ⚠️ Les tables `contacts`, `referrals`, `points_log`, `influencers` **n'ont jamais existé**.
 Si une doc ou un prototype les cite, c'est une invention à corriger.
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 import { ADMIN_COOKIE, verifierCookieAdmin } from "@/lib/admin-auth";
 
 /**
@@ -27,8 +28,53 @@ import { ADMIN_COOKIE, verifierCookieAdmin } from "@/lib/admin-auth";
 
 const OUVERTES = new Set(["/api/admin/login", "/api/admin/logout"]);
 
+/**
+ * La branche COMPTE — étanche de la branche admin, qui ne bouge pas.
+ *
+ * Elle ne GARDE rien : les pages /compte redirigent elles-mêmes vers la
+ * connexion, et chaque route /api/compte porte sa garde (défense en
+ * profondeur, même doctrine que l'admin). Son seul rôle est le
+ * RAFRAÎCHISSEMENT de session @supabase/ssr : un composant serveur ne peut
+ * pas écrire de cookies, le middleware si — getUser() ravive un jeton
+ * expiré et le repose ici. Sans SUPABASE_ANON_KEY, la branche est un
+ * passe-plat (règle du dépôt : une variable absente fait un silence).
+ */
+async function rafraichirSessionCompte(req: NextRequest): Promise<NextResponse> {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return NextResponse.next();
+
+  let reponse = NextResponse.next({ request: req });
+  const supabase = createServerClient(url, key, {
+    cookieOptions: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+    },
+    cookies: {
+      getAll() {
+        return req.cookies.getAll();
+      },
+      setAll(aEcrire) {
+        for (const { name, value } of aEcrire) req.cookies.set(name, value);
+        reponse = NextResponse.next({ request: req });
+        for (const { name, value, options } of aEcrire) {
+          reponse.cookies.set(name, value, options);
+        }
+      },
+    },
+  });
+  await supabase.auth.getUser();
+  return reponse;
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (pathname === "/compte" || pathname.startsWith("/compte/")) {
+    return rafraichirSessionCompte(req);
+  }
 
   if (OUVERTES.has(pathname)) return NextResponse.next();
 
@@ -59,5 +105,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
+  matcher: ["/admin/:path*", "/api/admin/:path*", "/compte/:path*"],
 };

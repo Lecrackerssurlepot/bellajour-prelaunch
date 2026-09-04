@@ -82,6 +82,19 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
    `?reprendre=<token>` à `CTA_HREF` : le paramètre n'est lu que par `/composer`, il serait
    ignoré EN SILENCE et la cliente repartirait sur un dépôt vide en croyant reprendre le sien.
 
+7. **La barre a TROIS éléments depuis le 04/09** : la signature, puis `.at-nav-droite` qui porte
+   le coin compte (`NavCompte`) ET le CTA. Trois règles de Mathias, toutes dans `nav.css` :
+   ⚠️ **le CTA marketing ne disparaît jamais** — « Suivre mon numéro » s'AJOUTE ; **sur mobile
+   (< 560 px) la barre ne porte QUE le compte**, le raccourci de suivi est masqué et vit dans
+   la page compte ; **connectée, l'icône devient la photo Google ou l'initiale**. Le raccourci
+   ne devine rien : UN seul numéro en cours → il y mène ; PLUSIEURS → il dit « Mes numéros »
+   et ouvre `/compte` (`numerosEnCours`, lib/compte/rattachement).
+   Les cookies de session sont `httpOnly` — la barre ne peut donc pas les lire : elle interroge
+   `/api/compte/statut` après le montage, ce qui garde `/` et `/magazine` **statiques**.
+   ⚠️ Deux pièges payés le 04/09 à 375 px : `.bj-atelier .at-nav-suivi` pose son `display` en
+   (0,2,0), donc **le masquer demande la même spécificité** (une media query n'en ajoute pas),
+   et sans `flex: 0 0 auto` le jeton du compte se fait écraser à 2 px par ses voisins.
+
 ## Le questionnaire — chaque phrase est un correctif, pas du style
 
 `(atelier)/composer/` — six écrans. **Aucune de ces formulations n'est décorative** : chacune

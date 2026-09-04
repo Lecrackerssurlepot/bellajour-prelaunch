@@ -164,6 +164,14 @@ export type ClientVue = {
     status: string | null;
     estAmbassadeur: boolean;
     pagesCredits: number;
+    /**
+     * Le miroir 20260905 : quand et avec quel code le crédit a été dépensé.
+     * Null = crédit encore dû (ou migration pas passée : le repli 42703
+     * rend null aussi — la fiche dit alors « à imputer », comme avant).
+     * `offerType` ne bouge jamais : consommé ou pas, un fondateur le reste.
+     */
+    creditConsommeLe: string | null;
+    creditCode: string | null;
   } | null;
 };
 
