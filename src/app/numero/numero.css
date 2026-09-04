@@ -280,7 +280,10 @@
   padding: var(--viz-pad);
 }
 
-/* La page : un bouton (rien ne se charge, la loupe s'ouvre). */
+/* La page : un bouton (rien ne se charge, la loupe s'ouvre).
+   04/09 (maquettes validées) : le bouton ne porte plus ni coin ni ombre ni
+   overflow — c'est la FACE du magazine (.nu-viz-mag-face) qui rogne et fait
+   l'objet ; le bouton doit laisser dépasser tranches et épaisseurs. */
 .nu-viz-page {
   position: relative;
   display: block;
@@ -293,9 +296,6 @@
   cursor: zoom-in;
   max-width: 100%;
   max-height: 100%;
-  border-radius: 3px;
-  overflow: hidden;
-  box-shadow: var(--shadow-float);
 }
 
 /* Couvertures portrait : le cadre prend le format 2/3, l'image le remplit et
@@ -304,7 +304,6 @@
 .nu-viz-page--gauche {
   height: 100%;
   aspect-ratio: 2 / 3;
-  background: var(--c-void);
 }
 .nu-viz-page--droite img,
 .nu-viz-page--gauche img {
@@ -315,25 +314,175 @@
 .nu-viz-page--droite img { object-position: right center; }
 .nu-viz-page--gauche img { object-position: left center; }
 
-/* Vues au format naturel : la planche à plat, les doubles pages, et les
-   couvertures PLEINES des anciens dossiers (c1/c4 séparés). L'image ENTIÈRE,
-   cadrée dans la scène — jamais coupée.
+/* Vues au format naturel : la planche à plat (`large`), les doubles pages
+   (`ouverte`) et les couvertures PLEINES des anciens dossiers (c1 `pleine`,
+   c4 `pleine-dos`). L'image ENTIÈRE, cadrée dans la scène — jamais coupée.
    ⚠️ Pas de max-height en % ici : le bouton est en hauteur auto, le % ne se
-   résout pas, l'image sort du bouton et overflow:hidden la tronque (défaut
-   du 04/09). La borne est donc la hauteur RÉELLE de la scène moins la
-   gouttière, par les variables posées sur .nu-viz-scene — une seule source. */
+   résout pas, l'image sort du bouton et l'overflow de la face la tronque
+   (défaut du 04/09). La borne est donc la hauteur RÉELLE de la scène moins
+   la gouttière et l'épaisseur du support, par les variables de
+   .nu-viz-scene — une seule source. */
 .nu-viz-page--large img,
-.nu-viz-page--pleine img {
+.nu-viz-page--ouverte img,
+.nu-viz-page--pleine img,
+.nu-viz-page--pleine-dos img {
   display: block;
   max-width: 100%;
-  max-height: calc(var(--viz-h) - 2 * var(--viz-pad));
+  max-height: calc(var(--viz-h) - 2 * var(--viz-pad) - 6px);
   width: auto;
   height: auto;
 }
 
-/* Le badge « Agrandir », comme sur les anciennes vues. */
+/* ══ LE SUPPORT MAGAZINE (04/09, maquettes validées) ══════════════════════
+   Les visuels ne « font plus photo » : ils se posent sur l'objet. Fermé pour
+   les couvertures — dos, tranche des pages, épaisseur, lumière discrète —
+   vu de FACE (droite, pleine) ou de DOS en miroir (gauche, pleine-dos).
+   Ouvert pour les doubles pages — pli central, bloc de pages dessous. La
+   planche à plat garde la seule épaisseur du papier. CSS pur, zéro image. */
+.nu-viz-mag {
+  position: relative;
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* La face : c'est ELLE qui rogne le visuel et porte l'ombre de l'objet. */
+.nu-viz-mag-face {
+  position: relative;
+  display: block;
+  z-index: 1;
+  overflow: hidden;
+  background: var(--c-void);
+  border-radius: 3px 9px 9px 3px;
+  box-shadow: var(--shadow-float);
+}
+
+/* Les épaisseurs, derrière la face : deux feuilles décalées. */
+.nu-viz-mag::before,
+.nu-viz-mag::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+}
+.nu-viz-mag { border-radius: 3px 9px 9px 3px; }
+.nu-viz-mag::before { transform: translate(6px, 5px); background: var(--paper-3); }
+.nu-viz-mag::after { transform: translate(3px, 2px); background: var(--paper-2); }
+
+/* La tranche : les pages vues par le côté, en fines lignes. z-index 1 comme
+   la face : elle passe AU-DESSUS des feuilles d'épaisseur (::after peint
+   après les enfants et la recouvrirait sinon), et la face, peinte après
+   elle dans le DOM, garde le dessus sur leur zone commune. */
+.nu-viz-mag-tranche {
+  position: absolute;
+  top: 3px;
+  bottom: 2px;
+  right: -5px;
+  width: 6px;
+  z-index: 1;
+  border-radius: 0 3px 3px 0;
+  background: repeating-linear-gradient(180deg, var(--paper) 0 2px, var(--paper-3) 2px 3px);
+}
+
+/* Le dos : l'ombre du pli côté reliure, et son filet de lumière. */
+.nu-viz-mag-dos {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 24px;
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0.42) 0, rgba(0, 0, 0, 0) 16px,
+    rgba(255, 255, 255, 0.1) 17px, rgba(255, 255, 255, 0) 24px);
+}
+
+/* La lumière : un voile discret, jamais un reflet dur. */
+.nu-viz-mag-lumiere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0) 30%);
+}
+
+/* Vues rognées (droite/gauche) : l'objet remplit le cadre 2/3 du bouton. */
+.nu-viz-page--droite .nu-viz-mag,
+.nu-viz-page--gauche .nu-viz-mag,
+.nu-viz-page--droite .nu-viz-mag-face,
+.nu-viz-page--gauche .nu-viz-mag-face {
+  width: 100%;
+  height: 100%;
+}
+
+/* Vu de DOS (la quatrième) : tout le fermé, en miroir. */
+.nu-viz-page--gauche .nu-viz-mag,
+.nu-viz-page--pleine-dos .nu-viz-mag,
+.nu-viz-page--gauche .nu-viz-mag-face,
+.nu-viz-page--pleine-dos .nu-viz-mag-face { border-radius: 9px 3px 3px 9px; }
+.nu-viz-page--gauche .nu-viz-mag::before,
+.nu-viz-page--pleine-dos .nu-viz-mag::before { transform: translate(-6px, 5px); }
+.nu-viz-page--gauche .nu-viz-mag::after,
+.nu-viz-page--pleine-dos .nu-viz-mag::after { transform: translate(-3px, 2px); }
+.nu-viz-page--gauche .nu-viz-mag-tranche,
+.nu-viz-page--pleine-dos .nu-viz-mag-tranche {
+  right: auto;
+  left: -5px;
+  border-radius: 3px 0 0 3px;
+}
+.nu-viz-page--gauche .nu-viz-mag-dos,
+.nu-viz-page--pleine-dos .nu-viz-mag-dos {
+  left: auto;
+  right: 0;
+  background: linear-gradient(270deg,
+    rgba(0, 0, 0, 0.42) 0, rgba(0, 0, 0, 0) 16px,
+    rgba(255, 255, 255, 0.1) 17px, rgba(255, 255, 255, 0) 24px);
+}
+
+/* La planche à plat : un imprimé posé, la seule épaisseur du papier. */
+.nu-viz-page--large .nu-viz-mag,
+.nu-viz-page--large .nu-viz-mag-face { border-radius: 3px; }
+.nu-viz-page--large .nu-viz-mag::before { content: none; }
+.nu-viz-page--large .nu-viz-mag::after { transform: translate(0, 4px); }
+.nu-viz-page--large .nu-viz-mag-tranche,
+.nu-viz-page--large .nu-viz-mag-dos { display: none; }
+.nu-viz-page--large .nu-viz-mag-lumiere {
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 32%);
+}
+
+/* La double page : le magazine OUVERT. Le pli central par-dessus le visuel,
+   le bloc de pages dessous, la tranche du bas en fines lignes verticales. */
+.nu-viz-page--ouverte .nu-viz-mag,
+.nu-viz-page--ouverte .nu-viz-mag-face { border-radius: 6px; }
+.nu-viz-page--ouverte .nu-viz-mag::before { content: none; }
+.nu-viz-page--ouverte .nu-viz-mag::after { transform: translate(0, 5px); background: var(--paper-3); }
+.nu-viz-page--ouverte .nu-viz-mag-tranche {
+  top: auto;
+  right: 3px;
+  left: 3px;
+  bottom: -5px;
+  width: auto;
+  height: 6px;
+  border-radius: 0 0 4px 4px;
+  background: repeating-linear-gradient(90deg, var(--paper) 0 2px, var(--paper-3) 2px 3px);
+}
+.nu-viz-page--ouverte .nu-viz-mag-dos {
+  left: 50%;
+  width: 90px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.16) 42%, rgba(0, 0, 0, 0.38) 50%,
+    rgba(0, 0, 0, 0.16) 58%, rgba(0, 0, 0, 0) 100%);
+}
+.nu-viz-page--ouverte .nu-viz-mag-lumiere {
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 32%);
+}
+
+/* Le badge « Agrandir », comme sur les anciennes vues. Au-dessus de la face
+   du magazine (z-index 1) pour rester lisible sur le visuel. */
 .nu-viz-zoom {
   position: absolute;
+  z-index: 2;
   right: 10px;
   bottom: 10px;
   padding: 7px 14px;
