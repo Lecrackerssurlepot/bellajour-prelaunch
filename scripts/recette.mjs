@@ -111,6 +111,31 @@ const LEVIERS = {
     vieillir: async (sb, n) =>
       sb.from("numeros").update({ etat_maj_le: new Date(Date.now() - 4 * J).toISOString() }).eq("id", n.id),
   },
+  M10: {
+    quoi: "le préavis de fermeture à J-7 (rétention 90 jours, T-076)",
+    /* La rétention ne touche jamais un dossier payé ni un état engagé
+       (retention.ts, ETATS_ENGAGES). Et `derniereActivite` prend le MAXIMUM
+       de toutes les dates : un dossier AVEC photos garde le jalon de sa
+       dernière photo, que ce levier ne sait pas vieillir — viser un dossier
+       sans photo. */
+    verifier: (n) =>
+      n.stripe_payment_intent
+        ? "le numéro est payé : la rétention ne touche jamais un dossier payé"
+        : ["payee", "maquette_prete", "validee", "en_production", "expediee", "livree"].includes(n.etat)
+          ? `le dossier est en « ${n.etat} », un état engagé : M10 ne part jamais ici`
+          : n.nb_photos > 0 && !n.consent_photos
+            ? "des photos sont arrivées : leur jalon (created_at de la table photos) tient la dernière activité, ce levier ne le vieillit pas"
+            : null,
+    vieillir: async (sb, n) =>
+      sb
+        .from("numeros")
+        .update({
+          created_at: new Date(Date.now() - 84 * J).toISOString(),
+          etat_maj_le: new Date(Date.now() - 84 * J).toISOString(),
+        })
+        .eq("id", n.id),
+    note: "⚠️ Si M2/M2b devient dû du même coup, il part en premier (un seul mail par dossier et par relève) : relancer `relever` une seconde fois pour voir M10.",
+  },
   auto: {
     quoi: "l'auto-validation à J+7 (le dossier passe seul en « validée »)",
     verifier: (n) =>

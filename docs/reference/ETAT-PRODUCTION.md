@@ -98,6 +98,51 @@ absent (dossier antérieur au 01/09).
 01/09. La leçon du 30/08 tient : une fusion ne prouve pas un déploiement, et le cache de
 bellajour.fr peut servir l'ancienne version plusieurs minutes.
 
+## 🌙 Recette autonome du 03/09 au soir — dossier « Test soir »
+
+Parcours complet rejoué en autonomie (accord de Mathias du 03/09 : « push absolument tous les
+mails », uniquement sur mdurand085@gmail.com). Quatre dossiers de test créés par les vraies
+routes de prod ; **14 mails partis, tous sur ces dossiers, aucun autre dossier touché**
+(vérifié dans `mails_envoyes`).
+
+**Prouvé de bout en bout** : questionnaire prod (dont `sous_titre`/`mot_quatrieme` écrits — la
+migration du 03/09 marche par la route) · dépôt 45+1 photos (presign→PUT→complete) · M0, M1,
+M9 (+MOT), M3, correction d'aperçu sans mail, paiement Stripe test 10 € (crédit fondateur
+appliqué d'office −30 €, webhook local → `payee`, `facture_url` posée), M4, M5, retouches
+(auto-validation suspendue) puis republication → M5 bis (verrou réouvert), validation cliente
+→ M6, `envoyer_impression` en **mode manuel** (aucune commande Cloudprinter — non couverte par
+l'accord), `ItemShipped` forgé → M7 + suivi Colissimo, PDF souvenir fabriqué,
+`ItemDeliveryCompleted` → M7b, rejeu ignoré (idempotence), souvenir 302/404 vérifié SUR LA
+PROD. `verif-mails-brevo` : aucun trou. `reconcilier-stripe` : paiement rapproché, zéro écart.
+Recette technique verte (tsc, lint, build, harnais **734 assertions**).
+
+**Reste à échéance, par le cron de 7 h UTC (tout part sur mdurand085)** : M2 (« Test soir 2 »,
+vide, dû sam. 05/09) · M2b (« Test soir 3 », 10 photos sans consentement, dû sam. 05/09) ·
+M3b (« Test soir 4 », `apercu_pret` non payé, dû 06/09 ; les deux `apercu_pret` du 02/09 sont
+aussi des tests de Mathias) · M8 (« Test soir » livré, dû 06/09). Ou en une commande :
+`node scripts/recette.mjs pousser "Test soir 2" M2 --sur=local` (etc.). M10 : levier ajouté à
+`recette.mjs` (arbre de travail, NON commité) — cible « Test soir 2 », relancer `relever` une
+seconde fois.
+
+**Trouvailles** :
+1. **Le template M10 EXISTE chez Brevo** (id 40, poussé le 02/09, actif) et
+   `BREVO_TEMPLATE_M10_ID=40` est posée en local — la section « Mails Brevo » ci-dessous était
+   en retard. Reste à confirmer la variable sur Vercel Production.
+2. **Supprimer un dossier payé ressuscite le crédit fondateur** : la consommation vit dans les
+   `evenements` du dossier payeur ; le ménage du 01/09 (dossiers de test supprimés en cascade)
+   a effacé la trace, et le checkout de ce soir a re-frappé `FONDATEUR-MATHIAS30` (−30 €).
+   Portée réelle : ménage de tests seulement, mais à savoir avant tout `nettoyer`.
+3. **La reprise `?reprendre=` est aveugle aux photos serveur** tant que le navigateur n'envoie
+   ou ne supprime rien (`nbServeur` ne s'apprend qu'au retour de `complete`/`supprimer`,
+   `moteur.ts:325,722`) : sur un AUTRE appareil, une cliente au dépôt fait voit « 0 photo » et
+   un bouton verrouillé. À transformer en ticket.
+4. Le rate-limit de `POST /api/atelier/numero` a freiné la 3e création consécutive (429) —
+   comportement voulu, constaté en vrai.
+
+**Les 4 dossiers « Test soir\* » restent en base** pour porter les mails à échéance ; les
+supprimer ensuite avec `recette.mjs nettoyer` (⚠️ trouvaille nº2 : la suppression de
+« Test soir » payé ressusciterait ENCORE le crédit fondateur — le re-consommer ou l'assumer).
+
 ## Mails Brevo — identifiants réels
 
 L'atelier compte **quatorze** codes de mail (`CodeMail`, `src/lib/atelier/mails.ts`) —
