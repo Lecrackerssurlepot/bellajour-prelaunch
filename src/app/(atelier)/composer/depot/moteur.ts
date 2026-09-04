@@ -150,6 +150,8 @@ class Moteur {
   private prochaineDeclarationA = 0
 
   private nbServeur: number | null = null
+  /* T-095 — la lecture d'initialisation ne part qu'une fois par moteur. */
+  private serveurInterroge = false
   /* Le clic a abouti (consent_photos posé en base). Le moteur continue de
      pomper : c'est tout l'objet du changement du 01/09. */
   private finalise = false
@@ -235,6 +237,39 @@ class Moteur {
 
     this.changement()
     this.pompe()
+
+    /* T-095 — la reprise sur un AUTRE appareil : la copie locale est vide et
+       aucun retour de /complete n'est jamais venu poser `nbServeur`. Sans
+       cette lecture, une cliente aux 45 photos déjà au coffre voyait
+       « 0 photo prête » et un bouton verrouillé. Une seule fois par moteur,
+       en arrière-plan : un confort ne bloque jamais un dépôt. */
+    void this.apprendreCompteServeur()
+  }
+
+  /**
+   * Demande au serveur combien de photos sont déjà confirmées au coffre.
+   *
+   * ⚠️ `Math.max`, jamais une affectation sèche : pendant que cette réponse
+   * voyage, un retour de `/complete` a pu poser un compte PLUS FRAIS — la
+   * lecture d'initialisation ne doit pas pouvoir l'écraser. La baisse
+   * légitime (une suppression) passe par la réponse de `/supprimer`, qui
+   * elle fait foi.
+   * Tout échec est silencieux : le comportement redevient exactement celui
+   * d'avant T-095, et la cliente peut toujours déposer.
+   */
+  private async apprendreCompteServeur(): Promise<void> {
+    if (this.serveurInterroge) return
+    this.serveurInterroge = true
+    try {
+      const r = await fetch(`/api/atelier/numero?token=${encodeURIComponent(this.token)}`)
+      if (!r.ok) return
+      const data = (await r.json()) as { nbPhotos?: number }
+      if (typeof data.nbPhotos !== 'number') return
+      this.nbServeur = Math.max(this.nbServeur ?? 0, data.nbPhotos)
+      this.changement()
+    } catch {
+      /* Réseau coupé, réponse illisible : silence, la grille locale suffit. */
+    }
   }
 
   /* ── entrée des fichiers ────────────────────────────────────────────── */

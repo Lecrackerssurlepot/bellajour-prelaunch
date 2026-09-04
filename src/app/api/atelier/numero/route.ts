@@ -73,6 +73,64 @@ function clean(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
+/**
+ * GET /api/atelier/numero?token=… — le compte de photos déjà au coffre.
+ *
+ * T-095 : une reprise sur un AUTRE appareil n'a ni copie locale ni retour de
+ * `/photos/complete` — le moteur du dépôt n'avait littéralement aucun moyen
+ * d'apprendre que 45 photos dormaient déjà chez nous, et l'écran affichait
+ * « 0 photo prête », bouton verrouillé. Cette lecture ne rend QUE ce compte.
+ *
+ * Même règle de comptage que `/photos/complete` : les lignes dont la taille a
+ * été MESURÉE sur R2 (`taille` non nulle), jamais les déclarées — sinon les
+ * envois échoués gonfleraient le seuil des 40.
+ * Même politique d'identité que tout le tunnel : le token EST l'identité,
+ * token inconnu → 404 sec, panne de base → 500 (T-043 : le moteur traite le
+ * 404 comme définitif, une panne doit rester retentable).
+ * Aucune écriture, aucun événement : c'est une lecture de confort.
+ */
+export async function GET(request: Request) {
+  try {
+    if (depasseLePlafond(request, RATE_LIMIT_MAX_PATCH)) {
+      return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+    }
+
+    const token = (new URL(request.url).searchParams.get("token") ?? "").trim();
+    if (!isValidNumeroToken(token)) {
+      return NextResponse.json({ error: "token_invalide" }, { status: 400 });
+    }
+
+    const supabase = makeSupabase();
+    const { data: numero, error: errNum } = await supabase
+      .from("numeros")
+      .select("id")
+      .eq("token", token)
+      .maybeSingle();
+
+    if (errNum) {
+      console.error("[numero GET] lookup échoué", errNum.code);
+      return NextResponse.json({ error: "internal" }, { status: 500 });
+    }
+    if (!numero) return NextResponse.json({ error: "introuvable" }, { status: 404 });
+
+    const { count, error: errCount } = await supabase
+      .from("photos")
+      .select("id", { count: "exact", head: true })
+      .eq("numero_id", numero.id)
+      .not("taille", "is", null);
+
+    if (errCount) {
+      console.error("[numero GET] compte échoué", errCount.code);
+      return NextResponse.json({ error: "internal" }, { status: 500 });
+    }
+
+    return NextResponse.json({ nbPhotos: count ?? 0 }, { status: 200 });
+  } catch (err) {
+    console.error("[numero GET] exception", (err as Error)?.message);
+    return NextResponse.json({ error: "internal" }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     if (depasseLePlafond(request)) {
