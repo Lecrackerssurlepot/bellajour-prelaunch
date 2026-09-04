@@ -561,28 +561,62 @@ function Coquille({
 }) {
   return (
     <div className="nu">
+      {/* Le haut de page du PARCOURS (04/09) : le logo officiel centré — le
+          même fichier que Composer.tsx — à la place du mot en toutes lettres.
+          La cliente arrive ici depuis le questionnaire : même maison, même
+          seuil. */}
       <header className="nu-top">
-        <span className="nu-top-logo">Bellajour</span>
-        <span className="nu-top-ref">Votre numéro</span>
+        <img
+          className="nu-top-logo-img"
+          src="/images/ui/signature-blanche.webp"
+          alt="Bellajour"
+          width={320}
+          height={122}
+          decoding="async"
+        />
       </header>
+
+      {/* Le sommaire du questionnaire, transposé aux cinq jalons du suivi
+          (04/09, maquettes validées). Desktop : les noms, le courant souligné
+          accent ; mobile : cinq segments + « n / 5 · nom ». Le visuel est
+          aria-hidden comme dans Composer.tsx — la phrase pour le lecteur
+          d'écran est juste en dessous. */}
+      {avancement >= 0 && (
+        <>
+          <div className="nu-etapes" aria-hidden="true">
+            <div className="nu-etapes-noms">
+              {JALONS.map((jalon, i) => (
+                <span
+                  key={jalon}
+                  className={`nu-etape ${i < avancement ? 'is-fait' : i === avancement ? 'is-la' : ''}`}
+                >
+                  {i < avancement && <i className="nu-etape-v">✓ </i>}
+                  {String(i + 1).padStart(2, '0')} · {jalon}
+                </span>
+              ))}
+            </div>
+            <div className="nu-etapes-mini">
+              <span className="nu-segments">
+                {JALONS.map((jalon, i) => (
+                  <i key={jalon} className={i <= avancement ? 'is-fait' : ''} />
+                ))}
+              </span>
+              <span className="nu-etapes-ou">
+                {Math.min(avancement + 1, JALONS.length)} / {JALONS.length} ·{' '}
+                {JALONS[Math.min(avancement, JALONS.length - 1)]}
+              </span>
+            </div>
+          </div>
+          <p className="sr-only">
+            Étape {Math.min(avancement + 1, JALONS.length)} sur {JALONS.length} :{' '}
+            {JALONS[Math.min(avancement, JALONS.length - 1)]}
+          </p>
+        </>
+      )}
 
       <main className="nu-main">
         <p className="at-kicker">Maison d’édition du souvenir</p>
         <h1 className="nu-titre">{titre}</h1>
-
-        {avancement >= 0 && (
-          <ol className="nu-fil">
-            {JALONS.map((jalon, i) => (
-              <li
-                key={jalon}
-                className={i < avancement ? 'is-fait' : i === avancement ? 'is-now' : ''}
-                aria-current={i === avancement ? 'step' : undefined}
-              >
-                {jalon}
-              </li>
-            ))}
-          </ol>
-        )}
 
         {montrerCamp && MOT_DU_CAMP[camp] && <p className="nu-camp">{MOT_DU_CAMP[camp]}</p>}
 

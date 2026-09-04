@@ -24,6 +24,12 @@ const MOTIFS = [
   'Autre chose',
 ] as const
 
+/* 04/09 (maquettes validées) — la longueur du numéro, un choix OU l'autre :
+   plus court c'est plus dense, plus long c'est plus aéré. Le choix voyage
+   dans `ajustement_motifs` comme les autres chips — la route les accepte en
+   texte libre (8 max, 80 caractères), rien à changer côté serveur. */
+const LONGUEURS = ['Plus court — plus dense', 'Plus long — plus aéré'] as const
+
 export default function FeuilleAjustement({
   token, ouvert, onFermer,
 }: {
@@ -32,6 +38,8 @@ export default function FeuilleAjustement({
   onFermer: () => void
 }) {
   const [choisis, setChoisis] = useState<string[]>([])
+  /* Un seul des deux sens à la fois : recliquer le même le décoche. */
+  const [longueur, setLongueur] = useState<string | null>(null)
   const [mot, setMot] = useState('')
   const [occupe, setOccupe] = useState(false)
   const [envoye, setEnvoye] = useState(false)
@@ -57,7 +65,12 @@ export default function FeuilleAjustement({
     )
   }, [])
 
-  const peutEnvoyer = choisis.length > 0 || mot.trim().length > 0
+  const basculerLongueur = useCallback((sens: string) => {
+    setErreur(null)
+    setLongueur((actuel) => (actuel === sens ? null : sens))
+  }, [])
+
+  const peutEnvoyer = choisis.length > 0 || longueur !== null || mot.trim().length > 0
 
   const envoyer = useCallback(async () => {
     if (!peutEnvoyer || occupe) return
@@ -69,7 +82,7 @@ export default function FeuilleAjustement({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           token,
-          ajustement_motifs: choisis,
+          ajustement_motifs: longueur ? [...choisis, longueur] : choisis,
           ajustement_mot: mot.trim(),
         }),
       })
@@ -79,7 +92,7 @@ export default function FeuilleAjustement({
       setErreur('Votre demande n’est pas partie. Réessayez dans un instant.')
       setOccupe(false)
     }
-  }, [token, choisis, mot, peutEnvoyer, occupe])
+  }, [token, choisis, longueur, mot, peutEnvoyer, occupe])
 
   if (!ouvert) return null
 
@@ -120,7 +133,7 @@ export default function FeuilleAjustement({
               version. Pas besoin d’écrire un mail.
             </p>
 
-            <div className="nu-feuille-chips">
+            <div className="nu-feuille-chips nu-feuille-chips--motifs">
               {MOTIFS.map((motif) => {
                 const actif = choisis.includes(motif)
                 return (
@@ -135,6 +148,23 @@ export default function FeuilleAjustement({
                   </button>
                 )
               })}
+            </div>
+
+            {/* 04/09 — la longueur, à part des motifs : c'est un sens OU
+                l'autre, pas une liste de cases. */}
+            <p className="nu-feuille-groupe">La longueur du numéro</p>
+            <div className="nu-feuille-chips nu-feuille-chips--longueur">
+              {LONGUEURS.map((sens) => (
+                <button
+                  key={sens}
+                  type="button"
+                  className="nu-feuille-chip"
+                  aria-pressed={longueur === sens}
+                  onClick={() => basculerLongueur(sens)}
+                >
+                  {sens}
+                </button>
+              ))}
             </div>
 
             <textarea
