@@ -30,7 +30,13 @@ import { useRef, useState } from 'react'
 import Reveal from '../../(atelier)/components/Reveal'
 import Loupe, { type VueLoupe } from '../../components/Loupe'
 
-type Cadre = 'droite' | 'gauche' | 'pleine' | 'large'
+/* Le CADRAGE dit aussi le SUPPORT (04/09, maquettes validées) : les
+   couvertures se posent sur un magazine FERMÉ (dos, tranche, épaisseur —
+   `droite`/`pleine` vus de face, `gauche`/`pleine-dos` vus de dos, en
+   miroir), les doubles pages sur un magazine OUVERT (`ouverte` : pli
+   central, bloc de pages dessous), la planche `large` reste posée à plat
+   avec la seule épaisseur du papier. Tout est en CSS pur (numero.css). */
+type Cadre = 'droite' | 'gauche' | 'pleine' | 'pleine-dos' | 'large' | 'ouverte'
 type Vue = { src: string; legende: string; loupe: string; cadre: Cadre }
 
 export default function Apercu({
@@ -60,11 +66,11 @@ export default function Apercu({
     vues.push({ src: plat, legende: 'La couverture à plat', loupe: 'La couverture à plat', cadre: 'large' })
   } else {
     if (c1) vues.push({ src: c1, legende: 'La couverture', loupe: 'La couverture', cadre: 'pleine' })
-    if (c4) vues.push({ src: c4, legende: 'La quatrième', loupe: 'La quatrième', cadre: 'pleine' })
+    if (c4) vues.push({ src: c4, legende: 'La quatrième', loupe: 'La quatrième', cadre: 'pleine-dos' })
   }
   doubles.forEach((src, k) => {
     const nom = doubles.length > 1 ? `Double page ${k + 1}` : 'Une double page'
-    vues.push({ src, legende: nom, loupe: nom, cadre: 'large' })
+    vues.push({ src, legende: nom, loupe: nom, cadre: 'ouverte' })
   })
 
   /* La loupe ne connaît que ce qui existe, une fois chacun. */
@@ -115,8 +121,19 @@ export default function Apercu({
                   aria-label={`Agrandir : ${v.legende}`}
                   tabIndex={k === idx ? 0 : -1}
                 >
-                  {/* <img> plain — next/image est proscrit sur ce dépôt (CLAUDE.md). */}
-                  <img src={v.src} alt={v.legende} loading={k === 0 ? 'eager' : 'lazy'} decoding="async" />
+                  {/* L'OBJET magazine, version SOBRE (retour Mathias 04/09) :
+                      la face porte le visuel, l'épaisseur du papier se
+                      dessine derrière elle (pseudo-éléments de .nu-viz-mag),
+                      angles droits partout — d'où un bouton SANS
+                      overflow:hidden, c'est la face qui rogne. Le pli ne
+                      s'affiche QUE sur la double ouverte. */}
+                  <span className="nu-viz-mag">
+                    <span className="nu-viz-mag-face">
+                      {/* <img> plain — next/image est proscrit sur ce dépôt (CLAUDE.md). */}
+                      <img src={v.src} alt={v.legende} loading={k === 0 ? 'eager' : 'lazy'} decoding="async" />
+                      <span className="nu-viz-mag-pli" aria-hidden="true" />
+                    </span>
+                  </span>
                   <span className="nu-viz-zoom" aria-hidden="true">Agrandir</span>
                 </button>
               </div>

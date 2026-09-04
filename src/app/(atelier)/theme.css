@@ -95,6 +95,10 @@ body:has(.bj-atelier) { background: var(--c-atelier-void); }
   /* ---- papier (pages du magazine en fond de hero) ---- */
   --paper: #f7f1e9;
   --paper-2: #efe6d8;
+  /* Le papier dans l'ombre — tranches et blocs de pages du support magazine
+     de la visionneuse (04/09). La teinte vit déjà dans --spine-2-bg et
+     --grad-slot : on la nomme, on n'invente rien. */
+  --paper-3: #cbbfae;
   --paper-text: #1c1c1c;
   --paper-text-soft: #5b554d;
 

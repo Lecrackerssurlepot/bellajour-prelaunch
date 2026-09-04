@@ -280,7 +280,10 @@
   padding: var(--viz-pad);
 }
 
-/* La page : un bouton (rien ne se charge, la loupe s'ouvre). */
+/* La page : un bouton (rien ne se charge, la loupe s'ouvre).
+   04/09 (maquettes validées) : le bouton ne porte plus ni coin ni ombre ni
+   overflow — c'est la FACE du magazine (.nu-viz-mag-face) qui rogne et fait
+   l'objet ; le bouton doit laisser dépasser tranches et épaisseurs. */
 .nu-viz-page {
   position: relative;
   display: block;
@@ -293,18 +296,16 @@
   cursor: zoom-in;
   max-width: 100%;
   max-height: 100%;
-  border-radius: 3px;
-  overflow: hidden;
-  box-shadow: var(--shadow-float);
 }
 
-/* Couvertures portrait : le cadre prend le format 2/3, l'image le remplit et
-   déborde en largeur, object-position choisit la face (découpe assumée). */
+/* Couvertures portrait : le cadre est au format RÉEL du magazine — A4
+   exact, 210 × 297 mm (FORMAT_FINI_MM, lib/atelier/impression.ts, vérifié
+   sur products/info Cloudprinter). L'image le remplit et déborde en
+   largeur, object-position choisit la face (découpe assumée). */
 .nu-viz-page--droite,
 .nu-viz-page--gauche {
   height: 100%;
-  aspect-ratio: 2 / 3;
-  background: var(--c-void);
+  aspect-ratio: 210 / 297;
 }
 .nu-viz-page--droite img,
 .nu-viz-page--gauche img {
@@ -315,25 +316,121 @@
 .nu-viz-page--droite img { object-position: right center; }
 .nu-viz-page--gauche img { object-position: left center; }
 
-/* Vues au format naturel : la planche à plat, les doubles pages, et les
-   couvertures PLEINES des anciens dossiers (c1/c4 séparés). L'image ENTIÈRE,
-   cadrée dans la scène — jamais coupée.
+/* Vues au format naturel : la planche à plat (`large`) et les couvertures
+   PLEINES des anciens dossiers (c1 `pleine`, c4 `pleine-dos`). L'image
+   ENTIÈRE, cadrée dans la scène — jamais coupée. La double (`ouverte`) a
+   son propre cadre au ratio double A4, plus bas.
    ⚠️ Pas de max-height en % ici : le bouton est en hauteur auto, le % ne se
-   résout pas, l'image sort du bouton et overflow:hidden la tronque (défaut
-   du 04/09). La borne est donc la hauteur RÉELLE de la scène moins la
-   gouttière, par les variables posées sur .nu-viz-scene — une seule source. */
+   résout pas, l'image sort du bouton et l'overflow de la face la tronque
+   (défaut du 04/09). La borne est donc la hauteur RÉELLE de la scène moins
+   la gouttière et l'épaisseur du support, par les variables de
+   .nu-viz-scene — une seule source. */
 .nu-viz-page--large img,
-.nu-viz-page--pleine img {
+.nu-viz-page--pleine img,
+.nu-viz-page--pleine-dos img {
   display: block;
   max-width: 100%;
-  max-height: calc(var(--viz-h) - 2 * var(--viz-pad));
+  max-height: calc(var(--viz-h) - 2 * var(--viz-pad) - 6px);
   width: auto;
   height: auto;
 }
 
-/* Le badge « Agrandir », comme sur les anciennes vues. */
+/* ══ LE SUPPORT MAGAZINE (04/09, revu SOBRE sur retour de Mathias) ════════
+   Les visuels se posent sur l'objet, sans effet : angles DROITS partout,
+   pas de tranche dessinée, pas de trait de reliure sur les pages simples.
+   Il reste l'essentiel — l'épaisseur du papier en feuilles décalées,
+   l'ombre portée, et le seul pli central de la double ouverte. */
+.nu-viz-mag {
+  position: relative;
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* La face : c'est ELLE qui rogne le visuel et porte l'ombre de l'objet. */
+.nu-viz-mag-face {
+  position: relative;
+  display: block;
+  z-index: 1;
+  overflow: hidden;
+  background: var(--c-void);
+  box-shadow: var(--shadow-float);
+}
+
+/* L'épaisseur : deux feuilles décalées derrière la face, à angles droits. */
+.nu-viz-mag::before,
+.nu-viz-mag::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.nu-viz-mag::before { transform: translate(6px, 5px); background: var(--paper-3); }
+.nu-viz-mag::after { transform: translate(3px, 2px); background: var(--paper-2); }
+
+/* Le pli central — RÉSERVÉ à la double ouverte. Aucun trait ailleurs. */
+.nu-viz-mag-pli { display: none; }
+
+/* Vues rognées (droite/gauche) : l'objet remplit le cadre A4 du bouton. */
+.nu-viz-page--droite .nu-viz-mag,
+.nu-viz-page--gauche .nu-viz-mag,
+.nu-viz-page--droite .nu-viz-mag-face,
+.nu-viz-page--gauche .nu-viz-mag-face {
+  width: 100%;
+  height: 100%;
+}
+
+/* Vu de DOS (la quatrième) : l'épaisseur en miroir. */
+.nu-viz-page--gauche .nu-viz-mag::before,
+.nu-viz-page--pleine-dos .nu-viz-mag::before { transform: translate(-6px, 5px); }
+.nu-viz-page--gauche .nu-viz-mag::after,
+.nu-viz-page--pleine-dos .nu-viz-mag::after { transform: translate(-3px, 2px); }
+
+/* La planche à plat : un imprimé posé, la seule épaisseur du papier. */
+.nu-viz-page--large .nu-viz-mag::before { content: none; }
+.nu-viz-page--large .nu-viz-mag::after { transform: translate(0, 4px); }
+
+/* La double page : le magazine OUVERT, au format RÉEL — deux A4 côte à
+   côte, 420 × 297 mm (FORMAT_FINI_MM, lib/atelier/impression.ts, vérifié
+   sur products/info Cloudprinter le 26/08). Le cadre impose le ratio ; un
+   export de double de l'atelier est exactement à ce format, rien n'est
+   rogné. La largeur se déduit de la hauteur disponible, plafonnée à la
+   colonne. */
+.nu-viz-page--ouverte {
+  width: min(100%, calc((var(--viz-h) - 2 * var(--viz-pad) - 6px) * 420 / 297));
+  aspect-ratio: 420 / 297;
+}
+.nu-viz-page--ouverte .nu-viz-mag,
+.nu-viz-page--ouverte .nu-viz-mag-face {
+  width: 100%;
+  height: 100%;
+}
+.nu-viz-page--ouverte img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.nu-viz-page--ouverte .nu-viz-mag::before { content: none; }
+.nu-viz-page--ouverte .nu-viz-mag::after { transform: translate(0, 5px); background: var(--paper-3); }
+.nu-viz-page--ouverte .nu-viz-mag-pli {
+  display: block;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 90px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.14) 42%, rgba(0, 0, 0, 0.32) 50%,
+    rgba(0, 0, 0, 0.14) 58%, rgba(0, 0, 0, 0) 100%);
+}
+
+/* Le badge « Agrandir », comme sur les anciennes vues. Au-dessus de la face
+   du magazine (z-index 1) pour rester lisible sur le visuel. */
 .nu-viz-zoom {
   position: absolute;
+  z-index: 2;
   right: 10px;
   bottom: 10px;
   padding: 7px 14px;
