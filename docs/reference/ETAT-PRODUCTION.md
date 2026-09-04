@@ -125,6 +125,30 @@ disent l'état final.
 `email_canonical` fait tout le travail en attendant. C'est exactement le revers documenté dans
 `supabase/CLAUDE.md` : après la migration, vérifier que `numeros.compte_id` se remplit vraiment.
 
+**Google OAuth — état au 04/09, et ce qui reste.** Le provider EST activé côté Supabase et la
+chaîne est prouvée : `/auth/v1/authorize?provider=google` redirige (302), la demande porte le
+bon `client_id`, l'URL de rappel `…supabase.co/auth/v1/callback` et PKCE, et **Google accepte**
+(écran de connexion en 200, ni `redirect_uri_mismatch` ni `invalid_client`). Le parcours depuis
+notre bouton demande bien le retour vers `/compte/callback`.
+
+⚠️ **Trois choses restent, et aucune n'est bloquante aujourd'hui :**
+1. **Le client OAuth vit dans le projet Google Cloud « Eventease »**, pas dans un projet
+   Bellajour — d'où l'écran Google qui annonce `lxkivqbcegursmxshmoc.supabase.co` au lieu du
+   nom de la marque. À refaire dans un projet `Bellajour` propre (branding + nouveau client),
+   puis remplacer l'ID et le secret dans Supabase. Sinon la connexion des clientes dépend d'un
+   projet qui appartient à une autre activité.
+2. **L'écran de consentement est en mode Test** : seuls les comptes ajoutés comme testeurs
+   peuvent se connecter. **À passer en Production avant l'ouverture** — sinon tout le monde sauf
+   Mathias est refusé, sans erreur visible de son côté.
+3. L'**email d'assistance** affiché aux clientes est son adresse personnelle (le champ est une
+   liste déroulante limitée au compte connecté). Se change plus tard **sans rien casser** : il
+   ne fait pas partie des identifiants OAuth. Décision de Mathias, 04/09 : « pas grave pour
+   l'instant ».
+
+⚠️ **Non vérifié, et ça ne peut l'être qu'avec un vrai compte** : le RETOUR de Google vers le
+site, qui dépend de l'`URL Configuration` de Supabase (Site URL + les deux `/compte/callback`).
+Si elle manque, Supabase renvoie la cliente ailleurs que chez nous, en silence.
+
 **Les six gestes de mise en service, tous à faire par Mathias :**
 1. Google Cloud → « ID client OAuth » (application web), URI de redirection autorisée
    `https://lxkivqbcegursmxshmoc.supabase.co/auth/v1/callback`.
