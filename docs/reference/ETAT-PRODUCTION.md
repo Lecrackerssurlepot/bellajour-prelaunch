@@ -25,7 +25,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 | Prévente (`/preventes`, `/lancement`) | retirées, 307 vers `/` | 28/08/2026 |
 | Rebonds Brevo (`/api/brevo/webhook`) | **actif**, webhook Brevo id 2158565 | prouvé le 29/08/2026 à 10:14 |
 | PDF souvenir + mail M7b à la livraison | en ligne, chaîne complète vérifiée | 03/09/2026 (PR #39) |
-| Compte cliente (`/compte`) | **déployé (PR #52) mais FERMÉ au public** : il s'ouvrira tout seul quand les trois variables seront posées (voir plus bas) | 04/09/2026 |
+| Compte cliente (`/compte`) | **EN LIGNE et ouvert au public**, parcours Google prouvé en production | 06/09/2026 |
 
 Quatorze fondateurs ont des droits ouverts sous les CGV v2.5, maintenus en régime transitoire.
 
@@ -152,6 +152,34 @@ disent l'état final.
 `PGRST204`, mais **le rattachement explicite ne s'écrit pas** — le rapprochement par
 `email_canonical` fait tout le travail en attendant. C'est exactement le revers documenté dans
 `supabase/CLAUDE.md` : après la migration, vérifier que `numeros.compte_id` se remplit vraiment.
+
+## ✅ L'ESPACE COMPTE EST OUVERT AU PUBLIC — 06/09/2026
+
+Les deux variables `BREVO_TEMPLATE_C1_ID=42` et `C2_ID=43` sont posées sur Vercel (Preview ET
+Production), les deux migrations sont appliquées, et le déploiement est passé. `compteOuvert()`
+rend donc `true` : l'entrée de compte est réapparue dans la barre, à côté du CTA marketing qui
+n'a pas bougé.
+
+**Vérifié sur www.bellajour.fr, cache contourné :** `/api/compte/statut` répond `ouvert:true`,
+`/compte/connexion` et `/compte/mot-de-passe-oublie` répondent 200, `/compte` redirige vers la
+connexion, le bouton Google part avec le bon retour `https://www.bellajour.fr/compte/callback`
+et Google accepte sans erreur. Le site public est intact (accueil, `/magazine`, `/composer`,
+pages de numéro). **Et Mathias s'est connecté en production avec Google : il est arrivé sur son
+espace.** Le circuit est donc complet, en vrai, sur le vrai domaine.
+
+⚠️ **Ce qui est désormais VIVANT pour de vraies clientes** : créer un compte par mot de passe
+envoie un VRAI mail C1, « mot de passe oublié » envoie un VRAI C2, et la connexion Google
+fonctionne. Ce ne sont plus des essais.
+
+**Les migrations sont appliquées ET la donnée arrive vraiment** (le revers du repli a été
+contrôlé, pas supposé) : `rattacherParToken` rend `lie`, `numeros.compte_id` porte l'identifiant
+du compte, l'événement `compte_rattache` est au journal, et un second passage ne duplique rien.
+Les colonnes `waitlist.credit_consomme_le` / `credit_code` existent ; elles ne se rempliront
+qu'au prochain paiement avec crédit fondateur, ce qui ne peut pas se prouver sans une commande.
+
+**Ce qui reste, et c'est tout** : la pré-création silencieuse des comptes fondateurs
+(`scripts/creer-comptes-fondateurs.ts`, dry-run d'abord, aucun mail ne part). `auth.users` porte
+aujourd'hui **un seul compte**, celui de Mathias.
 
 ## ✅ Le parcours Google, PROUVÉ de bout en bout le 06/09
 
