@@ -19,7 +19,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 | Questionnaire + dépôt (`/composer`) | en ligne, six champs exigés | 28/08/2026 |
 | Page cliente (`/numero/<token>`) | en ligne | 21/08/2026 |
 | Back-office (`/admin/atelier`) | en ligne | 25/08/2026 |
-| Relève quotidienne des mails | armée, 7 h UTC | prouvée le 29/08/2026 à 07:20 |
+| Relève des mails | cron Vercel **quotidien** (7 h UTC, déclenché dans l'heure) ; relève **horaire** écrite mais **inerte** (T-097) | prouvée le 29/08/2026 à 07:20 |
 | Cloudprinter | branché, **sandbox** (clés posées en Production le 01/09) | recette 26/08 ; **suivi vérifié sur la prod le 01/09** |
 | Stripe | branché | prévente depuis juin, atelier depuis le 24/08 |
 | Prévente (`/preventes`, `/lancement`) | retirées, 307 vers `/` | 28/08/2026 |
@@ -28,6 +28,34 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 | Compte cliente (`/compte`) | **déployé (PR #52) mais FERMÉ au public** : il s'ouvrira tout seul quand les trois variables seront posées (voir plus bas) | 04/09/2026 |
 
 Quatorze fondateurs ont des droits ouverts sous les CGV v2.5, maintenus en régime transitoire.
+
+## 04/09 au soir — l'audit des mails, et l'accueil qui ne rejoue plus
+
+**Les envois immédiats ne sont pas en retard, c'est mesuré.** Sur les 27 dernières lignes de
+`mails_envoyes` comparées à `created_at` / `etat_maj_le` : M0 part 0,5 à 1,5 s après la création
+du dossier, M1 en moins de 2 s, M3 en 0,6 s après la publication de l'aperçu. Tous ces envois
+sont `await`és dans leur route.
+
+**Le retard est celui du balayage, et il est structurel** (T-097) : le plan Vercel est **Hobby**
+(vérifié le 04/09), donc une tâche planifiée par jour, déclenchée « dans l'heure qui suit ». M2
+et M2b arrivent 12 à 31 h après l'inscription, M3b et M8 3 à 4 jours au lieu de 3, et
+l'auto-validation dépasse d'un jour la date qu'annonce M5, une fois sur deux.
+`.github/workflows/releve-mails.yml` ramène tout cela sous l'heure — **il ne fait rien tant que
+`ATELIER_MAILS_SECRET` n'est pas posé dans les secrets du dépôt GitHub**, et ce geste-là fait
+passer les relèves de 1 à 15 par jour sur de vraies clientes.
+
+**Deux correctifs posés le même jour :**
+- `maxDuration = 60` sur `/api/atelier/mails/relever` : le balayage envoie en série et n'avait
+  aucune borne déclarée, donc le plafond de 10 s. Une coupure au milieu de la boucle est
+  silencieuse — le résumé n'est journalisé qu'après elle.
+- **M4 réparable** (T-098, `doitRattraperM4`) : un « paiement reçu » refusé par Brevo n'était
+  jamais réessayé (`payee` hors du balayage), et comme M5 l'exige, le dossier PAYÉ se figeait
+  pour toujours. La réparation exige la preuve de l'échec dans le journal.
+
+**L'accueil** (T-099) : l'ouverture ne joue plus qu'une fois par onglet (`sessionStorage`, lu par
+un script en ligne avant la première peinture), le défilement termine l'ouverture au lieu de la
+subir, et les deux défilements pilotés rendent la main au premier geste. `/` reste **prérendue
+statique**.
 
 ## ⚠️ L'incident du 04/09 — dix minutes de porte ouverte sur du vide
 
@@ -125,29 +153,44 @@ disent l'état final.
 `email_canonical` fait tout le travail en attendant. C'est exactement le revers documenté dans
 `supabase/CLAUDE.md` : après la migration, vérifier que `numeros.compte_id` se remplit vraiment.
 
-**Google OAuth — état au 04/09, et ce qui reste.** Le provider EST activé côté Supabase et la
+## ✅ Le parcours Google, PROUVÉ de bout en bout le 06/09
+
+Mathias s'est connecté avec son compte Google depuis `localhost:3000/compte` et **il est arrivé
+sur son espace, avec ses numéros**. C'est la dernière marche qui manquait, et la seule que je ne
+pouvais pas franchir (elle demande de vrais identifiants). Ce qu'elle valide au passage :
+l'`URL Configuration` de Supabase est correcte, le retour vers `/compte/callback` fonctionne, la
+session s'ouvre, et le rapprochement par `email_canonical` montre bien ses dossiers.
+
+`auth.users` porte donc **un compte réel** : `mdurand085@gmail.com`, via Google, confirmé, avec
+photo et nom — ce n'est plus zéro, et c'est normal. Aucun événement `compte_rattache` n'a été
+écrit : la migration `compte_id` n'étant pas passée, l'épinglage se tait (repli PGRST204) et
+c'est le rapprochement par email qui fait tout le travail, comme prévu.
+
+Le client OAuth est celui du projet Google Cloud **Bellajour** (`739999270303-…`), l'application
+est **En production** et **Externe**, le Branding porte le logo et les trois URL de bellajour.fr.
+⚠️ Le bandeau « votre application doit être validée » de Google est apparu **parce qu'un logo a
+été chargé** : les scopes restent `email profile`, non sensibles, donc la connexion fonctionne
+sans validation. Effet possible et purement cosmétique : un écran « application non validée ».
+
+⚠️ Google annonce « to continue to lxkivqbcegursmxshmoc.supabase.co » sur son écran de connexion,
+et cela ne changera pas : il affiche le domaine de l'URL de rappel, qui appartient à Supabase.
+Le nom et le logo Bellajour vivent sur l'écran de consentement. Pour que même le premier écran
+porte la marque, il faudrait un domaine personnalisé Supabase — option **payante**, non tranchée.
+
+**Historique du câblage (04/09), et ce qui reste.** Le provider EST activé côté Supabase et la
 chaîne est prouvée : `/auth/v1/authorize?provider=google` redirige (302), la demande porte le
 bon `client_id`, l'URL de rappel `…supabase.co/auth/v1/callback` et PKCE, et **Google accepte**
 (écran de connexion en 200, ni `redirect_uri_mismatch` ni `invalid_client`). Le parcours depuis
 notre bouton demande bien le retour vers `/compte/callback`.
 
-⚠️ **Trois choses restent, et aucune n'est bloquante aujourd'hui :**
-1. **Le client OAuth vit dans le projet Google Cloud « Eventease »**, pas dans un projet
-   Bellajour — d'où l'écran Google qui annonce `lxkivqbcegursmxshmoc.supabase.co` au lieu du
-   nom de la marque. À refaire dans un projet `Bellajour` propre (branding + nouveau client),
-   puis remplacer l'ID et le secret dans Supabase. Sinon la connexion des clientes dépend d'un
-   projet qui appartient à une autre activité.
-2. **L'écran de consentement est en mode Test** : seuls les comptes ajoutés comme testeurs
-   peuvent se connecter. **À passer en Production avant l'ouverture** — sinon tout le monde sauf
-   Mathias est refusé, sans erreur visible de son côté.
-3. L'**email d'assistance** affiché aux clientes est son adresse personnelle (le champ est une
-   liste déroulante limitée au compte connecté). Se change plus tard **sans rien casser** : il
-   ne fait pas partie des identifiants OAuth. Décision de Mathias, 04/09 : « pas grave pour
-   l'instant ».
+Les trois points ouverts le 04/09 sont **réglés** : le client OAuth a été refait dans un projet
+Google Cloud `Bellajour` propre (celui d'Eventease, créé par erreur, est à supprimer), et
+l'application est passée en Production. Reste seulement l'**email d'assistance**, qui est
+l'adresse personnelle de Mathias : il l'assume pour l'instant, et il se change plus tard sans
+rien casser (il ne fait pas partie des identifiants OAuth).
 
-⚠️ **Non vérifié, et ça ne peut l'être qu'avec un vrai compte** : le RETOUR de Google vers le
-site, qui dépend de l'`URL Configuration` de Supabase (Site URL + les deux `/compte/callback`).
-Si elle manque, Supabase renvoie la cliente ailleurs que chez nous, en silence.
+⚠️ **Un piège rencontré, qui vaut pour la prochaine fois** : Supabase refuse un Client ID collé
+avec son préfixe `https://` (« Invalid characters »). Un client ID n'est pas une URL.
 
 **Les six gestes de mise en service, tous à faire par Mathias :**
 1. Google Cloud → « ID client OAuth » (application web), URI de redirection autorisée
@@ -171,11 +214,11 @@ fiche admin affiche « crédit consommé le … » à la place du bouton de frap
 **ne bouge pas** : un fondateur dont le crédit est dépensé reste fondateur, pour la segmentation
 des campagnes. La source de vérité reste le journal `evenements` ; ces colonnes sont un miroir.
 
-✅ **Les deux comptes de test du 04/09 sont supprimés** (`mdurand085+test@gmail.com` après la
-recette, `mdurand085+demo@gmail.com` après la relecture de Mathias). **`auth.users` est à ZÉRO
-compte**, et aucun événement `compte_rattache` n'a jamais été écrit — la migration n'étant pas
-passée, les replis 42703/PGRST204 ont joué à chaque fois. La base est exactement dans l'état
-d'avant ce chantier.
+✅ **Les deux comptes de test du 04/09 ont été supprimés** (`mdurand085+test@gmail.com` et
+`mdurand085+demo@gmail.com`). Depuis le 06/09, `auth.users` porte **un seul compte, réel** :
+celui de Mathias, créé par sa connexion Google de recette. Aucun événement `compte_rattache`
+n'a jamais été écrit — la migration n'étant pas passée, les replis 42703/PGRST204 jouent à
+chaque fois.
 
 ## Recette de bout en bout de l'Atelier — 01/09/2026 (après-midi)
 
