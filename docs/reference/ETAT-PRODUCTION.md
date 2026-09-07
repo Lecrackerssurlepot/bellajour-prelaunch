@@ -748,3 +748,35 @@ Deux choses à retenir pour la prochaine fois qu'on regardera ces chiffres :
    lire avant de conclure.
 
 Aucun correctif : il n'y a rien à corriger.
+
+## Le poids des polices, mesuré en production le 07/09/2026
+
+Après le déménagement de Cormorant hors du layout racine (T-064), mesure sur le site en ligne :
+
+| Page | Polices préchargées | Poids |
+|---|---|---|
+| `/` (accueil) | 7 fichiers | **202 Ko** |
+| `/cgv` (monde crème) | — | 156 Ko |
+
+**202 Ko en priorité haute sur l'accueil, c'est beaucoup — et pourtant il n'y a rien à
+retirer.** Vérifié face par face : les sept servent le PREMIER écran.
+
+- Cormorant 600 **normal** — « Vos meilleurs moments méritent leur », le titre de couverture,
+  seul élément du site en 600 (`ouverture.css:129`) ;
+- Cormorant 600 **italique** — le mot « magazine ». Le `<em>` n'a qu'une règle de COULEUR
+  (`.h-titre em`), il hérite donc de la famille et de la graisse du titre : l'italique 600 est
+  bien peint, contrairement à ce qu'on pourrait croire en ne lisant que le CSS ;
+- Cormorant 400 italique — l'amorce « Ce festival, cette soirée… » ;
+- DM Sans (variable) — tout le corps.
+
+Deux conséquences pratiques :
+
+1. **Ne pas tenter `preload: false` sur `titreFort`** (la 600, déclarée dans `page.tsx`) : elle
+   peint le titre du premier écran. Le retirer du préchargement échangerait 74 Ko contre un
+   échange de police visible sur l'élément le plus visible du site.
+2. Le seul gain possible serait un **choix de direction artistique** (une graisse en moins, un
+   italique en moins), pas une optimisation technique. Ça ne se décide pas ici.
+
+Rappel utile : toutes ces faces sont en `display: swap`. Elles ne bloquent pas le rendu — le
+texte s'affiche en repli puis bascule. Les 202 Ko coûtent de la bande passante, pas un écran
+blanc.
