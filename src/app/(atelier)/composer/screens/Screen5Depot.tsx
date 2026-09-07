@@ -220,19 +220,27 @@ export default function Screen5Depot({
         </p>
       )}
 
-      {vue.stockageDegrade && (
+      {/* ── Lot 4 (07/09) : UN SEUL de ces trois avis à la fois ─────────
+          Ils pouvaient s'empiler (stockage dégradé + réduction dégradée +
+          bandeau, jusqu'à quatre messages avec la reprise) et l'écran le
+          plus dense du parcours ouvrait sur un mur d'avertissements. Le
+          plus grave parle : impossible de garder une copie (risque de
+          perte), puis l'envoi en taille réelle, puis le bandeau
+          d'orientation. La reprise garde sa ligne à part : elle change ce
+          que l'écran EST, pas ce qu'il faut faire. */}
+      {vue.stockageDegrade ? (
         <p className="at-d-avis">
           Ce navigateur ne peut pas garder de copie de vos photos. Restez sur
           cette page jusqu’à la fin de l’envoi : un rechargement repartirait de zéro.
         </p>
-      )}
-      {vue.reductionDegradee && (
+      ) : vue.reductionDegradee ? (
         <p className="at-d-avis">
           Vos photos partent en taille réelle sur ce navigateur : l’envoi sera
           plus long, et plus gourmand si vous êtes en données mobiles.
         </p>
-      )}
-      {vue.bandeau && <p className="at-d-avis" role="status">{vue.bandeau}</p>}
+      ) : vue.bandeau ? (
+        <p className="at-d-avis" role="status">{vue.bandeau}</p>
+      ) : null}
 
       {/* ── la zone de dépôt : le PREMIER geste seulement ───────────────
           Dès qu'une photo est là, elle laisse la place à la grille — la

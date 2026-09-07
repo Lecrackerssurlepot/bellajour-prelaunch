@@ -24,7 +24,8 @@ import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import Kiosque from './Kiosque'
 import Corps from './Corps'
-import { COMPOSER_HREF, CTA_LABEL, FAQ, PALIERS } from '../content'
+import { GRILLE } from '@/lib/atelier/grille'
+import { COMPOSER_HREF, CTA_LABEL, FAQ } from '../content'
 import './pdp.css'
 
 const URL = 'https://www.bellajour.fr/magazine'
@@ -86,8 +87,10 @@ export const metadata: Metadata = {
    Product + AggregateOffer — la fiche produit. `AggregateOffer` et NON
    `Offer` : `lowPrice`/`highPrice` n'existent pas sur Offer et le test des
    résultats enrichis les rejette en bloc (leçon déjà payée sur l'accueil).
-   Les trois prix sont LUS depuis PALIERS : une grille qui change en un seul
-   endroit ne peut pas mentir ici.
+   Les trois prix sont LUS depuis GRILLE (@/lib/atelier/grille), la même
+   source que les cartes de la page et que le prix ferme du serveur — en
+   NOMBRES, plus en parsant des chaînes d'affichage : une grille qui change
+   en un seul endroit ne peut pas mentir ici.
 
    FAQPage — décrit EXACTEMENT les quatre <details> rendus par Corps.tsx.
    Déclarer une question qui n'est pas visible sur la page est une infraction
@@ -97,7 +100,7 @@ export const metadata: Metadata = {
 
    ⚠️ `offers.url` pointe sur CETTE page, pas sur /composer : c'est ici qu'on
    voit le prix. /composer est un questionnaire, et il est en noindex. */
-const PRIX = PALIERS.map((p) => Number(p.prix.replace(/[^\d]/g, '')))
+const PRIX = GRILLE.map((g) => g.euros)
 
 const JSON_LD = [
   {
@@ -113,7 +116,7 @@ const JSON_LD = [
       priceCurrency: 'EUR',
       lowPrice: String(Math.min(...PRIX)),
       highPrice: String(Math.max(...PRIX)),
-      offerCount: PALIERS.length,
+      offerCount: GRILLE.length,
       availability: 'https://schema.org/InStock',
       url: URL,
       areaServed: ['FR', 'BE', 'LU'],

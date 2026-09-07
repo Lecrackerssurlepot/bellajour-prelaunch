@@ -33,3 +33,24 @@ de Mathias, confirmé.
 
 **Question pour Mathias** : (a) collage discret, ou (b) on enrichit la bande ? Le reste attend ta
 réponse — c'est un arbitrage visuel, pas un bug.
+
+## Tranché et fait (07/09, lot 3 du chantier « Un vrai site »)
+
+Mathias a tranché via le chantier : ni le simple collage (a), ni les visuels (b) — la bande
+gagne un TITRE. « Le parcours avec l'atelier » (h2, famille display un cran sous les .titre
+de section) et un sous-texte « Depuis le téléphone ou l'ordinateur, en trois gestes. »,
+tous deux dans `content.ts` (PARCOURS_TITRE / PARCOURS_SOUS_TITRE), rendus par `Kiosque.tsx`
+avant la liste.
+
+Les marges qui simulaient du contenu se resserrent : `margin-top` de `.bloc-pas` descend de
+`clamp(56px, 6.5vw, 110px)` à la gouttière `--g` (80 px à 1440), et le `padding-top` de
+« L'objet » passe de `--v` (132 px max) à `clamp(48px, 6vw, 88px)` sur écran large. Le
+téléphone garde ses valeurs : le grief était desktop.
+
+Mesuré au navigateur (07/09) : à 1440×900 le premier écran va toujours jusqu'au bouton et la
+bande part sous la ligne de flottaison ; à 375×667 le bouton est à 620 px (invariant T-087
+tenu) et le titre ne déborde pas.
+
+## État
+
+`fait` — livré par la branche `feat/pdp-parcours-faq`, en attente de recette Mathias.

@@ -20,6 +20,27 @@ import './ouverture.css'
 
 const PLI = 120, FONDU = 1700, BATTEMENT = 1000
 
+/* ── LA COUVERTURE NE S'OUVRE QU'UNE FOIS PAR VISITE ──────────────────
+   `sessionStorage`, donc l'onglet : quelqu'un qui va voir /magazine puis
+   revient retrouve la page déjà ouverte, sans les trois secondes de
+   chorégraphie ni le travail de composition qui va avec — sur un téléphone
+   modeste, c'est ce rejeu qui saccade. Le lendemain, nouvel onglet, nouvelle
+   visite : la couverture s'ouvre à nouveau, ce qu'on veut.
+
+   Le drapeau est LU par le script en ligne de page.tsx, AVANT la première
+   peinture, et il pose `data-ouverture-vue` sur <html> — c'est la seule
+   façon de ne pas voir la couverture repliée le temps que React monte.
+   ouverture.css lit cet attribut et sert l'état final, sans transition. */
+const CLE_VUE = 'bj:ouverture-vue'
+const MARQUE_VUE = 'data-ouverture-vue'
+
+/* Au delà de ce défilement, la personne a pris la main : elle ne regarde
+   plus la couverture, elle veut la suite. On termine l'ouverture SEC, sans
+   transition, plutôt que de la laisser jouer sous elle — c'est ce
+   chevauchement qui se voyait comme un bug. Un quart d'écran, parce qu'en
+   dessous la couverture est encore largement à l'image. */
+const PRISE_EN_MAIN = 0.25
+
 export default function Ouverture() {
   const cadre = useRef<HTMLElement>(null)
 
@@ -44,7 +65,14 @@ export default function Ouverture() {
     let ouvert = false
     let frame = 0
     let minuteur = 0
+    /* Déclaré ici, et pas plus bas avec la boucle : `ouvrirEnGrand` le remet
+       à -1 pour forcer la recomposition du parallaxe (voir là-bas). */
+    let derniereY = -1
     const nettoyage: Array<() => void> = []
+    const racineHtml = document.documentElement
+    /* Déjà vue dans cette visite ? Le script en ligne de page.tsx a posé
+       l'attribut avant la première peinture ; on ne fait que le relire. */
+    const dejaVue = racineHtml.hasAttribute(MARQUE_VUE)
 
     const decoupe = (replie: boolean) => {
       if (!couv || !bande) return null
@@ -66,23 +94,47 @@ export default function Ouverture() {
       if (c) couv.style.clipPath = c
     }
 
-    const ouvrirEnGrand = () => {
+    /* `sec` : on saute à l'état final sans jouer le mouvement. Deux cas —
+       le retour sur la page (elle a déjà vu), et la prise en main au doigt
+       (elle ne regarde plus). L'attribut sur <html> est ce que la feuille de
+       style lit pour couper les transitions de l'ouverture ; le poser ICI
+       fait le même effet en cours de route qu'au premier rendu. */
+    const ouvrirEnGrand = (sec = false) => {
       if (!couv || ouvert) return
       ouvert = true
+      if (sec) racineHtml.setAttribute(MARQUE_VUE, '')
       accueil.classList.add('plein')
       couv.style.clipPath = 'inset(0px)'
+      clearTimeout(minuteur)
+      /* La dérive de l'image ne se calcule que couverture ouverte (plus bas).
+         Sans ce rappel, quelqu'un qui a défilé pendant l'ouverture gardait
+         une image figée à sa position de départ jusqu'au défilement suivant,
+         qui la faisait alors SAUTER. */
+      derniereY = -1
+      try { sessionStorage.setItem(CLE_VUE, '1') } catch { /* mode privé : tant pis, elle rejouera */ }
     }
 
     const ouvrir = () => {
       if (accueil.classList.contains('pret')) return
       accueil.classList.add('pret')
-      if (doux) { ouvrirEnGrand(); return }
+      if (doux || dejaVue) { ouvrirEnGrand(dejaVue); return }
       poser(false)
       minuteur = window.setTimeout(ouvrirEnGrand, PLI + FONDU + BATTEMENT)
     }
 
-    if (!doux) poser(true)                       /* le pli, avant toute peinture */
-    const surRedimension = () => poser(false)
+    if (!doux && !dejaVue) poser(true)           /* le pli, avant toute peinture */
+
+    /* ⚠️ LA LARGEUR SEULE COMPTE. Sur téléphone, la barre d'adresse se
+       rétracte dès qu'on descend : `resize` part alors qu'aucune mise en
+       page n'a bougé, et recalculer la découpe au milieu de son ouverture
+       la faisait sursauter. Même règle que `--app-height` (globals.css,
+       src/app/CLAUDE.md) : on ne remesure qu'au changement de largeur. */
+    let largeur = window.innerWidth
+    const surRedimension = () => {
+      if (window.innerWidth === largeur) return
+      largeur = window.innerWidth
+      poser(false)
+    }
     addEventListener('resize', surRedimension, { passive: true })
 
     /* On attend les polices pour que rien ne saute, avec un filet à 500 ms :
@@ -93,9 +145,14 @@ export default function Ouverture() {
     /* Une seule boucle pour tout le continu (règle maison) : la dérive de
        l'image, l'écartement des deux lignes du titre, et le voile de la
        barre de tête. Aucune écoute brute de l'événement scroll. */
-    let derniereY = -1
     const boucle = () => {
       const y = window.scrollY
+      /* ── elle a pris la main ───────────────────────────────────────
+         Le doigt qui descend pendant que la couverture s'ouvre, c'est deux
+         mouvements qui se marchent dessus : la découpe s'élargit, le titre
+         change de régime et le voile se pose, le tout sous une page qui
+         défile. On arrête le film au lieu de le jouer dans son dos. */
+      if (!ouvert && y > window.innerHeight * PRISE_EN_MAIN) ouvrirEnGrand(true)
       if (y !== derniereY) {
         derniereY = y
         const h = window.innerHeight
@@ -204,6 +261,32 @@ export default function Ouverture() {
     const racine = document.documentElement
     const memoire = racine.style.scrollBehavior
     racine.style.scrollBehavior = 'auto'
+    /* ⚠️ ON REND LA MAIN AU PREMIER GESTE. Cette descente écrit la position
+       de la page à chaque image pendant 1,3 s : un doigt qui défile
+       pendant ce temps se fait reposer où l'animation en est, soixante fois
+       par seconde. La page semble alors collée, puis repart d'un coup — le
+       « bug au scroll » le plus reproductible de l'accueil. Un geste
+       quelconque termine donc la descente sur place. */
+    let rendu = false
+    const rendreLaMain = () => { rendu = true }
+    const gestes: Array<keyof WindowEventMap> = ['wheel', 'touchstart', 'keydown', 'pointerdown']
+    /* ⚠️ ARMÉ À LA PREMIÈRE IMAGE, jamais tout de suite. Ce geste part
+       parfois d'un `keydown` (Entrée sur le bouton) qui n'a pas fini de
+       remonter jusqu'à window : une écoute posée maintenant s'entendrait
+       elle-même et annulerait la descente avant son premier pixel. */
+    let armes = false
+    const armer = () => {
+      if (armes) return
+      armes = true
+      gestes.forEach((g) => addEventListener(g, rendreLaMain, { passive: true }))
+    }
+    const relacher = () => {
+      gestes.forEach((g) => removeEventListener(g, rendreLaMain))
+      hero.style.transform = ''
+      hero.style.opacity = ''
+      racine.style.scrollBehavior = memoire
+      delete racine.dataset.pilote
+    }
     /* ⚠️ On se declare DEFILEMENT PILOTE le temps du geste. Le sequenceur
        de l'univers compose une page d'emblee, sans sa choregraphie, quand
        il voit descendre a plus de 900 px/s — pour qu'un lecteur presse ne
@@ -214,18 +297,15 @@ export default function Ouverture() {
        le sequenceur est dans un autre composant (Univers.tsx). */
     racine.dataset.pilote = '1'
     const pas = (t: number) => {
+      if (rendu) { relacher(); return }
+      armer()
       const p = Math.min(Math.max((t - t0) / duree, 0), 1)
       const e = 1 - Math.pow(1 - p, 4)
       window.scrollTo({ top: depart + d * e, behavior: 'instant' as ScrollBehavior })
       hero.style.transform = `translate3d(0, ${(-e * 8).toFixed(2)}vh, 0)`
       hero.style.opacity = String(1 - e * 0.8)
       if (p < 1) requestAnimationFrame(pas)
-      else {
-        hero.style.transform = ''
-        hero.style.opacity = ''
-        racine.style.scrollBehavior = memoire
-        delete racine.dataset.pilote
-      }
+      else relacher()
     }
     requestAnimationFrame(pas)
   }

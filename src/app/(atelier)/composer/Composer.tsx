@@ -96,8 +96,11 @@ export default function Composer() {
   const [erreurCle, setErreurCle] = useState(0)
   /* La confirmation de sortie (03/09). La croix ne quitte plus d'un clic :
      fermer un parcours à six écrans sur un geste ambigu coûtait des dossiers.
-     Quitter reste un <a> vers /magazine — rechargement voulu, voir la croix. */
-  const [quitter, setQuitter] = useState(false)
+     Quitter reste un <a> — rechargement voulu, voir la croix.
+     Depuis le 07/09 elle retient QUI l'a ouverte : la croix ramène à
+     /magazine (la page produit), le logo à l'accueil — deux intentions,
+     deux destinations, une seule modale. */
+  const [quitter, setQuitter] = useState<null | 'croix' | 'logo'>(null)
   /* T2-4 — vrai quand on est arrivé par `?reprendre=` : l'écran 5 doit dire
      que des photos sont DÉJÀ chez nous, sinon il ressemble à un premier
      dépôt et laisse croire qu'il faut tout recommencer. */
@@ -144,7 +147,70 @@ export default function Composer() {
     setDraft(estReprise ? { ...repris, token: reprendre, screen: 5 } : repris)
     setReprise(estReprise)
     setPret(true)
+    /* Lot 1 (07/09) — l'écran de départ entre dans l'historique. Sans cette
+       entrée, le Précédent du navigateur quittait tout le questionnaire
+       depuis n'importe quel écran : aucun écran n'existait pour lui. */
+    window.history.replaceState(
+      { bjScreen: estReprise ? 5 : repris.screen },
+      '',
+    )
   }, [])
+
+  /* ── LE PRÉCÉDENT DU NAVIGATEUR RECULE D'UN ÉCRAN (lot 1, 07/09) ────────
+     Les écrans vivent dans `draft.screen`, qui reste LA source de vérité
+     (pas de `?etape=` : une deuxième source dans l'URL entrerait en conflit
+     avec `?reprendre=` et rendrait un écran vide partageable). L'historique
+     n'est qu'un reflet : une entrée par écran atteint, et `popstate` ramène
+     au reflet — jamais plus loin en avant que ce que la validation permet.
+     Sur l'écran 6 le dossier est parti (garantie 4) : le Précédent ne
+     rouvre pas le questionnaire, il finit par en sortir. */
+  const viaPopstate = useRef(false)
+  useEffect(() => {
+    if (!pret) return
+    const surRetour = (e: PopStateEvent) => {
+      const etat = e.state as { bjScreen?: unknown } | null
+      const cible = typeof etat?.bjScreen === 'number' ? etat.bjScreen : null
+      if (cible === null) return
+      viaPopstate.current = true
+      setErreur(null)
+      setDraft((d) => {
+        if (d.termine || d.screen === 6) return d
+        let borne = Math.min(Math.max(Math.round(cible), 1), 5)
+        if (borne > d.screen) {
+          /* Avancer par le bouton Suivant du navigateur reste soumis à la
+             même règle que le bouton de la page : chaque écran traversé a
+             sa réponse, et l'écran 5 exige un dossier créé. */
+          for (let k = 1; k < borne; k++) {
+            if (premierManquant(CHAMPS_PAR_ECRAN[k] ?? [], (c) => d[c])) {
+              borne = d.screen
+              break
+            }
+          }
+          if (borne === 5 && !d.token) borne = d.screen
+        }
+        return borne === d.screen ? d : { ...d, screen: borne }
+      })
+      scroller.current?.scrollTo({ top: 0 })
+    }
+    window.addEventListener('popstate', surRetour)
+    return () => window.removeEventListener('popstate', surRetour)
+  }, [pret])
+
+  /* Le reflet : avancer empile, être renvoyé en arrière (erreur serveur)
+     remplace, l'écran 6 remplace aussi — la pile au-dessus devient lettre
+     morte, le garde de `surRetour` s'en charge. */
+  useEffect(() => {
+    if (!pret) return
+    if (viaPopstate.current) { viaPopstate.current = false; return }
+    const etat = window.history.state as { bjScreen?: unknown } | null
+    const dansPile = typeof etat?.bjScreen === 'number' ? etat.bjScreen : null
+    if (dansPile === draft.screen) return
+    if (dansPile !== null && draft.screen > dansPile && draft.screen !== 6) {
+      window.history.pushState({ bjScreen: draft.screen }, '')
+    } else {
+      window.history.replaceState({ bjScreen: draft.screen }, '')
+    }
+  }, [draft.screen, pret])
 
   /* Sauvegarde à chaque changement, une fois la reprise faite. */
   useEffect(() => {
@@ -194,7 +260,7 @@ export default function Composer() {
       titre.focus({ preventScroll: true })
     }
     const auClavier = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setQuitter(false)
+      if (e.key === 'Escape') setQuitter(null)
     }
     window.addEventListener('keydown', auClavier)
     return () => window.removeEventListener('keydown', auClavier)
@@ -206,6 +272,25 @@ export default function Composer() {
     setDraft((d) => ({ ...d, screen: n }))
     scroller.current?.scrollTo({ top: 0 })
   }, [])
+
+  /* Le bouton « ← Retour » de la page recule PAR l'historique quand la pile
+     est alignée : ainsi le Précédent du navigateur et le bouton de la page
+     racontent la même histoire, sans entrée en double. Pile désalignée
+     (reprise posée d'emblée à l'écran 5, onglet neuf) : on recule par
+     l'état, comme avant. */
+  const reculer = useCallback((n: number) => {
+    const etat = window.history.state as { bjScreen?: unknown } | null
+    if (
+      typeof etat?.bjScreen === 'number' &&
+      etat.bjScreen === n &&
+      n > 1 &&
+      !(reprise && n === 5)
+    ) {
+      window.history.back()
+    } else {
+      aller(n - 1)
+    }
+  }, [aller, reprise])
 
   /* ── AVANCER, SEULEMENT SI L'ÉCRAN A SA RÉPONSE ────────────────────────
      Le 27/08, un dossier est arrivé sans titre et sans photo. Rien n'avait
@@ -305,6 +390,13 @@ export default function Composer() {
      frame avant de retomber sur le sien — infiniment préférable au vide. */
   const n = draft.screen
 
+  /* T-088 (07/09) — vrai dès la première réponse : le logo s'interpose
+     alors avant de quitter, au lieu de jeter la composition d'un clic. */
+  const aCommence = Boolean(
+    draft.token || draft.occasion || draft.histoire || draft.titre ||
+    draft.prenom || draft.email || draft.telephone,
+  )
+
   /* Le sommaire nommé (Option A des maquettes du 03/09). Deux rendus, un
      seul affiché par le CSS : les noms sur desktop, segments + « n / 5 »
      sur mobile. Décoratif à l'oreille — la région live sr-only porte déjà
@@ -344,9 +436,14 @@ export default function Composer() {
       <div className="at-q">
         <div className="at-q-top">
           <span className="at-q-cote" aria-hidden="true" />
-          <img className="at-q-logo-img" src={LOGO} alt="Bellajour" width={320} height={122} decoding="async" />
+          {/* T-088 (07/09) — le logo mène à l'accueil ; rien n'est en cours
+              ici, pas de garde-fou. La croix rejoint /magazine, comme la
+              sortie de la modale : un seul pictogramme, un seul sens. */}
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-          <a className="at-q-close" href="/" aria-label="Fermer">✕</a>
+          <a className="at-q-logo" href="/" aria-label="Revenir à l’accueil Bellajour">
+            <img className="at-q-logo-img" src={LOGO} alt="Bellajour" width={320} height={122} decoding="async" />
+          </a>
+          <a className="at-q-close" href="/magazine" aria-label="Fermer">✕</a>
         </div>
         <div className="at-q-scroll">
           <div className="at-q-screen">
@@ -384,12 +481,31 @@ export default function Composer() {
         <button
           type="button"
           className="at-q-back"
-          onClick={() => aller(n - 1)}
+          onClick={() => reculer(n)}
           style={{ visibility: n === 1 || n === 6 ? 'hidden' : 'visible' }}
         >
           ← Retour
         </button>
-        <img className="at-q-logo-img" src={LOGO} alt="Bellajour" width={320} height={122} decoding="async" />
+        {/* T-088 (07/09) — le logo n'est plus un clic mort : il mène à
+            l'accueil. Composition commencée : la confirmation s'interpose
+            (même mécanique que la croix), et sa sortie ramène à l'accueil,
+            pas à /magazine. Écran 6 : parcours fini, <a> nu — rechargement
+            voulu, le moteur d'envoi est un singleton hors React. */}
+        {aCommence && n !== 6 ? (
+          <button
+            type="button"
+            className="at-q-logo"
+            onClick={() => setQuitter('logo')}
+            aria-label="Revenir à l’accueil Bellajour"
+          >
+            <img className="at-q-logo-img" src={LOGO} alt="Bellajour" width={320} height={122} decoding="async" />
+          </button>
+        ) : (
+          // eslint-disable-next-line @next/next/no-html-link-for-pages
+          <a className="at-q-logo" href="/" aria-label="Revenir à l’accueil Bellajour">
+            <img className="at-q-logo-img" src={LOGO} alt="Bellajour" width={320} height={122} decoding="async" />
+          </a>
+        )}
         {/* La croix N'EST PLUS un lien (03/09) : elle ouvre la confirmation.
             C'est le <a> DE LA MODALE qui quitte — et il RECHARGE la page,
             exprès : le moteur d'envoi est un singleton hors React
@@ -401,7 +517,7 @@ export default function Composer() {
           <button
             type="button"
             className="at-q-close"
-            onClick={() => setQuitter(true)}
+            onClick={() => setQuitter('croix')}
             aria-label="Quitter la composition"
           >
             ✕
@@ -476,7 +592,7 @@ export default function Composer() {
               <span className="at-q-barre-note">Vos réponses s’enregistrent au fur et à mesure.</span>
             )}
             {n > 1 && n < 6 && (
-              <button type="button" className="at-q-back at-q-barre-retour" onClick={() => aller(n - 1)}>
+              <button type="button" className="at-q-back at-q-barre-retour" onClick={() => reculer(n)}>
                 ← Retour
               </button>
             )}
@@ -528,7 +644,7 @@ export default function Composer() {
       {quitter && (
         <div
           className="at-q-voile"
-          onClick={(e) => { if (e.target === e.currentTarget) setQuitter(false) }}
+          onClick={(e) => { if (e.target === e.currentTarget) setQuitter(null) }}
         >
           <div
             className="at-q-quitter"
@@ -542,12 +658,22 @@ export default function Composer() {
               Vos réponses restent enregistrées sur cet appareil.
               Vous reprendrez exactement où vous en étiez.
             </p>
-            <button type="button" className="at-cta at-q-quitter-reste" onClick={() => setQuitter(false)}>
+            <button type="button" className="at-cta at-q-quitter-reste" onClick={() => setQuitter(null)}>
               Continuer ma composition
             </button>
-            <a className="at-skip at-q-quitter-part" href="/magazine">
-              Quitter et revenir à la page du magazine
-            </a>
+            {/* La sortie honore le geste qui a ouvert la modale : la croix
+                ramène à la page du magazine, le logo à l'accueil. <a> nu,
+                rechargement voulu (moteur singleton, voir la croix). */}
+            {quitter === 'logo' ? (
+              // eslint-disable-next-line @next/next/no-html-link-for-pages
+              <a className="at-skip at-q-quitter-part" href="/">
+                Quitter et revenir à l’accueil
+              </a>
+            ) : (
+              <a className="at-skip at-q-quitter-part" href="/magazine">
+                Quitter et revenir à la page du magazine
+              </a>
+            )}
           </div>
         </div>
       )}

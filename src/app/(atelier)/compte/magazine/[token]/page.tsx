@@ -61,7 +61,10 @@ export default async function MagazinePage({
   return (
     <div className="bj-atelier cpt cpt--mag">
       <header className="cpt-top">
-        <a className="cpt-retour" href="/compte">
+        {/* Lot 1 (07/09) — le lien promet la bibliothèque : l'URL porte
+            l'onglet, sinon /compte rouvrait « Mes numéros » dès qu'un
+            numéro était en cours. */}
+        <a className="cpt-retour" href="/compte?onglet=bibliotheque">
           <span aria-hidden="true">←</span> Ma bibliothèque
         </a>
         <Link className="cpt-top-marque" href="/" aria-label="Bellajour, retour à l’accueil">
@@ -118,8 +121,11 @@ export default async function MagazinePage({
             <dd>Papier intérieur et couverture, façonnage compris</dd>
             {euros ? (
               <>
+                {/* « livraison comprise » retiré le 07/09/2026 (chantier
+                    barème par pages) : la livraison sort du prix, et pour un
+                    numéro déjà payé le montant seul dit tout. */}
                 <dt>Payé</dt>
-                <dd>{euros} €, livraison comprise</dd>
+                <dd>{euros} €</dd>
               </>
             ) : null}
             {livreLe ? (

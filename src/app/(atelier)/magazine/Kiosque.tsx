@@ -10,7 +10,7 @@
    elles arrivent sous la ligne de flottaison. */
 
 import Reveal from '../components/Reveal'
-import { ETAPES, PALIERS } from '../content'
+import { ETAPES, PALIERS, PARCOURS_SOUS_TITRE, PARCOURS_TITRE } from '../content'
 import LienComposer from '../components/LienComposer'
 
 /* Le rythme annoncé à chaque étape. Il vit ICI et non dans content.ts : ce
@@ -111,13 +111,23 @@ export default function Kiosque() {
 
         <Reveal delay={140} className="bloc-prix">
           {/* Une LISTE, pas une pile de div : trois paliers sont une
-              énumération, et qui écoute la page doit pouvoir les compter. */}
+              énumération, et qui écoute la page doit pouvoir les compter.
+
+              ORDRE DES LIGNES (chantier barème par pages, 07/09/2026) : les
+              PAGES en tête — ce sont elles qui font le prix —, le prix, puis
+              les photos en ligne secondaire (un ordre de grandeur, ~).
+              ⚠️ Les classes .combien/.euros/.pages sont des EMPLACEMENTS
+              (haut petit / grand / bas petit), pas des sens : on a réordonné
+              le CONTENU sans toucher aux règles CSS, précisément pour que le
+              premier écran mobile (375×667) garde les mêmes corps et les
+              mêmes hauteurs. Renommer les classes obligerait à réécrire
+              pdp.css et ses trois media queries pour zéro pixel de gagné. */}
           <ul className="prix">
             {PALIERS.map((p) => (
               <li key={p.prix}>
-                <span className="combien">{p.photos}</span>
+                <span className="combien">{p.pages}</span>
                 <span className="euros">{p.prix}</span>
-                <span className="pages">{p.pages}</span>
+                <span className="pages">{p.photos}</span>
               </li>
             ))}
           </ul>
@@ -177,6 +187,12 @@ export default function Kiosque() {
           bouton pour le clavier et le lecteur d'ecran — c'est l'ordre de
           lecture voulu, et il n'a plus besoin d'`order` pour l'obtenir. */}
       <Reveal delay={70} className="bloc-pas">
+        {/* Lot 3 (07/09) — l'arbitrage T-086 : la bande gagne un titre et un
+            sous-texte au lieu de flotter sans nom entre deux zones denses.
+            Le h2 entre dans le plan de la page apres le h1 du kiosque,
+            avant « L'objet ». */}
+        <h2 className="pas-titre">{PARCOURS_TITRE}</h2>
+        <p className="pas-sous">{PARCOURS_SOUS_TITRE}</p>
         <ol className="pas">
           {ETAPES.map((e, i) => (
             <li key={e.titre}>

@@ -48,6 +48,26 @@ X € (filleule) et Y € (marraine) — le même montant des deux côtés est l
 qui a un lien : toutes les clientes livrées, ou d'abord ambassadrices + fondatrices ? ·
 le crédit marraine est-il cumulable sur une même commande ? · cumul avec le code fondatrice ?
 
+## La recommandation depuis la bibliothèque (note du 07/09/2026)
+
+**Statut : note de conception, décision de Mathias du 07/09 — pas d'implémentation dans ce
+chantier.**
+
+Contexte : Mathias veut permettre de recommander depuis la bibliothèque — `/compte`, onglet
+« Ma bibliothèque », et la fiche `/compte/magazine/[token]`. C'est exactement le « moment du
+bonheur » que la décision 3 ci-dessus identifiait déjà : le magazine validé, entre les mains
+de la personne qui l'a reçu.
+
+**Ce qui serait implémentable SANS attendre les montants** : un bloc de partage sobre sur la
+fiche du magazine livré — Web Share API quand le navigateur la porte, copie de lien sinon —
+qui pointe vers `/magazine`, SANS `?ref`, sans coupon, sans promesse chiffrée. Avantage :
+zéro chiffre à inventer, et réversible (retirer le bloc ne casse rien et ne trahit aucune
+promesse). Inconvénient : aucun suivi d'attribution — on ne saurait pas qui a amené qui.
+
+**Ce qui attend les décisions de Mathias** : l'étape 0 (`/magazine` lit `?ref`), le bandeau
+de bienvenue, les coupons Stripe, les montants X et Y — RIEN de tout cela n'est décidé, et
+cette note n'en propose aucun.
+
 ## Tant que c'est en pause
 
 Les liens `/preventes?ref=…` des mails déjà partis mènent à l'accueil sans effet (redirection

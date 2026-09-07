@@ -8,6 +8,7 @@ import {
   type LocalizedDoc,
 } from './types'
 import { pickLang, pickRef, resolveDoc, legalHref, backHref } from './resolve'
+import RetourLien from './RetourLien'
 import './legal.css'
 
 /* Composant partagé des pages légales (Server Component, zéro JS client).
@@ -44,7 +45,9 @@ export default function LegalPage({ slug, doc, params, forceLang }: LegalPagePro
       <div className="lg-inner">
 
         <header className="lg-head">
-          <a href={backHref()} className="lg-back">← Retour</a>
+          {/* Lot 1 (07/09) — revient d'où l'on vient quand la page
+              précédente est une page du site ; sinon le repli backHref(). */}
+          <RetourLien repli={backHref()} />
 
           <nav className="lg-langs" aria-label="Langue du document">
             {LOCALES.map((loc) => {

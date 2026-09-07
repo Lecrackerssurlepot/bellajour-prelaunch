@@ -25,6 +25,16 @@
   display: block;
 }
 
+/* T-088 (07/09) — l'enveloppe cliquable du logo (lien ou bouton selon que
+   la composition a commencé). Invisible : seul le geste change. */
+.bj-atelier .at-q-logo {
+  background: none;
+  border: none;
+  padding: 0;
+  display: block;
+  cursor: pointer;
+}
+
 /* L'équilibre de la barre quand un côté est vide (écran 6, lien abîmé) :
    une cale de la taille de la croix, pour que le logo reste centré. */
 .at-q-cote { width: 38px; height: 38px; flex: 0 0 auto; }
@@ -374,6 +384,9 @@
 /* ---- les deux couvertures d'exemple (écran 3) ---- */
 .at-covers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 36px; max-width: 600px; }
 
+/* Lot 4 (07/09) — les couvertures ne sont plus des boutons : le clic sans
+   effet (« dead click ») est parti avec le curseur, le survol et l'état
+   is-on. Ce sont des aperçus, le titre s'y écrit en direct. */
 .bj-atelier .at-cov {
   position: relative;
   display: flex;
@@ -383,9 +396,7 @@
   border: 1px solid var(--c-line-md);
   border-radius: 3px;
   background: transparent;
-  cursor: pointer;
   color: var(--c-text);
-  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
 
 .bj-atelier .at-cov::before {
@@ -396,8 +407,16 @@
   opacity: 0.85;
 }
 
-.bj-atelier .at-cov:hover { transform: translateY(-4px); }
-.bj-atelier .at-cov.is-on { border-color: var(--c-accent); }
+/* Lot 4 — sur téléphone, une seule couverture : l'écran du titre était le
+   plus chargé du questionnaire, et deux vignettes empilées repoussaient les
+   champs facultatifs hors de vue. Le desktop garde la paire. */
+@media (max-width: 720px) {
+  .at-covers { grid-template-columns: 1fr; max-width: 320px; }
+  /* (0,2,0) obligatoire : `.bj-atelier .at-cov` pose display:flex à la même
+     spécificité, et une media query n'en ajoute pas (piège payé le 04/09
+     sur .at-nav-suivi). */
+  .bj-atelier .at-cov--second { display: none; }
+}
 
 .at-cov-t {
   position: relative;
@@ -599,7 +618,9 @@
 
 /* ---- écran 3 : la grille d'inspiration dit son statut (03/09) ----
    Mathias a constaté que les deux couvertures se lisaient comme un choix à
-   faire. Le chapeau au-dessus et la note en dessous ferment la question. */
+   faire. Depuis le lot 4 (07/09) le chapeau porte seul le message (les deux
+   notes ont fusionné) et les vignettes ne sont plus cliquables du tout ;
+   .at-covers-note reste défini pour l'historique mais n'est plus rendu. */
 .bj-atelier .at-covers-chapeau {
   margin-top: 34px;
   font-size: 10px;

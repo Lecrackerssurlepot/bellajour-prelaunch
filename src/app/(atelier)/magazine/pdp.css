@@ -207,6 +207,28 @@
    composition dans une requete qui ne s'applique QU'AU-DESSUS de 768 px est
    la seule facon de garantir, sans rien remesurer, que le premier ecran du
    telephone n'a pas bouge d'un pixel. */
+/* Lot 3 (07/09) — le titre de la bande (arbitrage T-086 rendu par Mathias).
+   Sur telephone il coiffe la liste empilee ; sur ecran large il occupe le
+   vide mesure entre le kiosque et « L'objet » (~170 px de contenu pour
+   ~200 px de marges) : le titre absorbe, les marges se resserrent. Meme
+   famille display que les .titre de section, un cran en dessous. */
+.at-pdp .pas-titre {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(26px, 2.6vw, 38px);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+}
+
+.at-pdp .pas-sous {
+  margin: 0 0 clamp(14px, calc(2 * var(--uh)), 24px);
+  font-weight: 300;
+  font-size: clamp(14px, 1.15vw, 15px);
+  line-height: 1.6;
+  color: var(--c-text-soft);
+}
+
 .at-pdp .pas {
   margin: 0;
   padding: 0;
@@ -256,7 +278,9 @@
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 768px) {
   /* Toute la largeur de la grille, quelle que soit sa definition. */
-  .at-pdp .bloc-pas { grid-column: 1 / -1; margin-top: clamp(56px, 6.5vw, 110px); }
+  /* Lot 3 (07/09) — la marge descend vers la gouttiere standard : le titre
+     de la bande occupe desormais l'espace que la marge simulait. */
+  .at-pdp .bloc-pas { grid-column: 1 / -1; margin-top: var(--g); }
 
   .at-pdp .pas {
     display: grid;
@@ -443,6 +467,13 @@
   padding-top: var(--v);
   padding-bottom: var(--v);
   background: var(--c-bg);
+}
+
+/* Lot 3 (07/09) — sur ecran large, l'espace au-dessus de « L'objet »
+   descend d'un cran (T-086 : le vide flottant venait pour moitie d'ici).
+   Le telephone garde --v : le grief etait desktop. */
+@media (min-width: 768px) {
+  .at-pdp .objet { padding-top: clamp(48px, 6vw, 88px); }
 }
 
 .at-pdp .objet-grille {
@@ -684,9 +715,14 @@
      et le bouton sortait de l'écran.
      Chaque carte fait ~104 px de large sur un téléphone de 375. Les tailles
      ci-dessous sont calées pour que ça reste LISIBLE à cette largeur, sans
-     qu'aucune ligne ne se coupe :
-       — « 40 à 59 photos » se replie sur deux lignes (line-height 1,45) ;
-       — « 20 à 28 pages » tient sur une, à 11 px ;
+     qu'aucune ligne ne se coupe. Depuis le 07/09 (barème par pages), les
+     classes sont des EMPLACEMENTS : .combien = ligne haute, .pages = ligne
+     basse — le CONTENU a permuté (pages en haut, photos en bas), pas les
+     corps :
+       — « 20 à 29 pages » (.combien) tient sur une ligne, à 11 px ;
+       — « ~40 à 59 photos » (.pages) peut se replier sur deux lignes, comme
+         le faisait la ligne photos quand elle était en haut : le nombre
+         total de lignes par carte ne change pas ;
        — le prix reste ce qu'on lit en premier, à 8vw.
      Rayon à 12 px et non 16 : sur une carte de 104 px, un rayon de 16
      ressemble à une pastille, pas à un encart. */
@@ -702,8 +738,8 @@
   }
 
   /* T-087 — les deux libellés remontent au minimum lisible (Mathias, 01/09 :
-     « trop dense sur téléphone »). `.combien` 10 -> 11 px (il se replie déjà
-     sur deux lignes, aucun risque de coupe nouvelle) et `.pages` 11 -> 12 px.
+     « trop dense sur téléphone »). `.combien` 10 -> 11 px et `.pages`
+     11 -> 12 px (les corps n'ont PAS bougé au réordonnancement du 07/09).
      Le prix en euros était déjà grand (8vw) : ce n'est pas lui qui manquait de
      lisibilité mais les mentions au-dessus et en dessous. Interlignes resserrés
      d'un cran pour absorber la hausse sans repousser le bouton hors de l'écran. */
