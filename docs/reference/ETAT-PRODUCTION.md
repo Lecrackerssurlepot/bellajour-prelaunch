@@ -25,7 +25,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 | Prévente (`/preventes`, `/lancement`) | retirées, 307 vers `/` | 28/08/2026 |
 | Rebonds Brevo (`/api/brevo/webhook`) | **actif**, webhook Brevo id 2158565 | prouvé le 29/08/2026 à 10:14 |
 | PDF souvenir + mail M7b à la livraison | en ligne, chaîne complète vérifiée | 03/09/2026 (PR #39) |
-| Compte cliente (`/compte`) | **déployé (PR #52) mais FERMÉ au public** : il s'ouvrira tout seul quand les trois variables seront posées (voir plus bas) | 04/09/2026 |
+| Compte cliente (`/compte`) | **EN LIGNE et ouvert au public**, parcours Google prouvé en production | 06/09/2026 |
 
 Quatorze fondateurs ont des droits ouverts sous les CGV v2.5, maintenus en régime transitoire.
 
@@ -153,6 +153,34 @@ disent l'état final.
 `email_canonical` fait tout le travail en attendant. C'est exactement le revers documenté dans
 `supabase/CLAUDE.md` : après la migration, vérifier que `numeros.compte_id` se remplit vraiment.
 
+## ✅ L'ESPACE COMPTE EST OUVERT AU PUBLIC — 06/09/2026
+
+Les deux variables `BREVO_TEMPLATE_C1_ID=42` et `C2_ID=43` sont posées sur Vercel (Preview ET
+Production), les deux migrations sont appliquées, et le déploiement est passé. `compteOuvert()`
+rend donc `true` : l'entrée de compte est réapparue dans la barre, à côté du CTA marketing qui
+n'a pas bougé.
+
+**Vérifié sur www.bellajour.fr, cache contourné :** `/api/compte/statut` répond `ouvert:true`,
+`/compte/connexion` et `/compte/mot-de-passe-oublie` répondent 200, `/compte` redirige vers la
+connexion, le bouton Google part avec le bon retour `https://www.bellajour.fr/compte/callback`
+et Google accepte sans erreur. Le site public est intact (accueil, `/magazine`, `/composer`,
+pages de numéro). **Et Mathias s'est connecté en production avec Google : il est arrivé sur son
+espace.** Le circuit est donc complet, en vrai, sur le vrai domaine.
+
+⚠️ **Ce qui est désormais VIVANT pour de vraies clientes** : créer un compte par mot de passe
+envoie un VRAI mail C1, « mot de passe oublié » envoie un VRAI C2, et la connexion Google
+fonctionne. Ce ne sont plus des essais.
+
+**Les migrations sont appliquées ET la donnée arrive vraiment** (le revers du repli a été
+contrôlé, pas supposé) : `rattacherParToken` rend `lie`, `numeros.compte_id` porte l'identifiant
+du compte, l'événement `compte_rattache` est au journal, et un second passage ne duplique rien.
+Les colonnes `waitlist.credit_consomme_le` / `credit_code` existent ; elles ne se rempliront
+qu'au prochain paiement avec crédit fondateur, ce qui ne peut pas se prouver sans une commande.
+
+**Ce qui reste, et c'est tout** : la pré-création silencieuse des comptes fondateurs
+(`scripts/creer-comptes-fondateurs.ts`, dry-run d'abord, aucun mail ne part). `auth.users` porte
+aujourd'hui **un seul compte**, celui de Mathias.
+
 ## ✅ Le parcours Google, PROUVÉ de bout en bout le 06/09
 
 Mathias s'est connecté avec son compte Google depuis `localhost:3000/compte` et **il est arrivé
@@ -172,10 +200,27 @@ est **En production** et **Externe**, le Branding porte le logo et les trois URL
 été chargé** : les scopes restent `email profile`, non sensibles, donc la connexion fonctionne
 sans validation. Effet possible et purement cosmétique : un écran « application non validée ».
 
-⚠️ Google annonce « to continue to lxkivqbcegursmxshmoc.supabase.co » sur son écran de connexion,
-et cela ne changera pas : il affiche le domaine de l'URL de rappel, qui appartient à Supabase.
-Le nom et le logo Bellajour vivent sur l'écran de consentement. Pour que même le premier écran
-porte la marque, il faudrait un domaine personnalisé Supabase — option **payante**, non tranchée.
+✅ **L'écran Google porte la marque (07/09).** Il annonçait « to continue to
+lxkivqbcegursmxshmoc.supabase.co » ; il dit maintenant **« to continue to Bellajour »**, avec le
+logo, et renvoie aux « Bellajour's Privacy Policy and Terms of Service ». Vérifié sur le vrai
+parcours de production.
+
+C'est la **validation de marque par Google** qui l'a débloqué — pas un domaine personnalisé, donc
+**rien n'a été payé**. La doc Supabase le disait : « Branding and Verification show a logo and
+name instead of the Supabase project ID in the consent screen ». Elle annonçait « quelques jours
+ouvrés » ; elle est passée en moins d'une journée, sans doute parce que `bellajour.fr` portait
+DÉJÀ un `google-site-verification` dans le DNS Cloudflare et que les scopes (`email profile`)
+sont non sensibles. Le check-up du projet affiche « Votre application a été validée par Google ».
+
+⚠️ **Deux avertissements restent au check-up, aucun ne touche les clientes :**
+- **« Contacts du projet »** : le projet n'a qu'un propriétaire, le compte personnel de Mathias.
+  Si ce compte devient inaccessible, la connexion Google de toutes les clientes dépend de lui.
+  À corriger en ajoutant un second propriétaire (l'adresse pro, ou Louis).
+- **« Validation du compte de facturation »** : aucun compte de facturation Cloud associé. Sans
+  conséquence pour OAuth, qui est gratuit.
+
+⚠️ **À faire aussi** : supprimer le client OAuth créé par erreur dans le projet Google Cloud
+« Eventease », qui ne sert plus à rien.
 
 **Historique du câblage (04/09), et ce qui reste.** Le provider EST activé côté Supabase et la
 chaîne est prouvée : `/auth/v1/authorize?provider=google` redirige (302), la demande porte le
