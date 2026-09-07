@@ -11,7 +11,12 @@ import Reveal from '../components/Reveal'
 import { CTA_NOTE_PRICE, FAQ } from '../content'
 import LienComposer from '../components/LienComposer'
 
-/* Ce qui est compris. Chaque ligne doit rester tenue par quelque chose :
+/* Ce qui est compris. ⚠️ AUCUNE ligne ne doit dire ni laisser croire que le
+   TRANSPORT est compris dans le prix (chantier barème par pages, 07/09/2026 :
+   la livraison sort du prix, tarif en attente de la décision de Mathias —
+   docs/produit/PROPOSITION-CGV-LIVRAISON.md). La ligne « Chez vous sous
+   10 jours… » est un DÉLAI, pas une promesse d'inclusion : elle reste.
+   Chaque ligne doit rester tenue par quelque chose :
    l'impression au plus près vient du réseau de l'imprimeur, qui route la
    commande vers l'atelier le plus proche de l'adresse (lib/atelier/
    cloudprinter.ts) ; le délai de dix jours de lib/atelier/urgence.ts ; la

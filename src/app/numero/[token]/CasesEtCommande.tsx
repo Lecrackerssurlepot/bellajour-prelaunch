@@ -127,7 +127,12 @@ export default function CasesEtCommande({
         <div className="nu-tarif-p">
           {prixConnu && nbPages ? (
             <>
-              <span className="nu-tarif-label">Impression et livraison comprises</span>
+              {/* « Impression et livraison comprises » jusqu'au 07/09/2026.
+                  Reformulé (chantier barème par pages) : la livraison sort du
+                  prix, son tarif attend la décision de Mathias — cette ligne
+                  ne doit plus promettre son inclusion. « Façonnage » est le
+                  mot déjà employé par la fiche du compte. */}
+              <span className="nu-tarif-label">Impression et façonnage compris</span>
               <span className="nu-tarif-value">
                 <b>{nbPages}</b> pages<span className="nu-tarif-sep"> · </span>
                 <b className="nu-tarif-prix">{formaterEuros(euros)}</b>

@@ -16,23 +16,33 @@
  * de la base) mais ne répondent pas à la même question, et ne tombent pas
  * forcément d'accord : 65 photos annoncent « autour de 40 € », l'atelier peut
  * en tirer 28 pages et facturer 30 €. C'est la couverture qui tranche.
+ *
+ * DEPUIS LE 07/09/2026, LES NOMBRES VIENNENT DE `grille.ts` — la source
+ * unique, partagée avec l'affichage (content.ts, depot/paliers.ts, JSON-LD
+ * de /magazine). Ce fichier-ci garde le CALCUL serveur (palier → centimes,
+ * quantité, fiscal) ; il ne porte plus les chiffres. Changer la grille =
+ * changer grille.ts, et tout suit.
  */
 
-export type PalierCle = "p30" | "p40" | "p45";
+import { GRILLE as GRILLE_SOURCE, type PalierCle } from "./grille";
+
+export type { PalierCle };
 
 type Entree = {
   cle: PalierCle;
   minPages: number;
   maxPages: number;
-  /** Impression et livraison comprises. */
+  /** TTC. Ce que le prix comprend exactement (livraison ou non) est en cours
+   *  d'arbitrage — voir docs/produit/PROPOSITION-CGV-LIVRAISON.md. */
   euros: number;
 };
 
-const GRILLE: Entree[] = [
-  { cle: "p30", minPages: 20, maxPages: 29, euros: 30 },
-  { cle: "p40", minPages: 30, maxPages: 39, euros: 40 },
-  { cle: "p45", minPages: 40, maxPages: 50, euros: 45 },
-];
+const GRILLE: Entree[] = GRILLE_SOURCE.map((g) => ({
+  cle: g.cle,
+  minPages: g.minPages,
+  maxPages: g.maxPages,
+  euros: g.euros,
+}));
 
 /** Le palier que /admin appliquera au nombre de pages composées (lot 7). */
 export function palierPourPages(nbPages: number): PalierCle | null {
@@ -111,9 +121,12 @@ export function formaterEuros(euros: number): string {
  */
 export const PAYS_LIVRAISON = ["FR", "BE", "LU"] as const;
 
-/* Le prix est le même dans toute la zone — port compris, quelle que soit la
- * destination. On absorbe l'écart de quelques euros entre Paris et Bruxelles
- * plutôt que d'afficher trois prix pour un même album.
+/* Le prix est le même dans toute la zone, quelle que soit la destination.
+ * (Port compris à ce jour ; la sortie de la livraison du prix est en cours
+ * d'arbitrage — T-072 / PROPOSITION-CGV-LIVRAISON.md. Le jour venu, le tarif
+ * de port se branchera par `shipping_options` dans /api/atelier/checkout,
+ * où la structure attend en commentaire.) On absorbe l'écart de quelques
+ * euros entre Paris et Bruxelles plutôt que d'afficher trois prix.
  *
  * SI CET ÉCART DEVIENT INTENABLE : la grille ci-dessus devient palier × zone,
  * `eurosPour(palier)` prend un second argument, et /api/atelier/checkout le

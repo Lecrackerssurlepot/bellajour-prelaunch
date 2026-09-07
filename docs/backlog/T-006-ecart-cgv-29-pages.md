@@ -20,4 +20,13 @@ Aligner — mais dans quel sens est une décision, pas une correction.
 corriger les trois langues des CGV (et `legal-source/*.docx`, qui a déjà une version de retard).
 Si c'est 28, c'est `prix.ts` qui change, et il faut vérifier qu'aucun numéro existant n'est à 29.
 ## Ce qui a été fait
-—
+**07/09/2026 — lot 5 « barème par tranches de pages » (PR draft `feat/bareme-pages`).**
+L'affichage du site s'aligne sur le CODE en attendant l'arbitrage : la source unique
+`src/lib/atelier/grille.ts` dit 20-29 / 30-39 / 40-50, et la page produit comme
+l'écran 5 du dépôt affichent désormais « 20 à 29 pages » (ils disaient 20-28/30-38,
+en contradiction avec ce que `prix.ts` facture depuis le début). Les CGV, elles,
+n'ont PAS bougé (interdit nº2) : les textes proposés pour les trois langues sont dans
+`docs/produit/PROPOSITION-CGV-LIVRAISON.md` §5.
+**Attend Mathias** : 28 ou 29 ? Si 29 → corriger l'annexe des CGV (3 langues + docx).
+Si 28 → changer `maxPages` dans `grille.ts` et vérifier qu'aucun numéro n'est à
+29 pages. Le ticket reste ouvert jusqu'à l'arbitrage.
