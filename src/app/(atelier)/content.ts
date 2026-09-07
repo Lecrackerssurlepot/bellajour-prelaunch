@@ -3,6 +3,8 @@
    et nulle part ailleurs — c'est ce qui rend l'invariant mécanique plutôt
    que déclaratif. Aucun bouton secondaire n'existe sur la homepage. */
 
+import { GRILLE, EUROS_MIN } from '@/lib/atelier/grille'
+
 export const CTA_LABEL = 'Composer avec l’atelier'
 export const CTA_MAGAZINE_LABEL = 'Découvrir les magazines'
 /* Quand un brouillon vit sur l'appareil (draftEnCours), les boutons vers
@@ -34,19 +36,31 @@ export const CTA_REPRISE_LABEL = 'Continuer la composition'
    cliente repartirait sur un dépôt vide en croyant reprendre le sien. */
 export const CTA_HREF = '/magazine'
 export const COMPOSER_HREF = '/composer'
-export const CTA_NOTE_PRICE = '30 €'
 
 export const CONTACT_EMAIL = 'contact@bellajour.com'
 
-/* Les trois paliers — affichage d'orientation sur la homepage.
-   Le prix FERME n'existe qu'à l'état 2, calculé sur le nombre de pages
-   (20-29 = 30 € · 30-39 = 40 € · 40-50 = 45 €). Le fascicule de bas de
-   grille le dit explicitement : rien n'est dû avant la couverture. */
-export const PALIERS = [
-  { photos: '40 à 59 photos', prix: '30 €', pages: '20 à 28 pages' },
-  { photos: '60 à 79 photos', prix: '40 €', pages: '30 à 38 pages' },
-  { photos: '80 à 100 photos', prix: '45 €', pages: '40 à 50 pages' },
-] as const
+/* Les trois paliers — affichage d'orientation sur la page produit.
+   DÉRIVÉS de la source unique `@/lib/atelier/grille` (07/09/2026) : les
+   bornes et les montants ne s'écrivent plus ici, ils ne peuvent donc plus
+   contredire le prix ferme calculé par prix.ts (qui dérive de la même
+   grille). Le prix FERME n'existe qu'à l'état 2, calculé sur le nombre de
+   pages composé par l'atelier ; rien n'est dû avant la couverture.
+
+   NOUVEL ORDRE D'AFFICHAGE (chantier barème par pages, 07/09) : les PAGES
+   en tête de carte — ce sont elles qui déterminent le prix —, puis le
+   prix, puis les photos en ligne secondaire (« ~40 à 59 photos », un
+   ordre de grandeur, d'où le tilde). L'espace insécable entre le montant
+   et € vient de la dérivation : un prix ne se coupe jamais en fin de
+   ligne. */
+export const PALIERS = GRILLE.map((g) => ({
+  pages: `${g.minPages} à ${g.maxPages} pages`,
+  prix: `${g.euros} €`,
+  photos: `~${g.photosMin} à ${g.photosMax} photos`,
+}))
+
+/* « dès 30 € » — le prix d'appel est le MIN de la grille, jamais
+   recopié à la main. */
+export const CTA_NOTE_PRICE = `${EUROS_MIN} €`
 
 /* Le titre de la bande parcours (lot 3, 07/09 — arbitrage T-086 rendu par
    Mathias : la bande gagne un vrai titre au lieu de flotter sans nom). */

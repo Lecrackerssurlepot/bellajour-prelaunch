@@ -13,22 +13,30 @@
  * en dessous, il n'y a pas de quoi composer un numéro.
  */
 
+import { GRILLE, type PalierCle } from '@/lib/atelier/grille';
+
 export const MIN_PHOTOS = 40;
 export const MAX_PHOTOS = 100;
 
 export type Palier = {
-  cle: 'p30' | 'p40' | 'p45';
+  cle: PalierCle;
   min: number;
   max: number;
   pages: string;
   autour: string;
 };
 
-const PALIERS: Palier[] = [
-  { cle: 'p30', min: 40, max: 59, pages: '20 à 28 pages', autour: 'autour de 30 €' },
-  { cle: 'p40', min: 60, max: 79, pages: '30 à 38 pages', autour: 'autour de 40 €' },
-  { cle: 'p45', min: 80, max: 100, pages: '40 à 50 pages', autour: 'autour de 45 €' },
-];
+/* DÉRIVÉ de la source unique `@/lib/atelier/grille` (07/09/2026) : les
+   bornes photos, les tranches de pages et les montants « autour de » sont
+   ceux de la grille, les mêmes que la page produit et que le prix ferme de
+   prix.ts. Les trois affichages ne peuvent plus se contredire. */
+const PALIERS: Palier[] = GRILLE.map((g) => ({
+  cle: g.cle,
+  min: g.photosMin,
+  max: g.photosMax,
+  pages: `${g.minPages} à ${g.maxPages} pages`,
+  autour: `autour de ${g.euros} €`,
+}));
 
 export function palierPour(n: number): Palier | null {
   return PALIERS.find((p) => n >= p.min && n <= p.max) ?? null;

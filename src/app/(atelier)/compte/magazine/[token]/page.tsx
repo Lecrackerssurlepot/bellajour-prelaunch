@@ -121,8 +121,11 @@ export default async function MagazinePage({
             <dd>Papier intérieur et couverture, façonnage compris</dd>
             {euros ? (
               <>
+                {/* « livraison comprise » retiré le 07/09/2026 (chantier
+                    barème par pages) : la livraison sort du prix, et pour un
+                    numéro déjà payé le montant seul dit tout. */}
                 <dt>Payé</dt>
-                <dd>{euros} €, livraison comprise</dd>
+                <dd>{euros} €</dd>
               </>
             ) : null}
             {livreLe ? (

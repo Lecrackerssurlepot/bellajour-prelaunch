@@ -263,6 +263,47 @@ export async function POST(request: Request) {
             ...PAYS_LIVRAISON,
           ] as Stripe.Checkout.SessionCreateParams.ShippingAddressCollection.AllowedCountry[],
         },
+
+        /* ─────────────── LIVRAISON FACTURÉE — PRÊT, PAS BRANCHÉ ───────────────
+           Chantier barème par pages (07/09/2026) : la livraison SORT du prix
+           de l'album, mais son tarif n'est pas décidé (interdit nº5 : on
+           n'invente pas un montant). Le jour où Mathias donne le tarif, la
+           structure ci-dessous s'active TELLE QUELLE — un seul endroit, le
+           serveur, jamais le navigateur — et il faudra EN MÊME TEMPS :
+             1. reformuler la description du line_item plus bas (elle dit
+                encore « impression et livraison comprises ») ;
+             2. mettre à jour les CGV selon
+                docs/produit/PROPOSITION-CGV-LIVRAISON.md (accord de Mathias) ;
+             3. réafficher le tarif côté pages (décision « on prépare sans
+                afficher », donc rien n'est montré aujourd'hui).
+
+        shipping_options: [
+          {
+            shipping_rate_data: {
+              display_name: "Livraison suivie",
+              type: "fixed_amount",
+              fixed_amount: {
+                // ⚠️ MONTANT À POSER PAR MATHIAS (en centimes). Zéro tant
+                // qu'il n'a pas tranché — ce bloc reste commenté d'ici là.
+                amount: 0,
+                currency: "eur",
+              },
+              // TTC, comme le prix de l'album : le total ne gonfle pas au
+              // moment de payer.
+              tax_behavior: "inclusive",
+              // Le port suit le régime fiscal du transport de biens chez
+              // Stripe Tax ("shipping" hérite du taux du bien transporté via
+              // txcd_92010001 si on veut l'expliciter).
+              // tax_code: "txcd_92010001",
+              delivery_estimate: {
+                // À aligner sur JOURS_LIVRAISON (lib/atelier/urgence.ts) le
+                // jour du branchement — jamais deux promesses différentes.
+                maximum: { unit: "business_day", value: 10 },
+              },
+            },
+          },
+        ],
+        ──────────────────────────────────────────────────────────────────── */
         /* Adresse de facturation exigée : une facture émise sans elle n'est
            pas complète, et Stripe Tax a besoin d'une adresse pour trancher.
            Checkout propose « identique à la livraison » — un clic. */
