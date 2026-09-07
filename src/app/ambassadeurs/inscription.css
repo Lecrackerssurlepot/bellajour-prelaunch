@@ -66,9 +66,14 @@
   width: 100%;
   transition: border-color var(--bj-dur-fast) var(--bj-ease);
 }
+/* Même correctif que le questionnaire et le compte (07/09) : l'anneau de
+   focus ne se retire que pour un focus à la souris. */
 .amb-reg-input:focus {
-  outline: none;
   border-color: var(--bj-action);
+}
+
+.amb-reg-input:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .amb-reg-check {

@@ -74,6 +74,25 @@ export function legalRouteMetadata(slug: string, lang: Locale, doc: LocalizedDoc
   return {
     title: `${d.title} — Bellajour`,
     alternates: legalAlternates(slug, lang, doc),
+    openGraph: legalOpenGraph(slug, lang, d.title),
+  }
+}
+
+/* ⚠️ NEXT N'HÉRITE PAS CHAMP PAR CHAMP DANS `openGraph` (piège D6).
+   Une page qui n'en déclare pas hérite le bloc ENTIER du layout racine —
+   titre, description ET url de la HOMEPAGE. Résultat, avant le 07/09 :
+   partager `/pt/cgv` sur WhatsApp affichait « Bellajour, chaque moment
+   mérite son numéro » avec l'adresse de l'accueil, alors que l'onglet du
+   navigateur, lui, disait bien « Conditions générales de vente ».
+   Le titre et l'adresse suffisent à corriger le mensonge ; la description
+   du layout reste juste (elle décrit la maison, pas la page), et on ne
+   réécrit AUCUN texte légal ici — T-083 s'en tenait déjà à cette règle. */
+export function legalOpenGraph(slug: string, lang: Locale, titre: string): Metadata['openGraph'] {
+  return {
+    type: 'website',
+    url: SITE + legalPath(slug, lang),
+    title: `${titre} — Bellajour`,
+    locale: lang === 'fr' ? 'fr_FR' : lang === 'pt' ? 'pt_PT' : 'en_GB',
   }
 }
 

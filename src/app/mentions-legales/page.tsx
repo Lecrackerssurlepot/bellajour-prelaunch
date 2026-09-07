@@ -2,13 +2,17 @@ import type { Metadata } from 'next'
 import { permanentRedirect } from 'next/navigation'
 import LegalPage from '../legal/LegalPage'
 import { MENTIONS_LEGALES } from '../legal/content/mentions-legales'
-import { legalAlternates, legalHref, pickLang, pickRef } from '../legal/resolve'
+import { legalAlternates, legalOpenGraph, legalHref, pickLang, pickRef } from '../legal/resolve'
 
 export const metadata: Metadata = {
   title: 'Mentions légales — Bellajour',
   description:
     'Mentions légales et informations précontractuelles Bellajour : éditeur, hébergeur, propriété intellectuelle, médiation.',
   alternates: legalAlternates('mentions-legales', 'fr', MENTIONS_LEGALES),
+  /* Sans ce bloc, un partage de cette page affiche la carte de
+     l'ACCUEIL : Next hérite l'openGraph entier du layout racine
+     (piège D6). Le titre et l'adresse suffisent à dire la vérité. */
+  openGraph: legalOpenGraph('mentions-legales', 'fr', 'Mentions légales'),
 }
 
 export default async function MentionsLegalesPage({
