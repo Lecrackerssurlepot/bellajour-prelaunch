@@ -11,14 +11,14 @@
    conteneur. Cette page-ci vit à la racine : la variable n'existe pas, la
    déclaration devient invalide au calcul, et la propriété retombe sur
    l'héritage — le titre s'affichait en DM Sans au lieu du Cormorant.
-   On capte donc les variables du layout RACINE sur `:root`, avant toute
-   redéfinition, et on s'en sert ici. */
-:root {
-  --nf-display: var(--font-display);
-  --nf-ui: var(--font-ui);
-}
-
+   ⚠️ Et depuis T-064, `--font-display` n'est même plus posée sur <html> :
+   la page la charge elle-même (`cormorantCreme.variable` sur `.nf`). L'alias
+   est donc déclaré SUR `.nf`, au même point que la variable next/font —
+   une propriété personnalisée fige sa substitution là où elle est déclarée,
+   pas là où elle est lue. */
 .nf {
+  --nf-display: var(--font-display), 'Cormorant Garamond', Georgia, serif;
+  --nf-ui: var(--font-ui), 'DM Sans', system-ui, sans-serif;
   display: grid;
   place-items: center;
   min-height: var(--app-height);

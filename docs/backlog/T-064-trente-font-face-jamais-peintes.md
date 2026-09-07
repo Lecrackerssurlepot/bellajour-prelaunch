@@ -44,3 +44,54 @@ merci, ambassadeurs + charte + espace, inviter, LegalPage). ⚠️ Deux dépenda
 `WebViewBanner` (rendu par le layout racine sur TOUTES les pages — vérifier sa police) et les
 pages d'erreur par défaut. `/numero` est autonome (son layout déclare ses polices). Toute page
 oubliée retombe sur Georgia/system-ui en silence : c'est la recette visuelle qui l'attrapera.
+
+**07/09/2026 — fait, en partie seulement : Cormorant sortie, DM Sans reste.**
+
+`WebViewBanner` lit `--bj-font-ui` (DM Sans) en dur, sur TOUTES les pages — c'est le
+bandeau « Ouvrir dans le navigateur » pour le trafic Instagram/Facebook en webview,
+exactement le public que ce chantier sert. La sortir aurait cassé sa police pour tout ce
+trafic. **DM Sans reste donc dans `layout.tsx` racine**, seule Cormorant Garamond
+(500/600 + italique) est sortie, dans `src/app/creme-fonts.ts`, posée par les pages qui
+la peignent réellement :
+- `src/app/admin/layout.tsx` (nouveau) — couvre `/admin` et tout `/admin/atelier/**` en
+  un seul fichier (aucun layout n'existait à ce niveau).
+- `src/app/ambassadeurs/layout.tsx` (nouveau) — couvre `/ambassadeurs`, `/ambassadeurs/charte`,
+  `/ambassadeurs/espace`.
+- `src/app/legal/LegalPage.tsx` — un seul composant partagé par les 12 routes légales
+  (`/cgv`, `/confidentialite`, `/mentions-legales`, `/remboursement` × fr/en/pt).
+- `src/app/merci/page.tsx`, `src/app/inviter/page.tsx` (ses deux branches `<main>`).
+
+⚠️ **Piège trouvé et corrigé pendant la vérification, pas anticipé au constat** :
+`--bj-font-display` (tokens.css) vaut `var(--font-display), 'Cormorant Garamond', Georgia,
+serif`. Une propriété personnalisée fige sa substitution LÀ OÙ ELLE EST DÉCLARÉE (`:root`),
+pas là où elle est lue. Puisque `--font-display` n'est plus posée sur `<html>`,
+`--bj-font-display` héritait INVALIDE jusqu'en bas pour toutes les pages crème, et chaque
+`h1`/`h2`/`h3` y retombait en SILENCE sur `--bj-font-ui` (DM Sans, hérité du body) — prouvé
+sur `/ambassadeurs` (« Le Cercle Ambassadeur » rendu en DM Sans, pas Cormorant) avant
+correction. Corrigé par une classe `.bj-creme-fonts` (tokens.css) qui redéclare
+`--bj-font-display` au même point que la variable next/font ; exportée avec elle sous
+`cormorantCremeClassName` (creme-fonts.ts) pour qu'on ne puisse plus poser l'une sans
+l'autre. **Sans cette classe, le correctif entier cassait silencieusement les titres de
+8 routes** — exactement le risque que la fiche originale nommait sans le prouver.
+
+**Vérifié dans le navigateur** (serveur de dev, port 3100), avant/après le correctif de la
+classe : `/`, `/magazine`, `/composer` (accueil, PDP, questionnaire — Cormorant atelier
+inchangée), `/ambassadeurs`, `/ambassadeurs/charte`, `/admin/login`, `/cgv`, `/inviter`
+(état invalide), `/merci` (état invalide) — tous avec `getComputedStyle` confirmant
+`font-family` = Cormorant Garamond sur les titres crème, DM Sans sur le corps partout.
+Capté à 375×812 et desktop. `/admin` (le dashboard) 500 en dev faute de
+`SUPABASE_URL`/`SUPABASE_SERVICE_KEY` dans ce worktree — sans lien avec ce correctif
+(confirmé par le log serveur), non vérifiable ici.
+
+**Mesuré au build** (`grep -o '@font-face' | wc -l` sur les chunks CSS produits) :
+- Avant : un seul chunk racine, chargé par LES 41 ROUTES, **30 `@font-face` / 13 311
+  octets**.
+- Après : ce chunk racine (DM Sans seule, toujours chargé partout) tombe à **21
+  `@font-face` / 6 131 octets** — soit **-9 déclarations / -7 180 octets sur `/`,
+  `/magazine`, `/composer` et `/numero`**, les quatre routes qui reçoivent le trafic
+  Instagram. La Cormorant sortie forme un second chunk (9 `@font-face` / ~7 188 octets)
+  chargé UNIQUEMENT par les pages crème — total quasi identique à l'ancien chunk combiné
+  pour elles (aucune régression, juste une deuxième requête au lieu d'une).
+
+`npx tsc --noEmit`, `npm run lint`, `npm run build` verts après le correctif complet
+(module + classe d'ancrage).

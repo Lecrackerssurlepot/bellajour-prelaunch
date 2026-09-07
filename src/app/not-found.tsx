@@ -9,13 +9,17 @@
    on rouvre une porte. */
 
 import Link from 'next/link'
+import { cormorantCreme } from './creme-fonts'
 import { CONTACT_EMAIL, CTA_HREF, CTA_MAGAZINE_LABEL } from './(atelier)/content'
 import './(atelier)/theme.css'
 import './not-found.css'
 
 export default function Introuvable() {
   return (
-    <div className="bj-atelier nf">
+    /* ⚠️ La police display N'EST PLUS sur <html> depuis T-064 : cette page
+       vit à la racine, elle doit donc la poser elle-même, comme les pages
+       crème. Sans ça le titre retombe en silence sur DM Sans. */
+    <div className={`bj-atelier nf ${cormorantCreme.variable}`}>
       <div className="nf-in">
         <p className="nf-kicker">Bellajour</p>
         <h1 className="nf-mot">Cette page n’existe pas.</h1>

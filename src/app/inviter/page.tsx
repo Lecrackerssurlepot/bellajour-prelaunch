@@ -5,7 +5,12 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import InviterReferral from './InviterReferral'
 import { isValidRefCode } from '@/lib/validation'
+import { cormorantCremeClassName } from '../creme-fonts'
 import './inviter.css'
+
+/* T-064 — Cormorant du monde CRÈME (creme-fonts.ts), déplacée hors du layout
+   racine : posée directement sur les deux <main> (pas de wrapper, le layout
+   du dossier est un passthrough volontaire, cf. inviter/layout.tsx). */
 
 function InviterClient() {
   const searchParams = useSearchParams()
@@ -34,7 +39,7 @@ function InviterClient() {
 
   if (!refCode) {
     return (
-      <main className="inviter inviter--error" data-theme="light">
+      <main className={`inviter inviter--error ${cormorantCremeClassName}`} data-theme="light">
         <img src="/images/ui/logo.webp" alt="Bellajour" className="inviter-logo" />
         <h1 className="inviter-title">Lien de parrainage invalide.</h1>
         <p className="inviter-sub">Le lien que vous avez suivi est incomplet ou ne correspond à aucun code Bellajour.</p>
@@ -48,7 +53,7 @@ function InviterClient() {
     : 'Partagez votre code avec vos proches.'
 
   return (
-    <main className="inviter" data-theme="light">
+    <main className={`inviter ${cormorantCremeClassName}`} data-theme="light">
       <img src="/images/ui/logo.webp" alt="Bellajour" className="inviter-logo" />
       <h1 className="inviter-title">Votre lien de parrainage</h1>
       <p className="inviter-sub">{subtitle}</p>

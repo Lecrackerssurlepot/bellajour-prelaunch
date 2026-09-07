@@ -1,29 +1,19 @@
 import type { Metadata } from 'next'
-import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
+import { DM_Sans } from 'next/font/google'
 import './globals.css'
 import WebViewBanner from './components/WebViewBanner'
 import Mesure from './components/Mesure'
 
 /* Fonts DA (charte) chargées via next/font (self-host, zéro FOUC, pas de
    requête runtime vers fonts.gstatic.com). Exposées en variables CSS et
-   branchées sur --bj-font-display / --bj-font-ui dans tokens.css. */
-const cormorant = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['500', '600'],
-  style: ['normal', 'italic'],
-  variable: '--font-display',
-  display: 'swap',
-  /* PAS de prechargement : ces deux faces (500 romain + 500 italique, 75 Ko)
-     servent /preventes, /ambassadeurs, /admin, /legal, /merci, /inviter et
-     /lancement, mais JAMAIS la page d'accueil ni /composer, qui redefinissent
-     --font-display sur .bj-atelier vers Cormorant 400 ((atelier)/layout.tsx).
-     Le layout etant RACINE, prechargement = 75 Ko en priorite haute sur toutes
-     les pages, dont celles qui ne peindront jamais ces faces. Mesure du
-     27/08/2026. Contrepartie assumee : un echange de police au premier
-     affichage des pages qui s'en servent vraiment, deja en `display: swap`. */
-  preload: false,
-})
-
+   branchées sur --bj-font-display / --bj-font-ui dans tokens.css.
+   ⚠️ T-064 (07/09/2026) — Cormorant Garamond 500/600 n'est PLUS ici : elle a
+   déménagé dans `creme-fonts.ts`, posée par page. Cette racine sert AUSSI /,
+   /magazine, /composer et /numero, qui ne peignent jamais ces faces (ils
+   redéfinissent --font-display en Cormorant 400 sous .bj-atelier) — ils
+   payaient pourtant la moitié des ~30 `@font-face` du chunk racine pour rien.
+   DM Sans, elle, reste : `WebViewBanner` juste en dessous la lit sur TOUTES
+   les pages, atelier compris. */
 const dmSans = DM_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
@@ -119,7 +109,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="fr"
-      className={`${cormorant.variable} ${dmSans.variable}`}
+      className={dmSans.variable}
       /* APP_HEIGHT_SCRIPT pose --app-height en inline style sur <html> avant
          l'hydratation → attendu, on supprime l'avertissement de mismatch. */
       suppressHydrationWarning
