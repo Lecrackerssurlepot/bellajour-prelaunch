@@ -153,6 +153,26 @@ disent l'état final.
 `email_canonical` fait tout le travail en attendant. C'est exactement le revers documenté dans
 `supabase/CLAUDE.md` : après la migration, vérifier que `numeros.compte_id` se remplit vraiment.
 
+## ✅ Les comptes des fondateurs sont pré-créés — 07/09/2026
+
+`scripts/creer-comptes-fondateurs.ts --vraiment`, sur accord explicite de Mathias.
+**12 créés, 1 existant (le sien, né de sa connexion Google), 0 raté. AUCUN mail n'est parti**,
+conformément à sa décision du 04/09 : chacun entrera par « mot de passe oublié » ou par Google.
+
+`auth.users` porte donc **13 comptes**, tous avec email confirmé — c'est ce qui allume le
+rapprochement par `email_canonical` (invariant nº2 : il exige un email prouvé). 12 ne se sont
+jamais connectés, ce qui est normal.
+
+⚠️ **Le socle parle de « quatorze fondateurs », la base en donne TREIZE** (`offer_type=founder`,
+`status=confirmed`, `numero_fondateur` non nul). Les numéros vont de 2 à 15 avec deux trous : ni
+nº1 ni nº10. Ce n'est peut-être pas une anomalie (place non confirmée, numérotation qui commence
+à 2), mais l'écart est réel et n'a pas été tranché. Signalé à Mathias le 07/09.
+
+✅ **La canonicalisation prouve son utilité tout de suite** : le compte de Klervie est créé sur
+`klervie.bdn@gmail.com` (avec le point) alors que son dossier porte `klerviebdn@gmail.com`.
+Gmail ignorant les points, `canonicalizeEmail` fait correspondre les deux — sans elle, elle
+n'aurait pas retrouvé son numéro. Vérifié : Marjorie et Klervie voient bien leur dossier.
+
 ## ✅ L'ESPACE COMPTE EST OUVERT AU PUBLIC — 06/09/2026
 
 Les deux variables `BREVO_TEMPLATE_C1_ID=42` et `C2_ID=43` sont posées sur Vercel (Preview ET
