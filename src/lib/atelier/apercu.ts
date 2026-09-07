@@ -56,6 +56,17 @@ export type Apercu = {
   /** 0 à `MAX_DOUBLES` doubles pages résolues, dans l'ordre d'affichage. */
   doubles: string[];
   /**
+   * Le CADRAGE de chaque double page, ALIGNÉ sur `doubles` — une valeur
+   * `object-position` CSS (« 50% 30% »), chaîne vide quand rien n'est réglé.
+   *
+   * En base, les cadrages sont une map indexée par CLÉ de coffre : l'atelier
+   * réordonne et retire des pages, et un tableau indexé par rang associerait
+   * le cadrage de l'une à l'image de l'autre au premier glissé. Mais le
+   * navigateur ne voit que des URL signées, jamais les clés : on aligne donc
+   * ici, au seul endroit qui connaît encore les deux.
+   */
+  doublesCadrage: string[];
+  /**
    * ⚠️ RÉTROCOMPAT : la PREMIÈRE double page (= `doubles[0]`). Le format
    * historique n'écrit qu'une seule double page sous la clé `double` ; les
    * écrans qui n'ont pas encore migré vers `doubles` lisent encore ce champ.
@@ -64,7 +75,7 @@ export type Apercu = {
   double: string | null;
 };
 
-const VIDE: Apercu = { plat: null, plats: [], c1: null, c4: null, doubles: [], double: null };
+const VIDE: Apercu = { plat: null, plats: [], c1: null, c4: null, doubles: [], double: null, doublesCadrage: [] };
 
 function lire(source: Record<string, unknown>, ...noms: string[]): string | null {
   for (const nom of noms) {
@@ -101,6 +112,28 @@ export function lireDoublesBrutes(source: Record<string, unknown>): string[] {
 export function lirePlanchesBrutes(source: Record<string, unknown>): string[] {
   return lireListe(source, ["plats", "planches", "couvertures"],
     ["plat", "couverture_plat", "a_plat"], MAX_PLANCHES);
+}
+
+/**
+ * Les cadrages, tels quels : une map clé de coffre → `object-position`.
+ *
+ * Sévèrement filtrée, parce que cette valeur part dans un attribut `style`
+ * côté navigateur : uniquement des pourcentages et des mots-clés simples,
+ * deux composantes au plus. Tout le reste est ignoré — une chaîne libre
+ * venue de la base n'a rien à faire dans du CSS.
+ */
+const CADRAGE_SUR = /^(\d{1,3}(\.\d+)?%|left|right|center|top|bottom)( (\d{1,3}(\.\d+)?%|left|right|center|top|bottom))?$/;
+
+export function lireCadrages(source: Record<string, unknown>): Record<string, string> {
+  const brut = source.cadrages;
+  if (!brut || typeof brut !== "object" || Array.isArray(brut)) return {};
+  const sortie: Record<string, string> = {};
+  for (const [cle, valeur] of Object.entries(brut as Record<string, unknown>)) {
+    if (typeof valeur !== "string") continue;
+    const v = valeur.trim();
+    if (CADRAGE_SUR.test(v)) sortie[cle] = v;
+  }
+  return sortie;
 }
 
 /**
@@ -145,18 +178,35 @@ export async function resoudreApercu(brut: unknown): Promise<Apercu> {
   if (!brut || typeof brut !== "object" || Array.isArray(brut)) return VIDE;
   const source = brut as Record<string, unknown>;
 
+  /* Les clés BRUTES sont gardées : ce sont elles qui portent les cadrages,
+     et elles disparaissent une fois signées. */
+  const doublesBrutes = lireDoublesBrutes(source);
+  const cadrages = lireCadrages(source);
+
   const [platsResolues, c1, c4, doublesResolues] = await Promise.all([
     Promise.all(lirePlanchesBrutes(source).map(resoudre)),
     resoudre(lire(source, "c1", "couverture", "recto")),
     resoudre(lire(source, "c4", "dos", "verso")),
-    Promise.all(lireDoublesBrutes(source).map(resoudre)),
+    Promise.all(doublesBrutes.map(resoudre)),
   ]);
 
   /* Une double page qui ne se résout pas (clé morte) est retirée plutôt que de
      laisser un trou dans la visionneuse — même règle que les couvertures.
      Vaut aussi pour les planches : une couverture proposée dont la clé est
      morte disparaît du choix au lieu d'y laisser un cadre vide. */
-  const doubles = doublesResolues.filter((x): x is string => x !== null);
+  /* On filtre les clés mortes EN GARDANT l'alignement du cadrage : d'où le
+     passage par les index plutôt qu'un `filter` sur chaque liste séparément. */
+  const gardees = doublesResolues
+    .map((url, i) => ({ url, cadrage: cadrages[doublesBrutes[i]] ?? "" }))
+    .filter((x): x is { url: string; cadrage: string } => x.url !== null);
   const plats = platsResolues.filter((x): x is string => x !== null);
-  return { plat: plats[0] ?? null, plats, c1, c4, doubles, double: doubles[0] ?? null };
+  return {
+    plat: plats[0] ?? null,
+    plats,
+    c1,
+    c4,
+    doubles: gardees.map((x) => x.url),
+    double: gardees[0]?.url ?? null,
+    doublesCadrage: gardees.map((x) => x.cadrage),
+  };
 }

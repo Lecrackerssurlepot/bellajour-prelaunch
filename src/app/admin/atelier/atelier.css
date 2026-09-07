@@ -1894,8 +1894,17 @@
   border: 1px solid var(--bj-action-border);
   border-radius: var(--bj-r-sm);
   background: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
+  /* On tire l'image dans son cadre pour la recadrer (T-090, 07/09).
+     ⚠️ `touch-action: none` est OBLIGATOIRE : sans lui, sur tablette le
+     navigateur prend le geste pour un défilement et l'image ne bouge jamais.
+     `user-select` évite la sélection fantôme pendant le glissé. La tuile
+     « + » redit `cursor: pointer` juste en dessous — elle, on la clique. */
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
+.ate-double-zone:active { cursor: grabbing; }
+
 .ate-double-zone--ajout {
   border-style: dashed;
   cursor: pointer;

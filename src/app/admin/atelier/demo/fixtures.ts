@@ -516,11 +516,11 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
        doubles pages, dans leurs gestionnaires réordonnables. Un dossier non
        publié n'a encore rien. */
     apercu: publie
-      ? { plat: PHOTOS[10], plats: [PHOTOS[10], PHOTOS[11]], c1: null, c4: null, doubles: [PHOTOS[2], PHOTOS[3]], double: PHOTOS[2] }
-      : { plat: null, plats: [], c1: null, c4: null, doubles: [], double: null },
+      ? { plat: PHOTOS[10], plats: [PHOTOS[10], PHOTOS[11]], c1: null, c4: null, doubles: [PHOTOS[2], PHOTOS[3]], double: PHOTOS[2], doublesCadrage: ["", ""] }
+      : { plat: null, plats: [], c1: null, c4: null, doubles: [], double: null, doublesCadrage: [] },
     apercuBrut: publie
-      ? { plat: PHOTOS[10], plats: [PHOTOS[10], PHOTOS[11]], c1: null, c4: null, doubles: [PHOTOS[2], PHOTOS[3]], double: PHOTOS[2] }
-      : { plat: null, plats: [], c1: null, c4: null, doubles: [], double: null },
+      ? { plat: PHOTOS[10], plats: [PHOTOS[10], PHOTOS[11]], c1: null, c4: null, doubles: [PHOTOS[2], PHOTOS[3]], double: PHOTOS[2], cadrages: {} }
+      : { plat: null, plats: [], c1: null, c4: null, doubles: [], double: null, cadrages: {} },
     adresse: g.paye
       ? {
           nom: `${g.prenom} ${g.email.split("@")[0].split(".")[1] ?? ""}`.trim(),

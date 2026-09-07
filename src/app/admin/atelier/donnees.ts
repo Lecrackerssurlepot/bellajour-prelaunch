@@ -16,7 +16,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
 import { signerGet } from "@/lib/atelier/r2";
-import { resoudreApercu, lireDoublesBrutes, lirePlanchesBrutes } from "@/lib/atelier/apercu";
+import { resoudreApercu, lireDoublesBrutes, lirePlanchesBrutes, lireCadrages } from "@/lib/atelier/apercu";
 import { eurosPour, type PalierCle } from "@/lib/atelier/prix";
 import {
   ETAPE_ETAT,
@@ -871,6 +871,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
          Même lecteur que la page cliente : tableau `plats` neuf, ou `plat`
          unique historique traité comme une liste d'un élément. */
       plats: lirePlanchesBrutes(brut),
+      cadrages: lireCadrages(brut),
     },
     adresse: versAdresse(n.adresse_livraison),
     stripePaymentIntent: (n.stripe_payment_intent as string) ?? null,

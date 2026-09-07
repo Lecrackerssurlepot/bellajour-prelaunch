@@ -230,9 +230,20 @@ export type Fiche = {
       `plat` (T2-2) : la couverture à plat — présent, il remplace c1/c4.
       `doubles` (T-090) : 0 à trois doubles pages, dans l'ordre d'affichage ;
       `double` reste `doubles[0]` pour les écrans non encore migrés. */
-  apercu: { plat: string | null; plats: string[]; c1: string | null; c4: string | null; doubles: string[]; double: string | null };
+  apercu: { plat: string | null; plats: string[]; c1: string | null; c4: string | null; doubles: string[]; double: string | null; doublesCadrage: string[] };
   /** Les valeurs brutes (clés de coffre), pour préremplir le formulaire. */
-  apercuBrut: { plat: string | null; plats: string[]; c1: string | null; c4: string | null; doubles: string[]; double: string | null };
+  apercuBrut: {
+    plat: string | null;
+    plats: string[];
+    c1: string | null;
+    c4: string | null;
+    doubles: string[];
+    double: string | null;
+    /* Les cadrages TELS QU'EN BASE : indexés par clé de coffre, parce que
+       l'admin manipule les clés (il réordonne, il remplace) là où la page
+       cliente ne voit que des URL signées. */
+    cadrages: Record<string, string>;
+  };
   adresse: AdresseVue | null;
   stripePaymentIntent: string | null;
   photos: PhotoVue[];

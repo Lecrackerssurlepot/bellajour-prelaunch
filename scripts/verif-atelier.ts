@@ -219,6 +219,43 @@ const ancienAppel = preparerTransition("publier_apercu", "photos_recues",
   { nb_pages: 34, apercu_plat: "k/seul.jpg" });
 ok("publier : l'ancien champ `apercu_plat` seul marche toujours",
    ancienAppel.ok && JSON.stringify(ancienAppel.patch.apercu_urls) === JSON.stringify({ plat: "k/seul.jpg" }));
+
+/* ── le cadrage des doubles pages (T-090, 07/09) ──────────────────────────
+   Une valeur `object-position` qui finit dans un attribut `style` : on ne
+   garde que la forme attendue, et seulement pour les pages publiees. */
+const cadre = preparerTransition("publier_apercu", "photos_recues", {
+  nb_pages: 34,
+  apercu_plat: "k/p.jpg",
+  apercu_doubles: ["k/d1.jpg", "k/d2.jpg"],
+  apercu_cadrages: { "k/d1.jpg": "50% 30%", "k/d2.jpg": "top" },
+});
+const urlsCadre = cadre.ok ? (cadre.patch.apercu_urls as Record<string, unknown>) : {};
+ok("cadrage : les valeurs valides sont ecrites",
+   cadre.ok && JSON.stringify(urlsCadre.cadrages) === JSON.stringify({ "k/d1.jpg": "50% 30%", "k/d2.jpg": "top" }));
+
+const cadreSale = preparerTransition("publier_apercu", "photos_recues", {
+  nb_pages: 34,
+  apercu_plat: "k/p.jpg",
+  apercu_doubles: ["k/d1.jpg"],
+  apercu_cadrages: {
+    "k/d1.jpg": "url(javascript:alert(1))",
+    "k/absente.jpg": "50% 50%",
+  },
+});
+const urlsSale = cadreSale.ok ? (cadreSale.patch.apercu_urls as Record<string, unknown>) : {};
+ok("cadrage : une valeur qui n'est pas une position est REFUSEE",
+   cadreSale.ok && urlsSale.cadrages === undefined);
+ok("cadrage : une cle qui ne correspond a aucune page publiee est ignoree",
+   cadreSale.ok && urlsSale.cadrages === undefined);
+
+const sansCadrage = preparerTransition("publier_apercu", "photos_recues", {
+  nb_pages: 34,
+  apercu_plat: "k/p.jpg",
+  apercu_doubles: ["k/d1.jpg"],
+});
+const urlsSans = sansCadrage.ok ? (sansCadrage.patch.apercu_urls as Record<string, unknown>) : {};
+ok("cadrage : rien de regle -> aucune cle `cadrages` en base (cas normal inchange)",
+   sansCadrage.ok && !("cadrages" in urlsSans));
 const mauvaisEtat = preparerTransition("publier_maquette", "photos_recues", { canva_url: "https://x.fr" });
 ok("publier la maquette depuis l'etat 1 refuse", !mauvaisEtat.ok && mauvaisEtat.erreurs[0].champ === "etat");
 ok("lien javascript: refuse", !preparerTransition("publier_maquette", "payee", { canva_url: "javascript:alert(1)" }).ok);

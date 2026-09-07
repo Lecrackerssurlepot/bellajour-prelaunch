@@ -130,6 +130,18 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
       preview: fiche.apercu.doubles[i] ?? "",
     })),
   );
+  /* Le cadrage de chaque double page, indexé par sa CLÉ de coffre : la clé
+     survit au réordonnancement, le rang non. Vide = centré. */
+  const [cadrages, setCadrages] = useState<Record<string, string>>(
+    () => fiche.apercuBrut.cadrages,
+  );
+  /* Le recadrage en cours : la vignette qu'on tient, et d'où on est parti.
+     Une ref — elle ne pilote aucun rendu, elle survit juste au geste. */
+  const recadre = useRef<{ id: string; cle: string; x: number; y: number; px: number; py: number; bouge: boolean } | null>(null);
+  /* Vrai pendant qu'on recadre : le glissé de RÉORDONNANCEMENT est alors
+     désarmé, sinon les deux gestes se disputent le même doigt. */
+  const [recadrant, setRecadrant] = useState<string | null>(null);
+
   /* L'id de la double page qu'on est en train de glisser. Une ref, pas un
      état : elle ne pilote aucun rendu, elle survit juste au drag. */
   const glisse = useRef<string | null>(null);
@@ -301,6 +313,60 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
 
   /* Réordonner par glissé : on déplace la double saisie à la place de la
      cible. Aucune librairie — HTML5 drag, comme le reste du dépôt. */
+  /* ── LE RECADRAGE, AU DOIGT SUR LA VIGNETTE ────────────────────────────
+     On tire l'image dans son cadre, comme partout ailleurs : pas de curseur
+     à régler, pas de champ à remplir. Le déplacement est converti en
+     pourcentages `object-position`, bornés à [0,100] — au-delà, l'image
+     décollerait de son cadre et laisserait du vide.
+     `setPointerCapture` : le doigt peut sortir de la vignette sans que le
+     geste se coupe, ce qui arrive tout le temps sur une petite tuile. */
+  function litCadrage(cle: string): [number, number] {
+    const v = cadrages[cle];
+    if (!v) return [50, 50];
+    const [x, y] = v.split(" ");
+    return [parseFloat(x) || 50, parseFloat(y ?? "") || 50];
+  }
+
+  function debutRecadrage(e: React.PointerEvent, id: string, cle: string) {
+    if (envoiEnCours !== null) return;
+    const [px, py] = litCadrage(cle);
+    recadre.current = { id, cle, x: e.clientX, y: e.clientY, px, py, bouge: false };
+    setRecadrant(id);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function pendantRecadrage(e: React.PointerEvent) {
+    const r = recadre.current;
+    if (!r) return;
+    const boite = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    if (!boite.width || !boite.height) return;
+    /* Tirer l'image vers la gauche montre sa DROITE : d'où le signe négatif.
+       Le facteur 100 rapporte le déplacement à la taille de la vignette. */
+    /* Un doigt tremble : sous 4 px on ne recadre pas, et le geste reste un
+       clic — celui qui remplace l'image. */
+    if (!r.bouge && Math.abs(e.clientX - r.x) < 4 && Math.abs(e.clientY - r.y) < 4) return;
+    r.bouge = true;
+    const dx = ((e.clientX - r.x) / boite.width) * -100;
+    const dy = ((e.clientY - r.y) / boite.height) * -100;
+    const x = Math.round(Math.min(100, Math.max(0, r.px + dx)));
+    const y = Math.round(Math.min(100, Math.max(0, r.py + dy)));
+    setCadrages((c) => ({ ...c, [r.cle]: `${x}% ${y}%` }));
+  }
+
+  function finRecadrage() {
+    if (!recadre.current) return;
+    recadre.current = null;
+    setRecadrant(null);
+    setVerif(null);
+  }
+
+  /* Le clic n'ouvre le sélecteur de fichier QUE si le doigt n'a pas recadré :
+     sans ça, chaque recadrage finirait par une boîte de dialogue. */
+  function clicVignette(id: string) {
+    if (recadre.current?.bouge) return;
+    inputs.current[`double-${id}`]?.click();
+  }
+
   function deposerSur(cibleId: string) {
     const src = glisse.current;
     glisse.current = null;
@@ -402,6 +468,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
             ...saisie,
             apercu_plats: planches.map((p) => p.key),
             apercu_doubles: doubles.map((d) => d.key),
+            apercu_cadrages: cadrages,
           },
           verifier,
         }),
@@ -710,14 +777,18 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                       ajouter tant qu'on n'a pas atteint le maximum. */}
                   <div className="ate-doubles">
                     <span className="ate-slot-label">
-                      Doubles pages <span className="ate-faint">— facultatif, jusqu&apos;à {MAX_DOUBLES}. Glisser pour ranger.</span>
+                      Doubles pages{" "}
+                      <span className="ate-faint">
+                        — facultatif, jusqu&apos;à {MAX_DOUBLES}. Glisser la tuile pour ranger,
+                        glisser l&apos;image pour la recadrer.
+                      </span>
                     </span>
                     <div className="ate-doubles-liste">
                       {doubles.map((d, i) => (
                         <div
                           key={d.id}
                           className="ate-double"
-                          draggable={envoiEnCours === null}
+                          draggable={envoiEnCours === null && recadrant === null}
                           onDragStart={() => {
                             glisse.current = d.id;
                           }}
@@ -730,14 +801,28 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                           <button
                             type="button"
                             className="ate-double-zone ate-slot-zone--pleine"
-                            onClick={() => inputs.current[`double-${d.id}`]?.click()}
+                            onClick={() => clicVignette(d.id)}
+                            onPointerDown={(e) => debutRecadrage(e, d.id, d.key)}
+                            onPointerMove={pendantRecadrage}
+                            onPointerUp={finRecadrage}
+                            onPointerCancel={finRecadrage}
                             disabled={envoiEnCours !== null}
-                            title="Remplacer cette double page"
+                            title="Glisser pour recadrer, cliquer pour remplacer"
                           >
                             {envoiEnCours === `double-${d.id}` ? (
                               <span className="ate-slot-vide">Envoi…</span>
                             ) : (
-                              <img src={d.preview} alt="" className="ate-slot-img" />
+                              <img
+                                src={d.preview}
+                                alt=""
+                                className="ate-slot-img"
+                                draggable={false}
+                                style={
+                                  cadrages[d.key]
+                                    ? { objectPosition: cadrages[d.key] }
+                                    : undefined
+                                }
+                              />
                             )}
                             <span className="ate-double-rang" aria-hidden="true">
                               {i + 1}

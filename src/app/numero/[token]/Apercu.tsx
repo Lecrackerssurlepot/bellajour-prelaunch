@@ -42,6 +42,8 @@ type Vue = {
   legende: string
   loupe: string
   cadre: Cadre
+  /* Le cadrage réglé par l'atelier (`object-position`). Vide = centré. */
+  cadrage?: string
   /* T-093 — le rang de la couverture que cette vue montre (0 = celle
      proposée par défaut). Absent sur les doubles pages : on ne choisit pas
      une double page, on choisit une couverture. */
@@ -54,6 +56,7 @@ export default function Apercu({
   c1,
   c4,
   doubles,
+  doublesCadrage = [],
   token,
   modifiable = false,
 }: {
@@ -64,6 +67,8 @@ export default function Apercu({
   c1: string | null
   c4: string | null
   doubles: string[]
+  /** Le cadrage de chaque double page, aligné sur `doubles`. Vide = centré. */
+  doublesCadrage?: string[]
   /** Nécessaire pour enregistrer le choix. Absent sur le magazine livré. */
   token?: string
   /** T-093 : le mot rassurant n'a de sens QUE tant que la maquette n'est pas
@@ -116,7 +121,7 @@ export default function Apercu({
   }
   doubles.forEach((src, k) => {
     const nom = doubles.length > 1 ? `Double page ${k + 1}` : 'Une double page'
-    vues.push({ src, legende: nom, loupe: nom, cadre: 'ouverte' })
+    vues.push({ src, legende: nom, loupe: nom, cadre: 'ouverte', cadrage: doublesCadrage[k] })
   })
 
   /* La loupe ne connaît que ce qui existe, une fois chacun. */
@@ -228,7 +233,17 @@ export default function Apercu({
                   <span className="nu-viz-mag">
                     <span className="nu-viz-mag-face">
                       {/* <img> plain — next/image est proscrit sur ce dépôt (CLAUDE.md). */}
-                      <img src={v.src} alt={v.legende} loading={k === 0 ? 'eager' : 'lazy'} decoding="async" />
+                      {/* Le cadrage vient de l'atelier, jamais de la page :
+                          une image plus large que son cadre est coupée, et
+                          c'est lui qui décide où. Absent = centré, comme
+                          toujours. */}
+                      <img
+                        src={v.src}
+                        alt={v.legende}
+                        loading={k === 0 ? 'eager' : 'lazy'}
+                        decoding="async"
+                        style={v.cadrage ? { objectPosition: v.cadrage } : undefined}
+                      />
                       <span className="nu-viz-mag-pli" aria-hidden="true" />
                     </span>
                   </span>

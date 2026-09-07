@@ -382,6 +382,7 @@ export default async function NumeroPage({
             c1={apercu?.c1 ?? null}
             c4={apercu?.c4 ?? null}
             doubles={apercu?.doubles ?? []}
+            doublesCadrage={apercu?.doublesCadrage ?? []}
             token={numero.token}
             modifiable
           />
