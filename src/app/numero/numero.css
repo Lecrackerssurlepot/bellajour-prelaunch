@@ -583,6 +583,18 @@
   transform: scale(1.3);
 }
 
+/* Le mot rassurant (T-093) : SEULE la visionneuse encore modifiable le
+   porte (`modifiable`, Apercu.tsx) — le magazine LIVRÉ (/compte/magazine)
+   ne le passe pas. Pas de marge à protéger de la règle de spécificité
+   `.bj-atelier p { margin: 0 }` (voir la note ligne ~183 de ce fichier) :
+   l'espacement vient du `gap` de `.nu-viz-bas`. */
+.nu-viz-note {
+  max-width: 42ch;
+  text-align: center;
+  font-size: 13px;
+  color: var(--c-text-faint);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nu-viz-track { transition-duration: 0.01ms; }
 }

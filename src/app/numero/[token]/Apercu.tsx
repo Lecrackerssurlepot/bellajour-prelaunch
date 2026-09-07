@@ -26,7 +26,7 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Reveal from '../../(atelier)/components/Reveal'
 import Loupe, { type VueLoupe } from '../../components/Loupe'
 
@@ -44,11 +44,16 @@ export default function Apercu({
   c1,
   c4,
   doubles,
+  modifiable = false,
 }: {
   plat: string | null
   c1: string | null
   c4: string | null
   doubles: string[]
+  /** T-093 : le mot rassurant n'a de sens QUE tant que la maquette n'est pas
+      figée. Le magazine LIVRÉ (/compte/magazine) réutilise ce même composant
+      sans le passer — il serait mensonger une fois l'objet imprimé. */
+  modifiable?: boolean
 }) {
   const [ouvert, setOuvert] = useState<number | null>(null)
   const [i, setI] = useState(0)
@@ -77,6 +82,31 @@ export default function Apercu({
   const agrandissables: VueLoupe[] = vues
     .filter((v, k, tous) => tous.findIndex((a) => a.loupe === v.loupe) === k)
     .map((v) => ({ src: v.src, legende: v.loupe }))
+
+  /* Navigation clavier ‹ › — la scène répondait déjà au glissé et aux
+     chevrons, mais pas au clavier. SANS bouclage (contrairement à Loupe.tsx,
+     qui tourne l'objet) : cohérent avec les chevrons ‹ › ici désactivés aux
+     extrémités. Deux gardes : la loupe a déjà son propre handler clavier
+     (Escape/←/→, cyclique) sur `window` — on se tait tant qu'elle est
+     ouverte pour ne pas lui marcher dessus ; et un focus dans un champ de
+     saisie garde ses flèches (déplacer le curseur, pas la page). L'effet ne
+     dépend que de primitives stables (pas de `idx` ni de `vues` en entier) :
+     `setI` en fonction met à jour sans réabonner l'écouteur à chaque page
+     tournée. */
+  useEffect(() => {
+    if (ouvert !== null || vues.length < 2) return
+    function auClavier(e: KeyboardEvent) {
+      const cible = e.target
+      if (cible instanceof HTMLElement) {
+        const nom = cible.tagName
+        if (nom === 'INPUT' || nom === 'TEXTAREA' || nom === 'SELECT' || cible.isContentEditable) return
+      }
+      if (e.key === 'ArrowRight') setI((v) => Math.min(vues.length - 1, v + 1))
+      else if (e.key === 'ArrowLeft') setI((v) => Math.max(0, v - 1))
+    }
+    window.addEventListener('keydown', auClavier)
+    return () => window.removeEventListener('keydown', auClavier)
+  }, [ouvert, vues.length])
 
   /* Aucun visuel (cas théorique : les visuels sont exigés à la publication) :
      on ne rend rien plutôt qu'une scène vide. La page garde son titre et ses
@@ -180,6 +210,12 @@ export default function Apercu({
                 />
               ))}
             </div>
+          )}
+          {modifiable && (
+            <p className="nu-viz-note">
+              Ces pages restent entièrement modifiables à la création de votre maquette. Aucune
+              inquiétude.
+            </p>
           )}
         </div>
       </div>
