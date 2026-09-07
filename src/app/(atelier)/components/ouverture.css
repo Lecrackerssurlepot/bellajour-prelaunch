@@ -23,11 +23,23 @@
 .at-accueil { position: relative; }
 
 /* ---- grain de surface : aucun aplat parfaitement plat ---- */
+/* T-062 (07/09/2026) — `mix-blend-mode` sur un `position:fixed` plein écran
+   oblige le compositeur à refondre le calque avec tout ce qui défile
+   dessous, à chaque frame : c'est le prix du fondu, il ne se supprime pas
+   sans changer l'aspect (interdit). `translateZ(0)` + `will-change` ne
+   changent pas un pixel — le grain ne bouge jamais — mais forcent le
+   navigateur à garder ce calque SÉPARÉ (sa propre texture GPU) au lieu de le
+   re-rasteriser avec la page à chaque défilement, ce que Safari fait souvent
+   par défaut pour un fixed en blend-mode. Les deux boucles requestAnimationFrame
+   qui tournaient en permanence sont déjà coupées hors écran depuis le
+   30/08/2026 (commit 0a765a3, Ouverture.tsx et Univers.tsx) : ce qui restait
+   à traiter ici est CE calque, pas une boucle JS. */
 .at-accueil .grain{
   position:fixed;inset:0;z-index:900;pointer-events:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size:160px 160px;
   mix-blend-mode:soft-light;opacity:.5;
+  transform:translateZ(0);will-change:transform;
 }
 
 /* ---- lexique typographique ---- */

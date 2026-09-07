@@ -112,6 +112,20 @@
      Fallbacks conservés si next/font n'est pas encore chargé. */
   --bj-font-display: var(--font-display), 'Cormorant Garamond', Georgia, serif;  /* titres (italic) */
   --bj-font-ui:      var(--font-ui), 'DM Sans', system-ui, sans-serif;            /* UI / corps */
+}
+
+/* T-064 (07/09/2026) — POINT D'ANCRAGE pour les pages où `--font-display`
+   n'est PLUS posée sur <html> (creme-fonts.ts : /admin, /ambassadeurs,
+   /merci, /inviter, les pages légales). Une propriété personnalisée qui en
+   référence une autre FIGE sa substitution LÀ OÙ ELLE EST DÉCLARÉE, pas là
+   où elle est lue : `--bj-font-display` ci-dessus se calcule à :root, où
+   `--font-display` n'existe plus pour ces pages, et hérite donc INVALIDE
+   jusqu'en bas — chaque h1..h3 y retombait en silence sur `--bj-font-ui`
+   (DM Sans, héritée du body). Cette classe REDÉCLARE `--bj-font-display`
+   au même point que la variable next/font : elle doit être posée sur le
+   MÊME élément que `cormorantCreme.variable`, jamais à côté ni au-dessus. */
+.bj-creme-fonts {
+  --bj-font-display: var(--font-display), 'Cormorant Garamond', Georgia, serif;
 
   /* Tailles de référence (proto) */
   --bj-fs-h1:        56px;   /* grand titre (italic) */

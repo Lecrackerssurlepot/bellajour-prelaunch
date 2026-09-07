@@ -29,4 +29,48 @@ Trois pistes à essayer dans l'ordre, en vérifiant le rendu à chaque fois :
 3. Pour le grain seul : mesurer si une opacité simple donne un rendu acceptable sur téléphone, où
    la fusion coûte le plus. Si le rendu se dégrade, on garde la fusion : c'est la marque.
 ## Ce qui a été fait
-—
+**07/09/2026 — partiel, ré-audité avant correction.**
+
+**Point 1 (les deux boucles rAF) était déjà réglé** : le commit `0a765a3`
+(30/08/2026, perf du rail invisible/T-061) a posé un `IntersectionObserver` sur
+`Ouverture.tsx` et `Univers.tsx` qui coupe la boucle (`cancelAnimationFrame`)
+dès que sa section quitte l'écran, et la relance à l'entrée. Vérifié par
+grep + lecture des deux fichiers : les lignes citées dans le constat
+(`Ouverture.tsx:109`, `Univers.tsx:383`) ne sont plus des boucles permanentes.
+Rien à refaire ici.
+
+**Le calque de grain lui-même (`ouverture.css` `.at-accueil .grain`)** reste
+un `position:fixed` plein écran en `mix-blend-mode:soft-light` : c'est le
+coût réel qui demeure — le compositeur doit fondre ce calque avec tout ce
+qui défile dessous, à chaque frame, tant qu'il est visible (propriété
+intrinsèque du blend-mode sur un fixed superposé à du contenu qui défile,
+pas un bug réparable sans changer l'effet).
+Correctif au moindre coût, **zéro changement visuel** (vérifié : le calque
+ne bouge jamais, `translateZ(0)` est une transformation identité) :
+`transform:translateZ(0); will-change:transform;` ajoutés à `.grain`, pour
+forcer le navigateur à garder ce calque sur sa propre texture GPU plutôt que
+de le re-rastériser avec le reste de la page à chaque défilement — technique
+connue pour ce couple `position:fixed` + `mix-blend-mode` sur Safari/iOS.
+
+**Ce que je n'ai PAS fait, et pourquoi** :
+- `content-visibility:auto` sur les sept pages (`univers.css`) : le
+  séquenceur (`data-t`, `IntersectionObserver` à seuil 0.55, boucle rAF qui
+  lit `getBoundingClientRect` pour le rail) est trop fragile pour ce risque
+  sans pouvoir tester sur un vrai Safari iOS depuis cet environnement —
+  documenté comme piste, pas fait.
+- `isolation:isolate` sur `.at-accueil` (pour confiner le blend et éviter
+  qu'il ne se recompose avec la Nav/le Footer, hors de `.at-accueil`) :
+  aurait changé l'apparence de la Nav sous le grain (elle est actuellement
+  DANS la zone de fusion, `z-index:50` contre `900` pour le grain) — rejeté,
+  c'est exactement le changement d'aspect interdit par le ticket.
+- Les deux autres `mix-blend-mode` (`ouverture.css:78`, `univers.css:625`)
+  sont bornés à de petites boîtes de photo (`overflow:hidden`), pas au
+  viewport entier : coût largement inférieur, non traités ici.
+
+Vérifié : `npx tsc --noEmit`, `npm run lint`, `npm run build` verts ; `/` et
+`/magazine` comparés à l'œil à 375×812 et desktop (captures), grain et
+mouvement identiques ; `getComputedStyle('.grain').transform` confirmé
+`matrix(1,0,0,1,0,0)` (aucun déplacement).
+Non mesuré : le gain FPS réel sur un vrai iPhone (pas d'accès à un vrai
+Safari iOS depuis cet environnement) — seule la mesure DOM/visuelle est
+prouvée ici.

@@ -7,6 +7,7 @@ import Footer from '../sections/Footer'
 import MerciReferral from './MerciReferral'
 import MerciBackLink from './MerciBackLink'
 import MerciPendingRefresh from './MerciPendingRefresh'
+import { cormorantCremeClassName } from '../creme-fonts'
 import './merci.css'
 
 /* Route /merci — page de confirmation post-paiement prévente.
@@ -105,7 +106,9 @@ export default async function MerciPage({
   const state = await resolveState(sessionId)
 
   return (
-    <main>
+    /* T-064 — Cormorant du monde CRÈME (creme-fonts.ts), déplacée hors du
+       layout racine : /merci est la seule route à la peindre ici. */
+    <main className={cormorantCremeClassName}>
       <Navbar />
       <section className="merci">
         <div className="merci-inner">

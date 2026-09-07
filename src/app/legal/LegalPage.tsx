@@ -9,6 +9,7 @@ import {
 } from './types'
 import { pickLang, pickRef, resolveDoc, legalHref, backHref } from './resolve'
 import RetourLien from './RetourLien'
+import { cormorantCremeClassName } from '../creme-fonts'
 import './legal.css'
 
 /* Composant partagé des pages légales (Server Component, zéro JS client).
@@ -41,7 +42,7 @@ export default function LegalPage({ slug, doc, params, forceLang }: LegalPagePro
        document déclaré français — lu par une voix de synthèse française au
        lecteur d'écran. On pose la langue résolue par resolveDoc (jamais la
        demandée : une locale absente retombe sur fr, l'attribut doit suivre). */
-    <main className="lg" lang={lang} data-theme="dark" data-section="legal">
+    <main className={`lg ${cormorantCremeClassName}`} lang={lang} data-theme="dark" data-section="legal">
       <div className="lg-inner">
 
         <header className="lg-head">
