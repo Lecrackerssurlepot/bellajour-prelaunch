@@ -22,6 +22,43 @@ import { createPendingReferralCredits } from "@/lib/referral-credits";
 
 export const runtime = "nodejs";
 
+/* ── LE FREIN (T-008, 07/09/2026) ──────────────────────────────────────────
+   Cette route CRÉE une session Stripe et écrit une ligne en base : c'était la
+   seule route payante du dépôt sans aucun frein, alors que les cinq autres en
+   portent un. Elle est aujourd'hui fermée d'entrée (`preventeFermee`), donc le
+   trou n'a jamais pu être exploité — mais le jour où la prévente rouvre, elle
+   rouvrirait sans protection, et personne ne penserait à la reposer.
+
+   ⚠️ Ce n'est PAS une protection, et le dire autrement serait mentir : la
+   `Map` vit dans la mémoire d'UNE instance Vercel, qui redémarre à froid et se
+   multiplie sous charge. Ça coupe un script naïf, ça n'arrête pas quelqu'un de
+   déterminé. Le compteur partagé (une table suffirait, pas besoin de Redis)
+   reste à faire si le volume le justifie un jour — mais poser une requête de
+   base sur le chemin du paiement a son propre coût, et il n'est pas gratuit.
+
+   Même patron et mêmes plafonds que `api/atelier/numero`, volontairement :
+   cinq écritures par minute et par adresse en production, large pour une
+   personne qui hésite, étroit pour une boucle. */
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = process.env.NODE_ENV === "production" ? 5 : 30;
+const RATE_LIMIT_WINDOW_MS = process.env.NODE_ENV === "production" ? 60_000 : 10_000;
+
+function depasseLePlafond(request: Request): boolean {
+  const now = Date.now();
+  for (const [key, val] of rateLimitMap) {
+    if (val.resetAt < now) rateLimitMap.delete(key);
+  }
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const entry = rateLimitMap.get(ip);
+  if (entry && entry.resetAt > now) {
+    if (entry.count >= RATE_LIMIT_MAX) return true;
+    entry.count++;
+    return false;
+  }
+  rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+  return false;
+}
+
 type OfferType = "founder" | "standard" | "influencer";
 
 /* Montants serveur — source de vérité unique, en centimes. Tout montant
@@ -98,6 +135,13 @@ export async function POST(request: Request) {
   if (preventeFermee()) {
     console.log("[checkout] refus — la prévente est fermée (PREVENTE_FERMEE)");
     return NextResponse.json({ error: "prevente_fermee" }, { status: 410 });
+  }
+
+  /* Après la garde de fermeture : une prévente close répond 410 à tout le
+     monde, il n'y a rien à rationner. Avant toute lecture de corps, en
+     revanche — le plafond doit coûter moins cher que ce qu'il protège. */
+  if (depasseLePlafond(request)) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
   // 1. Parse + validation d'entrée -----------------------------------------

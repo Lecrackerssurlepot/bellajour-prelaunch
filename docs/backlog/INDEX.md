@@ -43,7 +43,7 @@ et à des chiffres que personne d'autre ne peut donner.
 | T-005 | L'ancien mot de passe admin partagé ouvre encore la porte | admin | serieux | libre | **fermé** |
 | T-006 | Un album de 29 pages n'est couvert par aucune ligne des CGV | produit | serieux | avis-requis | nouveau |
 | T-007 | Un mail sans template se saute en silence, à l'infini | atelier | serieux | libre | **fermé** |
-| T-008 | Le rate-limit ne limite rien sur Vercel | paiement | serieux | libre | nouveau |
+| T-008 | Le rate-limit ne limite rien sur Vercel | paiement | serieux | libre | **fermé** (fiche dans `fermes/`) — 07/09 : frein posé sur `api/checkout` (la seule route payante sans), et la limite du procédé documentée dans le code. Le trou n'était pas exploitable : la route répond 410 depuis la fermeture des préventes |
 | T-009 | Aucune page n'a de canonical | front | serieux | libre | **fermé** |
 | T-010 | Rien ne vérifie le code avant un commit | exploitation | serieux | libre | **fermé** |
 | T-011 | `.env.example` cache douze variables vivantes | exploitation | serieux | libre | **fermé** |
