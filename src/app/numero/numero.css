@@ -619,13 +619,9 @@
   background: var(--c-accent-soft);
 }
 
-.nu-viz-choix-fait {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  font-family: var(--font-ui);
-  font-size: 13px;
+/* La marque du choix, dans le nom de la vue : une nuance de couleur, pas un
+   bloc. Elle dit « c'est celle-ci » sans rien réclamer. */
+.nu-viz-nom-choix {
   color: var(--c-accent-strong);
 }
 

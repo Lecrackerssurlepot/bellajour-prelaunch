@@ -80,6 +80,12 @@ export default function Apercu({
      l'enregistrement suit. S'il échoue, on le dit et on revient en arrière —
      laisser un choix affiché qui n'est pas arrivé serait pire que tout. */
   const [choisie, setChoisie] = useState(0)
+  /* A-t-elle VRAIMENT choisi, ou regarde-t-elle la proposition par défaut ?
+     Tant qu'elle n'a rien dit, on n'affiche aucune marque : « votre choix »
+     sur une couverture qu'elle n'a pas choisie serait un mot de trop, et
+     faux. Ne rien choisir reste un choix — celui de garder la proposition
+     de l'atelier, et il est journalisé comme tel côté serveur. */
+  const [aChoisi, setAChoisi] = useState(false)
   const [refus, setRefus] = useState(false)
   const depart = useRef<{ x: number; y: number } | null>(null)
 
@@ -163,7 +169,9 @@ export default function Apercu({
   async function choisir(rang: number) {
     if (!token || rang === choisie) return
     const avant = choisie
+    const avantChoisi = aChoisi
     setChoisie(rang)
+    setAChoisi(true)
     setRefus(false)
     try {
       const r = await fetch('/api/atelier/numero', {
@@ -174,6 +182,7 @@ export default function Apercu({
       if (!r.ok) throw new Error('refus')
     } catch {
       setChoisie(avant)
+      setAChoisi(avantChoisi)
       setRefus(true)
     }
   }
@@ -254,7 +263,15 @@ export default function Apercu({
         </div>
 
         <div className="nu-viz-bas">
-          <span className="nu-viz-nom" aria-live="polite">{vues[idx].legende}</span>
+          <span className="nu-viz-nom" aria-live="polite">
+            {vues[idx].legende}
+            {/* Sur la couverture retenue, la marque du choix tient dans le
+                nom : un bloc de 44 px pour dire « c'est celle-ci » pesait sur
+                l'écran qui décide du paiement, sans rien proposer à faire. */}
+            {couvertures.length > 1 && aChoisi && vues[idx].rang === choisie && (
+              <span className="nu-viz-nom-choix"> · votre choix</span>
+            )}
+          </span>
           {!seul && (
             <div className="nu-viz-points" role="tablist" aria-label="Les vues de votre maquette">
               {vues.map((v, k) => (
@@ -275,13 +292,15 @@ export default function Apercu({
               qu'elle préfère ; celle qui est retenue le dit et son bouton
               s'éteint. Rien n'est bloquant : sans un seul clic, la première
               reste proposée et le paiement est ouvert. */}
-          {couvertures.length > 1 && token && vues[idx].rang !== undefined && (
-            <div className="nu-viz-choix">
-              {vues[idx].rang === choisie ? (
-                <span className="nu-viz-choix-fait">
-                  <span aria-hidden="true">✓</span> Votre couverture
-                </span>
-              ) : (
+          {/* Le bouton n'apparaît que là où il sert : devant une AUTRE
+              couverture que celle retenue. Sur celle qu'elle a déjà, il n'y
+              a rien à faire — et ne rien choisir reste un choix, celui de
+              garder la proposition de l'atelier. */}
+          {couvertures.length > 1 &&
+            token &&
+            vues[idx].rang !== undefined &&
+            vues[idx].rang !== choisie && (
+              <div className="nu-viz-choix">
                 <button
                   type="button"
                   className="nu-viz-choix-btn"
@@ -289,14 +308,13 @@ export default function Apercu({
                 >
                   Je préfère celle-ci
                 </button>
-              )}
-              {refus && (
-                <span className="nu-viz-choix-refus" role="alert">
-                  Votre choix n’a pas pu être enregistré. Réessayez dans un instant.
-                </span>
-              )}
-            </div>
-          )}
+                {refus && (
+                  <span className="nu-viz-choix-refus" role="alert">
+                    Votre choix n’a pas pu être enregistré. Réessayez dans un instant.
+                  </span>
+                )}
+              </div>
+            )}
           {modifiable && (
             <p className="nu-viz-note">
               Ces pages restent entièrement modifiables à la création de votre maquette. Aucune
