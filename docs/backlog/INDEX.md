@@ -24,11 +24,21 @@ exactement l'écart que la passe du 01/09/2026 a corrigé, sur 36 lignes.
 Semé le 29/08/2026 par l'audit de structure. Tous les tickets ci-dessous sont **prouvés dans le
 code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
+## Où on en est (07/09/2026, après le chantier « Un vrai site » et l'expérience maquette)
+
+**101 tickets ouverts depuis le début, 45 encore ouverts, et AUCUN bloquant.**
+Sur ces 45 : 35 sérieux, 9 confort — mais surtout **38 attendent une décision de Mathias**
+(prix, textes légaux, mails réels, visuels, migrations). Il ne reste que **six tickets**
+qu'on peut faire sans lui, et trois sont en cours de correction.
+
+Autrement dit : le frein n'est plus technique. Ce qui reste tient à des arbitrages produit
+et à des chiffres que personne d'autre ne peut donner.
+
 | id | titre | domaine | gravite | autonomie | etat |
 |---|---|---|---|---|---|
 | T-001 | Le numéro de suivi n'est jamais enregistré | donnees | bloquant | avis-requis | **fermé** |
 | T-002 | Les liens de parrainage des mails vivants sont morts | contenu | serieux | avis-requis | en pause (31/08, stratégie consignée dans la fiche) |
-| T-003 | 101 Mo d'images orphelines déployées à chaque build | front | serieux | libre | **à fermer** — fait le 02/09 : `prevente/` (dont 5 `.mp4`) et `solution/` déplacés en `archive/public-orphelins/`, `public/` de 22→9 Mo. Le « 101 Mo » était périmé (le gros avait déjà disparu). tsc+lint+build verts |
+| T-003 | 101 Mo d'images orphelines déployées à chaque build | front | serieux | libre | **fermé** (fiche dans `fermes/`) — fait le 02/09 : `prevente/` (dont 5 `.mp4`) et `solution/` déplacés en `archive/public-orphelins/`, `public/` de 22→9 Mo. Le « 101 Mo » était périmé (le gros avait déjà disparu). tsc+lint+build verts |
 | T-004 | La page d'état de la cliente est indexable par Google | front | serieux | libre | **refuse** (31/08, le noindex existait déjà) |
 | T-005 | L'ancien mot de passe admin partagé ouvre encore la porte | admin | serieux | libre | **fermé** |
 | T-006 | Un album de 29 pages n'est couvert par aucune ligne des CGV | produit | serieux | avis-requis | nouveau |
@@ -73,8 +83,8 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-045 | On peut savoir qui est cliente de Bellajour, avec son prénom | paiement | serieux | libre | **fermé** |
 | T-046 | La porte de l'atelier se laisse tester à l'infini | admin | serieux | libre | **fermé** |
 | T-047 | Un paiement sous alias n'attribuerait aucun numéro de fondateur | paiement | confort | avis-requis | nouveau |
-| T-048 | La garantie « pas d'objet sans ligne » n'existe pas vraiment | donnees | confort | libre | **à fermer** — corrigé le 01/09 (`r2.supprimer` rend un booléen, la route garde la ligne sur échec R2 et renvoie 500). tsc+lint+build+harnais verts |
-| T-049 | L'adresse de retour après paiement n'est pas vérifiée | paiement | serieux | avis-requis | **à fermer** — corrigé le 02/09 : `originDeConfiance` (liste blanche + repli gracieux sur `SITE_URL`) sur `/api/atelier/checkout`. Même défaut DORMANT sur `/api/checkout` (prévente close) noté dans la fiche. tsc+lint+build verts |
+| T-048 | La garantie « pas d'objet sans ligne » n'existe pas vraiment | donnees | confort | libre | **fermé** (fiche dans `fermes/`) — corrigé le 01/09 (`r2.supprimer` rend un booléen, la route garde la ligne sur échec R2 et renvoie 500). tsc+lint+build+harnais verts |
+| T-049 | L'adresse de retour après paiement n'est pas vérifiée | paiement | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — corrigé le 02/09 : `originDeConfiance` (liste blanche + repli gracieux sur `SITE_URL`) sur `/api/atelier/checkout`. Même défaut DORMANT sur `/api/checkout` (prévente close) noté dans la fiche. tsc+lint+build verts |
 | T-050 | Sans JavaScript, le site sert un écran noir — y compris la page qui fait payer | front | bloquant | libre | **fermé** |
 | T-051 | Le questionnaire est muet pour qui n'utilise pas la souris | front | serieux | libre | **fermé** |
 | T-052 | On refuse une histoire trop courte sans jamais dire qu'elle est trop courte | front | serieux | libre | **fermé** |
@@ -84,14 +94,14 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-056 | La page qui suit le paiement se recharge cinq fois sans prévenir | front | serieux | libre | **fermé** (reste à voir à l'œil : recette) |
 | T-057 | Les CGV portugaises, qui font foi, sont servies dans un document déclaré français | produit | serieux | libre | **fermé** (le reste → T-083) |
 | T-058 | Un lien de reprise tronqué fait recommencer tout, et crée un second dossier | atelier | serieux | libre | **fermé** (le reste → T-084) |
-| T-059 | Une police jamais peinte retarde l'apparition du premier écran | front | serieux | libre | **à fermer** — corrigé le 30/08 (commit `0a765a3`, italique sortie du layout), prouvé au build par l'audit du 01/09 |
+| T-059 | Une police jamais peinte retarde l'apparition du premier écran | front | serieux | libre | **fermé** (fiche dans `fermes/`) — corrigé le 30/08 (commit `0a765a3`, italique sortie du layout), prouvé au build par l'audit du 01/09 |
 | T-060 | 164 Ko d'images du deuxième écran descendent pendant que le premier s'affiche | front | serieux | libre | **fermé** |
-| T-061 | Le chemin de fer fait saccader le téléphone alors qu'il n'y est pas affiché | front | serieux | libre | **à fermer** — corrigé le 30/08 (commit `0a765a3`, `matchMedia` miroir de la media query), prouvé par l'audit du 01/09 |
+| T-061 | Le chemin de fer fait saccader le téléphone alors qu'il n'y est pas affiché | front | serieux | libre | **fermé** (fiche dans `fermes/`) — corrigé le 30/08 (commit `0a765a3`, `matchMedia` miroir de la media query), prouvé par l'audit du 01/09 |
 | T-062 | Le grain refond l'écran entier à chaque frame de défilement | front | serieux | libre | nouveau |
 | T-063 | 62 % de la feuille servie sur tout le site vise des pages archivées | front | confort | libre | en cours — dead code retiré (30/08) ; restent 2 règles globales, `/magazine` déjà protégé (audit 01/09) |
 | T-064 | Trente déclarations de police jamais peintes bloquent le rendu de chaque page | front | confort | libre | nouveau — constat re-vérifié le 31/08, correctif non commencé |
 | T-065 | Aucune image du site n'a de variante pour téléphone | front | serieux | libre | **fermé** |
-| T-066 | Ouvrir le questionnaire télécharge tout le moteur d'envoi de photos | front | serieux | libre | **à fermer** — fait le 02/09 : écrans 5 ET 6 en `next/dynamic` (l'écran 6 tirait aussi le moteur), moteur absent du chunk initial, worker servi en 200, reprise OK. Vérifié sur build prod. tsc+lint+build verts |
+| T-066 | Ouvrir le questionnaire télécharge tout le moteur d'envoi de photos | front | serieux | libre | **fermé** (fiche dans `fermes/`) — fait le 02/09 : écrans 5 ET 6 en `next/dynamic` (l'écran 6 tirait aussi le moteur), moteur absent du chunk initial, worker servi en 200, reprise OK. Vérifié sur build prod. tsc+lint+build verts |
 | T-067 | Une page indexable vend encore un programme qu'on n'honore plus | produit | serieux | avis-requis | nouveau |
 | T-068 | Le site déclare deux fiches produit concurrentes pour un seul produit | front | serieux | libre | **fermé** (le reste → T-085) |
 | T-069 | L'image de partage promet un album, et peut casser le déploiement entier | front | serieux | avis-requis | en cours — le `throw` qui cassait le build est retiré (repli, 01/09) ; **reste le visuel** (avec le chantier visuels) + rendre son image à `/ambassadeurs` |
@@ -107,23 +117,23 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 | T-079 | Le dashboard métriques n'a pas d'insights ni de stratégie assistés par IA | admin | confort | avis-requis | en pause (30/08, le bloc « Lecture » suffit — attendre ~50 dossiers) |
 | T-080 | Le dashboard métriques mérite un vrai design de tableau de bord | admin | confort | libre | nouveau |
 | T-081 | Rien ne compare les paiements Stripe aux dossiers de la base | paiement | serieux | avis-requis | en cours — script de rapprochement livré le 02/09 (`scripts/reconcilier-stripe.ts`, lecture seule, tsc+lint verts). Reste : le lancer sur la vraie base, puis décider d'un cron |
-| T-082 | Les lectures de `CHAMPS_MAIL` n'ont pas le repli 42703 que le reste du code a | donnees | serieux | libre | **à fermer** — corrigé le 02/09 : helper `lireNumerosMail` (repli sur `CHAMPS_MAIL_REPLI`) sur les 5 lieux de lecture. Dormant tant que les colonnes existent. tsc+lint+build+harnais verts |
-| T-083 | Les CGV portugaises n'ont pas d'URL à elles et sont invisibles pour Google | front | serieux | libre | **à fermer** — fait le 03/09 : URL par langue (`/en/cgv`, `/pt/cgv`), canonical auto-référent + hreflang/x-default, `?lang=` en 308 (ref préservé), sitemap. Aucun texte légal touché. tsc+lint+build + runtime verts |
-| T-084 | Deux dossiers ouverts pour la même adresse ne sont signalés nulle part | admin | serieux | libre | **à fermer** — part 1 (constat Santé orange, sur `email_canonical`) livrée le 02/09 (PR #27) ; part 2 (lien sur la fiche) existait déjà (« Ses autres numéros »). tsc+lint+harnais verts, détection validée sur la base |
+| T-082 | Les lectures de `CHAMPS_MAIL` n'ont pas le repli 42703 que le reste du code a | donnees | serieux | libre | **fermé** (fiche dans `fermes/`) — corrigé le 02/09 : helper `lireNumerosMail` (repli sur `CHAMPS_MAIL_REPLI`) sur les 5 lieux de lecture. Dormant tant que les colonnes existent. tsc+lint+build+harnais verts |
+| T-083 | Les CGV portugaises n'ont pas d'URL à elles et sont invisibles pour Google | front | serieux | libre | **fermé** (fiche dans `fermes/`) — fait le 03/09 : URL par langue (`/en/cgv`, `/pt/cgv`), canonical auto-référent + hreflang/x-default, `?lang=` en 308 (ref préservé), sitemap. Aucun texte légal touché. tsc+lint+build + runtime verts |
+| T-084 | Deux dossiers ouverts pour la même adresse ne sont signalés nulle part | admin | serieux | libre | **fermé** (fiche dans `fermes/`) — part 1 (constat Santé orange, sur `email_canonical`) livrée le 02/09 (PR #27) ; part 2 (lien sur la fiche) existait déjà (« Ses autres numéros »). tsc+lint+harnais verts, détection validée sur la base |
 | T-085 | La fiche produit de `/magazine` n'a ni image conforme ni conditions marchandes | produit | serieux | avis-requis | nouveau |
 | T-086 | Sur desktop, la bande « étapes 1-2-3 » occupe un espace sans rapport avec son contenu | front | confort | avis-requis | nouveau (retour Mathias 01/09, prouvé par l'audit) |
-| T-087 | Sur téléphone, le prix de la PDP est compressé à la limite de la lisibilité | front | confort | libre | **à fermer** — fait le 03/09 : libellés des cartes remontés (`.combien` 10→11 px, `.pages` 11→12 px), interlignes resserrés pour ne PAS bouger le bouton (delta 0 mesuré à 375×667). build vert |
+| T-087 | Sur téléphone, le prix de la PDP est compressé à la limite de la lisibilité | front | confort | libre | **fermé** (fiche dans `fermes/`) — fait le 03/09 : libellés des cartes remontés (`.combien` 10→11 px, `.pages` 11→12 px), interlignes resserrés pour ne PAS bouger le bouton (delta 0 mesuré à 375×667). build vert |
 | T-088 | Le logo en haut du questionnaire et de la page cliente est un clic mort | front | serieux | avis-requis | nouveau (retour Mathias 01/09, prouvé par l'audit) |
 | T-089 | La maquette que reçoit le client — visionneuse multi-format façon magazine | front | serieux | avis-requis | en cours — prototype v3 + fondation (#28) + **visionneuse `/numero` livrée (PR #29, rendu réel validé)** ; reste l'admin (T-090) et les vrais visuels |
-| T-090 | Admin — planche couverture, découpage centré, doubles pages à la demande, drag-and-drop | admin | serieux | avis-requis | **à fermer** — livré (PR #33) : dépôt de la planche, 0 à 3 doubles pages réordonnables au glissé, restitution fidèle sur la fiche. Le curseur de coupe reste écarté (centre auto, décision Mathias) ; le recadrage intra-page est demandé le 07/09 et reste à faire |
+| T-090 | Admin — planche couverture, découpage centré, doubles pages à la demande, drag-and-drop | admin | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — livré (PR #33) : dépôt de la planche, 0 à 3 doubles pages réordonnables au glissé, restitution fidèle sur la fiche. Le curseur de coupe reste écarté (centre auto, décision Mathias) ; le recadrage intra-page est demandé le 07/09 et reste à faire |
 | T-091 | Réagir à la maquette, pas seulement partir — thèmes + freestyle | produit | serieux | avis-requis | en cours — feuille d'ajustement livrée (PR #30/#31) + mots de couverture facultatifs (03/09). **Reste les 5 thèmes**, en attente des visuels de Mathias (07/09) |
 | T-092 | Refonte du parcours questionnaire — logo officiel + Q1 à Q5 | front | serieux | avis-requis | nouveau (02/09, cahier des charges de Mathias) |
 | T-093 | Plusieurs couvertures proposées, la cliente choisit sa préférée | produit | serieux | avis-requis | en cours (07/09) — socle livré : jusqu'à 3 couvertures publiables, gestionnaire admin réordonnable, restitution fiche. Tranché par Mathias : la première est proposée par défaut, jamais d'obstacle avant le paiement. Reste le geste de choix côté cliente |
 | T-094 | La demande « montrer un extrait » repart dans un mail, plus sur /numero | backend | mineur | avis-requis | nouveau (02/09) — la fiche existait, la ligne d'index manquait ; réparé le 04/09 |
-| T-095 | En reprise sur un autre appareil, le dépôt affiche zéro photo et verrouille l'envoi | front | serieux | libre | en cours — corrigé le 04/09 (GET compte serveur + moteur), prouvé au navigateur, PR à merger |
+| T-095 | En reprise sur un autre appareil, le dépôt affiche zéro photo et verrouille l'envoi | front | serieux | libre | **fermé** (fiche dans `fermes/`) — corrigé le 04/09, PR #47 **mergée** (vérifié le 07/09 : le commit est dans main) |
 | T-096 | Le carnet de l'atelier n'est lisible que dossier par dossier — le rendre exploitable | admin | serieux | avis-requis | nouveau (04/09) — constat vérifié, proposition en trois marches dans `docs/produit/NOTE-CARNET-STRUCTURE.md` |
 | T-097 | Les mails à retardement partent jusqu'à 24 h après l'heure annoncée | atelier | serieux | avis-requis | en pause (04/09) — relève horaire écrite et vérifiée, **inerte tant que le secret GitHub n'est pas posé** ; immédiats prouvés à moins de 2 s |
-| T-098 | Un M4 refusé par Brevo figeait le dossier payé pour toujours | atelier | bloquant | libre | **à fermer** — corrigé le 04/09 : réparation sur preuve d'échec (`doitRattraperM4`), 6 assertions au harnais |
-| T-099 | L'ouverture de l'accueil rejoue à chaque retour et se fait bousculer par le défilement | front | serieux | libre | **à fermer** — corrigé le 04/09 : ouverture jouée une fois par onglet, prise en main au défilement, défilements pilotés interruptibles |
+| T-098 | Un M4 refusé par Brevo figeait le dossier payé pour toujours | atelier | bloquant | libre | **fermé** (fiche dans `fermes/`) — corrigé le 04/09 : réparation sur preuve d'échec (`doitRattraperM4`), 6 assertions au harnais |
+| T-099 | L'ouverture de l'accueil rejoue à chaque retour et se fait bousculer par le défilement | front | serieux | libre | **fermé** (fiche dans `fermes/`) — corrigé le 04/09 : ouverture jouée une fois par onglet, prise en main au défilement, défilements pilotés interruptibles |
 | T-100 | Les treize fondateurs ont un compte qui les attend, et personne ne le leur a dit | atelier | serieux | avis-requis | nouveau (07/09) — mail C3 à écrire, à envoyer **quand l'atelier est prêt**, jamais avant |
 | T-101 | La connexion Google de toutes les clientes dépend d'un seul compte personnel | exploitation | serieux | libre | nouveau (07/09) — Louis à passer Propriétaire du projet Google Cloud ; **geste console, hors dépôt** |
