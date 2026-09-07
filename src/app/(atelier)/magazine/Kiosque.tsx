@@ -10,7 +10,7 @@
    elles arrivent sous la ligne de flottaison. */
 
 import Reveal from '../components/Reveal'
-import { ETAPES, PALIERS } from '../content'
+import { ETAPES, PALIERS, PARCOURS_SOUS_TITRE, PARCOURS_TITRE } from '../content'
 import LienComposer from '../components/LienComposer'
 
 /* Le rythme annoncé à chaque étape. Il vit ICI et non dans content.ts : ce
@@ -177,6 +177,12 @@ export default function Kiosque() {
           bouton pour le clavier et le lecteur d'ecran — c'est l'ordre de
           lecture voulu, et il n'a plus besoin d'`order` pour l'obtenir. */}
       <Reveal delay={70} className="bloc-pas">
+        {/* Lot 3 (07/09) — l'arbitrage T-086 : la bande gagne un titre et un
+            sous-texte au lieu de flotter sans nom entre deux zones denses.
+            Le h2 entre dans le plan de la page apres le h1 du kiosque,
+            avant « L'objet ». */}
+        <h2 className="pas-titre">{PARCOURS_TITRE}</h2>
+        <p className="pas-sous">{PARCOURS_SOUS_TITRE}</p>
         <ol className="pas">
           {ETAPES.map((e, i) => (
             <li key={e.titre}>

@@ -48,6 +48,11 @@ export const PALIERS = [
   { photos: '80 à 100 photos', prix: '45 €', pages: '40 à 50 pages' },
 ] as const
 
+/* Le titre de la bande parcours (lot 3, 07/09 — arbitrage T-086 rendu par
+   Mathias : la bande gagne un vrai titre au lieu de flotter sans nom). */
+export const PARCOURS_TITRE = 'Le parcours avec l’atelier'
+export const PARCOURS_SOUS_TITRE = 'Depuis le téléphone ou l’ordinateur, en trois gestes.'
+
 export const ETAPES = [
   {
     titre: 'Vous racontez le moment',
@@ -66,7 +71,7 @@ export const ETAPES = [
 export const FAQ = [
   {
     q: 'Les photos de mon téléphone suffisent ?',
-    r: 'Oui. La quasi-totalité des numéros sont composés à partir de photos de téléphone. Envoyez-les en qualité d’origine, on s’occupe du reste.',
+    r: 'Oui. La quasi-totalité des numéros sont composés à partir de photos de téléphone. Une seule condition : envoyez-les en qualité d’origine — pas de capture d’écran, pas d’export compressé par une messagerie. Le dépôt les prend telles quelles, on s’occupe du reste.',
   },
   {
     q: 'Et si la couverture ne me plaît pas ?',
@@ -74,7 +79,11 @@ export const FAQ = [
   },
   {
     q: 'Je le reçois quand ?',
-    r: 'Votre couverture sous 48 h. Le magazine imprimé chez vous sous 10 jours après validation.',
+    r: 'Votre couverture sous 48 h. Le magazine imprimé chez vous sous 10 jours après validation, avec un lien de suivi du colis dès l’expédition.',
+  },
+  {
+    q: 'Comment composez-vous mon magazine ?',
+    r: 'À la main, page à page, dans l’atelier. Vos photos et votre histoire donnent le rythme : pas de gabarit automatique, pas de remplissage. Vous voyez la maquette complète avant l’impression.',
   },
   {
     q: 'Je peux l’offrir ?',
