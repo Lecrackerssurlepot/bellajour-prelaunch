@@ -408,7 +408,22 @@ export async function PATCH(request: Request) {
       : [];
     const demandeAjustement = ajustementMot.length > 0 || ajustementMotifs.length > 0;
 
-    if (!Object.keys(maj).length && !demandeRetouches && !demandeAjustement) {
+    /* T-093 — LE RANG de la couverture choisie (0 = celle proposée par
+       défaut), pas son URL : une URL signée expire, et une clé de coffre
+       n'a rien à faire dans un corps de requête public. Le rang suffit à
+       l'atelier, qui a la liste sous les yeux dans le même ordre. Borné à
+       MAX_PLANCHES - 1 ; on ne vérifie pas ici qu'il existe vraiment une
+       couverture à ce rang — c'est un choix journalisé, pas un ordre. */
+    const rangCouverture =
+      typeof body.couverture_choisie === "number" &&
+      Number.isInteger(body.couverture_choisie) &&
+      body.couverture_choisie >= 0 &&
+      body.couverture_choisie < 3
+        ? body.couverture_choisie
+        : null;
+    const choisitCouverture = rangCouverture !== null;
+
+    if (!Object.keys(maj).length && !demandeRetouches && !demandeAjustement && !choisitCouverture) {
       return NextResponse.json({ error: "rien_a_faire" }, { status: 400 });
     }
 
@@ -455,6 +470,26 @@ export async function PATCH(request: Request) {
        qu'on propose. Ailleurs, c'est un onglet resté ouvert. */
     if (demandeAjustement && numero.etat !== "apercu_pret") {
       return NextResponse.json({ error: "etat_incompatible" }, { status: 409 });
+    }
+
+    /* Le choix de couverture n'a de sens qu'à l'état 2, devant la
+       proposition. Ailleurs, c'est un onglet resté ouvert. */
+    if (choisitCouverture && numero.etat !== "apercu_pret") {
+      return NextResponse.json({ error: "etat_incompatible" }, { status: 409 });
+    }
+
+    if (choisitCouverture) {
+      /* Journalisé, JAMAIS de colonne ni de migration — même patron que
+         `ajustement_demande`, et pour la même raison : c'est une préférence
+         que l'atelier lit avant de composer, pas un état de la machine. Un
+         second clic réécrit simplement une ligne de plus : l'atelier lit la
+         DERNIÈRE, et le récit garde la trace de l'hésitation, ce qui est une
+         information et non du bruit.
+         Aucun mail ne part : elle est encore en train de regarder. */
+      await logEvenement(supabase, numero.id, "couverture_choisie", {
+        source: "page_numero",
+        rang: rangCouverture,
+      });
     }
 
     if (demandeRetouches) {

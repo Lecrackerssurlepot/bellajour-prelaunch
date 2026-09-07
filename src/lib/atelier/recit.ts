@@ -219,6 +219,23 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
       };
     }
 
+    /* T-093 — la cliente a préféré une autre couverture que celle proposée
+       par défaut. Le rang, pas l'URL : l'atelier a la liste dans le même
+       ordre sous les yeux. Le rang 0 n'est jamais journalisé par l'écran
+       (choisir le défaut, c'est ne rien choisir), mais on sait le dire si
+       un rejeu le fait remonter. */
+    case "couverture_choisie": {
+      const rang = typeof payload.rang === "number" ? (payload.rang as number) : null;
+      return {
+        texte:
+          rang === null || rang === 0
+            ? "Le client garde la couverture proposée"
+            : `Le client préfère la couverture ${rang + 1}`,
+        detail: null,
+        ton: "elle",
+      };
+    }
+
     /* Le verrou d'un mail a été retiré pour qu'il reparte — aujourd'hui M5,
        à la republication d'une maquette corrigée. Sans cette ligne, deux
        « Mail parti : M5 » se suivraient sans explication. */
