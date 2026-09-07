@@ -88,6 +88,10 @@ export type Saisie = {
      Les deux cadres séparés restent acceptés pour corriger un dossier
      publié avant ce format. */
   apercu_plat?: string | null;
+  /* T-093 — la liste ORDONNÉE des couvertures proposées (1 à trois). Quand
+     elle est fournie, elle prime sur `apercu_plat`, et sa PREMIÈRE entrée
+     devient la couverture par défaut de la cliente. */
+  apercu_plats?: string[];
   apercu_c1?: string | null;
   apercu_c4?: string | null;
   apercu_double?: string | null;
@@ -258,11 +262,24 @@ function texte(v: unknown, max = 500): string {
    à la résolution : ceci est l'hygiène d'écriture, pas la seule garde. */
 const MAX_DOUBLES_ADMIN = 3;
 function doublesDeSaisie(v: unknown): string[] {
+  return listeDeSaisie(v, MAX_DOUBLES_ADMIN);
+}
+
+/* T-093 — les couvertures proposées au choix, même contrat et même plafond
+   (MAX_PLANCHES, apercu.ts), redit ici pour la même raison de pureté. La
+   PREMIÈRE est celle que la cliente voit d'emblée : l'ordre de l'atelier est
+   donc l'ordre de la proposition, pas un détail d'affichage. */
+const MAX_PLANCHES_ADMIN = 3;
+function planchesDeSaisie(v: unknown): string[] {
+  return listeDeSaisie(v, MAX_PLANCHES_ADMIN);
+}
+
+function listeDeSaisie(v: unknown, plafond: number): string[] {
   if (!Array.isArray(v)) return [];
   return v
     .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
     .map((x) => x.trim().slice(0, 600))
-    .slice(0, MAX_DOUBLES_ADMIN);
+    .slice(0, plafond);
 }
 
 /* Une adresse collée depuis Canva ou un transporteur. On refuse tout ce qui
@@ -347,14 +364,28 @@ export function preparerTransition(
        historique c1 + c4 + double reste accepté UNIQUEMENT pour corriger un
        dossier publié avant ce format : si `apercu_plat` est fourni, il gagne
        et c1/c4 sont ignorés (jamais de mélange des deux formats en base). */
-    const plat = texte(saisie.apercu_plat, 600);
+    /* T-093 — une planche, ou plusieurs proposées au choix. `apercu_plats`
+       (le tableau) prime ; `apercu_plat` reste accepté seul pour les appels
+       qui n'ont pas migré. La première du tableau est la couverture par
+       défaut : c'est elle qui s'affiche avant tout choix de la cliente. */
+    const plats = planchesDeSaisie(saisie.apercu_plats);
+    const platSeul = texte(saisie.apercu_plat, 600);
+    const planches = plats.length ? plats : platSeul ? [platSeul] : [];
 
-    if (plat) {
+    if (planches.length) {
       /* Les doubles pages dans l'ordre monté par l'atelier. On n'écrit la clé
          `doubles` que s'il y en a : une liste vide ne dit rien en base, et la
-         planche seule reste un aperçu complet. */
+         planche seule reste un aperçu complet.
+         Même règle pour les planches : `plats` n'apparaît que lorsqu'il y a
+         vraiment un choix. Une publication à une seule couverture s'écrit
+         exactement comme avant (`{ plat }`), donc rien ne change en base
+         pour le cas normal, et rien à reprendre sur les dossiers publiés. */
       const doubles = doublesDeSaisie(saisie.apercu_doubles);
-      patch.apercu_urls = { plat, ...(doubles.length ? { doubles } : {}) };
+      patch.apercu_urls = {
+        plat: planches[0],
+        ...(planches.length > 1 ? { plats: planches } : {}),
+        ...(doubles.length ? { doubles } : {}),
+      };
     } else {
       const visuels: Array<[keyof Saisie, string, string]> = [
         ["apercu_c1", "c1", "la couverture à plat (ou, à défaut, la première de couverture)"],

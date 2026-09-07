@@ -123,9 +123,14 @@ export async function POST(request: Request) {
       const visuels = prepa.patch.apercu_urls as Record<string, unknown>;
       const aVerifier: Array<{ champ: string; valeur: string }> = [];
       for (const [nom, valeur] of Object.entries(visuels)) {
-        if (nom === "doubles" && Array.isArray(valeur)) {
+        if ((nom === "doubles" || nom === "plats") && Array.isArray(valeur)) {
+          /* T-093 — les couvertures proposées arrivent elles aussi en tableau
+             et méritent la même garde : une planche absente du coffre ferait
+             un cadre vide DANS LE CHOIX, ce qui est pire qu'une seule
+             couverture. L'erreur pointe le rang exact. */
+          const prefixe = nom === "doubles" ? "apercu_double" : "apercu_plat";
           valeur.forEach((v, i) => {
-            if (typeof v === "string") aVerifier.push({ champ: `apercu_double_${i}`, valeur: v });
+            if (typeof v === "string") aVerifier.push({ champ: `${prefixe}_${i}`, valeur: v });
           });
         } else if (typeof valeur === "string") {
           const champ =
