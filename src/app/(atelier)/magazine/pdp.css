@@ -207,6 +207,28 @@
    composition dans une requete qui ne s'applique QU'AU-DESSUS de 768 px est
    la seule facon de garantir, sans rien remesurer, que le premier ecran du
    telephone n'a pas bouge d'un pixel. */
+/* Lot 3 (07/09) — le titre de la bande (arbitrage T-086 rendu par Mathias).
+   Sur telephone il coiffe la liste empilee ; sur ecran large il occupe le
+   vide mesure entre le kiosque et « L'objet » (~170 px de contenu pour
+   ~200 px de marges) : le titre absorbe, les marges se resserrent. Meme
+   famille display que les .titre de section, un cran en dessous. */
+.at-pdp .pas-titre {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(26px, 2.6vw, 38px);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+}
+
+.at-pdp .pas-sous {
+  margin: 0 0 clamp(14px, calc(2 * var(--uh)), 24px);
+  font-weight: 300;
+  font-size: clamp(14px, 1.15vw, 15px);
+  line-height: 1.6;
+  color: var(--c-text-soft);
+}
+
 .at-pdp .pas {
   margin: 0;
   padding: 0;
@@ -256,7 +278,9 @@
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 768px) {
   /* Toute la largeur de la grille, quelle que soit sa definition. */
-  .at-pdp .bloc-pas { grid-column: 1 / -1; margin-top: clamp(56px, 6.5vw, 110px); }
+  /* Lot 3 (07/09) — la marge descend vers la gouttiere standard : le titre
+     de la bande occupe desormais l'espace que la marge simulait. */
+  .at-pdp .bloc-pas { grid-column: 1 / -1; margin-top: var(--g); }
 
   .at-pdp .pas {
     display: grid;
@@ -443,6 +467,13 @@
   padding-top: var(--v);
   padding-bottom: var(--v);
   background: var(--c-bg);
+}
+
+/* Lot 3 (07/09) — sur ecran large, l'espace au-dessus de « L'objet »
+   descend d'un cran (T-086 : le vide flottant venait pour moitie d'ici).
+   Le telephone garde --v : le grief etait desktop. */
+@media (min-width: 768px) {
+  .at-pdp .objet { padding-top: clamp(48px, 6vw, 88px); }
 }
 
 .at-pdp .objet-grille {
