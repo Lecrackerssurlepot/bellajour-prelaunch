@@ -1,0 +1,104 @@
+# La relève des mails, toutes les heures.
+#
+# ══════════════════════════════════════════════════════════════════════════
+# POURQUOI GITHUB ET PAS VERCEL
+#
+# Le cron de `vercel.json` reste en place et ne bouge pas : il est le filet.
+# Mais le plan Hobby ne sait faire qu'UNE tâche par jour, et il la déclenche
+# « dans l'heure qui suit » l'horaire demandé, pas à l'heure dite. Tout ce
+# qui ne peut partir QUE par le balayage attendait donc entre 0 et 24 heures
+# de plus que le délai annoncé à la cliente :
+#   M2 / M2b   « J+1 » → en vrai de 12 à 31 h après l'inscription
+#   M3b        « 3 jours après M3 » → de 3 à 4 jours (le mail qui vend)
+#   M8         « J+3 après livraison » → de 3 à 4 jours
+#   M10        le préavis de fermeture → un jour de plus, sur 83
+#   et l'auto-validation à J+7, qui annonce dans M5 une date qu'elle
+#   dépassait d'un jour une fois sur deux.
+#
+# Une exécution par heure entre 6 h et 20 h UTC (8 h – 22 h à Paris) ramène
+# ce retard à moins d'une heure, sans jamais réveiller quelqu'un la nuit.
+# Rien n'est envoyé deux fois : le verrou est dans `mails_envoyes`, pas ici.
+#
+# ⚠️ CE FICHIER NE FAIT RIEN TANT QUE LE SECRET N'EXISTE PAS.
+# Sans `ATELIER_MAILS_SECRET` dans les secrets du dépôt, la tâche s'arrête
+# proprement et le dit. C'est Mathias qui l'arme, en connaissance de cause :
+# à partir de ce moment-là, de vrais mails partent à de vraies clientes
+# quatorze fois par jour au lieu d'une.
+#
+#   Repo → Settings → Secrets and variables → Actions → New repository secret
+#     ATELIER_MAILS_SECRET = la même valeur que sur Vercel (Production)
+#   Facultatif, pour viser une préproduction :
+#     RELEVE_URL = https://<domaine>  (défaut : https://www.bellajour.fr)
+#
+# ⚠️ LE JOURNAL NE PORTE JAMAIS DE TOKEN. La réponse de la route contient les
+# tokens entiers des dossiers touchés, et un token EST l'identité de la
+# cliente (T-041). On n'imprime donc que des COMPTES, jamais le corps brut :
+# les journaux d'une Action publique se lisent sans authentification.
+# ══════════════════════════════════════════════════════════════════════════
+
+name: Relève des mails
+
+on:
+  schedule:
+    # Toutes les heures de 6 h à 20 h UTC. GitHub déclenche à quelques
+    # minutes près et peut sauter un créneau en cas de charge : c'est une
+    # cadence, pas une horloge. Le cron Vercel de 7 h reste le filet.
+    - cron: '0 6-20 * * *'
+  workflow_dispatch:
+
+# Deux relèves en parallèle ne casseraient rien (le verrou tient), mais
+# elles n'apprendraient rien non plus.
+concurrency:
+  group: releve-mails
+  cancel-in-progress: false
+
+jobs:
+  relever:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Appeler la relève
+        env:
+          SECRET: ${{ secrets.ATELIER_MAILS_SECRET }}
+          BASE: ${{ vars.RELEVE_URL || 'https://www.bellajour.fr' }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SECRET}" ]; then
+            echo "::notice::Relève désarmée — le secret ATELIER_MAILS_SECRET n'est pas posé sur ce dépôt. Rien n'a été appelé."
+            exit 0
+          fi
+
+          code=$(curl -sS -o reponse.json -w '%{http_code}' \
+            -X POST "${BASE}/api/atelier/mails/relever" \
+            -H "Authorization: Bearer ${SECRET}" \
+            --max-time 120)
+
+          if [ "${code}" != "200" ]; then
+            # 404 = le secret ne correspond pas (la route ne confirme pas son
+            # existence à qui ne l'a pas). 500 = la relève a explosé.
+            echo "::error::La relève a répondu ${code}. Aucun mail n'est parti à ce passage."
+            exit 1
+          fi
+
+          # Des comptes, et rien d'autre : voir l'avertissement en tête.
+          resume=$(jq -c '{
+            examines,
+            envoyes: (.envoyes | length),
+            autoValides: (.autoValides | length),
+            incomplets: (.incomplets | length),
+            echecs: (.echecs | length),
+            sansTemplate: (.sansTemplate | length),
+            tronque
+          }' reponse.json)
+          echo "Relève : ${resume}"
+          echo "Relève : ${resume}" >> "${GITHUB_STEP_SUMMARY}"
+
+          if [ "$(jq '.echecs | length' reponse.json)" != "0" ]; then
+            echo "::warning::Brevo a refusé au moins un mail. Le verrou a été retiré, la relève suivante réessaiera — voir /admin/atelier/sante."
+          fi
+          if [ "$(jq '.sansTemplate | length' reponse.json)" != "0" ]; then
+            echo "::warning::Au moins un mail a été sauté faute de BREVO_TEMPLATE_<CODE>_ID sur Vercel. Celui-là ne guérira pas tout seul."
+          fi
+          if [ "$(jq '.tronque' reponse.json)" = "true" ]; then
+            echo "::warning::Balayage tronqué à 200 dossiers : le reste attend le passage suivant."
+          fi
