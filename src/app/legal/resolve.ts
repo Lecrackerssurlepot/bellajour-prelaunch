@@ -87,7 +87,10 @@ export function legalRouteMetadata(slug: string, lang: Locale, doc: LocalizedDoc
    personne qui a recu son lien. L'y envoyer lui montrerait le code de
    quelqu'un d'autre comme si c'etait le sien.
    Aujourd'hui aucune page n'accueille une filleule : voir T-002, qui attend
-   une decision produit. En attendant, l'accueil est la reponse honnete. */
+   une decision produit. En attendant, l'accueil est la reponse honnete.
+   Depuis le 07/09 (lot 1), ce lien n'est plus que le REPLI : RetourLien.tsx
+   le rend tel quel, puis le remplace par un vrai retour d'historique quand
+   la page precedente appartient au site. */
 export function backHref(): string {
   return '/'
 }

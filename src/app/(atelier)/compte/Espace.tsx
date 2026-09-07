@@ -144,6 +144,7 @@ export default function Espace({
   aTerminer,
   enCours,
   livres,
+  ongletInitial = null,
 }: {
   email: string
   photo: string | null
@@ -151,10 +152,15 @@ export default function Espace({
   aTerminer: DossierVue[]
   enCours: DossierVue[]
   livres: LivreVue[]
+  /* Lot 1 (07/09) — l'onglet demandé par l'URL (?onglet=), lu par la page
+     serveur. Un lien « ← Ma bibliothèque » qui rouvrait « Mes numéros »
+     était un retour qui mentait. Null : l'heuristique décide. */
+  ongletInitial?: Onglet | null
 }) {
   const numeros = [...aTerminer, ...enCours]
   const [onglet, setOnglet] = useState<Onglet>(
-    numeros.length === 0 && livres.length > 0 ? 'bibliotheque' : 'numeros',
+    ongletInitial ??
+      (numeros.length === 0 && livres.length > 0 ? 'bibliotheque' : 'numeros'),
   )
 
   return (

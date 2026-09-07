@@ -57,10 +57,22 @@ function dateLongue(iso: string | null): string | null {
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-export default async function ComptePage() {
+export default async function ComptePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ onglet?: string }>
+}) {
   /* L'espace n'est pas encore ouvert au public (compteOuvert) : cette
      page n'existe pas. */
   if (!compteOuvert()) notFound()
+
+  /* Lot 1 (07/09) — « ← Ma bibliothèque » doit rouvrir la bibliothèque,
+     pas l'onglet par défaut : l'onglet demandé arrive par l'URL, lu ICI
+     côté serveur (pas de useSearchParams côté client, pas de Suspense).
+     Toute autre valeur retombe sur l'heuristique d'Espace. */
+  const { onglet } = await searchParams
+  const ongletDemande =
+    onglet === 'bibliotheque' || onglet === 'numeros' ? onglet : null
 
   const qui = await utilisateurConnecte()
   if (!qui) redirect('/compte/connexion?suite=%2Fcompte')
@@ -109,6 +121,7 @@ export default async function ComptePage() {
       aTerminer={aTerminer.map(vueDossier)}
       enCours={enCours.map(vueDossier)}
       livres={livres}
+      ongletInitial={ongletDemande}
     />
   )
 }

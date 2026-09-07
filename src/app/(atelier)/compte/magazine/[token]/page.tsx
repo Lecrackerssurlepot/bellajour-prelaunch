@@ -61,7 +61,10 @@ export default async function MagazinePage({
   return (
     <div className="bj-atelier cpt cpt--mag">
       <header className="cpt-top">
-        <a className="cpt-retour" href="/compte">
+        {/* Lot 1 (07/09) — le lien promet la bibliothèque : l'URL porte
+            l'onglet, sinon /compte rouvrait « Mes numéros » dès qu'un
+            numéro était en cours. */}
+        <a className="cpt-retour" href="/compte?onglet=bibliotheque">
           <span aria-hidden="true">←</span> Ma bibliothèque
         </a>
         <Link className="cpt-top-marque" href="/" aria-label="Bellajour, retour à l’accueil">
