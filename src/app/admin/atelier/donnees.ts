@@ -16,7 +16,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
 import { signerGet } from "@/lib/atelier/r2";
-import { resoudreApercu, lireDoublesBrutes } from "@/lib/atelier/apercu";
+import { resoudreApercu, lireDoublesBrutes, lirePlanchesBrutes } from "@/lib/atelier/apercu";
 import { eurosPour, type PalierCle } from "@/lib/atelier/prix";
 import {
   ETAPE_ETAT,
@@ -867,6 +867,10 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
          cliente : tableau `doubles` neuf ou `double` unique historique). */
       doubles: lireDoublesBrutes(brut),
       double: brut.double ?? null,
+      /* T-093 — les clés brutes des couvertures proposées, dans l'ordre.
+         Même lecteur que la page cliente : tableau `plats` neuf, ou `plat`
+         unique historique traité comme une liste d'un élément. */
+      plats: lirePlanchesBrutes(brut),
     },
     adresse: versAdresse(n.adresse_livraison),
     stripePaymentIntent: (n.stripe_payment_intent as string) ?? null,

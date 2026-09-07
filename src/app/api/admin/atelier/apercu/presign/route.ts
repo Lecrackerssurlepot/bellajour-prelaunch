@@ -31,6 +31,11 @@ export const runtime = "nodejs";
    nouvelles publications. c1/c4 restent acceptés pour corriger les dossiers
    publiés avant ce format. */
 const SLOTS = new Set(["plat", "c1", "c4", "double"]);
+/* T-093 — les couvertures proposées au choix montent toutes sous le slot
+   `plat`, exactement comme les doubles pages montent sous `double` : la clé
+   générée porte déjà un suffixe aléatoire, donc trois planches ne s'écrasent
+   pas entre elles. Rien à ajouter ici, et c'est voulu — un slot indexé
+   figerait un rang que l'atelier peut encore changer au glissé. */
 
 export async function POST(request: Request) {
   const qui = await quiEstConnecteRequete(request);
