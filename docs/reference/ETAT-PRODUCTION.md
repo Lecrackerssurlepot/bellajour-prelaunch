@@ -723,3 +723,28 @@ Cinq tiers à faire passer en production, chacun avec son interrupteur et sa vé
 `docs/reference/BASCULE-LANCEMENT.md`. Deux points se décident AVANT le jour J : l'immatriculation
 portugaise chez Stripe Tax (le câblage TVA est inerte sans elle) et les finitions Cloudprinter
 (T-027). **Un mode test resté branché ne fait pas d'erreur, il fait un silence.**
+
+## Trois dossiers sans M0 — vérifié le 07/09/2026, aucun défaut
+
+Un audit de la base a montré que **trois dossiers sur douze n'ont jamais reçu M0**, l'accusé
+de création. Le trou est réel dans les données, mais les trois cas s'expliquent, et aucun
+n'est un défaut :
+
+| Dossier | Créé | Pourquoi pas de M0 |
+|---|---|---|
+| `153bb6` | 25/08 | **Antérieur à M0** : le code qui l'envoie date du 28/08 (commit `1e4a6db`) |
+| `1ad191` | 27/08 | Antérieur, même raison |
+| `a9b0e0` | 02/09 | **Créé par un script**, pas par le parcours : son journal porte `source: test_code_fondateur`, et l'insertion directe ne passe jamais par l'envoi |
+
+Deux choses à retenir pour la prochaine fois qu'on regardera ces chiffres :
+
+1. **Le premier M0 réellement parti date du 01/09 12:00**, soit quatre jours après le
+   déploiement du code. C'est la signature exacte du piège documenté dans
+   `src/lib/atelier/CLAUDE.md` : sans `BREVO_TEMPLATE_M0_ID`, le mail est sauté **sans poser
+   le verrou et sans erreur**, indéfiniment. La variable a été posée le 01/09 ; depuis, tous
+   les dossiers issus du parcours ont leur M0 (vérifié : neuf sur neuf).
+2. **Un dossier de test créé par script n'a pas la même chaîne de mails qu'un vrai dossier.**
+   Le compter comme un trou fausse la lecture. Le journal le dit (`source`), il suffit de le
+   lire avant de conclure.
+
+Aucun correctif : il n'y a rien à corriger.
