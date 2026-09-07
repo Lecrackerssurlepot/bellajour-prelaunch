@@ -23,6 +23,7 @@ import type Stripe from "stripe";
 import {
   codesPour,
   doitAutoValider,
+  doitRattraperM4,
   manquePour,
   parametresPour,
   templateExiste,
@@ -319,6 +320,25 @@ ok("livree il y a 4 j, M7b parti : M8",
 titre("— jamais deux fois —");
 ok("M1 deja parti : rien", codesPour(d({}), env(["M1", ilYA(1)]), MAINTENANT).length === 0);
 ok("M4 ne se rattrape jamais au balayage", codesPour(d({ etat: "payee" }), env(), MAINTENANT).length === 0);
+
+titre("— M4, le seul mail qu'on REPARE (05/09) —");
+/* Il part au webhook Stripe. S'il echoue, plus rien ne repassait derriere :
+   M5 l'exige, donc le dossier PAYE se figeait pour toujours. La reparation
+   se decide sur la PREUVE de l'echec, jamais sur l'etat seul. */
+ok("paye, M4 en echec au journal : on repare",
+   doitRattraperM4(d({ etat: "payee" }), env(), true));
+ok("paye, M4 jamais parti mais AUCUN echec : on ne repare pas (etat force a la main)",
+   !doitRattraperM4(d({ etat: "payee" }), env(), false));
+ok("paye, M4 deja parti : rien, meme avec un vieil echec repare",
+   !doitRattraperM4(d({ etat: "payee" }), env(["M4", ilYA(1)]), true));
+ok("pas encore paye : M4 ne se repare pas d'avance",
+   !doitRattraperM4(d({ etat: "apercu_pret" }), env(), true));
+ok("maquette publiee dans la journee, M4 en echec : on repare encore (M5 l'exige)",
+   doitRattraperM4(d({ etat: "maquette_prete" }), env(), true));
+ok("deja expedie : on ne reveille plus la chaine",
+   !doitRattraperM4(d({ etat: "expediee" }), env(), true));
+ok("deja livre : on ne reveille plus la chaine",
+   !doitRattraperM4(d({ etat: "livree" }), env(), true));
 
 titre("— l'auto-validation a J+7 —");
 ok("maquette + M5 + 8 j : valide d'office", doitAutoValider(d({ etat: "maquette_prete", etat_maj_le: ilYA(8) }), env(["M5", ilYA(8)]), MAINTENANT));
