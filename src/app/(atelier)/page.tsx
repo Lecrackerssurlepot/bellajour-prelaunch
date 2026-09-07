@@ -46,6 +46,14 @@ const titreFort = Cormorant_Garamond({
   display: 'swap',
 })
 
+/* Le drapeau « la couverture s'est deja ouverte dans cet onglet ». Ecrit par
+   Ouverture.tsx (cle `bj:ouverture-vue`), relu ici avant tout affichage.
+   Volontairement minuscule et sans dependance : il tourne sur le chemin
+   critique du premier rendu. */
+const OUVERTURE_VUE =
+  "(function(){try{if(sessionStorage.getItem('bj:ouverture-vue')==='1')" +
+  "document.documentElement.setAttribute('data-ouverture-vue','')}catch(e){}})()"
+
 const TITLE = 'L’atelier Bellajour — vos meilleurs moments méritent leur magazine'
 const DESCRIPTION =
   'Ce festival, cette soirée, ce road trip. Vous envoyez vos photos, ' +
@@ -144,6 +152,15 @@ export default function AtelierHome() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
+      {/* ⚠️ AVANT LA PREMIERE PEINTURE, et c'est tout son interet.
+          Si la couverture s'est deja ouverte dans cet onglet, on le dit au
+          document tout de suite : ouverture.css sert alors l'etat final et
+          Ouverture.tsx ne rejoue rien. Pose dans un `useEffect`, ce meme
+          drapeau arriverait APRES le premier rendu, et on verrait la
+          couverture repliee clignoter a chaque retour sur l'accueil.
+          Il ne lit rien d'autre que sa propre trace, et un mode prive qui
+          refuse `sessionStorage` retombe simplement sur l'animation. */}
+      <script dangerouslySetInnerHTML={{ __html: OUVERTURE_VUE }} />
       <Nav />
       <div className={`at-accueil ${titreFort.variable}`}>
         {/* Le grain : aucun aplat parfaitement plat. Fixe, par-dessus tout,

@@ -227,12 +227,37 @@ export default function Univers() {
       const memoire = rac.style.scrollBehavior
       rac.style.scrollBehavior = 'auto'
       document.documentElement.dataset.pilote = '1'
+      /* ⚠️ ON REND LA MAIN AU PREMIER GESTE. Pendant 1,1 s cette fonction
+         repose la page à chaque image : un doigt qui défile en même temps
+         se fait annuler soixante fois par seconde, et la page paraît
+         bloquée. Tourner la page est une PROPOSITION, pas une prise
+         d'otage. Même règle que la descente de Ouverture.tsx. */
+      let rendu = false
+      const rendreLaMain = () => { rendu = true }
+      const gestes: Array<keyof WindowEventMap> = ['wheel', 'touchstart', 'keydown', 'pointerdown']
+      /* ⚠️ ARMÉ À LA PREMIÈRE IMAGE, jamais tout de suite. Ce geste part
+         parfois d'un `keydown` (Entrée sur le bouton) qui n'a pas fini de
+         remonter jusqu'à window : une écoute posée maintenant s'entendrait
+         elle-même et annulerait la descente avant son premier pixel. */
+      let armes = false
+      const armer = () => {
+        if (armes) return
+        armes = true
+        gestes.forEach((g) => addEventListener(g, rendreLaMain, { passive: true }))
+      }
+      const relacher = () => {
+        gestes.forEach((g) => removeEventListener(g, rendreLaMain))
+        rac.style.scrollBehavior = memoire
+        delete document.documentElement.dataset.pilote
+      }
       const pas = (t: number) => {
+        if (rendu) { relacher(); return }
+        armer()
         const p = borne((t - t0) / duree, 0, 1)
         const e = 1 - Math.pow(1 - p, 4)
         window.scrollTo({ top: depart + d * e, behavior: 'instant' as ScrollBehavior })
         if (p < 1) requestAnimationFrame(pas)
-        else { rac.style.scrollBehavior = memoire; delete document.documentElement.dataset.pilote }
+        else relacher()
       }
       requestAnimationFrame(pas)
     }

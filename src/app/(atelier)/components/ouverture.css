@@ -579,3 +579,39 @@ html:not([data-anim]) .at-accueil .h-plein{
 /* Le voile suit la couverture : sans lui, le texte se poserait sur la
    photo en pleine lumiere et deviendrait illisible. */
 html:not([data-anim]) .at-accueil .h-voile{opacity:1 !important}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LA COUVERTURE DEJA VUE (05/09/2026)
+   `data-ouverture-vue` est pose sur <html> par le script en ligne de
+   page.tsx quand `sessionStorage` garde la trace d'une ouverture deja
+   jouee dans cet onglet — donc AVANT la premiere peinture, sinon on verrait
+   la couverture repliee le temps que React monte.
+
+   Deux situations, une seule regle :
+     — on revient sur l'accueil depuis /magazine ou /composer. Rejouer trois
+       secondes de choregraphie a chaque retour n'apprend rien a personne et
+       saccade les telephones modestes (retour de Mathias, 04/09) ;
+     — la personne a defile pendant l'ouverture : Ouverture.tsx pose le meme
+       attribut en cours de route pour arreter le film SEC.
+
+   Ce bloc ne cache rien et n'ajoute aucun mouvement : il SERT L'ETAT FINAL,
+   et coupe les seules transitions qui le rejoueraient. Les effets de survol
+   du bouton, eux, ne sont pas touches : ils vivent sur .rond, .mot et .fil,
+   pas sur les proprietes ci-dessous.
+   ⚠️ Il doit rester APRES le filet sans JavaScript : un navigateur sans JS
+   n'a ni l'attribut ni le probleme.
+   ═══════════════════════════════════════════════════════════════════════ */
+html[data-ouverture-vue] .at-accueil .h-plein{clip-path:inset(0);transition:none}
+html[data-ouverture-vue] .at-accueil .h-plein>img{transform:none;transition:none}
+html[data-ouverture-vue] .at-accueil .h-voile{opacity:1;transition:none}
+/* La lumiere rasante passe UNE fois, au lever de rideau. Au retour, il n'y
+   a pas de rideau : elle n'a rien a traverser. */
+html[data-ouverture-vue] .at-accueil .h-rake{display:none}
+html[data-ouverture-vue] .at-accueil .h-titre,
+html[data-ouverture-vue] .at-accueil .h-titre .ligne{transition:none}
+html[data-ouverture-vue] .at-accueil .h-titre .in{transform:none;opacity:1;transition:none}
+html[data-ouverture-vue] .at-accueil .h-amorce,
+html[data-ouverture-vue] .at-accueil .h-lede,
+html[data-ouverture-vue] .at-accueil .h-note,
+html[data-ouverture-vue] .at-accueil .acte--seul{opacity:1;transform:none;transition:none}
+html[data-ouverture-vue] .at-accueil .descente .fil{height:7vh;transition:none}
