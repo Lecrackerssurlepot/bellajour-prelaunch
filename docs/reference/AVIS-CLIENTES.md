@@ -1,5 +1,17 @@
 # Les avis clientes — le plan complet
 
+> **Mise à jour du 07/09/2026 — décision de Mathias : ce document reste une note de
+> conception. AUCUNE implémentation pour l'instant.** Le plan du 27/08 tient, mais trois
+> faits ont changé depuis et sont reportés ci-dessous, chirurgicalement :
+> 1. **La PDP a déménagé.** Depuis T-068 (fermé le 31/08), le nœud `Product` et la page
+>    qui vend, c'est **`/magazine`** — l'accueil `/` ne porte plus qu'`Organization` +
+>    `WebSite`. Le bloc avis visible et l'`aggregateRating` iront donc sur `/magazine`.
+> 2. **Le mail d'avis devient M11, sa relance M11b.** Le code M10 est PRIS depuis le
+>    01-02/09 par le préavis de fermeture (rétention T-076, template Brevo 40,
+>    `BREVO_TEMPLATE_M10_ID`, live en production).
+> 3. **Séquence cible confirmée** : M7b (livraison, J0) → M11 avis (J+5) → M11b relance
+>    (J+12) → M8 « le prochain moment ? » repoussé de J+3 à J+15.
+
 Écrit le 27/08/2026. Trois questions posées : **comment l'intégrer à la page produit**,
 **comment le rendre pertinent pour le SEO**, **comment le demander stratégiquement**.
 Elles n'ont pas la même difficulté. La troisième décide de tout : sans avis, il n'y a
@@ -16,12 +28,14 @@ ni page à remplir ni balisage à poser. Le reste est de la plomberie.
 | La relève quotidienne | `/api/atelier/mails/relever`, 7 h UTC | La machine qui enverra la demande, et sa relance. Rien de neuf à bâtir. |
 | `codesPour` + `mails_envoyes` | `src/lib/atelier/mails.ts` | Verrou anti double-envoi et **garde-fou de chaîne** (un mail ne part que si son prédécesseur est parti). Un mail d'avis y entre comme les autres. |
 | `consent_communication` | colonne + `ConsentCommunication.tsx` | La case « montrer un extrait de mon numéro ». Le consentement image existe déjà, séparé du reste. |
-| `Avis.tsx` | `/lancement` (noindex) | Trois témoignages **en dur**, sans étoile ni moyenne, avec la règle écrite en commentaire : rien tant qu'on est sous 30 avis, jamais d'`AggregateRating`. À reprendre (§9, D5). |
-| `JSON_LD` Product | `(atelier)/page.tsx` | Le socle du balisage. **Il contient un bug** à corriger avant d'y greffer quoi que ce soit (§4.1). |
+| `Avis.tsx` | `archive/lancement/components/` *(la page `/lancement` est retirée, D13)* | Trois témoignages **en dur**, sans étoile ni moyenne, avec la règle écrite en commentaire : rien tant qu'on est sous 30 avis, jamais d'`AggregateRating`. À reprendre (§9, D5). |
+| `JSON_LD` Product | `(atelier)/magazine/page.tsx` *(déplacé par T-068)* | Le socle du balisage. Le bug d'origine (`Offer` avec `lowPrice`/`highPrice`) est **déjà corrigé** : `AggregateOffer` en place (§4.1). |
 
-**La PDP, ici, c'est `/`.** La homepage de l'Atelier est la seule page indexée qui vend.
-C'est donc elle qui portera les avis visibles et le balisage. Pas `/lancement` (noindex),
-pas `/preventes` (fermée, noindex).
+**La PDP, ici, c'est `/magazine`** *(mise à jour du 07/09 — le 27/08 ce paragraphe disait
+`/`, mais T-068 a tranché : LE `Product` vit sur `/magazine`, la page qui porte les trois
+prix, et l'accueil ne garde qu'`Organization` + `WebSite`)*. C'est donc `/magazine` qui
+portera les avis visibles et le balisage. Pas `/` (le récit de marque, sans prix ni acte
+d'achat), pas `/lancement` ni `/preventes` (retirées, D13).
 
 ---
 
@@ -66,15 +80,21 @@ Séquence proposée, dans la machine existante (`codesPour`, état `livree`) :
 
 | Quand | Code | Ce que ça dit | Chaîné sur |
 |---|---|---|---|
-| Livraison + 5 j | **M10 · l'avis** | « Il vous ressemble ? » | M7 |
-| Livraison + 12 j, **si aucun avis** | **M10b · la relance** | Une phrase, un rappel, et c'est tout | M10 |
-| Livraison + 15 j | **M8 · le prochain moment** *(déplacé)* | L'invitation à recomposer | M10 |
+| Livraison + 5 j | **M11 · l'avis** | « Il vous ressemble ? » | M7b |
+| Livraison + 12 j, **si aucun avis** | **M11b · la relance** | Une phrase, un rappel, et c'est tout | M11 |
+| Livraison + 15 j | **M8 · le prochain moment** *(déplacé)* | L'invitation à recomposer | M11 |
+
+*(07/09 — le mail d'avis s'appelait M10 dans la première version de ce plan. Le code M10
+a été pris entre-temps par le préavis de fermeture, T-076, live en production : l'avis
+devient donc M11, sa relance M11b, partout dans ce document. Le prédécesseur de chaîne
+est M7b, « votre magazine est arrivé », qui part au passage en livraison — pas M7,
+l'expédition.)*
 
 ⚠️ **M8 part aujourd'hui à J+3 et demande un rachat.** Demander un rachat avant d'avoir
 demandé un avis, c'est réclamer le gros geste avant le petit. On inverse : l'avis
 d'abord, l'invitation ensuite. Le garde-fou de chaîne rend l'ordre mécanique.
 
-**Deux sollicitations, pas trois.** Après M10b, on ne redemande jamais. Une relance unique
+**Deux sollicitations, pas trois.** Après M11b, on ne redemande jamais. Une relance unique
 fait passer le taux de réponse d'environ moitié en plus ; une troisième abîme la relation
 pour un rendement nul.
 
@@ -124,7 +144,7 @@ se complète, jamais un formulaire à remplir d'un bloc.
 - **Aucun tri avant publication selon la note.** Voir §1.
 - **Aucun avis sollicité auprès de proches**, ni importé d'ailleurs.
 
-### 2.5 Le texte de M10 (brouillon)
+### 2.5 Le texte de M11 (brouillon)
 
 > **Objet** : Il vous ressemble ?
 > **Préheader** : Deux lignes, et vous aidez la prochaine à oser.
@@ -148,11 +168,17 @@ se complète, jamais un formulaire à remplir d'un bloc.
 
 ## 3. L'intégrer à la page produit
 
-### 3.1 Où, sur `/`
+### 3.1 Où, sur `/magazine`
 
-- **Bloc principal après `S2Collection`** : la preuve visuelle du produit, puis la preuve
-  sociale, puis la méthode. On ne met pas les avis avant d'avoir montré l'objet.
-- **Rappel court dans `S4Final`**, à hauteur du CTA : la note, le nombre d'avis, un lien
+*(07/09 — cette section proposait des emplacements sur `/`, dans `S2Collection` et
+`S4Final`. Ces composants sont ARCHIVÉS hors routage depuis, `archive/accueil-v1/`,
+D3/D13 : les emplacements sont à repenser sur `/magazine`. Le principe, lui, tient.)*
+
+- **Bloc principal après la preuve visuelle du produit** : le produit d'abord, la preuve
+  sociale ensuite, la méthode après. On ne met pas les avis avant d'avoir montré l'objet.
+  Sur `/magazine`, la bande des étapes (celle de T-086, dont l'espace desktop est déjà
+  jugé disproportionné) est un candidat naturel à céder ou partager sa place.
+- **Rappel court à hauteur du CTA final** : la note, le nombre d'avis, un lien
   vers `/avis`. C'est là que le doute se lève ou tue la commande.
 
 ### 3.2 Ce que porte chaque carte
@@ -166,8 +192,8 @@ La date et la mention ne sont pas décoratives : les deux sont des obligations l
 ### 3.3 La page `/avis`
 
 Tous les avis, du plus récent au plus ancien, paginés, **plus la charte de transparence**
-(§5.1). Indexable, ajoutée au `sitemap.ts`, liée depuis `/` et depuis le footer.
-C'est la page qui absorbe le volume de texte sans alourdir la homepage, et c'est elle
+(§5.1). Indexable, ajoutée au `sitemap.ts`, liée depuis `/magazine` et depuis le footer.
+C'est la page qui absorbe le volume de texte sans alourdir la page produit, et c'est elle
 qui répond à l'obligation d'affichage des modalités.
 
 ### 3.4 Le seuil d'affichage
@@ -184,22 +210,22 @@ conversion sur les fiches avec avis, et davantage sur les produits à panier él
 **Recommandation : 10.** Assez pour qu'une moyenne veuille dire quelque chose, assez tôt
 pour ne pas laisser six mois de trafic sans preuve. → décision **D3** (§10).
 
-### 3.6 Comment la note et le compteur montent tout seuls sur `/`
+### 3.6 Comment la note et le compteur montent tout seuls sur `/magazine`
 
 Un seul calcul, **`getAvis()`**, côté serveur : il lit les avis **publiés**, rend
-`{ moyenne, nombre, avis[], afficherNote }` et sert tout le monde — le bloc sur `/`, le
-rappel près du CTA, la page `/avis`, et le JSON-LD. Une seule source, donc aucune
-divergence possible entre l'étoile affichée et l'étoile balisée.
+`{ moyenne, nombre, avis[], afficherNote }` et sert tout le monde — le bloc sur
+`/magazine`, le rappel près du CTA, la page `/avis`, et le JSON-LD. Une seule source,
+donc aucune divergence possible entre l'étoile affichée et l'étoile balisée.
 
-Reste la vraie difficulté : **`/` est aujourd'hui une page statique**, fabriquée une fois
-au déploiement, qui ne parle à aucune base. Trois façons de la faire bouger, une seule
-bonne :
+Reste la vraie difficulté : **`/magazine` est aujourd'hui une page statique**, fabriquée
+une fois au déploiement, qui ne parle à aucune base. Trois façons de la faire bouger, une
+seule bonne :
 
 | Option | Effet | Verdict |
 |---|---|---|
-| `export const dynamic = 'force-dynamic'` | une requête Supabase **à chaque visite** | ❌ c'est la page qui reçoit tout le trafic Instagram |
+| `export const dynamic = 'force-dynamic'` | une requête Supabase **à chaque visite** | ❌ c'est la page où atterrit le trafic qui compte |
 | `export const revalidate = 3600` | la page se refait toute seule, au plus une fois par heure, à la première visite après expiration | ✅ le filet |
-| `revalidatePath('/')` à la publication d'un avis | la page se refait **dans la seconde** où vous publiez | ✅ l'effet immédiat |
+| `revalidatePath('/magazine')` à la publication d'un avis | la page se refait **dans la seconde** où vous publiez | ✅ l'effet immédiat |
 
 **Les deux dernières ensemble.** Coût : une requête base par heure au pire, zéro pour
 99,9 % des visiteuses. La moyenne à l'écran est donc automatique, mais elle ne bouge que
@@ -219,24 +245,27 @@ réponse de l'atelier sous un avis tiède est le contenu le plus persuasif de la
 
 ## 4. Le rendre pertinent pour le SEO
 
-### 4.1 D'abord, corriger le balisage existant
+### 4.1 D'abord, corriger le balisage existant — FAIT (T-068, 31/08)
 
-`(atelier)/page.tsx` déclare un `Offer` qui porte `lowPrice` et `highPrice`. **Ces deux
-propriétés n'existent pas sur `Offer`** : elles appartiennent à `AggregateOffer`. En
-l'état, Google ignore la fourchette au mieux, invalide l'offre au pire. À reprendre avant
-d'y greffer une note :
+*(07/09 — ce paragraphe décrivait un bug depuis corrigé. On le garde pour la trace.)*
+`(atelier)/page.tsx` déclarait un `Offer` qui portait `lowPrice` et `highPrice`, deux
+propriétés qui n'existent pas sur `Offer` : elles appartiennent à `AggregateOffer`.
+T-068 a réglé le fond ET la forme : LE `Product` vit désormais dans
+`(atelier)/magazine/page.tsx`, avec un `AggregateOffer` correct (`lowPrice`/`highPrice`
+lus depuis `PALIERS`, `priceCurrency`, `offerCount`, `availability`, `url`), plus
+`image`, `url` et `brand` ; l'accueil ne déclare plus qu'`Organization` + `WebSite`.
 
-- `offers` → `AggregateOffer` avec `lowPrice: 30`, `highPrice: 45`, `priceCurrency: EUR`, `offerCount: 3`, `availability`, `url` ;
-- ajouter `image` (une couverture réelle), `url`, `brand` (déjà là), et à terme `hasMerchantReturnPolicy` / `shippingDetails`, qui enrichissent la fiche marchande.
+Reste, à terme : `hasMerchantReturnPolicy` / `shippingDetails`, qui enrichissent la
+fiche marchande.
 
 ### 4.2 Puis greffer la note, quand le seuil est atteint
 
-Sur `/` uniquement, dans le même nœud `Product` :
+Sur `/magazine` uniquement, dans le même nœud `Product` :
 `aggregateRating` (`ratingValue`, `ratingCount`, `bestRating: 5`, `worstRating: 1`) **plus
 les derniers `review`** (`author`, `reviewRating`, `datePublished`, `reviewBody`).
 
 Trois règles à ne pas enfreindre :
-1. **Les avis balisés doivent être visibles sur la page qui les balise.** Baliser sur `/` une moyenne dont les avis ne vivent que sur `/avis` est une infraction directe.
+1. **Les avis balisés doivent être visibles sur la page qui les balise.** Baliser sur `/magazine` une moyenne dont les avis ne vivent que sur `/avis` est une infraction directe.
 2. **Ne jamais agréger des avis venus d'ailleurs** (Trustpilot, Instagram) dans notre `aggregateRating`. Interdit explicitement.
 3. **Jamais de note sur un nœud `Organization` ou `LocalBusiness`.** Inéligible, et c'est le genre de balisage qui attire une action manuelle.
 
@@ -255,7 +284,7 @@ frais, unique, et rédigé dans les mots des requêtes.
 texte libre (« Un festival », « Un road trip », « Un été »…). Une fois une trentaine
 d'avis rangés par occasion, ils deviennent la matière de pages d'atterrissage par moment
 (`/album-photo-voyage`, `/album-photo-anniversaire`), chacune avec ses propres avis. C'est
-là que se gagne la longue traîne, pas sur la homepage.
+là que se gagne la longue traîne, pas sur la page produit.
 
 ### 4.4 Le SEO qui n'est plus du SEO : les réponses des IA
 
@@ -331,7 +360,7 @@ moyenne et hors du balisage**. Voir D5.
 - **Écran `/admin/atelier/avis`** : file d'attente, actions armées en deux temps comme le
   reste de l'Atelier, publication et refus tracés dans `evenements`.
 - **Le filet en amont existe déjà** : M8 dit « si quelque chose ne va pas, répondez à ce
-  message ». On le garde dans M10. Ce n'est pas du gating tant que le lien vers l'avis
+  message ». On le garde dans M11. Ce n'est pas du gating tant que le lien vers l'avis
   public est offert à tout le monde, dans le même mail, sans condition.
 
 ---
@@ -352,14 +381,14 @@ moyenne et hors du balisage**. Voir D5.
 
 | Indicateur | Cible de départ |
 |---|---|
-| Taux de réponse à M10 (+ M10b) | **25 à 35 %** — hors norme pour du e-commerce (5 à 8 %), mais notre mail est nominatif, l'objet est émotionnel et le lien est déjà familier. |
+| Taux de réponse à M11 (+ M11b) | **25 à 35 %** — hors norme pour du e-commerce (5 à 8 %), mais notre mail est nominatif, l'objet est émotionnel et le lien est déjà familier. |
 | Délai médian livraison → avis | < 8 jours |
 | Part d'avis avec photo | > 25 % |
 | Note moyenne | 4,6 à 4,9 (viser 5,0 est un mauvais signe) |
 | Flux mensuel | 5 à 10 avis / mois, en continu |
 | Avis refusés | < 5 %, chacun motivé |
 | Search Console | apparition du rapport « Extraits d'avis » sous 3 semaines après le balisage |
-| Conversion `/` → `/composer` | comparer avant / après le bloc avis |
+| Conversion `/magazine` → `/composer` | comparer avant / après le bloc avis |
 
 ---
 
@@ -377,14 +406,18 @@ moyenne et hors du balisage**. Voir D5.
 3. **`POST /api/atelier/avis`** : token en corps, idempotent, un avis par numéro,
    limitation de débit. La note seule suffit à créer la ligne (marche 1).
 4. **Le bloc sur `/numero/[token]`**, visible dès l'état 8, avec `?note=` pré-rempli.
-5. **M10 + M10b** dans `scripts/mails-atelier.mjs`, entrées dans `codesPour`, **M8 déplacé
+5. **M11 + M11b** dans `scripts/mails-atelier.mjs`, entrées dans `codesPour`, **M8 déplacé
    à J+15 et chaîné**. Templates poussés par `--pousser`, ID dans Vercel (Preview **et**
-   Production).
+   Production). *(M10/M10b dans la version du 27/08 — le code M10 est pris depuis par le
+   préavis de fermeture, T-076.)*
 6. **`/admin/atelier/avis`** : modération, réponse, refus motivé.
 7. **`/avis`** + la charte de transparence + entrée sitemap + lien footer.
-8. **Le bloc d'affichage sur `/`**, sans étoiles tant que le seuil n'est pas atteint,
-   alimenté par un `getAvis()` unique que `/lancement` consommera aussi.
-9. **Correction du `JSON_LD`** (`AggregateOffer`), sans note.
+8. **Le bloc d'affichage sur `/magazine`**, sans étoiles tant que le seuil n'est pas
+   atteint, alimenté par un `getAvis()` unique. *(La version du 27/08 disait « que
+   `/lancement` consommera aussi » : `/lancement` est retirée depuis, redirection 307,
+   D13 — il n'y a plus qu'un consommateur visible, plus la page `/avis`.)*
+9. ~~Correction du `JSON_LD` (`AggregateOffer`), sans note.~~ **Déjà fait par T-068**
+   (§4.1) : rien à reprendre ici.
 
 *Ordre de grandeur : deux à trois jours.*
 
@@ -402,11 +435,17 @@ pages d'atterrissage par moment, arbitrage Google Seller Ratings si les Ads dém
 
 ## 10. Les décisions à trancher (à reporter dans `DECISIONS.md`)
 
-- **D3 — le seuil.** 10 avis (recommandé) ou 30 (règle actuelle, écrite dans `Avis.tsx`) ?
+*(07/09 — AUCUNE de ces décisions n'est tranchée : elles restent toutes à Mathias.
+Seule remarque de forme : la numérotation D3-D8 ci-dessous entre en collision avec les
+décisions D3-D8 déjà actées dans `docs/DECISIONS.md`, qui parlent d'autre chose. Au
+moment de les reporter, les renommer — par exemple DA1-DA6, « décisions avis ».)*
+
+- **D3 — le seuil.** 10 avis (recommandé) ou 30 (règle actuelle, écrite dans `Avis.tsx`,
+  aujourd'hui archivé) ?
 - **D4 — la contrepartie.** Recommandation ferme : **aucune**. À acter pour que la charte
   puisse l'écrire.
 - **D5 — les trois témoignages bêta.** Étiquetés et hors moyenne, ou retirés au profit des
   premiers vrais avis ?
 - **D6 — Trustpilot** au lancement, oui ou non ?
-- **D7 — le déplacement de M8** à J+15 derrière M10 : validé ?
+- **D7 — le déplacement de M8** à J+15 derrière M11 : validé ?
 - **D8 — la durée de conservation** des avis publiés, à écrire dans la charte.
