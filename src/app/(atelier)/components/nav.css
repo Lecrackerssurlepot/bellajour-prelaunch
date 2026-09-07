@@ -15,12 +15,24 @@
    la reconstituait donc dans son coin — pdp.css le faisait, avec un
    avertissement disant que la valeur devait suivre nav.css a la main. Elle
    est desormais posee ICI, ou vit le rembourrage qu'elle mesure : 2 × 2,6
-   unites de hauteur, plus le bouton du logo dont la cible tactile fait 44 px
-   et grandit avec la signature. MESURE : 91 px a 1440x900, 86 px sur un
+   unites de hauteur (2 × 1,8 sur desktop depuis le lot 2, 07/09), plus le
+   bouton du logo dont la cible tactile fait 44 px et grandit avec la
+   signature. MESURE : ~79 px a 1440x900 (91 avant le lot 2), 86 px sur un
    telephone de 812, 76 px sur un viewport de 620.
    ⚠️ Si le rembourrage ci-dessous change, cette ligne doit suivre — mais
-   elle seule, et plus une copie ailleurs. */
-.bj-atelier { --nav-h: calc(5.2 * var(--uh) + clamp(44px, 1.6vw + 24px, 52px)); }
+   elle seule, et plus une copie ailleurs.
+   Posee sur :root (et plus sur .bj-atelier) depuis le lot 2 : la racine
+   defile, et c'est elle qui doit connaitre la barre pour scroll-padding-top.
+   Les consommateurs (.at-pdp, ouverture.css) heritent comme avant. */
+:root { --nav-h: calc(5.2 * var(--uh) + clamp(44px, 1.6vw + 24px, 52px)); }
+
+/* Lot 2 (07/09) — les ancres du monde SOMBRE visaient 76 px, le
+   --bj-topbar-h du monde creme pose par globals.css, alors que la barre de
+   l'atelier est plus haute : toute ancre atterrissait ~15 px sous la barre.
+   Le scroll-padding vit sur la racine (c'est elle qui defile), garde par
+   :has — les pages creme gardent leur 76 px. Sans :has (vieux moteur), on
+   retombe sur le comportement d'avant : degrade, jamais casse. */
+html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
 
 .at-nav {
   position: fixed;
@@ -49,6 +61,26 @@
   padding-top: calc(1.9 * var(--uh));
   padding-bottom: calc(1.9 * var(--uh));
   background: var(--glass-bg-plein);
+}
+
+/* ── Lot 2 (07/09) — DESKTOP : la barre garde son air, perd son vide ─────
+   Constat de Mathias : « sur desktop nous avons maintenant trop d'espace ».
+   Le rembourrage descend de 2,6 a 1,8 unite au repos et de 1,9 a 1,4 une
+   fois defilee ; --nav-h suit LA MEME arithmetique (2 × 1,8) et tous ses
+   consommateurs (pdp.css, ouverture.css, les ancres ci-dessus) suivent
+   d'eux-memes. Le mobile ne bouge pas d'un pixel : rien ne change sous
+   1000 px, la coupure du site. Le padding n'est toujours PAS anime (voir
+   la note de .at-nav : re-rasterisation du flou). */
+@media (min-width: 1000px) {
+  :root { --nav-h: calc(3.6 * var(--uh) + clamp(44px, 1.6vw + 24px, 52px)); }
+  .at-nav {
+    padding-top: calc(1.8 * var(--uh));
+    padding-bottom: calc(1.8 * var(--uh));
+  }
+  .at-nav.is-stuck {
+    padding-top: calc(1.4 * var(--uh));
+    padding-bottom: calc(1.4 * var(--uh));
+  }
 }
 
 /* ⚠️ Remise a zero OBLIGATOIRE : sans elle le navigateur pose son fond
