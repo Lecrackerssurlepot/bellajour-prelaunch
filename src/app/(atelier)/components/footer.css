@@ -187,7 +187,22 @@
   .at-footer-links {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    /* Lot 6 (07/09) — 8 px d'écart pour des lignes de 22 px : les cinq
+       mentions se touchaient du pouce à un pixel près. L'écart passe à
+       18 px, ce qui LIBÈRE la place du rembourrage ci-dessous sans que
+       les zones se chevauchent (22 + 18 = 40 px d'axe en axe pour une
+       cible de 38). Empilées et aérées, elles se lisent aussi mieux. */
+    gap: 18px;
+  }
+
+  /* La cible grandit, la mise en page ne bouge pas : même remède que la
+     signature de la barre et que les liens sociaux ci-dessus — du
+     rembourrage annulé par une marge négative de même valeur. 22 → 38 px,
+     au-dessus du minimum de 24 px (WCAG 2.5.8) sans atteindre 44, qui
+     demanderait d'écarter encore les lignes. */
+  .at-footer-links a {
+    padding: 8px 0;
+    margin: -8px 0;
   }
   .at-footer-sep { display: none; }
 

@@ -30,19 +30,35 @@
 .bj-atelier .at-q-logo {
   background: none;
   border: none;
-  padding: 0;
-  display: block;
+  display: inline-flex;
+  align-items: center;
   cursor: pointer;
+  /* Lot 6 — la signature ne fait que 26 px : le rembourrage porte la cible
+     à 44, la marge négative annule son effet sur la barre. */
+  padding: 9px 14px;
+  margin: -9px -14px;
 }
 
 /* L'équilibre de la barre quand un côté est vide (écran 6, lien abîmé) :
    une cale de la taille de la croix, pour que le logo reste centré. */
 .at-q-cote { width: 38px; height: 38px; flex: 0 0 auto; }
 
+/* Lot 6 (07/09) — le retour faisait 29 px de haut et le logo 26 : deux
+   gestes fréquents, sous le plancher tactile, en haut d'un écran qu'on
+   traverse au pouce. Rembourrage annulé par une marge négative de même
+   valeur (le remède maison, voir nav.css) : les cibles passent à 44 px,
+   la barre garde exactement la même hauteur. */
 .bj-atelier .at-q-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   background: none;
   border: none;
-  padding: 6px;
+  /* La marge négative est VERTICALE aussi : sans elle, une cible de 44 px
+     imposait sa hauteur à la barre entière (mesuré : 58 → 64 px), et six
+     pixels de moins pour la question sur un écran de téléphone. */
+  padding: 6px 10px;
+  margin: -9px -10px;
   font-family: var(--font-ui);
   font-size: 13px;
   color: var(--c-text-faint);
@@ -355,7 +371,14 @@
 /* ---- suggestions de l'écran 1 ---- */
 .at-chips { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 26px; max-width: 640px; }
 
+/* Lot 6 (07/09) — 41 px mesurés à 375 px, trois pixels sous le plancher
+   d'une cible tactile. Ce sont les DOUZE premiers gestes du parcours, sur
+   le seul écran que tout le monde traverse : `min-height` plutôt que du
+   rembourrage, la pastille ne change pas de dessin. */
 .bj-atelier .at-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: 10px 18px;
   border: 1px solid var(--c-line-md);
   border-radius: 999px;
