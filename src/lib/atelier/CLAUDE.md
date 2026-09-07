@@ -65,7 +65,15 @@ borne de mise en service non plus, sinon plus rien ne s'anonymiserait jamais.
 le script refuse de refermer un dossier qui n'a pas été prévenu (`preavisRespecte`).
 
 ⚠️ **La relève doit tourner tous les jours** (`vercel.json`, 7 h UTC). Sans elle, M2, M3b, M8 et
-l'auto-validation à J+7 ne partent JAMAIS.
+l'auto-validation à J+7 ne partent JAMAIS. Le plan Hobby ne sait pas faire mieux qu'une fois par
+jour, et il déclenche « dans l'heure qui suit » : tout mail à retardement arrive donc entre 0 et
+24 h APRÈS le délai qu'on annonce à la cliente. La cadence horaire vit dans
+`.github/workflows/releve-mails.yml` — **inerte tant que son secret n'est pas posé sur le dépôt**.
+
+⚠️ **M4 est le seul mail que la relève RÉPARE dans un état qu'elle ne balaie pas pour lui-même**
+(`doitRattraperM4`). Il part au webhook Stripe ; s'il échoue, plus rien ne repassait derrière, et
+comme M5 l'exige, le dossier PAYÉ se figeait pour toujours. La réparation exige la PREUVE de
+l'échec (`mail_echec` dans le journal) : un état forcé à la main ne déclenche rien.
 
 ⚠️ **Si `BREVO_TEMPLATE_<CODE>_ID` manque, le mail est sauté SANS poser le verrou** : il sautera
 de nouveau à chaque relève, indéfiniment, sans erreur. `/admin/atelier/sante` est le seul endroit

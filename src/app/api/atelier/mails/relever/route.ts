@@ -24,7 +24,7 @@
  * ══════════════════════════════════════════════════════════════════════════
  *
  * ══════════════════════════════════════════════════════════════════════════
- * ELLE FAIT DEUX CHOSES, ET RIEN D'AUTRE
+ * ELLE FAIT TROIS CHOSES, ET RIEN D'AUTRE
  *
  * 1. ENVOYER CE QUI EST DÛ. La règle vit dans `codesPour` (mails.ts), pas
  *    ici : /admin l'utilise aussi après une transition, et deux copies de la
@@ -36,7 +36,13 @@
  *    mails.ts, pas ici —, M3b à J+3, M8 à J+3 après livraison)
  *    n'ont AUCUN déclencheur possible : ils n'existent que par ce balayage.
  *
- * 2. FERMER LA PRODUCTION. L'auto-validation à J+7 (PRD §11) : sans elle,
+ * 2. RÉPARER M4, ET LUI SEUL. Le mail du paiement part au webhook Stripe.
+ *    S'il échoue, plus rien ne repasse derrière — et M5 l'exige, donc le
+ *    dossier PAYÉ se fige pour toujours. Le balayage le renvoie quand le
+ *    journal porte la preuve de l'échec (`mail_echec`), jamais autrement :
+ *    un état forcé à la main ne déclenche rien. Voir `doitRattraperM4`.
+ *
+ * 3. FERMER LA PRODUCTION. L'auto-validation à J+7 (PRD §11) : sans elle,
  *    « une part des dossiers payés dort indéfiniment et la production ne se
  *    ferme jamais ». C'est la seule ÉCRITURE d'état de cette route.
  *
@@ -52,6 +58,8 @@ import {
   lireNumerosMail,
   codesPour,
   doitAutoValider,
+  doitRattraperM4,
+  ETATS_REPARABLES_M4,
   envoyerMailAtelier,
   lireJalons,
   manquePour,
@@ -65,6 +73,18 @@ import { memeSecret } from "@/lib/atelier/secret";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+/**
+ * Le balayage envoie EN SÉRIE : un aller-retour Brevo par mail, plus une à
+ * trois requêtes Supabase par dossier. Sans cette ligne, Vercel coupe la
+ * fonction à 10 s (défaut du plan) — au milieu de la boucle, sans erreur
+ * visible : les dossiers déjà traités ont leur mail, les suivants attendent
+ * le lendemain, et le résumé qui l'aurait dit n'est jamais journalisé
+ * puisqu'il est écrit APRÈS la boucle. Le silence exact qu'on cherche à
+ * éviter partout ailleurs dans ce fichier.
+ * 60 s est le plafond du plan Hobby ; à 200 dossiers c'est large.
+ */
+export const maxDuration = 60;
 
 /* Un balayage borné : au-delà, c'est qu'il s'est passé quelque chose
    d'anormal, et envoyer mille mails d'un coup serait le pire des remèdes.
@@ -99,10 +119,16 @@ function autorise(request: Request): boolean {
   return attendus.some((a) => memeSecret(bearer, a) || memeSecret(direct, a));
 }
 
-/* Tous les états où un mail peut être dû. `payee` en est absent : M4 part au
-   webhook, et le rattraper ici enverrait « paiement reçu » avec des jours de
-   retard aux dossiers passés à la main pendant les tests. */
+/* Tous les états où un mail peut être dû.
+
+   ⚠️ `payee` y est depuis le 05/09, et il n'y était pas avant. `codesPour`
+   n'y rend TOUJOURS aucun code — « paiement reçu » ne se rattrape pas des
+   jours plus tard sur un dossier passé à la main. Ce que le balayage vient
+   y chercher est autre chose : le M4 dont le journal PROUVE qu'il a échoué
+   (voir `doitRattraperM4`). Sans cette entrée, un dossier payé dont le mail
+   de Brevo a été refusé restait bloqué pour toujours — M5 exige M4. */
 const ETATS_BALAYES = [
+  "payee",
   "photos_recues",
   "photos_insuffisantes",
   "apercu_pret",
@@ -161,6 +187,31 @@ async function relever(request: Request) {
 
     const maintenant = new Date();
 
+    /* ── la preuve d'un M4 tombé (05/09) ───────────────────────────────
+       Une seule requête, et seulement s'il existe un dossier payé sans M4.
+       Sur une base normale la liste est vide et rien ne part : un dossier
+       payé a reçu son mail dans la seconde, au webhook.
+       On lit le JOURNAL, pas l'absence : c'est `mail_echec` qui distingue
+       « Brevo a refusé » de « état forcé à la main pendant un test », et
+       cette distinction est toute la sécurité de la réparation. */
+    const candidatsM4 = lignes.filter(
+      (d) => ETATS_REPARABLES_M4.includes(d.etat) && !envoyesParDossier.get(d.id)?.has("M4"),
+    );
+    const m4EnEchec = new Set<string>();
+    if (candidatsM4.length) {
+      const { data: evts, error: errM4 } = await supabase
+        .from("evenements")
+        .select("numero_id")
+        .eq("type", "mail_echec")
+        .contains("payload", { code: "M4" })
+        .in("numero_id", candidatsM4.map((d) => d.id))
+        .returns<Array<{ numero_id: string }>>();
+      /* Une lecture ratée ne répare rien — jamais l'inverse : sans la
+         preuve de l'échec, on n'envoie pas « paiement reçu ». */
+      if (errM4) console.error("[atelier/relever] lecture mail_echec M4", errM4.code, errM4.message);
+      for (const e of evts ?? []) m4EnEchec.add(e.numero_id);
+    }
+
     /* ── T-076 : les jalons de rétention, pour les seuls dossiers concernés ──
        La date du dépôt vit dans `evenements` et celle de la dernière photo
        dans `photos` : deux requêtes de plus. Le pré-tri les évite pour la
@@ -212,6 +263,23 @@ async function relever(request: Request) {
           autoValides.push({ token: d.token, titre: d.titre });
         }
         continue;
+      }
+
+      /* ── la réparation de M4, avant tout le reste ──────────────────
+         Elle ne passe que sur un dossier payé dont le journal porte
+         `mail_echec` pour M4. `codesPour` n'en sait rien et n'a pas à en
+         savoir : « paiement reçu » n'est pas un mail qu'on décide sur un
+         état, c'est un mail qu'on répare sur une preuve. */
+      if (doitRattraperM4(d, dejaPartis, m4EnEchec.has(d.id))) {
+        const manque = manquePour("M4", d);
+        if (manque.length) {
+          incomplets.push({ code: "M4", token: d.token, manque });
+        } else {
+          const r = await envoyerMailAtelier(supabase, "M4", d);
+          if (r.statut === "envoye") envoyes.push({ code: "M4", token: d.token, titre: d.titre });
+          else if (r.statut === "sans_template") sansTemplate.push({ code: "M4", token: d.token });
+          else if (r.statut !== "deja_envoye") echecs.push({ code: "M4", token: d.token });
+        }
       }
 
       /* Vide pour l'immense majorité des dossiers : seuls ceux qui approchent

@@ -627,9 +627,13 @@ const JOUR = 24 * HEURE;
 /**
  * L'âge à partir duquel un dépôt inachevé mérite une relance.
  *
- * ⚠️ CE N'EST PAS LE DÉLAI RÉEL DE LA RELANCE. La relève ne passe qu'une fois
- * par jour (vercel.json, 7 h UTC, et Vercel déclenche dans l'heure qui suit) :
- * le mail part au premier balayage POSTÉRIEUR à ce seuil, pas à l'heure pile.
+ * ⚠️ CE N'EST PAS LE DÉLAI RÉEL DE LA RELANCE. Le mail part au premier
+ * balayage POSTÉRIEUR à ce seuil, pas à l'heure pile — et la cadence du
+ * balayage n'est pas dans ce fichier. Deux régimes :
+ *   — cron Vercel seul (vercel.json, 7 h UTC, déclenché dans l'heure qui
+ *     suit sur le plan Hobby) : une fois par jour, donc jusqu'à 24 h de plus ;
+ *   — plus le workflow horaire `.github/workflows/releve-mails.yml`, une fois
+ *     son secret posé : moins d'une heure de plus.
  *
  * À 24 h, le « J+1 » annoncé valait en réalité entre 24 h et 46 h selon
  * l'heure d'inscription. Cas mesuré — un dossier ouvert le 27/08 à 10 h 24
@@ -841,6 +845,52 @@ export function doitAutoValider(n: NumeroPourReleve, envoyes: Envoyes, maintenan
   if (n.retouches_demandees_le) return false;
   if (n.etat !== "maquette_prete" || !envoyes.has("M5") || !n.etat_maj_le) return false;
   return maintenant.getTime() - Date.parse(n.etat_maj_le) >= JOURS_AVANT_AUTO_VALIDATION * JOUR;
+}
+
+/**
+ * M4 doit-il être RÉPARÉ ? (05/09/2026)
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ * LE SEUL MAIL QUI POUVAIT DISPARAÎTRE POUR TOUJOURS
+ *
+ * M4 part au webhook Stripe, à la seconde du paiement, et `codesPour` ne le
+ * rattrape volontairement PAS : l'état `payee` n'était même pas balayé, pour
+ * ne pas envoyer « paiement reçu » avec des jours de retard aux dossiers
+ * passés en payée à la main pendant les tests. La raison est bonne.
+ *
+ * Sa conséquence ne l'était pas. Si Brevo refuse M4, le verrou est retiré
+ * (garantie nº3) et PERSONNE ne repasse : le balayage ne regardait pas
+ * `payee`. Et comme M5 exige M4 (garde-fou de chaîne), la maquette publiée
+ * ensuite n'annonce plus rien, l'auto-validation à J+7 refuse de jouer
+ * (elle exige M5), et le dossier — PAYÉ — dort indéfiniment sans qu'aucun
+ * écran ne le dise. La page santé promettait pourtant, texto, que « la
+ * relève réessaiera seule ». C'était faux pour ce mail-là, et seulement
+ * pour lui.
+ *
+ * La réparation est donc conditionnée à la PREUVE de l'échec : une ligne
+ * `mail_echec` de code M4 dans le journal du dossier. Un dossier forcé en
+ * `payee` à la main n'en a pas, donc il ne reçoit rien — l'intention
+ * d'origine est intacte. C'est le lecteur du journal qui apporte
+ * `m4EnEchec` ; cette fonction reste PURE.
+ *
+ * ⚠️ DEUX ÉTATS, ET PAS UN DE PLUS. `payee` parce que c'est là que le trou
+ * s'ouvre, `maquette_prete` parce que l'atelier compose souvent dans la
+ * journée, donc AVANT le passage suivant du balayage — sans ce second état,
+ * la réparation raterait précisément les dossiers qui avancent vite. Au-delà
+ * (validée, en production, expédiée, livrée), on ne répare plus : réveiller
+ * la chaîne enverrait « paiement reçu », puis « votre maquette est prête »
+ * à quelqu'un dont le magazine est déjà parti. Ces dossiers-là se traitent à
+ * la main, et la page santé les montre.
+ * ══════════════════════════════════════════════════════════════════════════
+ */
+export const ETATS_REPARABLES_M4 = ["payee", "maquette_prete"];
+
+export function doitRattraperM4(
+  n: { etat: string },
+  envoyes: Envoyes,
+  m4EnEchec: boolean,
+): boolean {
+  return ETATS_REPARABLES_M4.includes(n.etat) && !envoyes.has("M4") && m4EnEchec;
 }
 
 export type Releve =
