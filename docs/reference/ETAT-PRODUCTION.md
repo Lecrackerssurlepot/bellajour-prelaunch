@@ -200,10 +200,27 @@ est **En production** et **Externe**, le Branding porte le logo et les trois URL
 été chargé** : les scopes restent `email profile`, non sensibles, donc la connexion fonctionne
 sans validation. Effet possible et purement cosmétique : un écran « application non validée ».
 
-⚠️ Google annonce « to continue to lxkivqbcegursmxshmoc.supabase.co » sur son écran de connexion,
-et cela ne changera pas : il affiche le domaine de l'URL de rappel, qui appartient à Supabase.
-Le nom et le logo Bellajour vivent sur l'écran de consentement. Pour que même le premier écran
-porte la marque, il faudrait un domaine personnalisé Supabase — option **payante**, non tranchée.
+✅ **L'écran Google porte la marque (07/09).** Il annonçait « to continue to
+lxkivqbcegursmxshmoc.supabase.co » ; il dit maintenant **« to continue to Bellajour »**, avec le
+logo, et renvoie aux « Bellajour's Privacy Policy and Terms of Service ». Vérifié sur le vrai
+parcours de production.
+
+C'est la **validation de marque par Google** qui l'a débloqué — pas un domaine personnalisé, donc
+**rien n'a été payé**. La doc Supabase le disait : « Branding and Verification show a logo and
+name instead of the Supabase project ID in the consent screen ». Elle annonçait « quelques jours
+ouvrés » ; elle est passée en moins d'une journée, sans doute parce que `bellajour.fr` portait
+DÉJÀ un `google-site-verification` dans le DNS Cloudflare et que les scopes (`email profile`)
+sont non sensibles. Le check-up du projet affiche « Votre application a été validée par Google ».
+
+⚠️ **Deux avertissements restent au check-up, aucun ne touche les clientes :**
+- **« Contacts du projet »** : le projet n'a qu'un propriétaire, le compte personnel de Mathias.
+  Si ce compte devient inaccessible, la connexion Google de toutes les clientes dépend de lui.
+  À corriger en ajoutant un second propriétaire (l'adresse pro, ou Louis).
+- **« Validation du compte de facturation »** : aucun compte de facturation Cloud associé. Sans
+  conséquence pour OAuth, qui est gratuit.
+
+⚠️ **À faire aussi** : supprimer le client OAuth créé par erreur dans le projet Google Cloud
+« Eventease », qui ne sert plus à rien.
 
 **Historique du câblage (04/09), et ce qui reste.** Le provider EST activé côté Supabase et la
 chaîne est prouvée : `/auth/v1/authorize?provider=google` redirige (302), la demande porte le
