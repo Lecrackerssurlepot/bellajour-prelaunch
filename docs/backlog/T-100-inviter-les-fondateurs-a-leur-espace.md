@@ -58,6 +58,9 @@ Reste à faire :
 Mathias dans la conversation, et **jamais avant que l'atelier soit prêt** : les inviter à un
 espace qui ne compose pas encore, c'est promettre deux fois.
 
+⚠️ **CE TICKET SE DÉCLENCHE AU LANCEMENT OFFICIEL, et Mathias y tient** — redit le 07/09 à la
+clôture de la séance des comptes. Il ne se rouvre pas avant, et il ne se ferme pas sans lui.
+
 ⚠️ À vérifier au passage : le socle parle de **quatorze** fondateurs, la base en donne **treize**
 (numéros 2 à 15, sans nº1 ni nº10). Si quelqu'un manque, cette invitation est le moment où ça
 se verrait — et le pire moment pour s'en apercevoir.
