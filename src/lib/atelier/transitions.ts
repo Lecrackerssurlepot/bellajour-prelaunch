@@ -100,6 +100,9 @@ export type Saisie = {
      à plat ; le trio historique garde sa `double` unique. Elle arrive en
      tableau depuis le navigateur. */
   apercu_doubles?: string[];
+  /* Le cadrage de chaque double page, indexé par sa clé de coffre — une
+     valeur `object-position` (« 50% 30% »). Absent = centré. */
+  apercu_cadrages?: Record<string, string>;
   canva_url?: string | null;
   maquette_pdf_url?: string | null;
   /* Les PDF print-ready, clés du coffre. Le produit décide desquels il a
@@ -274,6 +277,22 @@ function planchesDeSaisie(v: unknown): string[] {
   return listeDeSaisie(v, MAX_PLANCHES_ADMIN);
 }
 
+/* Les cadrages retenus : uniquement ceux des visuels réellement publiés
+   (une page retirée n'a plus de cadrage à garder), et uniquement des valeurs
+   de la forme attendue — cette chaîne finira dans un attribut `style`. */
+const CADRAGE_SAISIE = /^(\d{1,3}(\.\d+)?%|left|right|center|top|bottom)( (\d{1,3}(\.\d+)?%|left|right|center|top|bottom))?$/;
+function cadragesDeSaisie(v: unknown, clesGardees: string[]): Record<string, string> {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return {};
+  const gardees = new Set(clesGardees);
+  const sortie: Record<string, string> = {};
+  for (const [cle, valeur] of Object.entries(v as Record<string, unknown>)) {
+    if (!gardees.has(cle) || typeof valeur !== "string") continue;
+    const w = valeur.trim();
+    if (CADRAGE_SAISIE.test(w)) sortie[cle] = w;
+  }
+  return sortie;
+}
+
 function listeDeSaisie(v: unknown, plafond: number): string[] {
   if (!Array.isArray(v)) return [];
   return v
@@ -381,10 +400,15 @@ export function preparerTransition(
          exactement comme avant (`{ plat }`), donc rien ne change en base
          pour le cas normal, et rien à reprendre sur les dossiers publiés. */
       const doubles = doublesDeSaisie(saisie.apercu_doubles);
+      /* Les cadrages ne s'écrivent que pour les pages publiées, et la clé
+         n'apparaît pas du tout quand rien n'est réglé : le cas normal (tout
+         centré) laisse la base exactement comme avant. */
+      const cadrages = cadragesDeSaisie(saisie.apercu_cadrages, doubles);
       patch.apercu_urls = {
         plat: planches[0],
         ...(planches.length > 1 ? { plats: planches } : {}),
         ...(doubles.length ? { doubles } : {}),
+        ...(Object.keys(cadrages).length ? { cadrages } : {}),
       };
     } else {
       const visuels: Array<[keyof Saisie, string, string]> = [
