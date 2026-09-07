@@ -20,7 +20,31 @@
  * relancer le script ne casse rien et n'envoie toujours rien.
  */
 
+import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
+
+/* ⚠️ Les valeurs de .env.local peuvent être entre guillemets (cf. recette.mjs). */
+function sansGuillemets(v: string): string {
+  const t = v.trim();
+  return t.length > 1 && (t[0] === '"' || t[0] === "'") && t.at(-1) === t[0] ? t.slice(1, -1) : t;
+}
+
+/**
+ * `.env.local` versé dans `process.env` — même geste que
+ * `anonymiser-dossiers.ts` et `vignettes-rattrapage.ts`, et pour la même
+ * raison : Next charge ce fichier tout seul, un script lancé par tsx non.
+ * Sans ça, le script s'arrête sur un « SUPABASE_URL manquant » qui ne dit
+ * pas d'où vient le manque, et Mathias devrait exporter à la main.
+ */
+function chargerEnv(): void {
+  for (const ligne of readFileSync(".env.local", "utf8").split("\n")) {
+    const m = ligne.match(/^([A-Z0-9_]+)=(.*)$/);
+    if (!m || process.env[m[1]] !== undefined) continue;
+    process.env[m[1]] = sansGuillemets(m[2]);
+  }
+}
+
+chargerEnv();
 
 const VRAIMENT = process.argv.includes("--vraiment");
 
