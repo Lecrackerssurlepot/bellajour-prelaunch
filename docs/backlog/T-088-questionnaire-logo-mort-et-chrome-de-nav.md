@@ -44,3 +44,25 @@ coût d'usage silencieux, invisible en recette.
 
 **Question pour Mathias** : le logo `/composer` devient-il un lien vers l'accueil, ou reste-t-il
 neutre pour ne pas ouvrir de sortie du tunnel ?
+
+## Tranché et fait (07/09, lot 1 du chantier « Un vrai site »)
+
+Mathias a tranché dans la conversation du 07/09 : **« Cliquable + garde-fou »**.
+
+- **`/composer`** — le logo est un vrai lien vers l'accueil. Composition commencée (une réponse,
+  un token) : la modale « Quitter la composition ? » s'interpose, et sa sortie mène à l'accueil
+  quand c'est le logo qui l'a ouverte, à `/magazine` quand c'est la croix — deux intentions, deux
+  destinations, une seule modale. Composition vierge ou écran 6 : lien direct, rechargement voulu
+  (moteur singleton).
+- **La croix de l'écran « lien abîmé »** menait à `/` quand la croix normale mène à `/magazine` :
+  alignée sur `/magazine`.
+- **Dans le même lot** : le Précédent du navigateur recule d'un écran au lieu de sortir du
+  questionnaire (`history.pushState`/`popstate` reflétant `draft.screen`, validation identique en
+  avant), « ← Ma bibliothèque » rouvre l'onglet bibliothèque (`/compte?onglet=bibliotheque`), et
+  le « ← Retour » des pages légales revient d'où l'on vient (referrer même origine, repli `/`).
+- **`/numero/[token]`** — pas touché : l'inertie du logo y reste le choix produit documenté.
+  Rouvrir un ticket dédié si Mathias veut aussi le traiter.
+
+## État
+
+`fait` — livré par la branche `fix/navigation-retour`, en attente de recette Mathias.

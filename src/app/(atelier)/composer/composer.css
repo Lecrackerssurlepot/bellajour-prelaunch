@@ -25,6 +25,16 @@
   display: block;
 }
 
+/* T-088 (07/09) — l'enveloppe cliquable du logo (lien ou bouton selon que
+   la composition a commencé). Invisible : seul le geste change. */
+.bj-atelier .at-q-logo {
+  background: none;
+  border: none;
+  padding: 0;
+  display: block;
+  cursor: pointer;
+}
+
 /* L'équilibre de la barre quand un côté est vide (écran 6, lien abîmé) :
    une cale de la taille de la croix, pour que le logo reste centré. */
 .at-q-cote { width: 38px; height: 38px; flex: 0 0 auto; }
