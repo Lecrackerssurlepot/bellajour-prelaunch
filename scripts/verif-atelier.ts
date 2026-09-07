@@ -18,7 +18,7 @@
 
 import { preparerTransition, actionsDepuis } from "@/lib/atelier/transitions";
 import { urgencePour, comparerUrgence, etapeDepot } from "@/lib/atelier/urgence";
-import { lireDoublesBrutes, MAX_DOUBLES } from "@/lib/atelier/apercu";
+import { lireDoublesBrutes, lirePlanchesBrutes, MAX_DOUBLES, MAX_PLANCHES } from "@/lib/atelier/apercu";
 import type Stripe from "stripe";
 import {
   codesPour,
@@ -183,6 +183,42 @@ ok("doubles : rien -> liste vide",
    lireDoublesBrutes({}).length === 0 && lireDoublesBrutes({ double: "" }).length === 0);
 ok("doubles : alias `double_page` accepte",
    JSON.stringify(lireDoublesBrutes({ double_page: "y" })) === JSON.stringify(["y"]));
+
+/* ── apercu : 1 a 3 couvertures proposees au choix (T-093) ────────────────
+   Meme contrat que les doubles pages, et surtout : TOUS les dossiers deja
+   publies (une seule cle `plat`) doivent continuer de se lire sans reprise. */
+ok("planches : le tableau `plats` est lu dans l'ordre de proposition",
+   JSON.stringify(lirePlanchesBrutes({ plats: ["a", "b", "c"] })) === JSON.stringify(["a", "b", "c"]));
+ok(`planches : borne a ${MAX_PLANCHES} (au-dela, un choix devient un catalogue)`,
+   lirePlanchesBrutes({ plats: ["a", "b", "c", "d"] }).length === MAX_PLANCHES);
+ok("planches : un dossier deja publie (`plat` seul) reste lisible",
+   JSON.stringify(lirePlanchesBrutes({ plat: "k/plat.jpg" })) === JSON.stringify(["k/plat.jpg"]));
+ok("planches : le tableau prime sur la valeur unique",
+   JSON.stringify(lirePlanchesBrutes({ plats: ["a"], plat: "z" })) === JSON.stringify(["a"]));
+ok("planches : vides et non-chaines ignores",
+   JSON.stringify(lirePlanchesBrutes({ plats: ["a", "", 7, "  b  "] })) === JSON.stringify(["a", "b"]));
+ok("planches : rien -> liste vide",
+   lirePlanchesBrutes({}).length === 0 && lirePlanchesBrutes({ plat: "" }).length === 0);
+ok("planches : alias `couverture_plat` accepte (ancienne ecriture)",
+   JSON.stringify(lirePlanchesBrutes({ couverture_plat: "y" })) === JSON.stringify(["y"]));
+
+/* La PUBLICATION : une seule couverture s'ecrit comme avant (pas de cle
+   `plats` parasite), plusieurs ecrivent la liste ET gardent `plat` = la
+   premiere, celle que la cliente voit par defaut. */
+const uneSeule = preparerTransition("publier_apercu", "photos_recues",
+  { nb_pages: 34, apercu_plats: ["k/p1.jpg"] });
+ok("publier : une seule couverture n'ecrit PAS de cle `plats`",
+   uneSeule.ok && JSON.stringify(uneSeule.patch.apercu_urls) === JSON.stringify({ plat: "k/p1.jpg" }));
+const troisChoix = preparerTransition("publier_apercu", "photos_recues",
+  { nb_pages: 34, apercu_plats: ["k/p1.jpg", "k/p2.jpg", "k/p3.jpg"] });
+const urlsChoix = troisChoix.ok ? (troisChoix.patch.apercu_urls as Record<string, unknown>) : {};
+ok("publier : trois couvertures ecrivent la liste, `plat` = la premiere",
+   troisChoix.ok && urlsChoix.plat === "k/p1.jpg" &&
+   JSON.stringify(urlsChoix.plats) === JSON.stringify(["k/p1.jpg", "k/p2.jpg", "k/p3.jpg"]));
+const ancienAppel = preparerTransition("publier_apercu", "photos_recues",
+  { nb_pages: 34, apercu_plat: "k/seul.jpg" });
+ok("publier : l'ancien champ `apercu_plat` seul marche toujours",
+   ancienAppel.ok && JSON.stringify(ancienAppel.patch.apercu_urls) === JSON.stringify({ plat: "k/seul.jpg" }));
 const mauvaisEtat = preparerTransition("publier_maquette", "photos_recues", { canva_url: "https://x.fr" });
 ok("publier la maquette depuis l'etat 1 refuse", !mauvaisEtat.ok && mauvaisEtat.erreurs[0].champ === "etat");
 ok("lien javascript: refuse", !preparerTransition("publier_maquette", "payee", { canva_url: "javascript:alert(1)" }).ok);

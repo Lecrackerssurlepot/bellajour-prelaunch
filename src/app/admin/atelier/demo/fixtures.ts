@@ -511,15 +511,16 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     /* La démo ne joue pas le dépôt interrompu : `null` veut dire « aucun
        témoin », donc aucune alerte — exactement ce qu'on veut par défaut. */
     photosAttendues: null,
-    /* T-090 — la démo joue le format normal : une planche + deux doubles
-       pages, pour montrer le gestionnaire réordonnable de l'admin. Un dossier
-       non publié n'a encore rien. */
+    /* T-090/T-093 — la démo joue le format normal : DEUX couvertures
+       proposées (pour montrer le choix et son rang « par défaut ») et deux
+       doubles pages, dans leurs gestionnaires réordonnables. Un dossier non
+       publié n'a encore rien. */
     apercu: publie
-      ? { plat: PHOTOS[10], c1: null, c4: null, doubles: [PHOTOS[2], PHOTOS[3]], double: PHOTOS[2] }
-      : { plat: null, c1: null, c4: null, doubles: [], double: null },
+      ? { plat: PHOTOS[10], plats: [PHOTOS[10], PHOTOS[11]], c1: null, c4: null, doubles: [PHOTOS[2], PHOTOS[3]], double: PHOTOS[2] }
+      : { plat: null, plats: [], c1: null, c4: null, doubles: [], double: null },
     apercuBrut: publie
-      ? { plat: PHOTOS[10], c1: null, c4: null, doubles: [PHOTOS[2], PHOTOS[3]], double: PHOTOS[2] }
-      : { plat: null, c1: null, c4: null, doubles: [], double: null },
+      ? { plat: PHOTOS[10], plats: [PHOTOS[10], PHOTOS[11]], c1: null, c4: null, doubles: [PHOTOS[2], PHOTOS[3]], double: PHOTOS[2] }
+      : { plat: null, plats: [], c1: null, c4: null, doubles: [], double: null },
     adresse: g.paye
       ? {
           nom: `${g.prenom} ${g.email.split("@")[0].split(".")[1] ?? ""}`.trim(),

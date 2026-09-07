@@ -378,9 +378,12 @@ export default async function NumeroPage({
 
           <Apercu
             plat={apercu?.plat ?? null}
+            plats={apercu?.plats ?? []}
             c1={apercu?.c1 ?? null}
             c4={apercu?.c4 ?? null}
             doubles={apercu?.doubles ?? []}
+            token={numero.token}
+            modifiable
           />
 
           {!retourDePaiement && (

@@ -255,12 +255,20 @@ function vuesDeLApercu(apercu: FicheVue["apercu"]): ApercuVue[] {
   if (apercu.plat) {
     /* T-090 — la planche découpée en trois faces, puis 0 à trois doubles
        pages dans l'ordre. Les légendes sont uniques (« Double page 1/2/… »
-       s'il y en a plusieurs) : la loupe navigue par légende. */
+       s'il y en a plusieurs) : la loupe navigue par légende.
+       T-093 — quand plusieurs couvertures sont proposées, l'atelier doit voir
+       EXACTEMENT ce que verra la cliente : la première en trois faces (c'est
+       celle qu'elle a d'emblée), puis les autres, nommées par leur rang. */
+    const plats = apercu.plats.length ? apercu.plats : [apercu.plat];
     const vues: ApercuVue[] = [
-      { cle: "plat-c1", src: apercu.plat, legende: "La couverture", loupe: "La couverture à plat", decoupe: "droite" },
-      { cle: "plat-c4", src: apercu.plat, legende: "La quatrième", loupe: "La couverture à plat", decoupe: "gauche" },
-      { cle: "plat", src: apercu.plat, legende: "La couverture à plat", loupe: "La couverture à plat" },
+      { cle: "plat-c1", src: plats[0], legende: "La couverture", loupe: "La couverture à plat", decoupe: "droite" },
+      { cle: "plat-c4", src: plats[0], legende: "La quatrième", loupe: "La couverture à plat", decoupe: "gauche" },
+      { cle: "plat", src: plats[0], legende: "La couverture à plat", loupe: "La couverture à plat" },
     ];
+    plats.slice(1).forEach((src, i) => {
+      const nom = `Couverture ${i + 2}`;
+      vues.push({ cle: `plat-${i + 1}`, src, legende: nom, loupe: nom });
+    });
     apercu.doubles.forEach((src, i) => {
       const nom = apercu.doubles.length > 1 ? `Double page ${i + 1}` : "Une double page";
       vues.push({ cle: `double-${i}`, src, legende: nom, loupe: nom });

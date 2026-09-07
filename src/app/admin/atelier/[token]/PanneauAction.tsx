@@ -52,6 +52,11 @@ type DoubleItem = { id: string; key: string; preview: string };
    borne de toute façon à la publication. */
 const MAX_DOUBLES = 3;
 
+/* Miroir client de MAX_PLANCHES (apercu.ts), pour la même raison. T-093 :
+   jusqu'à trois couvertures proposées, la première étant celle que la cliente
+   voit avant tout choix. */
+const MAX_PLANCHES = 3;
+
 /* T2-2 / T-090 — le format normal : LA PLANCHE à plat (l'export naturel de
    Canva, la 4e, le dos et la 1re côte à côte dans un seul fichier). La page
    cliente en découpe les deux faces PILE au centre, en CSS. Les doubles pages
@@ -104,6 +109,18 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
     apercu_c4: fiche.apercu.c4 ?? "",
     apercu_double: fiche.apercu.double ?? "",
   });
+  /* T-093 — les couvertures proposées au choix, dans l'ordre de proposition.
+     La PREMIÈRE est celle que la cliente voit d'emblée : ranger, ici, c'est
+     décider ce qu'elle regarde en premier. Préremplies depuis la fiche, comme
+     les doubles pages ; un dossier publié avec une seule planche en donne une,
+     et l'écran se comporte exactement comme avant. */
+  const [planches, setPlanches] = useState<DoubleItem[]>(() =>
+    fiche.apercuBrut.plats.map((key, i) => ({
+      id: crypto.randomUUID(),
+      key,
+      preview: fiche.apercu.plats[i] ?? "",
+    })),
+  );
   /* T-090 — les doubles pages, dans l'ordre montré à la cliente. Préremplies
      depuis la fiche : clé brute + vignette signée, appariées par rang. */
   const [doubles, setDoubles] = useState<DoubleItem[]>(() =>
@@ -116,6 +133,10 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
   /* L'id de la double page qu'on est en train de glisser. Une ref, pas un
      état : elle ne pilote aucun rendu, elle survit juste au drag. */
   const glisse = useRef<string | null>(null);
+  /* Deux listes glissables, deux refs : sans ça, lâcher une couverture sur
+     une double page (ou l'inverse) déplacerait un élément dans la mauvaise
+     liste. Chaque liste ne voit que son propre glissé. */
+  const glissePlanche = useRef<string | null>(null);
   const [envoiEnCours, setEnvoiEnCours] = useState<string | null>(null);
   /* Les noms lisibles des PDF d'impression déposés — une clé de coffre seule
      ne dit rien à l'écran. Préremplis depuis la fiche si un dépôt a eu lieu. */
@@ -202,15 +223,52 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
     setApercus((a) => ({ ...a, [champ]: URL.createObjectURL(file) }));
   }
 
-  /* La planche. Un dépôt vide c1/c4 de la saisie : le serveur les ignorerait
-     (le plat gagne), mais une saisie qui porte les deux formats à la fois
-     finirait par mentir à quelqu'un. */
-  async function deposerPlanche(file: File) {
-    const key = await envoyerVisuel("apercu_plat", "plat", file);
+
+  /* T-093 — une couverture de plus dans la proposition. Toutes montent sous
+     le slot « plat » : la route leur donne une clé unique, donc trois
+     planches ne s'écrasent pas. */
+  async function ajouterPlanche(file: File) {
+    if (planches.length >= MAX_PLANCHES) return;
+    const key = await envoyerVisuel("apercu_plat_new", "plat", file);
     if (!key) return;
-    set("apercu_plat", key);
-    setApercus((a) => ({ ...a, apercu_plat: URL.createObjectURL(file) }));
+    setPlanches((p) =>
+      p.length >= MAX_PLANCHES ? p : [...p, { id: crypto.randomUUID(), key, preview: URL.createObjectURL(file) }],
+    );
+    /* Une planche déposée vide c1/c4 : le serveur les ignorerait de toute
+       façon (le format à plat gagne), mais une saisie qui porte les deux
+       formats à la fois finirait par mentir à quelqu'un. */
     setSaisie((s) => ({ ...s, apercu_c1: "", apercu_c4: "" }));
+    setVerif(null);
+  }
+
+  async function remplacerPlanche(id: string, file: File) {
+    const key = await envoyerVisuel(`planche-${id}`, "plat", file);
+    if (!key) return;
+    setPlanches((p) => p.map((x) => (x.id === id ? { ...x, key, preview: URL.createObjectURL(file) } : x)));
+    setVerif(null);
+  }
+
+  function retirerPlanche(id: string) {
+    /* Retirer = ne plus proposer. L'objet reste inerte dans le coffre. */
+    setPlanches((p) => p.filter((x) => x.id !== id));
+    setErreurs([]);
+    setVerif(null);
+  }
+
+  function deposerPlancheSur(cibleId: string) {
+    const src = glissePlanche.current;
+    glissePlanche.current = null;
+    if (!src || src === cibleId) return;
+    setPlanches((p) => {
+      const from = p.findIndex((x) => x.id === src);
+      const to = p.findIndex((x) => x.id === cibleId);
+      if (from < 0 || to < 0) return p;
+      const copie = [...p];
+      const [item] = copie.splice(from, 1);
+      copie.splice(to, 0, item);
+      return copie;
+    });
+    setVerif(null);
   }
 
   /* Une double page de plus, au bout de la liste. Toutes montent sous le même
@@ -337,7 +395,14 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
           /* T-090 — la liste ORDONNÉE des doubles pages part à côté de la
              saisie scalaire. Ignorée par le serveur en format historique
              (plat vide → il lit c1/c4/double). */
-          saisie: { ...saisie, apercu_doubles: doubles.map((d) => d.key) },
+          /* T-093 — les couvertures dans l'ordre de proposition, à côté des
+             doubles pages. Le serveur n'écrit `plats` que s'il y en a
+             plusieurs : une seule publication reste `{ plat }`, comme avant. */
+          saisie: {
+            ...saisie,
+            apercu_plats: planches.map((p) => p.key),
+            apercu_doubles: doubles.map((d) => d.key),
+          },
           verifier,
         }),
       });
@@ -518,54 +583,127 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                 </div>
               ) : (
                 <div className="ate-maquette">
-                  {/* ── LA PLANCHE ────────────────────────────────────────
-                      Un seul fichier large : 4e · dos · 1re. Cliquer OU y
-                      glisser le fichier depuis le Finder. */}
-                  <div className="ate-planche">
-                    <span className="ate-slot-label">{SLOT_PLANCHE.label}</span>
-                    <button
-                      type="button"
-                      className={
-                        "ate-planche-zone" + (apercus.apercu_plat ? " ate-slot-zone--pleine" : "")
-                      }
-                      onClick={() => inputs.current.apercu_plat?.click()}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const f = e.dataTransfer.files?.[0];
-                        if (f) deposerPlanche(f);
-                      }}
-                      disabled={envoiEnCours !== null}
-                    >
-                      {apercus.apercu_plat ? (
-                        <img src={apercus.apercu_plat} alt="" className="ate-slot-img" />
-                      ) : envoiEnCours === "apercu_plat" ? (
-                        <span className="ate-slot-vide">Envoi…</span>
-                      ) : (
-                        <span className="ate-slot-vide">
-                          Glisser la planche ici, ou cliquer.
-                          <br />
-                          La page cliente la coupe pile au centre.
-                        </span>
-                      )}
-                    </button>
-                    <input
-                      ref={(el) => {
-                        inputs.current.apercu_plat = el;
-                      }}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-                      hidden
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) deposerPlanche(f);
-                        e.target.value = "";
-                      }}
-                    />
-                    {erreurDe("apercu_plat") ? (
-                      <span className="ate-erreur">{erreurDe("apercu_plat")}</span>
+                  {/* ── LES COUVERTURES PROPOSÉES (1 à 3) ────────────────
+                      Une planche = un fichier large 4e · dos · 1re, que la
+                      page cliente coupe pile au centre. Depuis T-093 on peut
+                      en proposer jusqu'à trois : la PREMIÈRE est celle que la
+                      cliente voit d'emblée, glisser pour changer cet ordre. */}
+                  <div className="ate-doubles">
+                    <span className="ate-slot-label">
+                      {SLOT_PLANCHE.label}{" "}
+                      <span className="ate-faint">
+                        — jusqu&apos;à {MAX_PLANCHES}. La première est proposée par défaut ;
+                        glisser pour ranger.
+                      </span>
+                    </span>
+                    <div className="ate-doubles-liste">
+                      {planches.map((pl, i) => (
+                        <div
+                          key={pl.id}
+                          className="ate-double"
+                          draggable={envoiEnCours === null}
+                          onDragStart={() => {
+                            glissePlanche.current = pl.id;
+                          }}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            deposerPlancheSur(pl.id);
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className="ate-double-zone ate-slot-zone--pleine"
+                            onClick={() => inputs.current[`planche-${pl.id}`]?.click()}
+                            disabled={envoiEnCours !== null}
+                            title="Remplacer cette couverture"
+                          >
+                            {envoiEnCours === `planche-${pl.id}` ? (
+                              <span className="ate-slot-vide">Envoi…</span>
+                            ) : pl.preview ? (
+                              <img src={pl.preview} alt="" className="ate-slot-img" />
+                            ) : (
+                              <span className="ate-slot-vide">Couverture {i + 1}</span>
+                            )}
+                            {/* Le rang n'est pas décoratif : c'est l'ordre que
+                                verra la cliente, et le premier est celui qu'elle
+                                voit sans rien choisir. */}
+                            <span className="ate-double-rang" aria-hidden="true">
+                              {i === 0 ? "1 · par défaut" : i + 1}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            className="ate-double-retirer"
+                            onClick={() => retirerPlanche(pl.id)}
+                            aria-label={`Retirer la couverture ${i + 1}`}
+                            disabled={envoiEnCours !== null}
+                          >
+                            ×
+                          </button>
+                          <input
+                            ref={(el) => {
+                              inputs.current[`planche-${pl.id}`] = el;
+                            }}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                            hidden
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) remplacerPlanche(pl.id, f);
+                              e.target.value = "";
+                            }}
+                          />
+                        </div>
+                      ))}
+
+                      {planches.length < MAX_PLANCHES ? (
+                        <div
+                          className="ate-double ate-double--ajout"
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const f = e.dataTransfer.files?.[0];
+                            if (f) ajouterPlanche(f);
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className="ate-double-zone ate-double-zone--ajout"
+                            onClick={() => inputs.current.apercu_plat_new?.click()}
+                            disabled={envoiEnCours !== null}
+                          >
+                            {envoiEnCours === "apercu_plat_new" ? (
+                              <span className="ate-slot-vide">Envoi…</span>
+                            ) : (
+                              <span className="ate-double-plus" aria-hidden="true">
+                                +
+                              </span>
+                            )}
+                          </button>
+                          <input
+                            ref={(el) => {
+                              inputs.current.apercu_plat_new = el;
+                            }}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                            hidden
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) ajouterPlanche(f);
+                              e.target.value = "";
+                            }}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                    {erreurDe("apercu_plat") || erreurDe("apercu_plat_0") ? (
+                      <span className="ate-erreur">
+                        {erreurDe("apercu_plat") ?? erreurDe("apercu_plat_0")}
+                      </span>
                     ) : null}
                   </div>
+
 
                   {/* ── LES DOUBLES PAGES (0 à 3) ─────────────────────────
                       Glissé pour réordonner, × pour retirer, une tuile pour
