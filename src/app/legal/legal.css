@@ -60,11 +60,19 @@ body:has(.lg) { background: var(--lg-void); }
 }
 
 /* `.lg-back` se rend en <a> (repli) ou en <button> (retour d'historique,
-   lot 1) : le reset du bouton vit ici pour que l'œil ne voie qu'un lien. */
+   lot 1) : le reset du bouton vit ici pour que l'œil ne voie qu'un lien.
+   Lot 6 (07/09) — il ne faisait que 21 px de haut alors que c'est le seul
+   geste de navigation de la page : rembourrage porté à 44 px de cible,
+   annulé par une marge négative de même valeur (remède maison), l'en-tête
+   ne bouge donc pas d'un pixel. */
 .lg-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   background: none;
   border: none;
-  padding: 0;
+  padding: 0 10px;
+  margin: -11px -10px;
   font-family: inherit;
   cursor: pointer;
   font-size: var(--bj-fs-sm);
@@ -81,11 +89,19 @@ body:has(.lg) { background: var(--lg-void); }
   gap: var(--bj-sp-2);
 }
 
+/* Lot 6 (07/09) — 30 px de haut pour trois pastilles de deux lettres,
+   collées les unes aux autres : le doigt qui vise PT attrapait EN. La
+   cible passe à 44 px par le rembourrage vertical, compensé par la marge
+   négative pour ne pas grossir l'en-tête. */
 .lg-lang {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-size: var(--bj-fs-xs);
   font-weight: 500;
   letter-spacing: 0.08em;
   padding: 4px 10px;
+  margin: -7px 0;
   border-radius: var(--bj-r-pill);
   text-decoration: none;
   color: var(--bj-text-soft);
