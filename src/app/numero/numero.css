@@ -588,6 +588,53 @@
    ne le passe pas. Pas de marge à protéger de la règle de spécificité
    `.bj-atelier p { margin: 0 }` (voir la note ligne ~183 de ce fichier) :
    l'espacement vient du `gap` de `.nu-viz-bas`. */
+/* T-093 — le choix de couverture, sous la scène. Discret : ce n'est PAS
+   l'action principale de l'écran (celle-là, c'est payer), c'est une
+   préférence qu'on peut exprimer ou ignorer. */
+.nu-viz-choix {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.bj-atelier .nu-viz-choix-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 9px 20px;
+  background: none;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--c-text);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.bj-atelier .nu-viz-choix-btn:hover {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+}
+
+.nu-viz-choix-fait {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--c-accent-strong);
+}
+
+.nu-viz-choix-refus {
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  color: var(--c-text-faint);
+}
+
 .nu-viz-note {
   max-width: 42ch;
   text-align: center;
