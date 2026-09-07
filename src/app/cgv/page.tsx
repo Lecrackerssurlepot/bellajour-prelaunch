@@ -2,13 +2,17 @@ import type { Metadata } from 'next'
 import { permanentRedirect } from 'next/navigation'
 import LegalPage from '../legal/LegalPage'
 import { CGV } from '../legal/content/cgv'
-import { legalAlternates, legalHref, pickLang, pickRef } from '../legal/resolve'
+import { legalAlternates, legalOpenGraph, legalHref, pickLang, pickRef } from '../legal/resolve'
 
 export const metadata: Metadata = {
   title: 'Conditions générales de vente — Bellajour',
   description:
     'Conditions générales de vente Bellajour : commande, acompte, droit de rétractation, garanties, livraison. Fiche produit en annexe.',
   alternates: legalAlternates('cgv', 'fr', CGV),
+  /* Sans ce bloc, un partage de cette page affiche la carte de
+     l'ACCUEIL : Next hérite l'openGraph entier du layout racine
+     (piège D6). Le titre et l'adresse suffisent à dire la vérité. */
+  openGraph: legalOpenGraph('cgv', 'fr', 'Conditions générales de vente'),
 }
 
 export default async function CgvPage({

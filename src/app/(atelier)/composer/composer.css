@@ -323,9 +323,24 @@
    orphelin, pas pour un champ titré. (0,2,0) pour battre .bj-atelier .at-inp. */
 .bj-atelier .at-lbl + .at-inp { margin-top: 8px; }
 
+/* ── LE FOCUS DES CHAMPS ───────────────────────────────────────────────
+   Le trait du bas passe à l'accent dès qu'on écrit dedans : c'est le signe
+   « c'est ici que vous êtes » à la souris comme au doigt.
+   ⚠️ `outline: none` était posé sur `:focus` TOUT COURT, à la même
+   spécificité (0,2,0) que `.bj-atelier :focus-visible` de theme.css et
+   chargé après lui : il gagnait, et l'anneau de focus disparaissait de TOUS
+   les champs du questionnaire — l'occasion, l'histoire, le titre, le
+   prénom, l'email, le téléphone. Une personne au clavier perdait tout
+   repère dans un tunnel de six écrans, juste avant de payer.
+   L'outline n'est donc retiré QUE pour un focus à la souris
+   (`:focus:not(:focus-visible)`), où il ferait du bruit sans rien dire. */
 .at-field:focus,
 .at-area:focus,
-.at-inp:focus { outline: none; border-bottom-color: var(--c-accent); }
+.at-inp:focus { border-bottom-color: var(--c-accent); }
+
+.at-field:focus:not(:focus-visible),
+.at-area:focus:not(:focus-visible),
+.at-inp:focus:not(:focus-visible) { outline: none; }
 
 /* Le wrapper du layout composer qui porte --font-composer-italique.
    `display: contents` : il n'ajoute aucune boîte au flux, il ne fait que

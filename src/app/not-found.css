@@ -1,0 +1,116 @@
+/* La page « cette adresse n'existe pas » (07/09/2026).
+   Feuille à elle seule, chargée par `not-found.tsx` : ce fichier sert TOUTES
+   les routes du site, y compris celles du monde crème, donc il ne peut
+   emprunter ni à `pdp.css` ni à `numero.css` — les deux sont scopées sous un
+   conteneur que cette page n'a pas. Les couleurs viennent de `theme.css`
+   (monde sombre), importé juste au-dessus. */
+
+/* ⚠️ LES POLICES, ET POURQUOI ON PASSE PAR UN ALIAS.
+   `theme.css` redéfinit `--font-display` sous `.bj-atelier` en pointant vers
+   `--font-atelier-display`, que le layout du groupe (atelier) pose sur SON
+   conteneur. Cette page-ci vit à la racine : la variable n'existe pas, la
+   déclaration devient invalide au calcul, et la propriété retombe sur
+   l'héritage — le titre s'affichait en DM Sans au lieu du Cormorant.
+   On capte donc les variables du layout RACINE sur `:root`, avant toute
+   redéfinition, et on s'en sert ici. */
+:root {
+  --nf-display: var(--font-display);
+  --nf-ui: var(--font-ui);
+}
+
+.nf {
+  display: grid;
+  place-items: center;
+  min-height: var(--app-height);
+  padding: var(--pad);
+  background: var(--c-void);
+  color: var(--c-text);
+  text-align: center;
+}
+
+.nf-in {
+  max-width: 34rem;
+}
+
+.nf-kicker {
+  margin: 0 0 clamp(10px, 2vw, 16px);
+  font-family: var(--nf-ui), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.nf-mot {
+  margin: 0;
+  font-family: var(--nf-display), 'Cormorant Garamond', Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(30px, 7vw, 52px);
+  line-height: 1.06;
+  letter-spacing: -0.01em;
+}
+
+.nf-sub {
+  /* Un titre de 52 px a besoin de plus qu'un interligne pour respirer. */
+  margin: clamp(20px, 3.5vw, 30px) auto 0;
+  max-width: 30rem;
+  font-family: var(--nf-ui), system-ui, sans-serif;
+  font-weight: 300;
+  font-size: clamp(14px, 1.3vw, 16px);
+  line-height: 1.65;
+  color: var(--c-text-soft);
+}
+
+.nf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 2.5vw, 22px);
+  margin-top: clamp(26px, 4vw, 38px);
+}
+
+/* Cible tactile de 44 px, comme partout ailleurs depuis le lot 6. */
+.bj-atelier .nf-cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 22px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 999px;
+  font-family: var(--nf-ui), system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text);
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.bj-atelier .nf-cta:hover {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+}
+
+.bj-atelier .nf-skip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--nf-ui), system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--c-text-faint);
+  transition: color var(--dur) var(--ease);
+}
+
+.bj-atelier .nf-skip:hover { color: var(--c-text); }
+
+.nf-aide {
+  margin: clamp(26px, 4vw, 38px) auto 0;
+  max-width: 28rem;
+  font-family: var(--nf-ui), system-ui, sans-serif;
+  font-weight: 300;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--c-text-faint);
+}
+
+.nf-aide b { font-weight: 500; color: var(--c-text-soft); }

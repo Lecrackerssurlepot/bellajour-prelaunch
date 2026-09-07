@@ -655,9 +655,16 @@
   transition: border-color var(--dur) var(--ease);
 }
 
+/* Même correctif que le questionnaire (07/09) : `outline: none` sur
+   `:focus` tout court effaçait l'anneau de focus jusque sur l'écran de
+   CONNEXION, où l'on tape un mot de passe. On ne le retire que pour un
+   focus à la souris, où il ferait du bruit sans rien dire. */
 .cpt-champ input:focus {
-  outline: none;
   border-color: var(--c-accent);
+}
+
+.cpt-champ input:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .cpt-alerte {
