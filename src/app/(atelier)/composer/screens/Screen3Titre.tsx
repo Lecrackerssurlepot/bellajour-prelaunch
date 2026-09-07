@@ -9,12 +9,13 @@
    place : la promesse était creuse, et elle a été prise au mot dès le premier
    dossier venu de l'extérieur. Le titre se change de toute façon plus tard.
 
-   Les couvertures ne sont pas un choix : cliquer n'enregistre rien et n'a
-   aucune conséquence produit (PRD §7.3). Depuis le 03/09 l'écran LE DIT
-   au-dessus de la grille (« Pour l'inspiration, ce n'est pas un choix ») —
-   Mathias a constaté qu'elles se lisaient comme une sélection. L'état
-   `miseEnAvant` est purement décoratif — il n'existe aucun champ `modele`
-   en base, et c'est volontaire.
+   Les couvertures ne sont pas un choix : rien ne s'enregistre, il n'existe
+   aucun champ `modele` en base, et c'est volontaire (PRD §7.3). Depuis le
+   03/09 l'écran le disait au-dessus de la grille, mais elles restaient des
+   BOUTONS cliquables sans effet — le « dead click » que Mathias reproche au
+   site. Lot 4 (07/09) : elles deviennent de simples aperçus, sans clic,
+   sans état ; sur téléphone une seule s'affiche (l'écran était le plus
+   chargé du questionnaire), et les deux notes fusionnent en une.
 
    NOUVEAU 03/09 — les mots de couverture facultatifs : un sous-titre pour la
    première de couverture, un mot pour la quatrième. Repliés par défaut
@@ -35,8 +36,6 @@ export default function Screen3Titre({
   motQuatrieme: string
   onExtra: (champ: 'sousTitre' | 'motQuatrieme', v: string) => void
 }) {
-  /* Purement visuel. Jamais lu ailleurs, jamais envoyé au serveur. */
-  const [miseEnAvant, setMiseEnAvant] = useState(COVER_MODELS[0].id)
   /* Déplié d'office si un brouillon porte déjà un des deux mots : un champ
      rempli ne doit jamais être caché derrière son propre déplieur. */
   const [extras, setExtras] = useState(() => Boolean(sousTitre || motQuatrieme))
@@ -91,16 +90,19 @@ export default function Screen3Titre({
         )}
       </div>
 
-      <p className="at-covers-chapeau">Pour l’inspiration, ce n’est pas un choix</p>
+      {/* Lot 4 — une seule note au lieu de deux, et des aperçus qui ne
+          promettent plus un clic : le titre s'y écrit en direct, c'est
+          toute leur fonction. */}
+      <p className="at-covers-chapeau">
+        Pour l’inspiration — l’atelier composera le vôtre avec vos photos.
+      </p>
       <div className="at-covers">
-        {COVER_MODELS.map((m) => (
-          <button
+        {COVER_MODELS.map((m, i) => (
+          <div
             key={m.id}
-            type="button"
-            className={`at-cov at-cov--${m.alignement === 'centre' ? 'centre' : 'basgauche'} ${
-              miseEnAvant === m.id ? 'is-on' : ''
+            className={`at-cov at-cov--${m.alignement === 'centre' ? 'centre' : 'basgauche'}${
+              i > 0 ? ' at-cov--second' : ''
             }`}
-            onClick={() => setMiseEnAvant(m.id)}
             style={
               {
                 '--cov-family': m.famille === 'display' ? 'var(--font-display)' : 'var(--font-ui)',
@@ -114,12 +116,9 @@ export default function Screen3Titre({
             <span className="at-cov-lbl">{m.nom}</span>
             <span className="at-cov-t">{affiche}</span>
             <span className="at-cov-tag">{m.tag}</span>
-          </button>
+          </div>
         ))}
       </div>
-      <p className="at-covers-note">
-        Deux styles parmi d’autres. L’atelier composera le vôtre avec vos photos.
-      </p>
     </>
   )
 }
