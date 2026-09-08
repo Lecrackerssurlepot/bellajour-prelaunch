@@ -26,10 +26,11 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
 ## Où on en est (07/09/2026, après le chantier « Un vrai site » et l'expérience maquette)
 
-**101 tickets ouverts depuis le début, 45 encore ouverts, et AUCUN bloquant.**
-Sur ces 45 : 35 sérieux, 9 confort — mais surtout **38 attendent une décision de Mathias**
-(prix, textes légaux, mails réels, visuels, migrations). Il ne reste que **six tickets**
-qu'on peut faire sans lui, et trois sont en cours de correction.
+**102 tickets ouverts depuis le début, 42 encore ouverts, et AUCUN bloquant.**
+Sur ces 42 : **38 attendent une décision de Mathias** (prix, textes légaux, mails réels,
+visuels, migrations), et les 4 restants marqués `libre` ne le sont plus vraiment — ils
+attendent soit un geste hors du dépôt (T-101, console Google), soit une référence visuelle
+(T-080), soit un arbitrage sur un risque (T-102), soit un vrai iPhone pour être mesurés (T-062).
 
 Autrement dit : le frein n'est plus technique. Ce qui reste tient à des arbitrages produit
 et à des chiffres que personne d'autre ne peut donner.
@@ -97,9 +98,9 @@ et à des chiffres que personne d'autre ne peut donner.
 | T-059 | Une police jamais peinte retarde l'apparition du premier écran | front | serieux | libre | **fermé** (fiche dans `fermes/`) — corrigé le 30/08 (commit `0a765a3`, italique sortie du layout), prouvé au build par l'audit du 01/09 |
 | T-060 | 164 Ko d'images du deuxième écran descendent pendant que le premier s'affiche | front | serieux | libre | **fermé** |
 | T-061 | Le chemin de fer fait saccader le téléphone alors qu'il n'y est pas affiché | front | serieux | libre | **fermé** (fiche dans `fermes/`) — corrigé le 30/08 (commit `0a765a3`, `matchMedia` miroir de la media query), prouvé par l'audit du 01/09 |
-| T-062 | Le grain refond l'écran entier à chaque frame de défilement | front | serieux | libre | nouveau |
-| T-063 | 62 % de la feuille servie sur tout le site vise des pages archivées | front | confort | libre | en cours — dead code retiré (30/08) ; restent 2 règles globales, `/magazine` déjà protégé (audit 01/09) |
-| T-064 | Trente déclarations de police jamais peintes bloquent le rendu de chaque page | front | confort | libre | nouveau — constat re-vérifié le 31/08, correctif non commencé |
+| T-062 | Le grain refond l'écran entier à chaque frame de défilement | front | serieux | libre | **en pause** (07/09) — le calque de grain est promu sur sa propre couche GPU (`translateZ(0)` + `will-change`), aspect identique vérifié. Les deux boucles rAF citées étaient déjà coupées hors écran depuis le 30/08. Le reste du coût est le `mix-blend-mode` lui-même : il ne se supprime pas sans changer l'aspect, et le gain en images par seconde demande un vrai iPhone pour être mesuré |
+| T-063 | 62 % de la feuille servie sur tout le site vise des pages archivées | front | confort | libre | **refuse** (fiche dans `fermes/`, 07/09) — déjà fait avant cette séance : `globals.css` est passé de 10 332 à 5 211 octets, zéro sélecteur mort restant (vérifié par grep). Les deux règles vivantes portent leur justification en commentaire |
+| T-064 | Trente déclarations de police jamais peintes bloquent le rendu de chaque page | front | confort | libre | **fermé** (fiche dans `fermes/`, 07/09, PR #78) — Cormorant sortie du layout racine vers les pages qui la peignent : le chunk racine passe de 30 à 21 `@font-face`, −7 180 octets sur `/`, `/magazine`, `/composer`, `/numero`. ⚠️ Piège trouvé en vérifiant : une propriété personnalisée fige sa substitution LÀ OÙ ELLE EST DÉCLARÉE — d'où `.bj-creme-fonts`, sans quoi tous les titres crème retombaient en silence sur DM Sans |
 | T-065 | Aucune image du site n'a de variante pour téléphone | front | serieux | libre | **fermé** |
 | T-066 | Ouvrir le questionnaire télécharge tout le moteur d'envoi de photos | front | serieux | libre | **fermé** (fiche dans `fermes/`) — fait le 02/09 : écrans 5 ET 6 en `next/dynamic` (l'écran 6 tirait aussi le moteur), moteur absent du chunk initial, worker servi en 200, reprise OK. Vérifié sur build prod. tsc+lint+build verts |
 | T-067 | Une page indexable vend encore un programme qu'on n'honore plus | produit | serieux | avis-requis | nouveau |
