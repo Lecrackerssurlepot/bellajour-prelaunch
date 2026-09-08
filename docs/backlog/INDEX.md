@@ -24,16 +24,31 @@ exactement l'écart que la passe du 01/09/2026 a corrigé, sur 36 lignes.
 Semé le 29/08/2026 par l'audit de structure. Tous les tickets ci-dessous sont **prouvés dans le
 code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
-## Où on en est (07/09/2026, après le chantier « Un vrai site » et l'expérience maquette)
+## Où on en est (08/09/2026, après la séance « on finit tout »)
 
-**102 tickets ouverts depuis le début, 42 encore ouverts, et AUCUN bloquant.**
-Sur ces 42 : **38 attendent une décision de Mathias** (prix, textes légaux, mails réels,
-visuels, migrations), et les 4 restants marqués `libre` ne le sont plus vraiment — ils
-attendent soit un geste hors du dépôt (T-101, console Google), soit une référence visuelle
-(T-080), soit un arbitrage sur un risque (T-102), soit un vrai iPhone pour être mesurés (T-062).
+**104 tickets ouverts depuis le début, 36 encore ouverts, et AUCUN bloquant — pour de vrai.**
+Le compteur en annonçait un depuis des jours : c'était T-002, dont la fiche disait elle-même
+depuis le 31/08 qu'il sortait du rang des bloquants, sans que son en-tête suive. Corrigé.
 
-Autrement dit : le frein n'est plus technique. Ce qui reste tient à des arbitrages produit
-et à des chiffres que personne d'autre ne peut donner.
+Sur ces 36 : **33 attendent une décision de Mathias**, et les 3 marqués `libre` ne le sont pas
+davantage — ils attendent un geste hors du dépôt (T-101, console Google), une référence
+visuelle (T-080), ou un vrai iPhone pour être mesurés (T-062).
+
+### Ce que le 08/09 a changé
+
+Neuf tickets fermés (T-019, T-067, T-086, T-088, T-090, T-093, T-102, T-103, T-104), deux
+ouverts et fermés le jour même, et deux marches livrées sur T-096.
+
+**Le fait marquant n'était pas au backlog.** En allant vérifier une image de mail en 404, on a
+trouvé une fuite ouverte depuis le 01/09 : `/ambassadeurs` répondait 200 avec son formulaire,
+il ajoutait à la liste Brevo 3, et cette liste déclenchait une automation **active** qui
+envoyait deux mails annonçant des préventes closes. Coupé en trois endroits indépendants —
+automation en pause, page en 410, les deux routes en 410.
+
+**La leçon du jour, transposable :** un `grep` ne voit pas ce que les mails référencent. Les
+templates Brevo appellent leurs images par URL absolue, et deux fichiers « non référencés »
+étaient en fait vivants dans 18 et 3 templates actifs. Avant de déplacer une image de
+`public/`, interroger Brevo — pas seulement le dépôt.
 
 | id | titre | domaine | gravite | autonomie | etat |
 |---|---|---|---|---|---|
@@ -132,7 +147,7 @@ et à des chiffres que personne d'autre ne peut donner.
 | T-093 | Plusieurs couvertures proposées, la cliente choisit sa préférée | produit | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 08/09 : je le rouvrais pour livrer le geste de choix, il était DÉJÀ là (parti avec le chantier du 07/09, fiche non recalculée). Bouton, marque « votre choix », message d'échec et mot rassurant vérifiés dans `Apercu.tsx` |
 | T-094 | La demande « montrer un extrait » repart dans un mail, plus sur /numero | backend | mineur | avis-requis | nouveau (02/09) — la fiche existait, la ligne d'index manquait ; réparé le 04/09 |
 | T-095 | En reprise sur un autre appareil, le dépôt affiche zéro photo et verrouille l'envoi | front | serieux | libre | **fermé** (fiche dans `fermes/`) — corrigé le 04/09, PR #47 **mergée** (vérifié le 07/09 : le commit est dans main) |
-| T-096 | Le carnet de l'atelier n'est lisible que dossier par dossier — le rendre exploitable | admin | serieux | avis-requis | nouveau (04/09) — constat vérifié, proposition en trois marches dans `docs/produit/NOTE-CARNET-STRUCTURE.md` |
+| T-096 | Le carnet de l'atelier n'est lisible que dossier par dossier — le rendre exploitable | admin | serieux | avis-requis | en cours — **marches 1 ET 2 livrées le 08/09**. Marche 2 : `/admin/atelier/carnet`, toutes les notes, cherchables et exportables (txt pour lire, csv pour trier), filtre PUR partagé par l'écran et l'export. Marche 1 : les cinq genres tranchés par Mathias (photos · recit · page · cliente · atelier), facultatifs, migration `20260908_notes_genre.sql` **écrite non appliquée**, replis 42703 et PGRST204 posés — l'écriture réinsère la note SANS son genre plutôt que de la perdre. Reste la marche 3 (cible sur une photo ou une page), qui dépend de la migration |
 | T-097 | Les mails à retardement partent jusqu'à 24 h après l'heure annoncée | atelier | serieux | avis-requis | en pause (04/09) — relève horaire écrite et vérifiée, **inerte tant que le secret GitHub n'est pas posé** ; immédiats prouvés à moins de 2 s |
 | T-098 | Un M4 refusé par Brevo figeait le dossier payé pour toujours | atelier | bloquant | libre | **fermé** (fiche dans `fermes/`) — corrigé le 04/09 : réparation sur preuve d'échec (`doitRattraperM4`), 6 assertions au harnais |
 | T-099 | L'ouverture de l'accueil rejoue à chaque retour et se fait bousculer par le défilement | front | serieux | libre | **fermé** (fiche dans `fermes/`) — corrigé le 04/09 : ouverture jouée une fois par onglet, prise en main au défilement, défilements pilotés interruptibles |
