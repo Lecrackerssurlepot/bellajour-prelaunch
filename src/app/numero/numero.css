@@ -717,6 +717,121 @@
 
 .nu-prix-sub { margin-top: clamp(16px, 3vw, 22px); font-size: 15px; font-weight: 300; color: var(--c-text-soft); }
 
+/* ══════════════════════════════════════════════════════════════════════
+   LE BON DE COMMANDE — 08/09/2026.
+   Mathias : « je n'ai pas l'impression d'être sur un site haut de gamme ».
+   L'encart de verre dépoli qui tenait cette place mettait le nombre de pages
+   et le montant au même corps, sous une capitale de 11 px qui décrivait un
+   procédé (« impression et façonnage compris »). Au moment où l'on engage de
+   l'argent, ce qui doit dominer, c'est le total.
+   Ce qui suit énonce une commande : deux lignes de détail, un trait plus
+   marqué, puis le total en display. C'est la forme d'un reçu, et c'est
+   exactement ce qu'on attend d'une maison qui fabrique un objet.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.nu-bon {
+  margin-top: clamp(20px, 4vw, 30px);
+  border-top: 1px solid var(--c-line);
+  border-bottom: 1px solid var(--c-line);
+  padding: 2px 0;
+}
+
+.nu-bon-l {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 20px;
+  padding: 13px 0;
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 1.4;
+  color: var(--c-text-soft);
+}
+
+.nu-bon-l + .nu-bon-l { border-top: 1px solid var(--c-line); }
+
+/* Le détail reste en graisse normale : ce sont des montants intermédiaires,
+   ils informent, ils ne concluent pas. */
+.nu-bon-l b { font-weight: 400; color: var(--c-text); white-space: nowrap; }
+
+/* Le total. Trait plus marqué au-dessus, libellé en petites capitales, et le
+   montant en display : c'est la seule ligne du bloc qui doit s'attraper d'un
+   regard, de l'autre bout de la pièce. */
+.nu-bon-t {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 20px;
+  padding: 16px 0 14px;
+  border-top: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+}
+
+.nu-bon-t span {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.nu-bon-t b {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 6.5vw, 42px);
+  font-weight: 400;
+  line-height: 1;
+  color: var(--c-text);
+  white-space: nowrap;
+}
+
+/* ── LA PROMESSE, AU-DESSUS DU BOUTON ──
+   Deux lignes, deux points à l'accent. Elles vivaient sous le bouton, en
+   paragraphe gris : c'est-à-dire à l'endroit qu'on saute, alors que c'est
+   ce qui fait appuyer — on paie un objet qu'on n'a pas encore vu fini. */
+.nu-promesse {
+  margin: clamp(18px, 3.4vw, 24px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nu-promesse li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 14.5px;
+  font-weight: 300;
+  line-height: 1.5;
+  color: var(--c-text-soft);
+}
+
+.nu-promesse li i {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-top: 8px;
+  border-radius: 50%;
+  background: var(--c-accent);
+}
+
+.nu-promesse li b { font-weight: 500; color: var(--c-text); }
+
+/* Le bouton n'est plus dans un encart : il prend la laisse et se pose seul.
+   ⚠️ La règle `.nu-order` d'origine reste la référence — on n'ajoute ici que
+   ce que la sortie de l'encart change. */
+.nu-order--plein {
+  margin-top: clamp(20px, 4vw, 28px);
+  width: 100%;
+  justify-content: center;
+}
+
+.nu-accords-mot {
+  margin: 12px 0 0;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--c-text-faint);
+  text-align: center;
+}
+
 /* ---- les deux cases obligatoires (invariant nº3) ---- */
 .nu-cases { margin-top: clamp(28px, 5vw, 38px); display: grid; gap: 14px; }
 

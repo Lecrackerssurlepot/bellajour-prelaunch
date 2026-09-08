@@ -5,24 +5,91 @@
 
 /* ── zone de dépôt ─────────────────────────────────────────────────────── */
 
-.at-d-zone {
+/* ══════════════════════════════════════════════════════════════════════
+   L'APPEL, LA PLANCHE — 08/09/2026.
+   Mathias : « je n'ai pas l'impression d'être sur un site haut de gamme ».
+   Le premier coupable était ici : un rectangle EN POINTILLÉS autour du
+   bouton. C'est la signature visuelle du champ de téléversement, celle
+   qu'on a tous vue sur un intranet, et elle suffisait à faire basculer
+   l'écran de « maison d'édition » à « formulaire ». Elle ne portait
+   d'ailleurs rien : le bouton porte l'action, et le glisser-déposer écoute
+   la page entière, pas ce rectangle.
+   Ce qui le remplace n'est pas un autre cadre : c'est le bouton seul, puis
+   la planche que les photos vont remplir.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ⚠️ LA RÉSERVE SOUS LA BARRE, corrigée au passage (08/09/2026).
+   `.at-q-screen` (composer.css) garde 110 px de marge basse pour la barre
+   fixe. Celle du DÉPÔT en fait 179 mesurés — case de consentement, note de
+   format, bouton, ligne d'état : soixante-neuf pixels de contenu passaient
+   sous elle, à tous les états, et depuis toujours. Ce n'est pas ce lot qui
+   l'a créé, c'est lui qui l'a rendu visible : la ligne de progression
+   nouvelle version est plus longue, et se faisait couper en deux.
+   La réserve est donc reprise ici, pour ce seul écran. */
+.at-d-page { padding-bottom: 86px; }
+
+.at-d-appel {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  margin-top: 30px;
-  max-width: 640px;
-  padding: 38px 26px;
-  text-align: center;
-  border: 1px dashed var(--c-line-strong);
+  justify-content: center;
+  margin-top: 20px;
+  padding: 10px 0;
   border-radius: 20px;
-  background: var(--c-surface-1);
-  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  transition: background var(--dur) var(--ease);
 }
 
-.at-d-zone.is-survol {
-  border-color: var(--c-accent);
-  background: var(--c-accent-soft);
+/* Au survol d'un glisser-déposer, l'écran doit répondre — mais sans
+   ressortir un cadre. Un voile à l'accent suffit : il dit « lâchez ici »
+   sans redevenir un champ de formulaire. */
+.at-d-appel.is-survol { background: var(--c-accent-soft); }
+
+/* ── LA PLANCHE EN ATTENTE ──
+   Six cadres vides. Ils ne décorent pas : ils montrent CE QUI VA SE PASSER.
+   Un écran vide qui attend une action reste un formulaire ; un écran qui
+   montre l'objet à remplir devient un espace de travail.
+   Le trait est POINTILLÉ ici, et c'est voulu : sur une case vide il dit
+   « en attente » — c'est son sens juste. Sur un bouton, il disait
+   « champ de fichier ». Même trait, deux endroits, deux lectures. */
+.at-d-planche-titre {
+  margin: 22px 0 10px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.at-d-planche {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 640px;
+}
+
+.at-d-planche li {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  border: 1px dashed var(--c-line);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.008));
+}
+
+/* Sur grand écran la planche s'élargit comme la vraie grille de photos :
+   six cadres étirés sur toute la laisse feraient des pavés, pas des
+   vignettes. */
+@media (min-width: 700px) {
+  .at-d-planche { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+/* La mention de format, descendue de la zone de dépôt : elle sert une fois
+   sur cinquante et elle occupait le centre de l'écran. */
+.at-d-formats {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  color: var(--c-text-faint);
 }
 
 /* Le champ natif reste dans le flux pour l'accessibilité au clavier, mais
@@ -59,18 +126,35 @@
 
 .bj-atelier .at-d-parcourir:active { transform: scale(0.98); }
 
-.at-d-zone-note {
-  font-size: 13px;
-  font-weight: 300;
-  color: var(--c-text-faint);
-  max-width: 42ch;
+/* ── LE BOUTON ÉTEINT RESTE DANS LA MAISON (08/09/2026) ──
+   `.at-cta[disabled]` (theme.css) baisse l'opacité à 0,35 : sur un fond noir,
+   un bouton crème à 35 % devient un gris neutre, et un gris neutre est le
+   degré zéro de l'état désactivé — c'est ce qu'on voit sur n'importe quel
+   formulaire. Ici, l'attente n'est pas une panne : il manque des photos, et
+   ça va venir. Le bouton le dit donc dans la couleur de la maison, en creux :
+   contour et texte à l'accent, fond transparent.
+   ⚠️ Scopé à `.at-d-actions` : les autres `.at-cta` désactivés du site
+   gardent leur comportement, on ne redessine pas un état global depuis la
+   feuille d'un écran. */
+.bj-atelier .at-d-actions .at-cta[disabled] {
+  opacity: 1;
+  background: transparent;
+  border: 1px solid rgba(214, 138, 99, 0.34);
+  color: rgba(214, 138, 99, 0.66);
 }
 
 /* ── compteur, jauge, palier ───────────────────────────────────────────── */
 
-.at-d-etat { margin-top: 34px; max-width: 640px; }
+.at-d-etat { margin-top: 24px; max-width: 640px; }
 
+/* ⚠️ `[hidden]` NE SUFFIT PAS QUAND ON DÉCLARE UN `display`.
+   L'attribut HTML pose `display: none` par la feuille du navigateur ; une
+   règle d'auteur comme le `display: flex` ci-dessous gagne, et l'élément
+   « caché » reste à l'écran. C'est le piège qui a laissé « 0 photo prête »
+   visible à la première pose de ce lot. La ligne suivante rend son sens à
+   l'attribut, et elle doit rester APRÈS la déclaration qu'elle annule. */
 .at-d-compteur { display: flex; align-items: baseline; gap: 12px; }
+.at-d-compteur[hidden] { display: none; }
 
 .at-d-compteur b {
   font-family: var(--font-display);
@@ -522,7 +606,6 @@
      rangée, larges, valent mieux que quatre timbres-poste. Le resserrement
      ne vaut que pour la planche contact dépliée. */
   .bj-atelier .at-d-grille--toutes { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
-  .at-d-zone { padding: 30px 20px; }
   .at-d-pasparti { font-size: 13px; }
 }
 

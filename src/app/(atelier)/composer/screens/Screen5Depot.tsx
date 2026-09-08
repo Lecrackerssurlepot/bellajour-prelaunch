@@ -187,9 +187,20 @@ export default function Screen5Depot({
       onDragLeave={() => setSurvol(false)}
       onDrop={(e) => { e.preventDefault(); setSurvol(false); recevoir(e.dataTransfer.files) }}
     >
-      <p className="at-kicker">Vos photos</p>
+      {/* ⚠️ PLUS DE CHAPEAU ICI (08/09/2026). « Vos photos » était écrit
+          TROIS fois dans les 400 premiers pixels : le chapeau, le titre, et
+          la barre d'étape (« 5 / 5 · Vos photos »). Le chapeau est le seul
+          des trois qui n'apprend rien — le titre le dit mieux, la barre situe.
+          La barre, elle, n'est pas touchée : elle sert les cinq écrans, et sur
+          les quatre autres son nom d'étape est utile. */}
       <h2>Vos photos,<br />maintenant.</h2>
-      <p className="at-lede at-q-lede">Entre {MIN_PHOTOS} et {MAX_PHOTOS} photos.</p>
+      {/* Le chiffre qui compte est le PLANCHER, pas la fourchette. « Entre 40
+          et 100 » posait deux nombres dont un seul décide de quelque chose ;
+          le plafond se dit plus bas, quand il approche. */}
+      <p className="at-lede at-q-lede">
+        Il en faut {MIN_PHOTOS} pour composer un numéro. Vous pouvez aller
+        jusqu’à {MAX_PHOTOS}.
+      </p>
 
       {/* Le champ natif, hors de la zone : la tuile « Compléter » et le
           bouton de la zone vide déclenchent le même sélecteur. */}
@@ -247,14 +258,37 @@ export default function Screen5Depot({
           tuile « Compléter » et le glisser-déposer plein écran prennent
           le relais (03/09). */}
       {vue.photos.length === 0 && (
-        <div className={`at-d-zone${survol ? ' is-survol' : ''}`}>
-          <button type="button" className="at-d-parcourir" onClick={() => champ.current?.click()}>
-            Choisir des photos
-          </button>
-          <span className="at-d-zone-note">
-            JPG, PNG et HEIC (le format par défaut de l’iPhone). 50 Mo par photo.
-          </span>
-        </div>
+        <>
+          {/* ⚠️ PLUS DE CADRE EN POINTILLÉS (08/09/2026, « je n'ai pas
+              l'impression d'être sur un site haut de gamme »). Le rectangle
+              pointillé est la signature visuelle du champ de téléversement :
+              tout le monde l'a déjà vu sur un intranet, et il suffisait à
+              faire basculer l'écran de « maison d'édition » à « formulaire ».
+              Il ne portait aucune information — le bouton porte l'action, le
+              glisser-déposer marche sur TOUTE la page (voir onDrop plus haut,
+              c'est la section entière qui écoute), et la mention de format est
+              descendue en note de pied de barre.
+              Reste le seul objet qui compte : le geste. */}
+          <div className={`at-d-appel${survol ? ' is-survol' : ''}`}>
+            <button type="button" className="at-d-parcourir" onClick={() => champ.current?.click()}>
+              Choisir des photos
+            </button>
+          </div>
+
+          {/* ── LA PLANCHE, EN ATTENTE ──
+              Six cadres vides sous un titre. Ils ne sont pas décoratifs : ils
+              montrent CE QUI VA SE PASSER. Un écran vide qui attend une action
+              reste un formulaire ; un écran qui montre l'objet à remplir
+              devient un espace de travail. C'est aussi ce qui rend la barre de
+              progression lisible plus bas — elle remplit quelque chose qu'on a
+              sous les yeux.
+              `aria-hidden` : six cadres vides n'ont rien à dire à l'oreille,
+              et la phrase de progression sous eux porte déjà la vérité. */}
+          <p className="at-d-planche-titre">Votre planche</p>
+          <ul className="at-d-planche" aria-hidden="true">
+            {Array.from({ length: 6 }, (_, i) => <li key={i} />)}
+          </ul>
+        </>
       )}
 
       {/* ── compteur et seuil ─────────────────────────────────────────────
@@ -267,7 +301,13 @@ export default function Screen5Depot({
             et il se lit comme un état final. Après cinquante-cinq photos
             cochées vertes, « 55 photos déposées » veut dire « j'ai fini ».
             « prêtes » dit la même vérité et laisse le geste devant. */}
-        <div className="at-d-compteur">
+        {/* ⚠️ PAS DE GRAND ZÉRO (08/09/2026). « 0 photo prête », le chiffre
+            en Cormorant et le mot en DM Sans, se lisait comme un défaut
+            d'affichage — et un compteur à zéro n'informe de rien : il constate
+            qu'on n'a pas commencé. Tant qu'aucune photo n'est là, c'est la
+            ligne de progression plus bas qui parle. Dès la première, le
+            compteur reprend sa place et son office. */}
+        <div className="at-d-compteur" hidden={compteur === 0}>
           <b>{compteur}</b>
           <span>{compteur > 1 ? 'photos prêtes' : 'photo prête'}</span>
           {ilManque === 0 && (
@@ -286,8 +326,17 @@ export default function Screen5Depot({
             {/* T-051 — pas de role="status" : le compte changeait à CHAQUE
                 photo confirmée, jusqu'à 40 annonces d'affilée qui noyaient
                 les vraies alertes. Utile à l'œil, pas à l'oreille. */}
+            {/* « encore 40 pour composer un numéro » : minuscule initiale,
+                pas de point, syntaxe télégraphique — ça se lisait comme un
+                reste de développement.
+                Ce qui la remplace ne dit plus ce qui MANQUE mais où l'on EN
+                EST, et surtout elle ne réexplique rien : le chapô, six lignes
+                plus haut, vient de dire « il en faut 40 pour composer un
+                numéro ». Une progression n'a pas à répéter sa règle à chaque
+                photo — et la version longue se faisait couper par la barre
+                fixe, ce qui est la pire façon de finir une phrase. */}
             <p className="at-d-palier">
-              encore <b>{ilManque}</b> pour composer un numéro
+              <b>{compteur}</b> sur {MIN_PHOTOS} photos
             </p>
           </>
         )}
@@ -481,6 +530,11 @@ export default function Screen5Depot({
             />
             <span>Vous confirmez avoir le droit d’utiliser ces photos.</span>
           </label>
+
+          {/* La mention de format, descendue de la zone de dépôt (08/09) :
+              elle sert une fois sur cinquante et elle occupait le centre de
+              l'écran. Ici, elle est là pour qui la cherche. */}
+          <p className="at-d-formats">JPG, PNG, HEIC · 50 Mo par photo</p>
 
           <div className="at-q-actions at-d-actions">
             {erreur && <p key={erreurCle} className="at-erreur" role="alert">{erreur}</p>}
