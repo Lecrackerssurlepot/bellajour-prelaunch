@@ -119,43 +119,91 @@ export default function CasesEtCommande({
 
   return (
     <>
-      {/* L'encart tarif : pages + prix, l'ancre visuelle sous la visionneuse
-          (« comme sur desktop » — 02/09). Verre dépoli, le montant en accent,
-          « Commander » posé à droite. Sur mobile, il passe en colonne et le
-          bouton prend toute la largeur (CSS). */}
-      <div className="nu-tarif">
-        <div className="nu-tarif-p">
-          {prixConnu && nbPages ? (
-            <>
-              {/* « Impression et livraison comprises » jusqu'au 07/09/2026.
-                  Reformulé (chantier barème par pages) : la livraison sort du
-                  prix, son tarif attend la décision de Mathias — cette ligne
-                  ne doit plus promettre son inclusion. « Façonnage » est le
-                  mot déjà employé par la fiche du compte. */}
-              <span className="nu-tarif-label">Impression et façonnage compris</span>
-              <span className="nu-tarif-value">
-                <b>{nbPages}</b> pages<span className="nu-tarif-sep"> · </span>
-                <b className="nu-tarif-prix">{formaterEuros(euros)}</b>
-              </span>
-            </>
-          ) : (
-            <span className="nu-tarif-value">Votre numéro est en cours de chiffrage.</span>
-          )}
-        </div>
+      {/* ══════════════════════════════════════════════════════════════
+          LE BON DE COMMANDE — 08/09/2026.
 
-        <button
-          type="button"
-          className="nu-order"
-          onClick={confirmer ? () => void commander() : onCommander}
-          disabled={occupe || !prixConnu || (confirmer && !accepte)}
-        >
-          {occupe
-            ? 'Un instant…'
-            : confirmer
-              ? `Payer${prixConnu ? ` ${formaterEuros(euros)}` : ''}`
-              : 'Commander'}
-        </button>
-      </div>
+          Ce qui était là avant : un encart de verre dépoli portant
+          « IMPRESSION ET FAÇONNAGE COMPRIS » en capitales de 11 px, puis
+          « 32 pages · 40 € » où le nombre de pages et le montant avaient
+          EXACTEMENT le même corps, et un bouton qui disait « Commander »
+          sans le prix.
+
+          Trois défauts, et le même en trois endroits : au moment où l'on
+          engage de l'argent, ce qui doit dominer, c'est le montant.
+            — le premier mot lu décrivait un procédé industriel plutôt que
+              ce qu'on achète ;
+            — le total ne se distinguait pas du nombre de pages ;
+            — le montant n'était pas sur le geste qui l'engage.
+
+          Ce qui le remplace énonce une commande : ce qu'on prend, ligne à
+          ligne, puis un total qui domine. Rien n'a changé dans le calcul —
+          `euros` vient toujours du serveur, jamais du navigateur. */}
+      {prixConnu && nbPages ? (
+        <div className="nu-bon">
+          <div className="nu-bon-l">
+            <span>Votre numéro, {nbPages} pages</span>
+            <b>{formaterEuros(euros)}</b>
+          </div>
+          <div className="nu-bon-l">
+            <span>Impression et façonnage</span>
+            <b>compris</b>
+          </div>
+          <div className="nu-bon-t">
+            <span>À payer</span>
+            <b>{formaterEuros(euros)}</b>
+          </div>
+        </div>
+      ) : (
+        <div className="nu-bon">
+          <div className="nu-bon-l">
+            <span>Votre numéro est en cours de chiffrage.</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── LA PROMESSE PASSE AVANT LE GESTE ──
+          Les deux délais vivaient SOUS le bouton, en gris de 15 px. C'est
+          pourtant ce qui fait appuyer : on paie un objet qu'on n'a pas encore.
+          Les mêmes mots, dans le même ordre — composition, puis livraison
+          après validation — mais au-dessus, et en deux lignes qu'on lit d'un
+          coup d'œil au lieu d'un paragraphe qu'on saute. */}
+      {prixConnu ? (
+        <ul className="nu-promesse">
+          <li>
+            <i aria-hidden="true" />
+            <span>Votre numéro complet <b>sous {joursComposition} jours ouvrés</b></span>
+          </li>
+          <li>
+            <i aria-hidden="true" />
+            <span>Chez vous <b>sous {joursLivraison} jours</b> après votre validation</span>
+          </li>
+        </ul>
+      ) : (
+        <p className="nu-prix-sub">Le prix vous sera confirmé par mail, avant tout paiement.</p>
+      )}
+
+      <button
+        type="button"
+        className="nu-order nu-order--plein"
+        onClick={confirmer ? () => void commander() : onCommander}
+        disabled={occupe || !prixConnu || (confirmer && !accepte)}
+      >
+        {/* Le montant est SUR le bouton dès le premier temps. Il n'y était
+            qu'au second (« Payer 40 € ») : on demandait donc de cliquer
+            « Commander » en allant chercher le prix ailleurs sur l'écran. */}
+        {occupe
+          ? 'Un instant…'
+          : confirmer
+            ? `Payer${prixConnu ? ` ${formaterEuros(euros)}` : ''}`
+            : `Commander${prixConnu ? ` · ${formaterEuros(euros)}` : ''}`}
+      </button>
+
+      {/* Ce qui vient après le clic, dit avant. Deux accords, pas une
+          surprise : le panneau qui s'ouvre plus bas ne doit pas donner
+          l'impression qu'une étape s'ajoute au dernier moment. */}
+      {!confirmer && prixConnu && (
+        <p className="nu-accords-mot">Deux accords à cocher avant le paiement.</p>
+      )}
 
       {/* Révélé au tap sur « Commander », directement sous l'encart. Replié, il
           ne prend aucune place et n'est pas focusable (tabIndex -1). Le texte
@@ -201,18 +249,9 @@ export default function CasesEtCommande({
         <p className="nu-confirmer-aide">Cochez les deux accords pour continuer.</p>
       )}
 
-      {/* T2-8 — la promesse en deux temps (composition, puis livraison après
-          validation), dans l'ordre où elle se vivra. */}
-      <p className="nu-prix-sub">
-        {prixConnu ? (
-          <>
-            Après votre paiement : votre numéro complet sous {joursComposition} jours
-            ouvrés. Puis chez vous sous {joursLivraison} jours après votre validation.
-          </>
-        ) : (
-          'Le prix vous sera confirmé par mail, avant tout paiement.'
-        )}
-      </p>
+      {/* T2-8 — la promesse en deux temps a REMONTÉ au-dessus du bouton
+          (08/09/2026). Elle ne se répète pas ici : c'est ce qui décide, pas
+          une note de bas de page. Voir `.nu-promesse` plus haut. */}
 
       {erreur && <p className="nu-erreur" role="alert">{erreur}</p>}
 
