@@ -92,3 +92,38 @@ mais aucune séquence ne démarrerait.
 
 `en cours` — le danger immédiat est écarté (pause vérifiée). Reste la fermeture des routes,
 livrée avec T-067.
+
+## Geste 2 fait — les deux routes sont fermées (08/09/2026)
+
+- **`POST /api/ambassadeur/register` → 410 inconditionnel**, livré avec l'archivage de
+  **T-067**. La route n'appelle plus ni Brevo ni la base : elle refuse, point. C'était elle le
+  danger principal, celle qu'un formulaire vivant en production pouvait atteindre.
+- **`POST /api/waitlist` → 410 quand `preventeFermee()`**, posé ici. Cette route ajoutait à la
+  liste 3 **et envoyait W1** ; rien n'y regardait si la prévente était ouverte. Vérifié avant
+  d'y toucher : son seul appelant était `archive/landing-waitlist/FinalWaitlist.tsx`, archivé.
+  Aucune page vivante ne l'appelait, mais elle restait joignable en direct et répondait 400.
+
+**Les deux verrous sont volontairement différents, et c'est un choix, pas une inattention.**
+L'inscription ambassadeur est en 410 **inconditionnel** : sa page de vente est archivée, le
+programme est clos, il n'y a rien à rouvrir. La waitlist passe par **`preventeFermee()`** :
+rouvrir une liste d'attente est un geste qu'on peut vouloir refaire, et il doit alors passer par
+le même interrupteur que le reste du dépôt, pas par un redéploiement de cette ligne.
+
+`tsc` et `lint` verts.
+
+## La chaîne, maillon par maillon, après correction
+
+| maillon | avant | après |
+|---|---|---|
+| `/ambassadeurs` | 200, formulaire vivant | **410**, page archivée |
+| `POST /api/ambassadeur/register` | ajoutait à la liste 3 | **410**, n'appelle plus rien |
+| `POST /api/waitlist` | 400, ajoutait à la liste 3 + envoyait W1 | **410** tant que la prévente est close |
+| automation « Waitlist - Séquence W2 W3 » | **Active** | **En pause** (vérifié, 08/09 08:34) |
+
+Trois verrous indépendants là où il n'y en avait aucun. Il faudrait défaire les trois pour
+qu'un mail de prévente reparte.
+
+## État
+
+`fermé` — pause vérifiée dans Brevo, les deux routes fermées et prouvées, la chaîne coupée en
+trois endroits.
