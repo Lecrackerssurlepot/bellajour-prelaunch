@@ -102,3 +102,37 @@ Elle se lit dans Brevo, sous Automations.
 
 `nouveau` → la correction demandée est **impossible par l'API**. Elle demande un geste dans
 l'interface Brevo, et surtout une réponse à la question ci-dessus.
+
+## Regardé dans Brevo, sur autorisation de Mathias (08/09/2026)
+
+Le template 13 **ne peut pas être désactivé, et il n'a pas besoin de l'être.**
+
+La page « Automatisations → Messages » ne connaît que deux messages :
+**Message #14** (étape 5) et **Message #12** (étape 3). **Le 13 n'y figure pas.** L'automation
+elle-même, ouverte et lue sans rien y modifier, tient en cinq blocs :
+
+    Ajouté à la liste « Waitlist Bellajour - #3 »
+      → attendre 2 jours
+      → envoyer « présentez Bellajour à vos proches »        (Message #12, étape 3)
+      → attendre 2 jours
+      → envoyer « Ce que vous allez tenir entre les mains »  (Message #14, étape 5)
+      → Sortie
+
+Le template 13 n'est branché sur aucune étape. C'est l'ancien contenu de l'étape 5, remplacé
+par le 14 et resté en base — d'où le nom identique, et d'où le refus de l'API : Brevo ne
+l'expose plus comme un message modifiable, seulement comme une ligne de la liste des templates.
+
+**Un template orphelin ne part jamais.** L'image en 404 ne sera vue par personne. C'est la
+réponse à la question que posait ce ticket.
+
+## Mais la visite a trouvé bien pire — voir T-104
+
+L'automation est **Active**, son déclencheur est l'ajout à la liste 3, et
+`BREVO_WAITLIST_LIST_ID="3"`. Or `/ambassadeurs` répond 200 en production avec son formulaire.
+Quelqu'un qui s'inscrit aujourd'hui reçoit deux mails de l'ère prévente. **T-104.**
+
+## État
+
+`fermé` — l'image 404 vit dans un template orphelin, branché sur aucune étape, invisible dans
+l'interface et refusé en écriture par l'API. Il ne peut ni être désactivé ni être envoyé.
+Le vrai risque découvert en le vérifiant part en T-104.
