@@ -1179,6 +1179,79 @@
 
 /* ─────────────────────────── les métriques ─────────────────────────── */
 
+/* ── LA RANGÉE DE TÊTE DES MÉTRIQUES (T-080, 07/09/2026) ──────────────
+   Quatre cartes, une par chiffre qui décide. La VALEUR est l'élément le
+   plus gros de la page, le libellé le plus discret : c'est l'inverse du
+   reste du back-office, et c'est voulu — on ne lit pas un tableau de bord,
+   on le balaie.
+   Monde CRÈME uniquement (tokens --bj-*) : le back-office n'emprunte
+   jamais au thème sombre de l'atelier, même pour « faire dashboard ».
+   Une seule colonne sous 720 px : quatre chiffres côte à côte sur un
+   téléphone donnent quatre chiffres illisibles. */
+.ate-m-cles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--bj-sp-3);
+  margin-bottom: var(--bj-sp-4);
+}
+
+.ate-m-cle {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--bj-sp-4) var(--bj-sp-4);
+  background: var(--ate-carte-bg);
+  border: 1px solid var(--bj-veil-8);
+  border-radius: var(--bj-r-md);
+}
+
+.ate-m-cle-titre {
+  font-family: var(--bj-font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--bj-text-faint);
+}
+
+/* La grande valeur. `tabular-nums` : sans elle, deux cartes voisines
+   n'alignent pas leurs chiffres et la rangée tremble d'une période à
+   l'autre. */
+.ate-m-cle-val {
+  font-family: var(--bj-font-display);
+  font-size: clamp(28px, 2.6vw, 40px);
+  line-height: 1.05;
+  color: var(--bj-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ate-m-cle-unite {
+  margin-left: 3px;
+  font-size: 0.55em;
+  color: var(--bj-text-soft);
+}
+
+.ate-m-cle-pied {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 18px;
+}
+
+.ate-m-cle-note {
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+
+@media (max-width: 980px) {
+  .ate-m-cles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .ate-m-cles { grid-template-columns: minmax(0, 1fr); }
+}
+
 .ate-m-avertissement {
   margin: 0 0 var(--bj-sp-4);
   padding: var(--bj-sp-2) var(--bj-sp-3);
