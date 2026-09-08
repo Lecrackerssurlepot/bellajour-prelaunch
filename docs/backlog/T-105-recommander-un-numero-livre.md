@@ -67,11 +67,31 @@ impressions, et elle n'est pas vérifiable tant que le prix n'existe pas.
 4. **L'admin.** Une réimpression doit se voir quelque part dans `/admin/atelier`, ne serait-ce
    que pour le chiffre d'affaires — le CA est aujourd'hui dérivé du palier des dossiers.
 
-## Question pour Mathias
+## Ce qui bloque, exactement
 
-**Le prix d'une réimpression.** Un montant fixe, ou un pourcentage du prix d'origine ? Le jour
-où il le donne, le verrou tombe en une ligne dans `prix.ts` — le reste de la liste ci-dessus
-s'écrit alors dans la foulée.
+Mathias, le 08/09 au soir, après avoir vu la structure posée : **« le prix de réimpression, je
+ne le connais pas »**.
+
+C'est une précision qui change la nature du ticket, et il faut la garder. Ce n'est PAS un
+arbitrage qu'il repousse — c'est une donnée qu'il n'a pas encore. Le ticket n'attend donc pas
+qu'il se décide : il attend qu'on lui mette un coût sous les yeux.
+
+**Ce qu'il faudrait établir pour le débloquer** (aucun de ces chiffres n'existe aujourd'hui
+dans le dépôt, et aucun ne sera inventé — interdit nº5) :
+
+1. Ce que Cloudprinter facture pour **un seul exemplaire** aux trois paliers de pages. La
+   grille de production n'est nulle part dans le code : `impression.ts` ne porte que les
+   références produit et les contraintes de fichiers, jamais les coûts.
+2. Le **port** vers FR / BE / LU pour un exemplaire — le même arbitrage qui bloque déjà T-072
+   et `PROPOSITION-CGV-LIVRAISON.md`. Les trois se répondent.
+3. La marge qu'il veut sur une réimpression, sachant que l'atelier n'y passe **aucun temps** :
+   le PDF existe, il a déjà été composé, validé et imprimé une fois.
+
+Une fois ces trois nombres connus, le prix se pose et le verrou tombe en une ligne dans
+`prix.ts`. Le reste de la liste ci-dessus s'écrit alors dans la foulée.
+
+⚠️ **Ne pas rouvrir ce ticket en lui reposant la question telle quelle** — il y a déjà répondu :
+il ne sait pas. Le rouvrir, c'est apporter les coûts, pas redemander le prix.
 
 Voisin utile : **T-073** (plusieurs exemplaires à la commande, prix dégressifs) attend le même
 genre d'arbitrage. Les deux se répondent — si un 2ᵉ exemplaire commandé le jour même a un prix,
