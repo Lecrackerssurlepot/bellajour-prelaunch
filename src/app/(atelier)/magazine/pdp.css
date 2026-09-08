@@ -165,6 +165,16 @@
 .at-pdp .colonne-recit > .at-rv:first-child { order: 1; }
 .at-pdp .bloc-prix { order: 2; }
 .at-pdp .bloc-acte { order: 3; }
+
+/* ⚠️ LA LIGNE DE PRIX ET SON PETIT TITRE SONT DES OBJETS DE TÉLÉPHONE.
+   Ils vivent dans le DOM à toutes les largeurs — un seul balisage, jamais
+   deux — mais ne se peignent que sous 720 px, où la grille des trois paliers
+   est descendue sous le bouton. Au-dessus, c'est la grille qui tient la
+   place, et le premier écran d'ordinateur ne bouge pas d'un pixel.
+   Déclaré ICI, en tête de fichier et non dans une requête `min-width` : une
+   règle qui cache par défaut ne peut pas être oubliée par une largeur. */
+.at-pdp .bloc-prix-ligne,
+.at-pdp .prix-titre { display: none; }
 /* `.bloc-pas` n'a plus d'`order` : il n'est plus dans la colonne, il est le
    troisieme enfant de la section et vient donc apres elle de lui-meme.
    Et le selecteur ci-dessus ne dit plus `div:last-child` mais la classe de la
@@ -337,7 +347,17 @@
      La colonne de gauche CENTRE son contenu dans la hauteur ainsi gagnee :
      le mot et le collage restent solidaires — leur chevauchement EST la
      composition — au lieu de laisser un trou sous le collage. */
-  .at-pdp .kiosque > div {
+  /* ⚠️ LES DEUX COLONNES, PAS LE PARCOURS (corrigé le 08/09/2026).
+     Ce sélecteur disait `.kiosque > div` — or depuis que la bande du parcours
+     est sortie de la colonne de droite, elle EST un troisième enfant direct
+     de la section. Elle recevait donc la hauteur d'un écran entier : mesuré à
+     1280 x 720, 671 px de haut pour 280 px de contenu, soit près de 400 px de
+     noir sous les trois étapes. C'est le « vide flottant » qu'on avait tenté
+     de combler en septembre en donnant un titre à la bande (T-086) ; le titre
+     était juste, la cause était ici. On nomme donc les deux colonnes au lieu
+     de compter les enfants. */
+  .at-pdp .kiosque > div:first-child,
+  .at-pdp .colonne-recit {
     /* Le dernier terme est de l'air : sans lui, le bloc du bouton finissait
        PILE au bas de l'ecran (mesure : 900 sur 900) et les deux gages
        touchaient le bord. Il a ete double depuis que le collage remplit la
@@ -708,44 +728,197 @@
 }
 
 @media (max-width: 720px) {
-  /* ── TROIS ENCARTS, CÔTE À CÔTE ──
-     Décision de Mathias, 30/08 : des encarts, pas des filets de séparation.
-     Ils restent donc trois cartes comme en desktop — fond, bordure, rayon —
-     mais en trois colonnes et non empilées : empilées, elles coûtaient 260 px
-     et le bouton sortait de l'écran.
-     Chaque carte fait ~104 px de large sur un téléphone de 375. Les tailles
-     ci-dessous sont calées pour que ça reste LISIBLE à cette largeur, sans
-     qu'aucune ligne ne se coupe. Depuis le 07/09 (barème par pages), les
-     classes sont des EMPLACEMENTS : .combien = ligne haute, .pages = ligne
-     basse — le CONTENU a permuté (pages en haut, photos en bas), pas les
-     corps :
-       — « 20 à 29 pages » (.combien) tient sur une ligne, à 11 px ;
-       — « ~40 à 59 photos » (.pages) peut se replier sur deux lignes, comme
-         le faisait la ligne photos quand elle était en haut : le nombre
-         total de lignes par carte ne change pas ;
-       — le prix reste ce qu'on lit en premier, à 8vw.
-     Rayon à 12 px et non 16 : sur une carte de 104 px, un rayon de 16
-     ressemble à une pastille, pas à un encart. */
+  /* ════════════════════════════════════════════════════════════════════
+     LA COMPOSITION « COUVERTURE » — téléphone, 08/09/2026.
+     Demande de Mathias : le premier écran est trop dense, et la bande du
+     parcours est collée à ce qui la précède.
+
+     CE QUI A ÉTÉ MESURÉ AVANT (page en ligne, 375 x 812) : onze objets et
+     dix chiffres au-dessus du pli, et des blancs de -13, 14, 18 et 18 px —
+     un seul palier d'écart, donc rien qui se groupe. C'est la définition
+     mécanique de la densité. Le titre du parcours entrait dans l'écran à
+     777 px, soit 38 px sous le bouton, quand toutes les autres sections de
+     la page sont à 144 px de leur voisine et s'ouvrent par un filet.
+
+     CE QUE CE BLOC FAIT, ET RIEN D'AUTRE :
+       1. le prix ne dit plus qu'UNE chose ; les trois paliers descendent
+          sous le bouton (par `order`) et y deviennent lisibles ;
+       2. les blancs prennent TROIS valeurs — 14 dedans, 32 entre, 72 entre
+          deux chapitres — au lieu d'une seule ;
+       3. la bande du parcours gagne son filet et ses 72 px : elle se lit
+          comme L'objet et Questions, parce qu'elle est de même nature ;
+       4. plus aucun texte sous 12 px, et le corps de lecture passe à 16.
+
+     ⚠️ TOUT EST SOUS 720 px. Le premier écran d'ordinateur, mesuré et calé
+     en juillet puis en septembre, ne bouge pas d'un pixel. */
+
+  /* ── 1 · LE RYTHME ──
+     Trois valeurs, et trois seulement. Les remplacer par des `clamp` qui
+     varient avec la largeur reviendrait à réintroduire un continuum : c'est
+     précisément ce qu'on retire. */
+  .at-pdp { --dedans: 14px; --entre: 28px; --chapitre: 72px; }
+
+  /* L'air au-dessus du masthead : il ne se négocie pas contre la barre de
+     tête, il s'ajoute à elle.
+     ⚠️ `row-gap: 0` est INDISPENSABLE au rythme. En une seule colonne, les
+     trois enfants de la grille — le masthead+collage, le récit, le parcours —
+     sont trois rangées, et le `gap` de 14 px s'AJOUTAIT à chaque marge posée
+     plus bas : 32 devenait 46, et 72 devenait 86. Un écart qui se calcule à
+     deux endroits n'est pas un rythme. Ici la grille ne sépare plus rien,
+     les marges le font, et elles sont les trois seules valeurs du bloc. */
+  .at-pdp .kiosque { padding-top: calc(var(--nav-h) + 18px); row-gap: 0; }
+
+  /* ── 2 · LA PHOTO REPREND CE QUE LE PRIX A RENDU ──
+     Le collage passait de 150 px de haut, cadré en 11/5. Les pixels rendus
+     par la ligne de prix et par le chapô raccourci lui reviennent : c'est la
+     photo qui vend, elle est le seul objet de cet écran qui gagne à grandir.
+     Les trois cadres sont positionnés en POURCENTAGES (règle de la maison) :
+     ils grandissent ensemble, l'agencement ne bouge pas. Et les images sont
+     en `object-fit: cover` — un cadre plus haut leur rend de la matière au
+     lieu de leur en couper, puisque ce sont des portraits 450x675.
+     ⚠️ 11/5.8 ET PAS PLUS, et c'est une mesure, pas un goût. À 11/6.6 le
+     collage faisait 198 px et poussait le bouton à 675 : plus bas qu'avant le
+     chantier, sur un écran de 812 où Safari garde encore ses barres. La
+     photo grandit donc peu (150 -> 156 px) ; l'essentiel de ce qu'on a rendu
+     est parti dans la respiration et dans les corps de texte, pas dans
+     l'image. C'est le bon arbitrage : un bouton hors de vue coûte plus cher
+     qu'une photo de 40 px de moins. */
+  .at-pdp .collage { aspect-ratio: 11 / 5.8; }
+
+  /* ── 3 · LES TROIS ÉCARTS ──
+     `.titre` et `.lede` sont dans le même Reveal : ils se touchent de
+     l'intérieur, donc 14. Tout ce qui est un bloc à part est à 32. */
+  .at-pdp .bloc-collage { margin-bottom: var(--entre); }
+  .at-pdp .lede { margin-top: var(--dedans); }
+  .at-pdp .bloc-prix-ligne { margin-top: var(--entre); }
+  .at-pdp .acte { margin-top: var(--entre); gap: var(--dedans); }
+
+  /* ── 4 · LA LIGNE DE PRIX ──
+     Une ligne de devanture : le montant en display, l'ordre de grandeur en
+     petit à droite, deux filets. Pas d'encart — un encart unique pleine
+     largeur ressemblerait à un champ de formulaire, et il y a un vrai bouton
+     32 px plus bas avec lequel il se disputerait le regard. */
+  .at-pdp .bloc-prix-ligne { display: block; order: 2; }
+
+  .at-pdp .prix-ligne {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 15px 0;
+    border-top: 1px solid var(--c-line);
+    border-bottom: 1px solid var(--c-line);
+  }
+
+  /* Le montant reste le plus gros objet de la ligne. `white-space: nowrap`
+     contre le `overflow-wrap: anywhere !important` que globals.css impose
+     sous 767 px : sans lui, « Dès 30 € » pourrait se couper. */
+  .at-pdp .prix-ligne .des {
+    font-family: var(--font-display);
+    font-size: 38px;
+    line-height: 1;
+    color: var(--c-text);
+    white-space: nowrap;
+  }
+
+  .at-pdp .prix-ligne .quoi {
+    text-align: right;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--c-text-soft);
+  }
+
+  .at-pdp .prix-ligne .quoi span { display: block; }
+
+  /* ── 5 · LES TROIS PALIERS PASSENT SOUS LE BOUTON ──
+     `order`, JAMAIS un second balisage : l'ordre de lecture au clavier et au
+     lecteur d'écran suit le DOM, et deux copies énonceraient deux fois les
+     mêmes prix. Ils restent des ENCARTS — décision de Mathias du 30/08, des
+     encarts et pas des filets — mais empilés sur toute la laisse au lieu
+     d'être serrés à 104 px : c'est ce qui leur rend un corps de texte lisible
+     (15 px au lieu de 11) sans rien coûter au premier écran, puisqu'ils n'y
+     sont plus. */
+  /* Même traitement de section que la bande du parcours : 72 px, un filet,
+     puis le titre. Le filet tombe une trentaine de pixels AVANT le pli et le
+     titre après — un trait qui annonce une suite, jamais un titre coupé en
+     deux. C'est la forme exacte du grief de Mathias, prise à l'envers. */
+  .at-pdp .bloc-prix {
+    order: 4;
+    margin-top: var(--chapitre);
+    padding-top: 30px;
+    border-top: 1px solid var(--c-line);
+  }
+
+  .at-pdp .prix-titre {
+    display: block;
+    margin: 0 0 var(--dedans);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--c-text-faint);
+  }
+
   .at-pdp .prix {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    margin-top: 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
   }
 
+  /* Deux colonnes : à gauche les deux libellés empilés, à droite le prix,
+     centré sur les deux lignes. C'est la forme d'un tarif — on lit ce qu'on
+     a, puis ce que ça coûte — et elle tient sans jamais couper un mot. */
   .at-pdp .prix li {
-    padding: clamp(11px, calc(1.7 * var(--uh)), 15px) 9px;
-    border-radius: 12px;
-    text-align: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 2px 18px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    text-align: left;
   }
 
-  /* T-087 — les deux libellés remontent au minimum lisible (Mathias, 01/09 :
-     « trop dense sur téléphone »). `.combien` 10 -> 11 px et `.pages`
-     11 -> 12 px (les corps n'ont PAS bougé au réordonnancement du 07/09).
-     Le prix en euros était déjà grand (8vw) : ce n'est pas lui qui manquait de
-     lisibilité mais les mentions au-dessus et en dessous. Interlignes resserrés
-     d'un cran pour absorber la hausse sans repousser le bouton hors de l'écran. */
-  .at-pdp .prix .combien { font-size: 11px; letter-spacing: 0.08em; line-height: 1.3; }
-  .at-pdp .prix .euros { margin-top: 5px; font-size: clamp(24px, 8vw, 32px); }
-  .at-pdp .prix .pages { margin-top: 1px; font-size: 12px; line-height: 1.25; }
+  .at-pdp .prix .combien {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    line-height: 1.35;
+    color: var(--c-text);
+  }
+
+  .at-pdp .prix .pages {
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--c-text-faint);
+  }
+
+  .at-pdp .prix .euros {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    margin-top: 0;
+    font-size: 32px;
+    line-height: 1;
+  }
+
+  /* ── 6 · LA BANDE DU PARCOURS DEVIENT UNE SECTION ──
+     Le grief de Mathias, et il était fondé : elle commençait 38 px sous le
+     bouton, sans filet ni respiration, quand L'objet et Questions sont à
+     144 px de leur voisine et s'ouvrent chacune par un trait. Elle prend donc
+     le traitement des autres chapitres. Le filet apparaît AVANT le pli, le
+     titre après : c'est exactement ce qu'on veut — un trait qui dit qu'il y a
+     une suite, sans entamer l'écran avec un titre à moitié lu. */
+  .at-pdp .bloc-pas {
+    margin-top: var(--chapitre);
+    padding-top: 30px;
+    border-top: 1px solid var(--c-line);
+  }
 
   /* Le compte à rebours de l'étape passe à la ligne : sur 320 px, la
      troisième colonne écrasait le titre de l'étape. */
@@ -758,30 +931,74 @@
   .at-pdp .acte { align-self: stretch; }
   .at-pdp .acte .at-cta { width: 100%; justify-content: center; }
 
+  /* ════════════════════════════════════════════════════════════════════
+     LE PLANCHER DE LISIBILITÉ — 08/09/2026, demande de Mathias.
+     RELEVÉ AVANT, sur la page en ligne à 375 px : six styles visibles sous
+     14 px — les libellés des encarts à 11, les sur-titres de section à 11,
+     l'ordre de grandeur photos à 12, le délai des étapes à 12, les deux
+     gages à 13, la mention de L'objet à 13.
+     Les contrastes, eux, étaient bons partout (5,8:1 au pire, AA demande
+     4,5:1) : ce n'était pas la couleur qui manquait, c'était la taille.
+     Règle posée : 16 px pour ce qui se lit en continu, 14 px pour tout
+     texte de contenu, 12 px plancher absolu pour les micro-libellés en
+     capitales — et rien en dessous.
+     ⚠️ Sur téléphone seulement. Sur ordinateur ces corps sont vus à 50 cm
+     d'un écran de 24 pouces, pas à bout de bras : ils y sont justes. */
+
+  /* Le corps de lecture. `.lede` sert le kiosque ET L'objet : les deux
+     paragraphes qu'on lit vraiment sur cette page montent ensemble. */
+  .at-pdp .lede { font-size: 16px; line-height: 1.65; }
+
+  /* Les deux gages sous le bouton. 13 -> 14, et le picto suit : à 17 px il
+     paraissait flotter à côté d'un texte plus grand. */
+  .at-pdp .gages li { font-size: 14px; line-height: 1.45; }
+  .at-pdp .gages svg { width: 18px; height: 18px; }
+
+  /* Les sur-titres de section (« L'objet », « Questions »), le délai des
+     étapes, la mention, ce qui est compris, et les réponses de la FAQ. */
+  .at-pdp .kicker { font-size: 12px; }
+  .at-pdp .pas .quand { font-size: 14px; }
+  .at-pdp .mention { font-size: 14px; line-height: 1.65; }
+  .at-pdp .compris li { font-size: 15px; }
+  .at-pdp .pas-sous { font-size: 15px; }
+  .at-pdp .faq summary { font-size: 16px; }
+  .at-pdp .faq details p { font-size: 16px; line-height: 1.7; }
+
   .at-pdp .double .vignettes { display: none; }
 }
 
-/* ── ÉCRANS COURTS ──
-   Un iPhone SE fait 667 px de haut, un SE de première génération 568. À cette
-   hauteur, la composition normale pousse le bouton dehors. On resserre encore
-   plutôt que de le laisser sortir : c'est la seule chose de cet écran qui ne
-   se négocie pas.
-   La borne est en `max-height` et non en largeur — un téléphone couché a la
-   largeur d'une tablette et la hauteur d'un timbre, et c'est la hauteur qui
-   décide ici. */
-@media (max-width: 900px) and (max-height: 700px) {
+/* ── ÉCRANS COURTS, entre 721 et 900 px de large ──
+   Le téléphone couché et la petite tablette : la composition y est déjà en
+   une colonne mais garde les trois encarts dans le premier écran. Ces
+   valeurs-là n'ont pas bougé depuis leur mesure. */
+@media (min-width: 721px) and (max-width: 900px) and (max-height: 700px) {
   .at-pdp .kiosque { padding-top: calc(var(--nav-h) + 8px); gap: 10px; }
   .at-pdp .collage { aspect-ratio: 5 / 2; }
-  /* ⚠️ LE MASTHEAD NE RECULE PAS ICI, et c'est un choix mesuré. Le réduire à
-     13,6vw rendait 8 px — pas assez pour faire entrer le bouton dans un écran
-     de 568 px (il restait à 569), et le mot tombait à 81 % de la laisse au
-     lieu de 97. On perdait l'allure sans rien gagner. Sur cet écran-là — un
-     iPhone SE de 2016 — le bouton demande une dizaine de pixels de
-     défilement, et c'est assumé. */
   .at-pdp .lede { font-size: 14px; }
   .at-pdp .prix li { padding: 8px 8px; }
   .at-pdp .prix .euros { font-size: 26px; }
   .at-pdp .acte { margin-top: 10px; }
+}
+
+/* ── ÉCRANS COURTS, téléphone (08/09/2026) ──
+   Un iPhone SE fait 667 px de haut, un SE de première génération 568. À cette
+   hauteur, la composition normale pousse le bouton dehors.
+   CE QU'ON COMPRIME : les blancs et la photo. CE QU'ON NE COMPRIME PLUS : les
+   corps de texte. L'ancienne version faisait tomber le chapô à 14 px sur ces
+   écrans — c'est-à-dire qu'elle rendait le texte le moins lisible exactement
+   là où l'écran est le plus petit. Le rythme garde ses trois valeurs, il les
+   prend simplement d'un cran plus bas.
+   ⚠️ LE MASTHEAD NE RECULE PAS, et c'est un choix mesuré. Le réduire à
+   13,6vw rendait 8 px — pas assez pour faire entrer le bouton dans un écran
+   de 568 px, et le mot tombait à 81 % de la laisse au lieu de 97. On perdait
+   l'allure sans rien gagner. */
+@media (max-width: 720px) and (max-height: 700px) {
+  .at-pdp { --dedans: 10px; --entre: 22px; --chapitre: 56px; }
+  .at-pdp .kiosque { padding-top: calc(var(--nav-h) + 14px); }
+  .at-pdp .collage { aspect-ratio: 5 / 2; }
+  .at-pdp .lede { font-size: 15px; line-height: 1.6; }
+  .at-pdp .prix-ligne { padding: 11px 0; }
+  .at-pdp .prix-ligne .des { font-size: 32px; }
 }
 
 /* ── La double page ne survit pas à un écran étroit ──

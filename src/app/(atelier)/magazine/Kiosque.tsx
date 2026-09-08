@@ -10,7 +10,14 @@
    elles arrivent sous la ligne de flottaison. */
 
 import Reveal from '../components/Reveal'
-import { ETAPES, PALIERS, PARCOURS_SOUS_TITRE, PARCOURS_TITRE } from '../content'
+import {
+  ETAPES,
+  PALIERS,
+  PARCOURS_SOUS_TITRE,
+  PARCOURS_TITRE,
+  PRIX_LIGNE,
+  PRIX_TITRE,
+} from '../content'
 import LienComposer from '../components/LienComposer'
 
 /* Le rythme annoncé à chaque étape. Il vit ICI et non dans content.ts : ce
@@ -102,10 +109,34 @@ export default function Kiosque() {
               phrase qui dit ce qu'on vend, elle doit se lire même en diagonale.
               La virgule a bougé — « votre magazine personnalisé imprimé »
               empilait deux adjectifs et se lisait mal. */}
+          {/* ⚠️ TROIS PHRASES, PAS QUATRE (08/09/2026). « Vous voyez la
+              couverture avant de décider » a été retirée : elle est dite mot
+              pour mot par le premier gage, 90 px plus bas, et les deux se
+              lisaient dans le même écran. Sur un téléphone elle coûtait une
+              ligne entière de chapô pour répéter ce qui était déjà écrit.
+              L'argument n'est pas perdu — il est simplement dit une fois. */}
           <p className="lede">
             Vous racontez le moment, vous déposez vos photos.{' '}
             <b>L’atelier compose votre magazine personnalisé</b>, imprimé page
-            à page. Vous voyez la couverture avant de décider.
+            à page.
+          </p>
+        </Reveal>
+
+        {/* ── LA LIGNE DE PRIX — TÉLÉPHONE UNIQUEMENT ──
+            Une information au lieu de neuf : « Dès 30 € », et l'ordre de
+            grandeur qui la justifie. Tout est dérivé de la grille (content.ts
+            → PRIX_LIGNE), donc rien ici ne peut contredire le prix ferme.
+            ⚠️ Elle est `display: none` au-dessus de 720 px : sur ordinateur
+            c'est la grille des trois paliers qui tient cette place, et elle y
+            reste au pixel près. Le bloc existe donc dans le DOM à toutes les
+            largeurs — c'est le CSS qui choisit, pas deux balisages. */}
+        <Reveal delay={140} className="bloc-prix-ligne">
+          <p className="prix-ligne">
+            <span className="des">{PRIX_LIGNE.des}</span>
+            <span className="quoi">
+              <span>{PRIX_LIGNE.pages}</span>
+              <span>{PRIX_LIGNE.photos}</span>
+            </span>
           </p>
         </Reveal>
 
@@ -122,6 +153,11 @@ export default function Kiosque() {
               premier écran mobile (375×667) garde les mêmes corps et les
               mêmes hauteurs. Renommer les classes obligerait à réécrire
               pdp.css et ses trois media queries pour zéro pixel de gagné. */}
+          {/* Affiché SEULEMENT sous 720 px, là où la grille est descendue
+              sous le bouton et a besoin d'être annoncée. Sur ordinateur elle
+              est dans le premier écran, à sa place : personne n'a besoin
+              qu'on lui dise que trois prix sont trois prix. */}
+          <p className="prix-titre">{PRIX_TITRE}</p>
           <ul className="prix">
             {PALIERS.map((p) => (
               <li key={p.prix}>

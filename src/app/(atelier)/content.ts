@@ -62,6 +62,35 @@ export const PALIERS = GRILLE.map((g) => ({
    recopié à la main. */
 export const CTA_NOTE_PRICE = `${EUROS_MIN} €`
 
+/* LA LIGNE DE PRIX DU TÉLÉPHONE (08/09/2026).
+   Sur un écran de 375 px, les trois encarts de PALIERS font 104 px de large
+   chacun : pour tenir, leurs libellés étaient descendus à 11 et 12 px, et on
+   demandait un arbitrage — quel palier ? — à quelqu'un qui n'avait pas encore
+   lu ce qu'on vend. Le premier écran ne porte donc plus qu'UNE information de
+   prix ; les trois paliers, eux, ne disparaissent pas : ils passent SOUS le
+   bouton (par `order`, jamais par duplication de balisage) et y deviennent
+   trois encarts pleine largeur, enfin lisibles.
+   ⚠️ Les bornes sont DÉRIVÉES de la grille, jamais recopiées — et par
+   `Math.min`/`Math.max` sur toutes les tranches plutôt qu'en indexant la
+   première et la dernière : le jour où la grille change d'ordre, la ligne suit.
+   L'espace insécable avant € est celui de CTA_NOTE_PRICE : un prix ne se
+   coupe jamais en fin de ligne. */
+const PAGES_MIN = Math.min(...GRILLE.map((g) => g.minPages))
+const PAGES_MAX = Math.max(...GRILLE.map((g) => g.maxPages))
+const PHOTOS_MIN = Math.min(...GRILLE.map((g) => g.photosMin))
+const PHOTOS_MAX = Math.max(...GRILLE.map((g) => g.photosMax))
+
+export const PRIX_LIGNE = {
+  des: `Dès ${EUROS_MIN} €`,
+  pages: `${PAGES_MIN} à ${PAGES_MAX} pages`,
+  photos: `${PHOTOS_MIN} à ${PHOTOS_MAX} photos`,
+}
+
+/* Le petit titre qui coiffe les trois encarts une fois descendus sous le
+   bouton. Il n'est PAS affiché sur ordinateur : la grille y reste dans le
+   premier écran, à sa place, et n'a besoin de personne pour l'annoncer. */
+export const PRIX_TITRE = 'Les trois formats'
+
 /* Le titre de la bande parcours (lot 3, 07/09 — arbitrage T-086 rendu par
    Mathias : la bande gagne un vrai titre au lieu de flotter sans nom). */
 export const PARCOURS_TITRE = 'Le parcours avec l’atelier'
