@@ -49,3 +49,36 @@ Rien ne presse : le gain est un temps de build, pas une page plus rapide.
 ## État
 
 `nouveau` — constat prouvé, correctif volontairement différé.
+
+## Ce qui a été fait (08/09/2026)
+
+Le piège annoncé s'est refermé sur deux fichiers, et c'était le bon réflexe de le poser.
+
+**D'abord Brevo, ensuite le dépôt.** L'API Brevo a été interrogée (39 templates, contenu HTML
+complet) et croisée avec les 37 candidats. Deux d'entre eux sont **vivants** :
+
+- `instagram.png` — dans **18 templates actifs** (W1 à W6, P1 à P3, A1 à A3, F1, S1, ERR,
+  changement de format fondateurs) ;
+- `decor-album-email.jpg` — dans **3 templates actifs** (W3, et deux « W2 W3_step_#5 »).
+
+Un `grep` sur `src/` et `scripts/` ne voyait ni l'une ni l'autre. Les déplacer aurait cassé
+l'image de mails déjà reçus par des clientes.
+
+**Les 35 autres sont archivées** dans `archive/public-orphelins/images/` (`git mv`, jamais
+supprimées, retour par le geste inverse) : 27 vignettes de `lancement/galerie/`, 3 portraits de
+`lancement/avis/`, les 3 `ui/signature.*`, `ui/bellajour-blanc.webp` et
+`decor-album-email.png` (le `.png` seul — son jumeau `.jpg` est celui que Brevo appelle).
+
+**3,9 Mo retirés du déploiement.** Le poids suivi par git dans `public/` passe de 9,0 à 5,1 Mo.
+Le gain reste un temps de build : ces fichiers n'étaient jamais téléchargés par personne.
+
+Le détail et l'avertissement sont dans `archive/public-orphelins/README.md`.
+
+### Trouvé en chemin, sorti en ticket
+
+Le template Brevo **13** (« Waitlist - Séquence W2 W3_step_#5 », actif) appelle
+`https://www.bellajour.fr/images/Bellajour_bleu.png` qui **répond 404**. Voir **T-103**.
+
+## État
+
+`fermé` — 35 images archivées, 2 conservées avec la preuve de leur usage.

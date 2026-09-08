@@ -55,3 +55,44 @@ comme cadré ci-dessus (aucune écriture, pas de `--vraiment` puisqu'il n'agit j
 
 **Reste** : le lancer sur les vrais paiements (clé live), puis décider (T-031) d'un canal d'alerte
 et éventuellement d'un cron une fois la sortie éprouvée sur plusieurs passages.
+
+## Lancé sur la vraie base (08/09/2026)
+
+Le reste de la fiche disait « le lancer sur la vraie base ». Fait, deux fois, en lecture seule
+(le script n'a pas de `--vraiment` : il ne peut rien écrire).
+
+**Passe 1, `--jours=90` (livemode seul, la vraie vie)** :
+`0 paiement atelier réglé`, `0 écart`. Attendu — l'atelier n'a pas encore encaissé de vraie
+cliente. Mais un silence sur zéro ligne ne prouve rien : il fallait vérifier qu'il sait DÉTECTER.
+
+**Passe 2, `--jours=90 --avec-test`** : 3 paiements, 1 rapproché proprement, et **2 écarts
+levés** :
+
+- 10,00 € — `cs_test_a12VOwH7…NCNCV` — aucun dossier pour ce token ;
+- 40,00 € — `cs_test_a1to9Qeg…ZaHf4cB` — aucun dossier pour ce token.
+
+**Ce ne sont pas des bugs.** Ce sont les dossiers de recette supprimés en base après coup
+(les « Test soir\* » et les tests du 03/09), dont la session Stripe de test, elle, est restée.
+Le script fait exactement ce qu'on lui demande : il voit l'argent sans dossier. **Le filet
+fonctionne, et c'est la première fois qu'on le prouve contre les deux vrais côtés.**
+
+## Ce qui reste, et pourquoi je ne l'ai pas fait
+
+Le cron. Il ne se pose pas tout seul : **Vercel Hobby n'autorise qu'une tâche planifiée par
+jour**, et elle est déjà prise par la relève des mails de l'atelier. Trois issues, et c'est un
+arbitrage, pas un geste technique :
+
+1. **greffer le rapprochement sur la relève existante** (une seule tâche, deux travaux) — le
+   plus économe, mais on mêle deux responsabilités et un échec de l'un peut masquer l'autre ;
+2. **le passer sur GitHub Actions**, comme la relève horaire écrite pour T-097 — indépendant,
+   gratuit, mais un secret de plus à poser ;
+3. **le laisser à la main** et le lancer avant chaque clôture de semaine — suffisant tant que
+   le volume est nul, insuffisant dès la première vraie cliente.
+
+Ma recommandation : **(2)**, le jour où T-097 sera lancé — les deux tâches partagent le même
+mécanisme, et le rapprochement ne doit pas dépendre de la santé de l'envoi de mails.
+
+## État
+
+`en cours` → le script est livré ET éprouvé contre la production. Reste le seul choix du
+déclencheur, qui appartient à Mathias.
