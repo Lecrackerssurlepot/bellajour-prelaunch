@@ -55,3 +55,50 @@ un envoi reste possible.
 
 `nouveau` — constat prouvé contre la production et contre l'API Brevo, correctif en attente
 d'un accord (geste sur un mail réel).
+
+## Tentative de désactivation (08/09/2026) — l'API la refuse
+
+Mathias a demandé de désactiver le template 13. **Ça n'a pas marché, et il faut savoir pourquoi
+avant de recommencer.**
+
+    GET  /v3/smtp/templates/13  → 200, le template est là
+    PUT  /v3/smtp/templates/13  {"isActive": false}
+                                → 404 {"code":"document_not_found",
+                                       "message":"Template id does not exist"}
+
+Le même id est trouvé en lecture et introuvable en écriture. L'explication tient à son nom :
+**« Waitlist - Séquence W2 W3_step_#5 » est une étape d'une AUTOMATION**, pas un template
+transactionnel. La documentation de l'endpoint de liste le dit à demi-mot (« including
+automation templates ») ; ces templates-là se lisent par l'API et ne se modifient que dans
+l'interface de l'automation. Les seuls autres du dépôt à porter ce nom sont **12, 13 et 14** —
+tous les nôtres (W1 à W6, P, A, F, S, M0 à M10, C1, C2) sont transactionnels et créés par
+`scripts/mails-atelier.mjs`.
+
+**Correction d'une hypothèse trop rapide.** J'avais écrit que 13 était l'ancienne version de 14.
+C'est faux : ils partagent le NOM, pas l'objet.
+
+| id | objet réel | ce que c'est vraiment |
+|---|---|---|
+| 14 | « Ce que vous allez tenir entre les mains » | le propos de **W3** (template 7) |
+| 13 | « {{ params.PRENOM }}, les préventes ouvrent demain ! » | le propos de **W5** (template 8) |
+
+Donc 13 n'est pas un doublon de 14 : c'est un mail « les préventes ouvrent demain » enregistré
+sous un nom qui n'est pas le sien, et dont le vrai jumeau est le template 8.
+
+### La vraie question, qui décide de tout
+
+Aucun de ces trois templates n'est appelé par un id dans `src/` ni `scripts/` : ils
+n'appartiennent pas à notre code, ils appartiennent à une automation Brevo. Donc :
+
+- **si l'automation « Waitlist - Séquence W2 W3 » est arrêtée**, le mail ne peut plus partir et
+  l'image 404 ne sera jamais vue : le ticket se ferme sans rien toucher ;
+- **si elle tourne encore**, il faut l'arrêter — et c'est bien plus important que l'image, parce
+  qu'elle enverrait des mails annonçant des préventes **closes depuis le 01/09**.
+
+Cette réponse ne se lit pas depuis le dépôt : l'API v3 n'expose pas les workflows d'automation.
+Elle se lit dans Brevo, sous Automations.
+
+## État
+
+`nouveau` → la correction demandée est **impossible par l'API**. Elle demande un geste dans
+l'interface Brevo, et surtout une réponse à la question ci-dessus.
