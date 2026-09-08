@@ -28,7 +28,7 @@ const MOTIFS = [
    plus court c'est plus dense, plus long c'est plus aéré. Le choix voyage
    dans `ajustement_motifs` comme les autres chips — la route les accepte en
    texte libre (8 max, 80 caractères), rien à changer côté serveur. */
-const LONGUEURS = ['Plus court — plus dense', 'Plus long — plus aéré'] as const
+const LONGUEURS = ['Plus court, plus dense', 'Plus long, plus aéré'] as const
 
 export default function FeuilleAjustement({
   token, ouvert, onFermer,
@@ -117,7 +117,7 @@ export default function FeuilleAjustement({
           <>
             <p className="nu-feuille-done">C’est noté. L’atelier repasse dessus.</p>
             <p className="nu-feuille-sub" style={{ textAlign: 'center' }}>
-              Vous recevrez une nouvelle version — rien n’est dû tant que vous n’avez pas dit oui.
+              Vous recevrez une nouvelle version. Rien n’est dû tant que vous n’avez pas dit oui.
             </p>
             <div className="nu-feuille-row" style={{ justifyContent: 'center' }}>
               <button type="button" className="nu-feuille-send" onClick={onFermer}>
@@ -129,7 +129,7 @@ export default function FeuilleAjustement({
           <>
             <h3 className="nu-feuille-titre">Envie d’un ajustement&nbsp;?</h3>
             <p className="nu-feuille-sub">
-              Dites-le en deux mots — l’atelier repasse dessus, et vous recevez une nouvelle
+              Dites-le en deux mots. L’atelier repasse dessus, et vous recevez une nouvelle
               version. Pas besoin d’écrire un mail.
             </p>
 
@@ -176,7 +176,7 @@ export default function FeuilleAjustement({
                 à l'endroit où la question se pose. (Décision Mathias, 04/09.) */}
             {longueur && (
               <p className="nu-feuille-note">
-                Le nombre de pages peut changer le prix — on vous le confirme
+                Le nombre de pages peut changer le prix : on vous le confirme
                 avant tout paiement.
               </p>
             )}

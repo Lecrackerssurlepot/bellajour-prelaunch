@@ -42,7 +42,7 @@ export default function FormulaireOubli() {
           Si un compte existe pour <b>{email}</b>, un mail vient de partir.
         </p>
         <p className="cpt-envoye-sub">
-          Ouvrez-le et suivez le lien pour choisir un nouveau mot de passe — il est valable une
+          Ouvrez-le et suivez le lien pour choisir un nouveau mot de passe. Il est valable une
           heure. Rien reçu ? Regardez dans les courriers indésirables.
         </p>
         <a className="cpt-lien" href="/compte/connexion">

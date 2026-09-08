@@ -206,7 +206,7 @@ export default async function NumeroPage({
       <Coquille titre="Votre numéro" avancement={-1} camp="fini" token={token}>
         <p className="nu-mot">La page ne répond pas.</p>
         <p className="nu-sub">
-          Le dossier est intact — c’est l’affichage qui bloque. Rechargez dans
+          Le dossier est intact : c’est l’affichage qui bloque. Rechargez dans
           un instant, ou écrivez-nous à <b>{CONTACT_EMAIL}</b>.
         </p>
       </Coquille>
@@ -291,7 +291,7 @@ export default async function NumeroPage({
           <p className="nu-mot">L’atelier a vos {numero.nb_photos} photos.</p>
           <p className="nu-sub">
             Votre couverture arrive <b>sous 48 h</b>, par mail et sur cette page.
-            Vous ne payez qu’après l’avoir vue — et seulement si elle vous plaît.
+            Vous ne payez qu’après l’avoir vue, et seulement si elle vous plaît.
           </p>
         </>
       )}
@@ -343,7 +343,7 @@ export default async function NumeroPage({
             {sansPhotos ? (
               <>
                 Le dossier est ouvert, votre titre est réservé. Il faut{' '}
-                <b>{MIN_PHOTOS} photos</b> au minimum pour composer un numéro — comptez
+                <b>{MIN_PHOTOS} photos</b> au minimum pour composer un numéro. Comptez
                 deux minutes depuis votre téléphone.
               </>
             ) : (

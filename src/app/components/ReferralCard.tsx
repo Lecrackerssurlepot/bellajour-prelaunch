@@ -68,7 +68,7 @@ export default function ReferralCard({
 
       {footerVisible && (
         <p className="ref-card-footer">
-          Vos 5 pages s&rsquo;appliquent dès que chacun de vos proches passera commande au lancement. Pas de limite — plus vous parrainez, plus vous cumulez.
+          Vos 5 pages s&rsquo;appliquent dès que chacun de vos proches passera commande au lancement. Pas de limite : plus vous parrainez, plus vous cumulez.
         </p>
       )}
 

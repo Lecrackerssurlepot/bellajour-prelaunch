@@ -69,7 +69,7 @@ function CarteDossier({ d }: { d: DossierVue }) {
         </div>
         <p className="cpt-carte-etat">
           {d.nbPhotos > 0
-            ? `${d.nbPhotos} photo${d.nbPhotos > 1 ? 's' : ''} déjà là — il reste un geste pour tout envoyer.`
+            ? `${d.nbPhotos} photo${d.nbPhotos > 1 ? 's' : ''} déjà là. Il reste un geste pour tout envoyer.`
             : 'Vos photos ne sont pas encore arrivées.'}
         </p>
         <div className="cpt-carte-gestes">
@@ -287,7 +287,7 @@ export default function Espace({
                 <h1 className="cpt-titre">Ma bibliothèque</h1>
                 <p className="cpt-sous-titre">
                   {livres.length} numéro{livres.length > 1 ? 's' : ''} livré
-                  {livres.length > 1 ? 's' : ''} — à revoir et à télécharger quand vous voulez.
+                  {livres.length > 1 ? 's' : ''}, à revoir et à télécharger quand vous voulez.
                 </p>
               </div>
               <Link className="cpt-nouveau" href={`${COMPOSER_HREF}?${DEPUIS_COMPTE}`}>

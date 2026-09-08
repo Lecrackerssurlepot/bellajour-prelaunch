@@ -55,7 +55,7 @@ export default function FormulaireReinitialisation({ tokenHash }: { tokenHash: s
   if (fait) {
     return (
       <div className="cpt-envoye" role="status">
-        <p className="cpt-envoye-mot">C’est fait — votre mot de passe est changé.</p>
+        <p className="cpt-envoye-mot">C’est fait. Votre mot de passe est changé.</p>
         <a className="at-cta cpt-cta" href="/compte/connexion">
           Me connecter
         </a>

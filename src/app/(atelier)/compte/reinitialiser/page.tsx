@@ -49,7 +49,7 @@ export default async function ReinitialiserPage({
           <div className="cpt-envoye" role="alert">
             <p className="cpt-envoye-mot">Ce lien est incomplet.</p>
             <p className="cpt-envoye-sub">
-              Ouvrez le mail « réinitialiser votre mot de passe » et suivez son lien tel quel —
+              Ouvrez le mail « réinitialiser votre mot de passe » et suivez son lien tel quel,
               ou redemandez-en un.
             </p>
             <a className="cpt-lien" href="/compte/mot-de-passe-oublie">

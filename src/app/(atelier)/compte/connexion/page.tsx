@@ -55,7 +55,7 @@ export default async function ConnexionPage({
       <main className="cpt-main cpt-main--etroit">
         <h1 className="cpt-titre">Mon compte</h1>
         <p className="cpt-sous-titre">
-          Tous vos numéros au même endroit — le suivi, les anciens projets, les PDF.
+          Tous vos numéros au même endroit : le suivi, les anciens projets, les PDF.
         </p>
         {params.erreur && MOTS_ERREUR[params.erreur] ? (
           <p className="cpt-alerte" role="alert">

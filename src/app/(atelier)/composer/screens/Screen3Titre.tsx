@@ -94,7 +94,7 @@ export default function Screen3Titre({
           promettent plus un clic : le titre s'y écrit en direct, c'est
           toute leur fonction. */}
       <p className="at-covers-chapeau">
-        Pour l’inspiration — l’atelier composera le vôtre avec vos photos.
+        Pour l’inspiration : l’atelier composera le vôtre avec vos photos.
       </p>
       <div className="at-covers">
         {COVER_MODELS.map((m, i) => (
