@@ -196,7 +196,12 @@ export default function Kiosque() {
                     chaque <b> et chaque bout de texte devient un élément flex
                     à part entière, et les espaces de la phrase s'écartent de
                     10 px — « Premier aperçu   gratuit   sous   48 h ». */}
-                <span>Premier aperçu <b>gratuit</b> sous <b>48&nbsp;h</b></span>
+                {/* « Premier » est tombé le 08/09 : sur téléphone les deux
+                    gages se lisent maintenant sur UNE ligne, et le mot coûtait
+                    51 px mesurés — assez pour faire passer la ligne de 309 à
+                    360 px, c'est-à-dire pour la faire replier. Il n'ajoutait
+                    rien : un aperçu qu'on reçoit sous 48 h est le premier. */}
+                <span>Aperçu <b>gratuit</b> sous <b>48&nbsp;h</b></span>
               </li>
               <li>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"
@@ -204,7 +209,14 @@ export default function Kiosque() {
                   <path d="M12 3.4 19 5.9v5.5c0 4-3 6.8-7 8.4-4-1.6-7-4.4-7-8.4V5.9l7-2.5Z" />
                   <path d="m9 12.1 2.1 2.1 4.1-4.3" />
                 </svg>
-                <span>Rien à payer avant la couverture</span>
+                {/* ⚠️ `.g-plus` N'EST PAS UNE DUPLICATION : c'est le MÊME
+                    texte, avec un segment que le téléphone n'affiche pas. Sur
+                    ordinateur la phrase est entière ; sur téléphone, où les
+                    deux gages se suivent sur une ligne, elle s'arrête à
+                    « avant » — ce qui reste vrai et se comprend. Écrire deux
+                    variantes du gage aurait fait lire deux fois la même
+                    promesse à un lecteur d'écran. */}
+                <span>Rien à payer avant<span className="g-plus"> la couverture</span></span>
               </li>
             </ul>
           </div>

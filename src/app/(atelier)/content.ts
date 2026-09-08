@@ -12,6 +12,14 @@ export const CTA_MAGAZINE_LABEL = 'Découvrir les magazines'
    reprend tout seul à l'ouverture de /composer : même adresse, aucun
    paramètre — ne JAMAIS y accrocher `?reprendre=`, voir plus bas. */
 export const CTA_REPRISE_LABEL = 'Continuer la composition'
+/* LE TROISIÈME LIBELLÉ, ET LE DERNIER (08/09/2026).
+   Il ne vaut QUE dans /compte, et seulement quand la cliente a déjà quelque
+   chose sur son étagère ou en cours. Là, « Composer avec l'atelier » est un
+   libellé de découverte proposé à quelqu'un qui a déjà découvert : ce qu'elle
+   fait en cliquant, c'est en commencer UN AUTRE, et le bouton doit le dire.
+   Partout ailleurs — accueil, page produit, univers, page du numéro — les
+   deux libellés du dessus restent les seuls. */
+export const CTA_NOUVEAU_LABEL = 'Composer un nouveau numéro'
 /* DEUX ADRESSES, DEUX LIBELLÉS (01/09/2026).
    Jusqu'ici un seul libellé (« Composer avec l'atelier ») servait les deux
    destinations : l'ancien invariant nº5. Il tombe, à la demande de Mathias, car

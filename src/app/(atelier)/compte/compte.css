@@ -193,6 +193,67 @@
   color: var(--c-text-faint);
 }
 
+/* ── LA TÊTE D'ONGLET : le titre, et le geste qui manquait ──────────
+   08/09/2026, demande de Mathias. Jusqu'ici « Composer avec l'atelier »
+   n'existait QUE dans les deux écrans vides : une cliente qui avait déjà un
+   numéro en cours ou un livre sur son étagère n'avait plus aucune porte pour
+   en commencer un autre depuis son espace — il fallait ressortir par le site.
+   Le bouton se pose donc en tête des deux onglets remplis, à droite du titre.
+
+   Il est SECONDAIRE, volontairement : dans « Mes numéros » le geste qui
+   compte est celui que porte chaque carte (reprendre un dépôt, voir une
+   couverture). Un second bouton plein leur ferait concurrence. Contour et
+   fond discret : présent, jamais premier. */
+.cpt-tete {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.cpt .cpt-nouveau {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  /* 44 px de haut : la cible tactile minimale, sur un écran où tout le reste
+     est fait pour le doigt. */
+  min-height: 44px;
+  padding: 11px 20px;
+  border: 1px solid var(--c-line);
+  border-radius: 999px;
+  background: var(--c-surface-1);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--c-text);
+  text-decoration: none;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.cpt .cpt-nouveau span {
+  font-size: 17px;
+  line-height: 1;
+  color: var(--c-accent);
+}
+
+.cpt .cpt-nouveau:hover { border-color: var(--c-accent); background: var(--c-surface-2); }
+.cpt .cpt-nouveau:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 3px; }
+
+/* Sur téléphone le bouton passe sous le titre et prend toute la laisse :
+   à côté d'un titre de 34 px il ne restait pas 120 px, et « Composer un
+   nouveau numéro » s'y serait cassé en trois lignes. */
+@media (max-width: 640px) {
+  .cpt-tete { display: block; }
+  .cpt .cpt-nouveau {
+    margin-top: 20px;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* ── Les sections du dashboard ────────────────────────────────────── */
 
 .cpt-section { margin-top: clamp(40px, 7vw, 64px); }
@@ -717,4 +778,120 @@
   font-size: 14px;
   line-height: 1.6;
   color: var(--c-text-faint);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LES SILHOUETTES DE CHARGEMENT (loading.tsx) — 08/09/2026
+   Même remède que dans l'admin (`atelier.css`), pour la même raison, et
+   mesuré cette fois : `/compte` met 288 à 538 ms avant le premier octet,
+   contre 93 à 183 ms pour `/magazine`. L'écart n'est pas le réseau, c'est le
+   travail fait AVANT de répondre — la vérification de session interroge
+   Supabase Auth, puis les dossiers, puis on signe les couvertures.
+
+   Sans `loading.tsx`, Next garde l'écran PRÉCÉDENT figé pendant tout ce
+   temps : on clique, il ne se passe rien, on reclique. C'est exactement ce
+   que décrit Mathias — « je clique sur reprendre le dépôt, ça prend du temps ».
+   Ce qui se répare n'est donc pas la durée seule : c'est le clic mort.
+
+   Une silhouette qui a la FORME de l'écran qui arrive, jamais le mot
+   « Chargement » : un décalage de mise en page à l'arrivée recréerait
+   l'impression qu'on veut supprimer.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.cpt-squelette { user-select: none; }
+
+.cpt-sq {
+  display: block;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  animation: cpt-sq-pulse 1400ms var(--ease, ease) infinite;
+}
+
+.cpt-sq--titre { width: 44%; height: clamp(30px, 4vw, 42px); border-radius: 6px; }
+.cpt-sq--sous { width: 62%; height: 15px; margin-top: 14px; border-radius: 5px; }
+.cpt-sq--onglet { width: 116px; height: 20px; border-radius: 5px; }
+.cpt-sq--carte { height: 210px; border-radius: 18px; }
+.cpt-sq--livre { height: 300px; border-radius: 18px; }
+.cpt-sq--scene { height: clamp(280px, 52vw, 460px); border-radius: 12px; margin-top: clamp(24px, 4vw, 40px); }
+.cpt-sq--bloc { height: 160px; margin-top: clamp(32px, 5vw, 52px); }
+
+/* Les cartes ne battent pas ensemble : un décalage court fait respirer la
+   grille au lieu de la faire clignoter d'un bloc. */
+.cpt-sq-liste > *:nth-child(2n) { animation-delay: 160ms; }
+.cpt-sq-liste > *:nth-child(3n) { animation-delay: 320ms; }
+
+@keyframes cpt-sq-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cpt-sq { animation: none; }
+}
+
+/* ── « Recommander ce numéro » (T-105) ──────────────────────────────
+   Le bouton du même objet, une fois de plus. Secondaire et POSÉ À CÔTÉ du
+   téléchargement, jamais dessous : télécharger est le geste courant d'une page
+   de bibliothèque, recommander est le geste rare. Deux boutons pleins l'un
+   au-dessus de l'autre auraient fait hésiter sur lequel est « le » bouton.
+
+   ⚠️ Il n'est rendu par personne aujourd'hui : le verrou de prix.ts tient, et
+   `peutRecommander` refuse. Ces règles existent pour que le jour où Mathias
+   donne le prix, il n'y ait rien à dessiner — juste un montant à poser. */
+.cpt-mag-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.cpt .cpt-recommander {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px 22px;
+  border: 1px solid var(--c-line);
+  border-radius: 999px;
+  background: var(--c-surface-1);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--c-text);
+  text-decoration: none;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.cpt .cpt-recommander span {
+  font-size: 17px;
+  line-height: 1;
+  color: var(--c-accent);
+}
+
+.cpt .cpt-recommander:hover { border-color: var(--c-accent); background: var(--c-surface-2); }
+.cpt .cpt-recommander:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 3px; }
+
+/* Sur téléphone les deux gestes s'empilent et prennent toute la laisse —
+   LES DEUX. Un bouton secondaire pleine largeur sous un bouton principal qui
+   ne l'est pas se lit comme un défaut d'alignement, pas comme une hiérarchie ;
+   c'est la couleur qui dit lequel est le premier, pas la longueur. */
+@media (max-width: 560px) {
+  .cpt-mag-gestes { display: block; }
+  .cpt-mag-gestes > * { width: 100%; justify-content: center; }
+  .cpt-mag-gestes > * + * { margin-top: 12px; }
+}
+
+/* Le texte que seuls les lecteurs d'écran entendent. Les silhouettes ne
+   disent rien à l'œil — il faut bien que quelqu'un annonce l'attente. */
+.cpt-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }

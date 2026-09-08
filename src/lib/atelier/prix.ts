@@ -94,6 +94,60 @@ export function totalPour(
   return centimes === null ? null : centimes * quantite;
 }
 
+/* ────────────────────────── réimpression (T-105) ──────────────────────────
+ *
+ * Recommander un numéro DÉJÀ LIVRÉ. Demande de Mathias, 08/09/2026 : depuis
+ * la bibliothèque, à côté de « Télécharger le PDF », un bouton qui relance la
+ * fabrication du MÊME objet — pas une nouvelle composition, le même fichier
+ * réimprimé. Il a tranché le circuit : paiement puis impression directe, sans
+ * passage par l'atelier. C'est cohérent — le PDF a déjà été validé par la
+ * cliente et imprimé une fois.
+ *
+ * ⚠️ LE PRIX N'EST PAS TRANCHÉ, ET C'EST LE VERROU.
+ * Une réimpression ne coûte pas la même chose à produire qu'un premier
+ * numéro : l'atelier ne recompose rien, il ne reste que l'impression et le
+ * port. Mathias veut y réfléchir. Interdit nº5 : on n'invente jamais un prix,
+ * même « évident », même « le même qu'avant ».
+ *
+ * Tant que `REIMPRESSION_CENTIMES` vaut `null`, `centimesReimpression` rend
+ * `null` pour TOUT palier, et rien ne s'ouvre côté cliente : le bouton ne
+ * s'affiche pas, et la route de paiement refusera. Même discipline que le
+ * verrou T-073 juste au-dessus — la structure existe pour que le jour venu le
+ * branchement se fasse ICI et nulle part ailleurs.
+ *
+ * POUR LEVER LE VERROU, deux formes possibles, au choix de Mathias :
+ *   — un montant FIXE, quel que soit le palier → poser le nombre de centimes ;
+ *   — un POURCENTAGE du prix d'origine → remplacer le corps de la fonction par
+ *     `Math.round(centimesPour(palier) * taux)`, et rien d'autre.
+ * Dans les deux cas, un seul endroit change.
+ */
+export const REIMPRESSION_CENTIMES: number | null = null;
+
+/**
+ * Le prix d'une réimpression, en CENTIMES, pour un numéro de ce palier.
+ *
+ * Rend `null` — jamais un prix de repli — dans tous les cas où l'on ne sait
+ * pas : verrou en place, palier absent, palier inconnu. Un appelant qui reçoit
+ * `null` doit refuser la commande, pas retomber sur le prix d'origine : c'est
+ * exactement le genre de repli silencieux qui ferait payer à une cliente un
+ * montant que personne n'a décidé.
+ */
+export function centimesReimpression(
+  palier: PalierCle | null | undefined
+): number | null {
+  if (REIMPRESSION_CENTIMES === null) return null;
+  /* Le palier reste exigé même à prix fixe : il prouve que le numéro a bien
+     été facturé une fois, et il servira si le prix devient dégressif. */
+  if (centimesPour(palier) === null) return null;
+  return REIMPRESSION_CENTIMES;
+}
+
+/** Le verrou est-il levé ? Lisible par l'affichage, qui n'a pas à connaître
+ *  le montant pour savoir s'il doit dessiner un bouton. */
+export function reimpressionOuverte(): boolean {
+  return REIMPRESSION_CENTIMES !== null;
+}
+
 /** « 40 € ». Espace insécable : un prix ne se coupe jamais en fin de ligne. */
 export function formaterEuros(euros: number): string {
   return `${euros} €`;

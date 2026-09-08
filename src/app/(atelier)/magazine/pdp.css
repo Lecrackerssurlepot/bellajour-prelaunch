@@ -175,6 +175,10 @@
    règle qui cache par défaut ne peut pas être oubliée par une largeur. */
 .at-pdp .bloc-prix-ligne,
 .at-pdp .prix-titre { display: none; }
+
+/* `.g-plus` — le segment de phrase que seul l'ordinateur affiche. Visible par
+   defaut ; c'est le bloc telephone, plus bas, qui le retire. */
+.at-pdp .g-plus { display: inline; }
 /* `.bloc-pas` n'a plus d'`order` : il n'est plus dans la colonne, il est le
    troisieme enfant de la section et vient donc apres elle de lui-meme.
    Et le selecteur ci-dessus ne dit plus `div:last-child` mais la classe de la
@@ -949,10 +953,40 @@
      paragraphes qu'on lit vraiment sur cette page montent ensemble. */
   .at-pdp .lede { font-size: 16px; line-height: 1.65; }
 
-  /* Les deux gages sous le bouton. 13 -> 14, et le picto suit : à 17 px il
-     paraissait flotter à côté d'un texte plus grand. */
-  .at-pdp .gages li { font-size: 14px; line-height: 1.45; }
-  .at-pdp .gages svg { width: 18px; height: 18px; }
+  /* ── LES DEUX GAGES SUR UNE SEULE LIGNE (demande de Mathias, 08/09) ──
+     Ils tenaient deux lignes et 50 px sous le bouton. Ils en font 20.
+     MESURÉ à 14 px en DM Sans : « Aperçu gratuit sous 48 h · rien à payer
+     avant » fait 285 px, plus 24 px de picto et de gouttière = 309. La laisse
+     vaut 330 px sur un écran de 375 et 317 sur un 360 : la ligne tient. Sous
+     ~350 px de laisse — un iPhone SE de 2016 — elle se replie proprement en
+     deux, `flex-wrap` est là pour ça et rien ne se coupe.
+     C'est ce calcul qui a fait tomber « Premier » du premier gage : le mot
+     coûtait 51 px, soit exactement la marge qui manquait.
+     Le second picto disparaît : deux pictos sur une ligne font une frise, pas
+     un gage. Le point médian qui le remplace est posé en CSS — c'est une
+     ponctuation de mise en page, elle n'a rien à faire dans le balisage, et un
+     lecteur d'écran n'a pas à l'énoncer. */
+  .at-pdp .gages {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 4px 8px;
+    width: 100%;
+  }
+
+  .at-pdp .gages li { gap: 8px; font-size: 14px; line-height: 1.45; }
+  .at-pdp .gages svg { width: 16px; height: 16px; }
+  .at-pdp .gages li:last-child svg { display: none; }
+
+  .at-pdp .gages li:last-child::before {
+    content: '·';
+    color: var(--c-text-faint);
+  }
+
+  /* Le segment que la ligne fusionnée laisse tomber. La phrase s'arrête à
+     « Rien à payer avant » : incomplète à l'écrit, limpide sous un bouton. */
+  .at-pdp .g-plus { display: none; }
 
   /* Les sur-titres de section (« L'objet », « Questions »), le délai des
      étapes, la mention, ce qui est compris, et les réponses de la FAQ. */

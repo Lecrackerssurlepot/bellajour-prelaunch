@@ -7,6 +7,7 @@ import { resoudreApercu } from '@/lib/atelier/apercu'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { FORMAT_FINI_MM } from '@/lib/atelier/impression'
 import { eurosPour, type PalierCle } from '@/lib/atelier/prix'
+import { CHEMIN_RECOMMANDER, peutRecommander } from '@/lib/atelier/reimpression'
 import Apercu from '@/app/numero/[token]/Apercu'
 import '@/app/numero/numero.css'
 import '../../compte.css'
@@ -56,6 +57,18 @@ export default async function MagazinePage({
   )
 
   const euros = eurosPour(dossier.palier as PalierCle | null)
+
+  /* RECOMMANDER CE NUMÉRO (T-105, 08/09/2026).
+     Le verdict vient d'un module pur, le MÊME que celui dont se servira la
+     route de paiement : impossible d'afficher un bouton qu'elle refuserait.
+     Aujourd'hui il rend toujours `possible: false` — Mathias n'a pas tranché
+     le prix d'une réimpression, et le verrou est dans prix.ts. Le bouton
+     ci-dessous n'est donc jamais rendu, et la route qu'il vise n'existe pas
+     encore : les deux se lèveront ensemble, jamais l'un sans l'autre. */
+  const recommander = peutRecommander({
+    etat: dossier.etat,
+    palier: dossier.palier as PalierCle | null,
+  })
   const livreLe = dossier.etat_maj_le
     ? new Date(dossier.etat_maj_le).toLocaleDateString('fr-FR', {
         day: 'numeric',
@@ -70,9 +83,9 @@ export default async function MagazinePage({
         {/* Lot 1 (07/09) — le lien promet la bibliothèque : l'URL porte
             l'onglet, sinon /compte rouvrait « Mes numéros » dès qu'un
             numéro était en cours. */}
-        <a className="cpt-retour" href="/compte?onglet=bibliotheque">
+        <Link className="cpt-retour" href="/compte?onglet=bibliotheque">
           <span aria-hidden="true">←</span> Ma bibliothèque
-        </a>
+        </Link>
         <Link className="cpt-top-marque" href="/" aria-label="Bellajour, retour à l’accueil">
           <img
             className="cpt-top-logo"
@@ -165,9 +178,30 @@ export default async function MagazinePage({
           {dossier.souvenir_pdf_key ? (
             <>
               <p className="cpt-mag-pdf-mot">Votre magazine, en version numérique.</p>
-              <a className="at-cta cpt-cta" href={`/api/atelier/souvenir?token=${dossier.token}`}>
-                Télécharger le PDF
-              </a>
+              {/* Les deux gestes SUR LA MÊME LIGNE — « à côté du bouton
+                  télécharger le PDF », mot pour mot la demande de Mathias.
+                  Empilés, la note du téléchargement passait entre les deux et
+                  « recommander » avait l'air de commenter le PDF. */}
+              <div className="cpt-mag-gestes">
+                <a className="at-cta cpt-cta" href={`/api/atelier/souvenir?token=${dossier.token}`}>
+                  Télécharger le PDF
+                </a>
+                {/* ── LE MÊME NUMÉRO, UNE FOIS DE PLUS (T-105) ──
+                    Secondaire : télécharger est le geste courant d'une page de
+                    bibliothèque, recommander est le geste rare. Le prix est
+                    écrit SUR le bouton — on ne fait jamais cliquer vers un
+                    paiement sans dire combien — et il vient du module, jamais
+                    d'un calcul refait ici. */}
+                {recommander.possible ? (
+                  <a
+                    className="cpt-recommander"
+                    href={`${CHEMIN_RECOMMANDER}?token=${dossier.token}`}
+                  >
+                    <span aria-hidden="true">↻</span>
+                    Recommander ce numéro — {Math.round(recommander.centimes / 100)}&nbsp;€
+                  </a>
+                ) : null}
+              </div>
               <p className="cpt-mag-pdf-sub">
                 Le fichier est celui de l’impression : gardez-le au chaud, il est lourd.
               </p>
@@ -177,9 +211,9 @@ export default async function MagazinePage({
               La version numérique de ce numéro n’est pas encore prête.
             </p>
           )}
-          <a className="cpt-lien" href={`/numero/${dossier.token}`}>
+          <Link className="cpt-lien" href={`/numero/${dossier.token}`}>
             Revoir la page de suivi
-          </a>
+          </Link>
         </section>
       </main>
     </div>
