@@ -11,6 +11,7 @@ import type { Pile, EtapeDepot } from "@/lib/atelier/urgence";
 import type { Etat } from "@/lib/atelier/transitions";
 import type { Recit } from "@/lib/atelier/recit";
 import type { Parcours } from "@/lib/atelier/parcours";
+import type { GenreNote } from "@/lib/atelier/carnet";
 
 export type UrgenceVue = {
   pile: Pile;
@@ -123,6 +124,15 @@ export type NoteVue = {
   prenom: string;
   texte: string;
   createdAt: string;
+  /**
+   * Le genre de la note (T-096), ou `null` : parce qu'elle n'en porte pas, ou
+   * parce que la migration `20260908_notes_genre.sql` n'est pas passée. Les
+   * deux cas s'affichent pareil, sans étiquette.
+   *
+   * FACULTATIF dans le type : les fixtures de la démonstration écrivent des
+   * notes sans genre, et le carnet doit continuer de s'y afficher tel quel.
+   */
+  genre?: GenreNote | null;
 };
 
 export type MailVue = {
@@ -230,7 +240,19 @@ export type Fiche = {
       `plat` (T2-2) : la couverture à plat — présent, il remplace c1/c4.
       `doubles` (T-090) : 0 à trois doubles pages, dans l'ordre d'affichage ;
       `double` reste `doubles[0]` pour les écrans non encore migrés. */
-  apercu: { plat: string | null; plats: string[]; c1: string | null; c4: string | null; doubles: string[]; double: string | null; doublesCadrage: string[] };
+  apercu: {
+    plat: string | null;
+    plats: string[];
+    c1: string | null;
+    c4: string | null;
+    doubles: string[];
+    double: string | null;
+    doublesCadrage: string[];
+    /** T-090 (rouvert 07/09) — le cadrage de chaque FACE de chaque planche,
+        aligné sur `plats`, même patron que `doublesCadrage`. */
+    platsCadrageDroite: string[];
+    platsCadrageGauche: string[];
+  };
   /** Les valeurs brutes (clés de coffre), pour préremplir le formulaire. */
   apercuBrut: {
     plat: string | null;

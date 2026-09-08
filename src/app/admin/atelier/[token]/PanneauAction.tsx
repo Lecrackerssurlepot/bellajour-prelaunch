@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ActionVue, Fiche } from "../types";
 import { SLOTS_IMPRESSION } from "@/lib/atelier/impression";
+import { cleCadrageCouverture } from "@/lib/atelier/transitions";
 
 /**
  * L'action du moment — le geste que ce lot remplace.
@@ -137,7 +138,19 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
   );
   /* Le recadrage en cours : la vignette qu'on tient, et d'où on est parti.
      Une ref — elle ne pilote aucun rendu, elle survit juste au geste. */
-  const recadre = useRef<{ id: string; cle: string; x: number; y: number; px: number; py: number; bouge: boolean } | null>(null);
+  const recadre = useRef<{
+    id: string;
+    cle: string;
+    x: number;
+    y: number;
+    px: number;
+    py: number;
+    bouge: boolean;
+    /* T-090 (rouvert 07/09) — une FACE de planche n'a rien à régler à la
+       verticale : la coupe est une ligne, pas un point. Verrouiller Y évite
+       qu'un tremblement de doigt bascule la position en hauteur. */
+    verrouY: boolean;
+  } | null>(null);
   /* Vrai pendant qu'on recadre : le glissé de RÉORDONNANCEMENT est alors
      désarmé, sinon les deux gestes se disputent le même doigt. */
   const [recadrant, setRecadrant] = useState<string | null>(null);
@@ -320,17 +333,22 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
      décollerait de son cadre et laisserait du vide.
      `setPointerCapture` : le doigt peut sortir de la vignette sans que le
      geste se coupe, ce qui arrive tout le temps sur une petite tuile. */
-  function litCadrage(cle: string): [number, number] {
+  function litCadrage(cle: string, defaut: [number, number] = [50, 50]): [number, number] {
     const v = cadrages[cle];
-    if (!v) return [50, 50];
+    if (!v) return defaut;
     const [x, y] = v.split(" ");
-    return [parseFloat(x) || 50, parseFloat(y ?? "") || 50];
+    return [parseFloat(x) || defaut[0], parseFloat(y ?? "") || defaut[1]];
   }
 
-  function debutRecadrage(e: React.PointerEvent, id: string, cle: string) {
+  function debutRecadrage(
+    e: React.PointerEvent,
+    id: string,
+    cle: string,
+    options?: { defaut?: [number, number]; verrouY?: boolean },
+  ) {
     if (envoiEnCours !== null) return;
-    const [px, py] = litCadrage(cle);
-    recadre.current = { id, cle, x: e.clientX, y: e.clientY, px, py, bouge: false };
+    const [px, py] = litCadrage(cle, options?.defaut);
+    recadre.current = { id, cle, x: e.clientX, y: e.clientY, px, py, bouge: false, verrouY: options?.verrouY ?? false };
     setRecadrant(id);
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
@@ -347,9 +365,9 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
     if (!r.bouge && Math.abs(e.clientX - r.x) < 4 && Math.abs(e.clientY - r.y) < 4) return;
     r.bouge = true;
     const dx = ((e.clientX - r.x) / boite.width) * -100;
-    const dy = ((e.clientY - r.y) / boite.height) * -100;
+    const dy = r.verrouY ? 0 : ((e.clientY - r.y) / boite.height) * -100;
     const x = Math.round(Math.min(100, Math.max(0, r.px + dx)));
-    const y = Math.round(Math.min(100, Math.max(0, r.py + dy)));
+    const y = r.verrouY ? 50 : Math.round(Math.min(100, Math.max(0, r.py + dy)));
     setCadrages((c) => ({ ...c, [r.cle]: `${x}% ${y}%` }));
   }
 
@@ -771,6 +789,75 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                     ) : null}
                   </div>
 
+                  {/* ── LE CADRAGE DE CHAQUE PLANCHE (T-090, rouvert 07/09) ──
+                      La coupe reste centrée automatiquement PAR DÉFAUT : sans
+                      geste, les deux tuiles montrent exactement la même chose
+                      que la page cliente aujourd'hui. Glisser une tuile ne
+                      déplace QUE sa face, horizontalement — la ligne de coupe
+                      n'a rien à régler à la verticale. */}
+                  {planches
+                    .filter((pl) => pl.preview)
+                    .map((pl, i) => (
+                      <div key={`cadrage-${pl.id}`} className="ate-plat-cadrage">
+                        <span className="ate-slot-label">
+                          Cadrage{planches.length > 1 ? ` — couverture ${i + 1}` : ""}{" "}
+                          <span className="ate-faint">
+                            — glisser pour ajuster la coupe, centrée par défaut.
+                          </span>
+                        </span>
+                        <div className="ate-plat-faces">
+                          {(
+                            [
+                              { face: "droite" as const, nom: "La couverture", defaut: [100, 50] as [number, number] },
+                              { face: "gauche" as const, nom: "La quatrième", defaut: [0, 50] as [number, number] },
+                            ]
+                          ).map(({ face, nom, defaut }) => {
+                            const cleFace = cleCadrageCouverture(pl.key, face);
+                            const reglee = Boolean(cadrages[cleFace]);
+                            const [x, y] = litCadrage(cleFace, defaut);
+                            return (
+                              <div key={face} className="ate-plat-face">
+                                <span className="ate-plat-face-nom">{nom}</span>
+                                <div
+                                  className="ate-plat-face-zone"
+                                  onPointerDown={(e) =>
+                                    debutRecadrage(e, `plat-${pl.id}-${face}`, cleFace, { defaut, verrouY: true })
+                                  }
+                                  onPointerMove={pendantRecadrage}
+                                  onPointerUp={finRecadrage}
+                                  onPointerCancel={finRecadrage}
+                                  title="Glisser pour ajuster la coupe"
+                                >
+                                  <img
+                                    src={pl.preview}
+                                    alt=""
+                                    className="ate-plat-face-img"
+                                    draggable={false}
+                                    style={{ objectPosition: `${x}% ${y}%` }}
+                                  />
+                                </div>
+                                {reglee ? (
+                                  <button
+                                    type="button"
+                                    className="ate-plat-face-reset"
+                                    onClick={() => {
+                                      setCadrages((c) => {
+                                        const copie = { ...c };
+                                        delete copie[cleFace];
+                                        return copie;
+                                      });
+                                      setVerif(null);
+                                    }}
+                                  >
+                                    Centrer
+                                  </button>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
 
                   {/* ── LES DOUBLES PAGES (0 à 3) ─────────────────────────
                       Glissé pour réordonner, × pour retirer, une tuile pour

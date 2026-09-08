@@ -16,7 +16,7 @@
  * n'avoir rien du tout, et il tourne en une seconde.
  */
 
-import { preparerTransition, actionsDepuis } from "@/lib/atelier/transitions";
+import { preparerTransition, actionsDepuis, cleCadrageCouverture } from "@/lib/atelier/transitions";
 import { urgencePour, comparerUrgence, etapeDepot } from "@/lib/atelier/urgence";
 import { lireDoublesBrutes, lirePlanchesBrutes, MAX_DOUBLES, MAX_PLANCHES } from "@/lib/atelier/apercu";
 import type Stripe from "stripe";
@@ -141,6 +141,21 @@ import {
 } from "@/lib/compte/rattachement";
 import { suiteSure } from "@/lib/compte/garde";
 import { compteOuvert } from "@/lib/compte/session";
+import {
+  GENRES_NOTE,
+  csvCarnet,
+  filtreGenre,
+  filtrerNotes,
+  genreNote,
+  joursDePeriode,
+  libelleDossier,
+  libelleGenre,
+  periodeCarnet,
+  referenceDossier,
+  texteCarnet,
+  type GenreNote,
+  type NoteCarnet,
+} from "@/lib/atelier/carnet";
 
 let ko = 0;
 const ok = (n: string, c: boolean) => {
@@ -255,6 +270,45 @@ const sansCadrage = preparerTransition("publier_apercu", "photos_recues", {
 });
 const urlsSans = sansCadrage.ok ? (sansCadrage.patch.apercu_urls as Record<string, unknown>) : {};
 ok("cadrage : rien de regle -> aucune cle `cadrages` en base (cas normal inchange)",
+   sansCadrage.ok && !("cadrages" in urlsSans));
+
+/* ── le cadrage des DEUX FACES d'une planche (T-090, rouvert 07/09) ────────
+   Meme brique que les doubles pages, mais une planche montre C1 ET C4 :
+   deux cles derivees de la meme cle de coffre, jamais confondues. */
+ok("cleCadrageCouverture : deux faces, deux cles distinctes",
+   cleCadrageCouverture("k/plat.jpg", "droite") !== cleCadrageCouverture("k/plat.jpg", "gauche") &&
+   cleCadrageCouverture("k/plat.jpg", "droite") === "k/plat.jpg::droite");
+
+const cadrePlanche = preparerTransition("publier_apercu", "photos_recues", {
+  nb_pages: 34,
+  apercu_plat: "k/plat.jpg",
+  apercu_cadrages: {
+    [cleCadrageCouverture("k/plat.jpg", "droite")]: "88% 50%",
+    [cleCadrageCouverture("k/plat.jpg", "gauche")]: "12% 50%",
+  },
+});
+const urlsCadrePlanche = cadrePlanche.ok ? (cadrePlanche.patch.apercu_urls as Record<string, unknown>) : {};
+ok("cadrage planche : les deux faces sont ecrites, sous des cles distinctes",
+   cadrePlanche.ok &&
+   JSON.stringify(urlsCadrePlanche.cadrages) === JSON.stringify({
+     "k/plat.jpg::droite": "88% 50%",
+     "k/plat.jpg::gauche": "12% 50%",
+   }));
+
+const cadrePlancheRetiree = preparerTransition("publier_apercu", "photos_recues", {
+  nb_pages: 34,
+  apercu_plat: "k/plat.jpg",
+  apercu_cadrages: {
+    [cleCadrageCouverture("k/absente.jpg", "droite")]: "88% 50%",
+  },
+});
+const urlsCadrePlancheRetiree = cadrePlancheRetiree.ok
+  ? (cadrePlancheRetiree.patch.apercu_urls as Record<string, unknown>)
+  : {};
+ok("cadrage planche : la cle d'une planche non publiee est ignoree",
+   cadrePlancheRetiree.ok && urlsCadrePlancheRetiree.cadrages === undefined);
+
+ok("cadrage planche : sans reglage, la publication reste identique au cas normal",
    sansCadrage.ok && !("cadrages" in urlsSans));
 const mauvaisEtat = preparerTransition("publier_maquette", "photos_recues", { canva_url: "https://x.fr" });
 ok("publier la maquette depuis l'etat 1 refuse", !mauvaisEtat.ok && mauvaisEtat.erreurs[0].champ === "etat");
@@ -2055,6 +2109,194 @@ ok("une URL absolue, un protocole ou un vide retombent sur /compte",
    && suiteSure("") === "/compte"
    && suiteSure(null) === "/compte"
    && suiteSure(undefined) === "/compte");
+
+titre("— le carnet complet : ce que l'ecran montre est ce que l'export sort —");
+{
+  const dossierA = { token: "a".repeat(32), titre: "Un ete a Biarritz", prenom: "Lea" };
+  const dossierB = { token: "b".repeat(32), titre: null, prenom: "Camille" };
+  const note = (
+    id: string,
+    texte: string,
+    createdAt: string,
+    qui: string,
+    dossier: NoteCarnet["dossier"],
+    /* Ajouté le 08/09 (T-096) : le corpus historique n'a pas de genre, et
+       c'est exactement ce qu'il doit continuer de prouver. */
+    genre: GenreNote | null = null,
+  ): NoteCarnet => ({
+    id,
+    numeroId: `n-${id}`,
+    qui,
+    auteur: qui === "mathias" ? "Mathias" : "Louis",
+    texte,
+    createdAt,
+    dossier,
+    genre,
+  });
+
+  const MAINTENANT = new Date("2026-09-08T12:00:00.000Z");
+  const CORPUS: NoteCarnet[] = [
+    note("1", "Ne jamais couper le petit frere dans une double page.", "2026-09-07T10:00:00.000Z", "mathias", dossierA),
+    note("2", "Relancee par telephone, elle rappelle lundi.", "2026-09-01T10:00:00.000Z", "louis", dossierB),
+    note("3", "Le RÉCIT commence a la plage, pas a la voiture.", "2026-06-01T10:00:00.000Z", "mathias", dossierA),
+    note("4", "Note orpheline : le dossier a disparu.", "2026-09-06T10:00:00.000Z", "louis", null),
+  ];
+
+  const tout = filtrerNotes(CORPUS, { q: "", dossier: "", qui: "", jours: null }, MAINTENANT);
+  ok("sans filtre, tout le corpus, la plus recente en tete",
+     tout.length === 4 && tout[0].id === "1" && tout[3].id === "3");
+
+  ok("la recherche ignore la casse ET les accents",
+     filtrerNotes(CORPUS, { q: "recit", dossier: "", qui: "", jours: null }, MAINTENANT).length === 1
+     && filtrerNotes(CORPUS, { q: "RÉCIT", dossier: "", qui: "", jours: null }, MAINTENANT).length === 1);
+
+  ok("deux mots = les deux exiges, pas l'un OU l'autre",
+     filtrerNotes(CORPUS, { q: "frere page", dossier: "", qui: "", jours: null }, MAINTENANT).length === 1
+     && filtrerNotes(CORPUS, { q: "frere voiture", dossier: "", qui: "", jours: null }, MAINTENANT).length === 0);
+
+  ok("la recherche mord aussi sur le nom du dossier",
+     filtrerNotes(CORPUS, { q: "biarritz", dossier: "", qui: "", jours: null }, MAINTENANT).length === 2);
+
+  ok("le filtre par dossier ne garde que le sien",
+     filtrerNotes(CORPUS, { q: "", dossier: dossierA.token, qui: "", jours: null }, MAINTENANT)
+       .every((n) => n.dossier?.token === dossierA.token));
+
+  ok("le filtre par auteur ne garde que les siennes",
+     filtrerNotes(CORPUS, { q: "", dossier: "", qui: "louis", jours: null }, MAINTENANT).length === 2);
+
+  ok("30 jours ecarte la note de juin, pas celle d'hier",
+     filtrerNotes(CORPUS, { q: "", dossier: "", qui: "", jours: 30 }, MAINTENANT).map((n) => n.id).join() === "1,4,2");
+
+  /* Une note orpheline reste de la matiere : la perdre en silence serait
+     pire que l'afficher sans lien. */
+  ok("une note dont le dossier a disparu reste dans le corpus",
+     tout.some((n) => n.id === "4") && libelleDossier(null) === "Dossier inconnu");
+
+  ok("un dossier sans titre se nomme par son prenom, sinon par son token court",
+     libelleDossier(dossierB) === "Camille"
+     && libelleDossier({ token: "c".repeat(32), titre: "  ", prenom: null }) === "Dossier cccccc"
+     && referenceDossier(dossierA) === "aaaaaa");
+
+  ok("une periode inconnue retombe sur « tout », jamais sur une fenetre etroite",
+     periodeCarnet("42") === "tout" && periodeCarnet(null) === "tout"
+     && joursDePeriode("tout") === null && joursDePeriode("30") === 30);
+
+  /* Le token COMPLET ne sort jamais du back-office : 6 caracteres suffisent
+     a retrouver le dossier a la main et n'ouvrent aucune page. */
+  const csv = csvCarnet(tout);
+  ok("l'export ne contient jamais un token complet",
+     !csv.includes(dossierA.token) && csv.includes("aaaaaa"));
+
+  const piege: NoteCarnet[] = [
+    note("5", 'Elle dit : "coupez ; pas la mer".\nDeuxieme ligne.', "2026-09-05T10:00:00.000Z", "mathias", dossierA),
+  ];
+  const csvPiege = csvCarnet(piege);
+  ok("un point-virgule, un guillemet et un retour a la ligne ne cassent pas le CSV",
+     csvPiege.split("\r\n")[0] === "Date;Genre;Auteur;Dossier;Référence;Note"
+     && csvPiege.includes('"Elle dit : ""coupez ; pas la mer"".\nDeuxieme ligne."'));
+
+  const txt = texteCarnet(piege, "Le carnet");
+  ok("l'export texte garde la note telle qu'ecrite, retours a la ligne compris",
+     txt.includes("Deuxieme ligne.") && txt.startsWith("Le carnet\n=========\n"));
+  ok("l'export texte le dit quand le filtre ne rend rien",
+     texteCarnet([], "Le carnet").includes("Aucune note pour ce filtre."));
+}
+
+titre("— le genre d'une note : cinq mots, facultatifs, jamais bloquants (T-096) —");
+{
+  const dossier = { token: "d".repeat(32), titre: "Trois jours a Lisbonne", prenom: "Ines" };
+  const note = (
+    id: string,
+    texte: string,
+    genre: GenreNote | null,
+    createdAt = "2026-09-07T10:00:00.000Z",
+  ): NoteCarnet => ({
+    id,
+    numeroId: `n-${id}`,
+    qui: "mathias",
+    auteur: "Mathias",
+    texte,
+    createdAt,
+    genre,
+    dossier,
+  });
+
+  const MAINTENANT = new Date("2026-09-08T12:00:00.000Z");
+  const CORPUS: NoteCarnet[] = [
+    note("g1", "Beaucoup d'interieur, eviter les cadres blancs.", "photos"),
+    note("g2", "Le fil commence a la plage, pas a la voiture.", "recit"),
+    note("g3", "Une double pleine page pour l'arrivee.", "page"),
+    note("g4", "Elle veut voir sa mere sur la couverture.", "cliente"),
+    note("g5", "Relancee par telephone, elle rappelle lundi.", "atelier"),
+    note("g6", "Ecrite avant que le genre existe.", null),
+    note("g7", "Elle aussi, ecrite avant.", null),
+  ];
+
+  /* Les cinq mots, et RIEN d'autre : la base n'a ni check ni enum, donc c'est
+     cette liste qui fait autorite. */
+  ok("les cinq genres sont exactement ceux tranches le 08/09",
+     GENRES_NOTE.map((g) => g.cle).join() === "photos,recit,page,cliente,atelier");
+
+  ok("chaque genre filtre le corpus sur ses seules notes",
+     GENRES_NOTE.every((g) => {
+       const r = filtrerNotes(CORPUS, { q: "", dossier: "", qui: "", genre: g.cle, jours: null }, MAINTENANT);
+       return r.length === 1 && r[0].genre === g.cle;
+     }));
+
+  /* Le filtre qui sert a RANGER l'existant : sans lui, les centaines de notes
+     ecrites avant le 08/09 sont introuvables en tant que telles. */
+  const sans = filtrerNotes(CORPUS, { q: "", dossier: "", qui: "", genre: "sans", jours: null }, MAINTENANT);
+  ok("« sans genre » ne rend QUE les notes sans genre, et les rend toutes",
+     sans.length === 2 && sans.every((n) => n.genre === null));
+
+  ok("aucun filtre de genre laisse tout passer, et un champ absent aussi",
+     filtrerNotes(CORPUS, { q: "", dossier: "", qui: "", genre: null, jours: null }, MAINTENANT).length === 7
+     && filtrerNotes(CORPUS, { q: "", dossier: "", qui: "", jours: null }, MAINTENANT).length === 7);
+
+  ok("le genre se combine avec la recherche, il ne la remplace pas",
+     filtrerNotes(CORPUS, { q: "telephone", dossier: "", qui: "", genre: "atelier", jours: null }, MAINTENANT).length === 1
+     && filtrerNotes(CORPUS, { q: "telephone", dossier: "", qui: "", genre: "photos", jours: null }, MAINTENANT).length === 0);
+
+  /* Tout ce qui n'est pas l'un des cinq mots vaut null. JAMAIS une erreur :
+     une note refusee pour un genre inconnu, c'est un texte perdu. */
+  ok("un genre invalide devient null, quelle que soit sa forme",
+     genreNote("humeur") === null && genreNote("") === null && genreNote(null) === null
+     && genreNote(undefined) === null && genreNote(42) === null && genreNote({}) === null
+     && genreNote("récit") === null);
+
+  ok("un genre valide survit a la casse et aux espaces",
+     genreNote(" Photos ") === "photos" && genreNote("RECIT") === "recit");
+
+  ok("le filtre d'URL comprend « sans » et rejette le reste sur « tous »",
+     filtreGenre("sans") === "sans" && filtreGenre("page") === "page"
+     && filtreGenre("nimporte") === null && filtreGenre(null) === null);
+
+  ok("le libelle est accentue a l'ecran, la cle ne l'est jamais en base",
+     libelleGenre("recit") === "Récit" && libelleGenre(null) === "" && libelleGenre("humeur") === "");
+
+  /* Les deux exports portent le genre, sinon le fichier telecharge ne dit plus
+     ce que l'ecran montrait. */
+  const csvGenre = csvCarnet([note("g8", "Une double pleine page.", "page")]);
+  ok("le CSV porte une colonne Genre, remplie avec le libelle",
+     csvGenre.split("\r\n")[0] === "Date;Genre;Auteur;Dossier;Référence;Note"
+     && csvGenre.split("\r\n")[1].includes(";Page;Mathias;"));
+
+  /* Une absence n'est pas une valeur : la cellule reste VIDE. */
+  const csvSans = csvCarnet([note("g9", "Ecrite avant.", null)]);
+  ok("une note sans genre laisse la cellule vide, elle ne dit pas « aucun »",
+     csvSans.split("\r\n")[1].includes(";;Mathias;")
+     && !/aucun/i.test(csvSans));
+
+  const txtGenre = texteCarnet([note("g10", "Le fil commence a la plage.", "recit")], "Le carnet");
+  ok("le texte pose le genre en fin de ligne d'en-tete de la note",
+     txtGenre.includes(" · Mathias · Trois jours a Lisbonne · Récit")
+     && txtGenre.includes("Le fil commence a la plage."));
+
+  const txtSans = texteCarnet([note("g11", "Ecrite avant.", null)], "Le carnet");
+  ok("sans genre, la ligne d'en-tete est exactement celle d'avant le 08/09",
+     txtSans.includes(" · Mathias · Trois jours a Lisbonne\n")
+     && !/aucun/i.test(txtSans));
+}
 
 void verifierT005().then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

@@ -16,6 +16,7 @@
  */
 
 import { signerGet } from "./r2";
+import { cleCadrageCouverture } from "./transitions";
 
 /**
  * `plat` (T2-2) : la couverture À PLAT, C4 | dos | C1 dans un seul fichier —
@@ -67,6 +68,15 @@ export type Apercu = {
    */
   doublesCadrage: string[];
   /**
+   * Le cadrage de chaque FACE de chaque planche, ALIGNÉ sur `plats` (T-090,
+   * rouvert 07/09) — une planche montre deux faces (« La couverture » = C1,
+   * « La quatrième » = C4) du même fichier, donc deux tableaux plutôt qu'un,
+   * même patron que `doublesCadrage`. Chaîne vide quand rien n'est réglé :
+   * la coupe reste centrée automatiquement, exactement comme avant.
+   */
+  platsCadrageDroite: string[];
+  platsCadrageGauche: string[];
+  /**
    * ⚠️ RÉTROCOMPAT : la PREMIÈRE double page (= `doubles[0]`). Le format
    * historique n'écrit qu'une seule double page sous la clé `double` ; les
    * écrans qui n'ont pas encore migré vers `doubles` lisent encore ce champ.
@@ -75,7 +85,17 @@ export type Apercu = {
   double: string | null;
 };
 
-const VIDE: Apercu = { plat: null, plats: [], c1: null, c4: null, doubles: [], double: null, doublesCadrage: [] };
+const VIDE: Apercu = {
+  plat: null,
+  plats: [],
+  c1: null,
+  c4: null,
+  doubles: [],
+  double: null,
+  doublesCadrage: [],
+  platsCadrageDroite: [],
+  platsCadrageGauche: [],
+};
 
 function lire(source: Record<string, unknown>, ...noms: string[]): string | null {
   for (const nom of noms) {
@@ -181,10 +201,11 @@ export async function resoudreApercu(brut: unknown): Promise<Apercu> {
   /* Les clés BRUTES sont gardées : ce sont elles qui portent les cadrages,
      et elles disparaissent une fois signées. */
   const doublesBrutes = lireDoublesBrutes(source);
+  const platsBrutes = lirePlanchesBrutes(source);
   const cadrages = lireCadrages(source);
 
   const [platsResolues, c1, c4, doublesResolues] = await Promise.all([
-    Promise.all(lirePlanchesBrutes(source).map(resoudre)),
+    Promise.all(platsBrutes.map(resoudre)),
     resoudre(lire(source, "c1", "couverture", "recto")),
     resoudre(lire(source, "c4", "dos", "verso")),
     Promise.all(doublesBrutes.map(resoudre)),
@@ -199,14 +220,24 @@ export async function resoudreApercu(brut: unknown): Promise<Apercu> {
   const gardees = doublesResolues
     .map((url, i) => ({ url, cadrage: cadrages[doublesBrutes[i]] ?? "" }))
     .filter((x): x is { url: string; cadrage: string } => x.url !== null);
-  const plats = platsResolues.filter((x): x is string => x !== null);
+  /* Même patron pour les planches, avec DEUX cadrages par entrée (T-090,
+     rouvert 07/09) : une planche montre deux faces, chacune réglable. */
+  const platsGardees = platsResolues
+    .map((url, i) => ({
+      url,
+      droite: cadrages[cleCadrageCouverture(platsBrutes[i], "droite")] ?? "",
+      gauche: cadrages[cleCadrageCouverture(platsBrutes[i], "gauche")] ?? "",
+    }))
+    .filter((x): x is { url: string; droite: string; gauche: string } => x.url !== null);
   return {
-    plat: plats[0] ?? null,
-    plats,
+    plat: platsGardees[0]?.url ?? null,
+    plats: platsGardees.map((x) => x.url),
     c1,
     c4,
     doubles: gardees.map((x) => x.url),
     double: gardees[0]?.url ?? null,
     doublesCadrage: gardees.map((x) => x.cadrage),
+    platsCadrageDroite: platsGardees.map((x) => x.droite),
+    platsCadrageGauche: platsGardees.map((x) => x.gauche),
   };
 }

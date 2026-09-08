@@ -245,6 +245,10 @@ type ApercuVue = {
   legende: string;
   loupe: string;
   decoupe?: "droite" | "gauche";
+  /** T-090 (rouvert 07/09) — le cadrage réglé par l'atelier, tel qu'il
+      partira dans l'attribut `style` de la page cliente. Vide = la coupe
+      (ou le cadrage) reste celle par défaut. */
+  cadrage?: string;
 };
 
 /* Le même choix de rendu que la page cliente (Apercu.tsx) : un dossier au
@@ -258,20 +262,39 @@ function vuesDeLApercu(apercu: FicheVue["apercu"]): ApercuVue[] {
        s'il y en a plusieurs) : la loupe navigue par légende.
        T-093 — quand plusieurs couvertures sont proposées, l'atelier doit voir
        EXACTEMENT ce que verra la cliente : la première en trois faces (c'est
-       celle qu'elle a d'emblée), puis les autres, nommées par leur rang. */
+       celle qu'elle a d'emblée), puis les autres, nommées par leur rang.
+       T-090 (rouvert 07/09) — « exactement » inclut le CADRAGE réglé sur
+       chaque face : sans lui, ce récap mentirait dès qu'on ajuste une coupe. */
     const plats = apercu.plats.length ? apercu.plats : [apercu.plat];
     const vues: ApercuVue[] = [
-      { cle: "plat-c1", src: plats[0], legende: "La couverture", loupe: "La couverture à plat", decoupe: "droite" },
-      { cle: "plat-c4", src: plats[0], legende: "La quatrième", loupe: "La couverture à plat", decoupe: "gauche" },
+      {
+        cle: "plat-c1",
+        src: plats[0],
+        legende: "La couverture",
+        loupe: "La couverture à plat",
+        decoupe: "droite",
+        cadrage: apercu.platsCadrageDroite[0] || undefined,
+      },
+      {
+        cle: "plat-c4",
+        src: plats[0],
+        legende: "La quatrième",
+        loupe: "La couverture à plat",
+        decoupe: "gauche",
+        cadrage: apercu.platsCadrageGauche[0] || undefined,
+      },
       { cle: "plat", src: plats[0], legende: "La couverture à plat", loupe: "La couverture à plat" },
     ];
+    /* Les autres propositions (T-093) : montrées entières, comme avant —
+       cette liste n'a jamais reçu le traitement `decoupe`, changer ça
+       déborde du cadrage demandé le 07/09. */
     plats.slice(1).forEach((src, i) => {
       const nom = `Couverture ${i + 2}`;
       vues.push({ cle: `plat-${i + 1}`, src, legende: nom, loupe: nom });
     });
     apercu.doubles.forEach((src, i) => {
       const nom = apercu.doubles.length > 1 ? `Double page ${i + 1}` : "Une double page";
-      vues.push({ cle: `double-${i}`, src, legende: nom, loupe: nom });
+      vues.push({ cle: `double-${i}`, src, legende: nom, loupe: nom, cadrage: apercu.doublesCadrage[i] || undefined });
     });
     return vues;
   }
@@ -826,7 +849,7 @@ export default function Fiche({
                 Ce que le client voit sur sa page, dans le même ordre et avec les mêmes mots.
               </p>
               <div className="ate-apercu">
-                {apercuVues.map(({ cle, src, legende, loupe, decoupe }) => {
+                {apercuVues.map(({ cle, src, legende, loupe, decoupe, cadrage }) => {
                   const rang = apercuAgrandissable.findIndex((v) => v.legende === loupe);
                   return (
                     <figure key={cle} className="ate-apercu-item">
@@ -841,7 +864,11 @@ export default function Fiche({
                           onClick={() => setApercuOuvert(rang)}
                           aria-label={`Agrandir : ${legende}`}
                         >
-                          <img src={src} alt={legende} />
+                          {/* T-090 (rouvert 07/09) — le cadrage réglé par
+                              l'atelier doit se voir ICI aussi : sinon ce récap
+                              annonce « ce que le client voit » et ment dès
+                              qu'une coupe est ajustée. */}
+                          <img src={src} alt={legende} style={cadrage ? { objectPosition: cadrage } : undefined} />
                         </button>
                       ) : (
                         <span className="ate-photo-vide">manquant</span>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { NoteVue } from "../types";
+import { GENRES_NOTE, libelleGenre, type GenreNote } from "@/lib/atelier/carnet";
 
 /**
  * Le carnet de l'éditeur, et le lien de travail.
@@ -42,6 +43,10 @@ export default function Carnet({
 }) {
   const router = useRouter();
   const [texte, setTexte] = useState("");
+  /* `null` = aucun genre, et c'est l'état par défaut ET un état d'arrivée
+     légitime. Rien ici ne conditionne l'enregistrement : une note se prend en
+     trois secondes, et un classement obligatoire tuerait le carnet. */
+  const [genre, setGenre] = useState<GenreNote | null>(null);
   const [lien, setLien] = useState(canvaTravail ?? "");
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -59,7 +64,10 @@ export default function Carnet({
       const r = await fetch("/api/admin/atelier/note", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ token, texte: t }),
+        /* `genre` part tel quel : `null` est une valeur valide, le serveur
+           revalide de toute façon et ne fait jamais échouer une note pour un
+           genre. */
+        body: JSON.stringify({ token, texte: t, genre }),
       });
       if (r.status === 503) {
         setErreur("Le carnet n'est pas encore installé (migration « notes » à appliquer).");
@@ -70,6 +78,7 @@ export default function Carnet({
         return;
       }
       setTexte("");
+      setGenre(null);
       router.refresh();
     } catch {
       setErreur("Réseau interrompu.");
@@ -177,10 +186,31 @@ export default function Carnet({
           className="adm-btn"
           type="button"
           onClick={ajouter}
+          /* Le genre n'entre PAS dans cette condition : sans genre, on note
+             quand même. C'est la garantie qui fait vivre le carnet. */
           disabled={occupe || !texte.trim()}
         >
           {occupe ? "…" : "Noter"}
         </button>
+      </div>
+
+      {/* ── le genre, facultatif ──
+          Cinq mots (T-096) qui séparent une règle de composition d'une
+          relance téléphonique. Recliquer sur le genre choisi le retire : rien
+          ne se referme sur un classement qu'on regrette. */}
+      <div className="ate-seg ate-note-genres">
+        {GENRES_NOTE.map((g) => (
+          <button
+            key={g.cle}
+            type="button"
+            className={genre === g.cle ? "ate-seg-btn ate-seg-btn--actif" : "ate-seg-btn"}
+            aria-pressed={genre === g.cle}
+            title={g.aide}
+            onClick={() => setGenre((v) => (v === g.cle ? null : g.cle))}
+          >
+            {g.label}
+          </button>
+        ))}
       </div>
       {erreur ? <p className="ate-erreur">{erreur}</p> : null}
 
@@ -192,6 +222,11 @@ export default function Carnet({
             <li key={n.id} className="ate-note">
               <p className="ate-note-texte">{n.texte}</p>
               <p className="ate-note-pied">
+                {/* Rien du tout quand la note n'a pas de genre : la majorité
+                    du carnet a été écrite avant qu'il existe. */}
+                {libelleGenre(n.genre) ? (
+                  <span className="ate-tag ate-faint">{libelleGenre(n.genre)}</span>
+                ) : null}
                 <span className="ate-note-qui">{n.prenom}</span>
                 <span className="ate-faint">{quand(n.createdAt)}</span>
                 {/* Sa note, pas celle des autres : effacer la remarque de

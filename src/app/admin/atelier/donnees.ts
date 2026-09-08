@@ -34,6 +34,7 @@ import {
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
 import { construireParcours } from "@/lib/atelier/parcours";
+import { genreNote } from "@/lib/atelier/carnet";
 import { prenomDe } from "@/lib/admin-auth";
 import type {
   ActiviteVue,
@@ -898,36 +899,69 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
   };
 }
 
+type RangeeNoteFiche = {
+  id: string;
+  qui: string;
+  texte: string;
+  created_at: string;
+  /* Absente tant que `20260908_notes_genre.sql` n'est pas passée : la lecture
+     de repli ne la demande pas du tout. */
+  genre?: string | null;
+};
+
 /**
  * Le carnet de l'éditeur pour ce dossier.
  *
  * Dégrade au lieu de tomber : tant que la migration `notes` n'est pas passée,
  * la requête échoue, la fiche s'affiche quand même et le bloc DIT pourquoi il
  * est vide. Une carte silencieusement vide ferait croire qu'on n'a rien écrit.
+ *
+ * ⚠️ Deux migrations, deux dégradations DIFFÉRENTES : la table absente rend
+ * `indisponible` (l'écran le dit), la colonne `genre` absente rend 42703 et
+ * se replie en silence sur une lecture sans elle — les notes s'affichent,
+ * sans étiquette. Confondre les deux ferait disparaître tout le carnet d'un
+ * dossier pour une colonne manquante.
  */
 async function chargerNotes(
   supabase: ReturnType<typeof makeSupabase>,
   numeroId: string,
 ): Promise<{ notes: NoteVue[]; indisponible: boolean }> {
   try {
-    const { data, error } = await supabase
+    const avec = await supabase
       .from("notes")
-      .select("id, qui, texte, created_at")
+      .select("id, qui, texte, created_at, genre")
       .eq("numero_id", numeroId)
       .order("created_at", { ascending: false })
-      .returns<Array<{ id: string; qui: string; texte: string; created_at: string }>>();
+      .returns<RangeeNoteFiche[]>();
 
-    if (error) {
-      console.error("[admin/atelier] notes indisponibles", error.code, error.message);
-      return { notes: [], indisponible: true };
+    let rangees = avec.data;
+    if (avec.error) {
+      if (avec.error.code !== "42703") {
+        console.error("[admin/atelier] notes indisponibles", avec.error.code, avec.error.message);
+        return { notes: [], indisponible: true };
+      }
+      const sans = await supabase
+        .from("notes")
+        .select("id, qui, texte, created_at")
+        .eq("numero_id", numeroId)
+        .order("created_at", { ascending: false })
+        .returns<RangeeNoteFiche[]>();
+      if (sans.error) {
+        console.error("[admin/atelier] notes indisponibles", sans.error.code, sans.error.message);
+        return { notes: [], indisponible: true };
+      }
+      rangees = sans.data;
     }
+
     return {
-      notes: (data ?? []).map((n) => ({
+      notes: (rangees ?? []).map((n) => ({
         id: n.id,
         qui: n.qui,
         prenom: prenomDe(n.qui),
         texte: n.texte,
         createdAt: n.created_at,
+        /* Validé, jamais cru : la colonne n'a ni `check` ni enum. */
+        genre: genreNote(n.genre),
       })),
       indisponible: false,
     };

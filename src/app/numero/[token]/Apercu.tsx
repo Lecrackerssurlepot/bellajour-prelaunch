@@ -57,6 +57,8 @@ export default function Apercu({
   c4,
   doubles,
   doublesCadrage = [],
+  platsCadrageDroite = [],
+  platsCadrageGauche = [],
   token,
   modifiable = false,
 }: {
@@ -69,6 +71,12 @@ export default function Apercu({
   doubles: string[]
   /** Le cadrage de chaque double page, aligné sur `doubles`. Vide = centré. */
   doublesCadrage?: string[]
+  /** T-090 (rouvert 07/09) — le cadrage de chaque FACE de chaque planche,
+      alignés sur `plats` : « La couverture » (C1, cadre droite) et
+      « La quatrième » (C4, cadre gauche) peuvent être réglées séparément.
+      Vide = la coupe centrée automatique, inchangée. */
+  platsCadrageDroite?: string[]
+  platsCadrageGauche?: string[]
   /** Nécessaire pour enregistrer le choix. Absent sur le magazine livré. */
   token?: string
   /** T-093 : le mot rassurant n'a de sens QUE tant que la maquette n'est pas
@@ -105,15 +113,36 @@ export default function Apercu({
   const couvertures = plats.length ? plats : plat ? [plat] : []
   if (couvertures.length) {
     const premiere = couvertures[0]
-    vues.push({ src: premiere, legende: 'La couverture', loupe: 'La couverture à plat', cadre: 'droite', rang: 0 })
-    vues.push({ src: premiere, legende: 'La quatrième', loupe: 'La couverture à plat', cadre: 'gauche', rang: 0 })
+    vues.push({
+      src: premiere,
+      legende: 'La couverture',
+      loupe: 'La couverture à plat',
+      cadre: 'droite',
+      rang: 0,
+      cadrage: platsCadrageDroite[0] || undefined,
+    })
+    vues.push({
+      src: premiere,
+      legende: 'La quatrième',
+      loupe: 'La couverture à plat',
+      cadre: 'gauche',
+      rang: 0,
+      cadrage: platsCadrageGauche[0] || undefined,
+    })
     vues.push({ src: premiere, legende: 'La couverture à plat', loupe: 'La couverture à plat', cadre: 'large', rang: 0 })
     /* Les autres propositions : une vue chacune, cadrée sur leur face avant
        — c'est elle qu'on compare. La loupe montre la planche entière, comme
        pour la première. */
     couvertures.slice(1).forEach((src, k) => {
       const nom = `Couverture ${k + 2}`
-      vues.push({ src, legende: nom, loupe: nom, cadre: 'droite', rang: k + 1 })
+      vues.push({
+        src,
+        legende: nom,
+        loupe: nom,
+        cadre: 'droite',
+        rang: k + 1,
+        cadrage: platsCadrageDroite[k + 1] || undefined,
+      })
     })
   } else {
     if (c1) vues.push({ src: c1, legende: 'La couverture', loupe: 'La couverture', cadre: 'pleine' })

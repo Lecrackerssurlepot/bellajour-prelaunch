@@ -101,7 +101,13 @@ export type Saisie = {
      tableau depuis le navigateur. */
   apercu_doubles?: string[];
   /* Le cadrage de chaque double page, indexé par sa clé de coffre — une
-     valeur `object-position` (« 50% 30% »). Absent = centré. */
+     valeur `object-position` (« 50% 30% »). Absent = centré.
+     T-090 (rouvert 07/09) — la MÊME map porte aussi le cadrage de chaque
+     FACE d'une planche de couverture (« La couverture » = C1, « La
+     quatrième » = C4), sous une clé composée par `cleCadrageCouverture` :
+     une planche montre deux faces différentes du même fichier, il faut donc
+     deux réglages, là où une double page n'en a qu'un. Absent = la coupe
+     centrée automatique, inchangée. */
   apercu_cadrages?: Record<string, string>;
   canva_url?: string | null;
   maquette_pdf_url?: string | null;
@@ -277,6 +283,20 @@ function planchesDeSaisie(v: unknown): string[] {
   return listeDeSaisie(v, MAX_PLANCHES_ADMIN);
 }
 
+/* T-090 (rouvert 07/09) — une planche montre DEUX faces du même fichier
+   (« La couverture » = C1 à droite, « La quatrième » = C4 à gauche), avec la
+   coupe centrée automatique par défaut. Pour régler l'une sans écraser
+   l'autre, chaque face porte sa propre clé de cadrage, dérivée de la clé de
+   coffre de la planche. `::` ne peut jamais apparaître dans une vraie clé R2
+   (le format est `numeros/<id>/apercu/plat-<uuid>.<ext>`) : aucune collision
+   possible avec la clé d'une double page. Exportée pour que l'admin (qui
+   écrit ces clés en glissant) et apercu.ts (qui les relit pour la page
+   cliente) parlent exactement le même format. */
+export type FaceCouverture = "droite" | "gauche";
+export function cleCadrageCouverture(cleCoffre: string, face: FaceCouverture): string {
+  return `${cleCoffre}::${face}`;
+}
+
 /* Les cadrages retenus : uniquement ceux des visuels réellement publiés
    (une page retirée n'a plus de cadrage à garder), et uniquement des valeurs
    de la forme attendue — cette chaîne finira dans un attribut `style`. */
@@ -402,8 +422,14 @@ export function preparerTransition(
       const doubles = doublesDeSaisie(saisie.apercu_doubles);
       /* Les cadrages ne s'écrivent que pour les pages publiées, et la clé
          n'apparaît pas du tout quand rien n'est réglé : le cas normal (tout
-         centré) laisse la base exactement comme avant. */
-      const cadrages = cadragesDeSaisie(saisie.apercu_cadrages, doubles);
+         centré) laisse la base exactement comme avant. Les deux faces de
+         chaque planche publiée sont cadrables au même titre que les doubles
+         pages (T-090, rouvert 07/09). */
+      const clesCouvertures = planches.flatMap((cle) => [
+        cleCadrageCouverture(cle, "droite"),
+        cleCadrageCouverture(cle, "gauche"),
+      ]);
+      const cadrages = cadragesDeSaisie(saisie.apercu_cadrages, [...doubles, ...clesCouvertures]);
       patch.apercu_urls = {
         plat: planches[0],
         ...(planches.length > 1 ? { plats: planches } : {}),

@@ -2035,6 +2035,71 @@
   cursor: default;
 }
 
+/* ══ T-090 (rouvert 07/09) : le cadrage de chaque planche ═════════════════
+   Deux tuiles par planche, « La couverture » et « La quatrième » : le MÊME
+   fichier, cadré comme la page cliente le cadrera (object-fit: cover). Sans
+   geste, elles montrent la coupe centrée automatique — rien ne change pour
+   un dossier qu'on ne touche pas. */
+.ate-plat-cadrage {
+  padding-top: var(--bj-sp-2);
+  border-top: 1px dashed var(--bj-action-border);
+}
+.ate-plat-faces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bj-sp-3);
+  margin-top: var(--bj-sp-1);
+}
+.ate-plat-face {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--bj-sp-1);
+  width: clamp(96px, 40%, 140px);
+}
+.ate-plat-face-nom {
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-soft);
+}
+.ate-plat-face-zone {
+  width: 100%;
+  /* Le format RÉEL d'une face de couverture côté cliente (numero.css,
+     .nu-viz-page--droite/--gauche) : 210 × 297 mm, A4 portrait. Redit ici
+     plutôt qu'importé — l'admin vit dans la palette crème (tokens.css),
+     jamais dans le thème sombre de /numero (CLAUDE.md, src/app). */
+  aspect-ratio: 210 / 297;
+  overflow: hidden;
+  border-radius: var(--bj-r-sm);
+  border: 1px solid var(--bj-action-border);
+  cursor: grab;
+  /* Comme le recadrage des doubles pages : sans ces deux lignes, un doigt
+     sur tablette fait défiler la page au lieu de tirer l'image. */
+  touch-action: none;
+  user-select: none;
+}
+.ate-plat-face-zone:active {
+  cursor: grabbing;
+}
+.ate-plat-face-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+.ate-plat-face-reset {
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-action);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.ate-plat-face-reset:hover {
+  color: var(--bj-terracotta);
+}
+
 /* ── l'écran de confirmation ── */
 .ate-confirm {
   margin-top: var(--bj-sp-4);
@@ -2763,4 +2828,54 @@
   align-items: center;
   gap: var(--bj-sp-3);
   flex-wrap: wrap;
+}
+
+/* ─────────────────────── le carnet complet (T-096) ───────────────────────
+   L'écran /admin/atelier/carnet. Il ne réinvente rien : la barre reprend
+   .ate-seg et .ate-recherche de la table de travail, la note reprend
+   .ate-note-texte et .ate-note-pied de la fiche. Ce qui suit ne règle que
+   ce qui change vraiment ici : une note s'y lit HORS de son dossier, donc
+   le dossier doit se voir en premier dans le pied. */
+
+.ate-cn-barre {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  flex-wrap: wrap;
+  padding: var(--bj-sp-3) 0;
+  border-bottom: var(--ate-ligne-h);
+}
+.ate-cn-compte {
+  margin: var(--bj-sp-3) 0 0;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+.ate-cn-tronque {
+  margin: var(--bj-sp-2) 0 0;
+  font-size: var(--bj-fs-xs);
+  color: var(--ate-orange);
+}
+.ate-cn-vide {
+  margin: var(--bj-sp-6) 0;
+  text-align: center;
+}
+.ate-cn-notes {
+  list-style: none;
+  margin: var(--bj-sp-3) 0 0;
+  padding: 0;
+}
+/* Une note du carnet complet respire plus que sur la fiche : on en lit
+   quarante d'affilée, et un mur compact devient illisible au bout de dix. */
+.ate-cn-note {
+  padding: var(--bj-sp-4) 0;
+  border-top: var(--ate-ligne-h);
+  max-width: 68ch;
+}
+.ate-cn-dossier {
+  color: var(--bj-action);
+  font-weight: 500;
+  text-decoration: none;
+}
+.ate-cn-dossier:hover {
+  text-decoration: underline;
 }

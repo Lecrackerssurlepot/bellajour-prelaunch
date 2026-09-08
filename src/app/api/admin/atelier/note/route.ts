@@ -18,6 +18,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
 import { prenomDe } from "@/lib/admin-auth";
 import { isValidNumeroToken } from "@/lib/atelier/token";
+import { genreNote, type GenreNote } from "@/lib/atelier/carnet";
 
 export const runtime = "nodejs";
 
@@ -26,14 +27,69 @@ export const runtime = "nodejs";
    de trop. */
 const MAX_TEXTE = 2000;
 
+/**
+ * L'insertion, avec le genre si la colonne existe — sinon SANS, mais la note
+ * est écrite quand même.
+ *
+ * ⚠️ Le code d'erreur n'est pas celui d'une lecture : un `select` sur colonne
+ * inconnue rend `42703`, un `insert` qui la nomme rend `PGRST204`
+ * (supabase/CLAUDE.md). Un repli borné à 42703 ne se déclencherait jamais et
+ * la note serait PERDUE parce qu'une migration n'est pas passée — c'est le
+ * pire résultat possible ici, bien pire qu'un genre qui manque.
+ *
+ * ⚠️ Le revers, écrit noir sur blanc : ce repli EFFACE le genre en silence.
+ * Une fois `20260908_notes_genre.sql` appliquée, vérifier que le genre arrive
+ * vraiment en base, pas seulement que la note s'enregistre.
+ */
+async function insererNote(
+  supabase: ReturnType<typeof makeSupabase>,
+  ligne: { numero_id: string; qui: string; texte: string },
+  genre: GenreNote | null,
+): Promise<{
+  data: { id: string; created_at: string } | null;
+  error: { code?: string; message: string } | null;
+  genreEcrit: boolean;
+}> {
+  if (genre) {
+    const avec = await supabase
+      .from("notes")
+      .insert({ ...ligne, genre })
+      .select("id, created_at")
+      .maybeSingle<{ id: string; created_at: string }>();
+
+    if (!avec.error) return { data: avec.data, error: null, genreEcrit: true };
+
+    if (avec.error.code !== "PGRST204" && avec.error.code !== "42703") {
+      return { data: null, error: avec.error, genreEcrit: false };
+    }
+    console.warn("[admin/note] colonne genre absente, note écrite sans genre", avec.error.code);
+  }
+
+  const sans = await supabase
+    .from("notes")
+    .insert(ligne)
+    .select("id, created_at")
+    .maybeSingle<{ id: string; created_at: string }>();
+
+  return { data: sans.data, error: sans.error, genreEcrit: false };
+}
+
 export async function POST(request: Request) {
   const qui = await quiEstConnecteRequete(request);
   if (!qui) return NextResponse.json({ error: "non_authentifie" }, { status: 401 });
 
   try {
-    const body = (await request.json()) as { token?: unknown; texte?: unknown };
+    const body = (await request.json()) as {
+      token?: unknown;
+      texte?: unknown;
+      genre?: unknown;
+    };
     const token = typeof body.token === "string" ? body.token.trim() : "";
     const texte = typeof body.texte === "string" ? body.texte.trim().slice(0, MAX_TEXTE) : "";
+    /* Le genre est FACULTATIF et ne fait jamais échouer une note : tout ce qui
+       n'est pas l'un des cinq mots vaut `null`. Refuser la note pour un genre
+       inconnu ferait perdre le texte, qui est le seul contenu qui compte. */
+    const genre = genreNote(body.genre);
 
     if (!isValidNumeroToken(token)) {
       return NextResponse.json({ error: "token_invalide" }, { status: 400 });
@@ -49,11 +105,11 @@ export async function POST(request: Request) {
 
     if (!numero) return NextResponse.json({ error: "introuvable" }, { status: 404 });
 
-    const { data, error } = await supabase
-      .from("notes")
-      .insert({ numero_id: numero.id, qui, texte })
-      .select("id, created_at")
-      .maybeSingle<{ id: string; created_at: string }>();
+    const { data, error, genreEcrit } = await insererNote(
+      supabase,
+      { numero_id: numero.id, qui, texte },
+      genre,
+    );
 
     if (error) {
       console.error("[admin/note] insert échoué", error.code, error.message);
@@ -64,7 +120,18 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { ok: true, note: { id: data?.id, qui: prenomDe(qui), texte, createdAt: data?.created_at } },
+      {
+        ok: true,
+        note: {
+          id: data?.id,
+          qui: prenomDe(qui),
+          texte,
+          /* Ce qui est VRAIMENT en base, pas ce qui a été demandé : si le repli
+             a joué, l'écran ne doit pas afficher un genre qui n'existe pas. */
+          genre: genreEcrit ? genre : null,
+          createdAt: data?.created_at,
+        },
+      },
       { status: 200 },
     );
   } catch (err) {
