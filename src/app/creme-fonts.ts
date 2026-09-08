@@ -2,8 +2,10 @@ import { Cormorant_Garamond } from 'next/font/google'
 
 /* T-064 — Cormorant Garamond 500/600 (+ italique), SORTIE du layout racine.
    Elle ne sert que le monde CRÈME hors (atelier)/numero : /admin (les deux
-   dashboards), /ambassadeurs (+ charte, + espace), /merci, /inviter, les
-   pages légales. (atelier)/layout.tsx et numero/layout.tsx déclarent déjà
+   dashboards), /ambassadeurs/charte, /ambassadeurs/espace, /merci, /inviter,
+   les pages légales. (⚠️ /ambassadeurs lui-même est un `route.ts` 410 depuis
+   le 08/09/2026, T-067 : il n'entre plus dans l'arbre de layout, donc plus
+   dans cette liste.) (atelier)/layout.tsx et numero/layout.tsx déclarent déjà
    leur propre Cormorant 400 sous `--font-atelier-display`, que theme.css
    substitue à `--font-display` pour `.bj-atelier` : /, /magazine, /composer
    et /numero ne peignent donc JAMAIS ces faces 500/600, et payaient pourtant

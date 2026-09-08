@@ -7,8 +7,17 @@ import { useAndroid } from '@/hooks/useClient'
 /* Top bar /ambassadeurs — réutilise EXACTEMENT navbar.css (.pv-nav).
    Page principale (variant="page") : masquée sur le hero (#amb-hero), glass une fois
    sorti, CTA = scroll #inscription. Page espace (variant="espace") : toujours solide,
-   CTA = lien vers /ambassadeurs#inscription (pas de hero/inscription sur cette page).
-   Android : .pv-nav--flat (fond crème quasi-opaque) → anti-jank backdrop-filter fixe. */
+   SANS CTA (voir plus bas).
+   Android : .pv-nav--flat (fond crème quasi-opaque) → anti-jank backdrop-filter fixe.
+   ⚠️ 08/09/2026 (T-067) : la page de vente (`page.tsx`, seule à rendre
+   `variant="page"`) est archivée, `/ambassadeurs` répond 410. Ce composant
+   RESTE parce que `espace/page.tsx` l'importe encore — mais son bouton
+   « Rejoindre le Cercle » pointait vers `/ambassadeurs#inscription`, qui
+   n'existe plus : recruter de nouveaux ambassadeurs pour un programme clos
+   n'a aucun sens. Retiré pour `variant="espace"` plutôt que laissé mener à
+   un lien mort. `variant="page"` n'a plus d'appelant vivant ; son code est
+   laissé intact pour l'éventuel retour de la page (voir
+   archive/ambassadeurs/README.md). */
 
 export default function AmbassadeurNav({
   variant = 'page',
@@ -76,9 +85,11 @@ export default function AmbassadeurNav({
         />
       </a>
 
-      <button type="button" className="pv-nav-cta" onClick={onCta}>
-        Rejoindre le Cercle
-      </button>
+      {variant === 'page' ? (
+        <button type="button" className="pv-nav-cta" onClick={onCta}>
+          Rejoindre le Cercle
+        </button>
+      ) : null}
     </nav>
   )
 }
