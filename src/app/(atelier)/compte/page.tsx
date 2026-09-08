@@ -1,3 +1,4 @@
+import { after } from 'next/server'
 import { notFound, redirect } from 'next/navigation'
 import { makeSupabase } from '@/lib/supabase'
 import { compteOuvert, initialeDe, utilisateurConnecte } from '@/lib/compte/session'
@@ -79,7 +80,20 @@ export default async function ComptePage({
 
   const supabase = makeSupabase()
   const dossiers = await lireDossiersDuCompte(supabase, qui)
-  await epinglerDossiers(supabase, qui, dossiers, 'compte')
+
+  /* ⚠️ `after` ET PAS `await` (08/09/2026, chantier lenteur).
+     L'épinglage ÉCRIT : il rattache au compte les dossiers reconnus par email
+     et journalise l'événement. Rien de ce qu'il écrit n'est lu par le rendu
+     ci-dessous — la liste affichée est celle qu'on vient de lire. L'attendre
+     revenait donc à faire patienter la cliente devant un écran vide pendant
+     une écriture qui ne la regarde pas, à chaque ouverture de son espace.
+     `after` le lance une fois la réponse partie : même effet en base, même
+     journal, retiré du chemin critique.
+     Les erreurs restent traitées DANS `epinglerDossiers`, qui ne jette pas —
+     un échec d'épinglage n'a jamais empêché l'espace de s'afficher, et ce
+     n'est pas ce lot qui va changer ça. */
+  after(() => epinglerDossiers(supabase, qui, dossiers, 'compte'))
+
   const { aTerminer, enCours, bibliotheque } = classerDossiers(dossiers)
 
   const vueDossier = (d: (typeof dossiers)[number]): DossierVue => ({

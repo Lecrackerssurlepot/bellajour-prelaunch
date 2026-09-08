@@ -26,11 +26,11 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
 ## Où on en est (08/09/2026, après la séance « on finit tout »)
 
-**104 tickets ouverts depuis le début, 36 encore ouverts, et AUCUN bloquant — pour de vrai.**
+**105 tickets ouverts depuis le début, 37 encore ouverts, et AUCUN bloquant — pour de vrai.**
 Le compteur en annonçait un depuis des jours : c'était T-002, dont la fiche disait elle-même
 depuis le 31/08 qu'il sortait du rang des bloquants, sans que son en-tête suive. Corrigé.
 
-Sur ces 36 : **33 attendent une décision de Mathias**, et les 3 marqués `libre` ne le sont pas
+Sur ces 37 : **34 attendent une décision de Mathias**, et les 3 marqués `libre` ne le sont pas
 davantage — ils attendent un geste hors du dépôt (T-101, console Google), une référence
 visuelle (T-080), ou un vrai iPhone pour être mesurés (T-062).
 
@@ -38,6 +38,11 @@ visuelle (T-080), ou un vrai iPhone pour être mesurés (T-062).
 
 Neuf tickets fermés (T-019, T-067, T-086, T-088, T-090, T-093, T-102, T-103, T-104), deux
 ouverts et fermés le jour même, et deux marches livrées sur T-096.
+
+**Le soir du 08/09**, la page produit sur téléphone a été refondue (onze objets au-dessus du
+pli → sept, dix chiffres → quatre, plus aucun texte sous 14 px), l'espace compte a gagné un
+bouton « nouveau numéro » et ses écrans d'attente, et **T-105** a été ouvert : recommander un
+numéro déjà livré, structure posée et verrouillée en attendant le prix.
 
 **Le fait marquant n'était pas au backlog.** En allant vérifier une image de mail en 404, on a
 trouvé une fuite ouverte depuis le 01/09 : `/ambassadeurs` répondait 200 avec son formulaire,
@@ -156,3 +161,4 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-102 | Trente-sept images sont déployées à chaque build sans que rien ne les demande | front | confort | libre | **fermé** (fiche dans `fermes/`) — 08/09 : 35 archivées, **3,9 Mo hors du déploiement** (`public/` suivi par git : 9,0 → 5,1 Mo). ⚠️ Le piège s'est refermé sur 2 fichiers : l'API Brevo interrogée montre `instagram.png` dans **18 templates actifs** et `decor-album-email.jpg` dans 3 — ils RESTENT. Règle : avant de déplacer une image de `public/`, interroger Brevo, pas seulement `grep` |
 | T-103 | Un template de mail actif affiche une image qui répond 404 | contenu | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 08/09 : le template 13 est un ORPHELIN. L'interface Brevo ne connaît que les messages #12 et #14 de la séquence ; le 13 n'est branché sur aucune étape, d'où le refus de l'API en écriture. Un template orphelin ne part jamais : l'image 404 ne sera vue par personne. C'est en le vérifiant qu'on a trouvé T-104 |
 | T-104 | S'inscrire aujourd'hui déclenche deux mails qui annoncent des préventes closes | contenu | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — ouvert ET fermé le 08/09. `/ambassadeurs` (200, formulaire vivant) → liste Brevo 3 → automation ACTIVE → deux mails de l'ère prévente. Coupé en **trois** endroits indépendants : automation en pause (vérifiée), page en 410, les deux routes en 410. Ouvert en `bloquant`, fermé le jour même |
+| T-105 | Recommander un numéro déjà livré, depuis la bibliothèque | paiement | serieux | avis-requis | **en pause** (08/09) — structure posée et VERROUILLÉE, comme T-073. `REIMPRESSION_CENTIMES = null` dans `prix.ts`, module pur `reimpression.ts` (`peutRecommander`), bouton en place dans `/compte/magazine/<token>` mais jamais rendu, dix tests qui gardent le verrou. Mathias a tranché le CIRCUIT (paiement → impression directe, sans passage par l'atelier) et **pas le prix** : c'est ce qu'il attend. Restent ensuite la route Stripe, la branche webhook + commande Cloudprinter, deux mails, et la trace en admin |

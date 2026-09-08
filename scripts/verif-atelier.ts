@@ -55,8 +55,12 @@ import {
   palierPourPages,
   PAYS_LIVRAISON,
   QUANTITE_MAX,
+  REIMPRESSION_CENTIMES,
+  centimesReimpression,
+  reimpressionOuverte,
   type PalierCle,
 } from "@/lib/atelier/prix";
+import { peutRecommander } from "@/lib/atelier/reimpression";
 import { raconter } from "@/lib/atelier/recit";
 import {
   codeDansLeJournal,
@@ -1266,6 +1270,37 @@ ok("quantite nulle ou negative : refusee", totalPour("p40", 0) === null && total
 ok("quantite non entiere : refusee", totalPour("p45", 1.5) === null);
 ok("palier absent : null, on ne facture pas sans chiffrage",
    totalPour(null, 1) === null && totalPour(undefined, 1) === null);
+
+/* ═══════════════ RECOMMANDER UN NUMERO (T-105) : VERROUILLE ═══════════════
+   Mathias, 08/09 : « qu'on ait tout le processus qui soit prevu pour pouvoir
+   recommander le meme produit ». Il a tranche le circuit (paiement puis
+   impression directe) et PAS le prix. Ces tests-la gardent le verrou : leur
+   role est de faire echouer la verification le jour ou quelqu'un ouvrirait la
+   reimpression sans avoir pose de montant. */
+titre("— recommander un numero (T-105) : verrouille tant que le prix n'est pas donne —");
+ok("REIMPRESSION_CENTIMES est null : Mathias n'a pas tranche le prix",
+   REIMPRESSION_CENTIMES === null);
+ok("reimpressionOuverte() est faux : rien ne s'affiche cote cliente",
+   reimpressionOuverte() === false);
+for (const palier of ["p30", "p40", "p45"] as PalierCle[]) {
+  ok(`centimesReimpression(${palier}) = null : aucun prix de repli invente`,
+     centimesReimpression(palier) === null);
+}
+ok("un numero LIVRE avec palier : refuse pour 'prix_non_tranche', pas autre chose",
+   JSON.stringify(peutRecommander({ etat: "livree", palier: "p40" }))
+     === JSON.stringify({ possible: false, refus: "prix_non_tranche" }));
+ok("un numero EN FABRICATION s'entend dire qu'il n'est pas livre, pas que le prix manque",
+   JSON.stringify(peutRecommander({ etat: "maquette_prete", palier: "p40" }))
+     === JSON.stringify({ possible: false, refus: "pas_livree" }));
+ok("un numero livre SANS palier : 'palier_inconnu' — il n'a jamais ete facture",
+   JSON.stringify(peutRecommander({ etat: "livree", palier: null }))
+     === JSON.stringify({ possible: false, refus: "palier_inconnu" }));
+ok("l'ordre des controles tient : pas livre ET sans palier -> 'pas_livree'",
+   JSON.stringify(peutRecommander({ etat: "payee", palier: null }))
+     === JSON.stringify({ possible: false, refus: "pas_livree" }));
+ok("AUCUN etat ne rend possible:true tant que le verrou tient",
+   ["brouillon", "apercu_pret", "payee", "maquette_prete", "expediee", "livree"]
+     .every((e) => peutRecommander({ etat: e, palier: "p45" }).possible === false));
 
 /* ═══════════════ LE CODE FONDATRICE (T-021) : LE RECIT ═══════════════
    La route /api/admin/atelier/fondatrice-code écrit `code_fondatrice_cree`
