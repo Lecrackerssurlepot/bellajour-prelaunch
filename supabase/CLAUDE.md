@@ -11,7 +11,7 @@ Chargé dès qu'on touche une migration ou le dossier supabase.
 | `mails_envoyes` | **le verrou anti-doublon** | unique (`numero_id`, `code`) |
 | `pages_credits` | crédits de parrainage | `source` unique |
 | `evenements` | journal append-only du dossier | `type` + `payload` jsonb |
-| `notes` | carnet de l'éditeur | `qui` |
+| `notes` | carnet de l'éditeur | `qui` ; `genre` nullable depuis le 08/09 (5 valeurs, validées en TS, PAS de `check` en base) |
 | `dossiers_vus` | qui a vu quoi | PK composite |
 | `admin_last_seen` | singleton | PK `id boolean check(id=true)` |
 | `invoice_jobs` | facturation Fatura (edge function `emit-invoices`) | `stripe_payment_intent` unique |
@@ -50,7 +50,7 @@ Après toute migration, vérifier que la donnée arrive vraiment — pas seuleme
 
 ## État connu
 
-19 fichiers sur disque, 16 dans l'historique appliqué. `20260901_atelier_retention.sql`
+24 fichiers sur disque, 20 dans l'historique appliqué. **`20260908_notes_genre.sql` (colonne `notes.genre`, T-096) a été appliquée le 08/09/2026 sur accord explicite de Mathias**, et le revers a été CONTRÔLÉ, pas supposé : une note écrite par la vraie route porte bien `genre='page'` en base, l'écran l'étiquette, l'export la filtre. La note de vérification a été supprimée derrière. `20260901_atelier_retention.sql`
 (colonne `numeros.anonymise_le`, T-076) a été **appliquée le 02/09/2026** (colonne présente, vérifiée).
 Trois anciennes (`20260528_*`,
 `20260704_notion_synced`) sont absentes de l'historique mais leurs colonnes existent : appliquées
