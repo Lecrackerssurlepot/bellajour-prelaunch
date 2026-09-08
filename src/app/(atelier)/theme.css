@@ -127,6 +127,13 @@ body:has(.bj-atelier) { background: var(--c-atelier-void); }
      plus opaque que --glass-bg-strong, jamais un aplat. */
   --glass-bg-plein: rgba(10, 10, 12, 0.86);
 
+  /* Repli anti-jank Chrome/Android (T-019, posé le 08/09) : équivalent sombre
+     de --bj-nav-android-bg (tokens.css, monde crème) — jamais le token crème
+     lui-même, les deux palettes ne se mélangent pas. Quasi-opaque comme lui,
+     posé UNIQUEMENT quand `useAndroid()` ajoute .pv-nav--flat ; ni le flou ni
+     ce fond ne bougent ailleurs (voir .at-nav.pv-nav--flat, nav.css). */
+  --c-nav-android-bg: rgba(10, 10, 12, 0.96);
+
   /* Gouttières du récit. --pad sert les sections existantes ; l'ouverture
      et l'univers ont leur propre grille, volontairement asymétrique. */
   --mg: 8vw;

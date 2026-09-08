@@ -62,9 +62,11 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
    et disparaît sans déborder. Exigence tenue : **le premier écran de `/magazine` va jusqu'au
    bouton**, ce qui impose aussi l'`order: 5` du parcours (jamais en dupliquant le balisage).
 3. **`backdrop-filter: blur()` sur un `position: fixed` rame sur Chrome/Android.** Le repli existe
-   (`.pv-nav--flat` + `--bj-nav-android-bg` + `useAndroid()` dans `src/hooks/useClient.ts`).
-   Il n'est PAS posé sur la barre de l'accueil : risque accepté, voir D5. À poser au premier
-   signalement de barre qui accroche.
+   (`.pv-nav--flat` + `useAndroid()` dans `src/hooks/useClient.ts`). Posé le 08/09/2026 (T-019)
+   sur `.at-nav` (barre de l'accueil et de `/magazine`, `nav.css`) avec le token SOMBRE
+   `--c-nav-android-bg` (theme.css) — jamais `--bj-nav-android-bg`, qui est le token crème du
+   même patron sur `.pv-nav` (navbar.css). `useAndroid()` rend `false` au premier rendu serveur :
+   Desktop et Safari iOS restent inchangés.
 4. **Un séquenceur pilote l'accueil** : l'attribut `data-t` d'un élément = son instant en ms dans
    la séquence de sa page. Pour régler un timing, on change cet attribut, rien d'autre. Le
    séquenceur pose `transition-delay` ET une propriété `--retard`, parce que le glitch de la

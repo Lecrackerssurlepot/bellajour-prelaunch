@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { COMPOSER_HREF, CTA_HREF, CTA_MAGAZINE_LABEL, CTA_REPRISE_LABEL } from '../content'
 import { draftEnCours } from '../composer/draft'
+import { useAndroid } from '@/hooks/useClient'
 import NavCompte from './NavCompte'
 import './nav.css'
 
@@ -45,6 +46,9 @@ export default function Nav({
 }) {
   const [stuck, setStuck] = useState(false)
   const frame = useRef(0)
+  /* Repli anti-jank Chrome/Android (T-019) : `false` côté serveur donc côté
+     Desktop et Safari iOS le rendu ne bouge pas d'un pixel — voir nav.css. */
+  const flat = useAndroid()
 
   /* Le libellé conscient du brouillon (03/09) : quand le bouton mène à
      /composer et qu'une composition est en cours sur l'appareil, il dit la
@@ -101,7 +105,7 @@ export default function Nav({
   }
 
   return (
-    <nav className={`at-nav ${stuck ? 'is-stuck' : ''}`}>
+    <nav className={`at-nav ${stuck ? 'is-stuck' : ''} ${flat ? 'pv-nav--flat' : ''}`}>
       {/* ⚠️ Le <button> porte sa propre remise a zero dans nav.css. Sans elle
           le navigateur pose son fond `buttonface` gris-blanc — la panne exacte
           corrigee le 27/08 sur le bouton de descente. Le <a> partage la meme
