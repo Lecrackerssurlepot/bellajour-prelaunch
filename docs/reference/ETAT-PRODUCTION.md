@@ -1,4 +1,4 @@
-# État du système — au 04/09/2026
+# État du système — au 08/09/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -7,6 +7,84 @@ règles, sans moyen de savoir ce qui avait expiré.
 
 Règle d'entretien : quiconque change l'état du système met ce fichier à jour dans le même geste.
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
+
+---
+
+## 08/09/2026 — la séance « on finit tout » (PR #83)
+
+**Neuf tickets fermés, deux ouverts et fermés le jour même, zéro bloquant réel au backlog.**
+
+### ⚠️ Une fuite de mails, ouverte du 01/09 au 08/09
+
+Trouvée en vérifiant une image de mail, pas en la cherchant. Chaîne établie maillon par maillon :
+
+    /ambassadeurs (200, formulaire vivant)
+      -> POST /api/ambassadeur/register
+      -> ajout a la liste Brevo 3   (BREVO_WAITLIST_LIST_ID = "3")
+      -> declencheur de l'automation ACTIVE « Waitlist - Sequence W2 W3 »
+      -> J+2 « presentez Bellajour a vos proches », J+4 « Ce que vous allez tenir »
+
+Deux mails annonçant des **préventes closes depuis le 01/09**. Coupée en trois endroits
+indépendants, chacun suffisant :
+
+| verrou | état |
+|---|---|
+| automation Brevo | **en pause** le 08/09 à 08:34 (« Active 0 · En pause 1 », vérifié) |
+| `/ambassadeurs` | **410**, page de vente archivée |
+| `POST /api/ambassadeur/register` | **410 inconditionnel**, n'appelle plus ni Brevo ni la base |
+| `POST /api/waitlist` | **410** quand `preventeFermee()` — elle envoyait W1 sans rien vérifier |
+
+**La leçon, transposable :** fermer une caisse (`/api/checkout`) ne ferme pas les portes d'à
+côté. Quand une offre se clôt, faire le tour de TOUTES les routes qui écrivent chez un
+prestataire, pas seulement celle qui encaisse.
+
+### Brevo — ce qu'on a appris en y allant
+
+- L'API transactionnelle **ne modifie pas** les templates d'automation (`..._step_#N`) : le GET
+  les trouve, le PUT rend `404 document_not_found`. Ils se pilotent dans l'interface.
+- Le template **13** est un ORPHELIN : « Automatisations → Messages » ne connaît que #12
+  (étape 3) et #14 (étape 5). Non branché, donc **il ne peut pas partir** — son image en 404
+  ne sera vue par personne.
+- **Deux images de `public/` sont vivantes dans des mails** : `instagram.png` (18 templates
+  actifs) et `decor-album-email.jpg` (3). Elles n'apparaissent dans aucun `grep` du dépôt,
+  parce que les templates les appellent par URL absolue. **Avant de déplacer une image de
+  `public/`, interroger l'API Brevo.**
+- Doublon sans gravité : **M10 existe en 39 ET 40**, tous deux actifs. C'est le **40** qui est
+  câblé (`BREVO_TEMPLATE_M10_ID`).
+
+### La migration des genres est APPLIQUÉE, et son revers est contrôlé
+
+`20260908_notes_genre.sql` (colonne `notes.genre`) appliquée le **08/09 à 08:11 UTC**, sur
+accord explicite de Mathias. Historique : `20260908081139`.
+
+Le piège documenté du dépôt — le repli qui fait disparaître un champ en silence — a été
+**vérifié, pas supposé** : une note écrite par la vraie route (`POST /api/admin/atelier/note`,
+sous cookie admin réel) porte `genre='page'` en base, l'écran l'étiquette, le CSV la filtre et
+le TXT la nomme. La note de vérification a été supprimée derrière : la table est revenue à
+1 note, 0 avec genre.
+
+### Vérifié servi par www.bellajour.fr
+
+    /ambassadeurs                     410
+    /ambassadeurs/espace              200   (les mails P3/A3 y menent)
+    /ambassadeurs/charte              200   (engagement jusqu'au 31/12/2026)
+    POST /api/ambassadeur/register    410
+    POST /api/waitlist                410
+    /images/instagram.png             200   (vivante dans 18 mails)
+    /images/decor-album-email.jpg     200   (vivante dans 3 mails)
+    /images/lancement/galerie/*.webp  404   (archivees, comme voulu)
+
+### Le reste de la séance
+
+`/admin/atelier/carnet` (toutes les notes, cherchables, exportables en txt et csv) et ses cinq
+genres · le recadrage de la planche de couverture (deux faces réglables, sans migration, dans
+le `jsonb` `apercu_urls.cadrages`) · 3,9 Mo d'images hors du déploiement (`public/` suivi par
+git : 9,0 → 5,1 Mo) · le repli Android de `.at-nav` · `/compte/magazine` qui cessait d'ignorer
+les cadrages · le rapprochement Stripe **prouvé détecteur** contre la vraie base.
+
+⚠️ **`src/lib/pricing.ts` est orphelin en code** depuis l'archivage de `/ambassadeurs`, mais il
+porte la grille sur laquelle quatorze fondateurs ont contracté. Laissé en place : c'est une
+décision, pas du ménage.
 
 ---
 
