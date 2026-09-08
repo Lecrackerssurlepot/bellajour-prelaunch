@@ -25,6 +25,7 @@ import { eurosPour, type PalierCle } from '@/lib/atelier/prix'
 import { DELAIS, JOURS_LIVRAISON, etapeDepot, QUI_ATTEND, type Camp, type EtapeDepot } from '@/lib/atelier/urgence'
 import { JOURS_AVANT_AUTO_VALIDATION } from '@/lib/atelier/mails'
 import { MIN_PHOTOS } from '../../(atelier)/composer/depot/paliers'
+import { PARAM_PROVENANCE, marqueProvenance } from '../../(atelier)/composer/provenance'
 import { ajouterJours, formaterJour } from '@/lib/atelier/dates'
 import CasesEtCommande from './CasesEtCommande'
 import AttentePaiement from './AttentePaiement'
@@ -212,6 +213,17 @@ export default async function NumeroPage({
     )
   }
 
+  /* ⚠️ D'OÙ L'ON VIENT (08/09/2026). Tous les liens de CETTE page vers le
+     questionnaire disent qu'ils partent d'un numéro : sans ça, la croix du
+     questionnaire ramenait à la page produit. Une cliente à qui l'atelier
+     vient de demander des photos supplémentaires quittait le dépôt et
+     atterrissait sur une fiche de vente, comme si elle n'avait rien commandé.
+     `marqueProvenance` rend `null` si le token n'a pas la bonne forme — on
+     n'écrit alors PAS le paramètre, et le défaut (/magazine) reprend la main :
+     mieux vaut un retour moins fin qu'un lien bancal. */
+  const marque = marqueProvenance('numero', numero.token)
+  const dIci = marque ? `${PARAM_PROVENANCE}=${encodeURIComponent(marque)}` : ''
+
   const titre = numero.titre?.trim() || 'Votre numéro'
   const apercu = numero.etat === 'apercu_pret' ? await resoudreApercu(numero.apercu_urls) : null
   const euros = eurosPour(numero.palier)
@@ -312,7 +324,7 @@ export default async function NumeroPage({
             <BoutonEnvoyer token={numero.token} nbPhotos={numero.nb_photos ?? 0} />
           ) : (
             <div className="nu-actions">
-              <a className="at-cta" href={`${COMPOSER_HREF}?reprendre=${numero.token}`}>
+              <a className="at-cta" href={`${COMPOSER_HREF}?reprendre=${numero.token}${dIci ? `&${dIci}` : ''}`}>
                 Ajouter des photos <span className="at-cta-arrow">→</span>
               </a>
             </div>
@@ -345,7 +357,7 @@ export default async function NumeroPage({
           <div className="nu-actions">
             {/* Reprise du dépôt sur le MÊME dossier : le token voyage dans
                 l'URL, l'écran 5 le reconnaît et ne recrée rien. */}
-            <a className="at-cta" href={`${COMPOSER_HREF}?reprendre=${numero.token}`}>
+            <a className="at-cta" href={`${COMPOSER_HREF}?reprendre=${numero.token}${dIci ? `&${dIci}` : ''}`}>
               {sansPhotos ? 'Déposer mes photos' : 'Ajouter des photos'}{' '}
               <span className="at-cta-arrow">→</span>
             </a>
@@ -543,7 +555,7 @@ export default async function NumeroPage({
               {numero.souvenir_pdf_key ? '' : `${titre} est chez vous. `}
               Un numéro par moment : la collection commence au deuxième.
             </p>
-            <a className="nu-cta-second" href={COMPOSER_HREF}>
+            <a className="nu-cta-second" href={dIci ? `${COMPOSER_HREF}?${dIci}` : COMPOSER_HREF}>
               {CTA_LABEL} <span className="at-cta-arrow">→</span>
             </a>
           </div>

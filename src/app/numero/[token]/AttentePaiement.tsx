@@ -73,7 +73,7 @@ export default function AttentePaiement({
       ) : (
         <>
           On enregistre votre commande. Cette page se met à jour
-          toute seule dans quelques secondes — vous pouvez la
+          toute seule dans quelques secondes. Vous pouvez la
           laisser ouverte.
         </>
       )}

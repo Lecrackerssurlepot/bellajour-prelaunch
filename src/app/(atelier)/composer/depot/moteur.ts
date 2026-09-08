@@ -359,7 +359,7 @@ class Moteur {
         const data = (await r.json()) as { nbPhotos?: number }
         if (typeof data.nbPhotos === 'number') this.nbServeur = data.nbPhotos
       } catch {
-        item.message = 'Connexion perdue — la photo est toujours là.'
+        item.message = 'Connexion perdue. La photo est toujours là.'
         this.changement()
         return
       }
@@ -516,7 +516,7 @@ class Moteur {
       /* Réseau perdu : les photos restent en 'prete', on réessaiera. Rien
          n'est perdu, rien n'est marqué en échec — c'est le réseau, pas elle. */
       this.prochaineDeclarationA = Date.now() + 4_000
-      this.bandeau = 'Connexion instable — l’envoi reprend tout seul.'
+      this.bandeau = 'Connexion instable. L’envoi reprend tout seul.'
       this.changement()
       return
     }
@@ -686,7 +686,7 @@ class Moteur {
     if (item.essaisEnvoi >= ESSAIS_ENVOI_MAX) {
       item.etat = 'erreur'
       item.message = statut === 403
-        ? 'Envoi refusé — reprenez cette photo'
+        ? 'Envoi refusé, reprenez cette photo'
         : 'Envoi interrompu'
       return
     }
@@ -745,7 +745,7 @@ class Moteur {
       const attente = BACKOFF_MS[Math.min(this.essaisConfirmation, BACKOFF_MS.length - 1)]
       this.essaisConfirmation++
       this.prochaineConfirmationA = Date.now() + Math.max(attente, 2_000)
-      this.bandeau = 'Vos photos sont arrivées — l’atelier finit de les vérifier.'
+      this.bandeau = 'Vos photos sont arrivées. L’atelier finit de les vérifier.'
       this.changement()
       return
     }

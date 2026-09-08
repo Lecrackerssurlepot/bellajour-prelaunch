@@ -3,7 +3,15 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { COMPOSER_HREF, CTA_LABEL, CTA_NOUVEAU_LABEL } from '../content'
+import { PARAM_PROVENANCE } from '../composer/provenance'
 import { JALONS } from './jalons'
+
+/* ⚠️ TOUT LIEN D'ICI VERS /composer DIT D'OÙ IL VIENT (08/09/2026).
+   Sans ce paramètre, la croix du questionnaire ramenait à la page produit :
+   on sortait de son espace pour atterrir sur une fiche de vente. Voir
+   composer/provenance.ts — c'est une CLÉ d'une liste fermée, jamais un
+   chemin, et jamais une redirection ouverte. */
+const DEPUIS_COMPTE = `${PARAM_PROVENANCE}=compte`
 import BoutonDeconnexion from './BoutonDeconnexion'
 
 /**
@@ -74,7 +82,10 @@ function CarteDossier({ d }: { d: DossierVue }) {
               désigne — « je clique sur reprendre le dépôt, ça prend du temps ».
               Le `loading.tsx` d'à côté couvre le reste : ce que le préchargement
               met en réserve sur une route dynamique, c'est justement lui. */}
-          <Link className="at-cta cpt-cta" href={`/composer?reprendre=${d.token}`}>
+          <Link
+            className="at-cta cpt-cta"
+            href={`/composer?reprendre=${d.token}&${DEPUIS_COMPTE}`}
+          >
             Reprendre le dépôt
           </Link>
           <Link className="cpt-lien" href={`/numero/${d.token}`}>
@@ -227,7 +238,7 @@ export default function Espace({
               <p className="cpt-vide-mot">
                 Aucun numéro en cours. Le prochain moment n’attend que vous.
               </p>
-              <Link className="at-cta cpt-cta" href={COMPOSER_HREF}>
+              <Link className="at-cta cpt-cta" href={`${COMPOSER_HREF}?${DEPUIS_COMPTE}`}>
                 {CTA_LABEL}
               </Link>
             </section>
@@ -249,7 +260,7 @@ export default function Espace({
                       : 'Tout est entre nos mains. On vous écrit à chaque étape.'}
                   </p>
                 </div>
-                <Link className="cpt-nouveau" href={COMPOSER_HREF}>
+                <Link className="cpt-nouveau" href={`${COMPOSER_HREF}?${DEPUIS_COMPTE}`}>
                   <span aria-hidden="true">+</span> {CTA_NOUVEAU_LABEL}
                 </Link>
               </div>
@@ -265,7 +276,7 @@ export default function Espace({
             <p className="cpt-vide-mot">
               Votre étagère est encore vide. Elle se remplira à la première livraison.
             </p>
-            <Link className="at-cta cpt-cta" href={COMPOSER_HREF}>
+            <Link className="at-cta cpt-cta" href={`${COMPOSER_HREF}?${DEPUIS_COMPTE}`}>
               {CTA_LABEL}
             </Link>
           </section>
@@ -279,7 +290,7 @@ export default function Espace({
                   {livres.length > 1 ? 's' : ''} — à revoir et à télécharger quand vous voulez.
                 </p>
               </div>
-              <Link className="cpt-nouveau" href={COMPOSER_HREF}>
+              <Link className="cpt-nouveau" href={`${COMPOSER_HREF}?${DEPUIS_COMPTE}`}>
                 <span aria-hidden="true">+</span> {CTA_NOUVEAU_LABEL}
               </Link>
             </div>

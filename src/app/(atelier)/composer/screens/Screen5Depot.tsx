@@ -322,7 +322,7 @@ export default function Screen5Depot({
           <ul className="at-d-refus">
             {refus.slice(0, 5).map((r, i) => (
               <li key={`${r.nom}-${i}`}>
-                {r.nom} — {RAISONS[r.raison] ?? 'non acceptée'}
+                {r.nom} : {RAISONS[r.raison] ?? 'non acceptée'}
               </li>
             ))}
             {refus.length > 5 && <li>et {refus.length - 5} autre(s).</li>}
@@ -438,7 +438,7 @@ export default function Screen5Depot({
             <>
               Une photo n’est pas partie. Elle reste dans la grille
               {vue.clos
-                ? ' — « ✕ » la retire.'
+                ? ' « ✕ » la retire.'
                 : ' : « ↻ Reprendre » relance l’envoi, « ✕ » la retire.'}
             </>
           ) : (
@@ -446,7 +446,7 @@ export default function Screen5Depot({
               {enErreur.length} photos ne sont pas parties. Elles restent dans
               la grille
               {vue.clos
-                ? ' — « ✕ » les retire.'
+                ? ' « ✕ » les retire.'
                 : ' : « ↻ Reprendre » relance l’envoi, « ✕ » les retire.'}
             </>
           )}

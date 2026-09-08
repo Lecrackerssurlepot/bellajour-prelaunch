@@ -64,6 +64,7 @@ const Screen6Fin = dynamic(() => import('./screens/Screen6Fin'), {
 })
 import { EMPTY_DRAFT, loadDraft, saveDraft, type Draft } from './draft'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
+import { PARAM_PROVENANCE, cheminRetour, motRetour } from './provenance'
 import {
   CHAMPS_PAR_ECRAN,
   CHAMPS_QUESTIONNAIRE,
@@ -111,6 +112,12 @@ export default function Composer() {
      dossier — deux demandes, deux M0, et personne ne sait lequel porte ses
      photos. On s'arrête et on le dit. */
   const [lienAbime, setLienAbime] = useState(false)
+  /* D'où l'on vient (08/09) — lu une fois au montage, comme `reprendre`, et
+     jamais pendant le rendu serveur : `window` n'y existe pas. `null` tant
+     qu'on n'a pas lu, ce qui rend le défaut (/magazine) exact aussi bien
+     avant qu'après. Voir provenance.ts pour pourquoi ce n'est pas
+     `document.referrer` et pourquoi ce n'est pas une URL libre. */
+  const [de, setDe] = useState<string | null>(null)
   /* Le compte réellement parti, remonté par l'écran 5 au moment de l'envoi.
      Il ne vit PAS dans le brouillon : un brouillon terminé est effacé
      (loadDraft), et ce chiffre n'a de sens que sur l'écran 6 de CETTE
@@ -134,7 +141,9 @@ export default function Composer() {
      tandis que nb_photos, lui, est recalculé en base à chaque envoi. */
   useEffect(() => {
     const repris = loadDraft()
-    const reprendre = new URLSearchParams(window.location.search).get('reprendre')
+    const params = new URLSearchParams(window.location.search)
+    setDe(params.get(PARAM_PROVENANCE))
+    const reprendre = params.get('reprendre')
     const estReprise = Boolean(reprendre && isValidNumeroToken(reprendre))
     /* T-058 — le paramètre est là mais sa forme est fausse : le lien a été
        coupé en route. On n'avance PAS (`pret` reste faux, donc le brouillon
@@ -661,17 +670,24 @@ export default function Composer() {
             <button type="button" className="at-cta at-q-quitter-reste" onClick={() => setQuitter(null)}>
               Continuer ma composition
             </button>
-            {/* La sortie honore le geste qui a ouvert la modale : la croix
-                ramène à la page du magazine, le logo à l'accueil. <a> nu,
-                rechargement voulu (moteur singleton, voir la croix). */}
+            {/* La sortie honore DEUX choses : le geste qui a ouvert la
+                modale, et d'où l'on vient.
+                Le logo dit « accueil » — il l'a toujours dit, c'est un logo.
+                La croix, elle, ramène là où l'on était AVANT d'entrer dans le
+                questionnaire : son espace, son numéro, ou la page produit.
+                Jusqu'au 08/09 elle ramenait à /magazine quoi qu'il arrive, y
+                compris quand on venait d'une page d'état où l'atelier venait
+                de demander des photos — on ressortait alors devant une fiche
+                produit, comme si on n'avait rien commandé.
+                <a> nu, rechargement voulu (moteur singleton, voir la croix). */}
             {quitter === 'logo' ? (
               // eslint-disable-next-line @next/next/no-html-link-for-pages
               <a className="at-skip at-q-quitter-part" href="/">
                 Quitter et revenir à l’accueil
               </a>
             ) : (
-              <a className="at-skip at-q-quitter-part" href="/magazine">
-                Quitter et revenir à la page du magazine
+              <a className="at-skip at-q-quitter-part" href={cheminRetour(de)}>
+                {motRetour(de)}
               </a>
             )}
           </div>
