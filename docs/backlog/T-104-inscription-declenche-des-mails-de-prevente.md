@@ -62,3 +62,33 @@ d'annoncer une offre close).
 
 `nouveau` — chaîne prouvée maillon par maillon, en production et dans Brevo. Attend la décision
 de Mathias sur le geste 1.
+
+## Geste 1 fait — l'automation est EN PAUSE (08/09/2026, 08:34)
+
+Mathias a répondu « oui, pause maintenant ». Fait dans son navigateur, sur son compte Brevo.
+
+La modale de confirmation dit exactement ce qu'on espérait : « Aucun nouveau contact n'entrera
+dans l'automatisation et les contacts actuellement dans celle-ci la parcourront jusqu'à la
+dernière étape. » Comme **0 contact était actif**, personne n'est en vol : la pause ne coupe
+aucun parcours en cours, elle ferme seulement la porte d'entrée.
+
+**Vérifié après coup sur la liste des scénarios** : « Waitlist - Séquence W2 W3 » affiche
+**En pause**, le compteur passe de « Active 1 · En pause 0 » à « Active 0 · En pause 1 », et la
+dernière modification est datée du 08-09-2026 08:34. Le bandeau « Votre automatisation a été
+mise en pause » a été vu.
+
+**C'est réversible** : le bouton lecture la réactive. Rien n'a été supprimé, ni le scénario, ni
+ses messages, ni la liste 3.
+
+## Ce qui reste
+
+Le geste 2 — fermer les routes — est en cours dans le même mouvement que **T-067**, que Mathias
+a tranché le même jour : **archiver `/ambassadeurs` entièrement**, la route en 410, et
+`POST /api/ambassadeur/register` en 410 lui aussi. Tant que ce n'est pas déployé, la pause de
+l'automation est ce qui protège : une inscription ajouterait toujours le contact à la liste 3,
+mais aucune séquence ne démarrerait.
+
+## État
+
+`en cours` — le danger immédiat est écarté (pause vérifiée). Reste la fermeture des routes,
+livrée avec T-067.
