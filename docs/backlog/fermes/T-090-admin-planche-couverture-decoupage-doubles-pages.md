@@ -55,3 +55,63 @@ Refonte de l'upload admin, alignée sur le socle data model déjà mergé (T-089
 - Où vivent les images (R2 privé, clés `numeros/<id>/apercu/double-<uuid>` — déjà en place).
 - Compatibilité flux de retouches (`retouches_demandees_le`, M5) : `corriger_apercu` reste
   `surPlace`, ne renvoie pas de mail — inchangé.
+
+## Le reste demandé le 07/09 est fait (08/09/2026) — le recadrage dans la page
+
+Mathias avait rouvert le sujet le 07/09 : le centre auto ne suffit plus, il faut pouvoir
+recadrer une image DANS sa page.
+
+**Vérifié avant d'écrire, et le constat était partiellement faux.** Le recadrage des **doubles
+pages existait déjà** : livré le 07/09 (commit `adf75c4`, sur `main`), un glissé qui stocke une
+`object-position` par clé de coffre. C'est la **planche de couverture** qui n'avait rien : elle
+était coupée par deux ancres CSS fixes (`right center` / `left center`, `numero.css`), sans
+aucun réglage possible. C'était bien le trou signalé.
+
+### Deux réglages, pas un
+
+Une planche montre **deux faces du même fichier** — « La couverture » (C1) et « La quatrième »
+(C4). Un seul point de cadrage ne pouvait donc pas convenir : régler C1 aurait déréglé C4. Il y
+a deux réglages indépendants, sous une clé composée (`clé::droite` / `clé::gauche`,
+`cleCadrageCouverture` dans `transitions.ts`) — le séparateur ne peut entrer en collision avec
+aucune vraie clé R2.
+
+La mécanique de glissé déjà en production pour les doubles est **réutilisée telle quelle**,
+généralisée pour verrouiller l'axe vertical : une ligne de coupe n'a rien à régler en hauteur.
+
+### Ce qui compte autant que la fonction
+
+- **Aucune migration.** Tout vit dans le `jsonb` `apercu_urls.cadrages`, déjà existant.
+- **Le défaut ne bouge pas.** Sans geste de l'atelier, aucune clé n'est écrite et la page
+  cliente s'affiche pixel pour pixel comme avant. C'était le critère numéro un.
+- **Aucune seconde visionneuse.** `Apercu.tsx`, partagé par `/numero` et `/compte/magazine`,
+  reçoit deux tableaux de plus et applique la logique déjà en place pour les doubles.
+- **Le récap admin cesse de mentir.** « L'aperçu publié » (`Fiche.tsx`) reflète maintenant le
+  cadrage. Le même trou existait déjà en silence pour les doubles pages depuis le 07/09 :
+  corrigé au passage, à coût nul.
+
+### Mesuré
+
+`tsc`, `lint`, `build` (59 pages) verts ; harnais atelier **TOUT PASSE**, avec cinq assertions
+neuves (clés distinctes, écriture des deux faces, clé orpheline ignorée, cas normal inchangé).
+
+À l'écran, sur la démo `apercu_pret`, desktop et 375 px : glisser une tuile change
+l'`object-position` de **la seule face touchée** (`52% 50%` relevé dans le DOM après glissé),
+« Centrer » revient exactement au défaut, aucune autre face ni aucune autre planche n'est
+affectée.
+
+### Ce qui n'est pas prouvé, et deux manques signalés
+
+- Le tour complet en base réelle n'a pas été fait : la démo ne persiste rien. La preuve tient
+  sur les tests purs (`preparerTransition`, `cadragesDeSaisie`) et la lecture du code.
+- Le cadrage n'est pas étendu aux **couvertures secondaires** (2ᵉ et 3ᵉ proposition, T-093) :
+  hors périmètre, signalé dans le code.
+- **Antérieur à ce chantier, et CORRIGÉ dans la foulée** : `/compte/magazine/[token]` ne
+  passait que quatre champs à `Apercu` (`plat`, `c1`, `c4`, `doubles`). Vérifié ligne à ligne
+  avant d'y toucher : les deux pages appellent pourtant le même `resoudreApercu`, qui rend
+  déjà tout — la page du compte ne TRANSMETTAIT simplement pas les champs récents. La
+  bibliothèque montrait donc les visuels au cadrage par défaut, en ignorant en silence les
+  réglages de l'atelier, et n'affichait qu'une seule couverture là où la cliente en avait vu
+  plusieurs. Les quatre champs manquants sont passés, et `aDesVisuels` compte désormais
+  `plats.length` : sans ça, un dossier ne portant que des planches secondaires se serait
+  annoncé « visuels plus en ligne » alors que les images étaient là. Pas de `token` transmis,
+  volontairement : sur un magazine LIVRÉ il n'y a plus de couverture à choisir.

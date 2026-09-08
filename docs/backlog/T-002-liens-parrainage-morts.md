@@ -2,7 +2,7 @@
 id: T-002
 titre: Les liens de parrainage des mails vivants sont morts
 domaine: contenu
-gravite: bloquant
+gravite: serieux
 autonomie: avis-requis
 ouvert: 2026-08-29
 ---
@@ -75,3 +75,29 @@ l'active. » La stratégie complète (héritage, 4 décisions, déploiement en 3
 ouvertes) est consignée dans `docs/produit/STRATEGIE-PARRAINAGE.md`. Les liens déjà partis
 mènent à l'accueil sans effet ; les droits acquis restent honorés à la main. Le ticket sort
 du rang des bloquants : rien n'est promis publiquement tant que la pause tient.
+
+## Gravité corrigée, et le titre n'est plus exact (08/09/2026)
+
+**L'en-tête disait encore `bloquant` alors que la fiche elle-même écrit, depuis le 31/08, que
+le ticket « sort du rang des bloquants ».** La décision avait été prise et jamais reportée dans
+les métadonnées : le tableau de bord annonçait donc un bloquant fantôme à chaque ouverture de
+séance. Passé en `serieux`.
+
+**Et le titre parle de « mails vivants » qui ne le sont plus.** Depuis aujourd'hui :
+
+- **W1** ne part plus : `POST /api/waitlist` rend 410 quand la prévente est close (T-104) ;
+- **P1 et P2** partent du webhook sur un paiement de prévente — or `/api/checkout` rend 410
+  depuis le 01/09 ;
+- la séquence Brevo qui portait les autres liens est **en pause** (T-104).
+
+Autrement dit, plus aucun lien de parrainage cassé ne peut PARTIR. Restent seulement ceux déjà
+dans les boîtes, qui mènent à l'accueil sans effet — exactement ce que la pause du 31/08
+acceptait.
+
+Le fond ne bouge pas : le jour où le parrainage reprend, il faudra toujours répondre à la
+question du 31/08 (que voit une filleule, et comment sa commande crédite sa marraine), et la
+stratégie est dans `docs/produit/STRATEGIE-PARRAINAGE.md`.
+
+## État
+
+`en pause` — inchangé sur le fond, mais la gravité était fausse et le risque a encore baissé.

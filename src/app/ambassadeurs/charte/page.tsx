@@ -3,8 +3,13 @@ import Footer from '../../sections/Footer'
 import './charte.css'
 
 /* Page charte — texte juridique du Cercle Ambassadeur (Vague 1).
-   Server Component, page INDEXABLE (pas de noindex). Navbar légère :
-   logo cliquable → /ambassadeurs. Contenu verbatim, aucune réécriture. */
+   Server Component, page INDEXABLE (pas de noindex) : c'est le document que
+   les ambassadeurs ont signé, et son calendrier (§7, jusqu'au 31/12/2026)
+   est encore en cours — elle reste en ligne même après l'archivage de la
+   page de vente (T-067, 08/09/2026). Navbar légère : les deux liens visaient
+   /ambassadeurs (aujourd'hui 410) et ont été repointés vers
+   /ambassadeurs/espace, le seul endroit vivant qui reste pour un
+   ambassadeur. Contenu verbatim, aucune réécriture. */
 
 export const metadata: Metadata = {
   title: 'Charte du Cercle Ambassadeur — Bellajour',
@@ -18,8 +23,8 @@ export const metadata: Metadata = {
 export default function ChartePage() {
   return (
     <main className="amb-charte">
-      <nav className="amb-charte-nav" aria-label="Retour Cercle Ambassadeur">
-        <a href="/ambassadeurs" className="amb-charte-logo-link" aria-label="Retour au Cercle Ambassadeur">
+      <nav className="amb-charte-nav" aria-label="Cercle Ambassadeur">
+        <a href="/ambassadeurs/espace" className="amb-charte-logo-link" aria-label="Accéder à mon espace ambassadeur">
           <img
             src="/images/ui/logo.webp"
             className="amb-charte-logo"
@@ -27,8 +32,8 @@ export default function ChartePage() {
             decoding="sync"
           />
         </a>
-        <a href="/ambassadeurs#inscription" className="amb-charte-back">
-          ← Revenir à l&apos;inscription
+        <a href="/ambassadeurs/espace" className="amb-charte-back">
+          ← Mon espace ambassadeur
         </a>
       </nav>
 

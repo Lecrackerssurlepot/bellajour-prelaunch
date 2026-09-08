@@ -24,21 +24,36 @@ exactement l'écart que la passe du 01/09/2026 a corrigé, sur 36 lignes.
 Semé le 29/08/2026 par l'audit de structure. Tous les tickets ci-dessous sont **prouvés dans le
 code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
-## Où on en est (07/09/2026, après le chantier « Un vrai site » et l'expérience maquette)
+## Où on en est (08/09/2026, après la séance « on finit tout »)
 
-**102 tickets ouverts depuis le début, 42 encore ouverts, et AUCUN bloquant.**
-Sur ces 42 : **38 attendent une décision de Mathias** (prix, textes légaux, mails réels,
-visuels, migrations), et les 4 restants marqués `libre` ne le sont plus vraiment — ils
-attendent soit un geste hors du dépôt (T-101, console Google), soit une référence visuelle
-(T-080), soit un arbitrage sur un risque (T-102), soit un vrai iPhone pour être mesurés (T-062).
+**104 tickets ouverts depuis le début, 36 encore ouverts, et AUCUN bloquant — pour de vrai.**
+Le compteur en annonçait un depuis des jours : c'était T-002, dont la fiche disait elle-même
+depuis le 31/08 qu'il sortait du rang des bloquants, sans que son en-tête suive. Corrigé.
 
-Autrement dit : le frein n'est plus technique. Ce qui reste tient à des arbitrages produit
-et à des chiffres que personne d'autre ne peut donner.
+Sur ces 36 : **33 attendent une décision de Mathias**, et les 3 marqués `libre` ne le sont pas
+davantage — ils attendent un geste hors du dépôt (T-101, console Google), une référence
+visuelle (T-080), ou un vrai iPhone pour être mesurés (T-062).
+
+### Ce que le 08/09 a changé
+
+Neuf tickets fermés (T-019, T-067, T-086, T-088, T-090, T-093, T-102, T-103, T-104), deux
+ouverts et fermés le jour même, et deux marches livrées sur T-096.
+
+**Le fait marquant n'était pas au backlog.** En allant vérifier une image de mail en 404, on a
+trouvé une fuite ouverte depuis le 01/09 : `/ambassadeurs` répondait 200 avec son formulaire,
+il ajoutait à la liste Brevo 3, et cette liste déclenchait une automation **active** qui
+envoyait deux mails annonçant des préventes closes. Coupé en trois endroits indépendants —
+automation en pause, page en 410, les deux routes en 410.
+
+**La leçon du jour, transposable :** un `grep` ne voit pas ce que les mails référencent. Les
+templates Brevo appellent leurs images par URL absolue, et deux fichiers « non référencés »
+étaient en fait vivants dans 18 et 3 templates actifs. Avant de déplacer une image de
+`public/`, interroger Brevo — pas seulement le dépôt.
 
 | id | titre | domaine | gravite | autonomie | etat |
 |---|---|---|---|---|---|
 | T-001 | Le numéro de suivi n'est jamais enregistré | donnees | bloquant | avis-requis | **fermé** |
-| T-002 | Les liens de parrainage des mails vivants sont morts | contenu | serieux | avis-requis | en pause (31/08, stratégie consignée dans la fiche) |
+| T-002 | Les liens de parrainage des mails vivants sont morts | contenu | serieux | avis-requis | en pause (31/08, stratégie dans `STRATEGIE-PARRAINAGE.md`) — **gravité corrigée le 08/09** : l'en-tête de la fiche disait encore `bloquant` alors qu'elle-même le sortait du rang depuis le 31/08, d'où un bloquant fantôme à chaque ouverture de séance. Le risque a encore baissé : W1 (410), P1/P2 (checkout 410) et la séquence Brevo (en pause) font qu'aucun lien cassé ne peut plus PARTIR |
 | T-003 | 101 Mo d'images orphelines déployées à chaque build | front | serieux | libre | **fermé** (fiche dans `fermes/`) — fait le 02/09 : `prevente/` (dont 5 `.mp4`) et `solution/` déplacés en `archive/public-orphelins/`, `public/` de 22→9 Mo. Le « 101 Mo » était périmé (le gros avait déjà disparu). tsc+lint+build verts |
 | T-004 | La page d'état de la cliente est indexable par Google | front | serieux | libre | **refuse** (31/08, le noindex existait déjà) |
 | T-005 | L'ancien mot de passe admin partagé ouvre encore la porte | admin | serieux | libre | **fermé** |
@@ -55,7 +70,7 @@ et à des chiffres que personne d'autre ne peut donner.
 | T-016 | Les quatre composants de l'ancienne accueil ont fini leur office | front | confort | libre | **fermé** |
 | T-017 | Le focus au clavier est invisible sur la moitié du site | front | confort | libre | **fermé** |
 | T-018 | Trois fichiers sans rôle sont servis publiquement | exploitation | confort | libre | **fermé** |
-| T-019 | La barre de l'accueil n'a pas son repli Android | front | confort | avis-requis | nouveau |
+| T-019 | La barre de l'accueil n'a pas son repli Android | front | confort | avis-requis | **fermé** (fiche dans `fermes/`) — 08/09 : repli posé. ⚠️ Le correctif « écrit d'avance » ne se recopiait PAS : `.pv-nav--flat` et `--bj-nav-android-bg` sont du monde crème, `.at-nav` du monde sombre — nouveau token `--c-nav-android-bg`. Piège de cascade attrapé à la mesure (même spécificité que `.is-stuck`, à poser après). Hors Android, rendu identique au bit près |
 | T-020 | On ne saurait pas qu'une visiteuse décroche | exploitation | serieux | avis-requis | **actif le 02/09** — Web Analytics + Speed Insights activés, scripts servis en 200 sur la prod (vérifié). Masquage des tokens live |
 | T-021 | Le crédit fondateur de 30 € est entièrement manuel | paiement | serieux | avis-requis | en cours — automatique depuis le 01/09, jamais éprouvé contre Stripe |
 | T-022 | Les mails tombent dans l'onglet Promotions de Gmail | exploitation | serieux | avis-requis | en pause (31/08, tranché : la maquette reste telle quelle) |
@@ -103,7 +118,7 @@ et à des chiffres que personne d'autre ne peut donner.
 | T-064 | Trente déclarations de police jamais peintes bloquent le rendu de chaque page | front | confort | libre | **fermé** (fiche dans `fermes/`, 07/09, PR #78) — Cormorant sortie du layout racine vers les pages qui la peignent : le chunk racine passe de 30 à 21 `@font-face`, −7 180 octets sur `/`, `/magazine`, `/composer`, `/numero`. ⚠️ Piège trouvé en vérifiant : une propriété personnalisée fige sa substitution LÀ OÙ ELLE EST DÉCLARÉE — d'où `.bj-creme-fonts`, sans quoi tous les titres crème retombaient en silence sur DM Sans |
 | T-065 | Aucune image du site n'a de variante pour téléphone | front | serieux | libre | **fermé** |
 | T-066 | Ouvrir le questionnaire télécharge tout le moteur d'envoi de photos | front | serieux | libre | **fermé** (fiche dans `fermes/`) — fait le 02/09 : écrans 5 ET 6 en `next/dynamic` (l'écran 6 tirait aussi le moteur), moteur absent du chunk initial, worker servi en 200, reprise OK. Vérifié sur build prod. tsc+lint+build verts |
-| T-067 | Une page indexable vend encore un programme qu'on n'honore plus | produit | serieux | avis-requis | nouveau |
+| T-067 | Une page indexable vend encore un programme qu'on n'honore plus | produit | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 08/09, tranché par Mathias : page de vente archivée, `/ambassadeurs` et `POST /api/ambassadeur/register` en **410**. ⚠️ `espace/` et `charte/` RESTENT, preuve à l'appui : les mails P3/A3 déjà partis y mènent (`DASHBOARD_URL`) et la charte engage jusqu'au 31/12/2026 |
 | T-068 | Le site déclare deux fiches produit concurrentes pour un seul produit | front | serieux | libre | **fermé** (le reste → T-085) |
 | T-069 | L'image de partage promet un album, et peut casser le déploiement entier | front | serieux | avis-requis | en cours — le `throw` qui cassait le build est retiré (repli, 01/09) ; **reste le visuel** (avec le chantier visuels) + rendre son image à `/ambassadeurs` |
 | T-070 | Le retour des pages légales renvoie sur une page supprimée | front | confort | libre | **fermé** |
@@ -117,25 +132,27 @@ et à des chiffres que personne d'autre ne peut donner.
 | T-078 | Aucun moteur ne transforme les gabarits de mise en page en PDF imprimable | atelier | serieux | avis-requis | en cours — étape 0 livrée le 30/08, la suite dépend de T-077 |
 | T-079 | Le dashboard métriques n'a pas d'insights ni de stratégie assistés par IA | admin | confort | avis-requis | en pause (30/08, le bloc « Lecture » suffit — attendre ~50 dossiers) |
 | T-080 | Le dashboard métriques mérite un vrai design de tableau de bord | admin | confort | libre | en cours (07/09) — rendu sorti de la page (Vue.tsx, pour pouvoir le REGARDER sans base ni session) + rangée de quatre chiffres clés en tête. L habillage fin attend la référence visuelle de Mathias |
-| T-081 | Rien ne compare les paiements Stripe aux dossiers de la base | paiement | serieux | avis-requis | en cours — script de rapprochement livré le 02/09 (`scripts/reconcilier-stripe.ts`, lecture seule, tsc+lint verts). Reste : le lancer sur la vraie base, puis décider d'un cron |
+| T-081 | Rien ne compare les paiements Stripe aux dossiers de la base | paiement | serieux | avis-requis | en cours — **lancé sur la vraie base le 08/09**, deux passes en lecture seule : 0 écart en livemode, et 2 écarts levés en `--avec-test` (dossiers de recette supprimés). Le filet est prouvé DÉTECTEUR. Reste le seul choix du déclencheur : Vercel Hobby n'autorise qu'un cron/jour, déjà pris par la relève |
 | T-082 | Les lectures de `CHAMPS_MAIL` n'ont pas le repli 42703 que le reste du code a | donnees | serieux | libre | **fermé** (fiche dans `fermes/`) — corrigé le 02/09 : helper `lireNumerosMail` (repli sur `CHAMPS_MAIL_REPLI`) sur les 5 lieux de lecture. Dormant tant que les colonnes existent. tsc+lint+build+harnais verts |
 | T-083 | Les CGV portugaises n'ont pas d'URL à elles et sont invisibles pour Google | front | serieux | libre | **fermé** (fiche dans `fermes/`) — fait le 03/09 : URL par langue (`/en/cgv`, `/pt/cgv`), canonical auto-référent + hreflang/x-default, `?lang=` en 308 (ref préservé), sitemap. Aucun texte légal touché. tsc+lint+build + runtime verts |
 | T-084 | Deux dossiers ouverts pour la même adresse ne sont signalés nulle part | admin | serieux | libre | **fermé** (fiche dans `fermes/`) — part 1 (constat Santé orange, sur `email_canonical`) livrée le 02/09 (PR #27) ; part 2 (lien sur la fiche) existait déjà (« Ses autres numéros »). tsc+lint+harnais verts, détection validée sur la base |
 | T-085 | La fiche produit de `/magazine` n'a ni image conforme ni conditions marchandes | produit | serieux | avis-requis | nouveau |
-| T-086 | Sur desktop, la bande « étapes 1-2-3 » occupe un espace sans rapport avec son contenu | front | confort | avis-requis | nouveau (retour Mathias 01/09, prouvé par l'audit) |
+| T-086 | Sur desktop, la bande « étapes 1-2-3 » occupe un espace sans rapport avec son contenu | front | confort | avis-requis | **fermé** (fiche dans `fermes/`) — livré le 07/09, prouvé dans `main` le 08/09 (`content.ts:67-68`, `Kiosque.tsx:194`, branche fusionnée) |
 | T-087 | Sur téléphone, le prix de la PDP est compressé à la limite de la lisibilité | front | confort | libre | **fermé** (fiche dans `fermes/`) — fait le 03/09 : libellés des cartes remontés (`.combien` 10→11 px, `.pages` 11→12 px), interlignes resserrés pour ne PAS bouger le bouton (delta 0 mesuré à 375×667). build vert |
-| T-088 | Le logo en haut du questionnaire et de la page cliente est un clic mort | front | serieux | avis-requis | nouveau (retour Mathias 01/09, prouvé par l'audit) |
+| T-088 | Le logo en haut du questionnaire et de la page cliente est un clic mort | front | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — livré le 07/09, prouvé dans `main` le 08/09 (`Composer.tsx:443,497,505`, branche fusionnée). `/numero` non touché, choix produit documenté |
 | T-089 | La maquette que reçoit le client — visionneuse multi-format façon magazine | front | serieux | avis-requis | en cours — prototype v3 + fondation (#28) + **visionneuse `/numero` livrée (PR #29, rendu réel validé)** ; reste l'admin (T-090) et les vrais visuels |
-| T-090 | Admin — planche couverture, découpage centré, doubles pages à la demande, drag-and-drop | admin | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — livré (PR #33) : dépôt de la planche, 0 à 3 doubles pages réordonnables au glissé, restitution fidèle sur la fiche. Le curseur de coupe reste écarté (centre auto, décision Mathias) ; le recadrage intra-page est demandé le 07/09 et reste à faire |
+| T-090 | Admin — planche couverture, découpage centré, doubles pages à la demande, drag-and-drop | admin | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — livré (PR #33) : dépôt de la planche, 0 à 3 doubles pages réordonnables au glissé, restitution fidèle sur la fiche. Le curseur de coupe reste écarté (centre auto, décision Mathias) ; le recadrage intra-page est demandé le 07/09 et reste à faire ; **le recadrage intra-page est livré le 08/09** : la planche était coupée par deux ancres CSS fixes, elle a maintenant deux réglages indépendants (C1 et C4 sont deux faces du même fichier), sans migration — tout vit dans le `jsonb` `apercu_urls.cadrages`. Sans geste de l'atelier, l'affichage est pixel pour pixel l'ancien |
 | T-091 | Réagir à la maquette, pas seulement partir — thèmes + freestyle | produit | serieux | avis-requis | en cours — feuille d'ajustement livrée (PR #30/#31) + mots de couverture facultatifs (03/09). **Reste les 5 thèmes**, en attente des visuels de Mathias (07/09) |
 | T-092 | Refonte du parcours questionnaire — logo officiel + Q1 à Q5 | front | serieux | avis-requis | nouveau (02/09, cahier des charges de Mathias) |
-| T-093 | Plusieurs couvertures proposées, la cliente choisit sa préférée | produit | serieux | avis-requis | en cours (07/09) — socle livré : jusqu'à 3 couvertures publiables, gestionnaire admin réordonnable, restitution fiche. Tranché par Mathias : la première est proposée par défaut, jamais d'obstacle avant le paiement. Reste le geste de choix côté cliente |
+| T-093 | Plusieurs couvertures proposées, la cliente choisit sa préférée | produit | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 08/09 : je le rouvrais pour livrer le geste de choix, il était DÉJÀ là (parti avec le chantier du 07/09, fiche non recalculée). Bouton, marque « votre choix », message d'échec et mot rassurant vérifiés dans `Apercu.tsx` |
 | T-094 | La demande « montrer un extrait » repart dans un mail, plus sur /numero | backend | mineur | avis-requis | nouveau (02/09) — la fiche existait, la ligne d'index manquait ; réparé le 04/09 |
 | T-095 | En reprise sur un autre appareil, le dépôt affiche zéro photo et verrouille l'envoi | front | serieux | libre | **fermé** (fiche dans `fermes/`) — corrigé le 04/09, PR #47 **mergée** (vérifié le 07/09 : le commit est dans main) |
-| T-096 | Le carnet de l'atelier n'est lisible que dossier par dossier — le rendre exploitable | admin | serieux | avis-requis | nouveau (04/09) — constat vérifié, proposition en trois marches dans `docs/produit/NOTE-CARNET-STRUCTURE.md` |
+| T-096 | Le carnet de l'atelier n'est lisible que dossier par dossier — le rendre exploitable | admin | serieux | avis-requis | en cours — **marches 1 ET 2 livrées le 08/09**. Marche 2 : `/admin/atelier/carnet`, toutes les notes, cherchables et exportables (txt pour lire, csv pour trier), filtre PUR partagé par l'écran et l'export. Marche 1 : les cinq genres tranchés par Mathias (photos · recit · page · cliente · atelier), facultatifs, migration `20260908_notes_genre.sql` **écrite non appliquée**, replis 42703 et PGRST204 posés — l'écriture réinsère la note SANS son genre plutôt que de la perdre. Reste la marche 3 (cible sur une photo ou une page), qui dépend de la migration |
 | T-097 | Les mails à retardement partent jusqu'à 24 h après l'heure annoncée | atelier | serieux | avis-requis | en pause (04/09) — relève horaire écrite et vérifiée, **inerte tant que le secret GitHub n'est pas posé** ; immédiats prouvés à moins de 2 s |
 | T-098 | Un M4 refusé par Brevo figeait le dossier payé pour toujours | atelier | bloquant | libre | **fermé** (fiche dans `fermes/`) — corrigé le 04/09 : réparation sur preuve d'échec (`doitRattraperM4`), 6 assertions au harnais |
 | T-099 | L'ouverture de l'accueil rejoue à chaque retour et se fait bousculer par le défilement | front | serieux | libre | **fermé** (fiche dans `fermes/`) — corrigé le 04/09 : ouverture jouée une fois par onglet, prise en main au défilement, défilements pilotés interruptibles |
 | T-100 | Les treize fondateurs ont un compte qui les attend, et personne ne le leur a dit | atelier | serieux | avis-requis | nouveau (07/09) — mail C3 à écrire, à envoyer **quand l'atelier est prêt**, jamais avant |
 | T-101 | La connexion Google de toutes les clientes dépend d'un seul compte personnel | exploitation | serieux | libre | nouveau (07/09) — Louis à passer Propriétaire du projet Google Cloud ; **geste console, hors dépôt** |
-| T-102 | Trente-sept images sont déployées à chaque build sans que rien ne les demande | front | confort | libre | nouveau (07/09) — 4,2 Mo pour rien, coût utilisateur NUL (jamais chargées). ⚠️ Le piège : une image de mail est référencée par URL absolue, invisible d'un grep — vérifier Brevo avant de déplacer |
+| T-102 | Trente-sept images sont déployées à chaque build sans que rien ne les demande | front | confort | libre | **fermé** (fiche dans `fermes/`) — 08/09 : 35 archivées, **3,9 Mo hors du déploiement** (`public/` suivi par git : 9,0 → 5,1 Mo). ⚠️ Le piège s'est refermé sur 2 fichiers : l'API Brevo interrogée montre `instagram.png` dans **18 templates actifs** et `decor-album-email.jpg` dans 3 — ils RESTENT. Règle : avant de déplacer une image de `public/`, interroger Brevo, pas seulement `grep` |
+| T-103 | Un template de mail actif affiche une image qui répond 404 | contenu | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 08/09 : le template 13 est un ORPHELIN. L'interface Brevo ne connaît que les messages #12 et #14 de la séquence ; le 13 n'est branché sur aucune étape, d'où le refus de l'API en écriture. Un template orphelin ne part jamais : l'image 404 ne sera vue par personne. C'est en le vérifiant qu'on a trouvé T-104 |
+| T-104 | S'inscrire aujourd'hui déclenche deux mails qui annoncent des préventes closes | contenu | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — ouvert ET fermé le 08/09. `/ambassadeurs` (200, formulaire vivant) → liste Brevo 3 → automation ACTIVE → deux mails de l'ère prévente. Coupé en **trois** endroits indépendants : automation en pause (vérifiée), page en 410, les deux routes en 410. Ouvert en `bloquant`, fermé le jour même |

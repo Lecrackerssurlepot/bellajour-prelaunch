@@ -5,10 +5,12 @@
    une fois l'ouverture passée.
    ⚠️ backdrop-filter sur un position:fixed rame sur Chrome/Android (note
    anti-jank de CLAUDE.md, MESURÉE en juin sur /preventes/prix, commit
-   246d8e5, avec un flou de 18 px là où celui-ci est à 20). Le repli n'est
-   PAS posé et le risque est accepté en connaissance de cause : voir D5
-   dans DECISIONS.md. La correction est le patron .pv-nav--flat, écrite
-   d'avance, à poser dès qu'un Android passe à portée. */
+   246d8e5, avec un flou de 18 px là où celui-ci est à 20). Repli posé le
+   08/09 (T-019) sur le MÊME patron : `useAndroid()` (src/hooks/useClient.ts)
+   ajoute .pv-nav--flat, qui remplace le flou par --c-nav-android-bg
+   (theme.css), quasi-opaque — jamais --bj-nav-android-bg, qui est le token
+   crème. Desktop et Safari iOS restent inchangés : la classe n'est ajoutée
+   que côté client, après un premier rendu qui garde le verre dépoli. */
 /* ⚠️ LA HAUTEUR DE LA BARRE, DITE UNE SEULE FOIS.
    `.at-nav` est `position: fixed` : elle RECOUVRE le haut de la page, rien
    dans le flux ne connait sa hauteur. Chaque page qui doit demarrer dessous
@@ -61,6 +63,22 @@ html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
   padding-top: calc(1.9 * var(--uh));
   padding-bottom: calc(1.9 * var(--uh));
   background: var(--glass-bg-plein);
+}
+
+/* ── Repli Android (T-019, 08/09) ──
+   .pv-nav--flat est le MÊME patron que celui déjà posé sur .pv-nav
+   (navbar.css, monde crème) : `useAndroid()` l'ajoute une fois le premier
+   rendu client passé (jamais côté serveur, donc jamais sur Desktop ni
+   Safari iOS). On enlève le flou, on pose un fond quasi-opaque.
+   ⚠️ Placée APRÈS .is-stuck à dessein : les deux ont la même spécificité
+   (0,2,0), et sans cet ordre le fond de .is-stuck regagnerait la main sur
+   celui-ci une fois la barre défilée sur Android — le flou resterait bien
+   coupé (seul `.pv-nav--flat` touche `backdrop-filter`), mais le fond
+   redeviendrait `--glass-bg-plein` au lieu du fond Android. */
+.at-nav.pv-nav--flat {
+  background: var(--c-nav-android-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* ── Lot 2 (07/09) — DESKTOP : la barre garde son air, perd son vide ─────

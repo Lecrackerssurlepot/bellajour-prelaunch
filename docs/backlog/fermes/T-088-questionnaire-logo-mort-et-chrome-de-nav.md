@@ -66,3 +66,15 @@ Mathias a tranché dans la conversation du 07/09 : **« Cliquable + garde-fou »
 ## État
 
 `fait` — livré par la branche `fix/navigation-retour`, en attente de recette Mathias.
+
+## Fermeture (08/09/2026)
+
+Vérifié dans `main` avant fermeture, pas cru sur parole : le logo de
+`/composer` est un vrai `<a href="/">` avec son `aria-label` (`Composer.tsx:443, 497, 505`), et
+la branche `fix/navigation-retour` est bien fusionnée (`0e6e149`). Le clic mort n'existe plus.
+`/numero` reste inchangé, comme décidé.
+
+## État
+
+`fermé` — livré le 07/09, prouvé dans `main` le 08/09. La recette à l'œil reste à faire par
+Mathias, comme pour tout ce qui se voit.

@@ -37,3 +37,33 @@ visionneuse (#29), en même temps que l'admin.
 
 ## Ce qui a été fait
 - 02/09 : le **mot rassurant** est dans le prototype v4. Reste à le poser dans `Apercu.tsx` (petit).
+
+## Vérifié le 08/09/2026 — c'est fait, la fiche avait du retard
+
+Je reprenais ce ticket pour livrer « le geste de choix côté cliente ». En allant écrire, j'ai
+trouvé le geste déjà en place : il est parti avec le chantier du 07/09 sans que la fiche soit
+recalculée. Preuve, dans `src/app/numero/[token]/Apercu.tsx` :
+
+- **le bouton de choix existe** (`nu-viz-choix`, `nu-viz-choix-btn`) et poste
+  `{ token, couverture_choisie: rang }` ; la route l'accepte et le valide en entier borné
+  (`src/app/api/atelier/numero/route.ts:418-420`) ;
+- **la couverture retenue porte sa marque** — « · votre choix » sur son nom ;
+- **rien n'est affiché tant qu'elle n'a rien dit** : pas de « votre choix » par défaut, parce
+  que ce serait faux. Ne rien choisir reste un choix, celui de garder la proposition ;
+- **l'échec est dit** (« Votre choix n'a pas pu être enregistré ») au lieu d'être avalé ;
+- **le mot rassurant est là** : « Ces pages restent entièrement modifiables à la création de
+  votre maquette. Aucune inquiétude. » C'était le dernier point ouvert du 02/09.
+
+`/numero` passe bien `token` et `modifiable` (`page.tsx:388-389`).
+
+### Corrigé aujourd'hui, en marge
+
+`/compte/magazine/[token]` ne transmettait que quatre champs à `Apercu` : la **bibliothèque**
+montrait donc une seule couverture et ignorait les cadrages. Corrigé le 08/09 (voir T-090).
+Volontairement **sans `token`** : sur un magazine livré il n'y a plus de couverture à choisir,
+seulement à revoir — donc pas de bouton, et pas de mot rassurant sur des pages déjà imprimées.
+
+## État
+
+`fermé` — socle, admin, geste de choix, marque du choix, message d'échec et mot rassurant :
+tout est en place et vérifié dans le code.

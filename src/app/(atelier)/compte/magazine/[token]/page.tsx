@@ -47,7 +47,13 @@ export default async function MagazinePage({
   const apercu = await resoudreApercu(dossier.apercu_urls)
   const titre = dossier.titre?.trim() || 'Votre numéro'
 
-  const aDesVisuels = Boolean(apercu.plat || apercu.c1 || apercu.c4 || apercu.doubles.length)
+  /* `plats.length` compte aussi : `plat` n'est que la PREMIÈRE planche, gardée
+     par rétrocompatibilité. Sans lui, un dossier dont l'atelier n'aurait rangé
+     que des planches secondaires se serait annoncé « visuels plus en ligne »
+     alors que les images étaient là. */
+  const aDesVisuels = Boolean(
+    apercu.plat || apercu.plats.length || apercu.c1 || apercu.c4 || apercu.doubles.length,
+  )
 
   const euros = eurosPour(dossier.palier as PalierCle | null)
   const livreLe = dossier.etat_maj_le
@@ -93,9 +99,26 @@ export default async function MagazinePage({
             fermé pour les couvertures, ouvert avec pli pour les doubles), les
             flèches, le glissé au doigt, la loupe, et surtout une scène à
             HAUTEUR FIXE — une A4 et une double page ne font plus sauter la
-            page. Deux visionneuses auraient divergé au premier réglage. */}
+            page. Deux visionneuses auraient divergé au premier réglage.
+
+            Elle reçoit les MÊMES champs que /numero, et il faut que ça le
+            reste. Jusqu'au 08/09 cette page n'en passait que quatre : la
+            bibliothèque montrait donc les visuels au cadrage par défaut, en
+            ignorant en silence les réglages de l'atelier, et n'affichait
+            qu'une seule couverture là où la cliente en avait vu plusieurs.
+            Aucun `token` ici, volontairement : sur un magazine LIVRÉ il n'y a
+            plus de couverture à choisir, seulement à revoir. */}
         {aDesVisuels ? (
-          <Apercu plat={apercu.plat} c1={apercu.c1} c4={apercu.c4} doubles={apercu.doubles} />
+          <Apercu
+            plat={apercu.plat}
+            plats={apercu.plats}
+            c1={apercu.c1}
+            c4={apercu.c4}
+            doubles={apercu.doubles}
+            doublesCadrage={apercu.doublesCadrage}
+            platsCadrageDroite={apercu.platsCadrageDroite}
+            platsCadrageGauche={apercu.platsCadrageGauche}
+          />
         ) : (
           <p className="cpt-mag-sans-visuel">
             Les visuels de ce numéro ne sont plus en ligne. Votre PDF, lui, reste disponible

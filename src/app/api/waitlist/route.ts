@@ -3,6 +3,7 @@ import { canonicalizeEmail } from "@/lib/email";
 import { makeSupabase } from "@/lib/supabase";
 import { isValidRefCode } from "@/lib/validation";
 import { createPendingReferralCredits } from "@/lib/referral-credits";
+import { preventeFermee } from "@/lib/prevente";
 import { generateUniqueCode } from "@/lib/refcode";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/contacts";
@@ -189,6 +190,30 @@ function detectUniqueCollision(err: { details?: string | null; message?: string 
 }
 
 export async function POST(request: Request) {
+  /* ── LE FREIN (T-104, 08/09/2026) ────────────────────────────────────────
+     Cette route ajoute le contact à la liste Brevo `BREVO_WAITLIST_LIST_ID`
+     (« 3 ») ET lui envoie W1. La liste 3 était le déclencheur de l'automation
+     « Waitlist - Séquence W2 W3 », qui annonçait des préventes closes depuis
+     le 01/09 : l'automation est en pause depuis le 08/09, mais W1 partait
+     quand même, et rien ici ne regardait si la prévente était ouverte.
+
+     Aucune page vivante ne l'appelle plus — son seul appelant était la landing
+     `archive/landing-waitlist/FinalWaitlist.tsx`, archivée. La route restait
+     pourtant joignable en direct, et elle répondait 400, pas 410.
+
+     Le verrou est `preventeFermee()`, comme sur `/api/checkout`, et PAS un 410
+     inconditionnel : rouvrir une liste d'attente est un geste qu'on peut
+     vouloir refaire, et il doit alors passer par le même interrupteur que le
+     reste — pas par un redéploiement de cette ligne.
+
+     ⚠️ `/api/ambassadeur/register`, lui, est en 410 INCONDITIONNEL (T-067) :
+     sa page de vente est archivée, le programme est clos, il n'y a rien à
+     rouvrir. Les deux routes sont volontairement traitées différemment. */
+  if (preventeFermee()) {
+    console.log("[waitlist] refus — la prévente est fermée (PREVENTE_FERMEE)");
+    return NextResponse.json({ error: "prevente_fermee" }, { status: 410 });
+  }
+
   try {
     const now = Date.now();
     for (const [key, val] of rateLimitMap) {

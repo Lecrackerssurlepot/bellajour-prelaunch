@@ -54,3 +54,14 @@ tenu) et le titre ne déborde pas.
 ## État
 
 `fait` — livré par la branche `feat/pdp-parcours-faq`, en attente de recette Mathias.
+
+## Fermeture (08/09/2026)
+
+Vérifié dans `main` avant fermeture, pas cru sur parole : le titre et le
+sous-texte de la bande vivent dans `content.ts:67-68` et sont rendus par `Kiosque.tsx:194`, et
+la branche `feat/pdp-parcours-faq` est bien fusionnée (`de44248`).
+
+## État
+
+`fermé` — livré le 07/09, prouvé dans `main` le 08/09. La recette à l'œil reste à faire par
+Mathias.

@@ -331,6 +331,10 @@ export default function Liste({ vue }: { vue: VueListe }) {
         </div>
 
         <nav className="ate-liens">
+          {/* Le carnet complet : toutes les notes de tous les dossiers, en
+              lecture seule. Sa place est ici, à côté des deux autres écrans
+              qui regardent l'atelier de haut. */}
+          <Link href="/admin/atelier/carnet">Carnet</Link>
           <Link href="/admin/atelier/metriques">Métriques</Link>
           <Link href="/admin/atelier/sante">Santé</Link>
           <Link href="/admin">Prévente</Link>
