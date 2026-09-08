@@ -15,7 +15,7 @@ export default function NumeroIntrouvable() {
         <p className="at-kicker">Bellajour</p>
         <p className="nu-mot">Ce lien ne mène à aucun numéro.</p>
         <p className="nu-sub">
-          Vérifiez le lien reçu par mail — il est long, et un caractère manquant
+          Vérifiez le lien reçu par mail. Il est long, et un caractère manquant
           suffit. Si le doute persiste, écrivez-nous à <b>{CONTACT_EMAIL}</b>,
           on retrouve votre dossier.
         </p>

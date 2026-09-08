@@ -61,6 +61,11 @@ import {
   type PalierCle,
 } from "@/lib/atelier/prix";
 import { peutRecommander } from "@/lib/atelier/reimpression";
+import {
+  cheminRetour,
+  motRetour,
+  marqueProvenance,
+} from "@/app/(atelier)/composer/provenance";
 import { raconter } from "@/lib/atelier/recit";
 import {
   codeDansLeJournal,
@@ -1270,6 +1275,54 @@ ok("quantite nulle ou negative : refusee", totalPour("p40", 0) === null && total
 ok("quantite non entiere : refusee", totalPour("p45", 1.5) === null);
 ok("palier absent : null, on ne facture pas sans chiffrage",
    totalPour(null, 1) === null && totalPour(undefined, 1) === null);
+
+/* ═══════════════ D'OU L'ON VIENT, ET DONC OU L'ON RETOURNE ═══════════════
+   Mathias, 08/09 : « quand je clique sur la croix et je vais quitter, ca ne
+   m'emmene pas sur la page ou j'etais avant ». La sortie du questionnaire
+   etait ecrite en dur sur /magazine.
+   Le retour arrive maintenant par l'URL — donc par quelqu'un qui peut ecrire
+   ce qu'il veut. La moitie de ces tests ne verifie pas le confort : elle
+   verifie qu'AUCUN parametre ne peut faire de ce lien une redirection
+   ouverte. Ils sont la pour echouer le jour ou quelqu'un « simplifierait »
+   `cheminRetour` en renvoyant le parametre tel quel. */
+titre("— d'ou l'on vient : les retours legitimes —");
+const TOK = "abcdefghijklmnopqrstuvwxyzABCDEF"; /* 32 caracteres, forme valide */
+ok("rien -> /magazine, le comportement d'avant garde en filet",
+   cheminRetour(null) === "/magazine" && cheminRetour(undefined) === "/magazine");
+ok("compte -> /compte", cheminRetour("compte") === "/compte");
+ok("accueil -> /", cheminRetour("accueil") === "/");
+ok("magazine -> /magazine", cheminRetour("magazine") === "/magazine");
+ok("numero:<token> -> /numero/<token>", cheminRetour(`numero:${TOK}`) === `/numero/${TOK}`);
+
+titre("— d'ou l'on vient : AUCUN parametre ne detourne la sortie —");
+for (const attaque of [
+  "https://malveillant.example",
+  "//malveillant.example",
+  "/admin/atelier",
+  "javascript:alert(1)",
+  "numero:../../admin",
+  "numero:trop-court",
+  `numero:${TOK}x`,
+  `numero:${TOK}/../../admin`,
+  "compte/../admin",
+  "\\\\malveillant.example",
+]) {
+  ok(`« ${attaque} » retombe sur /magazine`, cheminRetour(attaque) === "/magazine");
+}
+
+titre("— d'ou l'on vient : le libelle nomme la destination —");
+ok("compte", motRetour("compte") === "Quitter et revenir à mon compte");
+ok("numero valide", motRetour(`numero:${TOK}`) === "Quitter et revenir à mon numéro");
+ok("token abime : le libelle suit le defaut, il ne promet pas un numero",
+   motRetour("numero:court") === "Quitter et revenir à la page du magazine");
+ok("attaque : libelle du defaut", motRetour("//mal.example") === "Quitter et revenir à la page du magazine");
+
+titre("— d'ou l'on vient : on n'ecrit jamais une marque bancale —");
+ok("token valide -> numero:<token>", marqueProvenance("numero", TOK) === `numero:${TOK}`);
+ok("token absent -> null, donc AUCUN parametre dans l'URL",
+   marqueProvenance("numero") === null);
+ok("token trop court -> null", marqueProvenance("numero", "abc") === null);
+ok("compte -> compte", marqueProvenance("compte") === "compte");
 
 /* ═══════════════ RECOMMANDER UN NUMERO (T-105) : VERROUILLE ═══════════════
    Mathias, 08/09 : « qu'on ait tout le processus qui soit prevu pour pouvoir

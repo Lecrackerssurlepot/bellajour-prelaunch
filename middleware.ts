@@ -77,6 +77,18 @@ async function rafraichirSessionCompte(req: NextRequest): Promise<NextResponse> 
   const key = process.env.SUPABASE_ANON_KEY;
   if (!url || !key) return NextResponse.next();
 
+  /* ⚠️ RIEN À RAFRAÎCHIR QUAND IL N'Y A RIEN (08/09/2026).
+     `getUser()` est un ALLER-RETOUR RÉSEAU vers Supabase Auth — mesuré depuis
+     cette machine : 137 à 451 ms, médiane 215. Sans cette garde, il partait à
+     CHAQUE ouverture de /compte/connexion, /compte/mot-de-passe-oublie et
+     /compte/reinitialiser : trois pages dont l'unique raison d'être est qu'on
+     n'a pas encore de session. On payait un contrôle d'identité pour vérifier
+     l'identité de quelqu'un qui vient dire qu'il n'en a pas.
+     Sans cookie de session, il n'y a par construction rien à raviver : on
+     laisse passer. La page fait de toute façon sa propre vérification —
+     celle qui fait foi. */
+  if (!aUnCookieDeSession(req)) return NextResponse.next();
+
   let reponse = NextResponse.next({ request: req });
   const supabase = createServerClient(url, key, {
     cookieOptions: {

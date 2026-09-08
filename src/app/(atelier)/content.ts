@@ -122,7 +122,7 @@ export const ETAPES = [
 export const FAQ = [
   {
     q: 'Les photos de mon téléphone suffisent ?',
-    r: 'Oui. La quasi-totalité des numéros sont composés à partir de photos de téléphone. Une seule condition : envoyez-les en qualité d’origine — pas de capture d’écran, pas d’export compressé par une messagerie. Le dépôt les prend telles quelles, on s’occupe du reste.',
+    r: 'Oui. La quasi-totalité des numéros sont composés à partir de photos de téléphone. Une seule condition : envoyez-les en qualité d’origine, pas de capture d’écran, pas d’export compressé par une messagerie. Le dépôt les prend telles quelles, on s’occupe du reste.',
   },
   {
     q: 'Et si la couverture ne me plaît pas ?',

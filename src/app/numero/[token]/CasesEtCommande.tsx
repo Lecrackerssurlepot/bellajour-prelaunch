@@ -152,7 +152,7 @@ export default function CasesEtCommande({
           {occupe
             ? 'Un instant…'
             : confirmer
-              ? `Payer${prixConnu ? ` — ${formaterEuros(euros)}` : ''}`
+              ? `Payer${prixConnu ? ` ${formaterEuros(euros)}` : ''}`
               : 'Commander'}
         </button>
       </div>

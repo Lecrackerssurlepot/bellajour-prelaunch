@@ -76,7 +76,7 @@ export default function FormulaireConnexion({ suite }: { suite: string }) {
           Si cette adresse est libre, un mail vient de partir vers <b>{email}</b>.
         </p>
         <p className="cpt-envoye-sub">
-          Ouvrez-le et suivez le lien pour activer votre compte — il est valable une heure.
+          Ouvrez-le et suivez le lien pour activer votre compte. Il est valable une heure.
           Rien reçu ? Regardez dans les courriers indésirables.
         </p>
       </div>
@@ -161,7 +161,7 @@ export default function FormulaireConnexion({ suite }: { suite: string }) {
           </>
         ) : (
           <button type="button" className="cpt-lien" onClick={() => basculer('connexion')}>
-            J’ai déjà un compte — me connecter
+            J’ai déjà un compte, me connecter
           </button>
         )}
       </div>

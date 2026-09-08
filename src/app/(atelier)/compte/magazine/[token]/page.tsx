@@ -198,7 +198,7 @@ export default async function MagazinePage({
                     href={`${CHEMIN_RECOMMANDER}?token=${dossier.token}`}
                   >
                     <span aria-hidden="true">↻</span>
-                    Recommander ce numéro — {Math.round(recommander.centimes / 100)}&nbsp;€
+                    Recommander ce numéro · {Math.round(recommander.centimes / 100)}&nbsp;€
                   </a>
                 ) : null}
               </div>
