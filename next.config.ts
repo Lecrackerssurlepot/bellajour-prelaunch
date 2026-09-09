@@ -48,6 +48,41 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     return [
+      /* ── L'ANCIENNE ADRESSE DES PAGES LÉGALES (déplacée ici le 09/09/2026) ──
+         Avant T-083, les traductions vivaient sur `/cgv?lang=en` ; depuis, elles
+         ont leur adresse propre (`/en/cgv`, `/pt/cgv`), et les quatre pages
+         françaises redirigeaient les vieux liens EN LEUR SEIN, en lisant
+         `searchParams`. C'était la moitié de ce qui rendait les DOUZE routes
+         légales dynamiques — 212 ms de réponse contre 77 pour une page figée,
+         pour quatre documents qui ne bougent qu'à la réécriture.
+
+         La règle est désormais tranchée ici, avant tout rendu, et pour rien :
+         les pages redeviennent statiques, et le vieux lien répond toujours 308.
+         Next reporte les paramètres restants — un `?ref=` survit donc à la
+         redirection, exactement comme le faisait `legalHref(slug, lang, ref)`.
+
+         ⚠️ SEUL ÉCART DE COMPORTEMENT, et il est cosmétique : la destination
+         garde le `?lang=en` d'origine (`/en/cgv?lang=en`), là où l'ancienne
+         redirection écrivait une adresse propre. Next reporte les paramètres
+         du départ et ne sait pas en retirer un ; la page ignore `lang`, le
+         canonical déclaré reste `/en/cgv`, et un moteur ne verra donc jamais
+         cette forme. On l'accepte plutôt que de tordre la règle.
+
+         ⚠️ Une 308 se grave dans le cache des navigateurs. Elle l'était déjà
+         avant (`permanentRedirect`) : on ne change que l'endroit où elle est
+         décidée, pas sa nature.
+         ⚠️ Les quatre documents existent dans les trois langues (vérifié le
+         09/09) : aucune redirection ne mène à une traduction absente. Si un
+         jour un document n'existait plus qu'en français, `resolveDoc` sert le
+         français à `/en/<slug>` et `legalLanguages` ne déclare pas le hreflang
+         manquant — la page reste juste, elle ne 404 pas. */
+      {
+        source: "/:slug(cgv|confidentialite|mentions-legales|remboursement)",
+        has: [{ type: "query", key: "lang", value: "(?<langue>en|pt)" }],
+        destination: "/:langue/:slug",
+        permanent: true,
+      },
+
       /* BASCULE DU 24/08/2026 — la racine EST l'Atelier.
          Le 307 `/` → `/preventes` (bascule du 13 juin) est retiré : la page
          de vente de la prévente reste joignable par son URL, mais elle n'est

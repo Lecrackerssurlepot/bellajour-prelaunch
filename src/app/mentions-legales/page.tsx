@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
-import { permanentRedirect } from 'next/navigation'
 import LegalPage from '../legal/LegalPage'
 import { MENTIONS_LEGALES } from '../legal/content/mentions-legales'
-import { legalAlternates, legalOpenGraph, legalHref, pickLang, pickRef } from '../legal/resolve'
+import { legalAlternates, legalOpenGraph } from '../legal/resolve'
 
 export const metadata: Metadata = {
   title: 'Mentions légales — Bellajour',
@@ -15,16 +14,13 @@ export const metadata: Metadata = {
   openGraph: legalOpenGraph('mentions-legales', 'fr', 'Mentions légales'),
 }
 
-export default async function MentionsLegalesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
-}) {
-  const params = await searchParams
-  /* T-083 — `?lang=en|pt` redirige vers l'adresse par langue (308), ref préservé. */
-  const lang = pickLang(params)
-  if (lang !== 'fr' && MENTIONS_LEGALES[lang]) {
-    permanentRedirect(legalHref('mentions-legales', lang, pickRef(params)))
-  }
-  return <LegalPage slug="mentions-legales" doc={MENTIONS_LEGALES} params={params} />
+/* ⚠️ AUCUN `searchParams` — c'est ce qui garde cette page FIGÉE (09/09/2026).
+   La redirection de l'ancienne adresse `?lang=en|pt` vers `/en/…` et `/pt/…`
+   (T-083) vivait ICI : elle est passée dans `next.config.ts`, où elle est
+   tranchée AVANT tout rendu — plus juste, et gratuite. Les liens `?lang=`
+   déjà partagés restent donc valides, en 308, code parrain repris au passage.
+   Le `?ref=` du sélecteur de langue est repris côté client par
+   `SelecteurLangue`. Lire l'URL ici rendrait la page dynamique. */
+export default function MentionsLegalesPage() {
+  return <LegalPage slug="mentions-legales" doc={MENTIONS_LEGALES} />
 }
