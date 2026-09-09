@@ -275,19 +275,6 @@ export default function Screen5Depot({
             </button>
           </div>
 
-          {/* ── LA PLANCHE, EN ATTENTE ──
-              Six cadres vides sous un titre. Ils ne sont pas décoratifs : ils
-              montrent CE QUI VA SE PASSER. Un écran vide qui attend une action
-              reste un formulaire ; un écran qui montre l'objet à remplir
-              devient un espace de travail. C'est aussi ce qui rend la barre de
-              progression lisible plus bas — elle remplit quelque chose qu'on a
-              sous les yeux.
-              `aria-hidden` : six cadres vides n'ont rien à dire à l'oreille,
-              et la phrase de progression sous eux porte déjà la vérité. */}
-          <p className="at-d-planche-titre">Votre planche</p>
-          <ul className="at-d-planche" aria-hidden="true">
-            {Array.from({ length: 6 }, (_, i) => <li key={i} />)}
-          </ul>
         </>
       )}
 
@@ -359,6 +346,33 @@ export default function Screen5Depot({
           </div>
         )}
       </div>
+
+      {/* ── LA PLANCHE, EN ATTENTE ──
+          Six cadres vides sous un titre. Ils ne décorent pas : ils montrent CE
+          QUI VA SE PASSER. Un écran vide qui attend une action reste un
+          formulaire ; un écran qui montre l'objet à remplir devient un espace
+          de travail.
+
+          ⚠️ ELLE EST SOUS LA PROGRESSION, PAS AU-DESSUS, et c'est une leçon
+          payée. Placée juste après le bouton, elle poussait « 0 sur 40 photos »
+          sous la barre fixe — qui fait 208 px mesurés, consentement sur deux
+          lignes compris. J'ai d'abord grignoté les marges : huit pixels
+          manquaient encore, et j'aurais reperdu la ligne au premier mot ajouté
+          quelque part. Une mise en page qui tient au pixel près ne tient pas.
+          La progression est donc au-dessus, collée au geste qui la fait
+          bouger ; la planche, qui anticipe, est ce qui défile. Elle sera de
+          toute façon remplacée par la vraie grille dès la première photo.
+
+          `aria-hidden` : six cadres vides n'ont rien à dire à l'oreille, et la
+          phrase de progression au-dessus porte déjà la vérité. */}
+      {vue.photos.length === 0 && (
+        <>
+          <p className="at-d-planche-titre">Votre planche</p>
+          <ul className="at-d-planche" aria-hidden="true">
+            {Array.from({ length: 6 }, (_, i) => <li key={i} />)}
+          </ul>
+        </>
+      )}
 
       {/* ── refus à l'entrée ──────────────────────────────────────────────
           T-051 — l'enveloppe est TOUJOURS rendue, et c'est elle qui est

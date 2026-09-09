@@ -66,7 +66,17 @@
   transition: color var(--dur) var(--ease);
 }
 
+/* ⚠️ LE CERCLE FAIT 38 px, LA CIBLE EN FAIT 44 (relevé le 09/09).
+   38 px est sous le minimum tactile, et la croix est le seul geste de sortie
+   du questionnaire : la rater, c'est rester coincé dans six écrans.
+   Mais grossir le cercle aurait déséquilibré la barre de tête, où il fait
+   pendant à la signature. On étend donc la ZONE, pas le dessin : un
+   pseudo-élément déborde de 3 px sur les quatre côtés. Le doigt gagne, l'œil
+   ne voit rien changer.
+   (Même remède applicable partout où une cible ronde est trop petite pour
+   être agrandie sans casser un alignement.) */
 .bj-atelier .at-q-close {
+  position: relative;
   flex: 0 0 auto;
   width: 38px;
   height: 38px;
@@ -81,6 +91,14 @@
   color: var(--c-text-faint);
   cursor: pointer;
   transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+/* La zone tactile, invisible : 44 x 44 au lieu de 38. `content` vide et
+   `inset` négatif — rien à peindre, tout à attraper. */
+.bj-atelier .at-q-close::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
 }
 
 .bj-atelier .at-q-back:hover { color: var(--c-text); }

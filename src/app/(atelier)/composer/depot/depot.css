@@ -18,7 +18,17 @@
    la planche que les photos vont remplir.
    ══════════════════════════════════════════════════════════════════════ */
 
-/* ⚠️ LA RÉSERVE SOUS LA BARRE, corrigée au passage (08/09/2026).
+/* ⚠️ LES BLANCS DE CET ÉCRAN SONT COMPTÉS AU PIXEL, et voici pourquoi.
+   La barre du dépôt est FIXE et fait 208 px (mesuré, consentement sur deux
+   lignes compris). Sur un écran de 812, il reste 604 px pour tout le reste :
+   le titre, le chapô, le bouton, la planche et la ligne de progression. Cette
+   dernière est la seule qui n'a pas de seconde chance — si elle passe sous la
+   barre, on ne la voit qu'en défilant, et une progression qu'on doit aller
+   chercher ne sert à rien.
+   Chaque valeur ci-dessous a donc été prise sur une mesure, pas au jugé. En
+   remonter une, c'est reperdre la ligne.
+
+   ⚠️ LA RÉSERVE SOUS LA BARRE, corrigée au passage (08/09/2026).
    `.at-q-screen` (composer.css) garde 110 px de marge basse pour la barre
    fixe. Celle du DÉPÔT en fait 179 mesurés — case de consentement, note de
    format, bouton, ligne d'état : soixante-neuf pixels de contenu passaient
@@ -26,12 +36,12 @@
    l'a créé, c'est lui qui l'a rendu visible : la ligne de progression
    nouvelle version est plus longue, et se faisait couper en deux.
    La réserve est donc reprise ici, pour ce seul écran. */
-.at-d-page { padding-bottom: 86px; }
+.at-d-page { padding-bottom: 90px; }
 
 .at-d-appel {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 14px;
   padding: 10px 0;
   border-radius: 20px;
   transition: background var(--dur) var(--ease);
@@ -50,8 +60,14 @@
    « en attente » — c'est son sens juste. Sur un bouton, il disait
    « champ de fichier ». Même trait, deux endroits, deux lectures. */
 .at-d-planche-titre {
-  margin: 22px 0 10px;
-  font-size: 11px;
+  /* De l'air au-dessus : la progression et la planche sont deux objets, pas
+     une légende et son image. Il y en a de reste depuis que la planche est
+     passée dessous. */
+  margin: 28px 0 10px;
+  /* 12 px, le plancher des micro-libellés en capitales posé sur la page
+     produit le 08/09. Il était à 11 : un pixel de moins que la règle qu'on
+     venait d'écrire, dans un fichier voisin. */
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -64,7 +80,7 @@
   list-style: none;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
   max-width: 640px;
 }
 
@@ -86,7 +102,7 @@
    sur cinquante et elle occupait le centre de l'écran. */
 .at-d-formats {
   margin: 0 0 12px;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 300;
   letter-spacing: 0.02em;
   color: var(--c-text-faint);
@@ -145,7 +161,7 @@
 
 /* ── compteur, jauge, palier ───────────────────────────────────────────── */
 
-.at-d-etat { margin-top: 24px; max-width: 640px; }
+.at-d-etat { margin-top: 16px; max-width: 640px; }
 
 /* ⚠️ `[hidden]` NE SUFFIT PAS QUAND ON DÉCLARE UN `display`.
    L'attribut HTML pose `display: none` par la feuille du navigateur ; une
@@ -485,7 +501,7 @@
 
 /* ── consentement et blocage ───────────────────────────────────────────── */
 
-.at-d-bloc { font-size: 13px; font-weight: 300; color: var(--c-text-faint); }
+.at-d-bloc { font-size: 14px; font-weight: 300; color: var(--c-text-faint); }
 
 /* ── LA BARRE FIXE DU DÉPÔT (03/09) ──
    L'ancienne barre en flux (`.at-d-envoi`) est partie : consentement et
@@ -496,6 +512,10 @@
 .at-q-barre--depot .at-d-consent {
   margin-top: 0;
   max-width: 40ch;
+  /* La cible tactile de la case. Voir le mot plus bas, dans la requête
+     téléphone : la ligne faisait 21 px. */
+  min-height: 44px;
+  align-items: center;
 }
 
 .at-q-barre--depot .at-d-pasparti--fond {
@@ -617,5 +637,14 @@
   .bj-atelier .at-d-glisser { display: none; }
   /* L'écran du dépôt réserve plus de bas de page : sa barre porte deux
      rangées (consentement + bouton pleine largeur). */
-  .at-q-barre--depot .at-d-consent { max-width: none; font-size: 12.5px; }
+  /* ⚠️ 12,5 px SUR LA PHRASE QUI ENGAGE (relevé le 09/09 en production).
+     C'est la confirmation dont dépend tout le dépôt — « vous confirmez avoir
+     le droit d'utiliser ces photos » — et c'était le texte le plus petit de
+     l'écran. On la remonte au plancher de contenu, 14 px.
+     Et ce n'était pas que la taille : la ligne entière mesurait 21 px de
+     haut, cible tactile comprise. Sur un écran où tout le reste est fait pour
+     le doigt, la seule case à cocher de la page en demandait un de pianiste.
+     `min-height: 44px` et `align-items: center` : la ligne devient une cible,
+     sans changer un mot. */
+  .at-q-barre--depot .at-d-consent { max-width: none; font-size: 14px; }
 }
