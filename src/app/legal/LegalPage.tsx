@@ -1,40 +1,38 @@
 import type { ReactNode } from 'react'
-import {
-  LOCALES,
-  LOCALE_LABEL,
-  type Block,
-  type Para,
-  type Locale,
-  type LocalizedDoc,
-} from './types'
-import { pickLang, pickRef, resolveDoc, legalHref, backHref } from './resolve'
+import { type Block, type Para, type Locale, type LocalizedDoc } from './types'
+import { resolveDoc, backHref } from './resolve'
 import RetourLien from './RetourLien'
+import SelecteurLangue from './SelecteurLangue'
 import { cormorantCremeClassName } from '../creme-fonts'
 import './legal.css'
 
-/* Composant partagé des pages légales (Server Component, zéro JS client).
+/* Composant partagé des pages légales (Server Component).
    Chrome à la charte SOMBRE de l'Atelier : fond quasi-noir, titres Cormorant
    italic, corps DM Sans, accent terracotta (voir legal.css).
-   - searchParams (Next 16, déjà awaité par la route) → langue + ref préservés.
    - Sélecteur de langue : FR rendu, EN/PT activés dès que la clé locale existe.
-   - Lien retour : /inviter?ref=… si parrain présent, sinon accueil (T-070). */
+   - Lien retour : l'historique quand on vient du site, sinon l'accueil (T-070).
 
-type RawParams = { [key: string]: string | string[] | undefined }
+   ⚠️ PLUS AUCUN `searchParams` (09/09/2026, audit de vitesse). Les douze routes
+   légales étaient rendues à CHAQUE visite — 212 ms contre 77 pour une page
+   figée — parce qu'elles lisaient l'URL pour deux choses :
+   · `?lang=en|pt`, l'ancienne adresse d'avant T-083 : la redirection vit
+     maintenant dans `next.config.ts`, tranchée avant tout rendu ;
+   · `?ref=`, le code parrain à préserver d'une langue à l'autre : c'est
+     `SelecteurLangue` (client) qui s'en charge.
+   Les quatre documents ne changent que quand on les réécrit : rien ici ne
+   justifie une fonction serveur. Ne pas réintroduire de `searchParams` sans
+   savoir qu'on rend les douze pages dynamiques du même geste. */
 
 interface LegalPageProps {
   slug: string
   doc: LocalizedDoc
-  params: RawParams
   /* T-083 — imposé par les routes par langue (`/en/cgv`, `/pt/cgv`) : la
-     langue vient alors de l'ADRESSE, pas de `?lang=`. Absent sur `/cgv`
-     (français), où `?lang=` sert encore de repli avant la redirection. */
+     langue vient de l'ADRESSE. Absent sur `/cgv`, qui est le français. */
   forceLang?: Locale
 }
 
-export default function LegalPage({ slug, doc, params, forceLang }: LegalPageProps) {
-  const requested = forceLang ?? pickLang(params)
-  const ref = pickRef(params)
-  const { doc: content, lang } = resolveDoc(doc, requested)
+export default function LegalPage({ slug, doc, forceLang }: LegalPageProps) {
+  const { doc: content, lang } = resolveDoc(doc, forceLang ?? 'fr')
 
   return (
     /* `lang` = la langue SERVIE (T-057) : le layout racine fixe lang="fr" en
@@ -50,29 +48,7 @@ export default function LegalPage({ slug, doc, params, forceLang }: LegalPagePro
               précédente est une page du site ; sinon le repli backHref(). */}
           <RetourLien repli={backHref()} />
 
-          <nav className="lg-langs" aria-label="Langue du document">
-            {LOCALES.map((loc) => {
-              const available = Boolean(doc[loc])
-              const current = loc === lang
-              if (!available) {
-                return (
-                  <span key={loc} className="lg-lang lg-lang--off" aria-disabled="true">
-                    {LOCALE_LABEL[loc]}
-                  </span>
-                )
-              }
-              return (
-                <a
-                  key={loc}
-                  href={legalHref(slug, loc, ref)}
-                  className={`lg-lang${current ? ' lg-lang--current' : ''}`}
-                  aria-current={current ? 'true' : undefined}
-                >
-                  {LOCALE_LABEL[loc]}
-                </a>
-              )
-            })}
-          </nav>
+          <SelecteurLangue slug={slug} doc={doc} lang={lang} />
         </header>
 
         <h1 className="lg-title">{content.title}</h1>

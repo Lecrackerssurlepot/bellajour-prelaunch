@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
-import { permanentRedirect } from 'next/navigation'
 import LegalPage from '../legal/LegalPage'
 import { CGV } from '../legal/content/cgv'
-import { legalAlternates, legalOpenGraph, legalHref, pickLang, pickRef } from '../legal/resolve'
+import { legalAlternates, legalOpenGraph } from '../legal/resolve'
 
 export const metadata: Metadata = {
   title: 'Conditions générales de vente — Bellajour',
@@ -15,16 +14,13 @@ export const metadata: Metadata = {
   openGraph: legalOpenGraph('cgv', 'fr', 'Conditions générales de vente'),
 }
 
-export default async function CgvPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
-}) {
-  const params = await searchParams
-  /* T-083 — `?lang=en|pt` a désormais son adresse propre (`/en/cgv`,
-     `/pt/cgv`) : on y renvoie en 308 (permanent), ref préservé. Les liens
-     `?lang=` déjà partagés restent donc valides plutôt que de répondre 404. */
-  const lang = pickLang(params)
-  if (lang !== 'fr' && CGV[lang]) permanentRedirect(legalHref('cgv', lang, pickRef(params)))
-  return <LegalPage slug="cgv" doc={CGV} params={params} />
+/* ⚠️ AUCUN `searchParams` — c'est ce qui garde cette page FIGÉE (09/09/2026).
+   La redirection de l'ancienne adresse `?lang=en|pt` vers `/en/…` et `/pt/…`
+   (T-083) vivait ICI : elle est passée dans `next.config.ts`, où elle est
+   tranchée AVANT tout rendu — plus juste, et gratuite. Les liens `?lang=`
+   déjà partagés restent donc valides, en 308, code parrain repris au passage.
+   Le `?ref=` du sélecteur de langue est repris côté client par
+   `SelecteurLangue`. Lire l'URL ici rendrait la page dynamique. */
+export default function CgvPage() {
+  return <LegalPage slug="cgv" doc={CGV} />
 }
