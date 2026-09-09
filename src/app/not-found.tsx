@@ -9,17 +9,39 @@
    on rouvre une porte. */
 
 import Link from 'next/link'
-import { cormorantCreme } from './creme-fonts'
 import { CONTACT_EMAIL, CTA_HREF, CTA_MAGAZINE_LABEL } from './(atelier)/content'
 import './(atelier)/theme.css'
 import './not-found.css'
 
+/**
+ * ⚠️ AUCUN MODULE next/font ICI, ET C'EST LE CŒUR DE CE FICHIER (09/09/2026).
+ *
+ * Cette page importait `cormorantCreme` (Cormorant Garamond 500/600, normal
+ * et italique). Or Next range le 404 racine dans l'arbre du layout racine :
+ * SA feuille de style part avec TOUTES les pages du site. Mesuré en
+ * production, deux `<link rel="preload" as="font">` de 75 Ko partaient donc
+ * sur `/`, `/magazine`, `/composer`, `/numero`, à la priorité la plus haute,
+ * pour des faces que ces pages ne peignent JAMAIS — leur propre commentaire
+ * le disait déjà (creme-fonts.ts, T-064). L'accueil préchargeait 202 Ko de
+ * polices, dont 75 pour rien.
+ *
+ * Et le module n'était même pas le bon : `.nf-mot` demande `font-weight: 400`,
+ * un poids que `cormorantCreme` ne contient pas. Le navigateur retombait donc
+ * sur la 500. On payait 75 Ko sur tout le site pour dessiner un titre dans
+ * une graisse qu'on n'avait pas demandée.
+ *
+ * Le titre suit maintenant la chaîne de repli que `not-found.css` déclarait
+ * DÉJÀ, et qui n'était jamais atteinte : Cormorant Garamond si une autre
+ * partie de la page l'a chargée, sinon Georgia. Sur un vrai 404 — une adresse
+ * mal tapée, hors de tout groupe de routes — c'est donc Georgia : un serif,
+ * sur une page rare, contre 75 Ko rendus à chaque visite de tout le site.
+ *
+ * ⚠️ Ne PAS « réparer » en réimportant une police ici. Toute déclaration
+ * next/font dans ce fichier repart avec le site entier.
+ */
 export default function Introuvable() {
   return (
-    /* ⚠️ La police display N'EST PLUS sur <html> depuis T-064 : cette page
-       vit à la racine, elle doit donc la poser elle-même, comme les pages
-       crème. Sans ça le titre retombe en silence sur DM Sans. */
-    <div className={`bj-atelier nf ${cormorantCreme.variable}`}>
+    <div className="bj-atelier nf">
       <div className="nf-in">
         <p className="nf-kicker">Bellajour</p>
         <h1 className="nf-mot">Cette page n’existe pas.</h1>
