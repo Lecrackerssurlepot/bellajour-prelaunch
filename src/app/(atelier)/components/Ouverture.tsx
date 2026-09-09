@@ -72,7 +72,25 @@ export default function Ouverture() {
     const racineHtml = document.documentElement
     /* Déjà vue dans cette visite ? Le script en ligne de page.tsx a posé
        l'attribut avant la première peinture ; on ne fait que le relire. */
-    const dejaVue = racineHtml.hasAttribute(MARQUE_VUE)
+    /* ⚠️ LES DEUX SOURCES, ET IL FAUT LES DEUX (09/09/2026, liens internes).
+       L'attribut sur <html> est posé par le script en ligne de page.tsx, qui
+       ne tourne qu'au CHARGEMENT D'UN DOCUMENT. Depuis que la barre navigue
+       côté client (`<Link>`), revenir de /magazine à l'accueil ne recharge
+       plus rien : le script ne rejoue pas, l'attribut n'est pas là, et la
+       couverture recommençait ses trois secondes de chorégraphie — très
+       exactement ce que ce drapeau existe pour empêcher.
+       Le composant lit donc aussi le stockage, qui est la source de vérité :
+       l'attribut n'est que le raccourci qui évite de voir la couverture
+       repliée avant que React monte. */
+    const dejaVue =
+      racineHtml.hasAttribute(MARQUE_VUE) ||
+      (() => {
+        try {
+          return sessionStorage.getItem(CLE_VUE) === '1'
+        } catch {
+          return false /* mode privé : elle rejouera, c'est le comportement d'avant */
+        }
+      })()
 
     const decoupe = (replie: boolean) => {
       if (!couv || !bande) return null

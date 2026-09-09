@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 
 /**
@@ -171,17 +172,24 @@ export default function NavCompte({ ouvertAuBuild = false }: { ouvertAuBuild?: b
   return (
     <span className="at-nav-perso">
       {/* Le raccourci de suivi : DESKTOP UNIQUEMENT (nav.css le masque sous
-          560 px). Sur mobile il vivrait au détriment du CTA. */}
+          560 px). Sur mobile il vivrait au détriment du CTA.
+          ⚠️ `prefetch={false}` ici ET sur le jeton du compte : /compte et
+          /numero sont des routes DYNAMIQUES (force-dynamic, et /compte
+          redirige vers la connexion sans session). Les précharger, c'est
+          faire tourner une fonction serveur — et pour /compte, suivre une
+          redirection — pour un clic qui n'aura peut-être jamais lieu. La
+          navigation côté client, elle, reste acquise. */}
       {suivi ? (
-        <a className="at-nav-suivi" href={suivi.href}>
+        <Link className="at-nav-suivi" href={suivi.href} prefetch={false}>
           <i className="at-nav-suivi-point" aria-hidden="true" />
           {suivi.mot}
-        </a>
+        </Link>
       ) : null}
 
-      <a
+      <Link
         className={`at-nav-compte${statut.connecte ? ' est-connecte' : ''}`}
         href="/compte"
+        prefetch={false}
         aria-label={statut.connecte ? 'Mon compte, connectée' : 'Mon compte'}
       >
         {statut.photo ? (
@@ -201,7 +209,7 @@ export default function NavCompte({ ouvertAuBuild = false }: { ouvertAuBuild?: b
             />
           </svg>
         )}
-      </a>
+      </Link>
     </span>
   )
 }

@@ -26,6 +26,7 @@
 
 import { CONTACT_EMAIL } from '../content'
 import './footer.css'
+import Link from 'next/link'
 
 const LIENS = [
   { href: '/mentions-legales', label: 'Mentions légales' },
@@ -47,10 +48,16 @@ export default function Footer() {
             <a className="at-footer-mail" href={`mailto:${CONTACT_EMAIL}`}>
               {CONTACT_EMAIL}
             </a>
+            {/* `prefetch={false}` sur tout le pied de page : ces pages sont
+                     DYNAMIQUES (le `?lang=` et le `?ref=` interdisent à Next de
+                     les figer) et quasiment jamais ouvertes. Les précharger dès
+                     que le pied entre à l'écran ferait tourner cinq fonctions
+                     serveur à chaque visite, pour rien. Le clic, lui, reste une
+                     navigation côté client. */}
             {LIENS.map((l) => (
               <span key={l.href} className="at-footer-item">
                 <span className="at-footer-sep" aria-hidden="true">·</span>
-                <a href={l.href}>{l.label}</a>
+                <Link href={l.href} prefetch={false}>{l.label}</Link>
               </span>
             ))}
           </nav>

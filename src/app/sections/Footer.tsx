@@ -1,5 +1,6 @@
 import InstagramLink from '../components/InstagramLink'
 import './footer.css'
+import Link from 'next/link'
 
 export default function Footer() {
   return (
@@ -12,21 +13,27 @@ export default function Footer() {
           <p className="footer-tagline">Vivez. Nous composons.</p>
           <p className="footer-contact-label">Une question&nbsp;? &Eacute;crivez-nous&nbsp;:</p>
           <nav className="footer-links" aria-label="Liens footer">
+            {/* `prefetch={false}` sur tout le pied de page : ces pages sont
+                     DYNAMIQUES (le `?lang=` et le `?ref=` interdisent à Next de
+                     les figer) et quasiment jamais ouvertes. Les précharger dès
+                     que le pied entre à l'écran ferait tourner cinq fonctions
+                     serveur à chaque visite, pour rien. Le clic, lui, reste une
+                     navigation côté client. */}
             <a href="mailto:contact@bellajour.com" className="footer-link footer-link--mail">
               contact@bellajour.com
             </a>
             <span className="footer-sep" aria-hidden="true">&middot;</span>
-            <a href="/mentions-legales" className="footer-link">Mentions l&eacute;gales</a>
+            <Link href="/mentions-legales" prefetch={false} className="footer-link">Mentions l&eacute;gales</Link>
             <span className="footer-sep" aria-hidden="true">&middot;</span>
-            <a href="/confidentialite" className="footer-link">Confidentialit&eacute;</a>
+            <Link href="/confidentialite" prefetch={false} className="footer-link">Confidentialit&eacute;</Link>
             <span className="footer-sep" aria-hidden="true">&middot;</span>
-            <a href="/cgv" className="footer-link">CGV</a>
+            <Link href="/cgv" prefetch={false} className="footer-link">CGV</Link>
             <span className="footer-sep" aria-hidden="true">&middot;</span>
-            <a href="/remboursement" className="footer-link">Remboursement</a>
+            <Link href="/remboursement" prefetch={false} className="footer-link">Remboursement</Link>
             <span className="footer-sep" aria-hidden="true">&middot;</span>
-            <a href="/ambassadeurs/espace" className="footer-link footer-link--amb">
+            <Link href="/ambassadeurs/espace" prefetch={false} className="footer-link footer-link--amb">
               Espace ambassadeur
-            </a>
+            </Link>
           </nav>
         </div>
 

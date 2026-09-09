@@ -4,6 +4,7 @@
    Lecture du scroll via requestAnimationFrame (règle CLAUDE.md) : le
    listener ne fait que lever un drapeau, la mesure a lieu dans la frame. */
 
+import Link from 'next/link'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { COMPOSER_HREF, CTA_HREF, CTA_MAGAZINE_LABEL, CTA_REPRISE_LABEL } from '../content'
 import { draftEnCours } from '../composer/draft'
@@ -34,7 +35,11 @@ const RIEN = () => () => {}
    ailleurs : le chemin du retour à l'accueil.
    ⚠️ Ce n'est pas un <button> stylé en lien : c'est un VRAI <a href>. Le clic
    milieu, le « ouvrir dans un nouvel onglet » et le survol qui montre l'adresse
-   en dépendent, et un bouton qui appelle router.push ne les rend pas. */
+   en dépendent, et un bouton qui appelle router.push ne les rend pas.
+   `<Link>` (09/09/2026) rend précisément ce <a href> — la garantie ci-dessus
+   tient mot pour mot — et y ajoute la navigation côté client : on ne recharge
+   plus tout le document à chaque clic, et la page visée est préchargée dès que
+   le bouton entre à l'écran. */
 export default function Nav({
   href = CTA_HREF,
   label = CTA_MAGAZINE_LABEL,
@@ -118,7 +123,7 @@ export default function Nav({
           classe : la remise a zero ne lui nuit pas, et la cible tactile de
           44 px vaut pour les deux. */}
       {retour ? (
-        <a className="at-nav-logo-btn" href={retour} aria-label="Bellajour, retour à l’accueil">
+        <Link className="at-nav-logo-btn" href={retour} aria-label="Bellajour, retour à l’accueil">
           <img
             className="at-nav-logo"
             src="/images/ui/signature-blanche.webp"
@@ -127,7 +132,7 @@ export default function Nav({
             height={122}
             decoding="async"
           />
-        </a>
+        </Link>
       ) : (
         <button
           type="button"
@@ -150,7 +155,7 @@ export default function Nav({
           marketing — qui ne disparaît JAMAIS (décision de Mathias, 04/09). */}
       <span className="at-nav-droite">
         <NavCompte ouvertAuBuild={compteOuvert} />
-        <a className="at-nav-cta" href={href}>{labelAffiche}</a>
+        <Link className="at-nav-cta" href={href}>{labelAffiche}</Link>
       </span>
     </nav>
   )
