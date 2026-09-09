@@ -190,9 +190,16 @@ html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
 }
 
 /* ⚠️ La barre est rendue AVANT que /api/compte/statut ait répondu, et
-   l'espace peut être fermé (compteOuvert) : le coin garde alors sa largeur
-   plutôt que d'apparaître d'un coup et de pousser le CTA. Zéro quand il
-   n'y aura rien à montrer, c'est le prix d'un bouton qui ne saute pas. */
+   l'espace peut être fermé (compteOuvert) : le coin ne prend alors aucune
+   place.
+   MESURÉ le 09/09/2026, parce que le commentaire d'origine promettait le
+   contraire (« le coin garde sa largeur plutôt que de pousser le CTA ») :
+   le CTA ne bouge PAS, ni à 0 ni à 44 px. `.at-nav` est en space-between et
+   `.at-nav-droite` est donc ancrée à DROITE — le coin compte grandit vers la
+   gauche, le bouton reste où il est (1028,74 px dans les deux cas, à 1280 de
+   large). Il n'y a rien à réserver ici ; ce qui faisait tarder l'icône était
+   le délai de la requête, traité côté serveur et par la mémoire locale de
+   NavCompte. */
 .at-nav-perso--vide { width: 0; }
 
 /* Le jeton du compte : cible tactile de 44 px, jamais de fond…

@@ -54,6 +54,12 @@ const CHAMPS_COMPTE_REPLI =
   "email_canonical, created_at, etat_maj_le, souvenir_pdf_key, " +
   "tracking_url, transporteur, anonymise_le, apercu_urls";
 
+/* Ce que la BARRE lit — les colonnes de `DossierDuCompte`, pas une de plus. */
+const CHAMPS_BARRE =
+  "token, etat, compte_id, email_canonical, consent_photos, nb_photos, etat_maj_le";
+const CHAMPS_BARRE_REPLI =
+  "token, etat, email_canonical, consent_photos, nb_photos, etat_maj_le";
+
 export function regardDe(qui: Connectee): Regard {
   return {
     uid: qui.id,
@@ -64,56 +70,118 @@ export function regardDe(qui: Connectee): Regard {
 
 type LigneBrute = Omit<DossierAffiche, "compte_id"> & { compte_id?: string | null };
 
-function normaliser(lignes: LigneBrute[]): DossierAffiche[] {
+function normaliser<T extends { compte_id?: string | null }>(lignes: T[]) {
   return lignes.map((l) => ({ ...l, compte_id: l.compte_id ?? null }));
 }
 
 /**
- * Tous les dossiers que ce compte a le droit de voir, anonymisés exclus
- * (un dossier refermé ne porte plus rien — il n'a rien à faire sur un
- * dashboard). Deux selects fusionnés par token, puis la règle pure filtre.
+ * Les CANDIDATS : deux selects, fusionnés par token, puis la règle pure
+ * tranche (peutVoirDossier). Le cœur commun des deux lectures ci-dessous —
+ * l'espace en veut toutes les colonnes, la barre de navigation presque
+ * aucune, et ni l'une ni l'autre ne doit réécrire la règle d'accès.
+ *
+ * ⚠️ LES DEUX SELECTS PARTENT ENSEMBLE (09/09/2026, chantier lenteur).
+ * Ils étaient séquentiels : on payait deux allers-retours vers Supabase l'un
+ * derrière l'autre alors qu'aucun des deux ne dépend du résultat de l'autre.
+ * En parallèle, le coût de la lecture tombe à celui du plus lent.
+ *
+ * REPLI 42703 — `compte_id` est une colonne fraîche (20260904) et Mathias
+ * applique les migrations lui-même : tant qu'elle n'existe pas, PostgREST
+ * répond 42703 aux DEUX requêtes (elles demandent la même colonne), et on
+ * refait alors la seule qui compte — celle par email — sans elle. Un
+ * aller-retour de plus, mais UNIQUEMENT dans ce monde-là.
  */
-export async function lireDossiersDuCompte(
+async function lireCandidats(
   supabase: SupabaseClient,
-  qui: Connectee,
-): Promise<DossierAffiche[]> {
-  const regard = regardDe(qui);
-  const parToken = new Map<string, DossierAffiche>();
+  regard: Regard,
+  champs: string,
+  champsRepli: string,
+): Promise<LigneBrute[]> {
+  const requete = (colonnes: string, par: "compte" | "email") => {
+    const base = supabase.from("numeros").select(colonnes).is("anonymise_le", null);
+    return par === "compte"
+      ? base.eq("compte_id", regard.uid)
+      : base.eq("email_canonical", regard.canon);
+  };
 
-  const parCompte = await supabase
-    .from("numeros")
-    .select(CHAMPS_COMPTE)
-    .eq("compte_id", regard.uid)
-    .is("anonymise_le", null);
+  const [parCompte, parEmail] = await Promise.all([
+    requete(champs, "compte"),
+    regard.emailConfirme ? requete(champs, "email") : null,
+  ]);
+
+  const parToken = new Map<string, LigneBrute>();
+
   if (parCompte.error) {
     if (parCompte.error.code !== "42703") {
       console.error("[compte] lecture par compte_id en panne :", parCompte.error.message);
     }
     /* 42703 : la migration n'est pas passée — le rapprochement email suffit. */
   } else {
-    for (const ligne of normaliser((parCompte.data ?? []) as unknown as LigneBrute[])) {
+    for (const ligne of (parCompte.data ?? []) as unknown as LigneBrute[]) {
       parToken.set(ligne.token, ligne);
     }
   }
 
-  if (regard.emailConfirme) {
-    const parEmail = await supabase
-      .from("numeros")
-      .select(parCompte.error?.code === "42703" ? CHAMPS_COMPTE_REPLI : CHAMPS_COMPTE)
-      .eq("email_canonical", regard.canon)
-      .is("anonymise_le", null);
-    if (parEmail.error) {
-      console.error("[compte] lecture par email en panne :", parEmail.error.message);
+  /* La colonne manque : la requête par email a échoué pour la même raison,
+     on la refait sans elle. */
+  const email =
+    parCompte.error?.code === "42703" && regard.emailConfirme
+      ? await requete(champsRepli, "email")
+      : parEmail;
+
+  if (email) {
+    if (email.error) {
+      console.error("[compte] lecture par email en panne :", email.error.message);
     } else {
-      for (const ligne of normaliser((parEmail.data ?? []) as unknown as LigneBrute[])) {
+      for (const ligne of (email.data ?? []) as unknown as LigneBrute[]) {
         if (!parToken.has(ligne.token)) parToken.set(ligne.token, ligne);
       }
     }
   }
 
-  const visibles = [...parToken.values()].filter((d) => peutVoirDossier(d, regard));
+  return [...parToken.values()];
+}
+
+function trier<T extends DossierDuCompte>(dossiers: T[], regard: Regard): T[] {
+  const visibles = dossiers.filter((d) => peutVoirDossier(d, regard));
   visibles.sort((a, b) => (b.etat_maj_le ?? "").localeCompare(a.etat_maj_le ?? ""));
   return visibles;
+}
+
+/**
+ * Tous les dossiers que ce compte a le droit de voir, anonymisés exclus
+ * (un dossier refermé ne porte plus rien — il n'a rien à faire sur un
+ * dashboard).
+ */
+export async function lireDossiersDuCompte(
+  supabase: SupabaseClient,
+  qui: Connectee,
+): Promise<DossierAffiche[]> {
+  const regard = regardDe(qui);
+  const lignes = await lireCandidats(supabase, regard, CHAMPS_COMPTE, CHAMPS_COMPTE_REPLI);
+  return trier(normaliser(lignes) as DossierAffiche[], regard);
+}
+
+/**
+ * LA MÊME LECTURE, POUR LA BARRE DE NAVIGATION (09/09/2026).
+ *
+ * /api/compte/statut ne rend qu'un nombre et, à l'occasion, un token : il
+ * n'a que faire du titre, du palier, du PDF souvenir, et surtout pas du
+ * `apercu_urls` — un jsonb qui porte toutes les planches d'un numéro et
+ * qu'on traînait sur le réseau, pour chaque dossier, à chaque ouverture de
+ * page, pour le jeter aussitôt.
+ *
+ * Les colonnes retenues sont EXACTEMENT celles de `DossierDuCompte`, c'est-à-dire
+ * celles dont la règle d'accès a besoin — plus rien. Même règle, même filtre,
+ * même tri : c'est la charge qui maigrit, pas le contrôle.
+ */
+export async function lireDossiersPourLaBarre(
+  supabase: SupabaseClient,
+  qui: Connectee,
+): Promise<DossierDuCompte[]> {
+  const regard = regardDe(qui);
+  const lignes = await lireCandidats(supabase, regard, CHAMPS_BARRE, CHAMPS_BARRE_REPLI);
+  return trier(normaliser(lignes) as unknown as DossierDuCompte[], regard);
 }
 
 /**
