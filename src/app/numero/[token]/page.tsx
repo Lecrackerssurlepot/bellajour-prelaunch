@@ -198,16 +198,26 @@ export default async function NumeroPage({
      rendent donc exactement la même page. */
   if (!isValidNumeroToken(token)) notFound()
 
-  /* ⚠️ LE DOSSIER ET LA SESSION PARTENT ENSEMBLE (09/09/2026, audit vitesse).
-     Cette page enchaînait QUATRE allers-retours réseau à la file — le dossier,
-     l'aperçu signé, la session, le rattachement — alors qu'ils vont deux par
-     deux : savoir qui regarde ne dépend pas du dossier, et l'inverse non plus.
-     C'est la page que la cliente ouvre depuis CHAQUE mail : elle mesurait
-     263 ms contre 77 pour une page statique. Les deux paires partent donc en
-     parallèle, et la chaîne passe de quatre attentes à deux.
+  /* LE DOSSIER ET LA SESSION PARTENT ENSEMBLE (09/09/2026, audit vitesse).
+     Savoir qui regarde ne dépend pas du dossier, et l'inverse non plus : les
+     deux lectures partent donc en même temps. Idem pour la seconde paire plus
+     bas (aperçu signé, rattachement au compte). La chaîne passe de quatre
+     attentes réseau à deux.
      `utilisateurConnecte()` peut ainsi partir pour un token qui n'existe pas :
      c'est un appel perdu sur une page d'erreur, et il est déjà payé quand on
-     s'en aperçoit — jamais une exception qui traîne. */
+     s'en aperçoit — jamais une exception qui traîne.
+
+     ⚠️ CE QUE CE LOT NE PROUVE PAS, ET IL FAUT LE DIRE. Comparaison A/B faite
+     en production entre les deux déploiements, 16 mesures alternées sur un
+     dossier LIVRÉ et un visiteur SANS session : 205 ms de médiane avant,
+     210 après. Aucun gain — et c'est normal. Sans session, `utilisateurConnecte`
+     ne touche pas le réseau (supabase-js court-circuite), `rattacherParToken`
+     n'est pas appelé, et `resoudreApercu` ne l'est qu'à l'état `apercu_pret` :
+     ce chemin-là n'a JAMAIS eu qu'une seule attente. Le gain n'existe que pour
+     une cliente CONNECTÉE devant sa couverture, cas qu'on n'a pas pu mesurer
+     faute de session. Les ~205 ms restantes sont le prix d'une route dynamique
+     (~90 ms au-dessus d'une page statique) plus une lecture en base, pas celui
+     d'appels enchaînés. Ne pas chercher ici une lenteur qui n'y est plus. */
   const [numero, qui] = await Promise.all([
     lireNumero(token),
     compteOuvert() ? utilisateurConnecte() : null,
