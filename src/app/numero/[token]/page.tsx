@@ -188,10 +188,10 @@ export default async function NumeroPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ paiement?: string }>
+  searchParams: Promise<{ paiement?: string; de?: string }>
 }) {
   const { token } = await params
-  const { paiement } = await searchParams
+  const { paiement, de } = await searchParams
 
   /* Test §17.7 : un token inexistant donne une page d'erreur propre, et
      AUCUNE information ne fuite. Forme invalide et dossier introuvable
@@ -243,6 +243,37 @@ export default async function NumeroPage({
       ? 'lie'
       : null
 
+  /* ── D'OÙ ELLE VIENT, ET DONC OÙ LA FLÈCHE LA RAMÈNE (09/09/2026) ──
+     Le bouton du haut de page menait toujours à /compte, la racine de
+     l'espace. Une cliente qui arrivait ici depuis SON magazine livré
+     (« Revoir la page de suivi », /compte/magazine/<token>) cliquait
+     « ← Mon compte » et se retrouvait devant la liste de ses numéros, à
+     devoir rouvrir la bibliothèque puis le magazine qu'elle venait de
+     quitter. Une flèche « retour » qui ne revient pas là d'où l'on vient
+     n'est pas un retour.
+
+     La provenance voyage donc dans l'URL (`?de=magazine`), écrite par le
+     seul lien qui vient de là — même patron que `?onglet=bibliotheque`
+     (07/09) et que `PARAM_PROVENANCE` du questionnaire : lue côté serveur,
+     sans l'historique du navigateur, donc juste aussi après un rechargement,
+     un partage ou un retour de paiement.
+
+     ⚠️ La destination est VÉRIFIÉE, jamais crue sur parole : /compte/magazine
+     rend 404 si le numéro n'est pas livré ou n'est pas celui de ce compte. On
+     n'y renvoie donc que si le dossier est `livree` ET rattaché à la session.
+     Un `?de=magazine` collé à la main sur un dossier en cours retombe sur le
+     comportement d'avant, sans page morte au bout de la flèche.
+
+     Et sans provenance, un numéro livré ramène quand même à l'ONGLET
+     bibliothèque : c'est là qu'il vit, « Mes numéros » ne le montre pas. */
+  const retourMagazine = de === 'magazine' && compte === 'lie' && numero.etat === 'livree'
+  const retour = retourMagazine
+    ? { href: `/compte/magazine/${numero.token}`, mot: 'Mon magazine' }
+    : {
+        href: numero.etat === 'livree' ? '/compte?onglet=bibliotheque' : '/compte',
+        mot: 'Mon compte',
+      }
+
   /* Retour de Stripe, webhook pas encore arrivé. Tant que l'état n'a pas
      basculé, on masque le bouton de commande : le lui remontrer juste après
      un paiement réussi, c'est l'inviter à payer deux fois.
@@ -285,6 +316,7 @@ export default async function NumeroPage({
       montrerCamp={numero.etat !== 'apercu_pret'}
       montrerGardeLien={numero.etat !== 'livree'}
       compte={compte}
+      retour={retour}
       token={numero.token}>
       {numero.etat === 'photos_recues' && depot === 'termine' && (
         <>
@@ -574,6 +606,7 @@ function Coquille({
   montrerCamp = true,
   montrerGardeLien = true,
   compte = null,
+  retour = { href: '/compte', mot: 'Mon compte' },
   token,
   children,
 }: {
@@ -597,6 +630,10 @@ function Coquille({
      (connectée, le dossier est épinglé au compte), null (rien à dire —
      dossier d'une autre, brique compte absente, ou page en panne). */
   compte?: 'invite' | 'lie' | null
+  /* Où mène la flèche du haut de page, quand il y en a une (compte lié).
+     Calculée par la page — elle seule sait d'où vient la cliente et si la
+     destination existe. Voir « D'OÙ ELLE VIENT » plus haut. */
+  retour?: { href: string; mot: string }
   token: string
   children: React.ReactNode
 }) {
@@ -613,9 +650,9 @@ function Coquille({
             04/09) : une cliente qui vient du compte doit pouvoir y revenir
             sans chercher, et sans la touche « précédent ». */}
         {compte === 'lie' ? (
-          <a className="nu-retour" href="/compte">
+          <a className="nu-retour" href={retour.href}>
             <span aria-hidden="true">←</span>
-            <span className="nu-retour-mot">Mon compte</span>
+            <span className="nu-retour-mot">{retour.mot}</span>
           </a>
         ) : (
           <span className="nu-top-cale" />

@@ -211,7 +211,12 @@ export default async function MagazinePage({
               La version numérique de ce numéro n’est pas encore prête.
             </p>
           )}
-          <Link className="cpt-lien" href={`/numero/${dossier.token}`}>
+          {/* `?de=magazine` : la page de suivi a besoin de savoir d'où l'on
+              vient pour que SA flèche revienne ICI, et pas à la racine de
+              l'espace (09/09). Même patron que `?onglet=bibliotheque`
+              ci-dessus — la provenance passe par l'URL, jamais par
+              l'historique du navigateur. */}
+          <Link className="cpt-lien" href={`/numero/${dossier.token}?de=magazine`}>
             Revoir la page de suivi
           </Link>
         </section>
