@@ -21,24 +21,39 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
  * Et le raccourci ne devine rien : un seul numéro en cours, il y mène ;
  * plusieurs, il dit « Mes numéros » et ouvre le compte.
  *
- * ═══════ POURQUOI IL Y A UNE MÉMOIRE (09/09/2026, chantier lenteur) ═══════
- * La chaîne complète, avant : le HTML arrive → le JS se télécharge → React
- * hydrate → ALORS SEULEMENT le fetch part → le serveur interroge Supabase
- * Auth, puis la base. Le coin compte apparaissait donc bien après le reste
- * de la page, et à CHAQUE page. C'est ce que Mathias décrit : « des fois ça
- * met du temps à s'afficher ».
+ * ═══════ POURQUOI L'ICÔNE ARRIVAIT SI TARD (09/09/2026) ═══════
+ * MESURÉ sur /magazine en production, avant correction :
+ *   HTML reçu 150 ms · DOM interactif 368 ms · page chargée 802 ms
+ *   le fetch du statut PART à 881 ms, finit à 1023 ms.
+ * La requête ne durait que 142 ms. Ce qui coûtait, c'est qu'elle ne pouvait
+ * pas PARTIR : elle attend le montage, donc l'hydratation de React, donc le
+ * téléchargement de tout le JS de la page. Le coin compte apparaissait une
+ * seconde après le reste, à chaque page. C'est le « des fois ça met du temps
+ * à s'afficher » de Mathias.
  *
- * Deux réponses, et il fallait les deux :
- * - la requête a maigri (garde du cookie + lecture allégée, côté serveur) ;
- * - la barre GARDE la dernière réponse dans `localStorage` et la peint
- *   IMMÉDIATEMENT au premier rendu, avant tout réseau : dès la deuxième
- *   page, le coin compte est là en même temps que le reste. Le fetch part
- *   quand même et corrige si quelque chose a changé.
+ * (Ce qu'on avait d'abord cru, et que la mesure a démenti : l'aller-retour
+ * vers Supabase Auth. `getUser()` ne touche PAS le réseau quand il n'y a pas
+ * de session — supabase-js court-circuite en local. Vérifié en production sur
+ * le déploiement : sans cookie 192 ms de médiane, avec un faux cookie 187 ms.
+ * Le coût de la route, ~90 ms au-dessus d'une page statique, est celui d'une
+ * fonction serveur, pas d'un appel à Supabase.)
  *
- * (Ce qu'on a CRU corriger et qui n'existait pas : le CTA ne saute pas quand
- * l'icône arrive. `.at-nav` est en space-between, la droite de la barre est
- * ancrée à droite, et le coin compte grandit vers la gauche — mesuré le
- * 09/09. Le seul défaut était le retard, pas un déplacement.)
+ * DEUX RÉPONSES, et elles se complètent :
+ *
+ * 1. `ouvertAuBuild` — la silhouette neutre entre dans le HTML STATIQUE.
+ *    C'est ce que voit, de toute façon, tout visiteur non connecté : autant
+ *    la dessiner tout de suite plutôt qu'une seconde plus tard. La valeur
+ *    vient de `compteOuvert()`, lu par la page serveur au build.
+ *    ⚠️ Elle est OPTIMISTE, jamais autoritaire : `false` au build (les
+ *    variables Brevo pas encore posées) ne ferme rien — le fetch ouvrira la
+ *    barre au premier chargement, exactement comme avant. C'est l'invariant
+ *    de `compteOuvert` : le jour où Mathias pose les variables, l'espace
+ *    s'ouvre tout seul, sans redéploiement.
+ *
+ * 2. La MÉMOIRE — la barre garde la dernière réponse dans `localStorage` et
+ *    la peint dès l'hydratation, sans réseau. C'est elle qui rend l'avatar
+ *    et « Suivre mon numéro » immédiats pour qui revient ; la silhouette du
+ *    point 1 ne connaît personne.
  *
  * La mémoire ne porte que ce que la barre affiche déjà — un token, une
  * photo, une initiale. Rien qu'un regard par-dessus l'épaule ne verrait
@@ -103,13 +118,24 @@ export function oublierStatutCompte() {
 const RIEN = () => () => {}
 const RIEN_AU_SERVEUR = () => null
 
-export default function NavCompte() {
-  /* Ce qu'on savait en arrivant : peint au premier rendu, sans un octet de
-     réseau. Le serveur, lui, ne sait rien — d'où `RIEN_AU_SERVEUR`, qui
-     garde l'hydratation identique au HTML envoyé. */
+/* Ce que le serveur peut affirmer sans connaître personne : l'espace existe,
+   et le visiteur n'est pas connecté. Rendu tel quel dans le HTML statique. */
+const INCONNU: Statut = {
+  ouvert: true,
+  connecte: false,
+  enCours: 0,
+  token: null,
+  photo: null,
+  initiale: null,
+}
+
+export default function NavCompte({ ouvertAuBuild = false }: { ouvertAuBuild?: boolean }) {
+  /* Ce qu'on savait en arrivant : peint dès l'hydratation, sans un octet de
+     réseau. Le serveur, lui, ne lit pas le stockage — d'où `RIEN_AU_SERVEUR`,
+     qui garde le rendu d'hydratation identique au HTML envoyé. */
   const memorise = useSyncExternalStore(RIEN, lireMemoire, RIEN_AU_SERVEUR)
   const [frais, setFrais] = useState<Statut | null>(null)
-  const statut = frais ?? memorise
+  const statut = frais ?? memorise ?? (ouvertAuBuild ? INCONNU : null)
 
   useEffect(() => {
     let vivant = true
@@ -131,8 +157,8 @@ export default function NavCompte() {
 
   /* ⚠️ Tant que rien n'a dit « ouvert », la barre ne montre AUCUNE entrée de
      compte : proposer une porte qui ne s'ouvre pas est pire que ne rien
-     proposer. Dès la deuxième page ce cas ne se présente plus — la mémoire
-     ci-dessus a déjà la réponse. */
+     proposer. Ne reste ici que le cas où l'espace était fermé au build ET
+     que le fetch n'a pas encore répondu. */
   if (!statut?.ouvert) return <span className="at-nav-perso at-nav-perso--vide" />
 
   const suivi =

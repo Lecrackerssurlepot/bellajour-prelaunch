@@ -27,6 +27,7 @@ import Nav from './components/Nav'
 import Ouverture from './components/Ouverture'
 import Univers from './components/Univers'
 import Footer from './components/Footer'
+import { compteOuvert } from '@/lib/compte/session'
 
 /* LE GRAS DU TITRE DE COUVERTURE, ET LUI SEUL.
    Cormorant Garamond n'est pas variable chez Google : chaque graisse est un
@@ -161,7 +162,11 @@ export default function AtelierHome() {
           Il ne lit rien d'autre que sa propre trace, et un mode prive qui
           refuse `sessionStorage` retombe simplement sur l'animation. */}
       <script dangerouslySetInnerHTML={{ __html: OUVERTURE_VUE }} />
-      <Nav />
+      {/* `compteOuvert()` est lu ICI, au build de cette page statique, pour
+          que la silhouette du compte soit dans le HTML plutôt que dessinée une
+          seconde plus tard (cf. NavCompte). Optimiste : `false` ne ferme rien,
+          le fetch de la barre ouvrira quand même. */}
+      <Nav compteOuvert={compteOuvert()} />
       <div className={`at-accueil ${titreFort.variable}`}>
         {/* Le grain : aucun aplat parfaitement plat. Fixe, par-dessus tout,
             insensible au pointeur. C'est une turbulence SVG en ligne, pas
