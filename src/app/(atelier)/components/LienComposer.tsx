@@ -16,6 +16,7 @@
 import { useSyncExternalStore } from 'react'
 import { COMPOSER_HREF, CTA_LABEL, CTA_REPRISE_LABEL } from '../content'
 import { draftEnCours } from '../composer/draft'
+import Link from 'next/link'
 
 const RIEN = () => () => {}
 
@@ -23,8 +24,8 @@ export default function LienComposer({ className = 'at-cta' }: { className?: str
   const reprise = useSyncExternalStore(RIEN, draftEnCours, () => false)
   const label = reprise ? CTA_REPRISE_LABEL : CTA_LABEL
   return (
-    <a className={className} href={COMPOSER_HREF}>
+    <Link className={className} href={COMPOSER_HREF}>
       {label} <span className="at-cta-arrow" aria-hidden="true">→</span>
-    </a>
+    </Link>
   )
 }

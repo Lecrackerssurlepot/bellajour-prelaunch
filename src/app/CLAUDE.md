@@ -67,6 +67,20 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
    `--c-nav-android-bg` (theme.css) — jamais `--bj-nav-android-bg`, qui est le token crème du
    même patron sur `.pv-nav` (navbar.css). `useAndroid()` rend `false` au premier rendu serveur :
    Desktop et Safari iOS restent inchangés.
+4bis. **La navigation est CÔTÉ CLIENT depuis le 09/09/2026.** La barre (`Nav`, `NavCompte`),
+   les deux pieds de page, `LienComposer` et le CTA final de l'accueil utilisent `<Link>` : un
+   clic ne recharge plus le document. `<Link>` rend un VRAI `<a href>` — clic milieu, nouvel
+   onglet et adresse au survol sont intacts — et `data-t` traverse jusqu'au `<a>`, le séquenceur
+   le trouve toujours. `prefetch={false}` sur tout ce qui est dynamique (`/compte`, `/numero`,
+   les pages légales) : précharger y ferait tourner une fonction serveur pour rien.
+   ⚠️ **LE PIÈGE, ET IL COÛTERA CHER À QUI L'IGNORE : les `<script>` en ligne ne rejouent pas.**
+   `layout.tsx` en pose deux (`--app-height`, le chien de garde `data-anim`) et `(atelier)/page.tsx`
+   un troisième (le drapeau `data-ouverture-vue`). Ils ne tournent qu'au chargement d'un DOCUMENT.
+   Tout ce qu'ils posent doit donc survivre à une navigation client, ou être relu autrement :
+   `Ouverture.tsx` lit désormais `sessionStorage` en plus de l'attribut, sinon revenir de
+   `/magazine` rejouait les trois secondes de couverture. Avant d'ajouter un `<Link>` vers une
+   page dont le premier rendu dépend d'un script en ligne, vérifier ce point-là.
+
 4. **Un séquenceur pilote l'accueil** : l'attribut `data-t` d'un élément = son instant en ms dans
    la séquence de sa page. Pour régler un timing, on change cet attribut, rien d'autre. Le
    séquenceur pose `transition-delay` ET une propriété `--retard`, parce que le glitch de la

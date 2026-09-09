@@ -13,6 +13,39 @@ const nextConfig: NextConfig = {
      ne change donc rien pour /preventes en ligne.
      Le motif couvre les IP privees courantes, l'IP du Mac changeant en DHCP. */
   allowedDevOrigins: ['localhost', '127.0.0.1', '192.168.1.*', '192.168.0.*', '10.0.0.*'],
+  /* ── LE CACHE DES IMAGES (09/09/2026, audit de vitesse) ──────────────
+     Vercel sert `public/` en `max-age=14400, must-revalidate` : passé quatre
+     heures, CHAQUE image de la page repart en requête conditionnelle avant
+     d'être réaffichée. Sur l'accueil c'est une dizaine d'allers-retours pour
+     s'entendre répondre « rien n'a changé », et ils sont sur le chemin de
+     l'affichage.
+
+     Un jour de fraîcheur, puis trente jours de `stale-while-revalidate` : au
+     retour, l'image s'affiche IMMÉDIATEMENT depuis le cache et le navigateur
+     va vérifier en arrière-plan, sans rien retenir à l'écran.
+
+     ⚠️ LE PRIX, ET IL EST RÉEL. Ces fichiers n'ont pas de nom versionné : si
+     tu remplaces `brand-01.webp` par un autre visuel, quelqu'un qui l'a déjà
+     vu peut continuer à voir l'ancien jusqu'à un jour (puis une fois de plus,
+     le temps de la revalidation de fond). Pour qu'un remplacement soit visible
+     TOUT DE SUITE, changer le NOM du fichier — `brand-01b.webp` — et le lien
+     qui le désigne. C'est la contrepartie acceptée le 09/09.
+     Les fichiers de `_next/static` ne sont pas concernés : ils portent déjà
+     une empreinte dans leur nom, et Vercel les sert en `immutable`. */
+  async headers() {
+    return [
+      {
+        source: "/images/:chemin*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=2592000",
+          },
+        ],
+      },
+    ];
+  },
+
   async redirects() {
     return [
       /* BASCULE DU 24/08/2026 — la racine EST l'Atelier.
