@@ -11,14 +11,23 @@
    conteneur. Cette page-ci vit à la racine : la variable n'existe pas, la
    déclaration devient invalide au calcul, et la propriété retombe sur
    l'héritage — le titre s'affichait en DM Sans au lieu du Cormorant.
-   ⚠️ Et depuis T-064, `--font-display` n'est même plus posée sur <html> :
-   la page la charge elle-même (`cormorantCreme.variable` sur `.nf`). L'alias
-   est donc déclaré SUR `.nf`, au même point que la variable next/font —
-   une propriété personnalisée fige sa substitution là où elle est déclarée,
-   pas là où elle est lue. */
+   ⚠️ Et depuis T-064, `--font-display` n'est même plus posée sur <html>.
+   Depuis le 09/09 la page ne la pose plus non plus : importer un module
+   next/font ICI l'expédiait sur tout le site (voir not-found.tsx).
+
+   ⚠️⚠️ LES REPLIS SONT DANS LE `var()`, PAS APRÈS LA VIRGULE — et c'est
+   toute la différence. `var(--font-display), Georgia, serif` n'est PAS une
+   chaîne de repli : si `--font-display` n'existe pas, la déclaration entière
+   devient invalide au calcul, et la propriété est HÉRITÉE du body, donc en
+   DM Sans. Constaté à l'écran le 09/09 : le titre est passé en sans-serif,
+   et sa taille — réglée au `clamp()` pour un serif étroit — a débordé de la
+   page. C'est le même piège que celui payé sur /ambassadeurs le 07/09
+   (creme-fonts.ts). Le repli va donc DANS la parenthèse : sans variable, on
+   tombe sur Cormorant si une autre partie de la page l'a chargée, sinon sur
+   Georgia — un serif, comme prévu. */
 .nf {
-  --nf-display: var(--font-display), 'Cormorant Garamond', Georgia, serif;
-  --nf-ui: var(--font-ui), 'DM Sans', system-ui, sans-serif;
+  --nf-display: var(--font-display, 'Cormorant Garamond'), Georgia, serif;
+  --nf-ui: var(--font-ui, 'DM Sans'), system-ui, sans-serif;
   display: grid;
   place-items: center;
   min-height: var(--app-height);
@@ -42,7 +51,15 @@
   color: var(--c-text-faint);
 }
 
-.nf-mot {
+/* ⚠️ ÉCRIT EN (0,2,0), ET CE N'EST PAS DU ZÈLE — DÉFAUT TROUVÉ LE 09/09/2026.
+   `theme.css` pose `.bj-atelier h1 { font-family: var(--font-display);
+   font-size: clamp(56px, 15vw, 150px) }`, en (0,1,1). Une classe seule est
+   en (0,1,0) : elle perdait. Le titre de cette page s'affichait donc en
+   150 px et dans la police d'INTERFACE, sur quatre lignes qui remplissaient
+   l'écran — vérifié en production le 09/09 avant toute modification, DM Sans,
+   150 px, 612 px de haut. Le réglage écrit ci-dessous n'avait jamais servi.
+   `.nf` devant la classe suffit à repasser devant. */
+.nf .nf-mot {
   margin: 0;
   font-family: var(--nf-display), 'Cormorant Garamond', Georgia, serif;
   font-weight: 400;
