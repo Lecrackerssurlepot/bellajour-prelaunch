@@ -198,7 +198,20 @@ export default async function NumeroPage({
      rendent donc exactement la même page. */
   if (!isValidNumeroToken(token)) notFound()
 
-  const numero = await lireNumero(token)
+  /* ⚠️ LE DOSSIER ET LA SESSION PARTENT ENSEMBLE (09/09/2026, audit vitesse).
+     Cette page enchaînait QUATRE allers-retours réseau à la file — le dossier,
+     l'aperçu signé, la session, le rattachement — alors qu'ils vont deux par
+     deux : savoir qui regarde ne dépend pas du dossier, et l'inverse non plus.
+     C'est la page que la cliente ouvre depuis CHAQUE mail : elle mesurait
+     263 ms contre 77 pour une page statique. Les deux paires partent donc en
+     parallèle, et la chaîne passe de quatre attentes à deux.
+     `utilisateurConnecte()` peut ainsi partir pour un token qui n'existe pas :
+     c'est un appel perdu sur une page d'erreur, et il est déjà payé quand on
+     s'en aperçoit — jamais une exception qui traîne. */
+  const [numero, qui] = await Promise.all([
+    lireNumero(token),
+    compteOuvert() ? utilisateurConnecte() : null,
+  ])
   if (numero === null) notFound()
 
   if (numero === 'panne') {
@@ -225,8 +238,15 @@ export default async function NumeroPage({
   const dIci = marque ? `${PARAM_PROVENANCE}=${encodeURIComponent(marque)}` : ''
 
   const titre = numero.titre?.trim() || 'Votre numéro'
-  const apercu = numero.etat === 'apercu_pret' ? await resoudreApercu(numero.apercu_urls) : null
   const euros = eurosPour(numero.palier)
+
+  /* La SECONDE paire — l'aperçu signé et le rattachement au compte. Ils ne
+     se connaissent pas davantage que les deux premiers : l'un signe des URL
+     R2, l'autre relit le dossier pour le compte. */
+  const [apercu, lien] = await Promise.all([
+    numero.etat === 'apercu_pret' ? resoudreApercu(numero.apercu_urls) : null,
+    qui ? rattacherParToken(makeSupabase(), qui, token) : null,
+  ])
 
   /* Le COMPTE (04/09) — il s'AJOUTE au token, jamais il ne le remplace.
      Déconnectée : une invitation discrète (« ce lien, à l'abri d'un compte »).
@@ -234,12 +254,11 @@ export default async function NumeroPage({
      (rattacherParToken), et la bande le dit. Un dossier qui n'est pas le
      sien : la bande se tait — le token affiche la page, le compte n'a rien
      à y dire. */
-  const qui = compteOuvert() ? await utilisateurConnecte() : null
   const compte: 'invite' | 'lie' | null = !compteOuvert()
     ? null /* l'espace n'est pas ouvert : on ne propose rien, on ne promet rien */
     : !qui
     ? 'invite'
-    : (await rattacherParToken(makeSupabase(), qui, token)) === 'lie'
+    : lien === 'lie'
       ? 'lie'
       : null
 
