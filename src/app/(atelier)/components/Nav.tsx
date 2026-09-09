@@ -39,10 +39,16 @@ export default function Nav({
   href = CTA_HREF,
   label = CTA_MAGAZINE_LABEL,
   retour,
+  compteOuvert = false,
 }: {
   href?: string
   label?: string
   retour?: string
+  /* `compteOuvert()` (lib/compte/session), lu par la PAGE SERVEUR — une
+     fonction client ne peut pas lire process.env. Il sert à dessiner la
+     silhouette du compte DANS le HTML plutôt qu'une seconde plus tard :
+     voir le long commentaire de NavCompte. Optimiste, jamais autoritaire. */
+  compteOuvert?: boolean
 }) {
   const [stuck, setStuck] = useState(false)
   const frame = useRef(0)
@@ -143,7 +149,7 @@ export default function Nav({
           numéro » quand un magazine est en fabrication), puis le CTA
           marketing — qui ne disparaît JAMAIS (décision de Mathias, 04/09). */}
       <span className="at-nav-droite">
-        <NavCompte />
+        <NavCompte ouvertAuBuild={compteOuvert} />
         <a className="at-nav-cta" href={href}>{labelAffiche}</a>
       </span>
     </nav>

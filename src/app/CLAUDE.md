@@ -93,6 +93,22 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
    et ouvre `/compte` (`numerosEnCours`, lib/compte/rattachement).
    Les cookies de session sont `httpOnly` — la barre ne peut donc pas les lire : elle interroge
    `/api/compte/statut` après le montage, ce qui garde `/` et `/magazine` **statiques**.
+   ⚠️ Ce fetch ne peut PARTIR qu'une fois React hydraté : mesuré sur `/magazine` en production
+   le 09/09, HTML à 150 ms, hydratation à 880 ms, icône à **1023 ms**. Deux réponses posées ce
+   jour-là, et la lenteur ne venait PAS de Supabase (`getUser()` ne touche pas le réseau sans
+   session — 192 ms sans cookie contre 187 ms avec, mesuré) :
+   1. **`compteOuvert()` est lu par la PAGE SERVEUR** (`(atelier)/page.tsx`, `magazine/page.tsx`)
+      et passé à `Nav` → `NavCompte` en prop `ouvertAuBuild` : la silhouette neutre entre dans le
+      HTML prérendu. Une fonction client ne peut pas lire `process.env`, d'où le passage par la
+      page. La valeur est **optimiste, jamais autoritaire** — `false` au build ne ferme rien, le
+      fetch ouvre quand même, et l'invariant « Mathias pose les variables, l'espace s'ouvre sans
+      redéploiement » tient toujours.
+   2. La barre **garde** la réponse dans `localStorage` (`bj-compte-statut`) et la peint dès
+      l'hydratation : c'est ce qui rend l'avatar et « Suivre mon numéro » immédiats au retour.
+      La lecture est **gelée au montage** (instantané stable exigé par `useSyncExternalStore`)
+      et la réponse fraîche vit dans un `useState` : ne jamais remettre à jour la variable de
+      module. La mémoire ne fait JAMAIS foi, et `oublierStatutCompte()` doit être appelé partout
+      où l'on se déconnecte.
    ⚠️ Deux pièges payés le 04/09 à 375 px : `.bj-atelier .at-nav-suivi` pose son `display` en
    (0,2,0), donc **le masquer demande la même spécificité** (une media query n'en ajoute pas),
    et sans `flex: 0 0 auto` le jeton du compte se fait écraser à 2 px par ses voisins.

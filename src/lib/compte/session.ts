@@ -95,34 +95,6 @@ export function compteOuvert(): boolean {
   return Boolean(process.env.BREVO_TEMPLATE_C1_ID && process.env.BREVO_TEMPLATE_C2_ID);
 }
 
-/**
- * Y a-t-il seulement un cookie de session Supabase ?
- *
- * @supabase/ssr nomme ses cookies `sb-<ref>-auth-token`, éventuellement
- * découpés en `.0`, `.1` quand le jeton est long : on cherche la FORME, pas
- * un nom exact. C'est le JUMEAU, côté route et composant serveur, de la
- * fonction du même office dans middleware.ts.
- *
- * ⚠️ Ceci ne prouve RIEN sur la validité de la session, et ce n'est pas son
- * office. Elle répond à une seule question : « peut-on écarter tout de suite
- * quelqu'un qui n'est manifestement pas connecté ? » Un cookie présent mais
- * périmé passe et se fait arrêter par `utilisateurConnecte()`, qui reste la
- * vérification qui fait foi.
- *
- * POURQUOI ELLE EXISTE (09/09/2026, chantier lenteur). `getUser()` est un
- * ALLER-RETOUR RÉSEAU vers Supabase Auth. /api/compte/statut le payait à
- * CHAQUE ouverture de page, y compris pour un visiteur qui n'a jamais eu de
- * compte : mesuré en production, 256 à 330 ms pour une réponse dont le
- * contenu était connu d'avance (« personne »). C'est ce délai qui faisait
- * apparaître le coin compte de la barre longtemps après le reste.
- */
-export async function aUnCookieDeSession(): Promise<boolean> {
-  const magasin = await cookies();
-  return magasin
-    .getAll()
-    .some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
-}
-
 function configAnon(): { url: string; key: string } | null {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_ANON_KEY;

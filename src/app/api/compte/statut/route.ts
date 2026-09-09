@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
-import {
-  aUnCookieDeSession,
-  compteOuvert,
-  initialeDe,
-  utilisateurConnecte,
-} from "@/lib/compte/session";
+import { compteOuvert, initialeDe, utilisateurConnecte } from "@/lib/compte/session";
 import { lireDossiersPourLaBarre } from "@/lib/compte/donnees";
 import { numerosEnCours } from "@/lib/compte/rattachement";
 
@@ -38,17 +33,6 @@ export async function GET() {
     /* L'espace pas encore ouvert : la barre n'affiche RIEN (compteOuvert). */
     if (!compteOuvert()) {
       return NextResponse.json(FERME, { headers: { "Cache-Control": "no-store" } });
-    }
-    /* ⚠️ RIEN À VÉRIFIER QUAND IL N'Y A RIEN (09/09/2026, chantier lenteur).
-       Sans cookie de session, `utilisateurConnecte()` rendra null — mais il
-       lui faut un ALLER-RETOUR vers Supabase Auth pour le dire. Cette route
-       est appelée par la barre à CHAQUE ouverture de page : on payait donc
-       256 à 330 ms (mesuré en production) pour apprendre qu'un visiteur qui
-       n'a jamais eu de compte n'est pas connecté, et le coin compte de la
-       barre n'apparaissait qu'après. Même garde, même raison, que celle du
-       middleware. La vérification qui fait foi reste juste en dessous. */
-    if (!(await aUnCookieDeSession())) {
-      return NextResponse.json(SANS_COMPTE, { headers: { "Cache-Control": "no-store" } });
     }
     const qui = await utilisateurConnecte();
     if (!qui) {
