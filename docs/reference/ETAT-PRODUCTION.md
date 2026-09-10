@@ -1,4 +1,4 @@
-# État du système — au 08/09/2026
+# État du système — au 10/09/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -7,6 +7,49 @@ règles, sans moyen de savoir ce qui avait expiré.
 
 Règle d'entretien : quiconque change l'état du système met ce fichier à jour dans le même geste.
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
+
+---
+
+## 10/09/2026 — la grille par nombre de pages (PR #99 → #103)
+
+**Mathias a livré la grille finale** (tableur du 10/09, seule la colonne « Prix client TTC » entre
+dans le dépôt ; coûts et marges restent chez lui) et trois décisions : la livraison est
+**facturée en sus par devis Cloudprinter** (avec un plafond à poser), le prix est **gelé** sur le
+dossier, et la page produit ne garde que l'accroche. Six PR le même jour, toutes en production.
+
+| ce qui est branché | où | preuve |
+|---|---|---|
+| Un prix TTC par pagination exacte : 20 p. = 25 €, puis 24 → 60 p. par pas de 2, de 27 à 59 € | `src/lib/atelier/grille.ts` (source unique, tout en dérive) | harnais : forme de la table, bornes, reliure |
+| Prix GELÉ à la publication de l'aperçu : `prix_centimes`, `livraison_centimes`, `livraison_niveau`, `pays_livraison` | migration `20260910_atelier_prix_gele.sql`, `centimesDuDossier` (prix.ts) | **migration NON APPLIQUÉE au 10/09** : le code marche avant et après (42703 / PGRST204, `colonnes_perdues_42703` au journal) |
+| Pays de livraison demandé à l'écran 4, exigé à la publication | `pays.ts`, `questionnaire.ts`, `Screen4Contact.tsx`, `PanneauAction.tsx` | vu à 375 px ; `pays_livraison_divergent` au journal si l'adresse Stripe diffère |
+| Fondateur rattaché à la main (email différent de la prévente) | `/api/admin/atelier/fondateur-rattacher`, `numeroFondateurDuDossier` | harnais (le dernier rattachement gagne) ; jamais éprouvé contre Stripe |
+| Livraison par devis `prices/lookup` à la publication, HT → TTC au taux du pays (règle commerciale, à valider), plafond `LIVRAISON_PLAFOND_CENTIMES = null`, niveau d'expédition gelé et repris par la commande | `livraison.ts`, `cloudprinter.ts` (`devisLivraison`), `transition/route.ts`, `impression.ts` | fixtures réelles `scripts/fixtures/cloudprinter-devis*.json` ; harnais |
+| Stripe : `shipping_options` fixe au montant gelé, `allowed_countries = [pays]`, port à 0 « Livraison offerte, fondateur » quand le crédit s'applique, description « impression comprise » | `api/atelier/checkout/route.ts` | aucun paiement de test réel passé le 10/09 |
+| Bon de commande à quatre lignes (numéro, impression comprise, livraison, crédit, à payer), mails M3/M3b/M10 avec `LIVRAISON`, `LIVRAISON_OFFERTE`, `TOTAL` | `CasesEtCommande.tsx`, `mails.ts`, `scripts/mails-atelier.mjs` | **templates Brevo NON POUSSÉS** : `verif-mails-brevo` signale l'écart tant que Mathias ne lance pas `--pousser` |
+| CGV v3.1 FR/PT/EN : prix selon la pagination, livraison en sus, annexe dérivée de la grille | `src/app/legal/content/cgv.ts` | `/cgv`, `/pt/cgv`, `/en/cgv` en production ; `legal-source/*.docx` en retard |
+| Page produit : accroche « Dès 25 € » + phrase, les trois encarts archivés | `Kiosque.tsx`, `pdp.css`, `archive/pdp-trois-formats/` | 375 × 667 : bouton dans le premier écran ; 1280 : prix visible |
+
+### Ce que le devis réel a appris (clé sandbox de `.env.local`)
+
+- `cp_saver` (l'ancien `SHIPPING_LEVEL`) **n'est pas proposé** : FR/32 p. → `cp_ground` Colissimo
+  9,216 € HT, `cp_fast` 9,756, `cp_limited` 12,936 ; BE/20 p. → `cp_ground` UPS 12,45 € HT seul.
+  D'où le niveau gelé sur le dossier et repris tel quel par la commande.
+- Le tableur estimait 5 € HT de port : le réel est deux fois plus. **Le plafond pèsera lourd.**
+- La `vat` renvoyée n'est pas celle du pays (20 % FR, 0 BE) : le TTC client est une règle à nous.
+- Les clés Production Vercel sont toujours celles du sandbox (01/09) : les devis aussi.
+
+### Ce qui attend Mathias
+
+1. Appliquer `20260910_atelier_prix_gele.sql`, puis vérifier sur un aperçu de test que
+   `prix_centimes`, `livraison_centimes`, `livraison_niveau`, `pays_livraison` se remplissent.
+2. Le plafond de livraison (`LIVRAISON_PLAFOND_CENTIMES`, `src/lib/atelier/livraison.ts`).
+3. La règle HT → TTC de la livraison (`TAUX_TTC_LIVRAISON`), avec le comptable.
+4. Pousser M3, M3b, M10 vers Brevo ; retoucher M4 (non versionné) dans Brevo.
+5. `legal-source/*.docx` v3.1 et la relecture PT.
+6. Deux règles commerciales : le surplus du crédit de 30 € sur 20 à 28 pages (perdu aujourd'hui),
+   et le port offert au fondateur seulement sur la commande qui consomme le crédit.
+7. Les dossiers en `apercu_pret` publiés AVANT le 10/09 (M3 leur a dit « livraison comprise ») :
+   les corriger via « Corriger l'aperçu » avec une livraison à 0, sinon leur checkout refuse.
 
 ---
 

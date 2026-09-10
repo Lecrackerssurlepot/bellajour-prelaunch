@@ -24,3 +24,14 @@ Deux chemins, à trancher :
 **Question pour Mathias** : quelle option, et pour quels pays au-delà de FR/BE/LU ?
 ## Ce qui a été fait
 —
+
+## Fermé le 10/09/2026
+
+Chemin 2 retenu, sous une forme plus simple que prévu : le pays de livraison est demandé
+**à l'écran 4 du questionnaire** (menu France / Belgique / Luxembourg, France présélectionnée,
+règle unique dans `questionnaire.ts`), stocké dans `numeros.pays_livraison`, exigé et modifiable
+par l'admin à la publication de l'aperçu. Le prix du magazine reste le même dans toute la zone ;
+c'est la **livraison** qui dépend du pays, chiffrée par devis Cloudprinter à la publication et
+gelée sur le dossier (`livraison_centimes`, `livraison_niveau`). Stripe ne propose plus que le
+pays déclaré (`allowed_countries = [pays]`), et le webhook journalise toute divergence entre le
+pays déclaré et l'adresse collectée. PR #100, #101, puis le lot livraison.

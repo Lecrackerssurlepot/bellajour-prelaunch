@@ -32,6 +32,7 @@ import {
   type Reliure,
 } from "./grille";
 import { normaliserPays, type PaysLivraison } from "./pays";
+import { centimesDeSaisie } from "./livraison";
 import { lireSuivi } from "./suivi";
 
 export type Etat =
@@ -101,6 +102,25 @@ export type Saisie = {
      repropose prérempli ; il reste saisissable parce que les dossiers ouverts
      AVANT le 10/09 n'en ont aucun, et qu'on ne devine pas une destination. */
   pays_livraison?: string | null;
+  /* La LIVRAISON, en EUROS tels que l'atelier les tape (« 4,90 »), lot 6 du
+     10/09/2026. Facultative : quand elle est vide, la route va chercher un
+     devis chez Cloudprinter et écrit le montant elle-même. Quand elle est
+     remplie, elle GAGNE — un devis raté, une adresse hors zone raisonnable ou
+     un geste commercial se règlent à la main, et un montant tapé par un
+     humain ne se fait jamais écraser par une machine.
+     ⚠️ EN EUROS, pas en centimes, parce que c'est ce qu'un humain tape. La
+     conversion est faite ici, par `centimesDeSaisie` (livraison.ts), une
+     seule fois, et zéro est une valeur ACCEPTÉE : offrir le port est une
+     décision légitime. */
+  livraison_centimes?: string | number | null;
+  /* Le niveau d'expédition retenu au devis (`cp_ground`…), renvoyé par
+     l'écran au second clic : il a été chiffré à la vérification, il doit être
+     GELÉ avec le montant. Sans lui, la commande d'impression repartirait sur
+     `SHIPPING_LEVEL` — un service qui n'est pas toujours proposé (relevé du
+     10/09). Une valeur qui ne ressemble pas à un niveau est ignorée en
+     silence : ce champ ne vient pas d'un humain, il ne mérite pas une erreur
+     de saisie qui bloquerait une publication. */
+  livraison_niveau?: string | null;
   /* T2-2 — LE format de dépôt : la couverture à plat (C4 | dos | C1), telle
      que Canva l'exporte. S'il est fourni, il gagne : c1/c4 sont ignorés.
      Les deux cadres séparés restent acceptés pour corriger un dossier
@@ -284,8 +304,12 @@ export type Preparation =
             place d'un code de palier qui ne nomme plus rien. */
         reliure?: Reliure;
         /** Le pays retenu, en code ISO. L'écran de confirmation l'écrit en
-            toutes lettres : le devis de port du lot 6 en dépendra. */
+            toutes lettres : c'est lui qui décide du devis de port. */
         pays?: PaysLivraison;
+        /** Le port SAISI à la main, en centimes. Absent quand l'atelier a
+            laissé le champ vide : c'est alors la route qui devise, et elle
+            n'a rien à dire de plus que ce module ne sait. */
+        livraisonCentimes?: number;
       };
       /** Paramètres de template en PLUS de `parametresPour` (T2-3 : le MOT
           de M9). Jamais dans `patch` — rien de tout ça n'est une colonne. */
@@ -401,6 +425,7 @@ export function preparerTransition(
     prixCentimes?: number;
     reliure?: Reliure;
     pays?: PaysLivraison;
+    livraisonCentimes?: number;
   } = {};
 
   if (cle === "publier_apercu" || cle === "corriger_apercu") {
@@ -468,6 +493,48 @@ export function preparerTransition(
       patch.pays_livraison = pays;
       resume.pays = pays;
     }
+
+    /* ── LA LIVRAISON, EN SUS ET SUR DEVIS (lot 6, 10/09/2026) ─────────
+       Mathias a tranché : le port sort du prix du magazine et se facture à
+       part, sur devis Cloudprinter par destination. Ce module PUR ne sait pas
+       appeler un imprimeur — le devis vit dans la route. Ici on ne traite que
+       le cas où l'atelier a TAPÉ un montant.
+
+       TROIS COMPORTEMENTS, ET LE SILENCE EN EST UN :
+         — un montant valide → il est gelé, et la route ne devise même pas
+           (la clé est dans le patch, elle gagne) ;
+         — un montant illisible ou négatif → une erreur de champ, parce que
+           quelqu'un a voulu dire quelque chose et s'est trompé ;
+         — un champ VIDE → aucune clé dans le patch. C'est le signal « devise
+           pour moi ». Écrire 0 par défaut ferait offrir le port en silence à
+           tout le monde, ce qui est exactement le genre de repli qui coûte
+           sans se voir.
+
+       ⚠️ ZÉRO EST VALIDE. Offrir le port est une décision commerciale
+       légitime, et la base l'accepte (`check (livraison_centimes >= 0)`).
+       C'est le seul montant du dépôt où zéro veut dire quelque chose. */
+    if (saisie.livraison_centimes !== undefined && saisie.livraison_centimes !== null
+        && String(saisie.livraison_centimes).trim() !== "") {
+      const centimes = centimesDeSaisie(saisie.livraison_centimes);
+      if (centimes === null) {
+        erreurs.push({
+          champ: "livraison_centimes",
+          message: "Un montant en euros, 0 accepté.",
+        });
+      } else {
+        patch.livraison_centimes = centimes;
+        resume.livraisonCentimes = centimes;
+      }
+    }
+
+    /* Le niveau d'expédition GELÉ AVEC LE MONTANT. Il ne vient pas d'un
+       clavier mais du devis rendu à la vérification, que l'écran renvoie tel
+       quel au second clic. Le motif est celui du `check` de la base
+       (`^[a-z_]{2,32}$`) : tout ce qui ne lui ressemble pas est IGNORÉ sans
+       erreur — un niveau abîmé ne doit pas empêcher de publier une couverture,
+       et la commande retombera alors sur `SHIPPING_LEVEL`, comme avant ce lot. */
+    const niveau = texte(saisie.livraison_niveau, 32);
+    if (/^[a-z_]{2,32}$/.test(niveau)) patch.livraison_niveau = niveau;
 
     /* ── les visuels ──────────────────────────────────────────────────
        Clé d'objet du coffre (dépôt depuis /admin) ou adresse absolue :

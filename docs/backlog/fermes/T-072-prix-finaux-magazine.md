@@ -34,3 +34,16 @@ décisions ci-dessous.
 **Attend Mathias** : (1) les montants finaux par tranche (changer `grille.ts`, tout
 suit) ; (2) le tarif de livraison désormais hors prix (activer `shipping_options` +
 CGV selon `docs/produit/PROPOSITION-CGV-LIVRAISON.md`) ; (3) la borne 28/29 (T-006).
+
+## Fermé le 10/09/2026
+
+Mathias a livré la grille finale (tableur du 10/09, seule la colonne « Prix client TTC » est
+reprise ; coûts et marges restent hors du dépôt) : 20 pages = 25 €, puis 24 → 27 €, 26 → 29 €,
+28 → 31 €, 30 → 33 €, 32 → 35 €, 34 → 37 €, 36 → 39 €, 38 → 41 €, 40 → 42 €, 42 → 44 €,
+44 → 45 €, 46 → 47 €, 48 → 49 €, 50 → 50 €, 52 → 52 €, 54 → 53 €, 56 → 55 €, 58 → 57 €,
+60 → 59 €. Elle vit dans `src/lib/atelier/grille.ts` (une ligne par pagination, tout en dérive).
+Réponse à la seconde question : **les prix ne sont plus port compris**. La livraison est
+facturée en sus, par devis Cloudprinter au moment de la publication de l'aperçu, avec un plafond
+à poser (`LIVRAISON_PLAFOND_CENTIMES`, lot 6). Le prix est **gelé** sur le dossier
+(`numeros.prix_centimes`, migration 20260910) : changer la grille ne change plus un aperçu déjà
+annoncé. PR #99, #102, puis le lot livraison.

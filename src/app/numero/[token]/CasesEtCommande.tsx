@@ -32,13 +32,30 @@
  */
 
 import { useCallback, useState } from 'react'
-import { formaterEuros } from '@/lib/atelier/prix'
+import { formaterCentimes } from '@/lib/atelier/prix'
+/* `pays.ts` est PUR et sans montant : la liste des trois pays a précisément
+   déménagé là pour pouvoir descendre dans le navigateur (cf. son en-tête). */
+import { PAYS_LIBELLE, paysValide } from '@/lib/atelier/pays'
 import FeuilleAjustement from './FeuilleAjustement'
 
 type Props = {
   token: string
   nbPages: number | null
   euros: number | null
+  /* ── LA LIVRAISON, FACTURÉE EN SUS (lot 6, 10/09/2026) ──────────────
+     Le port TTC gelé sur le dossier au devis, en centimes, et sa destination.
+     `null` = pas encore chiffré : le bon de commande ne montre alors AUCUN
+     prix et le bouton reste inerte, parce que le checkout refuserait
+     (`livraison_indisponible`). Un total affiché que Stripe ne demandera pas
+     est pire qu'un total absent. */
+  livraisonCentimes: number | null
+  pays: string | null
+  /* Le décompte, calculé PAR LE SERVEUR (`totalCommande`, livraison.ts) : ce
+     composant n'additionne rien, il met en forme. Même invariant que le prix
+     depuis toujours. */
+  commande: { prix: number; livraison: number; remise: number; total: number } | null
+  /** Un fondateur ne paie ni son crédit ni son port. Décidé côté serveur. */
+  portOffert: boolean
   cgvOk: boolean
   renonciation: boolean
   /* T2-8 — les deux temps de la promesse, calculés par la page depuis
@@ -49,7 +66,8 @@ type Props = {
 }
 
 export default function CasesEtCommande({
-  token, nbPages, euros, cgvOk, renonciation, joursComposition, joursLivraison,
+  token, nbPages, euros, livraisonCentimes, pays, commande, portOffert,
+  cgvOk, renonciation, joursComposition, joursLivraison,
 }: Props) {
   const [cgv, setCgv] = useState(cgvOk)
   const [reno, setReno] = useState(renonciation)
@@ -101,7 +119,12 @@ export default function CasesEtCommande({
     }
   }, [token])
 
-  const prixConnu = euros !== null
+  /* ⚠️ « CONNU » VEUT DIRE LES DEUX. Depuis que la livraison se facture à
+     part, un prix de magazine sans port n'est pas un prix : la cliente
+     lirait 37 € et Stripe en demanderait 48. Tant que le port n'est pas
+     chiffré, la page se tait exactement comme elle se taisait avant le
+     chiffrage du magazine — et le bouton reste inerte. */
+  const prixConnu = euros !== null && livraisonCentimes !== null && commande !== null
   const accepte = cgv && reno
 
   /* T2 — refonte mobile (02/09) : sous la visionneuse, l'écran reste dégagé —
@@ -138,19 +161,40 @@ export default function CasesEtCommande({
           Ce qui le remplace énonce une commande : ce qu'on prend, ligne à
           ligne, puis un total qui domine. Rien n'a changé dans le calcul —
           `euros` vient toujours du serveur, jamais du navigateur. */}
-      {prixConnu && nbPages ? (
+      {prixConnu && nbPages && commande ? (
         <div className="nu-bon">
           <div className="nu-bon-l">
             <span>Votre numéro, {nbPages} pages</span>
-            <b>{formaterEuros(euros)}</b>
+            <b>{formaterCentimes(commande.prix)}</b>
           </div>
           <div className="nu-bon-l">
             <span>Impression et façonnage</span>
             <b>compris</b>
           </div>
+          {/* ── LA LIVRAISON, EN SUS (lot 6, 10/09/2026) ──
+              Elle a sa ligne, toujours, même offerte : « compris » ne se dit
+              plus, le port est devisé par destination et son montant doit se
+              lire AVANT le clic. Une ligne absente ne dit rien ; une ligne à
+              « offerte » dit quelque chose. */}
+          <div className="nu-bon-l">
+            <span>
+              Livraison
+              {pays && paysValide(pays) ? ` en ${PAYS_LIBELLE[pays]}` : ''}
+            </span>
+            <b>{portOffert ? 'offerte, fondateur' : formaterCentimes(commande.livraison)}</b>
+          </div>
+          {/* Le crédit de prévente, quand il est dû. Signe MOINS (U+2212), pas
+              un tiret : « −30 € » se lit comme un montant retiré, « -30 € »
+              avec un trait d'union se lit comme une coquille. */}
+          {commande.remise > 0 ? (
+            <div className="nu-bon-l">
+              <span>Crédit fondateur</span>
+              <b>&minus;{formaterCentimes(commande.remise)}</b>
+            </div>
+          ) : null}
           <div className="nu-bon-t">
             <span>À payer</span>
-            <b>{formaterEuros(euros)}</b>
+            <b>{formaterCentimes(commande.total)}</b>
           </div>
         </div>
       ) : (
@@ -167,6 +211,18 @@ export default function CasesEtCommande({
           Les mêmes mots, dans le même ordre — composition, puis livraison
           après validation — mais au-dessus, et en deux lignes qu'on lit d'un
           coup d'œil au lieu d'un paragraphe qu'on saute. */}
+      {/* La destination, dite une fois, avec la sortie de secours. Le pays a
+          été choisi à l'écran 4 du questionnaire et il décide du port : s'il
+          est faux, tout le bon de commande l'est. On ne rouvre pas un select
+          ici (le devis est déjà passé, le montant est gelé) — on dit à qui
+          s'adresser, ce qui est le geste que l'atelier peut vraiment tenir. */}
+      {prixConnu && pays && paysValide(pays) ? (
+        <p className="nu-prix-sub">
+          Livraison en {PAYS_LIBELLE[pays]}. Un autre pays&nbsp;? Répondez au mail
+          de votre couverture.
+        </p>
+      ) : null}
+
       {prixConnu ? (
         <ul className="nu-promesse">
           <li>
@@ -191,11 +247,15 @@ export default function CasesEtCommande({
         {/* Le montant est SUR le bouton dès le premier temps. Il n'y était
             qu'au second (« Payer 35 € ») : on demandait donc de cliquer
             « Commander » en allant chercher le prix ailleurs sur l'écran. */}
+        {/* LE TOTAL, pas le prix du magazine : c'est ce qui sera débité, port
+            compris et crédit déduit. Afficher 37 € sur un bouton qui en
+            prélève 48 est la surprise qui coûte le plus cher de tout le
+            tunnel. */}
         {occupe
           ? 'Un instant…'
           : confirmer
-            ? `Payer${prixConnu ? ` ${formaterEuros(euros)}` : ''}`
-            : `Commander${prixConnu ? ` · ${formaterEuros(euros)}` : ''}`}
+            ? `Payer${commande ? ` ${formaterCentimes(commande.total)}` : ''}`
+            : `Commander${commande ? ` · ${formaterCentimes(commande.total)}` : ''}`}
       </button>
 
       {/* Ce qui vient après le clic, dit avant. Deux accords, pas une

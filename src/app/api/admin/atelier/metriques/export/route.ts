@@ -112,6 +112,13 @@ export async function GET(request: Request) {
     L.push(ligne("Livrées", String(c.livrees)));
     L.push(ligne("Chiffre d'affaires (EUR)", String(c.ca)));
     L.push(ligne("Panier moyen (EUR)", c.panierMoyen === null ? "pas encore" : String(c.panierMoyen).replace(".", ",")));
+    /* À PART DU CA, et nommée comme telle : le port est un coût d'imprimeur
+       refacturé, pas une vente (lot 6, 10/09/2026). Un tableur qui les
+       additionnerait ferait passer du transport pour de la croissance. */
+    L.push(ligne(
+      "Livraison encaissée (EUR)",
+      (c.livraisonCentimes / 100).toFixed(2).replace(".", ","),
+    ));
     /* La répartition par NOMBRE DE PAGES (10/09/2026) : « 3 x 34 p. / 1 x 40 p. ».
        Même règle que l'écran (`repartirParPages`, mesure.ts), en ASCII pour le
        tableur. Vide, on le DIT plutôt que de laisser une cellule blanche. */

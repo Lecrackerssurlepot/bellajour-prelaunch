@@ -32,13 +32,17 @@ neuf états, et à chaque passage un mail part vers une vraie cliente.
   `etat_maj_le` peut lui être bien postérieur, aucune des deux n'est la bonne.
   Restent absolus : jamais un dossier payé, jamais un état engagé (`ETATS_ENGAGES`), jamais deux
   fois, **jamais sans préavis M10 vieux de 7 jours**. ⚠️ La garde « payé » est **double** parce
-  qu'au palier 30 € une fondatrice n'a **aucun `payment_intent`** : c'est l'état qui la sauve.
+  qu'un fondateur dont le crédit couvre tout le prix (20 à 28 pages depuis la grille du 10/09) n'a
+  **aucun `payment_intent`** : c'est l'état qui la sauve.
   Les dates hors `numeros` transitent par le type `Jalons`, chargées par `lireJalons` (mails.ts)
   **uniquement** pour les dossiers retenus par `meriteUnRegardDeRetention` — un pré-tri qui calcule
   sur un majorant, donc ne peut rien laisser passer. Le module qui AGIT est
   `scripts/anonymiser-dossiers.ts`, et lui seul : aucune route web, aucun cron.
 
-Les autres purs : `prix.ts` (grille 30/40/45 €, **serveur uniquement**), `questionnaire.ts` (les
+Les autres purs : `grille.ts` (**la** grille, un prix par nombre de pages, importable navigateur,
+source de tout affichage), `prix.ts` (le calcul serveur : `centimesDuDossier` lit le prix GELÉ
+`prix_centimes` d'abord, la grille ensuite), `pays.ts` (FR/BE/LU), `livraison.ts` (devis → TTC,
+plafond, total de commande), `questionnaire.ts` (les
 6 champs exigés + `suggestionEmail`), `rebond.ts` (ce qu'un signal Brevo dit d'une adresse),
 `parcours.ts` (les 8 jalons), `impression.ts` (table produit Cloudprinter),
 `suivi.ts` (transporteur + code), `recit.ts`, `brief.ts`, `lot.ts`, `formats.ts`, `dates.ts`,
@@ -109,13 +113,20 @@ qui le montre. Le texte des mails est versionné dans `scripts/mails-atelier.mjs
 - **Le prix est TOUJOURS calculé côté serveur** depuis `prix.ts`. Le navigateur n'envoie que le
   token. Pas de `price_id` Stripe : une seule source de vérité, pas de dérive test/prod.
 - **La remise fondatrice aussi vient du serveur** (`fondatrice.ts`, 01/09) : la ligne `waitlist`
-  est relue à l'instant du clic, jamais crue depuis un écran. ⚠️ Au palier 30 €, le crédit couvre
-  TOUT le prix : la session Stripe tombe à zéro, se solde en `no_payment_required`, et le dossier
-  n'a alors **aucun `payment_intent`**.
-- Zone `FR, BE, LU`. TVA : `automatic_tax` + prix TTC, 23 % (taux normal PT) — le câblage est
+  est relue à l'instant du clic, jamais crue depuis un écran ; depuis le 10/09, si l'email ne
+  correspond pas, le journal `fondateur_rattache` (geste d'admin) désigne la ligne `waitlist`.
+  ⚠️ De 20 à 28 pages (25 à 31 €), le crédit de 30 € couvre TOUT le prix : la session Stripe
+  tombe à zéro, se solde en `no_payment_required`, le dossier n'a alors **aucun `payment_intent`**,
+  et le surplus de crédit est perdu (règle commerciale non tranchée par Mathias).
+- **Le prix est GELÉ sur le dossier** à la publication de l'aperçu (`prix_centimes`,
+  `livraison_centimes`, `livraison_niveau`, `pays_livraison` ; migration 20260910). Tout lecteur
+  d'argent passe par `centimesDuDossier` : changer `grille.ts` ne change jamais un aperçu déjà
+  annoncé. La livraison n'a **aucun repli** : sans montant gelé, le checkout refuse.
+- Zone `FR, BE, LU` (`pays.ts`), le pays est demandé à l'écran 4 du questionnaire depuis le 10/09 :
+  un devis de livraison exige le pays avant l'annonce du prix. TVA : `automatic_tax` + prix TTC, 23 % (taux normal PT) — le câblage est
   inerte tant que l'immatriculation n'est pas posée chez Stripe, puis s'active sans redéploiement.
 - **Cloudprinter** : les fichiers dépendent du produit. L'agrafé (20 p.) prend UN PDF `product` ;
-  le dos carré (22-50 p.) prend DEUX PDF `cover` + `book` — la couverture d'un dos carré ne peut
+  le dos carré (24 à 60 p., grille du 10/09 ; 22 et impairs ne désignent aucun produit) prend DEUX PDF `cover` + `book` — la couverture d'un dos carré ne peut
   physiquement pas vivre dans le même PDF que le bloc. Le md5 exigé est l'ETag R2 du PUT
   single-part. **Une référence de commande ne se RÉUTILISE JAMAIS**, même annulée : re-commande
   sous `<id>-r<epoch36>`. Sans `CLOUDPRINTER_API_KEY`, tout bascule en mode manuel sans casser.

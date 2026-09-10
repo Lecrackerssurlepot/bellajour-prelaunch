@@ -21,7 +21,9 @@ import { COMPOSER_HREF, CTA_LABEL, CONTACT_EMAIL } from '../../(atelier)/content
 import { makeSupabase } from '@/lib/supabase'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { resoudreApercu } from '@/lib/atelier/apercu'
-import { eurosDuDossier, type PalierCle } from '@/lib/atelier/prix'
+import { eurosDuDossier, centimesDuDossier, type PalierCle } from '@/lib/atelier/prix'
+import { totalCommande } from '@/lib/atelier/livraison'
+import { creditDuPourMail } from '@/lib/atelier/fondatrice'
 import { DELAIS, JOURS_LIVRAISON, etapeDepot, QUI_ATTEND, type Camp, type EtapeDepot } from '@/lib/atelier/urgence'
 import { JOURS_AVANT_AUTO_VALIDATION } from '@/lib/atelier/mails'
 import { MIN_PHOTOS } from '../../(atelier)/composer/depot/paliers'
@@ -59,6 +61,9 @@ type Etat =
   | 'livree'
 
 type Numero = {
+  id: string
+  /** Serveur uniquement : sert à retrouver le crédit fondateur, rien d'autre. */
+  email: string | null
   token: string
   etat: Etat
   titre: string | null
@@ -95,10 +100,21 @@ type Numero = {
      de la grille. Optionnelle — le repli la laisse `undefined` et le prix
      retombe sur la grille, exactement comme avant le gel. */
   prix_centimes?: number | null
+  /* Le PORT TTC gelé au devis (lot 6, 10/09) et sa destination. Optionnels
+     comme le prix : le repli du select les laisse `undefined` tant que la
+     migration 20260910 n'est pas passée. `null` veut dire « pas encore
+     chiffré » — et la page se tait alors sur le total, elle n'invente rien. */
+  livraison_centimes?: number | null
+  pays_livraison?: string | null
 }
 
+/* ⚠️ `id` et `email` sont là pour le CRÉDIT FONDATEUR du bon de commande
+   (lot 6) : `creditDuPourMail` cherche la ligne `waitlist` par email, et le
+   rattachement manuel par id. Deux colonnes stables depuis toujours, donc
+   aucun repli 42703 à prévoir pour elles. L'email ne descend JAMAIS dans le
+   navigateur : il ne sert qu'à cette lecture serveur. */
 const CHAMPS =
-  'token, etat, titre, prenom, nb_photos, nb_pages, palier, apercu_urls, ' +
+  'id, email, token, etat, titre, prenom, nb_photos, nb_pages, palier, apercu_urls, ' +
   'maquette_pdf_url, canva_url, cgv_ok, renonciation_retractation, consent_photos, ' +
   'transporteur, tracking_url, valide_le, etat_maj_le, retouches_demandees_le, ' +
   'consent_communication, facture_url'
@@ -228,6 +244,16 @@ export default async function NumeroPage({
      faute de session. Les ~205 ms restantes sont le prix d'une route dynamique
      (~90 ms au-dessus d'une page statique) plus une lecture en base, pas celui
      d'appels enchaînés. Ne pas chercher ici une lenteur qui n'y est plus. */
+  /* ── LE CRÉDIT FONDATEUR PART AVEC LE DOSSIER (lot 6, 10/09/2026) ──
+     Le bon de commande doit dire le TOTAL, donc connaître la remise avant
+     d'additionner. `creditDuPourMail` est en LECTURE SEULE : elle relit
+     `waitlist` et le journal, elle ne frappe AUCUN coupon chez Stripe — un
+     affichage n'écrit jamais chez un tiers (c'est le contrat du module, et
+     c'est ce qui permet de l'appeler au rendu d'une page publique).
+     Elle rejoint la paire existante plutôt que d'ajouter une attente : elle
+     ne dépend ni de la session ni du dossier. Un doute rend `null`, et le bon
+     de commande se contente alors de ne pas montrer de remise — jamais
+     l'inverse, jamais une remise promise puis absente chez Stripe. */
   const [numero, qui] = await Promise.all([
     lireNumero(token),
     compteOuvert() ? utilisateurConnecte() : null,
@@ -262,13 +288,65 @@ export default async function NumeroPage({
      l'endroit où le montant a été annoncé, elle ne peut pas en changer. */
   const euros = eurosDuDossier(numero)
 
+  /* ── LE BON DE COMMANDE, ADDITIONNÉ CÔTÉ SERVEUR ────────────────────
+     Le magazine, le port, la remise, le total : un seul calcul, dans un
+     module PUR (`totalCommande`, livraison.ts), le MÊME que celui qu'éprouve
+     verif-atelier.ts. Rien n'est recalculé dans le navigateur — il n'a qu'à
+     afficher. Et rien n'est affiché tant que le port n'est pas chiffré :
+     `livraison_centimes` à `null` (dossier d'avant le lot 6, devis raté, ou
+     migration pas encore passée) laisse la page sur « le prix vous sera
+     confirmé par mail », ce que le checkout refuserait de toute façon
+     (`livraison_indisponible`). Mieux vaut se taire que montrer un total que
+     Stripe ne demandera pas. */
+  const livraisonCentimes =
+    typeof numero.livraison_centimes === 'number' ? numero.livraison_centimes : null
+  const paysLivraison = numero.pays_livraison ?? null
+  const prixCentimes = centimesDuDossier(numero)
+
   /* La SECONDE paire — l'aperçu signé et le rattachement au compte. Ils ne
      se connaissent pas davantage que les deux premiers : l'un signe des URL
      R2, l'autre relit le dossier pour le compte. */
-  const [apercu, lien] = await Promise.all([
+  const [apercu, lien, creditEuros] = await Promise.all([
     numero.etat === 'apercu_pret' ? resoudreApercu(numero.apercu_urls) : null,
     qui ? rattacherParToken(makeSupabase(), qui, token) : null,
+    /* ── LE CRÉDIT FONDATEUR, EN LECTURE SEULE (lot 6, 10/09/2026) ──
+       Le bon de commande doit dire un TOTAL, donc connaître la remise avant
+       d'additionner. `creditDuPourMail` RELIT `waitlist` et le journal ; elle
+       ne frappe AUCUN coupon chez Stripe — c'est son contrat, et c'est ce qui
+       permet de l'appeler au rendu d'une page publique.
+       Un doute rend `null` : le bon de commande ne montre alors pas de
+       remise, ce qui est le sens sûr. L'inverse (promettre une remise que
+       Stripe n'appliquera pas) ferait douter d'un prix au pire moment.
+       Elle ne part QU'À l'état 2 : ailleurs il n'y a rien à vendre. */
+    numero.etat === 'apercu_pret'
+      ? creditDuPourMail(makeSupabase(), {
+          id: numero.id,
+          prenom: numero.prenom,
+          email: numero.email,
+          /* `CHAMPS` ne rapporte pas `email_canonical` : le module
+             canonicalise lui-même, avec la MÊME fonction que la prévente. */
+          email_canonical: null,
+        })
+      : null,
   ])
+
+  /* ── LE BON DE COMMANDE, ADDITIONNÉ CÔTÉ SERVEUR ────────────────────
+     Un seul calcul, dans un module PUR (`totalCommande`, livraison.ts), le
+     MÊME que celui qu'éprouve verif-atelier.ts. Le navigateur n'a qu'à
+     afficher. `null` tant que le port n'est pas chiffré — dossier d'avant le
+     lot 6, devis raté, ou migration pas encore passée : la page reste alors
+     sur « le prix vous sera confirmé par mail », ce que le checkout
+     refuserait de toute façon (`livraison_indisponible`). Mieux vaut se taire
+     que montrer un total que Stripe ne demandera pas. */
+  const commande =
+    prixCentimes !== null && livraisonCentimes !== null
+      ? totalCommande({
+          prixCentimes,
+          livraisonCentimes,
+          creditCentimes: (creditEuros ?? 0) * 100,
+          portOffert: creditEuros !== null,
+        })
+      : null
 
   /* Le COMPTE (04/09) — il s'AJOUTE au token, jamais il ne le remplace.
      Déconnectée : une invitation discrète (« ce lien, à l'abri d'un compte »).
@@ -479,6 +557,10 @@ export default async function NumeroPage({
               token={numero.token}
               nbPages={numero.nb_pages}
               euros={euros}
+              livraisonCentimes={livraisonCentimes}
+              pays={paysLivraison}
+              commande={commande}
+              portOffert={creditEuros !== null}
               cgvOk={numero.cgv_ok}
               renonciation={numero.renonciation_retractation}
               joursComposition={JOURS_COMPOSITION}

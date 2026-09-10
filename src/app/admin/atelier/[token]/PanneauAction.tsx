@@ -9,6 +9,11 @@ import { cleCadrageCouverture } from "@/lib/atelier/transitions";
    descendre la grille de prix dans le bundle (invariant nº2), contrairement
    à `prix.ts` — c'est exactement pour ça que la liste y a déménagé. */
 import { PAYS_LIVRAISON, PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
+/* ⚠️ RIEN N'EST IMPORTÉ DE `livraison.ts` ICI, ET C'EST VOLONTAIRE. Le
+   montant du port vient du SERVEUR — devis Cloudprinter ou saisie relue par
+   `preparerTransition` — et cet écran ne fait que l'afficher et le renvoyer.
+   Valider la saisie en double côté navigateur ferait une seconde vérité sur
+   un montant, exactement ce que l'invariant nº2 interdit. */
 /* `grille.ts` est PUR ET PUBLIC : ces nombres sont ceux qu'affiche déjà la
    page produit, ils ne révèlent rien. L'invariant nº2 n'est pas « la grille
    reste secrète », c'est « le SERVEUR décide du montant débité » — et il le
@@ -46,7 +51,29 @@ import {
 
 type Verif = {
   action: { cle: string; libelle: string; vers: string; note?: string };
-  resume: { nbPages?: number; palier?: string; euros?: number; reliure?: Reliure; pays?: string };
+  resume: {
+    nbPages?: number;
+    palier?: string;
+    euros?: number;
+    reliure?: Reliure;
+    pays?: string;
+    livraisonCentimes?: number;
+  };
+  /* Le devis de port, demandé PAR LE SERVEUR pendant la vérification (lot 6).
+     Rien n'a été écrit : c'est ce qui SERA écrit au second clic. */
+  livraison?: {
+    source: "admin" | "cloudprinter" | "echec";
+    niveau: string | null;
+    service: string | null;
+    transporteur: string | null;
+    niveauVouluAbsent: boolean;
+    devisHtCentimes: number | null;
+    devisTtcCentimes: number | null;
+    client: number | null;
+    absorbe: number;
+    raison?: string;
+    existant: number | null;
+  };
   /* T2-3 — le mot de l'atelier tel que le serveur l'a retenu : c'est LUI qui
      partira dans M9, pas la saisie locale. */
   mot?: string;
@@ -116,6 +143,14 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
        Préremplir « France » à sa place ferait passer une supposition pour une
        réponse du client, sur le champ dont dépendra le devis de port. */
     pays_livraison: fiche.paysLivraison ?? "",
+    /* Le port DÉJÀ gelé, en euros, tel qu'un humain le lit (« 4,90 »). Vide
+       quand rien n'a encore été devisé : la vérification ira le chercher chez
+       Cloudprinter et remplira ce champ toute seule. Préremplir un montant à
+       la place du devis ferait passer une supposition pour un tarif. */
+    livraison_centimes:
+      fiche.livraisonCentimes === null ? "" : eurosDeCentimes(fiche.livraisonCentimes),
+    /* Le niveau d'expédition chiffré : jamais tapé, seulement transporté. */
+    livraison_niveau: fiche.livraisonNiveau ?? "",
     apercu_plat: fiche.apercuBrut.plat ?? "",
     apercu_c1: fiche.apercuBrut.c1 ?? "",
     apercu_c4: fiche.apercuBrut.c4 ?? "",
@@ -547,7 +582,27 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
       }
 
       if (verifier) {
-        setVerif(data as Verif);
+        const v = data as Verif;
+        setVerif(v);
+        /* ── LE DEVIS REMPLIT LE CHAMP, ET LE NIVEAU VOYAGE AVEC LUI ─────
+           Deux gestes, une seule raison : ne pas rappeler Cloudprinter au
+           second clic (leur API rationne sévèrement). Le montant devient une
+           saisie ordinaire — donc RELISIBLE et corrigeable avant de publier —
+           et le niveau chiffré part avec, pour que la commande d'impression
+           achète exactement le service qui a été devisé.
+           ⚠️ On ne préremplit QUE si le champ était vide : un montant tapé par
+           l'atelier ne se fait jamais écraser par une machine. */
+        if (v.livraison?.client !== null && v.livraison?.client !== undefined) {
+          setSaisie((prec) =>
+            prec.livraison_centimes.trim()
+              ? prec
+              : { ...prec, livraison_centimes: eurosDeCentimes(v.livraison!.client!) },
+          );
+        }
+        if (v.livraison?.niveau) {
+          const niveau = v.livraison.niveau;
+          setSaisie((prec) => ({ ...prec, livraison_niveau: niveau }));
+        }
         return;
       }
 
@@ -595,6 +650,35 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
   }
 
   const besoinApercu = choisie?.cle === "publier_apercu" || choisie?.cle === "corriger_apercu";
+
+  /* ── CE QUE LE DEVIS A DIT, EN TOUTES LETTRES ────────────────────────
+     Entièrement DÉRIVÉ du retour du serveur : ni tarif écrit ici, ni phrase
+     qui pourrait vieillir. Avant toute vérification, on annonce seulement ce
+     que le champ vide déclenchera. */
+  const l = verif?.livraison;
+  const aideLivraison = !l
+    ? "Vide : le devis Cloudprinter est demandé à la vérification."
+    : l.source === "cloudprinter" && l.devisHtCentimes !== null && l.devisTtcCentimes !== null
+      ? [
+          `Devis Cloudprinter${
+            verif?.resume.pays && paysValide(verif.resume.pays)
+              ? `, ${PAYS_LIBELLE[verif.resume.pays]}`
+              : ""
+          }${l.transporteur ? `, ${l.transporteur}` : ""}${
+            l.niveau ? ` (${l.niveau})` : ""
+          } : ${eurosLisibles(l.devisHtCentimes)} HT, ${eurosLisibles(l.devisTtcCentimes)} TTC.`,
+          l.absorbe > 0
+            ? `Plafond appliqué : ${eurosLisibles(l.client ?? 0)} (Bellajour absorbe ${eurosLisibles(l.absorbe)}).`
+            : "",
+          l.niveauVouluAbsent && l.niveau
+            ? `cp_saver non proposé, niveau retenu : ${l.niveau}.`
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" ")
+      : l.source === "admin"
+        ? "Montant saisi à la main : il remplace le devis."
+        : `Devis indisponible : ${l.raison ?? "raison inconnue"}. Saisis le montant.`;
 
   /* T2-2 — quel jeu de cadres ? La planche + les doubles pages, sauf pour
      corriger un dossier publié en trois fichiers avant ce format (c1/c4 en
@@ -1061,6 +1145,30 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                   <span className="ate-erreur">{erreurDe("pays_livraison")}</span>
                 ) : null}
               </label>
+
+              {/* ── LA LIVRAISON TTC (lot 6, 10/09/2026) ──────────────────
+                  Laissé VIDE, c'est la vérification qui va chercher le devis
+                  chez Cloudprinter et remplit ce champ. Rempli, il GAGNE : un
+                  devis raté, une adresse hors zone raisonnable ou un geste
+                  commercial se règlent à la main, et un montant tapé par un
+                  humain ne se fait jamais écraser par une machine.
+                  ⚠️ Aucun tarif n'est proposé par défaut : un port supposé
+                  serait un montant que personne n'a décidé. */}
+              <label className="ate-champ ate-champ--court">
+                <span className="ate-champ-label">Livraison TTC (€)</span>
+                <input
+                  className="adm-input"
+                  type="text"
+                  inputMode="decimal"
+                  value={saisie.livraison_centimes}
+                  onChange={(e) => set("livraison_centimes", e.target.value)}
+                  placeholder="laisser vide : devis automatique"
+                />
+                <span className="ate-champ-aide">{aideLivraison}</span>
+                {erreurDe("livraison_centimes") ? (
+                  <span className="ate-erreur">{erreurDe("livraison_centimes")}</span>
+                ) : null}
+              </label>
             </>
           ) : null}
 
@@ -1231,12 +1339,21 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                     </dd>
                   </>
                 ) : null}
-                {/* Le pays retenu, en toutes lettres : c'est lui qui décidera
-                    du devis de port, et un code ISO ne se relit pas. */}
+                {/* Le PORT et sa destination, sur la même ligne : c'est ce
+                    qui s'ajoutera au prix chez Stripe, et un code ISO ne se
+                    relit pas. En démonstration, aucun chiffre n'est inventé —
+                    il n'y a ni base ni clé Cloudprinter derrière. */}
                 {verif.resume.pays && paysValide(verif.resume.pays) ? (
                   <>
                     <dt>Livraison</dt>
-                    <dd>en {PAYS_LIBELLE[verif.resume.pays]}</dd>
+                    <dd>
+                      {demo
+                        ? LIVRAISON_DEMO
+                        : verif.livraison?.client !== null && verif.livraison?.client !== undefined
+                          ? eurosLisibles(verif.livraison.client)
+                          : LIVRAISON_DEMO}{" "}
+                      <span className="ate-faint">· {PAYS_LIBELLE[verif.resume.pays]}</span>
+                    </dd>
                   </>
                 ) : null}
                 {verif.impression ? (
@@ -1352,6 +1469,23 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
   );
 }
 
+/* Des CENTIMES vers ce qu'un humain tape : « 4,90 », « 12 ». Virgule
+   française, décimales seulement quand elles disent quelque chose — c'est le
+   champ qu'on relit, pas un tableur. */
+function eurosDeCentimes(centimes: number): string {
+  const e = Math.round(centimes) / 100;
+  return Number.isInteger(e) ? String(e) : e.toFixed(2).replace(".", ",");
+}
+
+/* « 11,06 € ». Le jumeau navigateur de `formaterCentimes` (prix.ts, SERVEUR
+   UNIQUEMENT parce qu'il porte la grille) : recopié plutôt qu'importé, comme
+   `tokenForme.ts` l'est de `token.ts`. Trois lignes de mise en forme ne sont
+   pas une décision de montant — l'invariant nº2 tient toujours, le serveur
+   reste le seul à DÉCIDER de ce qui sera débité. */
+function eurosLisibles(centimes: number): string {
+  return `${eurosDeCentimes(centimes)} €`;
+}
+
 /* Le seul calcul de prix côté navigateur de tout le projet, et il n'existe
    QUE pour la démonstration (/admin/atelier/demo, sans base) : sans lui,
    l'écran de confirmation de la démo serait vide et le parcours ne se
@@ -1379,3 +1513,11 @@ function simulerResume(cle: string, nbPagesBrut: string, paysBrut: string) {
     reliure: reliurePour(n) ?? undefined,
   };
 }
+
+/* ⚠️ LA DÉMONSTRATION N'INVENTE AUCUN PORT. Un devis Cloudprinter est un
+   appel réseau vers un tiers, et /admin/atelier/demo tourne sans base et sans
+   clé : afficher « 11,06 € » ici ferait croire à un tarif décidé, alors qu'il
+   n'y en a aucun (interdit nº5). L'écran de confirmation de la démo dit donc
+   « à saisir », ce qui est exactement ce qui se passerait en vrai si le devis
+   échouait. */
+const LIVRAISON_DEMO = "à saisir";

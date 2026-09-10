@@ -77,3 +77,14 @@ Stripe si possible, mais qui est unique. » La cliente ne tape plus rien.
    `payment_intent`. Vérifier que la facture est quand même émise et que l'état passe à `payee`.
 6. Les templates M3 et M3b doivent être POUSSÉS avant que le bloc n'apparaisse dans les mails :
    `node scripts/mails-atelier.mjs --pousser --seulement M3,M3b`. Non fait ici (interdit nº2).
+
+## 10/09/2026 — le rattachement manuel, et le port offert
+
+Un fondateur qui compose sous un autre email n'était atteignable par aucun chemin. Depuis PR #101,
+l'admin **rattache** le dossier à un numéro de fondateur (`/api/admin/atelier/fondateur-rattacher`,
+journal `fondateur_rattache`, le dernier gagne) ; le checkout et M3 appliquent ensuite la remise
+sans que le client tape rien. Depuis PR #103, la livraison est facturée en sus et le port passe à
+0 € (« Livraison offerte, fondateur ») sur la commande qui consomme le crédit, parce qu'un coupon
+Stripe ne couvre jamais le port. Deux règles restent à trancher par Mathias : le surplus du crédit
+sur 20 à 28 pages (25 à 31 €, Stripe met la session à zéro et le reste est perdu), et le port
+offert seulement sur ce premier numéro. Toujours **jamais éprouvé contre l'API Stripe réelle**.

@@ -1,0 +1,16 @@
+{
+  "_source": "Réponse RÉELLE de POST prices/lookup, 10/09/2026, clé sandbox (devis magazine_sas_a4_p_fc BE 20). Un seul niveau proposé, TVA à 0 : la `vat` renvoyée par Cloudprinter n'est pas celle du pays de destination, c'est leur facturation vers nous. Le TTC client est donc une règle à nous.",
+  "price": "2.5468",
+  "vat": "0.0000",
+  "vat_rate": 0,
+  "currency": "EUR",
+  "shipments": [
+    {
+      "total_weight": "243",
+      "items": [ { "reference": "devis" } ],
+      "quotes": [
+        { "quote": "b1", "service": "Ground - Tracked", "shipping_level": "cp_ground", "shipping_option": "UPS - International Standard", "price": "12.4500", "vat": "0.0000", "currency": "EUR" }
+      ]
+    }
+  ]
+}

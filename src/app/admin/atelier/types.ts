@@ -59,6 +59,14 @@ export type LigneDossier = {
    * écran qui lit ce champ affiche donc l'absence, il ne la remplit pas.
    */
   pays: string | null;
+  /**
+   * Le PORT TTC gelé sur le dossier, en centimes (lot 6, 10/09).
+   *
+   * `null` = pas encore devisé (dossier antérieur, ou migration 20260910 pas
+   * passée). Ce n'est PAS zéro : un port inconnu et un port offert ne se
+   * disent pas de la même façon, et le checkout refuse le premier.
+   */
+  livraisonCentimes: number | null;
   createdAt: string | null;
   etatMajLe: string | null;
   urgence: UrgenceVue;
@@ -231,6 +239,11 @@ export type Fiche = {
       que la migration 20260910 n'est pas passée. C'est lui qui préremplit le
       champ « Pays de livraison » de la publication. */
   paysLivraison: string | null;
+  /** Le port TTC gelé, en centimes — il préremplit le champ de publication. */
+  livraisonCentimes: number | null;
+  /** Le niveau d'expédition chiffré au devis (`cp_ground`…), ou null. C'est
+      lui que la commande d'impression reprendra. */
+  livraisonNiveau: string | null;
   canvaUrl: string | null;
   /** Le lien d'ÉDITION, interne. Ne part jamais nulle part (PRD §11). */
   canvaTravail: string | null;

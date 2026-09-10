@@ -342,6 +342,19 @@ export default function VueMetriques({ m, periode }: { m: Metriques; periode: Pe
               <span className="ate-m-val">{c.panierMoyen}&nbsp;€</span>
             )}
           </div>
+          {/* ── LA LIVRAISON, À PART DU CA (lot 6, 10/09/2026) ──
+              Le port est un coût d'imprimeur refacturé, pas une vente : le
+              mélanger au chiffre d'affaires ferait passer du transport pour de
+              la croissance. Il se lit ici, sous le panier moyen, parce que
+              c'est la question suivante — combien d'argent est passé, et
+              combien en était vraiment à nous. */}
+          <div className="ate-m-mesure">
+            <span className="ate-m-mesure-titre">Livraison encaissée</span>
+            <span className="ate-m-val">
+              {Math.round(c.livraisonCentimes / 100)}&nbsp;€
+              <Ecart a={c.livraisonCentimes} b={prec?.livraisonCentimes} />
+            </span>
+          </div>
           <div className="ate-m-mesure">
             {/* La répartition par NOMBRE DE PAGES (10/09/2026). « 4 × p40 » ne
                 nommait plus trois prix depuis que la grille en donne un par

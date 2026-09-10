@@ -41,6 +41,12 @@ export type DossierAffiche = DossierDuCompte & {
      Optionnelle : le repli la laisse `undefined` et le prix retombe sur la
      grille, exactement comme avant le gel. */
   prix_centimes?: number | null;
+  /* Le PORT TTC gelé au devis, et sa destination (lot 6, 10/09) : déjà dans
+     CHAMPS_COMPTE, il ne manquait que la déclaration. Optionnels comme le
+     prix — le repli les laisse `undefined`, et la bibliothèque n'affiche
+     alors pas la ligne plutôt que d'écrire un zéro qui se lirait « offerte ». */
+  livraison_centimes?: number | null;
+  pays_livraison?: string | null;
   /* Les visuels publiés par l'atelier — la vraie couverture de la
      bibliothèque, et les pages de la visionneuse. jsonb libre, résolu par
      `resoudreApercu` (apercu.ts) : jamais lu à la main. */

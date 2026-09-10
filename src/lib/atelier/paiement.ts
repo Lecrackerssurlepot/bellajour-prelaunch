@@ -43,6 +43,14 @@ type MetaAtelier = {
   credit_fondatrice?: string;
   credit_fondatrice_numero?: string;
   credit_fondatrice_centimes?: string;
+  /* Lot 6 (10/09) — ce que le checkout a demandé, décomposé. Les métadonnées
+     Stripe sont toujours des CHAÎNES. Absentes sur les sessions ouvertes
+     avant ce lot : le webhook doit donc traiter leur absence, pas la supposer
+     à zéro (cf. `port_offert` plus bas). */
+  prix_centimes?: string;
+  livraison_centimes?: string;
+  port_offert?: string;
+  pays?: string;
 };
 
 /**
@@ -272,10 +280,40 @@ export async function traiterPaiementAtelier(
     devise: session.currency,
     tva: session.total_details?.amount_tax ?? null,
     pays_livraison: adresse?.address?.country ?? null,
+    /* ── LE PORT RÉELLEMENT ENCAISSÉ (lot 6, 10/09/2026) ──────────────
+       Ce que Stripe dit avoir pris pour la livraison, pas ce que nous avions
+       demandé : les deux doivent coïncider, et c'est ici qu'on pourra le
+       vérifier. Les deux champs existent selon la version d'API et le type de
+       session — `shipping_cost` sur les sessions récentes, `total_details`
+       pour le total ventilé — on lit les deux plutôt que de parier.
+       `null` = aucune ligne de livraison sur cette session, ce qui est le cas
+       normal des dossiers payés AVANT ce lot. Les métriques additionnent ce
+       champ pour tenir le port à part du chiffre d'affaires. */
+    livraison_encaissee:
+      session.shipping_cost?.amount_total ?? session.total_details?.amount_shipping ?? null,
+    port_offert: meta.port_offert === "true",
+    /* Ce que le checkout avait annoncé, pour pouvoir comparer plus tard. */
+    livraison_demandee_centimes: Number(meta.livraison_centimes) || null,
     /* T-044 — la trace du repli, dans le seul dossier qui ne s'efface pas.
        Absente quand tout va bien : une clé qui ne dit rien n'encombre pas. */
     ...(factureUrlPerdue ? { facture_url_perdue_42703: true } : {}),
   });
+
+  /* ── PORT OFFERT, MAIS ENCAISSÉ QUAND MÊME ? ─────────────────────────
+     Même famille que « remise posée mais rien décompté » plus bas : la
+     session annonçait une livraison gratuite et Stripe a pris de l'argent
+     dessus. Un fondateur a payé un port qu'on lui devait — ça se rembourse,
+     encore faut-il le voir. On CRIE, on ne bloque rien : l'argent est
+     encaissé, la commande est légitime, et refuser ici laisserait un paiement
+     sans dossier. */
+  const portEncaisse =
+    session.shipping_cost?.amount_total ?? session.total_details?.amount_shipping ?? 0;
+  if (meta.port_offert === "true" && portEncaisse > 0) {
+    console.error(
+      `[atelier/paiement] ⚠️ port annoncé OFFERT mais ${portEncaisse} centimes encaissés`,
+      session.id,
+    );
+  }
 
   /* ── T-021 : le crédit fondatrice est DÉPENSÉ ────────────────────────
      Écrit seulement si la session portait notre métadonnée ET que Stripe a

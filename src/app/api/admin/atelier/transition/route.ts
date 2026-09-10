@@ -37,7 +37,12 @@ import {
 } from "@/lib/atelier/impression";
 /* Les bornes de la grille, pour que le refus d'impression dise les vraies. */
 import { PAGES_MAX, PAGES_MIN } from "@/lib/atelier/grille";
-import { cloudprinterConfigure, creerCommande, infoCommande } from "@/lib/atelier/cloudprinter";
+import { cloudprinterConfigure, creerCommande, devisLivraison, infoCommande } from "@/lib/atelier/cloudprinter";
+import {
+  livraisonClient,
+  ttcDepuisHt,
+  LIVRAISON_PLAFOND_CENTIMES,
+} from "@/lib/atelier/livraison";
 import {
   ACTIONS,
   preparerTransition,
@@ -186,6 +191,123 @@ export async function POST(request: Request) {
       }
     }
 
+    /* ⚠️ LE DEVIS PART APRÈS LE CONTRÔLE DU COFFRE, ET C'EST VOULU. Leur API
+       rationne sévèrement (« Requests limit reached ») : chiffrer un port pour
+       une publication qui va être refusée deux lignes plus bas parce qu'une
+       image n'est jamais arrivée, c'est un appel gaspillé à chaque vignette
+       ratée. On ne demande un prix que sur un dossier déjà complet. */
+    /* ── LE DEVIS DE PORT (lot 6, 10/09/2026) ───────────────────────────
+       Publier l'aperçu, c'est annoncer un prix. Depuis que la livraison se
+       facture en sus, ce prix n'est complet qu'avec le port — et le port ne
+       s'invente pas (interdit nº5) : on le DEMANDE à l'imprimeur, ici, au
+       seul instant du parcours où l'on connaît à la fois le pays (écran 4) et
+       la pagination (saisie juste au-dessus).
+
+       TROIS SOURCES POSSIBLES, ET L'ÉCRAN LES NOMME :
+         admin       — l'atelier a tapé un montant, il gagne, aucun appel
+                       réseau n'est fait (leur API rationne) ;
+         cloudprinter— le devis a répondu, on convertit HT → TTC au taux du
+                       pays et on applique le plafond d'absorption ;
+         echec       — pas de clé, refus, ou réponse illisible : on ne devine
+                       PAS un montant, on demande une saisie.
+
+       ⚠️ UN SEUL APPEL CLOUDPRINTER PAR VÉRIFICATION. Le dry-run devise et
+       rend le montant à l'écran ; le second clic renvoie ce que l'écran a
+       reçu (`livraison_centimes` + `livraison_niveau`), donc n'appelle plus
+       personne. C'est ce qui tient le rationnement de leur API. */
+    type Livraison = {
+      source: "admin" | "cloudprinter" | "echec";
+      niveau: string | null;
+      /** « Ground - Tracked » : la famille de service telle qu'ils la nomment. */
+      service: string | null;
+      /** « Colissimo », « DPD - France » : ce que l'atelier reconnaît. */
+      transporteur: string | null;
+      niveauVouluAbsent: boolean;
+      devisHtCentimes: number | null;
+      devisTtcCentimes: number | null;
+      client: number | null;
+      absorbe: number;
+      raison?: string;
+      /** Ce qui est DÉJÀ en base, pour que l'écran ne l'écrase pas sans le dire. */
+      existant: number | null;
+    };
+    let livraison: Livraison | null = null;
+
+    if (cle === "publier_apercu" || cle === "corriger_apercu") {
+      const pays = String(prepa.patch.pays_livraison ?? "");
+      const pages = typeof prepa.patch.nb_pages === "number" ? prepa.patch.nb_pages : null;
+      const produit = produitPour(pages);
+      const existant =
+        typeof numero.livraison_centimes === "number" ? numero.livraison_centimes : null;
+
+      if ("livraison_centimes" in prepa.patch) {
+        /* La main de l'atelier gagne, toujours, et sans appel réseau. */
+        livraison = {
+          source: "admin",
+          niveau: typeof prepa.patch.livraison_niveau === "string" ? prepa.patch.livraison_niveau : null,
+          service: null,
+          transporteur: null,
+          niveauVouluAbsent: false,
+          devisHtCentimes: null,
+          devisTtcCentimes: null,
+          client: prepa.patch.livraison_centimes as number,
+          absorbe: 0,
+          existant,
+        };
+      } else if (!produit) {
+        /* Sans produit (pagination hors grille), `preparerTransition` a déjà
+           refusé plus haut : ce chemin ne devrait pas exister. Ceinture. */
+        livraison = {
+          source: "echec", niveau: null, service: null, transporteur: null,
+          niveauVouluAbsent: false,
+          devisHtCentimes: null, devisTtcCentimes: null, client: null, absorbe: 0,
+          raison: "aucun produit d'impression pour cette pagination", existant,
+        };
+      } else {
+        const d = await devisLivraison({ pays, produit, pages: pages! });
+        if (!d.ok) {
+          livraison = {
+            source: "echec", niveau: null, service: null, transporteur: null,
+            niveauVouluAbsent: false,
+            devisHtCentimes: null, devisTtcCentimes: null, client: null, absorbe: 0,
+            raison: d.message, existant,
+          };
+        } else {
+          const ttc = ttcDepuisHt(d.devis.htCentimes, pays);
+          if (ttc === null) {
+            /* Pays hors de la table des taux : on ne convertit pas au hasard. */
+            livraison = {
+              source: "echec", niveau: d.devis.niveau,
+              service: d.devis.service, transporteur: d.devis.transporteur,
+              niveauVouluAbsent: d.niveauVouluAbsent,
+              devisHtCentimes: d.devis.htCentimes, devisTtcCentimes: null,
+              client: null, absorbe: 0,
+              raison: `aucun taux connu pour ${pays || "ce pays"}`, existant,
+            };
+          } else {
+            const { client, absorbe } = livraisonClient(ttc);
+            livraison = {
+              source: "cloudprinter",
+              niveau: d.devis.niveau,
+              service: d.devis.service,
+              transporteur: d.devis.transporteur,
+              niveauVouluAbsent: d.niveauVouluAbsent,
+              devisHtCentimes: d.devis.htCentimes,
+              devisTtcCentimes: ttc,
+              client,
+              absorbe,
+              existant,
+            };
+            /* Le niveau CHIFFRÉ est gelé avec le montant : la commande
+               d'impression doit partir avec exactement ce service-là. */
+            prepa.patch.livraison_niveau = d.devis.niveau;
+            /* Le service et le transporteur ne sont pas des colonnes : ils
+               partent au journal, plus bas, par ce qu'on rend à l'écran. */
+          }
+        }
+      }
+    }
+
     /* ── l'impression : tout vérifier AVANT de commander ─────────────────
        Même logique que le bloc des aperçus, un cran plus loin : ici l'action
        déclenche un ACHAT chez un tiers. Rien ne part et rien ne s'écrit tant
@@ -272,7 +394,10 @@ export async function POST(request: Request) {
         modeManuel: !pret,
         produit: produit.produit,
         produitLibelle: produit.libelle,
-        shippingLevel: SHIPPING_LEVEL,
+        /* Ce qui partira VRAIMENT : le niveau gelé au devis, la constante à
+           défaut. L'écran de confirmation ne doit pas annoncer `cp_saver`
+           quand la commande partira en `cp_ground`. */
+        shippingLevel: numero.livraison_niveau ?? SHIPPING_LEVEL,
         fichiers,
         adresse: adr.ok
           ? { nom: adr.adresse.firstname + " " + adr.adresse.lastname, ville: adr.adresse.city, pays: adr.adresse.country }
@@ -289,6 +414,11 @@ export async function POST(request: Request) {
           resume: prepa.resume,
           ...(prepa.params?.MOT ? { mot: prepa.params.MOT } : {}),
           ...(impression ? { impression } : {}),
+          /* Le devis, tel qu'il vient d'être demandé. L'écran le montre en
+             toutes lettres, prérempli le champ si l'atelier l'avait laissé
+             vide, et RENVOIE le niveau au second clic pour qu'on ne rappelle
+             pas Cloudprinter. RIEN n'a été écrit ici. */
+          ...(livraison ? { livraison } : {}),
           /* Ce que la cliente lira dans le mail, si mail il y a. Le vrai
              rendu est chez Brevo — ici on garantit au moins que le bon
              destinataire va recevoir les bons nombres. */
@@ -296,6 +426,30 @@ export async function POST(request: Request) {
         },
         { status: 200 },
       );
+    }
+
+    /* ── LA LIVRAISON ENTRE DANS LE PATCH, OU LA PUBLICATION S'ARRÊTE ───
+       Publier une couverture sans port, c'est annoncer un prix incomplet :
+       la page d'état 2 afficherait « à payer 37 € » et Stripe en demanderait
+       48. On refuse donc d'écrire, et on NOMME le champ à remplir — l'atelier
+       tape le montant, reclique, et la source devient « admin ».
+       ⚠️ Jamais 0 par défaut : un port offert par accident ne se voit pas. */
+    if (livraison) {
+      if (livraison.client === null) {
+        return NextResponse.json(
+          {
+            error: "saisie",
+            erreurs: [
+              {
+                champ: "livraison_centimes",
+                message: `Le devis Cloudprinter a échoué (${livraison.raison ?? "raison inconnue"}). Saisis la livraison TTC à la main.`,
+              },
+            ],
+          },
+          { status: 422 },
+        );
+      }
+      prepa.patch.livraison_centimes = livraison.client;
     }
 
     /* ── la commande part MAINTENANT, avant l'écriture ───────────────────
@@ -330,7 +484,13 @@ export async function POST(request: Request) {
           pages: numero.nb_pages!,
           fichiers: fichiersSignes,
           titre: numero.titre,
-        });
+        },
+        /* Le niveau GELÉ au devis (`numeros.livraison_niveau`). `cp_saver`
+           n'est pas proposé partout — relevé du 10/09 — donc commander sous
+           la constante reviendrait à acheter un service qui n'a pas été
+           chiffré. `null` (dossier d'avant ce lot, ou repli 42703) retombe
+           sur `SHIPPING_LEVEL`, exactement comme avant. */
+        numero.livraison_niveau ?? null);
 
       let commande = await creerCommande(corpsPour(numero.id));
 
@@ -486,6 +646,24 @@ export async function POST(request: Request) {
         par: prenomDe(qui),
         source: republicationRetouches ? "republication_retouches" : "admin",
         ...prepa.resume,
+        /* ── LE PORT, DANS LE RÉCIT DU DOSSIER ──────────────────────────
+           D'où vient le montant, quel service a été chiffré, ce que
+           l'imprimeur demandait HT, ce qu'on a affiché TTC, ce que Bellajour
+           a absorbé, et le plafond en vigueur ce jour-là. Six mois plus tard,
+           « pourquoi ce dossier a-t-il payé 11,06 € de port ? » doit avoir une
+           réponse ici, pas dans un log Vercel effacé au bout d'une heure. */
+        ...(livraison
+          ? {
+              livraison_centimes: livraison.client,
+              livraison_source: livraison.source,
+              livraison_niveau: livraison.niveau,
+              livraison_transporteur: livraison.transporteur,
+              devis_ht_centimes: livraison.devisHtCentimes,
+              devis_ttc_centimes: livraison.devisTtcCentimes,
+              livraison_absorbee: livraison.absorbe,
+              plafond: LIVRAISON_PLAFOND_CENTIMES,
+            }
+          : {}),
         /* Ce que le repli a effacé, dans le RÉCIT du dossier et pas seulement
            dans un log d'une heure. Absent quand rien n'a été perdu : une clé
            qui ne dit rien n'encombre pas la lecture du journal. */

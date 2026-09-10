@@ -17,7 +17,8 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-import type { PayloadCommande } from "./impression";
+import { payloadDevis, SHIPPING_LEVEL, type PayloadCommande, type ProduitImpression } from "./impression";
+import { lireDevisCloudprinter, type Devis } from "./livraison";
 
 const BASE = "https://api.cloudprinter.com/cloudcore/1.0";
 
@@ -84,6 +85,51 @@ async function poster(chemin: string, corps: Record<string, unknown>): Promise<
       message: ((err as Error)?.message ?? "réseau").slice(0, 300),
     };
   }
+}
+
+/**
+ * Le DEVIS de port — `prices/lookup`, aucune commande, aucun engagement.
+ *
+ * Appelé à la publication de l'aperçu : c'est le seul instant où l'on connaît
+ * à la fois le pays (écran 4 du questionnaire) et la pagination (saisie par
+ * l'atelier), donc le seul où l'on peut chiffrer un envoi avant d'annoncer un
+ * prix. La lecture de la réponse est PURE (`lireDevisCloudprinter`,
+ * livraison.ts) et éprouvée sur deux relevés réels — ici, seulement l'appel.
+ *
+ * ⚠️ LEUR API RATIONNE SÉVÈREMENT (« Requests limit reached »). Un appel par
+ * VÉRIFICATION, jamais deux : la route de transition devise au dry-run, rend
+ * le montant à l'écran, et le second clic renvoie ce que l'écran a reçu.
+ *
+ * Contrat inchangé : ne throw JAMAIS. Sans clé, c'est un `Refus` « clé
+ * absente » — le mode manuel, où l'atelier saisit le port à la main, sans que
+ * rien ne casse. Le corps brut est rendu avec le devis : il part au journal du
+ * dossier, seul endroit où l'on pourra relire dans six mois ce que
+ * l'imprimeur avait réellement proposé ce jour-là.
+ */
+export async function devisLivraison(args: {
+  pays: string;
+  produit: ProduitImpression;
+  pages: number;
+}): Promise<
+  | { ok: true; devis: Devis; niveauVouluAbsent: boolean; brut: Record<string, unknown> }
+  | Refus
+> {
+  if (!process.env.CLOUDPRINTER_API_KEY) {
+    return { ok: false, code: "refus", message: "CLOUDPRINTER_API_KEY absente." };
+  }
+
+  const r = await poster("prices/lookup", payloadDevis(args) as unknown as Record<string, unknown>);
+  if (!r.ok) return r;
+
+  const lu = lireDevisCloudprinter(r.corps, SHIPPING_LEVEL);
+  if (!lu.ok) {
+    /* Ils ont répondu 200 mais leur réponse ne porte aucun tarif exploitable.
+       Ce n'est pas une panne réseau : c'est un refus de chiffrer, et l'écran
+       doit le dire tel quel pour que l'atelier saisisse le port à la main. */
+    return { ok: false, code: "refus", message: lu.raison };
+  }
+
+  return { ok: true, devis: lu.devis, niveauVouluAbsent: lu.niveauVouluAbsent, brut: r.corps };
 }
 
 /**

@@ -176,8 +176,9 @@ export default function FeuilleAjustement({
                 à l'endroit où la question se pose. (Décision Mathias, 04/09.) */}
             {longueur && (
               <p className="nu-feuille-note">
-                Le nombre de pages peut changer le prix : on vous le confirme
-                avant tout paiement.
+                Le nombre de pages peut changer le prix, et la livraison aussi
+                peut changer si le pays change. On vous confirme le tout avant
+                tout paiement.
               </p>
             )}
 
