@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { MOT_DE_PASSE_MIN } from '@/lib/compte/garde'
+import ChampMotDePasse from '../ChampMotDePasse'
 
 export default function FormulaireReinitialisation({ tokenHash }: { tokenHash: string }) {
   const [motDePasse, setMotDePasse] = useState('')
@@ -65,30 +66,24 @@ export default function FormulaireReinitialisation({ tokenHash }: { tokenHash: s
 
   return (
     <form className="cpt-form" onSubmit={envoyer}>
-      <label className="cpt-champ">
-        <span>Nouveau mot de passe</span>
-        <input
-          type="password"
-          name="new-password"
-          autoComplete="new-password"
-          required
-          minLength={MOT_DE_PASSE_MIN}
-          value={motDePasse}
-          onChange={(e) => setMotDePasse(e.target.value)}
-        />
-      </label>
-      <label className="cpt-champ">
-        <span>Le même, une seconde fois</span>
-        <input
-          type="password"
-          name="confirm-password"
-          autoComplete="new-password"
-          required
-          minLength={MOT_DE_PASSE_MIN}
-          value={confirmation}
-          onChange={(e) => setConfirmation(e.target.value)}
-        />
-      </label>
+      <ChampMotDePasse
+        name="new-password"
+        label="Nouveau mot de passe"
+        autoComplete="new-password"
+        required
+        minLength={MOT_DE_PASSE_MIN}
+        value={motDePasse}
+        onChange={(e) => setMotDePasse(e.target.value)}
+      />
+      <ChampMotDePasse
+        name="confirm-password"
+        label="Le même, une seconde fois"
+        autoComplete="new-password"
+        required
+        minLength={MOT_DE_PASSE_MIN}
+        value={confirmation}
+        onChange={(e) => setConfirmation(e.target.value)}
+      />
 
       {erreur ? (
         <p className="cpt-alerte" role="alert">

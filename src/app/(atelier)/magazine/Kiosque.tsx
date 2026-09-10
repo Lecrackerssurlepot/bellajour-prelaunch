@@ -15,7 +15,6 @@ import {
   PARCOURS_SOUS_TITRE,
   PARCOURS_TITRE,
   PRIX_LIGNE,
-  PRIX_PHRASE,
 } from '../content'
 import LienComposer from '../components/LienComposer'
 
@@ -136,10 +135,9 @@ export default function Kiosque() {
               <span>{PRIX_LIGNE.photos}</span>
             </span>
           </p>
-          {/* La phrase qui prolonge le prix d'appel : l'échelle complète, ses
-              deux bouts, et ce qui la fait varier — sans arbitrage à rendre.
-              Dans le même Reveal que la ligne : les deux se lisent ensemble. */}
-          <p className="prix-phrase">{PRIX_PHRASE}</p>
+          {/* La phrase qui prolongeait le prix d'appel (PRIX_PHRASE) a été
+              retirée le 10/09/2026 à la demande de Mathias : voir le
+              commentaire daté sur `.prix-phrase` dans pdp.css. */}
         </Reveal>
 
         {/* ── LES TROIS ENCARTS DE PALIER SONT PARTIS (10/09/2026, lot 2) ──

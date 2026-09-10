@@ -66,6 +66,16 @@ export const PAGES_MAX = Math.max(...GRILLE.map((g) => g.pages))
 export const EUROS_MIN = Math.min(...GRILLE.map((g) => g.euros))
 export const EUROS_MAX = Math.max(...GRILLE.map((g) => g.euros))
 
+/* L'OFFRE PUBLIQUE S'ARRÊTE À 50 PAGES (décision de Mathias, 10/09/2026) :
+   « le 60 pages, on le garde en interne pour nous, ça ne va que jusqu'à 50
+   pour l'instant ». La grille complète reste la vérité de l'atelier (l'admin
+   peut composer 52 à 60 pages, le prix existe), mais tout ce qui s'AFFICHE au
+   public (page produit, JSON-LD, écran 5, annexe des CGV, Word) dérive de
+   GRILLE_PUBLIQUE. Ouvrir 60 pages au public = changer ce seul nombre. */
+export const PAGES_MAX_PUBLIC = 50
+export const GRILLE_PUBLIQUE = GRILLE.filter((g) => g.pages <= PAGES_MAX_PUBLIC)
+export const EUROS_MAX_PUBLIC = Math.max(...GRILLE_PUBLIQUE.map((g) => g.euros))
+
 /**
  * Le prix TTC, en euros, d'un magazine de `n` pages. `null` hors grille — et
  * `null` veut dire « rien ne peut être facturé », jamais « on approche ».
@@ -111,7 +121,7 @@ export const RELIURE_LIBELLE: Record<Reliure, string> = {
 export const BANDES_PHOTOS = [
   { photosMin: 40, photosMax: 59, pagesMin: 20, pagesMax: 28 },
   { photosMin: 60, photosMax: 79, pagesMin: 30, pagesMax: 38 },
-  { photosMin: 80, photosMax: 100, pagesMin: 40, pagesMax: PAGES_MAX },
+  { photosMin: 80, photosMax: 100, pagesMin: 40, pagesMax: PAGES_MAX_PUBLIC },
 ] as const
 
 export type BandePhotos = (typeof BANDES_PHOTOS)[number]

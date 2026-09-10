@@ -728,6 +728,50 @@
   outline: none;
 }
 
+/* ── L'œil des champs mot de passe (Mathias, 10/09) ──────────────────
+   `.cpt-mdp` porte le positionnement relatif, le bouton se pose en absolu
+   à droite. L'input garde son style de `.cpt-champ input` (largeur pleine,
+   fond, bordure) : on ne fait ici que réserver la place de l'œil et poser
+   le bouton par-dessus. */
+.cpt-mdp {
+  position: relative;
+  display: block;
+}
+
+.cpt-mdp input {
+  /* 44px de zone de clic + un peu d'air, pour que le texte tapé ne passe
+     jamais sous l'œil. */
+  padding-right: 48px;
+}
+
+.cpt-mdp-oeil {
+  appearance: none;
+  background: none;
+  border: 0;
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--c-text-faint);
+  cursor: pointer;
+  transition: color var(--dur) var(--ease);
+}
+
+.cpt-mdp-oeil:hover { color: var(--c-text); }
+
+.cpt-mdp-oeil:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+  color: var(--c-text);
+  border-radius: 8px;
+}
+
 .cpt-alerte {
   margin-top: 14px;
   font-family: var(--font-ui);

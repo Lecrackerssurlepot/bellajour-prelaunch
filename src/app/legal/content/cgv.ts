@@ -1,5 +1,5 @@
 import type { LocalizedDoc } from '../types'
-import { GRILLE, PAGES_MIN, PAGES_MAX } from '@/lib/atelier/grille'
+import { GRILLE_PUBLIQUE, PAGES_MIN, PAGES_MAX_PUBLIC } from '@/lib/atelier/grille'
 
 /* CONDITIONS GÉNÉRALES DE VENTE — transcription fidèle de
    legal-source/cgv/FR/CONDITIONS GÉNÉRALES DE VENTE — BELLAJOUR.docx (v2.5).
@@ -230,8 +230,8 @@ export const CGV: LocalizedDoc = {
           { kind: 'table', columns: [`Paramètre`, `Valeur`], rows: [
             [`Type`, `Livre photo relié, imprimé à la commande`],
             [`Format`, `Portrait A4 — 210 × 297 mm`],
-            [`Reliure`, `Agrafée à 20 pages, dos carré collé de 24 à 60 pages, couverture souple 250 g`],
-            [`Pagination — Offre Atelier`, `${PAGES_MIN} pages min. — ${PAGES_MAX} pages max. (nombre de pages pair obligatoire ; 22 pages non proposé)`],
+            [`Reliure`, `Agrafée à 20 pages, dos carré collé de 24 à ${PAGES_MAX_PUBLIC} pages, couverture souple 250 g`],
+            [`Pagination — Offre Atelier`, `${PAGES_MIN} pages min. — ${PAGES_MAX_PUBLIC} pages max. (nombre de pages pair obligatoire ; 22 pages non proposé)`],
             [`Pagination — Prévente (13/06–15/08/2026)`, `30 pages min. — 200 pages max. (nombre de pages pair obligatoire)`],
             [`Couverture`, `Illustrée, unique, générée par IA dans un style propre à la marque`],
             [`Impression`, `Quadrichromie, 300 DPI, profil colorimétrique FOGRA 39`],
@@ -248,7 +248,7 @@ export const CGV: LocalizedDoc = {
           { kind: 'p', value: `Formats de fichiers acceptés : JPEG, PNG, HEIC, HEIF, WebP.` },
           { kind: 'h3', text: `Grille tarifaire — Offre Atelier (en vigueur depuis le 10/09/2026)` },
           { kind: 'p', value: `Grille applicable à toute commande passée via l'Atelier (article 4 bis). Prix fermes, affichés en euros, toutes taxes comprises, impression comprise. La livraison, dans la zone France, Belgique, Luxembourg, est facturée en sus au tarif porté à la connaissance du client avant tout paiement (article 4bis.4). Le prix est déterminé par le nombre de pages composé par l'atelier, jamais saisi par le client.` },
-          { kind: 'table', columns: [`Pagination composée`, `Prix TTC, hors livraison`], rows: GRILLE.map((g) => [`${g.pages} pages`, `${g.euros} €`]) },
+          { kind: 'table', columns: [`Pagination composée`, `Prix TTC, hors livraison`], rows: GRILLE_PUBLIQUE.map((g) => [`${g.pages} pages`, `${g.euros} €`]) },
           { kind: 'h3', text: `Grille tarifaire — Prévente (commandes du 13/06 au 15/08/2026)` },
           { kind: 'p', value: `Grille close, conservée pour les seules commandes de prévente (article 5). Prix catalogue standard, hors offre promotionnelle, affichés en euros, toutes taxes comprises. TVA appliquée au taux du pays de résidence du consommateur (régime OSS-Union) après le seuil des 10 000 € de chiffre d'affaires.` },
           { kind: 'table', columns: [`Pagination`, `Prix TTC`], rows: [
@@ -470,8 +470,8 @@ export const CGV: LocalizedDoc = {
           { kind: 'table', columns: [`Parâmetro`, `Valor`], rows: [
             [`Tipo`, `Livro de fotografias encadernado, impresso por encomenda`],
             [`Formato`, `Retrato A4 — 210 × 297 mm`],
-            [`Encadernação`, `Agrafada a 20 páginas, lombada colada de 24 a 60 páginas, capa mole 250 g`],
-            [`Paginação — Oferta Atelier`, `mín. ${PAGES_MIN} páginas — máx. ${PAGES_MAX} páginas (número de páginas obrigatoriamente par; 22 páginas não proposto)`],
+            [`Encadernação`, `Agrafada a 20 páginas, lombada colada de 24 a ${PAGES_MAX_PUBLIC} páginas, capa mole 250 g`],
+            [`Paginação — Oferta Atelier`, `mín. ${PAGES_MIN} páginas — máx. ${PAGES_MAX_PUBLIC} páginas (número de páginas obrigatoriamente par; 22 páginas não proposto)`],
             [`Paginação — Pré-venda (13/06–15/08/2026)`, `mín. 30 páginas — máx. 200 páginas (número de páginas obrigatoriamente par)`],
             [`Capa`, `Ilustrada, única, gerada por IA num estilo próprio da marca`],
             [`Impressão`, `Quadricromia, 300 DPI, perfil colorimétrico FOGRA 39`],
@@ -488,7 +488,7 @@ export const CGV: LocalizedDoc = {
           { kind: 'p', value: `Formatos de ficheiro aceites: JPEG, PNG, HEIC, HEIF, WebP.` },
           { kind: 'h3', text: `Grelha tarifária — Oferta Atelier (em vigor desde 10/09/2026)` },
           { kind: 'p', value: `Grelha aplicável a qualquer encomenda efetuada através do Atelier (artigo 4.º-A). Preços firmes, exibidos em euros, com todos os impostos incluídos, impressão incluída. A entrega, na zona França, Bélgica, Luxemburgo, é faturada adicionalmente à tarifa dada a conhecer ao cliente antes de qualquer pagamento (artigo 4.º-A.4). O preço é determinado pelo número de páginas composto pelo atelier, nunca introduzido pelo cliente.` },
-          { kind: 'table', columns: [`Paginação composta`, `Preço c/ IVA, sem entrega`], rows: GRILLE.map((g) => [`${g.pages} páginas`, `${g.euros} €`]) },
+          { kind: 'table', columns: [`Paginação composta`, `Preço c/ IVA, sem entrega`], rows: GRILLE_PUBLIQUE.map((g) => [`${g.pages} páginas`, `${g.euros} €`]) },
           { kind: 'h3', text: `Grelha tarifária — Pré-venda (encomendas de 13/06 a 15/08/2026)` },
           { kind: 'p', value: `Grelha encerrada, conservada apenas para as encomendas de pré-venda (artigo 5.º). Preços de catálogo padrão, fora de oferta promocional, exibidos em euros, com todos os impostos incluídos. IVA aplicado à taxa do país de residência do consumidor (regime OSS-União) após o limiar de 10 000 € de volume de negócios.` },
           { kind: 'table', columns: [`Paginação`, `Preço c/ IVA`], rows: [
@@ -710,8 +710,8 @@ export const CGV: LocalizedDoc = {
           { kind: 'table', columns: [`Parameter`, `Value`], rows: [
             [`Type`, `Bound photo book, printed on demand`],
             [`Format`, `Portrait A4 — 210 × 297 mm`],
-            [`Binding`, `Saddle-stitched at 20 pages, perfect-bound from 24 to 60 pages, 250 g soft cover`],
-            [`Pagination — Atelier offer`, `min. ${PAGES_MIN} pages — max. ${PAGES_MAX} pages (page count must be even; 22 pages not offered)`],
+            [`Binding`, `Saddle-stitched at 20 pages, perfect-bound from 24 to ${PAGES_MAX_PUBLIC} pages, 250 g soft cover`],
+            [`Pagination — Atelier offer`, `min. ${PAGES_MIN} pages — max. ${PAGES_MAX_PUBLIC} pages (page count must be even; 22 pages not offered)`],
             [`Pagination — Pre-sale (13/06–15/08/2026)`, `min. 30 pages — max. 200 pages (page count must be even)`],
             [`Cover`, `Illustrated, unique, AI-generated in a style specific to the brand`],
             [`Printing`, `Four-colour (CMYK), 300 DPI, FOGRA 39 colour profile`],
@@ -728,7 +728,7 @@ export const CGV: LocalizedDoc = {
           { kind: 'p', value: `Accepted file formats: JPEG, PNG, HEIC, HEIF, WebP.` },
           { kind: 'h3', text: `Price list — Atelier offer (in force since 10/09/2026)` },
           { kind: 'p', value: `Price list applicable to any order placed through the Atelier (Article 4a). Firm prices, displayed in euros, inclusive of all taxes, printing included. Delivery, within the France, Belgium, Luxembourg zone, is invoiced in addition at the rate made known to the customer before any payment (Article 4a.4). The price is determined by the page count composed by the atelier, never entered by the customer.` },
-          { kind: 'table', columns: [`Composed pagination`, `Price incl. VAT, excl. delivery`], rows: GRILLE.map((g) => [`${g.pages} pages`, `€${g.euros}`]) },
+          { kind: 'table', columns: [`Composed pagination`, `Price incl. VAT, excl. delivery`], rows: GRILLE_PUBLIQUE.map((g) => [`${g.pages} pages`, `€${g.euros}`]) },
           { kind: 'h3', text: `Price list — Pre-sale (orders from 13/06 to 15/08/2026)` },
           { kind: 'p', value: `Closed price list, retained for pre-sale orders only (Article 5). Standard catalogue prices, excluding promotional offers, displayed in euros, inclusive of all taxes. VAT applied at the rate of the consumer's country of residence (OSS-Union scheme) after the €10,000 turnover threshold.` },
           { kind: 'table', columns: [`Pagination`, `Price incl. VAT`], rows: [
