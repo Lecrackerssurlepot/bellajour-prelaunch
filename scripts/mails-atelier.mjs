@@ -157,7 +157,7 @@ function encartCouverturePrete() {
 <div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Votre couverture vous attend</div>
 </td></tr>
 <tr><td style="padding: 0 26px 24px 26px;">
-<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Elle est prête depuis longtemps, et elle n&rsquo;a pas bougé. {{ params.NB_PAGES }} pages, {{ params.PRIX }}&nbsp;&euro; impression comprise.{% if params.LIVRAISON_OFFERTE %} Livraison offerte.{% else %} Livraison {{ params.LIVRAISON }}&nbsp;&euro; en sus.{% endif %}</p>
+<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Elle est prête depuis longtemps, et elle n&rsquo;a pas bougé. {{ params.NB_PAGES }} pages, {{ params.PRIX }}&nbsp;&euro; impression comprise.{% if params.LIVRAISON_OFFERTE %} Livraison offerte.{% else %} Livraison {{ params.LIVRAISON }}&nbsp;&euro; en sus.{% endif %} Soit {{ params.TOTAL }}&nbsp;&euro; à payer.</p>
 </td></tr>
 </table>
 </td></tr>{% endif %}`;
@@ -329,8 +329,8 @@ const TITRE = "{{ params.TITRE }}";
 
 /* ─────────────────────────── les mails versionnés ───────────────────────────
    Douze mails de l'atelier + les deux du compte (C1 inscription, C2 mot de
-   passe — 04/09). M1 et M4 préexistent dans Brevo et n'ont pas encore été
-   rapatriés ici ; M3 l'a été le 26/08 pour le retour T2-7. */
+   passe — 04/09). M1 préexiste dans Brevo et n'a pas encore été rapatrié
+   ici ; M3 l'a été le 26/08 pour le retour T2-7, M4 le 10/09 (livraison en sus). */
 
 export const MAILS = [
   {
@@ -412,7 +412,7 @@ export const MAILS = [
        abandonné à l'arrivée. Le `{% if %}` traite la chaîne vide comme faux :
        un fondateur lit « livraison offerte », tout le monde d'autre lit le
        montant devisé pour SA destination. */
-    pied: "{{ params.NB_PAGES }} pages, {{ params.PRIX }} € impression comprise{% if params.LIVRAISON_OFFERTE %}, livraison offerte{% else %}, livraison {{ params.LIVRAISON }} € en sus{% endif %}. Vous ne payez que si elle vous plaît.",
+    pied: "{{ params.NB_PAGES }} pages, {{ params.PRIX }} € impression comprise{% if params.LIVRAISON_OFFERTE %}, livraison offerte{% else %}, livraison {{ params.LIVRAISON }} € en sus{% endif %}, soit {{ params.TOTAL }} € à payer. Vous ne payez que si elle vous plaît.",
   },
   {
     code: "M3b",
@@ -430,11 +430,37 @@ export const MAILS = [
         { valeur: "{{ params.PRIX }}&nbsp;&euro;", legende: "impression comprise", grand: true },
         /* Même correction que le pied de M3 : la livraison sort du prix (lot 6,
            10/09). La légende ne peut plus dire « tout compris ». */
-        "{% if params.LIVRAISON_OFFERTE %}Livraison offerte.{% else %}Livraison {{ params.LIVRAISON }} € en sus.{% endif %} Chez vous sous 10 jours après validation.",
+        "{% if params.LIVRAISON_OFFERTE %}Livraison offerte.{% else %}Livraison {{ params.LIVRAISON }} € en sus.{% endif %} Soit {{ params.TOTAL }} € à payer. Chez vous sous 10 jours après validation.",
       ) + encartCredit(),
     cta: "Revoir ma couverture",
     lien: LIEN,
     pied: "Un détail à changer avant de vous décider ? Répondez à ce message, on ajuste sans frais.",
+  },
+  {
+    /* M4 — le paiement est reçu, l'atelier compose. Rapatrié de Brevo le
+       10/09/2026 (template 29, texte du 24/08) pour une seule raison : sa
+       carte disait « X € réglés, impression et livraison comprises », faux
+       deux fois depuis le lot 6 (le port se facture en sus) et faux depuis
+       toujours pour un fondateur, dont les 30 € de crédit font que le montant
+       débité n'est pas le prix du numéro. Le mail ne reçoit que le prix de
+       grille (NB_PAGES, PRIX) : il ne prétend donc plus dire ce qui a été
+       réglé, il renvoie à la facture Stripe, qui seule connaît le montant
+       exact (port et crédit compris). */
+    code: "M4",
+    nom: "M4 · Atelier · Paiement reçu",
+    sujet: `${TITRE}, nous composons`,
+    preheader: "C’est réglé. Votre numéro est en composition.",
+    titreHtml: "Nous composons votre numéro",
+    h1: "C’est réglé.<br />Nous composons.",
+    sous: `${PRENOM}, votre numéro complet vous attend sous trois jours ouvrés. Vous le feuilletterez en entier avant qu’il ne parte à l’impression : rien ne s’imprime sans votre accord.`,
+    carte: carteChiffres(
+      { valeur: "{{ params.NB_PAGES }}", legende: "pages composées", grand: true },
+      { valeur: "{{ params.PRIX }}&nbsp;&euro;", legende: "le numéro, impression comprise", grand: true },
+      "Le montant exact réglé, livraison et crédit compris, figure sur votre facture, qui vous parvient séparément.",
+    ),
+    cta: "Suivre mon numéro",
+    lien: LIEN,
+    pied: "Vous n’avez rien à faire d’ici là. Une question, une envie de changement ? Répondez simplement à ce message.",
   },
   {
     code: "M5",
