@@ -17,11 +17,12 @@ Chargé dès qu'on touche un script. Aucun n'est branché dans `package.json` : 
 
 | Script | Danger |
 |---|---|
-| `mails-atelier.mjs --pousser` | **Réécrit dans Brevo TOUS les templates du tableau `MAILS`** (l'atelier + les mails de compte C1/C2). Bon quand on retouche la maquette commune, mauvais quand on n'ajoute qu'un mail. Borner : `--pousser --seulement M0` |
+| `mails-atelier.mjs --pousser` | **Réécrit dans Brevo TOUS les templates du tableau `MAILS`** (l'atelier + les mails de compte C0/C1/C2). Bon quand on retouche la maquette commune, mauvais quand on n'ajoute qu'un mail. Borner : `--pousser --seulement M0` |
 | `recette.mjs` | **Agit sur la base de PRODUCTION.** Vieillit des dossiers pour déclencher M2/M3b/M8. `nettoyer` ne touche que les titres commençant par « test », et exige `--vraiment` |
 | `vignettes-rattrapage.ts` | Télécharge des originaux depuis R2 et écrit en base. Idempotent, `--essai` pour compter sans écrire |
 | `supprimer-dossiers.ts` | **Supprime des dossiers de TEST entièrement** : objets R2 (`numeros/<id>/`) puis ligne `numeros` (cascade sur photos, evenements, mails_envoyes, dossiers_vus, notes). Exige `--email`, lecture seule sans `--vraiment`, refuse un dossier payé en live sans `--meme-payes`. Ne touche jamais `waitlist`. Servi le 10/09 pour les 9 dossiers de Mathias |
 | `anonymiser-dossiers.ts` | **Efface des photos de clientes sur R2, définitivement** (T-076, rétention 90 j). Dry-run par défaut, `--vraiment` pour agir. Ne supprime aucune ligne. Pas de cron, volontairement |
+| `inviter-fondateurs.ts` | **Envoie le mail C0** (« votre espace fondateur est ouvert ») aux fondateurs confirmés dont le compte existe. Lecture seule sans `--vraiment` ; `--seulement <email>` borne à une adresse (la vérification de Mathias). Le lien mène à `/compte/bienvenue`, sans jeton ni expiration. Pas d'idempotence : relancer renvoie |
 | `creer-comptes-fondateurs.ts` | **Écrit dans `auth.users` de PRODUCTION** : pré-crée en silence les comptes des fondateurs (email confirmé, aucun mot de passe, AUCUN mail). Dry-run par défaut, `--vraiment` pour agir. Idempotent |
 
 **Le texte des mails vit dans `mails-atelier.mjs`, versionné — pas dans l'interface Brevo.**
