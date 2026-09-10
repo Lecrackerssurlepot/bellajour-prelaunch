@@ -16,6 +16,42 @@
   min-height: var(--app-height);
 }
 
+/* ---- le bandeau de prévisualisation (10/09/2026) ----
+   L'atelier regarde la page AVANT de publier (/numero/<token>?brouillon=1,
+   réservé au cookie admin). Le bandeau existe pour une seule raison : rendre
+   impossible de confondre cette page avec celle qui est en ligne. Il est donc
+   FIXE — il reste sous les yeux même après un défilement jusqu'au bouton de
+   paiement, qui est justement l'endroit où la confusion coûterait le plus.
+
+   Aucune couleur en dur (invariant nº1 de ce fichier) : l'accent du thème
+   sombre, sur le voile plein que la barre du questionnaire utilise déjà. */
+.bj-atelier .nu-previs {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  margin: 0;
+  padding: 9px var(--pad);
+  background: var(--glass-bg-plein);
+  border-bottom: 1px solid var(--c-accent-soft);
+  box-shadow: var(--shadow-soft);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  color: var(--c-accent);
+  text-align: center;
+}
+
+/* La page descend d'autant : sans ça le bandeau couvre le logo du parcours,
+   et un bandeau qui cache le haut de la page qu'on vient vérifier ne sert à
+   rien. Deux lignes possibles sur un téléphone étroit, d'où la marge haute. */
+.nu--previs { padding-top: 44px; }
+
+@media (max-width: 560px) {
+  .bj-atelier .nu-previs { font-size: 11.5px; padding: 8px 14px; }
+  .nu--previs { padding-top: 56px; }
+}
+
 /* ---- barre haute : le logo du parcours, rien d'autre ----
    04/09 (maquettes validées) : le logo officiel centré — le même fichier et
    les mêmes cotes que la barre du questionnaire (composer.css, .at-q-logo-img).
@@ -899,7 +935,10 @@
   text-decoration-color: var(--c-line-strong);
   transition: color var(--dur) var(--ease);
 }
-.nu-ajuster:hover { color: var(--c-text-soft); }
+.nu-ajuster:hover:not([disabled]) { color: var(--c-text-soft); }
+/* Éteint en prévisualisation (l'atelier regarde, il ne dépose pas de demande
+   au nom du client) : le lien doit alors CESSER de se proposer. */
+.nu-ajuster[disabled] { opacity: 0.4; cursor: not-allowed; }
 .nu-ajuster:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; border-radius: 4px; }
 
 .nu-erreur { margin-top: 16px; font-size: 14px; color: var(--c-accent-strong); }

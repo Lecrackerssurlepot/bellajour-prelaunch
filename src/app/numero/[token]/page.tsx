@@ -37,6 +37,12 @@ import Apercu from './Apercu'
 import LienPartage from '../../components/LienPartage'
 import { compteOuvert, utilisateurConnecte } from '@/lib/compte/session'
 import { rattacherParToken } from '@/lib/compte/donnees'
+/* ── LA PRÉVISUALISATION (10/09/2026) ────────────────────────────────
+   Le cookie admin, et le module PUR qui superpose un brouillon à la ligne
+   lue. Rien de tout ça ne s'active sans `?brouillon=1` ET sans cookie :
+   pour une cliente, cette page est exactement celle d'avant. */
+import { quiEstConnecte } from '@/lib/admin-session'
+import { appliquerBrouillon, lireBrouillon, TYPE_BROUILLON } from '@/lib/atelier/brouillon'
 import '../numero.css'
 
 /* L'adresse publique du site, pour écrire le lien EN TOUTES LETTRES sous les
@@ -201,6 +207,40 @@ async function lireNumero(token: string): Promise<Numero | null | 'panne'> {
   }
 }
 
+/**
+ * Les derniers brouillons d'aperçu du dossier, dans l'ORDRE CHRONOLOGIQUE.
+ *
+ * Un dry-run d'admin en dépose un à chaque « Préparer » (voir la route de
+ * transition) : on relit les cinq derniers et `lireBrouillon` retient le plus
+ * récent qui tienne debout. Cinq et pas un seul, parce qu'un brouillon peut
+ * avoir été écrit par une version antérieure du patch et se faire refuser à
+ * la relecture — mieux vaut alors montrer l'avant-dernier que rien.
+ *
+ * Lecture en `created_at` DÉCROISSANT (c'est ce qu'un `limit` doit faire pour
+ * rendre les plus RÉCENTS), puis renversée : `lireBrouillon` attend le plus
+ * ancien d'abord. Jamais d'exception : sans brouillon, la page du client
+ * s'affiche telle qu'elle est vraiment.
+ */
+async function lireBrouillons(numeroId: string): Promise<Array<{ type: string; payload: unknown }>> {
+  try {
+    const { data, error } = await makeSupabase()
+      .from('evenements')
+      .select('type, payload')
+      .eq('numero_id', numeroId)
+      .eq('type', TYPE_BROUILLON)
+      .order('created_at', { ascending: false })
+      .limit(5)
+    if (error) {
+      console.error('[numero] brouillons illisibles', error.code, error.message)
+      return []
+    }
+    return ((data ?? []) as Array<{ type: string; payload: unknown }>).reverse()
+  } catch (err) {
+    console.error('[numero] brouillons exception', (err as Error)?.message)
+    return []
+  }
+}
+
 /* Le titre d'onglet ne dit jamais le nom du numéro : cette page vit dans
    l'historique d'un téléphone qu'on prête, et dans la liste des onglets
    ouverts qu'on montre par-dessus l'épaule. */
@@ -214,10 +254,10 @@ export default async function NumeroPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ paiement?: string; de?: string }>
+  searchParams: Promise<{ paiement?: string; de?: string; brouillon?: string }>
 }) {
   const { token } = await params
-  const { paiement, de } = await searchParams
+  const { paiement, de, brouillon: brouillonDemande } = await searchParams
 
   /* Test §17.7 : un token inexistant donne une page d'erreur propre, et
      AUCUNE information ne fuite. Forme invalide et dossier introuvable
@@ -254,13 +294,22 @@ export default async function NumeroPage({
      ne dépend ni de la session ni du dossier. Un doute rend `null`, et le bon
      de commande se contente alors de ne pas montrer de remise — jamais
      l'inverse, jamais une remise promise puis absente chez Stripe. */
-  const [numero, qui] = await Promise.all([
+  /* ── QUI REGARDE (10/09/2026) ────────────────────────────────────────
+     `?brouillon=1` ne fait rien tout seul : il faut AUSSI le cookie admin.
+     Sans lui, `quiEstConnecte()` rend null, la superposition n'a pas lieu et
+     la page est celle du client, au caractère près. C'est ce qui permet de
+     coller ce lien dans un mail sans conséquence.
+     La lecture du cookie ne part QUE si le paramètre est là : une page de
+     cliente ne paie pas la vérification d'une signature qui ne la concerne
+     pas. */
+  const [lu, qui, admin] = await Promise.all([
     lireNumero(token),
     compteOuvert() ? utilisateurConnecte() : null,
+    brouillonDemande === '1' ? quiEstConnecte() : null,
   ])
-  if (numero === null) notFound()
+  if (lu === null) notFound()
 
-  if (numero === 'panne') {
+  if (lu === 'panne') {
     return (
       <Coquille titre="Votre numéro" avancement={-1} camp="fini" token={token}>
         <p className="nu-mot">La page ne répond pas.</p>
@@ -271,6 +320,21 @@ export default async function NumeroPage({
       </Coquille>
     )
   }
+
+  /* ── LE BROUILLON SE SUPERPOSE AVANT TOUT LE RESTE ───────────────────
+     La ligne devient celle qu'elle SERA une fois l'aperçu publié, et tout ce
+     qui suit — résolution des visuels, prix gelé, port, crédit fondateur,
+     jalons — travaille dessus sans savoir qu'il s'agit d'un brouillon. C'est
+     la seule façon d'être sûr que ce que Mathias voit est ce que le client
+     verra : un rendu parallèle mentirait au premier écart.
+     Rien n'est écrit : `appliquerBrouillon` rend une COPIE.
+     Sans brouillon (aucun « Préparer » n'a eu lieu, ou le journal n'a rien
+     gardé), il n'y a rien à superposer : la page reste celle du dossier, et
+     le bandeau ne s'affiche pas — un bandeau « prévisualisation » au-dessus
+     de la page RÉELLE serait le premier mensonge de cet écran. */
+  const br = admin ? lireBrouillon(await lireBrouillons(lu.id)) : null
+  const previsualisation = br !== null
+  const numero: Numero = appliquerBrouillon(lu, br)
 
   /* ⚠️ D'OÙ L'ON VIENT (08/09/2026). Tous les liens de CETTE page vers le
      questionnaire disent qu'ils partent d'un numéro : sans ça, la croix du
@@ -436,6 +500,7 @@ export default async function NumeroPage({
       montrerGardeLien={numero.etat !== 'livree'}
       compte={compte}
       retour={retour}
+      previsualisation={previsualisation}
       token={numero.token}>
       {numero.etat === 'photos_recues' && depot === 'termine' && (
         <>
@@ -548,7 +613,13 @@ export default async function NumeroPage({
             doublesCadrage={apercu?.doublesCadrage ?? []}
             platsCadrageDroite={apercu?.platsCadrageDroite ?? []}
             platsCadrageGauche={apercu?.platsCadrageGauche ?? []}
-            token={numero.token}
+            {...(previsualisation
+              /* SANS TOKEN, LA VISIONNEUSE NE PEUT RIEN ÉCRIRE : c'est lui,
+                 et lui seul, qui arme le bouton « Je préfère celle-ci » et
+                 son PATCH. En prévisualisation, on regarde — le choix de
+                 couverture appartient au client, pas à l'atelier. */
+              ? {}
+              : { token: numero.token })}
             modifiable
           />
 
@@ -565,6 +636,7 @@ export default async function NumeroPage({
               renonciation={numero.renonciation_retractation}
               joursComposition={JOURS_COMPOSITION}
               joursLivraison={JOURS_LIVRAISON}
+              previsualisation={previsualisation}
             />
           )}
         </>
@@ -730,6 +802,7 @@ function Coquille({
   montrerGardeLien = true,
   compte = null,
   retour = { href: '/compte', mot: 'Mon compte' },
+  previsualisation = false,
   token,
   children,
 }: {
@@ -757,11 +830,27 @@ function Coquille({
      Calculée par la page — elle seule sait d'où vient la cliente et si la
      destination existe. Voir « D'OÙ ELLE VIENT » plus haut. */
   retour?: { href: string; mot: string }
+  /* La page est regardée par l'atelier AVANT publication (10/09/2026). Rien
+     ne change dans le rendu du dossier : on ajoute un bandeau qui dit ce
+     qu'on regarde, et la page se décale d'autant. */
+  previsualisation?: boolean
   token: string
   children: React.ReactNode
 }) {
   return (
-    <div className="nu">
+    <div className={`nu${previsualisation ? ' nu--previs' : ''}`}>
+      {/* ── LE BANDEAU DE PRÉVISUALISATION ────────────────────────────
+          Une ligne, fixe, impossible à confondre avec la page du client :
+          il dit les deux choses qu'on a besoin de savoir en la regardant
+          (rien n'est parti) et comment en sortir. Il ne s'affiche QUE pour
+          un admin porteur d'un brouillon — une cliente ne peut pas le voir,
+          même en collant le paramètre dans son URL. */}
+      {previsualisation && (
+        <p className="nu-previs" role="status">
+          Prévisualisation : rien n’est publié, aucun mail n’est parti. Fermez cet
+          onglet pour revenir à l’atelier.
+        </p>
+      )}
       {/* Le haut de page du PARCOURS (04/09) : le logo officiel centré — le
           même fichier que Composer.tsx — à la place du mot en toutes lettres.
           La cliente arrive ici depuis le questionnaire : même maison, même

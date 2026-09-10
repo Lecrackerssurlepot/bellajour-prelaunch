@@ -50,6 +50,9 @@ import {
   type Etat,
   type Saisie,
 } from "@/lib/atelier/transitions";
+/* Le brouillon de prévisualisation (10/09/2026) : sa liste blanche de
+   colonnes et le type d'événement qui le porte. Module PUR. */
+import { TYPE_BROUILLON } from "@/lib/atelier/brouillon";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -406,10 +409,44 @@ export async function POST(request: Request) {
     }
 
     if (verifierSeulement) {
+      /* ── LE BROUILLON, POUR VOIR LA PAGE AVANT DE L'ENVOYER ──────────
+         Demande de Mathias (10/09/2026). La prévisualisation ne peut pas
+         recevoir la saisie par l'URL : la page du client la lirait comme une
+         donnée du navigateur, et il faudrait y recopier la grille, le devis
+         et la résolution R2 — trois secondes vérités. On dépose donc CE QUI
+         SERAIT ÉCRIT dans le journal, et la page d'état le superpose à la
+         ligne réelle. Rien n'est écrit dans `numeros`, aucun mail ne part.
+
+         Le montant du port rejoint le patch ICI : plus bas il n'y entre
+         qu'au moment d'écrire (le dry-run s'arrête avant), et sans lui le
+         bon de commande de la prévisualisation resterait muet — exactement
+         ce que l'atelier veut relire avant de publier.
+
+         ⚠️ Un journal qui refuse ne fait pas échouer la vérification (même
+         contrat que `logEvenement` partout ailleurs) : on le DIT à l'écran,
+         qui n'affichera pas le bouton plutôt que d'ouvrir un onglet vide. */
+      let brouillon: boolean | null = null;
+      if (cle === "publier_apercu" || cle === "corriger_apercu") {
+        brouillon = await logEvenement(supabase, numero.id, TYPE_BROUILLON, {
+          patch: {
+            ...prepa.patch,
+            ...(typeof livraison?.client === "number"
+              ? { livraison_centimes: livraison.client }
+              : {}),
+          },
+          resume: prepa.resume,
+          livraison,
+          par: prenomDe(qui),
+        });
+      }
+
       return NextResponse.json(
         {
           ok: true,
           verification: true,
+          /* Absent sur les autres actions : il n'y a rien à prévisualiser
+             ailleurs que sur la page qui vend. */
+          ...(brouillon === null ? {} : { brouillon }),
           action: { cle: action.cle, libelle: action.libelle, vers: action.vers, note: action.note },
           resume: prepa.resume,
           ...(prepa.params?.MOT ? { mot: prepa.params.MOT } : {}),

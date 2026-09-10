@@ -51,6 +51,12 @@ import {
 
 type Verif = {
   action: { cle: string; libelle: string; vers: string; note?: string };
+  /* ── LE BROUILLON DE PRÉVISUALISATION (10/09/2026) ──────────────────
+     Rendu par le dry-run de `publier_apercu` / `corriger_apercu` UNIQUEMENT :
+     `true` = ce qui serait écrit est déposé au journal, la page du client est
+     visible ; `false` = le journal a refusé, il n'y a rien à ouvrir ;
+     `undefined` = une autre action, ou la démonstration (sans base). */
+  brouillon?: boolean;
   resume: {
     nbPages?: number;
     palier?: string;
@@ -1439,6 +1445,28 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                 >
                   Voir sa page
                 </a>
+                {/* ── PRÉVISUALISER, ENTRE PRÉPARER ET CONFIRMER ─────────
+                    Demande de Mathias (10/09/2026) : voir la page telle
+                    qu'elle sera, avec ce qui vient d'être saisi, avant que
+                    le mail parte. C'est un LIEN, pas un bouton : nouvel
+                    onglet, adresse visible au survol, rien à poster.
+                    Le dry-run vient de déposer le brouillon au journal ; la
+                    page d'état le superpose pour un porteur du cookie admin,
+                    et pour personne d'autre.
+                    ⚠️ ABSENT EN DÉMONSTRATION, et c'est normal :
+                    /admin/atelier/demo n'écrit rien en base (`simulerResume`
+                    ne rend pas `brouillon`), donc il n'y aurait aucun
+                    brouillon à afficher au bout du lien. */}
+                {besoinApercu && verif.brouillon === true ? (
+                  <a
+                    className="adm-btn adm-btn--ghost"
+                    href={`/numero/${fiche.ligne.token}?brouillon=1`}
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Prévisualiser la page du client
+                  </a>
+                ) : null}
                 <button
                   className="adm-btn ate-btn-valider"
                   type="button"
@@ -1448,6 +1476,18 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                   {occupe ? "…" : `Confirmer — ${choisie.libelle}`}
                 </button>
               </div>
+
+              {/* L'aide dit ce que le lien fait, ou POURQUOI il n'est pas là.
+                  Un bouton qui disparaît sans un mot se lit comme une panne. */}
+              {besoinApercu ? (
+                <p className="ate-champ-aide">
+                  {verif.brouillon === true
+                    ? "S'ouvre dans un nouvel onglet, avec ce que tu viens de saisir. Rien n'est publié."
+                    : demo
+                      ? "Pas de prévisualisation en démonstration : elle a besoin d'un brouillon en base."
+                      : "Prévisualisation indisponible : le brouillon n'a pas pu être écrit au journal."}
+                </p>
+              ) : null}
             </div>
           ) : choisie.cle === "envoyer_impression" && fiche.cloudprinterOrderId ? null : (
             <button

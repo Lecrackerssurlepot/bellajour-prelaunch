@@ -42,6 +42,13 @@ function texteMail(code: string): string {
   return objet ? `${code} — « ${objet} »` : code;
 }
 
+/* Un sous-objet du payload, ou un objet vide : le journal est du jsonb libre
+   et une ligne écrite par une version antérieure ne doit jamais faire
+   disparaître une phrase du récit. */
+function estObjet(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
 function auteur(payload: Record<string, unknown>): string | null {
   const par = payload.par;
   return typeof par === "string" && par.trim() ? par.trim() : null;
@@ -221,6 +228,35 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         detail: nbPages ? `${nbPages} pages${euros ? `, ${euros} €` : ""}` : null,
         ton: "nous",
       };
+
+    /* ── LA PRÉVISUALISATION D'UN APERÇU (10/09/2026) ──────────────────
+       Le dry-run de l'admin dépose un brouillon dans le journal : c'est lui
+       qui alimente /numero/<token>?brouillon=1. La ligne reste SOBRE — c'est
+       un geste de contrôle, pas une décision — mais elle existe, parce que
+       « qui a regardé cette page, avec quels chiffres, avant l'envoi ? » est
+       une question qu'on se pose le jour où le prix annoncé surprend.
+       Les nombres vivent sous `resume` et `livraison` (la forme exacte que la
+       route rend à l'écran de confirmation), pas à la racine du payload. */
+    case "apercu_brouillon": {
+      const resume: Record<string, unknown> = estObjet(payload.resume) ? payload.resume : {};
+      const bloc: Record<string, unknown> = estObjet(payload.livraison) ? payload.livraison : {};
+      const pages = typeof resume.nbPages === "number" ? resume.nbPages : null;
+      const prix = typeof resume.euros === "number" ? resume.euros : null;
+      /* Le port retenu par le dry-run : le devis, ou le montant saisi. */
+      const portVu = typeof bloc.client === "number" ? bloc.client : null;
+      return {
+        texte: fait(qui, "a prévisualisé la page", "Page prévisualisée"),
+        detail:
+          [
+            pages ? `${pages} pages` : "",
+            prix ? `${prix} €` : "",
+            portVu === null ? "" : `livraison ${eur(portVu)}`,
+          ]
+            .filter(Boolean)
+            .join(", ") || null,
+        ton: "neutre",
+      };
+    }
 
     case "mail_envoye":
       return {
