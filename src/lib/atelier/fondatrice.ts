@@ -43,6 +43,27 @@ import { logEvenement } from "./evenements";
  * mieux mais laissait quatorze clientes payer plein tarif si l'atelier
  * oubliait un envoi manuel. Un droit contractuel qui dépend d'un geste humain
  * n'est pas un droit. On a tranché pour l'automatisme.
+ *
+ * ── LE RATTACHEMENT À LA MAIN (10/09/2026) ───────────────────────────────
+ * Un fondateur peut composer son numéro sous une AUTRE adresse que celle de
+ * sa prévente. La détection par `email_canonical` ne le voit alors pas, et le
+ * filet manuel non plus, puisqu'il passe par la même détection : ce fondateur
+ * n'était atteignable par AUCUN des deux chemins. L'admin peut donc DÉSIGNER
+ * la ligne `waitlist` à laquelle un dossier se rattache — un événement
+ * `fondateur_rattache` au journal, aucune colonne, aucune migration.
+ *
+ * Trois bornes s'ajoutent aux quatre ci-dessus, et aucune ne les affaiblit :
+ *
+ *   5. Le geste est réservé à un ADMIN AUTHENTIFIÉ et journalisé avec son
+ *      prénom : « Mathias a rattaché le dossier au fondateur nº3 ». Ce n'est
+ *      pas un champ que le client remplit, c'est une décision attribuable.
+ *   6. Il DÉSIGNE un droit, il n'en crée aucun. La ligne `waitlist` visée est
+ *      relue à l'instant du geste ET à l'instant du crédit, et doit être
+ *      `founder` + `confirmed` + numéro attribué, exactement comme pour la
+ *      détection par email. Un numéro qui ne correspond à rien ne donne rien.
+ *   7. L'unicité ne bouge pas : `max_redemptions: 1` chez Stripe et le
+ *      journal indexé sur `numero_fondateur`. Deux dossiers rattachés au même
+ *      fondateur se partagent donc UN crédit, pas deux.
  */
 
 /** Le montant contractuel, en centimes. CGV v3.0 art. 5 bis : 30 €, point. */
@@ -57,6 +78,13 @@ export const EVT_CODE_CREE = "code_fondatrice_cree";
 export const EVT_CREDIT_APPLIQUE = "credit_fondatrice_applique";
 /** Le paiement est passé AVEC la remise : le crédit est dépensé. */
 export const EVT_CREDIT_CONSOMME = "credit_fondatrice_consomme";
+/**
+ * L'admin a désigné à la main le fondateur derrière ce dossier (10/09/2026).
+ * Payload : `{ numero_fondateur: number, par: string }`. C'est le SEUL moyen
+ * d'atteindre un fondateur qui compose sous une autre adresse que celle de sa
+ * prévente ; il ne crée aucun droit, il en désigne un (borne nº6 ci-dessus).
+ */
+export const EVT_FONDATEUR_RATTACHE = "fondateur_rattache";
 
 /** La clé de métadonnée posée sur la session Stripe quand la remise est d'office. */
 export const META_CREDIT = "credit_fondatrice";
@@ -89,6 +117,34 @@ export function numeroFondatricePour(w: LigneWaitlist | null | undefined): numbe
   const n = w.numero_fondateur;
   if (typeof n !== "number" || !Number.isInteger(n) || n <= 0) return null;
   return n;
+}
+
+/**
+ * Le numéro de fondateur désigné à la main, lu dans les événements
+ * `fondateur_rattache` d'un dossier. Le DERNIER gagne.
+ *
+ * Le dernier, et pas le premier, parce qu'un rattachement est une CORRECTION :
+ * se tromper de numéro en dictant au téléphone est exactement le geste que ce
+ * formulaire rend possible, et la seule réparation est de recommencer. Le
+ * journal reste append-only : la ligne fautive ne disparaît pas, elle est
+ * simplement dépassée.
+ *
+ * Tout payload illisible est IGNORÉ, jamais deviné : une chaîne « 3 », un
+ * zéro, un négatif, un décimal ne sont pas des places de fondateur. La
+ * conséquence d'un doute est « pas de crédit », qui se rattrape ; l'inverse
+ * distribuerait 30 € sur une coquille.
+ */
+export function numeroRattache(
+  lignes: Array<{ payload: unknown }> | null | undefined,
+): number | null {
+  let dernier: number | null = null;
+  for (const l of lignes ?? []) {
+    const p = (l?.payload ?? {}) as Record<string, unknown>;
+    const n = p.numero_fondateur;
+    if (typeof n !== "number" || !Number.isInteger(n) || n <= 0) continue;
+    dernier = n;
+  }
+  return dernier;
 }
 
 /* Le code porte le PRÉNOM du fondateur (décision de Mathias, 31/08) :
@@ -218,6 +274,16 @@ export type DossierCredit = {
   email_canonical: string | null;
 };
 
+/**
+ * D'où l'on sait que ce dossier est celui d'un fondateur.
+ *
+ * `email` : sa ligne `waitlist` porte l'adresse du dossier — le cas normal.
+ * `rattachement` : un admin l'a désigné à la main, parce qu'il a composé sous
+ * une autre adresse. L'écran et le journal le disent, sinon personne ne
+ * saurait pourquoi ce dossier-là porte une remise que l'email n'explique pas.
+ */
+export type OrigineFondateur = "email" | "rattachement";
+
 export type Credit =
   /** Pas fondatrice, ou pas confirmée : plein tarif, et c'est normal. */
   | { statut: "pas_fondatrice" }
@@ -228,13 +294,15 @@ export type Credit =
    */
   | { statut: "indisponible"; pourquoi: string; code: string | null }
   /** Le crédit a déjà servi. Une fois, c'est le contrat. */
-  | { statut: "consomme"; code: string; numeroFondateur: number }
+  | { statut: "consomme"; code: string; numeroFondateur: number; origine: OrigineFondateur }
   /** Applicable ici et maintenant. */
   | {
       statut: "pret";
       code: string;
       promotionCodeId: string;
       numeroFondateur: number;
+      /** Email ou rattachement à la main : le journal doit pouvoir le dire. */
+      origine: OrigineFondateur;
       /** Le code existait déjà (aucun objet Stripe créé à cet appel). */
       deja: boolean;
       /** L'écriture au journal a réussi (T-038). Faux = idempotence cassée. */
@@ -266,6 +334,106 @@ async function lireFondatrice(
 
   if (error) return { erreur: `waitlist:${error.code ?? "?"}` };
   return { numeroFondateur: numeroFondatricePour(data) };
+}
+
+/**
+ * Les rattachements posés à la main sur CE dossier, dans l'ordre.
+ *
+ * `limit(5)` : ce geste est rare et se corrige en le refaisant. Cinq lignes
+ * couvrent large, et l'ordre chronologique croissant garantit que la dernière
+ * lue est bien la dernière écrite — c'est elle qui fait foi.
+ */
+async function lireRattachements(
+  supabase: SupabaseClient,
+  numeroId: string,
+): Promise<{ numero: number | null } | { erreur: string }> {
+  const { data, error } = await supabase
+    .from("evenements")
+    .select("payload")
+    .eq("numero_id", numeroId)
+    .eq("type", EVT_FONDATEUR_RATTACHE)
+    .order("created_at", { ascending: true })
+    .limit(5)
+    .returns<Array<{ payload: unknown }>>();
+
+  if (error) return { erreur: `rattachement:${error.code ?? "?"}` };
+  return { numero: numeroRattache(data ?? []) };
+}
+
+/**
+ * La ligne `waitlist` que DÉSIGNE un rattachement — relue, jamais crue.
+ *
+ * ⚠️ C'EST LA BORNE nº6. Le rattachement dit « ce dossier est celui du
+ * fondateur nº3 » ; il ne dit pas « le fondateur nº3 a droit à 30 € ». Ce
+ * droit-là ne peut venir que de la prévente, et il se vérifie ici avec la
+ * MÊME règle que la détection par email (`numeroFondatricePour`). Un admin
+ * qui frappe un numéro fantaisiste ne crée donc aucun crédit.
+ */
+async function lireFondatriceParNumero(
+  supabase: SupabaseClient,
+  numeroFondateur: number,
+): Promise<{ confirme: boolean } | { erreur: string }> {
+  const { data, error } = await supabase
+    .from("waitlist")
+    .select("offer_type, status, numero_fondateur")
+    .eq("numero_fondateur", numeroFondateur)
+    .eq("offer_type", "founder")
+    .eq("status", "confirmed")
+    .limit(1)
+    .returns<LigneWaitlist[]>();
+
+  if (error) return { erreur: `waitlist_numero:${error.code ?? "?"}` };
+  /* Les filtres SQL ne suffisent pas : la règle des trois conditions vit dans
+     `numeroFondatricePour`, et c'est elle qui doit trancher, ici comme
+     ailleurs. Deux endroits qui décident « fondateur ou pas » finiraient par
+     ne plus dire la même chose. */
+  return { confirme: numeroFondatricePour((data ?? [])[0]) === numeroFondateur };
+}
+
+/** Ce que la détection rend : un numéro et son origine, rien, ou un doute. */
+export type Detection =
+  | { numeroFondateur: number; origine: OrigineFondateur }
+  | { numeroFondateur: null; origine: null }
+  | { erreur: string };
+
+/**
+ * LE point de détection : ce dossier est-il celui d'un fondateur, et par quel
+ * chemin le sait-on ?
+ *
+ * Deux chemins, dans cet ordre, et l'ordre compte :
+ *   1. L'EMAIL du dossier, comme depuis le 01/09. C'est le cas de très loin
+ *      le plus fréquent, et le seul qui ne coûte qu'une requête.
+ *   2. Le RATTACHEMENT posé à la main, pour le fondateur qui compose sous une
+ *      autre adresse. On ne le lit que si l'email n'a rien donné : un email
+ *      qui reconnaît déjà la personne n'a pas besoin d'être corrigé.
+ *
+ * Un doute (lecture en échec) ressort en `erreur` et n'est JAMAIS traduit en
+ * « pas fondateur » : les appelants en font « indisponible », c'est-à-dire
+ * plein tarif et un rattrapage à la main. Le contraire — deviner un crédit —
+ * ne se rattrape pas.
+ */
+export async function numeroFondateurDuDossier(
+  supabase: SupabaseClient,
+  dossier: DossierCredit,
+): Promise<Detection> {
+  const canon = canonique(dossier);
+  if (canon) {
+    const wl = await lireFondatrice(supabase, canon);
+    if ("erreur" in wl) return { erreur: wl.erreur };
+    if (wl.numeroFondateur !== null) {
+      return { numeroFondateur: wl.numeroFondateur, origine: "email" };
+    }
+  }
+
+  const rattache = await lireRattachements(supabase, dossier.id);
+  if ("erreur" in rattache) return { erreur: rattache.erreur };
+  if (rattache.numero === null) return { numeroFondateur: null, origine: null };
+
+  const confirme = await lireFondatriceParNumero(supabase, rattache.numero);
+  if ("erreur" in confirme) return { erreur: confirme.erreur };
+  if (!confirme.confirme) return { numeroFondateur: null, origine: null };
+
+  return { numeroFondateur: rattache.numero, origine: "rattachement" };
 }
 
 /**
@@ -387,13 +555,15 @@ export async function assurerCreditFondatrice(
   par?: string,
 ): Promise<Credit> {
   try {
-    const canon = canonique(dossier);
-    if (!canon) return { statut: "pas_fondatrice" };
-
-    const wl = await lireFondatrice(supabase, canon);
-    if ("erreur" in wl) return { statut: "indisponible", pourquoi: wl.erreur, code: null };
-    const numeroFondateur = wl.numeroFondateur;
-    if (numeroFondateur === null) return { statut: "pas_fondatrice" };
+    /* Email PUIS rattachement à la main : une seule détection pour les deux
+       appelants, sinon le filet manuel de l'admin ne verrait pas ce que le
+       checkout voit (c'était exactement le trou du 10/09). */
+    const detection = await numeroFondateurDuDossier(supabase, dossier);
+    if ("erreur" in detection) {
+      return { statut: "indisponible", pourquoi: detection.erreur, code: null };
+    }
+    if (detection.numeroFondateur === null) return { statut: "pas_fondatrice" };
+    const { numeroFondateur, origine } = detection;
 
     const journal = await lireCodeDeLaFondatrice(supabase, numeroFondateur);
     if ("erreur" in journal) {
@@ -412,7 +582,7 @@ export async function assurerCreditFondatrice(
       }
 
       if (await creditDejaConsomme(supabase, numeroFondateur)) {
-        return { statut: "consomme", code: existant.code, numeroFondateur };
+        return { statut: "consomme", code: existant.code, numeroFondateur, origine };
       }
 
       let promo: Stripe.PromotionCode;
@@ -424,7 +594,7 @@ export async function assurerCreditFondatrice(
       }
 
       if (!creditEncoreDu(promo)) {
-        return { statut: "consomme", code: existant.code, numeroFondateur };
+        return { statut: "consomme", code: existant.code, numeroFondateur, origine };
       }
 
       return {
@@ -432,6 +602,7 @@ export async function assurerCreditFondatrice(
         code: existant.code,
         promotionCodeId: promo.id,
         numeroFondateur,
+        origine,
         deja: true,
         journalEcrit: true,
         creeLe: existant.creeLe,
@@ -457,6 +628,10 @@ export async function assurerCreditFondatrice(
       coupon_id: frappe.couponId,
       montant: CREDIT_FONDATRICE_CENTIMES,
       numero_fondateur: numeroFondateur,
+      /* Six mois plus tard, « pourquoi ce dossier a-t-il un crédit alors que
+         son email n'est pas celui de la prévente ? » doit avoir une réponse
+         dans le journal, pas dans une mémoire. */
+      origine,
       ...(par ? { par } : { par: "auto" }),
     });
 
@@ -465,6 +640,7 @@ export async function assurerCreditFondatrice(
       code: frappe.code,
       promotionCodeId: frappe.promotionCodeId,
       numeroFondateur,
+      origine,
       deja: false,
       journalEcrit,
       creeLe,
@@ -490,16 +666,16 @@ export async function creditDuPourMail(
   dossier: DossierCredit,
 ): Promise<number | null> {
   try {
-    const canon = canonique(dossier);
-    if (!canon) return null;
-
-    const wl = await lireFondatrice(supabase, canon);
-    if ("erreur" in wl || wl.numeroFondateur === null) return null;
+    /* La MÊME détection que le checkout : un dossier rattaché à la main doit
+       lire « votre crédit de 30 € est déjà déduit » dans M3, sans quoi le mail
+       et la page de paiement se contrediraient. */
+    const detection = await numeroFondateurDuDossier(supabase, dossier);
+    if ("erreur" in detection || detection.numeroFondateur === null) return null;
 
     /* Le seul cas où une fondatrice n'a plus de crédit au moment de M3 : elle
        a déjà payé un PREMIER numéro avec. M3 ne part que sur un dossier non
        payé, donc c'est bien un second numéro. */
-    if (await creditDejaConsomme(supabase, wl.numeroFondateur)) return null;
+    if (await creditDejaConsomme(supabase, detection.numeroFondateur)) return null;
 
     return CREDIT_FONDATRICE_EUROS;
   } catch (err) {

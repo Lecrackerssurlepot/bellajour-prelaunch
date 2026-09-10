@@ -191,6 +191,19 @@ export type ClientVue = {
      */
     creditConsommeLe: string | null;
     creditCode: string | null;
+    /**
+     * 10/09 — cette ligne de prévente n'a PAS été trouvée par l'email du
+     * dossier : un admin l'a désignée à la main (`fondateur_rattache`), parce
+     * que le fondateur compose sous une autre adresse. Absent = détection
+     * normale par email, le cas de très loin le plus fréquent.
+     *
+     * L'écran doit le dire en toutes lettres : une remise de 30 € posée sur un
+     * dossier dont l'email n'est pas celui de la prévente est inexplicable
+     * sans cette phrase.
+     */
+    rattache?: boolean;
+    rattacheLe?: string;
+    rattachePar?: string;
   } | null;
 };
 

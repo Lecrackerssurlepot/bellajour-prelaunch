@@ -303,6 +303,28 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         ton: "alerte",
       };
 
+    /* ── LE DOSSIER EST RATTACHÉ À UN FONDATEUR, À LA MAIN (10/09/2026) ──
+       Un fondateur qui compose sous une autre adresse que celle de sa
+       prévente n'est reconnu par aucune détection automatique. Un admin le
+       désigne alors, et cette ligne est la SEULE trace du geste : elle doit
+       nommer l'auteur et le numéro, parce que c'est elle qui explique, six
+       mois plus tard, une remise que l'email ne justifie pas. */
+    case "fondateur_rattache": {
+      const nf = payload.numero_fondateur;
+      const place = typeof nf === "number" ? `au fondateur nº${nf}` : "à un fondateur";
+      return {
+        texte: fait(
+          auteur(payload),
+          `a rattaché le dossier ${place}`,
+          `Dossier rattaché ${place}`,
+        ),
+        detail:
+          "Le crédit de 30 € et les avantages fondateur s'appliqueront tout seuls, "
+          + "sans que le client tape quoi que ce soit",
+        ton: "nous",
+      };
+    }
+
     /* T-021 — le crédit contractuel des fondatrices (CGV art. 5 bis). Le
        code lui-même est dans le payload replié : la phrase dit le geste,
        pas le secret. */
@@ -314,7 +336,9 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
           "a créé le code fondateur de 30 €",
           "Code fondateur de 30 € créé",
         ),
-        detail: typeof nf === "number" ? `Fondateur nº${nf}, à usage unique` : "À usage unique",
+        detail:
+          (typeof nf === "number" ? `Fondateur nº${nf}, à usage unique` : "À usage unique")
+          + (payload.origine === "rattachement" ? " (dossier rattaché à la main)" : ""),
         ton: "nous",
       };
     }
@@ -328,6 +352,9 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         texte: "Crédit fondateur de 30 € appliqué automatiquement",
         detail:
           (typeof nf === "number" ? `Fondateur nº${nf}. ` : "") +
+          (payload.origine === "rattachement"
+            ? "Reconnu par le rattachement posé à la main, pas par son email. "
+            : "") +
           "Rien à saisir : la remise était déjà sur la page de paiement",
         ton: "nous",
       };
