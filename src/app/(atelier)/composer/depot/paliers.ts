@@ -4,8 +4,8 @@
  * ⚠️ Ceci n'est PAS un prix. C'est un ORDRE DE GRANDEUR, affiché ici et nulle
  * part avant. Le prix ferme naît du nombre de pages saisi par l'atelier au
  * moment de publier l'aperçu, et il ne quitte jamais le serveur : invariant
- * nº2 — le prix ne vient jamais du navigateur. D'où le libellé « autour de
- * 40 € · prix confirmé avec votre couverture » plutôt qu'un montant sec, qui
+ * nº2 — le prix ne vient jamais du navigateur. D'où le libellé « de 33 à
+ * 41 € · prix confirmé avec votre couverture » plutôt qu'un montant sec, qui
  * se lirait comme un engagement et deviendrait un litige si l'atelier compose
  * 38 pages au lieu de 42.
  *
@@ -13,30 +13,46 @@
  * en dessous, il n'y a pas de quoi composer un numéro.
  */
 
-import { GRILLE, type PalierCle } from '@/lib/atelier/grille';
+import { BANDES_PHOTOS, eurosPourPages } from '@/lib/atelier/grille';
 
 export const MIN_PHOTOS = 40;
 export const MAX_PHOTOS = 100;
 
 export type Palier = {
-  cle: PalierCle;
   min: number;
   max: number;
   pages: string;
   autour: string;
 };
 
-/* DÉRIVÉ de la source unique `@/lib/atelier/grille` (07/09/2026) : les
-   bornes photos, les tranches de pages et les montants « autour de » sont
-   ceux de la grille, les mêmes que la page produit et que le prix ferme de
-   prix.ts. Les trois affichages ne peuvent plus se contredire. */
-const PALIERS: Palier[] = GRILLE.map((g) => ({
-  cle: g.cle,
-  min: g.photosMin,
-  max: g.photosMax,
-  pages: `${g.minPages} à ${g.maxPages} pages`,
-  autour: `autour de ${g.euros} €`,
-}));
+/* DÉRIVÉ de la source unique `@/lib/atelier/grille`. Depuis le 10/09/2026 la
+   grille donne un prix par nombre de pages EXACT : une bande de photos ne
+   correspond donc plus à UN montant mais à une FOURCHETTE, et c'est elle
+   qu'on annonce (« de 25 à 31 € »). C'est plus honnête que l'ancien « autour
+   de 30 € » : le prix ferme naîtra du nombre de pages que l'atelier compose,
+   et il tombera quelque part dans cette fourchette-là.
+
+   ⚠️ Le champ garde son nom `autour` : il ne décrit pas le mot affiché mais
+   sa PLACE dans la phrase de l'écran 5 (« 20 à 28 pages · de 25 à 31 € »).
+   Les bornes de prix viennent de `eurosPourPages`, donc de la même table que
+   le montant débité : les deux ne peuvent plus se contredire.
+
+   Pas de `!` non-null : les bornes des bandes SONT des paginations de la
+   grille (le harnais le prouve), mais TypeScript ne le sait pas. Le repli
+   redit la fourchette de pages plutôt que d'inventer un montant. */
+const PALIERS: Palier[] = BANDES_PHOTOS.map((b) => {
+  const bas = eurosPourPages(b.pagesMin);
+  const haut = eurosPourPages(b.pagesMax);
+  return {
+    min: b.photosMin,
+    max: b.photosMax,
+    pages: `${b.pagesMin} à ${b.pagesMax} pages`,
+    autour:
+      bas === null || haut === null
+        ? `${b.pagesMin} à ${b.pagesMax} pages`
+        : `de ${bas} à ${haut} €`,
+  };
+});
 
 export function palierPour(n: number): Palier | null {
   return PALIERS.find((p) => n >= p.min && n <= p.max) ?? null;

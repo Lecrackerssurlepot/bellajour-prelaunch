@@ -163,18 +163,70 @@
    copies du même bloc énonceraient deux fois le même texte, et un utilisateur
    au clavier tabulerait dans un bloc invisible. */
 .at-pdp .colonne-recit > .at-rv:first-child { order: 1; }
-.at-pdp .bloc-prix { order: 2; }
+/* .bloc-prix (les trois encarts de palier) est orphelin depuis le
+   10/09/2026 (lot 2) : archivé dans archive/pdp-trois-formats/, voir plus
+   bas. `.bloc-prix-ligne` reprend son rang dans l'ordre du flex. */
+.at-pdp .bloc-prix-ligne { order: 2; }
 .at-pdp .bloc-acte { order: 3; }
 
-/* ⚠️ LA LIGNE DE PRIX ET SON PETIT TITRE SONT DES OBJETS DE TÉLÉPHONE.
-   Ils vivent dans le DOM à toutes les largeurs — un seul balisage, jamais
-   deux — mais ne se peignent que sous 720 px, où la grille des trois paliers
-   est descendue sous le bouton. Au-dessus, c'est la grille qui tient la
-   place, et le premier écran d'ordinateur ne bouge pas d'un pixel.
-   Déclaré ICI, en tête de fichier et non dans une requête `min-width` : une
-   règle qui cache par défaut ne peut pas être oubliée par une largeur. */
-.at-pdp .bloc-prix-ligne,
-.at-pdp .prix-titre { display: none; }
+/* ⚠️ LA LIGNE DE PRIX EST VISIBLE À TOUTES LES LARGEURS (10/09/2026, lot 3).
+   Elle ne se peignait qu'en dessous de 720 px, parce qu'au-dessus la grille
+   des trois paliers tenait la place du premier écran d'ordinateur. Les trois
+   paliers sont partis le 10/09 (lot 2, archive/pdp-trois-formats/) et rien
+   ne les a remplacés sur ordinateur : le premier écran n'affichait plus
+   aucun prix. Un seul balisage (`.bloc-prix-ligne` dans Kiosque.tsx) à
+   toutes les largeurs ; seuls les corps et l'espacement changent par
+   media query, comme partout ailleurs dans ce fichier. */
+.at-pdp .bloc-prix-ligne { display: block; }
+
+.at-pdp .prix-ligne {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--c-line);
+  border-bottom: 1px solid var(--c-line);
+}
+
+/* `white-space: nowrap` contre le `overflow-wrap: anywhere !important` que
+   globals.css impose sous 767 px : sans lui, « Dès 25 € » pourrait se
+   couper au milieu (piège nº1). */
+.at-pdp .prix-ligne .des {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 2.4vw, 38px);
+  line-height: 1;
+  color: var(--c-text);
+  white-space: nowrap;
+}
+
+.at-pdp .prix-ligne .quoi {
+  text-align: right;
+  font-size: clamp(13px, 0.95vw, 14px);
+  line-height: 1.45;
+  color: var(--c-text-soft);
+}
+
+.at-pdp .prix-ligne .quoi span { display: block; }
+
+/* La phrase qui suit la ligne (PRIX_PHRASE, content.ts) — un corps discret,
+   jamais un token crème : cette colonne vit sous .bj-atelier, le monde
+   sombre. Même famille que `.mention` (plus bas), un ton plus retenue. */
+.at-pdp .prix-phrase {
+  margin: 8px 0 0;
+  max-width: 44ch;
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.6;
+  color: var(--c-text-faint);
+}
+
+/* ⚠️ `.prix-titre` est ORPHELINE depuis le 10/09/2026 (lot 2) : elle
+   coiffait `.bloc-prix`, les trois encarts de palier. Plus aucun élément du
+   DOM ne porte cette classe (archive/pdp-trois-formats/). Commentée, pas
+   supprimée. */
+/* .at-pdp .prix-titre { display: none; } */
 
 /* `.g-plus` — le segment de phrase que seul l'ordinateur affiche. Visible par
    defaut ; c'est le bloc telephone, plus bas, qui le retire. */
@@ -394,7 +446,13 @@
   .at-pdp .collage { flex: 1; min-height: 0; aspect-ratio: auto; }
 }
 
-/* ---- les trois paliers ---- */
+/* ---- les trois paliers ----
+   ⚠️ ORPHELINES depuis le 10/09/2026 (lot 2) : plus aucun élément du DOM ne
+   porte `.prix` / `.prix li` — Kiosque.tsx a retiré le JSX qui les rendait,
+   archivé dans archive/pdp-trois-formats/. `.prix-ligne` et `.prix-phrase`
+   (plus haut) les remplacent, à toutes les largeurs. Commentées, pas
+   supprimées :
+
 .at-pdp .prix {
   margin-top: clamp(14px, calc(2.2 * var(--uh)), 30px);
   display: grid;
@@ -412,15 +470,8 @@
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 
-/* Pas de translateY au survol : la carte vit dans une colonne serrée, et un
-   décalage de 3 px y lit comme un défaut d'alignement, pas comme un état. */
 .at-pdp .prix li:hover { border-color: var(--c-accent); background: var(--c-surface-2); }
 
-/* ⚠️ `block` OBLIGATOIRE sur les trois. Ce sont des <span>, donc en ligne
-   par défaut : les trois lignes se seraient suivies sur une seule, et
-   surtout `margin-top` sur .euros n'aurait RIEN fait — une marge verticale
-   est ignorée sur un élément en ligne. Le défaut ne se voit pas en lisant
-   le CSS, il se voit à l'écran. */
 .at-pdp .prix .combien,
 .at-pdp .prix .euros,
 .at-pdp .prix .pages { display: block; }
@@ -440,7 +491,7 @@
   line-height: 1.1;
 }
 
-.at-pdp .prix .pages { font-size: 13px; font-weight: 300; color: var(--c-text-soft); }
+.at-pdp .prix .pages { font-size: 13px; font-weight: 300; color: var(--c-text-soft); } */
 
 .at-pdp .mention {
   margin: clamp(14px, 2vw, 20px) 0 0;
@@ -801,9 +852,11 @@
      Une ligne de devanture : le montant en display, l'ordre de grandeur en
      petit à droite, deux filets. Pas d'encart — un encart unique pleine
      largeur ressemblerait à un champ de formulaire, et il y a un vrai bouton
-     32 px plus bas avec lequel il se disputerait le regard. */
-  .at-pdp .bloc-prix-ligne { display: block; order: 2; }
-
+     32 px plus bas avec lequel il se disputerait le regard.
+     `display` et `order` ne sont plus redits ici (10/09/2026, lot 3) : la
+     ligne de prix est visible et ordonnée dès la base du fichier, à toutes
+     les largeurs. Ce bloc ne règle plus que les tailles propres au
+     téléphone. */
   .at-pdp .prix-ligne {
     margin: 0;
     display: flex;
@@ -835,18 +888,12 @@
 
   .at-pdp .prix-ligne .quoi span { display: block; }
 
-  /* ── 5 · LES TROIS PALIERS PASSENT SOUS LE BOUTON ──
-     `order`, JAMAIS un second balisage : l'ordre de lecture au clavier et au
-     lecteur d'écran suit le DOM, et deux copies énonceraient deux fois les
-     mêmes prix. Ils restent des ENCARTS — décision de Mathias du 30/08, des
-     encarts et pas des filets — mais empilés sur toute la laisse au lieu
-     d'être serrés à 104 px : c'est ce qui leur rend un corps de texte lisible
-     (15 px au lieu de 11) sans rien coûter au premier écran, puisqu'ils n'y
-     sont plus. */
-  /* Même traitement de section que la bande du parcours : 72 px, un filet,
-     puis le titre. Le filet tombe une trentaine de pixels AVANT le pli et le
-     titre après — un trait qui annonce une suite, jamais un titre coupé en
-     deux. C'est la forme exacte du grief de Mathias, prise à l'envers. */
+  /* ⚠️ LES TROIS PALIERS SONT ORPHELINS depuis le 10/09/2026 (lot 2) :
+     `.bloc-prix`, `.prix-titre`, `.prix` ne correspondent plus à rien dans
+     Kiosque.tsx (archivé dans archive/pdp-trois-formats/). La ligne de prix
+     unique, juste au-dessus, tient ce rôle à toutes les largeurs. Règles
+     commentées, pas supprimées :
+
   .at-pdp .bloc-prix {
     order: 4;
     margin-top: var(--chapitre);
@@ -870,9 +917,6 @@
     gap: 10px;
   }
 
-  /* Deux colonnes : à gauche les deux libellés empilés, à droite le prix,
-     centré sur les deux lignes. C'est la forme d'un tarif — on lit ce qu'on
-     a, puis ce que ça coûte — et elle tient sans jamais couper un mot. */
   .at-pdp .prix li {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -909,7 +953,7 @@
     margin-top: 0;
     font-size: 32px;
     line-height: 1;
-  }
+  } */
 
   /* ── 6 · LA BANDE DU PARCOURS DEVIENT UNE SECTION ──
      Le grief de Mathias, et il était fondé : elle commençait 38 px sous le
@@ -1003,14 +1047,15 @@
 
 /* ── ÉCRANS COURTS, entre 721 et 900 px de large ──
    Le téléphone couché et la petite tablette : la composition y est déjà en
-   une colonne mais garde les trois encarts dans le premier écran. Ces
-   valeurs-là n'ont pas bougé depuis leur mesure. */
+   une colonne. Ces valeurs-là n'ont pas bougé depuis leur mesure. */
+/* ⚠️ ORPHELINES depuis le 10/09/2026 (lot 2, voir plus haut) : commentées,
+   pas supprimées.
+   .at-pdp .prix li { padding: 8px 8px; }
+   .at-pdp .prix .euros { font-size: 26px; } */
 @media (min-width: 721px) and (max-width: 900px) and (max-height: 700px) {
   .at-pdp .kiosque { padding-top: calc(var(--nav-h) + 8px); gap: 10px; }
   .at-pdp .collage { aspect-ratio: 5 / 2; }
   .at-pdp .lede { font-size: 14px; }
-  .at-pdp .prix li { padding: 8px 8px; }
-  .at-pdp .prix .euros { font-size: 26px; }
   .at-pdp .acte { margin-top: 10px; }
 }
 

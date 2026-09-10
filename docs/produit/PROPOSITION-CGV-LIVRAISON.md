@@ -2,7 +2,9 @@
 
 Écrit le 07/09/2026, dans le lot 5 du chantier « barème par tranches de pages ».
 
-**Rien ici n'est appliqué.** Le texte légal ne se modifie qu'avec l'accord explicite de
+**APPLIQUÉ le 10/09/2026** (accord de Mathias donné dans la conversation du 10/09, chantier « grille par pages », lot 5) : les §1, §2, §3a, §3b ci-dessous sont dans `src/app/legal/content/cgv.ts` v3.1, FR/PT/EN, et le tableau de l'annexe dérive désormais de `src/lib/atelier/grille.ts` (un prix par nombre de pages, 20 puis 24 à 60). La question §5 (28 ou 29) n'a plus d'objet : la grille est par page exacte. Restent à Mathias : les `.docx` de `legal-source/` et la relecture de la version PT. Le texte d'origine est conservé ci-dessous tel qu'il a été proposé.
+
+~~**Rien ici n'est appliqué.**~~ Le texte légal ne se modifie qu'avec l'accord explicite de
 Mathias (interdit nº2) : ce document liste précisément chaque passage de
 `src/app/legal/content/cgv.ts` à changer le jour où il valide, avec le texte actuel et le
 texte proposé, dans les trois langues. **La version portugaise (PT) fait foi**

@@ -34,6 +34,7 @@ import { isValidNumeroToken } from "@/lib/atelier/token";
 import { logEvenement } from "@/lib/atelier/evenements";
 import { ecrireObjet, empreinteObjet, lireObjet, supprimer } from "@/lib/atelier/r2";
 import { estCleImpression, MAX_PDF_BYTES } from "@/lib/atelier/impression";
+import { reliurePour } from "@/lib/atelier/grille";
 import { boiteRognee, decouperCouverture, type Boite } from "@/lib/atelier/souvenir";
 
 export const runtime = "nodejs";
@@ -126,9 +127,13 @@ export async function POST(request: Request) {
     const cleDe = (type: string): string | null =>
       typeof fichiers[type] === "string" && fichiers[type] ? (fichiers[type] as string) : null;
 
-    /* Le produit se DÉDUIT de la pagination, comme partout : 20 pages =
-       agrafé (un `product`), le reste = dos carré (`cover` + `book`). */
-    const agrafe = numero.nb_pages === 20;
+    /* La reliure se DÉDUIT de la pagination, comme partout, et par la MÊME
+       fonction que le prix et que la référence Cloudprinter (`grille.ts`) :
+       agrafé (un `product`) à 20 pages, dos carré (`cover` + `book`) au-delà.
+       Une pagination hors grille ne rend NI l'un ni l'autre : elle tombe donc
+       dans la branche « dos carré », qui exigera ses deux PDF et refusera
+       proprement s'ils manquent — jamais un souvenir composé au hasard. */
+    const agrafe = reliurePour(numero.nb_pages) === "agrafe";
 
     const souvenir = await PDFDocument.create();
     let dosMm: number | null = null;

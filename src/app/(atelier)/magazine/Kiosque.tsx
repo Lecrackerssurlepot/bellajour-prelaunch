@@ -12,11 +12,10 @@
 import Reveal from '../components/Reveal'
 import {
   ETAPES,
-  PALIERS,
   PARCOURS_SOUS_TITRE,
   PARCOURS_TITRE,
   PRIX_LIGNE,
-  PRIX_TITRE,
+  PRIX_PHRASE,
 } from '../content'
 import LienComposer from '../components/LienComposer'
 
@@ -122,14 +121,13 @@ export default function Kiosque() {
           </p>
         </Reveal>
 
-        {/* ── LA LIGNE DE PRIX — TÉLÉPHONE UNIQUEMENT ──
-            Une information au lieu de neuf : « Dès 30 € », et l'ordre de
+        {/* ── LA LIGNE DE PRIX ──
+            Une information au lieu de neuf : « Dès 25 € », et l'ordre de
             grandeur qui la justifie. Tout est dérivé de la grille (content.ts
             → PRIX_LIGNE), donc rien ici ne peut contredire le prix ferme.
-            ⚠️ Elle est `display: none` au-dessus de 720 px : sur ordinateur
-            c'est la grille des trois paliers qui tient cette place, et elle y
-            reste au pixel près. Le bloc existe donc dans le DOM à toutes les
-            largeurs — c'est le CSS qui choisit, pas deux balisages. */}
+            Visible à toutes les largeurs depuis le 10/09/2026 (lot 3) : le
+            trou d'ordinateur (pdp.css cachait le bloc au-dessus de 720 px
+            depuis le retrait des trois paliers) est réparé — voir pdp.css. */}
         <Reveal delay={140} className="bloc-prix-ligne">
           <p className="prix-ligne">
             <span className="des">{PRIX_LIGNE.des}</span>
@@ -138,36 +136,22 @@ export default function Kiosque() {
               <span>{PRIX_LIGNE.photos}</span>
             </span>
           </p>
+          {/* La phrase qui prolonge le prix d'appel : l'échelle complète, ses
+              deux bouts, et ce qui la fait varier — sans arbitrage à rendre.
+              Dans le même Reveal que la ligne : les deux se lisent ensemble. */}
+          <p className="prix-phrase">{PRIX_PHRASE}</p>
         </Reveal>
 
-        <Reveal delay={140} className="bloc-prix">
-          {/* Une LISTE, pas une pile de div : trois paliers sont une
-              énumération, et qui écoute la page doit pouvoir les compter.
-
-              ORDRE DES LIGNES (chantier barème par pages, 07/09/2026) : les
-              PAGES en tête — ce sont elles qui font le prix —, le prix, puis
-              les photos en ligne secondaire (un ordre de grandeur, ~).
-              ⚠️ Les classes .combien/.euros/.pages sont des EMPLACEMENTS
-              (haut petit / grand / bas petit), pas des sens : on a réordonné
-              le CONTENU sans toucher aux règles CSS, précisément pour que le
-              premier écran mobile (375×667) garde les mêmes corps et les
-              mêmes hauteurs. Renommer les classes obligerait à réécrire
-              pdp.css et ses trois media queries pour zéro pixel de gagné. */}
-          {/* Affiché SEULEMENT sous 720 px, là où la grille est descendue
-              sous le bouton et a besoin d'être annoncée. Sur ordinateur elle
-              est dans le premier écran, à sa place : personne n'a besoin
-              qu'on lui dise que trois prix sont trois prix. */}
-          <p className="prix-titre">{PRIX_TITRE}</p>
-          <ul className="prix">
-            {PALIERS.map((p) => (
-              <li key={p.prix}>
-                <span className="combien">{p.pages}</span>
-                <span className="euros">{p.prix}</span>
-                <span className="pages">{p.photos}</span>
-              </li>
-            ))}
-          </ul>
-        </Reveal>
+        {/* ── LES TROIS ENCARTS DE PALIER SONT PARTIS (10/09/2026, lot 2) ──
+            La grille donne maintenant un prix par nombre de pages exact :
+            vingt prix, de 25 à 59 €. Trois encarts montreraient trois points d'une
+            échelle de vingt, ce qui serait faux ; vingt encarts seraient
+            illisibles. Le prix tient désormais dans PRIX_LIGNE et PRIX_PHRASE
+            ci-dessus. Le JSX retiré est archivé dans
+            `archive/pdp-trois-formats/`.
+            ⚠️ Les règles `.prix-titre` / `.prix` de pdp.css sont désormais
+            COMMENTÉES (10/09/2026, lot 3), pas supprimées : plus aucun
+            élément ne porte ces classes. */}
 
         <Reveal delay={210} className="bloc-acte">
           <div className="acte">

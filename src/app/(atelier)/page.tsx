@@ -28,6 +28,7 @@ import Ouverture from './components/Ouverture'
 import Univers from './components/Univers'
 import Footer from './components/Footer'
 import { compteOuvert } from '@/lib/compte/session'
+import { EUROS_MIN } from '@/lib/atelier/grille'
 
 /* LE GRAS DU TITRE DE COUVERTURE, ET LUI SEUL.
    Cormorant Garamond n'est pas variable chez Google : chaque graisse est un
@@ -56,10 +57,12 @@ const OUVERTURE_VUE =
   "document.documentElement.setAttribute('data-ouverture-vue','')}catch(e){}})()"
 
 const TITLE = 'L’atelier Bellajour — vos meilleurs moments méritent leur magazine'
+/* Le prix d'appel vient de la GRILLE (EUROS_MIN), jamais recopié : ce que
+   Google affiche et ce que Stripe débite sortent de la même table. */
 const DESCRIPTION =
   'Ce festival, cette soirée, ce road trip. Vous envoyez vos photos, ' +
   'l’atelier compose le magazine de cet instant de vie. ' +
-  'Premier aperçu gratuit, votre magazine sur-mesure dès 30 €.'
+  `Premier aperçu gratuit, votre magazine sur-mesure dès ${EUROS_MIN} €.`
 
 /* ⚠️ `openGraph` REMPLACE celui du layout racine, Next ne fusionne pas en
    profondeur. Un bloc partiel effacait donc og:image, og:url, og:site_name et
@@ -99,10 +102,10 @@ export const metadata: Metadata = {
    magazine que celui de /magazine, sans `@id` pour les relier : deux fiches
    concurrentes pour un seul produit, et Google pouvait retenir celle-ci —
    envoyant l'acheteuse sur le récit de marque, sans prix ni acte d'achat.
-   De plus son `highPrice: 45` n'apparaît nulle part sur la page rendue
-   (seul « dès 30 € » est visible, Ouverture.tsx) : balisage non conforme,
-   motif de rejet du résultat enrichi. LE Product vit sur /magazine, la page
-   qui porte les trois prix. Ici, la marque : `sameAs` relie le domaine aux
+   De plus son `highPrice` n'apparaissait nulle part sur la page rendue (seul
+   le prix d'appel est visible, Ouverture.tsx) : balisage non conforme, motif
+   de rejet du résultat enrichi. LE Product vit sur /magazine, la page qui
+   porte la grille. Ici, la marque : `sameAs` relie le domaine aux
    comptes réels écrits en dur dans Footer.tsx. */
 const JSON_LD = [
   {

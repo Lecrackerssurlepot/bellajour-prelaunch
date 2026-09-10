@@ -3,6 +3,7 @@ import { DM_Sans } from 'next/font/google'
 import './globals.css'
 import WebViewBanner from './components/WebViewBanner'
 import Mesure from './components/Mesure'
+import { EUROS_MIN } from '@/lib/atelier/grille'
 
 /* Fonts DA (charte) chargées via next/font (self-host, zéro FOUC, pas de
    requête runtime vers fonts.gstatic.com). Exposées en variables CSS et
@@ -40,11 +41,19 @@ const ANIM_SCRIPT = `(function(){var d=document.documentElement;d.setAttribute('
 
 const APP_HEIGHT_SCRIPT = `(function(){var d=document.documentElement,w=window;function s(){d.style.setProperty('--app-height',Math.round(w.innerHeight)+'px');}s();var lw=w.innerWidth;w.addEventListener('resize',function(){if(w.innerWidth!==lw){lw=w.innerWidth;s();}},{passive:true});w.addEventListener('orientationchange',function(){lw=w.innerWidth;s();},{passive:true});})();`
 
+/* Le prix d'appel vient de la GRILLE, jamais recopié (10/09/2026) : le jour
+   où elle change, les trois métadonnées de ce fichier suivent ensemble. Elles
+   étaient écrites trois fois à l'identique, ce qui est exactement le genre de
+   triplet qui se désynchronise. `grille.ts` est un module pur, sans import
+   serveur : le déclarer ici n'embarque rien dans le bundle. */
+const DESCRIPTION =
+  'Vous envoyez vos photos, l’atelier compose un vrai magazine imprimé. ' +
+  `Un numéro par moment. À partir de ${EUROS_MIN} €, aperçu gratuit avant de payer.`
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.bellajour.fr'),
   title: "Bellajour — chaque moment mérite son numéro",
-  description:
-    "Vous envoyez vos photos, l’atelier compose un vrai magazine imprimé. Un numéro par moment. À partir de 30 €, aperçu gratuit avant de payer.",
+  description: DESCRIPTION,
   /* Le défaut de tout le site depuis la bascule du 24/08/2026. Les pages qui
      ont leur propre `metadata` (la racine, /preventes) l'emportent ; c'est ce
      bloc que voient /merci, /inviter et les pages légales. */
@@ -65,15 +74,13 @@ export const metadata: Metadata = {
     url: 'https://www.bellajour.fr',
     siteName: 'Bellajour',
     title: "Bellajour — chaque moment mérite son numéro",
-    description:
-      "Vous envoyez vos photos, l’atelier compose un vrai magazine imprimé. Un numéro par moment. À partir de 30 €, aperçu gratuit avant de payer.",
+    description: DESCRIPTION,
   },
 
   twitter: {
     card: 'summary_large_image',
     title: "Bellajour — chaque moment mérite son numéro",
-    description:
-      "Vous envoyez vos photos, l’atelier compose un vrai magazine imprimé. Un numéro par moment. À partir de 30 €, aperçu gratuit avant de payer.",
+    description: DESCRIPTION,
   },
 
   icons: {

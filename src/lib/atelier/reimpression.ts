@@ -30,15 +30,21 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-import { centimesReimpression, reimpressionOuverte, type PalierCle } from "./prix";
+import { centimesReimpression, reimpressionOuverte } from "./prix";
+/* `grille.ts` est pur : le juger ici garde l'ORDRE des refus intact (le
+   dossier d'abord, le verrou ensuite) sans dependre du verrou pour savoir si
+   la pagination tient debout. */
+import { eurosPourPages } from "./grille";
 
 /** Pourquoi on ne propose pas. Un refus se nomme, il ne se devine pas. */
 export type RefusReimpression =
   /** Le numéro n'est pas livré : il est encore en fabrication. */
   | "pas_livree"
-  /** Aucun palier au dossier : il n'a jamais été facturé, on ne sait pas le
-   *  rattacher à la grille. Cas des dossiers d'avant le barème par pages. */
-  | "palier_inconnu"
+  /** Aucune pagination exploitable au dossier : il n'a jamais été chiffré, ou
+   *  sa pagination est hors grille. On ne sait pas ce qu'il coûterait, donc on
+   *  ne propose pas. (S'appelait `palier_inconnu` avant le 10/09/2026, quand
+   *  le prix venait du palier et non du nombre de pages.) */
+  | "prix_inconnu"
   /** Mathias n'a pas donné le prix de réimpression. C'est le cas courant
    *  aujourd'hui, et le seul qui se lève sans toucher aux données. */
   | "prix_non_tranche";
@@ -57,12 +63,18 @@ export type VerdictReimpression =
  */
 export function peutRecommander(d: {
   etat: string;
-  palier: PalierCle | null | undefined;
+  /* La PAGINATION, plus le palier (10/09/2026) : depuis la grille par pages,
+     le palier ne nomme plus un montant, et c'est `nb_pages` qui dit ce que
+     l'objet coûte. */
+  nb_pages: number | null | undefined;
 }): VerdictReimpression {
   if (d.etat !== "livree") return { possible: false, refus: "pas_livree" };
-  if (!d.palier) return { possible: false, refus: "palier_inconnu" };
+  /* La pagination d'abord : absente ou hors grille, on ne SAIT pas ce que
+     l'objet coute, et ce n'est pas la meme chose que « le prix n'est pas
+     decide ». Les deux phrases ne doivent pas se confondre. */
+  if (eurosPourPages(d.nb_pages) === null) return { possible: false, refus: "prix_inconnu" };
 
-  const centimes = centimesReimpression(d.palier);
+  const centimes = centimesReimpression(d.nb_pages);
   if (centimes === null) return { possible: false, refus: "prix_non_tranche" };
 
   return { possible: true, centimes };

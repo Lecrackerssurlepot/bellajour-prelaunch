@@ -35,6 +35,8 @@ import {
   SHIPPING_LEVEL,
   SLOTS_IMPRESSION,
 } from "@/lib/atelier/impression";
+/* Les bornes de la grille, pour que le refus d'impression dise les vraies. */
+import { PAGES_MAX, PAGES_MIN } from "@/lib/atelier/grille";
 import { cloudprinterConfigure, creerCommande, infoCommande } from "@/lib/atelier/cloudprinter";
 import {
   ACTIONS,
@@ -218,7 +220,9 @@ export async function POST(request: Request) {
       if (!produit) {
         erreurs.push({
           champ: "action",
-          message: `${numero.nb_pages ?? "?"} pages : aucun produit d'impression ne correspond (20 à 50 pages).`,
+          /* Les bornes viennent de la grille, jamais recopiées : le jour où
+             elle change, ce message change avec elle. */
+          message: `${numero.nb_pages ?? "?"} pages : aucun produit d'impression ne correspond (${PAGES_MIN} à ${PAGES_MAX} pages).`,
         });
         return NextResponse.json({ error: "saisie", erreurs }, { status: 422 });
       }

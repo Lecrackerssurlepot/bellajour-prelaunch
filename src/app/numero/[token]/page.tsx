@@ -490,7 +490,7 @@ export default async function NumeroPage({
 
       {numero.etat === 'payee' && (
         /* T2-10 — « Reçu. On compose. » était sec pour quelqu'un qui vient
-           de payer 40 €. On remercie, puis trois lignes aérées : c'est payé,
+           de payer 37 €. On remercie, puis trois lignes aérées : c'est payé,
            voilà ce qui se passe, voilà comment demander un détail. Les
            chiffres viennent de DELAIS, jamais en dur. */
         <>

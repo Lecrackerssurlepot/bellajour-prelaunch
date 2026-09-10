@@ -24,7 +24,7 @@ import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import Kiosque from './Kiosque'
 import Corps from './Corps'
-import { GRILLE } from '@/lib/atelier/grille'
+import { EUROS_MAX, EUROS_MIN, GRILLE } from '@/lib/atelier/grille'
 import { COMPOSER_HREF, CTA_LABEL, FAQ } from '../content'
 import './pdp.css'
 import { compteOuvert } from '@/lib/compte/session'
@@ -42,12 +42,15 @@ const TITLE = 'Le magazine d’un moment de vie — l’atelier Bellajour'
    ⚠️ 154 CARACTÈRES, ET C'EST UNE CONTRAINTE, PAS UN HASARD. Google en affiche
    environ 155 sur ordinateur et moins sur téléphone. La version longue faisait
    196 : elle était coupée juste avant le prix, c'est-à-dire avant ce qui
-   déclenche le clic. Le détail sacrifié (format A4, 30 à 45 €) est sur la page,
-   à trois lignes du haut. Rallonger cette phrase, c'est reperdre le prix. */
+   déclenche le clic. Le détail sacrifié (le format A4, l'échelle complète des
+   prix) est sur la page, à trois lignes du haut. Rallonger cette phrase, c'est
+   reperdre le prix.
+   ⚠️ Le montant est DÉRIVÉ de la grille (EUROS_MIN) : la description de Google
+   ne peut pas rester en arrière d'un changement de prix. */
 const DESCRIPTION =
   'Vous déposez 40 à 100 photos, l’atelier compose votre magazine ' +
   'personnalisé, imprimé et livré. Couverture gratuite sous 48 h, ' +
-  'vous décidez après. Dès 30 €.'
+  `vous décidez après. Dès ${EUROS_MIN} €.`
 
 /* ⚠️ `openGraph` REMPLACE celui du layout racine — Next ne fusionne pas en
    profondeur. Un bloc partiel efface og:image, og:url, og:site_name et
@@ -88,10 +91,11 @@ export const metadata: Metadata = {
    Product + AggregateOffer — la fiche produit. `AggregateOffer` et NON
    `Offer` : `lowPrice`/`highPrice` n'existent pas sur Offer et le test des
    résultats enrichis les rejette en bloc (leçon déjà payée sur l'accueil).
-   Les trois prix sont LUS depuis GRILLE (@/lib/atelier/grille), la même
-   source que les cartes de la page et que le prix ferme du serveur — en
-   NOMBRES, plus en parsant des chaînes d'affichage : une grille qui change
-   en un seul endroit ne peut pas mentir ici.
+   Les bornes sont LUES depuis GRILLE (@/lib/atelier/grille), la même source
+   que la page et que le prix ferme du serveur — en NOMBRES, jamais en parsant
+   une chaîne d'affichage. `offerCount` vaut le nombre de PRIX DISTINCTS de la
+   grille (vingt depuis le 10/09/2026, un par pagination), ce qui est bien ce
+   que `AggregateOffer` décrit : combien d'offres l'agrégat recouvre.
 
    FAQPage — décrit EXACTEMENT les quatre <details> rendus par Corps.tsx.
    Déclarer une question qui n'est pas visible sur la page est une infraction
@@ -101,8 +105,6 @@ export const metadata: Metadata = {
 
    ⚠️ `offers.url` pointe sur CETTE page, pas sur /composer : c'est ici qu'on
    voit le prix. /composer est un questionnaire, et il est en noindex. */
-const PRIX = GRILLE.map((g) => g.euros)
-
 const JSON_LD = [
   {
     '@context': 'https://schema.org',
@@ -115,8 +117,8 @@ const JSON_LD = [
     offers: {
       '@type': 'AggregateOffer',
       priceCurrency: 'EUR',
-      lowPrice: String(Math.min(...PRIX)),
-      highPrice: String(Math.max(...PRIX)),
+      lowPrice: String(EUROS_MIN),
+      highPrice: String(EUROS_MAX),
       offerCount: GRILLE.length,
       availability: 'https://schema.org/InStock',
       url: URL,

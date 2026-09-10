@@ -6,7 +6,7 @@ par une supposition.** À re-relever si Cloudprinter change de gamme.
 
 ## Les deux produits commandés par `src/lib/atelier/impression.ts`
 
-| Spec | `magazine_sas_a4_p_fc` (agrafé, 20 p) | `magazine_pb_a4_p_fc` (dos carré, 22-50 p) |
+| Spec | `magazine_sas_a4_p_fc` (agrafé, 20 p) | `magazine_pb_a4_p_fc` (dos carré, 24 à 60 p, par pas de 2) |
 |---|---|---|
 | Reliure | Saddle Stitch (agrafé) | Perfect bind (dos carré collé) |
 | Format fini (après rognage) | **210 × 297 mm** (A4 exact) | **210 × 297 mm** (A4 exact) |

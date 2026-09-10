@@ -7,7 +7,7 @@
  * reste `mesure.ts` / `metriques.ts`. */
 
 import Link from "next/link";
-import { ETAPES_VIE, SEUIL_CONCLUANT, type DureeEtape, type Seau } from "@/lib/atelier/mesure";
+import { ETAPES_VIE, SEUIL_CONCLUANT, libelleParPages, type DureeEtape, type Seau } from "@/lib/atelier/mesure";
 import { PERIODES, type Chiffres, type Duree, type Metriques, type Periode } from "../metriques";
 import "../../admin.css";
 import "../atelier.css";
@@ -343,10 +343,17 @@ export default function VueMetriques({ m, periode }: { m: Metriques; periode: Pe
             )}
           </div>
           <div className="ate-m-mesure">
-            <span className="ate-m-mesure-titre">Répartition</span>
-            <span className="ate-m-sous">
-              {c.paliers.p30} × 30 € · {c.paliers.p40} × 40 € · {c.paliers.p45} × 45 €
-            </span>
+            {/* La répartition par NOMBRE DE PAGES (10/09/2026). « 4 × p40 » ne
+                nommait plus trois prix depuis que la grille en donne un par
+                pagination ; « 3 × 34 p. » dit ce qui a été composé et facturé.
+                Sans échantillon, on le DIT plutôt que d'afficher une ligne
+                vide qui se lirait comme une panne. */}
+            <span className="ate-m-mesure-titre">Répartition par pages</span>
+            {c.parPages.length ? (
+              <span className="ate-m-sous">{libelleParPages(c.parPages)}</span>
+            ) : (
+              <span className="ate-m-vide">pas encore</span>
+            )}
           </div>
           <div className="ate-m-mesure">
             <span className="ate-m-mesure-titre">Relances envoyées (M3b)</span>

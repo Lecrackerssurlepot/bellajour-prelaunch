@@ -1,4 +1,5 @@
 import type { LocalizedDoc } from '../types'
+import { GRILLE, PAGES_MIN, PAGES_MAX } from '@/lib/atelier/grille'
 
 /* CONDITIONS GÉNÉRALES DE VENTE — transcription fidèle de
    legal-source/cgv/FR/CONDITIONS GÉNÉRALES DE VENTE — BELLAJOUR.docx (v2.5).
@@ -14,12 +15,16 @@ import type { LocalizedDoc } from '../types'
    EN : transcription fidèle de legal-source/cgv/EN/{TERMS AND CONDITIONS OF SALE,
    PRODUCT SHEET}.docx (clé `en` ci-dessous). Mêmes deux points qu'en PT :
    - art. 3.1 : source EN « [TO BE COMPLETED: PDF link] » → aligné FR/PT (#fiche-produit).
-   - art. 4.1 : phrase dupliquée dans la source EN → dédupliquée comme le PT (commit a8efedb). */
+   - art. 4.1 : phrase dupliquée dans la source EN → dédupliquée comme le PT (commit a8efedb).
+   v3.1 (10/09/2026, accord de Mathias) : la grille « Offre Atelier » devient un prix par
+   nombre de pages (dérivée de GRILLE, jamais recopiée) et la livraison sort du prix
+   (art. 4bis.4, liste « ce que comprend », annexe). Les .docx de legal-source ont donc
+   une version de retard : à régénérer par Mathias. */
 
 export const CGV: LocalizedDoc = {
   fr: {
     title: `Conditions générales de vente`,
-    lastUpdated: `Version 3.0 — En vigueur le 24/08/2026`,
+    lastUpdated: `Version 3.1 — En vigueur le 10/09/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `Traduction française à titre informatif. La version juridiquement prévalente est le texte portugais ; en cas de divergence, ce dernier prime.`,
@@ -89,9 +94,9 @@ export const CGV: LocalizedDoc = {
           {
             kind: 'p',
             value: [
-              `4bis.4 Prix par palier de pagination. Le prix est déterminé par le nombre de pages effectivement composé par l'atelier, selon la grille « Offre Atelier » figurant dans la `,
+              `4bis.4 Prix selon la pagination. Le prix est déterminé par le nombre de pages effectivement composé par l'atelier, selon la grille « Offre Atelier » figurant dans la `,
               { text: `Fiche produit`, href: `#fiche-produit` },
-              `. Il est ferme, affiché toutes taxes comprises, et comprend l'impression et la livraison. Le nombre de pages n'est ni choisi ni saisi par le client : il résulte du nombre et de la qualité des photographies déposées, et lui est communiqué avec le prix avant tout paiement.`,
+              `. Il est ferme, affiché toutes taxes comprises, et comprend l'impression. Les frais de livraison sont facturés en sus ; leur montant, toutes taxes comprises, est porté à la connaissance du client avant tout paiement, en même temps que le prix. Le nombre de pages n'est ni choisi ni saisi par le client : il résulte du nombre et de la qualité des photographies déposées, et lui est communiqué avec le prix avant tout paiement.`,
             ],
           },
           { kind: 'h3', text: `Ce que comprend une commande Atelier` },
@@ -100,7 +105,7 @@ export const CGV: LocalizedDoc = {
             `La couverture illustrée sur mesure`,
             `La mise en page composée par algorithme sous contrôle humain`,
             `La version digitale HD (article 1.2)`,
-            `L'impression et la livraison dans la zone définie au 4bis.6`,
+            `L'impression. La livraison, effectuée dans la zone définie au 4bis.6, est facturée en sus (article 4bis.4)`,
           ] },
           { kind: 'p', value: `4bis.5 Aucun avantage de prévente n'est attaché à une commande Atelier : ni Instants, ni pages offertes, ni bonus de parrainage. L'imputation d'un crédit de prévente obéit à l'article 5 bis.` },
           { kind: 'p', value: `4bis.6 Zone de livraison. Les commandes Atelier sont livrées en France, en Belgique et au Luxembourg. L'adresse de livraison est collectée au moment du paiement par le prestataire de paiement ; aucun pays hors de cette zone n'est proposé et aucune commande ne peut y être livrée. Cette zone peut être étendue ; l'extension s'apprécie à la date de la commande.` },
@@ -226,7 +231,7 @@ export const CGV: LocalizedDoc = {
             [`Type`, `Livre photo relié, imprimé à la commande`],
             [`Format`, `Portrait — 210 × 280 mm`],
             [`Reliure`, `Couverture rigide (hardcover)`],
-            [`Pagination — Offre Atelier`, `20 pages min. — 50 pages max. (nombre de pages pair obligatoire)`],
+            [`Pagination — Offre Atelier`, `${PAGES_MIN} pages min. — ${PAGES_MAX} pages max. (nombre de pages pair obligatoire ; 22 pages non proposé)`],
             [`Pagination — Prévente (13/06–15/08/2026)`, `30 pages min. — 200 pages max. (nombre de pages pair obligatoire)`],
             [`Couverture`, `Illustrée, unique, générée par IA dans un style propre à la marque`],
             [`Impression`, `Quadrichromie, 300 DPI, profil colorimétrique FOGRA 39`],
@@ -241,13 +246,9 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Spécifications des fichiers fournis par le client` },
           { kind: 'p', value: `Résolution minimum : 800 × 800 pixels. En deçà du seuil, la photo est rejetée ou rétrogradée vers un emplacement plus petit. Un écart colorimétrique normal existe entre l'affichage écran (RVB) et l'impression papier ; il ne constitue pas un défaut.` },
           { kind: 'p', value: `Formats de fichiers acceptés : JPEG, PNG, HEIC, HEIF, WebP.` },
-          { kind: 'h3', text: `Grille tarifaire — Offre Atelier (en vigueur depuis le 24/08/2026)` },
-          { kind: 'p', value: `Grille applicable à toute commande passée via l'Atelier (article 4 bis). Prix fermes, affichés en euros, toutes taxes comprises, impression et livraison comprises dans la zone France, Belgique, Luxembourg. Le palier est déterminé par le nombre de pages composé par l'atelier, jamais saisi par le client.` },
-          { kind: 'table', columns: [`Pagination composée`, `Prix TTC, tout compris`], rows: [
-            [`20 à 28 pages`, `30 €`],
-            [`30 à 38 pages`, `40 €`],
-            [`40 à 50 pages`, `45 €`],
-          ] },
+          { kind: 'h3', text: `Grille tarifaire — Offre Atelier (en vigueur depuis le 10/09/2026)` },
+          { kind: 'p', value: `Grille applicable à toute commande passée via l'Atelier (article 4 bis). Prix fermes, affichés en euros, toutes taxes comprises, impression comprise. La livraison, dans la zone France, Belgique, Luxembourg, est facturée en sus au tarif porté à la connaissance du client avant tout paiement (article 4bis.4). Le prix est déterminé par le nombre de pages composé par l'atelier, jamais saisi par le client.` },
+          { kind: 'table', columns: [`Pagination composée`, `Prix TTC, hors livraison`], rows: GRILLE.map((g) => [`${g.pages} pages`, `${g.euros} €`]) },
           { kind: 'h3', text: `Grille tarifaire — Prévente (commandes du 13/06 au 15/08/2026)` },
           { kind: 'p', value: `Grille close, conservée pour les seules commandes de prévente (article 5). Prix catalogue standard, hors offre promotionnelle, affichés en euros, toutes taxes comprises. TVA appliquée au taux du pays de résidence du consommateur (régime OSS-Union) après le seuil des 10 000 € de chiffre d'affaires.` },
           { kind: 'table', columns: [`Pagination`, `Prix TTC`], rows: [
@@ -263,7 +264,7 @@ export const CGV: LocalizedDoc = {
   },
   pt: {
     title: `Condições gerais de venda`,
-    lastUpdated: `Versão 3.0 — Em vigor em 24/08/2026`,
+    lastUpdated: `Versão 3.1 — Em vigor em 10/09/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `Texto de referência (versão portuguesa), juridicamente prevalecente. As traduções para francês e inglês são meramente informativas; em caso de divergência, prevalece o presente texto português.`,
@@ -333,9 +334,9 @@ export const CGV: LocalizedDoc = {
           {
             kind: 'p',
             value: [
-              `4.º-A.4 Preço por escalão de paginação. O preço é determinado pelo número de páginas efetivamente composto pelo atelier, de acordo com a grelha «Oferta Atelier» constante da `,
+              `4.º-A.4 Preço segundo a paginação. O preço é determinado pelo número de páginas efetivamente composto pelo atelier, de acordo com a grelha «Oferta Atelier» constante da `,
               { text: `Ficha de Produto`, href: `#fiche-produit` },
-              `. É firme, exibido com todos os impostos incluídos e inclui a impressão e a entrega. O número de páginas não é escolhido nem introduzido pelo cliente: resulta do número e da qualidade das fotografias carregadas e é-lhe comunicado juntamente com o preço antes de qualquer pagamento.`,
+              `. É firme, exibido com todos os impostos incluídos e inclui a impressão. Os custos de entrega são faturados adicionalmente; o seu montante, com todos os impostos incluídos, é dado a conhecer ao cliente antes de qualquer pagamento, juntamente com o preço. O número de páginas não é escolhido nem introduzido pelo cliente: resulta do número e da qualidade das fotografias carregadas e é-lhe comunicado juntamente com o preço antes de qualquer pagamento.`,
             ],
           },
           { kind: 'h3', text: `O que inclui uma encomenda Atelier` },
@@ -344,7 +345,7 @@ export const CGV: LocalizedDoc = {
             `A capa ilustrada à medida`,
             `A paginação composta por algoritmo sob controlo humano`,
             `A versão digital HD (artigo 1.2)`,
-            `A impressão e a entrega na zona definida em 4.º-A.6`,
+            `A impressão. A entrega, efetuada na zona definida em 4.º-A.6, é faturada adicionalmente (artigo 4.º-A.4)`,
           ] },
           { kind: 'p', value: `4.º-A.5 Nenhuma vantagem de pré-venda está associada a uma encomenda Atelier: nem Instants, nem páginas oferecidas, nem bónus de indicação. A imputação de um crédito de pré-venda rege-se pelo artigo 5.º-A.` },
           { kind: 'p', value: `4.º-A.6 Zona de entrega. As encomendas Atelier são entregues em França, na Bélgica e no Luxemburgo. O endereço de entrega é recolhido no momento do pagamento pelo prestador de pagamento; nenhum país fora desta zona é proposto e nenhuma encomenda pode aí ser entregue. Esta zona pode ser alargada; o alargamento afere-se à data da encomenda.` },
@@ -470,7 +471,7 @@ export const CGV: LocalizedDoc = {
             [`Tipo`, `Livro de fotografias encadernado, impresso por encomenda`],
             [`Formato`, `Retrato — 210 × 280 mm`],
             [`Encadernação`, `Capa dura (hardcover)`],
-            [`Paginação — Oferta Atelier`, `mín. 20 páginas — máx. 50 páginas (número de páginas obrigatoriamente par)`],
+            [`Paginação — Oferta Atelier`, `mín. ${PAGES_MIN} páginas — máx. ${PAGES_MAX} páginas (número de páginas obrigatoriamente par; 22 páginas não proposto)`],
             [`Paginação — Pré-venda (13/06–15/08/2026)`, `mín. 30 páginas — máx. 200 páginas (número de páginas obrigatoriamente par)`],
             [`Capa`, `Ilustrada, única, gerada por IA num estilo próprio da marca`],
             [`Impressão`, `Quadricromia, 300 DPI, perfil colorimétrico FOGRA 39`],
@@ -485,13 +486,9 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Especificações dos ficheiros fornecidos pelo cliente` },
           { kind: 'p', value: `Resolução mínima: 800 × 800 píxeis. Abaixo deste limiar, a fotografia é rejeitada ou remetida para um espaço mais pequeno. Existe uma diferença de cor normal entre a exibição no ecrã (RGB) e a impressão em papel; esta não constitui um defeito.` },
           { kind: 'p', value: `Formatos de ficheiro aceites: JPEG, PNG, HEIC, HEIF, WebP.` },
-          { kind: 'h3', text: `Grelha tarifária — Oferta Atelier (em vigor desde 24/08/2026)` },
-          { kind: 'p', value: `Grelha aplicável a qualquer encomenda efetuada através do Atelier (artigo 4.º-A). Preços firmes, exibidos em euros, com todos os impostos incluídos, impressão e entrega incluídas na zona França, Bélgica, Luxemburgo. O escalão é determinado pelo número de páginas composto pelo atelier, nunca introduzido pelo cliente.` },
-          { kind: 'table', columns: [`Paginação composta`, `Preço c/ IVA, tudo incluído`], rows: [
-            [`20 a 28 páginas`, `30 €`],
-            [`30 a 38 páginas`, `40 €`],
-            [`40 a 50 páginas`, `45 €`],
-          ] },
+          { kind: 'h3', text: `Grelha tarifária — Oferta Atelier (em vigor desde 10/09/2026)` },
+          { kind: 'p', value: `Grelha aplicável a qualquer encomenda efetuada através do Atelier (artigo 4.º-A). Preços firmes, exibidos em euros, com todos os impostos incluídos, impressão incluída. A entrega, na zona França, Bélgica, Luxemburgo, é faturada adicionalmente à tarifa dada a conhecer ao cliente antes de qualquer pagamento (artigo 4.º-A.4). O preço é determinado pelo número de páginas composto pelo atelier, nunca introduzido pelo cliente.` },
+          { kind: 'table', columns: [`Paginação composta`, `Preço c/ IVA, sem entrega`], rows: GRILLE.map((g) => [`${g.pages} páginas`, `${g.euros} €`]) },
           { kind: 'h3', text: `Grelha tarifária — Pré-venda (encomendas de 13/06 a 15/08/2026)` },
           { kind: 'p', value: `Grelha encerrada, conservada apenas para as encomendas de pré-venda (artigo 5.º). Preços de catálogo padrão, fora de oferta promocional, exibidos em euros, com todos os impostos incluídos. IVA aplicado à taxa do país de residência do consumidor (regime OSS-União) após o limiar de 10 000 € de volume de negócios.` },
           { kind: 'table', columns: [`Paginação`, `Preço c/ IVA`], rows: [
@@ -507,7 +504,7 @@ export const CGV: LocalizedDoc = {
   },
   en: {
     title: `Terms and Conditions of Sale`,
-    lastUpdated: `Version 3.0 — Effective 24/08/2026`,
+    lastUpdated: `Version 3.1 — Effective 10/09/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `English translation for information only. The legally prevailing version is the Portuguese text; in the event of any discrepancy, the Portuguese text prevails.`,
@@ -577,9 +574,9 @@ export const CGV: LocalizedDoc = {
           {
             kind: 'p',
             value: [
-              `4a.4 Price by pagination tier. The price is determined by the number of pages actually composed by the atelier, according to the "Atelier offer" price list set out in the `,
+              `4a.4 Price according to pagination. The price is determined by the number of pages actually composed by the atelier, according to the "Atelier offer" price list set out in the `,
               { text: `Product Sheet`, href: `#fiche-produit` },
-              `. It is firm, displayed inclusive of all taxes, and includes printing and delivery. The page count is neither chosen nor entered by the customer: it results from the number and quality of the photographs uploaded, and is communicated to them together with the price before any payment.`,
+              `. It is firm, displayed inclusive of all taxes, and includes printing. Delivery costs are invoiced in addition; their amount, inclusive of all taxes, is made known to the customer before any payment, together with the price. The page count is neither chosen nor entered by the customer: it results from the number and quality of the photographs uploaded, and is communicated to them together with the price before any payment.`,
             ],
           },
           { kind: 'h3', text: `What an Atelier order includes` },
@@ -588,7 +585,7 @@ export const CGV: LocalizedDoc = {
             `The bespoke illustrated cover`,
             `The layout composed by algorithm under human control`,
             `The HD digital version (Article 1.2)`,
-            `Printing and delivery within the zone defined in 4a.6`,
+            `Printing. Delivery, within the zone defined in 4a.6, is invoiced in addition (Article 4a.4)`,
           ] },
           { kind: 'p', value: `4a.5 No pre-sale benefit attaches to an Atelier order: no Instants, no free pages, no referral bonus. The crediting of a pre-sale credit is governed by Article 5a.` },
           { kind: 'p', value: `4a.6 Delivery zone. Atelier orders are delivered to France, Belgium and Luxembourg. The delivery address is collected at the time of payment by the payment provider; no country outside this zone is offered and no order may be delivered there. This zone may be extended; any extension is assessed as at the date of the order.` },
@@ -714,7 +711,7 @@ export const CGV: LocalizedDoc = {
             [`Type`, `Bound photo book, printed on demand`],
             [`Format`, `Portrait — 210 × 280 mm`],
             [`Binding`, `Hardcover`],
-            [`Pagination — Atelier offer`, `min. 20 pages — max. 50 pages (page count must be even)`],
+            [`Pagination — Atelier offer`, `min. ${PAGES_MIN} pages — max. ${PAGES_MAX} pages (page count must be even; 22 pages not offered)`],
             [`Pagination — Pre-sale (13/06–15/08/2026)`, `min. 30 pages — max. 200 pages (page count must be even)`],
             [`Cover`, `Illustrated, unique, AI-generated in a style specific to the brand`],
             [`Printing`, `Four-colour (CMYK), 300 DPI, FOGRA 39 colour profile`],
@@ -729,13 +726,9 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Specifications for customer-provided files` },
           { kind: 'p', value: `Minimum resolution: 800 × 800 pixels. Below this threshold, the photo is rejected or downgraded to a smaller slot. A normal colour difference exists between on-screen display (RGB) and paper printing; this does not constitute a defect.` },
           { kind: 'p', value: `Accepted file formats: JPEG, PNG, HEIC, HEIF, WebP.` },
-          { kind: 'h3', text: `Price list — Atelier offer (in force since 24/08/2026)` },
-          { kind: 'p', value: `Price list applicable to any order placed through the Atelier (Article 4a). Firm prices, displayed in euros, inclusive of all taxes, printing and delivery included within the France, Belgium, Luxembourg zone. The tier is determined by the page count composed by the atelier, never entered by the customer.` },
-          { kind: 'table', columns: [`Composed pagination`, `Price incl. VAT, all-inclusive`], rows: [
-            [`20 to 28 pages`, `€30`],
-            [`30 to 38 pages`, `€40`],
-            [`40 to 50 pages`, `€45`],
-          ] },
+          { kind: 'h3', text: `Price list — Atelier offer (in force since 10/09/2026)` },
+          { kind: 'p', value: `Price list applicable to any order placed through the Atelier (Article 4a). Firm prices, displayed in euros, inclusive of all taxes, printing included. Delivery, within the France, Belgium, Luxembourg zone, is invoiced in addition at the rate made known to the customer before any payment (Article 4a.4). The price is determined by the page count composed by the atelier, never entered by the customer.` },
+          { kind: 'table', columns: [`Composed pagination`, `Price incl. VAT, excl. delivery`], rows: GRILLE.map((g) => [`${g.pages} pages`, `€${g.euros}`]) },
           { kind: 'h3', text: `Price list — Pre-sale (orders from 13/06 to 15/08/2026)` },
           { kind: 'p', value: `Closed price list, retained for pre-sale orders only (Article 5). Standard catalogue prices, excluding promotional offers, displayed in euros, inclusive of all taxes. VAT applied at the rate of the consumer's country of residence (OSS-Union scheme) after the €10,000 turnover threshold.` },
           { kind: 'table', columns: [`Pagination`, `Price incl. VAT`], rows: [

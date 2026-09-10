@@ -34,11 +34,13 @@ import {
   compterEntonnoir,
   reactiviteConversion,
   composerConstats,
+  repartirParPages,
   ENTONNOIR,
   type EvenementMesure,
   type Jalons,
   type EtapeVieCle,
   type DureeEtape,
+  type PartPages,
   type Seau,
 } from "@/lib/atelier/mesure";
 
@@ -69,7 +71,10 @@ export type Chiffres = {
   livrees: number;
   ca: number;
   panierMoyen: number | null;
-  paliers: Record<PalierCle, number>;
+  /* La répartition des dossiers PAYÉS par nombre de pages composées
+     (10/09/2026, remplace la répartition par palier). Triée, les paginations
+     absentes écartées : voir `repartirParPages`. */
+  parPages: PartPages[];
   relances: number;
   couverture: Duree; // dépôt terminé → aperçu publié
   maquette: Duree; // paiement → maquette publiée
@@ -142,7 +147,7 @@ function calculer(
   const dans = (t?: number) => t !== undefined && t >= debut && t < fin;
 
   let ca = 0;
-  const paliers: Record<PalierCle, number> = { p30: 0, p40: 0, p45: 0 };
+  const pagesPayees: Array<number | null | undefined> = [];
   const dCouverture: number[] = [];
   const dMaquette: number[] = [];
   const dProduction: number[] = [];
@@ -150,10 +155,9 @@ function calculer(
   for (const [id, j] of jalons) {
     if (dans(j.paye)) {
       const dossier = prixPar.get(id) ?? null;
-      const p = dossier?.palier ?? null;
       const e = dossier ? eurosDuDossier(dossier) : null;
       if (e) ca += e;
-      if (p) paliers[p]++;
+      pagesPayees.push(dossier?.nb_pages);
     }
 
     /* Une durée est comptée dans la fenêtre où elle S'ACHÈVE : c'est là
@@ -176,7 +180,7 @@ function calculer(
     livrees: compte.livree,
     ca,
     panierMoyen: payes ? Math.round((ca / payes) * 10) / 10 : null,
-    paliers,
+    parPages: repartirParPages(pagesPayees),
     relances: relancesPar.filter((t) => t >= debut && t < fin).length,
     couverture: mesurer(dCouverture, PROMESSE_COUVERTURE_H),
     maquette: mesurer(dMaquette, PROMESSE_MAQUETTE_H),
@@ -356,7 +360,9 @@ export type LigneDossier = {
       token tronqué ne donne accès à rien. */
   reference: string;
   jalons: Jalons;
-  palier: PalierCle | null;
+  /** Le nombre de pages composées, plus le palier (10/09/2026) : c'est lui qui
+      fait le prix, et « p40 » ne nommait plus rien dans un tableur. */
+  nbPages: number | null;
   paye: boolean;
 };
 
@@ -381,7 +387,7 @@ export async function chargerRapport(periode: Periode): Promise<Rapport> {
     lignes.push({
       reference: n.token.slice(0, 6),
       jalons: j,
-      palier: n.palier,
+      nbPages: n.nb_pages ?? null,
       paye: j.paye !== undefined,
     });
   }

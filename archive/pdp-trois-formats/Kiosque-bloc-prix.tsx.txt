@@ -1,0 +1,24 @@
+Extrait de src/app/(atelier)/magazine/Kiosque.tsx, retiré le 10/09/2026 (chantier
+« grille par pages », lot 2). Il rendait le titre « Les trois formats » et la liste
+des trois paliers (20 à 29 p. / 30 €, 30 à 39 p. / 40 €, 40 à 50 p. / 45 €), lus
+depuis PALIERS et PRIX_TITRE de src/app/(atelier)/content.ts.
+
+Il vivait à l'intérieur du <Reveal delay={140} className="bloc-prix">, juste avant
+le <Reveal delay={210} className="bloc-acte">.
+
+──────────────────────────────────────────────────────────────────────────────
+
+          {/* Affiché SEULEMENT sous 720 px, là où la grille est descendue
+              sous le bouton et a besoin d'être annoncée. Sur ordinateur elle
+              est dans le premier écran, à sa place : personne n'a besoin
+              qu'on lui dise que trois prix sont trois prix. */}
+          <p className="prix-titre">{PRIX_TITRE}</p>
+          <ul className="prix">
+            {PALIERS.map((p) => (
+              <li key={p.prix}>
+                <span className="combien">{p.pages}</span>
+                <span className="euros">{p.prix}</span>
+                <span className="pages">{p.photos}</span>
+              </li>
+            ))}
+          </ul>

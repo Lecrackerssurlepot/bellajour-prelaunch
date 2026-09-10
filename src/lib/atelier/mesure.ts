@@ -249,6 +249,42 @@ export function reactiviteConversion(
   return seaux;
 }
 
+/* ──────────────────── la répartition par nombre de pages ────────────────────
+ *
+ * Remplace la répartition par PALIER (10/09/2026). Les trois paliers ne
+ * nommaient plus trois prix : « 4 × p40 » ne disait plus rien à personne,
+ * alors que « 3 × 34 p. · 1 × 40 p. » dit exactement ce que l'atelier a
+ * composé et ce qui a été facturé.
+ *
+ * La règle vit ici, pure, parce que DEUX lecteurs l'utilisent — l'écran des
+ * métriques et l'export CSV — et qu'ils ne doivent pas pouvoir se contredire.
+ * Une pagination absente n'est PAS comptée : un dossier payé sans nombre de
+ * pages est une anomalie qu'on ne range pas dans un seau inventé.
+ */
+export type PartPages = { pages: number; n: number };
+
+export function repartirParPages(pages: Array<number | null | undefined>): PartPages[] {
+  const compte = new Map<number, number>();
+  for (const p of pages) {
+    if (typeof p !== "number" || !Number.isInteger(p) || p <= 0) continue;
+    compte.set(p, (compte.get(p) ?? 0) + 1);
+  }
+  return [...compte.entries()]
+    .map(([pages, n]) => ({ pages, n }))
+    .sort((a, b) => a.pages - b.pages);
+}
+
+/**
+ * « 3 × 34 p. · 1 × 40 p. ». Le séparateur et le signe sont des PARAMÈTRES :
+ * l'écran veut « × » et « · », le CSV s'en tient à l'ASCII comme le reste de
+ * l'export.
+ * Rend la chaîne vide quand il n'y a rien à répartir — l'appelant décide de
+ * la phrase qui le dit.
+ */
+export function libelleParPages(parts: PartPages[], fois = "×", sep = " · "): string {
+  return parts.map((p) => `${p.n} ${fois} ${p.pages} p.`).join(sep);
+}
+
 /* ─────────────────────────────── la lecture ────────────────────────────── */
 
 function heuresEnMots(h: number): string {

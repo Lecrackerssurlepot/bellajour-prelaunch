@@ -38,8 +38,8 @@ import {
  * est branché. Aujourd'hui, le compte n'a AUCUNE immatriculation déclarée :
  * Stripe calcule donc 0 € de taxe et la cliente paie exactement le prix
  * affiché. Le jour où l'immatriculation portugaise est ajoutée dans le
- * tableau de bord, ces mêmes 40 € se découpent tout seuls en 32,52 € HT +
- * 7,48 € de TVA sur la facture — sans redéploiement, sans changement de prix,
+ * tableau de bord, un numéro à 37 € se découpe tout seul en 30,08 € HT +
+ * 6,92 € de TVA sur la facture — sans redéploiement, sans changement de prix,
  * sans toucher à ce fichier. C'est toute la raison de le câbler maintenant.
  *
  * LE CRÉDIT FONDATRICE (T-021, 01/09). La remise de 30 € des quatorze
@@ -254,14 +254,24 @@ export async function POST(request: Request) {
       email: numero.email,
       email_canonical: numero.email_canonical,
     });
-    /* ⚠️ LE PALIER À 30 € TOMBE À ZÉRO. Un numéro de 20 à 28 pages coûte
-       exactement 30 € : avec le crédit, la fondatrice n'a plus rien à payer.
-       Stripe l'accepte (il n'affiche alors aucun moyen de paiement et la
-       session se solde en `payment_status: "no_payment_required"`), le
-       webhook la fait passer en `payee` comme les autres — mais elle
-       n'aura AUCUN `payment_intent`. C'est voulu : le crédit est dû, on ne
-       va pas lui facturer un euro symbolique. À surveiller au premier cas
-       réel : c'est le seul chemin du tunnel où l'on encaisse zéro. */
+    /* ⚠️ LES PETITES PAGINATIONS TOMBENT À ZÉRO. Le crédit fondateur vaut
+       30 € ; depuis la grille par pages du 10/09/2026, un numéro de 20 à 28
+       pages coûte 25 à 31 €. Sous 30 €, le crédit couvre TOUT et la
+       fondatrice n'a plus rien à payer. Stripe l'accepte (il n'affiche alors
+       aucun moyen de paiement et la session se solde en
+       `payment_status: "no_payment_required"`), le webhook la fait passer en
+       `payee` comme les autres — mais elle n'aura AUCUN `payment_intent`.
+       C'est voulu : le crédit est dû, on ne va pas lui facturer un euro
+       symbolique. Reste le seul chemin du tunnel où l'on encaisse zéro.
+
+       ⚠️ ET UNE QUESTION QUI N'EST PAS TRANCHÉE : à 25 €, cinq euros de
+       crédit se perdent, sans que rien ne le dise à la fondatrice. Stripe
+       plafonne un `amount_off` au total de la commande, il n'y a donc ni
+       montant négatif ni reliquat reporté. Le comportement est SÛR ; il
+       n'est pas forcément celui que Mathias veut. Ne rien décider ici : le
+       reliquat est une règle commerciale, elle lui appartient (interdit
+       nº5). Avant la grille par pages, le cas n'existait pas — le premier
+       palier valait exactement 30 €. */
     const remiseAppliquee = credit.statut === "pret";
     if (credit.statut === "indisponible") {
       console.error(
@@ -491,8 +501,8 @@ export async function POST(request: Request) {
          la grille. Le jour où la grille change, c'est cette ligne qui dira si
          une commande a été chiffrée au barème d'hier ou à celui du jour. */
       prix_gele: numero.prix_centimes === centimes,
-      /* Ce qu'elle paiera vraiment. Sans cette ligne, le journal dirait 40 €
-         et Stripe 10 € : la première contradiction qu'on chercherait. */
+      /* Ce qu'elle paiera vraiment. Sans cette ligne, le journal dirait 37 €
+         et Stripe 7 € : la première contradiction qu'on chercherait. */
       credit_fondatrice_centimes: remiseAppliquee ? CREDIT_FONDATRICE_CENTIMES : 0,
       nb_pages: numero.nb_pages,
     });

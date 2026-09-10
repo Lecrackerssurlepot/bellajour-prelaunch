@@ -1145,12 +1145,17 @@ async function chargerClient(
 
   /* Les autres numéros de la même cliente. `prix_centimes` (20260910) est
      fraîche : repli 42703 sur les colonnes d'avant, où le total se recalcule
-     depuis la grille comme la veille. */
+     depuis la grille comme la veille.
+     ⚠️ `nb_pages` est OBLIGATOIRE dans ce select depuis le 10/09/2026 : le
+     repli de `eurosDuDossier` passe désormais par la pagination et non par le
+     palier. Sans elle, un dossier d'avant le gel compterait pour 0 € dans le
+     total encaissé, en silence. */
   type AutreNumero = {
     token: string;
     titre: string | null;
     etat: Etat;
     created_at: string | null;
+    nb_pages: number | null;
     palier: PalierCle | null;
     stripe_payment_intent: string | null;
     prix_centimes?: number | null;
@@ -1168,10 +1173,10 @@ async function chargerClient(
         .order("created_at", { ascending: false })
         .returns<AutreNumero[]>();
     const avec = await lire(
-      "token, titre, etat, created_at, palier, stripe_payment_intent, prix_centimes",
+      "token, titre, etat, created_at, nb_pages, palier, stripe_payment_intent, prix_centimes",
     );
     if (avec.error?.code !== "42703") return avec;
-    return lire("token, titre, etat, created_at, palier, stripe_payment_intent");
+    return lire("token, titre, etat, created_at, nb_pages, palier, stripe_payment_intent");
   };
 
   try {
