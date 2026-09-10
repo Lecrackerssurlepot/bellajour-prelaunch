@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import PanneauAction from "./PanneauAction";
 import Parcours from "./Parcours";
@@ -191,6 +192,102 @@ function CodeFondatrice({
         {occupe ? "Création chez Stripe…" : "Créer le code de 30 €"}
       </button>
       {erreur ? <p className="ate-erreur">{erreur}</p> : null}
+    </div>
+  );
+}
+
+/**
+ * « Ce client est un fondateur inscrit sous un autre email ? » (10/09/2026)
+ *
+ * ⚠️ LE SEUL CHEMIN VERS UN FONDATEUR QUI COMPOSE SOUS UNE AUTRE ADRESSE.
+ * La détection automatique lit `waitlist.email_canonical` ; le bouton « Créer
+ * le code » passe par la MÊME détection. Un fondateur qui a tapé une autre
+ * adresse à l'écran 4 n'était donc atteignable par aucun des deux, et un code
+ * dicté au téléphone ne couvrirait de toute façon jamais les frais de port.
+ *
+ * Ce formulaire DÉSIGNE une ligne de prévente ; il n'accorde rien. Le serveur
+ * refuse tout numéro qui ne correspond pas à un fondateur confirmé, et le
+ * crédit lui-même reste frappé ailleurs. Un rattachement réussi rafraîchit la
+ * fiche : le bloc « Prévente » se remplit alors tout seul, avec son bouton de
+ * code, parce que la fiche relit la même règle que le checkout.
+ */
+function RattacherFondateur({ token, demo }: { token: string; demo?: boolean }) {
+  const router = useRouter();
+  const [numero, setNumero] = useState("");
+  const [occupe, setOccupe] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  async function rattacher(e: React.FormEvent) {
+    e.preventDefault();
+    if (demo) {
+      setErreur("Démonstration : rien n'est rattaché.");
+      return;
+    }
+    const n = Number(numero.trim());
+    if (!Number.isInteger(n) || n <= 0) {
+      setErreur("Un numéro de fondateur est un entier supérieur à zéro.");
+      return;
+    }
+    setOccupe(true);
+    setErreur(null);
+    try {
+      const r = await fetch("/api/admin/atelier/fondateur-rattacher", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token, numero_fondateur: n }),
+      });
+      const corps = (await r.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!r.ok || !corps.ok) {
+        if (corps.error === "fondateur_inconnu") {
+          setErreur("Aucun fondateur confirmé ne porte ce numéro.");
+        } else if (corps.error === "numero_invalide") {
+          setErreur("Un numéro de fondateur est un entier supérieur à zéro.");
+        } else if (corps.error === "journal") {
+          setErreur("Le journal n'a pas enregistré le rattachement : rien n'est acquis, réessayez.");
+        } else {
+          setErreur("Le rattachement a échoué.");
+        }
+        return;
+      }
+      /* Tout le bloc « Prévente » est calculé côté serveur (crédit déjà
+         consommé, code existant, pages de parrainage) : on relit la fiche
+         plutôt que de reconstituer cet état dans le navigateur. */
+      setNumero("");
+      router.refresh();
+    } catch {
+      setErreur("Réseau interrompu.");
+    } finally {
+      setOccupe(false);
+    }
+  }
+
+  return (
+    <div className="ate-prevente">
+      <h3 className="ate-sous-titre">Prévente</h3>
+      <p className="ate-faint">
+        Aucune inscription en prévente sous cet email. Ce client est un fondateur inscrit sous un
+        autre email ?
+      </p>
+      <form className="ate-code-fondatrice ate-rattacher" onSubmit={rattacher}>
+        <label className="ate-rattacher-label" htmlFor="ate-rattacher-numero">
+          Fondateur nº
+        </label>
+        <input
+          id="ate-rattacher-numero"
+          className="adm-input ate-rattacher-input"
+          type="number"
+          min={1}
+          step={1}
+          inputMode="numeric"
+          value={numero}
+          onChange={(ev) => setNumero(ev.target.value)}
+          disabled={occupe}
+        />
+        <button type="submit" className="adm-btn" disabled={occupe || !numero.trim()}>
+          {occupe ? "Rattachement…" : "Rattacher"}
+        </button>
+        {erreur ? <p className="ate-erreur">{erreur}</p> : null}
+      </form>
     </div>
   );
 }
@@ -977,13 +1074,37 @@ export default function Fiche({
                     fondateur.
                   </p>
                 )}
+                {fiche.client.prevente.rattache ? (
+                  /* La ligne de prévente n'a PAS été trouvée par l'email du
+                     dossier : quelqu'un l'a désignée. Sans cette phrase, la
+                     remise de 30 € posée sur un dossier dont l'adresse ne dit
+                     rien resterait inexplicable. */
+                  <p className="ate-faint">
+                    Fondateur nº{fiche.client.prevente.numeroFondateur}, rattaché à la main
+                    {fiche.client.prevente.rattachePar
+                      ? ` par ${fiche.client.prevente.rattachePar}`
+                      : ""}
+                    {fiche.client.prevente.rattacheLe
+                      ? ` le ${new Date(fiche.client.prevente.rattacheLe).toLocaleDateString(
+                          "fr-FR",
+                          { day: "numeric", month: "long", year: "numeric" },
+                        )}`
+                      : ""}
+                    . Son email de composition n&apos;est pas celui de sa prévente.
+                  </p>
+                ) : null}
                 {fiche.client.prevente.estAmbassadeur ? (
                   <p className="ate-faint">
                     Ambassadeur · {fiche.client.prevente.pagesCredits} pages de parrainage acquises.
                   </p>
                 ) : null}
               </div>
-            ) : null}
+            ) : (
+              /* Personne en prévente sous cet email : c'est ici, et nulle part
+                 ailleurs, qu'un fondateur qui a composé sous une autre adresse
+                 peut être rattaché à son droit. */
+              <RattacherFondateur token={l.token} demo={demo} />
+            )}
           </section>
 
           {/* ── ce qui engage ── */}

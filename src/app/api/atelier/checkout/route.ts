@@ -462,6 +462,10 @@ export async function POST(request: Request) {
         code: credit.code,
         montant: CREDIT_FONDATRICE_CENTIMES,
         numero_fondateur: credit.numeroFondateur,
+        /* Par l'email du dossier, ou par un rattachement posé à la main
+           (10/09) : sans cette clé, une remise sur un dossier dont l'email
+           n'est pas celui de la prévente resterait inexplicable. */
+        origine: credit.origine,
         session_id: session.id,
         code_deja_frappe: credit.deja,
         par: "auto",

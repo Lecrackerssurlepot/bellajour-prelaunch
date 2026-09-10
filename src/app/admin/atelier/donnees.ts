@@ -35,6 +35,11 @@ import {
 } from "@/lib/atelier/mails";
 import { construireParcours } from "@/lib/atelier/parcours";
 import { genreNote } from "@/lib/atelier/carnet";
+import {
+  EVT_CODE_CREE,
+  EVT_FONDATEUR_RATTACHE,
+  numeroRattache,
+} from "@/lib/atelier/fondatrice";
 import { prenomDe } from "@/lib/admin-auth";
 import type {
   ActiviteVue,
@@ -778,19 +783,51 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
      Même raison que `finsDepot` pour la requête dédiée : la liste
      d'affichage est triée desc et plafonnée à 200, un vieux dossier
      bavard pourrait faire sortir l'événement de la fenêtre — et un code
-     « oublié » ferait recréer un second crédit de 30 €. */
-  const { data: codesFondatrice } = await supabase
+     « oublié » ferait recréer un second crédit de 30 €.
+
+     10/09 : la MÊME requête ramène les rattachements à la main
+     (`fondateur_rattache`). Une seconde requête aurait coûté un aller-retour
+     de plus sur une fiche qui en fait déjà beaucoup, pour deux types
+     d'événements aussi rares l'un que l'autre. */
+  const { data: lignesFondateur } = await supabase
     .from("evenements")
-    .select("payload, created_at")
+    .select("type, payload, created_at")
     .eq("numero_id", id)
-    .eq("type", "code_fondatrice_cree")
+    .in("type", [EVT_CODE_CREE, EVT_FONDATEUR_RATTACHE])
     .order("created_at", { ascending: true })
-    .limit(1)
-    .returns<Array<{ payload: Record<string, unknown>; created_at: string }>>();
-  const brutCode = codesFondatrice?.[0];
+    .limit(20)
+    .returns<Array<{ type: string; payload: Record<string, unknown>; created_at: string }>>();
+
+  const brutCode = (lignesFondateur ?? []).find((e) => e.type === EVT_CODE_CREE);
   const codeFondatrice =
     brutCode && typeof brutCode.payload?.code === "string"
       ? { code: brutCode.payload.code, creeLe: brutCode.created_at }
+      : null;
+
+  /* Le rattachement : le DERNIER fait foi (c'est une correction, cf.
+     `numeroRattache`). On relit la ligne correspondante pour la date et
+     l'auteur — l'écran doit pouvoir dire « rattaché par Mathias le 10/09 »,
+     sinon personne ne saura d'où sort la remise dans six mois. */
+  const lignesRattachement = (lignesFondateur ?? []).filter(
+    (e) => e.type === EVT_FONDATEUR_RATTACHE,
+  );
+  const numeroRattachement = numeroRattache(lignesRattachement);
+  const ligneRattachement =
+    numeroRattachement === null
+      ? null
+      : (lignesRattachement
+          .filter((e) => e.payload?.numero_fondateur === numeroRattachement)
+          .at(-1) ?? null);
+  const rattachement =
+    numeroRattachement !== null && ligneRattachement
+      ? {
+          numeroFondateur: numeroRattachement,
+          le: ligneRattachement.created_at,
+          par:
+            typeof ligneRattachement.payload?.par === "string"
+              ? ligneRattachement.payload.par
+              : null,
+        }
       : null;
 
   const apercu = await resoudreApercu(n.apercu_urls);
@@ -914,7 +951,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     codeFondatrice,
     /* `select("*")` : la colonne arrive d'elle-même quand elle existe. */
     enChargeAbsent: !("en_charge" in n),
-    client: await chargerClient(rangee),
+    client: await chargerClient(rangee, rattachement),
     /* Les mêmes que sur la ligne : une seule source, pas deux listes à
        garder d'accord. */
     actions: versLigne(
@@ -1002,6 +1039,19 @@ async function chargerNotes(
 /* ────────────────────────────── la cliente ────────────────────────────── */
 
 /**
+ * « Ce dossier est celui du fondateur nº N », dit à la main par un admin.
+ *
+ * Vit dans `evenements` (type `fondateur_rattache`), jamais dans une colonne :
+ * aucune migration, et le geste garde son auteur et sa date, que l'écran
+ * affiche en toutes lettres.
+ */
+export type Rattachement = {
+  numeroFondateur: number;
+  le: string;
+  par: string | null;
+};
+
+/**
  * Qui est-elle, au-delà de ce dossier.
  *
  * ⚠️ SEUL ENDROIT DU BACK-OFFICE DE L'ATELIER QUI LIT LA PRÉVENTE, et
@@ -1013,11 +1063,20 @@ async function chargerNotes(
  * Aucune écriture, jamais. Un échec de lecture rend `null` : la fiche
  * s'affiche sans le bloc, elle ne tombe pas.
  */
-async function chargerClient(r: RangeeNumero): Promise<ClientVue> {
+async function chargerClient(
+  r: RangeeNumero,
+  /* Le rattachement posé à la main (10/09), lu par `chargerFiche` dans la
+     même requête que le code fondateur. Il ne remplace pas l'email : il ne
+     sert que si l'email ne trouve personne. */
+  rattachement: Rattachement | null = null,
+): Promise<ClientVue> {
   const supabase = makeSupabase();
   const canonique = r.email_canonical ?? (r.email ? canonicalizeEmail(r.email) : null);
   const vide: ClientVue = { autres: [], totalPaye: 0, prevente: null };
-  if (!canonique) return vide;
+  /* Sans email ET sans rattachement, il n'y a rien à chercher. Avec l'un des
+     deux, on continue : un dossier rattaché doit afficher sa prévente même si
+     son adresse ne dit rien à personne. */
+  if (!canonique && !rattachement) return vide;
 
   /* `credit_consomme_le` + `credit_code` (20260905) : repli 42703 tant que
      la migration n'est pas passée — la fiche vit alors sur ses colonnes
@@ -1031,23 +1090,57 @@ async function chargerClient(r: RangeeNumero): Promise<ClientVue> {
     credit_consomme_le?: string | null;
     credit_code?: string | null;
   };
+  const CHAMPS_WL = "email, offer_type, numero_fondateur, status, is_ambassadeur";
+  const CHAMPS_WL_CREDIT = `${CHAMPS_WL}, credit_consomme_le, credit_code`;
+
   const lireWaitlist = async (): Promise<LigneWaitlist | null> => {
+    if (!canonique) return null;
     const lire = (champs: string) =>
       supabase
         .from("waitlist")
         .select(champs)
         .eq("email_canonical", canonique)
         .maybeSingle<LigneWaitlist>();
-    let { data, error } = await lire(
-      "email, offer_type, numero_fondateur, status, is_ambassadeur, credit_consomme_le, credit_code",
-    );
+    let { data, error } = await lire(CHAMPS_WL_CREDIT);
     if (error?.code === "42703") {
-      ({ data, error } = await lire(
-        "email, offer_type, numero_fondateur, status, is_ambassadeur",
-      ));
+      ({ data, error } = await lire(CHAMPS_WL));
     }
     if (error) throw new Error(error.message);
     return data ?? null;
+  };
+
+  /**
+   * La ligne DÉSIGNÉE par un rattachement. Lue seulement si l'email n'a rien
+   * donné : un email qui reconnaît déjà la personne n'a pas besoin d'être
+   * corrigé.
+   *
+   * ⚠️ Elle DÉSIGNE un droit, elle n'en crée pas (borne nº6 de
+   * `fondatrice.ts`) : les filtres `founder` + `confirmed` sont les mêmes que
+   * ceux de la détection automatique. Une ligne qui ne les passe pas rend
+   * null, et la fiche affiche alors le formulaire de rattachement comme si
+   * rien n'avait été fait — ce qui est la vérité : le numéro frappé ne donne
+   * aucun crédit.
+   *
+   * `limit(1)` et non `maybeSingle` : deux lignes portant le même numéro
+   * feraient tomber la fiche entière, pour une anomalie de la prévente qui
+   * n'a rien à voir avec ce dossier.
+   */
+  const lireWaitlistParNumero = async (n: number): Promise<LigneWaitlist | null> => {
+    const lire = (champs: string) =>
+      supabase
+        .from("waitlist")
+        .select(champs)
+        .eq("numero_fondateur", n)
+        .eq("offer_type", "founder")
+        .eq("status", "confirmed")
+        .limit(1)
+        .returns<LigneWaitlist[]>();
+    let { data, error } = await lire(CHAMPS_WL_CREDIT);
+    if (error?.code === "42703") {
+      ({ data, error } = await lire(CHAMPS_WL));
+    }
+    if (error) throw new Error(error.message);
+    return (data ?? [])[0] ?? null;
   };
 
   /* Les autres numéros de la même cliente. `prix_centimes` (20260910) est
@@ -1063,6 +1156,9 @@ async function chargerClient(r: RangeeNumero): Promise<ClientVue> {
     prix_centimes?: number | null;
   };
   const lireAutres = async () => {
+    /* Sans email, « ses autres numéros » n'a pas de sens : on ne rapproche
+       jamais deux dossiers par un rattachement, seulement par l'adresse. */
+    if (!canonique) return { data: [] as AutreNumero[], error: null };
     const lire = (champs: string) =>
       supabase
         .from("numeros")
@@ -1079,7 +1175,16 @@ async function chargerClient(r: RangeeNumero): Promise<ClientVue> {
   };
 
   try {
-    const [{ data: autres }, wl] = await Promise.all([lireAutres(), lireWaitlist()]);
+    const [{ data: autres }, parEmail] = await Promise.all([lireAutres(), lireWaitlist()]);
+
+    /* L'email d'abord, le rattachement en second recours. Un fondateur qui a
+       composé sous une autre adresse n'a AUCUNE ligne par email : sans ce
+       repli, la fiche jurerait qu'il n'est pas fondateur alors que le
+       checkout, lui, lui accorde la remise. */
+    const rattache = parEmail === null && rattachement !== null;
+    const wl = rattache
+      ? await lireWaitlistParNumero(rattachement.numeroFondateur)
+      : parEmail;
 
     let pagesCredits = 0;
     if (wl?.email) {
@@ -1120,6 +1225,16 @@ async function chargerClient(r: RangeeNumero): Promise<ClientVue> {
             pagesCredits,
             creditConsommeLe: wl.credit_consomme_le ?? null,
             creditCode: wl.credit_code ?? null,
+            /* Dit à la main, et par qui : la fiche doit pouvoir répondre à
+               « pourquoi ce dossier porte-t-il une remise que son email
+               n'explique pas ». */
+            ...(rattache && rattachement
+              ? {
+                  rattache: true,
+                  rattacheLe: rattachement.le,
+                  ...(rattachement.par ? { rattachePar: rattachement.par } : {}),
+                }
+              : {}),
           }
         : null,
     };

@@ -2445,6 +2445,27 @@
   overflow-wrap: anywhere;
 }
 
+/* 10/09 — rattacher un dossier à un fondateur inscrit sous un autre email.
+   Une ligne : le libellé, le champ, le bouton. L'erreur passe à la ligne
+   suivante en occupant toute la largeur (`flex-basis: 100%`), sinon une
+   phrase de deux mots écraserait le champ. */
+.ate-rattacher {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  flex-wrap: wrap;
+}
+.ate-rattacher-label {
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-faint);
+}
+.ate-rattacher-input {
+  width: 5.5rem;
+}
+.ate-rattacher .ate-erreur {
+  flex-basis: 100%;
+}
+
 .ate-accords {
   list-style: none;
   margin: 0;

@@ -84,6 +84,7 @@ import {
   creditEncoreDu,
   estCollisionDeCode,
   numeroFondatricePour,
+  numeroRattache,
   parametreCredit,
   CREDIT_FONDATRICE_CENTIMES,
   CREDIT_FONDATRICE_EUROS,
@@ -1532,6 +1533,55 @@ ok("numero a 0 ou negatif : colonne mal initialisee, pas un droit",
    && numeroFondatricePour(wl({ numero_fondateur: -2 })) === null);
 ok("numero non entier : refuse",
    numeroFondatricePour(wl({ numero_fondateur: 3.5 })) === null);
+
+/* ═══ LE RATTACHEMENT A LA MAIN (10/09/2026) : LA PARTIE PURE ═══
+   Un fondateur peut composer sous une AUTRE adresse que celle de sa prevente.
+   La detection par email ne le voit pas, et le filet manuel non plus puisqu'il
+   passe par la meme detection : il n'etait atteignable par aucun des deux.
+   L'admin le designe alors, et ce sont les evenements `fondateur_rattache` qui
+   portent la designation. Ce qui se teste ici sans base : quel numero une pile
+   d'evenements designe, et ce qu'elle NE designe pas.
+
+   Ce qui touche Stripe ou la base reste hors perimetre (cf. le commentaire du
+   code fondatrice plus haut) : la relecture de `waitlist` par numero, elle,
+   est a effets. */
+
+titre("— rattachement : le numero designe par le journal —");
+const evRat = (numero_fondateur: unknown) => ({ payload: { numero_fondateur } });
+ok("journal vide : personne n'est rattache",
+   numeroRattache([]) === null && numeroRattache(null) === null
+   && numeroRattache(undefined) === null);
+ok("payload vide ou nul : ignore, jamais devine",
+   numeroRattache([{ payload: {} }]) === null
+   && numeroRattache([{ payload: null }]) === null);
+ok("un numero en CHAINE n'est pas un numero (« 3 » ne vaut pas 3)",
+   numeroRattache([evRat("3")]) === null);
+ok("zero, negatif, decimal : aucune place de fondateur",
+   numeroRattache([evRat(0)]) === null
+   && numeroRattache([evRat(-1)]) === null
+   && numeroRattache([evRat(2.5)]) === null);
+ok("un rattachement lisible designe son numero",
+   numeroRattache([evRat(3)]) === 3);
+ok("le DERNIER gagne : rattacher est une correction, pas une premiere fois",
+   numeroRattache([evRat(3), evRat(7)]) === 7);
+ok("une ligne illisible au milieu ne fait pas perdre la designation",
+   numeroRattache([evRat(3), { payload: {} }]) === 3);
+
+titre("— rattachement : le recit nomme l'auteur et le numero —");
+const rRat = raconter("fondateur_rattache", { numero_fondateur: 3, par: "Mathias" });
+ok("la phrase nomme l'admin qui a decide", rRat.texte.includes("Mathias"));
+ok("la phrase nomme le numero de fondateur", rRat.texte.includes("nº3"));
+ok("elle dit le geste (« rattache »)", /rattach/i.test(rRat.texte));
+ok("sans auteur, la phrase reste correcte et garde le numero",
+   raconter("fondateur_rattache", { numero_fondateur: 7 }).texte.includes("nº7"));
+ok("sans numero lisible, la phrase ne fabrique aucun numero",
+   !/nº/.test(raconter("fondateur_rattache", { par: "Louis" }).texte));
+ok("le credit frappe sur un dossier rattache le DIT dans le journal",
+   (raconter("code_fondatrice_cree", { numero_fondateur: 3, origine: "rattachement" }).detail ?? "")
+     .includes("rattach"));
+ok("un credit detecte par email ne parle PAS de rattachement",
+   !(raconter("code_fondatrice_cree", { numero_fondateur: 3, origine: "email" }).detail ?? "")
+     .includes("rattach"));
 
 titre("— T-021 : le montant, borne et jamais invente —");
 ok("le credit vaut 3000 centimes, soit 30 EUR (CGV art. 5 bis)",
