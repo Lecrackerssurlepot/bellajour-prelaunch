@@ -20,6 +20,7 @@ import {
   normaliserTelephone,
   premierManquant,
 } from "@/lib/atelier/questionnaire";
+import { normaliserPays } from "@/lib/atelier/pays";
 
 export const runtime = "nodejs";
 
@@ -45,6 +46,10 @@ const MAX = {
   mot_quatrieme: 160,
   prenom: 60,
   telephone: 30,
+  /* Un code ISO à deux lettres. Le plafond n'est pas là pour couper une
+     réponse mais pour éviter d'appeler `toUpperCase()` sur une chaîne
+     arbitrairement longue venue d'un appel direct. */
+  pays: 8,
 };
 
 /* Sorti du corps de POST pour servir aussi à PATCH : les deux écrivent en
@@ -165,6 +170,18 @@ export async function POST(request: Request) {
       prenom: clean(body.prenom, MAX.prenom),
       email: clean(body.email, 200).toLowerCase(),
       telephone: normaliserTelephone(clean(body.telephone, MAX.telephone)),
+      /* ── LE PAYS DE LIVRAISON (lot 3, 10/09/2026) ────────────────────
+         DANS `valeurs`, et c'est le point : `premierManquant` le contrôle
+         alors comme les six autres réponses. Un brouillon d'une version
+         antérieure au 10/09 n'en porte pas — il est renvoyé à l'écran 4
+         plutôt qu'écrit en base sans destination, exactement comme un
+         dossier sans titre l'aurait été après le 28/08.
+
+         NORMALISÉ AVANT D'ÊTRE VALIDÉ : « fr » ou «  be  » deviennent des
+         codes canoniques, et tout le reste devient "" — donc un champ
+         manquant, jamais un pays inventé. C'est la seule façon d'écrire en
+         base la forme exacte que Stripe et Cloudprinter attendent. */
+      pays: normaliserPays(clean(body.pays, MAX.pays)) ?? "",
     };
 
     /* Les deux mots de couverture FACULTATIFS de l'écran 3 (03/09). Hors de
@@ -205,25 +222,41 @@ export async function POST(request: Request) {
       telephone: valeurs.telephone,
     };
 
-    /* Les mots de couverture ne rejoignent l'insert que s'ils existent : un
-       dossier sans eux ne nomme jamais les colonnes, donc ne dépend pas de
-       la migration. */
-    const colonnesCouverture = {
+    /* ── LES COLONNES QUE LA BASE PEUT NE PAS ENCORE AVOIR ─────────────
+       Les mots de couverture ne rejoignent l'insert que s'ils existent : un
+       dossier sans eux ne nomme jamais leurs colonnes, donc ne dépend pas de
+       leur migration. `pays_livraison`, lui, est TOUJOURS nommé — c'est une
+       réponse exigée, elle vaut toujours quelque chose — donc cet insert
+       dépend bel et bien de la migration 20260910 tant qu'elle n'est pas
+       passée, et c'est le repli ci-dessous qui tient la fenêtre. */
+    const colonnesFraiches = {
       ...(sousTitre ? { sous_titre: sousTitre } : {}),
       ...(motQuatrieme ? { mot_quatrieme: motQuatrieme } : {}),
+      /* ⚠️ COLONNE FRAÎCHE : `pays_livraison` vient de la migration
+         20260910 (le lot « prix gelé »), qui peut ne pas être passée quand
+         ce code se déploie. Il voyage donc avec les mots de couverture,
+         dans le même repli 42703/PGRST204 : mieux vaut un dossier créé sans
+         sa colonne pays qu'un 500 à l'écran 4. Le journal ci-dessous le
+         garde de toute façon, et la console CRIE — un repli qui efface une
+         donnée en silence est exactement ce qu'on ne veut pas. */
+      pays_livraison: valeurs.pays,
     };
 
     let insertion = await supabase
       .from("numeros")
-      .insert({ ...ligne, ...colonnesCouverture })
+      .insert({ ...ligne, ...colonnesFraiches })
       .select("id, token")
       .single();
 
     /* Repli « colonne inconnue », comme partout (donnees.ts, paiement.ts,
        mails.ts) : entre le déploiement du code et le passage de la migration,
        la colonne manque et l'insert ENTIER échoue. On réessaie sans elles —
-       le dossier vaut infiniment plus que deux mentions facultatives — et le
-       journal ci-dessous les garde quand même.
+       le dossier vaut infiniment plus que deux mentions facultatives et un
+       code pays — et le journal ci-dessous les garde quand même.
+       ⚠️ CE REPLI EFFACE UNE DONNÉE, dont désormais le pays de livraison :
+       une fois la migration 20260910 passée, VÉRIFIER sur un dossier neuf
+       que `numeros.pays_livraison` est réellement rempli. Un repli qui
+       marche trop bien se confond avec une colonne qui marche.
        ⚠️ DEUX CODES, PAS UN. PostgREST répond 42703 quand on LIT une colonne
        inconnue, mais PGRST204 (« Could not find the column in the schema
        cache ») quand on l'ÉCRIT. Prouvé en production le 03/09 sur ce dossier
@@ -231,9 +264,9 @@ export async function POST(request: Request) {
        d'ÉCRITURE doit attraper les deux. */
     const colonneInconnue =
       insertion.error?.code === "42703" || insertion.error?.code === "PGRST204";
-    if (colonneInconnue && Object.keys(colonnesCouverture).length > 0) {
+    if (colonneInconnue && Object.keys(colonnesFraiches).length > 0) {
       console.error(
-        "[atelier/numero] ⚠️ REPLI 42703 : sous_titre/mot_quatrieme absentes en base, les mots de couverture ne sont PAS en colonne (le journal les garde). Appliquer supabase/migrations/20260903_composer_mots_couverture.sql.",
+        "[atelier/numero] ⚠️ REPLI 42703 : sous_titre/mot_quatrieme/pays_livraison absentes en base, les mots de couverture ET LE PAYS DE LIVRAISON ne sont PAS en colonne (le journal les garde). Appliquer supabase/migrations/20260903_composer_mots_couverture.sql et supabase/migrations/20260910_atelier_prix_gele.sql.",
       );
       insertion = await supabase.from("numeros").insert(ligne).select("id, token").single();
     }
@@ -253,6 +286,9 @@ export async function POST(request: Request) {
       source: "questionnaire_ecran_4",
       ...(sousTitre ? { sous_titre: sousTitre } : {}),
       ...(motQuatrieme ? { mot_quatrieme: motQuatrieme } : {}),
+      /* Toujours présent : c'est une réponse exigée, et c'est la SEULE trace
+         du pays si le repli ci-dessus vient d'effacer la colonne. */
+      pays_livraison: valeurs.pays,
     });
 
     /* ══════════════════════════════════════════════════════════════════

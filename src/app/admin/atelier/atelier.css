@@ -1834,6 +1834,31 @@
 .ate-champ--court .adm-input {
   max-width: 9rem;
 }
+
+/* ── LE SELECT « PAYS DE LIVRAISON » (10/09/2026) ──────────────────────
+   Il porte `.adm-input` pour s'aligner sur les autres champs du formulaire
+   de publication. Or `.adm-input` pose `appearance: none` : sans les deux
+   règles ci-dessous, le menu n'aurait AUCUN chevron et se lirait comme un
+   champ de saisie qu'on peut remplir au clavier.
+   Le chevron est le même dessin que `.adm-select-wrap::after`, en
+   `background-image` plutôt qu'en pseudo-élément : le select est ici au
+   milieu d'un <label> qui porte aussi son titre et son aide, un ::after s'y
+   poserait tout en bas. La couleur est en dur (%238c8579 = --bj-text-faint),
+   une URL de données ne sachant pas lire une variable CSS.
+   La largeur repasse à 11rem : « Luxembourg » ne tient pas dans les 9 rem
+   d'un champ court, prévus pour un nombre de pages. */
+.ate-champ select.adm-input {
+  cursor: pointer;
+  padding-right: var(--bj-sp-6);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%238c8579' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--bj-sp-3) center;
+  background-size: 10px 7px;
+}
+
+.ate-champ--court select.adm-input {
+  max-width: 11rem;
+}
 .ate-champ-label {
   display: block;
   font-size: var(--bj-fs-xs);

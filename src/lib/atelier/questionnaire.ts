@@ -23,6 +23,8 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
+import { paysValide } from "./pays";
+
 /** Assez pour exclure une frappe accidentelle, pas assez pour brimer. */
 export const MIN_OCCASION = 2;
 
@@ -58,7 +60,12 @@ export type ChampQuestionnaire =
   | "titre"
   | "prenom"
   | "email"
-  | "telephone";
+  | "telephone"
+  /* Le pays de livraison (lot 3, 10/09/2026). Il est ici, avec les six
+     autres, parce qu'il est une RÉPONSE du questionnaire et pas un réglage :
+     le devis de port du lot 6 exige la destination avant qu'un montant ne
+     soit annoncé, et l'adresse n'arrive que plus tard, par Stripe. */
+  | "pays";
 
 /** Tous les champs, dans l'ordre où la cliente les rencontre. */
 export const CHAMPS_QUESTIONNAIRE: ChampQuestionnaire[] = [
@@ -68,6 +75,11 @@ export const CHAMPS_QUESTIONNAIRE: ChampQuestionnaire[] = [
   "prenom",
   "email",
   "telephone",
+  /* En DERNIER : c'est l'ordre où le client les rencontre à l'écran, et
+     `premierManquant` renvoie sur le premier trou en suivant cette liste. Un
+     brouillon d'une version antérieure au 10/09 n'a pas de pays du tout : il
+     est donc renvoyé à l'écran 4 plutôt qu'écrit en base sans destination. */
+  "pays",
 ];
 
 /**
@@ -82,7 +94,7 @@ export const CHAMPS_PAR_ECRAN: Record<number, ChampQuestionnaire[]> = {
   1: ["occasion"],
   2: ["histoire"],
   3: ["titre"],
-  4: ["prenom", "email", "telephone"],
+  4: ["prenom", "email", "telephone", "pays"],
 };
 
 export function ecranDuChamp(champ: ChampQuestionnaire): number {
@@ -110,6 +122,7 @@ export const MESSAGE_DU_CHAMP: Record<ChampQuestionnaire, string> = {
   prenom: "Il nous faut votre prénom pour vous écrire.",
   email: "Cette adresse email ne semble pas valide.",
   telephone: "Il nous faut un numéro pour la livraison.",
+  pays: "Dites-nous dans quel pays livrer votre numéro.",
 };
 
 /**
@@ -148,6 +161,14 @@ export function reponseValide(champ: ChampQuestionnaire, valeur: unknown): boole
       return EMAIL_PATTERN.test(v);
     case "telephone":
       return telephoneValide(v);
+    case "pays":
+      /* STRICTEMENT un des trois codes, majuscules comprises. Le navigateur
+         envoie une valeur du select, donc il ne peut pas se tromper ; le
+         serveur, lui, NORMALISE avant de valider (normaliserPays), parce que
+         c'est le seul endroit où « fr » ou «  be  » peut arriver. Valider
+         permissivement ici aurait laissé entrer en base une valeur que la
+         colonne, Stripe et Cloudprinter ne lisent pas de la même façon. */
+      return paysValide(v);
   }
 }
 

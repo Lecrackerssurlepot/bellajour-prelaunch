@@ -167,6 +167,9 @@ function versLigne(
     /* Le prix gelé du dossier d'abord : la liste doit montrer ce que la
        cliente a vu, pas ce que la grille dirait aujourd'hui. */
     euros: eurosDuDossier(r),
+    /* Vient de CHAMPS_PRIX, déjà lu par `lireNumeros` (avec son repli 42703
+       si la migration 20260910 n'est pas passée). */
+    pays: r.pays_livraison ?? null,
     createdAt: r.created_at,
     etatMajLe: r.etat_maj_le,
     urgence: {
@@ -838,6 +841,9 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     renonciation: n.renonciation_retractation === true,
     renonciationAt: (n.renonciation_at as string) ?? null,
     palier: (n.palier as string) ?? null,
+    /* Le pays déclaré à l'écran 4 (migration 20260910) : il arrive avec le
+       select("*") et vaut null tant qu'elle n'est pas passée. */
+    paysLivraison: (n.pays_livraison as string) ?? null,
     canvaUrl: (n.canva_url as string) ?? null,
     canvaTravail: (n.canva_travail as string) ?? null,
     maquettePdfUrl: (n.maquette_pdf_url as string) ?? null,

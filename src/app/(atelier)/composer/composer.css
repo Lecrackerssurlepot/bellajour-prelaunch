@@ -318,6 +318,43 @@
 .bj-atelier .at-inp { max-width: 420px; margin-top: 22px; padding: 12px 0; font-size: 17px; }
 .bj-atelier .at-inp--wide { max-width: 560px; }
 
+/* ── LE SELECT DU PAYS (écran 4, 10/09/2026) ───────────────────────────
+   Il doit se lire comme les autres champs : même largeur, même trait du bas,
+   même crème, même graisse. Un select natif ne le fait pas tout seul, d'où
+   les quatre réglages ci-dessous, chacun pour une raison précise.
+
+   1. `appearance: none` retire le chrome du système (fond blanc bombé sur
+      Safari, flèche bleue sur Chrome) : sans lui, un rectangle clair se
+      poserait au milieu d'une page noire.
+   2. Le chevron est un SVG EN LIGNE dans `background-image` : une image de
+      plus serait une requête de plus pour douze pixels, et le questionnaire
+      est déjà découpé au gramme près (T-066). La couleur est écrite en dur
+      (%23928d84 = --c-text-faint, la même couleur que les placeholders), parce qu'un `background-image` ne sait pas
+      lire une variable CSS à l'intérieur d'une URL de données.
+   3. `padding-right` réserve la place du chevron : sans lui, « Luxembourg »
+      passerait dessous.
+   4. `color-scheme: dark` fait dessiner la LISTE DÉROULANTE en sombre par le
+      système. C'est le seul levier qu'on ait sur elle : une popup native ne
+      se style pas au CSS. Les `option` reçoivent quand même fond et couleur
+      pour Firefox et Chrome sous Windows, qui, eux, les respectent — sans
+      ça, du texte crème s'affiche sur du blanc, donc invisible. */
+.bj-atelier .at-inp--select {
+  appearance: none;
+  -webkit-appearance: none;
+  color-scheme: dark;
+  padding-right: 28px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23928d84' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 2px center;
+  background-size: 12px 8px;
+}
+
+.bj-atelier .at-inp--select option {
+  background: var(--c-surface-2);
+  color: var(--c-text);
+}
+
 /* T-053 — l'opacité était à 0.42 : #928d84 à 42 % sur #020202 donne 1,90:1,
    pour un seuil de 4,5:1. À 0.85 on tient ≈ 4,9:1, et le gris reste un gris :
    un placeholder ne se confond pas avec du texte saisi (--c-text est crème). */

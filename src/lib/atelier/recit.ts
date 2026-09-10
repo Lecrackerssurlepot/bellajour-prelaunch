@@ -19,6 +19,7 @@
 
 import { LIBELLE_ETAT, type Etat } from "./transitions";
 import { OBJET_MAIL } from "./mails";
+import { PAYS_LIBELLE } from "./pays";
 
 /** Qui a agi : ça décide de la couleur et du verbe. */
 export type Ton = "nous" | "elle" | "mail" | "alerte" | "neutre";
@@ -342,6 +343,26 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
           (typeof m === "number" ? `${(m / 100).toFixed(0)} € déduits. ` : "") +
           "Le droit de l'article 5 bis est soldé : il ne s'appliquera plus",
         ton: "neutre",
+      };
+    }
+
+    /* ── LE PAYS DÉCLARÉ N'EST PAS CELUI DE L'ADRESSE (10/09/2026) ─────
+       Le client a annoncé un pays à l'écran 4 (c'est sur lui que le port
+       est devisé), Stripe en a rendu un autre au paiement. Rien n'a été
+       bloqué, et c'est voulu ; mais quelqu'un doit pouvoir le voir, parce
+       que l'écart de port est pour l'atelier. La phrase nomme les DEUX pays
+       en toutes lettres : « BE ≠ FR » ne se lit pas. */
+    case "pays_livraison_divergent": {
+      const nom = (v: unknown): string => {
+        const c = typeof v === "string" ? v.trim().toUpperCase() : "";
+        return c in PAYS_LIBELLE ? PAYS_LIBELLE[c as keyof typeof PAYS_LIBELLE] : c || "?";
+      };
+      return {
+        texte: "Le pays de livraison ne correspond pas",
+        detail:
+          `Le pays de l'adresse Stripe (${nom(payload.stripe)}) diffère de celui ` +
+          `déclaré (${nom(payload.declare)}). Rien n'a été bloqué : à regarder avant d'expédier`,
+        ton: "alerte",
       };
     }
 
