@@ -88,3 +88,11 @@ sans que le client tape rien. Depuis PR #103, la livraison est facturée en sus 
 Stripe ne couvre jamais le port. Deux règles restent à trancher par Mathias : le surplus du crédit
 sur 20 à 28 pages (25 à 31 €, Stripe met la session à zéro et le reste est perdu), et le port
 offert seulement sur ce premier numéro. Toujours **jamais éprouvé contre l'API Stripe réelle**.
+
+## 10/09/2026 — les deux règles commerciales sont tranchées
+
+Mathias a décidé : le crédit vaut **30 € de valeur sur le numéro et sa livraison** (le port de
+cette commande est offert, article 5) ; si le total, livraison comprise, est inférieur à 30 €,
+la différence n'est ni remboursée ni reportée (article 5 bis.3, réécrit en trois langues le
+10/09). Le port offert ne vaut que pour la commande qui consomme le crédit : un second numéro
+paie le port. Le code fait déjà exactement cela ; rien à changer.
