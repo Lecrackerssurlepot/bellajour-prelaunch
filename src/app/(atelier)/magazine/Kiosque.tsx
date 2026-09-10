@@ -129,7 +129,12 @@ export default function Kiosque() {
             depuis le retrait des trois paliers) est réparé — voir pdp.css. */}
         <Reveal delay={140} className="bloc-prix-ligne">
           <p className="prix-ligne">
-            <span className="des">{PRIX_LIGNE.des}</span>
+            <span className="des">
+              {PRIX_LIGNE.des}
+              {/* « hors livraison » sous le montant : la réserve du prix d'appel,
+                  à côté de lui, comme l'astérisque de Cewe mais lisible. */}
+              <small className="hors">{PRIX_LIGNE.hors}</small>
+            </span>
             <span className="quoi">
               <span>{PRIX_LIGNE.pages}</span>
               <span>{PRIX_LIGNE.photos}</span>

@@ -201,6 +201,20 @@
   white-space: nowrap;
 }
 
+/* Les deux mots sous le montant (10/09/2026) : corps de l'interface, ton
+   effacé, jamais plus gros que la colonne de droite. */
+.at-pdp .prix-ligne .hors {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--font-ui);
+  font-size: clamp(11px, 0.85vw, 12px);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  color: var(--c-text-faint);
+  white-space: nowrap;
+}
+
 .at-pdp .prix-ligne .quoi {
   text-align: right;
   font-size: clamp(13px, 0.95vw, 14px);

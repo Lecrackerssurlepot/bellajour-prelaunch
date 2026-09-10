@@ -82,6 +82,10 @@ const PHOTOS_MAX = Math.max(...BANDES_PHOTOS.map((b) => b.photosMax))
 
 export const PRIX_LIGNE = {
   des: `Dès ${EUROS_MIN} €`,
+  /* Deux mots sous le montant, jamais une phrase (Mathias, 10/09/2026, après
+     relevé chez Rosemood, Cewe et Photobox : le prix d'appel porte sa
+     réserve à côté de lui, le détail vit dans la FAQ). */
+  hors: 'hors livraison',
   pages: `${PAGES_MIN} à ${PAGES_MAX_PUBLIC} pages`,
   photos: `${PHOTOS_MIN} à ${PHOTOS_MAX} photos`,
 }
@@ -130,7 +134,7 @@ export const FAQ = [
   },
   {
     q: 'Je le reçois quand ?',
-    r: 'Votre couverture sous 48 h. Le magazine imprimé chez vous sous 10 jours après validation, avec un lien de suivi du colis dès l’expédition.',
+    r: 'Votre couverture sous 48 h. Le magazine imprimé chez vous sous 10 jours après validation, avec un lien de suivi du colis dès l’expédition. La livraison est facturée en plus, au tarif de votre pays, affiché avant le paiement.',
   },
   {
     q: 'Comment composez-vous mon magazine ?',
