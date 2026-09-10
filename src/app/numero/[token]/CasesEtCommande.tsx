@@ -63,11 +63,17 @@ type Props = {
      ce sont les délais que l'admin surveille déjà. */
   joursComposition: number
   joursLivraison: number
+  /* ── L'ATELIER REGARDE LA PAGE AVANT DE LA PUBLIER (10/09/2026) ──────
+     Tout ce qui écrit ou encaisse est alors DÉSARMÉ, à la source et pas
+     seulement à l'écran : la page est celle d'un dossier réel, et un clic
+     de contrôle ne doit ni ouvrir une session Stripe, ni cocher une case en
+     base au nom du client, ni déposer une demande d'ajustement. */
+  previsualisation?: boolean
 }
 
 export default function CasesEtCommande({
   token, nbPages, euros, livraisonCentimes, pays, commande, portOffert,
-  cgvOk, renonciation, joursComposition, joursLivraison,
+  cgvOk, renonciation, joursComposition, joursLivraison, previsualisation = false,
 }: Props) {
   const [cgv, setCgv] = useState(cgvOk)
   const [reno, setReno] = useState(renonciation)
@@ -81,6 +87,10 @@ export default function CasesEtCommande({
       const poser = champ === 'cgv_ok' ? setCgv : setReno
       poser(valeur)
       setErreur(null)
+      /* En prévisualisation la case bouge à l'écran et RIEN ne part : une
+         coche enregistrée ici serait un consentement écrit par l'atelier au
+         nom du client, exactement ce que l'invariant nº3 interdit. */
+      if (previsualisation) return
       try {
         const r = await fetch('/api/atelier/numero', {
           method: 'PATCH',
@@ -93,10 +103,13 @@ export default function CasesEtCommande({
         setErreur('Votre accord n’a pas pu être enregistré. Réessayez dans un instant.')
       }
     },
-    [token]
+    [token, previsualisation]
   )
 
   const commander = useCallback(async () => {
+    /* Ceinture : le bouton est déjà désactivé, mais un raccourci clavier ou
+       un rendu futur ne doit pas pouvoir ouvrir une caisse depuis ici. */
+    if (previsualisation) return
     setOccupe(true)
     setErreur(null)
     try {
@@ -117,7 +130,7 @@ export default function CasesEtCommande({
       )
       setOccupe(false)
     }
-  }, [token])
+  }, [token, previsualisation])
 
   /* ⚠️ « CONNU » VEUT DIRE LES DEUX. Depuis que la livraison se facture à
      part, un prix de magazine sans port n'est pas un prix : la cliente
@@ -135,10 +148,10 @@ export default function CasesEtCommande({
      geste. */
   const onCommander = useCallback(() => {
     setErreur(null)
-    if (!prixConnu || occupe) return
+    if (previsualisation || !prixConnu || occupe) return
     if (accepte) void commander()
     else setConfirmer(true)
-  }, [accepte, prixConnu, occupe, commander])
+  }, [accepte, prixConnu, occupe, commander, previsualisation])
 
   return (
     <>
@@ -242,7 +255,10 @@ export default function CasesEtCommande({
         type="button"
         className="nu-order nu-order--plein"
         onClick={confirmer ? () => void commander() : onCommander}
-        disabled={occupe || !prixConnu || (confirmer && !accepte)}
+        disabled={previsualisation || occupe || !prixConnu || (confirmer && !accepte)}
+        /* Le mot dit POURQUOI le bouton ne répond pas : un bouton éteint sans
+           explication se lit comme une panne, et c'est le bouton qui encaisse. */
+        title={previsualisation ? 'Prévisualisation' : undefined}
       >
         {/* Le montant est SUR le bouton dès le premier temps. Il n'y était
             qu'au second (« Payer 35 € ») : on demandait donc de cliquer
@@ -317,7 +333,15 @@ export default function CasesEtCommande({
 
       {/* T-091 — la porte de sortie douce : plus « répondez au mail », mais une
           feuille d'ajustement en deux gestes, sans écrire de mail. */}
-      <button type="button" className="nu-ajuster" onClick={() => setFeuille(true)}>
+      {/* Elle POSTE une demande d'ajustement au journal du dossier : éteinte
+          en prévisualisation, au même titre que le paiement. */}
+      <button
+        type="button"
+        className="nu-ajuster"
+        onClick={() => setFeuille(true)}
+        disabled={previsualisation}
+        title={previsualisation ? 'Prévisualisation' : undefined}
+      >
         Ce n’est pas tout à fait ça&nbsp;? Dites-le-nous.
       </button>
 

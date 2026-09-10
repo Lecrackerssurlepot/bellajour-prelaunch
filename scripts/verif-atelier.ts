@@ -94,6 +94,13 @@ import {
 } from "@/app/(atelier)/composer/provenance";
 import { raconter } from "@/lib/atelier/recit";
 import {
+  COLONNES_BROUILLON,
+  ETAT_BROUILLON,
+  TYPE_BROUILLON,
+  appliquerBrouillon,
+  lireBrouillon,
+} from "@/lib/atelier/brouillon";
+import {
   codeDansLeJournal,
   codesPossibles,
   creditEncoreDu,
@@ -3104,6 +3111,182 @@ titre("— le genre d'une note : cinq mots, facultatifs, jamais bloquants (T-096
      txtSans.includes(" · Mathias · Trois jours a Lisbonne\n")
      && !/aucun/i.test(txtSans));
 }
+
+
+/* ═════════ LA PRÉVISUALISATION D'UN APERÇU (10/09/2026) ═════════
+   Mathias veut voir la page du client AVANT de publier. Le dry-run dépose ce
+   qui serait écrit dans `evenements`, et la page d'état le superpose à la
+   ligne lue. Deux fonctions pures portent tout le risque : ce qui a le droit
+   de traverser (`appliquerBrouillon`) et lequel gagne (`lireBrouillon`).
+   Le risque, s'il fallait le nommer : une page de client rendue avec les
+   donnees d'un autre dossier, ou un brouillon abime qui casse l'affichage. */
+
+titre("— le brouillon superpose les colonnes attendues, et RIEN d'autre —");
+
+/* La forme d'une ligne `numeros` vue par la page d'etat, reduite a ce qui
+   nous interesse ici. Types explicites : sans eux, TypeScript deduit `null`
+   et rend la superposition intestable. */
+const LIGNE: {
+  id: string;
+  token: string;
+  email: string | null;
+  etat: string;
+  nb_pages: number | null;
+  palier: string | null;
+  prix_centimes: number | null;
+  livraison_centimes: number | null;
+  livraison_niveau: string | null;
+  pays_livraison: string | null;
+  apercu_urls: unknown;
+  nb_photos: number;
+} = {
+  id: "id-reel",
+  token: "tok-reel",
+  email: "client@exemple.fr",
+  etat: "photos_recues",
+  nb_pages: null,
+  palier: null,
+  prix_centimes: null,
+  livraison_centimes: null,
+  livraison_niveau: null,
+  pays_livraison: null,
+  apercu_urls: null,
+  nb_photos: 41,
+};
+
+const BROUILLON = lireBrouillon([
+  {
+    type: TYPE_BROUILLON,
+    payload: {
+      par: "Mathias",
+      patch: {
+        nb_pages: 34,
+        palier: "p40",
+        prix_centimes: 3700,
+        livraison_centimes: 1106,
+        livraison_niveau: "cp_ground",
+        pays_livraison: "FR",
+        apercu_urls: { plat: "k/plat.jpg" },
+        /* Ce qui ne doit JAMAIS traverser. */
+        id: "id-vole",
+        token: "tok-vole",
+        email: "quelquun@ailleurs.fr",
+        etat: "livree",
+        nb_photos: 999,
+      },
+    },
+  },
+]);
+
+ok("le brouillon est lu, avec son auteur",
+   BROUILLON !== null && BROUILLON.par === "Mathias");
+
+const VUE = appliquerBrouillon(LIGNE, BROUILLON);
+
+ok("les sept colonnes attendues sont superposees",
+   VUE.nb_pages === 34 && VUE.palier === "p40" && VUE.prix_centimes === 3700
+   && VUE.livraison_centimes === 1106 && VUE.livraison_niveau === "cp_ground"
+   && VUE.pays_livraison === "FR"
+   && (VUE.apercu_urls as { plat: string }).plat === "k/plat.jpg");
+
+ok("l'identite du dossier ne bouge PAS : id, token, email restent ceux de la base",
+   VUE.id === "id-reel" && VUE.token === "tok-reel" && VUE.email === "client@exemple.fr");
+
+ok("une colonne inconnue du brouillon est ignoree",
+   VUE.nb_photos === 41);
+
+ok("l'etat est FORCE a l'apercu, jamais celui du patch",
+   VUE.etat === ETAT_BROUILLON && ETAT_BROUILLON === "apercu_pret");
+
+ok("la ligne d'origine n'est pas mutee : c'est une copie",
+   LIGNE.etat === "photos_recues" && LIGNE.nb_pages === null);
+
+ok("sans brouillon, la ligne ressort telle quelle (meme etat)",
+   appliquerBrouillon(LIGNE, null).etat === "photos_recues");
+
+ok("la liste blanche ne nomme que les sept colonnes du gel et de l'apercu",
+   COLONNES_BROUILLON.length === 7
+   && !(COLONNES_BROUILLON as readonly string[]).includes("etat")
+   && !(COLONNES_BROUILLON as readonly string[]).includes("id"));
+
+titre("— le brouillon : les valeurs abimees ne passent pas —");
+
+const SALE = lireBrouillon([
+  {
+    type: TYPE_BROUILLON,
+    payload: {
+      patch: {
+        nb_pages: 34,
+        /* Un prix nul ou negatif n'est pas un prix : meme borne que prix.ts
+           et que le `check` de la base. */
+        prix_centimes: 0,
+        /* Zero est en revanche un PORT valide : offrir la livraison est une
+           decision commerciale legitime. */
+        livraison_centimes: 0,
+        /* Hors zone : le pays decide du port et de la phrase affichee. */
+        pays_livraison: "US",
+        /* Ne respecte pas le motif du `check` de la colonne. */
+        livraison_niveau: "CP GROUND!",
+        /* Une chaine n'est pas un jsonb de visuels. */
+        apercu_urls: "k/plat.jpg",
+      },
+    },
+  },
+]);
+const VUE_SALE = appliquerBrouillon(LIGNE, SALE);
+ok("un prix a zero est refuse, un port a zero est garde",
+   VUE_SALE.prix_centimes === null && VUE_SALE.livraison_centimes === 0);
+ok("un pays hors zone, un niveau abime et des visuels non-objet sont ignores",
+   VUE_SALE.pays_livraison === null && VUE_SALE.livraison_niveau === null
+   && VUE_SALE.apercu_urls === null);
+ok("le reste du brouillon passe quand meme : une valeur abimee n'annule pas tout",
+   VUE_SALE.nb_pages === 34 && VUE_SALE.etat === "apercu_pret");
+
+titre("— le brouillon : lequel gagne, et quand il n'y en a pas —");
+
+ok("une liste vide ne rend rien", lireBrouillon([]) === null);
+ok("une liste absente ne jette pas", lireBrouillon(null) === null && lireBrouillon(undefined) === null);
+ok("un payload malforme est ignore",
+   lireBrouillon([{ type: TYPE_BROUILLON, payload: null }]) === null
+   && lireBrouillon([{ type: TYPE_BROUILLON, payload: "34 pages" }]) === null
+   && lireBrouillon([{ type: TYPE_BROUILLON, payload: { patch: [1, 2] } }]) === null);
+ok("un patch sans AUCUNE colonne connue ne fait pas un brouillon",
+   lireBrouillon([{ type: TYPE_BROUILLON, payload: { patch: { etat: "livree", id: "x" } } }]) === null);
+ok("un evenement d'un autre type n'est jamais pris pour un brouillon",
+   lireBrouillon([{ type: "etat_change", payload: { patch: { nb_pages: 34 } } }]) === null);
+
+/* L'ordre est CHRONOLOGIQUE : le dernier prepare est celui que l'atelier a
+   sous les yeux. Un dry-run efface le precedent a l'ecran, pas en base. */
+const SUITE = lireBrouillon([
+  { type: TYPE_BROUILLON, payload: { patch: { nb_pages: 24 }, par: "Louis" } },
+  { type: TYPE_BROUILLON, payload: { patch: { nb_pages: 34 }, par: "Mathias" } },
+]);
+ok("le dernier brouillon gagne", SUITE?.patch.nb_pages === 34 && SUITE?.par === "Mathias");
+
+/* Un brouillon recent mais illisible ne doit pas faire disparaitre la
+   prevision : on remonte jusqu'au dernier qui tienne debout. */
+const REPLI = lireBrouillon([
+  { type: TYPE_BROUILLON, payload: { patch: { nb_pages: 24 } } },
+  { type: TYPE_BROUILLON, payload: { patch: {} } },
+]);
+ok("un dernier brouillon vide laisse la place au precedent", REPLI?.patch.nb_pages === 24);
+
+titre("— le brouillon se raconte dans le journal —");
+
+const rBrouillon = raconter(TYPE_BROUILLON, {
+  par: "Mathias",
+  resume: { nbPages: 34, euros: 37 },
+  livraison: { source: "cloudprinter", client: 1106 },
+});
+ok("la phrase nomme l'auteur et le geste",
+   rBrouillon.texte === "Mathias a prévisualisé la page");
+ok("le detail dit la pagination, le prix et le port",
+   rBrouillon.detail === "34 pages, 37 €, livraison 11,06 €");
+ok("le ton reste sobre : ce n'est pas une decision",
+   rBrouillon.ton === "neutre");
+ok("sans auteur ni chiffres, la phrase reste correcte et sans detail",
+   raconter(TYPE_BROUILLON, {}).texte === "Page prévisualisée"
+   && raconter(TYPE_BROUILLON, {}).detail === null);
 
 void verifierT005().then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
