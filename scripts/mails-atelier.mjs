@@ -328,8 +328,8 @@ const PRENOM = "{{ params.PRENOM }}";
 const TITRE = "{{ params.TITRE }}";
 
 /* ─────────────────────────── les mails versionnés ───────────────────────────
-   Douze mails de l'atelier + les deux du compte (C1 inscription, C2 mot de
-   passe — 04/09). M1 préexiste dans Brevo et n'a pas encore été rapatrié
+   Douze mails de l'atelier + les trois du compte (C0 invitation des
+   fondateurs 10/09, C1 inscription, C2 mot de passe, 04/09). M1 préexiste dans Brevo et n'a pas encore été rapatrié
    ici ; M3 l'a été le 26/08 pour le retour T2-7, M4 le 10/09 (livraison en sus). */
 
 export const MAILS = [
@@ -597,6 +597,26 @@ export const MAILS = [
     cta: "Reprendre mon numéro",
     lien: LIEN,
     pied: "Si vous préférez que nous refermions ce dossier, vous n'avez rien à faire. Et si vous voulez le reprendre plus tard, dites-le nous : répondez à ce message, nous vous répondrons nous-mêmes.",
+  },
+  {
+    /* C0 — l'invitation des fondateurs (10/09/2026). Leurs comptes ont été
+       pré-créés sans mail le 07/09 ; Mathias veut maintenant qu'ils puissent
+       se connecter. Le lien N'EXPIRE JAMAIS : il ouvre /compte/bienvenue
+       (adresse pré-remplie, un bouton « Recevoir mon lien » qui déclenche
+       le flux mot de passe oublié, ou Google). Décision de Mathias du 10/09 :
+       un lien à durée limitée finit toujours par tomber sur quelqu'un qui
+       lit trop tard. Envoyé par scripts/inviter-fondateurs.ts, jamais par
+       une route du site. Aucun tiret cadratin. */
+    code: "C0",
+    nom: "C0 · Compte · Votre espace fondateur est ouvert",
+    sujet: "Votre espace fondateur est ouvert",
+    preheader: "Votre compte existe déjà. Il ne manque que votre mot de passe.",
+    titreHtml: "Votre espace fondateur est ouvert",
+    h1: "Votre espace<br />fondateur est ouvert.",
+    sous: "{{ params.PRENOM }}, l'atelier ouvre pour de vrai. Vous êtes le fondateur nº{{ params.NUMERO }} : votre compte Bellajour est déjà créé avec cette adresse, il ne manque que votre mot de passe. Vos 30 € de crédit et la livraison offerte s'appliqueront tout seuls sur votre premier numéro.",
+    cta: "Choisir mon mot de passe",
+    lien: "{{ params.URL }}",
+    pied: "Le lien vous mène à une page où vous recevez, d'un clic, de quoi choisir votre mot de passe. Vous pouvez aussi vous connecter avec Google, avec cette même adresse. Une question ? Répondez à ce message, nous vous répondrons nous-mêmes.",
   },
   {
     /* C1 — la confirmation d'inscription au COMPTE (04/09). Hors machine à
