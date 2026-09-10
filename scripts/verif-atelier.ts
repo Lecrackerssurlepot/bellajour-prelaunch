@@ -81,6 +81,9 @@ import {
   EUROS_MIN,
   PAGES_AGRAFE,
   PAGES_MAX,
+  PAGES_MAX_PUBLIC,
+  GRILLE_PUBLIQUE,
+  EUROS_MAX_PUBLIC,
   PAGES_MIN,
   PAS_PAGES,
   RELIURE_LIBELLE,
@@ -2185,12 +2188,14 @@ ok("les bornes de chaque bande SONT des paginations de la grille",
 ok("les bandes de photos se suivent sans trou ni recouvrement",
    BANDES_PHOTOS.every((b, i) => i === 0 || b.photosMin === BANDES_PHOTOS[i - 1].photosMax + 1));
 ok("la derniere bande monte jusqu'au maximum de la grille",
-   BANDES_PHOTOS[BANDES_PHOTOS.length - 1].pagesMax === PAGES_MAX);
+   BANDES_PHOTOS[BANDES_PHOTOS.length - 1].pagesMax === PAGES_MAX_PUBLIC);
+ok("l'offre PUBLIQUE s'arrete a 50 pages (Mathias, 10/09) : 15 lignes, 50 EUR au plus, le 60 reste interne",
+   PAGES_MAX_PUBLIC === 50 && GRILLE_PUBLIQUE.length === 15 && EUROS_MAX_PUBLIC === 50 && PAGES_MAX === 60);
 /* La phrase de l'ecran 5, telle qu'elle s'affiche : une FOURCHETTE de prix,
    plus « autour de 30 EUR ». L'espace avant l'euro est INSECABLE. */
 ok("45 photos -> « de 25 a 31 EUR » (20 a 28 pages)",
    bandePour(45)?.autour === "de 25 \u00e0 31\u00a0\u20ac");
-ok("90 photos -> « 40 a 60 pages »", bandePour(90)?.pages === "40 \u00e0 60 pages");
+ok("90 photos -> « 40 a 50 pages »", bandePour(90)?.pages === "40 \u00e0 50 pages");
 ok("sous le seuil de faisabilite, aucune bande", bandePour(39) === null);
 ok("au-dela du plafond, aucune bande", bandePour(101) === null);
 

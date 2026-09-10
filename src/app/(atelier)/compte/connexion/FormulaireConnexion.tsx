@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { MOT_DE_PASSE_MIN } from '@/lib/compte/garde'
+import ChampMotDePasse from '../ChampMotDePasse'
 
 /**
  * Connexion et inscription sur le même écran, une bascule entre les deux.
@@ -121,18 +122,15 @@ export default function FormulaireConnexion({ suite }: { suite: string }) {
             onChange={(e) => setEmail(e.target.value)}
           />
         </label>
-        <label className="cpt-champ">
-          <span>Mot de passe</span>
-          <input
-            type="password"
-            name="password"
-            autoComplete={mode === 'connexion' ? 'current-password' : 'new-password'}
-            required
-            minLength={mode === 'inscription' ? MOT_DE_PASSE_MIN : undefined}
-            value={motDePasse}
-            onChange={(e) => setMotDePasse(e.target.value)}
-          />
-        </label>
+        <ChampMotDePasse
+          name="password"
+          label="Mot de passe"
+          autoComplete={mode === 'connexion' ? 'current-password' : 'new-password'}
+          required
+          minLength={mode === 'inscription' ? MOT_DE_PASSE_MIN : undefined}
+          value={motDePasse}
+          onChange={(e) => setMotDePasse(e.target.value)}
+        />
 
         {erreur ? (
           <p className="cpt-alerte" role="alert">

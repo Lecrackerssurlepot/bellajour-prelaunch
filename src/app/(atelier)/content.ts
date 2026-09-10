@@ -5,9 +5,9 @@
 
 import {
   BANDES_PHOTOS,
-  EUROS_MAX,
+  EUROS_MAX_PUBLIC,
   EUROS_MIN,
-  PAGES_MAX,
+  PAGES_MAX_PUBLIC,
   PAGES_MIN,
 } from '@/lib/atelier/grille'
 
@@ -82,7 +82,7 @@ const PHOTOS_MAX = Math.max(...BANDES_PHOTOS.map((b) => b.photosMax))
 
 export const PRIX_LIGNE = {
   des: `Dès ${EUROS_MIN} €`,
-  pages: `${PAGES_MIN} à ${PAGES_MAX} pages`,
+  pages: `${PAGES_MIN} à ${PAGES_MAX_PUBLIC} pages`,
   photos: `${PHOTOS_MIN} à ${PHOTOS_MAX} photos`,
 }
 
@@ -95,7 +95,9 @@ export const PRIX_LIGNE = {
    une page produit qui ne le dit pas ferait découvrir le port au moment de
    payer. On ne donne AUCUN montant ici — il vient d'un devis, destination par
    destination (interdit nº5) — mais on dit qu'il existe et quand il s'affiche. */
-export const PRIX_PHRASE = `De ${EUROS_MIN} € pour ${PAGES_MIN} pages à ${EUROS_MAX} € pour ${PAGES_MAX} pages. Livraison en sus, affichée avant paiement.`
+/* Retirée de la page produit le 10/09/2026 à la demande de Mathias ; gardée
+   dérivée (offre publique) pour un usage futur. */
+export const PRIX_PHRASE = `De ${EUROS_MIN} € pour ${PAGES_MIN} pages à ${EUROS_MAX_PUBLIC} € pour ${PAGES_MAX_PUBLIC} pages. Livraison en sus, affichée avant paiement.`
 
 /* Le titre de la bande parcours (lot 3, 07/09 — arbitrage T-086 rendu par
    Mathias : la bande gagne un vrai titre au lieu de flotter sans nom). */

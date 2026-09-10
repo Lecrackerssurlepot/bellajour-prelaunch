@@ -210,9 +210,10 @@
 
 .at-pdp .prix-ligne .quoi span { display: block; }
 
-/* La phrase qui suit la ligne (PRIX_PHRASE, content.ts) — un corps discret,
-   jamais un token crème : cette colonne vit sous .bj-atelier, le monde
-   sombre. Même famille que `.mention` (plus bas), un ton plus retenue. */
+/* .prix-phrase — retirée le 10/09/2026 à la demande de Mathias : le <p>
+   qui portait PRIX_PHRASE est parti de Kiosque.tsx. Plus aucun élément du
+   DOM ne porte cette classe. Commentée, pas supprimée (PRIX_PHRASE reste
+   dans content.ts, à retirer par Mathias).
 .at-pdp .prix-phrase {
   margin: 8px 0 0;
   max-width: 44ch;
@@ -220,7 +221,7 @@
   font-weight: 300;
   line-height: 1.6;
   color: var(--c-text-faint);
-}
+} */
 
 /* ⚠️ `.prix-titre` est ORPHELINE depuis le 10/09/2026 (lot 2) : elle
    coiffait `.bloc-prix`, les trois encarts de palier. Plus aucun élément du

@@ -24,7 +24,7 @@ import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import Kiosque from './Kiosque'
 import Corps from './Corps'
-import { EUROS_MAX, EUROS_MIN, GRILLE } from '@/lib/atelier/grille'
+import { EUROS_MAX_PUBLIC, EUROS_MIN, GRILLE_PUBLIQUE } from '@/lib/atelier/grille'
 import { COMPOSER_HREF, CTA_LABEL, FAQ } from '../content'
 import './pdp.css'
 import { compteOuvert } from '@/lib/compte/session'
@@ -118,8 +118,8 @@ const JSON_LD = [
       '@type': 'AggregateOffer',
       priceCurrency: 'EUR',
       lowPrice: String(EUROS_MIN),
-      highPrice: String(EUROS_MAX),
-      offerCount: GRILLE.length,
+      highPrice: String(EUROS_MAX_PUBLIC),
+      offerCount: GRILLE_PUBLIQUE.length,
       availability: 'https://schema.org/InStock',
       url: URL,
       areaServed: ['FR', 'BE', 'LU'],
