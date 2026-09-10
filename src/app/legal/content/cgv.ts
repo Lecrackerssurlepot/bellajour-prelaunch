@@ -138,7 +138,7 @@ export const CGV: LocalizedDoc = {
         blocks: [
           { kind: 'p', value: `5bis.1 Principe. Le crédit de 30 € attribué au titre de l'article 5.3 s'impute sur le prix d'une commande passée via l'Atelier. La clôture de la prévente est sans effet sur ce droit.` },
           { kind: 'p', value: `5bis.2 Modalités. Le client en fait la demande à contact@bellajour.com. Après vérification de ses droits, Bellajour lui adresse un code de réduction nominatif, à usage unique et non cessible, d'un montant de 30 €. Le client le saisit au moment du paiement de sa commande Atelier ; la réduction s'applique immédiatement sur le montant dû. Bellajour ne peut refuser l'imputation à un client dont les droits sont vérifiés.` },
-          { kind: 'p', value: `5bis.3 Usage unique. Un seul code est attribué par client. Il ne peut être ni fractionné, ni cumulé avec un autre code, ni échangé contre des espèces. Si le prix de la commande est inférieur au montant du crédit, la différence n'est ni remboursée ni reportée.` },
+          { kind: 'p', value: `5bis.3 Usage unique. Un seul code est attribué par client. Il ne peut être ni fractionné, ni cumulé avec un autre code, ni échangé contre des espèces. Le crédit s'impute sur le prix du numéro ; les frais de livraison de cette même commande sont offerts (article 5). Si le prix de la commande, livraison comprise, est inférieur au montant du crédit, la différence n'est ni remboursée ni reportée.` },
           { kind: 'p', value: `5bis.4 Expiration. Le crédit expire 12 mois après son attribution, conformément à l'article 5.5, dont la suspension prévue au bénéfice du client s'applique dans les mêmes termes. Bellajour adresse une relance par e-mail avant l'échéance.` },
           { kind: 'p', value: `5bis.5 Avantages conservés — Instants et pages de parrainage. Les Instants attribués en bonus (article 5.6) et les pages offertes au titre du parrainage ne s'imputent pas sur une commande Atelier et ne sont pas convertis en réduction. Ils sont conservés au crédit nominatif du client, sans perte, sans conversion et sans réduction de leur quantité, et deviendront utilisables à l'ouverture de l'espace client. Leurs conditions d'utilisation seront publiées à cette occasion et ne pourront réduire les avantages déjà acquis. Pour ces seuls avantages, le délai de 12 mois de l'article 5.5 est suspendu jusqu'à cette ouverture : aucun ne peut expirer avant d'avoir été rendu utilisable.` },
         ],
@@ -229,8 +229,8 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Caractéristiques techniques` },
           { kind: 'table', columns: [`Paramètre`, `Valeur`], rows: [
             [`Type`, `Livre photo relié, imprimé à la commande`],
-            [`Format`, `Portrait — 210 × 280 mm`],
-            [`Reliure`, `Couverture rigide (hardcover)`],
+            [`Format`, `Portrait A4 — 210 × 297 mm`],
+            [`Reliure`, `Agrafée à 20 pages, dos carré collé de 24 à 60 pages, couverture souple 250 g`],
             [`Pagination — Offre Atelier`, `${PAGES_MIN} pages min. — ${PAGES_MAX} pages max. (nombre de pages pair obligatoire ; 22 pages non proposé)`],
             [`Pagination — Prévente (13/06–15/08/2026)`, `30 pages min. — 200 pages max. (nombre de pages pair obligatoire)`],
             [`Couverture`, `Illustrée, unique, générée par IA dans un style propre à la marque`],
@@ -378,7 +378,7 @@ export const CGV: LocalizedDoc = {
         blocks: [
           { kind: 'p', value: `5.º-A.1 Princípio. O crédito de 30 € atribuído ao abrigo do artigo 5.3 é imputado no preço de uma encomenda efetuada através do Atelier. O encerramento da pré-venda não produz qualquer efeito sobre este direito.` },
           { kind: 'p', value: `5.º-A.2 Modalidades. O cliente solicita-o através de contact@bellajour.com. Após verificação dos seus direitos, a Bellajour envia-lhe um código de desconto nominativo, de utilização única e não cessível, no valor de 30 €. O cliente introduz o código no momento do pagamento da sua encomenda Atelier; o desconto aplica-se imediatamente ao montante devido. A Bellajour não pode recusar a imputação a um cliente cujos direitos tenham sido verificados.` },
-          { kind: 'p', value: `5.º-A.3 Utilização única. É atribuído um único código por cliente. Não pode ser fracionado, cumulado com outro código nem trocado por numerário. Se o preço da encomenda for inferior ao montante do crédito, a diferença não é reembolsada nem transitada.` },
+          { kind: 'p', value: `5.º-A.3 Utilização única. É atribuído um único código por cliente. Não pode ser fracionado, cumulado com outro código nem trocado por numerário. O crédito é imputado no preço do número; os custos de entrega dessa mesma encomenda são oferecidos (artigo 5.º). Se o preço da encomenda, entrega incluída, for inferior ao montante do crédito, a diferença não é reembolsada nem transitada.` },
           { kind: 'p', value: `5.º-A.4 Caducidade. O crédito caduca 12 meses após a sua atribuição, nos termos do artigo 5.5, cuja suspensão prevista em benefício do cliente se aplica nos mesmos termos. A Bellajour envia um aviso por correio eletrónico antes do termo do prazo.` },
           { kind: 'p', value: `5.º-A.5 Vantagens conservadas — Instants e páginas de indicação. Os Instants atribuídos a título de bónus (artigo 5.6) e as páginas oferecidas a título de indicação não são imputados numa encomenda Atelier nem convertidos em desconto. São conservados a crédito nominativo do cliente, sem perda, sem conversão e sem redução da sua quantidade, e tornar-se-ão utilizáveis com a abertura da área de cliente. As respetivas condições de utilização serão publicadas nessa ocasião e não poderão reduzir as vantagens já adquiridas. Apenas quanto a estas vantagens, o prazo de 12 meses do artigo 5.5 fica suspenso até essa abertura: nenhuma pode caducar antes de ter sido tornada utilizável.` },
         ],
@@ -469,8 +469,8 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Características técnicas` },
           { kind: 'table', columns: [`Parâmetro`, `Valor`], rows: [
             [`Tipo`, `Livro de fotografias encadernado, impresso por encomenda`],
-            [`Formato`, `Retrato — 210 × 280 mm`],
-            [`Encadernação`, `Capa dura (hardcover)`],
+            [`Formato`, `Retrato A4 — 210 × 297 mm`],
+            [`Encadernação`, `Agrafada a 20 páginas, lombada colada de 24 a 60 páginas, capa mole 250 g`],
             [`Paginação — Oferta Atelier`, `mín. ${PAGES_MIN} páginas — máx. ${PAGES_MAX} páginas (número de páginas obrigatoriamente par; 22 páginas não proposto)`],
             [`Paginação — Pré-venda (13/06–15/08/2026)`, `mín. 30 páginas — máx. 200 páginas (número de páginas obrigatoriamente par)`],
             [`Capa`, `Ilustrada, única, gerada por IA num estilo próprio da marca`],
@@ -618,7 +618,7 @@ export const CGV: LocalizedDoc = {
         blocks: [
           { kind: 'p', value: `5a.1 Principle. The €30 credit granted under Article 5.3 is credited against the price of an order placed through the Atelier. The closure of the pre-sale has no effect on this right.` },
           { kind: 'p', value: `5a.2 Procedure. The customer requests it at contact@bellajour.com. After verification of their entitlement, Bellajour sends them a personal, single-use and non-transferable discount code in the amount of €30. The customer enters it at the time of payment of their Atelier order; the discount applies immediately to the amount due. Bellajour may not refuse the crediting to a customer whose entitlement has been verified.` },
-          { kind: 'p', value: `5a.3 Single use. One code is granted per customer. It may not be split, combined with another code, or exchanged for cash. If the order price is lower than the credit amount, the difference is neither refunded nor carried over.` },
+          { kind: 'p', value: `5a.3 Single use. One code is granted per customer. It may not be split, combined with another code, or exchanged for cash. The credit is applied to the price of the issue; the delivery costs of that same order are offered (Article 5). If the order price, delivery included, is lower than the credit amount, the difference is neither refunded nor carried over.` },
           { kind: 'p', value: `5a.4 Expiry. The credit expires 12 months after it is granted, in accordance with Article 5.5, the suspension provided for in the customer's favour applying on the same terms. Bellajour sends a reminder by email before the deadline.` },
           { kind: 'p', value: `5a.5 Preserved benefits — Instants and referral pages. Instants granted as a bonus (Article 5.6) and pages granted through referral are not credited against an Atelier order and are not converted into a discount. They are preserved to the customer's personal credit, without loss, without conversion and without reduction in quantity, and will become usable upon the opening of the customer area. Their terms of use will be published on that occasion and may not reduce benefits already acquired. For these benefits alone, the 12-month period in Article 5.5 is suspended until that opening: none may expire before it has been made usable.` },
         ],
@@ -709,8 +709,8 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Technical specifications` },
           { kind: 'table', columns: [`Parameter`, `Value`], rows: [
             [`Type`, `Bound photo book, printed on demand`],
-            [`Format`, `Portrait — 210 × 280 mm`],
-            [`Binding`, `Hardcover`],
+            [`Format`, `Portrait A4 — 210 × 297 mm`],
+            [`Binding`, `Saddle-stitched at 20 pages, perfect-bound from 24 to 60 pages, 250 g soft cover`],
             [`Pagination — Atelier offer`, `min. ${PAGES_MIN} pages — max. ${PAGES_MAX} pages (page count must be even; 22 pages not offered)`],
             [`Pagination — Pre-sale (13/06–15/08/2026)`, `min. 30 pages — max. 200 pages (page count must be even)`],
             [`Cover`, `Illustrated, unique, AI-generated in a style specific to the brand`],

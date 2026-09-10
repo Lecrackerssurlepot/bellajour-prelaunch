@@ -31,3 +31,10 @@ T-006/T-028. La formule d'épaisseur du dos manque encore (zip de gabarits offic
 « On corrigera avec l'intégralité des CGV (prix, papier, grammage…) ». Le format 210×297 ne
 part donc pas seul : il rejoint le lot CGV avec les prix finaux (T-072), le grammage réel
 (T-028) et les finitions (T-027). À traiter d'un bloc, avec relecture juriste (T-026).
+
+## 10/09/2026 — le format et la reliure corrigés dans les CGV
+
+Accord de Mathias le 10/09 : la fiche produit des CGV (FR/PT/EN) dit désormais « Portrait A4,
+210 × 297 mm » et « Agrafée à 20 pages, dos carré collé de 24 à 60 pages, couverture souple
+250 g », soit ce que Cloudprinter fabrique (`impression.ts`) et ce que dit `/magazine`. La
+« couverture rigide (hardcover) » a disparu. Reste ouvert : la formule d'épaisseur du dos.
