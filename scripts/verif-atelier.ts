@@ -51,6 +51,10 @@ import { lireSignal, suitePour, typeEvenement } from "@/lib/atelier/rebond";
 import {
   totalPour,
   centimesPour,
+  centimesDuDossier,
+  eurosDuDossier,
+  formaterCentimes,
+  formaterEuros,
   eurosPour,
   palierPourPages,
   PAYS_LIVRAISON,
@@ -184,6 +188,22 @@ const p24 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 24
 ok("24 pages -> p30 / 30 EUR", p24.ok && p24.resume.euros === 30);
 const p44 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 44, ...VISUELS });
 ok("44 pages -> p45 / 45 EUR", p44.ok && p44.resume.euros === 45);
+
+/* ── LE PRIX SE FIGE SUR LE DOSSIER (10/09/2026) ──────────────────────────
+   Publier l'apercu, c'est montrer un montant a une cliente. A partir de cet
+   instant le dossier vaut CE prix : la colonne `prix_centimes` doit donc etre
+   dans le patch, au centime, et l'ecran de verification doit annoncer la meme
+   chose que ce qui sera ecrit. Si ce test tombe, une grille qui change
+   reecrira le prix de dossiers deja chiffres. */
+const pGel = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, ...VISUELS });
+ok("publier : le prix est GELE dans le patch (34 pages -> 4000 centimes)",
+   pGel.ok && pGel.patch.prix_centimes === 4000);
+ok("publier : l'ecran de verification annonce le MEME montant que le patch",
+   pGel.ok && pGel.resume.prixCentimes === 4000);
+const pGelCorrige = preparerTransition("corriger_apercu", "apercu_pret", { nb_pages: 44, ...VISUELS });
+ok("corriger : republier regele le prix (44 pages -> 4500 centimes)",
+   pGelCorrige.ok && pGelCorrige.patch.prix_centimes === 4500
+   && pGelCorrige.resume.prixCentimes === 4500);
 
 titre("— ce qui doit etre REFUSE —");
 const p52 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 52, ...VISUELS });
@@ -1276,6 +1296,56 @@ ok("quantite non entiere : refusee", totalPour("p45", 1.5) === null);
 ok("palier absent : null, on ne facture pas sans chiffrage",
    totalPour(null, 1) === null && totalPour(undefined, 1) === null);
 
+/* ══════════════ LE PRIX GELE SUR LE DOSSIER (10/09/2026) ══════════════
+   Decision de Mathias : le prix annonce est le prix debite, sur CE dossier,
+   meme si la grille change ensuite. `centimesDuDossier` porte cette regle et
+   elle est lue par tout le monde (page cliente, mails, checkout, admin,
+   compte, metriques). Ce qu'on verifie ici :
+     — le gel gagne TOUJOURS sur la grille, meme quand les deux different ;
+     — l'absence de gel retombe sur la grille au centime pres, ce qui est le
+       comportement d'avant le 10/09 (dossiers anciens, et fenetre entre le
+       deploiement et la migration ou le repli 42703 efface la colonne) ;
+     — une valeur qui ne peut pas etre un prix (0, negatif, non entiere) est
+       IGNOREE plutot que facturee : elle ne vient pas d'une publication
+       d'apercu, donc d'un UPDATE a la main ou d'une donnee abimee. */
+
+titre("— le prix GELE sur le dossier : le gel gagne, la grille rattrape —");
+ok("le gel gagne sur la grille (3700 alors que p40 dirait 4000)",
+   centimesDuDossier({ prix_centimes: 3700, palier: "p40" }) === 3700);
+ok("pas de gel : la grille rattrape, au centime (p40 -> 4000)",
+   centimesDuDossier({ prix_centimes: null, palier: "p40" }) === 4000);
+ok("colonne absente (repli 42703) : la grille rattrape aussi",
+   centimesDuDossier({ palier: "p40" }) === 4000);
+ok("zero n'est pas un prix : ignore, on retombe sur la grille",
+   centimesDuDossier({ prix_centimes: 0, palier: "p40" }) === 4000);
+ok("un negatif n'est pas un prix : ignore",
+   centimesDuDossier({ prix_centimes: -5, palier: "p40" }) === 4000);
+ok("un demi-centime n'existe pas chez Stripe : ignore",
+   centimesDuDossier({ prix_centimes: 12.5, palier: "p40" }) === 4000);
+ok("ni gel ni palier : null, on ne facture pas sans chiffrage",
+   centimesDuDossier({ prix_centimes: null, palier: null }) === null
+   && centimesDuDossier({}) === null);
+ok("le gel se lit meme sans palier (un dossier chiffre reste chiffre)",
+   centimesDuDossier({ prix_centimes: 3700, palier: null }) === 3700);
+ok("eurosDuDossier = centimes / 100, sans arrondi maison",
+   eurosDuDossier({ prix_centimes: 3700 }) === 37
+   && eurosDuDossier({ prix_centimes: 490 }) === 4.9
+   && eurosDuDossier({ palier: "p45" }) === 45
+   && eurosDuDossier({}) === null);
+
+titre("— formater un montant : des decimales SEULEMENT si elles disent quelque chose —");
+/* L'espace avant le symbole est INSECABLE (U+00A0) : un prix ne se coupe
+   jamais en fin de ligne. Meme regle que `formaterEuros`. */
+ok('490 -> « 4,90 € »', formaterCentimes(490) === "4,90 €");
+ok('3700 -> « 37 € » (pas « 37,00 € », l\'atelier n\'est pas comptable)',
+   formaterCentimes(3700) === "37 €");
+ok('1005 -> « 10,05 € » (le zero des centimes ne saute pas)',
+   formaterCentimes(1005) === "10,05 €");
+ok("l'espace avant l'euro est insecable, comme formaterEuros",
+   formaterCentimes(3000).includes(" ") && formaterEuros(30) === formaterCentimes(3000));
+ok("zero se dit « 0 € » plutot que rien",
+   formaterCentimes(0) === "0 €");
+
 /* ═══════════════ D'OU L'ON VIENT, ET DONC OU L'ON RETOURNE ═══════════════
    Mathias, 08/09 : « quand je clique sur la croix et je vais quitter, ca ne
    m'emmene pas sur la page ou j'etais avant ». La sortie du questionnaire
@@ -1498,6 +1568,22 @@ ok("M5 n'annonce AUCUN credit (elle a deja paye)",
    !("CREDIT_FONDATRICE" in parametresPour("M5", dossierM3, { creditFondatriceEuros: 30 })));
 ok("M0 non plus (aucun prix, aucun paiement en vue)",
    !("CREDIT_FONDATRICE" in parametresPour("M0", dossierM3, { creditFondatriceEuros: 30 })));
+
+/* Le PRIX que Brevo recoit vient du GEL, pas de la grille du jour (10/09).
+   Sans cette regle, changer la grille reecrirait le montant d'un mail deja
+   promis a une cliente : M3 annoncerait 40 EUR sur un dossier gele a 37, et
+   Stripe debiterait 37. Le mail et le paiement doivent dire LE MEME nombre. */
+const dossierGele = d({ etat: "apercu_pret", nb_pages: 34, palier: "p40", prix_centimes: 3700 });
+ok("M3 : PRIX vient du prix GELE du dossier (37), pas de la grille (40)",
+   parametresPour("M3", dossierGele).PRIX === 37);
+ok("M3b : la relance annonce le MEME montant que M3",
+   parametresPour("M3b", dossierGele).PRIX === 37);
+ok("M5 : la maquette rappelle le meme montant gele",
+   parametresPour("M5", d({ etat: "validee", nb_pages: 34, palier: "p40", prix_centimes: 3700 })).PRIX === 37);
+ok("M10 : le dernier rappel avant fermeture ne reinvente pas le prix non plus",
+   parametresPour("M10", d({ etat: "apercu_pret", nb_pages: 34, palier: "p40", prix_centimes: 3700 })).PRIX === 37);
+ok("sans gel, M3 annonce la grille comme avant le 10/09",
+   parametresPour("M3", d({ etat: "apercu_pret", nb_pages: 34, palier: "p40" })).PRIX === 40);
 
 /* ═══════════ LE TRI DU WEBHOOK PARTAGÉ (T-035, incident du 24/08) ═══════════
    /api/webhook sert DEUX produits. Le tri se fait sur les métadonnées, AVANT

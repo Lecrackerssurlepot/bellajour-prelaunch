@@ -76,28 +76,52 @@ export async function POST(request: Request) {
 
     const supabase = makeSupabase();
 
-    const { data: numero, error: lecture } = await supabase
-      .from("numeros")
-      .select("id, etat, titre, prenom, email, telephone, nb_pages, adresse_livraison, cloudprinter_order_id, retouches_demandees_le")
-      .eq("token", token)
-      .maybeSingle<{
-        id: string;
-        etat: Etat;
-        titre: string | null;
-        prenom: string | null;
-        email: string | null;
-        telephone: string | null;
-        nb_pages: number | null;
-        adresse_livraison: unknown;
-        cloudprinter_order_id: string | null;
-        retouches_demandees_le: string | null;
-      }>();
+    type LigneNumero = {
+      id: string;
+      etat: Etat;
+      titre: string | null;
+      prenom: string | null;
+      email: string | null;
+      telephone: string | null;
+      nb_pages: number | null;
+      adresse_livraison: unknown;
+      cloudprinter_order_id: string | null;
+      retouches_demandees_le: string | null;
+      /* Colonnes de la migration 20260910 (le prix gelé et la livraison à
+         venir). Absentes tant qu'elle n'est pas passée : le select les
+         demande, retombe en 42703, et elles restent `undefined`. */
+      prix_centimes?: number | null;
+      livraison_centimes?: number | null;
+      pays_livraison?: string | null;
+      livraison_niveau?: string | null;
+    };
+
+    const CHAMPS_BASE =
+      "id, etat, titre, prenom, email, telephone, nb_pages, adresse_livraison, " +
+      "cloudprinter_order_id, retouches_demandees_le";
+
+    /* Même repli qu'en lecture partout ailleurs (`lireNumeros`, donnees.ts) :
+       un select qui nomme une colonne absente ne dégrade pas, il échoue
+       ENTIÈREMENT — toute la route tomberait pour trois colonnes que le geste
+       n'exige même pas. On tente avec, on retombe sans. */
+    const lireLigne = (champs: string) =>
+      supabase.from("numeros").select(champs).eq("token", token).maybeSingle<LigneNumero>();
+
+    let { data: lu, error: lecture } = await lireLigne(
+      `${CHAMPS_BASE}, prix_centimes, livraison_centimes, pays_livraison, livraison_niveau`,
+    );
+    if (lecture?.code === "42703") {
+      ({ data: lu, error: lecture } = await lireLigne(CHAMPS_BASE));
+    }
 
     if (lecture) {
       console.error("[admin/transition] lecture échouée", lecture.code, lecture.message);
       return NextResponse.json({ error: "internal" }, { status: 500 });
     }
-    if (!numero) return NextResponse.json({ error: "introuvable" }, { status: 404 });
+    if (!lu) return NextResponse.json({ error: "introuvable" }, { status: 404 });
+    /* Reliée à une constante : les fermetures plus bas (le repli d'écriture)
+       ne peuvent pas la voir redevenir nulle. */
+    const numero = lu;
 
     const prepa = preparerTransition(cle, numero.etat, saisie);
     if (!prepa.ok) {
@@ -372,26 +396,58 @@ export async function POST(request: Request) {
       return q.select("id, etat");
     };
 
-    let { data: maj, error } = await ecrire(prepa.patch);
+    /* ── LES COLONNES FRAÎCHES, ET CE QU'ON PERD QUAND ELLES MANQUENT ──
+       Mathias applique les migrations lui-même : entre le déploiement et le
+       passage, un UPDATE qui nomme une colonne absente échoue ENTIÈREMENT.
+       Le geste métier (expédier, publier) ne doit pas tomber pour une colonne
+       qui n'est pas encore là — on écrit sans elle, et on le DIT.
 
-    if (error?.code === "42703" && "tracking_code" in prepa.patch) {
-      /* 42703 = colonne absente : la migration `tracking_code` (20260829)
-         n'est pas encore passée. Une expédition ne doit pas être bloquée par
-         une colonne d'affichage — on écrit sans elle, le lien de suivi
-         (`tracking_url`) part quand même. Même repli que le webhook. */
-      /* ⚠️ Ce repli EFFACE une donnée. Il doit donc CRIER (T-001, 29/08/2026) :
-         muet, il transforme une panne bruyante en donnée perdue. C'est
-         exactement ce qui est arrivé — la migration n'a jamais été appliquée,
-         le geste réussissait, et aucun colis n'a eu son numéro de suivi
-         pendant une semaine sans que rien ne le signale nulle part. */
+       ⚠️ DEUX CODES, PAS UN. Un SELECT rend `42703`, un INSERT/UPDATE rend
+       `PGRST204` (prouvé en prod le 03/09/2026). Ce repli était borné à
+       42703 : il ne se déclenchait donc jamais en écriture. Les deux sont
+       attrapés désormais.
+
+       ⚠️ CE REPLI EFFACE UNE DONNÉE. Il doit donc CRIER (T-001, 29/08/2026) :
+       muet, il transforme une panne bruyante en donnée perdue. C'est
+       exactement ce qui est arrivé avec `tracking_code` — la migration n'a
+       jamais été appliquée, le geste réussissait, et aucun colis n'a eu son
+       numéro de suivi pendant une semaine sans que rien ne le signale.
+       Depuis le 10/09, ce n'est plus seulement un log Vercel (gardé une
+       heure sur le plan Hobby) : ce qui a été perdu part AUSSI au journal du
+       dossier, sous `colonnes_perdues_42703`, où il se relit dans six mois. */
+    const COLONNES_FRAICHES: Record<string, string> = {
+      prix_centimes: "supabase/migrations/20260910_atelier_prix_gele.sql",
+      livraison_centimes: "supabase/migrations/20260910_atelier_prix_gele.sql",
+      pays_livraison: "supabase/migrations/20260910_atelier_prix_gele.sql",
+      livraison_niveau: "supabase/migrations/20260910_atelier_prix_gele.sql",
+      tracking_code: "supabase/migrations/20260829_atelier_tracking_code.sql",
+    };
+
+    const colonnesPerdues: string[] = [];
+
+    const ecrireAvecRepli = async (patch: Record<string, unknown>) => {
+      const premier = await ecrire(patch);
+      const code = premier.error?.code;
+      if (code !== "42703" && code !== "PGRST204") return premier;
+
+      const aRetirer = Object.keys(COLONNES_FRAICHES).filter((c) => c in patch);
+      /* Aucune colonne fraîche dans ce patch : l'erreur parle d'autre chose,
+         on la rend telle quelle plutôt que de réessayer à l'identique. */
+      if (aRetirer.length === 0) return premier;
+
+      const sansColonnes: Record<string, unknown> = { ...patch };
+      for (const c of aRetirer) delete sansColonnes[c];
+      colonnesPerdues.push(...aRetirer);
+
       console.error(
-        "[admin/transition] ⚠️ REPLI 42703 : tracking_code absent en base, le numéro de suivi n'est PAS enregistré. Appliquer supabase/migrations/20260829_atelier_tracking_code.sql.",
+        `[admin/transition] ⚠️ REPLI ${code} : ${aRetirer.join(", ")} absente(s) en base, la donnée n'est PAS enregistrée. ` +
+          `Appliquer ${[...new Set(aRetirer.map((c) => COLONNES_FRAICHES[c]))].join(" et ")}.`,
         { numero: numero.id, geste: cle },
       );
-      const sansColonne: Record<string, unknown> = { ...prepa.patch };
-      delete sansColonne.tracking_code;
-      ({ data: maj, error } = await ecrire(sansColonne));
-    }
+      return ecrire(sansColonnes);
+    };
+
+    const { data: maj, error } = await ecrireAvecRepli(prepa.patch);
 
     if (error) {
       console.error("[admin/transition] update échoué", cle, error.code, error.message);
@@ -426,6 +482,10 @@ export async function POST(request: Request) {
         par: prenomDe(qui),
         source: republicationRetouches ? "republication_retouches" : "admin",
         ...prepa.resume,
+        /* Ce que le repli a effacé, dans le RÉCIT du dossier et pas seulement
+           dans un log d'une heure. Absent quand rien n'a été perdu : une clé
+           qui ne dit rien n'encombre pas la lecture du journal. */
+        ...(colonnesPerdues.length ? { colonnes_perdues_42703: colonnesPerdues } : {}),
         /* T2-3 — le mot de M9 ne vit pas en base : le journal est sa seule
            trace pérenne (le mail, lui, peut être perdu par la cliente). */
         ...(prepa.params?.MOT ? { mot: prepa.params.MOT } : {}),

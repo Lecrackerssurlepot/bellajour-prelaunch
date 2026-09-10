@@ -18,7 +18,7 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-import { palierPourPages, eurosPour, type PalierCle } from "./prix";
+import { palierPourPages, eurosPour, centimesPour, type PalierCle } from "./prix";
 import { lireSuivi } from "./suivi";
 
 export type Etat =
@@ -252,8 +252,11 @@ export type Preparation =
       action: Action;
       /** Les colonnes de `numeros` à écrire. `etat_maj_le` est ajouté par la route. */
       patch: Record<string, unknown>;
-      /** Ce que l'écran de confirmation annonce (jamais recalculé ailleurs). */
-      resume: { nbPages?: number; palier?: PalierCle; euros?: number };
+      /** Ce que l'écran de confirmation annonce (jamais recalculé ailleurs).
+          `prixCentimes` est le montant GELÉ par ce geste (cf. `prix_centimes`
+          plus bas) : l'écran de vérification montre donc, au centime, ce qui
+          sera écrit en base et débité chez Stripe. */
+      resume: { nbPages?: number; palier?: PalierCle; euros?: number; prixCentimes?: number };
       /** Paramètres de template en PLUS de `parametresPour` (T2-3 : le MOT
           de M9). Jamais dans `patch` — rien de tout ça n'est une colonne. */
       params?: Record<string, string>;
@@ -361,7 +364,7 @@ export function preparerTransition(
 
   const erreurs: Erreur[] = [];
   const patch: Record<string, unknown> = {};
-  const resume: { nbPages?: number; palier?: PalierCle; euros?: number } = {};
+  const resume: { nbPages?: number; palier?: PalierCle; euros?: number; prixCentimes?: number } = {};
 
   if (cle === "publier_apercu" || cle === "corriger_apercu") {
     /* ── la pagination, donc le prix ──────────────────────────────────
@@ -383,9 +386,20 @@ export function preparerTransition(
       } else {
         patch.nb_pages = brut;
         patch.palier = palier;
+        /* ── LE PRIX SE FIGE ICI, ET NULLE PART AILLEURS (10/09/2026) ──
+           C'est l'instant où une cliente voit un montant pour la première
+           fois. À partir de maintenant, ce dossier vaut CE prix, quoi qu'il
+           advienne de la grille : la page d'état 2, M3, M3b, M10 et Stripe
+           liront tous la colonne, plus jamais le barème du jour.
+           Le repli d'écriture de la route (42703 / PGRST204) peut faire
+           disparaître ce champ tant que la migration 20260910 n'est pas
+           passée — le dossier retombe alors sur la grille, exactement comme
+           avant le gel, et la route le CRIE dans les logs et au journal. */
+        patch.prix_centimes = centimesPour(palier);
         resume.nbPages = brut;
         resume.palier = palier;
         resume.euros = eurosPour(palier) ?? undefined;
+        resume.prixCentimes = centimesPour(palier) ?? undefined;
       }
     }
 

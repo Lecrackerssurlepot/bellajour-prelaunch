@@ -6,7 +6,7 @@ import { lireDossiersDuCompte } from '@/lib/compte/donnees'
 import { resoudreApercu } from '@/lib/atelier/apercu'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { FORMAT_FINI_MM } from '@/lib/atelier/impression'
-import { eurosPour, type PalierCle } from '@/lib/atelier/prix'
+import { eurosDuDossier, type PalierCle } from '@/lib/atelier/prix'
 import { CHEMIN_RECOMMANDER, peutRecommander } from '@/lib/atelier/reimpression'
 import Apercu from '@/app/numero/[token]/Apercu'
 import '@/app/numero/numero.css'
@@ -56,7 +56,13 @@ export default async function MagazinePage({
     apercu.plat || apercu.plats.length || apercu.c1 || apercu.c4 || apercu.doubles.length,
   )
 
-  const euros = eurosPour(dossier.palier as PalierCle | null)
+  /* Le prix gelé du dossier d'abord (20260910) : la bibliothèque affiche ce
+     qui a été payé, pas ce que la grille dirait aujourd'hui. */
+  const euros = eurosDuDossier({
+    prix_centimes: dossier.prix_centimes,
+    nb_pages: dossier.nb_pages,
+    palier: dossier.palier as PalierCle | null,
+  })
 
   /* RECOMMANDER CE NUMÉRO (T-105, 08/09/2026).
      Le verdict vient d'un module pur, le MÊME que celui dont se servira la

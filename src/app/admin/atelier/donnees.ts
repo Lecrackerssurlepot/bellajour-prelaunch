@@ -17,7 +17,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
 import { signerGet } from "@/lib/atelier/r2";
 import { resoudreApercu, lireDoublesBrutes, lirePlanchesBrutes, lireCadrages } from "@/lib/atelier/apercu";
-import { eurosPour, type PalierCle } from "@/lib/atelier/prix";
+import { eurosDuDossier, type PalierCle } from "@/lib/atelier/prix";
 import {
   ETAPE_ETAT,
   ETATS,
@@ -75,7 +75,18 @@ type RangeeNumero = {
   /* Clé du compte qui a le dossier en main, ou null. Absente tant que la
      migration 20260826 n'est pas passée (cf. lireNumeros). */
   en_charge?: string | null;
+  /* Le prix GELÉ à la publication de l'aperçu, et la livraison à venir
+     (migration 20260910). Absentes tant qu'elle n'est pas passée : la liste
+     retombe alors sur la grille, comme avant le gel. */
+  prix_centimes?: number | null;
+  livraison_centimes?: number | null;
+  pays_livraison?: string | null;
+  livraison_niveau?: string | null;
 };
+
+/* Les trois colonnes du 10/09, isolées : elles se retirent d'un bloc au
+   premier niveau de repli de `lireNumeros`. */
+const CHAMPS_PRIX = "prix_centimes, livraison_centimes, pays_livraison, livraison_niveau";
 
 /**
  * Ce qui partira si on déclenche cette action, MAINTENANT, sur CE dossier.
@@ -153,7 +164,9 @@ function versLigne(
     libelleEtat: LIBELLE_ETAT[r.etat] ?? r.etat,
     nbPhotos,
     nbPages: r.nb_pages,
-    euros: eurosPour(r.palier),
+    /* Le prix gelé du dossier d'abord : la liste doit montrer ce que la
+       cliente a vu, pas ce que la grille dirait aujourd'hui. */
+    euros: eurosDuDossier(r),
     createdAt: r.created_at,
     etatMajLe: r.etat_maj_le,
     urgence: {
@@ -273,26 +286,35 @@ async function lirePhotos(
 async function lireNumeros(
   supabase: SupabaseClient,
 ): Promise<{ rangees: RangeeNumero[]; enChargeAbsent: boolean }> {
-  const avec = await supabase
-    .from("numeros")
-    .select(`id, ${CHAMPS_LIGNE}, en_charge`)
-    .order("etat_maj_le", { ascending: true })
-    .returns<RangeeNumero[]>();
+  const lire = (champs: string) =>
+    supabase
+      .from("numeros")
+      .select(champs)
+      .order("etat_maj_le", { ascending: true })
+      .returns<RangeeNumero[]>();
 
-  if (!avec.error) return { rangees: avec.data ?? [], enChargeAbsent: false };
+  /* Trois niveaux, du plus complet au plus ancien : le prix gelé (20260910),
+     puis `en_charge` (20260826), puis le socle. Chaque niveau ne coûte un
+     aller-retour de plus que dans la fenêtre où sa migration manque. */
+  const complet = await lire(`id, ${CHAMPS_LIGNE}, ${CHAMPS_PRIX}, en_charge`);
+  if (!complet.error) return { rangees: complet.data ?? [], enChargeAbsent: false };
 
   /* 42703 = undefined_column. Toute autre erreur est une vraie panne : on la
      journalise et on rend une liste vide, comme avant. */
+  if (complet.error.code !== "42703") {
+    console.error("[admin/atelier] lecture liste échouée", complet.error.code, complet.error.message);
+    return { rangees: [], enChargeAbsent: false };
+  }
+
+  const avec = await lire(`id, ${CHAMPS_LIGNE}, en_charge`);
+  if (!avec.error) return { rangees: avec.data ?? [], enChargeAbsent: false };
+
   if (avec.error.code !== "42703") {
     console.error("[admin/atelier] lecture liste échouée", avec.error.code, avec.error.message);
     return { rangees: [], enChargeAbsent: false };
   }
 
-  const sans = await supabase
-    .from("numeros")
-    .select(`id, ${CHAMPS_LIGNE}`)
-    .order("etat_maj_le", { ascending: true })
-    .returns<RangeeNumero[]>();
+  const sans = await lire(`id, ${CHAMPS_LIGNE}`);
 
   if (sans.error) {
     console.error("[admin/atelier] lecture liste échouée", sans.error.code, sans.error.message);
@@ -1022,26 +1044,36 @@ async function chargerClient(r: RangeeNumero): Promise<ClientVue> {
     return data ?? null;
   };
 
-  try {
-    const [{ data: autres }, wl] = await Promise.all([
+  /* Les autres numéros de la même cliente. `prix_centimes` (20260910) est
+     fraîche : repli 42703 sur les colonnes d'avant, où le total se recalcule
+     depuis la grille comme la veille. */
+  type AutreNumero = {
+    token: string;
+    titre: string | null;
+    etat: Etat;
+    created_at: string | null;
+    palier: PalierCle | null;
+    stripe_payment_intent: string | null;
+    prix_centimes?: number | null;
+  };
+  const lireAutres = async () => {
+    const lire = (champs: string) =>
       supabase
         .from("numeros")
-        .select("token, titre, etat, created_at, palier, stripe_payment_intent")
+        .select(champs)
         .eq("email_canonical", canonique)
         .neq("token", r.token)
         .order("created_at", { ascending: false })
-        .returns<
-          Array<{
-            token: string;
-            titre: string | null;
-            etat: Etat;
-            created_at: string | null;
-            palier: PalierCle | null;
-            stripe_payment_intent: string | null;
-          }>
-        >(),
-      lireWaitlist(),
-    ]);
+        .returns<AutreNumero[]>();
+    const avec = await lire(
+      "token, titre, etat, created_at, palier, stripe_payment_intent, prix_centimes",
+    );
+    if (avec.error?.code !== "42703") return avec;
+    return lire("token, titre, etat, created_at, palier, stripe_payment_intent");
+  };
+
+  try {
+    const [{ data: autres }, wl] = await Promise.all([lireAutres(), lireWaitlist()]);
 
     let pagesCredits = 0;
     if (wl?.email) {
@@ -1060,15 +1092,15 @@ async function chargerClient(r: RangeeNumero): Promise<ClientVue> {
       titre: a.titre,
       libelleEtat: LIBELLE_ETAT[a.etat] ?? a.etat,
       createdAt: a.created_at,
-      euros: eurosPour(a.palier),
+      euros: eurosDuDossier(a),
     }));
 
     /* Le total déjà encaissé : uniquement les numéros réellement payés. Un
        aperçu publié n'est pas un chiffre d'affaires. */
     const totalPaye = (autres ?? [])
       .filter((a) => a.stripe_payment_intent)
-      .reduce((s, a) => s + (eurosPour(a.palier) ?? 0), 0)
-      + (r.stripe_payment_intent ? (eurosPour(r.palier) ?? 0) : 0);
+      .reduce((s, a) => s + (eurosDuDossier(a) ?? 0), 0)
+      + (r.stripe_payment_intent ? (eurosDuDossier(r) ?? 0) : 0);
 
     return {
       autres: lignesAutres,

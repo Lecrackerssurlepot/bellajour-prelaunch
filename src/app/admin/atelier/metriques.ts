@@ -26,7 +26,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { makeSupabase } from "@/lib/supabase";
-import { eurosPour, type PalierCle } from "@/lib/atelier/prix";
+import { eurosDuDossier, type PalierCle } from "@/lib/atelier/prix";
 import {
   TYPES_MESURE,
   reconstruireJalons,
@@ -130,7 +130,11 @@ const PROMESSE_PRODUCTION_H = 10 * 24;
 
 function calculer(
   jalons: Map<string, Jalons>,
-  palierPar: Map<string, PalierCle | null>,
+  /* Le dossier réduit à ce qui fait un chiffre d'affaires : son prix GELÉ
+     et, à défaut, son palier. Pas seulement le palier depuis le 10/09 — sinon
+     un changement de grille réécrirait rétroactivement le CA des mois passés,
+     ce qui est le contraire d'une mesure. */
+  prixPar: Map<string, NumeroLeger>,
   relancesPar: number[],
   debut: number,
   fin: number,
@@ -145,8 +149,9 @@ function calculer(
 
   for (const [id, j] of jalons) {
     if (dans(j.paye)) {
-      const p = palierPar.get(id) ?? null;
-      const e = eurosPour(p);
+      const dossier = prixPar.get(id) ?? null;
+      const p = dossier?.palier ?? null;
+      const e = dossier ? eurosDuDossier(dossier) : null;
       if (e) ca += e;
       if (p) paliers[p]++;
     }
@@ -218,21 +223,47 @@ async function chargerEvenements(supabase: SupabaseClient): Promise<EvenementMes
   return tout;
 }
 
-type NumeroLeger = { id: string; token: string; palier: PalierCle | null };
+type NumeroLeger = {
+  id: string;
+  token: string;
+  palier: PalierCle | null;
+  nb_pages?: number | null;
+  /* Le prix gelé (20260910). Absent tant que la migration n'est pas passée :
+     le repli ci-dessous relit sans lui et le CA se recalcule depuis la grille,
+     exactement comme avant le gel. */
+  prix_centimes?: number | null;
+};
 
 type Matiere = {
   evts: EvenementMesure[];
   jalons: Map<string, Jalons>;
   numeros: NumeroLeger[];
-  palierPar: Map<string, PalierCle | null>;
+  prixPar: Map<string, NumeroLeger>;
   relancesT: number[];
 };
 
+async function chargerNumeros(supabase: SupabaseClient): Promise<NumeroLeger[]> {
+  const lire = (champs: string) =>
+    supabase.from("numeros").select(champs).returns<NumeroLeger[]>();
+  const avec = await lire("id, token, palier, nb_pages, prix_centimes");
+  if (!avec.error) return avec.data ?? [];
+  if (avec.error.code !== "42703") {
+    console.error("[admin/metriques] lecture numeros échouée", avec.error.code, avec.error.message);
+    return [];
+  }
+  const sans = await lire("id, token, palier, nb_pages");
+  if (sans.error) {
+    console.error("[admin/metriques] lecture numeros échouée", sans.error.code, sans.error.message);
+    return [];
+  }
+  return sans.data ?? [];
+}
+
 async function chargerMatiere(): Promise<Matiere> {
   const supabase = makeSupabase();
-  const [evts, { data: numeros }, { data: relances }] = await Promise.all([
+  const [evts, numeros, { data: relances }] = await Promise.all([
     chargerEvenements(supabase),
-    supabase.from("numeros").select("id, token, palier").returns<NumeroLeger[]>(),
+    chargerNumeros(supabase),
     supabase
       .from("mails_envoyes")
       .select("envoye_le")
@@ -243,8 +274,8 @@ async function chargerMatiere(): Promise<Matiere> {
   return {
     evts,
     jalons: reconstruireJalons(evts),
-    numeros: numeros ?? [],
-    palierPar: new Map((numeros ?? []).map((n) => [n.id, n.palier])),
+    numeros,
+    prixPar: new Map(numeros.map((n) => [n.id, n])),
     relancesT: (relances ?? []).map((r) => Date.parse(r.envoye_le)),
   };
 }
@@ -257,14 +288,14 @@ function bornes(periode: Periode): { def: (typeof PERIODES)[number]; debut: numb
 
 export async function chargerMetriques(periode: Periode): Promise<Metriques> {
   const { def, debut, fin } = bornes(periode);
-  const { evts, jalons, palierPar, relancesT } = await chargerMatiere();
+  const { evts, jalons, prixPar, relancesT } = await chargerMatiere();
 
-  const courant = calculer(jalons, palierPar, relancesT, debut, fin);
+  const courant = calculer(jalons, prixPar, relancesT, debut, fin);
 
   /* La fenêtre juste avant, de même durée. « Tout » n'a rien derrière lui :
      comparer à une période vide produirait des « +100 % » absurdes. */
   const precedent = def.jours
-    ? calculer(jalons, palierPar, relancesT, debut - def.jours * J, debut)
+    ? calculer(jalons, prixPar, relancesT, debut - def.jours * J, debut)
     : null;
 
   /* La courbe : arrivées et paiements par jour. Bornée à 30 points — au-delà
