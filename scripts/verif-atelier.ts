@@ -42,11 +42,18 @@ import {
 import {
   CHAMPS_PAR_ECRAN,
   CHAMPS_QUESTIONNAIRE,
+  ecranDuChamp,
   normaliserTelephone,
   premierManquant,
   reponseValide,
   suggestionEmail,
 } from "@/lib/atelier/questionnaire";
+import {
+  PAYS_DEFAUT,
+  PAYS_LIBELLE,
+  normaliserPays,
+  paysValide,
+} from "@/lib/atelier/pays";
 import { lireSignal, suitePour, typeEvenement } from "@/lib/atelier/rebond";
 import {
   totalPour,
@@ -182,11 +189,11 @@ const titre = (t: string) => console.log(`\n${t}`);
 const VISUELS = { apercu_c1: "k/c1.jpg", apercu_c4: "k/c4.jpg", apercu_double: "k/d.jpg" };
 
 titre("— le prix vient de la pagination, jamais du navigateur —");
-const p34 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: "34", ...VISUELS });
+const p34 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: "34", pays_livraison: "FR", ...VISUELS });
 ok("34 pages -> p40 / 40 EUR", p34.ok && p34.resume.palier === "p40" && p34.resume.euros === 40);
-const p24 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 24, ...VISUELS });
+const p24 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 24, pays_livraison: "FR", ...VISUELS });
 ok("24 pages -> p30 / 30 EUR", p24.ok && p24.resume.euros === 30);
-const p44 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 44, ...VISUELS });
+const p44 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 44, pays_livraison: "FR", ...VISUELS });
 ok("44 pages -> p45 / 45 EUR", p44.ok && p44.resume.euros === 45);
 
 /* ── LE PRIX SE FIGE SUR LE DOSSIER (10/09/2026) ──────────────────────────
@@ -195,21 +202,50 @@ ok("44 pages -> p45 / 45 EUR", p44.ok && p44.resume.euros === 45);
    dans le patch, au centime, et l'ecran de verification doit annoncer la meme
    chose que ce qui sera ecrit. Si ce test tombe, une grille qui change
    reecrira le prix de dossiers deja chiffres. */
-const pGel = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, ...VISUELS });
+const pGel = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, pays_livraison: "FR", ...VISUELS });
 ok("publier : le prix est GELE dans le patch (34 pages -> 4000 centimes)",
    pGel.ok && pGel.patch.prix_centimes === 4000);
 ok("publier : l'ecran de verification annonce le MEME montant que le patch",
    pGel.ok && pGel.resume.prixCentimes === 4000);
-const pGelCorrige = preparerTransition("corriger_apercu", "apercu_pret", { nb_pages: 44, ...VISUELS });
+const pGelCorrige = preparerTransition("corriger_apercu", "apercu_pret", { nb_pages: 44, pays_livraison: "FR", ...VISUELS });
 ok("corriger : republier regele le prix (44 pages -> 4500 centimes)",
    pGelCorrige.ok && pGelCorrige.patch.prix_centimes === 4500
    && pGelCorrige.resume.prixCentimes === 4500);
 
+/* ── LE PAYS DE LIVRAISON EST EXIGE POUR PUBLIER (lot 3, 10/09/2026) ──────
+   Publier l'apercu, c'est annoncer un prix. Depuis que le port sera devise par
+   destination, ce prix n'est pas complet sans pays. On refuse donc de publier
+   sans, plutot que de supposer « France » : une supposition ferait payer un
+   port francais sur une adresse belge, en silence.
+   Le pays est NORMALISE par la meme fonction que la route : l'atelier tape ce
+   qu'il veut, c'est le code canonique qui entre en base. */
+const pPays = preparerTransition("publier_apercu", "photos_recues",
+  { nb_pages: 34, pays_livraison: "be", ...VISUELS });
+ok("publier : « be » est normalise en BE dans le patch",
+   pPays.ok && pPays.patch.pays_livraison === "BE");
+ok("publier : l'ecran de verification annonce le meme pays que le patch",
+   pPays.ok && pPays.resume.pays === "BE");
+const pSansPays = preparerTransition("publier_apercu", "photos_recues",
+  { nb_pages: 34, ...VISUELS });
+ok("publier SANS pays : refuse, et le champ fautif est nomme",
+   !pSansPays.ok && pSansPays.erreurs.some((e) => e.champ === "pays_livraison"));
+ok("publier sans pays : rien ne retombe sur un defaut silencieux",
+   !pSansPays.ok && !pSansPays.erreurs.some((e) => e.champ === "nb_pages"));
+const pHorsZone = preparerTransition("publier_apercu", "photos_recues",
+  { nb_pages: 34, pays_livraison: "US", ...VISUELS });
+ok("publier vers un pays hors zone : refuse",
+   !pHorsZone.ok && pHorsZone.erreurs.some((e) => e.champ === "pays_livraison"));
+const pCorrigePays = preparerTransition("corriger_apercu", "apercu_pret",
+  { nb_pages: 44, pays_livraison: "LU", ...VISUELS });
+ok("corriger : le pays se regele lui aussi",
+   pCorrigePays.ok && pCorrigePays.patch.pays_livraison === "LU"
+   && pCorrigePays.resume.pays === "LU");
+
 titre("— ce qui doit etre REFUSE —");
-const p52 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 52, ...VISUELS });
+const p52 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 52, pays_livraison: "FR", ...VISUELS });
 ok("52 pages refusees (hors grille)", !p52.ok && p52.erreurs[0].champ === "nb_pages");
-ok("12 pages refusees", !preparerTransition("publier_apercu", "photos_recues", { nb_pages: 12, ...VISUELS }).ok);
-const sansImg = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, apercu_c1: "k/c1.jpg" });
+ok("12 pages refusees", !preparerTransition("publier_apercu", "photos_recues", { nb_pages: 12, pays_livraison: "FR", ...VISUELS }).ok);
+const sansImg = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, pays_livraison: "FR", apercu_c1: "k/c1.jpg" });
 ok("2 visuels manquants nommes un par un", !sansImg.ok && sansImg.erreurs.length === 2);
 
 /* ── apercu : 1 a 3 doubles pages, avec repli sur l'ancien format (T-089) ── */
@@ -250,17 +286,17 @@ ok("planches : alias `couverture_plat` accepte (ancienne ecriture)",
    `plats` parasite), plusieurs ecrivent la liste ET gardent `plat` = la
    premiere, celle que la cliente voit par defaut. */
 const uneSeule = preparerTransition("publier_apercu", "photos_recues",
-  { nb_pages: 34, apercu_plats: ["k/p1.jpg"] });
+  { nb_pages: 34, pays_livraison: "FR", apercu_plats: ["k/p1.jpg"] });
 ok("publier : une seule couverture n'ecrit PAS de cle `plats`",
    uneSeule.ok && JSON.stringify(uneSeule.patch.apercu_urls) === JSON.stringify({ plat: "k/p1.jpg" }));
 const troisChoix = preparerTransition("publier_apercu", "photos_recues",
-  { nb_pages: 34, apercu_plats: ["k/p1.jpg", "k/p2.jpg", "k/p3.jpg"] });
+  { nb_pages: 34, pays_livraison: "FR", apercu_plats: ["k/p1.jpg", "k/p2.jpg", "k/p3.jpg"] });
 const urlsChoix = troisChoix.ok ? (troisChoix.patch.apercu_urls as Record<string, unknown>) : {};
 ok("publier : trois couvertures ecrivent la liste, `plat` = la premiere",
    troisChoix.ok && urlsChoix.plat === "k/p1.jpg" &&
    JSON.stringify(urlsChoix.plats) === JSON.stringify(["k/p1.jpg", "k/p2.jpg", "k/p3.jpg"]));
 const ancienAppel = preparerTransition("publier_apercu", "photos_recues",
-  { nb_pages: 34, apercu_plat: "k/seul.jpg" });
+  { nb_pages: 34, pays_livraison: "FR", apercu_plat: "k/seul.jpg" });
 ok("publier : l'ancien champ `apercu_plat` seul marche toujours",
    ancienAppel.ok && JSON.stringify(ancienAppel.patch.apercu_urls) === JSON.stringify({ plat: "k/seul.jpg" }));
 
@@ -268,7 +304,7 @@ ok("publier : l'ancien champ `apercu_plat` seul marche toujours",
    Une valeur `object-position` qui finit dans un attribut `style` : on ne
    garde que la forme attendue, et seulement pour les pages publiees. */
 const cadre = preparerTransition("publier_apercu", "photos_recues", {
-  nb_pages: 34,
+  nb_pages: 34, pays_livraison: "FR",
   apercu_plat: "k/p.jpg",
   apercu_doubles: ["k/d1.jpg", "k/d2.jpg"],
   apercu_cadrages: { "k/d1.jpg": "50% 30%", "k/d2.jpg": "top" },
@@ -278,7 +314,7 @@ ok("cadrage : les valeurs valides sont ecrites",
    cadre.ok && JSON.stringify(urlsCadre.cadrages) === JSON.stringify({ "k/d1.jpg": "50% 30%", "k/d2.jpg": "top" }));
 
 const cadreSale = preparerTransition("publier_apercu", "photos_recues", {
-  nb_pages: 34,
+  nb_pages: 34, pays_livraison: "FR",
   apercu_plat: "k/p.jpg",
   apercu_doubles: ["k/d1.jpg"],
   apercu_cadrages: {
@@ -293,7 +329,7 @@ ok("cadrage : une cle qui ne correspond a aucune page publiee est ignoree",
    cadreSale.ok && urlsSale.cadrages === undefined);
 
 const sansCadrage = preparerTransition("publier_apercu", "photos_recues", {
-  nb_pages: 34,
+  nb_pages: 34, pays_livraison: "FR",
   apercu_plat: "k/p.jpg",
   apercu_doubles: ["k/d1.jpg"],
 });
@@ -309,7 +345,7 @@ ok("cleCadrageCouverture : deux faces, deux cles distinctes",
    cleCadrageCouverture("k/plat.jpg", "droite") === "k/plat.jpg::droite");
 
 const cadrePlanche = preparerTransition("publier_apercu", "photos_recues", {
-  nb_pages: 34,
+  nb_pages: 34, pays_livraison: "FR",
   apercu_plat: "k/plat.jpg",
   apercu_cadrages: {
     [cleCadrageCouverture("k/plat.jpg", "droite")]: "88% 50%",
@@ -325,7 +361,7 @@ ok("cadrage planche : les deux faces sont ecrites, sous des cles distinctes",
    }));
 
 const cadrePlancheRetiree = preparerTransition("publier_apercu", "photos_recues", {
-  nb_pages: 34,
+  nb_pages: 34, pays_livraison: "FR",
   apercu_plat: "k/plat.jpg",
   apercu_cadrages: {
     [cleCadrageCouverture("k/absente.jpg", "droite")]: "88% 50%",
@@ -503,28 +539,28 @@ ok("maquette SANS M5 + 30 j : on n'imprime PAS en silence", !doitAutoValider(d({
 
 titre("— la planche a plat + 0 a 3 doubles pages (T2-2 / T-090) —");
 const pPlat = preparerTransition("publier_apercu", "photos_recues", {
-  nb_pages: 34, apercu_plat: "k/plat.jpg", apercu_doubles: ["k/d1.jpg", "k/d2.jpg"],
+  nb_pages: 34, pays_livraison: "FR", apercu_plat: "k/plat.jpg", apercu_doubles: ["k/d1.jpg", "k/d2.jpg"],
 });
 ok("planche + doubles : la liste ordonnee entre en base",
    pPlat.ok && JSON.stringify(pPlat.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg", doubles: ["k/d1.jpg", "k/d2.jpg"] }));
-const pPlatSeule = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, apercu_plat: "k/plat.jpg" });
+const pPlatSeule = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, pays_livraison: "FR", apercu_plat: "k/plat.jpg" });
 ok("planche SEULE : acceptee, `doubles` absent (0 double permis, decision 02/09)",
    pPlatSeule.ok && JSON.stringify(pPlatSeule.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg" }));
 const pPlat4 = preparerTransition("publier_apercu", "photos_recues", {
-  nb_pages: 34, apercu_plat: "k/plat.jpg", apercu_doubles: ["a", "b", "c", "d"],
+  nb_pages: 34, pays_livraison: "FR", apercu_plat: "k/plat.jpg", apercu_doubles: ["a", "b", "c", "d"],
 });
 ok("planche + 4 doubles : rognee a 3 a l'ecriture",
    pPlat4.ok && (pPlat4.patch.apercu_urls as { doubles: string[] }).doubles.length === MAX_DOUBLES);
 const pPlatVides = preparerTransition("publier_apercu", "photos_recues", {
-  nb_pages: 34, apercu_plat: "k/plat.jpg", apercu_doubles: ["", "  k/d.jpg  ", null as unknown as string],
+  nb_pages: 34, pays_livraison: "FR", apercu_plat: "k/plat.jpg", apercu_doubles: ["", "  k/d.jpg  ", null as unknown as string],
 });
 ok("planche + doubles vides/espaces : ignorees et rognees",
    pPlatVides.ok && JSON.stringify(pPlatVides.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg", doubles: ["k/d.jpg"] }));
-const pTrio = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, ...VISUELS });
+const pTrio = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, pays_livraison: "FR", ...VISUELS });
 ok("le trio historique reste accepte (correction d'anciens dossiers)",
    pTrio.ok && JSON.stringify(pTrio.patch.apercu_urls) === JSON.stringify({ c1: "k/c1.jpg", c4: "k/c4.jpg", double: "k/d.jpg" }));
 const pMixte = preparerTransition("publier_apercu", "photos_recues", {
-  nb_pages: 34, apercu_plat: "k/plat.jpg", apercu_doubles: ["k/d1.jpg"], ...({ apercu_c1: "k/c1.jpg" }),
+  nb_pages: 34, pays_livraison: "FR", apercu_plat: "k/plat.jpg", apercu_doubles: ["k/d1.jpg"], ...({ apercu_c1: "k/c1.jpg" }),
 });
 ok("planche fournie : c1 est ignore, jamais de melange des deux formats",
    pMixte.ok && JSON.stringify(pMixte.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg", doubles: ["k/d1.jpg"] }));
@@ -998,6 +1034,10 @@ const flore = {
   prenom: "Flore",
   email: "flore@example.com",
   telephone: "0769710686",
+  /* Depuis le lot 3 (10/09), le pays fait partie des reponses exigees : sans
+     lui, ce dossier serait refuse pour le pays et non pour le titre, et le
+     test ci-dessous ne prouverait plus rien. */
+  pays: "FR",
 };
 ok("sans titre : REFUSE, et on dit lequel",
    premierManquant(CHAMPS_QUESTIONNAIRE, (c) => flore[c]) === "titre");
@@ -1008,8 +1048,8 @@ titre("— le PREMIER champ fautif, pas un bilan —");
 ok("occasion avant histoire",
    premierManquant(CHAMPS_QUESTIONNAIRE, () => "") === "occasion");
 ok("chaque ecran connait ses champs",
-   CHAMPS_PAR_ECRAN[1].length === 1 && CHAMPS_PAR_ECRAN[4].length === 3);
-ok("les six champs sont couverts par les quatre ecrans",
+   CHAMPS_PAR_ECRAN[1].length === 1 && CHAMPS_PAR_ECRAN[4].length === 4);
+ok("tous les champs sont couverts par les quatre ecrans",
    Object.values(CHAMPS_PAR_ECRAN).flat().sort().join() ===
      [...CHAMPS_QUESTIONNAIRE].sort().join());
 
@@ -1646,12 +1686,77 @@ ok("aucun pays hors zone ne s'est glisse dans la liste envoyee a Stripe",
    && !(PAYS_LIVRAISON as readonly string[]).includes("CH")
    && !(PAYS_LIVRAISON as readonly string[]).includes("MC"));
 
+/* ═══════════ LE PAYS DE LIVRAISON, DEMANDE DES L'ECRAN 4 (lot 3) ═══════════
+   Mathias a decide le 10/09/2026 que la livraison serait facturee en sus, sur
+   DEVIS de l'imprimeur. Un devis exige la destination AVANT qu'on annonce un
+   montant ; l'adresse Stripe, elle, n'arrive qu'apres le paiement. Le pays est
+   donc devenu une reponse du questionnaire, et une condition de publication.
+
+   Les deux fonctions sont volontairement SEPAREES : `paysValide` juge sans
+   rien reparer, `normaliserPays` repare puis juge. Les confondre rendrait la
+   validation permissive au passage, et « fr » entrerait en base la ou Stripe
+   et Cloudprinter attendent « FR ». */
+
+titre("— paysValide : strictement les trois codes, majuscules comprises —");
+ok("FR, BE et LU sont valides",
+   paysValide("FR") && paysValide("BE") && paysValide("LU"));
+ok("« fr » en minuscules est REFUSE (la validation ne repare pas)", !paysValide("fr"));
+ok("un pays hors zone est refuse", !paysValide("US"));
+ok("le vide et l'absence sont refuses",
+   !paysValide("") && !paysValide(null) && !paysValide(undefined));
+ok("un non-texte ne passe pas", !paysValide(42) && !paysValide({ pays: "FR" }));
+
+titre("— normaliserPays : repare ce qui se repare, invente le reste jamais —");
+ok("«  be  » devient BE (espaces et casse)", normaliserPays(" be ") === "BE");
+ok("« Fr » devient FR", normaliserPays("Fr") === "FR");
+ok("un pays hors zone rend null, JAMAIS le pays par defaut",
+   normaliserPays("US") === null && normaliserPays("DE") === null);
+ok("le vide rend null", normaliserPays("") === null && normaliserPays(null) === null);
+ok("le defaut est un pays de la zone, et il a un libelle",
+   paysValide(PAYS_DEFAUT) && PAYS_LIBELLE[PAYS_DEFAUT] === "France");
+ok("les trois pays ont un libelle en toutes lettres (aucun code affiche brut)",
+   PAYS_LIVRAISON.every((c) => (PAYS_LIBELLE[c] ?? "").length > 2));
+
+titre("— le pays est une REPONSE du questionnaire, lue des deux cotes —");
+ok("reponseValide accepte FR", reponseValide("pays", "FR"));
+ok("reponseValide refuse « fr » (le navigateur envoie une valeur du select)",
+   !reponseValide("pays", "fr"));
+ok("reponseValide refuse un pays hors zone et le vide",
+   !reponseValide("pays", "US") && !reponseValide("pays", ""));
+const complet = {
+  occasion: "Un voyage",
+  histoire: "Un road trip au Maroc avec Mathilde. Des paysages de dingue.",
+  titre: "Maroc",
+  prenom: "Flore",
+  email: "flore@example.com",
+  telephone: "0769710686",
+  pays: "",
+};
+ok("tout rempli SAUF le pays : c'est le pays qu'on redemande",
+   premierManquant(CHAMPS_QUESTIONNAIRE, (c) => complet[c]) === "pays");
+ok("avec le pays : plus rien ne manque",
+   premierManquant(CHAMPS_QUESTIONNAIRE, (c) => ({ ...complet, pays: "BE" })[c]) === null);
+ok("le pays vit sur l'ecran 4, avec les coordonnees",
+   CHAMPS_PAR_ECRAN[4].includes("pays") && ecranDuChamp("pays") === 4);
+
 /* ═════════ T-007 : LE SAUT « SANS TEMPLATE » LAISSE UNE TRACE ═════════
    La part pure : la phrase du journal existe, nomme le mail ET la variable a
    poser, et sonne comme une alerte. L'ecriture elle-meme (une fois par
    dossier+code, jamais a chaque releve) vit dans mails.ts,
    signalerSansTemplate — deduplication par lecture prealable, sur le modele
    du verrou de mails_envoyes. */
+
+titre("— le pays declare contre le pays de l'adresse Stripe —");
+/* Rien n'est bloque (l'argent est encaisse, la commande est legitime), mais
+   l'ecart de port est pour l'atelier : il doit se LIRE dans le journal du
+   dossier, en toutes lettres. « BE != FR » ne se lit pas. */
+const rPays = raconter("pays_livraison_divergent", { declare: "FR", stripe: "BE" });
+ok("la phrase nomme les DEUX pays en clair",
+   (rPays.detail ?? "").includes("Belgique") && (rPays.detail ?? "").includes("France"));
+ok("c'est une alerte, pas une ligne neutre", rPays.ton === "alerte");
+ok("un code inconnu reste visible plutot que d'etre efface",
+   (raconter("pays_livraison_divergent", { declare: "FR", stripe: "US" }).detail ?? "")
+     .includes("US"));
 
 titre("— T-007 : le mail saute sans template se lit dans le journal —");
 const rSaut = raconter("mail_sans_template", { code: "M2b", variable: "BREVO_TEMPLATE_M2B_ID" });

@@ -19,6 +19,7 @@
  */
 
 import { palierPourPages, eurosPour, centimesPour, type PalierCle } from "./prix";
+import { normaliserPays, type PaysLivraison } from "./pays";
 import { lireSuivi } from "./suivi";
 
 export type Etat =
@@ -83,6 +84,11 @@ export type ActionCle =
    navigateur : la conversion et le contrôle se font ICI, une seule fois. */
 export type Saisie = {
   nb_pages?: string | number | null;
+  /* Le pays de livraison, exigé à la publication de l'aperçu (lot 3,
+     10/09/2026). Il vient du questionnaire (écran 4) et l'écran d'admin le
+     repropose prérempli ; il reste saisissable parce que les dossiers ouverts
+     AVANT le 10/09 n'en ont aucun, et qu'on ne devine pas une destination. */
+  pays_livraison?: string | null;
   /* T2-2 — LE format de dépôt : la couverture à plat (C4 | dos | C1), telle
      que Canva l'exporte. S'il est fourni, il gagne : c1/c4 sont ignorés.
      Les deux cadres séparés restent acceptés pour corriger un dossier
@@ -256,7 +262,15 @@ export type Preparation =
           `prixCentimes` est le montant GELÉ par ce geste (cf. `prix_centimes`
           plus bas) : l'écran de vérification montre donc, au centime, ce qui
           sera écrit en base et débité chez Stripe. */
-      resume: { nbPages?: number; palier?: PalierCle; euros?: number; prixCentimes?: number };
+      resume: {
+        nbPages?: number;
+        palier?: PalierCle;
+        euros?: number;
+        prixCentimes?: number;
+        /** Le pays retenu, en code ISO. L'écran de confirmation l'écrit en
+            toutes lettres : le devis de port du lot 6 en dépendra. */
+        pays?: PaysLivraison;
+      };
       /** Paramètres de template en PLUS de `parametresPour` (T2-3 : le MOT
           de M9). Jamais dans `patch` — rien de tout ça n'est une colonne. */
       params?: Record<string, string>;
@@ -364,7 +378,13 @@ export function preparerTransition(
 
   const erreurs: Erreur[] = [];
   const patch: Record<string, unknown> = {};
-  const resume: { nbPages?: number; palier?: PalierCle; euros?: number; prixCentimes?: number } = {};
+  const resume: {
+    nbPages?: number;
+    palier?: PalierCle;
+    euros?: number;
+    prixCentimes?: number;
+    pays?: PaysLivraison;
+  } = {};
 
   if (cle === "publier_apercu" || cle === "corriger_apercu") {
     /* ── la pagination, donc le prix ──────────────────────────────────
@@ -401,6 +421,29 @@ export function preparerTransition(
         resume.euros = eurosPour(palier) ?? undefined;
         resume.prixCentimes = centimesPour(palier) ?? undefined;
       }
+    }
+
+    /* ── LE PAYS DE LIVRAISON, EXIGÉ ICI (lot 3, 10/09/2026) ──────────
+       Publier l'aperçu, c'est annoncer un prix. Depuis que Mathias a décidé
+       que la livraison serait facturée en sus, sur devis de l'imprimeur
+       (lot 6), ce prix ne peut pas être complet sans destination : un devis
+       se demande par pays. On refuse donc de publier sans, plutôt que de
+       supposer « France » — une supposition ferait payer un port français
+       sur une adresse belge, en silence, et personne ne le verrait.
+
+       Le questionnaire le remplit depuis le 10/09 (écran 4) et l'écran
+       d'admin le repropose. Reste le cas des dossiers OUVERTS AVANT : leur
+       colonne est vide, l'atelier choisit à la main, et c'est exactement le
+       moment où l'on veut une erreur de champ plutôt qu'un défaut. */
+    const pays = normaliserPays(saisie.pays_livraison);
+    if (!pays) {
+      erreurs.push({
+        champ: "pays_livraison",
+        message: "Indique le pays de livraison (France, Belgique ou Luxembourg).",
+      });
+    } else {
+      patch.pays_livraison = pays;
+      resume.pays = pays;
     }
 
     /* ── les visuels ──────────────────────────────────────────────────

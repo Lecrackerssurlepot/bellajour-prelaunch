@@ -1,18 +1,30 @@
 /* Écran 4 — « Où vous envoyons-nous votre couverture ? »
    Fin de cet écran = première écriture en base + création du token (PRD §7.2).
 
-   Aucun champ d'adresse ici, ni nulle part dans le questionnaire : c'est Stripe
-   qui collectera l'adresse de livraison le moment venu (PRD §9). */
+   Aucun champ d'ADRESSE ici, ni nulle part dans le questionnaire : c'est
+   Stripe qui collectera l'adresse de livraison le moment venu (PRD §9). Ça
+   reste vrai depuis le 10/09/2026, malgré le select ci-dessous : on demande
+   le PAYS, pas l'adresse. Les deux ne servent pas à la même chose et
+   n'arrivent pas au même moment.
+
+   POURQUOI LE PAYS, ET POURQUOI SI TÔT (lot 3). La livraison sera facturée en
+   sus, sur devis de l'imprimeur (décision de Mathias du 10/09/2026). Un devis
+   exige la destination AVANT qu'on puisse annoncer un montant ; l'adresse
+   Stripe, elle, n'arrive qu'au paiement, c'est-à-dire après. Sans cette
+   question, l'atelier devrait annoncer un prix de port qu'il ne connaît pas.
+   Une ligne de select ici évite d'inventer un chiffre plus tard. */
 
 import { suggestionEmail } from '@/lib/atelier/questionnaire'
+import { PAYS_LIVRAISON, PAYS_LIBELLE } from '@/lib/atelier/pays'
 
 export default function Screen4Contact({
-  prenom, email, telephone, onChange, erreur, erreurCle,
+  prenom, email, telephone, pays, onChange, erreur, erreurCle,
 }: {
   prenom: string
   email: string
   telephone: string
-  onChange: (champ: 'prenom' | 'email' | 'telephone', v: string) => void
+  pays: string
+  onChange: (champ: 'prenom' | 'email' | 'telephone' | 'pays', v: string) => void
   erreur: string | null
   /** T-051 — change à chaque refus : le même message est ré-annoncé. */
   erreurCle: number
@@ -101,6 +113,31 @@ export default function Screen4Contact({
         Le téléphone sert au transporteur, le jour où votre numéro arrive chez
         vous. Il ne part nulle part ailleurs, et personne ne vous appellera
         pour vous vendre quoi que ce soit.
+      </p>
+
+      {/* ── LE PAYS DE LIVRAISON ─────────────────────────────────────────
+          Un select et pas un champ libre : trois destinations, et une saisie
+          libre laisserait entrer « Fance » ou « Belgique » là où l'imprimeur
+          attend un code. Le pays par défaut est visible et modifiable, donc
+          rien n'est décidé à la place du client. */}
+      <label className="at-lbl" htmlFor="at-c-pays">Pays de livraison</label>
+      <select
+        id="at-c-pays"
+        className="at-inp at-inp--select"
+        value={pays}
+        onChange={(e) => onChange('pays', e.target.value)}
+        autoComplete="country"
+      >
+        {PAYS_LIVRAISON.map((code) => (
+          <option key={code} value={code}>{PAYS_LIBELLE[code]}</option>
+        ))}
+      </select>
+
+      {/* Ce que le select engage, dit ici plutôt que découvert au paiement :
+          le port n'est pas encore chiffré, il le sera avec la couverture. */}
+      <p className="at-hint at-hint--calme">
+        Le prix de la livraison dépend du pays. Il vous sera indiqué avec votre
+        couverture, avant tout paiement.
       </p>
 
       {erreur && <p key={erreurCle} className="at-erreur" role="alert">{erreur}</p>}

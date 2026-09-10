@@ -50,6 +50,15 @@ export type LigneDossier = {
   nbPhotos: number;
   nbPages: number | null;
   euros: number | null;
+  /**
+   * Le pays de livraison DÉCLARÉ par le client à l'écran 4 (lot 3, 10/09).
+   *
+   * `null` n'est pas une anomalie : les dossiers ouverts avant le 10/09 n'ont
+   * jamais eu la question, et la colonne reste vide tant que la migration
+   * 20260910 n'est pas passée (`lireNumeros` retombe alors sans elle). Un
+   * écran qui lit ce champ affiche donc l'absence, il ne la remplit pas.
+   */
+  pays: string | null;
   createdAt: string | null;
   etatMajLe: string | null;
   urgence: UrgenceVue;
@@ -204,6 +213,11 @@ export type Fiche = {
   renonciation: boolean;
   renonciationAt: string | null;
   palier: string | null;
+  /** Le pays de livraison déclaré à l'écran 4 (lot 3, 10/09). Arrive avec le
+      `select("*")` de `lireFiche` ; null pour un dossier antérieur, ou tant
+      que la migration 20260910 n'est pas passée. C'est lui qui préremplit le
+      champ « Pays de livraison » de la publication. */
+  paysLivraison: string | null;
   canvaUrl: string | null;
   /** Le lien d'ÉDITION, interne. Ne part jamais nulle part (PRD §11). */
   canvaTravail: string | null;

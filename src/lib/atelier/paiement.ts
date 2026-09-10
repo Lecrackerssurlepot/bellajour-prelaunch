@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logEvenement } from "./evenements";
+import { normaliserPays } from "./pays";
 import { lireNumerosMail, envoyerMailAtelier, type NumeroPourMail } from "./mails";
 import { EVT_CREDIT_CONSOMME } from "./fondatrice";
 
@@ -97,14 +98,24 @@ export async function traiterPaiementAtelier(
   /* Les colonnes du mail (titre, pagination, palier) plutôt qu'une liste
      locale : M4 annonce la même pagination et le même prix que la page
      d'état 2, et les trois mails de l'atelier partagent le même jeu. */
-  const { data: numero, error: lectureErr } = await lireNumerosMail<
-    (NumeroPourMail & { etat: string; stripe_session_id: string | null }) | null
-  >((champs) =>
-    supabase
-      .from("numeros")
-      .select(`${champs}, stripe_session_id`)
-      .eq("id", numeroId)
-      .maybeSingle<NumeroPourMail & { etat: string; stripe_session_id: string | null }>(),
+  /* `pays_livraison` est DÉJÀ dans CHAMPS_MAIL (migration 20260910), avec son
+     repli : rien à ajouter au select, seulement à déclarer. Optionnel, parce
+     que le repli `CHAMPS_MAIL_REPLI` le laisse `undefined` tant que la
+     migration n'est pas passée — auquel cas la comparaison ci-dessous ne dit
+     rien plutôt que de crier à tort. */
+  type NumeroPaiement = NumeroPourMail & {
+    etat: string;
+    stripe_session_id: string | null;
+    pays_livraison?: string | null;
+  };
+
+  const { data: numero, error: lectureErr } = await lireNumerosMail<NumeroPaiement | null>(
+    (champs) =>
+      supabase
+        .from("numeros")
+        .select(`${champs}, stripe_session_id`)
+        .eq("id", numeroId)
+        .maybeSingle<NumeroPaiement>(),
   );
 
   if (lectureErr) {
@@ -215,6 +226,37 @@ export async function traiterPaiementAtelier(
       });
     }
     return true;
+  }
+
+  /* ── LE PAYS DÉCLARÉ CONTRE LE PAYS RÉEL (lot 3, 10/09/2026) ────────
+     Le client a choisi un pays de livraison à l'écran 4, et c'est sur lui
+     qu'un devis de port sera demandé (lot 6). L'adresse Stripe arrive ici,
+     bien plus tard : rien ne garantit qu'elle soit dans le même pays. Une
+     Belge qui déclare « France » puis se fait livrer à Bruxelles fait payer
+     l'écart à l'atelier, en silence, et personne ne le voit passer.
+
+     ON NE BLOQUE RIEN. L'argent est encaissé, la commande est légitime, et
+     refuser ici laisserait un paiement sans dossier. On CRIE, dans la console
+     et surtout au journal du dossier (les logs Vercel s'effacent en une heure
+     sur le plan Hobby), puis on continue exactement comme avant.
+     APRÈS la transition atomique, et pas avant : un rejeu de webhook (Stripe
+     en envoie volontiers deux) sortirait plus haut sans repasser ici, donc la
+     divergence ne se journalise qu'UNE fois, comme le reste du dossier.
+     Silencieux dans le cas normal — et dans le cas où l'on ne sait pas : pas
+     d'adresse Stripe, pas de colonne encore migrée, aucune comparaison. */
+  const paysDeclare = normaliserPays(numero.pays_livraison);
+  const paysStripe = normaliserPays(adresse?.address?.country);
+  const paysDivergent = Boolean(paysDeclare && paysStripe && paysDeclare !== paysStripe);
+  if (paysDivergent) {
+    console.error(
+      `[atelier/paiement] ⚠️ pays divergent : déclaré ${paysDeclare}, adresse Stripe ${paysStripe}`,
+      { numero: numero.id, session: session.id },
+    );
+    await logEvenement(supabase, numero.id, "pays_livraison_divergent", {
+      declare: paysDeclare,
+      stripe: paysStripe,
+      session_id: session.id,
+    });
   }
 
   /* Invariant nº6 — chaque transition d'état écrit dans `evenements`.

@@ -9,6 +9,8 @@
  * storage désactivé ne doit jamais casser le parcours — au pire on perd la reprise.
  */
 
+import { PAYS_DEFAUT } from '@/lib/atelier/pays'
+
 const KEY = 'atelier_draft_v1'
 
 export type Draft = {
@@ -23,6 +25,12 @@ export type Draft = {
   prenom: string
   email: string
   telephone: string
+  /* Le pays de livraison, écran 4 (lot 3, 10/09/2026). Toujours une valeur :
+     le select part sur PAYS_DEFAUT, et un brouillon d'une version antérieure
+     — qui n'a pas la clé du tout — fusionne sur ce même défaut par
+     EMPTY_DRAFT (cf. loadDraft). Personne ne retombe donc sur un champ vide,
+     et personne ne se voit imposer un pays en silence : il est affiché. */
+  pays: string
   /* Posé au retour de /api/atelier/numero (fin d'écran 4). Sa présence
      signifie « le dossier existe en base » : on ne le recrée jamais. */
   token: string | null
@@ -43,6 +51,7 @@ export const EMPTY_DRAFT: Draft = {
   prenom: '',
   email: '',
   telephone: '',
+  pays: PAYS_DEFAUT,
   token: null,
   consentPhotos: false,
   consentCommunication: false,

@@ -12,6 +12,7 @@ import Loupe, { type VueLoupe } from "@/app/components/Loupe";
 import EnCharge from "./EnCharge";
 import { PRENOM_COMPTE } from "@/lib/admin-auth";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
+import { PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
 import {
   choisirDossier,
   ecrireLot,
@@ -31,6 +32,13 @@ import {
  * journal). Ce n'est pas un formulaire d'administration, c'est un plan de
  * travail.
  */
+
+/* « FR » ne se relit pas d'un coup d'œil, et un code inconnu (un dossier
+   repris à la main en SQL, par exemple) doit rester VISIBLE plutôt que
+   disparaître derrière un libellé qui n'existe pas. */
+function libellePays(code: string): string {
+  return paysValide(code) ? PAYS_LIBELLE[code] : code;
+}
 
 function fmt(iso: string | null): string {
   if (!iso) return "—";
@@ -1000,18 +1008,38 @@ export default function Fiche({
               </li>
             </ul>
 
-            {fiche.adresse ? (
+            {/* ── LIVRAISON ──
+                DEUX SOURCES, ET ELLES N'ARRIVENT PAS AU MÊME MOMENT.
+                Le PAYS est déclaré par le client dès l'écran 4 (lot 3,
+                10/09/2026) : il est là bien avant le paiement, et c'est lui
+                qui décide du devis de port. L'ADRESSE complète, elle, vient
+                de Stripe et n'existe qu'après le paiement.
+                Le bloc s'affiche donc dès qu'on a l'un OU l'autre : avant, il
+                restait muet jusqu'au paiement, et l'atelier ne pouvait pas
+                voir la destination au moment où il publie l'aperçu. */}
+            {fiche.paysLivraison || fiche.adresse ? (
               <>
                 <h3 className="ate-sous-titre">Livraison</h3>
-                <address className="ate-adresse">
-                  {fiche.adresse.nom ? <>{fiche.adresse.nom}<br /></> : null}
-                  {fiche.adresse.ligne1}
-                  {fiche.adresse.ligne2 ? <><br />{fiche.adresse.ligne2}</> : null}
-                  <br />
-                  {fiche.adresse.codePostal} {fiche.adresse.ville}
-                  <br />
-                  {fiche.adresse.pays}
-                </address>
+                {fiche.paysLivraison ? (
+                  <dl className="ate-defs">
+                    <dt>Pays déclaré</dt>
+                    <dd>
+                      {libellePays(fiche.paysLivraison)}{" "}
+                      <span className="ate-faint">annoncé à l&apos;écran 4</span>
+                    </dd>
+                  </dl>
+                ) : null}
+                {fiche.adresse ? (
+                  <address className="ate-adresse">
+                    {fiche.adresse.nom ? <>{fiche.adresse.nom}<br /></> : null}
+                    {fiche.adresse.ligne1}
+                    {fiche.adresse.ligne2 ? <><br />{fiche.adresse.ligne2}</> : null}
+                    <br />
+                    {fiche.adresse.codePostal} {fiche.adresse.ville}
+                    <br />
+                    {fiche.adresse.pays}
+                  </address>
+                ) : null}
               </>
             ) : null}
 

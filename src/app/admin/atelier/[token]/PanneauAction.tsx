@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import type { ActionVue, Fiche } from "../types";
 import { SLOTS_IMPRESSION } from "@/lib/atelier/impression";
 import { cleCadrageCouverture } from "@/lib/atelier/transitions";
+/* `pays.ts` est un module PUR et SANS montant : l'importer ici ne fait pas
+   descendre la grille de prix dans le bundle (invariant nº2), contrairement
+   à `prix.ts` — c'est exactement pour ça que la liste y a déménagé. */
+import { PAYS_LIVRAISON, PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
 
 /**
  * L'action du moment — le geste que ce lot remplace.
@@ -25,7 +29,7 @@ import { cleCadrageCouverture } from "@/lib/atelier/transitions";
 
 type Verif = {
   action: { cle: string; libelle: string; vers: string; note?: string };
-  resume: { nbPages?: number; palier?: string; euros?: number };
+  resume: { nbPages?: number; palier?: string; euros?: number; pays?: string };
   /* T2-3 — le mot de l'atelier tel que le serveur l'a retenu : c'est LUI qui
      partira dans M9, pas la saisie locale. */
   mot?: string;
@@ -90,6 +94,11 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
   );
   const [saisie, setSaisie] = useState<Record<string, string>>({
     nb_pages: fiche.ligne.nbPages ? String(fiche.ligne.nbPages) : "",
+    /* Le pays vient du dossier, jamais d'un défaut : un dossier ouvert avant
+       le 10/09 n'a pas eu la question, et le select reste alors sur « Choisir ».
+       Préremplir « France » à sa place ferait passer une supposition pour une
+       réponse du client, sur le champ dont dépendra le devis de port. */
+    pays_livraison: fiche.paysLivraison ?? "",
     apercu_plat: fiche.apercuBrut.plat ?? "",
     apercu_c1: fiche.apercuBrut.c1 ?? "",
     apercu_c4: fiche.apercuBrut.c4 ?? "",
@@ -456,7 +465,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
          se déroule en entier ; rien ne part, ni en base, ni chez Brevo. */
       setVerif({
         action: { cle: choisie.cle, libelle: choisie.libelle, vers: choisie.vers, note: choisie.note },
-        resume: simulerResume(choisie.cle, saisie.nb_pages),
+        resume: simulerResume(choisie.cle, saisie.nb_pages, saisie.pays_livraison),
         destinataire: {
           prenom: fiche.ligne.prenom,
           email: fiche.ligne.email,
@@ -1007,6 +1016,32 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                 </span>
                 {erreurDe("nb_pages") ? <span className="ate-erreur">{erreurDe("nb_pages")}</span> : null}
               </label>
+
+              {/* ── LE PAYS DE LIVRAISON (lot 3, 10/09/2026) ──────────────
+                  Obligatoire ici, parce que publier l'aperçu, c'est annoncer
+                  un prix, et que le port sera devisé par destination (lot 6).
+                  L'option vide n'existe QUE pour les dossiers ouverts avant
+                  le 10/09, qui n'ont jamais eu la question : ils obligent
+                  l'atelier à trancher au lieu de partir sur un défaut. */}
+              <label className="ate-champ ate-champ--court">
+                <span className="ate-champ-label">Pays de livraison</span>
+                <select
+                  className="adm-input"
+                  value={saisie.pays_livraison ?? ""}
+                  onChange={(e) => set("pays_livraison", e.target.value)}
+                >
+                  {paysValide(saisie.pays_livraison) ? null : <option value="">Choisir</option>}
+                  {PAYS_LIVRAISON.map((code) => (
+                    <option key={code} value={code}>{PAYS_LIBELLE[code]}</option>
+                  ))}
+                </select>
+                <span className="ate-champ-aide">
+                  Demandé au client à l&apos;écran 4. Le devis de livraison en dépend.
+                </span>
+                {erreurDe("pays_livraison") ? (
+                  <span className="ate-erreur">{erreurDe("pays_livraison")}</span>
+                ) : null}
+              </label>
             </>
           ) : null}
 
@@ -1172,6 +1207,14 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                     </dd>
                   </>
                 ) : null}
+                {/* Le pays retenu, en toutes lettres : c'est lui qui décidera
+                    du devis de port, et un code ISO ne se relit pas. */}
+                {verif.resume.pays && paysValide(verif.resume.pays) ? (
+                  <>
+                    <dt>Livraison</dt>
+                    <dd>en {PAYS_LIBELLE[verif.resume.pays]}</dd>
+                  </>
+                ) : null}
                 {verif.impression ? (
                   <>
                     <dt>Produit</dt>
@@ -1289,12 +1332,17 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
    QUE pour la démonstration : sans lui, l'écran de confirmation de la démo
    serait vide et le parcours ne se raconterait pas. Il ne sert jamais sur un
    vrai dossier — là, le résumé vient du serveur. */
-function simulerResume(cle: string, nbPagesBrut: string) {
+function simulerResume(cle: string, nbPagesBrut: string, paysBrut: string) {
   if (cle !== "publier_apercu" && cle !== "corriger_apercu") return {};
+  /* Le pays part avec le reste : sur un vrai dossier, le serveur le rend
+     dans `resume.pays` et la confirmation dit « Livraison en France ». Sans
+     lui ici, la démonstration montrerait un écran de confirmation amputé de
+     la ligne que l'atelier doit justement apprendre à relire. */
+  const pays = paysValide(paysBrut) ? { pays: paysBrut } : {};
   const n = Number(nbPagesBrut);
-  if (!Number.isInteger(n)) return {};
-  if (n >= 20 && n <= 29) return { nbPages: n, palier: "p30", euros: 30 };
-  if (n >= 30 && n <= 39) return { nbPages: n, palier: "p40", euros: 40 };
-  if (n >= 40 && n <= 50) return { nbPages: n, palier: "p45", euros: 45 };
-  return { nbPages: n };
+  if (!Number.isInteger(n)) return pays;
+  if (n >= 20 && n <= 29) return { ...pays, nbPages: n, palier: "p30", euros: 30 };
+  if (n >= 30 && n <= 39) return { ...pays, nbPages: n, palier: "p40", euros: 40 };
+  if (n >= 40 && n <= 50) return { ...pays, nbPages: n, palier: "p45", euros: 45 };
+  return { ...pays, nbPages: n };
 }

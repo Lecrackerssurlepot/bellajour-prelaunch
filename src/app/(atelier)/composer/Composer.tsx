@@ -354,6 +354,10 @@ export default function Composer() {
           prenom: draft.prenom,
           email: draft.email,
           telephone: draft.telephone,
+          /* Le pays de livraison (lot 3). Le serveur le NORMALISE puis le
+             valide comme les six autres réponses : un brouillon d'avant le
+             10/09 arrive sans pays et repose le client sur l'écran 4. */
+          pays: draft.pays,
         }),
       })
       const data = (await res.json()) as {
@@ -560,6 +564,7 @@ export default function Composer() {
               prenom={draft.prenom}
               email={draft.email}
               telephone={draft.telephone}
+              pays={draft.pays}
               onChange={(champ, v) => patch({ [champ]: v } as Partial<Draft>)}
               erreur={erreur}
               erreurCle={erreurCle}

@@ -222,40 +222,47 @@ export function formaterEuros(euros: number): string {
 
 /* ─────────────────────────────── livraison ───────────────────────────────
  *
- * Zone de livraison au lancement (lot 6). Stripe EXIGE une liste explicite de
- * pays : on ne peut pas dire « partout ». Cette liste est donc à la fois le
- * menu déroulant « Pays » du paiement et notre garde-fou commercial.
+ * LA ZONE VIT DANS `./pays`, PAS ICI, ET C'EST DÉLIBÉRÉ (lot 3, 10/09/2026).
+ * Depuis que le pays est demandé au CLIENT, à l'écran 4 du questionnaire, la
+ * liste des trois pays doit être lisible par le navigateur — et ce fichier-ci
+ * est serveur uniquement, puisqu'il porte les montants. La liste a donc
+ * déménagé dans un module pur ; on la ré-exporte pour ne pas casser ses
+ * appelants serveur (`/api/atelier/checkout` l'importe d'ici et la donne à
+ * Stripe, qui exige une liste explicite de pays).
  *
- * France, Belgique, Luxembourg. Trois pays de l'UE, tous couverts par
- * Stripe Tax, tous à portée de la grille de port de l'imprimeur.
+ * POURQUOI LE PAYS EST DEMANDÉ SI TÔT. Mathias a tranché le 10/09/2026 : la
+ * livraison sera facturée en sus, sur DEVIS Cloudprinter (lot 6). Un devis
+ * exige la destination avant d'annoncer un montant, et l'adresse n'était
+ * jusqu'ici collectée que par Stripe, c'est-à-dire APRÈS le prix. Le pays est
+ * donc devenu une réponse du questionnaire (`questionnaire.ts`, champ
+ * `pays`), obligatoire aussi à la publication de l'aperçu (`transitions.ts`).
+ * Le TARIF, lui, n'existe encore nulle part : aucun montant de port n'est
+ * décidé, et on n'en invente pas (interdit nº5). Il se branchera au lot 6,
+ * dans `livraison_centimes`, par `shipping_options` du checkout.
  *
- * ⚠️ LES DOM PASSENT AU TRAVERS. Une adresse à La Réunion ou en Guadeloupe est
- * une adresse « FR » pour Stripe, alors que ces territoires sont exclus du
- * territoire TVA de l'UE (et de Stripe Tax) et coûtent plusieurs fois le prix
- * de l'album en port. Impossible de les écarter proprement ici — Checkout ne
- * filtre pas par code postal. À faible volume, /admin les traite à la main ;
- * si le cas devient fréquent, la règle se posera sur le code postal reçu dans
- * `adresse_livraison`, pas sur cette liste.
- *
- * C'est la décision la plus réversible du lot : ajouter l'Espagne, c'est une
- * chaîne de plus ici et un déploiement.
+ * ⚠️ LES DOM PASSENT TOUJOURS AU TRAVERS, et le select de l'écran 4 n'y
+ * change rien : une adresse à La Réunion ou en Guadeloupe est une adresse
+ * « FR » pour Stripe comme pour nous, alors que ces territoires sont exclus
+ * du territoire TVA de l'UE (et de Stripe Tax) et coûtent plusieurs fois le
+ * prix de l'album en port. À faible volume, /admin les traite à la main ; si
+ * le cas devient fréquent, la règle se posera sur le code postal reçu dans
+ * `adresse_livraison`, pas sur la liste des pays.
  */
-export const PAYS_LIVRAISON = ["FR", "BE", "LU"] as const;
+export { PAYS_LIVRAISON, type PaysLivraison } from "./pays";
 
-/* Le prix est le même dans toute la zone, quelle que soit la destination.
- * (Port compris à ce jour ; la sortie de la livraison du prix est en cours
- * d'arbitrage — T-072 / PROPOSITION-CGV-LIVRAISON.md. Le jour venu, le tarif
- * de port se branchera par `shipping_options` dans /api/atelier/checkout,
- * où la structure attend en commentaire.) On absorbe l'écart de quelques
- * euros entre Paris et Bruxelles plutôt que d'afficher trois prix.
+/* Le prix du MAGAZINE est le même dans toute la zone, quelle que soit la
+ * destination : la grille ci-dessus ne prend pas de second argument, et elle
+ * n'en prendra pas. Ce qui varie avec le pays, c'est le PORT, et il sort du
+ * prix (décision de Mathias du 10/09/2026, lot 6) : un devis Cloudprinter par
+ * destination, écrit dans `livraison_centimes`, annoncé au client avec sa
+ * couverture, avant tout paiement.
  *
- * SI CET ÉCART DEVIENT INTENABLE : la grille ci-dessus devient palier × zone,
- * `eurosPour(palier)` prend un second argument, et /api/atelier/checkout le
- * lit depuis... rien. Et c'est bien là le problème : le pays n'est connu
- * qu'APRÈS, puisque c'est Stripe qui collecte l'adresse. Il faudrait alors
- * demander le pays sur la page d'état 2, avant d'annoncer le prix. Ce n'est
- * pas un réglage, c'est un changement de parcours — à décider en connaissance
- * de cause, pas en ajoutant discrètement une colonne.
+ * L'objection historique de ce commentaire — « le pays n'est connu qu'APRÈS,
+ * puisque c'est Stripe qui collecte l'adresse » — est levée depuis le lot 3 :
+ * le pays est demandé à l'écran 4 du questionnaire et vit dans
+ * `numeros.pays_livraison` bien avant qu'un montant ne soit annoncé. C'était
+ * un changement de parcours, il a été décidé comme tel et pas en ajoutant
+ * discrètement une colonne.
  */
 
 /* Code fiscal Stripe de l'album — « biens matériels, général », soit le taux
