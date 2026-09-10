@@ -364,8 +364,8 @@ export function parametresPour(
   /* ── T-021 : les deux mails qui portent le LIEN DE PAIEMENT ──────────
      M3 (« votre couverture est prête ») et M3b (sa relance) sont les seuls
      mails envoyés AVANT le paiement. Une fondatrice qui les reçoit doit lire
-     que ses 30 € sont déjà déduits — sinon elle voit 40 € annoncés, clique,
-     et découvre 10 € chez Stripe. Une bonne surprise reste une surprise, et
+     que ses 30 € sont déjà déduits — sinon elle voit 37 € annoncés, clique,
+     et découvre 7 € chez Stripe. Une bonne surprise reste une surprise, et
      une surprise sur un prix fait douter.
 
      ⚠️ Le paramètre est TOUJOURS présent sur ces deux codes, vide quand il

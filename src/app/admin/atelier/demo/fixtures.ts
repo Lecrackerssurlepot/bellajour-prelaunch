@@ -20,7 +20,11 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-import { eurosPour } from "@/lib/atelier/prix";
+/* Le prix vient de la PAGINATION depuis le 10/09/2026, plus du palier : les
+   fixtures dérivent donc leurs montants de `nbPages`, comme le serveur. Le
+   `palier` de chaque dossier reste posé — c'est le bucket hérité qu'on écrit
+   toujours en base, et la démo doit montrer un dossier réaliste. */
+import { eurosPourPages } from "@/lib/atelier/grille";
 import { ETAPE_ETAT, LIBELLE_ETAT, actionsDepuis, type Etat } from "@/lib/atelier/transitions";
 import { compter, comparerUrgence, urgencePour, etapeDepot, type EtapeDepot } from "@/lib/atelier/urgence";
 import { raconter } from "@/lib/atelier/recit";
@@ -312,7 +316,7 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
       libelleEtat: LIBELLE_ETAT[g.etat],
       nbPhotos: g.nbPhotos,
       nbPages: g.nbPages,
-      euros: eurosPour(g.palier),
+      euros: eurosPourPages(g.nbPages),
       /* La démo joue des dossiers français : c'est le cas normal, et le
          champ « Pays de livraison » de la publication s'y trouve prérempli
          comme sur un vrai dossier ouvert après le 10/09. */
@@ -445,7 +449,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
   if (publie) {
     journal.push({
       type: "etat_change",
-      payload: { de: "photos_recues", vers: "apercu_pret", par: "Mathias", nbPages: g.nbPages, euros: eurosPour(g.palier) },
+      payload: { de: "photos_recues", vers: "apercu_pret", par: "Mathias", nbPages: g.nbPages, euros: eurosPourPages(g.nbPages) },
       h: g.depuis + 48,
     });
     journal.push({ type: "mail_envoye", payload: { code: "M3" }, h: g.depuis + 48 });
@@ -455,7 +459,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     journal.push({ type: "mail_envoye", payload: { code: "M4" }, h: g.depuis + 24 });
   }
   if (g.rembourse) {
-    journal.push({ type: "remboursement", payload: { montant: eurosPour(g.palier) }, h: g.depuis + 2 });
+    journal.push({ type: "remboursement", payload: { montant: eurosPourPages(g.nbPages) }, h: g.depuis + 2 });
   }
   /* L'état courant, SAUF s'il vient déjà d'être poussé au-dessus : pour un
      dossier « payée », la boucle produisait deux « Paiement reçu » à la
@@ -610,7 +614,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
               },
             ]
           : [],
-      totalPaye: g.paye ? (eurosPour(g.palier) ?? 0) + (g.token === T("demo1") ? 45 : 0) : 0,
+      totalPaye: g.paye ? (eurosPourPages(g.nbPages) ?? 0) + (g.token === T("demo1") ? 45 : 0) : 0,
       prevente: g.fondatrice
         ? {
             offerType: "founder",

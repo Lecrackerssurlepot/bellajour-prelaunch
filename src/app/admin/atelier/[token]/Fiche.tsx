@@ -433,7 +433,6 @@ function matiereDe(fiche: FicheVue): MatiereBrief {
     libelleEtat: l.libelleEtat,
     nbPhotos: fiche.photos.length,
     nbPages: l.nbPages,
-    palier: fiche.palier,
     euros: l.euros,
     createdAt: l.createdAt,
     occasion: fiche.occasion,

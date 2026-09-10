@@ -15,7 +15,7 @@
  *
  * Et une règle de fond : le palier affiché ici est un ORDRE DE GRANDEUR. Le
  * prix ferme naît côté serveur, du nombre de pages saisi par l'atelier
- * (invariant nº2). D'où « autour de 30 € · prix confirmé avec votre
+ * (invariant nº2). D'où « de 25 à 31 € · prix confirmé avec votre
  * couverture », jamais un montant sec qui se lirait comme un engagement.
  *
  * REFONTE DU 03/09 (maquettes validées par Mathias) :

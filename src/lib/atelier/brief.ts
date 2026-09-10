@@ -26,6 +26,11 @@
  * ne l'envoie nulle part.
  */
 
+/* La reliure se déduit de la pagination, par la MÊME fonction que le prix et
+   que la référence Cloudprinter : le brief ne peut donc pas annoncer un dos
+   carré là où l'imprimeur recevra un agrafé. `grille.ts` est pur. */
+import { reliurePour, RELIURE_LIBELLE } from './grille';
+
 /** Ce dont le brief a besoin. Volontairement étroit : le brief ne connaît pas
  *  la fiche, la fiche lui donne ce qu'il demande. */
 export type MatiereBrief = {
@@ -36,7 +41,6 @@ export type MatiereBrief = {
   libelleEtat: string;
   nbPhotos: number;
   nbPages: number | null;
-  palier: string | null;
   euros: number | null;
   createdAt: string | null;
   occasion: string | null;
@@ -126,8 +130,13 @@ export function composerBrief(m: MatiereBrief, maintenant: Date): string {
     ["Photos", `${m.nbPhotos}`],
   ];
   if (m.nbPages) {
+    /* La RELIURE, plus le code de palier (10/09/2026) : c'est l'information
+       dont l'atelier a besoin en ouvrant le brief — agrafé ou dos carré change
+       la façon de monter la couverture. « p40 » ne nommait plus rien. */
+    const reliure = reliurePour(m.nbPages);
+    const mot = reliure ? ` (${RELIURE_LIBELLE[reliure]})` : "";
     const prix = m.euros ? `, ${m.euros} €` : "";
-    fiches.push(["Pages", `${m.nbPages}${m.palier ? ` (palier ${m.palier})` : ""}${prix}`]);
+    fiches.push(["Pages", `${m.nbPages}${mot}${prix}`]);
   }
   if (m.createdAt) fiches.push(["Ouvert le", dateCourte(m.createdAt)]);
   if (m.canvaTravail) fiches.push(["Canva (travail)", m.canvaTravail]);

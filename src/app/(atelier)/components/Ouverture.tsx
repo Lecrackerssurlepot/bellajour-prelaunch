@@ -16,6 +16,9 @@
    ════════════════════════════════════════════════════════════ */
 
 import { useEffect, useRef } from 'react'
+/* Le prix d'appel vient de content.ts, qui le dérive de la grille : la note
+   sous le bouton ne peut pas rester en arrière d'un changement de prix. */
+import { CTA_NOTE_PRICE } from '../content'
 import './ouverture.css'
 
 const PLI = 120, FONDU = 1700, BATTEMENT = 1000
@@ -377,7 +380,7 @@ export default function Ouverture() {
           <div className="h-gauche">
             <p className="h-amorce">Ce festival, cette soirée, ce road trip…</p>
             <p className="corps h-lede">Chaque moment qui vous touche. Vous envoyez vos photos, l’atelier compose le magazine de cet instant de vie.</p>
-            <p className="mention h-note">Premier aperçu gratuit · Votre magazine sur-mesure dès <b>30 €</b>.</p>
+            <p className="mention h-note">Premier aperçu gratuit · Votre magazine sur-mesure dès <b>{CTA_NOTE_PRICE}</b>.</p>
           </div>
           <div className="h-droite">
             <button className="acte acte--seul descente" type="button" onClick={descendre}>

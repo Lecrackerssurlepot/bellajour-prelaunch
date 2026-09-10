@@ -12,6 +12,12 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
+/* La reliure est décidée par la GRILLE (`grille.ts`, module pur et public) :
+   c'est elle qui sait quelles paginations existent et laquelle s'agrafe. Ce
+   fichier-ci ne fait plus que traduire une reliure en référence Cloudprinter,
+   et les deux ne peuvent donc plus diverger. */
+import { reliurePour } from "./grille";
+
 /* ─────────────────────────── le produit ─────────────────────────── */
 
 /**
@@ -50,12 +56,14 @@ export type ProduitImpression = {
 /**
  * La référence se DÉDUIT de la pagination, personne ne la choisit à l'écran
  * (décision de Mathias, 26/08/2026) :
- *   20 pages        → agrafé (saddle stitch)
- *   22 à 50 pages   → dos carré collé (perfect binding)
+ *   20 pages       → agrafé (saddle stitch)
+ *   24 à 60 pages  → dos carré collé (perfect binding)
  *
- * 22 pages n'arrive jamais en pratique (la grille commerciale saute de 20 à
- * 24) : si un dossier en porte quand même, le dos carré est le repli
- * arbitraire — il accepte cette pagination, l'agrafé de Cloudprinter non.
+ * ⚠️ LA LISTE DES PAGINATIONS N'EST PLUS ÉCRITE ICI (10/09/2026) : elle vient
+ * de la grille, par `reliurePour`. 22 pages et les impairs n'existent pas dans
+ * la grille, donc ils ne désignent AUCUN produit — on ne devine plus une
+ * reliure de repli pour une pagination qu'on ne sait pas facturer. Une seule
+ * table décide de ce qui est composable, et c'est celle qui décide du prix.
  *
  * ⚠️ Les finitions (grammage intérieur, papier de couverture) sont le choix
  * par défaut d'aujourd'hui. L'étude de prix de Mathias tranchera le choix
@@ -119,9 +127,9 @@ export const REGLE_PAGES_FICHIER: Record<string, { multiple: number; min: number
 };
 
 export function produitPour(nbPages: number | null | undefined): ProduitImpression | null {
-  if (typeof nbPages !== "number" || !Number.isInteger(nbPages)) return null;
-  if (nbPages === 20) return AGRAFE;
-  if (nbPages >= 22 && nbPages <= 50) return DOS_CARRE;
+  const reliure = reliurePour(nbPages);
+  if (reliure === "agrafe") return AGRAFE;
+  if (reliure === "dos_carre") return DOS_CARRE;
   return null;
 }
 
@@ -152,8 +160,8 @@ export const TELEPHONE_CONTACT = "+33680009071";
 
 /**
  * Plafond du PDF print-ready. Les photos plafonnent à 50 Mo (formats.ts),
- * mais un magazine de 50 pages en 300 dpi les dépasse largement : plafond
- * dédié, sans toucher au contrat des photos.
+ * mais un magazine de soixante pages en 300 dpi les dépasse largement :
+ * plafond dédié, sans toucher au contrat des photos.
  */
 export const MAX_PDF_BYTES = 200 * 1024 * 1024; /* 200 Mo */
 

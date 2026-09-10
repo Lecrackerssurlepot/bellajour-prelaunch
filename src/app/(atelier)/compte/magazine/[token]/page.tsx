@@ -73,7 +73,9 @@ export default async function MagazinePage({
      encore : les deux se lèveront ensemble, jamais l'un sans l'autre. */
   const recommander = peutRecommander({
     etat: dossier.etat,
-    palier: dossier.palier as PalierCle | null,
+    /* La PAGINATION, plus le palier (10/09/2026) : c'est elle qui dit ce que
+       l'objet coûte depuis la grille par pages. */
+    nb_pages: dossier.nb_pages,
   })
   const livreLe = dossier.etat_maj_le
     ? new Date(dossier.etat_maj_le).toLocaleDateString('fr-FR', {

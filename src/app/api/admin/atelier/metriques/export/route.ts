@@ -22,7 +22,7 @@
 import { NextResponse } from "next/server";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
 import { PERIODES, chargerRapport, type Periode } from "@/app/admin/atelier/metriques";
-import { ETAPES_VIE, dureeEtape, type JalonCle } from "@/lib/atelier/mesure";
+import { ETAPES_VIE, dureeEtape, libelleParPages, type JalonCle } from "@/lib/atelier/mesure";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -112,7 +112,13 @@ export async function GET(request: Request) {
     L.push(ligne("Livrées", String(c.livrees)));
     L.push(ligne("Chiffre d'affaires (EUR)", String(c.ca)));
     L.push(ligne("Panier moyen (EUR)", c.panierMoyen === null ? "pas encore" : String(c.panierMoyen).replace(".", ",")));
-    L.push(ligne("Répartition paliers", `${c.paliers.p30} x 30 EUR / ${c.paliers.p40} x 40 EUR / ${c.paliers.p45} x 45 EUR`));
+    /* La répartition par NOMBRE DE PAGES (10/09/2026) : « 3 x 34 p. / 1 x 40 p. ».
+       Même règle que l'écran (`repartirParPages`, mesure.ts), en ASCII pour le
+       tableur. Vide, on le DIT plutôt que de laisser une cellule blanche. */
+    L.push(ligne(
+      "Répartition par pages",
+      c.parPages.length ? libelleParPages(c.parPages, "x", " / ") : "pas encore",
+    ));
     L.push(ligne("Relances envoyées (M3b)", String(c.relances)));
     L.push("");
 
@@ -137,7 +143,7 @@ export async function GET(request: Request) {
     L.push(
       ligne(
         "Dossier",
-        "Palier",
+        "Pages",
         "Payé",
         ...JALONS_COLONNES.map((j) => NOM_JALON[j]),
         ...ETAPES_VIE.map((e) => `${e.label} (h)`),
@@ -147,7 +153,7 @@ export async function GET(request: Request) {
       L.push(
         ligne(
           d.reference,
-          d.palier ?? "",
+          d.nbPages === null ? "" : String(d.nbPages),
           d.paye ? "oui" : "non",
           ...JALONS_COLONNES.map((j) => date(d.jalons[j])),
           ...ETAPES_VIE.map((e) => heures(dureeEtape(d.jalons, e.de, e.vers))),

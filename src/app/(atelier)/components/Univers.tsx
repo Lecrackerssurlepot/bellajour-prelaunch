@@ -20,7 +20,8 @@
    ════════════════════════════════════════════════════════════ */
 
 import { useEffect, useRef } from 'react'
-import { CTA_HREF, CTA_MAGAZINE_LABEL } from '../content'
+/* Le prix d'appel vient de content.ts, qui le dérive de la grille. */
+import { CTA_HREF, CTA_MAGAZINE_LABEL, CTA_NOTE_PRICE } from '../content'
 import './univers.css'
 import Link from 'next/link'
 
@@ -733,7 +734,7 @@ export default function Univers() {
               <span className="mot">{CTA_MAGAZINE_LABEL}</span>
               <span className="rond" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12h13"/><path d="M11.5 6 17.5 12l-6 6"/></svg></span>
             </Link>
-            <p className="mention sl7-note" data-t="2200">Premier aperçu gratuit · Votre magazine sur-mesure dès <b>30 €</b>.</p>
+            <p className="mention sl7-note" data-t="2200">Premier aperçu gratuit · Votre magazine sur-mesure dès <b>{CTA_NOTE_PRICE}</b>.</p>
           </div>
         </section>
 

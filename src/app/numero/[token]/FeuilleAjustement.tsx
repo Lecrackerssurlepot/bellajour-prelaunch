@@ -167,8 +167,8 @@ export default function FeuilleAjustement({
               ))}
             </div>
 
-            {/* Le prix suit le nombre de pages (paliers, lib/atelier/prix.ts) :
-                demander plus court ou plus long peut changer de palier. On le
+            {/* Le prix suit le nombre de pages (grille par pages, lib/atelier/grille.ts) :
+                demander plus court ou plus long change le montant. On le
                 DIT ici plutôt que de laisser la cliente le découvrir sur la
                 nouvelle version — une surprise sur un prix coûte plus cher
                 qu'une phrase. La promesse « rien n'est dû tant que vous

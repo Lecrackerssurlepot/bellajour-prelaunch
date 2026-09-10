@@ -57,20 +57,33 @@ import {
 import { lireSignal, suitePour, typeEvenement } from "@/lib/atelier/rebond";
 import {
   totalPour,
-  centimesPour,
+  centimesPourPages,
   centimesDuDossier,
   eurosDuDossier,
   formaterCentimes,
   formaterEuros,
-  eurosPour,
-  palierPourPages,
+  palierHerite,
   PAYS_LIVRAISON,
   QUANTITE_MAX,
   REIMPRESSION_CENTIMES,
   centimesReimpression,
   reimpressionOuverte,
-  type PalierCle,
 } from "@/lib/atelier/prix";
+import {
+  GRILLE,
+  BANDES_PHOTOS,
+  PAGES_AUTORISEES,
+  eurosPourPages,
+  reliurePour,
+  EUROS_MAX,
+  EUROS_MIN,
+  PAGES_AGRAFE,
+  PAGES_MAX,
+  PAGES_MIN,
+  PAS_PAGES,
+  RELIURE_LIBELLE,
+} from "@/lib/atelier/grille";
+import { palierPour as bandePour } from "@/app/(atelier)/composer/depot/paliers";
 import { peutRecommander } from "@/lib/atelier/reimpression";
 import {
   cheminRetour,
@@ -128,6 +141,8 @@ import {
   compterEntonnoir,
   reactiviteConversion,
   composerConstats,
+  repartirParPages,
+  libelleParPages,
   ETAPES_VIE,
   ENTONNOIR,
   type EvenementMesure,
@@ -191,11 +206,37 @@ const VISUELS = { apercu_c1: "k/c1.jpg", apercu_c4: "k/c4.jpg", apercu_double: "
 
 titre("— le prix vient de la pagination, jamais du navigateur —");
 const p34 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: "34", pays_livraison: "FR", ...VISUELS });
-ok("34 pages -> p40 / 40 EUR", p34.ok && p34.resume.palier === "p40" && p34.resume.euros === 40);
+ok("34 pages -> 37 EUR, bucket herite p40, dos carre",
+   p34.ok && p34.resume.euros === 37 && p34.resume.palier === "p40"
+   && p34.resume.reliure === "dos_carre");
 const p24 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 24, pays_livraison: "FR", ...VISUELS });
-ok("24 pages -> p30 / 30 EUR", p24.ok && p24.resume.euros === 30);
+ok("24 pages -> 27 EUR", p24.ok && p24.resume.euros === 27);
 const p44 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 44, pays_livraison: "FR", ...VISUELS });
-ok("44 pages -> p45 / 45 EUR", p44.ok && p44.resume.euros === 45);
+ok("44 pages -> 45 EUR", p44.ok && p44.resume.euros === 45);
+const p20 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 20, pays_livraison: "FR", ...VISUELS });
+ok("20 pages -> 25 EUR et AGRAFE (la seule pagination agrafee)",
+   p20.ok && p20.resume.euros === 25 && p20.resume.reliure === "agrafe");
+const p60 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 60, pays_livraison: "FR", ...VISUELS });
+ok("60 pages est ACCEPTE : la grille monte jusque-la (59 EUR)",
+   p60.ok && p60.resume.euros === 59 && p60.patch.prix_centimes === 5900);
+
+/* Les trois refus qui protegent la caisse. 22 est le trou volontaire de la
+   grille (l'agrafe s'arrete a 20, le dos carre commence a 24), 33 est un
+   impair, 62 est au-dela de la derniere ligne. Aucun ne doit pouvoir etre
+   publie : une couverture sans prix, c'est M3 qui part sans montant. */
+for (const [pages, pourquoi] of [[22, "le trou de la grille"], [33, "un impair"], [62, "au-dela du maximum"]] as Array<[number, string]>) {
+  const r = preparerTransition("publier_apercu", "photos_recues", { nb_pages: pages, pays_livraison: "FR", ...VISUELS });
+  ok(`${pages} pages (${pourquoi}) : REFUSE, sur le champ nb_pages`,
+     !r.ok && r.erreurs.some((e) => e.champ === "nb_pages"));
+}
+ok("le message de refus DERIVE de la grille (bornes, pas, exclusion)",
+   (() => {
+     const r = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 22, pays_livraison: "FR", ...VISUELS });
+     if (r.ok) return false;
+     const m = r.erreurs.find((e) => e.champ === "nb_pages")?.message ?? "";
+     return m.includes(String(PAGES_MIN)) && m.includes(String(PAGES_MAX))
+       && m.includes(String(PAS_PAGES)) && m.includes(String(PAGES_AGRAFE + PAS_PAGES));
+   })());
 
 /* ── LE PRIX SE FIGE SUR LE DOSSIER (10/09/2026) ──────────────────────────
    Publier l'apercu, c'est montrer un montant a une cliente. A partir de cet
@@ -204,10 +245,12 @@ ok("44 pages -> p45 / 45 EUR", p44.ok && p44.resume.euros === 45);
    chose que ce qui sera ecrit. Si ce test tombe, une grille qui change
    reecrira le prix de dossiers deja chiffres. */
 const pGel = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, pays_livraison: "FR", ...VISUELS });
-ok("publier : le prix est GELE dans le patch (34 pages -> 4000 centimes)",
-   pGel.ok && pGel.patch.prix_centimes === 4000);
+ok("publier : le prix est GELE dans le patch (34 pages -> 3700 centimes)",
+   pGel.ok && pGel.patch.prix_centimes === 3700);
 ok("publier : l'ecran de verification annonce le MEME montant que le patch",
-   pGel.ok && pGel.resume.prixCentimes === 4000);
+   pGel.ok && pGel.resume.prixCentimes === 3700);
+ok("publier : le bucket herite part quand meme en base (colonne palier)",
+   pGel.ok && pGel.patch.palier === "p40");
 const pGelCorrige = preparerTransition("corriger_apercu", "apercu_pret", { nb_pages: 44, pays_livraison: "FR", ...VISUELS });
 ok("corriger : republier regele le prix (44 pages -> 4500 centimes)",
    pGelCorrige.ok && pGelCorrige.patch.prix_centimes === 4500
@@ -243,8 +286,8 @@ ok("corriger : le pays se regele lui aussi",
    && pCorrigePays.resume.pays === "LU");
 
 titre("— ce qui doit etre REFUSE —");
-const p52 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 52, pays_livraison: "FR", ...VISUELS });
-ok("52 pages refusees (hors grille)", !p52.ok && p52.erreurs[0].champ === "nb_pages");
+const p52 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 51, pays_livraison: "FR", ...VISUELS });
+ok("51 pages refusees (impair, hors grille)", !p52.ok && p52.erreurs[0].champ === "nb_pages");
 ok("12 pages refusees", !preparerTransition("publier_apercu", "photos_recues", { nb_pages: 12, pays_livraison: "FR", ...VISUELS }).ok);
 const sansImg = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, pays_livraison: "FR", apercu_c1: "k/c1.jpg" });
 ok("2 visuels manquants nommes un par un", !sansImg.ok && sansImg.erreurs.length === 2);
@@ -683,8 +726,7 @@ const MATIERE: MatiereBrief = {
   libelleEtat: "Photos recues",
   nbPhotos: 41,
   nbPages: 34,
-  palier: "p40",
-  euros: 40,
+  euros: 37,
   createdAt: "2026-08-12T09:00:00.000Z",
   occasion: "Un anniversaire",
   histoire: "On a marche des kilometres dans Triana.",
@@ -704,6 +746,12 @@ ok("le carnet est chronologique, la plus ancienne d'abord",
 ok("le brief porte le lien Canva de travail", BRIEF.includes("canva.com/design/interne"));
 ok("aucun tiret cadratin (consigne de la maison)", !/[\u2013\u2014]/.test(BRIEF));
 ok("sans mots de couverture, le bloc n'existe pas", !BRIEF.includes("LES MOTS DE COUVERTURE"));
+/* La ligne « Pages » nomme la RELIURE, plus un code de palier (10/09/2026) :
+   agrafe ou dos carre change la facon de monter la couverture, « p40 » ne
+   disait rien a personne. */
+ok("le brief nomme la reliure, pas un code de palier",
+   BRIEF.includes(RELIURE_LIBELLE.dos_carre) && !BRIEF.includes("p40"));
+ok("le brief porte le prix a cote de la pagination", BRIEF.includes("37 "));
 
 /* Les mots de couverture (03/09) : pr\u00e9sents, ils forment leur bloc. */
 const BRIEF_COUVERTURE = composerBrief(
@@ -725,9 +773,23 @@ titre("— la reference produit se deduit de la pagination —");
 ok("20 pages -> agrafe", produitPour(20)?.produit === "magazine_sas_a4_p_fc");
 ok("24 pages -> dos carre", produitPour(24)?.produit === "magazine_pb_a4_p_fc");
 ok("50 pages -> dos carre", produitPour(50)?.produit === "magazine_pb_a4_p_fc");
+ok("60 pages -> dos carre (la grille monte jusque-la)",
+   produitPour(60)?.produit === "magazine_pb_a4_p_fc");
 ok("18 pages -> aucun produit", produitPour(18) === null);
-ok("52 pages -> aucun produit", produitPour(52) === null);
+/* 22 et 61 ne sont PAS dans la grille : depuis le 10/09/2026 ils ne
+   designent plus aucun produit, la ou 22 tombait avant en dos carre par
+   repli arbitraire. Une pagination qu'on ne sait pas facturer ne part pas a
+   l'impression. */
+ok("22 pages -> aucun produit (le trou de la grille, plus de repli)", produitPour(22) === null);
+ok("61 pages (impair) -> aucun produit", produitPour(61) === null);
+ok("62 pages -> aucun produit", produitPour(62) === null);
 ok("pagination absente -> aucun produit", produitPour(null) === null);
+/* La reliure et la reference produit sortent de la MEME fonction : elles ne
+   peuvent pas diverger. Ce test-la est le lien entre les deux tables. */
+ok("produitPour SUIT reliurePour, pagination par pagination",
+   PAGES_AUTORISEES.every((n) =>
+     (reliurePour(n) === "agrafe") === (produitPour(n)?.produit === "magazine_sas_a4_p_fc")
+     && (reliurePour(n) === "dos_carre") === (produitPour(n)?.produit === "magazine_pb_a4_p_fc")));
 
 titre("— le telephone Cloudprinter passe en E.164 avec le pays (test 01/09) —");
 ok("national FR -> +33, zero de tete retire", telephoneE164("0680009071", "FR") === "+33680009071");
@@ -1311,31 +1373,35 @@ ok("rien a lire : UNE phrase qui le dit, pas une page vide",
    cRien.length === 1 && cRien[0].includes("Pas encore assez"));
 
 /* ══════════════════ MULTI-EXEMPLAIRES (T-073) : LE VERROU ══════════════════
-   Les paliers dégressifs ne sont PAS décidés (interdit nº5 : jamais inventer
-   une remise). La structure `totalPour` existe, verrouillée à 1 exemplaire :
-   à 1, elle DOIT rendre la grille actuelle au centime, et tout le reste DOIT
-   être refusé. Lever le verrou = QUANTITE_MAX dans prix.ts, quand Mathias
-   donne les paliers — et ces tests changeront AVEC lui, pas avant. */
+   Les paliers degressifs ne sont PAS decides (interdit nº5 : jamais inventer
+   une remise). La structure `totalPour` existe, verrouillee a 1 exemplaire :
+   a 1, elle DOIT rendre le prix unitaire au centime, et tout le reste DOIT
+   etre refuse. Lever le verrou = QUANTITE_MAX dans prix.ts, quand Mathias
+   donne les paliers — et ces tests changeront AVEC lui, pas avant.
+
+   Depuis le 10/09/2026 elle prend des CENTIMES et non un palier : l'appelant
+   a deja le prix gele du dossier sous la main, et le palier ne nomme plus un
+   montant. La boucle balaie TOUTE la grille, ligne par ligne. */
 
 titre("— multi-exemplaires (T-073) : verrouille a 1 —");
 ok("QUANTITE_MAX vaut 1 (verrou T-073, leve par Mathias seulement)", QUANTITE_MAX === 1);
-const GRILLE_ACTUELLE: Array<[PalierCle, number]> = [
-  ["p30", 3000],
-  ["p40", 4000],
-  ["p45", 4500],
-];
-for (const [palier, attendu] of GRILLE_ACTUELLE) {
+for (const g of GRILLE) {
   ok(
-    `totalPour(${palier}, 1) = ${attendu} centimes, la grille au centime`,
-    totalPour(palier, 1) === attendu && totalPour(palier, 1) === centimesPour(palier),
+    `${g.pages} pages : totalPour(x1) = ${g.euros * 100} centimes, la grille au centime`,
+    totalPour(centimesPourPages(g.pages), 1) === g.euros * 100,
+  );
+  ok(
+    `${g.pages} pages : 2 exemplaires REFUSES (aucune remise inventee)`,
+    totalPour(centimesPourPages(g.pages), 2) === null,
   );
 }
-ok("2 exemplaires : REFUSE tant que le verrou tient (pas de remise inventee)",
-   totalPour("p30", 2) === null);
-ok("quantite nulle ou negative : refusee", totalPour("p40", 0) === null && totalPour("p40", -1) === null);
-ok("quantite non entiere : refusee", totalPour("p45", 1.5) === null);
-ok("palier absent : null, on ne facture pas sans chiffrage",
+ok("quantite nulle ou negative : refusee",
+   totalPour(3700, 0) === null && totalPour(3700, -1) === null);
+ok("quantite non entiere : refusee", totalPour(3700, 1.5) === null);
+ok("prix absent : null, on ne facture pas sans chiffrage",
    totalPour(null, 1) === null && totalPour(undefined, 1) === null);
+ok("un prix qui n'en est pas un (0, negatif, demi-centime) est refuse",
+   totalPour(0, 1) === null && totalPour(-100, 1) === null && totalPour(12.5, 1) === null);
 
 /* ══════════════ LE PRIX GELE SUR LE DOSSIER (10/09/2026) ══════════════
    Decision de Mathias : le prix annonce est le prix debite, sur CE dossier,
@@ -1351,27 +1417,34 @@ ok("palier absent : null, on ne facture pas sans chiffrage",
        d'apercu, donc d'un UPDATE a la main ou d'une donnee abimee. */
 
 titre("— le prix GELE sur le dossier : le gel gagne, la grille rattrape —");
-ok("le gel gagne sur la grille (3700 alors que p40 dirait 4000)",
-   centimesDuDossier({ prix_centimes: 3700, palier: "p40" }) === 3700);
-ok("pas de gel : la grille rattrape, au centime (p40 -> 4000)",
-   centimesDuDossier({ prix_centimes: null, palier: "p40" }) === 4000);
+/* ⚠️ LE REPLI PASSE PAR `nb_pages` DEPUIS LE 10/09/2026, plus par le palier :
+   le palier ne nomme plus un montant, s'en servir facturerait 30 EUR un
+   dossier de 28 pages qui en vaut 31. */
+ok("le gel gagne sur la grille (3000 alors que 34 pages diraient 3700)",
+   centimesDuDossier({ prix_centimes: 3000, nb_pages: 34 }) === 3000);
+ok("pas de gel : la grille rattrape, au centime (34 pages -> 3700)",
+   centimesDuDossier({ prix_centimes: null, nb_pages: 34 }) === 3700);
 ok("colonne absente (repli 42703) : la grille rattrape aussi",
-   centimesDuDossier({ palier: "p40" }) === 4000);
+   centimesDuDossier({ nb_pages: 34 }) === 3700);
 ok("zero n'est pas un prix : ignore, on retombe sur la grille",
-   centimesDuDossier({ prix_centimes: 0, palier: "p40" }) === 4000);
+   centimesDuDossier({ prix_centimes: 0, nb_pages: 34 }) === 3700);
 ok("un negatif n'est pas un prix : ignore",
-   centimesDuDossier({ prix_centimes: -5, palier: "p40" }) === 4000);
+   centimesDuDossier({ prix_centimes: -5, nb_pages: 34 }) === 3700);
 ok("un demi-centime n'existe pas chez Stripe : ignore",
-   centimesDuDossier({ prix_centimes: 12.5, palier: "p40" }) === 4000);
-ok("ni gel ni palier : null, on ne facture pas sans chiffrage",
-   centimesDuDossier({ prix_centimes: null, palier: null }) === null
+   centimesDuDossier({ prix_centimes: 12.5, nb_pages: 34 }) === 3700);
+ok("ni gel ni pagination : null, on ne facture pas sans chiffrage",
+   centimesDuDossier({ prix_centimes: null, nb_pages: null }) === null
    && centimesDuDossier({}) === null);
-ok("le gel se lit meme sans palier (un dossier chiffre reste chiffre)",
-   centimesDuDossier({ prix_centimes: 3700, palier: null }) === 3700);
+ok("une pagination hors grille ne rattrape RIEN (22 pages -> null)",
+   centimesDuDossier({ nb_pages: 22 }) === null);
+ok("le palier seul ne facture plus rien : il n'est plus un prix",
+   centimesDuDossier({ palier: "p40" }) === null);
+ok("le gel se lit meme sans pagination (un dossier chiffre reste chiffre)",
+   centimesDuDossier({ prix_centimes: 3700, nb_pages: null }) === 3700);
 ok("eurosDuDossier = centimes / 100, sans arrondi maison",
    eurosDuDossier({ prix_centimes: 3700 }) === 37
    && eurosDuDossier({ prix_centimes: 490 }) === 4.9
-   && eurosDuDossier({ palier: "p45" }) === 45
+   && eurosDuDossier({ nb_pages: 44 }) === 45
    && eurosDuDossier({}) === null);
 
 titre("— formater un montant : des decimales SEULEMENT si elles disent quelque chose —");
@@ -1446,25 +1519,28 @@ ok("REIMPRESSION_CENTIMES est null : Mathias n'a pas tranche le prix",
    REIMPRESSION_CENTIMES === null);
 ok("reimpressionOuverte() est faux : rien ne s'affiche cote cliente",
    reimpressionOuverte() === false);
-for (const palier of ["p30", "p40", "p45"] as PalierCle[]) {
-  ok(`centimesReimpression(${palier}) = null : aucun prix de repli invente`,
-     centimesReimpression(palier) === null);
+for (const g of GRILLE) {
+  ok(`centimesReimpression(${g.pages} pages) = null : aucun prix de repli invente`,
+     centimesReimpression(g.pages) === null);
 }
-ok("un numero LIVRE avec palier : refuse pour 'prix_non_tranche', pas autre chose",
-   JSON.stringify(peutRecommander({ etat: "livree", palier: "p40" }))
+ok("un numero LIVRE avec pagination : refuse pour 'prix_non_tranche', pas autre chose",
+   JSON.stringify(peutRecommander({ etat: "livree", nb_pages: 34 }))
      === JSON.stringify({ possible: false, refus: "prix_non_tranche" }));
 ok("un numero EN FABRICATION s'entend dire qu'il n'est pas livre, pas que le prix manque",
-   JSON.stringify(peutRecommander({ etat: "maquette_prete", palier: "p40" }))
+   JSON.stringify(peutRecommander({ etat: "maquette_prete", nb_pages: 34 }))
      === JSON.stringify({ possible: false, refus: "pas_livree" }));
-ok("un numero livre SANS palier : 'palier_inconnu' — il n'a jamais ete facture",
-   JSON.stringify(peutRecommander({ etat: "livree", palier: null }))
-     === JSON.stringify({ possible: false, refus: "palier_inconnu" }));
-ok("l'ordre des controles tient : pas livre ET sans palier -> 'pas_livree'",
-   JSON.stringify(peutRecommander({ etat: "payee", palier: null }))
+ok("un numero livre SANS pagination : 'prix_inconnu' — il n'a jamais ete chiffre",
+   JSON.stringify(peutRecommander({ etat: "livree", nb_pages: null }))
+     === JSON.stringify({ possible: false, refus: "prix_inconnu" }));
+ok("un numero livre a une pagination HORS GRILLE : 'prix_inconnu' aussi",
+   JSON.stringify(peutRecommander({ etat: "livree", nb_pages: 22 }))
+     === JSON.stringify({ possible: false, refus: "prix_inconnu" }));
+ok("l'ordre des controles tient : pas livre ET sans pagination -> 'pas_livree'",
+   JSON.stringify(peutRecommander({ etat: "payee", nb_pages: null }))
      === JSON.stringify({ possible: false, refus: "pas_livree" }));
 ok("AUCUN etat ne rend possible:true tant que le verrou tient",
    ["brouillon", "apercu_pret", "payee", "maquette_prete", "expediee", "livree"]
-     .every((e) => peutRecommander({ etat: e, palier: "p45" }).possible === false));
+     .every((e) => peutRecommander({ etat: e, nb_pages: 44 }).possible === false));
 
 /* ═══════════════ LE CODE FONDATRICE (T-021) : LE RECIT ═══════════════
    La route /api/admin/atelier/fondatrice-code écrit `code_fondatrice_cree`
@@ -1652,7 +1728,7 @@ for (const c of ["M3", "M3b"] as const) {
   const avec = parametresPour(c, dossierM3, { creditFondatriceEuros: 30 });
   ok(`${c} : « 30 » pour une fondatrice`, avec.CREDIT_FONDATRICE === "30");
   ok(`${c} : le prix affiche reste celui de la grille, jamais diminue`,
-     avec.PRIX === 40 && sans.PRIX === 40);
+     avec.PRIX === 37 && sans.PRIX === 37);
 }
 ok("M5 n'annonce AUCUN credit (elle a deja paye)",
    !("CREDIT_FONDATRICE" in parametresPour("M5", dossierM3, { creditFondatriceEuros: 30 })));
@@ -1672,8 +1748,10 @@ ok("M5 : la maquette rappelle le meme montant gele",
    parametresPour("M5", d({ etat: "validee", nb_pages: 34, palier: "p40", prix_centimes: 3700 })).PRIX === 37);
 ok("M10 : le dernier rappel avant fermeture ne reinvente pas le prix non plus",
    parametresPour("M10", d({ etat: "apercu_pret", nb_pages: 34, palier: "p40", prix_centimes: 3700 })).PRIX === 37);
-ok("sans gel, M3 annonce la grille comme avant le 10/09",
-   parametresPour("M3", d({ etat: "apercu_pret", nb_pages: 34, palier: "p40" })).PRIX === 40);
+ok("sans gel, M3 retombe sur la grille, DEPUIS LA PAGINATION (34 -> 37)",
+   parametresPour("M3", d({ etat: "apercu_pret", nb_pages: 34, palier: "p40" })).PRIX === 37);
+ok("sans gel NI pagination, M3 n'invente aucun prix (le palier ne facture plus)",
+   parametresPour("M3", d({ etat: "apercu_pret", nb_pages: null, palier: "p40" })).PRIX === "");
 
 /* ═══════════ LE TRI DU WEBHOOK PARTAGÉ (T-035, incident du 24/08) ═══════════
    /api/webhook sert DEUX produits. Le tri se fait sur les métadonnées, AVANT
@@ -1706,24 +1784,115 @@ ok("charge de la prevente (JAMAIS de metadonnees) : PAS l'atelier",
 ok("charge metadata null : PAS l'atelier, pas d'exception",
    !estChargeAtelier(chargeStripe(null)));
 
-/* ═════════ LA GRILLE FACE À L'ANNEXE DES CGV (T-035) ═════════
-   Annexe « Grille tarifaire — Offre Atelier » (src/app/legal/content/cgv.ts) :
-   20 à 28 pages -> 30 €, 30 à 38 -> 40 €, 40 à 50 -> 45 €. TTC, impression et
-   livraison comprises. Un écart entre prix.ts et cette annexe est un mensonge
-   opposable — c'est le test qui aurait attrapé T-006 tout seul. */
+/* ═════════════ LA GRILLE PAR PAGES (10/09/2026) : LA FORME ═════════════
+   Grille FINALE de Mathias : un prix TTC par nombre de pages exact, 20 puis
+   24 a 60 par pas de 2. Ces tests-la ne verifient pas seulement trois valeurs,
+   ils verifient la FORME de la table — c'est ce qui fera echouer la
+   verification le jour ou quelqu'un ajoutera 22, un impair, ou un prix qui
+   descend. Les montants eux-memes viennent de Mathias : les changer ici sans
+   lui, c'est inventer un prix (interdit nº5).
 
-titre("— la grille de prix face a l'annexe des CGV —");
-ok("p30 = 30 EUR (annexe : 20 a 28 pages)", eurosPour("p30") === 30);
-ok("p40 = 40 EUR (annexe : 30 a 38 pages)", eurosPour("p40") === 40);
-ok("p45 = 45 EUR (annexe : 40 a 50 pages)", eurosPour("p45") === 45);
-ok("les bornes de palier suivent l'annexe (pages paires)",
-   palierPourPages(20) === "p30" && palierPourPages(28) === "p30"
-   && palierPourPages(30) === "p40" && palierPourPages(38) === "p40"
-   && palierPourPages(40) === "p45" && palierPourPages(50) === "p45");
-ok("hors grille : aucun palier, donc aucun prix invente",
-   palierPourPages(18) === null && palierPourPages(52) === null);
-ok("palier absent : null, on ne facture pas sans chiffrage",
-   eurosPour(null) === null && eurosPour(undefined) === null);
+   ⚠️ CE QUE CE BLOC NE VERIFIE PLUS, ET QUI EST UN VRAI ECART.
+   Il comparait la grille a l'annexe « Grille tarifaire — Offre Atelier » des
+   CGV (src/app/legal/content/cgv.ts), qui dit toujours 30/40/45 EUR pour
+   20-28 / 30-38 / 40-50 pages. L'annexe n'a PAS suivi la grille du 10/09 :
+   le texte legal appartient a Mathias (interdit nº2) et ne se reecrit pas
+   sans son accord. L'ecart est donc REEL et connu, pas oublie. */
+
+titre("— la grille par pages : la forme de la table —");
+ok("vingt lignes : 20, puis 24 a 60 par pas de 2", GRILLE.length === 20);
+ok("les paginations sont strictement croissantes",
+   GRILLE.every((g, i) => i === 0 || g.pages > GRILLE[i - 1].pages));
+ok("toutes les paginations sont PAIRES (un magazine se compose par feuilles)",
+   GRILLE.every((g) => g.pages % 2 === 0));
+ok("le pas est de 2 partout, SAUF le saut 20 -> 24 (22 n'existe pas)",
+   GRILLE.every((g, i) => {
+     if (i === 0) return true;
+     const ecart = g.pages - GRILLE[i - 1].pages;
+     return i === 1 ? ecart === 2 * PAS_PAGES : ecart === PAS_PAGES;
+   }));
+ok("22 pages n'est PAS dans la grille (le trou est volontaire)",
+   !PAGES_AUTORISEES.includes(PAGES_AGRAFE + PAS_PAGES));
+ok("les prix sont strictement croissants (plus epais n'est jamais moins cher)",
+   GRILLE.every((g, i) => i === 0 || g.euros > GRILLE[i - 1].euros));
+ok("PAGES_AUTORISEES derive de GRILLE, ligne pour ligne",
+   PAGES_AUTORISEES.length === GRILLE.length
+   && PAGES_AUTORISEES.every((n, i) => n === GRILLE[i].pages));
+
+titre("— la grille par pages : les valeurs de Mathias —");
+ok("20 pages = 25 EUR (le prix d'appel)", eurosPourPages(20) === 25);
+ok("34 pages = 37 EUR (le milieu de la table)", eurosPourPages(34) === 37);
+ok("60 pages = 59 EUR (le haut de la table)", eurosPourPages(60) === 59);
+ok("22 pages : null, le trou volontaire ne s'approxime pas", eurosPourPages(22) === null);
+ok("21 pages (impair) : null", eurosPourPages(21) === null);
+ok("62 pages (au-dela) : null", eurosPourPages(62) === null);
+ok("pagination absente : null, jamais un prix par defaut",
+   eurosPourPages(null) === null && eurosPourPages(undefined) === null);
+ok("une pagination non entiere ne passe pas", eurosPourPages(34.5) === null);
+ok("les bornes sont DERIVEES : 20 / 60 pages, 25 / 59 EUR",
+   PAGES_MIN === 20 && PAGES_MAX === 60 && EUROS_MIN === 25 && EUROS_MAX === 59);
+ok("chaque pagination autorisee a bien un prix",
+   PAGES_AUTORISEES.every((n) => typeof eurosPourPages(n) === "number"));
+
+titre("— la reliure se deduit de la pagination, jamais d'un choix a l'ecran —");
+ok("20 pages : agrafe, et c'est la SEULE", reliurePour(20) === "agrafe");
+ok("PAGES_AGRAFE derive de la premiere ligne", PAGES_AGRAFE === 20);
+ok("24, 50 et 60 pages : dos carre",
+   reliurePour(24) === "dos_carre" && reliurePour(50) === "dos_carre"
+   && reliurePour(60) === "dos_carre");
+ok("22 et 61 : aucune reliure (hors grille, on ne devine pas)",
+   reliurePour(22) === null && reliurePour(61) === null);
+ok("pagination absente : aucune reliure", reliurePour(null) === null);
+ok("une seule pagination agrafee dans toute la grille",
+   PAGES_AUTORISEES.filter((n) => reliurePour(n) === "agrafe").length === 1);
+ok("les deux libelles se lisent en francais",
+   RELIURE_LIBELLE.agrafe === "agrafe".replace("agrafe", "agraf\u00e9")
+   && RELIURE_LIBELLE.dos_carre === "dos carr\u00e9 coll\u00e9");
+
+titre("— le palier HERITE : un bucket de metriques, plus un prix —");
+/* La colonne `numeros.palier` (enum atelier_palier) continue d'etre ecrite
+   pour les metriques et les anciennes lignes du journal. Elle ne decide plus
+   d'aucun montant : c'est `centimesDuDossier` qui le prouve plus haut. */
+ok("20 et 28 pages -> p30", palierHerite(20) === "p30" && palierHerite(28) === "p30");
+ok("30 et 38 pages -> p40", palierHerite(30) === "p40" && palierHerite(38) === "p40");
+ok("40 et 60 pages -> p45", palierHerite(40) === "p45" && palierHerite(60) === "p45");
+ok("22 pages : aucun bucket, comme aucun prix", palierHerite(22) === null);
+ok("pagination absente : aucun bucket",
+   palierHerite(null) === null && palierHerite(undefined) === null);
+ok("chaque pagination de la grille a un bucket",
+   PAGES_AUTORISEES.every((n) => palierHerite(n) !== null));
+
+titre("— les bandes de photos de l'ecran 5 : un ordre de grandeur, pas un prix —");
+ok("les bornes de chaque bande SONT des paginations de la grille",
+   BANDES_PHOTOS.every((b) =>
+     PAGES_AUTORISEES.includes(b.pagesMin) && PAGES_AUTORISEES.includes(b.pagesMax)));
+ok("les bandes de photos se suivent sans trou ni recouvrement",
+   BANDES_PHOTOS.every((b, i) => i === 0 || b.photosMin === BANDES_PHOTOS[i - 1].photosMax + 1));
+ok("la derniere bande monte jusqu'au maximum de la grille",
+   BANDES_PHOTOS[BANDES_PHOTOS.length - 1].pagesMax === PAGES_MAX);
+/* La phrase de l'ecran 5, telle qu'elle s'affiche : une FOURCHETTE de prix,
+   plus « autour de 30 EUR ». L'espace avant l'euro est INSECABLE. */
+ok("45 photos -> « de 25 a 31 EUR » (20 a 28 pages)",
+   bandePour(45)?.autour === "de 25 \u00e0 31\u00a0\u20ac");
+ok("90 photos -> « 40 a 60 pages »", bandePour(90)?.pages === "40 \u00e0 60 pages");
+ok("sous le seuil de faisabilite, aucune bande", bandePour(39) === null);
+ok("au-dela du plafond, aucune bande", bandePour(101) === null);
+
+titre("— la repartition par nombre de pages (metriques + export CSV) —");
+/* Remplace la repartition par palier : « 4 x p40 » ne nommait plus trois prix.
+   Une pagination absente n'est PAS comptee — un dossier paye sans pagination
+   est une anomalie, pas un seau. */
+ok("comptee, triee, les absentes ecartees",
+   JSON.stringify(repartirParPages([34, 40, 34, null, 34, undefined, 20]))
+     === JSON.stringify([{ pages: 20, n: 1 }, { pages: 34, n: 3 }, { pages: 40, n: 1 }]));
+ok("rien a repartir -> tableau vide, jamais un seau invente",
+   repartirParPages([]).length === 0 && repartirParPages([null, undefined]).length === 0);
+ok("le libelle de l'ecran : « 3 x 34 p. »",
+   libelleParPages([{ pages: 34, n: 3 }, { pages: 40, n: 1 }])
+     === "3 \u00d7 34 p. \u00b7 1 \u00d7 40 p.");
+ok("le libelle du CSV reste en ASCII",
+   libelleParPages([{ pages: 34, n: 3 }, { pages: 40, n: 1 }], "x", " / ")
+     === "3 x 34 p. / 1 x 40 p.");
 
 titre("— la zone de livraison (CGV 4bis.6) —");
 /* Stripe EXIGE une liste explicite : cette constante EST le menu « Pays » du
@@ -2162,7 +2331,7 @@ titre("— T-076 : les parametres de M10 —");
   ok("couverture prete : l'encart de vente s'allume",
      pM10b.COUVERTURE_PRETE === "oui");
   ok("... et il porte la pagination et le prix, comme M3b",
-     pM10b.NB_PAGES === 34 && pM10b.PRIX === 40);
+     pM10b.NB_PAGES === 34 && pM10b.PRIX === 37);
   ok("... et la date de cloture suit LE DEPOT, pas la creation du dossier",
      pM10b.DATE_CLOTURE === formaterJour(new Date(Date.parse(ilYAj(120)) + 90 * 86_400_000)));
   ok("un apercu sans palier n'allume pas l'encart (jamais de prix vide affiche)",

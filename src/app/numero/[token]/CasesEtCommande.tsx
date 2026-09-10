@@ -124,7 +124,7 @@ export default function CasesEtCommande({
 
           Ce qui était là avant : un encart de verre dépoli portant
           « IMPRESSION ET FAÇONNAGE COMPRIS » en capitales de 11 px, puis
-          « 32 pages · 40 € » où le nombre de pages et le montant avaient
+          « 32 pages · 35 € » où le nombre de pages et le montant avaient
           EXACTEMENT le même corps, et un bouton qui disait « Commander »
           sans le prix.
 
@@ -189,7 +189,7 @@ export default function CasesEtCommande({
         disabled={occupe || !prixConnu || (confirmer && !accepte)}
       >
         {/* Le montant est SUR le bouton dès le premier temps. Il n'y était
-            qu'au second (« Payer 40 € ») : on demandait donc de cliquer
+            qu'au second (« Payer 35 € ») : on demandait donc de cliquer
             « Commander » en allant chercher le prix ailleurs sur l'écran. */}
         {occupe
           ? 'Un instant…'

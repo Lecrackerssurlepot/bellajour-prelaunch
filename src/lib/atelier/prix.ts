@@ -1,62 +1,63 @@
 /**
- * La grille de prix — SERVEUR UNIQUEMENT (invariant nº2).
+ * LE PRIX FERME — SERVEUR UNIQUEMENT (invariant nº2).
  *
- * « Le prix n'est jamais saisi ni transmis par le client » (PRD §8). Ce
- * fichier est la table en dur, trois entrées, dont parlera le lot 6 : le
- * `price_id` Stripe viendra s'y greffer par variable d'environnement, et le
- * montant réellement débité viendra de Stripe, jamais du navigateur.
+ * « Le prix n'est jamais saisi ni transmis par le client » (PRD §8). Le
+ * navigateur n'envoie que le token ; c'est ce fichier, appelé côté serveur,
+ * qui dit ce qui sera débité.
+ *
+ * LES NOMBRES NE SONT PAS ICI. Ils vivent dans `./grille` — un prix TTC par
+ * NOMBRE DE PAGES exact, de 20 à 60 par pas de 2 (22 exclu), grille de
+ * Mathias du 10/09/2026. Ce fichier-ci garde le CALCUL serveur : centimes,
+ * quantité, gel sur le dossier, code fiscal. Changer un prix = changer une
+ * ligne de grille.ts, et tout suit.
  *
  * ⚠️ NE PAS CONFONDRE avec depot/paliers.ts, qui vit côté navigateur :
  *   — paliers.ts fait correspondre un NOMBRE DE PHOTOS à un ordre de grandeur
- *     (« autour de 40 € »), affiché à l'écran 5, sans engagement ;
+ *     (« de 25 à 31 € »), affiché à l'écran 5, sans engagement ;
  *   — ce fichier-ci fait correspondre le NOMBRE DE PAGES saisi par l'atelier
  *     au prix FERME de l'état 2. C'est le seul montant opposable.
- *
- * Les deux produisent le même vocabulaire p30/p40/p45 (l'enum `atelier_palier`
- * de la base) mais ne répondent pas à la même question, et ne tombent pas
- * forcément d'accord : 65 photos annoncent « autour de 40 € », l'atelier peut
- * en tirer 28 pages et facturer 30 €. C'est la couverture qui tranche.
- *
- * DEPUIS LE 07/09/2026, LES NOMBRES VIENNENT DE `grille.ts` — la source
- * unique, partagée avec l'affichage (content.ts, depot/paliers.ts, JSON-LD
- * de /magazine). Ce fichier-ci garde le CALCUL serveur (palier → centimes,
- * quantité, fiscal) ; il ne porte plus les chiffres. Changer la grille =
- * changer grille.ts, et tout suit.
+ * Les deux ne répondent pas à la même question et ne tombent pas forcément
+ * d'accord : 65 photos annoncent « de 33 à 41 € », l'atelier peut en tirer
+ * 28 pages et facturer 31 €. C'est la couverture qui tranche.
  */
 
-import { GRILLE as GRILLE_SOURCE, type PalierCle } from "./grille";
+import { eurosPourPages, type PalierCle } from "./grille";
 
 export type { PalierCle };
 
-type Entree = {
-  cle: PalierCle;
-  minPages: number;
-  maxPages: number;
-  /** TTC. Ce que le prix comprend exactement (livraison ou non) est en cours
-   *  d'arbitrage — voir docs/produit/PROPOSITION-CGV-LIVRAISON.md. */
-  euros: number;
-};
-
-const GRILLE: Entree[] = GRILLE_SOURCE.map((g) => ({
-  cle: g.cle,
-  minPages: g.minPages,
-  maxPages: g.maxPages,
-  euros: g.euros,
-}));
-
-/** Le palier que /admin appliquera au nombre de pages composées (lot 7). */
-export function palierPourPages(nbPages: number): PalierCle | null {
-  return GRILLE.find((e) => nbPages >= e.minPages && nbPages <= e.maxPages)?.cle ?? null;
+/**
+ * Le bucket HÉRITÉ, pour la colonne `numeros.palier` (enum `atelier_palier`).
+ *
+ * ⚠️ CE N'EST PLUS UN PRIX, ET RIEN NE DOIT PLUS EN DÉPENDRE. Depuis le
+ * 10/09/2026 le prix vient du nombre de pages exact ; les trois valeurs
+ * p30/p40/p45 ne nomment plus trois montants. On continue de les ÉCRIRE parce
+ * que la colonne existe, qu'elle est renseignée sur tous les dossiers d'août,
+ * et que les métriques et les vieilles lignes du journal la lisent : un dossier
+ * neuf sans palier se lirait comme un dossier jamais chiffré (cf. le refus
+ * `palier_inconnu`, historique, de reimpression.ts). Elle est donc entretenue,
+ * jamais interrogée pour facturer.
+ *
+ * Le découpage est celui de l'ancienne grille : moins de 30 pages, moins de
+ * 40, le reste. Hors grille, aucun bucket — un dossier qu'on ne sait pas
+ * facturer n'a pas de palier non plus.
+ */
+export function palierHerite(n: number | null | undefined): PalierCle | null {
+  if (eurosPourPages(n) === null) return null;
+  const pages = n as number;
+  if (pages < 30) return "p30";
+  if (pages < 40) return "p40";
+  return "p45";
 }
 
-export function eurosPour(palier: PalierCle | null | undefined): number | null {
-  if (!palier) return null;
-  return GRILLE.find((e) => e.cle === palier)?.euros ?? null;
-}
+/** @deprecated Nom d'avant le 10/09/2026 : il promettait un PRIX, il ne rend
+ *  plus qu'un bucket de métriques. Utiliser `palierHerite`. */
+export const palierPourPages = palierHerite;
 
-/** Stripe raisonne en centimes — utile au lot 6, jamais envoyé au navigateur. */
-export function centimesPour(palier: PalierCle | null | undefined): number | null {
-  const e = eurosPour(palier);
+/** Le prix TTC en CENTIMES pour cette pagination — Stripe raisonne en
+ *  centimes. `null` hors grille : on ne facture pas ce qu'on ne sait pas
+ *  chiffrer, et surtout on n'approche pas. */
+export function centimesPourPages(n: number | null | undefined): number | null {
+  const e = eurosPourPages(n);
   return e === null ? null : e * 100;
 }
 
@@ -97,11 +98,20 @@ export type DossierPrix = {
   palier?: PalierCle | null;
 };
 
-/** Le prix FERME du dossier, en CENTIMES : le gel d'abord, la grille ensuite. */
+/**
+ * Le prix FERME du dossier, en CENTIMES : le gel d'abord, la grille ensuite.
+ *
+ * ⚠️ LE REPLI SE FAIT SUR `nb_pages`, PLUS SUR `palier` (10/09/2026). Le
+ * palier ne nomme plus un montant : s'en servir ici facturerait 30 € un
+ * dossier de 28 pages qui en vaut 31. Conséquence à connaître : un dossier
+ * ancien SANS pagination et SANS gel ne rend plus rien — il n'en rendait déjà
+ * rien de fiable, et un dossier qu'on ne sait pas chiffrer doit se taire
+ * plutôt qu'inventer.
+ */
 export function centimesDuDossier(d: DossierPrix): number | null {
   const gele = d.prix_centimes;
   if (typeof gele === "number" && Number.isInteger(gele) && gele > 0) return gele;
-  return centimesPour(d.palier);
+  return centimesPourPages(d.nb_pages);
 }
 
 /** Le même prix en EUROS — ce que lisent les écrans et les templates Brevo. */
@@ -142,23 +152,30 @@ export const QUANTITE_MAX = 1;
 /**
  * Le total en CENTIMES pour `quantite` exemplaires d'un même numéro.
  *
+ * Elle prend le prix unitaire EN CENTIMES, plus un palier (10/09/2026) :
+ * l'appelant a déjà le prix gelé du dossier sous la main, et le palier ne
+ * nomme plus un montant. Passer `centimesDuDossier(numero)` est le bon geste ;
+ * `centimesPourPages(n)` quand on part d'une pagination nue.
+ *
  * Aujourd'hui : `quantite × prix unitaire`, SANS remise. Les paliers
  * dégressifs de T-073 se brancheront dans CETTE fonction et nulle part
  * ailleurs — pas dans le checkout, pas dans un écran.
  *
- * Refuse (null) plutôt que d'inventer : palier inconnu, quantité non
- * entière, hors de [1, QUANTITE_MAX]. Tant que le verrou tient, seul
- * `totalPour(palier, 1)` peut rendre un montant — exactement la grille.
+ * Refuse (null) plutôt que d'inventer : prix inconnu, quantité non entière,
+ * hors de [1, QUANTITE_MAX]. Tant que le verrou tient, seul
+ * `totalPour(prix, 1)` peut rendre un montant — exactement le prix unitaire.
  */
 export function totalPour(
-  palier: PalierCle | null | undefined,
+  centimesUnitaire: number | null | undefined,
   quantite: number
 ): number | null {
   if (!Number.isInteger(quantite) || quantite < 1 || quantite > QUANTITE_MAX) {
     return null;
   }
-  const centimes = centimesPour(palier);
-  return centimes === null ? null : centimes * quantite;
+  if (typeof centimesUnitaire !== "number" || !Number.isInteger(centimesUnitaire) || centimesUnitaire <= 0) {
+    return null;
+  }
+  return centimesUnitaire * quantite;
 }
 
 /* ────────────────────────── réimpression (T-105) ──────────────────────────
@@ -185,27 +202,28 @@ export function totalPour(
  * POUR LEVER LE VERROU, deux formes possibles, au choix de Mathias :
  *   — un montant FIXE, quel que soit le palier → poser le nombre de centimes ;
  *   — un POURCENTAGE du prix d'origine → remplacer le corps de la fonction par
- *     `Math.round(centimesPour(palier) * taux)`, et rien d'autre.
+ *     `Math.round(centimesPourPages(nbPages) * taux)`, et rien d'autre.
  * Dans les deux cas, un seul endroit change.
  */
 export const REIMPRESSION_CENTIMES: number | null = null;
 
 /**
- * Le prix d'une réimpression, en CENTIMES, pour un numéro de ce palier.
+ * Le prix d'une réimpression, en CENTIMES, pour un numéro de `nbPages` pages.
  *
  * Rend `null` — jamais un prix de repli — dans tous les cas où l'on ne sait
- * pas : verrou en place, palier absent, palier inconnu. Un appelant qui reçoit
- * `null` doit refuser la commande, pas retomber sur le prix d'origine : c'est
- * exactement le genre de repli silencieux qui ferait payer à une cliente un
- * montant que personne n'a décidé.
+ * pas : verrou en place, pagination absente, pagination hors grille. Un
+ * appelant qui reçoit `null` doit refuser la commande, pas retomber sur le
+ * prix d'origine : c'est exactement le genre de repli silencieux qui ferait
+ * payer à une cliente un montant que personne n'a décidé.
  */
 export function centimesReimpression(
-  palier: PalierCle | null | undefined
+  nbPages: number | null | undefined
 ): number | null {
   if (REIMPRESSION_CENTIMES === null) return null;
-  /* Le palier reste exigé même à prix fixe : il prouve que le numéro a bien
-     été facturé une fois, et il servira si le prix devient dégressif. */
-  if (centimesPour(palier) === null) return null;
+  /* La pagination reste exigée même à prix fixe : elle prouve que le numéro a
+     bien été composé et chiffré une fois, et elle servira le jour où le prix
+     de réimpression dépendra de l'épaisseur. */
+  if (centimesPourPages(nbPages) === null) return null;
   return REIMPRESSION_CENTIMES;
 }
 
@@ -215,7 +233,7 @@ export function reimpressionOuverte(): boolean {
   return REIMPRESSION_CENTIMES !== null;
 }
 
-/** « 40 € ». Espace insécable : un prix ne se coupe jamais en fin de ligne. */
+/** « 37 € ». Espace insécable : un prix ne se coupe jamais en fin de ligne. */
 export function formaterEuros(euros: number): string {
   return `${euros} €`;
 }

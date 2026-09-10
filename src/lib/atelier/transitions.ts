@@ -18,7 +18,19 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-import { palierPourPages, eurosPour, centimesPour, type PalierCle } from "./prix";
+import { palierHerite, centimesPourPages, type PalierCle } from "./prix";
+/* `grille.ts` est PUR et public : ce module reste importable partout. Les
+   bornes du message d'erreur en sont DÉRIVÉES — le jour où la grille change,
+   la phrase que lit l'atelier change avec elle, sans qu'on y pense. */
+import {
+  eurosPourPages,
+  reliurePour,
+  PAGES_AGRAFE,
+  PAGES_MAX,
+  PAGES_MIN,
+  PAS_PAGES,
+  type Reliure,
+} from "./grille";
 import { normaliserPays, type PaysLivraison } from "./pays";
 import { lireSuivi } from "./suivi";
 
@@ -267,6 +279,10 @@ export type Preparation =
         palier?: PalierCle;
         euros?: number;
         prixCentimes?: number;
+        /** La reliure DÉDUITE de la pagination (agrafé à 20 pages, dos carré
+            au-delà) : c'est le mot que l'écran de confirmation montre, à la
+            place d'un code de palier qui ne nomme plus rien. */
+        reliure?: Reliure;
         /** Le pays retenu, en code ISO. L'écran de confirmation l'écrit en
             toutes lettres : le devis de port du lot 6 en dépendra. */
         pays?: PaysLivraison;
@@ -383,29 +399,35 @@ export function preparerTransition(
     palier?: PalierCle;
     euros?: number;
     prixCentimes?: number;
+    reliure?: Reliure;
     pays?: PaysLivraison;
   } = {};
 
   if (cle === "publier_apercu" || cle === "corriger_apercu") {
     /* ── la pagination, donc le prix ──────────────────────────────────
        C'est le SEUL nombre saisi de tout le back-office, et il décide du
-       montant débité. Hors grille, on refuse : `palierPourPages` rendrait
-       null, la page d'état 2 afficherait une couverture sans prix et M3
-       partirait sans montant. Un UPDATE à la main passe ce mur sans le voir
-       — c'est exactement ce qu'on vient supprimer. */
+       montant débité. Depuis le 10/09/2026 la grille donne un prix par
+       nombre de pages EXACT : 20, puis 24 à 60 de deux en deux. Hors grille,
+       on refuse — `eurosPourPages` rend null, la page d'état 2 afficherait
+       une couverture sans prix et M3 partirait sans montant. Un UPDATE à la
+       main passe ce mur sans le voir : c'est exactement ce qu'on supprime. */
     const brut = typeof saisie.nb_pages === "number" ? saisie.nb_pages : Number(texte(saisie.nb_pages, 8));
     if (!Number.isInteger(brut) || brut <= 0) {
       erreurs.push({ champ: "nb_pages", message: "Indique le nombre de pages composées." });
     } else {
-      const palier = palierPourPages(brut);
-      if (!palier) {
+      const euros = eurosPourPages(brut);
+      if (euros === null) {
         erreurs.push({
           champ: "nb_pages",
-          message: `${brut} pages : hors grille (20 à 50 pages). Rien ne peut être facturé.`,
+          /* La phrase est DÉRIVÉE de la grille : elle ne peut pas vieillir. */
+          message: `${brut} pages : hors grille (${PAGES_MIN} à ${PAGES_MAX} pages, par pas de ${PAS_PAGES}, ${PAGES_AGRAFE + PAS_PAGES} exclu). Rien ne peut être facturé.`,
         });
       } else {
         patch.nb_pages = brut;
-        patch.palier = palier;
+        /* Le palier n'est plus un prix : c'est le bucket hérité de l'enum
+           `atelier_palier`, entretenu pour les métriques et les anciennes
+           lignes du journal. Rien ne le lit pour facturer. */
+        patch.palier = palierHerite(brut);
         /* ── LE PRIX SE FIGE ICI, ET NULLE PART AILLEURS (10/09/2026) ──
            C'est l'instant où une cliente voit un montant pour la première
            fois. À partir de maintenant, ce dossier vaut CE prix, quoi qu'il
@@ -415,11 +437,12 @@ export function preparerTransition(
            disparaître ce champ tant que la migration 20260910 n'est pas
            passée — le dossier retombe alors sur la grille, exactement comme
            avant le gel, et la route le CRIE dans les logs et au journal. */
-        patch.prix_centimes = centimesPour(palier);
+        patch.prix_centimes = centimesPourPages(brut);
         resume.nbPages = brut;
-        resume.palier = palier;
-        resume.euros = eurosPour(palier) ?? undefined;
-        resume.prixCentimes = centimesPour(palier) ?? undefined;
+        resume.palier = palierHerite(brut) ?? undefined;
+        resume.euros = euros;
+        resume.prixCentimes = centimesPourPages(brut) ?? undefined;
+        resume.reliure = reliurePour(brut) ?? undefined;
       }
     }
 

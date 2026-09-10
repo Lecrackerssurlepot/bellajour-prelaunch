@@ -3,7 +3,13 @@
    et nulle part ailleurs — c'est ce qui rend l'invariant mécanique plutôt
    que déclaratif. Aucun bouton secondaire n'existe sur la homepage. */
 
-import { GRILLE, EUROS_MIN } from '@/lib/atelier/grille'
+import {
+  BANDES_PHOTOS,
+  EUROS_MAX,
+  EUROS_MIN,
+  PAGES_MAX,
+  PAGES_MIN,
+} from '@/lib/atelier/grille'
 
 export const CTA_LABEL = 'Composer avec l’atelier'
 export const CTA_MAGAZINE_LABEL = 'Découvrir les magazines'
@@ -47,57 +53,45 @@ export const COMPOSER_HREF = '/composer'
 
 export const CONTACT_EMAIL = 'contact@bellajour.com'
 
-/* Les trois paliers — affichage d'orientation sur la page produit.
-   DÉRIVÉS de la source unique `@/lib/atelier/grille` (07/09/2026) : les
-   bornes et les montants ne s'écrivent plus ici, ils ne peuvent donc plus
-   contredire le prix ferme calculé par prix.ts (qui dérive de la même
-   grille). Le prix FERME n'existe qu'à l'état 2, calculé sur le nombre de
-   pages composé par l'atelier ; rien n'est dû avant la couverture.
+/* ─────────────────────────── LE PRIX, EN TROIS FORMES ───────────────────────
+   Tout est DÉRIVÉ de `@/lib/atelier/grille`, la source unique : un prix TTC
+   par nombre de pages, de 20 à 60. Rien ici ne recopie un montant, donc rien
+   ici ne peut contredire le prix ferme calculé par le serveur.
 
-   NOUVEL ORDRE D'AFFICHAGE (chantier barème par pages, 07/09) : les PAGES
-   en tête de carte — ce sont elles qui déterminent le prix —, puis le
-   prix, puis les photos en ligne secondaire (« ~40 à 59 photos », un
-   ordre de grandeur, d'où le tilde). L'espace insécable entre le montant
-   et € vient de la dérivation : un prix ne se coupe jamais en fin de
-   ligne. */
-export const PALIERS = GRILLE.map((g) => ({
-  pages: `${g.minPages} à ${g.maxPages} pages`,
-  prix: `${g.euros} €`,
-  photos: `~${g.photosMin} à ${g.photosMax} photos`,
-}))
+   ⚠️ LES TROIS ENCARTS « 20 à 29 pages / 30 € » ONT DISPARU (10/09/2026, lot 2).
+   Ils décrivaient les trois anciens paliers ; avec vingt prix il n'y a plus
+   trois formats à comparer, il y a une échelle. Le bloc JSX qui les rendait
+   est archivé dans `archive/pdp-trois-formats/`. Le prix se dit maintenant en
+   une ligne (PRIX_LIGNE) et en une phrase (PRIX_PHRASE). */
 
-/* « dès 30 € » — le prix d'appel est le MIN de la grille, jamais
-   recopié à la main. */
-export const CTA_NOTE_PRICE = `${EUROS_MIN} €`
+/* « dès 25 € » — le prix d'appel est le MIN de la grille, jamais recopié. */
+export const CTA_NOTE_PRICE = `${EUROS_MIN} €`
 
-/* LA LIGNE DE PRIX DU TÉLÉPHONE (08/09/2026).
-   Sur un écran de 375 px, les trois encarts de PALIERS font 104 px de large
-   chacun : pour tenir, leurs libellés étaient descendus à 11 et 12 px, et on
-   demandait un arbitrage — quel palier ? — à quelqu'un qui n'avait pas encore
-   lu ce qu'on vend. Le premier écran ne porte donc plus qu'UNE information de
-   prix ; les trois paliers, eux, ne disparaissent pas : ils passent SOUS le
-   bouton (par `order`, jamais par duplication de balisage) et y deviennent
-   trois encarts pleine largeur, enfin lisibles.
-   ⚠️ Les bornes sont DÉRIVÉES de la grille, jamais recopiées — et par
-   `Math.min`/`Math.max` sur toutes les tranches plutôt qu'en indexant la
-   première et la dernière : le jour où la grille change d'ordre, la ligne suit.
-   L'espace insécable avant € est celui de CTA_NOTE_PRICE : un prix ne se
-   coupe jamais en fin de ligne. */
-const PAGES_MIN = Math.min(...GRILLE.map((g) => g.minPages))
-const PAGES_MAX = Math.max(...GRILLE.map((g) => g.maxPages))
-const PHOTOS_MIN = Math.min(...GRILLE.map((g) => g.photosMin))
-const PHOTOS_MAX = Math.max(...GRILLE.map((g) => g.photosMax))
+/* LA LIGNE DE PRIX (08/09/2026, généralisée le 10/09).
+   Sur un écran de 375 px, les trois encarts faisaient 104 px de large chacun :
+   pour tenir, leurs libellés étaient descendus à 11 et 12 px, et on demandait
+   un arbitrage — quel palier ? — à quelqu'un qui n'avait pas encore lu ce
+   qu'on vend. Le premier écran ne porte donc qu'UNE information de prix.
+   ⚠️ Les bornes sont DÉRIVÉES de la grille, jamais recopiées, et par
+   `Math.min`/`Math.max` sur toute la table plutôt qu'en indexant la première
+   et la dernière ligne (`.at(-1)!` serait un non-null de confort qui casserait
+   en silence sur une grille vide). L'espace insécable avant € est celui de
+   CTA_NOTE_PRICE : un prix ne se coupe jamais en fin de ligne. */
+const PHOTOS_MIN = Math.min(...BANDES_PHOTOS.map((b) => b.photosMin))
+const PHOTOS_MAX = Math.max(...BANDES_PHOTOS.map((b) => b.photosMax))
 
 export const PRIX_LIGNE = {
-  des: `Dès ${EUROS_MIN} €`,
+  des: `Dès ${EUROS_MIN} €`,
   pages: `${PAGES_MIN} à ${PAGES_MAX} pages`,
   photos: `${PHOTOS_MIN} à ${PHOTOS_MAX} photos`,
 }
 
-/* Le petit titre qui coiffe les trois encarts une fois descendus sous le
-   bouton. Il n'est PAS affiché sur ordinateur : la grille y reste dans le
-   premier écran, à sa place, et n'a besoin de personne pour l'annoncer. */
-export const PRIX_TITRE = 'Les trois formats'
+/* LA PHRASE DE PRIX (10/09/2026). Ce que les trois encarts disaient en neuf
+   nombres, dit en une phrase et sans arbitrage à rendre : l'échelle complète,
+   ses deux bouts, et ce qui la fait varier. Le lot 6 y ajoutera la livraison,
+   qui sera facturée en sus sur devis — d'où une phrase et non une constante
+   collée dans un JSX. */
+export const PRIX_PHRASE = `De ${EUROS_MIN} € pour ${PAGES_MIN} pages à ${EUROS_MAX} € pour ${PAGES_MAX} pages.`
 
 /* Le titre de la bande parcours (lot 3, 07/09 — arbitrage T-086 rendu par
    Mathias : la bande gagne un vrai titre au lieu de flotter sans nom). */

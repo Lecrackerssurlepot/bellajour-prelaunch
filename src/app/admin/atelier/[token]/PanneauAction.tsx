@@ -9,6 +9,21 @@ import { cleCadrageCouverture } from "@/lib/atelier/transitions";
    descendre la grille de prix dans le bundle (invariant nº2), contrairement
    à `prix.ts` — c'est exactement pour ça que la liste y a déménagé. */
 import { PAYS_LIVRAISON, PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
+/* `grille.ts` est PUR ET PUBLIC : ces nombres sont ceux qu'affiche déjà la
+   page produit, ils ne révèlent rien. L'invariant nº2 n'est pas « la grille
+   reste secrète », c'est « le SERVEUR décide du montant débité » — et il le
+   décide toujours : le champ ci-dessous ne fait que refuser tôt une saisie
+   que le serveur refuserait de toute façon, avec les MÊMES bornes. */
+import {
+  eurosPourPages,
+  reliurePour,
+  PAGES_AGRAFE,
+  PAGES_MAX,
+  PAGES_MIN,
+  PAS_PAGES,
+  RELIURE_LIBELLE,
+  type Reliure,
+} from "@/lib/atelier/grille";
 
 /**
  * L'action du moment — le geste que ce lot remplace.
@@ -22,14 +37,16 @@ import { PAYS_LIVRAISON, PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
  * personne qui va recevoir le mail. Le second écrit.
  *
  * Le prix affiché n'est jamais calculé ici. Il vient du serveur, par le
- * chemin exact qui l'écrira (invariant nº2) : la grille de prix n'entre pas
- * dans le bundle du navigateur, même sur une page protégée.
+ * chemin exact qui l'écrira : c'est ÇA, l'invariant nº2. La grille, elle, est
+ * publique — la page produit l'affiche en entier — et le champ de saisie
+ * emprunte ses bornes pour refuser 22 ou 61 avant l'aller-retour. Ce qu'un
+ * écran ne fait jamais, c'est DÉCIDER du montant débité.
  * ══════════════════════════════════════════════════════════════════════════
  */
 
 type Verif = {
   action: { cle: string; libelle: string; vers: string; note?: string };
-  resume: { nbPages?: number; palier?: string; euros?: number; pays?: string };
+  resume: { nbPages?: number; palier?: string; euros?: number; reliure?: Reliure; pays?: string };
   /* T2-3 — le mot de l'atelier tel que le serveur l'a retenu : c'est LUI qui
      partira dans M9, pas la saisie locale. */
   mot?: string;
@@ -1004,15 +1021,17 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                 <input
                   className="adm-input"
                   type="number"
-                  min={20}
-                  max={50}
+                  min={PAGES_MIN}
+                  max={PAGES_MAX}
+                  step={PAS_PAGES}
                   inputMode="numeric"
                   value={saisie.nb_pages}
                   onChange={(e) => set("nb_pages", e.target.value)}
                   placeholder="34"
                 />
                 <span className="ate-champ-aide">
-                  Le prix en découle. De 20 à 50 pages, jamais saisi à la main.
+                  Le prix en découle. De {PAGES_MIN} à {PAGES_MAX} pages, par
+                  deux, {PAGES_AGRAFE + PAS_PAGES} exclu.
                 </span>
                 {erreurDe("nb_pages") ? <span className="ate-erreur">{erreurDe("nb_pages")}</span> : null}
               </label>
@@ -1203,7 +1222,12 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                     <dd>{verif.resume.nbPages} pages</dd>
                     <dt>Prix</dt>
                     <dd className="ate-confirm-prix">
-                      {verif.resume.euros}&nbsp;€ <span className="ate-faint">({verif.resume.palier})</span>
+                      {verif.resume.euros}&nbsp;€{" "}
+                      {/* La RELIURE, pas le code de palier : « dos carré collé »
+                          se relit, « p40 » ne nomme plus rien depuis le 10/09. */}
+                      {verif.resume.reliure ? (
+                        <span className="ate-faint">({RELIURE_LIBELLE[verif.resume.reliure]})</span>
+                      ) : null}
                     </dd>
                   </>
                 ) : null}
@@ -1329,9 +1353,11 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
 }
 
 /* Le seul calcul de prix côté navigateur de tout le projet, et il n'existe
-   QUE pour la démonstration : sans lui, l'écran de confirmation de la démo
-   serait vide et le parcours ne se raconterait pas. Il ne sert jamais sur un
-   vrai dossier — là, le résumé vient du serveur. */
+   QUE pour la démonstration (/admin/atelier/demo, sans base) : sans lui,
+   l'écran de confirmation de la démo serait vide et le parcours ne se
+   raconterait pas. Il ne sert JAMAIS sur un vrai dossier — là, le résumé vient
+   du serveur, par le chemin exact qui écrira le prix en base. C'est ça,
+   l'invariant : la grille est publique, la DÉCISION est au serveur. */
 function simulerResume(cle: string, nbPagesBrut: string, paysBrut: string) {
   if (cle !== "publier_apercu" && cle !== "corriger_apercu") return {};
   /* Le pays part avec le reste : sur un vrai dossier, le serveur le rend
@@ -1341,8 +1367,15 @@ function simulerResume(cle: string, nbPagesBrut: string, paysBrut: string) {
   const pays = paysValide(paysBrut) ? { pays: paysBrut } : {};
   const n = Number(nbPagesBrut);
   if (!Number.isInteger(n)) return pays;
-  if (n >= 20 && n <= 29) return { ...pays, nbPages: n, palier: "p30", euros: 30 };
-  if (n >= 30 && n <= 39) return { ...pays, nbPages: n, palier: "p40", euros: 40 };
-  if (n >= 40 && n <= 50) return { ...pays, nbPages: n, palier: "p45", euros: 45 };
-  return { ...pays, nbPages: n };
+  const euros = eurosPourPages(n);
+  if (euros === null) return { ...pays, nbPages: n };
+  return {
+    ...pays,
+    nbPages: n,
+    /* Le bucket hérité, pour que la démonstration montre le même objet que le
+       serveur — il n'entre plus dans aucun calcul de prix. */
+    palier: n < 30 ? "p30" : n < 40 ? "p40" : "p45",
+    euros,
+    reliure: reliurePour(n) ?? undefined,
+  };
 }
