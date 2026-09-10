@@ -37,6 +37,10 @@ export type DossierAffiche = DossierDuCompte & {
   tracking_url: string | null;
   transporteur: string | null;
   anonymise_le: string | null;
+  /* Le prix GELÉ à la publication de l'aperçu (migration 20260910).
+     Optionnelle : le repli la laisse `undefined` et le prix retombe sur la
+     grille, exactement comme avant le gel. */
+  prix_centimes?: number | null;
   /* Les visuels publiés par l'atelier — la vraie couverture de la
      bibliothèque, et les pages de la visionneuse. jsonb libre, résolu par
      `resoudreApercu` (apercu.ts) : jamais lu à la main. */
@@ -46,12 +50,16 @@ export type DossierAffiche = DossierDuCompte & {
 const CHAMPS_COMPTE =
   "id, token, etat, titre, occasion, palier, nb_pages, nb_photos, consent_photos, " +
   "compte_id, email_canonical, created_at, etat_maj_le, souvenir_pdf_key, " +
-  "tracking_url, transporteur, anonymise_le, apercu_urls";
+  "tracking_url, transporteur, anonymise_le, apercu_urls, " +
+  "prix_centimes, livraison_centimes, pays_livraison, livraison_niveau";
 
-/* Identique moins compte_id — le repli tant que 20260904 n'est pas passée. */
+/* Identique moins les trois colonnes du prix gelé (20260910), les plus
+   fraîches — le repli tant qu'elle n'est pas passée. `compte_id` (20260904,
+   appliquée et vérifiée le 04/09) est donc revenue dedans, comme
+   `tracking_code` était revenu dans CHAMPS_MAIL_REPLI. */
 const CHAMPS_COMPTE_REPLI =
   "id, token, etat, titre, occasion, palier, nb_pages, nb_photos, consent_photos, " +
-  "email_canonical, created_at, etat_maj_le, souvenir_pdf_key, " +
+  "compte_id, email_canonical, created_at, etat_maj_le, souvenir_pdf_key, " +
   "tracking_url, transporteur, anonymise_le, apercu_urls";
 
 /* Ce que la BARRE lit — les colonnes de `DossierDuCompte`, pas une de plus. */
@@ -85,11 +93,15 @@ function normaliser<T extends { compte_id?: string | null }>(lignes: T[]) {
  * derrière l'autre alors qu'aucun des deux ne dépend du résultat de l'autre.
  * En parallèle, le coût de la lecture tombe à celui du plus lent.
  *
- * REPLI 42703 — `compte_id` est une colonne fraîche (20260904) et Mathias
- * applique les migrations lui-même : tant qu'elle n'existe pas, PostgREST
- * répond 42703 aux DEUX requêtes (elles demandent la même colonne), et on
- * refait alors la seule qui compte — celle par email — sans elle. Un
- * aller-retour de plus, mais UNIQUEMENT dans ce monde-là.
+ * REPLI 42703 — Mathias applique les migrations lui-même : tant qu'une
+ * colonne fraîche n'existe pas, PostgREST répond 42703 aux DEUX requêtes
+ * (elles demandent les mêmes colonnes), et on les refait avec `champsRepli`.
+ * Un aller-retour de plus, mais UNIQUEMENT dans ce monde-là.
+ * ⚠️ Une seule exception, et elle a sa raison : quand c'est `compte_id`
+ * lui-même qui manque (20260904), la requête par compte_id ne peut pas être
+ * refaite — on filtre dessus. Seul le rapprochement par email répond alors,
+ * et c'est pourquoi le repli teste la présence de la colonne dans la liste
+ * plutôt que de rejouer les deux en aveugle.
  */
 async function lireCandidats(
   supabase: SupabaseClient,
@@ -104,10 +116,25 @@ async function lireCandidats(
       : base.eq("email_canonical", regard.canon);
   };
 
-  const [parCompte, parEmail] = await Promise.all([
+  const [premierCompte, premierEmail] = await Promise.all([
     requete(champs, "compte"),
     regard.emailConfirme ? requete(champs, "email") : null,
   ]);
+
+  /* Une colonne fraîche manque : les DEUX requêtes ont échoué pour la même
+     raison (elles demandent les mêmes colonnes), on les refait sans elle.
+     La requête par compte_id n'est refaite que si le repli porte encore
+     cette colonne : quand c'est ELLE qui manque (20260904), filtrer dessus
+     n'a aucun sens et seul le rapprochement par email peut répondre. */
+  const replier = premierCompte.error?.code === "42703";
+  const compteEncorePossible = champsRepli.includes("compte_id");
+
+  const [parCompte, parEmail] = replier
+    ? await Promise.all([
+        compteEncorePossible ? requete(champsRepli, "compte") : premierCompte,
+        regard.emailConfirme ? requete(champsRepli, "email") : null,
+      ])
+    : [premierCompte, premierEmail];
 
   const parToken = new Map<string, LigneBrute>();
 
@@ -122,12 +149,7 @@ async function lireCandidats(
     }
   }
 
-  /* La colonne manque : la requête par email a échoué pour la même raison,
-     on la refait sans elle. */
-  const email =
-    parCompte.error?.code === "42703" && regard.emailConfirme
-      ? await requete(champsRepli, "email")
-      : parEmail;
+  const email = parEmail;
 
   if (email) {
     if (email.error) {

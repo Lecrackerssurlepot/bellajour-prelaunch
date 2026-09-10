@@ -21,7 +21,7 @@ import { COMPOSER_HREF, CTA_LABEL, CONTACT_EMAIL } from '../../(atelier)/content
 import { makeSupabase } from '@/lib/supabase'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { resoudreApercu } from '@/lib/atelier/apercu'
-import { eurosPour, type PalierCle } from '@/lib/atelier/prix'
+import { eurosDuDossier, type PalierCle } from '@/lib/atelier/prix'
 import { DELAIS, JOURS_LIVRAISON, etapeDepot, QUI_ATTEND, type Camp, type EtapeDepot } from '@/lib/atelier/urgence'
 import { JOURS_AVANT_AUTO_VALIDATION } from '@/lib/atelier/mails'
 import { MIN_PHOTOS } from '../../(atelier)/composer/depot/paliers'
@@ -90,6 +90,11 @@ type Numero = {
      affiché avant le clic, le fichier garde le poids d'impression. */
   souvenir_pdf_key: string | null
   souvenir_pdf_octets: number | null
+  /* Le prix GELÉ à la publication de l'aperçu (migration 20260910) :
+     ce que cette page a annoncé est ce qui sera débité, quoi qu'il advienne
+     de la grille. Optionnelle — le repli la laisse `undefined` et le prix
+     retombe sur la grille, exactement comme avant le gel. */
+  prix_centimes?: number | null
 }
 
 const CHAMPS =
@@ -99,11 +104,13 @@ const CHAMPS =
   'consent_communication, facture_url'
 
 /* Les colonnes arrivées après les autres (`tracking_code`, puis le souvenir
-   20260903) : tant qu'une migration n'est pas passée, PostgREST répond 42703
-   et la page entière tomberait pour une colonne d'affichage. Le repli est
-   celui de `lireNumeros` côté atelier — d'abord sans le souvenir, puis sans
-   rien de frais. */
+   20260903, puis le prix gelé 20260910) : tant qu'une migration n'est pas
+   passée, PostgREST répond 42703 et la page entière tomberait pour une
+   colonne d'affichage. Le repli est celui de `lireNumeros` côté atelier —
+   d'abord sans le prix gelé, puis sans le souvenir, puis sans rien de frais. */
 const CHAMPS_AVEC_SUIVI = `${CHAMPS}, tracking_code`
+const CHAMPS_AVEC_SOUVENIR = `${CHAMPS_AVEC_SUIVI}, souvenir_pdf_key, souvenir_pdf_octets`
+const CHAMPS_COMPLET = `${CHAMPS_AVEC_SOUVENIR}, prix_centimes, livraison_centimes, pays_livraison, livraison_niveau`
 
 /**
  * De qui c'est le tour, en une phrase.
@@ -156,7 +163,10 @@ async function lireNumero(token: string): Promise<Numero | null | 'panne'> {
     const lire = (champs: string) =>
       supabase.from('numeros').select(champs).eq('token', token).maybeSingle<Numero>()
 
-    let { data, error } = await lire(`${CHAMPS_AVEC_SUIVI}, souvenir_pdf_key, souvenir_pdf_octets`)
+    let { data, error } = await lire(CHAMPS_COMPLET)
+    if (error?.code === '42703') {
+      ;({ data, error } = await lire(CHAMPS_AVEC_SOUVENIR))
+    }
     if (error?.code === '42703') {
       ;({ data, error } = await lire(CHAMPS_AVEC_SUIVI))
     }
@@ -248,7 +258,9 @@ export default async function NumeroPage({
   const dIci = marque ? `${PARAM_PROVENANCE}=${encodeURIComponent(marque)}` : ''
 
   const titre = numero.titre?.trim() || 'Votre numéro'
-  const euros = eurosPour(numero.palier)
+  /* Le prix gelé du dossier, jamais la grille du jour : cette page est
+     l'endroit où le montant a été annoncé, elle ne peut pas en changer. */
+  const euros = eurosDuDossier(numero)
 
   /* La SECONDE paire — l'aperçu signé et le rattachement au compte. Ils ne
      se connaissent pas davantage que les deux premiers : l'un signe des URL

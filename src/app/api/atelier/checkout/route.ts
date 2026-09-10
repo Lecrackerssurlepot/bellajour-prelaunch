@@ -5,7 +5,8 @@ import { isValidNumeroToken } from "@/lib/atelier/token";
 import { logEvenement } from "@/lib/atelier/evenements";
 import { KIND_ATELIER } from "@/lib/atelier/paiement";
 import {
-  totalPour,
+  centimesDuDossier,
+  QUANTITE_MAX,
   PAYS_LIVRAISON,
   CODE_FISCAL_ALBUM,
   type PalierCle,
@@ -121,6 +122,10 @@ type Ligne = {
   email_canonical: string | null;
   nb_pages: number | null;
   palier: PalierCle | null;
+  /* Le prix GELÉ à la publication de l'aperçu (migration 20260910).
+     Optionnelle : le repli 42703 du select la laisse `undefined` tant que la
+     migration n'est pas passée, et le montant retombe sur la grille. */
+  prix_centimes?: number | null;
   cgv_ok: boolean;
   cgv_ok_at: string | null;
   renonciation_retractation: boolean;
@@ -146,14 +151,23 @@ export async function POST(request: Request) {
     }
 
     const supabase = makeSupabase();
-    const { data: numero, error: lectureErr } = await supabase
-      .from("numeros")
-      .select(
-        "id, token, etat, titre, prenom, email, email_canonical, nb_pages, palier, " +
-          "cgv_ok, cgv_ok_at, renonciation_retractation, renonciation_at"
-      )
-      .eq("token", token)
-      .maybeSingle<Ligne>();
+
+    const CHAMPS_BASE =
+      "id, token, etat, titre, prenom, email, email_canonical, nb_pages, palier, " +
+      "cgv_ok, cgv_ok_at, renonciation_retractation, renonciation_at";
+
+    /* Repli 42703 : `prix_centimes` est fraîche (20260910) et un select qui
+       nomme une colonne absente échoue ENTIÈREMENT. Sans ce repli, PLUS
+       PERSONNE NE POURRAIT PAYER entre le déploiement et la migration — le
+       pire des cas de la fenêtre. Sans la colonne, le montant vient de la
+       grille, exactement comme la veille. */
+    const lire = (champs: string) =>
+      supabase.from("numeros").select(champs).eq("token", token).maybeSingle<Ligne>();
+
+    let { data: numero, error: lectureErr } = await lire(`${CHAMPS_BASE}, prix_centimes`);
+    if (lectureErr?.code === "42703") {
+      ({ data: numero, error: lectureErr } = await lire(CHAMPS_BASE));
+    }
 
     if (lectureErr) {
       console.error("[atelier/checkout] lecture échouée", lectureErr.code);
@@ -190,18 +204,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "consentements_manquants" }, { status: 409 });
     }
 
-    /* Le prix vient de `palier`, jamais de la requête. Palier absent =
-       l'atelier n'a pas encore saisi le nombre de pages : la page d'état
-       affiche « en cours de chiffrage » et le bouton n'aurait pas dû être
-       actif. On refuse plutôt que d'inventer un montant.
+    /* Le prix vient du DOSSIER, jamais de la requête (invariant nº2). Depuis
+       le 10/09, il vient d'abord de `prix_centimes` — le montant gelé à la
+       publication de l'aperçu, donc exactement celui que la page d'état 2 a
+       affiché et que M3 a annoncé. La grille ne reprend la main que si la
+       colonne est vide (dossier d'avant le gel) ou absente (migration pas
+       encore passée) : le comportement d'avant, au centime.
 
-       `totalPour(palier, 1)` : UN exemplaire, toujours — le verrou T-073
-       (QUANTITE_MAX, prix.ts) tient tant que les paliers dégressifs ne sont
-       pas décidés. À 1, le montant est exactement la grille, au centime. */
-    const centimes = totalPour(numero.palier, 1);
+       Rien du tout = l'atelier n'a pas encore saisi le nombre de pages : la
+       page d'état affiche « en cours de chiffrage » et le bouton n'aurait pas
+       dû être actif. On refuse plutôt que d'inventer un montant.
+
+       ⚠️ UN exemplaire, toujours : le verrou T-073 (`QUANTITE_MAX`, prix.ts)
+       tient tant que les paliers dégressifs ne sont pas décidés, et le
+       `quantity: 1` du line_item plus bas EST son application. La garde
+       ci-dessous existe pour que le jour où le verrou se lève, ce `1` en dur
+       ne passe pas inaperçu. */
+    const centimes = centimesDuDossier(numero);
     if (centimes === null) {
-      console.error("[atelier/checkout] palier absent ou inconnu", numero.id, numero.palier);
+      console.error("[atelier/checkout] prix indisponible", numero.id, numero.palier);
       return NextResponse.json({ error: "prix_indisponible" }, { status: 409 });
+    }
+    if (QUANTITE_MAX !== 1) {
+      console.error(
+        "[atelier/checkout] ⚠️ QUANTITE_MAX n'est plus 1 : le line_item est encore figé à un exemplaire. " +
+          "Brancher les paliers dégressifs ICI avant de lever le verrou (prix.ts, T-073).",
+        numero.id,
+      );
     }
 
     const titre = numero.titre?.trim() || "Votre numéro";
@@ -454,6 +483,10 @@ export async function POST(request: Request) {
       session_id: session.id,
       palier: numero.palier,
       montant_centimes: centimes,
+      /* D'où vient ce montant : de la colonne gelée, ou d'un recalcul depuis
+         la grille. Le jour où la grille change, c'est cette ligne qui dira si
+         une commande a été chiffrée au barème d'hier ou à celui du jour. */
+      prix_gele: numero.prix_centimes === centimes,
       /* Ce qu'elle paiera vraiment. Sans cette ligne, le journal dirait 40 €
          et Stripe 10 € : la première contradiction qu'on chercherait. */
       credit_fondatrice_centimes: remiseAppliquee ? CREDIT_FONDATRICE_CENTIMES : 0,

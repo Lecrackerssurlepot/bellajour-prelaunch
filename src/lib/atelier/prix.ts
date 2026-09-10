@@ -60,6 +60,73 @@ export function centimesPour(palier: PalierCle | null | undefined): number | nul
   return e === null ? null : e * 100;
 }
 
+/* ───────────────────────── le prix GELÉ du dossier ─────────────────────────
+ *
+ * Décision de Mathias, 10/09/2026 : le prix se fige SUR LE DOSSIER à l'instant
+ * où l'atelier publie l'aperçu — le premier instant où une cliente voit un
+ * montant. La colonne `numeros.prix_centimes` (migration 20260910) porte ce
+ * gel.
+ *
+ * POURQUOI LE GEL GAGNE TOUJOURS. Recalculer depuis la grille, c'est promettre
+ * un prix qui change quand la grille change : la page d'état 2 afficherait un
+ * montant, M3 en annoncerait un autre, Stripe en débiterait un troisième, et
+ * la cliente aurait raison de le prendre mal. Le prix annoncé est le prix
+ * débité, pour ce dossier-là, définitivement. La grille ne sert plus qu'aux
+ * dossiers qui n'ont pas encore été chiffrés.
+ *
+ * POURQUOI LE REPLI SUR LA GRILLE EXISTE QUAND MÊME (lot 1). Deux mondes le
+ * demandent, et aucun n'est théorique :
+ *   — les dossiers d'avant la migration, dont la colonne est vide ;
+ *   — la fenêtre entre le déploiement et la migration, où le select retombe
+ *     sur ses colonnes d'avant et laisse `prix_centimes` indéfini.
+ * Dans ces deux cas, la grille rend EXACTEMENT ce qu'elle rendait la veille :
+ * le comportement est inchangé, au centime.
+ *
+ * POURQUOI UN 0, UN NÉGATIF OU UN NON-ENTIER EST IGNORÉ. Un prix gelé est un
+ * engagement : zéro veut dire « gratuit », un négatif ne veut rien dire, et
+ * 12,5 centime n'existe pas chez Stripe. Aucune de ces trois valeurs ne peut
+ * venir d'une publication d'aperçu ; si l'une arrive, c'est un UPDATE à la
+ * main ou une donnée abîmée. On retombe alors sur la grille plutôt que de
+ * facturer un montant que personne n'a décidé. La base pose le même garde-fou
+ * (`check (prix_centimes > 0)`) : deux ceintures, parce que celle de la base
+ * n'existe pas tant que la migration n'est pas passée.
+ */
+export type DossierPrix = {
+  prix_centimes?: number | null;
+  nb_pages?: number | null;
+  palier?: PalierCle | null;
+};
+
+/** Le prix FERME du dossier, en CENTIMES : le gel d'abord, la grille ensuite. */
+export function centimesDuDossier(d: DossierPrix): number | null {
+  const gele = d.prix_centimes;
+  if (typeof gele === "number" && Number.isInteger(gele) && gele > 0) return gele;
+  return centimesPour(d.palier);
+}
+
+/** Le même prix en EUROS — ce que lisent les écrans et les templates Brevo. */
+export function eurosDuDossier(d: DossierPrix): number | null {
+  const c = centimesDuDossier(d);
+  return c === null ? null : c / 100;
+}
+
+/**
+ * « 4,90 € », « 37 € ». Les décimales seulement quand elles disent quelque
+ * chose : « 37,00 € » sur une page produit fait comptable, et l'atelier ne
+ * l'est pas. Virgule française, espace insécable avant le symbole — un prix ne
+ * se coupe jamais en fin de ligne (même règle que `formaterEuros`).
+ */
+export function formaterCentimes(centimes: number): string {
+  const arrondi = Math.round(centimes);
+  const signe = arrondi < 0 ? "-" : "";
+  const abs = Math.abs(arrondi);
+  const euros = Math.floor(abs / 100);
+  const cts = abs % 100;
+  return cts === 0
+    ? `${signe}${euros} €`
+    : `${signe}${euros},${String(cts).padStart(2, "0")} €`;
+}
+
 /* ─────────────────────────── multi-exemplaires ───────────────────────────
  *
  * Verrou T-073 : lever quand Mathias donne les paliers. Tant qu'il vaut 1,

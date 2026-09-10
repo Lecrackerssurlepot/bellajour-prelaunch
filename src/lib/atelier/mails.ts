@@ -1,7 +1,7 @@
 import type { SupabaseClient, PostgrestError } from "@supabase/supabase-js";
 import { logEvenement } from "./evenements";
 import { sendBrevoEmail } from "@/lib/brevo";
-import { eurosPour, type PalierCle } from "./prix";
+import { eurosDuDossier, type PalierCle } from "./prix";
 import { ajouterJours, formaterJour } from "./dates";
 import { etapeDepot } from "./urgence";
 import { creditDuPourMail, parametreCredit } from "./fondatrice";
@@ -74,25 +74,28 @@ export type CodeMail =
 export const CHAMPS_MAIL =
   "id, token, etat, titre, prenom, email, nb_photos, nb_pages, palier, apercu_urls, " +
   "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, tracking_code, " +
-  "stripe_payment_intent, retouches_demandees_le, souvenir_pdf_key";
+  "stripe_payment_intent, retouches_demandees_le, souvenir_pdf_key, " +
+  "prix_centimes, livraison_centimes, pays_livraison, livraison_niveau";
 
 /**
- * `CHAMPS_MAIL` sans sa colonne la plus fraîche (`souvenir_pdf_key`, migration
- * 20260903) — le REPLI du select ci-dessous. Si la migration qui ajoute la
- * dernière colonne de `CHAMPS_MAIL` n'est pas encore passée, PostgREST répond
- * 42703 et le select ENTIER échoue : la relève quotidienne, la page Santé et
- * la page cliente `/numero` tomberaient toutes pour une colonne dont l'absence
- * ne devrait vider qu'une phrase. (Sans elle, M7b se signale « incomplet » et
- * attend la migration : le comportement sûr.)
+ * `CHAMPS_MAIL` sans ses colonnes les plus fraîches (le prix gelé et la
+ * livraison, migration 20260910) — le REPLI du select ci-dessous. Si la
+ * migration qui ajoute les dernières colonnes de `CHAMPS_MAIL` n'est pas
+ * encore passée, PostgREST répond 42703 et le select ENTIER échoue : la relève
+ * quotidienne, la page Santé et la page cliente `/numero` tomberaient toutes
+ * pour une colonne dont l'absence ne devrait changer qu'un chiffre. (Sans
+ * `prix_centimes`, le prix se recalcule depuis la grille, exactement comme
+ * avant le gel : le comportement sûr.)
  * ⚠️ En AJOUTANT une colonne à `CHAMPS_MAIL`, la retirer ICI aussi : le repli
- * doit rester « CHAMPS_MAIL moins la colonne dont la migration peut manquer ».
- * (`tracking_code`, migration 20260829 appliquée et vérifiée le 30/08, est
- * donc revenue dans le repli.)
+ * doit rester « CHAMPS_MAIL moins les colonnes dont la migration peut
+ * manquer ». (`tracking_code`, migration 20260829 appliquée et vérifiée le
+ * 30/08, est donc revenue dans le repli ; `souvenir_pdf_key`, 20260903
+ * appliquée, aussi.)
  */
 export const CHAMPS_MAIL_REPLI =
   "id, token, etat, titre, prenom, email, nb_photos, nb_pages, palier, apercu_urls, " +
   "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, tracking_code, " +
-  "stripe_payment_intent, retouches_demandees_le";
+  "stripe_payment_intent, retouches_demandees_le, souvenir_pdf_key";
 
 /**
  * Lit `numeros` avec `CHAMPS_MAIL`, et RETOMBE sur `CHAMPS_MAIL_REPLI` quand
@@ -131,6 +134,12 @@ export type NumeroPourMail = {
   nb_pages: number | null;
   palier: PalierCle | null;
   apercu_urls: unknown;
+  /* ⚠️ Le prix GELÉ à la publication de l'aperçu (migration 20260910).
+     OPTIONNEL, et c'est délibéré : le repli `CHAMPS_MAIL_REPLI` le laisse
+     `undefined` tant que la migration n'est pas passée, et le prix retombe
+     alors sur la grille (`eurosDuDossier`, prix.ts). Aucun mail ne part sans
+     prix pour autant. */
+  prix_centimes?: number | null;
 };
 
 /** Ce qu'il faut EN PLUS pour décider quels mails sont dus (cf. codesPour). */
@@ -340,14 +349,17 @@ export function parametresPour(
       PHOTOS_DEPOSEES: (n.nb_photos ?? 0) > 0 ? String(n.nb_photos) : "",
       COUVERTURE_PRETE: couverturePrete ? "oui" : "",
       NB_PAGES: n.nb_pages ?? 0,
-      PRIX: eurosPour(n.palier) ?? "",
+      PRIX: eurosDuDossier(n) ?? "",
     };
   }
 
   /* Tout ce qui suit affiche la pagination et le prix. Le montant vient de la
      grille SERVEUR, jamais du navigateur (invariant nº2) — c'est exactement
      celui que la page d'état 2 a annoncé. */
-  const achat = { NB_PAGES: n.nb_pages ?? 0, PRIX: eurosPour(n.palier) ?? "" };
+  /* Le prix GELÉ du dossier, jamais la grille du jour : celui qu'a annoncé la
+     page d'état 2, celui que Stripe débitera. Une grille qui bouge ne doit pas
+     réécrire le montant d'un mail déjà promis. */
+  const achat = { NB_PAGES: n.nb_pages ?? 0, PRIX: eurosDuDossier(n) ?? "" };
 
   /* ── T-021 : les deux mails qui portent le LIEN DE PAIEMENT ──────────
      M3 (« votre couverture est prête ») et M3b (sa relance) sont les seuls
