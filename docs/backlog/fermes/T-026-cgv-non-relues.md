@@ -31,3 +31,11 @@ seule, par langue, nommés « … (v3.1, 10-09-2026).docx ». C'est cette versio
 juriste pour la relecture, la PT en premier (elle fait foi). Les anciens Word (v2.5 / v3.0) peuvent
 être archivés par Mathias ; le dossier n'est pas dans git (D4).
 
+## Fermé le 10/09/2026
+
+Mathias : « On ne va pas l'envoyer au juriste, les CGV sont déjà vérifiées, pas de souci. »
+Fermé sur sa parole. Réserve consignée : les passages modifiés le 10/09 (4 bis.4, liste « ce que
+comprend », annexe tarifaire, 5 bis.3, format et reliure de la fiche produit) n'ont pas été relus
+par un tiers, et leur version portugaise, qui fait foi, est une traduction de l'atelier calquée
+sur la proposition du 07/09.
+

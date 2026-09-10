@@ -26,7 +26,7 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
 ## Où on en est (10/09/2026, après le chantier « grille par pages »)
 
-**Six PR le même jour (#99 → #103), trois tickets fermés (T-006, T-072, T-074), un ouvert (T-106, la politique de livraison), 35 encore ouverts,
+**Six PR le même jour (#99 → #103), trois tickets fermés (T-006, T-072, T-074), un ouvert (T-106, la politique de livraison), 34 encore ouverts,
 aucun bloquant.** La grille finale de Mathias est en production (un prix par nombre de pages, 25 à
 59 €), le prix se gèle sur le dossier, le pays est demandé à l'écran 4, la livraison est facturée
 en sus par devis Cloudprinter, les CGV sont en v3.1. **Ce qui bloque maintenant est chez Mathias** :
@@ -92,7 +92,7 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-023 | 734 photos orphelines dorment sur R2 | donnees | confort | avis-requis | nouveau — doit ignorer les dossiers anonymisés (T-076) |
 | T-024 | La page Santé crie sur une base vide | admin | confort | libre | **fermé** |
 | T-025 | Cinq mails n'ont jamais été envoyés en vrai | atelier | serieux | avis-requis | nouveau |
-| T-026 | Les CGV v3.0 n'ont pas été relues par un juriste | produit | serieux | avis-requis | nouveau |
+| T-026 | Les CGV v3.0 n'ont pas été relues par un juriste | produit | serieux | avis-requis | **fermé** (10/09 : vérifiées, pas de relecture juridique, décision de Mathias) |
 | T-027 | Les finitions d'impression sont posées par défaut, pas choisies | produit | serieux | avis-requis | nouveau |
 | T-028 | La page produit affirme un grammage qu'on n'a pas mesuré | produit | serieux | avis-requis | nouveau |
 | T-029 | Deux avertissements de lint traînent depuis le lot 7 | exploitation | confort | libre | **fermé** |
