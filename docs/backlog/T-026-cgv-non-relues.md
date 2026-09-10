@@ -22,3 +22,12 @@ exportée depuis le code, la liste des points sensibles, et les écarts connus (
 seule partie que je peux faire.
 ## Ce qui a été fait
 —
+
+## 10/09/2026 — les Word sont au niveau du site
+
+Six fichiers générés depuis le texte du site (v3.1) et déposés dans `legal-source/cgv/{FR,PT,EN}/`
+à côté des anciens, sans rien écraser : les CGV complètes (annexe comprise) et la fiche produit
+seule, par langue, nommés « … (v3.1, 10-09-2026).docx ». C'est cette version qu'il faut donner au
+juriste pour la relecture, la PT en premier (elle fait foi). Les anciens Word (v2.5 / v3.0) peuvent
+être archivés par Mathias ; le dossier n'est pas dans git (D4).
+
