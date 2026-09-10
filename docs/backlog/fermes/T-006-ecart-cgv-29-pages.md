@@ -30,3 +30,11 @@ n'ont PAS bougé (interdit nº2) : les textes proposés pour les trois langues s
 **Attend Mathias** : 28 ou 29 ? Si 29 → corriger l'annexe des CGV (3 langues + docx).
 Si 28 → changer `maxPages` dans `grille.ts` et vérifier qu'aucun numéro n'est à
 29 pages. Le ticket reste ouvert jusqu'à l'arbitrage.
+
+## Fermé le 10/09/2026
+
+La question « 28 ou 29 » n'a plus d'objet : Mathias a livré le 10/09 une grille **par nombre de
+pages exact** (20, puis 24 à 60 par pas de 2 ; 22 exclu). `src/lib/atelier/grille.ts` la porte,
+`preparerTransition` refuse toute pagination hors grille (impairs compris), et l'annexe des CGV
+v3.1 (FR/PT/EN, `src/app/legal/content/cgv.ts`) **dérive du même tableau** : aucune ligne ne peut
+plus contredire ce que le code facture. PR #102.

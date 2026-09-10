@@ -41,6 +41,17 @@ function libellePays(code: string): string {
   return paysValide(code) ? PAYS_LIBELLE[code] : code;
 }
 
+/* « 11,06 € ». Le jumeau navigateur de `formaterCentimes` (prix.ts, SERVEUR
+   UNIQUEMENT parce qu'il porte la grille) : trois lignes de mise en forme ne
+   sont pas une décision de montant, et le serveur reste le seul à décider de
+   ce qui sera débité. Même patron que `tokenForme.ts` face à `token.ts`. */
+function formaterCentimesAdmin(centimes: number): string {
+  const arrondi = Math.abs(Math.round(centimes));
+  const euros = Math.floor(arrondi / 100);
+  const cts = arrondi % 100;
+  return cts === 0 ? `${euros} €` : `${euros},${String(cts).padStart(2, "0")} €`;
+}
+
 function fmt(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -1140,13 +1151,45 @@ export default function Fiche({
             {fiche.paysLivraison || fiche.adresse ? (
               <>
                 <h3 className="ate-sous-titre">Livraison</h3>
-                {fiche.paysLivraison ? (
+                {fiche.paysLivraison || fiche.livraisonCentimes !== null ? (
                   <dl className="ate-defs">
-                    <dt>Pays déclaré</dt>
-                    <dd>
-                      {libellePays(fiche.paysLivraison)}{" "}
-                      <span className="ate-faint">annoncé à l&apos;écran 4</span>
-                    </dd>
+                    {fiche.paysLivraison ? (
+                      <>
+                        <dt>Pays déclaré</dt>
+                        <dd>
+                          {libellePays(fiche.paysLivraison)}{" "}
+                          <span className="ate-faint">annoncé à l&apos;écran 4</span>
+                        </dd>
+                      </>
+                    ) : null}
+                    {/* ── LE PORT GELÉ AU DEVIS (lot 6, 10/09/2026) ──
+                        Le montant TTC facturé au client, et le service qui a
+                        été chiffré. C'est ce niveau-là que la commande
+                        d'impression reprendra : l'afficher ici est le seul
+                        moyen de voir, avant de commander, qu'on achètera bien
+                        ce qu'on a vendu. Absent = pas encore devisé, et le
+                        checkout refusera le paiement. */}
+                    {fiche.livraisonCentimes !== null ? (
+                      <>
+                        <dt>Livraison</dt>
+                        <dd>
+                          {formaterCentimesAdmin(fiche.livraisonCentimes)}
+                          {fiche.paysLivraison || fiche.livraisonNiveau ? (
+                            <span className="ate-faint">
+                              {" "}
+                              (
+                              {[
+                                fiche.paysLivraison ? libellePays(fiche.paysLivraison) : "",
+                                fiche.livraisonNiveau ?? "",
+                              ]
+                                .filter(Boolean)
+                                .join(", ")}
+                              )
+                            </span>
+                          ) : null}
+                        </dd>
+                      </>
+                    ) : null}
                   </dl>
                 ) : null}
                 {fiche.adresse ? (

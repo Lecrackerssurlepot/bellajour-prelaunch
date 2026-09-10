@@ -6,7 +6,7 @@ import { lireDossiersDuCompte } from '@/lib/compte/donnees'
 import { resoudreApercu } from '@/lib/atelier/apercu'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { FORMAT_FINI_MM } from '@/lib/atelier/impression'
-import { eurosDuDossier, type PalierCle } from '@/lib/atelier/prix'
+import { eurosDuDossier, formaterCentimes, type PalierCle } from '@/lib/atelier/prix'
 import { CHEMIN_RECOMMANDER, peutRecommander } from '@/lib/atelier/reimpression'
 import Apercu from '@/app/numero/[token]/Apercu'
 import '@/app/numero/numero.css'
@@ -165,11 +165,21 @@ export default async function MagazinePage({
             <dd>Papier intérieur et couverture, façonnage compris</dd>
             {euros ? (
               <>
-                {/* « livraison comprise » retiré le 07/09/2026 (chantier
-                    barème par pages) : la livraison sort du prix, et pour un
-                    numéro déjà payé le montant seul dit tout. */}
-                <dt>Payé</dt>
+                {/* ⚠️ ON N'ÉCRIT PLUS « PAYÉ » (lot 6, 10/09/2026). La
+                    livraison sort du prix, et le montant RÉELLEMENT encaissé
+                    n'est en colonne nulle part : un fondateur a payé 7 € pour
+                    un numéro à 37 €, port offert. Dire « Payé 37 € » à celui-là
+                    serait un mensonge sur sa propre facture. On énonce donc ce
+                    que VALENT les deux lignes, comme un bon de commande, et le
+                    montant encaissé reste dans le journal du dossier. */}
+                <dt>Numéro</dt>
                 <dd>{euros} €</dd>
+              </>
+            ) : null}
+            {typeof dossier.livraison_centimes === 'number' ? (
+              <>
+                <dt>Livraison</dt>
+                <dd>{formaterCentimes(dossier.livraison_centimes)}</dd>
               </>
             ) : null}
             {livreLe ? (

@@ -175,6 +175,9 @@ function versLigne(
     /* Vient de CHAMPS_PRIX, déjà lu par `lireNumeros` (avec son repli 42703
        si la migration 20260910 n'est pas passée). */
     pays: r.pays_livraison ?? null,
+    /* Même origine que le pays (CHAMPS_PRIX, repli 42703 compris) : la liste
+       et la fiche lisent le port gelé, elles ne le recalculent jamais. */
+    livraisonCentimes: r.livraison_centimes ?? null,
     createdAt: r.created_at,
     etatMajLe: r.etat_maj_le,
     urgence: {
@@ -881,6 +884,11 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     /* Le pays déclaré à l'écran 4 (migration 20260910) : il arrive avec le
        select("*") et vaut null tant qu'elle n'est pas passée. */
     paysLivraison: (n.pays_livraison as string) ?? null,
+    /* Le port et son service, gelés au devis (migration 20260910) : ils
+       arrivent avec le select("*") et valent null tant qu'elle n'est pas
+       passée. Le champ de publication se préremplit avec le premier. */
+    livraisonCentimes: typeof n.livraison_centimes === "number" ? n.livraison_centimes : null,
+    livraisonNiveau: (n.livraison_niveau as string) ?? null,
     canvaUrl: (n.canva_url as string) ?? null,
     canvaTravail: (n.canva_travail as string) ?? null,
     maquettePdfUrl: (n.maquette_pdf_url as string) ?? null,

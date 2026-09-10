@@ -91,7 +91,11 @@ export const PRIX_LIGNE = {
    ses deux bouts, et ce qui la fait varier. Le lot 6 y ajoutera la livraison,
    qui sera facturée en sus sur devis — d'où une phrase et non une constante
    collée dans un JSX. */
-export const PRIX_PHRASE = `De ${EUROS_MIN} € pour ${PAGES_MIN} pages à ${EUROS_MAX} € pour ${PAGES_MAX} pages.`
+/* DEUX phrases depuis le lot 6 (10/09/2026) : la livraison sort du prix, et
+   une page produit qui ne le dit pas ferait découvrir le port au moment de
+   payer. On ne donne AUCUN montant ici — il vient d'un devis, destination par
+   destination (interdit nº5) — mais on dit qu'il existe et quand il s'affiche. */
+export const PRIX_PHRASE = `De ${EUROS_MIN} € pour ${PAGES_MIN} pages à ${EUROS_MAX} € pour ${PAGES_MAX} pages. Livraison en sus, affichée avant paiement.`
 
 /* Le titre de la bande parcours (lot 3, 07/09 — arbitrage T-086 rendu par
    Mathias : la bande gagne un vrai titre au lieu de flotter sans nom). */

@@ -16,6 +16,8 @@
  * n'avoir rien du tout, et il tourne en une seconde.
  */
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { preparerTransition, actionsDepuis, cleCadrageCouverture } from "@/lib/atelier/transitions";
 import { urgencePour, comparerUrgence, etapeDepot } from "@/lib/atelier/urgence";
 import { lireDoublesBrutes, lirePlanchesBrutes, MAX_DOUBLES, MAX_PLANCHES } from "@/lib/atelier/apercu";
@@ -112,6 +114,8 @@ import {
   estCleImpression,
   interpreterSignal,
   payloadCommande,
+  payloadDevis,
+  SHIPPING_LEVEL,
   pointsEnMm,
   produitPour,
   verdictMultiplePages,
@@ -136,6 +140,7 @@ import {
 } from "@/lib/frein-login";
 import {
   reconstruireJalons,
+  livraisonEncaissee,
   dureeEtape,
   dureesEtapes,
   compterEntonnoir,
@@ -148,6 +153,16 @@ import {
   type EvenementMesure,
   type Seau,
 } from "@/lib/atelier/mesure";
+import {
+  centimesDeSaisie,
+  lireDevisCloudprinter,
+  livraisonClient,
+  livraisonClientAvec,
+  totalCommande,
+  ttcDepuisHt,
+  LIVRAISON_PLAFOND_CENTIMES,
+  TAUX_TTC_LIVRAISON,
+} from "@/lib/atelier/livraison";
 import { estAbsenceR2 } from "@/lib/atelier/r2";
 import { formaterJour } from "@/lib/atelier/dates";
 import {
@@ -937,6 +952,202 @@ try {
 } catch { jete = true; }
 ok("un fichier requis manquant est une erreur franche, jamais une commande partielle", jete);
 
+
+/* ════════════════════ LA LIVRAISON FACTUREE EN SUS (lot 6) ════════════════
+   Mathias a tranche le 10/09/2026 : le port sort du prix du magazine et se
+   devise chez Cloudprinter, par destination. Tout ce qui suit s'appuie sur
+   DEUX RELEVES REELS de leur `prices/lookup`, rangees dans scripts/fixtures/ :
+   ce ne sont PAS des tarifs decides, ce sont des reponses d'API capturees un
+   jour donne. Le parseur doit savoir les lire, c'est tout ce qu'on teste. */
+
+titre("— le devis Cloudprinter, lu sur des reponses REELLES —");
+
+const fixture = (nom: string): unknown =>
+  JSON.parse(readFileSync(resolve(process.cwd(), "scripts/fixtures", nom), "utf8"));
+
+const DEVIS_FR = fixture("cloudprinter-devis.json");
+const DEVIS_BE = fixture("cloudprinter-devis-be-20.json");
+
+/* LE PIEGE CENTRAL DU LOT : `cp_saver` (SHIPPING_LEVEL) n'est PAS propose
+   pour la France en 32 pages. Commander sous ce niveau reviendrait a acheter
+   un service qui n'a jamais ete chiffre. Le parseur retient donc le MOINS
+   CHER des niveaux offerts, et le DIT. */
+const devFR = lireDevisCloudprinter(DEVIS_FR, SHIPPING_LEVEL);
+ok("FR/32 : cp_saver absent, on retient le moins cher (cp_ground) et on le signale",
+   devFR.ok && devFR.niveauVouluAbsent === true && devFR.devis.niveau === "cp_ground");
+ok("FR/32 : 9,2160 EUR HT devient 922 centimes (arrondi au centime)",
+   devFR.ok && devFR.devis.htCentimes === 922);
+/* L'espace finale de « Colissimo  » est dans la reponse reelle : ce trim n'est
+   pas de la coquetterie, cette chaine s'affiche dans le back-office. */
+ok("FR/32 : le transporteur est lisible et debarrasse de son espace finale",
+   devFR.ok && devFR.devis.transporteur === "Colissimo"
+   && devFR.devis.service === "Ground - Tracked");
+
+const devFast = lireDevisCloudprinter(DEVIS_FR, "cp_fast");
+ok("FR/32 : un niveau DEMANDE et propose est retenu tel quel (cp_fast, 976)",
+   devFast.ok && devFast.devis.niveau === "cp_fast" && devFast.devis.htCentimes === 976
+   && devFast.niveauVouluAbsent === false);
+
+const devBE = lireDevisCloudprinter(DEVIS_BE, SHIPPING_LEVEL);
+ok("BE/20 : un seul niveau propose, cp_ground a 1245 centimes",
+   devBE.ok && devBE.devis.niveau === "cp_ground" && devBE.devis.htCentimes === 1245
+   && devBE.niveauVouluAbsent === true);
+
+/* Cinq formes de refus. Aucune ne doit rendre un montant : un port invente
+   serait un montant que personne n'a decide (interdit nº5). */
+for (const [corps, quoi] of [
+  [{}, "un objet vide"],
+  [null, "null"],
+  ["x", "une chaine"],
+  [{ shipments: [] }, "aucune expedition"],
+  [{ shipments: [{ quotes: [] }] }, "aucun tarif"],
+] as Array<[unknown, string]>) {
+  ok(`devis illisible (${quoi}) : refuse, avec une raison affichable`,
+     (() => {
+       const r = lireDevisCloudprinter(corps, SHIPPING_LEVEL);
+       return !r.ok && typeof r.raison === "string" && r.raison.length > 0;
+     })());
+}
+
+titre("— du cout HT de l'imprimeur au prix client TTC —");
+
+/* ⚠️ CE N'EST PAS UN TAUX FISCAL. C'est un COEFFICIENT commercial (le taux
+   normal du pays), pour afficher le port TTC comme le magazine. La TVA
+   reellement facturee est celle de Stripe Tax. Regle a valider par Mathias. */
+ok("FR : 922 HT donne 1106 TTC (coefficient 20 %)", ttcDepuisHt(922, "FR") === 1106);
+ok("BE : 1245 HT donne 1506 TTC (coefficient 21 %)", ttcDepuisHt(1245, "BE") === 1506);
+ok("LU : 1000 HT donne 1170 TTC (coefficient 17 %)", ttcDepuisHt(1000, "LU") === 1170);
+/* Un pays hors table ne se devine PAS : la route retombe alors sur la saisie
+   a la main, ce qui est le comportement sur. */
+ok("un pays hors zone ne rend AUCUN montant", ttcDepuisHt(922, "US") === null);
+ok("les trois pays de la zone ont tous un coefficient",
+   Object.keys(TAUX_TTC_LIVRAISON).sort().join(",") === "BE,FR,LU");
+
+titre("— le plafond : au-dela, Bellajour absorbe —");
+
+ok("sans plafond, le client paie tout et rien n'est absorbe",
+   (() => { const r = livraisonClientAvec(1106, null); return r.client === 1106 && r.absorbe === 0; })());
+ok("plafond a 600 : le client paie 600, Bellajour absorbe 506",
+   (() => { const r = livraisonClientAvec(1106, 600); return r.client === 600 && r.absorbe === 506; })());
+ok("sous le plafond, il ne se passe RIEN (500 reste 500)",
+   (() => { const r = livraisonClientAvec(500, 600); return r.client === 500 && r.absorbe === 0; })());
+/* Le plafond du depot n'est pas encore pose (Mathias le tranchera) : tant
+   qu'il vaut null, `livraisonClient` ne doit rien plafonner. */
+ok("le plafond du depot n'est pas encore pose, donc il n'absorbe rien",
+   LIVRAISON_PLAFOND_CENTIMES === null && livraisonClient(9999).absorbe === 0);
+
+titre("— un montant tape a la main par l'atelier —");
+
+/* CHOIX ASSUME : au-dela de deux decimales on ARRONDIT (« 12,345 » -> 1235)
+   plutot que de refuser. Le centime n'existe pas en dessous, et refuser une
+   saisie pour une decimale de trop ferait perdre le geste sans rien proteger. */
+ok("« 4,90 », « 4.9 » et 4.9 donnent tous 490 centimes",
+   centimesDeSaisie("4,90") === 490 && centimesDeSaisie("4.9") === 490
+   && centimesDeSaisie(4.9) === 490);
+ok("« 0 » vaut ZERO, pas « inconnu » : offrir le port est une decision",
+   centimesDeSaisie("0") === 0);
+ok("vide, negatif et illisible rendent null, jamais un montant",
+   centimesDeSaisie("") === null && centimesDeSaisie("   ") === null
+   && centimesDeSaisie("-1") === null && centimesDeSaisie("abc") === null
+   && centimesDeSaisie(null) === null && centimesDeSaisie(undefined) === null);
+ok("« 12,345 » est ARRONDI a 1235, il n'est pas refuse", centimesDeSaisie("12,345") === 1235);
+
+titre("— le total d'une commande —");
+
+const ordinaire = totalCommande({ prixCentimes: 3700, livraisonCentimes: 1106, creditCentimes: 0, portOffert: false });
+ok("un client ordinaire, 34 pages : 37 EUR + 11,06 EUR = 48,06 EUR",
+   ordinaire.prix === 3700 && ordinaire.livraison === 1106 && ordinaire.remise === 0
+   && ordinaire.total === 4806);
+
+/* Le fondateur ne paie NI son credit NI son port (decision de Mathias). */
+const fondateur34 = totalCommande({ prixCentimes: 3700, livraisonCentimes: 1106, creditCentimes: 3000, portOffert: true });
+ok("un fondateur, 34 pages : 30 EUR deduits, port offert, reste 7 EUR",
+   fondateur34.remise === 3000 && fondateur34.livraison === 0 && fondateur34.total === 700);
+
+/* ⚠️ LE SURPLUS DE CREDIT EST PERDU, et c'est le comportement de Stripe
+   (`amount_off` plafonne au total). SUR, mais pas tranche commercialement :
+   ce test fige ce qu'on fait AUJOURD'HUI, il ne valide pas une decision. */
+const fondateur20 = totalCommande({ prixCentimes: 2500, livraisonCentimes: 1106, creditCentimes: 3000, portOffert: true });
+ok("un fondateur, 20 pages : la remise est plafonnee au prix, le total tombe a 0",
+   fondateur20.remise === 2500 && fondateur20.total === 0);
+ok("un total n'est JAMAIS negatif, quel que soit le credit",
+   totalCommande({ prixCentimes: 100, livraisonCentimes: 0, creditCentimes: 99999, portOffert: true }).total === 0);
+/* Le credit ne deborde pas sur le port : Stripe ne reporte pas un reliquat. */
+ok("le credit ne s'impute jamais sur la livraison d'un client ordinaire",
+   totalCommande({ prixCentimes: 2500, livraisonCentimes: 1106, creditCentimes: 3000, portOffert: false }).total === 1106);
+
+titre("— la livraison a la publication de l'apercu —");
+
+const pLivr = preparerTransition("publier_apercu", "photos_recues",
+  { nb_pages: 34, pays_livraison: "FR", livraison_centimes: "4,90", ...VISUELS });
+ok("un montant tape en EUROS entre en base en CENTIMES",
+   pLivr.ok && pLivr.patch.livraison_centimes === 490 && pLivr.resume.livraisonCentimes === 490);
+
+/* ⚠️ LE CHAMP VIDE EST UN SIGNAL, PAS UN ZERO : il dit « devise pour moi ».
+   Ecrire 0 par defaut ferait offrir le port en silence, a tout le monde. */
+const pLivrVide = preparerTransition("publier_apercu", "photos_recues",
+  { nb_pages: 34, pays_livraison: "FR", livraison_centimes: "", ...VISUELS });
+ok("un champ vide ne pose AUCUNE cle : c'est la route qui devisera",
+   pLivrVide.ok && !("livraison_centimes" in pLivrVide.patch));
+const pLivrAbsent = preparerTransition("publier_apercu", "photos_recues",
+  { nb_pages: 34, pays_livraison: "FR", ...VISUELS });
+ok("un champ absent se comporte comme un champ vide",
+   pLivrAbsent.ok && !("livraison_centimes" in pLivrAbsent.patch));
+
+const pLivrNeg = preparerTransition("publier_apercu", "photos_recues",
+  { nb_pages: 34, pays_livraison: "FR", livraison_centimes: "-2", ...VISUELS });
+ok("un montant negatif est REFUSE, sur son propre champ",
+   !pLivrNeg.ok && pLivrNeg.erreurs.some((e) => e.champ === "livraison_centimes"));
+
+const pLivrZero = preparerTransition("publier_apercu", "photos_recues",
+  { nb_pages: 34, pays_livraison: "FR", livraison_centimes: "0", ...VISUELS });
+ok("zero est ACCEPTE et gele : offrir le port est une decision legitime",
+   pLivrZero.ok && pLivrZero.patch.livraison_centimes === 0);
+
+/* Le niveau ne vient pas d'un clavier : il est renvoye par l'ecran apres le
+   devis. Une valeur abimee est IGNOREE, jamais transformee en erreur — un
+   niveau bancal ne doit pas empecher de publier une couverture. */
+const pNiveau = preparerTransition("publier_apercu", "photos_recues",
+  { nb_pages: 34, pays_livraison: "FR", livraison_niveau: "cp_ground", ...VISUELS });
+ok("le niveau d'expedition est gele avec le montant",
+   pNiveau.ok && pNiveau.patch.livraison_niveau === "cp_ground");
+const pNiveauSale = preparerTransition("publier_apercu", "photos_recues",
+  { nb_pages: 34, pays_livraison: "FR", livraison_niveau: "CP GROUND!", ...VISUELS });
+ok("un niveau qui ne respecte pas le motif de la base est IGNORE, sans erreur",
+   pNiveauSale.ok && !("livraison_niveau" in pNiveauSale.patch));
+
+titre("— le devis chiffre EXACTEMENT ce qu'on commandera —");
+
+/* Si les options du devis et celles de la commande divergent, le devis chiffre
+   un autre objet — et l'ecart ne fait AUCUNE erreur, seulement un prix faux.
+   C'est pour ca que les deux passent par la meme construction. */
+const OPT_DEVIS = payloadDevis({ pays: "FR", produit: produitPour(32)!, pages: 32 }).items[0].options;
+const OPT_COMMANDE = CORPS.items[0].options;
+ok("payloadDevis et payloadCommande envoient EXACTEMENT les memes options",
+   JSON.stringify(OPT_DEVIS) === JSON.stringify(OPT_COMMANDE));
+ok("le devis part en EUR, sur un exemplaire, sans fichier ni adresse",
+   (() => {
+     const d = payloadDevis({ pays: "BE", produit: produitPour(20)!, pages: 20 });
+     return d.currency === "EUR" && d.country === "BE" && d.items.length === 1
+       && d.items[0].count === "1" && !("files" in d.items[0]) && !("addresses" in d);
+   })());
+
+/* Le niveau GELE au devis remonte jusqu'a la commande. Sans lui, on
+   acheterait `cp_saver` — que la France ne propose meme pas. */
+ok("payloadCommande commande le niveau GELE quand on le lui donne",
+   payloadCommande({
+     reference: "r", emailContact: "c@b.com", adresse: ADR_OK,
+     produit: produitPour(32)!, pages: 32,
+     fichiers: { cover: { url: "u", md5: MD5 }, book: { url: "u", md5: MD5 } },
+   }, "cp_ground").items[0].shipping_level === "cp_ground");
+ok("sans niveau gele, elle retombe sur SHIPPING_LEVEL, comme avant le lot 6",
+   CORPS.items[0].shipping_level === SHIPPING_LEVEL
+   && payloadCommande({
+     reference: "r", emailContact: "c@b.com", adresse: ADR_OK,
+     produit: produitPour(32)!, pages: 32,
+     fichiers: { cover: { url: "u", md5: MD5 }, book: { url: "u", md5: MD5 } },
+   }, null).items[0].shipping_level === SHIPPING_LEVEL);
+
 titre("— les signaux CloudSignal —");
 ok("ItemShipped expedie", interpreterSignal("ItemShipped").effet === "expedier");
 ok("ItemError alerte sans changer l'etat", interpreterSignal("ItemError").effet === "alerte");
@@ -1286,6 +1497,36 @@ ok("la vie complete pose ses dix jalons",
 ok("un consentement REFUSE ne pose pas le depot", JALONS.get("E")!.depot === undefined);
 ok("aller-retour : le DERNIER passage compte", JALONS.get("F")!.apercu === T0 + 30 * H);
 ok("un dossier avance en SQL n'a pas de depot", JALONS.get("D")!.depot === undefined);
+
+
+titre("— lot 6 : la livraison encaissee, a part du chiffre d'affaires —");
+
+/* ⚠️ LE PORT N'EST PAS UNE VENTE. C'est un cout d'imprimeur refacture, sans
+   marge (et parfois absorbe, cf. le plafond de livraison.ts). L'ajouter au CA
+   ferait passer du transport pour de la croissance, et le panier moyen
+   mentirait d'autant. Deux nombres, deux questions.
+   La source est ce que STRIPE dit avoir pris (`livraison_encaissee`, ecrit par
+   le webhook), pas ce que le checkout avait demande : l'ecart est precisement
+   ce qu'on veut pouvoir constater. */
+const JOURNAL_PORT: EvenementMesure[] = [
+  evt("P1", "etat_change", 10, { vers: "payee", livraison_encaissee: 1106 }),
+  evt("P2", "etat_change", 20, { vers: "payee", livraison_encaissee: 1506 }),
+  /* Fondateur : port offert. Zero est une INFORMATION, pas une absence. */
+  evt("P3", "etat_change", 30, { vers: "payee", livraison_encaissee: 0 }),
+  /* Paiement d'AVANT le lot 6 : aucune ligne de livraison, il ne compte pour
+     rien — et c'est juste, aucun port n'a ete facture ce jour-la. */
+  evt("P4", "etat_change", 40, { vers: "payee" }),
+  /* Une transition qui n'est PAS un paiement ne doit rien ajouter. */
+  evt("P5", "etat_change", 50, { vers: "maquette_prete", livraison_encaissee: 9999 }),
+  /* Hors fenetre. */
+  evt("P6", "etat_change", 500, { vers: "payee", livraison_encaissee: 5000 }),
+];
+ok("le port encaisse s'additionne sur la fenetre, et seulement sur les paiements",
+   livraisonEncaissee(JOURNAL_PORT, T0, FIN) === 1106 + 1506);
+ok("un paiement hors fenetre n'entre pas dans le total",
+   livraisonEncaissee(JOURNAL_PORT, T0, T0 + 15 * H) === 1106);
+ok("un journal sans aucune ligne de livraison rend ZERO, jamais NaN",
+   livraisonEncaissee(JOURNAL, T0, FIN) === 0);
 
 titre("— les durees d'etape —");
 ok("la table couvre les neuf paires plus le bout-en-bout", ETAPES_VIE.length === 10);
@@ -1752,6 +1993,74 @@ ok("sans gel, M3 retombe sur la grille, DEPUIS LA PAGINATION (34 -> 37)",
    parametresPour("M3", d({ etat: "apercu_pret", nb_pages: 34, palier: "p40" })).PRIX === 37);
 ok("sans gel NI pagination, M3 n'invente aucun prix (le palier ne facture plus)",
    parametresPour("M3", d({ etat: "apercu_pret", nb_pages: null, palier: "p40" })).PRIX === "");
+
+
+titre("— lot 6 : le port entre dans les mails qui vendent —");
+
+/* ⚠️ LE MAIL QUI ANNONCE UN TOTAL FAUX EST UN PANIER ABANDONNE. M3, M3b et le
+   M10 d'une couverture prete portent le LIEN DE PAIEMENT : sans le port, ils
+   diraient 37 EUR a quelqu'un a qui Stripe en demandera 48. C'est la garantie
+   nº1 du module (jamais un mail qui tombe sur une page fausse), appliquee a un
+   chiffre au lieu d'une image. Et /api/atelier/checkout refuserait de toute
+   facon le paiement : on enverrait un mail vers un bouton mort. */
+const dossierPort = d({
+  etat: "apercu_pret", nb_pages: 34, palier: "p40", prix_centimes: 3700,
+  livraison_centimes: 1106, pays_livraison: "FR",
+});
+for (const c of ["M3", "M3b"] as const) {
+  ok(`${c} sans port devise : SIGNALE, le mail ne part pas`,
+     manquePour(c, d({ ...dossierPort, livraison_centimes: null })).includes("livraison_centimes"));
+  ok(`${c} sans pays : signale aussi (un port sans destination ne veut rien dire)`,
+     manquePour(c, d({ ...dossierPort, pays_livraison: null })).includes("pays_livraison"));
+  ok(`${c} avec le port : plus rien ne manque`, manquePour(c, dossierPort).length === 0);
+}
+/* `undefined` (repli 42703, migration pas passee) se traite comme `null` :
+   dans les deux cas on ne SAIT pas, et on ne devine pas un port. */
+ok("M3 : une colonne absente (repli 42703) retient le mail comme un null",
+   manquePour("M3", d({ ...dossierPort, livraison_centimes: undefined })).includes("livraison_centimes"));
+
+/* M10 n'exige le port QUE s'il va parler d'une couverture prete : un depot
+   abandonne n'a ni prix ni port a annoncer. */
+ok("M10 sur une couverture prete : le port est exige",
+   manquePour("M10", d({ ...dossierPort, livraison_centimes: null })).includes("livraison_centimes"));
+ok("M10 sur un depot abandonne : aucun port exige, il n'annonce aucun total",
+   manquePour("M10", d({ etat: "photos_recues", nb_pages: null, palier: null })).length === 0);
+
+/* LES TROIS PARAMETRES SONT TOUJOURS ENVOYES, quitte a etre vides : le
+   `{% if %}` de Brevo traite la chaine vide comme faux, mais la LISTE doit
+   rester stable d'un dossier a l'autre, sinon verif-mails-brevo ne peut plus
+   la comparer aux templates. Meme discipline que CREDIT_FONDATRICE. */
+for (const c of ["M3", "M3b", "M10"] as const) {
+  const p = parametresPour(c, dossierPort);
+  ok(`${c} : LIVRAISON, LIVRAISON_OFFERTE et TOTAL sont TOUJOURS envoyes`,
+     "LIVRAISON" in p && "LIVRAISON_OFFERTE" in p && "TOTAL" in p);
+}
+
+const ordinaireM3 = parametresPour("M3", dossierPort);
+ok("M3 ordinaire : le port s'ecrit « 11,06 », le total « 48,06 »",
+   ordinaireM3.LIVRAISON === "11,06" && ordinaireM3.TOTAL === "48,06"
+   && ordinaireM3.LIVRAISON_OFFERTE === "");
+
+/* Un fondateur ne paie NI son credit NI son port : le mail doit dire SON
+   total, pas celui des autres. 3700 - 3000 + 0 = 700, donc « 7 » (les
+   decimales ne s'ecrivent que quand elles disent quelque chose). */
+const fondateurM3 = parametresPour("M3", dossierPort, { creditFondatriceEuros: 30 });
+ok("M3 fondateur, 34 pages : livraison offerte et total a 7 EUR",
+   fondateurM3.LIVRAISON_OFFERTE === "oui" && fondateurM3.TOTAL === "7");
+ok("M3 fondateur : le PRIX affiche reste celui du magazine, jamais diminue",
+   fondateurM3.PRIX === 37 && fondateurM3.LIVRAISON === "11,06");
+
+/* Sans port connu, les trois paramètres existent quand meme, vides : le
+   template ne casse pas, il se tait. (Le mail, lui, ne partira pas — c'est
+   `manquePour` qui le retient, pas la mise en forme.) */
+const sansPortM3 = parametresPour("M3", d({ ...dossierPort, livraison_centimes: null }));
+ok("sans port : LIVRAISON et TOTAL sont VIDES, jamais zero",
+   sansPortM3.LIVRAISON === "" && sansPortM3.TOTAL === "");
+
+/* Les mails d'apres le paiement ne parlent plus de port : il est paye. */
+ok("M5 n'envoie aucun parametre de livraison (elle a deja paye)",
+   !("LIVRAISON" in parametresPour("M5", dossierPort))
+   && !("TOTAL" in parametresPour("M5", dossierPort)));
 
 /* ═══════════ LE TRI DU WEBHOOK PARTAGÉ (T-035, incident du 24/08) ═══════════
    /api/webhook sert DEUX produits. Le tri se fait sur les métadonnées, AVANT

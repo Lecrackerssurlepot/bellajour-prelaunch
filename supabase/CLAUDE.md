@@ -5,7 +5,7 @@ Chargé dès qu'on touche une migration ou le dossier supabase.
 
 | Table | Rôle | Clé à connaître |
 |---|---|---|
-| `numeros` | le dossier d'une cliente, du questionnaire à la livraison | `token` unique = l'identité ; `etat` (9 valeurs) |
+| `numeros` | le dossier d'une cliente, du questionnaire à la livraison | `token` unique = l'identité ; `etat` (9 valeurs) ; depuis 20260910 le prix GELÉ (`prix_centimes`, `livraison_centimes`, `livraison_niveau`, `pays_livraison`) ; `palier` est un bucket hérité, plus aucun prix n'en dépend, jamais de `drop` |
 | `waitlist` | inscrits, clients de la prévente, ambassadeurs | `email` unique, `ref_code` unique, `numero_fondateur` unique |
 | `photos` | une ligne par photo déposée | `r2_key` unique, `vignette_key` |
 | `mails_envoyes` | **le verrou anti-doublon** | unique (`numero_id`, `code`) |

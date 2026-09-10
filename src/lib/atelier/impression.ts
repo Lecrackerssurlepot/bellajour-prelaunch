@@ -404,6 +404,70 @@ export function adresseCloudprinter(
 
 /* ─────────────────────────── la commande ─────────────────────────── */
 
+/**
+ * Les OPTIONS d'un item : la pagination, puis les finitions du produit.
+ *
+ * Extraites de `payloadCommande` (10/09/2026) pour que le DEVIS et la
+ * COMMANDE en partagent une seule et même construction. La règle est celle
+ * du script de relevé (`cloudprinter-produits.mjs devis`) : « les mêmes
+ * options que la commande, sinon le devis ne chiffre pas ce qu'on
+ * commandera ». Deux listes recopiées auraient divergé au premier changement
+ * de grammage — et l'écart n'aurait pas fait d'erreur, seulement un prix
+ * faux. `scripts/verif-atelier.ts` compare les deux à chaque exécution.
+ */
+function optionsItem(produit: ProduitImpression, pages: number): Array<{ type: string; count: string }> {
+  return [
+    { type: "total_pages", count: String(pages) },
+    ...produit.finitions.map((f) => ({
+      type: f.type,
+      count: String(f.count === "pages" ? pages : f.count),
+    })),
+  ];
+}
+
+export type PayloadDevis = {
+  country: string;
+  currency: "EUR";
+  items: Array<{
+    reference: string;
+    product: string;
+    count: string;
+    options: Array<{ type: string; count: string }>;
+  }>;
+};
+
+/**
+ * Le corps de `prices/lookup` — le DEVIS de port, sans rien commander.
+ *
+ * Aucun fichier, aucune adresse, aucune référence de dossier : un devis ne
+ * dit que « combien coûte l'envoi de CET objet vers CE pays ». La référence
+ * d'item est une chaîne fixe, comme dans le script de relevé : elle ne sert
+ * qu'à relier la réponse à la demande, elle n'entre dans aucune commande.
+ *
+ * ⚠️ `count: "1"` : le devis chiffre UN exemplaire, exactement comme le
+ * checkout (verrou `QUANTITE_MAX`, prix.ts). Le jour où les multi-exemplaires
+ * s'ouvrent, ce « 1 » doit bouger EN MÊME TEMPS que celui du line_item.
+ */
+export function payloadDevis(args: {
+  pays: string;
+  produit: ProduitImpression;
+  pages: number;
+}): PayloadDevis {
+  const { pays, produit, pages } = args;
+  return {
+    country: pays,
+    currency: "EUR",
+    items: [
+      {
+        reference: "devis",
+        product: produit.produit,
+        count: "1",
+        options: optionsItem(produit, pages),
+      },
+    ],
+  };
+}
+
 export type PayloadCommande = {
   reference: string;
   email: string;
@@ -429,24 +493,33 @@ export type PayloadCommande = {
  * erreur de programmation de l'appelant : la route contrôle avant.
  * Les counts sont des CHAÎNES : c'est la forme que l'API documente.
  */
-export function payloadCommande(args: {
-  reference: string;
-  emailContact: string;
-  adresse: AdresseCp;
-  produit: ProduitImpression;
-  pages: number;
-  fichiers: Partial<Record<TypeFichier, { url: string; md5: string }>>;
-  titre?: string | null;
-}): PayloadCommande {
+export function payloadCommande(
+  args: {
+    reference: string;
+    emailContact: string;
+    adresse: AdresseCp;
+    produit: ProduitImpression;
+    pages: number;
+    fichiers: Partial<Record<TypeFichier, { url: string; md5: string }>>;
+    titre?: string | null;
+  },
+  /**
+   * Le niveau d'expédition GELÉ AU DEVIS (`numeros.livraison_niveau`).
+   *
+   * ⚠️ POURQUOI IL SE PASSE ET NE SE DEVINE PAS. Le premier devis réel
+   * (10/09/2026) a montré que `SHIPPING_LEVEL` — `cp_saver` — n'est PAS
+   * proposé partout : la France en 32 pages n'offrait que `cp_ground`,
+   * `cp_fast` et `cp_limited`. Commander sous un niveau qui n'a pas été
+   * chiffré, c'est facturer un service et en acheter un autre. Le niveau
+   * retenu au devis remonte donc jusqu'ici. `null`/absent = dossier chiffré
+   * avant ce lot (ou devis manqué) : on retombe sur la constante, exactement
+   * comme avant.
+   */
+  niveau?: string | null,
+): PayloadCommande {
   const { reference, emailContact, adresse, produit, pages, fichiers, titre } = args;
 
-  const options: Array<{ type: string; count: string }> = [
-    { type: "total_pages", count: String(pages) },
-    ...produit.finitions.map((f) => ({
-      type: f.type,
-      count: String(f.count === "pages" ? pages : f.count),
-    })),
-  ];
+  const options = optionsItem(produit, pages);
 
   return {
     reference,
@@ -457,7 +530,7 @@ export function payloadCommande(args: {
         reference: `${reference}-1`,
         product: produit.produit,
         count: "1",
-        shipping_level: SHIPPING_LEVEL,
+        shipping_level: niveau ?? SHIPPING_LEVEL,
         ...(titre ? { title: titre.slice(0, 120) } : {}),
         files: produit.fichiers.map((type) => {
           const f = fichiers[type];

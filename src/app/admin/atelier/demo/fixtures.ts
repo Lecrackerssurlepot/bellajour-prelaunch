@@ -321,6 +321,12 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
          champ « Pays de livraison » de la publication s'y trouve prérempli
          comme sur un vrai dossier ouvert après le 10/09. */
       pays: "FR",
+      /* ⚠️ AUCUN PORT INVENTÉ DANS LA DÉMONSTRATION. Un tarif de livraison
+         vient d'un devis Cloudprinter (lot 6), pas d'une constante : écrire
+         un montant ici ferait lire à l'atelier un chiffre que personne n'a
+         décidé (interdit nº5). `null` est exactement ce que montre un vrai
+         dossier pas encore devisé. */
+      livraisonCentimes: null,
       createdAt,
       etatMajLe,
       urgence: {
@@ -499,6 +505,9 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     renonciationAt: g.paye ? il(g.depuis + 25) : null,
     palier: g.palier,
     paysLivraison: "FR",
+    /* Même règle que la ligne : la démo ne chiffre aucun port. */
+    livraisonCentimes: null,
+    livraisonNiveau: null,
     canvaUrl: ["maquette_prete", "validee", "en_production", "expediee", "livree"].includes(g.etat)
       ? "https://www.canva.com/design/DEMO/view?mode=comment"
       : null,

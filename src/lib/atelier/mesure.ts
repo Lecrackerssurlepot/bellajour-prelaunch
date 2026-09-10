@@ -82,6 +82,46 @@ export function reconstruireJalons(evts: EvenementMesure[]): Map<string, Jalons>
   return par;
 }
 
+/**
+ * LA LIVRAISON ENCAISSÉE, À PART DU CHIFFRE D'AFFAIRES (lot 6, 10/09/2026).
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ * POURQUOI À PART, ET PAS DANS LE CA
+ *
+ * Le port n'est pas une vente : c'est un coût d'imprimeur refacturé, sur
+ * lequel il n'y a pas de marge (et sur lequel Bellajour peut même absorber,
+ * cf. le plafond de livraison.ts). L'ajouter au chiffre d'affaires ferait
+ * croire à une croissance qui n'est que du transport, et le panier moyen
+ * mentirait d'autant. Deux nombres, deux questions.
+ *
+ * La source est le journal, comme tout le reste : la clé `livraison_encaissee`
+ * des `etat_change → payee`, écrite par le webhook Stripe à partir de ce que
+ * Stripe dit avoir RÉELLEMENT pris. Pas ce que le checkout avait demandé — la
+ * différence est exactement ce qu'on veut pouvoir constater.
+ *
+ * Absente sur les paiements d'avant le lot 6 : ils ne comptent pour rien, ce
+ * qui est juste — aucun port n'a été facturé ce jour-là.
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * Fonction PURE, éprouvée par verif-atelier.ts. Rend des CENTIMES.
+ */
+export function livraisonEncaissee(
+  evts: EvenementMesure[],
+  debut: number,
+  fin: number,
+): number {
+  let total = 0;
+  for (const e of evts) {
+    if (e.type !== "etat_change") continue;
+    if (e.payload?.vers !== "payee") continue;
+    const t = Date.parse(e.created_at);
+    if (!(t >= debut && t < fin)) continue;
+    const v = e.payload?.livraison_encaissee;
+    if (typeof v === "number" && Number.isFinite(v) && v > 0) total += v;
+  }
+  return total;
+}
+
 /* ───────────────────── les étapes de la vie d'un dossier ───────────────── */
 
 export type EtapeVieCle =

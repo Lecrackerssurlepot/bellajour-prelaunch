@@ -1,7 +1,8 @@
 import type { SupabaseClient, PostgrestError } from "@supabase/supabase-js";
 import { logEvenement } from "./evenements";
 import { sendBrevoEmail } from "@/lib/brevo";
-import { eurosDuDossier, type PalierCle } from "./prix";
+import { centimesDuDossier, eurosDuDossier, type PalierCle } from "./prix";
+import { totalCommande } from "./livraison";
 import { ajouterJours, formaterJour } from "./dates";
 import { etapeDepot } from "./urgence";
 import { creditDuPourMail, parametreCredit } from "./fondatrice";
@@ -140,6 +141,15 @@ export type NumeroPourMail = {
      alors sur la grille (`eurosDuDossier`, prix.ts). Aucun mail ne part sans
      prix pour autant. */
   prix_centimes?: number | null;
+  /* Le PORT TTC gelé au devis, et sa destination (lot 6, 10/09). OPTIONNELS
+     pour la même raison que `prix_centimes` : le repli `CHAMPS_MAIL_REPLI` les
+     laisse `undefined` tant que la migration 20260910 n'est pas passée.
+     ⚠️ Contrairement au prix, ils n'ont AUCUN repli de calcul : un port ne se
+     recalcule pas depuis une grille, il vient d'un devis. Leur absence retient
+     donc les trois mails qui annoncent un total (cf. `manquePour`), plutôt que
+     d'envoyer « 37 € » à quelqu'un à qui Stripe demandera 48 €. */
+  livraison_centimes?: number | null;
+  pays_livraison?: string | null;
 };
 
 /** Ce qu'il faut EN PLUS pour décider quels mails sont dus (cf. codesPour). */
@@ -262,6 +272,35 @@ export function manquePour(code: CodeMail, n: NumeroPourMail): string[] {
   if (code === "M7b" && !(n as Partial<NumeroPourReleve>).souvenir_pdf_key) {
     manque.push("souvenir_pdf_key");
   }
+  /* ── LE PORT EST EXIGÉ PAR LES MAILS QUI ANNONCENT UN TOTAL ────────
+     M3 (« votre couverture est prête »), M3b (sa relance) et le M10 d'une
+     couverture prête portent tous les trois le LIEN DE PAIEMENT et disent un
+     montant. Depuis que la livraison se facture en sus (lot 6, 10/09/2026),
+     ce montant n'est complet qu'avec le port : sans lui, le mail annoncerait
+     37 € et Stripe en demanderait 48. C'est exactement la garantie nº1 du
+     module — jamais un mail qui tombe sur une page vide ou fausse — appliquée
+     à un chiffre au lieu d'une image.
+
+     Le dossier est SIGNALÉ, pas envoyé : la relève le remonte à l'atelier, qui
+     republie l'aperçu pour poser le port. Et /api/atelier/checkout refuserait
+     de toute façon le paiement (`livraison_indisponible`) : sans cette règle,
+     on enverrait un mail vers un bouton qui ne marche pas.
+
+     ⚠️ `undefined` (repli 42703, migration pas passée) et `null` (devis jamais
+     fait) se traitent PAREIL : dans les deux cas on ne sait pas. M10 ne
+     l'exige que s'il va parler d'une couverture prête — un dépôt abandonné n'a
+     ni prix ni port à annoncer. */
+  const exigeLePort =
+    code === "M3" ||
+    code === "M3b" ||
+    (code === "M10" &&
+      (n as Partial<NumeroPourReleve>).etat === "apercu_pret" &&
+      Boolean(n.nb_pages && n.palier));
+  if (exigeLePort) {
+    if (typeof n.livraison_centimes !== "number") manque.push("livraison_centimes");
+    if (!n.pays_livraison) manque.push("pays_livraison");
+  }
+
   if (code === "M3" || code === "M3b") {
     const a = n.apercu_urls;
     const vide =
@@ -285,6 +324,61 @@ export const JOURS_AVANT_AUTO_VALIDATION = 7;
  * silencieux dans le mail — pas une erreur, juste un mot manquant que
  * personne ne remarque avant qu'une cliente le signale.
  */
+/**
+ * Des CENTIMES vers ce qu'un mail écrit : « 11,06 », « 7 ». Sans le symbole —
+ * les templates posent le `&euro;` eux-mêmes, avec leur espace insécable.
+ * Décimales seulement quand elles disent quelque chose : « 7,00 » fait
+ * comptable, et l'atelier ne l'est pas (même règle que `formaterCentimes`).
+ */
+function eurosDeCentimesTexte(centimes: number): string {
+  const arrondi = Math.abs(Math.round(centimes));
+  const euros = Math.floor(arrondi / 100);
+  const cts = arrondi % 100;
+  return cts === 0 ? String(euros) : `${euros},${String(cts).padStart(2, "0")}`;
+}
+
+/**
+ * LE TOTAL D'UN MAIL QUI VEND — les trois paramètres de la livraison.
+ *
+ * ⚠️ TOUJOURS LES TROIS, TOUJOURS PRÉSENTS, quitte à être vides. Le
+ * `{% if params.X %}` de Brevo traite la chaîne vide comme faux, donc le bloc
+ * disparaît de lui-même ; mais la LISTE des paramètres envoyés doit rester
+ * identique d'un dossier à l'autre, sinon `scripts/verif-mails-brevo.ts` ne
+ * peut plus la comparer aux `{{ params.X }}` des templates. Même discipline
+ * que `CREDIT_FONDATRICE` et `PHOTOS_DEPOSEES`.
+ *
+ * Le calcul lui-même vit dans `totalCommande` (livraison.ts, module pur) : le
+ * mail, la page d'état 2 et le checkout additionnent tous les trois par la
+ * MÊME fonction, et ne peuvent donc plus annoncer trois montants différents.
+ */
+function parametresLivraison(
+  n: NumeroPourMail,
+  creditFondatriceEuros?: number | null,
+): { LIVRAISON: string; LIVRAISON_OFFERTE: string; TOTAL: string } {
+  const port = typeof n.livraison_centimes === "number" ? n.livraison_centimes : null;
+  const prix = centimesDuDossier(n);
+  /* Le crédit est dû ⇒ le port est offert. La même condition que le checkout
+     (`portOffert = credit.statut === "pret"`), parce que c'est la même
+     personne au même moment : deux tests séparés finiraient par diverger. */
+  const offert = typeof creditFondatriceEuros === "number" && creditFondatriceEuros > 0;
+
+  const total =
+    prix === null || port === null
+      ? null
+      : totalCommande({
+          prixCentimes: prix,
+          livraisonCentimes: port,
+          creditCentimes: (creditFondatriceEuros ?? 0) * 100,
+          portOffert: offert,
+        }).total;
+
+  return {
+    LIVRAISON: port === null ? "" : eurosDeCentimesTexte(port),
+    LIVRAISON_OFFERTE: offert ? "oui" : "",
+    TOTAL: total === null ? "" : eurosDeCentimesTexte(total),
+  };
+}
+
 export function parametresPour(
   code: CodeMail,
   n: NumeroPourMail,
@@ -350,6 +444,10 @@ export function parametresPour(
       COUVERTURE_PRETE: couverturePrete ? "oui" : "",
       NB_PAGES: n.nb_pages ?? 0,
       PRIX: eurosDuDossier(n) ?? "",
+      /* M10 porte le MÊME argumentaire que M3b quand la couverture est prête :
+         il doit donc dire le même total, port compris. Vides quand il n'y a
+         rien à vendre (dépôt abandonné) : le template les ignore. */
+      ...parametresLivraison(n, contexte?.creditFondatriceEuros),
     };
   }
 
@@ -377,6 +475,12 @@ export function parametresPour(
       ...communs,
       ...achat,
       CREDIT_FONDATRICE: parametreCredit(contexte?.creditFondatriceEuros),
+      /* Le port et le total, depuis le lot 6 (10/09/2026). Le pied de M3 disait
+         « tout compris, impression et livraison incluses » : c'était vrai la
+         veille, c'est faux depuis que le port se facture à part. Un mail qui
+         annonce un total faux, c'est un abandon de panier à l'arrivée chez
+         Stripe. */
+      ...parametresLivraison(n, contexte?.creditFondatriceEuros),
     };
   }
 
@@ -522,8 +626,13 @@ export async function envoyerMailAtelier(
        Stripe : un envoi de mail n'écrit jamais chez un tiers). Ne concerne
        que M3 et M3b ; ailleurs, aucune requête n'est faite. Un échec de
        lecture rend null et le mail part sans la phrase — jamais l'inverse. */
+    /* M10 rejoint M3 et M3b depuis le lot 6 (10/09) : quand il rappelle une
+       couverture prête, il annonce un TOTAL, et le total d'un fondateur n'est
+       pas celui des autres (crédit déduit, port offert). Le mail dirait
+       sinon 48,06 € à quelqu'un qui paiera 7 €. Toujours en LECTURE SEULE :
+       aucun coupon n'est frappé chez Stripe par un envoi de mail. */
     const creditFondatriceEuros =
-      code === "M3" || code === "M3b"
+      code === "M3" || code === "M3b" || code === "M10"
         ? await creditDuPourMail(supabase, {
             id: numero.id,
             prenom: numero.prenom,

@@ -66,6 +66,24 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
   const vers = typeof payload.vers === "string" ? (payload.vers as Etat) : null;
   const nbPages = typeof payload.nbPages === "number" ? payload.nbPages : null;
   const euros = typeof payload.euros === "number" ? payload.euros : null;
+  /* Le PORT, tel que le journal le porte depuis le lot 6 (10/09/2026). Absent
+     des lignes plus anciennes : le récit se contente alors de dire la
+     pagination et le prix, exactement comme avant. */
+  const port = typeof payload.livraison_centimes === "number" ? payload.livraison_centimes : null;
+  const portSource = typeof payload.livraison_source === "string" ? payload.livraison_source : "";
+  const portNiveau = typeof payload.livraison_niveau === "string" ? payload.livraison_niveau : "";
+  const paysPort = typeof payload.pays === "string" ? payload.pays : "";
+  const portEncaisse =
+    typeof payload.livraison_encaissee === "number" ? payload.livraison_encaissee : null;
+
+  /* « 11,06 € ». Le même format que `formaterCentimes` (prix.ts), recopié
+     pour garder ce module PUR et sans dépendance serveur — comme le fait déjà
+     `tokenForme.ts` avec `token.ts`. */
+  const eur = (centimes: number) => {
+    const cts = Math.abs(Math.round(centimes)) % 100;
+    const e = Math.floor(Math.abs(Math.round(centimes)) / 100);
+    return cts === 0 ? `${e} €` : `${e},${String(cts).padStart(2, "0")} €`;
+  };
 
   switch (type) {
     case "numero_cree":
@@ -95,9 +113,30 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
     case "etat_change": {
       const source = typeof payload.source === "string" ? payload.source : "";
       if (vers === "apercu_pret") {
+        /* Ce qu'on a annoncé au client, en entier : la pagination, le prix du
+           magazine, et le PORT avec sa provenance. Six mois plus tard,
+           « pourquoi ce dossier a-t-il payé 11,06 € de livraison ? » se lit
+           dans le journal du dossier, pas dans un log effacé au bout d'une
+           heure. Le port ne s'affiche que s'il existe : les publications
+           d'avant le lot 6 gardent le récit qu'elles avaient. */
+        const chiffres = nbPages ? `${nbPages} pages${euros ? `, ${euros} €` : ""}` : null;
+        const provenance = [
+          paysPort ? paysPort : "",
+          portSource === "cloudprinter"
+            ? `devis Cloudprinter${portNiveau ? ` ${portNiveau}` : ""}`
+            : portSource === "admin"
+              ? "saisi à la main"
+              : "",
+        ]
+          .filter(Boolean)
+          .join(", ");
+        const mentionPort =
+          port === null
+            ? ""
+            : `livraison ${eur(port)}${provenance ? ` (${provenance})` : ""}`;
         return {
           texte: fait(qui, "a publié l'aperçu", "Aperçu publié"),
-          detail: nbPages ? `${nbPages} pages${euros ? `, ${euros} €` : ""}` : null,
+          detail: [chiffres, mentionPort].filter(Boolean).join(", ") || null,
           ton: "nous",
         };
       }
@@ -112,7 +151,22 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         return { texte: "Le client a redéposé ses photos", detail: null, ton: "elle" };
       }
       if (vers === "payee") {
-        return { texte: "Paiement reçu", detail: euros ? `${euros} €` : null, ton: "elle" };
+        /* Le paiement DIT ce qui a été encaissé au titre de la livraison,
+           séparément : sans ça, un total qui ne tombe pas juste avec le prix
+           du magazine n'a aucune explication lisible. `0` est une information
+           (port offert au fondateur), `null` veut dire « pas de ligne de
+           livraison » — dossier payé avant le lot 6 — et se tait. */
+        const mention =
+          portEncaisse === null
+            ? ""
+            : portEncaisse === 0
+              ? "livraison offerte"
+              : `livraison ${eur(portEncaisse)}`;
+        return {
+          texte: "Paiement reçu",
+          detail: [euros ? `${euros} €` : "", mention].filter(Boolean).join(", ") || null,
+          ton: "elle",
+        };
       }
       if (vers === "maquette_prete") {
         /* Une republication après retouches n'est pas une première annonce :

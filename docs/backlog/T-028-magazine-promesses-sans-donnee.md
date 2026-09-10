@@ -25,3 +25,10 @@ FAQ, ou je te la sors dans un document ?
 Tant que ce n'est pas tranché, je ne touche à aucun chiffre de cette page.
 ## Ce qui a été fait
 —
+
+## 10/09/2026 — le point « livraison comprise » est tranché
+
+Mathias a décidé : la livraison est **facturée en sus** (devis Cloudprinter à la publication,
+plafond à poser). La page produit dit désormais « De 25 € pour 20 pages à 59 € pour 60 pages.
+Livraison en sus, affichée avant paiement. » (PR #102, #103), et les CGV v3.1 le contractualisent.
+Restent les trois autres points : grammage affirmé sans mesure, visuels provisoires, FAQ non relue.

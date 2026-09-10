@@ -41,11 +41,11 @@ Chargé dès qu'on touche une route.
 
 | Route | ce qu'elle déclenche vraiment |
 |---|---|
-| `/api/admin/atelier/transition` | patch d'état + R2 + **commande Cloudprinter réelle** + mails. `verifier: true` = dry-run, s'en servir |
+| `/api/admin/atelier/transition` | patch d'état + R2 + **commande Cloudprinter réelle** + mails. `verifier: true` = dry-run, s'en servir ; depuis le 10/09 le dry-run de `publier_apercu` / `corriger_apercu` demande **un devis Cloudprinter** (`prices/lookup`, rationné : un seul par vérification) et gèle prix, livraison, niveau d'expédition et pays |
 | `/api/webhook` | mails F1/S1/P3/A3/relance, `assign_numero_fondateur`, crédits de parrainage |
 | `/api/atelier/mails/relever` | **envois multiples** en un passage |
 | `/api/atelier/numero` | crée le dossier + **M0 dans la seconde** |
-| `/api/atelier/checkout`, `/api/checkout` | sessions Stripe + **coupon fondatrice frappé chez Stripe** et remise de 30 € appliquée d'office (T-021) |
+| `/api/atelier/checkout`, `/api/checkout` | sessions Stripe + **coupon fondatrice frappé chez Stripe** et remise de 30 € appliquée d'office (T-021) ; depuis le 10/09 le montant vient du prix GELÉ (`prix_centimes`), la livraison est une `shipping_option` au montant gelé (`livraison_centimes`, port à 0 pour un fondateur), `allowed_countries = [pays déclaré]` ; sans livraison gelée → 409 `livraison_indisponible`, jamais un montant de repli |
 | `/api/atelier/photos/supprimer` | DELETE R2 irréversible |
 | `/api/brevo/webhook` | **rien qu'une ligne de journal** : aucun état, aucun mail |
 | `/api/compte/inscription`, `/api/compte/mot-de-passe-oublie` | crée un compte `auth.users` et **envoie C1/C2 par Brevo** (lien frappé par `generateLink`, URL du site, jamais celle de Supabase) |

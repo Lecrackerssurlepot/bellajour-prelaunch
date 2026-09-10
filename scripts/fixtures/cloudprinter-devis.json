@@ -1,0 +1,23 @@
+{
+  "_source": "Réponse RÉELLE de POST prices/lookup, 10/09/2026, clé sandbox de .env.local (scripts/cloudprinter-produits.mjs devis magazine_pb_a4_p_fc FR 32). Identifiants de devis tronqués. Le prix produit (6,67 € HT) est une valeur sandbox, pas un coût réel ; les niveaux d'expédition et leur forme sont ce que le parseur doit savoir lire. Note : cp_saver (SHIPPING_LEVEL) n'est PAS proposé ici.",
+  "subtotals": { "currency": "EUR", "items": "6.6667", "fee": "0.0000", "app_fee": "0.0000" },
+  "price": "6.6667",
+  "vat": "1.3333",
+  "vat_rate": 20,
+  "currency": "EUR",
+  "expire_date": "2026-09-12T07:58:51.496394Z",
+  "shipments": [
+    {
+      "total_weight": "291",
+      "items": [ { "reference": "devis" } ],
+      "quotes": [
+        { "quote": "0d839cf5a893479b", "service": "Ground - Tracked", "shipping_level": "cp_ground", "shipping_option": "Colissimo ", "price": "9.2160", "vat": "1.8432", "currency": "EUR" },
+        { "quote": "80fc33e2a194574f", "service": "Express fast - Tracked", "shipping_level": "cp_fast", "shipping_option": "DPD - EU Europe Classic", "price": "9.7560", "vat": "1.9512", "currency": "EUR" },
+        { "quote": "c3b9aaf2268e11f5", "service": "Express fast - Tracked", "shipping_level": "cp_fast", "shipping_option": "DPD - France", "price": "9.7560", "vat": "1.9512", "currency": "EUR" },
+        { "quote": "ac2aa18e9c14fdf2", "service": "Limited", "shipping_level": "cp_limited", "shipping_option": "Chronopost - France", "price": "12.9360", "vat": "2.5872", "currency": "EUR" }
+      ]
+    }
+  ],
+  "invoice_currency": "EUR",
+  "invoice_exchange_rate": "1.0000"
+}

@@ -11,6 +11,9 @@ import {
   CODE_FISCAL_ALBUM,
   type PalierCle,
 } from "@/lib/atelier/prix";
+import { PAYS_LIBELLE, normaliserPays } from "@/lib/atelier/pays";
+import { CODE_FISCAL_LIVRAISON } from "@/lib/atelier/livraison";
+import { JOURS_LIVRAISON } from "@/lib/atelier/urgence";
 import {
   assurerCreditFondatrice,
   CREDIT_FONDATRICE_CENTIMES,
@@ -126,6 +129,15 @@ type Ligne = {
      Optionnelle : le repli 42703 du select la laisse `undefined` tant que la
      migration n'est pas passée, et le montant retombe sur la grille. */
   prix_centimes?: number | null;
+  /* LE PORT TTC GELÉ au devis (lot 6, 10/09). Optionnelle pour la même raison
+     que `prix_centimes` : le repli 42703 la laisse `undefined` tant que la
+     migration n'est pas passée. `null` et `undefined` se traitent PAREIL, et
+     tous les deux REFUSENT le paiement — voir plus bas. */
+  livraison_centimes?: number | null;
+  /* Le pays déclaré à l'écran 4. Il borne `allowed_countries` : on ne laisse
+     pas choisir chez Stripe une destination qui n'a pas été devisée. */
+  pays_livraison?: string | null;
+  livraison_niveau?: string | null;
   cgv_ok: boolean;
   cgv_ok_at: string | null;
   renonciation_retractation: boolean;
@@ -164,7 +176,9 @@ export async function POST(request: Request) {
     const lire = (champs: string) =>
       supabase.from("numeros").select(champs).eq("token", token).maybeSingle<Ligne>();
 
-    let { data: numero, error: lectureErr } = await lire(`${CHAMPS_BASE}, prix_centimes`);
+    let { data: numero, error: lectureErr } = await lire(
+      `${CHAMPS_BASE}, prix_centimes, livraison_centimes, pays_livraison, livraison_niveau`,
+    );
     if (lectureErr?.code === "42703") {
       ({ data: numero, error: lectureErr } = await lire(CHAMPS_BASE));
     }
@@ -233,6 +247,37 @@ export async function POST(request: Request) {
       );
     }
 
+    /* ─── LA LIVRAISON, FACTURÉE EN SUS (lot 6, 10/09/2026) ──────────────
+       Le port est GELÉ sur le dossier au moment où l'atelier publie l'aperçu
+       (devis Cloudprinter, cf. /api/admin/atelier/transition). Ici on le
+       relit, on ne le recalcule pas : la page d'état 2 a annoncé un total,
+       c'est ce total-là qui doit être débité.
+
+       ⚠️ JAMAIS ZÉRO PAR DÉFAUT. Un port inconnu et un port offert ne sont
+       pas la même chose : retomber sur 0 ferait offrir la livraison en
+       silence à tout dossier ouvert avant la migration ou dont le devis a
+       échoué, et personne ne le verrait passer. On refuse le paiement, la
+       page d'état affiche « en cours de chiffrage », et l'atelier republie
+       l'aperçu pour poser le montant. C'est la même discipline que
+       `prix_indisponible` juste au-dessus.
+
+       Un non-entier ou un négatif ne peut pas venir d'une publication : c'est
+       un UPDATE à la main ou une donnée abîmée, et on ne facture pas dessus. */
+    const livraison = numero.livraison_centimes;
+    if (typeof livraison !== "number" || !Number.isInteger(livraison) || livraison < 0) {
+      console.error("[atelier/checkout] livraison indisponible", numero.id, livraison);
+      return NextResponse.json({ error: "livraison_indisponible" }, { status: 409 });
+    }
+
+    /* Le pays DÉCLARÉ borne ce que Stripe laisse choisir : le port a été
+       devisé pour CETTE destination, en autoriser une autre ferait payer un
+       port français sur une adresse belge. Un dossier antérieur au lot 3 n'a
+       pas de pays — la zone complète reprend alors la main, exactement comme
+       avant, et la divergence se journalise au webhook (`paiement.ts`). */
+    const pays = normaliserPays(numero.pays_livraison);
+    const paysAutorises = (pays ? [pays] : [...PAYS_LIVRAISON]) as
+      Stripe.Checkout.SessionCreateParams.ShippingAddressCollection.AllowedCountry[];
+
     const titre = numero.titre?.trim() || "Votre numéro";
     const origin = originDeConfiance(request.headers.get("origin"));
     const stripe = new Stripe(stripeKey);
@@ -271,8 +316,34 @@ export async function POST(request: Request) {
        n'est pas forcément celui que Mathias veut. Ne rien décider ici : le
        reliquat est une règle commerciale, elle lui appartient (interdit
        nº5). Avant la grille par pages, le cas n'existait pas — le premier
-       palier valait exactement 30 €. */
+       palier valait exactement 30 €.
+
+       ⚠️ ET LE LOT 6 REND LE CAS PLUS FRÉQUENT, PAS MOINS. On aurait pu
+       croire que le port en sus rattraperait la session à zéro : c'est
+       l'inverse. Le fondateur ne paie pas son port non plus (`portOffert`
+       plus bas), donc de 20 à 28 pages la session tombe à zéro EXACTEMENT
+       comme avant, sans `payment_intent`, et le surplus de crédit se perd
+       toujours sans que rien ne le dise. Le crédit ne s'impute d'ailleurs
+       jamais sur le port : Stripe plafonne un `amount_off` au total de la
+       commande, il ne le reporte pas d'une ligne à l'autre (même règle que
+       `totalCommande`, livraison.ts). Rien n'est décidé ici. */
     const remiseAppliquee = credit.statut === "pret";
+
+    /* ─── LE PORT OFFERT AU FONDATEUR (lot 6, 10/09/2026) ────────────────
+       Décision de Mathias : un fondateur ne paie ni ses 30 € de crédit ni le
+       port. La condition est donc EXACTEMENT celle du crédit — c'est la même
+       personne, au même moment, et deux tests séparés finiraient par se
+       contredire.
+
+       ⚠️ RÈGLE À CONFIRMER PAR MATHIAS. `credit.statut === "pret"` veut dire
+       « le crédit est dû et va être consommé sur CETTE commande ». Un
+       fondateur qui a déjà dépensé son crédit sur un premier numéro n'est
+       plus « pret » : son SECOND numéro paiera donc le port. C'est cohérent
+       (l'avantage de prévente est unique, comme le crédit) mais ce n'est pas
+       écrit dans les CGV, et la question n'a pas été posée telle quelle. Si
+       Mathias veut le port offert À VIE aux quatorze fondateurs, c'est cette
+       ligne qui change, et elle seule. */
+    const portOffert = remiseAppliquee;
     if (credit.statut === "indisponible") {
       console.error(
         "[atelier/checkout] crédit fondatrice indisponible, plein tarif appliqué",
@@ -297,52 +368,42 @@ export async function POST(request: Request) {
            l'autocomplétion de Stripe plutôt que saisie à la main dans un
            formulaire maison. Elle atterrit dans `adresse_livraison`, prête
            pour l'imprimeur en phase 2. */
-        shipping_address_collection: {
-          allowed_countries: [
-            ...PAYS_LIVRAISON,
-          ] as Stripe.Checkout.SessionCreateParams.ShippingAddressCollection.AllowedCountry[],
-        },
+        shipping_address_collection: { allowed_countries: paysAutorises },
 
-        /* ─────────────── LIVRAISON FACTURÉE — PRÊT, PAS BRANCHÉ ───────────────
-           Chantier barème par pages (07/09/2026) : la livraison SORT du prix
-           de l'album, mais son tarif n'est pas décidé (interdit nº5 : on
-           n'invente pas un montant). Le jour où Mathias donne le tarif, la
-           structure ci-dessous s'active TELLE QUELLE — un seul endroit, le
-           serveur, jamais le navigateur — et il faudra EN MÊME TEMPS :
-             1. reformuler la description du line_item plus bas (elle dit
-                encore « impression et livraison comprises ») ;
-             2. mettre à jour les CGV selon
-                docs/produit/PROPOSITION-CGV-LIVRAISON.md (accord de Mathias) ;
-             3. réafficher le tarif côté pages (décision « on prépare sans
-                afficher », donc rien n'est montré aujourd'hui).
+        /* ─────────────────── LA LIVRAISON, FACTURÉE EN SUS ───────────────────
+           Branchée le 10/09/2026 (lot 6). Le montant vient du DEVIS
+           Cloudprinter gelé sur le dossier, jamais d'une constante : aucun
+           tarif de port n'est écrit dans ce dépôt (interdit nº5).
 
+           Une seule option, non choisie par le client : il n'y a rien à
+           arbitrer, l'atelier a déjà retenu le service au devis. La ligne
+           EXISTE quand même à zéro pour un fondateur, plutôt que de
+           disparaître : « Livraison offerte » se lit sur le récapitulatif
+           Stripe et sur la facture, une ligne absente ne dit rien. */
         shipping_options: [
           {
             shipping_rate_data: {
-              display_name: "Livraison suivie",
+              display_name: portOffert
+                ? "Livraison offerte, fondateur"
+                : `Livraison suivie${pays ? `, ${PAYS_LIBELLE[pays]}` : ""}`,
               type: "fixed_amount",
-              fixed_amount: {
-                // ⚠️ MONTANT À POSER PAR MATHIAS (en centimes). Zéro tant
-                // qu'il n'a pas tranché — ce bloc reste commenté d'ici là.
-                amount: 0,
-                currency: "eur",
-              },
-              // TTC, comme le prix de l'album : le total ne gonfle pas au
-              // moment de payer.
+              fixed_amount: { amount: portOffert ? 0 : livraison, currency: "eur" },
+              /* TTC, comme le prix du magazine : le total ne gonfle pas au
+                 moment de payer. La conversion HT → TTC a eu lieu au devis
+                 (livraison.ts) ; la TVA réellement facturée reste celle que
+                 Stripe Tax calcule à partir de l'adresse. */
               tax_behavior: "inclusive",
-              // Le port suit le régime fiscal du transport de biens chez
-              // Stripe Tax ("shipping" hérite du taux du bien transporté via
-              // txcd_92010001 si on veut l'expliciter).
-              // tax_code: "txcd_92010001",
+              tax_code: CODE_FISCAL_LIVRAISON,
               delivery_estimate: {
-                // À aligner sur JOURS_LIVRAISON (lib/atelier/urgence.ts) le
-                // jour du branchement — jamais deux promesses différentes.
-                maximum: { unit: "business_day", value: 10 },
+                /* Des jours CALENDAIRES, et la MÊME constante que la page
+                   cliente et les CGV (`JOURS_LIVRAISON`, urgence.ts) : deux
+                   promesses différentes sur le même colis, c'est celle qu'on
+                   ne tient pas qu'on retiendra. */
+                maximum: { unit: "day", value: JOURS_LIVRAISON },
               },
             },
           },
         ],
-        ──────────────────────────────────────────────────────────────────── */
         /* Adresse de facturation exigée : une facture émise sans elle n'est
            pas complète, et Stripe Tax a besoin d'une adresse pour trancher.
            Checkout propose « identique à la livraison » — un clic. */
@@ -384,9 +445,13 @@ export async function POST(request: Request) {
               tax_behavior: "inclusive",
               product_data: {
                 name: `Bellajour — ${titre}`,
+                /* La livraison SORT du prix depuis le lot 6 : la dire
+                   « comprise » ici, alors qu'une ligne de port s'ajoute juste
+                   en dessous, serait la contradiction la plus visible de tout
+                   le tunnel — sur l'écran de paiement ET sur la facture. */
                 description: numero.nb_pages
-                  ? `Numéro de ${numero.nb_pages} pages, impression et livraison comprises`
-                  : "Impression et livraison comprises",
+                  ? `Numéro de ${numero.nb_pages} pages, impression comprise`
+                  : "Impression comprise",
                 tax_code: CODE_FISCAL_ALBUM,
               },
             },
@@ -401,6 +466,15 @@ export async function POST(request: Request) {
           numero_id: numero.id,
           token: numero.token,
           palier: numero.palier ?? "",
+          /* CE QUI A ÉTÉ FACTURÉ, DÉCOMPOSÉ. Le webhook les relit pour
+             journaliser, et surtout pour CRIER si Stripe a encaissé un port
+             sur une commande annoncée « offerte ». Sans ces trois clés, la
+             seule façon de le savoir serait de rouvrir la session à la main.
+             Les métadonnées Stripe sont des CHAÎNES, toujours. */
+          prix_centimes: String(centimes),
+          livraison_centimes: String(livraison),
+          port_offert: portOffert ? "true" : "false",
+          pays: pays ?? "",
           /* T-021 — la remise se lit DANS STRIPE, pas seulement chez nous :
              le code apparaît sur la session et sur la facture. C'est aussi
              ce que le webhook relit pour savoir que le crédit a été dépensé
@@ -505,6 +579,13 @@ export async function POST(request: Request) {
          et Stripe 7 € : la première contradiction qu'on chercherait. */
       credit_fondatrice_centimes: remiseAppliquee ? CREDIT_FONDATRICE_CENTIMES : 0,
       nb_pages: numero.nb_pages,
+      /* Le port tel qu'il part chez Stripe, et pour quelle destination. Le
+         jour où une cliente conteste un total, c'est ici qu'on relit ce qui a
+         été demandé — pas seulement le prix du magazine. */
+      prix_centimes: centimes,
+      livraison_centimes: livraison,
+      port_offert: portOffert,
+      pays,
     });
 
     return NextResponse.json({ url: session.url }, { status: 200 });

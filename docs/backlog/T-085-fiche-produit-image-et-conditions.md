@@ -38,3 +38,10 @@ Deux gestes indépendants, chacun débloqué par autre chose que du code :
 endroit qui dit si Google a accepté ; un JSON-LD valide ne prouve rien.
 ## Ce qui a été fait
 —
+
+## 10/09/2026 — la condition « livraison tranchée » est levée
+
+La livraison est facturée en sus depuis PR #103 : `shippingDetails` du JSON-LD peut désormais
+être posé, mais son montant est un devis par pays et par pagination, pas un tarif fixe. À décider
+quand Mathias pose le plafond (`LIVRAISON_PLAFOND_CENTIMES`) : c'est lui qui pourra figurer comme
+`shippingRate` maximal. `AggregateOffer` est déjà dérivé de la grille (25 à 59 €, 20 offres).

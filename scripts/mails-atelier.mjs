@@ -130,7 +130,7 @@ function encartCredit() {
 <div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Votre cr&eacute;dit de fondateur</div>
 </td></tr>
 <tr><td style="padding: 0 26px 24px 26px;">
-<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Vos {{ params.CREDIT_FONDATRICE }}&nbsp;&euro; de cr&eacute;dit sont d&eacute;j&agrave; d&eacute;duits du prix ci-dessous. Vous n&rsquo;avez rien &agrave; saisir : la remise vous attend sur la page de paiement.</p>
+<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Vos {{ params.CREDIT_FONDATRICE }}&nbsp;&euro; de cr&eacute;dit et la livraison sont offerts : ils sont d&eacute;j&agrave; d&eacute;duits du prix ci-dessous. Vous n&rsquo;avez rien &agrave; saisir, la remise vous attend sur la page de paiement.</p>
 </td></tr>
 </table>
 </td></tr>{% endif %}`;
@@ -157,7 +157,7 @@ function encartCouverturePrete() {
 <div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Votre couverture vous attend</div>
 </td></tr>
 <tr><td style="padding: 0 26px 24px 26px;">
-<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Elle est prête depuis longtemps, et elle n&rsquo;a pas bougé. {{ params.NB_PAGES }} pages, {{ params.PRIX }}&nbsp;&euro; tout compris, impression et livraison incluses.</p>
+<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Elle est prête depuis longtemps, et elle n&rsquo;a pas bougé. {{ params.NB_PAGES }} pages, {{ params.PRIX }}&nbsp;&euro; impression comprise.{% if params.LIVRAISON_OFFERTE %} Livraison offerte.{% else %} Livraison {{ params.LIVRAISON }}&nbsp;&euro; en sus.{% endif %}</p>
 </td></tr>
 </table>
 </td></tr>{% endif %}`;
@@ -406,7 +406,13 @@ export const MAILS = [
     carte: carteCouverture(TITRE) + encartCredit(),
     cta: "Découvrir ma couverture",
     lien: LIEN,
-    pied: "{{ params.NB_PAGES }} pages, {{ params.PRIX }} € tout compris, impression et livraison incluses. Vous ne payez que si elle vous plaît.",
+    /* Le pied disait « tout compris, impression et livraison incluses » : vrai
+       jusqu'au 09/09, faux depuis que le port se facture en sus (lot 6). Un
+       mail qui annonce un total plus bas que celui de Stripe, c'est un panier
+       abandonné à l'arrivée. Le `{% if %}` traite la chaîne vide comme faux :
+       un fondateur lit « livraison offerte », tout le monde d'autre lit le
+       montant devisé pour SA destination. */
+    pied: "{{ params.NB_PAGES }} pages, {{ params.PRIX }} € impression comprise{% if params.LIVRAISON_OFFERTE %}, livraison offerte{% else %}, livraison {{ params.LIVRAISON }} € en sus{% endif %}. Vous ne payez que si elle vous plaît.",
   },
   {
     code: "M3b",
@@ -421,8 +427,10 @@ export const MAILS = [
     carte:
       carteChiffres(
         { valeur: "{{ params.NB_PAGES }}", legende: "pages", grand: true },
-        { valeur: "{{ params.PRIX }}&nbsp;&euro;", legende: "tout compris", grand: true },
-        "Impression et livraison comprises. Chez vous sous 10 jours après validation.",
+        { valeur: "{{ params.PRIX }}&nbsp;&euro;", legende: "impression comprise", grand: true },
+        /* Même correction que le pied de M3 : la livraison sort du prix (lot 6,
+           10/09). La légende ne peut plus dire « tout compris ». */
+        "{% if params.LIVRAISON_OFFERTE %}Livraison offerte.{% else %}Livraison {{ params.LIVRAISON }} € en sus.{% endif %} Chez vous sous 10 jours après validation.",
       ) + encartCredit(),
     cta: "Revoir ma couverture",
     lien: LIEN,
@@ -701,7 +709,16 @@ async function main() {
     TITRE: "Notre été à Séville",
     NB_PAGES: "34",
     NB_PHOTOS: "12",
-    PRIX: "40",
+    PRIX: "37",
+    /* Le port du relevé RÉEL du 10/09/2026 (France, 32 pages, dos carré :
+       9,22 € HT chez Cloudprinter, 11,06 € TTC au taux normal français). Ce
+       n'est PAS un tarif décidé — c'est un exemple d'aperçu, comme « Camille »
+       et « Notre été à Séville ». Le vrai montant vient du devis, dossier par
+       dossier. Le cas fondateur (livraison offerte) se lit en posant
+       LIVRAISON_OFFERTE à « oui ». */
+    LIVRAISON: "11,06",
+    LIVRAISON_OFFERTE: "",
+    TOTAL: "48,06",
     TRANSPORTEUR: "Colissimo",
     SUIVI: "https://www.laposte.fr/outils/suivre-vos-envois?code=6A123456789FR",
     CODE_SUIVI: "6A123456789FR",

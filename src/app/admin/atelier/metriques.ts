@@ -30,6 +30,7 @@ import { eurosDuDossier, type PalierCle } from "@/lib/atelier/prix";
 import {
   TYPES_MESURE,
   reconstruireJalons,
+  livraisonEncaissee,
   dureesEtapes,
   compterEntonnoir,
   reactiviteConversion,
@@ -70,6 +71,11 @@ export type Chiffres = {
   validees: number;
   livrees: number;
   ca: number;
+  /* LA LIVRAISON ENCAISSÉE, EN CENTIMES, ET À PART DU CA (lot 6, 10/09/2026).
+     Le port est un coût d'imprimeur refacturé, pas une vente : l'additionner
+     au chiffre d'affaires ferait passer du transport pour de la croissance, et
+     ferait mentir le panier moyen. Voir `livraisonEncaissee` (mesure.ts). */
+  livraisonCentimes: number;
   panierMoyen: number | null;
   /* La répartition des dossiers PAYÉS par nombre de pages composées
      (10/09/2026, remplace la répartition par palier). Triée, les paginations
@@ -134,6 +140,7 @@ const PROMESSE_MAQUETTE_H = 72;
 const PROMESSE_PRODUCTION_H = 10 * 24;
 
 function calculer(
+  evts: EvenementMesure[],
   jalons: Map<string, Jalons>,
   /* Le dossier réduit à ce qui fait un chiffre d'affaires : son prix GELÉ
      et, à défaut, son palier. Pas seulement le palier depuis le 10/09 — sinon
@@ -179,6 +186,9 @@ function calculer(
     validees: compte.validee,
     livrees: compte.livree,
     ca,
+    /* Le port, lu dans le MÊME journal, sur la MÊME fenêtre — mais compté
+       à part : ce n'est pas du chiffre d'affaires. */
+    livraisonCentimes: livraisonEncaissee(evts, debut, fin),
     panierMoyen: payes ? Math.round((ca / payes) * 10) / 10 : null,
     parPages: repartirParPages(pagesPayees),
     relances: relancesPar.filter((t) => t >= debut && t < fin).length,
@@ -294,12 +304,12 @@ export async function chargerMetriques(periode: Periode): Promise<Metriques> {
   const { def, debut, fin } = bornes(periode);
   const { evts, jalons, prixPar, relancesT } = await chargerMatiere();
 
-  const courant = calculer(jalons, prixPar, relancesT, debut, fin);
+  const courant = calculer(evts, jalons, prixPar, relancesT, debut, fin);
 
   /* La fenêtre juste avant, de même durée. « Tout » n'a rien derrière lui :
      comparer à une période vide produirait des « +100 % » absurdes. */
   const precedent = def.jours
-    ? calculer(jalons, prixPar, relancesT, debut - def.jours * J, debut)
+    ? calculer(evts, jalons, prixPar, relancesT, debut - def.jours * J, debut)
     : null;
 
   /* La courbe : arrivées et paiements par jour. Bornée à 30 points — au-delà

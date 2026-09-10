@@ -24,7 +24,17 @@ exactement l'écart que la passe du 01/09/2026 a corrigé, sur 36 lignes.
 Semé le 29/08/2026 par l'audit de structure. Tous les tickets ci-dessous sont **prouvés dans le
 code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
-## Où on en est (08/09/2026, après la séance « on finit tout »)
+## Où on en est (10/09/2026, après le chantier « grille par pages »)
+
+**Six PR le même jour (#99 → #103), trois tickets fermés (T-006, T-072, T-074), 34 encore ouverts,
+aucun bloquant.** La grille finale de Mathias est en production (un prix par nombre de pages, 25 à
+59 €), le prix se gèle sur le dossier, le pays est demandé à l'écran 4, la livraison est facturée
+en sus par devis Cloudprinter, les CGV sont en v3.1. **Ce qui bloque maintenant est chez Mathias** :
+la migration `20260910_atelier_prix_gele.sql` (sans elle, aucun aperçu ne peut être vendu), le
+plafond de livraison, la règle HT → TTC du port, et la poussée des templates M3/M3b/M10 vers Brevo.
+Le détail daté est dans `docs/reference/ETAT-PRODUCTION.md`.
+
+## Où on en était (08/09/2026, après la séance « on finit tout »)
 
 **105 tickets ouverts depuis le début, 37 encore ouverts, et AUCUN bloquant — pour de vrai.**
 Le compteur en annonçait un depuis des jours : c'était T-002, dont la fiche disait elle-même
@@ -62,7 +72,7 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-003 | 101 Mo d'images orphelines déployées à chaque build | front | serieux | libre | **fermé** (fiche dans `fermes/`) — fait le 02/09 : `prevente/` (dont 5 `.mp4`) et `solution/` déplacés en `archive/public-orphelins/`, `public/` de 22→9 Mo. Le « 101 Mo » était périmé (le gros avait déjà disparu). tsc+lint+build verts |
 | T-004 | La page d'état de la cliente est indexable par Google | front | serieux | libre | **refuse** (31/08, le noindex existait déjà) |
 | T-005 | L'ancien mot de passe admin partagé ouvre encore la porte | admin | serieux | libre | **fermé** |
-| T-006 | Un album de 29 pages n'est couvert par aucune ligne des CGV | produit | serieux | avis-requis | nouveau |
+| T-006 | Un album de 29 pages n'est couvert par aucune ligne des CGV | produit | serieux | avis-requis | **fermé** (10/09 : grille par page exacte, l'annexe des CGV dérive du code) |
 | T-007 | Un mail sans template se saute en silence, à l'infini | atelier | serieux | libre | **fermé** |
 | T-008 | Le rate-limit ne limite rien sur Vercel | paiement | serieux | libre | **fermé** (fiche dans `fermes/`) — 07/09 : frein posé sur `api/checkout` (la seule route payante sans), et la limite du procédé documentée dans le code. Le trou n'était pas exploitable : la route répond 410 depuis la fermeture des préventes |
 | T-009 | Aucune page n'a de canonical | front | serieux | libre | **fermé** |
@@ -77,7 +87,7 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-018 | Trois fichiers sans rôle sont servis publiquement | exploitation | confort | libre | **fermé** |
 | T-019 | La barre de l'accueil n'a pas son repli Android | front | confort | avis-requis | **fermé** (fiche dans `fermes/`) — 08/09 : repli posé. ⚠️ Le correctif « écrit d'avance » ne se recopiait PAS : `.pv-nav--flat` et `--bj-nav-android-bg` sont du monde crème, `.at-nav` du monde sombre — nouveau token `--c-nav-android-bg`. Piège de cascade attrapé à la mesure (même spécificité que `.is-stuck`, à poser après). Hors Android, rendu identique au bit près |
 | T-020 | On ne saurait pas qu'une visiteuse décroche | exploitation | serieux | avis-requis | **actif le 02/09** — Web Analytics + Speed Insights activés, scripts servis en 200 sur la prod (vérifié). Masquage des tokens live |
-| T-021 | Le crédit fondateur de 30 € est entièrement manuel | paiement | serieux | avis-requis | en cours — automatique depuis le 01/09, jamais éprouvé contre Stripe |
+| T-021 | Le crédit fondateur de 30 € est entièrement manuel | paiement | serieux | avis-requis | en cours — automatique depuis le 01/09, rattachement manuel possible depuis le 10/09 (fondateur sous un autre email), jamais éprouvé contre Stripe |
 | T-022 | Les mails tombent dans l'onglet Promotions de Gmail | exploitation | serieux | avis-requis | en pause (31/08, tranché : la maquette reste telle quelle) |
 | T-023 | 734 photos orphelines dorment sur R2 | donnees | confort | avis-requis | nouveau — doit ignorer les dossiers anonymisés (T-076) |
 | T-024 | La page Santé crie sur une base vide | admin | confort | libre | **fermé** |
@@ -128,9 +138,9 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-069 | L'image de partage promet un album, et peut casser le déploiement entier | front | serieux | avis-requis | en cours — le `throw` qui cassait le build est retiré (repli, 01/09) ; **reste le visuel** (avec le chantier visuels) + rendre son image à `/ambassadeurs` |
 | T-070 | Le retour des pages légales renvoie sur une page supprimée | front | confort | libre | **fermé** |
 | T-071 | Personne ne serait prévenu si Google rejetait le site | exploitation | confort | avis-requis | nouveau |
-| T-072 | Les prix finaux du magazine ne sont pas tranchés | paiement | serieux | avis-requis | nouveau |
+| T-072 | Les prix finaux du magazine ne sont pas tranchés | paiement | serieux | avis-requis | **fermé** (10/09 : grille finale de Mathias dans `grille.ts`, livraison en sus, prix gelé) |
 | T-073 | Commander plusieurs exemplaires, avec des paliers dégressifs à fournir | paiement | serieux | avis-requis | en pause (30/08, verrou à 1 posé — attend les paliers de Mathias) |
-| T-074 | Un prix selon le pays de livraison exige de demander le pays avant le prix | produit | serieux | avis-requis | nouveau |
+| T-074 | Un prix selon le pays de livraison exige de demander le pays avant le prix | produit | serieux | avis-requis | **fermé** (10/09 : pays demandé à l'écran 4, livraison par devis selon le pays) |
 | T-075 | Les ventes de l'atelier ne passent pas par la comptabilité InvoiceXpress | paiement | serieux | avis-requis | nouveau |
 | T-076 | Les dossiers abandonnés gardent leurs données personnelles sans limite de durée | donnees | serieux | avis-requis | **rétention armée le 02/09** — migration appliquée, template M10 poussé (ID 40), `BREVO_TEMPLATE_M10_ID` live en prod (Santé sans alerte). Reste seulement, différé exprès : un cron une fois éprouvé, et exclure les anonymisés de T-023 |
 | T-077 | Les specs d'impression des deux produits Cloudprinter ne sont pas sur le disque | produit | serieux | avis-requis | en pause (01/09, rejoint le lot CGV) |
