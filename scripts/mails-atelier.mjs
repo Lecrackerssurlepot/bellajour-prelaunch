@@ -157,7 +157,7 @@ function encartCouverturePrete() {
 <div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Votre couverture vous attend</div>
 </td></tr>
 <tr><td style="padding: 0 26px 24px 26px;">
-<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Elle est prête depuis longtemps, et elle n&rsquo;a pas bougé. {{ params.NB_PAGES }} pages, {{ params.PRIX }}&nbsp;&euro; impression comprise.{% if params.LIVRAISON_OFFERTE %} Livraison offerte.{% else %} Livraison {{ params.LIVRAISON }}&nbsp;&euro; en sus.{% endif %} Soit {{ params.TOTAL }}&nbsp;&euro; à payer.</p>
+<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Elle est prête depuis longtemps, et elle n&rsquo;a pas bougé. {{ params.NB_PAGES }} pages, {{ params.PRIX }}&nbsp;&euro; impression comprise.{% if params.PAYS_A_CHOISIR %} Livraison chiffrée selon votre pays, avant le paiement.{% elif params.LIVRAISON_OFFERTE %} Livraison offerte.{% else %} Livraison {{ params.LIVRAISON }}&nbsp;&euro; en sus, soit {{ params.TOTAL }}&nbsp;&euro; à payer.{% endif %}</p>
 </td></tr>
 </table>
 </td></tr>{% endif %}`;
@@ -412,7 +412,7 @@ export const MAILS = [
        abandonné à l'arrivée. Le `{% if %}` traite la chaîne vide comme faux :
        un fondateur lit « livraison offerte », tout le monde d'autre lit le
        montant devisé pour SA destination. */
-    pied: "{{ params.NB_PAGES }} pages, {{ params.PRIX }} € impression comprise{% if params.LIVRAISON_OFFERTE %}, livraison offerte{% else %}, livraison {{ params.LIVRAISON }} € en sus{% endif %}, soit {{ params.TOTAL }} € à payer. Vous ne payez que si elle vous plaît.",
+    pied: "{{ params.NB_PAGES }} pages, {{ params.PRIX }} € impression comprise. {% if params.PAYS_A_CHOISIR %}Livraison chiffrée selon votre pays, avant le paiement.{% elif params.LIVRAISON_OFFERTE %}Livraison offerte, soit {{ params.TOTAL }} € à payer.{% else %}Livraison {{ params.LIVRAISON }} € en sus, soit {{ params.TOTAL }} € à payer.{% endif %} Vous ne payez que si elle vous plaît.",
   },
   {
     code: "M3b",
@@ -430,7 +430,7 @@ export const MAILS = [
         { valeur: "{{ params.PRIX }}&nbsp;&euro;", legende: "impression comprise", grand: true },
         /* Même correction que le pied de M3 : la livraison sort du prix (lot 6,
            10/09). La légende ne peut plus dire « tout compris ». */
-        "{% if params.LIVRAISON_OFFERTE %}Livraison offerte.{% else %}Livraison {{ params.LIVRAISON }} € en sus.{% endif %} Soit {{ params.TOTAL }} € à payer. Chez vous sous 10 jours après validation.",
+        "{% if params.PAYS_A_CHOISIR %}Livraison chiffrée selon votre pays, avant le paiement.{% elif params.LIVRAISON_OFFERTE %}Livraison offerte. Soit {{ params.TOTAL }} € à payer.{% else %}Livraison {{ params.LIVRAISON }} € en sus, soit {{ params.TOTAL }} € à payer.{% endif %} Chez vous sous 10 jours après validation.",
       ) + encartCredit(),
     cta: "Revoir ma couverture",
     lien: LIEN,
@@ -765,6 +765,11 @@ async function main() {
     LIVRAISON: "11,06",
     LIVRAISON_OFFERTE: "",
     TOTAL: "48,06",
+    /* Le cas « le client choisira son pays » (11/09/2026) se lit en posant
+       « oui » ici : les trois mails qui vendent basculent alors sur la phrase
+       sans montant. Vide par défaut, parce que le cas le plus fréquent reste
+       le dossier chiffré d'avance. */
+    PAYS_A_CHOISIR: "",
     TRANSPORTEUR: "Colissimo",
     SUIVI: "https://www.laposte.fr/outils/suivre-vos-envois?code=6A123456789FR",
     CODE_SUIVI: "6A123456789FR",

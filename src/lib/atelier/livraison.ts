@@ -35,8 +35,9 @@
  * coût HT de l'imprimeur et on l'affiche TTC au taux normal du pays de
  * livraison, pour que le port affiché ait le même régime apparent que le
  * magazine (prix TTC, `tax_behavior: "inclusive"`). La TVA réellement
- * facturée reste celle que Stripe Tax calcule. Ces trois nombres sont donc à
- * valider par Mathias et son comptable ; ils ne font pas foi fiscalement.
+ * facturée reste celle que Stripe Tax calcule. Ces nombres (trois jusqu'au
+ * 10/09, trente depuis l'ouverture de l'Europe le 11/09) sont donc à valider
+ * par Mathias et son comptable ; ils ne font pas foi fiscalement.
  *
  * POURQUOI UN PLAFOND
  *
@@ -77,15 +78,74 @@ export const LIVRAISON_PLAFOND_CENTIMES: number | null = null;
  * trois nombres ne servent qu'à passer d'un coût d'imprimeur à un prix
  * affiché, pour que le port se présente TTC comme le magazine.
  *
- * Sources des taux normaux au 10/09/2026 : France 20 %, Belgique 21 %,
- * Luxembourg 17 %. Un pays hors de cette table rend `null` — on ne devine
- * pas un taux, et un `null` fait retomber l'admin sur la saisie manuelle.
+ * ⚠️ TRENTE DESTINATIONS DEPUIS LE 11/09/2026 (ouverture de l'Europe). Les
+ * taux ci-dessous sont les taux NORMAUX de TVA publiés pour 2026, un par pays
+ * de l'Union. Ils servent UNIQUEMENT à convertir un coût d'imprimeur en prix
+ * affiché : aucun n'est un taux facturé, aucun ne fait foi fiscalement, et
+ * tous restent à valider par Mathias et son comptable.
+ *
+ * Deux taux ont bougé récemment et méritent d'être nommés, parce qu'une
+ * source ancienne les donne encore à l'ancienne valeur :
+ *   — Estonie : 24 % (relevé au 1er juillet 2025, après le passage à 22 % au
+ *     1er janvier 2024) ;
+ *   — Slovaquie : 23 % (relevé au 1er janvier 2025, contre 20 % avant).
+ * Sont également récents : Finlande 25,5 % (septembre 2024) et Roumanie 21 %
+ * (août 2025).
+ *
+ * ⚠️ GB, CH et NO SONT À ZÉRO, ET CE N'EST PAS UN OUBLI. Hors Union, nous
+ * n'ajoutons aucune TVA à un port : le client paie le coût du transport tel
+ * qu'il est devisé. En contrepartie, les DROITS DE DOUANE et taxes à
+ * l'importation éventuels sont à la charge du destinataire — la page du
+ * client le dit (`HORS_UE`), et c'est un point à faire trancher par Mathias :
+ * un colis retenu en douane est un client mécontent, même quand c'est la
+ * règle. Un pays hors de cette table rend `null` (on ne devine pas un taux),
+ * ce qui fait retomber l'admin sur la saisie manuelle.
  */
 export const TAUX_TTC_LIVRAISON: Record<PaysLivraison, number> = {
-  FR: 20,
+  AT: 20,
   BE: 21,
+  BG: 20,
+  HR: 25,
+  CY: 19,
+  CZ: 21,
+  DK: 25,
+  EE: 24,
+  FI: 25.5,
+  FR: 20,
+  DE: 19,
+  GR: 24,
+  HU: 27,
+  IE: 23,
+  IT: 22,
+  LV: 21,
+  LT: 21,
   LU: 17,
+  MT: 18,
+  NL: 21,
+  PL: 23,
+  PT: 23,
+  RO: 21,
+  SK: 23,
+  SI: 22,
+  ES: 21,
+  SE: 25,
+  /* Hors Union : rien n'est ajouté par nous. Voir le paragraphe ci-dessus. */
+  GB: 0,
+  CH: 0,
+  NO: 0,
 };
+
+/**
+ * Les destinations HORS UNION EUROPÉENNE de la zone de livraison.
+ *
+ * Dérivé de rien : c'est une LISTE, tenue à la main, parce qu'un taux à zéro
+ * ne suffit pas à désigner un pays tiers (un taux pourrait tomber à zéro pour
+ * une autre raison). Elle sert à une seule chose, et elle doit servir à
+ * celle-là partout : dire au client, AVANT qu'il paie, que des droits de
+ * douane peuvent lui être réclamés à l'arrivée. Une mauvaise surprise à la
+ * livraison d'un objet fabriqué pour lui est la pire de toutes.
+ */
+export const HORS_UE: readonly PaysLivraison[] = ["GB", "CH", "NO"];
 
 /**
  * Le code fiscal Stripe du transport de biens (« Shipping »). Posé

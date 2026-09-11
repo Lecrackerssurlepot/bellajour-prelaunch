@@ -8,7 +8,7 @@ import { cleCadrageCouverture } from "@/lib/atelier/transitions";
 /* `pays.ts` est un module PUR et SANS montant : l'importer ici ne fait pas
    descendre la grille de prix dans le bundle (invariant nº2), contrairement
    à `prix.ts` — c'est exactement pour ça que la liste y a déménagé. */
-import { PAYS_LIVRAISON, PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
+import { PAYS_TRIES, PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
 /* ⚠️ RIEN N'EST IMPORTÉ DE `livraison.ts` ICI, ET C'EST VOLONTAIRE. Le
    montant du port vient du SERVEUR — devis Cloudprinter ou saisie relue par
    `preparerTransition` — et cet écran ne fait que l'afficher et le renvoyer.
@@ -68,7 +68,9 @@ type Verif = {
   /* Le devis de port, demandé PAR LE SERVEUR pendant la vérification (lot 6).
      Rien n'a été écrit : c'est ce qui SERA écrit au second clic. */
   livraison?: {
-    source: "admin" | "cloudprinter" | "echec";
+    /* `client` (11/09/2026) : aucun pays sur le dossier, donc aucun devis ici.
+       Le client choisira sa destination sur sa page, avant de payer. */
+    source: "admin" | "cloudprinter" | "echec" | "client";
     niveau: string | null;
     service: string | null;
     transporteur: string | null;
@@ -524,6 +526,21 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
       setVerif({
         action: { cle: choisie.cle, libelle: choisie.libelle, vers: choisie.vers, note: choisie.note },
         resume: simulerResume(choisie.cle, saisie.nb_pages, saisie.pays_livraison),
+        /* Sans pays, la démonstration montre la MÊME chose que la production :
+           « livraison choisie par le client ». Aucun montant n'est inventé —
+           il n'y a ni base ni clé Cloudprinter derrière cet écran. */
+        ...(!paysValide(saisie.pays_livraison)
+          && (choisie.cle === "publier_apercu" || choisie.cle === "corriger_apercu")
+          ? {
+              livraison: {
+                source: "client" as const,
+                niveau: null, service: null, transporteur: null,
+                niveauVouluAbsent: false,
+                devisHtCentimes: null, devisTtcCentimes: null,
+                client: null, absorbe: 0, existant: null,
+              },
+            }
+          : {}),
         destinataire: {
           prenom: fiche.ligne.prenom,
           email: fiche.ligne.email,
@@ -663,7 +680,9 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
      que le champ vide déclenchera. */
   const l = verif?.livraison;
   const aideLivraison = !l
-    ? "Vide : le devis Cloudprinter est demandé à la vérification."
+    ? "Vide : le devis Cloudprinter est demandé à la vérification (si un pays est choisi)."
+    : l.source === "client"
+    ? "Aucun pays sur ce dossier : le client choisira sa destination sur sa page, et la livraison sera chiffrée à cet instant, avant le paiement."
     : l.source === "cloudprinter" && l.devisHtCentimes !== null && l.devisTtcCentimes !== null
       ? [
           `Devis Cloudprinter${
@@ -1126,12 +1145,14 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                 {erreurDe("nb_pages") ? <span className="ate-erreur">{erreurDe("nb_pages")}</span> : null}
               </label>
 
-              {/* ── LE PAYS DE LIVRAISON (lot 3, 10/09/2026) ──────────────
-                  Obligatoire ici, parce que publier l'aperçu, c'est annoncer
-                  un prix, et que le port sera devisé par destination (lot 6).
-                  L'option vide n'existe QUE pour les dossiers ouverts avant
-                  le 10/09, qui n'ont jamais eu la question : ils obligent
-                  l'atelier à trancher au lieu de partir sur un défaut. */}
+              {/* ── LE PAYS DE LIVRAISON (lot 3, revu le 11/09/2026) ──────
+                  Publier l'aperçu, c'est annoncer un prix, et le port est
+                  devisé par destination (lot 6). Le pays était donc OBLIGATOIRE
+                  ici jusqu'au 10/09 — ce qui obligeait l'atelier à en choisir
+                  un pour les dossiers ouverts avant l'écran 4, c'est-à-dire à
+                  DEVINER. Mathias a tranché : on ne devine pas. La première
+                  option laisse le choix au client, sur sa page, où le port
+                  sera chiffré avant le paiement. */}
               <label className="ate-champ ate-champ--court">
                 <span className="ate-champ-label">Pays de livraison</span>
                 <select
@@ -1139,13 +1160,15 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                   value={saisie.pays_livraison ?? ""}
                   onChange={(e) => set("pays_livraison", e.target.value)}
                 >
-                  {paysValide(saisie.pays_livraison) ? null : <option value="">Choisir</option>}
-                  {PAYS_LIVRAISON.map((code) => (
+                  <option value="">Le client choisira sur sa page</option>
+                  {PAYS_TRIES.map((code) => (
                     <option key={code} value={code}>{PAYS_LIBELLE[code]}</option>
                   ))}
                 </select>
                 <span className="ate-champ-aide">
-                  Demandé au client à l&apos;écran 4. Le devis de livraison en dépend.
+                  {paysValide(saisie.pays_livraison)
+                    ? "Demandé au client à l'écran 4. Le devis de livraison en dépend."
+                    : "Sans pays, rien n'est devisé ici : le client choisit sa destination sur sa page et la livraison est chiffrée à cet instant, avant le paiement. Un port déjà gelé en base n'est pas effacé."}
                 </span>
                 {erreurDe("pays_livraison") ? (
                   <span className="ate-erreur">{erreurDe("pays_livraison")}</span>
@@ -1168,7 +1191,18 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                   inputMode="decimal"
                   value={saisie.livraison_centimes}
                   onChange={(e) => set("livraison_centimes", e.target.value)}
-                  placeholder="laisser vide : devis automatique"
+                  /* ⚠️ ÉTEINT SANS PAYS (11/09/2026). Un port sans destination
+                     ne veut rien dire : il n'a été chiffré pour nulle part, et
+                     il contredirait la page du client, qui ne demanderait plus
+                     rien puisqu'elle afficherait un montant. Le module pur
+                     refuse de toute façon la saisie (erreur sur le champ du
+                     pays) : ce `disabled` évite juste de taper pour rien. */
+                  disabled={!paysValide(saisie.pays_livraison)}
+                  placeholder={
+                    paysValide(saisie.pays_livraison)
+                      ? "laisser vide : devis automatique"
+                      : "choisis un pays pour saisir un port"
+                  }
                 />
                 <span className="ate-champ-aide">{aideLivraison}</span>
                 {erreurDe("livraison_centimes") ? (
@@ -1360,6 +1394,15 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                           : LIVRAISON_DEMO}{" "}
                       <span className="ate-faint">· {PAYS_LIBELLE[verif.resume.pays]}</span>
                     </dd>
+                  </>
+                ) : verif.livraison?.source === "client" ? (
+                  /* Le dossier n'a pas de pays : rien n'a été devisé, et c'est
+                     ce que la confirmation doit dire AVANT le clic. Un écran
+                     muet sur la livraison laisserait croire qu'elle est
+                     comprise, ce qu'elle n'est plus depuis le lot 6. */
+                  <>
+                    <dt>Livraison</dt>
+                    <dd>choisie par le client, chiffrée avant paiement.</dd>
                   </>
                 ) : null}
                 {verif.impression ? (

@@ -305,11 +305,29 @@ function s(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
-/* Les indicatifs des SEULS pays où l'on livre (PAYS_LIVRAISON). Des faits, pas
-   une invention : +33 France, +32 Belgique, +352 Luxembourg. Un pays hors de
-   cette liste ne devrait jamais arriver ici (Stripe ne collecte que ces trois),
-   et s'il arrivait on ne devinerait pas son indicatif. */
-const INDICATIFS_PAYS: Record<string, string> = { FR: "33", BE: "32", LU: "352" };
+/* Les indicatifs des pays où l'on livre (PAYS_LIVRAISON : toute l'Europe
+   depuis le 11/09/2026). Des faits publics (UIT E.164), pas une invention. Un
+   pays hors de cette liste ne devrait jamais arriver ici, et s'il arrivait on
+   ne devinerait pas son indicatif : le numéro partirait tel quel. */
+const INDICATIFS_PAYS: Record<string, string> = {
+  AT: "43", BE: "32", BG: "359", HR: "385", CY: "357", CZ: "420", DK: "45", EE: "372",
+  FI: "358", FR: "33", DE: "49", GR: "30", HU: "36", IE: "353", IT: "39", LV: "371",
+  LT: "370", LU: "352", MT: "356", NL: "31", PL: "48", PT: "351", RO: "40", SK: "421",
+  SI: "386", ES: "34", SE: "46", GB: "44", CH: "41", NO: "47",
+};
+
+/* ⚠️ L'ITALIE GARDE SON ZÉRO. Presque partout en Europe le 0 de tête est un
+   préfixe national qu'on retire derrière l'indicatif (« 06 12 » → +33 6 12).
+   En Italie, ce 0 fait partie du numéro fixe (« 02 1234567 » → +39 02 1234567) :
+   le retirer ferait un numéro qui n'existe pas, et un transporteur qui n'appelle
+   personne. Fait public, figé par le harnais. */
+const GARDE_LE_ZERO: ReadonlySet<string> = new Set(["IT"]);
+
+/** L'indicatif d'un pays de la zone, ou null : exporté pour que le harnais
+ *  prouve qu'AUCUN pays de PAYS_LIVRAISON n'en manque. */
+export function indicatifPour(pays: string): string | null {
+  return INDICATIFS_PAYS[(pays ?? "").toUpperCase()] ?? null;
+}
 
 /**
  * Le téléphone en E.164 (« +33612345678 »), à l'aide du PAYS de livraison.
@@ -333,9 +351,10 @@ export function telephoneE164(brut: string, pays: string): string {
   if (!p) return "";
   if (p.startsWith("+")) return p;
   if (p.startsWith("00")) return "+" + p.slice(2);
-  const indicatif = INDICATIFS_PAYS[(pays ?? "").toUpperCase()];
+  const code = (pays ?? "").toUpperCase();
+  const indicatif = INDICATIFS_PAYS[code];
   if (!indicatif) return p; // pays inconnu : mieux vaut le national que l'invention
-  return "+" + indicatif + p.replace(/^0+/, "");
+  return "+" + indicatif + (GARDE_LE_ZERO.has(code) ? p : p.replace(/^0+/, ""));
 }
 
 /**

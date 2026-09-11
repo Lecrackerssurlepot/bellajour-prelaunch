@@ -628,6 +628,12 @@ export default async function NumeroPage({
               token={numero.token}
               nbPages={numero.nb_pages}
               euros={euros}
+              /* Le prix GELÉ du magazine, seul, pour le cas où le PORT n'est
+                 pas encore chiffré : le bon de commande montre alors ce qui
+                 est connu (le numéro et sa pagination) et demande le pays à
+                 la place de la ligne de livraison. `commande` reste null tant
+                 que le total n'est pas calculable. */
+              prixCentimes={prixCentimes}
               livraisonCentimes={livraisonCentimes}
               pays={paysLivraison}
               commande={commande}

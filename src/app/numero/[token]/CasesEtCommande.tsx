@@ -32,10 +32,17 @@
  */
 
 import { useCallback, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { formaterCentimes } from '@/lib/atelier/prix'
-/* `pays.ts` est PUR et sans montant : la liste des trois pays a précisément
-   déménagé là pour pouvoir descendre dans le navigateur (cf. son en-tête). */
-import { PAYS_LIBELLE, paysValide } from '@/lib/atelier/pays'
+/* `pays.ts` est PUR et sans montant : la liste des pays a précisément
+   déménagé là pour pouvoir descendre dans le navigateur (cf. son en-tête).
+   `PAYS_TRIES` est l'ordre des menus : France, Belgique, Luxembourg, Suisse,
+   puis l'Europe par ordre alphabétique. */
+import { PAYS_LIBELLE, PAYS_TRIES, PAYS_DEFAUT, paysValide } from '@/lib/atelier/pays'
+/* `HORS_UE` ne porte aucun montant non plus : c'est la liste des trois
+   destinations hors Union, et elle sert à DIRE les droits de douane avant le
+   paiement plutôt qu'à les découvrir à la livraison. */
+import { HORS_UE } from '@/lib/atelier/livraison'
 import FeuilleAjustement from './FeuilleAjustement'
 
 type Props = {
@@ -50,6 +57,12 @@ type Props = {
      est pire qu'un total absent. */
   livraisonCentimes: number | null
   pays: string | null
+  /* ── LE PRIX DU MAGAZINE, SEUL (11/09/2026) ──────────────────────────
+     `commande` est nul tant que le port n'est pas chiffré : sans ce prix-là,
+     le bon de commande ne pourrait rien montrer du tout à quelqu'un à qui
+     l'on demande justement de choisir son pays. Il vient du serveur comme
+     tout le reste (`centimesDuDossier`), il n'est jamais additionné ici. */
+  prixCentimes: number | null
   /* Le décompte, calculé PAR LE SERVEUR (`totalCommande`, livraison.ts) : ce
      composant n'additionne rien, il met en forme. Même invariant que le prix
      depuis toujours. */
@@ -72,9 +85,10 @@ type Props = {
 }
 
 export default function CasesEtCommande({
-  token, nbPages, euros, livraisonCentimes, pays, commande, portOffert,
+  token, nbPages, euros, livraisonCentimes, pays, prixCentimes, commande, portOffert,
   cgvOk, renonciation, joursComposition, joursLivraison, previsualisation = false,
 }: Props) {
+  const router = useRouter()
   const [cgv, setCgv] = useState(cgvOk)
   const [reno, setReno] = useState(renonciation)
   const [erreur, setErreur] = useState<string | null>(null)
@@ -135,10 +149,76 @@ export default function CasesEtCommande({
   /* ⚠️ « CONNU » VEUT DIRE LES DEUX. Depuis que la livraison se facture à
      part, un prix de magazine sans port n'est pas un prix : la cliente
      lirait 37 € et Stripe en demanderait 48. Tant que le port n'est pas
-     chiffré, la page se tait exactement comme elle se taisait avant le
-     chiffrage du magazine — et le bouton reste inerte. */
-  const prixConnu = euros !== null && livraisonCentimes !== null && commande !== null
+     chiffré, le bouton reste inerte — le checkout refuserait de toute façon
+     (`livraison_indisponible`). */
+  /* ⚠️ ET « CONNU » VEUT DIRE TROIS, DEPUIS LE 11/09 : le pays en fait partie.
+     Un dossier peut porter un port gelé sans destination (publication d'avant
+     l'écran 4, montant saisi à la main) : ce port a été chiffré pour un pays
+     que personne n'a écrit, alors que Stripe, lui, laissera choisir n'importe
+     lequel de la zone. On demande donc la destination avant d'encaisser,
+     plutôt que d'expédier vers un pays dont le transport n'a pas été payé. */
+  const prixConnu =
+    euros !== null && livraisonCentimes !== null && commande !== null && paysValide(pays)
   const accepte = cgv && reno
+
+  /* ══════════════════════════════════════════════════════════════════════
+     LE CLIENT CHOISIT SA DESTINATION (11/09/2026)
+
+     Deux populations arrivent sur cette page, et elles ne voient pas la même
+     chose :
+       — celle qui a répondu à l'écran 4 : le pays est connu, le port a été
+         devisé à la publication, le bon de commande est complet. Elle garde
+         quand même la main : « Changer de pays » rouvre le menu, et le port
+         est REdevisé. Un port gelé sur la mauvaise destination est un colis
+         qui n'arrive pas ;
+       — celle dont le dossier est plus ancien : aucun pays. Jusqu'au 10/09,
+         l'atelier devait en choisir un à sa place pour publier. Désormais
+         c'est ELLE qui choisit, ici, et le port est chiffré à cet instant,
+         AVANT le paiement. Le bouton reste éteint jusque-là, et il dit
+         pourquoi : un bouton mort sans explication se lit comme une panne.
+
+     Rien n'est calculé dans ce composant : il envoie un code pays, le serveur
+     devise chez l'imprimeur, écrit, et la page se recharge avec le montant. */
+  const paysGele = paysValide(pays) ? pays : null
+  const portConnu = paysGele !== null && livraisonCentimes !== null
+  /* Le magazine est chiffré même quand le port ne l'est pas : on peut donc
+     montrer un bon de commande partiel plutôt qu'une page muette. */
+  const magazineConnu = nbPages !== null && (commande !== null || prixCentimes !== null)
+  const [choixPays, setChoixPays] = useState<string>(paysGele ?? PAYS_DEFAUT)
+  const [changer, setChanger] = useState(false)
+  const [calcul, setCalcul] = useState(false)
+  /* Le menu s'affiche à la place de la ligne « Livraison » tant que rien
+     n'est chiffré, et à la demande ensuite. */
+  const choixOuvert = !portConnu || changer
+  const douane = paysGele !== null && HORS_UE.includes(paysGele)
+
+  const calculerLivraison = useCallback(async () => {
+    /* Même désarmement que le paiement et les cases : en prévisualisation,
+       l'atelier REGARDE la page du client, il n'écrit pas à sa place. */
+    if (previsualisation || calcul) return
+    setCalcul(true)
+    setErreur(null)
+    try {
+      const r = await fetch('/api/atelier/livraison', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, pays: choixPays }),
+      })
+      if (!r.ok) throw new Error('devis')
+      setChanger(false)
+      /* La page est SERVEUR : elle relit la ligne, recalcule le total par
+         `totalCommande` et redescend les props. On ne recopie pas le montant
+         rendu par la route dans un état local — ce serait une seconde vérité,
+         et c'est exactement ce que l'invariant du prix interdit. */
+      router.refresh()
+    } catch {
+      setErreur(
+        'Nous n’avons pas pu chiffrer la livraison. Réessayez dans un instant, ou répondez au mail de votre couverture.'
+      )
+    } finally {
+      setCalcul(false)
+    }
+  }, [token, choixPays, previsualisation, calcul, router])
 
   /* T2 — refonte mobile (02/09) : sous la visionneuse, l'écran reste dégagé —
      le prix et « Commander », rien d'autre. Les deux accords obligatoires sont
@@ -174,11 +254,11 @@ export default function CasesEtCommande({
           Ce qui le remplace énonce une commande : ce qu'on prend, ligne à
           ligne, puis un total qui domine. Rien n'a changé dans le calcul —
           `euros` vient toujours du serveur, jamais du navigateur. */}
-      {prixConnu && nbPages && commande ? (
+      {magazineConnu ? (
         <div className="nu-bon">
           <div className="nu-bon-l">
             <span>Votre numéro, {nbPages} pages</span>
-            <b>{formaterCentimes(commande.prix)}</b>
+            <b>{formaterCentimes(commande ? commande.prix : prixCentimes ?? 0)}</b>
           </div>
           <div className="nu-bon-l">
             <span>Impression et façonnage</span>
@@ -188,27 +268,92 @@ export default function CasesEtCommande({
               Elle a sa ligne, toujours, même offerte : « compris » ne se dit
               plus, le port est devisé par destination et son montant doit se
               lire AVANT le clic. Une ligne absente ne dit rien ; une ligne à
-              « offerte » dit quelque chose. */}
-          <div className="nu-bon-l">
-            <span>
-              Livraison
-              {pays && paysValide(pays) ? ` en ${PAYS_LIBELLE[pays]}` : ''}
-            </span>
-            <b>{portOffert ? 'offerte, fondateur' : formaterCentimes(commande.livraison)}</b>
-          </div>
+              « offerte » dit quelque chose.
+              ⚠️ Depuis le 11/09, quand la destination n'est pas connue, cette
+              ligne devient LA QUESTION : un menu et un bouton, à l'endroit
+              exact où le montant s'affichera. */}
+          {paysGele !== null && livraisonCentimes !== null && commande && !choixOuvert ? (
+            <div className="nu-bon-l">
+              <span>
+                Livraison en {PAYS_LIBELLE[paysGele]}
+                {/* La sortie de secours, discrète et à sa place : le pays
+                    décide du port, s'il est faux tout le bon l'est. On ne
+                    renvoie plus vers un mail (l'atelier devait alors le faire
+                    à la main) : le client rouvre le menu et on redevise. */}
+                <button
+                  type="button"
+                  className="nu-bon-changer"
+                  onClick={() => setChanger(true)}
+                  disabled={previsualisation}
+                >
+                  Changer de pays
+                </button>
+              </span>
+              <b>{portOffert ? 'offerte, fondateur' : formaterCentimes(commande.livraison)}</b>
+            </div>
+          ) : (
+            <div className="nu-bon-choix">
+              <label className="nu-bon-choix-lbl" htmlFor="nu-pays">
+                Pays de livraison
+              </label>
+              <div className="nu-bon-choix-l">
+                <select
+                  id="nu-pays"
+                  className="nu-select"
+                  value={choixPays}
+                  onChange={(e) => setChoixPays(e.target.value)}
+                  disabled={previsualisation || calcul}
+                  autoComplete="country"
+                >
+                  {PAYS_TRIES.map((code) => (
+                    <option key={code} value={code}>{PAYS_LIBELLE[code]}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="nu-bon-calc"
+                  onClick={() => void calculerLivraison()}
+                  disabled={previsualisation || calcul}
+                  title={previsualisation ? 'Prévisualisation' : undefined}
+                >
+                  {calcul ? 'Un instant…' : 'Calculer la livraison'}
+                </button>
+              </div>
+              {/* Ce que le menu engage, dit ici et pas après le paiement. */}
+              <p className="nu-bon-choix-mot">
+                {portConnu
+                  ? 'Le port sera chiffré de nouveau pour cette destination.'
+                  : 'Le port est chiffré par notre imprimeur, avant tout paiement.'}
+              </p>
+              {paysGele !== null && changer ? (
+                <button
+                  type="button"
+                  className="nu-bon-changer nu-bon-changer--annule"
+                  onClick={() => { setChanger(false); setChoixPays(paysGele) }}
+                >
+                  Garder {PAYS_LIBELLE[paysGele]}
+                </button>
+              ) : null}
+            </div>
+          )}
           {/* Le crédit de prévente, quand il est dû. Signe MOINS (U+2212), pas
               un tiret : « −30 € » se lit comme un montant retiré, « -30 € »
               avec un trait d'union se lit comme une coquille. */}
-          {commande.remise > 0 ? (
+          {commande && commande.remise > 0 ? (
             <div className="nu-bon-l">
               <span>Crédit fondateur</span>
               <b>&minus;{formaterCentimes(commande.remise)}</b>
             </div>
           ) : null}
-          <div className="nu-bon-t">
-            <span>À payer</span>
-            <b>{formaterCentimes(commande.total)}</b>
-          </div>
+          {/* ⚠️ PAS DE TOTAL TANT QUE LE PORT MANQUE. Un total qui n'inclut
+              pas la livraison est un total faux, et c'est la surprise la plus
+              chère de tout le tunnel. */}
+          {commande && portConnu ? (
+            <div className="nu-bon-t">
+              <span>À payer</span>
+              <b>{formaterCentimes(commande.total)}</b>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="nu-bon">
@@ -218,23 +363,27 @@ export default function CasesEtCommande({
         </div>
       )}
 
+      {/* ── HORS UNION EUROPÉENNE ──
+          Royaume-Uni, Suisse, Norvège : le transport est devisé et facturé,
+          mais les droits d'importation, eux, sont réclamés au destinataire à
+          l'arrivée. Le dire ici coûte une ligne ; ne pas le dire coûte un
+          client qui découvre une facture de douane devant sa porte. */}
+      {douane ? (
+        <p className="nu-bon-note">Droits de douane éventuels à votre charge.</p>
+      ) : null}
+
       {/* ── LA PROMESSE PASSE AVANT LE GESTE ──
           Les deux délais vivaient SOUS le bouton, en gris de 15 px. C'est
           pourtant ce qui fait appuyer : on paie un objet qu'on n'a pas encore.
           Les mêmes mots, dans le même ordre — composition, puis livraison
           après validation — mais au-dessus, et en deux lignes qu'on lit d'un
           coup d'œil au lieu d'un paragraphe qu'on saute. */}
-      {/* La destination, dite une fois, avec la sortie de secours. Le pays a
-          été choisi à l'écran 4 du questionnaire et il décide du port : s'il
-          est faux, tout le bon de commande l'est. On ne rouvre pas un select
-          ici (le devis est déjà passé, le montant est gelé) — on dit à qui
-          s'adresser, ce qui est le geste que l'atelier peut vraiment tenir. */}
-      {prixConnu && pays && paysValide(pays) ? (
-        <p className="nu-prix-sub">
-          Livraison en {PAYS_LIBELLE[pays]}. Un autre pays&nbsp;? Répondez au mail
-          de votre couverture.
-        </p>
-      ) : null}
+      {/* La destination n'a plus besoin d'être redite ici : depuis le
+          11/09/2026 elle est DANS le bon de commande, sur la ligne du port,
+          avec « Changer de pays » à côté. Le paragraphe qui renvoyait au mail
+          (« un autre pays ? répondez ») a disparu AVEC sa cause : le client
+          n'a plus à écrire à l'atelier pour changer de destination, il le
+          fait lui-même et le port est redevisé. */}
 
       {prixConnu ? (
         <ul className="nu-promesse">
@@ -247,6 +396,11 @@ export default function CasesEtCommande({
             <span>Chez vous <b>sous {joursLivraison} jours</b> après votre validation</span>
           </li>
         </ul>
+      ) : magazineConnu ? (
+        /* Le bouton est éteint et il DIT pourquoi : sans destination, il n'y a
+           pas de total, et un bouton mort sans explication se lit comme une
+           panne — sur le bouton qui encaisse. */
+        <p className="nu-prix-sub">Choisissez votre pays pour connaître la livraison.</p>
       ) : (
         <p className="nu-prix-sub">Le prix vous sera confirmé par mail, avant tout paiement.</p>
       )}
@@ -267,11 +421,16 @@ export default function CasesEtCommande({
             compris et crédit déduit. Afficher 37 € sur un bouton qui en
             prélève 48 est la surprise qui coûte le plus cher de tout le
             tunnel. */}
+        {/* ⚠️ LE MONTANT NE S'AFFICHE QUE S'IL EST COMPLET. Un dossier au port
+            gelé sans destination a bien un `commande` calculable, mais ce
+            total-là n'est pas celui qu'on encaissera tant que le pays n'est
+            pas choisi : l'écrire sur un bouton éteint promettrait un prix
+            qu'on va rechiffrer. */}
         {occupe
           ? 'Un instant…'
           : confirmer
-            ? `Payer${commande ? ` ${formaterCentimes(commande.total)}` : ''}`
-            : `Commander${commande ? ` · ${formaterCentimes(commande.total)}` : ''}`}
+            ? `Payer${prixConnu && commande ? ` ${formaterCentimes(commande.total)}` : ''}`
+            : `Commander${prixConnu && commande ? ` · ${formaterCentimes(commande.total)}` : ''}`}
       </button>
 
       {/* Ce qui vient après le clic, dit avant. Deux accords, pas une

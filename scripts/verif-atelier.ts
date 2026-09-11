@@ -53,6 +53,7 @@ import {
 import {
   PAYS_DEFAUT,
   PAYS_LIBELLE,
+  PAYS_TRIES,
   normaliserPays,
   paysValide,
 } from "@/lib/atelier/pays";
@@ -121,6 +122,7 @@ import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief
 import {
   adresseCloudprinter,
   telephoneE164,
+  indicatifPour,
   estCleImpression,
   interpreterSignal,
   payloadCommande,
@@ -172,6 +174,7 @@ import {
   ttcDepuisHt,
   LIVRAISON_PLAFOND_CENTIMES,
   TAUX_TTC_LIVRAISON,
+  HORS_UE,
 } from "@/lib/atelier/livraison";
 import { estAbsenceR2 } from "@/lib/atelier/r2";
 import { formaterJour } from "@/lib/atelier/dates";
@@ -281,11 +284,14 @@ ok("corriger : republier regele le prix (44 pages -> 4500 centimes)",
    pGelCorrige.ok && pGelCorrige.patch.prix_centimes === 4500
    && pGelCorrige.resume.prixCentimes === 4500);
 
-/* ── LE PAYS DE LIVRAISON EST EXIGE POUR PUBLIER (lot 3, 10/09/2026) ──────
-   Publier l'apercu, c'est annoncer un prix. Depuis que le port sera devise par
-   destination, ce prix n'est pas complet sans pays. On refuse donc de publier
-   sans, plutot que de supposer « France » : une supposition ferait payer un
-   port francais sur une adresse belge, en silence.
+/* ── LE PAYS DE LIVRAISON A LA PUBLICATION (lot 3, revu le 11/09/2026) ────
+   Publier l'apercu, c'est annoncer un prix. Depuis que le port est devise par
+   destination, ce prix n'est pas complet sans pays — d'ou l'exigence posee le
+   10/09. Elle obligeait l'atelier a CHOISIR une destination a la place des
+   dossiers ouverts avant l'ecran 4, c'est-a-dire a deviner : exactement ce
+   qu'elle voulait empecher. Mathias a tranche le 11/09 : sans pays, on publie
+   quand meme, et c'est LE CLIENT qui choisit sur sa page, ou la livraison est
+   chiffree avant le paiement.
    Le pays est NORMALISE par la meme fonction que la route : l'atelier tape ce
    qu'il veut, c'est le code canonique qui entre en base. */
 const pPays = preparerTransition("publier_apercu", "photos_recues",
@@ -296,10 +302,24 @@ ok("publier : l'ecran de verification annonce le meme pays que le patch",
    pPays.ok && pPays.resume.pays === "BE");
 const pSansPays = preparerTransition("publier_apercu", "photos_recues",
   { nb_pages: 34, ...VISUELS });
-ok("publier SANS pays : refuse, et le champ fautif est nomme",
-   !pSansPays.ok && pSansPays.erreurs.some((e) => e.champ === "pays_livraison"));
-ok("publier sans pays : rien ne retombe sur un defaut silencieux",
-   !pSansPays.ok && !pSansPays.erreurs.some((e) => e.champ === "nb_pages"));
+ok("publier SANS pays : ACCEPTE (le client choisira sur sa page)", pSansPays.ok);
+ok("publier sans pays : aucune colonne pays n'entre dans le patch",
+   pSansPays.ok && !("pays_livraison" in pSansPays.patch));
+/* `null` et pas « absent » : l'ecran de confirmation doit pouvoir DIRE
+   « livraison choisie par le client », et une cle manquante ne dit rien. */
+ok("publier sans pays : le resume l'annonce (pays === null), il ne se tait pas",
+   pSansPays.ok && pSansPays.resume.pays === null);
+ok("publier sans pays : AUCUN port n'est exige ni ecrit",
+   pSansPays.ok && !("livraison_centimes" in pSansPays.patch));
+/* ⚠️ UN PORT SANS PAYS N'A PAS DE SENS : il n'a ete chiffre pour nulle part,
+   et il ferait taire la question sur la page du client en affichant un
+   montant. On refuse, sur le champ du PAYS — c'est lui qui manque. */
+const pPortSansPays = preparerTransition("publier_apercu", "photos_recues",
+  { nb_pages: 34, livraison_centimes: "4,90", ...VISUELS });
+ok("un port SANS pays : refuse, et c'est le pays qu'on reclame",
+   !pPortSansPays.ok && pPortSansPays.erreurs.some((e) => e.champ === "pays_livraison"));
+ok("un port sans pays : le montant n'entre nulle part",
+   !pPortSansPays.ok);
 const pHorsZone = preparerTransition("publier_apercu", "photos_recues",
   { nb_pages: 34, pays_livraison: "US", ...VISUELS });
 ok("publier vers un pays hors zone : refuse",
@@ -821,6 +841,12 @@ ok("national FR -> +33, zero de tete retire", telephoneE164("0680009071", "FR") 
 ok("national BE -> +32", telephoneE164("0470123456", "BE") === "+32470123456");
 ok("national LU -> +352 (pas de zero national a retirer)", telephoneE164("621123456", "LU") === "+352621123456");
 ok("deja en +... : garde tel quel", telephoneE164("+33612345678", "FR") === "+33612345678");
+ok("national DE -> +49, zero retire (zone Europe, 11/09)", telephoneE164("0170 1234567", "DE") === "+491701234567");
+ok("national GB -> +44", telephoneE164("07700 900123", "GB") === "+447700900123");
+ok("national CH -> +41", telephoneE164("079 123 45 67", "CH") === "+41791234567");
+ok("national IT -> +39 et le ZERO RESTE (il fait partie du numero)", telephoneE164("02 1234567", "IT") === "+39021234567");
+ok("chaque pays de la zone a son indicatif : aucun numero ne part national par oubli",
+   PAYS_LIVRAISON.every((p) => indicatifPour(p) !== null));
 ok("prefixe 00 -> +", telephoneE164("0033612345678", "FR") === "+33612345678");
 ok("separateurs (espaces/points) nettoyes", telephoneE164("06 80 00 90 71", "FR") === "+33680009071");
 ok("pays hors zone : on ne devine pas, on rend le national", telephoneE164("0680009071", "US") === "0680009071");
@@ -1030,8 +1056,24 @@ ok("LU : 1000 HT donne 1170 TTC (coefficient 17 %)", ttcDepuisHt(1000, "LU") ===
 /* Un pays hors table ne se devine PAS : la route retombe alors sur la saisie
    a la main, ce qui est le comportement sur. */
 ok("un pays hors zone ne rend AUCUN montant", ttcDepuisHt(922, "US") === null);
-ok("les trois pays de la zone ont tous un coefficient",
-   Object.keys(TAUX_TTC_LIVRAISON).sort().join(",") === "BE,FR,LU");
+/* ⚠️ UNE ENTREE PAR DESTINATION, SANS EXCEPTION (11/09/2026, ouverture de
+   l'Europe). Un pays de la zone sans coefficient rendrait `null` au moment du
+   devis : le client verrait « nous n'avons pas pu chiffrer » pour une
+   destination pourtant proposee dans le menu. */
+ok("les 30 destinations ont toutes un coefficient, et aucune de plus",
+   PAYS_LIVRAISON.every((c) => typeof TAUX_TTC_LIVRAISON[c] === "number")
+   && Object.keys(TAUX_TTC_LIVRAISON).length === PAYS_LIVRAISON.length);
+ok("DE : 1000 HT donne 1190 TTC (coefficient 19 %)", ttcDepuisHt(1000, "DE") === 1190);
+/* Hors Union : on n'ajoute RIEN. Les droits d'importation eventuels sont
+   reclames au destinataire, et la page du client le DIT avant le paiement. */
+ok("GB : 1000 HT reste 1000 (hors Union, aucune TVA ajoutee par nous)",
+   ttcDepuisHt(1000, "GB") === 1000);
+ok("les trois pays hors Union sont a zero, et ce ne sont pas les memes que HORS_UE par hasard",
+   TAUX_TTC_LIVRAISON.GB === 0 && TAUX_TTC_LIVRAISON.CH === 0 && TAUX_TTC_LIVRAISON.NO === 0
+   && [...HORS_UE].sort().join(",") === "CH,GB,NO");
+ok("aucun pays de l'Union n'est a zero (un taux oublie se lit comme un cadeau)",
+   PAYS_LIVRAISON.filter((c) => !(HORS_UE as readonly string[]).includes(c))
+     .every((c) => TAUX_TTC_LIVRAISON[c] > 0));
 
 titre("— le plafond : au-dela, Bellajour absorbe —");
 
@@ -2018,10 +2060,15 @@ const dossierPort = d({
   livraison_centimes: 1106, pays_livraison: "FR",
 });
 for (const c of ["M3", "M3b"] as const) {
-  ok(`${c} sans port devise : SIGNALE, le mail ne part pas`,
+  ok(`${c} sans port devise ALORS QUE LE PAYS EST CONNU : SIGNALE, le mail ne part pas`,
      manquePour(c, d({ ...dossierPort, livraison_centimes: null })).includes("livraison_centimes"));
-  ok(`${c} sans pays : signale aussi (un port sans destination ne veut rien dire)`,
-     manquePour(c, d({ ...dossierPort, pays_livraison: null })).includes("pays_livraison"));
+  /* ⚠️ SANS PAYS, LE MAIL PART QUAND MEME (11/09/2026). Le dossier n'a pas de
+     destination : le client la choisira sur sa page, ou le port sera chiffre
+     avant le paiement. Retenir le mail reviendrait a ne jamais l'amener sur
+     cette page — donc a ne jamais vendre ce dossier. Le mail bascule sur sa
+     phrase sans montant (PAYS_A_CHOISIR). */
+  ok(`${c} sans pays NI port : le mail part, il dira que le port sera chiffre`,
+     manquePour(c, d({ ...dossierPort, pays_livraison: null, livraison_centimes: null })).length === 0);
   ok(`${c} avec le port : plus rien ne manque`, manquePour(c, dossierPort).length === 0);
 }
 /* `undefined` (repli 42703, migration pas passee) se traite comme `null` :
@@ -2033,6 +2080,8 @@ ok("M3 : une colonne absente (repli 42703) retient le mail comme un null",
    abandonne n'a ni prix ni port a annoncer. */
 ok("M10 sur une couverture prete : le port est exige",
    manquePour("M10", d({ ...dossierPort, livraison_centimes: null })).includes("livraison_centimes"));
+ok("M10 sur une couverture prete SANS pays : il part quand meme",
+   manquePour("M10", d({ ...dossierPort, pays_livraison: null, livraison_centimes: null })).length === 0);
 ok("M10 sur un depot abandonne : aucun port exige, il n'annonce aucun total",
    manquePour("M10", d({ etat: "photos_recues", nb_pages: null, palier: null })).length === 0);
 
@@ -2042,9 +2091,24 @@ ok("M10 sur un depot abandonne : aucun port exige, il n'annonce aucun total",
    la comparer aux templates. Meme discipline que CREDIT_FONDATRICE. */
 for (const c of ["M3", "M3b", "M10"] as const) {
   const p = parametresPour(c, dossierPort);
-  ok(`${c} : LIVRAISON, LIVRAISON_OFFERTE et TOTAL sont TOUJOURS envoyes`,
-     "LIVRAISON" in p && "LIVRAISON_OFFERTE" in p && "TOTAL" in p);
+  ok(`${c} : LIVRAISON, LIVRAISON_OFFERTE, TOTAL et PAYS_A_CHOISIR sont TOUJOURS envoyes`,
+     "LIVRAISON" in p && "LIVRAISON_OFFERTE" in p && "TOTAL" in p && "PAYS_A_CHOISIR" in p);
+  /* Le drapeau est une CHAINE, vide quand il n'a rien a dire : le
+     `{% if params.X %}` de Brevo traite la chaine vide comme faux, et un
+     booleen `false` comme VRAI. Le confondre afficherait la phrase « livraison
+     chiffree selon votre pays » sur un dossier deja chiffre. */
+  ok(`${c} : PAYS_A_CHOISIR est VIDE quand le pays est connu`, p.PAYS_A_CHOISIR === "");
 }
+
+/* Sans pays : le drapeau passe a « oui », et les deux montants se taisent. Le
+   mail dit alors « livraison chiffree selon votre pays, avant le paiement »
+   au lieu d'annoncer un total qu'il ne peut pas connaitre. */
+const sansPaysM3 = parametresPour("M3", d({ ...dossierPort, pays_livraison: null, livraison_centimes: null }));
+ok("M3 sans pays : PAYS_A_CHOISIR vaut « oui »", sansPaysM3.PAYS_A_CHOISIR === "oui");
+ok("M3 sans pays : LIVRAISON et TOTAL restent VIDES, jamais zero",
+   sansPaysM3.LIVRAISON === "" && sansPaysM3.TOTAL === "");
+ok("M3 sans pays : le PRIX du magazine, lui, est toujours dit",
+   sansPaysM3.PRIX === 37);
 
 const ordinaireM3 = parametresPour("M3", dossierPort);
 ok("M3 ordinaire : le port s'ecrit « 11,06 », le total « 48,06 »",
@@ -2215,16 +2279,50 @@ ok("le libelle du CSV reste en ASCII",
    libelleParPages([{ pages: 34, n: 3 }, { pages: 40, n: 1 }], "x", " / ")
      === "3 x 34 p. / 1 x 40 p.");
 
-titre("— la zone de livraison (CGV 4bis.6) —");
-/* Stripe EXIGE une liste explicite : cette constante EST le menu « Pays » du
-   paiement. Un pays hors liste ne peut pas etre saisi — c'est tout le
-   comportement hors zone, et il vit dans cette liste. */
-ok("exactement la zone des CGV : Belgique, France, Luxembourg",
-   [...PAYS_LIVRAISON].sort().join() === "BE,FR,LU");
-ok("aucun pays hors zone ne s'est glisse dans la liste envoyee a Stripe",
-   !(PAYS_LIVRAISON as readonly string[]).includes("DE")
-   && !(PAYS_LIVRAISON as readonly string[]).includes("CH")
-   && !(PAYS_LIVRAISON as readonly string[]).includes("MC"));
+titre("— la zone de livraison : toute l'Europe (11/09/2026) —");
+/* ⚠️ LA ZONE DES CGV A CHANGE LE 11/09/2026 (art. 4bis.6) : « France, Belgique,
+   Luxembourg » est devenu « les pays de l'Union europeenne, le Royaume-Uni, la
+   Suisse et la Norvege ». Le texte legal appartient a Mathias : ce harnais ne
+   compare donc pas deux phrases, il verifie la zone TECHNIQUE, celle qui borne
+   reellement Stripe. Si l'une des deux bouge sans l'autre, c'est ici qu'on doit
+   s'en souvenir — une commande acceptee hors de la zone ecrite est une vente
+   sans conditions applicables.
+   Stripe EXIGE une liste explicite : cette constante EST le menu « Pays » du
+   paiement, et la preuve que Stripe connait ces 30 codes est a la COMPILATION
+   (`codeStripe`, /api/atelier/checkout). */
+ok("30 destinations : les 27 de l'Union, plus GB, CH et NO",
+   PAYS_LIVRAISON.length === 30 && new Set(PAYS_LIVRAISON).size === 30);
+ok("les trois pays d'origine sont toujours la (aucune regression de zone)",
+   (PAYS_LIVRAISON as readonly string[]).includes("FR")
+   && (PAYS_LIVRAISON as readonly string[]).includes("BE")
+   && (PAYS_LIVRAISON as readonly string[]).includes("LU"));
+ok("tous les codes sont des ISO alpha-2 en MAJUSCULES",
+   PAYS_LIVRAISON.every((c) => /^[A-Z]{2}$/.test(c)));
+ok("l'Europe est bien ouverte : Allemagne, Espagne, Italie, Suisse en sont",
+   (PAYS_LIVRAISON as readonly string[]).includes("DE")
+   && (PAYS_LIVRAISON as readonly string[]).includes("ES")
+   && (PAYS_LIVRAISON as readonly string[]).includes("IT")
+   && (PAYS_LIVRAISON as readonly string[]).includes("CH"));
+/* Monaco n'est pas dans la liste de Stripe pour nous : il reste dehors tant
+   que personne n'a verifie que l'imprimeur y livre. */
+ok("un pays jamais decide ne s'y est pas glisse (MC)",
+   !(PAYS_LIVRAISON as readonly string[]).includes("MC"));
+
+/* ── L'ORDRE DES MENUS ────────────────────────────────────────────────
+   Trente entrees, c'est une liste qu'on parcourt. Les quatre destinations
+   majoritaires passent devant ; le reste suit par ordre alphabetique du
+   LIBELLE, pas du code (« Allemagne » se cherche a la lettre A). */
+ok("PAYS_TRIES commence par France, Belgique, Luxembourg, Suisse",
+   PAYS_TRIES.slice(0, 4).join(",") === "FR,BE,LU,CH");
+ok("PAYS_TRIES contient TOUTE la zone, une fois chacune",
+   PAYS_TRIES.length === PAYS_LIVRAISON.length
+   && new Set(PAYS_TRIES).size === PAYS_LIVRAISON.length
+   && PAYS_LIVRAISON.every((c) => (PAYS_TRIES as readonly string[]).includes(c)));
+ok("apres les quatre premiers, le tri suit le LIBELLE : Allemagne avant Autriche",
+   PAYS_TRIES.indexOf("DE") < PAYS_TRIES.indexOf("AT")
+   && PAYS_TRIES.indexOf("AT") < PAYS_TRIES.indexOf("BG"));
+ok("chaque destination a un libelle en toutes lettres (aucun code affiche brut)",
+   PAYS_LIVRAISON.every((c) => (PAYS_LIBELLE[c] ?? "").length > 2));
 
 /* ═══════════ LE PAYS DE LIVRAISON, DEMANDE DES L'ECRAN 4 (lot 3) ═══════════
    Mathias a decide le 10/09/2026 que la livraison serait facturee en sus, sur
@@ -2250,7 +2348,10 @@ titre("— normaliserPays : repare ce qui se repare, invente le reste jamais —
 ok("«  be  » devient BE (espaces et casse)", normaliserPays(" be ") === "BE");
 ok("« Fr » devient FR", normaliserPays("Fr") === "FR");
 ok("un pays hors zone rend null, JAMAIS le pays par defaut",
-   normaliserPays("US") === null && normaliserPays("DE") === null);
+   normaliserPays("US") === null && normaliserPays("CA") === null);
+/* L'Allemagne etait hors zone jusqu'au 10/09 : elle est dedans depuis. */
+ok("un pays entre dans la zone le jour ou il entre dans la liste (DE)",
+   normaliserPays("de") === "DE" && paysValide("DE"));
 ok("le vide rend null", normaliserPays("") === null && normaliserPays(null) === null);
 ok("le defaut est un pays de la zone, et il a un libelle",
    paysValide(PAYS_DEFAUT) && PAYS_LIBELLE[PAYS_DEFAUT] === "France");

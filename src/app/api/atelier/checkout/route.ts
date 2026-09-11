@@ -11,7 +11,7 @@ import {
   CODE_FISCAL_ALBUM,
   type PalierCle,
 } from "@/lib/atelier/prix";
-import { PAYS_LIBELLE, normaliserPays } from "@/lib/atelier/pays";
+import { PAYS_LIBELLE, normaliserPays, type PaysLivraison } from "@/lib/atelier/pays";
 import { CODE_FISCAL_LIVRAISON } from "@/lib/atelier/livraison";
 import { JOURS_LIVRAISON } from "@/lib/atelier/urgence";
 import {
@@ -20,6 +20,24 @@ import {
   EVT_CREDIT_APPLIQUE,
   META_CREDIT,
 } from "@/lib/atelier/fondatrice";
+
+/**
+ * LA PREUVE, À LA COMPILATION, QUE STRIPE CONNAÎT NOS TRENTE DESTINATIONS.
+ *
+ * `shipping_address_collection.allowed_countries` n'accepte pas n'importe
+ * quelle chaîne : Stripe en publie l'union exacte. Depuis l'ouverture de
+ * l'Europe (11/09/2026), `PAYS_LIVRAISON` compte trente codes, et un seul
+ * code inconnu d'eux ferait échouer la création de session — donc empêcherait
+ * de payer, en production, sur une destination et une seule.
+ *
+ * Cette fonction ne fait RIEN à l'exécution (elle rend son argument). Son
+ * annotation de retour est le test : si un code de `PaysLivraison` n'existe
+ * pas dans l'union de Stripe, `npx tsc --noEmit` refuse de compiler. C'est
+ * pour cette raison qu'il n'y a plus de `as` ici — un `as` aurait fait taire
+ * exactement l'erreur qu'on veut voir.
+ */
+type PaysStripe = Stripe.Checkout.SessionCreateParams.ShippingAddressCollection.AllowedCountry;
+const codeStripe = (p: PaysLivraison): PaysStripe => p;
 
 /**
  * POST /api/atelier/checkout — le bouton « Commander » de l'état 2 (PRD §8, §9).
@@ -275,8 +293,7 @@ export async function POST(request: Request) {
        pas de pays — la zone complète reprend alors la main, exactement comme
        avant, et la divergence se journalise au webhook (`paiement.ts`). */
     const pays = normaliserPays(numero.pays_livraison);
-    const paysAutorises = (pays ? [pays] : [...PAYS_LIVRAISON]) as
-      Stripe.Checkout.SessionCreateParams.ShippingAddressCollection.AllowedCountry[];
+    const paysAutorises = pays ? [codeStripe(pays)] : PAYS_LIVRAISON.map(codeStripe);
 
     const titre = numero.titre?.trim() || "Votre numéro";
     const origin = originDeConfiance(request.headers.get("origin"));
