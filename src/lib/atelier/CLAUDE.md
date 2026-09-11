@@ -39,6 +39,18 @@ neuf états, et à chaque passage un mail part vers une vraie cliente.
   sur un majorant, donc ne peut rien laisser passer. Le module qui AGIT est
   `scripts/anonymiser-dossiers.ts`, et lui seul : aucune route web, aucun cron.
 
+- **`relance.ts`** — la relance MANUELLE (T-109, 11/09/2026), celle que l'atelier déclenche.
+  Pur. Le motif se DÉDUIT de l'état (dépôt vide → RD*, photos sans accord → RP*, aperçu non payé
+  → RA*), il n'est jamais saisi : un écran qui choisit ce qui part enverrait « il manque vos
+  photos » à quelqu'un qui les a déposées ce matin. ⚠️ **Une relance manuelle n'a AUCUN gabarit
+  Brevo à elle** : `MODELE_RELANCE` la fait rejouer M2, M2b ou M3b, et `modeleDe()` (mails.ts)
+  route gabarit, objet, `manquePour` et `parametresPour` vers ce modèle. Ce qui empêchait de
+  renvoyer une relance n'était pas son texte, c'était le verrou unique de `mails_envoyes` : le
+  code porte donc le RANG (RP1, RP2, RP3). Quatre refus, tous avec une phrase lisible : adresse
+  absente, adresse qui a rebondi, plafond `RELANCES_MAX` par motif, `DELAI_MIN_RELANCE_MS` depuis
+  le DERNIER mail quel qu'il soit. Ces deux constantes sont des réglages par défaut, pas des
+  décisions de Mathias.
+
 Les autres purs : `grille.ts` (**la** grille, un prix par nombre de pages, importable navigateur,
 source de tout affichage), `prix.ts` (le calcul serveur : `centimesDuDossier` lit le prix GELÉ
 `prix_centimes` d'abord, la grille ensuite), `pays.ts` (FR/BE/LU), `livraison.ts` (devis → TTC,
