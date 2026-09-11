@@ -547,21 +547,15 @@
 
 .cpt .cpt-mag-titre { font-size: clamp(26px, 4vw, 38px); }
 
-/* ⚠️ LA VISIONNEUSE TIENT DANS L'ÉCRAN, POINTS COMPRIS (Mathias, 04/09 :
-   « on doit avoir accès à tout, même le prévisualisateur, sans scroller »).
-   numero.css donne à la scène 64 unités de hauteur ; cette page porte un
-   titre et une fiche au-dessus, donc les points de feuilletage tombaient
-   33 px sous la ligne de flottaison (mesuré sur 1280 × 800). On resserre
-   ICI, jamais dans numero.css — la page de suivi n'a pas ce problème et
-   n'a pas à payer pour celui-ci. */
-.cpt--mag .nu-viz-scene { --viz-h: min(calc(55 * var(--uh)), 470px); }
-
-/* ⚠️ LA VISIONNEUSE N'A PAS DE STYLE ICI. Elle est le composant `Apercu`
-   de la page de suivi, et son habillage vit dans numero.css (.nu-viz-*),
-   importé par cette page. Une seconde visionneuse aurait divergé de la
-   première au premier réglage — et c'est la même cliente qui regarde le
-   même magazine. Le réglage propre à cet écran (la hauteur de scène) est
-   plus bas, sur `.cpt--mag`. */
+/* ⚠️ LA PLANCHE N'A PAS DE STYLE ICI (11/09/2026). Elle est le composant
+   `Apercu`, et son habillage vit dans numero.css (`.nu-pl-*`, `.nu-viz-mag*`),
+   importé par cette page. Une seconde planche aurait divergé de la première
+   au premier réglage — et c'est la même cliente qui regarde le même
+   magazine. La visionneuse en carrousel qui vivait ici (T-089) avait une
+   scène à hauteur fixe resserrée spécifiquement pour cet écran
+   (`.cpt--mag .nu-viz-scene`) ; la planche n'a plus de scène à hauteur
+   fixe, chaque tuile suit son `aspect-ratio` — la règle est partie avec le
+   carrousel, voir `archive/numero-carrousel-2026-09/README.md`. */
 
 .cpt-mag-sans-visuel {
   margin-top: 28px;

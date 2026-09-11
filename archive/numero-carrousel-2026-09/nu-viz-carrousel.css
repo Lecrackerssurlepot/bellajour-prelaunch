@@ -1,0 +1,399 @@
+/* ---- l'état 2 : la maquette, en VISIONNEUSE magazine (T-089, 02/09) ----
+   Les pages au cœur : une scène, une page à la fois, qu'on feuillette (glissé
+   au doigt, flèches, points). La couverture À PLAT (C4 | dos | C1) reste un
+   seul fichier ; « La couverture »/« La quatrième » sont des CADRAGES du même
+   objet (object-position), jamais des images à part. Le reste du parcours (les
+   deux cases, le paiement) vit en dessous, inchangé. */
+.nu-viz { margin-top: clamp(28px, 6vw, 46px); }
+
+/* Pas de dvh/vh (socle) : la hauteur vient de --uh, gelée au chargement.
+   La hauteur et la gouttière vivent en variables : les vues « fit »
+   (pleine, large) en ont besoin plus bas pour borner leur image — un
+   max-height en % ne se résout pas dans un bouton en hauteur auto, et
+   l'overflow:hidden COUPAIT la photo (constaté par Mathias le 04/09 sur
+   Test soir 4 : les deux tiers du visuel hors champ). */
+.nu-viz-scene {
+  --viz-h: min(calc(64 * var(--uh)), 560px);
+  --viz-pad: clamp(4px, 1.4vw, 14px);
+  position: relative;
+  overflow: hidden;
+  height: var(--viz-h);
+  border-radius: 6px;
+  touch-action: pan-y;
+}
+
+.nu-viz-track {
+  display: flex;
+  height: 100%;
+  transition: transform 620ms var(--ease-spring);
+  will-change: transform;
+}
+
+.nu-viz-slide {
+  flex: 0 0 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: var(--viz-pad);
+}
+
+/* La page : un bouton (rien ne se charge, la loupe s'ouvre).
+   04/09 (maquettes validées) : le bouton ne porte plus ni coin ni ombre ni
+   overflow — c'est la FACE du magazine (.nu-viz-mag-face) qui rogne et fait
+   l'objet ; le bouton doit laisser dépasser tranches et épaisseurs. */
+.nu-viz-page {
+  position: relative;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: zoom-in;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Couvertures portrait : le cadre est au format RÉEL du magazine — A4
+   exact, 210 × 297 mm (FORMAT_FINI_MM, lib/atelier/impression.ts, vérifié
+   sur products/info Cloudprinter). L'image le remplit et déborde en
+   largeur, object-position choisit la face (découpe assumée). */
+.nu-viz-page--droite,
+.nu-viz-page--gauche {
+  height: 100%;
+  aspect-ratio: 210 / 297;
+}
+.nu-viz-page--droite img,
+.nu-viz-page--gauche img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.nu-viz-page--droite img { object-position: right center; }
+.nu-viz-page--gauche img { object-position: left center; }
+
+/* Vues au format naturel : la planche à plat (`large`) et les couvertures
+   PLEINES des anciens dossiers (c1 `pleine`, c4 `pleine-dos`). L'image
+   ENTIÈRE, cadrée dans la scène — jamais coupée. La double (`ouverte`) a
+   son propre cadre au ratio double A4, plus bas.
+   ⚠️ Pas de max-height en % ici : le bouton est en hauteur auto, le % ne se
+   résout pas, l'image sort du bouton et l'overflow de la face la tronque
+   (défaut du 04/09). La borne est donc la hauteur RÉELLE de la scène moins
+   la gouttière et l'épaisseur du support, par les variables de
+   .nu-viz-scene — une seule source. */
+.nu-viz-page--large img,
+.nu-viz-page--pleine img,
+.nu-viz-page--pleine-dos img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(var(--viz-h) - 2 * var(--viz-pad) - 6px);
+  width: auto;
+  height: auto;
+}
+
+/* ══ LE SUPPORT MAGAZINE (04/09, revu SOBRE sur retour de Mathias) ════════
+   Les visuels se posent sur l'objet, sans effet : angles DROITS partout,
+   pas de tranche dessinée, pas de trait de reliure sur les pages simples.
+   Il reste l'essentiel — l'épaisseur du papier en feuilles décalées,
+   l'ombre portée, et le seul pli central de la double ouverte. */
+.nu-viz-mag {
+  position: relative;
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* La face : c'est ELLE qui rogne le visuel et porte l'ombre de l'objet. */
+.nu-viz-mag-face {
+  position: relative;
+  display: block;
+  z-index: 1;
+  overflow: hidden;
+  background: var(--c-void);
+  box-shadow: var(--shadow-float);
+}
+
+/* L'épaisseur : deux feuilles décalées derrière la face, à angles droits. */
+.nu-viz-mag::before,
+.nu-viz-mag::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.nu-viz-mag::before { transform: translate(6px, 5px); background: var(--paper-3); }
+.nu-viz-mag::after { transform: translate(3px, 2px); background: var(--paper-2); }
+
+/* Le pli central — RÉSERVÉ à la double ouverte. Aucun trait ailleurs. */
+.nu-viz-mag-pli { display: none; }
+
+/* Vues rognées (droite/gauche) : l'objet remplit le cadre A4 du bouton. */
+.nu-viz-page--droite .nu-viz-mag,
+.nu-viz-page--gauche .nu-viz-mag,
+.nu-viz-page--droite .nu-viz-mag-face,
+.nu-viz-page--gauche .nu-viz-mag-face {
+  width: 100%;
+  height: 100%;
+}
+
+/* Vu de DOS (la quatrième) : l'épaisseur en miroir. */
+.nu-viz-page--gauche .nu-viz-mag::before,
+.nu-viz-page--pleine-dos .nu-viz-mag::before { transform: translate(-6px, 5px); }
+.nu-viz-page--gauche .nu-viz-mag::after,
+.nu-viz-page--pleine-dos .nu-viz-mag::after { transform: translate(-3px, 2px); }
+
+/* La planche à plat : un imprimé posé, la seule épaisseur du papier. */
+.nu-viz-page--large .nu-viz-mag::before { content: none; }
+.nu-viz-page--large .nu-viz-mag::after { transform: translate(0, 4px); }
+
+/* La double page : le magazine OUVERT, au format RÉEL — deux A4 côte à
+   côte, 420 × 297 mm (FORMAT_FINI_MM, lib/atelier/impression.ts, vérifié
+   sur products/info Cloudprinter le 26/08). Le cadre impose le ratio ; un
+   export de double de l'atelier est exactement à ce format, rien n'est
+   rogné. La largeur se déduit de la hauteur disponible, plafonnée à la
+   colonne. */
+.nu-viz-page--ouverte {
+  width: min(100%, calc((var(--viz-h) - 2 * var(--viz-pad) - 6px) * 420 / 297));
+  aspect-ratio: 420 / 297;
+}
+.nu-viz-page--ouverte .nu-viz-mag,
+.nu-viz-page--ouverte .nu-viz-mag-face {
+  width: 100%;
+  height: 100%;
+}
+.nu-viz-page--ouverte img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.nu-viz-page--ouverte .nu-viz-mag::before { content: none; }
+.nu-viz-page--ouverte .nu-viz-mag::after { transform: translate(0, 5px); background: var(--paper-3); }
+.nu-viz-page--ouverte .nu-viz-mag-pli {
+  display: block;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 90px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.14) 42%, rgba(0, 0, 0, 0.32) 50%,
+    rgba(0, 0, 0, 0.14) 58%, rgba(0, 0, 0, 0) 100%);
+}
+
+/* Le badge « Agrandir », comme sur les anciennes vues. Au-dessus de la face
+   du magazine (z-index 1) pour rester lisible sur le visuel. */
+.nu-viz-zoom {
+  position: absolute;
+  z-index: 2;
+  right: 10px;
+  bottom: 10px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+  pointer-events: none;
+}
+.nu-viz-page:hover .nu-viz-zoom,
+.nu-viz-page:focus-visible .nu-viz-zoom { opacity: 1; }
+/* Au doigt, pas de survol : le badge reste posé, discrètement. */
+@media (hover: none) { .nu-viz-zoom { opacity: 0.85; } }
+
+/* Feuilleter : flèches PARTOUT (Mathias, 04/09), points partout, glissé au
+   doigt. Elles étaient réservées au pointeur fin ; au doigt, il ne restait
+   que le glissé — un geste qui ne s'annonce pas, donc que personne ne
+   devine. La scène garde `touch-action: pan-y`, le glissé continue de
+   marcher pour qui le connaît. */
+.nu-viz-fleche {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--c-text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--dur) var(--ease), opacity var(--dur) var(--ease);
+}
+.nu-viz-fleche:hover { background: var(--glass-border); }
+.nu-viz-fleche:disabled { opacity: 0.3; cursor: default; }
+.nu-viz-fleche--prev { left: 12px; }
+.nu-viz-fleche--next { right: 12px; }
+
+/* ⚠️ SUR UN TÉLÉPHONE, LE CHEVRON PERD SA PASTILLE, PAS SA CIBLE.
+   Le magazine fait ~300 px de large sur un écran de 375 : deux pastilles
+   de verre de 44 px lui mangeraient près d'un tiers. Le bouton GARDE donc
+   ses 44 × 44 (le plancher tactile du dépôt), et c'est son habillage qui
+   s'efface — le chevron seul, posé sur une ombre qui le tient lisible
+   aussi bien sur un ciel blanc que sur une photo sombre. */
+@media (hover: none), (pointer: coarse) {
+  .nu-viz-fleche {
+    border-color: transparent;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    font-size: 30px;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75), 0 0 3px rgba(0, 0, 0, 0.55);
+  }
+  .nu-viz-fleche--prev { left: 0; }
+  .nu-viz-fleche--next { right: 0; }
+}
+
+/* Sous la scène : le nom de la vue, et les points. Minimal. */
+.nu-viz-bas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: clamp(14px, 3vw, 20px);
+}
+.nu-viz-nom {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(17px, 2.6vw, 22px);
+  color: var(--c-text);
+}
+.nu-viz-points { display: flex; gap: 8px; }
+.nu-viz-point {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--c-line-strong);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.nu-viz-point[aria-current='true'] {
+  background: var(--c-accent);
+  transform: scale(1.3);
+}
+
+/* Le mot rassurant (T-093) : SEULE la visionneuse encore modifiable le
+   porte (`modifiable`, Apercu.tsx) — le magazine LIVRÉ (/compte/magazine)
+   ne le passe pas. Pas de marge à protéger de la règle de spécificité
+   `.bj-atelier p { margin: 0 }` (voir la note ligne ~183 de ce fichier) :
+   l'espacement vient du `gap` de `.nu-viz-bas`. */
+/* T-093 — le choix de couverture, sous la scène. Discret : ce n'est PAS
+   l'action principale de l'écran (celle-là, c'est payer), c'est une
+   préférence qu'on peut exprimer ou ignorer. */
+.nu-viz-choix {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.bj-atelier .nu-viz-choix-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 9px 20px;
+  background: none;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--c-text);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+/* Les deux réponses côte à côte : « celle-ci » et « décidez pour moi ».
+   Elles s'empilent d'elles-mêmes sur un téléphone (wrap), et restent
+   centrées : ce n'est pas une barre d'actions, c'est une question posée. */
+.nu-viz-choix-boutons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.bj-atelier .nu-viz-choix-btn:hover {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+}
+
+/* La seconde réponse est SECONDAIRE, pas égale : le trait s'efface, le mot
+   reste lisible. Dire « je vous fais confiance » doit rester possible sans
+   être la première chose que l'œil attrape. */
+.bj-atelier .nu-viz-choix-btn--doux {
+  border-color: transparent;
+  color: var(--c-text-faint);
+}
+.bj-atelier .nu-viz-choix-btn--doux:hover {
+  border-color: var(--c-line-strong);
+  background: none;
+  color: var(--c-text);
+}
+
+/* ÉTEINT EN PRÉVISUALISATION (11/09/2026) : l'atelier voit l'écran du
+   client, il ne choisit pas à sa place. Le bouton reste lisible — un bouton
+   qu'on ne voit plus est un bouton qu'on ne relit jamais. */
+.bj-atelier .nu-viz-choix-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.bj-atelier .nu-viz-choix-btn:disabled:hover {
+  border-color: var(--c-line-strong);
+  background: none;
+}
+.bj-atelier .nu-viz-choix-btn--doux:disabled:hover {
+  border-color: transparent;
+  color: var(--c-text-faint);
+}
+
+/* La marque du choix, dans le nom de la vue : une nuance de couleur, pas un
+   bloc. Elle dit « c'est celle-ci » sans rien réclamer. */
+.nu-viz-nom-choix {
+  color: var(--c-accent-strong);
+}
+
+.nu-viz-choix-refus {
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  color: var(--c-text-faint);
+}
+
+.nu-viz-note {
+  max-width: 42ch;
+  text-align: center;
+  font-size: 13px;
+  color: var(--c-text-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nu-viz-track { transition-duration: 0.01ms; }
+}
+
+/* ── De qui c'est le tour ──
+   Le fil des jalons dit OÙ on en est ; il ne dit pas QUI DOIT JOUER. C'est
+   pourtant la seule question de quelqu'un qui rouvre son lien. */
+.nu-camp {
+  /* La marge vit en (0-2-0) près de .nu-mot — voir la note spécificité. */
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+}

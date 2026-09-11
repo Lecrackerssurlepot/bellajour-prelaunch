@@ -28,7 +28,7 @@ import {
   MAX_DOUBLES,
   MAX_PLANCHES,
 } from "@/lib/atelier/apercu";
-import { construireVues, formatDepuisRatio, SEUIL_PLANCHE } from "@/lib/atelier/formatVisuel";
+import { construirePlanche, formatDepuisRatio, SEUIL_PLANCHE } from "@/lib/atelier/formatVisuel";
 /* Le brouillon LOCAL du panneau d'action (11/09/2026). Module sans React
    exprès : le composant tire `next/navigation` et une feuille de style, ce
    harnais ne peut charger ni l'un ni l'autre. */
@@ -3488,7 +3488,10 @@ ok("le seuil est FRANC : rien du catalogue ne tombe autour",
    && formatDepuisRatio(114, 100) === "portrait"
    && formatDepuisRatio(115, 100) === "planche");
 
-titre("— les vues de la visionneuse suivent le format mesure —");
+titre("— la planche (cartes de couverture + tuiles de double) suit le format mesure —");
+/* 11/09/2026 — remplace les assertions de l'ancienne visionneuse en
+   carrousel (`construireVues`) : mêmes scenarios, nouvelle forme. La
+   fonction elle-même est archivée dans `archive/numero-carrousel-2026-09/`. */
 
 const ENTREE = {
   plat: null as string | null,
@@ -3502,92 +3505,98 @@ const ENTREE = {
   formats: {} as Record<string, "portrait" | "planche" | undefined>,
 };
 
-const PLANCHE_SEULE = construireVues({
+const PLANCHE_SEULE = construirePlanche({
   ...ENTREE,
   plats: ["a.jpg"],
   platsCadrageDroite: ["80% 50%"],
   platsCadrageGauche: ["10% 50%"],
   formats: { "a.jpg": "planche" },
 });
-ok("planche : trois vues, la couverture / la quatrieme / a plat",
-   JSON.stringify(PLANCHE_SEULE.vues.map((v) => v.legende))
-   === JSON.stringify(["La couverture", "La quatrième", "La couverture à plat"]));
-ok("planche : les deux faces sont CADREES (droite, gauche) et portent le cadrage de l'atelier",
-   PLANCHE_SEULE.vues[0].cadre === "droite" && PLANCHE_SEULE.vues[0].cadrage === "80% 50%"
-   && PLANCHE_SEULE.vues[1].cadre === "gauche" && PLANCHE_SEULE.vues[1].cadrage === "10% 50%");
+ok("planche : une carte, deux tuiles (premiere cadree + planche entiere)",
+   PLANCHE_SEULE.couvertures.length === 1
+   && PLANCHE_SEULE.couvertures[0].format === "planche"
+   && PLANCHE_SEULE.couvertures[0].premiere?.legende === "La couverture"
+   && PLANCHE_SEULE.couvertures[0].entiere.legende === "La couverture à plat");
+ok("planche : la premiere porte le cadrage DROITE de l'atelier ; le cadrage GAUCHE n'a plus d'effet",
+   PLANCHE_SEULE.couvertures[0].premiere?.cadrage === "80% 50%"
+   && PLANCHE_SEULE.couvertures[0].entiere.cadrage === undefined);
 
-const PORTRAIT_SEUL = construireVues({
+const PORTRAIT_SEUL = construirePlanche({
   ...ENTREE,
   plats: ["a.jpg"],
   platsCadrageDroite: ["80% 50%"],
   platsCadrageGauche: ["10% 50%"],
   formats: { "a.jpg": "portrait" },
 });
-ok("portrait : UNE seule vue, aucune quatrieme, aucune vue a plat",
-   PORTRAIT_SEUL.vues.length === 1 && PORTRAIT_SEUL.vues[0].legende === "La couverture");
-ok("portrait : l'image est montree ENTIERE (cadre pleine), sans le cadrage des planches",
-   PORTRAIT_SEUL.vues[0].cadre === "pleine" && PORTRAIT_SEUL.vues[0].cadrage === undefined);
-ok("portrait : la loupe montre la meme chose, pas « la couverture a plat »",
-   PORTRAIT_SEUL.vues[0].loupe === "La couverture");
+ok("portrait : UNE seule carte, une seule tuile, aucune premiere separee",
+   PORTRAIT_SEUL.couvertures.length === 1
+   && PORTRAIT_SEUL.couvertures[0].format === "portrait"
+   && PORTRAIT_SEUL.couvertures[0].premiere === undefined);
+ok("portrait : l'image est montree ENTIERE, sans le cadrage des planches",
+   PORTRAIT_SEUL.couvertures[0].entiere.legende === "La couverture"
+   && PORTRAIT_SEUL.couvertures[0].entiere.cadrage === undefined);
 
-const PAS_MESURE = construireVues({ ...ENTREE, plats: ["a.jpg"] });
-ok("pas encore mesuree : une vue ENTIERE, jamais une decoupe au hasard",
-   PAS_MESURE.vues.length === 1 && PAS_MESURE.vues[0].cadre === "pleine");
+const PAS_MESURE = construirePlanche({ ...ENTREE, plats: ["a.jpg"] });
+ok("pas encore mesuree : une carte 'inconnu', une seule tuile entiere, jamais une decoupe au hasard",
+   PAS_MESURE.couvertures.length === 1
+   && PAS_MESURE.couvertures[0].format === "inconnu"
+   && PAS_MESURE.couvertures[0].premiere === undefined);
 
-const DEUX_PLANCHES = construireVues({
+const DEUX_PLANCHES = construirePlanche({
   ...ENTREE,
   plats: ["a.jpg", "b.jpg"],
   platsCadrageDroite: ["", "30% 50%"],
   formats: { "a.jpg": "planche", "b.jpg": "planche" },
 });
-ok("planche + planche : 3 vues + 1, la seconde cadree sur sa face avant",
-   DEUX_PLANCHES.vues.length === 4
-   && DEUX_PLANCHES.vues[3].legende === "Couverture 2"
-   && DEUX_PLANCHES.vues[3].cadre === "droite"
-   && DEUX_PLANCHES.vues[3].cadrage === "30% 50%");
+ok("planche + planche : DEUX cartes a deux tuiles chacune, la seconde cadree sur sa face avant",
+   DEUX_PLANCHES.couvertures.length === 2
+   && DEUX_PLANCHES.couvertures[1].nom === "Couverture 2"
+   && DEUX_PLANCHES.couvertures[1].premiere?.cadrage === "30% 50%"
+   && DEUX_PLANCHES.couvertures[1].entiere.legende === "Couverture 2 à plat");
 
-const DEUX_PORTRAITS = construireVues({
+const DEUX_PORTRAITS = construirePlanche({
   ...ENTREE,
   plats: ["a.jpg", "b.jpg"],
   formats: { "a.jpg": "portrait", "b.jpg": "portrait" },
 });
-ok("portrait + portrait : deux vues, une par couverture",
-   DEUX_PORTRAITS.vues.length === 2
-   && DEUX_PORTRAITS.vues.every((v) => v.cadre === "pleine")
-   && JSON.stringify(DEUX_PORTRAITS.vues.map((v) => v.rang)) === JSON.stringify([0, 1]));
+ok("portrait + portrait : deux cartes a une tuile, un rang chacune",
+   DEUX_PORTRAITS.couvertures.length === 2
+   && DEUX_PORTRAITS.couvertures.every((c) => c.premiere === undefined)
+   && JSON.stringify(DEUX_PORTRAITS.couvertures.map((c) => c.rang)) === JSON.stringify([0, 1]));
 
-const MELANGE = construireVues({
+const MELANGE = construirePlanche({
   ...ENTREE,
   plats: ["a.jpg", "b.jpg"],
   formats: { "a.jpg": "planche", "b.jpg": "portrait" },
 });
 ok("planche + portrait : chacune est traitee selon SON format",
-   MELANGE.vues.length === 4
-   && MELANGE.vues[0].cadre === "droite"
-   && MELANGE.vues[3].cadre === "pleine"
-   && MELANGE.vues[3].rang === 1);
+   MELANGE.couvertures.length === 2
+   && MELANGE.couvertures[0].format === "planche" && MELANGE.couvertures[0].premiere !== undefined
+   && MELANGE.couvertures[1].format === "portrait" && MELANGE.couvertures[1].premiere === undefined
+   && MELANGE.couvertures[1].rang === 1);
 
-const AVEC_DOUBLES = construireVues({
+const AVEC_DOUBLES = construirePlanche({
   ...ENTREE,
   plats: ["a.jpg"],
   doubles: ["d1.jpg", "d2.jpg"],
   doublesCadrage: ["50% 30%", ""],
   formats: { "a.jpg": "portrait" },
 });
-ok("les doubles pages ne changent pas : cadre ouvert, cadrage conserve, aucun rang",
-   AVEC_DOUBLES.vues.length === 3
-   && AVEC_DOUBLES.vues[1].cadre === "ouverte"
-   && AVEC_DOUBLES.vues[1].cadrage === "50% 30%"
-   && AVEC_DOUBLES.vues[1].rang === undefined);
+ok("les doubles pages sont des tuiles a part, cadrage conserve, numerotees",
+   AVEC_DOUBLES.doubles.length === 2
+   && AVEC_DOUBLES.doubles[0].legende === "Double page 1" && AVEC_DOUBLES.doubles[0].cadrage === "50% 30%"
+   && AVEC_DOUBLES.doubles[1].legende === "Double page 2" && AVEC_DOUBLES.doubles[1].cadrage === undefined);
+ok("une seule double page porte le nom singulier",
+   construirePlanche({ ...ENTREE, doubles: ["d1.jpg"] }).doubles[0].legende === "Une double page");
 
-const HISTORIQUE = construireVues({ ...ENTREE, c1: "c1.jpg", c4: "c4.jpg" });
-ok("un dossier d'AVANT le format a plat (c1/c4) se lit exactement comme avant",
-   HISTORIQUE.vues.length === 2
-   && HISTORIQUE.vues[0].cadre === "pleine"
-   && HISTORIQUE.vues[1].cadre === "pleine-dos");
+const HISTORIQUE = construirePlanche({ ...ENTREE, c1: "c1.jpg", c4: "c4.jpg" });
+ok("un dossier d'AVANT le format a plat (c1/c4) se lit comme deux cartes SANS rien a choisir",
+   HISTORIQUE.couvertures.length === 2
+   && HISTORIQUE.couvertures[0].nom === "La couverture" && HISTORIQUE.couvertures[0].rang === undefined
+   && HISTORIQUE.couvertures[1].nom === "La quatrième" && HISTORIQUE.couvertures[1].rang === undefined);
 
-ok("aucun visuel -> aucune vue (la page ne rend rien plutot qu'une scene vide)",
-   construireVues(ENTREE).vues.length === 0);
+ok("aucun visuel -> aucune carte, aucune tuile (la page ne rend rien plutot qu'une grille vide)",
+   construirePlanche(ENTREE).couvertures.length === 0 && construirePlanche(ENTREE).doubles.length === 0);
 
 titre("— le choix de couverture : un rang, ou « je vous fais confiance » —");
 

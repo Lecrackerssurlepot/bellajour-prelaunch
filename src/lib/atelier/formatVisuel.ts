@@ -30,11 +30,24 @@
  * que des nombres et des chaînes. C'est l'appelant qui MESURE (naturalWidth /
  * naturalHeight sur une `Image`), ici comme dans la fiche admin.
  *
- * Il porte aussi `construireVues`, la liste des vues de la visionneuse : c'est
- * la même règle vue de l'autre bout (quel cadre, quelle légende), et elle
- * vivait dans un composant que le harnais ne peut pas charger — il tire une
- * feuille CSS. Une règle qu'on ne peut pas éprouver finit par n'être éprouvée
- * par personne, et celle-ci se trompe EN SILENCE.
+ * Il porte aussi `construirePlanche`, la liste des CARTES et TUILES de la
+ * planche (11/09/2026, T2 — remplace l'ancienne visionneuse en carrousel,
+ * `construireVues`, dont l'unique appelant était `numero/[token]/Apercu.tsx`).
+ * Même raison de vivre ici : c'est la seule règle de cet écran qui peut se
+ * tromper EN SILENCE (montrer la moitié d'une couverture, ou rogner une
+ * planche qu'on doit montrer entière), et elle vivait dans un composant que
+ * le harnais ne peut pas charger — il tire une feuille CSS.
+ *
+ * LA PLANCHE, PAS LE CARROUSEL. Mathias (11/09) : « l'affichage n'est pas au
+ * format » — une planche à plat vue en paysage plein cadre ne montre pas ce
+ * qu'on va imprimer. La nouvelle grille montre TOUT d'un coup, chaque visuel
+ * à ses proportions réelles : pour une planche, une tuile « première de
+ * couverture » cadrée en A4 portrait (ce que le client tient en main) à côté
+ * de la planche ENTIÈRE jamais rognée (ce qu'on imprime). La « quatrième »
+ * cadrée séparément a disparu de cette carte : elle est déjà visible, entière,
+ * dans la tuile « à plat ». `platsCadrageGauche` reste un paramètre accepté
+ * (la fiche admin le règle encore pour son propre aperçu, `Fiche.tsx`) mais
+ * n'a plus d'effet ICI, volontairement.
  * ══════════════════════════════════════════════════════════════════════════
  */
 
@@ -63,29 +76,6 @@ export function formatDepuisRatio(largeur: number, hauteur: number): FormatVisue
   return largeur / hauteur < SEUIL_PLANCHE ? "portrait" : "planche";
 }
 
-/* Le CADRAGE dit aussi le SUPPORT (04/09, maquettes validées) : les
-   couvertures se posent sur un magazine FERMÉ (dos, tranche, épaisseur —
-   `droite`/`pleine` vus de face, `gauche`/`pleine-dos` vus de dos, en
-   miroir), les doubles pages sur un magazine OUVERT (`ouverte` : pli
-   central, bloc de pages dessous), la planche `large` reste posée à plat
-   avec la seule épaisseur du papier. Tout est en CSS pur (numero.css). */
-type Cadre = 'droite' | 'gauche' | 'pleine' | 'pleine-dos' | 'large' | 'ouverte'
-export type Vue = {
-  src: string
-  legende: string
-  loupe: string
-  cadre: Cadre
-  /* Le cadrage réglé par l'atelier (`object-position`). Vide = centré.
-     ⚠️ Réservé aux PLANCHES et aux doubles pages : sur une couverture seule,
-     il n'y a pas de coupe à régler, et appliquer un cadrage de planche
-     déplacerait une image qu'on montre entière. */
-  cadrage?: string
-  /* T-093 — le rang de la couverture que cette vue montre (0 = celle
-     proposée par défaut). Absent sur les doubles pages : on ne choisit pas
-     une double page, on choisit une couverture. */
-  rang?: number
-}
-
 export type EntreeVues = {
   plat: string | null
   plats: string[]
@@ -101,96 +91,118 @@ export type EntreeVues = {
   formats: Record<string, FormatVisuel | undefined>
 }
 
+/** Une image, montrée entière ou cadrée — le grain de la planche. */
+export type TuilePlanche = {
+  src: string
+  legende: string
+  /** `object-position` réglé par l'atelier. Vide = centré. Réservé aux
+      tuiles CADRÉES (`premiere`) : une tuile entière n'a rien à cadrer. */
+  cadrage?: string
+}
+
 /**
- * Les vues, dans l'ordre du feuilletage — FONCTION PURE, éprouvée par
- * verif-atelier.ts.
+ * Une carte de couverture, telle qu'affichée dans la section « Vos
+ * couvertures ». `format: 'inconnu'` = pas encore mesurée : traitée comme un
+ * portrait (image entière, sans découpe) tant qu'on ne sait pas.
+ */
+export type CarteCouverture = {
+  /** Le rang parmi les couvertures PROPOSÉES (plats/plat), pour le choix et
+      la marque « votre choix ». Absent pour un dossier HISTORIQUE (c1/c4
+      séparés, dossiers publiés avant le format à plat) : il n'y a rien à
+      choisir, seulement à regarder. */
+  rang?: number
+  nom: string
+  format: FormatVisuel | 'inconnu'
+  /** Toujours présente : l'image ENTIÈRE, jamais rognée. Pour une planche,
+      c'est l'objet à plat (« À plat : quatrième, dos, première »). Pour un
+      portrait ou une mesure en attente, c'est l'unique tuile de la carte. */
+  entiere: TuilePlanche
+  /** PLANCHE SEULEMENT : la première de couverture, cadrée en portrait A4
+      (`object-fit: cover`) — c'est elle qui « fait objet » dans la carte. */
+  premiere?: TuilePlanche
+}
+
+/** Une double page, à son ratio réel. */
+export type TuileDouble = {
+  src: string
+  legende: string
+  cadrage?: string
+}
+
+/**
+ * La planche : les cartes de couverture et les tuiles de double page, dans
+ * l'ordre d'affichage — FONCTION PURE, éprouvée par verif-atelier.ts.
  *
- * Elle est sortie du composant pour une raison simple : c'est la seule règle
- * de cet écran qui peut se tromper en silence (montrer la moitié d'une
- * couverture sous le nom « La quatrième »), et une règle qu'on ne peut pas
- * éprouver sans navigateur finit par n'être éprouvée par personne.
+ * Remplace `construireVues` (visionneuse en carrousel, T-089) le 11/09/2026 :
+ * Mathias, capture à l'appui — « l'affichage n'est pas au format », il veut
+ * tout voir d'un coup, en grille, chaque visuel à ses proportions réelles.
+ * Une planche vue en paysage plein cadre ne montre pas ce qu'on va imprimer ;
+ * une carte avec la première de couverture ET la planche entière, si.
  *
- * Le vocabulaire est celui de la cliente ET de l'atelier — deux personnes qui
- * regardent le même visuel le nomment pareil. La loupe navigue par légende
- * (findIndex) : en mode à plat, les deux faces découpées pointent le MÊME
- * objet entier, sous une seule légende de loupe « La couverture à plat ».
+ * Le vocabulaire reste celui de la cliente ET de l'atelier — deux personnes
+ * qui regardent le même visuel le nomment pareil.
  *
  * ⚠️ TANT QU'UNE COUVERTURE N'EST PAS MESURÉE, elle est rendue ENTIÈRE
- * (cadre `pleine`), en une seule vue. C'est le seul cadre neutre possible :
- * ne rien rendre ferait sauter la scène et retarderait le chargement de
- * l'image la plus importante de la page (elle ne serait plus dans le HTML),
- * et découper au hasard est exactement le défaut qu'on corrige. La mesure
- * arrive avec le décodage de l'image, donc dans le même souffle.
+ * (`format: 'inconnu'`), jamais découpée au hasard. Ne rien rendre ferait
+ * sauter la grille et retarderait le chargement de l'image la plus
+ * importante de la page (elle ne serait plus dans le HTML). La mesure arrive
+ * avec le décodage de l'image, donc dans le même souffle — la carte se
+ * réorganise alors en planche à deux tuiles.
  */
-export function construireVues(e: EntreeVues): { vues: Vue[]; couvertures: string[] } {
-  const vues: Vue[] = []
+export function construirePlanche(e: EntreeVues): { couvertures: CarteCouverture[]; doubles: TuileDouble[] } {
+  const couvertures: CarteCouverture[] = []
   /* T-093 — `plats` fait foi quand il est là ; sinon la planche unique, donc
      tous les dossiers publiés jusqu'ici passent par le même chemin qu'avant. */
-  const couvertures = e.plats.length ? e.plats : e.plat ? [e.plat] : []
+  const propositions = e.plats.length ? e.plats : e.plat ? [e.plat] : []
 
-  if (couvertures.length) {
-    couvertures.forEach((src, k) => {
+  if (propositions.length) {
+    propositions.forEach((src, k) => {
       const premiere = k === 0
       /* La première s'appelle « La couverture » : c'est celle qu'on propose.
          Les autres portent leur rang, c'est ce qui permet d'en parler au
          téléphone sans montrer son écran. */
       const nom = premiere ? 'La couverture' : `Couverture ${k + 1}`
+      const format = e.formats[src]
 
-      if (e.formats[src] === 'planche') {
-        if (premiere) {
-          vues.push({
-            src,
-            legende: 'La couverture',
-            loupe: 'La couverture à plat',
-            cadre: 'droite',
-            rang: 0,
-            cadrage: e.platsCadrageDroite[0] || undefined,
-          })
-          vues.push({
-            src,
-            legende: 'La quatrième',
-            loupe: 'La couverture à plat',
-            cadre: 'gauche',
-            rang: 0,
-            cadrage: e.platsCadrageGauche[0] || undefined,
-          })
-          vues.push({
-            src,
-            legende: 'La couverture à plat',
-            loupe: 'La couverture à plat',
-            cadre: 'large',
-            rang: 0,
-          })
-        } else {
-          /* Les autres propositions : une vue chacune, cadrée sur leur face
-             avant — c'est elle qu'on compare. La loupe montre la planche
-             entière, comme pour la première. */
-          vues.push({
+      if (format === 'planche') {
+        couvertures.push({
+          rang: k,
+          nom,
+          format: 'planche',
+          premiere: {
             src,
             legende: nom,
-            loupe: nom,
-            cadre: 'droite',
-            rang: k,
             cadrage: e.platsCadrageDroite[k] || undefined,
-          })
-        }
+          },
+          entiere: {
+            src,
+            legende: premiere ? 'La couverture à plat' : `${nom} à plat`,
+          },
+        })
       } else {
         /* Portrait (couverture seule) OU pas encore mesurée : l'image
-           ENTIÈRE, une seule vue, aucune quatrième — il n'y en a pas dans le
-           fichier. Aucun cadrage : celui de l'atelier règle une COUPE, et
-           ici il n'y en a aucune. */
-        vues.push({ src, legende: nom, loupe: nom, cadre: 'pleine', rang: k })
+           ENTIÈRE, une seule tuile, aucun cadrage — celui de l'atelier règle
+           une COUPE, et ici il n'y en a aucune. */
+        couvertures.push({
+          rang: k,
+          nom,
+          format: format === 'portrait' ? 'portrait' : 'inconnu',
+          entiere: { src, legende: nom },
+        })
       }
     })
   } else {
-    if (e.c1) vues.push({ src: e.c1, legende: 'La couverture', loupe: 'La couverture', cadre: 'pleine' })
-    if (e.c4) vues.push({ src: e.c4, legende: 'La quatrième', loupe: 'La quatrième', cadre: 'pleine-dos' })
+    /* Dossier HISTORIQUE : c1 et c4 sont deux fichiers séparés, pas une
+       planche. Rien à choisir (`rang` absent) : ils se montrent, entiers. */
+    if (e.c1) couvertures.push({ nom: 'La couverture', format: 'portrait', entiere: { src: e.c1, legende: 'La couverture' } })
+    if (e.c4) couvertures.push({ nom: 'La quatrième', format: 'portrait', entiere: { src: e.c4, legende: 'La quatrième' } })
   }
 
-  e.doubles.forEach((src, k) => {
-    const nom = e.doubles.length > 1 ? `Double page ${k + 1}` : 'Une double page'
-    vues.push({ src, legende: nom, loupe: nom, cadre: 'ouverte', cadrage: e.doublesCadrage[k] })
-  })
+  const doubles: TuileDouble[] = e.doubles.map((src, k) => ({
+    src,
+    legende: e.doubles.length > 1 ? `Double page ${k + 1}` : 'Une double page',
+    cadrage: e.doublesCadrage[k] || undefined,
+  }))
 
-  return { vues, couvertures }
+  return { couvertures, doubles }
 }
