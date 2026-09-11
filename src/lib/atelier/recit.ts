@@ -316,6 +316,16 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
        (choisir le défaut, c'est ne rien choisir), mais on sait le dire si
        un rejeu le fait remonter. */
     case "couverture_choisie": {
+      /* 11/09/2026 — « je vous fais confiance » est une RÉPONSE, et elle se
+         lit en premier : elle dit à l'atelier qu'il peut composer sans
+         attendre, là où un rang absent ne disait rien du tout. */
+      if (payload.indifferent === true) {
+        return {
+          texte: "Le client nous laisse choisir la couverture",
+          detail: "Sans préférence : l'atelier décide",
+          ton: "elle",
+        };
+      }
       const rang = typeof payload.rang === "number" ? (payload.rang as number) : null;
       return {
         texte:

@@ -556,6 +556,10 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
           platsCadrageDroite: [],
           platsCadrageGauche: [],
         },
+    /* La démonstration montre les DEUX réponses possibles : sur un dossier
+       publié, le client a préféré la seconde couverture. Sans ligne ici,
+       l'écran de démonstration n'apprendrait pas à la relire. */
+    choixCouverture: publie ? { rang: 1 } : null,
     apercuBrut: publie
       ? { plat: PHOTOS[10], plats: [PHOTOS[10], PHOTOS[11]], c1: null, c4: null, doubles: [PHOTOS[2], PHOTOS[3]], double: PHOTOS[2], cadrages: {} }
       : { plat: null, plats: [], c1: null, c4: null, doubles: [], double: null, cadrages: {} },

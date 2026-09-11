@@ -650,9 +650,48 @@
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 
+/* Les deux réponses côte à côte : « celle-ci » et « décidez pour moi ».
+   Elles s'empilent d'elles-mêmes sur un téléphone (wrap), et restent
+   centrées : ce n'est pas une barre d'actions, c'est une question posée. */
+.nu-viz-choix-boutons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
 .bj-atelier .nu-viz-choix-btn:hover {
   border-color: var(--c-accent);
   background: var(--c-accent-soft);
+}
+
+/* La seconde réponse est SECONDAIRE, pas égale : le trait s'efface, le mot
+   reste lisible. Dire « je vous fais confiance » doit rester possible sans
+   être la première chose que l'œil attrape. */
+.bj-atelier .nu-viz-choix-btn--doux {
+  border-color: transparent;
+  color: var(--c-text-faint);
+}
+.bj-atelier .nu-viz-choix-btn--doux:hover {
+  border-color: var(--c-line-strong);
+  background: none;
+  color: var(--c-text);
+}
+
+/* ÉTEINT EN PRÉVISUALISATION (11/09/2026) : l'atelier voit l'écran du
+   client, il ne choisit pas à sa place. Le bouton reste lisible — un bouton
+   qu'on ne voit plus est un bouton qu'on ne relit jamais. */
+.bj-atelier .nu-viz-choix-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.bj-atelier .nu-viz-choix-btn:disabled:hover {
+  border-color: var(--c-line-strong);
+  background: none;
+}
+.bj-atelier .nu-viz-choix-btn--doux:disabled:hover {
+  border-color: transparent;
+  color: var(--c-text-faint);
 }
 
 /* La marque du choix, dans le nom de la vue : une nuance de couleur, pas un

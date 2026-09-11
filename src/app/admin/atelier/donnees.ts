@@ -16,7 +16,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
 import { signerGet } from "@/lib/atelier/r2";
-import { resoudreApercu, lireDoublesBrutes, lirePlanchesBrutes, lireCadrages } from "@/lib/atelier/apercu";
+import {
+  resoudreApercu,
+  lireDoublesBrutes,
+  lirePlanchesBrutes,
+  lireCadrages,
+  dernierChoixCouverture,
+} from "@/lib/atelier/apercu";
 import { eurosDuDossier, type PalierCle } from "@/lib/atelier/prix";
 import {
   ETAPE_ETAT,
@@ -932,6 +938,13 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     depotInitialJusqua,
     photosAttendues,
     apercu,
+    /* T-093 (11/09/2026) — la réponse du client sur sa couverture, relue
+       dans le journal déjà chargé : aucune requête de plus, aucune colonne.
+       ⚠️ La liste est plafonnée à 200 lignes (tri décroissant) : sur un
+       dossier extraordinairement bavard, un choix très ancien pourrait en
+       sortir. Il sortirait aussi du journal affiché juste à côté — la fiche
+       ne peut pas montrer un choix qu'elle ne montre plus dans le récit. */
+    choixCouverture: dernierChoixCouverture(evenements ?? []),
     apercuBrut: {
       plat: brut.plat ?? null,
       c1: brut.c1 ?? null,

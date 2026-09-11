@@ -12,12 +12,18 @@
  * c'est le visuel — le reste du parcours (les deux cases, le paiement) reste en
  * dessous, inchangé.
  *
- * DEUX FORMATS, UNE SEULE PLANCHE. Le format normal est la couverture À PLAT :
- * un seul fichier C4 | dos | C1, l'export naturel de Canva. On ne le retouche
- * jamais côté serveur : la vue « La couverture » CADRE la moitié droite,
- * « La quatrième » la moitié gauche (object-position), et « La couverture à
- * plat » montre l'objet entier. Les dossiers publiés avant ce format portent
- * trois fichiers séparés (c1, c4) et se lisent comme des couvertures pleines.
+ * DEUX FORMATS DE COUVERTURE, ET C'EST LE FICHIER QUI LE DIT (11/09/2026).
+ * Le format courant est la couverture À PLAT : un seul fichier C4 | dos | C1,
+ * l'export naturel de Canva. On ne le retouche jamais côté serveur : la vue
+ * « La couverture » CADRE la moitié droite, « La quatrième » la moitié gauche
+ * (object-position), et « La couverture à plat » montre l'objet entier.
+ * Mais l'atelier dépose aussi des COUVERTURES SEULES (portrait, 210 × 297) :
+ * les couper en deux montrait une demi-couverture sous le nom « La couverture »
+ * et l'autre moitié sous « La quatrième ». Le format est donc MESURÉ sur
+ * l'image elle-même (`formatDepuisRatio`, module pur) — une page seule se
+ * montre entière, sous une seule vue, et n'a pas de quatrième.
+ * Les dossiers publiés avant le format à plat portent trois fichiers séparés
+ * (c1, c4) et se lisent comme des couvertures pleines, comme avant.
  *
  * 1 À 3 DOUBLES PAGES (MAX_DOUBLES) : l'atelier décide combien il en montre.
  *
@@ -29,26 +35,14 @@
 import { useEffect, useRef, useState } from 'react'
 import Reveal from '../../(atelier)/components/Reveal'
 import Loupe, { type VueLoupe } from '../../components/Loupe'
+import { construireVues, formatDepuisRatio, type FormatVisuel } from '@/lib/atelier/formatVisuel'
 
-/* Le CADRAGE dit aussi le SUPPORT (04/09, maquettes validées) : les
-   couvertures se posent sur un magazine FERMÉ (dos, tranche, épaisseur —
-   `droite`/`pleine` vus de face, `gauche`/`pleine-dos` vus de dos, en
-   miroir), les doubles pages sur un magazine OUVERT (`ouverte` : pli
-   central, bloc de pages dessous), la planche `large` reste posée à plat
-   avec la seule épaisseur du papier. Tout est en CSS pur (numero.css). */
-type Cadre = 'droite' | 'gauche' | 'pleine' | 'pleine-dos' | 'large' | 'ouverte'
-type Vue = {
-  src: string
-  legende: string
-  loupe: string
-  cadre: Cadre
-  /* Le cadrage réglé par l'atelier (`object-position`). Vide = centré. */
-  cadrage?: string
-  /* T-093 — le rang de la couverture que cette vue montre (0 = celle
-     proposée par défaut). Absent sur les doubles pages : on ne choisit pas
-     une double page, on choisit une couverture. */
-  rang?: number
-}
+/* Le mot que le serveur accepte pour « je vous fais confiance ». Recopié de
+   `@/lib/atelier/apercu` (CHOIX_INDIFFERENT) plutôt qu'importé : ce module
+   tire le SDK AWS pour signer les URL R2, et il n'a rien à faire dans le
+   bundle du navigateur — même raison que les miroirs de MAX_DOUBLES et
+   MAX_PLANCHES côté admin. */
+const INDIFFERENT = 'indifferent'
 
 export default function Apercu({
   plat,
@@ -61,6 +55,7 @@ export default function Apercu({
   platsCadrageGauche = [],
   token,
   modifiable = false,
+  previsualisation = false,
 }: {
   plat: string | null
   /** T-093 — les couvertures proposées, dans l'ordre. Vide ou à un seul
@@ -83,6 +78,12 @@ export default function Apercu({
       figée. Le magazine LIVRÉ (/compte/magazine) réutilise ce même composant
       sans le passer — il serait mensonger une fois l'objet imprimé. */
   modifiable?: boolean
+  /** 11/09/2026 — l'atelier regarde la page du client avant de publier
+      (`?brouillon=1`). Les boutons de choix se RENDENT, éteints : sans eux,
+      Mathias n'a jamais vu ce que le client verra, et un bouton invisible en
+      prévisualisation est un bouton qu'on ne relit pas. Ils restent inertes,
+      le choix appartient au client. */
+  previsualisation?: boolean
 }) {
   const [ouvert, setOuvert] = useState<number | null>(null)
   const [i, setI] = useState(0)
@@ -99,59 +100,60 @@ export default function Apercu({
      faux. Ne rien choisir reste un choix — celui de garder la proposition
      de l'atelier, et il est journalisé comme tel côté serveur. */
   const [aChoisi, setAChoisi] = useState(false)
+  /* 11/09/2026 — « décidez pour moi ». Sans ce bouton, le client sans avis
+     n'avait AUCUN moyen de le dire : son silence se lisait comme un dossier
+     jamais ouvert, et l'atelier ne savait pas s'il attendait encore. */
+  const [indifferent, setIndifferent] = useState(false)
   const [refus, setRefus] = useState(false)
   const depart = useRef<{ x: number; y: number } | null>(null)
+  /* Le format mesuré de chaque couverture, par URL. Vide au premier rendu
+     (serveur compris) : on ne découpe rien tant qu'on ne sait pas. */
+  const [formats, setFormats] = useState<Record<string, FormatVisuel>>({})
 
-  /* Les vues, dans l'ordre du feuilletage. Le vocabulaire est celui de la
-     cliente ET de l'atelier — deux personnes qui regardent le même visuel le
-     nomment pareil. La loupe navigue par légende (findIndex) : en mode à plat,
-     les deux faces découpées pointent le MÊME objet entier, sous une seule
-     légende de loupe « La couverture à plat ». */
-  const vues: Vue[] = []
-  /* T-093 — `plats` fait foi quand il est là ; sinon la planche unique, donc
-     tous les dossiers publiés jusqu'ici passent par le même chemin qu'avant. */
-  const couvertures = plats.length ? plats : plat ? [plat] : []
-  if (couvertures.length) {
-    const premiere = couvertures[0]
-    vues.push({
-      src: premiere,
-      legende: 'La couverture',
-      loupe: 'La couverture à plat',
-      cadre: 'droite',
-      rang: 0,
-      cadrage: platsCadrageDroite[0] || undefined,
-    })
-    vues.push({
-      src: premiere,
-      legende: 'La quatrième',
-      loupe: 'La couverture à plat',
-      cadre: 'gauche',
-      rang: 0,
-      cadrage: platsCadrageGauche[0] || undefined,
-    })
-    vues.push({ src: premiere, legende: 'La couverture à plat', loupe: 'La couverture à plat', cadre: 'large', rang: 0 })
-    /* Les autres propositions : une vue chacune, cadrée sur leur face avant
-       — c'est elle qu'on compare. La loupe montre la planche entière, comme
-       pour la première. */
-    couvertures.slice(1).forEach((src, k) => {
-      const nom = `Couverture ${k + 2}`
-      vues.push({
-        src,
-        legende: nom,
-        loupe: nom,
-        cadre: 'droite',
-        rang: k + 1,
-        cadrage: platsCadrageDroite[k + 1] || undefined,
-      })
-    })
-  } else {
-    if (c1) vues.push({ src: c1, legende: 'La couverture', loupe: 'La couverture', cadre: 'pleine' })
-    if (c4) vues.push({ src: c4, legende: 'La quatrième', loupe: 'La quatrième', cadre: 'pleine-dos' })
-  }
-  doubles.forEach((src, k) => {
-    const nom = doubles.length > 1 ? `Double page ${k + 1}` : 'Une double page'
-    vues.push({ src, legende: nom, loupe: nom, cadre: 'ouverte', cadrage: doublesCadrage[k] })
+  const { vues, couvertures } = construireVues({
+    plat,
+    plats,
+    c1,
+    c4,
+    doubles,
+    doublesCadrage,
+    platsCadrageDroite,
+    platsCadrageGauche,
+    formats,
   })
+
+  /* ── MESURER AVANT DE DÉCOUPER (11/09/2026) ────────────────────────
+     Une image chargée connaît ses dimensions ; on les lit sur un objet
+     `Image` détaché plutôt que sur le DOM, ce qui marche aussi pour les
+     couvertures des vues qu'on n'a pas encore fait défiler. Le navigateur
+     ne télécharge rien deux fois : c'est la même URL, donc la même entrée
+     de cache que l'`<img>` du document.
+     La dépendance est la LISTE JOINTE, pas le tableau : il est reconstruit à
+     chaque rendu, et l'effet se relancerait en boucle. */
+  const clesCouvertures = couvertures.join('\n')
+  useEffect(() => {
+    if (!clesCouvertures) return
+    let vivant = true
+    const images: HTMLImageElement[] = []
+    for (const src of clesCouvertures.split('\n')) {
+      const img = new Image()
+      img.onload = () => {
+        if (!vivant) return
+        const format = formatDepuisRatio(img.naturalWidth, img.naturalHeight)
+        /* Mise à jour FONCTIONNELLE : l'effet ne dépend pas de `formats`,
+           donc il ne se relance pas à chaque mesure. */
+        setFormats((f) => (f[src] === format ? f : { ...f, [src]: format }))
+      }
+      /* Une image illisible ne bloque rien : la vue reste entière, ce qui
+         est le repli sûr. On ne journalise pas côté client. */
+      img.src = src
+      images.push(img)
+    }
+    return () => {
+      vivant = false
+      for (const img of images) img.onload = null
+    }
+  }, [clesCouvertures])
 
   /* La loupe ne connaît que ce qui existe, une fois chacun. */
   const agrandissables: VueLoupe[] = vues
@@ -190,6 +192,13 @@ export default function Apercu({
 
   const idx = Math.min(i, vues.length - 1)
   const seul = vues.length === 1
+  const rangVu = vues[idx].rang
+  /* Y a-t-il vraiment à choisir ? Une seule couverture proposée, il n'y a
+     rien à arbitrer, et le paiement reste l'unique geste de l'écran. */
+  const surUneCouverture = rangVu !== undefined && couvertures.length > 1
+  /* Le bouton écrit ; sans token il ne le peut pas. En prévisualisation on
+     le montre quand même, ÉTEINT : l'atelier doit voir l'écran du client. */
+  const armable = Boolean(token) && !previsualisation
 
   function aller(k: number) {
     setI(Math.max(0, Math.min(vues.length - 1, k)))
@@ -198,25 +207,31 @@ export default function Apercu({
        n'a rien à voir. */
     setRefus(false)
   }
-  /* On envoie le RANG, jamais l'URL (voir la route). Aucun mail ne part :
-     elle est en train de regarder, pas de valider. */
-  async function choisir(rang: number) {
-    if (!token || rang === choisie) return
-    const avant = choisie
-    const avantChoisi = aChoisi
-    setChoisie(rang)
+  /* On envoie le RANG (ou le mot « indifferent »), jamais l'URL : voir la
+     route. Aucun mail ne part — elle est en train de regarder, pas de
+     valider. */
+  async function enregistrer(valeur: number | typeof INDIFFERENT) {
+    if (!token || previsualisation) return
+    const avant = { choisie, indifferent, aChoisi }
+    if (valeur === INDIFFERENT) {
+      setIndifferent(true)
+    } else {
+      setChoisie(valeur)
+      setIndifferent(false)
+    }
     setAChoisi(true)
     setRefus(false)
     try {
       const r = await fetch('/api/atelier/numero', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, couverture_choisie: rang }),
+        body: JSON.stringify({ token, couverture_choisie: valeur }),
       })
       if (!r.ok) throw new Error('refus')
     } catch {
-      setChoisie(avant)
-      setAChoisi(avantChoisi)
+      setChoisie(avant.choisie)
+      setIndifferent(avant.indifferent)
+      setAChoisi(avant.aChoisi)
       setRefus(true)
     }
   }
@@ -311,8 +326,14 @@ export default function Apercu({
             {vues[idx].legende}
             {/* Sur la couverture retenue, la marque du choix tient dans le
                 nom : un bloc de 44 px pour dire « c'est celle-ci » pesait sur
-                l'écran qui décide du paiement, sans rien proposer à faire. */}
-            {couvertures.length > 1 && aChoisi && vues[idx].rang === choisie && (
+                l'écran qui décide du paiement, sans rien proposer à faire.
+                Quand le client nous fait confiance, la marque suit la MÊME
+                règle et se pose sur chaque couverture : aucune n'est « la
+                sienne », c'est justement ce qu'il a dit. */}
+            {surUneCouverture && aChoisi && indifferent && (
+              <span className="nu-viz-nom-choix"> · vous nous faites confiance</span>
+            )}
+            {surUneCouverture && aChoisi && !indifferent && rangVu === choisie && (
               <span className="nu-viz-nom-choix"> · votre choix</span>
             )}
           </span>
@@ -335,30 +356,48 @@ export default function Apercu({
               Sur la vue d'une couverture, la cliente peut retenir celle
               qu'elle préfère ; celle qui est retenue le dit et son bouton
               s'éteint. Rien n'est bloquant : sans un seul clic, la première
-              reste proposée et le paiement est ouvert. */}
-          {/* Le bouton n'apparaît que là où il sert : devant une AUTRE
-              couverture que celle retenue. Sur celle qu'elle a déjà, il n'y
-              a rien à faire — et ne rien choisir reste un choix, celui de
-              garder la proposition de l'atelier. */}
-          {couvertures.length > 1 &&
-            token &&
-            vues[idx].rang !== undefined &&
-            vues[idx].rang !== choisie && (
-              <div className="nu-viz-choix">
-                <button
-                  type="button"
-                  className="nu-viz-choix-btn"
-                  onClick={() => choisir(vues[idx].rang!)}
-                >
-                  Je préfère celle-ci
-                </button>
-                {refus && (
-                  <span className="nu-viz-choix-refus" role="alert">
-                    Votre choix n’a pas pu être enregistré. Réessayez dans un instant.
-                  </span>
+              reste proposée et le paiement est ouvert.
+              11/09/2026 — le second bouton dit l'autre réponse possible :
+              « je n'ai pas d'avis ». Il est SECONDAIRE (le premier reste la
+              réponse la plus utile à l'atelier) et disparaît une fois dit. */}
+          {surUneCouverture && (
+            <div className="nu-viz-choix">
+              <div className="nu-viz-choix-boutons">
+                {/* Le bouton de préférence n'apparaît pas là où il ne sert à
+                    rien : devant la couverture DÉJÀ retenue, il n'y a rien à
+                    faire, le nom porte « votre choix ». Quand le client nous
+                    a laissé la main, aucune couverture n'est la sienne : le
+                    bouton revient partout, il peut changer d'avis. */}
+                {(indifferent || rangVu !== choisie) && (
+                  <button
+                    type="button"
+                    className="nu-viz-choix-btn"
+                    onClick={() => enregistrer(rangVu)}
+                    disabled={!armable}
+                    title={previsualisation ? 'Prévisualisation' : undefined}
+                  >
+                    Je préfère celle-ci
+                  </button>
+                )}
+                {!indifferent && (
+                  <button
+                    type="button"
+                    className="nu-viz-choix-btn nu-viz-choix-btn--doux"
+                    onClick={() => enregistrer(INDIFFERENT)}
+                    disabled={!armable}
+                    title={previsualisation ? 'Prévisualisation' : undefined}
+                  >
+                    Sans préférence, je vous fais confiance
+                  </button>
                 )}
               </div>
-            )}
+              {refus && (
+                <span className="nu-viz-choix-refus" role="alert">
+                  Votre choix n’a pas pu être enregistré. Réessayez dans un instant.
+                </span>
+              )}
+            </div>
+          )}
           {modifiable && (
             <p className="nu-viz-note">
               Ces pages restent entièrement modifiables à la création de votre maquette. Aucune

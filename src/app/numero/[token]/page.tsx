@@ -617,9 +617,15 @@ export default async function NumeroPage({
               /* SANS TOKEN, LA VISIONNEUSE NE PEUT RIEN ÉCRIRE : c'est lui,
                  et lui seul, qui arme le bouton « Je préfère celle-ci » et
                  son PATCH. En prévisualisation, on regarde — le choix de
-                 couverture appartient au client, pas à l'atelier. */
+                 couverture appartient au client, pas à l'atelier.
+                 ⚠️ 11/09/2026 : retirer le token SUFFISAIT à désarmer, mais
+                 il faisait aussi DISPARAÎTRE les boutons, donc Mathias n'a
+                 jamais vu l'écran de choix qu'il publiait. `previsualisation`
+                 les rend visibles et éteints ; le token reste absent, ce qui
+                 garde la garantie qu'aucune écriture n'est possible d'ici. */
               ? {}
               : { token: numero.token })}
+            previsualisation={previsualisation}
             modifiable
           />
 

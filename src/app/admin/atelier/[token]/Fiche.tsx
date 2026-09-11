@@ -14,6 +14,7 @@ import EnCharge from "./EnCharge";
 import { PRENOM_COMPTE } from "@/lib/admin-auth";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import { PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
+import { formatDepuisRatio, type FormatVisuel } from "@/lib/atelier/formatVisuel";
 import {
   choisirDossier,
   ecrireLot,
@@ -500,8 +501,33 @@ type ApercuVue = {
    format à plat montre deux faces DÉCOUPÉES du même fichier plus l'objet
    entier ; un dossier historique montre ses trois fichiers. Mêmes mots des
    deux côtés, toujours. */
-function vuesDeLApercu(apercu: FicheVue["apercu"]): ApercuVue[] {
+function vuesDeLApercu(
+  apercu: FicheVue["apercu"],
+  /* Le format MESURÉ de chaque couverture, par URL (11/09/2026). Absent =
+     pas encore mesuré : on montre l'image ENTIÈRE, jamais une moitié au
+     hasard. Même règle et même module que la page du client — cet encart
+     annonce « ce que le client voit », il ne peut pas s'en écarter. */
+  formats: Record<string, FormatVisuel | undefined> = {},
+): ApercuVue[] {
   if (apercu.plat) {
+    const premiere = apercu.plats.length ? apercu.plats[0] : apercu.plat;
+    /* Une COUVERTURE SEULE (portrait) n'a pas de quatrième dans son fichier :
+       la découper montrait une demi-couverture sous « La couverture » et
+       l'autre moitié sous « La quatrième ». Une seule vue, entière. */
+    if (formats[premiere] !== "planche") {
+      const vues: ApercuVue[] = [
+        { cle: "plat", src: premiere, legende: "La couverture", loupe: "La couverture" },
+      ];
+      (apercu.plats.length ? apercu.plats : [apercu.plat]).slice(1).forEach((src, i) => {
+        const nom = `Couverture ${i + 2}`;
+        vues.push({ cle: `plat-${i + 1}`, src, legende: nom, loupe: nom });
+      });
+      apercu.doubles.forEach((src, i) => {
+        const nom = apercu.doubles.length > 1 ? `Double page ${i + 1}` : "Une double page";
+        vues.push({ cle: `double-${i}`, src, legende: nom, loupe: nom, cadrage: apercu.doublesCadrage[i] || undefined });
+      });
+      return vues;
+    }
     /* T-090 — la planche découpée en trois faces, puis 0 à trois doubles
        pages dans l'ordre. Les légendes sont uniques (« Double page 1/2/… »
        s'il y en a plusieurs) : la loupe navigue par légende.
@@ -614,6 +640,38 @@ export default function Fiche({
      de repli et n'a jamais trompé personne. */
   const [ecritDirect, setEcritDirect] = useState(false);
   useEffect(() => setEcritDirect(supporteDossier()), []);
+  /* ── LE FORMAT DES COUVERTURES, MESURÉ (11/09/2026) ────────────────
+     Planche à plat (C4 | dos | C1) ou couverture seule ? La question se
+     tranche sur les dimensions du fichier, pas sur une déclaration : voir
+     `formatVisuel.ts`. Cet encart montre « ce que le client voit » — il doit
+     donc mesurer comme lui, sinon les deux écrans se contredisent au moment
+     précis où l'atelier vérifie avant de publier.
+     L'`Image` détachée partage le cache du document : rien n'est téléchargé
+     deux fois. Une signature expirée ou un objet absent ne rend RIEN, et la
+     vue reste entière — le repli sûr. */
+  const [formatsCouverture, setFormatsCouverture] = useState<Record<string, FormatVisuel>>({});
+  const clesCouvertures = (
+    fiche.apercu.plats.length ? fiche.apercu.plats : fiche.apercu.plat ? [fiche.apercu.plat] : []
+  ).join("\n");
+  useEffect(() => {
+    if (!clesCouvertures) return;
+    let vivant = true;
+    const images: HTMLImageElement[] = [];
+    for (const src of clesCouvertures.split("\n")) {
+      const img = new Image();
+      img.onload = () => {
+        if (!vivant) return;
+        const format = formatDepuisRatio(img.naturalWidth, img.naturalHeight);
+        setFormatsCouverture((f) => (f[src] === format ? f : { ...f, [src]: format }));
+      };
+      img.src = src;
+      images.push(img);
+    }
+    return () => {
+      vivant = false;
+      for (const img of images) img.onload = null;
+    };
+  }, [clesCouvertures]);
   const arret = useRef<AbortController | null>(null);
 
   const l = fiche.ligne;
@@ -637,7 +695,7 @@ export default function Fiche({
      manquant n'est pas une étape de la visite, et l'objet à plat n'y figure
      qu'une fois même s'il remplit trois cadres. Ses index ne sont donc PAS
      ceux de la grille. */
-  const apercuVues = vuesDeLApercu(fiche.apercu);
+  const apercuVues = vuesDeLApercu(fiche.apercu, formatsCouverture);
   const apercuAgrandissable: VueLoupe[] = apercuVues
     .filter((v): v is ApercuVue & { src: string } => Boolean(v.src))
     .filter((v, i, tous) => tous.findIndex((a) => a.loupe === v.loupe) === i)
@@ -1092,6 +1150,22 @@ export default function Fiche({
               <p className="ate-carte-sous">
                 Ce que le client voit sur sa page, dans le même ordre et avec les mêmes mots.
               </p>
+              {/* ── SA RÉPONSE SUR LA COUVERTURE (11/09/2026) ──────────
+                  Elle vivait dans le journal, donc en bas de page, entre une
+                  trentaine de lignes : personne ne la lisait AU MOMENT de
+                  composer. Elle se dit ici, à côté des visuels, en une
+                  ligne. Rien du tout tant qu'il n'a rien dit — « aucune
+                  préférence » affiché par défaut ferait passer un silence
+                  pour une réponse, et ce sont deux choses différentes. */}
+              {fiche.choixCouverture ? (
+                <p className="ate-faint">
+                  {"indifferent" in fiche.choixCouverture
+                    ? "Son choix : sans préférence, il nous fait confiance."
+                    : fiche.choixCouverture.rang === 0
+                      ? "Son choix : la couverture proposée par défaut (la 1re)."
+                      : `Son choix : la couverture ${fiche.choixCouverture.rang + 1}.`}
+                </p>
+              ) : null}
               <div className="ate-apercu">
                 {apercuVues.map(({ cle, src, legende, loupe, decoupe, cadrage }) => {
                   const rang = apercuAgrandissable.findIndex((v) => v.legende === loupe);
