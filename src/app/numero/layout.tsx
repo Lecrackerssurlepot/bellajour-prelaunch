@@ -13,6 +13,7 @@
 
 import type { Metadata } from 'next'
 import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
+import HautDePage from '../(atelier)/components/HautDePage'
 import '../(atelier)/theme.css'
 
 const atelierDisplay = Cormorant_Garamond({
@@ -46,6 +47,9 @@ export const metadata: Metadata = {
 export default function NumeroLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className={`bj-atelier ${atelierDisplay.variable} ${atelierUi.variable}`}>
+      {/* Même règle que le groupe (atelier) : revenir au magazine depuis sa
+          page ne doit pas retomber au milieu (11/09/2026). */}
+      <HautDePage />
       {children}
     </div>
   )
