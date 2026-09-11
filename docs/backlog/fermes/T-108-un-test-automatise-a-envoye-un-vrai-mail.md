@@ -41,3 +41,14 @@ recette d'un mail réel exige de retirer la variable sciemment. C'est exactement
 
 ⚠️ Ne PAS coupler cet interrupteur à `NODE_ENV` : `next dev` tourne aussi quand on veut
 délibérément éprouver un envoi, et un garde-fou qui se déclenche tout seul finit contourné.
+
+## Fermé le 11/09/2026 (PR #124)
+
+`ATELIER_MAILS_COUPES` existe, dans `src/lib/envois.ts` (module pur, dix assertions au harnais),
+et la garde est posée dans les DEUX chemins d'envoi du site : `sendBrevoEmail` et les trois
+envois propres de `/api/waitlist` (sans quoi l'interrupteur aurait menti sur la moitié des mails).
+Documentée dans `.env.example`, `scripts/CLAUDE.md` et `src/app/api/CLAUDE.md`.
+
+Prouvé sans risquer un envoi (modèle inexistant, adresse d'exemple) : coupé, aucun appel réseau et
+le log nomme le destinataire épargné ; ouvert, l'appel part bien jusqu'à Brevo.
+
