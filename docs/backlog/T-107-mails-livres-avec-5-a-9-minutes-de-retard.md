@@ -61,3 +61,28 @@ dédié (Postmark, Resend, SES). Ce serait un chantier : les quinze templates vi
 essayé le plan payant.
 
 **Question pour Mathias** : on passe au plan payant Brevo ?
+
+## ⚠️ 11/09, 13:39 — une quatrième mesure CONTREDIT les trois premières
+
+Le M3 de Klervie (le mail qui porte le lien de paiement, le plus critique des quinze) :
+
+| Mail | `requests` | `delivered` | délai |
+|---|---|---|---|
+| M3 « MADRID : votre couverture est prête » | 13:38:58 | 13:39:00 | **2 secondes** |
+
+Elle l'a ouvert à 13:39:04 et cliqué à 13:39:23, soit vingt-cinq secondes après la publication.
+
+**Le retard n'est donc PAS structurel.** Sur le même compte, le même plan gratuit, le même
+domaine, le même destinataire-type, Brevo remet parfois en deux secondes et parfois en huit
+minutes. L'hypothèse « file d'attente des comptes gratuits » ne suffit plus à expliquer l'écart :
+elle produirait un retard constant, pas intermittent.
+
+**Ce qu'il faut faire avant de dépenser quoi que ce soit** : mesurer sur une dizaine d'envois
+répartis dans la journée (`/v3/smtp/statistics/events`, l'écart `requests` → `delivered`), et
+regarder si les lents se groupent à certaines heures ou sur certains destinataires. Payer un plan
+pour corriger un défaut qu'on n'a pas caractérisé serait exactement le piège que ce dépôt
+documente déjà trois fois (« mesurer avant de conclure »).
+
+Le ticket reste OUVERT, mais sa gravité baisse : le chemin qui compte le plus a été servi en deux
+secondes le jour où un vrai client l'attendait.
+
