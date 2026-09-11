@@ -14,6 +14,7 @@
    consultent encore. */
 
 import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
+import HautDePage from './components/HautDePage'
 import './theme.css'
 
 /* Display : 400 seul, normal + italique (le « numéro » du titre hero).
@@ -48,6 +49,9 @@ const atelierUi = DM_Sans({
 export default function AtelierLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className={`bj-atelier ${atelierDisplay.variable} ${atelierUi.variable}`}>
+      {/* Un changement de page repart du haut (11/09/2026) : sans lui, aller
+          de l'accueil à /magazine gardait la position de défilement. */}
+      <HautDePage />
       {children}
     </div>
   )
