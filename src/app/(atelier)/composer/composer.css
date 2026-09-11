@@ -427,6 +427,23 @@
 
 .at-erreur { margin-top: 20px; font-size: 14px; color: var(--c-accent-strong); }
 
+/* 11/09 — l'avis du dossier disparu. Il n'est pas une erreur de saisie : il
+   dit ce que le site a fait, au-dessus de la question en cours. Même voix
+   que .at-d-avis de l'écran 5, dont il est la suite logique.
+   Préfixé .bj-atelier : theme.css pose `.bj-atelier p { margin: 0 }` en
+   (0,2,0), une classe simple perdrait sa marge sans erreur. */
+.bj-atelier .at-q-avis {
+  margin-bottom: 18px;
+  max-width: 56ch;
+  padding: 12px 16px;
+  border-left: 2px solid var(--c-accent);
+  background: var(--c-accent-soft);
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--c-text-soft);
+}
+
 /* T-052 — le compteur de l'écran 2. Discret : il informe, il ne gronde pas.
    Préfixé .bj-atelier : theme.css pose `.bj-atelier p { margin: 0 }` en
    (0,2,0), une classe simple perdrait sa marge sans erreur. */

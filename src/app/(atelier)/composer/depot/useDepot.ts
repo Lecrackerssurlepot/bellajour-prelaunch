@@ -20,7 +20,8 @@ import { moteurPour, type Refus, type Vue } from './moteur'
 const VUE_VIDE: Vue = {
   photos: [], confirmees: 0, enVol: 0, erreurs: 0,
   octetsEnvoyes: 0, octetsTotal: 0, stockageDegrade: false,
-  reductionDegradee: false, clos: false, finalise: false, attendues: 0,
+  reductionDegradee: false, clos: false, dossierIntrouvable: false,
+  finalise: false, attendues: 0,
   bandeau: null, serveur: null,
 }
 

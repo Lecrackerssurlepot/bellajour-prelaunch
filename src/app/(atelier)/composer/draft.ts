@@ -91,6 +91,45 @@ export function loadDraft(): Draft {
   }
 }
 
+/**
+ * Ce qu'il reste d'un brouillon dont le dossier a disparu (11/09/2026).
+ *
+ * Le token du brouillon veut dire « le dossier existe en base ». Il peut
+ * mentir : un dossier supprimé à la main (scripts/supprimer-dossiers.ts) ou
+ * anonymisé au bout des 90 jours de rétention (T-076) laisse un token qui ne
+ * désigne plus rien. L'écran 5 déposait alors sur un dossier introuvable
+ * (404), et `creerNumero` refusait d'en recréer un : « reprenez le
+ * questionnaire depuis le début » sans aucun moyen de recommencer.
+ *
+ * La règle est la même dans les deux cas : on garde ce qui appartient à la
+ * personne (ses six réponses, et les deux mots de couverture facultatifs), on
+ * jette ce qui n'avait de sens qu'avec CE dossier.
+ *
+ * — `token` : il ne désigne plus rien.
+ * — `consentPhotos` : c'est le droit d'usage donné POUR ce dépôt (garantie
+ *   nº7, seul signal de dépôt terminé). Un dossier neuf le redemande.
+ * — `termine` : le dépôt n'est jamais arrivé, il ne peut pas rester marqué
+ *   comme parti.
+ * — l'écran redescend au 4 : c'est là que le dossier se crée, et le bouton
+ *   « Passer à mes photos » suffit alors à le recréer (M0 repart, garantie
+ *   nº5). Un dossier recréé est un NOUVEAU dossier : nouveau token, nouveau
+ *   M0, et les photos de l'ancien n'existent plus.
+ *
+ * Sans token, il n'y a rien à corriger : le brouillon est rendu tel quel.
+ */
+export function brouillonSansDossier(draft: Draft): Draft {
+  if (!draft.token) return draft
+  return {
+    ...draft,
+    token: null,
+    consentPhotos: false,
+    termine: false,
+    /* Au maximum l'écran 4, jamais en dessous de 1 : un brouillon d'une
+       version antérieure peut porter n'importe quel nombre. */
+    screen: Math.min(Math.max(Math.round(draft.screen) || 1, 1), 4),
+  }
+}
+
 export function saveDraft(draft: Draft): void {
   if (typeof window === 'undefined') return
   try {

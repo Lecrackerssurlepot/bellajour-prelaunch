@@ -56,6 +56,13 @@ const SANS_PROGRES_MAX_MS = 180_000
    l'expiration sous la forme d'un 403 indéchiffrable. */
 const URL_PERIMEE_MS = 45 * 60 * 1000
 
+/* Le seul refus serveur dont on sache SORTIR (11/09/2026). Un seul texte
+   pour les deux endroits qui le posent : la déclaration et la confirmation
+   sont deux moments du même incident, ils ne peuvent pas en dire deux
+   choses différentes. */
+const MESSAGE_DOSSIER_INTROUVABLE =
+  'Ce dossier n’existe plus chez nous. Vos réponses sont gardées : reprenez à l’écran précédent, nous le recréons. Les photos de ce dépôt, elles, sont perdues.'
+
 /** Un 403 se retente deux fois (URL périmée, signature) avant d'abandonner. */
 const ESSAIS_ENVOI_MAX = 3
 
@@ -120,6 +127,12 @@ export type Vue = {
   reductionDegradee: boolean
   /** Le serveur a refusé pour de bon : plus rien ne repartira. */
   clos: boolean
+  /** Le serveur répond 404 : le dossier de ce token n'existe PLUS (supprimé,
+      ou anonymisé au bout des 90 jours). C'est le seul refus dont on sache
+      sortir : l'écran propose de reprendre le questionnaire à l'écran 4, avec
+      les réponses gardées, et le dossier est recréé. Distinct de `clos`, qui
+      dit l'inverse (le dossier existe, mais l'atelier y travaille déjà). */
+  dossierIntrouvable: boolean
   /** Le clic « Envoyer à l'atelier » a abouti : le dossier est chez nous. */
   finalise: boolean
   /** Combien de photos la file portait au moment de ce clic. */
@@ -157,6 +170,10 @@ class Moteur {
   private finalise = false
   private attendues = 0
   private purgeFaite = false
+  /* Posé par les DEUX seuls 404 du parcours (déclaration et confirmation).
+     Il ne sert pas à afficher un message de plus : il ouvre la seule issue,
+     voir Vue.dossierIntrouvable. */
+  private dossierIntrouvable = false
   private bandeau: string | null = null
   private stockageDegrade = false
   private minuteur: ReturnType<typeof setInterval> | null = null
@@ -497,8 +514,14 @@ class Moteur {
          bandeau qui promet que « l'envoi reprend tout seul » — le pire des
          messages, puisqu'il est faux et rassurant. */
       if (r.status === 409 || r.status === 404) {
+        /* ── 11/09/2026 : UN MESSAGE QUI MÈNE QUELQUE PART ────────────────
+           « Reprenez le questionnaire depuis le début » était faux ET sans
+           issue : le questionnaire refusait de recréer un dossier tant que le
+           brouillon portait ce token. On dit ce qui s'est passé, on garde les
+           réponses, et l'écran pose le geste (voir Vue.dossierIntrouvable). */
+        if (r.status === 404) this.dossierIntrouvable = true
         this.bandeau = r.status === 404
-          ? 'Ce dossier est introuvable. Reprenez le questionnaire depuis le début.'
+          ? MESSAGE_DOSSIER_INTROUVABLE
           : 'Ce dépôt est clos : l’atelier travaille déjà sur vos photos.'
         for (const i of lot) {
           i.etat = 'erreur'
@@ -731,7 +754,10 @@ class Moteur {
          en réessayant. Tout le reste — 500, coupure, délai — se retente. */
       if (r.status === 404) {
         for (const i of lot) { i.etat = 'erreur'; i.message = 'Dossier introuvable' }
-        this.bandeau = 'Ce dossier est introuvable. Reprenez le questionnaire depuis le début.'
+        /* Même issue qu'à la déclaration, et le MÊME message : deux endroits
+           différents du même incident ne doivent pas raconter deux histoires. */
+        this.dossierIntrouvable = true
+        this.bandeau = MESSAGE_DOSSIER_INTROUVABLE
         this.arreterDefinitivement()
         this.changement()
         return
@@ -956,6 +982,7 @@ class Moteur {
          plusieurs fois plus d'octets sur un forfait mobile. Ça se dit. */
       reductionDegradee: poolIndisponible(),
       clos: this.arrete,
+      dossierIntrouvable: this.dossierIntrouvable,
       finalise: this.finalise,
       attendues: this.attendues,
       bandeau: this.bandeau,

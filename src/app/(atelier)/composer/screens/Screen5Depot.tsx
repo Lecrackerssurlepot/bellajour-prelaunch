@@ -59,13 +59,18 @@ const RAISONS: Record<string, string> = {
 }
 
 export default function Screen5Depot({
-  token, reprise, consent, onConsent, onTermine,
+  token, reprise, consent, onConsent, onTermine, onDossierPerdu,
 }: {
   token: string | null
   /** T2-4 — arrivée par `?reprendre=` : des photos sont déjà chez nous. */
   reprise?: boolean
   consent: boolean
   onConsent: (v: boolean) => void
+  /** Le serveur dit que ce dossier n'existe plus (11/09/2026). Cet écran ne
+      sait pas effacer un token : le brouillon appartient au Composer. Il lui
+      passe donc le geste, et le Composer ramène à l'écran 4 avec les
+      réponses. Sans ce relais, le bandeau était une impasse. */
+  onDossierPerdu: () => void
   /** Le nombre RÉELLEMENT confirmé, pour que l'écran 6 puisse le nommer.
       Il ne vit que dans le moteur de dépôt : sans ce passage de relais,
       l'écran de fin ne peut que rester vague. */
@@ -239,7 +244,20 @@ export default function Screen5Depot({
           perte), puis l'envoi en taille réelle, puis le bandeau
           d'orientation. La reprise garde sa ligne à part : elle change ce
           que l'écran EST, pas ce qu'il faut faire. */}
-      {vue.stockageDegrade ? (
+      {/* ── LE DOSSIER N'EXISTE PLUS : LA SEULE ISSUE PASSE ICI (11/09) ──
+          Il passe devant les trois autres avis : les autres disent comment
+          l'envoi va se passer, celui-ci dit qu'il n'aura pas lieu. Et il
+          porte un GESTE — « reprenez depuis le début » ne menait nulle part,
+          puisque le questionnaire refusait de recréer un dossier tant que le
+          brouillon portait ce token. */}
+      {vue.dossierIntrouvable ? (
+        <div className="at-d-avis at-d-avis--perdu" role="alert">
+          <p>{vue.bandeau}</p>
+          <button type="button" className="at-cta" onClick={onDossierPerdu}>
+            Reprendre avec mes réponses <span className="at-cta-arrow">→</span>
+          </button>
+        </div>
+      ) : vue.stockageDegrade ? (
         <p className="at-d-avis">
           Ce navigateur ne peut pas garder de copie de vos photos. Restez sur
           cette page jusqu’à la fin de l’envoi : un rechargement repartirait de zéro.

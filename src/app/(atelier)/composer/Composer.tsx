@@ -62,7 +62,7 @@ const Screen6Fin = dynamic(() => import('./screens/Screen6Fin'), {
     </>
   ),
 })
-import { EMPTY_DRAFT, loadDraft, saveDraft, type Draft } from './draft'
+import { EMPTY_DRAFT, brouillonSansDossier, loadDraft, saveDraft, type Draft } from './draft'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { PARAM_PROVENANCE, cheminRetour, motRetour } from './provenance'
 import {
@@ -84,6 +84,44 @@ const TOTAL_ETAPES = NOMS_ETAPES.length
 
 /* Le logo officiel — le même fichier que la barre du site (Nav.tsx). */
 const LOGO = '/images/ui/signature-blanche.webp'
+
+/* ── LE TOKEN DU BROUILLON EXISTE-T-IL ENCORE EN BASE ? (11/09/2026) ───────
+   La route dit déjà tout ce qu'il faut : 404 quand le dossier n'existe pas,
+   200 avec le nombre de photos sinon. On ne lui demande rien de plus, et
+   surtout on n'écrit rien.
+
+   TROIS réponses, pas deux. Le doute (réseau coupé, 500, 429 du rate-limit)
+   n'est PAS une absence : effacer un token sur un réseau qui tousse
+   condamnerait un dossier bien vivant et en ferait créer un second. Seul un
+   404 franc décide. */
+/* ── COMBIEN D'ÉCRANS LE QUESTIONNAIRE A-T-IL EMPILÉS DERRIÈRE LUI ? ──────
+   `window.history.length` ne répond pas à la question : il compte TOUTE la
+   session, y compris les pages d'avant. On compte donc nous-mêmes, dans
+   l'état de l'entrée courante — le seul endroit qui survive à un
+   rechargement, à un aller-retour, et qu'on puisse relire sans rien deviner.
+   0 = cette entrée est la première du questionnaire : reculer par
+   l'historique ferait SORTIR du site. */
+function profondeur(): number {
+  const etat = window.history.state as { bjDepth?: unknown } | null
+  return typeof etat?.bjDepth === 'number' && etat.bjDepth > 0 ? etat.bjDepth : 0
+}
+
+type EtatDossier = 'existe' | 'introuvable' | 'indecidable'
+
+async function etatDuDossier(token: string): Promise<EtatDossier> {
+  /* Un token qui n'a pas la forme d'un token ne désigne aucun dossier, et la
+     route répondrait 400, c'est-à-dire « je ne sais pas » — le seul verdict
+     dont on ne saurait pas sortir. On tranche ici, sans appeler personne. */
+  if (!isValidNumeroToken(token)) return 'introuvable'
+  try {
+    const r = await fetch(`/api/atelier/numero?token=${encodeURIComponent(token)}`)
+    if (r.status === 404) return 'introuvable'
+    if (r.ok) return 'existe'
+    return 'indecidable'
+  } catch {
+    return 'indecidable'
+  }
+}
 
 export default function Composer() {
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT)
@@ -112,6 +150,10 @@ export default function Composer() {
      dossier — deux demandes, deux M0, et personne ne sait lequel porte ses
      photos. On s'arrête et on le dit. */
   const [lienAbime, setLienAbime] = useState(false)
+  /* 11/09 — le dossier du brouillon n'existe plus (supprimé, ou anonymisé au
+     bout des 90 jours de rétention). Ses réponses, elles, sont intactes : on
+     le dit et on le laisse continuer, le dossier se recrée à l'écran 4. */
+  const [dossierPerdu, setDossierPerdu] = useState(false)
   /* D'où l'on vient (08/09) — lu une fois au montage, comme `reprendre`, et
      jamais pendant le rendu serveur : `window` n'y existe pas. `null` tant
      qu'on n'a pas lu, ce qui rend le défaut (/magazine) exact aussi bien
@@ -158,11 +200,41 @@ export default function Composer() {
     setPret(true)
     /* Lot 1 (07/09) — l'écran de départ entre dans l'historique. Sans cette
        entrée, le Précédent du navigateur quittait tout le questionnaire
-       depuis n'importe quel écran : aucun écran n'existait pour lui. */
+       depuis n'importe quel écran : aucun écran n'existait pour lui.
+       `bjDepth` (11/09) : voir `reculer`. Il est RELU quand il est déjà là —
+       un simple rechargement ne remet pas la pile à plat, les entrées
+       empilées avant lui sont toujours derrière. */
     window.history.replaceState(
-      { bjScreen: estReprise ? 5 : repris.screen },
+      { bjScreen: estReprise ? 5 : repris.screen, bjDepth: profondeur() },
       '',
     )
+
+    /* ── LE TOKEN DU BROUILLON PEUT DÉSIGNER UN DOSSIER MORT (11/09/2026) ──
+       Constaté le 11/09 sur le vrai site : des dossiers de test supprimés en
+       base, et un brouillon qui gardait leur token. L'écran 5 s'ouvrait, le
+       dépôt tombait en 404, et l'écran 4 refusait de recréer un dossier tant
+       que le brouillon portait ce token. Aucune sortie. Le même piège attend
+       tout dossier anonymisé au bout des 90 jours (T-076).
+
+       On demande donc AVANT d'y croire. En parallèle, jamais en barrage :
+       bloquer l'affichage sur une réponse réseau, ce serait un écran vide
+       pour tout le monde afin de servir le cas rare. L'écran 5 peut donc
+       s'ouvrir une seconde avant de rendre la main à l'écran 4 — et son
+       moteur, lui, tomberait de toute façon sur le même 404.
+
+       ⚠️ Seul `introuvable` efface quoi que ce soit (voir etatDuDossier). */
+    const aVerifier = estReprise ? reprendre : repris.token
+    if (!aVerifier) return
+    let monte = true
+    void etatDuDossier(aVerifier).then((etat) => {
+      if (!monte || etat !== 'introuvable') return
+      setDraft(brouillonSansDossier)
+      /* Plus de dossier, donc plus de photos « déjà chez nous » à annoncer. */
+      setReprise(false)
+      setDossierPerdu(true)
+      scroller.current?.scrollTo({ top: 0 })
+    })
+    return () => { monte = false }
   }, [])
 
   /* ── LE PRÉCÉDENT DU NAVIGATEUR RECULE D'UN ÉCRAN (lot 1, 07/09) ────────
@@ -215,9 +287,13 @@ export default function Composer() {
     const dansPile = typeof etat?.bjScreen === 'number' ? etat.bjScreen : null
     if (dansPile === draft.screen) return
     if (dansPile !== null && draft.screen > dansPile && draft.screen !== 6) {
-      window.history.pushState({ bjScreen: draft.screen }, '')
+      /* On empile : l'entrée qu'on quitte passe DERRIÈRE, la profondeur
+         monte d'un cran. C'est cette valeur que `reculer` relit. */
+      window.history.pushState({ bjScreen: draft.screen, bjDepth: profondeur() + 1 }, '')
     } else {
-      window.history.replaceState({ bjScreen: draft.screen }, '')
+      /* On remplace : rien n'est ajouté ni retiré derrière, la profondeur
+         ne bouge pas. */
+      window.history.replaceState({ bjScreen: draft.screen, bjDepth: profondeur() }, '')
     }
   }, [draft.screen, pret])
 
@@ -282,24 +358,37 @@ export default function Composer() {
     scroller.current?.scrollTo({ top: 0 })
   }, [])
 
-  /* Le bouton « ← Retour » de la page recule PAR l'historique quand la pile
-     est alignée : ainsi le Précédent du navigateur et le bouton de la page
-     racontent la même histoire, sans entrée en double. Pile désalignée
-     (reprise posée d'emblée à l'écran 5, onglet neuf) : on recule par
-     l'état, comme avant. */
+  /* ── « ← RETOUR » REMONTE D'UN ÉCRAN, ET NE SORT JAMAIS DU SITE ─────────
+     Le bouton recule PAR l'historique quand c'est possible : ainsi le
+     Précédent du navigateur et le bouton de la page racontent la même
+     histoire, sans entrée en double, et la profondeur de la pile reste juste.
+
+     ⚠️ CE QUI ÉTAIT CASSÉ (constaté le 11/09) : la seule condition était
+     « l'entrée courante porte le même écran que moi ». Or à l'ouverture de
+     /composer, l'entrée est posée par `replaceState` — elle porte bien
+     l'écran 4, mais elle est SEULE dans la pile du questionnaire :
+     `history.back()` quittait le site au lieu de remonter d'un écran. Le
+     garde précédent (`!(reprise && n === 5)`) ne couvrait qu'un cas de cette
+     famille, la reprise par `?reprendre=` ; la reprise par brouillon local
+     passait au travers, et c'est le cas le plus courant des deux.
+
+     `bjDepth` répond à la vraie question, et il la couvre entièrement : y
+     a-t-il une entrée du questionnaire DERRIÈRE celle-ci ? Non (0) : on
+     recule par l'état, et le reflet remplacera l'entrée. Oui : on rend la
+     main au navigateur, qui déclenche `popstate` et donc `surRetour`. */
   const reculer = useCallback((n: number) => {
     const etat = window.history.state as { bjScreen?: unknown } | null
     if (
       typeof etat?.bjScreen === 'number' &&
       etat.bjScreen === n &&
       n > 1 &&
-      !(reprise && n === 5)
+      profondeur() > 0
     ) {
       window.history.back()
     } else {
       aller(n - 1)
     }
-  }, [aller, reprise])
+  }, [aller])
 
   /* ── AVANCER, SEULEMENT SI L'ÉCRAN A SA RÉPONSE ────────────────────────
      Le 27/08, un dossier est arrivé sans titre et sans photo. Rien n'avait
@@ -318,6 +407,19 @@ export default function Composer() {
     aller(n + 1)
   }, [draft, aller, signalerErreur])
 
+  /* ── LE DOSSIER N'EXISTE PLUS : ON GARDE LES RÉPONSES ──────────────────
+     Appelé par l'écran 5 quand le serveur a répondu 404 (moteur.ts), et par
+     la vérification du montage. Le brouillon appartient au Composer : c'est
+     lui, et lui seul, qui efface un token. La règle de ce qu'on garde vit
+     dans draft.ts (`brouillonSansDossier`), pure et éprouvée par le harnais. */
+  const oublierDossier = useCallback(() => {
+    setDraft(brouillonSansDossier)
+    setReprise(false)
+    setDossierPerdu(true)
+    setErreur(null)
+    scroller.current?.scrollTo({ top: 0 })
+  }, [])
+
   /* Fin d'écran 4 : création du dossier. Idempotent par le token. */
   const creerNumero = useCallback(async () => {
     /* Tous les champs, pas seulement ceux de l'écran 4 : c'est ici que le
@@ -334,11 +436,27 @@ export default function Composer() {
       }
       return
     }
-    if (draft.token) { aller(5); return }
-
+    /* ⚠️ L'IDEMPOTENCE TIENT ICI, ET NULLE PART AILLEURS : le token du
+       brouillon est la garde qui empêche deux dossiers pour une cliente.
+       On ne la lève que sur un 404 FRANC, c'est-à-dire quand le dossier
+       n'existe plus du tout — le doute réseau fait passer par `aller(5)`,
+       exactement comme avant. Le verrou `envoi` (posé juste au-dessus, et
+       le bouton est `disabled` avec lui) interdit qu'un second clic parte
+       pendant que la vérification voyage. */
     setEnvoi(true)
     setErreur(null)
     try {
+      if (draft.token) {
+        const etat = await etatDuDossier(draft.token)
+        if (etat !== 'introuvable') { aller(5); return }
+        /* Le dossier a disparu entre le montage et ce clic (ou la
+           vérification du montage n'a pas abouti). On efface, on le dit, et
+           on enchaîne sur la création dans le MÊME clic : elle vient de
+           demander ses photos, elle ne va pas recliquer pour la forme. */
+        setDraft(brouillonSansDossier)
+        setReprise(false)
+        setDossierPerdu(true)
+      }
       const res = await fetch('/api/atelier/numero', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -544,6 +662,19 @@ export default function Composer() {
 
       <div className="at-q-scroll" ref={scroller}>
         <div className="at-q-screen" key={n}>
+          {/* ── LE DOSSIER A DISPARU, LES RÉPONSES SONT LÀ (11/09/2026) ───
+              Deux moments, deux phrases, toutes les deux vraies : avant la
+              recréation on annonce ce qui va se passer, après on nomme ce
+              qui est arrivé. Rien n'est caché des photos perdues : le
+              dossier n'existe plus, elles non plus. Faire semblant se
+              paierait à l'écran 5, devant une grille vide. */}
+          {dossierPerdu && n !== 6 && (
+            <p className="at-q-avis" role="status">
+              {draft.token
+                ? 'Nous avons ouvert un nouveau dossier avec vos réponses. Les photos envoyées à l’ancien ne sont plus chez nous : déposez-les à nouveau.'
+                : 'Ce dossier n’existe plus. Vos réponses sont là : continuez, nous le recréons. Les photos déjà envoyées, elles, sont perdues.'}
+            </p>
+          )}
           {n === 1 && (
             <Screen1Occasion value={draft.occasion} onChange={(v) => patch({ occasion: v })} />
           )}
@@ -581,6 +712,7 @@ export default function Composer() {
                 setPhotosEnvoyees(nb)
                 setDraft((d) => ({ ...d, termine: true, screen: 6 }))
               }}
+              onDossierPerdu={oublierDossier}
             />
           )}
           {n === 6 && (
