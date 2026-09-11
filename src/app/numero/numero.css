@@ -918,6 +918,57 @@
    feuille qui n'est pas chargée sur cette page.
    ══════════════════════════════════════════════════════════════════════ */
 
+/* ── LA FINITION DE LA COUVERTURE (11/09/2026) ──────────────────────────
+   Une ligne du bon de commande comme les autres, mais dont la partie droite
+   n'est pas un montant : deux boutons collés, celui qui est choisi en plein.
+   `align-items: center` et non `baseline` — deux boutons ne s'alignent pas
+   sur une ligne de base, ils se centrent sur le libellé.
+   Le retour à la ligne sur mobile est assumé (`flex-wrap`) : à 320 px, le
+   libellé et les deux boutons ne tiennent pas côte à côte, et un bouton
+   rogné vaut moins qu'un bouton dessous. */
+.nu-bon-l--choix {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
+.nu-finition {
+  display: inline-flex;
+  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.nu-finition-b {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  /* 44 px de haut au doigt : la cible minimale, et la même que `.nu-select`
+     juste en dessous — les deux réglages du bon de commande doivent avoir la
+     même assise. */
+  padding: 11px 16px;
+  min-height: 44px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--c-text-soft);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.nu-finition-b + .nu-finition-b {
+  border-left: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+}
+.nu-finition-b:hover:not([disabled]):not(.est-choisi) { background: var(--c-surface-2); }
+.nu-finition-b.est-choisi {
+  background: var(--c-surface-3);
+  color: var(--c-text);
+  font-weight: 400;
+}
+.nu-finition-b[disabled] { opacity: 0.45; cursor: not-allowed; }
+/* L'outline à l'INTÉRIEUR : le groupe a `overflow: hidden`, un outline
+   décalé vers l'extérieur serait rogné et le focus deviendrait invisible. */
+.nu-finition-b:focus-visible { outline: 2px solid var(--c-accent); outline-offset: -3px; }
+
 .nu-bon-choix { padding: 13px 0 15px; }
 .nu-bon-l + .nu-bon-choix { border-top: 1px solid var(--c-line); }
 

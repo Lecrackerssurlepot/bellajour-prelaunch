@@ -38,3 +38,26 @@ Accord de Mathias le 10/09 : la fiche produit des CGV (FR/PT/EN) dit désormais 
 210 × 297 mm » et « Agrafée à 20 pages, dos carré collé de 24 à 60 pages, couverture souple
 250 g », soit ce que Cloudprinter fabrique (`impression.ts`) et ce que dit `/magazine`. La
 « couverture rigide (hardcover) » a disparu. Reste ouvert : la formule d'épaisseur du dos.
+
+
+## 11/09/2026 — la formule d'épaisseur du dos est dans le code : ce ticket est fermé
+
+C'était le dernier reste. La formule était relevée depuis le 02/09 mais inutilisable : elle
+exige un grammage, et le grammage n'était pas tranché. Il l'est (T-027).
+
+`dosMmPourPages` et `largeurCouvertureMm` (`impression.ts`) le calculent, et ne saisissent NI le
+grammage NI le bulk : les deux se déduisent de `PAPIER_INTERIEUR` (`pageblock_130mcs` → 130 g,
+suffixe `mcs` → bulk 0,90). Changer le papier change le dos tout seul, et `verif-atelier.ts` fige
+les trois valeurs de la doc (24 p → 2,40 mm · 32 p → 2,87 · 50 p → 3,93) : un changement de
+papier fait TOMBER le harnais au lieu de passer en silence.
+
+Deux usages immédiats :
+- le contrôle PDF de la fiche admin JUGE enfin la largeur d'une couverture enveloppante
+  (`verdictTaillePage`, quatrième argument = la pagination). Il s'en tenait à un « constat »
+  faute de savoir ce qu'elle devait mesurer ; une couverture au mauvais dos est le défaut qu'on
+  ne voit jamais à l'écran et toujours sur l'objet imprimé ;
+- l'écran de confirmation d'impression annonce le papier, le pelliculage, le dos et la largeur
+  de couverture attendue AVANT le clic qui engage un achat.
+
+Et les CGV sont alignées sur l'objet réel : v3.2 (11/09, accord de Mathias) corrige « couverture
+rigide » en couverture souple dans les trois langues, et l'annexe nomme le papier et la finition.

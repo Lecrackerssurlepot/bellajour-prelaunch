@@ -168,6 +168,16 @@ import {
   interpreterSignal,
   payloadCommande,
   payloadDevis,
+  normaliserFinition,
+  finitionDuDossier,
+  FINITION_DEFAUT,
+  FINITION_OPTION,
+  PAPIER_INTERIEUR,
+  PAPIER_COUVERTURE,
+  GRAMMAGE_INTERIEUR_GSM,
+  BULK_INTERIEUR,
+  dosMmPourPages,
+  largeurCouvertureMm,
   SHIPPING_LEVEL,
   pointsEnMm,
   produitPour,
@@ -1262,6 +1272,77 @@ ok("sans niveau gele, elle retombe sur SHIPPING_LEVEL, comme avant le lot 6",
      produit: produitPour(32)!, pages: 32,
      fichiers: { cover: { url: "u", md5: MD5 }, book: { url: "u", md5: MD5 } },
    }, null).items[0].shipping_level === SHIPPING_LEVEL);
+
+titre("— le papier tranche et le pelliculage au choix (11/09/2026) —");
+/* Les references viennent du releve products/info du 11/09. Les figer ici,
+   c'est empecher qu'une « harmonisation » de nommage les casse en silence :
+   `cover_finish_gloss` n'existe pas chez eux, la commande serait refusee. */
+ok("le papier est le MEME pour les deux reliures",
+   produitPour(20)!.finitions[0].type === PAPIER_INTERIEUR
+   && produitPour(32)!.finitions[0].type === PAPIER_INTERIEUR
+   && produitPour(20)!.finitions[1].type === PAPIER_COUVERTURE
+   && produitPour(32)!.finitions[1].type === PAPIER_COUVERTURE);
+ok("les references du pelliculage sont celles de Cloudprinter, asymetrie comprise",
+   FINITION_OPTION.gloss === "finish_gloss" && FINITION_OPTION.matte === "cover_finish_matte");
+ok("le defaut est le brillant, comme chez eux", FINITION_DEFAUT === "gloss");
+ok("normaliserFinition ne repare rien",
+   normaliserFinition("matte") === "matte"
+   && normaliserFinition("gloss") === "gloss"
+   && normaliserFinition("brilant") === null
+   && normaliserFinition("MATTE") === null
+   && normaliserFinition(null) === null
+   && normaliserFinition(1) === null);
+ok("un dossier sans choix part en brillant, comme avant le 11/09",
+   finitionDuDossier(null) === "gloss" && finitionDuDossier(undefined) === "gloss"
+   && finitionDuDossier("n'importe quoi") === "gloss");
+
+const optionsDe = (f: "gloss" | "matte" | null) =>
+  payloadCommande({
+    reference: "r", emailContact: "c@b.com", adresse: ADR_OK,
+    produit: produitPour(32)!, pages: 32,
+    fichiers: { cover: { url: "u", md5: MD5 }, book: { url: "u", md5: MD5 } },
+    finition: f,
+  }).items[0].options.map((o) => o.type);
+ok("la commande porte le pelliculage CHOISI",
+   optionsDe("matte").includes("cover_finish_matte")
+   && !optionsDe("matte").includes("finish_gloss"));
+ok("et le brillant quand rien n'a ete choisi", optionsDe(null).includes("finish_gloss"));
+/* Le devis doit chiffrer le MEME objet que la commande, pelliculage compris :
+   c'est la meme garantie que plus haut, etendue au seul parametre que le
+   client choisit lui-meme. */
+ok("le devis suit le pelliculage, sinon il chiffre un autre objet",
+   JSON.stringify(payloadDevis({ pays: "FR", produit: produitPour(32)!, pages: 32, finition: "matte" }).items[0].options)
+   === JSON.stringify(payloadCommande({
+     reference: "r", emailContact: "c@b.com", adresse: ADR_OK,
+     produit: produitPour(32)!, pages: 32,
+     fichiers: { cover: { url: "u", md5: MD5 }, book: { url: "u", md5: MD5 } },
+     finition: "matte",
+   }).items[0].options));
+
+titre("— la geometrie du dos (formule Cloudprinter, SPECS du 02/09) —");
+/* Les trois valeurs sont celles ecrites dans SPECS-CLOUDPRINTER.md, calculees
+   a la main depuis la formule officielle : 130 g, bulk MCS 0,90, softcover
+   +1,0 mm. Si le papier change en haut de impression.ts, CES TROIS LIGNES
+   tombent — et c'est le but : le dos ne doit jamais suivre en silence. */
+ok("le grammage et le bulk se DEDUISENT de la reference papier",
+   GRAMMAGE_INTERIEUR_GSM === 130 && BULK_INTERIEUR === 0.9);
+ok("24 pages -> 2,40 mm de dos", dosMmPourPages(24) === 2.4);
+ok("32 pages -> 2,87 mm de dos", dosMmPourPages(32) === 2.87);
+ok("50 pages -> 3,93 mm de dos", dosMmPourPages(50) === 3.93);
+ok("un agrafe n'a PAS de dos (null, jamais zero)", dosMmPourPages(20) === null);
+ok("hors grille : aucun dos", dosMmPourPages(22) === null && dosMmPourPages(null) === null);
+ok("la couverture enveloppante fait 2 x (210 + 3) + dos",
+   largeurCouvertureMm(32) === 2 * (210 + 3) + 2.87);
+
+/* Le verdict de largeur d'une cover, qui n'existait pas avant le 11/09 :
+   faute de grammage tranche, on ne savait pas ce qu'elle devait mesurer. */
+ok("cover a la bonne largeur pour sa pagination -> conforme",
+   verdictTaillePage("cover", largeurCouvertureMm(32)!, 303, 32) === "conforme");
+ok("cover au dos d'une AUTRE pagination -> hors format",
+   verdictTaillePage("cover", largeurCouvertureMm(50)!, 303, 32) === "hors_format");
+ok("sans pagination au dossier, on constate comme avant",
+   verdictTaillePage("cover", 428.87, 303) === "constat"
+   && verdictTaillePage("cover", 428.87, 303, 20) === "constat");
 
 titre("— les signaux CloudSignal —");
 ok("ItemShipped expedie", interpreterSignal("ItemShipped").effet === "expedier");

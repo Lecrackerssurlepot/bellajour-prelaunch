@@ -32,3 +32,17 @@ Mathias a décidé : la livraison est **facturée en sus** (devis Cloudprinter �
 plafond à poser). La page produit dit désormais « De 25 € pour 20 pages à 59 € pour 60 pages.
 Livraison en sus, affichée avant paiement. » (PR #102, #103), et les CGV v3.1 le contractualisent.
 Restent les trois autres points : grammage affirmé sans mesure, visuels provisoires, FAQ non relue.
+
+
+## 11/09/2026 — le grammage est sourcé : le point BLOQUANT de ce ticket tombe
+
+Le papier est tranché (T-027, fermé) et relevé chez l'imprimeur. `/magazine` ne promet donc plus
+un chiffre que personne n'avait mesuré : « papier intérieur couché satiné 130 g, couverture
+250 g » est désormais EXACTEMENT ce que `PAPIER_INTERIEUR` / `PAPIER_COUVERTURE` commandent, et
+les CGV v3.2 le contractualisent dans les trois langues. Une ligne s'ajoute à la page : la
+couverture est pelliculée brillante ou mate, au choix, sans supplément.
+
+⚠️ Le lien entre les deux est un COMMENTAIRE, pas du code : le grammage de `/magazine` et celui
+d'`impression.ts` sont deux chaînes distinctes. Les changer ensemble, toujours.
+
+**Restent les deux points non bloquants** : les visuels provisoires, et la FAQ non relue.
