@@ -30,8 +30,8 @@ code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 en deux temps, et la colonne « Dernier mot » a remplacé « Ouvert » (la date d'ouverture reste au
 survol). Aucun template Brevo à créer, aucune migration : une relance manuelle rejoue le gabarit
 du mail automatique correspondant et ne s'en distingue que par son code, qui porte le rang.
-Deux réglages posés par défaut **attendent un mot de Mathias** : trois relances au maximum par
-motif, quarante-huit heures entre deux (`src/lib/atelier/relance.ts`).
+Seuils **tranchés par Mathias le 11/09** : deux relances au maximum par motif, soixante-douze
+heures entre deux (`src/lib/atelier/relance.ts`).
 
 ## Où on en est (10/09/2026, après le chantier « grille par pages »)
 

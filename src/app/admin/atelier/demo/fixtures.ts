@@ -154,7 +154,11 @@ const GRAINES: Graine[] = [
     nbPhotos: 88,
     nbPages: 44,
     palier: "p45",
-    depuis: 52,
+    /* 96 h et non 52 : le silence minimum entre deux relances est passé à
+       72 h le 11/09, et la démonstration doit continuer à montrer un bouton
+       « Relancer » ACTIF à côté du bouton éteint. Un écran de démonstration
+       où aucune action n'est possible ne démontre rien. */
+    depuis: 96,
     ouvertIlYA: 6,
     fondatrice: 7,
     choixCouverture: { rang: 1 },

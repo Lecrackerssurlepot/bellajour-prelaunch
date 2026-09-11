@@ -32,7 +32,7 @@ que par son code, qui porte le rang.
 
 - `src/lib/atelier/relance.ts` — module PUR : le motif se déduit de l'état (dépôt vide → RD*,
   photos déposées sans accord → RP*, aperçu non payé → RA*), avec quatre refus lisibles (adresse
-  absente, adresse qui a rebondi, plafond de trois relances par motif, 48 h de silence minimum
+  absente, adresse qui a rebondi, plafond de deux relances par motif, 72 h de silence minimum
   depuis le dernier mail, quel qu'il soit).
 - `src/lib/atelier/mails.ts` — `modeleDe()` : gabarit, objet, contrôle de complétude et
   paramètres d'une relance viennent tous du mail rejoué. Une seule source, jamais deux libellés
@@ -47,12 +47,16 @@ que par son code, qui porte le rang.
 - Au passage, `chargerListe()` fait partir ses quatre lectures indépendantes **ensemble** au lieu
   de les enchaîner. Le patron existait déjà dans le même fichier pour la fiche d'un dossier.
 
-## Ce qui reste à décider (Mathias)
-- **Trois relances manuelles par motif, 48 h entre deux** : deux constantes dans `relance.ts`
-  (`RELANCES_MAX`, `DELAI_MIN_RELANCE_MS`), posées par défaut faute d'arbitrage. Un mot suffit à
-  les changer.
-- Le jour où une deuxième relance doit avoir **son propre texte**, il suffit de pointer RP2 vers
-  un autre gabarit Brevo dans `MODELE_RELANCE` : rien d'autre ne bouge.
+## Tranché par Mathias le 11/09/2026
+- **Deux relances manuelles par motif, 72 h entre deux** (`RELANCES_MAX`,
+  `DELAI_MIN_RELANCE_MS`). Trois jours laissent passer un week-end entier ; quarante-huit heures
+  ne le faisaient pas. La phrase du refus LIT la constante, elle ne recopie pas le chiffre.
+- `MODELE_RELANCE` garde un troisième rang par motif (RD3, RP3, RA3) : remonter le plafond ne
+  demandera pas une ligne de code, juste le chiffre.
+
+## Ce qui reste ouvert
+Le jour où une deuxième relance doit avoir **son propre texte**, il suffit de pointer RP2 vers un
+autre gabarit Brevo dans `MODELE_RELANCE` : rien d'autre ne bouge.
 
 ## Vérifié
 `npx tsc --noEmit`, `npm run lint`, `npm run build` : verts. `scripts/verif-atelier.ts` : 20

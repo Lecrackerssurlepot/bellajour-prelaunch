@@ -22,6 +22,7 @@ import { preparerTransition, actionsDepuis, cleCadrageCouverture } from "@/lib/a
 import { urgencePour, comparerUrgence, etapeDepot } from "@/lib/atelier/urgence";
 import {
   CODES_RELANCE,
+  DELAI_MIN_RELANCE_MS,
   MODELE_RELANCE,
   RELANCES_MAX,
   dernierMailParti,
@@ -4055,30 +4056,38 @@ const rSansMail = relanceDe({ depot: "abandonne", email: "   " });
 ok("aucune adresse : refus", !relanceDe({ depot: "abandonne", email: null }).possible
    && !rSansMail.possible);
 
-const rTropTot = relanceDe({ depot: "abandonne", envoyes: new Map([["M2b", ilYaH(6)]]) });
-ok("un mail parti il y a 6 h : on laisse 48 h entre deux",
-   !rTropTot.possible && rTropTot.pertinent === true && rTropTot.raison.includes("48 h"));
+/* Les seuils sont des DÉCISIONS de Mathias (2 relances, 72 h au 11/09/2026).
+   Le harnais les lit au lieu de les recopier : un test qui code le chiffre en
+   dur passe encore le jour où la règle change, et ne protège plus rien. */
+const H_MIN = DELAI_MIN_RELANCE_MS / 3_600_000;
 
-ok("passe 48 h, la relance repart",
-   relanceDe({ depot: "abandonne", envoyes: new Map([["M2b", ilYaH(60)]]) }).possible);
+const rTropTot = relanceDe({ depot: "abandonne", envoyes: new Map([["M2b", ilYaH(H_MIN - 12)]]) });
+ok("un mail trop recent : le silence minimum tient, et la phrase dit le bon chiffre",
+   !rTropTot.possible && rTropTot.pertinent === true && rTropTot.raison.includes(`${H_MIN} h`));
 
-const troisParties = new Map([
-  ["M2b", ilYaH(400)], ["RP1", ilYaH(300)], ["RP2", ilYaH(200)], ["RP3", ilYaH(100)],
-]);
-const rPlafond = relanceDe({ depot: "abandonne", envoyes: troisParties });
-ok("trois relances deja parties : le plafond tient",
-   !rPlafond.possible && rPlafond.pertinent === true && RELANCES_MAX === 3);
+ok("passe le silence minimum, la relance repart",
+   relanceDe({ depot: "abandonne", envoyes: new Map([["M2b", ilYaH(H_MIN + 8)]]) }).possible);
 
-const rRang3 = relanceDe({
+/* Le plafond atteint, quel qu'il soit : on remplit les RP jusqu'a RELANCES_MAX. */
+const auPlafond = new Map<string, string>([["M2b", ilYaH(400)]]);
+for (let i = 1; i <= RELANCES_MAX; i++) auPlafond.set(`RP${i}`, ilYaH(400 - i * 10));
+const rPlafond = relanceDe({ depot: "abandonne", envoyes: auPlafond });
+ok("le plafond tient, et il vaut deux",
+   !rPlafond.possible && rPlafond.pertinent === true && RELANCES_MAX === 2);
+
+const rRangSuivant = relanceDe({
   depot: "abandonne",
-  envoyes: new Map([["RP1", ilYaH(400)], ["RP2", ilYaH(100)]]),
+  envoyes: new Map([["RP1", ilYaH(400)]]),
 });
 ok("le rang compte les relances DU MOTIF, pas les mails du dossier",
-   rRang3.possible && rRang3.code === "RP3" && rRang3.rang === 3);
+   rRangSuivant.possible && rRangSuivant.code === "RP2" && rRangSuivant.rang === 2);
 
 ok("les relances d'un autre motif ne consomment pas le plafond",
-   relanceDe({ depot: "abandonne", envoyes: new Map([["RA1", ilYaH(400)], ["RA2", ilYaH(100)]]) })
+   relanceDe({ depot: "abandonne", envoyes: new Map([["RA1", ilYaH(400)], ["RA2", ilYaH(200)]]) })
      .possible);
+
+ok("un rang de plus existe deja dans la table : remonter le plafond ne coutera pas de code",
+   CODES_RELANCE.filter((c) => c.startsWith("RP")).length > RELANCES_MAX);
 
 titre("— le dernier mail parti, celui que la liste affiche —");
 ok("aucun mail : rien a dire", dernierMailParti(AUCUN_MAIL) === null);

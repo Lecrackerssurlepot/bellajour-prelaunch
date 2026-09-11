@@ -52,15 +52,29 @@ import type { EtapeDepot } from "./urgence";
 /** Ce sur quoi on relance. Tiré de l'état, jamais saisi. */
 export type MotifRelance = "depot" | "photos" | "apercu";
 
-/** Combien de relances manuelles au maximum, par dossier ET par motif. */
-export const RELANCES_MAX = 3;
+/**
+ * Combien de relances manuelles au maximum, par dossier ET par motif.
+ *
+ * DEUX, décidé par Mathias le 11/09/2026. Au-delà, ce n'est plus une relance :
+ * on appelle, ou on laisse le préavis de fermeture (M10) faire son travail.
+ * ⚠️ `MODELE_RELANCE` définit volontairement un TROISIÈME rang par motif
+ * (RD3, RP3, RA3) : remonter le plafond ne demandera alors pas une ligne de
+ * code de plus, juste ce chiffre.
+ */
+export const RELANCES_MAX = 2;
 
 /**
  * Le silence minimum entre deux mails, quel que soit l'expéditeur du premier
  * (nous ou le balayage). Deux mails de l'atelier dans la même journée ne se
  * lisent pas comme une attention, ils se lisent comme un bug.
+ *
+ * SOIXANTE-DOUZE HEURES, décidé par Mathias le 11/09/2026 : trois jours
+ * laissent passer un week-end entier, ce que quarante-huit ne faisaient pas.
  */
-export const DELAI_MIN_RELANCE_MS = 48 * 3_600_000;
+export const DELAI_MIN_RELANCE_MS = 72 * 3_600_000;
+/* La phrase du refus LIT la constante : un chiffre écrit à la main dans le
+   texte finit par dire autre chose que ce que la règle applique. */
+const DELAI_MIN_HEURES = Math.round(DELAI_MIN_RELANCE_MS / 3_600_000);
 
 export type CodeRelance =
   | "RD1" | "RD2" | "RD3"
@@ -222,7 +236,7 @@ export function evaluerRelance(args: {
   if (dernier && maintenant.getTime() - Date.parse(dernier.iso) < DELAI_MIN_RELANCE_MS) {
     return {
       possible: false,
-      raison: `Un mail lui est parti ${depuisEnMots(dernier.iso, maintenant)}. On laisse 48 h entre deux.`,
+      raison: `Un mail lui est parti ${depuisEnMots(dernier.iso, maintenant)}. On laisse ${DELAI_MIN_HEURES} h entre deux.`,
       pertinent: true,
     };
   }
