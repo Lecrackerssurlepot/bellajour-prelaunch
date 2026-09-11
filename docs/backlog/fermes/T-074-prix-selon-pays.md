@@ -42,6 +42,6 @@ Mathias : « accepter tous les pays d'Europe » et « l'atelier ne peut pas mett
 ne sait pas d'où vient le client ». PR #114 : `PAYS_LIVRAISON` = UE 27 + GB, CH, NO ; si le pays
 est connu (écran 4) le devis se fait à la publication, sinon la publication passe sans port et le
 client choisit son pays sur `/numero` (`POST /api/atelier/livraison`, devis gelé, journal
-`livraison_choisie`). Restent à trancher : la TVA des trois destinations hors UE (0 posé) et les
-droits de douane (annoncés à la charge du client), et à valider par le comptable les taux normaux
-de TVA par pays (`TAUX_TTC_LIVRAISON`). Le suivi colis ne connaît que les transporteurs FR/BE/LU.
+`livraison_choisie`). Tranché par Mathias le 11/09 : taux normaux de TVA par pays validés
+(`TAUX_TTC_LIVRAISON`), GB/CH/NO à 0 avec droits de douane à la charge du client, suivi colis
+limité aux transporteurs FR/BE/LU accepté.
