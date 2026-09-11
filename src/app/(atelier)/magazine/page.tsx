@@ -113,7 +113,8 @@ const JSON_LD = [
     name: 'Numéro Bellajour — le magazine d’un moment de vie',
     description:
       'Magazine photo imprimé, composé à la main à partir de vos photos. ' +
-      'Format A4, papier intérieur 130 g, couverture 250 g. Un numéro par moment.',
+      'Format A4, papier intérieur couché satiné 130 g, couverture 250 g ' +
+      'pelliculée brillante ou mate au choix. Un numéro par moment.',
     brand: { '@type': 'Brand', name: 'Bellajour' },
     offers: {
       '@type': 'AggregateOffer',

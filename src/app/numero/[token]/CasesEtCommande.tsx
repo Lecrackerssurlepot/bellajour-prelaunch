@@ -43,6 +43,11 @@ import { PAYS_LIBELLE, PAYS_TRIES, PAYS_DEFAUT, paysValide } from '@/lib/atelier
    destinations hors Union, et elle sert à DIRE les droits de douane avant le
    paiement plutôt qu'à les découvrir à la livraison. */
 import { HORS_UE } from '@/lib/atelier/livraison'
+/* `impression.ts` est PUR (aucun import serveur, aucun secret) : ses tables
+   descendent dans le navigateur comme `pays.ts` et `grille.ts`. Le libellé ne
+   se recopie pas ici — une seule source pour le mot que le client lit, celui
+   que l'atelier voit et celui qui part au journal. */
+import { FINITION_LIBELLE, type Finition } from '@/lib/atelier/impression'
 import FeuilleAjustement from './FeuilleAjustement'
 
 type Props = {
@@ -82,11 +87,19 @@ type Props = {
      de contrôle ne doit ni ouvrir une session Stripe, ni cocher une case en
      base au nom du client, ni déposer une demande d'ajustement. */
   previsualisation?: boolean
+  /* ── LE PELLICULAGE, CHOISI ICI (11/09/2026) ──────────────────────────
+     Brillant ou mat, sans différence de prix : le relevé Cloudprinter du
+     11/09 donne un demi-centime d'écart sur un dos carré de 32 pages. Le
+     serveur descend la valeur du dossier, ou le défaut (`finitionDuDossier`).
+     C'est le SEUL paramètre d'impression que le client choisit lui-même —
+     le format, la reliure et le papier se déduisent de sa pagination. */
+  finition: Finition
 }
 
 export default function CasesEtCommande({
   token, nbPages, euros, livraisonCentimes, pays, prixCentimes, commande, portOffert,
-  cgvOk, renonciation, joursComposition, joursLivraison, previsualisation = false,
+  cgvOk, renonciation, joursComposition, joursLivraison, finition,
+  previsualisation = false,
 }: Props) {
   const router = useRouter()
   const [cgv, setCgv] = useState(cgvOk)
@@ -95,6 +108,7 @@ export default function CasesEtCommande({
   const [occupe, setOccupe] = useState(false)
   const [confirmer, setConfirmer] = useState(false)
   const [feuille, setFeuille] = useState(false)
+  const [pellicule, setPellicule] = useState<Finition>(finition)
 
   const enregistrer = useCallback(
     async (champ: 'cgv_ok' | 'renonciation_retractation', valeur: boolean) => {
@@ -118,6 +132,34 @@ export default function CasesEtCommande({
       }
     },
     [token, previsualisation]
+  )
+
+  /* Le choix part tout de suite, comme les deux cases : l'écran bouge, la
+     requête suit, et un échec REVIENT en arrière avec une phrase. Une
+     finition affichée mais non enregistrée serait le pire des deux mondes —
+     le client croirait avoir choisi, et l'objet partirait autrement. */
+  const choisirFinition = useCallback(
+    async (valeur: Finition) => {
+      const precedent = pellicule
+      if (valeur === precedent) return
+      setPellicule(valeur)
+      setErreur(null)
+      /* Même désarmement que partout : en prévisualisation l'atelier REGARDE
+         la page du client, il ne choisit pas à sa place. */
+      if (previsualisation) return
+      try {
+        const r = await fetch('/api/atelier/numero', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, finition: valeur }),
+        })
+        if (!r.ok) throw new Error('patch')
+      } catch {
+        setPellicule(precedent)
+        setErreur('Votre choix de finition n’a pas pu être enregistré. Réessayez dans un instant.')
+      }
+    },
+    [token, pellicule, previsualisation]
   )
 
   const commander = useCallback(async () => {
@@ -267,6 +309,33 @@ export default function CasesEtCommande({
           <div className="nu-bon-l">
             <span>Impression et façonnage</span>
             <b>compris</b>
+          </div>
+          {/* ── LA FINITION DE LA COUVERTURE (11/09/2026) ──
+              Dans le bon de commande et pas dans un réglage à part : c'est un
+              trait de l'objet qu'on achète, au même titre que sa pagination.
+              Deux boutons plutôt qu'un menu — il n'y a que deux réponses, et
+              les montrer toutes les deux dit qu'il n'y a pas de supplément
+              mieux qu'une phrase ne le dirait.
+              Un `radiogroup` et non des boutons nus : au clavier et au
+              lecteur d'écran, « Brillante, sélectionné, 1 sur 2 ». */}
+          <div className="nu-bon-l nu-bon-l--choix">
+            <span id="nu-finition-lbl">Finition de la couverture</span>
+            <div className="nu-finition" role="radiogroup" aria-labelledby="nu-finition-lbl">
+              {(['gloss', 'matte'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="radio"
+                  aria-checked={pellicule === v}
+                  className={`nu-finition-b${pellicule === v ? ' est-choisi' : ''}`}
+                  onClick={() => void choisirFinition(v)}
+                  disabled={previsualisation}
+                >
+                  {/* Le mot vient de la table, la capitale du bouton. */}
+                  {FINITION_LIBELLE[v].charAt(0).toUpperCase() + FINITION_LIBELLE[v].slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
           {/* ── LA LIVRAISON, EN SUS (lot 6, 10/09/2026) ──
               Elle a sa ligne, toujours, même offerte : « compris » ne se dit

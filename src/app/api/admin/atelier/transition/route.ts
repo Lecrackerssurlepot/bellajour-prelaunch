@@ -31,6 +31,13 @@ import {
   adresseCloudprinter,
   payloadCommande,
   produitPour,
+  finitionDuDossier,
+  dosMmPourPages,
+  largeurCouvertureMm,
+  FINITION_LIBELLE,
+  FINITION_OPTION,
+  PAPIER_COUVERTURE,
+  PAPIER_INTERIEUR,
   EMAIL_CONTACT,
   SHIPPING_LEVEL,
   SLOTS_IMPRESSION,
@@ -104,6 +111,11 @@ export async function POST(request: Request) {
       livraison_centimes?: number | null;
       pays_livraison?: string | null;
       livraison_niveau?: string | null;
+      /* Le pelliculage choisi par le client (migration 20260911). Même
+         régime : absent tant qu'elle n'est pas passée, et `finitionDuDossier`
+         retombe alors sur le brillant — ce qui est exactement ce qui a été
+         imprimé jusqu'au 11/09, donc aucun dossier ne change d'objet. */
+      finition?: string | null;
     };
 
     const CHAMPS_BASE =
@@ -117,9 +129,17 @@ export async function POST(request: Request) {
     const lireLigne = (champs: string) =>
       supabase.from("numeros").select(champs).eq("token", token).maybeSingle<LigneNumero>();
 
-    let { data: lu, error: lecture } = await lireLigne(
-      `${CHAMPS_BASE}, prix_centimes, livraison_centimes, pays_livraison, livraison_niveau`,
-    );
+    /* Trois niveaux, du plus complet au plus ancien — même échelle que
+       `lireNumeros` (donnees.ts) : la finition (20260911), puis le prix gelé
+       (20260910), puis le socle. Chaque niveau ne coûte un aller-retour de
+       plus que dans la fenêtre où SA migration manque, et perdre la finition
+       ne doit pas faire perdre le prix avec elle. */
+    const CHAMPS_PRIX = "prix_centimes, livraison_centimes, pays_livraison, livraison_niveau";
+
+    let { data: lu, error: lecture } = await lireLigne(`${CHAMPS_BASE}, ${CHAMPS_PRIX}, finition`);
+    if (lecture?.code === "42703") {
+      ({ data: lu, error: lecture } = await lireLigne(`${CHAMPS_BASE}, ${CHAMPS_PRIX}`));
+    }
     if (lecture?.code === "42703") {
       ({ data: lu, error: lecture } = await lireLigne(CHAMPS_BASE));
     }
@@ -289,7 +309,15 @@ export async function POST(request: Request) {
           raison: "aucun produit d'impression pour cette pagination", existant,
         };
       } else {
-        const d = await devisLivraison({ pays, produit, pages: pages! });
+        /* Le devis chiffre l'objet TEL QU'IL SERA COMMANDÉ, pelliculage
+           compris : une seule construction d'options pour les deux (cf.
+           `optionsItem`, impression.ts). */
+        const d = await devisLivraison({
+          pays,
+          produit,
+          pages: pages!,
+          finition: finitionDuDossier(numero.finition),
+        });
         if (!d.ok) {
           livraison = {
             source: "echec", niveau: null, service: null, transporteur: null,
@@ -343,6 +371,18 @@ export async function POST(request: Request) {
       produit: string | null;
       produitLibelle: string | null;
       shippingLevel: string;
+      /* ── CE QUI SERA FABRIQUÉ, DIT AVANT LE CLIC (11/09/2026) ──────────
+         La confirmation annonçait la référence produit et le transporteur,
+         jamais la MATIÈRE. Or c'est elle qu'on ne peut plus rattraper : une
+         commande part, un objet se fabrique. Trois lignes de plus, toutes
+         dérivées (papier tranché, pelliculage du dossier, dos calculé) :
+         l'atelier relit ce qu'il achète, il ne le suppose pas. */
+      papier: { interieur: string; couverture: string };
+      finition: { cle: string; libelle: string };
+      /* L'épaisseur du dos, en mm — dos carré seulement (un agrafé n'en a
+         pas). C'est la cote dont dépend la largeur de la couverture
+         enveloppante déjà déposée : les deux doivent concorder. */
+      dos: { mm: number; largeurCouvertureMm: number } | null;
       fichiers: Array<{ type: string; cle: string; taille: number; md5: string }>;
       adresse: { nom: string; ville: string; pays: string } | null;
     } | null = null;
@@ -423,6 +463,20 @@ export async function POST(request: Request) {
            défaut. L'écran de confirmation ne doit pas annoncer `cp_saver`
            quand la commande partira en `cp_ground`. */
         shippingLevel: numero.livraison_niveau ?? SHIPPING_LEVEL,
+        papier: { interieur: PAPIER_INTERIEUR, couverture: PAPIER_COUVERTURE },
+        finition: {
+          cle: FINITION_OPTION[finitionDuDossier(numero.finition)],
+          libelle: FINITION_LIBELLE[finitionDuDossier(numero.finition)],
+        },
+        /* Les deux cotes voyagent ENSEMBLE, calculées ici : recalculer
+           « 2 × 213 + dos » dans l'écran recopierait le format fini et le
+           fond perdu à un deuxième endroit, et c'est ainsi que deux
+           géométries finissent par diverger. */
+        dos: (() => {
+          const mm = dosMmPourPages(numero.nb_pages);
+          const largeur = largeurCouvertureMm(numero.nb_pages);
+          return mm !== null && largeur !== null ? { mm, largeurCouvertureMm: largeur } : null;
+        })(),
         fichiers,
         adresse: adr.ok
           ? { nom: adr.adresse.firstname + " " + adr.adresse.lastname, ville: adr.adresse.city, pays: adr.adresse.country }
@@ -549,6 +603,10 @@ export async function POST(request: Request) {
           pages: numero.nb_pages!,
           fichiers: fichiersSignes,
           titre: numero.titre,
+          /* Le pelliculage CHOISI par le client sur sa page de commande. Le
+             repli sur le brillant est dans `payloadCommande` (interne, pour
+             que devis et commande le partagent) : ici on passe ce qu'on a. */
+          finition: finitionDuDossier(numero.finition),
         },
         /* Le niveau GELÉ au devis (`numeros.livraison_niveau`). `cp_saver`
            n'est pas proposé partout — relevé du 10/09 — donc commander sous

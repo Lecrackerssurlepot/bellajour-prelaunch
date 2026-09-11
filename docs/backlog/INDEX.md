@@ -24,6 +24,25 @@ exactement l'écart que la passe du 01/09/2026 a corrigé, sur 36 lignes.
 Semé le 29/08/2026 par l'audit de structure. Tous les tickets ci-dessous sont **prouvés dans le
 code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
+## Où on en est (11/09/2026, fin de journée — les références produit)
+
+**Les références d'impression sont arrêtées, et trois tickets tombent avec elles.** Mathias avait
+la liste ; le relevé Cloudprinter du 11/09 l'a confirmée jusqu'à la référence (`finish_gloss` et
+`cover_finish_matte` existent bien, avec leur asymétrie de nommage) et a chiffré ce qu'elle
+coûte. Intérieur 130 g couché satiné, couverture 250 g, **pelliculage laissé au client**,
+brillant ou mat, sans supplément — un demi-centime d'écart au devis, il n'y avait rien à
+arbitrer. T-027 et T-077 sont fermés, le point bloquant de T-028 tombe, T-078 est débloqué.
+
+Ce que le relevé a appris et qu'on ne devinait pas : le grammage ne coûte presque rien (un
+centime entre 90 et 130 g), mais il décide de l'USINE, donc du PORT — 2,76 € HT d'écart en
+France entre le silk et le gloss, et aucun écart au Portugal ni en Allemagne. Tout est dans
+`docs/reference/SPECS-CLOUDPRINTER.md`.
+
+⚠️ **La migration `20260911_atelier_finition.sql` doit être appliquée AVANT le déploiement.**
+C'est la première du dépôt dont l'écriture NE SE REPLIE PAS, volontairement : un repli ferait
+imprimer brillant à quelqu'un qui a cliqué mat, sans que personne ne le sache. La lecture, elle,
+se replie partout.
+
 ## Où on en est (11/09/2026)
 
 **T-109 fermé : on peut relancer un client depuis l'atelier.** Le bouton vit sur la ligne, armé
@@ -108,8 +127,8 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-024 | La page Santé crie sur une base vide | admin | confort | libre | **fermé** |
 | T-025 | Cinq mails n'ont jamais été envoyés en vrai | atelier | serieux | avis-requis | nouveau |
 | T-026 | Les CGV v3.0 n'ont pas été relues par un juriste | produit | serieux | avis-requis | **fermé** (10/09 : vérifiées, pas de relecture juridique, décision de Mathias) |
-| T-027 | Les finitions d'impression sont posées par défaut, pas choisies | produit | serieux | avis-requis | nouveau |
-| T-028 | La page produit affirme un grammage qu'on n'a pas mesuré | produit | serieux | avis-requis | nouveau |
+| T-027 | Les finitions d'impression sont posées par défaut, pas choisies | produit | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 11/09 : relevé des prix usine, Mathias tranche. Intérieur `pageblock_130mcs`, couverture `cover_250mcs`, pelliculage AU CHOIX du client (brillant ou mat, sans supplément). Le comparatif est dans `SPECS-CLOUDPRINTER.md` |
+| T-028 | La page produit affirme un grammage qu'on n'a pas mesuré | produit | serieux | avis-requis | en cours — **le grammage est sourcé le 11/09** (T-027 fermé) : `/magazine` et les CGV v3.2 disent ce qu'`impression.ts` commande. « Livraison comprise » tranché le 10/09. Restent les visuels provisoires et la FAQ non relue |
 | T-029 | Deux avertissements de lint traînent depuis le lot 7 | exploitation | confort | libre | **fermé** |
 | T-030 | Vérifier si la couverture d'un seul tenant est déjà livrée | atelier | confort | libre | **refuse** (03/09 — déjà livré : `plat` en un fichier découpé à l'affichage, T2-2/T-089/T-090 ; preuve dans `fermes/`) |
 | T-031 | Une erreur en production n'est vue par personne | exploitation | serieux | avis-requis | nouveau |
@@ -158,8 +177,8 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-074 | Un prix selon le pays de livraison exige de demander le pays avant le prix | produit | serieux | avis-requis | **fermé** (10/09 : pays demandé à l'écran 4, livraison par devis selon le pays) |
 | T-075 | Les ventes de l'atelier ne passent pas par la comptabilité InvoiceXpress | paiement | serieux | avis-requis | nouveau |
 | T-076 | Les dossiers abandonnés gardent leurs données personnelles sans limite de durée | donnees | serieux | avis-requis | **rétention armée le 02/09** — migration appliquée, template M10 poussé (ID 40), `BREVO_TEMPLATE_M10_ID` live en prod (Santé sans alerte). Reste seulement, différé exprès : un cron une fois éprouvé, et exclure les anonymisés de T-023 |
-| T-077 | Les specs d'impression des deux produits Cloudprinter ne sont pas sur le disque | produit | serieux | avis-requis | en pause (01/09, rejoint le lot CGV) |
-| T-078 | Aucun moteur ne transforme les gabarits de mise en page en PDF imprimable | atelier | serieux | avis-requis | en cours — étape 0 livrée le 30/08, la suite dépend de T-077 |
+| T-077 | Les specs d'impression des deux produits Cloudprinter ne sont pas sur le disque | produit | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 11/09 : la formule du dos est dans le code (`dosMmPourPages`, déduite du papier, figée par le harnais), le contrôle PDF juge enfin la largeur d'une couverture enveloppante, et les CGV v3.2 décrivent l'objet réel |
+| T-078 | Aucun moteur ne transforme les gabarits de mise en page en PDF imprimable | atelier | serieux | avis-requis | en cours — étape 0 livrée le 30/08. **Débloqué le 11/09** : T-077 est fermé, la géométrie que le moteur devra produire est écrite et éprouvée (`FORMAT_PAGE_PDF_MM`, `dosMmPourPages`, `largeurCouvertureMm`) |
 | T-079 | Le dashboard métriques n'a pas d'insights ni de stratégie assistés par IA | admin | confort | avis-requis | en pause (30/08, le bloc « Lecture » suffit — attendre ~50 dossiers) |
 | T-080 | Le dashboard métriques mérite un vrai design de tableau de bord | admin | confort | libre | en cours (07/09) — rendu sorti de la page (Vue.tsx, pour pouvoir le REGARDER sans base ni session) + rangée de quatre chiffres clés en tête. L habillage fin attend la référence visuelle de Mathias |
 | T-081 | Rien ne compare les paiements Stripe aux dossiers de la base | paiement | serieux | avis-requis | en cours — **lancé sur la vraie base le 08/09**, deux passes en lecture seule : 0 écart en livemode, et 2 écarts levés en `--avec-test` (dossiers de recette supprimés). Le filet est prouvé DÉTECTEUR. Reste le seul choix du déclencheur : Vercel Hobby n'autorise qu'un cron/jour, déjà pris par la relève |

@@ -139,10 +139,25 @@ export default function Corps() {
             <Reveal>
               <p className="kicker">L’objet</p>
               <h2 className="titre">Un vrai magazine,<br />pas un tirage.</h2>
+              {/* ⚠️ CES CHIFFRES SONT DÉSORMAIS SOURCÉS (11/09/2026). Ils ont
+                  été affirmés sans donnée du 28/08 au 11/09 (T-028) : le
+                  papier n'était pas tranché, la page le promettait quand
+                  même. Il l'est — relevé products/info et prix usine du
+                  11/09, consignés dans docs/reference/SPECS-CLOUDPRINTER.md,
+                  et commandés par `PAPIER_INTERIEUR` / `PAPIER_COUVERTURE`.
+                  Ne pas retoucher un grammage ici sans le changer LÀ. */}
               <p className="lede">
-                Format A4, papier intérieur 130 g, couverture 250 g. Agrafé à
-                20 pages, dos carré collé au-delà. Composé page à page par
-                l’atelier.
+                Format A4, papier intérieur couché satiné 130 g, couverture
+                250 g. Agrafé à 20 pages, dos carré collé au-delà. Composé
+                page à page par l’atelier.
+              </p>
+              {/* Le seul choix d'objet laissé au client, dit ici parce que
+                  c'est ici qu'on décrit l'objet — et redit au bon de
+                  commande, là où il se fait. Sans supplément : le relevé du
+                  11/09 donne un demi-centime d'écart entre les deux. */}
+              <p className="lede">
+                Couverture pelliculée <b>brillante ou mate</b>, à votre choix
+                au moment de la commande. Sans supplément.
               </p>
             </Reveal>
             <Reveal delay={70}>

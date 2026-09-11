@@ -56,7 +56,9 @@ source de tout affichage), `prix.ts` (le calcul serveur : `centimesDuDossier` li
 `prix_centimes` d'abord, la grille ensuite), `pays.ts` (FR/BE/LU), `livraison.ts` (devis → TTC,
 plafond, total de commande), `questionnaire.ts` (les
 6 champs exigés + `suggestionEmail`), `rebond.ts` (ce qu'un signal Brevo dit d'une adresse),
-`parcours.ts` (les 8 jalons), `impression.ts` (table produit Cloudprinter),
+`parcours.ts` (les 8 jalons), `impression.ts` (table produit Cloudprinter, **le papier tranché
+le 11/09 — `PAPIER_INTERIEUR` / `PAPIER_COUVERTURE`, une constante pour les deux reliures —, le
+pelliculage choisi par le client, et la GÉOMÉTRIE du dos qui se déduit du papier**),
 `suivi.ts` (transporteur + code), `recit.ts`, `brief.ts`, `lot.ts`, `formats.ts`, `dates.ts`,
 `token.ts` / `tokenForme.ts` (jumeau navigateur), `secret.ts`.
 Les modules à effets : `mails.ts`, `r2.ts`, `cloudprinter.ts`, `paiement.ts`, `evenements.ts`,
@@ -137,6 +139,17 @@ qui le montre. Le texte des mails est versionné dans `scripts/mails-atelier.mjs
 - Zone `FR, BE, LU` (`pays.ts`), le pays est demandé à l'écran 4 du questionnaire depuis le 10/09 :
   un devis de livraison exige le pays avant l'annonce du prix. TVA : `automatic_tax` + prix TTC, 23 % (taux normal PT) — le câblage est
   inerte tant que l'immatriculation n'est pas posée chez Stripe, puis s'active sans redéploiement.
+- **La matière est tranchée depuis le 11/09** (T-027) : intérieur `pageblock_130mcs`, couverture
+  `cover_250mcs`, et un PELLICULAGE choisi par le client — `finish_gloss` ou `cover_finish_matte`,
+  sans supplément (relevé : un demi-centime d'écart). C'est le SEUL paramètre d'impression que le
+  client choisisse ; le format, la reliure et le papier se déduisent de sa pagination. Il vit dans
+  `numeros.finition` (migration `20260911`, **à appliquer avant tout déploiement**), se choisit au
+  bon de commande de `/numero`, et entre dans le devis COMME dans la commande par une seule
+  construction (`optionsItem`) — deux listes recopiées auraient chiffré un objet et commandé un
+  autre. ⚠️ `cover_finish_gloss` n'existe pas chez eux : ne pas « harmoniser » l'asymétrie.
+- **Le dos se CALCULE** (`dosMmPourPages`), grammage et bulk déduits de `PAPIER_INTERIEUR` :
+  changer le papier change la géométrie, et le harnais tombe au lieu de se taire. `souvenir.ts`,
+  lui, continue de MESURER le dos sur la feuille déposée — juger et découper sont deux gestes.
 - **Cloudprinter** : les fichiers dépendent du produit. L'agrafé (20 p.) prend UN PDF `product` ;
   le dos carré (24 à 60 p., grille du 10/09 ; 22 et impairs ne désignent aucun produit) prend DEUX PDF `cover` + `book` — la couverture d'un dos carré ne peut
   physiquement pas vivre dans le même PDF que le bloc. Le md5 exigé est l'ETag R2 du PUT

@@ -53,6 +53,8 @@ type ControleFichier = {
       autresTaillesMm: DimensionMm[];
       verdict: VerdictPages;
       verdictTaille: VerdictTaille;
+      /** La géométrie attendue d'une couverture enveloppante (11/09/2026). */
+      attenduCouverture: { largeurMm: number; hauteurMm: number; dosMm: number; grammageGsm: number } | null;
       multiple: { ok: boolean; regle: string } | null;
     }
 );
@@ -75,21 +77,34 @@ function nomDe(cle: string): string {
 function ligneTaille(r: ControleFichier & { lisible: true }): { texte: string; ton: "ok" | "attention" | "alerte" } {
   const dims = `${mm(r.pageMm.largeur)} × ${mm(r.pageMm.hauteur)} mm`;
   const trim = r.trimMm ? `, zone rognée ${mm(r.trimMm.largeur)} × ${mm(r.trimMm.hauteur)} mm` : "";
+  /* La cote attendue d'une couverture enveloppante ne vaut que pour elle, et
+     elle se dit avec son dos : « 428,9 mm » ne se vérifie pas au gabarit,
+     « dos de 2,87 mm » si. */
+  const attenduCouv = r.attenduCouverture
+    ? `${mm(r.attenduCouverture.largeurMm)} × ${mm(r.attenduCouverture.hauteurMm)} mm (dos de ${mm(r.attenduCouverture.dosMm)} mm pour un intérieur ${r.attenduCouverture.grammageGsm} g)`
+    : null;
   switch (r.verdictTaille) {
     case "conforme":
-      return { texte: `${dims}${trim} : fini + fond perdu, conforme.`, ton: "ok" };
+      return {
+        texte: attenduCouv
+          ? `${dims}${trim} : couverture enveloppante au bon dos, conforme.`
+          : `${dims}${trim} : fini + fond perdu, conforme.`,
+        ton: "ok",
+      };
     case "sans_fond_perdu":
       return {
         texte: `${dims}${trim} : format FINI, sans fond perdu — le rognage mordra le bord de l'image. Attendu : 216 × 303 mm.`,
         ton: "attention",
       };
     case "constat":
-      /* Une cover de dos carré : la largeur dépend de l'épaisseur du dos
-         (formule non relevée), seule la hauteur est jugée. */
-      return { texte: `${dims}${trim} : hauteur conforme, largeur non jugée (elle dépend de l'épaisseur du dos).`, ton: "ok" };
+      /* Une cover sur un dossier SANS pagination : pas de dos calculable,
+         donc pas de largeur attendue. La hauteur, elle, est jugée. */
+      return { texte: `${dims}${trim} : hauteur conforme, largeur non jugée (le dossier n'a pas de pagination, donc pas de dos).`, ton: "ok" };
     case "hors_format":
       return {
-        texte: `${dims}${trim} : hors format. Attendu : 216 × 303 mm (210 × 297 fini + 3 mm de fond perdu de chaque côté).`,
+        texte: attenduCouv
+          ? `${dims}${trim} : hors format. Attendu : ${attenduCouv}.`
+          : `${dims}${trim} : hors format. Attendu : 216 × 303 mm (210 × 297 fini + 3 mm de fond perdu de chaque côté).`,
         ton: "alerte",
       };
   }

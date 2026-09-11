@@ -21,6 +21,7 @@ import {
   premierManquant,
 } from "@/lib/atelier/questionnaire";
 import { lireChoixCouverture } from "@/lib/atelier/apercu";
+import { normaliserFinition } from "@/lib/atelier/impression";
 
 export const runtime = "nodejs";
 
@@ -451,6 +452,21 @@ export async function PATCH(request: Request) {
     const choixCouverture = lireChoixCouverture(body.couverture_choisie);
     const choisitCouverture = choixCouverture !== null;
 
+    /* ── LE PELLICULAGE, CHOISI PAR LE CLIENT (11/09/2026) ──────────────
+       Brillant ou mat, sans différence de prix (relevé prices/lookup du
+       11/09 : un demi-centime sur un dos carré de 32 pages). Il entre dans
+       `maj` et pas dans une branche dédiée, contrairement au choix de
+       couverture : ce n'est pas une préférence qu'un humain interprète,
+       c'est un PARAMÈTRE DE COMMANDE qui partira tel quel chez Cloudprinter,
+       et il doit se relire dans le même SELECT que le reste du dossier.
+
+       ⚠️ `normaliserFinition` ne répare rien : une valeur inconnue est
+       ignorée (le champ n'entre pas dans `maj`), jamais corrigée en douce
+       vers le défaut. Imprimer brillant parce qu'un octet s'est perdu en
+       route est exactement le silence qu'on refuse. */
+    const finition = normaliserFinition(body.finition);
+    if (finition) maj.finition = finition;
+
     if (!Object.keys(maj).length && !demandeRetouches && !demandeAjustement && !choisitCouverture) {
       return NextResponse.json({ error: "rien_a_faire" }, { status: 400 });
     }
@@ -503,6 +519,13 @@ export async function PATCH(request: Request) {
     /* Le choix de couverture n'a de sens qu'à l'état 2, devant la
        proposition. Ailleurs, c'est un onglet resté ouvert. */
     if (choisitCouverture && numero.etat !== "apercu_pret") {
+      return NextResponse.json({ error: "etat_incompatible" }, { status: 409 });
+    }
+
+    /* Le pelliculage non plus : après paiement, l'objet est commandé et son
+       apparence ne se change plus d'un clic. Avant l'état 2, il n'y a rien à
+       commander. Même règle, même raison que les deux cases. */
+    if (finition && numero.etat !== "apercu_pret") {
       return NextResponse.json({ error: "etat_incompatible" }, { status: 409 });
     }
 
@@ -562,7 +585,20 @@ export async function PATCH(request: Request) {
     if (Object.keys(maj).length) {
       const { error } = await supabase.from("numeros").update(maj).eq("id", numero.id);
       if (error) {
-        console.error("[atelier/numero] patch consentements échoué", error.code);
+        /* ⚠️ AUCUN REPLI SUR `finition`, ET C'EST DÉLIBÉRÉ (11/09/2026).
+           Ailleurs, un UPDATE qui nomme une colonne fraîche retombe sur un
+           UPDATE sans elle pour survivre à la fenêtre déploiement/migration.
+           Ici le repli ferait imprimer brillant à quelqu'un qui a cliqué
+           mat, sans que rien ne le signale — le revers du repli, en pire,
+           parce qu'il coûte un objet fabriqué. On rend un 500 franc et on
+           NOMME la migration manquante dans les logs. */
+        console.error(
+          "[atelier/numero] patch consentements échoué",
+          error.code,
+          error.code === "42703" || error.code === "PGRST204"
+            ? "⚠️ colonne absente : appliquer supabase/migrations/20260911_atelier_finition.sql"
+            : "",
+        );
         return NextResponse.json({ error: "internal" }, { status: 500 });
       }
 
