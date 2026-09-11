@@ -21,6 +21,13 @@ import { resolve } from "node:path";
 import { preparerTransition, actionsDepuis, cleCadrageCouverture } from "@/lib/atelier/transitions";
 import { urgencePour, comparerUrgence, etapeDepot } from "@/lib/atelier/urgence";
 import {
+  CODES_RELANCE,
+  MODELE_RELANCE,
+  RELANCES_MAX,
+  dernierMailParti,
+  evaluerRelance,
+} from "@/lib/atelier/relance";
+import {
   lireDoublesBrutes,
   lirePlanchesBrutes,
   lireChoixCouverture,
@@ -56,8 +63,10 @@ import {
   doitAutoValider,
   doitRattraperM4,
   manquePour,
+  modeleDe,
   parametresPour,
   templateExiste,
+  OBJET_MAIL,
   type Envoyes,
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
@@ -3988,6 +3997,128 @@ ok("le mot de coupure NOMME le destinataire, le modele et la variable",
 ok("sans modele, le mot reste lisible",
    motDeCoupure("[brevo] W1", "a@b.fr", null).includes("a@b.fr") &&
    !motDeCoupure("[brevo] W1", "a@b.fr", null).includes("template="));
+
+/* ════════════════════════ LA RELANCE MANUELLE ════════════════════════
+   Elle envoie un mail a une vraie personne sans changer l'etat du dossier :
+   la regle qui decide est donc le seul garde-fou. Elle est pure, elle se
+   verifie ici. */
+
+titre("— la relance manuelle : le motif vient de l'etat, jamais d'un ecran —");
+
+const AUCUN_MAIL = new Map<string, string>();
+const T_REL = new Date("2026-09-11T10:00:00.000Z");
+const ilYaH = (heures: number) =>
+  new Date(T_REL.getTime() - heures * 3_600_000).toISOString();
+
+const relanceDe = (o: Partial<Parameters<typeof evaluerRelance>[0]>) =>
+  evaluerRelance({
+    etat: "photos_recues",
+    depot: "vide",
+    paye: false,
+    emailRebond: false,
+    email: "quelquun@exemple.fr",
+    envoyes: AUCUN_MAIL,
+    maintenant: T_REL,
+    ...o,
+  });
+
+const rVide = relanceDe({ depot: "vide" });
+ok("rien de depose -> RD1, qui rejoue M2",
+   rVide.possible && rVide.code === "RD1" && MODELE_RELANCE.RD1 === "M2");
+
+const rAband = relanceDe({ depot: "abandonne" });
+ok("photos montees sans accord -> RP1, qui rejoue M2b (jamais M2)",
+   rAband.possible && rAband.code === "RP1" && MODELE_RELANCE.RP1 === "M2b");
+
+const rFini = relanceDe({ depot: "termine" });
+ok("depot termine : on ne relance pas, et le bouton n'existe meme pas",
+   !rFini.possible && rFini.pertinent === false);
+
+const rApercu = relanceDe({ etat: "apercu_pret", depot: "termine" });
+ok("apercu publie et non paye -> RA1, qui rejoue M3b",
+   rApercu.possible && rApercu.code === "RA1" && MODELE_RELANCE.RA1 === "M3b");
+
+ok("apercu deja paye : plus rien a relancer",
+   !relanceDe({ etat: "apercu_pret", depot: "termine", paye: true }).possible);
+
+const rPayee = relanceDe({ etat: "payee", depot: "termine" });
+ok("un etat qui n'attend pas le client ne montre aucun bouton",
+   !rPayee.possible && rPayee.pertinent === false);
+
+titre("— les quatre refus, et leur raison lisible —");
+
+const rRebond = relanceDe({ depot: "abandonne", emailRebond: true });
+ok("adresse qui a rebondi : refus, mais le bouton reste pour dire pourquoi",
+   !rRebond.possible && rRebond.pertinent === true && rRebond.raison.includes("appeler"));
+
+const rSansMail = relanceDe({ depot: "abandonne", email: "   " });
+ok("aucune adresse : refus", !relanceDe({ depot: "abandonne", email: null }).possible
+   && !rSansMail.possible);
+
+const rTropTot = relanceDe({ depot: "abandonne", envoyes: new Map([["M2b", ilYaH(6)]]) });
+ok("un mail parti il y a 6 h : on laisse 48 h entre deux",
+   !rTropTot.possible && rTropTot.pertinent === true && rTropTot.raison.includes("48 h"));
+
+ok("passe 48 h, la relance repart",
+   relanceDe({ depot: "abandonne", envoyes: new Map([["M2b", ilYaH(60)]]) }).possible);
+
+const troisParties = new Map([
+  ["M2b", ilYaH(400)], ["RP1", ilYaH(300)], ["RP2", ilYaH(200)], ["RP3", ilYaH(100)],
+]);
+const rPlafond = relanceDe({ depot: "abandonne", envoyes: troisParties });
+ok("trois relances deja parties : le plafond tient",
+   !rPlafond.possible && rPlafond.pertinent === true && RELANCES_MAX === 3);
+
+const rRang3 = relanceDe({
+  depot: "abandonne",
+  envoyes: new Map([["RP1", ilYaH(400)], ["RP2", ilYaH(100)]]),
+});
+ok("le rang compte les relances DU MOTIF, pas les mails du dossier",
+   rRang3.possible && rRang3.code === "RP3" && rRang3.rang === 3);
+
+ok("les relances d'un autre motif ne consomment pas le plafond",
+   relanceDe({ depot: "abandonne", envoyes: new Map([["RA1", ilYaH(400)], ["RA2", ilYaH(100)]]) })
+     .possible);
+
+titre("— le dernier mail parti, celui que la liste affiche —");
+ok("aucun mail : rien a dire", dernierMailParti(AUCUN_MAIL) === null);
+ok("le plus recent gagne, code compris",
+   dernierMailParti(new Map([["M1", ilYaH(200)], ["M3", ilYaH(10)]]))?.code === "M3");
+
+titre("— une relance emprunte tout au mail qu'elle rejoue —");
+ok("les neuf codes ont un modele, et tous sont des mails existants",
+   CODES_RELANCE.length === 9 && CODES_RELANCE.every((c) => Boolean(MODELE_RELANCE[c])));
+ok("modeleDe rend le modele pour une relance, lui-meme sinon",
+   modeleDe("RA2") === "M3b" && modeleDe("M3") === "M3");
+ok("l'objet affiche est celui du mail rejoue : jamais deux libelles a diverger",
+   OBJET_MAIL.RP1 === OBJET_MAIL.M2b && OBJET_MAIL.RD3 === OBJET_MAIL.M2
+   && OBJET_MAIL.RA1 === OBJET_MAIL.M3b);
+
+const sansApercu = {
+  id: "x", token: "t", titre: null, prenom: "Alex", email: "a@b.fr",
+  nb_photos: 12, nb_pages: null, palier: null, apercu_urls: null,
+  consent_photos: true, created_at: null,
+} as unknown as Parameters<typeof manquePour>[1];
+ok("le controle de completude est celui du modele : RA1 exige ce qu'exige M3b",
+   JSON.stringify(manquePour("RA1", sansApercu)) === JSON.stringify(manquePour("M3b", sansApercu))
+   && manquePour("RA1", sansApercu).length > 0);
+ok("les parametres aussi viennent du modele",
+   JSON.stringify(parametresPour("RP1", sansApercu)) ===
+     JSON.stringify(parametresPour("M2b", sansApercu)));
+
+ok("le balayage quotidien n'envoie JAMAIS de relance manuelle",
+   !codesPour(
+     {
+       ...(sansApercu as object),
+       etat: "photos_recues",
+       consent_photos: null,
+       nb_photos: 40,
+       created_at: ilYaH(400),
+       etat_maj_le: ilYaH(400),
+     } as Parameters<typeof codesPour>[0],
+     new Map(),
+     T_REL,
+   ).some((c) => CODES_RELANCE.includes(c as (typeof CODES_RELANCE)[number])));
 
 /* On repose le globe comme on l'a trouve : la suite du harnais ne doit pas
    heriter d'un `localStorage` qui jette. */

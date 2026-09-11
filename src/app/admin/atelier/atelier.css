@@ -573,7 +573,7 @@
 .ate-ligne,
 .ate-entete {
   display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr) 10.5rem 9.5rem 3.5rem 12rem;
+  grid-template-columns: 2rem minmax(0, 1fr) 10.5rem 9.5rem 7.5rem 16rem;
   align-items: center;
   gap: var(--bj-sp-3);
   padding: var(--bj-sp-3) var(--bj-sp-2);
@@ -592,7 +592,7 @@
    viser un bouton, c'est ouvrir la fiche. */
 .ate-ligne-lien {
   position: absolute;
-  inset: 0 12.5rem 0 0;
+  inset: 0 16.5rem 0 0;
   z-index: 0;
 }
 .ate-ligne-lien:focus-visible {
@@ -612,6 +612,12 @@
 .ate-ligne > span.ate-ligne-act {
   pointer-events: auto;
   justify-self: end;
+  /* Deux boutons depuis la relance : la cellule est une rangée, pas un mot. */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
 }
 /* La ligne qui porte un panneau ouvert doit passer AU-DESSUS de ses voisines.
    Sans ça, chaque ligne étant `position: relative`, les suivantes se peignent
@@ -731,11 +737,38 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.ate-date {
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+/* ── « Dernier mot » (11/09/2026) ──
+   Elle a pris la place de la date d'ouverture, qui ne décidait de rien. Même
+   forme que la colonne « Délai » juste avant : deux lignes, la valeur puis sa
+   précision. C'est volontaire — l'oeil lit les deux colonnes d'un seul
+   mouvement, « il me reste 6 h » puis « il n'a rien reçu depuis 6 j ». */
+.ate-dernier {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+/* ── Relancer ──
+   Discrète au repos comme l'action principale : sur vingt lignes, deux
+   boutons qui crient valent moins qu'aucun. Elle ne se remplit jamais de
+   bleu, elle se contente de se souligner : le bleu plein appartient à
+   l'action qui fait AVANCER le dossier, et une relance ne le fait pas. */
+.ate-relance-btn {
+  flex: none;
+}
+.ate-ligne:hover .ate-relance-btn:not(.ate-relance-btn--eteint),
+.ate-ligne:focus-within .ate-relance-btn:not(.ate-relance-btn--eteint) {
+  border-color: var(--bj-action-border);
+  color: var(--bj-action);
+}
+/* Éteint, mais CLIQUABLE : le clic ouvre la raison. Un bouton mort qui ne
+   dit pas pourquoi finit contourné en SQL. */
+.ate-relance-btn--eteint {
+  opacity: 0.45;
+}
+.ate-relance-btn--eteint:hover {
+  opacity: 0.75;
 }
 
 /* La marque « qui a ce dossier en main » (migration 20260826). Discrète :
@@ -2790,7 +2823,7 @@
   .ate-ligne-corps { grid-area: corps; }
   .ate-etat { grid-area: etat; }
   .ate-delai { grid-area: delai; flex-direction: row; gap: var(--bj-sp-2); }
-  .ate-date { display: none; }
+  .ate-dernier { display: none; }
   .ate-delai-sub { display: none; }
   .ate-entete { display: none; }
 

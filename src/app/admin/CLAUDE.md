@@ -41,6 +41,21 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
   rappelle le téléphone ; la page santé le remonte en ROUGE **sans borne de date** — un rebond ne
   se périme pas au bout d'une semaine, contrairement aux mails en échec.
 
+- **« Relancer » n'est PAS une transition** (T-109, 11/09/2026). Les sept gestes d'`ActionRapide`
+  viennent de `transitions.ts` et changent l'état ; la relance redit ce qu'on avait déjà dit et
+  ne touche à rien. Elle a donc son composant (`Relance.tsx`) et sa route, mais elle garde la
+  règle qui compte : **jamais d'un seul clic**. Le bouton éteint dit POURQUOI au survol et dans
+  son panneau — un bouton mort sans explication finit contourné en SQL — et il n'existe pas du
+  tout là où une relance n'a aucun sens (`relance.pertinent`).
+- **La colonne « Dernier mot » a remplacé « Ouvert ».** La date d'ouverture ne décidait de rien
+  (elle est déjà dans le délai, dans la pile et sur la fiche) ; « il n'a rien reçu depuis six
+  jours » décide de la journée. Elle est lue dans `mails_envoyes`, DÉJÀ chargé pour la projection
+  des actions : aucune requête de plus. La date d'ouverture reste en `title`.
+- **`chargerListe` fait partir ses quatre lectures ensemble** (journal, activité, dossiers vus,
+  mails partis). Seul `lireNumeros` reste seul et avant : tout le reste dépend de ses ids.
+  Les enchaîner coûtait quatre latences à chaque ouverture ET à chaque rafraîchissement, donc
+  toutes les minutes.
+
 ## Écrans
 
 `page.tsx` (liste triée par urgence) · `[token]/page.tsx` (fiche + frise des 8 jalons + actions

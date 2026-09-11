@@ -35,9 +35,11 @@ import {
 } from "@/lib/atelier/transitions";
 import { compter, comparerUrgence, urgencePour, etapeDepot, type EtapeDepot } from "@/lib/atelier/urgence";
 import { raconter } from "@/lib/atelier/recit";
+import { dernierMailParti, depuisEnMots, evaluerRelance } from "@/lib/atelier/relance";
 import {
   codesPour,
   templateExiste,
+  OBJET_MAIL,
   type Envoyes,
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
@@ -171,6 +173,20 @@ function versLigne(
     ajustementLe,
   });
 
+  /* La relance manuelle et le « dernier mot » viennent de la MÊME lecture de
+     `mails_envoyes` que la projection des actions : `envoyes` est déjà là, et
+     ces deux colonnes ne coûtent donc pas un aller-retour de plus. */
+  const relanceCalc = evaluerRelance({
+    etat: r.etat,
+    depot,
+    paye: Boolean(r.stripe_payment_intent),
+    emailRebond,
+    email: r.email,
+    envoyes,
+    maintenant,
+  });
+  const dernier = dernierMailParti(envoyes);
+
   return {
     numeroId: r.id ?? "",
     token: r.token,
@@ -207,6 +223,21 @@ function versLigne(
     emailRebond,
     couvertureChoisie: choixCouverture,
     nouveau,
+    relance: relanceCalc.possible
+      ? {
+          possible: true,
+          libelle: relanceCalc.libelle,
+          /* Ce que le client va LIRE, pas le code du mail : « M3b » n'apprend
+             rien à qui n'a pas le PRD sous les yeux. */
+          objet: OBJET_MAIL[relanceCalc.code],
+          rang: relanceCalc.rang,
+        }
+      : { possible: false, raison: relanceCalc.raison, pertinent: relanceCalc.pertinent },
+    dernierMot: {
+      depuis: dernier ? depuisEnMots(dernier.iso, maintenant) : null,
+      quoi: dernier ? (OBJET_MAIL[dernier.code as keyof typeof OBJET_MAIL] ?? null) : null,
+      rebond: emailRebond,
+    },
     actions: actionsDepuis(r.etat).map((a) => ({
       cle: a.cle,
       libelle: a.libelle,
@@ -385,13 +416,43 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
      vit, aucune colonne ne le porte. Les trois autres types n'en font rien. */
   const choixCouvertures = new Map<string, ChoixCouverture>();
   const ids = rangees.map((r) => r.id).filter(Boolean) as string[];
-  if (ids.length) {
-    const { data: remb } = await supabase
-      .from("evenements")
-      .select("numero_id, type, payload, created_at")
-      .in("type", ["remboursement", "email_rebond", "ajustement_demande", "couverture_choisie"])
-      .in("numero_id", ids)
-      .returns<Array<{ numero_id: string; type: string; payload: Record<string, unknown> | null; created_at: string }>>();
+
+  /* ── LES QUATRE LECTURES PARTENT ENSEMBLE ──────────────────────────────
+     Elles ne dépendent que de `rangees` (déjà là) et les unes des autres :
+     pas du tout. Enchaînées, la table de travail payait quatre latences
+     l'une après l'autre à chaque ouverture ET à chaque rafraîchissement
+     automatique, c'est-à-dire toutes les minutes.
+     ⚠️ Le patron n'est pas neuf : `chargerFiche`, trois cents lignes plus
+     bas, fait déjà exactement ça pour les photos, le journal, les mails et
+     les notes d'un dossier. C'est la liste qui était en retard.
+     `lireNumeros` reste SEULE et AVANT : tout le reste a besoin de ses ids. */
+  const [marques, activite, lecture, envoyesPar] = await Promise.all([
+    ids.length
+      ? supabase
+          .from("evenements")
+          .select("numero_id, type, payload, created_at")
+          .in("type", ["remboursement", "email_rebond", "ajustement_demande", "couverture_choisie"])
+          .in("numero_id", ids)
+          .returns<
+            Array<{
+              numero_id: string;
+              type: string;
+              payload: Record<string, unknown> | null;
+              created_at: string;
+            }>
+          >()
+      : Promise.resolve({ data: [] as Array<{ numero_id: string; type: string; payload: Record<string, unknown> | null; created_at: string }> }),
+    chargerActivite(supabase, rangees),
+    chargerVus(supabase, identite.cle),
+    /* Ce qui est déjà parti, pour TOUS les dossiers en une requête : la règle
+       d'envoi en a besoin pour dire, ligne par ligne, quel mail partirait, et
+       la relance manuelle pour savoir combien sont déjà parties. */
+    chargerEnvoyes(supabase, ids),
+  ]);
+  const { vus, marqueurAbsent } = lecture;
+
+  {
+    const remb = marques.data;
     /* Le dernier mot par dossier : on regroupe d'abord, et c'est la MÊME
        fonction pure que la fiche qui tranche (`dernierChoixCouverture`), pas
        une seconde règle écrite ici. Deux règles auraient fini par se
@@ -401,26 +462,20 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
       if (e.type === "remboursement") rembourses.add(e.numero_id);
       else if (e.type === "email_rebond") rebonds.add(e.numero_id);
       else if (e.type === "couverture_choisie") {
-        const vus = choixParDossier.get(e.numero_id) ?? [];
-        vus.push(e);
-        choixParDossier.set(e.numero_id, vus);
+        const lignes = choixParDossier.get(e.numero_id) ?? [];
+        lignes.push(e);
+        choixParDossier.set(e.numero_id, lignes);
       } else {
         /* Plusieurs demandes possibles : on garde la plus récente. */
         const vu = ajustements.get(e.numero_id);
         if (!vu || e.created_at > vu) ajustements.set(e.numero_id, e.created_at);
       }
     }
-    for (const [numeroId, vus] of choixParDossier) {
-      const choix = dernierChoixCouverture(vus);
+    for (const [numeroId, choisis] of choixParDossier) {
+      const choix = dernierChoixCouverture(choisis);
       if (choix) choixCouvertures.set(numeroId, choix);
     }
   }
-
-  const activite = await chargerActivite(supabase, rangees);
-  const { vus, marqueurAbsent } = await chargerVus(supabase, identite.cle);
-  /* Ce qui est déjà parti, pour TOUS les dossiers en une requête : la règle
-     d'envoi en a besoin pour dire, ligne par ligne, quel mail partirait. */
-  const envoyesPar = await chargerEnvoyes(supabase, rangees.map((r) => r.id).filter(Boolean) as string[]);
 
   /* Une seule évaluation d'urgence par dossier : elle sert au tri, aux
      compteurs du bandeau et à l'affichage. La recalculer trois fois serait

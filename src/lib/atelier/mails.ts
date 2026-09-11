@@ -7,6 +7,12 @@ import { ajouterJours, formaterJour } from "./dates";
 import { etapeDepot } from "./urgence";
 import { creditDuPourMail, parametreCredit } from "./fondatrice";
 import {
+  CODES_RELANCE,
+  MODELE_RELANCE,
+  estCodeRelance,
+  type CodeRelance,
+} from "./relance";
+import {
   dateDeCloture,
   doitPrevenirCloture,
   meriteUnRegardDeRetention,
@@ -69,7 +75,24 @@ export type CodeMail =
   /* M10 — le préavis de fermeture (T-076). Le seul mail qui annonce une
      PERTE, et le seul, avec M2, à n'avoir aucun prédécesseur. Voir codesPour,
      case "photos_recues", et src/lib/atelier/retention.ts. */
-  | "M10";
+  | "M10"
+  /* Les relances MANUELLES (lot « relancer un client », 11/09/2026). Elles
+     n'apparaissent JAMAIS dans `codesPour` : le balayage ne les envoie pas,
+     seul /admin le fait. Elles empruntent le gabarit et les paramètres du
+     mail automatique correspondant — voir MODELE_RELANCE dans relance.ts. */
+  | CodeRelance;
+
+/**
+ * Le code dont `code` emprunte le GABARIT, les paramètres et les exigences.
+ *
+ * Pour tous les mails du PRD, c'est lui-même. Pour une relance manuelle,
+ * c'est le mail automatique qu'elle rejoue : RP2 lit M2b de bout en bout. Un
+ * seul endroit décide, sinon le template, les paramètres et le contrôle de
+ * complétude finiraient par ne plus parler du même mail.
+ */
+export function modeleDe(code: CodeMail): Exclude<CodeMail, CodeRelance> {
+  return estCodeRelance(code) ? MODELE_RELANCE[code] : (code as Exclude<CodeMail, CodeRelance>);
+}
 
 /** Les colonnes de `numeros` que tout envoi doit avoir sous la main. */
 export const CHAMPS_MAIL =
@@ -198,7 +221,7 @@ function templatePour(code: CodeMail): number | undefined {
     M8: process.env.BREVO_TEMPLATE_M8_ID,
     M9: process.env.BREVO_TEMPLATE_M9_ID,
     M10: process.env.BREVO_TEMPLATE_M10_ID,
-  }[code];
+  }[modeleDe(code)];
   return Number(brut) || undefined;
 }
 
@@ -214,7 +237,7 @@ export function templateExiste(code: string): boolean {
 }
 
 /** Ce que chaque mail annonce, pour l'afficher à l'atelier. */
-export const OBJET_MAIL: Record<CodeMail, string> = {
+const OBJET_BASE: Record<Exclude<CodeMail, CodeRelance>, string> = {
   M0: "votre numéro est ouvert, il attend vos photos",
   M1: "c'est parti, nous avons vos photos",
   M2: "il manque les photos",
@@ -232,6 +255,20 @@ export const OBJET_MAIL: Record<CodeMail, string> = {
 };
 
 /**
+ * Les objets, relances manuelles comprises.
+ *
+ * Une relance annonce EXACTEMENT ce qu'annonce le mail qu'elle rejoue : elle
+ * en emprunte le gabarit. Recopier les neuf libellés à la main, c'était
+ * s'assurer qu'ils divergent au premier mail dont on change le propos.
+ */
+export const OBJET_MAIL: Record<CodeMail, string> = {
+  ...OBJET_BASE,
+  ...(Object.fromEntries(
+    CODES_RELANCE.map((c) => [c, OBJET_BASE[MODELE_RELANCE[c]]]),
+  ) as Record<CodeRelance, string>),
+};
+
+/**
  * Le titre tel qu'il se lit dans un objet de mail.
  *
  * L'écran 3 autorise explicitement « Je ne sais pas encore, choisissez pour
@@ -246,7 +283,10 @@ export function titrePourMail(titre: string | null | undefined): string {
  * Ce qui manque pour que le mail ait un sens. Fonction PURE : la relève s'en
  * sert pour dire à l'atelier ce qu'il reste à saisir, sans rien envoyer.
  */
-export function manquePour(code: CodeMail, n: NumeroPourMail): string[] {
+export function manquePour(codeDemande: CodeMail, n: NumeroPourMail): string[] {
+  /* Une relance manuelle doit passer le contrôle du mail qu'elle rejoue :
+     RA2 exige la couverture et le prix, exactement comme M3b. */
+  const code = modeleDe(codeDemande);
   const manque: string[] = [];
   if (!n.email) manque.push("email");
 
@@ -402,7 +442,7 @@ function parametresLivraison(
 }
 
 export function parametresPour(
-  code: CodeMail,
+  codeDemande: CodeMail,
   n: NumeroPourMail,
   /**
    * Ce que la base seule ne dit pas, parce que ça ne vit pas sur `numeros` :
@@ -412,6 +452,9 @@ export function parametresPour(
    */
   contexte?: { creditFondatriceEuros?: number | null; jalons?: Jalons },
 ): Record<string, unknown> {
+  /* Même règle que `manquePour` : une relance manuelle sert les paramètres
+     du gabarit qu'elle emprunte, sans quoi le template recevrait des trous. */
+  const code = modeleDe(codeDemande);
   const r = n as Partial<NumeroPourReleve>;
   const communs = {
     PRENOM: n.prenom ?? "",
@@ -653,8 +696,11 @@ export async function envoyerMailAtelier(
        pas celui des autres (crédit déduit, port offert). Le mail dirait
        sinon 48,06 € à quelqu'un qui paiera 7 €. Toujours en LECTURE SEULE :
        aucun coupon n'est frappé chez Stripe par un envoi de mail. */
+    /* `modeleDe` : une relance manuelle sur l'aperçu (RA*) rejoue M3b, elle
+       doit donc porter le crédit fondateur comme lui. */
+    const modele = modeleDe(code);
     const creditFondatriceEuros =
-      code === "M3" || code === "M3b" || code === "M10"
+      modele === "M3" || modele === "M3b" || modele === "M10"
         ? await creditDuPourMail(supabase, {
             id: numero.id,
             prenom: numero.prenom,

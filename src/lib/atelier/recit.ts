@@ -265,6 +265,27 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         ton: "mail",
       };
 
+    /* La relance MANUELLE (11/09/2026). Le mail lui-même écrit déjà sa ligne
+       `mail_envoye` : celle-ci dit ce que la première ne peut pas dire, à
+       savoir que personne n'a attendu le balayage du lendemain, et QUI l'a
+       décidé. Deux lignes, deux choses. */
+    case "relance_manuelle": {
+      const rang = typeof payload.rang === "number" ? payload.rang : null;
+      const motif =
+        payload.motif === "apercu"
+          ? "son aperçu"
+          : payload.motif === "photos"
+            ? "son accord"
+            : payload.motif === "depot"
+              ? "ses photos"
+              : null;
+      return {
+        texte: fait(qui, `a relancé sur ${motif ?? "son dossier"}`, "Relance envoyée à la main"),
+        detail: rang ? `${rang}${rang === 1 ? "re" : "e"} relance` : null,
+        ton: "nous",
+      };
+    }
+
     case "mail_echec":
       return {
         texte: `Mail NON parti : ${texteMail(String(payload.code ?? ""))}`,

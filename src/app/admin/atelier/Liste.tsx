@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import ActionRapide from "./ActionRapide";
+import Relance from "./Relance";
 import Activite from "./Activite";
 import Flux from "./Flux";
 import Rafraichissement from "./Rafraichissement";
@@ -207,9 +208,30 @@ function Ligne({
         {l.urgence.promesse ? <span className="ate-delai-sub">{l.urgence.promesse}</span> : null}
       </span>
 
-      <span className="ate-date">{fmtJour(l.createdAt)}</span>
+      {/* ── « DERNIER MOT » A REMPLACÉ « OUVERT » (11/09/2026) ────────────
+          La date d'ouverture ne décidait de rien : elle est déjà dans le
+          délai, dans la pile et sur la fiche. « Il n'a rien reçu depuis six
+          jours », si — c'est la colonne qui dit s'il faut relancer, et elle
+          ne coûte aucune requête (les mails partis sont déjà chargés pour la
+          projection des actions). La date d'ouverture reste au survol. */}
+      <span className="ate-dernier" title={`Ouvert le ${fmtJour(l.createdAt)}`}>
+        {l.dernierMot.rebond ? (
+          <>
+            <span className="ate-delai-val ate-delai-val--retard">rebond</span>
+            <span className="ate-delai-sub">son adresse est morte</span>
+          </>
+        ) : l.dernierMot.depuis ? (
+          <>
+            <span className="ate-delai-val">{l.dernierMot.depuis}</span>
+            {l.dernierMot.quoi ? <span className="ate-delai-sub">{l.dernierMot.quoi}</span> : null}
+          </>
+        ) : (
+          <span className="ate-delai-sub">rien ne lui est parti</span>
+        )}
+      </span>
 
       <span className="ate-ligne-act">
+        <Relance ligne={l} demo={demo} onFait={onFait} />
         <ActionRapide ligne={l} demo={demo} onFait={onFait} />
       </span>
     </div>
@@ -431,7 +453,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
             <span>Dossier</span>
             <span>État</span>
             <span>Délai</span>
-            <span className="ate-date">Ouvert</span>
+            <span>Dernier mot</span>
             <span>Action</span>
           </div>
 

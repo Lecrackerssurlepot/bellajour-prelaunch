@@ -42,6 +42,7 @@ Chargé dès qu'on touche une route.
 | Route | ce qu'elle déclenche vraiment |
 |---|---|
 | `/api/admin/atelier/transition` | patch d'état + R2 + **commande Cloudprinter réelle** + mails. `verifier: true` = dry-run, s'en servir ; depuis le 10/09 le dry-run de `publier_apercu` / `corriger_apercu` demande **un devis Cloudprinter** (`prices/lookup`, rationné : un seul par vérification) et gèle prix, livraison, niveau d'expédition et pays |
+| `/api/admin/atelier/relance` | **un mail réel** à un client, sans changer d'état. N'accepte aucun motif en entrée : la règle (`evaluerRelance`) est relue côté serveur au clic |
 | `/api/webhook` | mails F1/S1/P3/A3/relance, `assign_numero_fondateur`, crédits de parrainage |
 | `/api/atelier/mails/relever` | **envois multiples** en un passage |
 | `/api/atelier/numero` | crée le dossier + **M0 dans la seconde** |

@@ -37,6 +37,33 @@ export type ActionVue = {
   note?: string;
 };
 
+/** La relance manuelle, telle que la ligne la reçoit. */
+export type RelanceVue =
+  | {
+      possible: true;
+      /** « 2e relance sur son aperçu ». */
+      libelle: string;
+      /** Ce que le client va lire dans son objet de mail. */
+      objet: string;
+      rang: number;
+    }
+  | {
+      possible: false;
+      raison: string;
+      /** Afficher le bouton éteint, ou ne rien afficher du tout. */
+      pertinent: boolean;
+    };
+
+/** La colonne « Dernier mot ». */
+export type DernierMotVue = {
+  /** « il y a 6 j ». `null` : aucun mail n'est jamais parti. */
+  depuis: string | null;
+  /** Ce que disait ce mail, en clair — jamais son code interne. */
+  quoi: string | null;
+  /** L'adresse est morte : le délai ne veut plus rien dire. */
+  rebond: boolean;
+};
+
 export type LigneDossier = {
   /** Identifiant interne — sert au marqueur de lecture, jamais affiché. */
   numeroId: string;
@@ -109,6 +136,23 @@ export type LigneDossier = {
   couvertureChoisie: { rang: number } | { indifferent: true } | null;
   /** Jamais ouvert par la personne connectée (cf. table `dossiers_vus`). */
   nouveau: boolean;
+  /**
+   * Peut-on le relancer, et sur quoi (lib/atelier/relance.ts).
+   *
+   * Décidé côté SERVEUR, comme `actions` : la règle lit l'état, le dépôt, le
+   * paiement, le rebond et les neuf codes déjà partis. Le navigateur ne
+   * reçoit qu'un oui avec une phrase, ou un non avec sa raison — celle qui
+   * s'affiche au survol du bouton éteint.
+   */
+  relance: RelanceVue;
+  /**
+   * Depuis quand ce client n'a plus rien reçu de nous, et quoi.
+   *
+   * « Ouvert le 2 sept. » ne décide de rien ; « il n'a rien reçu depuis six
+   * jours » décide de la journée. Lu dans `mails_envoyes`, DÉJÀ chargé pour
+   * la projection des actions : aucune requête de plus.
+   */
+  dernierMot: DernierMotVue;
   /**
    * Ce qu'on peut faire sur cette ligne, SANS l'ouvrir.
    *

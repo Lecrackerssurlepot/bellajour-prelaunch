@@ -24,6 +24,15 @@ exactement l'écart que la passe du 01/09/2026 a corrigé, sur 36 lignes.
 Semé le 29/08/2026 par l'audit de structure. Tous les tickets ci-dessous sont **prouvés dans le
 code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
+## Où on en est (11/09/2026)
+
+**T-109 fermé : on peut relancer un client depuis l'atelier.** Le bouton vit sur la ligne, armé
+en deux temps, et la colonne « Dernier mot » a remplacé « Ouvert » (la date d'ouverture reste au
+survol). Aucun template Brevo à créer, aucune migration : une relance manuelle rejoue le gabarit
+du mail automatique correspondant et ne s'en distingue que par son code, qui porte le rang.
+Deux réglages posés par défaut **attendent un mot de Mathias** : trois relances au maximum par
+motif, quarante-huit heures entre deux (`src/lib/atelier/relance.ts`).
+
 ## Où on en est (10/09/2026, après le chantier « grille par pages »)
 
 **Six PR le même jour (#99 → #103), trois tickets fermés (T-006, T-072, T-074), un ouvert (T-106, la politique de livraison), 34 encore ouverts,

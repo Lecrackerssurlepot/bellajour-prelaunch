@@ -28,6 +28,8 @@ import { eurosPourPages } from "@/lib/atelier/grille";
 import { ETAPE_ETAT, LIBELLE_ETAT, actionsDepuis, type Etat } from "@/lib/atelier/transitions";
 import { compter, comparerUrgence, urgencePour, etapeDepot, type EtapeDepot } from "@/lib/atelier/urgence";
 import { raconter } from "@/lib/atelier/recit";
+import { dernierMailParti, depuisEnMots, evaluerRelance } from "@/lib/atelier/relance";
+import { OBJET_MAIL, type CodeMail } from "@/lib/atelier/mails";
 import { construireParcours } from "@/lib/atelier/parcours";
 import { COLONNES } from "../donnees";
 import type { Fiche, LigneDossier, VueListe } from "../types";
@@ -314,6 +316,27 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
     g.etat === "photos_recues" ? etapeDepot(g.depotAbandonne ? null : true, g.nbPhotos) : "termine";
   const urgence = urgencePour(g.etat, etatMajLe, maintenant, { depot });
 
+  /* Le dernier mail de la démonstration : celui que l'état d'ARRIVÉE a fait
+     partir, daté de l'entrée dans l'état. Il donne à la colonne « Dernier
+     mot » et à la relance manuelle de quoi se prononcer — sans lui, la démo
+     montrerait une colonne vide et un bouton toujours allumé, c'est-à-dire
+     l'inverse de ce qu'il faut montrer.
+     Les dossiers récents tombent donc sous le délai de 48 h et affichent le
+     bouton ÉTEINT avec sa raison : c'est le cas le plus utile à voir. */
+  const envoyes = new Map<string, string>(
+    MAIL_A_L_ARRIVEE[g.etat] ? [[MAIL_A_L_ARRIVEE[g.etat]!, etatMajLe]] : [],
+  );
+  const relance = evaluerRelance({
+    etat: g.etat,
+    depot,
+    paye: Boolean(g.paye),
+    emailRebond: false,
+    email: g.email,
+    envoyes,
+    maintenant,
+  });
+  const dernier = dernierMailParti(envoyes);
+
   return {
     urgence,
     ligne: {
@@ -358,6 +381,19 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
       /* En démonstration, « nouveau » = arrivé dans les deux derniers jours
          et jamais ouvert : on veut voir le badge, pas simuler une table. */
       nouveau: depot === "termine" && g.ouvertIlYA <= 2,
+      relance: relance.possible
+        ? {
+            possible: true,
+            libelle: relance.libelle,
+            objet: OBJET_MAIL[relance.code],
+            rang: relance.rang,
+          }
+        : { possible: false, raison: relance.raison, pertinent: relance.pertinent },
+      dernierMot: {
+        depuis: dernier ? depuisEnMots(dernier.iso, maintenant) : null,
+        quoi: dernier ? (OBJET_MAIL[dernier.code as CodeMail] ?? null) : null,
+        rebond: false,
+      },
       actions: actionsDepuis(g.etat).map((a) => ({
         cle: a.cle,
         libelle: a.libelle,
