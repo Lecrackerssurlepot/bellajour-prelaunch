@@ -463,6 +463,35 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
       };
     }
 
+    /* ── LE CLIENT A CHOISI SA DESTINATION (11/09/2026) ───────────────
+       Le dossier n'avait pas de pays (ouvert avant l'écran 4), la page de
+       commande le lui a demandé, et le port a été devisé dans la foulée.
+       C'est un geste de CLIENT sur une colonne d'argent : il doit se lire
+       dans le récit, avec le montant, sinon « pourquoi 14,80 € de port ? »
+       n'a de réponse nulle part. Un changement d'avis se lit aussi. */
+    case "livraison_choisie": {
+      const nomPays = (v: unknown): string => {
+        const c = typeof v === "string" ? v.trim().toUpperCase() : "";
+        return c in PAYS_LIBELLE ? PAYS_LIBELLE[c as keyof typeof PAYS_LIBELLE] : c || "?";
+      };
+      const cts = typeof payload.livraison_centimes === "number" ? payload.livraison_centimes : null;
+      const montant =
+        cts === null
+          ? null
+          : `${(cts / 100).toFixed(2).replace(".", ",")} €`;
+      const precedent =
+        typeof payload.precedent === "string" && payload.precedent.trim()
+          ? `Il avait d'abord choisi ${nomPays(payload.precedent)}`
+          : null;
+      return {
+        texte: `Le client a choisi la livraison vers ${nomPays(payload.pays)}`,
+        detail: [montant ? `Port devisé : ${montant}` : null, precedent]
+          .filter(Boolean)
+          .join(" · ") || null,
+        ton: "elle",
+      };
+    }
+
     /* ── LE PAYS DÉCLARÉ N'EST PAS CELUI DE L'ADRESSE (10/09/2026) ─────
        Le client a annoncé un pays à l'écran 4 (c'est sur lui que le port
        est devisé), Stripe en a rendu un autre au paiement. Rien n'a été

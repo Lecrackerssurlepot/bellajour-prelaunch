@@ -97,10 +97,11 @@ export type ActionCle =
    navigateur : la conversion et le contrôle se font ICI, une seule fois. */
 export type Saisie = {
   nb_pages?: string | number | null;
-  /* Le pays de livraison, exigé à la publication de l'aperçu (lot 3,
-     10/09/2026). Il vient du questionnaire (écran 4) et l'écran d'admin le
-     repropose prérempli ; il reste saisissable parce que les dossiers ouverts
-     AVANT le 10/09 n'en ont aucun, et qu'on ne devine pas une destination. */
+  /* Le pays de livraison. Il vient du questionnaire (écran 4) et l'écran
+     d'admin le repropose prérempli.
+     ⚠️ FACULTATIF DEPUIS LE 11/09/2026 : vide veut dire « le client choisira
+     sur sa page », et c'est le cas normal des dossiers ouverts avant l'écran
+     4. Ni l'atelier ni le code ne devinent une destination. */
   pays_livraison?: string | null;
   /* La LIVRAISON, en EUROS tels que l'atelier les tape (« 4,90 »), lot 6 du
      10/09/2026. Facultative : quand elle est vide, la route va chercher un
@@ -304,8 +305,11 @@ export type Preparation =
             place d'un code de palier qui ne nomme plus rien. */
         reliure?: Reliure;
         /** Le pays retenu, en code ISO. L'écran de confirmation l'écrit en
-            toutes lettres : c'est lui qui décide du devis de port. */
-        pays?: PaysLivraison;
+            toutes lettres : c'est lui qui décide du devis de port.
+            ⚠️ `null` depuis le 11/09/2026 = « le client choisira sur sa page »,
+            ce qui n'est PAS la même chose qu'absent : l'écran de confirmation
+            doit pouvoir l'annoncer en toutes lettres. */
+        pays?: PaysLivraison | null;
         /** Le port SAISI à la main, en centimes. Absent quand l'atelier a
             laissé le champ vide : c'est alors la route qui devise, et elle
             n'a rien à dire de plus que ce module ne sait. */
@@ -320,6 +324,13 @@ export type Preparation =
 function texte(v: unknown, max = 500): string {
   return typeof v === "string" ? v.trim().slice(0, max) : "";
 }
+
+/* Un code ISO à deux lettres. Le plafond n'est pas là pour couper une réponse
+   mais pour borner ce qu'on met en majuscules — même raison que le MAX.pays de
+   /api/atelier/numero. Il vaut aussi « vide » pour tout ce qui n'est pas une
+   chaîne : `null` et `undefined` disent tous les deux « pas de pays », et
+   c'est précisément le cas que la publication accepte depuis le 11/09. */
+const MAX_PAYS = 8;
 
 /* T-090 — les doubles pages d'une planche, telles que l'atelier les a montées :
    des clés de coffre, dans l'ordre, les vides ignorées. Bornées à trois — c'est
@@ -424,7 +435,8 @@ export function preparerTransition(
     euros?: number;
     prixCentimes?: number;
     reliure?: Reliure;
-    pays?: PaysLivraison;
+    /* `null` = le client choisira sur sa page (11/09/2026). Voir `Preparation`. */
+    pays?: PaysLivraison | null;
     livraisonCentimes?: number;
   } = {};
 
@@ -471,23 +483,43 @@ export function preparerTransition(
       }
     }
 
-    /* ── LE PAYS DE LIVRAISON, EXIGÉ ICI (lot 3, 10/09/2026) ──────────
-       Publier l'aperçu, c'est annoncer un prix. Depuis que Mathias a décidé
-       que la livraison serait facturée en sus, sur devis de l'imprimeur
-       (lot 6), ce prix ne peut pas être complet sans destination : un devis
-       se demande par pays. On refuse donc de publier sans, plutôt que de
-       supposer « France » — une supposition ferait payer un port français
-       sur une adresse belge, en silence, et personne ne le verrait.
+    /* ── LE PAYS DE LIVRAISON, FACULTATIF ICI (11/09/2026) ────────────
+       Publier l'aperçu, c'est annoncer un prix, et depuis le lot 6 ce prix
+       n'est complet qu'avec un port — qui se devise PAR PAYS. Jusqu'au 10/09
+       on refusait donc de publier sans destination.
 
-       Le questionnaire le remplit depuis le 10/09 (écran 4) et l'écran
-       d'admin le repropose. Reste le cas des dossiers OUVERTS AVANT : leur
-       colonne est vide, l'atelier choisit à la main, et c'est exactement le
-       moment où l'on veut une erreur de champ plutôt qu'un défaut. */
-    const pays = normaliserPays(saisie.pays_livraison);
-    if (!pays) {
+       ⚠️ CETTE EXIGENCE FAISAIT DEVINER L'ATELIER, ce qui est exactement ce
+       qu'elle voulait empêcher. Les dossiers ouverts AVANT l'écran 4 n'ont
+       aucun pays : pour publier, l'atelier devait en choisir un à la place du
+       client, puis saisir un port. Une supposition d'atelier n'est pas
+       meilleure qu'une supposition de code. Mathias a tranché le 11/09 :
+       quand le pays est inconnu, C'EST LE CLIENT QUI CHOISIT, sur sa page de
+       commande, et la livraison est chiffrée à cet instant, avant le
+       paiement (`/api/atelier/livraison`).
+
+       TROIS CAS, ET AUCUN NE DEVINE :
+         — un pays valide → il est gelé, la route devise comme avant ;
+         — champ VIDE ou absent → aucune clé dans le patch, `resume.pays` vaut
+           `null`, AUCUN port n'est exigé ni écrit. La page du client montrera
+           un select à la place de la ligne « Livraison » ;
+         — un pays illisible ou hors zone → erreur de champ : quelqu'un a
+           voulu dire quelque chose et s'est trompé.
+
+       ⚠️ RIEN N'EST EFFACÉ. Repasser un dossier déjà chiffré sur « le client
+       choisira » ne retire ni son pays ni son port de la base : on n'écrit
+       pas, on ne supprime pas. Le client garde ce qui lui a été annoncé, et
+       peut le changer lui-même depuis sa page. */
+    const paysBrut = texte(saisie.pays_livraison, MAX_PAYS);
+    const pays = normaliserPays(paysBrut);
+    if (paysBrut === "") {
+      /* Le signal « le client choisira ». Explicite dans le résumé plutôt
+         qu'absent : l'écran de confirmation doit pouvoir DIRE ce qui se
+         passera, et une clé manquante ne dit rien. */
+      resume.pays = null;
+    } else if (!pays) {
       erreurs.push({
         champ: "pays_livraison",
-        message: "Indique le pays de livraison (France, Belgique ou Luxembourg).",
+        message: "Pays de livraison inconnu. Choisis-en un dans la liste, ou laisse le champ vide pour que le client choisisse.",
       });
     } else {
       patch.pays_livraison = pays;
@@ -513,8 +545,28 @@ export function preparerTransition(
        ⚠️ ZÉRO EST VALIDE. Offrir le port est une décision commerciale
        légitime, et la base l'accepte (`check (livraison_centimes >= 0)`).
        C'est le seul montant du dépôt où zéro veut dire quelque chose. */
-    if (saisie.livraison_centimes !== undefined && saisie.livraison_centimes !== null
-        && String(saisie.livraison_centimes).trim() !== "") {
+    /* ⚠️ UN PORT SANS PAYS N'A PAS DE SENS (11/09/2026). Depuis que la
+       publication accepte de ne pas connaître la destination, la saisie peut
+       arriver avec un montant et sans pays : c'est soit une main qui a oublié
+       de choisir dans le select, soit un appel direct. Geler un port pour une
+       destination inconnue, c'est facturer un transport qu'on n'a pas chiffré
+       — et c'est aussi contredire la page du client, qui ne demanderait plus
+       rien puisqu'elle voit un montant. On refuse, sur le champ du PAYS :
+       c'est lui qui manque, pas le montant. */
+    const aSaisiUnPort =
+      saisie.livraison_centimes !== undefined && saisie.livraison_centimes !== null
+      && String(saisie.livraison_centimes).trim() !== "";
+
+    if (aSaisiUnPort && !pays) {
+      if (paysBrut === "") {
+        erreurs.push({
+          champ: "pays_livraison",
+          message: "Un port sans pays n'a pas de sens : choisis le pays ou laisse le client le faire.",
+        });
+      }
+      /* Pays illisible : l'erreur est déjà posée plus haut, on n'en ajoute pas
+         une seconde sur le même champ. Le montant n'entre pas dans le patch. */
+    } else if (aSaisiUnPort) {
       const centimes = centimesDeSaisie(saisie.livraison_centimes);
       if (centimes === null) {
         erreurs.push({

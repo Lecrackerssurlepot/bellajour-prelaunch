@@ -15,7 +15,7 @@
    Une ligne de select ici évite d'inventer un chiffre plus tard. */
 
 import { suggestionEmail } from '@/lib/atelier/questionnaire'
-import { PAYS_LIVRAISON, PAYS_LIBELLE } from '@/lib/atelier/pays'
+import { PAYS_TRIES, PAYS_LIBELLE } from '@/lib/atelier/pays'
 
 export default function Screen4Contact({
   prenom, email, telephone, pays, onChange, erreur, erreurCle,
@@ -116,10 +116,15 @@ export default function Screen4Contact({
       </p>
 
       {/* ── LE PAYS DE LIVRAISON ─────────────────────────────────────────
-          Un select et pas un champ libre : trois destinations, et une saisie
-          libre laisserait entrer « Fance » ou « Belgique » là où l'imprimeur
-          attend un code. Le pays par défaut est visible et modifiable, donc
-          rien n'est décidé à la place du client. */}
+          Un select et pas un champ libre : une saisie libre laisserait entrer
+          « Fance » ou « Belgique » là où l'imprimeur attend un code. Le pays
+          par défaut est visible et modifiable, donc rien n'est décidé à la
+          place du client.
+          ⚠️ TRENTE DESTINATIONS DEPUIS LE 11/09/2026 (toute l'Europe). L'ordre
+          vient de `PAYS_TRIES`, jamais de la liste brute : France, Belgique,
+          Luxembourg et Suisse d'abord — l'écrasante majorité des dossiers —
+          puis le reste par ordre alphabétique du libellé. Trier sur le code
+          ISO rangerait « Allemagne » entre le Danemark et l'Estonie. */}
       <label className="at-lbl" htmlFor="at-c-pays">Pays de livraison</label>
       <select
         id="at-c-pays"
@@ -128,7 +133,7 @@ export default function Screen4Contact({
         onChange={(e) => onChange('pays', e.target.value)}
         autoComplete="country"
       >
-        {PAYS_LIVRAISON.map((code) => (
+        {PAYS_TRIES.map((code) => (
           <option key={code} value={code}>{PAYS_LIBELLE[code]}</option>
         ))}
       </select>

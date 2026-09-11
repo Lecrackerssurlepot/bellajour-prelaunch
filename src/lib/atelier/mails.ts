@@ -289,16 +289,25 @@ export function manquePour(code: CodeMail, n: NumeroPourMail): string[] {
      ⚠️ `undefined` (repli 42703, migration pas passée) et `null` (devis jamais
      fait) se traitent PAREIL : dans les deux cas on ne sait pas. M10 ne
      l'exige que s'il va parler d'une couverture prête — un dépôt abandonné n'a
-     ni prix ni port à annoncer. */
+     ni prix ni port à annoncer.
+
+     ⚠️ SANS PAYS, LE PORT N'EST PLUS EXIGÉ (11/09/2026). C'est le cas des
+     dossiers ouverts avant l'écran 4 : l'atelier ne devine plus leur
+     destination, le client la choisit lui-même sur sa page, et la livraison
+     est chiffrée à cet instant. Retenir le mail reviendrait alors à ne jamais
+     lui écrire — donc à ne jamais l'amener sur la page où la question se
+     pose. Le mail part, et il DIT que le port sera chiffré selon son pays
+     (`PAYS_A_CHOISIR`), au lieu d'annoncer un total qu'il ne peut pas
+     connaître. Le pays connu, en revanche, exige toujours son port : là, un
+     total incomplet serait un mensonge évitable. */
   const exigeLePort =
     code === "M3" ||
     code === "M3b" ||
     (code === "M10" &&
       (n as Partial<NumeroPourReleve>).etat === "apercu_pret" &&
       Boolean(n.nb_pages && n.palier));
-  if (exigeLePort) {
+  if (exigeLePort && n.pays_livraison) {
     if (typeof n.livraison_centimes !== "number") manque.push("livraison_centimes");
-    if (!n.pays_livraison) manque.push("pays_livraison");
   }
 
   if (code === "M3" || code === "M3b") {
@@ -338,9 +347,9 @@ function eurosDeCentimesTexte(centimes: number): string {
 }
 
 /**
- * LE TOTAL D'UN MAIL QUI VEND — les trois paramètres de la livraison.
+ * LE TOTAL D'UN MAIL QUI VEND — les quatre paramètres de la livraison.
  *
- * ⚠️ TOUJOURS LES TROIS, TOUJOURS PRÉSENTS, quitte à être vides. Le
+ * ⚠️ TOUJOURS LES QUATRE, TOUJOURS PRÉSENTS, quitte à être vides. Le
  * `{% if params.X %}` de Brevo traite la chaîne vide comme faux, donc le bloc
  * disparaît de lui-même ; mais la LISTE des paramètres envoyés doit rester
  * identique d'un dossier à l'autre, sinon `scripts/verif-mails-brevo.ts` ne
@@ -354,7 +363,16 @@ function eurosDeCentimesTexte(centimes: number): string {
 function parametresLivraison(
   n: NumeroPourMail,
   creditFondatriceEuros?: number | null,
-): { LIVRAISON: string; LIVRAISON_OFFERTE: string; TOTAL: string } {
+): { LIVRAISON: string; LIVRAISON_OFFERTE: string; TOTAL: string; PAYS_A_CHOISIR: string } {
+  /* ⚠️ LE PORT N'EST PAS TOUJOURS CONNU, ET LE MAIL DOIT LE DIRE (11/09/2026).
+     Un dossier sans pays (ouvert avant l'écran 4) part vers une page où le
+     client choisira sa destination : le mail ne peut annoncer ni port ni
+     total, mais il ne doit pas se taire non plus — sans un mot, « 37 € »
+     serait lu comme le prix final, et Stripe en demanderait davantage.
+     `PAYS_A_CHOISIR` est le drapeau du template, TOUJOURS envoyé, vide quand
+     il n'a rien à dire (même discipline que LIVRAISON_OFFERTE : le
+     `{% if %}` de Brevo traite la chaîne vide comme faux). */
+  const paysAChoisir = !n.pays_livraison;
   const port = typeof n.livraison_centimes === "number" ? n.livraison_centimes : null;
   const prix = centimesDuDossier(n);
   /* Le crédit est dû ⇒ le port est offert. La même condition que le checkout
@@ -373,9 +391,13 @@ function parametresLivraison(
         }).total;
 
   return {
+    /* Vides quand le port n'est pas connu : le template bascule alors sur sa
+       branche « chiffrée selon votre pays » plutôt que d'écrire une phrase
+       trouée là où les montants devraient être. */
     LIVRAISON: port === null ? "" : eurosDeCentimesTexte(port),
     LIVRAISON_OFFERTE: offert ? "oui" : "",
     TOTAL: total === null ? "" : eurosDeCentimesTexte(total),
+    PAYS_A_CHOISIR: paysAChoisir ? "oui" : "",
   };
 }
 

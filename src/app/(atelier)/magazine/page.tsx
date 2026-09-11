@@ -25,6 +25,7 @@ import Footer from '../components/Footer'
 import Kiosque from './Kiosque'
 import Corps from './Corps'
 import { EUROS_MAX_PUBLIC, EUROS_MIN, GRILLE_PUBLIQUE } from '@/lib/atelier/grille'
+import { PAYS_LIVRAISON } from '@/lib/atelier/pays'
 import { COMPOSER_HREF, CTA_LABEL, FAQ } from '../content'
 import './pdp.css'
 import { compteOuvert } from '@/lib/compte/session'
@@ -122,7 +123,9 @@ const JSON_LD = [
       offerCount: GRILLE_PUBLIQUE.length,
       availability: 'https://schema.org/InStock',
       url: URL,
-      areaServed: ['FR', 'BE', 'LU'],
+      /* La zone dérive de PAYS_LIVRAISON (toute l'Europe depuis le 11/09/2026),
+         jamais recopiée. */
+      areaServed: [...PAYS_LIVRAISON],
     },
     url: URL,
     image: ['https://www.bellajour.fr/images/lancement/galerie/marrakech.webp'],

@@ -206,7 +206,10 @@ export async function POST(request: Request) {
        seul instant du parcours où l'on connaît à la fois le pays (écran 4) et
        la pagination (saisie juste au-dessus).
 
-       TROIS SOURCES POSSIBLES, ET L'ÉCRAN LES NOMME :
+       QUATRE SOURCES POSSIBLES, ET L'ÉCRAN LES NOMME :
+         client      — aucun pays sur le dossier (11/09/2026) : on ne devise
+                       pas, on n'exige rien, et le client choisira sa
+                       destination sur sa page avant de payer ;
          admin       — l'atelier a tapé un montant, il gagne, aucun appel
                        réseau n'est fait (leur API rationne) ;
          cloudprinter— le devis a répondu, on convertit HT → TTC au taux du
@@ -219,7 +222,11 @@ export async function POST(request: Request) {
        reçu (`livraison_centimes` + `livraison_niveau`), donc n'appelle plus
        personne. C'est ce qui tient le rationnement de leur API. */
     type Livraison = {
-      source: "admin" | "cloudprinter" | "echec";
+      /* `client` (11/09/2026) = personne n'a chiffré ici, et c'est voulu : le
+         dossier n'a pas de pays, le client choisira le sien sur sa page et la
+         livraison sera devisée à cet instant, avant le paiement. Aucun appel
+         Cloudprinter, aucune colonne écrite. */
+      source: "admin" | "cloudprinter" | "echec" | "client";
       niveau: string | null;
       /** « Ground - Tracked » : la famille de service telle qu'ils la nomment. */
       service: string | null;
@@ -243,7 +250,22 @@ export async function POST(request: Request) {
       const existant =
         typeof numero.livraison_centimes === "number" ? numero.livraison_centimes : null;
 
-      if ("livraison_centimes" in prepa.patch) {
+      if (!pays) {
+        /* ── SANS PAYS, ON NE DEVISE PAS (11/09/2026) ──────────────────
+           Un devis se demande par destination : sans destination, il n'y a
+           rien à demander. On ne suppose pas « France » (le port d'un colis
+           allemand n'est pas celui d'un colis français) et on n'exige plus
+           de saisie : c'est le CLIENT qui choisira son pays sur sa page de
+           commande, et `/api/atelier/livraison` chiffrera à ce moment-là.
+           Rien n'entre dans le patch — ni pays, ni port : ce qui est déjà en
+           base y reste. */
+        livraison = {
+          source: "client", niveau: null, service: null, transporteur: null,
+          niveauVouluAbsent: false,
+          devisHtCentimes: null, devisTtcCentimes: null, client: null, absorbe: 0,
+          existant,
+        };
+      } else if ("livraison_centimes" in prepa.patch) {
         /* La main de l'atelier gagne, toujours, et sans appel réseau. */
         livraison = {
           source: "admin",
@@ -466,12 +488,18 @@ export async function POST(request: Request) {
     }
 
     /* ── LA LIVRAISON ENTRE DANS LE PATCH, OU LA PUBLICATION S'ARRÊTE ───
-       Publier une couverture sans port, c'est annoncer un prix incomplet :
-       la page d'état 2 afficherait « à payer 37 € » et Stripe en demanderait
-       48. On refuse donc d'écrire, et on NOMME le champ à remplir — l'atelier
-       tape le montant, reclique, et la source devient « admin ».
-       ⚠️ Jamais 0 par défaut : un port offert par accident ne se voit pas. */
-    if (livraison) {
+       Publier une couverture sans port ALORS QU'ON CONNAÎT LE PAYS, c'est
+       annoncer un prix incomplet : la page d'état 2 afficherait « à payer
+       37 € » et Stripe en demanderait 48. On refuse donc d'écrire, et on
+       NOMME le champ à remplir — l'atelier tape le montant, reclique, et la
+       source devient « admin ».
+       ⚠️ Jamais 0 par défaut : un port offert par accident ne se voit pas.
+       ⚠️ LA SOURCE « client » EST L'EXCEPTION, et c'est tout son intérêt :
+       sans pays, il n'y a rien à écrire et rien à réclamer. La page du
+       client montre alors un select au lieu d'une ligne de port, et son
+       bouton de paiement reste inerte tant qu'elle n'a pas choisi — le
+       checkout refuserait de toute façon (`livraison_indisponible`). */
+    if (livraison && livraison.source !== "client") {
       if (livraison.client === null) {
         return NextResponse.json(
           {

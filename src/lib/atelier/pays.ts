@@ -11,8 +11,10 @@
  * doit voir à l'écran 4 du questionnaire. Importer `prix.ts` depuis un écran
  * pour obtenir « FR, BE, LU » aurait embarqué la grille avec.
  *
- * La liste vit donc ICI, une seule fois, et les deux mondes la lisent :
+ * La liste vit donc ICI, une seule fois, et les trois mondes la lisent :
  *   — le questionnaire, pour dessiner le select et valider la réponse ;
+ *   — la page du client (`/numero/<token>`), qui depuis le 11/09/2026 lui
+ *     laisse choisir sa destination quand le dossier n'en porte aucune ;
  *   — le serveur (`prix.ts` la ré-exporte, `/api/atelier/checkout` la donne à
  *     Stripe, `transitions.ts` la contrôle à la publication de l'aperçu).
  *
@@ -24,11 +26,23 @@
  */
 
 /**
- * La zone de livraison au lancement. France, Belgique, Luxembourg.
+ * LA ZONE DE LIVRAISON — TOUTE L'EUROPE (décision de Mathias, 11/09/2026).
  *
- * Trois pays de l'UE, tous couverts par Stripe Tax, tous à portée de la
- * grille de port de l'imprimeur. Stripe EXIGE de toute façon une liste
- * explicite de pays : on ne peut pas dire « partout ».
+ * Les 27 de l'Union européenne, plus le Royaume-Uni, la Suisse et la Norvège :
+ * trente destinations. Jusqu'au 10/09 la liste tenait en trois codes
+ * (FR, BE, LU) ; elle ne bornait rien d'autre qu'elle-même, puisque le port
+ * n'est pas une grille écrite à la main mais un DEVIS demandé à l'imprimeur,
+ * destination par destination. Ouvrir la zone ne coûte donc aucun tarif
+ * inventé : c'est Cloudprinter qui chiffre, pays par pays, au moment où une
+ * couverture est publiée ou au moment où le client choisit sa destination.
+ *
+ * Stripe EXIGE de toute façon une liste explicite de pays (on ne peut pas
+ * dire « partout ») : cette constante EST le menu du paiement. Chaque code
+ * est un ISO 3166-1 alpha-2 accepté par
+ * `Stripe.Checkout.SessionCreateParams.ShippingAddressCollection.AllowedCountry`
+ * — la preuve n'est pas dans ce commentaire mais dans le typage de
+ * `/api/atelier/checkout` (`codeStripe`), qui refuserait de compiler si un
+ * code de cette liste n'existait pas chez eux.
  *
  * ⚠️ LES DOM PASSENT AU TRAVERS. Une adresse à La Réunion ou en Guadeloupe
  * est une adresse « FR », alors que ces territoires sont hors du territoire
@@ -38,19 +52,78 @@
  * devient fréquent, la règle se posera sur le CODE POSTAL de l'adresse
  * Stripe, jamais sur cette liste.
  *
- * C'est la décision la plus réversible du lot : ajouter l'Espagne, c'est une
- * chaîne de plus ici, un libellé, et un déploiement.
+ * ⚠️ GB, CH et NO SONT HORS UNION. Rien n'est ajouté par nous à leur port
+ * (cf. `TAUX_TTC_LIVRAISON`, livraison.ts), et des droits de douane peuvent
+ * être réclamés au destinataire à l'arrivée. La page du client le DIT
+ * (`HORS_UE`). Le traitement fiscal de ces trois destinations reste à
+ * trancher avec le comptable : ce fichier ne décide rien de fiscal.
  */
-export const PAYS_LIVRAISON = ["FR", "BE", "LU"] as const;
+export const PAYS_LIVRAISON = [
+  /* Les 27 de l'Union européenne. */
+  "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
+  "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL",
+  "PL", "PT", "RO", "SK", "SI", "ES", "SE",
+  /* Les trois voisins hors Union. */
+  "GB", "CH", "NO",
+] as const;
 
 export type PaysLivraison = (typeof PAYS_LIVRAISON)[number];
 
 /** Ce que le client lit. Le code ISO ne se montre jamais à l'écran. */
 export const PAYS_LIBELLE: Record<PaysLivraison, string> = {
-  FR: "France",
+  AT: "Autriche",
   BE: "Belgique",
+  BG: "Bulgarie",
+  HR: "Croatie",
+  CY: "Chypre",
+  CZ: "Tchéquie",
+  DK: "Danemark",
+  EE: "Estonie",
+  FI: "Finlande",
+  FR: "France",
+  DE: "Allemagne",
+  GR: "Grèce",
+  HU: "Hongrie",
+  IE: "Irlande",
+  IT: "Italie",
+  LV: "Lettonie",
+  LT: "Lituanie",
   LU: "Luxembourg",
+  MT: "Malte",
+  NL: "Pays-Bas",
+  PL: "Pologne",
+  PT: "Portugal",
+  RO: "Roumanie",
+  SK: "Slovaquie",
+  SI: "Slovénie",
+  ES: "Espagne",
+  SE: "Suède",
+  GB: "Royaume-Uni",
+  CH: "Suisse",
+  NO: "Norvège",
 };
+
+/**
+ * L'ORDRE DES MENUS DÉROULANTS. Jamais l'ordre des codes ISO.
+ *
+ * Trente entrées, c'est une liste qu'on parcourt. Quatre destinations portent
+ * l'écrasante majorité des dossiers (France, Belgique, Luxembourg, Suisse) :
+ * elles passent devant, dans cet ordre, et tout le reste suit par ordre
+ * alphabétique du LIBELLÉ — pas du code, sinon « DE » se rangerait entre le
+ * Danemark et l'Estonie alors que le client lit « Allemagne ».
+ *
+ * Le tri se fait avec le collateur français : sans lui, « Tchéquie » et
+ * « Suède » se classent par point de code, et les accents partent en fin de
+ * liste. Calculé UNE fois au chargement du module.
+ */
+const EN_TETE: readonly PaysLivraison[] = ["FR", "BE", "LU", "CH"];
+
+export const PAYS_TRIES: readonly PaysLivraison[] = [
+  ...EN_TETE,
+  ...PAYS_LIVRAISON.filter((c) => !EN_TETE.includes(c)).sort((a, b) =>
+    PAYS_LIBELLE[a].localeCompare(PAYS_LIBELLE[b], "fr"),
+  ),
+];
 
 /**
  * Le pays présélectionné.
@@ -63,7 +136,7 @@ export const PAYS_LIBELLE: Record<PaysLivraison, string> = {
 export const PAYS_DEFAUT: PaysLivraison = "FR";
 
 /**
- * Strictement « FR », « BE » ou « LU ». Rien d'autre, et surtout pas la
+ * Strictement un code de `PAYS_LIVRAISON`. Rien d'autre, et surtout pas la
  * version minuscule : cette fonction JUGE, elle ne répare pas. La réparation
  * (trim + majuscules) est le travail de `normaliserPays`, et les deux gestes
  * restent séparés pour que le serveur puisse normaliser AVANT de valider sans
@@ -80,7 +153,8 @@ export function paysValide(v: unknown): v is PaysLivraison {
  * Jamais de repli sur PAYS_DEFAUT : un pays inventé à la place d'un pays
  * illisible ferait facturer un port belge sur une adresse qu'on n'a pas lue.
  * `null` veut dire « on ne sait pas », et l'appelant doit le traiter comme
- * tel — le questionnaire renvoie à l'écran 4, l'admin refuse de publier.
+ * tel — le questionnaire renvoie à l'écran 4, la route de choix du client
+ * répond 400, et l'admin publie sans pays (le client choisira lui-même).
  */
 export function normaliserPays(v: unknown): PaysLivraison | null {
   if (typeof v !== "string") return null;
