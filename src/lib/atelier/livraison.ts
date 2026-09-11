@@ -36,8 +36,10 @@
  * livraison, pour que le port affiché ait le même régime apparent que le
  * magazine (prix TTC, `tax_behavior: "inclusive"`). La TVA réellement
  * facturée reste celle que Stripe Tax calcule. Ces nombres (trois jusqu'au
- * 10/09, trente depuis l'ouverture de l'Europe le 11/09) sont donc à valider
- * par Mathias et son comptable ; ils ne font pas foi fiscalement.
+ * 10/09, trente depuis l'ouverture de l'Europe le 11/09) ne font pas foi
+ * fiscalement. TRANCHÉ PAR MATHIAS LE 11/09/2026 : « les taux de TVA normaux,
+ * c'est bien » ; GB/CH/NO à 0 avec les droits de douane à la charge du client ;
+ * le suivi colis limité aux transporteurs FR/BE/LU est accepté.
  *
  * POURQUOI UN PLAFOND
  *
@@ -81,8 +83,8 @@ export const LIVRAISON_PLAFOND_CENTIMES: number | null = null;
  * ⚠️ TRENTE DESTINATIONS DEPUIS LE 11/09/2026 (ouverture de l'Europe). Les
  * taux ci-dessous sont les taux NORMAUX de TVA publiés pour 2026, un par pays
  * de l'Union. Ils servent UNIQUEMENT à convertir un coût d'imprimeur en prix
- * affiché : aucun n'est un taux facturé, aucun ne fait foi fiscalement, et
- * tous restent à valider par Mathias et son comptable.
+ * affiché : aucun n'est un taux facturé, aucun ne fait foi fiscalement.
+ * Validés par Mathias le 11/09/2026 (taux normaux, sans exception).
  *
  * Deux taux ont bougé récemment et méritent d'être nommés, parce qu'une
  * source ancienne les donne encore à l'ancienne valeur :
