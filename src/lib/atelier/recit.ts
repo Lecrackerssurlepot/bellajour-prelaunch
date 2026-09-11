@@ -365,6 +365,26 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
       };
     }
 
+    /* ── LE TÉLÉPHONE POSÉ OU CORRIGÉ À LA MAIN (11/09/2026) ──
+       Les dossiers ouverts avant le 28/08 n'ont pas de téléphone, et
+       Cloudprinter en exige un : sans lui, c'est le numéro de la maison qui
+       part chez le transporteur. Le numéro est écrit EN TOUTES LETTRES dans
+       le récit — c'est l'admin qui lit cette ligne, et la question qu'elle
+       doit trancher est « quel numéro a échoué, l'ancien ou le nouveau ». */
+    case "telephone_modifie": {
+      const apres = typeof payload.apres === "string" ? payload.apres : null;
+      const avant = typeof payload.avant === "string" && payload.avant.trim()
+        ? (payload.avant as string).trim()
+        : null;
+      return {
+        texte: avant
+          ? fait(qui, "a modifié le téléphone", "Le téléphone a été modifié")
+          : fait(qui, "a ajouté le téléphone", "Le téléphone a été ajouté"),
+        detail: avant ? `${avant} → ${apres ?? "—"}` : apres,
+        ton: "nous",
+      };
+    }
+
     case "canva_travail":
       return {
         texte: payload.pose
