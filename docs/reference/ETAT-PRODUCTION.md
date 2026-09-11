@@ -1,4 +1,4 @@
-# État du système — au 10/09/2026
+# État du système — au 11/09/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -7,6 +7,46 @@ règles, sans moyen de savoir ce qui avait expiré.
 
 Règle d'entretien : quiconque change l'état du système met ce fichier à jour dans le même geste.
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
+
+---
+
+## 11/09/2026 — le premier vrai client est en ligne (PR #113 → #125)
+
+**Klervie (fondatrice nº13) a reçu son aperçu à 13:38 et l'a ouvert à 13:39.** C'est le premier
+parcours réel de bout en bout depuis l'ouverture de l'Atelier. Treize PR le même jour.
+
+### Le dossier de Klervie, tel qu'il est parti
+38 pages, 41 € (grille du 10/09), livraison posée à 0 € par Mathias (fondatrice, port offert,
+CGV art. 5), France, M0 à 12:00, M1 à 12:14, M3 à 12:38. Mail remis en **2 secondes**, ouvert en
+6, cliqué en 25.
+
+### Ce que le test complet de Mathias a prouvé avant elle
+42 pages → 44 €, **devis Cloudprinter réel** pour la France (11,06 € TTC gelé), les trois mails,
+et la page Stripe ouverte. ⚠️ La session était `cs_live_` : le site encaisse pour de vrai, un
+test mené jusqu'au bout débiterait une carte. Mathias s'est arrêté avant. Dossier supprimé après.
+
+### Livré ce jour
+| quoi | où | preuve |
+|---|---|---|
+| Aperçu client en PLANCHE (sections « Laquelle préférez-vous ? » et « Les doubles pages », cartes première A4 + planche entière, doubles en grille, loupe) | `Apercu.tsx`, `formatVisuel.ts`, `numero.css` | mesuré sur le dossier réel de Klervie à 375 et 1280 ; carrousel archivé |
+| Choix de couverture CLAIR : bouton par carte, « Votre choix », « Sans préférence, je vous fais confiance », confirmation ; visible côté atelier (fiche datée, tag de liste, brief) | `Apercu.tsx`, `apercu.ts`, `donnees.ts`, `brief.ts` | harnais + DOM |
+| Format du visuel détecté sur les dimensions réelles (seuil 1,15) : une couverture seule n'est plus découpée comme une planche | `formatVisuel.ts` | harnais, 6 cas |
+| Zone de livraison EUROPE (UE 27 + GB, CH, NO), TVA par pays, indicatifs téléphoniques des 30 pays (l'Italie garde son zéro) | `pays.ts`, `livraison.ts`, `impression.ts` | devis réel Allemagne (DHL 6,10 € HT) |
+| Le client choisit son pays sur sa page quand l'atelier ne le connaît pas ; le questionnaire ne le demande plus | `/api/atelier/livraison`, `Screen4Contact.tsx` | décision de Mathias : « le Stripe suffit » |
+| Le panneau de publication garde son brouillon (local, par dossier) | `brouillonPanneau.ts` | harnais |
+| Téléphone éditable dans la fiche admin | `/api/admin/atelier/telephone` | DOM |
+| Un dossier disparu ne bloque plus le questionnaire ; le bouton Retour ne quitte plus le site ; chaque changement de page repart du haut | `Composer.tsx`, `draft.ts`, `HautDePage.tsx` | défauts reproduits AVANT correction, puis mesurés |
+| Garde-fou des envois (`ATELIER_MAILS_COUPES`) dans les deux chemins | `src/lib/envois.ts` | coupé : aucun appel ; ouvert : l'appel part |
+| « hors livraison » sous le prix d'appel de /magazine, offre publique bornée à 50 pages | `content.ts`, `grille.ts` | relevé Rosemood/Cewe/Photobox |
+
+### Ce qui reste ouvert, et c'est court
+- **T-106** : la politique de livraison (plafond, tarif fixe ou port compris). Le client paie le
+  devis complet tant que rien n'est posé. Décision de Mathias avec Louis.
+- **T-107** : le délai de remise des mails chez Brevo, INTERMITTENT (5 à 9 minutes trois fois,
+  2 secondes une fois). À caractériser avant de payer un plan.
+- Deux incidents du jour, tous deux réparés et documentés : un script de recette a envoyé un vrai
+  M0 (T-108, fermé, garde-fou posé), et la suppression des dossiers de test du matin avait laissé
+  un jeton mort dans le navigateur de Mathias (corrigé, PR #121).
 
 ---
 
