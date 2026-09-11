@@ -33,6 +33,12 @@ du mail automatique correspondant et ne s'en distingue que par son code, qui por
 Seuils **tranchés par Mathias le 11/09** : deux relances au maximum par motif, soixante-douze
 heures entre deux (`src/lib/atelier/relance.ts`).
 
+**Ce qui reste de ce chantier** est dans T-110 (relance groupée, pile « Sans réponse », téléphone
+sur la ligne, et surtout : le chemin d'envoi réel jamais exercé) et T-111 (la vitesse de la table
+de travail, dont un quart est fait). Les deux écrans proposés et non retenus — la « piste II »,
+liste et dossier en deux volets — sont dessinés dans le canevas du 11/09 :
+`https://claude.ai/code/artifact/291e130a-6a30-4102-b615-8a87a41ca8d6`.
+
 ## Où on en est (10/09/2026, après le chantier « grille par pages »)
 
 **Six PR le même jour (#99 → #103), trois tickets fermés (T-006, T-072, T-074), un ouvert (T-106, la politique de livraison), 34 encore ouverts,
@@ -184,3 +190,6 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-106 | La politique de livraison facturée au client (plafond, tarif fixe ou port compris) n'est pas tranchée | paiement | serieux | avis-requis | nouveau (10/09) — le client paie le devis Cloudprinter complet (11,06 € TTC pour la France) tant que le plafond n'est pas posé ; attend Mathias et Louis |
 | T-107 | Les mails mettent 5 à 9 minutes à arriver, alors que le site les soumet à la seconde | atelier | serieux | avis-requis | nouveau (11/09) — mesuré 5 min 07 s à 8 min 57 s sur trois mails, MAIS 2 s sur le M3 de Klervie le même jour : le retard est INTERMITTENT, pas structurel. Caractériser avant de payer un plan |
 | T-108 | Un test automatisé a créé un vrai dossier et envoyé un vrai mail | atelier | serieux | libre | **fermé** (11/09, PR #124 : `ATELIER_MAILS_COUPES` dans les deux chemins d'envoi) |
+| T-109 | Impossible de relancer un client depuis l'atelier, et une relance ne partait qu'une fois | admin | serieux | libre | **fermé** (11/09, PR #128 et #129 : bouton sur la ligne, colonne « Dernier mot », deux relances par motif, 72 h entre deux — aucun template Brevo créé, aucune migration) |
+| T-110 | La relance manuelle, ce qui reste après le premier lot | admin | confort | libre | nouveau (11/09) — relance groupée, pile « Sans réponse », téléphone sur la ligne. **Et le chemin d'envoi RÉEL n'a jamais été exercé** : à prouver au premier usage |
+| T-111 | La table de travail recharge tout, tout le temps | admin | confort | libre | nouveau (11/09) — le parallélisme des lectures est fait (PR #128) ; restent le rafraîchissement complet chaque minute, l'action qui recharge vingt lignes, la navigation vers la fiche. ⚠️ Mesurer entre deux déploiements AVANT d'annoncer quoi que ce soit |
