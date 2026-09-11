@@ -1391,10 +1391,13 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                   Publier l'aperçu, c'est annoncer un prix, et le port est
                   devisé par destination (lot 6). Le pays était donc OBLIGATOIRE
                   ici jusqu'au 10/09 — ce qui obligeait l'atelier à en choisir
-                  un pour les dossiers ouverts avant l'écran 4, c'est-à-dire à
+                  un pour les dossiers qui n'en avaient pas, c'est-à-dire à
                   DEVINER. Mathias a tranché : on ne devine pas. La première
                   option laisse le choix au client, sur sa page, où le port
-                  sera chiffré avant le paiement. */}
+                  sera chiffré avant le paiement.
+                  ⚠️ Le même jour, le pays a QUITTÉ le questionnaire : il ne
+                  sera donc prérempli que pour les dossiers où quelqu'un l'a
+                  posé. Vide est le cas normal, et ce n'est pas un oubli. */}
               <label className="ate-champ ate-champ--court">
                 <span className="ate-champ-label">Pays de livraison</span>
                 <select
@@ -1409,8 +1412,8 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                 </select>
                 <span className="ate-champ-aide">
                   {paysValide(saisie.pays_livraison)
-                    ? "Demandé au client à l'écran 4. Le devis de livraison en dépend."
-                    : "Sans pays, rien n'est devisé ici : le client choisit sa destination sur sa page et la livraison est chiffrée à cet instant, avant le paiement. Un port déjà gelé en base n'est pas effacé."}
+                    ? "Le devis de livraison partira sur ce pays. Choisis un pays seulement si tu le connais : sinon, laisse le client choisir, il le fait sur sa page, avant de payer."
+                    : "Laisse le client choisir : il le fait sur sa page, avant de payer. Rien n'est devisé ici, la livraison est chiffrée à cet instant. Un port déjà gelé en base n'est pas effacé."}
                 </span>
                 {erreurDe("pays_livraison") ? (
                   <span className="ate-erreur">{erreurDe("pays_livraison")}</span>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import ActionRapide from "./ActionRapide";
+import { etiquetteChoixCouverture } from "@/lib/atelier/formatVisuel";
 import type { ColonneVue, LigneDossier } from "./types";
 
 /**
@@ -80,6 +81,15 @@ export default function Tableau({
                         ) : null}
                         {l.titre?.trim() || "Sans titre"}
                         {l.rembourse ? <span className="ate-tag ate-tag--alerte">remboursé</span> : null}
+                        {/* La réponse du client sur sa couverture, même règle
+                            que la liste : rien du tout tant qu'il n'a rien
+                            dit. La colonne « aperçu publié » est celle où la
+                            question se pose, c'est là qu'on la lit. */}
+                        {etiquetteChoixCouverture(l.couvertureChoisie) ? (
+                          <span className="ate-tag ate-tag--choix">
+                            {etiquetteChoixCouverture(l.couvertureChoisie)}
+                          </span>
+                        ) : null}
                       </span>
                       <span className="ate-carte-d-sous">
                         {l.prenom || "—"}

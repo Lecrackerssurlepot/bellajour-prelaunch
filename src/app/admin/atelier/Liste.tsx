@@ -8,6 +8,7 @@ import Flux from "./Flux";
 import Rafraichissement from "./Rafraichissement";
 import Tableau from "./Tableau";
 import Vues, { useReglages } from "./Vues";
+import { etiquetteChoixCouverture } from "@/lib/atelier/formatVisuel";
 import type { LigneDossier, VueListe } from "./types";
 import type { Pile } from "@/lib/atelier/urgence";
 import { PRENOM_COMPTE } from "@/lib/admin-auth";
@@ -146,6 +147,26 @@ function Ligne({
           {/* Qui l'a en main. Sans cette marque, à deux, on compose deux fois
               le même numéro — ou aucun, chacun croyant que l'autre s'en
               occupe. La seconde est la plus probable, et la plus silencieuse. */}
+          {/* ── CE QUE LE CLIENT A RÉPONDU SUR SA COUVERTURE (11/09/2026) ──
+              Mathias, en découvrant son propre écran de choix : « nous, on
+              reçoit la demande où ? » Nulle part : la réponse vivait dans le
+              journal du dossier, donc seulement pour qui l'ouvrait et
+              descendait jusqu'en bas. Elle est ici, sur la ligne, à côté du
+              titre — là où l'œil se pose avant d'ouvrir quoi que ce soit.
+              PAS de tag quand il n'a rien dit : un tag « Couv. 1 » par défaut
+              ferait passer la proposition de l'atelier pour sa réponse. */}
+          {etiquetteChoixCouverture(l.couvertureChoisie) ? (
+            <span
+              className="ate-tag ate-tag--choix"
+              title={
+                l.couvertureChoisie && "indifferent" in l.couvertureChoisie
+                  ? "Le client nous laisse choisir la couverture"
+                  : "La couverture que le client a demandée"
+              }
+            >
+              {etiquetteChoixCouverture(l.couvertureChoisie)}
+            </span>
+          ) : null}
           {l.enCharge ? (
             <span
               className={l.enCharge === moiCle ? "ate-tag ate-tag--moi" : "ate-tag"}

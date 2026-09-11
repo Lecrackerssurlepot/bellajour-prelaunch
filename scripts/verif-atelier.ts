@@ -25,10 +25,19 @@ import {
   lirePlanchesBrutes,
   lireChoixCouverture,
   dernierChoixCouverture,
+  dernierChoixCouvertureDate,
   MAX_DOUBLES,
   MAX_PLANCHES,
 } from "@/lib/atelier/apercu";
-import { construirePlanche, formatDepuisRatio, SEUIL_PLANCHE } from "@/lib/atelier/formatVisuel";
+import {
+  construirePlanche,
+  enTeteCouvertures,
+  etatCartes,
+  etiquetteChoixCouverture,
+  formatDepuisRatio,
+  phraseChoixCouverture,
+  SEUIL_PLANCHE,
+} from "@/lib/atelier/formatVisuel";
 /* Le brouillon LOCAL du panneau d'action (11/09/2026). Module sans React
    exprès : le composant tire `next/navigation` et une feuille de style, ce
    harnais ne peut charger ni l'un ni l'autre. */
@@ -798,6 +807,7 @@ const MATIERE: MatiereBrief = {
   histoire: "On a marche des kilometres dans Triana.",
   sousTitre: null,
   motQuatrieme: null,
+  choixCouverture: null,
   canvaTravail: "https://canva.com/design/interne",
   notes: [
     { prenom: "Louis", texte: "Deux enfants, n'en faire disparaitre aucun.", createdAt: "2026-08-14T10:00:00.000Z" },
@@ -818,6 +828,26 @@ ok("sans mots de couverture, le bloc n'existe pas", !BRIEF.includes("LES MOTS DE
 ok("le brief nomme la reliure, pas un code de palier",
    BRIEF.includes(RELIURE_LIBELLE.dos_carre) && !BRIEF.includes("p40"));
 ok("le brief porte le prix a cote de la pagination", BRIEF.includes("37 "));
+
+/* ── LA REPONSE DU CLIENT SUR SA COUVERTURE (11/09/2026) ──────────────
+   Mathias : « nous, on recoit la demande ou ? » Dans le brief, entre autres,
+   parce que c'est le seul endroit ouvert AU MOMENT de composer. */
+ok("sans reponse du client, AUCUNE ligne de couverture choisie",
+   !BRIEF.includes("Couverture choisie"));
+const BRIEF_CHOIX = composerBrief(
+  { ...MATIERE, choixCouverture: { rang: 1 } },
+  new Date("2026-08-25T08:00:00.000Z"),
+);
+ok("le brief nomme la couverture choisie, en NUMERO d'affichage (rang 1 -> 2)",
+   BRIEF_CHOIX.includes("Couverture choisie") && /Couverture choisie\s+2/.test(BRIEF_CHOIX));
+const BRIEF_INDIFFERENT = composerBrief(
+  { ...MATIERE, choixCouverture: { indifferent: true } },
+  new Date("2026-08-25T08:00:00.000Z"),
+);
+ok("« sans preference » est une REPONSE, et le brief la dit",
+   BRIEF_INDIFFERENT.includes("sans pr\u00e9f\u00e9rence"));
+ok("la ligne du choix ne ressuscite pas le tiret cadratin",
+   !/[\u2013\u2014]/.test(BRIEF_CHOIX) && !/[\u2013\u2014]/.test(BRIEF_INDIFFERENT));
 
 /* Les mots de couverture (03/09) : pr\u00e9sents, ils forment leur bloc. */
 const BRIEF_COUVERTURE = composerBrief(
@@ -1381,10 +1411,6 @@ const flore = {
   prenom: "Flore",
   email: "flore@example.com",
   telephone: "0769710686",
-  /* Depuis le lot 3 (10/09), le pays fait partie des reponses exigees : sans
-     lui, ce dossier serait refuse pour le pays et non pour le titre, et le
-     test ci-dessous ne prouverait plus rien. */
-  pays: "FR",
 };
 ok("sans titre : REFUSE, et on dit lequel",
    premierManquant(CHAMPS_QUESTIONNAIRE, (c) => flore[c]) === "titre");
@@ -1395,10 +1421,15 @@ titre("— le PREMIER champ fautif, pas un bilan —");
 ok("occasion avant histoire",
    premierManquant(CHAMPS_QUESTIONNAIRE, () => "") === "occasion");
 ok("chaque ecran connait ses champs",
-   CHAMPS_PAR_ECRAN[1].length === 1 && CHAMPS_PAR_ECRAN[4].length === 4);
+   CHAMPS_PAR_ECRAN[1].length === 1 && CHAMPS_PAR_ECRAN[4].length === 3);
 ok("tous les champs sont couverts par les quatre ecrans",
    Object.values(CHAMPS_PAR_ECRAN).flat().sort().join() ===
      [...CHAMPS_QUESTIONNAIRE].sort().join());
+/* La route rend LE champ fautif ; le questionnaire doit savoir sur quel ecran
+   reposer le client, sinon il lui dit « reessayez » devant un formulaire qui
+   a l'air complet (Composer.tsx). Chaque champ mene donc a un vrai ecran. */
+ok("chaque champ sait sur quel ecran reposer le client",
+   CHAMPS_QUESTIONNAIRE.every((c) => CHAMPS_PAR_ECRAN[ecranDuChamp(c)]?.includes(c)));
 
 titre("— l'histoire : un brief court passe, un mot jete non —");
 ok("« ok » refuse", !reponseValide("histoire", "ok"));
@@ -2423,12 +2454,19 @@ ok("le defaut est un pays de la zone, et il a un libelle",
 ok("les trois pays ont un libelle en toutes lettres (aucun code affiche brut)",
    PAYS_LIVRAISON.every((c) => (PAYS_LIBELLE[c] ?? "").length > 2));
 
-titre("— le pays est une REPONSE du questionnaire, lue des deux cotes —");
-ok("reponseValide accepte FR", reponseValide("pays", "FR"));
-ok("reponseValide refuse « fr » (le navigateur envoie une valeur du select)",
-   !reponseValide("pays", "fr"));
-ok("reponseValide refuse un pays hors zone et le vide",
-   !reponseValide("pays", "US") && !reponseValide("pays", ""));
+titre("— le questionnaire n'exige PLUS le pays (11/09/2026) —");
+/* Mathias, 11/09 : « je ne veux pas que ce soit complique au niveau de la
+   livraison : la demander pendant le questionnaire, on s'en fiche. » Le pays
+   a ete une reponse exigee du 10 au 11/09. Il ne l'est plus : la destination
+   se choisit sur la page de commande, ou le port est chiffre avant le
+   paiement. Ce qui suit garde la trace de la regle RETIREE, pour qu'un
+   « oubli » ne la remette pas par megarde. */
+ok("le pays n'est plus un champ du questionnaire",
+   !(CHAMPS_QUESTIONNAIRE as string[]).includes("pays"));
+ok("l'ecran 4 ne porte plus que les trois coordonnees",
+   JSON.stringify(CHAMPS_PAR_ECRAN[4]) === JSON.stringify(["prenom", "email", "telephone"]));
+ok("aucun ecran ne porte le pays",
+   !Object.values(CHAMPS_PAR_ECRAN).flat().includes("pays" as never));
 const complet = {
   occasion: "Un voyage",
   histoire: "Un road trip au Maroc avec Mathilde. Des paysages de dingue.",
@@ -2436,14 +2474,16 @@ const complet = {
   prenom: "Flore",
   email: "flore@example.com",
   telephone: "0769710686",
-  pays: "",
 };
-ok("tout rempli SAUF le pays : c'est le pays qu'on redemande",
-   premierManquant(CHAMPS_QUESTIONNAIRE, (c) => complet[c]) === "pays");
-ok("avec le pays : plus rien ne manque",
-   premierManquant(CHAMPS_QUESTIONNAIRE, (c) => ({ ...complet, pays: "BE" })[c]) === null);
-ok("le pays vit sur l'ecran 4, avec les coordonnees",
-   CHAMPS_PAR_ECRAN[4].includes("pays") && ecranDuChamp("pays") === 4);
+ok("un dossier SANS pays est complet : rien ne manque",
+   premierManquant(CHAMPS_QUESTIONNAIRE, (c) => complet[c]) === null);
+/* La REGLE de validation d'un code pays n'a pas bouge d'un pouce : elle a
+   seulement change d'endroit. `paysValide` (pays.ts) reste lue par l'admin a
+   la publication et par la route du bon de commande. */
+ok("paysValide accepte FR", paysValide("FR"));
+ok("paysValide refuse « fr » (les appelants normalisent avant)", !paysValide("fr"));
+ok("paysValide refuse un pays hors zone et le vide",
+   !paysValide("US") && !paysValide(""));
 
 /* ═════════ T-007 : LE SAUT « SANS TEMPLATE » LAISSE UNE TRACE ═════════
    La part pure : la phrase du journal existe, nomme le mail ET la variable a
@@ -3553,6 +3593,22 @@ ok("planche + planche : DEUX cartes a deux tuiles chacune, la seconde cadree sur
    && DEUX_PLANCHES.couvertures[1].nom === "Couverture 2"
    && DEUX_PLANCHES.couvertures[1].premiere?.cadrage === "30% 50%"
    && DEUX_PLANCHES.couvertures[1].entiere.legende === "Couverture 2 à plat");
+/* 11/09/2026, seconde passe : quand il y a A CHOISIR, les deux cartes portent
+   des noms de la MEME famille. « La couverture » face a « Couverture 2 »
+   donnait a lire deux objets de nature differente la ou on demande de choisir
+   entre deux egales, et la confirmation (« ... avec la couverture 2 ») n'avait
+   pas de symetrique pour la premiere. */
+ok("plusieurs couvertures : TOUTES numerotees, aucune ne garde « La couverture »",
+   DEUX_PLANCHES.couvertures[0].nom === "Couverture 1"
+   && DEUX_PLANCHES.couvertures[1].nom === "Couverture 2");
+ok("une seule couverture : elle reste « La couverture », il n'y a rien a arbitrer",
+   PLANCHE_SEULE.couvertures[0].nom === "La couverture"
+   && PORTRAIT_SEUL.couvertures[0].nom === "La couverture");
+/* La loupe navigue PAR LEGENDE : deux legendes identiques rendraient un
+   visuel inatteignable (admin/CLAUDE.md). */
+ok("les legendes restent toutes distinctes apres la renumerotation",
+   new Set(DEUX_PLANCHES.couvertures.flatMap((c) => [c.entiere.legende, c.premiere?.legende ?? ""])).size
+     === DEUX_PLANCHES.couvertures.length * 2);
 
 const DEUX_PORTRAITS = construirePlanche({
   ...ENTREE,
@@ -3634,6 +3690,81 @@ ok("le plus RECENT fait foi",
    ])) === JSON.stringify({ indifferent: true }));
 ok("un evenement d'un autre type n'est jamais pris pour un choix",
    dernierChoixCouverture([{ type: "etat_change", payload: { rang: 1 } }]) === null);
+
+/* La DATE fait partie de la reponse (11/09/2026) : « Couverture 2 » lu trois
+   semaines plus tard, sur un dossier republie entre-temps, ne dit pas de
+   quelle maquette il parle. La fiche admin l'affiche. */
+ok("le choix voyage avec sa date",
+   JSON.stringify(dernierChoixCouvertureDate([
+     { type: "couverture_choisie", payload: { rang: 2 }, created_at: "2026-09-11T10:00:00Z" },
+   ])) === JSON.stringify({ choix: { rang: 2 }, quand: "2026-09-11T10:00:00Z" }));
+ok("c'est la date du DERNIER mot, pas du premier",
+   dernierChoixCouvertureDate([
+     { type: "couverture_choisie", payload: { rang: 2 }, created_at: "2026-09-11T09:00:00Z" },
+     { type: "couverture_choisie", payload: { indifferent: true }, created_at: "2026-09-11T10:00:00Z" },
+   ])?.quand === "2026-09-11T10:00:00Z");
+ok("un journal sans horodatage rend le choix quand meme, la date en moins",
+   JSON.stringify(dernierChoixCouvertureDate([
+     { type: "couverture_choisie", payload: { rang: 1 } },
+   ])) === JSON.stringify({ choix: { rang: 1 }, quand: null }));
+ok("les deux lectures ne peuvent pas diverger : l'une derive de l'autre",
+   JSON.stringify(dernierChoixCouverture([
+     { type: "couverture_choisie", payload: { rang: 2 }, created_at: "2026-09-11T10:00:00Z" },
+   ])) === JSON.stringify(dernierChoixCouvertureDate([
+     { type: "couverture_choisie", payload: { rang: 2 }, created_at: "2026-09-11T10:00:00Z" },
+   ])?.choix));
+
+titre("— l'ecran de choix : une QUESTION, un bouton par carte, aucune marque par defaut —");
+
+/* Mathias, 11/09 : « je ne trouve pas ca tres clair de choisir entre les
+   couvertures quand on a le choix. » Trois regles d'affichage, pures, parce
+   qu'un ecran qui se trompe ici fait dire au client ce qu'il n'a pas dit. */
+ok("TANT QU'IL N'A RIEN DIT, aucune carte n'est marquee (le rang 0 est la proposition, pas sa reponse)",
+   JSON.stringify(etatCartes(0, false, false, 2)) === JSON.stringify(["a-choisir", "a-choisir"]));
+ok("apres un clic, UNE SEULE carte est retenue",
+   JSON.stringify(etatCartes(1, true, false, 3))
+     === JSON.stringify(["a-choisir", "retenue", "a-choisir"]));
+ok("« sans preference » DEMARQUE tout : c'est une reponse, pas une carte",
+   JSON.stringify(etatCartes(1, true, true, 2)) === JSON.stringify(["a-choisir", "a-choisir"]));
+ok("choisir la premiere se marque comme n'importe quelle autre",
+   JSON.stringify(etatCartes(0, true, false, 2)) === JSON.stringify(["retenue", "a-choisir"]));
+ok("zero carte ne fabrique aucun etat", etatCartes(0, true, false, 0).length === 0);
+
+ok("sans reponse, AUCUNE phrase de confirmation",
+   phraseChoixCouverture(0, false, false) === null);
+ok("la confirmation repete le NUMERO, pas « celle-ci » (elle doit rester vraie lue seule)",
+   phraseChoixCouverture(1, true, false)
+     === "Merci. L\u2019atelier composera votre magazine avec la couverture 2.");
+ok("« sans preference » a sa propre confirmation",
+   phraseChoixCouverture(1, true, true) === "Merci. L\u2019atelier choisira pour vous.");
+
+const TETE2 = enTeteCouvertures(2, 2);
+ok("deux propositions : le titre devient une QUESTION",
+   TETE2.titre === "Laquelle pr\u00e9f\u00e9rez-vous ?");
+ok("le sous-titre accorde le nombre en toutes lettres et laisse la porte de sortie",
+   (TETE2.sousTitre ?? "").startsWith("Deux propositions")
+   && (TETE2.sousTitre ?? "").includes("laissez-nous d\u00e9cider"));
+ok("trois propositions : « Trois », jamais un chiffre nu",
+   (enTeteCouvertures(3, 3).sousTitre ?? "").startsWith("Trois propositions"));
+ok("une seule couverture : un titre, pas de question, pas de sous-titre",
+   JSON.stringify(enTeteCouvertures(1, 1)) === JSON.stringify({ titre: "Votre couverture", sousTitre: null }));
+/* DEUX CAS rendent `nbAChoisir` a zero, et aucun ne doit poser de question :
+   — un dossier HISTORIQUE (c1 + c4), deux faces d'un meme objet ;
+   — le magazine LIVRE (/compte/magazine), servi par le MEME composant sans
+     token : il est imprime et poste, « Laquelle preferez-vous ? » y serait
+     une question sans reponse possible (cf. `choixOffert`, Apercu.tsx). */
+ok("deux cartes SANS rien a choisir : « Vos couvertures », toujours pas de question",
+   JSON.stringify(enTeteCouvertures(0, 2)) === JSON.stringify({ titre: "Vos couvertures", sousTitre: null }));
+
+titre("— l'atelier VOIT la reponse sans ouvrir le journal —");
+
+ok("rien dit -> AUCUN tag (un « Couv. 1 » par defaut ferait passer la proposition pour sa reponse)",
+   etiquetteChoixCouverture(null) === null);
+ok("le tag affiche le NUMERO, pas le rang interne",
+   etiquetteChoixCouverture({ rang: 0 }) === "Couv. 1"
+   && etiquetteChoixCouverture({ rang: 1 }) === "Couv. 2");
+ok("« sans preference » a son propre tag, jamais confondu avec une couverture",
+   etiquetteChoixCouverture({ indifferent: true }) === "Sans pr\u00e9f\u00e9rence");
 
 titre("— le journal raconte les deux reponses —");
 

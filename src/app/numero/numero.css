@@ -371,6 +371,31 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  padding: clamp(12px, 3vw, 18px);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+/* LA CARTE RETENUE SE VOIT DE LOIN (11/09/2026). Un mot sous la carte ne
+   suffisait pas : sur un téléphone, la marque « · votre choix » tombait sous
+   la ligne de flottaison de l'image et personne ne la reliait à la bonne
+   couverture. La bordure accentuée dit QUELLE carte, avant même de lire. */
+.nu-pl-carte--retenue {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+}
+
+/* Le sous-titre de la question, sous le chapeau. Il DIT ce qu'on attend
+   (« choisissez, ou laissez-nous décider ») : sans lui, la question seule
+   laisse croire qu'une réponse est obligatoire avant de payer. */
+.nu-pl-sous {
+  margin: -8px 0 0;
+  max-width: 54ch;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--c-text-soft);
 }
 
 /* Les tuiles d'une même carte : côte à côte sur ordinateur (la première de
@@ -519,18 +544,81 @@
   color: var(--c-text);
   text-align: center;
 }
-.nu-pl-marque { color: var(--c-accent-strong); }
 
-/* Le choix, sous CHAQUE carte (« je préfère celle-ci ») et une fois sous la
-   section entière (« sans préférence ») — le même bouton que l'ancienne
-   visionneuse (`.nu-viz-choix-btn`, theme.css). */
-.nu-pl-choix-carte { display: flex; justify-content: center; }
+/* ── LE CHOIX : UN BOUTON PLEIN SOUS CHAQUE CARTE (11/09/2026) ─────────
+   L'ancien « Je préfère celle-ci » était un bouton fantôme (trait fin, fond
+   transparent) qui ne s'affichait QUE sur la carte non retenue : l'écran ne
+   proposait donc rien tant qu'on n'avait pas compris qu'il fallait cliquer.
+   Le bouton est maintenant PLEIN, identique sur chaque carte, et pleine
+   largeur de sa carte : sur 375 px, il se prend au pouce sans viser.
+   « Sans préférence » reste, sous la grille, en SECONDAIRE
+   (`.nu-viz-choix-btn--doux`, plus bas) : c'est une porte de sortie, pas une
+   option égale. */
+.nu-pl-choix-carte { display: flex; justify-content: center; width: 100%; }
 .nu-pl-choix-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin-top: 4px;
+}
+
+.bj-atelier .nu-pl-btn,
+.nu-pl-retenue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+  min-height: 46px;
+  padding: 11px 22px;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+
+/* Les mêmes couleurs que le bouton d'envoi de la feuille d'ajustement
+   (`.nu-feuille-send`, plus bas) : c'est le geste plein de cette page, il ne
+   s'invente pas une seconde fois. L'encre sombre est en dur là-bas comme
+   ici — `--c-void` est le noir du fond, trop profond sur cette terre. */
+.bj-atelier .nu-pl-btn {
+  appearance: none;
+  border: 1px solid var(--c-accent-strong);
+  background: var(--c-accent);
+  color: #1a1210;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), opacity var(--dur) var(--ease);
+}
+.bj-atelier .nu-pl-btn:hover:not(:disabled) { background: var(--c-accent-strong); }
+.bj-atelier .nu-pl-btn:focus-visible { outline: 2px solid var(--c-accent-strong); outline-offset: 3px; }
+/* ÉTEINT EN PRÉVISUALISATION : l'atelier voit l'écran du client, il ne
+   choisit pas à sa place. Le bouton reste LISIBLE — un bouton qu'on ne voit
+   plus est un bouton qu'on ne relit jamais. */
+.bj-atelier .nu-pl-btn:disabled { opacity: 0.45; cursor: default; }
+.bj-atelier .nu-pl-btn:disabled:hover { background: var(--c-accent); }
+
+/* La carte retenue ne perd PAS son bouton : il devient un état, à la même
+   place et à la même taille. Rien ne saute sous le doigt au moment du clic. */
+.nu-pl-retenue {
+  border: 1px solid var(--c-accent);
+  background: transparent;
+  color: var(--c-accent-strong);
+}
+
+/* La confirmation, sous la section. Elle répète le NUMÉRO choisi : lue
+   seule, au téléphone ou sur une capture, elle reste vraie. */
+.nu-pl-confirme {
+  margin: 0;
+  max-width: 48ch;
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--c-accent-strong);
 }
 
 /* ── Les doubles pages ─────────────────────────────────────────────────
