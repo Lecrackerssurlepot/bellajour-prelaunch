@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ActionVue, Fiche } from "../types";
 import { SLOTS_IMPRESSION } from "@/lib/atelier/impression";
@@ -19,6 +19,15 @@ import { PAYS_TRIES, PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
    reste secrète », c'est « le SERVEUR décide du montant débité » — et il le
    décide toujours : le champ ci-dessous ne fait que refuser tôt une saisie
    que le serveur refuserait de toute façon, avec les MÊMES bornes. */
+import {
+  lireBrouillonPanneau,
+  ecrireBrouillonPanneau,
+  effacerBrouillonPanneau,
+  empreinte,
+  depuis,
+  nomDeCle,
+  type VisuelBrouillon,
+} from "./brouillonPanneau";
 import {
   eurosPourPages,
   reliurePour,
@@ -101,8 +110,11 @@ type Verif = {
 type Erreur = { champ: string; message: string };
 
 /* T-090 — une double page montée par l'atelier : la clé du coffre, sa vignette
-   (objet local ou URL signée), et un id stable qui survit au réordonnancement. */
-type DoubleItem = { id: string; key: string; preview: string };
+   (objet local ou URL signée), et un id stable qui survit au réordonnancement.
+   `nom` (11/09/2026) : le nom du fichier, la SEULE chose qui reste à montrer
+   quand la vignette a disparu — une URL d'objet local ne survit pas à un
+   rechargement, et une clé de coffre ne se signe pas dans le navigateur. */
+type DoubleItem = { id: string; key: string; preview: string; nom?: string };
 
 /* Miroir client de MAX_DOUBLES (apercu.ts). On ne l'importe pas : apercu.ts tire
    r2 (AWS SDK) qui n'a rien à faire dans le bundle du navigateur. Le serveur
@@ -133,18 +145,21 @@ const SLOTS_HISTORIQUE = [
   { cle: "apercu_double", json: "double", label: "La double page" },
 ] as const;
 
-export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: boolean }) {
-  const router = useRouter();
-  /* T2-6 — à l'état 2, la seule action est « Corriger l'aperçu » : une
-     correction, pas l'étape suivante. La présélectionner déployait son
-     formulaire en pleine page alors qu'on attend le paiement — le panneau
-     dit d'abord QUI on attend, la correction se déplie derrière un lien. */
-  const [choisie, setChoisie] = useState<ActionVue | null>(
-    fiche.actions.length === 1 && fiche.actions[0].cle !== "corriger_apercu"
-      ? fiche.actions[0]
-      : null,
-  );
-  const [saisie, setSaisie] = useState<Record<string, string>>({
+/* T2-6 — à l'état 2, la seule action est « Corriger l'aperçu » : une
+   correction, pas l'étape suivante. La présélectionner déployait son
+   formulaire en pleine page alors qu'on attend le paiement — le panneau dit
+   d'abord QUI on attend, la correction se déplie derrière un lien. */
+function actionInitiale(fiche: Fiche): ActionVue | null {
+  return fiche.actions.length === 1 && fiche.actions[0].cle !== "corriger_apercu"
+    ? fiche.actions[0]
+    : null;
+}
+
+/* L'état de départ, DÉRIVÉ DE LA FICHE — sorti du composant pour servir deux
+   fois : au montage, et quand l'atelier clique « Repartir de la fiche ». Deux
+   copies de ces valeurs auraient divergé au premier champ ajouté. */
+function saisieInitiale(fiche: Fiche): Record<string, string> {
+  return {
     nb_pages: fiche.ligne.nbPages ? String(fiche.ligne.nbPages) : "",
     /* Le pays vient du dossier, jamais d'un défaut : un dossier ouvert avant
        le 10/09 n'a pas eu la question, et le select reste alors sur « Choisir ».
@@ -172,7 +187,53 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
     /* Le champ accepte les deux formes : on repropose le numéro s'il
        existe, l'adresse sinon. */
     tracking_url: fiche.trackingCode ?? fiche.trackingUrl ?? "",
-  });
+  };
+}
+
+/* Clés brutes + vignettes signées, appariées par rang (elles le sont déjà
+   dans la fiche). Un id neuf à chaque fois : il ne sert qu'au glissé. */
+function visuelsInitiaux(cles: string[], urls: string[]): DoubleItem[] {
+  return cles.map((key, i) => ({
+    id: crypto.randomUUID(),
+    key,
+    preview: urls[i] ?? "",
+    nom: nomDeCle(key),
+  }));
+}
+
+/**
+ * « Brouillon restauré (il y a 12 min) · Repartir de la fiche ».
+ *
+ * Un composant à part, minuscule, pour une raison : c'est la SEULE phrase qui
+ * prévienne que ce qu'on lit à l'écran n'est pas ce que dit le dossier. Isolée,
+ * elle se rend sans base, sans navigateur et sans routeur — donc elle se
+ * vérifie.
+ */
+export function LigneBrouillon({
+  enregistreLe,
+  onRepartir,
+}: {
+  enregistreLe: number;
+  onRepartir: () => void;
+}) {
+  return (
+    <p className="ate-brouillon">
+      Brouillon restauré ({depuis(enregistreLe)}) ·{" "}
+      <button type="button" className="ate-brouillon-annuler" onClick={onRepartir}>
+        Repartir de la fiche
+      </button>
+    </p>
+  );
+}
+
+export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: boolean }) {
+  const router = useRouter();
+  /* T2-6 — à l'état 2, la seule action est « Corriger l'aperçu » : une
+     correction, pas l'étape suivante. La présélectionner déployait son
+     formulaire en pleine page alors qu'on attend le paiement — le panneau
+     dit d'abord QUI on attend, la correction se déplie derrière un lien. */
+  const [choisie, setChoisie] = useState<ActionVue | null>(() => actionInitiale(fiche));
+  const [saisie, setSaisie] = useState<Record<string, string>>(() => saisieInitiale(fiche));
   const [apercus, setApercus] = useState<Record<string, string>>({
     apercu_plat: fiche.apercu.plat ?? "",
     apercu_c1: fiche.apercu.c1 ?? "",
@@ -185,20 +246,12 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
      les doubles pages ; un dossier publié avec une seule planche en donne une,
      et l'écran se comporte exactement comme avant. */
   const [planches, setPlanches] = useState<DoubleItem[]>(() =>
-    fiche.apercuBrut.plats.map((key, i) => ({
-      id: crypto.randomUUID(),
-      key,
-      preview: fiche.apercu.plats[i] ?? "",
-    })),
+    visuelsInitiaux(fiche.apercuBrut.plats, fiche.apercu.plats),
   );
   /* T-090 — les doubles pages, dans l'ordre montré à la cliente. Préremplies
      depuis la fiche : clé brute + vignette signée, appariées par rang. */
   const [doubles, setDoubles] = useState<DoubleItem[]>(() =>
-    fiche.apercuBrut.doubles.map((key, i) => ({
-      id: crypto.randomUUID(),
-      key,
-      preview: fiche.apercu.doubles[i] ?? "",
-    })),
+    visuelsInitiaux(fiche.apercuBrut.doubles, fiche.apercu.doubles),
   );
   /* Le cadrage de chaque double page, indexé par sa CLÉ de coffre : la clé
      survit au réordonnancement, le rang non. Vide = centré. */
@@ -247,6 +300,152 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
   const [occupe, setOccupe] = useState(false);
   const [fait, setFait] = useState<string | null>(null);
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
+  /* ── LE BROUILLON LOCAL (11/09/2026) ────────────────────────────────
+     Voir le bloc en tête de fichier. Trois états : ce qu'on a restauré (pour
+     le dire à l'écran), le feu vert d'écriture (on n'écrit JAMAIS avant
+     d'avoir tenté de lire, sinon le premier rendu écraserait le brouillon
+     qu'on venait chercher), et un drapeau pour ne restaurer qu'une fois. */
+  const [brouillonLocal, setBrouillonLocal] = useState<{ enregistreLe: number } | null>(null);
+  const [pretAEcrire, setPretAEcrire] = useState(false);
+  const dejaRestaure = useRef(false);
+  const jeton = fiche.ligne.token;
+
+  /* La restauration se fait APRÈS le montage, jamais dans un initialiseur
+     d'état : `localStorage` n'existe pas au rendu serveur, et un premier
+     rendu différent du HTML envoyé casserait l'hydratation de toute la
+     fiche. Un panneau qui se peuple une frame plus tard ne gêne personne. */
+  useEffect(() => {
+    if (dejaRestaure.current) return;
+    dejaRestaure.current = true;
+    if (demo) {
+      /* La démonstration n'a pas de dossier : lui donner une mémoire ferait
+         réapparaître des visuels de fixtures sur un autre écran. */
+      setPretAEcrire(true);
+      return;
+    }
+    const b = lireBrouillonPanneau(jeton);
+    if (!b) {
+      setPretAEcrire(true);
+      return;
+    }
+
+    /* Les vignettes ne sont PAS dans le brouillon (voir VisuelBrouillon). On
+       les retrouve pour les visuels déjà publiés, en rapprochant la clé de
+       coffre de l'URL signée que la fiche vient de rendre — c'est le seul
+       endroit du navigateur qui connaisse les deux. Un visuel déposé mais
+       pas encore publié n'a AUCUNE URL lisible ici (le bucket est privé, et
+       il n'existe aucune route qui signe une clé à la demande) : la tuile le
+       dit en toutes lettres plutôt que d'afficher un cadre vide. */
+    const urlParCle = new Map<string, string>();
+    fiche.apercuBrut.plats.forEach((cle, i) => {
+      const url = fiche.apercu.plats[i];
+      if (url) urlParCle.set(cle, url);
+    });
+    fiche.apercuBrut.doubles.forEach((cle, i) => {
+      const url = fiche.apercu.doubles[i];
+      if (url) urlParCle.set(cle, url);
+    });
+    const rendre = (v: VisuelBrouillon): DoubleItem => ({
+      id: v.id,
+      key: v.key,
+      preview: urlParCle.get(v.key) ?? "",
+      nom: v.nom,
+    });
+
+    /* Fusion et non remplacement : un champ ajouté au code depuis
+       l'enregistrement doit garder sa valeur de fiche, pas disparaître. */
+    setSaisie((s) => ({ ...s, ...b.saisie }));
+    /* ⚠️ LE FORMAT HISTORIQUE (c1/c4, dossiers d'avant la planche à plat) :
+       ses vignettes viennent d'un état séparé, qui n'est PAS dans le
+       brouillon. Si la clé restaurée n'est plus celle de la fiche, la
+       vignette affichée serait celle de l'ANCIEN fichier au-dessus de la
+       nouvelle clé — le pire des affichages, celui qui a l'air juste. On
+       l'efface : la tuile dira « visuel déposé » plutôt que de montrer le
+       mauvais. */
+    const brutParChamp: Record<string, string | null> = {
+      apercu_plat: fiche.apercuBrut.plat,
+      apercu_c1: fiche.apercuBrut.c1,
+      apercu_c4: fiche.apercuBrut.c4,
+      apercu_double: fiche.apercuBrut.double,
+    };
+    setApercus((a) => {
+      const copie = { ...a };
+      for (const [champ, brut] of Object.entries(brutParChamp)) {
+        const restaure = b.saisie[champ];
+        if (restaure !== undefined && restaure !== (brut ?? "")) copie[champ] = "";
+      }
+      return copie;
+    });
+    setPlanches(b.planches.map(rendre));
+    setDoubles(b.doubles.map(rendre));
+    setCadrages(b.cadrages);
+    /* L'action n'est reprise que si elle est ENCORE possible : le dossier a
+       pu avancer entre-temps (un paiement, une relève), et proposer une
+       action que la machine refuserait serait pire que de n'en proposer
+       aucune. */
+    if (b.action) {
+      const a = fiche.actions.find((x) => x.cle === b.action);
+      if (a) setChoisie(a);
+    }
+    setBrouillonLocal({ enregistreLe: b.enregistreLe });
+    setPretAEcrire(true);
+  }, [fiche, jeton, demo]);
+
+  /* L'enregistrement, à chaque changement, avec un souffle de retard : le
+     recadrage au doigt émet des dizaines d'états par seconde, et sérialiser
+     à chaque pixel ferait ramer le geste qu'on est en train de régler.
+     On n'écrit QUE si l'écran diffère encore de la fiche : sinon on efface,
+     pour qu'un panneau revenu à son point de départ ne se présente pas comme
+     un brouillon au prochain chargement. */
+  useEffect(() => {
+    if (!pretAEcrire || demo) return;
+    const t = setTimeout(() => {
+      const courant = empreinte(choisie?.cle ?? null, saisie, planches, doubles, cadrages);
+      const depart = empreinte(
+        actionInitiale(fiche)?.cle ?? null,
+        saisieInitiale(fiche),
+        visuelsInitiaux(fiche.apercuBrut.plats, fiche.apercu.plats),
+        visuelsInitiaux(fiche.apercuBrut.doubles, fiche.apercu.doubles),
+        fiche.apercuBrut.cadrages,
+      );
+      if (courant === depart) {
+        effacerBrouillonPanneau(jeton);
+        return;
+      }
+      ecrireBrouillonPanneau(jeton, {
+        version: 1,
+        enregistreLe: Date.now(),
+        action: choisie?.cle ?? null,
+        saisie,
+        planches: planches.map((p) => ({ id: p.id, key: p.key, nom: p.nom ?? nomDeCle(p.key) })),
+        doubles: doubles.map((d) => ({ id: d.id, key: d.key, nom: d.nom ?? nomDeCle(d.key) })),
+        cadrages,
+      });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [pretAEcrire, demo, jeton, fiche, choisie, saisie, planches, doubles, cadrages]);
+
+  /* « Repartir de la fiche » : on oublie le brouillon et on revient à ce que
+     le serveur dit du dossier. Les fichiers déjà déposés restent dans le
+     coffre — on abandonne un assemblage, jamais de la matière. */
+  function repartirDeLaFiche() {
+    effacerBrouillonPanneau(jeton);
+    setBrouillonLocal(null);
+    setChoisie(actionInitiale(fiche));
+    setSaisie(saisieInitiale(fiche));
+    setPlanches(visuelsInitiaux(fiche.apercuBrut.plats, fiche.apercu.plats));
+    setDoubles(visuelsInitiaux(fiche.apercuBrut.doubles, fiche.apercu.doubles));
+    setCadrages(fiche.apercuBrut.cadrages);
+    setApercus({
+      apercu_plat: fiche.apercu.plat ?? "",
+      apercu_c1: fiche.apercu.c1 ?? "",
+      apercu_c4: fiche.apercu.c4 ?? "",
+      apercu_double: fiche.apercu.double ?? "",
+    });
+    setErreurs([]);
+    setVerif(null);
+  }
+
 
   const erreurDe = (champ: string) => erreurs.find((e) => e.champ === champ)?.message;
   const set = (champ: string, v: string) => {
@@ -326,7 +525,9 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
     const key = await envoyerVisuel("apercu_plat_new", "plat", file);
     if (!key) return;
     setPlanches((p) =>
-      p.length >= MAX_PLANCHES ? p : [...p, { id: crypto.randomUUID(), key, preview: URL.createObjectURL(file) }],
+      p.length >= MAX_PLANCHES
+        ? p
+        : [...p, { id: crypto.randomUUID(), key, preview: URL.createObjectURL(file), nom: file.name }],
     );
     /* Une planche déposée vide c1/c4 : le serveur les ignorerait de toute
        façon (le format à plat gagne), mais une saisie qui porte les deux
@@ -338,7 +539,9 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
   async function remplacerPlanche(id: string, file: File) {
     const key = await envoyerVisuel(`planche-${id}`, "plat", file);
     if (!key) return;
-    setPlanches((p) => p.map((x) => (x.id === id ? { ...x, key, preview: URL.createObjectURL(file) } : x)));
+    setPlanches((p) =>
+      p.map((x) => (x.id === id ? { ...x, key, preview: URL.createObjectURL(file), nom: file.name } : x)),
+    );
     setVerif(null);
   }
 
@@ -372,7 +575,9 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
     const key = await envoyerVisuel("apercu_double_new", "double", file);
     if (!key) return;
     setDoubles((d) =>
-      d.length >= MAX_DOUBLES ? d : [...d, { id: crypto.randomUUID(), key, preview: URL.createObjectURL(file) }],
+      d.length >= MAX_DOUBLES
+        ? d
+        : [...d, { id: crypto.randomUUID(), key, preview: URL.createObjectURL(file), nom: file.name }],
     );
     setVerif(null);
   }
@@ -381,7 +586,9 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
   async function remplacerDouble(id: string, file: File) {
     const key = await envoyerVisuel(`double-${id}`, "double", file);
     if (!key) return;
-    setDoubles((d) => d.map((x) => (x.id === id ? { ...x, key, preview: URL.createObjectURL(file) } : x)));
+    setDoubles((d) =>
+      d.map((x) => (x.id === id ? { ...x, key, preview: URL.createObjectURL(file), nom: file.name } : x)),
+    );
     setVerif(null);
   }
 
@@ -652,6 +859,13 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
         }).catch(() => {});
       }
 
+      /* ── LE BROUILLON MEURT ICI, ET SEULEMENT ICI ────────────────────
+         La transition a réussi : la fiche va dire la même chose au
+         rechargement qui suit. Un brouillon qui lui survivrait
+         ressusciterait l'état d'AVANT à la prochaine ouverture, par-dessus
+         un dossier déjà publié. */
+      effacerBrouillonPanneau(jeton);
+      setBrouillonLocal(null);
       setVerif(null);
       router.refresh();
     } catch {
@@ -713,6 +927,13 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
   return (
     <section className="ate-carte ate-action">
       <h2 className="ate-carte-titre">L&apos;action du moment</h2>
+
+      {/* Discret, mais AU-DESSUS de tout : ce qui s'affiche en dessous n'est
+          pas ce que dit le dossier, et il faut le savoir avant de le lire.
+          Le lien est la sortie de secours, jamais un bouton principal. */}
+      {brouillonLocal ? (
+        <LigneBrouillon enregistreLe={brouillonLocal.enregistreLe} onRepartir={repartirDeLaFiche} />
+      ) : null}
 
       {fiche.actions.length > 1 ? (
         <div className="ate-choix">
@@ -780,6 +1001,13 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                           <img src={apercus[s.cle]} alt="" className="ate-slot-img" />
                         ) : envoiEnCours === s.cle ? (
                           <span className="ate-slot-vide">Envoi…</span>
+                        ) : saisie[s.cle] ? (
+                          /* Une clé sans vignette : brouillon restauré. Le
+                             fichier est dans le coffre, on ne peut pas le
+                             montrer d'ici (bucket privé). */
+                          <span className="ate-slot-vide">
+                            Visuel déposé · {nomDeCle(saisie[s.cle])}, aperçu après publication
+                          </span>
                         ) : (
                           <span className="ate-slot-vide">Choisir le fichier</span>
                         )}
@@ -843,7 +1071,15 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                             ) : pl.preview ? (
                               <img src={pl.preview} alt="" className="ate-slot-img" />
                             ) : (
-                              <span className="ate-slot-vide">Couverture {i + 1}</span>
+                              /* Restauré d'un brouillon : le fichier est dans
+                                 le coffre (sa clé est là), mais le bucket est
+                                 privé et rien ne signe une clé côté
+                                 navigateur. On nomme le fichier plutôt que de
+                                 montrer un trou. */
+                              <span className="ate-slot-vide">
+                                Visuel déposé{pl.nom ? ` · ${pl.nom}` : ""}, aperçu après
+                                publication
+                              </span>
                             )}
                             {/* Le rang n'est pas décoratif : c'est l'ordre que
                                 verra la cliente, et le premier est celui qu'elle
@@ -1033,7 +1269,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                           >
                             {envoiEnCours === `double-${d.id}` ? (
                               <span className="ate-slot-vide">Envoi…</span>
-                            ) : (
+                            ) : d.preview ? (
                               <img
                                 src={d.preview}
                                 alt=""
@@ -1045,6 +1281,12 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                                     : undefined
                                 }
                               />
+                            ) : (
+                              /* Même cas que les couvertures restaurées : la
+                                 clé survit, la vignette non. */
+                              <span className="ate-slot-vide">
+                                Visuel déposé{d.nom ? ` · ${d.nom}` : ""}, aperçu après publication
+                              </span>
                             )}
                             <span className="ate-double-rang" aria-hidden="true">
                               {i + 1}

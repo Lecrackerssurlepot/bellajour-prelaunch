@@ -293,6 +293,14 @@ export type Fiche = {
     platsCadrageDroite: string[];
     platsCadrageGauche: string[];
   };
+  /**
+   * T-093, élargi le 11/09/2026 — ce que le client a RÉPONDU sur sa
+   * couverture, relu dans le journal (`couverture_choisie`, append-only,
+   * aucune colonne). `null` : il n'a rien dit, ce qui n'est pas la même
+   * chose que « il n'a pas d'avis » — d'où le mot « indifferent », qui est
+   * une réponse et se lit comme telle.
+   */
+  choixCouverture: { rang: number } | { indifferent: true } | null;
   /** Les valeurs brutes (clés de coffre), pour préremplir le formulaire. */
   apercuBrut: {
     plat: string | null;

@@ -156,6 +156,75 @@ export function lireCadrages(source: Record<string, unknown>): Record<string, st
   return sortie;
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   LE CHOIX DE COUVERTURE DU CLIENT (T-093, élargi le 11/09/2026)
+
+   Trois réponses possibles, et la troisième manquait : « celle-ci »,
+   « celle-là »… et « décidez pour moi ». Sans elle, le client qui n'a pas
+   d'avis n'avait aucun moyen de le DIRE : son silence se lisait exactement
+   comme un dossier jamais ouvert, et l'atelier ne savait pas s'il attendait
+   encore une réponse ou s'il pouvait composer.
+
+   Pur, et ÉPROUVÉ PAR LE HARNAIS : c'est la validation d'un corps de requête
+   publique, donc la seule barrière entre `evenements` et n'importe qui. Le
+   rang n'est jamais une URL (une clé de coffre n'a rien à faire dans un corps
+   public, et une URL signée expire) ; « indifferent » est le seul mot accepté.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/** Le mot que le navigateur envoie pour « je vous fais confiance ». */
+export const CHOIX_INDIFFERENT = "indifferent";
+
+export type ChoixCouverture = { rang: number } | { indifferent: true };
+
+/**
+ * Le choix envoyé par le client, ou `null` si ce n'en est pas un.
+ *
+ * ⚠️ On ne vérifie PAS qu'une couverture existe vraiment à ce rang : c'est une
+ * préférence journalisée, pas un ordre donné à la machine, et un rang qui ne
+ * désigne plus rien (l'atelier a retiré une proposition entre-temps) doit
+ * rester lisible dans le récit plutôt que disparaître en erreur.
+ */
+export function lireChoixCouverture(valeur: unknown): ChoixCouverture | null {
+  if (typeof valeur === "string" && valeur.trim().toLowerCase() === CHOIX_INDIFFERENT) {
+    return { indifferent: true };
+  }
+  if (
+    typeof valeur === "number" &&
+    Number.isInteger(valeur) &&
+    valeur >= 0 &&
+    valeur < MAX_PLANCHES
+  ) {
+    return { rang: valeur };
+  }
+  return null;
+}
+
+/**
+ * Le DERNIER choix exprimé, relu dans le journal (append-only, aucune
+ * colonne : même patron que `ajustement_demande`).
+ *
+ * La liste peut être dans n'importe quel ordre : on prend l'événement le plus
+ * récent par sa date. Un client qui hésite écrit plusieurs lignes, et c'est
+ * la dernière qui dit ce qu'il veut aujourd'hui — les précédentes restent au
+ * journal, l'hésitation est une information.
+ */
+export function dernierChoixCouverture(
+  evenements: Array<{ type: string; payload?: Record<string, unknown> | null; created_at?: string }>,
+): ChoixCouverture | null {
+  let retenu: { quand: string; payload: Record<string, unknown> } | null = null;
+  for (const e of evenements) {
+    if (e.type !== "couverture_choisie") continue;
+    const quand = typeof e.created_at === "string" ? e.created_at : "";
+    if (retenu === null || quand >= retenu.quand) {
+      retenu = { quand, payload: e.payload ?? {} };
+    }
+  }
+  if (retenu === null) return null;
+  if (retenu.payload.indifferent === true) return { indifferent: true };
+  const rang = retenu.payload.rang;
+  return typeof rang === "number" && Number.isInteger(rang) && rang >= 0 ? { rang } : null;
+}
+
 /**
  * Le contrat commun aux deux listes : un tableau s'il existe, sinon la valeur
  * unique historique, bornée au plafond que la visionneuse sait montrer.

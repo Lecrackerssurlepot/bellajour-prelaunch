@@ -20,7 +20,27 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { preparerTransition, actionsDepuis, cleCadrageCouverture } from "@/lib/atelier/transitions";
 import { urgencePour, comparerUrgence, etapeDepot } from "@/lib/atelier/urgence";
-import { lireDoublesBrutes, lirePlanchesBrutes, MAX_DOUBLES, MAX_PLANCHES } from "@/lib/atelier/apercu";
+import {
+  lireDoublesBrutes,
+  lirePlanchesBrutes,
+  lireChoixCouverture,
+  dernierChoixCouverture,
+  MAX_DOUBLES,
+  MAX_PLANCHES,
+} from "@/lib/atelier/apercu";
+import { construireVues, formatDepuisRatio, SEUIL_PLANCHE } from "@/lib/atelier/formatVisuel";
+/* Le brouillon LOCAL du panneau d'action (11/09/2026). Module sans React
+   exprès : le composant tire `next/navigation` et une feuille de style, ce
+   harnais ne peut charger ni l'un ni l'autre. */
+import {
+  CLE_BROUILLON,
+  depuis,
+  ecrireBrouillonPanneau,
+  effacerBrouillonPanneau,
+  empreinte,
+  lireBrouillonPanneau,
+  nomDeCle,
+} from "@/app/admin/atelier/[token]/brouillonPanneau";
 import type Stripe from "stripe";
 import {
   codesPour,
@@ -3438,6 +3458,306 @@ ok("le ton reste sobre : ce n'est pas une decision",
 ok("sans auteur ni chiffres, la phrase reste correcte et sans detail",
    raconter(TYPE_BROUILLON, {}).texte === "Page prévisualisée"
    && raconter(TYPE_BROUILLON, {}).detail === null);
+
+titre("— le FORMAT d'une couverture : planche a plat ou page seule (11/09) —");
+
+/* Le defaut constate par Mathias sur un vrai dossier : une couverture seule
+   (portrait) etait coupee en deux, « La quatrieme » montrant la moitie GAUCHE
+   de la premiere. Le fichier dit son format ; on ne le devine plus. */
+ok("210 x 297 (A4, le format fini) -> portrait",
+   formatDepuisRatio(210, 297) === "portrait");
+ok("216 x 303 (A4 + fonds perdus) -> portrait",
+   formatDepuisRatio(216, 303) === "portrait");
+ok("420 x 297 (deux A4 cote a cote) -> planche",
+   formatDepuisRatio(420, 297) === "planche");
+ok("426 x 297 (deux A4 + le dos) -> planche",
+   formatDepuisRatio(426, 297) === "planche");
+ok("1000 x 700 (un export paysage quelconque) -> planche",
+   formatDepuisRatio(1000, 700) === "planche");
+ok("700 x 1000 (un export portrait quelconque) -> portrait",
+   formatDepuisRatio(700, 1000) === "portrait");
+/* Le choix assume : une mesure IMPOSSIBLE rend « planche », le comportement
+   historique — tous les dossiers publies jusqu'ici sont a plat, et les faire
+   basculer changerait ce que des clients ont deja vu. */
+ok("hauteur nulle -> planche (le comportement historique, jamais une erreur)",
+   formatDepuisRatio(420, 0) === "planche"
+   && formatDepuisRatio(0, 0) === "planche"
+   && formatDepuisRatio(Number.NaN, 297) === "planche");
+ok("le seuil est FRANC : rien du catalogue ne tombe autour",
+   SEUIL_PLANCHE > 1 && SEUIL_PLANCHE < 1.41
+   && formatDepuisRatio(114, 100) === "portrait"
+   && formatDepuisRatio(115, 100) === "planche");
+
+titre("— les vues de la visionneuse suivent le format mesure —");
+
+const ENTREE = {
+  plat: null as string | null,
+  plats: [] as string[],
+  c1: null as string | null,
+  c4: null as string | null,
+  doubles: [] as string[],
+  doublesCadrage: [] as string[],
+  platsCadrageDroite: [] as string[],
+  platsCadrageGauche: [] as string[],
+  formats: {} as Record<string, "portrait" | "planche" | undefined>,
+};
+
+const PLANCHE_SEULE = construireVues({
+  ...ENTREE,
+  plats: ["a.jpg"],
+  platsCadrageDroite: ["80% 50%"],
+  platsCadrageGauche: ["10% 50%"],
+  formats: { "a.jpg": "planche" },
+});
+ok("planche : trois vues, la couverture / la quatrieme / a plat",
+   JSON.stringify(PLANCHE_SEULE.vues.map((v) => v.legende))
+   === JSON.stringify(["La couverture", "La quatrième", "La couverture à plat"]));
+ok("planche : les deux faces sont CADREES (droite, gauche) et portent le cadrage de l'atelier",
+   PLANCHE_SEULE.vues[0].cadre === "droite" && PLANCHE_SEULE.vues[0].cadrage === "80% 50%"
+   && PLANCHE_SEULE.vues[1].cadre === "gauche" && PLANCHE_SEULE.vues[1].cadrage === "10% 50%");
+
+const PORTRAIT_SEUL = construireVues({
+  ...ENTREE,
+  plats: ["a.jpg"],
+  platsCadrageDroite: ["80% 50%"],
+  platsCadrageGauche: ["10% 50%"],
+  formats: { "a.jpg": "portrait" },
+});
+ok("portrait : UNE seule vue, aucune quatrieme, aucune vue a plat",
+   PORTRAIT_SEUL.vues.length === 1 && PORTRAIT_SEUL.vues[0].legende === "La couverture");
+ok("portrait : l'image est montree ENTIERE (cadre pleine), sans le cadrage des planches",
+   PORTRAIT_SEUL.vues[0].cadre === "pleine" && PORTRAIT_SEUL.vues[0].cadrage === undefined);
+ok("portrait : la loupe montre la meme chose, pas « la couverture a plat »",
+   PORTRAIT_SEUL.vues[0].loupe === "La couverture");
+
+const PAS_MESURE = construireVues({ ...ENTREE, plats: ["a.jpg"] });
+ok("pas encore mesuree : une vue ENTIERE, jamais une decoupe au hasard",
+   PAS_MESURE.vues.length === 1 && PAS_MESURE.vues[0].cadre === "pleine");
+
+const DEUX_PLANCHES = construireVues({
+  ...ENTREE,
+  plats: ["a.jpg", "b.jpg"],
+  platsCadrageDroite: ["", "30% 50%"],
+  formats: { "a.jpg": "planche", "b.jpg": "planche" },
+});
+ok("planche + planche : 3 vues + 1, la seconde cadree sur sa face avant",
+   DEUX_PLANCHES.vues.length === 4
+   && DEUX_PLANCHES.vues[3].legende === "Couverture 2"
+   && DEUX_PLANCHES.vues[3].cadre === "droite"
+   && DEUX_PLANCHES.vues[3].cadrage === "30% 50%");
+
+const DEUX_PORTRAITS = construireVues({
+  ...ENTREE,
+  plats: ["a.jpg", "b.jpg"],
+  formats: { "a.jpg": "portrait", "b.jpg": "portrait" },
+});
+ok("portrait + portrait : deux vues, une par couverture",
+   DEUX_PORTRAITS.vues.length === 2
+   && DEUX_PORTRAITS.vues.every((v) => v.cadre === "pleine")
+   && JSON.stringify(DEUX_PORTRAITS.vues.map((v) => v.rang)) === JSON.stringify([0, 1]));
+
+const MELANGE = construireVues({
+  ...ENTREE,
+  plats: ["a.jpg", "b.jpg"],
+  formats: { "a.jpg": "planche", "b.jpg": "portrait" },
+});
+ok("planche + portrait : chacune est traitee selon SON format",
+   MELANGE.vues.length === 4
+   && MELANGE.vues[0].cadre === "droite"
+   && MELANGE.vues[3].cadre === "pleine"
+   && MELANGE.vues[3].rang === 1);
+
+const AVEC_DOUBLES = construireVues({
+  ...ENTREE,
+  plats: ["a.jpg"],
+  doubles: ["d1.jpg", "d2.jpg"],
+  doublesCadrage: ["50% 30%", ""],
+  formats: { "a.jpg": "portrait" },
+});
+ok("les doubles pages ne changent pas : cadre ouvert, cadrage conserve, aucun rang",
+   AVEC_DOUBLES.vues.length === 3
+   && AVEC_DOUBLES.vues[1].cadre === "ouverte"
+   && AVEC_DOUBLES.vues[1].cadrage === "50% 30%"
+   && AVEC_DOUBLES.vues[1].rang === undefined);
+
+const HISTORIQUE = construireVues({ ...ENTREE, c1: "c1.jpg", c4: "c4.jpg" });
+ok("un dossier d'AVANT le format a plat (c1/c4) se lit exactement comme avant",
+   HISTORIQUE.vues.length === 2
+   && HISTORIQUE.vues[0].cadre === "pleine"
+   && HISTORIQUE.vues[1].cadre === "pleine-dos");
+
+ok("aucun visuel -> aucune vue (la page ne rend rien plutot qu'une scene vide)",
+   construireVues(ENTREE).vues.length === 0);
+
+titre("— le choix de couverture : un rang, ou « je vous fais confiance » —");
+
+/* La validation d'un corps de requete PUBLIC : c'est la seule barriere entre
+   le journal et n'importe qui. */
+ok("le mot « indifferent » est accepte",
+   JSON.stringify(lireChoixCouverture("indifferent")) === JSON.stringify({ indifferent: true }));
+ok("il est accepte quelles que soient casse et espaces",
+   JSON.stringify(lireChoixCouverture("  Indifferent ")) === JSON.stringify({ indifferent: true }));
+ok("un autre mot est REFUSE", lireChoixCouverture("autre") === null);
+ok("un rang negatif est refuse", lireChoixCouverture(-1) === null);
+ok("un rang au-dela du plafond est refuse", lireChoixCouverture(MAX_PLANCHES) === null);
+ok("un rang decimal est refuse", lireChoixCouverture(1.5) === null);
+ok("les rangs valides passent",
+   JSON.stringify(lireChoixCouverture(0)) === JSON.stringify({ rang: 0 })
+   && JSON.stringify(lireChoixCouverture(2)) === JSON.stringify({ rang: 2 }));
+ok("rien du tout n'est pas un choix",
+   lireChoixCouverture(undefined) === null && lireChoixCouverture(null) === null
+   && lireChoixCouverture(true) === null && lireChoixCouverture({}) === null);
+
+/* Ce que la fiche admin relit dans le journal : le DERNIER mot du client. */
+ok("sans evenement, il n'a rien dit (ce n'est pas « sans preference »)",
+   dernierChoixCouverture([]) === null);
+/* La fiche lit le journal trie DECROISSANT (donnees.ts) : le plus recent
+   arrive en premier. La regle ne doit dependre d'aucun ordre. */
+ok("le journal trie a l'envers donne le meme verdict",
+   JSON.stringify(dernierChoixCouverture([
+     { type: "couverture_choisie", payload: { rang: 2 }, created_at: "2026-09-11T10:00:00Z" },
+     { type: "couverture_choisie", payload: { indifferent: true }, created_at: "2026-09-11T09:00:00Z" },
+   ])) === JSON.stringify({ rang: 2 }));
+ok("le plus RECENT fait foi",
+   JSON.stringify(dernierChoixCouverture([
+     { type: "couverture_choisie", payload: { rang: 2 }, created_at: "2026-09-11T09:00:00Z" },
+     { type: "couverture_choisie", payload: { indifferent: true }, created_at: "2026-09-11T10:00:00Z" },
+   ])) === JSON.stringify({ indifferent: true }));
+ok("un evenement d'un autre type n'est jamais pris pour un choix",
+   dernierChoixCouverture([{ type: "etat_change", payload: { rang: 1 } }]) === null);
+
+titre("— le journal raconte les deux reponses —");
+
+const rIndifferent = raconter("couverture_choisie", { source: "page_numero", indifferent: true, rang: null });
+ok("« je vous fais confiance » se lit comme une REPONSE",
+   rIndifferent.texte === "Le client nous laisse choisir la couverture");
+ok("le detail dit ce que l'atelier doit en faire",
+   rIndifferent.detail === "Sans préférence : l'atelier décide");
+ok("le ton reste celui du client", rIndifferent.ton === "elle");
+ok("un rang se raconte toujours comme avant",
+   raconter("couverture_choisie", { rang: 1 }).texte === "Le client préfère la couverture 2"
+   && raconter("couverture_choisie", { rang: 0 }).texte === "Le client garde la couverture proposée");
+
+titre("— le brouillon LOCAL du panneau d'action (11/09) —");
+
+/* Un `localStorage` de papier : le harnais tourne sous Node, et la regle a
+   verifier est le FORMAT, pas le navigateur. */
+const disque = new Map<string, string>();
+(globalThis as { localStorage?: unknown }).localStorage = {
+  getItem: (c: string) => disque.get(c) ?? null,
+  setItem: (c: string, v: string) => {
+    disque.set(c, v);
+  },
+  removeItem: (c: string) => {
+    disque.delete(c);
+  },
+};
+
+const BROUILLON_PANNEAU = {
+  version: 1 as const,
+  enregistreLe: Date.UTC(2026, 8, 11, 9, 0, 0),
+  action: "publier_apercu",
+  saisie: { nb_pages: "34", pays_livraison: "FR" },
+  planches: [{ id: "p1", key: "numeros/x/apercu/plat-a.jpg", nom: "plat-a.jpg" }],
+  doubles: [{ id: "d1", key: "numeros/x/apercu/double-a.jpg", nom: "double-a.jpg" }],
+  cadrages: { "numeros/x/apercu/double-a.jpg": "50% 30%" },
+};
+ecrireBrouillonPanneau("jeton", BROUILLON_PANNEAU);
+ok("la cle porte le token : deux dossiers ouverts ne se melangent pas",
+   disque.has(`${CLE_BROUILLON}:jeton`) && lireBrouillonPanneau("autre") === null);
+const relu = lireBrouillonPanneau("jeton");
+ok("l'aller-retour rend exactement ce qui a ete ecrit",
+   JSON.stringify(relu) === JSON.stringify(BROUILLON_PANNEAU));
+
+/* Restaurer remet les memes valeurs dans les memes etats, donc redeclenche
+   une ecriture : si elle passait, l'horodatage repartirait a zero et l'ecran
+   dirait « a l'instant » pour un travail vieux de dix minutes. */
+ecrireBrouillonPanneau("jeton", { ...BROUILLON_PANNEAU, enregistreLe: Date.now() });
+ok("un contenu identique ne REECRIT pas : la date reste celle du dernier changement",
+   lireBrouillonPanneau("jeton")?.enregistreLe === BROUILLON_PANNEAU.enregistreLe);
+ecrireBrouillonPanneau("jeton", {
+  ...BROUILLON_PANNEAU,
+  enregistreLe: BROUILLON_PANNEAU.enregistreLe + 60_000,
+  saisie: { nb_pages: "36" },
+});
+ok("un contenu DIFFERENT reecrit, horodatage compris",
+   lireBrouillonPanneau("jeton")?.enregistreLe === BROUILLON_PANNEAU.enregistreLe + 60_000);
+ecrireBrouillonPanneau("jeton", BROUILLON_PANNEAU);
+
+disque.set(`${CLE_BROUILLON}:abime`, "{ceci n'est pas du json");
+ok("un contenu illisible ne jette jamais : le panneau marche comme avant",
+   lireBrouillonPanneau("abime") === null);
+disque.set(`${CLE_BROUILLON}:v2`, JSON.stringify({ ...BROUILLON_PANNEAU, version: 2 }));
+ok("une version inconnue est ignoree (le format pourra changer sans casser)",
+   lireBrouillonPanneau("v2") === null);
+disque.set(`${CLE_BROUILLON}:sansdate`, JSON.stringify({ ...BROUILLON_PANNEAU, enregistreLe: "hier" }));
+ok("sans horodatage, pas de brouillon : on ne peut pas dire depuis quand",
+   lireBrouillonPanneau("sansdate") === null);
+disque.set(`${CLE_BROUILLON}:sale`, JSON.stringify({
+  ...BROUILLON_PANNEAU,
+  saisie: { nb_pages: "34", pays_livraison: 7 },
+  planches: [{ key: "k/ok.jpg" }, { nom: "sans cle" }, "pas un objet"],
+  doubles: "pas une liste",
+}));
+const SALE_B = lireBrouillonPanneau("sale");
+ok("une valeur abimee est ecartee sans faire tomber le reste",
+   SALE_B !== null && JSON.stringify(SALE_B.saisie) === JSON.stringify({ nb_pages: "34" })
+   && SALE_B.planches.length === 1 && SALE_B.planches[0].key === "k/ok.jpg"
+   && SALE_B.doubles.length === 0);
+ok("un visuel sans id en recoit un : le glisse a besoin d'une identite stable",
+   Boolean(SALE_B?.planches[0].id) && SALE_B?.planches[0].nom === "ok.jpg");
+
+effacerBrouillonPanneau("jeton");
+ok("l'effacement ne laisse rien derriere lui",
+   lireBrouillonPanneau("jeton") === null && !disque.has(`${CLE_BROUILLON}:jeton`));
+
+/* Un `localStorage` ABSENT (rendu serveur) ou qui refuse d'ecrire (quota,
+   navigation privee) : le panneau ne doit pas s'en apercevoir. */
+(globalThis as { localStorage?: unknown }).localStorage = undefined;
+ok("sans localStorage, lire rend null et ecrire ne jette pas",
+   lireBrouillonPanneau("jeton") === null
+   && (() => { ecrireBrouillonPanneau("jeton", BROUILLON_PANNEAU); effacerBrouillonPanneau("jeton"); return true; })());
+(globalThis as { localStorage?: unknown }).localStorage = {
+  getItem: () => { throw new Error("refuse"); },
+  setItem: () => { throw new Error("plein"); },
+  removeItem: () => { throw new Error("refuse"); },
+};
+ok("un stockage qui REFUSE ne casse rien non plus",
+   lireBrouillonPanneau("jeton") === null
+   && (() => { ecrireBrouillonPanneau("jeton", BROUILLON_PANNEAU); effacerBrouillonPanneau("jeton"); return true; })());
+
+ok("une cle de coffre se lit par son dernier segment",
+   nomDeCle("numeros/abc/apercu/plat-3f2.jpg") === "plat-3f2.jpg" && nomDeCle("seul.jpg") === "seul.jpg");
+
+/* L'empreinte : elle ne regarde QUE ce qui distingue l'ecran de la fiche.
+   Les id de glisse et les vignettes changent a chaque rendu — les compter
+   ferait croire a un brouillon des l'ouverture de la page. */
+ok("deux listes de memes cles, d'ids differents, ont la meme empreinte",
+   empreinte("a", { x: "1" }, [{ key: "k1" }], [], {})
+   === empreinte("a", { x: "1" }, [{ key: "k1" }], [], {}));
+ok("l'ordre des couvertures compte : ranger, c'est decider ce qu'il voit en premier",
+   empreinte("a", {}, [{ key: "k1" }, { key: "k2" }], [], {})
+   !== empreinte("a", {}, [{ key: "k2" }, { key: "k1" }], [], {}));
+ok("un champ de saisie modifie change l'empreinte",
+   empreinte("a", { nb_pages: "34" }, [], [], {})
+   !== empreinte("a", { nb_pages: "36" }, [], [], {}));
+ok("l'ordre d'ecriture des champs, lui, ne compte pas",
+   empreinte("a", { x: "1", y: "2" }, [], [], {}) === empreinte("a", { y: "2", x: "1" }, [], [], {}));
+ok("un cadrage regle au doigt change l'empreinte",
+   empreinte("a", {}, [], [{ key: "d1" }], {}) !== empreinte("a", {}, [], [{ key: "d1" }], { d1: "50% 30%" }));
+
+/* « il y a 12 min » : la phrase que Mathias lit en haut du panneau. */
+const MINUTE = 60_000;
+ok("sous une minute, on dit « a l'instant » plutot qu'un « il y a 0 min » douteux",
+   depuis(Date.now() - 20_000) === "à l'instant");
+ok("douze minutes", depuis(Date.now() - 12 * MINUTE) === "il y a 12 min");
+ok("deux heures", depuis(Date.now() - 125 * MINUTE) === "il y a 2 h");
+ok("hier", depuis(Date.now() - 30 * 60 * MINUTE) === "hier");
+ok("trois jours", depuis(Date.now() - 3 * 24 * 60 * MINUTE) === "il y a 3 jours");
+
+/* On repose le globe comme on l'a trouve : la suite du harnais ne doit pas
+   heriter d'un `localStorage` qui jette. */
+delete (globalThis as { localStorage?: unknown }).localStorage;
 
 void verifierT005().then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

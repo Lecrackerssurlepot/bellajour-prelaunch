@@ -2350,6 +2350,30 @@
 }
 .ate-lien-discret:hover { color: var(--bj-text); }
 
+/* 11/09/2026 — le brouillon LOCAL du panneau (voir PanneauAction.tsx). Une
+   ligne, pas un bandeau : elle prévient que l'ecran n'est pas le dossier,
+   sans prendre la place du travail. Le liseré à gauche suffit à la
+   distinguer du texte courant. */
+.ate-brouillon {
+  margin: 0 0 var(--bj-sp-3);
+  padding-left: var(--bj-sp-2);
+  border-left: 2px solid var(--bj-terracotta);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+.ate-brouillon-annuler {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ate-brouillon-annuler:hover { color: var(--bj-text); }
+
 /* T2-3 — le mot de l'atelier (textarea sur l'action Demander plus de photos). */
 .ate-mot {
   resize: vertical;

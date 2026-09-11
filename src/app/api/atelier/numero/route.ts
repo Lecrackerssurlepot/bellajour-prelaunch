@@ -21,6 +21,7 @@ import {
   premierManquant,
 } from "@/lib/atelier/questionnaire";
 import { normaliserPays } from "@/lib/atelier/pays";
+import { lireChoixCouverture } from "@/lib/atelier/apercu";
 
 export const runtime = "nodejs";
 
@@ -449,15 +450,13 @@ export async function PATCH(request: Request) {
        n'a rien à faire dans un corps de requête public. Le rang suffit à
        l'atelier, qui a la liste sous les yeux dans le même ordre. Borné à
        MAX_PLANCHES - 1 ; on ne vérifie pas ici qu'il existe vraiment une
-       couverture à ce rang — c'est un choix journalisé, pas un ordre. */
-    const rangCouverture =
-      typeof body.couverture_choisie === "number" &&
-      Number.isInteger(body.couverture_choisie) &&
-      body.couverture_choisie >= 0 &&
-      body.couverture_choisie < 3
-        ? body.couverture_choisie
-        : null;
-    const choisitCouverture = rangCouverture !== null;
+       couverture à ce rang — c'est un choix journalisé, pas un ordre.
+       11/09/2026 — le mot « indifferent » s'ajoute au rang : « je vous fais
+       confiance » est une réponse, pas une absence de réponse. La règle vit
+       dans `@/lib/atelier/apercu` (pure, éprouvée par verif-atelier.ts) :
+       une validation de corps public ne se réécrit pas dans une route. */
+    const choixCouverture = lireChoixCouverture(body.couverture_choisie);
+    const choisitCouverture = choixCouverture !== null;
 
     if (!Object.keys(maj).length && !demandeRetouches && !demandeAjustement && !choisitCouverture) {
       return NextResponse.json({ error: "rien_a_faire" }, { status: 400 });
@@ -521,10 +520,16 @@ export async function PATCH(request: Request) {
          second clic réécrit simplement une ligne de plus : l'atelier lit la
          DERNIÈRE, et le récit garde la trace de l'hésitation, ce qui est une
          information et non du bruit.
-         Aucun mail ne part : elle est encore en train de regarder. */
+         Aucun mail ne part : elle est encore en train de regarder.
+         MÊME TYPE D'ÉVÉNEMENT pour les deux réponses (un rang, ou « je vous
+         fais confiance ») : c'est la même question, et deux types séparés
+         obligeraient chaque lecteur du journal à les recoller pour savoir
+         lequel est le dernier. */
       await logEvenement(supabase, numero.id, "couverture_choisie", {
         source: "page_numero",
-        rang: rangCouverture,
+        ...("indifferent" in choixCouverture
+          ? { indifferent: true, rang: null }
+          : { rang: choixCouverture.rang }),
       });
     }
 
