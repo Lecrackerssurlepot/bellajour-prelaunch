@@ -49,6 +49,18 @@ export type MatiereBrief = {
       plupart du temps : le bloc n'apparaît dans le brief que s'ils existent. */
   sousTitre: string | null;
   motQuatrieme: string | null;
+  /**
+   * Ce que le client a RÉPONDU sur sa couverture (11/09/2026).
+   *
+   * Le type est recopié plutôt qu'importé d'`apercu.ts` : ce module est pur
+   * et le sien tire le SDK AWS. Même choix que `types.ts` côté admin.
+   *
+   * `null` = il n'a rien dit, et la ligne N'APPARAÎT PAS. Écrire « couverture
+   * 1 » par défaut ferait composer sur la proposition de l'atelier en croyant
+   * suivre le client : ce sont deux choses différentes, et c'est justement la
+   * différence qu'on vient chercher dans ce fichier.
+   */
+  choixCouverture: { rang: number } | { indifferent: true } | null;
   /** Le lien d'ÉDITION, interne (PRD §11). Il ne part jamais chez la cliente. */
   canvaTravail: string | null;
   notes: Array<{ prenom: string; texte: string; createdAt: string }>;
@@ -108,6 +120,19 @@ function bloc(titre: string, corps: string): string {
 }
 
 /**
+ * La valeur de la ligne « Couverture choisie », ou "" s'il n'a rien dit.
+ *
+ * Le rang est interne (0-based), le numéro écrit ne l'est pas : la conversion
+ * se fait une fois, ici. Pas de tiret cadratin, comme partout dans ce fichier :
+ * il finit ouvert dans TextEdit ou collé dans un message.
+ */
+function choixEnClair(choix: { rang: number } | { indifferent: true } | null): string {
+  if (choix === null) return "";
+  if ("indifferent" in choix) return "sans préférence, il nous fait confiance";
+  return `${choix.rang + 1}`;
+}
+
+/**
  * Le brief, en texte brut.
  *
  * Aucun tiret cadratin nulle part : ce fichier finit ouvert dans TextEdit, un
@@ -138,6 +163,14 @@ export function composerBrief(m: MatiereBrief, maintenant: Date): string {
     const prix = m.euros ? `, ${m.euros} €` : "";
     fiches.push(["Pages", `${m.nbPages}${mot}${prix}`]);
   }
+  /* ── CE QUE LE CLIENT A DEMANDÉ (11/09/2026) ────────────────────────
+     Dans l'en-tête, avec la pagination et la reliure, et pas dans un bloc à
+     part : c'est un FAIT du dossier, et celui qui compose le lit avant
+     d'ouvrir quoi que ce soit. Absente quand il n'a rien dit — écrire
+     « couverture 1 » par défaut ferait composer la proposition de l'atelier
+     en croyant suivre le client. */
+  const choix = choixEnClair(m.choixCouverture);
+  if (choix) fiches.push(["Couverture choisie", choix]);
   if (m.createdAt) fiches.push(["Ouvert le", dateCourte(m.createdAt)]);
   if (m.canvaTravail) fiches.push(["Canva (travail)", m.canvaTravail]);
 

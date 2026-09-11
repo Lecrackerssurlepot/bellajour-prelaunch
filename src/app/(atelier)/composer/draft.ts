@@ -9,8 +9,6 @@
  * storage désactivé ne doit jamais casser le parcours — au pire on perd la reprise.
  */
 
-import { PAYS_DEFAUT } from '@/lib/atelier/pays'
-
 const KEY = 'atelier_draft_v1'
 
 export type Draft = {
@@ -25,12 +23,13 @@ export type Draft = {
   prenom: string
   email: string
   telephone: string
-  /* Le pays de livraison, écran 4 (lot 3, 10/09/2026). Toujours une valeur :
-     le select part sur PAYS_DEFAUT, et un brouillon d'une version antérieure
-     — qui n'a pas la clé du tout — fusionne sur ce même défaut par
-     EMPTY_DRAFT (cf. loadDraft). Personne ne retombe donc sur un champ vide,
-     et personne ne se voit imposer un pays en silence : il est affiché. */
-  pays: string
+  /* ⚠️ PLUS DE `pays` DEPUIS LE 11/09/2026 (décision de Mathias) : la
+     destination se choisit sur la page de commande, pas ici. Un brouillon
+     écrit entre le 10 et le 11/09 porte encore la clé : `loadDraft` fusionne
+     sur EMPTY_DRAFT, la clé surnuméraire est simplement recopiée et plus
+     personne ne la lit : ni l'écran 4, ni le POST, ni la route. Rien à
+     migrer, rien à effacer, aucun brouillon perdu. */
+
   /* Posé au retour de /api/atelier/numero (fin d'écran 4). Sa présence
      signifie « le dossier existe en base » : on ne le recrée jamais. */
   token: string | null
@@ -51,7 +50,6 @@ export const EMPTY_DRAFT: Draft = {
   prenom: '',
   email: '',
   telephone: '',
-  pays: PAYS_DEFAUT,
   token: null,
   consentPhotos: false,
   consentCommunication: false,
@@ -82,7 +80,11 @@ export function loadDraft(): Draft {
     if (parsed.termine) return EMPTY_DRAFT
 
     /* Fusion sur EMPTY_DRAFT : un brouillon d'une version antérieure à qui
-       il manque un champ ne fait pas planter l'écran, il repart à vide. */
+       il manque un champ ne fait pas planter l'écran, il repart à vide.
+       Dans l'autre sens, un brouillon qui porte une clé DE TROP (`pays`,
+       10 au 11/09) la garde sans effet : aucun écran ne la lit, aucune
+       route ne la reçoit. La reprise ne casse ni dans un sens ni dans
+       l'autre, ce qui est tout ce qu'on lui demande. */
     return { ...EMPTY_DRAFT, ...parsed }
   } catch {
     return EMPTY_DRAFT

@@ -200,17 +200,27 @@ export function lireChoixCouverture(valeur: unknown): ChoixCouverture | null {
 }
 
 /**
- * Le DERNIER choix exprimé, relu dans le journal (append-only, aucune
- * colonne : même patron que `ajustement_demande`).
+ * Le DERNIER choix exprimé ET SA DATE, relus dans le journal (append-only,
+ * aucune colonne : même patron que `ajustement_demande`).
  *
  * La liste peut être dans n'importe quel ordre : on prend l'événement le plus
  * récent par sa date. Un client qui hésite écrit plusieurs lignes, et c'est
  * la dernière qui dit ce qu'il veut aujourd'hui — les précédentes restent au
  * journal, l'hésitation est une information.
+ *
+ * ⚠️ LA DATE FAIT PARTIE DE LA RÉPONSE (11/09/2026). « Le client préfère la
+ * couverture 2 » sans quand, lu trois semaines plus tard sur un dossier
+ * republié entre-temps, ne dit pas s'il parle de la maquette en cours ou de
+ * la précédente. La fiche l'affiche, et c'est pour ça qu'elle voyage ici
+ * plutôt que d'être recalculée dans l'écran.
+ *
+ * `quand` vaut `null` quand l'événement retenu n'a pas d'horodatage lisible
+ * (jeux de test, journal tronqué) : le choix reste valable, c'est la date qui
+ * manque, et les deux ne se remplacent pas.
  */
-export function dernierChoixCouverture(
+export function dernierChoixCouvertureDate(
   evenements: Array<{ type: string; payload?: Record<string, unknown> | null; created_at?: string }>,
-): ChoixCouverture | null {
+): { choix: ChoixCouverture; quand: string | null } | null {
   let retenu: { quand: string; payload: Record<string, unknown> } | null = null;
   for (const e of evenements) {
     if (e.type !== "couverture_choisie") continue;
@@ -220,9 +230,24 @@ export function dernierChoixCouverture(
     }
   }
   if (retenu === null) return null;
-  if (retenu.payload.indifferent === true) return { indifferent: true };
+  const quand = retenu.quand || null;
+  if (retenu.payload.indifferent === true) return { choix: { indifferent: true }, quand };
   const rang = retenu.payload.rang;
-  return typeof rang === "number" && Number.isInteger(rang) && rang >= 0 ? { rang } : null;
+  return typeof rang === "number" && Number.isInteger(rang) && rang >= 0
+    ? { choix: { rang }, quand }
+    : null;
+}
+
+/**
+ * Le dernier choix, sans sa date — l'enveloppe historique, gardée parce que
+ * la moitié des appelants n'ont que faire du quand. Une SEULE lecture du
+ * journal derrière les deux : deux balayages auraient fini par diverger sur
+ * les égalités de date.
+ */
+export function dernierChoixCouverture(
+  evenements: Array<{ type: string; payload?: Record<string, unknown> | null; created_at?: string }>,
+): ChoixCouverture | null {
+  return dernierChoixCouvertureDate(evenements)?.choix ?? null;
 }
 
 /**

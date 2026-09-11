@@ -72,6 +72,16 @@ type Graine = {
   /** Qui a le dossier en main, pour montrer la marque en démonstration. */
   enCharge?: string;
   /**
+   * Ce que le client a répondu sur sa couverture (T-093, 11/09/2026).
+   *
+   * Un seul dossier de la démonstration en porte un, et c'est voulu : le tag
+   * doit se voir DANS une liste où la plupart des lignes n'en ont pas,
+   * sinon on met au point sur un écran qui n'existera jamais. Le rang 1 (la
+   * seconde couverture) plutôt que 0 : un rang 0 mal affiché passerait pour
+   * un « pas de choix » sans qu'on s'en aperçoive.
+   */
+  choixCouverture?: { rang: number } | { indifferent: true };
+  /**
    * Photos montées, bouton final jamais cliqué (cf. urgence.ts, etapeDepot).
    * Cas réel du 25/08 : sans lui, la démonstration ne montre jamais l'état
    * où le compteur de photos et l'avancement réel se contredisent.
@@ -145,6 +155,7 @@ const GRAINES: Graine[] = [
     depuis: 52,
     ouvertIlYA: 6,
     fondatrice: 7,
+    choixCouverture: { rang: 1 },
   },
   {
     token: T("demo5"),
@@ -343,6 +354,7 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
       /* La démo ne met en scène aucun rebond : elle sert à montrer le
          parcours nominal, pas ses pannes. */
       emailRebond: false,
+      couvertureChoisie: g.choixCouverture ?? null,
       /* En démonstration, « nouveau » = arrivé dans les deux derniers jours
          et jamais ouvert : on veut voir le badge, pas simuler une table. */
       nouveau: depot === "termine" && g.ouvertIlYA <= 2,
@@ -459,6 +471,17 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
       h: g.depuis + 48,
     });
     journal.push({ type: "mail_envoye", payload: { code: "M3" }, h: g.depuis + 48 });
+    /* Le choix du client, DANS le journal : la fiche le relit là où le vrai
+       code le relit, et la ligne « Couverture choisie » a une date à
+       afficher. Sans cet événement, la démonstration montrerait une réponse
+       sans quand, c'est-à-dire pas la même ligne que la production. */
+    if (g.choixCouverture) {
+      journal.push({
+        type: "couverture_choisie",
+        payload: { source: "page_numero", ...g.choixCouverture },
+        h: g.depuis + 30,
+      });
+    }
   }
   if (g.paye) {
     journal.push({ type: "etat_change", payload: { de: "apercu_pret", vers: "payee", par: "Stripe" }, h: g.depuis + 24 });
@@ -559,7 +582,9 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     /* La démonstration montre les DEUX réponses possibles : sur un dossier
        publié, le client a préféré la seconde couverture. Sans ligne ici,
        l'écran de démonstration n'apprendrait pas à la relire. */
-    choixCouverture: publie ? { rang: 1 } : null,
+    choixCouverture: publie ? (g.choixCouverture ?? null) : null,
+    choixCouvertureLe:
+      publie && g.choixCouverture ? il(Math.max(g.depuis + 30, 0)) : null,
     apercuBrut: publie
       ? { plat: PHOTOS[10], plats: [PHOTOS[10], PHOTOS[11]], c1: null, c4: null, doubles: [PHOTOS[2], PHOTOS[3]], double: PHOTOS[2], cadrages: {} }
       : { plat: null, plats: [], c1: null, c4: null, doubles: [], double: null, cadrages: {} },

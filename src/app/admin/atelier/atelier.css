@@ -807,6 +807,15 @@
   background: color-mix(in srgb, var(--ate-orange) 12%, transparent);
   color: var(--ate-orange);
 }
+/* « Couv. 2 » / « Sans préférence » (11/09/2026) — ce que le CLIENT a
+   demandé, pas un état du dossier. Bleu d'action, la couleur des liens et
+   des CTA : c'est une information qui appelle un geste (composer celle-là),
+   ni une alarme rouge ni une attente orange. Absent tant qu'il n'a rien dit :
+   voir Liste.tsx, le silence ne porte pas de tag. */
+.ate-tag--choix {
+  background: color-mix(in srgb, var(--bj-action) 12%, transparent);
+  color: var(--bj-action);
+}
 
 .ate-vide,
 .ate-faint {
@@ -2410,6 +2419,30 @@
 .ate-apercu-clic:focus-visible img {
   outline: 2px solid var(--bj-action);
   outline-offset: 2px;
+}
+
+/* ── LA RÉPONSE DU CLIENT SUR SA COUVERTURE (11/09/2026) ───────────────
+   Elle était une ligne grise sous le chapeau de la carte, indiscernable
+   d'une note de bas de page : Mathias ne l'a pas vue. C'est un ENCART, avec
+   un trait d'accent à gauche et la date en dessous. Deux dessins : neutre
+   tant qu'il n'a rien dit (l'absence est une information, pas une alarme),
+   bleu d'action dès qu'il a répondu (il y a un geste à faire). */
+.ate-choix {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 var(--bj-sp-3);
+  padding: var(--bj-sp-2) var(--bj-sp-3);
+  border-left: 3px solid var(--bj-veil-8);
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-veil-6);
+  font-size: var(--bj-fs-sm);
+}
+.ate-choix strong { font-weight: 600; }
+.ate-choix .ate-faint { font-size: var(--bj-fs-xs); }
+.ate-choix--dit {
+  border-left-color: var(--bj-action);
+  background: color-mix(in srgb, var(--bj-action) 8%, transparent);
 }
 
 /* Le chapeau d'une carte : une phrase qui dit à quoi sert ce qu'on regarde. */

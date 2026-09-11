@@ -22,6 +22,8 @@ import {
   lirePlanchesBrutes,
   lireCadrages,
   dernierChoixCouverture,
+  dernierChoixCouvertureDate,
+  type ChoixCouverture,
 } from "@/lib/atelier/apercu";
 import { eurosDuDossier, type PalierCle } from "@/lib/atelier/prix";
 import {
@@ -146,6 +148,11 @@ function versLigne(
      et le rebond. `ajustementLe` date le libellé depuis la demande. */
   aAjustement = false,
   ajustementLe: string | null = null,
+  /* T-093 — ce que le client a répondu sur sa couverture. Lu dans le journal
+     (evenements), comme le remboursement, le rebond et l'ajustement : aucune
+     colonne, aucune migration. `null` = il n'a rien dit, ce qui n'est PAS la
+     même chose que « il n'a pas d'avis ». */
+  choixCouverture: ChoixCouverture | null = null,
 ): LigneDossier {
   const nbPhotos = r.nb_photos ?? 0;
   /* La question ne se pose QU'À L'ÉTAT 1 : une fois l'aperçu publié, ni le
@@ -198,6 +205,7 @@ function versLigne(
     paye: Boolean(r.stripe_payment_intent),
     rembourse,
     emailRebond,
+    couvertureChoisie: choixCouverture,
     nouveau,
     actions: actionsDepuis(r.etat).map((a) => ({
       cle: a.cle,
@@ -366,22 +374,45 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
      Lue dans la MÊME requête : un aller-retour de plus par ouverture de la
      table de travail se paie à chaque fois. */
   const ajustements = new Map<string, string>();
+  /* T-093 (11/09/2026) — le choix de couverture du client. Mathias : « nous,
+     on reçoit la demande où ? » Nulle part : elle vivait dans le journal du
+     dossier, donc seulement pour qui l'ouvrait ET descendait jusqu'en bas.
+     Elle se lit maintenant sur la LIGNE, en un tag.
+     MÊME PATRON, MÊME REQUÊTE que le rebond et l'ajustement : un type de plus
+     dans le `.in`, pas un aller-retour de plus. Une requête par ligne aurait
+     coûté une latence par dossier à chaque ouverture de la table de travail.
+     ⚠️ `payload` rejoint le select POUR ÇA : le rang (ou « indifferent ») y
+     vit, aucune colonne ne le porte. Les trois autres types n'en font rien. */
+  const choixCouvertures = new Map<string, ChoixCouverture>();
   const ids = rangees.map((r) => r.id).filter(Boolean) as string[];
   if (ids.length) {
     const { data: remb } = await supabase
       .from("evenements")
-      .select("numero_id, type, created_at")
-      .in("type", ["remboursement", "email_rebond", "ajustement_demande"])
+      .select("numero_id, type, payload, created_at")
+      .in("type", ["remboursement", "email_rebond", "ajustement_demande", "couverture_choisie"])
       .in("numero_id", ids)
-      .returns<Array<{ numero_id: string; type: string; created_at: string }>>();
+      .returns<Array<{ numero_id: string; type: string; payload: Record<string, unknown> | null; created_at: string }>>();
+    /* Le dernier mot par dossier : on regroupe d'abord, et c'est la MÊME
+       fonction pure que la fiche qui tranche (`dernierChoixCouverture`), pas
+       une seconde règle écrite ici. Deux règles auraient fini par se
+       contredire entre la liste et la fiche du même dossier. */
+    const choixParDossier = new Map<string, Array<{ type: string; payload: Record<string, unknown> | null; created_at: string }>>();
     for (const e of remb ?? []) {
       if (e.type === "remboursement") rembourses.add(e.numero_id);
       else if (e.type === "email_rebond") rebonds.add(e.numero_id);
-      else {
+      else if (e.type === "couverture_choisie") {
+        const vus = choixParDossier.get(e.numero_id) ?? [];
+        vus.push(e);
+        choixParDossier.set(e.numero_id, vus);
+      } else {
         /* Plusieurs demandes possibles : on garde la plus récente. */
         const vu = ajustements.get(e.numero_id);
         if (!vu || e.created_at > vu) ajustements.set(e.numero_id, e.created_at);
       }
+    }
+    for (const [numeroId, vus] of choixParDossier) {
+      const choix = dernierChoixCouverture(vus);
+      if (choix) choixCouvertures.set(numeroId, choix);
     }
   }
 
@@ -406,6 +437,7 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
         r.id ? rebonds.has(r.id) : false,
         ajustementLe !== null,
         ajustementLe,
+        (r.id ? choixCouvertures.get(r.id) : undefined) ?? null,
       ),
       /* Le tri et les compteurs lisent la MÊME urgence que l'affichage : la
          balle qui change de camp (retouches à l'état 4, ajustement à l'état 2)
@@ -725,6 +757,14 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
 
   const rembourse = (evenements ?? []).some((e) => e.type === "remboursement");
   const emailRebond = (evenements ?? []).some((e) => e.type === "email_rebond");
+  /* T-093 (11/09/2026) — la réponse du client sur sa couverture, ET sa date,
+     relues dans le journal DÉJÀ chargé : aucune requête de plus, aucune
+     colonne.
+     ⚠️ La liste est plafonnée à 200 lignes (tri décroissant) : sur un dossier
+     extraordinairement bavard, un choix très ancien pourrait en sortir. Il
+     sortirait aussi du journal affiché juste à côté — la fiche ne peut pas
+     montrer un choix qu'elle ne montre plus dans le récit. */
+  const choixCouvertureFiche = dernierChoixCouvertureDate(evenements ?? []);
   /* T-091 — la dernière feuille d'ajustement envoyée à l'état 2, pour que le
      bandeau de la fiche dise la même chose que la pile (« à faire »). */
   const ajustementLe =
@@ -938,13 +978,11 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     depotInitialJusqua,
     photosAttendues,
     apercu,
-    /* T-093 (11/09/2026) — la réponse du client sur sa couverture, relue
-       dans le journal déjà chargé : aucune requête de plus, aucune colonne.
-       ⚠️ La liste est plafonnée à 200 lignes (tri décroissant) : sur un
-       dossier extraordinairement bavard, un choix très ancien pourrait en
-       sortir. Il sortirait aussi du journal affiché juste à côté — la fiche
-       ne peut pas montrer un choix qu'elle ne montre plus dans le récit. */
-    choixCouverture: dernierChoixCouverture(evenements ?? []),
+    choixCouverture: choixCouvertureFiche?.choix ?? null,
+    /* La DATE du choix (11/09/2026) : sans elle, « Couverture 2 » lu trois
+       semaines plus tard, sur un dossier republié entre-temps, ne dit pas de
+       quelle maquette il parle. */
+    choixCouvertureLe: choixCouvertureFiche?.quand ?? null,
     apercuBrut: {
       plat: brut.plat ?? null,
       c1: brut.c1 ?? null,

@@ -605,6 +605,10 @@ function matiereDe(fiche: FicheVue): MatiereBrief {
     histoire: fiche.histoire,
     sousTitre: fiche.sousTitre,
     motQuatrieme: fiche.motQuatrieme,
+    /* Ce que le client a répondu sur sa couverture (11/09/2026). Le brief est
+       ouvert DANS Canva, au moment de composer : c'est le seul endroit où
+       cette réponse arrive à l'heure. */
+    choixCouverture: fiche.choixCouverture,
     canvaTravail: fiche.canvaTravail,
     notes: fiche.notes.map((n) => ({ prenom: n.prenom, texte: n.texte, createdAt: n.createdAt })),
   };
@@ -1150,22 +1154,41 @@ export default function Fiche({
               <p className="ate-carte-sous">
                 Ce que le client voit sur sa page, dans le même ordre et avec les mêmes mots.
               </p>
-              {/* ── SA RÉPONSE SUR LA COUVERTURE (11/09/2026) ──────────
+              {/* ── SA RÉPONSE SUR LA COUVERTURE (11/09/2026, revue le
+                  même jour) ──────────────────────────────────────────────
                   Elle vivait dans le journal, donc en bas de page, entre une
                   trentaine de lignes : personne ne la lisait AU MOMENT de
-                  composer. Elle se dit ici, à côté des visuels, en une
-                  ligne. Rien du tout tant qu'il n'a rien dit — « aucune
-                  préférence » affiché par défaut ferait passer un silence
-                  pour une réponse, et ce sont deux choses différentes. */}
-              {fiche.choixCouverture ? (
-                <p className="ate-faint">
-                  {"indifferent" in fiche.choixCouverture
-                    ? "Son choix : sans préférence, il nous fait confiance."
-                    : fiche.choixCouverture.rang === 0
-                      ? "Son choix : la couverture proposée par défaut (la 1re)."
-                      : `Son choix : la couverture ${fiche.choixCouverture.rang + 1}.`}
-                </p>
-              ) : null}
+                  composer. Elle s'est dite ici, en gris, sur une ligne qui
+                  ressemblait à une note de bas de page. Mathias : « nous, on
+                  reçoit la demande où ? » Elle est maintenant un ENCART, avec
+                  sa date : « Couverture choisie par le client : 2 ».
+                  ⚠️ TROIS ÉTATS, PAS DEUX. « Pas encore de choix » est écrit
+                  en toutes lettres, parce que l'absence de réponse est une
+                  information (le client regarde peut-être encore) et qu'un
+                  bloc vide se lit comme un bug. Mais aucune couverture n'est
+                  désignée dans ce cas : faire passer la proposition par
+                  défaut pour son choix, c'est composer sur un malentendu. */}
+              <p
+                className={
+                  fiche.choixCouverture ? "ate-choix ate-choix--dit" : "ate-choix"
+                }
+              >
+                <strong>
+                  {fiche.choixCouverture === null
+                    ? "Pas encore de choix de couverture"
+                    : "indifferent" in fiche.choixCouverture
+                      ? "Le client nous laisse choisir"
+                      : `Couverture choisie par le client : ${fiche.choixCouverture.rang + 1}`}
+                </strong>
+                {fiche.choixCouverture === null ? (
+                  <span className="ate-faint">
+                    Il n’a rien dit. La couverture 1 reste la proposition de l’atelier,
+                    pas sa réponse.
+                  </span>
+                ) : (
+                  <span className="ate-faint">Le {fmt(fiche.choixCouvertureLe)}</span>
+                )}
+              </p>
               <div className="ate-apercu">
                 {apercuVues.map(({ cle, src, legende, loupe, decoupe, cadrage }) => {
                   const rang = apercuAgrandissable.findIndex((v) => v.legende === loupe);

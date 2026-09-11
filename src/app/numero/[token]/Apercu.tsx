@@ -28,13 +28,31 @@
  *
  * La légende est TOUJOURS nommée (recette du 25/08) ; la loupe agrandit
  * chaque tuile, en réutilisant le même composant partagé avec l'admin.
+ *
+ * ── LE CHOIX, RENDU CLAIR (11/09/2026, seconde passe) ─────────────────────
+ * Mathias : « je ne trouve pas ça très clair de choisir entre les couvertures
+ * quand on a le choix. » Quand plusieurs couvertures sont proposées, la
+ * section pose une QUESTION (« Laquelle préférez-vous ? »), chaque carte
+ * porte un bouton plein qui nomme le geste, la carte retenue devient un état
+ * (« Votre choix », bordure accentuée), et une ligne `role="status"` répète
+ * en toutes lettres ce qui sera composé. Les trois règles d'affichage sont
+ * dans `formatVisuel.ts` (`enTeteCouvertures`, `etatCartes`,
+ * `phraseChoixCouverture`), éprouvées par le harnais : un écran qui se
+ * trompe ici fait dire au client ce qu'il n'a pas dit.
  * ══════════════════════════════════════════════════════════════════════════
  */
 
 import { useEffect, useState } from 'react'
 import Reveal from '../../(atelier)/components/Reveal'
 import Loupe, { type VueLoupe } from '../../components/Loupe'
-import { construirePlanche, formatDepuisRatio, type FormatVisuel } from '@/lib/atelier/formatVisuel'
+import {
+  construirePlanche,
+  enTeteCouvertures,
+  etatCartes,
+  formatDepuisRatio,
+  phraseChoixCouverture,
+  type FormatVisuel,
+} from '@/lib/atelier/formatVisuel'
 
 /* Le mot que le serveur accepte pour « je vous fais confiance ». Recopié de
    `@/lib/atelier/apercu` (CHOIX_INDIFFERENT) plutôt qu'importé : ce module
@@ -182,10 +200,18 @@ export default function Apercu({
      dossier historique, sans rang), il n'y a rien à arbitrer, et le paiement
      reste l'unique geste de l'écran. */
   const rangsChoix = couvertures.filter((c) => c.rang !== undefined)
-  const surPlusieursCouvertures = rangsChoix.length > 1
   /* Le bouton écrit ; sans token il ne le peut pas. En prévisualisation on
      le montre quand même, ÉTEINT : l'atelier doit voir l'écran du client. */
   const armable = Boolean(token) && !previsualisation
+  /* ⚠️ LE CHOIX NE S'OFFRE QUE LÀ OÙ IL VEUT DIRE QUELQUE CHOSE.
+     Le MÊME composant sert la page de suivi ET le magazine LIVRÉ
+     (/compte/magazine/[token]), qui ne passe pas de token : là-bas le
+     magazine est imprimé et posté, il n'y a plus rien à arbitrer. Poser
+     « Laquelle préférez-vous ? » au-dessus d'un objet déjà reçu serait une
+     question sans réponse possible, et les boutons éteints en dessous
+     ressembleraient à une panne. La prévisualisation, elle, DOIT tout
+     montrer : c'est l'écran que l'atelier relit avant de publier. */
+  const choixOffert = rangsChoix.length > 1 && (Boolean(token) || previsualisation)
 
   /* On envoie le RANG (ou le mot « indifferent »), jamais l'URL : voir la
      route. Aucun mail ne part — elle est en train de regarder, pas de
@@ -216,7 +242,14 @@ export default function Apercu({
     }
   }
 
-  const titreCouvertures = couvertures.length > 1 ? 'Vos couvertures' : 'La couverture'
+  /* Le chapeau, la marque de chaque carte et la phrase de confirmation
+     viennent toutes les trois du module pur : trois règles d'affichage qui
+     peuvent mentir au client sur ce qu'il a demandé. */
+  const enTete = enTeteCouvertures(choixOffert ? rangsChoix.length : 0, couvertures.length)
+  const etats = etatCartes(choisie, aChoisi, indifferent, couvertures.length)
+  const confirmation = choixOffert
+    ? phraseChoixCouverture(choisie, aChoisi, indifferent)
+    : null
   const titreDoubles = tuilesDoubles.length > 1 ? 'Les doubles pages' : 'Une double page'
 
   return (
@@ -224,19 +257,16 @@ export default function Apercu({
       <div className="nu-planche">
         {couvertures.length > 0 && (
           <section className="nu-pl-section">
-            <h3 className="nu-pl-titre">{titreCouvertures}</h3>
+            <h3 className="nu-pl-titre">{enTete.titre}</h3>
+            {enTete.sousTitre && <p className="nu-pl-sous">{enTete.sousTitre}</p>}
             <div className="nu-pl-couvertures">
               {couvertures.map((c, k) => {
-                const estRetenue = c.rang !== undefined && aChoisi && !indifferent && c.rang === choisie
-                const marque = c.rang !== undefined && aChoisi && (
-                  indifferent ? (
-                    <span className="nu-pl-marque"> · vous nous faites confiance</span>
-                  ) : c.rang === choisie ? (
-                    <span className="nu-pl-marque"> · votre choix</span>
-                  ) : null
-                )
+                const estRetenue = c.rang !== undefined && etats[k] === 'retenue'
                 return (
-                  <div className="nu-pl-carte" key={`${c.nom}-${k}`}>
+                  <div
+                    className={estRetenue ? 'nu-pl-carte nu-pl-carte--retenue' : 'nu-pl-carte'}
+                    key={`${c.nom}-${k}`}
+                  >
                     <div className={`nu-pl-tuiles nu-pl-tuiles--${c.format}`}>
                       {c.format === 'planche' && c.premiere ? (
                         <>
@@ -289,22 +319,31 @@ export default function Apercu({
                       )}
                     </div>
 
-                    <p className="nu-pl-nom">
-                      {c.nom}
-                      {marque}
-                    </p>
+                    <p className="nu-pl-nom">{c.nom}</p>
 
-                    {surPlusieursCouvertures && c.rang !== undefined && (
+                    {/* ── LE GESTE, SOUS CHAQUE CARTE, TOUJOURS AU MÊME
+                        ENDROIT ─────────────────────────────────────────
+                        Un bouton plein, identique sur toutes les cartes,
+                        qui NOMME l'action (« Choisir cette couverture »)
+                        au lieu de la sous-entendre. Sur la carte retenue,
+                        il ne disparaît pas : il devient un état, coche
+                        comprise. Un bouton qui s'efface au clic laisse le
+                        doigt sur du vide et le doute entier. */}
+                    {choixOffert && c.rang !== undefined && (
                       <div className="nu-pl-choix-carte">
-                        {(indifferent || c.rang !== choisie) && !estRetenue && (
+                        {estRetenue ? (
+                          <span className="nu-pl-retenue">
+                            <span aria-hidden="true">✓</span> Votre choix
+                          </span>
+                        ) : (
                           <button
                             type="button"
-                            className="nu-viz-choix-btn"
+                            className="nu-pl-btn"
                             onClick={() => enregistrer(c.rang as number)}
                             disabled={!armable}
                             title={previsualisation ? 'Prévisualisation' : undefined}
                           >
-                            Je préfère celle-ci
+                            Choisir cette couverture
                           </button>
                         )}
                       </div>
@@ -314,8 +353,12 @@ export default function Apercu({
               })}
             </div>
 
-            {surPlusieursCouvertures && (
+            {choixOffert && (
               <div className="nu-pl-choix-section">
+                {/* La porte de sortie. SECONDAIRE, et elle le reste : dire
+                    « décidez pour moi » doit être possible sans être la
+                    première chose que l'œil attrape. Une fois choisie, elle
+                    s'efface au profit de la ligne de confirmation. */}
                 {!indifferent && (
                   <button
                     type="button"
@@ -326,6 +369,16 @@ export default function Apercu({
                   >
                     Sans préférence, je vous fais confiance
                   </button>
+                )}
+                {/* ── LA CONFIRMATION ───────────────────────────────────
+                    `role="status"` : le changement est annoncé sans voler
+                    le focus. Elle répète le NUMÉRO, pour rester vraie lue
+                    seule. Le client peut encore changer d'avis, les autres
+                    cartes gardent leur bouton. */}
+                {confirmation && (
+                  <p className="nu-pl-confirme" role="status">
+                    {confirmation}
+                  </p>
                 )}
                 {refus && (
                   <span className="nu-viz-choix-refus" role="alert">

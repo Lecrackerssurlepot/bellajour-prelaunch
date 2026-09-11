@@ -152,11 +152,11 @@ export default function CasesEtCommande({
      chiffré, le bouton reste inerte — le checkout refuserait de toute façon
      (`livraison_indisponible`). */
   /* ⚠️ ET « CONNU » VEUT DIRE TROIS, DEPUIS LE 11/09 : le pays en fait partie.
-     Un dossier peut porter un port gelé sans destination (publication d'avant
-     l'écran 4, montant saisi à la main) : ce port a été chiffré pour un pays
-     que personne n'a écrit, alors que Stripe, lui, laissera choisir n'importe
-     lequel de la zone. On demande donc la destination avant d'encaisser,
-     plutôt que d'expédier vers un pays dont le transport n'a pas été payé. */
+     Un dossier peut porter un port gelé sans destination (montant saisi à la
+     main à la publication) : ce port a été chiffré pour un pays que personne
+     n'a écrit, alors que Stripe, lui, laissera choisir n'importe lequel de la
+     zone. On demande donc la destination avant d'encaisser, plutôt que
+     d'expédier vers un pays dont le transport n'a pas été payé. */
   const prixConnu =
     euros !== null && livraisonCentimes !== null && commande !== null && paysValide(pays)
   const accepte = cgv && reno
@@ -164,18 +164,22 @@ export default function CasesEtCommande({
   /* ══════════════════════════════════════════════════════════════════════
      LE CLIENT CHOISIT SA DESTINATION (11/09/2026)
 
-     Deux populations arrivent sur cette page, et elles ne voient pas la même
-     chose :
-       — celle qui a répondu à l'écran 4 : le pays est connu, le port a été
-         devisé à la publication, le bon de commande est complet. Elle garde
-         quand même la main : « Changer de pays » rouvre le menu, et le port
-         est REdevisé. Un port gelé sur la mauvaise destination est un colis
-         qui n'arrive pas ;
-       — celle dont le dossier est plus ancien : aucun pays. Jusqu'au 10/09,
-         l'atelier devait en choisir un à sa place pour publier. Désormais
-         c'est ELLE qui choisit, ici, et le port est chiffré à cet instant,
-         AVANT le paiement. Le bouton reste éteint jusque-là, et il dit
-         pourquoi : un bouton mort sans explication se lit comme une panne.
+     ⚠️ C'EST DÉSORMAIS LE SEUL ENDROIT OÙ LA QUESTION SE POSE. Le
+     questionnaire l'a portée du 10 au 11/09 (un select à l'écran 4) ; Mathias
+     l'en a retirée : « je ne veux pas que ce soit compliqué au niveau de la
+     livraison ». Deux populations arrivent donc ici, et elles ne voient pas
+     la même chose :
+       — celle dont le dossier porte déjà un pays (l'atelier le connaissait
+         et l'a posé à la publication, ou le client l'a choisi ici lors d'une
+         visite précédente) : le port est devisé, le bon de commande est
+         complet. Elle garde quand même la main : « Changer de pays » rouvre
+         le menu, et le port est REdevisé. Un port gelé sur la mauvaise
+         destination est un colis qui n'arrive pas ;
+       — celle dont le dossier n'a aucun pays, ce qui est désormais le cas
+         NORMAL : c'est elle qui choisit, ici, et le port est chiffré à cet
+         instant, AVANT le paiement. Le bouton reste éteint jusque-là, et il
+         dit pourquoi : un bouton mort sans explication se lit comme une
+         panne.
 
      Rien n'est calculé dans ce composant : il envoie un code pays, le serveur
      devise chez l'imprimeur, écrit, et la page se recharge avec le montant. */

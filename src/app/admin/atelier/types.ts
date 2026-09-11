@@ -93,6 +93,20 @@ export type LigneDossier = {
    * dit qu'un dossier apparemment normal est en réalité INJOIGNABLE.
    */
   emailRebond: boolean;
+  /**
+   * Ce que le client a RÉPONDU sur sa couverture (T-093, 11/09/2026).
+   *
+   * Mathias, en découvrant l'écran de choix : « nous, on reçoit la demande
+   * où ? » Nulle part : la réponse vivait dans le journal du dossier, donc
+   * seulement pour qui l'ouvrait et descendait jusqu'en bas. Elle est ici
+   * pour que la LIGNE la porte, en un tag.
+   *
+   * Vient du journal (`couverture_choisie`), comme `rembourse` et
+   * `emailRebond` : aucune colonne, aucune migration, une seule requête pour
+   * toute la liste. `null` = il n'a rien dit — ce qui n'est PAS « il n'a pas
+   * d'avis », lequel s'écrit `{ indifferent: true }` et est une réponse.
+   */
+  couvertureChoisie: { rang: number } | { indifferent: true } | null;
   /** Jamais ouvert par la personne connectée (cf. table `dossiers_vus`). */
   nouveau: boolean;
   /**
@@ -301,6 +315,9 @@ export type Fiche = {
    * une réponse et se lit comme telle.
    */
   choixCouverture: { rang: number } | { indifferent: true } | null;
+  /** Quand il l'a dit. `null` : le journal n'a pas d'horodatage lisible pour
+      cet événement — le choix reste valable, c'est la date qui manque. */
+  choixCouvertureLe: string | null;
   /** Les valeurs brutes (clés de coffre), pour préremplir le formulaire. */
   apercuBrut: {
     plat: string | null;
