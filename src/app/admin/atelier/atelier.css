@@ -2423,6 +2423,36 @@
   line-height: 1.5;
   color: var(--bj-action);
 }
+/* 11/09 — le téléphone, ajouté ou corrigé depuis la fiche.
+   Il vit dans un `<dd>` de `.ate-defs`, c'est-à-dire dans une colonne
+   étroite : les boutons passent donc à la ligne (`flex-wrap`) plutôt que de
+   déborder, et le champ ignore le `min-width: 260px` de `.adm-input`, calé
+   pour les formulaires pleine largeur de la prévente.
+   L'absence est ORANGE, pas grise : un dossier sans téléphone fait partir le
+   numéro de la maison chez le transporteur, ça doit se voir de loin. */
+.ate-telephone {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  flex-wrap: wrap;
+}
+.ate-telephone .adm-btn {
+  padding: var(--bj-sp-1) var(--bj-sp-2);
+  font-size: var(--bj-fs-xs);
+}
+.ate-telephone-manque {
+  color: var(--ate-orange);
+  font-weight: 500;
+}
+.ate-telephone-input {
+  min-width: 0;
+  width: 100%;
+  max-width: 11rem;
+}
+.ate-telephone .ate-erreur {
+  flex-basis: 100%;
+}
+
 /* T-021 — le code fondatrice, créé et copié depuis la fiche. */
 .ate-code-fondatrice {
   margin-top: var(--bj-sp-2);

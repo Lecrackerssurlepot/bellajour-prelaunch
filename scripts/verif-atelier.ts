@@ -49,6 +49,7 @@ import {
   premierManquant,
   reponseValide,
   suggestionEmail,
+  telephoneValide,
 } from "@/lib/atelier/questionnaire";
 import {
   PAYS_DEFAUT,
@@ -1397,6 +1398,50 @@ ok("normalise pour Cloudprinter",
    normaliserTelephone("+33 (0)7 69.71-06 86") === "+330769710686");
 ok("le + de tete est conserve, et lui seul",
    normaliserTelephone("00 351 912 345 678") === "00351912345678");
+ok("la forme francaise entre en base sans ses espaces",
+   normaliserTelephone("06 12 34 56 78") === "0612345678");
+
+/* ═══ LE TELEPHONE AJOUTE OU CORRIGE DEPUIS LA FICHE (11/09/2026) ═══
+   Les dossiers ouverts avant le 28/08 n'ont pas de telephone et Cloudprinter
+   en exige un : sans lui, c'est le numero de la maison qui part chez le
+   transporteur. La route admin ecrit la forme NORMALISEE (celle que
+   Cloudprinter attend) et journalise l'avant et l'apres. */
+
+titre("— le telephone pose a la main : la route ecrit ce que le questionnaire valide —");
+ok("un numero tape avec des espaces est accepte", telephoneValide("06 12 34 56 78"));
+ok("il entre en base sous la forme que Cloudprinter attend",
+   normaliserTelephone("06 12 34 56 78") === "0612345678");
+ok("un champ vide est REFUSE (on n'efface jamais le seul moyen de joindre)",
+   !telephoneValide(""));
+ok("sept chiffres : REFUSE", !telephoneValide("0612345"));
+ok("seize chiffres : REFUSE", !telephoneValide("+3312345678901234"));
+
+titre("— le recit du telephone : ajout et correction ne disent pas la meme chose —");
+const rTelAjout = raconter("telephone_modifie", {
+  avant: null,
+  apres: "0612345678",
+  par: "Mathias",
+});
+ok("l'ajout nomme l'admin", rTelAjout.texte.includes("Mathias"));
+ok("l'ajout dit « a ajoute »", /a ajout/i.test(rTelAjout.texte));
+ok("l'ajout NE dit PAS « a modifie »", !/modifi/i.test(rTelAjout.texte));
+ok("le numero pose est lisible dans le detail (c'est l'admin qui lit)",
+   (rTelAjout.detail ?? "").includes("0612345678"));
+
+const rTelChange = raconter("telephone_modifie", {
+  avant: "+33612345678",
+  apres: "+33769710686",
+  par: "Louis",
+});
+ok("la correction dit « a modifie »", /modifi/i.test(rTelChange.texte));
+ok("elle nomme l'auteur", rTelChange.texte.includes("Louis"));
+ok("le detail porte l'AVANT et l'APRES",
+   (rTelChange.detail ?? "").includes("+33612345678")
+   && (rTelChange.detail ?? "").includes("+33769710686"));
+ok("sans auteur, la phrase reste correcte",
+   raconter("telephone_modifie", { avant: null, apres: "0612345678" }).texte.length > 0
+   && !/undefined|null/.test(raconter("telephone_modifie", { avant: null, apres: "0612345678" }).texte));
+ok("le geste est du cote de l'atelier (ton « nous »)", rTelChange.ton === "nous");
 
 titre("— l'email : la meme regle des deux cotes —");
 ok("adresse normale", reponseValide("email", "flore@example.com"));

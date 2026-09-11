@@ -208,6 +208,135 @@ function CodeFondatrice({
 }
 
 /**
+ * Le téléphone du client, modifiable depuis la fiche (11/09/2026).
+ *
+ * ⚠️ CE N'EST PAS UN CONFORT D'ÉDITION. Cloudprinter exige un téléphone
+ * dans l'adresse de livraison : sans celui du client, c'est celui de la
+ * maison qui part chez le transporteur, et un colis qui coince ne peut plus
+ * être débloqué par la seule personne qui sait où elle se trouve.
+ *
+ * Le champ n'est obligatoire à l'écran 4 que depuis le 28/08/2026 : les
+ * dossiers ouverts avant n'en portent pas, et le seul recours était le SQL.
+ * L'absence est donc affichée comme une ALERTE, pas comme un tiret : un
+ * « — » au milieu d'une liste de définitions ne se remarque pas.
+ *
+ * Le serveur revalide (même règle, `@/lib/atelier/questionnaire`) et
+ * normalise : ce champ PROPOSE une saisie, il n'impose pas une forme.
+ */
+function ChampTelephone({
+  token,
+  telephone,
+  demo,
+}: {
+  token: string;
+  telephone: string | null;
+  demo?: boolean;
+}) {
+  const router = useRouter();
+  const [ouvert, setOuvert] = useState(false);
+  const [valeur, setValeur] = useState(telephone ?? "");
+  const [occupe, setOccupe] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  function annuler() {
+    setOuvert(false);
+    setValeur(telephone ?? "");
+    setErreur(null);
+  }
+
+  async function enregistrer(e: React.FormEvent) {
+    e.preventDefault();
+    if (demo) {
+      setErreur("Démonstration : rien n'est enregistré.");
+      return;
+    }
+    setOccupe(true);
+    setErreur(null);
+    try {
+      const r = await fetch("/api/admin/atelier/telephone", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token, telephone: valeur }),
+      });
+      const corps = (await r.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        erreurs?: { champ?: string; message?: string }[];
+      };
+      if (!r.ok || !corps.ok) {
+        if (corps.error === "saisie") {
+          setErreur(corps.erreurs?.[0]?.message ?? "Ce numéro n'est pas exploitable.");
+        } else if (corps.error === "introuvable") {
+          setErreur("Ce dossier est introuvable côté serveur : rien n'a été enregistré.");
+        } else if (corps.error === "journal") {
+          setErreur(
+            "Le numéro est écrit mais le journal ne l'a pas enregistré : rafraîchis la fiche pour vérifier.",
+          );
+        } else {
+          setErreur("Le numéro n'a pas été enregistré.");
+        }
+        return;
+      }
+      /* La fiche relit tout côté serveur : le journal, le bandeau de rebond
+         et le téléphone lui-même viennent de la même requête. */
+      setOuvert(false);
+      router.refresh();
+    } catch {
+      setErreur("Réseau interrompu.");
+    } finally {
+      setOccupe(false);
+    }
+  }
+
+  if (!ouvert) {
+    return (
+      <div className="ate-telephone">
+        {telephone ? (
+          <span>{telephone}</span>
+        ) : (
+          <span className="ate-telephone-manque">À renseigner</span>
+        )}
+        <button
+          type="button"
+          className="adm-btn adm-btn--ghost"
+          onClick={() => setOuvert(true)}
+        >
+          {telephone ? "Modifier" : "Ajouter"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form className="ate-telephone ate-telephone--edition" onSubmit={enregistrer}>
+      <input
+        id="ate-telephone-champ"
+        className="adm-input ate-telephone-input"
+        type="tel"
+        inputMode="tel"
+        autoComplete="off"
+        aria-label="Téléphone du client"
+        value={valeur}
+        onChange={(ev) => setValeur(ev.target.value)}
+        disabled={occupe}
+      />
+      <button type="submit" className="adm-btn" disabled={occupe || !valeur.trim()}>
+        {occupe ? "…" : "Enregistrer"}
+      </button>
+      <button
+        type="button"
+        className="adm-btn adm-btn--ghost"
+        onClick={annuler}
+        disabled={occupe}
+      >
+        Annuler
+      </button>
+      {erreur ? <p className="ate-erreur">{erreur}</p> : null}
+    </form>
+  );
+}
+
+/**
  * « Ce client est un fondateur inscrit sous un autre email ? » (10/09/2026)
  *
  * ⚠️ LE SEUL CHEMIN VERS UN FONDATEUR QUI COMPOSE SOUS UNE AUTRE ADRESSE.
@@ -662,7 +791,7 @@ export default function Fiche({
               Son téléphone : <b>{fiche.telephone}</b>.
             </>
           ) : (
-            " Ce dossier ne porte pas de téléphone : il n'y a aucun autre moyen de le joindre."
+            " Pas de téléphone : le transporteur appellerait la maison. Ajoute-le ci-dessous."
           )}
         </div>
       ) : null}
@@ -1012,7 +1141,9 @@ export default function Fiche({
               <dt>Email</dt>
               <dd className="ate-mono">{l.email || "—"}</dd>
               <dt>Téléphone</dt>
-              <dd>{fiche.telephone || "—"}</dd>
+              <dd>
+                <ChampTelephone token={l.token} telephone={fiche.telephone} demo={demo} />
+              </dd>
               <dt>Dossier ouvert</dt>
               <dd>{fmt(l.createdAt)}</dd>
               {fiche.client.totalPaye > 0 ? (
