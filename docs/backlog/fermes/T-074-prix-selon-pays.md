@@ -35,3 +35,13 @@ c'est la **livraison** qui dépend du pays, chiffrée par devis Cloudprinter à 
 gelée sur le dossier (`livraison_centimes`, `livraison_niveau`). Stripe ne propose plus que le
 pays déclaré (`allowed_countries = [pays]`), et le webhook journalise toute divergence entre le
 pays déclaré et l'adresse collectée. PR #100, #101, puis le lot livraison.
+
+## 11/09/2026 — la zone devient l'Europe, et le client choisit quand l'atelier ne sait pas
+
+Mathias : « accepter tous les pays d'Europe » et « l'atelier ne peut pas mettre la livraison, on
+ne sait pas d'où vient le client ». PR #114 : `PAYS_LIVRAISON` = UE 27 + GB, CH, NO ; si le pays
+est connu (écran 4) le devis se fait à la publication, sinon la publication passe sans port et le
+client choisit son pays sur `/numero` (`POST /api/atelier/livraison`, devis gelé, journal
+`livraison_choisie`). Restent à trancher : la TVA des trois destinations hors UE (0 posé) et les
+droits de douane (annoncés à la charge du client), et à valider par le comptable les taux normaux
+de TVA par pays (`TAUX_TTC_LIVRAISON`). Le suivi colis ne connaît que les transporteurs FR/BE/LU.
