@@ -269,6 +269,16 @@
    (vos photos sont la), elle parle avec la voix du texte, pas de l'alerte. */
 .bj-atelier .at-d-avis--reprise b { font-weight: 400; color: var(--c-text); }
 
+/* 11/09 — l'avis qui porte un geste : le dossier n'existe plus, et le bouton
+   est la sortie. Colonne, parce qu'un bouton posé au bout d'une phrase de
+   trois lignes se lit comme une note de bas de page. */
+.bj-atelier .at-d-avis--perdu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
 .bj-atelier .at-d-refus {
   margin-top: 18px;
   max-width: 56ch;

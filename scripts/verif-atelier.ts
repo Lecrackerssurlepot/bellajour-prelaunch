@@ -120,6 +120,7 @@ import {
   RELIURE_LIBELLE,
 } from "@/lib/atelier/grille";
 import { palierPour as bandePour } from "@/app/(atelier)/composer/depot/paliers";
+import { brouillonSansDossier } from "@/app/(atelier)/composer/draft";
 import { peutRecommander } from "@/lib/atelier/reimpression";
 import {
   cheminRetour,
@@ -1896,6 +1897,69 @@ ok("token absent -> null, donc AUCUN parametre dans l'URL",
    marqueProvenance("numero") === null);
 ok("token trop court -> null", marqueProvenance("numero", "abc") === null);
 ok("compte -> compte", marqueProvenance("compte") === "compte");
+
+/* ═════════ LE BROUILLON DONT LE DOSSIER A DISPARU (11/09/2026) ═════════
+   Constate par Mathias sur le vrai site : ses dossiers de test supprimes en
+   base, et un brouillon qui gardait leur token. L'ecran 5 deposait sur un
+   dossier mort (404), et l'ecran 4 refusait d'en recreer un tant que le
+   brouillon portait ce token — « reprenez le questionnaire depuis le debut »
+   sans aucun moyen de recommencer. Le meme piege attend tout dossier
+   anonymise au bout des 90 jours de retention (T-076).
+
+   La regle est pure (draft.ts) et c'est tout ce qui est verifiable ici : le
+   harnais ne monte pas React et ne touche pas a l'historique du navigateur.
+   Le reste — l'ecran ramene, le bouton du bandeau, « ← Retour » qui ne sort
+   plus du site — se verifie a l'oeil dans le navigateur. */
+titre("— un brouillon dont le dossier n'existe plus : ce qu'on garde —");
+const BROUILLON_MORT = {
+  screen: 5,
+  occasion: "un mariage",
+  histoire: "Trois jours en Bretagne, et la pluie le matin.",
+  titre: "Nos trois jours",
+  sousTitre: "Bretagne",
+  motQuatrieme: "2026",
+  prenom: "Camille",
+  email: "camille@example.com",
+  telephone: "+33612345678",
+  token: "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+  consentPhotos: true,
+  consentCommunication: true,
+  termine: false,
+};
+const RESCAPE = brouillonSansDossier(BROUILLON_MORT);
+ok("les SIX reponses exigees sont gardees (garanties nº1 et nº2)",
+   RESCAPE.occasion === BROUILLON_MORT.occasion
+   && RESCAPE.histoire === BROUILLON_MORT.histoire
+   && RESCAPE.titre === BROUILLON_MORT.titre
+   && RESCAPE.prenom === BROUILLON_MORT.prenom
+   && RESCAPE.email === BROUILLON_MORT.email
+   && RESCAPE.telephone === BROUILLON_MORT.telephone);
+ok("les deux mots de couverture facultatifs suivent leurs reponses",
+   RESCAPE.sousTitre === "Bretagne" && RESCAPE.motQuatrieme === "2026");
+ok("le token est efface : c'est LUI qui bloquait la recreation",
+   RESCAPE.token === null);
+ok("le consentement photos retombe : il valait pour CE depot (garantie nº7)",
+   RESCAPE.consentPhotos === false);
+ok("« termine » retombe : ce depot n'est jamais arrive",
+   RESCAPE.termine === false);
+ok("l'ecran redescend au 4, la ou le dossier se cree (M0, garantie nº5)",
+   RESCAPE.screen === 4);
+/* La case « montrer des extraits » n'appartient pas au dossier mais a la
+   personne : elle survit, comme ses reponses. */
+ok("le consentement de communication, lui, est garde",
+   RESCAPE.consentCommunication === true);
+
+ok("un brouillon reste a son ecran quand il est deja avant le 4",
+   brouillonSansDossier({ ...BROUILLON_MORT, screen: 2 }).screen === 2);
+ok("un ecran aberrant d'une version anterieure retombe dans 1..4",
+   brouillonSansDossier({ ...BROUILLON_MORT, screen: 0 }).screen === 1
+   && brouillonSansDossier({ ...BROUILLON_MORT, screen: 9 }).screen === 4);
+
+/* Sans token il n'y a rien a corriger : on rend le brouillon TEL QUEL. Un
+   nettoyage de trop ici renverrait a l'ecran 1 quelqu'un qui n'a rien perdu. */
+const VIVANT = { ...BROUILLON_MORT, token: null, screen: 5 };
+ok("un brouillon sans token est rendu inchange, sans meme etre recopie",
+   brouillonSansDossier(VIVANT) === VIVANT);
 
 /* ═══════════════ RECOMMANDER UN NUMERO (T-105) : VERROUILLE ═══════════════
    Mathias, 08/09 : « qu'on ait tout le processus qui soit prevu pour pouvoir
