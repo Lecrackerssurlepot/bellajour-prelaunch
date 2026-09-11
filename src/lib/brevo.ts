@@ -19,6 +19,8 @@
  * celles-ci gardent leur implémentation propre.
  */
 
+import { VAR_MAILS_COUPES, envoisCoupes, motDeCoupure } from "./envois";
+
 const BREVO_SMTP_URL = "https://api.brevo.com/v3/smtp/email";
 
 export async function sendBrevoEmail(args: {
@@ -39,6 +41,14 @@ export async function sendBrevoEmail(args: {
   }
   if (!apiKey) {
     console.error(`${tag} skip — BREVO_API_KEY manquante`);
+    return false;
+  }
+  /* T-108 — l'interrupteur des envois. Posé À LA MAIN dans .env.local, jamais
+     sur Vercel : il coupe le seul geste irréversible d'une recette locale.
+     Rend `false` comme un échec Brevo, donc le verrou de `mails_envoyes` se
+     retire et rien ne se croit envoyé (lib/envois.ts). */
+  if (envoisCoupes(process.env[VAR_MAILS_COUPES])) {
+    console.warn(motDeCoupure(tag, email, templateId));
     return false;
   }
 

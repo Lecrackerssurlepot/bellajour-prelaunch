@@ -64,6 +64,11 @@ Lire le résultat, rendre 500 sinon (T-038).
   incompatibles chez Stripe** : les deux ensemble font échouer la création de session, donc
   empêchent de payer. La règle vit dans `@/lib/atelier/fondatrice`, avec le risque assumé (tunnel
   sans authentification) et ses quatre bornes. Ne jamais la réécrire dans une route.
+- **L'interrupteur des envois** (`ATELIER_MAILS_COUPES`, T-108) coupe l'appel à Brevo dans
+  `sendBrevoEmail` ET dans les trois envois propres de `/api/waitlist` : les deux chemins, sinon
+  il mentirait sur la moitié des mails. Il rend `false` comme un échec, donc le verrou de
+  `mails_envoyes` se retire et rien ne se croit envoyé. Posé à la main en local, jamais sur
+  Vercel, et JAMAIS couplé à `NODE_ENV` (règle écrite dans `src/lib/envois.ts`).
 - **Un envoi de mail ne doit jamais faire échouer une action métier.** `sendBrevoEmail` est
   best-effort strict : elle ne throw jamais. Corollaire : **un mail non parti ne remonte nulle
   part sauf dans les logs Vercel.**

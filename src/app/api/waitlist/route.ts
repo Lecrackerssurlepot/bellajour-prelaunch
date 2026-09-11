@@ -7,6 +7,8 @@ import { preventeFermee } from "@/lib/prevente";
 import { generateUniqueCode } from "@/lib/refcode";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/contacts";
+import { VAR_MAILS_COUPES, envoisCoupes, motDeCoupure } from "@/lib/envois";
+
 const BREVO_SMTP_URL = "https://api.brevo.com/v3/smtp/email";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
 const W1_REF_LINK_BASE = "https://www.bellajour.fr";
@@ -36,6 +38,14 @@ async function sendWelcomeEmailW1(
     console.error("[brevo] W1 skip — BREVO_TEMPLATE_W1_ID manquant");
     return;
   }
+  /* T-108 — l'interrupteur des envois (lib/envois.ts). Cette route garde son
+     implémentation propre depuis toujours : la garde se pose donc ici aussi,
+     sinon l'interrupteur mentirait sur la moitié des envois du site. */
+  if (envoisCoupes(process.env[VAR_MAILS_COUPES])) {
+    console.warn(motDeCoupure("[brevo] W1", email, templateId));
+    return;
+  }
+
   try {
     const res = await fetch(BREVO_SMTP_URL, {
       method: "POST",
@@ -76,6 +86,14 @@ async function sendReferralWelcomeEmailP1(
     console.error("[brevo] P1 skip — BREVO_TEMPLATE_P1_ID manquant");
     return;
   }
+  /* T-108 — l'interrupteur des envois (lib/envois.ts). Cette route garde son
+     implémentation propre depuis toujours : la garde se pose donc ici aussi,
+     sinon l'interrupteur mentirait sur la moitié des envois du site. */
+  if (envoisCoupes(process.env[VAR_MAILS_COUPES])) {
+    console.warn(motDeCoupure("[brevo] P1", email, templateId));
+    return;
+  }
+
   try {
     const res = await fetch(BREVO_SMTP_URL, {
       method: "POST",
@@ -118,6 +136,14 @@ async function sendReferralNotifyEmailP2(
     console.error("[brevo] P2 skip — BREVO_TEMPLATE_P2_ID manquant");
     return;
   }
+  /* T-108 — l'interrupteur des envois (lib/envois.ts). Cette route garde son
+     implémentation propre depuis toujours : la garde se pose donc ici aussi,
+     sinon l'interrupteur mentirait sur la moitié des envois du site. */
+  if (envoisCoupes(process.env[VAR_MAILS_COUPES])) {
+    console.warn(motDeCoupure("[brevo] P2", parrainEmail, templateId));
+    return;
+  }
+
   try {
     const res = await fetch(BREVO_SMTP_URL, {
       method: "POST",
