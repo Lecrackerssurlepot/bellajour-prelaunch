@@ -236,6 +236,7 @@ import {
 } from "@/lib/compte/rattachement";
 import { suiteSure } from "@/lib/compte/garde";
 import { compteOuvert } from "@/lib/compte/session";
+import { VAR_MAILS_COUPES, envoisCoupes, motDeCoupure } from "@/lib/envois";
 import {
   GENRES_NOTE,
   csvCarnet,
@@ -3958,6 +3959,35 @@ ok("douze minutes", depuis(Date.now() - 12 * MINUTE) === "il y a 12 min");
 ok("deux heures", depuis(Date.now() - 125 * MINUTE) === "il y a 2 h");
 ok("hier", depuis(Date.now() - 30 * 60 * MINUTE) === "hier");
 ok("trois jours", depuis(Date.now() - 3 * 24 * 60 * MINUTE) === "il y a 3 jours");
+
+
+/* ─────────────────── T-108 : l'interrupteur des envois ───────────────────
+   Le 11/09, un script de recette a envoye un vrai mail malgre la consigne.
+   Ces assertions gardent la seule regle qui compte : ce qui coupe, ce qui ne
+   coupe pas, et le fait qu'un doute NE coupe PAS (un tunnel muet en
+   production serait pire que le risque couvert). */
+titre("— l'interrupteur des envois (T-108) —");
+ok("la variable porte le nom attendu, ecrit une seule fois",
+   VAR_MAILS_COUPES === "ATELIER_MAILS_COUPES");
+ok("absente : les mails partent (production)",
+   envoisCoupes(undefined) === false && envoisCoupes(null) === false);
+ok("vide ou espaces : les mails partent",
+   envoisCoupes("") === false && envoisCoupes("   ") === false);
+ok("« 1 » coupe", envoisCoupes("1") === true);
+ok("« true » et « oui » coupent, quelle que soit la casse",
+   envoisCoupes("true") === true && envoisCoupes("TRUE") === true && envoisCoupes("Oui") === true);
+ok("les espaces autour ne trompent pas", envoisCoupes(" 1 ") === true);
+ok("« 0 » et « false » NE coupent PAS",
+   envoisCoupes("0") === false && envoisCoupes("false") === false);
+ok("une valeur inattendue ne coupe pas : le doute laisse partir",
+   envoisCoupes("peut-etre") === false && envoisCoupes("2") === false);
+ok("le mot de coupure NOMME le destinataire, le modele et la variable",
+   motDeCoupure("[brevo] M3", "quelquun@exemple.fr", 28).includes("quelquun@exemple.fr") &&
+   motDeCoupure("[brevo] M3", "quelquun@exemple.fr", 28).includes("28") &&
+   motDeCoupure("[brevo] M3", "quelquun@exemple.fr", 28).includes(VAR_MAILS_COUPES));
+ok("sans modele, le mot reste lisible",
+   motDeCoupure("[brevo] W1", "a@b.fr", null).includes("a@b.fr") &&
+   !motDeCoupure("[brevo] W1", "a@b.fr", null).includes("template="));
 
 /* On repose le globe comme on l'a trouve : la suite du harnais ne doit pas
    heriter d'un `localStorage` qui jette. */

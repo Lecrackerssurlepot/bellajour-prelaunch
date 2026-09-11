@@ -25,6 +25,11 @@ Chargé dès qu'on touche un script. Aucun n'est branché dans `package.json` : 
 | `inviter-fondateurs.ts` | **Envoie le mail C0** (« votre espace fondateur est ouvert ») aux fondateurs confirmés dont le compte existe. Lecture seule sans `--vraiment` ; `--seulement <email>` borne à une adresse (la vérification de Mathias). Le lien mène à `/compte/bienvenue`, sans jeton ni expiration. Pas d'idempotence : relancer renvoie |
 | `creer-comptes-fondateurs.ts` | **Écrit dans `auth.users` de PRODUCTION** : pré-crée en silence les comptes des fondateurs (email confirmé, aucun mot de passe, AUCUN mail). Dry-run par défaut, `--vraiment` pour agir. Idempotent |
 
+⚠️ **Pour qu'AUCUN mail ne parte d'une machine locale** : poser `ATELIER_MAILS_COUPES=1` dans
+`.env.local` (T-108). Le site fonctionne à l'identique, seul l'appel à Brevo est coupé, et le
+log nomme le destinataire épargné. Jamais sur Vercel. `--pousser` de `mails-atelier.mjs` n'est
+PAS concerné : il écrit des gabarits, il n'envoie rien.
+
 **Le texte des mails vit dans `mails-atelier.mjs`, versionné — pas dans l'interface Brevo.**
 Modifier un mail = modifier ce fichier, puis pousser le seul template concerné.
 
