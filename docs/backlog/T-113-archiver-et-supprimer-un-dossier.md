@@ -38,8 +38,8 @@ et de façon irréversible. Les cinq tables liées cascadent bien sur `delete fr
 - La démo porte un dossier archivé (« Test du 12 septembre »).
 
 ## Ce qui reste, et ne peut être que Mathias
-1. **Appliquer la migration `20260914_atelier_archive.sql`** sur Supabase. Sans elle, les deux
-   boutons répondent « migration non passée » et tout le reste lit comme avant.
+1. ~~Appliquer la migration `20260914_atelier_archive.sql`~~ **Fait le 14/09/2026**, sur accord
+   explicite de Mathias : colonne, index et cache PostgREST vérifiés, 6 dossiers en base, 0 archivé.
 2. **Premier usage réel** : archiver un vrai dossier de test, vérifier qu'il disparaît de la liste
    et que sa page client répond 404 ; le récupérer ; l'archiver de nouveau et le supprimer, puis
    vérifier dans R2 que `numeros/<id>/` est vide.

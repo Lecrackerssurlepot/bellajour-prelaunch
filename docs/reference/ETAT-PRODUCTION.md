@@ -10,6 +10,17 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 14/09/2026 : la table de travail se lit, et les dossiers de test se rangent (PR #132, #133)
+
+- **Boîte du jour « Depuis hier »** et colonne **« Prochaine étape »** sur `/admin/atelier` (T-112,
+  PR #132, en prod le 14/09) : ce qui est entré, et à qui est la balle. `urgence.ts` inchangé.
+- **Archiver, récupérer, supprimer définitivement** un dossier depuis sa fiche (T-113, PR #133, en
+  prod le 14/09). **Migration `20260914_atelier_archive.sql` APPLIQUÉE le 14/09** sur accord de
+  Mathias, colonne et cache PostgREST vérifiés. Aucune suppression réelle exercée : premier usage
+  réel à faire par Mathias sur un dossier de test.
+- **PR #131 (références produit, pelliculage, CGV v3.2) et sa migration `20260911` : GELÉES**, redit
+  par Mathias le 14/09. Ne pas appliquer la migration seule.
+
 ## 11/09/2026 — le premier vrai client est en ligne (PR #113 → #125)
 
 **Klervie (fondatrice nº13) a reçu son aperçu à 13:38 et l'a ouvert à 13:39.** C'est le premier
