@@ -184,3 +184,17 @@ soleil. Ce n'est plus un effet, c'est le contraste.
 **4. « Des visuels n'ont pas été changés sur la page admiration » — oui, c'est voulu.** Ce sont
 A06 à A09, les quatre masters non publiables (Vogue, Tintin, deux affiches de films). Voir plus
 haut. Seule A10 a été remplacée.
+
+
+## 14/09/2026 — quatrième passage, finition
+
+**Angles droits partout sur les images.** Les cadres du collage passent de 2 px d'arrondi à 0,
+la double page de 3 px à 0, et la couverture Rio perd son `2px 9px 9px 2px` (une tranche arrondie
+de magazine broché, reste du temps où l'objet portait aussi son dos et ses traits de tranche).
+Ce que ces cadres montrent, ce sont des doubles pages : du papier coupé au massicot.
+
+**L'ombre change de nature.** `--shadow-float` vaut `0 24px 70px rgba(0,0,0,.7)` : c'est une ombre
+de LÉVITATION, elle éloigne l'objet du fond. Pour du volume il faut du CONTACT. Chaque objet porte
+donc deux ombres : une très serrée (`0 1px 2px`) qui dessine le bord de la feuille, et une courte
+portée qui le pose. Collage `0 10px 24px`, double page `0 14px 34px`, Rio en unités `--uh`.
+⚠️ Ne pas « simplifier » en revenant au token `--shadow-float` : il supprime l'effet demandé.

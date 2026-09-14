@@ -122,12 +122,23 @@
   aspect-ratio: 749 / 574;
 }
 
+/* ⚠️ ANGLES DROITS, ET C'EST UNE DÉCISION (Mathias, 14/09/2026).
+   Les 2 px d'arrondi venaient de la maquette de août : ils adoucissaient des
+   couvertures, mais ce que le collage montre désormais, ce sont des DOUBLES
+   PAGES — du papier coupé au massicot, qui n'a pas de coin rond.
+   L'ombre change de nature avec eux. `--shadow-float` (0 24px 70px) est une
+   ombre de LÉVITATION : elle fait flotter l'objet loin au-dessus du fond.
+   Ici on veut de l'ÉPAISSEUR : une ombre courte, presque sous l'objet, plus
+   une seconde très serrée qui dessine le bord de la feuille. C'est ce contact
+   avec le fond qui donne le volume — une ombre lointaine le supprime. */
 .at-pdp .collage figure {
   position: absolute;
   margin: 0;
   overflow: hidden;
-  border-radius: 2px;
-  box-shadow: var(--shadow-float);
+  border-radius: 0;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    0 10px 24px rgba(0, 0, 0, 0.45);
 }
 
 .at-pdp .collage img {
@@ -640,8 +651,13 @@
 .at-pdp .double {
   position: relative;
   background: var(--paper);
-  border-radius: 3px;
-  box-shadow: var(--shadow-float);
+  /* Angles droits et ombre d'épaisseur : même raison que le collage. La
+     double page est plus grande, donc l'ombre porte un peu plus loin — mais
+     elle reste posée, jamais flottante. */
+  border-radius: 0;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.6),
+    0 14px 34px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   aspect-ratio: 4000 / 2828;
 }
