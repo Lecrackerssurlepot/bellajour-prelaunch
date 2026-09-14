@@ -77,12 +77,12 @@ export default function Kiosque() {
             </figure>
             <figure className="c3">
               <img
-                src="/images/v2/magazine/m03-450.webp"
-                srcSet="/images/v2/magazine/m03-240.webp 240w, /images/v2/magazine/m03-360.webp 360w, /images/v2/magazine/m03-450.webp 450w"
-                sizes="(max-width: 720px) 35vw, 19vw"
-                alt="Un numéro Bellajour consacré à un voyage au Japon"
-                width={450}
-                height={604}
+                src="/images/v2/magazine/m03-500.webp"
+                srcSet="/images/v2/magazine/m03-500.webp 500w, /images/v2/magazine/m03-1000.webp 1000w"
+                sizes="(max-width: 900px) 34vw, 30vw"
+                alt="Une double page d’un numéro : un lagon turquoise en pleine page, avec un tirage rapporté"
+                width={1000}
+                height={707}
                 loading="lazy"
                 decoding="async"
               />

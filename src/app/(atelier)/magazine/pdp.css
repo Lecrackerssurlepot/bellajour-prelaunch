@@ -137,6 +137,24 @@
   display: block;
 }
 
+/* ── LES TROIS CADRES SUIVENT LE FORMAT DES MASTERS (14/09/2026) ──
+   La composition tenait un portrait a gauche et DEUX portraits a droite.
+   Elle tient desormais un portrait et DEUX PAYSAGES : c'est la forme des
+   visuels livres, et la regle posee par Mathias ce jour-la est que le site
+   s'adapte au visuel, jamais l'inverse.
+   Chaque hauteur ci-dessous est CALCULEE, pas choisie : dans une boite de
+   749 x 574, un cadre de largeur L % a une hauteur de
+      (L% x 749 / rapport-du-master) / 574
+   de sorte que `object-fit: cover` n'ait plus rien a rogner.
+      c1  39,5 %  ->  0,708  (M01, 8770x12478)   ->  72,8 %
+      c2  44 %    ->  1,4217 (M02, 12468x8770)   ->  40,4 %
+      c3  55 %    ->  1,4145 (M03, 4000x2828)    ->  50,74 %
+   c3 a grandi ET remonte : en paysage a 35 % de large il ne faisait plus que
+   32 % de haut, et laissait une bande noire entre lui et c2. Large et pose
+   a 38 %, il mord le bas de c2 comme le faisait le portrait — le chevauchement
+   EST la composition, sans lui il n'y a plus de collage mais trois vignettes.
+   ⚠️ Toute retouche de largeur se repercute sur la hauteur par la formule
+   ci-dessus. Changer l'une sans l'autre remet du recadrage. */
 .at-pdp .c1 { left: 0;     top: 0;     width: 39.5%; height: 72.8%; transform: rotate(-1.6deg); }
 /* ⚠️ 40,4 % ET NON 39,7 % DEPUIS LE 14/09/2026 : c'est la hauteur qui donne
    au cadre le rapport EXACT du master livre (M02, 12468x8770, soit 1,4217).
@@ -144,7 +162,7 @@
    rien. La regle posee par Mathias ce jour-la est celle-ci : quand le format
    du visuel differe de celui du site, c'est le site qui bouge. */
 .at-pdp .c2 { left: 35.5%; top: -1.4%; width: 44%;   height: 40.4%; transform: rotate(1.1deg); }
-.at-pdp .c3 { left: 43%;   top: 37.6%; width: 35%;   height: 61.3%; transform: rotate(-0.8deg); }
+.at-pdp .c3 { left: 30%;   top: 38%;   width: 55%;   height: 50.74%; transform: rotate(-0.8deg); }
 
 /* `object-position` retire le 14/09 : il recentrait un portrait dans un
    cadre paysage. Le fichier servi est desormais un paysage au rapport du
@@ -731,9 +749,16 @@
      décide si le bouton reste dans l'écran : on élargit, on ne grandit pas. */
   .at-pdp .collage { margin-top: -3.4vw; aspect-ratio: 11 / 5; }
 
-  .at-pdp .c1 { left: 0;   top: 7%;  width: 36%; height: 88%; }
-  .at-pdp .c2 { left: 33%; top: 0;   width: 36%; height: 74%; }
-  .at-pdp .c3 { left: 65%; top: 15%; width: 35%; height: 85%; }
+  /* Memes formats qu'en desktop, recalcules pour une boite 11/5 :
+        c1  28,3 % -> 0,708  -> 88 %
+        c2  33,6 % -> 1,4217 -> 52 %
+        c3  33,4 % -> 1,4145 -> 52 %
+     Les deux paysages se posent cote a cote a droite du portrait, decales en
+     hauteur : c'est ce decalage qui garde l'air de collage une fois que les
+     trois cadres sont deployes de 0 a 100 %. */
+  .at-pdp .c1 { left: 0;   top: 6%;  width: 28.3%; height: 88%; }
+  .at-pdp .c2 { left: 31%; top: 2%;  width: 33.6%; height: 52%; }
+  .at-pdp .c3 { left: 66%; top: 30%; width: 33.4%; height: 52%; }
 
 
   /* Le premier écran d'un téléphone se compte au pixel. Chaque valeur

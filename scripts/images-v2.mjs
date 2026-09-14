@@ -69,11 +69,11 @@ const TRAVAUX = [
      d'une boîte 749/574, soit 0,708. Le master fait 0,7029. Idem : invisible. */
   { de: `${MASTERS}/BJ-M01.jpeg`, vers: 'magazine/m01', ratio: 0.708, largeurs: [450, 900] },
 
-  /* M03 — la troisieme du collage. Le master livre le 14/09 est un PAYSAGE
-     (4000x2828) pour un cadre portrait (`.c3`, 0,745) : ce n'est pas un
-     recadrage, c'est un quart-de-tour. On garde donc la couverture d'origine
-     ici, rangee sous son nom de code, en attendant un master portrait. */
-  { de: 'public/images/lancement/galerie/japon.webp', vers: 'magazine/m03', ratio: 0.745, largeurs: [240, 360, 450] },
+  /* M03 — la troisieme du collage. Le master est un PAYSAGE (4000x2828).
+     Mathias a tranche le 14/09 : c'est le CADRE qui passe en paysage, pas
+     l'image qu'on tourne. `.c3` vaut desormais 1,4145 (pdp.css), soit
+     exactement le rapport du master — aucun recadrage. */
+  { de: `${MASTERS}/BJ-M03.png`, vers: 'magazine/m03', ratio: null, largeurs: [500, 1000] },
 
   /* M02 — la paysage du collage. Master 1,4217 ; `.c2` passe de 39,7 % à
      40,4 % de hauteur pour l'épouser exactement (pdp.css). Aucun recadrage. */

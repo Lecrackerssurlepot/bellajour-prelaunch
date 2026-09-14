@@ -107,6 +107,7 @@ Douze masters déposés dans `design-explorations/visuels-v2/`. `scripts/images-
 | A11 | accueil page 07, le numéro | remplace `marrakech` ; **`.n-tete` retiré** (le master porte déjà « RIO ») ; titre passé à « Rio, et la lumière du matin » |
 | M01 | /magazine collage `.c1` | LCP ; preload de `page.tsx` mis en miroir |
 | M02 | /magazine collage `.c2` | **`.c2` passe de 39,7 % à 40,4 % de hauteur** pour épouser le 1,4217 du master ; `object-position` retiré |
+| M03 | /magazine collage `.c3` | **le cadre passe en paysage** (0,745 → 1,4145) ; c3 élargi de 35 % à 55 % et remonté à 38 % pour continuer de mordre c2 |
 | M04 + M04V | /magazine, la double page | **une seule image** ; `.gauche`, `.droite`, `.vignettes`, `.folio`, `.pli` supprimés du balisage ET de `pdp.css` ; `.double` passe de 760/474 à 4000/2828, et à 2828/4000 sous 560 px via `<picture>` |
 | M07 | JSON-LD `Product.image` | 450 px → 1600 px (T-085, point 1 levé) |
 
@@ -123,8 +124,11 @@ Ancre `#objet` posée sur la section produit au passage.
   site marchand. Les quatre couvertures d'origine restent en place, **rangées sous les noms de
   code** `v2/accueil/a06..a09` : le jour où de vrais masters arrivent, seule la ligne `de:` du
   script change. ⚠️ Ne pas publier ces quatre fichiers.
-- **M03 — orientation.** Master livré en paysage 4000×2828 pour un cadre portrait (`.c3`, 0,745).
-  Ce n'est pas un recadrage, c'est un quart de tour. `japon.webp` reste, rangé en `v2/magazine/m03`.
+- ~~M03~~ **intégré le 14/09 au second passage.** Mathias a tranché : le cadre passe en paysage,
+  on ne tourne pas l'image. `.c3` vaut désormais 1,4145, exactement le rapport du master, et le
+  collage tient un portrait plus **deux** paysages. Les hauteurs des trois cadres sont calculées,
+  plus choisies : `(largeur% × 749 / rapport) / 574`. La bande étroite (≤ 900 px) est recalculée
+  sur la même formule pour une boîte 11/5. `japon.webp` sort du collage.
 - **M07 — le master est le doublon de M04** (md5 identique) : une double page titrée, pas la photo
   d'objet demandée. Intégré quand même (1600 px valent mieux que 450), mais **en un seul cadrage** :
   les trois que Google préfère tranchent le mot « AUSTRALIA ». À refaire.
@@ -138,7 +142,14 @@ en ligne : 736 px suffisent pour une case peinte à 192 px CSS.
 ### À surveiller
 
 `pdp.css` fait remplir au collage toute la hauteur restante au-delà de 768 px
-(`.collage{flex:1;aspect-ratio:auto}`), et son commentaire dit explicitement que les trois cadres
-« sont des portraits 450x675 ». **M02 est désormais un paysage** : sur une fenêtre très haute, son
-cadre s'étire et le recadrage devient sévère. Vérifié bon à 1440×900 ; à revoir si Mathias voit
-le défaut sur un grand écran.
+(`.collage{flex:1;aspect-ratio:auto}`), et son commentaire dit encore que les trois cadres
+« sont des portraits 450x675 ». **Deux des trois sont désormais des paysages** : sur une fenêtre
+très haute, leur cadre s'étire et `object-fit` reprend du recadrage. Vérifié bon à 1440×900 et
+1512×982 (les deux tailles courantes) ; à revoir si le défaut se voit sur un très grand écran.
+Le remède, si besoin : rendre au collage son `aspect-ratio` et centrer le reste de la colonne —
+mais c'est revenir sur une décision antérieure, donc pas sans Mathias.
+
+Vérification du 14/09 par le protocole DevTools (`scratchpad/cdp.mjs`, Chrome piloté) :
+les cinq cases de la page 04 mesurent **216 × 324 px, identiques**, `.numero` fait 374 × 529
+(0,707), `.n-tete` est absent, et `/magazine` à 430 px de large a un `scrollWidth` de 430 —
+**aucun débordement horizontal**.
