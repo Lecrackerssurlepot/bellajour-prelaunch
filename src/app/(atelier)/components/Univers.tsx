@@ -556,8 +556,15 @@ export default function Univers() {
                  typographie francaise met devant `;`. Elle n'est pas
                  decorative : elle EMPECHE le point-virgule de basculer seul
                  en debut de ligne. Une espace normale le laisserait partir. */}
-            <span className="bloc" data-t="300">Nous vivons l’époque où l’on documente le plus notre vie&#8239;;</span>
-            <span className="bloc" data-t="1500"><em data-t="1900">photos</em>, <em data-t="2500">vidéos</em>, <em data-t="3100">commentaires</em>, <em data-t="3700">publications</em> et <em data-t="4300">stories</em> sur les réseaux sociaux…</span>
+            {/* `&nbsp;` entre « notre » et « vie » (14/09/2026) : les deux mots
+                passent ENSEMBLE à la ligne, avec leur point-virgule. Sans
+                elle, « notre » restait seul en bout de ligne et « vie ; »
+                ouvrait la suivante. */}
+            {/* ⚠️ `{' '}` ENTRE LES BLOCS (14/09/2026) : JSX avale le retour à la
+                 ligne entre deux <span>, et le texte se rendait « vie ;photos »
+                 et « sociaux…mais », collés. L'espace est écrite, donc rendue. */}
+            <span className="bloc" data-t="300">Nous vivons l’époque où l’on documente le plus notre&nbsp;vie&#8239;;</span>{' '}
+            <span className="bloc" data-t="1500"><em data-t="1900">photos</em>, <em data-t="2500">vidéos</em>, <em data-t="3100">commentaires</em>, <em data-t="3700">publications</em> et <em data-t="4300">stories</em> sur les réseaux sociaux…</span>{' '}
             <span className="bloc" data-t="5200">mais que tous ces moments de vie&#8239;; ces périodes, ces souvenirs&#8239;;</span>
             {/* la chute respire : 1400 ms apres la phrase qui la prepare,
                  au lieu de 900. C'est le seul mot qui doit surprendre. */}
@@ -684,9 +691,13 @@ export default function Univers() {
                la lueur qui traverse. Une page qui donne le premier role a
                la phrase d'un autre vend la phrase d'un autre. */}
           <p className="sl6-amorce" data-t="200">Nous sommes très attachés à la citation :</p>
+          {/* Le guillemet ouvrant vit DANS la première ligne (14/09/2026) : posé
+               avant elle, il tombait seul sur une ligne dès que la citation se
+               centre (mobile, et grand écran depuis l'axe de lecture). Il arrive
+               avec la ligne, par le même masque ; univers.css le sort du flux à
+               gauche du bloc quand la citation est ferrée à gauche. */}
           <blockquote className="sl6-cit">
-            <span className="guill" aria-hidden="true" data-t="700">«</span>
-            <span className="ligne"><span className="in">Il ne faut pas confondre</span></span>
+            <span className="ligne"><span className="in"><span className="guill" aria-hidden="true">«</span>Il ne faut pas confondre</span></span>
             <span className="ligne"><span className="in">rêver sa vie et vivre ses rêves<span className="guill-f" aria-hidden="true">»</span></span></span>
           </blockquote>
 

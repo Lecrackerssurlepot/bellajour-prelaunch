@@ -38,10 +38,18 @@ const CLE_VUE = 'bj:ouverture-vue'
 const MARQUE_VUE = 'data-ouverture-vue'
 
 /* Au delà de ce défilement, la personne a pris la main : elle ne regarde
-   plus la couverture, elle veut la suite. On termine l'ouverture SEC, sans
-   transition, plutôt que de la laisser jouer sous elle — c'est ce
-   chevauchement qui se voyait comme un bug. Un quart d'écran, parce qu'en
-   dessous la couverture est encore largement à l'image. */
+   plus la couverture, elle veut la suite. On termine alors l'ouverture
+   TOUT DE SUITE, mais EN DOUCEUR : la découpe finit de s'ouvrir et le titre
+   prend sa place avec leurs transitions, au lieu d'attendre la fin du
+   battement. Un quart d'écran, parce qu'en dessous la couverture est encore
+   largement à l'image.
+   ⚠️ 14/09/2026 : jusqu'ici la fin était SÈCHE (`ouvrirEnGrand(true)`) —
+   l'attribut `data-ouverture-vue` posé en plein milieu coupait TOUTES les
+   transitions d'un coup : découpe, titre, voile sautaient à leur état
+   final dans la même frame, et l'image arrivait figée sous une page qui
+   défile. C'est l'« affichage spécial qui gèle l'animation » signalé par
+   Mathias, sur ordinateur comme sur téléphone. La coupure sèche reste
+   réservée au retour sur la page (déjà vue), où il n'y a rien à jouer. */
 const PRISE_EN_MAIN = 0.25
 
 export default function Ouverture() {
@@ -173,7 +181,7 @@ export default function Ouverture() {
          mouvements qui se marchent dessus : la découpe s'élargit, le titre
          change de régime et le voile se pose, le tout sous une page qui
          défile. On arrête le film au lieu de le jouer dans son dos. */
-      if (!ouvert && y > window.innerHeight * PRISE_EN_MAIN) ouvrirEnGrand(true)
+      if (!ouvert && y > window.innerHeight * PRISE_EN_MAIN) ouvrirEnGrand()
       if (y !== derniereY) {
         derniereY = y
         const h = window.innerHeight
@@ -379,7 +387,10 @@ export default function Ouverture() {
         <div className="h-bas">
           <div className="h-gauche">
             <p className="h-amorce">Ce festival, cette soirée, ce road trip…</p>
-            <p className="corps h-lede">Chaque moment qui vous touche. Vous envoyez vos photos, l’atelier compose le magazine de cet instant de vie.</p>
+            {/* Deux souffles, deux lignes (Mathias, 14/09/2026) : la promesse
+                d'abord, le geste ensuite. Le <br> vaut sur tous les écrans :
+                la première phrase tient sur une ligne dès 320 px. */}
+            <p className="corps h-lede">Chaque moment qui vous touche.<br />Vous envoyez vos photos, l’atelier compose le magazine de cet instant de vie.</p>
             <p className="mention h-note">Premier aperçu gratuit · Votre magazine sur-mesure dès <b>{CTA_NOTE_PRICE}</b>.</p>
           </div>
           <div className="h-droite">

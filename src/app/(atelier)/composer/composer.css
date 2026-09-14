@@ -190,8 +190,13 @@
   to { opacity: 1; transform: none; }
 }
 
-.at-q-screen h2 { margin-top: 12px; }
-.at-q-lede { margin-top: 14px; }
+/* Le rythme vertical est celui de theme.css (--esp-*), pas des pixels
+   propres au questionnaire : étiquette → titre, titre → chapeau. */
+/* ⚠️ Préfixés .bj-atelier (0,2,0) : theme.css pose `.bj-atelier p { margin: 0 }`
+   en (0,1,1), qui BATTAIT `.at-q-lede` (0,1,0) — le chapeau n'a jamais eu ses
+   14 px d'écart sous le titre, il y était collé (constaté le 14/09/2026). */
+.bj-atelier .at-q-screen h2 { margin-top: var(--esp-etiq); }
+.bj-atelier .at-q-lede { margin-top: var(--esp-sous); }
 .at-q-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 
 /* ---- LA BARRE FIXE (03/09) ----
@@ -299,7 +304,7 @@
 
 .bj-atelier .at-field {
   max-width: 560px;
-  margin-top: 30px;
+  margin-top: var(--esp-corps);
   padding: 10px 0;
   font-family: var(--font-display);
   font-size: clamp(26px, 6vw, 40px);
@@ -308,14 +313,14 @@
 .bj-atelier .at-area {
   max-width: 620px;
   min-height: 110px;
-  margin-top: 26px;
+  margin-top: var(--esp-corps);
   padding: 12px 0;
   font-size: 16px;
   line-height: 1.7;
   resize: vertical;
 }
 
-.bj-atelier .at-inp { max-width: 420px; margin-top: 22px; padding: 12px 0; font-size: 17px; }
+.bj-atelier .at-inp { max-width: 420px; margin-top: var(--esp-corps); padding: 12px 0; font-size: 17px; }
 .bj-atelier .at-inp--wide { max-width: 560px; }
 
 /* ── LE SELECT DU PAYS (écran 4, 10/09/2026) ───────────────────────────
@@ -397,6 +402,20 @@
 .at-area:focus:not(:focus-visible),
 .at-inp:focus:not(:focus-visible) { outline: none; }
 
+/* 14/09/2026 (Mathias) : l'ENCADRÉ disparaît des champs texte, souris ET
+   clavier. Pour un champ de saisie, tous les navigateurs posent
+   `:focus-visible` dès qu'on y écrit, même au clic ou au doigt : l'anneau
+   de theme.css (2 px d'accent à 4 px du bord) dessinait un rectangle
+   orange autour de chaque champ du questionnaire, sur téléphone comme sur
+   ordinateur. Le repère de focus reste : c'est le trait du bas qui passe
+   à l'accent (règle du dessus), visible au clavier comme au doigt. Les
+   boutons, liens et cases gardent l'anneau de theme.css : eux n'ont pas
+   de trait. Même spécificité (0,2,0) que `.bj-atelier :focus-visible`,
+   chargé après lui : cette règle gagne. */
+.at-field:focus-visible,
+.at-area:focus-visible,
+.at-inp:focus-visible { outline: none; }
+
 /* Le wrapper du layout composer qui porte --font-composer-italique.
    `display: contents` : il n'ajoute aucune boîte au flux, il ne fait que
    descendre la variable de police jusqu'aux écrans. */
@@ -456,7 +475,7 @@
 }
 
 /* ---- suggestions de l'écran 1 ---- */
-.at-chips { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 26px; max-width: 640px; }
+.at-chips { display: flex; flex-wrap: wrap; gap: 9px; margin-top: var(--esp-corps); max-width: 640px; }
 
 /* Lot 6 (07/09) — 41 px mesurés à 375 px, trois pixels sous le plancher
    d'une cible tactile. Ce sont les DOUZE premiers gestes du parcours, sur
