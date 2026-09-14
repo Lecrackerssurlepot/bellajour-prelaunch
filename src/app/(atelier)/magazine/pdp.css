@@ -155,14 +155,29 @@
    EST la composition, sans lui il n'y a plus de collage mais trois vignettes.
    ⚠️ Toute retouche de largeur se repercute sur la hauteur par la formule
    ci-dessus. Changer l'une sans l'autre remet du recadrage. */
-.at-pdp .c1 { left: 0;     top: 0;     width: 39.5%; height: 72.8%; transform: rotate(-1.6deg); }
+/* ── CHAQUE CADRE PORTE LE RAPPORT DE SON MASTER (14/09/2026, 2e passage) ──
+   Ils avaient une hauteur en POURCENTAGE de la boite. C'etait le defaut :
+   le rapport d'un cadre valait alors (largeur% x largeur-boite) / (hauteur% x
+   hauteur-boite), donc il changeait des que la boite changeait de forme — et
+   la boite change de forme a chaque point de rupture, et s'etire en hauteur
+   sur grand ecran. Les photos etaient recadrees sans qu'aucune regle ne le
+   dise. Mathias l'a vu a l'ecran le 14/09.
+   Avec `aspect-ratio` et AUCUNE hauteur, la forme d'un cadre ne depend plus
+   que de sa largeur : elle est vraie partout, quelle que soit la boite.
+   Les valeurs sont les dimensions des masters, telles quelles, pas des
+   arrondis — c'est la seule facon que `object-fit: cover` n'ait rien a rogner.
+   ⚠️ Ne jamais reposer de `height` ici : elle reprendrait la main sur le
+   rapport et le recadrage silencieux reviendrait.
+   ⚠️ Plus aucune rotation : Mathias les a retirees le 14/09. Les cadres sont
+   droits, et c'est le chevauchement seul qui fait le collage. */
+.at-pdp .c1 { left: 0;     top: 0;     width: 39.5%; aspect-ratio: 8770 / 12478; }
 /* ⚠️ 40,4 % ET NON 39,7 % DEPUIS LE 14/09/2026 : c'est la hauteur qui donne
    au cadre le rapport EXACT du master livre (M02, 12468x8770, soit 1,4217).
    A 39,7 % le cadre valait 1,4462 et `object-fit` rognait les cotes pour
    rien. La regle posee par Mathias ce jour-la est celle-ci : quand le format
    du visuel differe de celui du site, c'est le site qui bouge. */
-.at-pdp .c2 { left: 35.5%; top: -1.4%; width: 44%;   height: 40.4%; transform: rotate(1.1deg); }
-.at-pdp .c3 { left: 30%;   top: 38%;   width: 55%;   height: 50.74%; transform: rotate(-0.8deg); }
+.at-pdp .c2 { left: 35.5%; top: -1.4%; width: 44%;   aspect-ratio: 12468 / 8770; }
+.at-pdp .c3 { left: 30%;   top: 38%;   width: 55%;   aspect-ratio: 4000 / 2828; }
 
 /* `object-position` retire le 14/09 : il recentrait un portrait dans un
    cadre paysage. Le fichier servi est desormais un paysage au rapport du
@@ -481,9 +496,18 @@
      de contenu sans lui, et le collage refuserait de se comprimer sur un
      ecran court. La colonne ne centre donc plus rien — il n'y a plus de vide
      a repartir. */
-  .at-pdp .kiosque > div:first-child { justify-content: flex-start; }
-  .at-pdp .bloc-collage { flex: 1; min-height: 0; display: flex; }
-  .at-pdp .collage { flex: 1; min-height: 0; aspect-ratio: auto; }
+  .at-pdp .kiosque > div:first-child { justify-content: center; }
+  .at-pdp .bloc-collage { flex: 0 1 auto; min-height: 0; display: flex; }
+  /* ⚠️ `aspect-ratio: auto` A ETE RETIRE le 14/09/2026 (2e passage). Il
+     laissait le collage prendre toute la hauteur restante — ce qui reglait
+     bien les deux cents pixels de noir, mais au prix de la FORME des trois
+     cadres : leurs `top` en pourcentage d'une boite qui s'allonge les
+     ecartaient, et leur hauteur en pourcentage les etirait. Mathias a vu le
+     resultat a l'ecran et a tranche pour le format.
+     La boite garde donc ses proportions, et la colonne CENTRE ce qui reste
+     au lieu de tout laisser tomber en bas : le vide se partage en haut et en
+     bas, ou il ne se lit plus comme un oubli. */
+  .at-pdp .collage { flex: 0 1 auto; min-height: 0; width: 100%; }
 }
 
 /* ---- les trois paliers ----
@@ -756,9 +780,12 @@
      Les deux paysages se posent cote a cote a droite du portrait, decales en
      hauteur : c'est ce decalage qui garde l'air de collage une fois que les
      trois cadres sont deployes de 0 a 100 %. */
-  .at-pdp .c1 { left: 0;   top: 6%;  width: 28.3%; height: 88%; }
-  .at-pdp .c2 { left: 31%; top: 2%;  width: 33.6%; height: 52%; }
-  .at-pdp .c3 { left: 66%; top: 30%; width: 33.4%; height: 52%; }
+  /* Seules les LARGEURS et les positions changent ici : le rapport de chaque
+     cadre vient de son `aspect-ratio`, pose une fois plus haut, et vaut donc
+     aussi bas que large soit l'ecran. */
+  .at-pdp .c1 { left: 0;   top: 4%;  width: 26%; }
+  .at-pdp .c2 { left: 29%; top: 6%;  width: 34%; }
+  .at-pdp .c3 { left: 65%; top: 28%; width: 35%; }
 
 
   /* Le premier écran d'un téléphone se compte au pixel. Chaque valeur

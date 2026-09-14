@@ -153,3 +153,34 @@ Vérification du 14/09 par le protocole DevTools (`scratchpad/cdp.mjs`, Chrome p
 les cinq cases de la page 04 mesurent **216 × 324 px, identiques**, `.numero` fait 374 × 529
 (0,707), `.n-tete` est absent, et `/magazine` à 430 px de large a un `scrollWidth` de 430 —
 **aucun débordement horizontal**.
+
+
+## 14/09/2026 — troisième passage, retours de Mathias à l'écran
+
+**1. Le collage ne respectait pas le format des masters.** Diagnostic : les trois cadres avaient
+une hauteur en POURCENTAGE de la boîte, donc leur rapport valait
+`(largeur% × largeur-boîte) / (hauteur% × hauteur-boîte)` et changeait à chaque point de rupture
+— et surtout quand `.collage{flex:1;aspect-ratio:auto}` étirait la boîte pour remplir la colonne.
+C'est le point que la note « à surveiller » du deuxième passage annonçait.
+
+Corrigé à la racine : **chaque cadre porte son `aspect-ratio`, aucun ne porte de `height`**. Sa
+forme ne dépend donc plus que de sa largeur, et elle est vraie quelle que soit la boîte. Les
+valeurs sont les dimensions brutes des masters (`8770/12478`, `12468/8770`, `4000/2828`).
+`aspect-ratio: auto` est retiré de `.collage` et la première colonne **centre** son contenu, pour
+que le vide se partage au lieu de tomber en bas.
+Mesuré au protocole DevTools à 1440×900, 1512×982, 1920×1200 et 820×1180 : **écart de 0,00 %**
+entre le rapport voulu et le rapport obtenu, sur les trois cadres, aux quatre tailles.
+
+**2. Plus aucune rotation.** Les `transform: rotate()` des trois cadres sont retirés. C'est le
+chevauchement seul qui fait le collage.
+
+**3. La couverture Rio est dépouillée.** Sont partis : `.n-tranche` (les traits de tranche à
+droite), `.n-voile`, `.n-lum`, `.n-fibre`, `.n-dos` (voile sombre, reflet, grain, dos), le filtre
+`saturate/contrast/brightness` de l'image, et l'inclinaison 3D sous la souris — avec son écoute
+dans `Univers.tsx`. Restent une ombre portée et deux coins arrondis.
+⚠️ Un seul dégradé subsiste, sous `.n-pied` : le titre est du texte clair sur un sable en plein
+soleil. Ce n'est plus un effet, c'est le contraste.
+
+**4. « Des visuels n'ont pas été changés sur la page admiration » — oui, c'est voulu.** Ce sont
+A06 à A09, les quatre masters non publiables (Vogue, Tintin, deux affiches de films). Voir plus
+haut. Seule A10 a été remplacée.

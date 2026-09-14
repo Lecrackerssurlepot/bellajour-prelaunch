@@ -323,7 +323,6 @@ export default function Univers() {
     const jauge = un<HTMLElement>('.pas-jauge i')
     const items = tous<HTMLElement>('.pas li')
     const impalp = un<HTMLElement>('.m2')
-    const numero = un<HTMLElement>('.numero')
     const souris = { x: -1, y: -1 }
     if (fin && !doux) {
       const bouge = (e: PointerEvent) => { souris.x = e.clientX; souris.y = e.clientY }
@@ -441,16 +440,12 @@ export default function Univers() {
         }
       }
 
-      /* le numéro s'incline vers la souris : on a envie de le prendre */
-      if (numero && fin && !doux && souris.x >= 0) {
-        const r = numero.getBoundingClientRect()
-        if (r.top < h && r.bottom > 0) {
-          const nx = borne((souris.x - (r.left + r.width / 2)) / (r.width * 1.6), -1, 1)
-          const ny = borne((souris.y - (r.top + r.height / 2)) / (r.height * 1.6), -1, 1)
-          numero.style.setProperty('--ry', (nx * 9).toFixed(2) + 'deg')
-          numero.style.setProperty('--rx', (-ny * 6).toFixed(2) + 'deg')
-        }
-      }
+      /* L'INCLINAISON DU NUMÉRO VERS LA SOURIS A ÉTÉ RETIRÉE le 14/09/2026.
+         Mathias : « enlève l'effet sur l'image, on veut un effet très subtil
+         de magazine ». Un objet qui pivote quand le curseur passe à côté
+         n'est pas subtil, et il n'était visible que sur un pointeur fin —
+         c'est-à-dire pas sur l'essentiel du trafic. Les propriétés `--ry` et
+         `--rx` ne sont plus lues par personne (univers.css). */
 
       frame = requestAnimationFrame(boucle)
     }
