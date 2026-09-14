@@ -50,9 +50,11 @@ Après toute migration, vérifier que la donnée arrive vraiment — pas seuleme
 
 ## État connu
 
-**`20260914_atelier_archive.sql` (colonne `numeros.archive_le`, T-113) est écrite, PAS appliquée** :
-sans elle, « Archiver » et « Supprimer définitivement » répondent 503 et l'écran le dit ; tout le
-reste lit comme avant (repli 42703 dans `lireNumeros`, `/numero`, `/compte`, la santé, la relève).
+**`20260914_atelier_archive.sql` (colonne `numeros.archive_le`, T-113) a été appliquée le 14/09/2026 sur
+accord explicite de Mathias** (colonne, index et cache PostgREST vérifiés). Le repli 42703 reste en
+place partout (`lireNumeros`, `/numero`, `/compte`, la santé, la relève) : dormant, comme les autres.
+**`20260911_atelier_finition.sql` reste NON appliquée**, gelée avec la PR #131 par décision de Mathias
+(14/09) : ne pas l'appliquer seule, l'écriture de `finition` ne se replie pas.
 
 24 fichiers sur disque, 20 dans l'historique appliqué. **`20260908_notes_genre.sql` (colonne `notes.genre`, T-096) a été appliquée le 08/09/2026 sur accord explicite de Mathias**, et le revers a été CONTRÔLÉ, pas supposé : une note écrite par la vraie route porte bien `genre='page'` en base, l'écran l'étiquette, l'export la filtre. La note de vérification a été supprimée derrière. `20260901_atelier_retention.sql`
 (colonne `numeros.anonymise_le`, T-076) a été **appliquée le 02/09/2026** (colonne présente, vérifiée).
