@@ -210,6 +210,23 @@ body:has(.bj-atelier) { background: var(--c-atelier-void); }
    PRIMITIVES PARTAGÉES
    ════════════════════════════════════════════════════════════ */
 
+/* ── LE RYTHME VERTICAL (14/09/2026, Mathias : « des espacements parfaits
+   entre titres, sous-titres et textes, sur tout le site ») ──
+   Règle commune de mise en page, la même que dans un magazine :
+     · l'ÉTIQUETTE au-dessus d'un titre en est proche (≈ un tiers du corps du
+       titre) — elle le nomme, elle ne s'en détache pas ;
+     · le SOUS-TITRE respire sous le titre (≈ la moitié du corps du titre) ;
+     · le CORPS, un champ, une liste, une action, prend une ligne pleine
+       d'écart (≈ une fois et demie le corps du texte).
+   Trois écarts, fluides entre téléphone et grand écran, et UN SEUL endroit
+   pour les régler. Une feuille qui pose un écart « titre → texte » en
+   pixels durs est un écart de plus à tenir à la main. */
+.bj-atelier {
+  --esp-etiq: clamp(12px, 1.4vw, 18px);
+  --esp-sous: clamp(16px, 2vw, 26px);
+  --esp-corps: clamp(24px, 3vw, 36px);
+}
+
 .at-wrap {
   max-width: 1200px;
   margin: 0 auto;

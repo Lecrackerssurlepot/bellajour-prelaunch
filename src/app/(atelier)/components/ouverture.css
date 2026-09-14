@@ -239,8 +239,10 @@
   font-size:clamp(23px,2.3vw,44px);line-height:1.14;letter-spacing:-.01em;
   color:var(--c-text);opacity:0;transform:translateY(1.6vh);
 }
+/* Les écarts du bas de page suivent le rythme commun (theme.css, --esp-*) :
+   chapeau sous l'amorce, mention sous le chapeau. */
 .at-accueil .h-lede{
-  margin-top:2vh;opacity:0;transform:translateY(1.6vh);
+  margin-top:var(--esp-sous);opacity:0;transform:translateY(1.6vh);
   font-size:clamp(16px,1.3vw,22px);line-height:1.64;color:var(--c-text-soft);
 }
 .at-accueil .h-note{font-size:clamp(13px,1vw,17px);font-weight:400;color:var(--c-text-soft)}
@@ -249,7 +251,7 @@
   font-size:1.42em;letter-spacing:0;color:var(--c-accent-strong);
 }
 .at-accueil .h-droite{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:2.4vh}
-.at-accueil .h-note{margin-top:2.6vh;opacity:0;transform:translateY(1.6vh)}
+.at-accueil .h-note{margin-top:var(--esp-corps);opacity:0;transform:translateY(1.6vh)}
 .at-accueil.pret .h-amorce{opacity:1;transform:none;transition:opacity var(--t-lux) var(--ease-out) 760ms,transform var(--t-lux) var(--ease-out) 760ms}
 .at-accueil.pret .h-lede{opacity:1;transform:none;transition:opacity var(--t-lux) var(--ease-out) 880ms,transform var(--t-lux) var(--ease-out) 880ms}
 .at-accueil.pret .h-note{opacity:1;transform:none;transition:opacity var(--t-lux) var(--ease-out) 1180ms,transform var(--t-lux) var(--ease-out) 1180ms}
@@ -346,16 +348,22 @@
    sous 1000 px : mêmes valeurs, trait pour trait, que le bloc mobile plus
    bas. On borne à `min-width:1001px` pour ne rien toucher au mobile, et on
    ne vise que `.descente` — le CTA final (.sl7-cta) garde sa grande forme. */
+/* 14/09/2026 (Mathias) : la pastille GRANDIT. À 44 px de haut et 19 px de
+   corps, elle avait la taille du bouton de la barre : le seul geste de
+   l'ouverture ne se distinguait plus d'un raccourci. Un cran au-dessus de
+   la barre (56 px, corps de 23, disque de 44) : c'est l'action principale
+   de l'écran, elle doit se lire comme telle, sans redevenir le gros disque
+   d'avant. */
 @media (min-width:1001px){
   .at-accueil .descente{
-    gap:12px;min-height:44px;padding:7px 8px 7px 20px;
+    gap:14px;min-height:56px;padding:8px 10px 8px 26px;
     border:1px solid var(--c-line-strong);border-radius:999px;
     transition:border-color var(--t-reveal) var(--ease);
   }
   .at-accueil .descente:hover{border-color:var(--c-accent)}
-  .at-accueil .descente .mot{font-size:19px}
-  .at-accueil .descente .rond{width:34px;height:34px}
-  .at-accueil .descente .rond svg{width:19px;height:19px}
+  .at-accueil .descente .mot{font-size:23px}
+  .at-accueil .descente .rond{width:44px;height:44px}
+  .at-accueil .descente .rond svg{width:22px;height:22px}
   .at-accueil .descente .fil{display:none}
 }
 
@@ -502,7 +510,7 @@
   .at-accueil .h-bas{flex-direction:column;align-items:stretch;gap:calc(2.8 * var(--uh));margin-top:calc(3 * var(--uh))}
   .at-accueil .h-gauche{max-width:none}
   .at-accueil .h-amorce{font-size:clamp(20px,5.9vw,28px)}
-  .at-accueil .h-lede{margin-top:calc(1.4 * var(--uh));font-size:clamp(14px,3.9vw,17px);line-height:1.62}
+  .at-accueil .h-lede{font-size:clamp(14px,3.9vw,17px);line-height:1.62}
   /* ─── LA MENTION DE PRIX SORT DU HERO, SUR TELEPHONE SEUL ───
      « Premier apercu gratuit · Votre magazine sur-mesure des 30 € » disait
      vrai, mais dans une ouverture ou tout se dispute quatre cents pixels de
@@ -534,14 +542,16 @@
      Le libelle reste en italique de titrage : le hero parle, la barre
      etiquette. Meme forme, deux voix — sans quoi deux boutons identiques
      feraient croire a la meme destination. */
+  /* 14/09/2026 : un cran plus grand ici aussi (50 px, corps jusqu'à 21,
+     disque de 38) — la pastille reste une pastille, mais on la voit. */
   .at-accueil .acte--seul{
-    gap:12px;min-height:44px;padding:7px 8px 7px 20px;
+    gap:12px;min-height:50px;padding:7px 9px 7px 22px;
     border:1px solid var(--c-line-strong);border-radius:999px;
     transition:border-color var(--t-reveal) var(--ease)}
   .at-accueil .acte--seul:hover{border-color:var(--c-accent)}
-  .at-accueil .acte--seul .mot{font-size:clamp(15px,4.3vw,19px)}
-  .at-accueil .acte--seul .rond{width:34px;height:34px}
-  .at-accueil .acte--seul .rond svg{width:19px;height:19px}
+  .at-accueil .acte--seul .mot{font-size:clamp(16px,4.6vw,21px)}
+  .at-accueil .acte--seul .rond{width:38px;height:38px}
+  .at-accueil .acte--seul .rond svg{width:20px;height:20px}
   /* Le fil qui tombait du disque n'a plus de point de chute : le bouton est
      centre, le disque n'est plus a son bord. Il disparait sur telephone —
      c'etait de toute facon un trait de plus dans une ouverture qu'on allege. */

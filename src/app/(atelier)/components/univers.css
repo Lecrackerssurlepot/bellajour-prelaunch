@@ -584,7 +584,10 @@
 .at-accueil .sl7-titre{margin:0;font-family:var(--font-display);font-weight:400;
   font-size:clamp(38px,5.6vw,112px);line-height:1.04;letter-spacing:-.024em}
 .at-accueil .sl7-titre em{font-style:italic;color:var(--c-accent)}
-.at-accueil .sl7-cta{margin-top:calc(6 * var(--uh));display:inline-flex}
+/* `nowrap` (14/09/2026) : le libellé se coupait en « Découvrir les / magazines »
+   à cause des 30ch de la colonne ; inline-flex, il peut la déborder sans rien
+   pousser. */
+.at-accueil .sl7-cta{margin-top:calc(6 * var(--uh));display:inline-flex;white-space:nowrap}
 .at-accueil .sl7-note{margin-top:calc(2.6 * var(--uh));font-size:clamp(13px,1vw,17px);font-weight:400;color:var(--c-text-soft)}
 .at-accueil .sl7-note b{font-family:var(--font-display);font-style:italic;font-weight:400;
   font-size:1.42em;color:var(--c-accent-strong)}
@@ -722,6 +725,39 @@
   .at-accueil .sl7-txt{grid-column:1;max-width:none}
   .at-accueil .sl7-titre{font-size:clamp(34px,10vw,58px)}
   .at-accueil .numero{transform:none}
+}
+
+/* ─────────── L'AXE DE LECTURE (14/09/2026, Mathias) ───────────
+   Sur grand écran, l'œil zigzaguait : page 01 titre à gauche, note et
+   chute ferrées à droite ; page 03 amorce à gauche, mots en escalier,
+   suite ferrée à droite ; page 06 tout à gauche pendant que la page 05
+   est centrée. Chaque page À TEXTE SEUL se lit désormais sur UN axe, au
+   centre de l'écran, comme la page 05. Les pages 02, 04 et 07 gardent leur
+   composition (texte + objets) : elles n'ont qu'un bord, le gauche.
+   Le rembourrage devient symétrique sur ces pages : le chemin de fer vit
+   dans la marge gauche (--mg-u), et la colonne se centre sur l'ÉCRAN, pas
+   sur ce qui reste à droite du chemin de fer.
+   Mobile (≤ 1000 px) inchangé : déjà une colonne, sur un bord. */
+@media (min-width:1001px){
+  .at-accueil .sl1,.at-accueil .sl3,.at-accueil .sl5,.at-accueil .sl6{
+    padding-right:var(--mg-u);text-align:center}
+  .at-accueil .sl1-camera{transform-origin:50% 50%}
+  .at-accueil .sl1-note{margin-left:auto;margin-right:auto;text-align:center}
+  .at-accueil .sl1-manque{text-align:center}
+  .at-accueil .sl3-avant,
+  .at-accueil .sl3-apres{margin-left:auto;margin-right:auto;text-align:center}
+  .at-accueil .sl3-mots{align-items:center}
+  .at-accueil .sl3-mots .m2,
+  .at-accueil .sl3-mots .m3{margin-left:0}
+  .at-accueil .sl6-cit,
+  .at-accueil .sl6-reponse,
+  .at-accueil .sl6-chute{margin-left:auto;margin-right:auto;text-align:center}
+  /* le guillemet ouvrant rentre dans le flux : posé hors du bloc, il
+     décentrerait la citation d'un glyphe. Même geste que sur mobile. */
+  .at-accueil .sl6-cit .guill{position:static;margin-right:var(--guill-ecart)}
+  .at-accueil .sl1 .suite,
+  .at-accueil .sl3 .suite,
+  .at-accueil .sl6 .suite{text-align:left}
 }
 
 /* ─────────── REGLAGE SYSTEME ───────────
