@@ -9,6 +9,7 @@
 
 import type { Pile, EtapeDepot, Camp } from "@/lib/atelier/urgence";
 import type { MotifArrivee } from "@/lib/atelier/arrivees";
+import type { VerdictSuppression } from "@/lib/atelier/archive";
 import type { Etat } from "@/lib/atelier/transitions";
 import type { Recit } from "@/lib/atelier/recit";
 import type { Parcours } from "@/lib/atelier/parcours";
@@ -109,6 +110,12 @@ export type LigneDossier = {
   etatMajLe: string | null;
   urgence: UrgenceVue;
   prochaine: ProchaineVue;
+  /**
+   * T-113 : archivé (mis de côté, réversible) à cette date, ou null.
+   * Un dossier archivé n'a ni action ni relance, ne compte nulle part, et ne
+   * s'affiche que sous le filtre « Archivés ».
+   */
+  archiveLe: string | null;
   /**
    * Où en est le dépôt. Tant qu'il n'est pas « termine », le dossier est une
    * relance, pas du travail d'atelier — même s'il porte déjà 55 photos.
@@ -403,6 +410,12 @@ export type Fiche = {
   codeFondatrice: { code: string; creeLe: string } | null;
   /** Idem pour la colonne `en_charge` (migration 20260826). */
   enChargeAbsent: boolean;
+  /**
+   * T-113 : archiver, récupérer, supprimer. `absent` = la migration 20260914
+   * n'est pas passée, les deux boutons le disent au lieu d'échouer.
+   * `suppression` est le verdict calculé côté serveur (archive.ts).
+   */
+  archive: { le: string | null; absent: boolean; suppression: VerdictSuppression };
   client: ClientVue;
   actions: ActionVue[];
 };
@@ -499,6 +512,8 @@ export type VueListe = {
    * tu — cf. `notesIndisponibles`.
    */
   enChargeAbsent: boolean;
+  /** Idem pour `archive_le` (migration 20260914) : le filtre « Archivés » disparaît. */
+  archiveAbsent: boolean;
   /** Mode démonstration : les actions ne partent jamais en base. */
   demo?: boolean;
 };

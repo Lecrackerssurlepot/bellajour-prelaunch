@@ -11,6 +11,7 @@ import { SLOTS_IMPRESSION } from "@/lib/atelier/impression";
 import type { EvenementVue, Fiche as FicheVue } from "../types";
 import Loupe, { type VueLoupe } from "@/app/components/Loupe";
 import EnCharge from "./EnCharge";
+import Archivage from "../Archivage";
 import { PRENOM_COMPTE } from "@/lib/admin-auth";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import { PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
@@ -822,6 +823,18 @@ export default function Fiche({
         />
       )}
 
+      {/* T-113 — archiver, récupérer, supprimer. Archivé : un bandeau à la
+          place du panneau d'action, le dossier ne bouge plus. */}
+      <Archivage
+        token={l.token}
+        archiveLe={fiche.archive.le}
+        absent={fiche.archive.absent}
+        suppression={fiche.archive.suppression}
+        nbPhotos={l.nbPhotos}
+        demo={demo}
+        variante="fiche"
+      />
+
       <Parcours parcours={fiche.parcours} />
 
       {l.rembourse ? (
@@ -933,7 +946,7 @@ export default function Fiche({
 
       <div className="ate-colonnes">
         <div className="ate-colonne">
-          <PanneauAction fiche={fiche} demo={demo} />
+          {fiche.archive.le ? null : <PanneauAction fiche={fiche} demo={demo} />}
 
           {/* Les PDF print-ready déposés, enfin VISIBLES avant d'appuyer sur
               « Envoyer à l'impression ». La carte n'existe que s'il y a au

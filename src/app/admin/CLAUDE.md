@@ -62,6 +62,14 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
   avec **les mêmes options qu'`urgencePour`** : la pastille et la pile ne peuvent pas se contredire.
   La fiche lit la même table (`parcours.ts` n'a plus de `SUITE` à lui). Les retards et les à-faire
   se lisent sous un seul groupe « À nous » : un GROUPE D'AFFICHAGE, `urgence.ts` n'a pas bougé.
+- **Archiver, récupérer, supprimer** (T-113, 14/09/2026 ; `Archivage.tsx`, règle pure
+  `lib/atelier/archive.ts`, colonne `numeros.archive_le`, migration 20260914). Archivé = hors de la
+  table de travail (sauf le filtre « Archivés »), de la relève des mails, de la page cliente et de
+  l'espace compte ; l'état ne change pas, tout revient à « Récupérer ». **La suppression définitive
+  ne part QUE d'un dossier archivé** (deux gestes), jamais pendant une impression (`en_production`,
+  `expediee`), et efface le coffre R2 (`supprimerPrefixe`, préfixe `numeros/<id>/`) AVANT la ligne :
+  si un objet résiste, rien n'est retiré en base (502). Le paiement Stripe et la facture ne bougent
+  pas, l'écran le dit avant le clic. Sans la migration, les boutons répondent 503 et le disent.
 - **`chargerListe` fait partir ses quatre lectures ensemble** (journal, activité, dossiers vus,
   mails partis). Seul `lireNumeros` reste seul et avant : tout le reste dépend de ses ids.
   Les enchaîner coûtait quatre latences à chaque ouverture ET à chaque rafraîchissement, donc

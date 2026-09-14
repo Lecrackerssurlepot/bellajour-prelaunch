@@ -25,6 +25,7 @@ import { quiEstConnecteRequete } from "@/lib/admin-session";
 import { prenomDe } from "@/lib/admin-auth";
 import { isValidNumeroToken } from "@/lib/atelier/token";
 import { logEvenement } from "@/lib/atelier/evenements";
+import { lireArchiveLe } from "@/lib/atelier/archivage";
 import { etapeDepot } from "@/lib/atelier/urgence";
 import type { Etat } from "@/lib/atelier/transitions";
 import { evaluerRelance } from "@/lib/atelier/relance";
@@ -69,6 +70,10 @@ export async function POST(request: Request) {
       supabase.from("numeros").select(champs).eq("token", token).maybeSingle<NumeroPourReleve>(),
     );
     if (!numero) return NextResponse.json({ error: "introuvable" }, { status: 404 });
+    /* T-113 : on ne relance pas un dossier archivé. */
+    if ((await lireArchiveLe(supabase, numero.id)).archiveLe) {
+      return NextResponse.json({ error: "impossible", raison: "Ce dossier est archivé." }, { status: 409 });
+    }
 
     const [envoyes, rebond] = await Promise.all([
       lireEnvoyes(supabase, numero.id),

@@ -25,6 +25,7 @@ import { quiEstConnecteRequete } from "@/lib/admin-session";
 import { prenomDe } from "@/lib/admin-auth";
 import { isValidNumeroToken } from "@/lib/atelier/token";
 import { logEvenement } from "@/lib/atelier/evenements";
+import { lireArchiveLe } from "@/lib/atelier/archivage";
 import { releverDossier } from "@/lib/atelier/mails";
 import { tailleReelle, empreinteObjet, signerGet, IMPRESSION_TTL_SECONDS } from "@/lib/atelier/r2";
 import {
@@ -129,6 +130,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "internal" }, { status: 500 });
     }
     if (!lu) return NextResponse.json({ error: "introuvable" }, { status: 404 });
+    /* T-113 : un dossier archivé ne bouge plus. Le récupérer d'abord. */
+    if ((await lireArchiveLe(supabase, lu.id)).archiveLe) {
+      return NextResponse.json({ error: "archive" }, { status: 422 });
+    }
     /* Reliée à une constante : les fermetures plus bas (le repli d'écriture)
        ne peuvent pas la voir redevenir nulle. */
     const numero = lu;

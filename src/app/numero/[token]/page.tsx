@@ -79,6 +79,8 @@ type Numero = {
   palier: PalierCle | null
   apercu_urls: unknown
   maquette_pdf_url: string | null
+  /** T-113 — archivé par l'atelier : la page répond 404 (migration 20260914 ; absent avant). */
+  archive_le?: string | null
   canva_url: string | null
   cgv_ok: boolean
   renonciation_retractation: boolean
@@ -133,6 +135,12 @@ const CHAMPS =
 const CHAMPS_AVEC_SUIVI = `${CHAMPS}, tracking_code`
 const CHAMPS_AVEC_SOUVENIR = `${CHAMPS_AVEC_SUIVI}, souvenir_pdf_key, souvenir_pdf_octets`
 const CHAMPS_COMPLET = `${CHAMPS_AVEC_SOUVENIR}, prix_centimes, livraison_centimes, pays_livraison, livraison_niveau`
+/* T-113 — `archive_le` a SON niveau de repli, au-dessus du prix gelé : tant que
+   la migration 20260914 n'est pas passée, on retombe sur CHAMPS_COMPLET et la
+   page garde le prix et le port gelés. La mettre au même niveau aurait fait
+   perdre le port (donc refuser le checkout) pour une colonne qui ne change
+   qu'un 404. */
+const CHAMPS_AVEC_ARCHIVE = `${CHAMPS_COMPLET}, archive_le`
 
 /**
  * De qui c'est le tour, en une phrase.
@@ -185,7 +193,10 @@ async function lireNumero(token: string): Promise<Numero | null | 'panne'> {
     const lire = (champs: string) =>
       supabase.from('numeros').select(champs).eq('token', token).maybeSingle<Numero>()
 
-    let { data, error } = await lire(CHAMPS_COMPLET)
+    let { data, error } = await lire(CHAMPS_AVEC_ARCHIVE)
+    if (error?.code === '42703') {
+      ;({ data, error } = await lire(CHAMPS_COMPLET))
+    }
     if (error?.code === '42703') {
       ;({ data, error } = await lire(CHAMPS_AVEC_SOUVENIR))
     }
@@ -308,6 +319,9 @@ export default async function NumeroPage({
     brouillonDemande === '1' ? quiEstConnecte() : null,
   ])
   if (lu === null) notFound()
+  /* T-113 — un dossier archivé par l'atelier n'a plus de page : ni un état à
+     annoncer, ni un bouton à proposer. Récupéré, elle revient telle quelle. */
+  if (lu !== 'panne' && lu.archive_le) notFound()
 
   if (lu === 'panne') {
     return (

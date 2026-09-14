@@ -46,6 +46,7 @@ import {
 import { construireParcours } from "@/lib/atelier/parcours";
 import { prochaineEtape } from "@/lib/atelier/prochaineEtape";
 import { debutFenetre, releverArrivees, type EvenementArrivee } from "@/lib/atelier/arrivees";
+import { verdictSuppression } from "@/lib/atelier/archive";
 import { genreNote } from "@/lib/atelier/carnet";
 import {
   EVT_CODE_CREE,
@@ -100,6 +101,9 @@ type RangeeNumero = {
   livraison_centimes?: number | null;
   pays_livraison?: string | null;
   livraison_niveau?: string | null;
+  /* T-113 — archivé à cette date (migration 20260914). Absente tant qu'elle
+     n'est pas passée : premier niveau de repli de `lireNumeros`. */
+  archive_le?: string | null;
 };
 
 /* Les trois colonnes du 10/09, isolées : elles se retirent d'un bloc au
@@ -159,6 +163,9 @@ function versLigne(
      même chose que « il n'a pas d'avis ». */
   choixCouverture: ChoixCouverture | null = null,
 ): LigneDossier {
+  /* T-113 — archivé : la ligne existe (filtre « Archivés »), mais elle n'a
+     ni action ni relance, et n'est jamais « nouvelle ». */
+  const archiveLe = r.archive_le ?? null;
   const nbPhotos = r.nb_photos ?? 0;
   /* La question ne se pose QU'À L'ÉTAT 1 : une fois l'aperçu publié, ni le
      compteur de photos ni le consentement ne disent plus rien de l'avancement.
@@ -223,14 +230,17 @@ function versLigne(
       age: u.age,
     },
     prochaine,
+    archiveLe,
     depot,
     enCharge: r.en_charge ?? null,
     paye: Boolean(r.stripe_payment_intent),
     rembourse,
     emailRebond,
     couvertureChoisie: choixCouverture,
-    nouveau,
-    relance: relanceCalc.possible
+    nouveau: archiveLe ? false : nouveau,
+    relance: archiveLe
+      ? { possible: false, raison: "Ce dossier est archivé.", pertinent: false }
+      : relanceCalc.possible
       ? {
           possible: true,
           libelle: relanceCalc.libelle,
@@ -245,7 +255,7 @@ function versLigne(
       quoi: dernier ? (OBJET_MAIL[dernier.code as keyof typeof OBJET_MAIL] ?? null) : null,
       rebond: emailRebond,
     },
-    actions: actionsDepuis(r.etat).map((a) => ({
+    actions: (archiveLe ? [] : actionsDepuis(r.etat)).map((a) => ({
       cle: a.cle,
       libelle: a.libelle,
       explication: a.explication,
@@ -348,7 +358,7 @@ async function lirePhotos(
 
 async function lireNumeros(
   supabase: SupabaseClient,
-): Promise<{ rangees: RangeeNumero[]; enChargeAbsent: boolean }> {
+): Promise<{ rangees: RangeeNumero[]; enChargeAbsent: boolean; archiveAbsent: boolean }> {
   const lire = (champs: string) =>
     supabase
       .from("numeros")
@@ -356,34 +366,43 @@ async function lireNumeros(
       .order("etat_maj_le", { ascending: true })
       .returns<RangeeNumero[]>();
 
-  /* Trois niveaux, du plus complet au plus ancien : le prix gelé (20260910),
-     puis `en_charge` (20260826), puis le socle. Chaque niveau ne coûte un
-     aller-retour de plus que dans la fenêtre où sa migration manque. */
-  const complet = await lire(`id, ${CHAMPS_LIGNE}, ${CHAMPS_PRIX}, en_charge`);
-  if (!complet.error) return { rangees: complet.data ?? [], enChargeAbsent: false };
+  /* Quatre niveaux, du plus complet au plus ancien : `archive_le` (20260914),
+     puis le prix gelé (20260910), puis `en_charge` (20260826), puis le socle.
+     Chaque niveau ne coûte un aller-retour de plus que dans la fenêtre où sa
+     migration manque. */
+  const tout = await lire(`id, ${CHAMPS_LIGNE}, ${CHAMPS_PRIX}, en_charge, archive_le`);
+  if (!tout.error) return { rangees: tout.data ?? [], enChargeAbsent: false, archiveAbsent: false };
 
   /* 42703 = undefined_column. Toute autre erreur est une vraie panne : on la
      journalise et on rend une liste vide, comme avant. */
+  if (tout.error.code !== "42703") {
+    console.error("[admin/atelier] lecture liste échouée", tout.error.code, tout.error.message);
+    return { rangees: [], enChargeAbsent: false, archiveAbsent: false };
+  }
+
+  const complet = await lire(`id, ${CHAMPS_LIGNE}, ${CHAMPS_PRIX}, en_charge`);
+  if (!complet.error) return { rangees: complet.data ?? [], enChargeAbsent: false, archiveAbsent: true };
+
   if (complet.error.code !== "42703") {
     console.error("[admin/atelier] lecture liste échouée", complet.error.code, complet.error.message);
-    return { rangees: [], enChargeAbsent: false };
+    return { rangees: [], enChargeAbsent: false, archiveAbsent: true };
   }
 
   const avec = await lire(`id, ${CHAMPS_LIGNE}, en_charge`);
-  if (!avec.error) return { rangees: avec.data ?? [], enChargeAbsent: false };
+  if (!avec.error) return { rangees: avec.data ?? [], enChargeAbsent: false, archiveAbsent: true };
 
   if (avec.error.code !== "42703") {
     console.error("[admin/atelier] lecture liste échouée", avec.error.code, avec.error.message);
-    return { rangees: [], enChargeAbsent: false };
+    return { rangees: [], enChargeAbsent: false, archiveAbsent: true };
   }
 
   const sans = await lire(`id, ${CHAMPS_LIGNE}`);
 
   if (sans.error) {
     console.error("[admin/atelier] lecture liste échouée", sans.error.code, sans.error.message);
-    return { rangees: [], enChargeAbsent: true };
+    return { rangees: [], enChargeAbsent: true, archiveAbsent: true };
   }
-  return { rangees: sans.data ?? [], enChargeAbsent: true };
+  return { rangees: sans.data ?? [], enChargeAbsent: true, archiveAbsent: true };
 }
 
 /* ─────────────────────────────── la liste ─────────────────────────────── */
@@ -392,7 +411,7 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
   const supabase = makeSupabase();
   const maintenant = new Date();
 
-  const { rangees, enChargeAbsent } = await lireNumeros(supabase);
+  const { rangees, enChargeAbsent, archiveAbsent } = await lireNumeros(supabase);
 
   /* Un remboursement ne change AUCUN état, volontairement : rembourser avant
      impression et après livraison ne veulent pas dire la même chose (cf.
@@ -518,15 +537,21 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
 
   evaluees.sort((a, b) => comparerUrgence(a.urgence, b.urgence));
 
+  /* T-113 — un dossier archivé reste dans `lignes` (le filtre « Archivés »
+     l'affiche), mais il ne compte NULLE PART : ni le bandeau du matin, ni la
+     boîte du jour, ni les jamais-ouverts. */
+  const vivants = evaluees.filter((e) => !e.ligne.archiveLe);
+
   return {
     lignes: evaluees.map((e) => e.ligne),
-    compteurs: compter(evaluees.map((e) => e.urgence)),
+    compteurs: compter(vivants.map((e) => e.urgence)),
     colonnes: COLONNES,
     enChargeAbsent,
+    archiveAbsent,
     activite: journal.activite,
-    arrivees: versArrivees(journal.brut, evaluees.map((e) => e.ligne), maintenant),
+    arrivees: versArrivees(journal.brut, vivants.map((e) => e.ligne), maintenant),
     fenetre: { depuis: debutFenetre(maintenant).toISOString() },
-    flux: mesurerFlux(evaluees.map((e) => e.ligne), marqueurAbsent),
+    flux: mesurerFlux(vivants.map((e) => e.ligne), marqueurAbsent),
     fetchedAt: maintenant.toISOString(),
     qui: identite.prenom,
     quiCle: identite.cle,
@@ -1086,6 +1111,18 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     codeFondatrice,
     /* `select("*")` : la colonne arrive d'elle-même quand elle existe. */
     enChargeAbsent: !("en_charge" in n),
+    /* T-113 — `select("*")` : la colonne est là ou elle n'y est pas, et
+       l'écran le dit au lieu d'échouer au clic. */
+    archive: {
+      le: typeof n.archive_le === "string" ? n.archive_le : null,
+      absent: !("archive_le" in n),
+      suppression: verdictSuppression({
+        etat: rangee.etat,
+        archiveLe: typeof n.archive_le === "string" ? n.archive_le : null,
+        paye: Boolean(rangee.stripe_payment_intent),
+        commandeImpression: Boolean(n.cloudprinter_order_id),
+      }),
+    },
     client: await chargerClient(rangee, rattachement),
     /* Les mêmes que sur la ligne : une seule source, pas deux listes à
        garder d'accord. */

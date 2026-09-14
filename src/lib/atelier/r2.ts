@@ -7,7 +7,15 @@
  * incidents déjà vécus en production, pas des précautions théoriques.
  */
 
-import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  DeleteObjectCommand,
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { extensionDepuisMime } from "./formats";
 
@@ -339,4 +347,66 @@ export async function supprimer(key: string): Promise<boolean> {
     console.error("[r2] suppression échouée", key, (err as Error)?.message);
     return false;
   }
+}
+
+/**
+ * Suppression de TOUT ce qui vit sous un préfixe (T-113, 14/09/2026).
+ *
+ * C'est ce que « Supprimer définitivement » fait au coffre avant de toucher
+ * la base : originaux, vignettes, planches, PDF d'impression et souvenir
+ * vivent tous sous `numeros/<id>/` (cf. archive.ts, prefixeCoffre). Même
+ * mécanique que scripts/supprimer-dossiers.ts : on liste page après page,
+ * on efface par paquets de 1000 (la limite de DeleteObjects).
+ *
+ * ⚠️ Garde-fou : le préfixe DOIT commencer par « numeros/ » et se terminer
+ * par « / ». Un préfixe vide ou tronqué (« numeros/ab ») effacerait le
+ * coffre entier ou les dossiers voisins ; on refuse plutôt que de faire
+ * confiance à l'appelant.
+ *
+ * Rend le compte des objets partis et des échecs. L'appelant ne retire la
+ * ligne en base QUE si `echecs === 0` : un objet sans ligne serait invisible
+ * et éternel (T-048, même règle que `supprimer`).
+ */
+export async function supprimerPrefixe(prefixe: string): Promise<{ supprimes: number; echecs: number }> {
+  if (!/^numeros\/[^/]+\/$/.test(prefixe)) {
+    console.error("[r2] préfixe refusé", prefixe);
+    return { supprimes: 0, echecs: 1 };
+  }
+  const r2 = makeR2();
+  const cles: string[] = [];
+  try {
+    let suite: string | undefined;
+    do {
+      const page = await r2.send(
+        new ListObjectsV2Command({ Bucket: bucket(), Prefix: prefixe, ContinuationToken: suite }),
+      );
+      for (const o of page.Contents ?? []) if (o.Key) cles.push(o.Key);
+      suite = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (suite);
+  } catch (err) {
+    console.error("[r2] listage échoué", prefixe, (err as Error)?.message);
+    return { supprimes: 0, echecs: 1 };
+  }
+
+  let supprimes = 0;
+  let echecs = 0;
+  for (let i = 0; i < cles.length; i += 1000) {
+    const lot = cles.slice(i, i + 1000);
+    try {
+      const r = await r2.send(
+        new DeleteObjectsCommand({
+          Bucket: bucket(),
+          Delete: { Objects: lot.map((Key) => ({ Key })), Quiet: true },
+        }),
+      );
+      const rates = r.Errors?.length ?? 0;
+      echecs += rates;
+      supprimes += lot.length - rates;
+      for (const e of r.Errors ?? []) console.error("[r2] échec de suppression", e.Key, e.Code, e.Message);
+    } catch (err) {
+      console.error("[r2] suppression groupée échouée", prefixe, (err as Error)?.message);
+      echecs += lot.length;
+    }
+  }
+  return { supprimes, echecs };
 }

@@ -79,6 +79,8 @@ type RangeeDoublon = {
   /* Colonne fraîche (migration 20260901, T-076) : absente pendant la fenêtre
      déploiement→migration. Optionnelle exprès, cf. le repli 42703 ci-dessous. */
   anonymise_le?: string | null;
+  /* T-113 — même repli, même raison. */
+  archive_le?: string | null;
 };
 
 /**
@@ -97,11 +99,11 @@ type RangeeDoublon = {
  */
 async function lireDoublonsAdresse(supabase: SupabaseClient): Promise<Constat["lignes"]> {
   const CHAMPS = "token, titre, email_canonical, etat";
-  const avec = await supabase
-    .from("numeros")
-    .select(`${CHAMPS}, anonymise_le`)
-    .order("created_at", { ascending: true })
-    .returns<RangeeDoublon[]>();
+  const lire = (colonnes: string) =>
+    supabase.from("numeros").select(colonnes).order("created_at", { ascending: true }).returns<RangeeDoublon[]>();
+
+  let avec = await lire(`${CHAMPS}, anonymise_le, archive_le`);
+  if (avec.error?.code === "42703") avec = await lire(`${CHAMPS}, anonymise_le`);
 
   let rangees: RangeeDoublon[];
   if (!avec.error) {
@@ -127,6 +129,7 @@ async function lireDoublonsAdresse(supabase: SupabaseClient): Promise<Constat["l
   for (const d of rangees) {
     if (!d.email_canonical) continue;
     if (d.anonymise_le) continue;
+    if (d.archive_le) continue;
     if (engages.has(d.etat)) continue;
     const liste = parAdresse.get(d.email_canonical) ?? [];
     liste.push(d.titre?.trim() || "sans titre");
