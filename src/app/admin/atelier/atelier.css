@@ -139,103 +139,177 @@
   color: var(--bj-action);
 }
 
-/* ── le flux entrant ── */
-.ate-flux {
-  margin-bottom: var(--bj-sp-3);
-}
-.ate-flux-nombres {
-  display: flex;
-  align-items: stretch;
-  gap: var(--bj-sp-2);
-  flex-wrap: wrap;
-}
-.ate-flux-item {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  min-width: 7.5rem;
-  padding: var(--bj-sp-3) var(--bj-sp-4);
+/* ── la boîte du jour : « Depuis hier » (11/09/2026) ──
+   A pris la place des quatre compteurs du flux entrant (archive/admin-flux-
+   2026-09). Une carte, trois groupes, des lignes qui sont des liens : la
+   même densité que la liste, aucun bouton. Le groupe gris (questionnaire
+   sans photos) est en pointillé et sans camp coloré : il informe, il ne
+   demande rien. */
+.ate-jour {
+  margin-bottom: var(--bj-sp-4);
+  padding: var(--bj-sp-3) var(--bj-sp-4) var(--bj-sp-2);
   border-radius: var(--bj-r-md);
   border: 1px solid var(--bj-veil-8);
   background: var(--ate-carte-bg);
-  text-align: left;
-  font-family: var(--bj-font-ui);
-  color: inherit;
-  cursor: pointer;
-  transition: border-color var(--bj-dur-fast) var(--bj-ease);
 }
-.ate-flux-item:hover:not(:disabled) {
-  border-color: var(--bj-action-border);
+.ate-jour-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--bj-sp-3);
+  flex-wrap: wrap;
+  padding-bottom: var(--bj-sp-2);
 }
-.ate-flux-item:disabled {
-  cursor: default;
-}
-.ate-flux-item--fixe {
-  cursor: default;
-}
-.ate-flux-item--actif {
-  border-color: var(--bj-action);
-  background: var(--bj-action-soft);
-}
-.ate-flux-item--pale {
-  background: transparent;
-  border-style: dashed;
-}
-.ate-flux-val {
+.ate-jour-titre {
+  margin: 0;
   font-family: var(--bj-font-display);
-  font-size: var(--bj-fs-h2);
-  line-height: 1;
-  color: var(--bj-text-soft);
+  font-style: italic;
+  font-weight: 600;
+  font-size: var(--bj-fs-h4);
+  line-height: 1.1;
+  color: var(--bj-text);
+}
+.ate-jour-sous {
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+.ate-jour-vide {
+  margin: 0;
+  padding: var(--bj-sp-2) 0 var(--bj-sp-2);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-faint);
+}
+.ate-jour-groupe {
+  padding-top: var(--bj-sp-2);
+}
+.ate-jour-groupe-titre {
+  display: flex;
+  align-items: baseline;
+  gap: var(--bj-sp-2);
+  margin: 0 0 2px;
+  font-size: var(--bj-fs-xs);
+  font-weight: 500;
+  color: var(--bj-text);
+}
+.ate-jour-groupe-compte {
   font-variant-numeric: tabular-nums;
+  color: var(--bj-text-soft);
+  font-weight: 400;
 }
-/* Un seul chiffre a le droit d'être en couleur : celui qui demande une
-   action. Trois chiffres colorés, et on ne sait plus lequel regarder. */
-.ate-flux-val--fort {
-  color: var(--bj-action);
-}
-.ate-flux-item--pale .ate-flux-val {
+.ate-jour-groupe-sous {
+  font-weight: 400;
   color: var(--bj-text-faint);
 }
-.ate-flux-label {
-  font-size: var(--bj-fs-xxs);
+.ate-jour-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ate-jour-ligne {
+  border-top: var(--ate-ligne-h);
+}
+.ate-jour-groupe--sans_photos .ate-jour-ligne {
+  border-top-style: dashed;
+}
+.ate-jour-lien {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 21rem;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  padding: var(--bj-sp-2) var(--bj-sp-2);
+  margin: 0 calc(-1 * var(--bj-sp-2));
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--bj-r-sm);
+  transition: background var(--bj-dur-fast) var(--bj-ease);
+}
+.ate-jour-lien:hover,
+.ate-jour-lien:focus-visible {
+  background: var(--bj-action-soft);
+  outline: none;
+}
+.ate-jour-dossier {
+  min-width: 0;
+}
+.ate-jour-dossier-titre {
+  display: block;
+  font-size: var(--bj-fs-ui);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ate-jour-dossier-sous {
+  display: block;
+  font-size: var(--bj-fs-xs);
   color: var(--bj-text-faint);
-  line-height: 1.2;
+  margin-top: 1px;
+}
+.ate-jour-groupe--reponse_client .ate-jour-dossier-sous,
+.ate-jour-groupe--nouvelle_demande .ate-jour-dossier-sous {
+  color: var(--bj-text-soft);
+}
+.ate-jour-groupe--sans_photos .ate-jour-dossier-titre {
+  color: var(--bj-text-soft);
+  font-weight: 400;
+}
+.ate-jour-suite {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  min-width: 0;
+}
+.ate-jour-geste {
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ate-jour-note {
+  margin: var(--bj-sp-2) 0 0;
+  font-size: 11px;
+  color: var(--ate-orange);
+}
+.ate-jour-note code {
+  font-size: 11px;
 }
 
-/* Une silhouette, pas un graphique : ni axe, ni légende, ni valeur. On veut
-   voir si ça monte, pas relever une mesure. */
-.ate-flux-frise {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  flex: 1;
-  min-width: 8rem;
-  /* Hauteur FIXE : les barres sont dimensionnées en pourcentage, et un
-     conteneur qui s'adapte à son contenu rendrait ce pourcentage circulaire —
-     les barres se calaient alors sur la hauteur des cartes voisines. */
-  height: 4.5rem;
-  padding: var(--bj-sp-3) var(--bj-sp-4);
-  border-radius: var(--bj-r-md);
-  border: 1px solid var(--bj-veil-8);
-  background: var(--ate-carte-bg);
+/* ── la pastille de camp ──
+   Trois couleurs pour trois réponses à « qui doit jouer » : bleu = nous,
+   ambre = le client, gris = personne (imprimeur, transporteur, livré). La
+   même pastille sert à la boîte du jour et à la colonne « Prochaine étape »
+   de la liste : c'est la même information, elle a la même tête. */
+.ate-camp {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--bj-r-pill);
+  font-size: var(--bj-fs-xxs);
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  background: var(--bj-veil-6);
+  color: var(--bj-text-soft);
 }
-.ate-flux-barre {
-  flex: 1;
-  min-height: 3px;
-  border-radius: 2px;
-  background: var(--bj-veil-8);
+.ate-camp--atelier {
+  background: var(--bj-action-soft);
+  color: var(--bj-action);
 }
-.ate-flux-barre--pleine {
-  background: var(--bj-action-faint);
+.ate-camp--cliente {
+  background: var(--bj-warn-soft);
+  color: var(--ate-orange);
 }
-.ate-flux-frise .ate-flux-barre:last-child.ate-flux-barre--pleine {
-  background: var(--bj-action);
+.ate-camp--fini {
+  background: rgba(63, 166, 106, 0.12);
+  color: var(--ate-vert);
 }
-.ate-flux-vu {
-  align-self: center;
+
+/* « Tout marquer vu », dans la barre de filtres depuis le 11/09/2026. */
+.ate-vu-btn {
   min-height: 34px;
-  padding: 0 var(--bj-sp-4);
+  padding: 0 var(--bj-sp-3);
   border-radius: var(--bj-r-btn);
   border: 1px solid var(--bj-veil-12);
   background: transparent;
@@ -243,18 +317,11 @@
   font-size: var(--bj-fs-xs);
   color: var(--bj-text-soft);
   cursor: pointer;
+  white-space: nowrap;
 }
-.ate-flux-vu:hover {
+.ate-vu-btn:hover {
   border-color: var(--bj-action-border);
   color: var(--bj-action);
-}
-.ate-flux-note {
-  margin: var(--bj-sp-2) 0 0;
-  font-size: 11px;
-  color: var(--ate-orange);
-}
-.ate-flux-note code {
-  font-size: 11px;
 }
 
 /* La marque « jamais ouvert » : un point, pas une étiquette. Sur vingt
@@ -573,7 +640,7 @@
 .ate-ligne,
 .ate-entete {
   display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr) 10.5rem 9.5rem 7.5rem 16rem;
+  grid-template-columns: 2rem minmax(0, 1fr) 12rem 9.5rem 7.5rem 16rem;
   align-items: center;
   gap: var(--bj-sp-3);
   padding: var(--bj-sp-3) var(--bj-sp-2);
@@ -629,8 +696,35 @@
   z-index: 30;
 }
 
+/* Le liseré dit le camp avant même qu'on lise la ligne : bleu = à nous,
+   ambre = chez le client, rouge = à nous ET en retard, rien = en dehors. */
+.ate-ligne--atelier {
+  box-shadow: inset 3px 0 0 var(--bj-action);
+}
+.ate-ligne--cliente {
+  box-shadow: inset 3px 0 0 var(--ate-orange);
+}
 .ate-ligne--retard {
-  box-shadow: inset 2px 0 0 var(--ate-rouge);
+  box-shadow: inset 3px 0 0 var(--ate-rouge);
+}
+
+/* ── la colonne « Prochaine étape » (11/09/2026) ──
+   La pastille de camp, puis le geste en dessous. Même patron à deux lignes
+   que « Délai » et « Dernier mot » : l'oeil balaie les trois d'un mouvement. */
+.ate-prochaine {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+}
+.ate-prochaine-geste {
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .ate-avatar {
@@ -2821,7 +2915,8 @@
   }
   .ate-avatar { grid-area: avatar; }
   .ate-ligne-corps { grid-area: corps; }
-  .ate-etat { grid-area: etat; }
+  .ate-prochaine { grid-area: etat; align-items: flex-end; }
+  .ate-prochaine-geste { display: none; }
   .ate-delai { grid-area: delai; flex-direction: row; gap: var(--bj-sp-2); }
   .ate-dernier { display: none; }
   .ate-delai-sub { display: none; }
@@ -2849,23 +2944,18 @@
   .ate-barre {
     gap: var(--bj-sp-2);
   }
-  /* Sur téléphone, les quatre nombres passent en deux colonnes et la frise
-     prend la largeur : empilés, ils repousseraient la liste sous la ligne
-     de flottaison. */
-  .ate-flux-item {
-    flex: 1 1 calc(50% - var(--bj-sp-2));
-    min-width: 0;
-    padding: var(--bj-sp-2) var(--bj-sp-3);
+  /* Sur téléphone, la boîte du jour empile : le dossier, puis le camp et
+     le geste en dessous. */
+  .ate-jour {
+    padding-left: var(--bj-sp-3);
+    padding-right: var(--bj-sp-3);
   }
-  .ate-flux-val {
-    font-size: var(--bj-fs-h1-screen);
+  .ate-jour-lien {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--bj-sp-1);
   }
-  .ate-flux-frise {
-    flex-basis: 100%;
-    height: 3.5rem;
-  }
-  .ate-flux-vu {
-    flex-basis: 100%;
+  .ate-vu-btn {
+    flex: 1 1 100%;
   }
   .ate-recherche {
     min-width: 0;
