@@ -193,8 +193,17 @@ la double page de 3 px à 0, et la couverture Rio perd son `2px 9px 9px 2px` (un
 de magazine broché, reste du temps où l'objet portait aussi son dos et ses traits de tranche).
 Ce que ces cadres montrent, ce sont des doubles pages : du papier coupé au massicot.
 
-**L'ombre change de nature.** `--shadow-float` vaut `0 24px 70px rgba(0,0,0,.7)` : c'est une ombre
-de LÉVITATION, elle éloigne l'objet du fond. Pour du volume il faut du CONTACT. Chaque objet porte
-donc deux ombres : une très serrée (`0 1px 2px`) qui dessine le bord de la feuille, et une courte
-portée qui le pose. Collage `0 10px 24px`, double page `0 14px 34px`, Rio en unités `--uh`.
-⚠️ Ne pas « simplifier » en revenant au token `--shadow-float` : il supprime l'effet demandé.
+**L'ombre ne pouvait pas marcher, et c'est la leçon du passage suivant.** Ces trois objets sont
+posés sur `--c-void` (#020202). `--shadow-float` (`0 24px 70px rgba(0,0,0,.7)`) comme les deux
+ombres courtes qui l'avaient remplacé étaient **littéralement invisibles** : du noir sur du noir.
+Mathias l'a vu en une capture : « il n'y a pas d'effet volume là ».
+
+**Sur fond sombre, le volume vient de la LUMIÈRE SUR LA TRANCHE, pas d'une ombre.** Chaque objet
+porte donc : un filet clair en `inset` sur l'arête haute (la source de lumière), trois ou quatre
+bandes claires décalées vers le bas et de plus en plus éteintes (l'épaisseur du papier, feuille
+après feuille), et un halo tiède très faible qui le décolle du vide.
+⚠️ `box-shadow` n'est pas rogné par l'`overflow: hidden` de l'élément : c'est ce qui permet de
+dessiner les tranches sans ajouter un seul nœud au document.
+⚠️ Rien sur les côtés de Rio : Mathias a demandé le retrait des traits latéraux, et l'épaisseur
+se lit très bien sur la seule arête basse.
+⚠️ Ne jamais « simplifier » en revenant au token `--shadow-float`.

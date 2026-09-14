@@ -123,22 +123,36 @@
 }
 
 /* ⚠️ ANGLES DROITS, ET C'EST UNE DÉCISION (Mathias, 14/09/2026).
-   Les 2 px d'arrondi venaient de la maquette de août : ils adoucissaient des
+   Les 2 px d'arrondi venaient de la maquette d'août : ils adoucissaient des
    couvertures, mais ce que le collage montre désormais, ce sont des DOUBLES
    PAGES — du papier coupé au massicot, qui n'a pas de coin rond.
-   L'ombre change de nature avec eux. `--shadow-float` (0 24px 70px) est une
-   ombre de LÉVITATION : elle fait flotter l'objet loin au-dessus du fond.
-   Ici on veut de l'ÉPAISSEUR : une ombre courte, presque sous l'objet, plus
-   une seconde très serrée qui dessine le bord de la feuille. C'est ce contact
-   avec le fond qui donne le volume — une ombre lointaine le supprime. */
+
+   ⚠️⚠️ UNE OMBRE NOIRE SUR UN FOND NOIR NE DONNE RIEN, et c'est l'erreur
+   corrigée au 5e passage du 14/09 : cette page est posée sur `--c-void`
+   (#020202). `--shadow-float`, `0 24px 70px rgba(0,0,0,.7)` comme les deux
+   ombres courtes qui l'avaient remplacé, étaient litéralement invisibles.
+   Mathias l'a vu tout de suite : « il n'y a pas d'effet volume là ».
+
+   Sur un fond sombre, le volume ne vient pas de l'ombre : il vient de la
+   LUMIÈRE SUR LA TRANCHE. Trois bandes claires décalées vers le bas dessinent
+   l'épaisseur du papier — la première est la tranche éclairée, les suivantes
+   s'éteignent comme les feuilles du dessous. Un filet clair en `inset` sur
+   l'arête haute place la source de lumière, et un halo tiède très faible
+   décolle l'objet du vide.
+   ⚠️ `box-shadow` n'est PAS rogné par l'`overflow: hidden` de l'élément :
+   c'est ce qui permet de dessiner les tranches sans ajouter un seul nœud.
+   ⚠️ Ne jamais « simplifier » en revenant à `--shadow-float`. */
 .at-pdp .collage figure {
   position: absolute;
   margin: 0;
   overflow: hidden;
   border-radius: 0;
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.55),
-    0 10px 24px rgba(0, 0, 0, 0.45);
+    inset 0 1px 0 rgba(255, 252, 245, 0.16),
+    0 2px 0 rgba(236, 230, 218, 0.26),
+    0 4px 0 rgba(146, 139, 127, 0.20),
+    0 6px 0 rgba(74, 70, 64, 0.16),
+    0 16px 26px -10px rgba(255, 248, 236, 0.05);
 }
 
 .at-pdp .collage img {
@@ -651,13 +665,17 @@
 .at-pdp .double {
   position: relative;
   background: var(--paper);
-  /* Angles droits et ombre d'épaisseur : même raison que le collage. La
-     double page est plus grande, donc l'ombre porte un peu plus loin — mais
-     elle reste posée, jamais flottante. */
+  /* Angles droits et tranche éclairée : même raison, même méthode que le
+     collage (voir le long commentaire là-haut). La double page est plus
+     grande, donc son épaisseur se lit sur quatre bandes au lieu de trois. */
   border-radius: 0;
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.6),
-    0 14px 34px rgba(0, 0, 0, 0.5);
+    inset 0 1px 0 rgba(255, 252, 245, 0.18),
+    0 3px 0 rgba(236, 230, 218, 0.28),
+    0 6px 0 rgba(160, 152, 139, 0.22),
+    0 9px 0 rgba(96, 91, 83, 0.18),
+    0 12px 0 rgba(52, 49, 45, 0.14),
+    0 26px 38px -14px rgba(255, 248, 236, 0.06);
   overflow: hidden;
   aspect-ratio: 4000 / 2828;
 }

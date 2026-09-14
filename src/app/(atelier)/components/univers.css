@@ -630,8 +630,19 @@
    L'ombre garde la même intention que la page produit : un contact serré qui
    donne l'épaisseur, et une portée courte qui pose l'objet au lieu de le
    faire léviter. */
+/* ⚠️ MEME CORRECTION QUE LA PAGE PRODUIT (5e passage du 14/09) : la page est
+   posee sur `--c-void`, une ombre noire n'y existe pas. Le volume vient de la
+   tranche eclairee — trois bandes claires decalees vers le bas, un filet sur
+   l'arete haute pour poser la lumiere, un halo tiede tres faible pour
+   decoller l'objet du vide.
+   ⚠️ RIEN SUR LES COTES : Mathias a demande le retrait des traits lateraux,
+   et l'epaisseur se lit tres bien sur la seule arete basse. */
 .at-accueil .n-plat{position:relative;width:100%;height:100%;overflow:hidden;border-radius:0;
-  box-shadow:0 1px 2px rgba(0,0,0,.6), 0 calc(2.4 * var(--uh)) calc(5 * var(--uh)) calc(-1.4 * var(--uh)) rgba(0,0,0,.72)}
+  box-shadow:inset 0 1px 0 rgba(255,252,245,.18),
+    0 2px 0 rgba(236,230,218,.28),
+    0 4px 0 rgba(150,143,131,.22),
+    0 7px 0 rgba(80,76,70,.16),
+    0 calc(2.6 * var(--uh)) calc(4.4 * var(--uh)) calc(-1.8 * var(--uh)) rgba(255,248,236,.06)}
 .at-accueil .n-plat>img{width:100%;height:100%;object-fit:cover}
 .at-accueil .n-tete{position:absolute;left:8%;right:8%;top:5.4%;z-index:5;
   display:flex;align-items:baseline;justify-content:space-between;
