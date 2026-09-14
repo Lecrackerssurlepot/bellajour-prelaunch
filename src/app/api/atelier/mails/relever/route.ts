@@ -69,6 +69,7 @@ import {
 } from "@/lib/atelier/mails";
 import { meriteUnRegardDeRetention, type Jalons } from "@/lib/atelier/retention";
 import { logEvenement } from "@/lib/atelier/evenements";
+import { lireIdsArchives } from "@/lib/atelier/archivage";
 import { memeSecret } from "@/lib/atelier/secret";
 
 export const runtime = "nodejs";
@@ -165,7 +166,11 @@ async function relever(request: Request) {
       return NextResponse.json({ error: "internal" }, { status: 500 });
     }
 
-    const lignes = dossiers ?? [];
+    /* T-113 — un dossier archivé ne reçoit plus rien : ni relance, ni
+       auto-validation. Filtré en mémoire, pour ne pas toucher au select et à
+       son repli. */
+    const archives = await lireIdsArchives(supabase);
+    const lignes = (dossiers ?? []).filter((d) => !archives.has(d.id));
 
     /* Un seul aller-retour pour TOUT ce qui est déjà parti, avec les dates :
        M3b se décide sur l'âge de M3, et le garde-fou de chaîne sur la simple

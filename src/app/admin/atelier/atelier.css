@@ -1313,6 +1313,109 @@
   color: var(--ate-orange);
 }
 
+/* ── archiver, récupérer, supprimer (T-113, 14/09/2026) ──
+   Archiver est un geste calme : un lien gris en haut de fiche, et une
+   boîte qui dit ce qui se passe. Supprimer est le seul bouton ROUGE de
+   tout l'admin, et il ne s'allume que depuis un dossier déjà archivé. */
+.ate-rangement {
+  position: relative;
+  margin: calc(-1 * var(--bj-sp-2)) 0 var(--bj-sp-3);
+  display: flex;
+  justify-content: flex-end;
+}
+.ate-arch-lien {
+  border: none;
+  background: transparent;
+  padding: 2px 0;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.ate-arch-lien:hover:not(:disabled) {
+  color: var(--bj-text);
+}
+.ate-arch-lien:disabled {
+  cursor: default;
+  text-decoration: none;
+}
+.ate-arch-boite {
+  width: min(28rem, 100%);
+  padding: var(--bj-sp-3);
+  border-radius: var(--bj-r-md);
+  border: 1px solid var(--bj-action-border);
+  background: var(--bj-cream);
+}
+.ate-arch-boite--danger {
+  margin-top: var(--bj-sp-3);
+  width: 100%;
+  border-color: var(--ate-rouge);
+  background: var(--ate-rouge-fond);
+}
+.ate-arch-boutons {
+  display: flex;
+  gap: var(--bj-sp-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ate-arch-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  flex-wrap: wrap;
+}
+.ate-arch-raison,
+.ate-arch-erreur {
+  margin: var(--bj-sp-2) 0 0;
+  font-size: var(--bj-fs-xs);
+  color: var(--ate-rouge);
+}
+.ate-arch-avert {
+  color: var(--bj-text);
+}
+.ate-arch-ligne {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+}
+.ate-bandeau--archive {
+  border-color: var(--bj-veil-12);
+  background: var(--bj-veil-6);
+  color: var(--bj-text-soft);
+}
+.ate-btn-danger {
+  border-color: var(--ate-rouge);
+  color: var(--ate-rouge);
+  background: transparent;
+}
+.ate-btn-danger:hover:not(:disabled) {
+  background: var(--ate-rouge);
+  color: #fff;
+}
+.ate-btn-danger:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+/* Une ligne archivée : présente, mais éteinte. Pas de liseré de camp. */
+.ate-ligne--archive {
+  opacity: 0.62;
+}
+.ate-ligne--archive:hover,
+.ate-ligne--archive:focus-within {
+  opacity: 1;
+}
+.ate-tag--archive {
+  background: var(--bj-veil-8);
+  color: var(--bj-text-soft);
+}
+.ate-seg-compte--gris {
+  background: var(--bj-veil-12);
+  color: var(--bj-text-soft);
+}
+
 /* ─────────────────────────── les métriques ─────────────────────────── */
 
 /* ── LA RANGÉE DE TÊTE DES MÉTRIQUES (T-080, 07/09/2026) ──────────────

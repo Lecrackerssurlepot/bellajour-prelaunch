@@ -23,6 +23,7 @@ import { urgencePour, comparerUrgence, etapeDepot } from "@/lib/atelier/urgence"
 import { gestePour, prochaineEtape, LIBELLE_CAMP } from "@/lib/atelier/prochaineEtape";
 import { debutFenetre, releverArrivees, type EvenementArrivee } from "@/lib/atelier/arrivees";
 import { construireParcours } from "@/lib/atelier/parcours";
+import { prefixeCoffre, verdictSuppression } from "@/lib/atelier/archive";
 import {
   CODES_RELANCE,
   DELAI_MIN_RELANCE_MS,
@@ -606,6 +607,29 @@ ok("aucun tiret dans les gestes (consigne de Mathias)",
    && Object.values(LIBELLE_CAMP).every((l) => !/[—–]/.test(l)));
 ok("la fiche lit la MEME table : le parcours dit le geste de prochaineEtape",
    construireParcours("payee", []).prochain.quoi === gestePour("payee"));
+
+/* ═══════════════ ARCHIVER, RÉCUPÉRER, SUPPRIMER (T-113, 14/09/2026) ═══════════════ */
+
+titre("— la suppression definitive : deux gestes, jamais un seul —");
+const HIER = "2026-09-13T10:00:00.000Z";
+ok("pas archive : REFUS, on archive d'abord",
+   verdictSuppression({ etat: "apercu_pret", archiveLe: null, paye: false, commandeImpression: false }).possible === false);
+ok("archive, pas paye, pas d'impression : possible, sans avertissement",
+   (() => { const v = verdictSuppression({ etat: "apercu_pret", archiveLe: HIER, paye: false, commandeImpression: false }); return v.possible && v.avertissements.length === 0; })());
+ok("archive et PAYE : possible, mais l'ecran previent que Stripe et la facture restent",
+   (() => { const v = verdictSuppression({ etat: "payee", archiveLe: HIER, paye: true, commandeImpression: false }); return v.possible && v.avertissements.some((a) => a.includes("Stripe")); })());
+ok("en production : REFUS, les signaux de l'imprimeur n'auraient plus de dossier",
+   verdictSuppression({ etat: "en_production", archiveLe: HIER, paye: true, commandeImpression: true }).possible === false);
+ok("expediee : REFUS aussi",
+   verdictSuppression({ etat: "expediee", archiveLe: HIER, paye: true, commandeImpression: true }).possible === false);
+ok("livree avec une commande passee : possible, avertissement sur la trace",
+   (() => { const v = verdictSuppression({ etat: "livree", archiveLe: HIER, paye: true, commandeImpression: true }); return v.possible && v.avertissements.length === 2; })());
+ok("chaque refus a sa phrase",
+   (() => { const v = verdictSuppression({ etat: "en_production", archiveLe: HIER, paye: false, commandeImpression: true }); return !v.possible && v.raison.length > 20; })());
+ok("le prefixe du coffre est celui des routes presign : numeros/<id>/",
+   prefixeCoffre("abc") === "numeros/abc/");
+ok("le garde-fou de r2.supprimerPrefixe accepte ce prefixe et refuse un prefixe tronque",
+   /^numeros\/[^/]+\/$/.test(prefixeCoffre("0f3e")) && !/^numeros\/[^/]+\/$/.test("numeros/") && !/^numeros\/[^/]+\/$/.test("numeros/ab"));
 
 /* ═══════════════════════ LA BOÎTE DU JOUR (11/09/2026) ═══════════════════════ */
 

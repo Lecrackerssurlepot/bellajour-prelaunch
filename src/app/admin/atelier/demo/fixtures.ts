@@ -33,6 +33,7 @@ import { OBJET_MAIL, type CodeMail } from "@/lib/atelier/mails";
 import { construireParcours } from "@/lib/atelier/parcours";
 import { prochaineEtape } from "@/lib/atelier/prochaineEtape";
 import { releverArrivees } from "@/lib/atelier/arrivees";
+import { verdictSuppression } from "@/lib/atelier/archive";
 import { COLONNES } from "../donnees";
 import type { Fiche, LigneDossier, VueListe } from "../types";
 
@@ -97,6 +98,8 @@ type Graine = {
    * « À nous » montrent le cas où un dossier « chez le client » remonte.
    */
   retouches?: boolean;
+  /** T-113 : archivé il y a N heures. Un seul, pour voir le filtre « Archivés ». */
+  archiveIlYA?: number;
 };
 
 const GRAINES: Graine[] = [
@@ -319,6 +322,26 @@ const GRAINES: Graine[] = [
   },
 ];
 
+/* T-113 — le dossier de test qu'on a mis de côté. C'est le cas d'usage
+   exact de l'archivage : un essai du parcours, à retirer de la table de
+   travail sans le perdre tout de suite. */
+GRAINES.push({
+  token: T("demoE"),
+  titre: "Test du 12 septembre",
+  prenom: "Mathias",
+  email: "mdurand+test@example.com",
+  telephone: "06 00 00 00 00",
+  occasion: "Un essai",
+  histoire: "Un parcours de test, du questionnaire au paiement, pour vérifier que tout tient.",
+  etat: "apercu_pret",
+  nbPhotos: 12,
+  nbPages: 20,
+  palier: "p30",
+  depuis: 40,
+  ouvertIlYA: 2,
+  archiveIlYA: 30,
+});
+
 const H = 3_600_000;
 const J = 86_400_000;
 
@@ -392,6 +415,7 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
         age: urgence.age,
       },
       prochaine,
+      archiveLe: g.archiveIlYA !== undefined ? new Date(maintenant.getTime() - g.archiveIlYA * H).toISOString() : null,
       depot,
       enCharge: g.enCharge ?? null,
       paye: Boolean(g.paye),
@@ -402,7 +426,7 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
       couvertureChoisie: g.choixCouverture ?? null,
       /* En démonstration, « nouveau » = arrivé dans les deux derniers jours
          et jamais ouvert : on veut voir le badge, pas simuler une table. */
-      nouveau: depot === "termine" && g.ouvertIlYA <= 2,
+      nouveau: g.archiveIlYA === undefined && depot === "termine" && g.ouvertIlYA <= 2,
       relance: relance.possible
         ? {
             possible: true,
@@ -434,6 +458,8 @@ export function listeDemo(qui: string): VueListe {
   const maintenant = new Date();
   const evaluees = GRAINES.map((g) => ligneDe(g, maintenant));
   evaluees.sort((a, b) => comparerUrgence(a.urgence, b.urgence));
+  /* Un dossier archivé ne compte nulle part : ni la boîte, ni le bandeau. */
+  const vivants = evaluees.filter((e) => !e.ligne.archiveLe);
 
   /* Un fil d'activité fabriqué : sans lui, la démonstration montrerait un
      encart vide là où, en vrai, se lit la journée de l'atelier. */
@@ -477,7 +503,7 @@ export function listeDemo(qui: string): VueListe {
   const parToken = new Map(evaluees.map((e) => [e.ligne.token, e.ligne]));
   const arrivees = releverArrivees(
     journal,
-    evaluees.map((e) => ({
+    vivants.map((e) => ({
       numeroId: e.ligne.token,
       etat: e.ligne.etat,
       pile: e.urgence.pile,
@@ -502,9 +528,10 @@ export function listeDemo(qui: string): VueListe {
 
   return {
     lignes: evaluees.map((e) => e.ligne),
-    compteurs: compter(evaluees.map((e) => e.urgence)),
+    compteurs: compter(vivants.map((e) => e.urgence)),
     colonnes: COLONNES,
     enChargeAbsent: false,
+    archiveAbsent: false,
     quiCle: "mathias",
     activite,
     arrivees,
@@ -729,6 +756,16 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     notesIndisponibles: false,
     codeFondatrice: null,
     enChargeAbsent: false,
+    archive: {
+      le: ligne.archiveLe,
+      absent: false,
+      suppression: verdictSuppression({
+        etat: g.etat,
+        archiveLe: ligne.archiveLe,
+        paye: Boolean(g.paye),
+        commandeImpression: false,
+      }),
+    },
     client: {
       autres:
         g.token === T("demo1")

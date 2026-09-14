@@ -37,6 +37,9 @@ export type DossierAffiche = DossierDuCompte & {
   tracking_url: string | null;
   transporteur: string | null;
   anonymise_le: string | null;
+  /* T-113 — archivé par l'atelier (migration 20260914). Absent tant qu'elle
+     n'est pas passée : premier niveau de repli, jamais filtré en SQL. */
+  archive_le?: string | null;
   /* Le prix GELÉ à la publication de l'aperçu (migration 20260910).
      Optionnelle : le repli la laisse `undefined` et le prix retombe sur la
      grille, exactement comme avant le gel. */
@@ -57,22 +60,25 @@ const CHAMPS_COMPTE =
   "id, token, etat, titre, occasion, palier, nb_pages, nb_photos, consent_photos, " +
   "compte_id, email_canonical, created_at, etat_maj_le, souvenir_pdf_key, " +
   "tracking_url, transporteur, anonymise_le, apercu_urls, " +
-  "prix_centimes, livraison_centimes, pays_livraison, livraison_niveau";
+  "prix_centimes, livraison_centimes, pays_livraison, livraison_niveau, archive_le";
 
-/* Identique moins les trois colonnes du prix gelé (20260910), les plus
-   fraîches — le repli tant qu'elle n'est pas passée. `compte_id` (20260904,
-   appliquée et vérifiée le 04/09) est donc revenue dedans, comme
-   `tracking_code` était revenu dans CHAMPS_MAIL_REPLI. */
+/* Identique moins `archive_le` (20260914, T-113), la plus fraîche — le repli
+   tant qu'elle n'est pas passée. Le prix gelé (20260910, appliquée et
+   vérifiée le 10/09) est donc revenu dedans, comme `compte_id` y était revenu
+   avant lui : perdre le port pour une colonne d'archivage ferait refuser le
+   checkout à tout le monde. */
 const CHAMPS_COMPTE_REPLI =
   "id, token, etat, titre, occasion, palier, nb_pages, nb_photos, consent_photos, " +
   "compte_id, email_canonical, created_at, etat_maj_le, souvenir_pdf_key, " +
-  "tracking_url, transporteur, anonymise_le, apercu_urls";
+  "tracking_url, transporteur, anonymise_le, apercu_urls, " +
+  "prix_centimes, livraison_centimes, pays_livraison, livraison_niveau";
 
 /* Ce que la BARRE lit — les colonnes de `DossierDuCompte`, pas une de plus. */
 const CHAMPS_BARRE =
-  "token, etat, compte_id, email_canonical, consent_photos, nb_photos, etat_maj_le";
+  "token, etat, compte_id, email_canonical, consent_photos, nb_photos, etat_maj_le, archive_le";
+/* Même logique : le repli retire `archive_le`, pas `compte_id` (appliquée). */
 const CHAMPS_BARRE_REPLI =
-  "token, etat, email_canonical, consent_photos, nb_photos, etat_maj_le";
+  "token, etat, compte_id, email_canonical, consent_photos, nb_photos, etat_maj_le";
 
 export function regardDe(qui: Connectee): Regard {
   return {
@@ -151,6 +157,8 @@ async function lireCandidats(
     /* 42703 : la migration n'est pas passée — le rapprochement email suffit. */
   } else {
     for (const ligne of (parCompte.data ?? []) as unknown as LigneBrute[]) {
+      /* T-113 : archivé par l'atelier = n'existe plus pour le client. */
+      if (ligne.archive_le) continue;
       parToken.set(ligne.token, ligne);
     }
   }
@@ -162,6 +170,7 @@ async function lireCandidats(
       console.error("[compte] lecture par email en panne :", email.error.message);
     } else {
       for (const ligne of (email.data ?? []) as unknown as LigneBrute[]) {
+        if (ligne.archive_le) continue;
         if (!parToken.has(ligne.token)) parToken.set(ligne.token, ligne);
       }
     }
@@ -234,8 +243,13 @@ export async function rattacherParToken(
     const lire = (champs: string) =>
       supabase.from("numeros").select(champs).eq("token", token).maybeSingle();
     let { data, error } = await lire(
-      "id, token, etat, compte_id, email_canonical, consent_photos, nb_photos, etat_maj_le, anonymise_le",
+      "id, token, etat, compte_id, email_canonical, consent_photos, nb_photos, etat_maj_le, anonymise_le, archive_le",
     );
+    if (error?.code === "42703") {
+      ({ data, error } = await lire(
+        "id, token, etat, compte_id, email_canonical, consent_photos, nb_photos, etat_maj_le, anonymise_le",
+      ));
+    }
     if (error?.code === "42703") {
       ({ data, error } = await lire(
         "id, token, etat, email_canonical, consent_photos, nb_photos, etat_maj_le, anonymise_le",
@@ -243,9 +257,10 @@ export async function rattacherParToken(
     }
     if (error || !data) return "aucun";
 
-    const brute = data as unknown as DossierAffiche & { anonymise_le: string | null };
+    const brute = data as unknown as DossierAffiche & { anonymise_le: string | null; archive_le?: string | null };
     const dossier = { ...brute, compte_id: brute.compte_id ?? null };
     if (dossier.anonymise_le) return "aucun";
+    if (dossier.archive_le) return "aucun";
 
     const regard = regardDe(qui);
     if (!peutVoirDossier(dossier, regard)) return "etranger";

@@ -7,6 +7,7 @@ import Relance from "./Relance";
 import Activite from "./Activite";
 import Arrivees from "./Arrivees";
 import MarquerVu from "./MarquerVu";
+import Archivage from "./Archivage";
 import Rafraichissement from "./Rafraichissement";
 import Tableau from "./Tableau";
 import Vues, { useReglages } from "./Vues";
@@ -78,13 +79,16 @@ const GROUPES: Groupe[] = [
    premier trie par urgence (que dois-je faire maintenant), le second par
    affectation (de quoi me suis-je chargé). Les confondre ferait disparaître
    de la vue un dossier qu'on a pris et qui attend la cliente. */
-type Filtre = "actifs" | "moi" | "aMoi" | "nouveaux" | "tous";
+type Filtre = "actifs" | "moi" | "aMoi" | "nouveaux" | "tous" | "archives";
 const FILTRES: Array<{ cle: Filtre; label: string }> = [
   { cle: "actifs", label: "En cours" },
   { cle: "moi", label: "À nous" },
   { cle: "aMoi", label: "Les miens" },
   { cle: "nouveaux", label: "Jamais ouverts" },
   { cle: "tous", label: "Tout" },
+  /* T-113 — les dossiers mis de côté. Le seul filtre qui les MONTRE : partout
+     ailleurs ils n'existent pas. Masqué tant que la migration 20260914 manque. */
+  { cle: "archives", label: "Archivés" },
 ];
 
 function initiales(l: LigneDossier): string {
@@ -117,7 +121,11 @@ function Ligne({
 }) {
   return (
     <div
-      className={`ate-ligne ate-ligne--${l.prochaine.camp}${l.urgence.enRetard ? " ate-ligne--retard" : ""}`}
+      className={
+        l.archiveLe
+          ? "ate-ligne ate-ligne--archive"
+          : `ate-ligne ate-ligne--${l.prochaine.camp}${l.urgence.enRetard ? " ate-ligne--retard" : ""}`
+      }
     >
       {/* Le lien couvre toute la ligne SAUF la zone d'action : un bouton
           imbriqué dans un <a> n'est ni valide ni utilisable au clavier. */}
@@ -151,6 +159,11 @@ function Ligne({
               }
             >
               dépôt non terminé
+            </span>
+          ) : null}
+          {l.archiveLe ? (
+            <span className="ate-tag ate-tag--archive" title={`Archivé le ${fmtJour(l.archiveLe)}`}>
+              archivé
             </span>
           ) : null}
           {l.rembourse ? <span className="ate-tag ate-tag--alerte">remboursé</span> : null}
@@ -257,8 +270,14 @@ function Ligne({
       </span>
 
       <span className="ate-ligne-act">
-        <Relance ligne={l} demo={demo} onFait={onFait} />
-        <ActionRapide ligne={l} demo={demo} onFait={onFait} />
+        {l.archiveLe ? (
+          <Archivage token={l.token} archiveLe={l.archiveLe} demo={demo} variante="ligne" />
+        ) : (
+          <>
+            <Relance ligne={l} demo={demo} onFait={onFait} />
+            <ActionRapide ligne={l} demo={demo} onFait={onFait} />
+          </>
+        )}
       </span>
     </div>
   );
@@ -302,6 +321,8 @@ export default function Liste({ vue }: { vue: VueListe }) {
   const filtrees = useMemo(() => {
     const q = recherche.trim().toLowerCase();
     return vue.lignes.filter((l) => {
+      /* T-113 — un dossier archivé n'existe que sous « Archivés ». */
+      if ((filtre === "archives") !== (l.archiveLe !== null)) return false;
       if (filtre === "actifs" && l.urgence.pile === "termine") return false;
       /* « Ce qui m'attend » = strictement ce sur quoi on peut agir. C'est le
          filtre qui répond à « par quoi je commence ». */
@@ -324,7 +345,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
    * connaît donc qu'une forme.
    */
   const groupes = useMemo(() => {
-    if (reglages.groupe === "aucun") {
+    if (reglages.groupe === "aucun" || filtre === "archives") {
       return [{ cle: "tout", titre: null, sous: null, lignes: filtrees }];
     }
 
@@ -343,7 +364,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
       const lignes = filtrees.filter((l) => g.piles.includes(l.urgence.pile));
       return { cle: g.cle, titre: g.titre, sous: g.sous(lignes) as string | null, lignes };
     }).filter((g) => g.lignes.length > 0);
-  }, [filtrees, reglages.groupe, vue.colonnes]);
+  }, [filtrees, reglages.groupe, vue.colonnes, filtre]);
 
   const base = vue.demo ? "/admin/atelier/demo" : "/admin/atelier";
   const aFaire = vue.compteurs.a_faire;
@@ -351,6 +372,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
   const aMoiCompte = vue.lignes.filter((l) => l.enCharge === vue.quiCle).length;
   const aNous = enRetard + aFaire;
   const arrivees = vue.arrivees.length;
+  const archivesCompte = vue.lignes.filter((l) => l.archiveLe !== null).length;
   const vide = filtrees.length === 0;
   const messageVide =
     vue.lignes.length === 0
@@ -359,7 +381,9 @@ export default function Liste({ vue }: { vue: VueListe }) {
         ? `Rien ne correspond à « ${recherche} ».`
         : filtre === "nouveaux"
           ? "Tout a été regardé."
-          : "Rien dans ce filtre.";
+          : filtre === "archives"
+            ? "Aucun dossier archivé."
+            : "Rien dans ce filtre.";
 
   return (
     <div
@@ -436,7 +460,9 @@ export default function Liste({ vue }: { vue: VueListe }) {
           quand on descend dans une longue liste. */}
       <div className="ate-barre">
         <div className="ate-seg">
-          {FILTRES.filter((f) => f.cle !== "aMoi" || !vue.enChargeAbsent).map((f) => (
+          {FILTRES.filter(
+            (f) => (f.cle !== "aMoi" || !vue.enChargeAbsent) && (f.cle !== "archives" || !vue.archiveAbsent),
+          ).map((f) => (
             <button
               key={f.cle}
               type="button"
@@ -452,6 +478,9 @@ export default function Liste({ vue }: { vue: VueListe }) {
               ) : null}
               {f.cle === "nouveaux" && vue.flux.nouveaux > 0 ? (
                 <span className="ate-seg-compte">{vue.flux.nouveaux}</span>
+              ) : null}
+              {f.cle === "archives" && archivesCompte > 0 ? (
+                <span className="ate-seg-compte ate-seg-compte--gris">{archivesCompte}</span>
               ) : null}
             </button>
           ))}

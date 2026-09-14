@@ -675,6 +675,17 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
        nombre de photos effacées et la date du préavis y sont, parce que
        « qu'aviez-vous sur moi, et quand l'avez-vous effacé » est une
        question à laquelle il faut savoir répondre. */
+    /* T-113 (14/09/2026) — mis de côté, puis éventuellement repris. La
+       suppression définitive, elle, n'a pas de récit : la ligne part avec. */
+    case "dossier_archive":
+      return {
+        texte: fait(qui, "a archivé le dossier", "Dossier archivé"),
+        detail: "Retiré de la table de travail, des mails automatiques et de la page cliente",
+        ton: "nous",
+      };
+    case "dossier_restaure":
+      return { texte: fait(qui, "a récupéré le dossier", "Dossier récupéré"), detail: null, ton: "nous" };
+
     case "dossier_anonymise":
       return {
         texte: "Dossier refermé et anonymisé",
