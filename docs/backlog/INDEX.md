@@ -24,6 +24,16 @@ exactement l'écart que la passe du 01/09/2026 a corrigé, sur 36 lignes.
 Semé le 29/08/2026 par l'audit de structure. Tous les tickets ci-dessous sont **prouvés dans le
 code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
+## Où on en est (11/09/2026, soir : la boîte du jour)
+
+**T-112 fermé : la table de travail dit ce qui est entré et à qui est la balle.** Mathias :
+« les nouvelles demandes ne sont pas claires, et on ne sait pas quand c'est à nous ». Trois
+définitions de « nouveau » cohabitaient en tête de page, la colonne État disait un nom et jamais
+un camp. Désormais : une boîte « Depuis hier » (une ligne par dossier, qui disparaît d'elle-même
+quand on a joué, sans bouton par décision de Mathias), une colonne « Prochaine étape » (pastille
+de camp + geste, même calcul que la pile), et les retards lus avec les à-faire sous « À nous ».
+`urgence.ts` n'a pas bougé. La pile « Sans réponse » reste dans T-110.
+
 ## Où on en est (11/09/2026)
 
 **T-109 fermé : on peut relancer un client depuis l'atelier.** Le bouton vit sur la ligne, armé
@@ -192,4 +202,5 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-108 | Un test automatisé a créé un vrai dossier et envoyé un vrai mail | atelier | serieux | libre | **fermé** (11/09, PR #124 : `ATELIER_MAILS_COUPES` dans les deux chemins d'envoi) |
 | T-109 | Impossible de relancer un client depuis l'atelier, et une relance ne partait qu'une fois | admin | serieux | libre | **fermé** (11/09, PR #128 et #129 : bouton sur la ligne, colonne « Dernier mot », deux relances par motif, 72 h entre deux — aucun template Brevo créé, aucune migration) |
 | T-110 | La relance manuelle, ce qui reste après le premier lot | admin | confort | libre | nouveau (11/09) — relance groupée, pile « Sans réponse », téléphone sur la ligne. **Et le chemin d'envoi RÉEL n'a jamais été exercé** : à prouver au premier usage |
+| T-112 | Les nouvelles demandes de la journée ne se lisent pas, et rien ne dit quand c'est à nous | admin | serieux | libre | **fermé** (11/09 : boîte du jour « Depuis hier », colonne « Prochaine étape », deux camps ; règles pures `arrivees.ts` et `prochaineEtape.ts`, `Flux.tsx` archivé) |
 | T-111 | La table de travail recharge tout, tout le temps | admin | confort | libre | nouveau (11/09) — le parallélisme des lectures est fait (PR #128) ; restent le rafraîchissement complet chaque minute, l'action qui recharge vingt lignes, la navigation vers la fiche. ⚠️ Mesurer entre deux déploiements AVANT d'annoncer quoi que ce soit |

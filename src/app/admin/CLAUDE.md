@@ -51,6 +51,17 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
   (elle est déjà dans le délai, dans la pile et sur la fiche) ; « il n'a rien reçu depuis six
   jours » décide de la journée. Elle est lue dans `mails_envoyes`, DÉJÀ chargé pour la projection
   des actions : aucune requête de plus. La date d'ouverture reste en `title`.
+- **La boîte du jour « Depuis hier »** (`Arrivees.tsx`, règle pure `lib/atelier/arrivees.ts`,
+  11/09/2026) a remplacé les quatre compteurs du flux (archive/admin-flux-2026-09). Une ligne
+  par dossier, l'événement le plus récent gagne, et **la ligne disparaît d'elle-même** dès que la
+  balle n'est plus chez nous : rien à cocher. Aucun bouton, par décision de Mathias. Fenêtre :
+  hier 00:00 heure de Paris, le lundi depuis vendredi. Elle lit le journal dans LA MÊME requête
+  que le fil d'activité (`chargerJournalRecent`, plafond 200 lignes) : aucune latence de plus.
+- **La colonne « Prochaine étape » a remplacé « État »** sur la liste (pas sur la fiche ni la vue
+  tableau). Pastille de camp + geste, calculés par `prochaineEtape` (`lib/atelier/prochaineEtape.ts`)
+  avec **les mêmes options qu'`urgencePour`** : la pastille et la pile ne peuvent pas se contredire.
+  La fiche lit la même table (`parcours.ts` n'a plus de `SUITE` à lui). Les retards et les à-faire
+  se lisent sous un seul groupe « À nous » : un GROUPE D'AFFICHAGE, `urgence.ts` n'a pas bougé.
 - **`chargerListe` fait partir ses quatre lectures ensemble** (journal, activité, dossiers vus,
   mails partis). Seul `lireNumeros` reste seul et avant : tout le reste dépend de ses ids.
   Les enchaîner coûtait quatre latences à chaque ouverture ET à chaque rafraîchissement, donc

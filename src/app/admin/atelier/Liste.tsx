@@ -5,11 +5,13 @@ import Link from "next/link";
 import ActionRapide from "./ActionRapide";
 import Relance from "./Relance";
 import Activite from "./Activite";
-import Flux from "./Flux";
+import Arrivees from "./Arrivees";
+import MarquerVu from "./MarquerVu";
 import Rafraichissement from "./Rafraichissement";
 import Tableau from "./Tableau";
 import Vues, { useReglages } from "./Vues";
 import { etiquetteChoixCouverture } from "@/lib/atelier/formatVisuel";
+import { LIBELLE_CAMP } from "@/lib/atelier/prochaineEtape";
 import type { LigneDossier, VueListe } from "./types";
 import type { Pile } from "@/lib/atelier/urgence";
 import { PRENOM_COMPTE } from "@/lib/admin-auth";
@@ -35,23 +37,40 @@ import { PRENOM_COMPTE } from "@/lib/admin-auth";
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-const ORDRE: Pile[] = ["retard", "a_faire", "attente_cliente", "dehors", "termine"];
-
-const TITRE_PILE: Record<Pile, string> = {
-  retard: "En retard",
-  a_faire: "À faire",
-  attente_cliente: "Chez le client",
-  dehors: "En route",
-  termine: "Terminés",
-};
-
-const SOUS_TITRE_PILE: Record<Pile, string> = {
-  retard: "La promesse faite au client est dépassée.",
-  a_faire: "La balle est dans notre camp.",
-  attente_cliente: "Le client doit payer, valider, ou compléter ses photos.",
-  dehors: "Chez l'imprimeur ou chez le transporteur.",
-  termine: "Livrés.",
-};
+/* ── DEUX CAMPS, PAS CINQ PILES (11/09/2026) ─────────────────────────────
+   Mathias : « on ne sait pas quand c'est à nous de faire ». Les retards et
+   les à-faire sont la même réponse à cette question (oui), séparés en deux
+   piles ils la diluaient. Ils sont lus ensemble sous « À nous », les retards
+   en tête (le tri serveur les y met déjà), et le sous-titre dit combien.
+   ⚠️ Un GROUPE D'AFFICHAGE, pas une pile : `urgence.ts` n'a pas bougé, ses
+   cinq piles restent la vérité du tri, des compteurs et de la page cliente. */
+type Groupe = { cle: string; titre: string; piles: Pile[]; sous: (lignes: LigneDossier[]) => string };
+const GROUPES: Groupe[] = [
+  {
+    cle: "nous",
+    titre: "À nous",
+    piles: ["retard", "a_faire"],
+    sous: (l) => {
+      const retards = l.filter((x) => x.urgence.enRetard).length;
+      return retards > 0
+        ? `La balle est dans notre camp, dont ${retards} en retard sur la promesse.`
+        : "La balle est dans notre camp.";
+    },
+  },
+  {
+    cle: "attente_cliente",
+    titre: "Chez le client",
+    piles: ["attente_cliente"],
+    sous: () => "Le client doit payer, valider, ou compléter ses photos.",
+  },
+  {
+    cle: "dehors",
+    titre: "En route",
+    piles: ["dehors"],
+    sous: () => "Chez l'imprimeur ou chez le transporteur.",
+  },
+  { cle: "termine", titre: "Livrés", piles: ["termine"], sous: () => "Rien à faire." },
+];
 
 /* Les filtres du haut. « Tout ce qui bouge » est le filtre par défaut d'un
    lundi matin : il retire les livrés, qui n'ont plus rien à raconter. */
@@ -62,7 +81,7 @@ const SOUS_TITRE_PILE: Record<Pile, string> = {
 type Filtre = "actifs" | "moi" | "aMoi" | "nouveaux" | "tous";
 const FILTRES: Array<{ cle: Filtre; label: string }> = [
   { cle: "actifs", label: "En cours" },
-  { cle: "moi", label: "Ce qui m'attend" },
+  { cle: "moi", label: "À nous" },
   { cle: "aMoi", label: "Les miens" },
   { cle: "nouveaux", label: "Jamais ouverts" },
   { cle: "tous", label: "Tout" },
@@ -97,7 +116,9 @@ function Ligne({
   prenoms: Record<string, string>;
 }) {
   return (
-    <div className={l.urgence.enRetard ? "ate-ligne ate-ligne--retard" : "ate-ligne"}>
+    <div
+      className={`ate-ligne ate-ligne--${l.prochaine.camp}${l.urgence.enRetard ? " ate-ligne--retard" : ""}`}
+    >
       {/* Le lien couvre toute la ligne SAUF la zone d'action : un bouton
           imbriqué dans un <a> n'est ni valide ni utilisable au clavier. */}
       <Link href={`${base}/${l.token}`} className="ate-ligne-lien" aria-label={l.titre ?? "Dossier"} />
@@ -196,9 +217,14 @@ function Ligne({
         </span>
       </span>
 
-      <span className={`ate-etat ate-etat--${l.etat}`}>
-        <span className="ate-etape">{l.etape}</span>
-        {l.libelleEtat}
+      {/* ── « PROCHAINE ÉTAPE » A REMPLACÉ « ÉTAT » (11/09/2026) ──────────
+          « Aperçu publié » disait où le dossier est rangé, pas qui doit
+          jouer. La pastille dit le camp, la ligne dessous dit le geste ; le
+          numéro d'étape et le nom de l'état restent au survol, sur la fiche
+          et dans la vue tableau. */}
+      <span className="ate-prochaine" title={`Étape ${l.etape} · ${l.libelleEtat}`}>
+        <span className={`ate-camp ate-camp--${l.prochaine.camp}`}>{LIBELLE_CAMP[l.prochaine.camp]}</span>
+        <span className="ate-prochaine-geste">{l.prochaine.geste}</span>
       </span>
 
       <span className="ate-delai">
@@ -313,18 +339,18 @@ export default function Liste({ vue }: { vue: VueListe }) {
         .filter((g) => g.lignes.length > 0);
     }
 
-    return ORDRE.map((pile) => ({
-      cle: pile,
-      titre: TITRE_PILE[pile],
-      sous: SOUS_TITRE_PILE[pile] as string | null,
-      lignes: filtrees.filter((l) => l.urgence.pile === pile),
-    })).filter((g) => g.lignes.length > 0);
+    return GROUPES.map((g) => {
+      const lignes = filtrees.filter((l) => g.piles.includes(l.urgence.pile));
+      return { cle: g.cle, titre: g.titre, sous: g.sous(lignes) as string | null, lignes };
+    }).filter((g) => g.lignes.length > 0);
   }, [filtrees, reglages.groupe, vue.colonnes]);
 
   const base = vue.demo ? "/admin/atelier/demo" : "/admin/atelier";
   const aFaire = vue.compteurs.a_faire;
   const enRetard = vue.compteurs.retard;
   const aMoiCompte = vue.lignes.filter((l) => l.enCharge === vue.quiCle).length;
+  const aNous = enRetard + aFaire;
+  const arrivees = vue.arrivees.length;
   const vide = filtrees.length === 0;
   const messageVide =
     vue.lignes.length === 0
@@ -351,24 +377,31 @@ export default function Liste({ vue }: { vue: VueListe }) {
       <header className="ate-header">
         <div>
           <h1 className="ate-h1">L&apos;Atelier</h1>
+          {/* Une phrase, la même que la boîte et les groupes : combien sont à
+              nous (et combien en retard), combien sont arrivés depuis hier. */}
           <p className="ate-bonjour">
             Bonjour {vue.qui}.{" "}
-            {enRetard > 0 ? (
-              <>
-                <strong className="ate-alerte">
-                  {enRetard} dossier{enRetard > 1 ? "s" : ""} en retard
-                </strong>
-                {aFaire > 0 ? `, ${aFaire} à traiter.` : "."}
-              </>
-            ) : aFaire > 0 ? (
+            {aNous > 0 ? (
               <>
                 <strong>
-                  {aFaire} dossier{aFaire > 1 ? "s" : ""} à traiter
+                  {aNous} dossier{aNous > 1 ? "s" : ""} à nous
                 </strong>
-                .
+                {enRetard > 0 ? (
+                  <>
+                    , dont <strong className="ate-alerte">{enRetard} en retard</strong>
+                  </>
+                ) : null}
               </>
             ) : (
-              <strong>rien ne vous attend.</strong>
+              <strong>rien ne vous attend</strong>
+            )}
+            {arrivees > 0 ? (
+              <>
+                <span className="ate-sep">·</span>
+                {arrivees} arrivé{arrivees > 1 ? "s" : ""} depuis hier.
+              </>
+            ) : (
+              "."
             )}
           </p>
         </div>
@@ -390,12 +423,11 @@ export default function Liste({ vue }: { vue: VueListe }) {
         </nav>
       </header>
 
-      <Flux
-        flux={vue.flux}
-        tokens={filtrees.map((l) => l.token)}
-        demo={vue.demo}
-        actif={filtre === "nouveaux"}
-        onFiltrer={() => setFiltre(filtre === "nouveaux" ? "actifs" : "nouveaux")}
+      <Arrivees
+        arrivees={vue.arrivees}
+        base={base}
+        fetchedAt={vue.fetchedAt}
+        marqueurAbsent={vue.flux.marqueurAbsent}
       />
 
       <Activite activite={vue.activite} base={base} fetchedAt={vue.fetchedAt} />
@@ -426,6 +458,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
         </div>
 
         <div className="ate-barre-droite">
+          <MarquerVu tokens={filtrees.map((l) => l.token)} nouveaux={vue.flux.nouveaux} demo={vue.demo} />
           <Vues reglages={reglages} onChange={majReglages} />
           <div className="ate-recherche-boite">
             <input
@@ -451,7 +484,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
           <div className="ate-entete" aria-hidden>
             <span />
             <span>Dossier</span>
-            <span>État</span>
+            <span>Prochaine étape</span>
             <span>Délai</span>
             <span>Dernier mot</span>
             <span>Action</span>

@@ -20,6 +20,9 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { preparerTransition, actionsDepuis, cleCadrageCouverture } from "@/lib/atelier/transitions";
 import { urgencePour, comparerUrgence, etapeDepot } from "@/lib/atelier/urgence";
+import { gestePour, prochaineEtape, LIBELLE_CAMP } from "@/lib/atelier/prochaineEtape";
+import { debutFenetre, releverArrivees, type EvenementArrivee } from "@/lib/atelier/arrivees";
+import { construireParcours } from "@/lib/atelier/parcours";
 import {
   CODES_RELANCE,
   DELAI_MIN_RELANCE_MS,
@@ -566,6 +569,97 @@ const lot = [
 ok("les retards d'abord", lot[0].pile === "retard" && lot[1].pile === "retard");
 ok("le plus en retard passe devant", (lot[0].reste ?? 0) < (lot[1].reste ?? 0));
 ok("les termines en dernier", lot[4].pile === "termine");
+
+/* ═══════════════════════ PROCHAINE ÉTAPE (11/09/2026) ═══════════════════════ */
+
+titre("— la prochaine etape : qui doit jouer, et quel geste —");
+ok("etat 1 : a nous, composer la couverture",
+   prochaineEtape("photos_recues").camp === "atelier" && prochaineEtape("photos_recues").geste === "Composer la couverture");
+ok("etat 2 : chez le client, il doit regler",
+   prochaineEtape("apercu_pret").camp === "cliente" && prochaineEtape("apercu_pret").geste.startsWith("Doit "));
+ok("etat 2 + ajustement : revient chez nous, reprendre la couverture",
+   prochaineEtape("apercu_pret", { ajustement: true }).camp === "atelier"
+   && prochaineEtape("apercu_pret", { ajustement: true }).geste === "Reprendre la couverture");
+ok("etat 4 + retouches : revient chez nous, republier",
+   prochaineEtape("maquette_prete", { retouches: true }).camp === "atelier"
+   && prochaineEtape("maquette_prete", { retouches: true }).geste.startsWith("Republier"));
+ok("etat 4 sans retouches : chez le client",
+   prochaineEtape("maquette_prete").camp === "cliente");
+ok("depot vide : chez le client, doit envoyer ses photos",
+   prochaineEtape("photos_recues", { depot: "vide" }).camp === "cliente"
+   && prochaineEtape("photos_recues", { depot: "vide" }).geste === "Doit envoyer ses photos");
+ok("depot abandonne : chez le client, et on ne lui reclame PAS des photos qu'il a deposees",
+   prochaineEtape("photos_recues", { depot: "abandonne" }).camp === "cliente"
+   && !prochaineEtape("photos_recues", { depot: "abandonne" }).geste.includes("envoyer ses photos"));
+ok("etat 6 : en dehors", prochaineEtape("en_production").camp === "dehors");
+ok("le camp et la pile sont d'accord sur les trois bascules",
+   (["photos_recues", "apercu_pret", "payee", "maquette_prete", "validee", "en_production", "expediee", "livree"] as const)
+     .every((e) => {
+       const camp = prochaineEtape(e).camp;
+       const pile = urgencePour(e, ilYAh(1), NOW).pile;
+       return (camp === "atelier") === (pile === "a_faire" || pile === "retard")
+         && (camp === "cliente") === (pile === "attente_cliente");
+     }));
+ok("aucun tiret dans les gestes (consigne de Mathias)",
+   (["photos_recues", "photos_insuffisantes", "apercu_pret", "payee", "maquette_prete", "validee", "en_production", "expediee", "livree"] as const)
+     .every((e) => !/[—–]/.test(gestePour(e)))
+   && Object.values(LIBELLE_CAMP).every((l) => !/[—–]/.test(l)));
+ok("la fiche lit la MEME table : le parcours dit le geste de prochaineEtape",
+   construireParcours("payee", []).prochain.quoi === gestePour("payee"));
+
+/* ═══════════════════════ LA BOÎTE DU JOUR (11/09/2026) ═══════════════════════ */
+
+titre("— la fenetre « depuis hier », heure de Paris —");
+const JEUDI = new Date("2026-09-10T10:00:00Z");
+ok("un jeudi a 12 h (Paris) : depuis mercredi 00:00 Paris = mardi 22:00 UTC",
+   debutFenetre(JEUDI).toISOString() === "2026-09-08T22:00:00.000Z");
+ok("un lundi : depuis vendredi 00:00 Paris",
+   debutFenetre(new Date("2026-09-14T10:00:00Z")).toISOString() === "2026-09-10T22:00:00.000Z");
+ok("a 00:30 Paris (22:30 UTC la veille), « hier » est bien la veille du jour civil de Paris",
+   debutFenetre(new Date("2026-09-09T22:30:00Z")).toISOString() === "2026-09-08T22:00:00.000Z");
+ok("en hiver, minuit Paris = 23:00 UTC",
+   debutFenetre(new Date("2026-01-15T10:00:00Z")).toISOString() === "2026-01-13T23:00:00.000Z");
+
+titre("— la boite du jour : ce qui entre, ce qui sort —");
+const hJ = (h: number) => new Date(JEUDI.getTime() - h * 3_600_000).toISOString();
+const ev = (numeroId: string, type: string, h: number, payload: Record<string, unknown> = {}): EvenementArrivee =>
+  ({ numeroId, type, payload, createdAt: hJ(h) });
+const dos = (numeroId: string, etat: Parameters<typeof prochaineEtape>[0], pile: ReturnType<typeof urgencePour>["pile"], depot: "termine" | "vide" | "abandonne" = "termine") =>
+  ({ numeroId, etat, pile, depot });
+
+ok("photos envoyees hier, dossier a faire : NOUVELLE DEMANDE",
+   releverArrivees([ev("a", "consentements", 20, { consent_photos: true })], [dos("a", "photos_recues", "a_faire")], JEUDI)
+     .map((x) => x.motif).join() === "nouvelle_demande");
+ok("photos envoyees hier, apercu publie depuis : la demande a DISPARU (la balle est chez le client)",
+   releverArrivees([ev("a", "consentements", 20, { consent_photos: true })], [dos("a", "apercu_pret", "attente_cliente")], JEUDI).length === 0);
+ok("paiement ce matin : reponse du client, avec le montant",
+   releverArrivees([ev("b", "etat_change", 2, { vers: "payee", euros: 47 })], [dos("b", "payee", "a_faire")], JEUDI)[0]?.quoi === "a payé 47 €");
+ok("une seule ligne par dossier, et c'est la plus recente qui parle",
+   (() => {
+     const r = releverArrivees(
+       [ev("c", "consentements", 8, { consent_photos: true }), ev("c", "etat_change", 2, { vers: "payee", euros: 39 })],
+       [dos("c", "payee", "a_faire")], JEUDI);
+     return r.length === 1 && r[0].motif === "reponse_client";
+   })());
+ok("questionnaire seul, hier : SANS PHOTOS, en gris",
+   releverArrivees([ev("d", "numero_cree", 20)], [dos("d", "photos_recues", "attente_cliente", "vide")], JEUDI)[0]?.motif === "sans_photos");
+ok("questionnaire seul, mais depot termine depuis : plus rien a dire",
+   releverArrivees([ev("d", "numero_cree", 20)], [dos("d", "photos_recues", "a_faire", "termine")], JEUDI).length === 0);
+ok("avant-hier : hors fenetre",
+   releverArrivees([ev("e", "etat_change", 60, { vers: "payee" })], [dos("e", "payee", "a_faire")], JEUDI).length === 0);
+ok("retouches demandees : reponse du client",
+   releverArrivees([ev("f", "retouches_demandees", 5)], [dos("f", "maquette_prete", "a_faire")], JEUDI)[0]?.motif === "reponse_client");
+ok("validation automatique a J+7 : dite comme un silence, pas comme un accord",
+   releverArrivees([ev("g", "etat_change", 5, { vers: "validee", par: "auto" })], [dos("g", "validee", "a_faire")], JEUDI)[0]?.quoi.includes("J+7") === true);
+ok("les autres consentements (CGV) ne sont pas une entree",
+   releverArrivees([ev("h", "consentements", 5, { cgv_ok: true })], [dos("h", "apercu_pret", "a_faire")], JEUDI).length === 0);
+ok("un dossier disparu du tableau ne laisse aucune ligne",
+   releverArrivees([ev("zzz", "numero_cree", 5)], [], JEUDI).length === 0);
+ok("l'ordre : nouvelles demandes, puis reponses, puis sans photos",
+   releverArrivees(
+     [ev("i", "numero_cree", 1), ev("j", "etat_change", 2, { vers: "payee" }), ev("k", "consentements", 3, { consent_photos: true })],
+     [dos("i", "photos_recues", "attente_cliente", "vide"), dos("j", "payee", "a_faire"), dos("k", "photos_recues", "a_faire")],
+     JEUDI).map((x) => x.motif).join() === "nouvelle_demande,reponse_client,sans_photos");
 
 /* ══════════════════════════════ MAILS ══════════════════════════════ */
 

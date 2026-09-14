@@ -31,6 +31,8 @@ import { raconter } from "@/lib/atelier/recit";
 import { dernierMailParti, depuisEnMots, evaluerRelance } from "@/lib/atelier/relance";
 import { OBJET_MAIL, type CodeMail } from "@/lib/atelier/mails";
 import { construireParcours } from "@/lib/atelier/parcours";
+import { prochaineEtape } from "@/lib/atelier/prochaineEtape";
+import { releverArrivees } from "@/lib/atelier/arrivees";
 import { COLONNES } from "../donnees";
 import type { Fiche, LigneDossier, VueListe } from "../types";
 
@@ -89,6 +91,12 @@ type Graine = {
    * où le compteur de photos et l'avancement réel se contredisent.
    */
   depotAbandonne?: boolean;
+  /**
+   * À l'état 4, le client a noté des retouches (T2-13) : la balle revient
+   * chez nous. Un seul dossier le porte, pour que la boîte du jour et la pile
+   * « À nous » montrent le cas où un dossier « chez le client » remonte.
+   */
+  retouches?: boolean;
 };
 
 const GRAINES: Graine[] = [
@@ -174,6 +182,7 @@ const GRAINES: Graine[] = [
     etat: "maquette_prete",
     nbPhotos: 96,
     nbPages: 48,
+    retouches: true,
     palier: "p45",
     depuis: 40,
     ouvertIlYA: 14,
@@ -316,9 +325,17 @@ const J = 86_400_000;
 function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: ReturnType<typeof urgencePour> } {
   const etatMajLe = new Date(maintenant.getTime() - g.depuis * H).toISOString();
   const createdAt = new Date(maintenant.getTime() - g.ouvertIlYA * J).toISOString();
+  /* Un dossier sans photo n'a pas terminé son dépôt : la graine « Sans
+     titre » (0 photo) passait pour un dépôt terminé et s'affichait dans « À
+     faire » avec un compte à rebours de 48 h, c'est-à-dire exactement la
+     confusion du 27/08 que la démo doit MONTRER, pas reproduire. */
   const depot: EtapeDepot =
-    g.etat === "photos_recues" ? etapeDepot(g.depotAbandonne ? null : true, g.nbPhotos) : "termine";
-  const urgence = urgencePour(g.etat, etatMajLe, maintenant, { depot });
+    g.etat === "photos_recues"
+      ? etapeDepot(g.depotAbandonne || g.nbPhotos === 0 ? null : true, g.nbPhotos)
+      : "termine";
+  const retouches = g.etat === "maquette_prete" && Boolean(g.retouches);
+  const urgence = urgencePour(g.etat, etatMajLe, maintenant, { depot, retouches });
+  const prochaine = prochaineEtape(g.etat, { depot, retouches });
 
   /* Le dernier mail de la démonstration : celui que l'état d'ARRIVÉE a fait
      partir, daté de l'entrée dans l'état. Il donne à la colonne « Dernier
@@ -374,6 +391,7 @@ function ligneDe(g: Graine, maintenant: Date): { ligne: LigneDossier; urgence: R
         enRetard: urgence.pile === "retard",
         age: urgence.age,
       },
+      prochaine,
       depot,
       enCharge: g.enCharge ?? null,
       paye: Boolean(g.paye),
@@ -441,6 +459,47 @@ export function listeDemo(qui: string): VueListe {
     createdAt: ilYA(e.h),
     recit: raconter(e.type, e.p as Record<string, unknown>),
   }));
+  /* La boîte du jour passe par la VRAIE règle (releverArrivees) sur un
+     journal fabriqué : la démonstration doit montrer qu'une demande sort de
+     la boîte quand la balle n'est plus chez nous, pas une liste figée. Les
+     heures sont choisies pour tomber dans « depuis hier » quel que soit le
+     jour où on ouvre la démo (sauf un dimanche soir tard, tant pis). */
+  const journal = [
+    { t: T("demo3"), type: "consentements", h: 14, p: { consent_photos: true } },
+    { t: T("demoB"), type: "etat_change", h: 12, p: { vers: "payee", euros: eurosPourPages(30) } },
+    { t: T("demo5"), type: "retouches_demandees", h: 20, p: {} },
+    { t: T("demoA"), type: "numero_cree", h: 22, p: {} },
+    { t: T("demoD"), type: "numero_cree", h: 25, p: {} },
+    /* Publié depuis : la balle est chez le client, la demande NE DOIT PAS
+       apparaître. C'est le cas qui prouve la règle. */
+    { t: T("demo4"), type: "consentements", h: 8, p: { consent_photos: true } },
+  ].map((e) => ({ numeroId: e.t, type: e.type, payload: e.p, createdAt: ilYA(e.h) }));
+  const parToken = new Map(evaluees.map((e) => [e.ligne.token, e.ligne]));
+  const arrivees = releverArrivees(
+    journal,
+    evaluees.map((e) => ({
+      numeroId: e.ligne.token,
+      etat: e.ligne.etat,
+      pile: e.urgence.pile,
+      depot: e.ligne.depot,
+    })),
+    maintenant,
+  ).map((a) => {
+    const l = parToken.get(a.numeroId)!;
+    return {
+      token: l.token,
+      titre: l.titre,
+      prenom: l.prenom,
+      nbPhotos: l.nbPhotos,
+      motif: a.motif,
+      quoi: a.quoi,
+      quand: a.quand,
+      camp: l.prochaine.camp,
+      geste: l.prochaine.geste,
+      promesse: l.urgence.promesse,
+    };
+  });
+
   return {
     lignes: evaluees.map((e) => e.ligne),
     compteurs: compter(evaluees.map((e) => e.urgence)),
@@ -448,19 +507,10 @@ export function listeDemo(qui: string): VueListe {
     enChargeAbsent: false,
     quiCle: "mathias",
     activite,
+    arrivees,
+    fenetre: { depuis: ilYA(34) },
     flux: {
-      demandesAujourdhui: evaluees.filter((e) => e.ligne.nouveau).length,
-      demandesSemaine: GRAINES.filter((g) => g.nbPhotos > 0 && g.ouvertIlYA <= 7).length,
-      sansDepot: evaluees.filter((e) => e.ligne.depot !== "termine").length,
       nouveaux: evaluees.filter((e) => e.ligne.nouveau).length,
-      parJour: Array.from({ length: 14 }, (_, i) => {
-        const jours = 13 - i;
-        const d = new Date(maintenant.getTime() - jours * 86_400_000);
-        return {
-          date: d.toISOString().slice(0, 10),
-          demandes: GRAINES.filter((g) => g.nbPhotos > 0 && g.ouvertIlYA === jours).length,
-        };
-      }),
       marqueurAbsent: false,
     },
     fetchedAt: maintenant.toISOString(),

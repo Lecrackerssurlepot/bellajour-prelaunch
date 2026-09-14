@@ -7,11 +7,22 @@
  * rendre EXACTEMENT les mêmes écrans avec des données fabriquées.
  */
 
-import type { Pile, EtapeDepot } from "@/lib/atelier/urgence";
+import type { Pile, EtapeDepot, Camp } from "@/lib/atelier/urgence";
+import type { MotifArrivee } from "@/lib/atelier/arrivees";
 import type { Etat } from "@/lib/atelier/transitions";
 import type { Recit } from "@/lib/atelier/recit";
 import type { Parcours } from "@/lib/atelier/parcours";
 import type { GenreNote } from "@/lib/atelier/carnet";
+
+/**
+ * La colonne « Prochaine étape » (11/09/2026) : QUI doit jouer, et QUEL geste.
+ *
+ * Mathias : « on ne sait pas quand c'est à nous de faire ». La colonne
+ * « État » disait un nom (« Aperçu publié »), jamais un camp. Calculée côté
+ * serveur par `prochaineEtape` avec LES MÊMES options qu'`urgencePour` : la
+ * pastille et la pile ne peuvent pas se contredire.
+ */
+export type ProchaineVue = { camp: Camp; geste: string };
 
 export type UrgenceVue = {
   pile: Pile;
@@ -97,6 +108,7 @@ export type LigneDossier = {
   createdAt: string | null;
   etatMajLe: string | null;
   urgence: UrgenceVue;
+  prochaine: ProchaineVue;
   /**
    * Où en est le dépôt. Tant qu'il n'est pas « termine », le dossier est une
    * relance, pas du travail d'atelier — même s'il porte déjà 55 photos.
@@ -422,24 +434,41 @@ export type ActiviteVue = {
 };
 
 /**
- * Le flux entrant, en tête de liste.
+ * Une ligne de la boîte du jour (« Depuis hier », 11/09/2026).
  *
- * « Arrivée » ne veut pas dire « demande » : un questionnaire rempli sans
- * dépôt est un prospect à relancer, pas du travail d'atelier. Les compter
- * ensemble gonfle le compteur du matin avec du vide, et un compteur qu'on ne
- * croit plus ne sert à rien.
+ * Ce qui est ENTRÉ dans l'atelier depuis hier, une ligne par dossier, avec le
+ * geste que ça nous demande. La règle est dans lib/atelier/arrivees.ts ; ici,
+ * ce que l'écran affiche, prêt à lire. `camp` et `geste` sont ceux de la
+ * ligne elle-même (même calcul), recopiés pour que la boîte n'ait pas à
+ * retrouver sa ligne dans la liste.
+ */
+export type ArriveeVue = {
+  token: string;
+  titre: string | null;
+  prenom: string | null;
+  nbPhotos: number;
+  motif: MotifArrivee;
+  /** « a payé 47 € ». Se lit après le prénom. */
+  quoi: string;
+  /** ISO. */
+  quand: string;
+  camp: Camp;
+  geste: string;
+  /** La promesse qui court, s'il y en a une : « Couverture sous 48 h ». */
+  promesse: string | null;
+};
+
+/**
+ * Le marqueur de lecture, réduit à ce que la barre affiche.
+ *
+ * Les quatre compteurs du flux (arrivées du jour, de la semaine, dépôts non
+ * terminés, frise de quatorze jours) ont cédé la place à la boîte du jour le
+ * 11/09/2026 : trois définitions de « nouveau » côte à côte ne se lisaient
+ * pas. Le calcul est en archive (archive/admin-flux-2026-09).
  */
 export type FluxVue = {
-  /** Dossiers dont le dépôt est terminé, arrivés aujourd'hui. */
-  demandesAujourdhui: number;
-  /** Idem, depuis 7 jours. */
-  demandesSemaine: number;
-  /** Questionnaires remplis, dépôt jamais terminé (tous âges). */
-  sansDepot: number;
   /** Jamais ouverts par la personne connectée. */
   nouveaux: number;
-  /** 14 derniers jours, du plus ancien au plus récent, pour la frise. */
-  parJour: Array<{ date: string; demandes: number }>;
   /**
    * `true` quand la table `dossiers_vus` n'a pas encore été créée : la marque
    * « nouveau » retombe alors sur « arrivé depuis moins de 24 h ». Affiché,
@@ -459,6 +488,10 @@ export type VueListe = {
   quiCle: string;
   colonnes: ColonneVue[];
   activite: ActiviteVue[];
+  /** La boîte du jour, déjà dans l'ordre de lecture. */
+  arrivees: ArriveeVue[];
+  /** Le début de « depuis hier » (ISO), pour le dire à l'écran. */
+  fenetre: { depuis: string };
   flux: FluxVue;
   /**
    * `true` quand la migration 20260826 n'est pas passée : le sélecteur de la

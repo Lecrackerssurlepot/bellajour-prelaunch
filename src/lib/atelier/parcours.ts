@@ -24,6 +24,7 @@
 
 import { ACTIONS, ETAPE_ETAT, LIBELLE_ETAT, type Etat } from "./transitions";
 import { QUI_ATTEND, type Camp } from "./urgence";
+import { gestePour } from "./prochaineEtape";
 
 /** La file principale. `photos_insuffisantes` en est volontairement absent. */
 export const FILE: Etat[] = [
@@ -37,18 +38,9 @@ export const FILE: Etat[] = [
   "livree",
 ];
 
-/** Le geste qui fait sortir de l'étape, dit du point de vue de qui le fait. */
-const SUITE: Record<Etat, string> = {
-  photos_recues: "Composer la couverture et publier l'aperçu",
-  photos_insuffisantes: "Elle complète son dépôt",
-  apercu_pret: "Elle règle son numéro",
-  payee: "Composer le numéro et publier la maquette",
-  maquette_prete: "Elle valide, ou validation automatique à J+7",
-  validee: "Passer la commande et lancer l'impression",
-  en_production: "L'imprimeur fabrique",
-  expediee: "Le transporteur livre",
-  livree: "Rien, le numéro est arrivé",
-};
+/* Le geste qui fait sortir de l'étape vit dans prochaineEtape.ts depuis le
+   11/09/2026 : la LISTE l'affiche aussi (colonne « Prochaine étape »), et
+   deux tables auraient fini par dire deux choses du même dossier. */
 
 /** Le titre court d'un jalon — plus parlant que l'énum sur une frise. */
 const TITRE: Record<Etat, string> = {
@@ -141,7 +133,7 @@ export function construireParcours(etatCourant: Etat, evenements: EvenementBrut[
       quand: trace?.quand ?? null,
       par: trace?.par ?? null,
       attend: QUI_ATTEND[etat],
-      suite: SUITE[etat],
+      suite: gestePour(etat),
       action: actionDepuis(etat),
     };
   });
@@ -154,7 +146,7 @@ export function construireParcours(etatCourant: Etat, evenements: EvenementBrut[
       ? { actif: etatCourant === "photos_insuffisantes", quand: detourQuand }
       : null,
     prochain: {
-      quoi: SUITE[etatReel],
+      quoi: gestePour(etatReel),
       attend: QUI_ATTEND[etatReel],
       action: actionDepuis(etatReel),
     },

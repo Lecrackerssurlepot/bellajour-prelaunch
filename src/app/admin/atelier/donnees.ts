@@ -44,6 +44,8 @@ import {
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
 import { construireParcours } from "@/lib/atelier/parcours";
+import { prochaineEtape } from "@/lib/atelier/prochaineEtape";
+import { debutFenetre, releverArrivees, type EvenementArrivee } from "@/lib/atelier/arrivees";
 import { genreNote } from "@/lib/atelier/carnet";
 import {
   EVT_CODE_CREE,
@@ -54,6 +56,7 @@ import { prenomDe } from "@/lib/admin-auth";
 import type {
   ActiviteVue,
   AdresseVue,
+  ArriveeVue,
   FluxVue,
   ColonneVue,
   ClientVue,
@@ -172,6 +175,9 @@ function versLigne(
     ajustement,
     ajustementLe,
   });
+  /* MÊMES options que l'urgence : la colonne « Prochaine étape » et la pile
+     lisent le même dossier, elles ne peuvent pas se contredire. */
+  const prochaine = prochaineEtape(r.etat, { depot, retouches, ajustement });
 
   /* La relance manuelle et le « dernier mot » viennent de la MÊME lecture de
      `mails_envoyes` que la projection des actions : `envoyes` est déjà là, et
@@ -216,6 +222,7 @@ function versLigne(
       enRetard: u.pile === "retard",
       age: u.age,
     },
+    prochaine,
     depot,
     enCharge: r.en_charge ?? null,
     paye: Boolean(r.stripe_payment_intent),
@@ -426,7 +433,7 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
      bas, fait déjà exactement ça pour les photos, le journal, les mails et
      les notes d'un dossier. C'est la liste qui était en retard.
      `lireNumeros` reste SEULE et AVANT : tout le reste a besoin de ses ids. */
-  const [marques, activite, lecture, envoyesPar] = await Promise.all([
+  const [marques, journal, lecture, envoyesPar] = await Promise.all([
     ids.length
       ? supabase
           .from("evenements")
@@ -442,7 +449,7 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
             }>
           >()
       : Promise.resolve({ data: [] as Array<{ numero_id: string; type: string; payload: Record<string, unknown> | null; created_at: string }> }),
-    chargerActivite(supabase, rangees),
+    chargerJournalRecent(supabase, rangees, maintenant),
     chargerVus(supabase, identite.cle),
     /* Ce qui est déjà parti, pour TOUS les dossiers en une requête : la règle
        d'envoi en a besoin pour dire, ligne par ligne, quel mail partirait, et
@@ -516,8 +523,10 @@ export async function chargerListe(identite: { cle: string; prenom: string }): P
     compteurs: compter(evaluees.map((e) => e.urgence)),
     colonnes: COLONNES,
     enChargeAbsent,
-    activite,
-    flux: mesurerFlux(evaluees.map((e) => e.ligne), rangees, maintenant, marqueurAbsent),
+    activite: journal.activite,
+    arrivees: versArrivees(journal.brut, evaluees.map((e) => e.ligne), maintenant),
+    fenetre: { depuis: debutFenetre(maintenant).toISOString() },
+    flux: mesurerFlux(evaluees.map((e) => e.ligne), marqueurAbsent),
     fetchedAt: maintenant.toISOString(),
     qui: identite.prenom,
     quiCle: identite.cle,
@@ -611,82 +620,82 @@ function estNouveau(
 
 /* ─────────────────────────────── le flux ─────────────────────────────── */
 
-/* Date civile Europe/Paris : le serveur tourne en UTC, et « arrivé
-   aujourd'hui » à 1 h du matin doit compter pour aujourd'hui à Lisbonne comme
-   à Paris, pas pour la veille. */
-const JOUR_PARIS = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Europe/Paris",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
-
-const JOURS_FRISE = 14;
-
-function mesurerFlux(
-  lignes: LigneDossier[],
-  rangees: RangeeNumero[],
-  maintenant: Date,
-  marqueurAbsent: boolean,
-): FluxVue {
-  /* Une ARRIVÉE compte le jour où le dossier a été ouvert ; une DEMANDE est
-     une arrivée dont le dépôt est TERMINÉ.
-     ⚠️ C'était `nb_photos > 0`, avec en commentaire « consent_photos dit la
-     même chose ». Il ne dit PAS la même chose : le 25/08, un dossier de 55
-     photos jamais envoyées comptait comme une demande du jour. Une cliente
-     qui a fermé l'onglet avant le dernier bouton n'a rien demandé. */
-  const demandes = rangees.filter((r) => r.consent_photos === true && r.created_at);
-
-  const aujourdhui = JOUR_PARIS.format(maintenant);
-  const ilYA = (jours: number) => JOUR_PARIS.format(new Date(maintenant.getTime() - jours * 86_400_000));
-
-  const compteParJour = new Map<string, number>();
-  for (const r of demandes) {
-    const j = JOUR_PARIS.format(new Date(r.created_at as string));
-    compteParJour.set(j, (compteParJour.get(j) ?? 0) + 1);
-  }
-
-  const parJour: FluxVue["parJour"] = [];
-  for (let i = JOURS_FRISE - 1; i >= 0; i--) {
-    const date = ilYA(i);
-    parJour.push({ date, demandes: compteParJour.get(date) ?? 0 });
-  }
-
-  const seuilSemaine = maintenant.getTime() - 7 * 86_400_000;
-
+/* Réduit au marqueur de lecture depuis le 11/09/2026 : les compteurs du jour,
+   de la semaine, des dépôts non terminés et la frise sont en archive
+   (archive/admin-flux-2026-09), remplacés par la boîte du jour. */
+function mesurerFlux(lignes: LigneDossier[], marqueurAbsent: boolean): FluxVue {
   return {
-    demandesAujourdhui: compteParJour.get(aujourdhui) ?? 0,
-    demandesSemaine: demandes.filter((r) => new Date(r.created_at as string).getTime() >= seuilSemaine)
-      .length,
-    sansDepot: lignes.filter((l) => l.depot !== "termine").length,
     nouveaux: lignes.filter((l) => l.nouveau).length,
-    parJour,
     marqueurAbsent,
   };
 }
 
+/* ─────────────────────────── la boîte du jour ─────────────────────────── */
+
 /**
- * Le fil d'activité de l'atelier — les deux derniers jours, tous dossiers
- * confondus.
+ * Les arrivées, prêtes à afficher : la règle pure (`releverArrivees`) décide
+ * QUOI montrer, et on habille chaque ligne avec ce que sa ligne de liste sait
+ * déjà (camp, geste, promesse), sans rien recalculer.
+ */
+function versArrivees(brut: EvenementArrivee[], lignes: LigneDossier[], maintenant: Date): ArriveeVue[] {
+  const parId = new Map(lignes.map((l) => [l.numeroId, l]));
+  const dossiers = lignes.map((l) => ({
+    numeroId: l.numeroId,
+    etat: l.etat,
+    pile: l.urgence.pile,
+    depot: l.depot,
+  }));
+  return releverArrivees(brut, dossiers, maintenant).flatMap((a) => {
+    const l = parId.get(a.numeroId);
+    if (!l) return [];
+    return [
+      {
+        token: l.token,
+        titre: l.titre,
+        prenom: l.prenom,
+        nbPhotos: l.nbPhotos,
+        motif: a.motif,
+        quoi: a.quoi,
+        quand: a.quand,
+        camp: l.prochaine.camp,
+        geste: l.prochaine.geste,
+        promesse: l.urgence.promesse,
+      },
+    ];
+  });
+}
+
+/**
+ * Le journal récent, en UNE requête pour deux lecteurs : le fil d'activité
+ * (les deux derniers jours, 60 lignes) et la boîte du jour (depuis hier,
+ * toutes les entrées). Les deux fenêtres se recouvrent presque toujours ;
+ * une seule lecture, bornée par la plus large, et chacun prend ce qu'il lui
+ * faut. Une seconde requête aurait coûté une latence de plus à chaque
+ * ouverture ET à chaque rafraîchissement, donc toutes les minutes.
  *
- * ⚠️ Fenêtre de 48 h et plafond à 60 lignes. Le journal grossit sans fin :
- * sans borne, cette requête deviendrait la plus lourde de la page, pour
- * afficher des événements que personne ne relit. Deux jours couvrent le
- * week-end et la question réelle — « qu'est-ce que j'ai fait, qu'est-ce qui
- * est parti ».
+ * ⚠️ Plafond à 200 lignes. Le journal grossit sans fin : sans borne, cette
+ * requête deviendrait la plus lourde de la page. Le fil n'en garde que 60 ;
+ * la boîte a besoin de tout ce qui est entré depuis hier, ce que 200 couvre
+ * largement au volume actuel (une poignée d'événements par dossier et par
+ * jour). Le jour où ça déborde, on le verra : la boîte perdra les plus
+ * anciens, jamais les plus récents.
  *
  * Best-effort : un fil vide ne doit jamais empêcher la table de travail de
  * s'afficher.
  */
 const FENETRE_ACTIVITE_H = 48;
 const MAX_ACTIVITE = 60;
+const MAX_JOURNAL = 200;
 
-async function chargerActivite(
+async function chargerJournalRecent(
   supabase: ReturnType<typeof makeSupabase>,
   rangees: RangeeNumero[],
-): Promise<ActiviteVue[]> {
+  maintenant: Date,
+): Promise<{ activite: ActiviteVue[]; brut: EvenementArrivee[] }> {
   try {
-    const depuis = new Date(Date.now() - FENETRE_ACTIVITE_H * 3_600_000).toISOString();
+    const depuisActivite = new Date(maintenant.getTime() - FENETRE_ACTIVITE_H * 3_600_000);
+    const depuisBoite = debutFenetre(maintenant);
+    const depuis = new Date(Math.min(depuisActivite.getTime(), depuisBoite.getTime())).toISOString();
     const { data } = await supabase
       .from("evenements")
       .select("id, numero_id, type, payload, created_at")
@@ -695,7 +704,7 @@ async function chargerActivite(
       .neq("type", "photos_confirmees")
       .gte("created_at", depuis)
       .order("created_at", { ascending: false })
-      .limit(MAX_ACTIVITE)
+      .limit(MAX_JOURNAL)
       .returns<
         Array<{
           id: string;
@@ -708,23 +717,35 @@ async function chargerActivite(
 
     const parId = new Map(rangees.filter((r) => r.id).map((r) => [r.id as string, r]));
 
-    return (data ?? [])
-      /* Un événement dont le dossier a disparu (suppression en cascade) n'a
-         plus de titre ni de lien : il ne raconte plus rien. */
-      .filter((e) => parId.has(e.numero_id))
-      .map((e) => {
-        const n = parId.get(e.numero_id)!;
-        return {
-          id: e.id,
-          token: n.token,
-          titre: n.titre,
-          createdAt: e.created_at,
-          recit: raconter(e.type, e.payload ?? {}),
-        };
-      });
+    /* Un événement dont le dossier a disparu (suppression en cascade) n'a
+       plus de titre ni de lien : il ne raconte plus rien. */
+    const vivants = (data ?? []).filter((e) => parId.has(e.numero_id));
+    const seuilActivite = depuisActivite.toISOString();
+
+    return {
+      activite: vivants
+        .filter((e) => e.created_at >= seuilActivite)
+        .slice(0, MAX_ACTIVITE)
+        .map((e) => {
+          const n = parId.get(e.numero_id)!;
+          return {
+            id: e.id,
+            token: n.token,
+            titre: n.titre,
+            createdAt: e.created_at,
+            recit: raconter(e.type, e.payload ?? {}),
+          };
+        }),
+      brut: vivants.map((e) => ({
+        numeroId: e.numero_id,
+        type: e.type,
+        payload: e.payload ?? null,
+        createdAt: e.created_at,
+      })),
+    };
   } catch (err) {
-    console.error("[admin/atelier] fil d'activité indisponible", (err as Error)?.message);
-    return [];
+    console.error("[admin/atelier] journal récent indisponible", (err as Error)?.message);
+    return { activite: [], brut: [] };
   }
 }
 
