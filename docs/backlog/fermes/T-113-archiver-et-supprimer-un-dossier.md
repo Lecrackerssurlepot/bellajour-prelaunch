@@ -5,7 +5,8 @@ domaine: admin
 gravite: serieux
 autonomie: libre
 ouvert: 2026-09-14
-etat: en cours
+ferme: 2026-09-14
+etat: fermé
 ---
 ## Ce que Mathias a dit
 « Donne-moi la possibilité de pouvoir supprimer une demande. Ça m'évite de passer par toi lorsque
@@ -40,9 +41,8 @@ et de façon irréversible. Les cinq tables liées cascadent bien sur `delete fr
 ## Ce qui reste, et ne peut être que Mathias
 1. ~~Appliquer la migration `20260914_atelier_archive.sql`~~ **Fait le 14/09/2026**, sur accord
    explicite de Mathias : colonne, index et cache PostgREST vérifiés, 6 dossiers en base, 0 archivé.
-2. **Premier usage réel** : archiver un vrai dossier de test, vérifier qu'il disparaît de la liste
-   et que sa page client répond 404 ; le récupérer ; l'archiver de nouveau et le supprimer, puis
-   vérifier dans R2 que `numeros/<id>/` est vide.
+2. ~~Premier usage réel~~ **Fait le 14/09/2026 par Mathias** : archiver, récupérer, supprimer sur un
+   dossier de test, « tout fonctionne parfaitement ». Ticket fermé.
 
 ## Ce qui n'est pas fait, volontairement
 - Aucune annulation Stripe, aucun avoir InvoiceXpress, aucune annulation Cloudprinter : ce sont
