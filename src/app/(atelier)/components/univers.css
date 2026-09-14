@@ -414,14 +414,25 @@
 @media (hover:hover) and (pointer:fine){
   .at-accueil .sl4-bande:hover .sl4-rail{animation-play-state:paused}
 }
+/* ─── UN SEUL RAPPORT POUR LES CINQ CASES (14/09/2026) ───
+   Le 2:3 n'est pas un gout : c'est le format de couverture, et cinq objets
+   alignes qui n'ont pas la meme forme se lisent comme une erreur de mise en
+   page avant de se lire comme une collection.
+   ⚠️ Le recadrage ne se joue PAS ici. `object-fit:cover` coupe toujours au
+   centre geometrique, et sur une page d'album ou un titre pose en haut, le
+   centre n'est pas le sujet. Les fichiers servis sont donc DEJA en 2:3,
+   decoupes par le contenu (`position:'attention'`, scripts/images-v2.mjs) :
+   ce `cover` ne fait plus que garantir l'absence de deformation. */
 .at-accueil .sl4-rail .ph{display:block;aspect-ratio:2/3;overflow:hidden;border-radius:3px;
-  box-shadow:var(--shadow-float);transition:transform 400ms var(--ease-recit)}
+  box-shadow:var(--shadow-float)}
 .at-accueil .sl4-rail .ph img{width:100%;height:100%;object-fit:cover;display:block;
   filter:saturate(.72) contrast(1.05) brightness(.86)}
 
-@media (hover:hover) and (pointer:fine){
-  .at-accueil .sl4-rail figure:hover .ph{transform:translateY(-8px)}
-}
+/* Le soulevement au survol a ete RETIRE le 14/09/2026, sur demande de
+   Mathias. Ces couvertures ne sont pas cliquables : rien ne s'ouvre, rien ne
+   s'agrandit. Un objet qui reagit a la souris promet une action, et n'en
+   tenir aucune est pire que de ne rien promettre. La bande se met deja en
+   pause au survol (regle plus haut) — c'est la seule reponse qui sert. */
 
 /* ─────────── 05 · LE CONCEPT ───────────
    La seule page du recit qui soit dans l'axe. C'est voulu : apres quatre

@@ -138,10 +138,17 @@
 }
 
 .at-pdp .c1 { left: 0;     top: 0;     width: 39.5%; height: 72.8%; transform: rotate(-1.6deg); }
-.at-pdp .c2 { left: 35.5%; top: -1.4%; width: 44%;   height: 39.7%; transform: rotate(1.1deg); }
+/* ⚠️ 40,4 % ET NON 39,7 % DEPUIS LE 14/09/2026 : c'est la hauteur qui donne
+   au cadre le rapport EXACT du master livre (M02, 12468x8770, soit 1,4217).
+   A 39,7 % le cadre valait 1,4462 et `object-fit` rognait les cotes pour
+   rien. La regle posee par Mathias ce jour-la est celle-ci : quand le format
+   du visuel differe de celui du site, c'est le site qui bouge. */
+.at-pdp .c2 { left: 35.5%; top: -1.4%; width: 44%;   height: 40.4%; transform: rotate(1.1deg); }
 .at-pdp .c3 { left: 43%;   top: 37.6%; width: 35%;   height: 61.3%; transform: rotate(-0.8deg); }
 
-.at-pdp .c2 img { object-position: 50% 38%; }
+/* `object-position` retire le 14/09 : il recentrait un portrait dans un
+   cadre paysage. Le fichier servi est desormais un paysage au rapport du
+   cadre — il n'y a plus rien a recadrer. */
 
 .at-pdp .kiosque > div { display: flex; flex-direction: column; }
 
@@ -573,76 +580,31 @@
   align-items: center;
 }
 
-/* La double page, construite en CSS : aucune image de maquette à charger. */
+/* ── LA DOUBLE PAGE, REFONDUE LE 14/09/2026 ──
+   Elle etait construite en CSS — une photo a gauche, un feuillet de papier a
+   droite portant « Chapitre deux », deux timbres et un folio, plus un pli
+   dessine au milieu. Elle ne porte plus qu'UNE image, qui traverse les deux
+   feuillets : c'est la demande de Mathias, et le visuel livre est deja une
+   double page complete.
+   ⚠️ CE QUI EST PARTI EST PARTI AVEC SA RAISON, pas par menage :
+   - le feuillet de droite et son texte : le visuel porte DEJA son titre et sa
+     mise en page. Deux typographies superposees, c'est une maquette ratee ;
+   - le pli dessine a 50 % : le visuel porte DEJA son propre pli, et il ne
+     tombe pas au milieu. Deux plis valent moins que zero ;
+   - les deux timbres : ils n'existent plus (codes BJ-M05/M06 retires).
+   ⚠️ LE RAPPORT SUIT LE MASTER, il ne le contraint pas : 4000x2828, soit
+   1,4145, la ou le montage CSS tenait en 760/474 (1,603). C'est la regle
+   posee par Mathias le 14/09 — le site s'adapte au visuel. */
 .at-pdp .double {
   position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
   background: var(--paper);
   border-radius: 3px;
   box-shadow: var(--shadow-float);
   overflow: hidden;
-  aspect-ratio: 760 / 474;
+  aspect-ratio: 4000 / 2828;
 }
 
-.at-pdp .double .gauche { position: relative; overflow: hidden; }
-.at-pdp .double .gauche img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-.at-pdp .double .droite {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: clamp(12px, 2vw, 24px);
-  padding: clamp(18px, 3vw, 44px) clamp(16px, 2.8vw, 40px);
-  background: linear-gradient(90deg, var(--paper-2) 0%, var(--paper) 22%);
-  color: var(--paper-text);
-}
-
-.at-pdp .double .chapitre {
-  margin: 0;
-  font-size: clamp(8px, 0.72vw, 10px);
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--paper-text-soft);
-}
-
-.at-pdp .double .phrase {
-  margin: clamp(8px, 1.2vw, 16px) 0 0;
-  font-family: var(--font-display);
-  font-size: clamp(15px, 2.1vw, 30px);
-  line-height: 1.2;
-  color: var(--paper-text);
-  text-wrap: pretty;
-}
-
-.at-pdp .double .vignettes { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(6px, 0.9vw, 12px); }
-.at-pdp .double .vignettes img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; border-radius: 1px; }
-
-.at-pdp .double .folio {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: clamp(8px, 0.78vw, 11px);
-  letter-spacing: 0.1em;
-  color: var(--paper-text-soft);
-}
-
-/* Le pli central. Décoratif, insensible au pointeur. */
-.at-pdp .double .pli {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 7.4%;
-  transform: translateX(-50%);
-  background: linear-gradient(90deg,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 0.22) 48%,
-    rgba(0, 0, 0, 0.10) 52%,
-    rgba(0, 0, 0, 0) 100%);
-  pointer-events: none;
-}
+.at-pdp .double img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* ---- ce qui est compris ---- */
 .at-pdp .compris { margin: clamp(24px, 3vw, 34px) 0 0; padding: 0; list-style: none; border-top: 1px solid var(--c-line); }
@@ -1057,7 +1019,6 @@
   .at-pdp .faq summary { font-size: 16px; }
   .at-pdp .faq details p { font-size: 16px; line-height: 1.7; }
 
-  .at-pdp .double .vignettes { display: none; }
 }
 
 /* ── ÉCRANS COURTS, entre 721 et 900 px de large ──
@@ -1096,12 +1057,16 @@
 }
 
 /* ── La double page ne survit pas à un écran étroit ──
-   À 380 px de large, chaque feuillet fait 170 px : la phrase du feuillet
-   droit y tient en quatre mots par ligne et le folio touche le pli. On ne
-   montre plus qu'UNE page — celle qui porte la photo, qui est ce qu'on
-   vient voir. */
+   Elle montrait jusqu'au 14/09/2026 une seule des deux pages : à 380 px de
+   large, chaque feuillet faisait 170 px, la phrase du feuillet droit y tenait
+   en quatre mots par ligne et le folio touchait le pli.
+   Depuis qu'elle est UNE image, le probleme a change de nature : ce n'est
+   plus une mise en page qui se serre, c'est un paysage de 1,4145 qui serait
+   ampute de moitie. La reponse n'est donc plus de cacher la moitie droite,
+   c'est de servir un AUTRE master, cadre en hauteur. */
 @media (max-width: 560px) {
-  .at-pdp .double { grid-template-columns: 1fr; aspect-ratio: 3 / 4; }
-  .at-pdp .double .droite,
-  .at-pdp .double .pli { display: none; }
+  /* Sous 560 px, c'est le master PORTRAIT (BJ-M04V, 2828x4000) qui est servi
+     par le <picture> de Corps.tsx : le cadre prend son rapport, il ne recadre
+     plus un paysage de moitie. */
+  .at-pdp .double { aspect-ratio: 2828 / 4000; }
 }

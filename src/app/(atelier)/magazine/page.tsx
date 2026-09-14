@@ -128,7 +128,15 @@ const JSON_LD = [
       areaServed: [...PAYS_LIVRAISON],
     },
     url: URL,
-    image: ['https://www.bellajour.fr/images/lancement/galerie/marrakech.webp'],
+    /* T-085 — l'image que Google peut montrer a cote du prix. Elle faisait
+       450 px de large jusqu'au 14/09/2026, sous le minimum de 1200 px que
+       Google demande pour un resultat enrichi produit : elle etait donc
+       probablement ignoree. 1600x1131 desormais.
+       ⚠️ Un SEUL cadrage, et c'est delibere. Google en prefere trois (1:1,
+       4:3, 16:9) ; ils ont ete produits puis jetes le 14/09 parce qu'ils
+       tranchent le lettrage du visuel en deux. Les trois reviendront avec le
+       master demande : une photo de l'objet imprime, sur fond uni. */
+    image: ['https://www.bellajour.fr/images/v2/magazine/m07-1600.webp'],
   },
   {
     '@context': 'https://schema.org',
@@ -159,10 +167,16 @@ export default function PageProduit() {
           /numero, qui n'affichent jamais cette image. Un préchargement posé
           trop haut est un téléchargement offert à des pages qui n'en veulent
           pas — 283 Ko sur tout le site, la panne du 27/08/2026. */}
+      {/* ⚠️ MIROIR EXACT du src/srcSet/sizes de la premiere figure du collage
+          (Kiosque.tsx, `.c1`). Si l'un des deux cotes change sans l'autre, le
+          navigateur precharge une variante et en affiche une autre : l'element
+          LCP est telecharge DEUX fois. */}
       <link
         rel="preload"
         as="image"
-        href="/images/lancement/galerie/marrakech.webp"
+        href="/images/v2/magazine/m01-900.webp"
+        imageSrcSet="/images/v2/magazine/m01-450.webp 450w, /images/v2/magazine/m01-900.webp 900w"
+        imageSizes="(max-width: 720px) 40vw, 22vw"
         fetchPriority="high"
       />
       <script

@@ -536,18 +536,18 @@ export default function Univers() {
           <h2 className="sr-only">Le constat</h2>
           <div className="sl-corps">
           <div className="sl2-scene" aria-hidden="true">
-            <figure className="v v1" data-t="1900"><span className="ph"><img src="/images/univers/solution-upload-02.webp" alt="" width="480" height="640" loading="lazy" fetchPriority="low" decoding="async" /></span></figure>
+            <figure className="v v1" data-t="1900"><span className="ph"><img src="/images/v2/accueil/a02-480.webp" alt="" width="480" height="640" loading="lazy" fetchPriority="low" decoding="async" /></span></figure>
             <figure className="v v2" data-t="2500">
-              <span className="ph"><img src="/images/univers/grid-03.webp" alt="" width="600" height="800" loading="lazy" fetchPriority="low" decoding="async" /></span>
+              <span className="ph"><img src="/images/v2/accueil/a03-600.webp" alt="" width="600" height="800" loading="lazy" fetchPriority="low" decoding="async" /></span>
               <span className="v-video"><i></i><b>0:24</b></span>
             </figure>
             <figure className="v v3" data-t="3100">
               <span className="v-mot"><s></s><s></s><em>♥ 12</em></span>
             </figure>
-            <figure className="v v4" data-t="3700"><span className="ph"><img src="/images/univers/solution-upload-05.webp" alt="" width="400" height="300" loading="lazy" fetchPriority="low" decoding="async" /></span></figure>
+            <figure className="v v4" data-t="3700"><span className="ph"><img src="/images/v2/accueil/a04-400.webp" alt="" width="400" height="300" loading="lazy" fetchPriority="low" decoding="async" /></span></figure>
             <figure className="v v5" data-t="4300">
               <span className="v-story"><i></i><i></i><i></i></span>
-              <span className="ph"><img src="/images/univers/solution-upload-09.webp" alt="" width="400" height="534" loading="lazy" fetchPriority="low" decoding="async" /></span>
+              <span className="ph"><img src="/images/v2/accueil/a05-400.webp" alt="" width="400" height="534" loading="lazy" fetchPriority="low" decoding="async" /></span>
             </figure>
           </div>
 
@@ -613,23 +613,26 @@ export default function Univers() {
             <div className="sl4-rail">
               {/* T-065 (31/08/2026) — le srcset colle a la taille PEINTE : les
                   figures font 15vw au-dela de 1000px, 38vw en dessous
-                  (univers.css). Variantes -240/-360 par scripts/images-galerie.mjs ;
-                  l'original 450 reste le plafond pour les iPhone 3x.
+                  (univers.css). Mesure du 14/09/2026 : 192 px CSS a 1280.
                   La seconde serie, aria-hidden, est la copie qui rend la bande
-                  infinie : memes fichiers, donc aucun octet de plus. */}
+                  infinie : memes fichiers, donc aucun octet de plus.
+                  ⚠️ CHAQUE CASE PORTE SES PROPRES LARGEURS : A06 a A09 sont
+                  encore les couvertures d'origine, plafonnees a 450 px, et
+                  A10 monte a 600. Un srcset fabrique a partir d'un plafond
+                  unique annoncerait des fichiers qui n'existent pas. */}
               {[false, true].map((copie) =>
                 ([
-                  ['marrakech', 'Un magazine', 'Un numéro Bellajour consacré à un voyage à Marrakech'],
-                  ['japon', 'Une BD', 'Un numéro Bellajour consacré à un voyage au Japon'],
-                  ['patagonie', 'Une affiche', 'Un numéro Bellajour consacré à un voyage en Patagonie'],
-                  ['lisbonne', 'Un album photos', 'Un numéro Bellajour consacré à un séjour à Lisbonne'],
-                  ['santorin', 'Une série de pages', 'Un numéro Bellajour consacré à un séjour à Santorin'],
-                ] as const).map(([fichier, legende, alt]) => (
-                  <figure key={`${fichier}${copie ? '-copie' : ''}`} aria-hidden={copie || undefined}>
+                  ['/images/v2/accueil/a06', [240, 360, 450], 'Un magazine', 'Un numéro Bellajour consacré à un voyage à Marrakech'],
+                  ['/images/v2/accueil/a07', [240, 360, 450], 'Une BD', 'Un numéro Bellajour consacré à un voyage au Japon'],
+                  ['/images/v2/accueil/a08', [240, 360, 450], 'Une affiche', 'Un numéro Bellajour consacré à un voyage en Patagonie'],
+                  ['/images/v2/accueil/a09', [240, 360, 450], 'Un album photos', 'Un numéro Bellajour consacré à un séjour à Lisbonne'],
+                  ['/images/v2/accueil/a10', [240, 360, 600], 'Une série de pages', 'Une page d’album photos : trois tirages d’un été au bord de la Méditerranée, collés sur la page'],
+                ] as const).map(([base, largeurs, legende, alt]) => (
+                  <figure key={`${base}${copie ? '-copie' : ''}`} aria-hidden={copie || undefined}>
                     <span className="ph" data-legende={legende}>
                       <img
-                        src={`/images/lancement/galerie/${fichier}.webp`}
-                        srcSet={`/images/lancement/galerie/${fichier}-240.webp 240w, /images/lancement/galerie/${fichier}-360.webp 360w, /images/lancement/galerie/${fichier}.webp 450w`}
+                        src={`${base}-${largeurs[largeurs.length - 1]}.webp`}
+                        srcSet={largeurs.map((l) => `${base}-${l}.webp ${l}w`).join(', ')}
                         sizes="(max-width: 1000px) 38vw, 15vw"
                         alt={copie ? '' : alt}
                         width="450"
@@ -720,12 +723,26 @@ export default function Univers() {
           <div className="sl7-obj" data-t="600">
             <div className="numero" data-legende="Votre numéro 01">
               <div className="n-plat">
-                <img src="/images/lancement/galerie/marrakech.webp" alt="Un numéro Bellajour" width="450" height="675" loading="lazy" decoding="async" />
+                {/* A11, master 10524x14973 recadre en 1/1,414 (scripts/images-v2.mjs).
+                     Mesure du 14/09/2026 : le cadre fait 333 px CSS a 1280, d'ou
+                     les trois largeurs 450/700/1050 qui couvrent jusqu'au 3x. */}
+                <img
+                  src="/images/v2/accueil/a11-700.webp"
+                  srcSet="/images/v2/accueil/a11-450.webp 450w, /images/v2/accueil/a11-700.webp 700w, /images/v2/accueil/a11-1050.webp 1050w"
+                  sizes="(max-width: 1000px) 52vw, 26vw"
+                  alt="Un numéro Bellajour consacré à un séjour à Rio de Janeiro"
+                  width="450" height="636" loading="lazy" decoding="async" />
                 <div className="n-voile"></div>
-                <div className="n-tete"><span className="n-masthead">Bellajour</span><span className="n-no">N° 01</span></div>
+                {/* ⚠️ LE VISUEL LIVRE PORTE DEJA SON PROPRE TITRE (« RIO », en
+                     haut a gauche). Le bandeau « Bellajour / N° 01 » viendrait
+                     donc s'ecrire PAR-DESSUS un lettrage existant. On garde le
+                     pied, qui tombe dans le calme de la photo, et on retire la
+                     tete : deux mastheads sur une meme couverture, c'est une
+                     maquette ratee, pas une couverture. A revoir le jour ou un
+                     master sans lettrage arrive (rapport du 14/09). */}
                 <div className="n-pied">
                   <span className="n-filet"></span>
-                  <span className="n-titre">Marrakech, et le silence des toits</span>
+                  <span className="n-titre">Rio, et la lumière du matin</span>
                   <span className="n-sous">Quatre jours · 32 pages · Mars</span>
                 </div>
                 <div className="n-lum"></div><div className="n-fibre"></div><div className="n-dos"></div>

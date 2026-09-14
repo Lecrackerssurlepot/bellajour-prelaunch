@@ -46,32 +46,43 @@ export default function Kiosque() {
 
         <Reveal delay={90} className="bloc-collage">
           <div className="collage">
+            {/* ⚠️ LA PREMIERE EST L'ELEMENT LCP : son `src` et son `srcSet`
+                DOIVENT rester miroirs du <link rel="preload"> de page.tsx.
+                S'ils divergent, le navigateur precharge un fichier et en
+                affiche un autre — l'image la plus lourde de la page est
+                telechargee deux fois. */}
             <figure className="c1">
               <img
-                src="/images/lancement/galerie/marrakech.webp"
-                alt="Un numéro Bellajour consacré à un voyage à Marrakech"
-                width={450}
-                height={675}
+                src="/images/v2/magazine/m01-900.webp"
+                srcSet="/images/v2/magazine/m01-450.webp 450w, /images/v2/magazine/m01-900.webp 900w"
+                sizes="(max-width: 720px) 40vw, 22vw"
+                alt="Un numéro Bellajour consacré à un séjour en Sicile"
+                width={900}
+                height={1271}
                 fetchPriority="high"
                 decoding="sync"
               />
             </figure>
             <figure className="c2">
               <img
-                src="/images/lancement/galerie/santorin.webp"
-                alt="Un numéro Bellajour consacré à un séjour à Santorin"
-                width={450}
-                height={675}
+                src="/images/v2/magazine/m02-500.webp"
+                srcSet="/images/v2/magazine/m02-500.webp 500w, /images/v2/magazine/m02-1000.webp 1000w"
+                sizes="(max-width: 720px) 40vw, 24vw"
+                alt="Un numéro Bellajour consacré à un séjour à Noosa, en Australie"
+                width={1000}
+                height={703}
                 loading="lazy"
                 decoding="async"
               />
             </figure>
             <figure className="c3">
               <img
-                src="/images/lancement/galerie/japon.webp"
+                src="/images/v2/magazine/m03-450.webp"
+                srcSet="/images/v2/magazine/m03-240.webp 240w, /images/v2/magazine/m03-360.webp 360w, /images/v2/magazine/m03-450.webp 450w"
+                sizes="(max-width: 720px) 35vw, 19vw"
                 alt="Un numéro Bellajour consacré à un voyage au Japon"
                 width={450}
-                height={675}
+                height={604}
                 loading="lazy"
                 decoding="async"
               />
