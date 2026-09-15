@@ -5,7 +5,19 @@ domaine: produit
 gravite: serieux
 autonomie: avis-requis
 ouvert: 2026-09-02
+ferme: 2026-09-15
+statut: fait
 ---
+
+> **FERMÉ le 15/09/2026**, en production sur bellajour.fr (PR #143, migration
+> `20260915_composer_modele_couverture.sql` appliquée par Mathias et vérifiée).
+> Neuf modèles de couverture choisissables à l'écran 3, « aucune préférence »
+> toujours visible, et le choix remonte sur la fiche du dossier.
+> La partie « feuille d'ajustement » était déjà livrée le 02/09 (PR #30/#31).
+>
+> Le **titre vivant** — le titre du client écrit en direct sur les couvertures —
+> a été construit puis **débranché par décision de Mathias**, pas abandonné :
+> tout est dans `archive/titre-vivant-composer/` avec sa marche à suivre.
 ## Ce que Mathias a dit (02/09, brouillon)
 « Aujourd'hui, si la maquette ne plaît pas au client, il ne peut que **partir**. » Plusieurs
 solutions envisagées :

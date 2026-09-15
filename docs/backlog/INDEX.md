@@ -59,11 +59,22 @@ la migration `20260910_atelier_prix_gele.sql` (sans elle, aucun aperçu ne peut 
 plafond de livraison, la règle HT → TTC du port, et la poussée des templates M3/M3b/M10 vers Brevo.
 Le détail daté est dans `docs/reference/ETAT-PRODUCTION.md`.
 
-## Où on en était (15/09/2026, après le chantier des visuels)
+## Où on en est (15/09/2026, soir : les modèles de couverture)
 
-**Recompté fiche par fiche le 15/09 : 113 tickets ouverts depuis le début, 36 encore ouverts,
-77 fermés, et AUCUN bloquant.** Sur les 36 : **31 attendent une décision de Mathias**,
-5 sont marqués `libre`. Répartition : 28 `serieux`, 7 `confort`.
+**Recompté fiche par fiche : 113 tickets ouverts depuis le début, 35 encore ouverts,
+78 fermés, et AUCUN bloquant.** Sur les 35 : **30 attendent une décision de Mathias**,
+5 sont marqués `libre`. Répartition : 27 `serieux`, 7 `confort`, 1 `mineur`.
+
+**T-091 fermé, en production.** L'écran du titre montrait deux couvertures dessinées en CSS qui
+ne servaient à rien. Il montre neuf modèles réels et choisissables, avec « aucune préférence »
+toujours visible, et le choix remonte sur la fiche du dossier : l'atelier sait vers quoi viser
+avant la première maquette. Migration `20260915` appliquée par Mathias et vérifiée.
+
+Un mécanisme de **titre vivant** (le titre du client écrit en direct sur chaque couverture, à la
+place, à la police et à la couleur relevées pixel à pixel) a été construit, il marchait, et
+Mathias l'a débranché : la question de l'écran est « un style vous parle déjà ? », on demande de
+reconnaître une ambiance, pas de se projeter dans une maquette. Il est archivé entier dans
+`archive/titre-vivant-composer/`, README et marche à suivre compris. **Ne pas le réécrire.**
 
 Le chantier des visuels a fermé T-069 et fait avancer T-085 (voir leurs lignes).
 
@@ -190,7 +201,7 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-088 | Le logo en haut du questionnaire et de la page cliente est un clic mort | front | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — livré le 07/09, prouvé dans `main` le 08/09 (`Composer.tsx:443,497,505`, branche fusionnée). `/numero` non touché, choix produit documenté |
 | T-089 | La maquette que reçoit le client — visionneuse multi-format façon magazine | front | serieux | avis-requis | en cours — prototype v3 + fondation (#28) + **visionneuse `/numero` livrée (PR #29, rendu réel validé)** ; reste l'admin (T-090) et les vrais visuels |
 | T-090 | Admin — planche couverture, découpage centré, doubles pages à la demande, drag-and-drop | admin | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — livré (PR #33) : dépôt de la planche, 0 à 3 doubles pages réordonnables au glissé, restitution fidèle sur la fiche. Le curseur de coupe reste écarté (centre auto, décision Mathias) ; le recadrage intra-page est demandé le 07/09 et reste à faire ; **le recadrage intra-page est livré le 08/09** : la planche était coupée par deux ancres CSS fixes, elle a maintenant deux réglages indépendants (C1 et C4 sont deux faces du même fichier), sans migration — tout vit dans le `jsonb` `apercu_urls.cadrages`. Sans geste de l'atelier, l'affichage est pixel pour pixel l'ancien |
-| T-091 | Réagir à la maquette, pas seulement partir — thèmes + freestyle | produit | serieux | avis-requis | en cours — feuille d'ajustement livrée (PR #30/#31) + mots de couverture facultatifs (03/09). **Reste les 5 thèmes**, en attente des visuels de Mathias (07/09) |
+| T-091 | Réagir à la maquette, pas seulement partir — thèmes + freestyle | produit | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 15/09, en production : neuf modèles de couverture choisissables à l'écran 3, « aucune préférence » toujours visible, et le choix remonte sur la fiche du dossier (PR #143, migration 20260915 appliquée et vérifiée). La feuille d'ajustement était livrée le 02/09 (PR #30/#31). Le titre vivant a été construit puis débranché par Mathias — archivé entier dans `archive/titre-vivant-composer/` |
 | T-092 | Refonte du parcours questionnaire — logo officiel + Q1 à Q5 | front | serieux | avis-requis | nouveau (02/09, cahier des charges de Mathias) |
 | T-093 | Plusieurs couvertures proposées, la cliente choisit sa préférée | produit | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 08/09 : je le rouvrais pour livrer le geste de choix, il était DÉJÀ là (parti avec le chantier du 07/09, fiche non recalculée). Bouton, marque « votre choix », message d'échec et mot rassurant vérifiés dans `Apercu.tsx` |
 | T-094 | La demande « montrer un extrait » repart dans un mail, plus sur /numero | backend | mineur | avis-requis | nouveau (02/09) — la fiche existait, la ligne d'index manquait ; réparé le 04/09 |
