@@ -448,7 +448,21 @@
    double page a besoin d'un volume parce qu'elle represente un objet OUVERT,
    une couverture posee a plat n'en a pas besoin. « On veut simplement
    l'image. » */
-.at-accueil .sl4-rail .ph{display:block;aspect-ratio:4066/5750;overflow:hidden;border-radius:0}
+/* ⚠️ UN FILET, ET IL REPARE UN DEFAUT REEL (15/09/2026). Mathias : « l'image
+   The Boys ne s'affiche pas ». Elle s'affichait : MESURE sur le fichier,
+   elle est a 76 % de pixels quasi noirs (That's Life monte a 81 %, Lisbonne a
+   71 %). Posee sans arete sur une page elle-meme noire, la carte n'a plus de
+   bord : il ne reste qu'un titre blanc qui flotte, et l'oeil lit une case
+   vide. Le defaut n'est pas dans l'image, il est dans l'absence de limite.
+   Un `box-shadow` d'etalement nul dessine cette limite sans rien ajouter a la
+   mise en page. Il est INVISIBLE sur les couvertures claires — Cote d'Azur ne
+   change pas d'un pixel — et ne se voit que la ou la couverture se confond
+   avec le fond.
+   ⚠️ CE N'EST PAS LA « BORDURE EN BAS » REFUSEE SUR RIO. Celle-la simulait
+   une epaisseur de papier sous l'objet ; celui-ci est l'arete de la carte,
+   sur ses quatre cotes, et il n'existe que pour les images qui se noient. */
+.at-accueil .sl4-rail .ph{display:block;aspect-ratio:4066/5750;overflow:hidden;border-radius:0;
+  box-shadow:0 0 0 1px rgba(246,241,232,.13)}
 .at-accueil .sl4-rail .ph img{width:100%;height:100%;object-fit:cover;display:block;
   /* ⚠️ ALLEGE le 15/09/2026, a la demande de Mathias. L'ancien reglage,
      saturate(.72) contrast(1.05) brightness(.86), avait ete pose en aout pour

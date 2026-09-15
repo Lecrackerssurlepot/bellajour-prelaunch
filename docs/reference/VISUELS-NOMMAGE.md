@@ -528,3 +528,19 @@ touche » passe sur les zones claires de la photo. Retenu, le niveau intermédia
 
 ⚠️ **Toute nouvelle photographie de header change cet équilibre.** Il se regarde, il ne s'estime
 pas — et on regarde **le petit texte, pas le titre** : le titre est énorme, il survit à tout.
+
+
+## 15/09/2026 — « l'image The Boys ne s'affiche pas »
+
+Elle s'affichait. **Mesure sur le fichier** : elle est à **76 % de pixels quasi noirs** — That's
+Life monte à 81 %, Lisbonne à 71 %, quand Côte d'Azur n'en a que 1,8 %. Posée sans arête sur une
+page elle-même noire, la carte n'a plus de bord : il ne reste qu'un titre blanc qui flotte, et
+l'œil lit une case vide. **Le défaut n'était pas dans l'image, il était dans l'absence de limite.**
+
+Un `box-shadow` d'étalement nul (`0 0 0 1px rgba(246,241,232,.13)`) dessine cette limite sans rien
+ajouter à la mise en page. Il est **invisible sur les couvertures claires** — Côte d'Azur ne change
+pas d'un pixel — et ne se voit que là où la couverture se confond avec le fond.
+
+⚠️ **Ce n'est pas la « bordure en bas » refusée sur Rio.** Celle-là simulait une épaisseur de
+papier sous l'objet. Celui-ci est l'arête de la carte, sur ses quatre côtés, et il n'existe que
+pour les images qui se noient.
