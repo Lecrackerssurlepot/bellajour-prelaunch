@@ -39,7 +39,21 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=86400, stale-while-revalidate=2592000",
+            /* ⚠️ EN DÉVELOPPEMENT, AUCUN CACHE — ajouté le 15/09/2026.
+               La règle d'un jour ci-dessous est juste en production, et c'est
+               un choix assumé. En local elle est un piège : pendant le
+               chantier des visuels, un fichier régénéré SOUS LE MÊME NOM
+               continuait d'être servi depuis le cache de Chrome. Mathias a
+               cru deux fois qu'une image n'avait pas été remplacée, et une
+               capture de vérification a montré l'ancienne version alors que
+               le fichier sur disque était le bon.
+               Ce n'est pas un contournement : `next dev` ne sert à mesurer ni
+               la vitesse ni le cache, et la valeur de production n'est pas
+               touchée. */
+            value:
+              process.env.NODE_ENV === "production"
+                ? "public, max-age=86400, stale-while-revalidate=2592000"
+                : "no-store, must-revalidate",
           },
         ],
       },
