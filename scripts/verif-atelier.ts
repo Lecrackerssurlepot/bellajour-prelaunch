@@ -2137,6 +2137,28 @@ ok("plaque nue et police vont ensemble : jamais l'une sans l'autre",
    COVER_MODELS.every((m) => Boolean(m.plaqueNue) === Boolean(m.police)));
 ok("un modele a titre vivant a une couleur de lettrage relevee",
    COVER_MODELS.every((m) => !m.police || Boolean(m.couleurTitre)));
+
+/* Les quatre modeles portent desormais le titre du client (15/09, apres
+   « on cherche d'autres typo » : Bodoni Moda et Archivo Black, Google Fonts,
+   OFL). Ce test-la echoue si quelqu'un en repasse un en visuel titre sans le
+   vouloir — par exemple en effacant une police. */
+ok("les QUATRE modeles ecrivent le titre du client",
+   COVER_MODELS.every((m) => Boolean(m.plaqueNue && m.police)));
+
+/* Chaque disposition exige ce dont elle a besoin, sinon elle se rend a
+   moitie et personne ne le voit : une bande manquante, une couleur absente. */
+ok("'haut-et-bas' porte bien sa seconde bande",
+   COVER_MODELS.every((m) => m.disposition !== "haut-et-bas" || Boolean(m.zoneBis)));
+ok("'deux-tons' porte son accent ET sa couleur du mot seul",
+   COVER_MODELS.every((m) =>
+     m.disposition !== "deux-tons" || Boolean(m.couleurAccent && m.couleurSeule)));
+ok("la seconde bande reste elle aussi dans la couverture",
+   COVER_MODELS.every((m) => !m.zoneBis
+     || (m.zoneBis.haut >= 0 && m.zoneBis.bas <= 100 && m.zoneBis.haut < m.zoneBis.bas)));
+/* Les deux bandes de Sicile ne doivent pas se recouvrir : elles encadrent la
+   photo, elles ne se marchent pas dessus. */
+ok("les deux bandes ne se chevauchent jamais",
+   COVER_MODELS.every((m) => !m.zoneBis || m.zone.bas <= m.zoneBis.haut));
 ok("le token est efface : c'est LUI qui bloquait la recreation",
    RESCAPE.token === null);
 ok("le consentement photos retombe : il valait pour CE depot (garantie nº7)",

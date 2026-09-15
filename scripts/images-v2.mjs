@@ -259,6 +259,13 @@ const TRAVAUX = [
      ici, parce qu'une plaque nue sans son lettrage est une couverture vide. */
   { de: `${MASTERS}/BJ-Q01-nu.png`, vers: 'composer/modele-aussie-nu', ratio: null, largeurs: [168, 336, 900] },
   { de: `${MASTERS}/BJ-Q02-nu.png`, vers: 'composer/modele-mon-annee-nu', ratio: null, largeurs: [168, 336, 900] },
+  /* Les deux dernières plaques nues (15/09, troisième passage) : Mathias a
+     dit « on cherche d'autres typo », et Google Fonts en donne deux qui
+     collent — Bodoni Moda pour Sicile, Archivo Black pour This Night, toutes
+     deux en OFL et auto-hébergées par next/font. Les quatre modèles portent
+     donc désormais le titre du client. */
+  { de: `${MASTERS}/BJ-Q03-nu.png`, vers: 'composer/modele-sicile-nu', ratio: null, largeurs: [168, 336, 900] },
+  { de: `${MASTERS}/BJ-Q04-nu.png`, vers: 'composer/modele-this-night-nu', ratio: null, largeurs: [168, 336, 900] },
   { de: `${MASTERS}/BJ-Q03.png`, vers: 'composer/modele-sicile', ratio: null, largeurs: [168, 336, 900] },
   { de: `${MASTERS}/BJ-Q04.png`, vers: 'composer/modele-this-night', ratio: null, largeurs: [168, 336, 900] },
 ]

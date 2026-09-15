@@ -4,6 +4,7 @@
 import type { Metadata } from 'next'
 import { DM_Sans } from 'next/font/google'
 import localFont from 'next/font/local'
+import { Bodoni_Moda, Archivo_Black } from 'next/font/google'
 
 /* L'italique de DM Sans ne se charge QU'ICI. Sa seule consommatrice du site
    est `.at-hint`, le texte d'exemple de l'écran 2 (composer.css:~133) :
@@ -56,6 +57,37 @@ const interlope = localFont({
   variable: '--font-interlope',
 })
 
+/* ── LES DEUX AUTRES LETTRAGES (15/09/2026, troisième passage) ─────────────
+   Mathias : « et bien on cherche d'autres typo. » Sa bibliothèque n'avait
+   aucun didone pour Sicile, et la seule grotesque qui collait pour This Night
+   (Aileron) n'a pas son fichier de licence. Google Fonts donne les deux, en
+   OFL, auto-hébergées par next/font exactement comme Cormorant et DM Sans :
+   aucun fichier à pourchasser, aucune question de redistribution.
+
+   — Bodoni Moda 700 pour SICILE : un vrai didone, ce que fait la maquette
+     (fûts épais, empattements filiformes non raccordés).
+   — Archivo Black pour THIS NIGHT : même largeur, même graisse, même G à
+     barre et éperon que le lettrage livré.
+
+   ⚠️ Une seule graisse chacune, et le sous-ensemble latin seul : ces polices
+   ne peignent QUE quatre vignettes de couverture. Charger une famille
+   variable entière pour six lettres serait absurde.
+   ⚠️ `display: 'block'`, même raison qu'Interlope : le titre est mesuré au
+   pixel, et mesurer une police de repli le poserait à une taille fausse. */
+const bodoni = Bodoni_Moda({
+  subsets: ['latin'],
+  weight: ['700'],
+  display: 'block',
+  variable: '--font-bodoni',
+})
+
+const archivo = Archivo_Black({
+  subsets: ['latin'],
+  weight: ['400'],
+  display: 'block',
+  variable: '--font-archivo',
+})
+
 export const metadata: Metadata = {
   title: 'Composer avec l’atelier — Bellajour',
   robots: { index: false, follow: false },
@@ -63,7 +95,12 @@ export const metadata: Metadata = {
 
 export default function ComposerLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`at-portee-italique ${composerItalique.variable} ${interlope.variable}`}>
+    <div
+      className={
+        `at-portee-italique ${composerItalique.variable} ` +
+        `${interlope.variable} ${bodoni.variable} ${archivo.variable}`
+      }
+    >
       {children}
     </div>
   )

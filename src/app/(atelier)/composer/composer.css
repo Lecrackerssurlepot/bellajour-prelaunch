@@ -705,6 +705,12 @@
   pointer-events: none;
 }
 
+/* 'deux-tons' — les deux lignes se CHEVAUCHENT, comme sur la maquette où
+   « THIS » en rouge passe derrière « NIGHT » en blanc. L'interligne resserré
+   fait le chevauchement ; l'ordre du DOM fait le dessus-dessous, la seconde
+   ligne recouvrant la première sans un seul z-index. */
+.at-cov-vivant > span + span { margin-top: -0.22em; }
+
 /* L'étiquette du style, SOUS la vignette (voir plus haut pourquoi). */
 .at-cov-tag {
   display: block;

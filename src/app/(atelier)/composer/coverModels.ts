@@ -94,6 +94,21 @@ export type CoverModel = {
      il n'y a qu'un seul mot, garde le blanc ». Le rouge de « THIS » est la
      couleur d'accompagnement, pas celle du titre. */
   couleurSeule?: string
+  /* COMMENT le titre se pose. Les quatre maquettes ne mettent pas leur
+     lettrage de la même façon, et ignorer ça reviendrait à poser quatre fois
+     le même bloc de texte sur quatre images différentes.
+     — 'simple'      : un bloc dans la zone (Aussie, Mon année).
+     — 'haut-et-bas' : le titre DEUX FOIS, en haut et en bas (Sicile). C'est
+                       ce que fait la maquette, qui répète le mot autour de la
+                       photo. Voir la limite plus bas.
+     — 'deux-tons'   : première ligne dans `couleurAccent`, seconde dans
+                       `couleurTitre`, légèrement chevauchées (This Night).
+                       Sur un seul mot, `couleurSeule` s'applique. */
+  disposition: 'simple' | 'haut-et-bas' | 'deux-tons'
+  /* La seconde bande, pour 'haut-et-bas'. `zone` porte alors la première. */
+  zoneBis?: ZoneTexte
+  /* La couleur de la première ligne, pour 'deux-tons'. */
+  couleurAccent?: string
 }
 
 /**
@@ -177,6 +192,7 @@ export const COVER_MODELS: CoverModel[] = [
     zone: { gauche: 29.2, droite: 86.6, haut: 6.1, bas: 18.5 },
     ligneBasse: { texte: '2026', zone: { gauche: 47, droite: 53.2, haut: 95.3, bas: 96.7 } },
     repli: 'reduire',
+    disposition: 'simple',
   },
   {
     id: 'mon-annee',
@@ -190,30 +206,50 @@ export const COVER_MODELS: CoverModel[] = [
     zone: { gauche: 7.8, droite: 22.4, haut: 11, bas: 17.3 },
     ligneBasse: { texte: 'MON ANNEE', zone: { gauche: 80.2, droite: 92.6, haut: 95.2, bas: 96 } },
     repli: 'reduire',
+    disposition: 'simple',
   },
   {
     id: 'sicile',
     nom: 'Sicile',
     tag: 'Graphique',
     image: 'modele-sicile',
-    plaqueNue: null,
-    police: null,
-    couleurTitre: null,
+    plaqueNue: 'modele-sicile-nu',
+    /* Bodoni Moda : un vrai didone, c'est-à-dire exactement ce que fait cette
+       couverture — fûts épais, empattements filiformes non raccordés. La
+       bibliothèque `assets/typo/` n'en contenait aucun ; Google Fonts si, et
+       en OFL, donc auto-hébergée par next/font comme Cormorant et DM Sans. */
+    police: '--font-bodoni',
+    couleurTitre: '#ffffff',
     titreOrigine: 'Sicile',
     /* La zone couvre les deux tiers de la hauteur : le mot est répété autour
        de la photo, pas posé au-dessus. D'où le repli le plus franc des quatre. */
-    zone: { gauche: 13, droite: 87.4, haut: 17, bas: 83 },
+    /* ⚠️ LA ZONE N'EST PLUS LE BLOC ENTIER. Mesuré au profil de lignes le
+       15/09 : le lettrage occupe bien 17 % à 83 % de la hauteur, mais c'est
+       parce que le mot est RÉPÉTÉ quatre fois autour de la photo. Deux
+       bandes portent une ligne pleine (17→28 % et 71→83 %), les deux du
+       milieu ne laissent voir que le S et le E de chaque côté, le reste
+       étant masqué par la photo.
+       Écrire le titre dans le bloc entier donnerait un mot haut de 66 % de
+       la couverture. On reproduit donc les DEUX bandes pleines. */
+    zone: { gauche: 13, droite: 87.4, haut: 17, bas: 28 },
+    zoneBis: { gauche: 13, droite: 87.4, haut: 71, bas: 83 },
     ligneBasse: null,
     repli: 'une-ligne-au-dessus',
+    disposition: 'haut-et-bas',
   },
   {
     id: 'this-night',
     nom: 'This Night',
     tag: 'Nuit',
     image: 'modele-this-night',
-    plaqueNue: null,
-    police: null,
-    couleurTitre: null,
+    plaqueNue: 'modele-this-night-nu',
+    /* Archivo Black : la grotesque noire la plus proche du lettrage livré —
+       même largeur, même graisse, même G à barre et éperon. OFL, Google
+       Fonts. Elle remplace Aileron, qui correspondait aussi bien mais dont
+       la notice CC0 manque au dossier (voir assets/typo/LICENCES.md). */
+    police: '--font-archivo',
+    couleurTitre: '#ffffff',
+    couleurAccent: '#841600',
     /* Deux mots, deux couleurs, qui se chevauchent : « THIS » en rouge
        derrière, « NIGHT » en blanc devant. */
     titreOrigine: 'This Night',
@@ -221,6 +257,7 @@ export const COVER_MODELS: CoverModel[] = [
     ligneBasse: null,
     repli: 'une-couleur',
     couleurSeule: '#ffffff',
+    disposition: 'deux-tons',
   },
 ]
 

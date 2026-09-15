@@ -189,3 +189,44 @@ affiche. Aucune ligne ne se termine par un mot-outil.
 - **À regarder à l'écran** : sur « Mon année », la zone du titre est celle du petit « 26 » en haut
   à gauche — un titre long y devient très petit. C'est fidèle au modèle livré, mais c'est la seule
   des quatre où ça se voit. Si ça ne va pas, la zone se déplace en une ligne dans `coverModels.ts`.
+
+## ✅ ÉTAPE 2 TERMINÉE (15/09/2026) — les quatre modèles portent le titre du client
+
+Mathias : « et bien on cherche d'autres typo. » Google Fonts donne les deux qui manquaient, en
+OFL, auto-hébergées par `next/font` exactement comme Cormorant et DM Sans — aucun fichier à
+pourchasser, aucune question de redistribution.
+
+| Modèle | Police | D'où elle vient |
+|---|---|---|
+| Aussie | **Interlope** | `assets/typo/`, OFL 1.1, Gabriel Dubourg |
+| Mon année | **Interlope** | idem |
+| Sicile | **Bodoni Moda 700** | Google Fonts, OFL — un vrai didone, ce que la bibliothèque n'avait pas |
+| This Night | **Archivo Black** | Google Fonts, OFL — même largeur, même graisse, même G à barre et éperon qu'Aileron, sans son problème de licence |
+
+### Les trois dispositions
+
+Les quatre maquettes ne posent pas leur lettrage de la même façon. Les traiter pareil serait
+coller quatre fois le même bloc de texte sur quatre images différentes.
+
+- **`simple`** (Aussie, Mon année) : un bloc dans la zone mesurée.
+- **`haut-et-bas`** (Sicile) : le titre **deux fois**, en haut et en bas. La maquette répète le
+  mot quatre fois autour de la photo ; le profil de lignes mesuré le 15/09 montre deux bandes
+  pleines (17→28 % et 71→83 %) et deux bandes du milieu dont la photo ne laisse voir que le S et
+  le E. ⚠️ **Limite assumée** : les deux répétitions du milieu ne sont pas reproduites, parce
+  qu'elles passent DERRIÈRE la photo et que la plaque livrée est plate — il faudrait la photo en
+  calque séparé. Les deux bandes pleines suffisent à faire lire le modèle.
+- **`deux-tons`** (This Night) : première ligne dans l'accent (`#841600`, relevé), seconde en
+  blanc, chevauchées de 0,22 em. ⚠️ Ce modèle **cherche les deux lignes d'abord**, pas en dernier
+  recours : le ramener à une ligne blanche parce qu'elle tient en largeur effacerait le modèle.
+  Sur un seul mot, le blanc seul — la règle de Mathias.
+
+Relevé à l'écran sur le build de production, titre « Nuits Sonores » : Aussie une ligne bleue,
+Mon année deux lignes blanches, **Sicile deux blocs** (haut et bas) en Bodoni, This Night
+« Nuits » en `rgb(132,22,0)` puis « Sonores » en blanc. **Aucun débordement sur les cinq blocs.**
+
+### Reste ouvert
+
+- **« Mon année »** : la zone du titre est celle du petit « 26 » en haut à gauche, donc un titre
+  long y est très petit. Trois issues, au choix de Mathias : déplacer le titre là où est
+  « MON ANNEE », agrandir la zone, ou laisser. Une ligne dans `coverModels.ts`.
+- Aileron n'est plus nécessaire : Archivo Black la remplace. La notice CC0 n'est plus un blocage.

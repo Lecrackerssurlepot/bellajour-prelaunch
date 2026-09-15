@@ -125,11 +125,19 @@ export default function TitreSurCouverture({
       let lignes = uneLigne
       let taille = tailleQuiRemplit(lignes, ctx, famille, width, height)
 
-      if (taille < reference * PLANCHER) {
+      /* ⚠️ 'deux-tons' CHERCHE LES DEUX LIGNES D'ABORD, pas en dernier
+         recours. Ce modèle n'est pas « un titre auquel on ajoute une
+         couleur » : c'est « THIS » en rouge derrière et « NIGHT » en blanc
+         devant, empilés et chevauchés. Le ramener à une ligne blanche parce
+         qu'elle tient en largeur, c'est effacer le modèle — et Mathias a
+         réservé le blanc seul au cas d'UN SEUL mot, ce qui dit bien qu'à
+         partir de deux, les deux tons jouent. */
+      const cherche2 = modele.disposition === 'deux-tons' || taille < reference * PLANCHER
+      if (cherche2) {
         const deux = decouperEnLignes(titre, largeurDe)
         if (deux.length > 1) {
           const t2 = tailleQuiRemplit(deux, ctx, famille, width, height)
-          if (t2 > taille) { lignes = deux; taille = t2 }
+          if (modele.disposition === 'deux-tons' || t2 > taille) { lignes = deux; taille = t2 }
         }
       }
 
@@ -152,13 +160,16 @@ export default function TitreSurCouverture({
     const ro = new ResizeObserver(calculer)
     ro.observe(el)
     return () => { vivant = false; ro.disconnect() }
-  }, [modele.titreOrigine, titre, policeVar])
+  }, [modele.titreOrigine, modele.disposition, titre, policeVar])
 
-  const z = modele.zone
-
-  return (
+  /* ── LES TROIS DISPOSITIONS ────────────────────────────────────────────
+     Les quatre maquettes ne posent pas leur lettrage de la même façon, et
+     les traiter pareil reviendrait à coller quatre fois le même bloc de
+     texte sur quatre images différentes. */
+  const rendu = (z: typeof modele.zone, cle: string) => (
     <span
-      ref={boite}
+      key={cle}
+      ref={cle === 'principale' ? boite : undefined}
       className="at-cov-vivant"
       aria-hidden="true"
       style={{
@@ -174,7 +185,36 @@ export default function TitreSurCouverture({
         visibility: mesure ? undefined : 'hidden',
       }}
     >
-      {mesure?.lignes.map((l, i) => <span key={i}>{l}</span>)}
+      {mesure?.lignes.map((l, i) => (
+        <span
+          key={i}
+          style={
+            /* 'deux-tons' : la première ligne prend l'accent, la seconde la
+               couleur du titre — « THIS » en rouge derrière, « NIGHT » en
+               blanc devant. Sur UN SEUL mot, `couleurSeule` s'applique :
+               « quand il n'y a qu'un seul mot, garde le blanc » (Mathias,
+               15/09). C'est pour ça que le test porte sur `lignes.length`
+               et pas sur l'index. */
+            modele.disposition === 'deux-tons' && mesure.lignes.length > 1 && i === 0
+              ? { color: modele.couleurAccent }
+              : modele.disposition === 'deux-tons' && mesure.lignes.length === 1
+                ? { color: modele.couleurSeule }
+                : undefined
+          }
+        >
+          {l}
+        </span>
+      ))}
     </span>
   )
+
+  /* 'haut-et-bas' : le titre DEUX FOIS. La maquette de Sicile répète le mot
+     autour de la photo ; les deux bandes pleines sont mesurées, les deux du
+     milieu sont masquées par la photo et ne se reproduisent pas ici (voir
+     `zoneBis` dans coverModels.ts). */
+  if (modele.disposition === 'haut-et-bas' && modele.zoneBis) {
+    return <>{rendu(modele.zone, 'principale')}{rendu(modele.zoneBis, 'bis')}</>
+  }
+
+  return rendu(modele.zone, 'principale')
 }
