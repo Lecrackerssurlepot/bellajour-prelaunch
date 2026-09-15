@@ -83,17 +83,17 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
     images: [{
-      url: '/opengraph-image',
+      url: 'https://www.bellajour.fr/images/v2/partage/bellajour-magazines-1200.png',
       width: 1200,
       height: 630,
-      alt: 'Bellajour — vos meilleurs moments méritent leur magazine',
+      alt: 'Dix magazines photo personnalisés Bellajour, imprimés et posés côte à côte',
     }],
   },
   twitter: {
     card: 'summary_large_image',
     title: TITLE,
     description: DESCRIPTION,
-    images: ['/opengraph-image'],
+    images: ['https://www.bellajour.fr/images/v2/partage/bellajour-magazines-1200.png'],
   },
 }
 

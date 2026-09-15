@@ -24,8 +24,9 @@ fichier, pas au jugé.
   Les déplacer casserait la régénération des images.
 - **`anxiete/`**, **`hero/hero-01`**, **`hero/hero-03`** : servent le dossier de
   démonstration du back-office (`admin/atelier/demo/fixtures.ts`).
-- **`header-bellajour.webp`** : encore lu par `opengraph-image.tsx`. Il tombera
-  avec la vignette de partage, quand BJ-P01 sera livrée.
+⚠️ `header-bellajour.webp` A REJOINT `divers/` le 15/09 au soir : `opengraph-image.tsx`
+était son dernier lecteur, et il est archivé lui aussi
+(`archive/opengraph-genere/`) depuis que BJ-P01 est livrée.
 
 ## Pour en rappeler une
 

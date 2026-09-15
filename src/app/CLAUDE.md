@@ -29,7 +29,8 @@ Le token vivant est `--bj-topbar-h`. Ne pas « réparer » en le définissant.
 `next/font/google`, self-hosté, **pas de `<link>` dans le `<head>`**. Déclarées dans trois
 layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font déduplique.
 **Cormorant Garamond** (display) et **DM Sans** (UI) — c'est bien la Garamond, pas « Cormorant ».
-**Playfair Display** n'existe QUE dans `opengraph-image.tsx`, côté serveur. Jamais sur une page.
+**Playfair Display** n'est PLUS chargée nulle part depuis le 15/09/2026 : elle ne vivait que dans
+`opengraph-image.tsx`, archivé avec la vignette de partage fabriquée (`archive/opengraph-genere/`).
 
 ## Règles CSS
 

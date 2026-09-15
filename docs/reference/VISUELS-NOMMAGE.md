@@ -568,3 +568,50 @@ déploiement soit prêt.** Un seul `curl` suffit à l'empoisonner pour un jour.
 **Le remède appliqué** est celui qu'écrit `next.config.ts` lui-même : changer le nom. Les deux
 largeurs concernées sont décalées — les couvertures passent de **600 à 640**, le paysage du header
 de **1920 à 1792**. Ce ne sont pas des valeurs de confort, ce sont des adresses neuves.
+
+
+## 15/09/2026 — BJ-P01 intégrée : la vignette de partage est un fichier
+
+Master HEIC **5712 × 4284** : une photographie des **dix magazines imprimés**, posés en grille sur
+une table. Sans texte — et c'est un choix qui tient : les réseaux affichent le titre et la
+description à côté de l'image, le texte incrusté n'est pas obligatoire.
+
+### Le recadrage n'est pas confié à une heuristique
+
+Le master est en 4:3 (1,333), la vignette en 1200 × 630 (1,905). Sur une photographie de dix
+objets alignés, `position: 'attention'` choisirait **un** magazine et couperait les autres. Le
+cadrage est donc **calculé** : pleine largeur, centré sur la bande blanche de la table, dont les
+bornes ont été mesurées dans l'image (y 791 à 3619). Les dix magazines tiennent dedans, vérifié à
+l'œil sur le rendu.
+
+### Le piège de l'orientation, et il était silencieux
+
+La première sortie était **tête en bas**. `sips` applique la rotation EXIF **aux pixels** — le PNG
+intermédiaire est droit — mais il **recopie quand même l'étiquette** dans le fichier de sortie.
+Relevé : pixels droits, `orientation = 3`. Le `.rotate()` de sharp lit cette étiquette et applique
+un **second** demi-tour.
+Le script réécrit désormais l'intermédiaire avec sharp **sans** `withMetadata()`, ce qui supprime
+l'étiquette sans toucher aux pixels.
+⚠️ **Les deux masters du header portaient `orientation = 1` et n'ont rien montré.** L'absence de
+symptôme sur un fichier ne prouve rien pour le suivant.
+
+### Ce qui a été archivé avec
+
+`src/app/opengraph-image.tsx` → `archive/opengraph-genere/`. Elle fabriquait l'image à chaque
+appel, annonçait « des albums d'exception » (T-069, point 1) et allait chercher deux polices chez
+Google au build (T-069, point 2). `header-bellajour.webp`, dont elle était le dernier lecteur,
+rejoint `archive/images-v1/divers/`. **Playfair Display n'est plus chargée nulle part** — la fiche
+`src/app/CLAUDE.md` le disait encore, elle est corrigée.
+
+⚠️ **L'URL de la vignette doit rester ABSOLUE** dans les trois déclarations (`layout.tsx`,
+`(atelier)/page.tsx`, `magazine/page.tsx`). Les robots d'aperçu ne résolvent pas les chemins
+relatifs : un `/images/...` nu est ignoré et la vignette disparaît sans message d'erreur.
+
+### Ce qui reste
+
+Les **pages légales n'ont toujours aucune vignette** — elles déclarent leur propre bloc
+`openGraph` sans `images`, et Next remplace l'objet au lieu de le fusionner (piège D6, déjà
+documenté). Ce n'était pas le cas avant non plus : vérifié en production. Peu grave, personne ne
+partage des CGV, mais c'est écrit.
+BJ-P02, la vignette propre à `/magazine`, n'est pas livrée : les deux pages partagent donc la même
+image et le même message.
