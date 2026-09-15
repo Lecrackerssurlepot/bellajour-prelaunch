@@ -373,3 +373,27 @@ noir sur du noir.
 Rio, par cohérence avec la page produit, puis retirée le jour même : « pour le Rio ne mets pas de
 bordure en bas, on veut simplement l'image ». La double page a besoin d'un volume parce qu'elle
 représente un objet OUVERT ; une couverture posée à plat n'en a pas besoin. Ne pas la remettre.
+
+
+## 15/09/2026 — « MAGAZINE » devient « LE MAGAZINE »
+
+Structure inchangée : **une seule ligne**, le masthead. Mais trois lettres de plus coûtent
+**24 % de largeur** — mesuré dans le navigateur, pas estimé : Cormorant Garamond rend
+« LE MAGAZINE » à **6,57 × la taille de police**, contre 5,29 pour « MAGAZINE ». Laissé tel quel,
+le mot passait à deux lignes à toutes les largeurs sauf une.
+
+Trois nombres ont été recalculés, chacun vérifié à huit largeurs de fenêtre :
+
+| | Avant | Après |
+|---|---|---|
+| Corps du mot (desktop) | `min(7.6vw, 110px)` | `min(7.4vw, 94px)` |
+| Corps du mot (≤ 900 px) | `16.3vw` | `13.1vw` |
+| Rattrapage du titre | `0.0366 em` du mot | `0.0213 em` du mot |
+
+Vérifié : **une seule ligne de 1990 px à 390 px**, le mot remplissant 97 à 98 % de sa colonne
+partout. Encre du mot et encre du titre à **106 px toutes les deux**.
+
+⚠️ Effet de bord traité : le mot plus petit raccourcit les deux colonnes de 15 px (H = 554 et non
+569), ce qui remontait le parcours à 892 px sur un écran de 900. La constante de `.bloc-pas` passe
+de 712 à **700**. Vérifié : parcours à 904 sur un écran de 900, à 1108 sur un écran de 1100.
+**Ce nombre se remesure dès qu'on touche à la taille du mot ou au rapport du collage.**

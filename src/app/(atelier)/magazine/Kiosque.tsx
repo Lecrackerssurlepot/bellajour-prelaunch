@@ -41,7 +41,7 @@ export default function Kiosque() {
               situe la marque a été gardé, celui-ci coupé — le mot se suffit,
               et les 26 px récupérés servent à faire tenir le bouton dans
               l'écran. */}
-          <p className="mot">MAGAZINE</p>
+          <p className="mot">LE MAGAZINE</p>
         </Reveal>
 
         <Reveal delay={90} className="bloc-collage">

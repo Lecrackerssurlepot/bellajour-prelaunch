@@ -91,7 +91,22 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: min(7.6vw, 110px);
+  /* ⚠️ REMESURE LE 15/09/2026, le mot etant passe de « MAGAZINE » a
+     « LE MAGAZINE » (demande de Mathias, structure inchangee : UNE ligne).
+     Les trois lettres en plus coutent 24 % de largeur — MESURE dans le
+     navigateur, pas estimee : Cormorant Garamond rend « LE MAGAZINE » a
+     6,57 x la taille de police, contre 5,29 pour « MAGAZINE ».
+     A 1440 la colonne fait 637 px : 637 / 6,57 = 97 px de plafond absolu.
+     On prend 94, soit 97 % de la laisse — la meme marge qu'avant, celle qui
+     absorbe l'ecart de chasse avec Georgia, la police de repli affichee le
+     temps du swap.
+     Le terme en vw suit le meme calcul : la colonne vaut ~50,6vw sous le
+     plafond du wrap, donc 6,57 x f = 0,97 x 0,506 x W donne f = 7,4vw.
+     ⚠️ Ne pas remonter ces deux nombres sans remesurer. Sous 767 px,
+     globals.css impose `overflow-wrap: anywhere !important` : un mot trop
+     grand ne deborde pas, il se coupe au milieu. Et ici il y a UNE ESPACE —
+     donc il passerait a la ligne, ce qui casse la structure demandee. */
+  font-size: min(7.4vw, 94px);
   line-height: 0.94;
   letter-spacing: 0.012em;
   color: var(--c-text);
@@ -469,16 +484,21 @@
      de sections au lieu d'un trou dans une colonne.
      LE CALCUL : le parcours commence a 92 (rembourrage haut) + H (les deux
      colonnes, 569) + 64 (gouttiere de grille) + cette marge. Pour qu'il passe
-     sous la ligne de flottaison il faut donc marge >= --app-height - 719.
-     MESURE, pas estimee : a 1440 x 900 la gouttiere de grille vaut 57,6 px
-     (4vw borne a 64) et non 64. On prend 712, six pixels d'air.
+     sous la ligne de flottaison il faut donc marge >= --app-height - 704.
+     MESURE, pas estimee, et REMESUREE le 15/09 quand le mot est passe a
+     « LE MAGAZINE » : plus court d'une ligne de 15 px, il a raccourci les
+     deux colonnes d'autant (H = 554 et non 569). La gouttiere de grille vaut
+     57,6 px a 1440 (4vw borne a 64) et non 64. On prend 700, quatre pixels
+     d'air.
+     ⚠️ Ce nombre suit la hauteur des colonnes : il se remesure des qu'on
+     touche a la taille du mot ou au rapport du collage.
      ⚠️ `--app-height` et jamais `vh` : hauteur GELEE au chargement, regle de
      la maison — `vh` suit la barre d'adresse et ferait sauter la page.
      ⚠️ `max()` avec --g : sur un ecran court le calcul devient negatif, et la
      gouttiere reprend la main. */
   .at-pdp .bloc-pas {
     grid-column: 1 / -1;
-    margin-top: max(var(--g), calc(var(--app-height) - 712px));
+    margin-top: max(var(--g), calc(var(--app-height) - 700px));
   }
 
   .at-pdp .pas {
@@ -531,7 +551,15 @@
      ⚠️ Exprime en EM DU MOT, pas en pixels : le mot vaut min(7,6vw, 110px),
      donc son interligne grandit avec la fenetre — un nombre fixe se
      desalignerait des qu'on change de largeur. 4 / 109,4 = 0,0366. */
-  .at-pdp .colonne-recit { padding-top: calc(0.0366 * min(7.6vw, 110px)); }
+  /* ⚠️ REMESURE le 15/09 avec « LE MAGAZINE » : le mot etant plus petit
+     (94 px au lieu de 109,44), son interligne l'est aussi, et l'ecart a
+     rattraper tombe de 4 px a 2. Le coefficient suit donc : 2 / 94 = 0,0213.
+     ⚠️ Il est exprime en em DU MOT, pas en pixels : c'est la seule facon que
+     l'alignement tienne quand la fenetre change de largeur. Il reste un
+     residu de un a trois pixels aux largeurs ou les deux polices ne varient
+     pas au meme rythme — invisible sur un corps de 94 px, et le corriger
+     demanderait de connaitre l'interligne du titre, qui a sa propre clamp. */
+  .at-pdp .colonne-recit { padding-top: calc(0.0213 * min(7.4vw, 94px)); }
 
   /* ── LES DEUX COLONNES REMPLISSENT L'ECRAN, LE PARCOURS TOMBE DESSOUS ──
      Sans ce plancher, le parcours commencait a 841 px sur un ecran de 900 :
@@ -563,7 +591,8 @@
      et le bouton. Mathias : « les espaces sur la droite sont beaucoup trop
      ecartes ».
      La hauteur vient desormais de la colonne de GAUCHE (le mot plus le
-     collage), et la droite s'y repartit. Les deux colonnes finissent donc
+     collage), et la droite s'y repartit. Mesure du 15/09 apres le passage a
+     « LE MAGAZINE » : H = 554, et les ecarts valent 83 et 82 px. Les deux colonnes finissent donc
      toujours ensemble — c'etait la demande precedente — mais sur une hauteur
      qu'on choisit, au lieu d'une hauteur subie.
      ⚠️ LE PARCOURS NE DOIT TOUJOURS PAS MONTRER SA PREMIERE BANDE dans le
@@ -963,7 +992,9 @@
      contre-ordre, le jour où le mot dépasse d'un pixel il ne déborde pas —
      il se coupe en « MAGAZI / NE ». */
   .at-pdp .mot {
-    font-size: 16.3vw;
+    /* 13,1vw et non 16,3 : meme remesure que le plafond desktop, meme
+       facteur (6,57 / 5,29 = 1,242). 16,3 / 1,242 = 13,1. */
+    font-size: 13.1vw;
     text-align: center;
     overflow-wrap: normal !important;
   }
