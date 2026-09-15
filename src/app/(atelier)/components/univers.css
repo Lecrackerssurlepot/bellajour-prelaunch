@@ -432,7 +432,15 @@
 .at-accueil .sl4-rail .ph{display:block;aspect-ratio:4066/5750;overflow:hidden;border-radius:3px;
   box-shadow:var(--shadow-float)}
 .at-accueil .sl4-rail .ph img{width:100%;height:100%;object-fit:cover;display:block;
-  filter:saturate(.72) contrast(1.05) brightness(.86)}
+  /* ⚠️ ALLEGE le 15/09/2026, a la demande de Mathias. L'ancien reglage,
+     saturate(.72) contrast(1.05) brightness(.86), avait ete pose en aout pour
+     des couvertures PHOTOGRAPHIQUES et claires. Les quatre livrees le 15/09
+     sont des compositions a fond sombre — « The Boys » et « This Night » sont
+     deja noires : les assombrir encore de 14 % les eteignait.
+     Trois reglages ont ete rendus cote a cote avant de trancher ; celui-ci
+     garde juste ce qu'il faut de retenue pour que la bande ne crie pas sur le
+     noir de la page, sans eteindre les couvertures. */
+  filter:saturate(.88) contrast(1.02) brightness(.96)}
 
 /* Le soulevement au survol a ete RETIRE le 14/09/2026, sur demande de
    Mathias. Ces couvertures ne sont pas cliquables : rien ne s'ouvre, rien ne

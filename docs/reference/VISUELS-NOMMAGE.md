@@ -321,3 +321,25 @@ suffit en local ; en production, il faudrait changer les noms.
 
 Dix visuels supplémentaires sans code attendent dans `design-explorations/visuels-v2/visus
 bellajour/` (5 à 11, 16, 31, 32).
+
+
+## 15/09/2026 — le filtre du rail est allégé
+
+`saturate(.72) contrast(1.05) brightness(.86)` → **`saturate(.88) contrast(1.02) brightness(.96)`**.
+L'ancien réglage datait d'août et visait des couvertures photographiques claires. Les quatre
+livrées le 15/09 sont des compositions à fond sombre — « The Boys » et « This Night » sont déjà
+noires : les assombrir encore de 14 % les éteignait. Trois réglages rendus côte à côte avant de
+trancher (`scratchpad/banc-filtre.html`).
+
+### Ce qui est coupé, et ce qui ne l'est pas
+
+| Case | Master | Servi | Perte |
+|---|---|---|---|
+| A06 à A09 | 4066 × 5750 (0,70713) | 600 × 848 | **aucune** (0,06 % d'arrondi, soit 0,13 px) |
+| A10 | 736 × 981 (0,75026) | 600 × 848 | **5,8 % de la largeur**, côté reliure |
+
+Les quatre couvertures ne sont donc pas recadrées du tout : c'est le cadre qui a pris leur
+rapport. A10 est la seule à être rognée, parce qu'elle seule n'a pas ce rapport — c'est une
+photographie de page d'album, pas une composition. Pour qu'aucune des cinq ne soit coupée, il
+faudrait remplacer A10 par une couverture au même format (dix attendent sans code dans
+`visus bellajour/`).
