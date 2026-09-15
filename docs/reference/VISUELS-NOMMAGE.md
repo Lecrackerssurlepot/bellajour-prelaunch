@@ -397,3 +397,29 @@ partout. Encre du mot et encre du titre à **106 px toutes les deux**.
 569), ce qui remontait le parcours à 892 px sur un écran de 900. La constante de `.bloc-pas` passe
 de 712 à **700**. Vérifié : parcours à 904 sur un écran de 900, à 1108 sur un écran de 1100.
 **Ce nombre se remesure dès qu'on touche à la taille du mot ou au rapport du collage.**
+
+
+## 15/09/2026 — l'étagement du collage repris
+
+« Mettre l'image Sicile tout en haut, Noosa qui descend un peu pour moins cacher le titre. »
+
+| | Avant | Après |
+|---|---|---|
+| Sicile (c1) | `top: 20%`, largeur 44 % | **`top: 0`**, largeur **50 %** |
+| Noosa (c2) | `top: 0` | **`top: 8%`** |
+| Lagon (c3) | `top: 36%`, largeur 70 %, gauche 30 % | **`top: 40.2%`**, largeur **66 %**, gauche **34 %** |
+
+Le mot finit à 180 px et le haut de Noosa tombe désormais à 189 : **rien ne le couvre plus**.
+
+⚠️ **Deux arithmétiques à ne pas oublier en retouchant ces nombres.**
+1. Le lagon ne descend que de ce que sa largeur lui permet : sa hauteur vaut sa largeur divisée
+   par 1,4145, et son bas doit tomber à 100 %. À 70 % de large il part à 36,5 %, pas plus bas. Un
+   essai à 52 % le faisait **sortir de la boîte de 77 px** et recouvrir le bouton.
+2. La Sicile remontée ouvrait un vide de 17 % sous elle. Elle passe donc de 44 à 50 % de large,
+   ce qui la fait descendre à 91 % au lieu de 80 et referme presque ce vide.
+
+Les quatre points rendus par le lagon (70 → 66 % de large) sont ce qui laisse Noosa se lire : à
+36,5 % elle n'apparaissait plus que par une bande de ciel, titre tranché.
+
+Vérifié à 1440×900, 1512×982 et 1990×1100 : le bas du collage et le bas du bloc bouton tombent
+au même pixel dans les trois cas.

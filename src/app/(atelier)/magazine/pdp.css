@@ -218,21 +218,39 @@
    de droite. Les trois cadres sont redéployés en escalier — paysage en haut à
    droite, portrait en bas à gauche, paysage en bas à droite — chacun mordant
    le précédent. Le chevauchement EST la composition.
-   ⚠️ LE COIN HAUT-GAUCHE RESTE VIDE, ET C'EST VOULU : c'est là que vit le mot
-   MAGAZINE. Seul c2 vient mordre sa droite, comme dans la maquette d'août.
-   Un premier essai posait c2 sur 66 % dès le bord haut : il recouvrait les
-   deux tiers du mot, qui ne se lisait plus.
+   ⚠️ L'ÉTAGEMENT A ÉTÉ REPRIS le 15/09/2026 : « mettre l'image Sicile tout en
+   haut, Noosa qui descend un peu pour moins cacher le titre ».
+   La Sicile part donc du bord haut (`top: 0`) et Noosa descend à 14 %, ce qui
+   DÉGAGE LE COIN HAUT-DROIT — c'est là que se lisent les dernières lettres de
+   « LE MAGAZINE ». Le lagon descend d'autant (36 → 52 %) pour que la
+   composition continue d'aller jusqu'en bas.
+   ⚠️ LE LAGON NE DESCEND QUE DE CE QUE SA LARGEUR LUI PERMET, et c'est
+   arithmétique : sa hauteur vaut sa largeur divisée par 1,4145, et son bas
+   doit tomber à 100 % de la boîte. À 70 % de large il fait 63,4 % de haut,
+   donc il part à 36,5 % — pas plus bas. Un premier essai l'avait posé à 52 % :
+   il sortait de la boîte de 77 px, MESURÉS, et recouvrait le bouton.
+   Il est donc passé à 66 % de large, ce qui le fait partir à 40,2 % : ces
+   quatre points rendus à Noosa sont ce qui la laisse se lire. À 36,5 % elle
+   n'apparaissait plus que par une bande de ciel, et son titre était tranché —
+   une composition ne peut pas cacher le sujet qu'elle met en scène.
+   Noosa, elle, ne descend qu'à 8 % : le mot finit à 180 px et le haut de
+   Noosa tombe à 189. Quatre points de plus ne dégageraient rien et lui
+   coûteraient trente pixels de lecture.
+   La Sicile compense donc autrement : elle passe de 44 à 50 % de large, ce qui
+   la fait descendre jusqu'à 91 % au lieu de 80 et referme presque le vide que
+   sa remontée ouvrait en bas à gauche. Les trois cadres bougent ENSEMBLE ou
+   pas du tout : chaque hauteur est déduite d'une largeur.
    ⚠️ Les LARGEURS ont grandi (39,5 → 42, 44 → 66, 55 → 66 %) : c'est là que
    les photos respirent. Les hauteurs ne sont jamais écrites : chaque cadre
    porte l'`aspect-ratio` de son master. */
-.at-pdp .c1 { left: 0;     top: 20%;   width: 44%;   aspect-ratio: 8770 / 12478; }
+.at-pdp .c1 { left: 0;     top: 0;     width: 50%;   aspect-ratio: 8770 / 12478; }
 /* ⚠️ 40,4 % ET NON 39,7 % DEPUIS LE 14/09/2026 : c'est la hauteur qui donne
    au cadre le rapport EXACT du master livre (M02, 12468x8770, soit 1,4217).
    A 39,7 % le cadre valait 1,4462 et `object-fit` rognait les cotes pour
    rien. La regle posee par Mathias ce jour-la est celle-ci : quand le format
    du visuel differe de celui du site, c'est le site qui bouge. */
-.at-pdp .c2 { left: 40%;   top: 0;     width: 60%;   aspect-ratio: 12468 / 8770; }
-.at-pdp .c3 { left: 30%;   top: 36%;   width: 70%;   aspect-ratio: 4000 / 2828; }
+.at-pdp .c2 { left: 40%;   top: 8%;    width: 60%;   aspect-ratio: 12468 / 8770; }
+.at-pdp .c3 { left: 34%;   top: 40.2%; width: 66%;   aspect-ratio: 4000 / 2828; }
 
 /* c3 est une DOUBLE PAGE, pas une couverture — même objet que la maquette de
    la section « L'objet », donc même pli central, à la même intensité
