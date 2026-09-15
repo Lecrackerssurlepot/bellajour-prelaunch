@@ -172,12 +172,29 @@
   clip-path:inset(50% 0 50% 0);
   transition:clip-path 1700ms var(--ease-spring) 120ms;
 }
-.at-accueil .h-plein>img{
+/* ⚠️ `.h-plein img` ET NON `.h-plein>img` (15/09/2026). L'image est
+   desormais enveloppee dans un <picture> — deux cadrages selon l'orientation
+   de la fenetre — et le combinateur d'enfant direct ne la trouvait plus. Elle
+   perdait alors `width`, `height` et `object-fit` : elle s'affichait a sa
+   taille naturelle, 1920 px de large dans un cadre de 1440, et on n'en voyait
+   qu'un coin. Rien ne debordait a l'ecran, le cadre etant en `overflow:hidden`
+   — le defaut ne se voyait que sur l'image elle-meme. */
+.at-accueil .h-plein img{
   width:100%;height:100%;object-fit:cover;object-position:50% 56%;
-  filter:saturate(.56) contrast(1.09) brightness(.79) sepia(.19);
+  /* ⚠️ RE-REGLE le 15/09/2026, l'image ayant change de NATURE. Le reglage
+     precedent — saturate(.56) brightness(.79) sepia(.19) — avait ete pose
+     pour une photographie d'ambiance, deux palmiers a contre-jour : l'eteindre
+     servait le titre et ne coutait rien. Le header livre ce jour-la est une
+     photographie des magazines IMPRIMES : c'est le produit, et l'eteindre
+     coute la seule chose que cette image a a dire.
+     Trois reglages ont ete rendus l'un sous l'autre avant de trancher. L'ecart
+     est faible — le degrade `.h-grad` et le voile `.h-voile` font l'essentiel
+     du contraste sous le titre — mais il va dans le bon sens : les couvertures
+     se lisent, le titre reste parfaitement detache. */
+  filter:saturate(.72) contrast(1.06) brightness(.90) sepia(.10);
   transform:scale(1.16);
 }
-.at-accueil.pret .h-plein>img{transform:none;transition:transform 2600ms var(--ease) 120ms}
+.at-accueil.pret .h-plein img{transform:none;transition:transform 2600ms var(--ease) 120ms}
 
 /* le modele de lumiere du bandeau, conserve tel quel */
 .at-accueil .h-grad{position:absolute;inset:0;
@@ -624,7 +641,7 @@ html:not([data-anim]) .at-accueil .h-voile{opacity:1 !important}
    n'a ni l'attribut ni le probleme.
    ═══════════════════════════════════════════════════════════════════════ */
 html[data-ouverture-vue] .at-accueil .h-plein{clip-path:inset(0);transition:none}
-html[data-ouverture-vue] .at-accueil .h-plein>img{transform:none;transition:none}
+html[data-ouverture-vue] .at-accueil .h-plein img{transform:none;transition:none}
 html[data-ouverture-vue] .at-accueil .h-voile{opacity:1;transition:none}
 /* La lumiere rasante passe UNE fois, au lever de rideau. Au retour, il n'y
    a pas de rideau : elle n'a rien a traverser. */

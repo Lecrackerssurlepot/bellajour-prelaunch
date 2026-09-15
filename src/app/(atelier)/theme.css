@@ -388,7 +388,7 @@ html:not([data-anim]) .at-rv {
    ce sont SES images. On ne touche donc ni `/composer`, ni `/numero`, ni
    `/compte`.
    ══════════════════════════════════════════════════════════════ */
-.at-accueil .h-plein > img,
+.at-accueil .h-plein img,
 .at-accueil .sl2-scene img,
 .at-accueil .sl4-rail img,
 .at-accueil .n-plat > img,

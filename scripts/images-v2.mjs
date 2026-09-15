@@ -25,8 +25,34 @@
  */
 
 import sharp from 'sharp'
-import { mkdir, stat, readdir } from 'node:fs/promises'
+import { mkdir, stat, readdir, rm } from 'node:fs/promises'
+import { execFileSync } from 'node:child_process'
 import path from 'node:path'
+import os from 'node:os'
+
+/* ⚠️ LE HEIC SE CONVERTIT AVANT, ET PAS PAR SHARP (15/09/2026).
+   Les photos sorties d'un iPhone arrivent en HEIC. `sharp` en lit l'EN-TÊTE
+   — `metadata()` rend bien 2125 x 2833 — mais il ne sait pas le DÉCODER : le
+   binaire est compilé sans le greffon de décompression, et l'erreur ne tombe
+   qu'au moment d'écrire le fichier de sortie (« Support for this compression
+   format has not been built in »). Une métadonnée lue n'est donc PAS une
+   promesse que l'image est lisible.
+   On passe par `sips`, l'outil d'images de macOS, qui décode le HEIC nativement
+   et écrit un PNG intermédiaire dans un dossier temporaire.
+   ⚠️ Ce script ne tourne donc que sur un Mac dès qu'un master est en HEIC.
+   C'est déjà le cas de tous les scripts du dépôt (ils se lancent à la main
+   depuis la machine de Mathias), mais c'est écrit ici pour que personne ne le
+   découvre sur une autre machine.
+   ⚠️ Aucun navigateur ne sert le HEIC : la conversion n'est pas un confort,
+   elle est obligatoire. */
+const TEMPO = path.join(os.tmpdir(), 'bellajour-heic')
+async function lisible(chemin) {
+  if (!/\.heic$/i.test(chemin)) return chemin
+  await mkdir(TEMPO, { recursive: true })
+  const png = path.join(TEMPO, path.basename(chemin).replace(/\.heic$/i, '.png'))
+  execFileSync('sips', ['-s', 'format', 'png', chemin, '--out', png], { stdio: 'ignore' })
+  return png
+}
 
 const MASTERS = 'design-explorations/visuels-v2'
 const CIBLE = 'public/images/v2'
@@ -50,6 +76,26 @@ const TRAVAUX = [
   { de: 'public/images/univers/grid-03.webp', vers: 'accueil/reseaux-video-telephone', ratio: null, largeurs: [600] },
   { de: 'public/images/univers/solution-upload-05.webp', vers: 'accueil/reseaux-publication', ratio: null, largeurs: [400] },
   { de: 'public/images/univers/solution-upload-09.webp', vers: 'accueil/reseaux-story', ratio: null, largeurs: [400] },
+
+  /* ── A01 — LE HEADER, EN DEUX CADRAGES (15/09/2026) ────────────────────
+     La couverture plein écran de l'accueil : une photographie des magazines
+     IMPRIMÉS, étalés. C'est l'image produit la plus forte du site.
+     ⚠️ DEUX MASTERS, ET DEUX SERVIS SÉPARÉMENT. Le cadre fait toute la
+     fenêtre : en portrait sur un téléphone, en paysage sur un écran. Un seul
+     fichier obligerait `object-fit: cover` à trancher la moitié de l'autre
+     orientation. Le `<picture>` d'Ouverture.tsx choisit sur
+     `(orientation: landscape)`, et les deux `<link rel=preload>` de page.tsx
+     portent le MÊME media — sinon on précharge un fichier et on en affiche
+     un autre, et l'élément LCP part deux fois.
+     ⚠️ Les masters sont des HEIC : sharp les lit ici (libheif est compilé
+     dans le binaire), mais aucun navigateur ne les sert. La conversion n'est
+     donc pas un confort, elle est obligatoire.
+     ⚠️ LE PORTRAIT NE FAIT QUE 2125 px DE LARGE, sous les 2400 demandés. Il
+     couvre un téléphone jusqu'à trois fois la densité (500 x 3 = 1500) mais
+     pas un grand écran en portrait. On ne l'agrandit pas — interdit n° 5 : le
+     plafond reste à sa largeur réelle. */
+  { de: `${MASTERS}/BJ-A01.HEIC`, vers: 'accueil/header-magazines', ratio: null, largeurs: [640, 960, 1280, 2125] },
+  { de: `${MASTERS}/BJ-A01L.HEIC`, vers: 'accueil/header-magazines-paysage', ratio: null, largeurs: [1280, 1920, 2560] },
 
   /* ── LA BANDE DE LA PAGE 04 ───────────────────────────────────────────
      Le rail impose UN seul rapport à ses cinq cases (2:3, univers.css) : le
@@ -135,7 +181,8 @@ let total = 0
 let ecrits = 0
 
 for (const t of TRAVAUX) {
-  const meta = await sharp(t.de, { limitInputPixels: false }).metadata()
+  const source = await lisible(t.de)
+  const meta = await sharp(source, { limitInputPixels: false }).metadata()
   const dossier = path.join(CIBLE, path.dirname(t.vers))
   await mkdir(dossier, { recursive: true })
 
@@ -148,7 +195,7 @@ for (const t of TRAVAUX) {
       continue
     }
     const cible = `${CIBLE}/${t.vers}-${l}.webp`
-    let img = sharp(t.de, { limitInputPixels: false }).rotate()
+    let img = sharp(source, { limitInputPixels: false }).rotate()
     if (t.ratio) {
       img = img.resize({
         width: l,
@@ -183,3 +230,6 @@ try {
 } catch {
   /* Dossier absent sur une autre machine : ce n'est pas une erreur. */
 }
+
+/* Les PNG intermédiaires du HEIC ne servent qu'à cette exécution. */
+await rm(TEMPO, { recursive: true, force: true })

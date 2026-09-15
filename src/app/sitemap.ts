@@ -48,6 +48,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
          noms produits par scripts/images-v2.mjs — s'ils changent, cette liste
          change avec eux. */
       images: [
+        /* Le header en tete : c'est la photographie des magazines IMPRIMES,
+           la seule image du site qui montre l'objet fini. */
+        'https://www.bellajour.fr/images/v2/accueil/header-magazines-paysage-2560.webp',
         'https://www.bellajour.fr/images/v2/accueil/couverture-the-boys-600.webp',
         'https://www.bellajour.fr/images/v2/accueil/couverture-this-night-600.webp',
         'https://www.bellajour.fr/images/v2/accueil/couverture-lisbonne-600.webp',
