@@ -346,17 +346,34 @@ export default function Ouverture() {
              rectangle du bandeau. C'est la decoupe qui s'ouvre, jamais l'image
              qui bouge : aucune deformation, et la meme photographie sert le
              bandeau puis le plein ecran. */}
-        <div className="h-plein" aria-hidden="true">
+        {/* ⚠️ `aria-hidden` A ÉTÉ RETIRÉ le 15/09/2026, sur décision de Mathias.
+             Cette image était traitée en décor : muette pour les lecteurs
+             d'écran, invisible pour Google Images. C'est pourtant la plus
+             grande image du site, celle qui occupe tout le premier écran de
+             la page la plus visitée — le seul actif visuel qu'on offrait à
+             personne.
+             Les trois calques qui la suivent (.h-grad, .h-rake, .h-voile)
+             sont des <div> vides sans rôle : ils restent ignorés d'eux-mêmes,
+             ils n'ont jamais eu besoin de l'attribut. */}
+        <div className="h-plein">
           {/* ⚠️ Le srcset DOIT rester identique a celui du <link rel="preload">
                de page.tsx (imagesrcset/imagesizes) : s'ils divergent, le
                navigateur precharge un fichier et en affiche un autre — double
                telechargement de l'element LCP. Variantes : scripts, sharp
-               q85, memes reglages que optimize-images.mjs. */}
+               q85, memes reglages que optimize-images.mjs.
+               ⚠️ LE TEXTE ALTERNATIF DÉCRIT CE QU'ON VOIT AUJOURD'HUI : deux
+               palmiers à contre-jour. Il devra être RÉÉCRIT le jour où le
+               header commandé arrive (BJ-A01, une accumulation de magazines).
+               Il dira alors le produit, pas une ambiance — quelque chose
+               comme « Une pile de magazines photo personnalisés Bellajour,
+               imprimés et reliés ». Un alt qui décrit une photo qui n'est
+               plus là est pire qu'un alt vide : il ment. */}
           <img
             src="/images/brand/brand-01.webp"
             srcSet="/images/brand/brand-01-640.webp 640w, /images/brand/brand-01-960.webp 960w, /images/brand/brand-01.webp 1200w"
             sizes="100vw"
-            alt="" width="1200" height="1600" fetchPriority="high" decoding="async" />
+            alt="Lever de jour sur deux palmiers, la photographie d’ouverture de l’atelier Bellajour"
+            width="1200" height="1600" fetchPriority="high" decoding="async" />
           <div className="h-grad"></div>
           <div className="h-rake"></div>
           <div className="h-voile"></div>

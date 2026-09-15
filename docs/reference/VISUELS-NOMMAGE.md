@@ -500,9 +500,16 @@ comme un chantier à part, après le header.
 
 ### Ce qui reste ouvert
 
-- **BJ-A01**, le header, n'est pas livré : la couverture actuelle est `brand/brand-01.webp`, et
-  elle porte `alt=""` sous un `aria-hidden`. **À reconsidérer quand A01 arrive** : une pile de
-  magazines en plein écran est l'image produit la plus forte du site, elle mérite un vrai texte
-  alternatif plutôt que le statut de décor.
+- **BJ-A01**, le header, n'est pas livré. La couverture actuelle est `brand/brand-01.webp` —
+  deux palmiers à contre-jour au lever du jour. Depuis le 15/09, **elle n'est plus un décor** :
+  `aria-hidden` est retiré de `.h-plein` et l'image porte un vrai texte alternatif. C'est la plus
+  grande image du site, sur le premier écran de la page la plus visitée ; muette, elle n'existait
+  ni pour les lecteurs d'écran ni pour Google Images.
+  ⚠️ **Le texte alternatif décrit ce qu'on voit AUJOURD'HUI.** Il devra être réécrit le jour où
+  A01 arrive : il dira alors le produit et non une ambiance, quelque chose comme « Une pile de
+  magazines photo personnalisés Bellajour, imprimés et reliés ». Un alt qui décrit une photo qui
+  n'est plus là est pire qu'un alt vide : il ment.
+  ⚠️ Les trois calques qui suivent l'image (`.h-grad`, `.h-rake`, `.h-voile`) sont des `<div>`
+  vides sans rôle : ils sont ignorés d'eux-mêmes, ils n'ont jamais eu besoin de l'attribut.
 - **BJ-P01** (partage) et **U01 à U04** (logos, icône) ne sont pas livrés.
 - **BJ-M07** reste le doublon de la double page.
