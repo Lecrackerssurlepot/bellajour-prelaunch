@@ -45,3 +45,23 @@ La livraison est facturée en sus depuis PR #103 : `shippingDetails` du JSON-LD 
 être posé, mais son montant est un devis par pays et par pagination, pas un tarif fixe. À décider
 quand Mathias pose le plafond (`LIVRAISON_PLAFOND_CENTIMES`) : c'est lui qui pourra figurer comme
 `shippingRate` maximal. `AggregateOffer` est déjà dérivé de la grille (25 à 59 €, 20 offres).
+
+
+## 15/09/2026 — le point 1 est réglé, le point 2 reste entier
+
+**L'image du `Product` fait désormais 1600 px de large.** `JSON_LD` de `magazine/page.tsx` pointe
+`https://www.bellajour.fr/images/v2/magazine/magazine-photo-personnalise-1600.webp`, contre
+450 px auparavant — sous le minimum de 1200 px que Google demande pour un résultat enrichi
+produit, donc probablement ignorée jusqu'ici.
+
+⚠️ **Mais ce n'est pas encore la bonne image, et c'est écrit ici pour qu'on ne l'oublie pas.** Le
+master livré sous le code BJ-M07 est le **doublon exact** de la double page (même md5) : une
+composition titrée, pas la photographie de l'objet imprimé sur fond uni qui vendrait vraiment.
+Mathias, le 15/09 : « garde-le en point mais on ne le change pas pour l'instant ».
+Les **trois cadrages** que Google préfère (1:1, 4:3, 16:9) ont été produits puis **jetés** : sur
+cette image ils tranchent le mot « AUSTRALIA » en deux. Mieux vaut une image entière qu'un
+lettrage coupé sous notre marque. Ils reviendront avec un vrai master.
+
+**Le point 2 — `hasMerchantReturnPolicy` et `shippingDetails` — n'a pas bougé.** Il attend
+toujours que la page AFFICHE ces conditions, et le plafond de livraison
+(`LIVRAISON_PLAFOND_CENTIMES`) que Mathias doit poser avec Louis.

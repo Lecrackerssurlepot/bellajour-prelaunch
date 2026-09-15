@@ -1,4 +1,4 @@
-# État du système — au 11/09/2026
+# État du système — au 15/09/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -7,6 +7,62 @@ règles, sans moyen de savoir ce qui avait expiré.
 
 Règle d'entretien : quiconque change l'état du système met ce fichier à jour dans le même geste.
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
+
+---
+
+## 15/09/2026 : tous les visuels du site sont remplacés (PR #138 → #141)
+
+**En production.** Quatre fusions : #138 le chantier, #139 le filet des couvertures sombres,
+#140 deux adresses empoisonnées, #141 la vignette de partage.
+
+**Ce qui a changé à l'écran.** Le header de l'accueil est une **photographie des magazines
+imprimés**, en deux cadrages choisis sur l'orientation de la fenêtre (portrait sur téléphone,
+paysage sur ordinateur) — il n'est plus un décor : `aria-hidden` est retiré et il porte un vrai
+texte alternatif. La bande de la page 04 compte **six vraies couvertures Bellajour**. Le numéro de
+la page 07 est la couverture « Rio », dépouillée de ses calques d'effet. Sur `/magazine`, le
+masthead dit « LE MAGAZINE », le collage tient trois visuels **au format exact de leurs fichiers**
+et la maquette de double page est devenue **une seule image** avec son pli central.
+
+**Fabrication.** `scripts/images-v2.mjs` lit les masters de `design-explorations/visuels-v2/`
+(hors git) et écrit `public/images/v2/` : **49 fichiers, 4,6 Mo servis pour 209 Mo de masters**.
+Les noms sont parlants (`couverture-lisbonne-640.webp`, plus `a08-600.webp`). Il convertit le
+HEIC par `sips` — **le script exige donc un Mac** dès qu'un master vient d'un iPhone.
+
+**SEO et performance.** Plan de site avec `images:` sur les deux pages indexables. Vignette de
+partage = **un fichier**, plus une route qui la fabriquait. Image produit du JSON-LD : 450 →
+1600 px. Signature de la barre : 320 px servis pour **60 peints**, corrigée. Trois logos sans
+`width`/`height` (décalage de mise en page) corrigés.
+AVIF **mesuré à 17 % de gain et écarté** : il coûte un `<picture>` par image et un second endroit
+où le miroir `preload`/`srcSet` peut se désynchroniser.
+
+**Ménage.** 15 images dans `archive/images-v1/`, `opengraph-image.tsx` dans
+`archive/opengraph-genere/`, chacun avec son README. **Playfair Display n'est plus chargée nulle
+part.**
+
+### Trois pièges rencontrés, et ce qu'ils coûtent à qui les ignore
+
+1. **Un 404 sur `/images/` est mis en cache un jour.** `next.config.ts` pose
+   `max-age=86400` sur tout `/images/:chemin*`, **y compris les réponses d'erreur**. Sonder une
+   adresse d'image en production **avant** la bascule du déploiement la fige en 404 pour 24 h, et
+   le déploiement suivant ne purge pas (relevé : `x-vercel-cache: HIT`, `age: 1502`). Deux images
+   ont dû changer de nom (600 → 640, 1920 → 1792). **Pour savoir si un déploiement est passé, on
+   interroge le HTML de la page, jamais l'adresse d'une image.**
+2. **`sips` laisse une étiquette d'orientation périmée.** Il applique la rotation EXIF aux pixels
+   mais recopie le tag ; `sharp.rotate()` l'applique une seconde fois. La vignette de partage est
+   sortie **tête en bas**, sans un mot dans le journal. Les masters du header portaient
+   `orientation = 1` et n'avaient rien montré : **l'absence de symptôme sur un fichier ne prouve
+   rien pour le suivant.**
+3. **Un `<picture>` casse les sélecteurs en enfant direct.** `.h-plein > img` ne trouvait plus
+   l'image devenue petite-fille : elle perdait `object-fit` et s'affichait à sa taille naturelle,
+   1920 px dans un cadre de 1440. **Rien ne débordait** — le cadre est en `overflow: hidden`.
+
+### Ce qui reste, et qui attend Mathias
+
+- **BJ-M07**, l'image produit du JSON-LD, est le **doublon exact** de la double page, pas la
+  photographie de l'objet imprimé. Gardé en point le 15/09, volontairement non traité (T-085).
+- **BJ-P02**, vignette propre à `/magazine` : non livrée, les deux pages partagent la même.
+- **Les pages légales n'ont aucune vignette** (piège D6 : Next remplace `openGraph` au lieu de le
+  fusionner). C'était déjà le cas avant, vérifié en production.
 
 ---
 

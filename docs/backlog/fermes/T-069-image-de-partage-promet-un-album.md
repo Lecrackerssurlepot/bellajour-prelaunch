@@ -39,3 +39,32 @@ décor plutôt que de faire tomber le déploiement), et rendre son image à `/am
 « Il faut effectivement changer cela. Ça viendra quand on s'occupera des visuels. » Le ticket
 reste ouvert et continue de bloquer le nettoyage des 101 Mo d'images orphelines (T-003) :
 le `throw` de opengraph-image.tsx sur fichier manquant casse le build si on déplace avant.
+
+
+## 15/09/2026 — FERMÉ, les trois points
+
+**1. Elle disait autre chose que ce qu'on vend — réglé.** L'image n'est plus fabriquée : c'est un
+fichier livré par Mathias, `public/images/v2/partage/bellajour-magazines-1200.png`, une
+photographie des **dix magazines imprimés**. Plus de phrase du tout sur l'image, donc plus de
+promesse d'album ; les réseaux affichent le titre et la description à côté. Déclarée en URL
+**absolue** dans `layout.tsx`, `(atelier)/page.tsx` et `magazine/page.tsx` — les robots d'aperçu
+ne résolvent pas les chemins relatifs. Vérifié en production : `og:image` et `twitter:image`
+pointent le fichier sur les deux pages, et le fichier répond 200.
+
+**2. Elle pouvait faire échouer un déploiement — réglé à la racine.** `src/app/opengraph-image.tsx`
+est archivé dans `archive/opengraph-genere/` avec son README. Plus aucune police n'est téléchargée
+chez Google pendant la construction, plus aucun fichier de `public/` n'est lu par sharp au build.
+`header-bellajour.webp`, dont elle était le dernier lecteur, rejoint `archive/images-v1/divers/`.
+**Playfair Display n'est plus chargée nulle part** — `src/app/CLAUDE.md` l'affirmait encore, la
+fiche est corrigée.
+
+**3. « Rendre son image à `/ambassadeurs` » — sans objet.** La page répond **410** : elle
+n'existe plus. Vérifié le 15/09.
+
+### Ce qui reste, et qui n'appartient pas à ce ticket
+
+Les **pages légales** n'ont toujours aucune vignette : elles déclarent leur propre bloc
+`openGraph` sans `images`, et Next remplace l'objet au lieu de le fusionner (piège D6). Ce n'était
+pas le cas avant non plus — vérifié en production avant la bascule. Personne ne partage des CGV.
+**BJ-P02**, une vignette propre à `/magazine`, n'est pas livrée : les deux pages partagent la même
+image et donc le même message.
