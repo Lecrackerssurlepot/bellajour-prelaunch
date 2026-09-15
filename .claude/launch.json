@@ -10,6 +10,31 @@
       ],
       "port": 3000,
       "autoPort": false
+    },
+    {
+      "name": "Design explorations",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "3900",
+        "--directory",
+        "design-explorations/parcours-composer"
+      ],
+      "port": 3900
+    },
+    {
+      "name": "Next.js prod 3005",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "start",
+        "--",
+        "-p",
+        "3005"
+      ],
+      "port": 3005,
+      "autoPort": false
     }
   ]
 }

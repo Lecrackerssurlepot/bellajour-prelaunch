@@ -1,4 +1,4 @@
-# État du système — au 15/09/2026
+# État du système — au 15/09/2026 (soir)
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -7,6 +7,37 @@ règles, sans moyen de savoir ce qui avait expiré.
 
 Règle d'entretien : quiconque change l'état du système met ce fichier à jour dans le même geste.
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
+
+---
+
+## 15/09/2026 (soir) — le client choisit son style de couverture
+
+**En production sur bellajour.fr**, PR #143, vérifié sur le site réel et non en local.
+
+| quoi | où | preuve |
+|---|---|---|
+| **Neuf modèles de couverture choisissables** à l'écran 3 du questionnaire, avec leur lettrage d'origine | `coverModels.ts`, `Screen3Titre.tsx`, `composer.css` | neuf visuels servis en 200 sur bellajour.fr, aucun cassé |
+| Les cinq couvertures de l'accueil rejoignent la grille, servies depuis `accueil/` — **pas un pixel dupliqué** | `coverModels.ts` (`image` porte son dossier, `largeurs` par modèle) | un test interdit tout visuel ou identifiant en double |
+| **« Aucune préférence » hors de la grille**, jamais masquée par un défilement | `.at-aucun` | vue sans défilement à 1440 et 375 px |
+| Le rapport des aperçus passe de **2/3 au A4 réel** (1/1,414) | `composer.css` | mesuré 0,7072 à l'écran |
+| Les modèles **en grand à droite** sur ordinateur (201 × 284 px, boîte qui défile seule), **rail au pouce** sur téléphone (150 px) | `composer.css` | la page ne bouge pas pendant qu'on parcourt la boîte |
+| Le choix **remonte sur la fiche du dossier** : « Souhaite plutôt « Lisbonne » » ou « Aucune préférence — proposition libre » | `route.ts` (liste blanche), `donnees.ts`, `Fiche.tsx` | cookie admin forgé, quatre fiches de démonstration |
+| Migration `20260915_composer_modele_couverture.sql` **appliquée par Mathias** | `numeros.modele_couverture` | colonne vérifiée : `text`, nullable |
+
+⚠️ **Le « 26 » a changé d'adresse** (`modele-mon-annee-grand`), et c'est obligatoire : Mathias a
+demandé la grande variante, donc le fichier change de CONTENU. Sous le même nom, `next.config.ts`
+(`max-age=86400` sur tout `/images/`) aurait servi l'ancienne image pendant vingt-quatre heures.
+
+⚠️ **Le titre vivant existe, et il est DÉBRANCHÉ.** Le titre du client s'écrivait en direct sur
+chaque couverture, à la place, à la police et à la couleur relevées pixel à pixel en superposant
+la version titrée et la plaque nue de chaque master. Trois dispositions, une règle de découpe
+équilibrée, trois polices (Interlope OFL, Bodoni Moda, Archivo Black). Mathias l'a débranché le
+15/09 : « le titre ne change pas, tu mets juste les visuels qu'on a avec les titres. » Tout est
+dans `archive/titre-vivant-composer/` avec sa marche à suivre. `coverModels.ts` garde les mesures.
+
+⚠️ **Rappel de licence** : `assets/typo/` ne peut pas être servi en webfont sans vérifier
+`LICENCES.md` — sur 136 fichiers, **76 interdisent la redistribution**, et servir une police EST
+une redistribution. Seules Interlope (OFL) et les polices Google Fonts ont été utilisées.
 
 ---
 
