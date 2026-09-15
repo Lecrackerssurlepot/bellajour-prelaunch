@@ -21,10 +21,10 @@ export default function MotDePasseOubliePage() {
         <Link href="/" aria-label="Bellajour, retour à l’accueil">
           <img
             className="cpt-top-logo"
-            src="/images/ui/signature-blanche.webp"
+            src="/images/v2/ui/signature-bellajour-240.webp"
             alt=""
-            width={320}
-            height={122}
+            width={240}
+            height={92}
             decoding="async"
           />
         </Link>

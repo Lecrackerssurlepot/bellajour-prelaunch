@@ -31,18 +31,25 @@ import path from 'node:path'
 const MASTERS = 'design-explorations/visuels-v2'
 const CIBLE = 'public/images/v2'
 
-/* Chaque entrée : le master, le dossier et le nom de code en sortie, le
-   rapport de forme visé (null = celui du master, aucun recadrage), et les
-   largeurs à produire. */
+/* Chaque entrée : le master, le CHEMIN DE SORTIE, le rapport de forme visé
+   (null = celui du master, aucun recadrage), et les largeurs à produire.
+   ⚠️ LE NOM DE SORTIE EST PARLANT, PAS CODÉ (15/09/2026). Il valait `a06`,
+   `m04`, `m07` — les codes de la commande, utiles entre nous et muets pour
+   tout le monde. Le nom d'un fichier image est lu par Google comme un signal
+   de contenu, et c'est le seul texte qu'un moteur trouve dans une recherche
+   d'images à côté de l'`alt`. `couverture-lisbonne-600.webp` dit ce que
+   `a08-600.webp` cachait.
+   ⚠️ Le code de la commande, lui, ne disparaît pas : il vit dans
+   `docs/reference/VISUELS-NOMMAGE.md` et dans le nom du master déposé. */
 const TRAVAUX = [
   /* ── ACCUEIL ──────────────────────────────────────────────────────────
      A02 à A05 : Mathias a demandé le 14/09 de NE PAS les changer, seulement
      de les ranger. On recopie donc les pixels tels quels depuis leur place
      actuelle — ni recadrage, ni redimensionnement. */
-  { de: 'public/images/univers/solution-upload-02.webp', vers: 'accueil/a02', ratio: null, largeurs: [480] },
-  { de: 'public/images/univers/grid-03.webp', vers: 'accueil/a03', ratio: null, largeurs: [600] },
-  { de: 'public/images/univers/solution-upload-05.webp', vers: 'accueil/a04', ratio: null, largeurs: [400] },
-  { de: 'public/images/univers/solution-upload-09.webp', vers: 'accueil/a05', ratio: null, largeurs: [400] },
+  { de: 'public/images/univers/solution-upload-02.webp', vers: 'accueil/reseaux-photo-telephone', ratio: null, largeurs: [480] },
+  { de: 'public/images/univers/grid-03.webp', vers: 'accueil/reseaux-video-telephone', ratio: null, largeurs: [600] },
+  { de: 'public/images/univers/solution-upload-05.webp', vers: 'accueil/reseaux-publication', ratio: null, largeurs: [400] },
+  { de: 'public/images/univers/solution-upload-09.webp', vers: 'accueil/reseaux-story', ratio: null, largeurs: [400] },
 
   /* ── LA BANDE DE LA PAGE 04 ───────────────────────────────────────────
      Le rail impose UN seul rapport à ses cinq cases (2:3, univers.css) : le
@@ -62,41 +69,41 @@ const TRAVAUX = [
      seule rognée. Mathias l'a remplacée par une couverture (« Aussie ») et en
      a ajouté une SIXIÈME (A12). Les six partagent maintenant le même master
      4066x5750, et pas un pixel n'est coupé. */
-  { de: `${MASTERS}/BJ-A06.png`, vers: 'accueil/a06', ratio: null, largeurs: [240, 360, 600] },
-  { de: `${MASTERS}/BJ-A07.png`, vers: 'accueil/a07', ratio: null, largeurs: [240, 360, 600] },
-  { de: `${MASTERS}/BJ-A08.png`, vers: 'accueil/a08', ratio: null, largeurs: [240, 360, 600] },
-  { de: `${MASTERS}/BJ-A09.png`, vers: 'accueil/a09', ratio: null, largeurs: [240, 360, 600] },
-  { de: `${MASTERS}/BJ-A10.png`, vers: 'accueil/a10', ratio: null, largeurs: [240, 360, 600] },
-  { de: `${MASTERS}/BJ-A12.png`, vers: 'accueil/a12', ratio: null, largeurs: [240, 360, 600] },
+  { de: `${MASTERS}/BJ-A06.png`, vers: 'accueil/couverture-the-boys', ratio: null, largeurs: [240, 360, 600] },
+  { de: `${MASTERS}/BJ-A07.png`, vers: 'accueil/couverture-this-night', ratio: null, largeurs: [240, 360, 600] },
+  { de: `${MASTERS}/BJ-A08.png`, vers: 'accueil/couverture-lisbonne', ratio: null, largeurs: [240, 360, 600] },
+  { de: `${MASTERS}/BJ-A09.png`, vers: 'accueil/couverture-cote-azur', ratio: null, largeurs: [240, 360, 600] },
+  { de: `${MASTERS}/BJ-A10.png`, vers: 'accueil/couverture-aussie', ratio: null, largeurs: [240, 360, 600] },
+  { de: `${MASTERS}/BJ-A12.png`, vers: 'accueil/couverture-thats-life', ratio: null, largeurs: [240, 360, 600] },
 
   /* A11 — le numéro de la page 07. Master 10524x14973 (0,7029) contre un
      cadre en 1/1,414 (0,7072) : 0,6 % d'écart, un recadrage invisible. */
-  { de: `${MASTERS}/BJ-A11.jpeg`, vers: 'accueil/a11', ratio: 1 / 1.414, largeurs: [450, 700, 1050] },
+  { de: `${MASTERS}/BJ-A11.jpeg`, vers: 'accueil/couverture-rio', ratio: 1 / 1.414, largeurs: [450, 700, 1050] },
 
   /* ── /magazine ────────────────────────────────────────────────────────
      M01 — la grande verticale du collage. Le cadre `.c1` fait 39,5 % x 72,8 %
      d'une boîte 749/574, soit 0,708. Le master fait 0,7029. Idem : invisible. */
-  { de: `${MASTERS}/BJ-M01.jpeg`, vers: 'magazine/m01', ratio: 0.708, largeurs: [450, 900] },
+  { de: `${MASTERS}/BJ-M01.jpeg`, vers: 'magazine/couverture-sicile', ratio: 0.708, largeurs: [450, 900] },
 
   /* M03 — la troisieme du collage. Le master est un PAYSAGE (4000x2828).
      Mathias a tranche le 14/09 : c'est le CADRE qui passe en paysage, pas
      l'image qu'on tourne. `.c3` vaut desormais 1,4145 (pdp.css), soit
      exactement le rapport du master — aucun recadrage. */
-  { de: `${MASTERS}/BJ-M03.png`, vers: 'magazine/m03', ratio: null, largeurs: [500, 1000] },
+  { de: `${MASTERS}/BJ-M03.png`, vers: 'magazine/double-page-lagon', ratio: null, largeurs: [500, 1000] },
 
   /* M02 — la paysage du collage. Master 1,4217 ; `.c2` passe de 39,7 % à
      40,4 % de hauteur pour l'épouser exactement (pdp.css). Aucun recadrage. */
-  { de: `${MASTERS}/BJ-M02.jpeg`, vers: 'magazine/m02', ratio: null, largeurs: [500, 1000] },
+  { de: `${MASTERS}/BJ-M02.jpeg`, vers: 'magazine/couverture-noosa', ratio: null, largeurs: [500, 1000] },
 
   /* M04 — LA double page, une seule image en travers du pli. Master 1,4145 ;
      `.double` quitte son 760/474 (1,603) pour ce rapport-là. Aucun recadrage. */
-  { de: `${MASTERS}/BJ-M04.png`, vers: 'magazine/m04', ratio: null, largeurs: [700, 1050, 1400] },
+  { de: `${MASTERS}/BJ-M04.png`, vers: 'magazine/double-page-australie', ratio: null, largeurs: [700, 1050, 1400] },
 
   /* M04V — la même scène en hauteur, servie sous 560 px de large, là où
      `.droite` et `.pli` sont masqués et où le 1,4145 serait amputé de moitié.
      ⚠️ Plafond à 1120 et non 1560 : le 3x d'un téléphone pèserait 641 Ko
      mesurés, pour un gain invisible sur un écran de 5 pouces. Le 2x suffit. */
-  { de: `${MASTERS}/BJ-M04V.png`, vers: 'magazine/m04v', ratio: null, largeurs: [560, 840, 1120] },
+  { de: `${MASTERS}/BJ-M04V.png`, vers: 'magazine/double-page-australie-portrait', ratio: null, largeurs: [560, 840, 1120] },
 
   /* M07 — l'image produit des données structurées. Jamais affichée sur le
      site : Google seul la lit, et il la veut en 1200 px de large au moins.
@@ -106,7 +113,21 @@ const TRAVAUX = [
      16:9) ont été produits puis jetés : essayés, ils tranchent le mot
      « AUSTRALIA » en deux. Mieux vaut une image entière qu'un lettrage coupé
      sous notre marque. Les trois cadrages reviendront avec un vrai master. */
-  { de: `${MASTERS}/BJ-M04.png`, vers: 'magazine/m07', ratio: null, largeurs: [1600] },
+  { de: `${MASTERS}/BJ-M04.png`, vers: 'magazine/magazine-photo-personnalise', ratio: null, largeurs: [1600] },
+
+  /* ── LE LOGO, AUX TAILLES OÙ ON LE REGARDE (15/09/2026) ──
+     `ui/logo.webp` fait 1000 x 707 et pèse 52 Ko. MESURÉ : il n'est peint
+     nulle part au-delà de 204 px CSS (la barre de `/merci`), 120 sur
+     `/inviter`, 102 sur `/ambassadeurs`. On servait donc cinq fois trop de
+     pixels sur trois pages. 640 couvre le plus grand des trois à densité 3. */
+  { de: 'public/images/ui/logo.webp', vers: 'ui/logo-bellajour', ratio: null, largeurs: [240, 640] },
+
+  /* ── LA SIGNATURE DE LA BARRE ──
+     Elle fait 320 x 122 et elle est sur TOUTES les pages de l'atelier, dans
+     une barre fixe donc chargée tout de suite. MESURÉE à l'écran : 60 x 23 px.
+     On servait cinq fois trop de pixels sur le chemin critique. 240 couvre
+     encore le quadruple de densité. */
+  { de: 'public/images/ui/signature-blanche.webp', vers: 'ui/signature-bellajour', ratio: null, largeurs: [240] },
 ]
 
 const ko = (o) => Math.round(o / 1024)

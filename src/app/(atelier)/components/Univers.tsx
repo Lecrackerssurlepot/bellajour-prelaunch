@@ -531,18 +531,18 @@ export default function Univers() {
           <h2 className="sr-only">Le constat</h2>
           <div className="sl-corps">
           <div className="sl2-scene" aria-hidden="true">
-            <figure className="v v1" data-t="1900"><span className="ph"><img src="/images/v2/accueil/a02-480.webp" alt="" width="480" height="640" loading="lazy" fetchPriority="low" decoding="async" /></span></figure>
+            <figure className="v v1" data-t="1900"><span className="ph"><img src="/images/v2/accueil/reseaux-photo-telephone-480.webp" alt="" width="480" height="640" loading="lazy" fetchPriority="low" decoding="async" /></span></figure>
             <figure className="v v2" data-t="2500">
-              <span className="ph"><img src="/images/v2/accueil/a03-600.webp" alt="" width="600" height="800" loading="lazy" fetchPriority="low" decoding="async" /></span>
+              <span className="ph"><img src="/images/v2/accueil/reseaux-video-telephone-600.webp" alt="" width="600" height="800" loading="lazy" fetchPriority="low" decoding="async" /></span>
               <span className="v-video"><i></i><b>0:24</b></span>
             </figure>
             <figure className="v v3" data-t="3100">
               <span className="v-mot"><s></s><s></s><em>♥ 12</em></span>
             </figure>
-            <figure className="v v4" data-t="3700"><span className="ph"><img src="/images/v2/accueil/a04-400.webp" alt="" width="400" height="300" loading="lazy" fetchPriority="low" decoding="async" /></span></figure>
+            <figure className="v v4" data-t="3700"><span className="ph"><img src="/images/v2/accueil/reseaux-publication-400.webp" alt="" width="400" height="300" loading="lazy" fetchPriority="low" decoding="async" /></span></figure>
             <figure className="v v5" data-t="4300">
               <span className="v-story"><i></i><i></i><i></i></span>
-              <span className="ph"><img src="/images/v2/accueil/a05-400.webp" alt="" width="400" height="534" loading="lazy" fetchPriority="low" decoding="async" /></span>
+              <span className="ph"><img src="/images/v2/accueil/reseaux-story-400.webp" alt="" width="400" height="534" loading="lazy" fetchPriority="low" decoding="async" /></span>
             </figure>
           </div>
 
@@ -617,12 +617,12 @@ export default function Univers() {
                   images elles-memes, comme Mathias l'a demande le 14/09. */}
               {[false, true].map((copie) =>
                 ([
-                  ['/images/v2/accueil/a06', [240, 360, 600], 'Un magazine', 'Un numéro Bellajour intitulé « The Boys » : cinq hommes en smoking sur un escalier, un soir de fête'],
-                  ['/images/v2/accueil/a07', [240, 360, 600], 'Une soirée', 'Un numéro Bellajour intitulé « This Night » : une jeune femme sur une banquette de velours rouge, un verre à la main'],
-                  ['/images/v2/accueil/a08', [240, 360, 600], 'Un séjour', 'Un numéro Bellajour consacré à un séjour à Lisbonne : une partie de mini-golf sous les néons'],
-                  ['/images/v2/accueil/a09', [240, 360, 600], 'Un voyage', 'Un numéro Bellajour consacré à la Côte d’Azur : une plage et sa rotonde Belle Époque, sous un ciel bleu'],
-                  ['/images/v2/accueil/a10', [240, 360, 600], 'Une nuit', 'Un numéro Bellajour intitulé « Aussie » : les tours d’une ville australienne illuminées à la nuit tombée'],
-                  ['/images/v2/accueil/a12', [240, 360, 600], 'Un matin', 'Un numéro Bellajour intitulé « That’s Life » : un lever de jour sur une ligne d’horizon, presque à contre-jour'],
+                  ['/images/v2/accueil/couverture-the-boys', [240, 360, 600], 'Un magazine', 'Un numéro Bellajour intitulé « The Boys » : cinq hommes en smoking sur un escalier, un soir de fête'],
+                  ['/images/v2/accueil/couverture-this-night', [240, 360, 600], 'Une soirée', 'Un numéro Bellajour intitulé « This Night » : une jeune femme sur une banquette de velours rouge, un verre à la main'],
+                  ['/images/v2/accueil/couverture-lisbonne', [240, 360, 600], 'Un séjour', 'Un numéro Bellajour consacré à un séjour à Lisbonne : une partie de mini-golf sous les néons'],
+                  ['/images/v2/accueil/couverture-cote-azur', [240, 360, 600], 'Un voyage', 'Un numéro Bellajour consacré à la Côte d’Azur : une plage et sa rotonde Belle Époque, sous un ciel bleu'],
+                  ['/images/v2/accueil/couverture-aussie', [240, 360, 600], 'Une nuit', 'Un numéro Bellajour intitulé « Aussie » : les tours d’une ville australienne illuminées à la nuit tombée'],
+                  ['/images/v2/accueil/couverture-thats-life', [240, 360, 600], 'Un matin', 'Un numéro Bellajour intitulé « That’s Life » : un lever de jour sur une ligne d’horizon, presque à contre-jour'],
                 ] as const).map(([base, largeurs, legende, alt]) => (
                   <figure key={`${base}${copie ? '-copie' : ''}`} aria-hidden={copie || undefined}>
                     <span className="ph" data-legende={legende}>
@@ -723,8 +723,8 @@ export default function Univers() {
                      Mesure du 14/09/2026 : le cadre fait 333 px CSS a 1280, d'ou
                      les trois largeurs 450/700/1050 qui couvrent jusqu'au 3x. */}
                 <img
-                  src="/images/v2/accueil/a11-700.webp"
-                  srcSet="/images/v2/accueil/a11-450.webp 450w, /images/v2/accueil/a11-700.webp 700w, /images/v2/accueil/a11-1050.webp 1050w"
+                  src="/images/v2/accueil/couverture-rio-700.webp"
+                  srcSet="/images/v2/accueil/couverture-rio-450.webp 450w, /images/v2/accueil/couverture-rio-700.webp 700w, /images/v2/accueil/couverture-rio-1050.webp 1050w"
                   sizes="(max-width: 1000px) 52vw, 26vw"
                   alt="Un numéro Bellajour consacré à un séjour à Rio de Janeiro"
                   width="450" height="636" loading="lazy" decoding="async" />

@@ -34,11 +34,13 @@ export default function Navbar() {
       {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a href="/" className="pv-nav-logo-btn" aria-label="Accueil Bellajour">
         <img
-          src="/images/ui/logo.webp"
+          src="/images/v2/ui/logo-bellajour-640.webp"
+          srcSet="/images/v2/ui/logo-bellajour-240.webp 240w, /images/v2/ui/logo-bellajour-640.webp 640w"
+          sizes="204px"
           className="pv-nav-logo"
           alt="Bellajour"
-          width="204"
-          height="144"
+          width="640"
+          height="452"
           decoding="async"
         />
       </a>

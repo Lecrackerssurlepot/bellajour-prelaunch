@@ -136,7 +136,7 @@ const JSON_LD = [
        4:3, 16:9) ; ils ont ete produits puis jetes le 14/09 parce qu'ils
        tranchent le lettrage du visuel en deux. Les trois reviendront avec le
        master demande : une photo de l'objet imprime, sur fond uni. */
-    image: ['https://www.bellajour.fr/images/v2/magazine/m07-1600.webp'],
+    image: ['https://www.bellajour.fr/images/v2/magazine/magazine-photo-personnalise-1600.webp'],
   },
   {
     '@context': 'https://schema.org',
@@ -174,8 +174,8 @@ export default function PageProduit() {
       <link
         rel="preload"
         as="image"
-        href="/images/v2/magazine/m01-900.webp"
-        imageSrcSet="/images/v2/magazine/m01-450.webp 450w, /images/v2/magazine/m01-900.webp 900w"
+        href="/images/v2/magazine/couverture-sicile-900.webp"
+        imageSrcSet="/images/v2/magazine/couverture-sicile-450.webp 450w, /images/v2/magazine/couverture-sicile-900.webp 900w"
         imageSizes="(max-width: 720px) 40vw, 22vw"
         fetchPriority="high"
       />

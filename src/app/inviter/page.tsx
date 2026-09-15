@@ -40,7 +40,7 @@ function InviterClient() {
   if (!refCode) {
     return (
       <main className={`inviter inviter--error ${cormorantCremeClassName}`} data-theme="light">
-        <img src="/images/ui/logo.webp" alt="Bellajour" className="inviter-logo" />
+        <img src="/images/v2/ui/logo-bellajour-240.webp" srcSet="/images/v2/ui/logo-bellajour-240.webp 240w, /images/v2/ui/logo-bellajour-640.webp 640w" sizes="clamp(80px, 12vw, 120px)" alt="Bellajour" width={240} height={170} className="inviter-logo" />
         <h1 className="inviter-title">Lien de parrainage invalide.</h1>
         <p className="inviter-sub">Le lien que vous avez suivi est incomplet ou ne correspond à aucun code Bellajour.</p>
         <Link href="/" className="inviter-back-btn">Retour à l&rsquo;accueil</Link>
@@ -54,7 +54,7 @@ function InviterClient() {
 
   return (
     <main className={`inviter ${cormorantCremeClassName}`} data-theme="light">
-      <img src="/images/ui/logo.webp" alt="Bellajour" className="inviter-logo" />
+      <img src="/images/v2/ui/logo-bellajour-240.webp" srcSet="/images/v2/ui/logo-bellajour-240.webp 240w, /images/v2/ui/logo-bellajour-640.webp 640w" sizes="clamp(80px, 12vw, 120px)" alt="Bellajour" width={240} height={170} className="inviter-logo" />
       <h1 className="inviter-title">Votre lien de parrainage</h1>
       <p className="inviter-sub">{subtitle}</p>
 

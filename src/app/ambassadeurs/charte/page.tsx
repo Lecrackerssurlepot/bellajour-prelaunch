@@ -26,7 +26,11 @@ export default function ChartePage() {
       <nav className="amb-charte-nav" aria-label="Cercle Ambassadeur">
         <a href="/ambassadeurs/espace" className="amb-charte-logo-link" aria-label="Accéder à mon espace ambassadeur">
           <img
-            src="/images/ui/logo.webp"
+            src="/images/v2/ui/logo-bellajour-240.webp"
+            srcSet="/images/v2/ui/logo-bellajour-240.webp 240w, /images/v2/ui/logo-bellajour-640.webp 640w"
+            sizes="160px"
+            width={240}
+            height={170}
             className="amb-charte-logo"
             alt="Bellajour"
             decoding="sync"

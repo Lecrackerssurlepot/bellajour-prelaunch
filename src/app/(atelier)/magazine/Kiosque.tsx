@@ -53,8 +53,8 @@ export default function Kiosque() {
                 telechargee deux fois. */}
             <figure className="c1">
               <img
-                src="/images/v2/magazine/m01-900.webp"
-                srcSet="/images/v2/magazine/m01-450.webp 450w, /images/v2/magazine/m01-900.webp 900w"
+                src="/images/v2/magazine/couverture-sicile-900.webp"
+                srcSet="/images/v2/magazine/couverture-sicile-450.webp 450w, /images/v2/magazine/couverture-sicile-900.webp 900w"
                 sizes="(max-width: 720px) 40vw, 22vw"
                 alt="Un numéro Bellajour consacré à un séjour en Sicile"
                 width={900}
@@ -65,8 +65,8 @@ export default function Kiosque() {
             </figure>
             <figure className="c2">
               <img
-                src="/images/v2/magazine/m02-500.webp"
-                srcSet="/images/v2/magazine/m02-500.webp 500w, /images/v2/magazine/m02-1000.webp 1000w"
+                src="/images/v2/magazine/couverture-noosa-500.webp"
+                srcSet="/images/v2/magazine/couverture-noosa-500.webp 500w, /images/v2/magazine/couverture-noosa-1000.webp 1000w"
                 sizes="(max-width: 720px) 40vw, 24vw"
                 alt="Un numéro Bellajour consacré à un séjour à Noosa, en Australie"
                 width={1000}
@@ -77,8 +77,8 @@ export default function Kiosque() {
             </figure>
             <figure className="c3">
               <img
-                src="/images/v2/magazine/m03-500.webp"
-                srcSet="/images/v2/magazine/m03-500.webp 500w, /images/v2/magazine/m03-1000.webp 1000w"
+                src="/images/v2/magazine/double-page-lagon-500.webp"
+                srcSet="/images/v2/magazine/double-page-lagon-500.webp 500w, /images/v2/magazine/double-page-lagon-1000.webp 1000w"
                 sizes="(max-width: 900px) 34vw, 30vw"
                 alt="Une double page d’un numéro : un lagon turquoise en pleine page, avec un tirage rapporté"
                 width={1000}

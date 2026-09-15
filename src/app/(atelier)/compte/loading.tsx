@@ -38,10 +38,10 @@ export default function Chargement() {
         <span className="cpt-top-marque">
           <img
             className="cpt-top-logo"
-            src="/images/ui/signature-blanche.webp"
+            src="/images/v2/ui/signature-bellajour-240.webp"
             alt=""
-            width={320}
-            height={122}
+            width={240}
+            height={92}
             decoding="async"
           />
         </span>

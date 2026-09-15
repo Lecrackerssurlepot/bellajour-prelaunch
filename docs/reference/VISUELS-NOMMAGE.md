@@ -452,3 +452,57 @@ Google — un mot qu'on n'a pas réussi à lire. On va le relire à la source.
 suit l'ordre du document : le lagon, écrit en dernier, passait devant tout, et la Sicile, écrite
 en premier, se retrouvait au fond. `.c1` reçoit `z-index: 3`. Les deux autres gardent leur ordre
 naturel — le lagon devant Noosa.
+
+
+## 15/09/2026 — le passage SEO et performance sur toutes les images
+
+### Ce qui a été fait
+
+**1. Plus aucun artefact au clic sur les images de mise en scène.** Aucune feuille du site public
+ne posait plus de `:hover` sur une image — vérifié. Ce qu'on voyait venait du navigateur, et
+c'était trois comportements distincts : le glisser natif qui affiche une copie translucide
+(`-webkit-user-drag`), la sélection qui recouvre l'image de bleu (`user-select`), et le voile gris
+au doigt (`-webkit-tap-highlight-color`). Coupés dans `theme.css`, **portée volontairement
+étroite** : `/composer`, `/numero` et `/compte` n'y touchent pas, les photos d'une cliente doivent
+rester sélectionnables et enregistrables.
+
+**2. Noms de fichiers parlants.** `a08-600.webp` → `couverture-lisbonne-600.webp`. Le nom d'un
+fichier image est lu par Google comme un signal de contenu, et c'est le seul texte qu'un moteur
+trouve dans une recherche d'images à côté de l'`alt`. Le code de commande (A08) continue de vivre
+ici et dans le nom du master déposé.
+
+**3. Plan de site avec images.** Les sept couvertures de l'accueil et les quatre images produit de
+`/magazine` sont déclarées en `images:` dans `sitemap.ts` — c'est ce qui les fait exister dans
+Google Images. ⚠️ Chemins absolus obligatoires. Les vignettes décoratives de la page 02 en sont
+absentes : elles illustrent un propos, elles ne montrent pas le produit.
+
+**4. Deux images du chemin critique étaient cinq fois trop grandes.**
+
+| Fichier | Servi avant | Peint | Servi après |
+|---|---|---|---|
+| `ui/signature-blanche.webp` | 320 × 122 | **60 × 23** | 240 × 92 |
+| `ui/logo.webp` | 1000 × 707 | 204 max | 640 × 452 (+ 240) |
+
+La signature est dans la barre fixe, donc chargée immédiatement, **sur toutes les pages de
+l'atelier**. Le logo servait cinq fois trop de pixels sur `/merci`, `/inviter` et `/ambassadeurs`.
+
+**5. Décalage de mise en page corrigé.** Les logos de `/inviter`, `/ambassadeurs` et de la charte
+n'avaient ni `width` ni `height` : le navigateur ne pouvait pas réserver leur place, et la page
+sautait à leur arrivée. C'est du CLS, l'un des trois indicateurs que Google note.
+
+### Ce qui a été mesuré puis écarté
+
+**AVIF : 17 % de gain, refusé pour l'instant.** Mesuré sur les cinq images les plus lourdes :
+1011 Ko en WebP contre 844 en AVIF. Le gain est réel mais il coûte un `<picture>` et une source de
+plus sur chaque image — donc le double de fichiers, et surtout un second endroit où le miroir
+`preload`/`srcSet` peut se désynchroniser, un piège déjà payé deux fois dans ce dépôt. À reprendre
+comme un chantier à part, après le header.
+
+### Ce qui reste ouvert
+
+- **BJ-A01**, le header, n'est pas livré : la couverture actuelle est `brand/brand-01.webp`, et
+  elle porte `alt=""` sous un `aria-hidden`. **À reconsidérer quand A01 arrive** : une pile de
+  magazines en plein écran est l'image produit la plus forte du site, elle mérite un vrai texte
+  alternatif plutôt que le statut de décor.
+- **BJ-P01** (partage) et **U01 à U04** (logos, icône) ne sont pas livrés.
+- **BJ-M07** reste le doublon de la double page.

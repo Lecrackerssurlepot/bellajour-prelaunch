@@ -109,12 +109,12 @@ export default function Corps() {
               <picture>
                 <source
                   media="(max-width: 560px)"
-                  srcSet="/images/v2/magazine/m04v-560.webp 560w, /images/v2/magazine/m04v-840.webp 840w, /images/v2/magazine/m04v-1120.webp 1120w"
+                  srcSet="/images/v2/magazine/double-page-australie-portrait-560.webp 560w, /images/v2/magazine/double-page-australie-portrait-840.webp 840w, /images/v2/magazine/double-page-australie-portrait-1120.webp 1120w"
                   sizes="100vw"
                 />
                 <img
-                  src="/images/v2/magazine/m04-1050.webp"
-                  srcSet="/images/v2/magazine/m04-700.webp 700w, /images/v2/magazine/m04-1050.webp 1050w, /images/v2/magazine/m04-1400.webp 1400w"
+                  src="/images/v2/magazine/double-page-australie-1050.webp"
+                  srcSet="/images/v2/magazine/double-page-australie-700.webp 700w, /images/v2/magazine/double-page-australie-1050.webp 1050w, /images/v2/magazine/double-page-australie-1400.webp 1400w"
                   sizes="(max-width: 560px) 100vw, 55vw"
                   alt="Une double page d’un numéro : un paysage australien en pleine page, face au titre du chapitre"
                   width={1400}
