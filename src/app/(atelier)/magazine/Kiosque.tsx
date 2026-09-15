@@ -41,37 +41,48 @@ export default function Kiosque() {
               situe la marque a été gardé, celui-ci coupé — le mot se suffit,
               et les 26 px récupérés servent à faire tenir le bouton dans
               l'écran. */}
-          <p className="mot">MAGAZINE</p>
+          <p className="mot">LE MAGAZINE</p>
         </Reveal>
 
         <Reveal delay={90} className="bloc-collage">
           <div className="collage">
+            {/* ⚠️ LA PREMIERE EST L'ELEMENT LCP : son `src` et son `srcSet`
+                DOIVENT rester miroirs du <link rel="preload"> de page.tsx.
+                S'ils divergent, le navigateur precharge un fichier et en
+                affiche un autre — l'image la plus lourde de la page est
+                telechargee deux fois. */}
             <figure className="c1">
               <img
-                src="/images/lancement/galerie/marrakech.webp"
-                alt="Un numéro Bellajour consacré à un voyage à Marrakech"
-                width={450}
-                height={675}
+                src="/images/v2/magazine/couverture-sicile-900.webp"
+                srcSet="/images/v2/magazine/couverture-sicile-450.webp 450w, /images/v2/magazine/couverture-sicile-900.webp 900w"
+                sizes="(max-width: 720px) 40vw, 22vw"
+                alt="Un numéro Bellajour consacré à un séjour en Sicile"
+                width={900}
+                height={1271}
                 fetchPriority="high"
                 decoding="sync"
               />
             </figure>
             <figure className="c2">
               <img
-                src="/images/lancement/galerie/santorin.webp"
-                alt="Un numéro Bellajour consacré à un séjour à Santorin"
-                width={450}
-                height={675}
+                src="/images/v2/magazine/couverture-noosa-500.webp"
+                srcSet="/images/v2/magazine/couverture-noosa-500.webp 500w, /images/v2/magazine/couverture-noosa-1000.webp 1000w"
+                sizes="(max-width: 720px) 40vw, 24vw"
+                alt="Un numéro Bellajour consacré à un séjour à Noosa, en Australie"
+                width={1000}
+                height={703}
                 loading="lazy"
                 decoding="async"
               />
             </figure>
             <figure className="c3">
               <img
-                src="/images/lancement/galerie/japon.webp"
-                alt="Un numéro Bellajour consacré à un voyage au Japon"
-                width={450}
-                height={675}
+                src="/images/v2/magazine/double-page-lagon-500.webp"
+                srcSet="/images/v2/magazine/double-page-lagon-500.webp 500w, /images/v2/magazine/double-page-lagon-1000.webp 1000w"
+                sizes="(max-width: 900px) 34vw, 30vw"
+                alt="Une double page d’un numéro : un lagon turquoise en pleine page, avec un tirage rapporté"
+                width={1000}
+                height={707}
                 loading="lazy"
                 decoding="async"
               />

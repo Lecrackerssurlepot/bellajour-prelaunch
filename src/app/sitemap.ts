@@ -37,6 +37,28 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: 'https://www.bellajour.fr',
       changeFrequency: 'weekly',
       priority: 1,
+      /* ── LES IMAGES DE LA PAGE, DÉCLARÉES (15/09/2026) ──
+         Un plan de site accepte une liste d'images par URL, et c'est ce qui
+         les fait exister dans Google Images — un canal d'entrée que le texte
+         seul n'ouvre pas, sur un produit qui se vend par l'oeil.
+         ⚠️ On ne déclare QUE des images de contenu, jamais un décor. Les
+         vignettes de la page 02 en sont donc absentes : elles illustrent un
+         propos sur les réseaux sociaux, elles ne montrent pas le produit.
+         ⚠️ Chemins ABSOLUS : Google refuse les relatifs ici. Ils suivent les
+         noms produits par scripts/images-v2.mjs — s'ils changent, cette liste
+         change avec eux. */
+      images: [
+        /* Le header en tete : c'est la photographie des magazines IMPRIMES,
+           la seule image du site qui montre l'objet fini. */
+        'https://www.bellajour.fr/images/v2/accueil/header-magazines-paysage-2560.webp',
+        'https://www.bellajour.fr/images/v2/accueil/couverture-the-boys-600.webp',
+        'https://www.bellajour.fr/images/v2/accueil/couverture-this-night-600.webp',
+        'https://www.bellajour.fr/images/v2/accueil/couverture-lisbonne-600.webp',
+        'https://www.bellajour.fr/images/v2/accueil/couverture-cote-azur-600.webp',
+        'https://www.bellajour.fr/images/v2/accueil/couverture-aussie-600.webp',
+        'https://www.bellajour.fr/images/v2/accueil/couverture-thats-life-600.webp',
+        'https://www.bellajour.fr/images/v2/accueil/couverture-rio-1050.webp',
+      ],
     },
     /* La page produit. Elle porte le prix, le papier, le delai et la FAQ :
        c'est elle qui repond a une recherche « magazine photo personnalise »,
@@ -45,6 +67,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: 'https://www.bellajour.fr/magazine',
       changeFrequency: 'monthly',
       priority: 0.9,
+      /* La page qui répond à « magazine photo personnalisé » déclare ses
+         quatre images de produit — les trois du collage et la double page.
+         La cinquième, `magazine-photo-personnalise-1600`, n'est pas ici : elle
+         n'est affichée nulle part, elle vit dans le JSON-LD `Product.image`,
+         qui est le bon endroit pour elle. */
+      images: [
+        'https://www.bellajour.fr/images/v2/magazine/couverture-sicile-900.webp',
+        'https://www.bellajour.fr/images/v2/magazine/couverture-noosa-1000.webp',
+        'https://www.bellajour.fr/images/v2/magazine/double-page-lagon-1000.webp',
+        'https://www.bellajour.fr/images/v2/magazine/double-page-australie-1400.webp',
+      ],
     },
     /* T-083 — chaque page legale existe en fr, en et pt, sur des adresses
        distinctes (`/cgv`, `/en/cgv`, `/pt/cgv`). On declare la famille par

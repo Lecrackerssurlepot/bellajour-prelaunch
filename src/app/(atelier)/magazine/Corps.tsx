@@ -86,52 +86,43 @@ export default function Corps() {
   return (
     <>
       {/* ─────────── 02 · L'OBJET ─────────── */}
-      <section className="objet filet">
+      <section className="objet filet" id="objet">
         <div className="wrap objet-grille">
           <Reveal>
-            {/* La double page est construite en CSS : rien à télécharger
-                pour une maquette qui n'est qu'une mise en scène. Seule la
-                photo de gauche est une vraie image. */}
+            {/* ── LA DOUBLE PAGE, UNE SEULE IMAGE (14/09/2026) ──
+                Elle etait un montage CSS : une photo a gauche, un feuillet de
+                papier a droite portant « Chapitre deux », deux timbres et un
+                folio, plus un pli dessine au milieu. Mathias a tranche : un
+                seul grand visuel en travers des deux feuillets.
+                Le master livre EST une double page finie — elle porte son
+                propre titre et son propre pli. Superposer les notres donnerait
+                deux typographies et deux pliures sur la meme page. Tout le
+                montage est donc parti avec sa raison (pdp.css).
+                ⚠️ LE <picture> N'EST PAS UN CONFORT. Sous 560 px, pdp.css
+                montrait jusqu'ici la seule page de gauche : un paysage de
+                1,4145 y serait ampute de moitie. Le master PORTRAIT (M04V)
+                est servi la, et le cadre prend son rapport.
+                ⚠️ Les deux `media` doivent rester MIROIRS de la bascule de
+                pdp.css (560 px) : s'ils divergent, le navigateur sert le
+                paysage dans un cadre portrait, et le sujet sort du cadre. */}
             <div className="double">
-              <div className="gauche">
+              <picture>
+                <source
+                  media="(max-width: 560px)"
+                  srcSet="/images/v2/magazine/double-page-australie-portrait-560.webp 560w, /images/v2/magazine/double-page-australie-portrait-840.webp 840w, /images/v2/magazine/double-page-australie-portrait-1120.webp 1120w"
+                  sizes="100vw"
+                />
                 <img
-                  src="/images/lancement/galerie/patagonie.webp"
-                  alt="Une page intérieure d’un numéro : la Patagonie en pleine page"
-                  width={450}
-                  height={675}
+                  src="/images/v2/magazine/double-page-australie-1050.webp"
+                  srcSet="/images/v2/magazine/double-page-australie-700.webp 700w, /images/v2/magazine/double-page-australie-1050.webp 1050w, /images/v2/magazine/double-page-australie-1400.webp 1400w"
+                  sizes="(max-width: 560px) 100vw, 55vw"
+                  alt="Une double page d’un numéro : un paysage australien en pleine page, face au titre du chapitre"
+                  width={1400}
+                  height={990}
                   loading="lazy"
                   decoding="async"
                 />
-              </div>
-              <div className="droite">
-                <div>
-                  <p className="chapitre">Chapitre deux</p>
-                  <p className="phrase">
-                    Le vent tombait vers dix-sept heures, et le silence
-                    reprenait la vallée.
-                  </p>
-                </div>
-                {/* T-065 (31/08/2026) — deux timbres decoratifs d'environ
-                    145 px CSS (un quart de la double page, ~10vw), caches sous
-                    720px (pdp.css). Le 450x675 plein coutait 2,4 Mo de bitmap :
-                    le srcset sert la variante 360 aux ecrans 2x, l'original ne
-                    reste que pour un improbable bureau 3x. Variantes par
-                    scripts/images-galerie.mjs. */}
-                <div className="vignettes" aria-hidden="true">
-                  <img src="/images/lancement/galerie/tulum.webp"
-                       srcSet="/images/lancement/galerie/tulum-240.webp 240w, /images/lancement/galerie/tulum-360.webp 360w, /images/lancement/galerie/tulum.webp 450w"
-                       sizes="10vw" alt=""
-                       width={450} height={675} loading="lazy" decoding="async" />
-                  <img src="/images/lancement/galerie/lisbonne.webp"
-                       srcSet="/images/lancement/galerie/lisbonne-240.webp 240w, /images/lancement/galerie/lisbonne-360.webp 360w, /images/lancement/galerie/lisbonne.webp 450w"
-                       sizes="10vw" alt=""
-                       width={450} height={675} loading="lazy" decoding="async" />
-                </div>
-                <div className="folio" aria-hidden="true">
-                  <span>BELLAJOUR</span><span>18</span>
-                </div>
-              </div>
-              <div className="pli" aria-hidden="true" />
+              </picture>
             </div>
           </Reveal>
 

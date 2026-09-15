@@ -78,7 +78,11 @@ export default function AmbassadeurNav({
         aria-label="Accueil Bellajour"
       >
         <img
-          src="/images/ui/logo.webp"
+          src="/images/v2/ui/logo-bellajour-240.webp"
+          srcSet="/images/v2/ui/logo-bellajour-240.webp 240w, /images/v2/ui/logo-bellajour-640.webp 640w"
+          sizes="clamp(64px, 16vw, 72px)"
+          width={240}
+          height={170}
           className="pv-nav-logo"
           alt="Bellajour"
           decoding="sync"

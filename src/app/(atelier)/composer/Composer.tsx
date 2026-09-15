@@ -83,7 +83,7 @@ const NOMS_ETAPES = ['Le moment', 'L’histoire', 'Le titre', 'Vous', 'Vos photo
 const TOTAL_ETAPES = NOMS_ETAPES.length
 
 /* Le logo officiel — le même fichier que la barre du site (Nav.tsx). */
-const LOGO = '/images/ui/signature-blanche.webp'
+const LOGO = '/images/v2/ui/signature-bellajour-240.webp'
 
 /* ── LE TOKEN DU BROUILLON EXISTE-T-IL ENCORE EN BASE ? (11/09/2026) ───────
    La route dit déjà tout ce qu'il faut : 404 quand le dossier n'existe pas,
@@ -572,7 +572,7 @@ export default function Composer() {
               sortie de la modale : un seul pictogramme, un seul sens. */}
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a className="at-q-logo" href="/" aria-label="Revenir à l’accueil Bellajour">
-            <img className="at-q-logo-img" src={LOGO} alt="Bellajour" width={320} height={122} decoding="async" />
+            <img className="at-q-logo-img" src={LOGO} alt="Bellajour" width={240} height={92} decoding="async" />
           </a>
           <a className="at-q-close" href="/magazine" aria-label="Fermer">✕</a>
         </div>
@@ -629,12 +629,12 @@ export default function Composer() {
             onClick={() => setQuitter('logo')}
             aria-label="Revenir à l’accueil Bellajour"
           >
-            <img className="at-q-logo-img" src={LOGO} alt="Bellajour" width={320} height={122} decoding="async" />
+            <img className="at-q-logo-img" src={LOGO} alt="Bellajour" width={240} height={92} decoding="async" />
           </button>
         ) : (
           // eslint-disable-next-line @next/next/no-html-link-for-pages
           <a className="at-q-logo" href="/" aria-label="Revenir à l’accueil Bellajour">
-            <img className="at-q-logo-img" src={LOGO} alt="Bellajour" width={320} height={122} decoding="async" />
+            <img className="at-q-logo-img" src={LOGO} alt="Bellajour" width={240} height={92} decoding="async" />
           </a>
         )}
         {/* La croix N'EST PLUS un lien (03/09) : elle ouvre la confirmation.

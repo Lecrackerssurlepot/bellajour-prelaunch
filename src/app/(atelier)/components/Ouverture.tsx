@@ -346,17 +346,49 @@ export default function Ouverture() {
              rectangle du bandeau. C'est la decoupe qui s'ouvre, jamais l'image
              qui bouge : aucune deformation, et la meme photographie sert le
              bandeau puis le plein ecran. */}
-        <div className="h-plein" aria-hidden="true">
+        {/* ⚠️ `aria-hidden` A ÉTÉ RETIRÉ le 15/09/2026, sur décision de Mathias.
+             Cette image était traitée en décor : muette pour les lecteurs
+             d'écran, invisible pour Google Images. C'est pourtant la plus
+             grande image du site, celle qui occupe tout le premier écran de
+             la page la plus visitée — le seul actif visuel qu'on offrait à
+             personne.
+             Les trois calques qui la suivent (.h-grad, .h-rake, .h-voile)
+             sont des <div> vides sans rôle : ils restent ignorés d'eux-mêmes,
+             ils n'ont jamais eu besoin de l'attribut. */}
+        <div className="h-plein">
           {/* ⚠️ Le srcset DOIT rester identique a celui du <link rel="preload">
                de page.tsx (imagesrcset/imagesizes) : s'ils divergent, le
                navigateur precharge un fichier et en affiche un autre — double
                telechargement de l'element LCP. Variantes : scripts, sharp
-               q85, memes reglages que optimize-images.mjs. */}
-          <img
-            src="/images/brand/brand-01.webp"
-            srcSet="/images/brand/brand-01-640.webp 640w, /images/brand/brand-01-960.webp 960w, /images/brand/brand-01.webp 1200w"
-            sizes="100vw"
-            alt="" width="1200" height="1600" fetchPriority="high" decoding="async" />
+               q85, memes reglages que optimize-images.mjs.
+               ⚠️ LE TEXTE ALTERNATIF DIT LE PRODUIT, et c'est le cas depuis
+               que le header livré le 15/09 EST le produit : des magazines
+               imprimés, étalés. Il nomme trois titres visibles plutôt que de
+               compter les objets — un nombre se démentirait à la première
+               photo suivante. S'il change encore, l'alt se réécrit avec lui :
+               un alt qui décrit une photo qui n'est plus là est pire qu'un
+               alt vide, il ment. */}
+          <picture>
+            {/* ⚠️ DEUX CADRAGES, CHOISIS SUR L'ORIENTATION DE LA FENETRE.
+                 Le cadre occupe tout l'ecran : en portrait sur un telephone,
+                 en paysage sur un ordinateur. Un seul fichier obligerait
+                 `object-fit: cover` a trancher la moitie de l'autre
+                 orientation — c'est exactement ce qui arrivait a la
+                 photographie precedente.
+                 ⚠️ Le `media` de cette <source> DOIT rester identique a celui
+                 des deux <link rel="preload"> de page.tsx. */}
+            <source
+              media="(orientation: landscape)"
+              srcSet="/images/v2/accueil/header-magazines-paysage-1280.webp 1280w, /images/v2/accueil/header-magazines-paysage-1920.webp 1920w, /images/v2/accueil/header-magazines-paysage-2560.webp 2560w"
+              sizes="100vw"
+            />
+            <img
+              src="/images/v2/accueil/header-magazines-960.webp"
+              srcSet="/images/v2/accueil/header-magazines-640.webp 640w, /images/v2/accueil/header-magazines-960.webp 960w, /images/v2/accueil/header-magazines-1280.webp 1280w, /images/v2/accueil/header-magazines-2125.webp 2125w"
+              sizes="100vw"
+              alt="Plusieurs magazines photo personnalisés Bellajour, imprimés et étalés côte à côte : Rio, la Sicile, Noosa"
+              width="2125" height="2833" fetchPriority="high" decoding="async" />
+          </picture>
           <div className="h-grad"></div>
           <div className="h-rake"></div>
           <div className="h-voile"></div>

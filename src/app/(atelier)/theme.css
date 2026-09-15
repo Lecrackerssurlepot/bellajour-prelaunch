@@ -368,3 +368,33 @@ html:not([data-anim]) .at-rv {
   opacity: 1 !important;
   transform: none !important;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   LES IMAGES DÉCORATIVES NE RÉAGISSENT PAS AU DOIGT NI À LA SOURIS
+   Ajouté le 15/09/2026. Mathias : « enlève les hovers qui apparaissent
+   quand on clique sur les images ».
+   Aucune feuille du site public ne posait plus de `:hover` sur une image —
+   vérifié. Ce qu'on voyait au clic venait du NAVIGATEUR, et c'est trois
+   comportements distincts qu'il faut couper séparément :
+     1. `-webkit-user-drag` — un clic maintenu sur une image démarre un
+        glisser natif et en affiche une copie translucide sous le curseur ;
+     2. `user-select` — un clic qui ripe sélectionne l'image avec le texte
+        autour, et la recouvre du bleu de sélection ;
+     3. `-webkit-tap-highlight-color` — au doigt, un voile gris clignote sur
+        la zone touchée avant même que rien ne se passe.
+   ⚠️ PORTÉE VOLONTAIREMENT ÉTROITE : uniquement les images de mise en scène.
+   Une photo déposée par une cliente, une vignette de l'aperçu ou une
+   couverture de son espace doivent rester sélectionnables et enregistrables —
+   ce sont SES images. On ne touche donc ni `/composer`, ni `/numero`, ni
+   `/compte`.
+   ══════════════════════════════════════════════════════════════ */
+.at-accueil .h-plein img,
+.at-accueil .sl2-scene img,
+.at-accueil .sl4-rail img,
+.at-accueil .n-plat > img,
+.at-pdp .collage img,
+.at-pdp .double img {
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}

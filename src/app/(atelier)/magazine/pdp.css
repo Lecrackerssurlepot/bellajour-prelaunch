@@ -91,7 +91,22 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: min(7.6vw, 110px);
+  /* ⚠️ REMESURE LE 15/09/2026, le mot etant passe de « MAGAZINE » a
+     « LE MAGAZINE » (demande de Mathias, structure inchangee : UNE ligne).
+     Les trois lettres en plus coutent 24 % de largeur — MESURE dans le
+     navigateur, pas estimee : Cormorant Garamond rend « LE MAGAZINE » a
+     6,57 x la taille de police, contre 5,29 pour « MAGAZINE ».
+     A 1440 la colonne fait 637 px : 637 / 6,57 = 97 px de plafond absolu.
+     On prend 94, soit 97 % de la laisse — la meme marge qu'avant, celle qui
+     absorbe l'ecart de chasse avec Georgia, la police de repli affichee le
+     temps du swap.
+     Le terme en vw suit le meme calcul : la colonne vaut ~50,6vw sous le
+     plafond du wrap, donc 6,57 x f = 0,97 x 0,506 x W donne f = 7,4vw.
+     ⚠️ Ne pas remonter ces deux nombres sans remesurer. Sous 767 px,
+     globals.css impose `overflow-wrap: anywhere !important` : un mot trop
+     grand ne deborde pas, il se coupe au milieu. Et ici il y a UNE ESPACE —
+     donc il passerait a la ligne, ce qui casse la structure demandee. */
+  font-size: min(7.4vw, 94px);
   line-height: 0.94;
   letter-spacing: 0.012em;
   color: var(--c-text);
@@ -122,12 +137,37 @@
   aspect-ratio: 749 / 574;
 }
 
+/* ⚠️ ANGLES DROITS, ET C'EST UNE DÉCISION (Mathias, 14/09/2026).
+   Les 2 px d'arrondi venaient de la maquette d'août : ils adoucissaient des
+   couvertures, mais ce que le collage montre désormais, ce sont des DOUBLES
+   PAGES — du papier coupé au massicot, qui n'a pas de coin rond.
+
+   ⚠️⚠️ UNE OMBRE NOIRE SUR UN FOND NOIR NE DONNE RIEN, et c'est l'erreur
+   corrigée au 5e passage du 14/09 : cette page est posée sur `--c-void`
+   (#020202). `--shadow-float`, `0 24px 70px rgba(0,0,0,.7)` comme les deux
+   ombres courtes qui l'avaient remplacé, étaient litéralement invisibles.
+   Mathias l'a vu tout de suite : « il n'y a pas d'effet volume là ».
+
+   Sur un fond sombre, le volume ne vient pas de l'ombre : il vient de la
+   LUMIÈRE SUR LA TRANCHE. Trois bandes claires décalées vers le bas dessinent
+   l'épaisseur du papier — la première est la tranche éclairée, les suivantes
+   s'éteignent comme les feuilles du dessous. Un filet clair en `inset` sur
+   l'arête haute place la source de lumière, et un halo tiède très faible
+   décolle l'objet du vide.
+   ⚠️ `box-shadow` n'est PAS rogné par l'`overflow: hidden` de l'élément :
+   c'est ce qui permet de dessiner les tranches sans ajouter un seul nœud.
+   ⚠️ Ne jamais « simplifier » en revenant à `--shadow-float`. */
 .at-pdp .collage figure {
   position: absolute;
   margin: 0;
   overflow: hidden;
-  border-radius: 2px;
-  box-shadow: var(--shadow-float);
+  border-radius: 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 252, 245, 0.10),
+    0 2px 0 rgba(236, 230, 218, 0.13),
+    0 4px 0 rgba(146, 139, 127, 0.09),
+    0 6px 0 rgba(74, 70, 64, 0.06),
+    0 16px 26px -10px rgba(255, 248, 236, 0.04);
 }
 
 .at-pdp .collage img {
@@ -137,11 +177,108 @@
   display: block;
 }
 
-.at-pdp .c1 { left: 0;     top: 0;     width: 39.5%; height: 72.8%; transform: rotate(-1.6deg); }
-.at-pdp .c2 { left: 35.5%; top: -1.4%; width: 44%;   height: 39.7%; transform: rotate(1.1deg); }
-.at-pdp .c3 { left: 43%;   top: 37.6%; width: 35%;   height: 61.3%; transform: rotate(-0.8deg); }
+/* ── LES TROIS CADRES SUIVENT LE FORMAT DES MASTERS (14/09/2026) ──
+   La composition tenait un portrait a gauche et DEUX portraits a droite.
+   Elle tient desormais un portrait et DEUX PAYSAGES : c'est la forme des
+   visuels livres, et la regle posee par Mathias ce jour-la est que le site
+   s'adapte au visuel, jamais l'inverse.
+   Chaque hauteur ci-dessous est CALCULEE, pas choisie : dans une boite de
+   749 x 574, un cadre de largeur L % a une hauteur de
+      (L% x 749 / rapport-du-master) / 574
+   de sorte que `object-fit: cover` n'ait plus rien a rogner.
+      c1  39,5 %  ->  0,708  (M01, 8770x12478)   ->  72,8 %
+      c2  44 %    ->  1,4217 (M02, 12468x8770)   ->  40,4 %
+      c3  55 %    ->  1,4145 (M03, 4000x2828)    ->  50,74 %
+   c3 a grandi ET remonte : en paysage a 35 % de large il ne faisait plus que
+   32 % de haut, et laissait une bande noire entre lui et c2. Large et pose
+   a 38 %, il mord le bas de c2 comme le faisait le portrait — le chevauchement
+   EST la composition, sans lui il n'y a plus de collage mais trois vignettes.
+   ⚠️ Toute retouche de largeur se repercute sur la hauteur par la formule
+   ci-dessus. Changer l'une sans l'autre remet du recadrage. */
+/* ── CHAQUE CADRE PORTE LE RAPPORT DE SON MASTER (14/09/2026, 2e passage) ──
+   Ils avaient une hauteur en POURCENTAGE de la boite. C'etait le defaut :
+   le rapport d'un cadre valait alors (largeur% x largeur-boite) / (hauteur% x
+   hauteur-boite), donc il changeait des que la boite changeait de forme — et
+   la boite change de forme a chaque point de rupture, et s'etire en hauteur
+   sur grand ecran. Les photos etaient recadrees sans qu'aucune regle ne le
+   dise. Mathias l'a vu a l'ecran le 14/09.
+   Avec `aspect-ratio` et AUCUNE hauteur, la forme d'un cadre ne depend plus
+   que de sa largeur : elle est vraie partout, quelle que soit la boite.
+   Les valeurs sont les dimensions des masters, telles quelles, pas des
+   arrondis — c'est la seule facon que `object-fit: cover` n'ait rien a rogner.
+   ⚠️ Ne jamais reposer de `height` ici : elle reprendrait la main sur le
+   rapport et le recadrage silencieux reviendrait.
+   ⚠️ Plus aucune rotation : Mathias les a retirees le 14/09. Les cadres sont
+   droits, et c'est le chevauchement seul qui fait le collage. */
+/* ⚠️ LES POSITIONS SUIVENT LA BOITE, ET LA BOITE A CHANGE le 15/09/2026.
+   Mathias : « les photos peuvent un peu plus respirer mais en restant
+   structurées, et que cela se finisse à la même hauteur en bas que le CTA ».
+   La boîte passe de 749/574 (1,305) à 749/792 (0,945) sur desktop : la seule
+   forme qui, dans une colonne de 637 px, descende jusqu'au bas de la colonne
+   de droite. Les trois cadres sont redéployés en escalier — paysage en haut à
+   droite, portrait en bas à gauche, paysage en bas à droite — chacun mordant
+   le précédent. Le chevauchement EST la composition.
+   ⚠️ L'ÉTAGEMENT A ÉTÉ REPRIS le 15/09/2026 : « mettre l'image Sicile tout en
+   haut, Noosa qui descend un peu pour moins cacher le titre ».
+   La Sicile part donc du bord haut (`top: 0`) et Noosa descend à 14 %, ce qui
+   DÉGAGE LE COIN HAUT-DROIT — c'est là que se lisent les dernières lettres de
+   « LE MAGAZINE ». Le lagon descend d'autant (36 → 52 %) pour que la
+   composition continue d'aller jusqu'en bas.
+   ⚠️ LE LAGON NE DESCEND QUE DE CE QUE SA LARGEUR LUI PERMET, et c'est
+   arithmétique : sa hauteur vaut sa largeur divisée par 1,4145, et son bas
+   doit tomber à 100 % de la boîte. À 70 % de large il fait 63,4 % de haut,
+   donc il part à 36,5 % — pas plus bas. Un premier essai l'avait posé à 52 % :
+   il sortait de la boîte de 77 px, MESURÉS, et recouvrait le bouton.
+   Il est donc passé à 66 % de large, ce qui le fait partir à 40,2 % : ces
+   quatre points rendus à Noosa sont ce qui la laisse se lire. À 36,5 % elle
+   n'apparaissait plus que par une bande de ciel, et son titre était tranché —
+   une composition ne peut pas cacher le sujet qu'elle met en scène.
+   Noosa, elle, ne descend qu'à 8 % : le mot finit à 180 px et le haut de
+   Noosa tombe à 189. Quatre points de plus ne dégageraient rien et lui
+   coûteraient trente pixels de lecture.
+   La Sicile compense donc autrement : elle passe de 44 à 50 % de large, ce qui
+   la fait descendre jusqu'à 91 % au lieu de 80 et referme presque le vide que
+   sa remontée ouvrait en bas à gauche. Les trois cadres bougent ENSEMBLE ou
+   pas du tout : chaque hauteur est déduite d'une largeur.
+   ⚠️ Les LARGEURS ont grandi (39,5 → 42, 44 → 66, 55 → 66 %) : c'est là que
+   les photos respirent. Les hauteurs ne sont jamais écrites : chaque cadre
+   porte l'`aspect-ratio` de son master. */
+/* ⚠️ `z-index: 3` : LA SICILE PASSE DEVANT (Mathias, 15/09/2026) — « Sicile
+   doit être mise en avant, tout en haut de la pile ». Sans lui, l'ordre
+   d'empilement suit l'ordre du document : le lagon, écrit en dernier, passait
+   devant tout, et la Sicile, écrite en premier, se retrouvait au fond.
+   Les deux autres gardent leur ordre naturel — le lagon devant Noosa. */
+.at-pdp .c1 { left: 0;     top: 0;     width: 50%;   aspect-ratio: 8770 / 12478; z-index: 3; }
+/* ⚠️ 40,4 % ET NON 39,7 % DEPUIS LE 14/09/2026 : c'est la hauteur qui donne
+   au cadre le rapport EXACT du master livre (M02, 12468x8770, soit 1,4217).
+   A 39,7 % le cadre valait 1,4462 et `object-fit` rognait les cotes pour
+   rien. La regle posee par Mathias ce jour-la est celle-ci : quand le format
+   du visuel differe de celui du site, c'est le site qui bouge. */
+.at-pdp .c2 { left: 40%;   top: 8%;    width: 60%;   aspect-ratio: 12468 / 8770; }
+.at-pdp .c3 { left: 34%;   top: 40.2%; width: 66%;   aspect-ratio: 4000 / 2828; }
 
-.at-pdp .c2 img { object-position: 50% 38%; }
+/* c3 est une DOUBLE PAGE, pas une couverture — même objet que la maquette de
+   la section « L'objet », donc même pli central, à la même intensité
+   (Mathias, 15/09). c1 et c2 n'y ont pas droit : ce sont des pages seules, et
+   une pliure au milieu y inventerait un objet qui n'existe pas. */
+.at-pdp .c3::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0) 30%,
+    rgba(0, 0, 0, 0.14) 42%,
+    rgba(0, 0, 0, 0.40) 48.6%,
+    rgba(0, 0, 0, 0.60) 50%,
+    rgba(0, 0, 0, 0.34) 52%,
+    rgba(0, 0, 0, 0.12) 58%,
+    rgba(0, 0, 0, 0) 70%);
+}
+
+/* `object-position` retire le 14/09 : il recentrait un portrait dans un
+   cadre paysage. Le fichier servi est desormais un paysage au rapport du
+   cadre — il n'y a plus rien a recadrer. */
 
 .at-pdp .kiosque > div { display: flex; flex-direction: column; }
 
@@ -361,7 +498,31 @@
   /* Toute la largeur de la grille, quelle que soit sa definition. */
   /* Lot 3 (07/09) — la marge descend vers la gouttiere standard : le titre
      de la bande occupe desormais l'espace que la marge simulait. */
-  .at-pdp .bloc-pas { grid-column: 1 / -1; margin-top: var(--g); }
+  /* ⚠️ CETTE MARGE PORTE SEULE LA REGLE DU 31/08/2026 : le parcours ne montre
+     pas sa premiere bande dans le premier ecran.
+     Elle le faisait avant par un plancher d'un ecran entier sur les deux
+     colonnes — au prix de deux vides de 180 px dans la colonne de droite
+     (voir plus bas). On ne rallonge plus les colonnes : on descend le
+     parcours de ce qu'il faut, et l'espace se lit alors comme une separation
+     de sections au lieu d'un trou dans une colonne.
+     LE CALCUL : le parcours commence a 92 (rembourrage haut) + H (les deux
+     colonnes, 569) + 64 (gouttiere de grille) + cette marge. Pour qu'il passe
+     sous la ligne de flottaison il faut donc marge >= --app-height - 704.
+     MESURE, pas estimee, et REMESUREE le 15/09 quand le mot est passe a
+     « LE MAGAZINE » : plus court d'une ligne de 15 px, il a raccourci les
+     deux colonnes d'autant (H = 554 et non 569). La gouttiere de grille vaut
+     57,6 px a 1440 (4vw borne a 64) et non 64. On prend 700, quatre pixels
+     d'air.
+     ⚠️ Ce nombre suit la hauteur des colonnes : il se remesure des qu'on
+     touche a la taille du mot ou au rapport du collage.
+     ⚠️ `--app-height` et jamais `vh` : hauteur GELEE au chargement, regle de
+     la maison — `vh` suit la barre d'adresse et ferait sauter la page.
+     ⚠️ `max()` avec --g : sur un ecran court le calcul devient negatif, et la
+     gouttiere reprend la main. */
+  .at-pdp .bloc-pas {
+    grid-column: 1 / -1;
+    margin-top: max(var(--g), calc(var(--app-height) - 700px));
+  }
 
   .at-pdp .pas {
     display: grid;
@@ -404,6 +565,25 @@
      Sans effet sur telephone, ou la colonne fait sa hauteur de contenu. */
   .at-pdp .colonne-recit { justify-content: space-between; }
 
+  /* ── LE TITRE SE CALE SUR LE MOT, PAS SUR LA BOITE (15/09/2026) ──
+     Mathias : « le titre Un moment de vie aligné à MAGAZINE ». Les deux
+     colonnes partent du meme haut, mais les deux textes n'ont pas le meme
+     interligne : MESURE AU PIXEL sur la capture (premiere ligne d'encre de
+     chaque cote, 1440 x 900), l'encre du mot commence 4 px plus bas que celle
+     du titre. On descend donc le recit de ces 4 px.
+     ⚠️ Exprime en EM DU MOT, pas en pixels : le mot vaut min(7,6vw, 110px),
+     donc son interligne grandit avec la fenetre — un nombre fixe se
+     desalignerait des qu'on change de largeur. 4 / 109,4 = 0,0366. */
+  /* ⚠️ REMESURE le 15/09 avec « LE MAGAZINE » : le mot etant plus petit
+     (94 px au lieu de 109,44), son interligne l'est aussi, et l'ecart a
+     rattraper tombe de 4 px a 2. Le coefficient suit donc : 2 / 94 = 0,0213.
+     ⚠️ Il est exprime en em DU MOT, pas en pixels : c'est la seule facon que
+     l'alignement tienne quand la fenetre change de largeur. Il reste un
+     residu de un a trois pixels aux largeurs ou les deux polices ne varient
+     pas au meme rythme — invisible sur un corps de 94 px, et le corriger
+     demanderait de connaitre l'interligne du titre, qui a sa propre clamp. */
+  .at-pdp .colonne-recit { padding-top: calc(0.0213 * min(7.4vw, 94px)); }
+
   /* ── LES DEUX COLONNES REMPLISSENT L'ECRAN, LE PARCOURS TOMBE DESSOUS ──
      Sans ce plancher, le parcours commencait a 841 px sur un ecran de 900 :
      on en voyait la premiere bande, ce qui est exactement ce que Mathias ne
@@ -427,18 +607,23 @@
      de combler en septembre en donnant un titre à la bande (T-086) ; le titre
      était juste, la cause était ici. On nomme donc les deux colonnes au lieu
      de compter les enfants. */
-  .at-pdp .kiosque > div:first-child,
-  .at-pdp .colonne-recit {
-    /* Le dernier terme est de l'air : sans lui, le bloc du bouton finissait
-       PILE au bas de l'ecran (mesure : 900 sur 900) et les deux gages
-       touchaient le bord. Il a ete double depuis que le collage remplit la
-       hauteur : sa marge negative — celle qui le fait chevaucher le mot — le
-       fait deborder de 24 px sous le bas de la colonne, et il ne restait que
-       huit pixels avant la ligne de flottaison. Avec 4,4vw, le collage finit
-       une quarantaine de pixels au-dessus, et le parcours descend d'autant. */
-    min-height: calc(var(--app-height) - var(--nav-h)
-      - clamp(8px, calc(1.4 * var(--uh)), 24px) - clamp(40px, 4.4vw, 72px));
-  }
+  /* ⚠️ LE PLANCHER « UN ECRAN ENTIER » A ETE RETIRE le 15/09/2026.
+     Il valait `--app-height - --nav-h - …`, soit 745 px sur un ecran de 900.
+     La colonne de droite ne porte que 385 px de contenu : `space-between` en
+     tirait DEUX VIDES DE 180 PX, entre le recit et le prix puis entre le prix
+     et le bouton. Mathias : « les espaces sur la droite sont beaucoup trop
+     ecartes ».
+     La hauteur vient desormais de la colonne de GAUCHE (le mot plus le
+     collage), et la droite s'y repartit. Mesure du 15/09 apres le passage a
+     « LE MAGAZINE » : H = 554, et les ecarts valent 83 et 82 px. Les deux colonnes finissent donc
+     toujours ensemble — c'etait la demande precedente — mais sur une hauteur
+     qu'on choisit, au lieu d'une hauteur subie.
+     ⚠️ LE PARCOURS NE DOIT TOUJOURS PAS MONTRER SA PREMIERE BANDE dans le
+     premier ecran (decision du 31/08/2026). Ce n'est plus la hauteur des
+     colonnes qui l'en empeche, c'est la marge du parcours : voir `.bloc-pas`.
+     L'espace qui separait les blocs de droite a simplement CHANGE DE PLACE —
+     il est passe entre le premier ecran et le parcours, ou il se lit comme
+     une separation de sections et non comme un trou dans une colonne. */
 
   /* ── LE COLLAGE PREND LA HAUTEUR QUI RESTE ──
      Il gardait ses proportions de maquette (749 / 574) et faisait 488 px de
@@ -457,8 +642,27 @@
      ecran court. La colonne ne centre donc plus rien — il n'y a plus de vide
      a repartir. */
   .at-pdp .kiosque > div:first-child { justify-content: flex-start; }
-  .at-pdp .bloc-collage { flex: 1; min-height: 0; display: flex; }
-  .at-pdp .collage { flex: 1; min-height: 0; aspect-ratio: auto; }
+  .at-pdp .bloc-collage { flex: 0 1 auto; min-height: 0; display: flex; }
+  /* ⚠️ `aspect-ratio: auto` A ETE RETIRE le 14/09/2026 (2e passage). Il
+     laissait le collage prendre toute la hauteur restante — ce qui reglait
+     bien les deux cents pixels de noir, mais au prix de la FORME des trois
+     cadres : leurs `top` en pourcentage d'une boite qui s'allonge les
+     ecartaient, et leur hauteur en pourcentage les etirait. Mathias a vu le
+     resultat a l'ecran et a tranche pour le format.
+     La boite garde donc ses proportions, et la colonne CENTRE ce qui reste
+     au lieu de tout laisser tomber en bas : le vide se partage en haut et en
+     bas, ou il ne se lit plus comme un oubli. */
+  /* ⚠️ 749/792 ET NON 749/574 (15/09/2026). Ce nombre n'est pas un gout, il
+     est CALCULE : la colonne de gauche fait 637 px de large, et c'est elle
+     qui FIXE desormais la hauteur des deux colonnes. On vise H = 569, la
+     hauteur qui laisse 90 px entre chacun des trois blocs de droite — le
+     resserrement demande par Mathias. Le collage doit donc faire
+     569 - 103 (le mot) + 32 (le chevauchement) = 498 px de haut.
+     637/498 = 1,279, soit 749/585. A remesurer si le masthead, la gouttiere
+     ou la largeur des colonnes changent. Toute autre valeur
+     laisse du noir sous le collage ou le fait deborder. A remesurer si le
+     masthead, la gouttiere ou la largeur des colonnes changent. */
+  .at-pdp .collage { flex: 0 1 auto; min-height: 0; width: 100%; aspect-ratio: 749 / 585; }
 }
 
 /* ---- les trois paliers ----
@@ -573,75 +777,77 @@
   align-items: center;
 }
 
-/* La double page, construite en CSS : aucune image de maquette à charger. */
+/* ── LA DOUBLE PAGE, REFONDUE LE 14/09/2026 ──
+   Elle etait construite en CSS — une photo a gauche, un feuillet de papier a
+   droite portant « Chapitre deux », deux timbres et un folio, plus un pli
+   dessine au milieu. Elle ne porte plus qu'UNE image, qui traverse les deux
+   feuillets : c'est la demande de Mathias, et le visuel livre est deja une
+   double page complete.
+   ⚠️ CE QUI EST PARTI EST PARTI AVEC SA RAISON, pas par menage :
+   - le feuillet de droite et son texte : le visuel porte DEJA son titre et sa
+     mise en page. Deux typographies superposees, c'est une maquette ratee ;
+   - le pli dessine a 50 % : le visuel porte DEJA son propre pli, et il ne
+     tombe pas au milieu. Deux plis valent moins que zero ;
+   - les deux timbres : ils n'existent plus (codes BJ-M05/M06 retires).
+   ⚠️ LE RAPPORT SUIT LE MASTER, il ne le contraint pas : 4000x2828, soit
+   1,4145, la ou le montage CSS tenait en 760/474 (1,603). C'est la regle
+   posee par Mathias le 14/09 — le site s'adapte au visuel. */
 .at-pdp .double {
   position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
   background: var(--paper);
-  border-radius: 3px;
-  box-shadow: var(--shadow-float);
+  /* Angles droits et tranche éclairée : même raison, même méthode que le
+     collage (voir le long commentaire là-haut). La double page est plus
+     grande, donc son épaisseur se lit sur quatre bandes au lieu de trois. */
+  border-radius: 0;
+  /* ⚠️ ATTÉNUÉES le 15/09, à la demande de Mathias : « rends moins visibles
+     les traits en dessous ». Elles étaient posées quand l'objet n'avait rien
+     d'autre pour exister ; depuis que le PLI porte le volume, elles n'ont
+     plus qu'à l'accompagner. Trois bandes au lieu de quatre, moitié moins
+     opaques, resserrées de 12 px à 8. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 252, 245, 0.10),
+    0 2px 0 rgba(236, 230, 218, 0.13),
+    0 5px 0 rgba(150, 143, 131, 0.09),
+    0 8px 0 rgba(70, 66, 60, 0.06),
+    0 26px 38px -14px rgba(255, 248, 236, 0.05);
   overflow: hidden;
-  aspect-ratio: 760 / 474;
+  aspect-ratio: 4000 / 2828;
 }
 
-.at-pdp .double .gauche { position: relative; overflow: hidden; }
-.at-pdp .double .gauche img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.at-pdp .double img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-.at-pdp .double .droite {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: clamp(12px, 2vw, 24px);
-  padding: clamp(18px, 3vw, 44px) clamp(16px, 2.8vw, 40px);
-  background: linear-gradient(90deg, var(--paper-2) 0%, var(--paper) 22%);
-  color: var(--paper-text);
-}
-
-.at-pdp .double .chapitre {
-  margin: 0;
-  font-size: clamp(8px, 0.72vw, 10px);
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--paper-text-soft);
-}
-
-.at-pdp .double .phrase {
-  margin: clamp(8px, 1.2vw, 16px) 0 0;
-  font-family: var(--font-display);
-  font-size: clamp(15px, 2.1vw, 30px);
-  line-height: 1.2;
-  color: var(--paper-text);
-  text-wrap: pretty;
-}
-
-.at-pdp .double .vignettes { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(6px, 0.9vw, 12px); }
-.at-pdp .double .vignettes img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; border-radius: 1px; }
-
-.at-pdp .double .folio {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: clamp(8px, 0.78vw, 11px);
-  letter-spacing: 0.1em;
-  color: var(--paper-text-soft);
-}
-
-/* Le pli central. Décoratif, insensible au pointeur. */
-.at-pdp .double .pli {
+/* ── LE PLI CENTRAL — ce qui donne vraiment le volume (15/09/2026) ──
+   Il avait été retiré la veille au motif que « le master porte déjà son
+   propre pli ». C'ÉTAIT FAUX, vérification faite sur le fichier : les deux
+   feuillets d'AUSTRALIA se rejoignent à 50,1 % de la largeur, et aucune
+   pliure n'y est dessinée. Mathias : « ce qui m'intéresse c'est surtout
+   l'ombre au centre de la double page ».
+   C'est la bonne intuition, et c'est de l'optique : sur un magazine ouvert
+   à plat, le papier se CREUSE vers la reliure. Ce creux reçoit moins de
+   lumière, donc il s'assombrit des deux côtés en approchant du centre, avec
+   la ligne de couture la plus noire au milieu. Aucune ombre portée ne peut
+   produire cela — c'est une ombre INTERNE, et c'est elle qu'on lit comme
+   l'épaisseur de l'objet.
+   ⚠️ Un pseudo-élément, pas un nœud : rien à ajouter au balisage, et
+   l'`overflow: hidden` du parent le borne proprement.
+   ⚠️ `pointer-events: none` : il couvre toute l'image, il ne doit rien
+   intercepter. */
+.at-pdp .double::after {
+  content: '';
   position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 7.4%;
-  transform: translateX(-50%);
-  background: linear-gradient(90deg,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 0.22) 48%,
-    rgba(0, 0, 0, 0.10) 52%,
-    rgba(0, 0, 0, 0) 100%);
+  inset: 0;
   pointer-events: none;
+  /* Intensité choisie par Mathias le 15/09 parmi trois rendues côte à côte :
+     le creux part de plus loin (30 % au lieu de 38 %) et descend plus bas au
+     centre (0,60 au lieu de 0,40). Le magazine se lit plus épais. */
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0) 30%,
+    rgba(0, 0, 0, 0.14) 42%,
+    rgba(0, 0, 0, 0.40) 48.6%,
+    rgba(0, 0, 0, 0.60) 50%,
+    rgba(0, 0, 0, 0.34) 52%,
+    rgba(0, 0, 0, 0.12) 58%,
+    rgba(0, 0, 0, 0) 70%);
 }
 
 /* ---- ce qui est compris ---- */
@@ -767,11 +973,31 @@
      trois cadres sont donc redéployés de 0 à 100 %.
      La HAUTEUR ne bouge pas — même `aspect-ratio` qu'avant. C'est elle qui
      décide si le bouton reste dans l'écran : on élargit, on ne grandit pas. */
-  .at-pdp .collage { margin-top: -3.4vw; aspect-ratio: 11 / 5; }
+  /* ⚠️ 100/37 ET NON 11/5 (15/09/2026). Mathias : « sur mobile c'est juste les
+     photos qu'il faut un peu plus aligner ».
+     Les trois cadres sont desormais poses sur UNE MEME LIGNE DE BASE
+     (`bottom: 0`) au lieu d'etre decales par trois `top` differents. Un
+     `bottom` tient a toutes les largeurs, quel que soit le rapport de la
+     boite, la ou un `top` en pourcentage se desalignait a chaque point de
+     rupture — c'est ce qui donnait la rangee en escalier de la capture.
+     La boite epouse alors le plus haut des trois, le portrait c1 :
+        hauteur = 26 % de la largeur / 0,7028 = 0,37 x largeur
+     d'ou 100/37. Une boite plus haute ne ferait que du noir au-dessus. */
+  .at-pdp .collage { margin-top: -3.4vw; aspect-ratio: 100 / 37; }
 
-  .at-pdp .c1 { left: 0;   top: 7%;  width: 36%; height: 88%; }
-  .at-pdp .c2 { left: 33%; top: 0;   width: 36%; height: 74%; }
-  .at-pdp .c3 { left: 65%; top: 15%; width: 35%; height: 85%; }
+  /* Memes formats qu'en desktop, recalcules pour une boite 11/5 :
+        c1  28,3 % -> 0,708  -> 88 %
+        c2  33,6 % -> 1,4217 -> 52 %
+        c3  33,4 % -> 1,4145 -> 52 %
+     Les deux paysages se posent cote a cote a droite du portrait, decales en
+     hauteur : c'est ce decalage qui garde l'air de collage une fois que les
+     trois cadres sont deployes de 0 a 100 %. */
+  /* Seules les LARGEURS et les positions changent ici : le rapport de chaque
+     cadre vient de son `aspect-ratio`, pose une fois plus haut, et vaut donc
+     aussi bas que large soit l'ecran. */
+  .at-pdp .c1 { left: 0;   top: auto; bottom: 0; width: 26%; }
+  .at-pdp .c2 { left: 29%; top: auto; bottom: 0; width: 34%; }
+  .at-pdp .c3 { left: 65%; top: auto; bottom: 0; width: 35%; }
 
 
   /* Le premier écran d'un téléphone se compte au pixel. Chaque valeur
@@ -789,7 +1015,9 @@
      contre-ordre, le jour où le mot dépasse d'un pixel il ne déborde pas —
      il se coupe en « MAGAZI / NE ». */
   .at-pdp .mot {
-    font-size: 16.3vw;
+    /* 13,1vw et non 16,3 : meme remesure que le plafond desktop, meme
+       facteur (6,57 / 5,29 = 1,242). 16,3 / 1,242 = 13,1. */
+    font-size: 13.1vw;
     text-align: center;
     overflow-wrap: normal !important;
   }
@@ -853,7 +1081,9 @@
      est parti dans la respiration et dans les corps de texte, pas dans
      l'image. C'est le bon arbitrage : un bouton hors de vue coûte plus cher
      qu'une photo de 40 px de moins. */
-  .at-pdp .collage { aspect-ratio: 11 / 5.8; }
+  /* Rapport retire le 15/09 : depuis que la boite epouse le plus haut des
+     trois cadres (100/37, plus haut), toute autre valeur ne fait que du noir
+     au-dessus de la ligne de base. */
 
   /* ── 3 · LES TROIS ÉCARTS ──
      `.titre` et `.lede` sont dans le même Reveal : ils se touchent de
@@ -1057,7 +1287,6 @@
   .at-pdp .faq summary { font-size: 16px; }
   .at-pdp .faq details p { font-size: 16px; line-height: 1.7; }
 
-  .at-pdp .double .vignettes { display: none; }
 }
 
 /* ── ÉCRANS COURTS, entre 721 et 900 px de large ──
@@ -1069,7 +1298,8 @@
    .at-pdp .prix .euros { font-size: 26px; } */
 @media (min-width: 721px) and (max-width: 900px) and (max-height: 700px) {
   .at-pdp .kiosque { padding-top: calc(var(--nav-h) + 8px); gap: 10px; }
-  .at-pdp .collage { aspect-ratio: 5 / 2; }
+  /* Rapport retire le 15/09 : voir 100/37 plus haut. Il servait a raccourcir
+     le collage sur un ecran court ; 100/37 est deja plus court que 5/2. */
   .at-pdp .lede { font-size: 14px; }
   .at-pdp .acte { margin-top: 10px; }
 }
@@ -1089,19 +1319,27 @@
 @media (max-width: 720px) and (max-height: 700px) {
   .at-pdp { --dedans: 10px; --entre: 22px; --chapitre: 56px; }
   .at-pdp .kiosque { padding-top: calc(var(--nav-h) + 14px); }
-  .at-pdp .collage { aspect-ratio: 5 / 2; }
+  /* Rapport retire le 15/09 : voir 100/37 plus haut. Il servait a raccourcir
+     le collage sur un ecran court ; 100/37 est deja plus court que 5/2. */
   .at-pdp .lede { font-size: 15px; line-height: 1.6; }
   .at-pdp .prix-ligne { padding: 11px 0; }
   .at-pdp .prix-ligne .des { font-size: 32px; }
 }
 
 /* ── La double page ne survit pas à un écran étroit ──
-   À 380 px de large, chaque feuillet fait 170 px : la phrase du feuillet
-   droit y tient en quatre mots par ligne et le folio touche le pli. On ne
-   montre plus qu'UNE page — celle qui porte la photo, qui est ce qu'on
-   vient voir. */
+   Elle montrait jusqu'au 14/09/2026 une seule des deux pages : à 380 px de
+   large, chaque feuillet faisait 170 px, la phrase du feuillet droit y tenait
+   en quatre mots par ligne et le folio touchait le pli.
+   Depuis qu'elle est UNE image, le probleme a change de nature : ce n'est
+   plus une mise en page qui se serre, c'est un paysage de 1,4145 qui serait
+   ampute de moitie. La reponse n'est donc plus de cacher la moitie droite,
+   c'est de servir un AUTRE master, cadre en hauteur. */
 @media (max-width: 560px) {
-  .at-pdp .double { grid-template-columns: 1fr; aspect-ratio: 3 / 4; }
-  .at-pdp .double .droite,
-  .at-pdp .double .pli { display: none; }
+  /* Sous 560 px, c'est le master PORTRAIT (BJ-M04V, 2828x4000) qui est servi
+     par le <picture> de Corps.tsx : le cadre prend son rapport, il ne recadre
+     plus un paysage de moitie. */
+  .at-pdp .double { aspect-ratio: 2828 / 4000; }
+  /* Le master portrait est une page SEULE : un pli au milieu y dessinerait
+     une pliure qui n'existe pas. */
+  .at-pdp .double::after { display: none; }
 }

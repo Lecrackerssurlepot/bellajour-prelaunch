@@ -897,10 +897,10 @@ function Coquille({
         )}
         <img
           className="nu-top-logo-img"
-          src="/images/ui/signature-blanche.webp"
+          src="/images/v2/ui/signature-bellajour-240.webp"
           alt="Bellajour"
-          width={320}
-          height={122}
+          width={240}
+          height={92}
           decoding="async"
         />
         <span className="nu-top-cale" />

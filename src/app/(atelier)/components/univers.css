@@ -410,18 +410,61 @@
   from{transform:translateX(0)}
   to{transform:translateX(calc(-50% - .9vw))}
 }
-.at-accueil .sl4-rail figure{margin:0;flex:none;width:15vw;min-width:152px}
+/* ⚠️ LA TAILLE D'UNE COUVERTURE EST BORNEE PAR DEUX COTES, PAS UN SEUL
+   (15/09/2026). Elle ne valait que `15vw` : sur une fenetre LARGE ET COURTE
+   — 1990 x 1100, celle de Mathias — la couverture faisait alors 299 de large
+   donc 422 de haut, pour une bande qui n'en offrait que 391. La bande est un
+   element flexible : elle a RETRECI sous la demande, et son `overflow:hidden`
+   a coupe 31 px en bas de chaque couverture. Rien ne debordait, rien ne
+   signalait l'erreur — c'est le piege habituel d'un `overflow:hidden`.
+   Le second terme borne donc la LARGEUR par la HAUTEUR disponible : 35
+   unites de hauteur d'ecran pour la bande, ramenees en largeur par le rapport
+   des couvertures (0,7071). 35 x 0,7071 = 24,75.
+   ⚠️ Ce nombre suit le rapport des masters : s'il change, il se recalcule. */
+.at-accueil .sl4-rail figure{margin:0;flex:none;width:min(15vw, calc(24.75 * var(--uh)));min-width:152px}
 @media (hover:hover) and (pointer:fine){
   .at-accueil .sl4-bande:hover .sl4-rail{animation-play-state:paused}
 }
-.at-accueil .sl4-rail .ph{display:block;aspect-ratio:2/3;overflow:hidden;border-radius:3px;
-  box-shadow:var(--shadow-float);transition:transform 400ms var(--ease-recit)}
+/* ─── UN SEUL RAPPORT POUR LES CINQ CASES (14/09/2026) ───
+   Le 2:3 n'est pas un gout : c'est le format de couverture, et cinq objets
+   alignes qui n'ont pas la meme forme se lisent comme une erreur de mise en
+   page avant de se lire comme une collection.
+   ⚠️ Le recadrage ne se joue PAS ici. `object-fit:cover` coupe toujours au
+   centre geometrique, et sur une page d'album ou un titre pose en haut, le
+   centre n'est pas le sujet. Les fichiers servis sont donc DEJA en 2:3,
+   decoupes par le contenu (`position:'attention'`, scripts/images-v2.mjs) :
+   ce `cover` ne fait plus que garantir l'absence de deformation. */
+/* ⚠️ 4066/5750 ET NON 2/3 (15/09/2026) : c'est le rapport EXACT des quatre
+   couvertures livrees ce jour-la. Elles sont COMPOSEES — titre en tete,
+   legende en pied — donc tout recadrage, meme choisi par le contenu,
+   trancherait un lettrage. Le cadre prend leur rapport, pas l'inverse ;
+   c'est la regle posee par Mathias le 14/09. Seule A10, une photographie de
+   page d'album, est recadree pour les rejoindre (scripts/images-v2.mjs). */
+/* ⚠️ ANGLES DROITS ET RIEN D'AUTRE (Mathias, 15/09/2026). Les 3 px d'arrondi
+   sont partis, et avec eux le `--shadow-float` qui n'existait de toute facon
+   pas — du noir sur du noir, la page est posee sur `--c-void`.
+   ⚠️ NE PAS Y REMETTRE DE TRANCHE ECLAIREE. Elle a ete posee ici le matin par
+   souci de coherence avec la page produit, puis retiree le jour meme : la
+   double page a besoin d'un volume parce qu'elle represente un objet OUVERT,
+   une couverture posee a plat n'en a pas besoin. « On veut simplement
+   l'image. » */
+.at-accueil .sl4-rail .ph{display:block;aspect-ratio:4066/5750;overflow:hidden;border-radius:0}
 .at-accueil .sl4-rail .ph img{width:100%;height:100%;object-fit:cover;display:block;
-  filter:saturate(.72) contrast(1.05) brightness(.86)}
+  /* ⚠️ ALLEGE le 15/09/2026, a la demande de Mathias. L'ancien reglage,
+     saturate(.72) contrast(1.05) brightness(.86), avait ete pose en aout pour
+     des couvertures PHOTOGRAPHIQUES et claires. Les quatre livrees le 15/09
+     sont des compositions a fond sombre — « The Boys » et « This Night » sont
+     deja noires : les assombrir encore de 14 % les eteignait.
+     Trois reglages ont ete rendus cote a cote avant de trancher ; celui-ci
+     garde juste ce qu'il faut de retenue pour que la bande ne crie pas sur le
+     noir de la page, sans eteindre les couvertures. */
+  filter:saturate(.88) contrast(1.02) brightness(.96)}
 
-@media (hover:hover) and (pointer:fine){
-  .at-accueil .sl4-rail figure:hover .ph{transform:translateY(-8px)}
-}
+/* Le soulevement au survol a ete RETIRE le 14/09/2026, sur demande de
+   Mathias. Ces couvertures ne sont pas cliquables : rien ne s'ouvre, rien ne
+   s'agrandit. Un objet qui reagit a la souris promet une action, et n'en
+   tenir aucune est pire que de ne rien promettre. La bande se met deja en
+   pause au survol (regle plus haut) — c'est la seule reponse qui sert. */
 
 /* ─────────── 05 · LE CONCEPT ───────────
    La seule page du recit qui soit dans l'axe. C'est voulu : apres quatre
@@ -593,19 +636,47 @@
   font-size:1.42em;color:var(--c-accent-strong)}
 
 /* ── LE NUMÉRO ──
-   Une vraie couverture : bandeau de titre en tete, filet, titre du
-   numero en pied. Papier, tranche, dos. Il s'incline sous la souris. */
-.at-accueil .numero{position:relative;width:100%;aspect-ratio:1/1.414;
-  transform-style:preserve-3d;
-  transform:perspective(1400px) rotateY(var(--ry,0deg)) rotateX(var(--rx,0deg));
-  transition:transform 700ms var(--ease-recit)}
-.at-accueil .n-plat{position:relative;width:100%;height:100%;overflow:hidden;border-radius:2px 9px 9px 2px;
-  box-shadow:0 calc(8 * var(--uh)) calc(11 * var(--uh)) calc(-5 * var(--uh)) rgba(0,0,0,.96), 0 calc(1.6 * var(--uh)) calc(4 * var(--uh)) calc(-1.6 * var(--uh)) rgba(0,0,0,.8)}
-.at-accueil .n-plat>img{width:100%;height:100%;object-fit:cover;
-  filter:saturate(.86) contrast(1.04) brightness(.94)}
-.at-accueil .n-voile{position:absolute;inset:0;z-index:2;
-  background:linear-gradient(180deg,rgba(2,2,2,.5) 0%,rgba(2,2,2,.1) 26%,
-    rgba(2,2,2,.14) 52%,rgba(2,2,2,.78) 100%)}
+   Un magazine posé, et rien de plus. Mathias, le 14/09/2026 : « enlève
+   l'effet sur l'image, enlève les traits sur le côté, on veut un effet très
+   subtil de magazine ».
+   CE QUI EST PARTI, et chacun avec sa raison :
+   - `.n-tranche`, les traits de tranche à droite. C'étaient eux, « les traits
+     sur le côté » ;
+   - `.n-voile`, `.n-lum`, `.n-fibre`, `.n-dos` : voile sombre, reflet en
+     biais, grain de papier, ombre de dos. Quatre calques posés SUR la
+     photographie, qui la grisaient ;
+   - le filtre `saturate/contrast/brightness` de l'image : la couverture est
+     désormais rendue telle qu'elle a été livrée ;
+   - l'inclinaison 3D sous la souris (`--ry`, `--rx`) et son écoute dans
+     Univers.tsx : un objet qui pivote quand on passe à côté n'est pas subtil.
+   CE QUI RESTE, et c'est tout ce qui fait l'objet : une ombre portée qui le
+   décolle du fond, et deux coins arrondis côté tranche. Les règles
+   `.n-tete`/`.n-masthead`/`.n-no` sont gardées SANS ÊTRE UTILISÉES : le
+   bandeau a été retiré du balisage le 14/09 parce que le master porte déjà
+   son titre, et il revient le jour où un master nu arrive. */
+.at-accueil .numero{position:relative;width:100%;aspect-ratio:1/1.414}
+/* ⚠️ ANGLES DROITS (Mathias, 14/09/2026). Les `2px 9px 9px 2px` imitaient
+   la tranche arrondie d'un magazine broché — un reste du temps où l'objet
+   portait aussi son dos et ses traits de tranche. Tout cela est parti : un
+   coin rond tout seul ne dit plus rien, il adoucit juste une photographie.
+   L'ombre garde la même intention que la page produit : un contact serré qui
+   donne l'épaisseur, et une portée courte qui pose l'objet au lieu de le
+   faire léviter. */
+/* ⚠️ MEME CORRECTION QUE LA PAGE PRODUIT (5e passage du 14/09) : la page est
+   posee sur `--c-void`, une ombre noire n'y existe pas. Le volume vient de la
+   tranche eclairee — trois bandes claires decalees vers le bas, un filet sur
+   l'arete haute pour poser la lumiere, un halo tiede tres faible pour
+   decoller l'objet du vide.
+   ⚠️ RIEN SUR LES COTES : Mathias a demande le retrait des traits lateraux,
+   et l'epaisseur se lit tres bien sur la seule arete basse. */
+/* ⚠️ AUCUNE OMBRE, AUCUN FILET, RIEN SOUS L'IMAGE (Mathias, 15/09/2026) :
+   « pour le Rio ne mets pas de bordure en bas, on veut simplement l'image ».
+   La tranche eclairee posee le matin est donc retiree. Ne pas la remettre au
+   nom de la coherence avec la page produit : la double page a besoin d'un
+   volume parce qu'elle represente un objet OUVERT ; une couverture posee a
+   plat n'en a pas besoin, et Mathias l'a tranche a l'ecran. */
+.at-accueil .n-plat{position:relative;width:100%;height:100%;overflow:hidden;border-radius:0}
+.at-accueil .n-plat>img{width:100%;height:100%;object-fit:cover}
 .at-accueil .n-tete{position:absolute;left:8%;right:8%;top:5.4%;z-index:5;
   display:flex;align-items:baseline;justify-content:space-between;
   padding-bottom:3%;border-bottom:1px solid rgba(246,241,232,.36)}
@@ -613,26 +684,18 @@
   letter-spacing:.3em;text-transform:uppercase;color:#f8f3eb}
 .at-accueil .n-no{font-size:clamp(8px,.62vw,12px);letter-spacing:.26em;text-transform:uppercase;
   color:rgba(246,241,232,.7)}
-.at-accueil .n-pied{position:absolute;left:8%;right:8%;bottom:6.5%;z-index:5}
+/* ⚠️ LE SEUL VOILE QUI RESTE, et il n'est pas décoratif : le titre est du
+   texte clair posé sur une photographie dont le bas est un sable en plein
+   soleil. Sans ce dégradé, il devient illisible — ce n'est plus un effet,
+   c'est le contraste. Il est borné au tiers bas et s'ouvre à zéro. */
+.at-accueil .n-pied{position:absolute;left:0;right:0;bottom:0;z-index:5;
+  padding:0 8% 6.5%;
+  background:linear-gradient(180deg,rgba(2,2,2,0) 0%,rgba(2,2,2,.52) 62%,rgba(2,2,2,.72) 100%)}
 .at-accueil .n-filet{display:block;width:34%;height:1px;background:var(--c-accent);margin-bottom:4%}
 .at-accueil .n-titre{display:block;font-family:var(--font-display);font-style:italic;
-  font-size:clamp(17px,1.8vw,36px);line-height:1.12;color:#f8f3eb;
-  text-shadow:0 2px 16px rgba(0,0,0,.6)}
+  font-size:clamp(17px,1.8vw,36px);line-height:1.12;color:#f8f3eb}
 .at-accueil .n-sous{display:block;margin-top:4%;font-size:clamp(8px,.6vw,12px);letter-spacing:.24em;
   text-transform:uppercase;color:rgba(246,241,232,.62)}
-.at-accueil .n-lum{position:absolute;inset:0;z-index:6;
-  background:linear-gradient(114deg,rgba(255,242,228,.2) 0%,rgba(255,242,228,.05) 22%,
-    rgba(7,7,8,0) 48%,rgba(7,7,8,.28) 84%,rgba(7,7,8,.52) 100%)}
-.at-accueil .n-fibre{position:absolute;inset:0;z-index:7;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04 0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23p)'/%3E%3C/svg%3E");background-size:220px 220px;
-  mix-blend-mode:overlay;opacity:.3}
-.at-accueil .n-dos{position:absolute;left:0;top:0;bottom:0;width:1.8%;z-index:8;
-  background:linear-gradient(90deg,rgba(0,0,0,.86) 0%,rgba(0,0,0,.4) 46%,
-    rgba(255,247,238,.18) 88%,rgba(255,247,238,.04) 100%)}
-.at-accueil .n-tranche{position:absolute;top:1%;bottom:1%;right:-1.2%;width:1.2%;z-index:4;
-  border-radius:0 4px 4px 0;
-  background:repeating-linear-gradient(180deg,rgba(246,241,232,.72) 0 1px,rgba(116,108,98,.42) 1px 2px);
-  box-shadow:inset calc(-.4 * var(--uh)) 0 calc(.9 * var(--uh)) calc(-.2 * var(--uh)) rgba(0,0,0,.72)}
 
 /* ─────────── ECRANS ETROITS ───────────
    Le chemin de fer se retire, les marges se resserrent, les tailles
@@ -690,7 +753,7 @@
   .at-accueil .sl4-texte{max-width:none;font-size:clamp(21px,5.4vw,28px)}
   .at-accueil .sl4-bande{margin-top:calc(4 * var(--uh))}
   .at-accueil .sl4-rail{gap:3.4vw;padding-left:var(--mg-u)}
-  .at-accueil .sl4-rail figure{width:38vw;min-width:0}
+  .at-accueil .sl4-rail figure{width:min(38vw, calc(24.75 * var(--uh)));min-width:0}
   @keyframes defile{from{transform:translateX(0)}to{transform:translateX(calc(-50% - 1.7vw))}}
   .at-accueil .sl5-titre{font-size:clamp(29px,8.4vw,50px)}
   .at-accueil .sl5-nuage{max-width:none;gap:.2em 3vw;margin-top:calc(3.4 * var(--uh))}

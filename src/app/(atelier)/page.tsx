@@ -144,11 +144,26 @@ export default function AtelierHome() {
           d'Ouverture.tsx : si l'un des deux cotes change sans l'autre, le
           navigateur precharge une variante et en affiche une autre, et
           l'element LCP est telecharge DEUX fois. */}
+      {/* ⚠️ DEUX PRECHARGEMENTS, UN PAR ORIENTATION, et leurs `media` sont
+          les MIROIRS EXACTS du <picture> d'Ouverture.tsx. Un `media` qui
+          diverge d'un cote precharge un fichier pendant que l'autre en
+          affiche un second : l'element LCP part DEUX fois, et c'est la plus
+          lourde image du site. */}
       <link
         rel="preload"
         as="image"
-        href="/images/brand/brand-01.webp"
-        imageSrcSet="/images/brand/brand-01-640.webp 640w, /images/brand/brand-01-960.webp 960w, /images/brand/brand-01.webp 1200w"
+        media="(orientation: landscape)"
+        href="/images/v2/accueil/header-magazines-paysage-1920.webp"
+        imageSrcSet="/images/v2/accueil/header-magazines-paysage-1280.webp 1280w, /images/v2/accueil/header-magazines-paysage-1920.webp 1920w, /images/v2/accueil/header-magazines-paysage-2560.webp 2560w"
+        imageSizes="100vw"
+        fetchPriority="high"
+      />
+      <link
+        rel="preload"
+        as="image"
+        media="(orientation: portrait)"
+        href="/images/v2/accueil/header-magazines-960.webp"
+        imageSrcSet="/images/v2/accueil/header-magazines-640.webp 640w, /images/v2/accueil/header-magazines-960.webp 960w, /images/v2/accueil/header-magazines-1280.webp 1280w, /images/v2/accueil/header-magazines-2125.webp 2125w"
         imageSizes="100vw"
         fetchPriority="high"
       />

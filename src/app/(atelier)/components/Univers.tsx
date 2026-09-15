@@ -323,7 +323,6 @@ export default function Univers() {
     const jauge = un<HTMLElement>('.pas-jauge i')
     const items = tous<HTMLElement>('.pas li')
     const impalp = un<HTMLElement>('.m2')
-    const numero = un<HTMLElement>('.numero')
     const souris = { x: -1, y: -1 }
     if (fin && !doux) {
       const bouge = (e: PointerEvent) => { souris.x = e.clientX; souris.y = e.clientY }
@@ -441,16 +440,12 @@ export default function Univers() {
         }
       }
 
-      /* le numéro s'incline vers la souris : on a envie de le prendre */
-      if (numero && fin && !doux && souris.x >= 0) {
-        const r = numero.getBoundingClientRect()
-        if (r.top < h && r.bottom > 0) {
-          const nx = borne((souris.x - (r.left + r.width / 2)) / (r.width * 1.6), -1, 1)
-          const ny = borne((souris.y - (r.top + r.height / 2)) / (r.height * 1.6), -1, 1)
-          numero.style.setProperty('--ry', (nx * 9).toFixed(2) + 'deg')
-          numero.style.setProperty('--rx', (-ny * 6).toFixed(2) + 'deg')
-        }
-      }
+      /* L'INCLINAISON DU NUMÉRO VERS LA SOURIS A ÉTÉ RETIRÉE le 14/09/2026.
+         Mathias : « enlève l'effet sur l'image, on veut un effet très subtil
+         de magazine ». Un objet qui pivote quand le curseur passe à côté
+         n'est pas subtil, et il n'était visible que sur un pointeur fin —
+         c'est-à-dire pas sur l'essentiel du trafic. Les propriétés `--ry` et
+         `--rx` ne sont plus lues par personne (univers.css). */
 
       frame = requestAnimationFrame(boucle)
     }
@@ -536,18 +531,18 @@ export default function Univers() {
           <h2 className="sr-only">Le constat</h2>
           <div className="sl-corps">
           <div className="sl2-scene" aria-hidden="true">
-            <figure className="v v1" data-t="1900"><span className="ph"><img src="/images/univers/solution-upload-02.webp" alt="" width="480" height="640" loading="lazy" fetchPriority="low" decoding="async" /></span></figure>
+            <figure className="v v1" data-t="1900"><span className="ph"><img src="/images/v2/accueil/reseaux-photo-telephone-480.webp" alt="" width="480" height="640" loading="lazy" fetchPriority="low" decoding="async" /></span></figure>
             <figure className="v v2" data-t="2500">
-              <span className="ph"><img src="/images/univers/grid-03.webp" alt="" width="600" height="800" loading="lazy" fetchPriority="low" decoding="async" /></span>
+              <span className="ph"><img src="/images/v2/accueil/reseaux-video-telephone-600.webp" alt="" width="600" height="800" loading="lazy" fetchPriority="low" decoding="async" /></span>
               <span className="v-video"><i></i><b>0:24</b></span>
             </figure>
             <figure className="v v3" data-t="3100">
               <span className="v-mot"><s></s><s></s><em>♥ 12</em></span>
             </figure>
-            <figure className="v v4" data-t="3700"><span className="ph"><img src="/images/univers/solution-upload-05.webp" alt="" width="400" height="300" loading="lazy" fetchPriority="low" decoding="async" /></span></figure>
+            <figure className="v v4" data-t="3700"><span className="ph"><img src="/images/v2/accueil/reseaux-publication-400.webp" alt="" width="400" height="300" loading="lazy" fetchPriority="low" decoding="async" /></span></figure>
             <figure className="v v5" data-t="4300">
               <span className="v-story"><i></i><i></i><i></i></span>
-              <span className="ph"><img src="/images/univers/solution-upload-09.webp" alt="" width="400" height="534" loading="lazy" fetchPriority="low" decoding="async" /></span>
+              <span className="ph"><img src="/images/v2/accueil/reseaux-story-400.webp" alt="" width="400" height="534" loading="lazy" fetchPriority="low" decoding="async" /></span>
             </figure>
           </div>
 
@@ -613,27 +608,31 @@ export default function Univers() {
             <div className="sl4-rail">
               {/* T-065 (31/08/2026) — le srcset colle a la taille PEINTE : les
                   figures font 15vw au-dela de 1000px, 38vw en dessous
-                  (univers.css). Variantes -240/-360 par scripts/images-galerie.mjs ;
-                  l'original 450 reste le plafond pour les iPhone 3x.
+                  (univers.css). Mesure du 14/09/2026 : 192 px CSS a 1280.
                   La seconde serie, aria-hidden, est la copie qui rend la bande
-                  infinie : memes fichiers, donc aucun octet de plus. */}
+                  infinie : memes fichiers, donc aucun octet de plus.
+                  ⚠️ LES SIX CASES PARTAGENT LE MEME RAPPORT, 4066/5750
+                  (univers.css) : c'est celui des quatre couvertures livrees
+                  le 15/09. Les textes alternatifs sont ecrits d'apres les
+                  images elles-memes, comme Mathias l'a demande le 14/09. */}
               {[false, true].map((copie) =>
                 ([
-                  ['marrakech', 'Un magazine', 'Un numéro Bellajour consacré à un voyage à Marrakech'],
-                  ['japon', 'Une BD', 'Un numéro Bellajour consacré à un voyage au Japon'],
-                  ['patagonie', 'Une affiche', 'Un numéro Bellajour consacré à un voyage en Patagonie'],
-                  ['lisbonne', 'Un album photos', 'Un numéro Bellajour consacré à un séjour à Lisbonne'],
-                  ['santorin', 'Une série de pages', 'Un numéro Bellajour consacré à un séjour à Santorin'],
-                ] as const).map(([fichier, legende, alt]) => (
-                  <figure key={`${fichier}${copie ? '-copie' : ''}`} aria-hidden={copie || undefined}>
+                  ['/images/v2/accueil/couverture-the-boys', [240, 360, 600], 'Un magazine', 'Un numéro Bellajour intitulé « The Boys » : cinq hommes en smoking sur un escalier, un soir de fête'],
+                  ['/images/v2/accueil/couverture-this-night', [240, 360, 600], 'Une soirée', 'Un numéro Bellajour intitulé « This Night » : une jeune femme sur une banquette de velours rouge, un verre à la main'],
+                  ['/images/v2/accueil/couverture-lisbonne', [240, 360, 600], 'Un séjour', 'Un numéro Bellajour consacré à un séjour à Lisbonne : une partie de mini-golf sous les néons'],
+                  ['/images/v2/accueil/couverture-cote-azur', [240, 360, 600], 'Un voyage', 'Un numéro Bellajour consacré à la Côte d’Azur : une plage et sa rotonde Belle Époque, sous un ciel bleu'],
+                  ['/images/v2/accueil/couverture-aussie', [240, 360, 600], 'Une nuit', 'Un numéro Bellajour intitulé « Aussie » : les tours d’une ville australienne illuminées à la nuit tombée'],
+                  ['/images/v2/accueil/couverture-thats-life', [240, 360, 600], 'Un matin', 'Un numéro Bellajour intitulé « That’s Life » : un lever de jour sur une ligne d’horizon, presque à contre-jour'],
+                ] as const).map(([base, largeurs, legende, alt]) => (
+                  <figure key={`${base}${copie ? '-copie' : ''}`} aria-hidden={copie || undefined}>
                     <span className="ph" data-legende={legende}>
                       <img
-                        src={`/images/lancement/galerie/${fichier}.webp`}
-                        srcSet={`/images/lancement/galerie/${fichier}-240.webp 240w, /images/lancement/galerie/${fichier}-360.webp 360w, /images/lancement/galerie/${fichier}.webp 450w`}
+                        src={`${base}-${largeurs[largeurs.length - 1]}.webp`}
+                        srcSet={largeurs.map((l) => `${base}-${l}.webp ${l}w`).join(', ')}
                         sizes="(max-width: 1000px) 38vw, 15vw"
                         alt={copie ? '' : alt}
-                        width="450"
-                        height="675"
+                        width="600"
+                        height="848"
                         loading="lazy"
                         decoding="async"
                       />
@@ -720,12 +719,26 @@ export default function Univers() {
           <div className="sl7-obj" data-t="600">
             <div className="numero" data-legende="Votre numéro 01">
               <div className="n-plat">
-                <img src="/images/lancement/galerie/marrakech.webp" alt="Un numéro Bellajour" width="450" height="675" loading="lazy" decoding="async" />
+                {/* A11, master 10524x14973 recadre en 1/1,414 (scripts/images-v2.mjs).
+                     Mesure du 14/09/2026 : le cadre fait 333 px CSS a 1280, d'ou
+                     les trois largeurs 450/700/1050 qui couvrent jusqu'au 3x. */}
+                <img
+                  src="/images/v2/accueil/couverture-rio-700.webp"
+                  srcSet="/images/v2/accueil/couverture-rio-450.webp 450w, /images/v2/accueil/couverture-rio-700.webp 700w, /images/v2/accueil/couverture-rio-1050.webp 1050w"
+                  sizes="(max-width: 1000px) 52vw, 26vw"
+                  alt="Un numéro Bellajour consacré à un séjour à Rio de Janeiro"
+                  width="450" height="636" loading="lazy" decoding="async" />
                 <div className="n-voile"></div>
-                <div className="n-tete"><span className="n-masthead">Bellajour</span><span className="n-no">N° 01</span></div>
+                {/* ⚠️ LE VISUEL LIVRE PORTE DEJA SON PROPRE TITRE (« RIO », en
+                     haut a gauche). Le bandeau « Bellajour / N° 01 » viendrait
+                     donc s'ecrire PAR-DESSUS un lettrage existant. On garde le
+                     pied, qui tombe dans le calme de la photo, et on retire la
+                     tete : deux mastheads sur une meme couverture, c'est une
+                     maquette ratee, pas une couverture. A revoir le jour ou un
+                     master sans lettrage arrive (rapport du 14/09). */}
                 <div className="n-pied">
                   <span className="n-filet"></span>
-                  <span className="n-titre">Marrakech, et le silence des toits</span>
+                  <span className="n-titre">Rio, et la lumière du matin</span>
                   <span className="n-sous">Quatre jours · 32 pages · Mars</span>
                 </div>
                 <div className="n-lum"></div><div className="n-fibre"></div><div className="n-dos"></div>
