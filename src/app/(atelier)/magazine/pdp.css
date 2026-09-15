@@ -195,14 +195,29 @@
    rapport et le recadrage silencieux reviendrait.
    ⚠️ Plus aucune rotation : Mathias les a retirees le 14/09. Les cadres sont
    droits, et c'est le chevauchement seul qui fait le collage. */
-.at-pdp .c1 { left: 0;     top: 0;     width: 39.5%; aspect-ratio: 8770 / 12478; }
+/* ⚠️ LES POSITIONS SUIVENT LA BOITE, ET LA BOITE A CHANGE le 15/09/2026.
+   Mathias : « les photos peuvent un peu plus respirer mais en restant
+   structurées, et que cela se finisse à la même hauteur en bas que le CTA ».
+   La boîte passe de 749/574 (1,305) à 749/792 (0,945) sur desktop : la seule
+   forme qui, dans une colonne de 637 px, descende jusqu'au bas de la colonne
+   de droite. Les trois cadres sont redéployés en escalier — paysage en haut à
+   droite, portrait en bas à gauche, paysage en bas à droite — chacun mordant
+   le précédent. Le chevauchement EST la composition.
+   ⚠️ LE COIN HAUT-GAUCHE RESTE VIDE, ET C'EST VOULU : c'est là que vit le mot
+   MAGAZINE. Seul c2 vient mordre sa droite, comme dans la maquette d'août.
+   Un premier essai posait c2 sur 66 % dès le bord haut : il recouvrait les
+   deux tiers du mot, qui ne se lisait plus.
+   ⚠️ Les LARGEURS ont grandi (39,5 → 42, 44 → 66, 55 → 66 %) : c'est là que
+   les photos respirent. Les hauteurs ne sont jamais écrites : chaque cadre
+   porte l'`aspect-ratio` de son master. */
+.at-pdp .c1 { left: 0;     top: 38%;   width: 44%;   aspect-ratio: 8770 / 12478; }
 /* ⚠️ 40,4 % ET NON 39,7 % DEPUIS LE 14/09/2026 : c'est la hauteur qui donne
    au cadre le rapport EXACT du master livre (M02, 12468x8770, soit 1,4217).
    A 39,7 % le cadre valait 1,4462 et `object-fit` rognait les cotes pour
    rien. La regle posee par Mathias ce jour-la est celle-ci : quand le format
    du visuel differe de celui du site, c'est le site qui bouge. */
-.at-pdp .c2 { left: 35.5%; top: -1.4%; width: 44%;   aspect-ratio: 12468 / 8770; }
-.at-pdp .c3 { left: 30%;   top: 38%;   width: 55%;   aspect-ratio: 4000 / 2828; }
+.at-pdp .c2 { left: 40%;   top: 0;     width: 60%;   aspect-ratio: 12468 / 8770; }
+.at-pdp .c3 { left: 30%;   top: 47%;   width: 70%;   aspect-ratio: 4000 / 2828; }
 
 /* c3 est une DOUBLE PAGE, pas une couverture — même objet que la maquette de
    la section « L'objet », donc même pli central, à la même intensité
@@ -488,6 +503,17 @@
      Sans effet sur telephone, ou la colonne fait sa hauteur de contenu. */
   .at-pdp .colonne-recit { justify-content: space-between; }
 
+  /* ── LE TITRE SE CALE SUR LE MOT, PAS SUR LA BOITE (15/09/2026) ──
+     Mathias : « le titre Un moment de vie aligné à MAGAZINE ». Les deux
+     colonnes partent du meme haut, mais les deux textes n'ont pas le meme
+     interligne : MESURE AU PIXEL sur la capture (premiere ligne d'encre de
+     chaque cote, 1440 x 900), l'encre du mot commence 4 px plus bas que celle
+     du titre. On descend donc le recit de ces 4 px.
+     ⚠️ Exprime en EM DU MOT, pas en pixels : le mot vaut min(7,6vw, 110px),
+     donc son interligne grandit avec la fenetre — un nombre fixe se
+     desalignerait des qu'on change de largeur. 4 / 109,4 = 0,0366. */
+  .at-pdp .colonne-recit { padding-top: calc(0.0366 * min(7.6vw, 110px)); }
+
   /* ── LES DEUX COLONNES REMPLISSENT L'ECRAN, LE PARCOURS TOMBE DESSOUS ──
      Sans ce plancher, le parcours commencait a 841 px sur un ecran de 900 :
      on en voyait la premiere bande, ce qui est exactement ce que Mathias ne
@@ -540,7 +566,7 @@
      de contenu sans lui, et le collage refuserait de se comprimer sur un
      ecran court. La colonne ne centre donc plus rien — il n'y a plus de vide
      a repartir. */
-  .at-pdp .kiosque > div:first-child { justify-content: center; }
+  .at-pdp .kiosque > div:first-child { justify-content: flex-start; }
   .at-pdp .bloc-collage { flex: 0 1 auto; min-height: 0; display: flex; }
   /* ⚠️ `aspect-ratio: auto` A ETE RETIRE le 14/09/2026 (2e passage). Il
      laissait le collage prendre toute la hauteur restante — ce qui reglait
@@ -551,7 +577,13 @@
      La boite garde donc ses proportions, et la colonne CENTRE ce qui reste
      au lieu de tout laisser tomber en bas : le vide se partage en haut et en
      bas, ou il ne se lit plus comme un oubli. */
-  .at-pdp .collage { flex: 0 1 auto; min-height: 0; width: 100%; }
+  /* ⚠️ 749/792 ET NON 749/574 (15/09/2026). Ce nombre n'est pas un gout, il
+     est CALCULE : la colonne de gauche fait 637 px de large et doit descendre
+     jusqu'au bas de la colonne de droite. Il reste 674 px sous le masthead,
+     chevauchement compris. 637/674 = 0,945, soit 749/792. Toute autre valeur
+     laisse du noir sous le collage ou le fait deborder. A remesurer si le
+     masthead, la gouttiere ou la largeur des colonnes changent. */
+  .at-pdp .collage { flex: 0 1 auto; min-height: 0; width: 100%; aspect-ratio: 749 / 792; }
 }
 
 /* ---- les trois paliers ----
@@ -862,7 +894,17 @@
      trois cadres sont donc redéployés de 0 à 100 %.
      La HAUTEUR ne bouge pas — même `aspect-ratio` qu'avant. C'est elle qui
      décide si le bouton reste dans l'écran : on élargit, on ne grandit pas. */
-  .at-pdp .collage { margin-top: -3.4vw; aspect-ratio: 11 / 5; }
+  /* ⚠️ 100/37 ET NON 11/5 (15/09/2026). Mathias : « sur mobile c'est juste les
+     photos qu'il faut un peu plus aligner ».
+     Les trois cadres sont desormais poses sur UNE MEME LIGNE DE BASE
+     (`bottom: 0`) au lieu d'etre decales par trois `top` differents. Un
+     `bottom` tient a toutes les largeurs, quel que soit le rapport de la
+     boite, la ou un `top` en pourcentage se desalignait a chaque point de
+     rupture — c'est ce qui donnait la rangee en escalier de la capture.
+     La boite epouse alors le plus haut des trois, le portrait c1 :
+        hauteur = 26 % de la largeur / 0,7028 = 0,37 x largeur
+     d'ou 100/37. Une boite plus haute ne ferait que du noir au-dessus. */
+  .at-pdp .collage { margin-top: -3.4vw; aspect-ratio: 100 / 37; }
 
   /* Memes formats qu'en desktop, recalcules pour une boite 11/5 :
         c1  28,3 % -> 0,708  -> 88 %
@@ -874,9 +916,9 @@
   /* Seules les LARGEURS et les positions changent ici : le rapport de chaque
      cadre vient de son `aspect-ratio`, pose une fois plus haut, et vaut donc
      aussi bas que large soit l'ecran. */
-  .at-pdp .c1 { left: 0;   top: 4%;  width: 26%; }
-  .at-pdp .c2 { left: 29%; top: 6%;  width: 34%; }
-  .at-pdp .c3 { left: 65%; top: 28%; width: 35%; }
+  .at-pdp .c1 { left: 0;   top: auto; bottom: 0; width: 26%; }
+  .at-pdp .c2 { left: 29%; top: auto; bottom: 0; width: 34%; }
+  .at-pdp .c3 { left: 65%; top: auto; bottom: 0; width: 35%; }
 
 
   /* Le premier écran d'un téléphone se compte au pixel. Chaque valeur
@@ -958,7 +1000,9 @@
      est parti dans la respiration et dans les corps de texte, pas dans
      l'image. C'est le bon arbitrage : un bouton hors de vue coûte plus cher
      qu'une photo de 40 px de moins. */
-  .at-pdp .collage { aspect-ratio: 11 / 5.8; }
+  /* Rapport retire le 15/09 : depuis que la boite epouse le plus haut des
+     trois cadres (100/37, plus haut), toute autre valeur ne fait que du noir
+     au-dessus de la ligne de base. */
 
   /* ── 3 · LES TROIS ÉCARTS ──
      `.titre` et `.lede` sont dans le même Reveal : ils se touchent de
@@ -1173,7 +1217,8 @@
    .at-pdp .prix .euros { font-size: 26px; } */
 @media (min-width: 721px) and (max-width: 900px) and (max-height: 700px) {
   .at-pdp .kiosque { padding-top: calc(var(--nav-h) + 8px); gap: 10px; }
-  .at-pdp .collage { aspect-ratio: 5 / 2; }
+  /* Rapport retire le 15/09 : voir 100/37 plus haut. Il servait a raccourcir
+     le collage sur un ecran court ; 100/37 est deja plus court que 5/2. */
   .at-pdp .lede { font-size: 14px; }
   .at-pdp .acte { margin-top: 10px; }
 }
@@ -1193,7 +1238,8 @@
 @media (max-width: 720px) and (max-height: 700px) {
   .at-pdp { --dedans: 10px; --entre: 22px; --chapitre: 56px; }
   .at-pdp .kiosque { padding-top: calc(var(--nav-h) + 14px); }
-  .at-pdp .collage { aspect-ratio: 5 / 2; }
+  /* Rapport retire le 15/09 : voir 100/37 plus haut. Il servait a raccourcir
+     le collage sur un ecran court ; 100/37 est deja plus court que 5/2. */
   .at-pdp .lede { font-size: 15px; line-height: 1.6; }
   .at-pdp .prix-ligne { padding: 11px 0; }
   .at-pdp .prix-ligne .des { font-size: 32px; }

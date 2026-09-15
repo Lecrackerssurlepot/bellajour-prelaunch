@@ -242,3 +242,34 @@ qu'à l'accompagner.
 **`.c3` reçoit le même pli.** Le troisième cadre du collage est une double page (M03), pas une
 couverture : même objet, même traitement, même intensité. `c1` et `c2` n'y ont pas droit — ce sont
 des pages seules, et une pliure au milieu y inventerait un objet qui n'existe pas.
+
+
+## 15/09/2026 — la structure du premier écran de /magazine
+
+Trois demandes de Mathias, toutes vérifiées à la mesure.
+
+**1. « Le titre Un moment de vie aligné à MAGAZINE. »** Les deux colonnes partaient déjà du même
+haut, mais leurs interlignes diffèrent. Mesure au pixel sur la capture (première ligne d'encre de
+chaque côté, 1440×900) : l'encre du mot commençait **4 px plus bas** que celle du titre. Le récit
+descend donc de 4 px, exprimés en **em du mot** (`calc(0.0366 * min(7.6vw, 110px))`) et non en
+pixels, sinon l'alignement se perdrait au changement de largeur. Revérifié après coup : **encre
+MAGAZINE 108, encre titre 108**.
+
+**2. « Que cela se finisse à la même hauteur en bas que le CTA. »** La colonne de gauche repart du
+haut (`flex-start`, mon centrage de la veille est annulé) et la boîte du collage passe de
+**749/574 à 749/792**. Ce nombre est calculé, pas choisi : 637 px de large, 674 px à couvrir sous
+le masthead, chevauchement compris. 637/674 = 0,945. Mesuré après : `.collage` bas = **837**,
+`.bloc-acte` bas = **837**.
+
+**3. « Les photos peuvent un peu plus respirer mais en restant structurées. »** Les largeurs
+passent de 39,5/44/55 % à 44/60/70 %, et les trois cadres se redéploient en escalier : paysage en
+haut à droite, portrait en bas à gauche, paysage en bas. ⚠️ Le coin haut-gauche reste vide, c'est
+là que vit le mot MAGAZINE — un premier essai à 66 % dès le bord haut en recouvrait les deux
+tiers.
+
+**Mobile : les photos partagent une ligne de base.** Elles étaient décalées par trois `top`
+différents, qui se désalignaient à chaque point de rupture puisque les hauteurs sont déduites des
+largeurs. Elles sont posées en `bottom: 0` : l'alignement tient à toutes les largeurs. La boîte
+épouse alors le plus haut des trois (le portrait), d'où `aspect-ratio: 100/37` — et les trois
+autres rapports (11/5.8, 5/2 deux fois) deviennent sans objet, ils ne feraient que du noir
+au-dessus de la ligne de base.
