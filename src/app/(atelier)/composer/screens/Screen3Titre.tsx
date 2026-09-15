@@ -62,7 +62,14 @@ export default function Screen3Titre({
   const affiche = value.trim() || TITRE_PLACEHOLDER
 
   return (
-    <>
+    /* ── DEUX COLONNES À PARTIR DE 900 px (15/09, demande de Mathias) ──────
+       « Il faut qu'on voie bien les affiches : sur desktop les mettre en grand
+       à droite, où on peut scroller seulement dans les templates. »
+       La question et le champ restent à gauche, les modèles passent à droite
+       et gagnent le double de largeur. Sous 900 px, tout se remet en colonne
+       et les modèles deviennent un rail qu'on fait défiler au pouce. */
+    <div className="at-t-deux">
+     <div className="at-t-col">
       <p className="at-kicker">Le titre</p>
       <h2>Donnez un titre<br />à votre numéro.</h2>
       <p className="at-lede at-q-lede">
@@ -110,6 +117,9 @@ export default function Screen3Titre({
         )}
       </div>
 
+     </div>
+
+     <div className="at-t-modeles">
       {/* ── LE STYLE (15/09/2026, T-091) ───────────────────────────────────
           Les deux couvertures dessinées en CSS deviennent quatre modèles
           livrés par l'atelier graphique, et le choix EST enregistré : « on
@@ -126,7 +136,11 @@ export default function Screen3Titre({
           boutons sans effet. Ici le clic fait quelque chose, et l'état
           sélectionné se voit. */}
       <p className="at-covers-chapeau">
-        Un style vous parle déjà&nbsp;? <span>Facultatif — et l’atelier composera le vôtre avec vos photos.</span>
+        Un style vous parle déjà&nbsp;?{' '}
+        <span>
+          Facultatif&nbsp;: voici des exemples de templates. L’atelier composera le vôtre
+          avec vos photos.
+        </span>
       </p>
       <div className="at-covers" role="group" aria-label="Style de couverture">
         {COVER_MODELS.map((m) => {
@@ -183,6 +197,7 @@ export default function Screen3Titre({
           <span className="at-cov-tag">Surprenez-moi</span>
         </button>
       </div>
-    </>
+     </div>
+    </div>
   )
 }
