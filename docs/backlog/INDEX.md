@@ -59,7 +59,15 @@ la migration `20260910_atelier_prix_gele.sql` (sans elle, aucun aperçu ne peut 
 plafond de livraison, la règle HT → TTC du port, et la poussée des templates M3/M3b/M10 vers Brevo.
 Le détail daté est dans `docs/reference/ETAT-PRODUCTION.md`.
 
-## Où on en était (08/09/2026, après la séance « on finit tout »)
+## Où on en était (15/09/2026, après le chantier des visuels)
+
+**Recompté fiche par fiche le 15/09 : 113 tickets ouverts depuis le début, 36 encore ouverts,
+77 fermés, et AUCUN bloquant.** Sur les 36 : **31 attendent une décision de Mathias**,
+5 sont marqués `libre`. Répartition : 28 `serieux`, 7 `confort`.
+
+Le chantier des visuels a fermé T-069 et fait avancer T-085 (voir leurs lignes).
+
+### Ce que disait le compte précédent (08/09/2026)
 
 **105 tickets ouverts depuis le début, 37 encore ouverts, et AUCUN bloquant — pour de vrai.**
 Le compteur en annonçait un depuis des jours : c'était T-002, dont la fiche disait elle-même
@@ -160,7 +168,7 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-066 | Ouvrir le questionnaire télécharge tout le moteur d'envoi de photos | front | serieux | libre | **fermé** (fiche dans `fermes/`) — fait le 02/09 : écrans 5 ET 6 en `next/dynamic` (l'écran 6 tirait aussi le moteur), moteur absent du chunk initial, worker servi en 200, reprise OK. Vérifié sur build prod. tsc+lint+build verts |
 | T-067 | Une page indexable vend encore un programme qu'on n'honore plus | produit | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 08/09, tranché par Mathias : page de vente archivée, `/ambassadeurs` et `POST /api/ambassadeur/register` en **410**. ⚠️ `espace/` et `charte/` RESTENT, preuve à l'appui : les mails P3/A3 déjà partis y mènent (`DASHBOARD_URL`) et la charte engage jusqu'au 31/12/2026 |
 | T-068 | Le site déclare deux fiches produit concurrentes pour un seul produit | front | serieux | libre | **fermé** (le reste → T-085) |
-| T-069 | L'image de partage promet un album, et peut casser le déploiement entier | front | serieux | avis-requis | en cours — le `throw` qui cassait le build est retiré (repli, 01/09) ; **reste le visuel** (avec le chantier visuels) + rendre son image à `/ambassadeurs` |
+| T-069 | L'image de partage promet un album, et peut casser le déploiement entier | front | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 15/09 : la vignette est un FICHIER, une photo des dix magazines imprimés ; `opengraph-image.tsx` archivé, plus aucune police distante au build ; `/ambassadeurs` répond 410, ce point était sans objet |
 | T-070 | Le retour des pages légales renvoie sur une page supprimée | front | confort | libre | **fermé** |
 | T-071 | Personne ne serait prévenu si Google rejetait le site | exploitation | confort | avis-requis | nouveau |
 | T-072 | Les prix finaux du magazine ne sont pas tranchés | paiement | serieux | avis-requis | **fermé** (10/09 : grille finale de Mathias dans `grille.ts`, livraison en sus, prix gelé) |
@@ -176,7 +184,7 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-082 | Les lectures de `CHAMPS_MAIL` n'ont pas le repli 42703 que le reste du code a | donnees | serieux | libre | **fermé** (fiche dans `fermes/`) — corrigé le 02/09 : helper `lireNumerosMail` (repli sur `CHAMPS_MAIL_REPLI`) sur les 5 lieux de lecture. Dormant tant que les colonnes existent. tsc+lint+build+harnais verts |
 | T-083 | Les CGV portugaises n'ont pas d'URL à elles et sont invisibles pour Google | front | serieux | libre | **fermé** (fiche dans `fermes/`) — fait le 03/09 : URL par langue (`/en/cgv`, `/pt/cgv`), canonical auto-référent + hreflang/x-default, `?lang=` en 308 (ref préservé), sitemap. Aucun texte légal touché. tsc+lint+build + runtime verts |
 | T-084 | Deux dossiers ouverts pour la même adresse ne sont signalés nulle part | admin | serieux | libre | **fermé** (fiche dans `fermes/`) — part 1 (constat Santé orange, sur `email_canonical`) livrée le 02/09 (PR #27) ; part 2 (lien sur la fiche) existait déjà (« Ses autres numéros »). tsc+lint+harnais verts, détection validée sur la base |
-| T-085 | La fiche produit de `/magazine` n'a ni image conforme ni conditions marchandes | produit | serieux | avis-requis | nouveau |
+| T-085 | La fiche produit de `/magazine` n'a ni image conforme ni conditions marchandes | produit | serieux | avis-requis | en cours — 15/09 : l'image du `Product` passe de 450 à **1600 px**. ⚠️ Mais le master BJ-M07 est le doublon de la double page, pas la photo d'objet : Mathias le garde en point, sans le changer. Le point 2 (conditions marchandes) n'a pas bougé |
 | T-086 | Sur desktop, la bande « étapes 1-2-3 » occupe un espace sans rapport avec son contenu | front | confort | avis-requis | **fermé** (fiche dans `fermes/`) — livré le 07/09, prouvé dans `main` le 08/09 (`content.ts:67-68`, `Kiosque.tsx:194`, branche fusionnée) |
 | T-087 | Sur téléphone, le prix de la PDP est compressé à la limite de la lisibilité | front | confort | libre | **fermé** (fiche dans `fermes/`) — fait le 03/09 : libellés des cartes remontés (`.combien` 10→11 px, `.pages` 11→12 px), interlignes resserrés pour ne PAS bouger le bouton (delta 0 mesuré à 375×667). build vert |
 | T-088 | Le logo en haut du questionnaire et de la page cliente est un clic mort | front | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — livré le 07/09, prouvé dans `main` le 08/09 (`Composer.tsx:443,497,505`, branche fusionnée). `/numero` non touché, choix produit documenté |
