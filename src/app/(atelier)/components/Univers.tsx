@@ -622,7 +622,7 @@ export default function Univers() {
                   ['/images/v2/accueil/a08', [240, 360, 600], 'Un séjour', 'Un numéro Bellajour consacré à un séjour à Lisbonne : une partie de mini-golf sous les néons'],
                   ['/images/v2/accueil/a09', [240, 360, 600], 'Un voyage', 'Un numéro Bellajour consacré à la Côte d’Azur : une plage et sa rotonde Belle Époque, sous un ciel bleu'],
                   ['/images/v2/accueil/a10', [240, 360, 600], 'Une nuit', 'Un numéro Bellajour intitulé « Aussie » : les tours d’une ville australienne illuminées à la nuit tombée'],
-                  ['/images/v2/accueil/a12', [240, 360, 600], 'Un matin', 'Un numéro Bellajour au titre manuscrit : un lever de jour sur une ligne d’horizon, presque à contre-jour'],
+                  ['/images/v2/accueil/a12', [240, 360, 600], 'Un matin', 'Un numéro Bellajour intitulé « That’s Life » : un lever de jour sur une ligne d’horizon, presque à contre-jour'],
                 ] as const).map(([base, largeurs, legende, alt]) => (
                   <figure key={`${base}${copie ? '-copie' : ''}`} aria-hidden={copie || undefined}>
                     <span className="ph" data-legende={legende}>

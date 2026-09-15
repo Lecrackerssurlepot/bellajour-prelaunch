@@ -439,9 +439,11 @@ rapport. Mesuré : les six cases font **272 × 385 px** à 1990 de large, identi
 page elle-même noire, elle se lit surtout par sa bande d'horizon. C'est un parti pris de l'image,
 pas un défaut d'intégration ; à signaler à Mathias plutôt qu'à corriger par un filtre.
 
-⚠️ **Son titre manuscrit n'est pas lisible avec certitude** (« That's Life » ? la capitale est
-très stylisée). Le texte alternatif décrit donc la scène sans citer le titre : on ne met pas dans
-un `alt` — lu par les lecteurs d'écran et par Google — un mot qu'on n'est pas sûr de lire.
+**Son titre est « That's Life »**, relu à pleine résolution après recadrage et éclaircissement :
+la capitale est un T calligraphié dont la barre s'enroule en boucle à gauche, ce qui la faisait
+passer pour un D ou un S sur l'aperçu. Le texte alternatif le cite désormais.
+⚠️ La méthode reste la règle : on ne met pas dans un `alt` — lu par les lecteurs d'écran et par
+Google — un mot qu'on n'a pas réussi à lire. On va le relire à la source.
 
 
 ## 15/09/2026 (soir) — la Sicile passe devant
