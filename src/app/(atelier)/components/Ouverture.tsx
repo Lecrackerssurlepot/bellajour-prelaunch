@@ -379,7 +379,7 @@ export default function Ouverture() {
                  des deux <link rel="preload"> de page.tsx. */}
             <source
               media="(orientation: landscape)"
-              srcSet="/images/v2/accueil/header-magazines-paysage-1280.webp 1280w, /images/v2/accueil/header-magazines-paysage-1920.webp 1920w, /images/v2/accueil/header-magazines-paysage-2560.webp 2560w"
+              srcSet="/images/v2/accueil/header-magazines-paysage-1280.webp 1280w, /images/v2/accueil/header-magazines-paysage-1792.webp 1792w, /images/v2/accueil/header-magazines-paysage-2560.webp 2560w"
               sizes="100vw"
             />
             <img

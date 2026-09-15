@@ -544,3 +544,27 @@ pas d'un pixel — et ne se voit que là où la couverture se confond avec le fo
 ⚠️ **Ce n'est pas la « bordure en bas » refusée sur Rio.** Celle-là simulait une épaisseur de
 papier sous l'objet. Celui-ci est l'arête de la carte, sur ses quatre côtés, et il n'existe que
 pour les images qui se noient.
+
+
+## 15/09/2026 — deux images en 404 alors qu'elles étaient déployées
+
+`couverture-the-boys-600.webp` et `header-magazines-paysage-1920.webp` répondaient **404 en
+production** pendant que les fichiers étaient dans le commit déployé, valides et servis
+parfaitement en local. Les quatre autres largeurs des mêmes familles marchaient.
+
+**La cause, et elle vient de moi.** J'avais interrogé ces deux adresses **avant** que le
+déploiement ne bascule. Elles ont répondu 404 — et `next.config.ts` pose
+`Cache-Control: public, max-age=86400` sur **tout** ce qui commence par `/images/`, **y compris une
+réponse d'erreur**. Le CDN a gardé le 404 vingt-quatre heures. Vérifié :
+`x-vercel-cache: HIT`, `age: 1502`, `x-matched-path: /404`. **Le déploiement suivant ne l'a pas
+purgé.**
+
+`headers()` ne sait pas distinguer un 200 d'un 404 : la règle ne peut pas se corriger dans la
+configuration.
+
+⚠️ **RÈGLE DE TRAVAIL : ne jamais interroger l'adresse d'une image en production avant que son
+déploiement soit prêt.** Un seul `curl` suffit à l'empoisonner pour un jour.
+
+**Le remède appliqué** est celui qu'écrit `next.config.ts` lui-même : changer le nom. Les deux
+largeurs concernées sont décalées — les couvertures passent de **600 à 640**, le paysage du header
+de **1920 à 1792**. Ce ne sont pas des valeurs de confort, ce sont des adresses neuves.

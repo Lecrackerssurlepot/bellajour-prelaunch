@@ -49,7 +49,23 @@ const nextConfig: NextConfig = {
                le fichier sur disque était le bon.
                Ce n'est pas un contournement : `next dev` ne sert à mesurer ni
                la vitesse ni le cache, et la valeur de production n'est pas
-               touchée. */
+               touchée.
+
+               ⚠️⚠️ CE CACHE S'APPLIQUE AUSSI AUX 404, ET ÇA COÛTE CHER.
+               Le 15/09/2026, deux images ont répondu 404 en production
+               pendant que les fichiers étaient déployés et valides. La cause :
+               j'avais interrogé leurs adresses AVANT que le déploiement ne
+               bascule. Elles ont répondu 404, ce motif `/images/:chemin*` a
+               posé `max-age=86400` SUR LA RÉPONSE D'ERREUR, et le CDN l'a
+               gardée vingt-quatre heures. Le déploiement suivant ne l'a pas
+               purgée — vérifié : `x-vercel-cache: HIT`, `age: 1502`.
+               `headers()` ne sait pas distinguer un 200 d'un 404 : la règle
+               ne peut pas se corriger ici.
+               LA RÈGLE DE TRAVAIL EST DONC : ne jamais interroger l'adresse
+               d'une image en production avant que son déploiement soit prêt.
+               Un seul `curl` suffit à l'empoisonner pour un jour.
+               LE REMÈDE, si ça arrive : changer le NOM du fichier, comme dit
+               plus haut. C'est ce qui a été fait (600 → 640, 1920 → 1792). */
             value:
               process.env.NODE_ENV === "production"
                 ? "public, max-age=86400, stale-while-revalidate=2592000"

@@ -45,6 +45,22 @@ import os from 'node:os'
    découvre sur une autre machine.
    ⚠️ Aucun navigateur ne sert le HEIC : la conversion n'est pas un confort,
    elle est obligatoire. */
+/* ⚠️ POURQUOI 640 ET 1792, ET PAS 600 ET 1920 (15/09/2026, en production).
+   Ces deux valeurs ont été DÉCALÉES pour changer d'adresse, pas pour un
+   gain d'image. `couverture-the-boys-600.webp` et
+   `header-magazines-paysage-1920.webp` répondaient 404 en production alors
+   que les fichiers étaient bien déployés et valides.
+   LA CAUSE : j'avais interrogé ces deux adresses AVANT que le déploiement ne
+   bascule. Elles ont répondu 404 — et `next.config.ts` pose
+   `Cache-Control: public, max-age=86400` sur TOUT ce qui commence par
+   `/images/`, y compris une réponse d'erreur. Le CDN a donc gardé le 404
+   pendant vingt-quatre heures, et le déploiement suivant ne l'a pas purgé.
+   Les quatre autres largeurs des mêmes familles marchaient parfaitement :
+   je ne les avais pas sondées.
+   LE REMÈDE est celui qu'écrit next.config.ts lui-même : changer le NOM.
+   ⚠️ NE JAMAIS INTERROGER UNE ADRESSE D'IMAGE EN PRODUCTION AVANT QUE SON
+   DÉPLOIEMENT NE SOIT PRÊT. Un seul `curl` suffit à l'empoisonner pour un
+   jour. */
 const TEMPO = path.join(os.tmpdir(), 'bellajour-heic')
 async function lisible(chemin) {
   if (!/\.heic$/i.test(chemin)) return chemin
@@ -95,7 +111,7 @@ const TRAVAUX = [
      pas un grand écran en portrait. On ne l'agrandit pas — interdit n° 5 : le
      plafond reste à sa largeur réelle. */
   { de: `${MASTERS}/BJ-A01.HEIC`, vers: 'accueil/header-magazines', ratio: null, largeurs: [640, 960, 1280, 2125] },
-  { de: `${MASTERS}/BJ-A01L.HEIC`, vers: 'accueil/header-magazines-paysage', ratio: null, largeurs: [1280, 1920, 2560] },
+  { de: `${MASTERS}/BJ-A01L.HEIC`, vers: 'accueil/header-magazines-paysage', ratio: null, largeurs: [1280, 1792, 2560] },
 
   /* ── LA BANDE DE LA PAGE 04 ───────────────────────────────────────────
      Le rail impose UN seul rapport à ses cinq cases (2:3, univers.css) : le
@@ -115,12 +131,12 @@ const TRAVAUX = [
      seule rognée. Mathias l'a remplacée par une couverture (« Aussie ») et en
      a ajouté une SIXIÈME (A12). Les six partagent maintenant le même master
      4066x5750, et pas un pixel n'est coupé. */
-  { de: `${MASTERS}/BJ-A06.png`, vers: 'accueil/couverture-the-boys', ratio: null, largeurs: [240, 360, 600] },
-  { de: `${MASTERS}/BJ-A07.png`, vers: 'accueil/couverture-this-night', ratio: null, largeurs: [240, 360, 600] },
-  { de: `${MASTERS}/BJ-A08.png`, vers: 'accueil/couverture-lisbonne', ratio: null, largeurs: [240, 360, 600] },
-  { de: `${MASTERS}/BJ-A09.png`, vers: 'accueil/couverture-cote-azur', ratio: null, largeurs: [240, 360, 600] },
-  { de: `${MASTERS}/BJ-A10.png`, vers: 'accueil/couverture-aussie', ratio: null, largeurs: [240, 360, 600] },
-  { de: `${MASTERS}/BJ-A12.png`, vers: 'accueil/couverture-thats-life', ratio: null, largeurs: [240, 360, 600] },
+  { de: `${MASTERS}/BJ-A06.png`, vers: 'accueil/couverture-the-boys', ratio: null, largeurs: [240, 360, 640] },
+  { de: `${MASTERS}/BJ-A07.png`, vers: 'accueil/couverture-this-night', ratio: null, largeurs: [240, 360, 640] },
+  { de: `${MASTERS}/BJ-A08.png`, vers: 'accueil/couverture-lisbonne', ratio: null, largeurs: [240, 360, 640] },
+  { de: `${MASTERS}/BJ-A09.png`, vers: 'accueil/couverture-cote-azur', ratio: null, largeurs: [240, 360, 640] },
+  { de: `${MASTERS}/BJ-A10.png`, vers: 'accueil/couverture-aussie', ratio: null, largeurs: [240, 360, 640] },
+  { de: `${MASTERS}/BJ-A12.png`, vers: 'accueil/couverture-thats-life', ratio: null, largeurs: [240, 360, 640] },
 
   /* A11 — le numéro de la page 07. Master 10524x14973 (0,7029) contre un
      cadre en 1/1,414 (0,7072) : 0,6 % d'écart, un recadrage invisible. */

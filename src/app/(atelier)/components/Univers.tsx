@@ -617,12 +617,12 @@ export default function Univers() {
                   images elles-memes, comme Mathias l'a demande le 14/09. */}
               {[false, true].map((copie) =>
                 ([
-                  ['/images/v2/accueil/couverture-the-boys', [240, 360, 600], 'Un magazine', 'Un numéro Bellajour intitulé « The Boys » : cinq hommes en smoking sur un escalier, un soir de fête'],
-                  ['/images/v2/accueil/couverture-this-night', [240, 360, 600], 'Une soirée', 'Un numéro Bellajour intitulé « This Night » : une jeune femme sur une banquette de velours rouge, un verre à la main'],
-                  ['/images/v2/accueil/couverture-lisbonne', [240, 360, 600], 'Un séjour', 'Un numéro Bellajour consacré à un séjour à Lisbonne : une partie de mini-golf sous les néons'],
-                  ['/images/v2/accueil/couverture-cote-azur', [240, 360, 600], 'Un voyage', 'Un numéro Bellajour consacré à la Côte d’Azur : une plage et sa rotonde Belle Époque, sous un ciel bleu'],
-                  ['/images/v2/accueil/couverture-aussie', [240, 360, 600], 'Une nuit', 'Un numéro Bellajour intitulé « Aussie » : les tours d’une ville australienne illuminées à la nuit tombée'],
-                  ['/images/v2/accueil/couverture-thats-life', [240, 360, 600], 'Un matin', 'Un numéro Bellajour intitulé « That’s Life » : un lever de jour sur une ligne d’horizon, presque à contre-jour'],
+                  ['/images/v2/accueil/couverture-the-boys', [240, 360, 640], 'Un magazine', 'Un numéro Bellajour intitulé « The Boys » : cinq hommes en smoking sur un escalier, un soir de fête'],
+                  ['/images/v2/accueil/couverture-this-night', [240, 360, 640], 'Une soirée', 'Un numéro Bellajour intitulé « This Night » : une jeune femme sur une banquette de velours rouge, un verre à la main'],
+                  ['/images/v2/accueil/couverture-lisbonne', [240, 360, 640], 'Un séjour', 'Un numéro Bellajour consacré à un séjour à Lisbonne : une partie de mini-golf sous les néons'],
+                  ['/images/v2/accueil/couverture-cote-azur', [240, 360, 640], 'Un voyage', 'Un numéro Bellajour consacré à la Côte d’Azur : une plage et sa rotonde Belle Époque, sous un ciel bleu'],
+                  ['/images/v2/accueil/couverture-aussie', [240, 360, 640], 'Une nuit', 'Un numéro Bellajour intitulé « Aussie » : les tours d’une ville australienne illuminées à la nuit tombée'],
+                  ['/images/v2/accueil/couverture-thats-life', [240, 360, 640], 'Un matin', 'Un numéro Bellajour intitulé « That’s Life » : un lever de jour sur une ligne d’horizon, presque à contre-jour'],
                 ] as const).map(([base, largeurs, legende, alt]) => (
                   <figure key={`${base}${copie ? '-copie' : ''}`} aria-hidden={copie || undefined}>
                     <span className="ph" data-legende={legende}>
