@@ -682,6 +682,37 @@
 
 .at-pdp .double img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
+/* ── LE PLI CENTRAL — ce qui donne vraiment le volume (15/09/2026) ──
+   Il avait été retiré la veille au motif que « le master porte déjà son
+   propre pli ». C'ÉTAIT FAUX, vérification faite sur le fichier : les deux
+   feuillets d'AUSTRALIA se rejoignent à 50,1 % de la largeur, et aucune
+   pliure n'y est dessinée. Mathias : « ce qui m'intéresse c'est surtout
+   l'ombre au centre de la double page ».
+   C'est la bonne intuition, et c'est de l'optique : sur un magazine ouvert
+   à plat, le papier se CREUSE vers la reliure. Ce creux reçoit moins de
+   lumière, donc il s'assombrit des deux côtés en approchant du centre, avec
+   la ligne de couture la plus noire au milieu. Aucune ombre portée ne peut
+   produire cela — c'est une ombre INTERNE, et c'est elle qu'on lit comme
+   l'épaisseur de l'objet.
+   ⚠️ Un pseudo-élément, pas un nœud : rien à ajouter au balisage, et
+   l'`overflow: hidden` du parent le borne proprement.
+   ⚠️ `pointer-events: none` : il couvre toute l'image, il ne doit rien
+   intercepter. */
+.at-pdp .double::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0) 38%,
+    rgba(0, 0, 0, 0.08) 45%,
+    rgba(0, 0, 0, 0.26) 49%,
+    rgba(0, 0, 0, 0.40) 50%,
+    rgba(0, 0, 0, 0.22) 51.5%,
+    rgba(0, 0, 0, 0.06) 56%,
+    rgba(0, 0, 0, 0) 63%);
+}
+
 /* ---- ce qui est compris ---- */
 .at-pdp .compris { margin: clamp(24px, 3vw, 34px) 0 0; padding: 0; list-style: none; border-top: 1px solid var(--c-line); }
 
@@ -1155,4 +1186,7 @@
      par le <picture> de Corps.tsx : le cadre prend son rapport, il ne recadre
      plus un paysage de moitie. */
   .at-pdp .double { aspect-ratio: 2828 / 4000; }
+  /* Le master portrait est une page SEULE : un pli au milieu y dessinerait
+     une pliure qui n'existe pas. */
+  .at-pdp .double::after { display: none; }
 }

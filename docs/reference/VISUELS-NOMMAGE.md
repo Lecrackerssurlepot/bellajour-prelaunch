@@ -207,3 +207,23 @@ dessiner les tranches sans ajouter un seul nœud au document.
 ⚠️ Rien sur les côtés de Rio : Mathias a demandé le retrait des traits latéraux, et l'épaisseur
 se lit très bien sur la seule arête basse.
 ⚠️ Ne jamais « simplifier » en revenant au token `--shadow-float`.
+
+
+## 15/09/2026 — le pli central, ce qui donne vraiment le volume
+
+Mathias, devant l'écran : « ce qui m'intéresse c'est surtout l'ombre **au centre** de la double
+page ». Il a raison, et j'avais retiré `.pli` la veille sur un motif **faux** : « le master porte
+déjà son propre pli ». Vérification faite sur le fichier, les deux feuillets d'AUSTRALIA se
+rejoignent à **50,1 %** de la largeur et **aucune pliure n'y est dessinée**.
+
+C'est de l'optique, pas de la décoration : un magazine ouvert à plat **se creuse** vers la
+reliure, le creux reçoit moins de lumière, il s'assombrit des deux côtés en approchant du centre
+avec la couture la plus noire au milieu. Aucune ombre PORTÉE ne produit cela — c'est une ombre
+**interne**, et c'est elle qu'on lit comme l'épaisseur de l'objet.
+
+Posé en `.at-pdp .double::after` : un pseudo-élément, donc aucun nœud ajouté, et l'`overflow:
+hidden` du parent le borne. `pointer-events: none`, il couvre toute l'image.
+⚠️ **Masqué sous 560 px** : c'est le master PORTRAIT (M04V) qui y est servi, une page seule, où
+un pli au milieu dessinerait une pliure qui n'existe pas.
+
+Trois intensités ont été rendues côte à côte pour que Mathias tranche (`scratchpad/banc-pli.html`).
