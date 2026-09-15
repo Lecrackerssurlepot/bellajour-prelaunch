@@ -68,6 +68,20 @@ export const metadata: Metadata = {
   creator: 'Bellajour',
   publisher: 'Bellajour',
 
+  /* ⚠️ L'IMAGE DE PARTAGE EST UN FICHIER, PLUS UNE ROUTE (15/09/2026).
+     Elle était FABRIQUÉE à chaque appel par `opengraph-image.tsx` : deux
+     polices téléchargées chez Google, deux images relues par sharp, et une
+     phrase — « Nous composons vos photos en albums d'exception » — qui
+     promettait un album quand le site vend un magazine depuis le 24/08
+     (ticket T-069). Un lien collé en message privé, premier canal
+     d'acquisition, annonçait autre chose que ce qu'il ouvrait.
+     C'est désormais une photographie des dix magazines imprimés, livrée par
+     Mathias. Un fichier statique : rien à fabriquer, rien à aller chercher,
+     et plus aucune chance qu'une police injoignable fasse échouer un
+     déploiement.
+     ⚠️ URL ABSOLUE OBLIGATOIRE. Les robots d'aperçu ne résolvent pas les
+     chemins relatifs : un `/images/...` nu est simplement ignoré, et la
+     vignette disparaît sans message d'erreur. */
   openGraph: {
     type: 'website',
     locale: 'fr_FR',
@@ -75,12 +89,19 @@ export const metadata: Metadata = {
     siteName: 'Bellajour',
     title: "Bellajour — chaque moment mérite son numéro",
     description: DESCRIPTION,
+    images: [{
+      url: 'https://www.bellajour.fr' + '/images/v2/partage/bellajour-magazines-1200.png',
+      width: 1200,
+      height: 630,
+      alt: 'Dix magazines photo personnalisés Bellajour, imprimés et posés côte à côte',
+    }],
   },
 
   twitter: {
     card: 'summary_large_image',
     title: "Bellajour — chaque moment mérite son numéro",
     description: DESCRIPTION,
+    images: ['https://www.bellajour.fr' + '/images/v2/partage/bellajour-magazines-1200.png'],
   },
 
   icons: {

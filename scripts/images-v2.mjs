@@ -65,8 +65,22 @@ const TEMPO = path.join(os.tmpdir(), 'bellajour-heic')
 async function lisible(chemin) {
   if (!/\.heic$/i.test(chemin)) return chemin
   await mkdir(TEMPO, { recursive: true })
+  const brut = path.join(TEMPO, path.basename(chemin).replace(/\.heic$/i, '-brut.png'))
   const png = path.join(TEMPO, path.basename(chemin).replace(/\.heic$/i, '.png'))
-  execFileSync('sips', ['-s', 'format', 'png', chemin, '--out', png], { stdio: 'ignore' })
+  execFileSync('sips', ['-s', 'format', 'png', chemin, '--out', brut], { stdio: 'ignore' })
+  /* ⚠️ ET ON RELAVE L'ÉTIQUETTE D'ORIENTATION, sinon l'image sort À L'ENVERS.
+     `sips` applique la rotation EXIF AUX PIXELS — le PNG est droit — mais il
+     RECOPIE quand même l'étiquette dans le fichier de sortie. Relevé sur
+     BJ-P01 : pixels droits, `orientation = 3`. Le `.rotate()` de sharp, plus
+     bas, lit cette étiquette et applique un second demi-tour : la vignette de
+     partage est sortie tête en bas, et rien dans le journal ne l'a dit.
+     Réécrire le fichier avec sharp SANS `withMetadata()` supprime l'étiquette
+     sans toucher aux pixels : le `.rotate()` devient alors sans effet, ce
+     qu'il doit être sur une image déjà droite.
+     ⚠️ Les deux masters du header portaient `orientation = 1` et n'ont donc
+     rien montré. L'absence de symptôme sur un fichier ne prouve rien pour le
+     suivant. */
+  await sharp(brut, { limitInputPixels: false }).png().toFile(png)
   return png
 }
 
@@ -177,6 +191,23 @@ const TRAVAUX = [
      sous notre marque. Les trois cadrages reviendront avec un vrai master. */
   { de: `${MASTERS}/BJ-M04.png`, vers: 'magazine/magazine-photo-personnalise', ratio: null, largeurs: [1600] },
 
+  /* ── P01 — LA VIGNETTE DE PARTAGE (15/09/2026) ────────────────────────
+     Ce que voient WhatsApp, iMessage, LinkedIn et Instagram quand un lien
+     bellajour.fr est collé. Elle remplace celle que le site FABRIQUAIT à
+     chaque appel, laquelle annonçait « des albums d'exception » alors que le
+     site vend un magazine depuis le 24/08 (ticket T-069).
+     ⚠️ 1200 x 630 EXACTEMENT, et pas « à peu près » : c'est le format déclaré
+     dans les métadonnées, et un écart fait recadrer les réseaux eux-mêmes.
+     ⚠️ LE MASTER EST EN 4:3 (5712 x 4284), pas en 1,905. Le recadrage n'est
+     donc PAS confié à `attention` : sur une photo de dix objets alignés, une
+     heuristique choisirait un magazine et couperait les autres. Le cadrage
+     est calculé — pleine largeur, centré sur la bande blanche de la table,
+     MESURÉE dans l'image (y 791 à 3619, centre 2205). Les dix magazines
+     tiennent dedans, vérifié.
+     ⚠️ PNG, jamais WebP : plusieurs robots d'aperçu ne savent pas le lire et
+     n'affichent alors aucune image. */
+  { de: `${MASTERS}/BJ-P01.HEIC`, vers: 'partage/bellajour-magazines', ratio: 1200 / 630, largeurs: [1200], position: { top: 706, hauteur: 2999 }, format: 'png' },
+
   /* ── LE LOGO, AUX TAILLES OÙ ON LE REGARDE (15/09/2026) ──
      `ui/logo.webp` fait 1000 x 707 et pèse 52 Ko. MESURÉ : il n'est peint
      nulle part au-delà de 204 px CSS (la barre de `/merci`), 120 sur
@@ -210,9 +241,17 @@ for (const t of TRAVAUX) {
       console.log(`⚠️  ${t.vers}-${l} SAUTÉ : le master ne fait que ${meta.width} px de large`)
       continue
     }
-    const cible = `${CIBLE}/${t.vers}-${l}.webp`
+    const ext = t.format === 'png' ? 'png' : 'webp'
+    const cible = `${CIBLE}/${t.vers}-${l}.${ext}`
     let img = sharp(source, { limitInputPixels: false }).rotate()
-    if (t.ratio) {
+    /* Un cadrage EXPLICITE l'emporte sur toute heuristique : c'est le cas
+       quand le sujet est une rangée d'objets qu'aucune zone « intéressante »
+       ne résume (voir P01). */
+    if (t.position) {
+      const m = await sharp(source, { limitInputPixels: false }).metadata()
+      img = img.extract({ left: 0, top: t.position.top, width: m.width, height: t.position.hauteur })
+    }
+    if (t.ratio && !t.position) {
       img = img.resize({
         width: l,
         height: Math.round(l / t.ratio),
@@ -223,12 +262,12 @@ for (const t of TRAVAUX) {
     } else {
       img = img.resize({ width: l, withoutEnlargement: true })
     }
-    await img.webp({ quality: 82 }).toFile(cible)
+    await (ext === 'png' ? img.png({ quality: 90, compressionLevel: 9 }) : img.webp({ quality: 82 })).toFile(cible)
     const poids = (await stat(cible)).size
     total += poids
     ecrits++
     const dims = await sharp(cible).metadata()
-    console.log(`${`${t.vers}-${l}.webp`.padEnd(30)} ${`${dims.width}x${dims.height}`.padEnd(11)} ${String(ko(poids)).padStart(4)} Ko`)
+    console.log(`${`${t.vers}-${l}.${ext}`.padEnd(30)} ${`${dims.width}x${dims.height}`.padEnd(11)} ${String(ko(poids)).padStart(4)} Ko`)
   }
 }
 
