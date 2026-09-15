@@ -615,3 +615,72 @@ documenté). Ce n'était pas le cas avant non plus : vérifié en production. Pe
 partage des CGV, mais c'est écrit.
 BJ-P02, la vignette propre à `/magazine`, n'est pas livrée : les deux pages partagent donc la même
 image et le même message.
+
+
+## Q01 à Q04 — les modèles de couverture du questionnaire (15/09/2026)
+
+Écran 3 de `/composer` : « un style vous parle déjà ? ». Quatre modèles choisissables, plus une
+cinquième case « aucune préférence ». Le choix est enregistré et remonte à la fiche du dossier.
+
+**Ces visuels se livrent PAR PAIRES** — c'est la seule famille du dépôt dans ce cas.
+
+| Code | Modèle | Avec titre | Sans titre | Fichier d'origine |
+|---|---|---|---|---|
+| Q01 | Aussie | `BJ-Q01.png` | `BJ-Q01-nu.png` | `5.png` / `6.png` |
+| Q02 | Mon année | `BJ-Q02.png` | `BJ-Q02-nu.png` | `8.png` / `9.png` |
+| Q03 | Sicile | `BJ-Q03.png` | `BJ-Q03-nu.png` | `31.png` / `32.png` |
+| Q04 | This Night | `BJ-Q04.png` | `BJ-Q04-nu.png` | `BJ-A07.png` / `16.png` |
+
+⚠️ **Q04 est le MÊME master que A07**, la deuxième couverture de la bande de l'accueil. Deux
+codes, un fichier : c'est voulu, pas un doublon à nettoyer.
+
+⚠️ **Les masters sont des liens durs** (`ln`) vers `visus bellajour/`, pas des copies : Q03 pèse
+70 Mo et Q04 26 Mo. Les dupliquer coûterait 250 Mo pour rien. Un `cp` à la place casserait le
+lien sans que rien ne le signale.
+
+### Pourquoi deux fichiers, et à quoi sert celui qui porte le titre
+
+Seule la version **avec titre** est servie aujourd'hui. La version **nue** ne s'affiche nulle
+part : elle sert à MESURER. En superposant les deux (différence pixel à pixel, seuil 18/255,
+segmentation par bandes) on obtient l'endroit exact où le graphiste a posé son lettrage. Mesures
+du 15/09, en % de la couverture, reportées dans `coverModels.ts` (`zone`) :
+
+| Modèle | Le titre | La seconde ligne |
+|---|---|---|
+| Q01 Aussie | x 29,2 → 86,6 %, y 6,1 → 18,5 % | « 2026 », centrée, y 95,3 → 96,7 % |
+| Q02 Mon année | x 7,8 → 22,4 %, y 11 → 17,3 % | « MON ANNEE », x 80,2 → 92,6 % |
+| Q03 Sicile | x 13 → 87,4 %, y 17 → 83 % | — |
+| Q04 This Night | x 14,8 → 87,4 %, y 3 → 19,8 % | — |
+
+Ces mesures serviront à l'**étape 2**, quand le titre tapé par le client s'écrira en direct sur la
+plaque nue. La règle de découpe est écrite dans `coverModels.ts` (constante `DECOUPE`).
+
+### ⚠️ CE QUI BLOQUE L'ÉTAPE 2 : LES POLICES
+
+Les quatre lettrages sont dans **quatre typographies différentes, et aucune n'est Cormorant
+Garamond ni DM Sans**. Sans les fichiers de police (et le droit de les servir sur le web), écrire
+le titre du client sur les plaques nues donnerait quatre modèles au même lettrage — c'est-à-dire
+quatre fois le même modèle. C'est pour ça que ce sont les versions TITRÉES qui sont en ligne.
+
+Trois autres choses attendent Mathias :
+- **La seconde ligne** (« 2026 », « MON ANNEE ») : texte fixe posé par le site, ou report du
+  sous-titre facultatif que l'écran 3 propose déjà ?
+- **Q04, la découpe entre les deux couleurs** : « THIS » en rouge derrière, « NIGHT » en blanc
+  devant. Que devient un titre d'un seul mot ?
+- **Q04, les prénoms incrustés** (Alex, Mary, Julia, Em) sont DANS la photo : ils restent sur la
+  plaque nue. Sans conséquence pour un aperçu d'ambiance ; à refaire si ce modèle sert un jour
+  une vraie couverture, car ces prénoms-là ne seront pas ceux du client.
+
+### Deux modèles livrés, non retenus
+
+`10.png` (« Perth ») et `11.png` (« WE'RE ») n'ont pas de plaque nue et n'ont pas été retenus par
+Mathias le 15/09. Ils restent dans `visus bellajour/`, sans code.
+
+### Le piège payé ici, et il est déjà écrit plus haut
+
+`.at-cov-img` porte `width`/`height` en attributs HTML (336 × 475, pour réserver la place) : une
+image dont la largeur ET la hauteur sont définies **ignore `aspect-ratio`**. Sans `height: auto`
+en CSS, la vignette prenait 475 px de haut et `object-fit: cover` recadrait la couverture — le
+lettrage tranché, exactement ce qu'on demande au client de juger. C'est le bug des timbres de
+`/magazine` relevé le 14/09, rencontré une seconde fois le 15. La ligne est commentée dans
+`composer.css` pour qu'il n'y ait pas de troisième fois.

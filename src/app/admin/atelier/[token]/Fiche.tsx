@@ -12,6 +12,7 @@ import type { EvenementVue, Fiche as FicheVue } from "../types";
 import Loupe, { type VueLoupe } from "@/app/components/Loupe";
 import EnCharge from "./EnCharge";
 import Archivage from "../Archivage";
+import { COVER_MODELS, MODELE_AUCUN } from "@/app/(atelier)/composer/coverModels";
 import { PRENOM_COMPTE } from "@/lib/admin-auth";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import { PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
@@ -992,6 +993,25 @@ export default function Fiche({
                 <>
                   <dt>Quatrième de couverture</dt>
                   <dd>{fiche.motQuatrieme}</dd>
+                </>
+              )}
+              {/* Le style retenu à l'écran 3 (15/09, T-091). C'est une
+                  INDICATION, pas une commande : d'où « souhaite plutôt ».
+                  « Aucune préférence » s'affiche AUSSI, contrairement aux deux
+                  mots ci-dessus qui se taisent quand ils sont vides — parce
+                  qu'ici le silence et le « surprenez-moi » ne veulent pas dire
+                  la même chose pour celui qui compose. */}
+              {fiche.modeleCouverture && (
+                <>
+                  <dt>Style</dt>
+                  <dd>
+                    {fiche.modeleCouverture === MODELE_AUCUN
+                      ? "Aucune préférence — proposition libre"
+                      : `Souhaite plutôt « ${
+                          COVER_MODELS.find((m) => m.id === fiche.modeleCouverture)?.nom
+                          ?? fiche.modeleCouverture
+                        } »`}
+                  </dd>
                 </>
               )}
             </dl>

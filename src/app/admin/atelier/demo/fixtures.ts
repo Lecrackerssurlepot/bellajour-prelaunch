@@ -635,6 +635,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     /* Les mots de couverture (03/09) : la démo n'en met pas, comme la
        plupart des vrais dossiers — l'écran doit être juste sans eux. */
     sousTitre: null,
+    modeleCouverture: null,
     motQuatrieme: null,
     telephone: g.telephone || null,
     consentPhotos: !g.depotAbandonne && g.nbPhotos > 0,

@@ -61,3 +61,37 @@ Le pop-up est en place sur `/numero` à l'état `apercu_pret`, fidèle au protot
   du titre.
 - ⚠️ Ne rien inventer comme visuels : les 5 thèmes attendent les fichiers de Mathias.
 Recoupe T-089 (visionneuse) et T-092 (parcours, Q3).
+
+## ✅ ÉTAPE 1 FAITE (15/09/2026, branche `feat/modeles-couverture-questionnaire`)
+
+Mathias a livré les visuels par paires (avec et sans titre) et retenu quatre modèles : **Aussie,
+Mon année, Sicile, This Night**. Quatre au lieu des cinq envisagés le 02/09.
+
+**Ce qui est en place**
+- `coverModels.ts` réécrit : quatre modèles réels, leur visuel, leur étiquette, et les **zones de
+  titre MESURÉES** sur les paires livrées (voir `docs/reference/VISUELS-NOMMAGE.md`).
+- Écran 3 : cinq cases choisissables — les quatre modèles + « Aucune préférence / Surprenez-moi ».
+  Cliquer une case déjà retenue la libère. Le champ est **facultatif** et ne bloque rien.
+- Le rapport des aperçus passe de **2/3 à 1/1,414** : le magazine est un A4, et on montrait au
+  client une couverture qui n'avait pas la forme de l'objet qu'il recevra.
+- `draft.ts` : `modele` persisté, et gardé par `brouillonSansDossier` (il appartient à la personne).
+- `POST /api/atelier/numero` : liste blanche (`MODELES_VALIDES`), colonne `modele_couverture`,
+  repli 42703/PGRST204 comme les mots de couverture, et le choix journalisé dans `numero_cree`.
+- Fiche admin : « Style — Souhaite plutôt « Sicile » », ou « Aucune préférence — proposition
+  libre ». Ce cas-là s'affiche AUSSI, contrairement aux mots de couverture vides : pour celui qui
+  compose, le silence et le « surprenez-moi » ne veulent pas dire la même chose.
+- `verif-atelier.ts` : trois assertions neuves (survie du style, liste blanche, zones bornées).
+
+**⚠️ MIGRATION À APPLIQUER PAR MATHIAS** : `supabase/migrations/20260915_composer_modele_couverture.sql`.
+Tant qu'elle n'est pas passée, le choix n'est PAS en colonne — il reste dans le journal
+`evenements`, et la fiche admin ne l'affiche pas. Aucun dossier n'est perdu.
+
+## Étape 2 — le titre vivant, en attente
+
+Le titre tapé par le client ne s'écrit pas encore SUR les visuels. Il y faut **les fichiers des
+quatre polices** (aucune n'est Cormorant ni DM Sans) et deux arbitrages de Mathias : le sort de la
+seconde ligne (« 2026 », « MON ANNEE ») et la découpe des deux couleurs de This Night.
+La **règle de découpe** est écrite et prête (`DECOUPE` dans `coverModels.ts`) : mesurer plutôt que
+compter, conserver la masse plutôt que la taille, couper entre les mots en équilibrant les lignes,
+trois paliers avec bascule sur un repli plutôt qu'une réduction sans fin, un plancher et un
+plafond. Reste mécanique le jour où les polices arrivent.

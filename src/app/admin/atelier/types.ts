@@ -303,6 +303,10 @@ export type Fiche = {
       que le client n'a rien écrit — les deux se lisent pareil : rien. */
   sousTitre: string | null;
   motQuatrieme: string | null;
+  /** Le style de couverture retenu à l'écran 3 (15/09, T-091). Null = pas
+      répondu (ou migration 20260915 pas passée) ; 'aucune' = a répondu
+      « aucune préférence » ; sinon l'id d'un modèle de coverModels.ts. */
+  modeleCouverture: string | null;
   telephone: string | null;
   consentPhotos: boolean;
   consentCommunication: boolean;

@@ -135,6 +135,7 @@ import {
 } from "@/lib/atelier/grille";
 import { palierPour as bandePour } from "@/app/(atelier)/composer/depot/paliers";
 import { brouillonSansDossier } from "@/app/(atelier)/composer/draft";
+import { COVER_MODELS, MODELES_VALIDES } from "@/app/(atelier)/composer/coverModels";
 import { peutRecommander } from "@/lib/atelier/reimpression";
 import {
   cheminRetour,
@@ -2047,6 +2048,7 @@ const BROUILLON_MORT = {
   titre: "Nos trois jours",
   sousTitre: "Bretagne",
   motQuatrieme: "2026",
+  modele: "sicile",
   prenom: "Camille",
   email: "camille@example.com",
   telephone: "+33612345678",
@@ -2065,6 +2067,27 @@ ok("les SIX reponses exigees sont gardees (garanties nº1 et nº2)",
    && RESCAPE.telephone === BROUILLON_MORT.telephone);
 ok("les deux mots de couverture facultatifs suivent leurs reponses",
    RESCAPE.sousTitre === "Bretagne" && RESCAPE.motQuatrieme === "2026");
+/* Le style retenu appartient a la personne, pas au dossier disparu (T-091,
+   15/09) : il traverse la recreation comme ses reponses. */
+ok("le style de couverture retenu survit a la perte du dossier",
+   RESCAPE.modele === "sicile");
+
+/* La liste blanche de la route : ce qu'un POST peut ecrire en base. Elle
+   protege la fiche admin d'un style qui n'existe pas — un brouillon d'une
+   version future, ou un POST forge. */
+ok("les quatre modeles et « aucune » sont acceptes, rien d'autre",
+   MODELES_VALIDES.length === 5
+   && MODELES_VALIDES.includes("aucune")
+   && COVER_MODELS.every((m) => MODELES_VALIDES.includes(m.id))
+   && !MODELES_VALIDES.includes("")
+   && !MODELES_VALIDES.includes("vogue"));
+
+/* Les zones sont MESUREES sur les visuels livres : des bornes incoherentes
+   poseraient le titre hors de la couverture a l'etape 2. */
+ok("chaque modele porte une zone de titre bornee dans la couverture",
+   COVER_MODELS.every((m) =>
+     m.zone.gauche >= 0 && m.zone.droite <= 100 && m.zone.gauche < m.zone.droite
+     && m.zone.haut >= 0 && m.zone.bas <= 100 && m.zone.haut < m.zone.bas));
 ok("le token est efface : c'est LUI qui bloquait la recreation",
    RESCAPE.token === null);
 ok("le consentement photos retombe : il valait pour CE depot (garantie nº7)",

@@ -1020,6 +1020,8 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
        select("*") et valent null tant qu'elle n'est pas passée. */
     sousTitre: (n.sous_titre as string) ?? null,
     motQuatrieme: (n.mot_quatrieme as string) ?? null,
+    /* Le style de couverture (migration 20260915), même règle. */
+    modeleCouverture: (n.modele_couverture as string) ?? null,
     telephone: (n.telephone as string) ?? null,
     consentPhotos: n.consent_photos === true,
     consentCommunication: n.consent_communication === true,

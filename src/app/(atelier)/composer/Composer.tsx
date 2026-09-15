@@ -469,6 +469,10 @@ export default function Composer() {
              20260903_composer_mots_couverture n'est pas passée. */
           sous_titre: draft.sousTitre,
           mot_quatrieme: draft.motQuatrieme,
+          /* Le style retenu à l'écran 3 (15/09, T-091). Facultatif : '' part
+             tel quel et la route n'écrit rien. Elle l'ignore proprement tant
+             que la migration 20260915_composer_modele n'est pas passée. */
+          modele: draft.modele,
           prenom: draft.prenom,
           email: draft.email,
           telephone: draft.telephone,
@@ -688,6 +692,8 @@ export default function Composer() {
               sousTitre={draft.sousTitre}
               motQuatrieme={draft.motQuatrieme}
               onExtra={(champ, v) => patch({ [champ]: v } as Partial<Draft>)}
+              modele={draft.modele}
+              onModele={(v) => patch({ modele: v })}
             />
           )}
           {n === 4 && (
