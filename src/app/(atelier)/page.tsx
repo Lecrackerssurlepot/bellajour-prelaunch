@@ -153,8 +153,8 @@ export default function AtelierHome() {
         rel="preload"
         as="image"
         media="(orientation: landscape)"
-        href="/images/v2/accueil/header-magazines-paysage-1920.webp"
-        imageSrcSet="/images/v2/accueil/header-magazines-paysage-1280.webp 1280w, /images/v2/accueil/header-magazines-paysage-1920.webp 1920w, /images/v2/accueil/header-magazines-paysage-2560.webp 2560w"
+        href="/images/v2/accueil/header-magazines-paysage-1792.webp"
+        imageSrcSet="/images/v2/accueil/header-magazines-paysage-1280.webp 1280w, /images/v2/accueil/header-magazines-paysage-1792.webp 1792w, /images/v2/accueil/header-magazines-paysage-2560.webp 2560w"
         imageSizes="100vw"
         fetchPriority="high"
       />
