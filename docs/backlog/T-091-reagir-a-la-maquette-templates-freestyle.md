@@ -95,3 +95,48 @@ La **règle de découpe** est écrite et prête (`DECOUPE` dans `coverModels.ts`
 compter, conserver la masse plutôt que la taille, couper entre les mots en équilibrant les lignes,
 trois paliers avec bascule sur un repli plutôt qu'une réduction sans fin, un plancher et un
 plafond. Reste mécanique le jour où les polices arrivent.
+
+## Arbitrages de Mathias du 15/09 (inscrits dans `coverModels.ts`)
+
+- **La seconde ligne** (« 2026 », « MON ANNEE ») est un **texte fixe** posé par le site, **remplacé
+  par le sous-titre** du client quand il en écrit un à l'écran 3. Elle ne disparaît jamais, elle
+  change de source. C'est aussi ce qui donne enfin une destination visible au champ « sous-titre ·
+  première de couverture », resté sans effet depuis le 03/09.
+- **This Night sur un seul mot : on garde le blanc.** Le rouge de « THIS » accompagne, il ne porte
+  pas le titre (`couleurSeule`).
+
+## Identification des polices (15/09, sur la bibliothèque `assets/typo/`)
+
+Mathias a ouvert l'accès à `assets/typo/` : 139 fichiers, 60 polices versionnées, 76 sur le disque
+seulement. Comparaison faite en superposant le lettrage d'origine découpé dans chaque master et le
+même mot rendu dans chaque candidate plausible (planche dans `design-explorations/planche-typo/`).
+
+| Modèle | Lettrage d'origine | La plus proche de la bibliothèque | Verdict |
+|---|---|---|---|
+| Q01 Aussie | script fin, connecté, capitale à longue boucle | **Interlope** (OFL 1.1) | proche d'esprit, **pas la même** |
+| Q02 26 | mêmes formes que Q01, chiffres à déliés | **Interlope** (OFL 1.1) | idem |
+| Q03 Sicile | didone, fûts épais et empattements filiformes | **aucune** | la bibliothèque n'a pas de didone |
+| Q04 This Night | grotesque noire, terminaisons horizontales | **Aileron Black** | correspondance forte |
+
+⚠️ **Aileron n'est pas versionnée** : aucun fichier de licence joint, donc tous droits réservés par
+défaut (`LICENCES.md`). L'audit du 27/08 note qu'elle est en réalité publiée en **CC0 par Sora
+Sagano** — il manque seulement la notice qui le prouve. La récupérer depuis la source d'origine
+suffit à débloquer Q04.
+
+⚠️ **Q03 attend le vrai nom de la police** auprès du graphiste. Cormorant Garamond, notre serif, est
+une garalde à contraste modéré : ce n'est pas la même chose qu'un didone à empattements filiformes,
+et la substituer se verrait.
+
+## ⚠️ LA CONTRAINTE QUI COMMANDE TOUT : `assets/` N'EST PAS `public/`
+
+`assets/typo/README.md`, écrit à la création de la bibliothèque : « Tout ce qui vit sous `public/`
+est servi par Vercel à une URL devinable. Y poser une police, c'est la mettre en téléchargement
+libre sur bellajour.fr. **Plusieurs licences de cette bibliothèque l'interdisent nommément.** »
+
+Servir une police en webfont, c'est exactement la poser à une URL publique. Donc :
+- les **60 polices en OFL 1.1 / Apache** peuvent être servies (Interlope en fait partie) ;
+- les **76 autres ne le peuvent pas** — Comico, Rheiborn Sans et Muro l'interdisent noir sur blanc,
+  les autres n'ont aucune licence jointe.
+
+Et « intégrer toutes les typos » n'a de toute façon pas de sens côté poids : 11,5 Mo pour les
+versionnées seules, là où l'écran 3 a besoin de **quatre** familles.

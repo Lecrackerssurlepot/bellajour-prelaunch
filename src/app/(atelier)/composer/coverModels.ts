@@ -59,11 +59,19 @@ export type CoverModel = {
   /* Où le titre se pose. */
   zone: ZoneTexte
   /* La seconde ligne, quand le modèle en porte une (« 2026 », « MON ANNEE »).
-     null = le modèle n'en a pas. Son sort est à trancher avec Mathias : texte
-     fixe posé par le site, ou report du sous-titre facultatif de l'écran 3 ? */
+     null = le modèle n'en a pas.
+     ⚠️ TRANCHÉ PAR MATHIAS LE 15/09 : c'est un texte FIXE, posé par le site —
+     SAUF si le client écrit un sous-titre à l'écran 3, auquel cas le sous-titre
+     prend sa place. La ligne ne disparaît donc jamais, elle change de source.
+     C'est aussi ce qui donne enfin une destination visible au champ
+     « sous-titre · première de couverture », resté jusqu'ici sans effet. */
   ligneBasse: { texte: string; zone: ZoneTexte } | null
   /* Comment le titre se réarrange quand il ne tient plus. Voir DÉCOUPE. */
   repli: 'reduire' | 'une-ligne-au-dessus' | 'une-couleur'
+  /* Pour le repli 'une-couleur' : celle qui reste. TRANCHÉ le 15/09 — « quand
+     il n'y a qu'un seul mot, garde le blanc ». Le rouge de « THIS » est la
+     couleur d'accompagnement, pas celle du titre. */
+  couleurSeule?: string
 }
 
 /**
@@ -117,9 +125,11 @@ export type CoverModel = {
  *    devient une affiche. On ne dépasse pas le corps de la maquette de plus
  *    d'un sixième.
  *
- * Reste à trancher par Mathias, parce que ça touche la maquette et pas le
- * code : pour This Night, quelle coupe entre les deux couleurs quand le titre
- * n'a pas deux mots ? (« Papa » en rouge derrière et en blanc devant ?)
+ * TRANCHÉ PAR MATHIAS LE 15/09, les deux points qui restaient ouverts :
+ * — la seconde ligne (« 2026 », « MON ANNEE ») est un texte FIXE, remplacé par
+ *   le sous-titre du client quand il en écrit un (voir `ligneBasse`) ;
+ * — This Night sur un seul mot garde le BLANC (voir `couleurSeule`). Le rouge
+ *   de « THIS » accompagne, il ne porte pas le titre.
  */
 export const DECOUPE = {
   /* Deux lignes au plus : une couverture n'est pas un paragraphe. */
@@ -176,6 +186,7 @@ export const COVER_MODELS: CoverModel[] = [
     zone: { gauche: 14.8, droite: 87.4, haut: 3, bas: 19.8 },
     ligneBasse: null,
     repli: 'une-couleur',
+    couleurSeule: '#ffffff',
   },
 ]
 
