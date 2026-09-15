@@ -61,3 +61,200 @@ Le pop-up est en place sur `/numero` à l'état `apercu_pret`, fidèle au protot
   du titre.
 - ⚠️ Ne rien inventer comme visuels : les 5 thèmes attendent les fichiers de Mathias.
 Recoupe T-089 (visionneuse) et T-092 (parcours, Q3).
+
+## ✅ ÉTAPE 1 FAITE (15/09/2026, branche `feat/modeles-couverture-questionnaire`)
+
+Mathias a livré les visuels par paires (avec et sans titre) et retenu quatre modèles : **Aussie,
+Mon année, Sicile, This Night**. Quatre au lieu des cinq envisagés le 02/09.
+
+**Ce qui est en place**
+- `coverModels.ts` réécrit : quatre modèles réels, leur visuel, leur étiquette, et les **zones de
+  titre MESURÉES** sur les paires livrées (voir `docs/reference/VISUELS-NOMMAGE.md`).
+- Écran 3 : cinq cases choisissables — les quatre modèles + « Aucune préférence / Surprenez-moi ».
+  Cliquer une case déjà retenue la libère. Le champ est **facultatif** et ne bloque rien.
+- Le rapport des aperçus passe de **2/3 à 1/1,414** : le magazine est un A4, et on montrait au
+  client une couverture qui n'avait pas la forme de l'objet qu'il recevra.
+- `draft.ts` : `modele` persisté, et gardé par `brouillonSansDossier` (il appartient à la personne).
+- `POST /api/atelier/numero` : liste blanche (`MODELES_VALIDES`), colonne `modele_couverture`,
+  repli 42703/PGRST204 comme les mots de couverture, et le choix journalisé dans `numero_cree`.
+- Fiche admin : « Style — Souhaite plutôt « Sicile » », ou « Aucune préférence — proposition
+  libre ». Ce cas-là s'affiche AUSSI, contrairement aux mots de couverture vides : pour celui qui
+  compose, le silence et le « surprenez-moi » ne veulent pas dire la même chose.
+- `verif-atelier.ts` : trois assertions neuves (survie du style, liste blanche, zones bornées).
+
+**⚠️ MIGRATION À APPLIQUER PAR MATHIAS** : `supabase/migrations/20260915_composer_modele_couverture.sql`.
+Tant qu'elle n'est pas passée, le choix n'est PAS en colonne — il reste dans le journal
+`evenements`, et la fiche admin ne l'affiche pas. Aucun dossier n'est perdu.
+
+## Étape 2 — le titre vivant, en attente
+
+Le titre tapé par le client ne s'écrit pas encore SUR les visuels. Il y faut **les fichiers des
+quatre polices** (aucune n'est Cormorant ni DM Sans) et deux arbitrages de Mathias : le sort de la
+seconde ligne (« 2026 », « MON ANNEE ») et la découpe des deux couleurs de This Night.
+La **règle de découpe** est écrite et prête (`DECOUPE` dans `coverModels.ts`) : mesurer plutôt que
+compter, conserver la masse plutôt que la taille, couper entre les mots en équilibrant les lignes,
+trois paliers avec bascule sur un repli plutôt qu'une réduction sans fin, un plancher et un
+plafond. Reste mécanique le jour où les polices arrivent.
+
+## Arbitrages de Mathias du 15/09 (inscrits dans `coverModels.ts`)
+
+- **La seconde ligne** (« 2026 », « MON ANNEE ») est un **texte fixe** posé par le site, **remplacé
+  par le sous-titre** du client quand il en écrit un à l'écran 3. Elle ne disparaît jamais, elle
+  change de source. C'est aussi ce qui donne enfin une destination visible au champ « sous-titre ·
+  première de couverture », resté sans effet depuis le 03/09.
+- **This Night sur un seul mot : on garde le blanc.** Le rouge de « THIS » accompagne, il ne porte
+  pas le titre (`couleurSeule`).
+
+## Identification des polices (15/09, sur la bibliothèque `assets/typo/`)
+
+Mathias a ouvert l'accès à `assets/typo/` : 139 fichiers, 60 polices versionnées, 76 sur le disque
+seulement. Comparaison faite en superposant le lettrage d'origine découpé dans chaque master et le
+même mot rendu dans chaque candidate plausible (planche dans `design-explorations/planche-typo/`).
+
+| Modèle | Lettrage d'origine | La plus proche de la bibliothèque | Verdict |
+|---|---|---|---|
+| Q01 Aussie | script fin, connecté, capitale à longue boucle | **Interlope** (OFL 1.1) | proche d'esprit, **pas la même** |
+| Q02 26 | mêmes formes que Q01, chiffres à déliés | **Interlope** (OFL 1.1) | idem |
+| Q03 Sicile | didone, fûts épais et empattements filiformes | **aucune** | la bibliothèque n'a pas de didone |
+| Q04 This Night | grotesque noire, terminaisons horizontales | **Aileron Black** | correspondance forte |
+
+⚠️ **Aileron n'est pas versionnée** : aucun fichier de licence joint, donc tous droits réservés par
+défaut (`LICENCES.md`). L'audit du 27/08 note qu'elle est en réalité publiée en **CC0 par Sora
+Sagano** — il manque seulement la notice qui le prouve. La récupérer depuis la source d'origine
+suffit à débloquer Q04.
+
+⚠️ **Q03 attend le vrai nom de la police** auprès du graphiste. Cormorant Garamond, notre serif, est
+une garalde à contraste modéré : ce n'est pas la même chose qu'un didone à empattements filiformes,
+et la substituer se verrait.
+
+## ⚠️ LA CONTRAINTE QUI COMMANDE TOUT : `assets/` N'EST PAS `public/`
+
+`assets/typo/README.md`, écrit à la création de la bibliothèque : « Tout ce qui vit sous `public/`
+est servi par Vercel à une URL devinable. Y poser une police, c'est la mettre en téléchargement
+libre sur bellajour.fr. **Plusieurs licences de cette bibliothèque l'interdisent nommément.** »
+
+Servir une police en webfont, c'est exactement la poser à une URL publique. Donc :
+- les **60 polices en OFL 1.1 / Apache** peuvent être servies (Interlope en fait partie) ;
+- les **76 autres ne le peuvent pas** — Comico, Rheiborn Sans et Muro l'interdisent noir sur blanc,
+  les autres n'ont aucune licence jointe.
+
+Et « intégrer toutes les typos » n'a de toute façon pas de sens côté poids : 11,5 Mo pour les
+versionnées seules, là où l'écran 3 a besoin de **quatre** familles.
+
+## ✅ ÉTAPE 2, MOITIÉ FAITE (15/09/2026) — le titre vivant sur Aussie et 26
+
+Mathias : « utilise Interlope pour Aussie et 26 en attendant. » Ces deux modèles servent
+désormais leur **plaque nue**, et le titre du client s'y écrit **en direct**, en Interlope
+(OFL 1.1, Gabriel Dubourg — le fichier et sa licence vivent dans
+`src/app/(atelier)/composer/polices/`, chargés par `next/font/local` **dans le layout du
+questionnaire seul**, pour ne pas les précharger sur l'accueil et /magazine).
+
+Sicile et This Night gardent leur visuel titré. **Ne pas « harmoniser »** en mettant Interlope
+partout : quatre modèles au même lettrage, c'est quatre fois le même modèle.
+
+**Les couleurs ne sont pas choisies à l'œil** : relevées dans les masters (médiane du 2 % de
+pixels les plus extrêmes de la zone du titre, soit le cœur du trait et pas son antialiasing).
+Aussie `#345a94`, 26 `#ffffff`.
+
+### La règle de découpe, mesurée en vrai
+
+`decoupeTitre.ts` (pur, testé) + `TitreSurCouverture.tsx` (mesure au canvas). Relevé à l'écran
+sur le build de production, vignette de 110 px :
+
+| Ce que tape le client | Ce que fait la couverture | Corps |
+|---|---|---|
+| « Papa » | une ligne, **plafonnée** | 17,92 px |
+| « Corse » | une ligne, même plafond | 17,92 px |
+| « Anniversaire » | un seul mot : pas de césure, ça rétrécit | 11 px |
+| « Le mariage de Léa et Tom » | **« Le mariage » / « de Léa et Tom »** | 8,96 px |
+| « Nos trois jours en Bretagne » | « Nos trois jours » / « en Bretagne » | 8,96 px |
+
+Aucun débordement dans les cinq cas (`scrollWidth`/`scrollHeight` vérifiés). Les deux titres
+courts tombent à la MÊME taille : c'est le plafond qui joue, et « Papa » ne devient pas une
+affiche. Aucune ligne ne se termine par un mot-outil.
+
+### Deux pièges payés ici
+
+- **`measureText` ne résout pas `var(--x)`**, et `next/font` **hache** le nom de famille
+  (`__interlope_a1b2c3`) : il n'existe qu'à travers la variable CSS. Le composant lit donc la
+  valeur *calculée* de la variable avant de mesurer. Renommer la variable casserait la mesure en
+  silence — le titre retomberait sur la police de repli, à la mauvaise taille.
+- **Le plancher ne borne pas le résultat, il déclenche la deuxième ligne.** Posé d'abord en
+  `Math.max`, il faisait sortir « Le mariage de Léa et Tom » du cadre par la droite.
+
+### Reste à faire
+
+- **Sicile** : le nom de sa police, auprès du graphiste. La bibliothèque n'a aucun didone.
+- **This Night** : la notice CC0 d'Aileron, à récupérer depuis la source d'origine.
+- **À regarder à l'écran** : sur « Mon année », la zone du titre est celle du petit « 26 » en haut
+  à gauche — un titre long y devient très petit. C'est fidèle au modèle livré, mais c'est la seule
+  des quatre où ça se voit. Si ça ne va pas, la zone se déplace en une ligne dans `coverModels.ts`.
+
+## ✅ ÉTAPE 2 TERMINÉE (15/09/2026) — les quatre modèles portent le titre du client
+
+Mathias : « et bien on cherche d'autres typo. » Google Fonts donne les deux qui manquaient, en
+OFL, auto-hébergées par `next/font` exactement comme Cormorant et DM Sans — aucun fichier à
+pourchasser, aucune question de redistribution.
+
+| Modèle | Police | D'où elle vient |
+|---|---|---|
+| Aussie | **Interlope** | `assets/typo/`, OFL 1.1, Gabriel Dubourg |
+| Mon année | **Interlope** | idem |
+| Sicile | **Bodoni Moda 700** | Google Fonts, OFL — un vrai didone, ce que la bibliothèque n'avait pas |
+| This Night | **Archivo Black** | Google Fonts, OFL — même largeur, même graisse, même G à barre et éperon qu'Aileron, sans son problème de licence |
+
+### Les trois dispositions
+
+Les quatre maquettes ne posent pas leur lettrage de la même façon. Les traiter pareil serait
+coller quatre fois le même bloc de texte sur quatre images différentes.
+
+- **`simple`** (Aussie, Mon année) : un bloc dans la zone mesurée.
+- **`haut-et-bas`** (Sicile) : le titre **deux fois**, en haut et en bas. La maquette répète le
+  mot quatre fois autour de la photo ; le profil de lignes mesuré le 15/09 montre deux bandes
+  pleines (17→28 % et 71→83 %) et deux bandes du milieu dont la photo ne laisse voir que le S et
+  le E. ⚠️ **Limite assumée** : les deux répétitions du milieu ne sont pas reproduites, parce
+  qu'elles passent DERRIÈRE la photo et que la plaque livrée est plate — il faudrait la photo en
+  calque séparé. Les deux bandes pleines suffisent à faire lire le modèle.
+- **`deux-tons`** (This Night) : première ligne dans l'accent (`#841600`, relevé), seconde en
+  blanc, chevauchées de 0,22 em. ⚠️ Ce modèle **cherche les deux lignes d'abord**, pas en dernier
+  recours : le ramener à une ligne blanche parce qu'elle tient en largeur effacerait le modèle.
+  Sur un seul mot, le blanc seul — la règle de Mathias.
+
+Relevé à l'écran sur le build de production, titre « Nuits Sonores » : Aussie une ligne bleue,
+Mon année deux lignes blanches, **Sicile deux blocs** (haut et bas) en Bodoni, This Night
+« Nuits » en `rgb(132,22,0)` puis « Sonores » en blanc. **Aucun débordement sur les cinq blocs.**
+
+### Reste ouvert
+
+- **« Mon année »** : la zone du titre est celle du petit « 26 » en haut à gauche, donc un titre
+  long y est très petit. Trois issues, au choix de Mathias : déplacer le titre là où est
+  « MON ANNEE », agrandir la zone, ou laisser. Une ligne dans `coverModels.ts`.
+- Aileron n'est plus nécessaire : Archivo Black la remplace. La notice CC0 n'est plus un blocage.
+
+## « 26 est beaucoup trop petit » — corrigé le 15/09
+
+C'était le dernier point ouvert. Deux corrections, dont une qui touche tous les modèles.
+
+**1. La zone de « Mon année » s'ouvre.** Elle valait `{7,8 → 22,4 ; 11 → 17,3}`, la place du petit
+« 26 » : deux caractères y tiennent, un titre non (« Nuits Sonores » y tombait à 4,5 px). Elle
+passe à `{7,8 → 80 ; 10 → 34}`. Les bornes sont mesurées, pas choisies : la photo de la plaque
+occupe x 44 → 94 % et y 45,2 → 90,1 % (relevé sur `BJ-Q02-nu`), et « MON ANNEE » vit à 95,2 %.
+Onze points de marge restent avant la photo. Le bord gauche ne bouge pas : la maquette garde son
+axe. C'est à peu près le milieu entre les deux variantes livrées par le graphiste — le petit
+« 26 » et le grand (y 9,2 → 50,6, pleine largeur) : les deux bornes étaient déjà dessinées.
+
+**2. La hauteur du texte se MESURE, elle ne se devine plus.** Le calcul supposait qu'un texte
+occupe sa hauteur de ligne (`lignes × 1,08 × corps`). Faux pour un script : les hampes et les
+jambages d'Interlope dépassent largement de la boîte de ligne. Tant que la zone était petite, ça
+ne se voyait pas ; une fois agrandie, « Papa » est sorti de son cadre — `scrollHeight` au-delà de
+`clientHeight`, prouvé à l'écran. On utilise désormais `fontBoundingBoxAscent/Descent`, la
+hauteur réelle des glyphes de la police.
+
+**Vérifié : quatre titres × cinq blocs = vingt cas, ZÉRO débordement.**
+
+| Titre | Aussie | Mon année | Sicile (×2) | This Night |
+|---|---|---|---|---|
+| Papa | 29,4 px | **56,8 px** | 20,4 px | 30,2 px |
+| Nuits Sonores | 20,4 | 29,9 | 20,4 | 22,0 |
+| Le mariage de Léa et Tom | 15,5 | 25,1 | 12,1 | 18,8 |
+| Anniversaire | 20,0 | 25,2 | 20,4 | 21,1 |

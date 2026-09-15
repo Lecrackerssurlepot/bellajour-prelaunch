@@ -21,6 +21,9 @@ import {
   premierManquant,
 } from "@/lib/atelier/questionnaire";
 import { lireChoixCouverture } from "@/lib/atelier/apercu";
+/* La liste blanche des styles vit avec les modèles eux-mêmes : ajouter un
+   modèle à l'écran 3 suffit pour que la route l'accepte. */
+import { MODELES_VALIDES } from "@/app/(atelier)/composer/coverModels";
 
 export const runtime = "nodejs";
 
@@ -189,6 +192,16 @@ export async function POST(request: Request) {
     const sousTitre = clean(body.sous_titre, MAX.sous_titre);
     const motQuatrieme = clean(body.mot_quatrieme, MAX.mot_quatrieme);
 
+    /* Le style de couverture retenu à l'écran 3 (15/09, T-091). Facultatif,
+       donc hors de `valeurs` lui aussi.
+       ⚠️ LISTE BLANCHE, PAS `clean`. Ce champ n'est jamais tapé par un
+       humain : il ne peut valoir qu'un des quatre identifiants de modèle ou
+       « aucune ». Tout le reste — un brouillon d'une version future, un POST
+       forgé — vaut '' et n'écrit rien. C'est ce qui garantit que la fiche
+       admin n'affichera jamais un style qui n'existe pas. */
+    const modeleBrut = typeof body.modele === "string" ? body.modele.trim() : "";
+    const modele = MODELES_VALIDES.includes(modeleBrut) ? modeleBrut : "";
+
     const manquant = premierManquant(CHAMPS_QUESTIONNAIRE, (c) => valeurs[c]);
     if (manquant) {
       return NextResponse.json(
@@ -233,6 +246,7 @@ export async function POST(request: Request) {
     const colonnesFraiches = {
       ...(sousTitre ? { sous_titre: sousTitre } : {}),
       ...(motQuatrieme ? { mot_quatrieme: motQuatrieme } : {}),
+      ...(modele ? { modele_couverture: modele } : {}),
     };
 
     let insertion = await supabase
@@ -259,7 +273,7 @@ export async function POST(request: Request) {
       insertion.error?.code === "42703" || insertion.error?.code === "PGRST204";
     if (colonneInconnue && Object.keys(colonnesFraiches).length > 0) {
       console.error(
-        "[atelier/numero] ⚠️ REPLI 42703 : sous_titre/mot_quatrieme absentes en base, les mots de couverture ne sont PAS en colonne (le journal les garde). Appliquer supabase/migrations/20260903_composer_mots_couverture.sql.",
+        "[atelier/numero] ⚠️ REPLI 42703 : sous_titre/mot_quatrieme/modele_couverture absentes en base, ces champs facultatifs ne sont PAS en colonne (le journal les garde). Appliquer supabase/migrations/20260903_composer_mots_couverture.sql et 20260915_composer_modele_couverture.sql.",
       );
       insertion = await supabase.from("numeros").insert(ligne).select("id, token").single();
     }
@@ -279,6 +293,7 @@ export async function POST(request: Request) {
       source: "questionnaire_ecran_4",
       ...(sousTitre ? { sous_titre: sousTitre } : {}),
       ...(motQuatrieme ? { mot_quatrieme: motQuatrieme } : {}),
+      ...(modele ? { modele_couverture: modele } : {}),
       /* ⚠️ PLUS DE `pays_livraison` ICI (11/09/2026) : le questionnaire ne
          pose plus la question, donc le journal n'a rien à raconter. Écrire
          une destination que personne n'a donnée serait pire que le silence :

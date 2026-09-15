@@ -510,75 +510,216 @@
   color: var(--c-accent-strong);
 }
 
-/* ---- les deux couvertures d'exemple (écran 3) ---- */
-.at-covers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 36px; max-width: 600px; }
+/* ---- écran 3 : les quatre modèles de couverture (15/09/2026, T-091) ----
+   Cinq cases : quatre visuels livrés + « aucune préférence ». Elles sont
+   CLIQUABLES et leur clic a une conséquence (le choix part à l'atelier) —
+   c'est la réponse au « dead click » du lot 4, qui avait retiré le curseur
+   faute d'effet plutôt que de donner un effet au geste.
 
-/* Lot 4 (07/09) — les couvertures ne sont plus des boutons : le clic sans
-   effet (« dead click ») est parti avec le curseur, le survol et l'état
-   is-on. Ce sont des aperçus, le titre s'y écrit en direct. */
+   ⚠️ LE RAPPORT EST CELUI DU MAGAZINE, PAS 2/3. Les aperçus dessinés en CSS
+   valaient `aspect-ratio: 2 / 3` (0,667). Le magazine imprimé est un A4
+   (210 x 297 mm, soit 0,7071), et les masters livrés font 4066 x 5750 —
+   exactement ce rapport. Montrer 2/3 au client, c'était lui montrer une
+   couverture qui n'a pas la forme de l'objet qu'il recevra. */
+/* ── LA MISE EN PAGE DE L'ÉCRAN (15/09, second passage) ───────────────────
+   Mathias, devant l'écran : « il faut qu'on voie bien les affiches. Sur
+   desktop les mettre en grand à droite, où on peut scroller seulement dans
+   les templates. » Les vignettes faisaient 110 px : on distinguait une
+   ambiance, pas une maquette — et c'est une maquette qu'on lui demande de
+   juger.
+
+   TÉLÉPHONE (par défaut) : un rail horizontal. Les cinq cases ne tiennent
+   pas de front, et les empiler poussait le geste suivant hors de l'écran.
+   150 px de large au lieu de 105, on en voit deux et demie, et la troisième
+   coupée par le bord dit qu'il y en a d'autres — sans flèche ni point.
+
+   ⚠️ LE RAIL DÉBORDE VOLONTAIREMENT À DROITE (marge négative + rembourrage
+   de la même valeur) : sans ça, la dernière vignette s'arrête net sur la
+   marge et le rail a l'air fini alors qu'il ne l'est pas.
+
+   BUREAU (≥ 900 px) : deux colonnes. La question et le champ à gauche, les
+   modèles à droite en 2 x 2, deux fois plus grands, dans une boîte qui
+   défile SEULE. */
+.at-t-deux { display: flex; flex-direction: column; }
+
+.at-covers {
+  display: flex;
+  gap: 12px;
+  margin-top: 30px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  /* L'anneau de sélection déborde d'1 px : sans ce rembourrage, le
+     défilement le rogne sur la première et la dernière vignette. */
+  padding: 2px 0;
+  margin-right: calc(-1 * var(--pad));
+  padding-right: var(--pad);
+  /* iOS garde l'élan du doigt et ne montre la barre qu'au geste. */
+  -webkit-overflow-scrolling: touch;
+}
+
+.bj-atelier .at-cov { flex: 0 0 150px; scroll-snap-align: start; }
+
+@media (min-width: 900px) {
+  .at-t-deux {
+    display: grid;
+    /* La colonne de droite ne rétrécit jamais sous 300 px : en dessous, une
+       vignette repasserait sous les 140 px et on aurait refait le problème. */
+    grid-template-columns: minmax(0, 1fr) clamp(300px, 32vw, 430px);
+    gap: 54px;
+    align-items: start;
+  }
+
+  /* `min-width: 0` sur les deux : un enfant de grille a une taille minimale
+     automatique égale à son contenu, et un titre long ferait déborder la
+     colonne au lieu de la faire tenir. */
+  .at-t-col, .at-t-modeles { min-width: 0; }
+
+  /* Le champ du titre suit la colonne, il ne garde pas sa largeur d'avant. */
+  .at-t-col .at-field, .at-t-col .at-extras { max-width: none; }
+
+  .at-covers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-right: 0;
+    /* ⚠️ C'EST ICI QUE SE JOUE « SCROLLER SEULEMENT DANS LES TEMPLATES ».
+       La boîte est bornée en hauteur et défile pour elle-même ; la page ne
+       bouge pas. `--uh` vaut un centième de --app-height (globals.css) :
+       `dvh` est interdit dans tout le site, il suit la barre d'adresse et
+       fait sauter la mise en page au premier défilement. */
+    max-height: calc(56 * var(--uh));
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    padding: 2px 6px 2px 2px;
+  }
+
+  .bj-atelier .at-cov { flex: none; }
+}
+
+/* ── « AUCUNE PRÉFÉRENCE », HORS DE LA GRILLE (15/09) ─────────────────────
+   Elle était la cinquième vignette. Sur ordinateur la grille est bornée en
+   hauteur et défile, sur téléphone c'est un rail horizontal : dans les deux
+   cas il fallait faire défiler pour découvrir qu'on avait le droit de ne pas
+   choisir. Une réponse qu'il faut chercher n'est pas une réponse offerte.
+   Elle devient une barre, dans le flux, sous la grille — jamais masquée.
+   ⚠️ Elle n'a PAS la forme d'une couverture, volontairement : lui donner le
+   même cadre que les quatre autres la ferait lire comme un cinquième style,
+   alors que c'est le refus de choisir. */
+.bj-atelier .at-aucun {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 13px 16px;
+  background: transparent;
+  border: 1px solid var(--c-line-md);
+  border-radius: 3px;
+  color: var(--c-text-soft);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.bj-atelier .at-aucun:hover { border-color: var(--c-line-strong); color: var(--c-text); }
+
+.bj-atelier .at-aucun.is-on {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 1px var(--c-accent);
+  color: var(--c-accent-strong);
+}
+
+.at-aucun-t { font-family: var(--font-ui); font-size: 13px; }
+
+.at-aucun-s {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.bj-atelier .at-aucun.is-on .at-aucun-s { color: var(--c-accent); }
+
+/* Une barre de défilement discrète dans la boîte des modèles : celle du
+   système, pleine largeur, coupait une vignette en deux sur macOS. */
+.at-covers::-webkit-scrollbar { width: 6px; height: 6px; }
+.at-covers::-webkit-scrollbar-thumb {
+  background: var(--c-line-strong);
+  border-radius: 3px;
+}
+.at-covers::-webkit-scrollbar-track { background: transparent; }
+
 .bj-atelier .at-cov {
   position: relative;
   display: flex;
-  aspect-ratio: 2 / 3;
-  padding: 22px;
-  overflow: hidden;
-  border: 1px solid var(--c-line-md);
-  border-radius: 3px;
+  flex-direction: column;
+  padding: 0;
+  border: none;
   background: transparent;
   color: var(--c-text);
+  cursor: pointer;
+  text-align: center;
 }
 
-.bj-atelier .at-cov::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--grad-cover);
-  opacity: 0.85;
-}
-
-/* Lot 4 — sur téléphone, une seule couverture : l'écran du titre était le
-   plus chargé du questionnaire, et deux vignettes empilées repoussaient les
-   champs facultatifs hors de vue. Le desktop garde la paire. */
-@media (max-width: 720px) {
-  .at-covers { grid-template-columns: 1fr; max-width: 320px; }
-  /* (0,2,0) obligatoire : `.bj-atelier .at-cov` pose display:flex à la même
-     spécificité, et une media query n'en ajoute pas (piège payé le 04/09
-     sur .at-nav-suivi). */
-  .bj-atelier .at-cov--second { display: none; }
-}
-
-.at-cov-t {
-  position: relative;
-  z-index: 2;
+/* ⚠️ LE CADRE EST SUR L'IMAGE, PAS SUR LE BOUTON. L'étiquette est sortie de
+   la couverture le 15/09 : elle était posée dessus sur un voile sombre, et ce
+   voile salissait les deux modèles clairs (« Aussie » a un ciel crème en pied,
+   « Doux » un rose pâle) — une brume grise en travers de la maquette qu'on
+   demande justement au client de juger. Elle passe donc DESSOUS, sur le fond
+   de la page, où elle ne coûte rien à personne. */
+.at-cov-img {
   width: 100%;
-  font-family: var(--cov-family);
-  font-size: var(--cov-size);
-  font-weight: var(--cov-weight);
-  letter-spacing: var(--cov-tracking);
-  text-transform: var(--cov-case);
-  line-height: 1.25;
+  /* ⚠️ `height: auto` EST OBLIGATOIRE, pas un ornement. `<img>` porte ses
+     attributs `width` et `height` (336 x 475, posés pour réserver la place
+     avant chargement) : une image dont la LARGEUR et la HAUTEUR sont toutes
+     deux définies IGNORE `aspect-ratio`, l'attribut HTML s'appliquant comme
+     indication de présentation. Sans cette ligne la vignette prend 475 px de
+     haut et `object-fit: cover` recadre la couverture — le lettrage tranché,
+     exactement ce qu'on cherche à montrer. C'est le bug relevé sur les timbres
+     de /magazine le 14/09, écrit dans docs/reference/VISUELS-NOMMAGE.md. */
+  height: auto;
+  aspect-ratio: 1 / 1.414;
+  object-fit: cover;
+  display: block;
+  border: 1px solid var(--c-line-md);
+  border-radius: 3px;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 
-.at-cov--centre { align-items: center; justify-content: center; text-align: center; }
-.at-cov--basgauche { align-items: flex-end; text-align: left; }
+.bj-atelier .at-cov:hover .at-cov-img { border-color: var(--c-line-strong); }
 
-/* Le titre aligné en bas partage sa ligne avec le tag posé en bas à droite.
-   On lui réserve la hauteur du tag, sinon un titre long vient le percuter. */
-.at-cov--basgauche .at-cov-t { padding-bottom: 18px; }
+/* L'état retenu : la pastille de l'ouverture, comme partout ailleurs sur
+   l'atelier (correction visuelle du 14/09). Pas d'anneau de focus dessiné
+   à la main — `:focus-visible` garde celui du navigateur. */
+.bj-atelier .at-cov.is-on .at-cov-img {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 1px var(--c-accent);
+}
 
-.at-cov-lbl,
+/* ⚠️ LE CSS DU TITRE VIVANT A VÉCU ICI (.at-cov-vivant) et n'y est plus :
+   le mécanisme est archivé dans `archive/titre-vivant-composer/`. Les
+   couvertures portent de nouveau leur propre lettrage, celui du graphiste.
+   `.at-cov-plaque` reste : elle enveloppe l'image et c'est elle qui portait
+   le repère en pourcentage. Elle ne coûte rien et évite de casser le
+   balisage le jour où on rallume. */
+
+/* L'étiquette du style, SOUS la vignette (voir plus haut pourquoi). */
 .at-cov-tag {
-  position: absolute;
-  z-index: 3;
+  display: block;
+  margin-top: 7px;
   font-family: var(--font-ui);
-  font-size: 9px;
-  letter-spacing: 0.2em;
+  font-size: 8px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  font-weight: 400;
+  font-weight: 500;
+  color: var(--c-text-faint);
+  transition: color var(--dur) var(--ease);
 }
 
-.at-cov-lbl { top: 10px; left: 12px; color: var(--c-overlay-text); }
-.at-cov-tag { bottom: 10px; right: 12px; color: var(--c-overlay-faint); }
+.bj-atelier .at-cov.is-on .at-cov-tag { color: var(--c-accent); }
 
 /* ---- lien discret ---- */
 .bj-atelier .at-skip {
@@ -757,6 +898,19 @@
   text-transform: uppercase;
   font-weight: 500;
   color: var(--c-text-faint);
+}
+
+/* La seconde ligne du chapeau (15/09) : « facultatif », en casse normale.
+   Le chapeau est en capitales espacées ; y laisser la précision dans la même
+   casse la rendait aussi péremptoire que la question, et on lit mal une
+   phrase entière en capitales à 10 px. */
+.bj-atelier .at-covers-chapeau span {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  letter-spacing: normal;
+  text-transform: none;
+  font-weight: 400;
 }
 
 .bj-atelier .at-covers-chapeau + .at-covers { margin-top: 14px; }

@@ -221,6 +221,50 @@ const TRAVAUX = [
      On servait cinq fois trop de pixels sur le chemin critique. 240 couvre
      encore le quadruple de densité. */
   { de: 'public/images/ui/signature-blanche.webp', vers: 'ui/signature-bellajour', ratio: null, largeurs: [240] },
+
+  /* ── Q01 à Q04 — LES MODÈLES DE COUVERTURE DU QUESTIONNAIRE (15/09/2026) ──
+     L'écran 3 de `/composer` montrait deux couvertures DESSINÉES EN CSS, sans
+     image, explicitement « des exemples, pas un choix ». Elles deviennent
+     quatre vrais modèles, choisissables, et le choix part à l'atelier (T-091).
+
+     ⚠️ CE SONT LES VERSIONS AVEC LEUR TITRE D'ORIGINE. Mathias a livré chaque
+     modèle en DEUX fichiers, avec et sans lettrage — les `-nu` restent dans
+     les masters et n'entrent pas ici. Ils serviront à l'étape 2, quand le
+     titre du client s'écrira par-dessus en direct ; ça attend les fichiers de
+     police, car les quatre lettrages sont dans quatre typographies dont
+     AUCUNE n'est Cormorant ni DM Sans. Servir la plaque nue aujourd'hui,
+     c'est montrer quatre modèles sans style : l'inverse de ce qu'on demande.
+
+     ⚠️ AUCUN RECADRAGE (`ratio: null`), même raison que la bande de l'accueil :
+     ce sont des couvertures composées, et Q03 pousse le lettrage jusqu'aux
+     bords. Un recadrage trancherait une lettre. Les cadres prennent le rapport
+     du master (composer.css), pas l'inverse.
+
+     ⚠️ LES LARGEURS. Mesurées à l'écran le 15/09 : une vignette de la grille
+     fait au plus 112 px CSS (colonne de 600 px, cinq cases, gouttière de 12),
+     et l'aperçu retenu 300 px. 336 couvre la vignette à densité 3, 900
+     l'aperçu. La troisième (168) sert les écrans à densité 1.
+     ⚠️ Q03 pèse 70 Mo en master (10085 x 14349) : `limitInputPixels` est déjà
+     levé plus haut, sans quoi sharp refuse le fichier. */
+  { de: `${MASTERS}/BJ-Q01.png`, vers: 'composer/modele-aussie', ratio: null, largeurs: [168, 336, 900] },
+  /* ⚠️ `-grand` DANS LE NOM, ET C'EST OBLIGATOIRE. Q02 pointe désormais sur la
+     GRANDE variante du « 26 » : le fichier CHANGE de contenu. Le garder sous
+     `modele-mon-annee` aurait fait servir l'ancienne image depuis le cache
+     pendant vingt-quatre heures (`next.config.ts` : max-age=86400 sur tout
+     `/images/`), et personne n'aurait compris pourquoi le petit chiffre
+     revenait. Un contenu neuf prend une adresse neuve. */
+  { de: `${MASTERS}/BJ-Q02.png`, vers: 'composer/modele-mon-annee-grand', ratio: null, largeurs: [168, 336, 900] },
+
+  /* ⚠️ LES QUATRE PLAQUES NUES NE SONT PLUS PRODUITES (15/09, quatrième
+     passage). Le titre du client s'écrivait dessus en direct ; Mathias a
+     débranché le mécanisme — « le titre ne change pas, tu mets juste les
+     visuels qu'on a avec les titres ». Le code est entier dans
+     `archive/titre-vivant-composer/`, avec la marche à suivre pour le
+     rallumer. Les masters `BJ-Q0x-nu.png` restent dans le dépôt de visuels.
+     ⚠️ Q02 POINTE MAINTENANT SUR LA GRANDE VARIANTE du « 26 » (l'ancien
+     `7.png`), et non plus la petite : « pour le 26 tu prends le gros ». */
+  { de: `${MASTERS}/BJ-Q03.png`, vers: 'composer/modele-sicile', ratio: null, largeurs: [168, 336, 900] },
+  { de: `${MASTERS}/BJ-Q04.png`, vers: 'composer/modele-this-night', ratio: null, largeurs: [168, 336, 900] },
 ]
 
 const ko = (o) => Math.round(o / 1024)

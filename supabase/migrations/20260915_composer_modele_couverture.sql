@@ -1,0 +1,32 @@
+-- Le style de couverture retenu à l'écran 3 du questionnaire (T-091, 15/09/2026).
+--
+-- `modele_couverture` : l'identifiant du modèle que le client a préféré, parmi
+-- les quatre proposés ('aussie', 'mon-annee', 'sicile', 'this-night'), ou la
+-- valeur 'aucune' quand il a explicitement répondu « aucune préférence ».
+--
+-- À QUOI ÇA SERT. « Le client choisit un thème qu'il aime déjà bien, donc on
+-- vise juste sur ses goûts » : c'est une INDICATION donnée à l'atelier avant
+-- la première maquette, pas une commande. L'atelier reste libre de composer
+-- autrement — rien dans le code ne lit cette colonne pour décider quoi que ce
+-- soit, elle s'affiche sur la fiche du dossier et c'est tout.
+--
+-- LES TROIS ÉTATS, ET POURQUOI ILS DIFFÈRENT.
+--   null      : le client n'a pas répondu (le champ est facultatif).
+--   'aucune'  : il a répondu, et sa réponse est « aucune préférence ».
+--   un id     : il a choisi ce style-là.
+-- L'atelier compose librement dans les deux premiers cas, mais la STATISTIQUE
+-- n'est pas la même : un écran que personne ne remplit et un écran où tout le
+-- monde répond « surprenez-moi » demandent deux corrections opposées.
+--
+-- PAS DE CONTRAINTE D'ÉNUMÉRATION, ET C'EST DÉLIBÉRÉ. La liste des modèles
+-- vit dans `src/app/(atelier)/composer/coverModels.ts`, où elle est faite pour
+-- bouger : en faire une contrainte SQL obligerait une migration à chaque
+-- modèle ajouté, et un dossier serait refusé en production pour un style
+-- nouveau. La validation est donc faite par liste blanche dans
+-- /api/atelier/numero, avant l'insert : une valeur inconnue n'est pas écrite.
+--
+-- Tant que cette migration n'est pas appliquée, la route retombe sur un insert
+-- sans cette colonne (repli 42703 / PGRST204) et garde le choix dans le
+-- journal `evenements` (payload de `numero_cree`). Aucun dossier n'est perdu.
+
+alter table numeros add column if not exists modele_couverture text;

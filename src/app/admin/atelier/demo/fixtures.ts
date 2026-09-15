@@ -28,6 +28,7 @@ import { eurosPourPages } from "@/lib/atelier/grille";
 import { ETAPE_ETAT, LIBELLE_ETAT, actionsDepuis, type Etat } from "@/lib/atelier/transitions";
 import { compter, comparerUrgence, urgencePour, etapeDepot, type EtapeDepot } from "@/lib/atelier/urgence";
 import { raconter } from "@/lib/atelier/recit";
+import { COVER_MODELS } from "@/app/(atelier)/composer/coverModels";
 import { dernierMailParti, depuisEnMots, evaluerRelance } from "@/lib/atelier/relance";
 import { OBJET_MAIL, type CodeMail } from "@/lib/atelier/mails";
 import { construireParcours } from "@/lib/atelier/parcours";
@@ -636,6 +637,13 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
        plupart des vrais dossiers — l'écran doit être juste sans eux. */
     sousTitre: null,
     motQuatrieme: null,
+    /* Le style retenu à l'écran 3 (T-091). La démo en montre un : c'est un
+       champ neuf, et l'endroit où il s'affiche sur la fiche ne se devine pas
+       tant qu'on ne l'a pas vu. Un dossier sur trois répond « aucune
+       préférence », comme dans la vraie vie — les deux rendus doivent être
+       lisibles côte à côte dans la pile de démonstration. */
+    modeleCouverture: g.nbPhotos % 3 === 0 ? "aucune"
+      : COVER_MODELS[g.nbPhotos % COVER_MODELS.length].id,
     telephone: g.telephone || null,
     consentPhotos: !g.depotAbandonne && g.nbPhotos > 0,
     consentCommunication: g.nbPhotos > 40,

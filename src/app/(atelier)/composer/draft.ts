@@ -20,6 +20,13 @@ export type Draft = {
      Vides par défaut : un brouillon antérieur fusionne sans casse. */
   sousTitre: string
   motQuatrieme: string
+  /* Le style de couverture retenu à l'écran 3 (15/09/2026, T-091).
+     '' = n'a pas répondu, 'aucune' = a dit explicitement « aucune
+     préférence », sinon l'id d'un modèle. Les trois cas sont légitimes :
+     ce champ est FACULTATIF et ne bloque jamais le passage à l'écran 4.
+     Un brouillon antérieur au 15/09 n'a pas la clé : `loadDraft` fusionne
+     sur EMPTY_DRAFT, elle repart donc à '' sans casser la reprise. */
+  modele: string
   prenom: string
   email: string
   telephone: string
@@ -47,6 +54,7 @@ export const EMPTY_DRAFT: Draft = {
   titre: '',
   sousTitre: '',
   motQuatrieme: '',
+  modele: '',
   prenom: '',
   email: '',
   telephone: '',
@@ -102,8 +110,8 @@ export function loadDraft(): Draft {
  * questionnaire depuis le début » sans aucun moyen de recommencer.
  *
  * La règle est la même dans les deux cas : on garde ce qui appartient à la
- * personne (ses six réponses, et les deux mots de couverture facultatifs), on
- * jette ce qui n'avait de sens qu'avec CE dossier.
+ * personne (ses six réponses, les deux mots de couverture facultatifs et le
+ * style retenu), on jette ce qui n'avait de sens qu'avec CE dossier.
  *
  * — `token` : il ne désigne plus rien.
  * — `consentPhotos` : c'est le droit d'usage donné POUR ce dépôt (garantie
