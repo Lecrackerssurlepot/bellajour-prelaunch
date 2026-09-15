@@ -22,12 +22,15 @@
      case dit « aucune préférence ». Le grief du lot 4 est réglé non pas en
      enlevant le clic, mais en lui donnant une conséquence.
 
-   LE TITRE EST VIVANT SUR DEUX MODÈLES SUR QUATRE (15/09, second passage).
-   Mathias : « utilise Interlope pour Aussie et 26 en attendant. » Ces deux-là
-   servent leur plaque NUE et le titre du client s'y écrit par-dessus ; Sicile
-   et This Night gardent leur visuel titré, faute de connaître leur police.
-   ⚠️ Ne pas « harmoniser » en mettant Interlope partout : quatre modèles au
-   même lettrage, c'est quatre fois le même modèle. Voir `coverModels.ts`.
+   ⚠️ LE TITRE DU CLIENT NE S'ÉCRIT PAS SUR LES COUVERTURES, et ce n'est pas
+   un oubli : le mécanisme a existé, il marchait, Mathias l'a débranché le
+   15/09 — « le titre ne change pas, tu mets juste les visuels qu'on a avec
+   les titres, et la personne peut sélectionner si elle aime bien ». La
+   question de l'écran est « un style vous parle déjà ? » : on demande de
+   reconnaître une ambiance, pas de se projeter dans une maquette — ça, c'est
+   le travail de l'atelier, et la vraie maquette le montrera plus tard.
+   Tout le mécanisme est dans `archive/titre-vivant-composer/`, README
+   compris. Ne pas le réécrire : le rallumer prend une demi-heure.
 
    NOUVEAU 03/09 — les mots de couverture facultatifs : un sous-titre pour la
    première de couverture, un mot pour la quatrième. Repliés par défaut
@@ -35,9 +38,8 @@
 
 import { useState } from 'react'
 import {
-  COVER_MODELS, MODELE_AUCUN, MODELE_LARGEURS, modeleSrcSet, TITRE_MAX, TITRE_PLACEHOLDER,
+  COVER_MODELS, MODELE_AUCUN, modeleSrc, modeleSrcSet, TITRE_MAX, TITRE_PLACEHOLDER,
 } from '../coverModels'
-import TitreSurCouverture from '../TitreSurCouverture'
 
 export const SOUS_TITRE_MAX = 80
 export const MOT_QUATRIEME_MAX = 160
@@ -56,10 +58,6 @@ export default function Screen3Titre({
   /* Déplié d'office si un brouillon porte déjà un des deux mots : un champ
      rempli ne doit jamais être caché derrière son propre déplieur. */
   const [extras, setExtras] = useState(() => Boolean(sousTitre || motQuatrieme))
-  /* Ce qui s'écrit sur les couvertures à titre vivant : ce que le client a
-     tapé, ou le titre d'exemple tant qu'il n'a rien écrit. Une couverture
-     vide ne montrerait aucun style, et c'est le style qu'on lui demande. */
-  const affiche = value.trim() || TITRE_PLACEHOLDER
 
   return (
     /* ── DEUX COLONNES À PARTIR DE 900 px (15/09, demande de Mathias) ──────
@@ -145,11 +143,6 @@ export default function Screen3Titre({
       <div className="at-covers" role="group" aria-label="Style de couverture">
         {COVER_MODELS.map((m) => {
           const actif = modele === m.id
-          /* Titre vivant seulement si la police du lettrage est connue. Les
-             deux autres modèles montrent leur visuel titré : une plaque nue
-             sans lettrage serait une couverture vide. */
-          const vivant = Boolean(m.plaqueNue && m.police)
-          const fichier = vivant ? m.plaqueNue! : m.image
           return (
             <button
               key={m.id}
@@ -161,42 +154,40 @@ export default function Screen3Titre({
               <span className="at-cov-plaque">
                 <img
                   className="at-cov-img"
-                  src={`/images/v2/composer/${fichier}-${MODELE_LARGEURS[1]}.webp`}
-                  srcSet={modeleSrcSet(fichier)}
-                  sizes="(max-width: 720px) 28vw, 112px"
+                  src={modeleSrc(m)}
+                  srcSet={modeleSrcSet(m)}
+                  sizes="(max-width: 900px) 150px, 200px"
                   width={336}
                   height={475}
-                  alt={
-                    vivant
-                      ? `Votre titre sur la couverture, style ${m.tag.toLowerCase()}`
-                      : `Couverture « ${m.titreOrigine} », style ${m.tag.toLowerCase()}`
-                  }
+                  alt={`Couverture « ${m.titreOrigine} », style ${m.tag.toLowerCase()}`}
                   loading="lazy"
                   decoding="async"
                 />
-                {vivant && (
-                  <TitreSurCouverture modele={m} titre={affiche} policeVar={m.police!} />
-                )}
               </span>
               <span className="at-cov-tag">{m.tag}</span>
             </button>
           )
         })}
-
-        {/* La cinquième case. Elle a la forme des quatre autres pour qu'on
-            comprenne qu'elle est une réponse, pas un bouton d'annulation. */}
-        <button
-          type="button"
-          className={`at-cov at-cov--aucun ${modele === MODELE_AUCUN ? 'is-on' : ''}`}
-          aria-pressed={modele === MODELE_AUCUN}
-          onClick={() => onModele(modele === MODELE_AUCUN ? '' : MODELE_AUCUN)}
-        >
-          <span className="at-cov-aucun-boite">
-            <span className="at-cov-aucun-t">Aucune préférence</span>
-          </span>
-          <span className="at-cov-tag">Surprenez-moi</span>
-        </button>
       </div>
+
+      {/* ⚠️ « AUCUNE PRÉFÉRENCE » EST HORS DE LA GRILLE, ET C'EST LE POINT.
+          Elle y était, en cinquième case : sur ordinateur la grille est bornée
+          en hauteur et défile, sur téléphone c'est un rail horizontal — dans
+          les deux cas il fallait faire défiler pour découvrir qu'on avait le
+          droit de ne pas choisir. Une réponse qu'il faut chercher n'est pas
+          une réponse offerte. Mathias, 15/09 : « pas de préférence doit
+          toujours être visible. »
+          Elle prend donc la forme d'une barre sous la grille, dans le flux,
+          visible sans un geste. */}
+      <button
+        type="button"
+        className={`at-aucun ${modele === MODELE_AUCUN ? 'is-on' : ''}`}
+        aria-pressed={modele === MODELE_AUCUN}
+        onClick={() => onModele(modele === MODELE_AUCUN ? '' : MODELE_AUCUN)}
+      >
+        <span className="at-aucun-t">Aucune préférence</span>
+        <span className="at-aucun-s">Surprenez-moi</span>
+      </button>
      </div>
     </div>
   )

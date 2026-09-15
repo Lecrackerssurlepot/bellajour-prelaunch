@@ -18,26 +18,31 @@
  * obligatoire : seul le style est facultatif, et ne rien choisir n'enlève
  * aucune information à l'atelier.
  *
- * ── ÉTAT : LE TITRE EST VIVANT SUR DEUX MODÈLES SUR QUATRE ────────────────
- * Mathias, le 15/09 : « utilise Interlope pour Aussie et 26 en attendant. »
+ * ── ÉTAT : LES COUVERTURES PORTENT LEUR PROPRE LETTRAGE ───────────────────
+ * Ce que le client voit, ce sont les visuels livrés, AVEC le titre du
+ * graphiste (« Aussie », « 26 », « SICILE », « THIS NIGHT »). Son propre
+ * titre ne s'y écrit pas.
  *
- * Aussie et 26 servent donc leur plaque NUE, et le titre du client s'y écrit
- * en direct en Interlope (OFL 1.1, Gabriel Dubourg — la licence voyage avec
- * le fichier dans `polices/`). Interlope n'est pas le lettrage d'origine :
- * c'est la plus proche de la bibliothèque `assets/typo/`, comparée mot à mot
- * contre le lettrage découpé dans chaque master.
+ * ⚠️ CE N'EST PAS UN MANQUE, C'EST UNE DÉCISION. Le mécanisme a existé et
+ * marchait : le titre du client s'écrivait en direct sur la plaque nue, à
+ * l'emplacement, à la police et à la couleur relevés sur chaque visuel.
+ * Mathias l'a débranché le 15/09 après l'avoir vu — « le titre ne change
+ * pas, tu mets juste les visuels qu'on a avec les titres, et la personne
+ * peut sélectionner si elle aime bien ». La question de l'écran est « un
+ * style vous parle déjà ? » : on demande de reconnaître une ambiance, pas de
+ * se projeter dans une maquette de son numéro. Ça, c'est le travail de
+ * l'atelier, et la vraie maquette le montrera plus tard.
  *
- * Sicile et This Night gardent leur visuel titré, et c'est délibéré :
- * — Sicile est un didone, et la bibliothèque n'en contient AUCUN. Le nom de
- *   sa police est à demander au graphiste. Cormorant, notre serif, est une
- *   garalde : la substituer se verrait.
- * — This Night correspond à Aileron Black, mais Aileron n'a aucun fichier de
- *   licence joint (donc tous droits réservés par défaut). L'audit du 27/08
- *   note qu'elle est en réalité en CC0 ; il manque la notice qui le prouve.
+ * Tout est dans `archive/titre-vivant-composer/` : la règle de découpe, la
+ * mesure, la police Interlope avec sa licence, et la marche à suivre pour
+ * rallumer. NE PAS LE RÉÉCRIRE.
  *
- * ⚠️ NE PAS « HARMONISER » EN METTANT INTERLOPE PARTOUT. Quatre modèles au
- * même lettrage, c'est quatre fois le même modèle, et la question de l'écran
- * ne veut plus rien dire.
+ * ⚠️ LES CHAMPS CI-DESSOUS RESTENT, ET CE N'EST PAS DU CODE MORT. `zone`,
+ * `zoneBis`, `ligneBasse`, les couleurs, `disposition`, `repli`, `police` :
+ * ce sont des MESURES, obtenues en superposant la version titrée et la
+ * plaque nue de chaque master, pixel à pixel. L'écran ne les lit plus ; elles
+ * sont ce qui permettrait de tout rallumer en une demi-heure, et elles ne
+ * coûtent rien. Le jour où on les jette, il faut les remesurer.
  */
 
 export type ZoneTexte = {
@@ -57,29 +62,40 @@ export type CoverModel = {
   nom: string
   /* Le mot qui qualifie le style, sous la vignette. */
   tag: string
-  /* Base du chemin dans /images/v2/composer/ — les largeurs s'y ajoutent. */
+  /* Chemin sous /images/v2/, SANS la largeur ni l'extension.
+     ⚠️ Il porte son dossier depuis le 15/09 : les six couvertures de la bande
+     de l'accueil rejoignent l'écran 3 (« on peut rajouter d'autres visuels du
+     coup, ceux de la homepage »), et elles vivent sous `accueil/`. Les
+     recopier sous `composer/` aurait dupliqué des pixels identiques. */
   image: string
+  /* Les largeurs réellement produites pour CE fichier par images-v2.mjs.
+     Elles diffèrent d'un dossier à l'autre : 168/336/900 pour les quatre
+     premiers modèles, 240/360/640 pour la bande de l'accueil, qui les avait
+     déjà. 640 couvre une vignette de 200 px CSS à trois fois la densité. */
+  largeurs: readonly number[]
   /* La plaque SANS lettrage, quand le titre du client s'y écrit en direct.
      null = la police du modèle manque encore, on sert la version titrée.
      ⚠️ Deux modèles sur quatre au 15/09 : Sicile attend le nom de sa police
      (la bibliothèque n'a aucun didone) et This Night la notice CC0
      d'Aileron. Servir leur plaque nue sans lettrage donnerait une couverture
      vide — pire que la maquette d'origine. */
-  plaqueNue: string | null
-  /* Le NOM DE LA VARIABLE CSS qui porte le lettrage, déclarée par next/font
-     dans `layout.tsx`. Pas le nom de la famille : next/font le hache
-     (`__interlope_a1b2c3`) et il n'est lisible qu'à travers la variable.
-     `TitreSurCouverture` la résout avant de mesurer. */
-  police: string | null
+  plaqueNue?: string | null
+  /* ⚠️ DOCUMENTATION, PLUS UN POINTEUR VIVANT (15/09, quatrième passage).
+     Ce champ portait le nom d'une variable CSS déclarée par next/font ;
+     depuis que le titre vivant est archivé, ces polices ne sont plus
+     chargées, et laisser `--font-bodoni` ici aurait été une référence
+     pendante. Il porte donc le NOM DE LA FAMILLE : ce qu'il faut redemander
+     à Google Fonts le jour où on rallume, et rien de plus. */
+  police?: string | null
   /* La couleur du lettrage, RELEVÉE dans le visuel livré (médiane du 2 % de
      pixels les plus extrêmes de la zone du titre : le cœur du trait, pas son
      antialiasing). Jamais choisie à l'œil. */
-  couleurTitre: string | null
+  couleurTitre?: string | null
   /* Le titre porté par le visuel livré. Sert l'`alt` aujourd'hui, et dira
      à l'étape 2 quel mot la plaque nue a perdu. */
   titreOrigine: string
-  /* Où le titre se pose. */
-  zone: ZoneTexte
+  /* Où le titre se pose. Absent sur les modèles jamais mesurés. */
+  zone?: ZoneTexte
   /* La seconde ligne, quand le modèle en porte une (« 2026 », « MON ANNEE »).
      null = le modèle n'en a pas.
      ⚠️ TRANCHÉ PAR MATHIAS LE 15/09 : c'est un texte FIXE, posé par le site —
@@ -87,9 +103,9 @@ export type CoverModel = {
      prend sa place. La ligne ne disparaît donc jamais, elle change de source.
      C'est aussi ce qui donne enfin une destination visible au champ
      « sous-titre · première de couverture », resté jusqu'ici sans effet. */
-  ligneBasse: { texte: string; zone: ZoneTexte } | null
+  ligneBasse?: { texte: string; zone: ZoneTexte } | null
   /* Comment le titre se réarrange quand il ne tient plus. Voir DÉCOUPE. */
-  repli: 'reduire' | 'une-ligne-au-dessus' | 'une-couleur'
+  repli?: 'reduire' | 'une-ligne-au-dessus' | 'une-couleur'
   /* Pour le repli 'une-couleur' : celle qui reste. TRANCHÉ le 15/09 — « quand
      il n'y a qu'un seul mot, garde le blanc ». Le rouge de « THIS » est la
      couleur d'accompagnement, pas celle du titre. */
@@ -104,7 +120,7 @@ export type CoverModel = {
      — 'deux-tons'   : première ligne dans `couleurAccent`, seconde dans
                        `couleurTitre`, légèrement chevauchées (This Night).
                        Sur un seul mot, `couleurSeule` s'applique. */
-  disposition: 'simple' | 'haut-et-bas' | 'deux-tons'
+  disposition?: 'simple' | 'haut-et-bas' | 'deux-tons'
   /* La seconde bande, pour 'haut-et-bas'. `zone` porte alors la première. */
   zoneBis?: ZoneTexte
   /* La couleur de la première ligne, pour 'deux-tons'. */
@@ -179,14 +195,24 @@ export const DECOUPE = {
   plancher: 0.55,
 } as const
 
+/* Produites par images-v2.mjs pour `composer/` : la vignette fait au plus
+   200 px CSS (colonne de droite, bureau), 336 couvre le double de densité et
+   900 le triple avec de la marge. */
+const COMPOSER_LARGEURS = [168, 336, 900] as const
+
+/* La bande de l'accueil les avait déjà. 640 couvre 200 px CSS à trois fois
+   la densité : inutile d'en produire d'autres, ce sont les mêmes pixels. */
+const ACCUEIL_LARGEURS = [240, 360, 640] as const
+
 export const COVER_MODELS: CoverModel[] = [
   {
     id: 'aussie',
     nom: 'Aussie',
     tag: 'Vacances',
-    image: 'modele-aussie',
+    image: 'composer/modele-aussie',
+    largeurs: COMPOSER_LARGEURS,
     plaqueNue: 'modele-aussie-nu',
-    police: '--font-interlope',
+    police: 'Interlope',
     couleurTitre: '#345a94',
     titreOrigine: 'Aussie',
     zone: { gauche: 29.2, droite: 86.6, haut: 6.1, bas: 18.5 },
@@ -197,10 +223,17 @@ export const COVER_MODELS: CoverModel[] = [
   {
     id: 'mon-annee',
     nom: 'Mon année',
+    /* ⚠️ LE MASTER EST LA GRANDE VARIANTE DU « 26 » depuis le 15/09 :
+       « pour le 26 tu prends le gros ». Le graphiste en avait livré deux, un
+       petit chiffre en haut à gauche et un grand qui tient la moitié de la
+       couverture. Le petit ne se lisait pas sur une vignette. Les zones
+       ci-dessous ont été mesurées sur le PETIT : à remesurer si le titre
+       vivant est un jour rallumé. */
     tag: 'Doux',
-    image: 'modele-mon-annee',
+    image: 'composer/modele-mon-annee-grand',
+    largeurs: COMPOSER_LARGEURS,
     plaqueNue: 'modele-mon-annee-nu',
-    police: '--font-interlope',
+    police: 'Interlope',
     couleurTitre: '#ffffff',
     titreOrigine: '26',
     /* ⚠️ LA SEULE ZONE QUI N'EST PAS CELLE DU LETTRAGE LIVRÉ, et c'est
@@ -229,13 +262,14 @@ export const COVER_MODELS: CoverModel[] = [
     id: 'sicile',
     nom: 'Sicile',
     tag: 'Graphique',
-    image: 'modele-sicile',
+    image: 'composer/modele-sicile',
+    largeurs: COMPOSER_LARGEURS,
     plaqueNue: 'modele-sicile-nu',
     /* Bodoni Moda : un vrai didone, c'est-à-dire exactement ce que fait cette
        couverture — fûts épais, empattements filiformes non raccordés. La
        bibliothèque `assets/typo/` n'en contenait aucun ; Google Fonts si, et
        en OFL, donc auto-hébergée par next/font comme Cormorant et DM Sans. */
-    police: '--font-bodoni',
+    police: 'Bodoni Moda 700',
     couleurTitre: '#ffffff',
     titreOrigine: 'Sicile',
     /* La zone couvre les deux tiers de la hauteur : le mot est répété autour
@@ -258,13 +292,14 @@ export const COVER_MODELS: CoverModel[] = [
     id: 'this-night',
     nom: 'This Night',
     tag: 'Nuit',
-    image: 'modele-this-night',
+    image: 'composer/modele-this-night',
+    largeurs: COMPOSER_LARGEURS,
     plaqueNue: 'modele-this-night-nu',
     /* Archivo Black : la grotesque noire la plus proche du lettrage livré —
        même largeur, même graisse, même G à barre et éperon. OFL, Google
        Fonts. Elle remplace Aileron, qui correspondait aussi bien mais dont
        la notice CC0 manque au dossier (voir assets/typo/LICENCES.md). */
-    police: '--font-archivo',
+    police: 'Archivo Black',
     couleurTitre: '#ffffff',
     couleurAccent: '#841600',
     /* Deux mots, deux couleurs, qui se chevauchent : « THIS » en rouge
@@ -276,13 +311,78 @@ export const COVER_MODELS: CoverModel[] = [
     couleurSeule: '#ffffff',
     disposition: 'deux-tons',
   },
+
+  /* ── LES COUVERTURES DE L'ACCUEIL (15/09/2026) ────────────────────────
+     Mathias : « on peut rajouter d'autres visuels du coup, ceux de la
+     homepage. » Ce sont les six couvertures de la bande de la page 04, déjà
+     en production, déjà converties, déjà à leur place sous `accueil/`. Elles
+     n'ont rien à faire de plus pour servir ici : elles sont au même format A
+     (4066 x 5750) et portent déjà leur propre lettrage.
+
+     ⚠️ « THIS NIGHT » N'EST PAS REPRISE ICI : c'est le master A07, et c'est
+     déjà le modèle `this-night` ci-dessus. Un même visuel deux fois dans la
+     grille se lirait comme un bug.
+
+     ⚠️ AUCUNE MESURE sur ces cinq-là. Les champs `zone`, `police`,
+     `plaqueNue`… restent absents, et c'est normal : elles n'ont jamais été
+     livrées en paire avec/sans lettrage. Il faudrait les mesurer avant de
+     pouvoir y écrire un titre vivant — voir `archive/titre-vivant-composer/`.
+
+     ⚠️ Deux modèles s'appellent « Aussie » (celui aux palmiers et celui de la
+     ville de nuit). C'est l'ÉTIQUETTE qui les distingue à l'écran, pas le
+     titre imprimé : « Vacances » et « Ville ». */
+  {
+    id: 'the-boys',
+    nom: 'The Boys',
+    tag: 'Smoking',
+    image: 'accueil/couverture-the-boys',
+    largeurs: ACCUEIL_LARGEURS,
+    titreOrigine: 'The Boys',
+  },
+  {
+    id: 'lisbonne',
+    nom: 'Lisbonne',
+    tag: 'Néon',
+    image: 'accueil/couverture-lisbonne',
+    largeurs: ACCUEIL_LARGEURS,
+    titreOrigine: 'Lisbonne',
+  },
+  {
+    id: 'cote-azur',
+    nom: 'Côte d’Azur',
+    tag: 'Classique',
+    image: 'accueil/couverture-cote-azur',
+    largeurs: ACCUEIL_LARGEURS,
+    titreOrigine: 'Côte d’Azur',
+  },
+  {
+    id: 'aussie-ville',
+    nom: 'Aussie, la ville',
+    tag: 'Ville',
+    image: 'accueil/couverture-aussie',
+    largeurs: ACCUEIL_LARGEURS,
+    titreOrigine: 'Aussie',
+  },
+  {
+    id: 'thats-life',
+    nom: 'That’s Life',
+    tag: 'Crépuscule',
+    image: 'accueil/couverture-thats-life',
+    largeurs: ACCUEIL_LARGEURS,
+    titreOrigine: 'That’s Life',
+  },
 ]
 
-/* Les largeurs produites par scripts/images-v2.mjs pour ces quatre-là. */
-export const MODELE_LARGEURS = [168, 336, 900] as const
+export function modeleSrcSet(m: CoverModel): string {
+  return m.largeurs.map((l) => `/images/v2/${m.image}-${l}.webp ${l}w`).join(', ')
+}
 
-export function modeleSrcSet(image: string): string {
-  return MODELE_LARGEURS.map((l) => `/images/v2/composer/${image}-${l}.webp ${l}w`).join(', ')
+/* La source de repli du `<img>` : la taille du milieu, celle que sert un
+   écran ordinaire. Jamais la plus grande — un navigateur sans srcset
+   téléchargerait 900 px pour en peindre 200. */
+export function modeleSrc(m: CoverModel): string {
+  const milieu = m.largeurs[Math.min(1, m.largeurs.length - 1)]
+  return `/images/v2/${m.image}-${milieu}.webp`
 }
 
 /* La valeur enregistrée quand le client dit explicitement « aucune préférence ».

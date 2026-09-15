@@ -247,25 +247,22 @@ const TRAVAUX = [
      ⚠️ Q03 pèse 70 Mo en master (10085 x 14349) : `limitInputPixels` est déjà
      levé plus haut, sans quoi sharp refuse le fichier. */
   { de: `${MASTERS}/BJ-Q01.png`, vers: 'composer/modele-aussie', ratio: null, largeurs: [168, 336, 900] },
-  { de: `${MASTERS}/BJ-Q02.png`, vers: 'composer/modele-mon-annee', ratio: null, largeurs: [168, 336, 900] },
+  /* ⚠️ `-grand` DANS LE NOM, ET C'EST OBLIGATOIRE. Q02 pointe désormais sur la
+     GRANDE variante du « 26 » : le fichier CHANGE de contenu. Le garder sous
+     `modele-mon-annee` aurait fait servir l'ancienne image depuis le cache
+     pendant vingt-quatre heures (`next.config.ts` : max-age=86400 sur tout
+     `/images/`), et personne n'aurait compris pourquoi le petit chiffre
+     revenait. Un contenu neuf prend une adresse neuve. */
+  { de: `${MASTERS}/BJ-Q02.png`, vers: 'composer/modele-mon-annee-grand', ratio: null, largeurs: [168, 336, 900] },
 
-  /* ── LES PLAQUES NUES (15/09/2026, second passage) ─────────────────────
-     Mathias : « utilise Interlope pour Aussie et 26 en attendant. » Ces deux
-     modèles-là passent donc au TITRE VIVANT : c'est leur plaque SANS lettrage
-     qui est servie, et le titre du client s'écrit par-dessus en HTML.
-     ⚠️ SEULEMENT CES DEUX-LÀ. Sicile attend le nom de sa police (la
-     bibliothèque n'a aucun didone) et This Night la notice CC0 d'Aileron :
-     leurs plaques nues existent dans les masters mais ne sont PAS produites
-     ici, parce qu'une plaque nue sans son lettrage est une couverture vide. */
-  { de: `${MASTERS}/BJ-Q01-nu.png`, vers: 'composer/modele-aussie-nu', ratio: null, largeurs: [168, 336, 900] },
-  { de: `${MASTERS}/BJ-Q02-nu.png`, vers: 'composer/modele-mon-annee-nu', ratio: null, largeurs: [168, 336, 900] },
-  /* Les deux dernières plaques nues (15/09, troisième passage) : Mathias a
-     dit « on cherche d'autres typo », et Google Fonts en donne deux qui
-     collent — Bodoni Moda pour Sicile, Archivo Black pour This Night, toutes
-     deux en OFL et auto-hébergées par next/font. Les quatre modèles portent
-     donc désormais le titre du client. */
-  { de: `${MASTERS}/BJ-Q03-nu.png`, vers: 'composer/modele-sicile-nu', ratio: null, largeurs: [168, 336, 900] },
-  { de: `${MASTERS}/BJ-Q04-nu.png`, vers: 'composer/modele-this-night-nu', ratio: null, largeurs: [168, 336, 900] },
+  /* ⚠️ LES QUATRE PLAQUES NUES NE SONT PLUS PRODUITES (15/09, quatrième
+     passage). Le titre du client s'écrivait dessus en direct ; Mathias a
+     débranché le mécanisme — « le titre ne change pas, tu mets juste les
+     visuels qu'on a avec les titres ». Le code est entier dans
+     `archive/titre-vivant-composer/`, avec la marche à suivre pour le
+     rallumer. Les masters `BJ-Q0x-nu.png` restent dans le dépôt de visuels.
+     ⚠️ Q02 POINTE MAINTENANT SUR LA GRANDE VARIANTE du « 26 » (l'ancien
+     `7.png`), et non plus la petite : « pour le 26 tu prends le gros ». */
   { de: `${MASTERS}/BJ-Q03.png`, vers: 'composer/modele-sicile', ratio: null, largeurs: [168, 336, 900] },
   { de: `${MASTERS}/BJ-Q04.png`, vers: 'composer/modele-this-night', ratio: null, largeurs: [168, 336, 900] },
 ]

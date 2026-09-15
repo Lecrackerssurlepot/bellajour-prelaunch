@@ -597,6 +597,52 @@
   .bj-atelier .at-cov { flex: none; }
 }
 
+/* ── « AUCUNE PRÉFÉRENCE », HORS DE LA GRILLE (15/09) ─────────────────────
+   Elle était la cinquième vignette. Sur ordinateur la grille est bornée en
+   hauteur et défile, sur téléphone c'est un rail horizontal : dans les deux
+   cas il fallait faire défiler pour découvrir qu'on avait le droit de ne pas
+   choisir. Une réponse qu'il faut chercher n'est pas une réponse offerte.
+   Elle devient une barre, dans le flux, sous la grille — jamais masquée.
+   ⚠️ Elle n'a PAS la forme d'une couverture, volontairement : lui donner le
+   même cadre que les quatre autres la ferait lire comme un cinquième style,
+   alors que c'est le refus de choisir. */
+.bj-atelier .at-aucun {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 13px 16px;
+  background: transparent;
+  border: 1px solid var(--c-line-md);
+  border-radius: 3px;
+  color: var(--c-text-soft);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.bj-atelier .at-aucun:hover { border-color: var(--c-line-strong); color: var(--c-text); }
+
+.bj-atelier .at-aucun.is-on {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 1px var(--c-accent);
+  color: var(--c-accent-strong);
+}
+
+.at-aucun-t { font-family: var(--font-ui); font-size: 13px; }
+
+.at-aucun-s {
+  font-family: var(--font-ui);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.bj-atelier .at-aucun.is-on .at-aucun-s { color: var(--c-accent); }
+
 /* Une barre de défilement discrète dans la boîte des modèles : celle du
    système, pleine largeur, coupait une vignette en deux sur macOS. */
 .at-covers::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -624,8 +670,7 @@
    « Doux » un rose pâle) — une brume grise en travers de la maquette qu'on
    demande justement au client de juger. Elle passe donc DESSOUS, sur le fond
    de la page, où elle ne coûte rien à personne. */
-.at-cov-img,
-.at-cov-aucun-boite {
+.at-cov-img {
   width: 100%;
   /* ⚠️ `height: auto` EST OBLIGATOIRE, pas un ornement. `<img>` porte ses
      attributs `width` et `height` (336 x 475, posés pour réserver la place
@@ -644,72 +689,22 @@
   transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 
-.bj-atelier .at-cov:hover .at-cov-img,
-.bj-atelier .at-cov:hover .at-cov-aucun-boite { border-color: var(--c-line-strong); }
+.bj-atelier .at-cov:hover .at-cov-img { border-color: var(--c-line-strong); }
 
 /* L'état retenu : la pastille de l'ouverture, comme partout ailleurs sur
    l'atelier (correction visuelle du 14/09). Pas d'anneau de focus dessiné
    à la main — `:focus-visible` garde celui du navigateur. */
-.bj-atelier .at-cov.is-on .at-cov-img,
-.bj-atelier .at-cov.is-on .at-cov-aucun-boite {
+.bj-atelier .at-cov.is-on .at-cov-img {
   border-color: var(--c-accent);
   box-shadow: 0 0 0 1px var(--c-accent);
 }
 
-/* La cinquième case n'a pas d'image : une boîte au MÊME rapport que les
-   couvertures, pour que la rangée reste une rangée et que la réponse se lise
-   comme une réponse — pas comme un bouton d'annulation en bout de ligne. */
-.at-cov-aucun-boite {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px;
-}
-
-.at-cov-aucun-t {
-  font-family: var(--font-ui);
-  font-size: 11px;
-  line-height: 1.35;
-  color: var(--c-text-soft);
-}
-
-/* ── LE TITRE VIVANT, ÉCRIT SUR LA PLAQUE (15/09/2026) ────────────────────
-   `.at-cov-plaque` est le seul élément positionné du lot : c'est lui qui
-   définit le repère en pourcentage dans lequel `.at-cov-vivant` se pose.
-   ⚠️ Il ne peut PAS être le bouton : celui-ci porte aussi l'étiquette sous
-   l'image, et les % du titre seraient alors comptés sur une boîte plus haute
-   que la couverture — le titre descendrait d'autant. */
-.at-cov-plaque {
-  position: relative;
-  display: block;
-  width: 100%;
-}
-
-/* La boîte MESURÉE sur le visuel livré. Position et dimensions viennent
-   toutes les quatre de `modele.zone`, en % : elles sont posées en style en
-   ligne par le composant, pas ici.
-   ⚠️ `overflow: hidden` est un filet, pas la règle : la taille est calculée
-   pour tenir. S'il rogne quelque chose, c'est que la mesure est fausse —
-   mieux vaut un titre coupé net qu'un titre qui déborde sur la photo. */
-.at-cov-vivant {
-  position: absolute;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  line-height: 1.08;
-  text-align: center;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-/* 'deux-tons' — les deux lignes se CHEVAUCHENT, comme sur la maquette où
-   « THIS » en rouge passe derrière « NIGHT » en blanc. L'interligne resserré
-   fait le chevauchement ; l'ordre du DOM fait le dessus-dessous, la seconde
-   ligne recouvrant la première sans un seul z-index. */
-.at-cov-vivant > span + span { margin-top: -0.22em; }
+/* ⚠️ LE CSS DU TITRE VIVANT A VÉCU ICI (.at-cov-vivant) et n'y est plus :
+   le mécanisme est archivé dans `archive/titre-vivant-composer/`. Les
+   couvertures portent de nouveau leur propre lettrage, celui du graphiste.
+   `.at-cov-plaque` reste : elle enveloppe l'image et c'est elle qui portait
+   le repère en pourcentage. Elle ne coûte rien et évite de casser le
+   balisage le jour où on rallume. */
 
 /* L'étiquette du style, SOUS la vignette (voir plus haut pourquoi). */
 .at-cov-tag {
