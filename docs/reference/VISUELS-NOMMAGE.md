@@ -273,3 +273,26 @@ largeurs. Elles sont posées en `bottom: 0` : l'alignement tient à toutes les l
 épouse alors le plus haut des trois (le portrait), d'où `aspect-ratio: 100/37` — et les trois
 autres rapports (11/5.8, 5/2 deux fois) deviennent sans objet, ils ne feraient que du noir
 au-dessus de la ligne de base.
+
+
+## 15/09/2026 — les écarts de la colonne de droite
+
+« Les espaces sur la droite sont beaucoup trop écartés. » La cause était le plancher
+`min-height: --app-height - --nav-h - …` posé sur les deux colonnes : il les forçait à 745 px sur
+un écran de 900, alors que la colonne de droite ne porte que **385 px de contenu**. `space-between`
+en tirait deux vides de **180 px**.
+
+**Le plancher est retiré.** La hauteur vient désormais de la colonne de gauche (le mot + le
+collage), calée à **569 px** — la valeur qui laisse exactement **90 px** entre chacun des trois
+blocs. Le collage passe en `749/585`. Les deux colonnes finissent toujours ensemble : mesuré,
+`.collage` bas = `.bloc-acte` bas = **661**.
+
+**L'espace a changé de place, il n'a pas disparu.** Il est passé entre le premier écran et le
+parcours, où il se lit comme une séparation de sections et non comme un trou dans une colonne.
+C'est `.bloc-pas` qui porte maintenant, seule, la règle du 31/08 (« le parcours ne montre pas sa
+première bande dans le premier écran ») :
+`margin-top: max(var(--g), calc(var(--app-height) - 712px))`.
+⚠️ 712 est mesuré, pas estimé : à 1440×900 la gouttière de grille vaut 57,6 px (4vw borné à 64) et
+non 64. Vérifié : parcours à **906** sur un écran de 900, à **993** sur un écran de 982.
+⚠️ `--app-height` et jamais `vh` (règle de la maison). `max()` avec `--g` pour qu'un écran court
+retombe sur la gouttière.
