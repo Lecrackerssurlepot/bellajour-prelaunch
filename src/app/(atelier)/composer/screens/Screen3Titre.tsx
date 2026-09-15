@@ -22,8 +22,12 @@
      case dit « aucune préférence ». Le grief du lot 4 est réglé non pas en
      enlevant le clic, mais en lui donnant une conséquence.
 
-   Le titre du client ne s'écrit pas encore SUR ces visuels : il y faut les
-   fichiers de police des quatre lettrages. Voir `coverModels.ts`.
+   LE TITRE EST VIVANT SUR DEUX MODÈLES SUR QUATRE (15/09, second passage).
+   Mathias : « utilise Interlope pour Aussie et 26 en attendant. » Ces deux-là
+   servent leur plaque NUE et le titre du client s'y écrit par-dessus ; Sicile
+   et This Night gardent leur visuel titré, faute de connaître leur police.
+   ⚠️ Ne pas « harmoniser » en mettant Interlope partout : quatre modèles au
+   même lettrage, c'est quatre fois le même modèle. Voir `coverModels.ts`.
 
    NOUVEAU 03/09 — les mots de couverture facultatifs : un sous-titre pour la
    première de couverture, un mot pour la quatrième. Repliés par défaut
@@ -33,6 +37,7 @@ import { useState } from 'react'
 import {
   COVER_MODELS, MODELE_AUCUN, MODELE_LARGEURS, modeleSrcSet, TITRE_MAX, TITRE_PLACEHOLDER,
 } from '../coverModels'
+import TitreSurCouverture from '../TitreSurCouverture'
 
 export const SOUS_TITRE_MAX = 80
 export const MOT_QUATRIEME_MAX = 160
@@ -51,6 +56,10 @@ export default function Screen3Titre({
   /* Déplié d'office si un brouillon porte déjà un des deux mots : un champ
      rempli ne doit jamais être caché derrière son propre déplieur. */
   const [extras, setExtras] = useState(() => Boolean(sousTitre || motQuatrieme))
+  /* Ce qui s'écrit sur les couvertures à titre vivant : ce que le client a
+     tapé, ou le titre d'exemple tant qu'il n'a rien écrit. Une couverture
+     vide ne montrerait aucun style, et c'est le style qu'on lui demande. */
+  const affiche = value.trim() || TITRE_PLACEHOLDER
 
   return (
     <>
@@ -122,6 +131,11 @@ export default function Screen3Titre({
       <div className="at-covers" role="group" aria-label="Style de couverture">
         {COVER_MODELS.map((m) => {
           const actif = modele === m.id
+          /* Titre vivant seulement si la police du lettrage est connue. Les
+             deux autres modèles montrent leur visuel titré : une plaque nue
+             sans lettrage serait une couverture vide. */
+          const vivant = Boolean(m.plaqueNue && m.police)
+          const fichier = vivant ? m.plaqueNue! : m.image
           return (
             <button
               key={m.id}
@@ -130,17 +144,26 @@ export default function Screen3Titre({
               aria-pressed={actif}
               onClick={() => onModele(actif ? '' : m.id)}
             >
-              <img
-                className="at-cov-img"
-                src={`/images/v2/composer/${m.image}-${MODELE_LARGEURS[1]}.webp`}
-                srcSet={modeleSrcSet(m.image)}
-                sizes="(max-width: 720px) 28vw, 112px"
-                width={336}
-                height={475}
-                alt={`Couverture « ${m.titreOrigine} », style ${m.tag.toLowerCase()}`}
-                loading="lazy"
-                decoding="async"
-              />
+              <span className="at-cov-plaque">
+                <img
+                  className="at-cov-img"
+                  src={`/images/v2/composer/${fichier}-${MODELE_LARGEURS[1]}.webp`}
+                  srcSet={modeleSrcSet(fichier)}
+                  sizes="(max-width: 720px) 28vw, 112px"
+                  width={336}
+                  height={475}
+                  alt={
+                    vivant
+                      ? `Votre titre sur la couverture, style ${m.tag.toLowerCase()}`
+                      : `Couverture « ${m.titreOrigine} », style ${m.tag.toLowerCase()}`
+                  }
+                  loading="lazy"
+                  decoding="async"
+                />
+                {vivant && (
+                  <TitreSurCouverture modele={m} titre={affiche} policeVar={m.police!} />
+                )}
+              </span>
               <span className="at-cov-tag">{m.tag}</span>
             </button>
           )

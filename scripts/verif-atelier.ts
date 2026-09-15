@@ -136,6 +136,7 @@ import {
 import { palierPour as bandePour } from "@/app/(atelier)/composer/depot/paliers";
 import { brouillonSansDossier } from "@/app/(atelier)/composer/draft";
 import { COVER_MODELS, MODELES_VALIDES } from "@/app/(atelier)/composer/coverModels";
+import { decouperEnLignes, coupuresPossibles } from "@/app/(atelier)/composer/decoupeTitre";
 import { peutRecommander } from "@/lib/atelier/reimpression";
 import {
   cheminRetour,
@@ -2082,12 +2083,60 @@ ok("les quatre modeles et « aucune » sont acceptes, rien d'autre",
    && !MODELES_VALIDES.includes("")
    && !MODELES_VALIDES.includes("vogue"));
 
+/* ── LA DECOUPE DU TITRE SUR UNE COUVERTURE (15/09, T-091) ────────────────
+   Une couverture est dessinee pour UN mot (« Aussie », six lettres) et le
+   client en tapera vingt-quatre. Ces tests gardent la regle, pas le rendu :
+   le calcul de la taille exige un navigateur, la decoupe non.
+   `largeur` mesure en caracteres — suffisant pour verifier l'EQUILIBRE. */
+const largeur = (s: string) => s.length;
+
+ok("un titre d'un seul mot n'est jamais cesure",
+   decouperEnLignes("Anniversaire", largeur).length === 1);
+ok("un titre vide ne rend aucune ligne",
+   decouperEnLignes("   ", largeur).length === 0);
+
+/* LE POINT IMPORTANT : on ne remplit pas la premiere ligne avant de passer a
+   la suivante. Une decoupe gloutonne donnerait « Le mariage de Lea et / Tom »,
+   une ligne pleine et un orphelin. */
+{
+  const l = decouperEnLignes("Le mariage de Lea et Tom", largeur);
+  ok("deux lignes equilibrees, pas une ligne pleine et un orphelin",
+     l.length === 2 && l[0] === "Le mariage" && l[1] === "de Lea et Tom");
+}
+
+/* Une ligne qui finit par « de » est l'erreur la plus visible d'une
+   couverture : les mots-outils restent colles au mot qui suit. */
+{
+  const l = decouperEnLignes("Les nuits de Rome", largeur);
+  ok("aucune ligne ne se termine par un mot-outil",
+     l.every((ligne) => !["de", "des", "du", "la", "le", "les", "et", "en", "un", "une", "a"]
+       .includes(ligne.split(" ").slice(-1)[0].toLocaleLowerCase("fr"))));
+}
+ok("un titre fait QUE de mots-outils garde une coupure plutot que de deborder",
+   coupuresPossibles(["Le", "de", "la"]).length > 0);
+
+/* Rien ne se perd et rien ne s'ajoute : les mots ressortis sont les mots
+   entres, dans l'ordre. On ne tronque JAMAIS le titre du client. */
+{
+  const titre = "Nos trois jours en Bretagne";
+  ok("la decoupe ne perd ni n'ajoute aucun mot",
+     decouperEnLignes(titre, largeur).join(" ") === titre);
+}
+
 /* Les zones sont MESUREES sur les visuels livres : des bornes incoherentes
    poseraient le titre hors de la couverture a l'etape 2. */
 ok("chaque modele porte une zone de titre bornee dans la couverture",
    COVER_MODELS.every((m) =>
      m.zone.gauche >= 0 && m.zone.droite <= 100 && m.zone.gauche < m.zone.droite
      && m.zone.haut >= 0 && m.zone.bas <= 100 && m.zone.haut < m.zone.bas));
+
+/* Le titre vivant ne s'affiche QUE sur un modele dont on connait la police.
+   Sans elle, on sert le visuel titre : une plaque nue sans lettrage serait
+   une couverture vide. Ces deux-la vont donc toujours ensemble. */
+ok("plaque nue et police vont ensemble : jamais l'une sans l'autre",
+   COVER_MODELS.every((m) => Boolean(m.plaqueNue) === Boolean(m.police)));
+ok("un modele a titre vivant a une couleur de lettrage relevee",
+   COVER_MODELS.every((m) => !m.police || Boolean(m.couleurTitre)));
 ok("le token est efface : c'est LUI qui bloquait la recreation",
    RESCAPE.token === null);
 ok("le consentement photos retombe : il valait pour CE depot (garantie nº7)",

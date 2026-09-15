@@ -18,20 +18,26 @@
  * obligatoire : seul le style est facultatif, et ne rien choisir n'enlève
  * aucune information à l'atelier.
  *
- * ── ÉTAT : LE TITRE N'EST PAS ENCORE VIVANT ───────────────────────────────
- * Ce que le client voit aujourd'hui, ce sont les couvertures AVEC leur titre
- * d'origine (« Aussie », « 26 », « SICILE », « THIS NIGHT »). Son propre titre
- * ne s'y écrit pas encore.
+ * ── ÉTAT : LE TITRE EST VIVANT SUR DEUX MODÈLES SUR QUATRE ────────────────
+ * Mathias, le 15/09 : « utilise Interlope pour Aussie et 26 en attendant. »
  *
- * Pourquoi : les quatre lettrages sont dans quatre typographies différentes,
- * et AUCUNE n'est Cormorant Garamond ni DM Sans, nos deux polices. Sans les
- * fichiers de police, écrire le titre du client par-dessus la plaque nue
- * donnerait quatre modèles au même lettrage — c'est-à-dire quatre fois le
- * même modèle, et la question ne veut plus rien dire.
+ * Aussie et 26 servent donc leur plaque NUE, et le titre du client s'y écrit
+ * en direct en Interlope (OFL 1.1, Gabriel Dubourg — la licence voyage avec
+ * le fichier dans `polices/`). Interlope n'est pas le lettrage d'origine :
+ * c'est la plus proche de la bibliothèque `assets/typo/`, comparée mot à mot
+ * contre le lettrage découpé dans chaque master.
  *
- * Les plaques nues SONT livrées et attendent dans les masters
- * (`BJ-Q01-nu.png`… hors git). `zone` ci-dessous porte déjà leurs mesures.
- * L'étape 2 est mécanique le jour où les polices arrivent.
+ * Sicile et This Night gardent leur visuel titré, et c'est délibéré :
+ * — Sicile est un didone, et la bibliothèque n'en contient AUCUN. Le nom de
+ *   sa police est à demander au graphiste. Cormorant, notre serif, est une
+ *   garalde : la substituer se verrait.
+ * — This Night correspond à Aileron Black, mais Aileron n'a aucun fichier de
+ *   licence joint (donc tous droits réservés par défaut). L'audit du 27/08
+ *   note qu'elle est en réalité en CC0 ; il manque la notice qui le prouve.
+ *
+ * ⚠️ NE PAS « HARMONISER » EN METTANT INTERLOPE PARTOUT. Quatre modèles au
+ * même lettrage, c'est quatre fois le même modèle, et la question de l'écran
+ * ne veut plus rien dire.
  */
 
 export type ZoneTexte = {
@@ -53,6 +59,22 @@ export type CoverModel = {
   tag: string
   /* Base du chemin dans /images/v2/composer/ — les largeurs s'y ajoutent. */
   image: string
+  /* La plaque SANS lettrage, quand le titre du client s'y écrit en direct.
+     null = la police du modèle manque encore, on sert la version titrée.
+     ⚠️ Deux modèles sur quatre au 15/09 : Sicile attend le nom de sa police
+     (la bibliothèque n'a aucun didone) et This Night la notice CC0
+     d'Aileron. Servir leur plaque nue sans lettrage donnerait une couverture
+     vide — pire que la maquette d'origine. */
+  plaqueNue: string | null
+  /* Le NOM DE LA VARIABLE CSS qui porte le lettrage, déclarée par next/font
+     dans `layout.tsx`. Pas le nom de la famille : next/font le hache
+     (`__interlope_a1b2c3`) et il n'est lisible qu'à travers la variable.
+     `TitreSurCouverture` la résout avant de mesurer. */
+  police: string | null
+  /* La couleur du lettrage, RELEVÉE dans le visuel livré (médiane du 2 % de
+     pixels les plus extrêmes de la zone du titre : le cœur du trait, pas son
+     antialiasing). Jamais choisie à l'œil. */
+  couleurTitre: string | null
   /* Le titre porté par le visuel livré. Sert l'`alt` aujourd'hui, et dira
      à l'étape 2 quel mot la plaque nue a perdu. */
   titreOrigine: string
@@ -148,6 +170,9 @@ export const COVER_MODELS: CoverModel[] = [
     nom: 'Aussie',
     tag: 'Vacances',
     image: 'modele-aussie',
+    plaqueNue: 'modele-aussie-nu',
+    police: '--font-interlope',
+    couleurTitre: '#345a94',
     titreOrigine: 'Aussie',
     zone: { gauche: 29.2, droite: 86.6, haut: 6.1, bas: 18.5 },
     ligneBasse: { texte: '2026', zone: { gauche: 47, droite: 53.2, haut: 95.3, bas: 96.7 } },
@@ -158,6 +183,9 @@ export const COVER_MODELS: CoverModel[] = [
     nom: 'Mon année',
     tag: 'Doux',
     image: 'modele-mon-annee',
+    plaqueNue: 'modele-mon-annee-nu',
+    police: '--font-interlope',
+    couleurTitre: '#ffffff',
     titreOrigine: '26',
     zone: { gauche: 7.8, droite: 22.4, haut: 11, bas: 17.3 },
     ligneBasse: { texte: 'MON ANNEE', zone: { gauche: 80.2, droite: 92.6, haut: 95.2, bas: 96 } },
@@ -168,6 +196,9 @@ export const COVER_MODELS: CoverModel[] = [
     nom: 'Sicile',
     tag: 'Graphique',
     image: 'modele-sicile',
+    plaqueNue: null,
+    police: null,
+    couleurTitre: null,
     titreOrigine: 'Sicile',
     /* La zone couvre les deux tiers de la hauteur : le mot est répété autour
        de la photo, pas posé au-dessus. D'où le repli le plus franc des quatre. */
@@ -180,6 +211,9 @@ export const COVER_MODELS: CoverModel[] = [
     nom: 'This Night',
     tag: 'Nuit',
     image: 'modele-this-night',
+    plaqueNue: null,
+    police: null,
+    couleurTitre: null,
     /* Deux mots, deux couleurs, qui se chevauchent : « THIS » en rouge
        derrière, « NIGHT » en blanc devant. */
     titreOrigine: 'This Night',

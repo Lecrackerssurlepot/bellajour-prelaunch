@@ -599,6 +599,38 @@
   color: var(--c-text-soft);
 }
 
+/* ── LE TITRE VIVANT, ÉCRIT SUR LA PLAQUE (15/09/2026) ────────────────────
+   `.at-cov-plaque` est le seul élément positionné du lot : c'est lui qui
+   définit le repère en pourcentage dans lequel `.at-cov-vivant` se pose.
+   ⚠️ Il ne peut PAS être le bouton : celui-ci porte aussi l'étiquette sous
+   l'image, et les % du titre seraient alors comptés sur une boîte plus haute
+   que la couverture — le titre descendrait d'autant. */
+.at-cov-plaque {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+/* La boîte MESURÉE sur le visuel livré. Position et dimensions viennent
+   toutes les quatre de `modele.zone`, en % : elles sont posées en style en
+   ligne par le composant, pas ici.
+   ⚠️ `overflow: hidden` est un filet, pas la règle : la taille est calculée
+   pour tenir. S'il rogne quelque chose, c'est que la mesure est fausse —
+   mieux vaut un titre coupé net qu'un titre qui déborde sur la photo. */
+.at-cov-vivant {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  line-height: 1.08;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* L'étiquette du style, SOUS la vignette (voir plus haut pourquoi). */
 .at-cov-tag {
   display: block;

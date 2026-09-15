@@ -248,6 +248,17 @@ const TRAVAUX = [
      levé plus haut, sans quoi sharp refuse le fichier. */
   { de: `${MASTERS}/BJ-Q01.png`, vers: 'composer/modele-aussie', ratio: null, largeurs: [168, 336, 900] },
   { de: `${MASTERS}/BJ-Q02.png`, vers: 'composer/modele-mon-annee', ratio: null, largeurs: [168, 336, 900] },
+
+  /* ── LES PLAQUES NUES (15/09/2026, second passage) ─────────────────────
+     Mathias : « utilise Interlope pour Aussie et 26 en attendant. » Ces deux
+     modèles-là passent donc au TITRE VIVANT : c'est leur plaque SANS lettrage
+     qui est servie, et le titre du client s'écrit par-dessus en HTML.
+     ⚠️ SEULEMENT CES DEUX-LÀ. Sicile attend le nom de sa police (la
+     bibliothèque n'a aucun didone) et This Night la notice CC0 d'Aileron :
+     leurs plaques nues existent dans les masters mais ne sont PAS produites
+     ici, parce qu'une plaque nue sans son lettrage est une couverture vide. */
+  { de: `${MASTERS}/BJ-Q01-nu.png`, vers: 'composer/modele-aussie-nu', ratio: null, largeurs: [168, 336, 900] },
+  { de: `${MASTERS}/BJ-Q02-nu.png`, vers: 'composer/modele-mon-annee-nu', ratio: null, largeurs: [168, 336, 900] },
   { de: `${MASTERS}/BJ-Q03.png`, vers: 'composer/modele-sicile', ratio: null, largeurs: [168, 336, 900] },
   { de: `${MASTERS}/BJ-Q04.png`, vers: 'composer/modele-this-night', ratio: null, largeurs: [168, 336, 900] },
 ]

@@ -140,3 +140,52 @@ Servir une police en webfont, c'est exactement la poser à une URL publique. Don
 
 Et « intégrer toutes les typos » n'a de toute façon pas de sens côté poids : 11,5 Mo pour les
 versionnées seules, là où l'écran 3 a besoin de **quatre** familles.
+
+## ✅ ÉTAPE 2, MOITIÉ FAITE (15/09/2026) — le titre vivant sur Aussie et 26
+
+Mathias : « utilise Interlope pour Aussie et 26 en attendant. » Ces deux modèles servent
+désormais leur **plaque nue**, et le titre du client s'y écrit **en direct**, en Interlope
+(OFL 1.1, Gabriel Dubourg — le fichier et sa licence vivent dans
+`src/app/(atelier)/composer/polices/`, chargés par `next/font/local` **dans le layout du
+questionnaire seul**, pour ne pas les précharger sur l'accueil et /magazine).
+
+Sicile et This Night gardent leur visuel titré. **Ne pas « harmoniser »** en mettant Interlope
+partout : quatre modèles au même lettrage, c'est quatre fois le même modèle.
+
+**Les couleurs ne sont pas choisies à l'œil** : relevées dans les masters (médiane du 2 % de
+pixels les plus extrêmes de la zone du titre, soit le cœur du trait et pas son antialiasing).
+Aussie `#345a94`, 26 `#ffffff`.
+
+### La règle de découpe, mesurée en vrai
+
+`decoupeTitre.ts` (pur, testé) + `TitreSurCouverture.tsx` (mesure au canvas). Relevé à l'écran
+sur le build de production, vignette de 110 px :
+
+| Ce que tape le client | Ce que fait la couverture | Corps |
+|---|---|---|
+| « Papa » | une ligne, **plafonnée** | 17,92 px |
+| « Corse » | une ligne, même plafond | 17,92 px |
+| « Anniversaire » | un seul mot : pas de césure, ça rétrécit | 11 px |
+| « Le mariage de Léa et Tom » | **« Le mariage » / « de Léa et Tom »** | 8,96 px |
+| « Nos trois jours en Bretagne » | « Nos trois jours » / « en Bretagne » | 8,96 px |
+
+Aucun débordement dans les cinq cas (`scrollWidth`/`scrollHeight` vérifiés). Les deux titres
+courts tombent à la MÊME taille : c'est le plafond qui joue, et « Papa » ne devient pas une
+affiche. Aucune ligne ne se termine par un mot-outil.
+
+### Deux pièges payés ici
+
+- **`measureText` ne résout pas `var(--x)`**, et `next/font` **hache** le nom de famille
+  (`__interlope_a1b2c3`) : il n'existe qu'à travers la variable CSS. Le composant lit donc la
+  valeur *calculée* de la variable avant de mesurer. Renommer la variable casserait la mesure en
+  silence — le titre retomberait sur la police de repli, à la mauvaise taille.
+- **Le plancher ne borne pas le résultat, il déclenche la deuxième ligne.** Posé d'abord en
+  `Math.max`, il faisait sortir « Le mariage de Léa et Tom » du cadre par la droite.
+
+### Reste à faire
+
+- **Sicile** : le nom de sa police, auprès du graphiste. La bibliothèque n'a aucun didone.
+- **This Night** : la notice CC0 d'Aileron, à récupérer depuis la source d'origine.
+- **À regarder à l'écran** : sur « Mon année », la zone du titre est celle du petit « 26 » en haut
+  à gauche — un titre long y devient très petit. C'est fidèle au modèle livré, mais c'est la seule
+  des quatre où ça se voit. Si ça ne va pas, la zone se déplace en une ligne dans `coverModels.ts`.
