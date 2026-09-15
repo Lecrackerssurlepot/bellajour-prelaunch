@@ -423,3 +423,22 @@ Les quatre points rendus par le lagon (70 → 66 % de large) sont ce qui laisse 
 
 Vérifié à 1440×900, 1512×982 et 1990×1100 : le bas du collage et le bas du bloc bouton tombent
 au même pixel dans les trois cas.
+
+
+## 15/09/2026 (soir) — A10 remplacée, A12 ajoutée : la bande passe à six
+
+A10 n'est plus la photographie de page d'album mais une couverture, « Aussie » (une ville
+australienne de nuit). Une sixième s'ajoute, **BJ-A12** — A11 était déjà pris par la couverture
+Rio de la page 07, qui n'est pas dans la bande.
+
+Les six partagent le même master **4066 × 5750**. Conséquence : **plus aucun recadrage nulle
+part**. A10 était la seule rognée (5,8 % de sa largeur) parce qu'elle seule n'avait pas ce
+rapport. Mesuré : les six cases font **272 × 385 px** à 1990 de large, identiques.
+
+⚠️ **BJ-A12 est très sombre** — un lever de jour presque à contre-jour, sur fond noir. Sur une
+page elle-même noire, elle se lit surtout par sa bande d'horizon. C'est un parti pris de l'image,
+pas un défaut d'intégration ; à signaler à Mathias plutôt qu'à corriger par un filtre.
+
+⚠️ **Son titre manuscrit n'est pas lisible avec certitude** (« That's Life » ? la capitale est
+très stylisée). Le texte alternatif décrit donc la scène sans citer le titre : on ne met pas dans
+un `alt` — lu par les lecteurs d'écran et par Google — un mot qu'on n'est pas sûr de lire.

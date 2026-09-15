@@ -611,7 +611,7 @@ export default function Univers() {
                   (univers.css). Mesure du 14/09/2026 : 192 px CSS a 1280.
                   La seconde serie, aria-hidden, est la copie qui rend la bande
                   infinie : memes fichiers, donc aucun octet de plus.
-                  ⚠️ LES CINQ CASES PARTAGENT LE MEME RAPPORT, 4066/5750
+                  ⚠️ LES SIX CASES PARTAGENT LE MEME RAPPORT, 4066/5750
                   (univers.css) : c'est celui des quatre couvertures livrees
                   le 15/09. Les textes alternatifs sont ecrits d'apres les
                   images elles-memes, comme Mathias l'a demande le 14/09. */}
@@ -621,7 +621,8 @@ export default function Univers() {
                   ['/images/v2/accueil/a07', [240, 360, 600], 'Une soirée', 'Un numéro Bellajour intitulé « This Night » : une jeune femme sur une banquette de velours rouge, un verre à la main'],
                   ['/images/v2/accueil/a08', [240, 360, 600], 'Un séjour', 'Un numéro Bellajour consacré à un séjour à Lisbonne : une partie de mini-golf sous les néons'],
                   ['/images/v2/accueil/a09', [240, 360, 600], 'Un voyage', 'Un numéro Bellajour consacré à la Côte d’Azur : une plage et sa rotonde Belle Époque, sous un ciel bleu'],
-                  ['/images/v2/accueil/a10', [240, 360, 600], 'Une série de pages', 'Une page d’album photos : trois tirages d’un été au bord de la Méditerranée, collés sur la page'],
+                  ['/images/v2/accueil/a10', [240, 360, 600], 'Une nuit', 'Un numéro Bellajour intitulé « Aussie » : les tours d’une ville australienne illuminées à la nuit tombée'],
+                  ['/images/v2/accueil/a12', [240, 360, 600], 'Un matin', 'Un numéro Bellajour au titre manuscrit : un lever de jour sur une ligne d’horizon, presque à contre-jour'],
                 ] as const).map(([base, largeurs, legende, alt]) => (
                   <figure key={`${base}${copie ? '-copie' : ''}`} aria-hidden={copie || undefined}>
                     <span className="ph" data-legende={legende}>

@@ -57,13 +57,17 @@ const TRAVAUX = [
      couvertures COMPOSÉES — titre en tête, légende en pied. Un recadrage,
      même choisi par le contenu, trancherait un lettrage. C'est le cadre du
      rail qui prend leur rapport (univers.css), pas l'inverse.
-     A10 est la seule à être recadrée, pour rejoindre ce rapport : c'est une
-     photographie de page d'album, pas une composition. */
+     ⚠️ PLUS AUCUN RECADRAGE ICI depuis le 15/09 au soir : A10 était une
+     photographie de page d'album, la seule à ne pas avoir ce rapport, donc la
+     seule rognée. Mathias l'a remplacée par une couverture (« Aussie ») et en
+     a ajouté une SIXIÈME (A12). Les six partagent maintenant le même master
+     4066x5750, et pas un pixel n'est coupé. */
   { de: `${MASTERS}/BJ-A06.png`, vers: 'accueil/a06', ratio: null, largeurs: [240, 360, 600] },
   { de: `${MASTERS}/BJ-A07.png`, vers: 'accueil/a07', ratio: null, largeurs: [240, 360, 600] },
   { de: `${MASTERS}/BJ-A08.png`, vers: 'accueil/a08', ratio: null, largeurs: [240, 360, 600] },
   { de: `${MASTERS}/BJ-A09.png`, vers: 'accueil/a09', ratio: null, largeurs: [240, 360, 600] },
-  { de: `${MASTERS}/BJ-A10.jpeg`, vers: 'accueil/a10', ratio: 4066 / 5750, largeurs: [240, 360, 600] },
+  { de: `${MASTERS}/BJ-A10.png`, vers: 'accueil/a10', ratio: null, largeurs: [240, 360, 600] },
+  { de: `${MASTERS}/BJ-A12.png`, vers: 'accueil/a12', ratio: null, largeurs: [240, 360, 600] },
 
   /* A11 — le numéro de la page 07. Master 10524x14973 (0,7029) contre un
      cadre en 1/1,414 (0,7072) : 0,6 % d'écart, un recadrage invisible. */
