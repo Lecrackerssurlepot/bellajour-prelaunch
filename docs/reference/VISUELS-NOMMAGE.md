@@ -227,3 +227,18 @@ hidden` du parent le borne. `pointer-events: none`, il couvre toute l'image.
 un pli au milieu dessinerait une pliure qui n'existe pas.
 
 Trois intensités ont été rendues côte à côte pour que Mathias tranche (`scratchpad/banc-pli.html`).
+
+
+## 15/09/2026 — réglage final du pli
+
+Mathias a choisi l'intensité **2** parmi les trois rendues : le creux part de 30 % au lieu de
+38 % et descend à 0,60 au centre au lieu de 0,40. Le magazine se lit plus épais.
+
+**Les tranches sont atténuées** (« rends moins visibles les traits en dessous ») : trois bandes
+au lieu de quatre, moitié moins opaques, resserrées de 12 px à 8. Elles avaient été posées quand
+l'objet n'avait rien d'autre pour exister ; depuis que le pli porte le volume, elles n'ont plus
+qu'à l'accompagner.
+
+**`.c3` reçoit le même pli.** Le troisième cadre du collage est une double page (M03), pas une
+couverture : même objet, même traitement, même intensité. `c1` et `c2` n'y ont pas droit — ce sont
+des pages seules, et une pliure au milieu y inventerait un objet qui n'existe pas.
