@@ -203,7 +203,24 @@ export const COVER_MODELS: CoverModel[] = [
     police: '--font-interlope',
     couleurTitre: '#ffffff',
     titreOrigine: '26',
-    zone: { gauche: 7.8, droite: 22.4, haut: 11, bas: 17.3 },
+    /* ⚠️ LA SEULE ZONE QUI N'EST PAS CELLE DU LETTRAGE LIVRÉ, et c'est
+       délibéré. Mesurée, elle valait { 7,8 → 22,4 ; 11 → 17,3 } : la place
+       du petit « 26 » en haut à gauche. Deux caractères y tiennent, un titre
+       non — « Nuits Sonores » y tombait à 4,5 px sur une vignette, illisible.
+       Mathias, le 15/09 devant l'écran : « 26 est beaucoup trop petit. »
+
+       La zone s'ouvre donc sur le vide rose du haut. Les bornes ne sont pas
+       choisies à l'œil : la photo de la plaque occupe x 44 → 94 % et
+       y 45,2 → 90,1 % (mesuré sur BJ-Q02-nu), et « MON ANNEE » vit à
+       y 95,2 %. Descendre à 34 % laisse donc onze points de marge avant la
+       photo, et la largeur s'arrête à 80 % pour garder une respiration à
+       droite. Le bord gauche reste à 7,8 %, celui du « 26 » d'origine : la
+       maquette garde son axe.
+
+       C'est aussi, à peu près, le milieu entre les deux variantes livrées —
+       le petit « 26 » et le grand (y 9,2 → 50,6, pleine largeur). Le
+       graphiste avait donc déjà dessiné les deux bornes. */
+    zone: { gauche: 7.8, droite: 80, haut: 10, bas: 34 },
     ligneBasse: { texte: 'MON ANNEE', zone: { gauche: 80.2, droite: 92.6, haut: 95.2, bas: 96 } },
     repli: 'reduire',
     disposition: 'simple',

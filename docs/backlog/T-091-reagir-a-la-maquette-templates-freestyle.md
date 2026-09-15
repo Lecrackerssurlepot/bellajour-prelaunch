@@ -230,3 +230,31 @@ Mon année deux lignes blanches, **Sicile deux blocs** (haut et bas) en Bodoni, 
   long y est très petit. Trois issues, au choix de Mathias : déplacer le titre là où est
   « MON ANNEE », agrandir la zone, ou laisser. Une ligne dans `coverModels.ts`.
 - Aileron n'est plus nécessaire : Archivo Black la remplace. La notice CC0 n'est plus un blocage.
+
+## « 26 est beaucoup trop petit » — corrigé le 15/09
+
+C'était le dernier point ouvert. Deux corrections, dont une qui touche tous les modèles.
+
+**1. La zone de « Mon année » s'ouvre.** Elle valait `{7,8 → 22,4 ; 11 → 17,3}`, la place du petit
+« 26 » : deux caractères y tiennent, un titre non (« Nuits Sonores » y tombait à 4,5 px). Elle
+passe à `{7,8 → 80 ; 10 → 34}`. Les bornes sont mesurées, pas choisies : la photo de la plaque
+occupe x 44 → 94 % et y 45,2 → 90,1 % (relevé sur `BJ-Q02-nu`), et « MON ANNEE » vit à 95,2 %.
+Onze points de marge restent avant la photo. Le bord gauche ne bouge pas : la maquette garde son
+axe. C'est à peu près le milieu entre les deux variantes livrées par le graphiste — le petit
+« 26 » et le grand (y 9,2 → 50,6, pleine largeur) : les deux bornes étaient déjà dessinées.
+
+**2. La hauteur du texte se MESURE, elle ne se devine plus.** Le calcul supposait qu'un texte
+occupe sa hauteur de ligne (`lignes × 1,08 × corps`). Faux pour un script : les hampes et les
+jambages d'Interlope dépassent largement de la boîte de ligne. Tant que la zone était petite, ça
+ne se voyait pas ; une fois agrandie, « Papa » est sorti de son cadre — `scrollHeight` au-delà de
+`clientHeight`, prouvé à l'écran. On utilise désormais `fontBoundingBoxAscent/Descent`, la
+hauteur réelle des glyphes de la police.
+
+**Vérifié : quatre titres × cinq blocs = vingt cas, ZÉRO débordement.**
+
+| Titre | Aussie | Mon année | Sicile (×2) | This Night |
+|---|---|---|---|---|
+| Papa | 29,4 px | **56,8 px** | 20,4 px | 30,2 px |
+| Nuits Sonores | 20,4 | 29,9 | 20,4 | 22,0 |
+| Le mariage de Léa et Tom | 15,5 | 25,1 | 12,1 | 18,8 |
+| Anniversaire | 20,0 | 25,2 | 20,4 | 21,1 |

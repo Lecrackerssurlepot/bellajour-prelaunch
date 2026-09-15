@@ -48,15 +48,26 @@ import { decouperEnLignes } from './decoupeTitre'
 const PLANCHER = 0.55
 const PLAFOND = 7 / 6
 
-/* Combien de fois la hauteur de ligne dépasse le corps, pour un script.
-   Sert à savoir si N lignes tiennent dans la hauteur de la boîte. */
+/* L'interligne CSS. Doit rester égal à `line-height` de `.at-cov-vivant` :
+   c'est lui qui écarte les lignes, et le calcul ci-dessous s'en sert pour
+   savoir si N lignes tiennent. */
 const INTERLIGNE = 1.08
 
 type Mesure = { lignes: string[]; taille: number }
 
 /* La taille qui fait tenir `lignes` dans la boîte. On borne par la LARGEUR de
-   la ligne la plus large ET par la HAUTEUR totale : une seule des deux
-   suffirait à faire déborder l'autre. */
+   la ligne la plus large ET par la HAUTEUR peinte : une seule des deux
+   suffirait à faire déborder l'autre.
+
+   ⚠️ LA HAUTEUR SE MESURE, ELLE NE SE DEVINE PAS. Le calcul disait d'abord
+   `lignes × 1,08 × corps`, en supposant qu'un texte occupe sa hauteur de
+   ligne. C'est faux pour un script : Interlope a des hampes et des jambages
+   qui DÉPASSENT largement de la boîte de ligne. Tant que la zone du titre
+   était petite, ça ne se voyait pas ; en agrandissant celle de « Mon année »
+   le 15/09, « Papa » est sorti de son cadre (mesuré : scrollHeight au-delà
+   de clientHeight).
+   `fontBoundingBoxAscent/Descent` donne la hauteur RÉELLE des glyphes de la
+   police, à quoi s'ajoute l'écart des lignes supplémentaires. */
 function tailleQuiRemplit(
   lignes: string[],
   ctx: CanvasRenderingContext2D,
@@ -65,13 +76,25 @@ function tailleQuiRemplit(
   hauteurBoite: number,
 ): number {
   if (lignes.length === 0) return 0
-  /* On mesure à 100 px une fois : la largeur d'un texte est proportionnelle
+  /* On mesure à 100 px une fois : largeur comme hauteur sont proportionnelles
      au corps, donc une règle de trois suffit et évite une recherche. */
   ctx.font = `100px ${police}`
-  const largeurMax = Math.max(...lignes.map((l) => ctx.measureText(l).width))
+  const mesures = lignes.map((l) => ctx.measureText(l))
+  const largeurMax = Math.max(...mesures.map((m) => m.width))
   if (largeurMax <= 0) return 0
+
+  /* Repli sur 1,2 si le navigateur ne donne pas les métriques : une valeur
+     prudente vaut mieux qu'un NaN qui effacerait le titre. */
+  const m0 = mesures[0]
+  const hautGlyphes100 =
+    Number.isFinite(m0.fontBoundingBoxAscent) && Number.isFinite(m0.fontBoundingBoxDescent)
+      ? m0.fontBoundingBoxAscent + m0.fontBoundingBoxDescent
+      : 120
+
   const parLargeur = (largeurBoite / largeurMax) * 100
-  const parHauteur = hauteurBoite / (lignes.length * INTERLIGNE)
+  /* N lignes : (N-1) écarts d'interligne, plus la hauteur réelle des glyphes. */
+  const hautTotale100 = (lignes.length - 1) * INTERLIGNE * 100 + hautGlyphes100
+  const parHauteur = (hauteurBoite / hautTotale100) * 100
   return Math.min(parLargeur, parHauteur)
 }
 
