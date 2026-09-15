@@ -343,3 +343,33 @@ rapport. A10 est la seule à être rognée, parce qu'elle seule n'a pas ce rappo
 photographie de page d'album, pas une composition. Pour qu'aucune des cinq ne soit coupée, il
 faudrait remplacer A10 par une couverture au même format (dix attendent sans code dans
 `visus bellajour/`).
+
+
+## 15/09/2026 — le rail rognait par le bas sur les écrans larges
+
+Mathias, capture à l'appui : « c'est encore rogné en bas des images ». **Reproduit et mesuré à
+1990 × 1100**, sa taille de fenêtre : la couverture demandait 299 de large donc **422 de haut**,
+pour une bande qui n'en offrait que **391**. `.sl4-bande` est un élément flexible : il a RÉTRÉCI
+sous la demande, et son `overflow: hidden` a coupé 31 px en bas de chaque couverture. Rien ne
+débordait, rien ne signalait l'erreur — le piège habituel d'un `overflow: hidden`.
+
+La largeur d'une couverture ne valait que `15vw`. Elle est désormais **bornée par les deux côtés** :
+`width: min(15vw, calc(24.75 * var(--uh)))` — 35 unités de hauteur d'écran pour la bande,
+ramenées en largeur par le rapport des couvertures (0,7071). Vérifié à cinq tailles : la hauteur
+de la case égale exactement celle de la bande, donc **aucun rognage**.
+
+| Fenêtre | Case | Bande |
+|---|---|---|
+| 1990 × 1100 | 272 × 385 | 385 |
+| 1920 × 1080 | 267 × 378 | 378 |
+| 1512 × 982 | 227 × 321 | 321 |
+| 1440 × 900 | 216 × 305 | 305 |
+| 390 × 844 | 148 × 210 | 210 |
+
+**Angles droits sur les couvertures du rail**, et `--shadow-float` retiré — il n'existait pas, du
+noir sur du noir.
+
+⚠️ **Rien sous une couverture.** Une tranche éclairée a été posée le matin sur le rail et sur
+Rio, par cohérence avec la page produit, puis retirée le jour même : « pour le Rio ne mets pas de
+bordure en bas, on veut simplement l'image ». La double page a besoin d'un volume parce qu'elle
+représente un objet OUVERT ; une couverture posée à plat n'en a pas besoin. Ne pas la remettre.

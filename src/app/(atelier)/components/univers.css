@@ -410,7 +410,18 @@
   from{transform:translateX(0)}
   to{transform:translateX(calc(-50% - .9vw))}
 }
-.at-accueil .sl4-rail figure{margin:0;flex:none;width:15vw;min-width:152px}
+/* ⚠️ LA TAILLE D'UNE COUVERTURE EST BORNEE PAR DEUX COTES, PAS UN SEUL
+   (15/09/2026). Elle ne valait que `15vw` : sur une fenetre LARGE ET COURTE
+   — 1990 x 1100, celle de Mathias — la couverture faisait alors 299 de large
+   donc 422 de haut, pour une bande qui n'en offrait que 391. La bande est un
+   element flexible : elle a RETRECI sous la demande, et son `overflow:hidden`
+   a coupe 31 px en bas de chaque couverture. Rien ne debordait, rien ne
+   signalait l'erreur — c'est le piege habituel d'un `overflow:hidden`.
+   Le second terme borne donc la LARGEUR par la HAUTEUR disponible : 35
+   unites de hauteur d'ecran pour la bande, ramenees en largeur par le rapport
+   des couvertures (0,7071). 35 x 0,7071 = 24,75.
+   ⚠️ Ce nombre suit le rapport des masters : s'il change, il se recalcule. */
+.at-accueil .sl4-rail figure{margin:0;flex:none;width:min(15vw, calc(24.75 * var(--uh)));min-width:152px}
 @media (hover:hover) and (pointer:fine){
   .at-accueil .sl4-bande:hover .sl4-rail{animation-play-state:paused}
 }
@@ -429,8 +440,15 @@
    trancherait un lettrage. Le cadre prend leur rapport, pas l'inverse ;
    c'est la regle posee par Mathias le 14/09. Seule A10, une photographie de
    page d'album, est recadree pour les rejoindre (scripts/images-v2.mjs). */
-.at-accueil .sl4-rail .ph{display:block;aspect-ratio:4066/5750;overflow:hidden;border-radius:3px;
-  box-shadow:var(--shadow-float)}
+/* ⚠️ ANGLES DROITS ET RIEN D'AUTRE (Mathias, 15/09/2026). Les 3 px d'arrondi
+   sont partis, et avec eux le `--shadow-float` qui n'existait de toute facon
+   pas — du noir sur du noir, la page est posee sur `--c-void`.
+   ⚠️ NE PAS Y REMETTRE DE TRANCHE ECLAIREE. Elle a ete posee ici le matin par
+   souci de coherence avec la page produit, puis retiree le jour meme : la
+   double page a besoin d'un volume parce qu'elle represente un objet OUVERT,
+   une couverture posee a plat n'en a pas besoin. « On veut simplement
+   l'image. » */
+.at-accueil .sl4-rail .ph{display:block;aspect-ratio:4066/5750;overflow:hidden;border-radius:0}
 .at-accueil .sl4-rail .ph img{width:100%;height:100%;object-fit:cover;display:block;
   /* ⚠️ ALLEGE le 15/09/2026, a la demande de Mathias. L'ancien reglage,
      saturate(.72) contrast(1.05) brightness(.86), avait ete pose en aout pour
@@ -651,12 +669,13 @@
    decoller l'objet du vide.
    ⚠️ RIEN SUR LES COTES : Mathias a demande le retrait des traits lateraux,
    et l'epaisseur se lit tres bien sur la seule arete basse. */
-.at-accueil .n-plat{position:relative;width:100%;height:100%;overflow:hidden;border-radius:0;
-  box-shadow:inset 0 1px 0 rgba(255,252,245,.18),
-    0 2px 0 rgba(236,230,218,.28),
-    0 4px 0 rgba(150,143,131,.22),
-    0 7px 0 rgba(80,76,70,.16),
-    0 calc(2.6 * var(--uh)) calc(4.4 * var(--uh)) calc(-1.8 * var(--uh)) rgba(255,248,236,.06)}
+/* ⚠️ AUCUNE OMBRE, AUCUN FILET, RIEN SOUS L'IMAGE (Mathias, 15/09/2026) :
+   « pour le Rio ne mets pas de bordure en bas, on veut simplement l'image ».
+   La tranche eclairee posee le matin est donc retiree. Ne pas la remettre au
+   nom de la coherence avec la page produit : la double page a besoin d'un
+   volume parce qu'elle represente un objet OUVERT ; une couverture posee a
+   plat n'en a pas besoin, et Mathias l'a tranche a l'ecran. */
+.at-accueil .n-plat{position:relative;width:100%;height:100%;overflow:hidden;border-radius:0}
 .at-accueil .n-plat>img{width:100%;height:100%;object-fit:cover}
 .at-accueil .n-tete{position:absolute;left:8%;right:8%;top:5.4%;z-index:5;
   display:flex;align-items:baseline;justify-content:space-between;
@@ -734,7 +753,7 @@
   .at-accueil .sl4-texte{max-width:none;font-size:clamp(21px,5.4vw,28px)}
   .at-accueil .sl4-bande{margin-top:calc(4 * var(--uh))}
   .at-accueil .sl4-rail{gap:3.4vw;padding-left:var(--mg-u)}
-  .at-accueil .sl4-rail figure{width:38vw;min-width:0}
+  .at-accueil .sl4-rail figure{width:min(38vw, calc(24.75 * var(--uh)));min-width:0}
   @keyframes defile{from{transform:translateX(0)}to{transform:translateX(calc(-50% - 1.7vw))}}
   .at-accueil .sl5-titre{font-size:clamp(29px,8.4vw,50px)}
   .at-accueil .sl5-nuage{max-width:none;gap:.2em 3vw;margin-top:calc(3.4 * var(--uh))}
