@@ -442,3 +442,11 @@ pas un défaut d'intégration ; à signaler à Mathias plutôt qu'à corriger pa
 ⚠️ **Son titre manuscrit n'est pas lisible avec certitude** (« That's Life » ? la capitale est
 très stylisée). Le texte alternatif décrit donc la scène sans citer le titre : on ne met pas dans
 un `alt` — lu par les lecteurs d'écran et par Google — un mot qu'on n'est pas sûr de lire.
+
+
+## 15/09/2026 (soir) — la Sicile passe devant
+
+« Sicile doit être mise en avant, tout en haut de la pile. » Sans `z-index`, l'ordre d'empilement
+suit l'ordre du document : le lagon, écrit en dernier, passait devant tout, et la Sicile, écrite
+en premier, se retrouvait au fond. `.c1` reçoit `z-index: 3`. Les deux autres gardent leur ordre
+naturel — le lagon devant Noosa.

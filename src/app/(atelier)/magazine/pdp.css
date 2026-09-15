@@ -243,7 +243,12 @@
    ⚠️ Les LARGEURS ont grandi (39,5 → 42, 44 → 66, 55 → 66 %) : c'est là que
    les photos respirent. Les hauteurs ne sont jamais écrites : chaque cadre
    porte l'`aspect-ratio` de son master. */
-.at-pdp .c1 { left: 0;     top: 0;     width: 50%;   aspect-ratio: 8770 / 12478; }
+/* ⚠️ `z-index: 3` : LA SICILE PASSE DEVANT (Mathias, 15/09/2026) — « Sicile
+   doit être mise en avant, tout en haut de la pile ». Sans lui, l'ordre
+   d'empilement suit l'ordre du document : le lagon, écrit en dernier, passait
+   devant tout, et la Sicile, écrite en premier, se retrouvait au fond.
+   Les deux autres gardent leur ordre naturel — le lagon devant Noosa. */
+.at-pdp .c1 { left: 0;     top: 0;     width: 50%;   aspect-ratio: 8770 / 12478; z-index: 3; }
 /* ⚠️ 40,4 % ET NON 39,7 % DEPUIS LE 14/09/2026 : c'est la hauteur qui donne
    au cadre le rapport EXACT du master livre (M02, 12468x8770, soit 1,4217).
    A 39,7 % le cadre valait 1,4462 et `object-fit` rognait les cotes pour
