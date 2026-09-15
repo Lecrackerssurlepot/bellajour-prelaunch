@@ -513,3 +513,18 @@ comme un chantier à part, après le header.
   vides sans rôle : ils sont ignorés d'eux-mêmes, ils n'ont jamais eu besoin de l'attribut.
 - **BJ-P01** (partage) et **U01 à U04** (logos, icône) ne sont pas livrés.
 - **BJ-M07** reste le doublon de la double page.
+
+
+## 15/09/2026 — le voile du header allégé
+
+Demande de Mathias. **Le vrai assombrisseur n'était pas le filtre de l'image mais `.h-voile`**,
+le calque posé par-dessus : `.80 / .54 / .60 / .93`, réglé pour une photographie d'ambiance qu'on
+pouvait éteindre sans rien perdre.
+
+Trois niveaux rendus l'un sous l'autre. **Le plus clair essayé** (`.46 / .24 / .30 / .72`) rendait
+les couvertures superbes mais **faisait perdre le petit texte** — « Chaque moment qui vous
+touche » passe sur les zones claires de la photo. Retenu, le niveau intermédiaire :
+`.62 / .38 / .44 / .82`, avec le filtre à `saturate(.80) contrast(1.04) brightness(.95) sepia(.06)`.
+
+⚠️ **Toute nouvelle photographie de header change cet équilibre.** Il se regarde, il ne s'estime
+pas — et on regarde **le petit texte, pas le titre** : le titre est énorme, il survit à tout.

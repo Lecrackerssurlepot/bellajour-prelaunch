@@ -191,7 +191,7 @@
      est faible — le degrade `.h-grad` et le voile `.h-voile` font l'essentiel
      du contraste sous le titre — mais il va dans le bon sens : les couvertures
      se lisent, le titre reste parfaitement detache. */
-  filter:saturate(.72) contrast(1.06) brightness(.90) sepia(.10);
+  filter:saturate(.80) contrast(1.04) brightness(.95) sepia(.06);
   transform:scale(1.16);
 }
 .at-accueil.pret .h-plein img{transform:none;transition:transform 2600ms var(--ease) 120ms}
@@ -205,10 +205,22 @@
 
 /* Le voile n'arrive qu'au plein ecran : avant, le texte est a cote de
    l'image, pas dessus, et n'a besoin de rien. */
+/* ⚠️ ALLEGE le 15/09/2026, une seconde fois, et c'est LUI le vrai
+   assombrisseur — pas le filtre de l'image. Il valait .80 / .54 / .60 / .93 :
+   pose pour une photographie d'ambiance qu'on pouvait eteindre sans rien
+   perdre. Le header est desormais la photographie des magazines IMPRIMES.
+   Trois niveaux ont ete rendus l'un sous l'autre. Le plus clair essaye
+   (.46 / .24 / .30 / .72) rendait les couvertures superbes mais faisait
+   perdre le petit texte — « Chaque moment qui vous touche » passe sur les
+   zones claires de la photo. C'est le niveau intermediaire qui est retenu :
+   les couvertures se lisent, le titre et le corps restent nets.
+   ⚠️ Toute nouvelle photographie de header change cet equilibre. Il se
+   REGARDE, il ne s'estime pas — et on regarde le petit texte, pas le titre :
+   le titre est enorme, il survit a tout. */
 .at-accueil .h-voile{
   position:absolute;inset:0;opacity:0;
   background:linear-gradient(180deg,
-    rgba(2,2,2,.80) 0%, rgba(2,2,2,.54) 30%, rgba(2,2,2,.60) 60%, rgba(2,2,2,.93) 100%);
+    rgba(2,2,2,.62) 0%, rgba(2,2,2,.38) 30%, rgba(2,2,2,.44) 60%, rgba(2,2,2,.82) 100%);
   transition:opacity 1500ms var(--ease-out);
 }
 .at-accueil.plein .h-voile{opacity:1}
