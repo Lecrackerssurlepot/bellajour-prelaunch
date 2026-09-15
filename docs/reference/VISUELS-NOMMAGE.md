@@ -296,3 +296,28 @@ première bande dans le premier écran ») :
 non 64. Vérifié : parcours à **906** sur un écran de 900, à **993** sur un écran de 982.
 ⚠️ `--app-height` et jamais `vh` (règle de la maison). `max()` avec `--g` pour qu'un écran court
 retombe sur la gouttière.
+
+
+## 15/09/2026 — A06 à A09 remplacés, la bande est complète
+
+Mathias a livré quatre nouveaux masters, **4066 × 5750** chacun : « The Boys / One Night »,
+« This Night », « Lisbonne / Mini Golf Master » et « Côte d'Azur / Nice · Cannes ». Ce sont de
+vraies couvertures Bellajour — plus aucune œuvre de tiers. Les quatre fichiers protégés de la
+première livraison ne sont plus référencés nulle part.
+
+⚠️ **Aucun recadrage sur ces quatre-là.** Ce sont des couvertures COMPOSÉES, titre en tête et
+légende en pied : un recadrage, même choisi par le contenu, trancherait un lettrage. C'est le
+cadre du rail qui prend leur rapport — `.sl4-rail .ph` passe de `2/3` à **`4066/5750`**. Seule
+A10, qui est une photographie de page d'album et non une composition, est recadrée pour les
+rejoindre. Mesuré : les cinq cases font **216 × 305 px, identiques**.
+
+Textes alternatifs écrits d'après les images, comme convenu le 14/09. Les légendes `data-legende`
+suivent (« Un magazine », « Une soirée », « Un séjour », « Un voyage », « Une série de pages »).
+
+⚠️ **Le piège du cache, vécu pendant cette vérification** : les quatre fichiers ont été
+régénérés SOUS LES MÊMES NOMS, et `next.config.ts` sert `/images/*` en `max-age=86400`. La
+première capture montrait encore les anciennes couvertures. Un rechargement forcé (Cmd+Maj+R)
+suffit en local ; en production, il faudrait changer les noms.
+
+Dix visuels supplémentaires sans code attendent dans `design-explorations/visuels-v2/visus
+bellajour/` (5 à 11, 16, 31, 32).

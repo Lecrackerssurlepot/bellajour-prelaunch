@@ -611,16 +611,16 @@ export default function Univers() {
                   (univers.css). Mesure du 14/09/2026 : 192 px CSS a 1280.
                   La seconde serie, aria-hidden, est la copie qui rend la bande
                   infinie : memes fichiers, donc aucun octet de plus.
-                  ⚠️ CHAQUE CASE PORTE SES PROPRES LARGEURS : A06 a A09 sont
-                  encore les couvertures d'origine, plafonnees a 450 px, et
-                  A10 monte a 600. Un srcset fabrique a partir d'un plafond
-                  unique annoncerait des fichiers qui n'existent pas. */}
+                  ⚠️ LES CINQ CASES PARTAGENT LE MEME RAPPORT, 4066/5750
+                  (univers.css) : c'est celui des quatre couvertures livrees
+                  le 15/09. Les textes alternatifs sont ecrits d'apres les
+                  images elles-memes, comme Mathias l'a demande le 14/09. */}
               {[false, true].map((copie) =>
                 ([
-                  ['/images/v2/accueil/a06', [240, 360, 450], 'Un magazine', 'Un numéro Bellajour consacré à un voyage à Marrakech'],
-                  ['/images/v2/accueil/a07', [240, 360, 450], 'Une BD', 'Un numéro Bellajour consacré à un voyage au Japon'],
-                  ['/images/v2/accueil/a08', [240, 360, 450], 'Une affiche', 'Un numéro Bellajour consacré à un voyage en Patagonie'],
-                  ['/images/v2/accueil/a09', [240, 360, 450], 'Un album photos', 'Un numéro Bellajour consacré à un séjour à Lisbonne'],
+                  ['/images/v2/accueil/a06', [240, 360, 600], 'Un magazine', 'Un numéro Bellajour intitulé « The Boys » : cinq hommes en smoking sur un escalier, un soir de fête'],
+                  ['/images/v2/accueil/a07', [240, 360, 600], 'Une soirée', 'Un numéro Bellajour intitulé « This Night » : une jeune femme sur une banquette de velours rouge, un verre à la main'],
+                  ['/images/v2/accueil/a08', [240, 360, 600], 'Un séjour', 'Un numéro Bellajour consacré à un séjour à Lisbonne : une partie de mini-golf sous les néons'],
+                  ['/images/v2/accueil/a09', [240, 360, 600], 'Un voyage', 'Un numéro Bellajour consacré à la Côte d’Azur : une plage et sa rotonde Belle Époque, sous un ciel bleu'],
                   ['/images/v2/accueil/a10', [240, 360, 600], 'Une série de pages', 'Une page d’album photos : trois tirages d’un été au bord de la Méditerranée, collés sur la page'],
                 ] as const).map(([base, largeurs, legende, alt]) => (
                   <figure key={`${base}${copie ? '-copie' : ''}`} aria-hidden={copie || undefined}>
@@ -630,8 +630,8 @@ export default function Univers() {
                         srcSet={largeurs.map((l) => `${base}-${l}.webp ${l}w`).join(', ')}
                         sizes="(max-width: 1000px) 38vw, 15vw"
                         alt={copie ? '' : alt}
-                        width="450"
-                        height="675"
+                        width="600"
+                        height="848"
                         loading="lazy"
                         decoding="async"
                       />

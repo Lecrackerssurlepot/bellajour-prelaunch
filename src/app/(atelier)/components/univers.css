@@ -423,7 +423,13 @@
    centre n'est pas le sujet. Les fichiers servis sont donc DEJA en 2:3,
    decoupes par le contenu (`position:'attention'`, scripts/images-v2.mjs) :
    ce `cover` ne fait plus que garantir l'absence de deformation. */
-.at-accueil .sl4-rail .ph{display:block;aspect-ratio:2/3;overflow:hidden;border-radius:3px;
+/* ⚠️ 4066/5750 ET NON 2/3 (15/09/2026) : c'est le rapport EXACT des quatre
+   couvertures livrees ce jour-la. Elles sont COMPOSEES — titre en tete,
+   legende en pied — donc tout recadrage, meme choisi par le contenu,
+   trancherait un lettrage. Le cadre prend leur rapport, pas l'inverse ;
+   c'est la regle posee par Mathias le 14/09. Seule A10, une photographie de
+   page d'album, est recadree pour les rejoindre (scripts/images-v2.mjs). */
+.at-accueil .sl4-rail .ph{display:block;aspect-ratio:4066/5750;overflow:hidden;border-radius:3px;
   box-shadow:var(--shadow-float)}
 .at-accueil .sl4-rail .ph img{width:100%;height:100%;object-fit:cover;display:block;
   filter:saturate(.72) contrast(1.05) brightness(.86)}

@@ -48,17 +48,22 @@ const TRAVAUX = [
      Le rail impose UN seul rapport à ses cinq cases (2:3, univers.css) : le
      recadrage est fait ICI, une fois, par le contenu (`attention`), plutôt
      que laissé à `object-fit` qui coupe toujours au centre géométrique.
-     ⚠️ A06 à A09 sont encore les couvertures D'ORIGINE, pas les masters
-     livrés le 14/09 : ces quatre-là sont des couvertures de Vogue, de Tintin
-     et deux affiches de films, protégées et non cessibles (voir le rapport du
-     14/09). On les range sous les noms de code pour que la bande soit
-     homogène ; le jour où de vrais masters arrivent, seule la ligne `de:`
-     change. */
-  { de: 'public/images/lancement/galerie/marrakech.webp', vers: 'accueil/a06', ratio: 2 / 3, largeurs: [240, 360, 450] },
-  { de: 'public/images/lancement/galerie/japon.webp', vers: 'accueil/a07', ratio: 2 / 3, largeurs: [240, 360, 450] },
-  { de: 'public/images/lancement/galerie/patagonie.webp', vers: 'accueil/a08', ratio: 2 / 3, largeurs: [240, 360, 450] },
-  { de: 'public/images/lancement/galerie/lisbonne.webp', vers: 'accueil/a09', ratio: 2 / 3, largeurs: [240, 360, 450] },
-  { de: `${MASTERS}/BJ-A10.jpeg`, vers: 'accueil/a10', ratio: 2 / 3, largeurs: [240, 360, 600] },
+     ⚠️ LES QUATRE MASTERS PROTÉGÉS SONT REMPLACÉS (15/09/2026). La première
+     livraison posait ici une couverture de Vogue, un album de Tintin et deux
+     affiches de films : refusés, et la raison est écrite dans
+     `docs/reference/VISUELS-NOMMAGE.md`. Les quatre nouveaux sont de vraies
+     couvertures Bellajour, 4066x5750 chacune.
+     ⚠️ AUCUN RECADRAGE sur ces quatre-là (`ratio: null`) : ce sont des
+     couvertures COMPOSÉES — titre en tête, légende en pied. Un recadrage,
+     même choisi par le contenu, trancherait un lettrage. C'est le cadre du
+     rail qui prend leur rapport (univers.css), pas l'inverse.
+     A10 est la seule à être recadrée, pour rejoindre ce rapport : c'est une
+     photographie de page d'album, pas une composition. */
+  { de: `${MASTERS}/BJ-A06.png`, vers: 'accueil/a06', ratio: null, largeurs: [240, 360, 600] },
+  { de: `${MASTERS}/BJ-A07.png`, vers: 'accueil/a07', ratio: null, largeurs: [240, 360, 600] },
+  { de: `${MASTERS}/BJ-A08.png`, vers: 'accueil/a08', ratio: null, largeurs: [240, 360, 600] },
+  { de: `${MASTERS}/BJ-A09.png`, vers: 'accueil/a09', ratio: null, largeurs: [240, 360, 600] },
+  { de: `${MASTERS}/BJ-A10.jpeg`, vers: 'accueil/a10', ratio: 4066 / 5750, largeurs: [240, 360, 600] },
 
   /* A11 — le numéro de la page 07. Master 10524x14973 (0,7029) contre un
      cadre en 1/1,414 (0,7072) : 0,6 % d'écart, un recadrage invisible. */
