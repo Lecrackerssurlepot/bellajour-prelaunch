@@ -5,7 +5,7 @@ Chargé dès qu'on touche une migration ou le dossier supabase.
 
 | Table | Rôle | Clé à connaître |
 |---|---|---|
-| `numeros` | le dossier d'une cliente, du questionnaire à la livraison | `token` unique = l'identité ; `etat` (9 valeurs) ; depuis 20260910 le prix GELÉ (`prix_centimes`, `livraison_centimes`, `livraison_niveau`, `pays_livraison`) ; `palier` est un bucket hérité, plus aucun prix n'en dépend, jamais de `drop` |
+| `numeros` | le dossier d'une cliente, du questionnaire à la livraison | `token` unique = l'identité ; `etat` (9 valeurs) ; depuis 20260910 le prix GELÉ (`prix_centimes`, `livraison_centimes`, `livraison_niveau`, `pays_livraison`), depuis 20260916 le HT gelé `prix_ht_centimes` et `quantite` (1 à 10), depuis 20260911 `finition` ; `palier` est un bucket hérité, plus aucun prix n'en dépend, jamais de `drop` |
 | `waitlist` | inscrits, clients de la prévente, ambassadeurs | `email` unique, `ref_code` unique, `numero_fondateur` unique |
 | `photos` | une ligne par photo déposée | `r2_key` unique, `vignette_key` |
 | `mails_envoyes` | **le verrou anti-doublon** | unique (`numero_id`, `code`) |
@@ -54,17 +54,20 @@ Après toute migration, vérifier que la donnée arrive vraiment — pas seuleme
 accord explicite de Mathias** (colonne, index et cache PostgREST vérifiés). Le repli 42703 reste en
 place partout (`lireNumeros`, `/numero`, `/compte`, la santé, la relève) : dormant, comme les autres.
 
-⚠️ **`20260911_atelier_finition.sql` (colonne `numeros.finition`, T-027) est À APPLIQUER, avec
-`20260916_atelier_exemplaires_prix_ht.sql`, AVANT la fusion de la branche des prix HT (16/09/2026).**
-Ce sont les migrations du dépôt dont le code d'ÉCRITURE ne se replie pas, et c'est délibéré :
-un repli ferait imprimer une couverture brillante à un client qui a cliqué « mate », ou un seul
-exemplaire à qui en a payé trois, en silence et sur un objet fabriqué. La route rend un 500 franc
-qui nomme la migration dans les logs. La LECTURE, elle, se replie partout (`/numero`, la route de
-livraison, la transition) : sans la colonne, tout marche comme avant.
+**`20260911_atelier_finition.sql` (colonne `numeros.finition`) et
+`20260916_atelier_exemplaires_prix_ht.sql` (`prix_ht_centimes`, `quantite`) ont été appliquées le
+16/09/2026 par Mathias**, quelques minutes APRÈS la fusion de la PR #145 (colonnes vérifiées en base
+ensuite). Ce sont les migrations du dépôt dont le code d'ÉCRITURE ne se replie pas, et c'est
+délibéré : un repli ferait imprimer une couverture brillante à un client qui a cliqué « mate », ou
+un seul exemplaire à qui en a payé trois, en silence et sur un objet fabriqué. La route rend un 500
+franc qui nomme la migration dans les logs. La LECTURE, elle, se replie partout.
+⚠️ Le repli d'écriture de la transition retire désormais UNE colonne à la fois (celle que PostgREST
+nomme dans son message), pas toutes les colonnes fraîches d'un coup : prouvé le 16/09, l'ancien
+retrait en bloc faisait perdre le prix gelé pour une seule colonne absente.
 `20260910_atelier_prix_gele.sql` **est appliquée** (les quatre colonnes sont en base, vérifié le
 11/09 et le 15/09).
 
-26 fichiers sur disque, 21 dans l'historique appliqué. **`20260908_notes_genre.sql` (colonne `notes.genre`, T-096) a été appliquée le 08/09/2026 sur accord explicite de Mathias**, et le revers a été CONTRÔLÉ, pas supposé : une note écrite par la vraie route porte bien `genre='page'` en base, l'écran l'étiquette, l'export la filtre. La note de vérification a été supprimée derrière. `20260901_atelier_retention.sql`
+26 fichiers sur disque, 23 dans l'historique appliqué. **`20260908_notes_genre.sql` (colonne `notes.genre`, T-096) a été appliquée le 08/09/2026 sur accord explicite de Mathias**, et le revers a été CONTRÔLÉ, pas supposé : une note écrite par la vraie route porte bien `genre='page'` en base, l'écran l'étiquette, l'export la filtre. La note de vérification a été supprimée derrière. `20260901_atelier_retention.sql`
 (colonne `numeros.anonymise_le`, T-076) a été **appliquée le 02/09/2026** (colonne présente, vérifiée).
 Trois anciennes (`20260528_*`,
 `20260704_notion_synced`) sont absentes de l'historique mais leurs colonnes existent : appliquées

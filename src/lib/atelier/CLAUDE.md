@@ -153,11 +153,11 @@ qui le montre. Le texte des mails est versionné dans `scripts/mails-atelier.mjs
 - **Les exemplaires** (`numeros.quantite`, 1 à 10, PATCH de `/api/atelier/numero`, écriture SANS
   repli comme `finition`) : une ligne Stripe par rang, `count` chez Cloudprinter, `totalPour` applique
   le dégressif d'`exemplaires.ts`.
-- **La matière est tranchée depuis le 11/09** (T-027) : intérieur `pageblock_130mcs`, couverture
+- **La matière est tranchée depuis le 11/09** (T-027, gloss depuis le 15/09) : intérieur `pageblock_130mcg`, couverture
   `cover_250mcs`, et un PELLICULAGE choisi par le client — `finish_gloss` ou `cover_finish_matte`,
   sans supplément (relevé : un demi-centime d'écart). C'est le SEUL paramètre d'impression que le
   client choisisse ; le format, la reliure et le papier se déduisent de sa pagination. Il vit dans
-  `numeros.finition` (migration `20260911`, **à appliquer avant tout déploiement**), se choisit au
+  `numeros.finition` (migration `20260911`, appliquée le 16/09), se choisit au
   bon de commande de `/numero`, et entre dans le devis COMME dans la commande par une seule
   construction (`optionsItem`) — deux listes recopiées auraient chiffré un objet et commandé un
   autre. ⚠️ `cover_finish_gloss` n'existe pas chez eux : ne pas « harmoniser » l'asymétrie.
