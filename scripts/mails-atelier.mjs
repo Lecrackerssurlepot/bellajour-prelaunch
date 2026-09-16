@@ -34,6 +34,27 @@ const ICI = dirname(fileURLToPath(import.meta.url));
 const RACINE = resolve(ICI, "..");
 const SORTIE = resolve(RACINE, ".mails-apercus");
 
+/* ── LES NOMBRES DE LA LIVRAISON OFFERTE VIENNENT DU CODE (16/09/2026) ──
+   Ce script est du JavaScript nu : il ne peut pas importer `livraison.ts` ni
+   `exemplaires.ts`. Il LIT donc les constantes dans leur fichier source,
+   par une expression régulière stricte, et refuse de tourner si l'une manque.
+   Le jour où le seuil ou une remise bouge dans le code, la phrase des mails
+   suit ; recopier « 50 € » ici aurait fini par mentir. */
+function lireConstante(fichier, nom) {
+  const source = readFileSync(resolve(RACINE, fichier), "utf8");
+  const m = new RegExp(`export const ${nom}\\s*=\\s*(\\d+)`).exec(source);
+  if (!m) throw new Error(`${nom} introuvable dans ${fichier}`);
+  return Number(m[1]);
+}
+const FRANCO_EUROS = lireConstante("src/lib/atelier/livraison.ts", "FRANCO_CENTIMES") / 100;
+const REMISE_DEUXIEME = lireConstante("src/lib/atelier/exemplaires.ts", "REMISE_DEUXIEME_PCT");
+const REMISE_SUIVANTS = lireConstante("src/lib/atelier/exemplaires.ts", "REMISE_SUIVANTS_PCT");
+/* La phrase qui VEND les exemplaires, dans les trois mails qui annoncent un
+   total (M3, M3b, M10), seulement quand le port est facturé : à un fondateur
+   ou au-dessus du seuil, elle n'aurait rien à vendre. « Moins 30 % » en
+   toutes lettres : pas de tiret, règle de forme nº1. */
+const PHRASE_FRANCO = `Offerte dès ${FRANCO_EUROS} € de magazines : le deuxième exemplaire est à moins ${REMISE_DEUXIEME} %, les suivants à moins ${REMISE_SUIVANTS} %.`;
+
 /* ─────────────────────────── la maquette ─────────────────────────── */
 /* Reprise à l'identique du template 28 (M3), déjà validé en production sur
    Gmail, Apple Mail et Outlook. On ne la redessine pas : on la remplit. */
@@ -157,7 +178,7 @@ function encartCouverturePrete() {
 <div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Votre couverture vous attend</div>
 </td></tr>
 <tr><td style="padding: 0 26px 24px 26px;">
-<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Elle est prête depuis longtemps, et elle n&rsquo;a pas bougé. {{ params.NB_PAGES }} pages, {{ params.PRIX }}&nbsp;&euro; impression comprise.{% if params.PAYS_A_CHOISIR %} Livraison chiffrée selon votre pays, avant le paiement.{% elif params.LIVRAISON_OFFERTE %} Livraison offerte.{% else %} Livraison {{ params.LIVRAISON }}&nbsp;&euro; en sus, soit {{ params.TOTAL }}&nbsp;&euro; à payer.{% endif %}</p>
+<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Elle est prête depuis longtemps, et elle n&rsquo;a pas bougé. {{ params.NB_PAGES }} pages, {{ params.PRIX }}&nbsp;&euro; impression comprise.{% if params.PAYS_A_CHOISIR %} Livraison chiffrée selon votre pays, avant le paiement.{% elif params.LIVRAISON_OFFERTE %} Livraison offerte.{% else %} Livraison {{ params.LIVRAISON }}&nbsp;&euro; en sus, soit {{ params.TOTAL }}&nbsp;&euro; à payer. ${PHRASE_FRANCO}{% endif %}</p>
 </td></tr>
 </table>
 </td></tr>{% endif %}`;
@@ -412,7 +433,7 @@ export const MAILS = [
        abandonné à l'arrivée. Le `{% if %}` traite la chaîne vide comme faux :
        un fondateur lit « livraison offerte », tout le monde d'autre lit le
        montant devisé pour SA destination. */
-    pied: "{{ params.NB_PAGES }} pages, {{ params.PRIX }} € impression comprise. {% if params.PAYS_A_CHOISIR %}Livraison chiffrée selon votre pays, avant le paiement.{% elif params.LIVRAISON_OFFERTE %}Livraison offerte, soit {{ params.TOTAL }} € à payer.{% else %}Livraison {{ params.LIVRAISON }} € en sus, soit {{ params.TOTAL }} € à payer.{% endif %} Vous ne payez que si elle vous plaît.",
+    pied: `{{ params.NB_PAGES }} pages, {{ params.PRIX }} € impression comprise. {% if params.PAYS_A_CHOISIR %}Livraison chiffrée selon votre pays, avant le paiement.{% elif params.LIVRAISON_OFFERTE %}Livraison offerte, soit {{ params.TOTAL }} € à payer.{% else %}Livraison {{ params.LIVRAISON }} € en sus, soit {{ params.TOTAL }} € à payer. ${PHRASE_FRANCO}{% endif %} Vous ne payez que si elle vous plaît.`,
   },
   {
     code: "M3b",
@@ -430,7 +451,7 @@ export const MAILS = [
         { valeur: "{{ params.PRIX }}&nbsp;&euro;", legende: "impression comprise", grand: true },
         /* Même correction que le pied de M3 : la livraison sort du prix (lot 6,
            10/09). La légende ne peut plus dire « tout compris ». */
-        "{% if params.PAYS_A_CHOISIR %}Livraison chiffrée selon votre pays, avant le paiement.{% elif params.LIVRAISON_OFFERTE %}Livraison offerte. Soit {{ params.TOTAL }} € à payer.{% else %}Livraison {{ params.LIVRAISON }} € en sus, soit {{ params.TOTAL }} € à payer.{% endif %} Chez vous sous 10 jours après validation.",
+        `{% if params.PAYS_A_CHOISIR %}Livraison chiffrée selon votre pays, avant le paiement.{% elif params.LIVRAISON_OFFERTE %}Livraison offerte. Soit {{ params.TOTAL }} € à payer.{% else %}Livraison {{ params.LIVRAISON }} € en sus, soit {{ params.TOTAL }} € à payer. ${PHRASE_FRANCO}{% endif %} Chez vous sous 10 jours après validation.`,
       ) + encartCredit(),
     cta: "Revoir ma couverture",
     lien: LIEN,
