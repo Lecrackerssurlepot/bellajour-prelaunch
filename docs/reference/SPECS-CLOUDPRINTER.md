@@ -1,4 +1,4 @@
-# Specs produits Cloudprinter — relevées le 30/08/2026, complétées le 11/09/2026
+# Specs produits Cloudprinter — relevées le 30/08/2026, complétées le 16/09/2026, complétées le 11/09/2026
 
 Source : `POST /cloudcore/1.0/products/info` (API Cloudprinter, lecture seule, clé du projet).
 Copies JSON complètes relevées le même jour. **Ces chiffres font foi — ne jamais les remplacer
@@ -149,3 +149,51 @@ prendre pour la formule.
 **Autres specs du gabarit** : profil couleur **Coated FOGRA39 (ISO 12647-2:2004)** ;
 zone de collage du dos = 3 mm à l'intérieur de la couverture (déjà noté). Zip exact (URL de l'API,
 le CDN refuse les URL devinées) : `resources.cloudprinter.com/templates/2216/magazine_pb_a4_p_fc_product.zip`.
+
+
+## 16/09/2026 — le relevé du chantier « prix HT, zones, exemplaires »
+
+Trois questions de Louis, posées le 15/09 sur la note de prix, tranchées par l'API (lecture
+seule, clé sandbox, un appel par pays, `scripts/cloudprinter-produits.mjs` et un `prices/lookup`
+direct) et par la page « Production and shipping » de cloudprinter.com.
+
+### Le pas de pagination, confirmé
+`products/info` du dos carré (`magazine_pb_a4_p_fc`) : `page_count_multiples = 2`, quantités
+1 à 100 000, **aucun minimum ni maximum de pages exposé** (l'option `total_pages` n'a ni min ni
+max). 60 ET 62 pages sont devisés sans refus. Les bornes 24 → 60 de la grille sont donc un choix
+commercial à l'intérieur de ce que l'usine accepte. L'agrafé (`magazine_sas_a4_p_fc`) n'est plus
+commandé depuis le 15/09 : ses specs restent ci-dessus pour mémoire.
+
+### Le papier gloss change d'usine, donc de port (FR)
+`pageblock_130mcg`, France, Colissimo `cp_ground` : **6,46 € HT** à 24 comme à 60 pages
+(re-devisé le 16/09), contre 9,22 € HT en `pageblock_130mcs`. Produit HT sandbox : 9,34 €
+(60 p. gloss). Décision de Mathias du 15/09 : **gloss** (`PAPIER_INTERIEUR`, impression.ts).
+
+### Le port réel de la zone C (24 pages, silk, le moins cher des niveaux proposés, HT)
+| Pays | Port HT | Niveau | Transporteur |
+|---|---:|---|---|
+| SK | 3,37 € | cp_fast | DPD |
+| SI | 4,26 € | cp_fast | DPD |
+| NO | 5,36 € | cp_ground | Postnord |
+| BG | 7,05 € | cp_fast | DPD |
+| LV | 7,37 € | cp_ground | Latvia Post |
+| LT | 8,39 € | cp_fast | DPD |
+| HR | 9,22 € | cp_fast | DPD |
+| CH | 9,22 € | cp_fast | DPD |
+| EE | 10,59 € | cp_fast | DPD |
+| BR | 25,27 € | cp_saver | UPS |
+| CY | 28,05 € | cp_fast | FedEx |
+| MT | 28,05 € | cp_fast | FedEx |
+
+Autres relevés du même jour (24 p. silk) : FR 9,22 (Colissimo, cp_ground), DE 6,10 (DHL,
+cp_ground), PT 11,97 (Correos, cp_ground). **Les douze pays de zone C rendent un devis** : le
+mécanisme « prix du jour » (`portClient`, livraison.ts) tient pour toute la zone. Ces chiffres
+sont volatils (le tableur de Mathias mesure jusqu'à 2,6 € d'écart d'un appel à l'autre) et ne
+deviennent jamais un tarif client. `cp_saver` n'existe que pour CY, MT et BR : `SHIPPING_LEVEL`
+vaut `cp_ground` depuis le 16/09. Reclasser un pays = déplacer une ligne de `ZONES_PORT`.
+
+### Les délais, source Cloudprinter
+Page « Production and shipping » (cloudprinter.com, 16/09) : **magazine = 3 jours ouvrés de
+fabrication** ; expédition Ground 3 à 7 jours (suivi), Saver 2 à 5, Fast 1 à 2, Postal 3 à 15
+(sans suivi). Nos commandes partent en Ground : 6 à 10 jours. Le délai public reste 10 jours
+après validation (`JOURS_LIVRAISON`), jamais plus de 30 (CGV).

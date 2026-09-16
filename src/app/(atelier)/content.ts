@@ -152,7 +152,15 @@ export const FAQ = [
   },
   {
     q: 'Je le reçois quand ?',
-    r: 'Votre couverture sous 48 h. Le magazine imprimé chez vous sous 10 jours après validation, avec un lien de suivi du colis dès l’expédition. La livraison est facturée en plus, au tarif de votre pays, affiché avant le paiement.',
+    r: 'Votre couverture sous 48 h. Le magazine imprimé chez vous sous 10 jours après validation (3 jours ouvrés de fabrication, 3 à 7 jours d’acheminement), avec un lien de suivi du colis dès l’expédition.',
+  },
+  {
+    q: 'Combien coûte la livraison ?',
+    r: `${LIVRAISON_PHRASE} Les prix affichés sont TTC pour la France ; ailleurs, la TVA de votre pays s’applique et le montant exact vous est indiqué avec votre couverture, avant tout paiement.`,
+  },
+  {
+    q: 'Je peux en commander plusieurs ?',
+    r: `Oui, jusqu’à 10 exemplaires du même numéro, depuis votre page de commande. ${PHRASE_DEGRESSIF} La livraison reste au même prix, et elle est offerte dès ${FRANCO_EUROS} € de magazines.`,
   },
   {
     q: 'Comment composez-vous mon magazine ?',

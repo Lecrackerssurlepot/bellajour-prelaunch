@@ -735,26 +735,49 @@ export async function POST(request: Request) {
 
     const colonnesPerdues: string[] = [];
 
-    const ecrireAvecRepli = async (patch: Record<string, unknown>) => {
-      const premier = await ecrire(patch);
-      const code = premier.error?.code;
-      if (code !== "42703" && code !== "PGRST204") return premier;
+    /* ⚠️ UNE COLONNE À LA FOIS (16/09/2026). PostgREST NOMME la colonne qui
+       manque (« Could not find the 'prix_ht_centimes' column »). Retirer
+       d'un coup TOUTES les colonnes fraîches du patch, comme avant, faisait
+       perdre le prix et le port gelés (20260910, appliquée depuis le 10/09)
+       pour une seule colonne du 16/09 encore absente : prouvé en local le
+       16/09 sur un dossier de test. On retire donc la colonne nommée, on
+       réessaie, et on ne retombe sur le retrait en bloc que si le message ne
+       nomme rien. Au plus une tentative par colonne fraîche. */
+    const colonneNommee = (message: string | undefined): string | null => {
+      const m = /'([a-z_]+)' column/.exec(message ?? "");
+      return m && m[1] in COLONNES_FRAICHES ? m[1] : null;
+    };
 
-      const aRetirer = Object.keys(COLONNES_FRAICHES).filter((c) => c in patch);
-      /* Aucune colonne fraîche dans ce patch : l'erreur parle d'autre chose,
-         on la rend telle quelle plutôt que de réessayer à l'identique. */
-      if (aRetirer.length === 0) return premier;
+    const ecrireAvecRepli = async (patchInitial: Record<string, unknown>) => {
+      let patch = patchInitial;
+      let tentative = await ecrire(patch);
+      let restantes = Object.keys(COLONNES_FRAICHES).filter((c) => c in patch).length;
+      while (tentative.error && restantes > 0) {
+        const code = tentative.error.code;
+        if (code !== "42703" && code !== "PGRST204") return tentative;
 
-      const sansColonnes: Record<string, unknown> = { ...patch };
-      for (const c of aRetirer) delete sansColonnes[c];
-      colonnesPerdues.push(...aRetirer);
+        const nommee = colonneNommee(tentative.error.message);
+        const aRetirer = nommee
+          ? [nommee]
+          : Object.keys(COLONNES_FRAICHES).filter((c) => c in patch);
+        /* Aucune colonne fraîche dans ce patch : l'erreur parle d'autre chose,
+           on la rend telle quelle plutôt que de réessayer à l'identique. */
+        if (aRetirer.length === 0) return tentative;
 
-      console.error(
-        `[admin/transition] ⚠️ REPLI ${code} : ${aRetirer.join(", ")} absente(s) en base, la donnée n'est PAS enregistrée. ` +
-          `Appliquer ${[...new Set(aRetirer.map((c) => COLONNES_FRAICHES[c]))].join(" et ")}.`,
-        { numero: numero.id, geste: cle },
-      );
-      return ecrire(sansColonnes);
+        const sansColonnes: Record<string, unknown> = { ...patch };
+        for (const c of aRetirer) delete sansColonnes[c];
+        colonnesPerdues.push(...aRetirer);
+
+        console.error(
+          `[admin/transition] ⚠️ REPLI ${code} : ${aRetirer.join(", ")} absente(s) en base, la donnée n'est PAS enregistrée. ` +
+            `Appliquer ${[...new Set(aRetirer.map((c) => COLONNES_FRAICHES[c]))].join(" et ")}.`,
+          { numero: numero.id, geste: cle },
+        );
+        patch = sansColonnes;
+        restantes -= aRetirer.length;
+        tentative = await ecrire(patch);
+      }
+      return tentative;
     };
 
     const { data: maj, error } = await ecrireAvecRepli(prepa.patch);

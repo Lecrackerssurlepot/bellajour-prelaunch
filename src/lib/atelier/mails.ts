@@ -138,11 +138,32 @@ export const CHAMPS_MAIL_REPLI =
  * `.returns`). Elle DOIT reconstruire la requête à chaque appel : un builder
  * Supabase ne se rejoue pas.
  */
+/**
+ * Le repli INTERMÉDIAIRE (16/09/2026) : sans les deux colonnes de la migration
+ * 20260916 (le HT gelé et les exemplaires), mais AVEC le prix et le port gelés
+ * de 20260910, appliquée depuis le 10/09. Sans ce niveau, une colonne du
+ * 16/09 encore absente faisait perdre le prix gelé aux mails, donc retenait
+ * M3 (`manquePour` exige le port) : prouvé en local le 16/09.
+ */
+export const CHAMPS_MAIL_SANS_EXEMPLAIRES =
+  "id, token, etat, titre, prenom, email, nb_photos, nb_pages, palier, apercu_urls, " +
+  "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, tracking_code, " +
+  "stripe_payment_intent, retouches_demandees_le, souvenir_pdf_key, " +
+  "prix_centimes, livraison_centimes, pays_livraison, livraison_niveau";
+
 export async function lireNumerosMail<D>(
   requete: (champs: string) => PromiseLike<{ data: D; error: PostgrestError | null }>,
 ): Promise<{ data: D; error: PostgrestError | null }> {
   const avec = await requete(CHAMPS_MAIL);
   if (!avec.error || avec.error.code !== "42703") return avec;
+  const sansExemplaires = await requete(CHAMPS_MAIL_SANS_EXEMPLAIRES);
+  if (!sansExemplaires.error || sansExemplaires.error.code !== "42703") {
+    console.error(
+      "[atelier/mails] 42703 sur CHAMPS_MAIL : prix_ht_centimes ou quantite manque (migration 20260916), " +
+        "repli sur les colonnes du 10/09. Un exemplaire, et le TTC gelé fait foi.",
+    );
+    return sansExemplaires;
+  }
   console.error(
     "[atelier/mails] 42703 sur CHAMPS_MAIL : une colonne fraîche manque, repli sur CHAMPS_MAIL_REPLI. " +
       "Vérifier que la dernière migration de `numeros` est appliquée (le champ absent restera vide jusque-là).",
