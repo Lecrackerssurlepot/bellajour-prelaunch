@@ -11,6 +11,7 @@ Chargé dès qu'on touche un script. Aucun n'est branché dans `package.json` : 
 | `verif-mails-brevo.ts` | `npx tsx --tsconfig tsconfig.json scripts/verif-mails-brevo.ts` | Compare les `{{ params.X }}` des templates Brevo aux paramètres réellement envoyés |
 | `cloudprinter-produits.mjs` | `node scripts/cloudprinter-produits.mjs produit …` | Lit le catalogue. ⚠️ API très rationnée |
 | `optimize-images*.mjs`, `images-univers.mjs` | `node scripts/…` | Optimisation sharp d'assets locaux |
+| `legal-docx.ts` | `npx tsx --tsconfig tsconfig.json scripts/legal-docx.ts [cgv]` | Génère les Word de `legal-source/` (hors git) depuis `src/app/legal/content/*.ts` : CGV + fiche produit, livraison, remboursement, mentions, en FR/PT/EN, nommés par la version et la date de `lastUpdated`. N'écrit que là, n'efface rien |
 | `reconcilier-stripe.ts` | `npx tsx --tsconfig tsconfig.json scripts/reconcilier-stripe.ts [--jours=N] [--avec-test]` | **T-081.** Rapproche les paiements Stripe réglés des dossiers de la base. LIT Stripe + base, n'écrit NULLE PART. Signale l'argent pris sans dossier « payée ». `livemode` seul par défaut |
 
 ## À manier avec précaution — écrit chez un tiers ou en base
