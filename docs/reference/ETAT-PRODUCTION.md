@@ -10,14 +10,18 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
-## 16/09/2026 — le modèle de prix v3 : grille HT, zones de port, exemplaires (SUR BRANCHE)
+## 16/09/2026 — le modèle de prix v3 : grille HT, zones de port, exemplaires — EN PRODUCTION
 
-**Pas encore en production.** Branche `feat/prix-ht-zones-exemplaires` (qui embarque la PR #131,
-finition), prête, vérifiée en local ; **elle attend DEUX migrations que Mathias applique lui-même,
-dans cet ordre, AVANT la fusion** : `20260911_atelier_finition.sql` puis
-`20260916_atelier_exemplaires_prix_ht.sql`. Les écritures de `finition` et de `quantite` ne se
-replient pas (un repli imprimerait brillant à qui a cliqué mat, un exemplaire à qui en a payé
-trois) : fusionner avant, c'est déployer deux boutons qui rendent 500 sur `/numero`.
+**En production depuis le 16/09 (PR #145, fusionnée par Mathias ; PR #131 embarquée et fermée).**
+Les deux migrations `20260911_atelier_finition.sql` et `20260916_atelier_exemplaires_prix_ht.sql`
+ont été appliquées par Mathias le même jour, APRÈS la fusion (quelques minutes de fenêtre : les
+colonnes vérifiées présentes en base ensuite). **Vérifié en production le 16/09** : `/livraison`
+répond, `/magazine` affiche « Dès 24 € » et « Livraison offerte dès 50 € » ; sur le dossier de
+test « Test vendredi LYON » (fondateur nº2, 36 p., prix gelé 39 €), 3 exemplaires par l'API
+publique → la page affiche 39 + 27,30 + 19,50, « Vous économisez 31,20 € », port offert
+fondateur, crédit −30 €, total 55,80 € ; **Mathias a ouvert la page Stripe LIVE et a vu les
+trois lignes, sans payer** (« c'est tout bon pour le test Stripe »). Le dossier a été remis à
+1 exemplaire et réarchivé. Klervie (41 €) et Marjorie (47 €) gardent leur prix gelé.
 
 **Ce que la branche porte (tableur « Prix & Marge v3 » de Mathias du 15/09, validé par Louis) :**
 
