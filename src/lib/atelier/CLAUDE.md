@@ -51,12 +51,18 @@ neuf états, et à chaque passage un mail part vers une vraie cliente.
   le DERNIER mail quel qu'il soit. Ces deux constantes sont des réglages par défaut, pas des
   décisions de Mathias.
 
-Les autres purs : `grille.ts` (**la** grille, un prix par nombre de pages, importable navigateur,
-source de tout affichage), `prix.ts` (le calcul serveur : `centimesDuDossier` lit le prix GELÉ
-`prix_centimes` d'abord, la grille ensuite), `pays.ts` (FR/BE/LU), `livraison.ts` (devis → TTC,
-plafond, total de commande), `questionnaire.ts` (les
-6 champs exigés + `suggestionEmail`), `rebond.ts` (ce qu'un signal Brevo dit d'une adresse),
-`parcours.ts` (les 8 jalons), `impression.ts` (table produit Cloudprinter),
+Les autres purs : `grille.ts` (**la** grille, un prix HORS TAXES par nombre de pages de 24 à 60,
+`ttcCentimesPour(pages, pays)` = HT × (1 + TVA du pays) arrondi à l'euro ; importable navigateur,
+source de tout affichage ; sans pays, c'est la France), `prix.ts` (le calcul serveur :
+`centimesDuDossier` lit le TTC GELÉ `prix_centimes` d'abord, le HT gelé `prix_ht_centimes`
+converti ensuite, la grille en dernier ; `ttcPourPays` recalcule quand le client change de pays),
+`pays.ts` (les 32 destinations, `TAUX_TVA_PAYS`, `HORS_UE`), `exemplaires.ts` (1 à 10 exemplaires,
+le 2e à −30 %, les suivants à −50 %, importable navigateur : le bon de commande le joue en direct),
+`livraison.ts` (zones A 5 € / B 13 € / C devis, `FRANCO_CENTIMES` 50 €, `portClient`, devis → TTC,
+`totalCommande`), `questionnaire.ts` (les 7 champs exigés, pays compris, + `suggestionEmail`), `rebond.ts` (ce qu'un signal Brevo dit d'une adresse),
+`parcours.ts` (les 8 jalons), `impression.ts` (table produit Cloudprinter, **le papier tranché
+le 11/09 — `PAPIER_INTERIEUR` / `PAPIER_COUVERTURE`, une constante pour les deux reliures —, le
+pelliculage choisi par le client, et la GÉOMÉTRIE du dos qui se déduit du papier**),
 `suivi.ts` (transporteur + code), `recit.ts`, `brief.ts`, `lot.ts`, `formats.ts`, `dates.ts`,
 `token.ts` / `tokenForme.ts` (jumeau navigateur), `secret.ts`.
 Les modules à effets : `mails.ts`, `r2.ts`, `cloudprinter.ts`, `paiement.ts`, `evenements.ts`,
@@ -134,12 +140,34 @@ qui le montre. Le texte des mails est versionné dans `scripts/mails-atelier.mjs
   `livraison_centimes`, `livraison_niveau`, `pays_livraison` ; migration 20260910). Tout lecteur
   d'argent passe par `centimesDuDossier` : changer `grille.ts` ne change jamais un aperçu déjà
   annoncé. La livraison n'a **aucun repli** : sans montant gelé, le checkout refuse.
-- Zone `FR, BE, LU` (`pays.ts`), le pays est demandé à l'écran 4 du questionnaire depuis le 10/09 :
-  un devis de livraison exige le pays avant l'annonce du prix. TVA : `automatic_tax` + prix TTC, 23 % (taux normal PT) — le câblage est
-  inerte tant que l'immatriculation n'est pas posée chez Stripe, puis s'active sans redéploiement.
-- **Cloudprinter** : les fichiers dépendent du produit. L'agrafé (20 p.) prend UN PDF `product` ;
-  le dos carré (24 à 60 p., grille du 10/09 ; 22 et impairs ne désignent aucun produit) prend DEUX PDF `cover` + `book` — la couverture d'un dos carré ne peut
-  physiquement pas vivre dans le même PDF que le bloc. Le md5 exigé est l'ETag R2 du PUT
+- **Le prix dépend du pays depuis le 15/09/2026** (grille HT × TVA du pays, `pays.ts`) : le pays est
+  demandé à l'écran 4 du questionnaire (retiré le 11/09, revenu le 15/09, décision de Mathias), gelé
+  avec le HT et le TTC à la publication, et le client peut en changer sur `/numero` (prix et port
+  recalculés par `/api/atelier/livraison`). Zone : UE 27 + GB (20 %), CH, NO, US, BR (à 0, douane au
+  client). TVA : `automatic_tax` + prix TTC calculé PAR NOUS — Stripe Tax est inerte tant que l'OSS
+  n'est pas immatriculé chez Stripe, puis s'active sans redéploiement.
+- **La livraison est une zone à prix fixe** (A 5 €, B 13 €, TTC partout) ou le devis du jour (zone C),
+  `livraison_centimes` gèle le BRUT et le seuil de 50 € se rejoue à chaque lecture (`totalCommande`),
+  parce que le client peut changer le nombre d'exemplaires après la publication. Le devis Cloudprinter
+  ne sert plus qu'au NIVEAU d'expédition en zone A/B (son échec n'empêche pas de publier).
+- **Les exemplaires** (`numeros.quantite`, 1 à 10, PATCH de `/api/atelier/numero`, écriture SANS
+  repli comme `finition`) : une ligne Stripe par rang, `count` chez Cloudprinter, `totalPour` applique
+  le dégressif d'`exemplaires.ts`.
+- **La matière est tranchée depuis le 11/09** (T-027) : intérieur `pageblock_130mcs`, couverture
+  `cover_250mcs`, et un PELLICULAGE choisi par le client — `finish_gloss` ou `cover_finish_matte`,
+  sans supplément (relevé : un demi-centime d'écart). C'est le SEUL paramètre d'impression que le
+  client choisisse ; le format, la reliure et le papier se déduisent de sa pagination. Il vit dans
+  `numeros.finition` (migration `20260911`, **à appliquer avant tout déploiement**), se choisit au
+  bon de commande de `/numero`, et entre dans le devis COMME dans la commande par une seule
+  construction (`optionsItem`) — deux listes recopiées auraient chiffré un objet et commandé un
+  autre. ⚠️ `cover_finish_gloss` n'existe pas chez eux : ne pas « harmoniser » l'asymétrie.
+- **Le dos se CALCULE** (`dosMmPourPages`), grammage et bulk déduits de `PAPIER_INTERIEUR` :
+  changer le papier change la géométrie, et le harnais tombe au lieu de se taire. `souvenir.ts`,
+  lui, continue de MESURER le dos sur la feuille déposée — juger et découper sont deux gestes.
+- **Cloudprinter** : 
+  le dos carré (24 à 60 p., le SEUL produit depuis le 15/09 ; l'agrafé est dans `archive/agrafe-2026-09/`)
+  prend DEUX PDF `cover` + `book` — la couverture d'un dos carré ne peut physiquement pas vivre dans le
+  même PDF que le bloc. Papier `pageblock_130mcg` (gloss : autre usine, port FR 6,46 € HT), `cp_ground`. Le md5 exigé est l'ETag R2 du PUT
   single-part. **Une référence de commande ne se RÉUTILISE JAMAIS**, même annulée : re-commande
   sous `<id>-r<epoch36>`. Sans `CLOUDPRINTER_API_KEY`, tout bascule en mode manuel sans casser.
 - **Le webhook Stripe est PARTAGÉ** entre prévente et atelier. Le tri est EXPLICITE des deux côtés,

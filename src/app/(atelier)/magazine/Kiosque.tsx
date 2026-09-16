@@ -15,6 +15,7 @@ import {
   PARCOURS_SOUS_TITRE,
   PARCOURS_TITRE,
   PRIX_LIGNE,
+  LIVRAISON_BANDEAU,
 } from '../content'
 import LienComposer from '../components/LienComposer'
 
@@ -149,6 +150,12 @@ export default function Kiosque() {
             <span className="quoi">
               <span>{PRIX_LIGNE.pages}</span>
               <span>{PRIX_LIGNE.photos}</span>
+              {/* ── L'ARGUMENT DE LA LIVRAISON (15/09/2026) ──
+                  « Livraison offerte dès 50 € », dérivé du seuil de
+                  livraison.ts : c'est ce que le tableur de Mathias demande
+                  d'afficher, à côté du prix et pas dans une note de bas de
+                  page. Le montant vient de FRANCO_CENTIMES, jamais recopié. */}
+              <span className="franco">{LIVRAISON_BANDEAU}</span>
             </span>
           </p>
           {/* La phrase qui prolongeait le prix d'appel (PRIX_PHRASE) a été

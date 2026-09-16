@@ -1,153 +1,167 @@
 /**
- * LA LIVRAISON FACTURÉE EN SUS — module PUR (lot 6, 10/09/2026).
+ * LA LIVRAISON FACTURÉE EN SUS — module PUR.
  *
  * ══════════════════════════════════════════════════════════════════════════
- * POURQUOI UN DEVIS EN DIRECT, ET PAS UNE GRILLE DE PORT
+ * LA POLITIQUE DU 15/09/2026 (tableur « Prix & Marge v3 », Mathias, validée
+ * par Louis) : TROIS ZONES, DES MONTANTS TTC IDENTIQUES PARTOUT.
  *
- * Une grille de port écrite à la main, c'est un tarif qu'il faut deviner
- * (interdit nº5 : on n'invente jamais un montant), puis entretenir à chaque
- * mouvement de l'imprimeur ou du transporteur. Or Cloudprinter sait déjà
- * répondre : `prices/lookup` rend, pour un PAYS et un PRODUIT donnés, la
- * liste des expéditions possibles avec leur prix. On demande donc le devis à
- * l'instant où l'atelier publie l'aperçu — le premier instant où une cliente
- * voit un montant — et on écrit le résultat sur le dossier. Aucun tarif de
- * port n'est écrit en dur nulle part dans ce dépôt, et ce fichier n'en porte
- * aucun non plus : il ne sait que LIRE un devis et le convertir.
+ *   zone A, 5 €  : France, Allemagne, Espagne, Pays-Bas, Pologne, Royaume-Uni,
+ *                  Belgique, Autriche, Tchéquie, Hongrie ;
+ *   zone B, 13 € : Italie, Irlande, Suède, Danemark, Roumanie, Luxembourg,
+ *                  Portugal, Finlande, Grèce, États-Unis ;
+ *   zone C       : tout le reste de la zone de livraison (Suisse, Norvège,
+ *                  Chypre, Malte, Slovénie, Bulgarie, Croatie, Estonie,
+ *                  Lettonie, Lituanie, Slovaquie, Brésil) : LE DEVIS
+ *                  CLOUDPRINTER DU JOUR, converti TTC au taux du pays, comme
+ *                  du 10 au 15/09 pour tout le monde.
  *
- * POURQUOI LE NIVEAU D'EXPÉDITION EST GELÉ AVEC LE MONTANT
+ *   OFFERTE DÈS 50 € TTC DE MAGAZINES (le total des exemplaires, remise
+ *   déduite), dans tous les pays. En France, c'est à partir de 44 pages.
  *
- * `SHIPPING_LEVEL` (impression.ts) vaut `cp_saver`. Le premier devis réel du
- * 10/09/2026 a montré que ce niveau n'est PAS proposé : la France en 32 pages
- * offrait `cp_ground`, `cp_fast` et `cp_limited` ; la Belgique en 20 pages
- * n'offrait que `cp_ground`. Commander ensuite sous `cp_saver` reviendrait à
- * facturer un port devisé sur un service, puis à en commander un autre — au
- * mieux un écart de marge, au pire un refus de commande. Le niveau retenu au
- * devis est donc rendu par `lireDevisCloudprinter`, écrit dans
- * `numeros.livraison_niveau`, et c'est LUI que la commande d'impression
- * reprend (`payloadCommande(..., niveau)`).
+ * Les 5 € et 13 € sont des montants TTC tels quels, pas des HT à convertir
+ * (réponse de Mathias du 15/09). Ils vivent ICI, une fois, et tout en dérive :
+ * le bon de commande, le checkout, les mails, la page Livraison et l'annexe
+ * des CGV. Aucun coût de transport n'est écrit dans ce fichier : le port réel
+ * de l'imprimeur reste chez Mathias et dans `docs/reference/SPECS-CLOUDPRINTER.md`.
  *
- * POURQUOI LE COEFFICIENT N'EST PAS UN TAUX FISCAL
+ * POURQUOI LE DEVIS CLOUDPRINTER EST ENCORE DEMANDÉ EN ZONE A ET B
+ *
+ * Pas pour le prix : pour le NIVEAU D'EXPÉDITION. Le premier devis réel
+ * (10/09/2026) a montré que `SHIPPING_LEVEL` n'est pas proposé partout : la
+ * France offrait `cp_ground`, `cp_fast` et `cp_limited`, la Belgique un seul
+ * niveau. Commander sous un niveau qui n'existe pas, c'est un refus de
+ * commande. Le niveau rendu par `lireDevisCloudprinter` est donc écrit dans
+ * `numeros.livraison_niveau` et c'est LUI que la commande d'impression
+ * reprend (`payloadCommande(..., niveau)`). En zone A et B, un devis qui
+ * échoue n'empêche plus de publier : le niveau reste vide et la commande
+ * partira sous `SHIPPING_LEVEL` (`cp_ground`, proposé sur les 14 devis
+ * relevés les 10 et 16/09). En zone C, sans devis il n'y a pas de prix, et
+ * l'admin saisit à la main ou le client réessaie.
+ *
+ * POURQUOI LE COEFFICIENT DE LA ZONE C N'EST PAS UN TAUX FISCAL
  *
  * Cloudprinter facture NOUS, pas le client : la `vat` de leur réponse est
- * celle de leur relation avec nous (20 % sur le devis français, 0 % sur le
- * devis belge, relevés le 10/09). Elle ne dit rien de ce qu'un client doit
- * payer. `TAUX_TTC_LIVRAISON` est donc une RÈGLE COMMERCIALE : on prend le
- * coût HT de l'imprimeur et on l'affiche TTC au taux normal du pays de
- * livraison, pour que le port affiché ait le même régime apparent que le
- * magazine (prix TTC, `tax_behavior: "inclusive"`). La TVA réellement
- * facturée reste celle que Stripe Tax calcule. Ces nombres (trois jusqu'au
- * 10/09, trente depuis l'ouverture de l'Europe le 11/09) ne font pas foi
- * fiscalement. TRANCHÉ PAR MATHIAS LE 11/09/2026 : « les taux de TVA normaux,
- * c'est bien » ; GB/CH/NO à 0 avec les droits de douane à la charge du client ;
- * le suivi colis limité aux transporteurs FR/BE/LU est accepté.
+ * celle de leur relation avec nous. `ttcDepuisHt` prend le coût HT de
+ * l'imprimeur et l'affiche TTC au taux du pays de livraison (`TAUX_TVA_PAYS`,
+ * pays.ts), pour que le port ait le même régime apparent que le magazine
+ * (prix TTC, `tax_behavior: "inclusive"`). La TVA réellement facturée reste
+ * celle que Stripe Tax calcule.
  *
- * POURQUOI UN PLAFOND
- *
- * Un devis peut déraper : une adresse hors zone raisonnable (les DOM passent
- * pour « FR », cf. pays.ts), un pic de tarif transporteur, une pagination
- * lourde. Au-delà d'un certain montant, faire payer le port au client fait
- * plus de mal que de renoncer à la marge : Bellajour absorbe la différence.
- * Le montant du plafond appartient à Mathias — il n'est pas décidé, la
- * constante vaut donc `null` et le plafond ne s'applique pas du tout.
+ * LE PLAFOND D'ABSORPTION DU 10/09 N'EXISTE PLUS : les zones à prix fixe l'ont
+ * remplacé (T-106 fermé). Son code est dans `archive/livraison-plafond-2026-09/`.
  *
  * Module PUR : aucun import serveur, aucune variable d'environnement, aucun
- * réseau. Tout y est éprouvé par `scripts/verif-atelier.ts`, sur les deux
- * relevés réels rangés dans `scripts/fixtures/`.
+ * réseau. Tout y est éprouvé par `scripts/verif-atelier.ts`, sur les relevés
+ * réels rangés dans `scripts/fixtures/`.
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-import type { PaysLivraison } from "./pays";
+import { HORS_UE, TAUX_TVA_PAYS, normaliserPays, tauxTvaPour, type PaysLivraison } from "./pays";
+import { totalExemplaires } from "./exemplaires";
 
-/**
- * Le plafond de port facturé au client, en CENTIMES. `null` = pas de plafond.
- *
- * ⚠️ MATHIAS LE POSERA. Tant qu'il vaut `null`, le client paie le port devisé,
- * quel qu'il soit, et `livraisonClientAvec` rend « absorbé : 0 ». Poser un
- * nombre ici est le SEUL geste à faire pour activer l'absorption : le
- * checkout, la page cliente, les mails et le journal en dérivent tous.
- * Même discipline que `REIMPRESSION_CENTIMES` (prix.ts) — la structure existe
- * pour que la décision se pose à un seul endroit.
- */
-export const LIVRAISON_PLAFOND_CENTIMES: number | null = null;
+/* Les deux vivent dans `pays.ts` depuis le 15/09 (le taux décide du prix du
+   magazine, pas seulement du port). Ré-exportés pour les lecteurs historiques. */
+export { HORS_UE };
+export const TAUX_TTC_LIVRAISON = TAUX_TVA_PAYS;
 
-/**
- * COEFFICIENT de conversion du coût HT Cloudprinter en prix client TTC : le
- * taux normal de TVA du pays de livraison, en pourcentage.
+/* ──────────────────────────── LES ZONES DE PORT ────────────────────────────
  *
- * ⚠️ RÈGLE COMMERCIALE PROPOSÉE, À VALIDER PAR MATHIAS ET SON COMPTABLE. Ce
- * n'est PAS le taux fiscalement applicable à la vente : celui-là est calculé
- * par Stripe Tax à partir de l'adresse et de `CODE_FISCAL_LIVRAISON`. Ces
- * trois nombres ne servent qu'à passer d'un coût d'imprimeur à un prix
- * affiché, pour que le port se présente TTC comme le magazine.
- *
- * ⚠️ TRENTE DESTINATIONS DEPUIS LE 11/09/2026 (ouverture de l'Europe). Les
- * taux ci-dessous sont les taux NORMAUX de TVA publiés pour 2026, un par pays
- * de l'Union. Ils servent UNIQUEMENT à convertir un coût d'imprimeur en prix
- * affiché : aucun n'est un taux facturé, aucun ne fait foi fiscalement.
- * Validés par Mathias le 11/09/2026 (taux normaux, sans exception).
- *
- * Deux taux ont bougé récemment et méritent d'être nommés, parce qu'une
- * source ancienne les donne encore à l'ancienne valeur :
- *   — Estonie : 24 % (relevé au 1er juillet 2025, après le passage à 22 % au
- *     1er janvier 2024) ;
- *   — Slovaquie : 23 % (relevé au 1er janvier 2025, contre 20 % avant).
- * Sont également récents : Finlande 25,5 % (septembre 2024) et Roumanie 21 %
- * (août 2025).
- *
- * ⚠️ GB, CH et NO SONT À ZÉRO, ET CE N'EST PAS UN OUBLI. Hors Union, nous
- * n'ajoutons aucune TVA à un port : le client paie le coût du transport tel
- * qu'il est devisé. En contrepartie, les DROITS DE DOUANE et taxes à
- * l'importation éventuels sont à la charge du destinataire — la page du
- * client le dit (`HORS_UE`), et c'est un point à faire trancher par Mathias :
- * un colis retenu en douane est un client mécontent, même quand c'est la
- * règle. Un pays hors de cette table rend `null` (on ne devine pas un taux),
- * ce qui fait retomber l'admin sur la saisie manuelle.
+ * Une zone = un montant TTC en centimes et la liste des pays qu'elle couvre.
+ * Tout pays de la zone de livraison absent des deux listes est en zone C :
+ * le devis du jour. Reclasser un pays = le déplacer d'une liste à l'autre,
+ * rien d'autre ne bouge (les relevés de coût par pays sont dans
+ * docs/reference/SPECS-CLOUDPRINTER.md, pour décider en connaissance).
  */
-export const TAUX_TTC_LIVRAISON: Record<PaysLivraison, number> = {
-  AT: 20,
-  BE: 21,
-  BG: 20,
-  HR: 25,
-  CY: 19,
-  CZ: 21,
-  DK: 25,
-  EE: 24,
-  FI: 25.5,
-  FR: 20,
-  DE: 19,
-  GR: 24,
-  HU: 27,
-  IE: 23,
-  IT: 22,
-  LV: 21,
-  LT: 21,
-  LU: 17,
-  MT: 18,
-  NL: 21,
-  PL: 23,
-  PT: 23,
-  RO: 21,
-  SK: 23,
-  SI: 22,
-  ES: 21,
-  SE: 25,
-  /* Hors Union : rien n'est ajouté par nous. Voir le paragraphe ci-dessus. */
-  GB: 0,
-  CH: 0,
-  NO: 0,
+export type ZonePort = "A" | "B" | "C";
+
+export const ZONES_PORT: Record<"A" | "B", { centimes: number; pays: readonly PaysLivraison[] }> = {
+  A: { centimes: 500, pays: ["FR", "DE", "ES", "NL", "PL", "GB", "BE", "AT", "CZ", "HU"] },
+  B: { centimes: 1300, pays: ["IT", "IE", "SE", "DK", "RO", "LU", "PT", "FI", "GR", "US"] },
+};
+
+/** Livraison offerte dès ce total TTC de magazines, remise déduite. */
+export const FRANCO_CENTIMES = 5000;
+
+/** Le mot que le client lit. Zone C : « chiffrée selon votre pays ». */
+export const ZONE_LIBELLE: Record<ZonePort, string> = {
+  A: "Livraison suivie, 5 €",
+  B: "Livraison suivie, 13 €",
+  C: "Livraison suivie, chiffrée selon votre pays",
+};
+
+/** La zone d'un pays. `null` pour un code hors de la zone de livraison. */
+export function zonePour(pays: unknown): ZonePort | null {
+  const code = normaliserPays(pays);
+  if (!code) return null;
+  if ((ZONES_PORT.A.pays as readonly string[]).includes(code)) return "A";
+  if ((ZONES_PORT.B.pays as readonly string[]).includes(code)) return "B";
+  return "C";
+}
+
+/** Le port TTC d'une zone à prix fixe, en centimes. `null` en zone C. */
+export function portDeZone(pays: unknown): number | null {
+  const zone = zonePour(pays);
+  if (zone === "A" || zone === "B") return ZONES_PORT[zone].centimes;
+  return null;
+}
+
+/** Le seuil est-il atteint ? Sur le total des magazines, jamais du port. */
+export function livraisonOfferte(totalProduitCentimes: number): boolean {
+  return Number.isFinite(totalProduitCentimes) && totalProduitCentimes >= FRANCO_CENTIMES;
+}
+
+/** Ce qui manque pour l'atteindre, en centimes. Zéro quand c'est atteint. */
+export function manquePourFranco(totalProduitCentimes: number): number {
+  return Math.max(0, FRANCO_CENTIMES - Math.max(0, Math.round(totalProduitCentimes)));
+}
+
+export type PortClient = {
+  zone: ZonePort;
+  /** Ce que le client paie, en centimes. Zéro si offert. */
+  centimes: number;
+  /**
+   * Le port AVANT la règle du seuil (la zone, ou le devis), en centimes.
+   * C'est CE nombre qui se gèle dans `numeros.livraison_centimes` : le seuil
+   * se rejoue à chaque lecture (`totalCommande`), parce que le client peut
+   * encore changer le nombre d'exemplaires après la publication.
+   */
+  brutCentimes: number;
+  offert: boolean;
+  /**
+   * D'où vient le montant : la zone (A ou B), le devis (zone C), ou rien
+   * (zone C sans devis : le port n'est pas connu, le checkout doit refuser).
+   */
+  source: "zone" | "devis" | "inconnu";
 };
 
 /**
- * Les destinations HORS UNION EUROPÉENNE de la zone de livraison.
+ * LE PORT QUE PAIE LE CLIENT — la seule règle, lue par le bon de commande, le
+ * checkout, les mails et la transition.
  *
- * Dérivé de rien : c'est une LISTE, tenue à la main, parce qu'un taux à zéro
- * ne suffit pas à désigner un pays tiers (un taux pourrait tomber à zéro pour
- * une autre raison). Elle sert à une seule chose, et elle doit servir à
- * celle-là partout : dire au client, AVANT qu'il paie, que des droits de
- * douane peuvent lui être réclamés à l'arrivée. Une mauvaise surprise à la
- * livraison d'un objet fabriqué pour lui est la pire de toutes.
+ *   — zone A ou B : le montant de la zone ;
+ *   — zone C : `devisTtcCentimes` (le devis du jour converti), ou rien ;
+ *   — dans tous les cas : ZÉRO si le total des magazines atteint le seuil.
+ *
+ * `null` quand le pays n'est pas dans la zone de livraison : on ne devine
+ * pas une destination.
  */
-export const HORS_UE: readonly PaysLivraison[] = ["GB", "CH", "NO"];
+export function portClient(args: {
+  pays: unknown;
+  totalProduitCentimes: number;
+  devisTtcCentimes?: number | null;
+}): PortClient | null {
+  const zone = zonePour(args.pays);
+  if (!zone) return null;
+  const offert = livraisonOfferte(args.totalProduitCentimes);
+  if (zone === "C") {
+    const devis = args.devisTtcCentimes;
+    const connu = typeof devis === "number" && Number.isInteger(devis) && devis >= 0;
+    if (!connu) return { zone, centimes: 0, brutCentimes: 0, offert, source: offert ? "zone" : "inconnu" };
+    return { zone, centimes: offert ? 0 : devis, brutCentimes: devis, offert, source: "devis" };
+  }
+  const brut = ZONES_PORT[zone].centimes;
+  return { zone, centimes: offert ? 0 : brut, brutCentimes: brut, offert, source: "zone" };
+}
 
 /**
  * Le code fiscal Stripe du transport de biens (« Shipping »). Posé
@@ -270,34 +284,9 @@ export function lireDevisCloudprinter(
  */
 export function ttcDepuisHt(htCentimes: number, pays: string): number | null {
   if (!Number.isFinite(htCentimes) || htCentimes < 0) return null;
-  const taux = (TAUX_TTC_LIVRAISON as Record<string, number | undefined>)[pays];
-  if (typeof taux !== "number") return null;
+  const taux = tauxTvaPour(pays);
+  if (taux === null) return null;
   return Math.round(htCentimes * (1 + taux / 100));
-}
-
-/**
- * Ce que le client paie, et ce que Bellajour absorbe, pour un plafond donné.
- *
- * Séparée de `livraisonClient` pour être éprouvable avec un plafond posé,
- * alors que la constante vaut `null` : sans ça, la règle d'absorption ne
- * serait testée par personne tant que Mathias n'aurait pas tranché, et elle
- * s'activerait un jour sans jamais avoir tourné.
- */
-export function livraisonClientAvec(
-  ttcCentimes: number,
-  plafond: number | null,
-): { client: number; absorbe: number } {
-  const ttc = Math.max(0, Math.round(ttcCentimes));
-  if (plafond === null || !Number.isFinite(plafond) || plafond < 0 || ttc <= plafond) {
-    return { client: ttc, absorbe: 0 };
-  }
-  const client = Math.round(plafond);
-  return { client, absorbe: ttc - client };
-}
-
-/** La même règle, avec le plafond du dépôt. C'est celle que la route appelle. */
-export function livraisonClient(ttcCentimes: number): ReturnType<typeof livraisonClientAvec> {
-  return livraisonClientAvec(ttcCentimes, LIVRAISON_PLAFOND_CENTIMES);
 }
 
 /**
@@ -330,40 +319,51 @@ export function centimesDeSaisie(v: unknown): number | null {
 /* ────────────────────────── le total d'une commande ──────────────────────── */
 
 export type Commande = {
-  /** Le prix GELÉ du magazine, en centimes (prix.ts). */
+  /** Le prix GELÉ d'UN exemplaire, TTC, en centimes (prix.ts). */
   prixCentimes: number;
-  /** Le port TTC devisé, en centimes. */
+  /** Combien d'exemplaires (1 à QUANTITE_MAX). Absent = un. */
+  quantite?: number;
+  /** Le port TTC retenu (zone ou devis), en centimes, AVANT la règle du seuil. */
   livraisonCentimes: number;
   /** Le crédit fondateur dû, en centimes. Zéro pour tout le monde d'autre. */
   creditCentimes: number;
-  /** Le port est-il offert ? Un fondateur ne paie ni son crédit ni son port. */
+  /** Le port est-il offert pour une AUTRE raison que le seuil (fondateur) ? */
   portOffert: boolean;
 };
 
 /**
  * Le décompte d'une commande, tel qu'il s'affiche sur le bon de commande et
- * tel qu'il sera facturé : prix, livraison, remise, total.
+ * tel qu'il sera facturé : magazines (remise dégressive comprise), livraison,
+ * remise fondateur, total.
  *
- * Trois règles, et elles vivent ICI et nulle part ailleurs (ni dans un écran,
- * ni dans une route) :
- *   — le port offert vaut ZÉRO, il ne disparaît pas de la ligne ;
- *   — la remise est PLAFONNÉE au prix du magazine (`Math.min`), parce que
- *     Stripe plafonne de la même façon un `amount_off` au total de la
- *     commande : un crédit de 30 € sur un numéro de 25 € ne rend pas 5 € et
- *     ne s'impute pas sur le port. Le surplus est perdu — c'est le
- *     comportement de Stripe, il est SÛR, mais il n'est pas tranché
- *     commercialement (cf. le commentaire du checkout) ;
+ * Quatre règles, et elles vivent ICI et nulle part ailleurs (ni dans un
+ * écran, ni dans une route) :
+ *   — les exemplaires se comptent par `totalExemplaires` (le 2e à −30 %, les
+ *     suivants à −50 %), jamais par une multiplication ;
+ *   — le port vaut ZÉRO dès que les magazines atteignent `FRANCO_CENTIMES`,
+ *     ou quand il est offert (fondateur) ; il ne disparaît pas de la ligne ;
+ *   — la remise fondateur est PLAFONNÉE au prix des magazines (`Math.min`),
+ *     parce que Stripe plafonne de la même façon un `amount_off` au total
+ *     de la commande : un crédit de 30 € sur un numéro de 24 € ne rend pas
+ *     6 € et ne s'impute pas sur le port. Le surplus est perdu (règle
+ *     commerciale non tranchée par Mathias, comportement SÛR) ;
  *   — le total ne descend jamais sous zéro.
  */
 export function totalCommande(c: Commande): {
   prix: number;
+  quantite: number;
   livraison: number;
+  livraisonOfferte: boolean;
   remise: number;
   total: number;
 } {
-  const prix = Math.max(0, Math.round(c.prixCentimes));
-  const livraison = c.portOffert ? 0 : Math.max(0, Math.round(c.livraisonCentimes));
+  const quantite = c.quantite ?? 1;
+  const unitaire = Math.max(0, Math.round(c.prixCentimes));
+  const ex = totalExemplaires(unitaire, quantite);
+  const prix = ex ? ex.totalCentimes : unitaire * Math.max(1, quantite);
+  const parSeuil = livraisonOfferte(prix);
+  const livraison = c.portOffert || parSeuil ? 0 : Math.max(0, Math.round(c.livraisonCentimes));
   const remise = Math.min(Math.max(0, Math.round(c.creditCentimes)), prix);
   const total = Math.max(0, prix - remise + livraison);
-  return { prix, livraison, remise, total };
+  return { prix, quantite, livraison, livraisonOfferte: c.portOffert || parSeuil, remise, total };
 }

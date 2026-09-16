@@ -1,5 +1,34 @@
 import type { LocalizedDoc } from '../types'
 import { GRILLE_PUBLIQUE, PAGES_MIN, PAGES_MAX_PUBLIC } from '@/lib/atelier/grille'
+import { GRAMMAGE_INTERIEUR_GSM } from '@/lib/atelier/impression'
+import { FRANCO_CENTIMES, ZONES_PORT } from '@/lib/atelier/livraison'
+import { PAYS_LIBELLE } from '@/lib/atelier/pays'
+import { QUANTITE_MAX, REMISE_DEUXIEME_PCT, REMISE_SUIVANTS_PCT } from '@/lib/atelier/exemplaires'
+
+/* ── v4.0 (16/09/2026, accord de Mathias, validée par Louis) ────────────────
+   LA GRILLE EST HORS TAXES et le TTC dépend du pays de livraison ; la livraison
+   est facturée par ZONES (A, B, C) avec un seuil de gratuité ; le client peut
+   commander PLUSIEURS EXEMPLAIRES avec une remise dégressive ; la zone s'étend
+   aux États-Unis et au Brésil ; l'agrafé de 20 pages disparaît (24 à 60 pages,
+   dos carré collé) ; le papier intérieur est le couché brillant 130 g. TOUS
+   LES NOMBRES CI-DESSOUS SONT DÉRIVÉS DU CODE (grille.ts, livraison.ts,
+   exemplaires.ts, impression.ts) : rien ne se recopie à la main.
+   ⚠️ La date d'entrée en vigueur est celle de la mise en ligne : à ajuster
+   dans CGV_DATE si la fusion glisse. */
+const CGV_DATE = '16/09/2026'
+const euros = (centimes: number, decimales = false) =>
+  decimales ? `${(centimes / 100).toFixed(2).replace('.', ',')} €` : `${centimes / 100} €`
+const eurosEn = (centimes: number, decimales = false) =>
+  decimales ? `€${(centimes / 100).toFixed(2)}` : `€${centimes / 100}`
+const FRANCO_EUR = FRANCO_CENTIMES / 100
+const ZONE_A_EUR = ZONES_PORT.A.centimes / 100
+const ZONE_B_EUR = ZONES_PORT.B.centimes / 100
+const PAYS_ZONE_A_FR = ZONES_PORT.A.pays.map((c) => PAYS_LIBELLE[c]).join(', ')
+const PAYS_ZONE_B_FR = ZONES_PORT.B.pays.map((c) => PAYS_LIBELLE[c]).join(', ')
+const PAYS_ZONE_A_PT = 'França, Alemanha, Espanha, Países Baixos, Polónia, Reino Unido, Bélgica, Áustria, Chéquia, Hungria'
+const PAYS_ZONE_B_PT = 'Itália, Irlanda, Suécia, Dinamarca, Roménia, Luxemburgo, Portugal, Finlândia, Grécia, Estados Unidos'
+const PAYS_ZONE_A_EN = 'France, Germany, Spain, Netherlands, Poland, United Kingdom, Belgium, Austria, Czechia, Hungary'
+const PAYS_ZONE_B_EN = 'Italy, Ireland, Sweden, Denmark, Romania, Luxembourg, Portugal, Finland, Greece, United States'
 
 /* CONDITIONS GÉNÉRALES DE VENTE — transcription fidèle de
    legal-source/cgv/FR/CONDITIONS GÉNÉRALES DE VENTE — BELLAJOUR.docx (v2.5).
@@ -19,12 +48,26 @@ import { GRILLE_PUBLIQUE, PAGES_MIN, PAGES_MAX_PUBLIC } from '@/lib/atelier/gril
    v3.1 (10/09/2026, accord de Mathias) : la grille « Offre Atelier » devient un prix par
    nombre de pages (dérivée de GRILLE, jamais recopiée) et la livraison sort du prix
    (art. 4bis.4, liste « ce que comprend », annexe). Les .docx de legal-source ont donc
-   une version de retard : à régénérer par Mathias. */
+   une version de retard : à régénérer par Mathias.
+   v3.2 (11/09/2026, accord de Mathias) : les références produit de l'imprimeur sont
+   arrêtées (relevé products/info + prix usine du 11/09, docs/reference/SPECS-CLOUDPRINTER.md).
+   Trois conséquences, dans les trois langues :
+   - art. 3.1 : « couverture rigide » / « capa dura » / « hardcover » était FAUX depuis
+     toujours — les deux produits commandés sont des softcovers (`magazine_sas_a4_p_fc`,
+     `magazine_pb_a4_p_fc`). L'annexe disait déjà « couverture souple 250 g » : les deux
+     endroits se contredisaient, l'article a été aligné sur l'objet réellement fabriqué ;
+   - annexe : le PAPIER est nommé (intérieur 130 g couché satiné, couverture 250 g), ce
+     qu'aucune version ne disait ;
+   - annexe : la FINITION devient un choix du client, brillant ou mat, sans supplément —
+     le seul paramètre d'impression qu'il choisisse. Écrit ici parce qu'il est contractuel.
+   Les grammages ne se recopient PAS à la main : ils doivent rester ceux de
+   `PAPIER_INTERIEUR` / `PAPIER_COUVERTURE` (src/lib/atelier/impression.ts), qui sont ce
+   qui part réellement chez l'imprimeur. */
 
 export const CGV: LocalizedDoc = {
   fr: {
     title: `Conditions générales de vente`,
-    lastUpdated: `Version 3.1 — En vigueur le 10/09/2026`,
+    lastUpdated: `Version 4.0 — En vigueur le ${CGV_DATE}`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `Traduction française à titre informatif. La version juridiquement prévalente est le texte portugais ; en cas de divergence, ce dernier prime.`,
@@ -60,7 +103,7 @@ export const CGV: LocalizedDoc = {
           {
             kind: 'p',
             value: [
-              `3.1 Description. L'album Bellajour est un livre relié à couverture rigide, imprimé en haute définition au format portrait, comprenant une couverture illustrée unique (générée par IA), une mise en page composée par algorithme sous contrôle humain, et une version digitale HD incluse. Les caractéristiques techniques détaillées (format, pagination, papier, finitions) et la grille tarifaire par palier de pages figurent dans la `,
+              `3.1 Description. L'album Bellajour est un livre photo relié à couverture souple, imprimé en haute définition au format portrait A4, comprenant une couverture illustrée unique (générée par IA), une mise en page composée par algorithme sous contrôle humain, et une version digitale HD incluse. Les caractéristiques techniques détaillées (format, pagination, papier, finitions) et la grille tarifaire hors taxes par nombre de pages figurent dans la `,
               { text: `Fiche produit`, href: `#fiche-produit` },
               `, document annexé aux présentes et reproduit en annexe ci-dessous. Ce document fait partie intégrante du contrat dans sa version en vigueur à la date de la commande (art. 13).`,
             ],
@@ -72,13 +115,9 @@ export const CGV: LocalizedDoc = {
       {
         heading: `Article 4 — Prix, TVA et facturation`,
         blocks: [
-          { kind: 'p', value: `4.1 Prix toutes taxes comprises. Les prix sont affichés en euros, toutes taxes comprises. Le prix de l'album dépend du palier de pagination choisi, selon la grille tarifaire figurant dans la Fiche produit. Le nombre de pages est défini sur mesure.` },
-          { kind: 'p', value: `4.2 Transparence — pas de frais cachés. Le prix TTC affiché avant validation est complet ; aucun coût n'est ajouté après la validation de la commande. Hors prévente, les frais de port éventuels sont indiqués clairement avant la validation de la commande. Dans le cadre de la prévente, les frais de port sont offerts.` },
-          { kind: 'p', value: `4.3 Régime de TVA. Bellajour relève du régime normal de TVA au Portugal. Pour les ventes aux consommateurs (B2C) :` },
-          { kind: 'list', items: [
-            `tant que le seuil de 10 000 € annuels de ventes à distance intracommunautaires n'est pas dépassé, la TVA portugaise au taux normal en vigueur s'applique (23 % au Portugal continental ; 22 % à Madère ; 16 % aux Açores) ;`,
-            `au-delà de ce seuil, la TVA du pays de résidence du consommateur s'applique, déclarée par Bellajour via le régime du guichet unique (OSS-Union) ou, le cas échéant, par immatriculation directe dans l'État membre concerné.`,
-          ] },
+          { kind: 'p', value: `4.1 Prix hors taxes et prix affiché. La grille tarifaire de la Fiche produit est établie hors taxes, par nombre de pages. Le prix payé par le client est ce prix hors taxes majoré de la TVA au taux normal du pays de livraison, arrondi à l'euro le plus proche ; il est affiché en euros, toutes taxes comprises, avant tout paiement. Le nombre de pages est défini sur mesure par l'atelier. À titre de référence, la Fiche produit reproduit la colonne toutes taxes comprises pour une livraison en France.` },
+          { kind: 'p', value: `4.2 Transparence — pas de frais cachés. Le prix TTC affiché avant validation est complet ; aucun coût n'est ajouté après la validation de la commande. Hors prévente, les frais de livraison sont indiqués clairement avant la validation de la commande, selon l'article 4bis.11. Dans le cadre de la prévente, les frais de port sont offerts.` },
+          { kind: 'p', value: `4.3 Régime de TVA. Bellajour relève du régime normal de TVA au Portugal. Les ventes aux consommateurs (B2C) livrées dans un État membre de l'Union européenne sont soumises à la TVA de l'État membre de livraison, déclarée par Bellajour via le régime du guichet unique (OSS-Union) ou, le cas échéant, par immatriculation directe dans l'État membre concerné. Pour une livraison au Royaume-Uni, le prix affiché est calculé avec une TVA de 20 %. Pour une livraison en Suisse, en Norvège, aux États-Unis ou au Brésil, aucune TVA de l'Union n'est ajoutée au prix hors taxes ; les droits, taxes et TVA à l'importation éventuellement dus dans le pays de destination restent à la charge du client (article 10.4).` },
           { kind: 'p', value: `Le taux effectivement appliqué à chaque commande figure sur la facture.` },
           { kind: 'p', value: `4.4 Exigibilité et facturation de l'acompte. La TVA est exigible à l'encaissement, y compris à l'encaissement de l'acompte. À l'encaissement de l'acompte, une facture est émise avec le descriptif « Acompte sur la commande [n°] » pour le montant effectivement versé. En cas de remboursement, une note de crédit est émise (jamais de facture négative). Les documents sont émis via un logiciel de facturation certifié par l'Administration fiscale, avec ATCUD et code QR.` },
           { kind: 'p', value: `4.5 Erreur manifeste de prix. Une commande à prix manifestement erroné (erreur d'affichage grossière) peut être annulée par Bellajour ; le client est informé et intégralement remboursé.` },
@@ -89,14 +128,14 @@ export const CGV: LocalizedDoc = {
         heading: `Article 4 bis — Commandes passées via l'Atelier (offre en vigueur)`,
         blocks: [
           { kind: 'p', value: `4bis.1 Champ d'application. Le présent article régit les commandes passées via l'Atelier sur bellajour.fr, seul mode de commande ouvert depuis le 24 août 2026. Les articles 5 et 5 bis ne concernent que les commandes de prévente passées entre le 13 juin et le 15 août 2026.` },
-          { kind: 'p', value: `4bis.2 Parcours de commande. Le client renseigne un questionnaire, dépose ses photographies, puis reçoit sous 48 heures un aperçu de sa couverture sur une page personnelle accessible par un lien unique adressé par e-mail. Aucune somme n'est demandée avant que cet aperçu et le prix ferme n'aient été portés à sa connaissance.` },
+          { kind: 'p', value: `4bis.2 Parcours de commande. Le client renseigne un questionnaire (l'occasion, son histoire, le titre de son numéro, ses coordonnées et son pays de livraison), dépose ses photographies, puis reçoit sous 48 heures un aperçu de sa couverture sur une page personnelle accessible par un lien unique adressé par e-mail. Cette page présente le prix ferme, calculé selon la pagination composée et le pays de livraison, ainsi que les frais de livraison ; le client peut y modifier son pays de livraison et le nombre d'exemplaires avant de payer. Aucune somme n'est demandée avant que cet aperçu et le prix ferme n'aient été portés à sa connaissance. Après paiement, l'atelier compose la maquette complète et la soumet au client sur la même page ; le client peut demander des ajustements, sans frais, ou valider la maquette, ce qui rend la commande définitive (article 8.3). Une maquette qui n'a reçu ni validation ni demande d'ajustement dans les 7 jours suivant sa mise à disposition est réputée validée, après rappel par e-mail. Un dossier laissé sans suite (photographies non déposées, ou aperçu non commandé) est conservé 90 jours à compter du dépôt, puis ses photographies sont supprimées après un préavis par e-mail adressé 7 jours avant.` },
           { kind: 'p', value: `4bis.3 Paiement intégral, sans acompte. La commande passée via l'Atelier ne donne lieu à aucun acompte, à aucune réservation et à aucun crédit (Instants). Le prix est payé en une seule fois au moment de la commande.` },
           {
             kind: 'p',
             value: [
-              `4bis.4 Prix selon la pagination. Le prix est déterminé par le nombre de pages effectivement composé par l'atelier, selon la grille « Offre Atelier » figurant dans la `,
+              `4bis.4 Prix selon la pagination et le pays de livraison. Le prix d'un exemplaire est déterminé par le nombre de pages effectivement composé par l'atelier, selon la grille hors taxes « Offre Atelier » figurant dans la `,
               { text: `Fiche produit`, href: `#fiche-produit` },
-              `. Il est ferme, affiché toutes taxes comprises, et comprend l'impression. Les frais de livraison sont facturés en sus ; leur montant, toutes taxes comprises, est porté à la connaissance du client avant tout paiement, en même temps que le prix. Le nombre de pages n'est ni choisi ni saisi par le client : il résulte du nombre et de la qualité des photographies déposées, et lui est communiqué avec le prix avant tout paiement.`,
+              `, majoré de la TVA du pays de livraison et arrondi à l'euro (article 4.1). Il est ferme, affiché toutes taxes comprises, et comprend l'impression. Les frais de livraison sont facturés en sus selon l'article 4bis.11 ; leur montant, toutes taxes comprises, est porté à la connaissance du client avant tout paiement, en même temps que le prix. Le nombre de pages n'est ni choisi ni saisi par le client : il résulte du nombre et de la qualité des photographies déposées, et lui est communiqué avec le prix avant tout paiement.`,
             ],
           },
           { kind: 'h3', text: `Ce que comprend une commande Atelier` },
@@ -105,13 +144,15 @@ export const CGV: LocalizedDoc = {
             `La couverture illustrée sur mesure`,
             `La mise en page composée par algorithme sous contrôle humain`,
             `La version digitale HD (article 1.2)`,
-            `L'impression. La livraison, effectuée dans la zone définie au 4bis.6, est facturée en sus (article 4bis.4)`,
+            `L'impression. La livraison, effectuée dans la zone définie au 4bis.6, est facturée en sus (article 4bis.11)`,
           ] },
           { kind: 'p', value: `4bis.5 Aucun avantage de prévente n'est attaché à une commande Atelier : ni Instants, ni pages offertes, ni bonus de parrainage. L'imputation d'un crédit de prévente obéit à l'article 5 bis.` },
-          { kind: 'p', value: `4bis.6 Zone de livraison. Les commandes Atelier sont livrées dans les pays de l'Union européenne, au Royaume-Uni, en Suisse et en Norvège. Le pays de livraison est indiqué par le client avant le paiement ; les frais de livraison sont chiffrés pour ce pays et portés à sa connaissance avant tout paiement (article 4bis.4). L'adresse de livraison est collectée au moment du paiement par le prestataire de paiement, dans ce pays uniquement ; aucun pays hors de cette zone n'est proposé et aucune commande ne peut y être livrée. Pour les pays hors Union européenne, les droits et taxes d'importation éventuels restent à la charge du client. Cette zone peut être étendue ou réduite ; elle s'apprécie à la date de la commande.` },
-          { kind: 'p', value: `4bis.7 Délai de livraison. Le délai court à compter de la validation de la maquette. Il est estimé à 10 jours et n'excède en tout état de cause pas 30 jours, conformément à l'article 10.1 et à l'article 9.º du DL 24/2014.` },
+          { kind: 'p', value: `4bis.6 Zone de livraison. Les commandes Atelier sont livrées dans les pays de l'Union européenne, au Royaume-Uni, en Suisse, en Norvège, aux États-Unis et au Brésil. Le pays de livraison est indiqué par le client dans le questionnaire et peut être modifié jusqu'au paiement ; le prix et les frais de livraison sont calculés pour ce pays et portés à sa connaissance avant tout paiement (articles 4bis.4 et 4bis.11). L'adresse de livraison est collectée au moment du paiement par le prestataire de paiement, dans ce pays uniquement ; aucun pays hors de cette zone n'est proposé et aucune commande ne peut y être livrée. Pour les pays hors Union européenne, les droits et taxes d'importation éventuels restent à la charge du client. Cette zone peut être étendue ou réduite ; elle s'apprécie à la date de la commande.` },
+          { kind: 'p', value: `4bis.7 Délai de livraison. Le délai court à compter de la validation de la maquette. Il est estimé à 10 jours (3 jours ouvrés de fabrication, puis 3 à 7 jours d'acheminement), auxquels s'ajoutent, pour les livraisons hors Union européenne, les délais de dédouanement éventuels, et n'excède en tout état de cause pas 30 jours, conformément à l'article 10.1 et à l'article 9.º du DL 24/2014.` },
           { kind: 'p', value: `4bis.8 Cases préalables au paiement. Avant tout paiement, le client coche deux cases distinctes, décochées par défaut et horodatées : (i) l'acceptation des présentes Conditions ; (ii) la reconnaissance, au sens de l'article 8.5, de ce que son album est manifestement personnalisé et de ce que son droit de libre résolution s'éteindra à la validation de la maquette, conformément à l'article 8.3. Le paiement est techniquement impossible tant que ces deux cases ne sont pas cochées et horodatées.` },
-          { kind: 'p', value: `4bis.9 Faculté de remboursement jusqu'à la maquette. Nonobstant le paiement intégral, et conformément aux articles 8.2 et 8.3, le client conserve jusqu'à la validation de sa maquette la faculté d'obtenir le remboursement intégral des sommes versées, sans retenue, sans frais et sans pénalité. Cette faculté disparaît à la validation de la maquette, qui rend la commande définitive.` },
+          { kind: 'p', value: `4bis.9 Faculté de remboursement jusqu'à la maquette. Nonobstant le paiement intégral, et conformément aux articles 8.2 et 8.3, le client conserve jusqu'à la validation de sa maquette la faculté d'obtenir le remboursement intégral des sommes versées, frais de livraison compris, sans retenue, sans frais et sans pénalité. Cette faculté disparaît à la validation de la maquette, qui rend la commande définitive.` },
+          { kind: 'p', value: `4bis.10 Exemplaires. Le client peut commander, depuis sa page de commande et avant le paiement, de 1 à ${QUANTITE_MAX} exemplaires identiques du même numéro. Le premier exemplaire est facturé au prix de l'article 4bis.4 ; le deuxième bénéficie d'une remise de ${REMISE_DEUXIEME_PCT} % sur ce prix ; le troisième et chacun des suivants d'une remise de ${REMISE_SUIVANTS_PCT} %. Ces remises portent sur le prix du magazine seulement, jamais sur les frais de livraison, et sont appliquées automatiquement ; le détail figure sur le récapitulatif de commande et sur la facture. Les exemplaires d'une même commande sont expédiés ensemble.` },
+          { kind: 'p', value: `4bis.11 Frais de livraison. Chaque magazine est fabriqué à la commande, sans stock. Les frais de livraison, toutes taxes comprises et identiques quel que soit le nombre d'exemplaires, sont les suivants : zone A, ${euros(ZONES_PORT.A.centimes)} (${PAYS_ZONE_A_FR}) ; zone B, ${euros(ZONES_PORT.B.centimes)} (${PAYS_ZONE_B_FR}) ; zone C, pour les autres pays de la zone de livraison (dont la Suisse, la Norvège, Chypre, Malte et le Brésil), le tarif de l'expédition suivie est chiffré pour le pays et le colis concernés et porté à la connaissance du client avant tout paiement. La livraison est offerte dès ${euros(FRANCO_CENTIMES)} toutes taxes comprises de magazines dans une même commande, remises de l'article 4bis.10 déduites. Le détail par zone figure dans la Fiche produit et sur la page Livraison du site.` },
         ],
       },
       {
@@ -187,7 +228,7 @@ export const CGV: LocalizedDoc = {
       {
         heading: `Article 10 — Livraison, transfert du risque et sécurité du produit (GPSR)`,
         blocks: [
-          { kind: 'p', value: `10.1 Livraison à l'adresse indiquée par le client. La fabrication est confiée à un imprimeur partenaire établi dans l'Union européenne, sans que cette sous-traitance n'altère la responsabilité de Bellajour envers le client. Le délai de livraison court à compter de la validation de la maquette ; il est porté à la connaissance du client avant la commande (estimation : 10 à 15 jours ouvrés selon la charge de production) et n'excède pas 30 jours, sauf accord exprès du client, conformément à l'article 9.º du DL 24/2014.` },
+          { kind: 'p', value: `10.1 Livraison à l'adresse indiquée par le client. La fabrication est confiée à un imprimeur partenaire établi dans l'Union européenne, sans que cette sous-traitance n'altère la responsabilité de Bellajour envers le client. Le délai de livraison court à compter de la validation de la maquette ; il est porté à la connaissance du client avant la commande (estimation : 10 jours, soit 3 jours ouvrés de fabrication puis 3 à 7 jours d'acheminement) et n'excède pas 30 jours, sauf accord exprès du client, conformément à l'article 9.º du DL 24/2014.` },
           { kind: 'p', value: `10.2 Transfert du risque. Les risques de perte ou de détérioration sont transférés au consommateur au moment de la réception physique du bien (par lui ou par un tiers qu'il désigne, distinct du transporteur), conformément à l'article 20 de la directive 2011/83/UE et au DL 24/2014. Le risque n'est jamais transféré à la remise au transporteur.` },
           { kind: 'p', value: `10.3 Achat-cadeau : le consommateur au sens des présentes Conditions est l'acheteur, qui exerce les garanties et reçoit les communications, même si l'album est livré à un tiers bénéficiaire.` },
           { kind: 'p', value: `10.4 Livraisons hors UE : des droits de douane et taxes à l'importation peuvent s'appliquer à la charge du destinataire, selon les règles du pays de destination.` },
@@ -230,8 +271,10 @@ export const CGV: LocalizedDoc = {
           { kind: 'table', columns: [`Paramètre`, `Valeur`], rows: [
             [`Type`, `Livre photo relié, imprimé à la commande`],
             [`Format`, `Portrait A4 — 210 × 297 mm`],
-            [`Reliure`, `Agrafée à 20 pages, dos carré collé de 24 à ${PAGES_MAX_PUBLIC} pages, couverture souple 250 g`],
-            [`Pagination — Offre Atelier`, `${PAGES_MIN} pages min. — ${PAGES_MAX_PUBLIC} pages max. (nombre de pages pair obligatoire ; 22 pages non proposé)`],
+            [`Reliure`, `Dos carré collé, de ${PAGES_MIN} à ${PAGES_MAX_PUBLIC} pages, couverture souple 250 g`],
+            [`Papier`, `Intérieur : couché brillant (Machine Coated Gloss) ${GRAMMAGE_INTERIEUR_GSM} g/m². Couverture : couché satiné 250 g/m².`],
+            [`Finition de couverture`, `Pelliculage au choix du client, brillant ou mat, sans supplément de prix. À défaut de choix exprimé avant le paiement : brillant.`],
+            [`Pagination — Offre Atelier`, `${PAGES_MIN} pages min. — ${PAGES_MAX_PUBLIC} pages max. (nombre de pages pair obligatoire)`],
             [`Pagination — Prévente (13/06–15/08/2026)`, `30 pages min. — 200 pages max. (nombre de pages pair obligatoire)`],
             [`Couverture`, `Illustrée, unique, générée par IA dans un style propre à la marque`],
             [`Impression`, `Quadrichromie, 300 DPI, profil colorimétrique FOGRA 39`],
@@ -246,9 +289,16 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Spécifications des fichiers fournis par le client` },
           { kind: 'p', value: `Résolution minimum : 800 × 800 pixels. En deçà du seuil, la photo est rejetée ou rétrogradée vers un emplacement plus petit. Un écart colorimétrique normal existe entre l'affichage écran (RVB) et l'impression papier ; il ne constitue pas un défaut.` },
           { kind: 'p', value: `Formats de fichiers acceptés : JPEG, PNG, HEIC, HEIF, WebP.` },
-          { kind: 'h3', text: `Grille tarifaire — Offre Atelier (en vigueur depuis le 10/09/2026)` },
-          { kind: 'p', value: `Grille applicable à toute commande passée via l'Atelier (article 4 bis). Prix fermes, affichés en euros, toutes taxes comprises, impression comprise. La livraison, dans la zone définie à l'article 4bis.6, est facturée en sus au tarif porté à la connaissance du client avant tout paiement (article 4bis.4). Le prix est déterminé par le nombre de pages composé par l'atelier, jamais saisi par le client.` },
-          { kind: 'table', columns: [`Pagination composée`, `Prix TTC, hors livraison`], rows: GRILLE_PUBLIQUE.map((g) => [`${g.pages} pages`, `${g.euros} €`]) },
+          { kind: 'h3', text: `Grille tarifaire — Offre Atelier (en vigueur depuis le ${CGV_DATE})` },
+          { kind: 'p', value: `Grille applicable à toute commande passée via l'Atelier (article 4 bis). Prix hors taxes, par nombre de pages composé par l'atelier, jamais saisi par le client. Le prix payé est ce prix hors taxes majoré de la TVA du pays de livraison, arrondi à l'euro (article 4.1) ; la colonne de droite indique, à titre de référence, le prix toutes taxes comprises pour une livraison en France (TVA 20 %). L'impression est comprise ; la livraison est facturée en sus selon l'article 4bis.11.` },
+          { kind: 'table', columns: [`Pagination composée`, `Prix HT`, `Prix TTC, livraison en France`], rows: GRILLE_PUBLIQUE.map((g) => [`${g.pages} pages`, euros(g.htCentimes, true), `${g.euros} €`]) },
+          { kind: 'h3', text: `Frais de livraison — Offre Atelier` },
+          { kind: 'table', columns: [`Zone`, `Pays`, `Frais TTC par commande`], rows: [
+            [`A`, PAYS_ZONE_A_FR, euros(ZONES_PORT.A.centimes)],
+            [`B`, PAYS_ZONE_B_FR, euros(ZONES_PORT.B.centimes)],
+            [`C`, `Autres pays de la zone de livraison (article 4bis.6)`, `Chiffrés pour le pays et le colis, avant paiement`],
+          ] },
+          { kind: 'p', value: `Livraison offerte dès ${euros(FRANCO_CENTIMES)} TTC de magazines dans une même commande (article 4bis.11). Exemplaires : le 2e à −${REMISE_DEUXIEME_PCT} %, le 3e et les suivants à −${REMISE_SUIVANTS_PCT} % (article 4bis.10).` },
           { kind: 'h3', text: `Grille tarifaire — Prévente (commandes du 13/06 au 15/08/2026)` },
           { kind: 'p', value: `Grille close, conservée pour les seules commandes de prévente (article 5). Prix catalogue standard, hors offre promotionnelle, affichés en euros, toutes taxes comprises. TVA appliquée au taux du pays de résidence du consommateur (régime OSS-Union) après le seuil des 10 000 € de chiffre d'affaires.` },
           { kind: 'table', columns: [`Pagination`, `Prix TTC`], rows: [
@@ -264,7 +314,7 @@ export const CGV: LocalizedDoc = {
   },
   pt: {
     title: `Condições gerais de venda`,
-    lastUpdated: `Versão 3.1 — Em vigor em 10/09/2026`,
+    lastUpdated: `Versão 4.0 — Em vigor em ${CGV_DATE}`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `Texto de referência (versão portuguesa), juridicamente prevalecente. As traduções para francês e inglês são meramente informativas; em caso de divergência, prevalece o presente texto português.`,
@@ -300,7 +350,7 @@ export const CGV: LocalizedDoc = {
           {
             kind: 'p',
             value: [
-              `3.1 Descrição. O álbum Bellajour é um livro encadernado de capa dura, impresso em alta definição no formato retrato, composto por uma capa ilustrada única (gerada por IA), uma paginação composta por algoritmo sob controlo humano e uma versão digital HD incluída. As características técnicas detalhadas (formato, paginação, papel, acabamentos) e a tabela de preços por escalão de páginas constam da `,
+              `3.1 Descrição. O álbum Bellajour é um livro de fotografias encadernado de capa mole, impresso em alta definição no formato retrato A4, composto por uma capa ilustrada única (gerada por IA), uma paginação composta por algoritmo sob controlo humano e uma versão digital HD incluída. As características técnicas detalhadas (formato, paginação, papel, acabamentos) e a tabela de preços sem IVA por número de páginas constam da `,
               { text: `Ficha de Produto`, href: `#fiche-produit` },
               `, documento anexo às presentes e reproduzido em anexo abaixo. Este documento faz parte integrante do contrato na versão em vigor à data da encomenda (art. 13.º).`,
             ],
@@ -312,13 +362,9 @@ export const CGV: LocalizedDoc = {
       {
         heading: `Artigo 4.º — Preços, IVA e faturação`,
         blocks: [
-          { kind: 'p', value: `4.1 Preços com impostos incluídos. Os preços são exibidos em euros, com todos os impostos incluídos. O preço do álbum depende do escalão de paginação escolhido, de acordo com a grelha tarifária constante da Ficha de Produto. O número de páginas é definido à medida.` },
-          { kind: 'p', value: `4.2 Transparência — sem custos ocultos. O preço com impostos exibido antes da validação é completo; nenhum custo é acrescentado após a validação da encomenda. Fora do período de pré-venda, os portes eventuais são indicados claramente antes da validação da encomenda. No âmbito da pré-venda, os portes são oferecidos.` },
-          { kind: 'p', value: `4.3 Regime de IVA. A Bellajour encontra-se enquadrada no regime normal de IVA em Portugal. Para as vendas a consumidores (B2C):` },
-          { kind: 'list', items: [
-            `enquanto não for ultrapassado o limiar de 10 000 € anuais de vendas à distância intracomunitárias, aplica-se o IVA português à taxa normal em vigor (23 % no Continente; 22 % na Madeira; 16 % nos Açores);`,
-            `a partir desse limiar, aplica-se o IVA do país de residência do consumidor, declarado pela Bellajour através do regime do balcão único (OSS-União) ou, se for caso disso, mediante registo direto no Estado-Membro em causa.`,
-          ] },
+          { kind: 'p', value: `4.1 Preços sem IVA e preço exibido. A grelha tarifária da Ficha de Produto é estabelecida sem IVA, por número de páginas. O preço pago pelo cliente é esse preço sem IVA acrescido do IVA à taxa normal do país de entrega, arredondado ao euro mais próximo; é exibido em euros, com todos os impostos incluídos, antes de qualquer pagamento. O número de páginas é definido à medida pelo atelier. A título de referência, a Ficha de Produto reproduz a coluna com IVA incluído para uma entrega em França.` },
+          { kind: 'p', value: `4.2 Transparência — sem custos ocultos. O preço com impostos exibido antes da validação é completo; nenhum custo é acrescentado após a validação da encomenda. Fora do período de pré-venda, os custos de entrega são indicados claramente antes da validação da encomenda, nos termos do artigo 4.º-A.11. No âmbito da pré-venda, os portes são oferecidos.` },
+          { kind: 'p', value: `4.3 Regime de IVA. A Bellajour encontra-se enquadrada no regime normal de IVA em Portugal. As vendas a consumidores (B2C) entregues num Estado-Membro da União Europeia estão sujeitas ao IVA do Estado-Membro de entrega, declarado pela Bellajour através do regime do balcão único (OSS-União) ou, se for caso disso, mediante registo direto no Estado-Membro em causa. Para uma entrega no Reino Unido, o preço exibido é calculado com IVA de 20 %. Para uma entrega na Suíça, na Noruega, nos Estados Unidos ou no Brasil, nenhum IVA da União é acrescentado ao preço sem IVA; os direitos, impostos e IVA de importação eventualmente devidos no país de destino ficam a cargo do cliente (artigo 10.4).` },
           { kind: 'p', value: `A taxa efetivamente aplicada a cada encomenda consta da fatura.` },
           { kind: 'p', value: `4.4 Exigibilidade e faturação do adiantamento. O IVA é exigível no momento do recebimento, incluindo no recebimento do adiantamento. No recebimento do adiantamento é emitida uma fatura com o descritivo «Adiantamento sobre a encomenda [n.º]», pelo montante efetivamente pago. Em caso de reembolso, é emitida uma nota de crédito (nunca uma fatura negativa). Os documentos são emitidos através de programa de faturação certificado pela Autoridade Tributária, com ATCUD e código QR.` },
           { kind: 'p', value: `4.5 Erro manifesto de preço. Uma encomenda a preço manifestamente errado (lapso grosseiro de exibição) pode ser anulada pela Bellajour; o cliente é informado e integralmente reembolsado.` },
@@ -329,14 +375,14 @@ export const CGV: LocalizedDoc = {
         heading: `Artigo 4.º-A — Encomendas efetuadas através do Atelier (oferta em vigor)`,
         blocks: [
           { kind: 'p', value: `4.º-A.1 Âmbito. O presente artigo rege as encomendas efetuadas através do Atelier em bellajour.fr, único modo de encomenda aberto desde 24 de agosto de 2026. Os artigos 5.º e 5.º-A respeitam exclusivamente às encomendas de pré-venda efetuadas entre 13 de junho e 15 de agosto de 2026.` },
-          { kind: 'p', value: `4.º-A.2 Percurso de encomenda. O cliente preenche um questionário, carrega as suas fotografias e recebe, no prazo de 48 horas, uma pré-visualização da sua capa numa página pessoal acessível por hiperligação única enviada por correio eletrónico. Nenhuma quantia é solicitada antes de essa pré-visualização e o preço firme lhe terem sido dados a conhecer.` },
+          { kind: 'p', value: `4.º-A.2 Percurso de encomenda. O cliente preenche um questionário (a ocasião, a sua história, o título do seu número, os seus contactos e o país de entrega), carrega as suas fotografias e recebe, no prazo de 48 horas, uma pré-visualização da sua capa numa página pessoal acessível por hiperligação única enviada por correio eletrónico. Essa página apresenta o preço firme, calculado segundo a paginação composta e o país de entrega, bem como os custos de entrega; o cliente pode aí alterar o país de entrega e o número de exemplares antes de pagar. Nenhuma quantia é solicitada antes de essa pré-visualização e o preço firme lhe terem sido dados a conhecer. Após o pagamento, o atelier compõe a maquete completa e submete-a ao cliente na mesma página; o cliente pode pedir ajustamentos, sem custos, ou validar a maquete, o que torna a encomenda definitiva (artigo 8.3). Uma maquete que não tenha recebido validação nem pedido de ajustamento nos 7 dias seguintes à sua disponibilização considera-se validada, após lembrete por correio eletrónico. Um processo deixado sem seguimento (fotografias não carregadas, ou pré-visualização não encomendada) é conservado durante 90 dias a contar do carregamento; as fotografias são depois eliminadas, após aviso prévio por correio eletrónico enviado 7 dias antes.` },
           { kind: 'p', value: `4.º-A.3 Pagamento integral, sem adiantamento. A encomenda efetuada através do Atelier não dá lugar a qualquer adiantamento, reserva ou crédito (Instants). O preço é pago de uma só vez no momento da encomenda.` },
           {
             kind: 'p',
             value: [
-              `4.º-A.4 Preço segundo a paginação. O preço é determinado pelo número de páginas efetivamente composto pelo atelier, de acordo com a grelha «Oferta Atelier» constante da `,
+              `4.º-A.4 Preço segundo a paginação e o país de entrega. O preço de um exemplar é determinado pelo número de páginas efetivamente composto pelo atelier, de acordo com a grelha sem IVA «Oferta Atelier» constante da `,
               { text: `Ficha de Produto`, href: `#fiche-produit` },
-              `. É firme, exibido com todos os impostos incluídos e inclui a impressão. Os custos de entrega são faturados adicionalmente; o seu montante, com todos os impostos incluídos, é dado a conhecer ao cliente antes de qualquer pagamento, juntamente com o preço. O número de páginas não é escolhido nem introduzido pelo cliente: resulta do número e da qualidade das fotografias carregadas e é-lhe comunicado juntamente com o preço antes de qualquer pagamento.`,
+              `, acrescido do IVA do país de entrega e arredondado ao euro (artigo 4.1). É firme, exibido com todos os impostos incluídos e inclui a impressão. Os custos de entrega são faturados adicionalmente nos termos do artigo 4.º-A.11; o seu montante, com todos os impostos incluídos, é dado a conhecer ao cliente antes de qualquer pagamento, juntamente com o preço. O número de páginas não é escolhido nem introduzido pelo cliente: resulta do número e da qualidade das fotografias carregadas e é-lhe comunicado juntamente com o preço antes de qualquer pagamento.`,
             ],
           },
           { kind: 'h3', text: `O que inclui uma encomenda Atelier` },
@@ -345,13 +391,15 @@ export const CGV: LocalizedDoc = {
             `A capa ilustrada à medida`,
             `A paginação composta por algoritmo sob controlo humano`,
             `A versão digital HD (artigo 1.2)`,
-            `A impressão. A entrega, efetuada na zona definida em 4.º-A.6, é faturada adicionalmente (artigo 4.º-A.4)`,
+            `A impressão. A entrega, efetuada na zona definida em 4.º-A.6, é faturada adicionalmente (artigo 4.º-A.11)`,
           ] },
           { kind: 'p', value: `4.º-A.5 Nenhuma vantagem de pré-venda está associada a uma encomenda Atelier: nem Instants, nem páginas oferecidas, nem bónus de indicação. A imputação de um crédito de pré-venda rege-se pelo artigo 5.º-A.` },
-          { kind: 'p', value: `4.º-A.6 Zona de entrega. As encomendas Atelier são entregues nos países da União Europeia, no Reino Unido, na Suíça e na Noruega. O país de entrega é indicado pelo cliente antes do pagamento; os custos de entrega são calculados para esse país e dados a conhecer ao cliente antes de qualquer pagamento (artigo 4.º-A.4). O endereço de entrega é recolhido no momento do pagamento pelo prestador de pagamento, apenas nesse país; nenhum país fora desta zona é proposto e nenhuma encomenda pode aí ser entregue. Para os países fora da União Europeia, os eventuais direitos e impostos de importação ficam a cargo do cliente. Esta zona pode ser alargada ou reduzida; afere-se à data da encomenda.` },
-          { kind: 'p', value: `4.º-A.7 Prazo de entrega. O prazo conta-se a partir da validação da maquete. Estima-se em 10 dias e não excede, em caso algum, 30 dias, nos termos do artigo 10.1 e do artigo 9.º do DL 24/2014.` },
+          { kind: 'p', value: `4.º-A.6 Zona de entrega. As encomendas Atelier são entregues nos países da União Europeia, no Reino Unido, na Suíça, na Noruega, nos Estados Unidos e no Brasil. O país de entrega é indicado pelo cliente no questionário e pode ser alterado até ao pagamento; o preço e os custos de entrega são calculados para esse país e dados a conhecer ao cliente antes de qualquer pagamento (artigos 4.º-A.4 e 4.º-A.11). O endereço de entrega é recolhido no momento do pagamento pelo prestador de pagamento, apenas nesse país; nenhum país fora desta zona é proposto e nenhuma encomenda pode aí ser entregue. Para os países fora da União Europeia, os eventuais direitos e impostos de importação ficam a cargo do cliente. Esta zona pode ser alargada ou reduzida; afere-se à data da encomenda.` },
+          { kind: 'p', value: `4.º-A.7 Prazo de entrega. O prazo conta-se a partir da validação da maquete. Estima-se em 10 dias (3 dias úteis de fabrico e 3 a 7 dias de transporte), aos quais acrescem, para as entregas fora da União Europeia, os eventuais prazos de desalfandegamento, e não excede, em caso algum, 30 dias, nos termos do artigo 10.1 e do artigo 9.º do DL 24/2014.` },
           { kind: 'p', value: `4.º-A.8 Caixas prévias ao pagamento. Antes de qualquer pagamento, o cliente assinala duas caixas distintas, não assinaladas por defeito e com registo de data e hora: (i) a aceitação das presentes Condições; (ii) o reconhecimento, na aceção do artigo 8.5, de que o seu álbum é manifestamente personalizado e de que o seu direito de livre resolução se extinguirá com a validação da maquete, nos termos do artigo 8.3. O pagamento é tecnicamente impossível enquanto ambas as caixas não estiverem assinaladas e registadas.` },
-          { kind: 'p', value: `4.º-A.9 Faculdade de reembolso até à maquete. Não obstante o pagamento integral, e nos termos dos artigos 8.2 e 8.3, o cliente conserva, até à validação da sua maquete, a faculdade de obter o reembolso integral das quantias pagas, sem retenção, sem encargos e sem penalização. Esta faculdade extingue-se com a validação da maquete, que torna a encomenda definitiva.` },
+          { kind: 'p', value: `4.º-A.9 Faculdade de reembolso até à maquete. Não obstante o pagamento integral, e nos termos dos artigos 8.2 e 8.3, o cliente conserva, até à validação da sua maquete, a faculdade de obter o reembolso integral das quantias pagas, custos de entrega incluídos, sem retenção, sem encargos e sem penalização. Esta faculdade extingue-se com a validação da maquete, que torna a encomenda definitiva.` },
+          { kind: 'p', value: `4.º-A.10 Exemplares. O cliente pode encomendar, a partir da sua página de encomenda e antes do pagamento, de 1 a ${QUANTITE_MAX} exemplares idênticos do mesmo número. O primeiro exemplar é faturado ao preço do artigo 4.º-A.4; o segundo beneficia de um desconto de ${REMISE_DEUXIEME_PCT} % sobre esse preço; o terceiro e cada um dos seguintes de um desconto de ${REMISE_SUIVANTS_PCT} %. Estes descontos incidem apenas sobre o preço da revista, nunca sobre os custos de entrega, e são aplicados automaticamente; o detalhe consta do resumo da encomenda e da fatura. Os exemplares de uma mesma encomenda são expedidos em conjunto.` },
+          { kind: 'p', value: `4.º-A.11 Custos de entrega. Cada revista é fabricada por encomenda, sem stock. Os custos de entrega, com todos os impostos incluídos e idênticos qualquer que seja o número de exemplares, são os seguintes: zona A, ${euros(ZONES_PORT.A.centimes)} (${PAYS_ZONE_A_PT}); zona B, ${euros(ZONES_PORT.B.centimes)} (${PAYS_ZONE_B_PT}); zona C, para os restantes países da zona de entrega (incluindo Suíça, Noruega, Chipre, Malta e Brasil), a tarifa da expedição com seguimento é calculada para o país e a encomenda em causa e dada a conhecer ao cliente antes de qualquer pagamento. A entrega é oferecida a partir de ${euros(FRANCO_CENTIMES)} com IVA de revistas numa mesma encomenda, deduzidos os descontos do artigo 4.º-A.10. O detalhe por zona consta da Ficha de Produto e da página Entrega do sítio.` },
         ],
       },
       {
@@ -427,7 +475,7 @@ export const CGV: LocalizedDoc = {
       {
         heading: `Artigo 10.º — Entrega, transferência do risco e segurança do produto (GPSR)`,
         blocks: [
-          { kind: 'p', value: `10.1 Entrega na morada indicada pelo cliente. O fabrico é confiado a um impressor parceiro estabelecido na União Europeia, sem que esta subcontratação altere a responsabilidade da Bellajour perante o cliente. O prazo de entrega conta-se a partir da validação da maquete; é dado a conhecer ao cliente antes da encomenda (estimativa: 10 a 15 dias úteis consoante a carga de produção) e não excede 30 dias, salvo acordo expresso do cliente, nos termos do artigo 9.º do DL 24/2014.` },
+          { kind: 'p', value: `10.1 Entrega na morada indicada pelo cliente. O fabrico é confiado a um impressor parceiro estabelecido na União Europeia, sem que esta subcontratação altere a responsabilidade da Bellajour perante o cliente. O prazo de entrega conta-se a partir da validação da maquete; é dado a conhecer ao cliente antes da encomenda (estimativa: 10 dias, ou seja, 3 dias úteis de fabrico e 3 a 7 dias de transporte) e não excede 30 dias, salvo acordo expresso do cliente, nos termos do artigo 9.º do DL 24/2014.` },
           { kind: 'p', value: `10.2 Transferência do risco. Os riscos de perda ou deterioração transferem-se para o consumidor no momento da receção física do bem (por si ou por terceiro que designe, distinto da transportadora), nos termos do artigo 20.º da Diretiva 2011/83/UE e do DL 24/2014. O risco nunca se transfere com a entrega à transportadora.` },
           { kind: 'p', value: `10.3 Compra-presente: o consumidor na aceção das presentes Condições é o comprador, que exerce as garantias e recebe as comunicações, ainda que o álbum seja entregue a um terceiro beneficiário.` },
           { kind: 'p', value: `10.4 Entregas fora da UE: podem aplicar-se direitos aduaneiros e impostos de importação a cargo do destinatário, segundo as regras do país de destino.` },
@@ -470,8 +518,10 @@ export const CGV: LocalizedDoc = {
           { kind: 'table', columns: [`Parâmetro`, `Valor`], rows: [
             [`Tipo`, `Livro de fotografias encadernado, impresso por encomenda`],
             [`Formato`, `Retrato A4 — 210 × 297 mm`],
-            [`Encadernação`, `Agrafada a 20 páginas, lombada colada de 24 a ${PAGES_MAX_PUBLIC} páginas, capa mole 250 g`],
-            [`Paginação — Oferta Atelier`, `mín. ${PAGES_MIN} páginas — máx. ${PAGES_MAX_PUBLIC} páginas (número de páginas obrigatoriamente par; 22 páginas não proposto)`],
+            [`Encadernação`, `Lombada colada, de ${PAGES_MIN} a ${PAGES_MAX_PUBLIC} páginas, capa mole 250 g`],
+            [`Papel`, `Interior: couché brilhante (Machine Coated Gloss) ${GRAMMAGE_INTERIEUR_GSM} g/m². Capa: couché acetinado 250 g/m².`],
+            [`Acabamento da capa`, `Plastificação à escolha do cliente, brilhante ou mate, sem custo adicional. Na ausência de escolha expressa antes do pagamento: brilhante.`],
+            [`Paginação — Oferta Atelier`, `mín. ${PAGES_MIN} páginas — máx. ${PAGES_MAX_PUBLIC} páginas (número de páginas obrigatoriamente par)`],
             [`Paginação — Pré-venda (13/06–15/08/2026)`, `mín. 30 páginas — máx. 200 páginas (número de páginas obrigatoriamente par)`],
             [`Capa`, `Ilustrada, única, gerada por IA num estilo próprio da marca`],
             [`Impressão`, `Quadricromia, 300 DPI, perfil colorimétrico FOGRA 39`],
@@ -486,9 +536,16 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Especificações dos ficheiros fornecidos pelo cliente` },
           { kind: 'p', value: `Resolução mínima: 800 × 800 píxeis. Abaixo deste limiar, a fotografia é rejeitada ou remetida para um espaço mais pequeno. Existe uma diferença de cor normal entre a exibição no ecrã (RGB) e a impressão em papel; esta não constitui um defeito.` },
           { kind: 'p', value: `Formatos de ficheiro aceites: JPEG, PNG, HEIC, HEIF, WebP.` },
-          { kind: 'h3', text: `Grelha tarifária — Oferta Atelier (em vigor desde 10/09/2026)` },
-          { kind: 'p', value: `Grelha aplicável a qualquer encomenda efetuada através do Atelier (artigo 4.º-A). Preços firmes, exibidos em euros, com todos os impostos incluídos, impressão incluída. A entrega, na zona definida no artigo 4.º-A.6, é faturada adicionalmente à tarifa dada a conhecer ao cliente antes de qualquer pagamento (artigo 4.º-A.4). O preço é determinado pelo número de páginas composto pelo atelier, nunca introduzido pelo cliente.` },
-          { kind: 'table', columns: [`Paginação composta`, `Preço c/ IVA, sem entrega`], rows: GRILLE_PUBLIQUE.map((g) => [`${g.pages} páginas`, `${g.euros} €`]) },
+          { kind: 'h3', text: `Grelha tarifária — Oferta Atelier (em vigor desde ${CGV_DATE})` },
+          { kind: 'p', value: `Grelha aplicável a qualquer encomenda efetuada através do Atelier (artigo 4.º-A). Preços sem IVA, por número de páginas composto pelo atelier, nunca introduzido pelo cliente. O preço pago é esse preço sem IVA acrescido do IVA do país de entrega, arredondado ao euro (artigo 4.1); a coluna da direita indica, a título de referência, o preço com IVA incluído para uma entrega em França (IVA 20 %). A impressão está incluída; a entrega é faturada adicionalmente nos termos do artigo 4.º-A.11.` },
+          { kind: 'table', columns: [`Paginação composta`, `Preço s/ IVA`, `Preço c/ IVA, entrega em França`], rows: GRILLE_PUBLIQUE.map((g) => [`${g.pages} páginas`, euros(g.htCentimes, true), `${g.euros} €`]) },
+          { kind: 'h3', text: `Custos de entrega — Oferta Atelier` },
+          { kind: 'table', columns: [`Zona`, `Países`, `Custo c/ IVA por encomenda`], rows: [
+            [`A`, PAYS_ZONE_A_PT, euros(ZONES_PORT.A.centimes)],
+            [`B`, PAYS_ZONE_B_PT, euros(ZONES_PORT.B.centimes)],
+            [`C`, `Restantes países da zona de entrega (artigo 4.º-A.6)`, `Calculados para o país e a encomenda, antes do pagamento`],
+          ] },
+          { kind: 'p', value: `Entrega oferecida a partir de ${euros(FRANCO_CENTIMES)} c/ IVA de revistas numa mesma encomenda (artigo 4.º-A.11). Exemplares: o 2.º a −${REMISE_DEUXIEME_PCT} %, o 3.º e seguintes a −${REMISE_SUIVANTS_PCT} % (artigo 4.º-A.10).` },
           { kind: 'h3', text: `Grelha tarifária — Pré-venda (encomendas de 13/06 a 15/08/2026)` },
           { kind: 'p', value: `Grelha encerrada, conservada apenas para as encomendas de pré-venda (artigo 5.º). Preços de catálogo padrão, fora de oferta promocional, exibidos em euros, com todos os impostos incluídos. IVA aplicado à taxa do país de residência do consumidor (regime OSS-União) após o limiar de 10 000 € de volume de negócios.` },
           { kind: 'table', columns: [`Paginação`, `Preço c/ IVA`], rows: [
@@ -504,7 +561,7 @@ export const CGV: LocalizedDoc = {
   },
   en: {
     title: `Terms and Conditions of Sale`,
-    lastUpdated: `Version 3.1 — Effective 10/09/2026`,
+    lastUpdated: `Version 4.0 — Effective ${CGV_DATE}`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `English translation for information only. The legally prevailing version is the Portuguese text; in the event of any discrepancy, the Portuguese text prevails.`,
@@ -540,7 +597,7 @@ export const CGV: LocalizedDoc = {
           {
             kind: 'p',
             value: [
-              `3.1 Description. The Bellajour album is a hardcover bound book, printed in high definition in portrait format, comprising a unique illustrated cover (AI-generated), a layout composed by algorithm under human control, and an included HD digital version. The detailed technical specifications (format, pagination, paper, finishes) and the price list per page tier are set out in the `,
+              `3.1 Description. The Bellajour album is a softcover bound photo book, printed in high definition in A4 portrait format, comprising a unique illustrated cover (AI-generated), a layout composed by algorithm under human control, and an included HD digital version. The detailed technical specifications (format, pagination, paper, finishes) and the price list excluding VAT per page count are set out in the `,
               { text: `Product Sheet`, href: `#fiche-produit` },
               `, a document annexed to these Terms and reproduced in the annex below. This document forms an integral part of the contract in the version in force on the date of the order (Art. 13).`,
             ],
@@ -552,13 +609,9 @@ export const CGV: LocalizedDoc = {
       {
         heading: `Article 4 — Prices, VAT and invoicing`,
         blocks: [
-          { kind: 'p', value: `4.1 Prices inclusive of all taxes. Prices are displayed in euros, inclusive of all taxes. The album price depends on the chosen pagination tier, according to the price list set out in the Product Sheet. The number of pages is defined bespoke.` },
-          { kind: 'p', value: `4.2 Transparency — no hidden costs. The tax-inclusive price displayed before validation is complete; no cost is added after validation of the order. Outside the pre-sale period, any shipping costs are clearly indicated before order validation. During the pre-sale, shipping is free of charge.` },
-          { kind: 'p', value: `4.3 VAT regime. Bellajour is registered under the standard VAT regime in Portugal. For consumer (B2C) sales:` },
-          { kind: 'list', items: [
-            `until the €10,000 annual threshold of intra-EU distance sales is exceeded, Portuguese VAT at the standard rate in force applies (23% in mainland Portugal; 22% in Madeira; 16% in the Azores);`,
-            `beyond that threshold, the VAT of the consumer's country of residence applies, declared by Bellajour via the One-Stop Shop (OSS-Union) scheme or, where applicable, by direct registration in the Member State concerned.`,
-          ] },
+          { kind: 'p', value: `4.1 Prices excluding VAT and displayed price. The price list in the Product Sheet is set excluding VAT, per page count. The price paid by the customer is that price plus VAT at the standard rate of the delivery country, rounded to the nearest euro; it is displayed in euros, inclusive of all taxes, before any payment. The page count is defined bespoke by the atelier. For reference, the Product Sheet reproduces the tax-inclusive column for delivery to France.` },
+          { kind: 'p', value: `4.2 Transparency — no hidden costs. The tax-inclusive price displayed before validation is complete; no cost is added after validation of the order. Outside the pre-sale period, delivery costs are clearly indicated before order validation, in accordance with Article 4a.11. During the pre-sale, shipping is free of charge.` },
+          { kind: 'p', value: `4.3 VAT regime. Bellajour is registered under the standard VAT regime in Portugal. Consumer (B2C) sales delivered to a Member State of the European Union are subject to the VAT of the Member State of delivery, declared by Bellajour via the One-Stop Shop (OSS-Union) scheme or, where applicable, by direct registration in the Member State concerned. For delivery to the United Kingdom, the displayed price is calculated with 20% VAT. For delivery to Switzerland, Norway, the United States or Brazil, no EU VAT is added to the price excluding VAT; any duties, taxes and import VAT due in the destination country remain payable by the customer (Article 10.4).` },
           { kind: 'p', value: `The rate actually applied to each order appears on the invoice.` },
           { kind: 'p', value: `4.4 Chargeability and invoicing of the deposit. VAT is chargeable upon receipt, including upon receipt of the deposit. Upon receipt of the deposit, an invoice is issued with the description "Deposit on order [no.]", for the amount actually paid. In the event of a refund, a credit note is issued (never a negative invoice). Documents are issued via invoicing software certified by the Tax Authority, with ATCUD and QR code.` },
           { kind: 'p', value: `4.5 Manifest pricing error. An order at a manifestly incorrect price (gross display error) may be cancelled by Bellajour; the customer is informed and fully refunded.` },
@@ -569,14 +622,14 @@ export const CGV: LocalizedDoc = {
         heading: `Article 4a — Orders placed through the Atelier (offer in force)`,
         blocks: [
           { kind: 'p', value: `4a.1 Scope. This Article governs orders placed through the Atelier on bellajour.fr, the only ordering channel open since 24 August 2026. Articles 5 and 5a concern exclusively the pre-sale orders placed between 13 June and 15 August 2026.` },
-          { kind: 'p', value: `4a.2 Ordering journey. The customer completes a questionnaire, uploads their photographs, and within 48 hours receives a preview of their cover on a personal page accessible via a unique link sent by email. No amount is requested before that preview and the firm price have been brought to their attention.` },
+          { kind: 'p', value: `4a.2 Ordering journey. The customer completes a questionnaire (the occasion, their story, the title of their issue, their contact details and delivery country), uploads their photographs, and within 48 hours receives a preview of their cover on a personal page accessible via a unique link sent by email. That page shows the firm price, calculated from the composed page count and the delivery country, together with the delivery costs; the customer may change their delivery country and the number of copies there before paying. No amount is requested before that preview and the firm price have been brought to their attention. After payment, the atelier composes the full proof and submits it to the customer on the same page; the customer may request adjustments, free of charge, or validate the proof, which makes the order definitive (Article 8.3). A proof that has received neither validation nor an adjustment request within 7 days of being made available is deemed validated, after an email reminder. A file left without follow-up (photographs not uploaded, or preview not ordered) is kept for 90 days from the upload; its photographs are then deleted, after email notice sent 7 days beforehand.` },
           { kind: 'p', value: `4a.3 Payment in full, no deposit. An order placed through the Atelier gives rise to no deposit, no reservation and no credit (Instants). The price is paid in a single instalment at the time of the order.` },
           {
             kind: 'p',
             value: [
-              `4a.4 Price according to pagination. The price is determined by the number of pages actually composed by the atelier, according to the "Atelier offer" price list set out in the `,
+              `4a.4 Price according to pagination and delivery country. The price of one copy is determined by the number of pages actually composed by the atelier, according to the "Atelier offer" price list excluding VAT set out in the `,
               { text: `Product Sheet`, href: `#fiche-produit` },
-              `. It is firm, displayed inclusive of all taxes, and includes printing. Delivery costs are invoiced in addition; their amount, inclusive of all taxes, is made known to the customer before any payment, together with the price. The page count is neither chosen nor entered by the customer: it results from the number and quality of the photographs uploaded, and is communicated to them together with the price before any payment.`,
+              `, plus the VAT of the delivery country, rounded to the euro (Article 4.1). It is firm, displayed inclusive of all taxes, and includes printing. Delivery costs are invoiced in addition in accordance with Article 4a.11; their amount, inclusive of all taxes, is made known to the customer before any payment, together with the price. The page count is neither chosen nor entered by the customer: it results from the number and quality of the photographs uploaded, and is communicated to them together with the price before any payment.`,
             ],
           },
           { kind: 'h3', text: `What an Atelier order includes` },
@@ -585,13 +638,15 @@ export const CGV: LocalizedDoc = {
             `The bespoke illustrated cover`,
             `The layout composed by algorithm under human control`,
             `The HD digital version (Article 1.2)`,
-            `Printing. Delivery, within the zone defined in 4a.6, is invoiced in addition (Article 4a.4)`,
+            `Printing. Delivery, within the zone defined in 4a.6, is invoiced in addition (Article 4a.11)`,
           ] },
           { kind: 'p', value: `4a.5 No pre-sale benefit attaches to an Atelier order: no Instants, no free pages, no referral bonus. The crediting of a pre-sale credit is governed by Article 5a.` },
-          { kind: 'p', value: `4a.6 Delivery zone. Atelier orders are delivered to the countries of the European Union, the United Kingdom, Switzerland and Norway. The delivery country is indicated by the customer before payment; delivery costs are quoted for that country and made known to the customer before any payment (Article 4a.4). The delivery address is collected at the time of payment by the payment provider, in that country only; no country outside this zone is offered and no order may be delivered there. For countries outside the European Union, any import duties and taxes remain payable by the customer. This zone may be extended or reduced; it is assessed as at the date of the order.` },
-          { kind: 'p', value: `4a.7 Delivery time. Time runs from validation of the proof. It is estimated at 10 days and shall in no event exceed 30 days, in accordance with Article 10.1 and Article 9 of DL 24/2014.` },
+          { kind: 'p', value: `4a.6 Delivery zone. Atelier orders are delivered to the countries of the European Union, the United Kingdom, Switzerland, Norway, the United States and Brazil. The delivery country is indicated by the customer in the questionnaire and may be changed until payment; the price and delivery costs are calculated for that country and made known to the customer before any payment (Articles 4a.4 and 4a.11). The delivery address is collected at the time of payment by the payment provider, in that country only; no country outside this zone is offered and no order may be delivered there. For countries outside the European Union, any import duties and taxes remain payable by the customer. This zone may be extended or reduced; it is assessed as at the date of the order.` },
+          { kind: 'p', value: `4a.7 Delivery time. Time runs from validation of the proof. It is estimated at 10 days (3 business days of manufacturing, then 3 to 7 days in transit), plus any customs clearance time for deliveries outside the European Union, and shall in no event exceed 30 days, in accordance with Article 10.1 and Article 9 of DL 24/2014.` },
           { kind: 'p', value: `4a.8 Checkboxes preceding payment. Before any payment, the customer ticks two separate checkboxes, unticked by default and timestamped: (i) acceptance of these Conditions; (ii) acknowledgement, within the meaning of Article 8.5, that their album is clearly personalised and that their right of withdrawal will be extinguished upon validation of the proof, in accordance with Article 8.3. Payment is technically impossible until both boxes are ticked and timestamped.` },
-          { kind: 'p', value: `4a.9 Right to a refund until the proof. Notwithstanding payment in full, and in accordance with Articles 8.2 and 8.3, the customer retains, until validation of their proof, the right to obtain a full refund of the amounts paid, with no deduction, no charge and no penalty. This right is extinguished upon validation of the proof, which makes the order definitive.` },
+          { kind: 'p', value: `4a.9 Right to a refund until the proof. Notwithstanding payment in full, and in accordance with Articles 8.2 and 8.3, the customer retains, until validation of their proof, the right to obtain a full refund of the amounts paid, delivery costs included, with no deduction, no charge and no penalty. This right is extinguished upon validation of the proof, which makes the order definitive.` },
+          { kind: 'p', value: `4a.10 Copies. The customer may order, from their order page and before payment, 1 to ${QUANTITE_MAX} identical copies of the same issue. The first copy is invoiced at the price of Article 4a.4; the second benefits from a ${REMISE_DEUXIEME_PCT}% discount on that price; the third and each subsequent copy from a ${REMISE_SUIVANTS_PCT}% discount. These discounts apply to the magazine price only, never to delivery costs, and are applied automatically; the breakdown appears on the order summary and on the invoice. Copies in the same order are shipped together.` },
+          { kind: 'p', value: `4a.11 Delivery costs. Each magazine is made to order, without stock. Delivery costs, inclusive of all taxes and identical whatever the number of copies, are as follows: zone A, ${eurosEn(ZONES_PORT.A.centimes)} (${PAYS_ZONE_A_EN}); zone B, ${eurosEn(ZONES_PORT.B.centimes)} (${PAYS_ZONE_B_EN}); zone C, for the other countries of the delivery zone (including Switzerland, Norway, Cyprus, Malta and Brazil), the tracked shipping rate is quoted for the country and parcel concerned and made known to the customer before any payment. Delivery is free from ${eurosEn(FRANCO_CENTIMES)} inclusive of all taxes of magazines in the same order, after the discounts of Article 4a.10. The breakdown by zone is set out in the Product Sheet and on the site's Delivery page.` },
         ],
       },
       {
@@ -667,7 +722,7 @@ export const CGV: LocalizedDoc = {
       {
         heading: `Article 10 — Delivery, transfer of risk and product safety (GPSR)`,
         blocks: [
-          { kind: 'p', value: `10.1 Delivery to the address indicated by the customer. Manufacturing is entrusted to a partner printer established in the European Union, without this subcontracting altering Bellajour's liability towards the customer. The delivery time runs from validation of the proof; it is made known to the customer before the order (estimate: 10 to 15 business days depending on production load) and does not exceed 30 days, save express agreement of the customer, in accordance with Article 9 of DL 24/2014.` },
+          { kind: 'p', value: `10.1 Delivery to the address indicated by the customer. Manufacturing is entrusted to a partner printer established in the European Union, without this subcontracting altering Bellajour's liability towards the customer. The delivery time runs from validation of the proof; it is made known to the customer before the order (estimate: 10 days, i.e. 3 business days of manufacturing then 3 to 7 days in transit) and does not exceed 30 days, save express agreement of the customer, in accordance with Article 9 of DL 24/2014.` },
           { kind: 'p', value: `10.2 Transfer of risk. The risks of loss or deterioration transfer to the consumer at the time of physical receipt of the goods (by the consumer or a third party they designate, other than the carrier), in accordance with Article 20 of Directive 2011/83/EU and DL 24/2014. Risk is never transferred upon handover to the carrier.` },
           { kind: 'p', value: `10.3 Gift purchase: the consumer within the meaning of these Terms is the buyer, who exercises the guarantees and receives communications, even if the album is delivered to a third-party beneficiary.` },
           { kind: 'p', value: `10.4 Deliveries outside the EU: customs duties and import taxes may apply at the recipient's expense, according to the rules of the destination country.` },
@@ -710,8 +765,10 @@ export const CGV: LocalizedDoc = {
           { kind: 'table', columns: [`Parameter`, `Value`], rows: [
             [`Type`, `Bound photo book, printed on demand`],
             [`Format`, `Portrait A4 — 210 × 297 mm`],
-            [`Binding`, `Saddle-stitched at 20 pages, perfect-bound from 24 to ${PAGES_MAX_PUBLIC} pages, 250 g soft cover`],
-            [`Pagination — Atelier offer`, `min. ${PAGES_MIN} pages — max. ${PAGES_MAX_PUBLIC} pages (page count must be even; 22 pages not offered)`],
+            [`Binding`, `Perfect-bound, from ${PAGES_MIN} to ${PAGES_MAX_PUBLIC} pages, 250 g soft cover`],
+            [`Paper`, `Inside pages: gloss coated (Machine Coated Gloss) ${GRAMMAGE_INTERIEUR_GSM} gsm. Cover: silk coated 250 gsm.`],
+            [`Cover finish`, `Lamination chosen by the customer, gloss or matte, at no extra cost. If no choice is made before payment: gloss.`],
+            [`Pagination — Atelier offer`, `min. ${PAGES_MIN} pages — max. ${PAGES_MAX_PUBLIC} pages (page count must be even)`],
             [`Pagination — Pre-sale (13/06–15/08/2026)`, `min. 30 pages — max. 200 pages (page count must be even)`],
             [`Cover`, `Illustrated, unique, AI-generated in a style specific to the brand`],
             [`Printing`, `Four-colour (CMYK), 300 DPI, FOGRA 39 colour profile`],
@@ -726,9 +783,16 @@ export const CGV: LocalizedDoc = {
           { kind: 'h3', text: `Specifications for customer-provided files` },
           { kind: 'p', value: `Minimum resolution: 800 × 800 pixels. Below this threshold, the photo is rejected or downgraded to a smaller slot. A normal colour difference exists between on-screen display (RGB) and paper printing; this does not constitute a defect.` },
           { kind: 'p', value: `Accepted file formats: JPEG, PNG, HEIC, HEIF, WebP.` },
-          { kind: 'h3', text: `Price list — Atelier offer (in force since 10/09/2026)` },
-          { kind: 'p', value: `Price list applicable to any order placed through the Atelier (Article 4a). Firm prices, displayed in euros, inclusive of all taxes, printing included. Delivery, within the zone defined in Article 4a.6, is invoiced in addition at the rate made known to the customer before any payment (Article 4a.4). The price is determined by the page count composed by the atelier, never entered by the customer.` },
-          { kind: 'table', columns: [`Composed pagination`, `Price incl. VAT, excl. delivery`], rows: GRILLE_PUBLIQUE.map((g) => [`${g.pages} pages`, `€${g.euros}`]) },
+          { kind: 'h3', text: `Price list — Atelier offer (in force since ${CGV_DATE})` },
+          { kind: 'p', value: `Price list applicable to any order placed through the Atelier (Article 4a). Prices excluding VAT, per page count composed by the atelier, never entered by the customer. The price paid is that price plus the VAT of the delivery country, rounded to the euro (Article 4.1); the right-hand column shows, for reference, the tax-inclusive price for delivery to France (20% VAT). Printing is included; delivery is invoiced in addition in accordance with Article 4a.11.` },
+          { kind: 'table', columns: [`Composed pagination`, `Price excl. VAT`, `Price incl. VAT, delivery to France`], rows: GRILLE_PUBLIQUE.map((g) => [`${g.pages} pages`, eurosEn(g.htCentimes, true), `€${g.euros}`]) },
+          { kind: 'h3', text: `Delivery costs — Atelier offer` },
+          { kind: 'table', columns: [`Zone`, `Countries`, `Cost incl. VAT per order`], rows: [
+            [`A`, PAYS_ZONE_A_EN, eurosEn(ZONES_PORT.A.centimes)],
+            [`B`, PAYS_ZONE_B_EN, eurosEn(ZONES_PORT.B.centimes)],
+            [`C`, `Other countries of the delivery zone (Article 4a.6)`, `Quoted for the country and parcel, before payment`],
+          ] },
+          { kind: 'p', value: `Free delivery from ${eurosEn(FRANCO_CENTIMES)} incl. VAT of magazines in the same order (Article 4a.11). Copies: the 2nd at −${REMISE_DEUXIEME_PCT}%, the 3rd and following at −${REMISE_SUIVANTS_PCT}% (Article 4a.10).` },
           { kind: 'h3', text: `Price list — Pre-sale (orders from 13/06 to 15/08/2026)` },
           { kind: 'p', value: `Closed price list, retained for pre-sale orders only (Article 5). Standard catalogue prices, excluding promotional offers, displayed in euros, inclusive of all taxes. VAT applied at the rate of the consumer's country of residence (OSS-Union scheme) after the €10,000 turnover threshold.` },
           { kind: 'table', columns: [`Pagination`, `Price incl. VAT`], rows: [

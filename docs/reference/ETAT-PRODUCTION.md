@@ -1,4 +1,4 @@
-# État du système — au 15/09/2026 (soir)
+# État du système — au 16/09/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -7,6 +7,48 @@ règles, sans moyen de savoir ce qui avait expiré.
 
 Règle d'entretien : quiconque change l'état du système met ce fichier à jour dans le même geste.
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
+
+---
+
+## 16/09/2026 — le modèle de prix v3 : grille HT, zones de port, exemplaires (SUR BRANCHE)
+
+**Pas encore en production.** Branche `feat/prix-ht-zones-exemplaires` (qui embarque la PR #131,
+finition), prête, vérifiée en local ; **elle attend DEUX migrations que Mathias applique lui-même,
+dans cet ordre, AVANT la fusion** : `20260911_atelier_finition.sql` puis
+`20260916_atelier_exemplaires_prix_ht.sql`. Les écritures de `finition` et de `quantite` ne se
+replient pas (un repli imprimerait brillant à qui a cliqué mat, un exemplaire à qui en a payé
+trois) : fusionner avant, c'est déployer deux boutons qui rendent 500 sur `/numero`.
+
+**Ce que la branche porte (tableur « Prix & Marge v3 » de Mathias du 15/09, validé par Louis) :**
+
+| Ce qui change | Où |
+|---|---|
+| Grille HORS TAXES, 24 à 60 pages, dos carré seul (l'agrafé archivé) ; TTC = HT × TVA du pays arrondi à l'euro (24 p. : 24 € FR, 25 € PT, 24 € DE, 20 € US) ; la colonne France du tableur reproduite au centime par le harnais | `grille.ts`, `pays.ts` (`TAUX_TVA_PAYS`), `archive/grille-ttc-unique-2026-09/`, `archive/agrafe-2026-09/` |
+| Le HT se gèle avec le TTC (`prix_ht_centimes`) ; le TTC se recalcule quand le client change de pays | `prix.ts` (`ttcPourPays`), `transitions.ts`, `/api/atelier/livraison` |
+| Le pays REVIENT à l'écran 4 (retiré le 11/09 : le prix en dépend désormais) | `questionnaire.ts`, `Screen4Contact.tsx`, `/api/atelier/numero` |
+| Zones de port TTC : A 5 € (FR DE ES NL PL GB BE AT CZ HU), B 13 € (IT IE SE DK RO LU PT FI GR US), C au devis du jour ; offerte dès 50 € de magazines ; le BRUT gelé, le seuil rejoué à la lecture ; plafond archivé | `livraison.ts` (`ZONES_PORT`, `FRANCO_CENTIMES`, `portClient`), `archive/livraison-plafond-2026-09/` |
+| 1 à 10 exemplaires sur le bon de commande, 2e −30 %, suivants −50 % ; une ligne Stripe par rang ; `count` Cloudprinter | `exemplaires.ts`, `numeros.quantite`, `CasesEtCommande.tsx`, `checkout/route.ts`, `impression.ts` |
+| États-Unis et Brésil ouverts (indicatifs +1, +55) ; Royaume-Uni à 20 % (décision du 15/09, « la TVA du pays ») ; CH, NO, US, BR à 0, douane au client | `pays.ts`, `impression.ts` |
+| Papier intérieur `pageblock_130mcg` (gloss : port FR 6,46 € HT au lieu de 9,22, re-devisé le 16/09) ; `SHIPPING_LEVEL = cp_ground` | `impression.ts` |
+| CGV v4.0 FR/PT/EN (4.1 HT + TVA du pays, 4.3 OSS, 4bis.2 le fonctionnement complet de l'atelier, 4bis.10 exemplaires, 4bis.11 livraison, délais 10 jours = 3 ouvrés + 3 à 7, annexe dérivée) ; page `/livraison` (+ `/pt`, `/en`) ; remboursement v3.1 (remboursement Atelier port compris) ; mentions v1.1 (zone) | `src/app/legal/content/*`, `src/app/livraison/`, pieds de page, sitemap |
+| Le repli d'écriture retire UNE colonne à la fois (celle que PostgREST nomme) ; les mails ont un repli intermédiaire sans les colonnes du 16/09 | `transition/route.ts`, `mails.ts` |
+
+**Vérifié en local le 16/09** (dossier de test `test-prix-ht@example.com`, supprimé ensuite) :
+écran 4 avec 32 pays, France présélectionnée ; publication 36 pages FR → 41 € TTC, 3400 HT,
+zone A 5 €, devis gloss Colissimo 6,46 € HT ; bon de commande « plus que 9 € et la livraison est
+offerte », total 46 € ; changement de pays → Portugal : 42 €, 13 €, total 55 € ; session Stripe
+TEST créée à 55 € (`allowed_countries = [PT]`, « Livraison suivie, Portugal », métadonnées
+`quantite`, `livraison_zone`), non payée ; `PATCH quantite=3` rend un 500 franc tant que la
+migration manque, `quantite=11` un 400. tsc, lint (0 erreur), build verts ; harnais 1018 ok.
+**Non vérifié** : le sélecteur d'exemplaires et les trois lignes Stripe sur une base migrée
+(impossible avant la migration) ; les captures d'écran (le volet navigateur restait masqué).
+
+**Ce qui attend Mathias** : les deux migrations ; l'immatriculation OSS dans Stripe Tax (la TVA
+reste à 0 sur les reçus jusque-là, le TTC encaissé est le nôtre) ; la question du Royaume-Uni à
+20 % sans immatriculation UK (portée à Louis) ; les `.docx` v4.0 dans `legal-source/` ; un mot
+dans M3 sur la livraison offerte dès 50 € (template Brevo, accord à part). Le relevé complet des
+coûts de zone C, du pas de pagination et des délais Cloudprinter est dans
+`docs/reference/SPECS-CLOUDPRINTER.md` (section du 16/09).
 
 ---
 
@@ -158,13 +200,15 @@ dossier, et la page produit ne garde que l'accroche. Six PR le même jour, toute
 | ce qui est branché | où | preuve |
 |---|---|---|
 | Un prix TTC par pagination exacte : 20 p. = 25 €, puis 24 → 60 p. par pas de 2, de 27 à 59 € | `src/lib/atelier/grille.ts` (source unique, tout en dérive) | harnais : forme de la table, bornes, reliure |
-| Prix GELÉ à la publication de l'aperçu : `prix_centimes`, `livraison_centimes`, `livraison_niveau`, `pays_livraison` | migration `20260910_atelier_prix_gele.sql`, `centimesDuDossier` (prix.ts) | **migration NON APPLIQUÉE au 10/09** : le code marche avant et après (42703 / PGRST204, `colonnes_perdues_42703` au journal) |
+| Prix GELÉ à la publication de l'aperçu : `prix_centimes`, `livraison_centimes`, `livraison_niveau`, `pays_livraison` | migration `20260910_atelier_prix_gele.sql`, `centimesDuDossier` (prix.ts) | **migration APPLIQUÉE — vérifié en base le 11/09** (les quatre colonnes existent). Cette ligne a dit le contraire pendant une journée : le code marchait des deux côtés (42703 / PGRST204), donc rien ne le démentait à l'écran |
 | Pays de livraison demandé à l'écran 4, exigé à la publication | `pays.ts`, `questionnaire.ts`, `Screen4Contact.tsx`, `PanneauAction.tsx` | vu à 375 px ; `pays_livraison_divergent` au journal si l'adresse Stripe diffère |
 | Fondateur rattaché à la main (email différent de la prévente) | `/api/admin/atelier/fondateur-rattacher`, `numeroFondateurDuDossier` | harnais (le dernier rattachement gagne) ; jamais éprouvé contre Stripe |
 | Livraison par devis `prices/lookup` à la publication, HT → TTC au taux du pays (règle commerciale, à valider), plafond `LIVRAISON_PLAFOND_CENTIMES = null`, niveau d'expédition gelé et repris par la commande | `livraison.ts`, `cloudprinter.ts` (`devisLivraison`), `transition/route.ts`, `impression.ts` | fixtures réelles `scripts/fixtures/cloudprinter-devis*.json` ; harnais |
 | Stripe : `shipping_options` fixe au montant gelé, `allowed_countries = [pays]`, port à 0 « Livraison offerte, fondateur » quand le crédit s'applique, description « impression comprise » | `api/atelier/checkout/route.ts` | aucun paiement de test réel passé le 10/09 |
 | Bon de commande à quatre lignes (numéro, impression comprise, livraison, crédit, à payer), mails M3/M3b/M10 avec `LIVRAISON`, `LIVRAISON_OFFERTE`, `TOTAL` | `CasesEtCommande.tsx`, `mails.ts`, `scripts/mails-atelier.mjs` | **templates Brevo NON POUSSÉS** : `verif-mails-brevo` signale l'écart tant que Mathias ne lance pas `--pousser` |
-| CGV v3.1 FR/PT/EN : prix selon la pagination, livraison en sus, annexe dérivée de la grille | `src/app/legal/content/cgv.ts` | `/cgv`, `/pt/cgv`, `/en/cgv` en production ; `legal-source/*.docx` en retard |
+| CGV v3.2 FR/PT/EN : prix selon la pagination, livraison en sus, annexe dérivée de la grille, **couverture SOUPLE (l'art. 3.1 disait « rigide » depuis toujours), papier nommé, finition au choix** | `src/app/legal/content/cgv.ts` | annexe relue à l'écran sur `/cgv` le 11/09 ; `legal-source/*.docx` en retard de deux versions |
+| Références d'impression arrêtées : intérieur `pageblock_130mcs`, couverture `cover_250mcs`, pelliculage **au choix du client** (`finish_gloss` / `cover_finish_matte`), sans supplément | `impression.ts` (`PAPIER_INTERIEUR`, `FINITION_OPTION`), `numeros.finition`, `CasesEtCommande.tsx` | relevé `products/info` + `prices/lookup` du 11/09 (`SPECS-CLOUDPRINTER.md`) ; harnais ; bon de commande relu à l'écran sur un dossier réel |
+| Géométrie du dos calculée depuis le papier, et la largeur d'une couverture enveloppante enfin JUGÉE au contrôle PDF | `dosMmPourPages`, `largeurCouvertureMm`, `verdictTaillePage` (4ᵉ argument), `PanneauAction.tsx` | harnais : 24 p → 2,40 mm · 32 p → 2,87 · 50 p → 3,93, les valeurs de la doc Cloudprinter |
 | Page produit : accroche « Dès 25 € » + phrase, les trois encarts archivés | `Kiosque.tsx`, `pdp.css`, `archive/pdp-trois-formats/` | 375 × 667 : bouton dans le premier écran ; 1280 : prix visible |
 
 ### Ce que le devis réel a appris (clé sandbox de `.env.local`)
@@ -178,8 +222,14 @@ dossier, et la page produit ne garde que l'accroche. Six PR le même jour, toute
 
 ### Ce qui attend Mathias
 
-1. Appliquer `20260910_atelier_prix_gele.sql`, puis vérifier sur un aperçu de test que
-   `prix_centimes`, `livraison_centimes`, `livraison_niveau`, `pays_livraison` se remplissent.
+1. ⚠️ **Appliquer `20260911_atelier_finition.sql` AVANT de déployer** (colonne `numeros.finition`).
+   C'est la seule migration du dépôt dont l'ÉCRITURE ne se replie pas, et c'est voulu : un repli
+   ferait imprimer brillant à qui a cliqué mat, en silence, sur un objet fabriqué. Sans elle, le
+   choix de finition rend un 500 (les logs nomment la migration) ; tout le reste de la page
+   fonctionne, et les dossiers partent en brillant comme avant. Après l'avoir passée, vérifier
+   que la colonne se remplit VRAIMENT en cliquant « Mate » sur un dossier de test — le revers du
+   repli a déjà mordu deux fois.
+   (`20260910_atelier_prix_gele.sql` est appliquée : vérifié en base le 11/09.)
 2. Le plafond de livraison (`LIVRAISON_PLAFOND_CENTIMES`, `src/lib/atelier/livraison.ts`).
 3. La règle HT → TTC de la livraison (`TAUX_TTC_LIVRAISON`), avec le comptable.
 4. Pousser M3, M3b, M10 vers Brevo ; retoucher M4 (non versionné) dans Brevo.

@@ -29,6 +29,8 @@ export default function Footer() {
             <span className="footer-sep" aria-hidden="true">&middot;</span>
             <Link href="/cgv" prefetch={false} className="footer-link">CGV</Link>
             <span className="footer-sep" aria-hidden="true">&middot;</span>
+            <Link href="/livraison" prefetch={false} className="footer-link">Livraison</Link>
+            <span className="footer-sep" aria-hidden="true">&middot;</span>
             <Link href="/remboursement" prefetch={false} className="footer-link">Remboursement</Link>
             <span className="footer-sep" aria-hidden="true">&middot;</span>
             <Link href="/ambassadeurs/espace" prefetch={false} className="footer-link footer-link--amb">

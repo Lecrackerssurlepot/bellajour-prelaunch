@@ -32,6 +32,13 @@ import {
   adresseCloudprinter,
   payloadCommande,
   produitPour,
+  finitionDuDossier,
+  dosMmPourPages,
+  largeurCouvertureMm,
+  FINITION_LIBELLE,
+  FINITION_OPTION,
+  PAPIER_COUVERTURE,
+  PAPIER_INTERIEUR,
   EMAIL_CONTACT,
   SHIPPING_LEVEL,
   SLOTS_IMPRESSION,
@@ -40,10 +47,13 @@ import {
 import { PAGES_MAX, PAGES_MIN } from "@/lib/atelier/grille";
 import { cloudprinterConfigure, creerCommande, devisLivraison, infoCommande } from "@/lib/atelier/cloudprinter";
 import {
-  livraisonClient,
+  portClient,
+  zonePour,
   ttcDepuisHt,
-  LIVRAISON_PLAFOND_CENTIMES,
+  FRANCO_CENTIMES,
 } from "@/lib/atelier/livraison";
+import { quantiteDuDossier } from "@/lib/atelier/exemplaires";
+import { centimesDuDossier, totalPour } from "@/lib/atelier/prix";
 import {
   ACTIONS,
   preparerTransition,
@@ -105,6 +115,14 @@ export async function POST(request: Request) {
       livraison_centimes?: number | null;
       pays_livraison?: string | null;
       livraison_niveau?: string | null;
+      /* Le pelliculage choisi par le client (migration 20260911). Même
+         régime : absent tant qu'elle n'est pas passée, et `finitionDuDossier`
+         retombe alors sur le brillant — ce qui est exactement ce qui a été
+         imprimé jusqu'au 11/09, donc aucun dossier ne change d'objet. */
+      finition?: string | null;
+      /* Le HT gelé et les exemplaires (migration 20260916). Même régime. */
+      prix_ht_centimes?: number | null;
+      quantite?: number | null;
     };
 
     const CHAMPS_BASE =
@@ -118,9 +136,26 @@ export async function POST(request: Request) {
     const lireLigne = (champs: string) =>
       supabase.from("numeros").select(champs).eq("token", token).maybeSingle<LigneNumero>();
 
+    /* Trois niveaux, du plus complet au plus ancien — même échelle que
+       `lireNumeros` (donnees.ts) : la finition (20260911), puis le prix gelé
+       (20260910), puis le socle. Chaque niveau ne coûte un aller-retour de
+       plus que dans la fenêtre où SA migration manque, et perdre la finition
+       ne doit pas faire perdre le prix avec elle. */
+    const CHAMPS_PRIX = "prix_centimes, livraison_centimes, pays_livraison, livraison_niveau";
+    /* Les colonnes du 16/09 (le HT gelé et les exemplaires), avec LEUR niveau
+       de repli, au-dessus de la finition : sans elles, un exemplaire et le
+       TTC gelé, comme avant. */
+    const CHAMPS_EXEMPLAIRES = "prix_ht_centimes, quantite";
+
     let { data: lu, error: lecture } = await lireLigne(
-      `${CHAMPS_BASE}, prix_centimes, livraison_centimes, pays_livraison, livraison_niveau`,
+      `${CHAMPS_BASE}, ${CHAMPS_PRIX}, finition, ${CHAMPS_EXEMPLAIRES}`,
     );
+    if (lecture?.code === "42703") {
+      ({ data: lu, error: lecture } = await lireLigne(`${CHAMPS_BASE}, ${CHAMPS_PRIX}, finition`));
+    }
+    if (lecture?.code === "42703") {
+      ({ data: lu, error: lecture } = await lireLigne(`${CHAMPS_BASE}, ${CHAMPS_PRIX}`));
+    }
     if (lecture?.code === "42703") {
       ({ data: lu, error: lecture } = await lireLigne(CHAMPS_BASE));
     }
@@ -227,24 +262,30 @@ export async function POST(request: Request) {
        reçu (`livraison_centimes` + `livraison_niveau`), donc n'appelle plus
        personne. C'est ce qui tient le rationnement de leur API. */
     type Livraison = {
-      /* `client` (11/09/2026) = personne n'a chiffré ici, et c'est voulu : le
-         dossier n'a pas de pays, le client choisira le sien sur sa page et la
-         livraison sera devisée à cet instant, avant le paiement. Aucun appel
-         Cloudprinter, aucune colonne écrite. */
-      source: "admin" | "cloudprinter" | "echec" | "client";
+      /**
+       * D'où vient le montant :
+       *   zone         — le port fixe de la zone A ou B (livraison.ts) ;
+       *   offert       — le total des magazines atteint le seuil ;
+       *   cloudprinter — zone C, le devis du jour converti TTC ;
+       *   admin        — l'atelier a tapé un montant, il gagne ;
+       *   client       — pas de pays : le client choisira sur sa page ;
+       *   echec        — zone C sans devis : à saisir à la main.
+       */
+      source: "zone" | "offert" | "cloudprinter" | "admin" | "client" | "echec";
+      zone: "A" | "B" | "C" | null;
       niveau: string | null;
-      /** « Ground - Tracked » : la famille de service telle qu'ils la nomment. */
       service: string | null;
-      /** « Colissimo », « DPD - France » : ce que l'atelier reconnaît. */
       transporteur: string | null;
       niveauVouluAbsent: boolean;
       devisHtCentimes: number | null;
       devisTtcCentimes: number | null;
       client: number | null;
-      absorbe: number;
       raison?: string;
       /** Ce qui est DÉJÀ en base, pour que l'écran ne l'écrase pas sans le dire. */
       existant: number | null;
+      /** Le total des magazines (exemplaires compris) qui a décidé du seuil. */
+      totalProduitCentimes: number | null;
+      quantite: number;
     };
     let livraison: Livraison | null = null;
 
@@ -254,86 +295,89 @@ export async function POST(request: Request) {
       const produit = produitPour(pages);
       const existant =
         typeof numero.livraison_centimes === "number" ? numero.livraison_centimes : null;
+      const quantite = quantiteDuDossier(numero.quantite);
+      /* Le prix que ce geste GÈLE (transitions.ts), les exemplaires déjà
+         choisis par le client : c'est ce total qui décide du seuil. */
+      const unitaire =
+        typeof prepa.patch.prix_centimes === "number" ? prepa.patch.prix_centimes : centimesDuDossier(numero);
+      const totalProduit = unitaire === null ? null : totalPour(unitaire, quantite);
+      const vide = {
+        niveau: null, service: null, transporteur: null, niveauVouluAbsent: false,
+        devisHtCentimes: null, devisTtcCentimes: null, existant, totalProduitCentimes: totalProduit, quantite,
+      };
 
       if (!pays) {
         /* ── SANS PAYS, ON NE DEVISE PAS (11/09/2026) ──────────────────
-           Un devis se demande par destination : sans destination, il n'y a
-           rien à demander. On ne suppose pas « France » (le port d'un colis
-           allemand n'est pas celui d'un colis français) et on n'exige plus
-           de saisie : c'est le CLIENT qui choisira son pays sur sa page de
-           commande, et `/api/atelier/livraison` chiffrera à ce moment-là.
-           Rien n'entre dans le patch — ni pays, ni port : ce qui est déjà en
-           base y reste. */
-        livraison = {
-          source: "client", niveau: null, service: null, transporteur: null,
-          niveauVouluAbsent: false,
-          devisHtCentimes: null, devisTtcCentimes: null, client: null, absorbe: 0,
-          existant,
-        };
+           Le client choisira son pays sur sa page de commande, et
+           `/api/atelier/livraison` chiffrera à ce moment-là. Rien n'entre
+           dans le patch — ni pays, ni port : ce qui est déjà en base y reste. */
+        livraison = { ...vide, source: "client", zone: null, client: null };
       } else if ("livraison_centimes" in prepa.patch) {
         /* La main de l'atelier gagne, toujours, et sans appel réseau. */
         livraison = {
+          ...vide,
           source: "admin",
+          zone: zonePour(pays),
           niveau: typeof prepa.patch.livraison_niveau === "string" ? prepa.patch.livraison_niveau : null,
-          service: null,
-          transporteur: null,
-          niveauVouluAbsent: false,
-          devisHtCentimes: null,
-          devisTtcCentimes: null,
           client: prepa.patch.livraison_centimes as number,
-          absorbe: 0,
-          existant,
         };
       } else if (!produit) {
         /* Sans produit (pagination hors grille), `preparerTransition` a déjà
            refusé plus haut : ce chemin ne devrait pas exister. Ceinture. */
-        livraison = {
-          source: "echec", niveau: null, service: null, transporteur: null,
-          niveauVouluAbsent: false,
-          devisHtCentimes: null, devisTtcCentimes: null, client: null, absorbe: 0,
-          raison: "aucun produit d'impression pour cette pagination", existant,
-        };
+        livraison = { ...vide, source: "echec", zone: zonePour(pays), client: null, raison: "aucun produit d'impression pour cette pagination" };
       } else {
-        const d = await devisLivraison({ pays, produit, pages: pages! });
-        if (!d.ok) {
+        /* ── LE DEVIS, POUR LE NIVEAU D'EXPÉDITION D'ABORD (16/09/2026) ──
+           En zone A et B le montant client est FIXE (livraison.ts) : le
+           devis ne sert qu'à geler le service exact que la commande
+           reprendra, et son échec n'empêche pas de publier. En zone C, le
+           devis EST le prix : sans lui, saisie à la main. */
+        const zone = zonePour(pays);
+        const d = await devisLivraison({
+          pays,
+          produit,
+          pages: pages!,
+          finition: finitionDuDossier(numero.finition),
+          quantite,
+        });
+        const devisHt = d.ok ? d.devis.htCentimes : null;
+        const devisTtc = d.ok ? ttcDepuisHt(d.devis.htCentimes, pays) : null;
+        const port = portClient({
+          pays,
+          totalProduitCentimes: totalProduit ?? 0,
+          devisTtcCentimes: devisTtc,
+        });
+        const commun = {
+          ...vide,
+          zone,
+          niveau: d.ok ? d.devis.niveau : null,
+          service: d.ok ? d.devis.service : null,
+          transporteur: d.ok ? d.devis.transporteur : null,
+          niveauVouluAbsent: d.ok ? d.niveauVouluAbsent : false,
+          devisHtCentimes: devisHt,
+          devisTtcCentimes: devisTtc,
+        };
+        if (!port || port.source === "inconnu") {
           livraison = {
-            source: "echec", niveau: null, service: null, transporteur: null,
-            niveauVouluAbsent: false,
-            devisHtCentimes: null, devisTtcCentimes: null, client: null, absorbe: 0,
-            raison: d.message, existant,
+            ...commun,
+            source: "echec",
+            client: null,
+            raison: !d.ok ? d.message : `aucun taux connu pour ${pays}`,
           };
         } else {
-          const ttc = ttcDepuisHt(d.devis.htCentimes, pays);
-          if (ttc === null) {
-            /* Pays hors de la table des taux : on ne convertit pas au hasard. */
-            livraison = {
-              source: "echec", niveau: d.devis.niveau,
-              service: d.devis.service, transporteur: d.devis.transporteur,
-              niveauVouluAbsent: d.niveauVouluAbsent,
-              devisHtCentimes: d.devis.htCentimes, devisTtcCentimes: null,
-              client: null, absorbe: 0,
-              raison: `aucun taux connu pour ${pays || "ce pays"}`, existant,
-            };
-          } else {
-            const { client, absorbe } = livraisonClient(ttc);
-            livraison = {
-              source: "cloudprinter",
-              niveau: d.devis.niveau,
-              service: d.devis.service,
-              transporteur: d.devis.transporteur,
-              niveauVouluAbsent: d.niveauVouluAbsent,
-              devisHtCentimes: d.devis.htCentimes,
-              devisTtcCentimes: ttc,
-              client,
-              absorbe,
-              existant,
-            };
-            /* Le niveau CHIFFRÉ est gelé avec le montant : la commande
-               d'impression doit partir avec exactement ce service-là. */
-            prepa.patch.livraison_niveau = d.devis.niveau;
-            /* Le service et le transporteur ne sont pas des colonnes : ils
-               partent au journal, plus bas, par ce qu'on rend à l'écran. */
-          }
+          /* Le montant GELÉ est le brut (zone ou devis) : le seuil se rejoue
+             à la lecture, parce que le client peut encore changer le nombre
+             d'exemplaires. `source: "offert"` dit à l'atelier ce que le
+             client verra aujourd'hui. */
+          livraison = {
+            ...commun,
+            source: port.offert ? "offert" : port.source === "devis" ? "cloudprinter" : "zone",
+            client: port.brutCentimes,
+          };
+          /* Le niveau CHIFFRÉ est gelé avec le montant : la commande
+             d'impression doit partir avec exactement ce service-là. Sans
+             devis (zone A/B), rien n'est gelé et la commande partira sous
+             SHIPPING_LEVEL. */
+          if (d.ok) prepa.patch.livraison_niveau = d.devis.niveau;
         }
       }
     }
@@ -348,6 +392,18 @@ export async function POST(request: Request) {
       produit: string | null;
       produitLibelle: string | null;
       shippingLevel: string;
+      /* ── CE QUI SERA FABRIQUÉ, DIT AVANT LE CLIC (11/09/2026) ──────────
+         La confirmation annonçait la référence produit et le transporteur,
+         jamais la MATIÈRE. Or c'est elle qu'on ne peut plus rattraper : une
+         commande part, un objet se fabrique. Trois lignes de plus, toutes
+         dérivées (papier tranché, pelliculage du dossier, dos calculé) :
+         l'atelier relit ce qu'il achète, il ne le suppose pas. */
+      papier: { interieur: string; couverture: string };
+      finition: { cle: string; libelle: string };
+      /* L'épaisseur du dos, en mm — dos carré seulement (un agrafé n'en a
+         pas). C'est la cote dont dépend la largeur de la couverture
+         enveloppante déjà déposée : les deux doivent concorder. */
+      dos: { mm: number; largeurCouvertureMm: number } | null;
       fichiers: Array<{ type: string; cle: string; taille: number; md5: string }>;
       adresse: { nom: string; ville: string; pays: string } | null;
     } | null = null;
@@ -428,6 +484,20 @@ export async function POST(request: Request) {
            défaut. L'écran de confirmation ne doit pas annoncer `cp_saver`
            quand la commande partira en `cp_ground`. */
         shippingLevel: numero.livraison_niveau ?? SHIPPING_LEVEL,
+        papier: { interieur: PAPIER_INTERIEUR, couverture: PAPIER_COUVERTURE },
+        finition: {
+          cle: FINITION_OPTION[finitionDuDossier(numero.finition)],
+          libelle: FINITION_LIBELLE[finitionDuDossier(numero.finition)],
+        },
+        /* Les deux cotes voyagent ENSEMBLE, calculées ici : recalculer
+           « 2 × 213 + dos » dans l'écran recopierait le format fini et le
+           fond perdu à un deuxième endroit, et c'est ainsi que deux
+           géométries finissent par diverger. */
+        dos: (() => {
+          const mm = dosMmPourPages(numero.nb_pages);
+          const largeur = largeurCouvertureMm(numero.nb_pages);
+          return mm !== null && largeur !== null ? { mm, largeurCouvertureMm: largeur } : null;
+        })(),
         fichiers,
         adresse: adr.ok
           ? { nom: adr.adresse.firstname + " " + adr.adresse.lastname, ville: adr.adresse.city, pays: adr.adresse.country }
@@ -554,6 +624,11 @@ export async function POST(request: Request) {
           pages: numero.nb_pages!,
           fichiers: fichiersSignes,
           titre: numero.titre,
+          /* Le pelliculage CHOISI par le client sur sa page de commande. Le
+             repli sur le brillant est dans `payloadCommande` (interne, pour
+             que devis et commande le partagent) : ici on passe ce qu'on a. */
+          finition: finitionDuDossier(numero.finition),
+          quantite: quantiteDuDossier(numero.quantite),
         },
         /* Le niveau GELÉ au devis (`numeros.livraison_niveau`). `cp_saver`
            n'est pas proposé partout — relevé du 10/09 — donc commander sous
@@ -651,6 +726,7 @@ export async function POST(request: Request) {
        dossier, sous `colonnes_perdues_42703`, où il se relit dans six mois. */
     const COLONNES_FRAICHES: Record<string, string> = {
       prix_centimes: "supabase/migrations/20260910_atelier_prix_gele.sql",
+      prix_ht_centimes: "supabase/migrations/20260916_atelier_exemplaires_prix_ht.sql",
       livraison_centimes: "supabase/migrations/20260910_atelier_prix_gele.sql",
       pays_livraison: "supabase/migrations/20260910_atelier_prix_gele.sql",
       livraison_niveau: "supabase/migrations/20260910_atelier_prix_gele.sql",
@@ -659,26 +735,49 @@ export async function POST(request: Request) {
 
     const colonnesPerdues: string[] = [];
 
-    const ecrireAvecRepli = async (patch: Record<string, unknown>) => {
-      const premier = await ecrire(patch);
-      const code = premier.error?.code;
-      if (code !== "42703" && code !== "PGRST204") return premier;
+    /* ⚠️ UNE COLONNE À LA FOIS (16/09/2026). PostgREST NOMME la colonne qui
+       manque (« Could not find the 'prix_ht_centimes' column »). Retirer
+       d'un coup TOUTES les colonnes fraîches du patch, comme avant, faisait
+       perdre le prix et le port gelés (20260910, appliquée depuis le 10/09)
+       pour une seule colonne du 16/09 encore absente : prouvé en local le
+       16/09 sur un dossier de test. On retire donc la colonne nommée, on
+       réessaie, et on ne retombe sur le retrait en bloc que si le message ne
+       nomme rien. Au plus une tentative par colonne fraîche. */
+    const colonneNommee = (message: string | undefined): string | null => {
+      const m = /'([a-z_]+)' column/.exec(message ?? "");
+      return m && m[1] in COLONNES_FRAICHES ? m[1] : null;
+    };
 
-      const aRetirer = Object.keys(COLONNES_FRAICHES).filter((c) => c in patch);
-      /* Aucune colonne fraîche dans ce patch : l'erreur parle d'autre chose,
-         on la rend telle quelle plutôt que de réessayer à l'identique. */
-      if (aRetirer.length === 0) return premier;
+    const ecrireAvecRepli = async (patchInitial: Record<string, unknown>) => {
+      let patch = patchInitial;
+      let tentative = await ecrire(patch);
+      let restantes = Object.keys(COLONNES_FRAICHES).filter((c) => c in patch).length;
+      while (tentative.error && restantes > 0) {
+        const code = tentative.error.code;
+        if (code !== "42703" && code !== "PGRST204") return tentative;
 
-      const sansColonnes: Record<string, unknown> = { ...patch };
-      for (const c of aRetirer) delete sansColonnes[c];
-      colonnesPerdues.push(...aRetirer);
+        const nommee = colonneNommee(tentative.error.message);
+        const aRetirer = nommee
+          ? [nommee]
+          : Object.keys(COLONNES_FRAICHES).filter((c) => c in patch);
+        /* Aucune colonne fraîche dans ce patch : l'erreur parle d'autre chose,
+           on la rend telle quelle plutôt que de réessayer à l'identique. */
+        if (aRetirer.length === 0) return tentative;
 
-      console.error(
-        `[admin/transition] ⚠️ REPLI ${code} : ${aRetirer.join(", ")} absente(s) en base, la donnée n'est PAS enregistrée. ` +
-          `Appliquer ${[...new Set(aRetirer.map((c) => COLONNES_FRAICHES[c]))].join(" et ")}.`,
-        { numero: numero.id, geste: cle },
-      );
-      return ecrire(sansColonnes);
+        const sansColonnes: Record<string, unknown> = { ...patch };
+        for (const c of aRetirer) delete sansColonnes[c];
+        colonnesPerdues.push(...aRetirer);
+
+        console.error(
+          `[admin/transition] ⚠️ REPLI ${code} : ${aRetirer.join(", ")} absente(s) en base, la donnée n'est PAS enregistrée. ` +
+            `Appliquer ${[...new Set(aRetirer.map((c) => COLONNES_FRAICHES[c]))].join(" et ")}.`,
+          { numero: numero.id, geste: cle },
+        );
+        patch = sansColonnes;
+        restantes -= aRetirer.length;
+        tentative = await ecrire(patch);
+      }
+      return tentative;
     };
 
     const { data: maj, error } = await ecrireAvecRepli(prepa.patch);
@@ -717,9 +816,9 @@ export async function POST(request: Request) {
         source: republicationRetouches ? "republication_retouches" : "admin",
         ...prepa.resume,
         /* ── LE PORT, DANS LE RÉCIT DU DOSSIER ──────────────────────────
-           D'où vient le montant, quel service a été chiffré, ce que
-           l'imprimeur demandait HT, ce qu'on a affiché TTC, ce que Bellajour
-           a absorbé, et le plafond en vigueur ce jour-là. Six mois plus tard,
+           D'où vient le montant (zone, devis, seuil, main), quel service a
+           été chiffré, ce que l'imprimeur demandait HT, ce qu'on a affiché
+           TTC, et le seuil en vigueur ce jour-là. Six mois plus tard,
            « pourquoi ce dossier a-t-il payé 11,06 € de port ? » doit avoir une
            réponse ici, pas dans un log Vercel effacé au bout d'une heure. */
         ...(livraison
@@ -730,8 +829,10 @@ export async function POST(request: Request) {
               livraison_transporteur: livraison.transporteur,
               devis_ht_centimes: livraison.devisHtCentimes,
               devis_ttc_centimes: livraison.devisTtcCentimes,
-              livraison_absorbee: livraison.absorbe,
-              plafond: LIVRAISON_PLAFOND_CENTIMES,
+              livraison_zone: livraison.zone,
+              total_produit_centimes: livraison.totalProduitCentimes,
+              quantite: livraison.quantite,
+              franco_centimes: FRANCO_CENTIMES,
             }
           : {}),
         /* Ce que le repli a effacé, dans le RÉCIT du dossier et pas seulement

@@ -9,6 +9,8 @@
  * storage désactivé ne doit jamais casser le parcours — au pire on perd la reprise.
  */
 
+import { PAYS_DEFAUT } from '@/lib/atelier/pays'
+
 const KEY = 'atelier_draft_v1'
 
 export type Draft = {
@@ -30,12 +32,14 @@ export type Draft = {
   prenom: string
   email: string
   telephone: string
-  /* ⚠️ PLUS DE `pays` DEPUIS LE 11/09/2026 (décision de Mathias) : la
-     destination se choisit sur la page de commande, pas ici. Un brouillon
-     écrit entre le 10 et le 11/09 porte encore la clé : `loadDraft` fusionne
-     sur EMPTY_DRAFT, la clé surnuméraire est simplement recopiée et plus
-     personne ne la lit : ni l'écran 4, ni le POST, ni la route. Rien à
-     migrer, rien à effacer, aucun brouillon perdu. */
+  /* Le pays de livraison, écran 4. Parti le 11/09, REVENU le 15/09/2026 :
+     depuis la grille hors taxes, le prix TTC dépend du pays, et M3 doit
+     annoncer le vrai montant. Toujours une valeur : le select part sur
+     PAYS_DEFAUT, et un brouillon d'une version antérieure, qui n'a pas la
+     clé, fusionne sur ce même défaut par EMPTY_DRAFT. Personne ne retombe
+     sur un champ vide, et personne ne se voit imposer un pays en silence :
+     il est affiché, et modifiable jusqu'au paiement. */
+  pays: string
 
   /* Posé au retour de /api/atelier/numero (fin d'écran 4). Sa présence
      signifie « le dossier existe en base » : on ne le recrée jamais. */
@@ -58,6 +62,7 @@ export const EMPTY_DRAFT: Draft = {
   prenom: '',
   email: '',
   telephone: '',
+  pays: PAYS_DEFAUT,
   token: null,
   consentPhotos: false,
   consentCommunication: false,
@@ -89,10 +94,9 @@ export function loadDraft(): Draft {
 
     /* Fusion sur EMPTY_DRAFT : un brouillon d'une version antérieure à qui
        il manque un champ ne fait pas planter l'écran, il repart à vide.
-       Dans l'autre sens, un brouillon qui porte une clé DE TROP (`pays`,
-       10 au 11/09) la garde sans effet : aucun écran ne la lit, aucune
-       route ne la reçoit. La reprise ne casse ni dans un sens ni dans
-       l'autre, ce qui est tout ce qu'on lui demande. */
+       Un brouillon du 10 au 11/09 porte déjà `pays` : il est simplement
+       repris. La reprise ne casse ni dans un sens ni dans l'autre, ce qui
+       est tout ce qu'on lui demande. */
     return { ...EMPTY_DRAFT, ...parsed }
   } catch {
     return EMPTY_DRAFT

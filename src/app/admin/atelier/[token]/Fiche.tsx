@@ -1430,6 +1430,20 @@ export default function Fiche({
                         moyen de voir, avant de commander, qu'on achètera bien
                         ce qu'on a vendu. Absent = pas encore devisé, et le
                         checkout refusera le paiement. */}
+                    {/* ── LES EXEMPLAIRES (15/09/2026) ──
+                        Le nombre que le client a choisi sur son bon de
+                        commande : c'est `count` chez Cloudprinter. Un seul
+                        exemplaire ne se dit pas (c'est le cas normal) ; deux
+                        ou plus se lisent AVANT de lancer l'impression. */}
+                    {fiche.quantite > 1 ? (
+                      <>
+                        <dt>Exemplaires</dt>
+                        <dd>
+                          {fiche.quantite}{" "}
+                          <span className="ate-faint">choisis par le client, un seul colis</span>
+                        </dd>
+                      </>
+                    ) : null}
                     {fiche.livraisonCentimes !== null ? (
                       <>
                         <dt>Livraison</dt>

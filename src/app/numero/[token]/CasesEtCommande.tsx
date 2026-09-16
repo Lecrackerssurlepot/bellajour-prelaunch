@@ -43,6 +43,21 @@ import { PAYS_LIBELLE, PAYS_TRIES, PAYS_DEFAUT, paysValide } from '@/lib/atelier
    destinations hors Union, et elle sert à DIRE les droits de douane avant le
    paiement plutôt qu'à les découvrir à la livraison. */
 import { HORS_UE } from '@/lib/atelier/livraison'
+/* `impression.ts` est PUR (aucun import serveur, aucun secret) : ses tables
+   descendent dans le navigateur comme `pays.ts` et `grille.ts`. Le libellé ne
+   se recopie pas ici — une seule source pour le mot que le client lit, celui
+   que l'atelier voit et celui qui part au journal. */
+import { FINITION_LIBELLE, type Finition } from '@/lib/atelier/impression'
+/* La règle des exemplaires, PURE et sans montant : c'est elle que le serveur
+   applique au prix gelé. Ici on ne lit que les pourcentages et le maximum,
+   pour dessiner le sélecteur et sa légende. */
+import {
+  QUANTITE_MAX,
+  PHRASE_DEGRESSIF,
+  libelleLigne,
+  type Exemplaires,
+} from '@/lib/atelier/exemplaires'
+import { manquePourFranco } from '@/lib/atelier/livraison'
 import FeuilleAjustement from './FeuilleAjustement'
 
 type Props = {
@@ -66,9 +81,23 @@ type Props = {
   /* Le décompte, calculé PAR LE SERVEUR (`totalCommande`, livraison.ts) : ce
      composant n'additionne rien, il met en forme. Même invariant que le prix
      depuis toujours. */
-  commande: { prix: number; livraison: number; remise: number; total: number } | null
+  commande: {
+    prix: number
+    quantite: number
+    livraison: number
+    livraisonOfferte: boolean
+    remise: number
+    total: number
+  } | null
   /** Un fondateur ne paie ni son crédit ni son port. Décidé côté serveur. */
   portOffert: boolean
+  /* ── LES EXEMPLAIRES (15/09/2026, T-073 levé) ────────────────────────
+     La quantité du dossier, et le décompte ligne par ligne calculé PAR LE
+     SERVEUR (`decompteExemplaires`) : « Votre numéro », « 2e exemplaire,
+     −30 % », « N exemplaires suivants, −50 % chacun ». Le composant les met
+     en forme et envoie un nouveau nombre ; il n'additionne rien. */
+  quantite: number
+  exemplaires: Exemplaires | null
   cgvOk: boolean
   renonciation: boolean
   /* T2-8 — les deux temps de la promesse, calculés par la page depuis
@@ -82,11 +111,20 @@ type Props = {
      de contrôle ne doit ni ouvrir une session Stripe, ni cocher une case en
      base au nom du client, ni déposer une demande d'ajustement. */
   previsualisation?: boolean
+  /* ── LE PELLICULAGE, CHOISI ICI (11/09/2026) ──────────────────────────
+     Brillant ou mat, sans différence de prix : le relevé Cloudprinter du
+     11/09 donne un demi-centime d'écart sur un dos carré de 32 pages. Le
+     serveur descend la valeur du dossier, ou le défaut (`finitionDuDossier`).
+     C'est le SEUL paramètre d'impression que le client choisit lui-même —
+     le format, la reliure et le papier se déduisent de sa pagination. */
+  finition: Finition
 }
 
 export default function CasesEtCommande({
   token, nbPages, euros, livraisonCentimes, pays, prixCentimes, commande, portOffert,
-  cgvOk, renonciation, joursComposition, joursLivraison, previsualisation = false,
+  quantite, exemplaires,
+  cgvOk, renonciation, joursComposition, joursLivraison, finition,
+  previsualisation = false,
 }: Props) {
   const router = useRouter()
   const [cgv, setCgv] = useState(cgvOk)
@@ -95,6 +133,11 @@ export default function CasesEtCommande({
   const [occupe, setOccupe] = useState(false)
   const [confirmer, setConfirmer] = useState(false)
   const [feuille, setFeuille] = useState(false)
+  const [pellicule, setPellicule] = useState<Finition>(finition)
+  /* Le nombre d'exemplaires affiché sur le sélecteur. Il part de la valeur
+     du dossier et REVIENT à elle si l'enregistrement échoue. */
+  const [nombre, setNombre] = useState<number>(quantite)
+  const [changeNombre, setChangeNombre] = useState(false)
 
   const enregistrer = useCallback(
     async (champ: 'cgv_ok' | 'renonciation_retractation', valeur: boolean) => {
@@ -118,6 +161,66 @@ export default function CasesEtCommande({
       }
     },
     [token, previsualisation]
+  )
+
+  /* Le choix part tout de suite, comme les deux cases : l'écran bouge, la
+     requête suit, et un échec REVIENT en arrière avec une phrase. Une
+     finition affichée mais non enregistrée serait le pire des deux mondes —
+     le client croirait avoir choisi, et l'objet partirait autrement. */
+  const choisirFinition = useCallback(
+    async (valeur: Finition) => {
+      const precedent = pellicule
+      if (valeur === precedent) return
+      setPellicule(valeur)
+      setErreur(null)
+      /* Même désarmement que partout : en prévisualisation l'atelier REGARDE
+         la page du client, il ne choisit pas à sa place. */
+      if (previsualisation) return
+      try {
+        const r = await fetch('/api/atelier/numero', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, finition: valeur }),
+        })
+        if (!r.ok) throw new Error('patch')
+      } catch {
+        setPellicule(precedent)
+        setErreur('Votre choix de finition n’a pas pu être enregistré. Réessayez dans un instant.')
+      }
+    },
+    [token, pellicule, previsualisation]
+  )
+
+  /* ── CHOISIR LE NOMBRE D'EXEMPLAIRES (15/09/2026) ───────────────────
+     Même patron que la finition : l'écran bouge, la requête suit, un échec
+     REVIENT en arrière avec une phrase. Puis `router.refresh()` : la page
+     est SERVEUR, elle relit la ligne, rejoue le décompte (dégressif, seuil
+     de livraison offerte, total) par les mêmes fonctions pures que le
+     checkout, et redescend les props. Le navigateur n'additionne rien. */
+  const choisirNombre = useCallback(
+    async (valeur: number) => {
+      const precedent = nombre
+      if (valeur === precedent || valeur < 1 || valeur > QUANTITE_MAX) return
+      setNombre(valeur)
+      setErreur(null)
+      if (previsualisation) return
+      setChangeNombre(true)
+      try {
+        const r = await fetch('/api/atelier/numero', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, quantite: valeur }),
+        })
+        if (!r.ok) throw new Error('patch')
+        router.refresh()
+      } catch {
+        setNombre(precedent)
+        setErreur('Le nombre d’exemplaires n’a pas pu être enregistré. Réessayez dans un instant.')
+      } finally {
+        setChangeNombre(false)
+      }
+    },
+    [token, nombre, previsualisation, router]
   )
 
   const commander = useCallback(async () => {
@@ -195,6 +298,9 @@ export default function CasesEtCommande({
      n'est chiffré, et à la demande ensuite. */
   const choixOuvert = !portConnu || changer
   const douane = paysGele !== null && HORS_UE.includes(paysGele)
+  /* Ce qu'il manque pour la livraison offerte, sur le total des magazines
+     (remise déduite), jamais sur le port. Zéro = atteint. */
+  const manqueFranco = commande ? manquePourFranco(commande.prix) : null
 
   const calculerLivraison = useCallback(async () => {
     /* Même désarmement que le paiement et les cases : en prévisualisation,
@@ -260,13 +366,94 @@ export default function CasesEtCommande({
           `euros` vient toujours du serveur, jamais du navigateur. */}
       {magazineConnu ? (
         <div className="nu-bon">
-          <div className="nu-bon-l">
-            <span>Votre numéro, {nbPages} pages</span>
-            <b>{formaterCentimes(commande ? commande.prix : prixCentimes ?? 0)}</b>
-          </div>
+          {/* ── LES EXEMPLAIRES, LIGNE PAR LIGNE (15/09/2026) ──
+              Une ligne par rang, comme sur le reçu Stripe : le premier au
+              plein tarif, le deuxième à −30 %, les suivants à −50 %. Le
+              décompte vient du serveur ; ici on l'écrit. Un seul exemplaire =
+              une seule ligne, comme avant. */}
+          {exemplaires && exemplaires.lignes.length > 1 ? (
+            exemplaires.lignes.map((ligne) => (
+              <div className="nu-bon-l" key={ligne.rang}>
+                <span>
+                  {ligne.rang === 1 ? `Votre numéro, ${nbPages} pages` : libelleLigne(ligne)}
+                </span>
+                <b>{formaterCentimes(ligne.totalCentimes)}</b>
+              </div>
+            ))
+          ) : (
+            <div className="nu-bon-l">
+              <span>Votre numéro, {nbPages} pages</span>
+              <b>{formaterCentimes(commande ? commande.prix : prixCentimes ?? 0)}</b>
+            </div>
+          )}
           <div className="nu-bon-l">
             <span>Impression et façonnage</span>
             <b>compris</b>
+          </div>
+          {/* ── COMBIEN D'EXEMPLAIRES ──
+              Un sélecteur à deux boutons et un nombre, à sa place dans le bon
+              de commande : c'est un trait de la commande, comme la finition.
+              La légende dit la remise AVANT qu'on clique, et l'économie
+              réalisée quand il y en a une. Dix au plus (QUANTITE_MAX). */}
+          <div className="nu-bon-l nu-bon-l--choix">
+            <span id="nu-exemplaires-lbl">
+              Exemplaires
+              <small className="nu-bon-legende">{PHRASE_DEGRESSIF}</small>
+            </span>
+            <div className="nu-nombre" role="group" aria-labelledby="nu-exemplaires-lbl">
+              <button
+                type="button"
+                className="nu-nombre-b"
+                onClick={() => void choisirNombre(nombre - 1)}
+                disabled={previsualisation || changeNombre || nombre <= 1}
+                aria-label="Un exemplaire de moins"
+              >
+                −
+              </button>
+              <output className="nu-nombre-v" aria-live="polite">{nombre}</output>
+              <button
+                type="button"
+                className="nu-nombre-b"
+                onClick={() => void choisirNombre(nombre + 1)}
+                disabled={previsualisation || changeNombre || nombre >= QUANTITE_MAX}
+                aria-label="Un exemplaire de plus"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          {exemplaires && exemplaires.economieCentimes > 0 ? (
+            <p className="nu-bon-econ">
+              Vous économisez {formaterCentimes(exemplaires.economieCentimes)} sur
+              {' '}{exemplaires.quantite} exemplaires.
+            </p>
+          ) : null}
+          {/* ── LA FINITION DE LA COUVERTURE (11/09/2026) ──
+              Dans le bon de commande et pas dans un réglage à part : c'est un
+              trait de l'objet qu'on achète, au même titre que sa pagination.
+              Deux boutons plutôt qu'un menu — il n'y a que deux réponses, et
+              les montrer toutes les deux dit qu'il n'y a pas de supplément
+              mieux qu'une phrase ne le dirait.
+              Un `radiogroup` et non des boutons nus : au clavier et au
+              lecteur d'écran, « Brillante, sélectionné, 1 sur 2 ». */}
+          <div className="nu-bon-l nu-bon-l--choix">
+            <span id="nu-finition-lbl">Finition de la couverture</span>
+            <div className="nu-finition" role="radiogroup" aria-labelledby="nu-finition-lbl">
+              {(['gloss', 'matte'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="radio"
+                  aria-checked={pellicule === v}
+                  className={`nu-finition-b${pellicule === v ? ' est-choisi' : ''}`}
+                  onClick={() => void choisirFinition(v)}
+                  disabled={previsualisation}
+                >
+                  {/* Le mot vient de la table, la capitale du bouton. */}
+                  {FINITION_LIBELLE[v].charAt(0).toUpperCase() + FINITION_LIBELLE[v].slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
           {/* ── LA LIVRAISON, EN SUS (lot 6, 10/09/2026) ──
               Elle a sa ligne, toujours, même offerte : « compris » ne se dit
@@ -293,7 +480,13 @@ export default function CasesEtCommande({
                   Changer de pays
                 </button>
               </span>
-              <b>{portOffert ? 'offerte, fondateur' : formaterCentimes(commande.livraison)}</b>
+              <b>
+                {portOffert
+                  ? 'offerte, fondateur'
+                  : commande.livraisonOfferte
+                    ? 'offerte'
+                    : formaterCentimes(commande.livraison)}
+              </b>
             </div>
           ) : (
             <div className="nu-bon-choix">
@@ -326,8 +519,8 @@ export default function CasesEtCommande({
               {/* Ce que le menu engage, dit ici et pas après le paiement. */}
               <p className="nu-bon-choix-mot">
                 {portConnu
-                  ? 'Le port sera chiffré de nouveau pour cette destination.'
-                  : 'Le port est chiffré par notre imprimeur, avant tout paiement.'}
+                  ? 'Le prix et le port seront recalculés pour cette destination.'
+                  : 'Le prix et le port dépendent du pays. Ils s’affichent ici, avant tout paiement.'}
               </p>
               {paysGele !== null && changer ? (
                 <button
@@ -349,6 +542,16 @@ export default function CasesEtCommande({
               <b>&minus;{formaterCentimes(commande.remise)}</b>
             </div>
           ) : null}
+          {/* ── LE SEUIL DE LA LIVRAISON OFFERTE (15/09/2026) ──
+              Dit AVANT qu'on paie, et seulement quand il reste quelque chose
+              à gagner : « plus que 14 € de magazines » se lit comme une
+              invitation à prendre un second exemplaire, pas comme une
+              réserve. Atteint, la ligne de livraison dit déjà « offerte ». */}
+          {commande && portConnu && !portOffert && !commande.livraisonOfferte && manqueFranco !== null && manqueFranco > 0 ? (
+            <p className="nu-bon-franco">
+              Plus que {formaterCentimes(manqueFranco)} de magazines et la livraison est offerte.
+            </p>
+          ) : null}
           {/* ⚠️ PAS DE TOTAL TANT QUE LE PORT MANQUE. Un total qui n'inclut
               pas la livraison est un total faux, et c'est la surprise la plus
               chère de tout le tunnel. */}
@@ -368,7 +571,7 @@ export default function CasesEtCommande({
       )}
 
       {/* ── HORS UNION EUROPÉENNE ──
-          Royaume-Uni, Suisse, Norvège : le transport est devisé et facturé,
+          Royaume-Uni, Suisse, Norvège, États-Unis, Brésil : le transport est facturé,
           mais les droits d'importation, eux, sont réclamés au destinataire à
           l'arrivée. Le dire ici coûte une ligne ; ne pas le dire coûte un
           client qui découvre une facture de douane devant sa porte. */}

@@ -10,6 +10,8 @@ import {
   PAGES_MAX_PUBLIC,
   PAGES_MIN,
 } from '@/lib/atelier/grille'
+import { FRANCO_CENTIMES, ZONES_PORT } from '@/lib/atelier/livraison'
+import { PHRASE_DEGRESSIF } from '@/lib/atelier/exemplaires'
 
 export const CTA_LABEL = 'Composer avec l’atelier'
 export const CTA_MAGAZINE_LABEL = 'Découvrir les magazines'
@@ -54,9 +56,12 @@ export const COMPOSER_HREF = '/composer'
 export const CONTACT_EMAIL = 'contact@bellajour.com'
 
 /* ─────────────────────────── LE PRIX, EN TROIS FORMES ───────────────────────
-   Tout est DÉRIVÉ de `@/lib/atelier/grille`, la source unique : un prix TTC
-   par nombre de pages, de 20 à 60. Rien ici ne recopie un montant, donc rien
-   ici ne peut contredire le prix ferme calculé par le serveur.
+   Tout est DÉRIVÉ de `@/lib/atelier/grille`, la source unique : un prix HORS
+   TAXES par nombre de pages, de 24 à 60, et le TTC FRANCE qui en découle
+   (EUROS_MIN, EUROS_MAX_PUBLIC). Ce que la page affiche avant qu'un pays soit
+   connu est donc un prix France : la mention « TTC France » le dit. Rien ici
+   ne recopie un montant, donc rien ici ne peut contredire le prix ferme
+   calculé par le serveur.
 
    ⚠️ LES TROIS ENCARTS « 20 à 29 pages / 30 € » ONT DISPARU (10/09/2026, lot 2).
    Ils décrivaient les trois anciens paliers ; avec vingt prix il n'y a plus
@@ -84,8 +89,9 @@ export const PRIX_LIGNE = {
   des: `Dès ${EUROS_MIN} €`,
   /* Deux mots sous le montant, jamais une phrase (Mathias, 10/09/2026, après
      relevé chez Rosemood, Cewe et Photobox : le prix d'appel porte sa
-     réserve à côté de lui, le détail vit dans la FAQ). */
-  hors: 'hors livraison',
+     réserve à côté de lui, le détail vit dans la FAQ). Depuis le 15/09 la
+     réserve dit aussi que c'est le prix France : ailleurs, la TVA du pays. */
+  hors: 'TTC France, hors livraison',
   pages: `${PAGES_MIN} à ${PAGES_MAX_PUBLIC} pages`,
   photos: `${PHOTOS_MIN} à ${PHOTOS_MAX} photos`,
 }
@@ -101,7 +107,19 @@ export const PRIX_LIGNE = {
    destination (interdit nº5) — mais on dit qu'il existe et quand il s'affiche. */
 /* Retirée de la page produit le 10/09/2026 à la demande de Mathias ; gardée
    dérivée (offre publique) pour un usage futur. */
-export const PRIX_PHRASE = `De ${EUROS_MIN} € pour ${PAGES_MIN} pages à ${EUROS_MAX_PUBLIC} € pour ${PAGES_MAX_PUBLIC} pages. Livraison en sus, affichée avant paiement.`
+export const PRIX_PHRASE = `De ${EUROS_MIN} € pour ${PAGES_MIN} pages à ${EUROS_MAX_PUBLIC} € pour ${PAGES_MAX_PUBLIC} pages, TTC France. Livraison en sus, affichée avant paiement.`
+
+/* ── LA LIVRAISON OFFERTE, L'ARGUMENT (15/09/2026) ─────────────────────
+   Le tableur de Mathias : « afficher Livraison offerte dès 50 € comme
+   argument de conversion ». Le seuil et les montants de zone viennent de
+   `livraison.ts`, jamais recopiés : le jour où le seuil bouge, le bandeau,
+   la FAQ, le bon de commande et les CGV bougent ensemble. */
+export const FRANCO_EUROS = FRANCO_CENTIMES / 100
+export const ZONE_A_EUROS = ZONES_PORT.A.centimes / 100
+export const ZONE_B_EUROS = ZONES_PORT.B.centimes / 100
+export const LIVRAISON_BANDEAU = `Livraison offerte dès ${FRANCO_EUROS} €`
+export const LIVRAISON_PHRASE = `Livraison ${ZONE_A_EUROS} € en France, Allemagne, Espagne, Belgique et la plupart des pays voisins, ${ZONE_B_EUROS} € en Italie, au Portugal, en Scandinavie et aux États-Unis, chiffrée avant paiement ailleurs. Offerte dès ${FRANCO_EUROS} € de magazines.`
+export const EXEMPLAIRES_PHRASE = `Plusieurs exemplaires du même numéro ? ${PHRASE_DEGRESSIF}`
 
 /* Le titre de la bande parcours (lot 3, 07/09 — arbitrage T-086 rendu par
    Mathias : la bande gagne un vrai titre au lieu de flotter sans nom). */
@@ -134,7 +152,15 @@ export const FAQ = [
   },
   {
     q: 'Je le reçois quand ?',
-    r: 'Votre couverture sous 48 h. Le magazine imprimé chez vous sous 10 jours après validation, avec un lien de suivi du colis dès l’expédition. La livraison est facturée en plus, au tarif de votre pays, affiché avant le paiement.',
+    r: 'Votre couverture sous 48 h. Le magazine imprimé chez vous sous 10 jours après validation (3 jours ouvrés de fabrication, 3 à 7 jours d’acheminement), avec un lien de suivi du colis dès l’expédition.',
+  },
+  {
+    q: 'Combien coûte la livraison ?',
+    r: `${LIVRAISON_PHRASE} Les prix affichés sont TTC pour la France ; ailleurs, la TVA de votre pays s’applique et le montant exact vous est indiqué avec votre couverture, avant tout paiement.`,
+  },
+  {
+    q: 'Je peux en commander plusieurs ?',
+    r: `Oui, jusqu’à 10 exemplaires du même numéro, depuis votre page de commande. ${PHRASE_DEGRESSIF} La livraison reste au même prix, et elle est offerte dès ${FRANCO_EUROS} € de magazines.`,
   },
   {
     q: 'Comment composez-vous mon magazine ?',

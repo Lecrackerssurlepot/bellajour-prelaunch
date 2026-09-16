@@ -24,6 +24,20 @@ exactement l'écart que la passe du 01/09/2026 a corrigé, sur 36 lignes.
 Semé le 29/08/2026 par l'audit de structure. Tous les tickets ci-dessous sont **prouvés dans le
 code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
+## Où on en est (16/09/2026 : le modèle de prix v3)
+
+**La grille est hors taxes, la livraison a ses zones, le client peut commander plusieurs
+exemplaires — sur une branche, en attente de deux migrations.** Le tableur « Prix & Marge v3 » de
+Mathias (15/09), validé par Louis, est intégré sur `feat/prix-ht-zones-exemplaires` : grille HT de
+24 à 60 pages (l'agrafé disparaît), TTC = HT × TVA du pays arrondi à l'euro (le pays revient à
+l'écran 4), zones de port A 5 € / B 13 € / C au devis, offerte dès 50 €, 1 à 10 exemplaires (2e
+−30 %, suivants −50 %), États-Unis et Brésil ouverts, Royaume-Uni à 20 %, papier gloss, PR #131
+(finition) embarquée. CGV v4.0 FR/PT/EN, page `/livraison`, remboursement v3.1, mentions v1.1.
+T-073 et T-106 fermés. **Bloquant chez Mathias avant la fusion** : appliquer
+`20260911_atelier_finition.sql` ET `20260916_atelier_exemplaires_prix_ht.sql` (les écritures de
+`finition` et de `quantite` ne se replient pas, volontairement). Le détail daté est dans
+`docs/reference/ETAT-PRODUCTION.md`.
+
 ## Où on en est (11/09/2026, soir : la boîte du jour)
 
 **T-112 fermé : la table de travail dit ce qui est entré et à qui est la balle.** Mathias :
@@ -33,6 +47,25 @@ un camp. Désormais : une boîte « Depuis hier » (une ligne par dossier, qui d
 quand on a joué, sans bouton par décision de Mathias), une colonne « Prochaine étape » (pastille
 de camp + geste, même calcul que la pile), et les retards lus avec les à-faire sous « À nous ».
 `urgence.ts` n'a pas bougé. La pile « Sans réponse » reste dans T-110.
+
+## Où on en est (11/09/2026, fin de journée — les références produit)
+
+**Les références d'impression sont arrêtées, et trois tickets tombent avec elles.** Mathias avait
+la liste ; le relevé Cloudprinter du 11/09 l'a confirmée jusqu'à la référence (`finish_gloss` et
+`cover_finish_matte` existent bien, avec leur asymétrie de nommage) et a chiffré ce qu'elle
+coûte. Intérieur 130 g couché satiné, couverture 250 g, **pelliculage laissé au client**,
+brillant ou mat, sans supplément — un demi-centime d'écart au devis, il n'y avait rien à
+arbitrer. T-027 et T-077 sont fermés, le point bloquant de T-028 tombe, T-078 est débloqué.
+
+Ce que le relevé a appris et qu'on ne devinait pas : le grammage ne coûte presque rien (un
+centime entre 90 et 130 g), mais il décide de l'USINE, donc du PORT — 2,76 € HT d'écart en
+France entre le silk et le gloss, et aucun écart au Portugal ni en Allemagne. Tout est dans
+`docs/reference/SPECS-CLOUDPRINTER.md`.
+
+⚠️ **La migration `20260911_atelier_finition.sql` doit être appliquée AVANT le déploiement.**
+C'est la première du dépôt dont l'écriture NE SE REPLIE PAS, volontairement : un repli ferait
+imprimer brillant à quelqu'un qui a cliqué mat, sans que personne ne le sache. La lecture, elle,
+se replie partout.
 
 ## Où on en est (11/09/2026)
 
@@ -61,8 +94,8 @@ Le détail daté est dans `docs/reference/ETAT-PRODUCTION.md`.
 
 ## Où on en est (15/09/2026, soir : les modèles de couverture)
 
-**Recompté fiche par fiche : 113 tickets ouverts depuis le début, 35 encore ouverts,
-78 fermés, et AUCUN bloquant.** Sur les 35 : **30 attendent une décision de Mathias**,
+**Recompté fiche par fiche le 16/09 : 113 tickets ouverts depuis le début, 31 encore ouverts,
+82 fermés, et AUCUN bloquant.** Sur les 35 : **30 attendent une décision de Mathias**,
 5 sont marqués `libre`. Répartition : 27 `serieux`, 7 `confort`, 1 `mineur`.
 
 **T-091 fermé, en production.** L'écran du titre montrait deux couvertures dessinées en CSS qui
@@ -137,8 +170,8 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-024 | La page Santé crie sur une base vide | admin | confort | libre | **fermé** |
 | T-025 | Cinq mails n'ont jamais été envoyés en vrai | atelier | serieux | avis-requis | nouveau |
 | T-026 | Les CGV v3.0 n'ont pas été relues par un juriste | produit | serieux | avis-requis | **fermé** (10/09 : vérifiées, pas de relecture juridique, décision de Mathias) |
-| T-027 | Les finitions d'impression sont posées par défaut, pas choisies | produit | serieux | avis-requis | nouveau |
-| T-028 | La page produit affirme un grammage qu'on n'a pas mesuré | produit | serieux | avis-requis | nouveau |
+| T-027 | Les finitions d'impression sont posées par défaut, pas choisies | produit | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 11/09 : relevé des prix usine, Mathias tranche. Intérieur `pageblock_130mcs`, couverture `cover_250mcs`, pelliculage AU CHOIX du client (brillant ou mat, sans supplément). Le comparatif est dans `SPECS-CLOUDPRINTER.md` |
+| T-028 | La page produit affirme un grammage qu'on n'a pas mesuré | produit | serieux | avis-requis | en cours — **le grammage est sourcé le 11/09** (T-027 fermé) : `/magazine` et les CGV v3.2 disent ce qu'`impression.ts` commande. « Livraison comprise » tranché le 10/09. Restent les visuels provisoires et la FAQ non relue |
 | T-029 | Deux avertissements de lint traînent depuis le lot 7 | exploitation | confort | libre | **fermé** |
 | T-030 | Vérifier si la couverture d'un seul tenant est déjà livrée | atelier | confort | libre | **refuse** (03/09 — déjà livré : `plat` en un fichier découpé à l'affichage, T2-2/T-089/T-090 ; preuve dans `fermes/`) |
 | T-031 | Une erreur en production n'est vue par personne | exploitation | serieux | avis-requis | nouveau |
@@ -183,12 +216,12 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-070 | Le retour des pages légales renvoie sur une page supprimée | front | confort | libre | **fermé** |
 | T-071 | Personne ne serait prévenu si Google rejetait le site | exploitation | confort | avis-requis | nouveau |
 | T-072 | Les prix finaux du magazine ne sont pas tranchés | paiement | serieux | avis-requis | **fermé** (10/09 : grille finale de Mathias dans `grille.ts`, livraison en sus, prix gelé) |
-| T-073 | Commander plusieurs exemplaires, avec des paliers dégressifs à fournir | paiement | serieux | avis-requis | en pause (30/08, verrou à 1 posé — attend les paliers de Mathias) |
+| T-073 | Commander plusieurs exemplaires, avec des paliers dégressifs à fournir | paiement | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 16/09 : barème de Mathias (1er plein, 2e −30 %, suivants −50 %, max 10) dans `exemplaires.ts`, sélecteur sur `/numero`, une ligne Stripe par rang, `count` Cloudprinter, migration 20260916 |
 | T-074 | Un prix selon le pays de livraison exige de demander le pays avant le prix | produit | serieux | avis-requis | **fermé** (10/09 : pays demandé à l'écran 4, livraison par devis selon le pays) |
 | T-075 | Les ventes de l'atelier ne passent pas par la comptabilité InvoiceXpress | paiement | serieux | avis-requis | nouveau |
 | T-076 | Les dossiers abandonnés gardent leurs données personnelles sans limite de durée | donnees | serieux | avis-requis | **rétention armée le 02/09** — migration appliquée, template M10 poussé (ID 40), `BREVO_TEMPLATE_M10_ID` live en prod (Santé sans alerte). Reste seulement, différé exprès : un cron une fois éprouvé, et exclure les anonymisés de T-023 |
-| T-077 | Les specs d'impression des deux produits Cloudprinter ne sont pas sur le disque | produit | serieux | avis-requis | en pause (01/09, rejoint le lot CGV) |
-| T-078 | Aucun moteur ne transforme les gabarits de mise en page en PDF imprimable | atelier | serieux | avis-requis | en cours — étape 0 livrée le 30/08, la suite dépend de T-077 |
+| T-077 | Les specs d'impression des deux produits Cloudprinter ne sont pas sur le disque | produit | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 11/09 : la formule du dos est dans le code (`dosMmPourPages`, déduite du papier, figée par le harnais), le contrôle PDF juge enfin la largeur d'une couverture enveloppante, et les CGV v3.2 décrivent l'objet réel |
+| T-078 | Aucun moteur ne transforme les gabarits de mise en page en PDF imprimable | atelier | serieux | avis-requis | en cours — étape 0 livrée le 30/08. **Débloqué le 11/09** : T-077 est fermé, la géométrie que le moteur devra produire est écrite et éprouvée (`FORMAT_PAGE_PDF_MM`, `dosMmPourPages`, `largeurCouvertureMm`) |
 | T-079 | Le dashboard métriques n'a pas d'insights ni de stratégie assistés par IA | admin | confort | avis-requis | en pause (30/08, le bloc « Lecture » suffit — attendre ~50 dossiers) |
 | T-080 | Le dashboard métriques mérite un vrai design de tableau de bord | admin | confort | libre | en cours (07/09) — rendu sorti de la page (Vue.tsx, pour pouvoir le REGARDER sans base ni session) + rangée de quatre chiffres clés en tête. L habillage fin attend la référence visuelle de Mathias |
 | T-081 | Rien ne compare les paiements Stripe aux dossiers de la base | paiement | serieux | avis-requis | en cours — **lancé sur la vraie base le 08/09**, deux passes en lecture seule : 0 écart en livemode, et 2 écarts levés en `--avec-test` (dossiers de recette supprimés). Le filet est prouvé DÉTECTEUR. Reste le seul choix du déclencheur : Vercel Hobby n'autorise qu'un cron/jour, déjà pris par la relève |
@@ -216,7 +249,7 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-103 | Un template de mail actif affiche une image qui répond 404 | contenu | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 08/09 : le template 13 est un ORPHELIN. L'interface Brevo ne connaît que les messages #12 et #14 de la séquence ; le 13 n'est branché sur aucune étape, d'où le refus de l'API en écriture. Un template orphelin ne part jamais : l'image 404 ne sera vue par personne. C'est en le vérifiant qu'on a trouvé T-104 |
 | T-104 | S'inscrire aujourd'hui déclenche deux mails qui annoncent des préventes closes | contenu | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — ouvert ET fermé le 08/09. `/ambassadeurs` (200, formulaire vivant) → liste Brevo 3 → automation ACTIVE → deux mails de l'ère prévente. Coupé en **trois** endroits indépendants : automation en pause (vérifiée), page en 410, les deux routes en 410. Ouvert en `bloquant`, fermé le jour même |
 | T-105 | Recommander un numéro déjà livré, depuis la bibliothèque | paiement | serieux | avis-requis | **en pause** (08/09) — structure posée et VERROUILLÉE, comme T-073. `REIMPRESSION_CENTIMES = null` dans `prix.ts`, module pur `reimpression.ts` (`peutRecommander`), bouton en place dans `/compte/magazine/<token>` mais jamais rendu, dix tests qui gardent le verrou. Mathias a tranché le CIRCUIT (paiement → impression directe, sans passage par l'atelier) et **pas le prix — parce qu'il ne le connaît pas** (dit tel quel le 08/09). Le ticket n'attend donc pas un arbitrage mais des COÛTS : tarif Cloudprinter à l'exemplaire par palier, port FR/BE/LU, marge voulue. Ne pas lui reposer la question, lui apporter les chiffres. Restent ensuite la route Stripe, la branche webhook + commande Cloudprinter, deux mails, et la trace en admin |
-| T-106 | La politique de livraison facturée au client (plafond, tarif fixe ou port compris) n'est pas tranchée | paiement | serieux | avis-requis | nouveau (10/09) — le client paie le devis Cloudprinter complet (11,06 € TTC pour la France) tant que le plafond n'est pas posé ; attend Mathias et Louis |
+| T-106 | La politique de livraison facturée au client (plafond, tarif fixe ou port compris) n'est pas tranchée | paiement | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 16/09 : zones A 5 € / B 13 € / C au devis, offerte dès 50 € TTC de magazines (tableur du 15/09, validé par Louis) ; plafond archivé ; CGV v4.0 et page `/livraison` |
 | T-107 | Les mails mettent 5 à 9 minutes à arriver, alors que le site les soumet à la seconde | atelier | serieux | avis-requis | nouveau (11/09) — mesuré 5 min 07 s à 8 min 57 s sur trois mails, MAIS 2 s sur le M3 de Klervie le même jour : le retard est INTERMITTENT, pas structurel. Caractériser avant de payer un plan |
 | T-108 | Un test automatisé a créé un vrai dossier et envoyé un vrai mail | atelier | serieux | libre | **fermé** (11/09, PR #124 : `ATELIER_MAILS_COUPES` dans les deux chemins d'envoi) |
 | T-109 | Impossible de relancer un client depuis l'atelier, et une relance ne partait qu'une fois | admin | serieux | libre | **fermé** (11/09, PR #128 et #129 : bouton sur la ligne, colonne « Dernier mot », deux relances par motif, 72 h entre deux — aucun template Brevo créé, aucune migration) |

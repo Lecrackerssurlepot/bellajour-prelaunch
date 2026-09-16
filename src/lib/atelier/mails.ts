@@ -2,7 +2,8 @@ import type { SupabaseClient, PostgrestError } from "@supabase/supabase-js";
 import { logEvenement } from "./evenements";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { centimesDuDossier, eurosDuDossier, type PalierCle } from "./prix";
-import { totalCommande } from "./livraison";
+import { totalCommande, portClient } from "./livraison";
+import { quantiteDuDossier } from "./exemplaires";
 import { ajouterJours, formaterJour } from "./dates";
 import { etapeDepot } from "./urgence";
 import { creditDuPourMail, parametreCredit } from "./fondatrice";
@@ -99,7 +100,8 @@ export const CHAMPS_MAIL =
   "id, token, etat, titre, prenom, email, nb_photos, nb_pages, palier, apercu_urls, " +
   "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, tracking_code, " +
   "stripe_payment_intent, retouches_demandees_le, souvenir_pdf_key, " +
-  "prix_centimes, livraison_centimes, pays_livraison, livraison_niveau";
+  "prix_centimes, livraison_centimes, pays_livraison, livraison_niveau, " +
+  "prix_ht_centimes, quantite";
 
 /**
  * `CHAMPS_MAIL` sans ses colonnes les plus fraîches (le prix gelé et la
@@ -136,11 +138,32 @@ export const CHAMPS_MAIL_REPLI =
  * `.returns`). Elle DOIT reconstruire la requête à chaque appel : un builder
  * Supabase ne se rejoue pas.
  */
+/**
+ * Le repli INTERMÉDIAIRE (16/09/2026) : sans les deux colonnes de la migration
+ * 20260916 (le HT gelé et les exemplaires), mais AVEC le prix et le port gelés
+ * de 20260910, appliquée depuis le 10/09. Sans ce niveau, une colonne du
+ * 16/09 encore absente faisait perdre le prix gelé aux mails, donc retenait
+ * M3 (`manquePour` exige le port) : prouvé en local le 16/09.
+ */
+export const CHAMPS_MAIL_SANS_EXEMPLAIRES =
+  "id, token, etat, titre, prenom, email, nb_photos, nb_pages, palier, apercu_urls, " +
+  "consent_photos, created_at, etat_maj_le, transporteur, tracking_url, tracking_code, " +
+  "stripe_payment_intent, retouches_demandees_le, souvenir_pdf_key, " +
+  "prix_centimes, livraison_centimes, pays_livraison, livraison_niveau";
+
 export async function lireNumerosMail<D>(
   requete: (champs: string) => PromiseLike<{ data: D; error: PostgrestError | null }>,
 ): Promise<{ data: D; error: PostgrestError | null }> {
   const avec = await requete(CHAMPS_MAIL);
   if (!avec.error || avec.error.code !== "42703") return avec;
+  const sansExemplaires = await requete(CHAMPS_MAIL_SANS_EXEMPLAIRES);
+  if (!sansExemplaires.error || sansExemplaires.error.code !== "42703") {
+    console.error(
+      "[atelier/mails] 42703 sur CHAMPS_MAIL : prix_ht_centimes ou quantite manque (migration 20260916), " +
+        "repli sur les colonnes du 10/09. Un exemplaire, et le TTC gelé fait foi.",
+    );
+    return sansExemplaires;
+  }
   console.error(
     "[atelier/mails] 42703 sur CHAMPS_MAIL : une colonne fraîche manque, repli sur CHAMPS_MAIL_REPLI. " +
       "Vérifier que la dernière migration de `numeros` est appliquée (le champ absent restera vide jusque-là).",
@@ -173,6 +196,10 @@ export type NumeroPourMail = {
      d'envoyer « 37 € » à quelqu'un à qui Stripe demandera 48 €. */
   livraison_centimes?: number | null;
   pays_livraison?: string | null;
+  /* Le HT gelé et les exemplaires (migration 20260916). OPTIONNELS, mêmes
+     replis : sans eux, un exemplaire et le TTC gelé. */
+  prix_ht_centimes?: number | null;
+  quantite?: number | null;
 };
 
 /** Ce qu'il faut EN PLUS pour décider quels mails sont dus (cf. codesPour). */
@@ -413,30 +440,46 @@ function parametresLivraison(
      il n'a rien à dire (même discipline que LIVRAISON_OFFERTE : le
      `{% if %}` de Brevo traite la chaîne vide comme faux). */
   const paysAChoisir = !n.pays_livraison;
-  const port = typeof n.livraison_centimes === "number" ? n.livraison_centimes : null;
   const prix = centimesDuDossier(n);
+  const quantite = quantiteDuDossier(n.quantite);
+  /* Le port BRUT (zone ou devis), rejoué par la MÊME règle que le bon de
+     commande et le checkout (16/09) : en zone A/B il est connu même sans
+     devis gelé, en zone C sans devis le mail se tait sur le total. */
+  const portRegle =
+    prix === null || !n.pays_livraison
+      ? null
+      : portClient({
+          pays: n.pays_livraison,
+          totalProduitCentimes: prix * quantite,
+          devisTtcCentimes: typeof n.livraison_centimes === "number" ? n.livraison_centimes : null,
+        });
+  const port = portRegle && portRegle.source !== "inconnu" ? portRegle.brutCentimes : null;
   /* Le crédit est dû ⇒ le port est offert. La même condition que le checkout
      (`portOffert = credit.statut === "pret"`), parce que c'est la même
      personne au même moment : deux tests séparés finiraient par diverger. */
-  const offert = typeof creditFondatriceEuros === "number" && creditFondatriceEuros > 0;
+  const fondateur = typeof creditFondatriceEuros === "number" && creditFondatriceEuros > 0;
 
-  const total =
+  const commande =
     prix === null || port === null
       ? null
       : totalCommande({
           prixCentimes: prix,
+          quantite,
           livraisonCentimes: port,
           creditCentimes: (creditFondatriceEuros ?? 0) * 100,
-          portOffert: offert,
-        }).total;
+          portOffert: fondateur,
+        });
+  /* Offerte pour le fondateur OU par le seuil : le template dit « Livraison
+     offerte » dans les deux cas, ce qui est exactement ce que le client paie. */
+  const offert = commande ? commande.livraisonOfferte : fondateur;
 
   return {
     /* Vides quand le port n'est pas connu : le template bascule alors sur sa
        branche « chiffrée selon votre pays » plutôt que d'écrire une phrase
        trouée là où les montants devraient être. */
-    LIVRAISON: port === null ? "" : eurosDeCentimesTexte(port),
+    LIVRAISON: commande === null ? "" : eurosDeCentimesTexte(commande.livraison),
     LIVRAISON_OFFERTE: offert ? "oui" : "",
-    TOTAL: total === null ? "" : eurosDeCentimesTexte(total),
+    TOTAL: commande === null ? "" : eurosDeCentimesTexte(commande.total),
     PAYS_A_CHOISIR: paysAChoisir ? "oui" : "",
   };
 }

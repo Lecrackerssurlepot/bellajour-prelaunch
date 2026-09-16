@@ -534,9 +534,22 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         typeof payload.precedent === "string" && payload.precedent.trim()
           ? `Il avait d'abord choisi ${nomPays(payload.precedent)}`
           : null;
+      /* Depuis le 15/09/2026, changer de pays change aussi le TTC du
+         magazine (grille HT x TVA) : le récit le dit, avec la zone de port
+         et le nombre d'exemplaires quand ils sont là. */
+      const prix = typeof payload.prix_centimes === "number" ? payload.prix_centimes : null;
+      const prixMot = prix === null ? null : `Magazine : ${(prix / 100).toFixed(2).replace(".", ",")} € TTC`;
+      const zone = typeof payload.livraison_zone === "string" ? `zone ${payload.livraison_zone}` : null;
+      const offerte = payload.livraison_offerte === true ? "offerte" : null;
+      const q = typeof payload.quantite === "number" && payload.quantite > 1 ? `${payload.quantite} exemplaires` : null;
       return {
         texte: `Le client a choisi la livraison vers ${nomPays(payload.pays)}`,
-        detail: [montant ? `Port devisé : ${montant}` : null, precedent]
+        detail: [
+          prixMot,
+          montant ? `Port : ${montant}${zone ? ` (${zone}${offerte ? ", offerte" : ""})` : ""}` : null,
+          q,
+          precedent,
+        ]
           .filter(Boolean)
           .join(" · ") || null,
         ton: "elle",

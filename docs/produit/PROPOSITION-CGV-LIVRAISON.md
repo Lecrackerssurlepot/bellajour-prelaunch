@@ -147,6 +147,10 @@ Le cœur du changement. La phrase engage l'inclusion de la livraison dans le pri
 
 ### 3c. La grille de la livraison
 
+> **FAIT le 16/09/2026 (CGV v4.0)** : le tarif est décidé (zones A 5 €, B 13 €, C au devis,
+> offerte dès 50 € TTC de magazines). L'annexe porte un tableau des zones et l'article 4bis.11
+> les écrit ; tout est dérivé de `livraison.ts`. Le reste de cette section est historique.
+
 Le jour où le tarif est décidé, l'annexe devrait porter UNE ligne de plus (un tableau
 « Livraison » ou une phrase) donnant le montant TTC pour la zone FR/BE/LU. Montant
 volontairement absent ici : décision de Mathias.

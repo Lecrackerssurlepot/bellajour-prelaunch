@@ -37,6 +37,10 @@ import {
   verdictMultiplePages,
   verdictPagesPdf,
   verdictTaillePage,
+  dosMmPourPages,
+  largeurCouvertureMm,
+  FORMAT_PAGE_PDF_MM,
+  GRAMMAGE_INTERIEUR_GSM,
   MAX_PDF_BYTES,
   SLOTS_IMPRESSION,
   type ProduitImpression,
@@ -80,6 +84,15 @@ type ControleFichier = {
       verdict: VerdictPages;
       /** Le format contre les specs relevées (SPECS-CLOUDPRINTER.md). */
       verdictTaille: VerdictTaille;
+      /**
+       * Ce que la feuille AURAIT DÛ mesurer, quand c'est calculable — une
+       * `cover` de dos carré sur un dossier paginé (11/09/2026). `null`
+       * partout ailleurs : les autres fichiers ont une cote fixe que l'écran
+       * connaît déjà (216 × 303), et une cover sans pagination n'a pas de dos.
+       * `dosMm` voyage avec : « 428,9 mm attendus » ne se vérifie pas à la
+       * main, « dos de 2,87 mm » se compare au gabarit.
+       */
+      attenduCouverture: { largeurMm: number; hauteurMm: number; dosMm: number; grammageGsm: number } | null;
       /** La règle de compte du produit, quand elle s'applique. */
       multiple: { ok: boolean; regle: string } | null;
     }
@@ -103,6 +116,7 @@ async function inspecterPdf(
   autresTaillesMm: DimensionMm[];
   verdict: VerdictPages;
   verdictTaille: VerdictTaille;
+  attenduCouverture: { largeurMm: number; hauteurMm: number; dosMm: number; grammageGsm: number } | null;
   multiple: { ok: boolean; regle: string } | null;
 }> {
   /* `updateMetadata: false` : on LIT, on ne veut pas qu'une date de
@@ -125,6 +139,11 @@ async function inspecterPdf(
   const trim = dimsDe(premiere.getTrimBox());
   const trimMm = memeDim(trim, pageMm) ? null : trim;
 
+  /* La géométrie attendue de la couverture enveloppante, depuis le papier
+     tranché le 11/09 : dos = f(grammage, bulk, pages), largeur = 2 × 213 + dos. */
+  const dosAttendu = dosMmPourPages(nbPagesDossier);
+  const largeurAttendue = largeurCouvertureMm(nbPagesDossier);
+
   const autresTaillesMm: DimensionMm[] = [];
   for (const page of pages.slice(1)) {
     const d = dimsDe(page.getMediaBox());
@@ -143,7 +162,18 @@ async function inspecterPdf(
     /* Le MediaBox EST la « page PDF » que les specs mesurent (216 × 303
        attendus, fond perdu compris) — la TrimBox, quand elle existe, ne
        fait que déclarer où tombera le rognage. */
-    verdictTaille: verdictTaillePage(type, pageMm.largeur, pageMm.hauteur),
+    /* La pagination voyage jusqu'ici depuis le 11/09 : elle donne le dos,
+       donc la largeur attendue d'une couverture enveloppante. */
+    verdictTaille: verdictTaillePage(type, pageMm.largeur, pageMm.hauteur, nbPagesDossier),
+    attenduCouverture:
+      type === "cover" && largeurAttendue !== null && dosAttendu !== null
+        ? {
+            largeurMm: largeurAttendue,
+            hauteurMm: FORMAT_PAGE_PDF_MM.hauteur,
+            dosMm: dosAttendu,
+            grammageGsm: GRAMMAGE_INTERIEUR_GSM,
+          }
+        : null,
     multiple: verdictMultiplePages(type, pages.length, produit),
   };
 }

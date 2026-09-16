@@ -6,13 +6,13 @@ import { logEvenement } from "@/lib/atelier/evenements";
 import { KIND_ATELIER } from "@/lib/atelier/paiement";
 import {
   centimesDuDossier,
-  QUANTITE_MAX,
-  PAYS_LIVRAISON,
+  decompteExemplaires,
   CODE_FISCAL_ALBUM,
   type PalierCle,
 } from "@/lib/atelier/prix";
 import { PAYS_LIBELLE, normaliserPays, type PaysLivraison } from "@/lib/atelier/pays";
-import { CODE_FISCAL_LIVRAISON } from "@/lib/atelier/livraison";
+import { CODE_FISCAL_LIVRAISON, portClient, totalCommande } from "@/lib/atelier/livraison";
+import { libelleLigne, quantiteDuDossier } from "@/lib/atelier/exemplaires";
 import { JOURS_LIVRAISON } from "@/lib/atelier/urgence";
 import {
   assurerCreditFondatrice,
@@ -160,6 +160,10 @@ type Ligne = {
   cgv_ok_at: string | null;
   renonciation_retractation: boolean;
   renonciation_at: string | null;
+  /* Le HT gelé et les exemplaires (migration 20260916) : optionnels, le repli
+     42703 les laisse `undefined` — un exemplaire, et le TTC gelé fait foi. */
+  prix_ht_centimes?: number | null;
+  quantite?: number | null;
 };
 
 export async function POST(request: Request) {
@@ -194,9 +198,11 @@ export async function POST(request: Request) {
     const lire = (champs: string) =>
       supabase.from("numeros").select(champs).eq("token", token).maybeSingle<Ligne>();
 
-    let { data: numero, error: lectureErr } = await lire(
-      `${CHAMPS_BASE}, prix_centimes, livraison_centimes, pays_livraison, livraison_niveau`,
-    );
+    const CHAMPS_PRIX = `${CHAMPS_BASE}, prix_centimes, livraison_centimes, pays_livraison, livraison_niveau`;
+    let { data: numero, error: lectureErr } = await lire(`${CHAMPS_PRIX}, prix_ht_centimes, quantite`);
+    if (lectureErr?.code === "42703") {
+      ({ data: numero, error: lectureErr } = await lire(CHAMPS_PRIX));
+    }
     if (lectureErr?.code === "42703") {
       ({ data: numero, error: lectureErr } = await lire(CHAMPS_BASE));
     }
@@ -247,53 +253,66 @@ export async function POST(request: Request) {
        page d'état affiche « en cours de chiffrage » et le bouton n'aurait pas
        dû être actif. On refuse plutôt que d'inventer un montant.
 
-       ⚠️ UN exemplaire, toujours : le verrou T-073 (`QUANTITE_MAX`, prix.ts)
-       tient tant que les paliers dégressifs ne sont pas décidés, et le
-       `quantity: 1` du line_item plus bas EST son application. La garde
-       ci-dessous existe pour que le jour où le verrou se lève, ce `1` en dur
-       ne passe pas inaperçu. */
+       Le prix gelé est CELUI DU PAYS GELÉ (15/09/2026, grille HT × TVA du
+       pays) : quand le client change de destination sur sa page,
+       `/api/atelier/livraison` réécrit `prix_centimes`. On lit donc toujours
+       un TTC cohérent avec `pays_livraison`. */
     const centimes = centimesDuDossier(numero);
     if (centimes === null) {
       console.error("[atelier/checkout] prix indisponible", numero.id, numero.palier);
       return NextResponse.json({ error: "prix_indisponible" }, { status: 409 });
     }
-    if (QUANTITE_MAX !== 1) {
-      console.error(
-        "[atelier/checkout] ⚠️ QUANTITE_MAX n'est plus 1 : le line_item est encore figé à un exemplaire. " +
-          "Brancher les paliers dégressifs ICI avant de lever le verrou (prix.ts, T-073).",
-        numero.id,
-      );
+
+    /* ─── LES EXEMPLAIRES (T-073 levé, 15/09/2026) ────────────────────────
+       La quantité vient du DOSSIER (`numeros.quantite`, choisie sur le bon
+       de commande), jamais de la requête. Le décompte (1er plein, 2e −30 %,
+       suivants −50 %) sort de `decompteExemplaires`, la MÊME fonction que le
+       bon de commande a jouée à l'écran : ce que le client a lu est ce que
+       Stripe débite, ligne par ligne. */
+    const quantite = quantiteDuDossier(numero.quantite);
+    const decompte = decompteExemplaires(centimes, quantite);
+    if (!decompte) {
+      console.error("[atelier/checkout] décompte impossible", numero.id, centimes, quantite);
+      return NextResponse.json({ error: "prix_indisponible" }, { status: 409 });
     }
 
-    /* ─── LA LIVRAISON, FACTURÉE EN SUS (lot 6, 10/09/2026) ──────────────
-       Le port est GELÉ sur le dossier au moment où l'atelier publie l'aperçu
-       (devis Cloudprinter, cf. /api/admin/atelier/transition). Ici on le
-       relit, on ne le recalcule pas : la page d'état 2 a annoncé un total,
-       c'est ce total-là qui doit être débité.
+    /* ─── LA LIVRAISON, FACTURÉE EN SUS (lot 6, revu le 16/09/2026) ──────
+       Le PAYS est exigé : depuis le 15/09 le prix lui-même en dépend, et un
+       port se devise par destination. Sans pays, la page du client lui
+       demande de choisir et le bouton reste éteint ; ici on refuse.
 
-       ⚠️ JAMAIS ZÉRO PAR DÉFAUT. Un port inconnu et un port offert ne sont
-       pas la même chose : retomber sur 0 ferait offrir la livraison en
-       silence à tout dossier ouvert avant la migration ou dont le devis a
-       échoué, et personne ne le verrait passer. On refuse le paiement, la
-       page d'état affiche « en cours de chiffrage », et l'atelier republie
-       l'aperçu pour poser le montant. C'est la même discipline que
-       `prix_indisponible` juste au-dessus.
+       Le port gelé sur le dossier (`livraison_centimes`) est le BRUT : le
+       montant de la zone (A, B) ou le devis du jour (C), avant la règle du
+       seuil. `portClient` rejoue la règle avec le total des exemplaires : en
+       zone A et B, il rend le montant de zone même si rien n'est gelé (c'est
+       une règle décidée, pas un montant deviné) ; en zone C sans devis, il
+       dit « inconnu » et on refuse.
 
-       Un non-entier ou un négatif ne peut pas venir d'une publication : c'est
-       un UPDATE à la main ou une donnée abîmée, et on ne facture pas dessus. */
-    const livraison = numero.livraison_centimes;
-    if (typeof livraison !== "number" || !Number.isInteger(livraison) || livraison < 0) {
-      console.error("[atelier/checkout] livraison indisponible", numero.id, livraison);
+       ⚠️ JAMAIS ZÉRO PAR DÉFAUT en zone C. Un port inconnu et un port offert
+       ne sont pas la même chose : retomber sur 0 ferait offrir la livraison
+       en silence à tout dossier dont le devis a échoué. */
+    const pays = normaliserPays(numero.pays_livraison);
+    if (!pays) {
+      console.error("[atelier/checkout] pays de livraison absent", numero.id);
+      return NextResponse.json({ error: "livraison_indisponible" }, { status: 409 });
+    }
+    const gele = numero.livraison_centimes;
+    const port = portClient({
+      pays,
+      totalProduitCentimes: decompte.totalCentimes,
+      devisTtcCentimes:
+        typeof gele === "number" && Number.isInteger(gele) && gele >= 0 ? gele : null,
+    });
+    if (!port || port.source === "inconnu") {
+      console.error("[atelier/checkout] livraison indisponible", numero.id, pays, gele);
       return NextResponse.json({ error: "livraison_indisponible" }, { status: 409 });
     }
 
-    /* Le pays DÉCLARÉ borne ce que Stripe laisse choisir : le port a été
-       devisé pour CETTE destination, en autoriser une autre ferait payer un
-       port français sur une adresse belge. Un dossier antérieur au lot 3 n'a
-       pas de pays — la zone complète reprend alors la main, exactement comme
-       avant, et la divergence se journalise au webhook (`paiement.ts`). */
-    const pays = normaliserPays(numero.pays_livraison);
-    const paysAutorises = pays ? [codeStripe(pays)] : PAYS_LIVRAISON.map(codeStripe);
+    /* Le pays DÉCLARÉ borne ce que Stripe laisse choisir : le prix et le port
+       ont été calculés pour CETTE destination, en autoriser une autre ferait
+       payer un TTC français sur une adresse portugaise. La divergence
+       éventuelle se journalise au webhook (`paiement.ts`). */
+    const paysAutorises = [codeStripe(pays)];
 
     const titre = numero.titre?.trim() || "Votre numéro";
     const origin = originDeConfiance(request.headers.get("origin"));
@@ -360,7 +379,19 @@ export async function POST(request: Request) {
        écrit dans les CGV, et la question n'a pas été posée telle quelle. Si
        Mathias veut le port offert À VIE aux quatorze fondateurs, c'est cette
        ligne qui change, et elle seule. */
-    const portOffert = remiseAppliquee;
+    const portOffertFondateur = remiseAppliquee;
+    /* LE DÉCOMPTE FINAL, par la MÊME fonction que le bon de commande et les
+       mails (`totalCommande`) : magazines (dégressif), port (zone ou devis,
+       zéro au seuil ou pour un fondateur), remise, total. */
+    const commande = totalCommande({
+      prixCentimes: centimes,
+      quantite,
+      livraisonCentimes: port.brutCentimes,
+      creditCentimes: remiseAppliquee ? CREDIT_FONDATRICE_CENTIMES : 0,
+      portOffert: portOffertFondateur,
+    });
+    const portOffert = commande.livraisonOfferte;
+    const livraison = commande.livraison;
     if (credit.statut === "indisponible") {
       console.error(
         "[atelier/checkout] crédit fondatrice indisponible, plein tarif appliqué",
@@ -400,11 +431,13 @@ export async function POST(request: Request) {
         shipping_options: [
           {
             shipping_rate_data: {
-              display_name: portOffert
+              display_name: portOffertFondateur
                 ? "Livraison offerte, fondateur"
-                : `Livraison suivie${pays ? `, ${PAYS_LIBELLE[pays]}` : ""}`,
+                : portOffert
+                  ? "Livraison offerte"
+                  : `Livraison suivie, ${PAYS_LIBELLE[pays]}`,
               type: "fixed_amount",
-              fixed_amount: { amount: portOffert ? 0 : livraison, currency: "eur" },
+              fixed_amount: { amount: livraison, currency: "eur" },
               /* TTC, comme le prix du magazine : le total ne gonfle pas au
                  moment de payer. La conversion HT → TTC a eu lieu au devis
                  (livraison.ts) ; la TVA réellement facturée reste celle que
@@ -450,30 +483,34 @@ export async function POST(request: Request) {
           : { allow_promotion_codes: true }),
         automatic_tax: { enabled: true },
 
-        line_items: [
-          {
-            quantity: 1,
-            price_data: {
-              currency: "eur",
-              unit_amount: centimes,
-              /* TTC : la cliente paie le prix affiché, quoi qu'il arrive à la
-                 TVA derrière. Un prix qui gonfle au moment de payer est la
-                 première cause d'abandon d'un panier. */
-              tax_behavior: "inclusive",
-              product_data: {
-                name: `Bellajour — ${titre}`,
-                /* La livraison SORT du prix depuis le lot 6 : la dire
-                   « comprise » ici, alors qu'une ligne de port s'ajoute juste
-                   en dessous, serait la contradiction la plus visible de tout
-                   le tunnel — sur l'écran de paiement ET sur la facture. */
-                description: numero.nb_pages
-                  ? `Numéro de ${numero.nb_pages} pages, impression comprise`
-                  : "Impression comprise",
-                tax_code: CODE_FISCAL_ALBUM,
-              },
+        /* ─── LES LIGNES, UNE PAR RANG D'EXEMPLAIRE (15/09/2026) ───────────
+           « Votre numéro », puis « 2e exemplaire, −30 % », puis « N
+           exemplaires suivants, −50 % chacun » : c'est ce que le client lit
+           sur l'écran de paiement et sur la facture, et c'est exactement le
+           décompte du bon de commande (`decompteExemplaires`). Une seule
+           ligne à quantité 3 et prix moyen ne dirait pas la remise. */
+        line_items: decompte.lignes.map((ligne) => ({
+          quantity: ligne.quantite,
+          price_data: {
+            currency: "eur",
+            unit_amount: ligne.unitaireCentimes,
+            /* TTC : le client paie le prix affiché, quoi qu'il arrive à la
+               TVA derrière. Un prix qui gonfle au moment de payer est la
+               première cause d'abandon d'un panier. */
+            tax_behavior: "inclusive" as const,
+            product_data: {
+              name: `Bellajour — ${titre}${ligne.rang === 1 ? "" : `, ${libelleLigne(ligne)}`}`,
+              /* La livraison SORT du prix depuis le lot 6 : la dire
+                 « comprise » ici, alors qu'une ligne de port s'ajoute juste
+                 en dessous, serait la contradiction la plus visible de tout
+                 le tunnel — sur l'écran de paiement ET sur la facture. */
+              description: numero.nb_pages
+                ? `Numéro de ${numero.nb_pages} pages, impression comprise`
+                : "Impression comprise",
+              tax_code: CODE_FISCAL_ALBUM,
             },
           },
-        ],
+        })),
 
         /* Le discriminant du webhook partagé. `kind` est lu au `switch` de
            /api/webhook AVANT tout accès en base ; sans lui, ce paiement
@@ -489,9 +526,14 @@ export async function POST(request: Request) {
              seule façon de le savoir serait de rouvrir la session à la main.
              Les métadonnées Stripe sont des CHAÎNES, toujours. */
           prix_centimes: String(centimes),
+          prix_ht_centimes: String(numero.prix_ht_centimes ?? ""),
+          quantite: String(quantite),
+          total_produit_centimes: String(decompte.totalCentimes),
           livraison_centimes: String(livraison),
+          livraison_zone: port.zone,
           port_offert: portOffert ? "true" : "false",
-          pays: pays ?? "",
+          port_offert_fondateur: portOffertFondateur ? "true" : "false",
+          pays,
           /* T-021 — la remise se lit DANS STRIPE, pas seulement chez nous :
              le code apparaît sur la session et sur la facture. C'est aussi
              ce que le webhook relit pour savoir que le crédit a été dépensé
@@ -600,8 +642,14 @@ export async function POST(request: Request) {
          jour où une cliente conteste un total, c'est ici qu'on relit ce qui a
          été demandé — pas seulement le prix du magazine. */
       prix_centimes: centimes,
+      prix_ht_centimes: numero.prix_ht_centimes ?? null,
+      quantite,
+      total_produit_centimes: decompte.totalCentimes,
       livraison_centimes: livraison,
+      livraison_zone: port.zone,
       port_offert: portOffert,
+      port_offert_fondateur: portOffertFondateur,
+      total_centimes: commande.total,
       pays,
     });
 

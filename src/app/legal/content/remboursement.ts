@@ -10,7 +10,7 @@ import type { LocalizedDoc } from '../types'
 export const REMBOURSEMENT: LocalizedDoc = {
   fr: {
     title: `Politique de remboursement et retours`,
-    lastUpdated: `Version 3.0 — En vigueur le 13/06/2026`,
+    lastUpdated: `Version 3.1 — En vigueur le 16/09/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `Traduction française à titre informatif. La version juridiquement prévalente est le texte portugais ; en cas de divergence, ce dernier prime. À lire avec les Conditions Générales de Vente (articles 5, 8 et 9) et la Politique de confidentialité.`,
@@ -30,9 +30,10 @@ export const REMBOURSEMENT: LocalizedDoc = {
         ],
       },
       {
-        heading: `3. Remboursement de l'acompte (commandes en prévente)`,
+        heading: `3. Remboursement avant la maquette (commandes Atelier et commandes en prévente)`,
         blocks: [
-          { kind: 'p', value: `Le moment où vous demandez l'arrêt de votre commande détermine le remboursement :` },
+          { kind: 'p', value: `Commandes passées via l'Atelier (depuis le 24 août 2026, article 4 bis des CGV) : vous payez le prix intégral à la commande, frais de livraison compris. Tant que vous n'avez pas validé votre maquette, vous pouvez demander le remboursement intégral de ce que vous avez payé, magazine et livraison, sans retenue, sans frais et sans pénalité. Après la validation de la maquette, la commande est définitive (§2), sous réserve des garanties légales (§5) et de l'impossibilité de produire ou de livrer (§7).` },
+          { kind: 'p', value: `Commandes de prévente (13 juin au 15 août 2026) : le moment où vous demandez l'arrêt de votre commande détermine le remboursement :` },
           { kind: 'table', columns: [`Étape`, `Remboursement`], rows: [
             [`Avant la validation de la maquette (quel que soit l'état d'avancement, téléversement des photos compris)`, `100 % de l'acompte effectivement versé — sans retenue, sans frais et sans pénalité (« réservation sans risque »)`],
             [`Après la validation de la maquette`, `Commande définitive : plus de remboursement à ce titre, sous réserve des garanties légales (§5) et de l'impossibilité de produire/livrer (§7)`],
@@ -111,7 +112,7 @@ export const REMBOURSEMENT: LocalizedDoc = {
   },
   pt: {
     title: `Política de reembolso e devoluções`,
-    lastUpdated: `Versão 3.0 — Em vigor em 13/06/2026`,
+    lastUpdated: `Versão 3.1 — Em vigor em 16/09/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `Texto de referência (versão portuguesa), juridicamente prevalecente. As traduções para francês e inglês são meramente informativas. A ler em conjunto com as Condições Gerais de Venda (artigos 5.º, 8.º e 9.º) e a Política de Privacidade.`,
@@ -131,9 +132,10 @@ export const REMBOURSEMENT: LocalizedDoc = {
         ],
       },
       {
-        heading: `3. Reembolso do adiantamento (pré-venda)`,
+        heading: `3. Reembolso antes da maquete (encomendas Atelier e pré-venda)`,
         blocks: [
-          { kind: 'p', value: `O momento em que solicita a interrupção da sua encomenda determina o reembolso:` },
+          { kind: 'p', value: `Encomendas efetuadas através do Atelier (desde 24 de agosto de 2026, artigo 4.º-A das CGV): paga o preço integral no momento da encomenda, custos de entrega incluídos. Enquanto não validar a sua maquete, pode pedir o reembolso integral do que pagou, revista e entrega, sem retenção, sem custos e sem penalização. Após a validação da maquete, a encomenda é definitiva (§2), sem prejuízo das garantias legais (§5) e da impossibilidade de produzir ou entregar (§7).` },
+          { kind: 'p', value: `Encomendas de pré-venda (13 de junho a 15 de agosto de 2026): o momento em que solicita a interrupção da sua encomenda determina o reembolso:` },
           { kind: 'table', columns: [`Etapa`, `Reembolso`], rows: [
             [`Antes da validação da maquete (independentemente do estado de execução, incluindo o carregamento das fotografias)`, `100 % do adiantamento efetivamente pago — sem retenção, sem custos e sem penalização («reserva sem risco»)`],
             [`Após a validação da maquete`, `Encomenda definitiva: sem reembolso a este título, sem prejuízo das garantias legais (§5) e da impossibilidade de produzir/entregar (§7)`],
@@ -212,7 +214,7 @@ export const REMBOURSEMENT: LocalizedDoc = {
   },
   en: {
     title: `Refund and Returns Policy`,
-    lastUpdated: `Version 3.0 — Effective 13/06/2026`,
+    lastUpdated: `Version 3.1 — Effective 16/09/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `English translation for information only. The legally prevailing version is the Portuguese text; in the event of any discrepancy, the Portuguese text prevails. To be read together with the Terms and Conditions of Sale (Articles 5, 8 and 9) and the Privacy Policy.`,
@@ -232,9 +234,10 @@ export const REMBOURSEMENT: LocalizedDoc = {
         ],
       },
       {
-        heading: `3. Refund of the deposit (pre-sale orders)`,
+        heading: `3. Refund before the proof (Atelier orders and pre-sale orders)`,
         blocks: [
-          { kind: 'p', value: `The moment at which you request to stop your order determines the refund:` },
+          { kind: 'p', value: `Orders placed through the Atelier (since 24 August 2026, Article 4a of the T&Cs): you pay the full price at the time of the order, delivery costs included. Until you validate your proof, you may request a full refund of what you paid, magazine and delivery, with no deduction, no charge and no penalty. After validation of the proof, the order is definitive (§2), without prejudice to the legal guarantees (§5) and to the impossibility of producing or delivering (§7).` },
+          { kind: 'p', value: `Pre-sale orders (13 June to 15 August 2026): the moment at which you request to stop your order determines the refund:` },
           { kind: 'table', columns: [`Stage`, `Refund`], rows: [
             [`Before validation of the proof (whatever the stage of progress, including uploading of photos)`, `100% of the deposit actually paid — no deduction, no charge and no penalty ("risk-free reservation")`],
             [`After validation of the proof`, `Definitive order: no further refund on this basis, without prejudice to the legal guarantees (§5) and to the impossibility of producing/delivering (§7)`],

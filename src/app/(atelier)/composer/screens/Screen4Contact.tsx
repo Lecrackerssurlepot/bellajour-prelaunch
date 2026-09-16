@@ -4,25 +4,26 @@
    Aucun champ d'ADRESSE ici, ni nulle part dans le questionnaire : c'est
    Stripe qui collectera l'adresse de livraison le moment venu (PRD §9).
 
-   ⚠️ PLUS DE PAYS NON PLUS DEPUIS LE 11/09/2026. Il y a figuré du 10 au
-   11/09 (un select, pour deviser le port avant d'annoncer un prix). Décision
-   de Mathias : « je ne veux pas que ce soit compliqué au niveau de la
-   livraison, la demander pendant le questionnaire, on s'en fiche. » La
-   destination se choisit désormais sur la page de commande (/numero), où le
-   port est chiffré AVANT le paiement, c'est-à-dire au moment où elle sert,
-   et à côté du montant qu'elle décide. Cet écran retrouve ses trois champs
-   et sa seule promesse : il reste une étape après celle-ci, les photos.
-   N'y remettre le pays qu'avec une raison plus forte que celle-là. */
+   LE PAYS EST DE RETOUR (15/09/2026), et la raison est plus forte que celle
+   qui l'avait fait partir le 11/09 (« on s'en fiche ») : depuis la grille
+   HORS TAXES, LE PRIX LUI-MÊME dépend du pays de livraison (HT × TVA du
+   pays, arrondi à l'euro). Sans pays, M3 ne peut pas annoncer le vrai
+   montant. Mathias : « on demande dans le questionnaire le pays de
+   livraison pour avoir la bonne info dans M3 ». On demande le PAYS, pas
+   l'adresse : les deux ne servent pas à la même chose et n'arrivent pas au
+   même moment. Le client peut encore en changer sur sa page de commande. */
 
 import { suggestionEmail } from '@/lib/atelier/questionnaire'
+import { PAYS_TRIES, PAYS_LIBELLE } from '@/lib/atelier/pays'
 
 export default function Screen4Contact({
-  prenom, email, telephone, onChange, erreur, erreurCle,
+  prenom, email, telephone, pays, onChange, erreur, erreurCle,
 }: {
   prenom: string
   email: string
   telephone: string
-  onChange: (champ: 'prenom' | 'email' | 'telephone', v: string) => void
+  pays: string
+  onChange: (champ: 'prenom' | 'email' | 'telephone' | 'pays', v: string) => void
   erreur: string | null
   /** T-051 — change à chaque refus : le même message est ré-annoncé. */
   erreurCle: number
@@ -111,6 +112,33 @@ export default function Screen4Contact({
         Le téléphone sert au transporteur, le jour où votre numéro arrive chez
         vous. Il ne part nulle part ailleurs, et personne ne vous appellera
         pour vous vendre quoi que ce soit.
+      </p>
+
+      {/* ── LE PAYS DE LIVRAISON ─────────────────────────────────────────
+          Un select et pas un champ libre : trente-deux destinations, et une
+          saisie libre laisserait entrer « Fance » là où le prix attend un
+          code. L'ordre est celui de PAYS_TRIES (France, Belgique, Luxembourg,
+          Suisse, puis l'alphabet). Le pays par défaut est visible et
+          modifiable, donc rien n'est décidé à la place du client. */}
+      <label className="at-lbl" htmlFor="at-c-pays">Pays de livraison</label>
+      <select
+        id="at-c-pays"
+        className="at-inp at-inp--select"
+        value={pays}
+        onChange={(e) => onChange('pays', e.target.value)}
+        autoComplete="country"
+      >
+        {PAYS_TRIES.map((code) => (
+          <option key={code} value={code}>{PAYS_LIBELLE[code]}</option>
+        ))}
+      </select>
+
+      {/* Ce que le select engage, dit ici plutôt que découvert au paiement :
+          le prix et le port dépendent du pays, et ils s'affichent avec la
+          couverture. */}
+      <p className="at-hint at-hint--calme">
+        Le prix et la livraison dépendent du pays. Ils vous seront indiqués
+        avec votre couverture, avant tout paiement.
       </p>
 
       {erreur && <p key={erreurCle} className="at-erreur" role="alert">{erreur}</p>}

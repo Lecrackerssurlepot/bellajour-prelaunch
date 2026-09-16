@@ -128,28 +128,20 @@ export async function POST(request: Request) {
       typeof fichiers[type] === "string" && fichiers[type] ? (fichiers[type] as string) : null;
 
     /* La reliure se DÉDUIT de la pagination, comme partout, et par la MÊME
-       fonction que le prix et que la référence Cloudprinter (`grille.ts`) :
-       agrafé (un `product`) à 20 pages, dos carré (`cover` + `book`) au-delà.
-       Une pagination hors grille ne rend NI l'un ni l'autre : elle tombe donc
-       dans la branche « dos carré », qui exigera ses deux PDF et refusera
-       proprement s'ils manquent — jamais un souvenir composé au hasard. */
-    const agrafe = reliurePour(numero.nb_pages) === "agrafe";
+       fonction que le prix et que la référence Cloudprinter (`grille.ts`).
+       Depuis le 15/09/2026 il n'y a plus que le dos carré (`cover` + `book`) :
+       la branche « agrafé » (un seul `product`) est dans
+       archive/agrafe-2026-09/souvenir-route.ts. Une pagination hors grille ne
+       rend aucune reliure : elle tombe dans la même exigence des deux PDF et
+       refuse proprement s'ils manquent — jamais un souvenir composé au hasard. */
+    if (reliurePour(numero.nb_pages) !== "dos_carre") {
+      console.warn("[admin/souvenir] pagination hors grille, on exige quand même les deux PDF", numero.id, numero.nb_pages);
+    }
 
     const souvenir = await PDFDocument.create();
     let dosMm: number | null = null;
 
-    if (agrafe) {
-      const cle = cleDe("product");
-      if (!cle) return NextResponse.json({ error: "fichiers_manquants", detail: "Le PDF du magazine n'est pas déposé." }, { status: 409 });
-      const charge = await chargerPdf(cle, "PDF du magazine");
-      if ("probleme" in charge) return NextResponse.json({ error: "fichier_ko", detail: charge.probleme }, { status: 422 });
-
-      const pages = await souvenir.copyPages(charge.doc, charge.doc.getPageIndices());
-      for (const page of pages) {
-        rogner(page, boiteRognee(page.getMediaBox().width, page.getMediaBox().height));
-        souvenir.addPage(page);
-      }
-    } else {
+    {
       const cleCover = cleDe("cover");
       const cleBook = cleDe("book");
       if (!cleCover || !cleBook) {

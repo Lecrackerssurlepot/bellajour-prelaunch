@@ -4,6 +4,7 @@ import { CGV } from './legal/content/cgv'
 import { CONFIDENTIALITE } from './legal/content/confidentialite'
 import { MENTIONS_LEGALES } from './legal/content/mentions-legales'
 import { REMBOURSEMENT } from './legal/content/remboursement'
+import { LIVRAISON } from './legal/content/livraison'
 
 /* Le plan du site, refait à la bascule du 24/08/2026.
  *
@@ -110,6 +111,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly',
       priority: 0.2,
       alternates: { languages: legalLanguages('remboursement', REMBOURSEMENT) },
+    },
+    /* La page Livraison (16/09/2026) : zones, seuil, delais. Meme famille que
+       les quatre autres, trois langues, portugais qui fait foi. */
+    {
+      url: 'https://www.bellajour.fr/livraison',
+      changeFrequency: 'yearly',
+      priority: 0.3,
+      alternates: { languages: legalLanguages('livraison', LIVRAISON) },
     },
   ]
 }

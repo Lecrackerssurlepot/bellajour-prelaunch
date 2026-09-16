@@ -361,6 +361,11 @@
 
 .at-pdp .prix-ligne .quoi span { display: block; }
 
+/* « Livraison offerte dès 50 € » (15/09/2026) : la troisième ligne de la
+   colonne de droite, en accent, parce que c'est l'argument de conversion que
+   le tableur demande d'afficher à côté du prix. Même corps que ses voisines. */
+.at-pdp .prix-ligne .quoi .franco { color: var(--c-accent); font-weight: 400; }
+
 /* .prix-phrase — retirée le 10/09/2026 à la demande de Mathias : le <p>
    qui portait PRIX_PHRASE est parti de Kiosque.tsx. Plus aucun élément du
    DOM ne porte cette classe. Commentée, pas supprimée (PRIX_PHRASE reste

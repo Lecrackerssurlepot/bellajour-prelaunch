@@ -32,3 +32,13 @@ Quel que soit le choix, valider avec le comptable la règle HT → TTC (`TAUX_TT
 taux du pays) et refaire un devis avec les vraies clés Cloudprinter (celles de Production sont
 encore le sandbox).
 **Question pour Mathias et Louis** : quelle politique, et quel montant ?
+
+## Fermé le 16/09/2026
+Tranché par Mathias le 15/09 avec le tableur « Prix & Marge v3 », validé par Louis : **zones à
+prix fixe TTC** (A 5 € : FR DE ES NL PL GB BE AT CZ HU ; B 13 € : IT IE SE DK RO LU PT FI GR US ;
+C : le devis Cloudprinter du jour, dont CH, NO, CY, MT, SI, BG, HR, EE, LV, LT, SK, BR), **offerte
+dès 50 € TTC de magazines** (remises déduites). Le plafond d'absorption est archivé
+(`archive/livraison-plafond-2026-09/`). Livré : `ZONES_PORT`, `FRANCO_CENTIMES`, `portClient`
+(`livraison.ts`), le port BRUT gelé et le seuil rejoué à la lecture, CGV v4.0 art. 4bis.11 et
+page `/livraison` (FR/PT/EN). Les coûts réels des douze pays de zone C sont relevés dans
+`docs/reference/SPECS-CLOUDPRINTER.md` (16/09) pour reclasser en connaissance.
