@@ -21,6 +21,10 @@
  * 2. Aucune image dans le corps (PRD §10) : une phrase, un bouton. Ça passe
  *    les filtres, ça s'ouvre en une seconde, et ça envoie sur la page où
  *    tout est beau. Seul le logo, hébergé sur le site, fait exception.
+ *    Depuis le 16/09/2026, UNE seconde exception, voulue par Mathias : le
+ *    mail de lancement C0 porte une image d'en-tête (champ facultatif
+ *    `hero`, absent de tous les autres mails). C'est le jour de l'ouverture,
+ *    on montre les magazines.
  * 3. Vouvoiement chaleureux. Jamais « Cliquez ici », jamais « Bonne
  *    réception ». Le ton d'un magazine, pas d'un SaaS.
  * ══════════════════════════════════════════════════════════════════════════
@@ -250,7 +254,7 @@ ${contenu}
   )}{% endif %}`;
 }
 
-function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pied }) {
+function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pied, hero }) {
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
 <head>
@@ -293,7 +297,21 @@ a { text-decoration: none; }
 <tr><td align="center" style="padding: 0 40px 54px 40px;">
 <table role="presentation" width="52" cellpadding="0" cellspacing="0" border="0"><tr><td height="1" bgcolor="#d68a63" style="background-color: #d68a63; height: 1px; line-height: 1px; font-size: 1px;">&nbsp;</td></tr></table>
 </td></tr>
-
+${
+  /* L'image d'en-tête est FACULTATIVE (16/09/2026, C0 seulement) : sans
+     elle, rien n'est rendu, pas même une ligne vide : le HTML des quinze
+     autres mails reste identique à l'octet près. Largeur 520 = les 600 px
+     du conteneur moins les deux marges de 40 ; `width: 100%` la fait suivre
+     l'écran du téléphone. L'alt reprend le nom de la maison, pour le client
+     Outlook qui ne saura pas afficher le WebP. */
+  hero
+    ? `
+<tr><td align="center" class="px-mobile" style="padding: 0 40px 44px 40px;">
+<img src="${hero.src}" width="520" alt="${hero.alt}" style="display: block; width: 100%; max-width: 520px; height: auto; border: 0; outline: none; text-decoration: none; border-radius: 2px;" />
+</td></tr>
+`
+    : ""
+}
 ${bloc(
   `<h1 class="hero-title" style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-size: 46px; font-weight: 500; color: #f5f0e7; line-height: 1.06; letter-spacing: -0.01em;">${h1}</h1>`,
   26,
@@ -627,17 +645,25 @@ export const MAILS = [
        le flux mot de passe oublié, ou Google). Décision de Mathias du 10/09 :
        un lien à durée limitée finit toujours par tomber sur quelqu'un qui
        lit trop tard. Envoyé par scripts/inviter-fondateurs.ts, jamais par
-       une route du site. Aucun tiret cadratin. */
+       une route du site. Aucun tiret cadratin.
+       Refonte du 16/09/2026 pour le LANCEMENT : l'intro dit que l'atelier
+       ouvre aujourd'hui, le bouton mène à composer, et une image d'en-tête
+       (les magazines de l'accueil) coiffe le mail. La mécanique du lien ne
+       bouge pas d'un caractère. */
     code: "C0",
-    nom: "C0 · Compte · Votre espace fondateur est ouvert",
-    sujet: "Votre espace fondateur est ouvert",
-    preheader: "Votre compte existe déjà. Il ne manque que votre mot de passe.",
-    titreHtml: "Votre espace fondateur est ouvert",
-    h1: "Votre espace<br />fondateur est ouvert.",
-    sous: "{{ params.PRENOM }}, l'atelier ouvre pour de vrai. Vous êtes le fondateur nº{{ params.NUMERO }} : votre compte Bellajour est déjà créé avec cette adresse, il ne manque que votre mot de passe. Vos 30 € de crédit et la livraison offerte s'appliqueront tout seuls sur votre premier numéro.",
-    cta: "Choisir mon mot de passe",
+    nom: "C0 · Compte · L'atelier est en ligne",
+    sujet: "L'atelier est en ligne",
+    preheader: "Composez votre premier magazine, votre espace est prêt.",
+    titreHtml: "L'atelier est en ligne",
+    h1: "L'atelier<br />est en ligne.",
+    hero: {
+      src: "https://www.bellajour.fr/images/v2/accueil/header-magazines-paysage-2560.webp",
+      alt: "Les magazines Bellajour",
+    },
+    sous: "{{ params.PRENOM }}, le jour est arrivé : l'atelier ouvre aujourd'hui, et vous en êtes. Fondateur nº{{ params.NUMERO }}, vous composez votre premier magazine avant tout le monde. Vos 30 € de crédit et la livraison offerte sont déjà posés sur votre premier numéro.",
+    cta: "Composer mon magazine",
     lien: "{{ params.URL }}",
-    pied: "Le lien vous mène à une page où vous recevez, d'un clic, de quoi choisir votre mot de passe. Vous pouvez aussi vous connecter avec Google, avec cette même adresse. Une question ? Répondez à ce message, nous vous répondrons nous-mêmes.",
+    pied: "Le lien vous mène à votre espace : d'un clic vous recevez de quoi choisir votre mot de passe, ou vous continuez avec Google, avec cette même adresse. Une question ? Répondez à ce message, nous vous répondrons nous-mêmes.",
   },
   {
     /* C1 — la confirmation d'inscription au COMPTE (04/09). Hors machine à
@@ -773,6 +799,8 @@ async function main() {
      les variables. */
   const EXEMPLE = {
     PRENOM: "Camille",
+    /* Le numéro de fondateur ne sert qu'à C0 (16/09/2026). */
+    NUMERO: "7",
     TITRE: "Notre été à Séville",
     NB_PAGES: "34",
     NB_PHOTOS: "12",
