@@ -107,7 +107,7 @@ const nextConfig: NextConfig = {
          français à `/en/<slug>` et `legalLanguages` ne déclare pas le hreflang
          manquant — la page reste juste, elle ne 404 pas. */
       {
-        source: "/:slug(cgv|confidentialite|mentions-legales|remboursement)",
+        source: "/:slug(cgv|confidentialite|mentions-legales|remboursement|livraison)",
         has: [{ type: "query", key: "lang", value: "(?<langue>en|pt)" }],
         destination: "/:langue/:slug",
         permanent: true,

@@ -1,4 +1,4 @@
-# État du système — au 15/09/2026 (soir)
+# État du système — au 16/09/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -7,6 +7,48 @@ règles, sans moyen de savoir ce qui avait expiré.
 
 Règle d'entretien : quiconque change l'état du système met ce fichier à jour dans le même geste.
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
+
+---
+
+## 16/09/2026 — le modèle de prix v3 : grille HT, zones de port, exemplaires (SUR BRANCHE)
+
+**Pas encore en production.** Branche `feat/prix-ht-zones-exemplaires` (qui embarque la PR #131,
+finition), prête, vérifiée en local ; **elle attend DEUX migrations que Mathias applique lui-même,
+dans cet ordre, AVANT la fusion** : `20260911_atelier_finition.sql` puis
+`20260916_atelier_exemplaires_prix_ht.sql`. Les écritures de `finition` et de `quantite` ne se
+replient pas (un repli imprimerait brillant à qui a cliqué mat, un exemplaire à qui en a payé
+trois) : fusionner avant, c'est déployer deux boutons qui rendent 500 sur `/numero`.
+
+**Ce que la branche porte (tableur « Prix & Marge v3 » de Mathias du 15/09, validé par Louis) :**
+
+| Ce qui change | Où |
+|---|---|
+| Grille HORS TAXES, 24 à 60 pages, dos carré seul (l'agrafé archivé) ; TTC = HT × TVA du pays arrondi à l'euro (24 p. : 24 € FR, 25 € PT, 24 € DE, 20 € US) ; la colonne France du tableur reproduite au centime par le harnais | `grille.ts`, `pays.ts` (`TAUX_TVA_PAYS`), `archive/grille-ttc-unique-2026-09/`, `archive/agrafe-2026-09/` |
+| Le HT se gèle avec le TTC (`prix_ht_centimes`) ; le TTC se recalcule quand le client change de pays | `prix.ts` (`ttcPourPays`), `transitions.ts`, `/api/atelier/livraison` |
+| Le pays REVIENT à l'écran 4 (retiré le 11/09 : le prix en dépend désormais) | `questionnaire.ts`, `Screen4Contact.tsx`, `/api/atelier/numero` |
+| Zones de port TTC : A 5 € (FR DE ES NL PL GB BE AT CZ HU), B 13 € (IT IE SE DK RO LU PT FI GR US), C au devis du jour ; offerte dès 50 € de magazines ; le BRUT gelé, le seuil rejoué à la lecture ; plafond archivé | `livraison.ts` (`ZONES_PORT`, `FRANCO_CENTIMES`, `portClient`), `archive/livraison-plafond-2026-09/` |
+| 1 à 10 exemplaires sur le bon de commande, 2e −30 %, suivants −50 % ; une ligne Stripe par rang ; `count` Cloudprinter | `exemplaires.ts`, `numeros.quantite`, `CasesEtCommande.tsx`, `checkout/route.ts`, `impression.ts` |
+| États-Unis et Brésil ouverts (indicatifs +1, +55) ; Royaume-Uni à 20 % (décision du 15/09, « la TVA du pays ») ; CH, NO, US, BR à 0, douane au client | `pays.ts`, `impression.ts` |
+| Papier intérieur `pageblock_130mcg` (gloss : port FR 6,46 € HT au lieu de 9,22, re-devisé le 16/09) ; `SHIPPING_LEVEL = cp_ground` | `impression.ts` |
+| CGV v4.0 FR/PT/EN (4.1 HT + TVA du pays, 4.3 OSS, 4bis.2 le fonctionnement complet de l'atelier, 4bis.10 exemplaires, 4bis.11 livraison, délais 10 jours = 3 ouvrés + 3 à 7, annexe dérivée) ; page `/livraison` (+ `/pt`, `/en`) ; remboursement v3.1 (remboursement Atelier port compris) ; mentions v1.1 (zone) | `src/app/legal/content/*`, `src/app/livraison/`, pieds de page, sitemap |
+| Le repli d'écriture retire UNE colonne à la fois (celle que PostgREST nomme) ; les mails ont un repli intermédiaire sans les colonnes du 16/09 | `transition/route.ts`, `mails.ts` |
+
+**Vérifié en local le 16/09** (dossier de test `test-prix-ht@example.com`, supprimé ensuite) :
+écran 4 avec 32 pays, France présélectionnée ; publication 36 pages FR → 41 € TTC, 3400 HT,
+zone A 5 €, devis gloss Colissimo 6,46 € HT ; bon de commande « plus que 9 € et la livraison est
+offerte », total 46 € ; changement de pays → Portugal : 42 €, 13 €, total 55 € ; session Stripe
+TEST créée à 55 € (`allowed_countries = [PT]`, « Livraison suivie, Portugal », métadonnées
+`quantite`, `livraison_zone`), non payée ; `PATCH quantite=3` rend un 500 franc tant que la
+migration manque, `quantite=11` un 400. tsc, lint (0 erreur), build verts ; harnais 1018 ok.
+**Non vérifié** : le sélecteur d'exemplaires et les trois lignes Stripe sur une base migrée
+(impossible avant la migration) ; les captures d'écran (le volet navigateur restait masqué).
+
+**Ce qui attend Mathias** : les deux migrations ; l'immatriculation OSS dans Stripe Tax (la TVA
+reste à 0 sur les reçus jusque-là, le TTC encaissé est le nôtre) ; la question du Royaume-Uni à
+20 % sans immatriculation UK (portée à Louis) ; les `.docx` v4.0 dans `legal-source/` ; un mot
+dans M3 sur la livraison offerte dès 50 € (template Brevo, accord à part). Le relevé complet des
+coûts de zone C, du pas de pagination et des délais Cloudprinter est dans
+`docs/reference/SPECS-CLOUDPRINTER.md` (section du 16/09).
 
 ---
 

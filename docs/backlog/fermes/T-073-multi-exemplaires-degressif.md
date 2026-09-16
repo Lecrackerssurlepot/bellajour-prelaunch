@@ -31,3 +31,13 @@ d'inventer une remise par accident. Tests dans `scripts/verif-atelier.ts` (secti
 « multi-exemplaires (T-073) ») : la grille au centime pour les trois paliers, le verrou à 1,
 les refus. RESTE À TRANCHER par Mathias : les paliers dégressifs et la quantité max — les
 brancher dans `totalPour` et lever `QUANTITE_MAX`, nulle part ailleurs.
+
+## Fermé le 16/09/2026
+Mathias a donné le barème le 15/09 (« −30 % pour 2 sur le prix produit, −50 % pour 3 exemplaires
+et après cela reste en −50 % », sur les exemplaires supplémentaires seulement) et le tableur
+« Prix & Marge v3 » fixe le maximum à 10. Livré sur la branche `feat/prix-ht-zones-exemplaires` :
+`src/lib/atelier/exemplaires.ts` (pur, importable navigateur), `totalPour` branché dessus,
+`numeros.quantite` (migration `20260916_atelier_exemplaires_prix_ht.sql`, écriture sans repli),
+sélecteur sur le bon de commande de `/numero`, une ligne Stripe par rang, `count` chez
+Cloudprinter, journal `quantite` au webhook, exemplaires sur la fiche admin. Harnais : 36 € →
+61,20 / 79,20 / 97,20 €, refus hors 1..10. CGV v4.0 art. 4bis.10.

@@ -24,6 +24,20 @@ exactement l'écart que la passe du 01/09/2026 a corrigé, sur 36 lignes.
 Semé le 29/08/2026 par l'audit de structure. Tous les tickets ci-dessous sont **prouvés dans le
 code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
+## Où on en est (16/09/2026 : le modèle de prix v3)
+
+**La grille est hors taxes, la livraison a ses zones, le client peut commander plusieurs
+exemplaires — sur une branche, en attente de deux migrations.** Le tableur « Prix & Marge v3 » de
+Mathias (15/09), validé par Louis, est intégré sur `feat/prix-ht-zones-exemplaires` : grille HT de
+24 à 60 pages (l'agrafé disparaît), TTC = HT × TVA du pays arrondi à l'euro (le pays revient à
+l'écran 4), zones de port A 5 € / B 13 € / C au devis, offerte dès 50 €, 1 à 10 exemplaires (2e
+−30 %, suivants −50 %), États-Unis et Brésil ouverts, Royaume-Uni à 20 %, papier gloss, PR #131
+(finition) embarquée. CGV v4.0 FR/PT/EN, page `/livraison`, remboursement v3.1, mentions v1.1.
+T-073 et T-106 fermés. **Bloquant chez Mathias avant la fusion** : appliquer
+`20260911_atelier_finition.sql` ET `20260916_atelier_exemplaires_prix_ht.sql` (les écritures de
+`finition` et de `quantite` ne se replient pas, volontairement). Le détail daté est dans
+`docs/reference/ETAT-PRODUCTION.md`.
+
 ## Où on en est (11/09/2026, soir : la boîte du jour)
 
 **T-112 fermé : la table de travail dit ce qui est entré et à qui est la balle.** Mathias :
@@ -80,8 +94,8 @@ Le détail daté est dans `docs/reference/ETAT-PRODUCTION.md`.
 
 ## Où on en est (15/09/2026, soir : les modèles de couverture)
 
-**Recompté fiche par fiche : 113 tickets ouverts depuis le début, 35 encore ouverts,
-78 fermés, et AUCUN bloquant.** Sur les 35 : **30 attendent une décision de Mathias**,
+**Recompté fiche par fiche le 16/09 : 113 tickets ouverts depuis le début, 31 encore ouverts,
+82 fermés, et AUCUN bloquant.** Sur les 35 : **30 attendent une décision de Mathias**,
 5 sont marqués `libre`. Répartition : 27 `serieux`, 7 `confort`, 1 `mineur`.
 
 **T-091 fermé, en production.** L'écran du titre montrait deux couvertures dessinées en CSS qui
@@ -202,7 +216,7 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-070 | Le retour des pages légales renvoie sur une page supprimée | front | confort | libre | **fermé** |
 | T-071 | Personne ne serait prévenu si Google rejetait le site | exploitation | confort | avis-requis | nouveau |
 | T-072 | Les prix finaux du magazine ne sont pas tranchés | paiement | serieux | avis-requis | **fermé** (10/09 : grille finale de Mathias dans `grille.ts`, livraison en sus, prix gelé) |
-| T-073 | Commander plusieurs exemplaires, avec des paliers dégressifs à fournir | paiement | serieux | avis-requis | en pause (30/08, verrou à 1 posé — attend les paliers de Mathias) |
+| T-073 | Commander plusieurs exemplaires, avec des paliers dégressifs à fournir | paiement | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 16/09 : barème de Mathias (1er plein, 2e −30 %, suivants −50 %, max 10) dans `exemplaires.ts`, sélecteur sur `/numero`, une ligne Stripe par rang, `count` Cloudprinter, migration 20260916 |
 | T-074 | Un prix selon le pays de livraison exige de demander le pays avant le prix | produit | serieux | avis-requis | **fermé** (10/09 : pays demandé à l'écran 4, livraison par devis selon le pays) |
 | T-075 | Les ventes de l'atelier ne passent pas par la comptabilité InvoiceXpress | paiement | serieux | avis-requis | nouveau |
 | T-076 | Les dossiers abandonnés gardent leurs données personnelles sans limite de durée | donnees | serieux | avis-requis | **rétention armée le 02/09** — migration appliquée, template M10 poussé (ID 40), `BREVO_TEMPLATE_M10_ID` live en prod (Santé sans alerte). Reste seulement, différé exprès : un cron une fois éprouvé, et exclure les anonymisés de T-023 |
@@ -235,7 +249,7 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-103 | Un template de mail actif affiche une image qui répond 404 | contenu | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 08/09 : le template 13 est un ORPHELIN. L'interface Brevo ne connaît que les messages #12 et #14 de la séquence ; le 13 n'est branché sur aucune étape, d'où le refus de l'API en écriture. Un template orphelin ne part jamais : l'image 404 ne sera vue par personne. C'est en le vérifiant qu'on a trouvé T-104 |
 | T-104 | S'inscrire aujourd'hui déclenche deux mails qui annoncent des préventes closes | contenu | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — ouvert ET fermé le 08/09. `/ambassadeurs` (200, formulaire vivant) → liste Brevo 3 → automation ACTIVE → deux mails de l'ère prévente. Coupé en **trois** endroits indépendants : automation en pause (vérifiée), page en 410, les deux routes en 410. Ouvert en `bloquant`, fermé le jour même |
 | T-105 | Recommander un numéro déjà livré, depuis la bibliothèque | paiement | serieux | avis-requis | **en pause** (08/09) — structure posée et VERROUILLÉE, comme T-073. `REIMPRESSION_CENTIMES = null` dans `prix.ts`, module pur `reimpression.ts` (`peutRecommander`), bouton en place dans `/compte/magazine/<token>` mais jamais rendu, dix tests qui gardent le verrou. Mathias a tranché le CIRCUIT (paiement → impression directe, sans passage par l'atelier) et **pas le prix — parce qu'il ne le connaît pas** (dit tel quel le 08/09). Le ticket n'attend donc pas un arbitrage mais des COÛTS : tarif Cloudprinter à l'exemplaire par palier, port FR/BE/LU, marge voulue. Ne pas lui reposer la question, lui apporter les chiffres. Restent ensuite la route Stripe, la branche webhook + commande Cloudprinter, deux mails, et la trace en admin |
-| T-106 | La politique de livraison facturée au client (plafond, tarif fixe ou port compris) n'est pas tranchée | paiement | serieux | avis-requis | nouveau (10/09) — le client paie le devis Cloudprinter complet (11,06 € TTC pour la France) tant que le plafond n'est pas posé ; attend Mathias et Louis |
+| T-106 | La politique de livraison facturée au client (plafond, tarif fixe ou port compris) n'est pas tranchée | paiement | serieux | avis-requis | **fermé** (fiche dans `fermes/`) — 16/09 : zones A 5 € / B 13 € / C au devis, offerte dès 50 € TTC de magazines (tableur du 15/09, validé par Louis) ; plafond archivé ; CGV v4.0 et page `/livraison` |
 | T-107 | Les mails mettent 5 à 9 minutes à arriver, alors que le site les soumet à la seconde | atelier | serieux | avis-requis | nouveau (11/09) — mesuré 5 min 07 s à 8 min 57 s sur trois mails, MAIS 2 s sur le M3 de Klervie le même jour : le retard est INTERMITTENT, pas structurel. Caractériser avant de payer un plan |
 | T-108 | Un test automatisé a créé un vrai dossier et envoyé un vrai mail | atelier | serieux | libre | **fermé** (11/09, PR #124 : `ATELIER_MAILS_COUPES` dans les deux chemins d'envoi) |
 | T-109 | Impossible de relancer un client depuis l'atelier, et une relance ne partait qu'une fois | admin | serieux | libre | **fermé** (11/09, PR #128 et #129 : bouton sur la ligne, colonne « Dernier mot », deux relances par motif, 72 h entre deux — aucun template Brevo créé, aucune migration) |

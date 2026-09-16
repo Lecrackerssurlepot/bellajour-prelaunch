@@ -12,7 +12,7 @@ import type { LocalizedDoc } from '../types'
 export const MENTIONS_LEGALES: LocalizedDoc = {
   fr: {
     title: `Mentions légales et informations précontractuelles`,
-    lastUpdated: `Version 1.0 — En vigueur le 13/06/2026`,
+    lastUpdated: `Version 1.1 — En vigueur le 16/09/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `Traduction française à titre informatif. La version juridiquement prévalente est le texte portugais ; en cas de divergence, ce dernier prime.`,
@@ -46,7 +46,7 @@ export const MENTIONS_LEGALES: LocalizedDoc = {
         heading: `3. Activité et zone de commercialisation`,
         blocks: [
           { kind: 'p', value: `Bellajour exerce une activité d'édition et de vente en ligne d'albums photo personnalisés (couverture illustrée générée par IA, mise en page algorithmique sous contrôle humain, version digitale HD incluse).` },
-          { kind: 'p', value: `Les produits sont commercialisés au sein de l'Union européenne. Toute extension à d'autres territoires fera l'objet d'une mise à jour des présentes mentions et des conditions applicables.` },
+          { kind: 'p', value: `Les produits sont commercialisés et livrés dans l'Union européenne, au Royaume-Uni, en Suisse, en Norvège, aux États-Unis et au Brésil (article 4 bis des CGV). Toute extension à d'autres territoires fera l'objet d'une mise à jour des présentes mentions et des conditions applicables.` },
         ],
       },
       {
@@ -89,10 +89,10 @@ export const MENTIONS_LEGALES: LocalizedDoc = {
           { kind: 'p', value: `Conformément à l'article 4.º du DL 24/2014, les informations précontractuelles essentielles sont mises à votre disposition avant la commande :` },
           { kind: 'list', items: [
             `Caractéristiques essentielles du produit : voir la Fiche produit (format, reliure, pagination, impression, fichiers acceptés).`,
-            `Prix : affichés en euros, toutes taxes comprises, selon la grille tarifaire de la Fiche produit ; le régime de TVA et les modalités de facturation figurent à l'article 4 des CGV.`,
+            `Prix : grille hors taxes par nombre de pages dans la Fiche produit, prix affiché en euros toutes taxes comprises au taux de TVA du pays de livraison ; le régime de TVA et les modalités de facturation figurent à l'article 4 des CGV.`,
             `Acompte, crédit (Instants) et prévente : article 5 des CGV.`,
             `Modalités de paiement : par carte via Stripe (authentification forte SCA / 3-D Secure 2) — article 7 des CGV.`,
-            `Livraison et délai : article 10 des CGV (le délai est porté à votre connaissance avant la commande).`,
+            `Livraison, frais et délai : facturée en sus par zone, offerte dès 50 € de magazines, délai estimé à 10 jours après validation de la maquette — articles 4 bis et 10 des CGV et page Livraison.`,
             `Transfert du risque : à la réception physique du bien — article 10 des CGV.`,
             `Droit de libre résolution et son exception : voir le §6 ci-dessus et l'article 8 des CGV.`,
             `Garanties légales : garantie de conformité de 3 ans, présomption de 2 ans, droit de rejet de 30 jours (DL n.º 84/2021) — article 9 des CGV.`,
@@ -131,7 +131,7 @@ export const MENTIONS_LEGALES: LocalizedDoc = {
   },
   pt: {
     title: `Menções legais e informações pré-contratuais`,
-    lastUpdated: `Versão 1.0 — Em vigor em 13/06/2026`,
+    lastUpdated: `Versão 1.1 — Em vigor em 16/09/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `Texto de referência (versão portuguesa), juridicamente prevalecente. As traduções para francês e inglês são meramente informativas.`,
@@ -165,7 +165,7 @@ export const MENTIONS_LEGALES: LocalizedDoc = {
         heading: `3. Atividade e zona de comercialização`,
         blocks: [
           { kind: 'p', value: `A Bellajour exerce uma atividade de edição e venda em linha de álbuns de fotografias personalizados (capa ilustrada gerada por IA, paginação algorítmica sob controlo humano, versão digital HD incluída).` },
-          { kind: 'p', value: `Os produtos são comercializados no território da União Europeia. Qualquer extensão a outros territórios será objeto de atualização das presentes menções e das condições aplicáveis.` },
+          { kind: 'p', value: `Os produtos são comercializados e entregues na União Europeia, no Reino Unido, na Suíça, na Noruega, nos Estados Unidos e no Brasil (artigo 4.º-A das CGV). Qualquer extensão a outros territórios será objeto de atualização das presentes menções e das condições aplicáveis.` },
         ],
       },
       {
@@ -208,10 +208,10 @@ export const MENTIONS_LEGALES: LocalizedDoc = {
           { kind: 'p', value: `Nos termos do artigo 4.º do DL 24/2014, as informações pré-contratuais essenciais são disponibilizadas antes da encomenda:` },
           { kind: 'list', items: [
             `Características essenciais do produto: ver a Ficha de Produto (formato, encadernação, paginação, impressão, ficheiros aceites).`,
-            `Preços: exibidos em euros, com todos os impostos incluídos, segundo a grelha tarifária da Ficha de Produto; o regime de IVA e as modalidades de faturação constam do artigo 4.º das CGV.`,
+            `Preços: grelha sem IVA por número de páginas na Ficha de Produto, preço exibido em euros com todos os impostos incluídos à taxa de IVA do país de entrega; o regime de IVA e as modalidades de faturação constam do artigo 4.º das CGV.`,
             `Adiantamento, crédito (Instants) e pré-venda: artigo 5.º das CGV.`,
             `Modalidades de pagamento: por cartão através da Stripe (autenticação forte SCA / 3-D Secure 2) — artigo 7.º das CGV.`,
-            `Entrega e prazo: artigo 10.º das CGV (o prazo é dado a conhecer antes da encomenda).`,
+            `Entrega, custos e prazo: faturada adicionalmente por zona, oferecida a partir de 50 € de revistas, prazo estimado em 10 dias após a validação da maquete — artigos 4.º-A e 10.º das CGV e página Entrega.`,
             `Transferência do risco: na receção física do bem — artigo 10.º das CGV.`,
             `Direito de livre resolução e a sua exceção: ver o §6 acima e o artigo 8.º das CGV.`,
             `Garantias legais: garantia de conformidade de 3 anos, presunção de 2 anos, direito de rejeição de 30 dias (DL n.º 84/2021) — artigo 9.º das CGV.`,
@@ -250,7 +250,7 @@ export const MENTIONS_LEGALES: LocalizedDoc = {
   },
   en: {
     title: `Legal Notice and Pre-Contractual Information`,
-    lastUpdated: `Version 1.0 — Effective 13/06/2026`,
+    lastUpdated: `Version 1.1 — Effective 16/09/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `English translation for information only. The legally prevailing version is the Portuguese text; in the event of any discrepancy, the Portuguese text prevails.`,
@@ -284,7 +284,7 @@ export const MENTIONS_LEGALES: LocalizedDoc = {
         heading: `3. Activity and area of sale`,
         blocks: [
           { kind: 'p', value: `Bellajour carries out an activity of online publishing and sale of personalised photo albums (AI-generated illustrated cover, algorithmic layout under human control, HD digital version included).` },
-          { kind: 'p', value: `The products are sold within the European Union. Any extension to other territories will be the subject of an update to this notice and the applicable terms.` },
+          { kind: 'p', value: `The products are sold and delivered within the European Union, the United Kingdom, Switzerland, Norway, the United States and Brazil (Article 4a of the T&Cs). Any extension to other territories will be the subject of an update to this notice and the applicable terms.` },
         ],
       },
       {
@@ -327,10 +327,10 @@ export const MENTIONS_LEGALES: LocalizedDoc = {
           { kind: 'p', value: `In accordance with Article 4 of DL 24/2014, the essential pre-contractual information is made available before the order:` },
           { kind: 'list', items: [
             `Essential characteristics of the product: see the Product Sheet (format, binding, pagination, printing, accepted files).`,
-            `Prices: displayed in euros, inclusive of all taxes, according to the price list in the Product Sheet; the VAT regime and invoicing arrangements appear in Article 4 of the T&Cs.`,
+            `Prices: price list excluding VAT per page count in the Product Sheet, price displayed in euros inclusive of all taxes at the VAT rate of the delivery country; the VAT regime and invoicing arrangements appear in Article 4 of the T&Cs.`,
             `Deposit, credit (Instants) and pre-sale: Article 5 of the T&Cs.`,
             `Payment methods: by card via Stripe (strong authentication SCA / 3-D Secure 2) — Article 7 of the T&Cs.`,
-            `Delivery and time: Article 10 of the T&Cs (the time is made known to you before the order).`,
+            `Delivery, costs and time: invoiced in addition by zone, free from €50 of magazines, estimated at 10 days after validation of the proof — Articles 4a and 10 of the T&Cs and the Delivery page.`,
             `Transfer of risk: upon physical receipt of the goods — Article 10 of the T&Cs.`,
             `Right of withdrawal and its exception: see §6 above and Article 8 of the T&Cs.`,
             `Legal guarantees: conformity guarantee of 3 years, presumption of 2 years, right of rejection of 30 days (DL no. 84/2021) — Article 9 of the T&Cs.`,

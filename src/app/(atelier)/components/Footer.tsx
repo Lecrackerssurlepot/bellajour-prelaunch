@@ -32,6 +32,7 @@ const LIENS = [
   { href: '/mentions-legales', label: 'Mentions légales' },
   { href: '/confidentialite', label: 'Confidentialité' },
   { href: '/cgv', label: 'CGV' },
+  { href: '/livraison', label: 'Livraison' },
   { href: '/remboursement', label: 'Remboursement' },
 ]
 
