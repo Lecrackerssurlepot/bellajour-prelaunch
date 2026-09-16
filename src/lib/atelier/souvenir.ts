@@ -17,10 +17,17 @@
  * LES CHIFFRES VIENNENT DES SPECS, PAS D'UNE SUPPOSITION
  * (docs/reference/SPECS-CLOUDPRINTER.md, relevé du 30/08) :
  *   format fini 210 × 297, fond perdu 3 mm de chaque côté, couverture
- *   enveloppante = 2 × (210 + 3) + dos. Le dos n'est PAS calculé par la
- *   formule au grammage (T-028 non tranché) : il est MESURÉ sur la feuille
- *   réelle — `largeur − 2 × (210 + fond perdu)` — donc toujours juste,
- *   quel que soit le papier commandé.
+ *   enveloppante = 2 × (210 + 3) + dos.
+ *
+ * ⚠️ ICI, LE DOS RESTE MESURÉ — et ce n'est plus faute de mieux. Depuis le
+ * 11/09 le papier est tranché et `dosMmPourPages` (impression.ts) sait le
+ * CALCULER ; c'est ce qui permet au contrôle PDF de refuser une couverture
+ * au mauvais dos avant d'imprimer. Mais ce module-ci ne fabrique rien : il
+ * découpe un fichier DÉJÀ déposé, pour le montrer. Le découper sur une cote
+ * théorique amputerait la vraie feuille de l'écart entre les deux. On mesure
+ * donc `largeur − 2 × (210 + fond perdu)`, ce qui reste juste même si
+ * l'atelier a déposé une couverture d'un autre gabarit. Juger et découper ne
+ * sont pas le même geste.
  */
 
 import { pointsEnMm } from "./impression";

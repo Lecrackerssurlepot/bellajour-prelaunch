@@ -64,18 +64,100 @@ export type ProduitImpression = {
  * la grille, donc ils ne désignent AUCUN produit — on ne devine plus une
  * reliure de repli pour une pagination qu'on ne sait pas facturer. Une seule
  * table décide de ce qui est composable, et c'est celle qui décide du prix.
+ */
+
+/* ─────────────────── LE PAPIER, TRANCHÉ (11/09/2026) ───────────────────
  *
- * ⚠️ Les finitions (grammage intérieur, papier de couverture) sont le choix
- * par défaut d'aujourd'hui. L'étude de prix de Mathias tranchera le choix
- * commercial définitif : cette table est LE seul endroit à retoucher.
+ * T-027 est clos : Mathias a arrêté les références après le relevé
+ * `products/info` + `prices/lookup` du 11/09 (consigné dans
+ * docs/reference/SPECS-CLOUDPRINTER.md).
+ *
+ *   intérieur  — 130 g couché SILK (`pageblock_130mcs`) ;
+ *   couverture — 250 g couché silk (`cover_250mcs`) ;
+ *   pelliculage — AU CHOIX DU CLIENT, brillant ou mat (plus bas).
+ *
+ * ⚠️ UNE SEULE CONSTANTE POUR LES DEUX RELIURES, ET C'EST VOULU. Un agrafé
+ * et un dos carré doivent se toucher pareil : personne ne reçoit un papier
+ * différent parce que son histoire tenait en vingt pages. Changer de papier
+ * = changer CES DEUX LIGNES, et la géométrie du dos suit toute seule
+ * (`GRAMMAGE_INTERIEUR_GSM` et `BULK_INTERIEUR` s'en déduisent plus bas).
+ *
+ * ⚠️ CE QUE LE RELEVÉ DU 11/09 A MONTRÉ, et qui ne se devine pas : le
+ * grammage ne coûte presque rien (90 → 130 g : un centime sur un 32 pages),
+ * mais il change d'USINE, et donc de PORT. En France, `pageblock_130mcs`
+ * route vers une usine dont le transporteur le moins cher est à 9,22 € HT,
+ * là où `pageblock_130mcg` (le même 130 g, en gloss) tombe à 6,46 €. Au
+ * Portugal et en Allemagne, les deux donnent exactement le même prix. Le
+ * jour où le port français pèse plus que le toucher du papier, la bascule
+ * tient en un mot : `mcs` → `mcg`. */
+export const PAPIER_INTERIEUR = "pageblock_130mcs";
+export const PAPIER_COUVERTURE = "cover_250mcs";
+
+/* ─────────────── LE PELLICULAGE, AU CHOIX DU CLIENT ───────────────
+ *
+ * Décision de Mathias du 11/09/2026 : brillant ou mat, sur les DEUX
+ * reliures, et sans différence de prix — vérifié, pas supposé : un dos
+ * carré de 32 pages est devisé 6,6667 € HT en brillant et 6,6722 € en mat.
+ * Un demi-centime. Rien à arbitrer, donc rien à facturer.
+ *
+ * ⚠️ L'ASYMÉTRIE DES RÉFÉRENCES EST CELLE DE CLOUDPRINTER, PAS UNE COQUILLE.
+ * Leur famille `type_book_cover_finish` nomme le brillant `finish_gloss`
+ * (c'est leur défaut) et le mat `cover_finish_matte`. Relevé le 11/09 sur
+ * les deux produits. Ne pas « harmoniser » en `cover_finish_gloss` : cette
+ * référence n'existe pas et la commande serait refusée.
+ *
+ * Le MOT du dossier est le nôtre (`gloss` / `matte`), jamais la référence
+ * Cloudprinter : c'est lui qui voyage en base, dans le journal et à
+ * l'écran. La traduction en référence se fait ici, au dernier moment. */
+export type Finition = "gloss" | "matte";
+
+/** Le défaut Cloudprinter, et le nôtre : un dossier sans choix part brillant. */
+export const FINITION_DEFAUT: Finition = "gloss";
+
+/** Notre mot → la référence de leur catalogue. Le seul endroit qui les relie. */
+export const FINITION_OPTION: Record<Finition, string> = {
+  gloss: "finish_gloss",
+  matte: "cover_finish_matte",
+};
+
+/** Le mot que le client et l'atelier lisent, au féminin de « couverture ». */
+export const FINITION_LIBELLE: Record<Finition, string> = {
+  gloss: "brillante",
+  matte: "mate",
+};
+
+/**
+ * Une valeur venue du navigateur (ou d'une colonne fraîche) devient une
+ * finition, ou `null`. Aucun repli ici : le repli sur le défaut appartient
+ * à l'appelant qui LIT un dossier (`finitionDuDossier`), jamais à celui qui
+ * VALIDE une saisie — accepter « brilant » en le corrigeant en silence
+ * ferait imprimer autre chose que ce qui a été cliqué.
+ */
+export function normaliserFinition(v: unknown): Finition | null {
+  return v === "gloss" || v === "matte" ? v : null;
+}
+
+/**
+ * La finition d'un dossier, avec le repli assumé sur le défaut. Un dossier
+ * ouvert avant le 11/09 n'a rien choisi : il part en brillant, c'est-à-dire
+ * exactement ce qui a été imprimé jusqu'ici.
+ */
+export function finitionDuDossier(v: unknown): Finition {
+  return normaliserFinition(v) ?? FINITION_DEFAUT;
+}
+
+/**
+ * Les deux produits, avec LE MÊME papier. Le pelliculage n'est PAS dans
+ * cette table : il ne dépend pas du produit mais du dossier, et il entre
+ * dans les options au moment de composer l'item (`optionsItem`).
  */
 const AGRAFE: ProduitImpression = {
   produit: "magazine_sas_a4_p_fc",
   libelle: "Magazine A4 agrafé",
   fichiers: ["product"],
   finitions: [
-    { type: "pageblock_130mcs", count: "pages" },
-    { type: "cover_250mcs", count: 1 },
+    { type: PAPIER_INTERIEUR, count: "pages" },
+    { type: PAPIER_COUVERTURE, count: 1 },
   ],
 };
 
@@ -84,8 +166,8 @@ const DOS_CARRE: ProduitImpression = {
   libelle: "Magazine A4 dos carré collé",
   fichiers: ["cover", "book"],
   finitions: [
-    { type: "pageblock_130mcs", count: "pages" },
-    { type: "cover_250mcs", count: 1 },
+    { type: PAPIER_INTERIEUR, count: "pages" },
+    { type: PAPIER_COUVERTURE, count: 1 },
   ],
 };
 
@@ -125,6 +207,86 @@ export const REGLE_PAGES_FICHIER: Record<string, { multiple: number; min: number
   magazine_sas_a4_p_fc: { multiple: 4, min: 8 },
   magazine_pb_a4_p_fc: { multiple: 2, min: null },
 };
+
+/* ────────────── LA GÉOMÉTRIE DU DOS (dos carré seulement) ──────────────
+ *
+ * Trouvée le 02/09 dans la doc Cloudprinter atteinte par un lien-annotation
+ * du gabarit `templates/2216`, recopiée telle quelle dans
+ * docs/reference/SPECS-CLOUDPRINTER.md :
+ *
+ *     dos_mm = (grammage × bulk × (pages / 2)) / 1000 + 2 × épaisseur_couv
+ *
+ * Elle est restée lettre morte jusqu'au 11/09 parce qu'elle exige un
+ * grammage, et que le grammage n'était pas tranché (T-028). Il l'est : ces
+ * deux constantes se DÉDUISENT de `PAPIER_INTERIEUR`, elles ne se saisissent
+ * pas — changer le papier plus haut change le dos ici, sans que personne
+ * n'ait à s'en souvenir.
+ */
+
+/** Le grammage, lu dans la référence : `pageblock_130mcs` → 130. */
+export const GRAMMAGE_INTERIEUR_GSM = Number(
+  /pageblock_(\d+)/.exec(PAPIER_INTERIEUR)?.[1] ?? 0,
+);
+
+/**
+ * Le « bulk » (foisonnement) du papier, valeurs moyennes Cloudprinter :
+ * MCG (gloss) 0,80 · MCS (silk) 0,90 · ECB 1,20 · OFF 1,22. Comme le
+ * grammage, il se déduit du SUFFIXE de la référence — `…130mcs` → silk.
+ * Un suffixe inconnu rend 0 : le dos vaudra alors le seul terme de
+ * couverture, visiblement faux, plutôt qu'un chiffre inventé (interdit nº5).
+ */
+export const BULK_PAR_PAPIER: Record<string, number> = {
+  mcg: 0.8,
+  mcs: 0.9,
+  ecb: 1.2,
+  off: 1.22,
+};
+
+export const BULK_INTERIEUR =
+  BULK_PAR_PAPIER[/pageblock_\d+([a-z]+)/.exec(PAPIER_INTERIEUR)?.[1] ?? ""] ?? 0;
+
+/**
+ * Le terme de couverture de la formule, en mm. Cloudprinter le fixe par
+ * RELIURE, pas par grammage : Case Wrap 3 mm → 6,0 · Case Wrap 2 mm → 4,0 ·
+ * **Perfect Binding / Softcover → 1,0** (2 × 0,5). `magazine_pb_a4_p_fc`
+ * est un softcover, donc 1,0. Ce n'est PAS l'épaisseur du 250 g : c'est leur
+ * forfait, et on le recopie sans l'améliorer.
+ */
+export const EPAISSEUR_COUVERTURE_MM = 1.0;
+
+/**
+ * L'épaisseur du dos, en mm, pour une pagination donnée. `null` quand la
+ * pagination ne désigne pas un dos carré : un agrafé n'a pas de dos, et
+ * rendre 0 laisserait croire qu'on a calculé quelque chose.
+ *
+ * Arrondi au centième : c'est la précision de la formule source, et celle
+ * que `decouperCouverture` rend déjà sur le dos MESURÉ (souvenir.ts) — les
+ * deux chiffres doivent pouvoir se comparer sans bruit d'arrondi.
+ */
+export function dosMmPourPages(nbPages: number | null | undefined): number | null {
+  if (reliurePour(nbPages) !== "dos_carre" || typeof nbPages !== "number") return null;
+  const dos =
+    (GRAMMAGE_INTERIEUR_GSM * BULK_INTERIEUR * (nbPages / 2)) / 1000 + EPAISSEUR_COUVERTURE_MM;
+  return Math.round(dos * 100) / 100;
+}
+
+/**
+ * La largeur de la COUVERTURE ENVELOPPANTE attendue par Cloudprinter, fonds
+ * perdus compris : deux faces finies, leurs deux fonds perdus extérieurs, et
+ * le dos entre elles.
+ *
+ *     2 × (210 + 3) + dos
+ *
+ * C'est la cote que `verdictTaillePage` peut enfin juger : jusqu'au 11/09
+ * elle se contentait d'un « constat » sur la largeur d'une `cover`, faute de
+ * savoir ce qu'elle aurait dû valoir. La hauteur, elle, n'a jamais dépendu
+ * du dos (303 mm, fini + fonds perdus).
+ */
+export function largeurCouvertureMm(nbPages: number | null | undefined): number | null {
+  const dos = dosMmPourPages(nbPages);
+  if (dos === null) return null;
+  return Math.round((2 * (FORMAT_FINI_MM.largeur + FOND_PERDU_MM) + dos) * 100) / 100;
+}
 
 export function produitPour(nbPages: number | null | undefined): ProduitImpression | null {
   const reliure = reliurePour(nbPages);
@@ -229,10 +391,15 @@ export function verdictPagesPdf(
  *   sans_fond_perdu — ~210 × 297 mm : le format FINI. Imprimable, mais le
  *                     rognage mordra dans l'image au bord ;
  *   hors_format     — ni l'un ni l'autre ;
- *   constat         — la LARGEUR d'une `cover` de dos carré dépend de
- *                     l'épaisseur du dos, dont la formule n'est pas dans
- *                     products/info (T-078) : on juge sa hauteur, on
- *                     constate sa largeur.
+ *   constat         — on ne sait pas juger : c'est une `cover` et la
+ *                     pagination du dossier est inconnue, donc le dos aussi.
+ *
+ * ⚠️ LA `cover` SE JUGE DEPUIS LE 11/09/2026, et c'est le seul changement de
+ * cette fonction. Sa largeur dépend de l'épaisseur du dos, qui dépend du
+ * grammage, qui n'était pas tranché : on constatait. Le papier est arrêté,
+ * `largeurCouvertureMm` sait donc ce que la feuille doit mesurer, et une
+ * couverture au mauvais dos est le défaut qu'on ne voit JAMAIS à l'écran et
+ * toujours sur l'objet imprimé — un titre décalé sur la tranche.
  */
 export type VerdictTaille = "conforme" | "sans_fond_perdu" | "hors_format" | "constat";
 
@@ -243,13 +410,25 @@ function proche(a: number, b: number): boolean {
 export function verdictTaillePage(
   type: TypeFichier,
   largeurMm: number,
-  hauteurMm: number
+  hauteurMm: number,
+  /**
+   * La pagination du DOSSIER, qui donne le dos et donc la largeur attendue
+   * d'une couverture enveloppante. Absente (ou hors grille) : on retombe
+   * exactement sur le comportement d'avant le 11/09 — la hauteur est jugée,
+   * la largeur constatée.
+   */
+  nbPagesDossier?: number | null,
 ): VerdictTaille {
   if (type === "cover") {
-    /* Seule la hauteur est jugeable : fini + fond perdu, ou fini nu. */
-    if (proche(hauteurMm, FORMAT_PAGE_PDF_MM.hauteur)) return "constat";
+    /* La hauteur d'abord : elle ne dépend pas du dos, et une hauteur fausse
+       condamne la feuille quelle que soit sa largeur. */
     if (proche(hauteurMm, FORMAT_FINI_MM.hauteur)) return "sans_fond_perdu";
-    return "hors_format";
+    if (!proche(hauteurMm, FORMAT_PAGE_PDF_MM.hauteur)) return "hors_format";
+
+    /* Puis la largeur, SI on sait ce qu'elle devrait valoir. */
+    const attendue = largeurCouvertureMm(nbPagesDossier);
+    if (attendue === null) return "constat";
+    return proche(largeurMm, attendue) ? "conforme" : "hors_format";
   }
   if (proche(largeurMm, FORMAT_PAGE_PDF_MM.largeur) && proche(hauteurMm, FORMAT_PAGE_PDF_MM.hauteur)) {
     return "conforme";
@@ -434,13 +613,24 @@ export function adresseCloudprinter(
  * de grammage — et l'écart n'aurait pas fait d'erreur, seulement un prix
  * faux. `scripts/verif-atelier.ts` compare les deux à chaque exécution.
  */
-function optionsItem(produit: ProduitImpression, pages: number): Array<{ type: string; count: string }> {
+function optionsItem(
+  produit: ProduitImpression,
+  pages: number,
+  /* ⚠️ LE PELLICULAGE VIENT DU DOSSIER, PAS DU PRODUIT (11/09/2026). Il est
+     le seul paramètre d'impression que le client choisit lui-même, et il
+     doit donc traverser le devis ET la commande de la même façon que le
+     papier — sinon le jour où le mat coûterait quelque chose, on chiffrerait
+     un objet et on en commanderait un autre. Aujourd'hui l'écart relevé est
+     d'un demi-centime ; la règle vaut pour demain. */
+  finition: Finition,
+): Array<{ type: string; count: string }> {
   return [
     { type: "total_pages", count: String(pages) },
     ...produit.finitions.map((f) => ({
       type: f.type,
       count: String(f.count === "pages" ? pages : f.count),
     })),
+    { type: FINITION_OPTION[finition], count: "1" },
   ];
 }
 
@@ -471,8 +661,11 @@ export function payloadDevis(args: {
   pays: string;
   produit: ProduitImpression;
   pages: number;
+  /** La finition du dossier. Absente = le défaut, comme partout ailleurs. */
+  finition?: Finition | null;
 }): PayloadDevis {
   const { pays, produit, pages } = args;
+  const finition = finitionDuDossier(args.finition);
   return {
     country: pays,
     currency: "EUR",
@@ -481,7 +674,7 @@ export function payloadDevis(args: {
         reference: "devis",
         product: produit.produit,
         count: "1",
-        options: optionsItem(produit, pages),
+        options: optionsItem(produit, pages, finition),
       },
     ],
   };
@@ -521,6 +714,13 @@ export function payloadCommande(
     pages: number;
     fichiers: Partial<Record<TypeFichier, { url: string; md5: string }>>;
     titre?: string | null;
+    /**
+     * Le pelliculage CHOISI PAR LE CLIENT sur sa page de commande
+     * (`numeros.finition`). Absent ou illisible = brillant, le défaut
+     * Cloudprinter et ce qui a été imprimé jusqu'au 11/09 : un dossier
+     * d'avant ce lot ne change donc pas d'objet.
+     */
+    finition?: Finition | null;
   },
   /**
    * Le niveau d'expédition GELÉ AU DEVIS (`numeros.livraison_niveau`).
@@ -538,7 +738,7 @@ export function payloadCommande(
 ): PayloadCommande {
   const { reference, emailContact, adresse, produit, pages, fichiers, titre } = args;
 
-  const options = optionsItem(produit, pages);
+  const options = optionsItem(produit, pages, finitionDuDossier(args.finition));
 
   return {
     reference,

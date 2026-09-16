@@ -22,6 +22,7 @@ import { makeSupabase } from '@/lib/supabase'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { resoudreApercu } from '@/lib/atelier/apercu'
 import { eurosDuDossier, centimesDuDossier, type PalierCle } from '@/lib/atelier/prix'
+import { finitionDuDossier } from '@/lib/atelier/impression'
 import { totalCommande } from '@/lib/atelier/livraison'
 import { creditDuPourMail } from '@/lib/atelier/fondatrice'
 import { DELAIS, JOURS_LIVRAISON, etapeDepot, QUI_ATTEND, type Camp, type EtapeDepot } from '@/lib/atelier/urgence'
@@ -114,6 +115,11 @@ type Numero = {
      chiffré » — et la page se tait alors sur le total, elle n'invente rien. */
   livraison_centimes?: number | null
   pays_livraison?: string | null
+  /* Le pelliculage de couverture choisi par le client (migration 20260911) :
+     `gloss` ou `matte`, `null` tant qu'il n'a rien choisi. Optionnelle comme
+     les autres colonnes fraîches — le repli la laisse `undefined`, et le
+     sélecteur repart alors du brillant, qui est le défaut réel. */
+  finition?: string | null
 }
 
 /* ⚠️ `id` et `email` sont là pour le CRÉDIT FONDATEUR du bon de commande
@@ -134,12 +140,13 @@ const CHAMPS =
    d'abord sans le prix gelé, puis sans le souvenir, puis sans rien de frais. */
 const CHAMPS_AVEC_SUIVI = `${CHAMPS}, tracking_code`
 const CHAMPS_AVEC_SOUVENIR = `${CHAMPS_AVEC_SUIVI}, souvenir_pdf_key, souvenir_pdf_octets`
-const CHAMPS_COMPLET = `${CHAMPS_AVEC_SOUVENIR}, prix_centimes, livraison_centimes, pays_livraison, livraison_niveau`
-/* T-113 — `archive_le` a SON niveau de repli, au-dessus du prix gelé : tant que
-   la migration 20260914 n'est pas passée, on retombe sur CHAMPS_COMPLET et la
-   page garde le prix et le port gelés. La mettre au même niveau aurait fait
-   perdre le port (donc refuser le checkout) pour une colonne qui ne change
-   qu'un 404. */
+const CHAMPS_AVEC_PRIX = `${CHAMPS_AVEC_SOUVENIR}, prix_centimes, livraison_centimes, pays_livraison, livraison_niveau`
+const CHAMPS_COMPLET = `${CHAMPS_AVEC_PRIX}, finition`
+/* T-113 — `archive_le` a SON niveau de repli, au-dessus du prix gelé et de la
+   finition : tant que la migration 20260914 n'est pas passée, on retombe sur
+   CHAMPS_COMPLET et la page garde le prix et le port gelés. La mettre au même
+   niveau aurait fait perdre le port (donc refuser le checkout) pour une colonne
+   qui ne change qu'un 404. */
 const CHAMPS_AVEC_ARCHIVE = `${CHAMPS_COMPLET}, archive_le`
 
 /**
@@ -196,6 +203,9 @@ async function lireNumero(token: string): Promise<Numero | null | 'panne'> {
     let { data, error } = await lire(CHAMPS_AVEC_ARCHIVE)
     if (error?.code === '42703') {
       ;({ data, error } = await lire(CHAMPS_COMPLET))
+    }
+    if (error?.code === '42703') {
+      ;({ data, error } = await lire(CHAMPS_AVEC_PRIX))
     }
     if (error?.code === '42703') {
       ;({ data, error } = await lire(CHAMPS_AVEC_SOUVENIR))
@@ -662,6 +672,9 @@ export default async function NumeroPage({
               renonciation={numero.renonciation_retractation}
               joursComposition={JOURS_COMPOSITION}
               joursLivraison={JOURS_LIVRAISON}
+              /* Le pelliculage déjà choisi, ou le défaut. Le composant ne
+                 décide de rien : il montre l'état du dossier. */
+              finition={finitionDuDossier(numero.finition)}
               previsualisation={previsualisation}
             />
           )}

@@ -17,7 +17,13 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-import { payloadDevis, SHIPPING_LEVEL, type PayloadCommande, type ProduitImpression } from "./impression";
+import {
+  payloadDevis,
+  SHIPPING_LEVEL,
+  type Finition,
+  type PayloadCommande,
+  type ProduitImpression,
+} from "./impression";
 import { lireDevisCloudprinter, type Devis } from "./livraison";
 
 const BASE = "https://api.cloudprinter.com/cloudcore/1.0";
@@ -110,6 +116,12 @@ export async function devisLivraison(args: {
   pays: string;
   produit: ProduitImpression;
   pages: number;
+  /* Le pelliculage du dossier voyage jusqu'au devis pour que celui-ci
+     chiffre EXACTEMENT l'objet qui sera commandé (11/09/2026). L'écart
+     relevé est d'un demi-centime aujourd'hui ; la règle, elle, ne dépend
+     pas de l'écart — c'est celle de `optionsItem`, une seule construction
+     pour le devis et la commande. */
+  finition?: Finition | null;
 }): Promise<
   | { ok: true; devis: Devis; niveauVouluAbsent: boolean; brut: Record<string, unknown> }
   | Refus

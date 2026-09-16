@@ -19,12 +19,26 @@ import { GRILLE_PUBLIQUE, PAGES_MIN, PAGES_MAX_PUBLIC } from '@/lib/atelier/gril
    v3.1 (10/09/2026, accord de Mathias) : la grille « Offre Atelier » devient un prix par
    nombre de pages (dérivée de GRILLE, jamais recopiée) et la livraison sort du prix
    (art. 4bis.4, liste « ce que comprend », annexe). Les .docx de legal-source ont donc
-   une version de retard : à régénérer par Mathias. */
+   une version de retard : à régénérer par Mathias.
+   v3.2 (11/09/2026, accord de Mathias) : les références produit de l'imprimeur sont
+   arrêtées (relevé products/info + prix usine du 11/09, docs/reference/SPECS-CLOUDPRINTER.md).
+   Trois conséquences, dans les trois langues :
+   - art. 3.1 : « couverture rigide » / « capa dura » / « hardcover » était FAUX depuis
+     toujours — les deux produits commandés sont des softcovers (`magazine_sas_a4_p_fc`,
+     `magazine_pb_a4_p_fc`). L'annexe disait déjà « couverture souple 250 g » : les deux
+     endroits se contredisaient, l'article a été aligné sur l'objet réellement fabriqué ;
+   - annexe : le PAPIER est nommé (intérieur 130 g couché satiné, couverture 250 g), ce
+     qu'aucune version ne disait ;
+   - annexe : la FINITION devient un choix du client, brillant ou mat, sans supplément —
+     le seul paramètre d'impression qu'il choisisse. Écrit ici parce qu'il est contractuel.
+   Les grammages ne se recopient PAS à la main : ils doivent rester ceux de
+   `PAPIER_INTERIEUR` / `PAPIER_COUVERTURE` (src/lib/atelier/impression.ts), qui sont ce
+   qui part réellement chez l'imprimeur. */
 
 export const CGV: LocalizedDoc = {
   fr: {
     title: `Conditions générales de vente`,
-    lastUpdated: `Version 3.1 — En vigueur le 10/09/2026`,
+    lastUpdated: `Version 3.2 — En vigueur le 11/09/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `Traduction française à titre informatif. La version juridiquement prévalente est le texte portugais ; en cas de divergence, ce dernier prime.`,
@@ -60,7 +74,7 @@ export const CGV: LocalizedDoc = {
           {
             kind: 'p',
             value: [
-              `3.1 Description. L'album Bellajour est un livre relié à couverture rigide, imprimé en haute définition au format portrait, comprenant une couverture illustrée unique (générée par IA), une mise en page composée par algorithme sous contrôle humain, et une version digitale HD incluse. Les caractéristiques techniques détaillées (format, pagination, papier, finitions) et la grille tarifaire par palier de pages figurent dans la `,
+              `3.1 Description. L'album Bellajour est un livre photo relié à couverture souple, imprimé en haute définition au format portrait A4, comprenant une couverture illustrée unique (générée par IA), une mise en page composée par algorithme sous contrôle humain, et une version digitale HD incluse. Les caractéristiques techniques détaillées (format, pagination, papier, finitions) et la grille tarifaire par palier de pages figurent dans la `,
               { text: `Fiche produit`, href: `#fiche-produit` },
               `, document annexé aux présentes et reproduit en annexe ci-dessous. Ce document fait partie intégrante du contrat dans sa version en vigueur à la date de la commande (art. 13).`,
             ],
@@ -231,6 +245,8 @@ export const CGV: LocalizedDoc = {
             [`Type`, `Livre photo relié, imprimé à la commande`],
             [`Format`, `Portrait A4 — 210 × 297 mm`],
             [`Reliure`, `Agrafée à 20 pages, dos carré collé de 24 à ${PAGES_MAX_PUBLIC} pages, couverture souple 250 g`],
+            [`Papier`, `Intérieur : couché satiné (Machine Coated Silk) 130 g/m². Couverture : couché satiné 250 g/m².`],
+            [`Finition de couverture`, `Pelliculage au choix du client, brillant ou mat, sans supplément de prix. À défaut de choix exprimé avant le paiement : brillant.`],
             [`Pagination — Offre Atelier`, `${PAGES_MIN} pages min. — ${PAGES_MAX_PUBLIC} pages max. (nombre de pages pair obligatoire ; 22 pages non proposé)`],
             [`Pagination — Prévente (13/06–15/08/2026)`, `30 pages min. — 200 pages max. (nombre de pages pair obligatoire)`],
             [`Couverture`, `Illustrée, unique, générée par IA dans un style propre à la marque`],
@@ -264,7 +280,7 @@ export const CGV: LocalizedDoc = {
   },
   pt: {
     title: `Condições gerais de venda`,
-    lastUpdated: `Versão 3.1 — Em vigor em 10/09/2026`,
+    lastUpdated: `Versão 3.2 — Em vigor em 11/09/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `Texto de referência (versão portuguesa), juridicamente prevalecente. As traduções para francês e inglês são meramente informativas; em caso de divergência, prevalece o presente texto português.`,
@@ -300,7 +316,7 @@ export const CGV: LocalizedDoc = {
           {
             kind: 'p',
             value: [
-              `3.1 Descrição. O álbum Bellajour é um livro encadernado de capa dura, impresso em alta definição no formato retrato, composto por uma capa ilustrada única (gerada por IA), uma paginação composta por algoritmo sob controlo humano e uma versão digital HD incluída. As características técnicas detalhadas (formato, paginação, papel, acabamentos) e a tabela de preços por escalão de páginas constam da `,
+              `3.1 Descrição. O álbum Bellajour é um livro de fotografias encadernado de capa mole, impresso em alta definição no formato retrato A4, composto por uma capa ilustrada única (gerada por IA), uma paginação composta por algoritmo sob controlo humano e uma versão digital HD incluída. As características técnicas detalhadas (formato, paginação, papel, acabamentos) e a tabela de preços por escalão de páginas constam da `,
               { text: `Ficha de Produto`, href: `#fiche-produit` },
               `, documento anexo às presentes e reproduzido em anexo abaixo. Este documento faz parte integrante do contrato na versão em vigor à data da encomenda (art. 13.º).`,
             ],
@@ -471,6 +487,8 @@ export const CGV: LocalizedDoc = {
             [`Tipo`, `Livro de fotografias encadernado, impresso por encomenda`],
             [`Formato`, `Retrato A4 — 210 × 297 mm`],
             [`Encadernação`, `Agrafada a 20 páginas, lombada colada de 24 a ${PAGES_MAX_PUBLIC} páginas, capa mole 250 g`],
+            [`Papel`, `Interior: couché acetinado (Machine Coated Silk) 130 g/m². Capa: couché acetinado 250 g/m².`],
+            [`Acabamento da capa`, `Plastificação à escolha do cliente, brilhante ou mate, sem custo adicional. Na ausência de escolha expressa antes do pagamento: brilhante.`],
             [`Paginação — Oferta Atelier`, `mín. ${PAGES_MIN} páginas — máx. ${PAGES_MAX_PUBLIC} páginas (número de páginas obrigatoriamente par; 22 páginas não proposto)`],
             [`Paginação — Pré-venda (13/06–15/08/2026)`, `mín. 30 páginas — máx. 200 páginas (número de páginas obrigatoriamente par)`],
             [`Capa`, `Ilustrada, única, gerada por IA num estilo próprio da marca`],
@@ -504,7 +522,7 @@ export const CGV: LocalizedDoc = {
   },
   en: {
     title: `Terms and Conditions of Sale`,
-    lastUpdated: `Version 3.1 — Effective 10/09/2026`,
+    lastUpdated: `Version 3.2 — Effective 11/09/2026`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `English translation for information only. The legally prevailing version is the Portuguese text; in the event of any discrepancy, the Portuguese text prevails.`,
@@ -540,7 +558,7 @@ export const CGV: LocalizedDoc = {
           {
             kind: 'p',
             value: [
-              `3.1 Description. The Bellajour album is a hardcover bound book, printed in high definition in portrait format, comprising a unique illustrated cover (AI-generated), a layout composed by algorithm under human control, and an included HD digital version. The detailed technical specifications (format, pagination, paper, finishes) and the price list per page tier are set out in the `,
+              `3.1 Description. The Bellajour album is a softcover bound photo book, printed in high definition in A4 portrait format, comprising a unique illustrated cover (AI-generated), a layout composed by algorithm under human control, and an included HD digital version. The detailed technical specifications (format, pagination, paper, finishes) and the price list per page tier are set out in the `,
               { text: `Product Sheet`, href: `#fiche-produit` },
               `, a document annexed to these Terms and reproduced in the annex below. This document forms an integral part of the contract in the version in force on the date of the order (Art. 13).`,
             ],
@@ -711,6 +729,8 @@ export const CGV: LocalizedDoc = {
             [`Type`, `Bound photo book, printed on demand`],
             [`Format`, `Portrait A4 — 210 × 297 mm`],
             [`Binding`, `Saddle-stitched at 20 pages, perfect-bound from 24 to ${PAGES_MAX_PUBLIC} pages, 250 g soft cover`],
+            [`Paper`, `Inside pages: silk coated (Machine Coated Silk) 130 gsm. Cover: silk coated 250 gsm.`],
+            [`Cover finish`, `Lamination chosen by the customer, gloss or matte, at no extra cost. If no choice is made before payment: gloss.`],
             [`Pagination — Atelier offer`, `min. ${PAGES_MIN} pages — max. ${PAGES_MAX_PUBLIC} pages (page count must be even; 22 pages not offered)`],
             [`Pagination — Pre-sale (13/06–15/08/2026)`, `min. 30 pages — max. 200 pages (page count must be even)`],
             [`Cover`, `Illustrated, unique, AI-generated in a style specific to the brand`],

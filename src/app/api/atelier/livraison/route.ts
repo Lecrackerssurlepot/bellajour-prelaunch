@@ -38,7 +38,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { isValidNumeroToken } from "@/lib/atelier/token";
 import { logEvenement } from "@/lib/atelier/evenements";
 import { normaliserPays } from "@/lib/atelier/pays";
-import { produitPour } from "@/lib/atelier/impression";
+import { finitionDuDossier, produitPour } from "@/lib/atelier/impression";
 import { devisLivraison } from "@/lib/atelier/cloudprinter";
 import {
   livraisonClient,
@@ -96,21 +96,36 @@ export async function POST(request: Request) {
     }
 
     const supabase = makeSupabase();
-    const { data: numero, error: lecture } = await supabase
-      .from("numeros")
-      .select("id, etat, prenom, email, email_canonical, nb_pages, prix_centimes, pays_livraison, livraison_centimes")
-      .eq("token", token)
-      .maybeSingle<{
-        id: string;
-        etat: string;
-        prenom: string | null;
-        email: string | null;
-        email_canonical: string | null;
-        nb_pages: number | null;
-        prix_centimes: number | null;
-        pays_livraison: string | null;
-        livraison_centimes: number | null;
-      }>();
+
+    type Ligne = {
+      id: string;
+      etat: string;
+      prenom: string | null;
+      email: string | null;
+      email_canonical: string | null;
+      nb_pages: number | null;
+      prix_centimes: number | null;
+      pays_livraison: string | null;
+      livraison_centimes: number | null;
+      /* Le pelliculage (migration 20260911), absent tant qu'elle n'est pas
+         passée : `finitionDuDossier` retombe alors sur le brillant. */
+      finition?: string | null;
+    };
+
+    const CHAMPS =
+      "id, etat, prenom, email, email_canonical, nb_pages, prix_centimes, pays_livraison, livraison_centimes";
+
+    const lire = (champs: string) =>
+      supabase.from("numeros").select(champs).eq("token", token).maybeSingle<Ligne>();
+
+    /* Le repli habituel (donnees.ts, transition) : un select qui nomme une
+       colonne absente échoue ENTIÈREMENT. Sans lui, le client ne pourrait
+       plus choisir sa destination du tout entre le déploiement et la
+       migration — pour une finition qui, elle, a un défaut sûr. */
+    let { data: numero, error: lecture } = await lire(`${CHAMPS}, finition`);
+    if (lecture?.code === "42703") {
+      ({ data: numero, error: lecture } = await lire(CHAMPS));
+    }
 
     /* T-043 — une panne de base n'est PAS un token inconnu : répondre 404 ici
        dirait au client que son dossier n'existe pas, au moment où il essaie
@@ -141,7 +156,14 @@ export async function POST(request: Request) {
        Le seul appel réseau de la route, et il part APRÈS toutes les gardes :
        l'API de Cloudprinter rationne (« Requests limit reached »), on ne la
        sollicite pas pour un dossier qu'on va refuser. */
-    const d = await devisLivraison({ pays, produit, pages: numero.nb_pages });
+    const d = await devisLivraison({
+      pays,
+      produit,
+      pages: numero.nb_pages,
+      /* Les mêmes options que la commande, pelliculage compris : un devis
+         qui chiffre autre chose que ce qu'on achètera est un prix faux. */
+      finition: finitionDuDossier(numero.finition),
+    });
     if (!d.ok) {
       /* 502 et pas 500 : ce n'est pas NOUS qui sommes en panne, c'est le
          chiffrage qui n'a pas répondu. La page le dit et propose de

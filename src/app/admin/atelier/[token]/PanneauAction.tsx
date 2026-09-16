@@ -101,6 +101,10 @@ type Verif = {
     modeManuel: boolean;
     produit: string | null;
     produitLibelle: string | null;
+    /* La matière et la géométrie annoncées par la route (11/09/2026). */
+    papier: { interieur: string; couverture: string };
+    finition: { cle: string; libelle: string };
+    dos: { mm: number; largeurCouvertureMm: number } | null;
     shippingLevel: string;
     fichiers: Array<{ type: string; cle: string; taille: number; md5: string }>;
     adresse: { nom: string; ville: string; pays: string } | null;
@@ -1657,6 +1661,35 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                       {verif.impression.produitLibelle}{" "}
                       <span className="ate-faint">({verif.impression.produit})</span>
                     </dd>
+                    {/* La matière, telle qu'elle partira dans les options
+                        d'item. Les références Cloudprinter sont montrées en
+                        clair : c'est ce qui se recopie dans leur dashboard
+                        quand il faut comparer une commande à une facture. */}
+                    <dt>Papier</dt>
+                    <dd>
+                      intérieur <span className="ate-faint">{verif.impression.papier.interieur}</span>
+                      {", couverture "}
+                      <span className="ate-faint">{verif.impression.papier.couverture}</span>
+                    </dd>
+                    <dt>Finition</dt>
+                    <dd>
+                      couverture {verif.impression.finition.libelle}{" "}
+                      <span className="ate-faint">({verif.impression.finition.cle})</span>
+                    </dd>
+                    {/* Le dos n'existe que sur un dos carré, et c'est la cote
+                        qui décide de la largeur de la couverture déposée. */}
+                    {verif.impression.dos ? (
+                      <>
+                        <dt>Dos</dt>
+                        <dd>
+                          {verif.impression.dos.mm.toFixed(2).replace(".", ",")} mm{" "}
+                          <span className="ate-faint">
+                            couverture enveloppante attendue :{" "}
+                            {verif.impression.dos.largeurCouvertureMm.toFixed(2).replace(".", ",")} mm de large
+                          </span>
+                        </dd>
+                      </>
+                    ) : null}
                     <dt>{verif.impression.fichiers.length > 1 ? "Fichiers" : "Fichier"}</dt>
                     <dd>
                       {verif.impression.fichiers.length
