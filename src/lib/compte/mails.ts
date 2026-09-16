@@ -17,9 +17,23 @@ import { clientAuthAdmin } from "@/lib/compte/session";
  * chose dans tous les cas, et seul le log serveur sait ce qui s'est passé.
  * Ces mails ne passent pas par mails_envoyes (verrou par numero_id + code,
  * hors sujet ici) : pas de dossier, pas de verrou.
+ *
+ * COMPTE DÉJÀ EXISTANT À L'INSCRIPTION (16/09/2026) : on n'envoie plus rien
+ * du tout, on envoie C2. Le cas est celui des fondateurs pré-créés le 07/09
+ * qui n'ont pas vu le mail C0 et cliquent « Créer mon compte » : l'écran
+ * disait « si l'adresse est libre, un mail arrive », et rien n'arrivait
+ * jamais. Avec C2, la personne reçoit de quoi choisir son mot de passe et
+ * entrer. L'anti-énumération tient : dans les deux cas un mail part vers la
+ * boîte, et seul son propriétaire voit lequel.
  */
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+
+/* Supabase dit « email_exists » (code) ou « already been registered » (texte)
+   selon la version. On lit les deux, comme creer-comptes-fondateurs.ts. */
+function compteExisteDeja(error: { code?: string; message?: string }): boolean {
+  return error.code === "email_exists" || /already/i.test(error.message ?? "");
+}
 
 /** C1 — crée le compte (email non confirmé) et envoie le lien de confirmation. */
 export async function envoyerC1Inscription(email: string, password: string): Promise<void> {
@@ -40,7 +54,15 @@ export async function envoyerC1Inscription(email: string, password: string): Pro
       password,
     });
     if (error || !data?.properties?.hashed_token) {
-      /* Compte déjà existant, mot de passe refusé… : silence dehors, log dedans. */
+      if (error && compteExisteDeja(error)) {
+        /* Adresse déjà inscrite : la porte d'entrée est le mot de passe, pas
+           une seconde création. Le mot de passe tapé ici est ignoré, c'est
+           le lien C2 qui en fera choisir un. */
+        console.error("[compte] C1 sur un compte existant : C2 envoyé à la place");
+        await envoyerC2Reinitialisation(email);
+        return;
+      }
+      /* Mot de passe refusé, lien absent… : silence dehors, log dedans. */
       console.error(`[compte] C1 non parti (${error?.message ?? "lien absent"})`);
       return;
     }

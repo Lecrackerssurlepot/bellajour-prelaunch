@@ -9,6 +9,7 @@ export default function FormulaireReinitialisation({ tokenHash }: { tokenHash: s
   const [confirmation, setConfirmation] = useState('')
   const [enCours, setEnCours] = useState(false)
   const [fait, setFait] = useState(false)
+  const [dejaLeBon, setDejaLeBon] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
 
   const envoyer = async (e: React.FormEvent) => {
@@ -41,6 +42,11 @@ export default function FormulaireReinitialisation({ tokenHash }: { tokenHash: s
         return
       }
       const corps = (await res.json().catch(() => null)) as { error?: string } | null
+      if (corps?.error === 'meme_mot_de_passe') {
+        /* Le lien est dépensé : le formulaire n'a plus de sens, on sort. */
+        setDejaLeBon(true)
+        return
+      }
       setErreur(
         corps?.error === 'lien_invalide'
           ? 'Ce lien a déjà servi ou a expiré. Redemandez-en un depuis « mot de passe oublié ».'
@@ -51,6 +57,20 @@ export default function FormulaireReinitialisation({ tokenHash }: { tokenHash: s
     } finally {
       setEnCours(false)
     }
+  }
+
+  if (dejaLeBon) {
+    return (
+      <div className="cpt-envoye" role="status">
+        <p className="cpt-envoye-mot">C’est déjà votre mot de passe actuel.</p>
+        <p className="cpt-envoye-sub">
+          Rien à changer : connectez-vous avec, il fonctionne.
+        </p>
+        <a className="at-cta cpt-cta" href="/compte/connexion">
+          Me connecter
+        </a>
+      </div>
+    )
   }
 
   if (fait) {
