@@ -58,6 +58,17 @@ export async function POST(request: Request) {
   if (sortie.error) console.error("[compte] signOut après reset :", sortie.error.message);
 
   if (maj.error) {
+    /* Le mot de passe tapé est déjà celui du compte (Supabase : 422
+       same_password). Le lien vient d'être dépensé par verifyOtp, donc dire
+       « essayez-en un autre » enverrait droit sur « lien déjà servi » : on
+       nomme le cas, et l'écran propose de se connecter avec. Vu le
+       16/09/2026 sur le compte de Mathias. */
+    if (
+      maj.error.code === "same_password" ||
+      /different from the old password/i.test(maj.error.message)
+    ) {
+      return NextResponse.json({ error: "meme_mot_de_passe" }, { status: 400 });
+    }
     console.error("[compte] updateUser :", maj.error.message);
     return NextResponse.json({ error: "mot_de_passe_refuse" }, { status: 400 });
   }
