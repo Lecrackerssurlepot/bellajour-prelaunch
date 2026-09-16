@@ -26,6 +26,7 @@ import {
   type ChoixCouverture,
 } from "@/lib/atelier/apercu";
 import { eurosDuDossier, type PalierCle } from "@/lib/atelier/prix";
+import { quantiteDuDossier } from "@/lib/atelier/exemplaires";
 import {
   ETAPE_ETAT,
   ETATS,
@@ -1038,6 +1039,11 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
        passée. Le champ de publication se préremplit avec le premier. */
     livraisonCentimes: typeof n.livraison_centimes === "number" ? n.livraison_centimes : null,
     livraisonNiveau: (n.livraison_niveau as string) ?? null,
+    /* Les exemplaires et le HT gelé (migration 20260916) : avec le
+       select("*"), null ou absents tant qu'elle n'est pas passée, donc un
+       exemplaire et pas de HT. */
+    quantite: quantiteDuDossier(n.quantite),
+    prixHtCentimes: typeof n.prix_ht_centimes === "number" ? n.prix_ht_centimes : null,
     canvaUrl: (n.canva_url as string) ?? null,
     canvaTravail: (n.canva_travail as string) ?? null,
     maquettePdfUrl: (n.maquette_pdf_url as string) ?? null,

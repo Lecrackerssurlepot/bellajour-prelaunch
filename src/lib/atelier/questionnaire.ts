@@ -23,6 +23,8 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
+import { paysValide } from "./pays";
+
 /** Assez pour exclure une frappe accidentelle, pas assez pour brimer. */
 export const MIN_OCCASION = 2;
 
@@ -52,24 +54,24 @@ export const MAX_TELEPHONE_CHIFFRES = 15;
    qui rebondit. */
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-/* ⚠️ LE PAYS DE LIVRAISON N'EST PLUS UNE RÉPONSE DU QUESTIONNAIRE (11/09/2026).
-   Il l'a été du 10 au 11/09, pour que le devis de port soit chiffré avant
-   l'annonce du prix. Décision de Mathias : « je ne veux pas que ce soit
-   compliqué au niveau de la livraison, la demander pendant le questionnaire,
-   on s'en fiche ». Le client choisit sa destination sur sa page de commande
-   (/numero), où le port est chiffré AVANT le paiement, et Stripe collecte
-   l'adresse ensuite. Une question de moins entre le premier mot et le dépôt
-   des photos, qui est la seule étape que le questionnaire doit protéger.
-   La règle de validation d'un code pays, elle, n'a pas bougé : elle vit dans
-   `pays.ts` (`paysValide`), lue par l'admin à la publication et par la route
-   du bon de commande. Rien ne s'est perdu, la question a changé d'endroit. */
+/* ⚠️ LE PAYS DE LIVRAISON EST DE NOUVEAU UNE RÉPONSE DU QUESTIONNAIRE
+   (15/09/2026). Il l'a été du 10 au 11/09 pour le devis de port, puis
+   Mathias l'a retiré (« on s'en fiche »). Il revient pour une raison plus
+   forte : depuis la grille HORS TAXES du 15/09, LE PRIX LUI-MÊME dépend du
+   pays (HT × TVA du pays, arrondi à l'euro). Sans pays, M3 ne peut pas
+   annoncer le vrai montant. Mathias, le 15/09 : « on demande dans le
+   questionnaire le pays de livraison pour avoir la bonne info dans M3 ».
+   Un select, France présélectionnée, validé par `paysValide` (pays.ts) des
+   deux côtés. Le client peut encore changer de pays sur sa page de commande,
+   où le prix et le port sont recalculés. */
 export type ChampQuestionnaire =
   | "occasion"
   | "histoire"
   | "titre"
   | "prenom"
   | "email"
-  | "telephone";
+  | "telephone"
+  | "pays";
 
 /** Tous les champs, dans l'ordre où la cliente les rencontre. */
 export const CHAMPS_QUESTIONNAIRE: ChampQuestionnaire[] = [
@@ -79,6 +81,7 @@ export const CHAMPS_QUESTIONNAIRE: ChampQuestionnaire[] = [
   "prenom",
   "email",
   "telephone",
+  "pays",
 ];
 
 /**
@@ -93,7 +96,7 @@ export const CHAMPS_PAR_ECRAN: Record<number, ChampQuestionnaire[]> = {
   1: ["occasion"],
   2: ["histoire"],
   3: ["titre"],
-  4: ["prenom", "email", "telephone"],
+  4: ["prenom", "email", "telephone", "pays"],
 };
 
 export function ecranDuChamp(champ: ChampQuestionnaire): number {
@@ -121,6 +124,7 @@ export const MESSAGE_DU_CHAMP: Record<ChampQuestionnaire, string> = {
   prenom: "Il nous faut votre prénom pour vous écrire.",
   email: "Cette adresse email ne semble pas valide.",
   telephone: "Il nous faut un numéro pour la livraison.",
+  pays: "Choisissez votre pays de livraison : le prix en dépend.",
 };
 
 /**
@@ -159,6 +163,8 @@ export function reponseValide(champ: ChampQuestionnaire, valeur: unknown): boole
       return EMAIL_PATTERN.test(v);
     case "telephone":
       return telephoneValide(v);
+    case "pays":
+      return paysValide(v);
   }
 }
 

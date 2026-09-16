@@ -17,6 +17,7 @@
    fichier-ci ne fait plus que traduire une reliure en référence Cloudprinter,
    et les deux ne peuvent donc plus diverger. */
 import { reliurePour } from "./grille";
+import { quantiteDuDossier } from "./exemplaires";
 
 /* ─────────────────────────── le produit ─────────────────────────── */
 
@@ -56,8 +57,11 @@ export type ProduitImpression = {
 /**
  * La référence se DÉDUIT de la pagination, personne ne la choisit à l'écran
  * (décision de Mathias, 26/08/2026) :
- *   20 pages       → agrafé (saddle stitch)
- *   24 à 60 pages  → dos carré collé (perfect binding)
+ *   24 à 60 pages  → dos carré collé (perfect binding), le SEUL produit
+ *                    depuis le 15/09/2026 (« l'agrafé disparaît »).
+ *
+ * L'agrafé de 20 pages (`magazine_sas_a4_p_fc`, un seul PDF `product`) est
+ * archivé dans `archive/agrafe-2026-09/` avec sa règle de fichier.
  *
  * ⚠️ LA LISTE DES PAGINATIONS N'EST PLUS ÉCRITE ICI (10/09/2026) : elle vient
  * de la grille, par `reliurePour`. 22 pages et les impairs n'existent pas dans
@@ -72,25 +76,26 @@ export type ProduitImpression = {
  * `products/info` + `prices/lookup` du 11/09 (consigné dans
  * docs/reference/SPECS-CLOUDPRINTER.md).
  *
- *   intérieur  — 130 g couché SILK (`pageblock_130mcs`) ;
+ *   intérieur  — 130 g couché GLOSS (`pageblock_130mcg`), depuis le
+ *                15/09/2026 (voir ci-dessous) ;
  *   couverture — 250 g couché silk (`cover_250mcs`) ;
  *   pelliculage — AU CHOIX DU CLIENT, brillant ou mat (plus bas).
  *
- * ⚠️ UNE SEULE CONSTANTE POUR LES DEUX RELIURES, ET C'EST VOULU. Un agrafé
- * et un dos carré doivent se toucher pareil : personne ne reçoit un papier
- * différent parce que son histoire tenait en vingt pages. Changer de papier
- * = changer CES DEUX LIGNES, et la géométrie du dos suit toute seule
- * (`GRAMMAGE_INTERIEUR_GSM` et `BULK_INTERIEUR` s'en déduisent plus bas).
+ * Changer de papier = changer CES DEUX LIGNES, et la géométrie du dos suit
+ * toute seule (`GRAMMAGE_INTERIEUR_GSM` et `BULK_INTERIEUR` s'en déduisent
+ * plus bas).
  *
- * ⚠️ CE QUE LE RELEVÉ DU 11/09 A MONTRÉ, et qui ne se devine pas : le
- * grammage ne coûte presque rien (90 → 130 g : un centime sur un 32 pages),
- * mais il change d'USINE, et donc de PORT. En France, `pageblock_130mcs`
- * route vers une usine dont le transporteur le moins cher est à 9,22 € HT,
- * là où `pageblock_130mcg` (le même 130 g, en gloss) tombe à 6,46 €. Au
- * Portugal et en Allemagne, les deux donnent exactement le même prix. Le
- * jour où le port français pèse plus que le toucher du papier, la bascule
- * tient en un mot : `mcs` → `mcg`. */
-export const PAPIER_INTERIEUR = "pageblock_130mcs";
+ * ⚠️ POURQUOI LE GLOSS, ET PAS LE SILK (décision de Mathias, 15/09/2026).
+ * Le relevé du 11/09 a montré que le grammage ne coûte presque rien (90 →
+ * 130 g : un centime sur un 32 pages), mais qu'il change d'USINE, et donc de
+ * PORT. En France, `pageblock_130mcs` route vers une usine dont le
+ * transporteur le moins cher est à 9,22 € HT, là où `pageblock_130mcg` (le
+ * même 130 g, en gloss) tombe à 6,46 € (re-devisé le 16/09 sur 60 pages :
+ * Colissimo `cp_ground`, 6,46 € HT). Au Portugal et en Allemagne, les deux
+ * donnent le même prix. Depuis que le port facturé au client est FIXE
+ * (5 € en zone A, livraison.ts), l'écart est pour nous : Mathias a choisi le
+ * gloss. Revenir au silk tient en un mot : `mcg` → `mcs`. */
+export const PAPIER_INTERIEUR = "pageblock_130mcg";
 export const PAPIER_COUVERTURE = "cover_250mcs";
 
 /* ─────────────── LE PELLICULAGE, AU CHOIX DU CLIENT ───────────────
@@ -147,20 +152,10 @@ export function finitionDuDossier(v: unknown): Finition {
 }
 
 /**
- * Les deux produits, avec LE MÊME papier. Le pelliculage n'est PAS dans
+ * Le produit, le seul depuis le 15/09/2026. Le pelliculage n'est PAS dans
  * cette table : il ne dépend pas du produit mais du dossier, et il entre
  * dans les options au moment de composer l'item (`optionsItem`).
  */
-const AGRAFE: ProduitImpression = {
-  produit: "magazine_sas_a4_p_fc",
-  libelle: "Magazine A4 agrafé",
-  fichiers: ["product"],
-  finitions: [
-    { type: PAPIER_INTERIEUR, count: "pages" },
-    { type: PAPIER_COUVERTURE, count: 1 },
-  ],
-};
-
 const DOS_CARRE: ProduitImpression = {
   produit: "magazine_pb_a4_p_fc",
   libelle: "Magazine A4 dos carré collé",
@@ -197,14 +192,14 @@ export const FORMAT_PAGE_PDF_MM = {
 export const TOLERANCE_FORMAT_MM = 0.5;
 
 /**
- * La règle de pagination du FICHIER intérieur, par produit (même source) :
- *   agrafé    — le PDF `product` doit compter un multiple de 4 pages,
- *               8 au minimum (une feuille agrafée = 4 faces) ;
+ * La règle de pagination du FICHIER intérieur, par produit (même source,
+ * re-relevée le 16/09/2026 : `page_count_multiples = 2`, aucun minimum ni
+ * maximum de pages exposé, 60 et 62 pages devisés sans refus) :
  *   dos carré — le PDF `book` doit compter un multiple de 2.
- * La couverture (`cover`) n'a pas de règle de compte relevée.
+ * La couverture (`cover`) n'a pas de règle de compte relevée. La règle de
+ * l'agrafé (multiple de 4, 8 minimum) est dans `archive/agrafe-2026-09/`.
  */
 export const REGLE_PAGES_FICHIER: Record<string, { multiple: number; min: number | null }> = {
-  magazine_sas_a4_p_fc: { multiple: 4, min: 8 },
   magazine_pb_a4_p_fc: { multiple: 2, min: null },
 };
 
@@ -289,18 +284,22 @@ export function largeurCouvertureMm(nbPages: number | null | undefined): number 
 }
 
 export function produitPour(nbPages: number | null | undefined): ProduitImpression | null {
-  const reliure = reliurePour(nbPages);
-  if (reliure === "agrafe") return AGRAFE;
-  if (reliure === "dos_carre") return DOS_CARRE;
-  return null;
+  return reliurePour(nbPages) === "dos_carre" ? DOS_CARRE : null;
 }
 
 /**
- * Le niveau d'expédition, identique pour toute la zone FR/BE/LU. `cp_saver`
- * est le suivi économique de Cloudprinter — le délai public (10 jours après
- * validation, PRD §13) garde de la marge même avec lui.
+ * Le niveau d'expédition par DÉFAUT, quand aucun devis n'a gelé le sien sur
+ * le dossier (`livraison_niveau`).
+ *
+ * `cp_ground` (« Ground, tracked ») et plus `cp_saver` depuis le 16/09/2026 :
+ * quatorze devis réels relevés les 10 et 16/09 (FR, DE, PT, BE et les douze
+ * pays de zone C) proposent `cp_ground` ou `cp_fast`, et `cp_saver`
+ * n'apparaît que pour Chypre, Malte et le Brésil. Commander sous un niveau
+ * absent est un refus de commande. Cloudprinter annonce Ground en 3 à 7
+ * jours avec suivi, plus 3 jours ouvrés de fabrication : le délai public de
+ * 10 jours (`JOURS_LIVRAISON`, urgence.ts) tient avec lui.
  */
-export const SHIPPING_LEVEL = "cp_saver";
+export const SHIPPING_LEVEL = "cp_ground";
 
 /**
  * Le contact de la COMMANDE côté Cloudprinter (leur champ `email` racine) :
@@ -493,6 +492,8 @@ const INDICATIFS_PAYS: Record<string, string> = {
   FI: "358", FR: "33", DE: "49", GR: "30", HU: "36", IE: "353", IT: "39", LV: "371",
   LT: "370", LU: "352", MT: "356", NL: "31", PL: "48", PT: "351", RO: "40", SK: "421",
   SI: "386", ES: "34", SE: "46", GB: "44", CH: "41", NO: "47",
+  /* Les deux destinations lointaines du 15/09/2026. */
+  US: "1", BR: "55",
 };
 
 /* ⚠️ L'ITALIE GARDE SON ZÉRO. Presque partout en Europe le 0 de tête est un
@@ -653,9 +654,10 @@ export type PayloadDevis = {
  * d'item est une chaîne fixe, comme dans le script de relevé : elle ne sert
  * qu'à relier la réponse à la demande, elle n'entre dans aucune commande.
  *
- * ⚠️ `count: "1"` : le devis chiffre UN exemplaire, exactement comme le
- * checkout (verrou `QUANTITE_MAX`, prix.ts). Le jour où les multi-exemplaires
- * s'ouvrent, ce « 1 » doit bouger EN MÊME TEMPS que celui du line_item.
+ * ⚠️ `count` EST LA QUANTITÉ DU DOSSIER (15/09/2026, T-073 levé) : le devis
+ * chiffre exactement ce qui sera commandé, un colis de `quantite`
+ * exemplaires. Le même nombre part dans `payloadCommande` et dans les lignes
+ * Stripe (`decompteExemplaires`, prix.ts). Absente = un exemplaire.
  */
 export function payloadDevis(args: {
   pays: string;
@@ -663,6 +665,8 @@ export function payloadDevis(args: {
   pages: number;
   /** La finition du dossier. Absente = le défaut, comme partout ailleurs. */
   finition?: Finition | null;
+  /** Le nombre d'exemplaires (`numeros.quantite`). Absent ou illisible = 1. */
+  quantite?: number | null;
 }): PayloadDevis {
   const { pays, produit, pages } = args;
   const finition = finitionDuDossier(args.finition);
@@ -673,7 +677,7 @@ export function payloadDevis(args: {
       {
         reference: "devis",
         product: produit.produit,
-        count: "1",
+        count: String(quantiteDuDossier(args.quantite)),
         options: optionsItem(produit, pages, finition),
       },
     ],
@@ -699,9 +703,9 @@ export type PayloadCommande = {
  * Le corps d'`orders/add`, SANS la clé API : elle est injectée par le module
  * réseau (cloudprinter.ts), et ce fichier reste pur et sans secret.
  *
- * Un seul item ; ses fichiers sont EXACTEMENT ceux que le produit déclare
- * (`produit.fichiers`) — un PDF `product` pour l'agrafé, le duo
- * `cover` + `book` pour le dos carré. Un fichier requis absent est une
+ * Un seul item, en `quantite` exemplaires ; ses fichiers sont EXACTEMENT
+ * ceux que le produit déclare (`produit.fichiers`) — le duo `cover` + `book`
+ * du dos carré. Un fichier requis absent est une
  * erreur de programmation de l'appelant : la route contrôle avant.
  * Les counts sont des CHAÎNES : c'est la forme que l'API documente.
  */
@@ -721,6 +725,12 @@ export function payloadCommande(
      * d'avant ce lot ne change donc pas d'objet.
      */
     finition?: Finition | null;
+    /**
+     * Le nombre d'exemplaires (`numeros.quantite`), lu dans le MÊME SELECT
+     * que la finition : c'est `count` chez Cloudprinter, un seul item, un
+     * seul colis. Absent ou illisible = un exemplaire.
+     */
+    quantite?: number | null;
   },
   /**
    * Le niveau d'expédition GELÉ AU DEVIS (`numeros.livraison_niveau`).
@@ -748,7 +758,7 @@ export function payloadCommande(
       {
         reference: `${reference}-1`,
         product: produit.produit,
-        count: "1",
+        count: String(quantiteDuDossier(args.quantite)),
         shipping_level: niveau ?? SHIPPING_LEVEL,
         ...(titre ? { title: titre.slice(0, 120) } : {}),
         files: produit.fichiers.map((type) => {

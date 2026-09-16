@@ -1463,3 +1463,71 @@
 @media (hover: none) {
   .nu-order:active:not([disabled]) { transform: scale(0.98); transition-duration: 120ms; }
 }
+
+/* ── LES EXEMPLAIRES (15/09/2026, T-073 levé) ────────────────────────────
+   Le sélecteur vit dans le bon de commande, sur la même ligne que son
+   libellé, avec la même assise que les boutons de finition juste au-dessus :
+   même cadre, même hauteur au doigt (44 px), même transition. La légende du
+   dégressif est SOUS le mot « Exemplaires », en petit, pour que la remise se
+   lise avant le clic sans écraser la ligne. */
+.nu-bon-legende {
+  display: block;
+  margin-top: 3px;
+  font-size: 12.5px;
+  font-weight: 300;
+  line-height: 1.35;
+  color: var(--c-text-faint);
+}
+
+.nu-nombre {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.nu-nombre-b {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: 44px;
+  min-height: 44px;
+  font-family: var(--font-ui);
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--c-text-soft);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.nu-nombre-b:hover:not([disabled]) { background: var(--c-surface-2); color: var(--c-text); }
+.nu-nombre-b[disabled] { opacity: 0.35; cursor: not-allowed; }
+.nu-nombre-b:focus-visible { outline: 2px solid var(--c-accent); outline-offset: -3px; }
+
+.nu-nombre-v {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  border-left: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-right: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* L'économie et le seuil : deux phrases courtes, alignées sur les lignes du
+   bon, en gris calme. L'économie dit ce qu'on vient de gagner ; le seuil dit
+   ce qui reste à gagner. Jamais les deux à la fois pour le même geste. */
+.nu-bon-econ,
+.nu-bon-franco {
+  margin: -4px 0 10px;
+  font-size: 13.5px;
+  font-weight: 300;
+  line-height: 1.4;
+  color: var(--c-text-soft);
+}
+.nu-bon-franco { color: var(--c-accent); }

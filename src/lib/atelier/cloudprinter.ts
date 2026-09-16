@@ -122,6 +122,9 @@ export async function devisLivraison(args: {
      pas de l'écart — c'est celle de `optionsItem`, une seule construction
      pour le devis et la commande. */
   finition?: Finition | null;
+  /* Le nombre d'exemplaires (15/09/2026) : un devis pour un colis de trois
+     magazines, pas pour un seul multiplié par trois. */
+  quantite?: number | null;
 }): Promise<
   | { ok: true; devis: Devis; niveauVouluAbsent: boolean; brut: Record<string, unknown> }
   | Refus

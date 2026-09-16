@@ -336,7 +336,7 @@ GRAINES.push({
   histoire: "Un parcours de test, du questionnaire au paiement, pour vérifier que tout tient.",
   etat: "apercu_pret",
   nbPhotos: 12,
-  nbPages: 20,
+  nbPages: 24,
   palier: "p30",
   depuis: 40,
   ouvertIlYA: 2,
@@ -656,6 +656,8 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     /* Même règle que la ligne : la démo ne chiffre aucun port. */
     livraisonCentimes: null,
     livraisonNiveau: null,
+    quantite: 1,
+    prixHtCentimes: null,
     canvaUrl: ["maquette_prete", "validee", "en_production", "expediee", "livree"].includes(g.etat)
       ? "https://www.canva.com/design/DEMO/view?mode=comment"
       : null,

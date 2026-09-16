@@ -325,6 +325,13 @@ export type Fiche = {
   /** Le niveau d'expédition chiffré au devis (`cp_ground`…), ou null. C'est
       lui que la commande d'impression reprendra. */
   livraisonNiveau: string | null;
+  /** Le nombre d'exemplaires choisi par le client (migration 20260916). Un
+      par défaut : c'est `count` chez Cloudprinter et le nombre de lignes chez
+      Stripe, et l'atelier doit le voir AVANT de commander. */
+  quantite: number;
+  /** Le HT gelé, en centimes (migration 20260916), ou null pour un dossier
+      d'avant : la fiche le montre à côté du TTC. */
+  prixHtCentimes: number | null;
   canvaUrl: string | null;
   /** Le lien d'ÉDITION, interne. Ne part jamais nulle part (PRD §11). */
   canvaTravail: string | null;

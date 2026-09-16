@@ -31,7 +31,6 @@ import {
 import {
   eurosPourPages,
   reliurePour,
-  PAGES_AGRAFE,
   PAGES_MAX,
   PAGES_MIN,
   PAS_PAGES,
@@ -79,7 +78,8 @@ type Verif = {
   livraison?: {
     /* `client` (11/09/2026) : aucun pays sur le dossier, donc aucun devis ici.
        Le client choisira sa destination sur sa page, avant de payer. */
-    source: "admin" | "cloudprinter" | "echec" | "client";
+    source: "zone" | "offert" | "admin" | "cloudprinter" | "echec" | "client";
+    zone: "A" | "B" | "C" | null;
     niveau: string | null;
     service: string | null;
     transporteur: string | null;
@@ -87,9 +87,10 @@ type Verif = {
     devisHtCentimes: number | null;
     devisTtcCentimes: number | null;
     client: number | null;
-    absorbe: number;
     raison?: string;
     existant: number | null;
+    totalProduitCentimes: number | null;
+    quantite: number;
   };
   /* T2-3 — le mot de l'atelier tel que le serveur l'a retenu : c'est LUI qui
      partira dans M9, pas la saisie locale. */
@@ -745,10 +746,12 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
           ? {
               livraison: {
                 source: "client" as const,
+                zone: null,
                 niveau: null, service: null, transporteur: null,
                 niveauVouluAbsent: false,
                 devisHtCentimes: null, devisTtcCentimes: null,
-                client: null, absorbe: 0, existant: null,
+                client: null, existant: null,
+                totalProduitCentimes: null, quantite: 1,
               },
             }
           : {}),
@@ -897,30 +900,29 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
      qui pourrait vieillir. Avant toute vérification, on annonce seulement ce
      que le champ vide déclenchera. */
   const l = verif?.livraison;
+  const paysDuDevis =
+    verif?.resume.pays && paysValide(verif.resume.pays) ? `, ${PAYS_LIBELLE[verif.resume.pays]}` : "";
+  const devisMot =
+    l && l.devisHtCentimes !== null && l.devisTtcCentimes !== null
+      ? `Devis Cloudprinter${paysDuDevis}${l.transporteur ? `, ${l.transporteur}` : ""}${
+          l.niveau ? ` (${l.niveau})` : ""
+        } : ${eurosLisibles(l.devisHtCentimes)} HT, ${eurosLisibles(l.devisTtcCentimes)} TTC.`
+      : "";
   const aideLivraison = !l
-    ? "Vide : le devis Cloudprinter est demandé à la vérification (si un pays est choisi)."
+    ? "Vide : zone A ou B, le port de la zone ; zone C, le devis Cloudprinter demandé à la vérification (si un pays est choisi)."
     : l.source === "client"
     ? "Aucun pays sur ce dossier : le client choisira sa destination sur sa page, et la livraison sera chiffrée à cet instant, avant le paiement."
-    : l.source === "cloudprinter" && l.devisHtCentimes !== null && l.devisTtcCentimes !== null
+    : l.source === "zone" || l.source === "offert"
       ? [
-          `Devis Cloudprinter${
-            verif?.resume.pays && paysValide(verif.resume.pays)
-              ? `, ${PAYS_LIBELLE[verif.resume.pays]}`
-              : ""
-          }${l.transporteur ? `, ${l.transporteur}` : ""}${
-            l.niveau ? ` (${l.niveau})` : ""
-          } : ${eurosLisibles(l.devisHtCentimes)} HT, ${eurosLisibles(l.devisTtcCentimes)} TTC.`,
-          l.absorbe > 0
-            ? `Plafond appliqué : ${eurosLisibles(l.client ?? 0)} (Bellajour absorbe ${eurosLisibles(l.absorbe)}).`
-            : "",
-          l.niveauVouluAbsent && l.niveau
-            ? `cp_saver non proposé, niveau retenu : ${l.niveau}.`
-            : "",
-        ]
-          .filter(Boolean)
-          .join(" ")
+          `Zone ${l.zone ?? "?"}${paysDuDevis} : ${eurosLisibles(l.client ?? 0)} TTC${
+            l.source === "offert" ? ", OFFERTE au client (seuil atteint sur les magazines)" : ""
+          }.`,
+          devisMot ? `Pour le niveau d'expédition seulement : ${devisMot}` : "Aucun devis : la commande partira en cp_ground.",
+        ].join(" ")
+      : l.source === "cloudprinter"
+        ? `Zone C. ${devisMot}${l.niveauVouluAbsent && l.niveau ? ` cp_ground non proposé, niveau retenu : ${l.niveau}.` : ""}`
       : l.source === "admin"
-        ? "Montant saisi à la main : il remplace le devis."
+        ? "Montant saisi à la main : il remplace la zone et le devis."
         : `Devis indisponible : ${l.raison ?? "raison inconnue"}. Saisis le montant.`;
 
   /* T2-2 — quel jeu de cadres ? La planche + les doubles pages, sauf pour
@@ -1386,7 +1388,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                 />
                 <span className="ate-champ-aide">
                   Le prix en découle. De {PAGES_MIN} à {PAGES_MAX} pages, par
-                  deux, {PAGES_AGRAFE + PAS_PAGES} exclu.
+                  deux. Hors taxes dans la grille, TTC selon le pays.
                 </span>
                 {erreurDe("nb_pages") ? <span className="ate-erreur">{erreurDe("nb_pages")}</span> : null}
               </label>

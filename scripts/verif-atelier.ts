@@ -124,7 +124,10 @@ import {
   reliurePour,
   EUROS_MAX,
   EUROS_MIN,
-  PAGES_AGRAFE,
+  GRILLE_FRANCE,
+  htCentimesPour,
+  ttcCentimesPour,
+  ttcDepuisHtArrondi,
   PAGES_MAX,
   PAGES_MAX_PUBLIC,
   GRILLE_PUBLIQUE,
@@ -224,14 +227,27 @@ import {
 import {
   centimesDeSaisie,
   lireDevisCloudprinter,
-  livraisonClient,
-  livraisonClientAvec,
   totalCommande,
   ttcDepuisHt,
-  LIVRAISON_PLAFOND_CENTIMES,
   TAUX_TTC_LIVRAISON,
   HORS_UE,
+  ZONES_PORT,
+  FRANCO_CENTIMES,
+  zonePour,
+  portClient,
+  livraisonOfferte,
+  manquePourFranco,
 } from "@/lib/atelier/livraison";
+import { TAUX_TVA_PAYS } from "@/lib/atelier/pays";
+import {
+  QUANTITE_MAX as QUANTITE_MAX_EXEMPLAIRES,
+  totalExemplaires,
+  normaliserQuantite,
+  quantiteDuDossier,
+  libelleLigne,
+  remisePourRang,
+} from "@/lib/atelier/exemplaires";
+import { htCentimesPourPages, ttcPourPays, decompteExemplaires } from "@/lib/atelier/prix";
 import { estAbsenceR2 } from "@/lib/atelier/r2";
 import { formaterJour } from "@/lib/atelier/dates";
 import {
@@ -289,27 +305,37 @@ const titre = (t: string) => console.log(`\n${t}`);
 
 const VISUELS = { apercu_c1: "k/c1.jpg", apercu_c4: "k/c4.jpg", apercu_double: "k/d.jpg" };
 
-titre("— le prix vient de la pagination, jamais du navigateur —");
+titre("— le prix vient de la pagination ET du pays, jamais du navigateur —");
+/* Grille HORS TAXES du 15/09/2026 : 34 pages = 32 EUR HT, soit 38 EUR TTC en
+   France (x 1,20 arrondi), 39 au Portugal (x 1,23 = 39,36), 38 en Allemagne. */
 const p34 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: "34", pays_livraison: "FR", ...VISUELS });
-ok("34 pages -> 37 EUR, bucket herite p40, dos carre",
-   p34.ok && p34.resume.euros === 37 && p34.resume.palier === "p40"
-   && p34.resume.reliure === "dos_carre");
+ok("34 pages FR -> 38 EUR TTC, 3200 HT geles, bucket herite p40, dos carre",
+   p34.ok && p34.resume.euros === 38 && p34.patch.prix_ht_centimes === 3200
+   && p34.resume.palier === "p40" && p34.resume.reliure === "dos_carre");
+const p34pt = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, pays_livraison: "PT", ...VISUELS });
+ok("34 pages PT -> 39 EUR TTC (le meme HT, la TVA du pays)",
+   p34pt.ok && p34pt.resume.euros === 39 && p34pt.patch.prix_centimes === 3900 && p34pt.patch.prix_ht_centimes === 3200);
 const p24 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 24, pays_livraison: "FR", ...VISUELS });
-ok("24 pages -> 27 EUR", p24.ok && p24.resume.euros === 27);
+ok("24 pages -> 24 EUR (le prix d'appel du tableur)", p24.ok && p24.resume.euros === 24);
 const p44 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 44, pays_livraison: "FR", ...VISUELS });
-ok("44 pages -> 45 EUR", p44.ok && p44.resume.euros === 45);
+ok("44 pages -> 50 EUR (le seuil de la livraison offerte)", p44.ok && p44.resume.euros === 50);
 const p20 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 20, pays_livraison: "FR", ...VISUELS });
-ok("20 pages -> 25 EUR et AGRAFE (la seule pagination agrafee)",
-   p20.ok && p20.resume.euros === 25 && p20.resume.reliure === "agrafe");
+ok("20 pages est REFUSE : l'agrafe n'existe plus (15/09/2026)",
+   !p20.ok && p20.erreurs.some((e) => e.champ === "nb_pages"));
 const p60 = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 60, pays_livraison: "FR", ...VISUELS });
-ok("60 pages est ACCEPTE : la grille monte jusque-la (59 EUR)",
-   p60.ok && p60.resume.euros === 59 && p60.patch.prix_centimes === 5900);
+ok("60 pages est ACCEPTE : la grille monte jusque-la (64 EUR)",
+   p60.ok && p60.resume.euros === 64 && p60.patch.prix_centimes === 6400 && p60.patch.prix_ht_centimes === 5320);
+/* Sans pays (« le client choisira »), le TTC gele est celui de la FRANCE, la
+   reference du tableur ; la route du bon de commande le recalculera. */
+const pSansPaysPrix = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, pays_livraison: "", ...VISUELS });
+ok("sans pays, le TTC gele est celui de la France (38 EUR), le HT est gele aussi",
+   pSansPaysPrix.ok && pSansPaysPrix.patch.prix_centimes === 3800 && pSansPaysPrix.patch.prix_ht_centimes === 3200);
 
-/* Les trois refus qui protegent la caisse. 22 est le trou volontaire de la
-   grille (l'agrafe s'arrete a 20, le dos carre commence a 24), 33 est un
-   impair, 62 est au-dela de la derniere ligne. Aucun ne doit pouvoir etre
-   publie : une couverture sans prix, c'est M3 qui part sans montant. */
-for (const [pages, pourquoi] of [[22, "le trou de la grille"], [33, "un impair"], [62, "au-dela du maximum"]] as Array<[number, string]>) {
+/* Les refus qui protegent la caisse. 20 et 22 sont sous la grille (l'agrafe
+   a disparu, le dos carre commence a 24), 33 est un impair, 62 est au-dela
+   de la derniere ligne. Aucun ne doit pouvoir etre publie : une couverture
+   sans prix, c'est M3 qui part sans montant. */
+for (const [pages, pourquoi] of [[22, "sous la grille"], [33, "un impair"], [62, "au-dela du maximum"]] as Array<[number, string]>) {
   const r = preparerTransition("publier_apercu", "photos_recues", { nb_pages: pages, pays_livraison: "FR", ...VISUELS });
   ok(`${pages} pages (${pourquoi}) : REFUSE, sur le champ nb_pages`,
      !r.ok && r.erreurs.some((e) => e.champ === "nb_pages"));
@@ -320,7 +346,7 @@ ok("le message de refus DERIVE de la grille (bornes, pas, exclusion)",
      if (r.ok) return false;
      const m = r.erreurs.find((e) => e.champ === "nb_pages")?.message ?? "";
      return m.includes(String(PAGES_MIN)) && m.includes(String(PAGES_MAX))
-       && m.includes(String(PAS_PAGES)) && m.includes(String(PAGES_AGRAFE + PAS_PAGES));
+       && m.includes(String(PAS_PAGES));
    })());
 
 /* ── LE PRIX SE FIGE SUR LE DOSSIER (10/09/2026) ──────────────────────────
@@ -330,16 +356,16 @@ ok("le message de refus DERIVE de la grille (bornes, pas, exclusion)",
    chose que ce qui sera ecrit. Si ce test tombe, une grille qui change
    reecrira le prix de dossiers deja chiffres. */
 const pGel = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, pays_livraison: "FR", ...VISUELS });
-ok("publier : le prix est GELE dans le patch (34 pages -> 3700 centimes)",
-   pGel.ok && pGel.patch.prix_centimes === 3700);
+ok("publier : le prix est GELE dans le patch (34 pages FR -> 3800 centimes TTC, 3200 HT)",
+   pGel.ok && pGel.patch.prix_centimes === 3800 && pGel.patch.prix_ht_centimes === 3200);
 ok("publier : l'ecran de verification annonce le MEME montant que le patch",
-   pGel.ok && pGel.resume.prixCentimes === 3700);
+   pGel.ok && pGel.resume.prixCentimes === 3800 && pGel.resume.prixHtCentimes === 3200);
 ok("publier : le bucket herite part quand meme en base (colonne palier)",
    pGel.ok && pGel.patch.palier === "p40");
 const pGelCorrige = preparerTransition("corriger_apercu", "apercu_pret", { nb_pages: 44, pays_livraison: "FR", ...VISUELS });
-ok("corriger : republier regele le prix (44 pages -> 4500 centimes)",
-   pGelCorrige.ok && pGelCorrige.patch.prix_centimes === 4500
-   && pGelCorrige.resume.prixCentimes === 4500);
+ok("corriger : republier regele le prix (44 pages -> 5000 centimes)",
+   pGelCorrige.ok && pGelCorrige.patch.prix_centimes === 5000
+   && pGelCorrige.resume.prixCentimes === 5000);
 
 /* ── LE PAYS DE LIVRAISON A LA PUBLICATION (lot 3, revu le 11/09/2026) ────
    Publier l'apercu, c'est annoncer un prix. Depuis que le port est devise par
@@ -378,7 +404,7 @@ ok("un port SANS pays : refuse, et c'est le pays qu'on reclame",
 ok("un port sans pays : le montant n'entre nulle part",
    !pPortSansPays.ok);
 const pHorsZone = preparerTransition("publier_apercu", "photos_recues",
-  { nb_pages: 34, pays_livraison: "US", ...VISUELS });
+  { nb_pages: 34, pays_livraison: "CA", ...VISUELS });
 ok("publier vers un pays hors zone : refuse",
    !pHorsZone.ok && pHorsZone.erreurs.some((e) => e.champ === "pays_livraison"));
 const pCorrigePays = preparerTransition("corriger_apercu", "apercu_pret",
@@ -1007,7 +1033,7 @@ ok("un dossier sans matiere le DIT au lieu de rendre un fichier vide",
 /* ════════════════════════════ IMPRESSION ════════════════════════════ */
 
 titre("— la reference produit se deduit de la pagination —");
-ok("20 pages -> agrafe", produitPour(20)?.produit === "magazine_sas_a4_p_fc");
+ok("20 pages -> aucun produit (l'agrafe a disparu le 15/09/2026)", produitPour(20) === null);
 ok("24 pages -> dos carre", produitPour(24)?.produit === "magazine_pb_a4_p_fc");
 ok("50 pages -> dos carre", produitPour(50)?.produit === "magazine_pb_a4_p_fc");
 ok("60 pages -> dos carre (la grille monte jusque-la)",
@@ -1023,10 +1049,9 @@ ok("62 pages -> aucun produit", produitPour(62) === null);
 ok("pagination absente -> aucun produit", produitPour(null) === null);
 /* La reliure et la reference produit sortent de la MEME fonction : elles ne
    peuvent pas diverger. Ce test-la est le lien entre les deux tables. */
-ok("produitPour SUIT reliurePour, pagination par pagination",
+ok("produitPour SUIT reliurePour, pagination par pagination : toujours le dos carre",
    PAGES_AUTORISEES.every((n) =>
-     (reliurePour(n) === "agrafe") === (produitPour(n)?.produit === "magazine_sas_a4_p_fc")
-     && (reliurePour(n) === "dos_carre") === (produitPour(n)?.produit === "magazine_pb_a4_p_fc")));
+     reliurePour(n) === "dos_carre" && produitPour(n)?.produit === "magazine_pb_a4_p_fc"));
 
 titre("— le telephone Cloudprinter passe en E.164 avec le pays (test 01/09) —");
 ok("national FR -> +33, zero de tete retire", telephoneE164("0680009071", "FR") === "+33680009071");
@@ -1041,7 +1066,9 @@ ok("chaque pays de la zone a son indicatif : aucun numero ne part national par o
    PAYS_LIVRAISON.every((p) => indicatifPour(p) !== null));
 ok("prefixe 00 -> +", telephoneE164("0033612345678", "FR") === "+33612345678");
 ok("separateurs (espaces/points) nettoyes", telephoneE164("06 80 00 90 71", "FR") === "+33680009071");
-ok("pays hors zone : on ne devine pas, on rend le national", telephoneE164("0680009071", "US") === "0680009071");
+ok("pays hors zone : on ne devine pas, on rend le national", telephoneE164("0680009071", "CA") === "0680009071");
+ok("national US -> +1, national BR -> +55 (les deux destinations du 15/09)",
+   telephoneE164("(212) 555-0123", "US") === "+12125550123" && telephoneE164("11 91234-5678", "BR") === "+5511912345678");
 ok("numero vide -> chaine vide (le repli TELEPHONE_CONTACT joue ailleurs)", telephoneE164("", "FR") === "");
 ok("adresseCloudprinter met le telephone en E.164",
    (() => { const r = adresseCloudprinter({ name: "Mathias Durand", address: { line1: "12 rue du Test", postal_code: "75001", city: "Paris", country: "FR" } }, "mdurand085@gmail.com", "0680009071");
@@ -1081,12 +1108,9 @@ ok("cover au fini sans fond perdu -> signale", verdictTaillePage("cover", 438, 2
 ok("cover de mauvaise hauteur -> hors format", verdictTaillePage("cover", 450, 200) === "hors_format");
 
 titre("— la regle de compte du produit —");
-ok("agrafe : 20 pages (multiple de 4, >= 8) -> ok",
-   verdictMultiplePages("product", 20, produitPour(20))?.ok === true);
-ok("agrafe : 22 pages -> refuse (pas multiple de 4)",
-   verdictMultiplePages("product", 22, produitPour(20))?.ok === false);
-ok("agrafe : 4 pages -> refuse (minimum 8)",
-   verdictMultiplePages("product", 4, produitPour(20))?.ok === false);
+/* La regle de l'agrafe (multiple de 4, 8 minimum) est archivee avec lui
+   (archive/agrafe-2026-09/). Reste le dos carre : multiple de 2, confirme
+   par products/info le 16/09/2026 (page_count_multiples = 2). */
 ok("dos carre : 32 pages (multiple de 2) -> ok",
    verdictMultiplePages("book", 32, produitPour(32))?.ok === true);
 ok("dos carre : 33 pages -> refuse",
@@ -1095,8 +1119,9 @@ ok("cover : aucune regle de compte", verdictMultiplePages("cover", 1, produitPou
 ok("produit inconnu : aucune regle", verdictMultiplePages("book", 32, null) === null);
 
 titre("— la saisie d'impression —");
-ok("l'agrafe exige UN fichier product", produitPour(20)!.fichiers.join(",") === "product");
 ok("le dos carre exige couverture ET bloc", produitPour(32)!.fichiers.join(",") === "cover,book");
+ok("le seul produit exige deux fichiers, de 24 a 60 pages",
+   PAGES_AUTORISEES.every((n) => produitPour(n)!.fichiers.join(",") === "cover,book"));
 const sansPdf = preparerTransition("envoyer_impression", "validee", {});
 ok("sans PDF refuse, champ nomme", !sansPdf.ok && sansPdf.erreurs[0].champ === "pdf_produit");
 ok("un lien externe refuse (pas de md5 possible)",
@@ -1160,16 +1185,6 @@ ok("le papier interieur est compte en pages",
    CORPS.items[0].options.some((o) => o.type.startsWith("pageblock_") && o.count === "32"));
 ok("l'adresse est de type delivery", CORPS.addresses[0].type === "delivery");
 ok("la cle API n'est PAS dans le payload", !("apikey" in CORPS));
-const CORPS_SAS = payloadCommande({
-  reference: "0b0e8400-e29b-41d4-a716-446655440000",
-  emailContact: "contact@bellajour.com",
-  adresse: ADR_OK,
-  produit: produitPour(20)!,
-  pages: 20,
-  fichiers: { product: { url: "https://coffre.example/p.pdf?sig", md5: MD5 } },
-});
-ok("l'agrafe envoie UN fichier de type product",
-   CORPS_SAS.items[0].files.length === 1 && CORPS_SAS.items[0].files[0].type === "product");
 let jete = false;
 try {
   payloadCommande({
@@ -1196,13 +1211,18 @@ const fixture = (nom: string): unknown =>
 const DEVIS_FR = fixture("cloudprinter-devis.json");
 const DEVIS_BE = fixture("cloudprinter-devis-be-20.json");
 
-/* LE PIEGE CENTRAL DU LOT : `cp_saver` (SHIPPING_LEVEL) n'est PAS propose
-   pour la France en 32 pages. Commander sous ce niveau reviendrait a acheter
-   un service qui n'a jamais ete chiffre. Le parseur retient donc le MOINS
-   CHER des niveaux offerts, et le DIT. */
+/* LE PIEGE CENTRAL DU LOT : `cp_saver` n'est PAS propose pour la France en
+   32 pages. Depuis le 16/09/2026 SHIPPING_LEVEL vaut `cp_ground`, propose
+   sur les quatorze devis releves. Commander sous un niveau absent
+   reviendrait a acheter un service jamais chiffre : le parseur retient le
+   niveau voulu s'il existe, sinon le MOINS CHER, et le DIT. */
+ok("SHIPPING_LEVEL est cp_ground depuis le 16/09/2026", SHIPPING_LEVEL === "cp_ground");
 const devFR = lireDevisCloudprinter(DEVIS_FR, SHIPPING_LEVEL);
+ok("FR/32 : cp_ground demande et propose, retenu tel quel",
+   devFR.ok && devFR.niveauVouluAbsent === false && devFR.devis.niveau === "cp_ground");
+const devSaver = lireDevisCloudprinter(DEVIS_FR, "cp_saver");
 ok("FR/32 : cp_saver absent, on retient le moins cher (cp_ground) et on le signale",
-   devFR.ok && devFR.niveauVouluAbsent === true && devFR.devis.niveau === "cp_ground");
+   devSaver.ok && devSaver.niveauVouluAbsent === true && devSaver.devis.niveau === "cp_ground");
 ok("FR/32 : 9,2160 EUR HT devient 922 centimes (arrondi au centime)",
    devFR.ok && devFR.devis.htCentimes === 922);
 /* L'espace finale de « Colissimo  » est dans la reponse reelle : ce trim n'est
@@ -1219,7 +1239,7 @@ ok("FR/32 : un niveau DEMANDE et propose est retenu tel quel (cp_fast, 976)",
 const devBE = lireDevisCloudprinter(DEVIS_BE, SHIPPING_LEVEL);
 ok("BE/20 : un seul niveau propose, cp_ground a 1245 centimes",
    devBE.ok && devBE.devis.niveau === "cp_ground" && devBE.devis.htCentimes === 1245
-   && devBE.niveauVouluAbsent === true);
+   && devBE.niveauVouluAbsent === false);
 
 /* Cinq formes de refus. Aucune ne doit rendre un montant : un port invente
    serait un montant que personne n'a decide (interdit nº5). */
@@ -1247,38 +1267,59 @@ ok("BE : 1245 HT donne 1506 TTC (coefficient 21 %)", ttcDepuisHt(1245, "BE") ===
 ok("LU : 1000 HT donne 1170 TTC (coefficient 17 %)", ttcDepuisHt(1000, "LU") === 1170);
 /* Un pays hors table ne se devine PAS : la route retombe alors sur la saisie
    a la main, ce qui est le comportement sur. */
-ok("un pays hors zone ne rend AUCUN montant", ttcDepuisHt(922, "US") === null);
-/* ⚠️ UNE ENTREE PAR DESTINATION, SANS EXCEPTION (11/09/2026, ouverture de
-   l'Europe). Un pays de la zone sans coefficient rendrait `null` au moment du
-   devis : le client verrait « nous n'avons pas pu chiffrer » pour une
-   destination pourtant proposee dans le menu. */
-ok("les 30 destinations ont toutes un coefficient, et aucune de plus",
-   PAYS_LIVRAISON.every((c) => typeof TAUX_TTC_LIVRAISON[c] === "number")
-   && Object.keys(TAUX_TTC_LIVRAISON).length === PAYS_LIVRAISON.length);
+ok("un pays hors zone ne rend AUCUN montant", ttcDepuisHt(922, "CA") === null);
+/* ⚠️ UNE ENTREE PAR DESTINATION, SANS EXCEPTION. Un pays de la zone sans
+   taux rendrait `null` au moment du devis : le client verrait « nous n'avons
+   pas pu chiffrer » pour une destination pourtant proposee dans le menu. */
+ok("les 32 destinations ont toutes un taux, et aucune de plus",
+   PAYS_LIVRAISON.length === 32
+   && PAYS_LIVRAISON.every((c) => typeof TAUX_TTC_LIVRAISON[c] === "number")
+   && Object.keys(TAUX_TTC_LIVRAISON).length === PAYS_LIVRAISON.length
+   && TAUX_TTC_LIVRAISON === TAUX_TVA_PAYS);
 ok("DE : 1000 HT donne 1190 TTC (coefficient 19 %)", ttcDepuisHt(1000, "DE") === 1190);
-/* Hors Union : on n'ajoute RIEN. Les droits d'importation eventuels sont
-   reclames au destinataire, et la page du client le DIT avant le paiement. */
-ok("GB : 1000 HT reste 1000 (hors Union, aucune TVA ajoutee par nous)",
-   ttcDepuisHt(1000, "GB") === 1000);
-ok("les trois pays hors Union sont a zero, et ce ne sont pas les memes que HORS_UE par hasard",
-   TAUX_TTC_LIVRAISON.GB === 0 && TAUX_TTC_LIVRAISON.CH === 0 && TAUX_TTC_LIVRAISON.NO === 0
-   && [...HORS_UE].sort().join(",") === "CH,GB,NO");
+/* Hors Union : le Royaume-Uni porte 20 % (tableur du 15/09, « la TVA du
+   pays »), les quatre autres sont a ZERO, et les droits d'importation sont
+   reclames au destinataire — la page du client le DIT avant le paiement. */
+ok("GB : 1000 HT donne 1200 (20 %, decision du 15/09/2026)", ttcDepuisHt(1000, "GB") === 1200);
+ok("CH, NO, US et BR sont a zero : rien n'est ajoute par nous",
+   TAUX_TTC_LIVRAISON.CH === 0 && TAUX_TTC_LIVRAISON.NO === 0
+   && TAUX_TTC_LIVRAISON.US === 0 && TAUX_TTC_LIVRAISON.BR === 0
+   && ttcDepuisHt(1000, "US") === 1000);
+ok("HORS_UE nomme les cinq destinations hors Union, Royaume-Uni compris",
+   [...HORS_UE].sort().join(",") === "BR,CH,GB,NO,US");
 ok("aucun pays de l'Union n'est a zero (un taux oublie se lit comme un cadeau)",
    PAYS_LIVRAISON.filter((c) => !(HORS_UE as readonly string[]).includes(c))
      .every((c) => TAUX_TTC_LIVRAISON[c] > 0));
 
-titre("— le plafond : au-dela, Bellajour absorbe —");
+titre("— les zones de port (tableur du 15/09/2026, validees par Louis) —");
 
-ok("sans plafond, le client paie tout et rien n'est absorbe",
-   (() => { const r = livraisonClientAvec(1106, null); return r.client === 1106 && r.absorbe === 0; })());
-ok("plafond a 600 : le client paie 600, Bellajour absorbe 506",
-   (() => { const r = livraisonClientAvec(1106, 600); return r.client === 600 && r.absorbe === 506; })());
-ok("sous le plafond, il ne se passe RIEN (500 reste 500)",
-   (() => { const r = livraisonClientAvec(500, 600); return r.client === 500 && r.absorbe === 0; })());
-/* Le plafond du depot n'est pas encore pose (Mathias le tranchera) : tant
-   qu'il vaut null, `livraisonClient` ne doit rien plafonner. */
-ok("le plafond du depot n'est pas encore pose, donc il n'absorbe rien",
-   LIVRAISON_PLAFOND_CENTIMES === null && livraisonClient(9999).absorbe === 0);
+ok("zone A = 5 EUR, zone B = 13 EUR, offerte des 50 EUR : les trois nombres du tableur",
+   ZONES_PORT.A.centimes === 500 && ZONES_PORT.B.centimes === 1300 && FRANCO_CENTIMES === 5000);
+ok("zone A : les dix pays de la note", [...ZONES_PORT.A.pays].sort().join(",") === "AT,BE,CZ,DE,ES,FR,GB,HU,NL,PL");
+ok("zone B : les dix pays de la note, Etats-Unis compris", [...ZONES_PORT.B.pays].sort().join(",") === "DK,FI,GR,IE,IT,LU,PT,RO,SE,US");
+ok("aucun pays dans deux zones, et tous dans la zone de livraison",
+   ZONES_PORT.A.pays.every((c) => !(ZONES_PORT.B.pays as readonly string[]).includes(c))
+   && [...ZONES_PORT.A.pays, ...ZONES_PORT.B.pays].every((c) => (PAYS_LIVRAISON as readonly string[]).includes(c)));
+ok("zonePour : FR -> A, PT -> B, CH -> C, BR -> C, hors zone -> null",
+   zonePour("FR") === "A" && zonePour("pt") === "B" && zonePour("CH") === "C" && zonePour("BR") === "C" && zonePour("CA") === null);
+ok("les douze pays de zone C sont ceux du releve du 16/09",
+   PAYS_LIVRAISON.filter((c) => zonePour(c) === "C").sort().join(",") === "BG,BR,CH,CY,EE,HR,LT,LV,MT,NO,SI,SK");
+ok("portClient FR, 36 EUR : 5 EUR, source zone, pas offert",
+   (() => { const r = portClient({ pays: "FR", totalProduitCentimes: 3600 }); return !!r && r.centimes === 500 && r.brutCentimes === 500 && r.source === "zone" && r.offert === false; })());
+ok("portClient FR, 50 EUR (44 pages) : OFFERTE, le brut reste 5 EUR",
+   (() => { const r = portClient({ pays: "FR", totalProduitCentimes: 5000 }); return !!r && r.centimes === 0 && r.brutCentimes === 500 && r.offert === true; })());
+ok("portClient US : 13 EUR, zone B, meme sans devis",
+   (() => { const r = portClient({ pays: "US", totalProduitCentimes: 2000 }); return !!r && r.centimes === 1300 && r.zone === "B"; })());
+ok("portClient CH avec devis 1106 : le devis, source devis",
+   (() => { const r = portClient({ pays: "CH", totalProduitCentimes: 3600, devisTtcCentimes: 1106 }); return !!r && r.centimes === 1106 && r.source === "devis"; })());
+ok("portClient CH sans devis : inconnu, JAMAIS zero par defaut",
+   (() => { const r = portClient({ pays: "CH", totalProduitCentimes: 3600 }); return !!r && r.source === "inconnu"; })());
+ok("portClient CH sans devis mais seuil atteint : offerte quand meme",
+   (() => { const r = portClient({ pays: "CH", totalProduitCentimes: 5200 }); return !!r && r.offert && r.centimes === 0; })());
+ok("portClient hors zone : null", portClient({ pays: "CA", totalProduitCentimes: 9999 }) === null);
+ok("livraisonOfferte : a 50 EUR oui, a 49,99 non", livraisonOfferte(5000) && !livraisonOfferte(4999));
+ok("manquePourFranco : 36 EUR -> 14 EUR, 50 -> 0, 61,20 -> 0",
+   manquePourFranco(3600) === 1400 && manquePourFranco(5000) === 0 && manquePourFranco(6120) === 0);
 
 titre("— un montant tape a la main par l'atelier —");
 
@@ -1299,9 +1340,20 @@ ok("« 12,345 » est ARRONDI a 1235, il n'est pas refuse", centimesDeSaisie("12,
 titre("— le total d'une commande —");
 
 const ordinaire = totalCommande({ prixCentimes: 3700, livraisonCentimes: 1106, creditCentimes: 0, portOffert: false });
-ok("un client ordinaire, 34 pages : 37 EUR + 11,06 EUR = 48,06 EUR",
+ok("un client ordinaire, 37 EUR + 11,06 EUR de devis = 48,06 EUR",
    ordinaire.prix === 3700 && ordinaire.livraison === 1106 && ordinaire.remise === 0
-   && ordinaire.total === 4806);
+   && ordinaire.total === 4806 && ordinaire.quantite === 1 && ordinaire.livraisonOfferte === false);
+/* Le seuil (15/09/2026) : des 50 EUR de magazines, le port tombe a zero et la
+   ligne le DIT. Sur le total des exemplaires remise deduite, jamais sur le port. */
+const seuil44 = totalCommande({ prixCentimes: 5000, livraisonCentimes: 500, creditCentimes: 0, portOffert: false });
+ok("44 pages FR (50 EUR) : livraison offerte par le seuil, total 50 EUR",
+   seuil44.livraison === 0 && seuil44.livraisonOfferte && seuil44.total === 5000);
+const deux36 = totalCommande({ prixCentimes: 3600, quantite: 2, livraisonCentimes: 500, creditCentimes: 0, portOffert: false });
+ok("2 exemplaires de 36 EUR : 61,20 EUR de magazines, seuil atteint, port offert",
+   deux36.prix === 6120 && deux36.livraison === 0 && deux36.total === 6120 && deux36.quantite === 2);
+const deux24 = totalCommande({ prixCentimes: 2400, quantite: 2, livraisonCentimes: 500, creditCentimes: 0, portOffert: false });
+ok("2 exemplaires de 24 EUR : 40,80 EUR, sous le seuil, port 5 EUR, total 45,80 EUR",
+   deux24.prix === 4080 && deux24.livraison === 500 && deux24.total === 4580);
 
 /* Le fondateur ne paie NI son credit NI son port (decision de Mathias). */
 const fondateur34 = totalCommande({ prixCentimes: 3700, livraisonCentimes: 1106, creditCentimes: 3000, portOffert: true });
@@ -1369,12 +1421,24 @@ const OPT_DEVIS = payloadDevis({ pays: "FR", produit: produitPour(32)!, pages: 3
 const OPT_COMMANDE = CORPS.items[0].options;
 ok("payloadDevis et payloadCommande envoient EXACTEMENT les memes options",
    JSON.stringify(OPT_DEVIS) === JSON.stringify(OPT_COMMANDE));
-ok("le devis part en EUR, sur un exemplaire, sans fichier ni adresse",
+ok("le devis part en EUR, sur un exemplaire par defaut, sans fichier ni adresse",
    (() => {
-     const d = payloadDevis({ pays: "BE", produit: produitPour(20)!, pages: 20 });
+     const d = payloadDevis({ pays: "BE", produit: produitPour(24)!, pages: 24 });
      return d.currency === "EUR" && d.country === "BE" && d.items.length === 1
        && d.items[0].count === "1" && !("files" in d.items[0]) && !("addresses" in d);
    })());
+/* Les exemplaires (15/09/2026) : le devis ET la commande portent la quantite
+   du dossier dans `count`, un seul item, un seul colis. */
+ok("3 exemplaires : count vaut 3 au devis comme a la commande",
+   payloadDevis({ pays: "FR", produit: produitPour(32)!, pages: 32, quantite: 3 }).items[0].count === "3"
+   && payloadCommande({
+     reference: "r", emailContact: "c@b.com", adresse: ADR_OK,
+     produit: produitPour(32)!, pages: 32, quantite: 3,
+     fichiers: { cover: { url: "u", md5: MD5 }, book: { url: "u", md5: MD5 } },
+   }).items[0].count === "3");
+ok("une quantite illisible ou absente vaut UN exemplaire, jamais zero",
+   payloadDevis({ pays: "FR", produit: produitPour(32)!, pages: 32, quantite: 0 }).items[0].count === "1"
+   && payloadDevis({ pays: "FR", produit: produitPour(32)!, pages: 32, quantite: null }).items[0].count === "1");
 
 /* Le niveau GELE au devis remonte jusqu'a la commande. Sans lui, on
    acheterait `cp_saver` — que la France ne propose meme pas. */
@@ -1396,11 +1460,11 @@ titre("— le papier tranche et le pelliculage au choix (11/09/2026) —");
 /* Les references viennent du releve products/info du 11/09. Les figer ici,
    c'est empecher qu'une « harmonisation » de nommage les casse en silence :
    `cover_finish_gloss` n'existe pas chez eux, la commande serait refusee. */
-ok("le papier est le MEME pour les deux reliures",
-   produitPour(20)!.finitions[0].type === PAPIER_INTERIEUR
-   && produitPour(32)!.finitions[0].type === PAPIER_INTERIEUR
-   && produitPour(20)!.finitions[1].type === PAPIER_COUVERTURE
-   && produitPour(32)!.finitions[1].type === PAPIER_COUVERTURE);
+ok("le papier de la table produit est celui des constantes (gloss 130 g, couverture 250 g)",
+   produitPour(24)!.finitions[0].type === PAPIER_INTERIEUR
+   && produitPour(60)!.finitions[0].type === PAPIER_INTERIEUR
+   && produitPour(32)!.finitions[1].type === PAPIER_COUVERTURE
+   && PAPIER_INTERIEUR === "pageblock_130mcg" && PAPIER_COUVERTURE === "cover_250mcs");
 ok("les references du pelliculage sont celles de Cloudprinter, asymetrie comprise",
    FINITION_OPTION.gloss === "finish_gloss" && FINITION_OPTION.matte === "cover_finish_matte");
 ok("le defaut est le brillant, comme chez eux", FINITION_DEFAUT === "gloss");
@@ -1439,19 +1503,21 @@ ok("le devis suit le pelliculage, sinon il chiffre un autre objet",
    }).items[0].options));
 
 titre("— la geometrie du dos (formule Cloudprinter, SPECS du 02/09) —");
-/* Les trois valeurs sont celles ecrites dans SPECS-CLOUDPRINTER.md, calculees
-   a la main depuis la formule officielle : 130 g, bulk MCS 0,90, softcover
-   +1,0 mm. Si le papier change en haut de impression.ts, CES TROIS LIGNES
-   tombent — et c'est le but : le dos ne doit jamais suivre en silence. */
-ok("le grammage et le bulk se DEDUISENT de la reference papier",
-   GRAMMAGE_INTERIEUR_GSM === 130 && BULK_INTERIEUR === 0.9);
-ok("24 pages -> 2,40 mm de dos", dosMmPourPages(24) === 2.4);
-ok("32 pages -> 2,87 mm de dos", dosMmPourPages(32) === 2.87);
-ok("50 pages -> 3,93 mm de dos", dosMmPourPages(50) === 3.93);
-ok("un agrafe n'a PAS de dos (null, jamais zero)", dosMmPourPages(20) === null);
+/* Les valeurs sortent de la formule officielle (SPECS-CLOUDPRINTER.md) avec
+   le papier du 15/09/2026 : 130 g, bulk MCG (gloss) 0,80, softcover +1,0 mm.
+   24 p -> 130 x 0,8 x 12 / 1000 + 1 = 2,248 ; 32 p -> 2,664 ; 50 p -> 3,6.
+   Si le papier change en haut de impression.ts, CES LIGNES tombent — et
+   c'est le but : le dos ne doit jamais suivre en silence. */
+ok("le grammage et le bulk se DEDUISENT de la reference papier (gloss : 0,80)",
+   GRAMMAGE_INTERIEUR_GSM === 130 && BULK_INTERIEUR === 0.8);
+ok("24 pages -> 2,25 mm de dos", dosMmPourPages(24) === 2.25);
+ok("32 pages -> 2,66 mm de dos", dosMmPourPages(32) === 2.66);
+ok("50 pages -> 3,60 mm de dos", dosMmPourPages(50) === 3.6);
+ok("60 pages -> 4,12 mm de dos", dosMmPourPages(60) === 4.12);
+ok("20 pages n'a PAS de dos : hors grille (null, jamais zero)", dosMmPourPages(20) === null);
 ok("hors grille : aucun dos", dosMmPourPages(22) === null && dosMmPourPages(null) === null);
 ok("la couverture enveloppante fait 2 x (210 + 3) + dos",
-   largeurCouvertureMm(32) === 2 * (210 + 3) + 2.87);
+   largeurCouvertureMm(32) === 2 * (210 + 3) + 2.66);
 
 /* Le verdict de largeur d'une cover, qui n'existait pas avant le 11/09 :
    faute de grammage tranche, on ne savait pas ce qu'elle devait mesurer. */
@@ -1623,6 +1689,7 @@ const flore = {
   prenom: "Flore",
   email: "flore@example.com",
   telephone: "0769710686",
+  pays: "FR",
 };
 ok("sans titre : REFUSE, et on dit lequel",
    premierManquant(CHAMPS_QUESTIONNAIRE, (c) => flore[c]) === "titre");
@@ -1633,7 +1700,7 @@ titre("— le PREMIER champ fautif, pas un bilan —");
 ok("occasion avant histoire",
    premierManquant(CHAMPS_QUESTIONNAIRE, () => "") === "occasion");
 ok("chaque ecran connait ses champs",
-   CHAMPS_PAR_ECRAN[1].length === 1 && CHAMPS_PAR_ECRAN[4].length === 3);
+   CHAMPS_PAR_ECRAN[1].length === 1 && CHAMPS_PAR_ECRAN[4].length === 4);
 ok("tous les champs sont couverts par les quatre ecrans",
    Object.values(CHAMPS_PAR_ECRAN).flat().sort().join() ===
      [...CHAMPS_QUESTIONNAIRE].sort().join());
@@ -1973,36 +2040,56 @@ const cRien = composerConstats({
 ok("rien a lire : UNE phrase qui le dit, pas une page vide",
    cRien.length === 1 && cRien[0].includes("Pas encore assez"));
 
-/* ══════════════════ MULTI-EXEMPLAIRES (T-073) : LE VERROU ══════════════════
-   Les paliers degressifs ne sont PAS decides (interdit nº5 : jamais inventer
-   une remise). La structure `totalPour` existe, verrouillee a 1 exemplaire :
-   a 1, elle DOIT rendre le prix unitaire au centime, et tout le reste DOIT
-   etre refuse. Lever le verrou = QUANTITE_MAX dans prix.ts, quand Mathias
-   donne les paliers — et ces tests changeront AVEC lui, pas avant.
+/* ══════════ MULTI-EXEMPLAIRES (T-073, LEVE LE 15/09/2026) ══════════
+   Le bareme de Mathias, valide par Louis : le 1er exemplaire plein tarif, le
+   2e a -30 %, le 3e et les suivants a -50 %, sur le prix du magazine
+   seulement, dix au plus. Les trois nombres de la reponse de Mathias (36 EUR
+   -> 61,20 / 79,20 / 97,20) sont figes ici. `totalPour` (prix.ts) et le bon
+   de commande passent par la MEME fonction (`totalExemplaires`). */
 
-   Depuis le 10/09/2026 elle prend des CENTIMES et non un palier : l'appelant
-   a deja le prix gele du dossier sous la main, et le palier ne nomme plus un
-   montant. La boucle balaie TOUTE la grille, ligne par ligne. */
-
-titre("— multi-exemplaires (T-073) : verrouille a 1 —");
-ok("QUANTITE_MAX vaut 1 (verrou T-073, leve par Mathias seulement)", QUANTITE_MAX === 1);
-for (const g of GRILLE) {
+titre("— multi-exemplaires (T-073) : le degressif du 15/09/2026 —");
+ok("QUANTITE_MAX vaut 10, des deux cotes (prix.ts re-exporte exemplaires.ts)",
+   QUANTITE_MAX === 10 && QUANTITE_MAX_EXEMPLAIRES === 10);
+ok("les remises par rang : 0, 30, 50, 50, 50...",
+   remisePourRang(1) === 0 && remisePourRang(2) === 30 && remisePourRang(3) === 50 && remisePourRang(10) === 50);
+ok("36 EUR : 2 exemplaires = 61,20 EUR", totalPour(3600, 2) === 6120);
+ok("36 EUR : 3 exemplaires = 79,20 EUR", totalPour(3600, 3) === 7920);
+ok("36 EUR : 4 exemplaires = 97,20 EUR", totalPour(3600, 4) === 9720);
+ok("36 EUR : 10 exemplaires = 205,20 EUR (36 + 25,20 + 8 x 18)", totalPour(3600, 10) === 20520);
+for (const g of GRILLE_FRANCE) {
   ok(
-    `${g.pages} pages : totalPour(x1) = ${g.euros * 100} centimes, la grille au centime`,
+    `${g.pages} pages : totalPour(x1) = ${g.euros * 100} centimes, la grille France au centime`,
     totalPour(centimesPourPages(g.pages), 1) === g.euros * 100,
   );
-  ok(
-    `${g.pages} pages : 2 exemplaires REFUSES (aucune remise inventee)`,
-    totalPour(centimesPourPages(g.pages), 2) === null,
-  );
 }
-ok("quantite nulle ou negative : refusee",
-   totalPour(3700, 0) === null && totalPour(3700, -1) === null);
+const dec3 = decompteExemplaires(3600, 3)!;
+ok("le decompte a trois lignes : plein, -30 %, -50 %",
+   dec3.lignes.length === 3 && dec3.lignes.map((l) => l.remisePct).join(",") === "0,30,50"
+   && dec3.lignes.map((l) => l.unitaireCentimes).join(",") === "3600,2520,1800"
+   && dec3.economieCentimes === 3 * 3600 - 7920);
+ok("5 exemplaires : la troisieme ligne porte 3 exemplaires a -50 %",
+   (() => { const d = totalExemplaires(3600, 5)!; return d.lignes[2].quantite === 3 && d.lignes[2].totalCentimes === 5400 && d.totalCentimes === 11520; })());
+ok("les libelles des lignes sont ceux du recu, sans tiret cadratin",
+   libelleLigne(dec3.lignes[0]) === "Votre numéro"
+   && libelleLigne(dec3.lignes[1]) === "2e exemplaire, −30 %"
+   && libelleLigne(dec3.lignes[2]) === "3e exemplaire, −50 %"
+   && libelleLigne(totalExemplaires(3600, 5)!.lignes[2]) === "3 exemplaires suivants, −50 % chacun"
+   && !libelleLigne(dec3.lignes[1]).includes("—"));
+ok("un arrondi au centime par exemplaire : 24 EUR x 0,7 = 16,80, x 0,5 = 12",
+   totalExemplaires(2400, 3)!.lignes.map((l) => l.unitaireCentimes).join(",") === "2400,1680,1200");
+ok("quantite nulle, negative ou au-dela de 10 : refusee",
+   totalPour(3700, 0) === null && totalPour(3700, -1) === null && totalPour(3700, 11) === null);
 ok("quantite non entiere : refusee", totalPour(3700, 1.5) === null);
 ok("prix absent : null, on ne facture pas sans chiffrage",
    totalPour(null, 1) === null && totalPour(undefined, 1) === null);
 ok("un prix qui n'en est pas un (0, negatif, demi-centime) est refuse",
    totalPour(0, 1) === null && totalPour(-100, 1) === null && totalPour(12.5, 1) === null);
+ok("normaliserQuantite ne repare rien : « 3 » et 3 passent, 0, 11, « trois », vide refuses",
+   normaliserQuantite("3") === 3 && normaliserQuantite(3) === 3 && normaliserQuantite("03") === 3
+   && normaliserQuantite(0) === null && normaliserQuantite(11) === null
+   && normaliserQuantite("trois") === null && normaliserQuantite("") === null && normaliserQuantite(2.5) === null);
+ok("quantiteDuDossier : un dossier sans colonne vaut UN exemplaire",
+   quantiteDuDossier(null) === 1 && quantiteDuDossier(undefined) === 1 && quantiteDuDossier(4) === 4);
 
 /* ══════════════ LE PRIX GELE SUR LE DOSSIER (10/09/2026) ══════════════
    Decision de Mathias : le prix annonce est le prix debite, sur CE dossier,
@@ -2021,18 +2108,35 @@ titre("— le prix GELE sur le dossier : le gel gagne, la grille rattrape —");
 /* ⚠️ LE REPLI PASSE PAR `nb_pages` DEPUIS LE 10/09/2026, plus par le palier :
    le palier ne nomme plus un montant, s'en servir facturerait 30 EUR un
    dossier de 28 pages qui en vaut 31. */
-ok("le gel gagne sur la grille (3000 alors que 34 pages diraient 3700)",
+ok("le gel gagne sur la grille (3000 alors que 34 pages diraient 3800)",
    centimesDuDossier({ prix_centimes: 3000, nb_pages: 34 }) === 3000);
-ok("pas de gel : la grille rattrape, au centime (34 pages -> 3700)",
-   centimesDuDossier({ prix_centimes: null, nb_pages: 34 }) === 3700);
+ok("pas de gel : la grille rattrape, au centime (34 pages -> 3800, France)",
+   centimesDuDossier({ prix_centimes: null, nb_pages: 34 }) === 3800);
+ok("pas de TTC gele mais un HT gele et un pays : le TTC s'en deduit (3200 HT, PT -> 3900)",
+   centimesDuDossier({ prix_centimes: null, prix_ht_centimes: 3200, pays_livraison: "PT", nb_pages: 34 }) === 3900);
+ok("pas de gel du tout, un pays : la grille du pays (34 pages DE -> 3800, 32 x 1,19 = 38,08)",
+   centimesDuDossier({ nb_pages: 34, pays_livraison: "DE" }) === 3800);
 ok("colonne absente (repli 42703) : la grille rattrape aussi",
-   centimesDuDossier({ nb_pages: 34 }) === 3700);
+   centimesDuDossier({ nb_pages: 34 }) === 3800);
 ok("zero n'est pas un prix : ignore, on retombe sur la grille",
-   centimesDuDossier({ prix_centimes: 0, nb_pages: 34 }) === 3700);
+   centimesDuDossier({ prix_centimes: 0, nb_pages: 34 }) === 3800);
 ok("un negatif n'est pas un prix : ignore",
-   centimesDuDossier({ prix_centimes: -5, nb_pages: 34 }) === 3700);
+   centimesDuDossier({ prix_centimes: -5, nb_pages: 34 }) === 3800);
 ok("un demi-centime n'existe pas chez Stripe : ignore",
-   centimesDuDossier({ prix_centimes: 12.5, nb_pages: 34 }) === 3700);
+   centimesDuDossier({ prix_centimes: 12.5, nb_pages: 34 }) === 3800);
+/* ttcPourPays : ce que la route du bon de commande ecrit quand le client
+   change de pays. Le HT gele d'abord, la grille ensuite, null sinon. */
+ok("ttcPourPays : depuis le HT gele (3200 -> FR 3800, PT 3900, DE 3800, US 3200)",
+   ttcPourPays({ prix_ht_centimes: 3200 }, "FR") === 3800
+   && ttcPourPays({ prix_ht_centimes: 3200 }, "PT") === 3900
+   && ttcPourPays({ prix_ht_centimes: 3200 }, "DE") === 3800
+   && ttcPourPays({ prix_ht_centimes: 3200 }, "US") === 3200);
+ok("ttcPourPays : sans HT gele, la grille du jour par la pagination",
+   ttcPourPays({ nb_pages: 24 }, "PT") === 2500 && ttcPourPays({ nb_pages: 24 }, "FR") === 2400);
+ok("ttcPourPays : un TTC gele seul ne se convertit PAS par une regle de trois",
+   ttcPourPays({ prix_centimes: 3800 }, "PT") === null);
+ok("htCentimesPourPages : 24 -> 2000, 60 -> 5320, 20 -> null",
+   htCentimesPourPages(24) === 2000 && htCentimesPourPages(60) === 5320 && htCentimesPourPages(20) === null);
 ok("ni gel ni pagination : null, on ne facture pas sans chiffrage",
    centimesDuDossier({ prix_centimes: null, nb_pages: null }) === null
    && centimesDuDossier({}) === null);
@@ -2045,8 +2149,40 @@ ok("le gel se lit meme sans pagination (un dossier chiffre reste chiffre)",
 ok("eurosDuDossier = centimes / 100, sans arrondi maison",
    eurosDuDossier({ prix_centimes: 3700 }) === 37
    && eurosDuDossier({ prix_centimes: 490 }) === 4.9
-   && eurosDuDossier({ nb_pages: 44 }) === 45
+   && eurosDuDossier({ nb_pages: 44 }) === 50
    && eurosDuDossier({}) === null);
+
+/* ══════ LA GRILLE HT ET LA COLONNE FRANCE DU TABLEUR (15/09/2026) ══════
+   Les dix-neuf lignes TTC France du tableur « Prix & Marge v3 », telles
+   quelles : si une ligne HT bouge sans que la colonne suive, ce test tombe.
+   Puis les autres pays, pour prouver la regle HT x TVA arrondie a l'euro. */
+titre("— la grille HT, et le TTC de chaque pays —");
+const TABLEUR_FRANCE: Array<[number, number]> = [
+  [24, 24], [26, 27], [28, 30], [30, 33], [32, 36], [34, 38], [36, 41], [38, 43], [40, 46],
+  [42, 48], [44, 50], [46, 52], [48, 54], [50, 55], [52, 57], [54, 59], [56, 60], [58, 62], [60, 64],
+];
+ok("la grille compte exactement les 19 lignes du tableur, de 24 a 60",
+   GRILLE.length === 19 && PAGES_MIN === 24 && PAGES_MAX === 60 && PAGES_MAX_PUBLIC === 60);
+for (const [pages, euros] of TABLEUR_FRANCE) {
+  ok(`${pages} pages : ${euros} EUR TTC France, comme le tableur`,
+     eurosPourPages(pages) === euros && ttcCentimesPour(pages, "FR") === euros * 100);
+}
+ok("les HT sont ceux du tableur : 20 ; 22,40 ; ... ; 53,20",
+   GRILLE.map((g) => g.htCentimes).join(",") === "2000,2240,2480,2720,2960,3200,3400,3600,3800,4000,4200,4340,4480,4620,4760,4900,5040,5180,5320");
+ok("24 pages : 25 EUR au Portugal, 24 en Allemagne, 24 au Royaume-Uni, 20 aux Etats-Unis",
+   eurosPourPages(24, "PT") === 25 && eurosPourPages(24, "DE") === 24
+   && eurosPourPages(24, "GB") === 24 && eurosPourPages(24, "US") === 20);
+ok("60 pages : 65 EUR au Portugal, 63 en Allemagne, 68 en Hongrie (27 % : 67,56)",
+   eurosPourPages(60, "PT") === 65 && eurosPourPages(60, "DE") === 63 && eurosPourPages(60, "HU") === 68);
+ok("l'arrondi est a l'euro, le demi vers le haut (2240 x 1,2 = 26,88 -> 27 ; 4000 x 1,2 = 48)",
+   ttcDepuisHtArrondi(2240, "FR") === 2700 && ttcDepuisHtArrondi(4000, "FR") === 4800);
+ok("un pays hors zone, un HT nul ou negatif : null, jamais un prix",
+   ttcDepuisHtArrondi(2000, "CA") === null && ttcDepuisHtArrondi(0, "FR") === null && ttcDepuisHtArrondi(-1, "FR") === null);
+ok("EUROS_MIN et EUROS_MAX sont ceux de la France : 24 et 64",
+   EUROS_MIN === 24 && EUROS_MAX === 64 && EUROS_MAX_PUBLIC === 64 && GRILLE_PUBLIQUE.length === 19);
+ok("htCentimesPour et la grille disent la meme chose", GRILLE.every((g) => htCentimesPour(g.pages) === g.htCentimes));
+ok("reliurePour : dos carre pour toute la grille, rien hors grille",
+   PAGES_AUTORISEES.every((n) => reliurePour(n) === "dos_carre") && reliurePour(20) === null && reliurePour(22) === null);
 
 titre("— formater un montant : des decimales SEULEMENT si elles disent quelque chose —");
 /* L'espace avant le symbole est INSECABLE (U+00A0) : un prix ne se coupe
@@ -2133,6 +2269,7 @@ const BROUILLON_MORT = {
   prenom: "Camille",
   email: "camille@example.com",
   telephone: "+33612345678",
+  pays: "FR",
   token: "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
   consentPhotos: true,
   consentCommunication: true,
@@ -2233,11 +2370,11 @@ ok("chaque destination a un libelle en toutes lettres (aucun code affiche brut)"
    validation permissive au passage, et « fr » entrerait en base la ou Stripe
    et Cloudprinter attendent « FR ». */
 
-titre("— paysValide : strictement les trois codes, majuscules comprises —");
-ok("FR, BE et LU sont valides",
-   paysValide("FR") && paysValide("BE") && paysValide("LU"));
+titre("— paysValide : strictement les codes de la zone, majuscules comprises —");
+ok("FR, BE, LU, US et BR sont valides",
+   paysValide("FR") && paysValide("BE") && paysValide("LU") && paysValide("US") && paysValide("BR"));
 ok("« fr » en minuscules est REFUSE (la validation ne repare pas)", !paysValide("fr"));
-ok("un pays hors zone est refuse", !paysValide("US"));
+ok("un pays hors zone est refuse", !paysValide("CA"));
 ok("le vide et l'absence sont refuses",
    !paysValide("") && !paysValide(null) && !paysValide(undefined));
 ok("un non-texte ne passe pas", !paysValide(42) && !paysValide({ pays: "FR" }));
@@ -2246,29 +2383,24 @@ titre("— normaliserPays : repare ce qui se repare, invente le reste jamais —
 ok("«  be  » devient BE (espaces et casse)", normaliserPays(" be ") === "BE");
 ok("« Fr » devient FR", normaliserPays("Fr") === "FR");
 ok("un pays hors zone rend null, JAMAIS le pays par defaut",
-   normaliserPays("US") === null && normaliserPays("CA") === null);
+   normaliserPays("CA") === null && normaliserPays("AU") === null);
 /* L'Allemagne etait hors zone jusqu'au 10/09 : elle est dedans depuis. */
 ok("un pays entre dans la zone le jour ou il entre dans la liste (DE)",
    normaliserPays("de") === "DE" && paysValide("DE"));
 ok("le vide rend null", normaliserPays("") === null && normaliserPays(null) === null);
 ok("le defaut est un pays de la zone, et il a un libelle",
    paysValide(PAYS_DEFAUT) && PAYS_LIBELLE[PAYS_DEFAUT] === "France");
-ok("les trois pays ont un libelle en toutes lettres (aucun code affiche brut)",
+ok("les pays ont un libelle en toutes lettres (aucun code affiche brut)",
    PAYS_LIVRAISON.every((c) => (PAYS_LIBELLE[c] ?? "").length > 2));
 
-titre("— le questionnaire n'exige PLUS le pays (11/09/2026) —");
-/* Mathias, 11/09 : « je ne veux pas que ce soit complique au niveau de la
-   livraison : la demander pendant le questionnaire, on s'en fiche. » Le pays
-   a ete une reponse exigee du 10 au 11/09. Il ne l'est plus : la destination
-   se choisit sur la page de commande, ou le port est chiffre avant le
-   paiement. Ce qui suit garde la trace de la regle RETIREE, pour qu'un
-   « oubli » ne la remette pas par megarde. */
-ok("le pays n'est plus un champ du questionnaire",
-   !(CHAMPS_QUESTIONNAIRE as string[]).includes("pays"));
-ok("l'ecran 4 ne porte plus que les trois coordonnees",
-   JSON.stringify(CHAMPS_PAR_ECRAN[4]) === JSON.stringify(["prenom", "email", "telephone"]));
-ok("aucun ecran ne porte le pays",
-   !Object.values(CHAMPS_PAR_ECRAN).flat().includes("pays" as never));
+titre("— le questionnaire exige DE NOUVEAU le pays (15/09/2026) —");
+/* Retire le 11/09 (« on s'en fiche »), revenu le 15/09 pour une raison plus
+   forte : le PRIX depend du pays (grille HT x TVA), et M3 doit annoncer le
+   vrai montant. Mathias : « on demande dans le questionnaire le pays de
+   livraison pour avoir la bonne info dans M3 ». */
+ok("le pays est un champ du questionnaire, sur l'ecran 4",
+   (CHAMPS_QUESTIONNAIRE as string[]).includes("pays")
+   && JSON.stringify(CHAMPS_PAR_ECRAN[4]) === JSON.stringify(["prenom", "email", "telephone", "pays"]));
 const complet = {
   occasion: "Un voyage",
   histoire: "Un road trip au Maroc avec Mathilde. Des paysages de dingue.",
@@ -2276,16 +2408,22 @@ const complet = {
   prenom: "Flore",
   email: "flore@example.com",
   telephone: "0769710686",
+  pays: "FR",
 };
-ok("un dossier SANS pays est complet : rien ne manque",
+ok("un dossier complet, pays compris : rien ne manque",
    premierManquant(CHAMPS_QUESTIONNAIRE, (c) => complet[c]) === null);
+ok("sans pays, c'est le pays qui manque, et il renvoie a l'ecran 4",
+   premierManquant(CHAMPS_QUESTIONNAIRE, (c) => (c === "pays" ? "" : complet[c])) === "pays"
+   && ecranDuChamp("pays") === 4);
+ok("« fr » en minuscules ne passe pas la validation (la route normalise AVANT)",
+   !reponseValide("pays", "fr") && reponseValide("pays", "FR") && reponseValide("pays", "BR"));
 /* La REGLE de validation d'un code pays n'a pas bouge d'un pouce : elle a
    seulement change d'endroit. `paysValide` (pays.ts) reste lue par l'admin a
    la publication et par la route du bon de commande. */
 ok("paysValide accepte FR", paysValide("FR"));
 ok("paysValide refuse « fr » (les appelants normalisent avant)", !paysValide("fr"));
 ok("paysValide refuse un pays hors zone et le vide",
-   !paysValide("US") && !paysValide(""));
+   !paysValide("CA") && !paysValide(""));
 
 /* ═════════ T-007 : LE SAUT « SANS TEMPLATE » LAISSE UNE TRACE ═════════
    La part pure : la phrase du journal existe, nomme le mail ET la variable a
@@ -2303,8 +2441,8 @@ ok("la phrase nomme les DEUX pays en clair",
    (rPays.detail ?? "").includes("Belgique") && (rPays.detail ?? "").includes("France"));
 ok("c'est une alerte, pas une ligne neutre", rPays.ton === "alerte");
 ok("un code inconnu reste visible plutot que d'etre efface",
-   (raconter("pays_livraison_divergent", { declare: "FR", stripe: "US" }).detail ?? "")
-     .includes("US"));
+   (raconter("pays_livraison_divergent", { declare: "FR", stripe: "CA" }).detail ?? "")
+     .includes("CA"));
 
 titre("— T-007 : le mail saute sans template se lit dans le journal —");
 const rSaut = raconter("mail_sans_template", { code: "M2b", variable: "BREVO_TEMPLATE_M2B_ID" });
@@ -2660,7 +2798,7 @@ titre("— T-076 : les parametres de M10 —");
   ok("couverture prete : l'encart de vente s'allume",
      pM10b.COUVERTURE_PRETE === "oui");
   ok("... et il porte la pagination et le prix, comme M3b",
-     pM10b.NB_PAGES === 34 && pM10b.PRIX === 37);
+     pM10b.NB_PAGES === 34 && pM10b.PRIX === 38);
   ok("... et la date de cloture suit LE DEPOT, pas la creation du dossier",
      pM10b.DATE_CLOTURE === formaterJour(new Date(Date.parse(ilYAj(120)) + 90 * 86_400_000)));
   ok("un apercu sans palier n'allume pas l'encart (jamais de prix vide affiche)",
@@ -3237,7 +3375,7 @@ const SALE = lireBrouillon([
            decision commerciale legitime. */
         livraison_centimes: 0,
         /* Hors zone : le pays decide du port et de la phrase affichee. */
-        pays_livraison: "US",
+        pays_livraison: "CA",
         /* Ne respecte pas le motif du `check` de la colonne. */
         livraison_niveau: "CP GROUND!",
         /* Une chaine n'est pas un jsonb de visuels. */

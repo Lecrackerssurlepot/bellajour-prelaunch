@@ -18,20 +18,18 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-import { palierHerite, centimesPourPages, type PalierCle } from "./prix";
+import { palierHerite, centimesPourPages, htCentimesPourPages, type PalierCle } from "./prix";
 /* `grille.ts` est PUR et public : ce module reste importable partout. Les
    bornes du message d'erreur en sont DÉRIVÉES — le jour où la grille change,
    la phrase que lit l'atelier change avec elle, sans qu'on y pense. */
 import {
-  eurosPourPages,
   reliurePour,
-  PAGES_AGRAFE,
   PAGES_MAX,
   PAGES_MIN,
   PAS_PAGES,
   type Reliure,
 } from "./grille";
-import { normaliserPays, type PaysLivraison } from "./pays";
+import { normaliserPays, PAYS_DEFAUT, type PaysLivraison } from "./pays";
 import { centimesDeSaisie } from "./livraison";
 import { lireSuivi } from "./suivi";
 
@@ -298,11 +296,15 @@ export type Preparation =
       resume: {
         nbPages?: number;
         palier?: PalierCle;
+        /** Le TTC en euros, dans le pays retenu (France si le client choisira). */
         euros?: number;
         prixCentimes?: number;
-        /** La reliure DÉDUITE de la pagination (agrafé à 20 pages, dos carré
-            au-delà) : c'est le mot que l'écran de confirmation montre, à la
-            place d'un code de palier qui ne nomme plus rien. */
+        /** Le HT gelé, en centimes (15/09/2026) : ce que la facture porte, et
+            la source de tout recalcul si le client change de pays. */
+        prixHtCentimes?: number;
+        /** La reliure DÉDUITE de la pagination (dos carré collé, la seule
+            depuis le 15/09) : c'est le mot que l'écran de confirmation montre,
+            à la place d'un code de palier qui ne nomme plus rien. */
         reliure?: Reliure;
         /** Le pays retenu, en code ISO. L'écran de confirmation l'écrit en
             toutes lettres : c'est lui qui décide du devis de port.
@@ -435,6 +437,7 @@ export function preparerTransition(
     euros?: number;
     prixCentimes?: number;
     reliure?: Reliure;
+    prixHtCentimes?: number;
     /* `null` = le client choisira sur sa page (11/09/2026). Voir `Preparation`. */
     pays?: PaysLivraison | null;
     livraisonCentimes?: number;
@@ -443,21 +446,23 @@ export function preparerTransition(
   if (cle === "publier_apercu" || cle === "corriger_apercu") {
     /* ── la pagination, donc le prix ──────────────────────────────────
        C'est le SEUL nombre saisi de tout le back-office, et il décide du
-       montant débité. Depuis le 10/09/2026 la grille donne un prix par
-       nombre de pages EXACT : 20, puis 24 à 60 de deux en deux. Hors grille,
-       on refuse — `eurosPourPages` rend null, la page d'état 2 afficherait
-       une couverture sans prix et M3 partirait sans montant. Un UPDATE à la
+       montant débité. Depuis le 15/09/2026 la grille donne un prix HORS
+       TAXES par nombre de pages EXACT, 24 à 60 de deux en deux, et le TTC
+       dépend du pays de livraison (lu plus bas). Hors grille, on refuse —
+       `htCentimesPourPages` rend null, la page d'état 2 afficherait une
+       couverture sans prix et M3 partirait sans montant. Un UPDATE à la
        main passe ce mur sans le voir : c'est exactement ce qu'on supprime. */
     const brut = typeof saisie.nb_pages === "number" ? saisie.nb_pages : Number(texte(saisie.nb_pages, 8));
+    let htGele: number | null = null;
     if (!Number.isInteger(brut) || brut <= 0) {
       erreurs.push({ champ: "nb_pages", message: "Indique le nombre de pages composées." });
     } else {
-      const euros = eurosPourPages(brut);
-      if (euros === null) {
+      htGele = htCentimesPourPages(brut);
+      if (htGele === null) {
         erreurs.push({
           champ: "nb_pages",
           /* La phrase est DÉRIVÉE de la grille : elle ne peut pas vieillir. */
-          message: `${brut} pages : hors grille (${PAGES_MIN} à ${PAGES_MAX} pages, par pas de ${PAS_PAGES}, ${PAGES_AGRAFE + PAS_PAGES} exclu). Rien ne peut être facturé.`,
+          message: `${brut} pages : hors grille (${PAGES_MIN} à ${PAGES_MAX} pages, par pas de ${PAS_PAGES}). Rien ne peut être facturé.`,
         });
       } else {
         patch.nb_pages = brut;
@@ -470,15 +475,16 @@ export function preparerTransition(
            fois. À partir de maintenant, ce dossier vaut CE prix, quoi qu'il
            advienne de la grille : la page d'état 2, M3, M3b, M10 et Stripe
            liront tous la colonne, plus jamais le barème du jour.
-           Le repli d'écriture de la route (42703 / PGRST204) peut faire
-           disparaître ce champ tant que la migration 20260910 n'est pas
-           passée — le dossier retombe alors sur la grille, exactement comme
-           avant le gel, et la route le CRIE dans les logs et au journal. */
-        patch.prix_centimes = centimesPourPages(brut);
+           Depuis le 15/09/2026 on gèle DEUX nombres : le HT (la promesse, la
+           ligne de facture, la source de tout recalcul) et le TTC dans le
+           pays retenu, posé plus bas une fois le pays lu. Le repli d'écriture
+           de la route (42703 / PGRST204) peut faire disparaître le HT tant que
+           la migration 20260916 n'est pas passée — le TTC gelé tient alors
+           seul, exactement comme du 10 au 15/09. */
+        patch.prix_ht_centimes = htGele;
         resume.nbPages = brut;
         resume.palier = palierHerite(brut) ?? undefined;
-        resume.euros = euros;
-        resume.prixCentimes = centimesPourPages(brut) ?? undefined;
+        resume.prixHtCentimes = htGele;
         resume.reliure = reliurePour(brut) ?? undefined;
       }
     }
@@ -524,6 +530,21 @@ export function preparerTransition(
     } else {
       patch.pays_livraison = pays;
       resume.pays = pays;
+    }
+
+    /* ── LE TTC, DANS LE PAYS RETENU (15/09/2026) ──────────────────────
+       HT × (1 + TVA du pays), arrondi à l'euro (`grille.ts`). Sans pays
+       (« le client choisira »), c'est le TTC FRANCE qui se gèle : la
+       référence du tableur, ce que la page produit affiche. Le jour où le
+       client choisit sa destination, `/api/atelier/livraison` recalcule le
+       TTC depuis le HT gelé et réécrit `prix_centimes`. */
+    if (htGele !== null && typeof patch.nb_pages === "number") {
+      const ttc = centimesPourPages(patch.nb_pages, pays ?? PAYS_DEFAUT);
+      if (ttc !== null) {
+        patch.prix_centimes = ttc;
+        resume.prixCentimes = ttc;
+        resume.euros = ttc / 100;
+      }
     }
 
     /* ── LA LIVRAISON, EN SUS ET SUR DEVIS (lot 6, 10/09/2026) ─────────

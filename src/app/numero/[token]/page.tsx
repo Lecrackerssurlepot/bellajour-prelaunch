@@ -23,7 +23,8 @@ import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { resoudreApercu } from '@/lib/atelier/apercu'
 import { eurosDuDossier, centimesDuDossier, type PalierCle } from '@/lib/atelier/prix'
 import { finitionDuDossier } from '@/lib/atelier/impression'
-import { totalCommande } from '@/lib/atelier/livraison'
+import { totalCommande, portClient } from '@/lib/atelier/livraison'
+import { quantiteDuDossier, totalExemplaires } from '@/lib/atelier/exemplaires'
 import { creditDuPourMail } from '@/lib/atelier/fondatrice'
 import { DELAIS, JOURS_LIVRAISON, etapeDepot, QUI_ATTEND, type Camp, type EtapeDepot } from '@/lib/atelier/urgence'
 import { JOURS_AVANT_AUTO_VALIDATION } from '@/lib/atelier/mails'
@@ -120,6 +121,9 @@ type Numero = {
      les autres colonnes fraîches — le repli la laisse `undefined`, et le
      sélecteur repart alors du brillant, qui est le défaut réel. */
   finition?: string | null
+  /* Le HT gelé et les exemplaires (migration 20260916). Mêmes replis. */
+  prix_ht_centimes?: number | null
+  quantite?: number | null
 }
 
 /* ⚠️ `id` et `email` sont là pour le CRÉDIT FONDATEUR du bon de commande
@@ -141,7 +145,8 @@ const CHAMPS =
 const CHAMPS_AVEC_SUIVI = `${CHAMPS}, tracking_code`
 const CHAMPS_AVEC_SOUVENIR = `${CHAMPS_AVEC_SUIVI}, souvenir_pdf_key, souvenir_pdf_octets`
 const CHAMPS_AVEC_PRIX = `${CHAMPS_AVEC_SOUVENIR}, prix_centimes, livraison_centimes, pays_livraison, livraison_niveau`
-const CHAMPS_COMPLET = `${CHAMPS_AVEC_PRIX}, finition`
+const CHAMPS_AVEC_FINITION = `${CHAMPS_AVEC_PRIX}, finition`
+const CHAMPS_COMPLET = `${CHAMPS_AVEC_FINITION}, prix_ht_centimes, quantite`
 /* T-113 — `archive_le` a SON niveau de repli, au-dessus du prix gelé et de la
    finition : tant que la migration 20260914 n'est pas passée, on retombe sur
    CHAMPS_COMPLET et la page garde le prix et le port gelés. La mettre au même
@@ -203,6 +208,9 @@ async function lireNumero(token: string): Promise<Numero | null | 'panne'> {
     let { data, error } = await lire(CHAMPS_AVEC_ARCHIVE)
     if (error?.code === '42703') {
       ;({ data, error } = await lire(CHAMPS_COMPLET))
+    }
+    if (error?.code === '42703') {
+      ;({ data, error } = await lire(CHAMPS_AVEC_FINITION))
     }
     if (error?.code === '42703') {
       ;({ data, error } = await lire(CHAMPS_AVEC_PRIX))
@@ -426,11 +434,27 @@ export default async function NumeroPage({
      sur « le prix vous sera confirmé par mail », ce que le checkout
      refuserait de toute façon (`livraison_indisponible`). Mieux vaut se taire
      que montrer un total que Stripe ne demandera pas. */
+  /* ── LES EXEMPLAIRES ET LE PORT DE ZONE (15/09/2026) ────────────────
+     La quantité vient du dossier ; le port gelé est le BRUT (zone ou devis)
+     et `portClient` rejoue la règle du seuil avec le total des exemplaires.
+     En zone A et B le port est connu même sans devis gelé (c'est une règle,
+     pas une devinette) ; en zone C sans devis, la page se tait. */
+  const quantite = quantiteDuDossier(numero.quantite)
+  const port =
+    prixCentimes !== null && paysLivraison
+      ? portClient({
+          pays: paysLivraison,
+          totalProduitCentimes: totalExemplaires(prixCentimes, quantite)?.totalCentimes ?? prixCentimes,
+          devisTtcCentimes: livraisonCentimes,
+        })
+      : null
+  const portBrut = port && port.source !== 'inconnu' ? port.brutCentimes : null
   const commande =
-    prixCentimes !== null && livraisonCentimes !== null
+    prixCentimes !== null && portBrut !== null
       ? totalCommande({
           prixCentimes,
-          livraisonCentimes,
+          quantite,
+          livraisonCentimes: portBrut,
           creditCentimes: (creditEuros ?? 0) * 100,
           portOffert: creditEuros !== null,
         })
@@ -664,8 +688,10 @@ export default async function NumeroPage({
                  la place de la ligne de livraison. `commande` reste null tant
                  que le total n'est pas calculable. */
               prixCentimes={prixCentimes}
-              livraisonCentimes={livraisonCentimes}
+              livraisonCentimes={portBrut}
               pays={paysLivraison}
+              quantite={quantite}
+              exemplaires={prixCentimes !== null ? totalExemplaires(prixCentimes, quantite) : null}
               commande={commande}
               portOffert={creditEuros !== null}
               cgvOk={numero.cgv_ok}

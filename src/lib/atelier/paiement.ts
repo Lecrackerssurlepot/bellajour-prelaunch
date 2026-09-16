@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logEvenement } from "./evenements";
 import { normaliserPays } from "./pays";
+import { quantiteDuDossier } from "./exemplaires";
 import { lireNumerosMail, envoyerMailAtelier, type NumeroPourMail } from "./mails";
 import { EVT_CREDIT_CONSOMME } from "./fondatrice";
 
@@ -51,6 +52,10 @@ type MetaAtelier = {
   livraison_centimes?: string;
   port_offert?: string;
   pays?: string;
+  /* 15/09/2026 : les exemplaires et la zone de port. */
+  quantite?: string;
+  total_produit_centimes?: string;
+  livraison_zone?: string;
 };
 
 /**
@@ -294,6 +299,14 @@ export async function traiterPaiementAtelier(
     port_offert: meta.port_offert === "true",
     /* Ce que le checkout avait annoncé, pour pouvoir comparer plus tard. */
     livraison_demandee_centimes: Number(meta.livraison_centimes) || null,
+    /* ── LES EXEMPLAIRES (15/09/2026) ── La quantité RELUE EN BASE, pas
+       celle des métadonnées : c'est la colonne que la commande d'impression
+       lira (`count`). Si les deux divergent, quelqu'un a changé la quantité
+       entre le clic et le paiement, et c'est ici qu'on le verra. */
+    quantite: quantiteDuDossier((numero as { quantite?: number | null }).quantite),
+    quantite_demandee: Number(meta.quantite) || null,
+    total_produit_demande_centimes: Number(meta.total_produit_centimes) || null,
+    livraison_zone: meta.livraison_zone ?? null,
     /* T-044 — la trace du repli, dans le seul dossier qui ne s'efface pas.
        Absente quand tout va bien : une clé qui ne dit rien n'encombre pas. */
     ...(factureUrlPerdue ? { facture_url_perdue_42703: true } : {}),

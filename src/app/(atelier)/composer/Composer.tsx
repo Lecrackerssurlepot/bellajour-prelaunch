@@ -476,10 +476,11 @@ export default function Composer() {
           prenom: draft.prenom,
           email: draft.email,
           telephone: draft.telephone,
-          /* ⚠️ PLUS DE `pays` ICI DEPUIS LE 11/09/2026 (décision de Mathias) :
-             la destination se choisit sur la page de commande, pas dans le
-             questionnaire. La route l'IGNORE si un brouillon d'avant cette
-             date l'envoie encore, plutôt que de refuser le dossier. */
+          /* Le pays de livraison, DE RETOUR le 15/09/2026 : le prix TTC en
+             dépend (grille hors taxes). Le serveur le normalise puis le
+             valide comme les six autres réponses ; un brouillon d'avant le
+             15/09 repart sur la France présélectionnée (EMPTY_DRAFT). */
+          pays: draft.pays,
         }),
       })
       const data = (await res.json()) as {
@@ -701,6 +702,7 @@ export default function Composer() {
               prenom={draft.prenom}
               email={draft.email}
               telephone={draft.telephone}
+              pays={draft.pays}
               onChange={(champ, v) => patch({ [champ]: v } as Partial<Draft>)}
               erreur={erreur}
               erreurCle={erreurCle}

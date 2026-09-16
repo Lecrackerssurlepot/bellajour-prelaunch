@@ -25,6 +25,8 @@ import { lireChoixCouverture } from "@/lib/atelier/apercu";
    modèle à l'écran 3 suffit pour que la route l'accepte. */
 import { MODELES_VALIDES } from "@/app/(atelier)/composer/coverModels";
 import { normaliserFinition } from "@/lib/atelier/impression";
+import { normaliserPays } from "@/lib/atelier/pays";
+import { normaliserQuantite } from "@/lib/atelier/exemplaires";
 
 export const runtime = "nodejs";
 
@@ -170,6 +172,13 @@ export async function POST(request: Request) {
       prenom: clean(body.prenom, MAX.prenom),
       email: clean(body.email, 200).toLowerCase(),
       telephone: normaliserTelephone(clean(body.telephone, MAX.telephone)),
+      /* ── LE PAYS DE LIVRAISON, DE RETOUR (15/09/2026) ────────────────
+         Normalisé (« fr », «  BE  » → code canonique) puis validé par
+         `premierManquant` comme les six autres réponses : un brouillon
+         d'avant le 15/09 arrive sans pays et repose le client sur l'écran
+         4, où la France est présélectionnée. Jamais de repli sur un pays
+         que le client n'a pas vu : le PRIX en dépend. */
+      pays: normaliserPays(body.pays) ?? "",
     };
 
     /* ── LE PAYS DE LIVRAISON N'ENTRE PLUS ICI (11/09/2026) ─────────────
@@ -248,6 +257,10 @@ export async function POST(request: Request) {
       ...(sousTitre ? { sous_titre: sousTitre } : {}),
       ...(motQuatrieme ? { mot_quatrieme: motQuatrieme } : {}),
       ...(modele ? { modele_couverture: modele } : {}),
+      /* Le pays (migration 20260910, appliquée) : nommé ici plutôt que dans
+         `ligne` pour que le repli ci-dessous, s'il devait jouer, garde le
+         dossier. Le journal le garde de toute façon. */
+      pays_livraison: valeurs.pays,
     };
 
     let insertion = await supabase
@@ -295,10 +308,9 @@ export async function POST(request: Request) {
       ...(sousTitre ? { sous_titre: sousTitre } : {}),
       ...(motQuatrieme ? { mot_quatrieme: motQuatrieme } : {}),
       ...(modele ? { modele_couverture: modele } : {}),
-      /* ⚠️ PLUS DE `pays_livraison` ICI (11/09/2026) : le questionnaire ne
-         pose plus la question, donc le journal n'a rien à raconter. Écrire
-         une destination que personne n'a donnée serait pire que le silence :
-         l'atelier la lirait comme une réponse du client. */
+      /* Le pays de livraison, tel que le client l'a choisi à l'écran 4
+         (15/09/2026) : le prix TTC et le port en dépendent. */
+      pays_livraison: valeurs.pays,
     });
 
     /* ══════════════════════════════════════════════════════════════════
@@ -385,7 +397,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "token_invalide" }, { status: 400 });
     }
 
-    const maj: Record<string, boolean | string | null> = {};
+    const maj: Record<string, boolean | string | number | null> = {};
     /* consent_photos ne se retire pas ici : il conditionne un dépôt déjà
        fait. Un retrait est une demande de suppression, pas une case à
        décocher — elle passe par l'atelier, pas par une requête. */
@@ -482,6 +494,17 @@ export async function PATCH(request: Request) {
     const finition = normaliserFinition(body.finition);
     if (finition) maj.finition = finition;
 
+    /* ── LE NOMBRE D'EXEMPLAIRES (15/09/2026, T-073 levé) ───────────────
+       Même régime que la finition : un PARAMÈTRE DE COMMANDE (c'est `count`
+       chez Cloudprinter et le nombre de lignes chez Stripe), relu dans le
+       même SELECT que le reste du dossier. `normaliserQuantite` ne répare
+       rien : 0, 11, « trois » sont ignorés, jamais ramenés à 1 en douce. */
+    const quantite = body.quantite === undefined ? null : normaliserQuantite(body.quantite);
+    if (body.quantite !== undefined && quantite === null) {
+      return NextResponse.json({ error: "quantite_invalide" }, { status: 400 });
+    }
+    if (quantite !== null) maj.quantite = quantite;
+
     if (!Object.keys(maj).length && !demandeRetouches && !demandeAjustement && !choisitCouverture) {
       return NextResponse.json({ error: "rien_a_faire" }, { status: 400 });
     }
@@ -540,7 +563,7 @@ export async function PATCH(request: Request) {
     /* Le pelliculage non plus : après paiement, l'objet est commandé et son
        apparence ne se change plus d'un clic. Avant l'état 2, il n'y a rien à
        commander. Même règle, même raison que les deux cases. */
-    if (finition && numero.etat !== "apercu_pret") {
+    if ((finition || quantite !== null) && numero.etat !== "apercu_pret") {
       return NextResponse.json({ error: "etat_incompatible" }, { status: 409 });
     }
 
@@ -611,7 +634,7 @@ export async function PATCH(request: Request) {
           "[atelier/numero] patch consentements échoué",
           error.code,
           error.code === "42703" || error.code === "PGRST204"
-            ? "⚠️ colonne absente : appliquer supabase/migrations/20260911_atelier_finition.sql"
+            ? "⚠️ colonne absente : appliquer supabase/migrations/20260911_atelier_finition.sql et 20260916_atelier_exemplaires_prix_ht.sql"
             : "",
         );
         return NextResponse.json({ error: "internal" }, { status: 500 });

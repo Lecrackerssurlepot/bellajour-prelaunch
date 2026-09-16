@@ -5,11 +5,12 @@
  * navigateur n'envoie que le token ; c'est ce fichier, appelé côté serveur,
  * qui dit ce qui sera débité.
  *
- * LES NOMBRES NE SONT PAS ICI. Ils vivent dans `./grille` — un prix TTC par
- * NOMBRE DE PAGES exact, de 20 à 60 par pas de 2 (22 exclu), grille de
- * Mathias du 10/09/2026. Ce fichier-ci garde le CALCUL serveur : centimes,
- * quantité, gel sur le dossier, code fiscal. Changer un prix = changer une
- * ligne de grille.ts, et tout suit.
+ * LES NOMBRES NE SONT PAS ICI. Ils vivent dans `./grille` — un prix HORS
+ * TAXES par NOMBRE DE PAGES exact, de 24 à 60 par pas de 2, tableur de
+ * Mathias du 15/09/2026, et le TTC en découle au taux du pays de livraison
+ * (`./pays`). Ce fichier-ci garde le CALCUL serveur : centimes, quantité,
+ * gel sur le dossier, code fiscal. Changer un prix = changer une ligne de
+ * grille.ts, et tout suit.
  *
  * ⚠️ NE PAS CONFONDRE avec depot/paliers.ts, qui vit côté navigateur :
  *   — paliers.ts fait correspondre un NOMBRE DE PHOTOS à un ordre de grandeur
@@ -21,7 +22,17 @@
  * 28 pages et facturer 31 €. C'est la couverture qui tranche.
  */
 
-import { eurosPourPages, type PalierCle } from "./grille";
+import {
+  eurosPourPages,
+  htCentimesPour,
+  ttcCentimesPour,
+  ttcDepuisHtArrondi,
+  type PalierCle,
+} from "./grille";
+import { PAYS_DEFAUT, normaliserPays } from "./pays";
+import { QUANTITE_MAX, totalExemplaires, type Exemplaires } from "./exemplaires";
+
+export { QUANTITE_MAX };
 
 export type { PalierCle };
 
@@ -53,12 +64,20 @@ export function palierHerite(n: number | null | undefined): PalierCle | null {
  *  plus qu'un bucket de métriques. Utiliser `palierHerite`. */
 export const palierPourPages = palierHerite;
 
-/** Le prix TTC en CENTIMES pour cette pagination — Stripe raisonne en
- *  centimes. `null` hors grille : on ne facture pas ce qu'on ne sait pas
+/** Le prix TTC en CENTIMES pour cette pagination, dans ce pays — Stripe
+ *  raisonne en centimes. Sans pays : la France, la référence du tableur.
+ *  `null` hors grille ou hors zone : on ne facture pas ce qu'on ne sait pas
  *  chiffrer, et surtout on n'approche pas. */
-export function centimesPourPages(n: number | null | undefined): number | null {
-  const e = eurosPourPages(n);
-  return e === null ? null : e * 100;
+export function centimesPourPages(
+  n: number | null | undefined,
+  pays: unknown = PAYS_DEFAUT,
+): number | null {
+  return ttcCentimesPour(n, pays);
+}
+
+/** Le prix HORS TAXES en centimes, celui qui se GÈLE sur le dossier. */
+export function htCentimesPourPages(n: number | null | undefined): number | null {
+  return htCentimesPour(n);
 }
 
 /* ───────────────────────── le prix GELÉ du dossier ─────────────────────────
@@ -93,7 +112,12 @@ export function centimesPourPages(n: number | null | undefined): number | null {
  * n'existe pas tant que la migration n'est pas passée.
  */
 export type DossierPrix = {
+  /** Le TTC gelé, dans le pays gelé. C'est lui qu'on lit d'abord. */
   prix_centimes?: number | null;
+  /** Le HT gelé (15/09/2026). Il sert à RECALCULER le TTC quand le client
+   *  change de pays sur son bon de commande, jamais à l'afficher tel quel. */
+  prix_ht_centimes?: number | null;
+  pays_livraison?: string | null;
   nb_pages?: number | null;
   palier?: PalierCle | null;
 };
@@ -111,7 +135,27 @@ export type DossierPrix = {
 export function centimesDuDossier(d: DossierPrix): number | null {
   const gele = d.prix_centimes;
   if (typeof gele === "number" && Number.isInteger(gele) && gele > 0) return gele;
-  return centimesPourPages(d.nb_pages);
+  /* Sans TTC gelé mais avec un HT gelé et un pays : le TTC s'en déduit. */
+  const ht = ttcDepuisHtArrondi(d.prix_ht_centimes, d.pays_livraison);
+  if (ht !== null) return ht;
+  return centimesPourPages(d.nb_pages, normaliserPays(d.pays_livraison) ?? PAYS_DEFAUT);
+}
+
+/**
+ * LE TTC POUR UN AUTRE PAYS QUE CELUI DU GEL — ce que la route de choix du
+ * pays (`/api/atelier/livraison`) écrit dans `prix_centimes` quand le client
+ * change de destination sur son bon de commande.
+ *
+ * Le HT gelé d'abord (le prix promis ne bouge pas avec la grille), la grille
+ * du jour ensuite pour un dossier d'avant le gel HT. Un dossier qui n'a que
+ * son TTC gelé et aucune pagination lisible rend `null` : on ne convertit
+ * pas un TTC français en TTC portugais par une règle de trois, ce serait un
+ * montant que personne n'a décidé.
+ */
+export function ttcPourPays(d: DossierPrix, pays: unknown): number | null {
+  const depuisGel = ttcDepuisHtArrondi(d.prix_ht_centimes, pays);
+  if (depuisGel !== null) return depuisGel;
+  return centimesPourPages(d.nb_pages, pays);
 }
 
 /** Le même prix en EUROS — ce que lisent les écrans et les templates Brevo. */
@@ -139,43 +183,33 @@ export function formaterCentimes(centimes: number): string {
 
 /* ─────────────────────────── multi-exemplaires ───────────────────────────
  *
- * Verrou T-073 : lever quand Mathias donne les paliers. Tant qu'il vaut 1,
- * le checkout garde `quantity: 1` et aucun `adjustable_quantity` — le
- * comportement est strictement celui d'avant, au centime près.
- *
- * Les prix dégressifs ne sont PAS décidés (interdit nº5 : on n'invente
- * jamais une remise). La structure existe pour que le jour venu, le
- * branchement se fasse ICI et nulle part ailleurs.
+ * VERROU T-073 LEVÉ LE 15/09/2026. Le barème est celui de Mathias, validé par
+ * Louis : le 1er exemplaire plein tarif, le 2e à −30 %, le 3e et les suivants
+ * à −50 %, sur le prix du magazine seulement. Dix au plus. La règle vit dans
+ * `exemplaires.ts` (pur, importable par le navigateur, parce que le bon de
+ * commande la joue en direct) ; ce fichier l'APPLIQUE au prix gelé.
  */
-export const QUANTITE_MAX = 1;
 
 /**
- * Le total en CENTIMES pour `quantite` exemplaires d'un même numéro.
- *
- * Elle prend le prix unitaire EN CENTIMES, plus un palier (10/09/2026) :
- * l'appelant a déjà le prix gelé du dossier sous la main, et le palier ne
- * nomme plus un montant. Passer `centimesDuDossier(numero)` est le bon geste ;
- * `centimesPourPages(n)` quand on part d'une pagination nue.
- *
- * Aujourd'hui : `quantite × prix unitaire`, SANS remise. Les paliers
- * dégressifs de T-073 se brancheront dans CETTE fonction et nulle part
- * ailleurs — pas dans le checkout, pas dans un écran.
+ * Le total en CENTIMES pour `quantite` exemplaires d'un même numéro, remise
+ * dégressive comprise. Passer `centimesDuDossier(numero)` est le bon geste.
  *
  * Refuse (null) plutôt que d'inventer : prix inconnu, quantité non entière,
- * hors de [1, QUANTITE_MAX]. Tant que le verrou tient, seul
- * `totalPour(prix, 1)` peut rendre un montant — exactement le prix unitaire.
+ * hors de [1, QUANTITE_MAX].
  */
 export function totalPour(
   centimesUnitaire: number | null | undefined,
-  quantite: number
+  quantite: number,
 ): number | null {
-  if (!Number.isInteger(quantite) || quantite < 1 || quantite > QUANTITE_MAX) {
-    return null;
-  }
-  if (typeof centimesUnitaire !== "number" || !Number.isInteger(centimesUnitaire) || centimesUnitaire <= 0) {
-    return null;
-  }
-  return centimesUnitaire * quantite;
+  return totalExemplaires(centimesUnitaire, quantite)?.totalCentimes ?? null;
+}
+
+/** Le même décompte, ligne par ligne : ce que Stripe et le reçu affichent. */
+export function decompteExemplaires(
+  centimesUnitaire: number | null | undefined,
+  quantite: number,
+): Exemplaires | null {
+  return totalExemplaires(centimesUnitaire, quantite);
 }
 
 /* ────────────────────────── réimpression (T-105) ──────────────────────────
@@ -268,19 +302,13 @@ export function formaterEuros(euros: number): string {
  */
 export { PAYS_LIVRAISON, type PaysLivraison } from "./pays";
 
-/* Le prix du MAGAZINE est le même dans toute la zone, quelle que soit la
- * destination : la grille ci-dessus ne prend pas de second argument, et elle
- * n'en prendra pas. Ce qui varie avec le pays, c'est le PORT, et il sort du
- * prix (décision de Mathias du 10/09/2026, lot 6) : un devis Cloudprinter par
- * destination, écrit dans `livraison_centimes`, annoncé au client avec sa
- * couverture, avant tout paiement.
- *
- * L'objection historique de ce commentaire — « le pays n'est connu qu'APRÈS,
- * puisque c'est Stripe qui collecte l'adresse » — est levée depuis le lot 3 :
- * le pays est demandé à l'écran 4 du questionnaire et vit dans
- * `numeros.pays_livraison` bien avant qu'un montant ne soit annoncé. C'était
- * un changement de parcours, il a été décidé comme tel et pas en ajoutant
- * discrètement une colonne.
+/* Le prix du MAGAZINE DÉPEND DU PAYS depuis le 15/09/2026 : la grille est
+ * hors taxes, et le TTC se calcule au taux du pays de livraison
+ * (`ttcCentimesPour`, grille.ts). C'est pour cela que le pays est de nouveau
+ * demandé à l'écran 4 du questionnaire — il l'avait été du 10 au 11/09 pour
+ * le port, puis retiré ; il revient pour le prix lui-même, et M3 peut ainsi
+ * annoncer le vrai montant. Le PORT, lui, est une zone à prix fixe (A, B) ou
+ * un devis (C) : `livraison.ts`.
  */
 
 /* Code fiscal Stripe de l'album — « biens matériels, général », soit le taux
