@@ -53,9 +53,13 @@ facturé. Templates 28, 31, 40 mis à jour par Mathias (`--pousser --seulement M
 phrase relue dans Brevo par l'API ; les nombres sont LUS dans `livraison.ts` et `exemplaires.ts`
 par `scripts/mails-atelier.mjs`, jamais recopiés.
 
+**Le Royaume-Uni à 20 % est TRANCHÉ (D18, 16/09)** : on garde les 20 % dans le prix, on les isole en
+compta, on s'immatricule au Royaume-Uni dès la première commande britannique et on reverse. À
+valider par le comptable ; à demander à Cloudprinter : comment ils déclarent en douane vers le UK.
+
 **Ce qui attend Mathias** : l'immatriculation OSS dans Stripe Tax (la TVA reste à 0 sur les reçus
-jusque-là, le TTC encaissé est le nôtre) ; la question du Royaume-Uni à 20 % sans immatriculation
-UK (portée à Louis) ; les `.docx` v4.0 dans `legal-source/`. Le relevé complet des
+jusque-là, le TTC encaissé est le nôtre) ; la ligne comptable « TVA UK collectée » et la question à
+Cloudprinter (D18). Les `.docx` v4.0 sont faits (`scripts/legal-docx.ts`, 15 fichiers). Le relevé complet des
 coûts de zone C, du pas de pagination et des délais Cloudprinter est dans
 `docs/reference/SPECS-CLOUDPRINTER.md` (section du 16/09).
 

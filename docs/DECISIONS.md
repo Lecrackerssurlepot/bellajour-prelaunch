@@ -398,3 +398,40 @@ de suggestion : elle invite la cliente à casser une adresse qui marchait.
 chemin réel (1 dossier journalisé) et son REJEU (0, idempotence par `message-id`). La
 fausse alerte de test a été retirée du journal — l'adresse de Flore fonctionne, son M2 a
 été remis le 29/08 à 08:20.
+
+D18 (16/09/2026) — **Le Royaume-Uni reste à 20 % de TVA dans le prix, mise de côté puis
+reversée après immatriculation britannique.** Décision de Mathias, à valider par le comptable
+avant la première commande britannique.
+
+Le contexte. Depuis le 15/09, le prix d'un magazine est HT × TVA du pays de livraison
+(`TAUX_TVA_PAYS`, pays.ts). Le Royaume-Uni est hors Union, donc hors du guichet unique OSS ;
+le 11/09 il était à 0 avec la douane au client, le tableur du 15/09 l'a mis à 20 % (« la TVA du
+pays »). La question du 16/09 : ces 20 % sont-ils une TVA, alors que Bellajour n'a pas de
+numéro de TVA britannique ?
+
+Ce qui a été établi. Depuis le 1er janvier 2021, pour un colis de moins de 135 £ vendu à un
+particulier au Royaume-Uni, c'est le VENDEUR étranger qui facture la TVA britannique à la vente,
+et l'obligation de s'immatriculer là-bas commence à la première vente, sans seuil. Un magazine
+Bellajour est toujours sous 135 £. Prélever 20 % à la commande est donc le comportement attendu
+par leur règle ; ce qui manque est l'immatriculation, qui se demande en ligne, prend des semaines
+et peut être datée au jour de la première vente.
+
+Ce qui est tranché.
+1. Le site garde `GB: 20` : un Britannique paie le même TTC qu'un Français. Aucun changement de code.
+2. Les 20 % encaissés sur une commande britannique sont isolés en comptabilité comme « TVA UK
+   collectée, non versée » (ligne à créer par le comptable), jamais lus comme de la marge.
+3. Dès la PREMIÈRE commande britannique réelle, Mathias lance l'immatriculation auprès de
+   l'administration britannique ; à l'obtention du numéro, tout ce qui a été mis de côté est
+   déclaré et versé. Une inscription tardive et volontaire se régularise ; la pénalité
+   éventuelle est à chiffrer par le comptable.
+
+Le risque qui reste, et il n'est pas fiscal. Tant que le numéro britannique n'est pas sur la
+déclaration en douane, le transporteur peut réclamer la TVA d'importation au client à sa porte :
+il aurait payé deux fois. La déclaration est remplie par Cloudprinter : il faut leur demander
+comment ils traitent les envois vers le Royaume-Uni (droits payés à l'avance ou non, où porter
+le numéro). La page de commande prévient déjà, avant le paiement, qu'un colis hors Union peut
+supporter des frais à l'arrivée (`HORS_UE`, CasesEtCommande.tsx), et les CGV v4.0 le disent
+(art. 4.3 et 10.4).
+
+**Conséquence :** ne pas repasser GB à 0 sans rouvrir cette décision. Deux gestes hors code
+attendent : la ligne comptable séparée, et l'immatriculation à la première commande.
