@@ -2,6 +2,10 @@
  * Supprimer des dossiers de TEST, entièrement : base et coffre R2.
  *   npx tsx --tsconfig tsconfig.json scripts/supprimer-dossiers.ts --email adresse@exemple.com
  *   npx tsx --tsconfig tsconfig.json scripts/supprimer-dossiers.ts --email adresse@exemple.com --vraiment
+ *   npx tsx --tsconfig tsconfig.json scripts/supprimer-dossiers.ts --email adresse@exemple.com --titre "Test du soir" --vraiment
+ *
+ * `--titre` (16/09/2026) borne le geste à UN dossier, par son titre exact :
+ * une même adresse porte souvent plusieurs tests, et on n'en jette qu'un.
  * ══════════════════════════════════════════════════════════════════════════
  * CE N'EST PAS LA RÉTENTION. `anonymiser-dossiers.ts` referme les dossiers
  * abandonnés de vraies clientes : il efface les photos et GARDE les lignes,
@@ -111,8 +115,9 @@ async function main(): Promise<void> {
   const vraiment = process.argv.includes("--vraiment");
   const memePayes = process.argv.includes("--meme-payes");
   const emailBrut = argument("--email");
+  const titreVise = argument("--titre")?.trim() || null;
   if (!emailBrut || !emailBrut.includes("@")) {
-    console.error("Usage : --email <adresse> [--vraiment] [--meme-payes]");
+    console.error("Usage : --email <adresse> [--titre <titre exact>] [--vraiment] [--meme-payes]");
     process.exit(1);
   }
   const canon = canonicalizeEmail(emailBrut);
@@ -132,8 +137,13 @@ async function main(): Promise<void> {
     .returns<Dossier[]>();
   if (error) throw new Error(`lecture numeros : ${error.code} ${error.message}`);
 
-  const dossiers = data ?? [];
-  console.log(`\n  ${dossiers.length} dossier(s) sous ${emailBrut}${vraiment ? "  — SUPPRESSION" : "  — lecture seule"}\n`);
+  const tous = data ?? [];
+  /* Titre exact, espaces de bord ignorés : un titre approchant ne suffit pas,
+     on préfère « aucun dossier » à « le mauvais dossier ». */
+  const dossiers = titreVise ? tous.filter((d) => (d.titre ?? "").trim() === titreVise) : tous;
+  console.log(
+    `\n  ${dossiers.length} dossier(s) sous ${emailBrut}${titreVise ? ` (titre « ${titreVise} », ${tous.length} sous l'adresse)` : ""}${vraiment ? "  — SUPPRESSION" : "  — lecture seule"}\n`,
+  );
   if (dossiers.length === 0) return;
 
   /* Un paiement LIVE est une facture : on ne l'efface pas sans le dire deux
