@@ -47,10 +47,15 @@ migration manque, `quantite=11` un 400. tsc, lint (0 erreur), build verts ; harn
 **Non vérifié** : le sélecteur d'exemplaires et les trois lignes Stripe sur une base migrée
 (impossible avant la migration) ; les captures d'écran (le volet navigateur restait masqué).
 
-**Ce qui attend Mathias** : les deux migrations ; l'immatriculation OSS dans Stripe Tax (la TVA
-reste à 0 sur les reçus jusque-là, le TTC encaissé est le nôtre) ; la question du Royaume-Uni à
-20 % sans immatriculation UK (portée à Louis) ; les `.docx` v4.0 dans `legal-source/` ; un mot
-dans M3 sur la livraison offerte dès 50 € (template Brevo, accord à part). Le relevé complet des
+**M3, M3b et M10 disent la livraison offerte (16/09, 11:11)** : « Offerte dès 50 € de magazines :
+le deuxième exemplaire est à moins 30 %, les suivants à moins 50 % », seulement quand le port est
+facturé. Templates 28, 31, 40 mis à jour par Mathias (`--pousser --seulement M3,M3b,M10`) ;
+phrase relue dans Brevo par l'API ; les nombres sont LUS dans `livraison.ts` et `exemplaires.ts`
+par `scripts/mails-atelier.mjs`, jamais recopiés.
+
+**Ce qui attend Mathias** : l'immatriculation OSS dans Stripe Tax (la TVA reste à 0 sur les reçus
+jusque-là, le TTC encaissé est le nôtre) ; la question du Royaume-Uni à 20 % sans immatriculation
+UK (portée à Louis) ; les `.docx` v4.0 dans `legal-source/`. Le relevé complet des
 coûts de zone C, du pas de pagination et des délais Cloudprinter est dans
 `docs/reference/SPECS-CLOUDPRINTER.md` (section du 16/09).
 
