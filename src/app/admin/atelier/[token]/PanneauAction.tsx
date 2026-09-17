@@ -124,7 +124,7 @@ type DoubleItem = { id: string; key: string; preview: string; nom?: string };
 /* Miroir client de MAX_DOUBLES (apercu.ts). On ne l'importe pas : apercu.ts tire
    r2 (AWS SDK) qui n'a rien à faire dans le bundle du navigateur. Le serveur
    borne de toute façon à la publication. */
-const MAX_DOUBLES = 3;
+const MAX_DOUBLES = 5;
 
 /* Miroir client de MAX_PLANCHES (apercu.ts), pour la même raison. T-093 :
    jusqu'à trois couvertures proposées, la première étant celle que la cliente
@@ -134,7 +134,7 @@ const MAX_PLANCHES = 3;
 /* T2-2 / T-090 — le format normal : LA PLANCHE à plat (l'export naturel de
    Canva, la 4e, le dos et la 1re côte à côte dans un seul fichier). La page
    cliente en découpe les deux faces PILE au centre, en CSS. Les doubles pages
-   (0 à 3) se montent à côté, dans leur propre liste réordonnable. */
+   (0 à 5) se montent à côté, dans leur propre liste réordonnable. */
 const SLOT_PLANCHE = {
   cle: "apercu_plat",
   json: "plat",
@@ -1236,7 +1236,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                       </div>
                     ))}
 
-                  {/* ── LES DOUBLES PAGES (0 à 3) ─────────────────────────
+                  {/* ── LES DOUBLES PAGES (0 à 5) ─────────────────────────
                       Glissé pour réordonner, × pour retirer, une tuile pour
                       ajouter tant qu'on n'a pas atteint le maximum. */}
                   <div className="ate-doubles">

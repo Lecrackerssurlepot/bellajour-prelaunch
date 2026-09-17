@@ -530,7 +530,7 @@ function vuesDeLApercu(
       });
       return vues;
     }
-    /* T-090 — la planche découpée en trois faces, puis 0 à trois doubles
+    /* T-090 — la planche découpée en trois faces, puis 0 à cinq doubles
        pages dans l'ordre. Les légendes sont uniques (« Double page 1/2/… »
        s'il y en a plusieurs) : la loupe navigue par légende.
        T-093 — quand plusieurs couvertures sont proposées, l'atelier doit voir
