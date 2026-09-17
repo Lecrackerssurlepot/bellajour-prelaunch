@@ -295,6 +295,26 @@ import {
   type NoteCarnet,
 } from "@/lib/atelier/carnet";
 
+/* Le cockpit de décision (17/09/2026) : calendrier ISO Paris, agrégat
+   hebdomadaire, formules et verdict. Trois modules purs, aucune base. */
+import { cleSemaine, lundiDeLaSemaine, lundiDecale, semainesCompletes } from "@/lib/cockpit/semaine";
+import { agregerSemaine, origineEffective } from "@/lib/cockpit/agregat";
+import {
+  calculerCockpit,
+  capaciteFinancement,
+  constatMargePages,
+  croissanceLissee,
+  dateLimiteCommande,
+  demandeDeclenchement,
+  fiabilite,
+  normaliserReglages,
+  phraseVerdict,
+  semaineDeMur,
+  verdict,
+  type LigneSemaine,
+  type Reglages,
+} from "@/lib/cockpit/modele";
+
 let ko = 0;
 const ok = (n: string, c: boolean) => {
   console.log(`${c ? "  ok " : "  KO "} ${n}`);
@@ -4026,6 +4046,165 @@ ok("le balayage quotidien n'envoie JAMAIS de relance manuelle",
      new Map(),
      T_REL,
    ).some((c) => CODES_RELANCE.includes(c as (typeof CODES_RELANCE)[number])));
+
+
+/* ═══════════════════ LE COCKPIT DE DÉCISION (17/09/2026) ═══════════════════
+   Les semaines sont ISO et commencent le lundi à minuit HEURE DE PARIS ; le
+   socle est le froid ; l'inconnu n'est ni chaud ni froid ; sans croissance
+   il n'y a pas de mur ; les seuils sont des repères. */
+titre("Cockpit : le calendrier");
+
+const MER = new Date("2026-09-16T10:00:00Z"); // mercredi
+ok("le lundi de la semaine est minuit Paris (22:00 UTC la veille en été)",
+   lundiDeLaSemaine(MER).toISOString() === "2026-09-13T22:00:00.000Z");
+ok("00:30 Paris un lundi est deja la semaine du lundi, pas celle d'avant",
+   lundiDeLaSemaine(new Date("2026-09-20T22:30:00Z")).toISOString() === "2026-09-20T22:00:00.000Z");
+ok("23:30 Paris un dimanche est encore la semaine d'avant",
+   lundiDeLaSemaine(new Date("2026-09-20T21:30:00Z")).toISOString() === "2026-09-13T22:00:00.000Z");
+ok("la cle ISO du 14/09/2026 est 202638",
+   cleSemaine(lundiDeLaSemaine(MER)) === 202638);
+ok("la semaine 53 de 2026 existe, puis 202701",
+   cleSemaine(lundiDeLaSemaine(new Date("2026-12-30T12:00:00Z"))) === 202653
+   && cleSemaine(lundiDeLaSemaine(new Date("2027-01-05T12:00:00Z"))) === 202701);
+const l19 = lundiDeLaSemaine(new Date("2026-10-20T12:00:00Z"));
+const l26 = lundiDecale(l19, 1);
+ok("passer le changement d'heure fait une semaine de 7 j + 1 h, pas de 7 x 24 h",
+   l19.toISOString() === "2026-10-18T22:00:00.000Z" && l26.toISOString() === "2026-10-25T23:00:00.000Z");
+const completes = semainesCompletes(new Date("2026-09-01T12:00:00Z"), new Date("2026-09-17T10:00:00Z"));
+ok("seules les semaines COMPLETES sont agregees : la semaine en cours n'y est jamais",
+   completes.map((s) => s.cle).join(",") === "202636,202637"
+   && completes[0].dateDebut === "2026-08-31" && completes[1].fin.toISOString() === "2026-09-13T22:00:00.000Z");
+ok("rien avant la premiere semaine complete",
+   semainesCompletes(new Date("2026-09-15T12:00:00Z"), new Date("2026-09-17T10:00:00Z")).length === 0);
+
+titre("Cockpit : l'agregat d'une semaine");
+const D0 = Date.parse("2026-09-06T22:00:00Z"); // lundi 7/09 00:00 Paris
+const D7 = D0 + 7 * 86_400_000;
+const h = (heures: number) => D0 + heures * 3_600_000;
+const commandes = [
+  { id: "A", payeA: h(10), origine: "froid" as const, fondateur: false, nbPages: 24 },
+  { id: "B", payeA: h(20), origine: "chaud" as const, fondateur: false, nbPages: 40 },
+  { id: "C", payeA: h(30), origine: null, fondateur: true, nbPages: null },
+  { id: "D", payeA: h(40), origine: null, fondateur: false, nbPages: 60 },
+  { id: "E", payeA: h(24 * 7 + 1), origine: "froid" as const, fondateur: false, nbPages: 24 },
+  { id: "F", payeA: h(-1), origine: "froid" as const, fondateur: false, nbPages: 24 },
+];
+const livraisons = [
+  { id: "G", livreeA: h(50), depotA: h(50) - 3.5 * 86_400_000 },
+  { id: "H", livreeA: h(60), depotA: null },
+  { id: "I", livreeA: h(24 * 8), depotA: h(0) },
+];
+const agg = agregerSemaine(commandes, livraisons, D0, D7);
+ok("quatre commandes dans la semaine, ni celle d'avant ni celle d'apres",
+   agg.commandes_totales === 4);
+ok("froid = origine posee ; chaud = origine posee OU fondateur ; le reste a part",
+   agg.commandes_froides === 1 && agg.commandes_chaudes === 2 && agg.commandes_sans_origine === 1);
+ok("un fondateur sans origine posee est chaud",
+   origineEffective({ origine: null, fondateur: true }) === "chaud"
+   && origineEffective({ origine: "froid", fondateur: true }) === "froid"
+   && origineEffective({ origine: null, fondateur: false }) === null);
+ok("la pagination moyenne ignore les dossiers sans pages",
+   agg.pages_moy === 41.3);
+ok("le delai est celui des livres de la semaine, du depot a la livraison ; sans depot on ne compte pas",
+   agg.delai_moy_jours === 3.5);
+ok("la marge reste nulle : aucun cout d'impression par commande n'est enregistre",
+   agg.marge_moy === null);
+const vide = agregerSemaine([], [], D0, D7);
+ok("une semaine vide rend des zeros et des null, jamais NaN",
+   vide.commandes_totales === 0 && vide.pages_moy === null && vide.delai_moy_jours === null);
+
+titre("Cockpit : les formules");
+ok("g lisse = racine cubique de S / S-3, moins 1",
+   croissanceLissee(8, 1) === 1 && Math.abs((croissanceLissee(4, 8) ?? 0) - (Math.cbrt(0.5) - 1)) < 1e-12);
+ok("sans point de depart (S-3 absente ou a zero), pas de croissance",
+   croissanceLissee(5, null) === null && croissanceLissee(5, 0) === null);
+ok("D_trigger = capacite / (1+g)^(t_dev+buffer)",
+   demandeDeclenchement(20, 1, 2, 1) === 2.5);
+ok("sans croissance, pas de seuil de declenchement",
+   demandeDeclenchement(20, null, 2, 1) === null && demandeDeclenchement(20, -0.1, 2, 1) === null);
+ok("semaine de mur = ln(capacite/froides) / ln(1+g)",
+   Math.abs((semaineDeMur(20, 5, 1) ?? 0) - 2) < 1e-12);
+ok("froid >= capacite : le mur est a zero, quelle que soit la croissance",
+   semaineDeMur(20, 20, null) === 0 && semaineDeMur(20, 25, 1) === 0);
+ok("sans croissance ou sans froid, pas de mur",
+   semaineDeMur(20, 5, null) === null && semaineDeMur(20, 5, 0) === null && semaineDeMur(20, 0, 1) === null);
+ok("date limite = mur - (t_dev + buffer)",
+   dateLimiteCommande(2, 2, 1) === -1 && dateLimiteCommande(null, 2, 1) === null);
+ok("financement = marge x volume x part reinvestie",
+   capaciteFinancement(20, 30, 50) === 300);
+
+titre("Cockpit : fiabilite et verdict");
+const ligne = (semaine: number, froides: number, sans = 0, pages: number | null = null, marge: number | null = null): LigneSemaine => ({
+  semaine, date_debut: "2026-09-07", commandes_totales: froides + sans, commandes_froides: froides,
+  commandes_chaudes: 0, commandes_sans_origine: sans, pages_moy: pages, marge_moy: marge, delai_moy_jours: null,
+});
+ok("moins de 5 froides par semaine : pas fiable, et la raison le dit",
+   !fiabilite(ligne(1, 4)).fiable && fiabilite(ligne(1, 4)).raisons.length === 1);
+ok("5 froides et aucune commande sans origine : fiable",
+   fiabilite(ligne(1, 5)).fiable);
+ok("des commandes sans origine rendent le socle non fiable : elles auraient pu etre froides",
+   !fiabilite(ligne(1, 8, 2)).fiable && fiabilite(ligne(1, 8, 2)).raisons[0].includes("sans origine"));
+ok("aucune semaine : pas fiable",
+   !fiabilite(null).fiable);
+ok("sature = un fait, il passe avant la fiabilite",
+   verdict({ fiable: false, capacite: 10, froides: 10, g: null, dateLimite: null }) === "retard_sature");
+ok("pas fiable ou pas de croissance : observation",
+   verdict({ fiable: false, capacite: 100, froides: 3, g: 1, dateLimite: 5 }) === "observation"
+   && verdict({ fiable: true, capacite: 100, froides: 6, g: null, dateLimite: null }) === "observation"
+   && verdict({ fiable: true, capacite: 100, froides: 6, g: -0.2, dateLimite: null }) === "observation");
+ok("date limite passee : retard",
+   verdict({ fiable: true, capacite: 100, froides: 6, g: 1, dateLimite: 0 }) === "retard_sature");
+ok("date limite sous 4 semaines : fenetre proche ; au-dela : de la marge",
+   verdict({ fiable: true, capacite: 100, froides: 6, g: 1, dateLimite: 4 }) === "fenetre_proche"
+   && verdict({ fiable: true, capacite: 100, froides: 6, g: 1, dateLimite: 4.1 }) === "marge");
+
+const serie = [2, 4, 8, 16, 32].map((f, i) => ligne(202634 + i, f));
+const regl = (capacite: number): Reglages => ({
+  capacite, t_dev: 2, buffer: 1, cout_dev: 6000, reinvesti_pct: 50, marge_defaut: 20, volume_mensuel: 30,
+});
+const c100 = calculerCockpit(serie, regl(100));
+ok("S est la derniere ligne, S-3 trois lignes avant, g = 1 (32/4 = 8, racine cubique 2)",
+   c100.derniere?.commandes_froides === 32 && c100.reference?.commandes_froides === 4 && c100.g === 1);
+ok("capacite 100 : mur dans 1,6 semaine, 3 semaines de dev : retard",
+   Math.abs((c100.semaineMur ?? 0) - Math.log2(100 / 32)) < 1e-12 && c100.verdict === "retard_sature");
+ok("capacite 1000 : mur dans 5 semaines, il reste 2 : fenetre proche",
+   calculerCockpit(serie, regl(1000)).verdict === "fenetre_proche");
+ok("capacite 10000 : de la marge",
+   calculerCockpit(serie, regl(10000)).verdict === "marge");
+ok("sans marge mesuree, la marge par defaut est retenue et le dit",
+   c100.marge.source === "defaut" && c100.marge.valeur === 20
+   && c100.financementMensuel === 300 && c100.moisPourFinancer === 20);
+ok("deux semaines seulement : pas de S-3, pas de g, observation",
+   calculerCockpit(serie.slice(3), regl(100)).g === null
+   && calculerCockpit(serie.slice(3), regl(1000)).verdict === "observation");
+ok("aucune semaine : rien ne casse, observation",
+   calculerCockpit([], regl(100)).verdict === "observation" && calculerCockpit([], regl(100)).derniere === null);
+for (const cap of [100, 1000, 10000]) {
+  const cc = calculerCockpit(serie, regl(cap));
+  ok(`la phrase du verdict ${cc.verdict} est ecrite`, phraseVerdict(cc, regl(cap)).length > 20);
+}
+ok("la phrase d'observation nomme la raison",
+   phraseVerdict(calculerCockpit([ligne(1, 3)], regl(100)), regl(100)).includes("il en faut 5"));
+
+const seriePages = [ligne(1, 6, 0, 40, 25), ligne(2, 6, 0, 38, 24), ligne(3, 6, 0, 36, 23), ligne(4, 6, 0, 30, 18)];
+ok("pagination et marge qui baissent ensemble : le constat le dit avec les deux chiffres",
+   (constatMargePages(seriePages) ?? "").includes("40 à 30") && (constatMargePages(seriePages) ?? "").includes("25 à 18"));
+ok("pagination qui baisse sans marge mesuree : le constat previent quand meme",
+   (constatMargePages(seriePages.map((l) => ({ ...l, marge_moy: null }))) ?? "").includes("ne la mesure pas"));
+ok("pagination stable : pas de constat ; trop court : pas de constat",
+   constatMargePages(seriePages.map((l) => ({ ...l, pages_moy: 40 }))) === null
+   && constatMargePages(seriePages.slice(1)) === null);
+
+titre("Cockpit : les reglages");
+const nr = normaliserReglages({ ...regl(50) });
+ok("des reglages dans les bornes passent", nr.ok && nr.reglages.capacite === 50);
+ok("une capacite a zero est refusee, pas ramenee",
+   !normaliserReglages({ ...regl(0) }).ok && (normaliserReglages({ ...regl(0) }) as { champ: string }).champ === "capacite");
+ok("un champ manquant ou une chaine est refuse",
+   !normaliserReglages({ ...regl(5), t_dev: undefined }).ok && !normaliserReglages({ ...regl(5), buffer: "2" }).ok
+   && !normaliserReglages(null).ok);
+ok("101 % reinvesti est refuse",
+   !normaliserReglages({ ...regl(5), reinvesti_pct: 101 }).ok);
 
 /* On repose le globe comme on l'a trouve : la suite du harnais ne doit pas
    heriter d'un `localStorage` qui jette. */

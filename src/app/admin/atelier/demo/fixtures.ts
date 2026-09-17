@@ -766,6 +766,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     notesIndisponibles: false,
     codeFondatrice: null,
     enChargeAbsent: false,
+    origine: { valeur: null, absent: false },
     archive: {
       le: ligne.archiveLe,
       absent: false,

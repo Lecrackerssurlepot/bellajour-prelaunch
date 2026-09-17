@@ -10,6 +10,25 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 17/09/2026 — le cockpit de décision, SUR BRANCHE, en attente d'une migration (T-115)
+
+`feat/cockpit-decision`. L'écran `/admin/atelier/cockpit` répond à « quand faut-il avoir lancé le
+développement pour ne pas saturer l'atelier ? » à partir d'un agrégat hebdo (`weekly_metrics`) écrit
+par un job du lundi (cron Vercel 6 h UTC, idempotent) et d'hypothèses réglées aux curseurs
+(`cockpit_settings`). **Rien ne fonctionne tant que `20260917_cockpit.sql` n'est pas appliquée** :
+l'écran le dit, les routes répondent 503, le job aussi. Aucune écriture ne se replie.
+
+Trois choses que le brief laissait ouvertes, tranchées comme suit et à confirmer par Mathias :
+- **chaud/froid** = bouton sur la fiche (`numeros.origine`), fondateur chaud d'office, inconnu
+  compté à part et rendant le socle non fiable ;
+- **la marge mesurée n'existe pas** : aucun coût d'impression par commande n'est enregistré (le
+  devis journalisé ne porte que le port). Le cockpit retient `marge_defaut` et le dit ;
+- **les défauts des curseurs** (10 froides/sem, 8 + 2 semaines, 10 000 €, 50 %, 20 €, 20/mois) sont
+  des points de départ, signalés « jamais réglés » jusqu'au premier enregistrement.
+
+Le prototype HTML cité par le brief n'a été trouvé nulle part : l'écran suit les formules du brief
+et le style de `/metriques`. `/admin/atelier/demo/cockpit` le montre sur une série inventée.
+
 ## 17/09/2026 — l'ordre des photos est celui du client (T-114)
 
 **Question de Mathias : « les photos qu'on reçoit sont-elles dans le bon ordre ? » Non, et c'est

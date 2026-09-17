@@ -4,6 +4,10 @@
     {
       "path": "/api/atelier/mails/relever",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/atelier/cockpit/agreger",
+      "schedule": "0 6 * * 1"
     }
   ]
 }

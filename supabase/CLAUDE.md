@@ -1,11 +1,11 @@
 # Base de données
 
-10 tables réelles, RLS activée partout mais **contournée côté serveur par la service key**.
+12 tables réelles, RLS activée partout mais **contournée côté serveur par la service key**.
 Chargé dès qu'on touche une migration ou le dossier supabase.
 
 | Table | Rôle | Clé à connaître |
 |---|---|---|
-| `numeros` | le dossier d'une cliente, du questionnaire à la livraison | `token` unique = l'identité ; `etat` (9 valeurs) ; depuis 20260910 le prix GELÉ (`prix_centimes`, `livraison_centimes`, `livraison_niveau`, `pays_livraison`), depuis 20260916 le HT gelé `prix_ht_centimes` et `quantite` (1 à 10), depuis 20260911 `finition` ; `palier` est un bucket hérité, plus aucun prix n'en dépend, jamais de `drop` |
+| `numeros` | le dossier d'une cliente, du questionnaire à la livraison | `token` unique = l'identité ; `etat` (9 valeurs) ; depuis 20260910 le prix GELÉ (`prix_centimes`, `livraison_centimes`, `livraison_niveau`, `pays_livraison`), depuis 20260916 le HT gelé `prix_ht_centimes` et `quantite` (1 à 10), depuis 20260911 `finition`, depuis 20260917 `origine` (chaud/froid, cockpit, **en attente**) ; `palier` est un bucket hérité, plus aucun prix n'en dépend, jamais de `drop` |
 | `waitlist` | inscrits, clients de la prévente, ambassadeurs | `email` unique, `ref_code` unique, `numero_fondateur` unique |
 | `photos` | une ligne par photo déposée | `r2_key` unique, `vignette_key` |
 | `mails_envoyes` | **le verrou anti-doublon** | unique (`numero_id`, `code`) |
@@ -15,6 +15,8 @@ Chargé dès qu'on touche une migration ou le dossier supabase.
 | `dossiers_vus` | qui a vu quoi | PK composite |
 | `admin_last_seen` | singleton | PK `id boolean check(id=true)` |
 | `invoice_jobs` | facturation Fatura (edge function `emit-invoices`) | `stripe_payment_intent` unique |
+| `weekly_metrics` | l'agrégat hebdo du cockpit (migration 20260917, **en attente**) | `semaine` AAAASS PK, réécrite entière par le job du lundi : idempotent |
+| `cockpit_settings` | les hypothèses du cockpit | singleton `id = true`, `regle_le` null = jamais réglé |
 
 RPC : `assign_numero_fondateur(p_email)`, appelée par `/api/webhook`.
 
