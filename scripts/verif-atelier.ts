@@ -421,11 +421,11 @@ ok("12 pages refusees", !preparerTransition("publier_apercu", "photos_recues", {
 const sansImg = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, pays_livraison: "FR", apercu_c1: "k/c1.jpg" });
 ok("2 visuels manquants nommes un par un", !sansImg.ok && sansImg.erreurs.length === 2);
 
-/* ── apercu : 1 a 3 doubles pages, avec repli sur l'ancien format (T-089) ── */
+/* ── apercu : 1 a 5 doubles pages, avec repli sur l'ancien format (T-089) ── */
 ok("doubles : le nouveau format tableau est lu dans l'ordre",
    JSON.stringify(lireDoublesBrutes({ doubles: ["a", "b", "c"] })) === JSON.stringify(["a", "b", "c"]));
 ok(`doubles : borne a ${MAX_DOUBLES} (l'admin n'en publie pas plus que ce qu'on montre)`,
-   lireDoublesBrutes({ doubles: ["a", "b", "c", "d"] }).length === MAX_DOUBLES);
+   lireDoublesBrutes({ doubles: ["a", "b", "c", "d", "e", "f"] }).length === MAX_DOUBLES);
 ok("doubles : l'ancien format `double` unique devient une liste d'un element",
    JSON.stringify(lireDoublesBrutes({ double: "x" })) === JSON.stringify(["x"]));
 ok("doubles : le tableau prime sur la valeur unique",
@@ -824,7 +824,7 @@ ok("maquette + M5 + 8 j : valide d'office", doitAutoValider(d({ etat: "maquette_
 ok("maquette + M5 + 5 j : elle a encore le temps", !doitAutoValider(d({ etat: "maquette_prete", etat_maj_le: ilYA(5) }), env(["M5", ilYA(5)]), MAINTENANT));
 ok("maquette SANS M5 + 30 j : on n'imprime PAS en silence", !doitAutoValider(d({ etat: "maquette_prete", etat_maj_le: ilYA(30) }), env(), MAINTENANT));
 
-titre("— la planche a plat + 0 a 3 doubles pages (T2-2 / T-090) —");
+titre("— la planche a plat + 0 a 5 doubles pages (T2-2 / T-090) —");
 const pPlat = preparerTransition("publier_apercu", "photos_recues", {
   nb_pages: 34, pays_livraison: "FR", apercu_plat: "k/plat.jpg", apercu_doubles: ["k/d1.jpg", "k/d2.jpg"],
 });
@@ -834,9 +834,9 @@ const pPlatSeule = preparerTransition("publier_apercu", "photos_recues", { nb_pa
 ok("planche SEULE : acceptee, `doubles` absent (0 double permis, decision 02/09)",
    pPlatSeule.ok && JSON.stringify(pPlatSeule.patch.apercu_urls) === JSON.stringify({ plat: "k/plat.jpg" }));
 const pPlat4 = preparerTransition("publier_apercu", "photos_recues", {
-  nb_pages: 34, pays_livraison: "FR", apercu_plat: "k/plat.jpg", apercu_doubles: ["a", "b", "c", "d"],
+  nb_pages: 34, pays_livraison: "FR", apercu_plat: "k/plat.jpg", apercu_doubles: ["a", "b", "c", "d", "e", "f"],
 });
-ok("planche + 4 doubles : rognee a 3 a l'ecriture",
+ok("planche + 6 doubles : rognee a 5 a l'ecriture",
    pPlat4.ok && (pPlat4.patch.apercu_urls as { doubles: string[] }).doubles.length === MAX_DOUBLES);
 const pPlatVides = preparerTransition("publier_apercu", "photos_recues", {
   nb_pages: 34, pays_livraison: "FR", apercu_plat: "k/plat.jpg", apercu_doubles: ["", "  k/d.jpg  ", null as unknown as string],

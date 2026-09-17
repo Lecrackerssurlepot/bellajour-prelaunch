@@ -26,13 +26,13 @@ import { cleCadrageCouverture } from "./transitions";
  * publiés avant ce format portent c1/c4 et un plat null. L'affichage choisit
  * son rendu sur cette seule distinction.
  */
-/** On montre au plus TROIS doubles pages (décision de Mathias, 02/09). */
-export const MAX_DOUBLES = 3;
+/** On montre au plus CINQ doubles pages (Mathias, 17/09 ; trois du 02/09 au 17/09). */
+export const MAX_DOUBLES = 5;
 
 /**
  * Et au plus TROIS couvertures proposées au choix (T-093, 07/09).
  *
- * Trois est le même plafond que les doubles pages, volontairement : au-delà,
+ * Trois (les doubles pages en montrent jusqu'à cinq depuis le 17/09) : au-delà,
  * un choix cesse d'être une préférence et devient un catalogue — la cliente
  * n'est pas venue arbitrer, elle est venue reconnaître son moment. L'atelier
  * en publie une, deux ou trois ; une seule reste le cas normal.

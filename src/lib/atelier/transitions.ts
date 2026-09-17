@@ -335,11 +335,11 @@ function texte(v: unknown, max = 500): string {
 const MAX_PAYS = 8;
 
 /* T-090 — les doubles pages d'une planche, telles que l'atelier les a montées :
-   des clés de coffre, dans l'ordre, les vides ignorées. Bornées à trois — c'est
+   des clés de coffre, dans l'ordre, les vides ignorées. Bornées à cinq — c'est
    MAX_DOUBLES (apercu.ts), redit ici plutôt qu'importé pour garder ce module
    PUR (apercu.ts importe r2, donc l'environnement). Le lecteur borne de nouveau
    à la résolution : ceci est l'hygiène d'écriture, pas la seule garde. */
-const MAX_DOUBLES_ADMIN = 3;
+const MAX_DOUBLES_ADMIN = 5;
 function doublesDeSaisie(v: unknown): string[] {
   return listeDeSaisie(v, MAX_DOUBLES_ADMIN);
 }
@@ -615,7 +615,7 @@ export function preparerTransition(
        vide ne vend pas — tout ce que le format choisi exige est obligatoire.
 
        T2-2 / T-090 : le format normal est LA PLANCHE À PLAT (C4 | dos | C1,
-       un seul fichier, l'export naturel de Canva) plus 0 à trois doubles
+       un seul fichier, l'export naturel de Canva) plus 0 à cinq doubles
        pages. La page cliente découpe les deux faces de la planche en CSS et la
        loupe montre l'objet entier — une vraie couverture qu'on retourne. Zéro
        double page est permis (décision de Mathias, 02/09) : une planche seule

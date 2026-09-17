@@ -24,7 +24,7 @@
  * Les dossiers publiés avant le format à plat portent trois fichiers séparés
  * (c1, c4) et se montrent chacun, entiers, sans rien à choisir.
  *
- * 1 À 3 DOUBLES PAGES (MAX_DOUBLES) : l'atelier décide combien il en montre.
+ * 1 À 5 DOUBLES PAGES (MAX_DOUBLES) : l'atelier décide combien il en montre.
  *
  * La légende est TOUJOURS nommée (recette du 25/08) ; la loupe agrandit
  * chaque tuile, en réutilisant le même composant partagé avec l'admin.
