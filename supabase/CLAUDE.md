@@ -5,7 +5,7 @@ Chargé dès qu'on touche une migration ou le dossier supabase.
 
 | Table | Rôle | Clé à connaître |
 |---|---|---|
-| `numeros` | le dossier d'une cliente, du questionnaire à la livraison | `token` unique = l'identité ; `etat` (9 valeurs) ; depuis 20260910 le prix GELÉ (`prix_centimes`, `livraison_centimes`, `livraison_niveau`, `pays_livraison`), depuis 20260916 le HT gelé `prix_ht_centimes` et `quantite` (1 à 10), depuis 20260911 `finition`, depuis 20260917 `origine` (chaud/froid, cockpit, **en attente**) ; `palier` est un bucket hérité, plus aucun prix n'en dépend, jamais de `drop` |
+| `numeros` | le dossier d'une cliente, du questionnaire à la livraison | `token` unique = l'identité ; `etat` (9 valeurs) ; depuis 20260910 le prix GELÉ (`prix_centimes`, `livraison_centimes`, `livraison_niveau`, `pays_livraison`), depuis 20260916 le HT gelé `prix_ht_centimes` et `quantite` (1 à 10), depuis 20260911 `finition`, depuis 20260917 `origine` (chaud/froid, cockpit) ; `palier` est un bucket hérité, plus aucun prix n'en dépend, jamais de `drop` |
 | `waitlist` | inscrits, clients de la prévente, ambassadeurs | `email` unique, `ref_code` unique, `numero_fondateur` unique |
 | `photos` | une ligne par photo déposée | `r2_key` unique, `vignette_key` |
 | `mails_envoyes` | **le verrou anti-doublon** | unique (`numero_id`, `code`) |
@@ -15,7 +15,7 @@ Chargé dès qu'on touche une migration ou le dossier supabase.
 | `dossiers_vus` | qui a vu quoi | PK composite |
 | `admin_last_seen` | singleton | PK `id boolean check(id=true)` |
 | `invoice_jobs` | facturation Fatura (edge function `emit-invoices`) | `stripe_payment_intent` unique |
-| `weekly_metrics` | l'agrégat hebdo du cockpit (migration 20260917, **en attente**) | `semaine` AAAASS PK, réécrite entière par le job du lundi : idempotent |
+| `weekly_metrics` | l'agrégat hebdo du cockpit (migration 20260917, **appliquée le 17/09**) | `semaine` AAAASS PK, réécrite entière par le job du lundi : idempotent |
 | `cockpit_settings` | les hypothèses du cockpit | singleton `id = true`, `regle_le` null = jamais réglé |
 
 RPC : `assign_numero_fondateur(p_email)`, appelée par `/api/webhook`.
@@ -51,6 +51,11 @@ Une colonne jamais migrée donne un code qui « marche » et une donnée qui n'e
 Après toute migration, vérifier que la donnée arrive vraiment — pas seulement que la page s'affiche.
 
 ## État connu
+
+**`20260917_cockpit.sql` (`weekly_metrics`, `cockpit_settings`, `numeros.origine`) a été appliquée le 17/09/2026
+via le MCP Supabase sur accord explicite de Mathias**, après vérification en SQL que son premier passage
+à la main n'avait rien créé (les trois objets absents, les colonnes témoins présentes). Les trois objets et
+la ligne de réglages sont vérifiés ; le job a tourné et lu la base (aucune semaine complète à écrire ce jour-là).
 
 **`20260914_atelier_archive.sql` (colonne `numeros.archive_le`, T-113) a été appliquée le 14/09/2026 sur
 accord explicite de Mathias** (colonne, index et cache PostgREST vérifiés). Le repli 42703 reste en

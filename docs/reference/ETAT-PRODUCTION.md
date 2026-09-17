@@ -10,9 +10,17 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
-## 17/09/2026 — le cockpit de décision, SUR BRANCHE, en attente d'une migration (T-115)
+## 17/09/2026 — le cockpit de décision EN PRODUCTION, migration appliquée (T-115)
 
-`feat/cockpit-decision`. L'écran `/admin/atelier/cockpit` répond à « quand faut-il avoir lancé le
+PR #160 fusionnée et déployée ; **migration `20260917_cockpit.sql` appliquée le 17/09 via le MCP Supabase
+sur accord explicite de Mathias** (son passage à la main n'avait rien créé : vérifié en SQL avant, les trois
+objets vérifiés après). Le job a tourné : une seule commande au journal (payée le 17/09 à 11 h 02), aucune
+semaine complète, donc aucune ligne encore ; la première tombe le lundi 21/09 à 6 h UTC. Le verdict dit
+« Observation, aucune semaine complète agrégée » et c'est exact. `scripts/cockpit-agreger.ts` relance le
+job à la main et affiche ce qu'il a écrit. Reste à Mathias : régler les curseurs, poser l'origine du
+dossier payé.
+
+Le texte d'origine de cette entrée, écrit avant la migration : L'écran `/admin/atelier/cockpit` répond à « quand faut-il avoir lancé le
 développement pour ne pas saturer l'atelier ? » à partir d'un agrégat hebdo (`weekly_metrics`) écrit
 par un job du lundi (cron Vercel 6 h UTC, idempotent) et d'hypothèses réglées aux curseurs
 (`cockpit_settings`). **Rien ne fonctionne tant que `20260917_cockpit.sql` n'est pas appliquée** :

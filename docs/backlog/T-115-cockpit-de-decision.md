@@ -58,4 +58,7 @@ origine » ; (4) me dire si les défauts des curseurs (10 / 8 / 2 / 10 000 € /
 doivent changer, ils ne viennent d'aucune donnée ; (5) retrouver le prototype pour comparer.
 
 ## Ce qui a été fait
-17/09 : tout ce qui précède, sur la branche, vérifié par tsc, lint, build et harnais.
+17/09 : tout ce qui précède, PR #160 fusionnée et déployée. Migration appliquée via MCP sur accord
+explicite (le passage à la main de Mathias n'avait rien créé, vérifié en SQL). Job lancé : 1 commande au
+journal, 0 semaine complète, verdict « Observation » exact. Script `scripts/cockpit-agreger.ts` ajouté.
+Reste : curseurs à régler, origine du dossier payé à poser, première ligne le lundi 21/09.
