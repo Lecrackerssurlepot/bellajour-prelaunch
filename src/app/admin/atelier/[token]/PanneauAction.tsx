@@ -290,6 +290,8 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
      liste. Chaque liste ne voit que son propre glissé. */
   const glissePlanche = useRef<string | null>(null);
   const [envoiEnCours, setEnvoiEnCours] = useState<string | null>(null);
+  /* L'avancement d'un lot de doubles pages (« Envoi 2/4… »), null hors lot. */
+  const [lotDoubles, setLotDoubles] = useState<{ fait: number; total: number } | null>(null);
   /* Les noms lisibles des PDF d'impression déposés — une clé de coffre seule
      ne dit rien à l'écran. Préremplis depuis la fiche si un dépôt a eu lieu. */
   const [pdfNoms, setPdfNoms] = useState<Record<string, string>>(() => {
@@ -573,17 +575,29 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
     setVerif(null);
   }
 
-  /* Une double page de plus, au bout de la liste. Toutes montent sous le même
-     slot « double » : la route leur donne à chacune une clé unique. */
-  async function ajouterDouble(file: File) {
-    if (doubles.length >= MAX_DOUBLES) return;
-    const key = await envoyerVisuel("apercu_double_new", "double", file);
-    if (!key) return;
-    setDoubles((d) =>
-      d.length >= MAX_DOUBLES
-        ? d
-        : [...d, { id: crypto.randomUUID(), key, preview: URL.createObjectURL(file), nom: file.name }],
-    );
+  /* Des doubles pages de plus, au bout de la liste — PLUSIEURS à la fois
+     (Mathias, 17/09 : « pouvoir en sélectionner plusieurs au lieu d'ouvrir
+     un par un »). Toutes montent sous le même slot « double » : la route leur
+     donne à chacune une clé unique. Les envois se font l'un après l'autre,
+     dans l'ordre du sélecteur, et ce qui dépasse le plafond est ignoré :
+     on ne monte jamais un fichier qu'on ne pourra pas montrer. Un fichier
+     refusé n'arrête pas les suivants. */
+  async function ajouterDoubles(fichiers: File[]) {
+    const places = MAX_DOUBLES - doubles.length;
+    if (places <= 0) return;
+    const lot = fichiers.slice(0, places);
+    for (let i = 0; i < lot.length; i++) {
+      const file = lot[i];
+      setLotDoubles({ fait: i + 1, total: lot.length });
+      const key = await envoyerVisuel("apercu_double_new", "double", file);
+      if (!key) continue;
+      setDoubles((d) =>
+        d.length >= MAX_DOUBLES
+          ? d
+          : [...d, { id: crypto.randomUUID(), key, preview: URL.createObjectURL(file), nom: file.name }],
+      );
+    }
+    setLotDoubles(null);
     setVerif(null);
   }
 
@@ -1243,7 +1257,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                     <span className="ate-slot-label">
                       Doubles pages{" "}
                       <span className="ate-faint">
-                        — facultatif, jusqu&apos;à {MAX_DOUBLES}. Glisser la tuile pour ranger,
+                        — facultatif, jusqu&apos;à {MAX_DOUBLES}, plusieurs fichiers à la fois. Glisser la tuile pour ranger,
                         glisser l&apos;image pour la recadrer.
                       </span>
                     </span>
@@ -1337,13 +1351,17 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => {
                               e.preventDefault();
-                              const f = e.dataTransfer.files?.[0];
-                              if (f) ajouterDouble(f);
+                              const fs = Array.from(e.dataTransfer.files ?? []);
+                              if (fs.length) ajouterDoubles(fs);
                             }}
                             disabled={envoiEnCours !== null}
                           >
                             {envoiEnCours === "apercu_double_new" ? (
-                              <span className="ate-slot-vide">Envoi…</span>
+                              <span className="ate-slot-vide">
+                                {lotDoubles && lotDoubles.total > 1
+                                  ? `Envoi /…`
+                                  : "Envoi…"}
+                              </span>
                             ) : (
                               <span className="ate-double-plus" aria-hidden="true">
                                 +
@@ -1356,10 +1374,11 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                             }}
                             type="file"
                             accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                            multiple
                             hidden
                             onChange={(e) => {
-                              const f = e.target.files?.[0];
-                              if (f) ajouterDouble(f);
+                              const fs = Array.from(e.target.files ?? []);
+                              if (fs.length) ajouterDoubles(fs);
                               e.target.value = "";
                             }}
                           />
