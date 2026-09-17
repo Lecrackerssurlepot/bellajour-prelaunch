@@ -56,7 +56,11 @@ export async function POST(request: Request) {
       .from("photos")
       .select("id, r2_key, nom_origine, taille, ordre")
       .eq("numero_id", numero.id)
+      /* T-114 : même tri que la fiche (donnees.ts), pour que « 03- » soit la
+         même photo dans le ZIP et à l'écran. */
       .order("ordre", { ascending: true })
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
       .returns<Array<{ id: string; r2_key: string; nom_origine: string | null; taille: number | null }>>();
 
     if (error) {

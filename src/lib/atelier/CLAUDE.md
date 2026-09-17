@@ -63,7 +63,8 @@ le 2e à −30 %, les suivants à −50 %, importable navigateur : le bon de com
 `parcours.ts` (les 8 jalons), `impression.ts` (table produit Cloudprinter, **le papier tranché
 le 11/09 — `PAPIER_INTERIEUR` / `PAPIER_COUVERTURE`, une constante pour les deux reliures —, le
 pelliculage choisi par le client, et la GÉOMÉTRIE du dos qui se déduit du papier**),
-`suivi.ts` (transporteur + code), `recit.ts`, `brief.ts`, `lot.ts`, `formats.ts`, `dates.ts`,
+`suivi.ts` (transporteur + code), `rang.ts` (le rang d'une photo : celui que le navigateur
+annonce fait foi, les ajouts se rangent après le coffre), `recit.ts`, `brief.ts`, `lot.ts`, `formats.ts`, `dates.ts`,
 `token.ts` / `tokenForme.ts` (jumeau navigateur), `secret.ts`.
 Les modules à effets : `mails.ts`, `r2.ts`, `cloudprinter.ts`, `paiement.ts`, `evenements.ts`,
 `apercu.ts`. La règle de séparation est volontaire : **tout ce qui est testable sans réseau l'est**,

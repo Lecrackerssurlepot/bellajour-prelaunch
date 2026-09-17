@@ -27,6 +27,7 @@ import {
 } from '@/lib/atelier/formats'
 import { fermerPool, poolIndisponible, reduire, tailleDuPool } from './pool'
 import * as stockage from './stockage'
+import { decalageVersLeCoffre, rangSuivant } from '@/lib/atelier/rang'
 import { MAX_PHOTOS } from './paliers'
 
 /* ── Réglages ─────────────────────────────────────────────────────────── */
@@ -49,6 +50,10 @@ const BACKOFF_MS = [0, 2_000, 8_000, 20_000, 45_000]
    bloque une voie à vie. Tic toutes les 10 s, coupure à 3 min SANS PROGRÈS
    (pas 3 min d'envoi : une grosse photo sur un réseau lent progresse). */
 const CHIEN_DE_GARDE_MS = 10_000
+/* T-114 : la déclaration attend que le serveur ait dit où commence le coffre
+   (ou qu'il ait échoué), au plus ce délai. Sans lui, une photo reprise sur
+   un autre appareil se déclarait au rang 0 pendant que la réponse voyageait. */
+const ATTENTE_COFFRE_MAX_MS = 3_000
 const SANS_PROGRES_MAX_MS = 180_000
 
 /* Piège nº5 : une URL signée vit 1 h et peut expirer PENDANT l'import.
@@ -165,6 +170,10 @@ class Moteur {
   private nbServeur: number | null = null
   /* T-095 — la lecture d'initialisation ne part qu'une fois par moteur. */
   private serveurInterroge = false
+  /* T-114 : tant que cette date n'est pas passée et que le serveur n'a pas
+     répondu, on ne déclare rien. 0 = le coffre est connu (ou on a renoncé). */
+  private attenteCoffreJusqua = 0
+  private reveilCoffre: ReturnType<typeof setTimeout> | null = null
   /* Le clic a abouti (consent_photos posé en base). Le moteur continue de
      pomper : c'est tout l'objet du changement du 01/09. */
   private finalise = false
@@ -209,6 +218,9 @@ class Moteur {
    * `photoId` conservé fait toute la reprise.
    */
   async reprendre(): Promise<void> {
+    /* Posé AVANT tout : la pompe de fin de reprise ne doit pas déclarer les
+       photos restaurées tant que le coffre n'a pas parlé (T-114). */
+    this.attenteCoffreJusqua = Date.now() + ATTENTE_COFFRE_MAX_MS
     this.stockageDegrade = !stockage.stockageActif() || (await stockage.quotaCritique())
     await stockage.purgerAutresTokens(this.token)
 
@@ -280,13 +292,49 @@ class Moteur {
     try {
       const r = await fetch(`/api/atelier/numero?token=${encodeURIComponent(this.token)}`)
       if (!r.ok) return
-      const data = (await r.json()) as { nbPhotos?: number }
+      const data = (await r.json()) as { nbPhotos?: number; ordreSuivant?: number }
       if (typeof data.nbPhotos !== 'number') return
       this.nbServeur = Math.max(this.nbServeur ?? 0, data.nbPhotos)
+      if (typeof data.ordreSuivant === 'number') this.calerApresLeCoffre(data.ordreSuivant)
       this.changement()
     } catch {
       /* Réseau coupé, réponse illisible : silence, la grille locale suffit. */
+    } finally {
+      /* Réponse ou échec, le coffre est « connu » : la déclaration peut
+         partir. Un échec ne bloque jamais un dépôt (même règle que T-095). */
+      this.attenteCoffreJusqua = 0
+      if (!this.arrete) this.pompe()
     }
+  }
+
+  /**
+   * T-114 — les ajouts d'une seconde session se rangent APRÈS le coffre.
+   *
+   * Sur un autre appareil, la copie locale est vide : le moteur numérote
+   * depuis 0 pendant que le serveur répond. Quand il répond « rang suivant
+   * 45 », les photos déjà choisies mais PAS ENCORE DÉCLARÉES sont poussées
+   * d'un même pas (cf. rang.ts) : leur ordre entre elles ne bouge pas, et
+   * toutes passent derrière les 45 du coffre. Une photo déjà déclarée garde
+   * son rang — le serveur l'a écrit, on ne le contredit pas.
+   * Le compteur repart après le plus haut rang connu, pour que le prochain
+   * choix suive.
+   */
+  private calerApresLeCoffre(base: number): void {
+    const nonDeclarees = [...this.items.values()].filter((i) => i.photoId === null)
+    const pas = decalageVersLeCoffre(nonDeclarees.map((i) => i.ordre), base)
+    if (pas > 0) {
+      for (const item of nonDeclarees) {
+        item.ordre += pas
+        /* Déjà dans la copie locale (réduite ou plus loin) : on y réécrit le
+           rang, sinon un rechargement la ferait revenir avec l'ancien. */
+        if (item.etat !== 'attente' && item.etat !== 'reduction') void this.persister(item, item.vignette)
+      }
+    }
+    this.ordreSuivant = Math.max(
+      this.ordreSuivant,
+      base,
+      rangSuivant([...this.items.values()].map((i) => i.ordre)),
+    )
   }
 
   /* ── entrée des fichiers ────────────────────────────────────────────── */
@@ -468,6 +516,20 @@ class Moteur {
   private etageDeclaration(): void {
     if (this.declarationEnVol || Date.now() < this.prochaineDeclarationA) return
 
+    /* T-114 : le coffre d'abord. Si le serveur ne répond pas dans le délai,
+       on se réveille et on déclare quand même — le rang sera celui du
+       navigateur, et le tri secondaire fera le reste. */
+    if (Date.now() < this.attenteCoffreJusqua) {
+      if (!this.reveilCoffre) {
+        this.reveilCoffre = setTimeout(() => {
+          this.reveilCoffre = null
+          this.attenteCoffreJusqua = 0
+          if (!this.arrete) this.pompe()
+        }, this.attenteCoffreJusqua - Date.now() + 10)
+      }
+      return
+    }
+
     const lot = this.selection((i) => i.etat === 'prete' && !!i.charge, LOT_DECLARATION)
     if (!lot.length) return
 
@@ -505,6 +567,10 @@ class Moteur {
                pour une vignette. Elle est connue : un item n'est déclaré
                qu'à l'état `prete`, donc après le passage du worker. */
             tailleVignette: i.vignette?.size,
+            /* T-114 — le rang du choix. C'est lui que le serveur écrit :
+               sans lui, l'atelier recevait les photos dans l'ordre où la
+               réduction finissait, pas dans celui du client. */
+            ordre: i.ordre,
           })),
         }),
       })
@@ -833,6 +899,7 @@ class Moteur {
     }
     this.arrete = true
     if (this.minuteur) clearInterval(this.minuteur)
+    if (this.reveilCoffre) { clearTimeout(this.reveilCoffre); this.reveilCoffre = null }
     this.minuteur = null
   }
 
@@ -1046,6 +1113,7 @@ class Moteur {
   detruire(): void {
     this.arrete = true
     if (this.minuteur) clearInterval(this.minuteur)
+    if (this.reveilCoffre) { clearTimeout(this.reveilCoffre); this.reveilCoffre = null }
     this.minuteur = null
     for (const item of this.items.values()) {
       item.xhr?.abort()

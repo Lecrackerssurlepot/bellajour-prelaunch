@@ -333,7 +333,11 @@ async function lirePhotos(
     .from("photos")
     .select("id, r2_key, nom_origine, taille, ordre, created_at, vignette_key")
     .eq("numero_id", numeroId)
+    /* T-114 : le rang d'abord, puis l'arrivée, puis l'id — deux rangs égaux
+       (deux appareils en même temps) se rangent toujours pareil. */
     .order("ordre", { ascending: true })
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true })
     .returns<RangeePhoto[]>();
 
   if (!avec.error) return { data: avec.data };
@@ -347,7 +351,11 @@ async function lirePhotos(
     .from("photos")
     .select("id, r2_key, nom_origine, taille, ordre, created_at")
     .eq("numero_id", numeroId)
+    /* T-114 : le rang d'abord, puis l'arrivée, puis l'id — deux rangs égaux
+       (deux appareils en même temps) se rangent toujours pareil. */
     .order("ordre", { ascending: true })
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true })
     .returns<RangeePhoto[]>();
 
   if (sans.error) {

@@ -1,4 +1,4 @@
-# État du système — au 16/09/2026
+# État du système — au 17/09/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,20 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 17/09/2026 — l'ordre des photos est celui du client (T-114)
+
+**Question de Mathias : « les photos qu'on reçoit sont-elles dans le bon ordre ? » Non, et c'est
+corrigé.** Le navigateur posait un rang à chaque photo choisie mais ne l'envoyait pas ; le serveur
+numérotait à l'arrivée des déclarations, c'est-à-dire dans l'ordre où la réduction FINISSAIT
+(trois voies en parallèle, un HEIC jamais réduit passait devant). La fiche admin et le ZIP
+(« 01- », « 02- ») trient sur ce rang : l'atelier voyait un ordre que le client n'avait jamais vu.
+Depuis T-114 : le rang du choix part avec la déclaration et le serveur l'écrit tel quel
+(`rang.ts`, pur, 19 cas au harnais) ; les ajouts d'une seconde session se rangent derrière le
+coffre (la déclaration attend jusqu'à 3 s que `/api/atelier/numero` dise où il commence) ; le tri
+lit `ordre`, puis `created_at`, puis `id`. **Aucune migration.** Reste connu : deux appareils
+déposant en même temps peuvent produire deux rangs égaux, rangés alors par date d'arrivée.
+Les dossiers déjà en base gardent leur rang d'avant : rien n'est renuméroté rétroactivement.
 
 ## 16/09/2026 (après-midi) — LE LANCEMENT : le mail C0 est parti aux treize fondateurs
 

@@ -14,6 +14,7 @@ import {
   MAX_FILE_BYTES, MIMES_ACCEPTES, MAX_VIGNETTE_BYTES, MIME_VIGNETTE,
   cleR2, cleVignetteR2, mimeDepuisNom, signerPut,
 } from "@/lib/atelier/r2";
+import { rangDeclare } from "@/lib/atelier/rang";
 
 export const runtime = "nodejs";
 
@@ -29,6 +30,12 @@ type Demande = {
      Absente si le décodage a échoué (HEIC sous Chrome, worker indisponible) :
      ce n'est pas une erreur, la fiche servira l'original comme avant. */
   tailleVignette?: number;
+  /* T-114 — le rang de la photo dans le dépôt, tel que le navigateur l'a
+     posé au moment du choix. C'est LUI qui fait l'ordre en base : les
+     déclarations arrivent dans l'ordre de fin de réduction, pas dans celui
+     du client. Absent sur un onglet ouvert avant la mise à jour : repli sur
+     le compteur historique (cf. rang.ts). */
+  ordre?: number;
 };
 
 /**
@@ -96,7 +103,9 @@ export async function POST(request: Request) {
       .eq("numero_id", numero.id);
 
     const resultats: Array<Record<string, unknown>> = [];
-    let ordre = dejaPresentes ?? 0;
+    /* Le nombre de lignes tient le PLAFOND et sert de repli au rang. Il ne
+       fait plus l'ordre : c'est le navigateur qui l'annonce (T-114). */
+    let nbLignes = dejaPresentes ?? 0;
 
     for (const f of fichiers) {
       const nom = typeof f.nom === "string" ? f.nom.slice(0, 260) : "";
@@ -147,7 +156,7 @@ export async function POST(request: Request) {
         }
       }
 
-      if (ordre >= MAX_PHOTOS_PAR_NUMERO) {
+      if (nbLignes >= MAX_PHOTOS_PAR_NUMERO) {
         resultats.push({ nom, erreur: "plafond" });
         continue;
       }
@@ -167,7 +176,7 @@ export async function POST(request: Request) {
            de ne compter que les vraies. Une ligne déclarée dont l'envoi
            échoue ne gonfle jamais le compteur. */
         taille: null,
-        ordre,
+        ordre: rangDeclare(f.ordre, nbLignes),
       });
 
       if (errIns) {
@@ -186,7 +195,7 @@ export async function POST(request: Request) {
            promesse produirait des cases vides dans la fiche. */
         ...(await signerVignette(numero.id, photoId, f.tailleVignette)),
       });
-      ordre++;
+      nbLignes++;
     }
 
     return NextResponse.json({ resultats }, { status: 200 });
