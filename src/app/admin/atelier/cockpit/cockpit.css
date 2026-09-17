@@ -1,0 +1,237 @@
+/* ── /admin/atelier/cockpit ──
+   Monde CRÈME (tokens.css). Tout est préfixé `ck-` et scopé sous `.ck-root`
+   pour ne rien emprunter ni prêter aux autres écrans de l'atelier ; les
+   cartes de tête réutilisent `.ate-m-cle` (metriques) pour que les deux
+   pages se ressemblent. */
+
+.ck-root .ate-fiche-tete {
+  margin-bottom: var(--bj-sp-5);
+}
+
+.ck-section {
+  margin-top: var(--bj-sp-6);
+}
+
+.ck-h2 {
+  margin: 0 0 var(--bj-sp-2);
+  font-family: var(--bj-font-display);
+  font-weight: 500;
+  font-size: var(--bj-fs-lg);
+  color: var(--bj-text);
+}
+
+.ck-note {
+  max-width: 78ch;
+  margin-bottom: var(--bj-sp-4);
+}
+
+/* ── le verdict : un seul bloc, une couleur par état ── */
+
+.ck-verdict {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--bj-sp-5) var(--bj-sp-5);
+  margin-bottom: var(--bj-sp-4);
+  border-radius: var(--bj-r-md);
+  border: 1px solid var(--bj-veil-12);
+  background: var(--ate-carte-bg);
+  border-left-width: 5px;
+}
+.ck-verdict--observation {
+  border-left-color: var(--bj-text-faint);
+}
+.ck-verdict--marge {
+  border-left-color: var(--ate-vert);
+}
+.ck-verdict--fenetre_proche {
+  border-left-color: var(--ate-orange);
+}
+.ck-verdict--retard_sature {
+  border-left-color: var(--ate-rouge);
+}
+
+
+.ck-verdict-mot {
+  font-family: var(--bj-font-display);
+  font-size: clamp(30px, 3vw, 44px);
+  line-height: 1.05;
+  color: var(--bj-text);
+}
+.ck-verdict--retard_sature .ck-verdict-mot {
+  color: var(--ate-rouge);
+}
+.ck-verdict--fenetre_proche .ck-verdict-mot {
+  color: var(--ate-orange);
+}
+.ck-verdict--marge .ck-verdict-mot {
+  color: var(--ate-vert);
+}
+
+.ck-verdict-phrase {
+  margin: 4px 0 0;
+  max-width: 70ch;
+  font-size: var(--bj-fs-md);
+  line-height: 1.5;
+  color: var(--bj-text);
+}
+.ck-verdict-fiab,
+.ck-verdict-constat {
+  margin: 0;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  line-height: 1.5;
+  color: var(--bj-text-soft);
+}
+.ck-verdict-constat {
+  color: var(--ate-orange);
+}
+
+/* ── les quatre chiffres, puis le financement ── */
+
+.ck-cles {
+  margin-bottom: var(--bj-sp-3);
+}
+
+.ck-finance {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--bj-sp-3);
+}
+.ck-finance-case {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  border: 1px solid var(--bj-veil-8);
+  border-radius: var(--bj-r-md);
+}
+
+/* ── les curseurs ── */
+
+.ck-curseurs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--bj-sp-3) var(--bj-sp-6);
+}
+
+.ck-curseur {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--bj-sp-3) 0;
+  border-bottom: 1px solid var(--bj-veil-8);
+  cursor: pointer;
+}
+.ck-curseur-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--bj-sp-3);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+}
+.ck-curseur-label {
+  color: var(--bj-text-soft);
+}
+.ck-curseur-val {
+  color: var(--bj-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ck-curseur input[type="range"] {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--bj-action);
+}
+
+.ck-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--bj-sp-3);
+  margin-top: var(--bj-sp-4);
+}
+.ck-actions-note {
+  font-size: var(--bj-fs-sm);
+}
+.ck-msg {
+  margin: var(--bj-sp-2) 0 0;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+}
+.ck-msg--ok {
+  color: var(--bj-text-soft);
+}
+.ck-msg--ko {
+  color: var(--ate-rouge);
+}
+
+/* ── le tableau des semaines ── */
+
+.ck-tableau-cadre {
+  overflow-x: auto;
+  border: 1px solid var(--bj-veil-8);
+  border-radius: var(--bj-r-md);
+}
+.ck-tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+.ck-tableau th,
+.ck-tableau td {
+  padding: 8px 12px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--bj-veil-8);
+}
+.ck-tableau th {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bj-text-faint);
+  background: var(--bj-veil-6);
+}
+.ck-tableau tbody tr:last-child td {
+  border-bottom: 0;
+}
+.ck-num {
+  text-align: right !important;
+}
+.ck-froid {
+  font-weight: 600;
+}
+.ck-ligne--incomplete td:nth-child(6) {
+  color: var(--ate-orange);
+  font-weight: 600;
+}
+
+.ck-pied {
+  margin-top: var(--bj-sp-6);
+  padding-top: var(--bj-sp-3);
+  border-top: 1px solid var(--bj-veil-8);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-faint);
+  max-width: 78ch;
+}
+
+@media (max-width: 860px) {
+  .ck-root .ate-m-cles,
+  .ck-finance,
+  .ck-curseurs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .ck-root .ate-m-cles,
+  .ck-finance,
+  .ck-curseurs {
+    grid-template-columns: 1fr;
+  }
+}

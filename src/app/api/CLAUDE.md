@@ -1,6 +1,6 @@
 # API — effets de bord et surfaces exposées
 
-34 routes. Beaucoup écrivent en base, envoient des mails, encaissent ou commandent une impression.
+38 routes. Beaucoup écrivent en base, envoient des mails, encaissent ou commandent une impression.
 Chargé dès qu'on touche une route.
 
 ## Qui est protégé par quoi
@@ -20,6 +20,8 @@ Chargé dès qu'on touche une route.
   autre que celui de sa cliente.
 - **`/api/atelier/mails/relever`** — secret d'en-tête, comparé à durée constante (`memeSecret`) :
   `Authorization: Bearer <CRON_SECRET>` ou `x-atelier-secret`. 404 si le secret manque côté serveur.
+- **`/api/atelier/cockpit/agreger`** — le job du lundi du cockpit (cron Vercel), mêmes deux secrets
+  d'en-tête que la relève, fermée sans secret. N'écrit que `weekly_metrics` : ni mail, ni état.
 - **`/api/webhook`** (Stripe) — signature `constructEvent` + `STRIPE_WEBHOOK_SECRET`.
 - **`/api/cloudprinter/webhook`** — `CLOUDPRINTER_WEBHOOK_KEY`, HORS middleware, **fermée par
   défaut si la clé manque** (refus, pas ouverture).
@@ -49,6 +51,7 @@ Chargé dès qu'on touche une route.
 | `/api/atelier/checkout`, `/api/checkout` | sessions Stripe + **coupon fondatrice frappé chez Stripe** et remise de 30 € appliquée d'office (T-021) ; depuis le 10/09 le montant vient du prix GELÉ (`prix_centimes`) ; depuis le 16/09 une ligne Stripe par rang d'exemplaire (`decompteExemplaires`), la livraison est une `shipping_option` au port de zone ou au devis gelé, à 0 dès 50 € de magazines ou pour un fondateur, `allowed_countries = [pays déclaré]`, le pays est EXIGÉ ; zone C sans devis → 409 `livraison_indisponible`, jamais un montant de repli |
 | `/api/atelier/photos/supprimer` | DELETE R2 irréversible |
 | `/api/brevo/webhook` | **rien qu'une ligne de journal** : aucun état, aucun mail |
+| `/api/admin/cockpit/*`, `/api/admin/atelier/origine` | réglages du cockpit, recalcul de l'agrégat, origine chaud/froid d'un dossier : aucun mail, aucun état, une ligne de journal pour l'origine |
 | `/api/compte/inscription`, `/api/compte/mot-de-passe-oublie` | crée un compte `auth.users` et **envoie C1/C2 par Brevo** (lien frappé par `generateLink`, URL du site, jamais celle de Supabase) |
 
 ⚠️ **Un webhook ne doit jamais mentir sur son succès.** `logEvenement` est best-effort et ne

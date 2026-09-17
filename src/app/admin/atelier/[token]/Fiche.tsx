@@ -11,6 +11,7 @@ import { SLOTS_IMPRESSION } from "@/lib/atelier/impression";
 import type { EvenementVue, Fiche as FicheVue } from "../types";
 import Loupe, { type VueLoupe } from "@/app/components/Loupe";
 import EnCharge from "./EnCharge";
+import Origine from "./Origine";
 import Archivage from "../Archivage";
 import { COVER_MODELS, MODELE_AUCUN } from "@/app/(atelier)/composer/coverModels";
 import { PRENOM_COMPTE } from "@/lib/admin-auth";
@@ -823,6 +824,10 @@ export default function Fiche({
           demo={demo}
         />
       )}
+
+      {/* D'où vient le dossier, pour le cockpit (17/09/2026). Absent tant
+          que la migration 20260917 n'est pas passée. */}
+      {fiche.origine.absent ? null : <Origine token={l.token} origine={fiche.origine.valeur} demo={demo} />}
 
       {/* T-113 — archiver, récupérer, supprimer. Archivé : un bandeau à la
           place du panneau d'action, le dossier ne bouge plus. */}

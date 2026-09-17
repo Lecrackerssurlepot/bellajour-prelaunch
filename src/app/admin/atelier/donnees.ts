@@ -12,6 +12,7 @@
  * maintenir. Le jour où ça pique, ce sera une bonne nouvelle.
  */
 
+import { origineValide } from "@/lib/cockpit/agregat";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
@@ -1127,6 +1128,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     codeFondatrice,
     /* `select("*")` : la colonne arrive d'elle-même quand elle existe. */
     enChargeAbsent: !("en_charge" in n),
+    origine: { valeur: origineValide(n.origine) ? n.origine : null, absent: !("origine" in n) },
     /* T-113 — `select("*")` : la colonne est là ou elle n'y est pas, et
        l'écran le dit au lieu d'échouer au clic. */
     archive: {

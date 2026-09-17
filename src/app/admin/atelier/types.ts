@@ -7,6 +7,7 @@
  * rendre EXACTEMENT les mêmes écrans avec des données fabriquées.
  */
 
+import type { Origine } from "@/lib/cockpit/agregat";
 import type { Pile, EtapeDepot, Camp } from "@/lib/atelier/urgence";
 import type { MotifArrivee } from "@/lib/atelier/arrivees";
 import type { VerdictSuppression } from "@/lib/atelier/archive";
@@ -421,6 +422,8 @@ export type Fiche = {
   codeFondatrice: { code: string; creeLe: string } | null;
   /** Idem pour la colonne `en_charge` (migration 20260826). */
   enChargeAbsent: boolean;
+  /** D'où vient la commande (cockpit, migration 20260917) ; `absent` = colonne pas encore là. */
+  origine: { valeur: Origine | null; absent: boolean };
   /**
    * T-113 : archiver, récupérer, supprimer. `absent` = la migration 20260914
    * n'est pas passée, les deux boutons le disent au lieu d'échouer.

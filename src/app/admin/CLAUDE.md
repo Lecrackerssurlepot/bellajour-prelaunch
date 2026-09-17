@@ -80,3 +80,9 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
 `page.tsx` (liste triée par urgence) · `[token]/page.tsx` (fiche + frise des 8 jalons + actions
 armées en deux temps + carnet de l'éditeur) · `metriques/` · `sante/` (**le seul endroit qui
 montre un mail sans template**) · `demo/` (fixtures, sans base).
+`cockpit/` (17/09/2026) : quand faut-il avoir lancé le développement ? Lit UNIQUEMENT l'agrégat
+`weekly_metrics` et `cockpit_settings` (jamais les commandes brutes) ; le modèle est pur
+(`@/lib/cockpit/modele`), rejoué par les curseurs côté client ; le job du lundi (`@/lib/cockpit/job`)
+réécrit toutes les semaines complètes, idempotent. L'origine chaud/froid se pose sur la fiche
+(`Origine.tsx`) ; un fondateur est chaud d'office ; l'inconnu est compté À PART, jamais deviné.
+`demo/cockpit` montre l'écran sur une série inventée.
