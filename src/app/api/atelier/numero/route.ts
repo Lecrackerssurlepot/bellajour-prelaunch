@@ -27,6 +27,7 @@ import { MODELES_VALIDES } from "@/app/(atelier)/composer/coverModels";
 import { normaliserFinition } from "@/lib/atelier/impression";
 import { normaliserPays } from "@/lib/atelier/pays";
 import { normaliserQuantite } from "@/lib/atelier/exemplaires";
+import { rangSuivant } from "@/lib/atelier/rang";
 
 export const runtime = "nodejs";
 
@@ -95,6 +96,11 @@ function clean(value: unknown, max: number): string {
  * token inconnu → 404 sec, panne de base → 500 (T-043 : le moteur traite le
  * 404 comme définitif, une panne doit rester retentable).
  * Aucune écriture, aucun événement : c'est une lecture de confort.
+ *
+ * T-114 : rend aussi `ordreSuivant`, le premier rang libre après TOUTES les
+ * lignes du numéro — déclarées comprises, puisqu'elles tiennent un rang. Le
+ * moteur s'en sert pour ranger les ajouts d'une seconde session derrière le
+ * premier dépôt, sans jamais renuméroter ce que le client a déjà choisi.
  */
 export async function GET(request: Request) {
   try {
@@ -131,7 +137,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "internal" }, { status: 500 });
     }
 
-    return NextResponse.json({ nbPhotos: count ?? 0 }, { status: 200 });
+    /* Le rang le plus haut, une seule ligne : `ordre` n'est pas indexé mais
+       un numéro n'a jamais plus de 100 photos. Un échec ici ne coûte que le
+       calage des ajouts : on rend le compte quand même. */
+    const { data: dernier, error: errRang } = await supabase
+      .from("photos")
+      .select("ordre")
+      .eq("numero_id", numero.id)
+      .order("ordre", { ascending: false })
+      .limit(1)
+      .maybeSingle<{ ordre: number | null }>();
+    if (errRang) console.error("[numero GET] rang échoué", errRang.code);
+    const ordreSuivant = rangSuivant(dernier?.ordre != null ? [dernier.ordre] : []);
+
+    return NextResponse.json({ nbPhotos: count ?? 0, ordreSuivant }, { status: 200 });
   } catch (err) {
     console.error("[numero GET] exception", (err as Error)?.message);
     return NextResponse.json({ error: "internal" }, { status: 500 });

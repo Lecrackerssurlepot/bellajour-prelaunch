@@ -42,7 +42,9 @@ export function assainir(nom: string): string {
  *
  * Deux exigences, dans cet ordre. D'abord L'ORDRE DU DÉPÔT : la cliente a
  * envoyé ses photos dans un ordre qui raconte quelque chose, et le Finder
- * trie par nom. Un préfixe numéroté le préserve ; sans lui, `IMG_4207` passe
+ * trie par nom. (Cet ordre est celui du CHOIX depuis T-114 : le navigateur
+ * annonce son rang à la déclaration, cf. rang.ts. Avant, c'était l'ordre de
+ * fin de réduction.) Un préfixe numéroté le préserve ; sans lui, `IMG_4207` passe
  * avant `IMG_988` et la chronologie se perd. Ensuite L'UNICITÉ : deux photos
  * peuvent porter le même nom d'origine (deux téléphones, deux exports), et
  * la seconde écraserait la première en silence.

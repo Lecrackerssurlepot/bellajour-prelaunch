@@ -77,6 +77,7 @@ import {
 } from "@/lib/atelier/mails";
 import { estSessionAtelier, estChargeAtelier, KIND_ATELIER } from "@/lib/atelier/paiement";
 import { nomsDeFichiers, nomDossier } from "@/lib/atelier/lot";
+import { RANG_MAX, decalageVersLeCoffre, rangDeclare, rangSuivant } from "@/lib/atelier/rang";
 import {
   signToken,
   signTokenShort,
@@ -958,6 +959,38 @@ ok("sans prenom : le titre suffit", nomDossier(null, "Nos dimanches", "abcdef012
 ok("sans rien : le token identifie quand meme", nomDossier(null, null, "abcdef0123") === "numero (abcdef)");
 ok("une barre oblique dans le titre ne cree pas de sous-dossier",
    !nomDossier("Camille", "ete 2026/2027", "abcdef0123").includes("/"));
+
+/* ── T-114 : L'ORDRE DU DÉPÔT EST CELUI DU CLIENT ─────────────────────────
+   Le navigateur annonce son rang, le serveur l'écrit ; les ajouts d'une
+   seconde session passent derrière le coffre sans renumérotation. */
+titre("— le rang des photos (T-114) —");
+ok("un rang annonce par le navigateur est ecrit tel quel", rangDeclare(7, 3) === 7);
+ok("le rang 0 est un vrai rang, pas une absence", rangDeclare(0, 3) === 0);
+ok("sans rang (client ancien) : le compteur historique", rangDeclare(undefined, 3) === 3);
+ok("un rang negatif retombe sur le compteur", rangDeclare(-1, 3) === 3);
+ok("un rang decimal retombe sur le compteur", rangDeclare(2.5, 3) === 3);
+ok("une chaine retombe sur le compteur", rangDeclare("4", 3) === 3);
+ok("au-dela du plafond, c'est du bruit", rangDeclare(RANG_MAX + 1, 3) === 3 && rangDeclare(RANG_MAX, 3) === RANG_MAX);
+/* Le scénario du ticket : trois photos choisies 0,1,2 ; la 1 (lourde) finit
+   sa réduction après la 2. Déclarées 0,2 puis 1 : les rangs écrits restent
+   0,2,1 et le tri par rang redonne 0,1,2. */
+const declarees = [[0, 0], [2, 1], [1, 2]].map(([rang, compteur]) => rangDeclare(rang, compteur));
+ok("declarer dans le desordre garde l'ordre du choix",
+   [...declarees].sort((a, b) => a - b).join() === "0,1,2" && declarees.join() === "0,2,1");
+ok("rang suivant : apres le plus haut, pas apres le compte", rangSuivant([0, 1, 7]) === 8);
+ok("rang suivant sur un coffre vide : 0", rangSuivant([]) === 0);
+ok("rang suivant ignore les trous laisses par une suppression", rangSuivant([0, 2, 3]) === 4);
+/* Autre appareil : la copie locale est vide, trois photos choisies 0,1,2
+   avant que le serveur dise « rang suivant 45 ». Un MÊME pas pour toutes. */
+ok("les photos choisies avant la reponse passent derriere le coffre",
+   decalageVersLeCoffre([0, 1, 2], 45) === 45);
+ok("le pas est constant : l'ordre relatif ne bouge pas",
+   [0, 1, 2].map((r) => r + decalageVersLeCoffre([0, 1, 2], 45)).join() === "45,46,47");
+ok("deja derriere le coffre : rien a decaler", decalageVersLeCoffre([45, 46], 45) === 0);
+ok("coffre vide : rien a decaler", decalageVersLeCoffre([0, 1], 0) === 0);
+ok("rien de choisi : rien a decaler", decalageVersLeCoffre([], 45) === 0);
+ok("un decalage partiel (rangs 10 a 12, coffre a 45) pousse de 35, pas de 45",
+   decalageVersLeCoffre([10, 11, 12], 45) === 35);
 
 titre("— le brief qui part avec les photos —");
 const MATIERE: MatiereBrief = {
