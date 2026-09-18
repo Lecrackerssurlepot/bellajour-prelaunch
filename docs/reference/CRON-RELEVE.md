@@ -19,7 +19,10 @@ oubliait M2b depuis sa création, et M10 s'est ajouté depuis.
 | **Auto-validation J+7** | Sans elle, « une part des dossiers payés dort indéfiniment et la production ne se ferme jamais » (PRD §11) |
 
 Les autres mails (M0, M1, M3, M4, M5, M6, M7, M9) partent au moment du geste —
-M0 à la création du dossier, M4 au webhook Stripe, les autres depuis `/admin`.
+M0 **programmé** à la création du dossier chez Brevo pour quinze minutes plus tard et
+annulé si une photo arrive avant (T-116, 17/09/2026 : la relève ne sait pas différer de
+quinze minutes, tout ce qu'elle diffère arrive le lendemain matin), M4 au webhook Stripe,
+les autres depuis `/admin`.
 Pour eux, la relève n'est qu'un filet : le jour où Brevo tousse, c'est elle qui
 rattrape. ⚠️ Deux exceptions à ce filet, volontaires : **M4** n'est jamais
 rattrapé (il enverrait « paiement reçu » avec des jours de retard aux dossiers

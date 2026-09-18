@@ -47,7 +47,8 @@ Chargé dès qu'on touche une route.
 | `/api/admin/atelier/relance` | **un mail réel** à un client, sans changer d'état. N'accepte aucun motif en entrée : la règle (`evaluerRelance`) est relue côté serveur au clic |
 | `/api/webhook` | mails F1/S1/P3/A3/relance, `assign_numero_fondateur`, crédits de parrainage |
 | `/api/atelier/mails/relever` | **envois multiples** en un passage |
-| `/api/atelier/numero` | crée le dossier + **M0 dans la seconde** |
+| `/api/atelier/numero` | crée le dossier + **M0 programmé chez Brevo pour +15 min** (T-116) ; le PATCH de consentement annule ce M0 puis envoie M1 |
+| `/api/atelier/photos/complete` | confirme les photos ; **au premier lot confirmé, annule le M0 programmé** (T-116, `annulerMailProgramme`) |
 | `/api/atelier/checkout`, `/api/checkout` | sessions Stripe + **coupon fondatrice frappé chez Stripe** et remise de 30 € appliquée d'office (T-021) ; depuis le 10/09 le montant vient du prix GELÉ (`prix_centimes`) ; depuis le 16/09 une ligne Stripe par rang d'exemplaire (`decompteExemplaires`), la livraison est une `shipping_option` au port de zone ou au devis gelé, à 0 dès 50 € de magazines ou pour un fondateur, `allowed_countries = [pays déclaré]`, le pays est EXIGÉ ; zone C sans devis → 409 `livraison_indisponible`, jamais un montant de repli |
 | `/api/atelier/photos/supprimer` | DELETE R2 irréversible |
 | `/api/brevo/webhook` | **rien qu'une ligne de journal** : aucun état, aucun mail |

@@ -10,6 +10,31 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 17/09/2026 (soir) — M0 part quinze minutes après l'écran 4, et seulement sans photo (T-116)
+
+**Sur la branche `feat/m0-differe`, pas encore fusionnée.** Décision de Mathias du 17/09 : Merisa
+avait reçu « il attend vos photos » pendant qu'elle envoyait ses 92 photos.
+
+- **Le mécanisme** : la relève ne sait pas différer de quinze minutes (D16), donc M0 est
+  **programmé chez Brevo** (`scheduledAt`, +15 min) à la création du dossier, et **retiré de la
+  file** (`DELETE /v3/smtp/email/{messageId}`) à la première photo confirmée ou au clic
+  « Envoyer à l'atelier ». Brevo annonce un aléa de +5 min : M0 arrive entre 15 et 20 min.
+  Journal : `mail_programme` (avec l'identifiant Brevo et l'heure), `mail_annule` (avec le
+  verdict : retiré, trop tard, échec). Le verrou `mails_envoyes` est posé à la programmation et
+  reste posé après annulation.
+- **Le texte** : la fin de M0 dit « Vous pouvez les déposer maintenant pour votre composition, ou
+  bien reprendre plus tard », et le pied perd « pour toute sa vie ». **Le template 38 n'est pas
+  encore poussé** : `node scripts/mails-atelier.mjs --pousser --seulement M0`, geste de Mathias.
+  Tant qu'il ne l'est pas, le différé fonctionne avec l'ancien texte.
+- **Non prouvé sur un cas réel** : que la programmation soit active sur le compte Brevo de
+  Bellajour, et que Brevo réponde 404 (et pas autre chose) à l'annulation d'un message déjà
+  parti. Le premier dossier réel après fusion le dira : chercher `mail_programme` puis
+  `mail_annule` dans son journal. Le code garde le code HTTP brut dans la ligne.
+- **Effet de bord assumé** : quelqu'un qui monte des photos sans cliquer « Envoyer » et ferme
+  l'onglet n'a plus de M0 (annulé à la première photo) ; son premier mail est M2b le lendemain
+  matin, qui dit la bonne chose (« vos photos sont arrivées, il reste le dernier geste »).
+
+
 ## 17/09/2026 — le cockpit de décision EN PRODUCTION, migration appliquée (T-115)
 
 PR #160 fusionnée et déployée ; **migration `20260917_cockpit.sql` appliquée le 17/09 via le MCP Supabase

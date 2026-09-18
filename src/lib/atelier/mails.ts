@@ -1,6 +1,14 @@
 import type { SupabaseClient, PostgrestError } from "@supabase/supabase-js";
 import { logEvenement } from "./evenements";
-import { sendBrevoEmail } from "@/lib/brevo";
+import { sendBrevoEmailDetail, deleteBrevoScheduledEmail } from "@/lib/brevo";
+import {
+  dateProgrammee,
+  identifiantBrevoPourUrl,
+  messageAAnnuler,
+  verdictAnnulation,
+  type EvenementProgramme,
+  type VerdictAnnulation,
+} from "./programme";
 import { centimesDuDossier, eurosDuDossier, type PalierCle } from "./prix";
 import { totalCommande, portClient } from "./livraison";
 import { quantiteDuDossier } from "./exemplaires";
@@ -53,8 +61,9 @@ import {
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
 
 export type CodeMail =
-  /* M0 — l'accusé, parti à la SECONDE où le dossier existe (fin de l'écran 4).
-     Voir la route POST /api/atelier/numero. */
+  /* M0 — l'accusé, PROGRAMMÉ à la seconde où le dossier existe (fin de
+     l'écran 4) pour quinze minutes plus tard, et annulé si une photo arrive
+     entre-temps (T-116, `programme.ts`). Voir la route POST /api/atelier/numero. */
   | "M0"
   | "M1"
   | "M2"
@@ -223,6 +232,9 @@ export type NumeroPourReleve = NumeroPourMail & {
 
 export type Resultat =
   | { statut: "envoye"; template: number }
+  /* T-116 — accepté par Brevo pour une heure future. Le verrou est posé
+     comme pour un envoi ; `annulerMailProgramme` peut encore le retirer. */
+  | { statut: "programme"; template: number; pour: string }
   | { statut: "deja_envoye" }
   | { statut: "incomplet"; manque: string[] }
   | { statut: "sans_template" }
@@ -695,6 +707,10 @@ export async function envoyerMailAtelier(
       autres codes les ignorent, et les appelants qui n'envoient jamais M10
       (le webhook Stripe, le dépôt) n'ont rien à charger. */
   jalons?: Jalons,
+  /** T-116 — `differeMs` : le mail est PROGRAMMÉ chez Brevo pour dans autant
+      de millisecondes au lieu de partir tout de suite. Réservé à M0 pour
+      l'instant ; tout code l'accepte, le verrou et le journal suivent. */
+  options?: { differeMs?: number },
 ): Promise<Resultat> {
   try {
     const manque = manquePour(code, numero);
@@ -755,16 +771,20 @@ export async function envoyerMailAtelier(
           })
         : null;
 
-    const envoye = await sendBrevoEmail({
+    const differeMs = options?.differeMs ?? 0;
+    const pour = differeMs > 0 ? dateProgrammee(new Date(), differeMs) : null;
+
+    const envoi = await sendBrevoEmailDetail({
       label: code,
       templateId: template,
       email: numero.email ?? "",
       name: numero.prenom ?? undefined,
       apiKey: process.env.BREVO_API_KEY,
       params: { ...parametresPour(code, numero, { creditFondatriceEuros, jalons }), ...extra },
+      ...(pour ? { scheduledAt: pour } : {}),
     });
 
-    if (!envoye) {
+    if (!envoi.ok) {
       /* Brevo a refusé. On rend le verrou pour que la relève suivante
          réessaie, et on laisse une trace dans le dossier : un mail qui n'est
          jamais parti doit se voir, sinon on cherche pendant des jours
@@ -778,11 +798,81 @@ export async function envoyerMailAtelier(
       return { statut: "echec" };
     }
 
+    if (pour) {
+      /* T-116 — programmé, pas parti. La ligne porte l'identifiant Brevo :
+         c'est lui qu'`annulerMailProgramme` retrouvera si une photo arrive
+         avant l'heure. Sans identifiant (réponse illisible), le mail partira
+         quoi qu'il arrive : on le dit dans la ligne plutôt que de le taire. */
+      await logEvenement(supabase, numero.id, "mail_programme", {
+        code,
+        template_id: template,
+        message_id: envoi.messageId,
+        pour,
+      });
+      return { statut: "programme", template, pour };
+    }
+
     await logEvenement(supabase, numero.id, "mail_envoye", { code, template_id: template });
     return { statut: "envoye", template };
   } catch (err) {
     console.error(`[atelier/mails] ${code} exception`, (err as Error)?.message);
     return { statut: "echec" };
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+ * T-116 — ANNULER UN MAIL PROGRAMMÉ
+ *
+ * Appelé quand la raison du mail disparaît avant son heure : une photo
+ * confirmée (photos/complete) ou le clic « Envoyer à l'atelier » (PATCH
+ * numero) pour M0. Idempotent : sans programmation en attente dans le
+ * journal, il ne fait rien et ne dit rien. Le verrou `mails_envoyes` reste
+ * posé (voir `programme.ts`) : un M0 annulé ne repart jamais.
+ *
+ * Ne throw jamais. Rend ce qui s'est passé pour la ligne de journal :
+ *   rien        — aucune programmation à annuler
+ *   annule      — Brevo a retiré le message (204)
+ *   trop_tard   — Brevo ne le connaît plus : il est déjà parti
+ *   echec       — autre réponse, ou pas de réseau ; la ligne garde le code
+ * ═════════════════════════════════════════════════════════════════════════ */
+export async function annulerMailProgramme(
+  supabase: SupabaseClient,
+  numeroId: string,
+  code: CodeMail,
+  motif: "photo_arrivee" | "depot_termine",
+): Promise<"rien" | VerdictAnnulation> {
+  try {
+    const { data, error } = await supabase
+      .from("evenements")
+      .select("type, payload, created_at")
+      .eq("numero_id", numeroId)
+      .in("type", ["mail_programme", "mail_annule"])
+      .order("created_at", { ascending: true });
+    if (error) {
+      console.error(`[atelier/mails] ${code} annulation : journal illisible`, error.code, error.message);
+      return "echec";
+    }
+    const cible = messageAAnnuler((data ?? []) as EvenementProgramme[], code);
+    if (!cible) return "rien";
+
+    const status = await deleteBrevoScheduledEmail({
+      identifiant: identifiantBrevoPourUrl(cible.messageId),
+      apiKey: process.env.BREVO_API_KEY,
+      label: code,
+    });
+    const verdict = verdictAnnulation(status);
+    await logEvenement(supabase, numeroId, "mail_annule", {
+      code,
+      message_id: cible.messageId,
+      pour: cible.pour,
+      motif,
+      resultat: verdict,
+      http: status,
+    });
+    return verdict;
+  } catch (err) {
+    console.error(`[atelier/mails] ${code} annulation exception`, (err as Error)?.message);
+    return "echec";
   }
 }
 

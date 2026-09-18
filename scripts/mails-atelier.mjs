@@ -389,10 +389,15 @@ export const MAILS = [
     preheader: "Votre dossier existe. Il lui manque encore la matière.",
     titreHtml: "Votre numéro est ouvert",
     h1: "Votre numéro<br />est ouvert.",
-    sous: `${PRENOM}, nous avons votre histoire et votre titre. Il manque encore l'essentiel : vos photos. Tant qu'elles ne sont pas chez nous, l'atelier ne peut rien composer. Comptez quelques minutes, et vous pouvez vous arrêter puis reprendre plus tard, depuis ce même lien.`,
+    /* 17/09/2026 (T-116) — Mathias : « ce lien et le sien pour toute sa vie,
+       on ne comprend pas » et « pas vous arrêter ni rien ». Le mail garde son
+       sens (il attend vos photos) ; la fin dit seulement : maintenant, ou plus
+       tard. Il part désormais quinze minutes après l'écran 4, et seulement si
+       aucune photo n'est arrivée (programme.ts). */
+    sous: `${PRENOM}, votre numéro est ouvert : nous avons votre histoire et votre titre. Il manque encore l'essentiel, vos photos. Vous pouvez les déposer maintenant pour votre composition, ou bien reprendre plus tard.`,
     cta: "Déposer mes photos",
     lien: LIEN,
-    pied: "Gardez ce message : le lien ci-dessus est celui de votre numéro, pour toute sa vie. Une question ? Répondez-y, nous vous répondrons nous-mêmes.",
+    pied: "Gardez ce message : le lien ci-dessus est celui de votre numéro. Une question ? Répondez-y, nous vous répondrons nous-mêmes.",
   },
   {
     code: "M2",
