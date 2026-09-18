@@ -61,5 +61,6 @@ exige M6), et `docs/reference/PARCOURS-INVARIANTS.md` avant tout déplacement.
 - Merisa : M6 déjà parti, le verrou de `mails_envoyes` empêche un second envoi à la commande.
 - tsc, lint (une apostrophe non échappée corrigée au passage dans `PanneauAction.tsx`, hors sujet
   mais bloquante), build : verts.
-Reste : fusionner, puis vérifier sur le premier `envoyer_impression` réel que M6 part bien à ce
+**PR #177 fusionnée et déployée le 18/09**, page de Merisa vérifiée sur l'URL de déploiement.
+Reste : vérifier sur le premier `envoyer_impression` réel que M6 part bien à ce
 moment (journal `mail_envoye` M6 après `etat_change` vers `en_production`).
