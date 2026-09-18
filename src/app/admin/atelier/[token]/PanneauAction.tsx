@@ -1763,8 +1763,8 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                   {choisie.mail ? (
                     choisie.mail.absent ? (
                       <span className="ate-alerte">
-                        {choisie.mail.code} n&apos;est pas encore câblé — elle ne sera PAS prévenue.
-                        Préviens-la à la main.
+                        {choisie.mail.code} n&apos;est pas encore câblé : le client ne sera PAS prévenu.
+                        Préviens-le à la main.
                       </span>
                     ) : (
                       <>Le mail {choisie.mail.code} partira maintenant.</>

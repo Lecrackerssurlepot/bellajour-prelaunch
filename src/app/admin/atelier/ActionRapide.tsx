@@ -224,7 +224,7 @@ export default function ActionRapide({
         <p className="ate-act-mail">
           {armee.mail ? (
             armee.mail.absent ? (
-              <span className="ate-alerte">{armee.mail.code} pas encore câblé : elle ne sera PAS prévenue.</span>
+              <span className="ate-alerte">{armee.mail.code} pas encore câblé : le client ne sera PAS prévenu.</span>
             ) : (
               <>Le mail {armee.mail.code} partira.</>
             )
