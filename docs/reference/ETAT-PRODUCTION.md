@@ -12,7 +12,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ## 18/09/2026 — M6 « part à l'impression » part à la commande, plus à la validation (T-120)
 
-**Sur la branche `fix/m6-a-la-commande`, en attente de fusion.** Le premier dossier réel (Merisa,
+**EN PRODUCTION depuis le 18/09 (PR #177, déploiement vérifié : la page de Merisa dit « Validé. Nous préparons l'impression. » sur l'URL de déploiement).** Le premier dossier réel (Merisa,
 « Madeira 2026 ») a reçu « votre numéro a quitté l'atelier pour l'imprimeur » le 17/09 à 19:52,
 au clic « Tout est bon, imprimez », alors qu'aucune commande Cloudprinter n'existait (ni PDF, ni
 référence). Décision de Mathias du 18/09 : le mail part quand le numéro part vraiment.
@@ -30,8 +30,9 @@ référence). Décision de Mathias du 18/09 : le mail part quand le numéro part
   empêche un second envoi à la commande. Elle ne recevra donc rien de plus avant M7.
 - **Effet assumé** : le client qui clique « imprimez » ne reçoit plus de mail dans la seconde ;
   sa page passe à « validé ». Le silence dure jusqu'à la commande, que l'atelier passe à la main.
-- **Template Brevo 33** : à repousser avec `--pousser --seulement M6` (accord de Mathias donné
-  le 18/09). L'état de cette ligne dit si c'est fait.
+- **Template Brevo 33 repoussé le 18/09** (`--pousser --seulement M6`, accord de Mathias).
+- **Reste à prouver** : sur la première commande réelle, `mail_envoye` M6 juste après
+  `etat_change` vers `en_production` dans le journal (pas pour Merisa : son M6 est déjà parti).
 
 ## 17/09/2026 (soir) — M0 part quinze minutes après l'écran 4, et seulement sans photo (T-116)
 
