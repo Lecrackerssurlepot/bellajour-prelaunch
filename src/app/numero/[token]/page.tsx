@@ -168,11 +168,16 @@ const CHAMPS_AVEC_ARCHIVE = `${CHAMPS_COMPLET}, archive_le`
  * ne peuvent donc pas se contredire — la cliente ne peut pas lire « c'est à
  * nous » pendant que la table de travail range son dossier chez elle.
  */
+/* Depuis le 18/09/2026 (refonte « au propre », planche validée par Mathias) :
+   ce n'est plus une phrase qui concurrence le mot d'état, c'est une ÉTIQUETTE
+   au-dessus du titre, trois mots, un point de couleur. Le sens ne bouge pas :
+   à qui est la balle. La table QUI_ATTEND (urgence.ts) reste la source, ces
+   mots n'en sont que l'habillage côté client. */
 const MOT_DU_CAMP: Record<Camp, string | null> = {
-  atelier: 'C’est à nous. On vous écrit dès que c’est prêt.',
-  cliente: 'C’est à vous.',
-  dehors: 'C’est en route. Rien à faire de votre côté.',
-  fini: null,
+  atelier: 'Entre nos mains',
+  cliente: 'C’est à vous',
+  dehors: 'En route',
+  fini: 'Chez vous',
 }
 
 /* Cinq jalons, pas huit. La cliente ne connaît pas notre machine à états :
@@ -544,7 +549,6 @@ export default async function NumeroPage({
   return (
     <Coquille titre={titre} avancement={attendPhotos || aTerminer ? 0 : AVANCEMENT[numero.etat] ?? 0}
       camp={camp}
-      montrerCamp={numero.etat !== 'apercu_pret'}
       montrerGardeLien={numero.etat !== 'livree'}
       compte={compte}
       retour={retour}
@@ -876,9 +880,10 @@ function Coquille({
      de mentir. */
   avancement: number
   camp: Camp
-  /* Le mot « c'est à vous / à nous » a du sens sur les étapes d'attente ;
-     sur la page qui vend (apercu_pret), il double le titre « Votre couverture »
-     et sonne comme un slogan. La page le masque là (02/09). */
+  /* Le mot « c'est à vous / à nous » était masqué sur la page qui vend
+     (02/09), parce qu'en phrase il doublait « Votre couverture ». Devenu une
+     étiquette de trois mots au-dessus du titre (18/09), il ne double plus
+     rien : il s'affiche partout. Le drapeau reste pour un cas futur. */
   montrerCamp?: boolean
   /* Le rappel « gardez ce lien » n'a de sens que TANT QUE le lien sert : il
      est la seule porte du dossier, sans compte ni mot de passe (PRD §7.5).
@@ -945,18 +950,6 @@ function Coquille({
         <span className="nu-top-cale" />
       </header>
 
-      {/* L'invitation, pour qui n'a pas de compte. Une ligne, jamais un mur :
-          le compte est une commodité qui s'ajoute au lien, pas une marche du
-          parcours. Rien de tel une fois connectée : le bouton de retour
-          ci-dessus dit déjà tout ce qu'il y a à dire. */}
-      {compte === 'invite' && (
-        <p className="nu-compte">
-          <a href={`/compte/connexion?suite=${encodeURIComponent(`/numero/${token}`)}`}>
-            Créez un compte
-          </a>{' '}
-          pour retrouver ce lien à tout moment, sur tous vos appareils.
-        </p>
-      )}
 
       {/* Le sommaire du questionnaire, transposé aux cinq jalons du suivi
           (04/09, maquettes validées). Desktop : les noms, le courant souligné
@@ -997,10 +990,19 @@ function Coquille({
       )}
 
       <main className="nu-main">
-        <p className="at-kicker">Maison d’édition du souvenir</p>
+        {/* ── L'ÉTIQUETTE, PUIS LE TITRE (18/09/2026) ─────────────────────
+            Le rappel « Maison d'édition du souvenir » est parti : le logo le
+            dit déjà, et il prenait la première ligne de chaque page pour ne
+            rien apprendre. À sa place, à qui est la balle — le point est
+            cuivre quand c'est au client d'agir, gris sinon. */}
+        {montrerCamp && MOT_DU_CAMP[camp] && (
+          <p className={`nu-camp${camp === 'cliente' ? ' is-vous' : ''}`}>
+            <i className="nu-camp-dot" aria-hidden="true" />
+            {MOT_DU_CAMP[camp]}
+          </p>
+        )}
         <h1 className="nu-titre">{titre}</h1>
 
-        {montrerCamp && MOT_DU_CAMP[camp] && <p className="nu-camp">{MOT_DU_CAMP[camp]}</p>}
 
         {children}
 
@@ -1010,12 +1012,32 @@ function Coquille({
             qui peut tomber en Promotions.
             T2-12 : l'URL en toutes lettres ne donnait aucun geste à faire —
             deux boutons le donnent, l'URL n'apparaît plus en clair. */}
-        {montrerGardeLien && (
-          <p className="nu-garde">
-            <b>Gardez ce lien.</b> C’est le seul, il suit votre numéro jusqu’à la livraison, et
-            il ne demande ni compte ni mot de passe.
-            <LienPartage url={`${SITE_URL_PUBLIC}/numero/${token}`} />
-          </p>
+        {/* 18/09 : une LIGNE, les deux boutons à côté du texte et plus dans
+            le paragraphe (où le texte coulait autour d'eux — le chevauchement
+            vu par Mathias sur la page de Merisa). L'invitation à créer un
+            compte quitte le haut de page pour ce même pied : le compte est
+            une commodité qui s'ajoute au lien, il n'a rien à faire avant le
+            titre. Une ligne, jamais un mur, même règle qu'avant. */}
+        {(montrerGardeLien || compte === 'invite') && (
+          <div className="nu-garde">
+            {montrerGardeLien && (
+              <div className="nu-garde-l">
+                <p>
+                  <b>Gardez ce lien.</b> C’est le seul, il suit votre numéro jusqu’à la
+                  livraison, sans compte ni mot de passe.
+                </p>
+                <LienPartage url={`${SITE_URL_PUBLIC}/numero/${token}`} />
+              </div>
+            )}
+            {compte === 'invite' && (
+              <p className="nu-garde-compte">
+                <a href={`/compte/connexion?suite=${encodeURIComponent(`/numero/${token}`)}`}>
+                  Créer un compte
+                </a>{' '}
+                pour le retrouver sur tous vos appareils.
+              </p>
+            )}
+          </div>
         )}
       </main>
 

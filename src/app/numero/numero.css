@@ -59,11 +59,15 @@
    partis avec l'ancien dessin. Pas de CTA ici. Invariant nº5 : un seul
    libellé de bouton sur tout le site, et il n'a rien à faire au-dessus d'un
    dossier en cours. */
+/* 18/09 : une GRILLE 1fr · auto · 1fr remplace les deux cales flex. Le logo
+   est au milieu du viewport que le bouton de retour soit là ou non, et le
+   bouton ne pousse plus rien sur 375 px. */
 .nu-top {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: center;
-  padding: 10px var(--pad);
+  gap: 12px;
+  padding: 14px var(--pad);
 }
 
 .nu-top-logo-img {
@@ -80,33 +84,34 @@
    Le haut de page devient : [retour] · logo centré · [cale]. Les deux cales
    de même largeur gardent le logo au MILIEU du viewport, pas au milieu de
    ce qui reste — sinon il se décale dès que le bouton apparaît. */
-.nu-top-cale { flex: 1 1 0; min-width: 0; }
-
+.nu-top-cale { min-width: 0; }
+/* Le retour au compte : le même bouton en verre que les utilitaires du pied
+   (18/09), à gauche ; il se lit comme un chemin, pas comme l'action de la page. */
 .bj-atelier .nu-retour {
-  flex: 1 1 0;
+  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
   min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid rgba(245, 240, 231, 0.28);
+  border-radius: 999px;
+  background: var(--c-veil-hover);
   font-family: var(--font-ui);
   font-size: 13px;
-  color: var(--c-text-soft);
+  color: var(--c-text);
+  text-decoration: none;
   white-space: nowrap;
-  transition: color var(--dur) var(--ease);
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
-
-.bj-atelier .nu-retour:hover { color: var(--c-text); }
-
-.nu-retour-mot {
-  padding: 7px 14px 7px 4px;
-  border-radius: 999px;
-}
+.bj-atelier .nu-retour:hover { border-color: var(--c-text); background: rgba(255, 255, 255, 0.1); }
+.nu-retour-mot { display: inline; }
 
 /* Sur un téléphone, la flèche seule : le logo garde sa place centrale et
    le mot ne pousse personne. La cible tactile reste à 40 px. */
 @media (max-width: 520px) {
   .nu-retour-mot { display: none; }
+  .bj-atelier .nu-retour { padding: 8px 12px; }
 }
 
 .nu-compte {
@@ -139,9 +144,35 @@
    qui vaut clamp(56px,15vw,150px) : la taille du hero écraserait une page
    qui n'est pas une page d'accueil. */
 .bj-atelier .nu-titre {
-  font-size: clamp(40px, 9vw, 78px);
-  margin-top: 10px;
+  font-size: clamp(44px, 6vw, 64px);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  margin-top: 14px;
 }
+/* ── L'étiquette « à qui est la balle » (18/09) ──
+   Onze pixels, capitales, un point de 6 px : cuivre quand c'est au client
+   d'agir (`is-vous`), gris sinon. Elle ouvre la colonne, d'où `margin-top: 0`
+   en (0,2,0) pour battre le `p { margin: 0 }` du thème sans le contredire. */
+.bj-atelier .nu-camp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--c-text-faint);
+}
+.nu-camp-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--c-text-faint);
+}
+.nu-camp.is-vous .nu-camp-dot { background: var(--c-accent); }
 
 /* ---- le sommaire des jalons (04/09, maquettes validées) ----
    Cinq jalons, jamais huit : la cliente ne connaît pas notre machine à
@@ -210,10 +241,10 @@
 /* ---- le mot d'état : la phrase que la cliente vient lire ---- */
 .nu-mot {
   font-family: var(--font-display);
-  font-size: clamp(26px, 5.4vw, 40px);
+  font-size: clamp(26px, 4vw, 30px);
   line-height: 1.15;
   letter-spacing: -0.015em;
-  max-width: 20ch;
+  max-width: 24ch;
 }
 
 /* ⚠️ Spécificité : `.bj-atelier p { margin: 0 }` (theme.css, 0-1-1) écrase
@@ -223,22 +254,66 @@
    Le sommaire ayant quitté la colonne (il vit sous le logo depuis le
    04/09), c'est la marge du mot qui aère l'espace sous le titre ; le mot
    qui suit « c'est à vous / à nous » se resserre, sinon elles s'empilent. */
-.bj-atelier .nu-mot { margin-top: clamp(28px, 6vw, 48px); }
-.bj-atelier .nu-camp { margin-top: clamp(28px, 6vw, 48px); }
-.bj-atelier .nu-camp + .nu-mot { margin-top: clamp(12px, 2.5vw, 18px); }
-.bj-atelier .nu-sub { margin-top: 16px; }
+.bj-atelier .nu-mot { margin-top: clamp(24px, 4vw, 28px); }
+.bj-atelier .nu-sub { margin-top: 14px; }
 
 .nu-sub {
-  margin-top: 16px;
-  max-width: 52ch;
+  margin-top: 14px;
+  max-width: 50ch;
   font-weight: 300;
+  line-height: 1.6;
   color: var(--c-text-soft);
-  font-size: clamp(15px, 4vw, 17px);
+  font-size: 16px;
 }
-
 .nu-sub b { color: var(--c-text); font-weight: 400; }
 
-.nu-actions { margin-top: clamp(30px, 6vw, 44px); }
+/* ── La rangée d'action (18/09) : UN geste plein, le secondaire en lien à
+   côté. Sur téléphone, le bouton prend la largeur et le lien passe dessous. */
+.nu-actions {
+  margin-top: 40px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 22px;
+}
+/* ── La note sous l'action (18/09). Elle n'avait AUCUNE règle : elle héritait
+   du corps en 17 px et se collait au bouton (le « fouilli » de la page de
+   Merisa). Treize pixels, un ton plus bas, une seule par page. */
+.bj-atelier .nu-note {
+  margin-top: 16px;
+  max-width: 52ch;
+  font-size: 13px;
+  line-height: 1.55;
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+.nu-note b { font-weight: 400; color: var(--c-text-soft); }
+
+/* ── L'AXE CENTRÉ, desktop seulement (18/09, planche validée). La tête de
+   page — étiquette, titre, mot, corps, action, note — vit sur l'axe, comme
+   les pages texte de l'univers depuis le 14/09. Le contenu des cartes (bon
+   de commande, suivi) garde son alignement à gauche : un tableau centré ne
+   se lit pas. Sous 760 px, tout revient à gauche. */
+/* ⚠️ Le centrage est posé ÉLÉMENT PAR ÉLÉMENT, jamais hérité de .nu-main :
+   hérité, il centrait aussi les légendes de la visionneuse et le bon de
+   commande (constaté le 18/09 sur un dossier à l'état couverture). Ce qui
+   n'est pas nommé ici garde son alignement. */
+@media (min-width: 761px) {
+  .nu-main .nu-camp { display: flex; justify-content: center; text-align: center; }
+  .nu-main .nu-titre,
+  .nu-main .nu-mot,
+  .nu-main .nu-sub,
+  .nu-main .nu-note,
+  .nu-main .nu-erreur,
+  .nu-main .nu-relance { text-align: center; margin-left: auto; margin-right: auto; }
+  .nu-main .nu-actions { justify-content: center; }
+  .nu-main .nu-relance-mot,
+  .nu-main .nu-relance-sub { margin-left: auto; margin-right: auto; }
+}
+@media (max-width: 760px) {
+  .nu-actions { flex-direction: column; align-items: stretch; gap: 16px; text-align: center; }
+  .nu-actions .at-cta { justify-content: center; }
+}
 
 /* ── La relance, en pied de page (état livrée) ──────────────────────────
    03/09 : deux CTA pleins identiques l'un sous l'autre se lisaient comme
@@ -775,15 +850,37 @@
    Pas de compte, pas de mot de passe : ce lien EST son espace client. Posé en
    pied de page, présent à tous les états, jamais dans le chemin de lecture. */
 .nu-garde {
-  margin-top: clamp(48px, 9vw, 84px);
-  padding-top: clamp(20px, 4vw, 28px);
+  margin-top: 72px;
+  padding-top: 24px;
   border-top: 1px solid var(--c-line);
-  max-width: 56ch;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   font-size: 13px;
+  line-height: 1.55;
   font-weight: 300;
   color: var(--c-text-faint);
 }
 .nu-garde b { font-weight: 400; color: var(--c-text-soft); }
+/* 18/09 : le texte à gauche, les deux boutons à droite, sur UNE ligne. Les
+   boutons ne sont plus DANS le paragraphe (le texte coulait autour d'eux). */
+.nu-garde-l {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+.nu-garde-l p { max-width: 46ch; }
+.nu-garde .bj-lienpartage { margin-top: 0; flex: 0 0 auto; }
+.bj-atelier .nu-garde-compte a {
+  color: var(--c-accent-strong);
+  text-decoration: none;
+}
+.bj-atelier .nu-garde-compte a:hover { color: var(--c-text); text-decoration: underline; }
+@media (max-width: 760px) {
+  .nu-garde { margin-top: 64px; padding-top: 22px; gap: 14px; }
+  .nu-garde-l { flex-direction: column; align-items: flex-start; gap: 14px; }
+}
 
 .nu-garde-url {
   display: block;
@@ -1406,15 +1503,60 @@
 .nu-facultatif .nu-check { margin-top: 16px; }
 
 /* ---- l'état 4 : maquette feuilletable + Canva en commentaire ---- */
-.nu-pdf {
-  margin-top: clamp(28px, 5vw, 40px);
+/* 18/09 : la visionneuse et ses deux liens dans UNE carte. La carte est
+   bornée à 760 px et centrée : la colonne de lecture fait 720, une carte
+   déborde d'un souffle, pas d'une marge. */
+.nu-doc {
+  margin: 40px auto 0;
+  max-width: 760px;
+  border: 1px solid var(--c-line-md);
+  border-radius: 16px;
+  background: var(--c-surface-1);
+  overflow: hidden;
+}
+.nu-doc .nu-pdf {
+  display: block;
+  margin: 0;
   width: 100%;
   aspect-ratio: 3 / 2;
-  border: 1px solid var(--c-line-md);
-  border-radius: 12px;
-  background: var(--c-surface-1);
+  border: 0;
+  background: var(--c-surface-2);
 }
-
+.nu-doc-liens {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  padding: 18px 24px;
+  border-top: 1px solid var(--c-line);
+}
+/* Le bouton « en verre » des utilitaires (18/09) : les mêmes cotes que
+   `.bj-lienpartage-btn` (lienpartage.css), pour que « Ouvrir le Canva »,
+   « Copier mon lien » et « Mon compte » soient un seul et même objet. */
+.bj-atelier .nu-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border: 1px solid rgba(245, 240, 231, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--c-text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 400;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.bj-atelier .nu-ghost:hover,
+.bj-atelier .nu-ghost:focus-visible { border-color: var(--c-text); background: rgba(255, 255, 255, 0.1); }
+@media (max-width: 760px) {
+  .nu-doc-liens { flex-direction: column; align-items: stretch; padding: 16px; gap: 10px; }
+  .nu-doc-liens .nu-ghost { white-space: normal; }
+}
+/* `.nu-liens` : l'ancien rang de liens, gardé pour qui l'utilise encore. */
 .nu-liens {
   margin-top: 22px;
   display: flex;

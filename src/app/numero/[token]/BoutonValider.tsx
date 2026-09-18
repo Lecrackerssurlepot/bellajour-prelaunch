@@ -16,6 +16,15 @@
 import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+/* Le petit signe « s'ouvre ailleurs » des deux liens du document. Dessiné, pas
+   un caractère : il suit la couleur du texte et ne dépend d'aucune police. */
+const ICONE_EXTERNE = (
+  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+    strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M6 3H3v10h10v-3M9 3h4v4M13 3L7 9" />
+  </svg>
+)
+
 export default function BoutonValider({
   token, pdfUrl, canvaUrl, dateAuto, retouchesLe,
 }: {
@@ -76,24 +85,35 @@ export default function BoutonValider({
 
   return (
     <>
-      {pdfUrl && (
-        /* Le PDF est feuilleté par le lecteur natif du navigateur : aucune
-           librairie, aucun poids ajouté sur un téléphone en 4G. */
-        <iframe className="nu-pdf" src={pdfUrl} title="Votre numéro, en entier" />
+      {/* ── LA CARTE DU DOCUMENT (18/09/2026) ──
+          Le PDF et ses deux liens vivent dans UNE carte : l'aperçu en haut,
+          les deux gestes « ouvrir » dessous, en verre, dans le pied de la
+          carte. Avant, les liens flottaient entre la visionneuse et le bouton
+          et se lisaient comme des actions de la page. Sans PDF (l'atelier
+          n'a collé que le Canva), la carte se réduit à son pied. */}
+      {(pdfUrl || canvaUrl) && (
+        <div className="nu-doc">
+          {pdfUrl && (
+            /* Le PDF est feuilleté par le lecteur natif du navigateur : aucune
+               librairie, aucun poids ajouté sur un téléphone en 4G. */
+            <iframe className="nu-pdf" src={pdfUrl} title="Votre numéro, en entier" />
+          )}
+          <div className="nu-doc-liens">
+            {pdfUrl && (
+              <a className="nu-ghost" href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                {ICONE_EXTERNE}
+                Ouvrir le PDF en grand
+              </a>
+            )}
+            {canvaUrl && (
+              <a className="nu-ghost" href={canvaUrl} target="_blank" rel="noopener noreferrer">
+                {ICONE_EXTERNE}
+                Ouvrir le Canva pour commenter
+              </a>
+            )}
+          </div>
+        </div>
       )}
-
-      <div className="nu-liens">
-        {pdfUrl && (
-          <a className="nu-lien" href={pdfUrl} target="_blank" rel="noopener noreferrer">
-            Ouvrir le PDF en grand
-          </a>
-        )}
-        {canvaUrl && (
-          <a className="nu-lien" href={canvaUrl} target="_blank" rel="noopener noreferrer">
-            Ouvrir le Canva pour commenter
-          </a>
-        )}
-      </div>
 
       <div className="nu-actions">
         <button type="button" className="at-cta" onClick={valider} disabled={occupe}>
