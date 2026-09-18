@@ -1,7 +1,7 @@
 ---
 id: T-116
 titre: M0 « il attend vos photos » arrive à la seconde, pendant que le client est encore en train de déposer
-etat: en cours
+etat: fermé
 domaine: atelier
 gravite: serieux
 autonomie: avis-requis
@@ -75,5 +75,7 @@ affichera un mail « envoyé » que personne n'a reçu.
 - Docs : PARCOURS-INVARIANTS (garantie 5), api/CLAUDE.md, atelier/CLAUDE.md, CRON-RELEVE.md,
   ETAT-PRODUCTION.
 
-18/09 : PR #162 fusionnée, en production à 10 h 19 ; template poussé à 10 h 51.
-Reste : le premier dossier réel, pour voir `mail_programme` puis `mail_annule` dans son journal.
+18/09 : PR #162 fusionnée, en production à 10 h 19 ; template poussé à 10 h 51, relu en ligne.
+**Fermé le 18/09 par Mathias** (« on peut clôturer le sujet »). Le mécanisme est prouvé chez Brevo en
+bac à sable (programmation en file, annulation 204, message disparu) ; le premier dossier réel
+l'écrira dans son journal (`mail_programme` puis `mail_annule`), à regarder en passant, sans ticket.
