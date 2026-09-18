@@ -16,14 +16,7 @@
 import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-/* Le petit signe « s'ouvre ailleurs » des deux liens du document. Dessiné, pas
-   un caractère : il suit la couleur du texte et ne dépend d'aucune police. */
-const ICONE_EXTERNE = (
-  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-    strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M6 3H3v10h10v-3M9 3h4v4M13 3L7 9" />
-  </svg>
-)
+import { ICONE_EXTERNE } from './icones'
 
 export default function BoutonValider({
   token, pdfUrl, canvaUrl, dateAuto, retouchesLe,
