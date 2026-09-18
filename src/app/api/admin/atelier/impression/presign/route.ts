@@ -20,7 +20,7 @@ import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
 import { isValidNumeroToken } from "@/lib/atelier/token";
-import { signerPut } from "@/lib/atelier/r2";
+import { signerPut, signerGet } from "@/lib/atelier/r2";
 import { MAX_PDF_BYTES } from "@/lib/atelier/impression";
 
 export const runtime = "nodejs";
@@ -83,7 +83,12 @@ export async function POST(request: Request) {
 
     const url = await signerPut(key, "application/pdf", taille);
 
-    return NextResponse.json({ ok: true, key, url, contentType: "application/pdf" }, { status: 200 });
+    /* T-121 : depuis que la fiche RECOUPE le fichier avant de le déposer,
+       l'atelier doit pouvoir ouvrir ce qu'elle a fabriqué, avant de commander.
+       Un lien de lecture signé pour une heure, rendu avec le PUT : l'objet
+       n'existe qu'après l'envoi, le lien ne sert qu'après. */
+    const lecture = await signerGet(key, 60 * 60);
+    return NextResponse.json({ ok: true, key, url, lecture, contentType: "application/pdf" }, { status: 200 });
   } catch (err) {
     console.error("[admin/impression/presign] exception", (err as Error)?.message);
     return NextResponse.json({ error: "internal" }, { status: 500 });

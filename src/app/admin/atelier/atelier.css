@@ -2157,6 +2157,15 @@
   object-fit: cover;
   display: block;
 }
+/* T-121 : le lien vers le PDF fabriqué par la fiche, sous le cadre. */
+.ate-slot-lien {
+  display: inline-block;
+  margin-top: var(--bj-sp-2);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-action);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
 .ate-slot-vide {
   font-size: var(--bj-fs-xxs);
   color: var(--bj-text-faint);
