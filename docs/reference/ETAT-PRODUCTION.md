@@ -1,4 +1,4 @@
-# État du système — au 17/09/2026
+# État du système — au 18/09/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,29 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 18/09/2026 — M6 « part à l'impression » part à la commande, plus à la validation (T-120)
+
+**Sur la branche `fix/m6-a-la-commande`, en attente de fusion.** Le premier dossier réel (Merisa,
+« Madeira 2026 ») a reçu « votre numéro a quitté l'atelier pour l'imprimeur » le 17/09 à 19:52,
+au clic « Tout est bon, imprimez », alors qu'aucune commande Cloudprinter n'existait (ni PDF, ni
+référence). Décision de Mathias du 18/09 : le mail part quand le numéro part vraiment.
+
+- **La règle** : `codesPour` (mails.ts) ne rend plus rien en `validee` et rend M6 en
+  `en_production` (toujours chaîné sur M5). La route `/api/atelier/valider` garde son appel à la
+  relève, qui ne trouve plus rien à envoyer ; l'auto-validation à J+7 non plus. L'écran de
+  confirmation de « Envoyer à l'impression » annonce désormais M6 tout seul, puisqu'il est
+  dérivé. Harnais : trois cas réécrits.
+- **Le texte** : M6 dit « il est entre les mains de l'imprimeur » et le pied annonce le mail
+  d'expédition (« dès que le colis est expédié ») au lieu de « dès qu'il part ». La page
+  `/numero` en état `validee` dit « Validé. Nous préparons l'impression. » au lieu de « Parti à
+  l'impression. » ; « Sous presse. » reste à `en_production`.
+- **Merisa** : son M6 est déjà parti et le verrou de `mails_envoyes` (unique dossier + code)
+  empêche un second envoi à la commande. Elle ne recevra donc rien de plus avant M7.
+- **Effet assumé** : le client qui clique « imprimez » ne reçoit plus de mail dans la seconde ;
+  sa page passe à « validé ». Le silence dure jusqu'à la commande, que l'atelier passe à la main.
+- **Template Brevo 33** : à repousser avec `--pousser --seulement M6` (accord de Mathias donné
+  le 18/09). L'état de cette ligne dit si c'est fait.
 
 ## 17/09/2026 (soir) — M0 part quinze minutes après l'écran 4, et seulement sans photo (T-116)
 

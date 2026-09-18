@@ -91,17 +91,18 @@ export async function POST(request: Request) {
         source: "page_numero",
       });
 
-      /* ── M6, dans la seconde ────────────────────────────────────────
-         C'est la SEULE transition que la cliente déclenche elle-même, donc
-         le seul endroit où quelqu'un attend une confirmation en regardant
-         son écran. Sans cet appel, elle cliquait « imprimez » et n'avait
-         rien avant le balayage du lendemain : le doute exact que ce mail
-         existe pour lever.
+      /* ── Aucun mail à la validation (T-120, 18/09/2026) ─────────────
+         M6 « part à l'impression » partait ici, dans la seconde, et
+         mentait : au clic « imprimez », aucune commande n'existe encore.
+         Décision de Mathias : M6 part à `envoyer_impression`, quand le
+         numéro quitte vraiment l'atelier (codesPour, case "en_production").
+         Ce que le client voit à l'instant de son clic, c'est sa page qui
+         passe à « validé ».
 
-         Même chemin partagé que /admin et que la relève — même verrou,
-         mêmes contrôles. Ne throw jamais : une validation réussie ne doit
-         pas être rendue en erreur parce que Brevo tousse, et le balayage
-         rattrapera. */
+         L'appel reste : c'est le chemin partagé avec /admin et la relève
+         (même verrou, mêmes contrôles), et il ne trouve aujourd'hui rien à
+         envoyer en `validee`. Ne throw jamais : une validation réussie ne
+         doit pas être rendue en erreur parce que Brevo tousse. */
       await releverDossier(supabase, numero.id);
     }
 
