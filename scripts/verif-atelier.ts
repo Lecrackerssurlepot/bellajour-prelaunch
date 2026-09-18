@@ -23,6 +23,13 @@ import { urgencePour, comparerUrgence, etapeDepot } from "@/lib/atelier/urgence"
 import { gestePour, prochaineEtape, LIBELLE_CAMP } from "@/lib/atelier/prochaineEtape";
 import { debutFenetre, releverArrivees, type EvenementArrivee } from "@/lib/atelier/arrivees";
 import { construireParcours } from "@/lib/atelier/parcours";
+import {
+  M0_DIFFERE_MS,
+  dateProgrammee,
+  identifiantBrevoPourUrl,
+  messageAAnnuler,
+  verdictAnnulation,
+} from "@/lib/atelier/programme";
 import { prefixeCoffre, verdictSuppression } from "@/lib/atelier/archive";
 import {
   CODES_RELANCE,
@@ -4205,6 +4212,48 @@ ok("un champ manquant ou une chaine est refuse",
    && !normaliserReglages(null).ok);
 ok("101 % reinvesti est refuse",
    !normaliserReglages({ ...regl(5), reinvesti_pct: 101 }).ok);
+
+/* ════════════════ T-116 : M0 PROGRAMMÉ, ET SON ANNULATION ════════════════
+   M0 ne part plus dans la seconde : il est accepté par Brevo pour quinze
+   minutes plus tard, et la première photo (ou le clic « Envoyer à l'atelier »)
+   le retire de la file. Le module est pur ; ici on éprouve l'heure, l'encodage
+   de l'identifiant, et le choix du message à annuler d'après le journal. */
+titre("T-116 : M0 programme quinze minutes apres l'ecran 4");
+ok("le differe vaut exactement quinze minutes", M0_DIFFERE_MS === 15 * 60_000);
+ok("l'heure programmee est maintenant + le differe, en ISO UTC",
+   dateProgrammee(new Date("2026-09-17T15:43:10.000Z"), M0_DIFFERE_MS) === "2026-09-17T15:58:10.000Z");
+ok("l'identifiant Brevo garde ses chevrons et son arobase, encodes pour l'URL",
+   identifiantBrevoPourUrl("<202609171543.1@smtp-relay.mailin.fr>") === "%3C202609171543.1%40smtp-relay.mailin.fr%3E");
+ok("un identifiant avec des espaces autour est nettoye",
+   identifiantBrevoPourUrl("  <a@b>  ") === "%3Ca%40b%3E");
+
+titre("T-116 : quel message annuler, d'apres le journal");
+const prog = (code: string, id: string | null, pour = "2026-09-17T15:58:10.000Z") =>
+  ({ type: "mail_programme", payload: { code, template_id: 38, message_id: id, pour } });
+const annule = (id: string) => ({ type: "mail_annule", payload: { code: "M0", message_id: id, resultat: "annule" } });
+ok("journal vide : rien a annuler", messageAAnnuler([], "M0") === null);
+ok("une programmation M0 : c'est elle",
+   messageAAnnuler([prog("M0", "<a@b>")], "M0")?.messageId === "<a@b>");
+ok("l'heure programmee remonte avec l'identifiant",
+   messageAAnnuler([prog("M0", "<a@b>")], "M0")?.pour === "2026-09-17T15:58:10.000Z");
+ok("deja annulee : rien a annuler, on ne rappelle pas Brevo",
+   messageAAnnuler([prog("M0", "<a@b>"), annule("<a@b>")], "M0") === null);
+ok("une annulation qui a ECHOUE compte aussi comme tentee",
+   messageAAnnuler([prog("M0", "<a@b>"), { type: "mail_annule", payload: { code: "M0", message_id: "<a@b>", resultat: "echec" } }], "M0") === null);
+ok("sans identifiant Brevo : rien a annuler (le mail partira, le journal le dit)",
+   messageAAnnuler([prog("M0", null)], "M0") === null);
+ok("un autre code n'est pas confondu",
+   messageAAnnuler([prog("M2", "<c@d>")], "M0") === null);
+ok("deux programmations : la derniere non annulee",
+   messageAAnnuler([prog("M0", "<a@b>"), annule("<a@b>"), prog("M0", "<e@f>")], "M0")?.messageId === "<e@f>");
+ok("une ligne d'une version anterieure sans payload ne casse rien",
+   messageAAnnuler([{ type: "mail_programme", payload: null }, prog("M0", "<a@b>")], "M0")?.messageId === "<a@b>");
+
+titre("T-116 : ce que la reponse de Brevo veut dire");
+ok("204 : retire de la file", verdictAnnulation(204) === "annule");
+ok("404 : Brevo ne le connait plus, il est parti", verdictAnnulation(404) === "trop_tard");
+ok("500 ou pas de reseau : on ne sait pas, on le dit",
+   verdictAnnulation(500) === "echec" && verdictAnnulation(null) === "echec");
 
 /* On repose le globe comme on l'a trouve : la suite du harnais ne doit pas
    heriter d'un `localStorage` qui jette. */

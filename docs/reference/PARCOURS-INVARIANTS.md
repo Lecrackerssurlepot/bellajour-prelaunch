@@ -21,7 +21,7 @@ fichier ou toute réécriture de texte dans le tunnel `/composer` → `/numero` 
 | 2 | Une seule règle de validation, lue des deux côtés | idem + `api/atelier/numero` | L'écran dit « c'est bon », le serveur répond « non » |
 | 3 | L'écran 4 annonce le dépôt à venir | `composer/screens/Screen4Contact.tsx` | La cliente croit avoir fini et part |
 | 4 | L'écran 6 nomme ce qui est arrivé | `composer/screens/Screen6Fin.tsx` | Elle doute d'avoir réussi |
-| 5 | M0 part à la seconde où le dossier existe | `api/atelier/numero` | 12 à 31 h de silence après avoir donné son adresse |
+| 5 | M0 est PROGRAMMÉ à la seconde où le dossier existe, chez Brevo, pour quinze minutes plus tard ; la première photo ou le clic « Envoyer à l'atelier » l'annule (T-116, 17/09) | `api/atelier/numero`, `lib/atelier/programme.ts` | 12 à 31 h de silence après avoir donné son adresse ; ou « il attend vos photos » reçu pendant qu'on les envoie |
 | 6 | Le filet M0 et le seuil de relance lisent la MÊME constante | `lib/atelier/mails.ts` | Fenêtre où l'accusé remplace la relance, qui ne part jamais |
 | 7 | `consent_photos` est le SEUL signal de dépôt terminé | `lib/atelier/urgence.ts` | On compose sans le droit d'usage des photos |
 | 8 | Le tag « dépôt non terminé » sur la ligne | `admin/atelier/Liste.tsx` | « Photos reçues » avec zéro photo se lit comme une demande complète |

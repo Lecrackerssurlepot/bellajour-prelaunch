@@ -87,6 +87,14 @@ borne de mise en service non plus, sinon plus rien ne s'anonymiserait jamais.
 ⚠️ **Sans `BREVO_TEMPLATE_M10_ID`, la rétention de 90 jours ne s'applique pas du tout** :
 le script refuse de refermer un dossier qui n'a pas été prévenu (`preavisRespecte`).
 
+⚠️ **M0 est programmé, pas envoyé** (T-116, 17/09/2026) : `envoyerMailAtelier(..., { differeMs })`
+passe `scheduledAt` à Brevo (+15 min), journalise `mail_programme` avec le `messageId`, et pose le
+verrou comme pour un envoi. `annulerMailProgramme` (première photo confirmée, ou clic « Envoyer à
+l'atelier ») fait le `DELETE` chez Brevo et journalise `mail_annule` ; **le verrou reste posé** : un
+M0 annulé ne repart jamais, M1 ou M2b prennent le relais. Le module pur `programme.ts` porte le
+délai, l'encodage de l'identifiant et le choix du message à annuler. Le filet de la relève ne
+rattrape que la programmation qui a ÉCHOUÉ (verrou retiré), toujours borné par D16.
+
 ⚠️ **La relève doit tourner tous les jours** (`vercel.json`, 7 h UTC). Sans elle, M2, M3b, M8 et
 l'auto-validation à J+7 ne partent JAMAIS. Le plan Hobby ne sait pas faire mieux qu'une fois par
 jour, et il déclenche « dans l'heure qui suit » : tout mail à retardement arrive donc entre 0 et

@@ -37,6 +37,15 @@ export type Recit = {
    ⚠️ La table vit dans mails.ts, pas ici : elle y sert aussi à la page santé,
    et deux copies des mêmes dix libellés auraient divergé au premier mail
    dont on change le propos. */
+/* T-116 — « 17:58 » plutôt qu'un ISO complet dans la ligne du journal. La
+   date du jour est déjà celle de la ligne ; seule l'heure apporte quelque
+   chose. Une chaîne illisible ressort telle quelle. */
+function heureCourte(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
+}
+
 function texteMail(code: string): string {
   const objet = OBJET_MAIL[code as keyof typeof OBJET_MAIL];
   return objet ? `${code} — « ${objet} »` : code;
@@ -292,6 +301,51 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         detail: "La relève réessaiera",
         ton: "alerte",
       };
+
+    /* T-116 — un mail accepté par Brevo pour une heure FUTURE (M0, quinze
+       minutes après l'écran 4). Pas « parti » : il peut encore être annulé,
+       et la ligne suivante dira s'il l'a été. Sans identifiant, Brevo
+       l'enverra quoi qu'il arrive : on le dit ici plutôt que de le découvrir. */
+    case "mail_programme": {
+      const pour = typeof payload.pour === "string" ? heureCourte(payload.pour) : null;
+      return {
+        texte: `Mail programmé : ${texteMail(String(payload.code ?? ""))}`,
+        detail: [
+          pour ? `pour ${pour}` : null,
+          typeof payload.message_id === "string" && payload.message_id
+            ? null
+            : "sans identifiant Brevo : il partira quoi qu'il arrive",
+        ]
+          .filter(Boolean)
+          .join(" · ") || null,
+        ton: "mail",
+      };
+    }
+
+    case "mail_annule": {
+      const code = texteMail(String(payload.code ?? ""));
+      const motif =
+        payload.motif === "photo_arrivee"
+          ? "une photo est arrivée avant l'heure"
+          : payload.motif === "depot_termine"
+            ? "le dépôt est terminé"
+            : null;
+      if (payload.resultat === "annule") {
+        return { texte: `Mail retiré avant l'envoi : ${code}`, detail: motif, ton: "mail" };
+      }
+      if (payload.resultat === "trop_tard") {
+        return {
+          texte: `Mail NON retiré, déjà parti : ${code}`,
+          detail: motif ? `${motif}, mais Brevo l'avait déjà envoyé` : null,
+          ton: "neutre",
+        };
+      }
+      return {
+        texte: `Mail NON retiré : ${code}`,
+        detail: `Brevo a répondu ${payload.http ?? "sans code"} : il partira à l'heure prévue`,
+        ton: "alerte",
+      };
+    }
 
     /* T-007 — la variable BREVO_TEMPLATE_<CODE>_ID manque : le mail saute à
        CHAQUE relève, sans erreur, et rien ne le rattrapera tant que la

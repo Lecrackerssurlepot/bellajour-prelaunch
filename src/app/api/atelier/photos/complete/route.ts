@@ -19,6 +19,7 @@ import {
   cleVignetteR2, supprimer, tailleReelle,
 } from "@/lib/atelier/r2";
 import { logEvenement } from "@/lib/atelier/evenements";
+import { annulerMailProgramme } from "@/lib/atelier/mails";
 
 export const runtime = "nodejs";
 
@@ -211,6 +212,17 @@ export async function POST(request: Request) {
         rejetees: rejetees.length,
         nb_photos: nbPhotos,
       });
+
+      /* T-116 — LA PREMIÈRE PHOTO ANNULE M0. Le mail « il attend vos photos »
+         est programmé chez Brevo pour quinze minutes après l'écran 4 ; une
+         photo confirmée avant l'heure en retire la raison. On ne le tente
+         qu'au PREMIER lot confirmé (toutes les photos confirmées du dossier
+         sont celles de ce lot) : les lots suivants n'ont rien à annuler, et
+         `annulerMailProgramme` est de toute façon idempotent. Best-effort :
+         un échec d'annulation n'empêche jamais une photo d'être confirmée. */
+      if (nbPhotos === confirmees.length) {
+        await annulerMailProgramme(supabase, numero.id, "M0", "photo_arrivee");
+      }
     }
 
     return NextResponse.json(

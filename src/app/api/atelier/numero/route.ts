@@ -14,7 +14,8 @@ import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
 import { generateNumeroToken, isValidNumeroToken } from "@/lib/atelier/token";
 import { logEvenement } from "@/lib/atelier/evenements";
-import { lireNumerosMail, envoyerMailAtelier, type NumeroPourMail } from "@/lib/atelier/mails";
+import { lireNumerosMail, envoyerMailAtelier, annulerMailProgramme, type NumeroPourMail } from "@/lib/atelier/mails";
+import { M0_DIFFERE_MS } from "@/lib/atelier/programme";
 import {
   CHAMPS_QUESTIONNAIRE,
   normaliserTelephone,
@@ -357,18 +358,32 @@ export async function POST(request: Request) {
        la relève réessaiera tant que le dossier a moins de 24 h (codesPour).
        Quoi qu'il arrive, la cliente voit son écran 5 — on ne fait jamais
        échouer une création de dossier sur un mail.
+
+       ⚠️ DEPUIS LE 17/09/2026 (T-116), PROGRAMMÉ, PAS ENVOYÉ. Le message est
+       accepté par Brevo ici, dans la seconde, mais pour quinze minutes plus
+       tard : Merisa recevait « il attend vos photos » pendant qu'elle envoyait
+       ses 92 photos. La première photo confirmée (photos/complete) ou le clic
+       « Envoyer à l'atelier » (PATCH ci-dessous) l'annule. Le verrou reste
+       posé à la programmation : un M0 annulé ne part jamais plus tard.
        ══════════════════════════════════════════════════════════════════ */
-    await envoyerMailAtelier(supabase, "M0", {
-      id: data.id,
-      token: data.token,
-      titre: valeurs.titre,
-      prenom,
-      email,
-      nb_photos: 0,
-      nb_pages: null,
-      palier: null,
-      apercu_urls: null,
-    });
+    await envoyerMailAtelier(
+      supabase,
+      "M0",
+      {
+        id: data.id,
+        token: data.token,
+        titre: valeurs.titre,
+        prenom,
+        email,
+        nb_photos: 0,
+        nb_pages: null,
+        palier: null,
+        apercu_urls: null,
+      },
+      undefined,
+      undefined,
+      { differeMs: M0_DIFFERE_MS },
+    );
 
     return NextResponse.json({ token: data.token }, { status: 201 });
   } catch (err) {
@@ -701,6 +716,11 @@ export async function PATCH(request: Request) {
            CONFIRMÉES (paliers.ts) : ce plancher vaut donc toujours au moins
            MIN_PHOTOS. Il n'y a pas de « vos 3 photos ». */
     if (maj.consent_photos === true && numero.etat === "photos_recues") {
+      /* T-116 — le dépôt est terminé : un M0 encore dans la file de Brevo
+         dirait « il attend vos photos » après « c'est parti ». On le retire
+         AVANT d'envoyer M1 ; le second filet, à la première photo confirmée,
+         l'a le plus souvent déjà fait (photos/complete). Idempotent. */
+      await annulerMailProgramme(supabase, numero.id, "M0", "depot_termine");
       await envoyerMailAtelier(supabase, "M1", numero);
     }
 

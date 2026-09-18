@@ -23,7 +23,7 @@ import { VAR_MAILS_COUPES, envoisCoupes, motDeCoupure } from "./envois";
 
 const BREVO_SMTP_URL = "https://api.brevo.com/v3/smtp/email";
 
-export async function sendBrevoEmail(args: {
+export type ArgsBrevoEmail = {
   templateId: number | undefined | null;
   email: string;
   name?: string;
@@ -31,17 +31,37 @@ export async function sendBrevoEmail(args: {
   apiKey: string | undefined | null;
   /** Étiquette de log (ex. "F1", "S1", "P3") pour tracer l'envoi. */
   label?: string;
-}): Promise<boolean> {
-  const { templateId, email, name, params, apiKey, label } = args;
+  /** T-116 — l'heure d'envoi, en ISO 8601, au plus 72 h dans le futur. Absent :
+      Brevo envoie tout de suite. Le message reste annulable jusqu'à cette
+      heure par `deleteBrevoScheduledEmail`. */
+  scheduledAt?: string;
+};
+
+export type ResultatBrevoEmail = {
+  ok: boolean;
+  /** L'identifiant que Brevo rend (`<…@smtp-relay.mailin.fr>`). Null quand
+      l'envoi a échoué ou que la réponse ne le portait pas. */
+  messageId: string | null;
+};
+
+/** L'appel historique : vrai si Brevo a accepté. Les appelants qui ont
+    besoin de l'identifiant (un mail programmé) passent par le détail. */
+export async function sendBrevoEmail(args: ArgsBrevoEmail): Promise<boolean> {
+  return (await sendBrevoEmailDetail(args)).ok;
+}
+
+export async function sendBrevoEmailDetail(args: ArgsBrevoEmail): Promise<ResultatBrevoEmail> {
+  const { templateId, email, name, params, apiKey, label, scheduledAt } = args;
+  const rate: ResultatBrevoEmail = { ok: false, messageId: null };
   const tag = label ? `[brevo] ${label}` : "[brevo]";
 
   if (!templateId) {
     console.error(`${tag} skip — templateId manquant`);
-    return false;
+    return rate;
   }
   if (!apiKey) {
     console.error(`${tag} skip — BREVO_API_KEY manquante`);
-    return false;
+    return rate;
   }
   /* T-108 — l'interrupteur des envois. Posé À LA MAIN dans .env.local, jamais
      sur Vercel : il coupe le seul geste irréversible d'une recette locale.
@@ -49,7 +69,7 @@ export async function sendBrevoEmail(args: {
      retire et rien ne se croit envoyé (lib/envois.ts). */
   if (envoisCoupes(process.env[VAR_MAILS_COUPES])) {
     console.warn(motDeCoupure(tag, email, templateId));
-    return false;
+    return rate;
   }
 
   try {
@@ -63,18 +83,68 @@ export async function sendBrevoEmail(args: {
         templateId,
         to: [{ email, name: name || email }],
         params: params ?? {},
+        ...(scheduledAt ? { scheduledAt } : {}),
       }),
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       console.error(`${tag} échec ${email} → ${res.status} ${body}`);
-      return false;
+      return rate;
     }
-    console.log(`${tag} envoyé ${email} (template=${templateId})`);
-    return true;
+    /* Brevo rend `{ "messageId": "<…>" }`. Un corps illisible n'est pas un
+       échec d'envoi : le message est accepté, on n'a juste pas son nom. */
+    const messageId = await res
+      .json()
+      .then((j: unknown) =>
+        j && typeof j === "object" && typeof (j as { messageId?: unknown }).messageId === "string"
+          ? (j as { messageId: string }).messageId
+          : null,
+      )
+      .catch(() => null);
+    console.log(
+      scheduledAt
+        ? `${tag} programmé ${email} pour ${scheduledAt} (template=${templateId})`
+        : `${tag} envoyé ${email} (template=${templateId})`,
+    );
+    return { ok: true, messageId };
   } catch (err) {
     console.error(`${tag} exception ${email}`, err);
-    return false;
+    return rate;
+  }
+}
+
+/**
+ * T-116 — retire un message PROGRAMMÉ de la file de Brevo, avant son heure.
+ * `DELETE /v3/smtp/email/{messageId}` : 204 quand c'est fait. Rend le code
+ * HTTP brut (null sur exception) et laisse `lib/atelier/programme.ts` dire ce
+ * qu'il signifie. Ne throw jamais, comme le reste du fichier.
+ */
+export async function deleteBrevoScheduledEmail(args: {
+  identifiant: string;
+  apiKey: string | undefined | null;
+  label?: string;
+}): Promise<number | null> {
+  const { identifiant, apiKey, label } = args;
+  const tag = label ? `[brevo] ${label}` : "[brevo]";
+  if (!apiKey) {
+    console.error(`${tag} annulation impossible — BREVO_API_KEY manquante`);
+    return null;
+  }
+  try {
+    const res = await fetch(`${BREVO_SMTP_URL}/${identifiant}`, {
+      method: "DELETE",
+      headers: { "api-key": apiKey },
+    });
+    if (res.status !== 204) {
+      const body = await res.text().catch(() => "");
+      console.error(`${tag} annulation → ${res.status} ${body}`);
+    } else {
+      console.log(`${tag} annulé (${identifiant})`);
+    }
+    return res.status;
+  } catch (err) {
+    console.error(`${tag} annulation exception`, err);
+    return null;
   }
 }
 
