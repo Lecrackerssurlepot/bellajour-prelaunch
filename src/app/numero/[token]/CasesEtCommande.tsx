@@ -364,6 +364,15 @@ export default function CasesEtCommande({
           Ce qui le remplace énonce une commande : ce qu'on prend, ligne à
           ligne, puis un total qui domine. Rien n'a changé dans le calcul —
           `euros` vient toujours du serveur, jamais du navigateur. */}
+      {/* ── UNE SEULE CARTE (18/09/2026, planche validée) ──
+          Le bon, la douane, la promesse, le bouton et les deux accords vivent
+          dans une carte de 760 px, bornée et centrée comme la carte du
+          document de l'état maquette. Avant, ces blocs s'empilaient nus sur
+          toute la colonne et se lisaient comme autant de sections. Rien ne
+          change dans l'ordre ni dans la logique du paiement (deux temps,
+          accords révélés au clic) : seule l'enveloppe change. */}
+      <div className="nu-commande">
+      <p className="nu-commande-lbl">Votre commande</p>
       {magazineConnu ? (
         <div className="nu-bon">
           {/* ── LES EXEMPLAIRES, LIGNE PAR LIGNE (15/09/2026) ──
@@ -696,6 +705,7 @@ export default function CasesEtCommande({
           une note de bas de page. Voir `.nu-promesse` plus haut. */}
 
       {erreur && <p className="nu-erreur" role="alert">{erreur}</p>}
+      </div>
 
       {/* T-091 — la porte de sortie douce : plus « répondez au mail », mais une
           feuille d'ajustement en deux gestes, sans écrire de mail. */}

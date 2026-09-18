@@ -46,7 +46,16 @@ Merisa (desktop et 390 px), note à 13 px séparée du pied, CTA et lien centré
 Textes changés (approuvés avec la planche) : « sans compte ni mot de passe » ; « Créer un compte
 pour le retrouver sur tous vos appareils » ; les quatre mots de camp.
 
+### État couverture (18/09, PR #174)
+Le bon de commande, la douane, la promesse, le bouton bleu et les deux accords entrent dans UNE
+carte `.nu-commande` (760 px, centrée, étiquette « Votre commande »), même enveloppe que la carte
+du document. Le bon perd ses filets haut et bas, le total passe à 28-32 px, le bouton s'aligne à
+gauche dans la carte (pleine largeur sur mobile), « Ce n'est pas tout à fait ça ? » se centre
+sous la carte. La logique du paiement ne bouge pas (deux temps, accords révélés au clic) ; la
+visionneuse non plus, ses légendes se centraient déjà par leurs propres règles.
+Vérifié en local sur le dossier réel « 24h des hautes alpes 2026 » : carte à 740 px sur l'axe
+(1440), 343 px sur 390 sans débordement, bouton pleine largeur sur mobile.
+
 ## Ce qui reste
-Les blocs propres aux autres états, dans l'ordre de la planche : couverture (visionneuse +
-bon de commande dans une carte, 760 px), en route (carte transporteur/suivi + bouton verre),
+Les blocs propres aux autres états, dans l'ordre de la planche : en route (carte transporteur/suivi + bouton verre),
 chez vous (relance centrée), attente. Puis vérifier la visionneuse au nouvel axe.
