@@ -4338,9 +4338,26 @@ if (couv.ok && !couv.inchange) {
 }
 ok("deux pages source (exterieur + interieur) : deux faces, rien d'ajoute",
    (() => { const c = planCouverture([dbl, dbl], 44); return c.ok && !c.inchange && c.faces.length === 2 && !c.interieurAjoute; })());
-ok("un export qui dessine deja le dos (423,29) n'est que recoupe",
+{
+  /* L'interieur de couverture (page 2 du gabarit) : le dos + 3 mm de chaque
+     cote restent vierges, c'est la zone de collage. */
+  const c = planCouverture([dbl, dbl], 44);
+  if (c.ok && !c.inchange) {
+    const [q, p] = c.faces[1].parties;
+    ok("l'interieur n'a que deux morceaux : rien n'est pose sur le dos", c.faces[1].parties.length === 2);
+    ok("la face gauche de l'interieur s'arrete 3 mm avant le pli", Math.abs(q.largeurSortie - (c.faces[0].parties[0].largeurSortie - 3)) < 0.001);
+    ok("la face droite de l'interieur reprend 3 mm apres le pli",
+       Math.abs(p.x - (q.largeurSortie + 3 + 3.29 + 3)) < 0.001 && Math.abs(p.x + p.largeurSortie - 429.29) < 0.001);
+    ok("le vide au milieu de l'interieur fait dos + 6 mm", Math.abs(p.x - (q.x + q.largeurSortie) - (3.29 + 6)) < 0.001);
+  }
+}
+ok("un export qui dessine deja le dos (423,29) n'est que recoupe : trois morceaux, le dos pris tel quel",
    (() => { const c = planCouverture([{ media: { ...mediaDouble, largeur: 435.29 }, trim: { ...trimDouble, largeur: 423.29 } }], 44);
-            return c.ok && !c.inchange && !c.dosAjoute && c.faces[0].parties.length === 1 && c.largeur === 429.29; })());
+            if (!c.ok || c.inchange) return false;
+            const [q, d, p] = c.faces[0].parties;
+            return !c.dosAjoute && c.faces[0].parties.length === 3 && c.largeur === 429.29
+              && d.boite.largeur === 3.29 && d.largeurSortie === 3.29
+              && Math.abs(q.largeurSortie - (3 + 210)) < 0.001 && Math.abs(p.x + p.largeurSortie - 429.29) < 0.001; })());
 ok("une couverture deja a 429,29 x 303 passe telle quelle",
    (() => { const c = planCouverture([{ media: { x: 0, y: 0, largeur: 429.29, hauteur: 303 }, trim: null }], 44); return c.ok && c.inchange; })());
 ok("une largeur qui n'est ni 420 ni 423,29 est refusee, avec les deux cotes attendues",
