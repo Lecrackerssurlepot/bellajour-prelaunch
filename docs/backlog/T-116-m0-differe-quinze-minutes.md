@@ -69,10 +69,11 @@ affichera un mail « envoyé » que personne n'a reçu.
 - `POST /api/atelier/numero` : M0 différé de 15 min. `PATCH` (consentement) : annule M0 avant M1.
   `POST /api/atelier/photos/complete` : annule M0 au premier lot confirmé.
 - `recit.ts` : deux lignes de journal lisibles (programmé pour HH:MM ; retiré / trop tard / échec).
-- `scripts/mails-atelier.mjs` : le texte de M0 (fin et pied), **template 38 à pousser par Mathias**.
+- `scripts/mails-atelier.mjs` : le texte de M0 (fin et pied). **Template 38 poussé le 18/09**, sur
+  accord de Mathias, borné à M0.
 - Harnais : 19 assertions T-116, les cinq de D16 intactes. tsc, lint (0 erreur), build : voir la PR.
 - Docs : PARCOURS-INVARIANTS (garantie 5), api/CLAUDE.md, atelier/CLAUDE.md, CRON-RELEVE.md,
   ETAT-PRODUCTION.
 
-Reste : fusion, puis le premier dossier réel pour prouver la programmation et l'annulation
-(chercher `mail_programme` et `mail_annule` dans son journal), et la poussée du template M0.
+18/09 : PR #162 fusionnée, en production à 10 h 19 ; template poussé à 10 h 51.
+Reste : le premier dossier réel, pour voir `mail_programme` puis `mail_annule` dans son journal.

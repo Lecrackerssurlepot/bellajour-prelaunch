@@ -12,7 +12,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ## 17/09/2026 (soir) — M0 part quinze minutes après l'écran 4, et seulement sans photo (T-116)
 
-**Sur la branche `feat/m0-differe`, pas encore fusionnée.** Décision de Mathias du 17/09 : Merisa
+**EN PRODUCTION depuis le 18/09 à 10 h 19 (PR #162).** Décision de Mathias du 17/09 : Merisa
 avait reçu « il attend vos photos » pendant qu'elle envoyait ses 92 photos.
 
 - **Le mécanisme** : la relève ne sait pas différer de quinze minutes (D16), donc M0 est
@@ -23,9 +23,8 @@ avait reçu « il attend vos photos » pendant qu'elle envoyait ses 92 photos.
   verdict : retiré, trop tard, échec). Le verrou `mails_envoyes` est posé à la programmation et
   reste posé après annulation.
 - **Le texte** : la fin de M0 dit « Vous pouvez les déposer maintenant pour votre composition, ou
-  bien reprendre plus tard », et le pied perd « pour toute sa vie ». **Le template 38 n'est pas
-  encore poussé** : `node scripts/mails-atelier.mjs --pousser --seulement M0`, geste de Mathias.
-  Tant qu'il ne l'est pas, le différé fonctionne avec l'ancien texte.
+  bien reprendre plus tard », et le pied perd « pour toute sa vie ». **Template 38 poussé le
+  18/09 à 10 h 51**, sur accord de Mathias (`--pousser --seulement M0`, les autres intacts).
 - **Non prouvé sur un cas réel** : que la programmation soit active sur le compte Brevo de
   Bellajour, et que Brevo réponde 404 (et pas autre chose) à l'annulation d'un message déjà
   parti. Le premier dossier réel après fusion le dira : chercher `mail_programme` puis
