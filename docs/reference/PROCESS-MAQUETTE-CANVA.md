@@ -59,11 +59,8 @@ C'est l'étape où il a le plus appris, et **le vocabulaire qu'il connaît vient
 ### Sa page, maintenant (`/numero`, état `payee`)
 
 > Merci. Votre paiement est bien reçu. L'atelier compose maintenant votre numéro complet.
-> Il vous attend ici **sous 3 jours ouvrés**, et vous serez prévenue par mail.
+> Il vous attend ici **sous 3 jours ouvrés**, et vous serez prévenu par mail.
 > Un détail à changer ? Répondez au mail, on ajuste sans frais.
-
-(Note en passant : « prévenue » est au féminin, contraire à la règle du masculin générique
-adoptée pour tout le visible. À corriger dans `page.tsx`, hors de ce process.)
 
 ### En résumé : les promesses déjà faites, à ne pas contredire
 

@@ -720,7 +720,7 @@ export default async function NumeroPage({
           </p>
           <p className="nu-sub">
             Il vous attend ici <b>sous {JOURS_COMPOSITION} jours ouvrés</b>, et
-            vous serez prévenue par mail.
+            vous serez prévenu par mail.
           </p>
           {numero.facture_url && (
             <p className="nu-sub">
