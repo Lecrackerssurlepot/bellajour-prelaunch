@@ -265,32 +265,49 @@ export function planCouverture(pages: PageLue[], nbPagesDossier: number | null |
       };
     }
     const y = arrondi(trim.y + trim.hauteur / 2 - hauteur / 2);
+    if (sansDos) dosAjoute = true;
+    /* Le dos dessiné par l'export, s'il y est ; et la demi-feuille, c'est-à-dire
+       une face finie (209,945 chez Canva, pas 210). */
+    const dosDessine = sansDos ? 0 : dos;
+    const demi = (trim.largeur - dosDessine) / 2;
+
+    /* Trois morceaux, dans l'ordre de la feuille : la quatrième avec son fond
+       perdu gauche, le dos, la première avec son fond perdu droit. Le fond
+       perdu droit absorbe l'écart entre le fini de Canva (419,89) et les 420
+       du calcul : la feuille fait EXACTEMENT `largeur`. */
+    const quatrieme: BoiteMm = { x: arrondi(trim.x - FOND_PERDU_MM), y, largeur: arrondi(FOND_PERDU_MM + demi), hauteur };
+    const largeurPremiere = arrondi(largeur - quatrieme.largeur - dos);
+    const premiere: BoiteMm = { x: arrondi(trim.x + demi + dosDessine), y, largeur: largeurPremiere, hauteur };
+    /* Le dos : la bande dessinée par l'export, ou, quand il manque, le
+       dernier millimètre de la quatrième étiré à la largeur du dos. */
+    const bandeDos: BoiteMm = sansDos
+      ? { x: arrondi(trim.x + demi - 1), y, largeur: 1, hauteur }
+      : { x: arrondi(trim.x + demi), y, largeur: dos, hauteur };
+    if (!tientDans(quatrieme, page.media) || !tientDans(premiere, page.media)) {
+      return { ok: false, raison: `Page ${i + 1} : le fond perdu exporté est trop court (il faut ${FOND_PERDU_MM} mm au-delà de la coupe).` };
+    }
+
     const parties: PartieCouverture[] = [];
-    if (sansDos) {
-      dosAjoute = true;
-      const demi = trim.largeur / 2;
-      const quatrieme: BoiteMm = { x: arrondi(trim.x - FOND_PERDU_MM), y, largeur: arrondi(FOND_PERDU_MM + demi), hauteur };
-      /* Ce qui reste après la quatrième et le dos : la première ET le fond
-         perdu droit, qui absorbe l'écart entre le fini de Canva (419,89) et
-         les 420 du calcul. */
-      const largeurPremiere = arrondi(largeur - quatrieme.largeur - dos);
-      const premiere: BoiteMm = { x: arrondi(trim.x + demi), y, largeur: largeurPremiere, hauteur };
-      const bandeDos: BoiteMm = { x: arrondi(trim.x + demi - 1), y, largeur: 1, hauteur };
-      if (!tientDans(quatrieme, page.media) || !tientDans(premiere, page.media)) {
-        return { ok: false, raison: `Page ${i + 1} : le fond perdu exporté est trop court (il faut ${FOND_PERDU_MM} mm au-delà de la coupe).` };
-      }
+    if (i === 0) {
       parties.push({ boite: quatrieme, x: 0, largeurSortie: quatrieme.largeur });
       parties.push({ boite: bandeDos, x: quatrieme.largeur, largeurSortie: dos });
       parties.push({ boite: premiere, x: arrondi(quatrieme.largeur + dos), largeurSortie: largeurPremiere });
-      fini ??= { x: FOND_PERDU_MM, largeur: arrondi(largeur - FOND_PERDU_MM - (largeurPremiere - demi)) };
     } else {
-      const tout: BoiteMm = { x: arrondi(trim.x - FOND_PERDU_MM), y, largeur, hauteur };
-      if (!tientDans(tout, page.media)) {
-        return { ok: false, raison: `Page ${i + 1} : le fond perdu exporté est trop court (il faut ${FOND_PERDU_MM} mm au-delà de la coupe).` };
-      }
-      parties.push({ boite: tout, x: 0, largeurSortie: largeur });
-      fini ??= { x: FOND_PERDU_MM, largeur: arrondi(largeur - 2 * FOND_PERDU_MM) };
+      /* L'INTÉRIEUR de la couverture (gabarit Cloudprinter, page 2) : le dos
+         plus 3 mm de chaque côté doivent rester VIERGES, c'est la zone de
+         collage du bloc. On n'y pose donc rien : la page de sortie est
+         blanche par nature, on retire 3 mm à chaque face et le dos n'est pas
+         dessiné. Le design que l'atelier y met s'arrête de lui-même à 3 mm
+         du pli, sans qu'il ait à le savoir. */
+      const retrait = FOND_PERDU_MM;
+      parties.push({ boite: { ...quatrieme, largeur: arrondi(quatrieme.largeur - retrait) }, x: 0, largeurSortie: arrondi(quatrieme.largeur - retrait) });
+      parties.push({
+        boite: { ...premiere, x: arrondi(premiere.x + retrait), largeur: arrondi(largeurPremiere - retrait) },
+        x: arrondi(quatrieme.largeur + dos + retrait),
+        largeurSortie: arrondi(largeurPremiere - retrait),
+      });
     }
+    fini ??= { x: FOND_PERDU_MM, largeur: arrondi(largeur - FOND_PERDU_MM - (largeurPremiere - demi)) };
     faces.push({ source: i, parties });
   }
   return {
