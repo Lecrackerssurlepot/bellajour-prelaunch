@@ -35,6 +35,18 @@
       ],
       "port": 3005,
       "autoPort": false
+    },
+    {
+      "name": "Aperçus mails",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "3901",
+        "--directory",
+        ".mails-apercus"
+      ],
+      "port": 3901
     }
   ]
 }
