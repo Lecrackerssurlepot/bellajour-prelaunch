@@ -167,6 +167,41 @@ export default function Composer() {
   const [photosEnvoyees, setPhotosEnvoyees] = useState(0)
   const scroller = useRef<HTMLDivElement>(null)
   const modale = useRef<HTMLDivElement>(null)
+  const racine = useRef<HTMLDivElement>(null)
+
+  /* LA RÉSERVE DU BAS SUIT LA BARRE FIXE (18/09/2026).
+     Le bas de .at-q-screen dégage la barre par un padding ; il valait 110 px
+     fixes, et la barre n'a pas une hauteur fixe : 83 px sur desktop, mais
+     176 px sur mobile dès qu'un message d'erreur s'y affiche (« Donnez-lui
+     un titre »), et la barre de dépôt de l'écran 5 porte en plus le
+     consentement. Un client a cliqué « Continuer » sans titre : l'erreur a
+     grandi la barre et « Aucune préférence » a disparu dessous, même au
+     bout du défilement. On MESURE donc la barre et on pose sa hauteur en
+     variable CSS sur la racine ; composer.css en fait la réserve. Rien ne
+     passe par un setState : une mesure qui re-rend le questionnaire ferait
+     une boucle avec la barre qu'elle mesure. Rejoué à chaque écran (la barre
+     est démontée/remontée avec `n`) et à chaque changement de taille
+     (l'erreur qui apparaît, le clavier, la rotation). */
+  useEffect(() => {
+    const root = racine.current
+    if (!root) return
+    const barre = root.querySelector<HTMLElement>('.at-q-barre')
+    if (!barre) {
+      root.style.removeProperty('--at-barre-h')
+      return
+    }
+    const poser = () => {
+      root.style.setProperty('--at-barre-h', `${Math.ceil(barre.getBoundingClientRect().height)}px`)
+    }
+    poser()
+    const observateur = new ResizeObserver(poser)
+    observateur.observe(barre)
+    return () => observateur.disconnect()
+    /* `draft.screen` et non `n` : `n` n'est déclaré que plus bas. `erreur`
+       est là par ceinture : c'est LE cas signalé, et un onglet qui ne peint
+       pas (arrière-plan) retarde les ResizeObserver ; le re-rendu, lui,
+       n'attend personne. */
+  }, [draft.screen, erreur])
 
   /* Reprise au montage — jamais pendant le rendu serveur, sinon l'HTML
      livré et l'HTML hydraté divergent.
@@ -604,7 +639,7 @@ export default function Composer() {
   }
 
   return (
-    <div className="at-q">
+    <div className="at-q" ref={racine}>
       {/* T-051 — la région live UNIQUE : l'écran atteint est annoncé, une
           fois, poliment. Elle existe dès le premier rendu (une région créée
           en même temps que son contenu n'est pas annoncée) et ne change

@@ -176,7 +176,14 @@
   margin: 0 auto;
   /* Le bas dégage la BARRE FIXE (03/09) : sans cette réserve, la fin du
      contenu passerait sous le verre. env() : la zone sûre de l'iPhone. */
-  padding: 20px var(--pad) calc(110px + env(safe-area-inset-bottom, 0px));
+  /* ⚠️ LA RÉSERVE SUIT LA BARRE (18/09/2026). `--at-barre-h` est la hauteur
+     MESURÉE de .at-q-barre, posée par Composer.tsx (ResizeObserver) : la
+     barre grandit quand un message d'erreur s'y affiche (176 px à 375 px
+     de large) et 110 px fixes laissaient alors « Aucune préférence »
+     entièrement sous le verre — c'est le retour client du 18/09. Le repli
+     (110 px + zone sûre) ne sert qu'avant la première mesure. */
+  padding: 20px var(--pad)
+    calc(var(--at-barre-h, calc(110px + env(safe-area-inset-bottom, 0px))) + 20px);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -238,8 +245,13 @@
    la note d'enregistrement n'a pas la place — le CTA prend toute la
    largeur, dans la zone du pouce. */
 @media (max-width: 760px) {
-  .at-q-barre-note,
-  .at-q-barre-retour { display: none; }
+  .at-q-barre-note { display: none; }
+  /* ⚠️ Même spécificité que `.bj-atelier .at-q-back` (0,2,0), qui pose le
+     `display: inline-flex` : sans le préfixe, cette règle perdait et le
+     bouton restait peint, la barre faisait 119 px au lieu de 83 (constaté
+     le 18/09/2026, jamais masqué depuis le 03/09). Le même piège que
+     `.at-nav-suivi`, cf. src/app/CLAUDE.md. */
+  .bj-atelier .at-q-barre-retour { display: none; }
   .at-q-barre-int { flex-direction: column; align-items: stretch; gap: 10px; }
   .at-q-barre .at-q-actions { flex-direction: column; align-items: stretch; gap: 10px; }
   .at-q-barre .at-cta { justify-content: center; }
