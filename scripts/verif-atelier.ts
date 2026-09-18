@@ -1088,7 +1088,7 @@ ok("aucune ligne au dela de 80 colonnes sauf les liens",
    BRIEF.split("\n").every((l) => l.length <= 80 || l.includes("http")));
 const VIDE = composerBrief({ ...MATIERE, occasion: null, histoire: null, notes: [] }, new Date("2026-08-25T08:00:00.000Z"));
 ok("un dossier sans matiere le DIT au lieu de rendre un fichier vide",
-   VIDE.includes("Rien de not\u00e9.") && VIDE.includes("Elle n'a rien \u00e9crit."));
+   VIDE.includes("Rien de not\u00e9.") && VIDE.includes("Il n'a rien \u00e9crit."));
 
 /* ════════════════════════════ IMPRESSION ════════════════════════════ */
 

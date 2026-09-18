@@ -1,7 +1,7 @@
 ---
 id: T-117
 titre: Des féminins résiduels subsistent dans le visible, contraires à la règle du masculin générique
-etat: nouveau
+etat: en cours
 domaine: contenu
 gravite: confort
 autonomie: avis-requis
@@ -68,4 +68,9 @@ récits fictifs de la démo admin, et les libellés d'état « Livrée », « Va
 3. Rien pour les docx légaux.
 
 ## Ce qui a été fait
-(rien encore)
+- **18/09, PR du point 1** : les 3 occurrences des pages et les 18 du back-office (16 sûres +
+  les 2 ambiguës reformulées sans pronom) passées au masculin générique, 23 remplacements sur
+  12 fichiers, dont l'assertion du harnais qui citait « Elle n'a rien écrit ». Les clés en base
+  (`cliente`, `attente_cliente`) et les identifiants n'ont pas bougé. tsc, lint, build et
+  harnais verts.
+- **Reste** : M10 (point 2), sur accord de Mathias, puis fermeture.

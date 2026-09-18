@@ -61,7 +61,7 @@ export type MatiereBrief = {
    * différence qu'on vient chercher dans ce fichier.
    */
   choixCouverture: { rang: number } | { indifferent: true } | null;
-  /** Le lien d'ÉDITION, interne (PRD §11). Il ne part jamais chez la cliente. */
+  /** Le lien d'ÉDITION, interne (PRD §11). Il ne part jamais chez le client. */
   canvaTravail: string | null;
   notes: Array<{ prenom: string; texte: string; createdAt: string }>;
 };
@@ -149,7 +149,7 @@ export function composerBrief(m: MatiereBrief, maintenant: Date): string {
   morceaux.push("");
 
   const fiches: Array<[string, string]> = [
-    ["Cliente", [m.prenom?.trim(), m.email?.trim()].filter(Boolean).join(" · ") || "inconnue"],
+    ["Client", [m.prenom?.trim(), m.email?.trim()].filter(Boolean).join(" · ") || "inconnu"],
     ["Dossier", m.token.slice(0, 8)],
     ["Étape", m.libelleEtat],
     ["Photos", `${m.nbPhotos}`],
@@ -178,7 +178,7 @@ export function composerBrief(m: MatiereBrief, maintenant: Date): string {
   for (const [cle, valeur] of fiches) morceaux.push(`${cle.padEnd(large)}  ${valeur}`);
   morceaux.push("");
 
-  morceaux.push(bloc("L'OCCASION", plier(m.occasion?.trim() || "Elle ne l'a pas précisée.")));
+  morceaux.push(bloc("L'OCCASION", plier(m.occasion?.trim() || "Il ne l'a pas précisée.")));
 
   /* Les mots de couverture : un bloc SEULEMENT s'il y a quelque chose à
      composer. La plupart des dossiers n'en ont pas, et un bloc vide se
@@ -192,7 +192,7 @@ export function composerBrief(m: MatiereBrief, maintenant: Date): string {
   }
 
   morceaux.push(
-    bloc("SON HISTOIRE, DANS SES MOTS", plier(m.histoire?.trim() || "Elle n'a rien écrit.")),
+    bloc("SON HISTOIRE, DANS SES MOTS", plier(m.histoire?.trim() || "Il n'a rien écrit.")),
   );
 
   /* Chronologique, la plus ancienne d'abord : le carnet se lit comme une
@@ -216,7 +216,7 @@ export function composerBrief(m: MatiereBrief, maintenant: Date): string {
   morceaux.push("");
   morceaux.push(
     plier(
-      `Document interne, écrit le ${dateHeure(maintenant.toISOString())}. Il ne part jamais chez la cliente. La fiche du dossier reste la source vivante : si tu ajoutes une note pendant la composition, écris-la dans le carnet, pas ici.`,
+      `Document interne, écrit le ${dateHeure(maintenant.toISOString())}. Il ne part jamais chez le client. La fiche du dossier reste la source vivante : si tu ajoutes une note pendant la composition, écris-la dans le carnet, pas ici.`,
     ),
   );
 

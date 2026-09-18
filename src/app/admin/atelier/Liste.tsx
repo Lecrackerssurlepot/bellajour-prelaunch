@@ -154,7 +154,7 @@ function Ligne({
               className="ate-tag ate-tag--attente"
               title={
                 l.depot === "abandonne"
-                  ? "Ses photos sont chez nous, elle n'a pas cliqué « Envoyer »"
+                  ? "Ses photos sont chez nous, il n'a pas cliqué « Envoyer »"
                   : "Le questionnaire est rempli, aucune photo n'a été déposée"
               }
             >

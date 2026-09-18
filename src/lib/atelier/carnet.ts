@@ -50,7 +50,7 @@ export const GENRES_NOTE = [
   { cle: "photos", label: "Photos", aide: "Ce que disent les images" },
   { cle: "recit", label: "Récit", aide: "Ce que dit l'histoire" },
   { cle: "page", label: "Page", aide: "Une décision de mise en page" },
-  { cle: "cliente", label: "Cliente", aide: "Ce qu'elle a demandé" },
+  { cle: "cliente", label: "Client", aide: "Ce qu'il a demandé" },
   { cle: "atelier", label: "Atelier", aide: "Relance, impression, incident" },
 ] as const;
 

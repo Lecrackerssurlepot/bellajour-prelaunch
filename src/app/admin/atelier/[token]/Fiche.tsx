@@ -863,7 +863,7 @@ export default function Fiche({
       {l.emailRebond ? (
         <div className="ate-bandeau ate-bandeau--alerte">
           <b>Cette adresse ne reçoit pas nos mails.</b> Un envoi a définitivement
-          rebondi sur {l.email || "cette adresse"} — elle n&apos;a donc reçu aucun
+          rebondi sur {l.email || "cette adresse"} : cette adresse n&apos;a donc reçu aucun
           de nos messages, et n&apos;en recevra aucun. Le détail est dans le journal,
           en bas de cette fiche.
           {fiche.telephone ? (
@@ -1517,7 +1517,7 @@ export default function Fiche({
                 {fiche.cloudprinterOrderId && !fiche.trackingUrl && fiche.trackingCode ? (
                   <p className="ate-faint">
                     Pas de lien de suivi pour ce transporteur : c&apos;est le numéro qui part chez
-                    elle, sur sa page.
+                    le client, sur sa page.
                   </p>
                 ) : null}
               </>

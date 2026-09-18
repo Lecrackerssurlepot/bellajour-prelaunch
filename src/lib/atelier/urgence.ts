@@ -26,7 +26,7 @@ export type Pile = "retard" | "a_faire" | "attente_cliente" | "dehors" | "termin
 export const LIBELLE_PILE: Record<Pile, string> = {
   retard: "En retard",
   a_faire: "À faire",
-  attente_cliente: "Chez la cliente",
+  attente_cliente: "Chez le client",
   dehors: "En route",
   termine: "Terminés",
 };

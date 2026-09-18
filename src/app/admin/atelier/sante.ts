@@ -380,7 +380,7 @@ export async function chargerSante(): Promise<Sante> {
       gravite: "orange",
       titre: `${plaintes.length} mail${plaintes.length > 1 ? "s ont été marqués" : " a été marqué"} comme indésirable${plaintes.length > 1 ? "s" : ""}`,
       remede:
-        "L'adresse fonctionne : elle a reçu, puis cliqué « indésirable ». Rien à réparer sur le dossier — c'est un signal sur la délivrabilité de nos mails, les suivants risquent le dossier spam.",
+        "L'adresse fonctionne : le client a reçu, puis cliqué « indésirable ». Rien à réparer sur le dossier — c'est un signal sur la délivrabilité de nos mails, les suivants risquent le dossier spam.",
       lignes: plaintes,
     });
   }
