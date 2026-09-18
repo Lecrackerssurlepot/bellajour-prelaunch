@@ -10,6 +10,31 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 18/09/2026 (soir) — la fiche recoupe elle-même les PDF d'impression (T-121)
+
+**Sur la branche `feat/t121-decoupe-pdf`, en attente de fusion.** Né du premier dossier réel : l'atelier
+produit naturellement un export Canva en doubles pages avec fond perdu et marge de traits, et une
+couverture de 420 mm sans dos ; Cloudprinter attend 44 pages simples de 216 × 303 et une feuille
+enveloppante de 429,29 × 303 (dos de 3,29 mm pour 44 pages). Le 18/09 la conversion a été faite à
+la main ; elle est maintenant dans la fiche.
+
+- **La règle** est pure, dans `src/lib/atelier/decoupe.ts` : nature d'une page d'export (finale,
+  simple, double, inconnue) d'après sa TrimBox, plan du bloc (une double devient deux pages
+  centrées sur chaque fini, 3 mm de la voisine côté couture) et plan de la couverture (dos inséré
+  au milieu en étirant le dernier millimètre de la quatrième, ou dos déjà dessiné, largeur =
+  `largeurCouvertureMm`). Harnais : 40 cas sur les cotes réelles de l'export de Merisa.
+- **L'assemblage** tourne DANS LE NAVIGATEUR de l'atelier (`preparerPdf.ts`, pdf-lib) au moment
+  du dépôt, avant le coffre : mêmes objets, autres cadres, aucune image recompressée. Le fichier
+  déposé prend le suffixe « - impression ». Éprouvé sous Node sur les fichiers de Merisa : 0,5 s
+  pour 133 Mo, résultat identique au pixel près aux fichiers faits à la main.
+- **La transition refuse un fichier faux** : `envoyer_impression` relit chaque PDF du coffre
+  (`controlePdf.ts`, partagé avec l'écran de contrôle) et rend 422 sur un format hors specs, un
+  mauvais compte de pages ou des tailles différentes, au dry-run comme au vrai clic. Jusque-là,
+  le contrôle ne pouvait tourner qu'APRÈS la commande (il lit `impression_fichiers`, écrit par la
+  transition) : le récap du dry-run porte désormais les mesures de chaque fichier.
+- **Reste à voir à l'œil** : le dépôt sur la vraie fiche de Merisa (Mathias), avec les deux
+  exports Canva bruts (« Douples pages » et « Cover »).
+
 ## 18/09/2026 — M6 « part à l'impression » part à la commande, plus à la validation (T-120)
 
 **EN PRODUCTION depuis le 18/09 (PR #177, déploiement vérifié : la page de Merisa dit « Validé. Nous préparons l'impression. » sur l'URL de déploiement).** Le premier dossier réel (Merisa,

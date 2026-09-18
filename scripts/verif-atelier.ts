@@ -31,6 +31,7 @@ import {
   verdictAnnulation,
 } from "@/lib/atelier/programme";
 import { prefixeCoffre, verdictSuppression } from "@/lib/atelier/archive";
+import { natureDe, planInterieur, planCouverture, resumeInterieur, resumeCouverture, type PageLue } from "@/lib/atelier/decoupe";
 import {
   CODES_RELANCE,
   DELAI_MIN_RELANCE_MS,
@@ -4259,6 +4260,96 @@ ok("204 : retire de la file", verdictAnnulation(204) === "annule");
 ok("404 : Brevo ne le connait plus, il est parti", verdictAnnulation(404) === "trop_tard");
 ok("500 ou pas de reseau : on ne sait pas, on le dit",
    verdictAnnulation(500) === "echec" && verdictAnnulation(null) === "echec");
+
+/* ══════════════ T-121 : LA DECOUPE DES PDF D'IMPRESSION ══════════════
+   Les mesures sont celles de l'export Canva reel de Merisa (18/09/2026,
+   « Traits de coupe et fond perdu » coche) : fini 419,89 x 297,13 pose a
+   (6 ; 21,74) dans un media de 431,89 x 309,13 qui commence a y = 15,74. */
+titre("T-121 : la nature d'une page d'export");
+const mediaDouble = { x: 0, y: 15.74, largeur: 431.89, hauteur: 309.13 };
+const trimDouble = { x: 6, y: 21.74, largeur: 419.89, hauteur: 297.13 };
+const mediaSimple = { x: 0, y: 15.74, largeur: 222.08, hauteur: 309.13 };
+const trimSimple = { x: 6, y: 21.74, largeur: 210.08, hauteur: 297.13 };
+const dbl: PageLue = { media: mediaDouble, trim: trimDouble };
+const smp: PageLue = { media: mediaSimple, trim: trimSimple };
+const finale: PageLue = { media: { x: 0, y: 0, largeur: 216, hauteur: 303 }, trim: { x: 3, y: 3, largeur: 210, hauteur: 297 } };
+const sansFondPerdu: PageLue = { media: { x: 0, y: 2.76, largeur: 419.89, hauteur: 297.13 }, trim: { x: 0, y: 2.76, largeur: 419.89, hauteur: 297.13 } };
+ok("une double Canva est reconnue", natureDe(dbl) === "double");
+ok("une simple Canva est reconnue", natureDe(smp) === "simple");
+ok("une page de 216 x 303 est deja finale", natureDe(finale) === "finale");
+ok("un export sans la case cochee (trim = media) est inconnu", natureDe(sansFondPerdu) === "inconnue");
+ok("une largeur qui n'est ni 210 ni 420 est inconnue",
+   natureDe({ media: mediaDouble, trim: { ...trimDouble, largeur: 300 } }) === "inconnue");
+
+titre("T-121 : le plan du bloc interieur (Merisa : 1 simple + 21 doubles + 1 simple)");
+const merisa = [smp, ...Array.from({ length: 21 }, () => dbl), smp];
+const plan = planInterieur(merisa);
+ok("le plan est accepte", plan.ok && !plan.inchange);
+if (plan.ok && !plan.inchange) {
+  ok("44 pages de sortie", plan.nbPages === 44 && plan.sorties.length === 44);
+  ok("2 simples et 21 doubles comptees", plan.simples === 2 && plan.doubles === 21);
+  ok("la page 1 vient de la premiere page source, seule", plan.sorties[0].source === 0 && plan.sorties[1].source === 1);
+  ok("la page 44 vient de la derniere page source", plan.sorties[43].source === 22);
+  ok("chaque sortie fait 216 x 303", plan.sorties.every((s) => s.boite.largeur === 216 && s.boite.hauteur === 303));
+  const p1 = plan.sorties[0].boite;
+  ok("la page simple est centree sur son fini (3,04 mm de fond perdu de chaque cote)",
+     Math.abs(p1.x - 3.04) < 0.01 && Math.abs(p1.y - 18.805) < 0.01);
+  const g = plan.sorties[1].boite, d = plan.sorties[2].boite;
+  ok("la double est coupee au milieu de son fini : les deux moities se chevauchent de 6 mm",
+     Math.abs(g.x + g.largeur - d.x - 6.055) < 0.02);
+  ok("la moitie gauche commence 3 mm avant la coupe (dans le media)", Math.abs(g.x - 2.973) < 0.01);
+  /* Le fini de Canva fait 209,945 par moitie, pas 210 : centrer 216 dessus
+     laisse 3,0275 mm de chaque cote, et c'est cet ecart-la, pas 3 tout rond. */
+  ok("la moitie droite finit 3,03 mm apres la coupe, dans le media",
+     Math.abs(d.x + d.largeur - (trimDouble.x + trimDouble.largeur + 3.0275)) < 0.02 && d.x + d.largeur <= mediaDouble.largeur);
+  ok("la phrase de l'ecran dit ce qu'il a fait", resumeInterieur(plan) === "Export Canva reconnu (21 doubles et 2 simples) → 44 pages d'impression de 216 × 303 mm.");
+}
+ok("des pages deja finales passent telles quelles",
+   (() => { const p = planInterieur([finale, finale]); return p.ok && p.inchange && p.nbPages === 2; })());
+ok("un export sans fond perdu est refuse, et la phrase dit la case a cocher",
+   (() => { const p = planInterieur([sansFondPerdu]); return !p.ok && /fond perdu/.test(p.raison) && /Traits de coupe/.test(p.raison); })());
+ok("une finale melangee a des doubles est refusee",
+   (() => { const p = planInterieur([dbl, finale]); return !p.ok && /Page 2/.test(p.raison); })());
+ok("une largeur inconnue est refusee avec sa cote",
+   (() => { const p = planInterieur([{ media: mediaDouble, trim: { ...trimDouble, largeur: 300 } }]); return !p.ok && /300/.test(p.raison); })());
+ok("un fond perdu trop court est refuse",
+   (() => { const p = planInterieur([{ media: { x: 5, y: 20, largeur: 421.89, hauteur: 300 }, trim: trimDouble }]); return !p.ok && /trop court/.test(p.raison); })());
+ok("un PDF vide est refuse", !planInterieur([]).ok);
+
+titre("T-121 : le plan de la couverture (44 pages : dos de 3,29 mm)");
+const couv = planCouverture([dbl], 44);
+ok("un export de 420 mm est accepte, le dos est ajoute", couv.ok && !couv.inchange && couv.dosAjoute);
+if (couv.ok && !couv.inchange) {
+  ok("la feuille fait 429,29 x 303, dos 3,29", couv.largeur === 429.29 && couv.hauteur === 303 && couv.dos === 3.29);
+  ok("une seule face source, trois morceaux : quatrieme, dos, premiere",
+     couv.faces.length === 1 && couv.faces[0].parties.length === 3);
+  const [q, dos, p] = couv.faces[0].parties;
+  ok("la quatrieme commence a 0 et emporte 3 mm de fond perdu a gauche",
+     q.x === 0 && Math.abs(q.boite.x - (trimDouble.x - 3)) < 0.001 && Math.abs(q.largeurSortie - (3 + 419.89 / 2)) < 0.001);
+  ok("le dos est le dernier millimetre de la quatrieme, etire a 3,29 mm",
+     dos.boite.largeur === 1 && dos.largeurSortie === 3.29 && Math.abs(dos.x - q.largeurSortie) < 0.001);
+  ok("la premiere commence apres le dos et va jusqu'au bord de la feuille",
+     Math.abs(p.x - (q.largeurSortie + 3.29)) < 0.001 && Math.abs(p.x + p.largeurSortie - 429.29) < 0.001);
+  ok("la premiere est prise a partir du milieu du fini (rien de la quatrieme n'y passe)",
+     Math.abs(p.boite.x - (trimDouble.x + 419.89 / 2)) < 0.001);
+  ok("le fini declare : 3 mm a gauche, 423,18 de large", couv.fini.x === 3 && Math.abs(couv.fini.largeur - 423.18) < 0.001);
+  ok("une seule page source : l'interieur vierge est ajoute", couv.interieurAjoute);
+  ok("la phrase de l'ecran", resumeCouverture(couv) === "Couverture recoupée à 429,29 × 303 mm, dos de 3,29 mm ajouté au milieu, intérieur vierge ajouté.");
+}
+ok("deux pages source (exterieur + interieur) : deux faces, rien d'ajoute",
+   (() => { const c = planCouverture([dbl, dbl], 44); return c.ok && !c.inchange && c.faces.length === 2 && !c.interieurAjoute; })());
+ok("un export qui dessine deja le dos (423,29) n'est que recoupe",
+   (() => { const c = planCouverture([{ media: { ...mediaDouble, largeur: 435.29 }, trim: { ...trimDouble, largeur: 423.29 } }], 44);
+            return c.ok && !c.inchange && !c.dosAjoute && c.faces[0].parties.length === 1 && c.largeur === 429.29; })());
+ok("une couverture deja a 429,29 x 303 passe telle quelle",
+   (() => { const c = planCouverture([{ media: { x: 0, y: 0, largeur: 429.29, hauteur: 303 }, trim: null }], 44); return c.ok && c.inchange; })());
+ok("une largeur qui n'est ni 420 ni 423,29 est refusee, avec les deux cotes attendues",
+   (() => { const c = planCouverture([{ media: mediaDouble, trim: { ...trimDouble, largeur: 400 } }], 44); return !c.ok && /420/.test(c.raison) && /423,29|423.29/.test(c.raison); })());
+ok("sans fond perdu declare : refuse", !planCouverture([sansFondPerdu], 44).ok);
+ok("trois pages : refuse", !planCouverture([dbl, dbl, dbl], 44).ok);
+ok("une pagination sans dos carre (20 p., agrafe archive) : refuse", !planCouverture([dbl], 20).ok);
+ok("le dos suit la pagination : 60 pages donnent un dos de 4,12 et une feuille de 430,12",
+   (() => { const c = planCouverture([dbl], 60); return c.ok && !c.inchange && c.dos === 4.12 && c.largeur === 430.12; })());
 
 /* On repose le globe comme on l'a trouve : la suite du harnais ne doit pas
    heriter d'un `localStorage` qui jette. */

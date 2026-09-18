@@ -1,7 +1,7 @@
 ---
 id: T-121
 titre: La fiche doit recouper elle-même l'export Canva en pages d'impression, l'atelier ne peut pas passer par un script à chaque dossier
-etat: nouveau
+etat: en cours
 domaine: atelier
 gravite: serieux
 autonomie: avis-requis
@@ -72,4 +72,18 @@ Rattaché à T-078 (le moteur de rendu) dont c'est l'étape 1 concrète, avec le
 comme jeu d'essai (les fichiers du 18/09 sont sur le Bureau de Mathias).
 
 ## Ce qui a été fait
-Rien encore. Pour Merisa, la découpe a été faite à la main le 18/09.
+**18/09/2026 (soir), branche `feat/t121-decoupe-pdf`. Décision de Mathias : « c'est à l'atelier de
+créer les fichiers en pages simples et d'ajouter le dos aux bonnes mesures ».**
+- Points 1 à 5 livrés : `src/lib/atelier/decoupe.ts` (pur, 40 cas au harnais sur les cotes réelles
+  de l'export de Merisa), `src/app/admin/atelier/[token]/preparerPdf.ts` (pdf-lib, dans le
+  navigateur, appelé par `televerserPdf` avant le presign), `src/lib/atelier/controlePdf.ts`
+  (l'inspection extraite de la route de contrôle) et la transition qui relit chaque PDF du coffre et
+  rend 422 sur un format faux, dry-run compris ; le récap du dry-run porte une ligne « Mesuré ».
+- Éprouvé sous Node sur les fichiers de Merisa : « Douples pages » (23 pages) → 44 pages de 216 × 303
+  en 0,5 s, « Cover » (420 mm) → 429,29 × 303 avec le dos de 3,29 mm, résultats identiques au pixel
+  près aux fichiers faits à la main le matin ; l'export sans fond perdu est refusé avec la case
+  Canva à cocher dans la phrase.
+- tsc, lint, build, harnais (1143 cas) verts.
+- Points 6 et 7 (résolution des photos) : pas commencés.
+Reste : le dépôt à l'œil sur la vraie fiche de Merisa, avec les deux exports Canva bruts.
+

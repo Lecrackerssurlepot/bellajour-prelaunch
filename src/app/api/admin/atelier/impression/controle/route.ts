@@ -25,29 +25,22 @@
  */
 
 import { NextResponse } from "next/server";
-import { PDFDocument, EncryptedPDFError } from "pdf-lib";
+import { EncryptedPDFError } from "pdf-lib";
 import { makeSupabase } from "@/lib/supabase";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
 import { isValidNumeroToken } from "@/lib/atelier/token";
 import { empreinteObjet, lireObjet } from "@/lib/atelier/r2";
 import {
   estCleImpression,
-  pointsEnMm,
   produitPour,
-  verdictMultiplePages,
-  verdictPagesPdf,
-  verdictTaillePage,
-  dosMmPourPages,
-  largeurCouvertureMm,
-  FORMAT_PAGE_PDF_MM,
-  GRAMMAGE_INTERIEUR_GSM,
   MAX_PDF_BYTES,
   SLOTS_IMPRESSION,
-  type ProduitImpression,
   type TypeFichier,
-  type VerdictPages,
-  type VerdictTaille,
 } from "@/lib/atelier/impression";
+/* T-121 (18/09/2026) : la lecture du PDF et ses verdicts vivent dans
+   `controlePdf.ts`, partagés avec la route de transition qui REFUSE désormais
+   de commander sur un fichier hors format. Une seule inspection, deux usages. */
+import { inspecterPdf, type Inspection } from "@/lib/atelier/controlePdf";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,121 +55,12 @@ export const maxDuration = 300;
    verdict sur les autres fichiers ne sert à rien. */
 const BUDGET_FICHIER_MS = 90_000;
 
-type DimensionMm = { largeur: number; hauteur: number };
-
 type ControleFichier = {
   type: TypeFichier;
   label: string;
   cle: string;
   taille: number | null;
-} & (
-  | { lisible: false; probleme: string }
-  | {
-      lisible: true;
-      nbPages: number;
-      /** MediaBox de la première page, en mm. */
-      pageMm: DimensionMm;
-      /** TrimBox si le PDF en déclare une DIFFÉRENTE du MediaBox, sinon null. */
-      trimMm: DimensionMm | null;
-      taillesUniformes: boolean;
-      /** Les autres formats rencontrés quand les pages divergent. */
-      autresTaillesMm: DimensionMm[];
-      verdict: VerdictPages;
-      /** Le format contre les specs relevées (SPECS-CLOUDPRINTER.md). */
-      verdictTaille: VerdictTaille;
-      /**
-       * Ce que la feuille AURAIT DÛ mesurer, quand c'est calculable — une
-       * `cover` de dos carré sur un dossier paginé (11/09/2026). `null`
-       * partout ailleurs : les autres fichiers ont une cote fixe que l'écran
-       * connaît déjà (216 × 303), et une cover sans pagination n'a pas de dos.
-       * `dosMm` voyage avec : « 428,9 mm attendus » ne se vérifie pas à la
-       * main, « dos de 2,87 mm » se compare au gabarit.
-       */
-      attenduCouverture: { largeurMm: number; hauteurMm: number; dosMm: number; grammageGsm: number } | null;
-      /** La règle de compte du produit, quand elle s'applique. */
-      multiple: { ok: boolean; regle: string } | null;
-    }
-);
-
-function memeDim(a: DimensionMm, b: DimensionMm): boolean {
-  return a.largeur === b.largeur && a.hauteur === b.hauteur;
-}
-
-/** Ouvre le PDF et en tire tout ce que le contrôle affiche. */
-async function inspecterPdf(
-  bytes: Uint8Array,
-  type: TypeFichier,
-  nbPagesDossier: number | null,
-  produit: ProduitImpression | null
-): Promise<{
-  nbPages: number;
-  pageMm: DimensionMm;
-  trimMm: DimensionMm | null;
-  taillesUniformes: boolean;
-  autresTaillesMm: DimensionMm[];
-  verdict: VerdictPages;
-  verdictTaille: VerdictTaille;
-  attenduCouverture: { largeurMm: number; hauteurMm: number; dosMm: number; grammageGsm: number } | null;
-  multiple: { ok: boolean; regle: string } | null;
-}> {
-  /* `updateMetadata: false` : on LIT, on ne veut pas qu'une date de
-     modification bouge dans un objet qu'on ne réécrira jamais. */
-  const doc = await PDFDocument.load(bytes, { updateMetadata: false });
-  const pages = doc.getPages();
-  if (pages.length === 0) throw new Error("PDF sans aucune page");
-
-  const dimsDe = (boite: { width: number; height: number }): DimensionMm => ({
-    largeur: pointsEnMm(boite.width),
-    hauteur: pointsEnMm(boite.height),
-  });
-
-  const premiere = pages[0];
-  const pageMm = dimsDe(premiere.getMediaBox());
-
-  /* pdf-lib replie TrimBox → CropBox → MediaBox quand la boîte manque : une
-     trim IDENTIQUE au MediaBox ne dit donc rien, on ne montre que celle qui
-     existe vraiment (fond perdu déclaré). */
-  const trim = dimsDe(premiere.getTrimBox());
-  const trimMm = memeDim(trim, pageMm) ? null : trim;
-
-  /* La géométrie attendue de la couverture enveloppante, depuis le papier
-     tranché le 11/09 : dos = f(grammage, bulk, pages), largeur = 2 × 213 + dos. */
-  const dosAttendu = dosMmPourPages(nbPagesDossier);
-  const largeurAttendue = largeurCouvertureMm(nbPagesDossier);
-
-  const autresTaillesMm: DimensionMm[] = [];
-  for (const page of pages.slice(1)) {
-    const d = dimsDe(page.getMediaBox());
-    if (!memeDim(d, pageMm) && !autresTaillesMm.some((a) => memeDim(a, d))) {
-      autresTaillesMm.push(d);
-    }
-  }
-
-  return {
-    nbPages: pages.length,
-    pageMm,
-    trimMm,
-    taillesUniformes: autresTaillesMm.length === 0,
-    autresTaillesMm,
-    verdict: verdictPagesPdf(type, pages.length, nbPagesDossier),
-    /* Le MediaBox EST la « page PDF » que les specs mesurent (216 × 303
-       attendus, fond perdu compris) — la TrimBox, quand elle existe, ne
-       fait que déclarer où tombera le rognage. */
-    /* La pagination voyage jusqu'ici depuis le 11/09 : elle donne le dos,
-       donc la largeur attendue d'une couverture enveloppante. */
-    verdictTaille: verdictTaillePage(type, pageMm.largeur, pageMm.hauteur, nbPagesDossier),
-    attenduCouverture:
-      type === "cover" && largeurAttendue !== null && dosAttendu !== null
-        ? {
-            largeurMm: largeurAttendue,
-            hauteurMm: FORMAT_PAGE_PDF_MM.hauteur,
-            dosMm: dosAttendu,
-            grammageGsm: GRAMMAGE_INTERIEUR_GSM,
-          }
-        : null,
-    multiple: verdictMultiplePages(type, pages.length, produit),
-  };
-}
+} & ({ lisible: false; probleme: string } | ({ lisible: true } & Inspection));
 
 export async function POST(request: Request) {
   /* Même défense en profondeur que les routes voisines (presign,

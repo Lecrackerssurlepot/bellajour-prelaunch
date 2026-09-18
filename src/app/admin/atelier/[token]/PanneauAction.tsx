@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ActionVue, Fiche } from "../types";
 import { SLOTS_IMPRESSION } from "@/lib/atelier/impression";
+import { preparerPdfImpression } from "./preparerPdf";
 import { cleCadrageCouverture } from "@/lib/atelier/transitions";
 /* `pays.ts` est un module PUR et SANS montant : l'importer ici ne fait pas
    descendre la grille de prix dans le bundle (invariant nº2), contrairement
@@ -108,6 +109,15 @@ type Verif = {
     dos: { mm: number; largeurCouvertureMm: number } | null;
     shippingLevel: string;
     fichiers: Array<{ type: string; cle: string; taille: number; md5: string }>;
+    /* T-121 : ce que le serveur a LU dans chaque PDF du coffre avant
+       d'accepter de commander. Un refus ici arrive aussi en erreur de champ. */
+    controles: Array<{
+      type: string;
+      nbPages: number;
+      pageMm: { largeur: number; hauteur: number };
+      verdictTaille: string;
+      refus: string | null;
+    }>;
     adresse: { nom: string; ville: string; pays: string } | null;
   };
 };
@@ -704,15 +714,49 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
     setEnvoiEnCours(champ);
     setErreurs((e) => e.filter((x) => x.champ !== champ));
     try {
+      /* ── LA DÉCOUPE, AVANT LE COFFRE (T-121, 18/09/2026) ─────────────
+         L'atelier dépose l'export Canva tel quel ; ce qui part au coffre
+         est ce que Cloudprinter attend : pages simples de 216 × 303 pour
+         le bloc, feuille enveloppante à sa largeur exacte (dos compris)
+         pour la couverture. La règle est dans `@/lib/atelier/decoupe`,
+         l'assemblage dans `preparerPdf.ts`, et un fichier déjà au format
+         passe tel quel. Un export qu'on ne sait pas lire est REFUSÉ ici,
+         avec la phrase qui dit quoi corriger, avant tout envoi. */
+      const typeSlot = SLOTS_IMPRESSION.find((s) => s.cle === champ)?.type ?? "book";
+      /* La phrase d'attente ne doit pas survivre à un échec : un cadre qui
+         dit « lecture… » pour toujours cache l'erreur affichée dessous. */
+      const retirerNom = () =>
+        setPdfNoms((n) => {
+          const { [champ]: _retire, ...reste } = n;
+          void _retire;
+          return reste;
+        });
+      setPdfNoms((n) => ({ ...n, [champ]: `${file.name} : lecture et découpe…` }));
+      let prep: Awaited<ReturnType<typeof preparerPdfImpression>>;
+      try {
+        prep = await preparerPdfImpression(await file.arrayBuffer(), typeSlot, fiche.ligne.nbPages ?? null);
+      } catch {
+        retirerNom();
+        setErreurs((e) => [...e, { champ, message: "La découpe a échoué dans le navigateur. Réessaie, ou dépose un fichier déjà au format." }]);
+        return;
+      }
+      if ("refus" in prep) {
+        retirerNom();
+        setErreurs((e) => [...e, { champ, message: prep.refus }]);
+        return;
+      }
+      const corps: Blob = prep.inchange ? file : new Blob([prep.octets as BlobPart], { type: "application/pdf" });
+      const nom = prep.inchange ? file.name : `${file.name.replace(/\.pdf$/i, "")} - impression.pdf`;
+
       const r = await fetch("/api/admin/atelier/impression/presign", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           token: fiche.ligne.token,
           slot,
-          nom: file.name,
-          type: file.type,
-          taille: file.size,
+          nom,
+          type: "application/pdf",
+          taille: corps.size,
         }),
       });
       const data = await r.json();
@@ -721,6 +765,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
           format_refuse: "PDF uniquement.",
           taille_refusee: "Fichier trop lourd (200 Mo maximum).",
         };
+        retirerNom();
         setErreurs((e) => [...e, { champ, message: messages[data?.error] ?? "Envoi impossible." }]);
         return;
       }
@@ -728,16 +773,25 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
       const put = await fetch(data.url, {
         method: "PUT",
         headers: { "content-type": data.contentType },
-        body: file,
+        body: corps,
       });
       if (!put.ok) {
+        retirerNom();
         setErreurs((e) => [...e, { champ, message: "Le coffre a refusé le fichier." }]);
         return;
       }
 
       set(champ, data.key);
-      setPdfNoms((n) => ({ ...n, [champ]: `${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} Mo)` }));
+      setPdfNoms((n) => ({
+        ...n,
+        [champ]: `${nom} (${(corps.size / (1024 * 1024)).toFixed(1)} Mo) · ${prep.resume}`,
+      }));
     } catch {
+      setPdfNoms((n) => {
+        const { [champ]: _retire, ...reste } = n;
+        void _retire;
+        return reste;
+      });
       setErreurs((e) => [...e, { champ, message: "Envoi interrompu. Réessaie." }]);
     } finally {
       setEnvoiEnCours(null);
@@ -1719,6 +1773,24 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                             .join(" · ") + ", empreintes vérifiées"
                         : "—"}
                     </dd>
+                    {/* T-121 : ce que le serveur a MESURÉ dans chaque PDF du
+                        coffre. Un refus n'arrive jamais ici (la route rend
+                        422 avant), donc ces lignes sont toujours vertes ;
+                        elles disent avec quoi la commande va partir. */}
+                    {verif.impression.controles.length ? (
+                      <>
+                        <dt>Mesuré</dt>
+                        <dd>
+                          {verif.impression.controles
+                            .map(
+                              (c) =>
+                                `${c.type} : ${c.nbPages} page${c.nbPages > 1 ? "s" : ""} de ${String(c.pageMm.largeur).replace(".", ",")} × ${String(c.pageMm.hauteur).replace(".", ",")} mm`,
+                            )
+                            .join(" · ")}
+                          , conforme aux specs Cloudprinter
+                        </dd>
+                      </>
+                    ) : null}
                     <dt>Livraison</dt>
                     <dd>
                       {verif.impression.adresse

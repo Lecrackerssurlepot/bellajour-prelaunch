@@ -70,6 +70,12 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
   `expediee`), et efface le coffre R2 (`supprimerPrefixe`, préfixe `numeros/<id>/`) AVANT la ligne :
   si un objet résiste, rien n'est retiré en base (502). Le paiement Stripe et la facture ne bougent
   pas, l'écran le dit avant le clic. Sans la migration, les boutons répondent 503 et le disent.
+- **Le dépôt d'un PDF d'impression le RECOUPE avant le coffre** (T-121, 18/09/2026, `preparerPdf.ts`) :
+  l'atelier dépose l'export Canva brut (doubles pages, marge de traits, couverture sans dos) et le
+  navigateur en fait les pages simples et la feuille enveloppante que Cloudprinter attend ; la phrase
+  sous le cadre dit ce qu'il a fait, un export illisible est refusé avec la case Canva à cocher.
+  Le contrôle technique de la carte « Fichiers d'impression » ne lit que `impression_fichiers`, donc
+  APRÈS la commande : avant, c'est le dry-run de « Envoyer à l'impression » qui mesure et refuse.
 - **`chargerListe` fait partir ses quatre lectures ensemble** (journal, activité, dossiers vus,
   mails partis). Seul `lireNumeros` reste seul et avant : tout le reste dépend de ses ids.
   Les enchaîner coûtait quatre latences à chaque ouverture ET à chaque rafraîchissement, donc

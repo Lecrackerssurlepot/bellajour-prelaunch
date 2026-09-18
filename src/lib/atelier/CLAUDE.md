@@ -170,6 +170,13 @@ qui le montre. Le texte des mails est versionné dans `scripts/mails-atelier.mjs
   bon de commande de `/numero`, et entre dans le devis COMME dans la commande par une seule
   construction (`optionsItem`) — deux listes recopiées auraient chiffré un objet et commandé un
   autre. ⚠️ `cover_finish_gloss` n'existe pas chez eux : ne pas « harmoniser » l'asymétrie.
+- **Les PDF déposés sont RECOUPÉS dans le navigateur de l'atelier** (T-121, 18/09/2026) : la règle
+  est pure dans `decoupe.ts` (nature d'une page d'export d'après sa TrimBox, plan du bloc en pages
+  simples de 216 × 303, plan de la couverture avec le dos inséré à `largeurCouvertureMm`), l'assemblage
+  pdf-lib dans `src/app/admin/atelier/[token]/preparerPdf.ts`, jamais sur le serveur (130 Mo).
+  ⚠️ Cloudprinter attend des pages SIMPLES dans l'ordre de lecture (gabarit `book` = une page) et
+  `total_pages` = le compte du fichier : un export en doubles pages est faux même s'il « se voit »
+  bien. `envoyer_impression` relit chaque PDF du coffre (`controlePdf.ts`) et REFUSE un format faux.
 - **Le dos se CALCULE** (`dosMmPourPages`), grammage et bulk déduits de `PAPIER_INTERIEUR` :
   changer le papier change la géométrie, et le harnais tombe au lieu de se taire. `souvenir.ts`,
   lui, continue de MESURER le dos sur la feuille déposée — juger et découper sont deux gestes.

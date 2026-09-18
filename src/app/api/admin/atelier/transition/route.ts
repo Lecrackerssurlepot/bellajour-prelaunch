@@ -27,7 +27,10 @@ import { isValidNumeroToken } from "@/lib/atelier/token";
 import { logEvenement } from "@/lib/atelier/evenements";
 import { lireArchiveLe } from "@/lib/atelier/archivage";
 import { releverDossier } from "@/lib/atelier/mails";
-import { tailleReelle, empreinteObjet, signerGet, IMPRESSION_TTL_SECONDS } from "@/lib/atelier/r2";
+import { tailleReelle, empreinteObjet, signerGet, lireObjet, IMPRESSION_TTL_SECONDS } from "@/lib/atelier/r2";
+/* T-121 (18/09/2026) : la même inspection que l'écran de contrôle, appliquée
+   AVANT de commander. Un PDF hors format ne part plus chez l'imprimeur. */
+import { inspecterPdf, refusDeCommande } from "@/lib/atelier/controlePdf";
 import {
   adresseCloudprinter,
   payloadCommande,
@@ -66,6 +69,21 @@ import {
 import { TYPE_BROUILLON } from "@/lib/atelier/brouillon";
 
 export const runtime = "nodejs";
+/* « Envoyer à l'impression » relit les deux PDF depuis le coffre pour les
+   juger (T-121) : la minute par défaut ne suffit pas toujours à descendre
+   130 Mo. Même valeur que la route de contrôle ; Vercel écrête au plan. */
+export const maxDuration = 300;
+/* Le budget d'UN fichier (téléchargement + lecture) pendant la vérification. */
+const BUDGET_CONTROLE_MS = 90_000;
+
+/** Ce que la vérification a MESURÉ dans un PDF du coffre, rendu à l'écran (T-121). */
+type ControleImpression = {
+  type: string;
+  nbPages: number;
+  pageMm: { largeur: number; hauteur: number };
+  verdictTaille: string;
+  refus: string | null;
+};
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
@@ -405,6 +423,10 @@ export async function POST(request: Request) {
          enveloppante déjà déposée : les deux doivent concorder. */
       dos: { mm: number; largeurCouvertureMm: number } | null;
       fichiers: Array<{ type: string; cle: string; taille: number; md5: string }>;
+      /* T-121 : ce que chaque PDF du coffre MESURE, et ce qui interdirait de
+         commander. Rendu au dry-run pour que l'écran le montre, et opposé à
+         la commande réelle : un refus est aussi une erreur de champ. */
+      controles: ControleImpression[];
       adresse: { nom: string; ville: string; pays: string } | null;
     } | null = null;
 
@@ -470,6 +492,38 @@ export async function POST(request: Request) {
         }
       }
 
+      /* ── LE FICHIER EST-IL IMPRIMABLE ? (T-121, 18/09/2026) ─────────────
+         Jusqu'ici la route prouvait que l'objet était ARRIVÉ (taille, md5),
+         jamais qu'il était imprimable : un export Canva brut, en doubles
+         pages avec sa marge de traits, serait parti chez Cloudprinter tel
+         quel, avec `total_pages = 44` face à 23 pages. On relit chaque PDF
+         depuis le coffre avec la même inspection que l'écran de contrôle,
+         et un format faux, un mauvais compte ou des pages de tailles
+         différentes REFUSENT la commande, au dry-run comme au vrai clic.
+         Seulement quand tout le reste est déjà bon : descendre 130 Mo pour
+         un fichier qui manque ne servirait à rien. */
+      const controles: ControleImpression[] = [];
+      if (!erreurs.length) {
+        for (const f of fichiers) {
+          const slot = SLOTS_IMPRESSION.find((s) => s.type === f.type)!;
+          const type = f.type as (typeof produit.fichiers)[number];
+          try {
+            const octets = await lireObjet(f.cle, AbortSignal.timeout(BUDGET_CONTROLE_MS));
+            const lu = await inspecterPdf(octets, type, numero.nb_pages ?? null, produit);
+            const refus = refusDeCommande(type, lu);
+            controles.push({ type, nbPages: lu.nbPages, pageMm: lu.pageMm, verdictTaille: lu.verdictTaille, refus });
+            if (refus) erreurs.push({ champ: slot.cle, message: `${slot.label} : ${refus}` });
+          } catch (err) {
+            const e = err as Error;
+            console.error("[admin/transition] contrôle du PDF impossible", type, f.cle, e.name, e.message);
+            erreurs.push({
+              champ: slot.cle,
+              message: `${slot.label} : impossible de lire le PDF depuis le coffre (${e.name}). Redépose-le.`,
+            });
+          }
+        }
+      }
+
       if (erreurs.length) {
         return NextResponse.json({ error: "saisie", erreurs }, { status: 422 });
       }
@@ -499,6 +553,7 @@ export async function POST(request: Request) {
           return mm !== null && largeur !== null ? { mm, largeurCouvertureMm: largeur } : null;
         })(),
         fichiers,
+        controles,
         adresse: adr.ok
           ? { nom: adr.adresse.firstname + " " + adr.adresse.lastname, ville: adr.adresse.city, pays: adr.adresse.country }
           : null,
