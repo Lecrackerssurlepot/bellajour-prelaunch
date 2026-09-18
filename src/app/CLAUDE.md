@@ -152,6 +152,13 @@ rouvre le trou.
    un champ obligatoire dont on tait la raison se lit comme un fichier qu'on constitue.
 6. **La validation vient de `@/lib/atelier/questionnaire`**, jamais réécrite dans un écran : la
    route POST lit LA MÊME règle et renvoie `{ error: "champ_manquant", champ }`.
+7. **La réserve sous l'écran suit la barre fixe, elle n'est pas un nombre.** `Composer.tsx` mesure
+   `.at-q-barre` (ResizeObserver, rejoué à chaque écran et à chaque erreur) et pose `--at-barre-h`
+   sur `.at-q` ; `composer.css` en fait le `padding-bottom` de `.at-q-screen`. La barre fait 83 px,
+   mais 140 à 176 px sur mobile dès qu'un message d'erreur s'y affiche : avec 110 px fixes,
+   « Aucune préférence » de l'écran 3 disparaissait sous le verre (retour client du 18/09/2026).
+   Et le piège de spécificité de `.at-nav-suivi` vaut ici aussi : `.at-q-barre-retour` ne se
+   masque sur mobile qu'en `.bj-atelier .at-q-barre-retour`, sinon `.bj-atelier .at-q-back` gagne.
 
 ## Ce qui est mort — ne pas ressusciter
 
