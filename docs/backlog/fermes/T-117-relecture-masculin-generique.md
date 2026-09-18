@@ -1,7 +1,7 @@
 ---
 id: T-117
 titre: Des féminins résiduels subsistent dans le visible, contraires à la règle du masculin générique
-etat: en cours
+etat: fermé
 domaine: contenu
 gravite: confort
 autonomie: avis-requis
@@ -77,4 +77,6 @@ récits fictifs de la démo admin, et les libellés d'état « Livrée », « Va
   arrêté ». Passage à blanc vert (16 mails, aucun tiret). Accord donné par Mathias, qui pousse
   lui-même : `node scripts/mails-atelier.mjs --pousser --seulement M10`, puis relire le template
   40 dans Brevo.
-- **Reste** : la poussée du template 40 par Mathias, puis fermeture.
+- **18/09, poussée** : sur demande explicite de Mathias, `--pousser --seulement M10` lancé
+  par Claude : « M10 mis à jour, template 40 », les neuf autres non touchés. Relu par l'API
+  Brevo : le corps dit « où vous vous étiez arrêté ». **Fermé le 18/09.**
