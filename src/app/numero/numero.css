@@ -309,6 +309,8 @@
   .nu-main .nu-actions { justify-content: center; }
   .nu-main .nu-relance-mot,
   .nu-main .nu-relance-sub { margin-left: auto; margin-right: auto; }
+  /* La porte de sortie douce sous la carte de commande, sur l'axe elle aussi. */
+  .nu-main .nu-ajuster { display: block; margin-left: auto; margin-right: auto; }
 }
 @media (max-width: 760px) {
   .nu-actions { flex-direction: column; align-items: stretch; gap: 16px; text-align: center; }
@@ -931,6 +933,41 @@
 .nu-tarif-prix { color: var(--c-accent); white-space: nowrap; }
 
 .nu-prix-sub { margin-top: clamp(16px, 3vw, 22px); font-size: 15px; font-weight: 300; color: var(--c-text-soft); }
+
+/* ── LA CARTE DE LA COMMANDE (18/09/2026) ──
+   Même enveloppe que `.nu-doc` (l'état maquette) : 760 px, centrée, surface
+   et filet du thème. Le bon de commande y perd ses propres filets haut et
+   bas — c'est la carte qui borde, les lignes ne gardent que leurs séparateurs.
+   Le texte reste à gauche : un reçu centré ne se lit pas. */
+.nu-commande {
+  margin: 40px auto 0;
+  max-width: 760px;
+  padding: 26px 32px 30px;
+  border: 1px solid var(--c-line-md);
+  border-radius: 16px;
+  background: var(--c-surface-1);
+  text-align: left;
+}
+.bj-atelier .nu-commande-lbl {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--c-text-faint);
+}
+.nu-commande .nu-bon { margin-top: 12px; border-top: none; border-bottom: none; padding: 0; }
+.nu-commande .nu-bon-t { padding: 18px 0 0; }
+.nu-commande .nu-bon-t b { font-size: clamp(28px, 4vw, 32px); }
+.nu-commande .nu-promesse { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--c-line); }
+.nu-commande .nu-order--plein { width: auto; margin-top: 22px; }
+.nu-commande .nu-accords-mot { text-align: left; }
+@media (max-width: 760px) {
+  .nu-commande { margin-top: 36px; padding: 20px; }
+  .nu-commande .nu-order--plein { width: 100%; }
+  .nu-commande .nu-accords-mot { text-align: center; }
+}
 
 /* ══════════════════════════════════════════════════════════════════════
    LE BON DE COMMANDE — 08/09/2026.
