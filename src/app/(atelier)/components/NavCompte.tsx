@@ -190,7 +190,7 @@ export default function NavCompte({ ouvertAuBuild = false }: { ouvertAuBuild?: b
         className={`at-nav-compte${statut.connecte ? ' est-connecte' : ''}`}
         href="/compte"
         prefetch={false}
-        aria-label={statut.connecte ? 'Mon compte, connectée' : 'Mon compte'}
+        aria-label={statut.connecte ? 'Mon compte, connecté' : 'Mon compte'}
       >
         {statut.photo ? (
           <img className="at-nav-avatar" src={statut.photo} alt="" width={28} height={28} />

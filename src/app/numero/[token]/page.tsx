@@ -580,7 +580,7 @@ export default async function NumeroPage({
               <>
                 Nous en avons <b>{numero.nb_photos}</b>, et rien n’est perdu. Il en faut{' '}
                 <b>{MIN_PHOTOS}</b> pour composer un vrai numéro sans répéter deux fois le
-                même moment. Reprenez là où vous vous êtes arrêtée.
+                même moment. Reprenez là où vous vous êtes arrêté.
               </>
             )}
           </p>
@@ -614,7 +614,7 @@ export default async function NumeroPage({
               <>
                 Nous en avons {numero.nb_photos}. À partir de <b>{MIN_PHOTOS}</b>, il y a de
                 quoi composer un vrai numéro sans répéter deux fois le même
-                moment. Reprenez là où vous vous étiez arrêtée.
+                moment. Reprenez là où vous vous étiez arrêté.
               </>
             )}
           </p>

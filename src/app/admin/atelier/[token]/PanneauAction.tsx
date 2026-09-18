@@ -982,7 +982,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
           <p className="ate-attente">On attend son paiement.</p>
           <p className="ate-faint">
             Sa page montre la couverture, la pagination et le prix. La relance M3b
-            partira toute seule si elle tarde.
+            partira toute seule s'il tarde.
           </p>
           <button
             type="button"

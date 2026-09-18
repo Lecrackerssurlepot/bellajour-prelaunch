@@ -195,10 +195,10 @@ export const ACTIONS: Record<ActionCle, Action> = {
     cle: "publier_apercu",
     libelle: "Publier l'aperçu",
     explication:
-      "Ouvre la page qui vend : elle découvre sa couverture, son nombre de pages et son prix, et peut payer.",
+      "Ouvre la page qui vend : le client découvre sa couverture, son nombre de pages et son prix, et peut payer.",
     de: ["photos_recues", "photos_insuffisantes"],
     vers: "apercu_pret",
-    note: "Elle découvre son prix et peut payer dans la foulée.",
+    note: "Il découvre son prix et peut payer dans la foulée.",
   },
 
   /* Corriger sans refaire l'histoire. Une coquille dans la pagination ou une
@@ -213,7 +213,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
       "Remplace les visuels ou la pagination d'un aperçu déjà publié. Le prix suit. Aucun mail n'est renvoyé.",
     de: ["apercu_pret"],
     vers: "apercu_pret",
-    note: "Le mail d'annonce ne repart pas : il est déjà parti. Une relance peut en revanche être due si elle n'a toujours pas payé.",
+    note: "Le mail d'annonce ne repart pas : il est déjà parti. Une relance peut en revanche être due s'il n'a toujours pas payé.",
     surPlace: true,
   },
 
@@ -221,7 +221,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
     cle: "photos_insuffisantes",
     libelle: "Demander plus de photos",
     explication:
-      "Sa page lui propose de reprendre le dépôt. Le dossier revient ici dès qu'elle a rajouté ses photos.",
+      "Sa page lui propose de reprendre le dépôt. Le dossier revient ici dès qu'il a rajouté ses photos.",
     de: ["photos_recues"],
     vers: "photos_insuffisantes",
     note: "Ses photos déjà déposées sont conservées.",
@@ -236,7 +236,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
     cle: "publier_maquette",
     libelle: "Publier la maquette",
     explication:
-      "Elle découvre le numéro complet et le bouton « Tout est bon, imprimez ». Rien ne part à l'impression avant.",
+      "Le client découvre le numéro complet et le bouton « Tout est bon, imprimez ». Rien ne part à l'impression avant.",
     de: ["payee", "maquette_prete"],
     vers: "maquette_prete",
     note: "L'échéance d'auto-validation à J+7 part de maintenant. Republier après des retouches lève leur suspension.",
@@ -249,7 +249,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
       "Passe la commande chez l'imprimeur : le PDF et l'adresse de livraison partent chez Cloudprinter. Le suivi arrivera tout seul.",
     de: ["validee"],
     vers: "en_production",
-    note: "Elle a déjà été prévenue au moment où elle a validé : rien de nouveau ne part ici.",
+    note: "Il a déjà été prévenu au moment où il a validé : rien de nouveau ne part ici.",
   },
 
   marquer_expediee: {

@@ -68,7 +68,7 @@ export default function Parcours({ parcours }: { parcours: ParcoursVue }) {
       {parcours.detour ? (
         <p className={parcours.detour.actif ? "ate-detour ate-detour--actif" : "ate-detour"}>
           {parcours.detour.actif
-            ? "Détour en cours : on lui a demandé plus de photos. Le dossier reviendra à l'étape 1 dès qu'elle aura redéposé."
+            ? "Détour en cours : on lui a demandé plus de photos. Le dossier reviendra à l'étape 1 dès qu'il aura redéposé."
             : `Ce dossier est passé par « photos insuffisantes »${
                 parcours.detour.quand ? ` le ${jour(parcours.detour.quand)}` : ""
               }, puis est revenu.`}
