@@ -632,7 +632,7 @@ export const MAILS = [
        La phrase commune ne parle donc que du TEMPS, qui est vrai dans tous
        les cas ; ce qui distingue les situations vit dans les deux encarts
        conditionnels, pas dans le texte de base. */
-    sous: `${PRENOM}, votre numéro n'a plus bougé depuis trois mois. Sans nouvelles de vous d'ici le {{ params.DATE_CLOTURE }}, nous refermons son dossier et nous effaçons ce que vous nous aviez confié. D'ici là, rien n'a changé : votre lien vous ramène exactement où vous vous étiez arrêtée.`,
+    sous: `${PRENOM}, votre numéro n'a plus bougé depuis trois mois. Sans nouvelles de vous d'ici le {{ params.DATE_CLOTURE }}, nous refermons son dossier et nous effaçons ce que vous nous aviez confié. D'ici là, rien n'a changé : votre lien vous ramène exactement où vous vous étiez arrêté.`,
     /* Deux encarts, jamais les mêmes selon le dossier. Ils peuvent coexister
        (une couverture prête ET des photos au coffre) et se lisent alors dans
        le bon ordre : ce qu'elle gagne à revenir, puis ce qu'elle perd à ne

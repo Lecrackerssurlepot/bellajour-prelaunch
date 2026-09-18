@@ -73,4 +73,8 @@ récits fictifs de la démo admin, et les libellés d'état « Livrée », « Va
   12 fichiers, dont l'assertion du harnais qui citait « Elle n'a rien écrit ». Les clés en base
   (`cliente`, `attente_cliente`) et les identifiants n'ont pas bougé. tsc, lint, build et
   harnais verts.
-- **Reste** : M10 (point 2), sur accord de Mathias, puis fermeture.
+- **18/09, point 2, côté source** : `scripts/mails-atelier.mjs:635` dit « où vous vous étiez
+  arrêté ». Passage à blanc vert (16 mails, aucun tiret). Accord donné par Mathias, qui pousse
+  lui-même : `node scripts/mails-atelier.mjs --pousser --seulement M10`, puis relire le template
+  40 dans Brevo.
+- **Reste** : la poussée du template 40 par Mathias, puis fermeture.
