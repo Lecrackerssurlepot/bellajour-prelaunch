@@ -55,6 +55,19 @@ de `presign/route.ts`). Le geste de l'atelier devient : déposer l'export Canva 
 4. **Ne pas casser** : `verdictTaillePage`, `verdictPagesPdf`, `MAX_PDF_BYTES` restent la source du
    verdict ; le dépôt reste single-part ; aucune route serveur ne reçoit le PDF.
 
+5. **Bloquer, pas seulement annoncer** : aujourd'hui `envoyer_impression` ne lit pas les verdicts du
+   contrôle (`transition/route.ts` vérifie présence et md5, pas `verdictTaillePage`). Un fichier
+   `hors_format` ou au mauvais compte de pages doit rendre 422 avec la phrase du contrôle : un
+   export Canva brut (222 × 309) partirait sinon chez Cloudprinter avec sa marge blanche.
+6. **Résolution des photos posées, au dépôt** (demande de Mathias du 18/09) : pour chaque image du
+   PDF, largeur en pixels / largeur posée en mm (chaîne complète des transformations, comme le
+   relevé pypdfium2 du 18/09 : pleines pages de Merisa à 171 dpi, vignettes 300 à 500), et la
+   liste des pages sous un seuil réglable. Dans le navigateur (pdf.js donne les opérateurs et
+   leurs matrices), jamais sur le serveur.
+7. **Bien plus tôt, sur la fiche du dossier** : signaler les photos trop petites pour une pleine
+   page dès le dépôt du client (les dimensions sont connues : `photos`), avec le dpi qu'elles
+   donneraient en A4. C'est là que l'atelier choisit quoi agrandir, pas au moment d'imprimer.
+
 Rattaché à T-078 (le moteur de rendu) dont c'est l'étape 1 concrète, avec le dossier de Merisa
 comme jeu d'essai (les fichiers du 18/09 sont sur le Bureau de Mathias).
 
