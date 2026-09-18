@@ -304,6 +304,10 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
   const [lotDoubles, setLotDoubles] = useState<{ fait: number; total: number } | null>(null);
   /* Les noms lisibles des PDF d'impression déposés — une clé de coffre seule
      ne dit rien à l'écran. Préremplis depuis la fiche si un dépôt a eu lieu. */
+  /* T-121 : le lien de lecture (signé une heure) du PDF que la fiche vient
+     de fabriquer et de déposer : l'atelier regarde AVANT de commander. Jamais
+     restauré d'un brouillon, un lien signé se périme. */
+  const [pdfLiens, setPdfLiens] = useState<Record<string, string>>({});
   const [pdfNoms, setPdfNoms] = useState<Record<string, string>>(() => {
     const noms: Record<string, string> = {};
     for (const s of SLOTS_IMPRESSION) {
@@ -782,6 +786,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
       }
 
       set(champ, data.key);
+      setPdfLiens((l) => ({ ...l, [champ]: typeof data.lecture === "string" ? data.lecture : "" }));
       setPdfNoms((n) => ({
         ...n,
         [champ]: `${nom} (${(corps.size / (1024 * 1024)).toFixed(1)} Mo) · ${prep.resume}`,
@@ -1617,6 +1622,11 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                           e.target.value = "";
                         }}
                       />
+                      {pdfLiens[s.cle] ? (
+                        <a className="ate-slot-lien" href={pdfLiens[s.cle]} target="_blank" rel="noreferrer">
+                          Voir le PDF préparé ↗
+                        </a>
+                      ) : null}
                       {erreurDe(s.cle) ? <span className="ate-erreur">{erreurDe(s.cle)}</span> : null}
                     </div>
                   ))}

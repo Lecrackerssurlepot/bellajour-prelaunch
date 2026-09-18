@@ -32,8 +32,10 @@ la main ; elle est maintenant dans la fiche.
   mauvais compte de pages ou des tailles différentes, au dry-run comme au vrai clic. Jusque-là,
   le contrôle ne pouvait tourner qu'APRÈS la commande (il lit `impression_fichiers`, écrit par la
   transition) : le récap du dry-run porte désormais les mesures de chaque fichier.
-- **Reste à voir à l'œil** : le dépôt sur la vraie fiche de Merisa (Mathias), avec les deux
-  exports Canva bruts (« Douples pages » et « Cover »).
+- **Vu par Mathias sur bellajour.fr le 18/09 à 18 h 20** : les deux exports Canva bruts déposés, les deux
+  phrases sous les cadres, le récap « Mesuré » ; les fichiers du coffre relus et rendus en images.
+- **Lien « Voir le PDF préparé ↗ »** sous chaque cadre après le dépôt (lecture signée une heure,
+  rendue par `presign`) : l'atelier ouvre ce que la fiche a fabriqué avant de commander.
 
 ## 18/09/2026 — M6 « part à l'impression » part à la commande, plus à la validation (T-120)
 
