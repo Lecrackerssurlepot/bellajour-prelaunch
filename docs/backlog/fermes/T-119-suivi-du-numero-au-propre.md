@@ -1,7 +1,7 @@
 ---
 id: T-119
 titre: La page de suivi du numéro fait fouillis (typos, espacements, boutons, trop d'informations), desktop et mobile
-etat: en cours
+etat: fermé
 domaine: numero
 gravite: serieux
 autonomie: libre
@@ -66,5 +66,7 @@ Aucun dossier réel à ces deux états : vérifiés en rendu statique (DOM final
 + balisage exact), desktop 1440 et mobile 390, captures dans la conversation du 18/09.
 
 ## Ce qui reste
-Le regard de Mathias sur les six planches de captures ; puis fermer. Les blocs propres à en route (carte transporteur/suivi + bouton verre),
+Rien : Mathias a vu les six planches de captures le 18/09 (« c'est propre ») et a fermé le ticket.
+Hors périmètre, à ouvrir à part si voulu : les deux accords visibles d'emblée dans la carte de
+commande (la planche les montrait, le flux en deux temps est resté). Les blocs propres à en route (carte transporteur/suivi + bouton verre),
 chez vous (relance centrée), attente. Puis vérifier la visionneuse au nouvel axe.
