@@ -244,9 +244,9 @@ async function relever(request: Request) {
 
       /* ── l'auto-validation, AVANT les mails ───────────────────────────
          Le dossier change d'état : lui envoyer M5 dans la même passe serait
-         annoncer une maquette qu'on vient de valider d'office. M6 partira au
-         balayage suivant, une fois l'état stabilisé — c'est le prix d'une
-         règle simple, et il se compte en heures. */
+         annoncer une maquette qu'on vient de valider d'office. Rien ne part
+         en `validee` (T-120) : M6 partira quand l'atelier passera la commande
+         d'impression, comme pour une validation cliquée. */
       if (doitAutoValider(d, dejaPartis, maintenant)) {
         const quand = maintenant.toISOString();
         const { data: maj } = await supabase

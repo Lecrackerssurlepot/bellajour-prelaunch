@@ -46,7 +46,7 @@ const MAIL_A_L_ARRIVEE: Partial<Record<Etat, string>> = {
   photos_insuffisantes: "M9",
   apercu_pret: "M3",
   maquette_prete: "M5",
-  validee: "M6",
+  en_production: "M6",
   expediee: "M7",
   livree: "M7b",
 };

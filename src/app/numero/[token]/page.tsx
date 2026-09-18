@@ -760,7 +760,10 @@ export default async function NumeroPage({
 
       {numero.etat === 'validee' && (
         <>
-          <p className="nu-mot">Parti à l’impression.</p>
+          {/* T-120 (18/09/2026) : « Parti à l'impression » se disait ici, avant
+              toute commande. L'atelier prépare les fichiers ; le départ réel
+              est l'état suivant, et c'est lui qui envoie M6. */}
+          <p className="nu-mot">Validé. Nous préparons l’impression.</p>
           <p className="nu-sub">
             Plus rien à faire. Chez vous autour du{' '}
             <b>{formaterJour(ajouterJours(numero.valide_le ?? numero.etat_maj_le, JOURS_LIVRAISON))}</b>.

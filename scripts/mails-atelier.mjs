@@ -530,10 +530,13 @@ export const MAILS = [
     preheader: "Votre numéro est entre les mains de l'imprimeur.",
     titreHtml: "Départ à l'impression",
     h1: "C’est parti<br />à l’impression.",
-    sous: `${PRENOM}, votre numéro a quitté l’atelier pour l’imprimeur. À partir de maintenant, plus rien ne peut être modifié : c’est ce qui garantit qu’il arrivera exactement tel que vous l’avez validé.`,
+    /* T-120 (18/09/2026) : ce mail part à la COMMANDE d'impression, plus au
+       clic de validation. « A quitté l'atelier » est donc vrai au moment où
+       il arrive, et le pied annonce le prochain mail, celui de l'expédition. */
+    sous: `${PRENOM}, votre numéro a quitté l’atelier : il est entre les mains de l’imprimeur. Plus rien ne peut être modifié, c’est ce qui garantit qu’il arrivera exactement tel que vous l’avez validé.`,
     cta: "Suivre mon numéro",
     lien: LIEN,
-    pied: "Comptez une dizaine de jours avant de l’avoir entre les mains. Nous vous écrivons dès qu’il part.",
+    pied: "Comptez une dizaine de jours avant de l’avoir entre les mains. Nous vous écrivons dès que le colis est expédié.",
   },
   {
     code: "M7",

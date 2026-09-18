@@ -1088,11 +1088,22 @@ export function codesPour(
       if (deja("M4")) dus.push("M5");
       break;
 
+    /* État 5 : le client a validé, RIEN ne part. Jusqu'au 18/09/2026, M6
+       « part à l'impression » partait ici, au clic « imprimez » : un vrai
+       client (Merisa, 17/09) a lu « votre numéro a quitté l'atelier pour
+       l'imprimeur » alors qu'aucune commande n'existait, ni PDF, ni
+       référence Cloudprinter. Décision de Mathias (T-120) : le mail part
+       quand le numéro part VRAIMENT, c'est-à-dire à `envoyer_impression`.
+       Sa page dit « validé », et c'est tout ce qui est vrai à cet instant. */
     case "validee":
-      if (deja("M5")) dus.push("M6");
       break;
 
+    /* État 6 : la commande d'impression existe (ou le mode manuel l'a
+       remplacée). M6 dit maintenant la vérité. Chaîné sur M5 : un dossier
+       validé à qui la maquette n'a jamais été annoncée ne reçoit pas « il
+       part à l'impression » en premier mail. */
     case "en_production":
+      if (deja("M5")) dus.push("M6");
       break;
 
     case "expediee":

@@ -249,7 +249,7 @@ export const ACTIONS: Record<ActionCle, Action> = {
       "Passe la commande chez l'imprimeur : le PDF et l'adresse de livraison partent chez Cloudprinter. Le suivi arrivera tout seul.",
     de: ["validee"],
     vers: "en_production",
-    note: "Il a déjà été prévenu au moment où il a validé : rien de nouveau ne part ici.",
+    note: "C'est ici que le client apprend le départ à l'impression (T-120) : sa validation, elle, n'envoyait rien.",
   },
 
   marquer_expediee: {

@@ -767,7 +767,12 @@ const d = (p: Partial<NumeroPourReleve>): NumeroPourReleve => ({ ...base, ...p }
 
 titre("— LE GARDE-FOU DE CHAINE (le vrai danger) —");
 ok("etat validee sans aucun mail : RIEN ne part", codesPour(d({ etat: "validee" }), env(), MAINTENANT).length === 0);
-ok("etat validee avec M5 parti : M6 part", codesPour(d({ etat: "validee" }), env(["M5", ilYA(1)]), MAINTENANT).join() === "M6");
+/* T-120 (18/09/2026) : la validation n'envoie plus rien, M6 part à la
+   commande d'impression. Un dossier validé à qui M6 est déjà parti (Merisa,
+   17/09) ne le recevra pas deux fois : le verrou de mails_envoyes s'en charge. */
+ok("etat validee avec M5 parti : RIEN ne part (M6 attend la commande)", codesPour(d({ etat: "validee" }), env(["M5", ilYA(1)]), MAINTENANT).length === 0);
+ok("etat en_production sans M5 : pas de M6", codesPour(d({ etat: "en_production" }), env(), MAINTENANT).length === 0);
+ok("etat en_production avec M5 parti : M6 part", codesPour(d({ etat: "en_production" }), env(["M5", ilYA(1)]), MAINTENANT).join() === "M6");
 ok("maquette prete sans M4 : pas de M5", codesPour(d({ etat: "maquette_prete" }), env(), MAINTENANT).length === 0);
 ok("maquette prete avec M4 : M5 part", codesPour(d({ etat: "maquette_prete" }), env(["M4", ilYA(2)]), MAINTENANT).join() === "M5");
 ok("expediee sans M6 : pas de M7", codesPour(d({ etat: "expediee", transporteur: "Colissimo" }), env(), MAINTENANT).length === 0);
