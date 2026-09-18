@@ -369,35 +369,51 @@
 }
 
 /* ---- encart secondaire (suivi, adresse, rappel) ---- */
+/* 18/09 : la carte du colis prend l'enveloppe commune (760 px, centrée,
+   filet du thème) : champs à gauche, bouton en verre à droite. */
 .nu-carte {
-  margin-top: clamp(28px, 5vw, 40px);
-  padding: 22px 24px;
-  border: 1px solid var(--c-line);
+  margin: 40px auto 0;
+  max-width: 760px;
+  padding: 24px 32px;
+  border: 1px solid var(--c-line-md);
   border-radius: 16px;
   background: var(--c-surface-1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  text-align: left;
 }
+.nu-carte-champs { display: flex; gap: 56px; margin: 0; }
+.nu-carte-champ { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 
 .nu-carte dt {
+  font-family: var(--font-ui);
   font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+  font-weight: 500;
   color: var(--c-text-faint);
 }
 
 .nu-carte dd {
-  margin: 4px 0 0;
-  font-size: 16px;
+  margin: 0;
+  font-size: 15px;
   color: var(--c-text);
 }
 
-.nu-carte dd + dt { margin-top: 16px; }
+.nu-carte .nu-ghost { flex: 0 0 auto; }
+@media (max-width: 760px) {
+  .nu-carte { margin-top: 36px; padding: 20px; flex-direction: column; align-items: stretch; gap: 18px; }
+  .nu-carte-champs { gap: 28px; }
+}
 
 /* Le numero de suivi : celui qu'on recopie dans l'appli du transporteur.
    Selectionnable d'un geste, et lisible chiffre par chiffre (un 0 et un O
    ne se confondent pas dans une chasse fixe). */
 .nu-suivi-code {
-  display: block;
-  margin-top: 6px;
+  display: inline;
+  margin: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 14px;
   letter-spacing: 0.08em;

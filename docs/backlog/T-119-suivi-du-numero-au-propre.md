@@ -56,6 +56,15 @@ visionneuse non plus, ses légendes se centraient déjà par leurs propres règl
 Vérifié en local sur le dossier réel « 24h des hautes alpes 2026 » : carte à 740 px sur l'axe
 (1440), 343 px sur 390 sans débordement, bouton pleine largeur sur mobile.
 
+### États en route et chez vous (18/09, PR #175)
+En route : la carte du colis prend l'enveloppe commune (`.nu-carte`, 760 px) : transporteur et
+numéro de suivi en deux champs à gauche, « Suivre le colis » en bouton verre à droite (dessous
+sur mobile) ; le numéro reste écrit même quand le lien existe. Chez vous : une phrase (« Il existe
+aussi en numérique, à garder et à partager »), le bouton, puis la relance centrée sur l'axe.
+L'icône « s'ouvre ailleurs » passe dans `icones.tsx`, partagée avec la carte du document.
+Aucun dossier réel à ces deux états : vérifiés en rendu statique (DOM final de la page réelle
++ balisage exact), desktop 1440 et mobile 390, captures dans la conversation du 18/09.
+
 ## Ce qui reste
-Les blocs propres aux autres états, dans l'ordre de la planche : en route (carte transporteur/suivi + bouton verre),
+Le regard de Mathias sur les six planches de captures ; puis fermer. Les blocs propres à en route (carte transporteur/suivi + bouton verre),
 chez vous (relance centrée), attente. Puis vérifier la visionneuse au nouvel axe.

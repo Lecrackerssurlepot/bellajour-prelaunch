@@ -20,6 +20,7 @@ import Footer from '../../(atelier)/components/Footer'
 import { COMPOSER_HREF, CTA_LABEL, CONTACT_EMAIL } from '../../(atelier)/content'
 import { makeSupabase } from '@/lib/supabase'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
+import { ICONE_EXTERNE } from './icones'
 import { resoudreApercu } from '@/lib/atelier/apercu'
 import { eurosDuDossier, centimesDuDossier, type PalierCle } from '@/lib/atelier/prix'
 import { finitionDuDossier } from '@/lib/atelier/impression'
@@ -782,34 +783,33 @@ export default async function NumeroPage({
         <>
           <p className="nu-mot">{titre} est en route.</p>
           <p className="nu-sub">Vous pouvez suivre le colis jusqu’à votre porte.</p>
-          <dl className="nu-carte">
-            <dt>Transporteur</dt>
-            <dd>{numero.transporteur?.trim() || 'En cours d’attribution'}</dd>
-            {(numero.tracking_url || numero.tracking_code) && (
-              <>
-                <dt>Suivi</dt>
-                <dd>
-                  {numero.tracking_url ? (
-                    <a
-                      className="nu-lien"
-                      href={numero.tracking_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Suivre le colis
-                    </a>
-                  ) : null}
-                  {/* Le numéro reste écrit même quand le lien existe : c'est
-                      lui qu'on recopie dans l'application du transporteur, et
-                      c'est tout ce qui reste quand on ne sait pas construire
-                      le lien. */}
-                  {numero.tracking_code ? (
-                    <span className="nu-suivi-code">{numero.tracking_code}</span>
-                  ) : null}
-                </dd>
-              </>
-            )}
-          </dl>
+          {/* ── LA CARTE DU COLIS (18/09/2026, planche validée) ──
+              Même enveloppe que les cartes du document et de la commande :
+              les deux champs à gauche, le geste « Suivre le colis » en verre
+              à droite (dessous sur téléphone). Le numéro reste écrit même
+              quand le lien existe : c'est lui qu'on recopie dans l'application
+              du transporteur, et c'est tout ce qui reste quand on ne sait pas
+              construire le lien. */}
+          <div className="nu-carte nu-carte--suivi">
+            <dl className="nu-carte-champs">
+              <div className="nu-carte-champ">
+                <dt>Transporteur</dt>
+                <dd>{numero.transporteur?.trim() || 'En cours d’attribution'}</dd>
+              </div>
+              {numero.tracking_code ? (
+                <div className="nu-carte-champ">
+                  <dt>Suivi</dt>
+                  <dd><span className="nu-suivi-code">{numero.tracking_code}</span></dd>
+                </div>
+              ) : null}
+            </dl>
+            {numero.tracking_url ? (
+              <a className="nu-ghost" href={numero.tracking_url} target="_blank" rel="noopener noreferrer">
+                {ICONE_EXTERNE}
+                Suivre le colis
+              </a>
+            ) : null}
+          </div>
         </>
       )}
 
@@ -828,10 +828,9 @@ export default async function NumeroPage({
                parlait de contrainte technique au moment d'offrir un cadeau. */
             <>
               <p className="nu-mot">{titre} est chez vous.</p>
-              <p className="nu-sub">
-                Il existe aussi en numérique ! Vous pouvez le télécharger en
-                cliquant sur le bouton ci-dessous.
-              </p>
+              {/* 18/09 : une phrase, plus « cliquant sur le bouton ci-dessous »
+                  (le bouton est là, il n'a pas besoin qu'on le désigne). */}
+              <p className="nu-sub">Il existe aussi en numérique, à garder et à partager.</p>
               <div className="nu-actions">
                 <a className="at-cta" href={`/api/atelier/souvenir?token=${numero.token}`}>
                   Télécharger mon magazine en PDF
