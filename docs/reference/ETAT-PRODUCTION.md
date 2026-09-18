@@ -12,7 +12,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ## 18/09/2026 (soir) — la fiche recoupe elle-même les PDF d'impression (T-121)
 
-**Sur la branche `feat/t121-decoupe-pdf`, en attente de fusion.** Né du premier dossier réel : l'atelier
+**EN PRODUCTION depuis le 18/09 au soir (PR #181).** Né du premier dossier réel : l'atelier
 produit naturellement un export Canva en doubles pages avec fond perdu et marge de traits, et une
 couverture de 420 mm sans dos ; Cloudprinter attend 44 pages simples de 216 × 303 et une feuille
 enveloppante de 429,29 × 303 (dos de 3,29 mm pour 44 pages). Le 18/09 la conversion a été faite à

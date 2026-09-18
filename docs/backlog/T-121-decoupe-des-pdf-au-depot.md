@@ -72,7 +72,7 @@ Rattaché à T-078 (le moteur de rendu) dont c'est l'étape 1 concrète, avec le
 comme jeu d'essai (les fichiers du 18/09 sont sur le Bureau de Mathias).
 
 ## Ce qui a été fait
-**18/09/2026 (soir), branche `feat/t121-decoupe-pdf`. Décision de Mathias : « c'est à l'atelier de
+**18/09/2026 (soir), PR #181 fusionnée le jour même. Décision de Mathias : « c'est à l'atelier de
 créer les fichiers en pages simples et d'ajouter le dos aux bonnes mesures ».**
 - Points 1 à 5 livrés : `src/lib/atelier/decoupe.ts` (pur, 40 cas au harnais sur les cotes réelles
   de l'export de Merisa), `src/app/admin/atelier/[token]/preparerPdf.ts` (pdf-lib, dans le
@@ -83,7 +83,9 @@ créer les fichiers en pages simples et d'ajouter le dos aux bonnes mesures ».*
   en 0,5 s, « Cover » (420 mm) → 429,29 × 303 avec le dos de 3,29 mm, résultats identiques au pixel
   près aux fichiers faits à la main le matin ; l'export sans fond perdu est refusé avec la case
   Canva à cocher dans la phrase.
-- tsc, lint, build, harnais (1143 cas) verts.
+- tsc, lint, build, harnais (1143 cas) verts. Dry-run complet rejoué sur le build local avec les deux
+  exports Canva bruts de Merisa injectés dans la fiche : les deux cadres disent ce qu'ils ont fait, le
+  récap porte « Mesuré : cover 2 pages de 429,3 × 303 · book 44 pages de 216 × 303, conforme ».
 - Points 6 et 7 (résolution des photos) : pas commencés.
 Reste : le dépôt à l'œil sur la vraie fiche de Merisa, avec les deux exports Canva bruts.
 
