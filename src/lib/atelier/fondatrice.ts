@@ -85,6 +85,19 @@ export const EVT_CREDIT_CONSOMME = "credit_fondatrice_consomme";
  * prévente ; il ne crée aucun droit, il en désigne un (borne nº6 ci-dessus).
  */
 export const EVT_FONDATEUR_RATTACHE = "fondateur_rattache";
+/**
+ * Un code du journal est INVALIDE chez Stripe et ne doit plus être relu
+ * (19/09/2026). Payload : `{ code, promotion_code_id, numero_fondateur,
+ * raison, par }`. Le journal reste append-only : la ligne `code_fondatrice_cree`
+ * fautive ne disparaît pas, elle est dépassée — exactement comme un
+ * rattachement corrigé.
+ *
+ * Le cas qui l'a fait naître : deux codes frappés fin août avec la clé de
+ * TEST (Marjorie nº14, Klervie nº13), invisibles pour la clé LIVE qui sert
+ * depuis. Le checkout les relisait, Stripe répondait « a similar object
+ * exists in test mode », et la fondatrice payait plein tarif ET son port.
+ */
+export const EVT_CODE_INVALIDE = "code_fondatrice_invalide";
 
 /** La clé de métadonnée posée sur la session Stripe quand la remise est d'office. */
 export const META_CREDIT = "credit_fondatrice";
@@ -187,23 +200,51 @@ export type CodeAuJournal = {
 };
 
 /**
- * Le premier code frappé, lu dans une liste d'événements `code_fondatrice_cree`.
+ * Les identifiants Stripe déclarés invalides, lus dans une liste d'événements
+ * `code_fondatrice_invalide`. Un payload sans `promotion_code_id` lisible ne
+ * compte pas : on n'invalide rien sur un doute.
+ */
+export function codesInvalides(
+  lignes: Array<{ payload: unknown }> | null | undefined,
+): Set<string> {
+  const ids = new Set<string>();
+  for (const l of lignes ?? []) {
+    const p = (l?.payload ?? {}) as Record<string, unknown>;
+    if (typeof p.promotion_code_id === "string" && p.promotion_code_id.trim()) {
+      ids.add(p.promotion_code_id.trim());
+    }
+  }
+  return ids;
+}
+
+/**
+ * Le premier code frappé ENCORE VALIDE, lu dans une liste d'événements
+ * `code_fondatrice_cree`.
  *
  * Le journal EST la persistance : aucune colonne, aucune migration. Un
  * payload sans `code` lisible ne compte pas — on préfère « rien trouvé » à
  * un code fantôme, parce que c'est « rien trouvé » qui déclenche une
  * création, et une création est réparable ; un code fantôme appliqué à une
  * session Stripe ne l'est pas.
+ *
+ * Un code dont l'identifiant figure dans `invalides` est SAUTÉ, pas rendu :
+ * c'est ce qui permet de remplacer un code frappé en mode test sans jamais
+ * effacer une ligne du journal. Sans cette exclusion, le premier code
+ * (le fautif) gagnerait toujours et un code de remplacement ne serait jamais
+ * relu.
  */
 export function codeDansLeJournal(
   lignes: Array<{ payload: unknown; created_at: string }> | null | undefined,
+  invalides: Set<string> = new Set(),
 ): CodeAuJournal | null {
   for (const l of lignes ?? []) {
     const p = (l.payload ?? {}) as Record<string, unknown>;
     if (typeof p.code !== "string" || !p.code.trim()) continue;
+    const promotionCodeId = typeof p.promotion_code_id === "string" ? p.promotion_code_id : null;
+    if (promotionCodeId && invalides.has(promotionCodeId)) continue;
     return {
       code: p.code.trim(),
-      promotionCodeId: typeof p.promotion_code_id === "string" ? p.promotion_code_id : null,
+      promotionCodeId,
       couponId: typeof p.coupon_id === "string" ? p.coupon_id : null,
       creeLe: l.created_at,
     };
@@ -249,6 +290,23 @@ export function estCollisionDeCode(err: unknown): boolean {
   const e = err as { type?: string; message?: string } | null;
   if (!e || typeof e.message !== "string") return false;
   return /already exists|existing promotion code/i.test(e.message);
+}
+
+/**
+ * Stripe ne trouve-t-il pas ce code parce qu'il vit dans l'AUTRE mode ?
+ *
+ * C'est le message exact de Stripe pour un objet de test relu avec une clé
+ * live (ou l'inverse) : « No such promotion code: 'promo_…'; a similar
+ * object exists in test mode, but a live mode key was used to make this
+ * request. » Un tel code ne s'appliquera JAMAIS sur une session de ce mode :
+ * il ne se répare qu'en frappant un remplaçant. Toute autre erreur de
+ * relecture (réseau, clé, inconnu) reste un doute, et un doute reste
+ * « indisponible ».
+ */
+export function estCodeDAutreMode(err: unknown): boolean {
+  const e = err as { message?: string } | null;
+  if (!e || typeof e.message !== "string") return false;
+  return /similar object exists in (test|live) mode/i.test(e.message);
 }
 
 /**
@@ -458,7 +516,19 @@ async function lireCodeDeLaFondatrice(
     .returns<Array<{ payload: Record<string, unknown>; created_at: string }>>();
 
   if (error) return { erreur: `journal:${error.code ?? "?"}` };
-  return { trouve: codeDansLeJournal(data) };
+
+  /* Les codes déclarés invalides (frappés dans l'autre mode Stripe) sont
+     sautés : sinon le premier code, le fautif, gagnerait pour toujours. */
+  const { data: invalides, error: errInvalides } = await supabase
+    .from("evenements")
+    .select("payload")
+    .eq("type", EVT_CODE_INVALIDE)
+    .contains("payload", { numero_fondateur: numeroFondateur })
+    .limit(5)
+    .returns<Array<{ payload: unknown }>>();
+
+  if (errInvalides) return { erreur: `journal_invalides:${errInvalides.code ?? "?"}` };
+  return { trouve: codeDansLeJournal(data, codesInvalides(invalides)) };
 }
 
 /** Le crédit a-t-il déjà été DÉPENSÉ, d'après notre journal ? */
@@ -572,7 +642,7 @@ export async function assurerCreditFondatrice(
       return { statut: "indisponible", pourquoi: journal.erreur, code: null };
     }
 
-    const existant = journal.trouve;
+    let existant = journal.trouve;
     if (existant) {
       if (!existant.promotionCodeId) {
         /* Une vieille ligne sans identifiant de promotion code : on ne peut
@@ -585,28 +655,60 @@ export async function assurerCreditFondatrice(
         return { statut: "consomme", code: existant.code, numeroFondateur, origine };
       }
 
-      let promo: Stripe.PromotionCode;
+      const relu = { ...existant, promotionCodeId: existant.promotionCodeId };
+      let promo: Stripe.PromotionCode | null = null;
       try {
-        promo = await stripe.promotionCodes.retrieve(existant.promotionCodeId);
+        promo = await stripe.promotionCodes.retrieve(relu.promotionCodeId);
       } catch (err) {
-        console.error("[atelier/fondatrice] relecture du code échouée", (err as Error)?.message);
-        return { statut: "indisponible", pourquoi: "stripe_relecture", code: existant.code };
+        if (!estCodeDAutreMode(err)) {
+          console.error("[atelier/fondatrice] relecture du code échouée", (err as Error)?.message);
+          return { statut: "indisponible", pourquoi: "stripe_relecture", code: existant.code };
+        }
+
+        /* Le code vit dans l'AUTRE mode Stripe (frappé avec la clé de test,
+           relu avec la clé live) : il ne s'appliquera jamais ici. On le
+           déclare invalide au journal, puis on tombe dans le chemin de
+           création, comme si aucun code n'existait.
+
+           ⚠️ L'ÉCRITURE AU JOURNAL PASSE AVANT LA FRAPPE, et si elle échoue
+           on ne frappe rien : sans cette ligne, la lecture suivante rendrait
+           encore le code fautif, et chaque paiement refrapperait un coupon.
+           L'idempotence tient à cette ligne, pas à Stripe. */
+        console.error(
+          "[atelier/fondatrice] code frappé dans l'autre mode Stripe, remplacement",
+          relu.code,
+          relu.promotionCodeId,
+        );
+        const invalide = await logEvenement(supabase, dossier.id, EVT_CODE_INVALIDE, {
+          code: relu.code,
+          promotion_code_id: relu.promotionCodeId,
+          coupon_id: relu.couponId,
+          numero_fondateur: numeroFondateur,
+          raison: "autre_mode_stripe",
+          ...(par ? { par } : { par: "auto" }),
+        });
+        if (!invalide) {
+          return { statut: "indisponible", pourquoi: "code_invalide_non_journalise", code: relu.code };
+        }
+        existant = null;
       }
 
-      if (!creditEncoreDu(promo)) {
-        return { statut: "consomme", code: existant.code, numeroFondateur, origine };
-      }
+      if (promo) {
+        if (!creditEncoreDu(promo)) {
+          return { statut: "consomme", code: relu.code, numeroFondateur, origine };
+        }
 
-      return {
-        statut: "pret",
-        code: existant.code,
-        promotionCodeId: promo.id,
-        numeroFondateur,
-        origine,
-        deja: true,
-        journalEcrit: true,
-        creeLe: existant.creeLe,
-      };
+        return {
+          statut: "pret",
+          code: relu.code,
+          promotionCodeId: promo.id,
+          numeroFondateur,
+          origine,
+          deja: true,
+          journalEcrit: true,
+          creeLe: relu.creeLe,
+        };
+      }
     }
 
     let frappe: { code: string; promotionCodeId: string; couponId: string };
