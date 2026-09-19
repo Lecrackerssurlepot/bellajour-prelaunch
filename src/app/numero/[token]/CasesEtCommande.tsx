@@ -238,12 +238,18 @@ export default function CasesEtCommande({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
       })
-      const data = (await r.json().catch(() => ({}))) as { url?: string }
-      if (!r.ok || !data.url) throw new Error('checkout')
+      const data = (await r.json().catch(() => ({}))) as { url?: string; error?: string }
+      if (!r.ok || !data.url) throw new Error(data.error ?? 'checkout')
       window.location.href = data.url
-    } catch {
+    } catch (e) {
+      /* Le serveur a reconnu un fondateur mais n'a pas pu poser son crédit :
+         il a REFUSÉ d'ouvrir un paiement plein tarif (19/09/2026). On le dit
+         tel quel : la cliente ne doit pas croire qu'elle a perdu son droit,
+         ni réessayer en boucle. */
       setErreur(
-        'Le paiement n’a pas pu démarrer. Répondez au mail de votre couverture, on s’en occupe.'
+        e instanceof Error && e.message === 'credit_indisponible'
+          ? 'Votre crédit fondateur n’a pas pu être appliqué, alors nous n’avons pas ouvert le paiement : vous ne paierez pas plein tarif. L’atelier est prévenu et vous écrit dès que c’est réglé.'
+          : 'Le paiement n’a pas pu démarrer. Répondez au mail de votre couverture, on s’en occupe.'
       )
       setOccupe(false)
     }

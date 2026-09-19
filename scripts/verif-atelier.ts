@@ -169,6 +169,7 @@ import {
   creditEncoreDu,
   estCodeDAutreMode,
   estCollisionDeCode,
+  modeStripe,
   numeroFondatricePour,
   numeroRattache,
   parametreCredit,
@@ -1443,6 +1444,14 @@ ok("le message Stripe « exists in test mode » est reconnu comme un code d'autr
    estCodeDAutreMode({ message: "No such promotion code: 'promo_1'; a similar object exists in test mode, but a live mode key was used to make this request." }));
 ok("l'inverse (live relu en test) aussi",
    estCodeDAutreMode({ message: "a similar object exists in live mode, but a test mode key was used" }));
+ok("le mode d'une cle se lit dans son prefixe, et un prefixe inconnu ne se devine pas",
+   modeStripe("sk_live_abc") === "live" && modeStripe("rk_live_abc") === "live"
+   && modeStripe("sk_test_abc") === "test" && modeStripe("pk_live_abc") === null
+   && modeStripe("") === null && modeStripe(undefined) === null);
+ok("le journal garde le mode du code (19/09) ; les lignes d'avant rendent null",
+   codeDansLeJournal([{ payload: { code: "A", promotion_code_id: "p", mode: "test" }, created_at: "x" }])?.mode === "test"
+   && codeDansLeJournal(journalMarjorie)?.mode === null
+   && codeDansLeJournal([{ payload: { code: "A", mode: "prod" }, created_at: "x" }])?.mode === null);
 ok("une autre erreur de relecture reste un doute, pas un remplacement",
    !estCodeDAutreMode({ message: "No such promotion code: 'promo_1'" }) && !estCodeDAutreMode(null) && !estCodeDAutreMode(new Error("ECONNRESET")));
 

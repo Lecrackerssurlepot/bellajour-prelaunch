@@ -98,6 +98,15 @@ export const EVT_FONDATEUR_RATTACHE = "fondateur_rattache";
  * exists in test mode », et la fondatrice payait plein tarif ET son port.
  */
 export const EVT_CODE_INVALIDE = "code_fondatrice_invalide";
+/**
+ * Le checkout a REFUSÉ d'ouvrir un paiement à un fondateur dont le crédit
+ * n'a pas pu être posé (19/09/2026). Payload : `{ pourquoi, numero_fondateur,
+ * code, paiement_bloque }`. Avant cette date, le fondateur payait plein tarif
+ * « et on rembourse » : Marjorie a vu 52 € au lieu de 17 €. Plus jamais : le
+ * doute bloque le paiement et se lit dans la fiche, il ne se répercute pas
+ * sur la carte de la cliente.
+ */
+export const EVT_CREDIT_INDISPONIBLE = "credit_fondatrice_indisponible";
 
 /** La clé de métadonnée posée sur la session Stripe quand la remise est d'office. */
 export const META_CREDIT = "credit_fondatrice";
@@ -191,12 +200,36 @@ export function codesPossibles(
   };
 }
 
+/** Le mode d'une clé ou d'un objet Stripe : deux univers qui ne se parlent pas. */
+export type ModeStripe = "live" | "test";
+
+/**
+ * Le mode de la clé secrète Stripe, lu dans son préfixe. `sk_live_…` et
+ * `rk_live_…` sont live, `sk_test_…` et `rk_test_…` sont test ; tout autre
+ * préfixe rend null — on ne devine pas un mode.
+ *
+ * C'est ce qui manquait le 19/09/2026 : deux codes frappés fin août avec la
+ * clé de test étaient relus en live, et personne ne le savait avant que
+ * Stripe le dise à une fondatrice sur sa page de paiement.
+ */
+export function modeStripe(cle: string | null | undefined): ModeStripe | null {
+  if (typeof cle !== "string") return null;
+  if (/^[sr]k_live_/.test(cle)) return "live";
+  if (/^[sr]k_test_/.test(cle)) return "test";
+  return null;
+}
+
 /** Ce que le journal garde d'un code déjà frappé. */
 export type CodeAuJournal = {
   code: string;
   promotionCodeId: string | null;
   couponId: string | null;
   creeLe: string;
+  /**
+   * Le mode Stripe dans lequel le code a été frappé (19/09/2026). Null pour
+   * les lignes d'avant cette date : elles se vérifient chez Stripe.
+   */
+  mode: ModeStripe | null;
 };
 
 /**
@@ -247,6 +280,7 @@ export function codeDansLeJournal(
       promotionCodeId,
       couponId: typeof p.coupon_id === "string" ? p.coupon_id : null,
       creeLe: l.created_at,
+      mode: p.mode === "live" || p.mode === "test" ? p.mode : null,
     };
   }
   return null;
@@ -350,7 +384,18 @@ export type Credit =
    * rien et on ne crée rien : dans le doute, la cliente paie plein tarif et
    * l'atelier rattrape à la main. Le contraire créerait des doublons.
    */
-  | { statut: "indisponible"; pourquoi: string; code: string | null }
+  | {
+      statut: "indisponible";
+      pourquoi: string;
+      code: string | null;
+      /**
+       * Le fondateur reconnu, si la détection a abouti (19/09/2026). Le
+       * checkout s'en sert pour REFUSER d'ouvrir un paiement plein tarif à
+       * un fondateur : un doute sur son crédit n'est pas une raison de lui
+       * faire payer 30 € de trop et son port.
+       */
+      numeroFondateur: number | null;
+    }
   /** Le crédit a déjà servi. Une fois, c'est le contrat. */
   | { statut: "consomme"; code: string; numeroFondateur: number; origine: OrigineFondateur }
   /** Applicable ici et maintenant. */
@@ -560,7 +605,7 @@ async function creditDejaConsomme(
 async function frapperLeCode(
   stripe: Stripe,
   d: { numeroId: string; prenom: string | null; numeroFondateur: number },
-): Promise<{ code: string; promotionCodeId: string; couponId: string }> {
+): Promise<{ code: string; promotionCodeId: string; couponId: string; mode: ModeStripe }> {
   const { voulu, repli } = codesPossibles(d.prenom, d.numeroFondateur);
   const metadata = {
     numero_id: d.numeroId,
@@ -596,7 +641,7 @@ async function frapperLeCode(
       code = repli;
       promo = await creerPromo(repli);
     }
-    return { code, promotionCodeId: promo.id, couponId: coupon.id };
+    return { code, promotionCodeId: promo.id, couponId: coupon.id, mode: promo.livemode ? "live" : "test" };
   } catch (err) {
     await stripe.coupons.del(coupon.id).catch(() => undefined);
     throw err;
@@ -624,13 +669,17 @@ export async function assurerCreditFondatrice(
   /** Le prénom de l'admin qui a cliqué, quand le geste est manuel. */
   par?: string,
 ): Promise<Credit> {
+  /* Le mode de la clé qui sert à CET appel. Les deux appelants construisent
+     leur client Stripe depuis la même variable ; on la relit ici plutôt que
+     de demander au SDK, qui ne l'expose pas. */
+  const modeCourant = modeStripe(process.env.STRIPE_SECRET_KEY);
   try {
     /* Email PUIS rattachement à la main : une seule détection pour les deux
        appelants, sinon le filet manuel de l'admin ne verrait pas ce que le
        checkout voit (c'était exactement le trou du 10/09). */
     const detection = await numeroFondateurDuDossier(supabase, dossier);
     if ("erreur" in detection) {
-      return { statut: "indisponible", pourquoi: detection.erreur, code: null };
+      return { statut: "indisponible", pourquoi: detection.erreur, code: null, numeroFondateur: null };
     }
     if (detection.numeroFondateur === null) return { statut: "pas_fondatrice" };
     const { numeroFondateur, origine } = detection;
@@ -639,7 +688,7 @@ export async function assurerCreditFondatrice(
     if ("erreur" in journal) {
       /* Journal illisible = idempotence invérifiable. On refuse de créer
          plutôt que de risquer un doublon de 30 €. */
-      return { statut: "indisponible", pourquoi: journal.erreur, code: null };
+      return { statut: "indisponible", pourquoi: journal.erreur, code: null, numeroFondateur };
     }
 
     let existant = journal.trouve;
@@ -648,7 +697,7 @@ export async function assurerCreditFondatrice(
         /* Une vieille ligne sans identifiant de promotion code : on ne peut
            ni vérifier ni appliquer. On rend le code pour l'écran, et on ne
            frappe surtout PAS de remplaçant. */
-        return { statut: "indisponible", pourquoi: "code_sans_id", code: existant.code };
+        return { statut: "indisponible", pourquoi: "code_sans_id", code: existant.code, numeroFondateur };
       }
 
       if (await creditDejaConsomme(supabase, numeroFondateur)) {
@@ -656,41 +705,59 @@ export async function assurerCreditFondatrice(
       }
 
       const relu = { ...existant, promotionCodeId: existant.promotionCodeId };
-      let promo: Stripe.PromotionCode | null = null;
-      try {
-        promo = await stripe.promotionCodes.retrieve(relu.promotionCodeId);
-      } catch (err) {
-        if (!estCodeDAutreMode(err)) {
-          console.error("[atelier/fondatrice] relecture du code échouée", (err as Error)?.message);
-          return { statut: "indisponible", pourquoi: "stripe_relecture", code: existant.code };
-        }
 
-        /* Le code vit dans l'AUTRE mode Stripe (frappé avec la clé de test,
-           relu avec la clé live) : il ne s'appliquera jamais ici. On le
-           déclare invalide au journal, puis on tombe dans le chemin de
-           création, comme si aucun code n'existait.
+      /* Le code vit dans l'AUTRE mode Stripe (frappé avec la clé de test,
+         relu avec la clé live) : il ne s'appliquera jamais ici. On le
+         déclare invalide au journal, puis on tombe dans le chemin de
+         création, comme si aucun code n'existait.
 
-           ⚠️ L'ÉCRITURE AU JOURNAL PASSE AVANT LA FRAPPE, et si elle échoue
-           on ne frappe rien : sans cette ligne, la lecture suivante rendrait
-           encore le code fautif, et chaque paiement refrapperait un coupon.
-           L'idempotence tient à cette ligne, pas à Stripe. */
+         ⚠️ L'ÉCRITURE AU JOURNAL PASSE AVANT LA FRAPPE, et si elle échoue
+         on ne frappe rien : sans cette ligne, la lecture suivante rendrait
+         encore le code fautif, et chaque paiement refrapperait un coupon.
+         L'idempotence tient à cette ligne, pas à Stripe. */
+      const invalider = async (detecte: "journal" | "stripe"): Promise<boolean> => {
         console.error(
           "[atelier/fondatrice] code frappé dans l'autre mode Stripe, remplacement",
           relu.code,
           relu.promotionCodeId,
+          detecte,
         );
-        const invalide = await logEvenement(supabase, dossier.id, EVT_CODE_INVALIDE, {
+        return logEvenement(supabase, dossier.id, EVT_CODE_INVALIDE, {
           code: relu.code,
           promotion_code_id: relu.promotionCodeId,
           coupon_id: relu.couponId,
           numero_fondateur: numeroFondateur,
           raison: "autre_mode_stripe",
+          mode_du_code: relu.mode,
+          mode_de_la_cle: modeCourant,
+          detecte,
           ...(par ? { par } : { par: "auto" }),
         });
-        if (!invalide) {
-          return { statut: "indisponible", pourquoi: "code_invalide_non_journalise", code: relu.code };
+      };
+
+      let promo: Stripe.PromotionCode | null = null;
+      if (relu.mode && modeCourant && relu.mode !== modeCourant) {
+        /* Le journal SAIT dans quel mode le code a été frappé (19/09) : pas
+           besoin d'attendre que Stripe le dise. C'est la garantie que le bug
+           de Marjorie ne se rejoue pas sur un code frappé après cette date. */
+        if (!(await invalider("journal"))) {
+          return { statut: "indisponible", pourquoi: "code_invalide_non_journalise", code: relu.code, numeroFondateur };
         }
         existant = null;
+      } else {
+        try {
+          promo = await stripe.promotionCodes.retrieve(relu.promotionCodeId);
+        } catch (err) {
+          if (!estCodeDAutreMode(err)) {
+            console.error("[atelier/fondatrice] relecture du code échouée", (err as Error)?.message);
+            return { statut: "indisponible", pourquoi: "stripe_relecture", code: relu.code, numeroFondateur };
+          }
+          /* Une ligne d'avant le 19/09, sans mode au journal : Stripe tranche. */
+          if (!(await invalider("stripe"))) {
+            return { statut: "indisponible", pourquoi: "code_invalide_non_journalise", code: relu.code, numeroFondateur };
+          }
+          existant = null;
+        }
       }
 
       if (promo) {
@@ -711,7 +778,7 @@ export async function assurerCreditFondatrice(
       }
     }
 
-    let frappe: { code: string; promotionCodeId: string; couponId: string };
+    let frappe: { code: string; promotionCodeId: string; couponId: string; mode: ModeStripe };
     try {
       frappe = await frapperLeCode(stripe, {
         numeroId: dossier.id,
@@ -720,7 +787,7 @@ export async function assurerCreditFondatrice(
       });
     } catch (err) {
       console.error("[atelier/fondatrice] création du code échouée", (err as Error)?.message);
-      return { statut: "indisponible", pourquoi: "stripe_creation", code: null };
+      return { statut: "indisponible", pourquoi: "stripe_creation", code: null, numeroFondateur };
     }
 
     const creeLe = new Date().toISOString();
@@ -728,6 +795,9 @@ export async function assurerCreditFondatrice(
       code: frappe.code,
       promotion_code_id: frappe.promotionCodeId,
       coupon_id: frappe.couponId,
+      /* Le mode dans lequel Stripe a VRAIMENT créé l'objet (`livemode`), pas
+         celui qu'on croit : c'est ce que la relecture comparera à sa clé. */
+      mode: frappe.mode,
       montant: CREDIT_FONDATRICE_CENTIMES,
       numero_fondateur: numeroFondateur,
       /* Six mois plus tard, « pourquoi ce dossier a-t-il un crédit alors que
@@ -749,7 +819,7 @@ export async function assurerCreditFondatrice(
     };
   } catch (err) {
     console.error("[atelier/fondatrice] exception", (err as Error)?.message);
-    return { statut: "indisponible", pourquoi: "exception", code: null };
+    return { statut: "indisponible", pourquoi: "exception", code: null, numeroFondateur: null };
   }
 }
 

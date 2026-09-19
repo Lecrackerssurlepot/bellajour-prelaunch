@@ -144,7 +144,12 @@ qui le montre. Le texte des mails est versionné dans `scripts/mails-atelier.mjs
   correspond pas, le journal `fondateur_rattache` (geste d'admin) désigne la ligne `waitlist`.
   Le code frappé vit au journal (`code_fondatrice_cree`, le PREMIER gagne) ; un code que Stripe
   dit « exists in test mode » est déclaré `code_fondatrice_invalide` puis remplacé par un code
-  live (19/09) : le journal ne s'efface jamais, il se dépasse.
+  live (19/09) : le journal ne s'efface jamais, il se dépasse. Depuis le 19/09 le journal porte
+  le `mode` (`livemode` Stripe) de chaque code et le compare au préfixe de `STRIPE_SECRET_KEY`
+  (`modeStripe`) AVANT d'appeler Stripe. **Un fondateur reconnu dont le crédit ne peut pas être
+  posé ne voit JAMAIS un plein tarif** : le checkout rend 409 `credit_indisponible`, journalise
+  `credit_fondatrice_indisponible`, la page cliente le dit ; Marjorie a vu 52 € au lieu de 17 €
+  le 19/09, c'est la dernière fois.
   ⚠️ De 20 à 28 pages (25 à 31 €), le crédit de 30 € couvre TOUT le prix : la session Stripe
   tombe à zéro, se solde en `no_payment_required`, le dossier n'a alors **aucun `payment_intent`**,
   et le surplus de crédit est perdu (règle commerciale non tranchée par Mathias).
