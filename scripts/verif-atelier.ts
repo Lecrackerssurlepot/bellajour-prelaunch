@@ -4336,16 +4336,19 @@ if (plan.ok && !plan.inchange) {
      p1.length === 1 && p1[0].boite.largeur === 216 && Math.abs(p1[0].boite.x - 3.04) < 0.01 && Math.abs(p1[0].boite.y - 18.805) < 0.01);
   const g = plan.sorties[1].parties, d = plan.sorties[2].parties;
   const milieu = trimDouble.x + trimDouble.largeur / 2;
-  ok("la moitie gauche : sa face jusqu'a la coupe, puis son propre bord etire sur la reserve",
-     g.length === 2 && Math.abs(g[0].boite.x - (trimDouble.x - 3)) < 0.001 && Math.abs(g[0].boite.x + g[0].boite.largeur - milieu) < 0.001
+  /* Les faces s'arretent 0,4 mm AVANT le pli (le fil de photo voisine que
+     Canva laisse deborder sur la coupe ne doit jamais entrer) ; la reserve
+     etiree couvre 3,055 + 0,4 mm. */
+  ok("la moitie gauche : sa face jusqu'a 0,4 mm de la coupe, puis son propre bord etire sur la reserve",
+     g.length === 2 && Math.abs(g[0].boite.x - (trimDouble.x - 3)) < 0.001 && Math.abs(g[0].boite.x + g[0].boite.largeur - (milieu - 0.4)) < 0.001
        && g[0].x === 0 && g[1].boite.largeur === 1 && Math.abs(g[1].boite.x + 1.5 - milieu) < 0.001
-       && Math.abs(g[1].x - g[0].largeurSortie) < 0.001 && Math.abs(g[1].largeurSortie - (216 - 3 - 209.945)) < 0.001);
-  ok("la moitie droite : son propre bord etire d'abord, puis sa face jusqu'au fond perdu exterieur",
+       && Math.abs(g[1].x - g[0].largeurSortie) < 0.001 && Math.abs(g[1].largeurSortie - (216 - 3 - 209.945 + 0.4)) < 0.001);
+  ok("la moitie droite : son propre bord etire d'abord, puis sa face de 0,4 mm apres la coupe au fond perdu exterieur",
      d.length === 2 && d[0].x === 0 && d[0].boite.largeur === 1 && Math.abs(d[0].boite.x - (milieu + 0.5)) < 0.001
-       && Math.abs(d[1].boite.x - milieu) < 0.001 && Math.abs(d[1].boite.x + d[1].boite.largeur - (trimDouble.x + trimDouble.largeur + 3)) < 0.001
+       && Math.abs(d[1].boite.x - (milieu + 0.4)) < 0.001 && Math.abs(d[1].boite.x + d[1].boite.largeur - (trimDouble.x + trimDouble.largeur + 3)) < 0.001
        && d[1].boite.x + d[1].boite.largeur <= mediaDouble.largeur);
-  ok("aucune moitie n'emporte la page voisine : les faces s'arretent pile a la coupe",
-     Math.abs(g[0].boite.x + g[0].boite.largeur - d[1].boite.x) < 0.001);
+  ok("aucune moitie n'emporte la page voisine : 0,8 mm de vide entre les deux faces, autour de la coupe",
+     Math.abs(d[1].boite.x - (g[0].boite.x + g[0].boite.largeur) - 0.8) < 0.001);
   ok("la phrase de l'ecran dit ce qu'il a fait", resumeInterieur(plan) === "Export Canva reconnu (21 doubles et 2 simples) → 44 pages d'impression de 216 × 303 mm.");
 }
 ok("des pages deja finales passent telles quelles",

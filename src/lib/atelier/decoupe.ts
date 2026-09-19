@@ -199,19 +199,23 @@ export function planInterieur(pages: PageLue[]): PlanInterieur {
     } else {
       const demi = trim.largeur / 2;
       const milieu = arrondi(trim.x + demi);
-      /* La face avec son fond perdu EXTÉRIEUR, jusqu'à la coupe : 3 + demi. */
-      const face = arrondi(FOND_PERDU_MM + demi);
-      /* Ce qui reste jusqu'à 216 : la réserve côté couture, remplie en
-         étirant le dernier millimètre de la face (3,055 mm chez Canva, dont
-         le fini fait 209,945 et pas 210). */
+      /* ⚠️ LE RETRAIT AU PLI (19/09/2026, vu sur le fichier de Merisa). Canva
+         laisse une photo déborder de 0,2 mm sur la coupe du milieu : une face
+         prise jusqu'au milieu exact emporte ce fil de la page voisine, et il
+         se voit, un trait sombre au bord d'une page blanche. La face s'arrête
+         donc 0,4 mm AVANT le pli, et la réserve étirée couvre ce qui manque.
+         Ces 0,4 mm sont dans la colle : personne ne les verra jamais. */
+      const retrait = 0.4;
+      /* La face avec son fond perdu EXTÉRIEUR, jusqu'à 0,4 mm de la coupe. */
+      const face = arrondi(FOND_PERDU_MM + demi - retrait);
+      /* Ce qui reste jusqu'à 216 : la réserve côté couture (3,055 mm chez
+         Canva, dont le fini fait 209,945 et pas 210) plus le retrait, rempli
+         en étirant un millimètre de la face. */
       const reserve = arrondi(L - face);
       const gauche: BoiteMm = { x: arrondi(trim.x - FOND_PERDU_MM), y, largeur: face, hauteur: H };
-      const droite: BoiteMm = { x: milieu, y, largeur: face, hauteur: H };
+      const droite: BoiteMm = { x: arrondi(milieu + retrait), y, largeur: face, hauteur: H };
       if (!tientDans(gauche, page.media) || !tientDans(droite, page.media)) return tropCourt;
-      /* Le millimètre pris pour l'étirement est reculé d'un demi-millimètre
-         du milieu : une photo de la page voisine qui déborde de 0,2 mm sur
-         la coupe (Canva le fait) ne doit pas se retrouver étirée sur la
-         réserve. À 0,5 mm du pli, on est sûr d'être chez soi. */
+      /* Le millimètre étiré est pris à 0,5 mm du pli, chez soi à coup sûr. */
       const bordGauche: BoiteMm = { x: arrondi(milieu - 1.5), y, largeur: 1, hauteur: H };
       const bordDroit: BoiteMm = { x: arrondi(milieu + 0.5), y, largeur: 1, hauteur: H };
       sorties.push({
