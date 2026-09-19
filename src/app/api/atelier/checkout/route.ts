@@ -18,7 +18,9 @@ import {
   assurerCreditFondatrice,
   CREDIT_FONDATRICE_CENTIMES,
   EVT_CREDIT_APPLIQUE,
+  EVT_CREDIT_INDISPONIBLE,
   META_CREDIT,
+  modeStripe,
 } from "@/lib/atelier/fondatrice";
 
 /**
@@ -393,11 +395,45 @@ export async function POST(request: Request) {
     const portOffert = commande.livraisonOfferte;
     const livraison = commande.livraison;
     if (credit.statut === "indisponible") {
+      /* ⚠️ UN FONDATEUR NE VOIT JAMAIS UN PLEIN TARIF (19/09/2026).
+         Jusqu'ici, un doute sur le crédit ouvrait la caisse à plein tarif,
+         « ça se rembourse ». Marjorie (nº14) a vu 52 € au lieu de 17 € et a
+         écrit pour demander si c'était normal. Ce n'est pas un rattrapage,
+         c'est une cliente qui doute de nous au moment de payer.
+
+         Désormais, si la personne EST reconnue fondatrice et que son crédit
+         ne peut pas être posé, on n'ouvre rien : la page le lui dit, le
+         journal le dit à l'atelier, et le paiement attend que le crédit soit
+         réparé. Une session qui n'existe pas se rouvre en un clic ; un plein
+         tarif encaissé se rembourse en trois jours et coûte la confiance.
+
+         Quand la détection elle-même a échoué (`numeroFondateur` null), on
+         ne sait pas à qui on parle : on garde le plein tarif, journalisé,
+         parce que bloquer tout le monde sur une lecture `waitlist` en échec
+         punirait aussi les clientes ordinaires. */
       console.error(
-        "[atelier/checkout] crédit fondatrice indisponible, plein tarif appliqué",
+        "[atelier/checkout] crédit fondatrice indisponible",
         numero.id,
         credit.pourquoi,
+        credit.numeroFondateur,
       );
+      await logEvenement(supabase, numero.id, EVT_CREDIT_INDISPONIBLE, {
+        pourquoi: credit.pourquoi,
+        numero_fondateur: credit.numeroFondateur,
+        code: credit.code,
+        paiement_bloque: credit.numeroFondateur !== null,
+      });
+      if (credit.numeroFondateur !== null) {
+        return NextResponse.json({ error: "credit_indisponible" }, { status: 409 });
+      }
+    }
+
+    /* Le mode de la clé, dans le journal et dans les logs : c'est le
+       piège des deux comptes Stripe. Une clé de test en production frapperait
+       des codes que la clé live ne relira jamais — exactement le bug du 19/09. */
+    const stripeMode = modeStripe(stripeKey);
+    if (process.env.VERCEL_ENV === "production" && stripeMode !== "live") {
+      console.error("[atelier/checkout] ⚠️ clé Stripe non live en production", stripeMode);
     }
 
     let session: Stripe.Checkout.Session;
@@ -651,6 +687,7 @@ export async function POST(request: Request) {
       port_offert_fondateur: portOffertFondateur,
       total_centimes: commande.total,
       pays,
+      stripe_mode: stripeMode,
     });
 
     return NextResponse.json({ url: session.url }, { status: 200 });

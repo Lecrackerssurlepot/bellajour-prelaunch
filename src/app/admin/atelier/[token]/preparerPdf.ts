@@ -84,17 +84,23 @@ export async function preparerPdfImpression(
 
     const out = await PDFDocument.create();
     /* Un seul `embedPages` pour tout : pdf-lib copie les ressources UNE fois
-       par appel, donc une double page dont on tire deux moitiés n'embarque
-       ses photos qu'une fois. */
+       par appel, donc une double page dont on tire deux moitiés (et deux
+       bandes de bord) n'embarque ses photos qu'une fois. */
+    const morceaux = plan.sorties.flatMap((s) => s.parties.map((p) => ({ source: s.source, partie: p })));
     const incorporees = await out.embedPages(
-      plan.sorties.map((s) => pages[s.source]),
-      plan.sorties.map((s) => cadre(s.boite)),
+      morceaux.map((m) => pages[m.source]),
+      morceaux.map((m) => cadre(m.partie.boite)),
     );
     const W = mm(FORMAT_PAGE_PDF_MM.largeur);
     const H = mm(FORMAT_PAGE_PDF_MM.hauteur);
-    for (const e of incorporees) {
+    let k = 0;
+    for (const sortie of plan.sorties) {
       const page = out.addPage([W, H]);
-      page.drawPage(e, { x: 0, y: 0 });
+      for (const partie of sortie.parties) {
+        /* `width` étire la bande de bord sur la réserve côté couture ; pour
+           la face elle-même elle vaut la largeur de la boîte, rien ne bouge. */
+        page.drawPage(incorporees[k++], { x: mm(partie.x), y: 0, width: mm(partie.largeurSortie), height: H });
+      }
       page.setBleedBox(0, 0, W, H);
       page.setTrimBox(mm(FOND_PERDU_MM), mm(FOND_PERDU_MM), mm(FORMAT_FINI_MM.largeur), mm(FORMAT_FINI_MM.hauteur));
       page.setArtBox(mm(FOND_PERDU_MM), mm(FOND_PERDU_MM), mm(FORMAT_FINI_MM.largeur), mm(FORMAT_FINI_MM.hauteur));

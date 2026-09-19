@@ -555,6 +555,48 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
       };
     }
 
+    /* ── UN CODE FRAPPÉ DANS L'AUTRE MODE STRIPE (19/09/2026) ─────────
+       Le code de Marjorie (nº14) avait été frappé avec la clé de test ; la
+       clé live ne le trouvait pas et elle a vu 52 € au lieu de 17 €. Cette
+       ligne dit que le code a été écarté et remplacé : sans elle, la fiche
+       montrerait deux codes sans dire lequel compte. */
+    case "code_fondatrice_invalide": {
+      const nf = payload.numero_fondateur;
+      return {
+        texte: fait(
+          auteur(payload),
+          "a écarté un code fondateur inutilisable",
+          "Code fondateur inutilisable écarté",
+        ),
+        detail:
+          (typeof nf === "number" ? `Fondateur nº${nf}. ` : "") +
+          `Frappé en mode ${typeof payload.mode_du_code === "string" ? payload.mode_du_code : "test"}, ` +
+          "invisible pour la clé Stripe en service : un code neuf est frappé à sa place",
+        ton: "nous",
+      };
+    }
+
+    /* ── LE PAIEMENT A ÉTÉ REFUSÉ, PAS OUVERT (19/09/2026) ─────────────
+       Le crédit d'un fondateur n'a pas pu être posé, et plutôt que de lui
+       ouvrir une caisse plein tarif, le checkout s'est arrêté. C'est LA
+       ligne à lire quand un fondateur écrit « je n'arrive pas à payer ». */
+    case "credit_fondatrice_indisponible": {
+      const nf = payload.numero_fondateur;
+      const bloque = payload.paiement_bloque === true;
+      return {
+        texte: bloque
+          ? "Paiement refusé : crédit fondateur impossible à appliquer"
+          : "Crédit fondateur invérifiable, plein tarif ouvert",
+        detail:
+          (typeof nf === "number" ? `Fondateur nº${nf}. ` : "") +
+          `Cause : ${typeof payload.pourquoi === "string" ? payload.pourquoi : "inconnue"}. ` +
+          (bloque
+            ? "Rien n'a été encaissé : réparer le crédit (bouton code fondateur), puis lui dire de recommander"
+            : "La détection a échoué avant de savoir si c'est un fondateur : vérifier le paiement s'il a eu lieu"),
+        ton: "nous",
+      };
+    }
+
     /* Le paiement est passé AVEC la remise : le droit contractuel est soldé.
        Écrit par le webhook Stripe, jamais par nous. */
     case "credit_fondatrice_consomme": {

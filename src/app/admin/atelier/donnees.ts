@@ -54,6 +54,9 @@ import {
   EVT_CODE_CREE,
   EVT_FONDATEUR_RATTACHE,
   numeroRattache,
+  EVT_CODE_INVALIDE,
+  codeDansLeJournal,
+  codesInvalides,
 } from "@/lib/atelier/fondatrice";
 import { prenomDe } from "@/lib/admin-auth";
 import type {
@@ -953,16 +956,21 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     .from("evenements")
     .select("type, payload, created_at")
     .eq("numero_id", id)
-    .in("type", [EVT_CODE_CREE, EVT_FONDATEUR_RATTACHE])
+    .in("type", [EVT_CODE_CREE, EVT_FONDATEUR_RATTACHE, EVT_CODE_INVALIDE])
     .order("created_at", { ascending: true })
     .limit(20)
     .returns<Array<{ type: string; payload: Record<string, unknown>; created_at: string }>>();
 
-  const brutCode = (lignesFondateur ?? []).find((e) => e.type === EVT_CODE_CREE);
-  const codeFondatrice =
-    brutCode && typeof brutCode.payload?.code === "string"
-      ? { code: brutCode.payload.code, creeLe: brutCode.created_at }
-      : null;
+  /* La MÊME lecture que le checkout (`codeDansLeJournal`) : un code déclaré
+     invalide (frappé dans l'autre mode Stripe, 19/09) est sauté, et la fiche
+     montre le remplaçant — pas le code que Stripe refuserait. Deux lecteurs
+     du journal qui ne sauteraient pas les mêmes lignes finiraient par
+     afficher un code et en appliquer un autre. */
+  const codeAuJournal = codeDansLeJournal(
+    (lignesFondateur ?? []).filter((e) => e.type === EVT_CODE_CREE),
+    codesInvalides((lignesFondateur ?? []).filter((e) => e.type === EVT_CODE_INVALIDE)),
+  );
+  const codeFondatrice = codeAuJournal ? { code: codeAuJournal.code, creeLe: codeAuJournal.creeLe } : null;
 
   /* Le rattachement : le DERNIER fait foi (c'est une correction, cf.
      `numeroRattache`). On relit la ligne correspondante pour la date et
