@@ -4324,18 +4324,28 @@ if (plan.ok && !plan.inchange) {
   ok("2 simples et 21 doubles comptees", plan.simples === 2 && plan.doubles === 21);
   ok("la page 1 vient de la premiere page source, seule", plan.sorties[0].source === 0 && plan.sorties[1].source === 1);
   ok("la page 44 vient de la derniere page source", plan.sorties[43].source === 22);
-  ok("chaque sortie fait 216 x 303", plan.sorties.every((s) => s.boite.largeur === 216 && s.boite.hauteur === 303));
-  const p1 = plan.sorties[0].boite;
-  ok("la page simple est centree sur son fini (3,04 mm de fond perdu de chaque cote)",
-     Math.abs(p1.x - 3.04) < 0.01 && Math.abs(p1.y - 18.805) < 0.01);
-  const g = plan.sorties[1].boite, d = plan.sorties[2].boite;
-  ok("la double est coupee au milieu de son fini : les deux moities se chevauchent de 6 mm",
-     Math.abs(g.x + g.largeur - d.x - 6.055) < 0.02);
-  ok("la moitie gauche commence 3 mm avant la coupe (dans le media)", Math.abs(g.x - 2.973) < 0.01);
-  /* Le fini de Canva fait 209,945 par moitie, pas 210 : centrer 216 dessus
-     laisse 3,0275 mm de chaque cote, et c'est cet ecart-la, pas 3 tout rond. */
-  ok("la moitie droite finit 3,03 mm apres la coupe, dans le media",
-     Math.abs(d.x + d.largeur - (trimDouble.x + trimDouble.largeur + 3.0275)) < 0.02 && d.x + d.largeur <= mediaDouble.largeur);
+  ok("chaque sortie remplit 216 mm de large, sans trou ni chevauchement",
+     plan.sorties.every((s) => {
+       const tri = [...s.parties].sort((a, b) => a.x - b.x);
+       return Math.abs(tri.reduce((acc, p) => acc + p.largeurSortie, 0) - 216) < 0.001
+         && tri.every((p, k) => k === 0 || Math.abs(p.x - (tri[k - 1].x + tri[k - 1].largeurSortie)) < 0.001)
+         && s.parties.every((p) => p.boite.hauteur === 303);
+     }));
+  const p1 = plan.sorties[0].parties;
+  ok("la page simple est une seule boite centree sur son fini (3,04 mm de fond perdu de chaque cote)",
+     p1.length === 1 && p1[0].boite.largeur === 216 && Math.abs(p1[0].boite.x - 3.04) < 0.01 && Math.abs(p1[0].boite.y - 18.805) < 0.01);
+  const g = plan.sorties[1].parties, d = plan.sorties[2].parties;
+  const milieu = trimDouble.x + trimDouble.largeur / 2;
+  ok("la moitie gauche : sa face jusqu'a la coupe, puis son propre bord etire sur la reserve",
+     g.length === 2 && Math.abs(g[0].boite.x - (trimDouble.x - 3)) < 0.001 && Math.abs(g[0].boite.x + g[0].boite.largeur - milieu) < 0.001
+       && g[0].x === 0 && g[1].boite.largeur === 1 && Math.abs(g[1].boite.x + 1.5 - milieu) < 0.001
+       && Math.abs(g[1].x - g[0].largeurSortie) < 0.001 && Math.abs(g[1].largeurSortie - (216 - 3 - 209.945)) < 0.001);
+  ok("la moitie droite : son propre bord etire d'abord, puis sa face jusqu'au fond perdu exterieur",
+     d.length === 2 && d[0].x === 0 && d[0].boite.largeur === 1 && Math.abs(d[0].boite.x - (milieu + 0.5)) < 0.001
+       && Math.abs(d[1].boite.x - milieu) < 0.001 && Math.abs(d[1].boite.x + d[1].boite.largeur - (trimDouble.x + trimDouble.largeur + 3)) < 0.001
+       && d[1].boite.x + d[1].boite.largeur <= mediaDouble.largeur);
+  ok("aucune moitie n'emporte la page voisine : les faces s'arretent pile a la coupe",
+     Math.abs(g[0].boite.x + g[0].boite.largeur - d[1].boite.x) < 0.001);
   ok("la phrase de l'ecran dit ce qu'il a fait", resumeInterieur(plan) === "Export Canva reconnu (21 doubles et 2 simples) → 44 pages d'impression de 216 × 303 mm.");
 }
 ok("des pages deja finales passent telles quelles",

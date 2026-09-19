@@ -19,8 +19,9 @@ enveloppante de 429,29 × 303 (dos de 3,29 mm pour 44 pages). Le 18/09 la conver
 la main ; elle est maintenant dans la fiche.
 
 - **La règle** est pure, dans `src/lib/atelier/decoupe.ts` : nature d'une page d'export (finale,
-  simple, double, inconnue) d'après sa TrimBox, plan du bloc (une double devient deux pages
-  centrées sur chaque fini, 3 mm de la voisine côté couture) et plan de la couverture (dos inséré
+  simple, double, inconnue) d'après sa TrimBox, plan du bloc (une double devient deux pages, la
+  réserve côté couture est le PROPRE bord de la page étiré sur 3 mm, décision de Mathias du 19/09 après
+  qu'il a lu les 3 mm de la voisine comme un défaut ; les deux règles donnent le même objet relié) et plan de la couverture (dos inséré
   au milieu en étirant le dernier millimètre de la quatrième, ou dos déjà dessiné, largeur =
   `largeurCouvertureMm`). Harnais : 40 cas sur les cotes réelles de l'export de Merisa.
 - **L'assemblage** tourne DANS LE NAVIGATEUR de l'atelier (`preparerPdf.ts`, pdf-lib) au moment

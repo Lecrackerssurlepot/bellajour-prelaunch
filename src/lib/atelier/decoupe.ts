@@ -124,8 +124,15 @@ const MANQUE_FOND_PERDU = (i: number, page: PageLue) =>
 
 /* ─────────────────────────── le bloc intérieur ─────────────────────────── */
 
-/** Une page de sortie : quelle portion (boîte) de quelle page source. */
-export type SortiePage = { source: number; boite: BoiteMm };
+/**
+ * Un morceau d'une page de sortie : une boîte de la page source, posée à `x`
+ * (mm) dans la page de sortie, éventuellement ÉTIRÉE à `largeurSortie`.
+ * La hauteur est toujours celle de la page (303), posée à y = 0.
+ */
+export type Partie = { boite: BoiteMm; x: number; largeurSortie: number };
+
+/** Une page de sortie : ses morceaux, tous tirés de la même page source. */
+export type SortiePage = { source: number; parties: Partie[] };
 
 export type PlanInterieur =
   /** Toutes les pages sont déjà des pages d'impression : le fichier part tel quel. */
@@ -135,11 +142,20 @@ export type PlanInterieur =
 
 /**
  * Le plan du bloc intérieur. Une page simple devient une page ; une double
- * en devient deux, gauche puis droite, coupée au milieu de son fini : chaque
- * moitié emporte 3 mm de sa voisine côté couture, ce qui est exactement le
- * fond perdu que la reliure mange. L'ORDRE est celui de l'export : la
- * première page simple est la page 1 (seule, à droite), la dernière est la
- * page N (seule, à gauche) — c'est ainsi qu'un dos carré s'ouvre.
+ * en devient deux, gauche puis droite, coupée au milieu de son fini. L'ORDRE
+ * est celui de l'export : la première page simple est la page 1 (seule, à
+ * droite), la dernière est la page N (seule, à gauche) — c'est ainsi qu'un
+ * dos carré s'ouvre.
+ *
+ * ⚠️ LA RÉSERVE CÔTÉ COUTURE EST LE PROPRE BORD DE LA PAGE (décision de
+ * Mathias, 19/09/2026). L'usage des imprimeurs est d'y mettre la page
+ * voisine (c'est ce qui se trouve là, et la suite exacte d'une photo qui
+ * traverse). Mais dans un PDF, chaque page porte alors 3 mm de sa voisine
+ * au bord, et Mathias, qui a déjà vu des magazines décalés, lisait ça comme
+ * un défaut. Les deux règles donnent le même objet relié : ces 3 mm sont
+ * rabotés et collés. On étire donc le dernier millimètre de la page sur ses
+ * 3 mm de réserve, comme pour le dos d'une couverture : une photo qui
+ * s'arrête au pli donne sa propre couleur, une marge blanche donne du blanc.
  */
 export function planInterieur(pages: PageLue[]): PlanInterieur {
   if (!pages.length) return { ok: false, raison: "PDF sans aucune page." };
@@ -166,21 +182,54 @@ export function planInterieur(pages: PageLue[]): PlanInterieur {
         raison: `Page ${i + 1} : fini de ${cote(trim)}, ni une page simple (210 × 297), ni une double (420 × 297).`,
       };
     }
-    const boites =
-      nature === "simple"
-        ? [boitePage(trim, trim.x, trim.largeur)]
-        : [boitePage(trim, trim.x, trim.largeur / 2), boitePage(trim, trim.x + trim.largeur / 2, trim.largeur / 2)];
-    for (const boite of boites) {
-      if (!tientDans(boite, page.media)) {
-        return {
-          ok: false,
-          raison: `Page ${i + 1} : le fond perdu exporté est trop court (il faut ${FOND_PERDU_MM} mm au-delà de la coupe de chaque côté).`,
-        };
-      }
-      sorties.push({ source: i, boite });
+    const L = FORMAT_PAGE_PDF_MM.largeur;
+    const H = FORMAT_PAGE_PDF_MM.hauteur;
+    const y = arrondi(trim.y + trim.hauteur / 2 - H / 2);
+    const tropCourt = {
+      ok: false as const,
+      raison: `Page ${i + 1} : le fond perdu exporté est trop court (il faut ${FOND_PERDU_MM} mm au-delà de la coupe de chaque côté).`,
+    };
+    if (nature === "simple") {
+      /* Une page seule a son fond perdu des quatre côtés dans l'export : une
+         seule boîte, centrée sur le fini. */
+      const boite = boitePage(trim, trim.x, trim.largeur);
+      if (!tientDans(boite, page.media)) return tropCourt;
+      sorties.push({ source: i, parties: [{ boite, x: 0, largeurSortie: L }] });
+      simples++;
+    } else {
+      const demi = trim.largeur / 2;
+      const milieu = arrondi(trim.x + demi);
+      /* La face avec son fond perdu EXTÉRIEUR, jusqu'à la coupe : 3 + demi. */
+      const face = arrondi(FOND_PERDU_MM + demi);
+      /* Ce qui reste jusqu'à 216 : la réserve côté couture, remplie en
+         étirant le dernier millimètre de la face (3,055 mm chez Canva, dont
+         le fini fait 209,945 et pas 210). */
+      const reserve = arrondi(L - face);
+      const gauche: BoiteMm = { x: arrondi(trim.x - FOND_PERDU_MM), y, largeur: face, hauteur: H };
+      const droite: BoiteMm = { x: milieu, y, largeur: face, hauteur: H };
+      if (!tientDans(gauche, page.media) || !tientDans(droite, page.media)) return tropCourt;
+      /* Le millimètre pris pour l'étirement est reculé d'un demi-millimètre
+         du milieu : une photo de la page voisine qui déborde de 0,2 mm sur
+         la coupe (Canva le fait) ne doit pas se retrouver étirée sur la
+         réserve. À 0,5 mm du pli, on est sûr d'être chez soi. */
+      const bordGauche: BoiteMm = { x: arrondi(milieu - 1.5), y, largeur: 1, hauteur: H };
+      const bordDroit: BoiteMm = { x: arrondi(milieu + 0.5), y, largeur: 1, hauteur: H };
+      sorties.push({
+        source: i,
+        parties: [
+          { boite: gauche, x: 0, largeurSortie: face },
+          { boite: bordGauche, x: face, largeurSortie: reserve },
+        ],
+      });
+      sorties.push({
+        source: i,
+        parties: [
+          { boite: bordDroit, x: 0, largeurSortie: reserve },
+          { boite: droite, x: reserve, largeurSortie: face },
+        ],
+      });
+      doubles++;
     }
-    if (nature === "simple") simples++;
-    else doubles++;
   }
   return { ok: true, inchange: false, sorties, simples, doubles, nbPages: sorties.length };
 }

@@ -180,7 +180,9 @@ qui le montre. Le texte des mails est versionné dans `scripts/mails-atelier.mjs
   autre. ⚠️ `cover_finish_gloss` n'existe pas chez eux : ne pas « harmoniser » l'asymétrie.
 - **Les PDF déposés sont RECOUPÉS dans le navigateur de l'atelier** (T-121, 18/09/2026) : la règle
   est pure dans `decoupe.ts` (nature d'une page d'export d'après sa TrimBox, plan du bloc en pages
-  simples de 216 × 303, plan de la couverture avec le dos inséré à `largeurCouvertureMm`), l'assemblage
+  simples de 216 × 303 dont la réserve côté couture est le PROPRE bord de la page étiré, jamais la
+  page voisine : décision de Mathias du 19/09, ne pas revenir à l'usage InDesign sans lui ; plan de la
+  couverture avec le dos inséré à `largeurCouvertureMm`, intérieur de couverture vierge au dos + 3 mm), l'assemblage
   pdf-lib dans `src/app/admin/atelier/[token]/preparerPdf.ts`, jamais sur le serveur (130 Mo).
   ⚠️ Cloudprinter attend des pages SIMPLES dans l'ordre de lecture (gabarit `book` = une page) et
   `total_pages` = le compte du fichier : un export en doubles pages est faux même s'il « se voit »
