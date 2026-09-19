@@ -164,8 +164,10 @@ import {
 } from "@/lib/atelier/brouillon";
 import {
   codeDansLeJournal,
+  codesInvalides,
   codesPossibles,
   creditEncoreDu,
+  estCodeDAutreMode,
   estCollisionDeCode,
   numeroFondatricePour,
   numeroRattache,
@@ -1420,6 +1422,29 @@ ok("2 exemplaires de 36 EUR : 61,20 EUR de magazines, seuil atteint, port offert
 const deux24 = totalCommande({ prixCentimes: 2400, quantite: 2, livraisonCentimes: 500, creditCentimes: 0, portOffert: false });
 ok("2 exemplaires de 24 EUR : 40,80 EUR, sous le seuil, port 5 EUR, total 45,80 EUR",
    deux24.prix === 4080 && deux24.livraison === 500 && deux24.total === 4580);
+
+/* ── Un code frappe dans l'AUTRE mode Stripe se remplace, sans effacer le
+   journal (19/09/2026 : Marjorie no14, code de test relu en live). ── */
+titre("— le code fondateur frappe en mode test est saute, jamais efface —");
+const journalMarjorie = [
+  { payload: { code: "FONDATRICE-14-6FGR", promotion_code_id: "promo_test", coupon_id: "c1" }, created_at: "2026-08-31" },
+  { payload: { code: "FONDATEUR-MARJORIE30", promotion_code_id: "promo_live", coupon_id: "c2" }, created_at: "2026-09-19" },
+];
+ok("sans invalidation, le PREMIER code gagne (idempotence inchangee)",
+   codeDansLeJournal(journalMarjorie)?.code === "FONDATRICE-14-6FGR");
+const invalides = codesInvalides([{ payload: { promotion_code_id: "promo_test", numero_fondateur: 14 } }]);
+ok("le code invalide est saute : c'est le remplacant live qui est relu",
+   codeDansLeJournal(journalMarjorie, invalides)?.code === "FONDATEUR-MARJORIE30");
+ok("un seul code, invalide : rien trouve, donc creation",
+   codeDansLeJournal([journalMarjorie[0]], invalides) === null);
+ok("une invalidation sans identifiant lisible n'invalide rien",
+   codesInvalides([{ payload: { code: "X" } }, { payload: null }]).size === 0);
+ok("le message Stripe « exists in test mode » est reconnu comme un code d'autre mode",
+   estCodeDAutreMode({ message: "No such promotion code: 'promo_1'; a similar object exists in test mode, but a live mode key was used to make this request." }));
+ok("l'inverse (live relu en test) aussi",
+   estCodeDAutreMode({ message: "a similar object exists in live mode, but a test mode key was used" }));
+ok("une autre erreur de relecture reste un doute, pas un remplacement",
+   !estCodeDAutreMode({ message: "No such promotion code: 'promo_1'" }) && !estCodeDAutreMode(null) && !estCodeDAutreMode(new Error("ECONNRESET")));
 
 /* Le fondateur ne paie NI son credit NI son port (decision de Mathias). */
 const fondateur34 = totalCommande({ prixCentimes: 3700, livraisonCentimes: 1106, creditCentimes: 3000, portOffert: true });
