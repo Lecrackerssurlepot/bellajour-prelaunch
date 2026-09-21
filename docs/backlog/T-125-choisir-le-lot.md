@@ -40,3 +40,6 @@ TOUT PASSE), la fiche (`choix`, `ecartees`, `entrerChoix`, `basculer`, vignette 
 CSS `.ate-photo--choix`, `.ate-photo--ecartee`, `.ate-photo-coche`, `.ate-photos-choix`. tsc et
 lint verts. Vérifié à l'écran sur la fiche démo (le doublon et la capture des fixtures écartés
 d'office, bascule d'une vignette, libellé du bouton).
+**PR #199 fusionnée le 21/09** (commit `ea18551`), déploiement Vercel de production vérifié par
+l'API. Reste à voir sur un vrai dossier : un lot téléchargé après choix, et la trace dans le
+dossier obtenu (les rangs des écartées manquent, c'est voulu).
