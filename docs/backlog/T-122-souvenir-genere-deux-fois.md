@@ -69,8 +69,8 @@ Le correctif le plus simple, sans migration, sans supprimer de code :
    d'elle-même à « au coffre » sans recharger à la main.
 
 ## Ce qui a été fait
-**21/09/2026, branche `fix/t122-souvenir-double-generation`, PR #190 ouverte le jour même (PAS ENCORE EN
-PROD : la fusion et le déploiement restent à faire).**
+**21/09/2026, branche `fix/t122-souvenir-double-generation`, PR #190 fusionnée et EN PROD le jour même
+(fusion demandée par Mathias, déploiement Vercel vérifié).**
 - `src/lib/atelier/souvenir.ts` : la règle pure `etatGenerationSouvenir(evenements, maintenant)` et
   les trois types `souvenir_demarre` / `souvenir_genere` / `souvenir_echoue` ; fenêtre
   `FENETRE_VERROU_SOUVENIR_MS` = 300 s = la `maxDuration` de la route (Next exige un littéral pour
@@ -99,7 +99,7 @@ PROD : la fusion et le déploiement restent à faire).**
 - `docs/reference/ETAT-PRODUCTION.md` corrigé : il n'y a **pas** d'orphelin de 134 Mo au coffre, le
   second passage a supprimé le premier objet. `src/app/api/CLAUDE.md` : ligne de la route ajoutée.
 
-Reste : fusionner, vérifier sur le déploiement qu'une commande réelle ne journalise plus qu'un
+Reste : vérifier sur la prochaine commande réelle qu'elle ne journalise plus qu'un
 `souvenir_demarre` suivi d'un seul `souvenir_genere`. Ce que le verrou ne couvre PAS : deux appels
 à moins de ~100 ms d'écart (entre la lecture du journal et l'écriture du `souvenir_demarre`) ; le
 cas du 21/09 était à 13 s. Un verrou atomique demanderait une colonne, donc une migration :

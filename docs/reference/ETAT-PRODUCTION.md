@@ -40,7 +40,7 @@ deux fois. **Pas d'orphelin** : le premier objet (`38af31be`) est absent de R2, 
 l'a lu comme « ancienne clé » et supprimé ; les deux passages ont donc été séquentiels, le second
 lancé après 08:54:15. Cause : aucun verrou sur la route, et la fiche, rechargée par le panneau
 pendant la fusion, disait « pas encore généré » et invitait à cliquer. Correctif sur la branche
-`fix/t122-souvenir-double-generation` (PR #190, pas encore fusionnée) : verrou dans le journal (`souvenir_demarre` → `souvenir_genere`
+`fix/t122-souvenir-double-generation` (PR #190, fusionnée et EN PROD le 21/09) : verrou dans le journal (`souvenir_demarre` → `souvenir_genere`
 / `souvenir_echoue`, 409 `deja_en_cours`), carte qui dit « génération en cours », second refresh à la
 fin de la fusion. Sans migration.
 
