@@ -10,24 +10,21 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
-## 21/09/2026 (soir) — les photos disent quand et où (T-123), SUR BRANCHE, deux choses attendent Mathias
+## 21/09/2026 (soir) — les photos disent quand et où (T-123) : base remplie, code sur branche
 
-**Branche `feat/photos-metadonnees-lieux`, pas encore fusionnée.** La lecture des métadonnées
-(date, GPS, appareil, dimensions, empreinte, luminance) tourne en tâche de fond après chaque lot
-confirmé, et les lieux (Geoapify) au consentement. **Rien n'est en production** et rien ne
-peut l'être utilement tant que :
-1. la migration `supabase/migrations/20260921_atelier_photos_metadonnees.sql` n'est pas
-   appliquée par Mathias (13 colonnes nullables sur `photos` + un index partiel). Le code se
-   replie partout en attendant (lecture 42703, écriture PGRST204) : la fiche s'affiche sans
-   ces informations, la confirmation d'une photo n'échoue jamais pour elles ;
-2. `GEOAPIFY_API_KEY` n'est pas posée dans Vercel (Production ET Preview) et `.env.local`.
-   Sans elle, tout est lu sauf les lieux ; le bouton « Lire les photos » de la fiche les
-   rattrape dès qu'elle existe.
-Puis : `npx tsx --tsconfig tsconfig.json scripts/metadonnees-rattrapage.ts --essai` pour
-compter, sans `--essai` pour lire les dossiers existants (sortie R2 gratuite, quelques appels
-Geoapify par dossier sur un plan de 3 000 par jour).
+**La migration `20260921_atelier_photos_metadonnees.sql` est APPLIQUÉE par Mathias le 21/09**
+(13 colonnes vérifiées en SQL par `information_schema.columns`, types conformes).
+**`GEOAPIFY_API_KEY` est posée dans Vercel (Production et Preview, vérifié par l'API Vercel) et
+dans `.env.local`.** Le rattrapage `scripts/metadonnees-rattrapage.ts` a tourné pour de vrai le
+21/09 sur les 6 dossiers non anonymisés : 503 photos lues, 324 datées, 293 avec GPS, 106 appels
+Geoapify. Deux dossiers ne savent presque rien d'eux-mêmes (Marjorie : 25 dates et 1 GPS sur 99 ;
+Jeanne : 0 sur 100) : ce sont des exports (Snapchat, messageries) qui ont perdu leur EXIF, pas
+une panne. Un « best of » sur trois ans coûte 32 appels (lieux éparpillés), un séjour 18 à 36.
+**Le code, lui, est sur `feat/photos-metadonnees-lieux`, pas encore fusionné** : la fiche de
+production ne montre encore rien de ces colonnes, et les dépôts futurs ne seront lus en tâche de
+fond qu'après la fusion. ⚠️ Une variable Vercel ne prend effet qu'au déploiement suivant.
 Sonde du 21/09 sur le coffre réel (lecture seule) : 56 JPEG datés et 52 géolocalisés sur 60,
-250 ms par photo sur les premiers 512 Ko.
+250 ms par photo sur les premiers 512 Ko ; le rattrapage mesure 84 ms par photo à quatre de front.
 
 ## 21/09/2026 (matin) — PREMIÈRE COMMANDE CLOUDPRINTER RÉELLE, et la bascule en LIVE
 

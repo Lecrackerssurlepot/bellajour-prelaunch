@@ -68,6 +68,10 @@ et `.env.local`. Sans la clé, tout marche sauf les lieux, et le bouton les ratt
 **21/09/2026, branche `feat/photos-metadonnees-lieux`.** Tout ce qui précède est écrit.
 `exifr@7.1.3` ajouté. Harnais : 60 assertions de plus, « TOUT PASSE ». tsc et lint verts (25
 avertissements préexistants, 0 erreur).
-Reste : la migration (Mathias), la clé Geoapify (Mathias), un premier passage de
-`scripts/metadonnees-rattrapage.ts` sur les dossiers existants après la migration, et la preuve
+**21/09, plus tard.** Migration appliquée par Mathias (13 colonnes vérifiées en SQL), clé
+Geoapify posée dans Vercel (Production + Preview, vérifié par l'API) et `.env.local`. Rattrapage
+lancé pour de vrai : 6 dossiers, 503 photos lues, 324 datées, 293 avec GPS, 106 appels Geoapify.
+Marjorie (25 dates, 1 GPS sur 99) et Jeanne (rien sur 100) déposent des exports sans EXIF : ce
+n'est pas une panne, la fiche dira « sans date ».
+Reste : fusionner la branche (PR à créer par Mathias, refusée depuis la session), puis la preuve
 sur un dépôt réel que la tâche de fond tourne bien sur Vercel (journal `metadonnees_lues`).
