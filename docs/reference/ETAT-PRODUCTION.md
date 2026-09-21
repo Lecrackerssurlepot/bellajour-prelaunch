@@ -34,9 +34,15 @@ Canva du 19/09 15:21 ; une remarque de bord (page 28, coin, 2,5 mm) acceptée pa
 **À suivre** : signaux ItemProduce / ItemShipped (M7 « en route » avec le numéro de colis) puis
 ItemDeliveryCompleted (M7b). C'est la première fois que cette chaîne tourne en réel.
 
-**Vu au passage** : `souvenir_genere` journalisé DEUX fois (08:54:15 et 08:54:31, deux clés R2
-différentes, même taille 134 Mo) : la génération du PDF souvenir s'est lancée deux fois. Un fichier
-orphelin de 134 Mo au coffre ; à regarder (double déclenchement côté fiche ?), pas bloquant.
+**Vu au passage, puis expliqué (T-122)** : `souvenir_genere` journalisé DEUX fois (08:54:15 et
+08:54:31, deux clés R2 différentes, même taille 134 Mo) : la génération du PDF souvenir s'est lancée
+deux fois. **Pas d'orphelin** : le premier objet (`38af31be`) est absent de R2, le second passage
+l'a lu comme « ancienne clé » et supprimé ; les deux passages ont donc été séquentiels, le second
+lancé après 08:54:15. Cause : aucun verrou sur la route, et la fiche, rechargée par le panneau
+pendant la fusion, disait « pas encore généré » et invitait à cliquer. Correctif sur la branche
+`fix/t122-souvenir-double-generation` : verrou dans le journal (`souvenir_demarre` → `souvenir_genere`
+/ `souvenir_echoue`, 409 `deja_en_cours`), carte qui dit « génération en cours », second refresh à la
+fin de la fusion. Sans migration.
 
 ---
 

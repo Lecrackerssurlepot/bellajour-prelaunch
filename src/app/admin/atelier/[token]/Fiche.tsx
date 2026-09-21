@@ -967,6 +967,7 @@ export default function Fiche({
                 : [];
             })}
             souvenir={fiche.souvenir}
+            souvenirEnCours={fiche.souvenirEnCours}
             demo={demo}
           />
 

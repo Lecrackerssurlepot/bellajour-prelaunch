@@ -961,7 +961,14 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ token: fiche.ligne.token }),
-        }).catch(() => {});
+        })
+          /* T-122 : la fiche se recharge une SECONDE fois quand la fusion se
+             termine, pour que la carte passe de « génération en cours » à
+             « au coffre » sans geste. Le refresh juste dessous, lui, part tout
+             de suite et montre l'état « en cours » lu au journal — c'est lui
+             qui disait « pas encore généré » le 21/09 et invitait à cliquer. */
+          .then(() => router.refresh())
+          .catch(() => {});
       }
 
       /* ── LE BROUILLON MEURT ICI, ET SEULEMENT ICI ────────────────────

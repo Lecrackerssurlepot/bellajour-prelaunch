@@ -179,7 +179,16 @@ import {
   type LigneWaitlist,
 } from "@/lib/atelier/fondatrice";
 import { lireSuivi, nomTransporteur } from "@/lib/atelier/suivi";
-import { boiteRognee, decouperCouverture, nomFichierSouvenir } from "@/lib/atelier/souvenir";
+import {
+  boiteRognee,
+  decouperCouverture,
+  nomFichierSouvenir,
+  etatGenerationSouvenir,
+  EVT_SOUVENIR_DEMARRE,
+  EVT_SOUVENIR_GENERE,
+  EVT_SOUVENIR_ECHOUE,
+  FENETRE_VERROU_SOUVENIR_MS,
+} from "@/lib/atelier/souvenir";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import {
   adresseCloudprinter,
@@ -1683,6 +1692,40 @@ titre("— le PDF souvenir : le nom de fichier —");
 ok("le titre entre dans le nom", nomFichierSouvenir("Notre été à Séville") === "Bellajour - Notre été à Séville.pdf");
 ok("sans titre, un nom digne quand meme", nomFichierSouvenir(null) === "Bellajour - Votre numero.pdf");
 ok("les caracteres interdits d'un nom de fichier sautent", !nomFichierSouvenir('a/b:c"d').includes("/"));
+
+titre("— le PDF souvenir : le verrou de generation (T-122) —");
+/* Le cas reel du 21/09/2026 (Merisa) : la transition a 08:54:06, le panneau
+   lance la fusion a 08:54:07, la fiche rechargee dit « pas encore genere »,
+   l'atelier clique vers 08:54:20. Avec le verrou, ce clic doit recevoir 409. */
+{
+  const ev = (type: string, iso: string) => ({ type, created_at: iso });
+  const DEMARRE = "2026-09-21T08:54:07.000Z";
+  const CLIC = Date.parse("2026-09-21T08:54:20.000Z");
+  const iso = (ms: number) => new Date(ms).toISOString();
+  ok("journal vide : rien en cours", !etatGenerationSouvenir([], CLIC).enCours);
+  const seul = etatGenerationSouvenir([ev(EVT_SOUVENIR_DEMARRE, DEMARRE)], CLIC);
+  ok("le clic du 21/09 a 08:54:20 : demarre a 08:54:07 sans suite, EN COURS", seul.enCours);
+  ok("… et il dit depuis quand", seul.enCours && seul.depuis === DEMARRE);
+  ok("demarre puis genere : libre",
+     !etatGenerationSouvenir([ev(EVT_SOUVENIR_DEMARRE, DEMARRE), ev(EVT_SOUVENIR_GENERE, "2026-09-21T08:54:15.000Z")], CLIC).enCours);
+  ok("demarre puis echoue : libre (un rate ne bloque pas la reprise)",
+     !etatGenerationSouvenir([ev(EVT_SOUVENIR_DEMARRE, DEMARRE), ev(EVT_SOUVENIR_ECHOUE, "2026-09-21T08:54:09.000Z")], CLIC).enCours);
+  ok("genere il y a longtemps puis un nouveau demarre : en cours (regeneration)",
+     etatGenerationSouvenir([ev(EVT_SOUVENIR_GENERE, "2026-09-20T10:00:00.000Z"), ev(EVT_SOUVENIR_DEMARRE, DEMARRE)], CLIC).enCours);
+  ok("l'ordre des lignes ne compte pas (la fiche les a en decroissant)",
+     etatGenerationSouvenir([ev(EVT_SOUVENIR_DEMARRE, DEMARRE), ev(EVT_SOUVENIR_GENERE, "2026-09-20T10:00:00.000Z")], CLIC).enCours);
+  ok("les autres evenements du dossier sont ignores",
+     etatGenerationSouvenir([ev("etat_change", "2026-09-21T08:54:06.900Z"), ev(EVT_SOUVENIR_DEMARRE, DEMARRE), ev("cloudprinter_signal", "2026-09-21T08:54:46.000Z")], CLIC).enCours);
+  ok("un demarre plus vieux que la fenetre : libre, le verrou ne survit pas a la fonction",
+     !etatGenerationSouvenir([ev(EVT_SOUVENIR_DEMARRE, iso(CLIC - FENETRE_VERROU_SOUVENIR_MS - 1000))], CLIC).enCours);
+  ok("un demarre a une seconde de la fenetre : encore en cours",
+     etatGenerationSouvenir([ev(EVT_SOUVENIR_DEMARRE, iso(CLIC - FENETRE_VERROU_SOUVENIR_MS + 1000))], CLIC).enCours);
+  ok("horloge de la base en avance d'une seconde : le verrou tient quand meme",
+     etatGenerationSouvenir([ev(EVT_SOUVENIR_DEMARRE, iso(CLIC + 1000))], CLIC).enCours);
+  ok("une date illisible : libre plutot que bloque pour toujours",
+     !etatGenerationSouvenir([ev(EVT_SOUVENIR_DEMARRE, "pas une date")], CLIC).enCours);
+  ok("la fenetre du verrou vaut la maxDuration de la route (300 s)", FENETRE_VERROU_SOUVENIR_MS === 300_000);
+}
 
 titre("— le suivi du colis : un numero doit devenir un lien —");
 const dpd = lireSuivi("dpd_france", "250A4B7C1234");

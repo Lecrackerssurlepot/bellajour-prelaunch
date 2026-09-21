@@ -668,6 +668,7 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     impressionFichiers: { product: null, cover: null, book: null },
     impressionUrls: { product: null, cover: null, book: null },
     souvenir: null,
+    souvenirEnCours: null,
     cloudprinterOrderId: null,
     transporteur: ["expediee", "livree"].includes(g.etat) ? "Colissimo" : null,
     trackingUrl: ["expediee", "livree"].includes(g.etat)
