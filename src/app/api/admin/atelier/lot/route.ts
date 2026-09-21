@@ -25,6 +25,44 @@ import { nomsDeFichiers } from "@/lib/atelier/lot";
 
 export const runtime = "nodejs";
 
+type RangeeLot = {
+  id: string;
+  r2_key: string;
+  nom_origine: string | null;
+  taille: number | null;
+  /* T-124 — absentes tant que la migration 20260921 n'est pas passée. */
+  prise_le?: string | null;
+  lieu_ville?: string | null;
+  lieu_pays?: string | null;
+};
+
+/**
+ * Les photos du lot, dans l'ordre de la fiche, avec la date et le lieu quand
+ * les colonnes existent.
+ *
+ * T-124 — la date EXIF et le lieu (migration 20260921) entrent dans le nom
+ * du fichier. Même repli 42703 que `donnees.ts` : si la colonne manque, on
+ * relit sans, et le nom se fait comme avant. Le téléchargement d'un lot ne
+ * doit jamais dépendre d'une migration.
+ */
+async function lirePhotosDuLot(supabase: ReturnType<typeof makeSupabase>, numeroId: string) {
+  const lire = (champs: string) =>
+    supabase
+      .from("photos")
+      .select(champs)
+      .eq("numero_id", numeroId)
+      /* T-114 : même tri que la fiche (donnees.ts), pour que « 03 - » soit
+         la même photo dans le dossier et à l'écran. */
+      .order("ordre", { ascending: true })
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .returns<RangeeLot[]>();
+
+  const complet = await lire("id, r2_key, nom_origine, taille, ordre, prise_le, lieu_ville, lieu_pays");
+  if (!complet.error || complet.error.code !== "42703") return complet;
+  return lire("id, r2_key, nom_origine, taille, ordre");
+}
+
 export async function POST(request: Request) {
   const qui = await quiEstConnecteRequete(request);
   if (!qui) return NextResponse.json({ error: "non_authentifie" }, { status: 401 });
@@ -52,16 +90,7 @@ export async function POST(request: Request) {
 
     if (!numero) return NextResponse.json({ error: "introuvable" }, { status: 404 });
 
-    const { data: photos, error } = await supabase
-      .from("photos")
-      .select("id, r2_key, nom_origine, taille, ordre")
-      .eq("numero_id", numero.id)
-      /* T-114 : même tri que la fiche (donnees.ts), pour que « 03- » soit la
-         même photo dans le ZIP et à l'écran. */
-      .order("ordre", { ascending: true })
-      .order("created_at", { ascending: true })
-      .order("id", { ascending: true })
-      .returns<Array<{ id: string; r2_key: string; nom_origine: string | null; taille: number | null }>>();
+    const { data: photos, error } = await lirePhotosDuLot(supabase, numero.id);
 
     if (error) {
       console.error("[admin/lot] lecture photos échouée", error.code, error.message);
@@ -76,7 +105,14 @@ export async function POST(request: Request) {
        la numérotation `01-`, `02-` reste celle du dépôt d'origine, et un
        lot partiel COMPLÈTE le même dossier au lieu de le renuméroter. */
     const rangees = photos ?? [];
-    const noms = nomsDeFichiers(rangees.map((p) => ({ nom: p.nom_origine })));
+    const noms = nomsDeFichiers(
+      rangees.map((p) => ({
+        nom: p.nom_origine,
+        priseLe: p.prise_le ?? null,
+        lieuVille: p.lieu_ville ?? null,
+        lieuPays: p.lieu_pays ?? null,
+      })),
+    );
     const retenues = rangees
       .map((p, i) => ({ ...p, nomFichier: noms[i] }))
       .filter((p) => !ids || ids.has(p.id));

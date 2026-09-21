@@ -17,14 +17,36 @@
  */
 
 import { NOM_BRIEF } from "./brief";
+import { jourCourt } from "./metadonnees";
 
 /** Le strict minimum pour nommer. Le reste du lot ne regarde pas ce module. */
-export type PhotoNommable = { nom: string | null };
+export type PhotoNommable = {
+  nom: string | null;
+  /** T-124 — ce que la photo sait d'elle-même (T-123), quand elle le sait :
+      la date EXIF locale et le lieu géocodé. Absents ou `null`, le nom se
+      fait sans eux. */
+  priseLe?: string | null;
+  lieuVille?: string | null;
+  lieuPays?: string | null;
+};
+
+/* Ce qui sépare les morceaux du nom : « 01 - 08 aou 2024 - Seville - IMG_4207.jpg ».
+   Le même que celui du dossier (`nomDossier`), pour que le lot se lise d'un
+   seul regard dans le Finder. */
+const SEP = " - ";
 
 /* Ce que macOS et Windows refusent dans un nom de fichier, plus les
    caractères de contrôle. Les espaces sont CONSERVÉS : ils ne gênent ni le
    Finder ni `curl -OJ`, et un nom d'origine reste reconnaissable. */
 const INTERDITS = /[\\/:*?"<>|\u0000-\u001f]/g;
+
+/** « Séville » → « Seville ». Le lieu entre dans un nom de fichier, et le
+ *  chemin `curl -OJ` n'écrit que la forme ASCII du `Content-Disposition`
+ *  (r2.ts) : sans cela, Chrome écrirait « Séville » et curl « S-ville », et
+ *  les deux chemins ne donneraient plus LES MÊMES NOMS. */
+function sansAccents(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
 
 export function assainir(nom: string): string {
   return nom
@@ -51,6 +73,13 @@ export function assainir(nom: string): string {
  *
  * Le nom du brief est réservé d'avance : une photo qui s'appellerait comme
  * lui l'écraserait, et on perdrait les notes au lieu d'une vignette.
+ *
+ * T-124 (21/09/2026) — entre le rang et le nom d'origine viennent LA DATE
+ * (« 08 aou 2024 », mois en trois lettres) et LE LIEU (la ville, sinon le
+ * pays), quand la photo les sait : c'est ce qui permet de se repérer dans
+ * Canva sans rouvrir la fiche. Le rang reste TOUJOURS en tête : la date
+ * aide à lire, elle ne réordonne rien (l'ordre est celui du client, T-114).
+ * Une photo sans date ni lieu garde la forme courte « 01 - IMG_4207.jpg ».
  */
 export function nomsDeFichiers(photos: PhotoNommable[]): string[] {
   const largeur = Math.max(2, String(photos.length).length);
@@ -62,10 +91,13 @@ export function nomsDeFichiers(photos: PhotoNommable[]): string[] {
     const souche = point > 0 ? base.slice(0, point) : base;
     const ext = point > 0 ? base.slice(point) : "";
     const prefixe = String(i + 1).padStart(largeur, "0");
+    const date = jourCourt(p.priseLe ?? null);
+    const lieu = assainir(sansAccents(p.lieuVille?.trim() || p.lieuPays?.trim() || "")).slice(0, 40);
+    const tete = [prefixe, date, lieu || null].filter(Boolean).join(SEP);
 
-    let candidat = `${prefixe}-${souche}${ext}`;
+    let candidat = `${tete}${SEP}${souche}${ext}`;
     let n = 2;
-    while (pris.has(candidat.toLowerCase())) candidat = `${prefixe}-${souche}-${n++}${ext}`;
+    while (pris.has(candidat.toLowerCase())) candidat = `${tete}${SEP}${souche}-${n++}${ext}`;
     pris.add(candidat.toLowerCase());
     return candidat;
   });

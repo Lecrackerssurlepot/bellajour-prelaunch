@@ -194,6 +194,7 @@ import {
   dimensionsDroites,
   estCaptureEcran,
   formatDepuisOctets,
+  jourCourt,
   jourEnClair,
   nommerAppareil,
   normaliserDateExif,
@@ -1017,22 +1018,47 @@ titre("— le lot partiel (T2-5) —");
    Nommer apres filtrage renumeroterait a 01- et melangerait tout. */
 const lotComplet = nomsDeFichiers([{ nom: "a.jpg" }, { nom: "b.jpg" }, { nom: "c.jpg" }]);
 ok("nommer PUIS filtrer garde le rang d'origine (03- pour la troisieme)",
-   lotComplet[2] === "03-c.jpg");
+   lotComplet[2] === "03 - c.jpg");
 ok("filtrer puis nommer renumeroterait (la preuve du danger)",
-   nomsDeFichiers([{ nom: "c.jpg" }])[0] === "01-c.jpg");
+   nomsDeFichiers([{ nom: "c.jpg" }])[0] === "01 - c.jpg");
 
 titre("— les noms de fichiers d'un lot —");
 const nomsSimples = nomsDeFichiers([{ nom: "IMG_988.jpg" }, { nom: "IMG_4207.jpg" }]);
 ok("l'ordre du depot est prefixe, pas l'ordre alphabetique",
-   nomsSimples[0] === "01-IMG_988.jpg" && nomsSimples[1] === "02-IMG_4207.jpg");
+   nomsSimples[0] === "01 - IMG_988.jpg" && nomsSimples[1] === "02 - IMG_4207.jpg");
 ok("largeur du prefixe suivant la taille du lot",
-   nomsDeFichiers(Array.from({ length: 120 }, () => ({ nom: "a.jpg" })))[0] === "001-a.jpg");
+   nomsDeFichiers(Array.from({ length: 120 }, () => ({ nom: "a.jpg" })))[0] === "001 - a.jpg");
 const doublons = nomsDeFichiers([{ nom: "photo.jpg" }, { nom: "photo.jpg" }]);
 ok("deux noms d'origine identiques ne s'ecrasent pas",
    doublons[0] !== doublons[1] && new Set(doublons).size === 2);
-ok("nom absent : un nom quand meme", nomsDeFichiers([{ nom: null }])[0] === "01-photo-1");
+ok("nom absent : un nom quand meme", nomsDeFichiers([{ nom: null }])[0] === "01 - photo-1");
 ok("une barre oblique ne cree pas de sous-dossier", !nomsDeFichiers([{ nom: "ete/2026.jpg" }])[0].includes("/"));
 ok("le nom du brief est reserve", nomsDeFichiers([{ nom: NOM_BRIEF }])[0] !== NOM_BRIEF);
+
+/* ── T-124 : LA DATE ET LE LIEU DANS LE NOM ─────────────────────────────
+   Le rang reste en tete (l'ordre du client, T-114), puis « 08 aou 2024 »,
+   puis la ville, puis le nom d'origine. Sans accent : curl -OJ n'ecrit que
+   l'ASCII du Content-Disposition, et les deux chemins doivent donner LES
+   MEMES NOMS. */
+titre("— T-124 : la date et le lieu dans le nom —");
+const seville = { nom: "IMG_4207.jpg", priseLe: "2024-08-08T19:01:22", lieuVille: "Séville", lieuPays: "Espagne" };
+ok("rang, date en mois court, ville, nom d'origine",
+   nomsDeFichiers([seville])[0] === "01 - 08 aou 2024 - Seville - IMG_4207.jpg");
+ok("sans lieu : le rang, la date, le nom",
+   nomsDeFichiers([{ nom: "IMG_1.jpg", priseLe: "2025-12-25T10:00:00" }])[0] === "01 - 25 dec 2025 - IMG_1.jpg");
+ok("sans ville : le pays tient lieu de lieu",
+   nomsDeFichiers([{ nom: "IMG_1.jpg", priseLe: null, lieuVille: null, lieuPays: "Portugal" }])[0] === "01 - Portugal - IMG_1.jpg");
+ok("sans date ni lieu : la forme courte d'avant",
+   nomsDeFichiers([{ nom: "IMG_1.jpg", priseLe: null, lieuVille: null, lieuPays: null }])[0] === "01 - IMG_1.jpg");
+ok("la date ne reordonne pas : la plus recente garde le rang 01",
+   nomsDeFichiers([{ nom: "b.jpg", priseLe: "2025-03-02T00:00:00" }, { nom: "a.jpg", priseLe: "2025-03-01T00:00:00" }])[0].startsWith("01 - 02 mar 2025"));
+ok("deux photos datees pareil au meme endroit ne s'ecrasent pas",
+   new Set(nomsDeFichiers([seville, seville])).size === 2);
+ok("juin et juillet ne se confondent pas",
+   jourCourt("2024-06-01T00:00:00") === "01 juin 2024" && jourCourt("2024-07-14T12:00:00") === "14 juil 2024");
+ok("un mois hors bornes ne fabrique pas de date", jourCourt("2024-13-01T00:00:00") === null && jourCourt(null) === null);
+ok("une ville avec barre oblique ne cree pas de sous-dossier",
+   !nomsDeFichiers([{ nom: "a.jpg", lieuVille: "Saint/Ouen" }])[0].includes("/"));
 ok("le dossier porte la cliente puis le titre",
    nomDossier("Camille", "Seville, dix jours", "abcdef0123") === "Camille - Seville, dix jours");
 ok("un titre a rallonge ne fabrique pas un dossier illisible",
