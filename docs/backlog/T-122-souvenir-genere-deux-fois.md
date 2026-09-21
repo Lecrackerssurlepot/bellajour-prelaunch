@@ -69,7 +69,7 @@ Le correctif le plus simple, sans migration, sans supprimer de code :
    d'elle-même à « au coffre » sans recharger à la main.
 
 ## Ce qui a été fait
-**21/09/2026, branche `fix/t122-souvenir-double-generation`, PR ouverte le jour même (PAS ENCORE EN
+**21/09/2026, branche `fix/t122-souvenir-double-generation`, PR #190 ouverte le jour même (PAS ENCORE EN
 PROD : la fusion et le déploiement restent à faire).**
 - `src/lib/atelier/souvenir.ts` : la règle pure `etatGenerationSouvenir(evenements, maintenant)` et
   les trois types `souvenir_demarre` / `souvenir_genere` / `souvenir_echoue` ; fenêtre
