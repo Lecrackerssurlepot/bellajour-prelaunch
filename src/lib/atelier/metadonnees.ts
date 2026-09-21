@@ -244,6 +244,17 @@ export function remarquesDe(p: MetaPhoto, doublonDe: string | null): Remarque[] 
 }
 
 /**
+ * T-125 — ce que le choix du lot écarte D'OFFICE : les doublons et les
+ * captures d'écran. Les autres remarques restent des remarques : une photo
+ * de nuit très sombre ou un scan sans date se composent très bien. Et même
+ * ce qui est écarté d'office se remet d'un clic sur la vignette : la règle
+ * propose, l'atelier décide.
+ */
+export function ecarteeDOffice(remarques: Remarque[]): boolean {
+  return remarques.includes("doublon") || remarques.includes("capture");
+}
+
+/**
  * L'ordre du temps : les photos datées d'abord, de la plus ancienne à la
  * plus récente, puis les autres dans l'ordre reçu. Stable : deux photos
  * prises à la même seconde gardent l'ordre du dépôt.
