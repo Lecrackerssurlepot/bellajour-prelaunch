@@ -19,6 +19,7 @@ import {
   largeurCouvertureMm,
   FORMAT_PAGE_PDF_MM,
   GRAMMAGE_INTERIEUR_GSM,
+  type Finition,
   type ProduitImpression,
   type TypeFichier,
   type VerdictPages,
@@ -58,6 +59,12 @@ export async function inspecterPdf(
   type: TypeFichier,
   nbPagesDossier: number | null,
   produit: ProduitImpression | null,
+  /**
+   * La finition du dossier : depuis le 21/09/2026 elle choisit le papier
+   * intérieur, donc le dos, donc la largeur attendue d'une couverture.
+   * Absente = le défaut (brillant), comme partout.
+   */
+  finition?: Finition | null,
 ): Promise<Inspection> {
   /* `updateMetadata: false` : on LIT, on ne veut pas qu'une date de
      modification bouge dans un objet qu'on ne réécrira jamais. */
@@ -79,8 +86,8 @@ export async function inspecterPdf(
   const trim = dimsDe(premiere.getTrimBox());
   const trimMm = memeDim(trim, pageMm) ? null : trim;
 
-  const dosAttendu = dosMmPourPages(nbPagesDossier);
-  const largeurAttendue = largeurCouvertureMm(nbPagesDossier);
+  const dosAttendu = dosMmPourPages(nbPagesDossier, finition);
+  const largeurAttendue = largeurCouvertureMm(nbPagesDossier, finition);
 
   const autresTaillesMm: DimensionMm[] = [];
   for (const page of pages.slice(1)) {
@@ -100,7 +107,7 @@ export async function inspecterPdf(
     /* Le MediaBox EST la « page PDF » que les specs mesurent (216 × 303
        attendus, fond perdu compris) — la TrimBox, quand elle existe, ne
        fait que déclarer où tombera le rognage. */
-    verdictTaille: verdictTaillePage(type, pageMm.largeur, pageMm.hauteur, nbPagesDossier),
+    verdictTaille: verdictTaillePage(type, pageMm.largeur, pageMm.hauteur, nbPagesDossier, finition),
     attenduCouverture:
       type === "cover" && largeurAttendue !== null && dosAttendu !== null
         ? {

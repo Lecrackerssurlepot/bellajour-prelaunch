@@ -470,6 +470,12 @@ export default function CasesEtCommande({
               ))}
             </div>
           </div>
+          {/* Le papier intérieur suit la finition (21/09/2026) : le client
+              choisit UN mot, il doit savoir qu'il choisit tout l'objet. */}
+          <p className="nu-bon-note">
+            Le papier intérieur suit votre choix&nbsp;: brillant avec une couverture
+            brillante, satiné avec une couverture mate.
+          </p>
           {/* ── LA LIVRAISON, EN SUS (lot 6, 10/09/2026) ──
               Elle a sa ligne, toujours, même offerte : « compris » ne se dit
               plus, le port est devisé par destination et son montant doit se

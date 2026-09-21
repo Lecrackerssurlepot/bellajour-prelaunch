@@ -33,6 +33,7 @@ import { empreinteObjet, lireObjet } from "@/lib/atelier/r2";
 import {
   estCleImpression,
   produitPour,
+  finitionDuDossier,
   MAX_PDF_BYTES,
   SLOTS_IMPRESSION,
   type TypeFichier,
@@ -78,14 +79,18 @@ export async function POST(request: Request) {
     const supabase = makeSupabase();
 
     let nbPagesDossier: number | null = null;
+    /* La finition (migration 20260911) : depuis le 21/09 elle choisit le
+       papier intérieur, donc le dos, donc la largeur attendue d'une
+       couverture. Lue avec le reste ; `null` = brillant, comme partout. */
+    let finitionDossier: string | null = null;
     let fichiersBruts: Record<string, unknown> = {};
     let colonneAbsente = false;
 
     const { data: numero, error: lecture } = await supabase
       .from("numeros")
-      .select("id, nb_pages, impression_fichiers")
+      .select("id, nb_pages, impression_fichiers, finition")
       .eq("token", token)
-      .maybeSingle<{ id: string; nb_pages: number | null; impression_fichiers: unknown }>();
+      .maybeSingle<{ id: string; nb_pages: number | null; impression_fichiers: unknown; finition?: string | null }>();
 
     if (lecture && lecture.code === "42703") {
       /* La colonne `impression_fichiers` (migration 20260827) n'existe pas
@@ -112,6 +117,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "introuvable" }, { status: 404 });
     } else {
       nbPagesDossier = numero.nb_pages;
+      finitionDossier = numero.finition ?? null;
       fichiersBruts = (numero.impression_fichiers && typeof numero.impression_fichiers === "object"
         ? numero.impression_fichiers
         : {}) as Record<string, unknown>;
@@ -159,7 +165,7 @@ export async function POST(request: Request) {
 
       try {
         const bytes = await lireObjet(cle, AbortSignal.timeout(BUDGET_FICHIER_MS));
-        const lu = await inspecterPdf(bytes, slot.type, nbPagesDossier, produit);
+        const lu = await inspecterPdf(bytes, slot.type, nbPagesDossier, produit, finitionDuDossier(finitionDossier));
         resultats.push({ ...socle, taille: empreinte.taille, lisible: true, ...lu });
       } catch (err) {
         const e = err as Error;

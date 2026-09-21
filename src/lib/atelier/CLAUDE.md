@@ -61,7 +61,8 @@ le 2e à −30 %, les suivants à −50 %, importable navigateur : le bon de com
 `livraison.ts` (zones A 5 € / B 13 € / C devis, `FRANCO_CENTIMES` 50 €, `portClient`, devis → TTC,
 `totalCommande`), `questionnaire.ts` (les 7 champs exigés, pays compris, + `suggestionEmail`), `rebond.ts` (ce qu'un signal Brevo dit d'une adresse),
 `parcours.ts` (les 8 jalons), `impression.ts` (table produit Cloudprinter, **le papier tranché
-le 11/09 — `PAPIER_INTERIEUR` / `PAPIER_COUVERTURE`, une constante pour les deux reliures —, le
+le 11/09 — `PAPIER_COUVERTURE` constante, et depuis le 21/09 le papier intérieur SUIT la finition :
+`papierInterieurPour(finition)`, gloss sous brillant, silk sous mat —, le
 pelliculage choisi par le client, et la GÉOMÉTRIE du dos qui se déduit du papier**),
 `suivi.ts` (transporteur + code), `rang.ts` (le rang d'une photo : celui que le navigateur
 annonce fait foi, les ajouts se rangent après le coffre), `recit.ts`, `brief.ts`, `lot.ts`, `formats.ts`, `dates.ts`,
@@ -193,8 +194,10 @@ qui le montre. Le texte des mails est versionné dans `scripts/mails-atelier.mjs
   Un débord court ne compte que sur 2 mm de bord d'un seul tenant (un reflet cramé n'est pas une
   photo qui s'arrête). Le rendu est dans `src/app/admin/atelier/[token]/rendreBords.ts` (pdf.js
   servi depuis `public/pdfjs/`, jamais empaqueté), le module pur ne voit que des pixels gris.
-- **Le dos se CALCULE** (`dosMmPourPages`), grammage et bulk déduits de `PAPIER_INTERIEUR` :
-  changer le papier change la géométrie, et le harnais tombe au lieu de se taire. `souvenir.ts`,
+- **Le dos se CALCULE** (`dosMmPourPages(pages, finition)`), grammage déduit de la référence, bulk
+  de la FINITION (gloss 0,80 · silk 0,90, `bulkInterieurPour`) : changer le papier change la
+  géométrie, et le harnais tombe au lieu de se taire. Tout ce qui juge ou découpe une couverture
+  (`controlePdf.ts`, `decoupe.ts`, `preparerPdf.ts`) reçoit donc la finition avec la pagination. `souvenir.ts`,
   lui, continue de MESURER le dos sur la feuille déposée — juger et découper sont deux gestes.
 - **Cloudprinter** : 
   le dos carré (24 à 60 p., le SEUL produit depuis le 15/09 ; l'agrafé est dans `archive/agrafe-2026-09/`)

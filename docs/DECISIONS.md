@@ -435,3 +435,23 @@ supporter des frais à l'arrivée (`HORS_UE`, CasesEtCommande.tsx), et les CGV v
 
 **Conséquence :** ne pas repasser GB à 0 sans rouvrir cette décision. Deux gestes hors code
 attendent : la ligne comptable séparée, et l'immatriculation à la première commande.
+
+D19 (21/09/2026) — **Le papier intérieur suit la finition choisie par le client : brillant
+(gloss, `pageblock_130mcg`) sous une couverture brillante, satiné (silk, `pageblock_130mcs`)
+sous une couverture mate.** Décision de Mathias.
+
+Le contexte. Le 15/09, le papier intérieur avait été fixé au gloss pour tout le monde, parce
+qu'en France le silk part d'une autre usine et coûte 9,22 € HT de port au lieu de 6,46 (relevé du
+11/09, re-devisé le 16/09). Mais la page produit promettait « couché satiné » et les CGV disaient
+« couché brillant » : deux textes, deux papiers, et un seul objet imprimé (Merisa, 21/09, gloss).
+
+Ce qui est tranché. Le client ne choisit qu'un mot, brillant ou mat, et ce mot décide de tout
+l'objet : le pelliculage de la couverture ET le papier des pages. Une commande mate française
+coûte donc 2,76 € HT de port de plus, à notre charge (le port facturé au client est fixe par
+zone) ; le cockpit le verra. Le dos se calcule avec le bulk du papier réel (gloss 0,80, silk
+0,90), et tout ce qui juge ou découpe une couverture reçoit la finition avec la pagination.
+
+**Conséquence :** `papierInterieurPour(finition)` est le seul chemin vers la référence du papier
+intérieur ; la page produit et le bon de commande le disent au client. Les CGV (annexe « Papier »,
+FR/PT/EN) disent encore « couché brillant » pour tous : texte légal, à corriger avec l'accord
+explicite de Mathias.

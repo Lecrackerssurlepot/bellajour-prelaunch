@@ -31,7 +31,7 @@ import {
   type BoiteMm,
   type PageLue,
 } from "@/lib/atelier/decoupe";
-import { FORMAT_FINI_MM, FORMAT_PAGE_PDF_MM, FOND_PERDU_MM, type TypeFichier } from "@/lib/atelier/impression";
+import { FORMAT_FINI_MM, FORMAT_PAGE_PDF_MM, FOND_PERDU_MM, type Finition, type TypeFichier } from "@/lib/atelier/impression";
 
 const PT = 72 / 25.4;
 const mm = (v: number) => v * PT;
@@ -63,6 +63,8 @@ export async function preparerPdfImpression(
   source: ArrayBuffer | Uint8Array,
   type: TypeFichier,
   nbPagesDossier: number | null,
+  /** La finition du dossier : elle choisit le papier, donc le dos (21/09). */
+  finition: Finition | null = null,
 ): Promise<Preparation> {
   /* L'agrafé (archivé le 15/09) prenait UN PDF complet : plus aucune règle
      ne le décrit, on ne touche pas à ce qu'on ne sait pas juger. */
@@ -109,7 +111,7 @@ export async function preparerPdfImpression(
     return { inchange: false, octets, resume: resumeInterieur(plan) };
   }
 
-  const plan = planCouverture(lues, nbPagesDossier);
+  const plan = planCouverture(lues, nbPagesDossier, finition);
   if (!plan.ok) return { refus: plan.raison };
   if (plan.inchange) return { inchange: true, resume: resumeCouverture(plan) };
 

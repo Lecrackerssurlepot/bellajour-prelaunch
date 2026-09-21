@@ -35,6 +35,7 @@ import {
   TOLERANCE_FORMAT_MM,
   dosMmPourPages,
   largeurCouvertureMm,
+  type Finition,
 } from "./impression";
 
 export type BoiteMm = { x: number; y: number; largeur: number; hauteur: number };
@@ -284,9 +285,14 @@ export type PlanCouverture =
  * La largeur de sortie est CELLE DU CODE (`largeurCouvertureMm`) : c'est la
  * cote que la route de transition annonce et que le contrôle juge.
  */
-export function planCouverture(pages: PageLue[], nbPagesDossier: number | null | undefined): PlanCouverture {
-  const largeur = largeurCouvertureMm(nbPagesDossier);
-  const dos = dosMmPourPages(nbPagesDossier);
+export function planCouverture(
+  pages: PageLue[],
+  nbPagesDossier: number | null | undefined,
+  /** La finition du dossier, qui choisit le papier et donc le dos (21/09). */
+  finition?: Finition | null,
+): PlanCouverture {
+  const largeur = largeurCouvertureMm(nbPagesDossier, finition);
+  const dos = dosMmPourPages(nbPagesDossier, finition);
   if (largeur === null || dos === null) {
     return { ok: false, raison: "La pagination du dossier ne désigne aucun dos carré : impossible de calculer le dos." };
   }

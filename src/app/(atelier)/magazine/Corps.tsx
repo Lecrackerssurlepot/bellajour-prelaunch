@@ -142,17 +142,22 @@ export default function Corps() {
                   (l'agrafé de 20 pages est archivé dans archive/agrafe-2026-09/).
                   Les bornes sont DÉRIVÉES de la grille, jamais recopiées. */}
               <p className="lede">
-                Format A4, papier intérieur couché satiné 130 g, couverture
-                250 g. Dos carré collé, de {PAGES_MIN} à {PAGES_MAX_PUBLIC} pages.
+                Format A4, papier intérieur couché 130 g, couverture 250 g.
+                Dos carré collé, de {PAGES_MIN} à {PAGES_MAX_PUBLIC} pages.
                 Composé page à page par l’atelier.
               </p>
               {/* Le seul choix d'objet laissé au client, dit ici parce que
                   c'est ici qu'on décrit l'objet — et redit au bon de
                   commande, là où il se fait. Sans supplément : le relevé du
-                  11/09 donne un demi-centime d'écart entre les deux. */}
+                  11/09 donne un demi-centime d'écart entre les deux.
+                  Depuis le 21/09/2026 le papier intérieur SUIT ce choix
+                  (`PAPIER_INTERIEUR_PAR_FINITION`, impression.ts) : brillant
+                  sous une couverture brillante, satiné sous une mate. */}
               <p className="lede">
                 Couverture pelliculée <b>brillante ou mate</b>, à votre choix
-                au moment de la commande. Sans supplément.
+                au moment de la commande. Le papier intérieur suit&nbsp;:
+                brillant avec la couverture brillante, satiné avec la mate.
+                Sans supplément.
               </p>
             </Reveal>
             <Reveal delay={70}>
