@@ -45,3 +45,7 @@ paliers, type `PhotoLot` élargi pour le calcul local (mode démo). Harnais : 9 
 sous « T-124 », les 6 anciennes mises au nouveau séparateur, TOUT PASSE. tsc et lint verts.
 Une photo déposée avant la lecture de ses métadonnées est nommée sans date au premier
 téléchargement, avec au suivant : c'est attendu, la lecture suit chaque lot.
+**PR #197 fusionnée le 21/09** (commit `a9c9b38`), déploiement Vercel de production vérifié par
+l'API. Aperçu réel en lecture seule avant fusion : Merisa `01 - 29 aou 2026 - Ponta do Sol -
+IMG_0873.jpeg`, Klervie `59 - 31 mai 2026 - Aranjuez - IMG_4956.HEIC`, Jeanne (export sans EXIF)
+`001 - IMG_0932.jpeg`. Reste à voir sur un vrai téléchargement Chrome depuis la fiche.
