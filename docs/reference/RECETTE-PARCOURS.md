@@ -165,12 +165,13 @@ imprimées, signaux simulés en quelques minutes.
 passerait une vraie commande payante.
 
 Admin, sur la fiche : *Envoyer à l'impression* → déposer les **PDF
-d'impression** (20 pages = UN PDF complet couverture intégrée ; dos carré
-= DEUX PDF, la couverture enveloppante avec le dos + le bloc intérieur —
-c'est l'exigence de leurs produits) → *Préparer* → *Confirmer*.
+d'impression** (dos carré collé, le seul produit depuis le 15/09/2026 :
+DEUX PDF, la couverture enveloppante avec le dos + le bloc intérieur —
+c'est l'exigence de leur produit ; l'agrafé de 20 pages est archivé dans
+`archive/agrafe-2026-09/`) → *Préparer* → *Confirmer*.
 
-- [ ] *Préparer* affiche le produit déduit de la pagination (20 p. = agrafé,
-      sinon dos carré), la taille du fichier et l'adresse Stripe
+- [ ] *Préparer* affiche le produit (dos carré collé), la taille des deux
+      fichiers et l'adresse Stripe
 - [ ] sans PDF déposé, chaque cadre manquant est nommé ; une adresse incomplète est
       nommée champ par champ
 - [ ] *Confirmer* : le journal dit « a passé la commande chez l'imprimeur
