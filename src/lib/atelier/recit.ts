@@ -704,6 +704,29 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
        La commande, puis le fil de production poussé par leurs webhooks.
        Un seul signal change l'état (ItemShipped → « Expédié », rendu par
        etat_change ci-dessus) ; le reste raconte. */
+    /* ── Le PDF souvenir (03/09, verrou T-122 du 21/09) ────────────────
+       Trois lignes : la fusion démarre (c'est le verrou), aboutit (la clé et
+       le poids) ou rate (la raison). Deux `souvenir_genere` à la suite se
+       LISENT ici : c'est ce journal qui a révélé le double passage du 21/09. */
+    case "souvenir_demarre":
+      return {
+        texte: fait(qui, "a lancé la fabrication du PDF souvenir", "Fabrication du PDF souvenir lancée"),
+        detail: null,
+        ton: "nous",
+      };
+    case "souvenir_genere":
+      return {
+        texte: "PDF souvenir au coffre",
+        detail: typeof payload.octets === "number" ? `${Math.max(1, Math.round(payload.octets / (1024 * 1024)))} Mo` : null,
+        ton: "neutre",
+      };
+    case "souvenir_echoue":
+      return {
+        texte: "La fabrication du PDF souvenir a échoué",
+        detail: typeof payload.raison === "string" ? payload.raison : null,
+        ton: "alerte",
+      };
+
     case "cloudprinter_commande":
       return {
         texte: fait(qui, "a passé la commande chez l'imprimeur", "Commande passée chez l'imprimeur"),

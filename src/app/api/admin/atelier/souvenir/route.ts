@@ -23,6 +23,15 @@
  * (best-effort), et la carte Impression porte un bouton de reprise. Filet
  * ultime : tant que `souvenir_pdf_key` manque, `manquePour` retient M7b et
  * la relève réessaie chaque jour — visible sur /admin/atelier/sante.
+ *
+ * UN SEUL PASSAGE À LA FOIS (T-122, 21/09/2026). Sur la première commande
+ * réelle, les deux déclencheurs ont tourné l'un après l'autre à 16 s d'écart
+ * (134 Mo lus, fusionnés et écrits deux fois). La route pose donc un verrou
+ * DANS LE JOURNAL : `souvenir_demarre` avant de lire le coffre, puis
+ * `souvenir_genere` ou `souvenir_echoue`. Un `souvenir_demarre` sans suite
+ * depuis moins de `FENETRE_VERROU_SOUVENIR_MS` rend 409 `deja_en_cours`. La
+ * règle est pure (`etatGenerationSouvenir`) et la fiche la relit pour
+ * éteindre son bouton. Pas de colonne, pas de migration.
  * ══════════════════════════════════════════════════════════════════════════
  */
 
@@ -35,13 +44,27 @@ import { logEvenement } from "@/lib/atelier/evenements";
 import { ecrireObjet, empreinteObjet, lireObjet, supprimer } from "@/lib/atelier/r2";
 import { estCleImpression, MAX_PDF_BYTES } from "@/lib/atelier/impression";
 import { reliurePour } from "@/lib/atelier/grille";
-import { boiteRognee, decouperCouverture, type Boite } from "@/lib/atelier/souvenir";
+import {
+  boiteRognee,
+  decouperCouverture,
+  etatGenerationSouvenir,
+  EVT_SOUVENIR_DEMARRE,
+  EVT_SOUVENIR_ECHOUE,
+  EVT_SOUVENIR_GENERE,
+  EVTS_SOUVENIR,
+  type Boite,
+} from "@/lib/atelier/souvenir";
+import { prenomDe } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /* Deux PDF de magazine à descendre, parser et réécrire : la minute par
-   défaut ne suffit pas. Même réglage que le contrôle technique. */
+   défaut ne suffit pas. Même réglage que le contrôle technique.
+   ⚠️ C'est AUSSI la durée du verrou (`FENETRE_VERROU_SOUVENIR_MS`,
+   souvenir.ts) : un verrou ne doit pas survivre à la fonction qui l'a posé.
+   Next exige ici un LITTÉRAL (un calcul casse le build), donc le lien est
+   tenu par le harnais : « la fenetre du verrou vaut la maxDuration ». */
 export const maxDuration = 300;
 
 /* Le budget d'UN téléchargement. Au-delà, on rend un message clair plutôt
@@ -86,6 +109,14 @@ export async function POST(request: Request) {
   const qui = await quiEstConnecteRequete(request);
   if (!qui) return NextResponse.json({ error: "non_authentifie" }, { status: 401 });
 
+  /* Le verrou posé, à libérer sur TOUTE sortie en échec — y compris
+     l'exception du `catch`, hors de portée des `const` du `try`. */
+  let verrou: { supabase: ReturnType<typeof makeSupabase>; numeroId: string } | null = null;
+  const liberer = async (raison: string) => {
+    if (!verrou) return;
+    await logEvenement(verrou.supabase, verrou.numeroId, EVT_SOUVENIR_ECHOUE, { par: prenomDe(qui), raison });
+  };
+
   try {
     const body = (await request.json()) as { token?: unknown };
     const token = typeof body.token === "string" ? body.token.trim() : "";
@@ -121,6 +152,38 @@ export async function POST(request: Request) {
     }
     if (!numero) return NextResponse.json({ error: "introuvable" }, { status: 404 });
 
+    /* ── LE VERROU (T-122) ─────────────────────────────────────────────
+       Le dernier événement souvenir du dossier décide : un `souvenir_demarre`
+       récent sans suite = une fusion tourne, on refuse. Une lecture ratée du
+       journal refuse aussi : sans lui, on ne sait pas, et ce travail est
+       trop lourd pour être fait « au cas où ». */
+    const { data: dernierSouvenir, error: lectureJournal } = await supabase
+      .from("evenements")
+      .select("type, created_at")
+      .eq("numero_id", numero.id)
+      .in("type", [...EVTS_SOUVENIR])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .returns<Array<{ type: string; created_at: string }>>();
+    if (lectureJournal) {
+      console.error("[admin/souvenir] journal illisible", lectureJournal.code, lectureJournal.message);
+      return NextResponse.json({ error: "internal" }, { status: 500 });
+    }
+    const etat = etatGenerationSouvenir(dernierSouvenir ?? [], Date.now());
+    if (etat.enCours) {
+      return NextResponse.json({ error: "deja_en_cours", depuis: etat.depuis }, { status: 409 });
+    }
+    /* Best-effort comme tout le journal : si la ligne ne s'écrit pas, on
+       génère quand même — le verrou est une ceinture, pas la raison d'être. */
+    await logEvenement(supabase, numero.id, EVT_SOUVENIR_DEMARRE, { par: prenomDe(qui) });
+    verrou = { supabase, numeroId: numero.id };
+
+    /* Une sortie en échec libère le verrou ET rend la réponse. */
+    const echouer = async (statut: number, corps: Record<string, unknown>, raison: string) => {
+      await liberer(raison);
+      return NextResponse.json(corps, { status: statut });
+    };
+
     const fichiers = (numero.impression_fichiers && typeof numero.impression_fichiers === "object"
       ? numero.impression_fichiers
       : {}) as Record<string, unknown>;
@@ -145,9 +208,10 @@ export async function POST(request: Request) {
       const cleCover = cleDe("cover");
       const cleBook = cleDe("book");
       if (!cleCover || !cleBook) {
-        return NextResponse.json(
+        return echouer(
+          409,
           { error: "fichiers_manquants", detail: "Il faut la couverture ET le bloc intérieur déposés." },
-          { status: 409 },
+          "fichiers_manquants",
         );
       }
 
@@ -155,18 +219,19 @@ export async function POST(request: Request) {
          après l'autre dans la mémoire d'une fonction, pas forcément côte à
          côte (le motif du contrôle technique). */
       const cover = await chargerPdf(cleCover, "PDF de la couverture");
-      if ("probleme" in cover) return NextResponse.json({ error: "fichier_ko", detail: cover.probleme }, { status: 422 });
+      if ("probleme" in cover) return echouer(422, { error: "fichier_ko", detail: cover.probleme }, cover.probleme);
 
       const feuille = cover.doc.getPage(0).getMediaBox();
       const decoupe = decouperCouverture(feuille.width, feuille.height);
       if (!decoupe) {
-        return NextResponse.json(
+        return echouer(
+          422,
           {
             error: "cover_hors_gabarit",
             detail:
               "La couverture n'a pas la tête d'une feuille enveloppante (2 faces + dos + fonds perdus) : le souvenir ne peut pas la découper. Vérifie le fichier avec le contrôle technique.",
           },
-          { status: 422 },
+          "cover_hors_gabarit",
         );
       }
       dosMm = decoupe.dosMm;
@@ -179,7 +244,7 @@ export async function POST(request: Request) {
       souvenir.addPage(c1);
 
       const book = await chargerPdf(cleBook, "PDF du bloc intérieur");
-      if ("probleme" in book) return NextResponse.json({ error: "fichier_ko", detail: book.probleme }, { status: 422 });
+      if ("probleme" in book) return echouer(422, { error: "fichier_ko", detail: book.probleme }, book.probleme);
       const pages = await souvenir.copyPages(book.doc, book.doc.getPageIndices());
       for (const page of pages) {
         rogner(page, boiteRognee(page.getMediaBox().width, page.getMediaBox().height));
@@ -205,7 +270,7 @@ export async function POST(request: Request) {
       console.error("[admin/souvenir] écriture échouée", ecriture.code, ecriture.message);
       /* L'objet sans ligne serait invisible et éternel : on le reprend. */
       await supprimer(cleSouvenir);
-      return NextResponse.json({ error: "internal" }, { status: 500 });
+      return echouer(500, { error: "internal" }, "ecriture_base");
     }
 
     /* Régénération : l'ancien objet n'est plus référencé, on le reprend.
@@ -216,7 +281,8 @@ export async function POST(request: Request) {
 
     /* Invariant nº6 : toute écriture se journalise. Best-effort assumé —
        la clé est déjà en base, un rejeu régénérerait proprement. */
-    await logEvenement(supabase, numero.id, "souvenir_genere", {
+    await logEvenement(supabase, numero.id, EVT_SOUVENIR_GENERE, {
+      par: prenomDe(qui),
       cle: cleSouvenir,
       octets: octets.byteLength,
       ...(dosMm !== null ? { dos_mm: dosMm } : {}),
@@ -225,6 +291,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, octets: octets.byteLength }, { status: 200 });
   } catch (err) {
     console.error("[admin/souvenir] exception", (err as Error)?.message);
+    await liberer("exception");
     return NextResponse.json({ error: "internal" }, { status: 500 });
   }
 }

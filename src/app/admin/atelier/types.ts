@@ -349,6 +349,9 @@ export type Fiche = {
       à la livraison (mail M7b), et son poids. Null tant qu'il n'est pas
       généré — M7b attend, la carte Impression porte le bouton. */
   souvenir: { cle: string; octets: number | null } | null;
+  /** T-122 : l'heure ISO du `souvenir_demarre` sans suite (fusion en cours,
+      lue au journal), ou null. La carte éteint son bouton tant que c'est posé. */
+  souvenirEnCours: string | null;
   /** Posé quand la commande est partie chez Cloudprinter — jamais deux fois. */
   cloudprinterOrderId: string | null;
   transporteur: string | null;

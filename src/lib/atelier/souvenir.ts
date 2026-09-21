@@ -120,3 +120,59 @@ export function nomFichierSouvenir(titre: string | null | undefined): string {
   const propre = (titre ?? "").trim().replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim();
   return propre ? `Bellajour - ${propre}.pdf` : "Bellajour - Votre numero.pdf";
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LE VERROU DE GÉNÉRATION (T-122, 21/09/2026)
+
+   Le 21/09, sur la première commande réelle, le souvenir s'est fabriqué DEUX
+   fois à 16 s d'écart : le panneau lance la fusion après « Envoyer à
+   l'impression » et recharge la fiche aussitôt ; la carte, qui ne connaît
+   que `souvenir_pdf_key` (encore nulle), disait « pas encore généré » et
+   invitait à cliquer. 134 Mo lus, fusionnés et écrits deux fois, et deux
+   appels vraiment simultanés auraient laissé un orphelin sur R2.
+
+   Le verrou vit dans le JOURNAL, pas dans une colonne : aucune migration, et
+   le récit du dossier dit de lui-même « la fusion a démarré à… ». La route
+   journalise `souvenir_demarre` avant de toucher le coffre, puis
+   `souvenir_genere` ou `souvenir_echoue`. Un `souvenir_demarre` sans suite
+   depuis moins de FENETRE_VERROU_SOUVENIR_MS = « ça tourne » : la route rend
+   409, la fiche éteint le bouton. La fenêtre vaut la `maxDuration` de la
+   route (300 s) : un verrou ne peut pas survivre à la fonction qui l'a posé,
+   donc un raté sans journal (coupure) se libère seul en cinq minutes.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+export const EVT_SOUVENIR_DEMARRE = "souvenir_demarre";
+export const EVT_SOUVENIR_GENERE = "souvenir_genere";
+export const EVT_SOUVENIR_ECHOUE = "souvenir_echoue";
+export const EVTS_SOUVENIR: readonly string[] = [EVT_SOUVENIR_DEMARRE, EVT_SOUVENIR_GENERE, EVT_SOUVENIR_ECHOUE];
+
+/** = `maxDuration` de /api/admin/atelier/souvenir. Les deux vont ensemble. */
+export const FENETRE_VERROU_SOUVENIR_MS = 300 * 1000;
+
+export type EtatGenerationSouvenir = { enCours: true; depuis: string } | { enCours: false };
+
+/**
+ * Une génération du souvenir est-elle en cours pour ce dossier ?
+ * Reçoit des lignes de journal dans N'IMPORTE QUEL ordre (la fiche les a en
+ * ordre décroissant, la route en demande une seule) et ne regarde que les
+ * trois types du souvenir. C'est le DERNIER d'entre eux qui décide : un
+ * `souvenir_demarre` récent sans `genere`/`echoue` après lui = en cours.
+ */
+export function etatGenerationSouvenir(
+  evenements: ReadonlyArray<{ type: string; created_at: string }>,
+  maintenantMs: number,
+  fenetreMs: number = FENETRE_VERROU_SOUVENIR_MS
+): EtatGenerationSouvenir {
+  let dernier: { type: string; created_at: string } | null = null;
+  for (const e of evenements) {
+    if (!EVTS_SOUVENIR.includes(e.type)) continue;
+    if (!dernier || e.created_at > dernier.created_at) dernier = e;
+  }
+  if (!dernier || dernier.type !== EVT_SOUVENIR_DEMARRE) return { enCours: false };
+  /* Un âge négatif (horloge de la base en avance sur celle de la fonction)
+     reste « en cours » : c'est précisément la seconde où deux appels se
+     croisent, le verrou doit tenir là plus qu'ailleurs. */
+  const age = maintenantMs - Date.parse(dernier.created_at);
+  if (Number.isNaN(age) || age >= fenetreMs) return { enCours: false };
+  return { enCours: true, depuis: dernier.created_at };
+}

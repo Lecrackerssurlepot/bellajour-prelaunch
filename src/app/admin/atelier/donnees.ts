@@ -17,6 +17,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
 import { signerGet } from "@/lib/atelier/r2";
+import { etatGenerationSouvenir } from "@/lib/atelier/souvenir";
 import {
   resoudreApercu,
   lireDoublesBrutes,
@@ -871,6 +872,10 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
 
   const rembourse = (evenements ?? []).some((e) => e.type === "remboursement");
   const emailRebond = (evenements ?? []).some((e) => e.type === "email_rebond");
+  /* T-122 : une fusion du souvenir en cours se lit au journal (un
+     `souvenir_demarre` sans suite depuis moins de 5 min), dans les lignes
+     déjà chargées pour le récit — aucune requête de plus. */
+  const generationSouvenir = etatGenerationSouvenir(evenements ?? [], Date.now());
   /* T-093 (11/09/2026) — la réponse du client sur sa couverture, ET sa date,
      relues dans le journal DÉJÀ chargé : aucune requête de plus, aucune
      colonne.
@@ -1094,6 +1099,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
             octets: typeof n.souvenir_pdf_octets === "number" ? n.souvenir_pdf_octets : null,
           }
         : null,
+    souvenirEnCours: generationSouvenir.enCours ? generationSouvenir.depuis : null,
     cloudprinterOrderId: (n.cloudprinter_order_id as string) ?? null,
     transporteur: (n.transporteur as string) ?? null,
     trackingUrl: (n.tracking_url as string) ?? null,

@@ -126,19 +126,33 @@ function lignePages(r: ControleFichier & { lisible: true }): { texte: string; to
 type EtatSouvenir =
   | { phase: "repos" }
   | { phase: "encours" }
+  /** T-122 : une fusion tourne, lancée par le panneau ou un autre onglet
+      (409 `deja_en_cours` au clic). On n'a rien à attendre ici : on le dit. */
+  | { phase: "ailleurs"; depuis: string }
   | { phase: "fini"; octets: number }
   | { phase: "erreur"; message: string };
+
+/* Heure de Paris, FIXÉE : ce composant est rendu côté serveur (UTC) puis
+   hydraté côté client, et une heure locale implicite casserait l'hydratation. */
+function heureParis(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
+}
 
 export default function Impression({
   token,
   fichiers,
   souvenir,
+  souvenirEnCours = null,
   demo,
 }: {
   token: string;
   fichiers: FichierImpression[];
   /** Le PDF souvenir déjà au coffre (clé + poids), ou null. */
   souvenir: { cle: string; octets: number | null } | null;
+  /** T-122 : l'heure ISO d'une fusion en cours lue au journal, ou null. */
+  souvenirEnCours?: string | null;
   demo?: boolean;
 }) {
   const [controle, setControle] = useState<EtatControle>({ phase: "repos" });
@@ -187,7 +201,16 @@ export default function Impression({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ token }),
       });
-      const data = (await r.json().catch(() => ({}))) as { octets?: number; detail?: string; error?: string };
+      const data = (await r.json().catch(() => ({}))) as {
+        octets?: number;
+        detail?: string;
+        error?: string;
+        depuis?: string;
+      };
+      if (r.status === 409 && data.error === "deja_en_cours") {
+        setGenere({ phase: "ailleurs", depuis: typeof data.depuis === "string" ? data.depuis : new Date().toISOString() });
+        return;
+      }
       if (!r.ok) {
         setGenere({
           phase: "erreur",
@@ -207,6 +230,12 @@ export default function Impression({
 
   const octetsSouvenir = genere.phase === "fini" ? genere.octets : (souvenir?.octets ?? null);
   const souvenirExiste = genere.phase === "fini" || souvenir !== null;
+  /* T-122 : une fusion lancée AILLEURS (le panneau après « Envoyer à
+     l'impression », un autre onglet). Tant qu'on n'a rien fait ici, c'est le
+     journal, relu par la fiche, qui le dit ; après un clic, c'est le 409. */
+  const enCoursAilleurs =
+    genere.phase === "ailleurs" ? genere.depuis : genere.phase === "repos" ? souvenirEnCours : null;
+  const generationOccupee = genere.phase === "encours" || enCoursAilleurs !== null;
 
   return (
     <section className="ate-carte">
@@ -314,24 +343,33 @@ export default function Impression({
         <button
           type="button"
           className="adm-btn"
-          disabled={genere.phase === "encours"}
+          disabled={generationOccupee}
           onClick={genererSouvenir}
         >
-          {genere.phase === "encours"
+          {generationOccupee
             ? "Génération en cours…"
             : souvenirExiste
               ? "Régénérer le PDF souvenir"
               : "Générer le PDF souvenir"}
         </button>
         <span className="ate-faint">
-          {souvenirExiste
-            ? `PDF souvenir au coffre${octetsSouvenir ? ` (${Math.max(1, Math.round(octetsSouvenir / (1024 * 1024)))} Mo)` : ""} : il partira au client avec le mail M7b, à la livraison.`
-            : "Pas encore généré : le mail M7b attendra ce fichier pour partir."}
+          {enCoursAilleurs !== null
+            ? "Le fichier arrive : la fusion tourne côté serveur."
+            : souvenirExiste
+              ? `PDF souvenir au coffre${octetsSouvenir ? ` (${Math.max(1, Math.round(octetsSouvenir / (1024 * 1024)))} Mo)` : ""} : il partira au client avec le mail M7b, à la livraison.`
+              : "Pas encore généré : le mail M7b attendra ce fichier pour partir."}
         </span>
       </div>
       {genere.phase === "encours" ? (
         <p className="ate-faint" role="status">
           Le serveur fusionne les PDF déposés — quelques dizaines de secondes pour un gros fichier.
+        </p>
+      ) : null}
+      {enCoursAilleurs !== null ? (
+        <p className="ate-faint" role="status">
+          La fusion a démarré à {heureParis(enCoursAilleurs)} (lancée par la commande d&apos;impression, ou
+          depuis un autre onglet). Rien à relancer : recharge la page dans une minute si elle ne
+          s&apos;est pas mise à jour d&apos;elle-même.
         </p>
       ) : null}
       {genere.phase === "erreur" ? <p className="ate-erreur ate-erreur--bloc">{genere.message}</p> : null}
