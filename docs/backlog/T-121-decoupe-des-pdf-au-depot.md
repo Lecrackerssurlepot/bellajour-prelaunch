@@ -100,8 +100,8 @@ Reste : le dépôt à l'œil sur la vraie fiche de Merisa, avec les deux exports
   builds de référence. Audit de géométrie complet : une seule remarque, page 36, fond perdu de
   2,2 mm en bas.
 
-**21/09/2026 : le contrôle des bords, dans la fiche, au dépôt (Mathias, 19/09 : « l'atelier devrait
-nous donner l'info »).**
+**21/09/2026, PR #187 fusionnée et EN PROD le jour même : le contrôle des bords, dans la fiche, au
+dépôt (Mathias, 19/09 : « l'atelier devrait nous donner l'info »).**
 - `src/lib/atelier/bords.ts` (pur, au harnais, 12 cas) : sur une page RENDUE en gris, pour chaque
   bord, si une photo touche la coupe (pixels < 245 dans le millimètre intérieur) et jusqu'où elle
   déborde dans le fond perdu, en s'arrêtant au PAPIER (≥ 254), pas au presque blanc d'une photo

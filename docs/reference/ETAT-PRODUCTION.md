@@ -12,7 +12,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ## 21/09/2026 — la fiche mesure le fond perdu de chaque page au dépôt (T-121, suite)
 
-**Livré sur la branche `feat/t121-controle-bords`, PR en cours au moment d'écrire.** Après le PUT
+**EN PRODUCTION depuis le 21/09 (PR #187, déploiement vérifié : `/pdfjs/pdf.min.mjs` et son worker servis aux tailles exactes).** Après le PUT
 d'un PDF d'impression, le navigateur de l'atelier rend chaque page à 100 dpi (pdf.js, servi depuis
 `public/pdfjs/`) et la règle pure `bords.ts` dit, par page et par bord, si une photo touche la coupe
 sans déborder de 3 mm dans le fond perdu (seuil 2,5 mm, papier = pixels ≥ 254, débord court retenu
