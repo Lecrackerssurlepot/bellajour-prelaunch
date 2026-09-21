@@ -10,6 +10,16 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 21/09/2026 (soir, suite) — T-123 EN PRODUCTION
+
+**PR #194 fusionnée par Mathias le 21/09, déploiement Vercel `5cfc8f2` READY, alias `bellajour.fr`
+et `www.bellajour.fr` posés (vérifié par l'API Vercel).** La fiche de production lit désormais les
+colonnes remplies par le rattrapage (résumé, « Par date », remarques, infobulles) et chaque lot
+confirmé sera lu en tâche de fond (`after()`), les lieux au consentement. **Reste à prouver sur le
+premier vrai dépôt** : une ligne `metadonnees_lues` au journal du dossier, peu après
+`photos_confirmees`, et les colonnes remplies. Si elle manque, regarder les logs Vercel de
+`/api/atelier/photos/complete` (le `after()` y écrit ses avertissements).
+
 ## 21/09/2026 (soir) — les photos disent quand et où (T-123) : base remplie, code sur branche
 
 **La migration `20260921_atelier_photos_metadonnees.sql` est APPLIQUÉE par Mathias le 21/09**
