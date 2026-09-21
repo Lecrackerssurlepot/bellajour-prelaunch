@@ -13,7 +13,9 @@ import Loupe, { type VueLoupe } from "@/app/components/Loupe";
 import EnCharge from "./EnCharge";
 import Origine from "./Origine";
 import Archivage from "../Archivage";
-import { COVER_MODELS, MODELE_AUCUN } from "@/app/(atelier)/composer/coverModels";
+import {
+  COVER_MODELS, MODELE_AUCUN, modeleSrc, modeleSrcGrand, modeleSrcSet,
+} from "@/app/(atelier)/composer/coverModels";
 import { PRENOM_COMPTE } from "@/lib/admin-auth";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import { PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
@@ -663,6 +665,15 @@ export default function Fiche({
   const [visibles, setVisibles] = useState(VIGNETTES_VISIBLES);
   const [lot, setLot] = useState<EtatLot>({ phase: "repos" });
   const [apercuOuvert, setApercuOuvert] = useState<number | null>(null);
+  /* Le style de couverture en grand (21/09). Sa propre loupe, à une seule
+     vue : il n'est pas une étape de la visite de l'aperçu, et le mêler à ses
+     index lui ferait tourner « la couverture » puis « le style » comme s'il
+     s'agissait de deux faces du même objet. */
+  const [styleOuvert, setStyleOuvert] = useState<number | null>(null);
+  const modeleChoisi =
+    fiche.modeleCouverture && fiche.modeleCouverture !== MODELE_AUCUN
+      ? COVER_MODELS.find((m) => m.id === fiche.modeleCouverture) ?? null
+      : null;
   /* `supporteDossier()` lit `window` : appelé au rendu, il rendrait `false`
      côté serveur et `true` ensuite, et React refuserait l'hydratation. On
      décide donc APRÈS le premier rendu, ce qui affiche brièvement le libellé
@@ -1070,12 +1081,44 @@ export default function Fiche({
                 <>
                   <dt>Style</dt>
                   <dd>
-                    {fiche.modeleCouverture === MODELE_AUCUN
-                      ? "Aucune préférence — proposition libre"
-                      : `Souhaite plutôt « ${
-                          COVER_MODELS.find((m) => m.id === fiche.modeleCouverture)?.nom
-                          ?? fiche.modeleCouverture
-                        } »`}
+                    {fiche.modeleCouverture === MODELE_AUCUN ? (
+                      "Aucune préférence — proposition libre"
+                    ) : modeleChoisi ? (
+                      /* 21/09 — le nom ne suffit pas : « il faut le visuel
+                         dans l'admin, pour ne pas avoir à se souvenir de
+                         quel magazine il s'agit ». La vignette est CELLE de
+                         l'écran 3 (mêmes fichiers, même srcset), petite
+                         dans la colonne, et s'ouvre en grand dans la loupe
+                         d'un clic, comme l'aperçu plus bas. */
+                      <span className="ate-style">
+                        <button
+                          type="button"
+                          className="ate-style-vignette"
+                          onClick={() => setStyleOuvert(0)}
+                          aria-label={`Agrandir : le style «\u00a0${modeleChoisi.nom}\u00a0»`}
+                        >
+                          <img
+                            src={modeleSrc(modeleChoisi)}
+                            srcSet={modeleSrcSet(modeleChoisi)}
+                            sizes="72px"
+                            width={336}
+                            height={475}
+                            alt={`Couverture « ${modeleChoisi.titreOrigine} », style ${modeleChoisi.tag.toLowerCase()}`}
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </button>
+                        <span className="ate-style-texte">
+                          {`Souhaite plutôt «\u00a0${modeleChoisi.nom}\u00a0»`}
+                          <span className="ate-faint">{modeleChoisi.tag}</span>
+                        </span>
+                      </span>
+                    ) : (
+                      /* Un id que coverModels ne connaît plus (modèle retiré,
+                         ligne reprise en SQL) reste VISIBLE tel quel plutôt
+                         que de disparaître derrière un libellé absent. */
+                      `Souhaite plutôt « ${fiche.modeleCouverture} »`
+                    )}
                   </dd>
                 </>
               )}
@@ -1372,6 +1415,17 @@ export default function Fiche({
             onIndex={setApercuOuvert}
             onFermer={() => setApercuOuvert(null)}
           />
+          {modeleChoisi ? (
+            <Loupe
+              vues={[{
+                src: modeleSrcGrand(modeleChoisi),
+                legende: `Le style souhaité : «\u00a0${modeleChoisi.nom}\u00a0» (${modeleChoisi.tag})`,
+              }]}
+              index={styleOuvert}
+              onIndex={setStyleOuvert}
+              onFermer={() => setStyleOuvert(null)}
+            />
+          ) : null}
         </div>
 
         <div className="ate-colonne ate-colonne--cote">

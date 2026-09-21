@@ -385,6 +385,13 @@ export function modeleSrc(m: CoverModel): string {
   return `/images/v2/${m.image}-${milieu}.webp`
 }
 
+/* La plus grande largeur produite : celle que sert un agrandissement (la
+   loupe de la fiche admin, 21/09). Jamais dans un `<img>` de vignette. */
+export function modeleSrcGrand(m: CoverModel): string {
+  const grand = m.largeurs[m.largeurs.length - 1]
+  return `/images/v2/${m.image}-${grand}.webp`
+}
+
 /* La valeur enregistrée quand le client dit explicitement « aucune préférence ».
    Distincte de la chaîne vide, qui veut dire « n'a pas répondu » : l'atelier
    compose librement dans les deux cas, mais la statistique n'est pas la même. */
