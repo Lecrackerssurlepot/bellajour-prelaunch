@@ -21,6 +21,7 @@ import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief
 import { PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
 import {
   LIBELLE_REMARQUE,
+  ecarteeDOffice,
   jourEnClair,
   phraseResume,
   remarquesDe,
@@ -664,6 +665,12 @@ export default function Fiche({
      les fiches sont legeres. */
   const [visibles, setVisibles] = useState(VIGNETTES_VISIBLES);
   const [lot, setLot] = useState<EtatLot>({ phase: "repos" });
+  /* T-125 — le choix du lot : `choix` ouvre le mode, `ecartees` porte les
+     ids qui ne partiront pas. Un état d'ÉCRAN comme `parDate` : rien n'est
+     écrit, et les noms du lot restent ceux du lot COMPLET (la route nomme
+     puis filtre, T2-5) : écarter la 03 laisse 01, 02, 04. */
+  const [choix, setChoix] = useState(false);
+  const [ecartees, setEcartees] = useState<Set<string>>(() => new Set());
   const [apercuOuvert, setApercuOuvert] = useState<number | null>(null);
   /* Le style de couverture en grand (21/09). Sa propre loupe, à une seule
      vue : il n'est pas une étape de la visite de l'aperçu, et le mêler à ses
@@ -692,6 +699,28 @@ export default function Fiche({
   const nbLues = fiche.photos.filter((p) => p.metadonneesLe).length;
   const nbDatees = fiche.photos.filter((p) => p.priseLe).length;
   const nbDoublons = fiche.photos.filter((p) => p.doublonDe).length;
+  /* T-125 — ce qui s'écarte d'office en entrant dans le choix (doublons et
+     captures, règle pure), et ce qui reste. Chaque vignette se bascule. */
+  const ecarteesDOffice = fiche.photos
+    .filter((p) => ecarteeDOffice(remarquesDe(p, p.doublonDe)))
+    .map((p) => p.id);
+  const gardees = choix ? fiche.photos.filter((p) => !ecartees.has(p.id)) : fiche.photos;
+  const idsGardes = (base: FicheVue["photos"]): string[] | undefined =>
+    choix && ecartees.size ? base.filter((p) => !ecartees.has(p.id)).map((p) => p.id) : undefined;
+  function entrerChoix() {
+    setEcartees(new Set(ecarteesDOffice));
+    setChoix(true);
+    /* Pour choisir, il faut tout voir : la grille se déplie d'un coup. */
+    setVisibles(fiche.photos.length);
+  }
+  function basculer(id: string) {
+    setEcartees((avant) => {
+      const apres = new Set(avant);
+      if (apres.has(id)) apres.delete(id);
+      else apres.add(id);
+      return apres;
+    });
+  }
   const sansLieu = fiche.photos.some((p) => p.gpsLat !== null && !p.lieuVille && !p.lieuPays);
   const lieux = resumeLieux(fiche.photos);
   const resumePhotos = phraseResume(fiche.photos, nbDoublons, lieux);
@@ -1165,34 +1194,86 @@ export default function Fiche({
                   >
                     Le brief
                   </button>
+                  {/* T-125 — choisir ce qui part : doublons et captures
+                      écartés d'office, chaque vignette se garde ou s'écarte. */}
+                  <button
+                    className="adm-btn adm-btn--ghost"
+                    type="button"
+                    aria-pressed={choix}
+                    disabled={occupe}
+                    onClick={() => (choix ? setChoix(false) : entrerChoix())}
+                    title={
+                      choix
+                        ? "Reprendre le lot entier"
+                        : "Choisir ce qui part dans le lot : doublons et captures d'écran écartés d'office, chaque vignette se garde ou s'écarte d'un clic"
+                    }
+                  >
+                    {choix ? "Annuler le choix" : "Choisir"}
+                  </button>
                   {/* T2-5 — après un ajout, on ne veut souvent QUE les
                       nouvelles : même mécanique, filtrée, et la numérotation
-                      reste celle du lot complet (la route y veille). */}
+                      reste celle du lot complet (la route y veille). En
+                      choix, les écartées en sortent aussi. */}
                   {nouvelles.length > 0 && nouvelles.length < fiche.photos.length ? (
                     <button
                       className="adm-btn adm-btn--ghost"
                       type="button"
-                      disabled={occupe}
+                      disabled={occupe || nouvelles.every((p) => choix && ecartees.has(p.id))}
                       onClick={() => {
-                        const ids = nouvelles.map((p) => p.id);
+                        const ids = idsGardes(nouvelles) ?? nouvelles.map((p) => p.id);
                         if (ecritDirect) telechargerDossier(ids);
                         else telechargerListe(ids);
                       }}
                     >
-                      Les {nouvelles.length} nouvelles
+                      Les {choix ? nouvelles.filter((p) => !ecartees.has(p.id)).length : nouvelles.length} nouvelles
                     </button>
                   ) : null}
                   <button
                     className="adm-btn"
                     type="button"
-                    disabled={occupe}
-                    onClick={() => (ecritDirect ? telechargerDossier() : telechargerListe())}
+                    disabled={occupe || gardees.length === 0}
+                    onClick={() => {
+                      const ids = idsGardes(fiche.photos);
+                      if (ecritDirect) telechargerDossier(ids);
+                      else telechargerListe(ids);
+                    }}
                   >
-                    {ecritDirect ? "Télécharger le lot" : "Télécharger les liens"}
+                    {choix && ecartees.size
+                      ? `${ecritDirect ? "Télécharger" : "Les liens des"} ${gardees.length} gardée${gardees.length > 1 ? "s" : ""}`
+                      : ecritDirect
+                        ? "Télécharger le lot"
+                        : "Télécharger les liens"}
                   </button>
                 </div>
               ) : null}
             </div>
+
+            {/* T-125 — la ligne du choix : le compte, et les deux gestes de
+                masse. Ce qui a été écarté d'office se remet d'un clic. */}
+            {choix ? (
+              <p className="ate-carte-sous ate-photos-choix" role="status" aria-live="polite">
+                <span>
+                  {`${gardees.length} gardée${gardees.length > 1 ? "s" : ""}, ${ecartees.size} écartée${ecartees.size > 1 ? "s" : ""}. Clique une vignette pour la garder ou l'écarter.`}
+                </span>
+                <button
+                  type="button"
+                  className="ate-photos-choix-btn"
+                  disabled={ecartees.size === 0}
+                  onClick={() => setEcartees(new Set())}
+                >
+                  Tout garder
+                </button>
+                {ecarteesDOffice.length ? (
+                  <button
+                    type="button"
+                    className="ate-photos-choix-btn"
+                    onClick={() => setEcartees(new Set(ecarteesDOffice))}
+                  >
+                    {`Écarter les doublons et captures (${ecarteesDOffice.length})`}
+                  </button>
+                ) : null}
+              </p>
+            ) : null}
 
             {lot.phase !== "repos" ? (
               <div className={`ate-lot ate-lot--${lot.phase}`} role="status" aria-live="polite">
@@ -1265,25 +1346,10 @@ export default function Fiche({
               <div className="ate-photos">
                 {affichees.slice(0, visibles).map((p, i) => {
                   const remarques = remarquesDe(p, p.doublonDe).filter((r) => r !== "sans_date");
-                  return (
-                  <Fragment key={p.id}>
-                    {/* T2-5 — le filet qui sépare le premier dépôt des
-                        ajouts. Grille triée par ordre de dépôt : les ajouts
-                        arrivent après, un seul filet suffit. Par date, les
-                        ajouts se mêlent au reste : pas de filet. */}
-                    {!parDate && i === premiereNouvelle && i > 0 && p.ajouteLe ? (
-                      <span className="ate-photos-filet">
-                        Ajoutées le{" "}
-                        {new Date(p.ajouteLe).toLocaleDateString("fr-FR", { day: "2-digit", month: "long" })}
-                      </span>
-                    ) : null}
-                    <a
-                      className={`ate-photo${remarques.length ? ` ate-photo--${remarques[0]}` : ""}`}
-                      href={p.url ?? "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                      title={titreVignette(p, poids(p.taille))}
-                    >
+                  const ecartee = choix && ecartees.has(p.id);
+                  const classes = `ate-photo${remarques.length ? ` ate-photo--${remarques[0]}` : ""}${choix ? " ate-photo--choix" : ""}${ecartee ? " ate-photo--ecartee" : ""}`;
+                  const interieur = (
+                    <>
                       {/* D7 — la vignette de 320 px si elle existe, l'original
                           sinon (dossiers antérieurs au 30/08, photos que le
                           navigateur n'a pas su décoder). Le lien du cadre,
@@ -1310,7 +1376,49 @@ export default function Fiche({
                       {parDate && p.priseLe ? (
                         <span className="ate-photo-jour">{jourEnClair(p.priseLe.slice(0, 10), false)}</span>
                       ) : null}
-                    </a>
+                      {choix ? (
+                        <span className="ate-photo-coche" aria-hidden="true">
+                          {ecartee ? "✕" : "✓"}
+                        </span>
+                      ) : null}
+                    </>
+                  );
+                  return (
+                  <Fragment key={p.id}>
+                    {/* T2-5 — le filet qui sépare le premier dépôt des
+                        ajouts. Grille triée par ordre de dépôt : les ajouts
+                        arrivent après, un seul filet suffit. Par date, les
+                        ajouts se mêlent au reste : pas de filet. */}
+                    {!parDate && i === premiereNouvelle && i > 0 && p.ajouteLe ? (
+                      <span className="ate-photos-filet">
+                        Ajoutées le{" "}
+                        {new Date(p.ajouteLe).toLocaleDateString("fr-FR", { day: "2-digit", month: "long" })}
+                      </span>
+                    ) : null}
+                    {/* T-125 — en choix, la vignette est un BOUTON qui bascule
+                        la photo dans ou hors du lot ; hors choix, le lien vers
+                        l'original, comme toujours. */}
+                    {choix ? (
+                      <button
+                        type="button"
+                        className={classes}
+                        aria-pressed={!ecartee}
+                        onClick={() => basculer(p.id)}
+                        title={`${ecartee ? "Écartée du lot, cliquer pour la garder" : "Dans le lot, cliquer pour l'écarter"} · ${titreVignette(p, poids(p.taille))}`}
+                      >
+                        {interieur}
+                      </button>
+                    ) : (
+                      <a
+                        className={classes}
+                        href={p.url ?? "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={titreVignette(p, poids(p.taille))}
+                      >
+                        {interieur}
+                      </a>
+                    )}
                   </Fragment>
                   );
                 })}

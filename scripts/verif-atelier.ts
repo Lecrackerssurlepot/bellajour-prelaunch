@@ -192,6 +192,7 @@ import {
 import { composerBrief, blocChronologie, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import {
   dimensionsDroites,
+  ecarteeDOffice,
   estCaptureEcran,
   formatDepuisOctets,
   jourCourt,
@@ -1243,6 +1244,11 @@ ok("les remarques : doublon, capture, sombre, claire, sans date",
    && remarquesDe(meta("h", null), null).join() === "sans_date");
 ok("une photo jamais lue n'a AUCUNE remarque (on ne sait pas, on ne dit rien)",
    remarquesDe(meta("i", null, { metadonneesLe: null, luminance: null }), null).length === 0);
+/* T-125 : le choix du lot ecarte d'office les doublons et les captures, et
+   RIEN d'autre : une photo de nuit ou un scan sans date se composent. */
+ok("T-125 : doublon et capture s'ecartent d'office, sombre, claire et sans date restent",
+   ecarteeDOffice(["doublon"]) && ecarteeDOffice(["capture"]) && ecarteeDOffice(["sombre", "doublon"])
+   && !ecarteeDOffice(["sombre"]) && !ecarteeDOffice(["claire"]) && !ecarteeDOffice(["sans_date"]) && !ecarteeDOffice([]));
 const phrase = phraseResume(desordre, 1, [{ ville: "Lisbonne", pays: "Portugal" }, { ville: null, pays: "Espagne" }]);
 ok("la phrase de la carte : periode, lieux, doublons, sans date",
    phrase.startsWith("Du 8 au 10 août 2024 (3 jours)") && phrase.includes("Lisbonne, Espagne") && phrase.includes("1 doublon") && phrase.includes("2 sans date"));
