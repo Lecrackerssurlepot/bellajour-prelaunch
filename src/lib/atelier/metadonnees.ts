@@ -108,6 +108,22 @@ export function jourEnClair(jour: string | null, avecAnnee = true): string {
   return `${d === 1 ? "1er" : d} ${MOIS[Number(m[2]) - 1]}${avecAnnee ? ` ${m[1]}` : ""}`;
 }
 
+/* T-124 — les mois en trois lettres, SANS accent : cette forme entre dans
+   un NOM DE FICHIER, et `curl -OJ` n'écrit que la partie ASCII du
+   `Content-Disposition` (r2.ts) ; « aoû » y deviendrait « ao- ». Juin et
+   juillet gardent une lettre de plus : « jui » ne dirait pas lequel. */
+const MOIS_COURTS = ["jan", "fev", "mar", "avr", "mai", "juin", "juil", "aou", "sep", "oct", "nov", "dec"];
+
+/** « 08 aou 2024 » : la date telle qu'elle entre dans le nom d'un fichier du
+ *  lot (lot.ts). Le jour reste sur deux chiffres pour que la colonne s'aligne
+ *  dans le Finder et dans Canva. `null` sans date lisible. */
+export function jourCourt(priseLe: string | null): string | null {
+  const m = priseLe?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const mois = MOIS_COURTS[Number(m[2]) - 1];
+  return mois ? `${m[3]} ${mois} ${m[1]}` : null;
+}
+
 /** « du 8 au 15 août 2024 », « du 28 juillet au 3 août 2024 », « le 8 août 2024 ». */
 export function periodeEnClair(premier: string, dernier: string): string {
   if (premier === dernier) return `le ${jourEnClair(premier)}`;

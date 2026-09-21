@@ -65,7 +65,7 @@ le 11/09 — `PAPIER_COUVERTURE` constante, et depuis le 21/09 le papier intéri
 `papierInterieurPour(finition)`, gloss sous brillant, silk sous mat —, le
 pelliculage choisi par le client, et la GÉOMÉTRIE du dos qui se déduit du papier**),
 `suivi.ts` (transporteur + code), `rang.ts` (le rang d'une photo : celui que le navigateur
-annonce fait foi, les ajouts se rangent après le coffre), `recit.ts`, `brief.ts`, `lot.ts`, `formats.ts`, `dates.ts`,
+annonce fait foi, les ajouts se rangent après le coffre), `recit.ts`, `brief.ts`, `lot.ts` (le nom d'un fichier du lot : le RANG toujours en tête, puis « 08 aou 2024 » et la ville quand la photo les sait, puis le nom d'origine ; sans accent, `curl -OJ` n'écrit que l'ASCII, T-124), `formats.ts`, `dates.ts`,
 `token.ts` / `tokenForme.ts` (jumeau navigateur), `secret.ts`.
 **Ce que la photo sait d'elle-même (T-123, 21/09/2026)** : trois purs, `metadonnees.ts` (la
 date EXIF normalisée SANS fuseau, l'appareil, les dimensions droites, le format lu dans les

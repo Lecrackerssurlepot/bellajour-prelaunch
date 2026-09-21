@@ -37,6 +37,10 @@ export type PhotoLot = {
       partiel, il préserve la numérotation d'origine. Absent (mode démo,
       vieux appels) : recalculé localement. */
   nomFichier?: string | null;
+  /** T-124 — pour le calcul local (mode démo) : la fiche les a déjà. */
+  priseLe?: string | null;
+  lieuVille?: string | null;
+  lieuPays?: string | null;
   url: string | null;
 };
 
