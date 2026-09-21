@@ -49,7 +49,9 @@ Chargé dès qu'on touche une route.
 | `/api/webhook` | mails F1/S1/P3/A3/relance, `assign_numero_fondateur`, crédits de parrainage |
 | `/api/atelier/mails/relever` | **envois multiples** en un passage |
 | `/api/atelier/numero` | crée le dossier + **M0 programmé chez Brevo pour +15 min** (T-116) ; le PATCH de consentement annule ce M0 puis envoie M1 |
-| `/api/atelier/photos/complete` | confirme les photos ; **au premier lot confirmé, annule le M0 programmé** (T-116, `annulerMailProgramme`) |
+| `/api/atelier/photos/complete` | confirme les photos ; **au premier lot confirmé, annule le M0 programmé** (T-116, `annulerMailProgramme`) ; depuis le 21/09 (T-123) lit en tâche de fond (`after()`, après la réponse) la date, le GPS, l'appareil, les dimensions et l'empreinte des photos confirmées (`enrichirDossier`, best-effort strict, `maxDuration` 60) |
+| `/api/atelier/numero` (PATCH `consent_photos`) | en `after()` : ce qui manque encore, puis **les LIEUX** par Geoapify, un appel par lieu (T-123) |
+| `/api/admin/atelier/metadonnees` | le bouton « Lire les photos » : même passage, synchrone, `maxDuration` 300 ; 503 `colonne_absente` sans la migration 20260921 ; une ligne de journal `metadonnees_lues` si quelque chose a été lu, aucun mail, aucun état |
 | `/api/atelier/checkout`, `/api/checkout` | sessions Stripe + **coupon fondatrice frappé chez Stripe** et remise de 30 € appliquée d'office (T-021) ; depuis le 10/09 le montant vient du prix GELÉ (`prix_centimes`) ; depuis le 16/09 une ligne Stripe par rang d'exemplaire (`decompteExemplaires`), la livraison est une `shipping_option` au port de zone ou au devis gelé, à 0 dès 50 € de magazines ou pour un fondateur, `allowed_countries = [pays déclaré]`, le pays est EXIGÉ ; zone C sans devis → 409 `livraison_indisponible`, jamais un montant de repli ; depuis le 19/09 un fondateur reconnu dont le crédit ne peut pas être posé → 409 `credit_indisponible` + journal, jamais un plein tarif |
 | `/api/atelier/photos/supprimer` | DELETE R2 irréversible |
 | `/api/brevo/webhook` | **rien qu'une ligne de journal** : aucun état, aucun mail |

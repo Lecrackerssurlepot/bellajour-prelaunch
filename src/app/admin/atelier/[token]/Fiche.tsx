@@ -17,6 +17,14 @@ import { COVER_MODELS, MODELE_AUCUN } from "@/app/(atelier)/composer/coverModels
 import { PRENOM_COMPTE } from "@/lib/admin-auth";
 import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
 import { PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
+import {
+  LIBELLE_REMARQUE,
+  jourEnClair,
+  phraseResume,
+  remarquesDe,
+  trierChronologie,
+} from "@/lib/atelier/metadonnees";
+import { resumeLieux } from "@/lib/atelier/lieux";
 import { formatDepuisRatio, type FormatVisuel } from "@/lib/atelier/formatVisuel";
 import {
   choisirDossier,
@@ -614,7 +622,21 @@ function matiereDe(fiche: FicheVue): MatiereBrief {
     choixCouverture: fiche.choixCouverture,
     canvaTravail: fiche.canvaTravail,
     notes: fiche.notes.map((n) => ({ prenom: n.prenom, texte: n.texte, createdAt: n.createdAt })),
+    /* T-123 — ce que les photos savent d'elles-mêmes, dans l'ordre du dépôt :
+       le brief en fait son bloc « chronologie et lieux ». */
+    photos: fiche.photos,
   };
+}
+
+/** T-123 — l'infobulle d'une vignette : ce qu'on sait, en une ligne. */
+function titreVignette(p: FicheVue["photos"][number], poidsTexte: string): string {
+  const morceaux = [`${p.nom ?? ""} ${poidsTexte}`.trim()];
+  if (p.priseLe) morceaux.push(`${jourEnClair(p.priseLe.slice(0, 10))} à ${p.priseLe.slice(11, 16)}`);
+  const lieu = [p.lieuVille, p.lieuPays].filter(Boolean).join(", ");
+  if (lieu) morceaux.push(lieu);
+  if (p.largeur && p.hauteur) morceaux.push(`${p.largeur} × ${p.hauteur}`);
+  if (p.appareil) morceaux.push(p.appareil);
+  return morceaux.join(" · ");
 }
 
 export default function Fiche({
@@ -647,6 +669,43 @@ export default function Fiche({
      de repli et n'a jamais trompé personne. */
   const [ecritDirect, setEcritDirect] = useState(false);
   useEffect(() => setEcritDirect(supporteDossier()), []);
+  const router = useRouter();
+
+  /* ── T-123 : CE QUE LES PHOTOS SAVENT D'ELLES-MÊMES ────────────────
+     Tout est calculé ici, depuis les colonnes de `photos`, par les modules
+     purs : le résumé sous le titre, l'ordre chronologique, les remarques
+     sur chaque vignette. `parDate` est un état d'ÉCRAN : la grille se
+     réordonne, l'ordre du dépôt reste celui des noms du lot (T-114). */
+  const [parDate, setParDate] = useState(false);
+  const [lecture, setLecture] = useState<"repos" | "en_cours" | "erreur">("repos");
+  const nbLues = fiche.photos.filter((p) => p.metadonneesLe).length;
+  const nbDatees = fiche.photos.filter((p) => p.priseLe).length;
+  const nbDoublons = fiche.photos.filter((p) => p.doublonDe).length;
+  const sansLieu = fiche.photos.some((p) => p.gpsLat !== null && !p.lieuVille && !p.lieuPays);
+  const lieux = resumeLieux(fiche.photos);
+  const resumePhotos = phraseResume(fiche.photos, nbDoublons, lieux);
+  const affichees = parDate ? trierChronologie(fiche.photos) : fiche.photos;
+  /* Un bouton seulement quand il reste quelque chose à lire : des photos
+     jamais lues (dossier antérieur au 21/09, tâche de fond ratée) ou des
+     GPS sans lieu (clé Geoapify posée après le dépôt). */
+  const aLire = nbLues < fiche.photos.length || sansLieu;
+
+  async function lirePhotos() {
+    if (demo || lecture === "en_cours") return;
+    setLecture("en_cours");
+    try {
+      const r = await fetch("/api/admin/atelier/metadonnees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: l.token }),
+      });
+      if (!r.ok) throw new Error(String(r.status));
+      setLecture("repos");
+      router.refresh();
+    } catch {
+      setLecture("erreur");
+    }
+  }
   /* ── LE FORMAT DES COUVERTURES, MESURÉ (11/09/2026) ────────────────
      Planche à plat (C4 | dos | C1) ou couverture seule ? La question se
      tranche sur les dimensions du fichier, pas sur une déclaration : voir
@@ -1031,6 +1090,30 @@ export default function Fiche({
               </h2>
               {fiche.photos.length ? (
                 <div className="ate-carte-outils">
+                  {/* T-123 — l'ordre du temps, quand au moins une photo est
+                      datée. Un état d'écran : rien n'est écrit. */}
+                  {nbDatees > 0 ? (
+                    <button
+                      className="adm-btn adm-btn--ghost"
+                      type="button"
+                      aria-pressed={parDate}
+                      onClick={() => setParDate((v) => !v)}
+                      title={parDate ? "Revenir à l'ordre du dépôt (celui des noms du lot)" : "Trier la grille par date de prise de vue"}
+                    >
+                      {parDate ? "Ordre du dépôt" : "Par date"}
+                    </button>
+                  ) : null}
+                  {aLire && !demo ? (
+                    <button
+                      className="adm-btn adm-btn--ghost"
+                      type="button"
+                      disabled={lecture === "en_cours"}
+                      onClick={lirePhotos}
+                      title="Lire la date, le lieu, l'appareil et les dimensions dans les fichiers du coffre"
+                    >
+                      {lecture === "en_cours" ? "Lecture…" : lecture === "erreur" ? "Relire les photos" : "Lire les photos"}
+                    </button>
+                  ) : null}
                   <button
                     className="adm-btn adm-btn--ghost"
                     type="button"
@@ -1124,27 +1207,39 @@ export default function Fiche({
               </div>
             ) : null}
 
+            {/* T-123 — ce que le lot sait de lui-même, en une ligne, avant
+                d'ouvrir quoi que ce soit. Vide tant que rien n'a été lu. */}
+            {resumePhotos ? <p className="ate-carte-sous ate-photos-resume">{resumePhotos}</p> : null}
+            {lecture === "erreur" ? (
+              <p className="ate-carte-sous ate-photos-resume">
+                La lecture a échoué. Si la migration 20260921 n&apos;est pas passée, c&apos;est attendu.
+              </p>
+            ) : null}
+
             {fiche.photos.length === 0 ? (
               <p className="ate-faint">Aucune photo déposée.</p>
             ) : (
               <div className="ate-photos">
-                {fiche.photos.slice(0, visibles).map((p, i) => (
+                {affichees.slice(0, visibles).map((p, i) => {
+                  const remarques = remarquesDe(p, p.doublonDe).filter((r) => r !== "sans_date");
+                  return (
                   <Fragment key={p.id}>
                     {/* T2-5 — le filet qui sépare le premier dépôt des
                         ajouts. Grille triée par ordre de dépôt : les ajouts
-                        arrivent après, un seul filet suffit. */}
-                    {i === premiereNouvelle && i > 0 && p.ajouteLe ? (
+                        arrivent après, un seul filet suffit. Par date, les
+                        ajouts se mêlent au reste : pas de filet. */}
+                    {!parDate && i === premiereNouvelle && i > 0 && p.ajouteLe ? (
                       <span className="ate-photos-filet">
                         Ajoutées le{" "}
                         {new Date(p.ajouteLe).toLocaleDateString("fr-FR", { day: "2-digit", month: "long" })}
                       </span>
                     ) : null}
                     <a
-                      className="ate-photo"
+                      className={`ate-photo${remarques.length ? ` ate-photo--${remarques[0]}` : ""}`}
                       href={p.url ?? "#"}
                       target="_blank"
                       rel="noreferrer"
-                      title={`${p.nom ?? ""} ${poids(p.taille)}`}
+                      title={titreVignette(p, poids(p.taille))}
                     >
                       {/* D7 — la vignette de 320 px si elle existe, l'original
                           sinon (dossiers antérieurs au 30/08, photos que le
@@ -1163,9 +1258,19 @@ export default function Fiche({
                       ) : (
                         <span className="ate-photo-vide">?</span>
                       )}
+                      {/* T-123 — la remarque sur la vignette : doublon, capture
+                          d'écran, très sombre ou très claire. Une REMARQUE, pas
+                          une exclusion : l'atelier juge. */}
+                      {remarques.length ? (
+                        <span className="ate-photo-remarque">{LIBELLE_REMARQUE[remarques[0]]}</span>
+                      ) : null}
+                      {parDate && p.priseLe ? (
+                        <span className="ate-photo-jour">{jourEnClair(p.priseLe.slice(0, 10), false)}</span>
+                      ) : null}
                     </a>
                   </Fragment>
-                ))}
+                  );
+                })}
               </div>
             )}
 

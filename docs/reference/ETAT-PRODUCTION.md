@@ -10,6 +10,22 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 21/09/2026 (soir) — les photos disent quand et où (T-123) : base remplie, code sur branche
+
+**La migration `20260921_atelier_photos_metadonnees.sql` est APPLIQUÉE par Mathias le 21/09**
+(13 colonnes vérifiées en SQL par `information_schema.columns`, types conformes).
+**`GEOAPIFY_API_KEY` est posée dans Vercel (Production et Preview, vérifié par l'API Vercel) et
+dans `.env.local`.** Le rattrapage `scripts/metadonnees-rattrapage.ts` a tourné pour de vrai le
+21/09 sur les 6 dossiers non anonymisés : 503 photos lues, 324 datées, 293 avec GPS, 106 appels
+Geoapify. Deux dossiers ne savent presque rien d'eux-mêmes (Marjorie : 25 dates et 1 GPS sur 99 ;
+Jeanne : 0 sur 100) : ce sont des exports (Snapchat, messageries) qui ont perdu leur EXIF, pas
+une panne. Un « best of » sur trois ans coûte 32 appels (lieux éparpillés), un séjour 18 à 36.
+**Le code, lui, est sur `feat/photos-metadonnees-lieux`, pas encore fusionné** : la fiche de
+production ne montre encore rien de ces colonnes, et les dépôts futurs ne seront lus en tâche de
+fond qu'après la fusion. ⚠️ Une variable Vercel ne prend effet qu'au déploiement suivant.
+Sonde du 21/09 sur le coffre réel (lecture seule) : 56 JPEG datés et 52 géolocalisés sur 60,
+250 ms par photo sur les premiers 512 Ko ; le rattrapage mesure 84 ms par photo à quatre de front.
+
 ## 21/09/2026 (matin) — PREMIÈRE COMMANDE CLOUDPRINTER RÉELLE, et la bascule en LIVE
 
 **Cloudprinter est EN LIVE depuis le 21/09 à 08:40 UTC.** Jusque-là, `CLOUDPRINTER_API_KEY` en

@@ -67,8 +67,21 @@ pelliculage choisi par le client, et la GÉOMÉTRIE du dos qui se déduit du pap
 `suivi.ts` (transporteur + code), `rang.ts` (le rang d'une photo : celui que le navigateur
 annonce fait foi, les ajouts se rangent après le coffre), `recit.ts`, `brief.ts`, `lot.ts`, `formats.ts`, `dates.ts`,
 `token.ts` / `tokenForme.ts` (jumeau navigateur), `secret.ts`.
+**Ce que la photo sait d'elle-même (T-123, 21/09/2026)** : trois purs, `metadonnees.ts` (la
+date EXIF normalisée SANS fuseau, l'appareil, les dimensions droites, le format lu dans les
+octets et jamais dans l'extension, la capture d'écran, le tri chronologique, le résumé, les
+remarques), `empreinte.ts` (pHash DCT 64 bits porté de l'ancien projet, `SEUIL_DOUBLON = 2`
+PAIR, groupes dissous au-delà de `TAILLE_GROUPE_MAX` : on ne marque jamais en masse) et
+`lieux.ts` (DBSCAN 150 m / 3 photos, puis cellule à 2 décimales pour les isolées : **un appel
+Geoapify par LIEU, jamais par photo**). Deux à effets : `geocodage.ts` (Geoapify, distingue
+« rien là » de « pas répondu » : seule la première note `lieu_le`) et `enrichissement.ts`
+(Range GET 512 Ko, exifr, sharp sur la vignette, idempotent par `metadonnees_le` / `lieu_le`,
+ne throw jamais, s'arrête sur colonne absente sans boucler). ⚠️ Les remarques (sombre, claire,
+doublon, capture) sont des REMARQUES pour l'œil de l'atelier, jamais des exclusions : l'ancien
+projet a marqué 80 % d'un album réel avec un seuil de flou, puis l'a débranché. ⚠️ `prise_le`
+est l'heure LOCALE de l'appareil : ne pas la convertir, ne pas la comparer à `created_at`.
 Les modules à effets : `mails.ts`, `r2.ts`, `cloudprinter.ts`, `paiement.ts`, `evenements.ts`,
-`apercu.ts`. La règle de séparation est volontaire : **tout ce qui est testable sans réseau l'est**,
+`apercu.ts`, `enrichissement.ts`, `geocodage.ts`. La règle de séparation est volontaire : **tout ce qui est testable sans réseau l'est**,
 et `scripts/verif-atelier.ts` le prouve à chaque exécution.
 
 ## Les mails — trois garanties, dans cet ordre

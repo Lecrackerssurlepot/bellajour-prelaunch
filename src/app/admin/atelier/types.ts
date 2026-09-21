@@ -202,6 +202,27 @@ export type PhotoVue = {
    * sur `url` — c'est ce qu'elle faisait pour toutes les photos jusqu'ici.
    */
   urlVignette: string | null;
+  /**
+   * T-123 — ce que la photo sait d'elle-même, lu dans son EXIF par le
+   * serveur après la confirmation du lot (`@/lib/atelier/metadonnees`).
+   * Tout `null` tant que la lecture n'a pas eu lieu (`metadonneesLe` null),
+   * ou quand la photo ne le sait pas (capture d'écran, scan, export).
+   */
+  largeur: number | null;
+  hauteur: number | null;
+  /** Heure LOCALE de l'appareil, sans fuseau : « 2024-08-08T19:01:22 ». */
+  priseLe: string | null;
+  appareil: string | null;
+  gpsLat: number | null;
+  gpsLon: number | null;
+  empreinte: string | null;
+  luminance: number | null;
+  lieuVille: string | null;
+  lieuPays: string | null;
+  metadonneesLe: string | null;
+  /** L'id de l'ORIGINALE dont cette photo est une copie, calculé sur les
+      empreintes du dossier (`groupesDeDoublons`). `null` : pas un doublon. */
+  doublonDe: string | null;
 };
 
 export type EvenementVue = {

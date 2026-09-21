@@ -564,6 +564,47 @@ const PHOTOS = [
   "/images/hero/hero-03.webp",
 ];
 
+/**
+ * T-123 — ce que les douze photos de la démonstration « savent » : un
+ * séjour de quatre jours à Lisbonne puis Sintra, déposé dans le désordre
+ * (la dixième photo est la plus ancienne, pour que « Par date » change
+ * visiblement l'ordre), un doublon (la 6e copie de la 5e), une capture
+ * d'écran sans date (la 12e). Un dossier sans photo ne sait rien.
+ */
+const EMPREINTES_DEMO = [
+  "0000000000000000", "ffffffffffffffff", "0f0f0f0f0f0f0f0f", "f0f0f0f0f0f0f0f0",
+  "00ff00ff00ff00ff", "ff00ff00ff00ff00", "3333333333333333", "cccccccccccccccc",
+  "5555555555555555", "aaaaaaaaaaaaaaaa", "0000ffff0000ffff", "ffff0000ffff0000",
+];
+
+function metaDemo(i: number, lu: boolean) {
+  const rien = {
+    largeur: null, hauteur: null, priseLe: null, appareil: null, gpsLat: null, gpsLon: null,
+    empreinte: null, luminance: null, lieuVille: null, lieuPays: null, metadonneesLe: null, doublonDe: null,
+  };
+  if (!lu) return rien;
+  const capture = i === 11;
+  const jour = i === 9 ? 8 : 10 + Math.floor(i / 4);
+  const heure = 9 + ((i * 3) % 9);
+  const sintra = i >= 7 && i !== 9 && !capture;
+  return {
+    largeur: capture ? 1170 : i % 3 === 0 ? 3024 : 4032,
+    hauteur: capture ? 2532 : i % 3 === 0 ? 4032 : 3024,
+    priseLe: capture ? null : `2025-05-${String(jour).padStart(2, "0")}T${String(heure).padStart(2, "0")}:${String((i * 7) % 60).padStart(2, "0")}:00`,
+    appareil: capture ? null : "Apple iPhone 15",
+    gpsLat: capture ? null : sintra ? 38.7973 : 38.7223,
+    gpsLon: capture ? null : sintra ? -9.3904 : -9.1393,
+    /* Douze empreintes à plus de 16 bits les unes des autres, sauf la 6e,
+       copie de la 5e : le seul doublon que `groupesDeDoublons` doit voir. */
+    empreinte: capture ? null : EMPREINTES_DEMO[i === 5 ? 4 : i],
+    luminance: capture ? 0.9 : 0.42,
+    lieuVille: capture ? null : sintra ? "Sintra" : "Lisbonne",
+    lieuPays: capture ? null : "Portugal",
+    metadonneesLe: "2025-05-14T10:00:00.000Z",
+    doublonDe: i === 5 ? "demo-4" : null,
+  };
+}
+
 export function ficheDemo(token: string, maintenant = new Date()): Fiche | null {
   const g = GRAINES.find((x) => x.token === token);
   if (!g) return null;
@@ -740,6 +781,11 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
          il n'y a pas de seconde version à montrer. Le repli sur `url` est
          exactement ce que fait une fiche réelle sans vignette. */
       urlVignette: null,
+      /* T-123 — un séjour inventé de quatre jours à Lisbonne puis Sintra,
+         déposé dans le désordre (la dixième photo est la plus ancienne),
+         avec un doublon et une capture d'écran : tout ce que la fiche sait
+         montrer, sur une seule grille. */
+      ...metaDemo(i, g.nbPhotos > 0),
     })),
     evenements: evenementsVus,
     mails: [

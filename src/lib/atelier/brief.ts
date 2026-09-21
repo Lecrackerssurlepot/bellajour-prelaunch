@@ -30,6 +30,17 @@
    que la référence Cloudprinter : le brief ne peut donc pas annoncer un dos
    carré là où l'imprimeur recevra un agrafé. `grille.ts` est pur. */
 import { reliurePour, RELIURE_LIBELLE } from './grille';
+/* T-123 — ce que les photos savent d'elles-mêmes : deux modules purs, comme
+   celui-ci. Le brief en tire un bloc « chronologie et lieux » que l'atelier
+   lit avant d'ouvrir le lot. */
+import {
+  estCaptureEcran,
+  jourEnClair,
+  periodeEnClair,
+  resumeChronologie,
+  type MetaPhoto,
+} from './metadonnees';
+import { lieuEnClair, resumeLieux } from './lieux';
 
 /** Ce dont le brief a besoin. Volontairement étroit : le brief ne connaît pas
  *  la fiche, la fiche lui donne ce qu'il demande. */
@@ -64,6 +75,13 @@ export type MatiereBrief = {
   /** Le lien d'ÉDITION, interne (PRD §11). Il ne part jamais chez le client. */
   canvaTravail: string | null;
   notes: Array<{ prenom: string; texte: string; createdAt: string }>;
+  /**
+   * T-123 — les photos avec ce qu'elles savent d'elles-mêmes, dans l'ORDRE
+   * DU DÉPÔT (celui des noms de fichiers du lot). Facultatif : un appelant
+   * qui ne les a pas ne perd que le bloc. `doublonDe` désigne l'originale
+   * dont la photo est une copie (calculé par `empreinte.ts`).
+   */
+  photos?: Array<MetaPhoto & { doublonDe: string | null }>;
 };
 
 /* Une largeur de colonne, pas une largeur de fenêtre : le brief se lit dans
@@ -132,6 +150,67 @@ function choixEnClair(choix: { rang: number } | { indifferent: true } | null): s
   return `${choix.rang + 1}`;
 }
 
+/* Au-delà, on ne liste plus les jours un par un : un mois de vacances ferait
+   trente lignes que personne ne lirait. */
+const JOURS_DETAILLES_MAX = 14;
+
+/**
+ * Le corps du bloc « chronologie et lieux », ou "" s'il n'y a rien à dire.
+ * Exporté pour le harnais.
+ */
+export function blocChronologie(photos: NonNullable<MatiereBrief["photos"]>): string {
+  const lues = photos.filter((p) => p.metadonneesLe);
+  if (!lues.length) return "";
+  const lignes: string[] = [];
+  const nomDe = (id: string) => photos.find((p) => p.id === id)?.nom ?? id.slice(0, 8);
+  const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? "s" : ""}`;
+
+  const c = resumeChronologie(photos);
+  if (c.premier && c.dernier) {
+    const periode = periodeEnClair(c.premier, c.dernier);
+    lignes.push(
+      `${periode.charAt(0).toUpperCase()}${periode.slice(1)}${c.jours > 1 ? ` (${c.jours} jours)` : ""}. ` +
+        `${pluriel(c.datees, "photo")} datée${c.datees > 1 ? "s" : ""} sur ${photos.length}.`,
+    );
+    if (c.parJour.length > 1 && c.parJour.length <= JOURS_DETAILLES_MAX) {
+      for (const j of c.parJour) lignes.push(`  ${jourEnClair(j.jour, false)} : ${pluriel(j.n, "photo")}`);
+    }
+  } else {
+    lignes.push(`Aucune photo datée sur ${photos.length} : l'ordre du dépôt est le seul repère.`);
+  }
+
+  const lieux = resumeLieux(photos);
+  if (lieux.length) {
+    lignes.push("");
+    lignes.push(lieux.length > 1 ? "Les lieux, dans l'ordre où on y arrive :" : "Le lieu :");
+    for (const l of lieux) {
+      const quand = l.premier && l.dernier ? `, ${periodeEnClair(l.premier, l.dernier).replace(/ \d{4}$/, "")}` : "";
+      lignes.push(`  ${lieuEnClair(l)} : ${pluriel(l.n, "photo")}${quand}`);
+    }
+  }
+
+  const doublons = photos.filter((p) => p.doublonDe);
+  if (doublons.length) {
+    lignes.push("");
+    lignes.push("Doublons (la même image deux fois, la plus ancienne fait foi) :");
+    for (const d of doublons) lignes.push(`  ${d.nom ?? d.id.slice(0, 8)} = copie de ${nomDe(d.doublonDe!)}`);
+  }
+
+  const captures = photos.filter((p) => estCaptureEcran(p));
+  if (captures.length) {
+    lignes.push("");
+    lignes.push(`Captures d'écran : ${captures.map((p) => p.nom ?? p.id.slice(0, 8)).join(", ")}`);
+  }
+
+  lignes.push("");
+  lignes.push(
+    plier(
+      "Le lot est numéroté dans l'ordre du dépôt, celui que le client a choisi. Les dates et les lieux sont lus dans les fichiers : ils aident à ordonner, ils ne racontent pas sa vie.",
+    ),
+  );
+  return lignes.join("\n");
+}
+
 /**
  * Le brief, en texte brut.
  *
@@ -194,6 +273,14 @@ export function composerBrief(m: MatiereBrief, maintenant: Date): string {
   morceaux.push(
     bloc("SON HISTOIRE, DANS SES MOTS", plier(m.histoire?.trim() || "Il n'a rien écrit.")),
   );
+
+  /* ── T-123 : LA CHRONOLOGIE ET LES LIEUX ──────────────────────────
+     Ce que les fichiers savent : quand, où, lesquels sont des copies. Un
+     bloc SEULEMENT si quelque chose a été lu ; un dossier antérieur au
+     21/09 n'a rien, et un bloc vide se lirait comme une panne. Ce sont des
+     lectures de fichiers, pas des vérités sur sa vie : le brief le dit. */
+  const chrono = blocChronologie(m.photos ?? []);
+  if (chrono) morceaux.push(bloc("LA CHRONOLOGIE ET LES LIEUX", chrono));
 
   /* Chronologique, la plus ancienne d'abord : le carnet se lit comme une
      conversation, pas comme un fil d'actualité. L'écran, lui, montre la plus

@@ -18,6 +18,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
 import { signerGet } from "@/lib/atelier/r2";
 import { etatGenerationSouvenir } from "@/lib/atelier/souvenir";
+import { doublonsParPhoto, groupesDeDoublons } from "@/lib/atelier/empreinte";
 import {
   resoudreApercu,
   lireDoublesBrutes,
@@ -316,7 +317,24 @@ type RangeePhoto = {
   created_at: string | null;
   /* D7 — absente tant que la migration 20260830 n'est pas passée. */
   vignette_key?: string | null;
+  /* T-123 — absentes tant que la migration 20260921 n'est pas passée. */
+  ordre?: number;
+  largeur?: number | null;
+  hauteur?: number | null;
+  prise_le?: string | null;
+  appareil?: string | null;
+  gps_lat?: number | null;
+  gps_lon?: number | null;
+  empreinte?: string | null;
+  luminance?: number | null;
+  lieu_ville?: string | null;
+  lieu_pays?: string | null;
+  metadonnees_le?: string | null;
 };
+
+/* T-123 — les colonnes de la migration 20260921, tentées en premier. */
+const COLONNES_METADONNEES =
+  "largeur, hauteur, prise_le, appareil, gps_lat, gps_lon, empreinte, luminance, lieu_ville, lieu_pays, metadonnees_le";
 
 /**
  * Les photos d'un dossier, avec `vignette_key` si la colonne existe.
@@ -335,6 +353,25 @@ async function lirePhotos(
   supabase: SupabaseClient,
   numeroId: string,
 ): Promise<{ data: RangeePhoto[] | null }> {
+  /* T-123 — trois paliers, du plus complet au plus ancien : avec les
+     métadonnées (migration 20260921), avec la seule vignette (20260830),
+     sans rien. Chaque palier ne tombe que sur 42703 : une autre erreur est
+     une vraie panne, on ne la masque pas derrière un repli. */
+  const complet = await supabase
+    .from("photos")
+    .select(`id, r2_key, nom_origine, taille, ordre, created_at, vignette_key, ${COLONNES_METADONNEES}`)
+    .eq("numero_id", numeroId)
+    .order("ordre", { ascending: true })
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true })
+    .returns<RangeePhoto[]>();
+
+  if (!complet.error) return { data: complet.data };
+  if (complet.error.code !== "42703") {
+    console.error("[admin/atelier] lecture photos échouée", complet.error.code, complet.error.message);
+    return { data: [] };
+  }
+
   const avec = await supabase
     .from("photos")
     .select("id, r2_key, nom_origine, taille, ordre, created_at, vignette_key")
@@ -904,6 +941,20 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
      coût est une signature de plus, calculée en local, sans appel réseau. Le
      gain est de servir ~20 Ko au lieu de plusieurs Mo dans une case de 84 px,
      sur l'écran que l'atelier laisse ouvert toute la journée. */
+  /* T-123 — les doublons se calculent sur le dossier entier, une fois : la
+     photo la plus ancienne du groupe reste propre, ses copies sont marquées.
+     Module pur, aucune requête de plus. */
+  const doublons = doublonsParPhoto(
+    groupesDeDoublons(
+      (photos ?? []).map((p, i) => ({
+        id: p.id,
+        empreinte: p.empreinte ?? null,
+        priseLe: p.prise_le ?? null,
+        ordre: p.ordre ?? i,
+      })),
+    ),
+  );
+
   const photosVues: PhotoVue[] = await Promise.all(
     (photos ?? []).map(async (p) => ({
       id: p.id,
@@ -914,6 +965,18 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
       urlVignette: p.vignette_key
         ? await signerGet(p.vignette_key).catch(() => null)
         : null,
+      largeur: p.largeur ?? null,
+      hauteur: p.hauteur ?? null,
+      priseLe: p.prise_le ?? null,
+      appareil: p.appareil ?? null,
+      gpsLat: p.gps_lat ?? null,
+      gpsLon: p.gps_lon ?? null,
+      empreinte: p.empreinte ?? null,
+      luminance: p.luminance ?? null,
+      lieuVille: p.lieu_ville ?? null,
+      lieuPays: p.lieu_pays ?? null,
+      metadonneesLe: p.metadonnees_le ?? null,
+      doublonDe: doublons.get(p.id) ?? null,
     })),
   );
 
