@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import type { ActionVue, Fiche } from "../types";
 import { SLOTS_IMPRESSION } from "@/lib/atelier/impression";
 import { preparerPdfImpression } from "./preparerPdf";
+import { controlerBordsPdf } from "./rendreBords";
+import { resumeBords } from "@/lib/atelier/bords";
 import { cleCadrageCouverture } from "@/lib/atelier/transitions";
 /* `pays.ts` est un module PUR et SANS montant : l'importer ici ne fait pas
    descendre la grille de prix dans le bundle (invariant nº2), contrairement
@@ -308,6 +310,10 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
      de fabriquer et de déposer : l'atelier regarde AVANT de commander. Jamais
      restauré d'un brouillon, un lien signé se périme. */
   const [pdfLiens, setPdfLiens] = useState<Record<string, string>>({});
+  /* T-121 : le contrôle des bords du PDF déposé (rendu pdf.js, règle
+     `bords.ts`) : une photo au bord doit déborder de 3 mm. Tourne APRÈS
+     l'envoi, sans le bloquer ; le texte dit où il en est. */
+  const [bords, setBords] = useState<Record<string, { texte: string; remarques: string[] }>>({});
   const [pdfNoms, setPdfNoms] = useState<Record<string, string>>(() => {
     const noms: Record<string, string> = {};
     for (const s of SLOTS_IMPRESSION) {
@@ -714,6 +720,20 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
      Même mécanique que les visuels, autre route : PDF seulement, plafond
      dédié, et l'envoi DOIT rester un seul PUT — l'empreinte md5 qui part
      chez Cloudprinter est l'ETag de cet objet. */
+  async function controlerBords(champ: string, corps: Blob) {
+    const poser = (texte: string, remarques: string[] = []) => setBords((b) => ({ ...b, [champ]: { texte, remarques } }));
+    poser("Contrôle des bords…");
+    try {
+      const res = await controlerBordsPdf(new Uint8Array(await corps.arrayBuffer()), (i, n) =>
+        poser(`Contrôle des bords : page ${i} sur ${n}…`),
+      );
+      poser(resumeBords(res.nbPages, res.remarques), res.remarques);
+    } catch (err) {
+      console.error("[admin/impression] contrôle des bords impossible", (err as Error)?.message);
+      poser("Contrôle des bords impossible dans ce navigateur : le fichier est déposé, regarde-le à l'œil.");
+    }
+  }
+
   async function televerserPdf(champ: string, slot: string, file: File) {
     setEnvoiEnCours(champ);
     setErreurs((e) => e.filter((x) => x.champ !== champ));
@@ -739,7 +759,10 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
       let prep: Awaited<ReturnType<typeof preparerPdfImpression>>;
       try {
         prep = await preparerPdfImpression(await file.arrayBuffer(), typeSlot, fiche.ligne.nbPages ?? null);
-      } catch {
+      } catch (err) {
+        /* La cause reste lisible en console : le 21/09, un banc a mis deux
+           jours à découvrir que c'était CE chemin qui tombait. */
+        console.error("[admin/impression] découpe impossible", (err as Error)?.message ?? err);
         retirerNom();
         setErreurs((e) => [...e, { champ, message: "La découpe a échoué dans le navigateur. Réessaie, ou dépose un fichier déjà au format." }]);
         return;
@@ -787,6 +810,8 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
 
       set(champ, data.key);
       setPdfLiens((l) => ({ ...l, [champ]: typeof data.lecture === "string" ? data.lecture : "" }));
+      /* Le contrôle des bords part de lui-même, sur les octets envoyés. */
+      void controlerBords(champ, corps);
       setPdfNoms((n) => ({
         ...n,
         [champ]: `${nom} (${(corps.size / (1024 * 1024)).toFixed(1)} Mo) · ${prep.resume}`,
@@ -1626,6 +1651,16 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                         <a className="ate-slot-lien" href={pdfLiens[s.cle]} target="_blank" rel="noreferrer">
                           Voir le PDF préparé ↗
                         </a>
+                      ) : null}
+                      {bords[s.cle] ? (
+                        <div className="ate-bords">
+                          <span className={bords[s.cle].remarques.length ? "ate-alerte" : "ate-faint"}>{bords[s.cle].texte}</span>
+                          {bords[s.cle].remarques.map((r) => (
+                            <span key={r} className="ate-bords-remarque">
+                              {r}
+                            </span>
+                          ))}
+                        </div>
                       ) : null}
                       {erreurDe(s.cle) ? <span className="ate-erreur">{erreurDe(s.cle)}</span> : null}
                     </div>

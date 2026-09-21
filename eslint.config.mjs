@@ -14,6 +14,9 @@ const eslintConfig = defineConfig([
      vrais defauts de src/ etaient noyes a 1 %, la commande mettait des
      minutes, et personne ne lance un lint dont la sortie est illisible. */
   globalIgnores([
+    /* T-121 : le worker pdf.js, copié minifié dans public/ (Turbopack ne sait pas
+       empaqueter un worker de node_modules). Du code compilé, pas le nôtre. */
+    "public/pdfjs/**",
     "**/.next/**",
     "**/out/**",
     "**/build/**",

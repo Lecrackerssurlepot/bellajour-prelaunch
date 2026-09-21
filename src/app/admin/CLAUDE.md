@@ -76,6 +76,14 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
   sous le cadre dit ce qu'il a fait, un export illisible est refusé avec la case Canva à cocher.
   Le contrôle technique de la carte « Fichiers d'impression » ne lit que `impression_fichiers`, donc
   APRÈS la commande : avant, c'est le dry-run de « Envoyer à l'impression » qui mesure et refuse.
+- **Après le PUT, la fiche CONTRÔLE LES BORDS du PDF envoyé** (T-121, 21/09/2026, `rendreBords.ts`
+  + `@/lib/atelier/bords`) : pdf.js rend chaque page à 100 dpi dans le navigateur (44 pages ≈ 40 s,
+  l'écran dit « page i sur n »), et la phrase sous le cadre nomme la page, le bord, l'endroit et la
+  cote d'un fond perdu court. C'est une REMARQUE, pas un refus : l'atelier juge. pdf.js et son
+  worker vivent dans `public/pdfjs/` (copie de `node_modules/pdfjs-dist/build`, même version que
+  `package.json`) et se chargent à l'exécution, hors bundler ; à mettre à jour ensemble.
+  ⚠️ Pour tester la fiche en local, l'onglet doit être VISIBLE (Chrome headless ou fenêtre au
+  premier plan) : un onglet caché n'hydrate jamais la fiche en flux, sans aucune erreur.
 - **`chargerListe` fait partir ses quatre lectures ensemble** (journal, activité, dossiers vus,
   mails partis). Seul `lireNumeros` reste seul et avant : tout le reste dépend de ses ids.
   Les enchaîner coûtait quatre latences à chaque ouverture ET à chaque rafraîchissement, donc

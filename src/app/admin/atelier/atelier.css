@@ -2157,6 +2157,19 @@
   object-fit: cover;
   display: block;
 }
+/* T-121 : le contrôle des bords, sous le cadre : une ligne d'état, puis les remarques. */
+.ate-bords {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-1);
+  margin-top: var(--bj-sp-2);
+  font-size: var(--bj-fs-sm);
+  max-width: 44ch;
+}
+.ate-bords-remarque {
+  color: var(--bj-charcoal);
+  line-height: 1.35;
+}
 /* T-121 : le lien vers le PDF fabriqué par la fiche, sous le cadre. */
 .ate-slot-lien {
   display: inline-block;

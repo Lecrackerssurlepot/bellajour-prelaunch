@@ -1,4 +1,4 @@
-# État du système — au 18/09/2026
+# État du système — au 21/09/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -7,6 +7,29 @@ règles, sans moyen de savoir ce qui avait expiré.
 
 Règle d'entretien : quiconque change l'état du système met ce fichier à jour dans le même geste.
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
+
+---
+
+## 21/09/2026 — la fiche mesure le fond perdu de chaque page au dépôt (T-121, suite)
+
+**Livré sur la branche `feat/t121-controle-bords`, PR en cours au moment d'écrire.** Après le PUT
+d'un PDF d'impression, le navigateur de l'atelier rend chaque page à 100 dpi (pdf.js, servi depuis
+`public/pdfjs/`) et la règle pure `bords.ts` dit, par page et par bord, si une photo touche la coupe
+sans déborder de 3 mm dans le fond perdu (seuil 2,5 mm, papier = pixels ≥ 254, débord court retenu
+seulement sur 2 mm de bord d'un seul tenant). L'écran affiche « Bords contrôlés sur 44 pages :
+1 remarque » et la phrase qui dit la page, le bord, l'endroit et la cote. Mesuré sur le build local
+avec les fichiers réels de Merisa : couverture 0,5 s, intérieur 44 pages 41,6 s.
+
+**Merisa (« Madeira 2026 »)** : l'export Canva du 19/09 15:21 corrige la page 36 ; il n'a PAS
+encore été déposé (dernier intérieur au coffre : 19/09 14:05 UTC). Reste une remarque sur cet
+export : page 28, en bas, au milieu, une photo un peu inclinée dont le coin ne couvre pas le fond
+perdu sur 2,3 mm de bord (à étirer dans Canva, ou à accepter). La commande Cloudprinter réelle
+attend toujours l'accord explicite de Mathias.
+
+**Les 18 et 19/09 (PR #182, #183, #185, #186, EN PROD)** : lien « Voir le PDF préparé » sous
+chaque cadre ; intérieur de couverture vierge au dos + 3 mm ; réserve côté couture = le PROPRE bord
+de la page étiré (décision de Mathias, jamais la page voisine) ; face reculée de 0,4 mm avant le
+pli (les photos Canva débordent la coupe centrale de 0,2 mm, un filet sombre apparaissait).
 
 ---
 
