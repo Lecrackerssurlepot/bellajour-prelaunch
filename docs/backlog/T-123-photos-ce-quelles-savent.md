@@ -73,5 +73,6 @@ Geoapify posée dans Vercel (Production + Preview, vérifié par l'API) et `.env
 lancé pour de vrai : 6 dossiers, 503 photos lues, 324 datées, 293 avec GPS, 106 appels Geoapify.
 Marjorie (25 dates, 1 GPS sur 99) et Jeanne (rien sur 100) déposent des exports sans EXIF : ce
 n'est pas une panne, la fiche dira « sans date ».
-Reste : fusionner la branche (PR à créer par Mathias, refusée depuis la session), puis la preuve
-sur un dépôt réel que la tâche de fond tourne bien sur Vercel (journal `metadonnees_lues`).
+**PR #194 créée et fusionnée par Mathias le 21/09**, déploiement Vercel `5cfc8f2` READY sur
+`bellajour.fr` (vérifié par l'API). Reste la preuve sur un dépôt réel que la tâche de fond
+tourne bien sur Vercel (journal `metadonnees_lues` juste après `photos_confirmees`).
