@@ -10,6 +10,36 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 21/09/2026 (matin) — PREMIÈRE COMMANDE CLOUDPRINTER RÉELLE, et la bascule en LIVE
+
+**Cloudprinter est EN LIVE depuis le 21/09 à 08:40 UTC.** Jusque-là, `CLOUDPRINTER_API_KEY` en
+Production Vercel était la clé SANDBOX (« My API interface », posée le 01/09). Découvert en
+vérifiant le mode avant la première commande, sur demande de Mathias. Il a créé chez Cloudprinter
+(Development, API interfaces) une interface « Bellajour production », mode Live, Core API 1.0, et
+collé sa clé dans Vercel ; déploiement créé onze secondes après, prêt à 08:43 UTC. Le webhook
+(Signals, « Bellajour Production », ex-« Bellajour preview ») pointait déjà vers
+`www.bellajour.fr/api/cloudprinter/webhook` depuis le 01/09 : clé inchangée, rien à toucher.
+⚠️ **La variable `CLOUDPRINTER_API_KEY` est PARTAGÉE Production + Preview** : la clé live s'applique
+aussi aux previews. Aucun test de commande sur une preview tant qu'elle n'est pas scindée en deux
+variables (Preview → clé sandbox « My API interface », toujours active chez Cloudprinter).
+
+**Merisa (« Madeira 2026 », PT, 44 p., brillant, 1 ex.) : commandée le 21/09 à 08:54:06 UTC par
+Mathias depuis la fiche.** Séquence prouvée au journal : `etat_change` validee → en_production,
+`cloudprinter_commande` (référence = id du dossier, `magazine_pb_a4_p_fc`, `cp_ground`), souvenir
+généré, puis **`cloudprinter_signal` CloudprinterOrderValidated reçu à 08:54:46** : le webhook live
+fonctionne et Cloudprinter a validé la commande. Aucun mail parti (M6 déjà envoyé le 17/09, verrou).
+Fichiers du coffre : `couverture-393c6d09.pdf` (2 p., 429,29 × 303, dos 3,29) et
+`interieur-6a953fc3.pdf` (44 p., 216 × 303), identiques page à page au dépôt de 08:11 et à l'export
+Canva du 19/09 15:21 ; une remarque de bord (page 28, coin, 2,5 mm) acceptée par Mathias.
+**À suivre** : signaux ItemProduce / ItemShipped (M7 « en route » avec le numéro de colis) puis
+ItemDeliveryCompleted (M7b). C'est la première fois que cette chaîne tourne en réel.
+
+**Vu au passage** : `souvenir_genere` journalisé DEUX fois (08:54:15 et 08:54:31, deux clés R2
+différentes, même taille 134 Mo) : la génération du PDF souvenir s'est lancée deux fois. Un fichier
+orphelin de 134 Mo au coffre ; à regarder (double déclenchement côté fiche ?), pas bloquant.
+
+---
+
 ## 21/09/2026 — la fiche mesure le fond perdu de chaque page au dépôt (T-121, suite)
 
 **EN PRODUCTION depuis le 21/09 (PR #187, déploiement vérifié : `/pdfjs/pdf.min.mjs` et son worker servis aux tailles exactes).** Après le PUT
@@ -519,7 +549,7 @@ décision, pas du ménage.
 | Page cliente (`/numero/<token>`) | en ligne | 21/08/2026 |
 | Back-office (`/admin/atelier`) | en ligne | 25/08/2026 |
 | Relève des mails | cron Vercel **quotidien** (7 h UTC, déclenché dans l'heure) ; relève **horaire** écrite mais **inerte** (T-097) | prouvée le 29/08/2026 à 07:20 |
-| Cloudprinter | branché, **sandbox** (clés posées en Production le 01/09) | recette 26/08 ; **suivi vérifié sur la prod le 01/09** |
+| Cloudprinter | branché, **LIVE depuis le 21/09** (interface « Bellajour production » ; variable partagée avec Preview, à scinder) | recette 26/08 ; suivi vérifié sur la prod le 01/09 ; **première commande réelle le 21/09 (Merisa), signal OrderValidated reçu** |
 | Stripe | branché | prévente depuis juin, atelier depuis le 24/08 |
 | Prévente (`/preventes`, `/lancement`) | retirées, 307 vers `/` | 28/08/2026 |
 | Rebonds Brevo (`/api/brevo/webhook`) | **actif**, webhook Brevo id 2158565 | prouvé le 29/08/2026 à 10:14 |
