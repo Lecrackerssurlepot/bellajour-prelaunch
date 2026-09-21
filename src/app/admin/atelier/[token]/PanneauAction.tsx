@@ -1618,10 +1618,11 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
             ) : (
               <>
                 <div className="ate-slots">
-                  {/* Quels cadres ? Ceux du produit : l'agrafé (20 p.) prend UN
-                      PDF complet, le dos carré prend la couverture enveloppante
-                      ET le bloc. Le serveur revalide — ici on n'affiche que les
-                      cadres utiles pour ne pas faire déposer un fichier de trop. */}
+                  {/* Quels cadres ? Ceux du produit : le dos carré (le seul
+                      depuis le 15/09/2026) prend la couverture enveloppante ET
+                      le bloc ; la branche 20 p. = UN PDF `product` est celle de
+                      l'agrafé archivé, elle ne s'atteint plus. Le serveur
+                      revalide — ici on n'affiche que les cadres utiles. */}
                   {SLOTS_IMPRESSION.filter((s) =>
                     fiche.ligne.nbPages === 20 ? s.type === "product" : s.type !== "product",
                   ).map((s) => (

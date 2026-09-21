@@ -119,9 +119,9 @@ faut s'en servir.
 - [ ] Les finitions par défaut (`pageblock_130mcs`, `cover_250mcs`) sont
       celles qu'on veut : elles vivent dans `src/lib/atelier/impression.ts`,
       c'est LE seul endroit à retoucher. L'étude de prix tranche.
-- [ ] Le catalogue live porte bien les deux références attendues
-      (`magazine_sas_a4_p_fc` agrafé pour 20 p.,
-      `magazine_pb_a4_p_fc` dos carré au-delà) :
+- [ ] Le catalogue live porte bien la référence attendue
+      (`magazine_pb_a4_p_fc`, dos carré collé, le seul produit depuis le
+      15/09/2026 ; l'agrafé `magazine_sas_a4_p_fc` est archivé) :
       `node scripts/cloudprinter-produits.mjs` ⚠️ API très rationnée, une fois.
 
 **Comment on vérifie** — la seule preuve qui vaille est une commande réelle

@@ -7,8 +7,8 @@
  * (`impression_fichiers`, JAMAIS des clés venues du navigateur), les
  * assemble en UN document feuilletable, et range le résultat au coffre.
  *
- *   agrafé (20 p.)      — le `product`, pages rognées au format fini ;
- *   dos carré (22-50 p.) — 1re de couv + bloc + 4e de couv, les deux faces
+ *   dos carré (24-60 p.) — 1re de couv + bloc + 4e de couv, les deux faces
+ *   (l'agrafé de 20 p., un `product` rogné au format fini, est archivé)
  *                          découpées de la feuille enveloppante (la
  *                          géométrie vit dans souvenir.ts, PURE, prouvée
  *                          par verif-atelier.ts).

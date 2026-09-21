@@ -9,6 +9,7 @@
 
 import Reveal from '../components/Reveal'
 import { CTA_NOTE_PRICE, FAQ } from '../content'
+import { PAGES_MIN, PAGES_MAX_PUBLIC } from '@/lib/atelier/grille'
 import LienComposer from '../components/LienComposer'
 
 /* Ce qui est compris. ⚠️ AUCUNE ligne ne doit dire ni laisser croire que le
@@ -137,10 +138,13 @@ export default function Corps() {
                   11/09, consignés dans docs/reference/SPECS-CLOUDPRINTER.md,
                   et commandés par `PAPIER_INTERIEUR` / `PAPIER_COUVERTURE`.
                   Ne pas retoucher un grammage ici sans le changer LÀ. */}
+              {/* Une seule reliure depuis le 15/09/2026 : le dos carré collé
+                  (l'agrafé de 20 pages est archivé dans archive/agrafe-2026-09/).
+                  Les bornes sont DÉRIVÉES de la grille, jamais recopiées. */}
               <p className="lede">
                 Format A4, papier intérieur couché satiné 130 g, couverture
-                250 g. Agrafé à 20 pages, dos carré collé au-delà. Composé
-                page à page par l’atelier.
+                250 g. Dos carré collé, de {PAGES_MIN} à {PAGES_MAX_PUBLIC} pages.
+                Composé page à page par l’atelier.
               </p>
               {/* Le seul choix d'objet laissé au client, dit ici parce que
                   c'est ici qu'on décrit l'objet — et redit au bon de
