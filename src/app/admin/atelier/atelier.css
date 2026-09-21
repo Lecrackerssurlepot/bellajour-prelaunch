@@ -2711,6 +2711,48 @@
   outline-offset: 2px;
 }
 
+/* ── LE STYLE SOUHAITÉ, EN IMAGE (21/09/2026) ──────────────────────────
+   Le nom seul (« Souhaite plutôt “Sicile” ») obligeait à se souvenir de
+   quel visuel il s'agit. La vignette de l'écran 3 vit donc dans le <dd>,
+   petite (72 px, le format 2/3 d'une couverture), à côté du texte, et
+   s'ouvre en grand dans la loupe d'un clic — même geste que l'aperçu. */
+.ate-style {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+}
+.ate-style-vignette {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 72px;
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  border: 0;
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-veil-6);
+  overflow: hidden;
+  cursor: zoom-in;
+  box-shadow: var(--bj-shadow-soft);
+}
+.ate-style-vignette img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ate-style-vignette:hover,
+.ate-style-vignette:focus-visible {
+  outline: 2px solid var(--bj-action);
+  outline-offset: 2px;
+}
+.ate-style-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ate-style-texte .ate-faint { font-size: var(--bj-fs-xs); }
+
 /* ── LA RÉPONSE DU CLIENT SUR SA COUVERTURE (11/09/2026) ───────────────
    Elle était une ligne grise sous le chapeau de la carte, indiscernable
    d'une note de bas de page : Mathias ne l'a pas vue. C'est un ENCART, avec
