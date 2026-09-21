@@ -203,9 +203,12 @@ import {
   FINITION_DEFAUT,
   FINITION_OPTION,
   PAPIER_INTERIEUR,
+  PAPIER_INTERIEUR_PAR_FINITION,
+  papierInterieurPour,
   PAPIER_COUVERTURE,
   GRAMMAGE_INTERIEUR_GSM,
   BULK_INTERIEUR,
+  bulkInterieurPour,
   dosMmPourPages,
   largeurCouvertureMm,
   SHIPPING_LEVEL,
@@ -1570,11 +1573,24 @@ titre("— le papier tranche et le pelliculage au choix (11/09/2026) —");
 /* Les references viennent du releve products/info du 11/09. Les figer ici,
    c'est empecher qu'une « harmonisation » de nommage les casse en silence :
    `cover_finish_gloss` n'existe pas chez eux, la commande serait refusee. */
-ok("le papier de la table produit est celui des constantes (gloss 130 g, couverture 250 g)",
-   produitPour(24)!.finitions[0].type === PAPIER_INTERIEUR
-   && produitPour(60)!.finitions[0].type === PAPIER_INTERIEUR
-   && produitPour(32)!.finitions[1].type === PAPIER_COUVERTURE
-   && PAPIER_INTERIEUR === "pageblock_130mcg" && PAPIER_COUVERTURE === "cover_250mcs");
+/* 21/09/2026 : le papier interieur SUIT la finition. La table produit ne
+   porte plus que la couverture ; l'interieur vient de `papierInterieurPour`. */
+ok("la table produit ne porte que la couverture 250 g (l'interieur depend du dossier)",
+   produitPour(24)!.finitions.length === 1
+   && produitPour(32)!.finitions[0].type === PAPIER_COUVERTURE
+   && PAPIER_COUVERTURE === "cover_250mcs");
+ok("le papier interieur suit la finition : gloss sous brillant, silk sous mat",
+   papierInterieurPour("gloss") === "pageblock_130mcg"
+   && papierInterieurPour("matte") === "pageblock_130mcs"
+   && PAPIER_INTERIEUR_PAR_FINITION.gloss === "pageblock_130mcg"
+   && PAPIER_INTERIEUR_PAR_FINITION.matte === "pageblock_130mcs");
+ok("sans choix, le papier du defaut (gloss), exactement ce qui a ete imprime jusqu'ici",
+   papierInterieurPour(null) === PAPIER_INTERIEUR
+   && papierInterieurPour(undefined) === "pageblock_130mcg"
+   && papierInterieurPour("brilant") === "pageblock_130mcg");
+ok("les deux papiers pesent pareil : le grammage se deduit d'un seul",
+   /pageblock_130/.test(PAPIER_INTERIEUR_PAR_FINITION.gloss)
+   && /pageblock_130/.test(PAPIER_INTERIEUR_PAR_FINITION.matte));
 ok("les references du pelliculage sont celles de Cloudprinter, asymetrie comprise",
    FINITION_OPTION.gloss === "finish_gloss" && FINITION_OPTION.matte === "cover_finish_matte");
 ok("le defaut est le brillant, comme chez eux", FINITION_DEFAUT === "gloss");
@@ -1600,6 +1616,23 @@ ok("la commande porte le pelliculage CHOISI",
    optionsDe("matte").includes("cover_finish_matte")
    && !optionsDe("matte").includes("finish_gloss"));
 ok("et le brillant quand rien n'a ete choisi", optionsDe(null).includes("finish_gloss"));
+/* Le papier interieur part AVEC le pelliculage choisi (21/09/2026) : un mat
+   commande du silk, un brillant du gloss, et jamais les deux. */
+ok("la commande mate part en papier silk, jamais en gloss",
+   optionsDe("matte").includes("pageblock_130mcs")
+   && !optionsDe("matte").includes("pageblock_130mcg"));
+ok("la commande brillante (ou sans choix) part en papier gloss",
+   optionsDe("gloss").includes("pageblock_130mcg")
+   && optionsDe(null).includes("pageblock_130mcg")
+   && !optionsDe(null).includes("pageblock_130mcs"));
+ok("le papier interieur est compte par page, la couverture une fois",
+   payloadCommande({
+     reference: "r", emailContact: "c@b.com", adresse: ADR_OK,
+     produit: produitPour(32)!, pages: 32,
+     fichiers: { cover: { url: "u", md5: MD5 }, book: { url: "u", md5: MD5 } },
+     finition: "matte",
+   }).items[0].options.some((o) => o.type === "pageblock_130mcs" && o.count === "32")
+   && optionsDe("matte").filter((t) => t === "cover_250mcs").length === 1);
 /* Le devis doit chiffrer le MEME objet que la commande, pelliculage compris :
    c'est la meme garantie que plus haut, etendue au seul parametre que le
    client choisit lui-meme. */
@@ -1620,6 +1653,26 @@ titre("— la geometrie du dos (formule Cloudprinter, SPECS du 02/09) —");
    c'est le but : le dos ne doit jamais suivre en silence. */
 ok("le grammage et le bulk se DEDUISENT de la reference papier (gloss : 0,80)",
    GRAMMAGE_INTERIEUR_GSM === 130 && BULK_INTERIEUR === 0.8);
+/* 21/09/2026 : le bulk suit la finition, silk 0,90. 24 p mat -> 130 x 0,9 x
+   12 / 1000 + 1 = 2,404 (c'est le dos que SPECS-CLOUDPRINTER.md a toujours
+   cite pour 24 pages) ; 32 p -> 2,872 ; 60 p -> 4,51. */
+ok("le bulk suit la finition : silk 0,90 sous une couverture mate, gloss sans choix",
+   bulkInterieurPour("matte") === 0.9 && bulkInterieurPour("gloss") === 0.8
+   && bulkInterieurPour(null) === BULK_INTERIEUR);
+ok("24 pages mat -> 2,40 mm de dos", dosMmPourPages(24, "matte") === 2.4);
+ok("32 pages mat -> 2,87 mm de dos", dosMmPourPages(32, "matte") === 2.87);
+ok("60 pages mat -> 4,51 mm de dos", dosMmPourPages(60, "matte") === 4.51);
+ok("sans finition, le dos est celui du gloss, comme avant",
+   dosMmPourPages(24, null) === 2.25 && dosMmPourPages(24, "gloss") === 2.25);
+ok("la couverture enveloppante d'un mat suit son dos",
+   largeurCouvertureMm(24, "matte") === 2 * (210 + 3) + 2.4
+   && largeurCouvertureMm(24, "gloss") === 2 * (210 + 3) + 2.25);
+/* L'ecart gloss/silk reste sous la tolerance de 0,5 mm (0,39 mm a 60 p) : un
+   verdict ne distingue pas les deux, et c'est voulu — juger n'est pas
+   commander. Ce qui change vraiment, c'est le papier qui part et la cote
+   annoncee a l'atelier. */
+ok("une cover a la largeur du mat est conforme pour un dossier mat",
+   verdictTaillePage("cover", largeurCouvertureMm(60, "matte")!, 303, 60, "matte") === "conforme");
 ok("24 pages -> 2,25 mm de dos", dosMmPourPages(24) === 2.25);
 ok("32 pages -> 2,66 mm de dos", dosMmPourPages(32) === 2.66);
 ok("50 pages -> 3,60 mm de dos", dosMmPourPages(50) === 3.6);

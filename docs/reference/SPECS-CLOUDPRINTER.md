@@ -41,7 +41,7 @@ Décision de Mathias, après ce relevé :
 
 | | Référence |
 |---|---|
-| Papier intérieur | `pageblock_130mcs` — 130 g Machine Coated Silk |
+| Papier intérieur | **suit la finition (21/09/2026)** : `pageblock_130mcg` — 130 g Machine Coated Gloss sous une couverture brillante, `pageblock_130mcs` — 130 g Machine Coated Silk sous une mate (`PAPIER_INTERIEUR_PAR_FINITION`, impression.ts). Du 15/09 au 21/09 : gloss pour tous, pour le port FR |
 | Papier de couverture | `cover_250mcs` — 250 g Machine Coated Silk |
 | Pelliculage | **au choix du client** : `finish_gloss` ou `cover_finish_matte` |
 | Pagination | `total_pages` |

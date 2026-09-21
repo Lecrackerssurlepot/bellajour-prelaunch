@@ -12,6 +12,7 @@ import type { Pile, EtapeDepot, Camp } from "@/lib/atelier/urgence";
 import type { MotifArrivee } from "@/lib/atelier/arrivees";
 import type { VerdictSuppression } from "@/lib/atelier/archive";
 import type { Etat } from "@/lib/atelier/transitions";
+import type { Finition } from "@/lib/atelier/impression";
 import type { Recit } from "@/lib/atelier/recit";
 import type { Parcours } from "@/lib/atelier/parcours";
 import type { GenreNote } from "@/lib/atelier/carnet";
@@ -333,6 +334,11 @@ export type Fiche = {
   /** Le HT gelé, en centimes (migration 20260916), ou null pour un dossier
       d'avant : la fiche le montre à côté du TTC. */
   prixHtCentimes: number | null;
+  /** La finition choisie par le client (migration 20260911), ou null s'il
+      n'a rien choisi (= brillant partout où elle se lit). Depuis le 21/09
+      elle choisit aussi le PAPIER intérieur, donc le dos : la recoupe de la
+      couverture dans le navigateur (`preparerPdf.ts`) en a besoin. */
+  finition: Finition | null;
   canvaUrl: string | null;
   /** Le lien d'ÉDITION, interne. Ne part jamais nulle part (PRD §11). */
   canvaTravail: string | null;

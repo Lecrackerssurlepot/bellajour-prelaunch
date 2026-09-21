@@ -758,7 +758,9 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
       setPdfNoms((n) => ({ ...n, [champ]: `${file.name} : lecture et découpe…` }));
       let prep: Awaited<ReturnType<typeof preparerPdfImpression>>;
       try {
-        prep = await preparerPdfImpression(await file.arrayBuffer(), typeSlot, fiche.ligne.nbPages ?? null);
+        /* La finition passe avec la pagination : depuis le 21/09 elle choisit
+           le papier, donc le dos, donc la largeur de la feuille enveloppante. */
+        prep = await preparerPdfImpression(await file.arrayBuffer(), typeSlot, fiche.ligne.nbPages ?? null, fiche.finition);
       } catch (err) {
         /* La cause reste lisible en console : le 21/09, un banc a mis deux
            jours à découvrir que c'était CE chemin qui tombait. */

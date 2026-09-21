@@ -29,6 +29,7 @@ import {
 } from "@/lib/atelier/apercu";
 import { eurosDuDossier, type PalierCle } from "@/lib/atelier/prix";
 import { quantiteDuDossier } from "@/lib/atelier/exemplaires";
+import { normaliserFinition } from "@/lib/atelier/impression";
 import {
   ETAPE_ETAT,
   ETATS,
@@ -1066,6 +1067,10 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
        exemplaire et pas de HT. */
     quantite: quantiteDuDossier(n.quantite),
     prixHtCentimes: typeof n.prix_ht_centimes === "number" ? n.prix_ht_centimes : null,
+    /* La finition (migration 20260911) : `normaliserFinition`, pas le repli,
+       parce que la fiche montre ce que le client a CHOISI — l'absence se lit
+       comme une absence, et c'est la commande qui replie sur le brillant. */
+    finition: normaliserFinition(n.finition),
     canvaUrl: (n.canva_url as string) ?? null,
     canvaTravail: (n.canva_travail as string) ?? null,
     maquettePdfUrl: (n.maquette_pdf_url as string) ?? null,

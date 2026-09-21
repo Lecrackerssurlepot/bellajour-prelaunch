@@ -76,26 +76,53 @@ export type ProduitImpression = {
  * `products/info` + `prices/lookup` du 11/09 (consigné dans
  * docs/reference/SPECS-CLOUDPRINTER.md).
  *
- *   intérieur  — 130 g couché GLOSS (`pageblock_130mcg`), depuis le
- *                15/09/2026 (voir ci-dessous) ;
- *   couverture — 250 g couché silk (`cover_250mcs`) ;
+ *   intérieur  — 130 g couché, et SA FINITION SUIT CELLE DE LA COUVERTURE
+ *                (décision de Mathias, 21/09/2026) : GLOSS
+ *                (`pageblock_130mcg`) avec une couverture brillante, SILK
+ *                (`pageblock_130mcs`, le « satiné ») avec une couverture
+ *                mate. Un magazine mat au toucher dedans comme dehors ;
+ *   couverture — 250 g couché silk (`cover_250mcs`), quelle que soit la
+ *                finition : le pelliculage se pose dessus ;
  *   pelliculage — AU CHOIX DU CLIENT, brillant ou mat (plus bas).
  *
- * Changer de papier = changer CES DEUX LIGNES, et la géométrie du dos suit
- * toute seule (`GRAMMAGE_INTERIEUR_GSM` et `BULK_INTERIEUR` s'en déduisent
- * plus bas).
+ * Changer de papier = changer CES LIGNES, et la géométrie du dos suit toute
+ * seule (`GRAMMAGE_INTERIEUR_GSM` et `bulkInterieurPour` s'en déduisent plus
+ * bas). Le papier intérieur n'est donc plus UNE constante mais une table par
+ * finition : `papierInterieurPour(finition)` est le seul chemin vers la
+ * référence, et le devis comme la commande passent par lui (`optionsItem`).
  *
- * ⚠️ POURQUOI LE GLOSS, ET PAS LE SILK (décision de Mathias, 15/09/2026).
- * Le relevé du 11/09 a montré que le grammage ne coûte presque rien (90 →
- * 130 g : un centime sur un 32 pages), mais qu'il change d'USINE, et donc de
- * PORT. En France, `pageblock_130mcs` route vers une usine dont le
- * transporteur le moins cher est à 9,22 € HT, là où `pageblock_130mcg` (le
- * même 130 g, en gloss) tombe à 6,46 € (re-devisé le 16/09 sur 60 pages :
- * Colissimo `cp_ground`, 6,46 € HT). Au Portugal et en Allemagne, les deux
- * donnent le même prix. Depuis que le port facturé au client est FIXE
- * (5 € en zone A, livraison.ts), l'écart est pour nous : Mathias a choisi le
- * gloss. Revenir au silk tient en un mot : `mcg` → `mcs`. */
-export const PAPIER_INTERIEUR = "pageblock_130mcg";
+ * ⚠️ LE PORT N'EST PAS LE MÊME (relevé du 11/09, re-devisé le 16/09). Le
+ * grammage ne coûte presque rien (90 → 130 g : un centime sur un 32 pages),
+ * mais la finition du papier change d'USINE, et donc de PORT. En France,
+ * `pageblock_130mcs` route vers une usine dont le transporteur le moins cher
+ * est à 9,22 € HT, là où `pageblock_130mcg` tombe à 6,46 € (Colissimo
+ * `cp_ground`). Au Portugal et en Allemagne, les deux donnent le même prix.
+ * Le port facturé au client étant FIXE (5 € en zone A, livraison.ts),
+ * l'écart est pour nous : du 15/09 au 21/09 Mathias avait fixé le gloss
+ * pour tout le monde ; le 21/09 il a tranché que le papier suit le choix du
+ * client, et qu'une commande mate française coûte donc 2,76 € HT de port de
+ * plus. Le cockpit (livraison réelle vs port facturé) le montrera. */
+export const PAPIER_INTERIEUR_PAR_FINITION = {
+  gloss: "pageblock_130mcg",
+  matte: "pageblock_130mcs",
+} as const satisfies Record<Finition, string>;
+
+/**
+ * La référence du papier intérieur pour la finition d'un dossier — avec le
+ * même repli que partout (`finitionDuDossier`) : un dossier sans choix part
+ * en brillant, donc en gloss, exactement ce qui a été imprimé jusqu'ici.
+ */
+export function papierInterieurPour(finition: unknown): string {
+  return PAPIER_INTERIEUR_PAR_FINITION[finitionDuDossier(finition)];
+}
+
+/**
+ * Le papier du DÉFAUT (brillant) : ce que reçoit un dossier sans choix, et
+ * la référence dont le GRAMMAGE se déduit (les deux papiers pèsent pareil,
+ * le harnais le vérifie). Ne pas s'en servir pour composer une commande :
+ * c'est `papierInterieurPour` qui sait quel papier part.
+ */
+export const PAPIER_INTERIEUR: string = PAPIER_INTERIEUR_PAR_FINITION.gloss;
 export const PAPIER_COUVERTURE = "cover_250mcs";
 
 /* ─────────────── LE PELLICULAGE, AU CHOIX DU CLIENT ───────────────
@@ -153,17 +180,16 @@ export function finitionDuDossier(v: unknown): Finition {
 
 /**
  * Le produit, le seul depuis le 15/09/2026. Le pelliculage n'est PAS dans
- * cette table : il ne dépend pas du produit mais du dossier, et il entre
- * dans les options au moment de composer l'item (`optionsItem`).
+ * cette table, et depuis le 21/09/2026 le PAPIER INTÉRIEUR non plus : tous
+ * deux dépendent du dossier (sa finition), pas du produit, et ils entrent
+ * dans les options au moment de composer l'item (`optionsItem`). Ne reste
+ * ici que ce qui ne bouge jamais : la couverture 250 g.
  */
 const DOS_CARRE: ProduitImpression = {
   produit: "magazine_pb_a4_p_fc",
   libelle: "Magazine A4 dos carré collé",
   fichiers: ["cover", "book"],
-  finitions: [
-    { type: PAPIER_INTERIEUR, count: "pages" },
-    { type: PAPIER_COUVERTURE, count: 1 },
-  ],
+  finitions: [{ type: PAPIER_COUVERTURE, count: 1 }],
 };
 
 /* ─────────── ce que Cloudprinter attend d'un PDF (les SPECS) ───────────
@@ -241,6 +267,15 @@ export const BULK_INTERIEUR =
   BULK_PAR_PAPIER[/pageblock_\d+([a-z]+)/.exec(PAPIER_INTERIEUR)?.[1] ?? ""] ?? 0;
 
 /**
+ * Le bulk du papier qui partira VRAIMENT pour ce dossier : depuis le
+ * 21/09/2026 il dépend de la finition (gloss 0,80 · silk 0,90). Sans
+ * finition, celui du défaut — `BULK_INTERIEUR`, exactement.
+ */
+export function bulkInterieurPour(finition?: Finition | null): number {
+  return BULK_PAR_PAPIER[/pageblock_\d+([a-z]+)/.exec(papierInterieurPour(finition))?.[1] ?? ""] ?? 0;
+}
+
+/**
  * Le terme de couverture de la formule, en mm. Cloudprinter le fixe par
  * RELIURE, pas par grammage : Case Wrap 3 mm → 6,0 · Case Wrap 2 mm → 4,0 ·
  * **Perfect Binding / Softcover → 1,0** (2 × 0,5). `magazine_pb_a4_p_fc`
@@ -258,10 +293,18 @@ export const EPAISSEUR_COUVERTURE_MM = 1.0;
  * que `decouperCouverture` rend déjà sur le dos MESURÉ (souvenir.ts) — les
  * deux chiffres doivent pouvoir se comparer sans bruit d'arrondi.
  */
-export function dosMmPourPages(nbPages: number | null | undefined): number | null {
+export function dosMmPourPages(
+  nbPages: number | null | undefined,
+  /**
+   * La finition du dossier : depuis le 21/09/2026 elle choisit le papier
+   * intérieur, donc son bulk, donc le dos. Absente = le défaut (brillant,
+   * gloss), comme pour tout dossier ouvert avant ce lot.
+   */
+  finition?: Finition | null,
+): number | null {
   if (reliurePour(nbPages) !== "dos_carre" || typeof nbPages !== "number") return null;
   const dos =
-    (GRAMMAGE_INTERIEUR_GSM * BULK_INTERIEUR * (nbPages / 2)) / 1000 + EPAISSEUR_COUVERTURE_MM;
+    (GRAMMAGE_INTERIEUR_GSM * bulkInterieurPour(finition) * (nbPages / 2)) / 1000 + EPAISSEUR_COUVERTURE_MM;
   return Math.round(dos * 100) / 100;
 }
 
@@ -277,8 +320,11 @@ export function dosMmPourPages(nbPages: number | null | undefined): number | nul
  * savoir ce qu'elle aurait dû valoir. La hauteur, elle, n'a jamais dépendu
  * du dos (303 mm, fini + fonds perdus).
  */
-export function largeurCouvertureMm(nbPages: number | null | undefined): number | null {
-  const dos = dosMmPourPages(nbPages);
+export function largeurCouvertureMm(
+  nbPages: number | null | undefined,
+  finition?: Finition | null,
+): number | null {
+  const dos = dosMmPourPages(nbPages, finition);
   if (dos === null) return null;
   return Math.round((2 * (FORMAT_FINI_MM.largeur + FOND_PERDU_MM) + dos) * 100) / 100;
 }
@@ -417,6 +463,8 @@ export function verdictTaillePage(
    * la largeur constatée.
    */
   nbPagesDossier?: number | null,
+  /** La finition du dossier, qui choisit le papier et donc le dos (21/09). */
+  finition?: Finition | null,
 ): VerdictTaille {
   if (type === "cover") {
     /* La hauteur d'abord : elle ne dépend pas du dos, et une hauteur fausse
@@ -425,7 +473,7 @@ export function verdictTaillePage(
     if (!proche(hauteurMm, FORMAT_PAGE_PDF_MM.hauteur)) return "hors_format";
 
     /* Puis la largeur, SI on sait ce qu'elle devrait valoir. */
-    const attendue = largeurCouvertureMm(nbPagesDossier);
+    const attendue = largeurCouvertureMm(nbPagesDossier, finition);
     if (attendue === null) return "constat";
     return proche(largeurMm, attendue) ? "conforme" : "hors_format";
   }
@@ -627,6 +675,10 @@ function optionsItem(
 ): Array<{ type: string; count: string }> {
   return [
     { type: "total_pages", count: String(pages) },
+    /* Le papier intérieur SUIT la finition (21/09/2026) : gloss sous une
+       couverture brillante, silk sous une mate. Il vient d'ici et de nulle
+       part ailleurs, pour le devis comme pour la commande. */
+    { type: papierInterieurPour(finition), count: String(pages) },
     ...produit.finitions.map((f) => ({
       type: f.type,
       count: String(f.count === "pages" ? pages : f.count),

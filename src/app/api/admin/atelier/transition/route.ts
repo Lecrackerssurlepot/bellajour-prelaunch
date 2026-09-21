@@ -41,7 +41,7 @@ import {
   FINITION_LIBELLE,
   FINITION_OPTION,
   PAPIER_COUVERTURE,
-  PAPIER_INTERIEUR,
+  papierInterieurPour,
   EMAIL_CONTACT,
   SHIPPING_LEVEL,
   SLOTS_IMPRESSION,
@@ -509,7 +509,7 @@ export async function POST(request: Request) {
           const type = f.type as (typeof produit.fichiers)[number];
           try {
             const octets = await lireObjet(f.cle, AbortSignal.timeout(BUDGET_CONTROLE_MS));
-            const lu = await inspecterPdf(octets, type, numero.nb_pages ?? null, produit);
+            const lu = await inspecterPdf(octets, type, numero.nb_pages ?? null, produit, finitionDuDossier(numero.finition));
             const refus = refusDeCommande(type, lu);
             controles.push({ type, nbPages: lu.nbPages, pageMm: lu.pageMm, verdictTaille: lu.verdictTaille, refus });
             if (refus) erreurs.push({ champ: slot.cle, message: `${slot.label} : ${refus}` });
@@ -538,7 +538,9 @@ export async function POST(request: Request) {
            défaut. L'écran de confirmation ne doit pas annoncer `cp_saver`
            quand la commande partira en `cp_ground`. */
         shippingLevel: numero.livraison_niveau ?? SHIPPING_LEVEL,
-        papier: { interieur: PAPIER_INTERIEUR, couverture: PAPIER_COUVERTURE },
+        /* Le papier intérieur SUIT la finition du dossier (21/09/2026) :
+           l'écran de confirmation montre celui qui partira, pas un défaut. */
+        papier: { interieur: papierInterieurPour(numero.finition), couverture: PAPIER_COUVERTURE },
         finition: {
           cle: FINITION_OPTION[finitionDuDossier(numero.finition)],
           libelle: FINITION_LIBELLE[finitionDuDossier(numero.finition)],
@@ -548,8 +550,8 @@ export async function POST(request: Request) {
            fond perdu à un deuxième endroit, et c'est ainsi que deux
            géométries finissent par diverger. */
         dos: (() => {
-          const mm = dosMmPourPages(numero.nb_pages);
-          const largeur = largeurCouvertureMm(numero.nb_pages);
+          const mm = dosMmPourPages(numero.nb_pages, finitionDuDossier(numero.finition));
+          const largeur = largeurCouvertureMm(numero.nb_pages, finitionDuDossier(numero.finition));
           return mm !== null && largeur !== null ? { mm, largeurCouvertureMm: largeur } : null;
         })(),
         fichiers,

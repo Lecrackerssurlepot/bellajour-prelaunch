@@ -658,6 +658,8 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     livraisonNiveau: null,
     quantite: 1,
     prixHtCentimes: null,
+    /* La démo ne choisit pas de finition : comme un dossier d'avant le 11/09. */
+    finition: null,
     canvaUrl: ["maquette_prete", "validee", "en_production", "expediee", "livree"].includes(g.etat)
       ? "https://www.canva.com/design/DEMO/view?mode=comment"
       : null,
