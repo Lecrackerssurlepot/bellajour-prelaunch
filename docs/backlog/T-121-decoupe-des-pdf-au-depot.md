@@ -89,3 +89,40 @@ créer les fichiers en pages simples et d'ajouter le dos aux bonnes mesures ».*
 - Points 6 et 7 (résolution des photos) : pas commencés.
 Reste : le dépôt à l'œil sur la vraie fiche de Merisa, avec les deux exports Canva bruts.
 
+**18 et 19/09/2026, PR #182, #183, #185, #186 (fusionnées, EN PROD).**
+- #182 : lien « Voir le PDF préparé » sous chaque cadre (URL de lecture signée une heure).
+- #183 : l'intérieur de couverture (page 2 du gabarit) laisse le dos et 3 mm de chaque côté vierges.
+- #185 : décision de Mathias (« je ne veux absolument pas que cela se reproduise ») : la réserve de
+  3 mm côté couture d'une page simple est le PROPRE bord de la page, étiré, jamais la page voisine.
+- #186 : la face s'arrête 0,4 mm avant le pli (les photos Canva débordent la coupe centrale de
+  0,2 mm et laissaient un filet sombre à 3 mm du bord) ; creux mesuré 140 → 5.
+- Fichiers finaux du 19/09 (coffre, 14:04 UTC) vérifiés : conformes, sans filet, identiques aux
+  builds de référence. Audit de géométrie complet : une seule remarque, page 36, fond perdu de
+  2,2 mm en bas.
+
+**21/09/2026 : le contrôle des bords, dans la fiche, au dépôt (Mathias, 19/09 : « l'atelier devrait
+nous donner l'info »).**
+- `src/lib/atelier/bords.ts` (pur, au harnais, 12 cas) : sur une page RENDUE en gris, pour chaque
+  bord, si une photo touche la coupe (pixels < 245 dans le millimètre intérieur) et jusqu'où elle
+  déborde dans le fond perdu, en s'arrêtant au PAPIER (≥ 254), pas au presque blanc d'une photo
+  claire ; un débord court ne compte que s'il tient sur 2 mm de bord d'un seul tenant ; la phrase
+  dit où (« vers la droite », « au milieu », « sur toute la largeur ») et sur combien de mm.
+  Seuil : 2,5 mm. Le « presque » (une image qui s'arrête entre 0,3 et 3 mm avant la coupe) est
+  signalé aussi.
+- `src/app/admin/atelier/[token]/rendreBords.ts` : pdf.js rend chaque page à 100 dpi sur un canvas
+  hors écran, dans le navigateur, sur les octets ENVOYÉS ; pdf.js et son worker sont copiés dans
+  `public/pdfjs/` et chargés à l'exécution (hors bundler). `PanneauAction.tsx` lance le contrôle
+  juste après le PUT, affiche « Contrôle des bords : page i sur n… » puis le résumé et les
+  remarques sous le cadre (`.ate-bords`).
+- Banc headless (Chrome, sur le build local, fichiers réels de Merisa) : couverture 2 pages en
+  0,5 s, intérieur 44 pages en 41,6 s. Résultat sur l'export du 19/09 15:21 : couverture sans
+  remarque ; intérieur 1 remarque (page 28, en bas, au milieu, débord de 0 à 1 mm sur 2,3 mm de
+  bord : le coin d'une photo un peu inclinée). La page 36 est corrigée dans cet export ; le coffre
+  ne l'a pas encore (dernier intérieur déposé : 19/09 14:05 UTC, export précédent).
+- Deux fausses pistes du 19/09 documentées dans le code : une photo claire (ciel à 247-251) prise
+  pour du papier avec un seul seuil à 245 (trois fausses alertes sur la couverture) ; l'onglet caché
+  du navigateur de test qui n'hydrate jamais la fiche en flux (ce n'était pas l'import de pdf.js).
+- La découpe qui échoue journalise désormais la cause en console (`[admin/impression] découpe
+  impossible`) : le banc a mis deux jours à voir un « fichier introuvable ».
+- Points 6 et 7 (résolution des photos) : toujours pas commencés.
+

@@ -187,6 +187,12 @@ qui le montre. Le texte des mails est versionné dans `scripts/mails-atelier.mjs
   ⚠️ Cloudprinter attend des pages SIMPLES dans l'ordre de lecture (gabarit `book` = une page) et
   `total_pages` = le compte du fichier : un export en doubles pages est faux même s'il « se voit »
   bien. `envoyer_impression` relit chaque PDF du coffre (`controlePdf.ts`) et REFUSE un format faux.
+  **`bords.ts` (pur, 21/09) mesure le fond perdu de chaque page rendue** : « touche la coupe » se
+  juge à 245 (visible), « jusqu'où ça déborde » s'arrête au PAPIER (≥ 254) : un ciel clair à 248 est
+  de la photo, pas du blanc (trois fausses alertes sur la couverture de Merisa avec un seul seuil).
+  Un débord court ne compte que sur 2 mm de bord d'un seul tenant (un reflet cramé n'est pas une
+  photo qui s'arrête). Le rendu est dans `src/app/admin/atelier/[token]/rendreBords.ts` (pdf.js
+  servi depuis `public/pdfjs/`, jamais empaqueté), le module pur ne voit que des pixels gris.
 - **Le dos se CALCULE** (`dosMmPourPages`), grammage et bulk déduits de `PAPIER_INTERIEUR` :
   changer le papier change la géométrie, et le harnais tombe au lieu de se taire. `souvenir.ts`,
   lui, continue de MESURER le dos sur la feuille déposée — juger et découper sont deux gestes.

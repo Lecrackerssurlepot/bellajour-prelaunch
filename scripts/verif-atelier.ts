@@ -32,6 +32,7 @@ import {
 } from "@/lib/atelier/programme";
 import { prefixeCoffre, verdictSuppression } from "@/lib/atelier/archive";
 import { natureDe, planInterieur, planCouverture, resumeInterieur, resumeCouverture, type PageLue } from "@/lib/atelier/decoupe";
+import { verdictBord, auditerBords, resumeBords, PROFONDEUR_MIN_MM, type PageGrise } from "@/lib/atelier/bords";
 import {
   CODES_RELANCE,
   DELAI_MIN_RELANCE_MS,
@@ -4414,6 +4415,85 @@ ok("trois pages : refuse", !planCouverture([dbl, dbl, dbl], 44).ok);
 ok("une pagination sans dos carre (20 p., agrafe archive) : refuse", !planCouverture([dbl], 20).ok);
 ok("le dos suit la pagination : 60 pages donnent un dos de 4,12 et une feuille de 430,12",
    (() => { const c = planCouverture([dbl], 60); return c.ok && !c.inchange && c.dos === 4.12 && c.largeur === 430.12; })());
+
+/* ══════════════ T-121 : LE CONTROLE DES BORDS ══════════════
+   Des pages inventees a 10 px/mm : 216 x 303 mm → 2160 x 3030 px. On y pose
+   des rectangles sombres et on lit ce que la regle en dit. */
+titre("T-121 : le controle des bords d'une page d'impression");
+{
+  const K = 10; const Wp = 216 * K; const Hp = 303 * K;
+  const pageBlanche = (): PageGrise => ({ gris: new Uint8Array(Wp * Hp).fill(255), largeur: Wp, hauteur: Hp, pxParMm: K });
+  /* Un rectangle sombre, en mm depuis le coin haut-gauche de la PAGE (fond perdu compris). */
+  const peindre = (p: PageGrise, x0: number, y0: number, x1: number, y1: number) => {
+    for (let y = Math.round(y0 * K); y < Math.round(y1 * K); y++)
+      for (let x = Math.round(x0 * K); x < Math.round(x1 * K); x++) p.gris[y * Wp + x] = 60;
+  };
+  const vide = pageBlanche();
+  ok("page blanche : aucun bord touche, aucune remarque",
+     auditerBords(vide, 1).remarques.length === 0 && !verdictBord(vide, "haut").touche);
+  /* Une photo pleine page qui deborde de 3 mm partout : la coupe est a 3 mm du bord. */
+  const pleine = pageBlanche(); peindre(pleine, 0, 0, 216, 303);
+  const vp = verdictBord(pleine, "gauche");
+  ok("photo pleine page avec fond perdu complet : touche, profondeur 3 mm, rien a dire",
+     vp.touche && vp.profondeurMm !== null && Math.abs(vp.profondeurMm - 3) < 0.15 && auditerBords(pleine, 1).remarques.length === 0);
+  /* La page 36 de Merisa : la photo touche la coupe en bas mais ne deborde que de 2,2 mm. */
+  const p36 = pageBlanche(); peindre(p36, 0, 0, 216, 300 + 2.2);
+  const vb = verdictBord(p36, "bas");
+  ok("fond perdu court en bas (2,2 mm) : mesure, et remarque avec la cote",
+     vb.touche && vb.profondeurMm !== null && Math.abs(vb.profondeurMm - 2.2) < 0.15
+       && vb.courtVers === "partout"
+       && auditerBords(p36, 36).remarques.some((r) => /Page 36, en bas, sur toute la largeur : /.test(r) && /2,2 mm \(il en faut 3\)/.test(r)));
+  ok("le seuil est 2,5 mm", PROFONDEUR_MIN_MM === 2.5);
+  /* Une photo qui s'arrete 1,5 mm AVANT la coupe, a droite : le « presque ». */
+  const presque = pageBlanche(); peindre(presque, 20, 20, 213 - 1.5, 280);
+  const vd = verdictBord(presque, "droite");
+  ok("photo a 1,5 mm de la coupe sans la toucher : « presque », pas « touche »",
+     !vd.touche && vd.presque && auditerBords(presque, 7).remarques.some((r) => /Page 7, à droite/.test(r) && /sans la toucher/.test(r)));
+  /* Une photo bien a l'interieur (marge de 15 mm) : rien. */
+  const marge = pageBlanche(); peindre(marge, 18, 18, 198, 285);
+  ok("photo avec une marge de 15 mm : aucun bord touche, aucun presque, aucune remarque",
+     auditerBords(marge, 2).remarques.length === 0 && !verdictBord(marge, "gauche").presque);
+  /* Une poussiere : un point sombre a la coupe ne fait pas un bord touche. */
+  const poussiere = pageBlanche(); peindre(poussiere, 100, 0, 100.5, 6);
+  ok("une poussiere de 0,5 mm a la coupe : pas un bord touche", !verdictBord(poussiere, "haut").touche);
+  /* Une photo qui deborde SEULEMENT d'1 mm en haut, sur la moitie de la largeur. */
+  const moitie = pageBlanche(); peindre(moitie, 0, 2, 108, 150);
+  const vh = verdictBord(moitie, "haut");
+  ok("fond perdu d'1 mm sur la moitie du bord : touche a 50 %, profondeur 1 mm",
+     vh.touche && Math.abs(vh.partTouchee - 0.5) < 0.01 && vh.profondeurMm !== null && Math.abs(vh.profondeurMm - 1) < 0.15);
+  ok("le resume dit le nombre de pages et de remarques",
+     resumeBords(44, []) === "Bords contrôlés sur 44 pages : chaque photo au bord déborde bien dans le fond perdu."
+       && resumeBords(44, ["a"]) === "Bords contrôlés sur 44 pages : 1 remarque.");
+  /* La couverture de Merisa (19/09) : un ciel clair, 243 a la coupe et 247-251
+     dans le fond perdu. Ce n'est pas du papier : la photo deborde bien. */
+  const claire = pageBlanche();
+  for (let y = 0; y < Hp; y++) for (let x = 0; x < Wp; x++) claire.gris[y * Wp + x] = x < 30 ? 249 : 243;
+  const vc = verdictBord(claire, "gauche");
+  ok("photo claire (249 dans le fond perdu, 243 a la coupe) : touche, deborde de 3 mm, aucune remarque",
+     vc.touche && vc.profondeurMm !== null && Math.abs(vc.profondeurMm - 3) < 0.15 && auditerBords(claire, 1).remarques.length === 0);
+  /* Un reflet crame : une colonne d'1 mm de blanc pur dans le fond perdu d'une
+     photo pleine page. Une colonne isolee n'est pas une photo qui s'arrete. */
+  const reflet = pageBlanche(); peindre(reflet, 0, 0, 216, 303);
+  for (let y = 0; y < 2 * K; y++) for (let x = 100 * K; x < 101 * K; x++) reflet.gris[y * Wp + x] = 255;
+  const vr = verdictBord(reflet, "haut");
+  ok("reflet crame d'1 mm de large dans le fond perdu : ignore, profondeur 3 mm",
+     vr.touche && vr.profondeurMm !== null && Math.abs(vr.profondeurMm - 3) < 0.15);
+  /* Mais une encoche blanche de 3 mm de large qui laisse 1 mm de debord :
+     elle tient sur plus de 2 mm, elle compte. */
+  const encoche = pageBlanche(); peindre(encoche, 0, 0, 216, 303);
+  for (let y = 0; y < 2 * K; y++) for (let x = 100 * K; x < 103 * K; x++) encoche.gris[y * Wp + x] = 255;
+  const ve = verdictBord(encoche, "haut");
+  ok("encoche blanche de 3 mm de large au milieu : profondeur 1 mm, la remarque dit ou et sur combien",
+     ve.touche && ve.profondeurMm !== null && Math.abs(ve.profondeurMm - 1) < 0.15 && ve.courtVers === "milieu" && ve.courtSurMm === 3
+       && auditerBords(encoche, 3).remarques.some((r) => /Page 3, en haut, au milieu : /.test(r) && /1 mm sur 3 mm de bord/.test(r)));
+  /* Le coin bas droit de la page 28 de Merisa : une photo un peu inclinee dont le
+     coin ne couvre pas le fond perdu, sur 3 mm pres du bord droit. */
+  const coin = pageBlanche(); peindre(coin, 100, 0, 216, 303);
+  for (let y = 300 * K; y < Hp; y++) for (let x = 210 * K; x < 216 * K; x++) coin.gris[y * Wp + x] = 255;
+  const vk = verdictBord(coin, "bas");
+  ok("coin non couvert vers la droite : « vers la droite », 0 mm sur 6 mm de bord",
+     vk.courtVers === "fin" && vk.courtSurMm === 6 && auditerBords(coin, 28).remarques.some((r) => /Page 28, en bas, vers la droite : .*0 mm sur 6 mm de bord/.test(r)));
+}
 
 /* On repose le globe comme on l'a trouve : la suite du harnais ne doit pas
    heriter d'un `localStorage` qui jette. */
