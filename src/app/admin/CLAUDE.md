@@ -33,6 +33,13 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
   ⚠️ Elle navigue par LÉGENDE : deux légendes identiques rendent un visuel inatteignable.
 - **La grille sert des vignettes** (`urlVignette ?? url`), mais le cadre, la loupe et le
   téléchargement gardent l'ORIGINAL. Les dossiers anciens et les HEIC n'ont pas de vignette.
+- **La grille sait ce que les photos savent (T-123, 21/09/2026)** : `lirePhotos()` tente trois
+  paliers de colonnes (métadonnées 20260921 → vignette 20260830 → rien), les doublons se
+  calculent dans `donnees.ts` sur le dossier entier (`groupesDeDoublons`, module pur), et la
+  fiche affiche une phrase de résumé, un bouton « Par date » (état d'ÉCRAN : l'ordre du dépôt
+  reste celui des noms du lot, T-114) et une remarque par vignette (doublon à demi éteint,
+  capture d'écran, très sombre, très claire). **Ce sont des remarques, jamais des exclusions.**
+  Le bouton « Lire les photos » n'apparaît que s'il reste quelque chose à lire ; en démo, jamais.
 - **« Télécharger le lot »** ouvre le sélecteur de dossier AVANT tout `await` : Chrome exige une
   activation utilisateur fraîche. Dépend du CORS du bucket R2 en GET.
 - **Le tag rouge « ne reçoit pas »** est le seul marqueur qui dise qu'un dossier d'apparence

@@ -189,7 +189,40 @@ import {
   EVT_SOUVENIR_ECHOUE,
   FENETRE_VERROU_SOUVENIR_MS,
 } from "@/lib/atelier/souvenir";
-import { composerBrief, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
+import { composerBrief, blocChronologie, NOM_BRIEF, type MatiereBrief } from "@/lib/atelier/brief";
+import {
+  dimensionsDroites,
+  estCaptureEcran,
+  formatDepuisOctets,
+  jourEnClair,
+  nommerAppareil,
+  normaliserDateExif,
+  periodeEnClair,
+  phraseResume,
+  remarquesDe,
+  resumeChronologie,
+  trierChronologie,
+  type MetaPhoto,
+} from "@/lib/atelier/metadonnees";
+import {
+  SEUIL_DOUBLON,
+  TAILLE_GROUPE_MAX,
+  distanceHamming,
+  doublonsParPhoto,
+  empreinteDepuisGris,
+  groupesDeDoublons,
+} from "@/lib/atelier/empreinte";
+import {
+  MIN_PHOTOS_LIEU,
+  RAYON_LIEU_M,
+  celluleGeo,
+  dbscan,
+  distanceMetres,
+  lieuEnClair,
+  planGeocodage,
+  resumeLieux,
+} from "@/lib/atelier/lieux";
+import { lieuDepuisReponse } from "@/lib/atelier/geocodage";
 import {
   adresseCloudprinter,
   telephoneE164,
@@ -1064,6 +1097,8 @@ const MATIERE: MatiereBrief = {
   ],
 };
 const BRIEF = composerBrief(MATIERE, new Date("2026-08-25T08:00:00.000Z"));
+ok("sans photos lues, pas de bloc chronologie (un dossier d'avant le 21/09)",
+   !BRIEF.includes("LA CHRONOLOGIE"));
 ok("le brief porte l'histoire", BRIEF.includes("Triana"));
 ok("le brief porte les DEUX notes", BRIEF.includes("cadres blancs") && BRIEF.includes("disparaitre"));
 ok("le carnet est chronologique, la plus ancienne d'abord",
@@ -1104,6 +1139,203 @@ const BRIEF_COUVERTURE = composerBrief(
   new Date("2026-08-25T08:00:00.000Z"),
 );
 ok("le brief porte le sous-titre de couverture", BRIEF_COUVERTURE.includes("Seville, juin 2026"));
+
+/* ═══════════ CE QUE LA PHOTO SAIT D'ELLE-MEME (T-123) ═══════════ */
+
+titre("— la date EXIF, telle que l'appareil l'a ecrite —");
+const AUJOURDHUI = new Date("2026-09-21T12:00:00.000Z");
+ok("« 2024:08:08 19:01:22 » devient une heure locale sans fuseau",
+   normaliserDateExif("2024:08:08 19:01:22", AUJOURDHUI) === "2024-08-08T19:01:22");
+ok("la forme ISO passe aussi (exifr peut la rendre)",
+   normaliserDateExif("2024-08-08T19:01:22", AUJOURDHUI) === "2024-08-08T19:01:22");
+ok("une Date JS est relue en heure locale, pas en UTC",
+   normaliserDateExif(new Date(2024, 7, 8, 19, 1, 22), AUJOURDHUI) === "2024-08-08T19:01:22");
+ok("« 0000:00:00 » (appareil jamais regle) vaut null", normaliserDateExif("0000:00:00 00:00:00", AUJOURDHUI) === null);
+ok("une date avant 1990 vaut null (horloge a zero)", normaliserDateExif("1980:01:01 00:00:00", AUJOURDHUI) === null);
+ok("une date dans le futur vaut null", normaliserDateExif("2031:01:01 00:00:00", AUJOURDHUI) === null);
+ok("demain reste accepte (fuseau de l'appareil en avance)", normaliserDateExif("2026:09:22 08:00:00", AUJOURDHUI) !== null);
+ok("n'importe quoi vaut null", normaliserDateExif(42, AUJOURDHUI) === null && normaliserDateExif("hier", AUJOURDHUI) === null);
+ok("le jour en clair : « 8 aout 2024 », « 1er mai »",
+   jourEnClair("2024-08-08") === "8 août 2024" && jourEnClair("2025-05-01", false) === "1er mai");
+ok("la periode : meme mois, mois differents, meme jour",
+   periodeEnClair("2024-08-08", "2024-08-15") === "du 8 au 15 août 2024"
+   && periodeEnClair("2024-07-28", "2024-08-03") === "du 28 juillet au 3 août 2024"
+   && periodeEnClair("2024-08-08", "2024-08-08") === "le 8 août 2024");
+ok("la periode a cheval sur deux annees nomme les deux",
+   periodeEnClair("2024-12-30", "2025-01-02") === "du 30 décembre 2024 au 2 janvier 2025");
+
+titre("— l'appareil, les dimensions, le format —");
+ok("« Apple » + « iPhone 13 » = « Apple iPhone 13 »", nommerAppareil("Apple", "iPhone 13") === "Apple iPhone 13");
+ok("le modele qui repete la marque n'est pas double", nommerAppareil("Canon", "Canon EOS R6") === "Canon EOS R6");
+ok("rien = null, une moitie = la moitie",
+   nommerAppareil(null, undefined) === null && nommerAppareil("", "X100V") === "X100V" && nommerAppareil("Sony ", "") === "Sony");
+ok("orientation 6 (portrait tenu droit) echange largeur et hauteur",
+   JSON.stringify(dimensionsDroites(4032, 3024, 6)) === JSON.stringify({ largeur: 3024, hauteur: 4032 }));
+ok("orientation 1 ou absente ne change rien",
+   dimensionsDroites(4032, 3024, 1).largeur === 4032 && dimensionsDroites(4032, 3024, null).largeur === 4032);
+ok("sans dimensions, rien a echanger", dimensionsDroites(null, null, 6).largeur === null);
+ok("le format se lit dans les octets, jamais dans l'extension",
+   formatDepuisOctets(new Uint8Array([0xff, 0xd8, 0xff, 0xe1])) === "jpeg"
+   && formatDepuisOctets(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) === "png"
+   && formatDepuisOctets(new Uint8Array([0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63])) === "heic"
+   && formatDepuisOctets(new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50])) === "webp"
+   && formatDepuisOctets(new Uint8Array([1, 2, 3])) === "inconnu");
+
+titre("— la capture d'ecran —");
+ok("1170 x 2532 sans appareil : un iPhone a fait une capture",
+   estCaptureEcran({ largeur: 1170, hauteur: 2532, appareil: null }));
+ok("la meme taille en paysage aussi", estCaptureEcran({ largeur: 2532, hauteur: 1170, appareil: null }));
+ok("avec un appareil nomme, ce n'est pas une capture",
+   !estCaptureEcran({ largeur: 1170, hauteur: 2532, appareil: "Apple iPhone 13" }));
+ok("4032 x 3024 sans appareil : une vraie photo exportee",
+   !estCaptureEcran({ largeur: 4032, hauteur: 3024, appareil: null }));
+ok("le logiciel qui se nomme « Screenshot » tranche seul",
+   estCaptureEcran({ largeur: 900, hauteur: 900, appareil: "Apple iPhone 13", logiciel: "Screenshot" }));
+
+titre("— le tri, le resume, les remarques —");
+const meta = (id: string, priseLe: string | null, extra: Partial<MetaPhoto> = {}): MetaPhoto => ({
+  id, nom: `${id}.jpg`, largeur: 4032, hauteur: 3024, priseLe, appareil: "Apple iPhone 13",
+  gpsLat: null, gpsLon: null, empreinte: null, luminance: 0.4, lieuVille: null, lieuPays: null,
+  metadonneesLe: "2026-09-21T10:00:00.000Z", ...extra,
+});
+const desordre = [meta("c", "2024-08-10T10:00:00"), meta("x", null), meta("a", "2024-08-08T09:00:00"), meta("b", "2024-08-08T09:00:00"), meta("y", null)];
+ok("les datees d'abord, par date, les autres apres dans l'ordre recu",
+   trierChronologie(desordre).map((p) => p.id).join("") === "abcxy");
+ok("deux photos a la meme seconde gardent l'ordre du depot (tri stable)",
+   trierChronologie([meta("b", "2024-08-08T09:00:00"), meta("a", "2024-08-08T09:00:00")])[0].id === "b");
+const chrono = resumeChronologie(desordre);
+ok("le resume compte les datees, les jours, le premier et le dernier",
+   chrono.datees === 3 && chrono.sansDate === 2 && chrono.jours === 3 && chrono.premier === "2024-08-08" && chrono.dernier === "2024-08-10"
+   && chrono.parJour.length === 2 && chrono.parJour[0].n === 2);
+ok("aucune date : zero jour, rien a dire",
+   resumeChronologie([meta("x", null)]).jours === 0 && resumeChronologie([meta("x", null)]).premier === null);
+ok("les remarques : doublon, capture, sombre, claire, sans date",
+   remarquesDe(meta("d", "2024-08-08T09:00:00"), "a").join() === "doublon"
+   && remarquesDe(meta("e", null, { largeur: 1170, hauteur: 2532, appareil: null }), null).join() === "capture"
+   && remarquesDe(meta("f", "2024-08-08T09:00:00", { luminance: 0.02 }), null).join() === "sombre"
+   && remarquesDe(meta("g", "2024-08-08T09:00:00", { luminance: 0.99 }), null).join() === "claire"
+   && remarquesDe(meta("h", null), null).join() === "sans_date");
+ok("une photo jamais lue n'a AUCUNE remarque (on ne sait pas, on ne dit rien)",
+   remarquesDe(meta("i", null, { metadonneesLe: null, luminance: null }), null).length === 0);
+const phrase = phraseResume(desordre, 1, [{ ville: "Lisbonne", pays: "Portugal" }, { ville: null, pays: "Espagne" }]);
+ok("la phrase de la carte : periode, lieux, doublons, sans date",
+   phrase.startsWith("Du 8 au 10 août 2024 (3 jours)") && phrase.includes("Lisbonne, Espagne") && phrase.includes("1 doublon") && phrase.includes("2 sans date"));
+ok("rien de lu, phrase vide", phraseResume([meta("x", null, { metadonneesLe: null })], 0, []) === "");
+ok("la phrase compte ce qui reste a lire",
+   phraseResume([meta("a", "2024-08-08T09:00:00"), meta("x", null, { metadonneesLe: null })], 0, []).includes("1 pas encore lue"));
+
+titre("— l'empreinte et les doublons —");
+const gris = (f: (x: number, y: number) => number) => {
+  const g = new Uint8Array(32 * 32);
+  for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) g[y * 32 + x] = Math.max(0, Math.min(255, Math.round(f(x, y))));
+  return g;
+};
+/* Une « scene » synthetique assez riche pour que la DCT ait quelque chose a
+   dire : un degrade pur est degenere (la moitie du bloc vaut zero, et le
+   moindre bruit bascule des bits autour de la mediane). */
+const scene = (x: number, y: number) => 128 + 90 * Math.sin(x / 5) * Math.cos(y / 7) + 30 * Math.sin((x + y) / 3);
+const bruit = (x: number, y: number) => ((x * 7 + y * 3) % 5) - 2;
+const empreinteScene = empreinteDepuisGris(gris(scene));
+ok("seize hexa minuscules, et la meme image donne la meme empreinte",
+   /^[0-9a-f]{16}$/.test(empreinteScene) && empreinteDepuisGris(gris(scene)) === empreinteScene
+   && empreinteDepuisGris(gris(() => 128)) === empreinteDepuisGris(gris(() => 128)));
+ok("la meme scene bruitee (re-encodage) : distance ≤ seuil",
+   distanceHamming(empreinteScene, empreinteDepuisGris(gris((x, y) => scene(x, y) + bruit(x, y)))) <= SEUIL_DOUBLON);
+ok("la meme scene re-exposee (contraste, luminosite) : distance ≤ seuil",
+   distanceHamming(empreinteScene, empreinteDepuisGris(gris((x, y) => scene(x, y) * 0.8 + 20))) <= SEUIL_DOUBLON);
+const damier = gris((x, y) => ((x >> 3) + (y >> 3)) % 2 ? 230 : 20);
+ok("un damier, un degrade, la scene en miroir : sans rapport (distance ≥ 18)",
+   distanceHamming(empreinteScene, empreinteDepuisGris(damier)) >= 18
+   && distanceHamming(empreinteScene, empreinteDepuisGris(gris((x) => x * 8))) >= 18
+   && distanceHamming(empreinteScene, empreinteDepuisGris(gris((x, y) => scene(31 - x, y)))) >= 18);
+ok("la distance de Hamming compte les bits", distanceHamming("0000000000000000", "ffffffffffffffff") === 64
+   && distanceHamming("00000000000000ff", "0000000000000000") === 8);
+let hammingRefuse = false;
+try { distanceHamming("abc", "0000000000000000"); } catch { hammingRefuse = true; }
+ok("une empreinte tronquee est REFUSEE, pas comparee de travers", hammingRefuse);
+ok("l'empreinte ne prend que 1024 octets", (() => { try { empreinteDepuisGris(new Uint8Array(10)); return false; } catch { return true; } })());
+const lotEmpreintes = [
+  { id: "p1", empreinte: "0f0f0f0f0f0f0f0f", priseLe: "2024-08-08T10:00:00", ordre: 1 },
+  { id: "p2", empreinte: "0f0f0f0f0f0f0f0e", priseLe: "2024-08-08T09:00:00", ordre: 2 },
+  { id: "p3", empreinte: "f0f0f0f0f0f0f0f0", priseLe: "2024-08-09T10:00:00", ordre: 3 },
+  { id: "p4", empreinte: null, priseLe: null, ordre: 4 },
+];
+const groupes = groupesDeDoublons(lotEmpreintes);
+ok("p1 et p2 sont la meme image ; la plus ANCIENNE (p2) est l'originale, p1 le doublon",
+   groupes.length === 1 && groupes[0].originale === "p2" && groupes[0].doublons.join() === "p1");
+ok("la table doublon → originale ne nomme que les copies",
+   doublonsParPhoto(groupes).get("p1") === "p2" && !doublonsParPhoto(groupes).has("p2") && !doublonsParPhoto(groupes).has("p3"));
+ok("sans date, c'est l'ordre du depot qui designe l'originale",
+   groupesDeDoublons([{ id: "b", empreinte: "1111111111111111", priseLe: null, ordre: 9 }, { id: "a", empreinte: "1111111111111111", priseLe: null, ordre: 2 }])[0].originale === "a");
+ok(`un groupe de plus de ${TAILLE_GROUPE_MAX} est DISSOUS : on ne marque jamais en masse`,
+   groupesDeDoublons(Array.from({ length: TAILLE_GROUPE_MAX + 1 }, (_, i) => ({ id: `m${i}`, empreinte: "3333333333333333", priseLe: null, ordre: i }))).length === 0
+   && groupesDeDoublons(Array.from({ length: TAILLE_GROUPE_MAX }, (_, i) => ({ id: `m${i}`, empreinte: "3333333333333333", priseLe: null, ordre: i }))).length === 1);
+
+titre("— les lieux : un appel par endroit, jamais par photo —");
+const LISBONNE = { lat: 38.7223, lon: -9.1393 };
+ok("un millieme de degre de latitude fait ~111 m",
+   Math.abs(distanceMetres(LISBONNE, { lat: LISBONNE.lat + 0.001, lon: LISBONNE.lon }) - 111) < 2);
+const pres = (i: number) => ({ lat: LISBONNE.lat + i * 0.0002, lon: LISBONNE.lon, charge: `l${i}` });
+const points = [pres(0), pres(1), pres(2), pres(3), { lat: 38.7973, lon: -9.3904, charge: "sintra" }];
+const dense = dbscan(points, RAYON_LIEU_M, MIN_PHOTOS_LIEU);
+ok("quatre photos a moins de 150 m forment un lieu, la cinquieme a 25 km est isolee",
+   dense.groupes.length === 1 && dense.groupes[0].membres.length === 4 && dense.isoles.length === 1 && dense.isoles[0].charge === "sintra");
+ok("le centre du lieu est la moyenne des points",
+   Math.abs(dense.groupes[0].centre.lat - (LISBONNE.lat + 0.0003)) < 1e-9);
+ok("la cellule arrondit a deux decimales (≈ 1,1 km)", celluleGeo(LISBONNE) === "38.72:-9.14");
+const planLieux = planGeocodage([
+  { id: "a", gpsLat: LISBONNE.lat, gpsLon: LISBONNE.lon },
+  { id: "b", gpsLat: LISBONNE.lat + 0.0002, gpsLon: LISBONNE.lon },
+  { id: "c", gpsLat: LISBONNE.lat + 0.0004, gpsLon: LISBONNE.lon },
+  { id: "d", gpsLat: 38.7973, gpsLon: -9.3904 },
+  { id: "e", gpsLat: 38.7975, gpsLon: -9.3901 },
+  { id: "f", gpsLat: null, gpsLon: null },
+  { id: "g", gpsLat: 0, gpsLon: 0 },
+  { id: "h", gpsLat: 95, gpsLon: 10 },
+]);
+ok("huit photos, DEUX appels : le lieu dense, et la cellule des deux isolees",
+   planLieux.length === 2 && planLieux.some((d) => d.ids.join() === "a,b,c") && planLieux.some((d) => d.ids.sort().join() === "d,e"));
+ok("sans GPS, (0, 0) et hors bornes ne demandent rien",
+   !planLieux.flatMap((d) => d.ids).some((id) => ["f", "g", "h"].includes(id)));
+ok("Geoapify : ville + pays, code pays en majuscules",
+   JSON.stringify(lieuDepuisReponse({ features: [{ properties: { city: "Lisbonne", country: "Portugal", country_code: "pt" } }] }))
+   === JSON.stringify({ ville: "Lisbonne", pays: "Portugal", codePays: "PT" }));
+ok("sans ville, le comte fait l'affaire ; sans rien, null",
+   lieuDepuisReponse({ features: [{ properties: { county: "Vila Real", country: "Portugal" } }] })?.ville === "Vila Real"
+   && lieuDepuisReponse({ features: [] }) === null && lieuDepuisReponse(null) === null);
+const etapes = resumeLieux([
+  { priseLe: "2024-08-10T10:00:00", lieuVille: "Sintra", lieuPays: "Portugal" },
+  { priseLe: "2024-08-08T10:00:00", lieuVille: "Lisbonne", lieuPays: "Portugal" },
+  { priseLe: "2024-08-12T10:00:00", lieuVille: "Lisbonne", lieuPays: "Portugal" },
+  { priseLe: null, lieuVille: "Porto", lieuPays: "Portugal" },
+  { priseLe: "2024-08-09T10:00:00", lieuVille: null, lieuPays: null },
+]);
+ok("les lieux dans l'ordre d'arrivee, une ville revisitee n'apparait qu'une fois, le sans-date en dernier",
+   etapes.map((e) => e.ville).join(",") === "Lisbonne,Sintra,Porto" && etapes[0].n === 2 && etapes[0].premier === "2024-08-08" && etapes[0].dernier === "2024-08-12");
+ok("« Lisbonne, Portugal », et « Portugal » seul si la ville manque",
+   lieuEnClair({ ville: "Lisbonne", pays: "Portugal", codePays: "PT" }) === "Lisbonne, Portugal" && lieuEnClair({ ville: null, pays: "Portugal", codePays: null }) === "Portugal");
+
+titre("— le bloc du brief —");
+const photosBrief = [
+  { ...meta("p1", "2024-08-08T10:00:00", { lieuVille: "Lisbonne", lieuPays: "Portugal" }), doublonDe: null },
+  { ...meta("p2", "2024-08-08T11:00:00", { lieuVille: "Lisbonne", lieuPays: "Portugal" }), doublonDe: "p1" },
+  { ...meta("p3", "2024-08-10T11:00:00", { lieuVille: "Sintra", lieuPays: "Portugal" }), doublonDe: null },
+  { ...meta("p4", null, { largeur: 1170, hauteur: 2532, appareil: null }), doublonDe: null },
+];
+const BLOC = blocChronologie(photosBrief);
+ok("le bloc dit la periode, les photos datees, les lieux dans l'ordre, le doublon et la capture",
+   BLOC.startsWith("Du 8 au 10 août 2024 (3 jours). 3 photos datées sur 4.")
+   && BLOC.includes("  Lisbonne, Portugal : 2 photos, le 8 août")
+   && BLOC.indexOf("Lisbonne") < BLOC.indexOf("Sintra")
+   && BLOC.includes("p2.jpg = copie de p1.jpg")
+   && BLOC.includes("Captures d'écran : p4.jpg"));
+ok("le bloc ne ressuscite pas le tiret cadratin", !/[–—]/.test(BLOC));
+ok("rien de lu, pas de bloc", blocChronologie([{ ...meta("z", null, { metadonneesLe: null }), doublonDe: null }]) === "");
+const BRIEF_PHOTOS = composerBrief({ ...MATIERE, photos: photosBrief }, new Date("2026-08-25T08:00:00.000Z"));
+ok("le brief porte le bloc, entre l'histoire et le carnet",
+   BRIEF_PHOTOS.includes("LA CHRONOLOGIE ET LES LIEUX")
+   && BRIEF_PHOTOS.indexOf("SON HISTOIRE") < BRIEF_PHOTOS.indexOf("LA CHRONOLOGIE")
+   && BRIEF_PHOTOS.indexOf("LA CHRONOLOGIE") < BRIEF_PHOTOS.indexOf("LE CARNET"));
 ok("le brief porte le mot de quatrieme", BRIEF_COUVERTURE.includes("A la bande."));
 ok("le bloc des mots de couverture est nomme", BRIEF_COUVERTURE.includes("LES MOTS DE COUVERTURE"));
 ok("aucune ligne au dela de 80 colonnes sauf les liens",

@@ -2465,6 +2465,7 @@
   gap: var(--bj-sp-2);
 }
 .ate-photo {
+  position: relative;
   aspect-ratio: 1;
   overflow: hidden;
   border-radius: var(--bj-r-sm);
@@ -2477,6 +2478,43 @@
   height: 100%;
   object-fit: cover;
   display: block;
+}
+/* T-123 — ce que la photo sait d'elle-même, sur la vignette. La remarque
+   (doublon, capture, très sombre, très claire) est un voile sombre en bas ;
+   le jour n'apparaît qu'en tri « Par date », en haut. Un doublon s'éteint
+   à moitié : on le voit, on ne le confond pas avec l'originale. */
+.ate-photo-remarque,
+.ate-photo-jour {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: 2px 5px;
+  font-family: var(--bj-font-ui);
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  color: var(--bj-cream);
+  background: color-mix(in srgb, var(--bj-charcoal) 62%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ate-photo-remarque {
+  bottom: 0;
+}
+.ate-photo-jour {
+  top: 0;
+}
+.ate-photo--doublon img {
+  opacity: 0.55;
+}
+.ate-photos-resume {
+  margin-bottom: var(--bj-sp-3);
+}
+/* Le bouton « Par date » enfoncé : même accent que le survol des outils. */
+.ate-carte-outils .adm-btn[aria-pressed="true"] {
+  border-color: var(--bj-action-border);
+  color: var(--bj-action);
 }
 .ate-photos-plus {
   margin-top: var(--bj-sp-3);

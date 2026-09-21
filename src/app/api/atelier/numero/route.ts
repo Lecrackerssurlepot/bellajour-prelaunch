@@ -9,9 +9,10 @@
  * aucune table de la prévente n'est lue ni écrite ici.
  */
 
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { canonicalizeEmail } from "@/lib/email";
+import { enrichirDossier } from "@/lib/atelier/enrichissement";
 import { generateNumeroToken, isValidNumeroToken } from "@/lib/atelier/token";
 import { logEvenement } from "@/lib/atelier/evenements";
 import { lireNumerosMail, envoyerMailAtelier, annulerMailProgramme, type NumeroPourMail } from "@/lib/atelier/mails";
@@ -759,6 +760,14 @@ export async function PATCH(request: Request) {
           nb_photos: numero.nb_photos,
         });
       }
+    }
+
+    /* T-123 — LE DÉPÔT EST TERMINÉ : on lit ce qui manque encore (un lot
+       dont la tâche de fond a raté) puis les LIEUX, une requête Geoapify
+       par groupe de photos. Après la réponse, best-effort strict : rien de
+       ce qui précède n'en dépend, et le module ne throw jamais. */
+    if (maj.consent_photos === true) {
+      after(() => enrichirDossier(supabase, numero.id, { geocoder: true }));
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });

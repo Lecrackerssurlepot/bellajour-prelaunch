@@ -47,6 +47,19 @@
         ".mails-apercus"
       ],
       "port": 3901
+    },
+    {
+      "name": "Next.js dev 3007",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3007"
+      ],
+      "port": 3007,
+      "autoPort": false
     }
   ]
 }

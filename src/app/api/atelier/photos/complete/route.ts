@@ -11,7 +11,7 @@
  * rien à renvoyer.
  */
 
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { isValidNumeroToken } from "@/lib/atelier/token";
 import {
@@ -20,8 +20,13 @@ import {
 } from "@/lib/atelier/r2";
 import { logEvenement } from "@/lib/atelier/evenements";
 import { annulerMailProgramme } from "@/lib/atelier/mails";
+import { enrichirDossier } from "@/lib/atelier/enrichissement";
 
 export const runtime = "nodejs";
+/* T-123 : la lecture des métadonnées tourne APRÈS la réponse (`after()`),
+   dans la même fonction. Cinquante photos à quatre de front, c'est quelques
+   secondes ; la borne laisse de la marge sans jamais retenir la réponse. */
+export const maxDuration = 60;
 
 /* Piège nº20 : plafond de confirmation distinct de celui de déclaration.
    Piège nº12 : un refus de trop-plein sur la confirmation perd les photos au
@@ -223,6 +228,17 @@ export async function POST(request: Request) {
       if (nbPhotos === confirmees.length) {
         await annulerMailProgramme(supabase, numero.id, "M0", "photo_arrivee");
       }
+
+      /* T-123 — CE QUE LA PHOTO SAIT D'ELLE-MÊME, lu après la réponse.
+         Date, GPS, appareil, dimensions, empreinte : 512 Ko par photo
+         depuis le coffre, écrits dans `photos`. En tâche de fond (`after`),
+         donc jamais dans le temps de réponse du navigateur, et best-effort
+         strict : le module ne throw jamais, une lecture ratée ne reprend
+         rien à la photo confirmée. Les LIEUX attendent la fin du dépôt
+         (PATCH consent_photos) : un appel Geoapify par lot serait payé pour
+         des groupes qui changent à chaque lot. */
+      const ids = [...confirmees];
+      after(() => enrichirDossier(supabase, numero.id, { ids, geocoder: false }));
     }
 
     return NextResponse.json(

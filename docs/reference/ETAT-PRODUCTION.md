@@ -10,6 +10,25 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 21/09/2026 (soir) — les photos disent quand et où (T-123), SUR BRANCHE, deux choses attendent Mathias
+
+**Branche `feat/photos-metadonnees-lieux`, pas encore fusionnée.** La lecture des métadonnées
+(date, GPS, appareil, dimensions, empreinte, luminance) tourne en tâche de fond après chaque lot
+confirmé, et les lieux (Geoapify) au consentement. **Rien n'est en production** et rien ne
+peut l'être utilement tant que :
+1. la migration `supabase/migrations/20260921_atelier_photos_metadonnees.sql` n'est pas
+   appliquée par Mathias (13 colonnes nullables sur `photos` + un index partiel). Le code se
+   replie partout en attendant (lecture 42703, écriture PGRST204) : la fiche s'affiche sans
+   ces informations, la confirmation d'une photo n'échoue jamais pour elles ;
+2. `GEOAPIFY_API_KEY` n'est pas posée dans Vercel (Production ET Preview) et `.env.local`.
+   Sans elle, tout est lu sauf les lieux ; le bouton « Lire les photos » de la fiche les
+   rattrape dès qu'elle existe.
+Puis : `npx tsx --tsconfig tsconfig.json scripts/metadonnees-rattrapage.ts --essai` pour
+compter, sans `--essai` pour lire les dossiers existants (sortie R2 gratuite, quelques appels
+Geoapify par dossier sur un plan de 3 000 par jour).
+Sonde du 21/09 sur le coffre réel (lecture seule) : 56 JPEG datés et 52 géolocalisés sur 60,
+250 ms par photo sur les premiers 512 Ko.
+
 ## 21/09/2026 (matin) — PREMIÈRE COMMANDE CLOUDPRINTER RÉELLE, et la bascule en LIVE
 
 **Cloudprinter est EN LIVE depuis le 21/09 à 08:40 UTC.** Jusque-là, `CLOUDPRINTER_API_KEY` en

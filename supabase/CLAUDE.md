@@ -7,7 +7,7 @@ Chargé dès qu'on touche une migration ou le dossier supabase.
 |---|---|---|
 | `numeros` | le dossier d'une cliente, du questionnaire à la livraison | `token` unique = l'identité ; `etat` (9 valeurs) ; depuis 20260910 le prix GELÉ (`prix_centimes`, `livraison_centimes`, `livraison_niveau`, `pays_livraison`), depuis 20260916 le HT gelé `prix_ht_centimes` et `quantite` (1 à 10), depuis 20260911 `finition`, depuis 20260917 `origine` (chaud/froid, cockpit) ; `palier` est un bucket hérité, plus aucun prix n'en dépend, jamais de `drop` |
 | `waitlist` | inscrits, clients de la prévente, ambassadeurs | `email` unique, `ref_code` unique, `numero_fondateur` unique |
-| `photos` | une ligne par photo déposée | `r2_key` unique, `vignette_key` |
+| `photos` | une ligne par photo déposée | `r2_key` unique, `vignette_key` ; depuis 20260921 (T-123, **pas encore appliquée**) ce que la photo sait d'elle-même : `prise_le` (heure LOCALE sans fuseau, volontairement), `gps_lat/lon`, `appareil`, `largeur/hauteur`, `empreinte`, `luminance`, `lieu_ville/pays/code_pays`, et les deux marqueurs d'idempotence `metadonnees_le` / `lieu_le` |
 | `mails_envoyes` | **le verrou anti-doublon** | unique (`numero_id`, `code`) |
 | `pages_credits` | crédits de parrainage | `source` unique |
 | `evenements` | journal append-only du dossier | `type` + `payload` jsonb |
