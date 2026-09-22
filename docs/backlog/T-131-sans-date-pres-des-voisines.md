@@ -25,7 +25,7 @@ le groupe « Sans date » disparaît. La vignette reste sans date. Relâché : e
 avant. Le lot suit (règle T-128), la route reçoit `sansDate: "voisines"`.
 
 ## Ce qui a été fait
-22/09/2026, branche `feat/sans-date-voisines`.
+22/09/2026, branche `feat/sans-date-voisines`. **PR #209 fusionnée le 22/09, EN PROD** (déploiement READY du premier coup, alias bellajour.fr vérifié).
 - `lot.ts` : `CaleSansDate`, `lireCaleSansDate`, `envelopper` (la date empruntée vit dans une
   enveloppe, jamais sur la photo), `groupesDuLot` (la fiche et le lot voient les MÊMES groupes),
   `ordonnerLot(photos, ordre, cale)`.
