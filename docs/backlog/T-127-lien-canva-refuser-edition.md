@@ -45,4 +45,5 @@ du bouton Partager »), lien hors Canva. COMMENTER passe ; Canva muet (5xx, dél
 vérifié » et le dit. Le chemin `/edit` ne décide de RIEN, et le harnais le fixe. Prouvé en
 dry-run sur le build local : le design de travail de Jeanne (jamais partagé) est refusé avec la
 phrase « Demander l'accès », `https://x.fr/design` avec « Ce n'est pas un lien Canva ».
-Reste : fusion et déploiement.
+**PR #201 fusionnée le 22/09, déploiement Vercel `0d45f0c` READY.** Reste : la preuve en
+production au premier lien refusé pour de vrai.

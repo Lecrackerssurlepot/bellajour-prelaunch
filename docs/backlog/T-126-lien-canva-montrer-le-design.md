@@ -56,5 +56,7 @@ Harnais +21, TOUT PASSE ; tsc, lint (0 erreur), build verts. Prouvé sur le buil
 cookie forgé) contre la vraie base, en dry-run : le lien actuel de Marjorie rend
 « Ce lien ouvre « Réferences », en commentaire pour qui l'a. », son lien de travail rend
 « Marjorie », celui de Merisa « MERISA - Madeira 2026 », en 550 à 800 ms. Captures faites.
-Reste : fusion, déploiement, et la correction du lien de Marjorie par Mathias (recoller le lien
-Partager de « Marjorie » en commentaire puis republier ; J+7 repart de ce jour-là).
+**PR #201 fusionnée le 22/09, déploiement Vercel `0d45f0c` READY, alias `bellajour.fr` posés
+(vérifié par l'API Vercel).** Reste : la correction du lien de Marjorie par Mathias (recoller le
+lien Partager de « Marjorie » en commentaire puis republier ; J+7 repart de ce jour-là), et la
+preuve en production à la première publication réelle (le cookie forgé ne vaut pas en prod).

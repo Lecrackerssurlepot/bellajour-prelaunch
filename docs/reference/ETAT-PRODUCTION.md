@@ -1,4 +1,4 @@
-# État du système — au 21/09/2026
+# État du système — au 22/09/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,28 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 22/09/2026 — le lien Canva partagé est lu avant d'être publié (T-126, T-127) EN PRODUCTION
+
+**L'incident** : Marjorie a reçu, via sa page `/numero`, le lien court `canva.link/ojxycg4p5x3uugb`
+qui mène au design « Réferences » (le tableau d'inspiration de l'atelier), pas au sien
+(« Marjorie », `canva.link/r1n5hr0gidmnqc0`). Le mail M5 ne porte pas le lien : la page le sert
+depuis `numeros.canva_url`, et personne ne l'avait regardé. **Au 22/09, le lien de Marjorie est
+TOUJOURS le mauvais en base : Mathias doit recoller le lien Partager de « Marjorie » (peut
+commenter) et republier la maquette** ; J+7 repartira de ce jour-là (le mail annonçait le 28/09).
+
+**PR #201 fusionnée le 22/09, déploiement Vercel `0d45f0c` (dpl_2sGcZRzB2u4MgUvUJv2msFBmC8zH)
+READY.** À « Publier la maquette » (dry-run ET clic direct de l'action rapide), la route suit le
+lien court, lit la page publique `/view` du design chez Canva (deux requêtes, sans clé, 8 s de
+délai) et rend le titre dans « Avant de confirmer » ; le rôle de la règle `EXTENSION` de la liste
+d'accès décide : COMMENTER passe, EDITOR / VIEWER / NONE / design non partagé (303 vers la
+connexion) / adresse sans extension / lien hors Canva sont refusés en 422 sous le champ. Canva
+muet passe « non vérifié », en orange. Le titre entre au journal (`canva_titre`) et dans le récit.
+⚠️ **Le chemin `/edit` ne dit pas le mode** : le bouton Partager l'écrit même en « peut
+commenter ». Prouvé le 22/09 en dry-run sur le build local contre la vraie base : Marjorie →
+« Réferences », Merisa → « MERISA - Madeira 2026 », design de travail de Jeanne (non partagé) →
+refusé. **Non prouvé en production** (le cookie forgé n'y vaut pas) : la première publication
+réelle le dira, dans « Avant de confirmer ».
 
 ## 21/09/2026 (soir, suite) — T-123 EN PRODUCTION
 
