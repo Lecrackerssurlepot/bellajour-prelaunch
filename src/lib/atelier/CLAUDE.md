@@ -51,6 +51,16 @@ neuf états, et à chaque passage un mail part vers une vraie cliente.
   le DERNIER mail quel qu'il soit. Ces deux constantes sont des réglages par défaut, pas des
   décisions de Mathias.
 
+- **`canva.ts`** — le lien Canva PARTAGÉ (T-126, T-127, 22/09/2026). Pur : la forme d'un lien
+  (`canva.link` court, design identifié, autre), la lecture de la page publique `/view` d'un design
+  (titre `og:title`, rôle de la règle `EXTENSION` de sa liste d'accès = ce que voit un inconnu qui
+  a le lien), et le verdict : COMMENTER passe, EDITOR / VIEWER / NONE refusés avec la marche à
+  suivre, Canva muet passe « non vérifié ». ⚠️ **Le chemin `/edit` ne dit pas le mode** : le bouton
+  Partager l'écrit dans tous ses liens, même « peut commenter » (vu sur le lien de Marjorie).
+  Le réseau (301 du lien court, GET de `/view` avec un User-Agent de navigateur, `/edit` répond
+  403) est dans `canvaDistant.ts`, best-effort strict. Appelé par la route de transition sur
+  `publier_maquette`, dry-run ET écriture.
+
 Les autres purs : `grille.ts` (**la** grille, un prix HORS TAXES par nombre de pages de 24 à 60,
 `ttcCentimesPour(pages, pays)` = HT × (1 + TVA du pays) arrondi à l'euro ; importable navigateur,
 source de tout affichage ; sans pays, c'est la France), `prix.ts` (le calcul serveur :

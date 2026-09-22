@@ -2122,6 +2122,10 @@
 .ate-erreur--bloc {
   margin: var(--bj-sp-3) 0;
 }
+/* T-126 : une ligne de confirmation qui dit « non vérifié » (Canva muet). */
+.ate-confirm-attention {
+  color: var(--ate-orange);
+}
 
 /* ── les trois cadres de la couverture ── */
 .ate-slots {

@@ -31,6 +31,7 @@ import {
   verdictAnnulation,
 } from "@/lib/atelier/programme";
 import { prefixeCoffre, verdictSuppression } from "@/lib/atelier/archive";
+import { lireLienCanva, lireFicheCanva, urlLectureCanva, verdictLienPartage } from "@/lib/atelier/canva";
 import { natureDe, planInterieur, planCouverture, resumeInterieur, resumeCouverture, type PageLue } from "@/lib/atelier/decoupe";
 import { verdictBord, auditerBords, resumeBords, PROFONDEUR_MIN_MM, type PageGrise } from "@/lib/atelier/bords";
 import {
@@ -4853,6 +4854,69 @@ titre("T-121 : le controle des bords d'une page d'impression");
   const vk = verdictBord(coin, "bas");
   ok("coin non couvert vers la droite : « vers la droite », 0 mm sur 6 mm de bord",
      vk.courtVers === "fin" && vk.courtSurMm === 6 && auditerBords(coin, 28).remarques.some((r) => /Page 28, en bas, vers la droite : .*0 mm sur 6 mm de bord/.test(r)));
+}
+
+/* ── Le lien Canva partagé (T-126, T-127, 22/09/2026) ────────────────
+   Le 21/09, la fiche de Marjorie a reçu le lien court du design « Réferences »
+   au lieu du sien. Ces morceaux de page sont ceux que Canva a servis le 22/09
+   pour les deux designs réels (liste d'accès réduite à ses règles). */
+{
+  console.log("\n— Le lien Canva partagé (T-126, T-127)");
+  const court = lireLienCanva("https://canva.link/ojxycg4p5x3uugb");
+  ok("canva.link : un lien court, à résoudre", court?.forme === "court");
+  const long = lireLienCanva(
+    "https://www.canva.com/design/DAHVd-NI0Xc/O42JLzn77z69jsq_XXWZRA/edit?utm_content=DAHVd-NI0Xc&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton",
+  );
+  ok("canva.com/design/<id>/<extension>/edit : design, extension et chemin lus",
+     long?.forme === "design" && long.designId === "DAHVd-NI0Xc" && long.extension === "O42JLzn77z69jsq_XXWZRA" && long.chemin === "edit");
+  const sansExt = lireLienCanva("https://www.canva.com/design/DAHVd-NI0Xc/edit");
+  ok("sans extension : design lu, extension nulle", sansExt?.forme === "design" && sansExt.extension === null);
+  ok("une adresse hors Canva est « autre »", lireLienCanva("https://x.fr/design/abc")?.forme === "autre");
+  ok("javascript: n'est pas un lien", lireLienCanva("javascript:alert(1)") === null);
+  ok("la page publique est /view, avec l'extension",
+     urlLectureCanva("DAHVd-NI0Xc", "O42JLzn77z69jsq_XXWZRA") === "https://www.canva.com/design/DAHVd-NI0Xc/O42JLzn77z69jsq_XXWZRA/view"
+       && urlLectureCanva("DAHVd-NI0Xc", null) === null);
+
+  const acl = (extension: string) =>
+    `"acl":{"rules":[{"type":"USER","principal":{"brand":"B","user":"U"},"role":"OWNER"},{"type":"DEFAULT","allowAnonymousEditAccess":false,"role":"NONE","origin":{"type":"MANUAL"}}${extension}],"extension":"O42JLzn77z69jsq_XXWZRA","version":3}`;
+  const page = (titre: string, regles: string) =>
+    `<html><head><title>${titre} - Multi-design</title><meta property="og:title" content="${titre}"/></head><body><script>window.__x=${acl(regles)};</script></body></html>`;
+  const ref = lireFicheCanva(page("R&#39;éf &amp; co", ',{"type":"EXTENSION","owningBrandOnly":false,"allowAnonymousEditAccess":false,"role":"COMMENTER","origin":{"type":"MANUAL"},"createdAt":1789981691532}'));
+  ok("le titre vient d'og:title, entités décodées", ref.titre === "R'éf & co");
+  ok("la règle EXTENSION porte le rôle du lien : COMMENTER", ref.acl && ref.roleLien === "COMMENTER");
+  const edit = lireFicheCanva(page("Marjorie", ',{"type":"USER","principal":{"brand":"B","user":"U2"},"role":"EDITOR","origin":{"type":"FOLDER","id":"F"}},{"type":"EXTENSION","owningBrandOnly":false,"allowAnonymousEditAccess":true,"role":"EDITOR","origin":{"type":"MANUAL"}}'));
+  ok("un EDITOR sur un USER ne compte pas, c'est l'EXTENSION qui décide", edit.roleLien === "EDITOR" && edit.titre === "Marjorie");
+  const sansRegle = lireFicheCanva(page("Marjorie", ""));
+  ok("sans règle EXTENSION : le design n'est partagé par aucun lien (NONE)", sansRegle.acl && sansRegle.roleLien === "NONE");
+  const vide = lireFicheCanva("<html><head><title>Canva</title></head></html>");
+  ok("une page sans design : ni titre, ni liste d'accès", vide.titre === null && vide.acl === false && vide.roleLien === null);
+  const crochet = lireFicheCanva(page("A [b]", ',{"type":"EXTENSION","role":"COMMENTER","origin":{"type":"[x]"}}'));
+  ok("un crochet dans une chaîne ne ferme pas la liste", crochet.roleLien === "COMMENTER");
+
+  const v = (roleLien: "OWNER" | "EDITOR" | "COMMENTER" | "VIEWER" | "NONE" | null, titre: string | null = "Marjorie") =>
+    verdictLienPartage({ lu: true, designId: "D", fiche: { titre, roleLien, acl: roleLien !== null } });
+  const bon = v("COMMENTER");
+  ok("COMMENTER passe, et la phrase nomme le design", bon.ok && bon.verifie && /« Marjorie »/.test(bon.phrase) && /commentaire/.test(bon.phrase));
+  const ed = v("EDITOR");
+  ok("EDITOR est refusé, avec la marche à suivre", !ed.ok && /ÉDITION/.test(ed.message) && /Peut commenter/.test(ed.message));
+  ok("VIEWER est refusé : elle ne pourrait pas commenter", !v("VIEWER").ok && /lecture seule/.test((v("VIEWER") as { message: string }).message));
+  ok("NONE est refusé : « Demander l'accès »", !v("NONE").ok && /Demander l'accès/.test((v("NONE") as { message: string }).message));
+  const inconnu = v(null);
+  ok("liste illisible mais titre lu : passe, non vérifié, le titre est montré", inconnu.ok && !inconnu.verifie && /« Marjorie »/.test(inconnu.phrase));
+  const muet = verdictLienPartage({ lu: false, raison: "reseau" });
+  ok("Canva muet : passe, non vérifié, et la phrase le dit", muet.ok && !muet.verifie && /vérifie toi-même/.test(muet.phrase));
+  ok("un lien hors Canva est refusé", !verdictLienPartage({ lu: false, raison: "hors_canva" }).ok);
+  const ferme = verdictLienPartage({ lu: false, raison: "ferme" });
+  ok("Canva redirige vers sa connexion (design non partagé, extension fausse) : refusé, « Demander l'accès »",
+     !ferme.ok && /Demander l'accès/.test(ferme.message));
+  const barre = verdictLienPartage({ lu: false, raison: "sans_extension" });
+  ok("une adresse sans extension (barre d'adresse, pas Partager) : refusée, et la phrase le dit",
+     !barre.ok && /barre d'adresse/.test(barre.message));
+  ok("un lien invalide est refusé", !verdictLienPartage({ lu: false, raison: "lien_invalide" }).ok);
+  /* Le piège du 22/09 : refuser `/edit` aurait refusé le lien de Marjorie,
+     qui est pourtant en commentaire. Le chemin ne décide de rien. */
+  ok("un chemin /edit avec un rôle COMMENTER passe : seul le rôle fait foi",
+     long?.forme === "design" && long.chemin === "edit" && v("COMMENTER").ok);
 }
 
 /* On repose le globe comme on l'a trouve : la suite du harnais ne doit pas

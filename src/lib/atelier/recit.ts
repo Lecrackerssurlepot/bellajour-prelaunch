@@ -187,14 +187,17 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
       if (vers === "maquette_prete") {
         /* Une republication après retouches n'est pas une première annonce :
            la nuance dit à celui qui relit pourquoi il y a deux publications. */
+        /* T-126 : le titre du design partagé, lu chez Canva à la publication.
+           « Maquette publiée, « Réferences » » se serait vu le 21/09. */
+        const canvaTitre = typeof payload.canva_titre === "string" && payload.canva_titre ? `Canva « ${payload.canva_titre} »` : "";
         if (source === "republication_retouches") {
           return {
             texte: fait(qui, "a republié la maquette", "Maquette republiée"),
-            detail: "Après ses retouches. L'échéance J+7 repart de maintenant",
+            detail: [canvaTitre, "Après ses retouches. L'échéance J+7 repart de maintenant"].filter(Boolean).join(". "),
             ton: "nous",
           };
         }
-        return { texte: fait(qui, "a publié la maquette", "Maquette publiée"), detail: null, ton: "nous" };
+        return { texte: fait(qui, "a publié la maquette", "Maquette publiée"), detail: canvaTitre || null, ton: "nous" };
       }
       if (vers === "validee") {
         /* Le PRD prévoit une validation automatique à J+7 : la distinction
