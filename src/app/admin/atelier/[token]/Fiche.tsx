@@ -38,6 +38,7 @@ import {
   COMMANDE_REPLI,
   type PhotoLot,
 } from "./telechargement";
+import { ordonnerLot, type OrdreLot } from "@/lib/atelier/lot";
 
 /**
  * La fiche dossier — tout ce qu'il faut pour composer un numéro et le faire
@@ -692,8 +693,9 @@ export default function Fiche({
   /* ── T-123 : CE QUE LES PHOTOS SAVENT D'ELLES-MÊMES ────────────────
      Tout est calculé ici, depuis les colonnes de `photos`, par les modules
      purs : le résumé sous le titre, l'ordre chronologique, les remarques
-     sur chaque vignette. `parDate` est un état d'ÉCRAN : la grille se
-     réordonne, l'ordre du dépôt reste celui des noms du lot (T-114). */
+     sur chaque vignette. `parDate` est un état d'ÉCRAN : rien n'est écrit.
+     La grille se réordonne, et le lot téléchargé la suit (T-128) : les noms
+     « 01 - », « 02 - » prennent l'ordre affiché au moment du clic. */
   const [parDate, setParDate] = useState(false);
   const [lecture, setLecture] = useState<"repos" | "en_cours" | "erreur">("repos");
   const nbLues = fiche.photos.filter((p) => p.metadonneesLe).length;
@@ -819,13 +821,20 @@ export default function Fiche({
    * aucune signature à refaire, et surtout aucun appel qui toucherait la base.
    */
   async function liensFrais(ids?: string[]): Promise<PhotoLot[]> {
-    if (demo) return ids ? fiche.photos.filter((p) => ids.includes(p.id)) : fiche.photos;
+    /* T-128 — le lot suit la grille : « Par date » enfoncé, il se numérote
+       par date de prise de vue. La route trie sur le lot COMPLET avant de
+       nommer puis de filtrer (T2-5) ; en démo, le même module trie ici. */
+    const ordre: OrdreLot = parDate ? "date" : "depot";
+    if (demo) {
+      const tout = ordonnerLot(fiche.photos, ordre);
+      return ids ? tout.filter((p) => ids.includes(p.id)) : tout;
+    }
     const r = await fetch("/api/admin/atelier/lot", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       /* T2-5 — `ids` restreint aux nouvelles ; la route calcule les noms
          sur le lot COMPLET avant de filtrer, la numérotation tient. */
-      body: JSON.stringify({ token: l.token, ...(ids ? { ids } : {}) }),
+      body: JSON.stringify({ token: l.token, ordre, ...(ids ? { ids } : {}) }),
     });
     if (!r.ok) throw new Error("Les liens du coffre n'ont pas pu être refaits.");
     const d = (await r.json()) as { photos?: PhotoLot[] };
@@ -1170,7 +1179,7 @@ export default function Fiche({
                       type="button"
                       aria-pressed={parDate}
                       onClick={() => setParDate((v) => !v)}
-                      title={parDate ? "Revenir à l'ordre du dépôt (celui des noms du lot)" : "Trier la grille par date de prise de vue"}
+                      title={parDate ? "Revenir à l'ordre du dépôt : la grille et les noms du lot le suivent" : "Trier la grille par date de prise de vue : le lot téléchargé se numérote dans cet ordre"}
                     >
                       {parDate ? "Ordre du dépôt" : "Par date"}
                     </button>
