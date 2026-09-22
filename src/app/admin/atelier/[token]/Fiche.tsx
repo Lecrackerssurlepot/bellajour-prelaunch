@@ -883,6 +883,8 @@ export default function Fiche({
         token: l.token,
         photos,
         brief: leBrief(),
+        ordre: ordreGrille,
+        cale: caleSansDate,
         signal: ctrl.signal,
         onProgres: (p) => setLot({ phase: "ecrit", ...p }),
       });
