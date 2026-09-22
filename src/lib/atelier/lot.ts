@@ -216,15 +216,30 @@ export function nomsDeFichiers(photos: PhotoNommable[]): string[] {
  * ouvert.
  *
  * ⚠️ Ce nom n'est pas garanti unique, et c'est un choix. Retélécharger le
- * MÊME numéro doit retomber sur le MÊME dossier et réécrire par-dessus :
+ * MÊME numéro dans le MÊME ordre doit retomber sur le MÊME dossier et réécrire par-dessus :
  * c'est ce qu'on veut après un lot interrompu ou trois photos ratées. Le
  * revers est qu'une cliente qui donnerait deux fois le même titre à deux
  * numéros verrait les deux lots se mélanger. Le token ne revient donc dans
  * le nom que lorsqu'il ne reste rien d'autre pour l'identifier.
  */
-export function nomDossier(prenom: string | null, titre: string | null, token: string): string {
+export function nomDossier(
+  prenom: string | null,
+  titre: string | null,
+  token: string,
+  ordre: OrdreLot = "depot",
+  cale: CaleSansDate = "queue",
+): string {
   const qui = assainir(prenom?.trim() ?? "").slice(0, 40);
   const quoi = assainir(titre?.trim() ?? "").slice(0, 60);
   const parts = [qui, quoi].filter(Boolean);
-  return parts.length ? parts.join(" - ") : `numero (${token.slice(0, 6)})`;
+  const base = parts.length ? parts.join(" - ") : `numero (${token.slice(0, 6)})`;
+  /* T-133 (22/09/2026) — l'ordre du lot entre dans le nom du dossier. Sans
+     cela, un lot « par date » descendu APRÈS un lot « ordre du dépôt »
+     s'ajoute dans le même dossier au lieu de le remplacer (les noms
+     diffèrent dès le préfixe), et l'éditeur voit deux numérotations
+     mêlées : c'est ce qui est arrivé à Mathias sur Eloise. Le même ordre
+     retombe toujours sur le même dossier, et le réécrit. */
+  const suffixe =
+    ordre === "depot" ? "" : ` (par ${ordre === "date" ? "date" : "lieu"}${cale === "voisines" ? ", sans date voisines" : ""})`;
+  return base + suffixe;
 }

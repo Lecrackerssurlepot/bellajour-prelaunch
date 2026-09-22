@@ -1070,6 +1070,10 @@ ok("sans prenom : le titre suffit", nomDossier(null, "Nos dimanches", "abcdef012
 ok("sans rien : le token identifie quand meme", nomDossier(null, null, "abcdef0123") === "numero (abcdef)");
 ok("une barre oblique dans le titre ne cree pas de sous-dossier",
    !nomDossier("Camille", "ete 2026/2027", "abcdef0123").includes("/"));
+ok("T-133 : l'ordre du lot nomme le dossier, deux ordres font deux dossiers",
+   nomDossier("Eloise", "La vie", "abcdef0123", "date") === "Eloise - La vie (par date)"
+   && nomDossier("Eloise", "La vie", "abcdef0123", "lieu", "voisines") === "Eloise - La vie (par lieu, sans date voisines)"
+   && nomDossier("Eloise", "La vie", "abcdef0123", "depot", "voisines") === "Eloise - La vie");
 
 /* ── T-128 : LE LOT SUIT LE BOUTON « PAR DATE » ──────────────────────────
    Le bouton reordonne la grille ; le lot telecharge prend le meme ordre, et

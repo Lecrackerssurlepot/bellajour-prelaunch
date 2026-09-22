@@ -27,7 +27,7 @@
  */
 
 import { NOM_BRIEF } from "@/lib/atelier/brief";
-import { nomsDeFichiers, nomDossier } from "@/lib/atelier/lot";
+import { nomsDeFichiers, nomDossier, type CaleSansDate, type OrdreLot } from "@/lib/atelier/lot";
 
 export type PhotoLot = {
   id: string;
@@ -135,13 +135,16 @@ export async function ecrireLot(
     token: string;
     photos: PhotoLot[];
     brief: string;
+    /** T-133 — l'ordre du lot nomme le dossier : deux ordres, deux dossiers. */
+    ordre?: OrdreLot;
+    cale?: CaleSansDate;
     signal: AbortSignal;
     onProgres: (p: Progres) => void;
   },
 ): Promise<ResultatLot> {
   const { prenom, titre, token, photos, brief, signal, onProgres } = options;
 
-  const nom = nomDossier(prenom, titre, token);
+  const nom = nomDossier(prenom, titre, token, options.ordre ?? "depot", options.cale ?? "queue");
   const dossier = await racine.getDirectoryHandle(nom, { create: true });
 
   await ecrireFichier(dossier, NOM_BRIEF, new Blob([brief], { type: "text/plain;charset=utf-8" }));

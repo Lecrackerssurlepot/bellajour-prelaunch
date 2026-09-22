@@ -47,6 +47,8 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
   Le bouton « Lire les photos » n'apparaît que s'il reste quelque chose à lire ; en démo, jamais.
 - **« Télécharger le lot »** ouvre le sélecteur de dossier AVANT tout `await` : Chrome exige une
   activation utilisateur fraîche. Dépend du CORS du bucket R2 en GET.
+  Le dossier écrit porte l'ordre choisi (« … (par date) », T-133) : le même ordre réécrit le même
+  dossier, un autre ordre en fait un autre, sinon deux numérotations se mêlent.
 - **Le tag rouge « ne reçoit pas »** est le seul marqueur qui dise qu'un dossier d'apparence
   normale est INJOIGNABLE (journal `email_rebond`, posé par le webhook Brevo). Lu dans la MÊME
   requête que les remboursements, sans colonne ni migration. La fiche en fait un bandeau qui
