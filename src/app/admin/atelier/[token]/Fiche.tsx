@@ -1436,8 +1436,18 @@ export default function Fiche({
                           soit l'ordre : c'est le repère de l'éditeur pendant
                           la mise en page. La même forme que dans le nom du
                           fichier (« 11 juil 2026 »), pour retrouver la photo
-                          dans le dossier sans hésiter. */}
-                      {p.priseLe ? <span className="ate-photo-jour">{jourCourt(p.priseLe)}</span> : null}
+                          dans le dossier sans hésiter. T-132 : le lieu dessous. */}
+                      {p.priseLe || p.lieuVille || p.lieuPays ? (
+                        <span className="ate-photo-jour">
+                          {p.priseLe ? <span>{jourCourt(p.priseLe)}</span> : null}
+                          {/* T-132 — le lieu sous le jour (la ville, sinon le
+                              pays) : dans l'ordre du dépôt, la grille se lit
+                              seule, sans survol ni bouton. */}
+                          {p.lieuVille || p.lieuPays ? (
+                            <span className="ate-photo-lieu">{p.lieuVille ?? p.lieuPays}</span>
+                          ) : null}
+                        </span>
+                      ) : null}
                       {choix ? (
                         <span className="ate-photo-coche" aria-hidden="true">
                           {ecartee ? "✕" : "✓"}

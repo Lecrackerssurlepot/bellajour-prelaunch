@@ -2515,6 +2515,19 @@
 }
 .ate-photo-jour {
   top: 0;
+  /* T-132 — deux lignes au plus : le jour, puis le lieu. Chacune se coupe
+     seule ; le voile ne grandit jamais au-delà. */
+  display: grid;
+  white-space: normal;
+}
+.ate-photo-jour > span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ate-photo-lieu {
+  opacity: 0.82;
 }
 .ate-photo--doublon img {
   opacity: 0.55;
