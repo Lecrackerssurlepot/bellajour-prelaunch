@@ -15,9 +15,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 **L'incident** : Marjorie a reçu, via sa page `/numero`, le lien court `canva.link/ojxycg4p5x3uugb`
 qui mène au design « Réferences » (le tableau d'inspiration de l'atelier), pas au sien
 (« Marjorie », `canva.link/r1n5hr0gidmnqc0`). Le mail M5 ne porte pas le lien : la page le sert
-depuis `numeros.canva_url`, et personne ne l'avait regardé. **Au 22/09, le lien de Marjorie est
-TOUJOURS le mauvais en base : Mathias doit recoller le lien Partager de « Marjorie » (peut
-commenter) et republier la maquette** ; J+7 repartira de ce jour-là (le mail annonçait le 28/09).
+depuis `numeros.canva_url`, et personne ne l'avait regardé. Corrigé par Mathias le 22/09 à 10:16 (voir plus bas).
 
 **PR #201 fusionnée le 22/09, déploiement Vercel `0d45f0c` (dpl_2sGcZRzB2u4MgUvUJv2msFBmC8zH)
 READY.** À « Publier la maquette » (dry-run ET clic direct de l'action rapide), la route suit le
@@ -29,8 +27,12 @@ muet passe « non vérifié », en orange. Le titre entre au journal (`canva_tit
 ⚠️ **Le chemin `/edit` ne dit pas le mode** : le bouton Partager l'écrit même en « peut
 commenter ». Prouvé le 22/09 en dry-run sur le build local contre la vraie base : Marjorie →
 « Réferences », Merisa → « MERISA - Madeira 2026 », design de travail de Jeanne (non partagé) →
-refusé. **Non prouvé en production** (le cookie forgé n'y vaut pas) : la première publication
-réelle le dira, dans « Avant de confirmer ».
+refusé. **Prouvé en production le 22/09 à 10:16** : Mathias a recollé le lien Partager de « Marjorie »
+et republié ; « Avant de confirmer » a dit « Ce lien ouvre « Marjorie », en commentaire pour qui
+l'a. », et le journal porte `canva_titre: "Marjorie"`. Sa page sert le bon design depuis ;
+l'auto-validation repart au 29/09. Mail d'excuse parti à 10:39 (hors système, journal
+`mail_manuel`), **reçu deux fois** : Brevo indexe ses événements avec une minute de retard et
+j'ai relancé sur un doute. Règle : un mail réel ne se rejoue jamais sur un doute.
 
 ## 21/09/2026 (soir, suite) — T-123 EN PRODUCTION
 

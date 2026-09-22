@@ -57,6 +57,12 @@ cookie forgé) contre la vraie base, en dry-run : le lien actuel de Marjorie ren
 « Ce lien ouvre « Réferences », en commentaire pour qui l'a. », son lien de travail rend
 « Marjorie », celui de Merisa « MERISA - Madeira 2026 », en 550 à 800 ms. Captures faites.
 **PR #201 fusionnée le 22/09, déploiement Vercel `0d45f0c` READY, alias `bellajour.fr` posés
-(vérifié par l'API Vercel).** Reste : la correction du lien de Marjorie par Mathias (recoller le
-lien Partager de « Marjorie » en commentaire puis republier ; J+7 repart de ce jour-là), et la
-preuve en production à la première publication réelle (le cookie forgé ne vaut pas en prod).
+(vérifié par l'API Vercel).** **Le 22/09 à 10:16, Mathias a recollé le bon lien et republié** : `canva_url` =
+`canva.link/r1n5hr0gidmnqc0`, journal `etat_change` avec `canva_titre: "Marjorie"`,
+`canva_role: COMMENTER`. **C'est la preuve en production** : « Avant de confirmer » a affiché
+« Ce lien ouvre « Marjorie », en commentaire pour qui l'a. » (capture de Mathias), Canva
+répond depuis Vercel. J+7 repart au 29/09. Un mail d'excuse (hors système, gabarit des mails
+de l'atelier, bouton vers sa page, code unique promis si nouvelle commande) est parti à
+Marjorie à 10:39, **deux fois par erreur** (Brevo indexe ses événements avec une minute de
+retard, j'ai relancé sur un doute) ; ligne `mail_manuel` au journal avec les deux identifiants.
+Reste : rien. Le ticket se ferme à la prochaine passe de rangement.
