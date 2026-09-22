@@ -64,6 +64,8 @@ import {
   type Etat,
   type Saisie,
 } from "@/lib/atelier/transitions";
+import { verdictLienPartage, type VerdictCanva } from "@/lib/atelier/canva";
+import { resoudreLienCanva } from "@/lib/atelier/canvaDistant";
 /* Le brouillon de prévisualisation (10/09/2026) : sa liste blanche de
    colonnes et le type d'événement qui le porte. Module PUR. */
 import { TYPE_BROUILLON } from "@/lib/atelier/brouillon";
@@ -199,6 +201,25 @@ export async function POST(request: Request) {
     }
 
     const action = prepa.action;
+
+    /* ── OÙ MÈNE LE LIEN CANVA ? (T-126, T-127, 22/09/2026) ─────────────
+       Le 21/09, la fiche de Marjorie a reçu le lien court du tableau
+       « Réferences » de l'atelier au lieu du sien, et la page du client l'a
+       servi tel quel. Avant d'écrire, on suit le lien court et on lit la page
+       publique du design : le TITRE revient à l'écran (dry-run) et au journal,
+       et le RÔLE du lien décide. Édition, lecture seule ou fermé : refus sous
+       le champ, avec la marche à suivre. Canva muet : on publie, en le disant.
+       Le clic direct de l'action rapide (sans dry-run) passe par ici aussi. */
+    let canva: VerdictCanva | null = null;
+    if (cle === "publier_maquette" && typeof prepa.patch.canva_url === "string") {
+      canva = verdictLienPartage(await resoudreLienCanva(prepa.patch.canva_url));
+      if (!canva.ok) {
+        return NextResponse.json(
+          { error: "saisie", erreurs: [{ champ: "canva_url", message: canva.message }] },
+          { status: 422 },
+        );
+      }
+    }
 
     /* ── les visuels sont-ils VRAIMENT dans le coffre ? ─────────────────
        Un envoi peut échouer en silence côté navigateur (onglet fermé, réseau
@@ -603,6 +624,9 @@ export async function POST(request: Request) {
           ...(brouillon === null ? {} : { brouillon }),
           action: { cle: action.cle, libelle: action.libelle, vers: action.vers, note: action.note },
           resume: prepa.resume,
+          /* Le design que le lien ouvre, en toutes lettres, AVANT le second
+             clic : c'est le regard qui a manqué le 21/09. */
+          ...(canva ? { canva } : {}),
           ...(prepa.params?.MOT ? { mot: prepa.params.MOT } : {}),
           ...(impression ? { impression } : {}),
           /* Le devis, tel qu'il vient d'être demandé. L'écran le montre en
@@ -871,6 +895,9 @@ export async function POST(request: Request) {
         vers: action.vers,
         par: prenomDe(qui),
         source: republicationRetouches ? "republication_retouches" : "admin",
+        /* Le titre du design partagé, lu chez Canva à l'instant de publier :
+           six mois plus tard, « quel Canva a-t-elle reçu ? » se lit ici. */
+        ...(canva?.ok && canva.titre ? { canva_titre: canva.titre, canva_role: canva.role } : {}),
         ...prepa.resume,
         /* ── LE PORT, DANS LE RÉCIT DU DOSSIER ──────────────────────────
            D'où vient le montant (zone, devis, seuil, main), quel service a

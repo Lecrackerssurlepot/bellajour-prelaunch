@@ -98,6 +98,11 @@ type Verif = {
   /* T2-3 — le mot de l'atelier tel que le serveur l'a retenu : c'est LUI qui
      partira dans M9, pas la saisie locale. */
   mot?: string;
+  /* T-126 (22/09/2026) — le design que le lien Canva partagé ouvre, lu par
+     le serveur pendant la vérification. `verifie: false` : Canva n'a pas
+     répondu, la phrase le dit, l'atelier regarde lui-même. Absent hors de
+     « Publier la maquette » et en démonstration. */
+  canva?: { ok: true; phrase: string; verifie: boolean; titre: string | null; role: string | null };
   destinataire: { prenom: string | null; email: string | null; titre: string | null };
   /* Le récap d'impression, calculé par le serveur (jamais ici) : ce qui va
      réellement partir chez Cloudprinter au clic suivant. */
@@ -1589,7 +1594,8 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                 {/* PRD §11 : en édition, elle casse les fonds perdus, écrase une
                     police ou insère du 72 dpi, et ça se découvre à la livraison. */}
                 <span className="ate-champ-aide ate-champ-aide--attention">
-                  Mode COMMENTAIRE uniquement. Jamais le lien d&apos;édition.
+                  Mode COMMENTAIRE uniquement. Jamais le lien d&apos;édition. La vérification
+                  lit le titre du design derrière le lien : relis-le avant de confirmer.
                 </span>
                 {erreurDe("canva_url") ? <span className="ate-erreur">{erreurDe("canva_url")}</span> : null}
               </label>
@@ -1782,6 +1788,17 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                   <>
                     <dt>Livraison</dt>
                     <dd>choisie par le client, chiffrée avant paiement.</dd>
+                  </>
+                ) : null}
+                {/* T-126 — le titre du design derrière le lien, relu AVANT
+                    de confirmer : le 21/09, un lien vers « Réferences » est
+                    parti chez Marjorie parce que personne ne l'avait vu. */}
+                {verif.canva ? (
+                  <>
+                    <dt>Canva</dt>
+                    <dd className={verif.canva.verifie ? undefined : "ate-confirm-attention"}>
+                      {verif.canva.phrase}
+                    </dd>
                   </>
                 ) : null}
                 {verif.impression ? (
