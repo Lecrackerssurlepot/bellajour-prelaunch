@@ -23,5 +23,5 @@ dossier téléchargé. Une photo sans date ne porte rien (la remarque « sans da
 résumé, pas sur la vignette).
 
 ## Ce qui a été fait
-22/09/2026, branche `fix/lot-par-date` (avec T-128). Condition retirée dans `Fiche.tsx`,
+22/09/2026, branche `fix/lot-par-date` (avec T-128). **PR #206 fusionnée le 22/09, EN PROD** (premier déploiement en ERROR sur la police Google, relancé sans cache par Mathias, READY à 14h06 UTC, alias bellajour.fr vérifié). Condition retirée dans `Fiche.tsx`,
 `jourCourt` à la place de `jourEnClair` sans année, commentaire CSS et `admin/CLAUDE.md` à jour.

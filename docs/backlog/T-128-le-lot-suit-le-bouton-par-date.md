@@ -38,7 +38,7 @@ rien ne change (T-114 tient). La vignette « 03 » à l'écran est le fichier «
 dans les deux cas.
 
 ## Ce qui a été fait
-22/09/2026, branche `fix/lot-par-date`.
+22/09/2026, branche `fix/lot-par-date`. **PR #206 fusionnée le 22/09, EN PROD** (premier déploiement en ERROR sur la police Google, relancé sans cache par Mathias, READY à 14h06 UTC, alias bellajour.fr vérifié).
 - `src/lib/atelier/lot.ts` : `OrdreLot` (`"depot" | "date"`), `lireOrdreLot` (inconnu → dépôt,
   jamais d'erreur), `ordonnerLot` (le tri de la grille, réutilisé tel quel).
 - `src/app/api/admin/atelier/lot/route.ts` : lit `ordre` dans le corps, réordonne le lot complet
