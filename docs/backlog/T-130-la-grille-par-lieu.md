@@ -33,3 +33,20 @@ boutons s'excluent, et un bouton enfoncé se relâche vers l'ordre du dépôt.
   « Par lieu » (seulement si un lieu existe) ; titre `.ate-photos-lieu` avant la première
   photo de chaque groupe ; le filet « Ajoutées le » ne s'affiche qu'en ordre du dépôt.
 - Harnais : 7 assertions sous « T-130 », TOUT PASSE. tsc, lint (0 erreur), build verts.
+
+## Deuxième passe (22/09/2026, après-midi)
+Mathias, après avoir vu la première version en prod : « Je souhaite pouvoir avoir les photos
+par lieu mais dans l'ordre chronologique (donc date) et que les photos sans date soient placées
+dans l'ordre d'upload. Et que le téléchargement se fasse toujours par rapport à cela ! »
+
+La première passe fusionnait une ville quittée puis retrouvée en UN groupe placé à la première
+visite : Lisbonne (mars) contenait aussi les photos d'août, et le fil du temps sautait. Réécrit
+en SÉJOURS : les datées par date, un nouveau groupe à chaque changement de lieu (ville, sinon
+pays) ; une datée sans lieu ne coupe rien, elle reste dans le séjour en cours et le premier
+lieu connu baptise un séjour encore sans nom ; « Sans date » ferme, dans l'ordre du dépôt. Le
+titre porte le lieu, le compte et la période (« du 7 au 8 mars 2026 »). Le lot suit, inchangé
+dans son principe. Vu sur les vraies données d'Eloise : une photo du 8 août qui ne connaît que le
+pays « Portugal » coupait Lisbonne en deux ; règle ajoutée, une photo au pays seul reste dans
+le séjour du même pays, et un séjour nommé par le pays prend la première ville de ce pays.
+Harnais réécrit : 12 assertions, TOUT PASSE. Branche
+`feat/par-lieu-chronologique`.

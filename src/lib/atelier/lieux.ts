@@ -169,44 +169,71 @@ export function resumeLieux(photos: Array<{ priseLe: string | null; lieuVille: s
 /* ── Les sous-groupes (T-130) ───────────────────────────────────────────── */
 
 export const SANS_LIEU = "Sans lieu";
+export const SANS_DATE = "Sans date";
 
-export type GroupeLieu<T> = { cle: string; libelle: string; photos: T[] };
+export type GroupeLieu<T> = {
+  ville: string | null;
+  pays: string | null;
+  libelle: string;
+  photos: T[];
+  /** Jour de la première et de la dernière photo du séjour ; null pour « Sans date ». */
+  premier: string | null;
+  dernier: string | null;
+};
 
 /**
- * Les photos par lieu, pour la grille de la fiche et le lot « par lieu ».
+ * Les photos par SÉJOUR, dans l'ordre du temps, pour la grille de la fiche
+ * et le lot « par lieu ».
  *
- * Un groupe par ville (sinon par pays), dans l'ordre où on y est ARRIVÉ
- * (première photo datée), les groupes sans aucune date ensuite par taille,
- * « Sans lieu » toujours en dernier. Dans un groupe, l'ordre du temps
- * (`trierChronologie`, les sans date derrière). Une ville qu'on a quittée
- * puis retrouvée ne fait qu'UN groupe : l'éditeur compose par destination,
- * pas par étape.
+ * Deuxième passe (22/09/2026, après-midi) : Mathias veut le fil du voyage,
+ * pas une destination fusionnée. Les datées sont rangées par date, et un
+ * nouveau groupe s'ouvre à chaque CHANGEMENT de lieu : Lisbonne en mars puis
+ * Lisbonne en août font deux groupes. Ce qui NE coupe PAS un séjour :
+ * - une photo sans lieu (le soir à la maison, un GPS absent) ;
+ * - une photo qui ne connaît que le pays, quand c'est celui du séjour
+ *   (Eloise, 8 août : « Portugal » au milieu de Lisbonne) ;
+ * - et un séjour encore sans nom prend le premier lieu connu qui passe,
+ *   un séjour nommé par le pays seul prend la première ville de ce pays.
+ * Les photos sans date ferment la liste, dans l'ordre du dépôt, sous
+ * « Sans date ».
  */
 export function grouperParLieu<T extends { priseLe: string | null; lieuVille: string | null; lieuPays: string | null }>(
   photos: T[],
 ): GroupeLieu<T>[] {
-  const groupes = new Map<string, GroupeLieu<T>>();
-  for (const p of photos) {
+  const datees = trierChronologie(photos.filter((p) => p.priseLe));
+  const sansDate = photos.filter((p) => !p.priseLe);
+  const groupes: GroupeLieu<T>[] = [];
+  let courant: GroupeLieu<T> | null = null;
+
+  const libelleDe = (ville: string | null, pays: string | null) => ville ?? pays ?? SANS_LIEU;
+  const memeSejour = (c: GroupeLieu<T>, ville: string | null, pays: string | null): boolean => {
+    if (!ville && !pays) return true;
+    if (!c.ville && !c.pays) return true;
+    if (!ville) return c.pays === pays;
+    if (!c.ville) return c.pays === pays;
+    return c.ville === ville;
+  };
+
+  for (const p of datees) {
     const ville = p.lieuVille?.trim() || null;
     const pays = p.lieuPays?.trim() || null;
-    const cle = ville || pays ? `${ville ?? ""}|${pays ?? ""}` : "";
-    const g = groupes.get(cle) ?? { cle, libelle: ville ?? pays ?? SANS_LIEU, photos: [] };
-    g.photos.push(p);
-    groupes.set(cle, g);
+    const jour = (p.priseLe as string).slice(0, 10);
+    if (!courant || !memeSejour(courant, ville, pays)) {
+      courant = { ville, pays, libelle: libelleDe(ville, pays), photos: [], premier: jour, dernier: jour };
+      groupes.push(courant);
+    } else if ((ville && !courant.ville) || (pays && !courant.pays)) {
+      /* Le séjour se précise : un nom, ou une ville pour un pays seul. */
+      courant.ville = courant.ville ?? ville;
+      courant.pays = courant.pays ?? pays;
+      courant.libelle = libelleDe(courant.ville, courant.pays);
+    }
+    courant.photos.push(p);
+    courant.dernier = jour;
   }
-  const premier = (g: GroupeLieu<T>): string | null =>
-    g.photos.reduce<string | null>((m, p) => (p.priseLe && (!m || p.priseLe < m) ? p.priseLe : m), null);
-  return [...groupes.values()]
-    .sort((a, b) => {
-      if (!a.cle !== !b.cle) return a.cle ? -1 : 1;
-      const pa = premier(a);
-      const pb = premier(b);
-      if (pa && pb && pa !== pb) return pa.localeCompare(pb);
-      if (pa && !pb) return -1;
-      if (!pa && pb) return 1;
-      return b.photos.length - a.photos.length;
-    })
-    .map((g) => ({ ...g, photos: trierChronologie(g.photos) }));
+  if (sansDate.length) {
+    groupes.push({ ville: null, pays: null, libelle: SANS_DATE, photos: sansDate, premier: null, dernier: null });
+  }
+  return groupes;
 }
 
 /** « Lisbonne, Portugal » ; « Portugal » si la ville manque. */

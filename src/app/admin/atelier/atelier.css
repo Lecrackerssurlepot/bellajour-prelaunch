@@ -2590,6 +2590,15 @@
 .ate-photos-lieu .ate-compte {
   margin-left: 0.4em;
 }
+/* La période du séjour, en retrait, dans la voix des libellés. */
+.ate-photos-lieu-quand {
+  margin-left: 0.8em;
+  font-family: var(--bj-font-ui);
+  font-style: normal;
+  font-size: var(--bj-fs-xxs);
+  letter-spacing: 0.02em;
+  color: var(--bj-text-faint);
+}
 .ate-photos-lieu:first-child {
   padding-top: 0;
   border-top: 0;

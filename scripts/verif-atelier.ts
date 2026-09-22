@@ -1096,11 +1096,12 @@ ok("l'ordre demande se lit sans jamais echouer : absent, inconnu, date",
 ok("par date puis lot partiel : la numerotation reste celle du lot complet",
    nomsDeFichiers(ordonnerLot(depotInverse, "date")).filter((_, i) => i === 2)[0] === "03 - 11 juil 2026 - IMG_8027.jpeg");
 
-/* ── T-130 : LES SOUS-GROUPES PAR LIEU ────────────────────────────────────
-   Un groupe par ville (sinon pays), dans l'ordre d'arrivee, « Sans lieu »
-   en dernier ; dans un groupe, l'ordre du temps. Le lot « lieu » les met
-   bout a bout. */
-titre("— T-130 : les sous-groupes par lieu —");
+/* ── T-130 : LES SÉJOURS, DANS L'ORDRE DU TEMPS ──────────────────────────
+   Les datees par date, un groupe a chaque changement de lieu (ville, sinon
+   pays) ; une datee sans lieu reste dans le sejour en cours et, s'il n'a pas
+   de nom, l'attend ; « Sans date » ferme, dans l'ordre du depot. Le lot
+   « lieu » les met bout a bout. */
+titre("— T-130 : les séjours, dans l'ordre du temps —");
 const lieuP = (id: string, priseLe: string | null, lieuVille: string | null, lieuPays: string | null) =>
   ({ id, nom: `${id}.jpg`, priseLe, lieuVille, lieuPays });
 const voyage = [
@@ -1111,21 +1112,33 @@ const voyage = [
   lieuP("pt1", "2026-08-06T10:00:00", null, "Portugal"),
   lieuP("lis0", null, "Lisbonne", "Portugal"),
   lieuP("nul2", null, null, null),
+  lieuP("deb", "2026-08-05T10:00:00", null, null),
 ];
 const parLieu = grouperParLieu(voyage);
-ok("un groupe par ville, sinon par pays, « Sans lieu » en dernier",
-   parLieu.map((g) => g.libelle).join(" > ") === "Portugal > Lisbonne > Sintra > Sans lieu");
-ok("dans un groupe : l'ordre du temps, la sans date derriere",
-   parLieu[1].photos.map((p) => p.id).join(",") === "lis1,lis2,lis0");
-ok("le compte d'un groupe est le sien", parLieu[1].photos.length === 3 && parLieu[3].photos.length === 2);
-ok("le lot par lieu met les groupes bout a bout",
-   ordonnerLot(voyage, "lieu").map((p) => p.id).join(",") === "pt1,lis1,lis2,lis0,sin1,nul1,nul2");
-ok("par lieu, le rang 01 est la premiere du premier lieu",
-   nomsDeFichiers(ordonnerLot(voyage, "lieu"))[0] === "01 - 06 aou 2026 - Portugal - pt1.jpg");
-ok("l'ordre « lieu » se lit ; sans aucun lieu, un seul groupe « Sans lieu »",
-   lireOrdreLot("lieu") === "lieu" && grouperParLieu([lieuP("a", null, null, null)])[0].libelle === "Sans lieu");
+ok("un groupe a chaque changement de lieu, dans l'ordre du temps, « Sans date » en dernier",
+   parLieu.map((g) => g.libelle).join(" > ") === "Lisbonne > Sintra > Lisbonne > Sans date");
+ok("une datee sans lieu ouvre le sejour ; le pays le nomme, la ville du meme pays le precise",
+   parLieu[0].photos.map((p) => p.id).join(",") === "deb,pt1,nul1,lis1" && parLieu[0].premier === "2026-08-05" && parLieu[0].dernier === "2026-08-08");
+ok("la meme ville quittee puis retrouvee fait DEUX sejours",
+   parLieu.filter((g) => g.libelle === "Lisbonne").length === 2);
+ok("les sans date ferment, dans l'ordre du depot, sans periode",
+   parLieu[3].photos.map((p) => p.id).join(",") === "lis0,nul2" && parLieu[3].premier === null);
+ok("le lot par lieu met les sejours bout a bout",
+   ordonnerLot(voyage, "lieu").map((p) => p.id).join(",") === "deb,pt1,nul1,lis1,sin1,lis2,lis0,nul2");
+ok("par lieu, le rang 01 est la premiere photo du voyage",
+   nomsDeFichiers(ordonnerLot(voyage, "lieu"))[0] === "01 - 05 aou 2026 - deb.jpg");
+ok("l'ordre « lieu » se lit ; sans aucune date, un seul groupe « Sans date »",
+   lireOrdreLot("lieu") === "lieu" && grouperParLieu([lieuP("a", null, null, null)])[0].libelle === "Sans date");
 ok("un lieu vide (espaces) vaut sans lieu",
-   grouperParLieu([lieuP("a", null, "  ", " ")])[0].libelle === "Sans lieu");
+   grouperParLieu([lieuP("a", "2026-01-01T00:00:00", "  ", " ")])[0].libelle === "Sans lieu");
+ok("une photo qui ne connait que le pays ne coupe pas un sejour dans ce pays",
+   grouperParLieu([lieuP("l1", "2026-08-03T10:00:00", "Lisbonne", "Portugal"), lieuP("pt", "2026-08-08T10:00:00", null, "Portugal"), lieuP("l2", "2026-08-08T12:00:00", "Lisbonne", "Portugal")]).length === 1);
+ok("un autre pays coupe, meme sans ville",
+   grouperParLieu([lieuP("l1", "2026-08-03T10:00:00", "Lisbonne", "Portugal"), lieuP("es", "2026-08-08T10:00:00", null, "Espagne")]).map((g) => g.libelle).join(" > ") === "Lisbonne > Espagne");
+ok("un sejour nomme par le pays seul prend la premiere ville de ce pays",
+   grouperParLieu([lieuP("pt", "2026-08-06T10:00:00", null, "Portugal"), lieuP("l1", "2026-08-07T10:00:00", "Lisbonne", "Portugal")])[0].libelle === "Lisbonne");
+ok("une soiree sans GPS entre deux jours au meme endroit ne coupe pas le sejour",
+   grouperParLieu([lieuP("s1", "2026-07-12T10:00:00", "Souilhanels", "France"), lieuP("n", "2026-07-13T21:00:00", null, null), lieuP("s2", "2026-07-14T10:00:00", "Souilhanels", "France")]).length === 1);
 
 /* ── T-114 : L'ORDRE DU DÉPÔT EST CELUI DU CLIENT ─────────────────────────
    Le navigateur annonce son rang, le serveur l'écrit ; les ajouts d'une
