@@ -21,7 +21,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
 import { isValidNumeroToken } from "@/lib/atelier/token";
 import { signerGet, LOT_TTL_SECONDS } from "@/lib/atelier/r2";
-import { lireOrdreLot, nomsDeFichiers, ordonnerLot } from "@/lib/atelier/lot";
+import { lireCaleSansDate, lireOrdreLot, nomsDeFichiers, ordonnerLot } from "@/lib/atelier/lot";
 
 export const runtime = "nodejs";
 
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
   if (!qui) return NextResponse.json({ error: "non_authentifie" }, { status: 401 });
 
   try {
-    const body = (await request.json()) as { token?: unknown; ids?: unknown; ordre?: unknown };
+    const body = (await request.json()) as { token?: unknown; ids?: unknown; ordre?: unknown; sansDate?: unknown };
     const token = typeof body.token === "string" ? body.token.trim() : "";
     if (!isValidNumeroToken(token)) {
       return NextResponse.json({ error: "token_invalide" }, { status: 400 });
@@ -84,6 +84,9 @@ export async function POST(request: Request) {
        le lot se numérote par date de prise de vue ; « Par lieu » (T-130), par
        sous-groupe de lieu. Absent ou inconnu : l'ordre du dépôt, comme avant. */
     const ordre = lireOrdreLot(body.ordre);
+    /* T-131 — où vont les sans date : en queue, ou calées près de leurs
+       voisines de dépôt. Absent ou inconnu : en queue. */
+    const sansDate = lireCaleSansDate(body.sansDate);
 
     const supabase = makeSupabase();
     const { data: numero } = await supabase
@@ -118,6 +121,7 @@ export async function POST(request: Request) {
         lieuPays: p.lieu_pays ?? null,
       })),
       ordre,
+      sansDate,
     );
     const noms = nomsDeFichiers(
       rangees.map((p) => ({

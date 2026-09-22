@@ -18,7 +18,7 @@
 
 import { NOM_BRIEF } from "./brief";
 import { jourCourt, trierChronologie } from "./metadonnees";
-import { grouperParLieu } from "./lieux";
+import { grouperParLieu, type GroupeLieu } from "./lieux";
 
 /** Le strict minimum pour nommer. Le reste du lot ne regarde pas ce module. */
 export type PhotoNommable = {
@@ -79,22 +79,86 @@ export function lireOrdreLot(v: unknown): OrdreLot {
 type Ordonnable = { priseLe?: string | null; lieuVille?: string | null; lieuPays?: string | null };
 
 /**
- * Le lot dans l'ordre demandé. `date` est le tri de la grille
- * (`trierChronologie` : les datées d'abord, les autres derrière, dans
- * l'ordre du dépôt) ; `lieu` (T-130) est ses séjours mis bout à bout, dans
- * l'ordre du temps, les sans date en queue (`grouperParLieu`). C'est LE MÊME module qui range l'écran et le
- * disque.
+ * T-131 (22/09/2026) — où vont les photos SANS date quand la grille n'est
+ * pas dans l'ordre du dépôt. `queue` : elles ferment la liste, dans l'ordre
+ * du dépôt. `voisines` : chacune se cale juste après la photo datée déposée
+ * AVANT elle (sinon juste avant la première datée déposée après), et dans
+ * son séjour, pour retrouver ses voisines de dépôt autour d'elle. Une valeur inconnue vaut
+ * `queue`, jamais une erreur.
  */
-export function ordonnerLot<T extends Ordonnable>(photos: T[], ordre: OrdreLot): T[] {
-  if (ordre === "depot") return photos;
-  const enveloppes = photos.map((p) => ({
+export type CaleSansDate = "queue" | "voisines";
+
+export function lireCaleSansDate(v: unknown): CaleSansDate {
+  return v === "voisines" ? "voisines" : "queue";
+}
+
+type Enveloppe<T> = { p: T; priseLe: string | null; lieuVille: string | null; lieuPays: string | null };
+
+/**
+ * Les photos habillées pour le tri, SANS toucher à ce qu'elles affichent :
+ * la date « empruntée » d'une sans date ne sert qu'à la ranger, la vignette
+ * reste sans date. C'est la raison de l'enveloppe.
+ */
+function envelopper<T extends Ordonnable>(photos: T[], cale: CaleSansDate): Enveloppe<T>[] {
+  const env = photos.map((p) => ({
     p,
     priseLe: p.priseLe ?? null,
     lieuVille: p.lieuVille ?? null,
     lieuPays: p.lieuPays ?? null,
   }));
-  if (ordre === "date") return trierChronologie(enveloppes).map((x) => x.p);
-  return grouperParLieu(enveloppes).flatMap((g) => g.photos.map((x) => x.p));
+  if (cale !== "voisines") return env;
+  /* La première datée déposée APRÈS chaque position, pour les sans date qui
+     ouvrent le dépôt. */
+  type Voisine = Pick<Enveloppe<T>, "priseLe" | "lieuVille" | "lieuPays">;
+  const suivantes: Array<Voisine | null> = new Array(env.length).fill(null);
+  let prochaine: Voisine | null = null;
+  for (let i = env.length - 1; i >= 0; i--) {
+    if (env[i].priseLe) prochaine = env[i];
+    suivantes[i] = prochaine;
+  }
+  let precedente: Voisine | null = null;
+  for (let i = 0; i < env.length; i++) {
+    if (env[i].priseLe) {
+      precedente = env[i];
+      continue;
+    }
+    const v = precedente ?? suivantes[i];
+    if (!v) continue;
+    env[i].priseLe = v.priseLe;
+    /* Le lieu aussi, si elle n'en a pas : c'est ce qui la fait entrer dans
+       le SÉJOUR de sa voisine (T-130) au lieu de rester accrochée au
+       séjour d'avant quand elle emprunte à celle d'après. */
+    if (!env[i].lieuVille && !env[i].lieuPays) {
+      env[i].lieuVille = v.lieuVille;
+      env[i].lieuPays = v.lieuPays;
+    }
+  }
+  /* Le tri est stable : une sans date qui emprunte la date de sa voisine
+     d'avant reste APRÈS elle, celle qui emprunte à sa voisine d'après reste
+     AVANT. C'est l'ordre du dépôt qui départage, et c'est voulu. */
+  return env;
+}
+
+/**
+ * Les séjours du lot (T-130), avec la règle des sans date (T-131). La fiche
+ * s'en sert pour poser ses titres, et `ordonnerLot` pour le lot « lieu » :
+ * les deux voient EXACTEMENT les mêmes groupes.
+ */
+export function groupesDuLot<T extends Ordonnable>(photos: T[], cale: CaleSansDate): GroupeLieu<T>[] {
+  return grouperParLieu(envelopper(photos, cale)).map((g) => ({ ...g, photos: g.photos.map((x) => x.p) }));
+}
+
+/**
+ * Le lot dans l'ordre demandé. `date` est le tri de la grille
+ * (`trierChronologie` : les datées d'abord, les autres derrière, dans
+ * l'ordre du dépôt) ; `lieu` (T-130) est ses séjours mis bout à bout, dans
+ * l'ordre du temps. Dans les deux, `cale` dit où vont les sans date (T-131).
+ * C'est LE MÊME module qui range l'écran et le disque.
+ */
+export function ordonnerLot<T extends Ordonnable>(photos: T[], ordre: OrdreLot, cale: CaleSansDate = "queue"): T[] {
+  if (ordre === "depot") return photos;
+  if (ordre === "date") return trierChronologie(envelopper(photos, cale)).map((x) => x.p);
+  return groupesDuLot(photos, cale).flatMap((g) => g.photos);
 }
 
 /**
