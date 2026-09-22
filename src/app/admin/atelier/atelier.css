@@ -2575,7 +2575,26 @@
 .ate-photos-resume {
   margin-bottom: var(--bj-sp-3);
 }
-/* Le bouton « Par date » enfoncé : même accent que le survol des outils. */
+/* T-130 — le titre d'un sous-groupe par lieu, sur toute la largeur de la
+   grille : la ville (sinon le pays) et son compte. Le premier n'a pas de
+   filet au-dessus, il suit directement la phrase de résumé. */
+.ate-photos-lieu {
+  grid-column: 1 / -1;
+  padding-top: var(--bj-sp-2);
+  border-top: 1px solid var(--bj-veil-12);
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text);
+}
+.ate-photos-lieu .ate-compte {
+  margin-left: 0.4em;
+}
+.ate-photos-lieu:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+/* Les boutons « Par date » et « Par lieu » enfoncés : même accent que le survol des outils. */
 .ate-carte-outils .adm-btn[aria-pressed="true"] {
   border-color: var(--bj-action-border);
   color: var(--bj-action);

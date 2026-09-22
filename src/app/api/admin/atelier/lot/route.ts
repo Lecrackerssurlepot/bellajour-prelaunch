@@ -81,8 +81,8 @@ export async function POST(request: Request) {
       ? new Set(body.ids.filter((v): v is string => typeof v === "string"))
       : null;
     /* T-128 — l'ordre de la grille au moment du clic : « Par date » enfoncé,
-       le lot se numérote par date de prise de vue. Absent ou inconnu : l'ordre
-       du dépôt, comme avant. */
+       le lot se numérote par date de prise de vue ; « Par lieu » (T-130), par
+       sous-groupe de lieu. Absent ou inconnu : l'ordre du dépôt, comme avant. */
     const ordre = lireOrdreLot(body.ordre);
 
     const supabase = makeSupabase();
@@ -111,7 +111,12 @@ export async function POST(request: Request) {
        T-128 : le réordonnancement par date s'applique lui aussi au lot
        COMPLET, pour la même raison. */
     const rangees = ordonnerLot(
-      (photos ?? []).map((p) => ({ ...p, priseLe: p.prise_le ?? null })),
+      (photos ?? []).map((p) => ({
+        ...p,
+        priseLe: p.prise_le ?? null,
+        lieuVille: p.lieu_ville ?? null,
+        lieuPays: p.lieu_pays ?? null,
+      })),
       ordre,
     );
     const noms = nomsDeFichiers(

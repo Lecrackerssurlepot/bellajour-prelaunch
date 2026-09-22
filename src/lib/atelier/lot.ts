@@ -18,6 +18,7 @@
 
 import { NOM_BRIEF } from "./brief";
 import { jourCourt, trierChronologie } from "./metadonnees";
+import { grouperParLieu } from "./lieux";
 
 /** Le strict minimum pour nommer. Le reste du lot ne regarde pas ce module. */
 export type PhotoNommable = {
@@ -69,20 +70,31 @@ export function assainir(nom: string): string {
  * que soit l'ordre choisi. Une valeur inconnue vaut `depot`, jamais une
  * erreur : un vieux client qui n'envoie rien télécharge comme avant.
  */
-export type OrdreLot = "depot" | "date";
+export type OrdreLot = "depot" | "date" | "lieu";
 
 export function lireOrdreLot(v: unknown): OrdreLot {
-  return v === "date" ? "date" : "depot";
+  return v === "date" || v === "lieu" ? v : "depot";
 }
+
+type Ordonnable = { priseLe?: string | null; lieuVille?: string | null; lieuPays?: string | null };
 
 /**
  * Le lot dans l'ordre demandé. `date` est le tri de la grille
  * (`trierChronologie` : les datées d'abord, les autres derrière, dans
- * l'ordre du dépôt) : c'est LE MÊME module qui range l'écran et le disque.
+ * l'ordre du dépôt) ; `lieu` (T-130) est ses sous-groupes par lieu mis bout
+ * à bout (`grouperParLieu`). C'est LE MÊME module qui range l'écran et le
+ * disque.
  */
-export function ordonnerLot<T extends { priseLe?: string | null }>(photos: T[], ordre: OrdreLot): T[] {
-  if (ordre !== "date") return photos;
-  return trierChronologie(photos.map((p) => ({ p, priseLe: p.priseLe ?? null }))).map((x) => x.p);
+export function ordonnerLot<T extends Ordonnable>(photos: T[], ordre: OrdreLot): T[] {
+  if (ordre === "depot") return photos;
+  const enveloppes = photos.map((p) => ({
+    p,
+    priseLe: p.priseLe ?? null,
+    lieuVille: p.lieuVille ?? null,
+    lieuPays: p.lieuPays ?? null,
+  }));
+  if (ordre === "date") return trierChronologie(enveloppes).map((x) => x.p);
+  return grouperParLieu(enveloppes).flatMap((g) => g.photos.map((x) => x.p));
 }
 
 /**
