@@ -36,8 +36,11 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
 - **La grille sait ce que les photos savent (T-123, 21/09/2026)** : `lirePhotos()` tente trois
   paliers de colonnes (métadonnées 20260921 → vignette 20260830 → rien), les doublons se
   calculent dans `donnees.ts` sur le dossier entier (`groupesDeDoublons`, module pur), et la
-  fiche affiche une phrase de résumé, un bouton « Par date » (état d'ÉCRAN : l'ordre du dépôt
-  reste celui des noms du lot, T-114) et une remarque par vignette (doublon à demi éteint,
+  fiche affiche une phrase de résumé, un bouton « Par date » (état d'ÉCRAN, rien n'est écrit ;
+  **le lot téléchargé suit ce bouton**, T-128 : la route reçoit `ordre: "date"` et numérote le
+  lot COMPLET dans l'ordre du temps, sinon l'ordre du dépôt, T-114 ; « Par lieu », T-130, fait de
+  même par sous-groupes de ville, un titre `.ate-photos-lieu` par groupe), **le jour sur chaque vignette
+  datée** (T-129, même forme que le nom du fichier) et une remarque par vignette (doublon à demi éteint,
   capture d'écran, très sombre, très claire). **Ce sont des remarques, jamais des exclusions.**
   Le bouton « Lire les photos » n'apparaît que s'il reste quelque chose à lire ; en démo, jamais.
 - **« Télécharger le lot »** ouvre le sélecteur de dossier AVANT tout `await` : Chrome exige une

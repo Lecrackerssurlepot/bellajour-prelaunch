@@ -17,7 +17,8 @@
  */
 
 import { NOM_BRIEF } from "./brief";
-import { jourCourt } from "./metadonnees";
+import { jourCourt, trierChronologie } from "./metadonnees";
+import { grouperParLieu } from "./lieux";
 
 /** Le strict minimum pour nommer. Le reste du lot ne regarde pas ce module. */
 export type PhotoNommable = {
@@ -60,6 +61,43 @@ export function assainir(nom: string): string {
 }
 
 /**
+ * L'ordre dans lequel le lot est numéroté.
+ *
+ * `depot` : l'ordre du client (T-114), celui de la grille au repos. `date` :
+ * l'ordre de prise de vue, celui de la grille quand « Par date » est
+ * enfoncé (T-128, 22/09/2026). Le bouton et le lot disent LA MÊME CHOSE :
+ * la vignette « 03 » à l'écran est le fichier « 03 - » sur le disque, quel
+ * que soit l'ordre choisi. Une valeur inconnue vaut `depot`, jamais une
+ * erreur : un vieux client qui n'envoie rien télécharge comme avant.
+ */
+export type OrdreLot = "depot" | "date" | "lieu";
+
+export function lireOrdreLot(v: unknown): OrdreLot {
+  return v === "date" || v === "lieu" ? v : "depot";
+}
+
+type Ordonnable = { priseLe?: string | null; lieuVille?: string | null; lieuPays?: string | null };
+
+/**
+ * Le lot dans l'ordre demandé. `date` est le tri de la grille
+ * (`trierChronologie` : les datées d'abord, les autres derrière, dans
+ * l'ordre du dépôt) ; `lieu` (T-130) est ses sous-groupes par lieu mis bout
+ * à bout (`grouperParLieu`). C'est LE MÊME module qui range l'écran et le
+ * disque.
+ */
+export function ordonnerLot<T extends Ordonnable>(photos: T[], ordre: OrdreLot): T[] {
+  if (ordre === "depot") return photos;
+  const enveloppes = photos.map((p) => ({
+    p,
+    priseLe: p.priseLe ?? null,
+    lieuVille: p.lieuVille ?? null,
+    lieuPays: p.lieuPays ?? null,
+  }));
+  if (ordre === "date") return trierChronologie(enveloppes).map((x) => x.p);
+  return grouperParLieu(enveloppes).flatMap((g) => g.photos.map((x) => x.p));
+}
+
+/**
  * Les noms du lot, dans l'ordre.
  *
  * Deux exigences, dans cet ordre. D'abord L'ORDRE DU DÉPÔT : la cliente a
@@ -80,6 +118,8 @@ export function assainir(nom: string): string {
  * Canva sans rouvrir la fiche. Le rang reste TOUJOURS en tête : la date
  * aide à lire, elle ne réordonne rien (l'ordre est celui du client, T-114).
  * Une photo sans date ni lieu garde la forme courte « 01 - IMG_4207.jpg ».
+ * Quand l'éditeur VEUT l'ordre du temps, c'est `ordonnerLot(…, "date")` qui
+ * réordonne AVANT d'appeler ici (T-128) : ce module ne trie jamais seul.
  */
 export function nomsDeFichiers(photos: PhotoNommable[]): string[] {
   const largeur = Math.max(2, String(photos.length).length);

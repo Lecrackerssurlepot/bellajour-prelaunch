@@ -20,6 +20,8 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
+import { trierChronologie } from "./metadonnees";
+
 export const RAYON_LIEU_M = 150;
 export const MIN_PHOTOS_LIEU = 3;
 /** Décimales de la cellule des photos isolées : 2 ≈ 1,1 km. */
@@ -162,6 +164,49 @@ export function resumeLieux(photos: Array<{ priseLe: string | null; lieuVille: s
     if (!a.premier && b.premier) return 1;
     return b.n - a.n;
   });
+}
+
+/* ── Les sous-groupes (T-130) ───────────────────────────────────────────── */
+
+export const SANS_LIEU = "Sans lieu";
+
+export type GroupeLieu<T> = { cle: string; libelle: string; photos: T[] };
+
+/**
+ * Les photos par lieu, pour la grille de la fiche et le lot « par lieu ».
+ *
+ * Un groupe par ville (sinon par pays), dans l'ordre où on y est ARRIVÉ
+ * (première photo datée), les groupes sans aucune date ensuite par taille,
+ * « Sans lieu » toujours en dernier. Dans un groupe, l'ordre du temps
+ * (`trierChronologie`, les sans date derrière). Une ville qu'on a quittée
+ * puis retrouvée ne fait qu'UN groupe : l'éditeur compose par destination,
+ * pas par étape.
+ */
+export function grouperParLieu<T extends { priseLe: string | null; lieuVille: string | null; lieuPays: string | null }>(
+  photos: T[],
+): GroupeLieu<T>[] {
+  const groupes = new Map<string, GroupeLieu<T>>();
+  for (const p of photos) {
+    const ville = p.lieuVille?.trim() || null;
+    const pays = p.lieuPays?.trim() || null;
+    const cle = ville || pays ? `${ville ?? ""}|${pays ?? ""}` : "";
+    const g = groupes.get(cle) ?? { cle, libelle: ville ?? pays ?? SANS_LIEU, photos: [] };
+    g.photos.push(p);
+    groupes.set(cle, g);
+  }
+  const premier = (g: GroupeLieu<T>): string | null =>
+    g.photos.reduce<string | null>((m, p) => (p.priseLe && (!m || p.priseLe < m) ? p.priseLe : m), null);
+  return [...groupes.values()]
+    .sort((a, b) => {
+      if (!a.cle !== !b.cle) return a.cle ? -1 : 1;
+      const pa = premier(a);
+      const pb = premier(b);
+      if (pa && pb && pa !== pb) return pa.localeCompare(pb);
+      if (pa && !pb) return -1;
+      if (!pa && pb) return 1;
+      return b.photos.length - a.photos.length;
+    })
+    .map((g) => ({ ...g, photos: trierChronologie(g.photos) }));
 }
 
 /** « Lisbonne, Portugal » ; « Portugal » si la ville manque. */

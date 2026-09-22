@@ -86,7 +86,7 @@ import {
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
 import { estSessionAtelier, estChargeAtelier, KIND_ATELIER } from "@/lib/atelier/paiement";
-import { nomsDeFichiers, nomDossier } from "@/lib/atelier/lot";
+import { lireOrdreLot, nomsDeFichiers, nomDossier, ordonnerLot } from "@/lib/atelier/lot";
 import { RANG_MAX, decalageVersLeCoffre, rangDeclare, rangSuivant } from "@/lib/atelier/rang";
 import {
   signToken,
@@ -224,6 +224,7 @@ import {
   lieuEnClair,
   planGeocodage,
   resumeLieux,
+  grouperParLieu,
 } from "@/lib/atelier/lieux";
 import { lieuDepuisReponse } from "@/lib/atelier/geocodage";
 import {
@@ -1069,6 +1070,62 @@ ok("sans prenom : le titre suffit", nomDossier(null, "Nos dimanches", "abcdef012
 ok("sans rien : le token identifie quand meme", nomDossier(null, null, "abcdef0123") === "numero (abcdef)");
 ok("une barre oblique dans le titre ne cree pas de sous-dossier",
    !nomDossier("Camille", "ete 2026/2027", "abcdef0123").includes("/"));
+
+/* ── T-128 : LE LOT SUIT LE BOUTON « PAR DATE » ──────────────────────────
+   Le bouton reordonne la grille ; le lot telecharge prend le meme ordre, et
+   la vignette « 03 » a l'ecran est le fichier « 03 - » sur le disque. Sans
+   le bouton, rien ne change : l'ordre du depot (T-114). */
+titre("— T-128 : le lot suit le bouton « Par date » —");
+const depotInverse = [
+  { id: "juil", nom: "IMG_8027.jpeg", priseLe: "2026-07-11T20:39:51" },
+  { id: "sans", nom: "capture.png", priseLe: null },
+  { id: "jan", nom: "IMG_4140.jpeg", priseLe: "2026-01-10T16:11:41" },
+  { id: "mars", nom: "IMG_7859.jpeg", priseLe: "2026-03-07T11:24:44" },
+];
+ok("ordre du depot : rien ne bouge, meme objet",
+   ordonnerLot(depotInverse, "depot") === depotInverse);
+ok("par date : les datees dans l'ordre du temps, la sans date derriere",
+   ordonnerLot(depotInverse, "date").map((p) => p.id).join(",") === "jan,mars,juil,sans");
+ok("par date : le rang 01 est la plus ancienne, plus la derniere deposee",
+   nomsDeFichiers(ordonnerLot(depotInverse, "date"))[0] === "01 - 10 jan 2026 - IMG_4140.jpeg"
+   && nomsDeFichiers(depotInverse)[0] === "01 - 11 juil 2026 - IMG_8027.jpeg");
+ok("par date : la photo sans date ferme le lot",
+   nomsDeFichiers(ordonnerLot(depotInverse, "date"))[3] === "04 - capture.png");
+ok("l'ordre demande se lit sans jamais echouer : absent, inconnu, date",
+   lireOrdreLot(undefined) === "depot" && lireOrdreLot("n'importe") === "depot" && lireOrdreLot("date") === "date");
+ok("par date puis lot partiel : la numerotation reste celle du lot complet",
+   nomsDeFichiers(ordonnerLot(depotInverse, "date")).filter((_, i) => i === 2)[0] === "03 - 11 juil 2026 - IMG_8027.jpeg");
+
+/* ── T-130 : LES SOUS-GROUPES PAR LIEU ────────────────────────────────────
+   Un groupe par ville (sinon pays), dans l'ordre d'arrivee, « Sans lieu »
+   en dernier ; dans un groupe, l'ordre du temps. Le lot « lieu » les met
+   bout a bout. */
+titre("— T-130 : les sous-groupes par lieu —");
+const lieuP = (id: string, priseLe: string | null, lieuVille: string | null, lieuPays: string | null) =>
+  ({ id, nom: `${id}.jpg`, priseLe, lieuVille, lieuPays });
+const voyage = [
+  lieuP("lis2", "2026-08-10T10:00:00", "Lisbonne", "Portugal"),
+  lieuP("nul1", "2026-08-07T10:00:00", null, null),
+  lieuP("sin1", "2026-08-09T10:00:00", "Sintra", "Portugal"),
+  lieuP("lis1", "2026-08-08T10:00:00", "Lisbonne", "Portugal"),
+  lieuP("pt1", "2026-08-06T10:00:00", null, "Portugal"),
+  lieuP("lis0", null, "Lisbonne", "Portugal"),
+  lieuP("nul2", null, null, null),
+];
+const parLieu = grouperParLieu(voyage);
+ok("un groupe par ville, sinon par pays, « Sans lieu » en dernier",
+   parLieu.map((g) => g.libelle).join(" > ") === "Portugal > Lisbonne > Sintra > Sans lieu");
+ok("dans un groupe : l'ordre du temps, la sans date derriere",
+   parLieu[1].photos.map((p) => p.id).join(",") === "lis1,lis2,lis0");
+ok("le compte d'un groupe est le sien", parLieu[1].photos.length === 3 && parLieu[3].photos.length === 2);
+ok("le lot par lieu met les groupes bout a bout",
+   ordonnerLot(voyage, "lieu").map((p) => p.id).join(",") === "pt1,lis1,lis2,lis0,sin1,nul1,nul2");
+ok("par lieu, le rang 01 est la premiere du premier lieu",
+   nomsDeFichiers(ordonnerLot(voyage, "lieu"))[0] === "01 - 06 aou 2026 - Portugal - pt1.jpg");
+ok("l'ordre « lieu » se lit ; sans aucun lieu, un seul groupe « Sans lieu »",
+   lireOrdreLot("lieu") === "lieu" && grouperParLieu([lieuP("a", null, null, null)])[0].libelle === "Sans lieu");
+ok("un lieu vide (espaces) vaut sans lieu",
+   grouperParLieu([lieuP("a", null, "  ", " ")])[0].libelle === "Sans lieu");
 
 /* ── T-114 : L'ORDRE DU DÉPÔT EST CELUI DU CLIENT ─────────────────────────
    Le navigateur annonce son rang, le serveur l'écrit ; les ajouts d'une

@@ -21,7 +21,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
 import { isValidNumeroToken } from "@/lib/atelier/token";
 import { signerGet, LOT_TTL_SECONDS } from "@/lib/atelier/r2";
-import { nomsDeFichiers } from "@/lib/atelier/lot";
+import { lireOrdreLot, nomsDeFichiers, ordonnerLot } from "@/lib/atelier/lot";
 
 export const runtime = "nodejs";
 
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
   if (!qui) return NextResponse.json({ error: "non_authentifie" }, { status: 401 });
 
   try {
-    const body = (await request.json()) as { token?: unknown; ids?: unknown };
+    const body = (await request.json()) as { token?: unknown; ids?: unknown; ordre?: unknown };
     const token = typeof body.token === "string" ? body.token.trim() : "";
     if (!isValidNumeroToken(token)) {
       return NextResponse.json({ error: "token_invalide" }, { status: 400 });
@@ -80,6 +80,10 @@ export async function POST(request: Request) {
     const ids = Array.isArray(body.ids)
       ? new Set(body.ids.filter((v): v is string => typeof v === "string"))
       : null;
+    /* T-128 — l'ordre de la grille au moment du clic : « Par date » enfoncé,
+       le lot se numérote par date de prise de vue ; « Par lieu » (T-130), par
+       sous-groupe de lieu. Absent ou inconnu : l'ordre du dépôt, comme avant. */
+    const ordre = lireOrdreLot(body.ordre);
 
     const supabase = makeSupabase();
     const { data: numero } = await supabase
@@ -103,12 +107,22 @@ export async function POST(request: Request) {
        consommateurs.
        ⚠️ Les noms sont calculés sur le lot COMPLET, PUIS filtrés (T2-5) :
        la numérotation `01-`, `02-` reste celle du dépôt d'origine, et un
-       lot partiel COMPLÈTE le même dossier au lieu de le renuméroter. */
-    const rangees = photos ?? [];
+       lot partiel COMPLÈTE le même dossier au lieu de le renuméroter.
+       T-128 : le réordonnancement par date s'applique lui aussi au lot
+       COMPLET, pour la même raison. */
+    const rangees = ordonnerLot(
+      (photos ?? []).map((p) => ({
+        ...p,
+        priseLe: p.prise_le ?? null,
+        lieuVille: p.lieu_ville ?? null,
+        lieuPays: p.lieu_pays ?? null,
+      })),
+      ordre,
+    );
     const noms = nomsDeFichiers(
       rangees.map((p) => ({
         nom: p.nom_origine,
-        priseLe: p.prise_le ?? null,
+        priseLe: p.priseLe,
         lieuVille: p.lieu_ville ?? null,
         lieuPays: p.lieu_pays ?? null,
       })),

@@ -22,12 +22,12 @@ import { PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
 import {
   LIBELLE_REMARQUE,
   ecarteeDOffice,
+  jourCourt,
   jourEnClair,
   phraseResume,
   remarquesDe,
-  trierChronologie,
 } from "@/lib/atelier/metadonnees";
-import { resumeLieux } from "@/lib/atelier/lieux";
+import { grouperParLieu, resumeLieux } from "@/lib/atelier/lieux";
 import { formatDepuisRatio, type FormatVisuel } from "@/lib/atelier/formatVisuel";
 import {
   choisirDossier,
@@ -38,6 +38,7 @@ import {
   COMMANDE_REPLI,
   type PhotoLot,
 } from "./telechargement";
+import { ordonnerLot, type OrdreLot } from "@/lib/atelier/lot";
 
 /**
  * La fiche dossier — tout ce qu'il faut pour composer un numéro et le faire
@@ -692,9 +693,13 @@ export default function Fiche({
   /* ── T-123 : CE QUE LES PHOTOS SAVENT D'ELLES-MÊMES ────────────────
      Tout est calculé ici, depuis les colonnes de `photos`, par les modules
      purs : le résumé sous le titre, l'ordre chronologique, les remarques
-     sur chaque vignette. `parDate` est un état d'ÉCRAN : la grille se
-     réordonne, l'ordre du dépôt reste celui des noms du lot (T-114). */
-  const [parDate, setParDate] = useState(false);
+     sur chaque vignette. `parDate` est un état d'ÉCRAN : rien n'est écrit.
+     La grille se réordonne, et le lot téléchargé la suit (T-128) : les noms
+     « 01 - », « 02 - » prennent l'ordre affiché au moment du clic. */
+  const [ordreGrille, setOrdreGrille] = useState<OrdreLot>("depot");
+  const parDate = ordreGrille === "date";
+  /* Un bouton enfoncé se relâche vers l'ordre du dépôt ; l'autre le remplace. */
+  const basculerOrdre = (o: OrdreLot) => setOrdreGrille((v) => (v === o ? "depot" : o));
   const [lecture, setLecture] = useState<"repos" | "en_cours" | "erreur">("repos");
   const nbLues = fiche.photos.filter((p) => p.metadonneesLe).length;
   const nbDatees = fiche.photos.filter((p) => p.priseLe).length;
@@ -724,7 +729,13 @@ export default function Fiche({
   const sansLieu = fiche.photos.some((p) => p.gpsLat !== null && !p.lieuVille && !p.lieuPays);
   const lieux = resumeLieux(fiche.photos);
   const resumePhotos = phraseResume(fiche.photos, nbDoublons, lieux);
-  const affichees = parDate ? trierChronologie(fiche.photos) : fiche.photos;
+  const affichees = ordonnerLot(fiche.photos, ordreGrille);
+  /* T-130 — par lieu, la grille se coupe en sous-groupes : un titre avant la
+     première photo de chacun. Le lot descend dans le même ordre. */
+  const teteDeGroupe =
+    ordreGrille === "lieu"
+      ? new Map(grouperParLieu(fiche.photos).map((g) => [g.photos[0].id, g] as const))
+      : null;
   /* Un bouton seulement quand il reste quelque chose à lire : des photos
      jamais lues (dossier antérieur au 21/09, tâche de fond ratée) ou des
      GPS sans lieu (clé Geoapify posée après le dépôt). */
@@ -819,13 +830,20 @@ export default function Fiche({
    * aucune signature à refaire, et surtout aucun appel qui toucherait la base.
    */
   async function liensFrais(ids?: string[]): Promise<PhotoLot[]> {
-    if (demo) return ids ? fiche.photos.filter((p) => ids.includes(p.id)) : fiche.photos;
+    /* T-128 — le lot suit la grille : « Par date » enfoncé, il se numérote
+       par date de prise de vue. La route trie sur le lot COMPLET avant de
+       nommer puis de filtrer (T2-5) ; en démo, le même module trie ici. */
+    const ordre: OrdreLot = ordreGrille;
+    if (demo) {
+      const tout = ordonnerLot(fiche.photos, ordre);
+      return ids ? tout.filter((p) => ids.includes(p.id)) : tout;
+    }
     const r = await fetch("/api/admin/atelier/lot", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       /* T2-5 — `ids` restreint aux nouvelles ; la route calcule les noms
          sur le lot COMPLET avant de filtrer, la numérotation tient. */
-      body: JSON.stringify({ token: l.token, ...(ids ? { ids } : {}) }),
+      body: JSON.stringify({ token: l.token, ordre, ...(ids ? { ids } : {}) }),
     });
     if (!r.ok) throw new Error("Les liens du coffre n'ont pas pu être refaits.");
     const d = (await r.json()) as { photos?: PhotoLot[] };
@@ -1169,10 +1187,23 @@ export default function Fiche({
                       className="adm-btn adm-btn--ghost"
                       type="button"
                       aria-pressed={parDate}
-                      onClick={() => setParDate((v) => !v)}
-                      title={parDate ? "Revenir à l'ordre du dépôt (celui des noms du lot)" : "Trier la grille par date de prise de vue"}
+                      onClick={() => basculerOrdre("date")}
+                      title={parDate ? "Revenir à l'ordre du dépôt : la grille et les noms du lot le suivent" : "Trier la grille par date de prise de vue : le lot téléchargé se numérote dans cet ordre"}
                     >
-                      {parDate ? "Ordre du dépôt" : "Par date"}
+                      Par date
+                    </button>
+                  ) : null}
+                  {/* T-130 — par lieu : sous-groupes par ville (sinon pays),
+                      dans l'ordre d'arrivée, « Sans lieu » en dernier. */}
+                  {lieux.length > 0 ? (
+                    <button
+                      className="adm-btn adm-btn--ghost"
+                      type="button"
+                      aria-pressed={ordreGrille === "lieu"}
+                      onClick={() => basculerOrdre("lieu")}
+                      title={ordreGrille === "lieu" ? "Revenir à l'ordre du dépôt : la grille et les noms du lot le suivent" : "Grouper la grille par lieu : le lot téléchargé se numérote dans cet ordre"}
+                    >
+                      Par lieu
                     </button>
                   ) : null}
                   {aLire && !demo ? (
@@ -1373,9 +1404,12 @@ export default function Fiche({
                       {remarques.length ? (
                         <span className="ate-photo-remarque">{LIBELLE_REMARQUE[remarques[0]]}</span>
                       ) : null}
-                      {parDate && p.priseLe ? (
-                        <span className="ate-photo-jour">{jourEnClair(p.priseLe.slice(0, 10), false)}</span>
-                      ) : null}
+                      {/* T-129 — le jour sur CHAQUE vignette datée, quel que
+                          soit l'ordre : c'est le repère de l'éditeur pendant
+                          la mise en page. La même forme que dans le nom du
+                          fichier (« 11 juil 2026 »), pour retrouver la photo
+                          dans le dossier sans hésiter. */}
+                      {p.priseLe ? <span className="ate-photo-jour">{jourCourt(p.priseLe)}</span> : null}
                       {choix ? (
                         <span className="ate-photo-coche" aria-hidden="true">
                           {ecartee ? "✕" : "✓"}
@@ -1389,10 +1423,16 @@ export default function Fiche({
                         ajouts. Grille triée par ordre de dépôt : les ajouts
                         arrivent après, un seul filet suffit. Par date, les
                         ajouts se mêlent au reste : pas de filet. */}
-                    {!parDate && i === premiereNouvelle && i > 0 && p.ajouteLe ? (
+                    {ordreGrille === "depot" && i === premiereNouvelle && i > 0 && p.ajouteLe ? (
                       <span className="ate-photos-filet">
                         Ajoutées le{" "}
                         {new Date(p.ajouteLe).toLocaleDateString("fr-FR", { day: "2-digit", month: "long" })}
+                      </span>
+                    ) : null}
+                    {teteDeGroupe?.has(p.id) ? (
+                      <span className="ate-photos-lieu">
+                        {teteDeGroupe.get(p.id)!.libelle}
+                        <span className="ate-compte">{teteDeGroupe.get(p.id)!.photos.length}</span>
                       </span>
                     ) : null}
                     {/* T-125 — en choix, la vignette est un BOUTON qui bascule
