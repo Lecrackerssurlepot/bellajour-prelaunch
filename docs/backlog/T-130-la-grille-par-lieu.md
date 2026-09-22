@@ -25,7 +25,7 @@ téléchargé suit ce même ordre (règle T-128 : la vignette 03 est le fichier 
 boutons s'excluent, et un bouton enfoncé se relâche vers l'ordre du dépôt.
 
 ## Ce qui a été fait
-22/09/2026, branche `fix/lot-par-date` (avec T-128 et T-129).
+22/09/2026, branche `fix/lot-par-date` (avec T-128 et T-129). **PR #206 fusionnée le 22/09, EN PROD** (premier déploiement en ERROR sur la police Google, relancé sans cache par Mathias, READY à 14h06 UTC, alias bellajour.fr vérifié).
 - `lieux.ts` : `grouperParLieu` (pur), `SANS_LIEU`.
 - `lot.ts` : `OrdreLot` gagne `"lieu"`, `ordonnerLot` met les groupes bout à bout ; la route
   du lot le lit tel quel.
@@ -48,5 +48,5 @@ titre porte le lieu, le compte et la période (« du 7 au 8 mars 2026 »). Le lo
 dans son principe. Vu sur les vraies données d'Eloise : une photo du 8 août qui ne connaît que le
 pays « Portugal » coupait Lisbonne en deux ; règle ajoutée, une photo au pays seul reste dans
 le séjour du même pays, et un séjour nommé par le pays prend la première ville de ce pays.
-Harnais réécrit : 12 assertions, TOUT PASSE. Branche
-`feat/par-lieu-chronologique`.
+Harnais réécrit : 12 assertions, TOUT PASSE. **PR #207 fusionnée le 22/09, EN PROD**
+(déploiement READY du premier coup, alias bellajour.fr vérifié).
