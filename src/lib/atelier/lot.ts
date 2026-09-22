@@ -81,8 +81,8 @@ type Ordonnable = { priseLe?: string | null; lieuVille?: string | null; lieuPays
 /**
  * Le lot dans l'ordre demandé. `date` est le tri de la grille
  * (`trierChronologie` : les datées d'abord, les autres derrière, dans
- * l'ordre du dépôt) ; `lieu` (T-130) est ses sous-groupes par lieu mis bout
- * à bout (`grouperParLieu`). C'est LE MÊME module qui range l'écran et le
+ * l'ordre du dépôt) ; `lieu` (T-130) est ses séjours mis bout à bout, dans
+ * l'ordre du temps, les sans date en queue (`grouperParLieu`). C'est LE MÊME module qui range l'écran et le
  * disque.
  */
 export function ordonnerLot<T extends Ordonnable>(photos: T[], ordre: OrdreLot): T[] {

@@ -24,6 +24,7 @@ import {
   ecarteeDOffice,
   jourCourt,
   jourEnClair,
+  periodeEnClair,
   phraseResume,
   remarquesDe,
 } from "@/lib/atelier/metadonnees";
@@ -730,8 +731,9 @@ export default function Fiche({
   const lieux = resumeLieux(fiche.photos);
   const resumePhotos = phraseResume(fiche.photos, nbDoublons, lieux);
   const affichees = ordonnerLot(fiche.photos, ordreGrille);
-  /* T-130 — par lieu, la grille se coupe en sous-groupes : un titre avant la
-     première photo de chacun. Le lot descend dans le même ordre. */
+  /* T-130 — par lieu, la grille se coupe en séjours : un titre (lieu, compte,
+     période) avant la première photo de chacun. Le lot descend dans le même
+     ordre. */
   const teteDeGroupe =
     ordreGrille === "lieu"
       ? new Map(grouperParLieu(fiche.photos).map((g) => [g.photos[0].id, g] as const))
@@ -1193,15 +1195,16 @@ export default function Fiche({
                       Par date
                     </button>
                   ) : null}
-                  {/* T-130 — par lieu : sous-groupes par ville (sinon pays),
-                      dans l'ordre d'arrivée, « Sans lieu » en dernier. */}
+                  {/* T-130 — par lieu : un groupe par SÉJOUR, dans l'ordre
+                      du temps (un nouveau à chaque changement de ville, sinon
+                      de pays), « Sans date » en dernier, dans l'ordre du dépôt. */}
                   {lieux.length > 0 ? (
                     <button
                       className="adm-btn adm-btn--ghost"
                       type="button"
                       aria-pressed={ordreGrille === "lieu"}
                       onClick={() => basculerOrdre("lieu")}
-                      title={ordreGrille === "lieu" ? "Revenir à l'ordre du dépôt : la grille et les noms du lot le suivent" : "Grouper la grille par lieu : le lot téléchargé se numérote dans cet ordre"}
+                      title={ordreGrille === "lieu" ? "Revenir à l'ordre du dépôt : la grille et les noms du lot le suivent" : "Grouper la grille par séjour, dans l'ordre du temps : le lot téléchargé se numérote dans cet ordre"}
                     >
                       Par lieu
                     </button>
@@ -1433,6 +1436,11 @@ export default function Fiche({
                       <span className="ate-photos-lieu">
                         {teteDeGroupe.get(p.id)!.libelle}
                         <span className="ate-compte">{teteDeGroupe.get(p.id)!.photos.length}</span>
+                        {teteDeGroupe.get(p.id)!.premier ? (
+                          <span className="ate-photos-lieu-quand">
+                            {periodeEnClair(teteDeGroupe.get(p.id)!.premier as string, teteDeGroupe.get(p.id)!.dernier as string)}
+                          </span>
+                        ) : null}
                       </span>
                     ) : null}
                     {/* T-125 — en choix, la vignette est un BOUTON qui bascule
