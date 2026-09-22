@@ -1,7 +1,7 @@
 ---
 id: T-126
 titre: Le lien Canva partagé se publie sans que personne ait vu vers quel design il mène
-etat: en cours
+etat: fermé
 domaine: admin
 gravite: bloquant
 autonomie: libre
@@ -65,4 +65,8 @@ répond depuis Vercel. J+7 repart au 29/09. Un mail d'excuse (hors système, gab
 de l'atelier, bouton vers sa page, code unique promis si nouvelle commande) est parti à
 Marjorie à 10:39, **deux fois par erreur** (Brevo indexe ses événements avec une minute de
 retard, j'ai relancé sur un doute) ; ligne `mail_manuel` au journal avec les deux identifiants.
-Reste : rien. Le ticket se ferme à la prochaine passe de rangement.
+
+## Ce qui reste
+Rien : lien de Marjorie corrigé et republié le 22/09 à 10:16, preuve en production faite (« Ce
+lien ouvre « Marjorie », en commentaire pour qui l'a. »), mail d'excuse parti. Fermé par Mathias
+le 22/09/2026.

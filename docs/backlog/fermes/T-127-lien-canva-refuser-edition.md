@@ -1,7 +1,7 @@
 ---
 id: T-127
 titre: Un lien Canva en édition, en lecture seule ou fermé passe la publication de la maquette
-etat: en cours
+etat: fermé
 domaine: admin
 gravite: serieux
 autonomie: libre
@@ -45,5 +45,9 @@ du bouton Partager »), lien hors Canva. COMMENTER passe ; Canva muet (5xx, dél
 vérifié » et le dit. Le chemin `/edit` ne décide de RIEN, et le harnais le fixe. Prouvé en
 dry-run sur le build local : le design de travail de Jeanne (jamais partagé) est refusé avec la
 phrase « Demander l'accès », `https://x.fr/design` avec « Ce n'est pas un lien Canva ».
-**PR #201 fusionnée le 22/09, déploiement Vercel `0d45f0c` READY.** Reste : la preuve en
-production au premier lien refusé pour de vrai.
+**PR #201 fusionnée le 22/09, déploiement Vercel `0d45f0c` READY.** 
+
+## Ce qui reste
+Rien : refus en 422 en production depuis PR #201 (édition, lecture seule, non partagé, sans
+extension, hors Canva). La preuve d'un refus réel viendra d'elle-même au premier lien faux ; la
+règle est au harnais. Fermé par Mathias le 22/09/2026.
