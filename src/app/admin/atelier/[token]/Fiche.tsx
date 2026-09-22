@@ -22,6 +22,7 @@ import { PAYS_LIBELLE, paysValide } from "@/lib/atelier/pays";
 import {
   LIBELLE_REMARQUE,
   ecarteeDOffice,
+  jourCourt,
   jourEnClair,
   phraseResume,
   remarquesDe,
@@ -1382,9 +1383,12 @@ export default function Fiche({
                       {remarques.length ? (
                         <span className="ate-photo-remarque">{LIBELLE_REMARQUE[remarques[0]]}</span>
                       ) : null}
-                      {parDate && p.priseLe ? (
-                        <span className="ate-photo-jour">{jourEnClair(p.priseLe.slice(0, 10), false)}</span>
-                      ) : null}
+                      {/* T-129 — le jour sur CHAQUE vignette datée, quel que
+                          soit l'ordre : c'est le repère de l'éditeur pendant
+                          la mise en page. La même forme que dans le nom du
+                          fichier (« 11 juil 2026 »), pour retrouver la photo
+                          dans le dossier sans hésiter. */}
+                      {p.priseLe ? <span className="ate-photo-jour">{jourCourt(p.priseLe)}</span> : null}
                       {choix ? (
                         <span className="ate-photo-coche" aria-hidden="true">
                           {ecartee ? "✕" : "✓"}

@@ -2485,7 +2485,8 @@
 }
 /* T-123 — ce que la photo sait d'elle-même, sur la vignette. La remarque
    (doublon, capture, très sombre, très claire) est un voile sombre en bas ;
-   le jour n'apparaît qu'en tri « Par date », en haut. Un doublon s'éteint
+   le jour est un voile en haut, sur chaque vignette datée (T-129 : il
+   n'apparaissait qu'en tri « Par date »). Un doublon s'éteint
    à moitié : on le voit, on ne le confond pas avec l'originale. */
 .ate-photo-remarque,
 .ate-photo-jour {
