@@ -31,7 +31,7 @@ sur le même dossier et le réécrit (la reprise d'un lot interrompu tient), un 
 ouvre un autre. Rien n'est effacé, jamais.
 
 ## Ce qui a été fait
-22/09/2026, branche `fix/dossier-par-ordre`. `nomDossier(…, ordre, cale)`, `ecrireLot` reçoit
+22/09/2026, branche `fix/dossier-par-ordre`. **PR #211 fusionnée le 22/09, EN PROD** (déploiement READY du premier coup, alias bellajour.fr vérifié). `nomDossier(…, ordre, cale)`, `ecrireLot` reçoit
 `ordre` et `cale`, la fiche les passe. Harnais +1. `admin/CLAUDE.md` à jour.
 
 ## Ce qui reste

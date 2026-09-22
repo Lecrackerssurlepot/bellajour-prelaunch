@@ -23,6 +23,6 @@ Une photo sans date mais avec un lieu porte le lieu seul ; sans rien, pas de voi
 au plus, chacune coupée par des points de suspension si elle déborde. Rien d'autre ne bouge.
 
 ## Ce qui a été fait
-22/09/2026, branche `feat/lieu-sur-vignette`. `Fiche.tsx` (voile à deux lignes), `atelier.css`
+22/09/2026, branche `feat/lieu-sur-vignette`. **PR #212 fusionnée le 22/09, EN PROD** (déploiement READY du premier coup, alias bellajour.fr vérifié). `Fiche.tsx` (voile à deux lignes), `atelier.css`
 (`.ate-photo-jour` en grille, `.ate-photo-lieu`), `admin/CLAUDE.md`. tsc, lint (0 erreur), build
 verts, capture en démo.
