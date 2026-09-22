@@ -2016,7 +2016,13 @@
 }
 .ate-carte-outils {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--bj-sp-2);
+}
+/* T-131 — trois boutons d'ordre plus le brief, le choix et le lot : la barre
+   passe à la ligne, jamais un libellé. */
+.ate-carte-outils .adm-btn {
+  white-space: nowrap;
 }
 .ate-compte {
   font-family: var(--bj-font-ui);

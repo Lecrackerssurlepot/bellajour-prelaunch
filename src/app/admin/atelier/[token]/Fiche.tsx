@@ -28,7 +28,7 @@ import {
   phraseResume,
   remarquesDe,
 } from "@/lib/atelier/metadonnees";
-import { grouperParLieu, resumeLieux } from "@/lib/atelier/lieux";
+import { resumeLieux } from "@/lib/atelier/lieux";
 import { formatDepuisRatio, type FormatVisuel } from "@/lib/atelier/formatVisuel";
 import {
   choisirDossier,
@@ -39,7 +39,7 @@ import {
   COMMANDE_REPLI,
   type PhotoLot,
 } from "./telechargement";
-import { ordonnerLot, type OrdreLot } from "@/lib/atelier/lot";
+import { groupesDuLot, ordonnerLot, type CaleSansDate, type OrdreLot } from "@/lib/atelier/lot";
 
 /**
  * La fiche dossier — tout ce qu'il faut pour composer un numéro et le faire
@@ -701,9 +701,13 @@ export default function Fiche({
   const parDate = ordreGrille === "date";
   /* Un bouton enfoncé se relâche vers l'ordre du dépôt ; l'autre le remplace. */
   const basculerOrdre = (o: OrdreLot) => setOrdreGrille((v) => (v === o ? "depot" : o));
+  /* T-131 — où vont les sans date hors de l'ordre du dépôt : en queue, ou
+     calées près de leurs voisines de dépôt. Un état d'écran, et le lot suit. */
+  const [caleSansDate, setCaleSansDate] = useState<CaleSansDate>("queue");
   const [lecture, setLecture] = useState<"repos" | "en_cours" | "erreur">("repos");
   const nbLues = fiche.photos.filter((p) => p.metadonneesLe).length;
   const nbDatees = fiche.photos.filter((p) => p.priseLe).length;
+  const nbSansDate = fiche.photos.length - nbDatees;
   const nbDoublons = fiche.photos.filter((p) => p.doublonDe).length;
   /* T-125 — ce qui s'écarte d'office en entrant dans le choix (doublons et
      captures, règle pure), et ce qui reste. Chaque vignette se bascule. */
@@ -730,13 +734,13 @@ export default function Fiche({
   const sansLieu = fiche.photos.some((p) => p.gpsLat !== null && !p.lieuVille && !p.lieuPays);
   const lieux = resumeLieux(fiche.photos);
   const resumePhotos = phraseResume(fiche.photos, nbDoublons, lieux);
-  const affichees = ordonnerLot(fiche.photos, ordreGrille);
+  const affichees = ordonnerLot(fiche.photos, ordreGrille, caleSansDate);
   /* T-130 — par lieu, la grille se coupe en séjours : un titre (lieu, compte,
      période) avant la première photo de chacun. Le lot descend dans le même
      ordre. */
   const teteDeGroupe =
     ordreGrille === "lieu"
-      ? new Map(grouperParLieu(fiche.photos).map((g) => [g.photos[0].id, g] as const))
+      ? new Map(groupesDuLot(fiche.photos, caleSansDate).map((g) => [g.photos[0].id, g] as const))
       : null;
   /* Un bouton seulement quand il reste quelque chose à lire : des photos
      jamais lues (dossier antérieur au 21/09, tâche de fond ratée) ou des
@@ -836,8 +840,9 @@ export default function Fiche({
        par date de prise de vue. La route trie sur le lot COMPLET avant de
        nommer puis de filtrer (T2-5) ; en démo, le même module trie ici. */
     const ordre: OrdreLot = ordreGrille;
+    const sansDate: CaleSansDate = caleSansDate;
     if (demo) {
-      const tout = ordonnerLot(fiche.photos, ordre);
+      const tout = ordonnerLot(fiche.photos, ordre, sansDate);
       return ids ? tout.filter((p) => ids.includes(p.id)) : tout;
     }
     const r = await fetch("/api/admin/atelier/lot", {
@@ -845,7 +850,7 @@ export default function Fiche({
       headers: { "Content-Type": "application/json" },
       /* T2-5 — `ids` restreint aux nouvelles ; la route calcule les noms
          sur le lot COMPLET avant de filtrer, la numérotation tient. */
-      body: JSON.stringify({ token: l.token, ordre, ...(ids ? { ids } : {}) }),
+      body: JSON.stringify({ token: l.token, ordre, sansDate, ...(ids ? { ids } : {}) }),
     });
     if (!r.ok) throw new Error("Les liens du coffre n'ont pas pu être refaits.");
     const d = (await r.json()) as { photos?: PhotoLot[] };
@@ -1207,6 +1212,24 @@ export default function Fiche({
                       title={ordreGrille === "lieu" ? "Revenir à l'ordre du dépôt : la grille et les noms du lot le suivent" : "Grouper la grille par séjour, dans l'ordre du temps : le lot téléchargé se numérote dans cet ordre"}
                     >
                       Par lieu
+                    </button>
+                  ) : null}
+                  {/* T-131 — hors de l'ordre du dépôt, les sans date ferment
+                      la grille ; enfoncé, chacune se cale près de la photo
+                      déposée juste avant elle. Le lot suit. */}
+                  {ordreGrille !== "depot" && nbSansDate > 0 && nbDatees > 0 ? (
+                    <button
+                      className="adm-btn adm-btn--ghost"
+                      type="button"
+                      aria-pressed={caleSansDate === "voisines"}
+                      onClick={() => setCaleSansDate((v) => (v === "voisines" ? "queue" : "voisines"))}
+                      title={
+                        caleSansDate === "voisines"
+                          ? "Remettre les photos sans date en fin de grille"
+                          : `Caler chaque photo sans date juste après la photo déposée avant elle, pour retrouver ses voisines : le lot téléchargé suit (${nbSansDate} sans date)`
+                      }
+                    >
+                      Sans date : voisines
                     </button>
                   ) : null}
                   {aLire && !demo ? (

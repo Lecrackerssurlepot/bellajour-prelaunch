@@ -86,7 +86,7 @@ import {
   type NumeroPourReleve,
 } from "@/lib/atelier/mails";
 import { estSessionAtelier, estChargeAtelier, KIND_ATELIER } from "@/lib/atelier/paiement";
-import { lireOrdreLot, nomsDeFichiers, nomDossier, ordonnerLot } from "@/lib/atelier/lot";
+import { groupesDuLot, lireCaleSansDate, lireOrdreLot, nomsDeFichiers, nomDossier, ordonnerLot } from "@/lib/atelier/lot";
 import { RANG_MAX, decalageVersLeCoffre, rangDeclare, rangSuivant } from "@/lib/atelier/rang";
 import {
   signToken,
@@ -1139,6 +1139,35 @@ ok("un sejour nomme par le pays seul prend la premiere ville de ce pays",
    grouperParLieu([lieuP("pt", "2026-08-06T10:00:00", null, "Portugal"), lieuP("l1", "2026-08-07T10:00:00", "Lisbonne", "Portugal")])[0].libelle === "Lisbonne");
 ok("une soiree sans GPS entre deux jours au meme endroit ne coupe pas le sejour",
    grouperParLieu([lieuP("s1", "2026-07-12T10:00:00", "Souilhanels", "France"), lieuP("n", "2026-07-13T21:00:00", null, null), lieuP("s2", "2026-07-14T10:00:00", "Souilhanels", "France")]).length === 1);
+
+/* ── T-131 : LES SANS DATE PRÈS DE LEURS VOISINES ────────────────────────
+   En queue par defaut. « voisines » : chacune se cale juste apres la photo
+   datee deposee avant elle (sinon juste avant la premiere datee deposee
+   apres). La vignette reste sans date : seul le rang emprunte. */
+titre("— T-131 : les sans date près de leurs voisines —");
+const depotMele = [
+  lieuP("u0", null, null, null),
+  lieuP("b", "2026-08-10T10:00:00", "Sintra", "Portugal"),
+  lieuP("u1", null, null, null),
+  lieuP("a", "2026-08-08T10:00:00", "Lisbonne", "Portugal"),
+  lieuP("u2", null, null, null),
+];
+ok("en queue (defaut) : les sans date ferment, dans l'ordre du depot",
+   ordonnerLot(depotMele, "date").map((p) => p.id).join(",") === "a,b,u0,u1,u2");
+ok("voisines, par date : u1 suit b, u2 suit a, u0 precede b (sa premiere voisine d'apres)",
+   ordonnerLot(depotMele, "date", "voisines").map((p) => p.id).join(",") === "a,u2,u0,b,u1");
+ok("voisines, par lieu : chaque sans date entre dans le sejour de sa voisine, plus de groupe « Sans date »",
+   groupesDuLot(depotMele, "voisines").map((g) => `${g.libelle}:${g.photos.map((p) => p.id).join("")}`).join(" > ") === "Lisbonne:au2 > Sintra:u0bu1");
+ok("en queue, par lieu : le groupe « Sans date » est la",
+   groupesDuLot(depotMele, "queue").map((g) => g.libelle).join(" > ") === "Lisbonne > Sintra > Sans date");
+ok("la photo n'est pas modifiee : sa date reste nulle a l'ecran",
+   ordonnerLot(depotMele, "date", "voisines").find((p) => p.id === "u1")!.priseLe === null);
+ok("aucune datee : rien a emprunter, l'ordre du depot tient",
+   ordonnerLot([lieuP("x", null, null, null), lieuP("y", null, null, null)], "date", "voisines").map((p) => p.id).join("") === "xy");
+ok("la cale se lit sans jamais echouer : absent, inconnu, voisines",
+   lireCaleSansDate(undefined) === "queue" && lireCaleSansDate("ailleurs") === "queue" && lireCaleSansDate("voisines") === "voisines");
+ok("le lot par date avec voisines numerote dans cet ordre",
+   nomsDeFichiers(ordonnerLot(depotMele, "date", "voisines"))[1] === "02 - u2.jpg");
 
 /* ── T-114 : L'ORDRE DU DÉPÔT EST CELUI DU CLIENT ─────────────────────────
    Le navigateur annonce son rang, le serveur l'écrit ; les ajouts d'une

@@ -40,7 +40,8 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
   **le lot téléchargé suit ce bouton**, T-128 : la route reçoit `ordre: "date"` et numérote le
   lot COMPLET dans l'ordre du temps, sinon l'ordre du dépôt, T-114 ; « Par lieu », T-130, fait de
   même par SÉJOUR : un groupe à chaque changement de ville dans l'ordre du temps, « Sans date » en
-  queue dans l'ordre du dépôt, un titre `.ate-photos-lieu` par groupe), **le jour sur chaque vignette
+  queue dans l'ordre du dépôt, un titre `.ate-photos-lieu` par groupe ; « Sans date : voisines », T-131, cale chaque sans date
+  près de sa voisine de dépôt, la route reçoit `sansDate: "voisines"`), **le jour sur chaque vignette
   datée** (T-129, même forme que le nom du fichier) et une remarque par vignette (doublon à demi éteint,
   capture d'écran, très sombre, très claire). **Ce sont des remarques, jamais des exclusions.**
   Le bouton « Lire les photos » n'apparaît que s'il reste quelque chose à lire ; en démo, jamais.
