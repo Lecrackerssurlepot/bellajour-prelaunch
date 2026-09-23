@@ -523,6 +523,49 @@ export const MAILS = [
     lien: LIEN,
     pied: "Sans réponse de votre part d’ici le {{ params.DATE_LIMITE }}, nous lançons l’impression telle quelle.",
   },
+  /* ──────────────────────────────────────────────────────────────────
+     M5c — LA MAQUETTE CORRIGÉE (T-134, 23/09/2026)
+
+     Ce n'est PAS une étape de plus dans la machine : c'est le SECOND
+     GABARIT du code M5. Le verrou, le garde-fou de chaîne et
+     l'auto-validation à J+7 restent accrochés à « M5 est parti », et ne
+     savent rien de ce texte.
+
+     Pourquoi il existe : republier après des corrections renvoyait M5 mot
+     pour mot. Quelqu'un qui venait d'écrire trois remarques dans le Canva
+     relisait « votre numéro est composé, chaque page est en place », sous
+     un objet identique au premier envoi, donc empilé dans le même fil chez
+     Gmail. Rien n'accusait réception de ce qu'il avait demandé.
+
+     ⚠️ L'OBJET DIFFÈRE, et c'est la raison d'être d'un second gabarit
+     plutôt que d'une conditionnelle : le dépôt utilise `{% if %}` dans des
+     corps de mail, JAMAIS dans un sujet, et rien ne prouve que Brevo l'y
+     accepte. Un sujet identique rendait le second mail invisible.
+
+     ⚠️ Mêmes paramètres que M5, aux mêmes noms : ce gabarit est servi par
+     le MÊME code, donc par `parametresPour("M5", …)`. N'y introduire aucune
+     variable que M5 ne fournit pas, elle arriverait vide.
+     ────────────────────────────────────────────────────────────────── */
+  {
+    code: "M5c",
+    nom: "M5c · Atelier · La maquette corrigée",
+    sujet: `${TITRE}, vos corrections sont faites`,
+    preheader: "Nous avons repris vos remarques. Le numéro est à jour.",
+    titreHtml: "Vos corrections sont faites",
+    h1: "Vos corrections<br />sont faites.",
+    sous: `${PRENOM}, nous avons repris les remarques que vous nous avez laissées dans le document. Le numéro est à jour : reprenez-le page après page, et dites-nous si cette fois tout y est.`,
+    carte: carteChiffres(
+      { valeur: "{{ params.NB_PAGES }}", legende: "pages composées", grand: true },
+      { valeur: "{{ params.DATE_LIMITE }}", legende: "nouvelle date limite", grand: false },
+      /* La même note que M5, volontairement : promettre ici des retouches
+         illimitées serait une règle commerciale que Mathias n'a pas
+         tranchée. */
+      "Il reste quelque chose ? Écrivez-le dans le document, puis dites-le nous depuis votre page : nous repassons dessus.",
+    ),
+    cta: "Revoir ma maquette",
+    lien: LIEN,
+    pied: "Le délai repart de zéro. Sans réponse de votre part d’ici le {{ params.DATE_LIMITE }}, nous lançons l’impression telle quelle.",
+  },
   {
     code: "M6",
     nom: "M6 · Atelier · Départ à l'impression",

@@ -265,8 +265,26 @@ function versLigne(
     },
     actions: (archiveLe ? [] : actionsDepuis(r.etat)).map((a) => ({
       cle: a.cle,
-      libelle: a.libelle,
-      explication: a.explication,
+      /* ── T-134 — PUBLIER ET REPUBLIER NE SONT PAS LE MÊME GESTE ──────
+         La table des transitions porte UN libellé par action, et c'est
+         volontaire : elle décrit des gestes, pas des situations. Mais
+         `publier_maquette` part de deux états, et depuis `maquette_prete`
+         elle REpublie. L'écrire ici, là où l'état est connu, évite deux
+         entrées dans la table pour une seule règle.
+         Les mots sont ceux de la colonne « Prochaine étape »
+         (`prochaineEtape.ts`) : les deux écrans ne peuvent pas diverger. */
+      libelle:
+        a.cle === "publier_maquette" && r.etat === "maquette_prete"
+          ? retouches
+            ? "Republier la maquette corrigée"
+            : "Republier la maquette"
+          : a.libelle,
+      explication:
+        a.cle === "publier_maquette" && r.etat === "maquette_prete"
+          ? retouches
+            ? "Le client a demandé des corrections. Coche « j'ai corrigé » pour lui annoncer qu'elles sont faites : son délai de 7 jours repart de zéro."
+            : "Remplace ce que le client voit. Sans cocher « j'ai corrigé », aucun mail ne part : c'est une mise à jour silencieuse."
+          : a.explication,
       vers: a.vers,
       /* T2-13 — republier après retouches lèvera le verrou M5 (la route le
          supprime avant la relève) : la projection doit le savoir, sinon

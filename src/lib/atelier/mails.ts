@@ -244,7 +244,32 @@ export type Resultat =
    dur : les ID diffèrent entre le compte de test et le compte réel. Lus à
    CHAQUE appel (et non au chargement du module) pour qu'un ajout de variable
    sur Vercel prenne effet au redéploiement sans dépendre du cache de module. */
-function templatePour(code: CodeMail): number | undefined {
+export function templatePour(code: CodeMail, varianteCorrigee = false): number | undefined {
+  /* ── T-134 — LE SECOND GABARIT DE M5 (23/09/2026) ──────────────────
+     Republier après des corrections envoie le MÊME code M5 (donc le même
+     verrou, le même garde-fou de chaîne, la même auto-validation à J+7),
+     mais un AUTRE texte : « vos corrections sont faites » au lieu de
+     « votre numéro est composé ».
+
+     Deux gabarits et pas une conditionnelle dans un seul, parce que
+     l'OBJET doit changer : sans ça, Gmail empile le second mail sous le
+     premier et le client le prend pour un doublon. Le dépôt n'utilise
+     `{% if %}` que dans des corps de mail, jamais dans un sujet.
+
+     ⚠️ LE REPLI EST LA GARANTIE, PAS UN CONFORT. Si la variable manque,
+     on rend le gabarit M5 ORDINAIRE : le mail part, avec le mauvais
+     texte. Rendre `undefined` ici aurait déclenché `sans_template` plus
+     bas, c'est-à-dire un mail sauté SANS poser le verrou, donc re-sauté à
+     chaque relève, indéfiniment et sans erreur. Un texte à côté vaut
+     mieux qu'un silence définitif. */
+  if (varianteCorrigee && modeleDe(code) === "M5") {
+    const corrige = Number(process.env.BREVO_TEMPLATE_M5C_ID) || undefined;
+    if (corrige) return corrige;
+    console.error(
+      "[atelier/mails] M5 « corrections faites » demandé mais BREVO_TEMPLATE_M5C_ID absent — repli sur le gabarit M5 ordinaire",
+    );
+  }
+
   const brut = {
     M0: process.env.BREVO_TEMPLATE_M0_ID,
     M1: process.env.BREVO_TEMPLATE_M1_ID,
@@ -710,7 +735,9 @@ export async function envoyerMailAtelier(
   /** T-116 — `differeMs` : le mail est PROGRAMMÉ chez Brevo pour dans autant
       de millisecondes au lieu de partir tout de suite. Réservé à M0 pour
       l'instant ; tout code l'accepte, le verrou et le journal suivent. */
-  options?: { differeMs?: number },
+  /** T-134 — `varianteCorrigee` : M5 part dans sa version « corrections
+      faites ». Le CODE ne change pas, seul le gabarit change. */
+  options?: { differeMs?: number; varianteCorrigee?: boolean },
 ): Promise<Resultat> {
   try {
     const manque = manquePour(code, numero);
@@ -719,7 +746,7 @@ export async function envoyerMailAtelier(
       return { statut: "incomplet", manque };
     }
 
-    const template = templatePour(code);
+    const template = templatePour(code, options?.varianteCorrigee);
     if (!template) {
       /* Pas de verrou posé : le jour où la variable arrive, le mail partira.
          C'est ce qui permet de câbler un mail avant que son template existe.
@@ -1306,7 +1333,12 @@ export async function releverDossier(
   numeroId: string,
   /** Passés à l'envoi du premier code dû (T2-3 : le MOT de M9, connu du seul
       appel immédiat de la transition — le balayage n'en a pas). */
-  extra?: Record<string, unknown>
+  extra?: Record<string, unknown>,
+  /** T-134 — relayé tel quel à `envoyerMailAtelier`. Sans ce relais, le
+      drapeau n'atteindrait jamais le choix du gabarit : `extra` n'est
+      fusionné que dans les PARAMÈTRES Brevo, bien après que le gabarit a
+      été résolu. */
+  options?: { varianteCorrigee?: boolean },
 ): Promise<Releve> {
   try {
     const { data } = await lireNumerosMail<NumeroPourReleve | null>((champs) =>
@@ -1331,7 +1363,10 @@ export async function releverDossier(
        deux (cas d'un rattrapage), on envoie le premier ici et le balayage
        prendra le second : /admin n'a pas à devenir un moteur d'envoi. */
     const code = codes[0];
-    return { code, resultat: await envoyerMailAtelier(supabase, code, data, extra, jalons) };
+    return {
+      code,
+      resultat: await envoyerMailAtelier(supabase, code, data, extra, jalons, options),
+    };
   } catch (err) {
     console.error("[atelier/mails] relève d'un dossier échouée", (err as Error)?.message);
     return { code: null, resultat: null };

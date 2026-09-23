@@ -160,6 +160,21 @@ export type Saisie = {
   /* T2-3 — le mot facultatif de l'atelier sur « Demander plus de photos ».
      Il part dans M9 (param MOT), jamais en base : ce n'est pas une colonne. */
   mot?: string | null;
+  /* T-134 (23/09/2026) — « je republie parce que j'ai corrigé ».
+     Ni colonne ni patch : un SIGNAL que la route lit pour décider deux
+     choses, renvoyer M5 et l'envoyer dans sa version « corrections faites ».
+
+     ⚠️ POURQUOI UNE CASE ET PAS SEULEMENT LA COLONNE `retouches_demandees_le`.
+     Cette colonne n'est posée que si le client clique « j'ai noté des
+     retouches » sur sa page. Or il écrit souvent ses remarques directement
+     dans le Canva et oublie le bouton : l'atelier VOIT les corrections, le
+     système non. Sans cette case, republier n'aurait alors rien renvoyé du
+     tout (garde de la republication de confort), et le client n'aurait
+     jamais su que son numéro avait bougé. Décision de Mathias, 23/09/2026.
+
+     La colonne reste la source PRÉ-COCHÉE : quand le client a cliqué, la
+     case est déjà faite. Les deux chemins mènent au même geste. */
+  corrections_faites?: boolean | string | null;
 };
 
 export type Action = {
