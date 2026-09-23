@@ -134,6 +134,18 @@ l'échec (`mail_echec` dans le journal) : un état forcé à la main ne déclenc
 de nouveau à chaque relève, indéfiniment, sans erreur. `/admin/atelier/sante` est le seul endroit
 qui le montre. Le texte des mails est versionné dans `scripts/mails-atelier.mjs`, pas dans Brevo.
 
+⚠️ **M5 a DEUX gabarits, un seul code** (T-134, 23/09/2026). Republier une maquette après des
+corrections envoie le code M5 — donc le même verrou, le même garde-fou de chaîne, la même
+auto-validation à J+7 — mais le gabarit `BREVO_TEMPLATE_M5C_ID` (« vos corrections faites »)
+au lieu de `BREVO_TEMPLATE_M5_ID`. Le drapeau passe par `options.varianteCorrigee`, relayé par
+`releverDossier` : **pas par les paramètres**, qui ne sont fusionnés que bien après la résolution
+du gabarit. Deux gabarits et non une conditionnelle parce que l'OBJET doit changer, sinon Gmail
+empile les deux mails. ⚠️ **Le repli sur le gabarit M5 ordinaire est la garantie, pas un
+confort** : rendre `undefined` aurait déclenché `sans_template`, c'est-à-dire un mail sauté sans
+verrou, re-sauté à chaque relève, indéfiniment. Deux chemins l'ouvrent : le clic du client
+(`retouches_demandees_le`) OU la case « j'ai corrigé » de l'atelier, parce que le client écrit
+souvent dans le Canva sans cliquer le bouton de sa page (décision de Mathias, 23/09).
+
 ⚠️ **Aucun tiret (—, –) dans les textes de mails.** Consigne explicite de Mathias.
 
 ## Les signaux qui ne veulent pas dire ce qu'on croit

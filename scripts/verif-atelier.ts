@@ -30,6 +30,7 @@ import {
   messageAAnnuler,
   verdictAnnulation,
 } from "@/lib/atelier/programme";
+import { templatePour } from "@/lib/atelier/mails";
 import { prefixeCoffre, verdictSuppression } from "@/lib/atelier/archive";
 import { lireLienCanva, lireFicheCanva, urlLectureCanva, verdictLienPartage } from "@/lib/atelier/canva";
 import { natureDe, planInterieur, planCouverture, resumeInterieur, resumeCouverture, type PageLue } from "@/lib/atelier/decoupe";
@@ -5020,6 +5021,50 @@ titre("T-121 : le controle des bords d'une page d'impression");
      qui est pourtant en commentaire. Le chemin ne décide de rien. */
   ok("un chemin /edit avec un rôle COMMENTER passe : seul le rôle fait foi",
      long?.forme === "design" && long.chemin === "edit" && v("COMMENTER").ok);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   T-134 — LE SECOND GABARIT DE M5 (« vos corrections sont faites »)
+
+   La regle tient en deux phrases, et la seconde est la plus importante :
+   le drapeau choisit l'autre gabarit, et SON ABSENCE retombe sur M5 au
+   lieu de ne rien rendre. Rendre `undefined` aurait declenche
+   `sans_template` : un mail saute SANS poser le verrou, donc re-saute a
+   chaque releve, indefiniment et sans erreur.
+   ══════════════════════════════════════════════════════════════════════ */
+titre("— T-134 : le gabarit de M5 selon qu'on corrige ou non —");
+{
+  const avant = { m5: process.env.BREVO_TEMPLATE_M5_ID, m5c: process.env.BREVO_TEMPLATE_M5C_ID };
+
+  process.env.BREVO_TEMPLATE_M5_ID = "33";
+  process.env.BREVO_TEMPLATE_M5C_ID = "46";
+  ok("sans drapeau, M5 garde son gabarit d'origine", templatePour("M5") === 33);
+  ok("avec le drapeau, M5 part dans le gabarit corrige", templatePour("M5", true) === 46);
+
+  delete process.env.BREVO_TEMPLATE_M5C_ID;
+  ok(
+    "gabarit corrige absent : on RETOMBE sur M5, le mail part (jamais de saut silencieux)",
+    templatePour("M5", true) === 33,
+  );
+
+  process.env.BREVO_TEMPLATE_M5C_ID = "46";
+  process.env.BREVO_TEMPLATE_M6_ID = "34";
+  ok(
+    "le drapeau ne deborde sur AUCUN autre code",
+    templatePour("M6", true) === 34,
+  );
+
+  delete process.env.BREVO_TEMPLATE_M5_ID;
+  delete process.env.BREVO_TEMPLATE_M5C_ID;
+  ok(
+    "les deux absents : rien a envoyer, et c'est le seul cas ou l'on rend rien",
+    templatePour("M5", true) === undefined,
+  );
+
+  if (avant.m5 === undefined) delete process.env.BREVO_TEMPLATE_M5_ID;
+  else process.env.BREVO_TEMPLATE_M5_ID = avant.m5;
+  if (avant.m5c === undefined) delete process.env.BREVO_TEMPLATE_M5C_ID;
+  else process.env.BREVO_TEMPLATE_M5C_ID = avant.m5c;
 }
 
 /* On repose le globe comme on l'a trouve : la suite du harnais ne doit pas

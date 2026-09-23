@@ -202,6 +202,13 @@ function saisieInitiale(fiche: Fiche): Record<string, string> {
     apercu_double: fiche.apercuBrut.double ?? "",
     canva_url: fiche.canvaUrl ?? "",
     maquette_pdf_url: fiche.maquettePdfUrl ?? "",
+    /* T-134 — « je republie parce que j'ai corrigé ». PRÉ-COCHÉE quand le
+       client a cliqué « j'ai noté des retouches » sur sa page : dans ce cas
+       la réponse est déjà connue, l'atelier n'a rien à se demander. Sinon
+       vide, et c'est à l'oeil de l'atelier de la cocher (il voit les
+       commentaires dans le Canva, le client ayant souvent oublié le bouton).
+       Chaîne et pas booléen : tout cet état est un Record<string, string>. */
+    corrections_faites: fiche.retouchesLe ? "oui" : "",
     pdf_produit: fiche.impressionFichiers.product ?? "",
     pdf_couverture: fiche.impressionFichiers.cover ?? "",
     pdf_interieur: fiche.impressionFichiers.book ?? "",
@@ -480,6 +487,15 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
 
 
   const erreurDe = (champ: string) => erreurs.find((e) => e.champ === champ)?.message;
+  /* T-134 — republication qui annonce des corrections : la case est cochée
+     ET le dossier est déjà à l'état maquette. Sert au libellé du bouton comme
+     à la ligne « Mail » de la confirmation, pour qu'ils ne puissent pas se
+     contredire. */
+  const corrigeMaintenant =
+    choisie?.cle === "publier_maquette" &&
+    fiche.ligne.etat === "maquette_prete" &&
+    saisie.corrections_faites === "oui";
+
   const set = (champ: string, v: string) => {
     setSaisie((s) => ({ ...s, [champ]: v }));
     setVerif(null);
@@ -887,6 +903,10 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
              plusieurs : une seule publication reste `{ plat }`, comme avant. */
           saisie: {
             ...saisie,
+            /* T-134 — la route la lit en BOOLÉEN strict (`=== true`) : un
+               « oui » textuel ne déclencherait rien. La conversion se fait
+               ici, une fois, au bord. */
+            corrections_faites: saisie.corrections_faites === "oui",
             apercu_plats: planches.map((p) => p.key),
             apercu_doubles: doubles.map((d) => d.key),
             apercu_cadrages: cadrages,
@@ -1613,6 +1633,34 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                   <span className="ate-erreur">{erreurDe("maquette_pdf_url")}</span>
                 ) : null}
               </label>
+
+              {/* ── T-134 : CE QUI DÉCIDE DU MAIL ────────────────────────
+                  Cochée, elle fait deux choses : elle RENVOIE M5 (dont le
+                  verrou est levé) et elle l'envoie dans sa version
+                  « vos corrections sont faites ».
+                  Décochée, rien ne repart : c'est la republication de
+                  confort, celle qui ne doit réveiller personne.
+                  N'apparaît qu'en REpublication : à la première publication
+                  il n'y a rien à corriger. */}
+              {fiche.ligne.etat === "maquette_prete" ? (
+                <label className="ate-champ ate-champ--case">
+                  <span className="ate-case">
+                    <input
+                      type="checkbox"
+                      checked={saisie.corrections_faites === "oui"}
+                      onChange={(e) => set("corrections_faites", e.target.checked ? "oui" : "")}
+                    />
+                    <span className="ate-champ-label">J&apos;ai corrigé ce qui était demandé</span>
+                  </span>
+                  <span className="ate-champ-aide">
+                    {fiche.retouchesLe
+                      ? "Le client a cliqué « j'ai noté des retouches » : coché d'office."
+                      : "Coche-la si tu as repris des commentaires vus dans le Canva, même sans que le client l'ait signalé depuis sa page."}{" "}
+                    Cochée, il reçoit « vos corrections sont faites » et son délai repart de zéro.
+                    Décochée, aucun mail ne part.
+                  </span>
+                </label>
+              ) : null}
             </>
           ) : null}
 
@@ -1904,7 +1952,19 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                   {/* Le mail vient de la RÈGLE d'envoi, projetée sur ce
                       dossier : ce qui est annoncé ici est ce qui partira une
                       seconde plus tard, pas ce qu'une table déclarait. */}
-                  {choisie.mail ? (
+                  {/* ── T-134 — L'ÉCRAN NE PEUT PAS MENTIR SUR CE QUI PART ──
+                      La projection `choisie.mail` est calculée sur le SERVEUR,
+                      donc avant que l'atelier n'ait coché quoi que ce soit.
+                      Elle est juste quand le client a cliqué (la case est
+                      alors pré-cochée), et FAUSSE dès que l'atelier coche
+                      lui-même : elle annoncerait « aucun mail » pendant que
+                      M5 repart. On recalcule donc ici, sur la case réelle. */}
+                  {corrigeMaintenant ? (
+                    <>
+                      Le mail M5 partira maintenant, dans sa version
+                      {" "}<strong>« vos corrections sont faites »</strong>.
+                    </>
+                  ) : choisie.mail ? (
                     choisie.mail.absent ? (
                       <span className="ate-alerte">
                         {choisie.mail.code} n&apos;est pas encore câblé : le client ne sera PAS prévenu.

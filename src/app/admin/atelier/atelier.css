@@ -2116,6 +2116,28 @@
   color: var(--bj-text-faint);
   margin-top: var(--bj-sp-1);
 }
+/* ── T-134 : LA CASE « J'AI CORRIGÉ » ──────────────────────────────────
+   Un champ dont l'étiquette est à DROITE de la case, et non au-dessus
+   comme partout ailleurs : c'est ce que l'oeil attend d'une case à cocher,
+   et `.ate-champ-label` pose `display: block` qui la renverrait à la ligne.
+   L'aide, elle, reste sous l'ensemble, alignée sur les autres champs. */
+.ate-case {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  cursor: pointer;
+}
+.ate-case input {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--ate-orange);
+  cursor: pointer;
+}
+.ate-case .ate-champ-label {
+  margin-bottom: 0;
+}
+
 .ate-champ-aide--attention {
   color: var(--ate-orange);
 }

@@ -759,13 +759,26 @@ export async function POST(request: Request) {
       prepa.patch.cloudprinter_order_id = orderIdCommande;
     }
 
-    /* T2-13 — une REpublication de maquette après des retouches demandées.
-       La garde sur la colonne compte : une republication de confort (sans
-       retouches) ne doit pas faire repartir M5. */
-    const republicationRetouches =
+    /* ── T2-13, ÉLARGI PAR T-134 (23/09/2026) ──────────────────────────
+       Une REpublication de maquette qui annonce des corrections.
+
+       La garde compte toujours : une republication de CONFORT ne doit pas
+       faire repartir M5, sinon le moindre ajustement de lien renverrait un
+       mail à quelqu'un qui n'a rien demandé.
+
+       Ce qui change : deux chemins ouvrent cette porte au lieu d'un.
+       1. Le client a cliqué « j'ai noté des retouches » sur sa page, et la
+          colonne est posée. C'est le cas propre.
+       2. L'atelier COCHE la case, parce qu'il voit les commentaires dans le
+          Canva alors que le client a oublié le bouton. Mathias, 23/09/2026 :
+          ce cas est le plus fréquent, et sans lui republier ne renvoyait
+          rien du tout.
+
+       Le second chemin n'exige PAS le premier : c'est tout son intérêt. */
+    const correctionsFaites =
       cle === "publier_maquette" &&
       numero.etat === "maquette_prete" &&
-      Boolean(numero.retouches_demandees_le);
+      (Boolean(numero.retouches_demandees_le) || saisie.corrections_faites === true);
 
     const maintenant = new Date().toISOString();
 
@@ -894,7 +907,7 @@ export async function POST(request: Request) {
         de: numero.etat,
         vers: action.vers,
         par: prenomDe(qui),
-        source: republicationRetouches ? "republication_retouches" : "admin",
+        source: correctionsFaites ? "republication_retouches" : "admin",
         /* Le titre du design partagé, lu chez Canva à l'instant de publier :
            six mois plus tard, « quel Canva a-t-elle reçu ? » se lit ici. */
         ...(canva?.ok && canva.titre ? { canva_titre: canva.titre, canva_role: canva.role } : {}),
@@ -953,11 +966,15 @@ export async function POST(request: Request) {
        échec Brevo) : la relève ci-dessous renverra M5 avec la nouvelle
        DATE_LIMITE. Journalisé, sinon deux « Mail parti : M5 » se suivraient
        sans explication. */
-    if (republicationRetouches) {
+    if (correctionsFaites) {
       await supabase.from("mails_envoyes").delete().eq("numero_id", numero.id).eq("code", "M5");
       await logEvenement(supabase, numero.id, "mail_reouvert", {
         code: "M5",
         cause: "republication_retouches",
+        /* D'où venait le signal : le clic du client, ou l'oeil de l'atelier
+           dans le Canva. Six mois plus tard, « pourquoi ce second mail ? »
+           se lit ici (T-134). */
+        signal: numero.retouches_demandees_le ? "clic_client" : "case_atelier",
         par: prenomDe(qui),
       });
     }
@@ -965,7 +982,12 @@ export async function POST(request: Request) {
     /* Le mail, par le chemin partagé : même verrou, mêmes contrôles que le
        balayage. Ne throw jamais — une transition réussie ne doit pas être
        rendue en erreur parce que Brevo tousse. Le balayage rattrapera. */
-    const releve = await releverDossier(supabase, numero.id, prepa.params);
+    /* T-134 — le drapeau passe par le TROISIÈME argument, pas par les
+       paramètres : le gabarit est résolu bien avant que ceux-ci ne soient
+       fusionnés. Voir `templatePour` (mails.ts). */
+    const releve = await releverDossier(supabase, numero.id, prepa.params, {
+      varianteCorrigee: correctionsFaites,
+    });
 
     return NextResponse.json(
       {

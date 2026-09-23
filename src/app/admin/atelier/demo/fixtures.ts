@@ -718,7 +718,10 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
       ? "https://www.laposte.fr/outils/suivre-vos-envois?code=6A123456789FR"
       : null,
     trackingCode: ["expediee", "livree"].includes(g.etat) ? "6A123456789FR" : null,
-    retouchesLe: null,
+    /* T-134 — la graine porte `retouches`, la fiche l'ignorait : le bandeau
+       T2-13 et la case « j'ai corrigé » ne se voyaient donc JAMAIS en démo,
+       alors qu'un dossier de démonstration est fait pour les montrer. */
+    retouchesLe: g.retouches ? il(20) : null,
     depotInitialJusqua: null,
     /* La démo ne joue pas le dépôt interrompu : `null` veut dire « aucun
        témoin », donc aucune alerte — exactement ce qu'on veut par défaut. */
