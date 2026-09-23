@@ -1,7 +1,7 @@
 ---
 id: T-134
 titre: Après des retouches, le client reçoit M5 mot pour mot, sans un mot sur les corrections qu'il a demandées
-etat: nouveau
+etat: en cours
 domaine: atelier
 gravite: serieux
 autonomie: avis-requis
@@ -155,4 +155,28 @@ du dossier atelier, toute règle ajoutée s'y ajoute aussi.
 
 ## Ce qui a été fait
 
-Rien. Ticket ouvert le 23/09/2026.
+**23/09/2026, PR #214 fusionnée.**
+
+- Le gabarit Brevo « M5c · Atelier · La maquette corrigée » est **créé, template 46**,
+  poussé par `mails-atelier.mjs --pousser --seulement M5c` (le script écrit des
+  gabarits, il n'envoie rien). Son texte est versionné dans le script.
+- `BREVO_TEMPLATE_M5C_ID=46` **posée sur Vercel par Mathias le 23/09**.
+- Le code M5 choisit son gabarit selon `options.varianteCorrigee`, relayé par
+  `releverDossier`. Repli sur le gabarit M5 ordinaire si la variable manque.
+- La case « J'ai corrigé ce qui était demandé » est dans le panneau de
+  republication, pré-cochée quand le client a cliqué sur sa page. Elle ouvre le
+  second chemin demandé par Mathias : republier en annonçant les corrections
+  même quand le client n'a jamais touché le bouton de sa page.
+- Le bouton porte « Republier la maquette », la ligne de confirmation nomme la
+  version du mail, recalculée sur la case réelle.
+- La fiche de DÉMONSTRATION portait `retouchesLe: null` en dur alors que sa
+  graine dit `retouches: true` : le bandeau T2-13 ne s'y voyait jamais. Corrigé,
+  c'est ce qui a permis à Mathias de relire l'écran sans toucher la base.
+
+Vérifié : `tsc`, `lint`, `build` et le harnais atelier (5 assertions ajoutées).
+Écran relu par Mathias sur le dossier de démonstration.
+
+**Ce qui reste, et pourquoi le ticket n'est pas fermé** : le nouveau mail n'est
+jamais parti à un vrai destinataire. Tant qu'une republication réelle n'a pas
+eu lieu, on ne sait pas que le bon gabarit part vraiment. À prouver au premier
+usage, comme T-109 et T-120.
