@@ -1,11 +1,13 @@
 ---
 id: T-134
 titre: Après des retouches, le client reçoit M5 mot pour mot, sans un mot sur les corrections qu'il a demandées
-etat: en cours
+etat: fermé
 domaine: atelier
 gravite: serieux
 autonomie: avis-requis
 ouvert: 2026-09-23
+ferme: 2026-09-23
+statut: fait
 ---
 ## Ce que Mathias a dit
 
@@ -176,7 +178,20 @@ du dossier atelier, toute règle ajoutée s'y ajoute aussi.
 Vérifié : `tsc`, `lint`, `build` et le harnais atelier (5 assertions ajoutées).
 Écran relu par Mathias sur le dossier de démonstration.
 
-**Ce qui reste, et pourquoi le ticket n'est pas fermé** : le nouveau mail n'est
-jamais parti à un vrai destinataire. Tant qu'une republication réelle n'a pas
-eu lieu, on ne sait pas que le bon gabarit part vraiment. À prouver au premier
-usage, comme T-109 et T-120.
+**PROUVÉ EN RÉEL le 23/09/2026 à 11h38, sur le dossier de Marjorie**
+(« Notre histoire », 46 pages). Vérifié en base, pas déduit :
+
+- `mails_envoyes` : la ligne M5 porte **`template_id: 46`**, datée 11:38:30.
+  L'ancienne ligne (gabarit 33, 21/09) a bien été levée puis remplacée.
+- `evenements`, trois entrées en trois secondes : `etat_change`
+  (`source: republication_retouches`, Canva « Marjorie », rôle COMMENTER),
+  `mail_reouvert` (`signal: clic_client`), `mail_envoye` (`template_id: 46`).
+- `retouches_demandees_le` repassé à `null`, `etat_maj_le` reparti à 11:38 :
+  la date limite annoncée dans le mail (30/09) EST celle de l'auto-validation.
+
+Contrôles faits AVANT le clic, et qui méritent d'être refaits à l'identique le
+jour où un mail dépend d'une nouvelle variable : `BREVO_TEMPLATE_M5C_ID` créée
+**11 minutes avant** le déploiement de production (une variable posée APRÈS
+n'entre en service qu'au déploiement suivant, et le client aurait reçu l'ancien
+texte sans que rien ne le signale) ; M4 présent, donc le garde-fou de chaîne
+passe ; `palier` et `nb_pages` présents, donc `manquePour` ne retient rien.
