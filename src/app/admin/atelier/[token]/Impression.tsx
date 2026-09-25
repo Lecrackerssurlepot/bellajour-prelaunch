@@ -30,9 +30,14 @@ export type FichierImpression = {
 
 type DimensionMm = { largeur: number; hauteur: number };
 
+/* Miroir de `VerdictPages` (lib/atelier/impression.ts) : depuis le 25/09/2026
+   un SURPLUS de pages n'est plus un défaut mais une dépense assumée, et seul
+   un MANQUE reste un refus. Les deux genres doivent se lire différemment ici,
+   sinon l'écran dirait « à vérifier » pour une décision déjà prise. */
 type VerdictPages =
   | { genre: "conforme"; attendu: number }
-  | { genre: "ecart"; attendu: number }
+  | { genre: "surplus"; attendu: number; imprime: number }
+  | { genre: "manque"; attendu: number; imprime: number }
   | { genre: "constat" };
 
 type VerdictTaille = "conforme" | "sans_fond_perdu" | "hors_format" | "constat";
@@ -114,10 +119,17 @@ function lignePages(r: ControleFichier & { lisible: true }): { texte: string; to
   if (r.verdict.genre === "conforme") {
     return { texte: `${r.nbPages} pages, comme le dossier.`, ton: "ok" };
   }
-  if (r.verdict.genre === "ecart") {
+  if (r.verdict.genre === "surplus") {
+    const ecart = r.verdict.imprime - r.verdict.attendu;
     return {
-      texte: `${r.nbPages} pages constatées, ${r.verdict.attendu} au dossier : à vérifier.`,
+      texte: `${r.nbPages} pages imprimées pour ${r.verdict.attendu} facturées : ${ecart} page${ecart > 1 ? "s" : ""} à nos frais. Le dos et la couverture suivent les ${r.nbPages}.`,
       ton: "attention",
+    };
+  }
+  if (r.verdict.genre === "manque") {
+    return {
+      texte: `${r.nbPages} pages seulement, ${r.verdict.attendu} ont été facturées. On n'imprime jamais moins que ce qui a été payé.`,
+      ton: "alerte",
     };
   }
   return { texte: `${r.nbPages} page${r.nbPages > 1 ? "s" : ""} constatée${r.nbPages > 1 ? "s" : ""}.`, ton: "ok" };

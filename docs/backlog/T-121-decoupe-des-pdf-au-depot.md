@@ -68,6 +68,39 @@ de `presign/route.ts`). Le geste de l'atelier devient : déposer l'export Canva 
    page dès le dépôt du client (les dimensions sont connues : `photos`), avec le dpi qu'elles
    donneraient en A4. C'est là que l'atelier choisit quoi agrandir, pas au moment d'imprimer.
 
+   ⚠️ **LES QUATRE PIÈGES DU POINT 6, mesurés le 23/09/2026 sur le PDF réel de Lara.** Ils ne
+   se devinent pas, et le premier m'a fait annoncer 43 dpi là où il y en avait 147.
+   - **Ne compter QUE la face.** Une page issue d'une double porte DEUX morceaux : la face à
+     l'échelle 1,000 et la réserve côté couture étirée (3,453× sur ce fichier). La bande contient
+     les MÊMES images, vues à travers un facteur 3,45 : les compter divise tous les dpi par 3,45.
+     Le filtre est simple, ne descendre que dans le morceau posé à l'échelle 1,000.
+   - **Descendre récursivement.** Les images sont imbriquées dans des Form XObject sur plusieurs
+     niveaux (page → `EmbeddedPdfPage-*` → `X8` → `X4`), et il faut multiplier à chaque étage la
+     matrice `cm` du flux ET la `Matrix` du form.
+   - **Une image de double est vue deux fois**, une fois par demi-page. Dédoublonner, ou dire que
+     le compte est en placements et pas en photos.
+   - **Un `q`/`Q` mal empilé fausse tout** : la pile des matrices doit être tenue, pas approchée
+     par la dernière `cm` avant le `Do`.
+
+   Seuils proposés, à confirmer par Mathias parce que ce sont des promesses de qualité et pas un
+   réglage technique : 300 dpi l'idéal, 200 dpi le plancher, alerte sous 200. Sur Lara, onze
+   placements étaient sous 200 dpi et un seul sous 150 (768 × 1024 px posé sur 132 mm, 147 dpi) ;
+   la médiane était à 345 dpi. Le module de calcul doit être PUR et éprouvé au harnais, comme
+   `bords.ts`, le rendu seul restant dans le navigateur.
+
+8. **Signaler une photo AGRANDIE PAR LOGICIEL** (constat du 23/09/2026, utile et pas prévu).
+   Un dpi élevé ne prouve plus rien depuis que Canva propose « améliorer l'image » : la fonction
+   ré-échantillonne le fichier, donc le dpi affiché monte sans que le détail suive. Mesuré sur
+   Lara, à la variance du laplacien, en ramenant chaque image au même format pour comparer :
+   - la photo faible (768 px) agrandie par Canva à 2151 px rend **167**, contre **12** pour un
+     agrandissement lanczos ordinaire et **392** pour une vraie photo native. Canva reconstruit
+     donc du détail, ce n'est pas une simple interpolation, mais il en rend **43 %**.
+   - ⚠️ et sur une photo qui allait DÉJÀ bien (3024 px, 336 dpi), passée à 3674 px, la netteté
+     tombe de **306 à 207 une fois ramenée au format d'origine, soit −32 % de détail fin**.
+     « Améliorer » une photo déjà bonne la DÉGRADE, et alourdit le fichier (81,9 → 92,1 Mo).
+   Un simple rapport netteté/résolution suffirait à lever le doute et à dire à l'atelier : celle-ci
+   est agrandie, ne comptez pas son dpi pour argent comptant.
+
 Rattaché à T-078 (le moteur de rendu) dont c'est l'étape 1 concrète, avec le dossier de Merisa
 comme jeu d'essai (les fichiers du 18/09 sont sur le Bureau de Mathias).
 
@@ -125,4 +158,27 @@ dépôt (Mathias, 19/09 : « l'atelier devrait nous donner l'info »).**
 - La découpe qui échoue journalise désormais la cause en console (`[admin/impression] découpe
   impossible`) : le banc a mis deux jours à voir un « fichier introuvable ».
 - Points 6 et 7 (résolution des photos) : toujours pas commencés.
+
+**23/09/2026, dossier de Lara (« Lulu et Laraclette », 38 pages). Rien livré, mais les points 6, 7
+et 8 sont désormais chiffrés sur un fichier réel, et la découpe est PROUVÉE en production.**
+- Ce qui a déclenché la mesure : Mathias a cru voir « des photos un peu déformées sur les bords ».
+  Vérifié sur les deux PDF tirés du coffre : **aucune photo n'est déformée**. Test direct, rapport
+  largeur/hauteur en pixels contre rapport de la pose sur le papier, écart maximal **0,438 %** sur
+  90 images de l'intérieur et 0,019 % sur la couverture, l'œil ne voit rien sous 1 %.
+- Ce qu'il voyait est la réserve côté couture, conforme à la décision du 19/09 : 38 morceaux à
+  l'échelle 1,000, 36 bandes étirées à 3,453× (1 mm tiré à 3,453 mm), échelle verticale 1,000
+  partout. Trim à 3,3 pour 210 × 297, donc **3 mm partent à la coupe et 0,455 mm survivent** au
+  ras du pli. Couverture : quatrième et première intactes, seul le dos étiré (1 mm → 2,98 mm).
+- La découpe tient sur un second dossier réel : 38 pages de 216 × 303, couverture 428,98 × 303,
+  page 2 vierge, dos 2,98 mm (38 p., finition nulle donc gloss par repli).
+- **Le vrai défaut était invisible à la fiche** : une photo à 147 dpi, et onze placements sous
+  200 dpi. Personne ne l'aurait vu, c'est exactement le point 6. Les originaux déposés portaient
+  déjà ces tailles (768 × 1024, `appareil` NUL sur précisément les photos faibles : elles sont
+  passées par une messagerie, qui retire l'EXIF et réduit).
+- Après « améliorer l'image » de Canva, le minimum remonte à 161 dpi et la médiane à 362, mais
+  voir le point 8 : le gain est partiel sur la photo faible et NÉGATIF sur les photos déjà bonnes.
+- Méthode reproductible : `pdf-lib` lit les `Contents` (flux `FlateDecode` à décompresser), on suit
+  `q`/`Q`/`cm`, on descend dans les Form XObject, on lit `Width`/`Height` des images ; `sharp`
+  mesure la netteté. Aucun rasteriseur n'est installé sur le poste (ni `pdftoppm`, ni `mutool`,
+  ni `gs`) : tout se fait par les boîtes et les matrices, ou par pdf.js dans le navigateur.
 

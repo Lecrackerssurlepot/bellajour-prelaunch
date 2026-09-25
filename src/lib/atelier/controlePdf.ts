@@ -17,6 +17,7 @@ import {
   verdictTaillePage,
   dosMmPourPages,
   largeurCouvertureMm,
+  paginationImprimee,
   FORMAT_PAGE_PDF_MM,
   GRAMMAGE_INTERIEUR_GSM,
   type Finition,
@@ -47,6 +48,11 @@ export type Inspection = {
   attenduCouverture: { largeurMm: number; hauteurMm: number; dosMm: number; grammageGsm: number } | null;
   /** La règle de compte du produit, quand elle s'applique. */
   multiple: { ok: boolean; regle: string } | null;
+  /**
+   * La pagination sur laquelle la GÉOMÉTRIE a été jugée : celle du bloc
+   * quand on la connaît, celle du dossier sinon (25/09/2026).
+   */
+  geometriePages: number | null;
 };
 
 function memeDim(a: DimensionMm, b: DimensionMm): boolean {
@@ -65,6 +71,19 @@ export async function inspecterPdf(
    * Absente = le défaut (brillant), comme partout.
    */
   finition?: Finition | null,
+  /**
+   * La pagination IMPRIMÉE, quand elle est déjà connue (25/09/2026) : le
+   * nombre de pages lu dans le PDF du bloc. C'est elle qui donne le dos et
+   * donc la largeur attendue d'une couverture, parce que c'est elle qui
+   * décrit l'objet fabriqué. `nbPagesDossier`, lui, reste la pagination
+   * FACTURÉE et ne sert plus qu'à dire s'il y a surplus ou manque.
+   *
+   * ⚠️ Absente, on retombe sur `nbPagesDossier` : c'est le cas de l'écran de
+   * contrôle, qui inspecte un fichier à la fois et n'a pas encore lu le bloc
+   * quand il regarde la couverture. La route de transition, elle, lit le
+   * bloc EN PREMIER et la passe (`envoyer_impression`).
+   */
+  pagesImprimees?: number | null,
 ): Promise<Inspection> {
   /* `updateMetadata: false` : on LIT, on ne veut pas qu'une date de
      modification bouge dans un objet qu'on ne réécrira jamais. */
@@ -86,8 +105,12 @@ export async function inspecterPdf(
   const trim = dimsDe(premiere.getTrimBox());
   const trimMm = memeDim(trim, pageMm) ? null : trim;
 
-  const dosAttendu = dosMmPourPages(nbPagesDossier, finition);
-  const largeurAttendue = largeurCouvertureMm(nbPagesDossier, finition);
+  /* LA GÉOMÉTRIE SUIT LE BLOC, PAS LA FACTURE (25/09/2026). Sans pagination
+     imprimée sous la main, `paginationImprimee` retombe sur celle du dossier
+     et rien ne change du comportement d'avant. */
+  const pourGeometrie = paginationImprimee(pagesImprimees, nbPagesDossier);
+  const dosAttendu = dosMmPourPages(pourGeometrie, finition);
+  const largeurAttendue = largeurCouvertureMm(pourGeometrie, finition);
 
   const autresTaillesMm: DimensionMm[] = [];
   for (const page of pages.slice(1)) {
@@ -107,7 +130,11 @@ export async function inspecterPdf(
     /* Le MediaBox EST la « page PDF » que les specs mesurent (216 × 303
        attendus, fond perdu compris) — la TrimBox, quand elle existe, ne
        fait que déclarer où tombera le rognage. */
-    verdictTaille: verdictTaillePage(type, pageMm.largeur, pageMm.hauteur, nbPagesDossier, finition),
+    verdictTaille: verdictTaillePage(type, pageMm.largeur, pageMm.hauteur, pourGeometrie, finition),
+    /* La cote sur laquelle la couverture vient d'être jugée : l'écran la
+       montre, et sans elle un « hors format » resterait inexplicable quand
+       le bloc et la facture ne disent pas le même nombre de pages. */
+    geometriePages: pourGeometrie,
     attenduCouverture:
       type === "cover" && largeurAttendue !== null && dosAttendu !== null
         ? {
@@ -142,8 +169,12 @@ export function refusDeCommande(type: TypeFichier, i: Inspection): string | null
   if (!i.taillesUniformes) {
     return `Les pages n'ont pas toutes la même taille (${c(i.pageMm)} puis ${i.autresTaillesMm.map(c).join(", ")}).`;
   }
-  if (i.verdict.genre === "ecart") {
-    return `${i.nbPages} pages au lieu des ${i.verdict.attendu} du dossier.`;
+  /* Un SURPLUS ne refuse pas : la fabrication suit le fichier et l'écart est
+     à nos frais (impression.ts, 25/09/2026). Un MANQUE refuse toujours, et
+     c'est le seul sens où on ne va jamais : livrer un objet plus mince que
+     celui qu'on a vendu. */
+  if (i.verdict.genre === "manque") {
+    return `${i.nbPages} pages au lieu des ${i.verdict.attendu} facturées. On n'imprime jamais moins que ce qui a été payé : reprends la maquette, ou corrige la pagination du dossier.`;
   }
   if (i.multiple && !i.multiple.ok) {
     return `${i.nbPages} pages : le produit exige un ${i.multiple.regle}.`;
