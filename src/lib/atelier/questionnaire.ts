@@ -226,8 +226,14 @@ const DOMAINES_COURANTS = [
  * faute de frappe la plus fréquente. Avec Levenshtein et un plafond de 1, le
  * garde-fou ratait le cas nº1 qu'il était censé attraper (mesuré : gmial et
  * hotmial passaient au travers). Damerau la compte pour une.
+ *
+ * ⚠️ EXPORTÉE DEPUIS LE 25/09/2026 (T-138) : `adresse.ts` s'en sert pour
+ * juger un nom de rue contre celui que rend le géocodeur. Une SECONDE
+ * implémentation aurait fini par diverger de celle-ci, et deux garde-fous
+ * qui ne comptent pas pareil se contredisent sans que rien ne le dise.
+ * Elle reste utilisée sous le nom `distance` dans ce fichier.
  */
-function distance(a: string, b: string, max: number): number {
+export function distanceDamerau(a: string, b: string, max: number): number {
   if (Math.abs(a.length - b.length) > max) return max + 1;
 
   /* Trois lignes suffisent : l'avant-précédente ne sert qu'à la transposition. */
@@ -281,7 +287,7 @@ export function suggestionEmail(valeur: string): string | null {
   if (DOMAINES_COURANTS.includes(domaine)) return null;
 
   for (const candidat of DOMAINES_COURANTS) {
-    if (distance(domaine, candidat, 1) <= 1) return `${local}@${candidat}`;
+    if (distanceDamerau(domaine, candidat, 1) <= 1) return `${local}@${candidat}`;
   }
   return null;
 }

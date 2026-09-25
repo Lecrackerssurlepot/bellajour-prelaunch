@@ -33,12 +33,30 @@ d'Eloïse, quinze minutes avant de lancer sa commande d'impression.
 ## Ce que je propose
 Deux gestes, du moins cher au plus complet.
 
-**1. Le filet, côté atelier (rien à changer dans le tunnel).** Au dry-run d'`envoyer_impression`,
-géocoder l'adresse et afficher le verdict dans le panneau « Avant de confirmer », à côté de la
-ligne Livraison : confiance haute, rien à dire ; confiance basse ou nulle, une phrase qui le dit
-et propose la graphie trouvée. **Une REMARQUE, jamais un refus** — même règle que le contrôle
-des bords : Geoapify ne connaît pas tout, et un refus finirait contourné en SQL. Best-effort
-strict : Geoapify muet ne bloque rien (le patron de `canvaDistant.ts`).
+**1. Le filet, côté atelier — ✅ LIVRÉ le 25/09/2026.** Au dry-run d'`envoyer_impression`, la
+route géocode l'adresse et le panneau « Avant de confirmer » affiche le verdict sous la ligne
+Livraison. **Une REMARQUE, jamais un refus** ; best-effort strict (patron de `canvaDistant.ts`),
+Geoapify muet ne bloque rien.
+
+Quatre genres : `connue` (silence), `graphie` (propose l'orthographe trouvée), `introuvable`,
+`non_verifie`. Le module pur est `adresse.ts`, le réseau `adresseDistant.ts`, et un écart
+journalise `adresse_doutee` — « on le savait et on est passé outre » doit se lire.
+
+**Trois choses que le harnais et les vraies données ont corrigées en route, et qu'il ne faut pas
+défaire :**
+- ⚠️ **Le numéro de rue doit être ÔTÉ de la requête.** « Rua antero de quantal **n3**, 1150-041
+  Lisbonne » ne rend que des rues sans rapport ; sans le « n3 », Geoapify trouve « Rua Antero de
+  Quental ». Le jeton collé au nom égare la recherche.
+- ⚠️ **Un « contient » naïf ne suffit pas.** Lara habite « 1 LE GALET », son colis est arrivé, et
+  Geoapify écrit l'endroit « Lieu Dit Galet » — qui ne contient pas « le galet ». Ce qui se
+  compare, ce sont les mots qui DÉSIGNENT (« galet »), jamais le type de voie ni les articles.
+  Sans cette règle, le filet criait au loup sur une adresse juste, une fois sur quatre.
+- ⚠️ **Un seuil de longueur minimale** : sur un nom court, la lettre qui diffère EST ce qui
+  distingue deux rues, jamais une coquille.
+
+**Vérifié sur les quatre adresses réelles de la base** (Eloïse, Lara, Merisa, Marjorie) :
+aucune alerte, zéro faux positif. Et sur les deux cas de contrôle : la faute d'origine d'Eloïse
+rend `graphie` en proposant « Rua Antero de Quental », une rue inventée rend `introuvable`.
 
 **2. La suggestion à la saisie.** C'est ce que Mathias demande, et c'est le vrai correctif : on
 ne rattrape pas, on empêche.

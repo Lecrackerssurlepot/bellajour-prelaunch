@@ -130,6 +130,14 @@ type Verif = {
       refus: string | null;
     }>;
     adresse: { nom: string; ville: string; pays: string } | null;
+    /* T-138 : ce que le géocodeur dit de la rue. Une remarque, jamais un
+       refus — l'atelier lit et tranche. */
+    verdictAdresse:
+      | { genre: "connue" }
+      | { genre: "graphie"; proposee: string; phrase: string }
+      | { genre: "introuvable"; phrase: string }
+      | { genre: "non_verifie"; phrase: string }
+      | null;
   };
 };
 
@@ -1962,6 +1970,28 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                         : "—"}{" "}
                       <span className="ate-faint">{verif.impression.shippingLevel}</span>
                     </dd>
+                    {/* T-138 — le filet sur l'adresse. Une REMARQUE : rien ici
+                        n'empêche de commander, et le silence veut dire que la
+                        rue est connue sous cette graphie. */}
+                    {verif.impression.verdictAdresse &&
+                    verif.impression.verdictAdresse.genre !== "connue" ? (
+                      <>
+                        <dt>Adresse</dt>
+                        <dd
+                          className={
+                            verif.impression.verdictAdresse.genre === "non_verifie"
+                              ? "ate-faint"
+                              : undefined
+                          }
+                        >
+                          {verif.impression.verdictAdresse.genre === "graphie" ? (
+                            <strong>{verif.impression.verdictAdresse.phrase}</strong>
+                          ) : (
+                            verif.impression.verdictAdresse.phrase
+                          )}
+                        </dd>
+                      </>
+                    ) : null}
                     {verif.impression.modeManuel ? (
                       <>
                         <dt>Imprimeur</dt>

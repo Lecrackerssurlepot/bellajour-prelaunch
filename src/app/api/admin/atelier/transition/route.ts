@@ -31,6 +31,10 @@ import { tailleReelle, empreinteObjet, signerGet, lireObjet, IMPRESSION_TTL_SECO
 /* T-121 (18/09/2026) : la même inspection que l'écran de contrôle, appliquée
    AVANT de commander. Un PDF hors format ne part plus chez l'imprimeur. */
 import { inspecterPdf, refusDeCommande } from "@/lib/atelier/controlePdf";
+/* T-138 (25/09/2026) : le filet sur l'adresse de livraison. Pur d'un côté,
+   réseau de l'autre, et jamais un refus. */
+import { jugerAdresse, requeteAdresse, type VerdictAdresse } from "@/lib/atelier/adresse";
+import { chercherAdresse } from "@/lib/atelier/adresseDistant";
 import {
   adresseCloudprinter,
   payloadCommande,
@@ -457,7 +461,11 @@ export async function POST(request: Request) {
          la commande réelle : un refus est aussi une erreur de champ. */
       controles: ControleImpression[];
       adresse: { nom: string; ville: string; pays: string } | null;
+      /* T-138 : ce que le géocodeur dit de la rue. Une REMARQUE, jamais un
+         refus ; `null` quand l'action n'est pas `envoyer_impression`. */
+      verdictAdresse: VerdictAdresse | null;
     } | null = null;
+    let verdictAdresse: VerdictAdresse | null = null;
 
     if (cle === "envoyer_impression") {
       /* Jamais deux commandes pour un dossier. Le verrou dur est sur
@@ -494,6 +502,23 @@ export async function POST(request: Request) {
           champ: "action",
           message: `L'adresse de livraison Stripe est incomplète (${adr.manque.join(", ")}). Corrige-la avant d'imprimer.`,
         });
+      }
+
+      /* ── LE FILET SUR L'ADRESSE (T-138, 25/09/2026) ─────────────────────
+         `adresseCloudprinter` dit que les champs sont LÀ, jamais qu'ils
+         désignent un lieu réel. Le dossier d'Eloïse portait « Rua antero de
+         quantal » pour « Rua Antero de Quental », et seul un humain qui a lu
+         l'adresse ligne à ligne l'a vu.
+         ⚠️ Ce verdict ne rejoint JAMAIS `erreurs` : c'est une remarque, comme
+         le contrôle des bords. Une adresse réelle peut manquer d'une base de
+         géocodage, et un refus qui se trompe finit contourné en SQL. */
+      if (adr.ok) {
+        const a = (numero.adresse_livraison as { address?: Record<string, unknown> } | null)?.address ?? {};
+        const candidats = await chercherAdresse(
+          requeteAdresse(a.line1, a.postal_code, a.city),
+          typeof a.country === "string" ? a.country : null,
+        );
+        verdictAdresse = jugerAdresse(a.line1, candidats);
       }
 
       /* Les fichiers que CE produit exige (un `product` pour l'agrafé, le
@@ -632,6 +657,7 @@ export async function POST(request: Request) {
         adresse: adr.ok
           ? { nom: adr.adresse.firstname + " " + adr.adresse.lastname, ville: adr.adresse.city, pays: adr.adresse.country }
           : null,
+        verdictAdresse,
       };
     }
 
@@ -1024,6 +1050,19 @@ export async function POST(request: Request) {
           imprimees: impression.pagination.imprimees,
           surplus: impression.pagination.surplus,
           aNosFrais: true,
+          par: prenomDe(qui),
+        });
+      }
+      /* T-138 : une adresse douteuse ne retient pas la commande, mais elle
+         laisse une trace. Le jour où un colis revient, « on le savait et on
+         est passé outre » doit se lire, pas se deviner. Rien n'est écrit
+         quand la rue est connue : le journal n'est pas un log. */
+      if (verdictAdresse && verdictAdresse.genre !== "connue") {
+        await logEvenement(supabase, numero.id, "adresse_doutee", {
+          genre: verdictAdresse.genre,
+          phrase: verdictAdresse.phrase,
+          proposee: verdictAdresse.genre === "graphie" ? verdictAdresse.proposee : null,
+          passeOutre: true,
           par: prenomDe(qui),
         });
       }
