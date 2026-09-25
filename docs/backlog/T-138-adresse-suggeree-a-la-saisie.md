@@ -41,23 +41,47 @@ des bords : Geoapify ne connaît pas tout, et un refus finirait contourné en SQ
 strict : Geoapify muet ne bloque rien (le patron de `canvaDistant.ts`).
 
 **2. La suggestion à la saisie.** C'est ce que Mathias demande, et c'est le vrai correctif : on
-ne rattrape pas, on empêche. Deux voies, et **la première question est de savoir laquelle Stripe
-permet** :
-- si le formulaire d'adresse de Stripe Checkout propose déjà l'autocomplétion Google Places sur
-  les pays qu'on sert, il n'y a peut-être rien à écrire : à vérifier dans le tableau de bord
-  Stripe avant tout code ;
-- sinon, collecter l'adresse **chez nous** (bon de commande de `/numero`, avec
-  `geocode/autocomplete` de Geoapify) et la passer à Stripe en `shipping_address_collection`
-  pré-remplie. Plus de travail, et ça déplace une responsabilité : à peser.
+ne rattrape pas, on empêche.
+
+⚠️ **TRANCHÉ LE 25/09, ET C'EST UNE MAUVAISE NOUVELLE : Stripe ne couvre pas le Portugal.**
+La question « Stripe le fait-il déjà ? » est réglée, et la réponse ferme la voie la plus simple.
+L'autocomplétion d'adresse de Stripe s'appuie sur Google Places et n'est proposée que pour
+26 pays (doc officielle, liste relevée le 25/09) : AU, BE, BR, CA, CH, DE, ES, FR, GB, IE, IN,
+IT, JP, MX, MY, NL, NO, NZ, PH, PL, RU, SE, SG, TR, US, ZA.
+
+Confronté à nos 32 destinations (`PAYS_LIVRAISON`) :
+- **14 couverts** : Belgique, France, Allemagne, Irlande, Italie, Pays-Bas, Pologne, Espagne,
+  Suède, Royaume-Uni, Suisse, Norvège, États-Unis, Brésil ;
+- **18 NON couverts** : Autriche, Bulgarie, Croatie, Chypre, Tchéquie, Danemark, Estonie,
+  Finlande, Grèce, Hongrie, Lettonie, Lituanie, Luxembourg, Malte, **Portugal**, Roumanie,
+  Slovaquie, Slovénie.
+
+Autrement dit : **même en passant à l'Address Element de Stripe, l'adresse d'Eloïse n'aurait pas
+été autocomplétée.** Le cas qui a ouvert ce ticket est précisément un de ceux que Stripe ne sait
+pas traiter. Et plus de la moitié de nos destinations sont dans le même cas.
+
+Reste donc une seule voie sérieuse : collecter l'adresse **chez nous**, au bon de commande de
+`/numero`, avec `geocode/autocomplete` de Geoapify, et la passer à Stripe pré-remplie. C'est
+plus de travail et ça déplace une responsabilité, mais c'est la seule qui couvre le Portugal,
+et Geoapify a fait la preuve qu'il le couvre (confiance 1 sur la bonne graphie, 0 sur la
+mauvaise, mesuré le 25/09 sur cette adresse exacte).
 
 ⚠️ Dans les deux cas, le client doit pouvoir **passer outre** la suggestion. Une adresse réelle
 absente d'une base de géocodage existe (lotissement neuf, lieu-dit, boîte postale) : une saisie
 qui refuse ce que le client sait vrai est pire que le défaut qu'elle corrige.
 
 ## Ce qu'il reste à trancher
-- Ce que Stripe propose déjà (à regarder avant d'écrire une ligne).
+- ~~Ce que Stripe propose déjà~~ — **réglé le 25/09 : 18 de nos 32 destinations, Portugal
+  compris, ne sont pas autocomplétées par Stripe.** La voie « ne rien écrire » est fermée.
+- **Collecter l'adresse chez nous change le tunnel de paiement.** Aujourd'hui elle vient de
+  Stripe Checkout et de nulle part ailleurs (PRD §9), et tout le code en dépend
+  (`adresseCloudprinter`, le webhook, la page cliente). La déplacer est une décision de produit,
+  pas un détail technique : à poser à Mathias avant d'écrire.
 - Le quota Geoapify : le plan gratuit sert déjà les lieux des photos (un appel par LIEU, jamais
-  par photo, T-123). Une autocomplétion tape beaucoup plus — compter avant de brancher.
+  par photo, T-123). Une autocomplétion tape beaucoup plus, une requête par frappe si on n'y
+  prend pas garde — compter, et débouncer, avant de brancher.
+- **Le filet côté atelier (geste 1) ne dépend d'aucune de ces décisions** et aurait suffi à
+  attraper Eloïse. C'est ce qu'il faut faire en premier.
 - Faut-il géocoder les adresses des dossiers DÉJÀ payés et pas encore imprimés, en lecture seule,
   pour voir combien d'autres Eloïse dorment en base ?
 
