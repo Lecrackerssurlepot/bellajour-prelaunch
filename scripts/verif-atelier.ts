@@ -35,6 +35,8 @@ import { prefixeCoffre, verdictSuppression } from "@/lib/atelier/archive";
 import { lireLienCanva, lireFicheCanva, urlLectureCanva, verdictLienPartage } from "@/lib/atelier/canva";
 import { natureDe, planInterieur, planCouverture, resumeInterieur, resumeCouverture, type PageLue } from "@/lib/atelier/decoupe";
 import { verdictBord, auditerBords, resumeBords, PROFONDEUR_MIN_MM, type PageGrise } from "@/lib/atelier/bords";
+/* T-138 : le filet sur l'adresse de livraison. Pur, donc au harnais. */
+import { normaliserRue, memeRueATypoPres, memeRueAutrementEcrite, motsDistinctifs, jugerAdresse, requeteAdresse } from "@/lib/atelier/adresse";
 import {
   CODES_RELANCE,
   DELAI_MIN_RELANCE_MS,
@@ -1579,6 +1581,87 @@ ok("une couverture coupee pour 48 passe encore a 50 (0,1 mm < tolerance)",
    verdictTaillePage("cover", largeurCouvertureMm(48, "gloss")!, 303, 50, "gloss") === "conforme");
 ok("mais un ecart de 10 pages, non",
    verdictTaillePage("cover", largeurCouvertureMm(48, "gloss")!, 303, 58, "gloss") === "hors_format");
+
+/* T-138 (25/09/2026) — le filet sur l'adresse de livraison. Les candidats
+   sont ceux que Geoapify a REELLEMENT rendus le 25/09 sur l'adresse d'Eloise
+   (releve en session), pas des inventions. */
+titre("— le filet sur l'adresse : la normalisation —");
+ok("accents, casse et ponctuation tombent",
+   normaliserRue("Rua Antero de Quental") === "rua antero de quental");
+ok("le numero en queue tombe",
+   normaliserRue("Rua Antero de Quental 3") === "rua antero de quental");
+ok("« n3 » colle au nom et tombe aussi",
+   normaliserRue("Rua antero de quantal n3") === "rua antero de quantal");
+ok("une entree qui n'est pas du texte rend une chaine vide",
+   normaliserRue(null) === "" && normaliserRue(42) === "");
+
+titre("— le filet sur l'adresse : la faute de frappe —");
+ok("quantal / quental : UNE substitution, c'est une faute de frappe",
+   memeRueATypoPres("rua antero de quantal", "rua antero de quental"));
+ok("deux rues differentes ne se ressemblent pas",
+   !memeRueATypoPres("rua antero de quental", "avenida da liberdade"));
+ok("identiques -> PAS une faute de frappe (le verdict « connue » passe avant)",
+   !memeRueATypoPres("rua da prata", "rua da prata"));
+ok("sur un nom court, on ne propose RIEN (la lettre qui differe EST la rue)",
+   !memeRueATypoPres("rua a", "rua b"));
+ok("le seuil de longueur ne mange pas un vrai nom de rue",
+   memeRueATypoPres("rua da prat", "rua da prata"));
+
+titre("— le filet sur l'adresse : le meme lieu ecrit autrement —");
+/* Cas REEL : Lara habite « 1 LE GALET », son colis est arrive, et Geoapify
+   ecrit l'endroit « Lieu Dit Galet ». Sans cette regle, le filet criait au
+   loup sur une adresse juste. */
+ok("« le galet » est contenu dans « lieu dit galet »",
+   memeRueAutrementEcrite("le galet", "lieu dit galet"));
+ok("« rua » ne rend pas toutes les rues portugaises equivalentes",
+   !memeRueAutrementEcrite("rua", "rua antero de quental"));
+/* Un seul mot DISTINCTIF suffit, et c'est voulu : « quental » seul designe
+   bien cette rue, et le filet ne parle que pour dire quelque chose d'utile. */
+ok("un seul mot distinctif suffit s'il designe vraiment",
+   memeRueAutrementEcrite("quental", "rua antero de quental"));
+ok("les mots de liaison ne comptent pas : « le » et « dit » sont vides",
+   JSON.stringify(motsDistinctifs("lieu dit galet")) === JSON.stringify(["galet"]));
+ok("deux rues sans mot commun restent distinctes",
+   !memeRueAutrementEcrite("rua pipotron fantaisiste", "rua barbosa bocage"));
+const LARA = [
+  { formatted: "33710 Saint-Ciers-de-Canesse, France", rue: null, ville: "Saint-Ciers-de-Canesse" },
+  { formatted: "2 Lieu Dit Galet, 33710 St.-Ciers-de-Canesse, France", rue: "Lieu Dit Galet", ville: "St.-Ciers-de-Canesse" },
+];
+ok("l'adresse REELLE de Lara ne declenche AUCUNE alerte",
+   jugerAdresse("1 LE GALET", LARA).genre === "connue");
+
+titre("— le filet sur l'adresse : le verdict —");
+const CANDIDATS_ELOISE = [
+  { formatted: "Rua Antero de Quental 3, 2700-060 Amadora, Portugal", rue: "Rua Antero de Quental", ville: "Amadora" },
+  { formatted: "Rua Antero de Quental LT 3, 2955-130 Pinhal Novo, Portugal", rue: "Rua Antero de Quental", ville: "Pinhal Novo" },
+];
+const vEloise = jugerAdresse("Rua antero de quantal n3", CANDIDATS_ELOISE);
+ok("la faute d'Eloise est ATTRAPEE et la graphie proposee",
+   vEloise.genre === "graphie" && vEloise.proposee === "Rua Antero de Quental");
+ok("la phrase ne promet pas une adresse, seulement une graphie",
+   vEloise.genre === "graphie" && vEloise.phrase.includes("graphie la plus proche"));
+ok("la bonne graphie ne declenche RIEN",
+   jugerAdresse("Rua Antero de Quental 3", CANDIDATS_ELOISE).genre === "connue");
+ok("aucun candidat ressemblant -> introuvable",
+   jugerAdresse("Rua Inventee", [{ formatted: "x", rue: "Avenida da Liberdade", ville: "Lisboa" }]).genre === "introuvable");
+ok("liste vide -> introuvable (le geocodeur a repondu « rien la »)",
+   jugerAdresse("Rua Antero de Quental", []).genre === "introuvable");
+ok("null -> non verifie, et ce N'EST PAS la meme chose qu'une liste vide",
+   jugerAdresse("Rua Antero de Quental", null).genre === "non_verifie");
+ok("aucun verdict n'est un refus : les quatre genres sont des remarques",
+   ["connue", "graphie", "introuvable", "non_verifie"].includes(vEloise.genre));
+
+titre("— le filet sur l'adresse : la requete —");
+/* Le numero DOIT tomber : mesure du 25/09, « n3 » colle au nom et egare
+   Geoapify au point de ne plus trouver la rue du tout. */
+ok("le numero en queue est retire de la requete",
+   requeteAdresse("Rua Antero de Quental 3", "1150-041", "Lisboa") === "Rua Antero de Quental, 1150-041 Lisboa");
+ok("« n3 » aussi, c'est LUI qui cassait la recherche",
+   requeteAdresse("Rua antero de quantal n3", "1150-041", "Lisbonne") === "Rua antero de quantal, 1150-041 Lisbonne");
+ok("code postal et ville se joignent par une espace, pas une virgule",
+   requeteAdresse("Rua X", "1150-041", "Lisboa") === "Rua X, 1150-041 Lisboa");
+ok("les morceaux absents ne laissent pas de virgule orpheline",
+   requeteAdresse("Rua X", null, "Lisboa") === "Rua X, Lisboa");
 
 titre("— le format de page face aux specs relevees —");
 ok("216 x 303 (fini + fond perdu) -> conforme", verdictTaillePage("book", 216, 303) === "conforme");
