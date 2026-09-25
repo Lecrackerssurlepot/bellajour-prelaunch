@@ -31,7 +31,14 @@ import {
   type BoiteMm,
   type PageLue,
 } from "@/lib/atelier/decoupe";
-import { FORMAT_FINI_MM, FORMAT_PAGE_PDF_MM, FOND_PERDU_MM, type Finition, type TypeFichier } from "@/lib/atelier/impression";
+import {
+  FORMAT_FINI_MM,
+  FORMAT_PAGE_PDF_MM,
+  FOND_PERDU_MM,
+  paginationImprimee,
+  type Finition,
+  type TypeFichier,
+} from "@/lib/atelier/impression";
 
 const PT = 72 / 25.4;
 const mm = (v: number) => v * PT;
@@ -50,8 +57,8 @@ function cadre(b: BoiteMm) {
 }
 
 export type Preparation =
-  | { inchange: true; resume: string }
-  | { inchange: false; octets: Uint8Array; resume: string }
+  | { inchange: true; resume: string; pages?: number }
+  | { inchange: false; octets: Uint8Array; resume: string; pages?: number }
   | { refus: string };
 
 /**
@@ -65,6 +72,14 @@ export async function preparerPdfImpression(
   nbPagesDossier: number | null,
   /** La finition du dossier : elle choisit le papier, donc le dos (21/09). */
   finition: Finition | null = null,
+  /**
+   * La pagination du BLOC déjà découpé, quand l'atelier l'a déposé avant la
+   * couverture (25/09/2026). C'est elle qui donne le dos : découper une
+   * couverture à la cote du dossier alors que le bloc en dément le compte,
+   * c'est fabriquer une feuille trop étroite. Absente, on retombe sur la
+   * pagination du dossier, exactement comme avant.
+   */
+  pagesImprimees: number | null = null,
 ): Promise<Preparation> {
   /* L'agrafé (archivé le 15/09) prenait UN PDF complet : plus aucune règle
      ne le décrit, on ne touche pas à ce qu'on ne sait pas juger. */
@@ -82,7 +97,7 @@ export async function preparerPdfImpression(
   if (type === "book") {
     const plan = planInterieur(lues);
     if (!plan.ok) return { refus: plan.raison };
-    if (plan.inchange) return { inchange: true, resume: resumeInterieur(plan) };
+    if (plan.inchange) return { inchange: true, resume: resumeInterieur(plan), pages: lues.length };
 
     const out = await PDFDocument.create();
     /* Un seul `embedPages` pour tout : pdf-lib copie les ressources UNE fois
@@ -108,10 +123,14 @@ export async function preparerPdfImpression(
       page.setArtBox(mm(FOND_PERDU_MM), mm(FOND_PERDU_MM), mm(FORMAT_FINI_MM.largeur), mm(FORMAT_FINI_MM.hauteur));
     }
     const octets = await out.save({ useObjectStreams: false });
-    return { inchange: false, octets, resume: resumeInterieur(plan) };
+    /* Le compte de SORTIE, pas celui de l'export : c'est lui qui sera relié,
+       et c'est lui que la couverture doit envelopper (25/09/2026). */
+    return { inchange: false, octets, resume: resumeInterieur(plan), pages: plan.sorties.length };
   }
 
-  const plan = planCouverture(lues, nbPagesDossier, finition);
+  /* LE DOS SUIT LE BLOC (25/09/2026). `paginationImprimee` retombe sur la
+     pagination du dossier quand le bloc n'a pas encore été déposé. */
+  const plan = planCouverture(lues, paginationImprimee(pagesImprimees, nbPagesDossier), finition);
   if (!plan.ok) return { refus: plan.raison };
   if (plan.inchange) return { inchange: true, resume: resumeCouverture(plan) };
 

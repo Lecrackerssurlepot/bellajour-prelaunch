@@ -38,6 +38,9 @@ import {
   finitionDuDossier,
   dosMmPourPages,
   largeurCouvertureMm,
+  /* 25/09/2026 : la géométrie suit le BLOC, la facture reste sur le dossier. */
+  paginationImprimee,
+  surplusDePages,
   FINITION_LIBELLE,
   FINITION_OPTION,
   PAPIER_COUVERTURE,
@@ -443,6 +446,11 @@ export async function POST(request: Request) {
          pas). C'est la cote dont dépend la largeur de la couverture
          enveloppante déjà déposée : les deux doivent concorder. */
       dos: { mm: number; largeurCouvertureMm: number } | null;
+      /**
+       * Les deux paginations du dossier (25/09/2026) : ce qui a été facturé,
+       * ce qui part à l'impression, et le surplus que nous payons.
+       */
+      pagination: { facturees: number | null; imprimees: number | null; surplus: number | null };
       fichiers: Array<{ type: string; cle: string; taille: number; md5: string }>;
       /* T-121 : ce que chaque PDF du coffre MESURE, et ce qui interdirait de
          commander. Rendu au dry-run pour que l'écran le montre, et opposé à
@@ -524,13 +532,49 @@ export async function POST(request: Request) {
          Seulement quand tout le reste est déjà bon : descendre 130 Mo pour
          un fichier qui manque ne servirait à rien. */
       const controles: ControleImpression[] = [];
+      /* ── LA PAGINATION IMPRIMÉE SE LIT DANS LE BLOC (25/09/2026) ────────
+         `nb_pages` ne dit plus que ce qui a été FACTURÉ ; le nombre de pages
+         du PDF du bloc dit ce qui sera FABRIQUÉ, et c'est lui qui donne le
+         dos, la largeur de couverture et `total_pages`.
+         ⚠️ D'où l'ordre de lecture : la couverture est inspectée EN DERNIER,
+         sinon elle serait jugée contre une cote que le bloc dément (48 pages
+         facturées, 50 composées : 3,50 mm de dos attendu au lieu de 3,60). */
+      let pagesImprimees: number | null = numero.nb_pages ?? null;
+      const ordreLecture = [...fichiers].sort(
+        (a, b) => Number(a.type === "cover") - Number(b.type === "cover"),
+      );
       if (!erreurs.length) {
-        for (const f of fichiers) {
+        for (const f of ordreLecture) {
           const slot = SLOTS_IMPRESSION.find((s) => s.type === f.type)!;
           const type = f.type as (typeof produit.fichiers)[number];
           try {
             const octets = await lireObjet(f.cle, AbortSignal.timeout(BUDGET_CONTROLE_MS));
-            const lu = await inspecterPdf(octets, type, numero.nb_pages ?? null, produit, finitionDuDossier(numero.finition));
+            const lu = await inspecterPdf(
+              octets,
+              type,
+              numero.nb_pages ?? null,
+              produit,
+              finitionDuDossier(numero.finition),
+              pagesImprimees,
+            );
+            /* Le bloc fait foi dès qu'il est lu, pour lui-même et pour la
+               couverture qui suit.
+               ⚠️ Mais un surplus ne peut pas sortir du PRODUIT : la pagination
+               imprimée pilote maintenant `total_pages`, et un bloc de 62 pages
+               partirait chez Cloudprinter sous une référence qui s'arrête à
+               `PAGES_MAX`. `verdictMultiplePages` ne l'attraperait pas (sa
+               règle n'a pas de maximum), c'est donc ici que ça se juge. */
+            if (type !== "cover") {
+              const lue = paginationImprimee(lu.nbPages, numero.nb_pages ?? null);
+              if (produitPour(lue) === null) {
+                erreurs.push({
+                  champ: slot.cle,
+                  message: `${slot.label} : ${lu.nbPages} pages, aucun produit d'impression ne correspond (${PAGES_MIN} à ${PAGES_MAX} pages).`,
+                });
+              } else {
+                pagesImprimees = lue;
+              }
+            }
             const refus = refusDeCommande(type, lu);
             controles.push({ type, nbPages: lu.nbPages, pageMm: lu.pageMm, verdictTaille: lu.verdictTaille, refus });
             if (refus) erreurs.push({ champ: slot.cle, message: `${slot.label} : ${refus}` });
@@ -571,10 +615,18 @@ export async function POST(request: Request) {
            fond perdu à un deuxième endroit, et c'est ainsi que deux
            géométries finissent par diverger. */
         dos: (() => {
-          const mm = dosMmPourPages(numero.nb_pages, finitionDuDossier(numero.finition));
-          const largeur = largeurCouvertureMm(numero.nb_pages, finitionDuDossier(numero.finition));
+          const mm = dosMmPourPages(pagesImprimees, finitionDuDossier(numero.finition));
+          const largeur = largeurCouvertureMm(pagesImprimees, finitionDuDossier(numero.finition));
           return mm !== null && largeur !== null ? { mm, largeurCouvertureMm: largeur } : null;
         })(),
+        /* Ce que l'écran doit montrer AVANT le clic : combien de pages ont
+           été payées, combien partiront à l'impression, et l'écart que nous
+           prenons à notre charge (25/09/2026). */
+        pagination: {
+          facturees: numero.nb_pages ?? null,
+          imprimees: pagesImprimees,
+          surplus: surplusDePages(pagesImprimees, numero.nb_pages ?? null),
+        },
         fichiers,
         controles,
         adresse: adr.ok
@@ -701,8 +753,13 @@ export async function POST(request: Request) {
           reference,
           emailContact: EMAIL_CONTACT,
           adresse: adr.adresse,
-          produit: produitPour(numero.nb_pages)!,
-          pages: numero.nb_pages!,
+          /* LE PRODUIT ET `total_pages` SUIVENT LE BLOC, PAS LA FACTURE
+             (25/09/2026) : c'est le fichier qui dit combien de feuilles
+             seront reliées, et le dos que l'usine montera s'en déduit. Le
+             prix, lui, ne bouge pas : il est gelé sur le dossier et se lit
+             dans `prix.ts`, jamais ici. */
+          produit: produitPour(impression.pagination.imprimees)!,
+          pages: impression.pagination.imprimees!,
           fichiers: fichiersSignes,
           titre: numero.titre,
           /* Le pelliculage CHOISI par le client sur sa page de commande. Le
@@ -950,8 +1007,26 @@ export async function POST(request: Request) {
         orderId: orderIdCommande,
         produit: impression?.produit,
         shippingLevel: impression?.shippingLevel,
+        /* Les deux paginations voyagent AVEC la commande (25/09/2026) :
+           dans six mois, « pourquoi ce dossier a-t-il coûté plus que son
+           prix ? » doit se lire ici, pas se déduire d'un PDF archivé. */
+        pagesFacturees: impression?.pagination.facturees ?? null,
+        pagesImprimees: impression?.pagination.imprimees ?? null,
+        pagesSurplus: impression?.pagination.surplus ?? null,
         par: prenomDe(qui),
       });
+      /* Un surplus est une DÉPENSE que personne n'a facturée : il mérite sa
+         propre ligne, pour que le cockpit puisse un jour l'agréger sans
+         relire toutes les commandes. */
+      if (impression?.pagination.surplus) {
+        await logEvenement(supabase, numero.id, "pagination_surplus", {
+          facturees: impression.pagination.facturees,
+          imprimees: impression.pagination.imprimees,
+          surplus: impression.pagination.surplus,
+          aNosFrais: true,
+          par: prenomDe(qui),
+        });
+      }
     } else if (impression?.modeManuel) {
       /* La trace que RIEN n'est parti chez un imprimeur : sans elle, un
          dossier « en production » sans commande ressemblerait à un bug. */

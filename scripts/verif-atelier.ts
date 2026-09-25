@@ -255,6 +255,8 @@ import {
   verdictMultiplePages,
   verdictPagesPdf,
   verdictTaillePage,
+  paginationImprimee,
+  surplusDePages,
 } from "@/lib/atelier/impression";
 import {
   comptesAdmin,
@@ -1540,11 +1542,43 @@ ok("arrondi au dixieme de mm", pointsEnMm(600) === 211.7);
 titre("— le compte de pages face au dossier —");
 ok("book a la pagination du dossier -> conforme",
    verdictPagesPdf("book", 32, 32).genre === "conforme");
-const ecart = verdictPagesPdf("book", 30, 32);
-ok("book en ecart le DIT avec l'attendu", ecart.genre === "ecart" && ecart.attendu === 32);
-ok("product compare aussi au dossier", verdictPagesPdf("product", 24, 20).genre === "ecart");
+const manque = verdictPagesPdf("book", 30, 32);
+ok("book en MANQUE le DIT avec l'attendu et l'imprime",
+   manque.genre === "manque" && manque.attendu === 32 && manque.imprime === 30);
+const surplus = verdictPagesPdf("book", 34, 32);
+ok("book en SURPLUS est un genre a part, pas un manque",
+   surplus.genre === "surplus" && surplus.attendu === 32 && surplus.imprime === 34);
+ok("product compare aussi au dossier", verdictPagesPdf("product", 24, 20).genre === "surplus");
 ok("cover : constat, jamais de verdict", verdictPagesPdf("cover", 1, 32).genre === "constat");
 ok("dossier sans pagination : constat", verdictPagesPdf("book", 32, null).genre === "constat");
+
+/* 25/09/2026 — la regle tranchee par Mathias sur le dossier d'Eloise (48
+   facturees, 50 composees) : plus de pages passe et nous coute, moins de
+   pages ne passe jamais. */
+titre("— les deux paginations : facturee et imprimee —");
+ok("le fichier fait foi des qu'on sait le lire", paginationImprimee(50, 48) === 50);
+ok("sans fichier lisible, on retombe sur la facture", paginationImprimee(null, 48) === 48);
+ok("ni l'un ni l'autre -> null, aucune geometrie n'est inventee",
+   paginationImprimee(null, null) === null);
+ok("un compte absurde ne devient pas une geometrie", paginationImprimee(0, 48) === 48);
+ok("surplus de 2 pages sur un 48 facture", surplusDePages(50, 48) === 2);
+ok("pas de surplus quand les deux coincident", surplusDePages(48, 48) === 0);
+ok("jamais negatif : un manque est refuse avant d'arriver la",
+   surplusDePages(46, 48) === 0);
+ok("une pagination manquante ne rend pas zero mais null",
+   surplusDePages(null, 48) === null && surplusDePages(50, null) === null);
+
+/* Le piege que la bascule ouvrait : la couverture jugee contre la facture
+   pendant que le bloc dit autre chose. Les deux cotes doivent suivre le
+   BLOC, et l'ecart de 0,1 mm entre 48 et 50 pages reste dans la tolerance
+   (ce qui a evite un redepot de couverture a Eloise). */
+titre("— la geometrie suit le bloc, pas la facture —");
+ok("le dos de 50 pages n'est pas celui de 48",
+   dosMmPourPages(50, "gloss") !== dosMmPourPages(48, "gloss"));
+ok("une couverture coupee pour 48 passe encore a 50 (0,1 mm < tolerance)",
+   verdictTaillePage("cover", largeurCouvertureMm(48, "gloss")!, 303, 50, "gloss") === "conforme");
+ok("mais un ecart de 10 pages, non",
+   verdictTaillePage("cover", largeurCouvertureMm(48, "gloss")!, 303, 58, "gloss") === "hors_format");
 
 titre("— le format de page face aux specs relevees —");
 ok("216 x 303 (fini + fond perdu) -> conforme", verdictTaillePage("book", 216, 303) === "conforme");

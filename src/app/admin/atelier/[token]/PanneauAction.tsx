@@ -114,6 +114,10 @@ type Verif = {
     papier: { interieur: string; couverture: string };
     finition: { cle: string; libelle: string };
     dos: { mm: number; largeurCouvertureMm: number } | null;
+    /* Les deux paginations du dossier (25/09/2026) : ce qui a été facturé,
+       ce qui part à l'impression, et le surplus que nous prenons à notre
+       charge. C'est la ligne que Mathias doit voir AVANT de cliquer. */
+    pagination: { facturees: number | null; imprimees: number | null; surplus: number | null };
     shippingLevel: string;
     fichiers: Array<{ type: string; cle: string; taille: number; md5: string }>;
     /* T-121 : ce que le serveur a LU dans chaque PDF du coffre avant
@@ -335,6 +339,11 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
     return noms;
   });
   const [erreurs, setErreurs] = useState<Erreur[]>([]);
+  /* La pagination du BLOC une fois découpé (25/09/2026) : c'est elle qui donne
+     le dos, donc la largeur de la couverture. Elle n'existe qu'à partir du
+     moment où l'atelier a déposé le bloc dans CETTE session ; avant, la
+     découpe retombe sur la pagination du dossier, comme avant ce lot. */
+  const [pagesBloc, setPagesBloc] = useState<number | null>(null);
   const [verif, setVerif] = useState<Verif | null>(null);
   const [occupe, setOccupe] = useState(false);
   const [fait, setFait] = useState<string | null>(null);
@@ -781,7 +790,13 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
       try {
         /* La finition passe avec la pagination : depuis le 21/09 elle choisit
            le papier, donc le dos, donc la largeur de la feuille enveloppante. */
-        prep = await preparerPdfImpression(await file.arrayBuffer(), typeSlot, fiche.ligne.nbPages ?? null, fiche.finition);
+        prep = await preparerPdfImpression(
+          await file.arrayBuffer(),
+          typeSlot,
+          fiche.ligne.nbPages ?? null,
+          fiche.finition,
+          pagesBloc,
+        );
       } catch (err) {
         /* La cause reste lisible en console : le 21/09, un banc a mis deux
            jours à découvrir que c'était CE chemin qui tombait. */
@@ -795,6 +810,10 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
         setErreurs((e) => [...e, { champ, message: prep.refus }]);
         return;
       }
+      /* Le bloc vient d'être découpé : sa pagination servira à la couverture
+         déposée ensuite, et c'est le seul moment où on la connaît sans
+         relire un fichier de 130 Mo. */
+      if (typeSlot !== "cover" && typeof prep.pages === "number") setPagesBloc(prep.pages);
       const corps: Blob = prep.inchange ? file : new Blob([prep.octets as BlobPart], { type: "application/pdf" });
       const nom = prep.inchange ? file.name : `${file.name.replace(/\.pdf$/i, "")} - impression.pdf`;
 
@@ -1885,6 +1904,31 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                         </dd>
                       </>
                     ) : null}
+                    {/* Payé pour n, imprimé m : l'écart est une dépense que
+                        personne n'a facturée, il ne doit jamais passer en
+                        silence (25/09/2026). */}
+                    <dt>Pages</dt>
+                    <dd>
+                      {verif.impression.pagination.surplus ? (
+                        <>
+                          <strong>
+                            {verif.impression.pagination.imprimees} imprimées pour{" "}
+                            {verif.impression.pagination.facturees} facturées
+                          </strong>{" "}
+                          <span className="ate-faint">
+                            {verif.impression.pagination.surplus} page
+                            {verif.impression.pagination.surplus > 1 ? "s" : ""} à nos frais. Le prix
+                            payé ne bouge pas ; le dos et la couverture suivent les{" "}
+                            {verif.impression.pagination.imprimees}.
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          {verif.impression.pagination.imprimees ?? "?"}{" "}
+                          <span className="ate-faint">facturées et imprimées</span>
+                        </>
+                      )}
+                    </dd>
                     <dt>{verif.impression.fichiers.length > 1 ? "Fichiers" : "Fichier"}</dt>
                     <dd>
                       {verif.impression.fichiers.length

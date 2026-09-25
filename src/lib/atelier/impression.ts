@@ -396,20 +396,37 @@ export function pointsEnMm(points: number): number {
 
 /**
  * Ce que le contrôle technique peut DIRE du nombre de pages d'un PDF face
- * au DOSSIER, et rien de plus.
+ * au DOSSIER.
  *
- *   product / book — la pagination du dossier (`nb_pages`) est l'attente
- *   naturelle : c'est elle qui part chez Cloudprinter en `total_pages`.
- *   Écart ≠ refus : l'écran signale, l'atelier tranche — un `product`
- *   agrafé peut légitimement porter ses faces de couverture en plus, et le
- *   relevé products/info ne dit pas comment `total_pages` les compte.
+ * ══════════════════════════════════════════════════════════════════════════
+ * DEUX PAGINATIONS, ET C'EST VOULU (25/09/2026, décision de Mathias)
+ *
+ * `numeros.nb_pages` est la pagination FACTURÉE : celle qui a fixé le prix
+ * au gel de l'aperçu, celle que le client a payée. Elle ne bouge plus jamais
+ * après, sinon on ferait réapparaître un montant que personne n'a encaissé.
+ *
+ * La pagination IMPRIMÉE, elle, est celle du PDF du bloc, et c'est la seule
+ * qui décrit l'objet fabriqué : le dos s'en déduit, la couverture aussi, et
+ * `total_pages` part chez Cloudprinter avec elle.
+ *
+ * Elles ne coïncident pas toujours, et le dossier d'Eloïse (48 facturées,
+ * 50 composées) l'a montré : l'atelier compose au nombre de doubles pages
+ * que l'histoire demande, pas à celui d'un devis fait avant de composer.
+ *
+ * La règle tranchée est ASYMÉTRIQUE :
+ *   surplus — plus de pages qu'il n'en a été facturé : ACCEPTÉ, l'écart est
+ *   à nos frais, montré à l'écran avant le clic et écrit au journal. Le
+ *   client ne peut pas se plaindre de recevoir plus que promis ;
+ *   manque — moins de pages : REFUSÉ, toujours. Livrer un objet plus mince
+ *   que celui qu'on a vendu est le seul sens dans lequel on ne va jamais.
  *
  *   cover — AUCUNE attente de compte relevée (SPECS-CLOUDPRINTER.md) :
  *   on constate, on ne juge pas.
  */
 export type VerdictPages =
   | { genre: "conforme"; attendu: number }
-  | { genre: "ecart"; attendu: number }
+  | { genre: "surplus"; attendu: number; imprime: number }
+  | { genre: "manque"; attendu: number; imprime: number }
   | { genre: "constat" };
 
 export function verdictPagesPdf(
@@ -422,9 +439,54 @@ export function verdictPagesPdf(
     /* Dossier sans pagination : rien à quoi comparer, on constate. */
     return { genre: "constat" };
   }
-  return nbPagesFichier === nbPagesDossier
-    ? { genre: "conforme", attendu: nbPagesDossier }
-    : { genre: "ecart", attendu: nbPagesDossier };
+  if (nbPagesFichier === nbPagesDossier) return { genre: "conforme", attendu: nbPagesDossier };
+  return nbPagesFichier > nbPagesDossier
+    ? { genre: "surplus", attendu: nbPagesDossier, imprime: nbPagesFichier }
+    : { genre: "manque", attendu: nbPagesDossier, imprime: nbPagesFichier };
+}
+
+/**
+ * LA PAGINATION IMPRIMÉE — celle que toute la fabrication suit.
+ *
+ * Le PDF du bloc fait foi dès qu'on sait le lire : c'est le seul objet qui
+ * dise combien de feuilles seront reliées. `nb_pages` ne sert plus que de
+ * repli, pour les chemins qui n'ont pas encore de fichier sous la main (la
+ * découpe au dépôt avant que le bloc ne soit choisi, un devis à la
+ * publication de l'aperçu).
+ *
+ * ⚠️ Ne jamais s'en servir pour calculer de l'argent : le prix se lit dans
+ * `prix.ts` et nulle part ailleurs (`centimesDuDossier`). Cette fonction
+ * décrit une GÉOMÉTRIE, pas une facture.
+ */
+export function paginationImprimee(
+  nbPagesFichier: number | null | undefined,
+  nbPagesFacturees: number | null | undefined
+): number | null {
+  if (typeof nbPagesFichier === "number" && Number.isInteger(nbPagesFichier) && nbPagesFichier > 0) {
+    return nbPagesFichier;
+  }
+  if (
+    typeof nbPagesFacturees === "number" &&
+    Number.isInteger(nbPagesFacturees) &&
+    nbPagesFacturees > 0
+  ) {
+    return nbPagesFacturees;
+  }
+  return null;
+}
+
+/**
+ * Le surplus de pages d'un dossier : ce qu'on fabrique en plus de ce qui a
+ * été facturé, et donc ce que ça nous coûte. Zéro quand les deux coïncident,
+ * `null` quand l'une des deux manque. Jamais négatif : un manque est refusé
+ * avant d'arriver ici.
+ */
+export function surplusDePages(
+  pagesImprimees: number | null | undefined,
+  nbPagesFacturees: number | null | undefined
+): number | null {
+  if (typeof pagesImprimees !== "number" || typeof nbPagesFacturees !== "number") return null;
+  return Math.max(0, pagesImprimees - nbPagesFacturees);
 }
 
 /**
