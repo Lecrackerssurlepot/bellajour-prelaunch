@@ -455,3 +455,29 @@ zone) ; le cockpit le verra. Le dos se calcule avec le bulk du papier réel (glo
 intérieur ; la page produit et le bon de commande le disent au client. Les CGV (annexe « Papier »,
 FR/PT/EN) disent encore « couché brillant » pour tous : texte légal, à corriger avec l'accord
 explicite de Mathias.
+
+D20 (25/09/2026) — **On imprime plus de pages que facturé quand la composition l'exige, à nos
+frais ; jamais moins.** Décision de Mathias.
+
+Le contexte. Le dossier d'Eloïse a été chiffré à 48 pages à la publication de l'aperçu, puis
+composé en 50 : l'atelier pose le nombre de doubles pages que l'histoire demande, et il le
+découvre en composant, pas en devisant. Le prix, lui, est gelé depuis le 10/09 et avait déjà été
+encaissé. Aucune double page n'était supprimable sans défaire une maquette que la cliente venait
+de valider.
+
+Ce qui est tranché. La pagination de fabrication n'est plus celle de la facture. Un surplus de
+pages part à l'impression sans que rien ne soit redemandé au client, et l'écart est pour nous :
+« le client ne peut pas se plaindre s'il y a plus de pages que ce qui a été annoncé ». Le sens
+inverse reste interdit : on ne livre jamais un objet plus mince que celui qu'on a vendu. La règle
+est donc ASYMÉTRIQUE, et c'est voulu.
+
+Ce qui en découle dans le code. `numeros.nb_pages` ne dit plus que ce qui a été FACTURÉ et ne
+bouge plus après le gel du prix ; la pagination IMPRIMÉE se lit dans le PDF du bloc et pilote le
+dos, la largeur de la couverture, la référence produit et `total_pages`. Un manque refuse la
+commande, un surplus la laisse passer en l'écrivant au journal (`pagination_surplus`) et en
+l'affichant au panneau avant le clic.
+
+**Conséquence :** ne jamais « réparer » un écart en corrigeant `nb_pages` à la main — ce serait
+regeler le prix d'un dossier encaissé. Et ne jamais rendre la règle symétrique « par propreté » :
+le sens compte plus que la symétrie. Le surplus est une dépense réelle, que le cockpit pourra
+chiffrer à partir du journal.
