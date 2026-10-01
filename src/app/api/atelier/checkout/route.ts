@@ -57,13 +57,24 @@ const codeStripe = (p: PaysLivraison): PaysStripe => p;
  * la cliente, mais par l'atelier au moment de saisir le nombre de pages.
  * ══════════════════════════════════════════════════════════════════════════
  *
- * TVA. Le prix est déclaré TTC (`tax_behavior: "inclusive"`) et Stripe Tax
- * est branché. Aujourd'hui, le compte n'a AUCUNE immatriculation déclarée :
- * Stripe calcule donc 0 € de taxe et la cliente paie exactement le prix
- * affiché. Le jour où l'immatriculation portugaise est ajoutée dans le
- * tableau de bord, un numéro à 37 € se découpe tout seul en 30,08 € HT +
- * 6,92 € de TVA sur la facture — sans redéploiement, sans changement de prix,
- * sans toucher à ce fichier. C'est toute la raison de le câbler maintenant.
+ * TVA. Le prix est déclaré TTC (`tax_behavior: "inclusive"`), et c'est TOUT :
+ * `automatic_tax` est COUPÉ depuis le 01/10/2026 (décision du conseil compta).
+ *
+ * Stripe Tax était branché en pariant qu'une immatriculation portugaise
+ * viendrait découper le TTC toute seule sur la facture. Ce pari est abandonné :
+ * la facture qui fait foi est la fatura certifiée (InvoiceXpress, ATCUD et code
+ * QR, CGV art. 4.4), pas le reçu Stripe, et c'est elle qui portera le taux du
+ * pays de livraison. Faire calculer à Stripe une taxe que personne ne lit
+ * ajoutait un second avis fiscal silencieux à côté du vrai.
+ *
+ * `tax_behavior: "inclusive"` RESTE, sur le magazine comme sur le port. Tous
+ * les `unit_amount` d'ici sont des TTC ; sans ce champ, le défaut du compte
+ * (`exclusive`) ferait AJOUTER la taxe par-dessus le prix affiché le jour où
+ * une immatriculation existerait. Le garder ne coûte rien et dit au passage,
+ * dans la charge utile elle-même, que ces montants sont toutes taxes comprises.
+ *
+ * Ce que le client paie n'a pas changé d'un centime : Stripe calculait déjà
+ * 0 € de taxe, faute d'immatriculation.
  *
  * LE CRÉDIT FONDATRICE (T-021, 01/09). La remise de 30 € des quatorze
  * fondatrices s'applique TOUTE SEULE : le serveur relit `waitlist`, réutilise
@@ -476,8 +487,9 @@ export async function POST(request: Request) {
               fixed_amount: { amount: livraison, currency: "eur" },
               /* TTC, comme le prix du magazine : le total ne gonfle pas au
                  moment de payer. La conversion HT → TTC a eu lieu au devis
-                 (livraison.ts) ; la TVA réellement facturée reste celle que
-                 Stripe Tax calcule à partir de l'adresse. */
+                 (livraison.ts). La TVA réellement facturée est celle de la
+                 fatura, calculée sur le pays de livraison — Stripe n'en
+                 calcule plus aucune depuis le 01/10 (voir l'en-tête). */
               tax_behavior: "inclusive",
               tax_code: CODE_FISCAL_LIVRAISON,
               delivery_estimate: {
@@ -491,8 +503,8 @@ export async function POST(request: Request) {
           },
         ],
         /* Adresse de facturation exigée : une facture émise sans elle n'est
-           pas complète, et Stripe Tax a besoin d'une adresse pour trancher.
-           Checkout propose « identique à la livraison » — un clic. */
+           pas complète. Checkout propose « identique à la livraison » — un
+           clic. Exigée même sans Stripe Tax : c'est la fatura qui en a besoin. */
         billing_address_collection: "required",
 
         /* Le crédit de prévente (CGV art. 5 bis). Les 14 fondateurs ont versé
@@ -517,7 +529,6 @@ export async function POST(request: Request) {
         ...(remiseAppliquee
           ? { discounts: [{ promotion_code: credit.promotionCodeId }] }
           : { allow_promotion_codes: true }),
-        automatic_tax: { enabled: true },
 
         /* ─── LES LIGNES, UNE PAR RANG D'EXEMPLAIRE (15/09/2026) ───────────
            « Votre numéro », puis « 2e exemplaire, −30 % », puis « N

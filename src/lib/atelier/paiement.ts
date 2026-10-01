@@ -274,7 +274,10 @@ export async function traiterPaiementAtelier(
 
   /* Invariant nº6 — chaque transition d'état écrit dans `evenements`.
      On y range aussi ce que Stripe a calculé de TVA : le jour où une facture
-     est contestée, c'est ici qu'on lit ce qui a réellement été appliqué. */
+     est contestée, c'est ici qu'on lit ce qui a réellement été appliqué.
+     Depuis le 01/10/2026 `automatic_tax` est coupé côté checkout, donc ce
+     champ vaut 0 ou null — on le garde quand même, parce qu'une valeur non
+     nulle signalerait que Stripe Tax a été rebranché sans qu'on le sache. */
   await logEvenement(supabase, numero.id, "etat_change", {
     de: "apercu_pret",
     vers: "payee",
