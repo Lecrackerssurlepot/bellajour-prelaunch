@@ -260,3 +260,98 @@ export function normaliserPays(v: unknown): PaysLivraison | null {
   const c = v.trim().toUpperCase();
   return paysValide(c) ? c : null;
 }
+
+/* ───────────── LES TERRITOIRES HORS ZONE TVA DE L'UNION EUROPÉENNE ─────────────
+ *
+ * Posé le 01/10/2026. Décision du conseil compta : CES TERRITOIRES NE SONT PAS
+ * DESSERVIS.
+ *
+ * Le problème qu'ils posent n'est pas le port, c'est la double imposition. Une
+ * adresse aux Canaries est une adresse « ES » pour Stripe comme pour nous : le
+ * client paierait les 21 % espagnols inclus dans le prix, puis l'IGIC et les
+ * droits à l'import à l'arrivée. Il paierait deux fois une taxe dont nous
+ * n'aurions dû lui prendre aucune. Le constat vivait en commentaire dans
+ * `prix.ts` depuis l'ouverture de l'Europe (« les DOM passent au travers ») ;
+ * ici on en tire la conséquence.
+ *
+ * ⚠️ LE CONTRÔLE EST FORCÉMENT POSTÉRIEUR AU PAIEMENT. Stripe Checkout borne
+ * les destinations au PAYS (`allowed_countries`), jamais au code postal, et
+ * l'adresse n'arrive qu'avec la session payée. On annonce donc l'exclusion
+ * AVANT le paiement (page du client, écran 4, CGV art. 4bis.6) et on la
+ * constate APRÈS : journal au webhook, bandeau dans l'admin, et refus dur
+ * avant l'envoi à l'imprimeur. Le remboursement est manuel.
+ *
+ * ⚠️ LES VALEURS SONT À CONFIRMER PAR LE COMPTABLE. Aucune source fiscale ne
+ * vit dans ce dépôt, et un code postal n'est pas une frontière : ce sont les
+ * préfixes usuels, pas une liste officielle. Ils ne décident d'aucun prix et
+ * d'aucune TVA facturée — ils décident seulement de CRIER. Un faux positif
+ * coûte une vérification humaine, un faux négatif coûte un remboursement :
+ * c'est pourquoi la table penche du côté du cri.
+ */
+type Territoire = { readonly pays: PaysLivraison; readonly prefixes: readonly string[]; readonly nom: string };
+
+export const TERRITOIRES_HORS_TVA_UE: readonly Territoire[] = [
+  { pays: "ES", prefixes: ["35", "38"], nom: "Canaries" },
+  { pays: "ES", prefixes: ["51"], nom: "Ceuta" },
+  { pays: "ES", prefixes: ["52"], nom: "Melilla" },
+  /* 97 et 98 : départements et collectivités d'outre-mer. Voir l'exception
+     Monaco juste en dessous — elle est la raison pour laquelle ce tableau ne
+     peut pas se lire sans son garde-fou. */
+  { pays: "FR", prefixes: ["97", "98"], nom: "DOM-COM" },
+  { pays: "FI", prefixes: ["22"], nom: "Åland" },
+  { pays: "DE", prefixes: ["27498"], nom: "Helgoland" },
+  { pays: "DE", prefixes: ["78266"], nom: "Büsingen" },
+  { pays: "IT", prefixes: ["23041"], nom: "Livigno" },
+  { pays: "IT", prefixes: ["22061"], nom: "Campione d'Italia" },
+  { pays: "GR", prefixes: ["63086"], nom: "Mont Athos" },
+];
+
+/**
+ * MONACO N'EST PAS UN TERRITOIRE EXCLU, ET SON CODE POSTAL COMMENCE PAR 98.
+ *
+ * 98000 est Monaco, qui est DANS le territoire TVA de l'Union et y est traité
+ * comme la France. Les 98 qui nous intéressent sont plus loin : 986xx Wallis,
+ * 987xx Polynésie, 988xx Nouvelle-Calédonie. Sans cette exception, la règle
+ * refuserait un client monégasque parfaitement livrable, et personne ne
+ * comprendrait pourquoi. Une exception nommée vaut mieux qu'un préfixe plus
+ * long qui cacherait le raisonnement.
+ */
+const CODES_NON_EXCLUS: readonly string[] = ["98000"];
+
+/** Le code postal, réduit à ses chiffres : « 2 310 » et « 2310-123 » donnent « 2310 ». */
+function chiffresDuCodePostal(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const c = v.replace(/[^0-9]/g, "");
+  return c.length > 0 ? c : null;
+}
+
+/**
+ * Cette adresse tombe-t-elle dans un territoire hors zone TVA de l'Union ?
+ *
+ * Sans code postal lisible, la réponse est NON : on ne crie pas sur une
+ * absence. Le pays seul ne suffit jamais — c'est tout le point de ce module.
+ */
+export function estTerritoireHorsTvaUE(pays: unknown, codePostal: unknown): boolean {
+  const code = normaliserPays(pays);
+  if (code === null) return false;
+  const cp = chiffresDuCodePostal(codePostal);
+  if (cp === null) return false;
+  if (CODES_NON_EXCLUS.includes(cp)) return false;
+  return TERRITOIRES_HORS_TVA_UE.some(
+    (t) => t.pays === code && t.prefixes.some((p) => cp.startsWith(p)),
+  );
+}
+
+/** Le nom du territoire, pour le dire à l'atelier. `null` si l'adresse est desservie. */
+export function territoireHorsTvaUE(pays: unknown, codePostal: unknown): string | null {
+  if (!estTerritoireHorsTvaUE(pays, codePostal)) return null;
+  const code = normaliserPays(pays);
+  const cp = chiffresDuCodePostal(codePostal);
+  if (code === null || cp === null) return null;
+  /* Le préfixe le plus long gagne : « 22061 » (Campione) avant un « 22 »
+     éventuel, pour que le nom affiché soit le bon et pas le premier trouvé. */
+  const trouve = TERRITOIRES_HORS_TVA_UE.filter((t) => t.pays === code)
+    .flatMap((t) => t.prefixes.filter((p) => cp.startsWith(p)).map((p) => ({ p, nom: t.nom })))
+    .sort((a, b) => b.p.length - a.p.length)[0];
+  return trouve?.nom ?? null;
+}

@@ -305,7 +305,18 @@ import {
   livraisonOfferte,
   manquePourFranco,
 } from "@/lib/atelier/livraison";
-import { TAUX_TVA_PAYS } from "@/lib/atelier/pays";
+import {
+  TAUX_TVA_PAYS,
+  TERRITOIRES_HORS_TVA_UE,
+  estTerritoireHorsTvaUE,
+  territoireHorsTvaUE,
+} from "@/lib/atelier/pays";
+import {
+  TAUX_REGIONAUX_CONFIRMES,
+  htDepuisTtc,
+  tauxTvaFacture,
+  tvaDepuisTtc,
+} from "@/lib/atelier/tvaFacture";
 import {
   QUANTITE_MAX as QUANTITE_MAX_EXEMPLAIRES,
   totalExemplaires,
@@ -1888,6 +1899,135 @@ ok("portClient hors zone : null", portClient({ pays: "CA", totalProduitCentimes:
 ok("livraisonOfferte : a 50 EUR oui, a 49,99 non", livraisonOfferte(5000) && !livraisonOfferte(4999));
 ok("manquePourFranco : 36 EUR -> 14 EUR, 50 -> 0, 61,20 -> 0",
    manquePourFranco(3600) === 1400 && manquePourFranco(5000) === 0 && manquePourFranco(6120) === 0);
+
+/* ══════════ LES TERRITOIRES HORS ZONE TVA UE (01/10/2026) ══════════
+   Decision du conseil compta : ces territoires ne sont PAS desservis. Le
+   pays seul ne les distingue pas (une adresse aux Canaries est « ES »), il
+   faut le CODE POSTAL, qui n'arrive qu'avec l'adresse Stripe apres paiement.
+   Les prefixes sont « a confirmer » cote comptable : ils ne decident d'aucun
+   prix, seulement du cri. */
+
+titre("— les territoires hors zone TVA de l'Union —");
+
+ok("Las Palmas 35001 -> Canaries", estTerritoireHorsTvaUE("ES", "35001"));
+ok("Santa Cruz de Tenerife 38001 -> Canaries", estTerritoireHorsTvaUE("ES", "38001"));
+ok("Ceuta 51001 -> exclu", estTerritoireHorsTvaUE("ES", "51001"));
+ok("Melilla 52001 -> exclu", estTerritoireHorsTvaUE("ES", "52001"));
+ok("La Reunion 97400 -> DOM-COM", estTerritoireHorsTvaUE("FR", "97400"));
+ok("Nouvelle-Caledonie 98800 -> DOM-COM", estTerritoireHorsTvaUE("FR", "98800"));
+ok("Mariehamn 22100 -> Aland", estTerritoireHorsTvaUE("FI", "22100"));
+ok("Helgoland 27498 -> exclu", estTerritoireHorsTvaUE("DE", "27498"));
+ok("Busingen 78266 -> exclu", estTerritoireHorsTvaUE("DE", "78266"));
+ok("Livigno 23041 -> exclu", estTerritoireHorsTvaUE("IT", "23041"));
+ok("Campione d'Italia 22061 -> exclu", estTerritoireHorsTvaUE("IT", "22061"));
+ok("Mont Athos 63086 -> exclu", estTerritoireHorsTvaUE("GR", "63086"));
+
+/* ⚠️ MONACO. 98000 commence par 98 comme les COM, mais Monaco est DANS le
+   territoire TVA de l'Union et traite comme la France. Sans son exception
+   nommee, la regle refuserait un client parfaitement livrable. */
+ok("Monaco 98000 : DESSERVI, malgre son prefixe 98", !estTerritoireHorsTvaUE("FR", "98000"));
+
+ok("Paris 75010 : desservi", !estTerritoireHorsTvaUE("FR", "75010"));
+ok("Madrid 28001 : desservi", !estTerritoireHorsTvaUE("ES", "28001"));
+ok("Lisbonne 1100 : desservi", !estTerritoireHorsTvaUE("PT", "1100"));
+ok("Hambourg 20095 : desservi (27498 est un code entier, pas un prefixe 27)",
+   !estTerritoireHorsTvaUE("DE", "20095"));
+ok("Milan 20121 : desservi (23041 et 22061 sont des codes entiers)",
+   !estTerritoireHorsTvaUE("IT", "20121"));
+ok("Turin 10121 : desservi", !estTerritoireHorsTvaUE("IT", "10121"));
+
+/* On ne crie JAMAIS sur une absence : un code postal manquant n'est pas une
+   exclusion, c'est une inconnue. */
+ok("code postal absent : jamais exclu", !estTerritoireHorsTvaUE("FR", null));
+ok("code postal vide : jamais exclu", !estTerritoireHorsTvaUE("FR", "   "));
+ok("code postal non texte : jamais exclu", !estTerritoireHorsTvaUE("FR", 97400));
+ok("pays hors zone de livraison : jamais exclu", !estTerritoireHorsTvaUE("CA", "97400"));
+ok("pays absent : jamais exclu", !estTerritoireHorsTvaUE(null, "97400"));
+
+/* Les espaces et le tiret portugais ne doivent pas casser la lecture. */
+ok("« 97 400 » se lit comme 97400", estTerritoireHorsTvaUE("FR", "97 400"));
+ok("« 9000-064 » se lit comme 9000", estTerritoireHorsTvaUE("PT", "9000-064") === false);
+
+ok("le territoire est NOMME, pour le dire a l'atelier",
+   territoireHorsTvaUE("ES", "35001") === "Canaries" &&
+   territoireHorsTvaUE("FR", "97400") === "DOM-COM" &&
+   territoireHorsTvaUE("GR", "63086") === "Mont Athos");
+ok("une adresse desservie n'a pas de nom de territoire",
+   territoireHorsTvaUE("FR", "75010") === null);
+/* Le prefixe le PLUS LONG gagne : 22061 est Campione, pas un « 22 » italien
+   qui n'existe pas dans la table. Si un jour deux prefixes se recouvrent,
+   c'est le plus precis qui doit nommer. */
+ok("le prefixe le plus long nomme : 22061 -> Campione d'Italia",
+   territoireHorsTvaUE("IT", "22061") === "Campione d'Italia");
+ok("la table couvre 6 pays et 10 territoires",
+   TERRITOIRES_HORS_TVA_UE.length === 10 &&
+   new Set(TERRITOIRES_HORS_TVA_UE.map((t) => t.pays)).size === 6);
+
+/* ══════════ LE TAUX DE LA FATURA (01/10/2026, BRANCHE NULLE PART) ══════════
+   Ne pas confondre avec le PRIX : le prix reste HT × (1 + TAUX_TVA_PAYS),
+   gele sur le dossier. Ce module decoupe un TTC DEJA ENCAISSE en HT + TVA
+   pour la facture certifiee, et c'est la seule chose qui ait besoin du code
+   postal. Aucun appelant a ce jour (T-075). */
+
+titre("— le taux de TVA de la facture, par code postal —");
+
+/* ⚠️ LE DRAPEAU. Les taux regionaux portugais n'ont AUCUNE source dans le
+   depot (note de Mathias, « a confirmer »). Cette assertion est le garde-fou :
+   passer le drapeau a true oblige a toucher CE fichier. */
+ok("TAUX_REGIONAUX_CONFIRMES est FAUX : le comptable n'a pas encore ecrit",
+   TAUX_REGIONAUX_CONFIRMES === false);
+
+ok("Lisbonne 1100 -> 23 %, continent, CONFIRME",
+   (() => { const r = tauxTvaFacture("PT", "1100-048");
+            return !!r && r.taux === 23 && r.regime === "Portugal continental" && r.confirme; })());
+ok("Funchal 9000 -> 22 %, Madere, NON confirme",
+   (() => { const r = tauxTvaFacture("PT", "9000-064");
+            return !!r && r.taux === 22 && r.regime === "Madère" && !r.confirme; })());
+ok("Ponta Delgada 9500 -> 16 %, Acores, NON confirme",
+   (() => { const r = tauxTvaFacture("PT", "9500-100");
+            return !!r && r.taux === 16 && r.regime === "Açores" && !r.confirme; })());
+ok("la coupure est a 9499 / 9500",
+   tauxTvaFacture("PT", "9499")?.taux === 22 && tauxTvaFacture("PT", "9500")?.taux === 16);
+ok("Porto 4000 -> 23 %, continent", tauxTvaFacture("PT", "4000-001")?.taux === 23);
+ok("PT sans code postal lisible retombe sur le CONTINENT, jamais sur une region",
+   (() => { const r = tauxTvaFacture("PT", null);
+            return !!r && r.taux === 23 && r.regime === "Portugal continental"; })());
+
+ok("Las Palmas 35001 -> 0 %, hors UE, territoire nomme",
+   (() => { const r = tauxTvaFacture("ES", "35001");
+            return !!r && r.taux === 0 && r.regime === "hors UE" && r.territoire === "Canaries"; })());
+ok("Saint-Denis de La Reunion 97400 -> 0 %, hors UE",
+   (() => { const r = tauxTvaFacture("FR", "97400");
+            return !!r && r.taux === 0 && r.regime === "hors UE" && r.territoire === "DOM-COM"; })());
+/* L'ORDRE COMPTE : le territoire passe AVANT le taux du pays, sinon les
+   Canaries sortiraient a 21 % espagnols. */
+ok("Madrid 28001 -> 21 %, taux du pays", tauxTvaFacture("ES", "28001")?.taux === 21);
+ok("Paris 75010 -> 20 %", tauxTvaFacture("FR", "75010")?.taux === 20);
+ok("Monaco 98000 -> 20 %, comme la France", tauxTvaFacture("FR", "98000")?.taux === 20);
+ok("Berlin 10115 -> 19 %", tauxTvaFacture("DE", "10115")?.taux === 19);
+ok("Budapest 1011 -> 27 %", tauxTvaFacture("HU", "1011")?.taux === 27);
+ok("Zurich 8001 -> 0 %, taux du pays (hors Union, rien ajoute par nous)",
+   tauxTvaFacture("CH", "8001")?.taux === 0);
+ok("un pays hors zone ne rend AUCUN taux : null, jamais un chiffre devine",
+   tauxTvaFacture("CA", "H3Z") === null && tauxTvaFacture(null, "75010") === null);
+
+titre("— le HT et la TVA d'un TTC deja encaisse —");
+
+/* LE SENS DU CALCUL. Le TTC est le FAIT (ce que la banque a debite, arrondi
+   a l'euro et gele) ; le HT en est la consequence. Partir du HT de la grille
+   donnerait un centime d'ecart avec le debit reel. */
+ok("2400 a 20 % -> 2000 HT", htDepuisTtc(2400, 20) === 2000);
+ok("5200 a 23 % -> 4228 HT", htDepuisTtc(5200, 23) === 4228);
+ok("taux 0 : le HT est le TTC", htDepuisTtc(5200, 0) === 5200);
+ok("HT + TVA = TTC AU CENTIME, quel que soit le taux",
+   [[2400, 20], [5200, 23], [3900, 22], [4300, 16], [6400, 25.5]].every(
+     ([ttc, t]) => htDepuisTtc(ttc, t)! + tvaDepuisTtc(ttc, t)! === ttc,
+   ));
+ok("zero TTC -> zero HT et zero TVA", htDepuisTtc(0, 23) === 0 && tvaDepuisTtc(0, 23) === 0);
+ok("un TTC non entier, negatif ou absent rend null",
+   htDepuisTtc(24.5, 20) === null && htDepuisTtc(-100, 20) === null && htDepuisTtc(null, 20) === null);
+ok("un taux absurde rend null, il ne s'arrondit pas",
+   htDepuisTtc(2400, -1) === null && htDepuisTtc(2400, 100) === null && htDepuisTtc(2400, null) === null);
 
 titre("— un montant tape a la main par l'atelier —");
 
