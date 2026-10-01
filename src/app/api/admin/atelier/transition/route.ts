@@ -63,6 +63,7 @@ import {
   FRANCO_CENTIMES,
 } from "@/lib/atelier/livraison";
 import { quantiteDuDossier } from "@/lib/atelier/exemplaires";
+import { territoireHorsTvaUE } from "@/lib/atelier/pays";
 import { centimesDuDossier, totalPour } from "@/lib/atelier/prix";
 import {
   ACTIONS,
@@ -501,6 +502,30 @@ export async function POST(request: Request) {
         erreurs.push({
           champ: "action",
           message: `L'adresse de livraison Stripe est incomplète (${adr.manque.join(", ")}). Corrige-la avant d'imprimer.`,
+        });
+      }
+
+      /* ── UN TERRITOIRE HORS ZONE TVA DE L'UNION : REFUS DUR (01/10/2026) ──
+         Le seul endroit du parcours où cette règle peut BLOQUER. Stripe ne
+         filtre pas sur un code postal, donc la commande a été payée ; le
+         webhook a crié et la fiche affiche un bandeau rouge, mais rien
+         n'empêchait encore un clic distrait d'envoyer le dossier à
+         l'imprimeur — et une fois la commande passée chez Cloudprinter, elle
+         ne se rattrape plus : la référence ne se réutilise jamais.
+
+         Dans `erreurs[]` et pas en remarque, contrairement au filet sur
+         l'adresse juste en dessous : ce n'est pas un doute sur une rue mal
+         orthographiée, c'est une destination qu'on a décidé de ne pas servir.
+         Le dry-run le montre donc AVANT le clic, et le vrai clic refuse. */
+      const brute =
+        (numero.adresse_livraison as { address?: Record<string, unknown> } | null)?.address ?? {};
+      const territoireExclu = territoireHorsTvaUE(brute.country, brute.postal_code);
+      if (territoireExclu) {
+        erreurs.push({
+          champ: "action",
+          message:
+            `Adresse en ${territoireExclu} : hors zone TVA de l'Union, destination non desservie ` +
+            `depuis le 01/10/2026 (D21). Cette commande est à REMBOURSER, pas à imprimer.`,
         });
       }
 

@@ -771,6 +771,10 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
           ville: g.dom ? "Saint-Denis" : "Paris",
           pays: "FR",
           dom: Boolean(g.dom),
+          /* La démo garde le cas réel : 97400 est La Réunion, donc hors zone
+             TVA de l'UE depuis le 01/10/2026 et plus desservie. C'est ce
+             dossier-là qui montre le bandeau rouge dans la démo. */
+          horsTvaUe: g.dom ? "DOM-COM" : null,
         }
       : null,
     stripePaymentIntent: g.paye ? "pi_3QdemoDEMO0000000000000" : null,

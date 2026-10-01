@@ -528,7 +528,7 @@ export default function CasesEtCommande({
               {/* Dit AVANT le menu, sinon le client choisit puis comprend. */}
               {paysSuspendu ? (
                 <p className="nu-bon-note nu-bon-note--suspendu">
-                  {paysSuspendu} : destination momentanément indisponible.
+                  {paysSuspendu}&nbsp;: destination momentanément indisponible.
                   Choisissez-en une autre.
                 </p>
               ) : null}
@@ -560,6 +560,13 @@ export default function CasesEtCommande({
                 {portConnu
                   ? 'Le prix et le port seront recalculés pour cette destination.'
                   : 'Le prix et le port dépendent du pays. Ils s’affichent ici, avant tout paiement.'}
+              </p>
+              {/* Le menu liste des PAYS : une adresse aux Canaries est une
+                  adresse espagnole, et aucun menu ne peut l'écarter. Le
+                  contrôle réel se fait sur le code postal, donc après le
+                  paiement — d'où cette ligne, ici, avant. */}
+              <p className="nu-bon-choix-mot">
+                Nous ne livrons pas les Canaries, Ceuta, Melilla, les DOM-COM ni Åland.
               </p>
               {paysGele !== null && changer ? (
                 <button

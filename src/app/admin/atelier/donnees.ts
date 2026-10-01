@@ -30,6 +30,7 @@ import {
 } from "@/lib/atelier/apercu";
 import { eurosDuDossier, type PalierCle } from "@/lib/atelier/prix";
 import { quantiteDuDossier } from "@/lib/atelier/exemplaires";
+import { territoireHorsTvaUE } from "@/lib/atelier/pays";
 import { normaliserFinition } from "@/lib/atelier/impression";
 import {
   ETAPE_ETAT,
@@ -851,6 +852,14 @@ function estDom(codePostal: string | null): boolean {
   return Boolean(codePostal && /^9[78]/.test(codePostal.trim()));
 }
 
+/* ⚠️ `estDom` et `horsTvaUe` se recouvrent, et ce n'est pas un doublon à
+   « nettoyer ». Les DOM sont un SOUS-ENSEMBLE des territoires hors zone TVA
+   de l'UE : depuis le 01/10/2026 ils ne sont plus desservis du tout, et c'est
+   le bandeau `horsTvaUe` qui le dit. `estDom` reste parce qu'il est plus
+   précis dans son libellé (« département d'outre-mer ») et qu'un futur
+   changement de politique pourrait rouvrir les DOM sans rouvrir les Canaries.
+   La FICHE n'affiche qu'un seul des deux bandeaux : voir Fiche.tsx. */
+
 function versAdresse(brut: unknown): AdresseVue | null {
   if (!brut || typeof brut !== "object") return null;
   const o = brut as Record<string, unknown>;
@@ -868,6 +877,7 @@ function versAdresse(brut: unknown): AdresseVue | null {
     ville: s(a.city) ?? s(a.ville),
     pays: s(a.country) ?? s(a.pays),
     dom: estDom(codePostal),
+    horsTvaUe: territoireHorsTvaUE(s(a.country) ?? s(a.pays), codePostal),
   };
 }
 

@@ -141,6 +141,16 @@ export default function Screen4Contact({
         avec votre couverture, avant tout paiement.
       </p>
 
+      {/* ── CE QUE LE MENU NE PEUT PAS DIRE (01/10/2026) ──
+          Le select liste des PAYS, et une adresse aux Canaries est une adresse
+          espagnole : rien dans ce menu ne peut l'écarter. On le dit donc en
+          mots, ici et sur le bon de commande, parce que le contrôle réel ne
+          peut avoir lieu qu'après le paiement, sur le code postal. Une ligne
+          sobre valait mieux qu'un remboursement surpris. */}
+      <p className="at-hint at-hint--calme">
+        Nous ne livrons pas les Canaries, Ceuta, Melilla, les DOM-COM ni Åland.
+      </p>
+
       {erreur && <p key={erreurCle} className="at-erreur" role="alert">{erreur}</p>}
     </>
   )

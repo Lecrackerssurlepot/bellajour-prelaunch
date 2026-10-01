@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logEvenement } from "./evenements";
-import { normaliserPays } from "./pays";
+import { normaliserPays, territoireHorsTvaUE } from "./pays";
 import { quantiteDuDossier } from "./exemplaires";
 import { lireNumerosMail, envoyerMailAtelier, type NumeroPourMail } from "./mails";
 import { EVT_CREDIT_CONSOMME } from "./fondatrice";
@@ -268,6 +268,45 @@ export async function traiterPaiementAtelier(
     await logEvenement(supabase, numero.id, "pays_livraison_divergent", {
       declare: paysDeclare,
       stripe: paysStripe,
+      session_id: session.id,
+    });
+  }
+
+  /* ── UN TERRITOIRE HORS ZONE TVA DE L'UNION (01/10/2026) ────────────
+     Canaries, Ceuta, Melilla, DOM-COM, Åland, Helgoland, Büsingen, Livigno,
+     Campione, Mont Athos : le conseil compta a tranché, on ne les dessert
+     pas. Le client y paierait la TVA de l'Union incluse dans le prix, puis
+     les taxes locales à l'import : deux fois une taxe qu'on n'aurait dû lui
+     prendre aucune.
+
+     ⚠️ POURQUOI C'EST ICI, ET PAS AVANT LE PAIEMENT. Stripe Checkout borne
+     les destinations au PAYS (`allowed_countries`), jamais au code postal :
+     une adresse aux Canaries est une adresse « ES », et l'adresse elle-même
+     n'arrive qu'avec la session payée. On ANNONCE donc l'exclusion avant
+     (page du client, écran 4, CGV art. 4bis.6) et on la CONSTATE après.
+
+     ON NE BLOQUE PAS LE PAIEMENT, pour la même raison que la divergence de
+     pays juste au-dessus : l'argent est encaissé, et refuser ici laisserait
+     un paiement sans dossier. On crie, et le refus dur est posé plus loin,
+     avant l'envoi à l'imprimeur (route de transition, `envoyer_impression`).
+     Le remboursement est manuel : /admin le montre en rouge sur la fiche.
+
+     Sur le code postal RÉEL de Stripe, jamais sur le pays déclaré : c'est
+     tout l'objet de ce contrôle. */
+  const territoireExclu = territoireHorsTvaUE(
+    adresse?.address?.country,
+    adresse?.address?.postal_code,
+  );
+  if (territoireExclu) {
+    console.error(
+      `[atelier/paiement] ⚠️ territoire non desservi : ${territoireExclu} (${adresse?.address?.postal_code})`,
+      { numero: numero.id, session: session.id },
+    );
+    await logEvenement(supabase, numero.id, "territoire_non_desservi", {
+      territoire: territoireExclu,
+      pays: adresse?.address?.country ?? null,
+      code_postal: adresse?.address?.postal_code ?? null,
+      a_rembourser: true,
       session_id: session.id,
     });
   }

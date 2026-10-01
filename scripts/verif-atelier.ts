@@ -3346,6 +3346,28 @@ ok("un code inconnu reste visible plutot que d'etre efface",
    (raconter("pays_livraison_divergent", { declare: "FR", stripe: "CA" }).detail ?? "")
      .includes("CA"));
 
+/* ── LE TERRITOIRE NON DESSERVI, DANS LE JOURNAL (01/10/2026) ──
+   La ligne la plus grave du journal : commande payee, impression bloquee,
+   remboursement attendu. Elle doit dire QUOI FAIRE, pas seulement constater. */
+const rTerr = raconter("territoire_non_desservi", {
+  territoire: "Canaries",
+  pays: "ES",
+  code_postal: "35001",
+  a_rembourser: true,
+});
+ok("la phrase nomme le territoire", rTerr.texte.includes("Canaries"));
+ok("le detail donne le code postal et le GESTE a faire",
+   (rTerr.detail ?? "").includes("35001") && (rTerr.detail ?? "").includes("REMBOURSER"));
+ok("le detail dit aussi que l'impression est bloquee",
+   (rTerr.detail ?? "").includes("bloqu"));
+ok("c'est une alerte, pas une ligne neutre", rTerr.ton === "alerte");
+/* Un payload incomplet (vieil evenement, champ absent) ne doit pas rendre une
+   ligne illisible : la phrase tient sans le nom ni le code postal. */
+ok("sans territoire ni code postal, la ligne tient quand meme",
+   (() => { const r = raconter("territoire_non_desservi", {});
+            return r.texte.length > 10 && r.ton === "alerte"
+                   && !(r.detail ?? "").includes("undefined"); })());
+
 titre("— T-007 : le mail saute sans template se lit dans le journal —");
 const rSaut = raconter("mail_sans_template", { code: "M2b", variable: "BREVO_TEMPLATE_M2B_ID" });
 ok("la phrase nomme le mail saute", rSaut.texte.includes("M2b"));

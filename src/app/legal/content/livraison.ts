@@ -69,7 +69,7 @@ export const LIVRAISON: LocalizedDoc = {
       {
         heading: `4. Où nous livrons`,
         blocks: [
-          { kind: 'p', value: `Dans les pays de l'Union européenne, en Suisse, en Norvège, aux États-Unis et au Brésil. Vous indiquez votre pays dans le questionnaire et pouvez en changer jusqu'au paiement : le prix du magazine (TVA de votre pays) et les frais de livraison sont recalculés. Pour la Suisse, la Norvège, les États-Unis et le Brésil, les droits et taxes d'importation éventuels sont à votre charge à l'arrivée.` },
+          { kind: 'p', value: `Dans les pays de l'Union européenne, en Suisse, en Norvège, aux États-Unis et au Brésil. Nous ne livrons pas les territoires situés hors du territoire fiscal de l'Union européenne, même lorsqu'ils relèvent d'un pays desservi : les îles Canaries, Ceuta, Melilla, les départements et collectivités d'outre-mer français, les îles Åland, Helgoland, Büsingen, Livigno, Campione d'Italia et le Mont Athos. Une commande passée vers l'un de ces territoires est remboursée intégralement. Vous indiquez votre pays dans le questionnaire et pouvez en changer jusqu'au paiement : le prix du magazine (TVA de votre pays) et les frais de livraison sont recalculés. Pour la Suisse, la Norvège, les États-Unis et le Brésil, les droits et taxes d'importation éventuels sont à votre charge à l'arrivée.` },
         ],
       },
       {
@@ -116,7 +116,7 @@ export const LIVRAISON: LocalizedDoc = {
       {
         heading: `4. Onde entregamos`,
         blocks: [
-          { kind: 'p', value: `Nos países da União Europeia, na Suíça, na Noruega, nos Estados Unidos e no Brasil. Indica o seu país no questionário e pode alterá-lo até ao pagamento: o preço da revista (IVA do seu país) e os custos de entrega são recalculados. Para a Suíça, a Noruega, os Estados Unidos e o Brasil, os eventuais direitos e impostos de importação ficam a seu cargo à chegada.` },
+          { kind: 'p', value: `Nos países da União Europeia, na Suíça, na Noruega, nos Estados Unidos e no Brasil. Não entregamos nos territórios situados fora do território fiscal da União Europeia, mesmo quando pertencem a um país servido: as ilhas Canárias, Ceuta, Melilla, os departamentos e coletividades franceses de ultramar, as ilhas Åland, Helgoland, Büsingen, Livigno, Campione d'Italia e o Monte Atos. Uma encomenda feita para um destes territórios é integralmente reembolsada. Indica o seu país no questionário e pode alterá-lo até ao pagamento: o preço da revista (IVA do seu país) e os custos de entrega são recalculados. Para a Suíça, a Noruega, os Estados Unidos e o Brasil, os eventuais direitos e impostos de importação ficam a seu cargo à chegada.` },
         ],
       },
       {
@@ -163,7 +163,7 @@ export const LIVRAISON: LocalizedDoc = {
       {
         heading: `4. Where we deliver`,
         blocks: [
-          { kind: 'p', value: `To the countries of the European Union, Switzerland, Norway, the United States and Brazil. You indicate your country in the questionnaire and may change it until payment: the magazine price (VAT of your country) and delivery costs are recalculated. For Switzerland, Norway, the United States and Brazil, any import duties and taxes are payable by you on arrival.` },
+          { kind: 'p', value: `To the countries of the European Union, Switzerland, Norway, the United States and Brazil. We do not deliver to territories located outside the tax territory of the European Union, even where they belong to a country we serve: the Canary Islands, Ceuta, Melilla, the French overseas departments and collectivities, the Åland Islands, Heligoland, Büsingen, Livigno, Campione d'Italia and Mount Athos. An order placed to one of these territories is refunded in full. You indicate your country in the questionnaire and may change it until payment: the magazine price (VAT of your country) and delivery costs are recalculated. For Switzerland, Norway, the United States and Brazil, any import duties and taxes are payable by you on arrival.` },
         ],
       },
       {
