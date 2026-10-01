@@ -1230,6 +1230,16 @@
   color: var(--c-text-faint);
 }
 
+/* Une destination qui n'est plus desservie (D21). Même note, mais LUE : le
+   gris estompé convient à une mention de douane qu'on parcourt, pas à une
+   information qui demande au client de refaire un choix. Pleine couleur de
+   texte, et au-dessus du menu plutôt qu'à la suite du bon. */
+.nu-bon-note--suspendu {
+  margin: 0 0 10px;
+  color: var(--c-text);
+  font-weight: 400;
+}
+
 /* ── LA PROMESSE, AU-DESSUS DU BOUTON ──
    Deux lignes, deux points à l'accent. Elles vivaient sous le bouton, en
    paragraphe gris : c'est-à-dire à l'endroit qu'on saute, alors que c'est

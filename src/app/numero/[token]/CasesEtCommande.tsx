@@ -304,6 +304,17 @@ export default function CasesEtCommande({
      n'est chiffré, et à la demande ensuite. */
   const choixOuvert = !portConnu || changer
   const douane = paysGele !== null && HORS_UE.includes(paysGele)
+  /* ── UNE DESTINATION QUI N'EST PLUS DESSERVIE (D21, 01/10/2026) ──
+     Le dossier porte un code pays que la zone ne reconnaît plus : le menu
+     repart donc à « France » et le bon de commande redemande un calcul, sans
+     rien expliquer. Un client qui avait choisi le Royaume-Uni verrait sa
+     destination changer toute seule — la pire façon de l'apprendre.
+     Le libellé existe toujours (`PAYS_LIBELLE` connaît les 32 codes, même
+     suspendus), donc on peut NOMMER le pays qu'on ne dessert plus. */
+  const paysSuspendu =
+    paysGele === null && typeof pays === 'string' && pays.trim() !== ''
+      ? (PAYS_LIBELLE[pays.trim().toUpperCase() as keyof typeof PAYS_LIBELLE] ?? null)
+      : null
   /* Ce qu'il manque pour la livraison offerte, sur le total des magazines
      (remise déduite), jamais sur le port. Zéro = atteint. */
   const manqueFranco = commande ? manquePourFranco(commande.prix) : null
@@ -514,6 +525,13 @@ export default function CasesEtCommande({
               <label className="nu-bon-choix-lbl" htmlFor="nu-pays">
                 Pays de livraison
               </label>
+              {/* Dit AVANT le menu, sinon le client choisit puis comprend. */}
+              {paysSuspendu ? (
+                <p className="nu-bon-note nu-bon-note--suspendu">
+                  {paysSuspendu} : destination momentanément indisponible.
+                  Choisissez-en une autre.
+                </p>
+              ) : null}
               <div className="nu-bon-choix-l">
                 <select
                   id="nu-pays"

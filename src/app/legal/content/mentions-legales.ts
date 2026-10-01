@@ -46,7 +46,7 @@ export const MENTIONS_LEGALES: LocalizedDoc = {
         heading: `3. Activité et zone de commercialisation`,
         blocks: [
           { kind: 'p', value: `Bellajour exerce une activité d'édition et de vente en ligne d'albums photo personnalisés (couverture illustrée générée par IA, mise en page algorithmique sous contrôle humain, version digitale HD incluse).` },
-          { kind: 'p', value: `Les produits sont commercialisés et livrés dans l'Union européenne, au Royaume-Uni, en Suisse, en Norvège, aux États-Unis et au Brésil (article 4 bis des CGV). Toute extension à d'autres territoires fera l'objet d'une mise à jour des présentes mentions et des conditions applicables.` },
+          { kind: 'p', value: `Les produits sont commercialisés et livrés dans l'Union européenne, en Suisse, en Norvège, aux États-Unis et au Brésil (article 4 bis des CGV). Toute extension à d'autres territoires fera l'objet d'une mise à jour des présentes mentions et des conditions applicables.` },
         ],
       },
       {
@@ -165,7 +165,7 @@ export const MENTIONS_LEGALES: LocalizedDoc = {
         heading: `3. Atividade e zona de comercialização`,
         blocks: [
           { kind: 'p', value: `A Bellajour exerce uma atividade de edição e venda em linha de álbuns de fotografias personalizados (capa ilustrada gerada por IA, paginação algorítmica sob controlo humano, versão digital HD incluída).` },
-          { kind: 'p', value: `Os produtos são comercializados e entregues na União Europeia, no Reino Unido, na Suíça, na Noruega, nos Estados Unidos e no Brasil (artigo 4.º-A das CGV). Qualquer extensão a outros territórios será objeto de atualização das presentes menções e das condições aplicáveis.` },
+          { kind: 'p', value: `Os produtos são comercializados e entregues na União Europeia, na Suíça, na Noruega, nos Estados Unidos e no Brasil (artigo 4.º-A das CGV). Qualquer extensão a outros territórios será objeto de atualização das presentes menções e das condições aplicáveis.` },
         ],
       },
       {
@@ -284,7 +284,7 @@ export const MENTIONS_LEGALES: LocalizedDoc = {
         heading: `3. Activity and area of sale`,
         blocks: [
           { kind: 'p', value: `Bellajour carries out an activity of online publishing and sale of personalised photo albums (AI-generated illustrated cover, algorithmic layout under human control, HD digital version included).` },
-          { kind: 'p', value: `The products are sold and delivered within the European Union, the United Kingdom, Switzerland, Norway, the United States and Brazil (Article 4a of the T&Cs). Any extension to other territories will be the subject of an update to this notice and the applicable terms.` },
+          { kind: 'p', value: `The products are sold and delivered within the European Union, Switzerland, Norway, the United States and Brazil (Article 4a of the T&Cs). Any extension to other territories will be the subject of an update to this notice and the applicable terms.` },
         ],
       },
       {

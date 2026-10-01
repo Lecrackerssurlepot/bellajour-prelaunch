@@ -5,8 +5,9 @@
  * LA POLITIQUE DU 15/09/2026 (tableur « Prix & Marge v3 », Mathias, validée
  * par Louis) : TROIS ZONES, DES MONTANTS TTC IDENTIQUES PARTOUT.
  *
- *   zone A, 5 €  : France, Allemagne, Espagne, Pays-Bas, Pologne, Royaume-Uni,
- *                  Belgique, Autriche, Tchéquie, Hongrie ;
+ *   zone A, 5 €  : France, Allemagne, Espagne, Pays-Bas, Pologne, Belgique,
+ *                  Autriche, Tchéquie, Hongrie (le Royaume-Uni y était, il est
+ *                  SUSPENDU depuis D21 — voir `paysDesservisZone`) ;
  *   zone B, 13 € : Italie, Irlande, Suède, Danemark, Roumanie, Luxembourg,
  *                  Portugal, Finlande, Grèce, États-Unis ;
  *   zone C       : tout le reste de la zone de livraison (Suisse, Norvège,
@@ -44,8 +45,9 @@
  * celle de leur relation avec nous. `ttcDepuisHt` prend le coût HT de
  * l'imprimeur et l'affiche TTC au taux du pays de livraison (`TAUX_TVA_PAYS`,
  * pays.ts), pour que le port ait le même régime apparent que le magazine
- * (prix TTC, `tax_behavior: "inclusive"`). La TVA réellement facturée reste
- * celle que Stripe Tax calcule.
+ * (prix TTC, `tax_behavior: "inclusive"`). La TVA réellement facturée est
+ * celle de la fatura, calculée sur le code postal réel (`tvaFacture.ts`) :
+ * Stripe n'en calcule plus aucune depuis le 01/10/2026.
  *
  * LE PLAFOND D'ABSORPTION DU 10/09 N'EXISTE PLUS : les zones à prix fixe l'ont
  * remplacé (T-106 fermé). Son code est dans `archive/livraison-plafond-2026-09/`.
@@ -56,7 +58,14 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-import { HORS_UE, TAUX_TVA_PAYS, normaliserPays, tauxTvaPour, type PaysLivraison } from "./pays";
+import {
+  HORS_UE,
+  PAYS_LIVRAISON,
+  TAUX_TVA_PAYS,
+  normaliserPays,
+  tauxTvaPour,
+  type PaysLivraison,
+} from "./pays";
 import { totalExemplaires } from "./exemplaires";
 
 /* Les deux vivent dans `pays.ts` depuis le 15/09 (le taux décide du prix du
@@ -67,6 +76,8 @@ export const TAUX_TTC_LIVRAISON = TAUX_TVA_PAYS;
 /* ──────────────────────────── LES ZONES DE PORT ────────────────────────────
  *
  * Une zone = un montant TTC en centimes et la liste des pays qu'elle couvre.
+ * C'est une carte de COÛTS : un pays suspendu y reste (son port n'a pas changé
+ * de prix). Ce qu'on ANNONCE au client passe par `paysDesservisZone`.
  * Tout pays de la zone de livraison absent des deux listes est en zone C :
  * le devis du jour. Reclasser un pays = le déplacer d'une liste à l'autre,
  * rien d'autre ne bouge (les relevés de coût par pays sont dans
@@ -96,6 +107,21 @@ export function zonePour(pays: unknown): ZonePort | null {
   if ((ZONES_PORT.A.pays as readonly string[]).includes(code)) return "A";
   if ((ZONES_PORT.B.pays as readonly string[]).includes(code)) return "B";
   return "C";
+}
+
+/**
+ * LES PAYS D'UNE ZONE QU'ON DESSERT VRAIMENT.
+ *
+ * `ZONES_PORT` est une carte de COÛTS : un pays suspendu y reste, parce que
+ * son port n'a pas changé de prix et qu'une réactivation ne doit rien
+ * reconstruire. Mais tout ce qui ANNONCE une zone au client — les CGV, la page
+ * Livraison — doit lire la zone desservie, pas la carte des coûts. Sans ce
+ * filtre, les CGV promettaient encore le Royaume-Uni le jour de sa suspension
+ * (D21, 01/10/2026), et c'est exactement le genre de contradiction qu'un
+ * client découvre au pire moment.
+ */
+export function paysDesservisZone(z: "A" | "B"): readonly PaysLivraison[] {
+  return ZONES_PORT[z].pays.filter((c) => PAYS_LIVRAISON.includes(c));
 }
 
 /** Le port TTC d'une zone à prix fixe, en centimes. `null` en zone C. */

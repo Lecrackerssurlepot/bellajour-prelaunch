@@ -292,13 +292,14 @@ export function formaterEuros(euros: number): string {
  * décidé, et on n'en invente pas (interdit nº5). Il se branchera au lot 6,
  * dans `livraison_centimes`, par `shipping_options` du checkout.
  *
- * ⚠️ LES DOM PASSENT TOUJOURS AU TRAVERS, et le select de l'écran 4 n'y
- * change rien : une adresse à La Réunion ou en Guadeloupe est une adresse
- * « FR » pour Stripe comme pour nous, alors que ces territoires sont exclus
- * du territoire TVA de l'UE (et de Stripe Tax) et coûtent plusieurs fois le
- * prix de l'album en port. À faible volume, /admin les traite à la main ; si
- * le cas devient fréquent, la règle se posera sur le code postal reçu dans
- * `adresse_livraison`, pas sur la liste des pays.
+ * ⚠️ LES DOM NE PASSENT PLUS AU TRAVERS (01/10/2026), et le select de l'écran 4
+ * n'y est pour rien : une adresse à La Réunion ou en Guadeloupe est une adresse
+ * « FR » pour Stripe comme pour nous, alors que ces territoires sont exclus du
+ * territoire TVA de l'UE et coûtent plusieurs fois le prix de l'album en port.
+ * La règle s'est posée là où ce commentaire l'annonçait depuis le début : sur
+ * le CODE POSTAL reçu dans `adresse_livraison`, jamais sur la liste des pays.
+ * Elle vit dans `estTerritoireHorsTvaUE` (pays.ts), et ces territoires ne sont
+ * plus desservis du tout — décision du conseil compta, pas un réglage de port.
  */
 export { PAYS_LIVRAISON, type PaysLivraison } from "./pays";
 
