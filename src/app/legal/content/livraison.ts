@@ -1,5 +1,5 @@
 import type { LocalizedDoc } from '../types'
-import { FRANCO_CENTIMES, ZONES_PORT } from '@/lib/atelier/livraison'
+import { FRANCO_CENTIMES, ZONES_PORT, paysDesservisZone } from '@/lib/atelier/livraison'
 import { PAYS_LIBELLE } from '@/lib/atelier/pays'
 import { QUANTITE_MAX, REMISE_DEUXIEME_PCT, REMISE_SUIVANTS_PCT } from '@/lib/atelier/exemplaires'
 import { JOURS_LIVRAISON } from '@/lib/atelier/urgence'
@@ -20,11 +20,13 @@ import { JOURS_LIVRAISON } from '@/lib/atelier/urgence'
 const FRANCO = FRANCO_CENTIMES / 100
 const ZONE_A = ZONES_PORT.A.centimes / 100
 const ZONE_B = ZONES_PORT.B.centimes / 100
-const PAYS_A_FR = ZONES_PORT.A.pays.map((c) => PAYS_LIBELLE[c]).join(', ')
-const PAYS_B_FR = ZONES_PORT.B.pays.map((c) => PAYS_LIBELLE[c]).join(', ')
-const PAYS_A_PT = 'França, Alemanha, Espanha, Países Baixos, Polónia, Reino Unido, Bélgica, Áustria, Chéquia, Hungria'
+/* DÉRIVÉES de la zone DESSERVIE : un pays suspendu (D21) sort de lui-même de
+   cette page. Les listes PT et EN sont à la main : les tenir avec celle-ci. */
+const PAYS_A_FR = paysDesservisZone('A').map((c) => PAYS_LIBELLE[c]).join(', ')
+const PAYS_B_FR = paysDesservisZone('B').map((c) => PAYS_LIBELLE[c]).join(', ')
+const PAYS_A_PT = 'França, Alemanha, Espanha, Países Baixos, Polónia, Bélgica, Áustria, Chéquia, Hungria'
 const PAYS_B_PT = 'Itália, Irlanda, Suécia, Dinamarca, Roménia, Luxemburgo, Portugal, Finlândia, Grécia, Estados Unidos'
-const PAYS_A_EN = 'France, Germany, Spain, Netherlands, Poland, United Kingdom, Belgium, Austria, Czechia, Hungary'
+const PAYS_A_EN = 'France, Germany, Spain, Netherlands, Poland, Belgium, Austria, Czechia, Hungary'
 const PAYS_B_EN = 'Italy, Ireland, Sweden, Denmark, Romania, Luxembourg, Portugal, Finland, Greece, United States'
 const PAYS_C_FR = 'Suisse, Norvège, Chypre, Malte, Slovénie, Bulgarie, Croatie, Estonie, Lettonie, Lituanie, Slovaquie, Brésil'
 const PAYS_C_PT = 'Suíça, Noruega, Chipre, Malta, Eslovénia, Bulgária, Croácia, Estónia, Letónia, Lituânia, Eslováquia, Brasil'
@@ -67,7 +69,7 @@ export const LIVRAISON: LocalizedDoc = {
       {
         heading: `4. Où nous livrons`,
         blocks: [
-          { kind: 'p', value: `Dans les pays de l'Union européenne, au Royaume-Uni, en Suisse, en Norvège, aux États-Unis et au Brésil. Vous indiquez votre pays dans le questionnaire et pouvez en changer jusqu'au paiement : le prix du magazine (TVA de votre pays) et les frais de livraison sont recalculés. Pour le Royaume-Uni, la Suisse, la Norvège, les États-Unis et le Brésil, les droits et taxes d'importation éventuels sont à votre charge à l'arrivée.` },
+          { kind: 'p', value: `Dans les pays de l'Union européenne, en Suisse, en Norvège, aux États-Unis et au Brésil. Nous ne livrons pas les territoires situés hors du territoire fiscal de l'Union européenne, même lorsqu'ils relèvent d'un pays desservi : les îles Canaries, Ceuta, Melilla, les départements et collectivités d'outre-mer français, les îles Åland, Helgoland, Büsingen, Livigno, Campione d'Italia et le Mont Athos. Une commande passée vers l'un de ces territoires est remboursée intégralement. Vous indiquez votre pays dans le questionnaire et pouvez en changer jusqu'au paiement : le prix du magazine (TVA de votre pays) et les frais de livraison sont recalculés. Pour la Suisse, la Norvège, les États-Unis et le Brésil, les droits et taxes d'importation éventuels sont à votre charge à l'arrivée.` },
         ],
       },
       {
@@ -114,7 +116,7 @@ export const LIVRAISON: LocalizedDoc = {
       {
         heading: `4. Onde entregamos`,
         blocks: [
-          { kind: 'p', value: `Nos países da União Europeia, no Reino Unido, na Suíça, na Noruega, nos Estados Unidos e no Brasil. Indica o seu país no questionário e pode alterá-lo até ao pagamento: o preço da revista (IVA do seu país) e os custos de entrega são recalculados. Para o Reino Unido, a Suíça, a Noruega, os Estados Unidos e o Brasil, os eventuais direitos e impostos de importação ficam a seu cargo à chegada.` },
+          { kind: 'p', value: `Nos países da União Europeia, na Suíça, na Noruega, nos Estados Unidos e no Brasil. Não entregamos nos territórios situados fora do território fiscal da União Europeia, mesmo quando pertencem a um país servido: as ilhas Canárias, Ceuta, Melilla, os departamentos e coletividades franceses de ultramar, as ilhas Åland, Helgoland, Büsingen, Livigno, Campione d'Italia e o Monte Atos. Uma encomenda feita para um destes territórios é integralmente reembolsada. Indica o seu país no questionário e pode alterá-lo até ao pagamento: o preço da revista (IVA do seu país) e os custos de entrega são recalculados. Para a Suíça, a Noruega, os Estados Unidos e o Brasil, os eventuais direitos e impostos de importação ficam a seu cargo à chegada.` },
         ],
       },
       {
@@ -161,7 +163,7 @@ export const LIVRAISON: LocalizedDoc = {
       {
         heading: `4. Where we deliver`,
         blocks: [
-          { kind: 'p', value: `To the countries of the European Union, the United Kingdom, Switzerland, Norway, the United States and Brazil. You indicate your country in the questionnaire and may change it until payment: the magazine price (VAT of your country) and delivery costs are recalculated. For the United Kingdom, Switzerland, Norway, the United States and Brazil, any import duties and taxes are payable by you on arrival.` },
+          { kind: 'p', value: `To the countries of the European Union, Switzerland, Norway, the United States and Brazil. We do not deliver to territories located outside the tax territory of the European Union, even where they belong to a country we serve: the Canary Islands, Ceuta, Melilla, the French overseas departments and collectivities, the Åland Islands, Heligoland, Büsingen, Livigno, Campione d'Italia and Mount Athos. An order placed to one of these territories is refunded in full. You indicate your country in the questionnaire and may change it until payment: the magazine price (VAT of your country) and delivery costs are recalculated. For Switzerland, Norway, the United States and Brazil, any import duties and taxes are payable by you on arrival.` },
         ],
       },
       {

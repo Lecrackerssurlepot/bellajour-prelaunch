@@ -66,7 +66,8 @@ Les autres purs : `grille.ts` (**la** grille, un prix HORS TAXES par nombre de p
 source de tout affichage ; sans pays, c'est la France), `prix.ts` (le calcul serveur :
 `centimesDuDossier` lit le TTC GELÉ `prix_centimes` d'abord, le HT gelé `prix_ht_centimes`
 converti ensuite, la grille en dernier ; `ttcPourPays` recalcule quand le client change de pays),
-`pays.ts` (les 32 destinations, `TAUX_TVA_PAYS`, `HORS_UE`), `exemplaires.ts` (1 à 10 exemplaires,
+`pays.ts` (`PAYS_CONNUS` 32 codes moins `PAYS_SUSPENDUS` = 31 desservies, `TAUX_TVA_PAYS`,
+`HORS_UE`, `estTerritoireHorsTvaUE`), `tvaFacture.ts` (le taux de la FATURA par code postal, branché nulle part), `exemplaires.ts` (1 à 10 exemplaires,
 le 2e à −30 %, les suivants à −50 %, importable navigateur : le bon de commande le joue en direct),
 `livraison.ts` (zones A 5 € / B 13 € / C devis, `FRANCO_CENTIMES` 50 €, `portClient`, devis → TTC,
 `totalCommande`), `questionnaire.ts` (les 7 champs exigés, pays compris, + `suggestionEmail`), `rebond.ts` (ce qu'un signal Brevo dit d'une adresse),
@@ -196,9 +197,15 @@ souvent dans le Canva sans cliquer le bouton de sa page (décision de Mathias, 2
 - **Le prix dépend du pays depuis le 15/09/2026** (grille HT × TVA du pays, `pays.ts`) : le pays est
   demandé à l'écran 4 du questionnaire (retiré le 11/09, revenu le 15/09, décision de Mathias), gelé
   avec le HT et le TTC à la publication, et le client peut en changer sur `/numero` (prix et port
-  recalculés par `/api/atelier/livraison`). Zone : UE 27 + GB (20 %), CH, NO, US, BR (à 0, douane au
-  client). TVA : `automatic_tax` + prix TTC calculé PAR NOUS — Stripe Tax est inerte tant que l'OSS
-  n'est pas immatriculé chez Stripe, puis s'active sans redéploiement.
+  recalculés par `/api/atelier/livraison`). Zone : UE 27 + CH, NO, US, BR (à 0, douane au client).
+  ⚠️ **Le Royaume-Uni est SUSPENDU depuis D21 (01/10/2026)** : son taux, son libellé et sa zone de
+  port restent écrits, mais `normaliserPays` ne le reconnaît plus, donc AUCUN chemin ne peut le
+  chiffrer. Réactiver = retirer `GB` de `PAYS_SUSPENDUS`, pas avant une décision d'immatriculation.
+  ⚠️ **Les territoires hors zone TVA UE ne sont pas desservis** (`estTerritoireHorsTvaUE`, 01/10) :
+  le pays ne les distingue pas, seul le CODE POSTAL de l'adresse Stripe le fait — donc annoncé avant
+  le paiement, constaté après. Monaco (98000) est exclu nommément de la règle des 98.
+  TVA : prix TTC calculé PAR NOUS, `tax_behavior: "inclusive"`, et **`automatic_tax` COUPÉ** depuis
+  le 01/10 : Stripe ne calcule plus aucune taxe, la fatura certifiée fait foi (`tvaFacture.ts`).
 - **La livraison est une zone à prix fixe** (A 5 €, B 13 €, TTC partout) ou le devis du jour (zone C),
   `livraison_centimes` gèle le BRUT et le seuil de 50 € se rejoue à chaque lecture (`totalCommande`),
   parce que le client peut changer le nombre d'exemplaires après la publication. Le devis Cloudprinter

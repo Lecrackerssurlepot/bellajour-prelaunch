@@ -30,7 +30,9 @@
  *
  * Les 27 de l'Union européenne, plus le Royaume-Uni, la Suisse et la Norvège
  * (décision de Mathias du 11/09/2026), plus les États-Unis et le Brésil
- * (15/09/2026, tableur « Prix & Marge v3 ») : trente-deux destinations. Jusqu'au 10/09 la liste tenait en trois codes
+ * (15/09/2026, tableur « Prix & Marge v3 ») : trente-deux destinations connues,
+ * trente et une desservies depuis la suspension du Royaume-Uni (D21).
+ * Jusqu'au 10/09 la liste tenait en trois codes
  * (FR, BE, LU) ; elle ne bornait rien d'autre qu'elle-même, puisque le port
  * n'est pas une grille écrite à la main mais un DEVIS demandé à l'imprimeur,
  * destination par destination. Ouvrir la zone ne coûte donc aucun tarif
@@ -45,21 +47,24 @@
  * `/api/atelier/checkout` (`codeStripe`), qui refuserait de compiler si un
  * code de cette liste n'existait pas chez eux.
  *
- * ⚠️ LES DOM PASSENT AU TRAVERS. Une adresse à La Réunion ou en Guadeloupe
- * est une adresse « FR », alors que ces territoires sont hors du territoire
- * TVA de l'UE et coûtent plusieurs fois le prix de l'album en port. Le select
- * de l'écran 4 n'y change rien : le client y choisira « France » de bonne
- * foi. À faible volume, /admin les traite à la main ; le jour où le cas
- * devient fréquent, la règle se posera sur le CODE POSTAL de l'adresse
- * Stripe, jamais sur cette liste.
+ * ⚠️ LES DOM NE PASSENT PLUS AU TRAVERS (01/10/2026). Une adresse à La
+ * Réunion ou en Guadeloupe est une adresse « FR » pour Stripe comme pour
+ * nous, et le select de l'écran 4 n'y change rien : le client y choisira
+ * « France » de bonne foi. La règle s'est donc posée là où elle devait,
+ * sur le CODE POSTAL de l'adresse Stripe et jamais sur cette liste :
+ * `estTerritoireHorsTvaUE`, plus bas.
  *
- * ⚠️ GB, CH et NO SONT HORS UNION. Rien n'est ajouté par nous à leur port
- * (cf. `TAUX_TTC_LIVRAISON`, livraison.ts), et des droits de douane peuvent
- * être réclamés au destinataire à l'arrivée. La page du client le DIT
- * (`HORS_UE`). Le traitement fiscal de ces trois destinations reste à
- * trancher avec le comptable : ce fichier ne décide rien de fiscal.
+ * ⚠️ CH ET NO SONT HORS UNION (le Royaume-Uni l'était aussi, il est suspendu).
+ * Rien n'est ajouté par nous à leur port (cf. `TAUX_TTC_LIVRAISON`,
+ * livraison.ts), et des droits de douane peuvent être réclamés au destinataire
+ * à l'arrivée. La page du client le DIT (`HORS_UE`). Ce fichier ne décide rien
+ * de fiscal : il convertit un HT en prix affiché, c'est tout.
+ *
+ * ⚠️ CETTE CONSTANTE N'EST PLUS LA ZONE DESSERVIE. Depuis le 01/10/2026 elle
+ * énumère les pays que le CODE CONNAÎT ; ce qu'on dessert vraiment est
+ * `PAYS_LIVRAISON`, qui en retire `PAYS_SUSPENDUS`. Voir plus bas (D21).
  */
-export const PAYS_LIVRAISON = [
+export const PAYS_CONNUS = [
   /* Les 27 de l'Union européenne. */
   "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
   "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL",
@@ -72,7 +77,43 @@ export const PAYS_LIVRAISON = [
   "US", "BR",
 ] as const;
 
-export type PaysLivraison = (typeof PAYS_LIVRAISON)[number];
+export type PaysLivraison = (typeof PAYS_CONNUS)[number];
+
+/* ─────────────────── LES DESTINATIONS SUSPENDUES (D21, 01/10/2026) ───────────────────
+ *
+ * LE ROYAUME-UNI NE SE VEND PLUS.
+ *
+ * Le 15/09 il est passé à 20 % de TVA (« la TVA du pays », D18), et le site a
+ * encaissé ces 20 % en les mettant de côté, en attendant une immatriculation
+ * britannique. Le conseil compta a tranché le 01/10 : ce n'est pas tenable.
+ * Depuis le 01/01/2021, pour un colis de moins de 135 £ vers un particulier
+ * du Royaume-Uni, c'est le vendeur étranger qui facture la TVA britannique, et
+ * l'immatriculation est obligatoire DÈS LA PREMIÈRE VENTE, sans seuil. Encaisser
+ * sans être immatriculé, c'est garder une taxe qu'on n'a pas le droit de
+ * collecter, et exposer le client à une seconde TVA à la frontière.
+ *
+ * On suspend donc la destination plutôt que de rouvrir le débat du taux.
+ * Aucune vente britannique n'a jamais eu lieu (vérifié en base le 01/10) : il
+ * n'y a rien à rembourser, rien à régulariser.
+ *
+ * ⚠️ LE PAYS RESTE DANS LE CODE, ENTIER. Son libellé, son taux (`GB: 20`), sa
+ * zone de port, son indicatif téléphonique : tout est conservé, simplement
+ * inatteignable, parce que `paysValide` juge contre `PAYS_LIVRAISON`. Le type
+ * `PaysLivraison` garde ses 32 membres, donc les tables indexées par pays
+ * restent exhaustives et rien ne se dégrade en silence.
+ *
+ * RÉACTIVER = RETIRER LE CODE DE CE TABLEAU, rien d'autre. Mais pas sans une
+ * décision explicite d'immatriculation TVA britannique (D21).
+ */
+export const PAYS_SUSPENDUS: readonly PaysLivraison[] = ["GB"];
+
+/**
+ * LA ZONE RÉELLEMENT DESSERVIE. C'est elle que lisent les menus, la validation,
+ * Stripe et le JSON-LD — jamais `PAYS_CONNUS`.
+ */
+export const PAYS_LIVRAISON: readonly PaysLivraison[] = PAYS_CONNUS.filter(
+  (c) => !PAYS_SUSPENDUS.includes(c),
+);
 
 /** Ce que le client lit. Le code ISO ne se montre jamais à l'écran. */
 export const PAYS_LIBELLE: Record<PaysLivraison, string> = {
@@ -113,7 +154,7 @@ export const PAYS_LIBELLE: Record<PaysLivraison, string> = {
 /**
  * L'ORDRE DES MENUS DÉROULANTS. Jamais l'ordre des codes ISO.
  *
- * Trente entrées, c'est une liste qu'on parcourt. Quatre destinations portent
+ * Trente et une entrées, c'est une liste qu'on parcourt. Quatre destinations portent
  * l'écrasante majorité des dossiers (France, Belgique, Luxembourg, Suisse) :
  * elles passent devant, dans cet ordre, et tout le reste suit par ordre
  * alphabétique du LIBELLÉ — pas du code, sinon « DE » se rangerait entre le
@@ -159,24 +200,26 @@ export const PAYS_DEFAUT: PaysLivraison = "FR";
  * 2025). Sont récents aussi : Finlande 25,5 % (septembre 2024), Roumanie 21 %
  * (août 2025). Validés par Mathias le 11/09/2026 (taux normaux, sans exception).
  *
- * ⚠️ CE N'EST PAS UNE TABLE FISCALE. Bellajour n'est pas encore immatriculée
- * au guichet unique (OSS) : la TVA réellement déclarée est celle que Stripe Tax
- * calcule, et tant qu'aucune immatriculation n'est posée dans Stripe, elle
- * vaut zéro sur le reçu. Ces nombres servent à une seule chose : convertir un
- * prix HT décidé par Mathias en prix affiché et encaissé (`tax_behavior:
- * "inclusive"`). Le jour où l'OSS est déclaré, rien ne change ici.
+ * ⚠️ CE N'EST PAS UNE TABLE FISCALE. Ces nombres servent à une seule chose :
+ * convertir un prix HT décidé par Mathias en prix affiché et encaissé
+ * (`tax_behavior: "inclusive"`). La TVA réellement déclarée est celle de la
+ * fatura certifiée, qui reste à brancher et dont le taux se calcule sur le
+ * CODE POSTAL de l'adresse réelle (`tvaFacture.ts`, T-075) — pas ici. Depuis
+ * le 01/10/2026, `automatic_tax` est coupé chez Stripe : il ne calcule plus
+ * aucune taxe, et n'en calculera plus même le jour d'une immatriculation.
  *
- * ⚠️ LE ROYAUME-UNI EST À 20 %, ET CE N'EST PLUS ZÉRO (15/09/2026). Le 11/09
- * les trois voisins hors Union étaient à zéro, douane au client. Le tableur du
- * 15/09 met le Royaume-Uni à 20 % (« UK, TVA 20 % »), et Mathias a tranché :
- * « la TVA du pays ». Un Britannique paie donc le même prix qu'un Français.
- * Conséquence connue, à porter au comptable : reverser ces 20 % suppose une
- * immatriculation TVA britannique (hors OSS) ; sans elle, le client risque
- * une seconde TVA à la frontière. Suisse, Norvège, États-Unis et Brésil
- * restent à ZÉRO : rien n'est ajouté par nous, droits et taxes à l'arrivée à
- * la charge du destinataire, et la page du client le dit avant le paiement
- * (`HORS_UE`). Un pays hors de cette table rend `null` chez qui la lit : on
- * ne devine pas un taux.
+ * ⚠️ LE ROYAUME-UNI GARDE SON 20 %, MAIS NE SE VEND PLUS (01/10/2026). Le
+ * 11/09 les trois voisins hors Union étaient à zéro, douane au client. Le
+ * tableur du 15/09 l'a mis à 20 % (« la TVA du pays », D18), et le conseil
+ * compta a tranché le 01/10 : encaisser cette TVA sans immatriculation
+ * britannique n'est pas tenable, donc la destination est SUSPENDUE
+ * (`PAYS_SUSPENDUS`, D21). Le taux reste écrit parce qu'il redeviendra juste
+ * le jour d'une réactivation ; il est simplement inatteignable.
+ *
+ * Suisse, Norvège, États-Unis et Brésil restent à ZÉRO : rien n'est ajouté par
+ * nous, droits et taxes à l'arrivée à la charge du destinataire, et la page du
+ * client le dit avant le paiement (`HORS_UE`). Un pays hors de cette table
+ * rend `null` chez qui la lit : on ne devine pas un taux.
  */
 export const TAUX_TVA_PAYS: Record<PaysLivraison, number> = {
   AT: 20,
@@ -235,7 +278,7 @@ export function tauxTvaPour(pays: unknown): number | null {
 export const HORS_UE: readonly PaysLivraison[] = ["GB", "CH", "NO", "US", "BR"];
 
 /**
- * Strictement un code de `PAYS_LIVRAISON`. Rien d'autre, et surtout pas la
+ * Strictement un code DESSERVI. Rien d'autre, et surtout pas la
  * version minuscule : cette fonction JUGE, elle ne répare pas. La réparation
  * (trim + majuscules) est le travail de `normaliserPays`, et les deux gestes
  * restent séparés pour que le serveur puisse normaliser AVANT de valider sans
@@ -259,4 +302,99 @@ export function normaliserPays(v: unknown): PaysLivraison | null {
   if (typeof v !== "string") return null;
   const c = v.trim().toUpperCase();
   return paysValide(c) ? c : null;
+}
+
+/* ───────────── LES TERRITOIRES HORS ZONE TVA DE L'UNION EUROPÉENNE ─────────────
+ *
+ * Posé le 01/10/2026. Décision du conseil compta : CES TERRITOIRES NE SONT PAS
+ * DESSERVIS.
+ *
+ * Le problème qu'ils posent n'est pas le port, c'est la double imposition. Une
+ * adresse aux Canaries est une adresse « ES » pour Stripe comme pour nous : le
+ * client paierait les 21 % espagnols inclus dans le prix, puis l'IGIC et les
+ * droits à l'import à l'arrivée. Il paierait deux fois une taxe dont nous
+ * n'aurions dû lui prendre aucune. Le constat vivait en commentaire dans
+ * `prix.ts` depuis l'ouverture de l'Europe (« les DOM passent au travers ») ;
+ * ici on en tire la conséquence.
+ *
+ * ⚠️ LE CONTRÔLE EST FORCÉMENT POSTÉRIEUR AU PAIEMENT. Stripe Checkout borne
+ * les destinations au PAYS (`allowed_countries`), jamais au code postal, et
+ * l'adresse n'arrive qu'avec la session payée. On annonce donc l'exclusion
+ * AVANT le paiement (page du client, écran 4, CGV art. 4bis.6) et on la
+ * constate APRÈS : journal au webhook, bandeau dans l'admin, et refus dur
+ * avant l'envoi à l'imprimeur. Le remboursement est manuel.
+ *
+ * ⚠️ LES VALEURS SONT À CONFIRMER PAR LE COMPTABLE. Aucune source fiscale ne
+ * vit dans ce dépôt, et un code postal n'est pas une frontière : ce sont les
+ * préfixes usuels, pas une liste officielle. Ils ne décident d'aucun prix et
+ * d'aucune TVA facturée — ils décident seulement de CRIER. Un faux positif
+ * coûte une vérification humaine, un faux négatif coûte un remboursement :
+ * c'est pourquoi la table penche du côté du cri.
+ */
+type Territoire = { readonly pays: PaysLivraison; readonly prefixes: readonly string[]; readonly nom: string };
+
+export const TERRITOIRES_HORS_TVA_UE: readonly Territoire[] = [
+  { pays: "ES", prefixes: ["35", "38"], nom: "Canaries" },
+  { pays: "ES", prefixes: ["51"], nom: "Ceuta" },
+  { pays: "ES", prefixes: ["52"], nom: "Melilla" },
+  /* 97 et 98 : départements et collectivités d'outre-mer. Voir l'exception
+     Monaco juste en dessous — elle est la raison pour laquelle ce tableau ne
+     peut pas se lire sans son garde-fou. */
+  { pays: "FR", prefixes: ["97", "98"], nom: "DOM-COM" },
+  { pays: "FI", prefixes: ["22"], nom: "Åland" },
+  { pays: "DE", prefixes: ["27498"], nom: "Helgoland" },
+  { pays: "DE", prefixes: ["78266"], nom: "Büsingen" },
+  { pays: "IT", prefixes: ["23041"], nom: "Livigno" },
+  { pays: "IT", prefixes: ["22061"], nom: "Campione d'Italia" },
+  { pays: "GR", prefixes: ["63086"], nom: "Mont Athos" },
+];
+
+/**
+ * MONACO N'EST PAS UN TERRITOIRE EXCLU, ET SON CODE POSTAL COMMENCE PAR 98.
+ *
+ * 98000 est Monaco, qui est DANS le territoire TVA de l'Union et y est traité
+ * comme la France. Les 98 qui nous intéressent sont plus loin : 986xx Wallis,
+ * 987xx Polynésie, 988xx Nouvelle-Calédonie. Sans cette exception, la règle
+ * refuserait un client monégasque parfaitement livrable, et personne ne
+ * comprendrait pourquoi. Une exception nommée vaut mieux qu'un préfixe plus
+ * long qui cacherait le raisonnement.
+ */
+const CODES_NON_EXCLUS: readonly string[] = ["98000"];
+
+/** Le code postal, réduit à ses chiffres : « 2 310 » et « 2310-123 » donnent « 2310 ». */
+function chiffresDuCodePostal(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const c = v.replace(/[^0-9]/g, "");
+  return c.length > 0 ? c : null;
+}
+
+/**
+ * Cette adresse tombe-t-elle dans un territoire hors zone TVA de l'Union ?
+ *
+ * Sans code postal lisible, la réponse est NON : on ne crie pas sur une
+ * absence. Le pays seul ne suffit jamais — c'est tout le point de ce module.
+ */
+export function estTerritoireHorsTvaUE(pays: unknown, codePostal: unknown): boolean {
+  const code = normaliserPays(pays);
+  if (code === null) return false;
+  const cp = chiffresDuCodePostal(codePostal);
+  if (cp === null) return false;
+  if (CODES_NON_EXCLUS.includes(cp)) return false;
+  return TERRITOIRES_HORS_TVA_UE.some(
+    (t) => t.pays === code && t.prefixes.some((p) => cp.startsWith(p)),
+  );
+}
+
+/** Le nom du territoire, pour le dire à l'atelier. `null` si l'adresse est desservie. */
+export function territoireHorsTvaUE(pays: unknown, codePostal: unknown): string | null {
+  if (!estTerritoireHorsTvaUE(pays, codePostal)) return null;
+  const code = normaliserPays(pays);
+  const cp = chiffresDuCodePostal(codePostal);
+  if (code === null || cp === null) return null;
+  /* Le préfixe le plus long gagne : « 22061 » (Campione) avant un « 22 »
+     éventuel, pour que le nom affiché soit le bon et pas le premier trouvé. */
+  const trouve = TERRITOIRES_HORS_TVA_UE.filter((t) => t.pays === code)
+    .flatMap((t) => t.prefixes.filter((p) => cp.startsWith(p)).map((p) => ({ p, nom: t.nom })))
+    .sort((a, b) => b.p.length - a.p.length)[0];
+  return trouve?.nom ?? null;
 }

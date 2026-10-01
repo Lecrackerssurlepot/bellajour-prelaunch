@@ -267,6 +267,13 @@ export type AdresseVue = {
   pays: string | null;
   /** Département d'outre-mer détecté sur le code postal (cf. prix.ts). */
   dom: boolean;
+  /**
+   * Le territoire hors zone TVA de l'UE, NOMMÉ, quand l'adresse y tombe
+   * (01/10/2026). `null` = adresse desservie. Dérivé à la lecture depuis
+   * `adresse_livraison`, donc rétroactif sur tous les dossiers : aucune
+   * colonne, aucune migration.
+   */
+  horsTvaUe: string | null;
 };
 
 export type ClientVue = {

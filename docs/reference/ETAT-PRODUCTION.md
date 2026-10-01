@@ -293,9 +293,9 @@ trois lignes, sans payer** (« c'est tout bon pour le test Stripe »). Le dossie
 | Grille HORS TAXES, 24 à 60 pages, dos carré seul (l'agrafé archivé) ; TTC = HT × TVA du pays arrondi à l'euro (24 p. : 24 € FR, 25 € PT, 24 € DE, 20 € US) ; la colonne France du tableur reproduite au centime par le harnais | `grille.ts`, `pays.ts` (`TAUX_TVA_PAYS`), `archive/grille-ttc-unique-2026-09/`, `archive/agrafe-2026-09/` |
 | Le HT se gèle avec le TTC (`prix_ht_centimes`) ; le TTC se recalcule quand le client change de pays | `prix.ts` (`ttcPourPays`), `transitions.ts`, `/api/atelier/livraison` |
 | Le pays REVIENT à l'écran 4 (retiré le 11/09 : le prix en dépend désormais) | `questionnaire.ts`, `Screen4Contact.tsx`, `/api/atelier/numero` |
-| Zones de port TTC : A 5 € (FR DE ES NL PL GB BE AT CZ HU), B 13 € (IT IE SE DK RO LU PT FI GR US), C au devis du jour ; offerte dès 50 € de magazines ; le BRUT gelé, le seuil rejoué à la lecture ; plafond archivé | `livraison.ts` (`ZONES_PORT`, `FRANCO_CENTIMES`, `portClient`), `archive/livraison-plafond-2026-09/` |
+| Zones de port TTC : A 5 € (FR DE ES NL PL BE AT CZ HU ; GB suspendu D21), B 13 € (IT IE SE DK RO LU PT FI GR US), C au devis du jour ; offerte dès 50 € de magazines ; le BRUT gelé, le seuil rejoué à la lecture ; plafond archivé | `livraison.ts` (`ZONES_PORT`, `FRANCO_CENTIMES`, `portClient`), `archive/livraison-plafond-2026-09/` |
 | 1 à 10 exemplaires sur le bon de commande, 2e −30 %, suivants −50 % ; une ligne Stripe par rang ; `count` Cloudprinter | `exemplaires.ts`, `numeros.quantite`, `CasesEtCommande.tsx`, `checkout/route.ts`, `impression.ts` |
-| États-Unis et Brésil ouverts (indicatifs +1, +55) ; Royaume-Uni à 20 % (décision du 15/09, « la TVA du pays ») ; CH, NO, US, BR à 0, douane au client | `pays.ts`, `impression.ts` |
+| États-Unis et Brésil ouverts (indicatifs +1, +55) ; **Royaume-Uni SUSPENDU (D21, 01/10)** ; CH, NO, US, BR à 0, douane au client ; territoires hors TVA UE non desservis (`estTerritoireHorsTvaUE`) | `pays.ts`, `impression.ts` |
 | Papier intérieur **suit la finition depuis le 21/09** : `pageblock_130mcg` (gloss) sous une couverture brillante, `pageblock_130mcs` (silk) sous une mate — un mat français coûte 2,76 € HT de port de plus (9,22 au lieu de 6,46, re-devisé le 16/09), accepté par Mathias ; `SHIPPING_LEVEL = cp_ground` | `impression.ts` (`PAPIER_INTERIEUR_PAR_FINITION`) |
 | CGV v4.0 FR/PT/EN (4.1 HT + TVA du pays, 4.3 OSS, 4bis.2 le fonctionnement complet de l'atelier, 4bis.10 exemplaires, 4bis.11 livraison, délais 10 jours = 3 ouvrés + 3 à 7, annexe dérivée) ; page `/livraison` (+ `/pt`, `/en`) ; remboursement v3.1 (remboursement Atelier port compris) ; mentions v1.1 (zone) | `src/app/legal/content/*`, `src/app/livraison/`, pieds de page, sitemap |
 | Le repli d'écriture retire UNE colonne à la fois (celle que PostgREST nomme) ; les mails ont un repli intermédiaire sans les colonnes du 16/09 | `transition/route.ts`, `mails.ts` |
@@ -316,13 +316,27 @@ facturé. Templates 28, 31, 40 mis à jour par Mathias (`--pousser --seulement M
 phrase relue dans Brevo par l'API ; les nombres sont LUS dans `livraison.ts` et `exemplaires.ts`
 par `scripts/mails-atelier.mjs`, jamais recopiés.
 
-**Le Royaume-Uni à 20 % est TRANCHÉ (D18, 16/09)** : on garde les 20 % dans le prix, on les isole en
-compta, on s'immatricule au Royaume-Uni dès la première commande britannique et on reverse. À
-valider par le comptable ; à demander à Cloudprinter : comment ils déclarent en douane vers le UK.
+**Le Royaume-Uni est SUSPENDU (D21, 01/10/2026)** : l'immatriculation TVA britannique est
+obligatoire dès la première vente de moins de 135 £, sans seuil, donc encaisser 20 % en attendant
+n'était pas tenable. D18 est close sans avoir servi — zéro vente britannique en base. La
+destination n'apparaît plus nulle part, aucun prix ne se calcule pour elle, et les textes légaux
+ne l'annoncent plus. Réactiver = retirer `GB` de `PAYS_SUSPENDUS`, après décision explicite
+d'immatriculation.
 
-**Ce qui attend Mathias** : l'immatriculation OSS dans Stripe Tax (la TVA reste à 0 sur les reçus
-jusque-là, le TTC encaissé est le nôtre) ; la ligne comptable « TVA UK collectée » et la question à
-Cloudprinter (D18). Les `.docx` v4.0 sont faits (`scripts/legal-docx.ts`, 15 fichiers). Le relevé complet des
+**Les territoires hors zone TVA de l'UE ne sont plus desservis (01/10/2026)** : Canaries, Ceuta,
+Melilla, DOM-COM, Åland, Helgoland, Büsingen, Livigno, Campione, Mont Athos. Le pays seul ne les
+distingue pas, le contrôle se fait sur le CODE POSTAL de l'adresse Stripe, donc APRÈS le paiement :
+annoncé avant, constaté après (journal, bandeau admin, refus avant l'imprimeur), remboursement
+manuel. Monaco (98000) est explicitement exclu de la règle des 98.
+
+**`automatic_tax` est COUPÉ chez Stripe (01/10/2026)** : la facture qui fait foi est la fatura
+certifiée, pas le reçu Stripe. Le TTC encaissé n'a pas changé (Stripe calculait déjà 0 €), et
+`tax_behavior: "inclusive"` reste pour que le défaut `exclusive` n'ajoute jamais de taxe par-dessus.
+Le taux de la fatura se calcule sur le code postal (`tvaFacture.ts`), **non branché**, taux
+régionaux portugais à confirmer par le comptable.
+
+**Ce qui attend Mathias** : la confirmation comptable des taux Madère / Açores et des plages de
+codes postaux ; l'architecture de facturation (T-075). Les `.docx` v4.0 sont faits (`scripts/legal-docx.ts`, 15 fichiers). Le relevé complet des
 coûts de zone C, du pas de pagination et des délais Cloudprinter est dans
 `docs/reference/SPECS-CLOUDPRINTER.md` (section du 16/09).
 
@@ -447,7 +461,7 @@ test mené jusqu'au bout débiterait une carte. Mathias s'est arrêté avant. Do
 | Aperçu client en PLANCHE (sections « Laquelle préférez-vous ? » et « Les doubles pages », cartes première A4 + planche entière, doubles en grille, loupe) | `Apercu.tsx`, `formatVisuel.ts`, `numero.css` | mesuré sur le dossier réel de Klervie à 375 et 1280 ; carrousel archivé |
 | Choix de couverture CLAIR : bouton par carte, « Votre choix », « Sans préférence, je vous fais confiance », confirmation ; visible côté atelier (fiche datée, tag de liste, brief) | `Apercu.tsx`, `apercu.ts`, `donnees.ts`, `brief.ts` | harnais + DOM |
 | Format du visuel détecté sur les dimensions réelles (seuil 1,15) : une couverture seule n'est plus découpée comme une planche | `formatVisuel.ts` | harnais, 6 cas |
-| Zone de livraison EUROPE (UE 27 + GB, CH, NO), TVA par pays, indicatifs téléphoniques des 30 pays (l'Italie garde son zéro) | `pays.ts`, `livraison.ts`, `impression.ts` | devis réel Allemagne (DHL 6,10 € HT) |
+| Zone de livraison EUROPE (UE 27 + CH, NO ; GB suspendu depuis D21), TVA par pays, indicatifs téléphoniques (l'Italie garde son zéro) | `pays.ts`, `livraison.ts`, `impression.ts` | devis réel Allemagne (DHL 6,10 € HT) |
 | Le client choisit son pays sur sa page quand l'atelier ne le connaît pas ; le questionnaire ne le demande plus | `/api/atelier/livraison`, `Screen4Contact.tsx` | décision de Mathias : « le Stripe suffit » |
 | Le panneau de publication garde son brouillon (local, par dossier) | `brouillonPanneau.ts` | harnais |
 | Téléphone éditable dans la fiche admin | `/api/admin/atelier/telephone` | DOM |
@@ -1306,7 +1320,7 @@ découvrirait aussi bellajour.fr. Stripe réessaie trois jours, et l'événement
 
 Cinq tiers à faire passer en production, chacun avec son interrupteur et sa vérification :
 `docs/reference/BASCULE-LANCEMENT.md`. Deux points se décident AVANT le jour J : l'immatriculation
-portugaise chez Stripe Tax (le câblage TVA est inerte sans elle) et les finitions Cloudprinter
+facturation (T-075 : la fatura porte le taux, plus Stripe Tax) et les finitions Cloudprinter
 (T-027). **Un mode test resté branché ne fait pas d'erreur, il fait un silence.**
 
 ## Trois dossiers sans M0 — vérifié le 07/09/2026, aucun défaut

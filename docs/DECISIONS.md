@@ -399,6 +399,8 @@ chemin réel (1 dossier journalisé) et son REJEU (0, idempotence par `message-i
 fausse alerte de test a été retirée du journal — l'adresse de Flore fonctionne, son M2 a
 été remis le 29/08 à 08:20.
 
+**Remplacée par D21 (01/10/2026).**
+
 D18 (16/09/2026) — **Le Royaume-Uni reste à 20 % de TVA dans le prix, mise de côté puis
 reversée après immatriculation britannique.** Décision de Mathias, à valider par le comptable
 avant la première commande britannique.
@@ -481,3 +483,33 @@ l'affichant au panneau avant le clic.
 regeler le prix d'un dossier encaissé. Et ne jamais rendre la règle symétrique « par propreté » :
 le sens compte plus que la symétrie. Le surplus est une dépense réelle, que le cockpit pourra
 chiffrer à partir du journal.
+
+D21 (01/10/2026) — **Les ventes vers le Royaume-Uni sont suspendues : la destination est
+retirée du site.** Décision de Mathias, sur avis du conseil compta.
+
+Le contexte. D18 avait tranché l'inverse quinze jours plus tôt : garder les 20 % dans le prix,
+les isoler en comptabilité comme « TVA UK collectée, non versée », et lancer l'immatriculation
+britannique à la première commande réelle. Cette décision supposait qu'on pouvait encaisser
+d'abord et régulariser ensuite.
+
+Ce qui a été établi. On ne peut pas. Pour un bien de moins de 135 £ vendu à un particulier du
+Royaume-Uni, l'immatriculation TVA britannique est obligatoire **dès la première vente, sans
+seuil** : il n'existe aucune fenêtre pendant laquelle encaisser 20 % serait régulier. Garder
+cette taxe sans numéro, c'est collecter ce qu'on n'a pas le droit de collecter, et exposer le
+client à une seconde TVA réclamée à la frontière sur le même colis.
+
+Ce qui est tranché. La destination sort de la zone de livraison. Le Royaume-Uni n'apparaît plus
+dans aucun menu, aucun prix ne se calcule pour lui, et les CGV, la page Livraison et les mentions
+légales ne l'annoncent plus. D18 est close **sans avoir jamais servi** : zéro vente britannique
+constatée en base le 01/10/2026, donc rien à rembourser et rien à régulariser.
+
+Ce qui en découle dans le code. `PAYS_CONNUS` énumère les trente-deux pays que le code connaît,
+`PAYS_SUSPENDUS` en retire le Royaume-Uni, et `PAYS_LIVRAISON` est ce qui reste. Le pays garde
+son libellé, son taux de 20 %, son indicatif et sa zone de port : tout est conservé mais
+inatteignable, parce que le chiffrage passe sans exception par `normaliserPays`. Le harnais
+prouve l'étanchéité sur les six chemins, et pas seulement l'absence de l'option dans le menu.
+
+**Conséquence :** réactiver le Royaume-Uni = retirer son code de `PAYS_SUSPENDUS`, une ligne.
+Mais **pas sans une décision explicite d'immatriculation TVA britannique**, dont le coût et le
+volume restent à évaluer. Et ne pas rouvrir D18 : son raisonnement était juste, sa prémisse
+— « on peut encaisser avant de s'immatriculer » — était fausse.

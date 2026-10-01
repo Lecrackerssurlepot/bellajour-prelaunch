@@ -1055,7 +1055,22 @@ export default function Fiche({
         </div>
       ) : null}
 
-      {fiche.adresse?.dom ? (
+      {/* ── UNE ADRESSE HORS ZONE TVA DE L'UNION (01/10/2026) ───────
+          Le bandeau le plus grave de cette fiche, et il REMPLACE l'ancien
+          voyant outre-mer : « vérifie le coût du port » n'a plus de sens pour
+          une destination qu'on ne dessert plus du tout. Les DOM en sont un
+          sous-ensemble, donc un dossier réunionnais passe par ici.
+
+          Stripe ne sait pas filtrer sur un code postal : la commande a donc
+          été payée, et c'est au remboursement qu'on la rattrape. Le refus
+          avant l'imprimeur, lui, est dur (route de transition). */}
+      {fiche.adresse?.horsTvaUe ? (
+        <div className="ate-bandeau ate-bandeau--alerte">
+          Adresse en {fiche.adresse.codePostal}, {fiche.adresse.horsTvaUe}&nbsp;: hors zone TVA de
+          l&apos;Union, destination non desservie. À REMBOURSER. L&apos;envoi à l&apos;imprimeur
+          est bloqué, ne le force pas.
+        </div>
+      ) : fiche.adresse?.dom ? (
         <div className="ate-bandeau ate-bandeau--attention">
           Adresse en {fiche.adresse.codePostal} — département d&apos;outre-mer. Stripe l&apos;a
           traitée comme la France métropolitaine : vérifie le coût du port AVANT de commander

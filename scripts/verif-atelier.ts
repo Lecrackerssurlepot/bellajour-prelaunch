@@ -301,11 +301,25 @@ import {
   ZONES_PORT,
   FRANCO_CENTIMES,
   zonePour,
+  paysDesservisZone,
   portClient,
   livraisonOfferte,
   manquePourFranco,
 } from "@/lib/atelier/livraison";
-import { TAUX_TVA_PAYS } from "@/lib/atelier/pays";
+import {
+  PAYS_CONNUS,
+  PAYS_SUSPENDUS,
+  TAUX_TVA_PAYS,
+  TERRITOIRES_HORS_TVA_UE,
+  estTerritoireHorsTvaUE,
+  territoireHorsTvaUE,
+} from "@/lib/atelier/pays";
+import {
+  TAUX_REGIONAUX_CONFIRMES,
+  htDepuisTtc,
+  tauxTvaFacture,
+  tvaDepuisTtc,
+} from "@/lib/atelier/tvaFacture";
 import {
   QUANTITE_MAX as QUANTITE_MAX_EXEMPLAIRES,
   totalExemplaires,
@@ -1517,8 +1531,8 @@ ok("national DE -> +49, zero retire (zone Europe, 11/09)", telephoneE164("0170 1
 ok("national GB -> +44", telephoneE164("07700 900123", "GB") === "+447700900123");
 ok("national CH -> +41", telephoneE164("079 123 45 67", "CH") === "+41791234567");
 ok("national IT -> +39 et le ZERO RESTE (il fait partie du numero)", telephoneE164("02 1234567", "IT") === "+39021234567");
-ok("chaque pays de la zone a son indicatif : aucun numero ne part national par oubli",
-   PAYS_LIVRAISON.every((p) => indicatifPour(p) !== null));
+ok("chaque pays CONNU a son indicatif, suspendus compris : aucun numero ne part national par oubli",
+   PAYS_CONNUS.every((p) => indicatifPour(p) !== null));
 ok("prefixe 00 -> +", telephoneE164("0033612345678", "FR") === "+33612345678");
 ok("separateurs (espaces/points) nettoyes", telephoneE164("06 80 00 90 71", "FR") === "+33680009071");
 ok("pays hors zone : on ne devine pas, on rend le national", telephoneE164("0680009071", "CA") === "0680009071");
@@ -1829,7 +1843,8 @@ titre("— du cout HT de l'imprimeur au prix client TTC —");
 
 /* ⚠️ CE N'EST PAS UN TAUX FISCAL. C'est un COEFFICIENT commercial (le taux
    normal du pays), pour afficher le port TTC comme le magazine. La TVA
-   reellement facturee est celle de Stripe Tax. Regle a valider par Mathias. */
+   reellement facturee est celle de la fatura (tvaFacture.ts). Stripe n'en
+   calcule plus aucune depuis le 01/10/2026. Regle validee par Mathias. */
 ok("FR : 922 HT donne 1106 TTC (coefficient 20 %)", ttcDepuisHt(922, "FR") === 1106);
 ok("BE : 1245 HT donne 1506 TTC (coefficient 21 %)", ttcDepuisHt(1245, "BE") === 1506);
 ok("LU : 1000 HT donne 1170 TTC (coefficient 17 %)", ttcDepuisHt(1000, "LU") === 1170);
@@ -1839,22 +1854,38 @@ ok("un pays hors zone ne rend AUCUN montant", ttcDepuisHt(922, "CA") === null);
 /* ⚠️ UNE ENTREE PAR DESTINATION, SANS EXCEPTION. Un pays de la zone sans
    taux rendrait `null` au moment du devis : le client verrait « nous n'avons
    pas pu chiffrer » pour une destination pourtant proposee dans le menu. */
-ok("les 32 destinations ont toutes un taux, et aucune de plus",
-   PAYS_LIVRAISON.length === 32
+ok("les 31 destinations desservies ont toutes un taux",
+   PAYS_LIVRAISON.length === 31
    && PAYS_LIVRAISON.every((c) => typeof TAUX_TTC_LIVRAISON[c] === "number")
-   && Object.keys(TAUX_TTC_LIVRAISON).length === PAYS_LIVRAISON.length
    && TAUX_TTC_LIVRAISON === TAUX_TVA_PAYS);
+/* La TABLE couvre les pays CONNUS, suspendus compris : c'est ce qui permet a
+   une reactivation de n'etre qu'une ligne a retirer de PAYS_SUSPENDUS. */
+ok("la table des taux couvre les 32 pays connus, suspendus compris",
+   PAYS_CONNUS.length === 32
+   && Object.keys(TAUX_TTC_LIVRAISON).length === 32
+   && PAYS_CONNUS.every((c) => typeof TAUX_TTC_LIVRAISON[c] === "number"));
 ok("DE : 1000 HT donne 1190 TTC (coefficient 19 %)", ttcDepuisHt(1000, "DE") === 1190);
-/* Hors Union : le Royaume-Uni porte 20 % (tableur du 15/09, « la TVA du
-   pays »), les quatre autres sont a ZERO, et les droits d'importation sont
-   reclames au destinataire — la page du client le DIT avant le paiement. */
-ok("GB : 1000 HT donne 1200 (20 %, decision du 15/09/2026)", ttcDepuisHt(1000, "GB") === 1200);
+/* Hors Union : les quatre destinations ouvertes sont a ZERO, et les droits
+   d'importation sont reclames au destinataire — la page du client le DIT
+   avant le paiement. Le Royaume-Uni y etait a 20 % ; il est SUSPENDU (D21). */
+/* LA SUSPENSION EST ETANCHE, ET PAS SEULEMENT DANS LE MENU. Le taux de 20 %
+   reste ECRIT dans la table, pour qu'une reactivation ne reconstruise rien ;
+   mais il est INATTEIGNABLE, parce que tout le chiffrage passe par
+   `normaliserPays`, qui ne reconnait plus le code. Aucun chemin ne peut donc
+   mettre un prix sur une destination suspendue : ni le port, ni le magazine.
+   C'est la propriete qui compte, bien plus que l'absence de l'option. */
+ok("GB : son taux de 20 % reste ecrit dans la table, pour la reactivation",
+   TAUX_TTC_LIVRAISON.GB === 20);
+ok("GB : mais AUCUN port ne se chiffre dessus",
+   ttcDepuisHt(1000, "GB") === null && portClient({ pays: "GB", totalProduitCentimes: 2400 }) === null);
 ok("CH, NO, US et BR sont a zero : rien n'est ajoute par nous",
    TAUX_TTC_LIVRAISON.CH === 0 && TAUX_TTC_LIVRAISON.NO === 0
    && TAUX_TTC_LIVRAISON.US === 0 && TAUX_TTC_LIVRAISON.BR === 0
    && ttcDepuisHt(1000, "US") === 1000);
-ok("HORS_UE nomme les cinq destinations hors Union, Royaume-Uni compris",
+ok("HORS_UE nomme les cinq pays hors Union connus, Royaume-Uni compris",
    [...HORS_UE].sort().join(",") === "BR,CH,GB,NO,US");
+ok("mais seules quatre d'entre elles sont encore desservies",
+   HORS_UE.filter((c) => PAYS_LIVRAISON.includes(c)).sort().join(",") === "BR,CH,NO,US");
 ok("aucun pays de l'Union n'est a zero (un taux oublie se lit comme un cadeau)",
    PAYS_LIVRAISON.filter((c) => !(HORS_UE as readonly string[]).includes(c))
      .every((c) => TAUX_TTC_LIVRAISON[c] > 0));
@@ -1863,11 +1894,20 @@ titre("— les zones de port (tableur du 15/09/2026, validees par Louis) —");
 
 ok("zone A = 5 EUR, zone B = 13 EUR, offerte des 50 EUR : les trois nombres du tableur",
    ZONES_PORT.A.centimes === 500 && ZONES_PORT.B.centimes === 1300 && FRANCO_CENTIMES === 5000);
-ok("zone A : les dix pays de la note", [...ZONES_PORT.A.pays].sort().join(",") === "AT,BE,CZ,DE,ES,FR,GB,HU,NL,PL");
+/* La CARTE DES COUTS garde le Royaume-Uni : son port n'a pas change de prix,
+   et une reactivation ne doit rien reconstruire. */
+ok("zone A, carte des couts : les dix pays de la note", [...ZONES_PORT.A.pays].sort().join(",") === "AT,BE,CZ,DE,ES,FR,GB,HU,NL,PL");
+/* Mais ce qu'on ANNONCE au client est la zone DESSERVIE. C'est cette fonction
+   que lisent les CGV et la page Livraison : sans elle, elles promettaient
+   encore le Royaume-Uni le jour de sa suspension. */
+ok("zone A, DESSERVIE : neuf pays, le Royaume-Uni en moins",
+   [...paysDesservisZone("A")].sort().join(",") === "AT,BE,CZ,DE,ES,FR,HU,NL,PL");
+ok("zone B : rien n'y est suspendu, les deux listes coincident",
+   [...paysDesservisZone("B")].sort().join(",") === [...ZONES_PORT.B.pays].sort().join(","));
 ok("zone B : les dix pays de la note, Etats-Unis compris", [...ZONES_PORT.B.pays].sort().join(",") === "DK,FI,GR,IE,IT,LU,PT,RO,SE,US");
-ok("aucun pays dans deux zones, et tous dans la zone de livraison",
+ok("aucun pays dans deux zones, et tous parmi les pays connus",
    ZONES_PORT.A.pays.every((c) => !(ZONES_PORT.B.pays as readonly string[]).includes(c))
-   && [...ZONES_PORT.A.pays, ...ZONES_PORT.B.pays].every((c) => (PAYS_LIVRAISON as readonly string[]).includes(c)));
+   && [...ZONES_PORT.A.pays, ...ZONES_PORT.B.pays].every((c) => (PAYS_CONNUS as readonly string[]).includes(c)));
 ok("zonePour : FR -> A, PT -> B, CH -> C, BR -> C, hors zone -> null",
    zonePour("FR") === "A" && zonePour("pt") === "B" && zonePour("CH") === "C" && zonePour("BR") === "C" && zonePour("CA") === null);
 ok("les douze pays de zone C sont ceux du releve du 16/09",
@@ -1888,6 +1928,179 @@ ok("portClient hors zone : null", portClient({ pays: "CA", totalProduitCentimes:
 ok("livraisonOfferte : a 50 EUR oui, a 49,99 non", livraisonOfferte(5000) && !livraisonOfferte(4999));
 ok("manquePourFranco : 36 EUR -> 14 EUR, 50 -> 0, 61,20 -> 0",
    manquePourFranco(3600) === 1400 && manquePourFranco(5000) === 0 && manquePourFranco(6120) === 0);
+
+/* ══════════ LES TERRITOIRES HORS ZONE TVA UE (01/10/2026) ══════════
+   Decision du conseil compta : ces territoires ne sont PAS desservis. Le
+   pays seul ne les distingue pas (une adresse aux Canaries est « ES »), il
+   faut le CODE POSTAL, qui n'arrive qu'avec l'adresse Stripe apres paiement.
+   Les prefixes sont « a confirmer » cote comptable : ils ne decident d'aucun
+   prix, seulement du cri. */
+
+/* ══════════ LES DESTINATIONS SUSPENDUES (D21, 01/10/2026) ══════════
+   Le Royaume-Uni ne se vend plus : encaisser 20 % de TVA britannique suppose
+   une immatriculation obligatoire des la premiere vente, sans seuil. On
+   suspend la destination au lieu de rouvrir le debat du taux (D18).
+
+   LA PROPRIETE QUI COMPTE N'EST PAS L'ABSENCE DE L'OPTION DANS LE MENU : un
+   dossier deja enregistre, un appel direct a l'API, un vieil onglet peuvent
+   tous presenter « GB ». Ce qui protege, c'est que TOUT passe par
+   `normaliserPays`. */
+
+titre("— une destination suspendue : etanche a tous les chemins —");
+
+ok("GB est connu du code, mais pas desservi",
+   (PAYS_CONNUS as readonly string[]).includes("GB")
+   && !(PAYS_LIVRAISON as readonly string[]).includes("GB"));
+ok("PAYS_SUSPENDUS nomme le Royaume-Uni, et lui seul",
+   [...PAYS_SUSPENDUS].join(",") === "GB");
+ok("les deux listes se deduisent l'une de l'autre, sans recopie",
+   PAYS_LIVRAISON.length === PAYS_CONNUS.length - PAYS_SUSPENDUS.length);
+
+/* Les quatre portes d'entree d'un code pays, toutes fermees. */
+ok("paysValide refuse GB", !paysValide("GB"));
+ok("normaliserPays rend null sur GB, et sur « gb » repare", normaliserPays("GB") === null && normaliserPays(" gb ") === null);
+ok("aucun menu ne propose GB", !(PAYS_TRIES as readonly string[]).includes("GB"));
+ok("aucune zone DESSERVIE ne contient GB",
+   !(paysDesservisZone("A") as readonly string[]).includes("GB")
+   && !(paysDesservisZone("B") as readonly string[]).includes("GB"));
+
+/* Et les consequences, la ou l'argent se calcule. */
+ok("zonePour refuse GB : pas de zone, donc pas de port", zonePour("GB") === null);
+ok("le territoire hors TVA UE ne se juge pas sur un pays suspendu",
+   !estTerritoireHorsTvaUE("GB", "SW1A"));
+/* ⚠️ La facture non plus : un dossier suspendu ne doit pas pouvoir etre
+   facture a 20 % par un futur emetteur distrait. */
+ok("tauxTvaFacture refuse GB", tauxTvaFacture("GB", "SW1A 1AA") === null);
+
+/* ⚠️ CE QUI RESTE, ET DOIT RESTER, POUR QU'UNE REACTIVATION SOIT UNE LIGNE. */
+ok("le libelle survit : on peut encore NOMMER le pays qu'on ne dessert plus",
+   PAYS_LIBELLE.GB === "Royaume-Uni");
+ok("le taux, l'indicatif et la zone de cout survivent aussi",
+   TAUX_TVA_PAYS.GB === 20
+   && indicatifPour("GB") === "44"
+   && (ZONES_PORT.A.pays as readonly string[]).includes("GB"));
+
+titre("— les territoires hors zone TVA de l'Union —");
+
+ok("Las Palmas 35001 -> Canaries", estTerritoireHorsTvaUE("ES", "35001"));
+ok("Santa Cruz de Tenerife 38001 -> Canaries", estTerritoireHorsTvaUE("ES", "38001"));
+ok("Ceuta 51001 -> exclu", estTerritoireHorsTvaUE("ES", "51001"));
+ok("Melilla 52001 -> exclu", estTerritoireHorsTvaUE("ES", "52001"));
+ok("La Reunion 97400 -> DOM-COM", estTerritoireHorsTvaUE("FR", "97400"));
+ok("Nouvelle-Caledonie 98800 -> DOM-COM", estTerritoireHorsTvaUE("FR", "98800"));
+ok("Mariehamn 22100 -> Aland", estTerritoireHorsTvaUE("FI", "22100"));
+ok("Helgoland 27498 -> exclu", estTerritoireHorsTvaUE("DE", "27498"));
+ok("Busingen 78266 -> exclu", estTerritoireHorsTvaUE("DE", "78266"));
+ok("Livigno 23041 -> exclu", estTerritoireHorsTvaUE("IT", "23041"));
+ok("Campione d'Italia 22061 -> exclu", estTerritoireHorsTvaUE("IT", "22061"));
+ok("Mont Athos 63086 -> exclu", estTerritoireHorsTvaUE("GR", "63086"));
+
+/* ⚠️ MONACO. 98000 commence par 98 comme les COM, mais Monaco est DANS le
+   territoire TVA de l'Union et traite comme la France. Sans son exception
+   nommee, la regle refuserait un client parfaitement livrable. */
+ok("Monaco 98000 : DESSERVI, malgre son prefixe 98", !estTerritoireHorsTvaUE("FR", "98000"));
+
+ok("Paris 75010 : desservi", !estTerritoireHorsTvaUE("FR", "75010"));
+ok("Madrid 28001 : desservi", !estTerritoireHorsTvaUE("ES", "28001"));
+ok("Lisbonne 1100 : desservi", !estTerritoireHorsTvaUE("PT", "1100"));
+ok("Hambourg 20095 : desservi (27498 est un code entier, pas un prefixe 27)",
+   !estTerritoireHorsTvaUE("DE", "20095"));
+ok("Milan 20121 : desservi (23041 et 22061 sont des codes entiers)",
+   !estTerritoireHorsTvaUE("IT", "20121"));
+ok("Turin 10121 : desservi", !estTerritoireHorsTvaUE("IT", "10121"));
+
+/* On ne crie JAMAIS sur une absence : un code postal manquant n'est pas une
+   exclusion, c'est une inconnue. */
+ok("code postal absent : jamais exclu", !estTerritoireHorsTvaUE("FR", null));
+ok("code postal vide : jamais exclu", !estTerritoireHorsTvaUE("FR", "   "));
+ok("code postal non texte : jamais exclu", !estTerritoireHorsTvaUE("FR", 97400));
+ok("pays hors zone de livraison : jamais exclu", !estTerritoireHorsTvaUE("CA", "97400"));
+ok("pays absent : jamais exclu", !estTerritoireHorsTvaUE(null, "97400"));
+
+/* Les espaces et le tiret portugais ne doivent pas casser la lecture. */
+ok("« 97 400 » se lit comme 97400", estTerritoireHorsTvaUE("FR", "97 400"));
+ok("« 9000-064 » se lit comme 9000", estTerritoireHorsTvaUE("PT", "9000-064") === false);
+
+ok("le territoire est NOMME, pour le dire a l'atelier",
+   territoireHorsTvaUE("ES", "35001") === "Canaries" &&
+   territoireHorsTvaUE("FR", "97400") === "DOM-COM" &&
+   territoireHorsTvaUE("GR", "63086") === "Mont Athos");
+ok("une adresse desservie n'a pas de nom de territoire",
+   territoireHorsTvaUE("FR", "75010") === null);
+/* Le prefixe le PLUS LONG gagne : 22061 est Campione, pas un « 22 » italien
+   qui n'existe pas dans la table. Si un jour deux prefixes se recouvrent,
+   c'est le plus precis qui doit nommer. */
+ok("le prefixe le plus long nomme : 22061 -> Campione d'Italia",
+   territoireHorsTvaUE("IT", "22061") === "Campione d'Italia");
+ok("la table couvre 6 pays et 10 territoires",
+   TERRITOIRES_HORS_TVA_UE.length === 10 &&
+   new Set(TERRITOIRES_HORS_TVA_UE.map((t) => t.pays)).size === 6);
+
+/* ══════════ LE TAUX DE LA FATURA (01/10/2026, BRANCHE NULLE PART) ══════════
+   Ne pas confondre avec le PRIX : le prix reste HT × (1 + TAUX_TVA_PAYS),
+   gele sur le dossier. Ce module decoupe un TTC DEJA ENCAISSE en HT + TVA
+   pour la facture certifiee, et c'est la seule chose qui ait besoin du code
+   postal. Aucun appelant a ce jour (T-075). */
+
+titre("— le taux de TVA de la facture, par code postal —");
+
+/* ⚠️ LE DRAPEAU. Les taux regionaux portugais n'ont AUCUNE source dans le
+   depot (note de Mathias, « a confirmer »). Cette assertion est le garde-fou :
+   passer le drapeau a true oblige a toucher CE fichier. */
+ok("TAUX_REGIONAUX_CONFIRMES est FAUX : le comptable n'a pas encore ecrit",
+   TAUX_REGIONAUX_CONFIRMES === false);
+
+ok("Lisbonne 1100 -> 23 %, continent, CONFIRME",
+   (() => { const r = tauxTvaFacture("PT", "1100-048");
+            return !!r && r.taux === 23 && r.regime === "Portugal continental" && r.confirme; })());
+ok("Funchal 9000 -> 22 %, Madere, NON confirme",
+   (() => { const r = tauxTvaFacture("PT", "9000-064");
+            return !!r && r.taux === 22 && r.regime === "Madère" && !r.confirme; })());
+ok("Ponta Delgada 9500 -> 16 %, Acores, NON confirme",
+   (() => { const r = tauxTvaFacture("PT", "9500-100");
+            return !!r && r.taux === 16 && r.regime === "Açores" && !r.confirme; })());
+ok("la coupure est a 9499 / 9500",
+   tauxTvaFacture("PT", "9499")?.taux === 22 && tauxTvaFacture("PT", "9500")?.taux === 16);
+ok("Porto 4000 -> 23 %, continent", tauxTvaFacture("PT", "4000-001")?.taux === 23);
+ok("PT sans code postal lisible retombe sur le CONTINENT, jamais sur une region",
+   (() => { const r = tauxTvaFacture("PT", null);
+            return !!r && r.taux === 23 && r.regime === "Portugal continental"; })());
+
+ok("Las Palmas 35001 -> 0 %, hors UE, territoire nomme",
+   (() => { const r = tauxTvaFacture("ES", "35001");
+            return !!r && r.taux === 0 && r.regime === "hors UE" && r.territoire === "Canaries"; })());
+ok("Saint-Denis de La Reunion 97400 -> 0 %, hors UE",
+   (() => { const r = tauxTvaFacture("FR", "97400");
+            return !!r && r.taux === 0 && r.regime === "hors UE" && r.territoire === "DOM-COM"; })());
+/* L'ORDRE COMPTE : le territoire passe AVANT le taux du pays, sinon les
+   Canaries sortiraient a 21 % espagnols. */
+ok("Madrid 28001 -> 21 %, taux du pays", tauxTvaFacture("ES", "28001")?.taux === 21);
+ok("Paris 75010 -> 20 %", tauxTvaFacture("FR", "75010")?.taux === 20);
+ok("Monaco 98000 -> 20 %, comme la France", tauxTvaFacture("FR", "98000")?.taux === 20);
+ok("Berlin 10115 -> 19 %", tauxTvaFacture("DE", "10115")?.taux === 19);
+ok("Budapest 1011 -> 27 %", tauxTvaFacture("HU", "1011")?.taux === 27);
+ok("Zurich 8001 -> 0 %, taux du pays (hors Union, rien ajoute par nous)",
+   tauxTvaFacture("CH", "8001")?.taux === 0);
+ok("un pays hors zone ne rend AUCUN taux : null, jamais un chiffre devine",
+   tauxTvaFacture("CA", "H3Z") === null && tauxTvaFacture(null, "75010") === null);
+
+titre("— le HT et la TVA d'un TTC deja encaisse —");
+
+/* LE SENS DU CALCUL. Le TTC est le FAIT (ce que la banque a debite, arrondi
+   a l'euro et gele) ; le HT en est la consequence. Partir du HT de la grille
+   donnerait un centime d'ecart avec le debit reel. */
+ok("2400 a 20 % -> 2000 HT", htDepuisTtc(2400, 20) === 2000);
+ok("5200 a 23 % -> 4228 HT", htDepuisTtc(5200, 23) === 4228);
+ok("taux 0 : le HT est le TTC", htDepuisTtc(5200, 0) === 5200);
+ok("HT + TVA = TTC AU CENTIME, quel que soit le taux",
+   [[2400, 20], [5200, 23], [3900, 22], [4300, 16], [6400, 25.5]].every(
+     ([ttc, t]) => htDepuisTtc(ttc, t)! + tvaDepuisTtc(ttc, t)! === ttc,
+   ));
+ok("zero TTC -> zero HT et zero TVA", htDepuisTtc(0, 23) === 0 && tvaDepuisTtc(0, 23) === 0);
+ok("un TTC non entier, negatif ou absent rend null",
+   htDepuisTtc(24.5, 20) === null && htDepuisTtc(-100, 20) === null && htDepuisTtc(null, 20) === null);
+ok("un taux absurde rend null, il ne s'arrondit pas",
+   htDepuisTtc(2400, -1) === null && htDepuisTtc(2400, 100) === null && htDepuisTtc(2400, null) === null);
 
 titre("— un montant tape a la main par l'atelier —");
 
@@ -2852,9 +3065,15 @@ for (const [pages, euros] of TABLEUR_FRANCE) {
 }
 ok("les HT sont ceux du tableur : 20 ; 22,40 ; ... ; 53,20",
    GRILLE.map((g) => g.htCentimes).join(",") === "2000,2240,2480,2720,2960,3200,3400,3600,3800,4000,4200,4340,4480,4620,4760,4900,5040,5180,5320");
-ok("24 pages : 25 EUR au Portugal, 24 en Allemagne, 24 au Royaume-Uni, 20 aux Etats-Unis",
+ok("24 pages : 25 EUR au Portugal, 24 en Allemagne, 20 aux Etats-Unis",
    eurosPourPages(24, "PT") === 25 && eurosPourPages(24, "DE") === 24
-   && eurosPourPages(24, "GB") === 24 && eurosPourPages(24, "US") === 20);
+   && eurosPourPages(24, "US") === 20);
+/* Le prix n'est pas la raison de la suspension (l'immatriculation l'est),
+   mais la consequence est nette : plus aucun prix ne sort pour le
+   Royaume-Uni, pas meme un prix juste. Un dossier suspendu ne peut donc PAS
+   etre paye par accident. */
+ok("24 pages au Royaume-Uni : aucun prix, la destination est suspendue",
+   eurosPourPages(24, "GB") === null && ttcCentimesPour(24, "GB") === null);
 ok("60 pages : 65 EUR au Portugal, 63 en Allemagne, 68 en Hongrie (27 % : 67,56)",
    eurosPourPages(60, "PT") === 65 && eurosPourPages(60, "DE") === 63 && eurosPourPages(60, "HU") === 68);
 ok("l'arrondi est a l'euro, le demi vers le haut (2240 x 1,2 = 26,88 -> 27 ; 4000 x 1,2 = 48)",
@@ -3126,6 +3345,28 @@ ok("c'est une alerte, pas une ligne neutre", rPays.ton === "alerte");
 ok("un code inconnu reste visible plutot que d'etre efface",
    (raconter("pays_livraison_divergent", { declare: "FR", stripe: "CA" }).detail ?? "")
      .includes("CA"));
+
+/* ── LE TERRITOIRE NON DESSERVI, DANS LE JOURNAL (01/10/2026) ──
+   La ligne la plus grave du journal : commande payee, impression bloquee,
+   remboursement attendu. Elle doit dire QUOI FAIRE, pas seulement constater. */
+const rTerr = raconter("territoire_non_desservi", {
+  territoire: "Canaries",
+  pays: "ES",
+  code_postal: "35001",
+  a_rembourser: true,
+});
+ok("la phrase nomme le territoire", rTerr.texte.includes("Canaries"));
+ok("le detail donne le code postal et le GESTE a faire",
+   (rTerr.detail ?? "").includes("35001") && (rTerr.detail ?? "").includes("REMBOURSER"));
+ok("le detail dit aussi que l'impression est bloquee",
+   (rTerr.detail ?? "").includes("bloqu"));
+ok("c'est une alerte, pas une ligne neutre", rTerr.ton === "alerte");
+/* Un payload incomplet (vieil evenement, champ absent) ne doit pas rendre une
+   ligne illisible : la phrase tient sans le nom ni le code postal. */
+ok("sans territoire ni code postal, la ligne tient quand meme",
+   (() => { const r = raconter("territoire_non_desservi", {});
+            return r.texte.length > 10 && r.ton === "alerte"
+                   && !(r.detail ?? "").includes("undefined"); })());
 
 titre("— T-007 : le mail saute sans template se lit dans le journal —");
 const rSaut = raconter("mail_sans_template", { code: "M2b", variable: "BREVO_TEMPLATE_M2B_ID" });

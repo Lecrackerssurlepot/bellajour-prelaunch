@@ -675,6 +675,22 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
       };
     }
 
+    /* ── UN TERRITOIRE HORS ZONE TVA DE L'UNION (01/10/2026) ──
+       La ligne la plus grave que ce journal puisse porter : la commande est
+       payée, elle ne partira pas à l'impression, et elle attend un geste
+       humain. Le détail dit QUOI FAIRE, pas seulement ce qui s'est passé. */
+    case "territoire_non_desservi": {
+      const terr = typeof payload.territoire === "string" ? payload.territoire : "territoire exclu";
+      const cp = typeof payload.code_postal === "string" ? payload.code_postal : null;
+      return {
+        texte: `Adresse hors zone TVA de l'Union : ${terr}`,
+        detail:
+          `${cp ? `Code postal ${cp}. ` : ""}Cette destination n'est pas desservie (D21) : ` +
+          `la commande est à REMBOURSER, et l'envoi à l'imprimeur est bloqué`,
+        ton: "alerte",
+      };
+    }
+
     case "paiement_inattendu":
       return { texte: "Paiement inattendu", detail: "À vérifier chez Stripe", ton: "alerte" };
 
