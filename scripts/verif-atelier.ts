@@ -321,6 +321,12 @@ import {
   tvaDepuisTtc,
 } from "@/lib/atelier/tvaFacture";
 import {
+  deciderFacture,
+  DESCRIPTION_CREDIT,
+  REGLES_FACTURE,
+  SERIES_INTERDITES,
+} from "@/lib/atelier/facturation";
+import {
   QUANTITE_MAX as QUANTITE_MAX_EXEMPLAIRES,
   totalExemplaires,
   normaliserQuantite,
@@ -2101,6 +2107,44 @@ ok("un TTC non entier, negatif ou absent rend null",
    htDepuisTtc(24.5, 20) === null && htDepuisTtc(-100, 20) === null && htDepuisTtc(null, 20) === null);
 ok("un taux absurde rend null, il ne s'arrondit pas",
    htDepuisTtc(2400, -1) === null && htDepuisTtc(2400, 100) === null && htDepuisTtc(2400, null) === null);
+
+titre("— la fatura atelier : la table de decision (T-075, D22) —");
+
+/* Une fatura finalisee part au fisc et ne se supprime pas : tout ce que la
+   table ne couvre pas doit finir en manual_review, jamais emis au mieux. */
+const facture = (pays: string, cp: string, extra: Partial<Parameters<typeof deciderFacture>[0]> = {}) =>
+  deciderFacture({ pays, codePostal: cp, taxIds: [], ttcCentimes: 5200, quantite: 1,
+                   titre: "Nos etes", creditFondateur: false, ...extra });
+const auto = (d: ReturnType<typeof deciderFacture>, serie: string, taxe: string) =>
+  d.statut === "pending" && d.serie === serie && d.taxe === taxe;
+
+ok("Lisbonne 1350 -> FAT2026 / IVA23, automatique", auto(facture("PT", "1350-321"), "FAT2026", "IVA23"));
+ok("Funchal 9000 -> manual_review (Madere non confirmee)", facture("PT", "9000-064").statut === "manual_review");
+ok("Ponta Delgada 9500 -> manual_review (Acores non confirmees)", facture("PT", "9500-150").statut === "manual_review");
+ok("Bordeaux 33000 -> FR2026 / IVA20, automatique", auto(facture("FR", "33000"), "FR2026", "IVA20"));
+ok("FR2026 : le client est l'adresse de livraison", (() => {
+  const d = facture("FR", "33000"); return d.statut === "pending" && d.client === "livraison"; })());
+ok("FAT2026 : le client est Consumidor Final", (() => {
+  const d = facture("PT", "1100-482"); return d.statut === "pending" && d.client === "consumidor_final"; })());
+ok("Berlin -> manual_review", facture("DE", "10115").statut === "manual_review");
+ok("Geneve -> manual_review", facture("CH", "1201").statut === "manual_review");
+ok("La Reunion 97400 -> manual_review", facture("FR", "97400").statut === "manual_review");
+ok("client avec numero de TVA, meme a Lisbonne -> manual_review",
+   facture("PT", "1350-321", { taxIds: [{ type: "eu_vat", value: "PT123" }] }).statut === "manual_review");
+ok("montant encaisse absent ou nul -> manual_review",
+   facture("FR", "33000", { ttcCentimes: null }).statut === "manual_review" &&
+   facture("FR", "33000", { ttcCentimes: 0 }).statut === "manual_review");
+ok("credit fondateur : 11,00 EUR a 20 % -> 9,17 HT + 1,83 TVA, libelle du solde", (() => {
+  const d = facture("FR", "33000", { ttcCentimes: 1100, creditFondateur: true });
+  return d.statut === "pending" && d.htCentimes === 917 && d.tvaCentimes === 183 &&
+         d.description === DESCRIPTION_CREDIT; })());
+ok("le nom de l'article porte le titre, sans cadratin", (() => {
+  const d = facture("PT", "1350-321"); return d.statut === "pending" &&
+    d.nomArticle === "Magazine photo Bellajour : Nos etes" && !d.nomArticle.includes("—"); })());
+ok("aucune regle ne vise une serie interdite",
+   REGLES_FACTURE.every((r) => !(SERIES_INTERDITES as readonly string[]).includes(r.serie)));
+ok("chaque regle annonce le taux que tvaFacture calcule", REGLES_FACTURE.every((r) =>
+   tauxTvaFacture(r.pays, r.pays === "PT" ? "1000-001" : "75001")?.taux === r.taux));
 
 titre("— un montant tape a la main par l'atelier —");
 

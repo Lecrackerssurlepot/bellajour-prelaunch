@@ -5,6 +5,7 @@ import { normaliserPays, territoireHorsTvaUE } from "./pays";
 import { quantiteDuDossier } from "./exemplaires";
 import { lireNumerosMail, envoyerMailAtelier, type NumeroPourMail } from "./mails";
 import { EVT_CREDIT_CONSOMME } from "./fondatrice";
+import { creerJobFacture, alerterRemboursementFacture } from "./jobFacture";
 
 /**
  * Les deux handlers de webhook de l'atelier (PRD §9).
@@ -434,6 +435,17 @@ export async function traiterPaiementAtelier(
     );
   }
 
+  /* ── T-075 : la fatura (07/10/2026) ──────────────────────────────────
+     Le job de facture, pour l'Edge Function `emit-invoices`. Après la
+     transition réussie, donc jamais sur un rejeu. Ne lève jamais : une
+     facture qui ne se prépare pas n'empêche ni le paiement ni M4. */
+  await creerJobFacture(supabase, session, stripe, {
+    numeroId: numero.id,
+    titre: numero.titre,
+    quantite: quantiteDuDossier((numero as { quantite?: number | null }).quantite),
+    creditFondateur: !!codeCredit && (session.total_details?.amount_discount ?? 0) > 0,
+  });
+
   /* M4 « {{titre}}, nous composons » (PRD §10). Passe par le helper commun :
      même verrou anti-doublon que M1 et M3 (Stripe rejoue volontiers ses
      webhooks), même repli de titre, même trace dans le journal. */
@@ -533,6 +545,10 @@ export async function traiterRemboursementAtelier(
     devise: charge.currency,
     a_verifier_a_la_main: true,
   });
+
+  /* T-075 : si ce paiement est déjà facturé, la nota de crédito est à faire
+     à la main. On prévient ; on n'automatise rien. */
+  await alerterRemboursementFacture(supabase, asId(charge.payment_intent), charge.amount_refunded);
 
   return true;
 }
