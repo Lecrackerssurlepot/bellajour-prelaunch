@@ -67,7 +67,10 @@ source de tout affichage ; sans pays, c'est la France), `prix.ts` (le calcul ser
 `centimesDuDossier` lit le TTC GELÉ `prix_centimes` d'abord, le HT gelé `prix_ht_centimes`
 converti ensuite, la grille en dernier ; `ttcPourPays` recalcule quand le client change de pays),
 `pays.ts` (`PAYS_CONNUS` 32 codes moins `PAYS_SUSPENDUS` = 31 desservies, `TAUX_TVA_PAYS`,
-`HORS_UE`, `estTerritoireHorsTvaUE`), `tvaFacture.ts` (le taux de la FATURA par code postal, branché nulle part), `exemplaires.ts` (1 à 10 exemplaires,
+`HORS_UE`, `estTerritoireHorsTvaUE`), `tvaFacture.ts` (le taux de la FATURA par code postal), `facturation.ts` (LA table série/taux de
+la fatura, D22 : PT continental FAT2026/IVA23, FR métropole FR2026/IVA20, tout le reste en
+`manual_review` ; appelée par `jobFacture.ts` depuis `traiterPaiementAtelier`, l'Edge Function
+`emit-invoices` ne fait qu'exécuter le job), `exemplaires.ts` (1 à 10 exemplaires,
 le 2e à −30 %, les suivants à −50 %, importable navigateur : le bon de commande le joue en direct),
 `livraison.ts` (zones A 5 € / B 13 € / C devis, `FRANCO_CENTIMES` 50 €, `portClient`, devis → TTC,
 `totalCommande`), `questionnaire.ts` (les 7 champs exigés, pays compris, + `suggestionEmail`), `rebond.ts` (ce qu'un signal Brevo dit d'une adresse),

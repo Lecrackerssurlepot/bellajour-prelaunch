@@ -1,4 +1,4 @@
-# État du système — au 22/09/2026
+# État du système — au 07/10/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -7,6 +7,36 @@ règles, sans moyen de savoir ce qui avait expiré.
 
 Règle d'entretien : quiconque change l'état du système met ce fichier à jour dans le même geste.
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
+
+---
+
+## 07/10/2026 — la vente atelier entre en facturation (T-075, D22) : code prêt, déploiement en trois temps
+
+- **Code** sur la branche `feat/facturation-atelier` : `traiterPaiementAtelier` crée un job
+  `invoice_jobs` après chaque paiement réussi (livemode, payment intent présent), décidé par
+  `src/lib/atelier/facturation.ts` ; Edge Function `emit-invoices` v2 paramétrique ; page
+  `/admin/atelier/factures` ; alertes mail Brevo.
+- **Ordre de mise en service imposé par Mathias** : (a) migration `20261007_invoice_jobs_atelier`
+  appliquée et vérifiée, (b) Edge Function v2 déployée et version vérifiée, (c) seulement
+  ensuite la fusion du site. La v1 (en ligne depuis juin, version 1) émet tout job `pending` à
+  23 % en série par défaut : elle ne doit jamais voir un job atelier.
+- **Le 07/10, (a) et (b) ont été refusées par le garde-fou de la session** : elles restent à
+  lancer par Mathias (ou sur son autorisation explicite). Tant que (a) manque,
+  `/admin/atelier/factures` affiche un bandeau orange et le webhook n'écrit AUCUN job (pas de
+  repli, voulu).
+- **État de la base au 07/10** : 16 jobs prévente `emitted` (dernier le 24/08), contrainte
+  UNIQUE sur `stripe_payment_intent` déjà présente, pg_cron `emit-invoices-worker` actif toutes
+  les 5 minutes, Edge Function `emit-invoices` en version 1. Les six ventes facturées à la main
+  (FAT2026/19 à 23, FR2026/1) seront inscrites `emitted_manual` par la migration.
+- **Secrets à poser** :
+  - Vercel (Production et Preview) : `ALERTE_FACTURATION_EMAIL` (obligatoire, aucune valeur
+    par défaut), `INVOICEXPRESS_ACCOUNT` (pour les liens de la page admin).
+  - Supabase → Edge Functions → Secrets : `ALERTE_FACTURATION_EMAIL`, `BREVO_API_KEY`.
+    `INVOICE_AUTO_FINALIZE` NE PAS poser tant que les brouillons n'ont pas été relus ;
+    `TVA_FR_NUMERO` à poser le jour où le numéro français est attribué.
+- **Pas encore fait** : la liste des séries et taxes InvoiceXpress (GET) n'a pas pu être lue,
+  la clé n'existant que dans les secrets Supabase ; l'émetteur résout tout par NOM et part en
+  `manual_review` si un nom manque. Le brouillon de test FR2026 attend l'accord de Mathias.
 
 ---
 
