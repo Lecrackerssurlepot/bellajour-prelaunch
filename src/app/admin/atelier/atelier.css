@@ -3473,3 +3473,44 @@
 .ate-cn-dossier:hover {
   text-decoration: underline;
 }
+
+/* ── /admin/atelier/factures (T-075, 07/10/2026) ───────────────────────── */
+.ate-factures {
+  overflow-x: auto;
+}
+.ate-factures table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--bj-fs-sm);
+}
+.ate-factures th,
+.ate-factures td {
+  text-align: left;
+  padding: var(--bj-sp-2) var(--bj-sp-3);
+  border-bottom: 1px solid var(--bj-veil-8);
+  vertical-align: top;
+}
+.ate-factures th {
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ate-factures td:nth-child(3) {
+  font-size: var(--bj-fs-xs);
+  word-break: break-all;
+}
+.ate-facture-origine {
+  color: var(--bj-text-faint);
+  font-size: var(--bj-fs-xxs);
+}
+.ate-facture--manual_review td:first-child,
+.ate-facture--failed td:first-child {
+  color: var(--ate-rouge);
+  font-weight: 600;
+}
+.ate-facture--error td:first-child,
+.ate-facture--draft td:first-child {
+  color: var(--ate-orange);
+  font-weight: 600;
+}
