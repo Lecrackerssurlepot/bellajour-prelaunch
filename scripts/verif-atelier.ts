@@ -996,6 +996,17 @@ ok("premiere publication : leve aussi la suspension (sans danger)",
 ok("publier la maquette depuis l'etat 2 : toujours refuse",
    !preparerTransition("publier_maquette", "apercu_pret", { canva_url: "https://www.canva.com/x" }).ok);
 
+/* 08/10/2026 : le client a dit oui hors du site (Marjorie). */
+const pourLui = preparerTransition("valider_pour_client", "maquette_prete", {});
+ok("valider a sa place depuis l'etat 4 : passe en validee, au nom du client, sans retouches",
+   pourLui.ok && pourLui.patch.etat === "validee" && pourLui.patch.valide_par === "cliente"
+   && pourLui.patch.retouches_demandees_le === null);
+ok("valider a sa place : refuse hors de l'etat 4",
+   !preparerTransition("valider_pour_client", "payee", {}).ok
+   && !preparerTransition("valider_pour_client", "validee", {}).ok);
+ok("valider a sa place : aucun mail ne part en validee (T-120)",
+   codesPour(d({ etat: "validee" }), env(["M5", ilYA(1)]), MAINTENANT).length === 0);
+
 titre("— ce qui manque pour envoyer —");
 ok("M7 sans transporteur : signale", manquePour("M7", d({ transporteur: null })).includes("transporteur"));
 ok("M7 avec transporteur : complet", manquePour("M7", d({ transporteur: "Colissimo" })).length === 0);
