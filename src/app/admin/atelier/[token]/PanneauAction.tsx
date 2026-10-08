@@ -355,6 +355,22 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
   const [verif, setVerif] = useState<Verif | null>(null);
   const [occupe, setOccupe] = useState(false);
   const [fait, setFait] = useState<string | null>(null);
+  /* ── L'ÉTAT A CHANGÉ SOUS LE PANNEAU (08/10/2026) ────────────────────
+     Après une transition, `router.refresh()` rend une fiche dans son NOUVEL
+     état, mais l'état local survivait : le geste qu'on venait de faire
+     restait choisi, et « Préparer » répondait « pas possible depuis
+     Validée » (vu sur le dossier de Marjorie). Quand l'état du dossier
+     bouge, le panneau repart de ce que la fiche propose maintenant ; le
+     « C'est fait » reste affiché. Ajusté PENDANT le rendu, pas dans un
+     effet : React le recommande pour un état dérivé d'une prop. */
+  const [etatVu, setEtatVu] = useState(fiche.ligne.etat);
+  if (fiche.ligne.etat !== etatVu) {
+    setEtatVu(fiche.ligne.etat);
+    setChoisie(actionInitiale(fiche));
+    setSaisie(saisieInitiale(fiche));
+    setErreurs([]);
+    setVerif(null);
+  }
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
   /* ── LE BROUILLON LOCAL (11/09/2026) ────────────────────────────────
      Voir le bloc en tête de fichier. Trois états : ce qu'on a restauré (pour
