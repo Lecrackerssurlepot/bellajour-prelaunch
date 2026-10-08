@@ -20,10 +20,12 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
   appliquée et vérifiée, (b) Edge Function v2 déployée et version vérifiée, (c) seulement
   ensuite la fusion du site. La v1 (en ligne depuis juin, version 1) émet tout job `pending` à
   23 % en série par défaut : elle ne doit jamais voir un job atelier.
-- **Le 07/10, (a) et (b) ont été refusées par le garde-fou de la session** : elles restent à
-  lancer par Mathias (ou sur son autorisation explicite). Tant que (a) manque,
-  `/admin/atelier/factures` affiche un bandeau orange et le webhook n'écrit AUCUN job (pas de
-  repli, voulu).
+- **(a) FAIT le 08/10** sur accord explicite de Mathias : migration appliquée, vérifiée en SQL
+  (16 jobs `acompte`/`emitted` intacts avec leurs logs ; 6 `emitted_manual` rattachés à leur
+  dossier, FR2026/1 compris ; contraintes de statut et d'origine en place ; 0 job `pending`).
+- **(b) FAIT le 08/10** sur accord explicite : Edge Function `emit-invoices` en **version 2**,
+  `verify_jwt` conservé, code relu en ligne. Premier passage pg_cron à 08:25 UTC : HTTP 200,
+  `autoFinalize: false`, rien à traiter. **(c) la fusion du site attend le feu vert de Mathias.**
 - **État de la base au 07/10** : 16 jobs prévente `emitted` (dernier le 24/08), contrainte
   UNIQUE sur `stripe_payment_intent` déjà présente, pg_cron `emit-invoices-worker` actif toutes
   les 5 minutes, Edge Function `emit-invoices` en version 1. Les six ventes facturées à la main
