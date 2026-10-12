@@ -900,7 +900,13 @@ export async function POST(request: Request) {
     const ecrire = (patch: Record<string, unknown>) => {
       let q = supabase
         .from("numeros")
-        .update({ ...patch, etat_maj_le: maintenant })
+        .update({
+          ...patch,
+          etat_maj_le: maintenant,
+          /* La date de l'accord, lue par la page client pour l'estimation
+             de livraison : posée ici pour que le module reste pur. */
+          ...(cle === "valider_pour_client" ? { valide_le: maintenant } : {}),
+        })
         .eq("id", numero.id)
         .eq("etat", numero.etat);
       if (cle === "envoyer_impression") q = q.is("cloudprinter_order_id", null);

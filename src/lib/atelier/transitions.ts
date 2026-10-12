@@ -87,6 +87,7 @@ export type ActionCle =
   | "corriger_apercu"
   | "photos_insuffisantes"
   | "publier_maquette"
+  | "valider_pour_client"
   | "envoyer_impression"
   | "marquer_expediee"
   | "marquer_livree";
@@ -255,6 +256,25 @@ export const ACTIONS: Record<ActionCle, Action> = {
     de: ["payee", "maquette_prete"],
     vers: "maquette_prete",
     note: "L'échéance d'auto-validation à J+7 part de maintenant. Republier après des retouches lève leur suspension.",
+  },
+
+  /* Le client a dit oui AILLEURS (08/10/2026, Marjorie) : par message, au
+     téléphone, dans le Canva, sans cliquer « Tout est bon, imprimez ». Sans
+     ce geste, le dossier restait en maquette prête, et si une demande de
+     retouches était posée, l'auto-validation J+7 était suspendue elle aussi :
+     rien ne pouvait plus le faire avancer, sauf une écriture en base.
+     Même arrivée que le clic du client (`/api/atelier/valider`), même
+     `valide_par = 'cliente'` : c'est bien lui qui a validé, l'énum n'a pas
+     de troisième valeur, et le journal dit qui a cliqué. `valide_le` est
+     posé par la route, comme `etat_maj_le`. Aucun mail (T-120). */
+  valider_pour_client: {
+    cle: "valider_pour_client",
+    libelle: "Valider à sa place",
+    explication:
+      "Le client a donné son accord par un autre canal. Le numéro passe en « validée », comme s'il avait cliqué « Tout est bon, imprimez », et l'impression devient possible.",
+    de: ["maquette_prete"],
+    vers: "validee",
+    note: "À utiliser seulement si son accord est écrit quelque part (message, mail, commentaire Canva).",
   },
 
   envoyer_impression: {
@@ -706,6 +726,12 @@ export function preparerTransition(
     /* T2-13 : publier (ou republier) la maquette lève la suspension posée
        par « j'ai demandé des retouches ». L'échéance J+7 repart avec le
        `etat_maj_le` que la route ajoute au patch. */
+    patch.retouches_demandees_le = null;
+  }
+
+  if (cle === "valider_pour_client") {
+    patch.valide_par = "cliente";
+    /* Une demande de retouches encore posée n'a plus d'objet : il a dit oui. */
     patch.retouches_demandees_le = null;
   }
 
