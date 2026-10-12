@@ -438,6 +438,7 @@ export default function Liste({ vue }: { vue: VueListe }) {
           <Link href="/admin/atelier/metriques">Métriques</Link>
           <Link href="/admin/atelier/cockpit">Cockpit</Link>
           <Link href="/admin/atelier/sante">Santé</Link>
+          <Link href="/admin/atelier/factures">Factures</Link>
           <Link href="/admin">Prévente</Link>
           {vue.demo ? null : <Link href="/admin/atelier/demo">Démo</Link>}
           <form action="/api/admin/logout" method="post" className="adm-logout-form">

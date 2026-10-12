@@ -513,3 +513,35 @@ prouve l'étanchéité sur les six chemins, et pas seulement l'absence de l'opti
 Mais **pas sans une décision explicite d'immatriculation TVA britannique**, dont le coût et le
 volume restent à évaluer. Et ne pas rouvrir D18 : son raisonnement était juste, sa prémisse
 — « on peut encaisser avant de s'immatriculer » — était fausse.
+
+D22 (07/10/2026) — **La fatura atelier s'émet seule sur deux cas, et sur eux seulement : le
+Portugal continental (FAT2026, IVA23) et la France métropolitaine (FR2026, IVA20).** Tout le
+reste s'arrête en contrôle manuel. Décision de Mathias.
+
+Le contexte. Depuis la fermeture de la prévente (24/08), aucune vente atelier n'entrait dans
+`invoice_jobs` : six ventes ont été facturées à la main (FAT2026/19 à 23, FR2026/1). L'ancien
+émetteur facturait tout à 23 % portugais, en série par défaut, ce que le comptable a jugé faux
+le 01/09.
+
+Ce qui est tranché.
+- **Une vente livrée en France se facture à 20 % sur la série FR2026, quel que soit le pays de
+  l'usine** : la société s'immatricule à la TVA en France. Le pays d'usine n'est plus une donnée
+  de facturation, on ne l'ajoute pas.
+- **Une vente livrée au Portugal continental se facture à 23 % sur FAT2026**, client
+  « Consumidor Final », comme avant.
+- **Madère et Açores passent en contrôle manuel** : les taux de 22 % et 16 % et la coupure des
+  codes postaux à 9500 ne sont pas confirmés par le comptable (`TAUX_REGIONAUX_CONFIRMES` reste
+  à `false`).
+- **Tout autre pays, et tout client qui saisit un numéro de TVA, passent en contrôle manuel** :
+  leur régime n'est pas tranché, ces cas sont rares, on les traite à la main.
+- La base est le montant RÉELLEMENT encaissé (`amount_received`), crédit fondateur et port
+  offert déduits, jamais le prix de grille. HT = TTC ÷ (1 + taux).
+- Mise en service en BROUILLON (`INVOICE_AUTO_FINALIZE` absent) : chaque fatura est relue et
+  finalisée à la main dans InvoiceXpress jusqu'à ce que Mathias pose ce secret à `true`.
+- La nota de crédito d'un remboursement reste manuelle ; une alerte mail la signale.
+
+**Conséquence :** la table vit dans `src/lib/atelier/facturation.ts` (`REGLES_FACTURE`) et
+nulle part ailleurs ; l'Edge Function `emit-invoices` n'en connaît que ce que le job lui écrit.
+Ajouter un pays = une ligne dans cette table ET la taxe dans `TAXE_PAR_TAUX` de l'émetteur,
+après décision du comptable. Ne pas « simplifier » en émettant au taux normal du pays : c'est
+précisément le défaut qu'on a corrigé.

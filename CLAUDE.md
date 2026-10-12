@@ -53,7 +53,8 @@ que le problème existe. Un ticket infirmé se ferme en `refuse` avec la preuve.
 
 1. **Jamais de commit ni de push sur `main`.** On travaille sur une branche, toujours.
    Un hook le bloque ; s'il saute, la règle tient quand même.
-2. **Jamais d'envoi de mail réel, de migration appliquée en production, de commande Cloudprinter
+2. **Jamais d'envoi de mail réel, de migration appliquée en production, de commande Cloudprinter,
+   d'écriture InvoiceXpress (une fatura finalisée part au fisc, D22)
    ou de modification de texte légal sans accord explicite de Mathias**, demandé dans la
    conversation. Ces gestes touchent de vraies clientes et quatorze fondateurs aux droits ouverts.
 3. **Jamais `git add -A` à la racine.** `design-explorations/` et `assets/typo/` sont hors git

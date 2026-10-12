@@ -66,3 +66,12 @@ réelle à ce jour, donc aucun rattrapage.
 3. ⚠️ Les **16 faturas de prévente déjà émises** l'ont été à 23 % PT → taux désormais réputé
    FAUX. À porter au comptable : régularisation probable (avoirs). Ce ne sont pas que les
    paiements de test.
+
+**07/10/2026 — tranché par D22, code écrit sur `feat/facturation-atelier` (repart de `main`,
+PAS de `fix/atelier-invoice-jobs`, qui reste à ne jamais fusionner).**
+Table de décision `src/lib/atelier/facturation.ts` : PT continental FAT2026/IVA23, FR
+métropole FR2026/IVA20, tout le reste `manual_review`. Base = `amount_received`. Émetteur v2
+paramétrique, brouillon par défaut, 3 tentatives puis `failed`, alertes mail, page
+`/admin/atelier/factures`. Reste : migration 20261007 et déploiement de l'Edge Function v2
+(refusés par le garde-fou de session, à lancer par Mathias), puis fusion, puis un brouillon de
+test FR2026 avec son accord. Les 16 faturas de prévente à 23 % restent un sujet du comptable.

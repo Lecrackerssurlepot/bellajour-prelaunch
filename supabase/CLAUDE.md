@@ -14,7 +14,7 @@ Chargé dès qu'on touche une migration ou le dossier supabase.
 | `notes` | carnet de l'éditeur | `qui` ; `genre` nullable depuis le 08/09 (5 valeurs, validées en TS, PAS de `check` en base) |
 | `dossiers_vus` | qui a vu quoi | PK composite |
 | `admin_last_seen` | singleton | PK `id boolean check(id=true)` |
-| `invoice_jobs` | facturation Fatura (edge function `emit-invoices`) | `stripe_payment_intent` unique |
+| `invoice_jobs` | facturation Fatura (edge function `emit-invoices`, D22) | `stripe_payment_intent` unique ; statuts `pending` `emitting` `emitted` `error` `draft` `manual_review` `failed` `emitted_manual` ; `client`, `payload_log`, `response_log` = données perso, vidées par `anonymiser-dossiers.ts` ; écriture atelier SANS repli (un job sans série serait mal émis) |
 | `weekly_metrics` | l'agrégat hebdo du cockpit (migration 20260917, **appliquée le 17/09**) | `semaine` AAAASS PK, réécrite entière par le job du lundi : idempotent |
 | `cockpit_settings` | les hypothèses du cockpit | singleton `id = true`, `regle_le` null = jamais réglé |
 

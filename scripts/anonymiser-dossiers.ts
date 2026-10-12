@@ -441,6 +441,20 @@ async function main(): Promise<void> {
       console.error(`  ! ${x.d.token} — noms de fichiers non effacés : ${errPhotos.code}`);
     }
 
+    /* T-075 : le job de facture copie nom et adresse (`client`) et les
+       échanges avec InvoiceXpress (`payload_log`, `response_log`). On les
+       vide ; le numéro de fatura, les montants et le pays RESTENT, parce
+       qu'une pièce fiscale se conserve. Un dossier jamais payé n'a pas de
+       job : la requête ne touche alors rien. 42703 = migration 20261007
+       pas encore passée, donc rien à vider. */
+    const { error: errFacture } = await supabase
+      .from("invoice_jobs")
+      .update({ client: null, payload_log: null, response_log: null })
+      .eq("numero_id", x.d.id);
+    if (errFacture && errFacture.code !== "42703" && errFacture.code !== "PGRST204") {
+      console.error(`  ! ${x.d.token} — job de facture non vidé : ${errFacture.code}`);
+    }
+
     /* Invariant nº6 : toute écriture est journalisée. Ici c'est même la
        seule trace lisible de ce qui a disparu, puisque la ligne, elle, ne
        dit plus rien. */
