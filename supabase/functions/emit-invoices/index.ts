@@ -212,7 +212,13 @@ Deno.serve(async () => {
     if (!s.ok || !t.ok) throw new Error(`référentiels InvoiceXpress illisibles (séries ${s.status}, taxes ${t.status})`);
     series = new Map();
     for (const q of (s.json?.["sequences"] as Array<Record<string, unknown>> | undefined) ?? []) {
-      series.set(String(q["serie"]), Number(q["id"]));
+      /* L'id à passer en `sequence_id` est celui de la sous-série du TYPE de
+         document, pas l'id de la série : avec `id`, InvoiceXpress répond 422
+         « A série não corresponde ao tipo de documento » (vu le 12/10/2026).
+         Une série sans sous-série fatura-recibo n'est pas retenue : le job
+         part alors en revue (« série introuvable »), jamais au mieux. */
+      const recibo = Number(q["current_invoice_receipt_sequence_id"]);
+      if (Number.isFinite(recibo) && recibo > 0) series.set(String(q["serie"]), recibo);
     }
     taxes = new Map();
     for (const x of (t.json?.["taxes"] as Array<Record<string, unknown>> | undefined) ?? []) {
