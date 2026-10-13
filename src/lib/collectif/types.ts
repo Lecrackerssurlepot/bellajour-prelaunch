@@ -19,6 +19,7 @@
  */
 
 import type { EtatEdition } from "./etats";
+import type { CouvertureStyle, DoubleStyle, Palette, Typos } from "./styles";
 
 /* ─────────────────────────────── les rôles ─────────────────────────────── */
 
@@ -158,10 +159,10 @@ export type StyleLigne = {
   nom: string;
   description: string | null;
   segment: Segment;
-  palettes: unknown[];
-  typos: Record<string, unknown>;
-  couvertures: unknown[];
-  doubles: unknown[];
+  palettes: Palette[];
+  typos: Partial<Typos>;
+  couvertures: CouvertureStyle[];
+  doubles: DoubleStyle[];
   publie: boolean;
   ordre: number;
   created_at: Horodatage;

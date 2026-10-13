@@ -367,3 +367,18 @@ export function gestesDepuis(etat: EtatEdition, role: Role): Geste[] {
     (g) => g.de.includes(etat) && quiPour(g.cle).includes(role) && g.vers !== "inchange"
   );
 }
+
+/**
+ * Les gestes que la FICHE atelier propose (phase 1). `publier_tour` n'y est
+ * pas : un tour se publie depuis son dépôt (phase 5), avec son PDF. Et
+ * `valider_bat` appartient au responsable, jamais à l'atelier.
+ */
+export const GESTES_DE_LA_FICHE: readonly GesteCle[] = [
+  "clore_collecte",
+  "rouvrir_collecte",
+  "lancer_impression",
+  "marquer_expediee",
+  "marquer_livree",
+  "archiver",
+  "desarchiver",
+];

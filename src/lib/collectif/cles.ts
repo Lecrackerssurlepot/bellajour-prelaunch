@@ -29,6 +29,11 @@ function exigerUuid(id: string, quoi: string): string {
   return id.toLowerCase();
 }
 
+/** Un identifiant de ligne (uuid) : filtré avant toute requête, comme un token. */
+export function estUuid(v: unknown): v is string {
+  return typeof v === "string" && UUID.test(v);
+}
+
 export function estSlugStyle(v: unknown): v is string {
   return typeof v === "string" && v.length <= 60 && SLUG.test(v);
 }
