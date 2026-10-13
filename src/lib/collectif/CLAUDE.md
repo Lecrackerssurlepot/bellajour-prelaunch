@@ -63,7 +63,35 @@ Un client B2B (entreprise, école) ouvre une **édition** d'un ou plusieurs **ma
   EXTENSIBLE : texte libre en base, une ligne ici pour un nouveau type.
 - **`interrupteur.ts`**, **`migration.ts`** — voir plus bas.
 
-Les modules à effets : `acces.ts` (la porte serveur des liens), `sante.ts` (la seule sonde).
+**Phase 1 (13/10/2026), les purs de l'atelier :**
+- **`dates.ts`** — l'heure de PARIS, explicitement : `instantDeParis` (le champ `datetime-local`
+  → instant ISO, `null` pour l'heure qui n'existe pas au passage à l'heure d'été),
+  `versChampParis`, `formaterInstantParis`. Jamais `new Date(champ)` : il lit l'heure de la
+  machine, et ni celle de Vercel (UTC) ni celle de l'atelier ne sont forcément Paris.
+- **`saisie.ts`** — la règle de création ET de réglage d'une édition (exigés : organisation,
+  événement, registre, e-mail du responsable, un magazine ; tout chiffre vide reste `null` ;
+  `rdv_url` en https seulement ; `suggestionEmail` suggère, ne bloque pas ; la case
+  « démonstration » ne s'écrit jamais d'ici). `planMagazines` : renommer toujours, ajouter à la
+  suite, retirer SEULEMENT le dernier et seulement s'il est vide : les rangs ne se renumérotent
+  jamais (le client lit « magazine 2 »).
+- **`styles.ts`** — la forme d'un style (palettes de 4 couleurs, deux typos + un échantillon en
+  IMAGE, couvertures, TOUJOURS cinq doubles pages types), sa saisie (le slug ne change jamais,
+  une image d'un autre style est refusée), `manquesPourPublier` (le serveur refuse de publier
+  un style incomplet), `nomImageStyle` (nom versionné, jamais d'écrasement).
+- **`prochaine.ts`** — la prochaine étape et son camp, lue par la liste ET la fiche.
+- **`recit.ts`** — le journal en français ; **jamais un token** (un lien régénéré se dit par son
+  rôle, pas par sa valeur). **`liens.ts`** — les trois liens sur l'origine de la requête
+  (localhost en local).
+
+Les modules à effets : `acces.ts` (la porte serveur des liens), `sante.ts` (la seule sonde),
+`journal.ts` (`collectif_evenements`, rend un booléen que la route LIT).
+
+⚠️ **Les images d'un style passent PAR LE SERVEUR, pas en PUT signé vers R2** (phase 1). Le
+CORS du bucket n'autorise que bellajour.fr, *.vercel.app et localhost:3000 : depuis le local
+de recette (3006) un PUT direct échouerait sans le dire. Le navigateur réduit l'image
+(`reduireImage.ts`, 2400 px, WebP sinon JPEG, sous 4 Mo) puis la route l'écrit avec
+`ecrireObjet`. Les PHOTOS de la phase 3 (des milliers, souvent lourdes) ne pourront pas suivre
+ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans le CORS.
 
 ## L'interrupteur et la migration
 

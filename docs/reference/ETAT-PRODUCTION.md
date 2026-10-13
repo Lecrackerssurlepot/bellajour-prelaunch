@@ -10,6 +10,20 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 13/10/2026 (après-midi) — Édition collective, phase 1 : ouvrir une édition, les styles (T-140), sur branche
+
+- **Code** sur `feat/collectif-phase-1` (PR à fusionner par Mathias) : liste, création, fiche et
+  éditeur de styles sous `/admin/collectif`, 7 routes sous `/api/admin/collectif/*`. Toujours
+  derrière `COLLECTIF_OUVERT`, toujours absent de Vercel : rien ne change en production.
+- **Données d'essai écrites en PRODUCTION** pendant la recette locale (le local lit la base de
+  production) : l'édition « Essai technique (Claude) » (`dcf95f15-…`, ARCHIVÉE, ses trois liens
+  répondent 404) et le style « Essai technique Claude » (slug `essai-technique-claude`,
+  BROUILLON, jamais publié), avec une image sur R2 sous `collectif/styles/essai-technique-claude/`.
+  Aucun mail, aucune autre table touchée. À retirer si Mathias le demande.
+- **Le local de recette** : `.claude/launch.json` « Next.js prod 3006 collectif »
+  (`COLLECTIF_OUVERT=1`), après un `npm run build`. Connexion admin avec le mot de passe de
+  `.env.local`.
+
 ## 13/10/2026 — l'Édition collective (B2B) : le socle, phase 0 (T-139), EN PRODUCTION
 
 - **Code fusionné** par Mathias le 13/10 (PR #225, commit 31b1590), déploiement de production
