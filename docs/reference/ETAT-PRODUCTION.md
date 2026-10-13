@@ -35,6 +35,13 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
   : un tour publié, une demande de modification, deux propositions complémentaires (des PDF
   d'essai) acceptées, BAT validé « sans préférence », impression, expédition Colissimo avec le
   numéro fictif `TESTCOLLECTIF01`, livrée. À archiver quand Mathias l'aura regardée.
+- **Troisième édition d'essai, VIERGE, créée le 13/10 à la demande de Mathias** pour vivre le
+  parcours client depuis le début : « Organisation d’essai » · « Séminaire d’essai », un
+  magazine, collecte ouverte jusqu'au 27/10/2026 18:00 (Paris). Réglages d'ESSAI posés par
+  Claude (modifiables dans la fiche, aucun n'est une décision) : 30 photos par participant,
+  1 000 au total, présélection 40, 24 pages, tirage 50, 2 tours, 2 propositions de couverture,
+  2 couvertures aimées ; contenus demandés : logo, programme, mot du dirigeant ; pas de lien de
+  rendez-vous. Adresse du responsable `recette-collectif@bellajour.fr` (aucun mail ne part).
 - ⚠️ **Le style « Essai technique Claude » est PUBLIÉ** (13/10) pour que le mur de la recette
   ne soit pas vide : il apparaîtra sur le mur de TOUTE édition tant qu'il l'est. Le retirer du
   mur (`/admin/collectif/styles`, « Retirer du mur ») dès que Mathias a publié un vrai style.
