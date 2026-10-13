@@ -531,6 +531,10 @@ Prévoir les accroches, ne rien envoyer :
 8. **Délai de regroupement** des mails « nouveau message ».
 9. **Temps réel** : interrogation (phase 2) suffisante, ou Realtime (phase 7) ?
 10. **Largeur de rendu des pages** du BAT (qualité contre poids).
+11. **Le compte des étapes** affiché au client : les maquettes disent « Étape N sur 6 » côté client
+    et « sur 7 » côté atelier. À trancher en phase 2 (T-141).
+12. **Le texte du consentement et des conditions** du lien participant (§0.5) : texte légal,
+    jamais rédigé d'office (T-142).
 
 ---
 
