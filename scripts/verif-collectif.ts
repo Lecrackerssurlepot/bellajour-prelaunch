@@ -97,6 +97,18 @@ import {
 } from "@/lib/collectif/plafonds";
 import { estTypeNote, ROLES, TYPES_NOTE, type Role } from "@/lib/collectif/types";
 import {
+  demandePossible,
+  estJour,
+  etapesLivraison,
+  formaterJour,
+  lireDemande,
+  lireSaisieLivraison,
+  messageDemande,
+  messageProposition,
+  MOTIFS_MODIFICATION,
+  titreLivraison,
+} from "@/lib/collectif/livraison";
+import {
   apparierPages,
   decoderGris,
   doublesPages,
@@ -1077,6 +1089,48 @@ ok("tour publie, notes envoyees, BAT valide",
    phraseEvenement("tour_publie", { magazine: 1, tour: 2, par: "mathias" }).includes("tour 2 publié") &&
    phraseEvenement("notes_envoyees", { magazine: 1, n: 3 }).includes("3 note") &&
    phraseEvenement("bat_valide", { magazine: 2 }).includes("VALIDÉ"));
+
+
+/* ════════════════════════════ PHASE 6 : L'ATELIER ET LA LIVRAISON ════════════════════════════ */
+
+titre("— demander une modification : un motif, des mots, jusqu'a la validation —");
+ok("cinq motifs, ceux de la maquette", MOTIFS_MODIFICATION.length === 5 && MOTIFS_MODIFICATION.some((m) => m.cle === "autre"));
+ok("sans motif : refuse", !lireDemande({ texte: "x" }).ok);
+ok("« Autre chose » sans un mot : refuse", !lireDemande({ motif: "autre", texte: "  " }).ok);
+{
+  const d = lireDemande({ motif: "pages", texte: "  huit pages pour la soiree  " });
+  ok("un motif et un texte : acceptes, le texte nettoye", d.ok && d.texte === "huit pages pour la soiree" && d.libelle === "Ajouter des pages");
+  ok("le message dit le motif puis le texte", d.ok && messageDemande(d) === "Demande de modification · Ajouter des pages\nhuit pages pour la soiree");
+}
+ok("possible jusqu'au bon a tirer, plus apres",
+   (["preparation", "composition", "bat"] as EtatEdition[]).every(demandePossible) &&
+   !(["bat_valide", "impression", "expediee", "livree"] as EtatEdition[]).some(demandePossible));
+ok("accepter ou reparler d'une proposition : un message sans montant",
+   messageProposition("accepter", "8 pages en plus") === "J'accepte la proposition complémentaire « 8 pages en plus »." &&
+   messageProposition("reparler", "x").startsWith("Je souhaite reparler"));
+ok("aucun montant ecrit dans la phase 6 (le document vient de l'atelier)",
+   ["src/lib/collectif/livraison.ts", "src/app/api/collectif/proposition/route.ts", "src/app/api/collectif/modification/route.ts", "src/app/edition/[token]/atelier/Propositions.tsx"].every((f) => !/€/.test(lire(f))));
+
+titre("— la livraison : un jour du calendrier, des etapes posees par l'atelier —");
+ok("un jour qui existe", estJour("2026-10-29") && !estJour("2026-06-31") && !estJour("29/10/2026") && !estJour(null));
+ok("le jour se lit sans fuseau", formaterJour("2026-10-29") === "jeudi 29 octobre 2026" && formaterJour("x") === "");
+{
+  const s1 = lireSaisieLivraison({ adresse: "  Maison Essai\r\n12 rue du Port  ", prevue_le: "" });
+  ok("l'adresse garde ses lignes, un jour vide reste vide", s1.ok && s1.adresse === "Maison Essai\n12 rue du Port" && s1.prevue_le === null);
+  ok("un jour illisible : refuse", !lireSaisieLivraison({ prevue_le: "2026-13-01" }).ok);
+}
+{
+  const e = etapesLivraison("impression", { bat_valide: "21 octobre", impression: "22 octobre", expediee: "x" });
+  ok("a l'impression : BAT fait, impression en cours, le reste a venir",
+     e[0].faite && !e[0].courante && e[1].courante && !e[2].faite && !e[3].faite);
+  ok("une date ne s'affiche que pour une etape atteinte", e[0].quand === "21 octobre" && e[2].quand === null);
+  const l = etapesLivraison("livree", {});
+  ok("livree : tout est fait, la derniere est la courante", l.every((x) => x.faite) && l[3].courante && l.filter((x) => x.courante).length === 1);
+}
+ok("le titre suit l'etape", titreLivraison("bat_valide").includes("validé") && titreLivraison("expediee") === "Votre magazine arrive." && titreLivraison("livree").includes("arrivé"));
+ok("le journal de la phase 6 se lit en francais",
+   phraseEvenement("modification_demandee", { motif: "Ajouter des pages" }).includes("Ajouter des pages") &&
+   phraseEvenement("proposition_acceptee", { libelle: "Option" }).includes("acceptée"));
 
 titre("— chaque porte du B2B lit l'interrupteur —");
 const layouts = ["src/app/edition/layout.tsx", "src/app/depot/layout.tsx", "src/app/admin/collectif/layout.tsx"];

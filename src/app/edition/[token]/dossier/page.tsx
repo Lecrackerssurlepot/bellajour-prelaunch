@@ -66,6 +66,7 @@ export default async function PageDossier({ params }: { params: Promise<{ token:
                       <br />
                       <span className="ec-note">
                         {d.libelleType} · {formaterInstantParis(d.quand)}
+                        {d.statut ? ` · ${d.statut}` : ''}
                       </span>
                     </span>
                     {d.url ? (

@@ -109,6 +109,14 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return `Magazine ${String(payload.magazine)} : note sur la couverture.`;
     case "bat_valide":
       return `Magazine ${String(payload.magazine)} : bon à tirer VALIDÉ par le client.`;
+    case "modification_demandee":
+      return `Demande de modification du client : ${String(payload.motif ?? "")}.`;
+    case "proposition_acceptee":
+      return `Proposition complémentaire acceptée par le client : ${String(payload.libelle ?? "")}.`;
+    case "proposition_a_reparler":
+      return `Le client veut reparler de la proposition : ${String(payload.libelle ?? "")}.`;
+    case "livraison_reglee":
+      return `Adresse ou jour de livraison réglés par ${par}.`;
     case "style_cree":
       return `Style créé par ${par}.`;
     case "style_modifie": {

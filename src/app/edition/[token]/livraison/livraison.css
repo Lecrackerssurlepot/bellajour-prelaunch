@@ -1,0 +1,139 @@
+/* La livraison — monde SOMBRE, tout sous `.ec-espace`. */
+
+.ec-espace .ec-livraison-tete {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.ec-espace .ec-livraison-prevue {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(214, 138, 99, 0.45);
+  background: var(--ec-orange-voile);
+}
+.ec-espace .ec-livraison-prevue strong {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 26px;
+}
+.ec-espace .ec-livraison-etapes {
+  list-style: none;
+  margin: 0 0 32px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.ec-espace .ec-livraison-etape {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 26px;
+  color: var(--ec-blanc-56);
+}
+/* Le fil qui relie les étapes. */
+.ec-espace .ec-livraison-etape::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: 16px;
+  right: -12px;
+  height: 2px;
+  background: var(--ec-filet-fort);
+}
+.ec-espace .ec-livraison-etape:last-child::before {
+  display: none;
+}
+.ec-espace .ec-livraison-etape--faite::before,
+.ec-espace .ec-livraison-etape--courante::before {
+  background: rgba(214, 138, 99, 0.55);
+}
+.ec-espace .ec-livraison-etape--courante::before {
+  background: linear-gradient(90deg, rgba(214, 138, 99, 0.55), var(--ec-filet-fort));
+}
+.ec-espace .ec-livraison-point {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--ec-filet-fort);
+  background: var(--ec-fond);
+  box-sizing: border-box;
+}
+.ec-espace .ec-livraison-etape--faite .ec-livraison-point {
+  border-color: var(--ec-orange);
+  background: var(--ec-orange);
+}
+.ec-espace .ec-livraison-etape--courante .ec-livraison-point {
+  border-color: var(--ec-orange);
+  background: var(--ec-orange);
+  box-shadow: 0 0 0 6px rgba(214, 138, 99, 0.2);
+}
+.ec-espace .ec-livraison-etape--faite,
+.ec-espace .ec-livraison-etape--courante {
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-livraison-libelle {
+  font-weight: 500;
+}
+.ec-espace .ec-livraison-ligne {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ec-filet);
+}
+.ec-espace .ec-livraison-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-livraison-copier {
+  flex: none;
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.ec-espace .ec-livraison-adresse {
+  white-space: pre-line;
+  color: var(--ec-blanc);
+}
+
+@media (max-width: 760px) {
+  /* Le numéro de suivi passe sous son libellé : côte à côte, il se coupait. */
+  .ec-espace .ec-livraison-ligne {
+    flex-wrap: wrap;
+  }
+  .ec-espace .ec-livraison-etapes {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  .ec-espace .ec-livraison-etape {
+    padding: 0 0 0 30px;
+  }
+  .ec-espace .ec-livraison-etape::before {
+    top: 18px;
+    left: 7px;
+    right: auto;
+    bottom: -18px;
+    width: 2px;
+    height: auto;
+  }
+  .ec-espace .ec-livraison-etape--courante::before {
+    background: var(--ec-filet-fort);
+  }
+}

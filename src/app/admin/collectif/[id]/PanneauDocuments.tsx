@@ -65,7 +65,10 @@ export default function PanneauDocuments({ id, documents }: { id: string; docume
               <span>
                 {d.libelle} <span className="eca-sous">{d.libelleType}</span>
               </span>
-              <span className="eca-sous">{formaterInstantParis(d.quand)}</span>
+              <span className="eca-sous">
+                {formaterInstantParis(d.quand)}
+                {d.statut ? ` · ${d.statut}` : ""}
+              </span>
             </li>
           ))}
         </ul>

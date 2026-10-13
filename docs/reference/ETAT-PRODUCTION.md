@@ -29,6 +29,12 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
   1 à 3 publiés, proposition 1 choisie, **BAT VALIDÉ** le 13/10. Fichiers sur R2 sous
   `collectif/dcf95f15-…/tours/`. Un tour publié est figé par la base : ces tours ne se
   suppriment pas, l'édition s'archive.
+- **Phase 6 faite** (T-145) : parler à l'atelier, la livraison. **Seconde édition d'essai
+  créée le 13/10 : « Essai livraison (Claude) »** (un magazine, tirage 40, adresse du
+  responsable `recette-collectif@bellajour.fr`, aucun mail ne part), menée jusqu'à **« Livrée »**
+  : un tour publié, une demande de modification, deux propositions complémentaires (des PDF
+  d'essai) acceptées, BAT validé « sans préférence », impression, expédition Colissimo avec le
+  numéro fictif `TESTCOLLECTIF01`, livrée. À archiver quand Mathias l'aura regardée.
 - ⚠️ **Le style « Essai technique Claude » est PUBLIÉ** (13/10) pour que le mur de la recette
   ne soit pas vide : il apparaîtra sur le mur de TOUTE édition tant qu'il l'est. Le retirer du
   mur (`/admin/collectif/styles`, « Retirer du mur ») dès que Mathias a publié un vrai style.

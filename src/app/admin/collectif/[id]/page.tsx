@@ -18,6 +18,7 @@ import PanneauDocuments from "./PanneauDocuments";
 import PanneauGestes from "./PanneauGestes";
 import PanneauMessages from "./PanneauMessages";
 import PanneauLiens from "./PanneauLiens";
+import PanneauLivraison from "./PanneauLivraison";
 import "../../admin.css";
 import "../../atelier/atelier.css";
 import "../collectif.css";
@@ -132,6 +133,12 @@ export default async function PageFiche({ params }: { params: Promise<{ id: stri
           <PanneauGestes id={e.id} etat={etat} archivee={Boolean(e.archive_le)} />
           <PanneauCollecte id={e.id} {...collecte} />
           <PanneauDocuments id={e.id} documents={documents} />
+          <PanneauLivraison
+            id={e.id}
+            livraison={e.livraison ?? {}}
+            expedieeTexte={formaterInstantParis(e.livraison?.expediee_le ?? null)}
+            livreeTexte={formaterInstantParis(e.livraison?.livree_le ?? null)}
+          />
 
           <section className="ate-carte">
             <h2 className="ate-carte-titre">Magazines</h2>

@@ -12,7 +12,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { signerGet } from "@/lib/atelier/r2";
 import { chargerAcces } from "@/lib/collectif/acces";
 import { styleVisible } from "@/lib/collectif/brief";
-import { formaterInstantParis } from "@/lib/collectif/dates";
+import { formaterInstantParis, formaterJourParis } from "@/lib/collectif/dates";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { lireMessages } from "@/lib/collectif/messagerie";
 import type { Message } from "@/lib/collectif/messages";
@@ -107,6 +107,8 @@ export type DocumentDossier = {
   libelle: string;
   quand: string;
   url: string | null;
+  /** « Acceptée le … » pour une proposition complémentaire ; posé par l'atelier ou par le client. */
+  statut: string | null;
 };
 
 export type Dossier = { documents: DocumentDossier[]; messages: Message[] };
@@ -116,7 +118,7 @@ export async function chargerDossier(edition: EditionLigne): Promise<Dossier> {
   const [docs, fil] = await Promise.all([
     supabase
       .from("collectif_documents")
-      .select("id, type, libelle, r2_key, created_at")
+      .select("id, type, libelle, r2_key, statut_texte, created_at")
       .eq("edition_id", edition.id)
       .order("created_at", { ascending: false }),
     lireMessages(supabase, edition.id, null),
@@ -125,7 +127,7 @@ export async function chargerDossier(edition: EditionLigne): Promise<Dossier> {
   if (!fil.ok) throw new Error(`[collectif] messages du dossier : ${fil.code}`);
 
   const documents = await Promise.all(
-    ((docs.data ?? []) as { id: string; type: string; libelle: string; r2_key: string | null; created_at: string }[]).map(
+    ((docs.data ?? []) as { id: string; type: string; libelle: string; r2_key: string | null; statut_texte: string | null; created_at: string }[]).map(
       async (d) => {
         let url: string | null = null;
         if (d.r2_key) {
@@ -143,6 +145,7 @@ export async function chargerDossier(edition: EditionLigne): Promise<Dossier> {
           libelle: d.libelle,
           quand: d.created_at,
           url,
+          statut: d.statut_texte,
         };
       }
     )
@@ -371,4 +374,48 @@ export async function chargerBat(edition: EditionLigne, rang: number | null): Pr
     }))
   );
   return { magazines, magazine, tours, notes: ((notes.data ?? []) as NoteLigne[]).map(noteVersBat), couvertures };
+}
+
+/* ───────────────────────────── parler à l'atelier, la livraison ───────────────────────────── */
+
+/** Les propositions complémentaires posées par l'atelier (documents de type `proposition`). */
+export async function chargerPropositions(edition: EditionLigne): Promise<DocumentDossier[]> {
+  const { documents } = await chargerDossier(edition);
+  return documents.filter((d) => d.type === "proposition");
+}
+
+export type SuiviLivraison = {
+  /** Le jour où chaque étape a été atteinte, déjà mis en mots (« 21 octobre »). */
+  quand: Partial<Record<"bat_valide" | "impression" | "expediee" | "livree", string>>;
+};
+
+/**
+ * Les dates des étapes, LUES (jamais estimées) : la dernière validation de
+ * BAT des magazines, le geste « Lancer l'impression » du journal, les dates
+ * d'expédition et de livraison posées dans `livraison` par les gestes.
+ */
+export async function chargerSuiviLivraison(edition: EditionLigne): Promise<SuiviLivraison> {
+  const supabase = makeSupabase();
+  const [mags, impression] = await Promise.all([
+    supabase.from("collectif_magazines").select("bat_valide_le").eq("edition_id", edition.id),
+    supabase
+      .from("collectif_evenements")
+      .select("created_at")
+      .eq("edition_id", edition.id)
+      .eq("type", "geste")
+      .eq("payload->>cle", "lancer_impression")
+      .order("created_at", { ascending: false })
+      .limit(1),
+  ]);
+  if (mags.error) echec("magazines de la livraison", mags.error);
+  if (impression.error) echec("journal de la livraison", impression.error);
+  const valides = ((mags.data ?? []) as { bat_valide_le: string | null }[]).map((m) => m.bat_valide_le).filter((x): x is string => Boolean(x));
+  const dernierBat = valides.length === (mags.data ?? []).length && valides.length ? valides.sort().at(-1) ?? null : null;
+  const quand: SuiviLivraison["quand"] = {};
+  if (dernierBat) quand.bat_valide = formaterJourParis(dernierBat);
+  const imp = (impression.data ?? [])[0] as { created_at: string } | undefined;
+  if (imp) quand.impression = formaterJourParis(imp.created_at);
+  if (edition.livraison?.expediee_le) quand.expediee = formaterJourParis(edition.livraison.expediee_le);
+  if (edition.livraison?.livree_le) quand.livree = formaterJourParis(edition.livraison.livree_le);
+  return { quand };
 }

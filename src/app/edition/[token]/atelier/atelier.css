@@ -1,0 +1,41 @@
+/* Parler à l'atelier — monde SOMBRE, tout sous `.ec-espace`. */
+
+.ec-espace .ec-demande {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ec-espace .ec-demande-texte {
+  min-height: 0;
+  padding: 10px 12px;
+  resize: vertical;
+}
+.ec-espace .ec-propositions {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ec-espace .ec-proposition {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(214, 138, 99, 0.45);
+  background: rgba(214, 138, 99, 0.08);
+}
+.ec-espace .ec-proposition p {
+  margin: 4px 0 6px;
+}
+.ec-espace .ec-confirmer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 460px;
+}
+

@@ -166,6 +166,21 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
 - Route client `/api/collectif/bat` : une action par geste, le droit dépend de l'action ; tout
   est refusé hors de l'état `bat` et sur un magazine validé.
 
+**Phase 6 (13/10/2026), parler à l'atelier et la livraison :**
+- **`livraison.ts`** (pur) — ⚠️ **Pas de suivi en direct, pas de créneaux, pas de montant**
+  (PRD §0.5) : le colis, c'est le transporteur, le numéro et le lien que `suivi.ts` sait
+  construire ; le rendez-vous, c'est le lien Google de la fiche ; une proposition
+  complémentaire est un document de l'atelier, et « Accepter » ne paie rien (message, journal,
+  mention sur le document ; le harnais refuse un « € » dans ces fichiers). Les dates des étapes
+  sont LUES (journal, `livraison`, `bat_valide_le`), jamais estimées. Le jour prévu est un
+  `AAAA-MM-JJ` sans heure : il se lit sans fuseau (`formaterJour`).
+- Une demande de modification devient un MESSAGE : l'atelier la lit où il lit tout le reste
+  (compteur de non-lus compris). Possible jusqu'à la validation du bon à tirer.
+- L'acceptation d'une proposition fait foi dans le JOURNAL (`proposition_acceptee`,
+  `payload.document`) : une seconde acceptation est refusée.
+- `livraison` (jsonb) se FUSIONNE, jamais ne se remplace : l'adresse et le jour prévu viennent
+  du panneau de la fiche, le transporteur et le suivi du geste « Marquer expédiée ».
+
 ## L'interrupteur et la migration
 
 - **`COLLECTIF_OUVERT`** (lu à chaque appel, une valeur incomprise FERME) : sans lui,

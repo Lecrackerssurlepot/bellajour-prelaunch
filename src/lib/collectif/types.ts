@@ -96,6 +96,8 @@ export type Livraison = {
   url?: string | null;
   expediee_le?: Horodatage | null;
   livree_le?: Horodatage | null;
+  /** Le jour prévu, réglé par l'atelier (`AAAA-MM-JJ`, sans heure ni fuseau). */
+  prevue_le?: string | null;
 };
 
 export type EditionLigne = {

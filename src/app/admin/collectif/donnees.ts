@@ -127,7 +127,7 @@ export type MagazineFiche = Pick<MagazineLigne, "id" | "rang" | "nom" | "brief_v
 
 export type EntreeJournal = { id: string; quand: string; phrase: string };
 
-export type DocumentFiche = { id: string; libelle: string; libelleType: string; quand: string; par: string | null };
+export type DocumentFiche = { id: string; libelle: string; libelleType: string; quand: string; par: string | null; statut: string | null };
 
 export type Collecte = {
   total: number;
@@ -177,7 +177,7 @@ export async function chargerEdition(
       .limit(100),
     supabase
       .from("collectif_documents")
-      .select("id, type, libelle, created_at, cree_par")
+      .select("id, type, libelle, statut_texte, created_at, cree_par")
       .eq("edition_id", id)
       .order("created_at", { ascending: false }),
     lireMessages(supabase, id, null),
@@ -278,8 +278,8 @@ export async function chargerEdition(
         quand: j.created_at,
         phrase: phraseEvenement(j.type, j.payload ?? {}),
       })),
-      documents: ((docs.data ?? []) as { id: string; type: string; libelle: string; created_at: string; cree_par: string | null }[]).map(
-        (d) => ({ id: d.id, libelle: d.libelle, libelleType: libelleTypeDocument(d.type), quand: d.created_at, par: d.cree_par })
+      documents: ((docs.data ?? []) as { id: string; type: string; libelle: string; statut_texte: string | null; created_at: string; cree_par: string | null }[]).map(
+        (d) => ({ id: d.id, libelle: d.libelle, libelleType: libelleTypeDocument(d.type), quand: d.created_at, par: d.cree_par, statut: d.statut_texte })
       ),
       messages: fil.messages,
     },
