@@ -11,6 +11,7 @@ import { cache } from "react";
 import { makeSupabase } from "@/lib/supabase";
 import { signerGet } from "@/lib/atelier/r2";
 import { chargerAcces } from "@/lib/collectif/acces";
+import { styleVisible } from "@/lib/collectif/brief";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { lireMessages } from "@/lib/collectif/messagerie";
 import type { Message } from "@/lib/collectif/messages";
@@ -144,4 +145,84 @@ export async function chargerDossier(edition: EditionLigne): Promise<Dossier> {
     )
   );
   return { documents, messages: fil.messages };
+}
+
+/* ───────────────────────────── le mur des styles ───────────────────────────── */
+
+export type StyleMur = {
+  id: string;
+  slug: string;
+  nom: string;
+  description: string | null;
+  palettes: { cle: string; nom: string; couleurs: string[] }[];
+  typos: { titres: string; texte: string; echantillon: string | null };
+  couvertures: { cle: string; url: string | null; legende: string }[];
+  doubles: { type: string; url: string | null; legende: string }[];
+};
+
+export type MagazineMur = {
+  id: string;
+  rang: number;
+  nom: string;
+  style_id: string | null;
+  palette_cle: string | null;
+  texte: string | null;
+  doubles: string[];
+  couvertures_aimees: { style_id: string; couverture: string }[];
+  brief_valide_le: string | null;
+};
+
+async function signerOuRien(key: string | null | undefined): Promise<string | null> {
+  if (!key) return null;
+  try {
+    return await signerGet(key);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Les styles PUBLIÉS que le public de l'édition peut voir (`styleVisible`),
+ * dans l'ordre du mur, chaque image signée pour une heure ; et les
+ * magazines avec leur brief.
+ */
+export async function chargerMur(edition: EditionLigne): Promise<{ styles: StyleMur[]; magazines: MagazineMur[] }> {
+  const supabase = makeSupabase();
+  const [st, mags] = await Promise.all([
+    supabase
+      .from("collectif_styles")
+      .select("id, slug, nom, description, segment, palettes, typos, couvertures, doubles, ordre")
+      .eq("publie", true)
+      .order("ordre", { ascending: true })
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("collectif_magazines")
+      .select("id, rang, nom, style_id, palette_cle, texte, doubles, couvertures_aimees, brief_valide_le")
+      .eq("edition_id", edition.id)
+      .order("rang", { ascending: true }),
+  ]);
+  if (st.error) echec("styles du mur", st.error);
+  if (mags.error) echec("magazines du mur", mags.error);
+
+  type Brut = {
+    id: string; slug: string; nom: string; description: string | null; segment: string;
+    palettes: { cle: string; nom: string; couleurs: string[] }[] | null;
+    typos: { titres?: string; texte?: string; echantillon_key?: string | null } | null;
+    couvertures: { cle: string; image_key: string; legende: string }[] | null;
+    doubles: { type: string; image_key: string | null; legende: string }[] | null;
+  };
+  const visibles = ((st.data ?? []) as Brut[]).filter((s) => styleVisible(edition.styles_segment, s.segment));
+  const styles = await Promise.all(
+    visibles.map(async (s) => ({
+      id: s.id,
+      slug: s.slug,
+      nom: s.nom,
+      description: s.description,
+      palettes: s.palettes ?? [],
+      typos: { titres: s.typos?.titres ?? "", texte: s.typos?.texte ?? "", echantillon: await signerOuRien(s.typos?.echantillon_key) },
+      couvertures: await Promise.all((s.couvertures ?? []).map(async (c) => ({ cle: c.cle, url: await signerOuRien(c.image_key), legende: c.legende }))),
+      doubles: await Promise.all((s.doubles ?? []).map(async (d) => ({ type: d.type, url: await signerOuRien(d.image_key), legende: d.legende }))),
+    }))
+  );
+  return { styles, magazines: (mags.data ?? []) as MagazineMur[] };
 }

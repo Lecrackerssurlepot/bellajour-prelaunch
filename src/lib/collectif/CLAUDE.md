@@ -128,6 +128,18 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
   (vérifié le 13/10 par une requête OPTIONS) : le local de recette des photos tourne donc sur
   3000 (`.claude/launch.json` « Next.js prod 3000 collectif »).
 
+**Phase 4 (13/10/2026), le style :**
+- **`brief.ts`** (pur) — LA RÈGLE DE MATHIAS est dans `lireChoixStyle` (une palette d'un autre
+  style est refusée) et `basculerCouverture` (une couverture de n'importe quel style publié,
+  plafonnée par `couvertures_aimees_max`, `null` = refusé). `briefModifiable` : seulement en
+  `preparation`. Changer un brief validé le remet à valider. `styleVisible` : une école voit
+  les styles « école » et « tous ».
+- Une seule route, `/api/collectif/brief`, une action par geste ; le droit change selon
+  l'action (`valider_brief` pour valider ou rouvrir, `choisir_style` pour le reste).
+- Le mur et la page d'un style lisent `chargerMur` (styles PUBLIÉS et visibles, images signées
+  une heure). Un style dépublié disparaît du mur ; un brief qui le nomme reste lisible côté
+  atelier (la fiche lit le style par son id, publié ou non).
+
 ## L'interrupteur et la migration
 
 - **`COLLECTIF_OUVERT`** (lu à chaque appel, une valeur incomprise FERME) : sans lui,

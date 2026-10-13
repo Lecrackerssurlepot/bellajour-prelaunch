@@ -69,6 +69,18 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return "Un signalement de photo retiré.";
     case "provenance_creee":
       return `Lien de dépôt créé : ${String(payload.libelle ?? "")}${payload.sansPlafond ? " (sans plafond)" : ""}.`;
+    case "brief_style_choisi":
+      return `Magazine ${String(payload.magazine)} : style ${String(payload.style ?? "")} choisi par le client.`;
+    case "brief_valide":
+      return `Magazine ${String(payload.magazine)} : brief validé par le client.`;
+    case "brief_rouvert":
+      return `Magazine ${String(payload.magazine)} : brief rouvert par le client.`;
+    case "brief_repris":
+      return `Magazine ${String(payload.magazine)} : style repris du magazine ${String(payload.depuis)}.`;
+    case "couverture_aimee":
+      return `Magazine ${String(payload.magazine)} : une couverture aimée.`;
+    case "couverture_retiree":
+      return `Magazine ${String(payload.magazine)} : une couverture n'est plus aimée.`;
     case "style_cree":
       return `Style créé par ${par}.`;
     case "style_modifie": {

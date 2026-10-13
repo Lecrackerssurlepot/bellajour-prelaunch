@@ -376,6 +376,43 @@
   margin-bottom: 2px;
 }
 
+.eca-root .eca-mag-liste li.eca-mag-brief {
+  flex-direction: column;
+  gap: 6px;
+}
+.eca-root .eca-mag-ligne {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--bj-sp-3);
+}
+.eca-root .eca-brief {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-bandes {
+  display: flex;
+  height: 14px;
+  width: 140px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.eca-root .eca-bandes > span {
+  flex: 1;
+}
+.eca-root .eca-aimees {
+  display: flex;
+  gap: 6px;
+}
+.eca-root .eca-aimees img {
+  width: 44px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
 /* ─────────────────────────────── les styles ─────────────────────────────── */
 
 .eca-root .eca-styles {

@@ -111,6 +111,14 @@ export type MagazineFiche = Pick<MagazineLigne, "id" | "rang" | "nom" | "brief_v
   toursPublies: number;
   /** Ni brief commencé, ni tour : il peut se retirer (le dernier seulement). */
   vide: boolean;
+  /** Le brief, lisible par l'atelier (phase 4). */
+  brief: {
+    style: string | null;
+    palette: { nom: string; couleurs: string[] } | null;
+    texte: string | null;
+    doubles: string[];
+    aimees: { style: string; url: string | null }[];
+  };
 };
 
 export type EntreeJournal = { id: string; quand: string; phrase: string };
@@ -154,7 +162,7 @@ export async function chargerEdition(
   const [mags, journal, docs, fil, photos] = await Promise.all([
     supabase
       .from("collectif_magazines")
-      .select("id, rang, nom, style_id, brief_valide_le, bat_valide_le")
+      .select("id, rang, nom, style_id, palette_cle, texte, doubles, couvertures_aimees, brief_valide_le, bat_valide_le")
       .eq("edition_id", id)
       .order("rang", { ascending: true }),
     supabase
@@ -211,6 +219,37 @@ export async function chargerEdition(
     parProvenance: resumeDeposants(lignesPhotos),
   };
 
+  /* Les styles que les briefs nomment (choisis ou aimés), pour les lire en clair. */
+  type MagBrut = MagazineLigne & { style_id: string | null };
+  const magsBruts = (mags.data ?? []) as MagBrut[];
+  const idsStyles = [...new Set(magsBruts.flatMap((m) => [m.style_id, ...(m.couvertures_aimees ?? []).map((a) => a.style_id)]).filter(Boolean))] as string[];
+  const stylesLus = idsStyles.length
+    ? await supabase.from("collectif_styles").select("id, nom, palettes, couvertures").in("id", idsStyles)
+    : { data: [], error: null };
+  if (stylesLus.error) echec("styles des briefs", stylesLus.error);
+  const parStyle = new Map(
+    ((stylesLus.data ?? []) as { id: string; nom: string; palettes: { cle: string; nom: string; couleurs: string[] }[]; couvertures: { cle: string; image_key: string }[] }[]).map((x) => [x.id, x])
+  );
+  const briefs = new Map<string, MagazineFiche["brief"]>();
+  for (const m of magsBruts) {
+    const st = m.style_id ? parStyle.get(m.style_id) : undefined;
+    const pal = st?.palettes?.find((x) => x.cle === m.palette_cle);
+    const aimees = await Promise.all(
+      (m.couvertures_aimees ?? []).map(async (a) => {
+        const s2 = parStyle.get(a.style_id);
+        const c = s2?.couvertures?.find((x) => x.cle === a.couverture);
+        return { style: s2?.nom ?? "?", url: c ? await signerOuRien(c.image_key) : null };
+      })
+    );
+    briefs.set(m.id, {
+      style: st?.nom ?? null,
+      palette: pal ? { nom: pal.nom, couleurs: pal.couleurs } : null,
+      texte: m.texte,
+      doubles: m.doubles ?? [],
+      aimees,
+    });
+  }
+
   return {
     absent: false,
     fiche: {
@@ -227,6 +266,7 @@ export async function chargerEdition(
           bat_valide_le: m.bat_valide_le,
           toursPublies: t.publies,
           vide: !m.style_id && !m.brief_valide_le && t.total === 0,
+          brief: briefs.get(m.id) ?? { style: null, palette: null, texte: null, doubles: [], aimees: [] },
         };
       }),
       journal: ((journal.data ?? []) as Pick<EvenementLigne, "id" | "type" | "payload" | "created_at">[]).map((j) => ({

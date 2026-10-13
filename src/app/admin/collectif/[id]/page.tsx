@@ -9,6 +9,8 @@ import { LIBELLE_ETAT_EDITION } from "@/lib/collectif/etats";
 import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
 import { MIGRATION_COLLECTIF } from "@/lib/collectif/migration";
 import { LIBELLE_CAMP, prochaineEtape } from "@/lib/collectif/prochaine";
+import { PARTS_TEXTE } from "@/lib/collectif/brief";
+import { TYPES_DOUBLES } from "@/lib/collectif/styles";
 import { chargerEdition } from "../donnees";
 import FormulaireEdition, { type ValeursEdition } from "../FormulaireEdition";
 import PanneauCollecte from "./PanneauCollecte";
@@ -135,19 +137,47 @@ export default async function PageFiche({ params }: { params: Promise<{ id: stri
             <h2 className="ate-carte-titre">Magazines</h2>
             <ul className="eca-mag-liste">
               {magazines.map((m) => (
-                <li key={m.id}>
-                  <span>
-                    {m.rang}. {m.nom}
+                <li key={m.id} className="eca-mag-brief">
+                  <span className="eca-mag-ligne">
+                    <span>
+                      {m.rang}. {m.nom}
+                    </span>
+                    <span className="eca-sous">
+                      {m.bat_valide_le
+                        ? "BAT validé"
+                        : m.toursPublies > 0
+                          ? `Tour ${m.toursPublies} publié`
+                          : m.brief_valide_le
+                            ? `Brief validé le ${formaterInstantParis(m.brief_valide_le)}`
+                            : m.brief.style
+                              ? "Brief en cours"
+                              : "Brief à faire"}
+                    </span>
                   </span>
-                  <span className="eca-sous">
-                    {m.bat_valide_le
-                      ? "BAT validé"
-                      : m.toursPublies > 0
-                        ? `Tour ${m.toursPublies} publié`
-                        : m.brief_valide_le
-                          ? "Brief validé"
-                          : "Brief à faire"}
-                  </span>
+                  {m.brief.style ? (
+                    <span className="eca-brief">
+                      <span>
+                        Style <strong>{m.brief.style}</strong>
+                        {m.brief.palette ? `, palette ${m.brief.palette.nom}` : ""}
+                      </span>
+                      {m.brief.palette ? (
+                        <span className="eca-bandes">
+                          {m.brief.palette.couleurs.map((c, i) => (
+                            <span key={i} style={{ background: c }} />
+                          ))}
+                        </span>
+                      ) : null}
+                      <span>Texte : {PARTS_TEXTE.find((t) => t.cle === m.brief.texte)?.libelle ?? "?"}</span>
+                      <span>Doubles : {m.brief.doubles.map((d) => TYPES_DOUBLES.find((t) => t.cle === d)?.libelle).join(", ") || "?"}</span>
+                    </span>
+                  ) : null}
+                  {m.brief.aimees.length ? (
+                    <span className="eca-aimees">
+                      {m.brief.aimees.map((a, i) =>
+                        a.url ? <img key={i} src={a.url} alt={`Couverture aimée (${a.style})`} title={a.style} /> : <span key={i}>{a.style}</span>
+                      )}
+                    </span>
+                  ) : null}
                 </li>
               ))}
             </ul>

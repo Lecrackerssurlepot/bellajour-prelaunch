@@ -63,6 +63,7 @@ import {
   type MagazinePourGeste,
 } from "@/lib/collectif/gestes";
 import { lireInterrupteur } from "@/lib/collectif/interrupteur";
+import { basculerCouverture, briefModifiable, lireChoixStyle, manquesBrief, PARTS_TEXTE, styleVisible } from "@/lib/collectif/brief";
 import { cleFichier, compteDansPlafond, DELAI_DECLARATION_MORTE_MS, lireDeclaration, LOT_DECLARATION, planDeclaration, type Existant } from "@/lib/collectif/depot";
 import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
 import { jourDePhoto, libelleProvenance, lireFiltre, resumeDeposants } from "@/lib/collectif/grille";
@@ -797,6 +798,43 @@ ok("qui a depose : par provenance et deposant, le plus fourni d'abord",
      { provenance_type: "participant", deposant: "Camille" },
    ])) === JSON.stringify([{ libelle: "Un participant · Camille", n: 2 }, { libelle: "Le photographe · Studio X", n: 1 }]));
 ok("le responsable se nomme comme tel", libelleProvenance("organisateur", "Lou") === "Le responsable · Lou");
+
+
+/* ═══════════════════════════ PHASE 4 : LE STYLE ET LE BRIEF ═══════════════════════════ */
+
+titre("— la regle de Mathias : l'interieur suit le style, la couverture peut venir d'ailleurs —");
+const riviera = { id: "s-riv", publie: true, palettes: [{ cle: "marine" }, { cle: "sable" }], couvertures: [{ cle: "c1" }, { cle: "c2" }] };
+const nuit = { id: "s-nuit", publie: true, palettes: [{ cle: "noir" }], couvertures: [{ cle: "n1" }] };
+const choix = lireChoixStyle({ palette_cle: "sable", texte: "peu", doubles: ["recit", "aeree", "pirate"] }, riviera);
+ok("choisir un style : sa palette, la part de texte, ses doubles (inconnues ignorees, ordre du style), brief remis a valider",
+   choix.ok && choix.patch.style_id === "s-riv" && choix.patch.palette_cle === "sable" && choix.patch.texte === "peu"
+   && choix.patch.doubles.join() === "aeree,recit" && choix.patch.brief_valide_le === null);
+ok("une palette d'un AUTRE style est refusee (l'interieur suit le style)",
+   !lireChoixStyle({ palette_cle: "noir", texte: "peu", doubles: ["aeree"] }, riviera).ok);
+ok("sans double page, ou sans la place du texte : refuse",
+   !lireChoixStyle({ palette_cle: "sable", texte: "peu", doubles: [] }, riviera).ok
+   && !lireChoixStyle({ palette_cle: "sable", doubles: ["aeree"] }, riviera).ok);
+ok("un style non publie ne se choisit pas", !lireChoixStyle({ palette_cle: "sable", texte: "peu", doubles: ["aeree"] }, { ...riviera, publie: false }).ok);
+ok("trois parts de texte, libelles de la maquette", PARTS_TEXTE.map((t) => t.libelle).join(" | ") === "Surtout des photos | Un peu de texte | Beaucoup de texte");
+
+titre("— les couvertures aimees : de n'importe quel style, plafonnees, jamais devinees —");
+const b1 = basculerCouverture([], { style_id: "s-nuit", couverture: "n1" }, true, 2, nuit);
+ok("aimer une couverture d'un AUTRE style que celui du magazine : permis", b1.ok && b1.aimees.length === 1);
+ok("au plafond, une de plus est refusee avec la phrase",
+   (() => { const b = basculerCouverture([{ style_id: "s-riv", couverture: "c1" }, { style_id: "s-riv", couverture: "c2" }], { style_id: "s-nuit", couverture: "n1" }, true, 2, nuit); return !b.ok && b.message.includes("2 couvertures"); })());
+ok("plafond non regle par l'atelier : refuse (on n'invente pas de chiffre)",
+   !basculerCouverture([], { style_id: "s-nuit", couverture: "n1" }, true, null, nuit).ok);
+ok("ne plus aimer marche toujours, meme sans plafond",
+   (() => { const b = basculerCouverture([{ style_id: "s-nuit", couverture: "n1" }], { style_id: "s-nuit", couverture: "n1" }, false, null, null); return b.ok && b.aimees.length === 0; })());
+ok("une couverture qui n'existe pas dans le style est refusee",
+   !basculerCouverture([], { style_id: "s-nuit", couverture: "zz" }, true, 3, nuit).ok);
+
+titre("— valider, et jusqu'a quand —");
+ok("ce qui manque se nomme", manquesBrief({ style_id: null, palette_cle: null, texte: null, doubles: [] }).length === 4
+   && manquesBrief({ style_id: "s", palette_cle: "p", texte: "peu", doubles: ["aeree"] }).length === 0);
+ok("le brief ne bouge plus apres la cloture", briefModifiable("preparation") && !briefModifiable("composition") && !briefModifiable("bat"));
+ok("le mur d'une ecole voit les styles ecole et tous, pas entreprise",
+   styleVisible("ecole", "ecole") && styleVisible("ecole", "tous") && !styleVisible("ecole", "entreprise") && styleVisible("tous", "entreprise"));
 
 /* ═══════════════════════════ LES GARDES DANS LES FICHIERS ═══════════════════════════ */
 
