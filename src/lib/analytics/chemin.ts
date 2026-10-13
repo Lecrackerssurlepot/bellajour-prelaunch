@@ -54,11 +54,16 @@ type RouteDynamique = {
 /* Table des routes dont le segment suivant est une valeur, pas un nom.
    Ordre = préfixe le plus long d'abord ; la première qui matche gagne.
    Ajouter une route dynamique = une entrée ici, plus un cas dans
-   scripts/verif-atelier.ts. */
+   scripts/verif-atelier.ts (scripts/verif-collectif.ts pour les routes de
+   l'Édition collective). */
 const ROUTES_DYNAMIQUES: readonly RouteDynamique[] = [
   { prefixe: '/admin/atelier/demo', statiques: [] },
   { prefixe: '/admin/atelier', statiques: ['demo', 'metriques', 'sante'] },
   { prefixe: '/numero', statiques: [] },
+  /* L'Édition collective (13/10/2026) : le lien responsable ou équipe, et le
+     lien de dépôt partagé aux participants. Trois jetons au porteur. */
+  { prefixe: '/edition', statiques: [] },
+  { prefixe: '/depot', statiques: [] },
 ]
 
 /**

@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Un style en détail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;500;600&family=Fraunces:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+body{margin:0;background:#050505}
+a{color:#d68a63}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="min-height: 2400px; box-sizing: border-box; background: #050505; color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.5; display: flex">
+  <aside aria-label="Navigation de l'espace" style="flex: none; width: 248px; box-sizing: border-box; border-right: 1px solid rgba(255,255,255,0.10); background: #050505; padding: 22px 14px; display: flex; flex-direction: column; gap: 22px">
+    <span style="padding: 0 14px; font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; color: #ffffff">Bellajour</span>
+    <button type="button" aria-label="Changer d'édition" style="margin: 0 2px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); color: #ffffff; font-family: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px">
+      <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">Séminaire d'automne</span><span style="font-size: 12px; color: rgba(255,255,255,0.56)">Maison Aubier</span></span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5-5 5 5M7 14l5 5 5-5"></path></svg>
+    </button>
+    <nav style="display: flex; flex-direction: column; gap: 4px">
+        <a href="Espace.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>Tableau de bord</a>
+        <a href="Styles.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: #ffffff; background: rgba(214,138,99,0.16); font-weight: 600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><circle cx="12" cy="12" r="9"></circle><circle cx="8" cy="10.5" r="1.3"></circle><circle cx="12" cy="7.5" r="1.3"></circle><circle cx="16" cy="10.5" r="1.3"></circle><path d="M12 21a3 3 0 0 1 0-6h2"></path></svg>Style</a>
+        <a href="Collecte.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="M21 16l-5-5-9 8"></path></svg>Photos</a>
+        <span role="link" aria-disabled="true" title="Disponible à la réception du premier bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; font-size: 15px; color: rgba(255,255,255,0.32); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 5h6.5A2.5 2.5 0 0 1 12 7.5V20a2 2 0 0 0-2-2H3z"></path><path d="M21 5h-6.5A2.5 2.5 0 0 0 12 7.5V20a2 2 0 0 1 2-2h7z"></path></svg>Bon à tirer<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+        <span role="link" aria-disabled="true" title="Disponible après la validation du bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; font-size: 15px; color: rgba(255,255,255,0.32); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 6h11v10H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="1.8"></circle><circle cx="17" cy="18" r="1.8"></circle></svg>Livraison<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+    </nav>
+    <div style="height: 1px; margin: 0 14px; background: rgba(255,255,255,0.10)"></div>
+    <nav style="display: flex; flex-direction: column; gap: 4px">
+        <a href="Dossier.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path><path d="M9 13h6M9 17h6"></path></svg>Votre dossier</a>
+        <a href="RendezVous.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M4 5h16v11H9l-5 4z"></path></svg>Parler à l'atelier</a>
+    </nav>
+    <div style="margin-top: auto; padding: 14px; border-top: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center; gap: 12px">
+      <span style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: rgba(214,138,99,0.18); display: inline-flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 600; font-size: 14px">ML</span>
+      <span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 14px; color: #ffffff">Marion Lefèvre</span><span style="font-size: 12px; color: rgba(255,255,255,0.56)">Responsable du bon à tirer</span></span>
+    </div>
+  </aside>
+
+  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 22px 4%; border-bottom: 1px solid rgba(255,255,255,0.10)"><a href="Styles.dc.html" style="font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 500; color: rgba(255,255,255,0.56); text-decoration: none">Le style</a><span style="font-family: 'Cormorant Garamond', serif; font-size: 30px; color: rgba(255,255,255,0.32)">/</span><span style="font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 500">Riviera</span></header>
+
+  <div style="padding: 16px 4%; border-bottom: 1px solid rgba(255,255,255,0.10); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; background: rgba(214,138,99,0.06)">
+    <span style="font-size: 14px; color: rgba(255,255,255,0.56)">Ce style, vous le choisissez pour un magazine</span>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+      <span style="font-size: 14px; color: rgba(255,255,255,0.72)">Pour</span>
+      <sc-for list="{{ magazines }}" as="m" hint-placeholder-count="2">
+        <button type="button" onClick="{{ m.choisir }}" aria-pressed="{{ m.actif }}" style="height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid {{ m.bord }}; background: {{ m.fond }}; color: {{ m.texte }}; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer">{{ m.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <main style="flex: 1; max-width: 1240px; width: 100%; margin: 0 auto; padding: 56px 4% 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 64px">
+
+    <section style="display: flex; flex-wrap: wrap; gap: 56px; align-items: center">
+      <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+          <span style="font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #d68a63">Style</span>
+          <sc-if value="{{ tagAutre }}" hint-placeholder-val="{{ false }}">
+            <span title="Le style que vous avez choisi pour le magazine 1" style="display: inline-flex; align-items: center; height: 26px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.72); font-size: 12px; cursor: help">Sélection du magazine 1</span>
+          </sc-if>
+        </div>
+        <h1 style="margin: 0; font-family: 'Fraunces', serif; font-weight: 400; font-style: italic; font-size: 120px; line-height: 0.9">Riviera</h1>
+        <p style="margin: 0; font-size: 18px; color: rgba(255,255,255,0.72); max-width: 520px">Lumière d'été, bleu outremer et sable. Pour les sorties en mer, les séminaires au soleil, les week-ends au bord de l'eau.</p>
+        <p style="margin: 0; padding-left: 14px; border-left: 2px solid #d68a63; font-size: 15px; color: #ffffff; max-width: 520px">Choisi pour un magazine, ce style en dessine tout l'intérieur. Seule la couverture peut venir d'un autre style.</p>
+      </div>
+      <div style="flex: 1 1 360px; min-width: 0; display: flex; justify-content: center">
+        <div style="width: 100%; max-width: 380px; aspect-ratio: 210 / 297; background: {{ fond }}; padding: 9%; box-sizing: border-box; display: flex; flex-direction: column; gap: 7%; box-shadow: 0 40px 90px rgba(0,0,0,0.85); transition: background 0.4s">
+          <span style="font-family: 'Fraunces', serif; font-size: 52px; line-height: 0.95; color: {{ encre }}">Cap au large</span>
+          <div style="flex: 1; background: {{ photo }}"></div>
+          <span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: {{ encre }}">Édition 2026 · Bellajour</span>
+        </div>
+      </div>
+    </section>
+
+    <section style="position: relative; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px 72px; align-items: start">
+      <span aria-hidden="true" style="position: absolute; top: -40px; left: 34%; font-family: 'Fraunces', serif; font-style: italic; font-size: 280px; line-height: 1; color: rgba(214,138,99,0.08); pointer-events: none">&amp;</span>
+
+      <div style="position: relative; display: flex; flex-direction: column; gap: 22px">
+        <div style="display: flex; align-items: baseline; gap: 14px"><span style="font-family: 'Cormorant Garamond', serif; font-size: 40px; color: #d68a63">1</span><h2 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 40px">La palette</h2></div>
+        <div style="display: flex; height: 340px; border-radius: 4px; overflow: hidden; box-shadow: 0 30px 70px rgba(0,0,0,0.7)">
+          <sc-for list="{{ teintes }}" as="t" hint-placeholder-count="4">
+            <div style="flex: {{ t.flex }}; background: {{ t.couleur }}; display: flex; align-items: flex-end; padding: 12px 10px; transition: background 0.4s"><span style="writing-mode: vertical-rl; transform: rotate(180deg); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: {{ t.encre }}">{{ t.nom }}</span></div>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <sc-for list="{{ palettes }}" as="p" hint-placeholder-count="3">
+            <button type="button" onClick="{{ p.choisir }}" aria-pressed="{{ p.actif }}" style="height: 52px; padding: 0 18px 0 8px; border-radius: 999px; border: 1px solid {{ p.bord }}; background: {{ p.fondBouton }}; color: #ffffff; font-family: inherit; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 12px; text-align: left">
+              <span style="display: flex"><span style="width: 20px; height: 36px; border-radius: 18px 0 0 18px; background: {{ p.c1 }}"></span><span style="width: 20px; height: 36px; background: {{ p.c2 }}"></span><span style="width: 20px; height: 36px; border-radius: 0 18px 18px 0; background: {{ p.c3 }}"></span></span>{{ p.nom }}
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="position: relative; margin-top: 140px; display: flex; flex-direction: column; gap: 26px">
+        <div style="display: flex; align-items: baseline; gap: 14px"><span style="font-family: 'Cormorant Garamond', serif; font-size: 40px; color: #d68a63">2</span><h2 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 40px">Le texte</h2></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding-bottom: 22px; border-bottom: 1px solid rgba(255,255,255,0.14)">
+          <span style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.56)">Titres · Fraunces</span>
+          <span style="font-family: 'Fraunces', serif; font-size: 76px; line-height: 0.95">Cap au large</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-left: 18%">
+          <span style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.56)">Texte · DM Sans</span>
+          <span style="font-family: 'DM Sans', sans-serif; font-size: 18px; line-height: 1.5; color: rgba(255,255,255,0.8)">Le vent tourne au large de l'île, l'équipage se tait, puis tout le monde rit en même temps.</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px">
+          <span style="font-size: 17px">Quelle place pour le texte ?</span>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 4px; border: 1px solid rgba(255,255,255,0.14); border-radius: 16px">
+            <sc-for list="{{ textes }}" as="x" hint-placeholder-count="3">
+              <button type="button" onClick="{{ x.choisir }}" aria-pressed="{{ x.actif }}" style="min-height: 52px; border: 0; border-radius: 12px; background: {{ x.fond }}; color: {{ x.texte }}; font-family: inherit; font-size: 15px; cursor: pointer">{{ x.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px">
+        <div style="display: flex; align-items: baseline; gap: 14px"><span style="font-family: 'Cormorant Garamond', serif; font-size: 40px; color: #d68a63">3</span><h2 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 40px">Vos plus belles doubles pages</h2></div>
+        <span style="color: {{ compteCouleur }}">{{ compteDoubles }}</span>
+      </div>
+      <p style="margin: 0; color: rgba(255,255,255,0.72)">Choisissez-en autant que vous voulez, de une à cinq. Elles nous disent le rythme que vous aimez : beaucoup de blanc, beaucoup de photos, du texte, ou des pages qui surprennent.</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 24px">
+        <sc-for list="{{ doubles }}" as="d" hint-placeholder-count="5">
+          <button type="button" onClick="{{ d.choisir }}" aria-pressed="{{ d.choisie }}" style="padding: 0; border: 0; background: transparent; color: #ffffff; font-family: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 10px">
+            <span style="position: relative; display: flex; width: 100%; aspect-ratio: 420 / 297; background: {{ d.fond }}; flex-direction: {{ d.sens }}; padding: 5%; box-sizing: border-box; gap: 5%; outline: 2px solid {{ d.cadre }}; outline-offset: 5px; transition: background 0.4s">
+              <span style="flex: {{ d.flexPhoto }}; background: {{ d.photo }}"></span>
+              <span style="flex: 1; display: flex; flex-direction: column; gap: 6%">
+                <span style="font-family: 'Fraunces', serif; font-size: {{ d.taille }}; line-height: 1; color: {{ d.encre }}">{{ d.titre }}</span>
+                <span style="flex: {{ d.flexPhoto2 }}; background: {{ d.photo2 }}"></span>
+                <span style="height: 3px; width: 80%; background: {{ d.encre }}; opacity: {{ d.lignes }}"></span>
+                <span style="height: 3px; width: 70%; background: {{ d.encre }}; opacity: {{ d.lignes }}"></span>
+                <span style="height: 3px; width: 60%; background: {{ d.encre }}; opacity: {{ d.lignes }}"></span>
+              </span>
+              <sc-if value="{{ d.choisie }}" hint-placeholder-val="{{ false }}">
+                <span style="position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 50%; background: #d68a63; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></span>
+              </sc-if>
+            </span>
+            <span style="display: flex; flex-direction: column"><strong>{{ d.nom }}</strong><span style="font-size: 14px; color: rgba(255,255,255,0.72)">{{ d.legende }}</span></span>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+
+    <section id="couvertures" style="display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px">
+        <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 40px">Des couvertures de ce style</h2>
+        <span style="color: rgba(255,255,255,0.56)">Facultatif · deux au plus par magazine</span>
+      </div>
+      <p style="margin: 0; color: rgba(255,255,255,0.72); max-width: 720px">Vous pouvez aimer une couverture d'un autre style que celui du magazine : elle changera la couverture, pas les pages intérieures.</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 28px">
+        <sc-for list="{{ couvertures }}" as="c" hint-placeholder-count="3">
+          <article style="display: flex; flex-direction: column; gap: 12px">
+            <div style="aspect-ratio: 210 / 297; background: {{ c.fond }}; padding: 9%; box-sizing: border-box; display: flex; flex-direction: {{ c.sens }}; gap: 7%; outline: 2px solid {{ c.cadre }}; outline-offset: 5px; transition: background 0.4s">
+              <span style="font-family: 'Fraunces', serif; font-size: 40px; line-height: 0.95; color: {{ c.encre }}">Cap au large</span>
+              <div style="flex: 1; background: {{ c.photo }}"></div>
+            </div>
+            <button type="button" onClick="{{ c.basculer }}" aria-pressed="{{ c.aime }}" style="height: 44px; border-radius: 999px; border: 1px solid {{ c.bord }}; background: {{ c.fondBouton }}; color: #ffffff; font-family: inherit; font-size: 14px; cursor: pointer">{{ c.bouton }}</button>
+          </article>
+        </sc-for>
+      </div>
+    </section>
+  </main>
+
+  <footer style="position: sticky; bottom: 0; border-top: 1px solid rgba(255,255,255,0.12); background: rgba(5,5,5,0.94); padding: 18px 4%; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px">
+    <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+      <span>{{ resume }}</span>
+      <span style="font-size: 13px; color: {{ aideCouleur }}">{{ aide }}</span>
+    </div>
+    <a href="Styles.dc.html" style="display: inline-flex; align-items: center; height: 48px; padding: 0 22px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); color: #ffffff; text-decoration: none">Revenir sans choisir</a>
+    <a href="Styles.dc.html" style="display: inline-flex; align-items: center; height: 48px; padding: 0 26px; border-radius: 999px; background: {{ choisirFond }}; color: #050505; text-decoration: none; font-weight: 600">{{ choisirLabel }}</a>
+  </footer>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const PAL = {
+      sable: { nom: 'Sable', fond: '#e9dcc6', encre: '#1d3557', accent: '#2f5d8a', douce: '#f6efe3', noms: ['Sable', 'Marine', 'Outremer', 'Écume'] },
+      marine: { nom: 'Marine', fond: '#1d3557', encre: '#f6efe3', accent: '#7fa7c9', douce: '#2f5d8a', noms: ['Marine', 'Écume', 'Ciel', 'Outremer'] },
+      ecume: { nom: 'Écume', fond: '#f6efe3', encre: '#2f5d8a', accent: '#9fb7c9', douce: '#e9dcc6', noms: ['Écume', 'Outremer', 'Brume', 'Sable'] }
+    };
+    const mag = s.mag || 1;
+    const cle = s.palette || 'sable';
+    const P = PAL[cle];
+    const choisies = s.doubles || ['aeree'];
+    const texte = s.texte || null;
+    const couvs = s.couvs || [];
+    const ph = (a, b, angle) => 'linear-gradient(' + angle + 'deg, ' + a + ', ' + b + ')';
+
+    const magazines = [1, 2].map((n) => {
+      const actif = mag === n;
+      return { label: 'Magazine ' + n, actif: actif, fond: actif ? '#ffffff' : 'transparent', texte: actif ? '#050505' : '#ffffff', bord: actif ? '#ffffff' : 'rgba(255,255,255,0.22)', choisir: () => this.setState({ mag: n }) };
+    });
+    const palettes = Object.keys(PAL).map((k) => {
+      const actif = k === cle;
+      return { nom: PAL[k].nom, actif: actif, c1: PAL[k].fond, c2: PAL[k].encre, c3: PAL[k].accent, bord: actif ? '#d68a63' : 'rgba(255,255,255,0.22)', fondBouton: actif ? 'rgba(214,138,99,0.22)' : 'transparent', choisir: () => this.setState({ palette: k }) };
+    });
+
+    const base = [
+      ['aeree', 'Aérée', 'Une grande photo, beaucoup de blanc.', 'Jour un', 'row', '1.8', '0.6', '22px', '0.3', P.douce, P.encre],
+      ['equilibree', 'Équilibrée', 'Photos et texte à parts égales.', 'La traversée', 'row-reverse', '1', '1', '22px', '0.6', P.douce, P.encre],
+      ['dense', 'Dense', 'Beaucoup de photos, en mosaïque.', 'Le soir', 'row', '1', '2.4', '18px', '0.2', P.fond, P.encre],
+      ['recit', 'Récit', 'Une page de texte, une photo en regard.', 'Le mot du capitaine', 'row-reverse', '0.8', '0.3', '20px', '1', P.douce, P.encre],
+      ['audacieuse', 'Audacieuse', 'Photo coupée, titre géant, page qui surprend.', 'CAP', 'row', '0.6', '1', '64px', '0.3', P.encre, P.fond]
+    ];
+    const doubles = base.map((d) => {
+      const choisie = choisies.indexOf(d[0]) !== -1;
+      return {
+        nom: d[1], legende: d[2], titre: d[3], sens: d[4], flexPhoto: d[5], flexPhoto2: d[6], taille: d[7], lignes: d[8], fond: d[9], encre: d[10],
+        photo: ph(P.accent, P.douce, 135), photo2: ph(P.douce, P.accent, 200),
+        choisie: choisie,
+        cadre: choisie ? '#d68a63' : 'transparent',
+        choisir: () => {
+          if (choisie) this.setState({ doubles: choisies.filter((x) => x !== d[0]) });
+          else this.setState({ doubles: choisies.concat([d[0]]) });
+        }
+      };
+    });
+
+    const textes = [['peu', 'Surtout des photos'], ['unpeu', 'Un peu de texte'], ['beaucoup', 'Beaucoup de texte']].map((o) => {
+      const actif = texte === o[0];
+      return { label: o[1], actif: actif, fond: actif ? '#ffffff' : 'transparent', texte: actif ? '#050505' : '#ffffff', choisir: () => this.setState({ texte: o[0] }) };
+    });
+
+    const couvertures = [
+      ['c1', P.fond, P.encre, 'column', ph(P.accent, P.douce, 135)],
+      ['c2', P.encre, P.fond, 'column-reverse', ph(P.douce, P.accent, 160)],
+      ['c3', P.douce, P.encre, 'column', ph(P.encre, P.fond, 200)]
+    ].map((c) => {
+      const aime = couvs.indexOf(c[0]) !== -1;
+      return {
+        fond: c[1], encre: c[2], sens: c[3], photo: c[4], aime: aime,
+        cadre: aime ? '#d68a63' : 'transparent',
+        bord: aime ? '#d68a63' : 'rgba(255,255,255,0.22)',
+        fondBouton: aime ? 'rgba(214,138,99,0.22)' : 'transparent',
+        bouton: aime ? 'Aimée · retirer' : 'J’aime cette couverture',
+        basculer: () => {
+          if (aime) this.setState({ couvs: couvs.filter((x) => x !== c[0]) });
+          else if (couvs.length < 2) this.setState({ couvs: couvs.concat([c[0]]) });
+        }
+      };
+    });
+
+    const nomsDoubles = base.filter((d) => choisies.indexOf(d[0]) !== -1).map((d) => d[1]);
+    const complet = nomsDoubles.length >= 1 && !!texte;
+    const manque = [];
+    if (nomsDoubles.length < 1) manque.push('au moins une double page');
+    if (!texte) manque.push('la question du texte');
+
+    return {
+      magazines: magazines,
+      palettes: palettes,
+      teintes: [P.fond, P.encre, P.accent, P.douce].map((c, i) => ({ couleur: c, nom: P.noms[i], flex: ['3', '2', '1.2', '0.8'][i], encre: (c === P.encre) ? P.fond : P.encre })),
+      tagAutre: mag === 2,
+      fond: P.fond,
+      encre: P.encre,
+      photo: ph(P.accent, P.douce, 135),
+      doubles: doubles,
+      compteDoubles: nomsDoubles.length + (nomsDoubles.length > 1 ? ' choisies' : ' choisie') + ' sur 5',
+      compteCouleur: nomsDoubles.length >= 1 ? '#d68a63' : 'rgba(255,255,255,0.56)',
+      textes: textes,
+      couvertures: couvertures,
+      resume: 'Riviera, palette ' + P.nom + (nomsDoubles.length ? ' · ' + (nomsDoubles.length === 5 ? 'les cinq doubles pages' : nomsDoubles.join(', ')) : '') + (couvs.length ? ' · ' + couvs.length + ' couverture' + (couvs.length > 1 ? 's' : '') + ' aimée' + (couvs.length > 1 ? 's' : '') : ''),
+      aide: complet ? 'Tout est prêt pour le magazine ' + mag + '.' : 'Il reste : ' + manque.join(' et ') + '.',
+      aideCouleur: complet ? '#d68a63' : 'rgba(255,255,255,0.56)',
+      choisirLabel: 'Choisir Riviera pour le magazine ' + mag,
+      choisirFond: complet ? '#d68a63' : 'rgba(255,255,255,0.4)'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Édition collective, page publique</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@400;500;600&display=swap">
+<style>
+body{margin:0;background:#020202}
+a{color:#e39a73}a:hover{color:#f5f0e7}
+input::placeholder{color:#928d84}
+</style>
+</helmet>
+<div style="background: #070708; color: #f5f0e7; font-family: 'DM Sans', sans-serif; font-size: 16px; line-height: 1.55">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 6%; border-bottom: 1px solid rgba(255,255,255,0.07)">
+    <div style="display: flex; align-items: baseline; gap: 14px">
+      <span style="font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 500; letter-spacing: 0.01em">Bellajour</span>
+      <span style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: #928d84">Édition collective</span>
+    </div>
+    <nav style="display: flex; flex-wrap: wrap; align-items: center; gap: 28px; font-size: 14px">
+      <a href="#principe" style="color: #c7c2b8; text-decoration: none">Le principe</a>
+      <a href="#etapes" style="color: #c7c2b8; text-decoration: none">Les étapes</a>
+      <a href="#espace" style="color: #c7c2b8; text-decoration: none">Votre espace</a>
+      <a href="#brief" style="display: inline-block; padding: 12px 22px; border-radius: 999px; background: #d68a63; color: #1a1210; font-weight: 600; text-decoration: none">Parler de votre événement</a>
+    </nav>
+  </header>
+
+  <section style="max-width: 1240px; margin: 0 auto; padding: 96px 6% 88px; display: flex; flex-wrap: wrap; align-items: center; gap: 64px">
+    <div style="flex: 1 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 28px">
+      <div style="display: flex; gap: 8px; padding: 4px; border: 1px solid rgba(255,255,255,0.11); border-radius: 999px; align-self: flex-start">
+        <button type="button" onClick="{{ choisirEntreprises }}" style="border: 0; cursor: pointer; padding: 10px 20px; border-radius: 999px; font-family: inherit; font-size: 14px; font-weight: 500; background: {{ fondEntreprises }}; color: {{ texteEntreprises }}">Entreprises</button>
+        <button type="button" onClick="{{ choisirEcoles }}" style="border: 0; cursor: pointer; padding: 10px 20px; border-radius: 999px; font-family: inherit; font-size: 14px; font-weight: 500; background: {{ fondEcoles }}; color: {{ texteEcoles }}">Écoles et associations</button>
+      </div>
+      <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: clamp(44px, 6vw, 84px); line-height: 1.02; letter-spacing: -0.01em">Votre événement, <span style="font-style: italic; color: #e39a73">en magazine.</span></h1>
+      <sc-if value="{{ estEntreprises }}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <p style="margin: 0; font-size: 22px; line-height: 1.4; color: #f5f0e7">Offrez à vos équipes le magazine de leur séminaire.</p>
+          <p style="margin: 0; font-size: 17px; color: #c7c2b8; max-width: 520px">Un souvenir commun qui fait vivre l'esprit d'équipe bien après l'événement.</p>
+        </div>
+      </sc-if>
+      <sc-if value="{{ estEcoles }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <p style="margin: 0; font-size: 22px; line-height: 1.4; color: #f5f0e7">Certains week-ends se racontent toute une vie.</p>
+          <p style="margin: 0; font-size: 17px; color: #c7c2b8; max-width: 520px">Celui-là aura son magazine. Un exemplaire pour chaque participant.</p>
+        </div>
+      </sc-if>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px; padding-top: 8px">
+        <a href="#brief" style="display: inline-block; padding: 16px 28px; border-radius: 999px; background: #d68a63; color: #1a1210; font-weight: 600; text-decoration: none">Demander un échange de 15 minutes</a>
+        <a href="#etapes" style="color: #c7c2b8; text-decoration: underline; text-underline-offset: 4px">Voir comment ça se passe</a>
+      </div>
+    </div>
+    <div style="flex: 1 1 380px; min-width: 0; display: flex; justify-content: center">
+      <div style="position: relative; width: 100%; max-width: 420px">
+        <div style="position: absolute; left: 9%; top: 5%; width: 100%; aspect-ratio: 210 / 297; border-radius: 4px; background: #161618; border: 1px solid rgba(255,255,255,0.07)"></div>
+        <div style="position: relative; width: 100%; aspect-ratio: 210 / 297; border-radius: 4px; background: linear-gradient(160deg, #8e7a68, #4a4038 55%, #211d1a); box-shadow: 0 24px 70px rgba(0,0,0,0.7); display: flex; flex-direction: column; justify-content: space-between; padding: 9%; box-sizing: border-box">
+          <div style="font-family: 'Cormorant Garamond', serif; font-size: 44px; line-height: 1; color: #f5f0e7">[Titre du numéro]</div>
+          <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #f5f0e7">
+            <span>[Photo de couverture de l'événement]</span>
+            <span style="color: #cdbfae">Bellajour · Édition collective</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="principe" style="border-top: 1px solid rgba(255,255,255,0.07); background: #0e0e10">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 88px 6%; display: flex; flex-direction: column; gap: 48px">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <span style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: #d68a63">Le principe</span>
+        <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: clamp(32px, 4vw, 52px); line-height: 1.08">Une maquette, un exemplaire par participant.</h2>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px">
+        <div style="padding: 32px; border: 1px solid rgba(255,255,255,0.11); border-radius: 14px; background: #161618; display: flex; flex-direction: column; gap: 12px">
+          <span style="font-family: 'Cormorant Garamond', serif; font-size: 26px">Tout le monde repart avec le même magazine</span>
+          <span style="color: #c7c2b8">Un seul numéro, composé pour votre groupe, imprimé pour chacun.</span>
+        </div>
+        <div style="padding: 32px; border: 1px solid rgba(255,255,255,0.11); border-radius: 14px; background: #161618; display: flex; flex-direction: column; gap: 12px">
+          <span style="font-family: 'Cormorant Garamond', serif; font-size: 26px">Nous composons tout</span>
+          <span style="color: #c7c2b8">Sélection des photos, mise en page, textes, couverture. Vous validez, rien de plus.</span>
+        </div>
+        <div style="padding: 32px; border: 1px solid rgba(255,255,255,0.11); border-radius: 14px; background: #161618; display: flex; flex-direction: column; gap: 12px">
+          <span style="font-family: 'Cormorant Garamond', serif; font-size: 26px">Livré en une fois</span>
+          <span style="color: #c7c2b8">Un seul envoi, à l'adresse de votre choix.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="etapes" style="max-width: 1240px; margin: 0 auto; padding: 96px 6%; display: flex; flex-direction: column; gap: 48px">
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: #d68a63">Comment ça se passe</span>
+      <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: clamp(32px, 4vw, 52px); line-height: 1.08">Quatre étapes, une seule à votre charge.</h2>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0; border-top: 1px solid rgba(255,255,255,0.16)">
+      <div style="padding: 28px 24px 8px 0; display: flex; flex-direction: column; gap: 12px">
+        <span style="font-family: 'Cormorant Garamond', serif; font-size: 48px; line-height: 1; color: #d68a63">01</span>
+        <span style="font-size: 18px; font-weight: 600">15 minutes d'échange</span>
+        <span style="color: #c7c2b8">Votre événement, vos participants, ce que vous voulez transmettre.</span>
+      </div>
+      <div style="padding: 28px 24px 8px 0; display: flex; flex-direction: column; gap: 12px">
+        <span style="font-family: 'Cormorant Garamond', serif; font-size: 48px; line-height: 1; color: #d68a63">02</span>
+        <span style="font-size: 18px; font-weight: 600">Vous envoyez les photos</span>
+        <span style="color: #c7c2b8">Un lien unique à partager aux participants, une date limite, rien d'autre à faire.</span>
+      </div>
+      <div style="padding: 28px 24px 8px 0; display: flex; flex-direction: column; gap: 12px">
+        <span style="font-family: 'Cormorant Garamond', serif; font-size: 48px; line-height: 1; color: #d68a63">03</span>
+        <span style="font-size: 18px; font-weight: 600">Nous composons, vous validez</span>
+        <span style="color: #c7c2b8">Une épreuve numérique à commenter en ligne, avant toute impression.</span>
+      </div>
+      <div style="padding: 28px 0 8px 0; display: flex; flex-direction: column; gap: 12px">
+        <span style="font-family: 'Cormorant Garamond', serif; font-size: 48px; line-height: 1; color: #d68a63">04</span>
+        <span style="font-size: 18px; font-weight: 600">Impression et livraison</span>
+        <span style="color: #c7c2b8">[DÉLAI] jours ouvrés après validation, à une seule adresse.</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="espace" style="border-top: 1px solid rgba(255,255,255,0.07); background: #0e0e10">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 96px 6%; display: flex; flex-wrap: wrap; gap: 56px; align-items: center">
+      <div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <span style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: #d68a63">Votre espace</span>
+        <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: clamp(32px, 4vw, 52px); line-height: 1.08">Un seul lien pour suivre votre édition.</h2>
+        <p style="margin: 0; color: #c7c2b8; max-width: 480px">Pas de compte à créer, pas de logiciel à apprendre. Votre lien privé ouvre l'espace de votre événement, de la collecte des photos à la livraison.</p>
+        <div style="display: flex; flex-direction: column; gap: 18px; padding-top: 12px">
+          <div style="display: flex; gap: 16px; align-items: flex-start">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"></path><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"></path></svg>
+            <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600">Un lien pour tous les participants</span><span style="color: #c7c2b8">Chacun dépose ses photos depuis son téléphone. Vous voyez la collecte grandir.</span></div>
+          </div>
+          <div style="display: flex; gap: 16px; align-items: flex-start">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path></svg>
+            <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600">Le bon à tirer, commenté en ligne</span><span style="color: #c7c2b8">Vous feuilletez la maquette et posez vos remarques sur la page concernée.</span></div>
+          </div>
+          <div style="display: flex; gap: 16px; align-items: flex-start">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-top: 2px"><path d="M4 6h16"></path><path d="M4 12h10"></path><path d="M4 18h6"></path><circle cx="19" cy="15" r="3"></circle></svg>
+            <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 600">Le suivi, étape par étape</span><span style="color: #c7c2b8">Vous savez à tout moment où en est votre magazine, et ce que l'atelier attend de vous.</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="flex: 1 1 420px; min-width: 0">
+        <div style="border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; background: #161618; padding: 28px; display: flex; flex-direction: column; gap: 22px; box-shadow: 0 20px 60px rgba(0,0,0,0.6)">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap">
+            <span style="font-family: 'Cormorant Garamond', serif; font-size: 26px">[Nom de votre événement]</span>
+            <span style="font-size: 13px; color: #1a1210; background: #d68a63; padding: 4px 12px; border-radius: 999px; font-weight: 600">Collecte ouverte</span>
+          </div>
+          <div style="display: flex; gap: 6px">
+            <span style="flex: 1; height: 4px; border-radius: 2px; background: #d68a63"></span>
+            <span style="flex: 1; height: 4px; border-radius: 2px; background: #d68a63"></span>
+            <span style="flex: 1; height: 4px; border-radius: 2px; background: #e39a73"></span>
+            <span style="flex: 1; height: 4px; border-radius: 2px; background: #29292e"></span>
+            <span style="flex: 1; height: 4px; border-radius: 2px; background: #29292e"></span>
+            <span style="flex: 1; height: 4px; border-radius: 2px; background: #29292e"></span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+            <div style="aspect-ratio: 1; border-radius: 6px; background: linear-gradient(135deg, #cdbfae, #8e7a68)"></div>
+            <div style="aspect-ratio: 1; border-radius: 6px; background: linear-gradient(135deg, #a89482, #4a4038)"></div>
+            <div style="aspect-ratio: 1; border-radius: 6px; background: linear-gradient(135deg, #8e7a68, #211d1a)"></div>
+            <div style="aspect-ratio: 1; border-radius: 6px; background: linear-gradient(135deg, #cdbfae, #a89482)"></div>
+          </div>
+          <span style="color: #c7c2b8; font-size: 14px">Aperçu de l'espace organisateur. Les écrans complets sont sur les planches suivantes.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width: 1240px; margin: 0 auto; padding: 96px 6%; display: flex; flex-wrap: wrap; gap: 56px; align-items: flex-start">
+    <div style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+      <span style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: #d68a63">L'objet</span>
+      <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: clamp(32px, 4vw, 52px); line-height: 1.08">Un vrai magazine, pas un album.</h2>
+      <p style="margin: 0; color: #c7c2b8">Magazine A4, dos carré collé, 24 pages. Composé à la main par l'atelier Bellajour, signé Bellajour.</p>
+    </div>
+    <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 0; border-top: 1px solid rgba(255,255,255,0.16)">
+      <div style="display: flex; justify-content: space-between; gap: 24px; padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,0.07)"><span style="color: #c7c2b8">Sur mesure, si vous le souhaitez</span><span style="text-align: right">Logo, mot du dirigeant ou du président, programme, liste des participants</span></div>
+      <div style="display: flex; justify-content: space-between; gap: 24px; padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,0.07)"><span style="color: #c7c2b8">Quantité</span><span style="text-align: right">À partir de 10 exemplaires</span></div>
+      <div style="display: flex; justify-content: space-between; gap: 24px; padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,0.07)"><span style="color: #c7c2b8">Livraison</span><span style="text-align: right">Groupée, à une seule adresse</span></div>
+      <div style="display: flex; justify-content: space-between; gap: 24px; padding: 18px 0"><span style="color: #c7c2b8">Validation</span><span style="text-align: right">Épreuve numérique, un seul validateur de votre côté</span></div>
+    </div>
+  </section>
+
+  <section id="brief" style="border-top: 1px solid rgba(255,255,255,0.07); background: #0e0e10">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 96px 6%; display: flex; flex-wrap: wrap; gap: 56px">
+      <div style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+        <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: clamp(32px, 4vw, 52px); line-height: 1.08">Parlons de votre prochain événement.</h2>
+        <p style="margin: 0; color: #c7c2b8">15 minutes suffisent. Quelques informations pour que l'échange soit utile dès la première minute.</p>
+        <p style="margin: 0; padding-top: 12px"><a href="mailto:contact@bellajour.com">contact@bellajour.com</a></p>
+      </div>
+      <form style="flex: 1 1 460px; min-width: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px">
+        <label style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: #c7c2b8">Organisation
+          <input type="text" placeholder="Nom de l'entreprise ou de l'association" style="height: 48px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.16); background: #070708; color: #f5f0e7; font-family: inherit; font-size: 16px">
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: #c7c2b8">Votre e-mail
+          <input type="email" placeholder="prenom@organisation.fr" style="height: 48px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.16); background: #070708; color: #f5f0e7; font-family: inherit; font-size: 16px">
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: #c7c2b8">Type d'événement
+          <select style="height: 48px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.16); background: #070708; color: #f5f0e7; font-family: inherit; font-size: 16px">
+            <option>Séminaire</option>
+            <option>Soirée d'entreprise</option>
+            <option>Week-end d'intégration</option>
+            <option>Séjour au ski</option>
+            <option>Gala</option>
+            <option>Autre</option>
+          </select>
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: #c7c2b8">Date de l'événement
+          <input type="date" style="height: 48px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.16); background: #070708; color: #f5f0e7; font-family: inherit; font-size: 16px">
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: #c7c2b8">Nombre de participants
+          <input type="number" placeholder="Par exemple 80" style="height: 48px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.16); background: #070708; color: #f5f0e7; font-family: inherit; font-size: 16px">
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: #c7c2b8">Les photos
+          <select style="height: 48px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.16); background: #070708; color: #f5f0e7; font-family: inherit; font-size: 16px">
+            <option>Photographe professionnel</option>
+            <option>Photos des participants</option>
+            <option>Les deux</option>
+            <option>Je ne sais pas encore</option>
+          </select>
+        </label>
+        <button type="submit" style="grid-column: 1 / -1; height: 56px; border: 0; border-radius: 999px; background: #d68a63; color: #1a1210; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer">Demander un échange de 15 minutes</button>
+      </form>
+    </div>
+  </section>
+
+  <footer style="padding: 40px 6%; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; border-top: 1px solid rgba(255,255,255,0.07); color: #928d84; font-size: 14px">
+    <span style="font-family: 'Cormorant Garamond', serif; font-size: 22px; font-style: italic; color: #c7c2b8">Vivez, nous composons.</span>
+    <span>Bellajour · Édition collective</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":3080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const e = ((this.state && this.state.segment) || 'entreprises') === 'entreprises';
+    return {
+      estEntreprises: e,
+      estEcoles: !e,
+      fondEntreprises: e ? '#f5f0e7' : 'transparent',
+      texteEntreprises: e ? '#1a1210' : '#c7c2b8',
+      fondEcoles: e ? 'transparent' : '#f5f0e7',
+      texteEcoles: e ? '#c7c2b8' : '#1a1210',
+      choisirEntreprises: () => this.setState({ segment: 'entreprises' }),
+      choisirEcoles: () => this.setState({ segment: 'ecoles' })
+    };
+  }
+}
+</script>
+</body>
+</html>

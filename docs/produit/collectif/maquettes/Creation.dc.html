@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Créer une édition après signature du devis</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&amp;family=DM+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#f7f1e9}
+a{color:#2a5f9e}a:hover{color:#1c1c1c}
+</style>
+</helmet>
+<div style="min-height: 1340px; box-sizing: border-box; background: #f7f1e9; color: #1c1c1c; font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.5">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 4%; border-bottom: 1px solid rgba(28,28,28,0.12)">
+    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 24px">
+      <span style="font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600">Bellajour · Atelier</span>
+      <a href="Atelier.dc.html" style="color: #5c554c; text-decoration: none">← Éditions collectives</a>
+    </div>
+    <span style="font-size: 14px; color: #5c554c">Devis signé et acompte reçu le 21 septembre</span>
+  </header>
+
+  <main style="max-width: 1320px; margin: 0 auto; padding: 36px 4% 56px; display: flex; flex-direction: column; gap: 28px">
+    <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 48px; line-height: 1.02; width: 383px">Ouvrir une édition</h1>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+      <form style="flex: 999 1 620px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+        <fieldset style="margin: 0; border: 1px solid rgba(28,28,28,0.14); border-radius: 14px; background: #fffaf3; padding: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px">
+          <legend style="padding: 0 8px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #5c554c">Le client et l'événement</legend>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Organisation
+            <input type="text" value="Maison Aubier" style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Nom de l'événement
+            <input type="text" value="Séminaire d'automne" style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Dates de l'événement
+            <input type="text" value="18 au 20 septembre 2026" style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Registre
+            <select style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px">
+              <option>Entreprise, vouvoiement</option>
+              <option>École, tutoiement</option>
+            </select>
+          </label>
+        </fieldset>
+
+        <fieldset style="margin: 0; border: 1px solid rgba(28,28,28,0.14); border-radius: 14px; background: #fffaf3; padding: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px">
+          <legend style="padding: 0 8px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #5c554c">La collecte des photos</legend>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Clôture de la collecte
+            <input type="text" value="4 octobre 2026, minuit" style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Photos au plus par participant
+            <input type="number" value="30" style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Photos au plus pour toute l'édition
+            <input type="number" value="2000" style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Présélection remise à l'atelier
+            <input type="number" value="300" style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px">
+          </label>
+          <label style="display: flex; gap: 10px; align-items: center; grid-column: 1 / -1"><input type="checkbox" checked="" style="width: 20px; height: 20px; margin: 0; accent-color: #1c1c1c"><span>L'organisateur et le photographe déposent sans plafond par personne</span></label>
+        </fieldset>
+
+        <fieldset style="margin: 0; border: 1px solid rgba(28,28,28,0.14); border-radius: 14px; background: #fffaf3; padding: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px">
+          <legend style="padding: 0 8px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #5c554c">Le magazine et le bon à tirer</legend>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Pagination prévue au devis
+            <input type="number" value="24" style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px">
+            <span style="font-size: 13px">Indicative. La pagination réelle est lue dans chaque PDF déposé.</span>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Tirage prévu au devis
+            <input type="number" value="120" style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Responsable du bon à tirer, e-mail
+            <input type="email" value="marion.lefevre@maison-aubier.example" style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px">
+            <span style="font-size: 13px">Une seule personne. Elle seule peut noter et valider.</span>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Tours de corrections inclus
+            <input type="number" value="2" style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Propositions de couverture au premier tour
+            <input type="number" value="3" style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px">
+            <span style="font-size: 13px">Le client les voit avec le premier bon à tirer.</span>
+          </label>
+        </fieldset>
+
+        <fieldset style="margin: 0; border: 1px solid rgba(28,28,28,0.14); border-radius: 14px; background: #fffaf3; padding: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px">
+          <legend style="padding: 0 8px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #5c554c">Le mur des styles</legend>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Magazines dans l'édition
+            <select style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px"><option>2</option><option>1</option><option>3</option></select>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Couvertures aimées au plus, par magazine
+            <select style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px"><option>2</option><option>1</option><option>3</option></select>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #5c554c">Styles proposés sur le mur
+            <select style="height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid rgba(28,28,28,0.3); background: #ffffff; color: #1c1c1c; font-family: inherit; font-size: 15px"><option>Tous</option><option>Entreprise seulement</option><option>École seulement</option></select>
+          </label>
+          <span style="grid-column: 1 / -1; font-size: 13px">Un brief par magazine : un style et sa palette, ses doubles pages préférées (une à cinq), la part de texte, et des couvertures aimées de n'importe quel style.</span>
+        </fieldset>
+
+        <fieldset style="margin: 0; border: 1px solid rgba(28,28,28,0.14); border-radius: 14px; background: #fffaf3; padding: 24px; display: flex; flex-wrap: wrap; gap: 14px 32px">
+          <legend style="padding: 0 8px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #5c554c">Ce qu'on demande au client dans son espace</legend>
+          <label style="display: flex; gap: 10px; align-items: center"><input type="checkbox" checked="" style="width: 20px; height: 20px; margin: 0; accent-color: #1c1c1c"><span>Logo vectoriel</span></label>
+          <label style="display: flex; gap: 10px; align-items: center"><input type="checkbox" checked="" style="width: 20px; height: 20px; margin: 0; accent-color: #1c1c1c"><span>Mot du dirigeant, par questionnaire</span></label>
+          <label style="display: flex; gap: 10px; align-items: center"><input type="checkbox" checked="" style="width: 20px; height: 20px; margin: 0; accent-color: #1c1c1c"><span>Programme</span></label>
+          <label style="display: flex; gap: 10px; align-items: center"><input type="checkbox" checked="" style="width: 20px; height: 20px; margin: 0; accent-color: #1c1c1c"><span>Liste des participants</span></label>
+          <label style="display: flex; gap: 10px; align-items: center"><input type="checkbox" style="width: 20px; height: 20px; margin: 0; accent-color: #1c1c1c"><span>Rubrique à contenu fourni</span></label>
+        </fieldset>
+      </form>
+
+      <aside style="flex: 1 1 340px; min-width: 0; border: 1px solid rgba(28,28,28,0.14); border-radius: 14px; background: #fffaf3; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+        <span style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #5c554c">Ce que la création produit</span>
+        <div style="display: flex; flex-direction: column; gap: 4px"><strong>Un lien organisateur, privé</strong><span style="color: #5c554c">Envoyé à la responsable du bon à tirer. Il ouvre l'espace de l'édition : étapes, photos, questions, bon à tirer.</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><strong>Un lien participants</strong><span style="color: #5c554c">À diffuser par l'organisateur. Dépôt de photos seulement, plafonné par personne, fermé à la date de clôture.</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><strong>Une ligne dans le suivi</strong><span style="color: #5c554c">L'édition apparaît dans la table des éditions collectives, à l'étape Collecte.</span></div>
+        <label style="border-top: 1px solid rgba(28,28,28,0.14); padding-top: 18px; display: flex; gap: 12px; align-items: flex-start">
+          <input type="checkbox" style="width: 20px; height: 20px; flex: none; margin: 2px 0 0; accent-color: #1c1c1c">
+          <span style="display: flex; flex-direction: column; gap: 4px"><strong>Édition de démonstration</strong><span style="color: #5c554c">À montrer à un prospect. Photos et notes fictives déjà en place, bandeau « Démonstration » sur chaque écran, aucun mail envoyé, rien dans le suivi ni dans les chiffres.</span></span>
+        </label>
+        <button type="button" style="height: 52px; border: 0; border-radius: 999px; background: #1c1c1c; color: #f7f1e9; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer">Créer l'édition et obtenir les liens</button>
+        <span style="font-size: 13px; color: #5c554c">Aucun mail ne part à cette étape. Vous envoyez le lien vous-même, après relecture.</span>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1340}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

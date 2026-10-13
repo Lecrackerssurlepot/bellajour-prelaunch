@@ -1,4 +1,4 @@
-# État du système — au 07/10/2026
+# État du système — au 13/10/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,28 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 13/10/2026 — l'Édition collective (B2B) : le socle, phase 0 (T-139), sur branche
+
+- **Code** sur `feat/collectif-phase-0`, PR ouverte, **non fusionnée** (Mathias fusionne). PRD et
+  maquettes versionnés dans le même lot (`docs/produit/PRD-edition-collective.md`,
+  `docs/produit/collectif/maquettes/`).
+- **Interrupteur `COLLECTIF_OUVERT`** : absent de Vercel à ce jour, donc TOUT le B2B répond 404
+  en production (`/edition`, `/depot`, `/admin/collectif`, `/api/admin/collectif/sante`) et la
+  table de travail n'affiche pas le lien « Éditions collectives ». Le B2C ne lit cette variable
+  nulle part ailleurs.
+- **Migration `20261013_collectif.sql` ÉCRITE, NON APPLIQUÉE** : 13 tables `collectif_*`,
+  atomique (`begin`/`commit`), RLS sans policy, deux triggers (tour publié figé, couvertures
+  figées). Elle n'a été exécutée NULLE PART (aucun Postgres local) : relue à la main seulement.
+  Sans elle et interrupteur ouvert, les liens affichent « Migration collectif absente » et l'API
+  répond 503 `migration_collectif_absente` en nommant les tables (prouvé en local le 13/10, base
+  de production lue en SELECT, rien écrit).
+- **Recette du 13/10** (build servi sur 3005 sans interrupteur, 3006 avec) : 404 réels sans
+  l'interrupteur (`curl -I`), écran de migration absente avec `noindex` et `no-referrer` à 1440 et
+  375 px, 503 sur l'API, lien admin présent ; `/`, `/magazine`, `/composer`, `/admin/atelier` en
+  200 sur les deux. `verif-atelier.ts` 1450 vérifications, `verif-collectif.ts` 151, verts.
+- **Avant le premier vrai client B2B** (PRD §12.2) : plan payant Supabase (sauvegardes) et Vercel
+  (Hobby est non commercial) ; le texte du consentement participant (légal).
 
 ## 07/10/2026 — la vente atelier entre en facturation (T-075, D22) : code prêt, déploiement en trois temps
 

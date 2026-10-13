@@ -283,7 +283,7 @@ function Ligne({
   );
 }
 
-export default function Liste({ vue }: { vue: VueListe }) {
+export default function Liste({ vue, collectif = false }: { vue: VueListe; collectif?: boolean }) {
   const [recherche, setRecherche] = useState("");
   const [filtre, setFiltre] = useState<Filtre>("actifs");
   const [reglages, majReglages] = useReglages();
@@ -440,6 +440,9 @@ export default function Liste({ vue }: { vue: VueListe }) {
           <Link href="/admin/atelier/sante">Santé</Link>
           <Link href="/admin/atelier/factures">Factures</Link>
           <Link href="/admin">Prévente</Link>
+          {/* L'Édition collective : absente tant que COLLECTIF_OUVERT est
+              fermé (la page répondrait 404). La démo n'en parle jamais. */}
+          {collectif && !vue.demo ? <Link href="/admin/collectif">Éditions collectives</Link> : null}
           {vue.demo ? null : <Link href="/admin/atelier/demo">Démo</Link>}
           <form action="/api/admin/logout" method="post" className="adm-logout-form">
             <button className="adm-btn adm-btn--ghost" type="submit">
