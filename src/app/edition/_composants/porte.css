@@ -1,0 +1,72 @@
+/* L'écran de porte de l'Édition collective (/edition et /depot, phase 0).
+   Tout est sous `.bj-atelier .ec-porte` : une feuille chargée ne se décharge
+   jamais en navigation client, une classe courte non scopée repeindrait le
+   B2C. Couleurs et polices : les tokens du monde sombre (theme.css), rien
+   d'autre. Noir, blanc, une touche d'orange. */
+
+.bj-atelier .ec-porte {
+  display: grid;
+  place-items: center;
+  min-height: var(--app-height);
+  padding: clamp(32px, 8vw, 72px) 16px;
+  background: var(--c-void);
+  color: var(--c-text);
+  text-align: center;
+}
+
+.bj-atelier .ec-porte-in {
+  width: 100%;
+  max-width: 34rem;
+}
+
+.bj-atelier .ec-porte-signature {
+  display: block;
+  width: 120px;
+  height: auto;
+  margin: 0 auto clamp(28px, 6vw, 44px);
+  opacity: 0.9;
+}
+
+.bj-atelier .ec-porte-surtitre {
+  margin: 0 0 14px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+}
+
+/* (0,2,0) : `.bj-atelier h1` (theme.css, 0,1,1) pose 56 à 150 px. Une classe
+   seule perdrait, comme sur la page 404 avant le 09/09. Sous 767 px,
+   globals.css coupe un mot trop long au milieu : la taille reste modeste. */
+.bj-atelier .ec-porte-titre {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(32px, 7vw, 52px);
+  line-height: 1.08;
+  color: var(--c-text-pure);
+}
+
+.bj-atelier .ec-porte-texte p {
+  margin: 0 auto 10px;
+  max-width: 30rem;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--c-text-soft);
+}
+
+.bj-atelier .ec-porte-detail {
+  margin: 26px auto 0;
+  padding-top: 18px;
+  max-width: 30rem;
+  border-top: 1px solid var(--c-line-md);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--c-text-faint);
+  overflow-wrap: anywhere;
+}

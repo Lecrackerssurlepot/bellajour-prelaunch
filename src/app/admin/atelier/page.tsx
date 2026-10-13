@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
 import { prenomDe } from "@/lib/admin-auth";
+import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { chargerListe } from "./donnees";
 import Liste from "./Liste";
 import "../admin.css";
@@ -29,5 +30,8 @@ export default async function PageAtelier() {
   if (!qui) redirect("/admin/login");
 
   const vue = await chargerListe({ cle: qui, prenom: prenomDe(qui) });
-  return <Liste vue={vue} />;
+  /* L'Édition collective (13/10/2026) : son lien n'existe que si
+     l'interrupteur est ouvert. Lu ici, côté serveur : un composant client ne
+     lit pas process.env. */
+  return <Liste vue={vue} collectif={collectifOuvert()} />;
 }

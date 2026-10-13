@@ -37,6 +37,21 @@
       "autoPort": false
     },
     {
+      "name": "Next.js prod 3006 collectif",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "COLLECTIF_OUVERT=1",
+        "npm",
+        "run",
+        "start",
+        "--",
+        "-p",
+        "3006"
+      ],
+      "port": 3006,
+      "autoPort": false
+    },
+    {
       "name": "Aperçus mails",
       "runtimeExecutable": "python3",
       "runtimeArgs": [
