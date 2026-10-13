@@ -1,7 +1,7 @@
 ---
 id: T-139
 titre: Il n'existe aucun socle pour ouvrir une édition collective sans toucher au B2C
-etat: en cours
+etat: fermé
 domaine: collectif
 gravite: serieux
 autonomie: avis-requis
@@ -51,3 +51,9 @@ sur un build servi deux fois (3005 sans interrupteur, 3006 avec) : 404 réels pa
 l'interrupteur ; avec lui, écran « Migration collectif absente » (noindex, no-referrer), 503
 `migration_collectif_absente` qui nomme les 13 tables, lien admin présent ; `/`, `/magazine`,
 `/composer`, `/admin/atelier` en 200 sur les deux. Reste : la fusion, puis la migration.
+
+**Fermé le 13/10/2026.** Mathias a fusionné la PR #225 (31b1590, déploiement de production
+READY, bellajour.fr vérifié : B2C en 200, `/edition` et `/depot` en 404 sans l'interrupteur) et
+appliqué la migration dans le SQL Editor. Vérifiée en lecture seule : 13 tables, RLS sur les 13,
+0 policy, 2 triggers, 8 contraintes témoins, aucune clé vers `numeros`, et les 13 tables lues par
+PostgREST. Rien ne reste de la phase 0 ; la suite est T-140.

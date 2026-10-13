@@ -7,6 +7,7 @@
 
 import { notFound } from 'next/navigation'
 import { chargerAcces } from '@/lib/collectif/acces'
+import { collecteOuverte } from '@/lib/collectif/etats'
 import { MIGRATION_COLLECTIF } from '@/lib/collectif/migration'
 import Porte from '../../edition/_composants/Porte'
 
@@ -30,9 +31,15 @@ export default async function PageDepot({ params }: { params: Promise<{ token: s
 
   const { edition } = acces
   const tu = edition.registre === 'ecole_tu'
+  /* L'état EFFECTIF : une clôture passée ferme le lien sans cron (etats.ts). */
+  const ouvert = collecteOuverte(edition.etat, edition.cloture_le, new Date())
   return (
     <Porte surtitre={`${edition.organisation} ${tu ? 't’invite' : 'vous invite'}`} titre={edition.evenement}>
-      <p>Le dépôt des photos s’ouvrira sur ce même lien.</p>
+      <p>
+        {ouvert
+          ? 'Le dépôt des photos s’ouvrira sur ce même lien.'
+          : 'Le dépôt des photos est fermé : l’atelier compose le magazine avec les photos reçues.'}
+      </p>
     </Porte>
   )
 }

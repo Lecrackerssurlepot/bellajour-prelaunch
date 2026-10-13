@@ -54,6 +54,7 @@ import {
 } from "@/lib/collectif/etats";
 import {
   GESTES,
+  GESTES_DE_LA_FICHE,
   gestesDepuis,
   preparerGeste,
   quiPour,
@@ -62,6 +63,19 @@ import {
   type MagazinePourGeste,
 } from "@/lib/collectif/gestes";
 import { lireInterrupteur } from "@/lib/collectif/interrupteur";
+import { formaterInstantParis, instantDeParis, versChampParis } from "@/lib/collectif/dates";
+import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
+import { prochaineEtape } from "@/lib/collectif/prochaine";
+import { phraseEvenement } from "@/lib/collectif/recit";
+import { lireSaisieEdition, planMagazines, type MagazineActuel } from "@/lib/collectif/saisie";
+import {
+  estCleImageStyle,
+  lireSaisieStyle,
+  manquesPourPublier,
+  nomImageStyle,
+  slugDepuisNom,
+  TYPES_DOUBLES,
+} from "@/lib/collectif/styles";
 import { MIGRATION_COLLECTIF, TABLES_COLLECTIF, tableAbsente } from "@/lib/collectif/migration";
 import {
   lireEntierPositif,
@@ -502,6 +516,162 @@ ok("/edition/<token>/bat garde la section", cheminPublic(`${O}/edition/${TOK}/ba
 ok("/depot/<token>?p=<cle> : token masque, cle de provenance jamais envoyee",
    cheminPublic(`${O}/depot/${TOK}?p=${"k".repeat(22)}`) === `${O}/depot/${MASQUE}`);
 ok("l'admin collectif ne part pas du tout", cheminPublic(`${O}/admin/collectif`) === null);
+
+
+/* ═══════════════════════════ PHASE 1 : L'HEURE DE PARIS ═══════════════════════════ */
+
+titre("— la cloture se tape a l'heure de Paris, part en UTC —");
+ok("ete (UTC+2) : 20 octobre 23:59 a Paris = 21:59 UTC",
+   instantDeParis("2026-10-20T23:59") === "2026-10-20T21:59:00.000Z");
+ok("hiver (UTC+1) : 1er decembre 00:00 a Paris = 30 novembre 23:00 UTC",
+   instantDeParis("2026-12-01T00:00") === "2026-11-30T23:00:00.000Z");
+ok("l'heure qui n'existe pas (29 mars 2026, 2:30) est refusee, pas decalee",
+   instantDeParis("2026-03-29T02:30") === null);
+ok("l'heure qui existe deux fois (25 octobre 2026, 2:30) donne un instant qui relit la meme heure",
+   (() => { const i = instantDeParis("2026-10-25T02:30"); return i !== null && versChampParis(i) === "2026-10-25T02:30"; })());
+ok("une saisie illisible est refusee",
+   instantDeParis("20/10/2026 23:59") === null && instantDeParis("2026-13-01T10:00") === null && instantDeParis("") === null);
+ok("aller-retour : versChampParis relit ce qu'instantDeParis a ecrit",
+   versChampParis(instantDeParis("2026-07-14T08:05")) === "2026-07-14T08:05");
+ok("versChampParis d'une valeur vide ou illisible = vide", versChampParis(null) === "" && versChampParis("n'importe") === "");
+ok("formaterInstantParis ecrit l'heure de Paris", formaterInstantParis("2026-10-20T21:59:00.000Z").includes("23:59"));
+
+/* ═══════════════════════════ PHASE 1 : LA SAISIE D'UNE ÉDITION ═══════════════════════════ */
+
+titre("— ouvrir une edition : ce qui est exige, ce qui reste vide —");
+const creation = {
+  organisation: "  Maison Test  ", evenement: "Seminaire", registre: "entreprise_vous",
+  responsable_email: "Resp@Exemple.fr", magazines: [{ nom: "Le seminaire" }, { nom: "La soiree" }],
+};
+const cr1 = lireSaisieEdition(creation, "creation");
+ok("une creation minimale passe, textes nettoyes, e-mail en minuscules",
+   cr1.ok && cr1.edition.organisation === "Maison Test" && cr1.edition.responsable_email === "resp@exemple.fr"
+   && cr1.magazines?.length === 2);
+ok("AUCUN chiffre invente : tous les champs chiffres absents valent null",
+   cr1.ok && ["plafond_participant_atelier", "plafond_total", "preselection_max", "pagination_prevue", "tirage",
+     "tours_inclus", "nb_propositions_couverture", "couvertures_aimees_max"].every((k) => cr1.edition[k] === null));
+ok("le segment par defaut est « tous » (un choix, pas un chiffre)", cr1.ok && cr1.edition.styles_segment === "tous");
+ok("une cloture sans fuseau est refusee (l'ecran envoie de l'ISO)",
+   (() => { const x = lireSaisieEdition({ ...creation, cloture_le: "2026-10-20T23:59" }, "creation"); return !x.ok && x.erreurs.some((e) => e.champ === "cloture_le"); })());
+ok("une cloture ISO avec fuseau passe",
+   (() => { const x = lireSaisieEdition({ ...creation, cloture_le: "2026-10-20T21:59:00.000Z" }, "creation"); return x.ok && x.edition.cloture_le === "2026-10-20T21:59:00.000Z"; })());
+const sansRien = lireSaisieEdition({}, "creation");
+ok("sans organisation, evenement, e-mail ni magazine : quatre refus nommes",
+   !sansRien.ok && ["organisation", "evenement", "responsable_email", "magazines"].every((c) => sansRien.erreurs.some((e) => e.champ === c)));
+ok("un magazine sans nom est refuse",
+   !lireSaisieEdition({ ...creation, magazines: [{ nom: "" }] }, "creation").ok);
+ok("un chiffre illisible est refuse, zero l'est pour un plafond, accepte pour la preselection",
+   !lireSaisieEdition({ ...creation, tirage: "beaucoup" }, "creation").ok
+   && !lireSaisieEdition({ ...creation, plafond_total: "0" }, "creation").ok
+   && (() => { const x = lireSaisieEdition({ ...creation, preselection_max: "0" }, "creation"); return x.ok && x.edition.preselection_max === 0; })());
+ok("un lien de rendez-vous qui n'est pas en https est refuse (javascript: compris)",
+   !lireSaisieEdition({ ...creation, rdv_url: "javascript:alert(1)" }, "creation").ok
+   && !lireSaisieEdition({ ...creation, rdv_url: "http://calendar.app.google/x" }, "creation").ok
+   && lireSaisieEdition({ ...creation, rdv_url: "https://calendar.app.google/x" }, "creation").ok);
+ok("les contenus demandes ne gardent que les cles connues",
+   (() => { const x = lireSaisieEdition({ ...creation, contenus_demandes: ["logo", "pirate", "mot"] }, "creation"); return x.ok && JSON.stringify(x.edition.contenus_demandes) === '["logo","mot"]'; })());
+ok("une faute de frappe dans l'e-mail est SUGGEREE, pas bloquee",
+   (() => { const x = lireSaisieEdition({ ...creation, responsable_email: "resp@gmial.com" }, "creation"); return x.ok && x.suggestion === "resp@gmail.com"; })());
+ok("la case « demonstration » ne s'ecrit jamais d'ici",
+   (() => { const x = lireSaisieEdition({ ...creation, demo: true }, "creation"); return x.ok && !("demo" in x.edition); })());
+
+titre("— regler une edition : seuls les champs envoyes —");
+const mo1 = lireSaisieEdition({ tirage: "120" }, "modification");
+ok("modifier le tirage n'ecrit que le tirage", mo1.ok && JSON.stringify(mo1.edition) === '{"tirage":120}' && mo1.magazines === null);
+const mo2 = lireSaisieEdition({ plafond_participant_atelier: "10" }, "modification",
+  { plafond_participant_atelier: 30, plafond_participant_client: 20, plafond_total: 2000 });
+ok("baisser le plafond atelier sous le curseur client ramene le curseur (meme ecriture)",
+   mo2.ok && mo2.edition.plafond_participant_atelier === 10 && mo2.edition.plafond_participant_client === 10);
+
+titre("— les magazines : renommer, ajouter a la suite, retirer le dernier s'il est vide —");
+const actuels: MagazineActuel[] = [
+  { id: "a", rang: 1, nom: "Le seminaire", vide: false },
+  { id: "b", rang: 2, nom: "La soiree", vide: true },
+];
+const pRen = planMagazines(actuels, [{ id: "a", nom: "Le grand seminaire" }, { id: "b", nom: "La soiree" }]);
+ok("renommer le premier", pRen.ok && pRen.renommer.length === 1 && pRen.renommer[0].nom === "Le grand seminaire" && !pRen.ajouter.length);
+const pAj = planMagazines(actuels, [{ id: "a", nom: "Le seminaire" }, { id: "b", nom: "La soiree" }, { id: null, nom: "Le voyage" }]);
+ok("ajouter a la suite : rang 3", pAj.ok && pAj.ajouter.length === 1 && pAj.ajouter[0].rang === 3);
+const pRet = planMagazines(actuels, [{ id: "a", nom: "Le seminaire" }]);
+ok("retirer le dernier, vide", pRet.ok && pRet.retirer.join() === "b");
+ok("retirer un magazine qui a un brief : refuse",
+   !planMagazines([{ ...actuels[0] }, { ...actuels[1], vide: false }], [{ id: "a", nom: "x" }]).ok);
+ok("retirer le premier en gardant le second : refuse (pas de renumerotation)",
+   !planMagazines(actuels, [{ id: "b", nom: "La soiree" }]).ok);
+ok("un id etranger a l'edition : refuse", !planMagazines(actuels, [{ id: "zzz", nom: "x" }]).ok);
+ok("a la creation, tout s'ajoute a partir du rang 1",
+   (() => { const p = planMagazines([], [{ id: null, nom: "Un" }, { id: null, nom: "Deux" }]); return p.ok && p.ajouter.map((x) => x.rang).join() === "1,2"; })());
+
+/* ═══════════════════════════ PHASE 1 : LES STYLES ═══════════════════════════ */
+
+titre("— un style : son adresse, sa saisie, ce qui manque pour publier —");
+ok("slugDepuisNom enleve accents et ponctuation", slugDepuisNom("Riviéra d'été !") === "riviera-d-ete" && slugDepuisNom("   ") === "");
+const st1 = lireSaisieStyle({ nom: "Riviera", segment: "entreprise" }, "creation");
+ok("creer : nom + adresse derivee + public", st1.ok && st1.patch.slug === "riviera" && st1.patch.segment === "entreprise");
+ok("une adresse invalide est refusee", !lireSaisieStyle({ nom: "X", slug: "Riv Iera" }, "creation").ok);
+ok("en modification, le slug ne se change JAMAIS",
+   (() => { const x = lireSaisieStyle({ slug: "autre", nom: "R" }, "modification", "riviera"); return x.ok && !("slug" in x.patch); })());
+const img = (n: string) => `collectif/styles/riviera/${n}`;
+ok("une image d'un AUTRE style est refusee",
+   estCleImageStyle("riviera", img("couverture-a-1234.webp")) && !estCleImageStyle("riviera", "collectif/styles/autre/a.webp")
+   && !estCleImageStyle("riviera", "collectif/styles/riviera/../../numeros/x"));
+const pal = lireSaisieStyle({ palettes: [{ nom: "Azur", couleurs: ["#1D3557", "#7fa7c9", "#f6efe3", "#d68a63"] }] }, "modification", "riviera");
+ok("une palette : nom + 4 couleurs hex, cle derivee du nom, minuscules",
+   pal.ok && JSON.stringify(pal.patch.palettes) === '[{"cle":"azur","nom":"Azur","couleurs":["#1d3557","#7fa7c9","#f6efe3","#d68a63"]}]');
+ok("une palette a 3 couleurs ou une couleur illisible est refusee",
+   !lireSaisieStyle({ palettes: [{ nom: "A", couleurs: ["#000000", "#ffffff", "#123456"] }] }, "modification", "riviera").ok
+   && !lireSaisieStyle({ palettes: [{ nom: "A", couleurs: ["noir", "#ffffff", "#123456", "#000000"] }] }, "modification", "riviera").ok);
+const dbl = lireSaisieStyle({ doubles: [{ type: "dense", image_key: img("double-dense-ab12.webp"), legende: "L" }] }, "modification", "riviera");
+ok("les doubles pages reviennent TOUJOURS a cinq, dans l'ordre, les manquantes vides",
+   dbl.ok && Array.isArray(dbl.patch.doubles) && (dbl.patch.doubles as { type: string; image_key: string | null }[]).map((d) => d.type).join()
+     === TYPES_DOUBLES.map((t) => t.cle).join()
+   && (dbl.patch.doubles as { type: string; image_key: string | null }[]).filter((d) => d.image_key).length === 1);
+const complet = {
+  nom: "Riviera",
+  palettes: [{ cle: "azur", nom: "Azur", couleurs: ["#000000", "#111111", "#222222", "#333333"] }],
+  typos: { titres: "Fraunces", texte: "Inter", echantillon_key: null },
+  couvertures: [{ cle: "c1", image_key: img("c.webp"), legende: "" }],
+  doubles: TYPES_DOUBLES.map(({ cle }) => ({ type: cle, image_key: img(`${cle}.webp`), legende: "" })),
+};
+ok("un style complet est publiable (l'echantillon est facultatif)", manquesPourPublier(complet).length === 0);
+ok("sans palette, sans typo, sans couverture, une double sans image : quatre manques nommes",
+   manquesPourPublier({ ...complet, palettes: [], typos: { titres: "", texte: "" }, couvertures: [],
+     doubles: complet.doubles.map((d) => (d.type === "recit" ? { ...d, image_key: null } : d)) }).length === 4);
+ok("le nom d'une image est versionne et sur",
+   nomImageStyle("couverture", "c1", "a1b2c3", "webp") === "couverture-c1-a1b2c3.webp"
+   && nomImageStyle("double", "../x", "ZZ", "jpg") === "double-x-0000.jpg");
+
+/* ═══════════════════════════ PHASE 1 : LISTE, FICHE, JOURNAL ═══════════════════════════ */
+
+titre("— la prochaine etape et son camp —");
+ok("preparation : au client, avec la date de cloture",
+   (() => { const p = prochaineEtape("preparation", "2026-10-20T21:59:00.000Z"); return p.camp === "client" && p.texte.includes("20 octobre"); })());
+ok("preparation sans date : la cloture est a fixer", prochaineEtape("preparation", null).texte.includes("à fixer"));
+ok("composition : a nous ; bat : au client ; bat_valide : a nous ; livree : termine",
+   prochaineEtape("composition", null).camp === "atelier" && prochaineEtape("bat", null).camp === "client"
+   && prochaineEtape("bat_valide", null).camp === "atelier" && prochaineEtape("livree", null).camp === "aucun");
+ok("chaque etat a sa phrase", ETATS_EDITION.every((e) => prochaineEtape(e, null).texte.length > 0));
+
+titre("— la fiche ne propose que ses gestes —");
+ok("publier un tour n'est pas un bouton de la fiche (il part avec son PDF, phase 5)", !GESTES_DE_LA_FICHE.includes("publier_tour"));
+ok("valider le BAT non plus (c'est le responsable)", !GESTES_DE_LA_FICHE.includes("valider_bat"));
+ok("chaque geste de la fiche est un geste d'atelier", GESTES_DE_LA_FICHE.every((c) => quiPour(c).includes("atelier")));
+
+titre("— les liens et le journal ne laissent fuir aucun token —");
+const tok = { token_responsable: "R".repeat(32), token_equipe: "E".repeat(32), token_depot: "D".repeat(32) };
+const l = liensEdition("http://localhost:3006/", tok);
+ok("les trois liens, sur l'origine de la requete",
+   l.responsable === `http://localhost:3006/edition/${"R".repeat(32)}` && l.equipe.endsWith(`/edition/${"E".repeat(32)}`)
+   && l.depot === `http://localhost:3006/depot/${"D".repeat(32)}`);
+ok("origineDepuis : https par defaut, http pour localhost, refuse un hote douteux",
+   origineDepuis("bellajour.fr", null) === "https://bellajour.fr" && origineDepuis("localhost:3006", null) === "http://localhost:3006"
+   && origineDepuis("bellajour.fr", "https,http") === "https://bellajour.fr" && origineDepuis("evil.com/x", "https") === "");
+ok("le journal dit QUEL lien a change, jamais sa valeur",
+   (() => { const ph = phraseEvenement("lien_regenere", { quel: "equipe", par: "Mathias", token: "R".repeat(32) }); return ph.includes("de l'équipe") && !ph.includes("RRRR"); })());
+ok("un geste se raconte par son libelle", phraseEvenement("geste", { cle: "clore_collecte", par: "Louis" }) === "Clore maintenant, par Louis.");
+ok("les champs modifies se nomment en francais",
+   phraseEvenement("reglages_modifies", { par: "Mathias", champs: ["tirage", "plafond_total"] }).includes("Tirage prévu au devis"));
+ok("un type inconnu reste lisible", phraseEvenement("truc_inconnu", {}) === "truc_inconnu");
 
 /* ═══════════════════════════ LES GARDES DANS LES FICHIERS ═══════════════════════════ */
 

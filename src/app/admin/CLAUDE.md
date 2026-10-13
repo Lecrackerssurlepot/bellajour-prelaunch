@@ -105,6 +105,13 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
 
 ## Écrans
 
+**`/admin/collectif/**`** (13/10/2026) — le back-office de l'Édition collective, derrière
+`COLLECTIF_OUVERT` (sinon 404). Ses règles sont dans `src/lib/collectif/CLAUDE.md`. Liste,
+`nouvelle`, fiche `[id]` (réglages, trois liens copier / ouvrir / régénérer, gestes armés en
+deux temps, magazines, journal), `styles` et `styles/[id]` (l'éditeur). Toutes ses écritures
+sont sous `/api/admin/collectif/*`, revérifient l'admin et journalisent dans
+`collectif_evenements`. Sa feuille `collectif.css` est scopée `.eca-root`.
+
 `page.tsx` (liste triée par urgence) · `[token]/page.tsx` (fiche + frise des 8 jalons + actions
 armées en deux temps + carnet de l'éditeur) · `metriques/` · `sante/` (**le seul endroit qui
 montre un mail sans template**) · `demo/` (fixtures, sans base).

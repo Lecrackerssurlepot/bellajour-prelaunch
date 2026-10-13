@@ -1,7 +1,7 @@
 ---
 id: T-140
 titre: L'atelier ne peut ni ouvrir une édition collective ni créer les styles du mur
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: libre
@@ -36,4 +36,23 @@ du BAT, T-144). Il faut un export réel de 24 à 40 pages de Mathias.
 **Recette** : créer un style avec ses images, une édition à deux magazines, copier les trois liens.
 
 ## Ce qui a été fait
-Rien. Ticket ouvert le 13/10/2026.
+13/10/2026, branche `feat/collectif-phase-1` :
+- **Liste** `/admin/collectif` (état effectif, prochaine étape et camp, clôture, tirage,
+  non-lus, filtre « Archivées »), **création** `/admin/collectif/nouvelle` (aucun chiffre
+  pré-rempli, clôture saisie à l'heure de Paris, case démonstration désactivée, aucun mail),
+  **fiche** `/admin/collectif/[id]` (réglages, trois liens copier / ouvrir / régénérer, gestes
+  Clore, Rouvrir, Lancer l'impression, Expédier, Livrée, Archiver, Récupérer armés en deux
+  temps, magazines, journal).
+- **Éditeur de styles** `/admin/collectif/styles` et `/styles/[id]` : nom, adresse définitive,
+  public, ordre, description, palettes de 4 couleurs, typos + échantillon en image,
+  couvertures, cinq doubles pages types, publier / retirer du mur (refusé tant qu'il manque
+  quelque chose, la liste le dit).
+- 7 routes sous `/api/admin/collectif/*` ; modules purs `dates`, `saisie`, `styles`,
+  `prochaine`, `recit`, `liens` ; harnais `verif-collectif.ts` porté à 204 vérifications.
+- **Recette faite en local contre la base de production** (13/10) : une édition d'essai créée,
+  réglée, close, rouverte, un lien régénéré (l'ancien répond 404), un magazine ajouté puis
+  retiré, archivée (ses liens répondent 404) ; un style d'essai créé, une image envoyée et
+  relue sur R2, publication refusée parce qu'incomplet. Les deux sont nommés « Essai
+  technique » ; l'édition est archivée, le style reste en brouillon.
+- **Reste** : la recette de Mathias (créer son premier vrai style, une édition à deux
+  magazines, copier les trois liens), puis le test d'un vrai PDF Affinity.
