@@ -17,6 +17,7 @@ import { phraseEvenement } from "@/lib/collectif/recit";
 import { manquesPourPublier } from "@/lib/collectif/styles";
 import { libelleTypeDocument } from "@/lib/collectif/documents";
 import { lireMessages } from "@/lib/collectif/messagerie";
+import { resumeDeposants } from "@/lib/collectif/grille";
 import type { Message } from "@/lib/collectif/messages";
 import type { EditionLigne, EvenementLigne, MagazineLigne, StyleLigne } from "@/lib/collectif/types";
 
@@ -116,7 +117,16 @@ export type EntreeJournal = { id: string; quand: string; phrase: string };
 
 export type DocumentFiche = { id: string; libelle: string; libelleType: string; quand: string; par: string | null };
 
+export type Collecte = {
+  total: number;
+  participants: number;
+  signalees: number;
+  sansVignette: number;
+  parProvenance: { libelle: string; n: number }[];
+};
+
 export type Fiche = {
+  collecte: Collecte;
   edition: EditionLigne;
   etat: EtatEdition;
   magazines: MagazineFiche[];
@@ -141,7 +151,7 @@ export async function chargerEdition(
   }
   if (!edition) return { absent: false, fiche: null };
 
-  const [mags, journal, docs, fil] = await Promise.all([
+  const [mags, journal, docs, fil, photos] = await Promise.all([
     supabase
       .from("collectif_magazines")
       .select("id, rang, nom, style_id, brief_valide_le, bat_valide_le")
@@ -159,7 +169,14 @@ export async function chargerEdition(
       .eq("edition_id", id)
       .order("created_at", { ascending: false }),
     lireMessages(supabase, id, null),
+    supabase
+      .from("collectif_photos")
+      .select("provenance_type, deposant, role_deposant, appareil_id, signalee, vignette_key")
+      .eq("edition_id", id)
+      .not("confirmee_le", "is", null)
+      .limit(20000),
   ]);
+  if (photos.error) echec("photos de l'édition", photos.error);
   if (mags.error) echec("magazines de l'édition", mags.error);
   if (journal.error) echec("journal de l'édition", journal.error);
   if (docs.error) echec("documents de l'édition", docs.error);
@@ -178,9 +195,26 @@ export async function chargerEdition(
     toursParMag.set(t.magazine_id, c);
   }
 
+  const lignesPhotos = (photos.data ?? []) as {
+    provenance_type: string;
+    deposant: string | null;
+    role_deposant: string;
+    appareil_id: string | null;
+    signalee: boolean;
+    vignette_key: string | null;
+  }[];
+  const collecte: Collecte = {
+    total: lignesPhotos.length,
+    participants: new Set(lignesPhotos.filter((p) => p.role_deposant === "participant" && p.appareil_id).map((p) => p.appareil_id)).size,
+    signalees: lignesPhotos.filter((p) => p.signalee).length,
+    sansVignette: lignesPhotos.filter((p) => !p.vignette_key).length,
+    parProvenance: resumeDeposants(lignesPhotos),
+  };
+
   return {
     absent: false,
     fiche: {
+      collecte,
       edition,
       etat: etatEffectif(edition.etat, edition.cloture_le, maintenant),
       magazines: ((mags.data ?? []) as (MagazineLigne & { style_id: string | null })[]).map((m) => {

@@ -10,6 +10,7 @@
    ce layout (Next 16) : il ne doit pas en ajouter de lentes. */
 
 import { notFound } from 'next/navigation'
+import { peut } from '@/lib/collectif/droits'
 import { etatEffectif } from '@/lib/collectif/etats'
 import { initiales, libelleRole, parler } from '@/lib/collectif/espace'
 import { MIGRATION_COLLECTIF } from '@/lib/collectif/migration'
@@ -60,6 +61,7 @@ export default async function EspaceLayout({
       )}
       verrous={verrousPour(etat)}
       nonLus={nonLus}
+      peutDeposer={peut(role, 'deposer_photos')}
     >
       {children}
     </Coquille>

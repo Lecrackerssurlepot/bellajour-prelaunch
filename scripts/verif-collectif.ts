@@ -63,6 +63,9 @@ import {
   type MagazinePourGeste,
 } from "@/lib/collectif/gestes";
 import { lireInterrupteur } from "@/lib/collectif/interrupteur";
+import { cleFichier, compteDansPlafond, DELAI_DECLARATION_MORTE_MS, lireDeclaration, LOT_DECLARATION, planDeclaration, type Existant } from "@/lib/collectif/depot";
+import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
+import { jourDePhoto, libelleProvenance, lireFiltre, resumeDeposants } from "@/lib/collectif/grille";
 import { contenusAEnvoyer, ETAPES_CLIENT, etapeClient, initiales, joursAvant, libelleRole, parler, phraseJours } from "@/lib/collectif/espace";
 import { curseur, fusionnerMessages, lireTexteMessage, MESSAGE_MAX, type Message } from "@/lib/collectif/messages";
 import { libelleTypeDocument, lireSaisieDocument, nomTelechargement } from "@/lib/collectif/documents";
@@ -720,6 +723,81 @@ ok("le nom de telechargement est en ASCII sur", nomTelechargement("Facture n°3 
 ok("le journal raconte un message sans le citer",
    phraseEvenement("message_client", { par: "Camille", texte: "secret" }) === "Message du client (Camille).");
 
+
+/* ═══════════════════════════ PHASE 3 : LA COLLECTE ═══════════════════════════ */
+
+titre("— la cle de fichier : la reprise sans doublon —");
+ok("nom|taille|date de modification, sur l'ORIGINAL", cleFichier("IMG_1.HEIC", 2048, 1700000000123) === "IMG_1.HEIC|2048|1700000000123");
+const decl = lireDeclaration([
+  { cle: cleFichier("a.jpg", 10, 1), nom: "a.jpg", taille: 900, type: "image/jpeg", tailleVignette: 30, ordre: 0 },
+  { cle: "pas une cle", nom: "b.jpg", taille: 10, type: "image/jpeg" },
+  { cle: cleFichier("c.pdf", 10, 1), nom: "c.pdf", taille: 10, type: "application/pdf" },
+  { cle: cleFichier("d.jpg", 10, 1), nom: "d.jpg", taille: 60 * 1024 * 1024, type: "image/jpeg" },
+]);
+ok("une declaration garde ce qui est lisible et refuse le reste, un par un",
+   decl !== null && decl.fichiers.length === 1 && decl.refus.map((r) => r.erreur).join() === "cle,format,taille");
+ok("un lot vide ou trop gros est refuse en bloc",
+   lireDeclaration([]) === null && lireDeclaration(Array.from({ length: LOT_DECLARATION + 1 }, () => ({}))) === null);
+
+titre("— le partage d'un lot : deja la, reprise, nouvelle, refusee —");
+const f = (nom: string) => ({ cle: cleFichier(nom, 1, 1), nom, taille: 1, type: "image/jpeg", tailleVignette: null, ordre: null });
+const lotDepot = [f("a"), f("b"), f("c"), f("d"), f("e")];
+const existantsDepot = new Map<string, Existant>([
+  [f("a").cle, { id: "A", r2_key: "k/a", confirmee: true }],
+  [f("b").cle, { id: "B", r2_key: "k/b", confirmee: false }],
+]);
+const plan = planDeclaration(lotDepot, existantsDepot, { illimitee: false, place: 2, borne: "plafond_participant" });
+ok("deja arrivee = deja ; declaree jamais arrivee = reprise sur la MEME cle",
+   plan[0].sorte === "deja" && plan[1].sorte === "reprise" && (plan[1] as { r2_key: string }).r2_key === "k/b");
+ok("seules les nouvelles consomment la place : 2 places pour c, d, e = c et d acceptees, e refusee",
+   plan[2].sorte === "nouvelle" && plan[3].sorte === "nouvelle" && plan[4].sorte === "refusee"
+   && (plan[4] as { raison: string }).raison === "plafond_participant");
+const planDouble = planDeclaration([f("x"), f("x")], new Map(), { illimitee: true });
+ok("le meme fichier deux fois dans un lot : la seconde est ignoree", planDouble[0].sorte === "nouvelle" && planDouble[1].sorte === "double");
+ok("un plafond non regle refuse tout le neuf, mais laisse passer les reprises",
+   (() => { const pl = planDeclaration([f("a"), f("z")], existantsDepot, { illimitee: false, place: 0, borne: "plafond_non_regle" }); return pl[0].sorte === "deja" && pl[1].sorte === "refusee"; })());
+const ilya = (ms: number) => new Date(LUNDI.getTime() - ms).toISOString();
+ok("une declaration morte (plus de 2 h sans arriver) ne bloque plus le plafond",
+   compteDansPlafond({ confirmee_le: null, created_at: ilya(10_000) }, LUNDI)
+   && !compteDansPlafond({ confirmee_le: null, created_at: ilya(DELAI_DECLARATION_MORTE_MS + 1) }, LUNDI)
+   && compteDansPlafond({ confirmee_le: ilya(5), created_at: ilya(DELAI_DECLARATION_MORTE_MS * 9) }, LUNDI));
+
+titre("— les doublons rapides = les doublons du B2C, sur des lots synthetiques —");
+let graine = 7;
+const alea = () => { graine = (graine * 1103515245 + 12345) & 0x7fffffff; return graine; };
+const hexAlea = () => Array.from({ length: 16 }, () => (alea() % 16).toString(16)).join("");
+const voisin = (h: string, bits: number) => {
+  const b = [...h].map((c) => parseInt(c, 16).toString(2).padStart(4, "0")).join("").split("");
+  for (let k = 0; k < bits; k++) { const i = alea() % 64; b[i] = b[i] === "0" ? "1" : "0"; }
+  return Array.from({ length: 16 }, (_, i) => parseInt(b.slice(i * 4, i * 4 + 4).join(""), 2).toString(16)).join("");
+};
+let identiques = true;
+for (let lot = 0; lot < 25; lot++) {
+  const photosSynth: { id: string; empreinte: string | null; priseLe: string | null; ordre: number }[] = [];
+  for (let i = 0; i < 60; i++) {
+    const base = i > 0 && alea() % 3 === 0 ? photosSynth[alea() % photosSynth.length].empreinte ?? hexAlea() : hexAlea();
+    photosSynth.push({
+      id: `p${lot}-${i}`,
+      empreinte: alea() % 15 === 0 ? null : voisin(base, alea() % 4),
+      priseLe: alea() % 4 === 0 ? null : `2026-10-0${1 + (alea() % 9)}T10:00:00`,
+      ordre: i,
+    });
+  }
+  if (JSON.stringify(groupesDoublonsRapides(photosSynth)) !== JSON.stringify(groupesDeDoublons(photosSynth))) identiques = false;
+}
+ok("25 lots de 60 photos (rafales, recompressions, sans empreinte) : exactement les memes groupes", identiques);
+
+titre("— la grille —");
+ok("un filtre inconnu retombe sur « toutes »", lireFiltre("pirate") === "toutes" && lireFiltre("doublons") === "doublons");
+ok("le jour d'une photo : sa prise de vue, lue SANS fuseau", jourDePhoto("2024-08-08T23:30:00", "2026-10-13T10:00:00Z").libelle.startsWith("8 août"));
+ok("sans date de prise de vue : le jour d'arrivee, et c'est dit", jourDePhoto(null, "2026-10-13T10:00:00Z").libelle.includes("sans date"));
+ok("qui a depose : par provenance et deposant, le plus fourni d'abord",
+   JSON.stringify(resumeDeposants([
+     { provenance_type: "participant", deposant: "Camille" }, { provenance_type: "photographe", deposant: "Studio X" },
+     { provenance_type: "participant", deposant: "Camille" },
+   ])) === JSON.stringify([{ libelle: "Un participant · Camille", n: 2 }, { libelle: "Le photographe · Studio X", n: 1 }]));
+ok("le responsable se nomme comme tel", libelleProvenance("organisateur", "Lou") === "Le responsable · Lou");
+
 /* ═══════════════════════════ LES GARDES DANS LES FICHIERS ═══════════════════════════ */
 
 function fichiers(dossier: string, nom: string): string[] {
@@ -743,7 +821,7 @@ ok(`chaque route collectif (${routes.length}) lit l'interrupteur`,
    routes.every((f) => /collectifOuvert\(\)/.test(lire(f))));
 const ECRITURE = /export\s+(async\s+)?function\s+(POST|PUT|PATCH|DELETE)\b/;
 ok("chaque route publique lit le token par chargerAcces (forme, porte, archive)",
-   fichiers("src/app/api/collectif", "route.ts").every((f) => /chargerAcces\(/.test(lire(f))));
+   fichiers("src/app/api/collectif", "route.ts").every((f) => /chargerAcces(Depot)?\(/.test(lire(f))));
 ok("chaque route publique qui ECRIT demande peut(role, action) avant d'agir",
    fichiers("src/app/api/collectif", "route.ts").filter((f) => ECRITURE.test(lire(f))).every((f) => /\bpeut\(/.test(lire(f))));
 ok("chaque route admin revérifie l'admin (defense en profondeur)",
@@ -751,9 +829,11 @@ ok("chaque route admin revérifie l'admin (defense en profondeur)",
 
 titre("— le B2B n'ecrit jamais dans les tables du B2C —");
 const libCollectif = readdirSync(resolve(RACINE, "src/lib/collectif")).filter((f) => f.endsWith(".ts"));
-const interdits = /@\/lib\/atelier\/(evenements|mails|enrichissement|paiement|cloudprinter|apercu)["']/;
+const interdits = /@\/lib\/atelier\/(evenements|mails|paiement|cloudprinter|apercu)["']/;
 ok("aucun module de src/lib/collectif n'importe un module B2C qui ecrit dans numeros/photos/evenements",
    libCollectif.every((f) => !interdits.test(lire(`src/lib/collectif/${f}`))));
+ok("de l'enrichissement B2C, seul le COEUR sans table est importe (jamais enrichirPhotos ni geocoderNumero)",
+   libCollectif.every((f) => !/\b(enrichirPhotos|geocoderNumero|enrichirDossier|logEvenement|envoyerMailAtelier)\b/.test(lire(`src/lib/collectif/${f}`).replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, ""))));
 ok("aucun module de src/lib/collectif ne nomme une table du B2C",
    libCollectif.every((f) => !/from\(["'](numeros|photos|evenements|mails_envoyes)["']\)/.test(lire(`src/lib/collectif/${f}`))));
 

@@ -11,6 +11,7 @@ import { MIGRATION_COLLECTIF } from "@/lib/collectif/migration";
 import { LIBELLE_CAMP, prochaineEtape } from "@/lib/collectif/prochaine";
 import { chargerEdition } from "../donnees";
 import FormulaireEdition, { type ValeursEdition } from "../FormulaireEdition";
+import PanneauCollecte from "./PanneauCollecte";
 import PanneauDocuments from "./PanneauDocuments";
 import PanneauGestes from "./PanneauGestes";
 import PanneauMessages from "./PanneauMessages";
@@ -66,7 +67,7 @@ export default async function PageFiche({ params }: { params: Promise<{ id: stri
     );
   }
   if (!lu.fiche) notFound();
-  const { edition: e, etat, magazines, journal, documents, messages } = lu.fiche;
+  const { edition: e, etat, magazines, journal, documents, messages, collecte } = lu.fiche;
 
   const h = await headers();
   const origine = origineDepuis(h.get("x-forwarded-host") ?? h.get("host"), h.get("x-forwarded-proto"));
@@ -127,6 +128,7 @@ export default async function PageFiche({ params }: { params: Promise<{ id: stri
           <PanneauLiens id={e.id} liens={liens} />
           <PanneauMessages id={e.id} initiaux={messages} />
           <PanneauGestes id={e.id} etat={etat} archivee={Boolean(e.archive_le)} />
+          <PanneauCollecte id={e.id} {...collecte} />
           <PanneauDocuments id={e.id} documents={documents} />
 
           <section className="ate-carte">

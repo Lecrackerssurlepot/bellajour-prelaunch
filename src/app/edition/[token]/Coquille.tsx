@@ -16,6 +16,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cheminSection, MENU, sectionDuChemin, type CleSection, type Verrous } from "@/lib/collectif/verrous";
+import { DepotFournisseur, PastilleEnvoi } from "../_composants/depot/DepotContexte";
 
 type Props = {
   token: string;
@@ -28,6 +29,8 @@ type Props = {
   verrous: Verrous;
   nonLus: number;
   bandeauLecture: string;
+  /** Le responsable dépose : son moteur d'envoi vit ici, pas dans la page. */
+  peutDeposer: boolean;
   children: React.ReactNode;
 };
 
@@ -165,10 +168,13 @@ export default function Coquille(props: Props) {
 
       {ouvert ? <button type="button" className="ec-voile" aria-label="Fermer le menu" onClick={() => setOuvert(false)} /> : null}
 
-      <div className="ec-contenu">
-        {props.lectureSeule ? <p className="ec-bandeau">{props.bandeauLecture}</p> : null}
-        {props.children}
-      </div>
+      <DepotFournisseur token={props.token} actif={props.peutDeposer}>
+        <div className="ec-contenu">
+          {props.lectureSeule ? <p className="ec-bandeau">{props.bandeauLecture}</p> : null}
+          <PastilleEnvoi lien={cheminSection(props.token, "photos")} />
+          {props.children}
+        </div>
+      </DepotFournisseur>
     </div>
   );
 }

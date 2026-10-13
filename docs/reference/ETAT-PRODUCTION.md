@@ -16,6 +16,13 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
   `feat/collectif-phases-2-a-6`, testées sur `localhost:3006`, fusionnées quand il est satisfait.
   Rien ne change en production entre-temps (`COLLECTIF_OUVERT` absent de Vercel).
 - **Phase 2 faite** (T-141) : espace client, tableau de bord, dossier, messagerie.
+- **Phase 3 faite** (T-142) : la collecte. Le local de recette passe sur **localhost:3000** :
+  c'est la seule origine locale que le CORS du coffre R2 accepte pour un envoi direct (OPTIONS
+  testé le 13/10 : 3000 → 204, 3006 → 403).
+- **Données d'essai de la collecte en production** : 11 photos sur R2 sous
+  `collectif/dcf95f15-…/photos/` (8 « Camille Essai », 3 « Studio Essai »), une photo
+  présélectionnée et signalée, deux liens de provenance (« Photographe essai », sans plafond),
+  plafond client réglé à 8. Tout appartient à l'édition « Essai technique (Claude) ».
 - **Données d'essai en production** : l'édition « Essai technique (Claude) » a été RÉCUPÉRÉE
   (désarchivée) pour la recette de l'espace client ; elle porte quatre messages d'essai et un
   « Devis d'essai » (PDF minuscule sur R2, `collectif/<id>/documents/`). Plafond client réglé à 8.

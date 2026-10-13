@@ -55,3 +55,15 @@ export async function chargerAcces(token: string, surface: Surface): Promise<Acc
 
   return { statut: "ok", edition: data, role };
 }
+
+/**
+ * La porte du DÉPÔT de photos : le lien des participants (`token_depot`) OU
+ * l'espace du responsable, qui dépose depuis sa page Photos. Le lien
+ * d'équipe passe la porte mais la route le refuse ensuite (`peut`) : il lit,
+ * il ne dépose pas.
+ */
+export async function chargerAccesDepot(token: string): Promise<Acces> {
+  const depot = await chargerAcces(token, "depot");
+  if (depot.statut !== "introuvable") return depot;
+  return chargerAcces(token, "espace");
+}

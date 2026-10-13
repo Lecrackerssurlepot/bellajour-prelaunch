@@ -206,6 +206,21 @@
   display: none;
 }
 
+.ec-espace .ec-pastille-envoi {
+  position: sticky;
+  top: 8px;
+  z-index: 20;
+  float: right;
+  margin: -8px 0 12px 12px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--ec-orange-voile);
+  border: 1px solid rgba(214, 138, 99, 0.45);
+  color: var(--ec-blanc);
+  font-size: 13px;
+  text-decoration: none;
+}
+
 /* ─────────────────────────────── les pages ─────────────────────────────── */
 
 .ec-espace .ec-page {
@@ -541,6 +556,215 @@
   resize: vertical;
 }
 
+
+/* ─────────────────────────────── la collecte ─────────────────────────────── */
+
+.ec-espace .ec-collecte {
+  max-width: 1240px;
+}
+.ec-espace .ec-collecte-tete {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.ec-espace .ec-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-onglets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.ec-espace .ec-onglet {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-filet-fort);
+  background: transparent;
+  color: var(--ec-blanc-72);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ec-espace .ec-onglet[aria-pressed="true"] {
+  background: var(--ec-orange-voile);
+  border-color: rgba(214, 138, 99, 0.5);
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-collecte-corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 22px;
+  align-items: start;
+}
+.ec-espace .ec-collecte-cote {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ec-espace .ec-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+.ec-espace .ec-grille-titre {
+  grid-column: 1 / -1;
+  margin: 14px 0 2px;
+  font-family: var(--font-ui);
+  font-style: normal;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ec-blanc-72);
+}
+/* Une tuile hors écran ne coûte rien à peindre : 2 000 vignettes restent fluides. */
+.ec-espace .ec-tuile {
+  margin: 0;
+  content-visibility: auto;
+  contain-intrinsic-size: 132px 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ec-espace .ec-tuile-image {
+  position: relative;
+  aspect-ratio: 1;
+  width: 100%;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+}
+.ec-espace .ec-tuile-image:disabled {
+  cursor: default;
+}
+.ec-espace .ec-tuile-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ec-espace .ec-tuile--choisie .ec-tuile-image {
+  border-color: var(--ec-orange);
+}
+.ec-espace .ec-tuile--doublon .ec-tuile-image {
+  opacity: 0.5;
+}
+.ec-espace .ec-tuile-sans {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 6px;
+  font-size: 11px;
+  color: var(--ec-blanc-56);
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-tuile-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  min-height: 18px;
+}
+.ec-espace .ec-badge {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-badge--signal {
+  background: rgba(255, 155, 122, 0.16);
+  color: #ff9b7a;
+}
+.ec-espace .ec-tuile-signal {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ec-blanc-56);
+  font: inherit;
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ec-espace .ec-panneau-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.7);
+}
+.ec-espace .ec-panneau {
+  width: min(560px, 100%);
+  max-height: calc(var(--app-height) - 32px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 20px;
+  border: 1px solid var(--ec-filet-fort);
+  background: #0b0b0b;
+  box-sizing: border-box;
+}
+.ec-espace .ec-panneau-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.ec-espace .ec-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-puce--active {
+  border-color: rgba(214, 138, 99, 0.6);
+  background: var(--ec-orange-voile);
+  cursor: pointer;
+}
+.ec-espace label.ec-puce {
+  cursor: pointer;
+}
+.ec-espace .ec-depose {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px dashed var(--ec-filet-fort);
+  border-radius: 16px;
+}
+.ec-espace .ec-depose--survol {
+  border-color: var(--ec-orange);
+  background: var(--ec-orange-voile);
+}
+.ec-espace .ec-dp-barre-espace {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  margin: 8px 0;
+}
+.ec-espace .ec-dp-barre-espace > div {
+  height: 100%;
+  background: var(--ec-orange);
+  transition: width 300ms ease;
+}
+
 /* ─────────────────────────────── à venir, verrou ─────────────────────────────── */
 
 .ec-espace .ec-a-venir {
@@ -600,8 +824,13 @@
     background: rgba(0, 0, 0, 0.6);
   }
   .ec-espace .ec-cartes,
-  .ec-espace .ec-dossier {
+  .ec-espace .ec-dossier,
+  .ec-espace .ec-collecte-corps {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .ec-espace .ec-grille {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
   }
   .ec-espace .ec-carte {
     padding: 20px;

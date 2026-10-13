@@ -109,6 +109,25 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
   ET page) ; l'état du tiroir et de la bulle d'un verrou est rattaché au chemin, il se referme
   seul à la navigation (aucun `setState` dans un effet).
 
+**Phase 3 (13/10/2026), la collecte :**
+- **`depot.ts`** (pur) — `cleFichier` (nom|taille|date de modification de l'ORIGINAL),
+  `lireDeclaration`, `planDeclaration` (déjà là / reprise sur la MÊME clé R2 / nouvelle /
+  refusée ; seules les nouvelles consomment la place), `compteDansPlafond` (une déclaration
+  morte depuis 2 h ne bloque plus personne). **`doublons.ts`** — par trois tronçons (principe
+  des tiroirs), mêmes groupes que `groupesDeDoublons` : le harnais le prouve sur 25 lots.
+  **`grille.ts`** — filtres, jour d'une photo lu SANS fuseau, « qui a déposé ».
+- **`collecte.ts`** (effets) — cookie httpOnly `bj_depot_appareil` (le plafond PAR APPAREIL,
+  un frein honnête), comptes, reprise. **`enrichissement.ts`** (effets) — le voisin de
+  `enrichirPhotos` : importe `lireDepuisCoffre`, `planGeocodage`, `geocoderInverse`, écrit dans
+  `collectif_photos`. Le harnais interdit d'importer `enrichirPhotos`, `geocoderNumero`,
+  `logEvenement`, `envoyerMailAtelier`.
+- ⚠️ **Le moteur d'envoi** (`edition/_composants/depot/moteur.ts`) ne garde RIEN dans le
+  navigateur et ne tient jamais plus de 8 photos réduites en mémoire. Ne pas y ajouter une copie
+  IndexedDB « pour la reprise » : c'est exactement ce qui fait sauter le quota à 2 000 photos.
+- ⚠️ **Le CORS du coffre** n'accepte que bellajour.fr, www, *.vercel.app et `localhost:3000`
+  (vérifié le 13/10 par une requête OPTIONS) : le local de recette des photos tourne donc sur
+  3000 (`.claude/launch.json` « Next.js prod 3000 collectif »).
+
 ## L'interrupteur et la migration
 
 - **`COLLECTIF_OUVERT`** (lu à chaque appel, une valeur incomprise FERME) : sans lui,

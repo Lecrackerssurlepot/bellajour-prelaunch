@@ -55,6 +55,20 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return `Photos par participant réglées à ${String(payload.valeur)} par ${par}.`;
     case "document_pose":
       return `Document déposé par ${par} : ${String(payload.libelle ?? "")}.`;
+    case "photos_confirmees":
+      return `${String(payload.n)} photo(s) arrivée(s) (${payload.role === "responsable" ? "le responsable" : "un participant"}).`;
+    case "metadonnees_lues":
+      return `Métadonnées lues : ${String(payload.traitees ?? 0)} photo(s), ${String(payload.lieux ?? 0)} lieu(x).`;
+    case "photo_preselectionnee":
+      return "Une photo ajoutée à la présélection du client.";
+    case "photo_deselectionnee":
+      return "Une photo retirée de la présélection du client.";
+    case "photo_signalee":
+      return "Une photo signalée « à ne pas publier ».";
+    case "photo_designalee":
+      return "Un signalement de photo retiré.";
+    case "provenance_creee":
+      return `Lien de dépôt créé : ${String(payload.libelle ?? "")}${payload.sansPlafond ? " (sans plafond)" : ""}.`;
     case "style_cree":
       return `Style créé par ${par}.`;
     case "style_modifie": {
