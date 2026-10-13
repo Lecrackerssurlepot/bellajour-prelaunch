@@ -82,6 +82,19 @@ export function clePageTour(
   return `${prefixeEdition(editionId)}tours/${exigerUuid(tourId, "tourId")}/pages/${String(index).padStart(3, "0")}.${extension}`;
 }
 
+/** La miniature d'une page (bande de vignettes du lecteur), à côté de la page. */
+export function cleVignettePageTour(editionId: string, tourId: string, index: number, extension: "webp" | "jpg"): string {
+  return clePageTour(editionId, tourId, index, extension).replace(/\.(webp|jpg)$/, `-v.${extension}`);
+}
+
+/**
+ * Les plans de gris des pages d'un tour (`bat.ts`, `encoderGris`) : le tour
+ * suivant les relit pour calculer ses zones modifiées. Jamais servi au client.
+ */
+export function cleGrisTour(editionId: string, tourId: string): string {
+  return `${prefixeEdition(editionId)}tours/${exigerUuid(tourId, "tourId")}/gris.bin`;
+}
+
 /** Une face d'une proposition de couverture : la 1re, la 2e ou la 3e de couverture. */
 export function cleCouverture(
   editionId: string,

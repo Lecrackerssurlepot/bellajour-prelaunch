@@ -20,6 +20,15 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
   c'est la seule origine locale que le CORS du coffre R2 accepte pour un envoi direct (OPTIONS
   testé le 13/10 : 3000 → 204, 3006 → 403).
 - **Phase 4 faite** (T-143) : le mur des styles et le brief.
+- **Phase 5 faite** (T-144) : le bon à tirer. ⚠️ L'édition d'essai a CHANGÉ D'ÉTAT pour la
+  recette : collecte close (13/10, « Clore maintenant »), `nb_propositions_couverture` = 2,
+  état « Bon à tirer ». Magazine 1 : tours 1 et 2 publiés (PDF synthétiques ; le tour 2 date
+  d'avant le nouvel appariement et dit à tort « 2 nouvelles, 1 retirée »), 2 propositions de
+  couverture, la proposition 2 choisie, deux notes envoyées dont une avec réponse ; **laissé
+  ouvert** pour que Mathias essaie notes, couverture et validation lui-même. Magazine 2 : tours
+  1 à 3 publiés, proposition 1 choisie, **BAT VALIDÉ** le 13/10. Fichiers sur R2 sous
+  `collectif/dcf95f15-…/tours/`. Un tour publié est figé par la base : ces tours ne se
+  suppriment pas, l'édition s'archive.
 - ⚠️ **Le style « Essai technique Claude » est PUBLIÉ** (13/10) pour que le mur de la recette
   ne soit pas vide : il apparaîtra sur le mur de TOUTE édition tant qu'il l'est. Le retirer du
   mur (`/admin/collectif/styles`, « Retirer du mur ») dès que Mathias a publié un vrai style.

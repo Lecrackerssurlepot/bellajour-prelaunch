@@ -234,7 +234,11 @@ export type ContenuLigne = {
 export type PageTour = {
   index: number;
   image_key: string;
+  /** La miniature de la bande de vignettes (320 px) ; absente sur un tour ancien. */
+  vignette_key?: string | null;
   empreinte: string | null;
+  /** Les mots de la page (sans les mots communs à tout le tour), pour l'apparier au tour suivant. */
+  mots?: string | null;
   /** L'index de la page du tour précédent qui lui ressemble, ou null (« nouvelle page »). */
   apparie_a: number | null;
   /** Les zones modifiées, en pourcentages de la page. */

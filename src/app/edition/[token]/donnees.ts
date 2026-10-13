@@ -12,10 +12,13 @@ import { makeSupabase } from "@/lib/supabase";
 import { signerGet } from "@/lib/atelier/r2";
 import { chargerAcces } from "@/lib/collectif/acces";
 import { styleVisible } from "@/lib/collectif/brief";
+import { formaterInstantParis } from "@/lib/collectif/dates";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { lireMessages } from "@/lib/collectif/messagerie";
 import type { Message } from "@/lib/collectif/messages";
-import type { EditionLigne } from "@/lib/collectif/types";
+import { couverturesDesTours, magazinesPourGeste, toursDuMagazine } from "@/lib/collectif/tours";
+import type { Zone } from "@/lib/collectif/bat";
+import type { EditionLigne, NoteLigne } from "@/lib/collectif/types";
 
 export const chargerEspace = cache(async (token: string) => chargerAcces(token, "espace"));
 
@@ -225,4 +228,147 @@ export async function chargerMur(edition: EditionLigne): Promise<{ styles: Style
     }))
   );
   return { styles, magazines: (mags.data ?? []) as MagazineMur[] };
+}
+
+/* ───────────────────────────── le bon à tirer ───────────────────────────── */
+
+export type PageBat = { index: number; url: string | null; vignette: string | null; apparie_a: number | null; zones: Zone[] };
+
+export type TourBat = {
+  id: string;
+  numero: number;
+  publie_le: string;
+  publieTexte: string;
+  echeance_retours: string | null;
+  echeanceTexte: string;
+  pages: PageBat[];
+};
+
+export type NoteBat = {
+  id: string;
+  tour_id: string;
+  page_index: number | null;
+  x_pct: number | null;
+  y_pct: number | null;
+  type: string;
+  contenu: Record<string, string>;
+  envoyee_le: string | null;
+  resolue_le: string | null;
+  retiree_le: string | null;
+  reponse_atelier: string | null;
+  created_at: string;
+};
+
+export type CouvertureBat = { id: string; rang: number; legende: string | null; c1: string | null; c2: string | null; c3: string | null };
+
+export type MagazineBat = {
+  id: string;
+  rang: number;
+  nom: string;
+  bat_valide_le: string | null;
+  couverture_choisie_id: string | null;
+  couverture_sans_preference: boolean;
+  couverture_note: string | null;
+  toursPublies: number;
+  valideTexte: string;
+};
+
+export type Bat = { magazines: MagazineBat[]; magazine: MagazineBat | null; tours: TourBat[]; notes: NoteBat[]; couvertures: CouvertureBat[] };
+
+/** Une note telle que le navigateur la reçoit (les nombres de PostgREST relus, le contenu en chaînes). */
+export function noteVersBat(n: NoteLigne): NoteBat {
+  const contenu: Record<string, string> = {};
+  for (const [k, v] of Object.entries(n.contenu ?? {})) if (typeof v === "string") contenu[k] = v;
+  const nombre = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+  return {
+    id: n.id,
+    tour_id: n.tour_id,
+    page_index: n.page_index,
+    x_pct: nombre(n.x_pct),
+    y_pct: nombre(n.y_pct),
+    type: n.type,
+    contenu,
+    envoyee_le: n.envoyee_le,
+    resolue_le: n.resolue_le,
+    retiree_le: n.retiree_le,
+    reponse_atelier: n.reponse_atelier,
+    created_at: n.created_at,
+  };
+}
+
+/**
+ * Le bon à tirer d'UN magazine (`rang`, le premier par défaut) : ses tours
+ * PUBLIÉS (un brouillon de l'atelier ne se voit jamais), chaque page signée
+ * une heure, toutes ses notes (brouillons compris : c'est le responsable qui
+ * les a posées), les propositions de couverture du premier tour.
+ */
+export async function chargerBat(edition: EditionLigne, rang: number | null): Promise<Bat> {
+  const supabase = makeSupabase();
+  const lusMags = await magazinesPourGeste(supabase, edition.id);
+  if (!lusMags.ok) throw new Error(`[collectif] magazines du BAT : ${lusMags.code}`);
+  const { data: noms, error } = await supabase
+    .from("collectif_magazines")
+    .select("id, nom, couverture_note")
+    .eq("edition_id", edition.id);
+  if (error) echec("noms des magazines du BAT", error);
+  const parId = new Map(((noms ?? []) as { id: string; nom: string; couverture_note: string | null }[]).map((m) => [m.id, m]));
+  const magazines: MagazineBat[] = lusMags.valeur
+    .map((m) => ({
+      ...m,
+      nom: parId.get(m.id)?.nom ?? "",
+      couverture_note: parId.get(m.id)?.couverture_note ?? null,
+      valideTexte: formaterInstantParis(m.bat_valide_le),
+    }))
+    .sort((a, b) => a.rang - b.rang);
+  const magazine = magazines.find((m) => m.rang === rang) ?? magazines[0] ?? null;
+  if (!magazine) return { magazines, magazine: null, tours: [], notes: [], couvertures: [] };
+
+  const lus = await toursDuMagazine(supabase, magazine.id);
+  if (!lus.ok) throw new Error(`[collectif] tours du BAT : ${lus.code}`);
+  const publies = lus.valeur.filter((t) => t.publie_le);
+  const ids = publies.map((t) => t.id);
+  const [notes, couv] = await Promise.all([
+    ids.length
+      ? supabase
+          .from("collectif_notes")
+          .select("id, tour_id, page_index, x_pct, y_pct, type, contenu, envoyee_le, resolue_le, reponse_atelier, reponse_le, retiree_le, created_at, maj_le")
+          .in("tour_id", ids)
+          .is("retiree_le", null)
+          .order("created_at", { ascending: true })
+      : Promise.resolve({ data: [], error: null }),
+    couverturesDesTours(supabase, ids),
+  ]);
+  if (notes.error) echec("notes du BAT", notes.error);
+  if (!couv.ok) throw new Error(`[collectif] couvertures du BAT : ${couv.code}`);
+
+  const tours: TourBat[] = await Promise.all(
+    publies.map(async (t) => ({
+      id: t.id,
+      numero: t.numero,
+      publie_le: t.publie_le as string,
+      publieTexte: formaterInstantParis(t.publie_le),
+      echeance_retours: t.echeance_retours,
+      echeanceTexte: formaterInstantParis(t.echeance_retours),
+      pages: await Promise.all(
+        (t.pages ?? []).map(async (p) => ({
+          index: p.index,
+          url: await signerOuRien(p.image_key),
+          vignette: await signerOuRien(p.vignette_key ?? null),
+          apparie_a: p.apparie_a,
+          zones: p.zones ?? [],
+        }))
+      ),
+    }))
+  );
+  const couvertures: CouvertureBat[] = await Promise.all(
+    couv.valeur.map(async (c) => ({
+      id: c.id,
+      rang: c.rang,
+      legende: c.legende,
+      c1: await signerOuRien(c.image_key),
+      c2: await signerOuRien(c.interieur2_key),
+      c3: await signerOuRien(c.interieur3_key),
+    }))
+  );
+  return { magazines, magazine, tours, notes: ((notes.data ?? []) as NoteLigne[]).map(noteVersBat), couvertures };
 }

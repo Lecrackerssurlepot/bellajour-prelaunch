@@ -19,7 +19,11 @@ import { libelleTypeDocument } from "@/lib/collectif/documents";
 import { lireMessages } from "@/lib/collectif/messagerie";
 import { resumeDeposants } from "@/lib/collectif/grille";
 import type { Message } from "@/lib/collectif/messages";
-import type { EditionLigne, EvenementLigne, MagazineLigne, StyleLigne } from "@/lib/collectif/types";
+import { resumeNote, resumeTour } from "@/lib/collectif/bat";
+import { estUuid } from "@/lib/collectif/cles";
+import { formaterInstantParis, versChampParis } from "@/lib/collectif/dates";
+import { couverturesDesTours, precedentDe, toursDuMagazine } from "@/lib/collectif/tours";
+import type { EditionLigne, EvenementLigne, MagazineLigne, NoteLigne, StyleLigne } from "@/lib/collectif/types";
 
 function echec(quoi: string, error: { code?: string; message: string }): never {
   throw new Error(`[collectif] ${quoi} : ${error.code ?? "?"} ${error.message}`);
@@ -373,6 +377,220 @@ export async function chargerStyle(
         quand: j.created_at,
         phrase: phraseEvenement(j.type, j.payload ?? {}),
       })),
+    },
+  };
+}
+
+/* ─────────────────────────────────── le bon à tirer ─────────────────────────────────── */
+
+export type PageAtelier = { index: number; vignette: string | null; apparie_a: number | null; zones: number };
+
+export type TourAtelier = {
+  id: string;
+  numero: number;
+  publie: boolean;
+  publieTexte: string;
+  echeanceLocal: string;
+  echeanceTexte: string;
+  nbPages: number | null;
+  pdf: boolean;
+  pages: PageAtelier[];
+  resume: { nouvelles: number; modifiees: number; retirees: number[] } | null;
+  precedent: number | null;
+};
+
+export type CouvertureAtelier = { rang: number; legende: string; c1: string | null; c2: string | null; c3: string | null };
+
+export type NoteAtelier = {
+  id: string;
+  numero: number;
+  tour: number;
+  page: number | null;
+  type: string;
+  resume: string;
+  photo: string | null;
+  envoyeeTexte: string;
+  resolue: boolean;
+  reponse: string | null;
+};
+
+export type MagazineBatAtelier = {
+  id: string;
+  rang: number;
+  nom: string;
+  bat_valide_le: string | null;
+  couverture: string;
+  couverture_note: string | null;
+};
+
+export type BatAtelier = {
+  edition: Pick<EditionLigne, "id" | "organisation" | "evenement" | "nb_propositions_couverture" | "tirage" | "token_responsable" | "archive_le">;
+  etat: EtatEdition;
+  magazines: MagazineBatAtelier[];
+  magazine: MagazineBatAtelier | null;
+  tours: TourAtelier[];
+  brouillon: TourAtelier | null;
+  /** Les propositions vivent sur le premier tour (brouillon tant qu'il n'est pas publié). */
+  couvertures: CouvertureAtelier[];
+  couverturesModifiables: boolean;
+  notes: NoteAtelier[];
+};
+
+async function signer(key: string | null | undefined): Promise<string | null> {
+  if (!key) return null;
+  try {
+    return await signerGet(key);
+  } catch {
+    return null;
+  }
+}
+
+/** L'écran « Bon à tirer » de l'atelier, pour un magazine (`rang`, le premier par défaut). */
+export async function chargerBatAtelier(
+  supabase: SupabaseClient,
+  id: string,
+  rang: number | null,
+  maintenant: Date
+): Promise<{ absent: true } | { absent: false; bat: BatAtelier | null }> {
+  const { data: edition, error } = await supabase
+    .from("collectif_editions")
+    .select("id, organisation, evenement, etat, cloture_le, nb_propositions_couverture, tirage, token_responsable, archive_le")
+    .eq("id", id)
+    .maybeSingle<EditionLigne>();
+  if (error) {
+    if (tableAbsente(error.code)) return { absent: true };
+    echec("lecture de l'édition (BAT)", error);
+  }
+  if (!edition) return { absent: false, bat: null };
+
+  const { data: mags, error: errMags } = await supabase
+    .from("collectif_magazines")
+    .select("id, rang, nom, bat_valide_le, couverture_choisie_id, couverture_sans_preference, couverture_note")
+    .eq("edition_id", id)
+    .order("rang", { ascending: true });
+  if (errMags) echec("magazines (BAT)", errMags);
+  const brutes = (mags ?? []) as Pick<MagazineLigne, "id" | "rang" | "nom" | "bat_valide_le" | "couverture_choisie_id" | "couverture_sans_preference" | "couverture_note">[];
+  const choisie = brutes.find((m) => m.rang === rang) ?? brutes[0] ?? null;
+
+  const base = {
+    edition,
+    etat: etatEffectif(edition.etat, edition.cloture_le, maintenant),
+  };
+  if (!choisie) return { absent: false, bat: { ...base, magazines: [], magazine: null, tours: [], brouillon: null, couvertures: [], couverturesModifiables: false, notes: [] } };
+
+  const lus = await toursDuMagazine(supabase, choisie.id);
+  if (!lus.ok) throw new Error(`[collectif] tours (BAT) : ${lus.code}`);
+  const premierId = lus.valeur[0]?.id ?? null;
+  const couv = await couverturesDesTours(supabase, premierId ? [premierId] : []);
+  if (!couv.ok) throw new Error(`[collectif] couvertures (BAT) : ${couv.code}`);
+  const rangChoisi = couv.valeur.find((c) => c.id === choisie.couverture_choisie_id)?.rang ?? null;
+
+  const versMagazine = (m: (typeof brutes)[number]): MagazineBatAtelier => ({
+    id: m.id,
+    rang: m.rang,
+    nom: m.nom,
+    bat_valide_le: m.bat_valide_le,
+    couverture:
+      m.id !== choisie.id
+        ? ""
+        : m.couverture_sans_preference
+          ? "Sans préférence : l'atelier choisit"
+          : rangChoisi
+            ? `Proposition ${rangChoisi} choisie`
+            : "Pas encore choisie",
+    couverture_note: m.couverture_note,
+  });
+
+  const tours: TourAtelier[] = await Promise.all(
+    lus.valeur.map(async (t) => {
+      const precedent = precedentDe(lus.valeur, t.numero);
+      return {
+        id: t.id,
+        numero: t.numero,
+        publie: Boolean(t.publie_le),
+        publieTexte: formaterInstantParis(t.publie_le),
+        echeanceLocal: versChampParis(t.echeance_retours),
+        echeanceTexte: formaterInstantParis(t.echeance_retours),
+        nbPages: t.nb_pages,
+        pdf: Boolean(t.pdf_key),
+        pages: await Promise.all(
+          (t.pages ?? []).map(async (p) => ({
+            index: p.index,
+            vignette: await signer(p.vignette_key ?? p.image_key),
+            apparie_a: p.apparie_a,
+            zones: p.zones?.length ?? 0,
+          }))
+        ),
+        resume: t.pages?.length ? resumeTour(t.pages, precedent ? precedent.pages.length : null) : null,
+        precedent: precedent?.numero ?? null,
+      };
+    })
+  );
+
+  /* Les notes ENVOYÉES : un brouillon du client n'est pas encore pour nous. */
+  const ids = lus.valeur.filter((t) => t.publie_le).map((t) => t.id);
+  const { data: notes, error: errNotes } = ids.length
+    ? await supabase
+        .from("collectif_notes")
+        .select("id, tour_id, page_index, type, contenu, envoyee_le, resolue_le, reponse_atelier, retiree_le, created_at")
+        .in("tour_id", ids)
+        .is("retiree_le", null)
+        .order("created_at", { ascending: true })
+    : { data: [], error: null };
+  if (errNotes) echec("notes (BAT)", errNotes);
+  const toutes = (notes ?? []) as Pick<NoteLigne, "id" | "tour_id" | "page_index" | "type" | "contenu" | "envoyee_le" | "resolue_le" | "reponse_atelier" | "created_at">[];
+  const numeroTour = new Map(lus.valeur.map((t) => [t.id, t.numero]));
+  const photosVoulues = toutes
+    .filter((n) => n.envoyee_le && n.type === "photo" && typeof n.contenu?.photo === "string" && estUuid(n.contenu.photo))
+    .map((n) => n.contenu.photo as string);
+  const vignettesPhotos = new Map<string, string | null>();
+  if (photosVoulues.length) {
+    const { data: ph } = await supabase
+      .from("collectif_photos")
+      .select("id, vignette_key, r2_key")
+      .eq("edition_id", id)
+      .in("id", photosVoulues);
+    for (const x of (ph ?? []) as { id: string; vignette_key: string | null; r2_key: string }[]) {
+      vignettesPhotos.set(x.id, await signer(x.vignette_key ?? x.r2_key));
+    }
+  }
+  const notesAtelier: NoteAtelier[] = toutes
+    .map((n, k) => ({ n, numero: k + 1 }))
+    .filter(({ n }) => n.envoyee_le)
+    .map(({ n, numero }) => ({
+      id: n.id,
+      numero,
+      tour: numeroTour.get(n.tour_id) ?? 0,
+      page: n.page_index,
+      type: n.type,
+      resume: resumeNote(n.type, n.contenu ?? {}),
+      photo: typeof n.contenu?.photo === "string" ? vignettesPhotos.get(n.contenu.photo) ?? null : null,
+      envoyeeTexte: formaterInstantParis(n.envoyee_le),
+      resolue: Boolean(n.resolue_le),
+      reponse: n.reponse_atelier,
+    }));
+
+  const couvertures: CouvertureAtelier[] = await Promise.all(
+    couv.valeur.map(async (c) => ({
+      rang: c.rang,
+      legende: c.legende ?? "",
+      c1: await signer(c.image_key),
+      c2: await signer(c.interieur2_key),
+      c3: await signer(c.interieur3_key),
+    }))
+  );
+  const brouillon = tours.find((t) => !t.publie) ?? null;
+  return {
+    absent: false,
+    bat: {
+      ...base,
+      magazines: brutes.map(versMagazine),
+      magazine: versMagazine(choisie),
+      tours,
+      brouillon,
+      couvertures,
+      couverturesModifiables: Boolean(brouillon && !tours.some((t) => t.publie)),
+      notes: notesAtelier,
     },
   };
 }

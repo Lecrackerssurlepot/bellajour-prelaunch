@@ -530,7 +530,8 @@ Prévoir les accroches, ne rien envoyer :
 7. **Accord sur les données (DPA)** : contenu juridique, hors outil.
 8. **Délai de regroupement** des mails « nouveau message ».
 9. **Temps réel** : interrogation (phase 2) suffisante, ou Realtime (phase 7) ?
-10. **Largeur de rendu des pages** du BAT (qualité contre poids).
+10. **Largeur de rendu des pages** du BAT (qualité contre poids). Provisoire : 1600 px
+    (`LARGEUR_RENDU_PX`, bat.ts), WebP. À mesurer sur un vrai export Affinity (T-144).
 11. **Le compte des étapes** affiché au client : les maquettes disent « Étape N sur 6 » côté client
     et « sur 7 » côté atelier. À trancher en phase 2 (T-141).
 12. **Le texte du consentement et des conditions** du lien participant (§0.5) : texte légal,

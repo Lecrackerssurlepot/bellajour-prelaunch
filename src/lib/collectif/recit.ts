@@ -81,6 +81,34 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return `Magazine ${String(payload.magazine)} : une couverture aimée.`;
     case "couverture_retiree":
       return `Magazine ${String(payload.magazine)} : une couverture n'est plus aimée.`;
+    case "tour_cree":
+      return `Magazine ${String(payload.magazine)} : tour ${String(payload.tour)} ouvert par ${par}.`;
+    case "tour_pages":
+      return `Magazine ${String(payload.magazine)} : tour ${String(payload.tour)} rendu (${String(payload.pages)} pages) par ${par}.`;
+    case "tour_echeance":
+      return `Magazine ${String(payload.magazine)} : échéance du tour ${String(payload.tour)} réglée par ${par}.`;
+    case "tour_couverture":
+      return `Magazine ${String(payload.magazine)} : proposition de couverture ${String(payload.rang)} déposée par ${par}.`;
+    case "tour_couverture_retiree":
+      return `Magazine ${String(payload.magazine)} : proposition de couverture ${String(payload.rang)} retirée par ${par}.`;
+    case "tour_publie":
+      return `Magazine ${String(payload.magazine)} : tour ${String(payload.tour)} publié par ${par}.`;
+    case "notes_envoyees":
+      return `Magazine ${String(payload.magazine)} : ${String(payload.n)} note(s) envoyée(s) par le client.`;
+    case "note_resolue":
+      return `Magazine ${String(payload.magazine)} : une note marquée résolue par le client.`;
+    case "note_rouverte":
+      return `Magazine ${String(payload.magazine)} : une note rouverte par le client.`;
+    case "note_repondue":
+      return `Magazine ${String(payload.magazine)} : réponse de l'atelier à une note, par ${par}.`;
+    case "couverture_choisie":
+      return payload.sansPreference
+        ? `Magazine ${String(payload.magazine)} : couverture « sans préférence ».`
+        : `Magazine ${String(payload.magazine)} : proposition de couverture ${String(payload.rang)} choisie.`;
+    case "couverture_note":
+      return `Magazine ${String(payload.magazine)} : note sur la couverture.`;
+    case "bat_valide":
+      return `Magazine ${String(payload.magazine)} : bon à tirer VALIDÉ par le client.`;
     case "style_cree":
       return `Style créé par ${par}.`;
     case "style_modifie": {

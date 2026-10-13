@@ -154,6 +154,9 @@ export default async function PageFiche({ params }: { params: Promise<{ id: stri
                               : "Brief à faire"}
                     </span>
                   </span>
+                  <Link href={`/admin/collectif/${e.id}/bat?m=${m.rang}`} className="eca-lien-bat">
+                    Bon à tirer du magazine {m.rang} →
+                  </Link>
                   {m.brief.style ? (
                     <span className="eca-brief">
                       <span>

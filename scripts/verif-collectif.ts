@@ -21,8 +21,10 @@ import {
   cleContenu,
   cleCouverture,
   cleDocument,
+  cleGrisTour,
   clePageTour,
   clePdfTour,
+  cleVignettePageTour,
   clePhoto,
   cleStyle,
   cleVignette,
@@ -94,6 +96,31 @@ import {
   type ReglagesPlafond,
 } from "@/lib/collectif/plafonds";
 import { estTypeNote, ROLES, TYPES_NOTE, type Role } from "@/lib/collectif/types";
+import {
+  apparierPages,
+  decoderGris,
+  doublesPages,
+  encoderGris,
+  etatNote,
+  GRIS_H,
+  GRIS_L,
+  libelleDouble,
+  lireChoixCouverture,
+  lireNote,
+  lirePagesTour,
+  manquesPourPublierTour,
+  MAX_PAGES_TOUR,
+  rectRognage,
+  resumeNote,
+  resumeTour,
+  PLAFOND_EMPREINTE,
+  coutPaire,
+  motsDePage,
+  motsUtiles,
+  texteValidationBat,
+  tourCourant,
+  zonesModifiees,
+} from "@/lib/collectif/bat";
 import { cheminSection, MENU, RAISON_VERROU, sectionDuChemin, verrousPour } from "@/lib/collectif/verrous";
 
 let ko = 0;
@@ -849,6 +876,207 @@ function fichiers(dossier: string, nom: string): string[] {
   }
   return sortie;
 }
+
+
+/* ════════════════════════════ PHASE 5 : LE BON À TIRER ════════════════════════════ */
+
+function fichiersParSuffixe(dossier: string, motif: RegExp): string[] {
+  const abs = resolve(RACINE, dossier);
+  if (!existsSync(abs)) return [];
+  const sortie: string[] = [];
+  for (const entree of readdirSync(abs)) {
+    const chemin = join(abs, entree);
+    if (statSync(chemin).isDirectory()) sortie.push(...fichiersParSuffixe(join(dossier, entree), motif));
+    else if (motif.test(entree)) sortie.push(join(dossier, entree));
+  }
+  return sortie;
+}
+
+titre("— apparier deux tours : le texte d'abord, l'image ensuite, l'ordre toujours —");
+{
+  /* Des pages de texte : chacune son histoire (mots distincts). */
+  const histoire = (k: number) => ["arrivee domaine matin cafe accueil", "conference directrice strategie annee chiffres", "atelier equipe jeux rires cuisine", "diner soiree musique danse lumieres", "remise prix trophees applaudissements podium"][k];
+  const page = (index: number, k: number, empreinte = "0000000000000000") => ({ index, empreinte, mots: histoire(k) });
+  const t1 = [page(0, 0), page(1, 1), page(2, 2), page(3, 3)];
+  const insere = apparierPages(t1, [page(0, 0), page(1, 1), page(2, 4), page(3, 2), page(4, 3)]);
+  ok("une page ajoutee au milieu : nouvelle, et les suivantes retrouvent leur ancienne",
+     insere.apparie.get(0) === 0 && insere.apparie.get(1) === 1 && insere.apparie.get(2) === null && insere.apparie.get(3) === 2 && insere.apparie.get(4) === 3 && insere.retirees.length === 0);
+  const retire = apparierPages(t1, [page(0, 0), page(1, 2), page(2, 3)]);
+  ok("une page retiree : signalee, les autres appariees", retire.retirees.join() === "1" && retire.apparie.get(1) === 2);
+  /* Le cas mesure le 13/10 : meme gabarit (images a 0 bit), histoires differentes. */
+  const memeGabarit = apparierPages([page(0, 0), page(1, 1)], [page(0, 1), page(1, 0)]);
+  ok("deux pages de meme gabarit mais d'histoires differentes ne sont pas confondues",
+     memeGabarit.apparie.get(0) !== 0 && memeGabarit.apparie.get(1) !== 1);
+  const photoChangee = apparierPages([page(0, 2, "0000000000000000")], [{ index: 0, empreinte: "ffffffffffffffff", mots: histoire(2) + " legende" }]);
+  ok("une photo changee (image tres differente, meme texte) : la meme page, retouchee", photoChangee.apparie.get(0) === 0);
+  /* Les pages sans texte : l'image decide. */
+  const A = "0000000000000000", B = "ffffffff00000000";
+  ok("pleine photo : une retouche de 2 bits reste la meme page", apparierPages([{ index: 0, empreinte: A }], [{ index: 0, empreinte: "0000000000000003" }]).apparie.get(0) === 0);
+  ok(`pleine photo : au-dela de ${PLAFOND_EMPREINTE} bits, une autre page`, apparierPages([{ index: 0, empreinte: A }], [{ index: 0, empreinte: B }]).apparie.get(0) === null);
+  const unique = apparierPages([{ index: 0, empreinte: A }], [{ index: 0, empreinte: A }, { index: 1, empreinte: A }]);
+  ok("une ancienne n'est reprise qu'une fois", [unique.apparie.get(0), unique.apparie.get(1)].filter((x) => x === 0).length === 1);
+  ok("une page sans empreinte ni texte n'est jamais appariee", apparierPages([{ index: 0, empreinte: null }], [{ index: 0, empreinte: null }]).apparie.get(0) === null);
+  ok("les mots : minuscules, sans accent ni chiffre, trois lettres au moins, une fois chacun",
+     motsDePage("Été 2026 : le Séminaire, l'été !").join(" ") === "ete seminaire");
+  ok("les mots communs a plus de la moitie des pages (titre courant) sont retires",
+     motsUtiles([["seminaire", "arrivee"], ["seminaire", "diner"], ["seminaire", "prix"], ["seminaire", "danse"]]).join("|") === "arrivee|diner|prix|danse");
+  ok("le cout d'une paire : texte partage = bon marche, rien en commun = impossible",
+     coutPaire({ empreinte: A, mots: new Set(["a1", "b1", "c1", "d1", "e1"]) }, { empreinte: B, mots: new Set(["a1", "b1", "c1", "d1", "e1"]) }) === 0 &&
+     coutPaire({ empreinte: A, mots: new Set(["a1", "b1", "c1", "d1", "e1"]) }, { empreinte: A, mots: new Set(["v1", "w1", "x1", "y1", "z1"]) }) === Infinity);
+}
+
+titre("— les zones modifiees, en pourcentages —");
+{
+  const l = 40, h = 40;
+  const fond = () => new Uint8Array(l * h).fill(200);
+  const a = fond();
+  ok("deux pages identiques : aucune zone", zonesModifiees(a, fond(), l, h).length === 0);
+  const bruit = fond();
+  for (let k = 0; k < bruit.length; k += 3) bruit[k] = 210;
+  ok("le bruit de recompression reste sous le seuil", zonesModifiees(a, bruit, l, h).length === 0);
+  const b = fond();
+  for (let y = 8; y < 16; y++) for (let x = 0; x < 16; x++) b[y * l + x] = 20;
+  const z = zonesModifiees(a, b, l, h);
+  ok("un bloc change : une zone, au bon endroit", z.length === 1 && z[0].x === 0 && z[0].y === 20 && z[0].l === 40 && z[0].h === 20);
+  for (let y = 32; y < 40; y++) for (let x = 32; x < 40; x++) b[y * l + x] = 20;
+  ok("deux blocs separes : deux zones", zonesModifiees(a, b, l, h).length === 2);
+  const ligne = fond();
+  for (let x = 20; x < 30; x++) ligne[30 * l + x] = 0;
+  ok("une seule ligne de pixels franchement changee (un mot) : une zone, malgre une moyenne faible", zonesModifiees(a, ligne, l, h).length === 1);
+  const unPixel = fond();
+  unPixel[5 * l + 5] = 0;
+  ok("un pixel isole ne fait pas une zone", zonesModifiees(a, unPixel, l, h).length === 0);
+  let leve = false;
+  try {
+    zonesModifiees(a, new Uint8Array(10), l, h);
+  } catch {
+    leve = true;
+  }
+  ok("des tailles differentes levent (on ne compare jamais faux)", leve);
+}
+
+titre("— les doubles pages : la premiere seule, a droite —");
+ok("0 page : rien", doublesPages(0).length === 0);
+ok("1 page : [0]", JSON.stringify(doublesPages(1)) === "[[0]]");
+ok("4 pages : [0] [1,2] [3]", JSON.stringify(doublesPages(4)) === "[[0],[1,2],[3]]");
+ok("5 pages : [0] [1,2] [3,4]", JSON.stringify(doublesPages(5)) === "[[0],[1,2],[3,4]]");
+ok("libelles : « Page 1 », « Pages 2 et 3 »", libelleDouble([0]) === "Page 1" && libelleDouble([1, 2]) === "Pages 2 et 3");
+
+titre("— rogner au format fini (TrimBox) —");
+{
+  const r = rectRognage([0, 0, 624, 876], { x: 12, y: 12, width: 600, height: 852 }, 2);
+  ok("fond perdu de 12 pt retire des quatre cotes", r.sx === 24 && r.sy === 24 && r.sl === 1200 && r.sh === 1704);
+  const sans = rectRognage([0, 0, 600, 800], null, 1);
+  ok("sans TrimBox : la page entiere", sans.sx === 0 && sans.sy === 0 && sans.sl === 600 && sans.sh === 800);
+  const decale = rectRognage([10, 20, 610, 820], { x: 10, y: 20, width: 600, height: 800 }, 1);
+  ok("une vue qui ne part pas de 0 : rien a rogner quand trim = vue", decale.sx === 0 && decale.sy === 0 && decale.sl === 600 && decale.sh === 800);
+}
+
+titre("— une note : chaque type dit ce qu'il exige —");
+ok("type inconnu : refuse", !lireNote({ type: "autre", contenu: {} }, 10).ok);
+ok("corriger un texte sans rien dire : refuse", !lireNote({ type: "texte", contenu: {}, page_index: 0 }, 10).ok);
+ok("corriger un texte avec le remplacement seul : accepte", lireNote({ type: "texte", contenu: { remplacement: "Jour 1" }, page_index: 0 }, 10).ok);
+ok("changer une photo sans photo ni description : refuse", !lireNote({ type: "photo", contenu: {}, page_index: 0 }, 10).ok);
+ok("une idee vide : refusee", !lireNote({ type: "idee", contenu: { texte: "   " } }, 10).ok);
+ok("retirer sans raison : accepte (la raison est facultative)", lireNote({ type: "retirer", contenu: {}, page_index: 2, x_pct: 10, y_pct: 10 }, 10).ok);
+ok("page hors du tour : refusee", !lireNote({ type: "retirer", contenu: {}, page_index: 10 }, 10).ok);
+{
+  const g = lireNote({ type: "idee", contenu: { texte: "Plus de photos de groupe" }, x_pct: 50 }, 10);
+  ok("une note generale n'a pas de position", g.ok && g.note.page_index === null && g.note.x_pct === null && g.note.y_pct === null);
+  const c = lireNote({ type: "retirer", contenu: { raison: "x", inconnu: "y" }, page_index: 1, x_pct: 140, y_pct: -3 }, 10);
+  ok("la position est bornee a la page, les champs inconnus sont ignores",
+     c.ok && c.note.x_pct === 100 && c.note.y_pct === 0 && !("inconnu" in c.note.contenu));
+}
+ok("etat d'une note : brouillon, a traiter, resolue, retiree",
+   etatNote({ envoyee_le: null, resolue_le: null, retiree_le: null }) === "brouillon" &&
+   etatNote({ envoyee_le: "x", resolue_le: null, retiree_le: null }) === "a_traiter" &&
+   etatNote({ envoyee_le: "x", resolue_le: "y", retiree_le: null }) === "resolue" &&
+   etatNote({ envoyee_le: null, resolue_le: null, retiree_le: "z" }) === "retiree");
+ok("la note se resume en une phrase", resumeNote("texte", { cible: "Jour un", remplacement: "Jour 1" }) === "« Jour un » devient « Jour 1 »" && resumeNote("retirer", {}) === "Retirer cet élément");
+
+titre("— la phrase de validation : le tirage de la fiche, jamais devine —");
+ok("avec un tirage : le nombre est dit", texteValidationBat(120).includes("120 exemplaires"));
+ok("sans tirage : aucun chiffre invente", !/\d/.test(texteValidationBat(null)));
+
+titre("— les gris d'un tour : un format a nous, relu sans confiance —");
+{
+  const p1 = new Uint8Array(GRIS_L * GRIS_H).fill(7);
+  const p2 = new Uint8Array(GRIS_L * GRIS_H).fill(9);
+  const lu = decoderGris(encoderGris([p1, p2]));
+  ok("aller-retour sans perte", lu !== null && lu.pages.length === 2 && lu.pages[1][5] === 9 && lu.l === GRIS_L && lu.h === GRIS_H);
+  ok("un fichier tronque ou etranger est refuse", decoderGris(encoderGris([p1]).slice(0, 50)) === null && decoderGris(new Uint8Array([1, 2, 3])) === null);
+}
+
+titre("— les pages d'un tour : le serveur recalcule chaque cle —");
+{
+  const ED = "11111111-1111-4111-8111-111111111111", TO = "22222222-2222-4222-8222-222222222222";
+  const cles = { page: (i: number, e: "webp" | "jpg") => clePageTour(ED, TO, i, e), vignette: (i: number, e: "webp" | "jpg") => cleVignettePageTour(ED, TO, i, e) };
+  const page = (i: number, extra: Record<string, unknown> = {}) => ({ index: i, image_key: clePageTour(ED, TO, i, "webp"), vignette_key: cleVignettePageTour(ED, TO, i, "webp"), empreinte: "0123456789abcdef", apparie_a: null, zones: [], ...extra });
+  ok("trois pages bien formees : acceptees", lirePagesTour([page(0), page(1), page(2)], cles, null).ok);
+  ok("une cle qui pointe ailleurs : refusee", !lirePagesTour([{ ...page(0), image_key: clePageTour(ED, "33333333-3333-4333-8333-333333333333", 0, "webp") }], cles, null).ok);
+  ok("une vignette qui pointe ailleurs : refusee", !lirePagesTour([{ ...page(0), vignette_key: clePageTour(ED, TO, 0, "webp") }], cles, null).ok);
+  ok("des index qui ne se suivent pas : refuses", !lirePagesTour([page(0), page(2)], cles, null).ok);
+  ok("un appariement sans tour precedent : refuse", !lirePagesTour([page(0, { apparie_a: 0 })], cles, null).ok);
+  ok("une ancienne page reprise deux fois : refusee", !lirePagesTour([page(0, { apparie_a: 0 }), page(1, { apparie_a: 0 })], cles, 3).ok);
+  ok("une ancienne page qui n'existe pas : refusee", !lirePagesTour([page(0, { apparie_a: 7 })], cles, 3).ok);
+  ok(`plus de ${MAX_PAGES_TOUR} pages : refuse`, !lirePagesTour(Array.from({ length: MAX_PAGES_TOUR + 1 }, (_, i) => page(i)), cles, null).ok);
+  const z = lirePagesTour([page(0, { apparie_a: 1, zones: [{ x: -5, y: 10, l: 150, h: 20 }, { x: "a", y: 0, l: 1, h: 1 }] })], cles, 2);
+  ok("les zones sont bornees, une zone illisible est ecartee", z.ok && z.pages[0].zones.length === 1 && z.pages[0].zones[0].x === 0 && z.pages[0].zones[0].l === 100);
+  const n = lirePagesTour([page(0, { zones: [{ x: 1, y: 1, l: 1, h: 1 }] })], cles, 2);
+  ok("une nouvelle page n'a pas de zones (rien a comparer)", n.ok && n.pages[0].zones.length === 0);
+  const r = resumeTour([{ apparie_a: 0, zones: [{ x: 0, y: 0, l: 1, h: 1 }] }, { apparie_a: null, zones: [] }, { apparie_a: 2, zones: [] }], 4);
+  ok("le resume du tour : modifiees, nouvelles, retirees", r.modifiees === 1 && r.nouvelles === 1 && r.retirees.join() === "1,3");
+  ok("le premier tour n'a rien a resumer", resumeTour([{ apparie_a: null, zones: [] }], null).nouvelles === 0);
+}
+
+titre("— le tour courant, publier, la couverture —");
+ok("le tour courant est le dernier PUBLIE (un brouillon ne compte pas)",
+   tourCourant([{ numero: 1, publie_le: "a" }, { numero: 2, publie_le: "b" }, { numero: 3, publie_le: null }])?.numero === 2);
+{
+  const futur = new Date("2026-10-20T10:00:00Z").toISOString();
+  const maintenant = new Date("2026-10-13T10:00:00Z");
+  const complet = { pdf_key: "k", nb_pages: 24, pages: [1], echeance_retours: futur };
+  const couv = (rang: number) => ({ rang, image_key: "a", interieur2_key: "b", interieur3_key: "c" });
+  ok("tour 2 complet : publiable sans couverture", manquesPourPublierTour(complet, false, [], null, maintenant).length === 0);
+  ok("tour 1 sans nombre de propositions regle : refuse (on ne devine pas « 3 »)", manquesPourPublierTour(complet, true, [couv(1)], null, maintenant).some((m) => m.includes("nombre de propositions")));
+  ok("tour 1 avec le bon nombre de propositions completes : publiable", manquesPourPublierTour(complet, true, [couv(1), couv(2)], 2, maintenant).length === 0);
+  ok("une proposition sans sa 3e de couverture : refusee", manquesPourPublierTour(complet, true, [{ ...couv(1), interieur3_key: null }], 1, maintenant).some((m) => m.includes("3e")));
+  ok("sans echeance, ou une echeance passee : refuse",
+     manquesPourPublierTour({ ...complet, echeance_retours: null }, false, [], null, maintenant).length === 1 &&
+     manquesPourPublierTour({ ...complet, echeance_retours: "2026-10-01T00:00:00Z" }, false, [], null, maintenant).length === 1);
+  ok("sans PDF rendu : refuse", manquesPourPublierTour({ ...complet, pdf_key: null }, false, [], null, maintenant).length === 1);
+}
+ok("choisir une proposition du magazine, ou « sans preference »",
+   lireChoixCouverture({ couvertureId: "p1" }, [{ id: "p1" }]).ok &&
+   !lireChoixCouverture({ couvertureId: "p9" }, [{ id: "p1" }]).ok &&
+   (() => {
+     const r = lireChoixCouverture({ sans_preference: true }, []);
+     return r.ok && r.patch.couverture_sans_preference && r.patch.couverture_choisie_id === null;
+   })());
+
+titre("— le PDF source et les gris ne sortent jamais vers le client —");
+{
+  const ED = "11111111-1111-4111-8111-111111111111", TO = "22222222-2222-4222-8222-222222222222";
+  ok("les gris et les vignettes de pages sont sous collectif/", estCleCollectif(cleGrisTour(ED, TO)) && estCleCollectif(cleVignettePageTour(ED, TO, 3, "jpg")));
+  let leve = false;
+  try {
+    cleGrisTour(ED, "../numeros");
+  } catch {
+    leve = true;
+  }
+  ok("un id de tour qui n'est pas un uuid est refuse", leve);
+  const client = [...fichiersParSuffixe("src/app/edition", /\.tsx?$/), ...fichiers("src/app/api/collectif", "route.ts")];
+  ok(`aucun fichier client ou route publique (${client.length}) ne lit pdf_key, clePdfTour ou cleGrisTour`,
+     client.every((f) => !/\b(pdf_key|clePdfTour|cleGrisTour)\b/.test(lire(f))));
+  ok("le lecteur client ne lit que les tours PUBLIES",
+     /\.filter\(\(t\) => t\.publie_le\)/.test(lire("src/app/edition/[token]/donnees.ts")));
+}
+
+titre("— le journal du bon a tirer se lit en francais, sans token —");
+ok("tour publie, notes envoyees, BAT valide",
+   phraseEvenement("tour_publie", { magazine: 1, tour: 2, par: "mathias" }).includes("tour 2 publié") &&
+   phraseEvenement("notes_envoyees", { magazine: 1, n: 3 }).includes("3 note") &&
+   phraseEvenement("bat_valide", { magazine: 2 }).includes("VALIDÉ"));
 
 titre("— chaque porte du B2B lit l'interrupteur —");
 const layouts = ["src/app/edition/layout.tsx", "src/app/depot/layout.tsx", "src/app/admin/collectif/layout.tsx"];

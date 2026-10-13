@@ -140,6 +140,32 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
   une heure). Un style dépublié disparaît du mur ; un brief qui le nomme reste lisible côté
   atelier (la fiche lit le style par son id, publié ou non).
 
+**Phase 5 (13/10/2026), le bon à tirer :**
+- **`bat.ts`** (pur, importable navigateur) — ⚠️ **L'APPARIEMENT DE DEUX TOURS LIT LE TEXTE
+  D'ABORD.** Mesuré le 13/10 : deux pages de même gabarit ont des empreintes d'image à 0-4 bits
+  même quand leur contenu diffère, et une page dont la photo a changé s'éloigne de 20-28 bits.
+  L'image seule confondait les unes et perdait l'autre. `coutPaire` : la part de mots communs
+  (pdf.js lit le texte, `motsUtiles` retire titre courant et folio) ; l'image seulement pour une
+  page sans texte ; `apparierPages` aligne dans l'ORDRE (un « diff »). Ne pas revenir à un
+  appariement glouton par empreinte. ⚠️ **Les zones** (`zonesModifiees`) comparent des gris de
+  240 × 340 et marquent une cellule aussi sur quelques pixels FRANCHEMENT changés : à 120 px ou
+  à la seule moyenne, un mot corrigé passait inaperçu. `rectRognage` coupe au format fini
+  (TrimBox lue par pdf-lib). `lirePagesTour` RECALCULE chaque clé : le navigateur ne peut faire
+  entrer dans un tour qu'un emplacement de CE tour.
+- **`tours.ts`** (effets) — une seule façon de compter les tours publiés et de trouver le tour
+  précédent d'un brouillon (le dernier PUBLIÉ avant lui, jamais un autre brouillon).
+- Le PDF est rendu dans le NAVIGATEUR de l'atelier (`admin/collectif/[id]/bat/rendreTour.ts`) :
+  le PDF source, les pages et leurs vignettes partent en PUT signé (le CORS du coffre doit
+  accepter l'origine : bellajour.fr, *.vercel.app, localhost:3000) ; les gris passent par le
+  serveur (gzip). Le PDF source et les gris ne sont JAMAIS servis au client : le harnais
+  vérifie qu'aucun fichier de `/edition` ni route publique ne les nomme.
+- Un seul brouillon de tour par magazine (`ouvrir_tour` le rouvre). Les propositions de
+  couverture vivent sur le PREMIER tour ; leur nombre est un réglage de la fiche, `null` refuse
+  la publication. Valider exige une couverture ou « Sans préférence » ET aucune note restée en
+  brouillon.
+- Route client `/api/collectif/bat` : une action par geste, le droit dépend de l'action ; tout
+  est refusé hors de l'état `bat` et sur un magazine validé.
+
 ## L'interrupteur et la migration
 
 - **`COLLECTIF_OUVERT`** (lu à chaque appel, une valeur incomprise FERME) : sans lui,
