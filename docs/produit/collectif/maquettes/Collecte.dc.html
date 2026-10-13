@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Photos et présélection</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@400;500;600&display=swap">
+<style>
+body{margin:0;background:#050505}
+a{color:#d68a63}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="min-height: 1040px; box-sizing: border-box; background: #050505; color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.5; display: flex">
+  <aside aria-label="Navigation de l'espace" style="flex: none; width: 248px; box-sizing: border-box; border-right: 1px solid rgba(255,255,255,0.10); background: #050505; padding: 22px 14px; display: flex; flex-direction: column; gap: 22px">
+    <span style="padding: 0 14px; font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; color: #ffffff">Bellajour</span>
+    <button type="button" aria-label="Changer d'édition" style="margin: 0 2px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); color: #ffffff; font-family: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px">
+      <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">Séminaire d'automne</span><span style="font-size: 12px; color: rgba(255,255,255,0.56)">Maison Aubier</span></span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5-5 5 5M7 14l5 5 5-5"></path></svg>
+    </button>
+    <nav style="display: flex; flex-direction: column; gap: 4px">
+        <a href="Espace.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>Tableau de bord</a>
+        <a href="Styles.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><circle cx="12" cy="12" r="9"></circle><circle cx="8" cy="10.5" r="1.3"></circle><circle cx="12" cy="7.5" r="1.3"></circle><circle cx="16" cy="10.5" r="1.3"></circle><path d="M12 21a3 3 0 0 1 0-6h2"></path></svg>Style</a>
+        <a href="Collecte.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: #ffffff; background: rgba(214,138,99,0.16); font-weight: 600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="M21 16l-5-5-9 8"></path></svg>Photos</a>
+        <span role="link" aria-disabled="true" title="Disponible à la réception du premier bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; font-size: 15px; color: rgba(255,255,255,0.32); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 5h6.5A2.5 2.5 0 0 1 12 7.5V20a2 2 0 0 0-2-2H3z"></path><path d="M21 5h-6.5A2.5 2.5 0 0 0 12 7.5V20a2 2 0 0 1 2-2h7z"></path></svg>Bon à tirer<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+        <span role="link" aria-disabled="true" title="Disponible après la validation du bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; font-size: 15px; color: rgba(255,255,255,0.32); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 6h11v10H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="1.8"></circle><circle cx="17" cy="18" r="1.8"></circle></svg>Livraison<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+    </nav>
+    <div style="height: 1px; margin: 0 14px; background: rgba(255,255,255,0.10)"></div>
+    <nav style="display: flex; flex-direction: column; gap: 4px">
+        <a href="Dossier.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path><path d="M9 13h6M9 17h6"></path></svg>Votre dossier</a>
+        <a href="RendezVous.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M4 5h16v11H9l-5 4z"></path></svg>Parler à l'atelier</a>
+    </nav>
+    <div style="margin-top: auto; padding: 14px; border-top: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center; gap: 12px">
+      <span style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: rgba(214,138,99,0.18); display: inline-flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 600; font-size: 14px">ML</span>
+      <span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 14px; color: #ffffff">Marion Lefèvre</span><span style="font-size: 12px; color: rgba(255,255,255,0.56)">Responsable du bon à tirer</span></span>
+    </div>
+  </aside>
+
+  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 4%; border-bottom: 1px solid rgba(255,255,255,0.10)">
+    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px">
+      <span style="font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 500">Les photos</span>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px">
+      <button type="button" style="height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer">Copier le lien participants</button>
+      <button type="button" onClick="{{ ouvrirDepot }}" style="height: 44px; padding: 0 20px; border-radius: 999px; border: 0; background: #ffffff; color: #050505; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">Déposer des photos</button>
+    </div>
+  </header>
+
+  <div style="padding: 22px 4%; display: flex; flex-wrap: wrap; gap: 14px 44px; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.10)">
+    <div style="display: flex; align-items: baseline; gap: 10px"><span style="font-family: 'Cormorant Garamond', serif; font-size: 44px; line-height: 1">1 248</span><span style="color: rgba(255,255,255,0.72)">photos reçues</span></div>
+    <div style="display: flex; align-items: baseline; gap: 10px"><span style="font-family: 'Cormorant Garamond', serif; font-size: 44px; line-height: 1">64</span><span style="color: rgba(255,255,255,0.72)">participants</span></div>
+    <div style="display: flex; align-items: baseline; gap: 10px"><span style="font-family: 'Cormorant Garamond', serif; font-size: 44px; line-height: 1">37</span><span style="color: rgba(255,255,255,0.72)">doublons repérés</span></div>
+    <div style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+      <div style="display: flex; justify-content: space-between; font-size: 14px"><span>84 photos en cours d'arrivée</span><span style="color: rgba(255,255,255,0.72)">3 participants en ligne</span></div>
+      <div style="height: 4px; border-radius: 2px; background: rgba(255,255,255,0.12); overflow: hidden"><div style="width: 72%; height: 100%; background: #d68a63"></div></div>
+    </div>
+  </div>
+
+  <div style="flex: 1; display: flex; flex-wrap: wrap; align-items: stretch">
+
+    <main style="flex: 999 1 560px; min-width: 0; padding: 24px 4% 32px; display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+        <button type="button" style="height: 40px; padding: 0 18px; border-radius: 999px; border: 0; background: #ffffff; color: #050505; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">Toutes</button>
+        <button type="button" style="height: 40px; padding: 0 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font-family: inherit; font-size: 14px; cursor: pointer">Par jour</button>
+        <button type="button" style="height: 40px; padding: 0 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font-family: inherit; font-size: 14px; cursor: pointer">Par provenance</button>
+        <button type="button" style="height: 40px; padding: 0 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font-family: inherit; font-size: 14px; cursor: pointer">Doublons · 37</button>
+        <button type="button" style="height: 40px; padding: 0 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font-family: inherit; font-size: 14px; cursor: pointer">Ma présélection</button>
+        <span style="margin-left: auto; font-size: 14px; color: rgba(255,255,255,0.56)">Jeudi 18 septembre · 412 photos</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px">
+        <sc-for list="{{ photos }}" as="p" hint-placeholder-count="32">
+          <button type="button" onClick="{{ p.basculer }}" aria-pressed="{{ p.choisie }}" aria-label="{{ p.libelle }}" style="position: relative; aspect-ratio: 1; border-radius: 8px; padding: 0; cursor: pointer; background: {{ p.fond }}; border: 2px solid {{ p.bord }}; opacity: {{ p.opacite }}">
+            <sc-if value="{{ p.choisie }}" hint-placeholder-val="{{ false }}">
+              <span style="position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; background: #d68a63; display: flex; align-items: center; justify-content: center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#050505" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>
+              </span>
+            </sc-if>
+            <sc-if value="{{ p.doublon }}" hint-placeholder-val="{{ false }}">
+              <span style="position: absolute; left: 6px; bottom: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(5,5,5,0.8); color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 11px">Doublon</span>
+            </sc-if>
+          </button>
+        </sc-for>
+      </div>
+      <span style="font-size: 13px; color: rgba(255,255,255,0.56)">Facultatif : touchez une photo pour l'ajouter à votre présélection. Sans présélection, l'atelier choisit parmi toutes les photos.</span>
+    </main>
+
+    <aside style="flex: 1 1 300px; min-width: 0; border-left: 1px solid rgba(255,255,255,0.10); padding: 24px; display: flex; flex-direction: column; gap: 24px">
+      <section style="display: flex; flex-direction: column; gap: 12px">
+        <span style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.56)">Votre présélection · facultative</span>
+        <div style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'Cormorant Garamond', serif; font-size: 72px; line-height: 1">{{ total }}</span><span style="color: rgba(255,255,255,0.72)">sur 300 photos</span></div>
+        <div style="height: 6px; border-radius: 3px; background: rgba(255,255,255,0.12); overflow: hidden"><div style="width: {{ largeur }}; height: 100%; background: #d68a63"></div></div>
+        <button type="button" style="height: 48px; border: 0; border-radius: 999px; background: #d68a63; color: #050505; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer">Envoyer la présélection à l'atelier</button>
+        <button type="button" style="height: 48px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font-family: inherit; font-size: 15px; cursor: pointer">Laisser l'atelier choisir</button>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgba(255,255,255,0.10); padding-top: 20px">
+        <span style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.56)">Qui a déposé</span>
+        <div style="display: flex; justify-content: space-between"><span>Photographe du séminaire</span><span style="color: rgba(255,255,255,0.72)">486</span></div>
+        <div style="display: flex; justify-content: space-between"><span>Camille Renaud</span><span style="color: rgba(255,255,255,0.72)">30</span></div>
+        <div style="display: flex; justify-content: space-between"><span>Hugo Martel</span><span style="color: rgba(255,255,255,0.72)">30</span></div>
+        <div style="display: flex; justify-content: space-between"><span>Inès Garnier</span><span style="color: rgba(255,255,255,0.72)">27</span></div>
+        <div style="display: flex; justify-content: space-between"><span>Théo Blanchard</span><span style="color: rgba(255,255,255,0.72)">22</span></div>
+        <a href="#participants" style="padding-top: 4px">Voir les 59 autres</a>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgba(255,255,255,0.10); padding-top: 20px">
+        <span style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.56)">Photos à ne pas publier</span>
+        <span style="color: rgba(255,255,255,0.72)">Signalez une photo ou une personne : l'atelier l'écarte de la maquette.</span>
+        <a href="#signaler">Signaler une photo</a>
+      </section>
+    </aside>
+  </div>
+
+  <sc-if value="{{ depotOuvert }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; z-index: 20; background: rgba(5,5,5,0.6); display: flex; justify-content: flex-end">
+      <section role="dialog" aria-label="Déposer des photos" style="width: 520px; max-width: 100%; height: 100%; box-sizing: border-box; overflow: auto; background: #0b0b0b; border-left: 1px solid rgba(255,255,255,0.12); padding: 28px; display: flex; flex-direction: column; gap: 22px">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px">
+          <span style="font-family: 'Cormorant Garamond', serif; font-size: 32px">Déposer des photos</span>
+          <button type="button" onClick="{{ fermerDepot }}" aria-label="Fermer" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <span style="font-weight: 600">1. D'où viennent ces photos ?</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <sc-for list="{{ sources }}" as="o" hint-placeholder-count="4">
+              <button type="button" onClick="{{ o.choisir }}" aria-pressed="{{ o.actif }}" style="height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid {{ o.bord }}; background: {{ o.fond }}; color: #ffffff; font-family: inherit; font-size: 14px; cursor: pointer">{{ o.label }}</button>
+            </sc-for>
+          </div>
+          <span style="font-size: 13px; color: rgba(255,255,255,0.56)">Chaque lot garde sa provenance : vous les retrouvez triés dans « Par provenance », et l'atelier aussi.</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <span style="font-weight: 600">2. Ajoutez-les</span>
+          <div style="border: 1.5px dashed rgba(214,138,99,0.6); border-radius: 16px; background: rgba(214,138,99,0.06); padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"></path><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"></path></svg>
+            <span>Glissez des photos ou un dossier entier ici</span>
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px">
+              <button type="button" style="height: 42px; padding: 0 16px; border-radius: 999px; border: 0; background: #ffffff; color: #050505; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">Choisir des photos</button>
+              <button type="button" style="height: 42px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font-family: inherit; font-size: 14px; cursor: pointer">Choisir un dossier</button>
+            </div>
+            <span style="font-size: 12px; color: rgba(255,255,255,0.56)">JPEG, HEIC, PNG · sans plafond pour vous · les doublons sont écartés tout seuls</span>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <span style="font-weight: 600">En cours</span>
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12)">
+            <div style="display: flex; justify-content: space-between; font-size: 14px"><span>Photographe · 486 photos</span><span style="color: #d68a63">72 %</span></div>
+            <div style="height: 4px; border-radius: 2px; background: rgba(255,255,255,0.12); overflow: hidden"><div style="width: 72%; height: 100%; background: #d68a63"></div></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); font-size: 14px"><span>Mes photos · 54 photos</span><span style="color: rgba(255,255,255,0.56)">Terminé</span></div>
+          <span style="font-size: 12px; color: rgba(255,255,255,0.56)">Vous pouvez continuer à naviguer dans l'espace pendant le dépôt. Si vous fermez la page, les photos déjà arrivées sont gardées : reprenez le même dossier, celles déjà reçues sont ignorées.</span>
+        </div>
+
+        <div style="border-top: 1px solid rgba(255,255,255,0.10); padding-top: 18px; display: flex; flex-direction: column; gap: 10px">
+          <span style="font-weight: 600">Les photos sont chez quelqu'un d'autre ?</span>
+          <span style="font-size: 14px; color: rgba(255,255,255,0.72)">Envoyez-lui un lien de dépôt sans plafond, au nom de sa provenance. Idéal pour le photographe.</span>
+          <div style="display: flex; gap: 8px">
+            <span style="flex: 1; min-width: 0; height: 44px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; border: 1px solid rgba(255,255,255,0.18); color: rgba(255,255,255,0.72); font-size: 14px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">bellajour.fr/c/seminaire-automne/photographe</span>
+            <button type="button" style="flex: none; height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font-family: inherit; font-size: 14px; cursor: pointer">Copier</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const tons = [
+      ['rgba(214,138,99,0.46)', 'rgba(214,138,99,0.10)'],
+      ['rgba(255,255,255,0.20)', 'rgba(255,255,255,0.05)'],
+      ['rgba(214,138,99,0.26)', 'rgba(255,255,255,0.08)'],
+      ['rgba(255,255,255,0.12)', 'rgba(214,138,99,0.22)'],
+      ['rgba(214,138,99,0.36)', 'rgba(214,138,99,0.06)'],
+      ['rgba(255,255,255,0.16)', 'rgba(255,255,255,0.04)'],
+      ['rgba(214,138,99,0.20)', 'rgba(255,255,255,0.10)'],
+      ['rgba(255,255,255,0.24)', 'rgba(214,138,99,0.12)']
+    ];
+    const depart = [0, 2, 3, 6, 9, 11, 12, 15, 17, 20, 21, 24, 26, 27, 29, 30];
+    const doublons = [4, 5, 13, 22];
+    const choix = (this.state && this.state.choix) || depart;
+    const photos = [];
+    for (let i = 0; i < 32; i++) {
+      const t = tons[(i * 5 + 3) % tons.length];
+      const choisie = choix.indexOf(i) !== -1;
+      const doublon = doublons.indexOf(i) !== -1;
+      photos.push({
+        fond: 'linear-gradient(' + (115 + (i * 37) % 90) + 'deg, ' + t[0] + ', ' + t[1] + ')',
+        bord: choisie ? '#d68a63' : 'transparent',
+        opacite: doublon && !choisie ? '0.5' : '1',
+        choisie: choisie,
+        doublon: doublon,
+        libelle: 'Photo ' + (i + 1) + (choisie ? ', dans la présélection' : ''),
+        basculer: () => {
+          const suite = choisie ? choix.filter((n) => n !== i) : choix.concat([i]);
+          this.setState({ choix: suite });
+        }
+      });
+    }
+    const total = 196 + choix.length;
+    const st = this.state || {};
+    const source = st.source || 'moi';
+    const sources = [['moi', 'Mes photos'], ['photographe', 'Le photographe'], ['participant', 'Un participant'], ['autre', 'Autre source']].map((o) => {
+      const actif = source === o[0];
+      return { label: o[1], actif: actif, bord: actif ? '#d68a63' : 'rgba(255,255,255,0.22)', fond: actif ? 'rgba(214,138,99,0.18)' : 'transparent', choisir: () => this.setState({ source: o[0] }) };
+    });
+    return {
+      depotOuvert: !!st.depot,
+      ouvrirDepot: () => this.setState({ depot: true }),
+      fermerDepot: () => this.setState({ depot: false }),
+      sources: sources,
+      photos: photos,
+      total: total,
+      largeur: Math.min(100, Math.round((total / 300) * 100)) + '%'
+    };
+  }
+}
+</script>
+</body>
+</html>
