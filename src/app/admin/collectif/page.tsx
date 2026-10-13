@@ -52,7 +52,7 @@ export default async function PageCollectif() {
         <section className="ate-carte ate-sante-ok">
           <h2 className="ate-carte-titre">La migration est passée</h2>
           <p>
-            Les {TABLES_COLLECTIF.length} tables <code>collectif_*</code> répondent. Les liens
+            Les {TABLES_COLLECTIF.length} tables <code>collectif_*</code>{" "}répondent. Les liens
             d&apos;édition et de dépôt sont prêts à servir dès qu&apos;une édition existera.
           </p>
         </section>
