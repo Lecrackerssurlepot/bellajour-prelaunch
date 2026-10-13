@@ -10,6 +10,16 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 13/10/2026 (fin d'après-midi) — Édition collective : phases 2 à 6 sur UNE branche, testées en local avant fusion
+
+- Décision de Mathias : ne plus fusionner phase par phase ; les phases 2 à 6 s'enchaînent sur
+  `feat/collectif-phases-2-a-6`, testées sur `localhost:3006`, fusionnées quand il est satisfait.
+  Rien ne change en production entre-temps (`COLLECTIF_OUVERT` absent de Vercel).
+- **Phase 2 faite** (T-141) : espace client, tableau de bord, dossier, messagerie.
+- **Données d'essai en production** : l'édition « Essai technique (Claude) » a été RÉCUPÉRÉE
+  (désarchivée) pour la recette de l'espace client ; elle porte quatre messages d'essai et un
+  « Devis d'essai » (PDF minuscule sur R2, `collectif/<id>/documents/`). Plafond client réglé à 8.
+
 ## 13/10/2026 (après-midi) — Édition collective, phase 1 : ouvrir une édition, les styles (T-140), sur branche
 
 - **Code** sur `feat/collectif-phase-1` (PR à fusionner par Mathias) : liste, création, fiche et

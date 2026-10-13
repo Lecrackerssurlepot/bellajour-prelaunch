@@ -11,7 +11,9 @@ import { MIGRATION_COLLECTIF } from "@/lib/collectif/migration";
 import { LIBELLE_CAMP, prochaineEtape } from "@/lib/collectif/prochaine";
 import { chargerEdition } from "../donnees";
 import FormulaireEdition, { type ValeursEdition } from "../FormulaireEdition";
+import PanneauDocuments from "./PanneauDocuments";
 import PanneauGestes from "./PanneauGestes";
+import PanneauMessages from "./PanneauMessages";
 import PanneauLiens from "./PanneauLiens";
 import "../../admin.css";
 import "../../atelier/atelier.css";
@@ -64,7 +66,7 @@ export default async function PageFiche({ params }: { params: Promise<{ id: stri
     );
   }
   if (!lu.fiche) notFound();
-  const { edition: e, etat, magazines, journal } = lu.fiche;
+  const { edition: e, etat, magazines, journal, documents, messages } = lu.fiche;
 
   const h = await headers();
   const origine = origineDepuis(h.get("x-forwarded-host") ?? h.get("host"), h.get("x-forwarded-proto"));
@@ -123,7 +125,9 @@ export default async function PageFiche({ params }: { params: Promise<{ id: stri
 
         <aside className="eca-colonne">
           <PanneauLiens id={e.id} liens={liens} />
+          <PanneauMessages id={e.id} initiaux={messages} />
           <PanneauGestes id={e.id} etat={etat} archivee={Boolean(e.archive_le)} />
+          <PanneauDocuments id={e.id} documents={documents} />
 
           <section className="ate-carte">
             <h2 className="ate-carte-titre">Magazines</h2>

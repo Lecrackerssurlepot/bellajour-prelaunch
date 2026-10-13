@@ -93,6 +93,22 @@ de recette (3006) un PUT direct échouerait sans le dire. Le navigateur réduit 
 `ecrireObjet`. Les PHOTOS de la phase 3 (des milliers, souvent lourdes) ne pourront pas suivre
 ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans le CORS.
 
+**Phase 2 (13/10/2026), l'espace client :**
+- **`espace.ts`** (pur) — les cinq étapes du client par leur NOM (jamais « N sur M », PRD §12.11
+  ouvert), `joursAvant` en jours CALENDAIRES de Paris, `parler(registre)` pour vous / tu,
+  `contenusAEnvoyer`. **`messages.ts`** (pur) — 3,5 s, `fusionnerMessages` sans doublon.
+  **`documents.ts`** (pur) — types de documents, nom de téléchargement en ASCII.
+- **`messagerie.ts`** (effets) — UNE façon de lire, écrire, marquer lu, pour le client et pour
+  l'atelier. **`reponses.ts`** — 404 identique pour inconnu / archivé / fermé, 503 migration,
+  403 `lecture_seule`.
+- ⚠️ **Les routes publiques sont en POST, token dans le CORPS** (`/api/collectif/messages*`,
+  `/api/collectif/plafond`) : jamais un token dans une URL que les journaux garderaient.
+- ⚠️ **« Marquer lu » se fait par un EFFET** (`useMessagerie`), jamais au rendu : un
+  préchargement de `<Link>` exécute la page. Le lien d'équipe ne marque rien.
+- La coquille (`edition/[token]/layout.tsx`) lit l'édition par `cache` (une requête pour layout
+  ET page) ; l'état du tiroir et de la bulle d'un verrou est rattaché au chemin, il se referme
+  seul à la navigation (aucun `setState` dans un effet).
+
 ## L'interrupteur et la migration
 
 - **`COLLECTIF_OUVERT`** (lu à chaque appel, une valeur incomprise FERME) : sans lui,

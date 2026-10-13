@@ -63,6 +63,9 @@ import {
   type MagazinePourGeste,
 } from "@/lib/collectif/gestes";
 import { lireInterrupteur } from "@/lib/collectif/interrupteur";
+import { contenusAEnvoyer, ETAPES_CLIENT, etapeClient, initiales, joursAvant, libelleRole, parler, phraseJours } from "@/lib/collectif/espace";
+import { curseur, fusionnerMessages, lireTexteMessage, MESSAGE_MAX, type Message } from "@/lib/collectif/messages";
+import { libelleTypeDocument, lireSaisieDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { formaterInstantParis, instantDeParis, versChampParis } from "@/lib/collectif/dates";
 import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
 import { prochaineEtape } from "@/lib/collectif/prochaine";
@@ -673,6 +676,50 @@ ok("les champs modifies se nomment en francais",
    phraseEvenement("reglages_modifies", { par: "Mathias", champs: ["tirage", "plafond_total"] }).includes("Tirage prévu au devis"));
 ok("un type inconnu reste lisible", phraseEvenement("truc_inconnu", {}) === "truc_inconnu");
 
+
+/* ═══════════════════════════ PHASE 2 : L'ESPACE CLIENT ═══════════════════════════ */
+
+titre("— les etapes du client, sans « N sur M » —");
+ok("cinq etapes nommees", ETAPES_CLIENT.map((e) => e.libelle).join(" | ") === "Style et photos | Composition | Bon à tirer | Impression | Livraison");
+ok("chaque etat tombe sur une etape", ETATS_EDITION.every((e) => etapeClient(e) >= 0));
+ok("bat_valide et impression = Impression ; expediee et livree = Livraison",
+   etapeClient("bat_valide") === 3 && etapeClient("impression") === 3 && etapeClient("expediee") === 4 && etapeClient("livree") === 4);
+
+titre("— le temps qui reste, en jours de Paris —");
+const midi = new Date("2026-10-13T10:00:00.000Z");
+ok("le meme jour = aujourd'hui", phraseJours(joursAvant("2026-10-13T21:59:00.000Z", midi)) === "aujourd'hui");
+ok("le lendemain 00:30 a Paris = demain (pas « dans 0 jour »)", phraseJours(joursAvant("2026-10-13T22:30:00.000Z", midi)) === "demain");
+ok("dans 7 jours", joursAvant("2026-10-20T21:59:00.000Z", midi) === 7 && phraseJours(7) === "dans 7 jours");
+ok("une date passee le dit", phraseJours(joursAvant("2026-10-01T10:00:00.000Z", midi)) === "date passée");
+ok("sans date, rien", joursAvant(null, midi) === null && phraseJours(null) === "");
+
+titre("— qui regarde, et comment on lui parle —");
+ok("initiales", initiales("Camille Renaud") === "CR" && initiales("Lou") === "LO" && initiales("  ") === "?" && initiales(null) === "?");
+ok("le role au masculin generique", libelleRole("responsable") === "Responsable du bon à tirer" && libelleRole("equipe").includes("lecture seule"));
+ok("vous pour une entreprise, tu pour une ecole", parler("entreprise_vous")("vous", "tu") === "vous" && parler("ecole_tu")("vous", "tu") === "tu");
+const cont = contenusAEnvoyer(["mot", "logo", "pirate"], ["logo"]);
+ok("contenus demandes : ordre de la fiche, inconnu ignore, recu marque",
+   cont.map((c) => `${c.cle}:${c.recu}`).join() === "logo:true,mot:false");
+
+titre("— la messagerie —");
+ok("un message vide ou trop long est refuse",
+   !lireTexteMessage("   ").ok && !lireTexteMessage(42).ok && !lireTexteMessage("x".repeat(MESSAGE_MAX + 1)).ok);
+ok("un message se nettoie (CRLF, espaces autour)",
+   (() => { const t = lireTexteMessage("  Bonjour\r\nà tous  "); return t.ok && t.texte === "Bonjour\nà tous"; })());
+const msg = (id: string, quand: string): Message => ({ id, auteur: "client", qui: null, texte: id, created_at: quand });
+const fil = fusionnerMessages([msg("a", "2026-10-13T10:00:00Z"), msg("b", "2026-10-13T10:01:00Z")], [msg("b", "2026-10-13T10:01:00Z"), msg("c", "2026-10-13T10:00:30Z")]);
+ok("fusion sans doublon, dans l'ordre du temps", fil.map((m) => m.id).join() === "a,c,b");
+ok("le curseur est le dernier message", curseur(fil) === "2026-10-13T10:01:00Z" && curseur([]) === null);
+
+titre("— les documents du dossier —");
+ok("un type inconnu est refuse", !lireSaisieDocument("bulletin", "", "x").ok);
+ok("sans libelle, le type le donne",
+   (() => { const d = lireSaisieDocument("devis", "", "devis-2026"); return d.ok && d.libelle === "Devis signé" && d.nom === "devis-2026"; })());
+ok("l'accord sur les donnees est un document ATELIER, jamais redige par le code", libelleTypeDocument("donnees") === "Accord sur les données");
+ok("le nom de telechargement est en ASCII sur", nomTelechargement("Facture n°3 / été", "pdf") === "Facture n 3 ete.pdf" && nomTelechargement("", "pdf") === "document.pdf");
+ok("le journal raconte un message sans le citer",
+   phraseEvenement("message_client", { par: "Camille", texte: "secret" }) === "Message du client (Camille).");
+
 /* ═══════════════════════════ LES GARDES DANS LES FICHIERS ═══════════════════════════ */
 
 function fichiers(dossier: string, nom: string): string[] {
@@ -695,6 +742,8 @@ const routes = [...fichiers("src/app/api/collectif", "route.ts"), ...fichiers("s
 ok(`chaque route collectif (${routes.length}) lit l'interrupteur`,
    routes.every((f) => /collectifOuvert\(\)/.test(lire(f))));
 const ECRITURE = /export\s+(async\s+)?function\s+(POST|PUT|PATCH|DELETE)\b/;
+ok("chaque route publique lit le token par chargerAcces (forme, porte, archive)",
+   fichiers("src/app/api/collectif", "route.ts").every((f) => /chargerAcces\(/.test(lire(f))));
 ok("chaque route publique qui ECRIT demande peut(role, action) avant d'agir",
    fichiers("src/app/api/collectif", "route.ts").filter((f) => ECRITURE.test(lire(f))).every((f) => /\bpeut\(/.test(lire(f))));
 ok("chaque route admin revérifie l'admin (defense en profondeur)",

@@ -1,0 +1,615 @@
+/* L'espace client de l'Édition collective (monde SOMBRE).
+
+   Tout est écrit sous `.bj-atelier.ec-espace` (posé par edition/layout.tsx) :
+   une feuille chargée ne se décharge jamais en navigation client, une classe
+   courte non scopée repeindrait le B2C. Les couleurs voulues par Mathias pour
+   cet espace : noir, blanc, orange (`--c-accent`) en touche et en
+   transparence. Pas de gris « sale » : les nuances sont des blancs
+   transparents. Polices : Cormorant Garamond 400, DM Sans. Pas de `dvh` :
+   la hauteur pleine est `var(--app-height)`. */
+
+.bj-atelier.ec-espace {
+  --ec-fond: #050505;
+  --ec-blanc: var(--c-text-pure);
+  --ec-blanc-72: rgba(255, 255, 255, 0.72);
+  --ec-blanc-56: rgba(255, 255, 255, 0.56);
+  --ec-blanc-32: rgba(255, 255, 255, 0.32);
+  --ec-filet: rgba(255, 255, 255, 0.1);
+  --ec-filet-fort: rgba(255, 255, 255, 0.16);
+  --ec-surface: rgba(255, 255, 255, 0.035);
+  --ec-orange: var(--c-accent);
+  --ec-orange-voile: rgba(214, 138, 99, 0.16);
+  --ec-menu-l: 248px;
+  background: var(--ec-fond);
+  color: var(--ec-blanc);
+  line-height: 1.5;
+}
+
+/* ─────────────────────────────── la coquille ─────────────────────────────── */
+
+.ec-espace .ec-coquille {
+  display: grid;
+  grid-template-columns: var(--ec-menu-l) minmax(0, 1fr);
+  min-height: var(--app-height);
+}
+
+.ec-espace .ec-barre-mobile {
+  display: none;
+}
+
+.ec-espace .ec-menu {
+  position: sticky;
+  top: 0;
+  height: var(--app-height);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px 14px;
+  border-right: 1px solid var(--ec-filet);
+  background: var(--ec-fond);
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.ec-espace .ec-marque {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1;
+  color: var(--ec-blanc);
+  letter-spacing: 0.01em;
+}
+.ec-espace .ec-marque--menu {
+  padding: 0 10px;
+}
+
+.ec-espace .ec-edition {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border: 1px solid var(--ec-filet);
+  border-radius: 10px;
+  background: var(--ec-surface);
+}
+.ec-espace .ec-edition-nom {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ec-blanc);
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-edition-orga {
+  font-size: 12px;
+  color: var(--ec-blanc-56);
+}
+
+.ec-espace .ec-menu-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ec-espace .ec-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  color: var(--ec-blanc-72);
+  text-decoration: none;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.ec-espace a.ec-menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-menu-item[aria-current="page"] {
+  background: var(--ec-orange-voile);
+  color: var(--ec-blanc);
+  font-weight: 600;
+}
+.ec-espace .ec-menu-item[aria-current="page"] svg {
+  color: var(--ec-orange);
+}
+.ec-espace .ec-menu-item--verrou {
+  color: var(--ec-blanc-32);
+  cursor: not-allowed;
+}
+.ec-espace .ec-menu-libelle {
+  flex: 1;
+  min-width: 0;
+}
+.ec-espace .ec-menu-cadenas {
+  display: inline-flex;
+}
+.ec-espace .ec-menu-pastille {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--ec-orange);
+  color: var(--c-text-onaccent);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+}
+.ec-espace .ec-menu-bulle {
+  display: block;
+  margin: 4px 12px 8px 42px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--ec-filet);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-menu-filet {
+  border: 0;
+  border-top: 1px solid var(--ec-filet);
+  margin: 10px 4px;
+}
+
+.ec-espace .ec-moi {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+}
+.ec-espace .ec-avatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(214, 138, 99, 0.18);
+  color: var(--ec-orange);
+  font-size: 13px;
+  font-weight: 600;
+}
+.ec-espace .ec-moi-texte {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ec-espace .ec-moi-nom {
+  font-size: 14px;
+  color: var(--ec-blanc);
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-moi-role {
+  font-size: 12px;
+  color: var(--ec-blanc-56);
+}
+
+.ec-espace .ec-contenu {
+  min-width: 0;
+  padding: clamp(28px, 4vw, 56px) clamp(16px, 4vw, 56px) 80px;
+}
+.ec-espace .ec-bandeau {
+  margin: 0 0 24px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--ec-filet-fort);
+  background: var(--ec-surface);
+  font-size: 14px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-voile {
+  display: none;
+}
+
+/* ─────────────────────────────── les pages ─────────────────────────────── */
+
+.ec-espace .ec-page {
+  max-width: 1080px;
+}
+.ec-espace .ec-surtitre {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+/* (0,2,0) contre `.bj-atelier h1` (0,1,1), qui pose 56 à 150 px. */
+.ec-espace .ec-h1 {
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(36px, 5.5vw, 64px);
+  line-height: 1.04;
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(26px, 3vw, 34px);
+  line-height: 1.1;
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-texte {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-echeance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: baseline;
+  margin: 0 0 22px;
+  font-size: 15px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-echeance strong {
+  color: var(--ec-blanc);
+  font-weight: 500;
+}
+.ec-espace .ec-echeance-delai {
+  color: var(--ec-orange);
+}
+
+.ec-espace .ec-etapes {
+  list-style: none;
+  margin: 0 0 34px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-etape {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-filet);
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-etape--faite {
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-etape--courante {
+  border-color: rgba(214, 138, 99, 0.5);
+  background: var(--ec-orange-voile);
+  color: var(--ec-blanc);
+}
+
+.ec-espace .ec-cartes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+.ec-espace .ec-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  border: 1px solid var(--ec-filet);
+  border-radius: 20px;
+  background: var(--ec-surface);
+  min-width: 0;
+}
+.ec-espace .ec-carte-tete {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-statut {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--ec-orange-voile);
+  color: var(--ec-orange);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ec-espace .ec-statut--ok {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-lignes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ec-espace .ec-lignes li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--ec-filet);
+  font-size: 14px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-lignes li strong {
+  color: var(--ec-blanc);
+  font-weight: 500;
+}
+.ec-espace .ec-compteurs {
+  display: flex;
+  gap: 28px;
+}
+.ec-espace .ec-compteur {
+  display: flex;
+  flex-direction: column;
+}
+.ec-espace .ec-compteur-n {
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1;
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-compteur-l {
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+
+.ec-espace .ec-bouton {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--ec-orange);
+  color: var(--c-text-onaccent);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+}
+.ec-espace .ec-bouton:hover {
+  background: var(--c-accent-strong);
+}
+.ec-espace .ec-bouton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ec-espace .ec-bouton--clair {
+  background: transparent;
+  color: var(--ec-blanc);
+  border: 1px solid var(--ec-filet-fort);
+}
+.ec-espace .ec-bouton--clair:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ec-espace .ec-lien-ligne {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ec-espace .ec-champ {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ec-filet-fort);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ec-blanc);
+  font: inherit;
+  font-size: 14px;
+}
+.ec-espace .ec-champ:focus-visible,
+.ec-espace .ec-zone:focus-visible {
+  outline: 2px solid var(--ec-orange);
+  outline-offset: 1px;
+}
+.ec-espace .ec-curseur {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-curseur input[type="range"] {
+  accent-color: var(--ec-orange);
+  width: 100%;
+}
+.ec-espace .ec-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-note--erreur {
+  color: #ff9b7a;
+}
+
+.ec-espace .ec-puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-puce {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-filet-fort);
+  font-size: 13px;
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-puce--recue {
+  color: var(--ec-blanc-32);
+  border-color: var(--ec-filet);
+}
+.ec-espace .ec-ensuite {
+  margin: 28px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--ec-filet);
+  font-size: 14px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-section {
+  margin-bottom: 34px;
+}
+
+/* ─────────────────────────────── le dossier ─────────────────────────────── */
+
+.ec-espace .ec-dossier {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 22px;
+  align-items: start;
+}
+.ec-espace .ec-documents {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ec-espace .ec-documents li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--ec-filet);
+  font-size: 14px;
+}
+.ec-espace .ec-documents a {
+  color: var(--ec-orange);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ec-espace .ec-documents a:hover {
+  color: var(--ec-blanc);
+}
+
+.ec-espace .ec-fil {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(60 * var(--uh));
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.ec-espace .ec-bulle {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ec-blanc);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-bulle--moi {
+  align-self: flex-end;
+  background: var(--ec-orange-voile);
+}
+.ec-espace .ec-bulle-qui {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 12px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-zone {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 92px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--ec-filet-fort);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ec-blanc);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+/* ─────────────────────────────── à venir, verrou ─────────────────────────────── */
+
+.ec-espace .ec-a-venir {
+  max-width: 560px;
+  padding: 28px;
+  border: 1px dashed var(--ec-filet-fort);
+  border-radius: 20px;
+}
+
+/* ─────────────────────────────── téléphone ─────────────────────────────── */
+
+@media (max-width: 860px) {
+  .ec-espace .ec-coquille {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ec-espace .ec-barre-mobile {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--ec-fond);
+    border-bottom: 1px solid var(--ec-filet);
+  }
+  .ec-espace .ec-bouton-tiroir {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-right: -10px;
+    border: 0;
+    background: none;
+    color: var(--ec-blanc);
+    cursor: pointer;
+  }
+  .ec-espace .ec-menu {
+    position: fixed;
+    z-index: 40;
+    top: 0;
+    left: 0;
+    width: min(86vw, 300px);
+    height: var(--app-height);
+    transform: translateX(-102%);
+    transition: transform var(--dur) var(--ease);
+  }
+  .ec-espace .ec-coquille[data-tiroir="ouvert"] .ec-menu {
+    transform: none;
+  }
+  .ec-espace .ec-voile {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    border: 0;
+    background: rgba(0, 0, 0, 0.6);
+  }
+  .ec-espace .ec-cartes,
+  .ec-espace .ec-dossier {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ec-espace .ec-carte {
+    padding: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ec-espace .ec-menu {
+    transition: none;
+  }
+}

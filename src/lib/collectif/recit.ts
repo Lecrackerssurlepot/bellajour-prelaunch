@@ -47,6 +47,14 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       const quel = LIBELLE_LIEN[String(payload.quel)] ?? "";
       return `Lien ${quel} régénéré par ${par} : l'ancien ne fonctionne plus.`;
     }
+    case "message_client":
+      return `Message du client (${par}).`;
+    case "message_atelier":
+      return `Message de l'atelier, par ${par}.`;
+    case "plafond_client":
+      return `Photos par participant réglées à ${String(payload.valeur)} par ${par}.`;
+    case "document_pose":
+      return `Document déposé par ${par} : ${String(payload.libelle ?? "")}.`;
     case "style_cree":
       return `Style créé par ${par}.`;
     case "style_modifie": {

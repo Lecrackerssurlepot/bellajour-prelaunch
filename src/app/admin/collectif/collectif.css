@@ -347,6 +347,35 @@
   border-bottom: none;
 }
 
+.eca-root .eca-fil {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.eca-root .eca-bulle {
+  max-width: 88%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--bj-veil-8);
+  font-size: var(--bj-fs-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-bulle--atelier {
+  align-self: flex-end;
+  background: var(--bj-action-soft);
+  border-color: var(--bj-action-border);
+}
+.eca-root .eca-bulle-qui {
+  display: block;
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+  margin-bottom: 2px;
+}
+
 /* ─────────────────────────────── les styles ─────────────────────────────── */
 
 .eca-root .eca-styles {

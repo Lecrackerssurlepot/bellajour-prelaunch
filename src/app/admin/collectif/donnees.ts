@@ -15,6 +15,9 @@ import { tableAbsente } from "@/lib/collectif/migration";
 import { prochaineEtape, type Prochaine } from "@/lib/collectif/prochaine";
 import { phraseEvenement } from "@/lib/collectif/recit";
 import { manquesPourPublier } from "@/lib/collectif/styles";
+import { libelleTypeDocument } from "@/lib/collectif/documents";
+import { lireMessages } from "@/lib/collectif/messagerie";
+import type { Message } from "@/lib/collectif/messages";
 import type { EditionLigne, EvenementLigne, MagazineLigne, StyleLigne } from "@/lib/collectif/types";
 
 function echec(quoi: string, error: { code?: string; message: string }): never {
@@ -111,11 +114,15 @@ export type MagazineFiche = Pick<MagazineLigne, "id" | "rang" | "nom" | "brief_v
 
 export type EntreeJournal = { id: string; quand: string; phrase: string };
 
+export type DocumentFiche = { id: string; libelle: string; libelleType: string; quand: string; par: string | null };
+
 export type Fiche = {
   edition: EditionLigne;
   etat: EtatEdition;
   magazines: MagazineFiche[];
   journal: EntreeJournal[];
+  documents: DocumentFiche[];
+  messages: Message[];
 };
 
 export async function chargerEdition(
@@ -134,7 +141,7 @@ export async function chargerEdition(
   }
   if (!edition) return { absent: false, fiche: null };
 
-  const [mags, journal] = await Promise.all([
+  const [mags, journal, docs, fil] = await Promise.all([
     supabase
       .from("collectif_magazines")
       .select("id, rang, nom, style_id, brief_valide_le, bat_valide_le")
@@ -146,9 +153,17 @@ export async function chargerEdition(
       .eq("edition_id", id)
       .order("created_at", { ascending: false })
       .limit(100),
+    supabase
+      .from("collectif_documents")
+      .select("id, type, libelle, created_at, cree_par")
+      .eq("edition_id", id)
+      .order("created_at", { ascending: false }),
+    lireMessages(supabase, id, null),
   ]);
   if (mags.error) echec("magazines de l'édition", mags.error);
   if (journal.error) echec("journal de l'édition", journal.error);
+  if (docs.error) echec("documents de l'édition", docs.error);
+  if (!fil.ok) throw new Error(`[collectif] messages de l'édition : ${fil.code}`);
 
   const magIds = (mags.data ?? []).map((m) => m.id as string);
   const tours = magIds.length
@@ -185,6 +200,10 @@ export async function chargerEdition(
         quand: j.created_at,
         phrase: phraseEvenement(j.type, j.payload ?? {}),
       })),
+      documents: ((docs.data ?? []) as { id: string; type: string; libelle: string; created_at: string; cree_par: string | null }[]).map(
+        (d) => ({ id: d.id, libelle: d.libelle, libelleType: libelleTypeDocument(d.type), quand: d.created_at, par: d.cree_par })
+      ),
+      messages: fil.messages,
     },
   };
 }

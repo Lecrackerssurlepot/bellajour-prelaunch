@@ -1,7 +1,7 @@
 ---
 id: T-141
 titre: Le client B2B n'a pas d'espace, ni menu, ni tableau de bord, ni dossier, ni messagerie
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: libre
@@ -36,4 +36,24 @@ PRD §4, §7, phase 2 :
 dans deux fenêtres, le lien équipe qui ne peut rien écrire.
 
 ## Ce qui a été fait
-Rien. Ticket ouvert le 13/10/2026.
+13/10/2026, branche `feat/collectif-phases-2-a-6` (Mathias veut tester les phases 2 à 6 ensemble
+en local avant toute fusion) :
+- **La coquille** `/edition/[token]/layout.tsx` + `Coquille.tsx` : menu persistant (sept entrées,
+  BAT et Livraison grisés avec cadenas, raison au survol ET au tap), tiroir sur téléphone, bandeau
+  « lecture seule » pour l'équipe, pastille des messages non lus. Navigation par `<Link>` : prouvé
+  dans le navigateur, même document d'une section à l'autre.
+- **Le tableau de bord** (maquette Espace) : échéance « Tout avant le … » en jours de Paris, les
+  cinq étapes par leur NOM (pas de « N sur M » : PRD §12.11 non tranché), encarts Style et Photos
+  (lien participants à copier, curseur « Photos par participant » borné par l'atelier), « À
+  envoyer à l'atelier », « Ensuite ». Vous ou tu selon le registre.
+- **Votre dossier** : ce qui est prévu (« à confirmer avec l'atelier » si l'atelier n'a rien
+  saisi), documents posés par l'atelier (téléchargés sous leur libellé, URL signée une heure),
+  messagerie interrogée toutes les 3,5 s onglet visible. Côté atelier, la fiche a sa messagerie
+  et son dépôt de documents (PDF ou image, 4 Mo).
+- Les sections Style, Photos, BAT, Livraison et Parler à l'atelier existent et le disent ; BAT
+  et Livraison verrouillées affichent la même phrase que le menu.
+- **Le lien d'équipe n'écrit rien** : 403 `lecture_seule` sur envoyer, marquer lu, régler le
+  plafond (prouvé au `curl`). Le harnais vérifie que chaque route publique passe par
+  `chargerAcces` et `peut`.
+- **Reste / reporté** : le QR code du lien participants (aucune bibliothèque installée, avec la
+  collecte, T-142) ; « Étape N sur M » si Mathias tranche.
