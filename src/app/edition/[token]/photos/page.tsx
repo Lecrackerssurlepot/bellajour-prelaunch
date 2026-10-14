@@ -5,9 +5,11 @@
 
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
+import { formaterJour } from '@/lib/atelier/dates'
 import { makeSupabase } from '@/lib/supabase'
 import { peut } from '@/lib/collectif/droits'
 import { liensEdition, origineDepuis } from '@/lib/collectif/liens'
+import { plafondLienMax } from '@/lib/collectif/plafonds'
 import { chargerEspace } from '../donnees'
 import Collecte from './Collecte'
 
@@ -42,6 +44,9 @@ export default async function PagePhotos({ params }: { params: Promise<{ token: 
       lienParticipants={liensEdition(origine, edition).depot}
       preselectionMax={edition.preselection_max}
       origine={origine}
+      max={plafondLienMax(edition)}
+      evenement={edition.evenement}
+      cloture={edition.cloture_le ? formaterJour(edition.cloture_le) : ''}
       liens={((provs ?? []) as { cle: string; libelle: string | null; sans_plafond: boolean }[]).map((p) => ({
         libelle: p.libelle ?? 'Lien',
         chemin: `/depot/${edition.token_depot}?p=${p.cle}`,

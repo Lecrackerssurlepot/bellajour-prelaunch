@@ -1,4 +1,4 @@
-/* La livraison — monde SOMBRE, tout sous `.ec-espace`. */
+/* La livraison — tout sous `.ec-espace`, jour et nuit par les jetons. */
 
 .ec-espace .ec-livraison-tete {
   display: flex;
@@ -6,7 +6,21 @@
   justify-content: space-between;
   align-items: flex-end;
   gap: 20px;
-  margin-bottom: 32px;
+  margin-bottom: 12px;
+}
+/* (0,2,0) contre `.bj-atelier h2`. */
+.ec-espace .ec-livraison-titre {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 40px;
+  line-height: 1.05;
+  letter-spacing: 0;
+  color: var(--ec-text);
+}
+.ec-espace .ec-livraison-tete .ec-texte {
+  margin: 0;
 }
 .ec-espace .ec-livraison-prevue {
   display: flex;
@@ -24,7 +38,7 @@
 }
 .ec-espace .ec-livraison-etapes {
   list-style: none;
-  margin: 0 0 32px;
+  margin: 0 0 12px;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

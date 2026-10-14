@@ -7,7 +7,10 @@
    sont posées par les gestes de l'atelier, avec leurs dates LUES ; le colis
    montre le transporteur, le numéro et un bouton vers le site du
    transporteur quand `suivi.ts` sait construire l'adresse (jamais un lien
-   approximatif). Les « derniers passages » sont la phase 7. */
+   approximatif). Les « derniers passages » sont la phase 7.
+
+   Révision §14.7 : l'en-tête commun, le corps qui défile chez lui si
+   l'écran ne suffit pas, « Écrire à l'atelier » mène à Parler à l'atelier. */
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -15,6 +18,7 @@ import { etatEffectif } from '@/lib/collectif/etats'
 import { parler } from '@/lib/collectif/espace'
 import { etapesLivraison, formaterJour, titreLivraison } from '@/lib/collectif/livraison'
 import { cheminSection, verrousPour } from '@/lib/collectif/verrous'
+import { EnTeteEcran } from '../../_composants/Ecran'
 import { Verrou } from '../../_composants/EnPreparation'
 import { chargerEspace, chargerSuiviLivraison } from '../donnees'
 import Copier from './Copier'
@@ -39,14 +43,14 @@ export default async function Page({ params }: { params: Promise<{ token: string
   const prevue = formaterJour(l.prevue_le)
 
   return (
-    <section className="ec-page ec-livraison">
+    <section className="ec-ecran ec-livraison">
+      <EnTeteEcran titre="Livraison" sous={edition.tirage ? `${edition.tirage} exemplaires` : undefined} />
+      <div className="ec-ecran-corps ec-defile">
       <div className="ec-livraison-tete">
         <div>
-          <p className="ec-surtitre">Livraison</p>
-          <h1 className="ec-h1">{titreLivraison(etat)}</h1>
+          <h2 className="ec-livraison-titre">{titreLivraison(etat)}</h2>
           <p className="ec-texte">
-            {edition.tirage ? `${edition.tirage} exemplaires · ` : ''}
-            {p('le bon à tirer validé reste consultable dans l’onglet ', 'le bon à tirer validé reste consultable dans l’onglet ')}
+            {p('Le bon à tirer validé reste consultable dans l’onglet ', 'Le bon à tirer validé reste consultable dans l’onglet ')}
             <Link className="ec-lien-texte" href={cheminSection(token, 'bat')} prefetch={false}>
               Bon à tirer
             </Link>
@@ -123,6 +127,7 @@ export default async function Page({ params }: { params: Promise<{ token: string
             </Link>
           </p>
         </section>
+      </div>
       </div>
     </section>
   )

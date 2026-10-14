@@ -8,14 +8,24 @@
    - La présélection est FACULTATIVE : toucher une photo l'ajoute ou la
      retire, jamais obligé, « Laisser l'atelier choisir » le dit.
    - Signaler une photo (« à ne pas publier ») se voit côté atelier.
-   - Le dépôt du responsable s'ouvre SUR PLACE (panneau), et son moteur vit
-     dans la coquille : on peut quitter la page pendant l'envoi.
-   - L'équipe voit tout, sans bouton qui écrive. */
+   - Le dépôt du responsable s'ouvre SUR PLACE (une fenêtre en verre), et son
+     moteur vit dans la coquille : on peut quitter la page pendant l'envoi.
+   - L'équipe voit tout, sans bouton qui écrive.
+
+   Révision §14.3 : l'écran reste le même, seuls changent la coquille (rien
+   ne fait défiler la page : la grille et la colonne défilent chez elles), le
+   thème, le partage (« Créer un lien » ouvre la fenêtre du lien de
+   contribution, avec son plafond PAR LIEN) et le dépôt en verre.
+   ⚠️ Le chargement par pages observe SA zone de défilement (`root` de
+   l'IntersectionObserver) ; sur téléphone, la page défile : `root` nul. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Filtre } from "@/lib/collectif/grille";
 import { useMoteurDepot } from "../../_composants/depot/DepotContexte";
 import { useMoteur, fichiersDuDepot } from "../../_composants/depot/useMoteur";
+import { EnTeteEcran } from "../../_composants/Ecran";
+import Fenetre from "../../_composants/Fenetre";
+import FenetreLien from "../../_composants/LienContribution";
 
 type Photo = {
   id: string;
@@ -43,7 +53,15 @@ type Props = {
   preselectionMax: number | null;
   origine: string;
   liens: Lien[];
+  /** La fenêtre du lien de contribution (`plafondLienMax`, l'événement, la clôture). */
+  max: number;
+  evenement: string;
+  cloture: string;
 };
+
+/* Sur téléphone la page défile de nouveau (espace.css, 860 px) : la grille
+   n'est plus une zone de défilement. */
+const REQUETE_TELEPHONE = "(max-width: 860px)";
 
 const ONGLETS: { cle: Filtre; libelle: string }[] = [
   { cle: "toutes", libelle: "Toutes" },
@@ -72,8 +90,9 @@ export default function Collecte(p: Props) {
   const [erreur, setErreur] = useState<string | null>(null);
   const [panneau, setPanneau] = useState(false);
   const [copie, setCopie] = useState<string | null>(null);
-  const [liens, setLiens] = useState<Lien[]>(p.liens);
+  const [fenetreLien, setFenetreLien] = useState(false);
   const fin = useRef<HTMLDivElement>(null);
+  const zone = useRef<HTMLDivElement>(null);
   const version = useRef(0);
 
   const charger = useCallback(
@@ -118,9 +137,10 @@ export default function Collecte(p: Props) {
   useEffect(() => {
     const el = fin.current;
     if (!el || suivante === null || suivante === 0 || chargement) return;
+    const racine = window.matchMedia(REQUETE_TELEPHONE).matches ? null : zone.current;
     const obs = new IntersectionObserver((e) => {
       if (e.some((x) => x.isIntersecting)) void charger(suivante, filtre);
-    }, { rootMargin: "800px" });
+    }, { root: racine, rootMargin: "800px" });
     obs.observe(el);
     return () => obs.disconnect();
   }, [suivante, chargement, filtre, charger]);
@@ -161,24 +181,19 @@ export default function Collecte(p: Props) {
   const groupe = filtre === "jour" ? (x: Photo) => x.jour : filtre === "provenance" ? (x: Photo) => x.provenance : null;
 
   return (
-    <section className="ec-page ec-collecte">
-      <div className="ec-collecte-tete">
-        <div>
-          <p className="ec-surtitre">{compteurs ? `${compteurs.toutes} photo${compteurs.toutes > 1 ? "s" : ""} reçue${compteurs.toutes > 1 ? "s" : ""}` : "Les photos"}</p>
-          <h1 className="ec-h1">Les photos</h1>
-        </div>
-        <div className="ec-actions">
-          <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => copier(p.lienParticipants, "participants")}>
-            {copie === "participants" ? "Copié" : "Copier le lien participants"}
+    <section className="ec-ecran ec-collecte">
+      <EnTeteEcran titre="Les photos" sous={compteurs ? `${compteurs.toutes} photo${compteurs.toutes > 1 ? "s" : ""} reçue${compteurs.toutes > 1 ? "s" : ""}` : undefined}>
+        <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => copier(p.lienParticipants, "participants")}>
+          {copie === "participants" ? "Copié" : "Copier le lien participants"}
+        </button>
+        {p.ecrire ? (
+          <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => setPanneau(true)}>
+            Déposer des photos
           </button>
-          {p.ecrire ? (
-            <button type="button" className="ec-bouton" onClick={() => setPanneau(true)}>
-              Déposer des photos
-            </button>
-          ) : null}
-        </div>
-      </div>
+        ) : null}
+      </EnTeteEcran>
 
+      <div className="ec-ecran-corps ec-collecte-zone">
       <nav className="ec-onglets" aria-label="Filtrer les photos">
         {ONGLETS.map((o) => (
           <button
@@ -197,7 +212,7 @@ export default function Collecte(p: Props) {
       </nav>
 
       <div className="ec-collecte-corps">
-        <div>
+        <div className="ec-collecte-grille ec-defile" ref={zone}>
           {p.ecrire ? (
             <p className="ec-note">
               {v(
@@ -270,7 +285,7 @@ export default function Collecte(p: Props) {
           ) : null}
         </div>
 
-        <aside className="ec-collecte-cote">
+        <aside className="ec-collecte-cote ec-defile">
           <section className="ec-carte">
             <div className="ec-carte-tete">
               <span>{v("Votre présélection · facultative", "Ta présélection · facultative")}</span>
@@ -303,13 +318,13 @@ export default function Collecte(p: Props) {
               <p className="ec-note">Personne encore.</p>
             )}
           </section>
-          {p.ecrire ? (
-            <LiensProvenance token={p.token} origine={p.origine} liens={liens} onCree={(l) => setLiens((x) => [...x, l])} copie={copie} copier={copier} tu={p.tu} />
-          ) : null}
+          {p.ecrire ? <LiensProvenance origine={p.origine} liens={p.liens} copie={copie} copier={copier} onCreer={() => setFenetreLien(true)} /> : null}
         </aside>
+      </div>
       </div>
 
       {panneau ? <PanneauDepot tu={p.tu} fermer={() => { setPanneau(false); changerFiltre(filtre); }} /> : null}
+      {fenetreLien ? <FenetreLien token={p.token} max={p.max} evenement={p.evenement} cloture={p.cloture} tu={p.tu} onFermer={() => setFenetreLien(false)} /> : null}
     </section>
   );
 }
@@ -340,16 +355,7 @@ function PanneauDepot({ tu, fermer }: { tu: boolean; fermer: () => void }) {
   const recues = vue.arrivees + vue.dejaLa;
 
   return (
-    <div className="ec-panneau-voile" role="presentation" onClick={fermer}>
-      <div className="ec-panneau" role="dialog" aria-modal="true" aria-labelledby="ec-depot-titre" onClick={(e) => e.stopPropagation()}>
-        <div className="ec-panneau-tete">
-          <h2 className="ec-h2" id="ec-depot-titre">
-            Déposer des photos
-          </h2>
-          <button type="button" className="ec-bouton ec-bouton--clair" onClick={fermer}>
-            Fermer
-          </button>
-        </div>
+    <Fenetre titre="Déposer des photos" onFermer={fermer} large>
 
         <fieldset className="ec-fieldset">
           <legend className="ec-note">1. D&apos;où viennent ces photos ?</legend>
@@ -418,78 +424,35 @@ function PanneauDepot({ tu, fermer }: { tu: boolean; fermer: () => void }) {
             {vue.ferme ? <p className="ec-note ec-note--erreur">{vue.ferme}</p> : null}
           </div>
         ) : null}
-      </div>
-    </div>
+    </Fenetre>
   );
 }
 
-/* ─────────────────────────── les liens de provenance ─────────────────────────── */
+/* ─────────────────────────── les liens de contribution ─────────────────────────── */
 
-function LiensProvenance(p: {
-  token: string;
-  origine: string;
-  liens: Lien[];
-  onCree: (l: Lien) => void;
-  copie: string | null;
-  copier: (t: string, cle: string) => void;
-  tu: boolean;
-}) {
-  const [libelle, setLibelle] = useState("");
-  const [sansPlafond, setSansPlafond] = useState(true);
-  const [message, setMessage] = useState<string | null>(null);
-  const [envoi, setEnvoi] = useState(false);
-
-  async function creer(e: React.FormEvent) {
-    e.preventDefault();
-    setEnvoi(true);
-    setMessage(null);
-    try {
-      const rep = await fetch("/api/collectif/provenances", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ token: p.token, type: "photographe", libelle, sansPlafond }),
-      });
-      const json = (await rep.json().catch(() => ({}))) as { chemin?: string; message?: string };
-      if (!rep.ok || !json.chemin) {
-        setMessage(json.message ?? `Lien non créé (erreur ${rep.status}).`);
-        return;
-      }
-      p.onCree({ libelle, chemin: json.chemin, sansPlafond });
-      setLibelle("");
-    } catch {
-      setMessage("Le réseau n'a pas répondu.");
-    } finally {
-      setEnvoi(false);
-    }
-  }
-
+/* Les liens déjà créés, à copier ; « Créer un lien » ouvre la fenêtre du lien
+   de contribution (révision §14.2) : un nom, SON plafond au curseur, le QR. */
+function LiensProvenance(p: { origine: string; liens: Lien[]; copie: string | null; copier: (t: string, cle: string) => void; onCreer: () => void }) {
   return (
     <section className="ec-carte">
       <div className="ec-carte-tete">
         <span>Les photos sont chez quelqu&apos;un d&apos;autre ?</span>
       </div>
-      <p className="ec-note">Un lien à son nom, par exemple pour le photographe. Ses photos se rangent sous son nom.</p>
+      <p className="ec-note">Un lien à son nom, par exemple pour le photographe ou une équipe. Ses photos se rangent sous son nom.</p>
       {p.liens.map((l) => (
         <div key={l.chemin} className="ec-lien-ligne">
-          <span className="ec-texte" style={{ flex: 1, minWidth: 0 }}>
+          <span className="ec-texte ec-lien-ligne-nom">
             {l.libelle}
-            {l.sansPlafond ? " · sans plafond" : ""}
+            {l.sansPlafond ? " · sans limite" : ""}
           </span>
-          <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => p.copier(`${p.origine}${l.chemin}`, l.chemin)}>
+          <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => p.copier(`${p.origine}${l.chemin}`, l.chemin)}>
             {p.copie === l.chemin ? "Copié" : "Copier"}
           </button>
         </div>
       ))}
-      <form onSubmit={creer} className="ec-curseur">
-        <input className="ec-champ" placeholder="Nom (ex. le photographe)" value={libelle} onChange={(e) => setLibelle(e.target.value)} />
-        <label className="ec-note">
-          <input type="checkbox" checked={sansPlafond} onChange={(e) => setSansPlafond(e.target.checked)} /> Sans plafond par personne
-        </label>
-        <button type="submit" className="ec-bouton ec-bouton--clair" disabled={envoi || !libelle.trim()}>
-          Créer le lien
-        </button>
-        {message ? <p className="ec-note ec-note--erreur">{message}</p> : null}
-      </form>
+      <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={p.onCreer}>
+        Créer un lien de contribution
+      </button>
     </section>
   );
 }

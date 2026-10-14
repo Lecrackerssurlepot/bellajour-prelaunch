@@ -1364,5 +1364,19 @@ titre("— revision 14.6 : le brief partie par partie —");
   ok("le mur : les lignes du brief menent a style/brief", /style\/brief\?m=/.test(lire("src/app/edition/[token]/style/Mur.tsx")));
 }
 
+titre("— revision 14.3 / 14.7 : photos et livraison —");
+{
+  const collecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  ok("Photos : le chargement par pages observe SA zone de defilement (root), nul sur telephone",
+    /root: racine/.test(collecte) && /matchMedia\(REQUETE_TELEPHONE\)\.matches \? null : zone\.current/.test(collecte));
+  ok("Photos : « Créer un lien » ouvre la fenetre du lien de contribution (plafond PAR LIEN), plus de formulaire « photographe » en dur",
+    /<FenetreLien /.test(collecte) && !/type: "photographe"/.test(collecte));
+  ok("Photos : le depot s'ouvre dans une fenetre en verre", /<Fenetre titre="Déposer des photos"/.test(collecte));
+  ok("Photos : l'ecran garde ses filtres et sa presélection facultative (pas la proposition B)", /Ma présélection/.test(collecte) && /Laisser|laisse l'atelier choisir|laissez l'atelier choisir/.test(collecte));
+  const livraison = lire("src/app/edition/[token]/livraison/page.tsx");
+  ok("Livraison : l'en-tete commun et « Écrire à l'atelier » vers Parler a l'atelier",
+    /<EnTeteEcran titre="Livraison"/.test(livraison) && livraison.includes("cheminSection(token, 'atelier')") && !livraison.includes("cheminSection(token, 'dossier')"));
+}
+
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
 process.exit(ko === 0 ? 0 : 1);

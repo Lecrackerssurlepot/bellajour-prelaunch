@@ -862,8 +862,14 @@
 
 /* ─────────────────────────────── la collecte ─────────────────────────────── */
 
-.ec-espace .ec-collecte {
-  max-width: 1240px;
+/* Révision §14.3 : la page ne défile plus ; la grille et la colonne de
+   droite défilent chacune chez elle (Collecte.tsx). */
+.ec-espace .ec-collecte-zone {
+  gap: 12px;
+}
+.ec-espace .ec-collecte-zone .ec-onglets {
+  flex: none;
+  margin-bottom: 0;
 }
 .ec-espace .ec-collecte-tete {
   display: flex;
@@ -900,15 +906,24 @@
   color: var(--ec-blanc);
 }
 .ec-espace .ec-collecte-corps {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 22px;
-  align-items: start;
+  align-items: stretch;
+}
+.ec-espace .ec-collecte-grille {
+  padding-right: 4px;
 }
 .ec-espace .ec-collecte-cote {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+.ec-espace .ec-lien-ligne-nom {
+  flex: 1;
+  min-width: 0;
 }
 .ec-espace .ec-grille {
   display: grid;
