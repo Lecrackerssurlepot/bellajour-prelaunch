@@ -1,7 +1,7 @@
 ---
 id: T-148
 titre: Le client B2B prend son rendez-vous hors de l'espace et ne le retrouve pas dedans
-etat: en cours
+etat: en pause
 domaine: collectif
 gravite: serieux
 autonomie: avis-requis
@@ -54,6 +54,19 @@ visio Google Meet (un lien fixe par personne) ; texte du mail proposé par Claud
   ordre verrou → Google, mails fermés par défaut.
 - Vérifié AVANT la migration : routes en 503 qui nomment le fichier, lien d'équipe en 403,
   créneau passé refusé, espace inchangé (lien de la fiche), fiche et page Agendas qui le disent.
+
+## En pause, sans être oublié (14/10/2026)
+Mathias : « pas la priorité numéro une » ; d'abord que la plateforme soit fonctionnelle et l'UX
+optimisée. Carte « Édition collective : brancher la prise de rendez-vous dans l'espace client »
+dans le Board Cofondateurs (Notion), statut « En attente ».
+
+**La visio, question de Mathias (14/10)** : pourquoi un lien Meet fixe et pas un lien généré à
+chaque rendez-vous ? Parce qu'un compte de service ne peut, hors Google Workspace, ni créer de
+visio Meet ni inviter le client. La solution recommandée à la reprise : connecter le compte
+Google de chacun (« Se connecter avec Google », OAuth, jeton gardé côté serveur) ; l'événement
+est alors posé EN SON NOM, avec un Meet neuf (`conferenceData`) et le client invité par Google
+lui-même. À trancher avec Mathias avant de reprendre : c'est un changement de `agenda.ts` et de
+la page « Les agendas », pas des règles ni de l'écran client.
 
 ## Ce qui reste (Mathias, puis Claude)
 1. ~~Appliquer la migration~~ : appliquée le 14/10 par Mathias, vérifiée en SQL ; le choix de
