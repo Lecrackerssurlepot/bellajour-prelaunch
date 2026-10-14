@@ -1,55 +1,98 @@
 "use client";
 
-/* La fenêtre d'envoi des photos du responsable (retours du 14/10, points 6 et
-   8, maquette EnvoiPhotos validée). Deux vues dans la même fenêtre :
-   - CHOISIR : d'où viennent les photos, puis la zone où les glisser ;
-   - L'ENVOI : où il en est (le compte en grand, la barre), ce qui est arrivé,
-     ce qui était DÉJÀ LÀ et pourquoi c'est sauté, ce qui est à reprendre.
+/* La fenêtre d'envoi des photos du responsable (T-152, maquette « Déposer =
+   choisir où », après la fenêtre du 14/10). Deux vues dans la même fenêtre :
+   - CHOISIR : DANS QUEL DOSSIER (ceux qui existent, en pastilles, ou un nom
+     nouveau qui crée le dossier ; « Mes photos » la première fois), puis la
+     zone où glisser les photos, un seul bouton « Choisir des photos » (un
+     dossier de l'ordinateur se glisse toujours) ;
+   - L'ENVOI : le compte en très grand, la barre, ce qui est arrivé, ce qui
+     était DÉJÀ LÀ (et pourquoi c'est sauté), ce qui est à reprendre.
    « Réduire et continuer » ferme sans rien arrêter ; la pastille de l'en-tête
    rouvre. « Ajouter d'autres photos » repasse au choix pendant que l'envoi
-   continue : le nouveau lot garde SA provenance (moteur.ts). */
+   continue : le nouveau lot garde SON dossier (moteur.ts). */
 
 import { useEffect, useRef, useState } from "react";
-import { TYPES_PROVENANCE } from "@/lib/collectif/types";
-import { DOSSIER_RESPONSABLE } from "@/lib/collectif/sources";
+import { DOSSIER_RESPONSABLE, lireNomDossier, SEPARATEUR, type Arbre } from "@/lib/collectif/dossiers";
 import Fenetre from "../Fenetre";
-import type { MoteurDepot, Provenance } from "./moteur";
+import type { OuvertureEnvoi } from "./DepotContexte";
+import type { MoteurDepot } from "./moteur";
 import { fichiersDuDepot, useMoteur } from "./useMoteur";
 
-const AVEC_NOM: Record<string, string> = {
-  organisateur: `Le nom du dossier (${DOSSIER_RESPONSABLE} si vide)`,
-  photographe: "Son nom (facultatif)",
-  participant: "Son nom",
-  autre: "La source (ex. l'agence)",
-};
-
-function libelleDossier(p: Provenance | null): string {
-  if (!p || p.type === "organisateur") return p?.libelle.trim() || DOSSIER_RESPONSABLE;
-  const type = TYPES_PROVENANCE.find((t) => t.cle === p.type)?.libelle ?? "Autre source";
-  return p.libelle.trim() ? `${type} · ${p.libelle.trim()}` : type;
+/** Les dossiers du responsable, à plat : « La soirée », « La soirée / Photobooth »… avec leurs photos. */
+function cheminsDe(arbre: Arbre | null): { chemin: string; n: number }[] {
+  if (!arbre) return [];
+  return arbre.vous
+    .filter((h) => h.cle.startsWith("resp:organisateur:"))
+    .flatMap((h) => [{ chemin: h.nom, n: h.n }, ...h.enfants.map((e) => ({ chemin: `${h.nom}${SEPARATEUR}${e.nom}`, n: e.n }))]);
 }
 
-export default function FenetreEnvoi({ moteur, tu, fermer }: { moteur: MoteurDepot; tu: boolean; fermer: () => void }) {
+export default function FenetreEnvoi({
+  moteur,
+  token,
+  tu,
+  ouverture,
+  fermer,
+}: {
+  moteur: MoteurDepot;
+  token: string;
+  tu: boolean;
+  ouverture: OuvertureEnvoi;
+  fermer: () => void;
+}) {
   const vue = useMoteur(moteur);
   const v = (vous: string, toi: string) => (tu ? toi : vous);
-  /* Lu une fois, pour retrouver le choix en se rouvrant ; ensuite l'état local fait foi. */
+  /* Lu une fois, pour retrouver le dossier en se rouvrant ; ensuite l'état local fait foi. */
   const [deja] = useState(() => moteur.provenanceChoisie());
-  const [choisir, setChoisir] = useState(vue.total === 0);
-  const [type, setType] = useState(deja?.type ?? "organisateur");
-  const [libelle, setLibelle] = useState(deja?.libelle ?? "");
+  const [choisir, setChoisir] = useState(vue.total === 0 || Boolean(ouverture.nouveau) || Boolean(ouverture.dossier));
+  const [arbre, setArbre] = useState<Arbre | null>(null);
+  const [chemin, setChemin] = useState<string>(ouverture.dossier ?? (deja?.libelle ? deja.libelle : DOSSIER_RESPONSABLE));
+  const [nouveau, setNouveau] = useState("");
+  const [refus, setRefus] = useState<string | null>(null);
   const [survol, setSurvol] = useState(false);
   const fichiers = useRef<HTMLInputElement>(null);
-  const dossier = useRef<HTMLInputElement>(null);
+  const champNouveau = useRef<HTMLInputElement>(null);
 
-  /* `webkitdirectory` n'est pas typé par React : posé à la main. */
+  /* Les dossiers qui existent déjà : la route de la grille rend l'arbre seul. */
   useEffect(() => {
-    dossier.current?.setAttribute("webkitdirectory", "");
-  }, [choisir]);
+    let vivant = true;
+    void fetch("/api/collectif/photos", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token, seulementArbre: true }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { arbre?: Arbre } | null) => {
+        if (vivant && j?.arbre) setArbre(j.arbre);
+      })
+      .catch(() => {});
+    return () => {
+      vivant = false;
+    };
+  }, [token]);
+  useEffect(() => {
+    if (ouverture.nouveau) champNouveau.current?.focus();
+  }, [ouverture.nouveau]);
+
+  const existants = cheminsDe(arbre);
+  const nomNouveau = nouveau.trim();
+  const cible = nomNouveau ? nomNouveau : chemin;
 
   function ajouter(liste: Iterable<File>) {
-    const nom = libelle.trim();
-    moteur.definirProvenance({ type, libelle: type === "organisateur" && nom === DOSSIER_RESPONSABLE ? "" : nom });
+    let dossier = chemin;
+    if (nomNouveau) {
+      const lu = lireNomDossier(nomNouveau);
+      if (!lu.ok) {
+        setRefus(lu.message);
+        return;
+      }
+      dossier = lu.nom;
+    }
+    setRefus(null);
+    moteur.definirProvenance({ type: "organisateur", libelle: dossier === DOSSIER_RESPONSABLE ? "" : dossier });
     moteur.ajouter(liste);
+    setChemin(dossier);
+    setNouveau("");
     setChoisir(false);
   }
 
@@ -57,20 +100,45 @@ export default function FenetreEnvoi({ moteur, tu, fermer }: { moteur: MoteurDep
     return (
       <Fenetre titre="Déposer des photos" onFermer={fermer} large>
         <fieldset className="ec-fieldset">
-          <legend className="ec-note">1. D&apos;où viennent ces photos ?</legend>
-          <div className="ec-puces">
-            {TYPES_PROVENANCE.map((o) => (
-              <label key={o.cle} className={`ec-puce${type === o.cle ? " ec-puce--active" : ""}`}>
-                <input type="radio" name="provenance" value={o.cle} checked={type === o.cle} onChange={() => setType(o.cle)} hidden />
-                {o.libelle}
-              </label>
-            ))}
-          </div>
-          {AVEC_NOM[type] ? <input className="ec-champ" placeholder={AVEC_NOM[type]} value={libelle} maxLength={80} onChange={(e) => setLibelle(e.target.value)} /> : null}
+          <legend className="ec-envoi-question">Dans quel dossier ?</legend>
+          {existants.length ? (
+            <div className="ec-puces">
+              {existants.map((d) => (
+                <button
+                  key={d.chemin}
+                  type="button"
+                  className="ec-onglet"
+                  aria-pressed={!nomNouveau && chemin === d.chemin}
+                  onClick={() => {
+                    setChemin(d.chemin);
+                    setNouveau("");
+                  }}
+                >
+                  {d.chemin} <span className="ec-envoi-puce-n">· {d.n.toLocaleString("fr-FR")}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+          <label className="ec-curseur">
+            {existants.length ? "Ou un nouveau dossier" : "Le nom du dossier"}
+            <input
+              ref={champNouveau}
+              className="ec-champ"
+              value={nouveau}
+              maxLength={80}
+              placeholder={existants.length ? "Le dîner, Le photographe, Jour 2…" : DOSSIER_RESPONSABLE}
+              onChange={(e) => setNouveau(e.target.value)}
+            />
+          </label>
+          <span className="ec-note">
+            {existants.length
+              ? v("Un nom nouveau crée le dossier. Vous rangerez ensuite en glissant un dossier dans un autre.", "Un nom nouveau crée le dossier. Tu rangeras ensuite en glissant un dossier dans un autre.")
+              : v("La première fois, tout va dans « Mes photos », ou sous le nom que vous tapez.", "La première fois, tout va dans « Mes photos », ou sous le nom que tu tapes.")}
+          </span>
         </fieldset>
 
         <div
-          className={`ec-depose${survol ? " ec-depose--survol" : ""}`}
+          className={`ec-depose ec-depose--centre${survol ? " ec-depose--survol" : ""}`}
           onDragOver={(e) => {
             e.preventDefault();
             setSurvol(true);
@@ -82,21 +150,34 @@ export default function FenetreEnvoi({ moteur, tu, fermer }: { moteur: MoteurDep
             ajouter(await fichiersDuDepot(e.dataTransfer));
           }}
         >
-          <p className="ec-texte">{v("2. Glissez des photos ou un dossier entier ici", "2. Glisse des photos ou un dossier entier ici")}</p>
-          <div className="ec-actions">
-            <button type="button" className="ec-bouton" onClick={() => fichiers.current?.click()}>
-              Choisir des photos
-            </button>
-            <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => dossier.current?.click()}>
-              Choisir un dossier
-            </button>
-          </div>
-          <p className="ec-note">
-            JPEG, HEIC, PNG · sans plafond par personne pour {v("vous", "toi")} · une photo déjà envoyée n&apos;est jamais envoyée deux fois
-          </p>
-          <input ref={fichiers} type="file" multiple accept="image/*,.heic,.heif" hidden onChange={(e) => { if (e.target.files) ajouter(e.target.files); e.target.value = ""; }} />
-          <input ref={dossier} type="file" multiple hidden onChange={(e) => { if (e.target.files) ajouter(e.target.files); e.target.value = ""; }} />
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="ec-depose-icone">
+            <path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
+          </svg>
+          <strong className="ec-depose-titre">{v("Glissez vos photos ici", "Glisse tes photos ici")}</strong>
+          <span className="ec-note">
+            Vers « {cible} » · {v("un dossier de votre ordinateur se glisse aussi", "un dossier de ton ordinateur se glisse aussi")}
+          </span>
+          <button type="button" className="ec-bouton" onClick={() => fichiers.current?.click()}>
+            Choisir des photos
+          </button>
+          <span className="ec-note">JPEG, HEIC, PNG · une photo déjà envoyée ne part jamais deux fois</span>
+          <input
+            ref={fichiers}
+            type="file"
+            multiple
+            accept="image/*,.heic,.heif"
+            hidden
+            onChange={(e) => {
+              if (e.target.files) ajouter(e.target.files);
+              e.target.value = "";
+            }}
+          />
         </div>
+        {refus ? (
+          <p className="ec-note ec-note--erreur" role="alert">
+            {refus}
+          </p>
+        ) : null}
 
         {vue.total ? (
           <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => setChoisir(false)}>
@@ -107,49 +188,35 @@ export default function FenetreEnvoi({ moteur, tu, fermer }: { moteur: MoteurDep
     );
   }
 
-  const faites = vue.total - vue.enCours;
-  const part = vue.total ? Math.round((faites / vue.total) * 100) : 0;
+  const part = vue.total ? Math.round(((vue.total - vue.enCours) / vue.total) * 100) : 0;
   const fini = vue.enCours === 0;
   return (
-    <Fenetre titre={v("L'envoi de vos photos", "L'envoi de tes photos")} sous={`Rangées dans « ${libelleDossier({ type, libelle })} »`} onFermer={fermer} large>
+    <Fenetre titre={`Vers « ${chemin} »`} sous={fini ? "Envoi terminé" : "Pendant l'envoi"} onFermer={fermer} large>
       <div className="ec-envoi" role="status" aria-live="polite">
         <div className="ec-envoi-compte">
-          <strong className="ec-envoi-n">
-            {faites.toLocaleString("fr-FR")} <span>sur {vue.total.toLocaleString("fr-FR")}</span>
-          </strong>
-          <span className="ec-texte">{fini ? "Terminé" : `${vue.enCours} en cours`}</span>
+          <strong className="ec-envoi-n">{(vue.arrivees + vue.dejaLa).toLocaleString("fr-FR")}</strong>
+          <span className="ec-envoi-sur">sur {vue.total.toLocaleString("fr-FR")} arrivées</span>
         </div>
-        <div className="ec-dp-barre-espace" aria-hidden="true">
+        <div className="ec-envoi-barre" aria-hidden="true">
           <div style={{ width: `${part}%` }} />
         </div>
+        <span className="ec-note">{fini ? "Terminé" : `${vue.enCours} photo${vue.enCours > 1 ? "s" : ""} en route en ce moment`}</span>
       </div>
 
-      <ul className="ec-lignes ec-envoi-lignes">
-        <li>
-          <span>Arrivées</span>
+      <div className="ec-envoi-cases">
+        <span className="ec-envoi-case">
           <strong>{vue.arrivees.toLocaleString("fr-FR")}</strong>
-        </li>
-        <li>
-          <span>Déjà là, sautées (même fichier déjà envoyé)</span>
-          <strong>{vue.dejaLa.toLocaleString("fr-FR")}</strong>
-        </li>
-        {vue.dejaAjoutes ? (
-          <li>
-            <span>Choisies deux fois, sautées</span>
-            <strong>{vue.dejaAjoutes.toLocaleString("fr-FR")}</strong>
-          </li>
-        ) : null}
-        <li>
-          <span>À reprendre</span>
-          <strong>{vue.erreurs.toLocaleString("fr-FR")}</strong>
-        </li>
-        {vue.refusees ? (
-          <li>
-            <span>Refusées</span>
-            <strong>{vue.refusees.toLocaleString("fr-FR")}</strong>
-          </li>
-        ) : null}
-      </ul>
+          <span>arrivées</span>
+        </span>
+        <span className="ec-envoi-case">
+          <strong>{(vue.dejaLa + vue.dejaAjoutes).toLocaleString("fr-FR")}</strong>
+          <span>déjà là, sautées</span>
+        </span>
+        <span className="ec-envoi-case">
+          <strong>{(vue.erreurs + vue.refusees).toLocaleString("fr-FR")}</strong>
+          <span>à reprendre</span>
+        </span>
+      </div>
 
       {vue.dejaLa || vue.dejaAjoutes ? (
         <p className="ec-note">
@@ -170,8 +237,8 @@ export default function FenetreEnvoi({ moteur, tu, fermer }: { moteur: MoteurDep
       {!fini ? (
         <p className="ec-envoi-info">
           {v(
-            "Vous pouvez naviguer dans l'espace pendant l'envoi : la pastille « Envoi en cours », en haut de chaque écran, rouvre cette fenêtre. Gardez l'onglet ouvert.",
-            "Tu peux naviguer dans l'espace pendant l'envoi : la pastille « Envoi en cours », en haut de chaque écran, rouvre cette fenêtre. Garde l'onglet ouvert."
+            "Naviguez librement : la pastille « Envoi en cours », en haut de chaque écran, rouvre cette fenêtre. Gardez l'onglet ouvert.",
+            "Navigue librement : la pastille « Envoi en cours », en haut de chaque écran, rouvre cette fenêtre. Garde l'onglet ouvert."
           )}
         </p>
       ) : null}

@@ -1,26 +1,42 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAcces } from "@/lib/collectif/acces";
+import {
+  arbreDesPhotos,
+  cheminDe,
+  cheminDuNoeud,
+  deposantPour,
+  lireCleResp,
+  lireNomDossier,
+  noeudDe,
+  nouveauChemin,
+  planDeplacement,
+  SEPARATEUR,
+  type LignePhoto,
+} from "@/lib/collectif/dossiers";
 import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
-import { DOSSIER_RESPONSABLE, dossierRenommable, lireNomDossier } from "@/lib/collectif/sources";
 
 /**
- * POST /api/collectif/dossiers — renommer un dossier de photos d'un double
- * clic (retours du 14/10, point 3). `{ token, cle, nom }`, la clé étant celle
- * d'une source (sources.ts).
- * - un LIEN de contribution : son nom (`collectif_provenances.libelle`) ;
- * - un dossier du RESPONSABLE : le nom (`deposant`) de ses photos. Renommer
- *   en « Mes photos » les rend à son propre nom. Deux dossiers renommés du
- *   même nom se rejoignent : c'est voulu, comme sur un ordinateur.
- * Le lien général et l'atelier ne se renomment pas. Rien ne s'efface, et le
- * journal garde l'ancien nom.
+ * POST /api/collectif/dossiers — ranger les photos (T-152, maquette « Photos
+ * rangées en dossiers »). Un dossier est le NOM sous lequel les photos ont
+ * été déposées ; un sous-dossier s'écrit « Parent / Enfant » (un niveau).
+ * - `{ token, cle, nom }` : renommer un dossier du responsable (ses
+ *   sous-dossiers suivent) ou le nom d'un lien ;
+ * - `{ token, cle, dans }` : ranger un dossier du responsable dans un autre
+ *   (`dans` = la clé d'un dossier de premier niveau), ou l'en sortir
+ *   (`dans: null`). Un seul niveau : la règle est `planDeplacement`.
+ * Les photos ne changent que de nom de dossier : rien ne s'efface, le
+ * journal garde l'ancien chemin.
  */
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+type Ligne = LignePhoto & { id: string };
 
 export async function POST(request: Request) {
   if (!collectifOuvert()) return new NextResponse(null, { status: 404 });
@@ -32,48 +48,77 @@ export async function POST(request: Request) {
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   if (!peut(acces.role, "regler_plafond_participant")) return refusDroit();
   const { edition } = acces;
-
-  const dossier = dossierRenommable(corps.cle);
-  if (!dossier) return NextResponse.json({ error: "introuvable" }, { status: 404 });
-  const lu = lireNomDossier(corps.nom);
-  if (!lu.ok) return NextResponse.json({ error: "saisie", message: lu.message }, { status: 422 });
-
   const supabase = makeSupabase();
-  let avant: string;
+  const cle = typeof corps.cle === "string" ? corps.cle : "";
 
-  if (dossier.genre === "lien") {
-    const { data, error } = await supabase
-      .from("collectif_provenances")
-      .select("libelle")
-      .eq("id", dossier.id)
-      .eq("edition_id", edition.id)
-      .maybeSingle<{ libelle: string | null }>();
+  /* ── Le nom d'un lien ── */
+  if (cle.startsWith("lien:")) {
+    const id = cle.slice(5);
+    if (!UUID.test(id)) return NextResponse.json({ error: "introuvable" }, { status: 404 });
+    const lu = lireNomDossier(corps.nom);
+    if (!lu.ok) return NextResponse.json({ error: "saisie", message: lu.message }, { status: 422 });
+    const { data, error } = await supabase.from("collectif_provenances").select("libelle").eq("id", id).eq("edition_id", edition.id).maybeSingle<{ libelle: string | null }>();
     if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
     if (!data) return NextResponse.json({ error: "introuvable" }, { status: 404 });
-    avant = data.libelle ?? "Lien de contribution";
-    const { error: e } = await supabase.from("collectif_provenances").update({ libelle: lu.nom }).eq("id", dossier.id).eq("edition_id", edition.id);
+    const { error: e } = await supabase.from("collectif_provenances").update({ libelle: lu.nom }).eq("id", id).eq("edition_id", edition.id);
     if (e) return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
-  } else {
-    /* Le responsable sous son propre nom : `deposant` nul, son nom, ou « Le
-       responsable » (presign). Revenir à « Mes photos » rend son propre nom. */
-    const propre = edition.responsable_nom || "Le responsable";
-    const nouveau = dossier.type === "organisateur" && lu.nom === DOSSIER_RESPONSABLE ? propre : lu.nom;
-    let requete = supabase
-      .from("collectif_photos")
-      .update({ deposant: nouveau })
-      .eq("edition_id", edition.id)
-      .eq("role_deposant", "responsable")
-      .eq("provenance_type", dossier.type)
-      .is("provenance_id", null);
-    requete = dossier.deposant
-      ? requete.eq("deposant", dossier.deposant)
-      : requete.or(`deposant.is.null,deposant.eq."${propre.replace(/"/g, '\\"')}",deposant.eq."Le responsable"`);
-    const { data, error } = await requete.select("id");
-    if (error) return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
-    if (!data?.length) return NextResponse.json({ error: "introuvable" }, { status: 404 });
-    avant = dossier.deposant ?? DOSSIER_RESPONSABLE;
+    const journal = await journaliser(supabase, { editionId: edition.id }, "dossier_renomme", { avant: data.libelle ?? "Lien de contribution", apres: lu.nom }, null);
+    return NextResponse.json({ ok: true, journal });
   }
 
-  const journal = await journaliser(supabase, { editionId: edition.id }, "dossier_renomme", { avant, apres: lu.nom }, null);
-  return NextResponse.json({ ok: true, journal });
+  /* ── Un dossier du responsable : on relit ses photos pour savoir ce qui bouge ── */
+  if (!lireCleResp(cle)) return NextResponse.json({ error: "introuvable" }, { status: 404 });
+  const { data, error } = await supabase
+    .from("collectif_photos")
+    .select("id, provenance_id, provenance_type, role_deposant, deposant")
+    .eq("edition_id", edition.id)
+    .eq("role_deposant", "responsable")
+    .is("provenance_id", null)
+    .limit(20000)
+    .returns<Ligne[]>();
+  if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  const lignes = data ?? [];
+  const arbre = arbreDesPhotos(lignes, [], edition, false);
+  const source = noeudDe(arbre, cle);
+  const avant = cheminDuNoeud(arbre, cle);
+  if (!source || !avant) return NextResponse.json({ error: "introuvable" }, { status: 404 });
+
+  let apres: string;
+  let type: string;
+  if ("dans" in corps) {
+    const dans = corps.dans === null ? null : noeudDe(arbre, String(corps.dans ?? ""));
+    const plan = planDeplacement(source, dans, arbre);
+    if (!plan.ok) return NextResponse.json({ error: "saisie", message: plan.message }, { status: 422 });
+    apres = plan.apres;
+    type = "dossier_range";
+  } else {
+    const lu = lireNomDossier(corps.nom);
+    if (!lu.ok) return NextResponse.json({ error: "saisie", message: lu.message }, { status: 422 });
+    const p = avant.includes(SEPARATEUR) ? avant.slice(0, avant.indexOf(SEPARATEUR)) : null;
+    apres = p ? `${p}${SEPARATEUR}${lu.nom}` : lu.nom;
+    type = "dossier_renomme";
+  }
+  if (apres === avant) return NextResponse.json({ ok: true, journal: true });
+
+  /* Chaque photo du dossier (et de ses sous-dossiers) prend son nouveau
+     chemin ; le type redevient « organisateur » (le nom fait la provenance). */
+  const parDeposant = new Map<string, string[]>();
+  for (const l of lignes) {
+    const n = nouveauChemin(cheminDe(l, edition.responsable_nom).chemin, avant, apres);
+    if (n === null) continue;
+    const d = deposantPour(n, edition.responsable_nom);
+    parDeposant.set(d, [...(parDeposant.get(d) ?? []), l.id]);
+  }
+  for (const [deposant, ids] of parDeposant) {
+    for (let i = 0; i < ids.length; i += 500) {
+      const { error: e } = await supabase
+        .from("collectif_photos")
+        .update({ deposant, provenance_type: "organisateur" })
+        .eq("edition_id", edition.id)
+        .in("id", ids.slice(i, i + 500));
+      if (e) return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
+    }
+  }
+  const journal = await journaliser(supabase, { editionId: edition.id }, type, { avant, apres }, null);
+  return NextResponse.json({ ok: true, journal, apres });
 }

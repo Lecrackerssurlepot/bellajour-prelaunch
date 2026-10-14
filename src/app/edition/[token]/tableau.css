@@ -185,6 +185,8 @@
   font-size: clamp(44px, 4.4vw, 64px);
   line-height: 1;
   color: var(--ec-text);
+  font-variant-numeric: lining-nums;
+  font-feature-settings: "lnum" 1;
 }
 .ec-espace .ec-tdb-dossiers {
   flex: 1;
@@ -193,12 +195,55 @@
   padding: 0;
 }
 .ec-espace .ec-tdb-dossiers li {
+  border-bottom: 1px solid var(--ec-line);
+  font-size: 14px;
+}
+/* Un dossier du tableau de bord mène à la page Photos, ce dossier ouvert
+   (retour du 14/10 : « un clic sur un dossier n'emmène nulle part »). */
+.ec-espace .ec-tdb-dossier-lien {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--ec-line);
-  font-size: 14px;
+  padding: 11px 8px;
+  margin: 0 -8px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+.ec-espace .ec-tdb-dossier-lien:hover {
+  background: var(--ec-surface);
+}
+.ec-espace .ec-tdb-dossier-lien:focus-visible {
+  outline: 2px solid var(--ec-accent);
+  outline-offset: -2px;
+}
+.ec-espace .ec-tdb-dossier-barre {
+  flex: 0 0 72px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--ec-line);
+  overflow: hidden;
+}
+.ec-espace .ec-tdb-dossier-barre > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ec-accent);
+}
+.ec-espace .ec-tdb-chevron {
+  flex: none;
+  color: var(--ec-faint);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+.ec-espace .ec-tdb-dossier-lien:hover .ec-tdb-chevron {
+  color: var(--ec-text);
+  transform: translateX(2px);
+}
+@media (max-width: 520px) {
+  .ec-espace .ec-tdb-dossier-barre {
+    display: none;
+  }
 }
 .ec-espace .ec-tdb-point {
   flex: none;

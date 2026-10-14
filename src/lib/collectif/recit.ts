@@ -123,6 +123,12 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return `Contenu reçu du client : ${String(payload.type ?? "")}${payload.nom ? ` (${String(payload.nom)})` : ""}.`;
     case "contenu_remplace":
       return `Contenu remplacé par le client : ${String(payload.type ?? "")}${payload.nom ? ` (${String(payload.nom)})` : ""}, l'ancienne version reste à l'atelier.`;
+    case "dossier_range":
+      return `Dossier de photos rangé : « ${String(payload.avant ?? "")} » devient « ${String(payload.apres ?? "")} ».`;
+    case "provenance_supprimee":
+      return `Lien de contribution supprimé : « ${String(payload.libelle ?? "")} » ; ses photos restent.`;
+    case "provenance_plafond":
+      return `Lien « ${String(payload.libelle ?? "")} » : ${payload.sansPlafond ? "sans limite" : `${String(payload.plafond ?? "?")} photos par personne`}.`;
     case "dossier_renomme":
       return `Dossier de photos renommé : « ${String(payload.avant ?? "")} » devient « ${String(payload.apres ?? "")} ».`;
     case "modification_demandee":

@@ -15,7 +15,7 @@ import { compositionDu, styleVisible, stylesDeLaComposition, type BriefLigne } f
 import { colonneAbsente } from "@/lib/collectif/migration";
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
 import { apercuPossible, contenuClient, envoisCourants, type LigneEnvoi } from "@/lib/collectif/contenus";
-import { sourcesDesPhotos } from "@/lib/collectif/sources";
+import { arbreDesPhotos, plafondDuLien } from "@/lib/collectif/dossiers";
 import { formaterInstantParis, formaterJourParis } from "@/lib/collectif/dates";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { compteAgenda } from "@/lib/collectif/agenda";
@@ -87,7 +87,7 @@ export type Tableau = {
   dernierMessage: { texte: string; quand: string } | null;
 };
 
-type ProvenanceLue = { id: string; cle: string; type: string; libelle: string | null; sans_plafond: boolean; plafond_par_personne: number | null; created_at: string };
+type ProvenanceLue = { id: string; cle: string; type: string; libelle: string | null; sans_plafond: boolean; plafond_par_personne: number | null; created_at: string; retire_le?: string | null };
 
 /**
  * Les liens de contribution d'une édition. Repli tant que la migration de la
@@ -96,6 +96,14 @@ type ProvenanceLue = { id: string; cle: string; type: string; libelle: string | 
  */
 export async function lireProvenances(editionId: string): Promise<ProvenanceLue[]> {
   const supabase = makeSupabase();
+  /* Le lien supprimé (migration 20261018) d'abord ; sans elle, aucun lien n'est supprimé. */
+  const retires = await supabase
+    .from("collectif_provenances")
+    .select("id, cle, type, libelle, sans_plafond, plafond_par_personne, created_at, retire_le")
+    .eq("edition_id", editionId)
+    .order("created_at", { ascending: true });
+  if (!retires.error) return (retires.data ?? []) as ProvenanceLue[];
+  if (!colonneAbsente(retires.error.code)) echec("liens de contribution", retires.error);
   const avec = await supabase
     .from("collectif_provenances")
     .select("id, cle, type, libelle, sans_plafond, plafond_par_personne, created_at")
@@ -251,9 +259,26 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
     plafond: libellePlafondLien(p, edition),
     recues: lignes.filter((l) => l.provenance_id === p.id).length,
   }));
-  const dossiers: DossierPhotos[] = sourcesDesPhotos(lignes, provenances, edition, false)
-    .map((s) => ({ cle: s.cle, libelle: s.libelle, detail: s.detail, n: s.n, lien: s.cle.startsWith("lien:") || s.cle === "participants" }))
-    .sort((a, b) => b.n - a.n);
+  /* Les dossiers de la carte : le même arbre que la page Photos (dossiers.ts),
+     le premier niveau seulement ; chaque ligne y mène (`?dossier=`). */
+  const arbre = arbreDesPhotos(lignes, provenances, edition, false);
+  const parId = new Map(provenances.map((p) => [p.id, p]));
+  const personnes = (n: { enfants: unknown[] }) => (n.enfants.length > 1 ? ` · ${n.enfants.length} personnes` : "");
+  const dossiers: DossierPhotos[] = [
+    ...arbre.vous.map((h) => ({
+      cle: h.cle,
+      libelle: h.nom,
+      detail: `déposées par vous${h.enfants.length ? ` · ${h.enfants.length} sous-dossier${h.enfants.length > 1 ? "s" : ""}` : ""}`,
+      n: h.n,
+      lien: false,
+    })),
+    ...arbre.liens.map((l) => {
+      const prov = l.cle.startsWith("lien:") ? parId.get(l.cle.slice(5)) : undefined;
+      const regle = prov ? plafondDuLien(prov, edition) : plafondDuLien({ sans_plafond: false, plafond_par_personne: null }, edition);
+      return { cle: l.cle, libelle: l.nom, detail: `${prov ? "lien" : "lien général"} · ${regle.toLowerCase()}${personnes(l)}`, n: l.n, lien: true };
+    }),
+    ...(arbre.atelier ? [{ cle: "atelier", libelle: arbre.atelier.nom, detail: "déposées par l'atelier", n: arbre.atelier.n, lien: false }] : []),
+  ].sort((a, b) => b.n - a.n);
 
   const mosaique = (
     await Promise.all(lignes.filter((l) => l.vignette_key).slice(0, 8).map((l) => signerOuRien(l.vignette_key)))

@@ -122,3 +122,16 @@ export const MIGRATION_COMPOSITION = "supabase/migrations/20261017_collectif_com
 export const ERREUR_COMPOSITION_ABSENTE = "migration_composition_absente";
 export const MESSAGE_COMPOSITION_ABSENTE =
   "La mise à jour de la base pour composer pièce par pièce n'est pas encore appliquée (20261017_collectif_composition.sql) : rien n'a été enregistré.";
+
+/* ─────────────────────────── supprimer un lien, répondre (T-152, 14/10 soir) ─────────────────────────── */
+
+/**
+ * Deux colonnes : `collectif_provenances.retire_le` (un lien supprimé) et
+ * `collectif_messages.reponse_a` (la réponse à un message). Sans elles, aucun
+ * lien n'est supprimé et aucun message ne répond à un autre ; « Supprimer le
+ * lien » et « Répondre » répondent 503 `migration_liens_absente`.
+ */
+export const MIGRATION_LIENS = "supabase/migrations/20261018_collectif_liens_reponses.sql";
+export const ERREUR_LIENS_ABSENTE = "migration_liens_absente";
+export const MESSAGE_LIENS_ABSENTE =
+  "La mise à jour de la base pour supprimer un lien et répondre à un message n'est pas encore appliquée (20261018_collectif_liens_reponses.sql) : rien n'a été enregistré.";

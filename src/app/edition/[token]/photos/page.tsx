@@ -1,5 +1,6 @@
-/* /edition/[token]/photos — la collecte, côté client (PRD §4.2, §5, maquette
-   Photos du 14/10). La page serveur ne lit que ce qui ne bouge pas (le lien
+/* /edition/[token]/photos — la collecte, côté client (PRD §4.2, §5, T-152 :
+   les photos rangées en dossiers, l'onglet des liens). `?dossier=<clé>` ouvre
+   un dossier (depuis le tableau de bord), `?onglet=liens` l'onglet des liens. La page serveur ne lit que ce qui ne bouge pas (le lien
    général, le plafond de présélection, les mots du message de partage) ; la
    grille ET « Qui a déposé » avec ses liens se lisent par la route photos,
    depuis le navigateur, et se relisent après un envoi. */
@@ -10,15 +11,22 @@ import { formaterJour } from '@/lib/atelier/dates'
 import { peut } from '@/lib/collectif/droits'
 import { collecteOuverte } from '@/lib/collectif/etats'
 import { liensEdition, origineDepuis } from '@/lib/collectif/liens'
-import { plafondLienMax } from '@/lib/collectif/plafonds'
+import { plafondLienMax, plafondParticipant } from '@/lib/collectif/plafonds'
 import { chargerEspace } from '../donnees'
 import Collecte from './Collecte'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export default async function PagePhotos({ params }: { params: Promise<{ token: string }> }) {
+export default async function PagePhotos({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>
+  searchParams: Promise<{ dossier?: string; onglet?: string }>
+}) {
   const { token } = await params
+  const recherche = await searchParams
   const acces = await chargerEspace(token)
   if (acces.statut !== 'ok') notFound()
   const { edition, role } = acces
@@ -38,6 +46,9 @@ export default async function PagePhotos({ params }: { params: Promise<{ token: 
       lienParticipants={ecrire ? liensEdition(origine, edition).depot : ''}
       preselectionMax={edition.preselection_max}
       max={plafondLienMax(edition)}
+      plafondGeneral={plafondParticipant(edition)}
+      dossierInitial={typeof recherche.dossier === 'string' && recherche.dossier.length <= 400 ? recherche.dossier : 'tout'}
+      ongletInitial={recherche.onglet === 'liens' ? 'liens' : 'photos'}
       organisation={edition.organisation}
       evenement={edition.evenement}
       cloture={edition.cloture_le ? formaterJour(edition.cloture_le) : ''}

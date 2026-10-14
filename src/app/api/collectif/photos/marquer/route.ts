@@ -4,6 +4,7 @@ import { chargerAcces } from "@/lib/collectif/acces";
 import { estUuid } from "@/lib/collectif/cles";
 import { peut } from "@/lib/collectif/droits";
 import type { Role } from "@/lib/collectif/types";
+import { dansLeDossier, type LignePhoto } from "@/lib/collectif/dossiers";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
   const acces = await chargerAcces(String(corps.token ?? ""), "espace");
   const refus = refusAcces(acces);
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
-  if (corps.toutes === true) return toutesLesPhotos(acces.edition.id, acces.role, corps.preselection);
+  if (corps.toutes === true) return toutesLesPhotos(acces.edition.id, acces.edition.responsable_nom, acces.role, corps.preselection, corps.dossier);
   if (!estUuid(corps.photoId)) return NextResponse.json({ error: "introuvable" }, { status: 404 });
 
   const patch: Record<string, unknown> = {};
@@ -66,22 +67,45 @@ export async function POST(request: Request) {
   return NextResponse.json({ ok: true, journal });
 }
 
-async function toutesLesPhotos(editionId: string, role: Role, preselection: unknown) {
+async function toutesLesPhotos(editionId: string, responsable: string | null, role: Role, preselection: unknown, dossierBrut: unknown) {
   if (typeof preselection !== "boolean") return NextResponse.json({ error: "rien_a_marquer" }, { status: 400 });
   if (!peut(role, "preselectionner")) return refusDroit();
   const supabase = makeSupabase();
-  let requete = supabase
-    .from("collectif_photos")
-    .update({ preselection })
-    .eq("edition_id", editionId)
-    .not("confirmee_le", "is", null)
-    .eq("preselection", !preselection);
-  if (preselection) requete = requete.eq("signalee", false);
-  const { data, error } = await requete.select("id");
-  if (error) return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
-  const n = data?.length ?? 0;
+  const dossier = typeof dossierBrut === "string" && dossierBrut.length <= 400 ? dossierBrut : "tout";
+  let n = 0;
+  if (dossier === "tout" || dossier === "selection") {
+    let requete = supabase
+      .from("collectif_photos")
+      .update({ preselection })
+      .eq("edition_id", editionId)
+      .not("confirmee_le", "is", null)
+      .eq("preselection", !preselection);
+    if (preselection) requete = requete.eq("signalee", false);
+    const { data, error } = await requete.select("id");
+    if (error) return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
+    n = data?.length ?? 0;
+  } else {
+    /* « Sélectionner tout ce dossier » (T-152) : les photos du dossier, par la
+       même règle que la grille (`dansLeDossier`), puis par paquets d'ids. */
+    const { data, error } = await supabase
+      .from("collectif_photos")
+      .select("id, provenance_id, provenance_type, role_deposant, deposant, preselection, signalee")
+      .eq("edition_id", editionId)
+      .not("confirmee_le", "is", null)
+      .limit(20000)
+      .returns<(LignePhoto & { id: string; signalee: boolean })[]>();
+    if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+    const ids = (data ?? [])
+      .filter((l) => dansLeDossier(l, dossier, responsable) && Boolean(l.preselection) !== preselection && (!preselection || !l.signalee))
+      .map((l) => l.id);
+    for (let i = 0; i < ids.length; i += 500) {
+      const { error: e } = await supabase.from("collectif_photos").update({ preselection }).eq("edition_id", editionId).in("id", ids.slice(i, i + 500));
+      if (e) return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
+    }
+    n = ids.length;
+  }
   const journal = n
-    ? await journaliser(supabase, { editionId }, preselection ? "preselection_toutes" : "preselection_aucune", { n }, null)
+    ? await journaliser(supabase, { editionId }, preselection ? "preselection_toutes" : "preselection_aucune", { n, ...(dossier !== "tout" ? { dossier: true } : {}) }, null)
     : true;
   return NextResponse.json({ ok: true, n, journal });
 }

@@ -14,38 +14,42 @@ import FenetreEnvoi from "./FenetreEnvoi";
 import { MoteurDepot } from "./moteur";
 import { useMoteur } from "./useMoteur";
 
+/** Ce que la fenêtre sait en s'ouvrant : le dossier où l'on est (il est proposé d'emblée), ou « un nouveau dossier ». */
+export type OuvertureEnvoi = { dossier?: string | null; nouveau?: boolean };
+
 type Envoi = {
   moteur: MoteurDepot | null;
+  token: string;
   tu: boolean;
-  ouvert: boolean;
-  ouvrir: () => void;
+  ouvert: OuvertureEnvoi | null;
+  ouvrir: (o?: OuvertureEnvoi) => void;
   fermer: () => void;
   /** Combien de fois la fenêtre s'est fermée : une page qui montre les photos se relit à chaque fermeture. */
   fermetures: number;
 };
 
-const Contexte = createContext<Envoi>({ moteur: null, tu: false, ouvert: false, ouvrir: () => {}, fermer: () => {}, fermetures: 0 });
+const Contexte = createContext<Envoi>({ moteur: null, token: "", tu: false, ouvert: null, ouvrir: () => {}, fermer: () => {}, fermetures: 0 });
 
 export function useMoteurDepot(): MoteurDepot | null {
   return useContext(Contexte).moteur;
 }
 
 /** Ouvrir la fenêtre d'envoi, et savoir quand elle s'est refermée. `ouvrir` est nul sans droit de déposer. */
-export function useFenetreEnvoi(): { ouvrir: (() => void) | null; fermetures: number } {
+export function useFenetreEnvoi(): { ouvrir: ((o?: OuvertureEnvoi) => void) | null; fermetures: number } {
   const c = useContext(Contexte);
   return { ouvrir: c.moteur ? c.ouvrir : null, fermetures: c.fermetures };
 }
 
 export function DepotFournisseur({ token, actif, tu, children }: { token: string; actif: boolean; tu: boolean; children: React.ReactNode }) {
   const moteur = useMemo(() => (actif ? new MoteurDepot({ token }) : null), [token, actif]);
-  const [ouvert, setOuvert] = useState(false);
+  const [ouvert, setOuvert] = useState<OuvertureEnvoi | null>(null);
   const [fermetures, setFermetures] = useState(0);
-  const ouvrir = useCallback(() => setOuvert(true), []);
+  const ouvrir = useCallback((o?: OuvertureEnvoi) => setOuvert(o ?? {}), []);
   const fermer = useCallback(() => {
-    setOuvert(false);
+    setOuvert(null);
     setFermetures((n) => n + 1);
   }, []);
-  const valeur = useMemo(() => ({ moteur, tu, ouvert, ouvrir, fermer, fermetures }), [moteur, tu, ouvert, ouvrir, fermer, fermetures]);
+  const valeur = useMemo(() => ({ moteur, token, tu, ouvert, ouvrir, fermer, fermetures }), [moteur, token, tu, ouvert, ouvrir, fermer, fermetures]);
   return <Contexte.Provider value={valeur}>{children}</Contexte.Provider>;
 }
 
@@ -53,7 +57,7 @@ export function DepotFournisseur({ token, actif, tu, children }: { token: string
 export function HoteFenetreEnvoi() {
   const c = useContext(Contexte);
   if (!c.moteur || !c.ouvert) return null;
-  return <FenetreEnvoi moteur={c.moteur} tu={c.tu} fermer={c.fermer} />;
+  return <FenetreEnvoi moteur={c.moteur} token={c.token} tu={c.tu} ouverture={c.ouvert} fermer={c.fermer} />;
 }
 
 /** La pastille « Envoi en cours » de l'en-tête : visible depuis tous les écrans, elle rouvre la fenêtre. */
@@ -64,7 +68,7 @@ export function PastilleEnvoi() {
   const faites = vue.total - vue.enCours;
   const part = vue.total ? Math.round((faites / vue.total) * 100) : 0;
   return (
-    <button type="button" className="ec-pastille-envoi" onClick={c.ouvrir}>
+    <button type="button" className="ec-pastille-envoi" onClick={() => c.ouvrir()}>
       <span className="ec-pastille-envoi-barre" aria-hidden="true">
         <span style={{ width: `${part}%` }} />
       </span>

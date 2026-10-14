@@ -100,9 +100,9 @@ import { estTypeNote, ROLES, TYPES_NOTE, type Role } from "@/lib/collectif/types
 import { cookieMode, LOGO_MODE, lireMode, MODES } from "@/lib/collectif/affichage";
 import { CONTENUS_CLIENT, contenuClient, lireFichierContenu, lireReponsesMot, QUESTIONS_MOT } from "@/lib/collectif/contenus";
 import { cheminQr, matriceQr, svgQr } from "@/lib/collectif/qr";
-import { DOSSIER_RESPONSABLE, dossierRenommable, lireNomDossier, sourcesDesPhotos } from "@/lib/collectif/sources";
 import { apercuPossible, envoisCourants } from "@/lib/collectif/contenus";
-import { GROUPE_GENERAL, messagePartage } from "@/lib/collectif/partage";
+import * as Dossiers from "@/lib/collectif/dossiers";
+import { messagePartage } from "@/lib/collectif/partage";
 import { colonneAbsente, MIGRATION_REVISION } from "@/lib/collectif/migration";
 import { libellePlafondLien, lirePlafondLien, plafondLienMax, CURSEUR_LIEN } from "@/lib/collectif/plafonds";
 import {
@@ -1438,10 +1438,10 @@ titre("— revision 14.3 / 14.7 : photos et livraison —");
     /root: racine/.test(collecte) && /matchMedia\(REQUETE_TELEPHONE\)\.matches \? null : zone\.current/.test(collecte));
   ok("Photos : « Créer un lien » ouvre la fenetre du lien de contribution (plafond PAR LIEN), plus de formulaire « photographe » en dur",
     /<FenetreLien\b/.test(collecte) && !/type: "photographe"/.test(collecte));
-  ok("Photos : le depot s'ouvre dans une fenetre en verre (celle de la coquille, retours du 14/10)",
-    /<Fenetre titre="Déposer des photos"/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")) && /onClick=\{envoi\.ouvrir\}/.test(collecte));
-  ok("Photos : l'ecran garde ses filtres et sa presélection facultative (pas la proposition B)",
-    ["toutes", "jour", "provenance", "doublons", "preselection", "signalees"].every((f) => collecte.includes(`cle: "${f}"`)) && /Facultative/.test(collecte) && /l'atelier choisit parmi toutes/.test(collecte));
+  ok("Photos : le depot s'ouvre dans une fenetre en verre (celle de la coquille), sur le dossier ouvert",
+    /<Fenetre titre="Déposer des photos"/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")) && /envoi\.ouvrir\?\.\(\{ dossier:/.test(collecte));
+  ok("Photos (T-152) : les dossiers a gauche, Toutes / Par jour / Doublons, la selection facultative, plus de pastilles de filtres",
+    /aria-label="Les dossiers"/.test(collecte) && /Par jour/.test(collecte) && /Doublons/.test(collecte) && /Ma sélection/.test(collecte) && /facultatif/.test(collecte) && !/cle: "signalees"/.test(collecte));
   const livraison = lire("src/app/edition/[token]/livraison/page.tsx");
   ok("Livraison : l'en-tete commun et « Écrire à l'atelier » vers Parler a l'atelier",
     /<EnTeteEcran titre="Livraison"/.test(livraison) && livraison.includes("cheminSection(token, 'atelier')") && !livraison.includes("cheminSection(token, 'dossier')"));
@@ -1520,48 +1520,24 @@ titre("— retours de Mathias du 14/10 —");
   const css = lire("src/app/edition/[token]/espace.css");
   ok("presélection : un bord autour de la photo choisie, trace EN DEDANS (la tuile rogne sa peinture), ni case ni coche",
     /\.ec-tuile--choisie \.ec-tuile-image \{\s*outline: 3px solid var\(--ec-accent\);\s*outline-offset: -3px;/.test(css) && !/type="checkbox"/.test(collecte) && !/[✓✔]/.test(collecte));
-  ok("presélection : « Tout sélectionner » et « Tout désélectionner »",
-    /Tout sélectionner/.test(collecte) && /Tout désélectionner/.test(collecte) && /toutes: true, preselection/.test(collecte));
+  ok("selection : « Sélectionner tout ce dossier », « Vider la sélection » dans Ma sélection",
+    /Sélectionner tout ce dossier/.test(collecte) && /Vider la sélection/.test(collecte) && /toutes: true, preselection, dossier/.test(collecte));
   const marquer = lire("src/app/api/collectif/photos/marquer/route.ts");
   ok("tout selectionner : le droit preselectionner, jamais une photo signalee, journalise",
     /corps\.toutes === true/.test(marquer) && /peut\(role, "preselectionner"\)/.test(marquer) && /if \(preselection\) requete = requete\.eq\("signalee", false\)/.test(marquer) && /"preselection_toutes" : "preselection_aucune"/.test(marquer));
   ok("le journal dit « tout selectionne » et « tout deselectionne »",
     /Tout sélectionné : 12 photo/.test(phraseEvenement("preselection_toutes", { n: 12 })) && /Tout désélectionné : 3 photo/.test(phraseEvenement("preselection_aucune", { n: 3 })));
 
-  /* 9 et 10 : « Qui a déposé » et les liens au même endroit. */
-  const edition = { plafond_participant_atelier: 30, plafond_participant_client: null, plafond_total: 2000, responsable_nom: "Camille Essai" };
-  const liens = [
-    { id: "l1", cle: "c".repeat(22), libelle: "Équipe Lyon", sans_plafond: false, plafond_par_personne: 30 },
-    { id: "l2", cle: "d".repeat(22), libelle: "Le photographe", sans_plafond: true, plafond_par_personne: null },
-  ];
-  const lignes = [
-    { provenance_id: null, provenance_type: "organisateur", role_deposant: "responsable", deposant: "Camille Essai", appareil_id: null },
-    { provenance_id: null, provenance_type: "organisateur", role_deposant: "responsable", deposant: "La soirée", appareil_id: null },
-    { provenance_id: "l1", provenance_type: "participant", role_deposant: "participant", deposant: "Paul", appareil_id: "a1" },
-    { provenance_id: "l1", provenance_type: "participant", role_deposant: "participant", deposant: "Léa", appareil_id: "a2" },
-    { provenance_id: "l1", provenance_type: "participant", role_deposant: "participant", deposant: "Léa", appareil_id: "a2" },
-    { provenance_id: null, provenance_type: "participant", role_deposant: "participant", deposant: null, appareil_id: "a3" },
-    { provenance_id: null, provenance_type: "autre", role_deposant: "atelier", deposant: null, appareil_id: null },
-  ];
-  const resp = sourcesDesPhotos(lignes, liens, edition, true);
-  ok("sources : un ordre STABLE (dossiers du responsable, liens, lien general, atelier)",
-    JSON.stringify(resp.map((x) => x.libelle)) === JSON.stringify([DOSSIER_RESPONSABLE, "La soirée", "Équipe Lyon", "Le photographe", GROUPE_GENERAL, "L'atelier"]));
-  ok("sources : chaque lien compte ses photos et ses personnes (par appareil), son plafond PAR LIEN",
-    resp[2].n === 3 && resp[2].detail === "Lien · 30 photos par personne · 2 personnes" && resp[3].n === 0 && resp[3].detail === "Lien · sans limite");
-  ok("sources : le responsable voit chaque lien (meme vide) avec sa cle ; le lien general a la cle nulle",
-    resp[2].lien?.cle === "c".repeat(22) && resp[3].lien?.cle === "d".repeat(22) && resp[4].lien?.cle === null && resp[0].lien === undefined && resp[5].lien === undefined);
-  const equipe = sourcesDesPhotos(lignes, [], edition, false);
-  ok("sources : l'equipe ne voit AUCUN lien, et pas les liens vides",
-    equipe.every((x) => !x.lien) && !equipe.some((x) => x.libelle === "Le photographe"));
+  /* 9 et 10 : « Qui a déposé » et les liens au même endroit (l'arbre lui-même : bloc T-152). */
   const route = lire("src/app/api/collectif/photos/route.ts");
-  ok("route photos : les liens ne sont lus que pour qui peut en creer",
-    /const partage = peut\(acces\.role, "regler_plafond_participant"\)/.test(route) && /partage \? lireProvenances\(acces\.edition\.id\) : Promise\.resolve\(\[\]\)/.test(route) && /sourcesDesPhotos\(toutes, liens, acces\.edition, partage\)/.test(route));
-  ok("Photos : plus de « Copier le lien participants » dans l'en-tete, les liens vivent dans « Qui a déposé »",
-    !/Copier le lien participants/.test(collecte) && /Qui a déposé/.test(collecte) && /Copier le lien/.test(collecte) && /Partager/.test(collecte) && /Créer un lien pour quelqu&apos;un/.test(collecte));
-  ok("Photos : collecte close, ni « Déposer », ni lien a partager, ni « Créer un lien » (la presélection reste)",
-    /envoi\.ouvrir && p\.ouverte/.test(collecte) && /const lien = p\.ouverte \? lienDe\(s\) : null/.test(collecte) && /p\.ecrire && p\.ouverte \?/.test(collecte) && /collecteOuverte\(edition\.etat, edition\.cloture_le, new Date\(\)\)/.test(lire("src/app/edition/[token]/photos/page.tsx")));
-  ok("tableau de bord : ses dossiers sont les memes sources",
-    /sourcesDesPhotos\(lignes, provenances, edition, false\)/.test(lire("src/app/edition/[token]/donnees.ts")));
+  ok("route photos : les liens ne sortent que pour qui peut en creer",
+    /const partage = peut\(acces\.role, "regler_plafond_participant"\)/.test(route) && /const liens = partage \? provenances : \[\]/.test(route) && /liens: partage\s*\?/.test(route) && /arbreDesPhotos\(toutes, liens, edition, partage\)/.test(route));
+  ok("Photos : les liens vivent dans l'onglet « Les liens » (un « Partager », un menu), plus de « Copier le lien » eparpilles",
+    !/Copier le lien participants/.test(collecte) && /Les liens · /.test(collecte) && /Partager/.test(collecte) && /Changer le nombre de photos/.test(collecte) && /Supprimer le lien/.test(collecte) && !/Copier le lien</.test(collecte));
+  ok("Photos : collecte close, ni « Déposer », ni « Créer un lien », ni « Partager » (la selection reste)",
+    /envoi\.ouvrir && p\.ouverte/.test(collecte) && /onglet === "liens" && p\.ouverte/.test(collecte) && /c\.ouverte \?/.test(collecte) && /collecteOuverte\(edition\.etat, edition\.cloture_le, new Date\(\)\)/.test(lire("src/app/edition/[token]/photos/page.tsx")));
+  ok("tableau de bord : ses dossiers sont le meme arbre que la page Photos, chaque ligne y mene",
+    /arbreDesPhotos\(lignes, provenances, edition, false\)/.test(lire("src/app/edition/[token]/donnees.ts")) && /\?dossier=\$\{encodeURIComponent\(d\.cle\)\}/.test(lire("src/app/edition/[token]/CartePhotos.tsx")));
 
   /* 5 : le message de partage, écrit pour ce groupe et cet événement. */
   const base = { organisation: "Maison Aubier", evenement: "Séminaire d'automne", url: "https://bellajour.fr/depot/x?p=y", plafond: "30 photos par personne", cloture: "28 octobre", tu: false };
@@ -1583,16 +1559,17 @@ titre("— retours de Mathias du 14/10 —");
   ok("envoi : chaque lot garde SA provenance (un second lot ne relabellise jamais le premier)",
     /provenance: this\.provenance,\n\s*\}\);/.test(moteur) && /provenance: premier\.provenance/.test(moteur) && !/provenance: this\.provenance,\n\s*fichiers/.test(moteur));
   ok("envoi : un fichier choisi deux fois est compte et dit, plus jamais saute en silence",
-    /this\.dejaAjoutes\+\+/.test(moteur) && /Choisies deux fois, sautées/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")));
+    /this\.dejaAjoutes\+\+/.test(moteur) && /vue\.dejaLa \+ vue\.dejaAjoutes/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")));
   const fenetre = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
-  ok("envoi : « déjà là » est explique, « Ajouter d'autres photos » et « Réduire et continuer »",
-    /Déjà là, sautées \(même fichier déjà envoyé\)/.test(fenetre) && /n'est jamais envoyée deux fois/.test(fenetre) && /Ajouter d&apos;autres photos/.test(fenetre) && /Réduire et continuer/.test(fenetre));
+  ok("envoi : « déjà là » est explique, « Ajouter d'autres photos » et « Réduire et continuer », le compte en grand",
+    /déjà là, sautées/.test(fenetre) && /n'est jamais envoyée deux fois/.test(fenetre) && /Ajouter d&apos;autres photos/.test(fenetre) && /Réduire et continuer/.test(fenetre) && /ec-envoi-n/.test(fenetre));
   ok("envoi : la fenetre vit dans la coquille, la pastille de chaque en-tete la rouvre",
-    /<HoteFenetreEnvoi \/>/.test(lire("src/app/edition/[token]/Coquille.tsx")) && /<PastilleEnvoi \/>/.test(lire("src/app/edition/_composants/Ecran.tsx")) && /onClick=\{c\.ouvrir\}/.test(lire("src/app/edition/_composants/depot/DepotContexte.tsx")));
+    /<HoteFenetreEnvoi \/>/.test(lire("src/app/edition/[token]/Coquille.tsx")) && /<PastilleEnvoi \/>/.test(lire("src/app/edition/_composants/Ecran.tsx")) && /onClick=\{\(\) => c\.ouvrir\(\)\}/.test(lire("src/app/edition/_composants/depot/DepotContexte.tsx")));
 }
 
 titre("— retours du 14/10 : les envois du client et les dossiers —");
 {
+  const collecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
   const mig = lire("supabase/migrations/20261016_collectif_envois.sql");
   ok("migration 20261016 : atomique, idempotente, trois colonnes, PostgREST relit",
     /^begin;/m.test(mig) && /^commit;/m.test(mig) && (mig.match(/add column if not exists/g) ?? []).length === 3 && /remplace_le timestamptz/.test(mig) && /contenu_id uuid/.test(mig) && /on delete set null/.test(mig) && /notify pgrst, 'reload schema'/.test(mig));
@@ -1622,15 +1599,25 @@ titre("— retours du 14/10 : les envois du client et les dossiers —");
     ["Remplacer", "Ajouter un autre fichier", "Ouvrir", "ancienne version", "Modifier"].every((t) => ligne.includes(t)));
   ok("contenus : l'atelier voit l'ancienne version", /ancienne version/.test(lire("src/app/admin/collectif/[id]/PanneauContenus.tsx")) && /remplace_le/.test(lire("src/app/admin/collectif/donnees.ts")));
 
-  ok("dossiers : un lien ou un dossier du responsable se renomme ; le lien general et l'atelier non",
-    dossierRenommable("lien:0b1f3c2e-4a5b-4c6d-8e9f-001122334455")?.genre === "lien" && dossierRenommable("resp:organisateur:")?.genre === "responsable" && (dossierRenommable("resp:photographe:Jean") as { deposant: string | null }).deposant === "Jean" && dossierRenommable("participants") === null && dossierRenommable("atelier") === null && dossierRenommable("lien:pas-un-uuid") === null && dossierRenommable("resp:pirate:x") === null);
+  {
+    const a = Dossiers.arbreDesPhotos(
+      [{ provenance_id: null, provenance_type: "photographe", role_deposant: "responsable", deposant: "Jean" }, { provenance_id: null, provenance_type: "participant", role_deposant: "participant", deposant: null }, { provenance_id: null, provenance_type: "autre", role_deposant: "atelier", deposant: null }],
+      [{ id: "0b1f3c2e-4a5b-4c6d-8e9f-001122334455", cle: "c".repeat(22), libelle: "Équipe Lyon", sans_plafond: true, plafond_par_personne: null }],
+      { plafond_participant_atelier: 30, plafond_participant_client: null, plafond_total: 2000, responsable_nom: "Camille" },
+      true
+    );
+    ok("dossiers : un lien ou un dossier du responsable se renomme ; le lien general et l'atelier non ; une cle inconnue est refusee",
+      a.vous[0].renommable && a.liens.find((l) => l.cle.startsWith("lien:"))?.renommable === true && a.liens.find((l) => l.cle === "participants")?.renommable === false && a.atelier?.renommable === false
+      && Dossiers.lireCleResp("resp:photographe:Jean")?.brut === "Jean" && Dossiers.lireCleResp("resp:pirate:x") === null && Dossiers.lireCleResp("participants") === null);
+    ok("dossiers : un dossier d'avant T-152 garde son nom, sans « Autre source · » ni « Le photographe · »", a.vous[0].nom === "Jean");
+  }
   ok("dossiers : un nom d'une ligne, 80 caracteres au plus, jamais vide",
-    lireNomDossier("  La  soirée\n de clôture ").ok && (lireNomDossier("  La  soirée\n de clôture ") as { nom: string }).nom === "La soirée de clôture" && !lireNomDossier("   ").ok && !lireNomDossier("x".repeat(81)).ok);
+    Dossiers.lireNomDossier("  La  soirée\n de clôture ").ok && (Dossiers.lireNomDossier("  La  soirée\n de clôture ") as { nom: string }).nom === "La soirée de clôture" && !Dossiers.lireNomDossier("   ").ok && !Dossiers.lireNomDossier("x".repeat(81)).ok);
   const dossiers = lire("src/app/api/collectif/dossiers/route.ts");
   ok("dossiers : le droit du responsable, l'edition filtree, journalise ; « Mes photos » rend son propre nom",
-    /peut\(acces\.role, "regler_plafond_participant"\)/.test(dossiers) && /\.eq\("edition_id", edition\.id\)/.test(dossiers) && /"dossier_renomme"/.test(dossiers) && /lu\.nom === DOSSIER_RESPONSABLE \? propre : lu\.nom/.test(dossiers));
-  ok("dossiers : double clic sur le nom (Photos et tableau de bord), Entree garde, Echap annule",
-    /onDoubleClick/.test(lire("src/app/edition/_composants/NomDossier.tsx")) && /<NomDossier/.test(lire("src/app/edition/[token]/photos/Collecte.tsx")) && /<NomDossier/.test(lire("src/app/edition/[token]/CartePhotos.tsx")));
+    /peut\(acces\.role, "regler_plafond_participant"\)/.test(dossiers) && /\.eq\("edition_id", edition\.id\)/.test(dossiers) && /"dossier_renomme"/.test(dossiers) && /deposantPour\(n, edition\.responsable_nom\)/.test(dossiers));
+  ok("dossiers : double clic (ou F2) sur un nom dans la page Photos, Entree garde, Echap annule",
+    /onDoubleClick=\{\(\) => p\.ecrire && n\.renommable/.test(collecte) && /e\.key === "F2"/.test(collecte) && /e\.key === "Escape"/.test(collecte));
   ok("le journal dit le renommage et le remplacement",
     /devient « La soirée »/.test(phraseEvenement("dossier_renomme", { avant: "Mes photos", apres: "La soirée" })) && /ancienne version reste/.test(phraseEvenement("contenu_remplace", { type: "Logo", nom: "logo.png" })));
 
@@ -1642,6 +1629,84 @@ titre("— retours du 14/10 : les envois du client et les dossiers —");
     /requete\(COLONNES_ENVOIS\)[\s\S]{0,200}requete\(COLONNES\)[\s\S]{0,200}requete\(COLONNES_AVANT\)/.test(messagerie));
   ok("citer un envoi : le « + » propose « Citer un de vos envois », la bulle et l'atelier le montrent",
     /Citer un de \{v\("vos", "tes"\)\} envois/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")) && /Votre envoi · \{m\.contenu\.libelle\}/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")) && /Envoi du client cité/.test(lire("src/app/admin/collectif/[id]/PanneauMessages.tsx")));
+}
+
+titre("— T-152 : les photos rangees en dossiers, les liens a part —");
+{
+  const D = Dossiers;
+  const ed = { plafond_participant_atelier: 30, plafond_participant_client: null, plafond_total: 2000, responsable_nom: "Camille" };
+  const r = (deposant: string | null, extra: Partial<Dossiers.LignePhoto> = {}): Dossiers.LignePhoto => ({ provenance_id: null, provenance_type: "organisateur", role_deposant: "responsable", deposant, ...extra });
+  const p = (lien: string | null, nom: string | null): Dossiers.LignePhoto => ({ provenance_id: lien, provenance_type: "participant", role_deposant: "participant", deposant: nom });
+  const L = "0b1f3c2e-4a5b-4c6d-8e9f-001122334455";
+  const liens = [{ id: L, cle: "c".repeat(22), libelle: "Équipe Lyon", sans_plafond: false, plafond_par_personne: 30 }];
+  const lignes = [
+    r("Camille"), r(null), r("La soirée"), r("La soirée / Photobooth"), r("La soirée / Photobooth"), r("Mes photos / Brouillons"),
+    p(L, "Hugo"), p(L, "Hugo"), p(L, "Inès"), p(null, null), p(null, "Léa"),
+  ];
+  const a = D.arbreDesPhotos(lignes, liens, ed, true);
+  ok("dossiers : « Mes photos » d'abord, un dossier par nom, ses sous-dossiers dedans (un niveau)",
+    JSON.stringify(a.vous.map((h) => `${h.nom}:${h.n}[${h.enfants.map((e) => `${e.nom}:${e.n}`).join(",")}]`)) === JSON.stringify(["Mes photos:3[Brouillons:1]", "La soirée:3[Photobooth:2]"]));
+  ok("dossiers : un dossier qui a des sous-dossiers ne se range pas dans un autre ; les autres oui",
+    a.vous.every((h) => h.deplacable === (h.enfants.length === 0)) && a.vous.every((h) => h.enfants.every((e) => e.deplacable && !e.accueille)));
+  ok("liens : le lien general et chaque lien, une ligne par personne dedans (« Sans nom » si pas de nom)",
+    a.liens.map((l) => `${l.nom}:${l.n}`).join() === "Tous les participants:2,Équipe Lyon:3" && a.liens[1].enfants.map((e) => `${e.nom}:${e.n}`).join() === "Hugo:2,Inès:1" && a.liens[0].enfants.some((e) => e.nom === "Sans nom"));
+  ok("liens : une seule personne qui porte le nom du lien n'est pas detaillee ; un lien supprime et vide disparait",
+    D.arbreDesPhotos([p(L, "Équipe Lyon")], liens, ed, true).liens[1].enfants.length === 0
+    && D.arbreDesPhotos([], [{ ...liens[0], retire_le: "2026-10-14T20:00:00Z" }], ed, true).liens.length === 1);
+  ok("l'equipe ne voit pas les liens vides", D.arbreDesPhotos([], liens, ed, false).liens.length === 0);
+  const dans = (cle: string) => lignes.filter((l) => D.dansLeDossier(l, cle, "Camille")).length;
+  ok("un dossier montre ses photos ET celles de ses sous-dossiers ; un sous-dossier les siennes",
+    dans("resp:organisateur:") === 3 && dans("resp:organisateur:La soirée") === 3 && dans("resp:organisateur:La soirée / Photobooth") === 2);
+  ok("un lien, une personne, le lien general, tout", dans(`lien:${L}`) === 3 && dans(`pers:${L}:Hugo`) === 2 && dans("participants") === 2 && dans("pers:general:Sans nom") === 1 && dans("tout") === lignes.length);
+  ok("« Ma sélection » : les photos choisies", D.dansLeDossier({ ...r(null), preselection: true }, "selection", "Camille") && !D.dansLeDossier(r(null), "selection", "Camille"));
+  const soiree = D.noeudDe(a, "resp:organisateur:La soirée");
+  const mes = D.noeudDe(a, "resp:organisateur:");
+  const photobooth = D.noeudDe(a, "resp:organisateur:La soirée / Photobooth");
+  const seul = D.arbreDesPhotos([r("Le dîner"), r("La soirée")], [], ed, false);
+  const plan1 = D.planDeplacement(D.noeudDe(seul, "resp:organisateur:Le dîner"), D.noeudDe(seul, "resp:organisateur:La soirée"), seul);
+  ok("ranger : un dossier sans sous-dossier entre dans un autre (« La soirée / Le dîner »)", plan1.ok && plan1.avant === "Le dîner" && plan1.apres === "La soirée / Le dîner");
+  ok("ranger : un dossier qui a des sous-dossiers refuse (un seul niveau), un sous-dossier ne recoit rien",
+    !D.planDeplacement(soiree, mes, a).ok && !D.planDeplacement(D.noeudDe(a, "resp:organisateur:Mes photos / Brouillons"), photobooth, a).ok && !D.planDeplacement(soiree, soiree, a).ok);
+  const sortir = D.planDeplacement(photobooth, null, a);
+  ok("ranger : un sous-dossier revient au premier niveau", sortir.ok && sortir.avant === "La soirée / Photobooth" && sortir.apres === "Photobooth");
+  ok("renommer : le dossier et ses sous-dossiers suivent, les autres ne bougent pas",
+    D.nouveauChemin("La soirée", "La soirée", "Le gala") === "Le gala" && D.nouveauChemin("La soirée / Photobooth", "La soirée", "Le gala") === "Le gala / Photobooth" && D.nouveauChemin("La soirée bis", "La soirée", "Le gala") === null);
+  ok("un nom de dossier : sans « / » (il separe le sous-dossier), une ligne, 80 caracteres",
+    (D.lireNomDossier("Jour 1/2") as { nom: string }).nom === "Jour 1-2" && !D.lireNomDossier("  ").ok && !D.lireNomDossier("x".repeat(81)).ok);
+  ok("« Mes photos » redevient le nom du responsable en base", D.deposantPour("Mes photos", "Camille") === "Camille" && D.deposantPour("La soirée / Photobooth", "Camille") === "La soirée / Photobooth");
+
+  const route = lire("src/app/api/collectif/dossiers/route.ts");
+  ok("route dossiers : ranger par planDeplacement, renommer par nouveauChemin, ecrire par paquets d'ids de l'edition",
+    /planDeplacement\(source, dans, arbre\)/.test(route) && /nouveauChemin\(cheminDe\(l, edition\.responsable_nom\)\.chemin, avant, apres\)/.test(route) && /\.in\("id", ids\.slice\(i, i \+ 500\)\)/.test(route) && /"dossier_range"/.test(route));
+  ok("le depot du responsable accepte un chemin de sous-dossier (170 caracteres)", /demande\.libelle\.trim\(\)\.slice\(0, 170\)/.test(lire("src/app/api/collectif/depot/presign/route.ts")));
+  const photos = lire("src/app/api/collectif/photos/route.ts");
+  ok("route photos : la grille filtre par dansLeDossier, « en cours d'arrivee » = declarees non confirmees depuis 2 h",
+    /dansLeDossier\(p, dossier, responsable\)/.test(photos) && /\.is\("confirmee_le", null\)\.gt\("created_at", depuis\)/.test(photos) && /seulementArbre === true/.test(photos));
+  ok("selectionner tout un dossier : la meme regle que la grille, jamais une photo signalee",
+    /dansLeDossier\(l, dossier, responsable\)/.test(lire("src/app/api/collectif/photos/marquer/route.ts")) && /!preselection \|\| !l\.signalee/.test(lire("src/app/api/collectif/photos/marquer/route.ts")));
+
+  const prov = lire("src/app/api/collectif/provenances/route.ts");
+  ok("supprimer un lien : un marqueur (retire_le), jamais un DELETE ; 503 nomme sans la migration ; ses photos restent",
+    /update\(\{ retire_le: new Date\(\)\.toISOString\(\) \}\)/.test(prov) && !/\.delete\(/.test(prov) && /ERREUR_LIENS_ABSENTE/.test(prov) && /"provenance_supprimee"/.test(prov));
+  ok("changer le nombre de photos d'un lien : la meme regle qu'a la creation (lirePlafondLien), journalise",
+    /async function modifierLien[\s\S]*lirePlafondLien\(corps, edition\)/.test(prov) && /"provenance_plafond"/.test(prov));
+  ok("un lien supprime ne recoit plus rien : la page de depot est introuvable, la route refuse",
+    /lu\.data\.retire_le\) notFound\(\)/.test(lire("src/app/depot/[token]/page.tsx")) && /!prov \|\| prov\.retire_le/.test(lire("src/app/api/collectif/depot/presign/route.ts")));
+  const mig = lire("supabase/migrations/20261018_collectif_liens_reponses.sql");
+  ok("migration 20261018 : atomique, idempotente, retire_le et reponse_a, PostgREST relit",
+    /^begin;/m.test(mig) && /^commit;/m.test(mig) && /retire_le timestamptz/.test(mig) && /reponse_a uuid/.test(mig) && /notify pgrst, 'reload schema'/.test(mig));
+
+  const page = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  ok("Photos : plus de « Signaler », plus de barre de presélection, les grands chiffres en tete",
+    !/Signaler/.test(page) && !/ec-presel/.test(page) && /ec-ph-chiffres/.test(page) && /photos reçues/.test(page));
+  ok("Photos : ranger en glissant (draggable, onDrop), « + Nouveau dossier » ouvre le depot sur un nom neuf",
+    /draggable=\{peutGlisser\}/.test(page) && /void ranger\(glisse, n\.cle\)/.test(page) && /envoi\.ouvrir\?\.\(\{ nouveau: true \}\)/.test(page));
+  const fen = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
+  ok("deposer : « Dans quel dossier ? », les dossiers existants ou un nom neuf, un seul bouton",
+    /Dans quel dossier \?/.test(fen) && /Ou un nouveau dossier/.test(fen) && /Choisir des photos/.test(fen) && !/Choisir un dossier/.test(fen) && !/webkitdirectory/.test(fen));
+  const css = lire("src/app/edition/[token]/espace.css");
+  ok("le bleu de Bellajour en mode jour (#4a90d9), le nom de l'edition sans boite",
+    /--ec-accent: #4a90d9;/.test(css) && /--ec-ac-rgb: 74, 144, 217;/.test(css) && !/\.ec-espace \.ec-edition \{[^}]*border: 1px/.test(css));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
