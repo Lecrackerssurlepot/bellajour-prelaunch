@@ -1,7 +1,7 @@
 ---
 id: T-147
 titre: L'espace client de l'Édition collective se lit comme un site, pas comme un logiciel
-etat: en cours
+etat: en pause
 domaine: collectif
 gravite: serieux
 autonomie: avis-requis
@@ -37,5 +37,30 @@ La révision, écran par écran, sur `feat/collectif-revision-13-10` (issue de
 Claude Code) ; les quatre questions du mot du dirigeant (PRD §12.14) ; les rendez-vous pris
 (PRD §12.13).
 
-## Ce qui a été fait
-Rien encore. Ticket ouvert le 14/10/2026.
+## Ce qui a été fait (14/10/2026, `feat/collectif-revision-13-10`)
+Sept commits, un par point, puis une PR vers `main` (elle porte aussi les phases 2 à 6) :
+1. **Les documents** : le PRD remis à son nom (§12 complété), les maquettes à leur place.
+2. **La coquille** : jour / nuit (jetons sémantiques, cookie `bj_ec_mode`, soleil / lune), le
+   vrai logo, le menu de 232 px dans le nouvel ordre (« Documents »), la pastille sur Parler à
+   l'atelier qui s'éteint sans recharger, aucune page qui défile, les fenêtres en verre.
+3. **Le tableau de bord** : encarts Style et Photos à leurs états, le lien de contribution
+   (curseur, plafond PAR LIEN, QR, partage), « À envoyer à l'atelier » (fichier ou
+   questionnaire), le dernier message. Migration `20261014` écrite, replis testés.
+4. **Le bon à tirer plein écran** : en-tête unique, une ligne d'information, la double page à la
+   taille de la scène, bande et onglets des magazines en bas, notes dans un panneau repliable,
+   note en cours dans le panneau, couvertures dans la scène, validation en verre.
+5. **Parler à l'atelier et Documents** : un fil (messages, demandes, propositions), le « + »
+   (joindre, citer), le rendez-vous et « Vos demandes » ; Documents sans messagerie, l'encart
+   « Nouvelle proposition », ce que prévoit le devis.
+6. **Le style** : le mur à défilement interne et brief fixe, la barre d'étapes collante, la
+   page `/style/brief` (palette et texte sur place, doubles pages et couvertures en panneau
+   latéral), les actions partielles de l'API.
+7. **Photos et Livraison** : la coquille, le défilement interne, la fenêtre du lien de
+   contribution sur Photos, le dépôt en verre.
+
+Vérifié : `tsc`, `lint` (0 erreur), `build`, `verif-atelier.ts` (1450) et `verif-collectif.ts`
+(426) verts ; chaque écran mesuré sans défilement de page en jour ET en nuit, à 1440 × 900 et
+1280 × 800 ; téléphone à 375 px (menu en tiroir, BAT avec notes en feuille du bas).
+
+**Reste à Mathias** : appliquer `supabase/migrations/20261014_collectif_revision.sql` ; relire
+les quatre questions du mot du dirigeant ; trancher les rendez-vous pris (PRD §12.13).

@@ -1,4 +1,4 @@
-# État du système — au 13/10/2026
+# État du système — au 14/10/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,27 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 14/10/2026 — Édition collective : la révision du 13/10 (PRD §14, T-147), sur branche
+
+- **Code** sur `feat/collectif-revision-13-10` (issue de `feat/collectif-phases-2-a-6`, non
+  fusionnée) : une PR vers `main` porte les phases 2 à 6 ET la révision. Rien ne change en
+  production tant qu'elle n'est pas fusionnée et que `COLLECTIF_OUVERT` reste absent de Vercel.
+- **Migration `20261014_collectif_revision.sql` ÉCRITE, PAS APPLIQUÉE** (à appliquer par
+  Mathias) : `collectif_provenances.plafond_par_personne`, `collectif_messages.document_id`,
+  `piece_jointe_key`, `piece_jointe_nom`. Sans elle, vérifié le 14/10 sur localhost:3000 : les
+  lectures se replient (liens et fil s'affichent), un lien AVEC plafond, un document cité ou une
+  pièce jointe répondent 503 `migration_revision_absente` avec la phrase qui nomme le fichier ;
+  un lien « Sans limite » et un message simple passent.
+- **Quatrième édition d'essai : « Essai révision (Claude) »** (id `033b0841-…`, deux magazines,
+  collecte ouverte), créée le 14/10 pour la révision. Elle porte : le lien de contribution
+  « Équipe Lyon » (sans limite), deux contenus reçus (un logo d'essai, le mot du dirigeant au
+  questionnaire), le message « Bonjour, un message d'essai de la révision (Claude). », et le
+  brief du **magazine 1 VALIDÉ** (style « Essai technique Claude », palette Essai, beaucoup de
+  texte, trois doubles pages, une couverture aimée) ; le magazine 2 n'a pas de style, deux
+  couvertures aimées. Aucun mail ne part (phase 7). À archiver quand Mathias l'aura regardée.
+- L'édition vierge « Organisation d'essai » n'a pas été touchée : elle reste à Mathias.
+- `verif-collectif.ts` 426 vérifications, `verif-atelier.ts` 1450, verts le 14/10.
 
 ## 13/10/2026 (fin d'après-midi) — Édition collective : phases 2 à 6 sur UNE branche, testées en local avant fusion
 

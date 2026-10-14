@@ -210,11 +210,60 @@ répond `introuvable` à l'identique pour un lien inconnu, archivé, ou tapé su
 
 ## Les écrans
 
-Client : monde SOMBRE, `.bj-atelier` + scope propre (`.ec-espace`, `.ec-depot`), noir, blanc,
-orange `--c-accent`, Cormorant Garamond **400** (jamais 500 : T-059) et DM Sans. Toute classe
-préfixée `ec-` et écrite sous son scope : une feuille chargée ne se décharge jamais en navigation
-client. Admin : monde CRÈME, classes de la table de travail. Masculin générique à l'écran
-(« le responsable »), même si le PRD écrit « la responsable ».
+Client : `.bj-atelier` + scope propre (`.ec-espace`, `.ec-depot`), Cormorant Garamond **400**
+(jamais 500 : T-059) et DM Sans. Toute classe préfixée `ec-` et écrite sous son scope : une
+feuille chargée ne se décharge jamais en navigation client. Admin : monde CRÈME, classes de la
+table de travail. Masculin générique à l'écran (« le responsable »), même si le PRD écrit « la
+responsable ».
+
+## La révision du 13/10 (PRD §14, T-147) : l'espace devient un logiciel
+
+Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
+- **Jour / nuit.** `data-ec-mode` sur la racine (`RacineEspace`), cookie d'affichage `bj_ec_mode`
+  (`affichage.ts`, `path=/edition`) lu par `edition/layout.tsx` : la page arrive dans le bon mode,
+  sans éclair. Des jetons SÉMANTIQUES (`--ec-bg`, `--ec-panel`, `--ec-surface`, `--ec-text`,
+  `--ec-accent`, `--ec-glass`…) redéfinis par mode dans `espace.css` ; les anciens noms
+  (`--ec-blanc*`, `--ec-orange*`, `--ec-filet*`) sont des alias. ⚠️ **Aucune couleur écrite en
+  dur** hors des blocs de jetons (le harnais relit chaque CSS de `edition/[token]` et refuse un
+  hexadécimal dans un `.tsx`). Les pages de magazine (BAT, QR) gardent leurs vraies couleurs dans
+  les deux modes : jetons FIXES `--ec-page`, `--ec-encre`, `--ec-noir-rgb`. Pas de `data-theme`
+  (mort, `src/app/CLAUDE.md`).
+- **Aucune page ne défile** au-dessus de 860 px : `.ec-coquille` fait `var(--app-height)`, chaque
+  écran est `.ec-ecran` (en-tête `EnTeteEcran` de 68 px, puis un corps en `min-height: 0`), et
+  seules les zones `.ec-defile` défilent. Sur téléphone, la page défile de nouveau (`.ec-defile`
+  repasse en `overflow: visible`), menu en tiroir. Un `IntersectionObserver` qui charge par pages
+  observe SA zone (`root`), nul sur téléphone (Photos).
+- **Les fenêtres sont en verre** (`Fenetre`, `cote` pour le panneau latéral) et couvrent la
+  colonne de contenu, pas le menu.
+- **Le plafond appartient au LIEN** (`plafond_par_personne`, compté par appareil SUR ce lien :
+  `compterPourPlafond(…, provenanceId)`). « Sans limite » = `sans_plafond`. Un lien d'avant la
+  révision garde l'ancienne règle (`plafondParticipant`). Le curseur va de 5 à
+  `plafondLienMax` (100, ou le plafond de l'atelier s'il est plus bas).
+- **La migration `20261014_collectif_revision.sql`** ajoute des COLONNES à des tables qui existent :
+  la LECTURE se replie (`colonneAbsente`, 42703 / PGRST204), l'ÉCRITURE qui en a besoin répond 503
+  `migration_revision_absente` (`MESSAGE_REVISION_ABSENTE`). Jamais d'écriture retentée en
+  silence sans la colonne : le plafond choisi ou la pièce jointe disparaîtraient. Un message
+  simple ne NOMME pas les colonnes de la révision (il s'écrit avant la migration).
+- **Joindre un fichier ou citer un document** (`messages/envoyer`, JSON ou multipart) : la
+  migration est SONDÉE avant d'écrire au coffre (aucun fichier orphelin) ; le document cité doit
+  appartenir à l'édition ; la pièce passe par le serveur (4 Mo, type lu à l'EXTENSION,
+  `clePieceJointe`). Un fichier seul prend « Fichier joint : nom » (le texte reste obligatoire).
+- **Le fil de « Parler à l'atelier »** réunit messages, demandes (un message du client qui
+  commence par un motif connu devient une carte, `lireMessageDemande`) et propositions
+  complémentaires (documents `proposition`), jour par jour (`filDeConversation`). « Vos demandes »
+  se lit dans le fil. Aucun rendez-vous inventé : un seul lien, celui de la fiche.
+- **Les contenus** (`contenus.ts`, `/api/collectif/contenus`) : un fichier par le serveur (4 Mo)
+  ou le questionnaire du mot du dirigeant (`QUESTIONS_MOT`, quatre questions NEUTRES à relire par
+  Mathias, PRD §12.14). Envoyer de nouveau ajoute une ligne : le plus récent gagne.
+- **Le QR code** (`qr.ts`, `qrcode-generator` épinglé) : modules foncés sur fond clair dans les
+  deux modes, une marge de quatre modules.
+- **Le brief partie par partie** (`/style/brief`) : `lirePartieBrief` contrôle palette, texte,
+  doubles pages contre le style DÉJÀ choisi ; aimer une couverture passe par `patchCouvertures`
+  (un brief validé repasse « à valider »). Le slug `brief` est réservé (`SLUGS_RESERVES`) : le
+  segment fixe gagne sur `style/[slug]`.
+- **Le BAT plein écran** : la page suit la scène par unités de conteneur (`container-type: size`,
+  `100cqh`, `50cqw`), jamais un plafond en pixels ; la page seule garde son côté de la pliure ;
+  notes dans un panneau repliable (feuille du bas sur téléphone, fermée par défaut).
 
 ## Phase 7 : les accroches déjà posées
 
