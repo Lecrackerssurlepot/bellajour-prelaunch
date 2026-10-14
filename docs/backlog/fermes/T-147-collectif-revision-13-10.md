@@ -1,7 +1,7 @@
 ---
 id: T-147
 titre: L'espace client de l'Édition collective se lit comme un site, pas comme un logiciel
-etat: en pause
+etat: fermé
 domaine: collectif
 gravite: serieux
 autonomie: avis-requis
@@ -66,5 +66,8 @@ Vérifié : `tsc`, `lint` (0 erreur), `build`, `verif-atelier.ts` (1450) et `ver
 plafonné à 5 a reçu 5 photos sur 6 (la 6e refusée avec sa phrase), un document cité et une pièce
 jointe sont arrivés et s'ouvrent des deux côtés (client et fiche atelier).
 
-**Reste à Mathias** : fusionner la PR #229 ; relire les quatre questions du mot du dirigeant ;
-trancher les rendez-vous pris (PRD §12.13).
+## Fermé le 14/10/2026
+PR #229 fusionnée par Mathias le 14/10 (elle portait aussi les phases 2 à 6). Rien ne s'ouvre
+en production tant que `COLLECTIF_OUVERT` est absent de Vercel. Ce qui reste n'est plus ce
+ticket : ce sont deux décisions ouvertes du PRD, §12.13 (les rendez-vous pris) et §12.14 (les
+quatre questions du mot du dirigeant, neutres et provisoires dans `QUESTIONS_MOT`).
