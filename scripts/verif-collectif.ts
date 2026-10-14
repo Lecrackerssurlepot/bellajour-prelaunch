@@ -71,7 +71,7 @@ import { cleFichier, compteDansPlafond, DELAI_DECLARATION_MORTE_MS, lireDeclarat
 import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
 import { jourDePhoto, libelleProvenance, lireFiltre, resumeDeposants } from "@/lib/collectif/grille";
 import { contenusAEnvoyer, ETAPES_CLIENT, etapeClient, initiales, joursAvant, libelleRole, parler, phraseJours } from "@/lib/collectif/espace";
-import { curseur, filDeConversation, fusionnerMessages, lirePieceJointe, lireTexteMessage, MESSAGE_MAX, PIECE_MAX, texteDuMessage, type Message } from "@/lib/collectif/messages";
+import { curseur, extraitDe, filDeConversation, fusionnerMessages, lirePieceJointe, lireTexteMessage, MESSAGE_MAX, PIECE_MAX, texteDuMessage, type Message } from "@/lib/collectif/messages";
 import { libelleTypeDocument, lireSaisieDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { formaterHeureParis, formaterInstantParis, formaterJourParis, instantDeParis, versChampParis } from "@/lib/collectif/dates";
 import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
@@ -102,6 +102,7 @@ import { CONTENUS_CLIENT, contenuClient, lireFichierContenu, lireReponsesMot, QU
 import { cheminQr, matriceQr, svgQr } from "@/lib/collectif/qr";
 import { apercuPossible, envoisCourants } from "@/lib/collectif/contenus";
 import * as Dossiers from "@/lib/collectif/dossiers";
+import { genreFichier } from "@/lib/collectif/visionneuse";
 import { messagePartage } from "@/lib/collectif/partage";
 import { colonneAbsente, MIGRATION_REVISION } from "@/lib/collectif/migration";
 import { libellePlafondLien, lirePlafondLien, plafondLienMax, CURSEUR_LIEN } from "@/lib/collectif/plafonds";
@@ -1628,7 +1629,7 @@ titre("— retours du 14/10 : les envois du client et les dossiers —");
   ok("citer un envoi : la lecture se replie en trois paliers (envois, revision, avant)",
     /requete\(COLONNES_ENVOIS\)[\s\S]{0,200}requete\(COLONNES\)[\s\S]{0,200}requete\(COLONNES_AVANT\)/.test(messagerie));
   ok("citer un envoi : le « + » propose « Citer un de vos envois », la bulle et l'atelier le montrent",
-    /Citer un de \{v\("vos", "tes"\)\} envois/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")) && /Votre envoi · \{m\.contenu\.libelle\}/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")) && /Envoi du client cité/.test(lire("src/app/admin/collectif/[id]/PanneauMessages.tsx")));
+    /Citer un de \{v\("vos", "tes"\)\} envois/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")) && /Votre envoi · \{m\.contenu\.libelle\}/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")) && /Envoi du client cité/.test(lire("src/app/admin/collectif/ConversationAtelier.tsx")));
 }
 
 titre("— T-152 : les photos rangees en dossiers, les liens a part —");
@@ -1707,6 +1708,36 @@ titre("— T-152 : les photos rangees en dossiers, les liens a part —");
   const css = lire("src/app/edition/[token]/espace.css");
   ok("le bleu de Bellajour en mode jour (#4a90d9), le nom de l'edition sans boite",
     /--ec-accent: #4a90d9;/.test(css) && /--ec-ac-rgb: 74, 144, 217;/.test(css) && !/\.ec-espace \.ec-edition \{[^}]*border: 1px/.test(css));
+}
+
+titre("— T-152 : les documents s'ouvrent dans la page, on repond a un message —");
+{
+  ok("visionneuse : un PDF et une image courante se peignent, le reste se telecharge ; la requete d'une adresse signee est ignoree",
+    genreFichier("devis.pdf") === "pdf" && genreFichier(null, "https://x.r2/collectif/a/devis.PDF?X-Amz-Signature=1") === "pdf" && genreFichier("logo.png") === "image" && genreFichier("photo.heic") === "autre" && genreFichier("note.docx") === "autre" && genreFichier("sans-extension", "https://x/y.webp?a=b") === "image");
+  const vis = lire("src/app/edition/_composants/Visionneuse.tsx");
+  ok("visionneuse : posee dans la colonne par un portail, l'icone qui telecharge, ouvrir dans un onglet",
+    /createPortal\(/.test(vis) && /document\.querySelector\("\.ec-contenu"\)/.test(vis) && /aria-label="Télécharger"/.test(vis) && /download/.test(vis) && /Ouvrir dans un nouvel onglet/.test(vis));
+  const donnees = lire("src/app/edition/[token]/donnees.ts");
+  ok("documents : deux adresses signees, l'une telecharge (nom propre), l'autre s'affiche",
+    /\[url, voir\] = await Promise\.all\(\[signerGet\(d\.r2_key, undefined, nomTelechargement\(d\.libelle, ext\)\), signerGet\(d\.r2_key\)\]\)/.test(donnees) && /telecharger,/.test(donnees));
+  ok("visionneuse branchee : Documents, propositions, envois, fichiers cites dans le fil ; plus aucun « Ouvrir » vers un nouvel onglet",
+    /vision\.ouvrir/.test(lire("src/app/edition/[token]/dossier/ListeDocuments.tsx")) && /vision\.ouvrir/.test(lire("src/app/edition/[token]/atelier/Propositions.tsx")) && /vision\.ouvrir/.test(lire("src/app/edition/[token]/LigneContenus.tsx")) && /ouvrir=\{vision\.ouvrir\}/.test(lire("src/app/edition/[token]/atelier/Parler.tsx"))
+    && ["src/app/edition/[token]/atelier/Parler.tsx", "src/app/edition/[token]/atelier/Propositions.tsx", "src/app/edition/[token]/LigneContenus.tsx"].every((f) => !/href=\{(m\.(document|contenu|piece)|d|e)\.url\} target="_blank"/.test(lire(f))));
+  const ms = lire("src/lib/collectif/messagerie.ts");
+  ok("reponse : la lecture se replie en quatre paliers (reponses, envois, revision, avant)",
+    /requete\(COLONNES_REPONSES\)[\s\S]*requete\(COLONNES_ENVOIS\)[\s\S]*requete\(COLONNES\)[\s\S]*requete\(COLONNES_AVANT\)/.test(ms) && /COLONNES_REPONSES = `\$\{COLONNES_ENVOIS\}, reponse_a`/.test(ms));
+  ok("reponse : le message repondu est de la MEME edition, la migration sondee avant tout",
+    /async function lireReponseA[\s\S]*reponsesMessagesAppliquees\(supabase\)[\s\S]*\.eq\("edition_id", editionId\)/.test(ms) && /\.eq\("edition_id", editionId\)\s*\.in\("id", idsReponses\)/.test(ms));
+  const env = lire("src/app/api/collectif/messages/envoyer/route.ts");
+  ok("reponse cote client : sondee AVANT le coffre, 503 nomme sans la migration",
+    env.indexOf("lireReponseA(") > 0 && env.indexOf("lireReponseA(") < env.indexOf("ecrireObjet(cle.key") && /ERREUR_LIENS_ABSENTE, MESSAGE_LIENS_ABSENTE/.test(env));
+  ok("reponse cote atelier : la meme regle", /lireReponseA\(supabase, g\.id, corps\.reponseA\)/.test(lire("src/app/api/admin/collectif/editions/[id]/messages/route.ts")));
+  ok("reponse : un extrait d'une ligne, coupe au mot", extraitDe("Bonjour\n\nla  couverture") === "Bonjour la couverture" && extraitDe("a".repeat(50) + " " + "b".repeat(200)).endsWith("…") && extraitDe("a".repeat(50) + " " + "b".repeat(200)).length <= 141);
+  const parler = lire("src/app/edition/[token]/atelier/Parler.tsx");
+  ok("reponse : « Répondre » sur la bulle (pour qui ecrit), la citation dans la zone d'ecriture et dans la bulle, un clic y ramene",
+    /repondre=\{p\.ecrire \? \(\) => setReponse\(el\.message\) : undefined\}/.test(parler) && /Réponse à \{auteurDe\(e\.reponse\)\}/.test(parler) && /allerAuMessage\(m\.reponseA\.id\)/.test(parler) && /reponseA: e\.reponse\?\.id \?\? null/.test(parler));
+  ok("Documents : « Répondre » ouvre la conversation, le document deja cite (pour qui ecrit seulement)",
+    /\?citer=\$\{d\.id\}/.test(lire("src/app/edition/[token]/dossier/ListeDocuments.tsx")) && /peut\(role, 'ecrire_message'\) \? versAtelier : null/.test(lire("src/app/edition/[token]/dossier/page.tsx")) && /documents\.some\(\(d\) => d\.id === citer\) \? citer : null/.test(lire("src/app/edition/[token]/atelier/page.tsx")));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

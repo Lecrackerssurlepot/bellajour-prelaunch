@@ -24,9 +24,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { libelleCreneau, RDV_A_VENIR_MAX, REGLES_RDV } from "@/lib/collectif/creneaux";
 import { formaterHeureParis, formaterJourParis } from "@/lib/collectif/dates";
 import { demandesDuFil, lireMessageDemande } from "@/lib/collectif/livraison";
-import { filDeConversation, lirePieceJointe, type Message } from "@/lib/collectif/messages";
+import { extraitDe, filDeConversation, lirePieceJointe, type Message } from "@/lib/collectif/messages";
 import { EnTeteEcran } from "../../_composants/Ecran";
 import Fenetre from "../../_composants/Fenetre";
+import { useVisionneuse, type FichierVu } from "../../_composants/Visionneuse";
 import { useMessagerie, type Joint } from "../../_composants/useMessagerie";
 import { EVENEMENT_MESSAGES_LUS } from "../Coquille";
 import type { DocumentDossier, Reservation as ReservationVue, VueRendezVous } from "../donnees";
@@ -52,6 +53,8 @@ type Props = {
   rdvUrl: string | null;
   reservation: ReservationVue;
   tu: boolean;
+  /** Le document à citer d'emblée (« Répondre » depuis Documents, T-152). */
+  citeInitial?: string | null;
 };
 
 const majuscule = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
@@ -84,6 +87,9 @@ export default function Parler(p: Props) {
   const [etatRdv, setEtatRdv] = useState<{ texte: string; erreur: boolean } | null>(null);
   const [maintenant] = useState(() => Date.now());
   const fil = useRef<HTMLDivElement>(null);
+  const vision = useVisionneuse();
+  /* Le message auquel on répond (T-152) : choisi sur une bulle, montré dans la zone d'écriture. */
+  const [reponse, setReponse] = useState<Message | null>(null);
   const { messages, envoyer, envoi, erreur, ajouter } = useMessagerie({
     initiaux: p.initiaux,
     lecteur: "client",
@@ -97,13 +103,20 @@ export default function Parler(p: Props) {
     },
     envoyer: async (t, joint) => {
       try {
-        let corps: Record<string, unknown> | FormData = { token: p.token, texte: t, documentId: joint?.documentId ?? null, contenuId: joint?.contenuId ?? null };
+        let corps: Record<string, unknown> | FormData = {
+          token: p.token,
+          texte: t,
+          documentId: joint?.documentId ?? null,
+          contenuId: joint?.contenuId ?? null,
+          reponseA: joint?.reponseA ?? null,
+        };
         if (joint?.fichier) {
           const f = new FormData();
           f.set("token", p.token);
           f.set("texte", t);
           if (joint.documentId) f.set("documentId", joint.documentId);
           if (joint.contenuId) f.set("contenuId", joint.contenuId);
+          if (joint.reponseA) f.set("reponseA", joint.reponseA);
           f.set("fichier", joint.fichier);
           corps = f;
         }
@@ -186,6 +199,7 @@ export default function Parler(p: Props) {
           </button>
         ) : null}
       </EnTeteEcran>
+      {vision.rendu}
 
       <div className="ec-parler-corps">
         <div className="ec-parler-colonne">
@@ -205,13 +219,23 @@ export default function Parler(p: Props) {
                 ) : el.genre === "rendezvous" ? (
                   <CarteRendezVous key={el.cle} r={el.rendezVous} />
                 ) : (
-                  <Bulle key={el.cle} m={el.message} />
+                  <Bulle key={el.cle} m={el.message} ouvrir={vision.ouvrir} repondre={p.ecrire ? () => setReponse(el.message) : undefined} />
                 )
               )
             )}
           </div>
           {p.ecrire ? (
-            <Ecrire documents={p.documents} envois={p.envois} envoi={envoi} erreur={erreur} tu={p.tu} onEnvoyer={envoyer} />
+            <Ecrire
+              documents={p.documents}
+              envois={p.envois}
+              envoi={envoi}
+              erreur={erreur}
+              tu={p.tu}
+              onEnvoyer={envoyer}
+              reponse={reponse}
+              sansReponse={() => setReponse(null)}
+              citeInitial={p.citeInitial ?? null}
+            />
           ) : (
             <p className="ec-note ec-parler-lecture">Ce lien permet de tout lire, sans écrire.</p>
           )}
@@ -362,9 +386,24 @@ function CarteRendezVous({ r }: { r: VueRendezVous }) {
 
 /* Un message : une bulle ; une demande du client : une carte. Le document
    cité s'affiche en étiquette AU-DESSUS du texte, la pièce jointe dessous. */
-function Bulle({ m }: { m: Message }) {
+/** « L'atelier · Mathias » ou « Vous » : qui a écrit un message. */
+function auteurDe(m: { auteur: "client" | "atelier"; qui: string | null }): string {
+  return m.auteur === "atelier" ? `L'atelier${m.qui ? ` · ${m.qui}` : ""}` : m.qui ?? "Vous";
+}
+
+/** Revenir au message cité : il défile jusqu'au centre et s'éclaire un instant. */
+function allerAuMessage(id: string) {
+  const cible = document.getElementById(`ec-msg-${id}`);
+  if (!cible) return;
+  cible.scrollIntoView({ behavior: "smooth", block: "center" });
+  cible.classList.remove("ec-parler-bulle--eclair");
+  void cible.offsetWidth;
+  cible.classList.add("ec-parler-bulle--eclair");
+}
+
+function Bulle({ m, ouvrir, repondre }: { m: Message; ouvrir: (f: FichierVu) => void; repondre?: () => void }) {
   const moi = m.auteur === "client";
-  const qui = m.auteur === "atelier" ? `L'atelier${m.qui ? ` · ${m.qui}` : ""}` : m.qui ?? "Vous";
+  const qui = auteurDe(m);
   const heure = formaterHeureParis(m.created_at);
   const demande = moi ? lireMessageDemande(m.texte) : null;
   if (demande) {
@@ -383,13 +422,19 @@ function Bulle({ m }: { m: Message }) {
   }
   const texteSeul = !(m.piece && m.texte === `Fichier joint : ${m.piece.nom}`);
   return (
-    <div className={moi ? "ec-parler-bulle ec-parler-bulle--moi" : "ec-parler-bulle"}>
+    <div id={`ec-msg-${m.id}`} className={moi ? "ec-parler-bulle ec-parler-bulle--moi" : "ec-parler-bulle"}>
+      {m.reponseA ? (
+        <button type="button" className="ec-parler-citation" onClick={() => m.reponseA && allerAuMessage(m.reponseA.id)}>
+          <span className="ec-parler-citation-qui">{auteurDe(m.reponseA)}</span>
+          <span className="ec-parler-citation-texte">{m.reponseA.extrait}</span>
+        </button>
+      ) : null}
       {m.document ? (
-        m.document.url ? (
-          <a className="ec-parler-cite" href={m.document.url} target="_blank" rel="noopener noreferrer">
+        m.document.voir ? (
+          <button type="button" className="ec-parler-cite" onClick={() => m.document?.voir && ouvrir({ titre: m.document.libelle, voir: m.document.voir, telecharger: m.document.url })}>
             <IconeDocument />
             {m.document.libelle}
-          </a>
+          </button>
         ) : (
           <span className="ec-parler-cite">
             <IconeDocument />
@@ -398,11 +443,11 @@ function Bulle({ m }: { m: Message }) {
         )
       ) : null}
       {m.contenu ? (
-        m.contenu.url ? (
-          <a className="ec-parler-cite" href={m.contenu.url} target="_blank" rel="noopener noreferrer">
+        m.contenu.voir ? (
+          <button type="button" className="ec-parler-cite" onClick={() => m.contenu?.voir && ouvrir({ titre: m.contenu.libelle, sous: "Votre envoi", voir: m.contenu.voir, telecharger: m.contenu.url })}>
             <IconeDocument />
             Votre envoi · {m.contenu.libelle}
-          </a>
+          </button>
         ) : (
           <span className="ec-parler-cite">
             <IconeDocument />
@@ -412,11 +457,11 @@ function Bulle({ m }: { m: Message }) {
       ) : null}
       {texteSeul ? <span className="ec-parler-texte">{m.texte}</span> : null}
       {m.piece ? (
-        m.piece.url ? (
-          <a className="ec-parler-cite ec-parler-cite--piece" href={m.piece.url} target="_blank" rel="noopener noreferrer">
+        m.piece.voir ? (
+          <button type="button" className="ec-parler-cite ec-parler-cite--piece" onClick={() => m.piece?.voir && ouvrir({ titre: m.piece.nom, sous: "Fichier joint", voir: m.piece.voir, telecharger: m.piece.url, nom: m.piece.nom })}>
             <IconeDocument />
             {m.piece.nom}
-          </a>
+          </button>
         ) : (
           <span className="ec-parler-cite ec-parler-cite--piece">
             <IconeDocument />
@@ -426,6 +471,15 @@ function Bulle({ m }: { m: Message }) {
       ) : null}
       <span className="ec-parler-qui">
         {qui} · {heure}
+        {repondre ? (
+          <button type="button" className="ec-parler-repondre" onClick={repondre} aria-label={`Répondre au message de ${qui}`}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M9 14 4 9l5-5" />
+              <path d="M4 9h10a6 6 0 0 1 6 6v5" />
+            </svg>
+            Répondre
+          </button>
+        ) : null}
       </span>
     </div>
   );
@@ -440,11 +494,21 @@ function Ecrire(e: {
   erreur: string | null;
   tu: boolean;
   onEnvoyer: (texte: string, joint?: Joint) => Promise<boolean>;
+  /** Le message auquel on répond, et le geste qui l'oublie. */
+  reponse: Message | null;
+  sansReponse: () => void;
+  citeInitial: string | null;
 }) {
   const v = (vous: string, toi: string) => (e.tu ? toi : vous);
   const [texte, setTexte] = useState("");
   const [menu, setMenu] = useState(false);
-  const [cite, setCite] = useState<DocumentCite | null>(null);
+  const [cite, setCite] = useState<DocumentCite | null>(() => e.documents.find((d) => d.id === e.citeInitial) ?? null);
+  const zone = useRef<HTMLTextAreaElement>(null);
+  /* Choisir « Répondre » ou arriver avec un document à citer : on écrit tout de suite. */
+  const reponseId = e.reponse?.id ?? null;
+  useEffect(() => {
+    if (reponseId || e.citeInitial) zone.current?.focus();
+  }, [reponseId, e.citeInitial]);
   const [envoiCite, setEnvoiCite] = useState<EnvoiCite | null>(null);
   const [fichier, setFichier] = useState<File | null>(null);
   const [refus, setRefus] = useState<string | null>(null);
@@ -454,8 +518,9 @@ function Ecrire(e: {
   async function soumettre(ev: React.FormEvent) {
     ev.preventDefault();
     if (!pret || e.envoi) return;
-    if (await e.onEnvoyer(texte, { documentId: cite?.id ?? null, fichier, contenuId: envoiCite?.id ?? null })) {
+    if (await e.onEnvoyer(texte, { documentId: cite?.id ?? null, fichier, contenuId: envoiCite?.id ?? null, reponseA: e.reponse?.id ?? null })) {
       setTexte("");
+      e.sansReponse();
       setCite(null);
       setEnvoiCite(null);
       setFichier(null);
@@ -475,6 +540,15 @@ function Ecrire(e: {
 
   return (
     <form className="ec-parler-ecrire" onSubmit={soumettre} onKeyDown={(ev) => ev.key === "Escape" && setMenu(false)}>
+      {e.reponse ? (
+        <div className="ec-parler-reponse">
+          <span className="ec-parler-citation-qui">Réponse à {auteurDe(e.reponse)}</span>
+          <span className="ec-parler-citation-texte">{extraitDe(e.reponse.texte)}</span>
+          <button type="button" aria-label="Ne plus répondre à ce message" onClick={e.sansReponse}>
+            ✕
+          </button>
+        </div>
+      ) : null}
       {cite || fichier || envoiCite ? (
         <div className="ec-parler-joints">
           {envoiCite ? (
@@ -566,6 +640,7 @@ function Ecrire(e: {
       ) : null}
       <div className="ec-parler-ligne">
         <textarea
+          ref={zone}
           className="ec-champ ec-parler-zone"
           rows={1}
           value={texte}

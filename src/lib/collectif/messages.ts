@@ -21,13 +21,25 @@ export type Message = {
   qui: string | null;
   texte: string;
   created_at: string;
-  /** Le document cité (révision §14.5), lien signé une heure. Absent avant la migration. */
-  document?: { id: string; libelle: string; url: string | null } | null;
+  /** Le document cité (révision §14.5), lien signé une heure. Absent avant la migration.
+   *  `url` télécharge, `voir` s'affiche dans la visionneuse (T-152). */
+  document?: { id: string; libelle: string; url: string | null; voir?: string | null } | null;
   /** La pièce jointe, lien signé une heure. */
-  piece?: { nom: string; url: string | null } | null;
+  piece?: { nom: string; url: string | null; voir?: string | null } | null;
   /** Un envoi du client cité (« Votre envoi · Logo · logo-blanc.png », migration 20261016), lien signé une heure. */
-  contenu?: { id: string; libelle: string; url: string | null } | null;
+  contenu?: { id: string; libelle: string; url: string | null; voir?: string | null } | null;
+  /** Le message auquel celui-ci RÉPOND (T-152, migration 20261018) : qui l'a écrit et son début. */
+  reponseA?: { id: string; auteur: "client" | "atelier"; qui: string | null; extrait: string } | null;
 };
+
+/** Le début d'un message cité en réponse : une ligne, 140 caractères au plus, coupé au mot. */
+export function extraitDe(texte: string, max = 140): string {
+  const ligne = texte.replace(/\s+/g, " ").trim();
+  if (ligne.length <= max) return ligne;
+  const coupe = ligne.slice(0, max);
+  const espace = coupe.lastIndexOf(" ");
+  return `${(espace > max * 0.6 ? coupe.slice(0, espace) : coupe).trimEnd()}…`;
+}
 
 export type TexteLu = { ok: true; texte: string } | { ok: false; message: string };
 

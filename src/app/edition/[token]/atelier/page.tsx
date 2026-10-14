@@ -16,8 +16,15 @@ import Parler from './Parler'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export default async function PageAtelier({ params }: { params: Promise<{ token: string }> }) {
+export default async function PageAtelier({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>
+  searchParams: Promise<{ citer?: string }>
+}) {
   const { token } = await params
+  const { citer } = await searchParams
   const acces = await chargerEspace(token)
   if (acces.statut !== 'ok') notFound()
   const { edition, role } = acces
@@ -35,6 +42,7 @@ export default async function PageAtelier({ params }: { params: Promise<{ token:
       rdvUrl={edition.rdv_url}
       reservation={reservation}
       tu={edition.registre === 'ecole_tu'}
+      citeInitial={documents.some((d) => d.id === citer) ? citer : null}
     />
   )
 }

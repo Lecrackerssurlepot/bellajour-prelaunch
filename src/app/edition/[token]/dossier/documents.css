@@ -90,6 +90,30 @@
   flex: none;
   color: var(--ec-accent);
 }
+/* « Ouvrir » (la visionneuse) et l'icône qui télécharge sans ouvrir (T-152). */
+.ec-espace .ec-docs-gestes {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ec-espace .ec-docs-telecharger {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-line);
+  color: var(--ec-muted);
+  text-decoration: none;
+}
+.ec-espace .ec-docs-telecharger:hover {
+  color: var(--ec-text);
+  border-color: rgba(var(--ec-fg-rgb), 0.3);
+}
+.ec-espace .ec-docs-telecharger svg {
+  color: inherit;
+}
 .ec-espace .ec-docs-nom {
   flex: 1;
   min-width: 0;

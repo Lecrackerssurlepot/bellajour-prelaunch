@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { contenuClient, CONTENUS_CLIENT, QUESTIONS_MOT, type ContenuClient } from "@/lib/collectif/contenus";
 import Fenetre from "../_composants/Fenetre";
+import { useVisionneuse } from "../_composants/Visionneuse";
 import type { EnvoiClient } from "./donnees";
 
 type Props = { token: string; demandes: string[]; envois: EnvoiClient[]; ecrire: boolean; tu: boolean };
@@ -111,6 +112,7 @@ function FenetreContenu({
   const [fait, setFait] = useState<string | null>(null);
   const [survol, setSurvol] = useState(false);
   const [modifier, setModifier] = useState(false);
+  const vision = useVisionneuse();
   const [question, setQuestion] = useState(0);
   const courants = recus;
   const deja = courants[0]?.reponses ?? null;
@@ -269,9 +271,13 @@ function FenetreContenu({
               </span>
               <span className="ec-envoi-recu-gestes">
                 {e.url ? (
-                  <a className="ec-bouton ec-bouton--clair ec-bouton--petit" href={e.url} target="_blank" rel="noopener noreferrer">
+                  <button
+                    type="button"
+                    className="ec-bouton ec-bouton--clair ec-bouton--petit"
+                    onClick={() => vision.ouvrir({ titre: e.nom ?? contenu.libelle, sous: `${contenu.libelle} · envoyé le ${e.recuLe}`, voir: e.url as string, telecharger: e.telecharger, nom: e.nom })}
+                  >
                     Ouvrir
-                  </a>
+                  </button>
                 ) : null}
                 {ecrire ? (
                   <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" disabled={Boolean(occupe)} onClick={() => choisir(e.id)}>
@@ -282,6 +288,7 @@ function FenetreContenu({
             </li>
           ))}
         </ul>
+        {vision.rendu}
         {ecrire ? (
           <>
             <button type="button" className="ec-envoi-ajouter" disabled={Boolean(occupe)} onClick={() => choisir(null)}>

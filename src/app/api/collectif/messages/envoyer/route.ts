@@ -8,9 +8,17 @@ import { clePieceJointe, estUuid } from "@/lib/collectif/cles";
 import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
-import { ecrireMessage, envoisMessagesAppliques, revisionMessagesAppliquee } from "@/lib/collectif/messagerie";
+import { ecrireMessage, envoisMessagesAppliques, lireReponseA, revisionMessagesAppliquee } from "@/lib/collectif/messagerie";
 import { lirePieceJointe, PIECE_MAX, texteDuMessage } from "@/lib/collectif/messages";
-import { colonneAbsente, ERREUR_ENVOIS_ABSENTE, ERREUR_REVISION_ABSENTE, MESSAGE_ENVOIS_ABSENTE, MESSAGE_REVISION_ABSENTE } from "@/lib/collectif/migration";
+import {
+  colonneAbsente,
+  ERREUR_ENVOIS_ABSENTE,
+  ERREUR_LIENS_ABSENTE,
+  ERREUR_REVISION_ABSENTE,
+  MESSAGE_ENVOIS_ABSENTE,
+  MESSAGE_LIENS_ABSENTE,
+  MESSAGE_REVISION_ABSENTE,
+} from "@/lib/collectif/migration";
 import { refusAcces, refusDroit } from "@/lib/collectif/reponses";
 
 /**
@@ -22,7 +30,10 @@ import { refusAcces, refusDroit } from "@/lib/collectif/reponses";
  * - `contenuId?` dans les deux : le message CITE un envoi du client (le logo
  *   blanc, ses réponses au mot du dirigeant ; retours du 14/10, point 11),
  *   qui doit appartenir à l'édition. Demande la migration 20261016 : 503
- *   `migration_envois_absente` sinon, sondé avant tout.
+ *   `migration_envois_absente` sinon, sondé avant tout ;
+ * - `reponseA?` dans les deux : le message RÉPOND à un autre du même fil
+ *   (T-152). Demande la migration 20261018 : 503 `migration_liens_absente`
+ *   sinon, sondé avant le coffre.
  * Le token reste dans le CORPS, jamais dans l'URL. Le lien d'équipe reçoit
  * 403 : il lit, il n'écrit pas.
  *
@@ -55,6 +66,7 @@ export async function POST(request: Request) {
   let texteBrut: unknown;
   let documentBrut: unknown;
   let contenuBrut: unknown;
+  let reponseBrut: unknown;
   let fichier: File | null = null;
   try {
     if ((request.headers.get("content-type") ?? "").toLowerCase().startsWith("multipart/form-data")) {
@@ -63,6 +75,7 @@ export async function POST(request: Request) {
       texteBrut = f.get("texte");
       documentBrut = f.get("documentId");
       contenuBrut = f.get("contenuId");
+      reponseBrut = f.get("reponseA");
       const brut = f.get("fichier");
       fichier = brut instanceof File && brut.size > 0 ? brut : null;
     } else {
@@ -71,6 +84,7 @@ export async function POST(request: Request) {
       texteBrut = c?.texte;
       documentBrut = c?.documentId;
       contenuBrut = c?.contenuId;
+      reponseBrut = c?.reponseA;
     }
   } catch {
     return non(400, "corps_illisible");
@@ -116,6 +130,12 @@ export async function POST(request: Request) {
     if (!data) return non(422, "saisie", "Cet envoi n'est plus dans l'édition.");
   }
 
+  const reponse = await lireReponseA(supabase, edition.id, reponseBrut);
+  if (!reponse.ok) {
+    if (reponse.statut === 503) return non(503, ERREUR_LIENS_ABSENTE, MESSAGE_LIENS_ABSENTE);
+    return reponse.statut === 422 ? non(422, "saisie", reponse.message) : non(500, "lecture_impossible");
+  }
+
   const id = randomUUID();
   let cle: { key: string; nom: string } | null = null;
   if (documentId || piece) {
@@ -137,9 +157,12 @@ export async function POST(request: Request) {
   }
 
   const qui = edition.responsable_nom ?? "Le responsable";
-  const ecrit = await ecrireMessage(supabase, edition.id, "client", qui, texte.texte, { id, documentId: documentId as string | null, piece: cle, contenuId: contenuId as string | null });
+  const ecrit = await ecrireMessage(supabase, edition.id, "client", qui, texte.texte, { id, documentId: documentId as string | null, piece: cle, contenuId: contenuId as string | null, reponseA: reponse.id });
   if (!ecrit.ok) {
-    if (colonneAbsente(ecrit.code)) return contenuId ? non(503, ERREUR_ENVOIS_ABSENTE, MESSAGE_ENVOIS_ABSENTE) : non(503, ERREUR_REVISION_ABSENTE, MESSAGE_REVISION_ABSENTE);
+    if (colonneAbsente(ecrit.code)) {
+      if (reponse.id) return non(503, ERREUR_LIENS_ABSENTE, MESSAGE_LIENS_ABSENTE);
+      return contenuId ? non(503, ERREUR_ENVOIS_ABSENTE, MESSAGE_ENVOIS_ABSENTE) : non(503, ERREUR_REVISION_ABSENTE, MESSAGE_REVISION_ABSENTE);
+    }
     return non(500, "ecriture_impossible");
   }
 

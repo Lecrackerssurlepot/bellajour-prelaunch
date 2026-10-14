@@ -7,6 +7,7 @@ import { chargerAcces } from "@/lib/collectif/acces";
 import { cleContenu, estUuid } from "@/lib/collectif/cles";
 import { apercuPossible, contenuClient, lireFichierContenu, lireReponsesMot, OCTETS_MAX_CONTENU } from "@/lib/collectif/contenus";
 import { formaterJourParis } from "@/lib/collectif/dates";
+import { nomTelechargement } from "@/lib/collectif/documents";
 import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
@@ -158,15 +159,18 @@ export async function POST(request: Request) {
   );
   /* L'envoi tel que la fenêtre le montre : elle l'ajoute tout de suite, sans
      attendre que la page se relise. */
+  const nom = typeof ligne.nom_origine === "string" ? ligne.nom_origine : null;
   let url: string | null = null;
+  let telecharger: string | null = null;
   if (typeof ligne.r2_key === "string") {
+    const ext = /\.([a-z0-9]{1,5})$/i.exec(ligne.r2_key)?.[1]?.toLowerCase() ?? "bin";
     try {
-      url = await signerGet(ligne.r2_key);
+      [url, telecharger] = await Promise.all([signerGet(ligne.r2_key), signerGet(ligne.r2_key, undefined, nomTelechargement((nom ?? contenu.libelle).replace(/\.[A-Za-z0-9]{1,5}$/, ""), ext))]);
     } catch {
       url = null;
+      telecharger = null;
     }
   }
-  const nom = typeof ligne.nom_origine === "string" ? ligne.nom_origine : null;
   const envoi = {
     id,
     type: contenu.cle,
@@ -175,6 +179,7 @@ export async function POST(request: Request) {
     recuLe: formaterJourParis(new Date().toISOString()),
     url,
     apercu: url && apercuPossible(nom) ? url : null,
+    telecharger,
     reponses: (ligne.reponses as Record<string, string> | undefined) ?? null,
   };
   return NextResponse.json({ ok: true, id, envoi, remplace: ancien, journal }, { status: 201 });

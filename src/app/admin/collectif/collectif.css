@@ -386,6 +386,94 @@
   color: var(--bj-action);
 }
 
+/* Répondre à un message (T-152) : le geste dans l'en-tête de la bulle, la
+   citation au-dessus du texte ; un clic ramène au message d'origine. */
+.eca-root .eca-conversation-ecrire {
+  margin-top: 12px;
+  gap: 8px;
+}
+.eca-root .eca-bulle-qui {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eca-root .eca-bulle-repondre {
+  padding: 0 6px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bj-action);
+  font: inherit;
+  cursor: pointer;
+  opacity: 0;
+}
+.eca-root .eca-bulle:hover .eca-bulle-repondre,
+.eca-root .eca-bulle-repondre:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .eca-root .eca-bulle-repondre {
+    opacity: 1;
+  }
+}
+.eca-root .eca-citation {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  margin: 2px 0 6px;
+  padding: 5px 10px;
+  box-sizing: border-box;
+  border: 0;
+  border-left: 2px solid var(--bj-action);
+  border-radius: 3px 8px 8px 3px;
+  background: var(--bj-veil-6);
+  font: inherit;
+  font-size: var(--bj-fs-xxs);
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+.eca-root .eca-citation--ecrire {
+  margin: 0;
+  padding-right: 34px;
+  cursor: default;
+}
+.eca-root .eca-citation-qui {
+  font-weight: 500;
+  color: var(--bj-action);
+}
+.eca-root .eca-citation-texte {
+  color: var(--bj-text-faint);
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-citation-retirer {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bj-text-faint);
+  cursor: pointer;
+}
+.eca-root .eca-bulle--eclair {
+  animation: eca-eclair 1.4s ease;
+}
+@keyframes eca-eclair {
+  0%,
+  30% {
+    box-shadow: 0 0 0 2px var(--bj-action);
+  }
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
 .eca-root .eca-mag-liste li.eca-mag-brief {
   flex-direction: column;
   gap: 6px;

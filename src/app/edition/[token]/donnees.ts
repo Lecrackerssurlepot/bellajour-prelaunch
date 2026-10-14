@@ -133,6 +133,8 @@ export type EnvoiClient = {
   url: string | null;
   /** La même, si c'est une image qui se revoit en aperçu. */
   apercu: string | null;
+  /** L'adresse qui TÉLÉCHARGE sous le nom d'origine (la visionneuse, T-152). */
+  telecharger: string | null;
   reponses: Record<string, string> | null;
 };
 
@@ -156,7 +158,7 @@ export async function lireEnvois(editionId: string): Promise<EnvoiClient[]> {
   const courants = [...envoisCourants(lignes).values()].flat();
   return Promise.all(
     courants.map(async (l) => {
-      const url = await signerOuRien(l.r2_key);
+      const [url, telecharger] = await Promise.all([signerOuRien(l.r2_key), signerTelechargement(l.r2_key, l.nom_origine)]);
       return {
         id: l.id,
         type: l.type,
@@ -165,6 +167,7 @@ export async function lireEnvois(editionId: string): Promise<EnvoiClient[]> {
         recuLe: formaterJourParis(l.recu_le),
         url,
         apercu: url && apercuPossible(l.nom_origine) ? url : null,
+        telecharger,
         reponses: l.reponses,
       };
     })
@@ -309,6 +312,8 @@ export type DocumentDossier = {
   libelle: string;
   quand: string;
   url: string | null;
+  /** La même adresse, sans en-tête de téléchargement : elle s'affiche dans la visionneuse (T-152). */
+  voir: string | null;
   /** « Acceptée le … » pour une proposition complémentaire ; posé par l'atelier ou par le client. */
   statut: string | null;
 };
@@ -327,10 +332,11 @@ export async function chargerDocuments(edition: EditionLigne): Promise<DocumentD
     ((data ?? []) as { id: string; type: string; libelle: string; r2_key: string | null; statut_texte: string | null; created_at: string }[]).map(
       async (d) => {
         let url: string | null = null;
+        let voir: string | null = null;
         if (d.r2_key) {
           const ext = /\.([a-z0-9]{1,5})$/.exec(d.r2_key)?.[1] ?? "pdf";
           try {
-            url = await signerGet(d.r2_key, undefined, nomTelechargement(d.libelle, ext));
+            [url, voir] = await Promise.all([signerGet(d.r2_key, undefined, nomTelechargement(d.libelle, ext)), signerGet(d.r2_key)]);
           } catch (e) {
             console.error("[collectif] document non signé", d.id, e);
           }
@@ -342,6 +348,7 @@ export async function chargerDocuments(edition: EditionLigne): Promise<DocumentD
           libelle: d.libelle,
           quand: d.created_at,
           url,
+          voir,
           statut: d.statut_texte,
         };
       }
@@ -437,6 +444,17 @@ async function signerOuRien(key: string | null | undefined): Promise<string | nu
   if (!key) return null;
   try {
     return await signerGet(key);
+  } catch {
+    return null;
+  }
+}
+
+/** L'adresse qui télécharge un fichier sous son nom d'origine (`nomTelechargement`). */
+async function signerTelechargement(key: string | null | undefined, nom: string | null): Promise<string | null> {
+  if (!key) return null;
+  const ext = /\.([a-z0-9]{1,5})$/i.exec(key)?.[1]?.toLowerCase() ?? "bin";
+  try {
+    return await signerGet(key, undefined, nomTelechargement((nom ?? "fichier").replace(/\.[A-Za-z0-9]{1,5}$/, ""), ext));
   } catch {
     return null;
   }

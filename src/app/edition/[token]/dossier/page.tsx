@@ -2,7 +2,7 @@
    maquette Dossier).
 
    Seulement les documents posés par l'atelier (signés pour une heure), avec
-   « Ouvrir » ; en tête, l'encart « Nouvelle proposition » quand une
+   « Ouvrir » (dans la page, la visionneuse de T-152) et l'icône pour télécharger ; en tête, l'encart « Nouvelle proposition » quand une
    proposition complémentaire attend une réponse (elle se lit et s'accepte
    dans « Parler à l'atelier ») ; à droite, ce que prévoit le devis. La
    messagerie n'est plus ici. Un chiffre que l'atelier n'a pas encore saisi
@@ -10,13 +10,14 @@
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { formaterInstantParis, formaterJourParis } from '@/lib/collectif/dates'
+import { formaterJourParis } from '@/lib/collectif/dates'
 import { peut } from '@/lib/collectif/droits'
 import { parler } from '@/lib/collectif/espace'
 import { formaterJour } from '@/lib/collectif/livraison'
 import { cheminSection } from '@/lib/collectif/verrous'
 import { EnTeteEcran } from '../../_composants/Ecran'
 import { chargerDocuments, chargerEspace, chargerTableau, propositionEnAttente } from '../donnees'
+import ListeDocuments from './ListeDocuments'
 import './documents.css'
 
 export const runtime = 'nodejs'
@@ -69,30 +70,7 @@ export default async function PageDocuments({ params }: { params: Promise<{ toke
             {documents.length === 0 ? (
               <p className="ec-note ec-docs-vide">L&apos;atelier déposera ici le devis signé, les factures et les conditions.</p>
             ) : (
-              <ul className="ec-docs-lignes ec-defile">
-                {documents.map((d) => (
-                  <li key={d.id}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M6 3h8l4 4v14H6z" />
-                      <path d="M14 3v4h4" />
-                    </svg>
-                    <span className="ec-docs-nom">
-                      <span>{d.libelle}</span>
-                      <span className="ec-note">
-                        {d.libelleType} · {formaterInstantParis(d.quand)}
-                      </span>
-                    </span>
-                    {d.statut ? <span className="ec-docs-statut">{d.statut}</span> : propositionEnAttente(d) ? <span className="ec-docs-statut ec-docs-accent">À lire</span> : null}
-                    {d.url ? (
-                      <a className="ec-bouton ec-bouton--clair ec-bouton--petit" href={d.url} target="_blank" rel="noopener noreferrer">
-                        Ouvrir
-                      </a>
-                    ) : (
-                      <span className="ec-note">indisponible</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <ListeDocuments documents={documents} aLire={documents.filter(propositionEnAttente).map((d) => d.id)} versAtelier={peut(role, 'ecrire_message') ? versAtelier : null} />
             )}
           </section>
         </div>
