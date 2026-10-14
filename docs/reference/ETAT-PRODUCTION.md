@@ -1,4 +1,4 @@
-# État du système — au 13/10/2026
+# État du système — au 14/10/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -49,6 +49,27 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
   passée »), poser `COLLECTIF_OUVERT=1` sur Vercel et redéployer.
 - **Avant le premier vrai client B2B** (PRD §12.2) : plan payant Supabase (sauvegardes) et Vercel
   (Hobby est non commercial) ; le texte du consentement participant (légal).
+
+## 14/10/2026 — facturation atelier EN PRODUCTION, en brouillon, chaînes FR et PT prouvées (T-075, D22)
+
+- **Fusion du site le 12/10** (PR #224) : chaque paiement atelier livemode crée son job.
+- **12/10 : premier brouillon FR2026 refusé** (422 « A série não corresponde ao tipo de documento »).
+  Cause, lue en GET le 14/10 : l'émetteur envoyait l'`id` général de la série, InvoiceXpress attend
+  `current_invoice_receipt_sequence_id` (FR2026 : 6559305 → 6559307 ; FAT2026 : 6316664 → 6316666).
+- **Edge Function `emit-invoices` en version 6 le 14/10** (v3 et v4 déployées entre le 08 et le
+  13/10 par une main inconnue, sans trace git ; v5 = correctif de série, v6 = liens `web.`).
+- **Deux brouillons de test le 14/10, sur accord de Mathias, puis supprimés** : FR2026 11,00 €
+  (9,17 + 1,83, IVA20, client livraison France) et FAT2026 52,00 € (2 ex., 42,28 + 9,72, IVA23,
+  Consumidor Final). Totaux exacts, aucune série n'a avancé. Lignes de test supprimées en base.
+- **Alerte mail testée le 12/10** : reçue sur `contact@bellajour.com` (ne jamais cliquer
+  « Unsubscribe », Brevo bloquerait l'adresse).
+- **Compte InvoiceXpress** : série par défaut FR2026 et taxe par défaut IVA20, VOULU par Mathias
+  (marché surtout français). OSS2026 n'est enregistrée qu'en « PARCIAL ».
+- **Secrets** : Vercel `ALERTE_FACTURATION_EMAIL`, `INVOICEXPRESS_ACCOUNT` ; Supabase
+  `ALERTE_FACTURATION_EMAIL`, `BREVO_API_KEY`. `INVOICE_AUTO_FINALIZE` ABSENT : tout reste brouillon.
+- **Jamais testé** : le passage d'un brouillon finalisé à `emitted` (il faudrait une vraie fatura).
+
+---
 
 ## 07/10/2026 — la vente atelier entre en facturation (T-075, D22) : code prêt, déploiement en trois temps
 
