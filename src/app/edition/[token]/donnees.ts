@@ -16,7 +16,9 @@ import { colonneAbsente } from "@/lib/collectif/migration";
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
 import { formaterInstantParis, formaterJourParis } from "@/lib/collectif/dates";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
+import { compteAgenda } from "@/lib/collectif/agenda";
 import { lireMessages } from "@/lib/collectif/messagerie";
+import { lireInterlocuteurs, lireRendezVous } from "@/lib/collectif/rendezvous";
 import type { Message } from "@/lib/collectif/messages";
 import { couverturesDesTours, magazinesPourGeste, toursDuMagazine } from "@/lib/collectif/tours";
 import type { Zone } from "@/lib/collectif/bat";
@@ -292,6 +294,58 @@ export async function chargerDossier(edition: EditionLigne): Promise<Dossier> {
   const [documents, fil] = await Promise.all([chargerDocuments(edition), lireMessages(makeSupabase(), edition.id, null)]);
   if (!fil.ok) throw new Error(`[collectif] messages de l'édition : ${fil.code}`);
   return { documents, messages: fil.messages };
+}
+
+/* ───────────────────────────── les rendez-vous (D23, T-148) ───────────────────────────── */
+
+export type VueRendezVous = {
+  id: string;
+  debut: string;
+  fin: string;
+  motif: string | null;
+  statut: "pris" | "annule";
+  /** Quand il a été pris : sa place dans le fil. */
+  quand: string;
+  avec: string;
+};
+
+export type Reservation = {
+  /** `agenda` : les créneaux s'affichent dans l'espace ; `lien` : le lien de rendez-vous de la fiche ; `aucun`. */
+  mode: "agenda" | "lien" | "aucun";
+  avec: string | null;
+  meet: string | null;
+  rendezVous: VueRendezVous[];
+};
+
+/**
+ * La prise de rendez-vous de l'espace. Les créneaux s'affichent dans l'espace
+ * seulement quand TOUT est prêt : la migration, un interlocuteur choisi et
+ * actif, son agenda relié, le compte Google posé. Sinon l'espace garde le lien
+ * de la fiche : rien ne casse pendant la mise en place.
+ */
+export async function chargerReservation(edition: EditionLigne): Promise<Reservation> {
+  const supabase = makeSupabase();
+  const repli: Reservation = { mode: edition.rdv_url ? "lien" : "aucun", avec: null, meet: null, rendezVous: [] };
+  if (edition.interlocuteur_cle === undefined) return repli;
+  const [inters, rdvs] = await Promise.all([lireInterlocuteurs(supabase), lireRendezVous(supabase, edition.id)]);
+  if (!inters.ok || !rdvs.ok) return repli;
+  const prenom = (cle: string) => inters.valeur.find((i) => i.cle === cle)?.prenom ?? "l'atelier";
+  const inter = inters.valeur.find((i) => i.cle === edition.interlocuteur_cle) ?? null;
+  const pret = Boolean(inter && inter.actif && inter.agenda_id && compteAgenda());
+  return {
+    mode: pret ? "agenda" : repli.mode,
+    avec: inter?.prenom ?? null,
+    meet: inter?.meet_url ?? null,
+    rendezVous: rdvs.valeur.map((r) => ({
+      id: r.id,
+      debut: new Date(r.debut).toISOString(),
+      fin: new Date(r.fin).toISOString(),
+      motif: r.motif,
+      statut: r.statut,
+      quand: r.created_at,
+      avec: prenom(r.interlocuteur_cle),
+    })),
+  };
 }
 
 /** Une proposition complémentaire attend-elle une réponse ? (« Acceptée le … » est posé par la route.) */

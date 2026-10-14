@@ -128,6 +128,8 @@ export type EditionLigne = {
   responsable_email: string;
   responsable_nom: string | null;
   rdv_url: string | null;
+  /** L'interlocuteur de l'atelier (D23) ; absent tant que la migration 20261015 n'est pas passée. */
+  interlocuteur_cle?: string | null;
   livraison: Livraison;
   demo: boolean;
   archive_le: Horodatage | null;

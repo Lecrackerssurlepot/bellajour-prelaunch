@@ -699,3 +699,57 @@
   outline: 2px solid var(--bj-terracotta);
   outline-offset: 2px;
 }
+
+/* Les rendez-vous d'une édition (D23) et la page des agendas. */
+.eca-root .eca-liste-rdv {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.eca-root .eca-liste-rdv li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--bj-fs-sm, 14px);
+}
+.eca-root .eca-etapes-agenda {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.eca-root .eca-adresse-compte {
+  user-select: all;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+}
+.eca-root .eca-liste-agendas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+.eca-root .eca-agenda {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--bj-veil-12);
+  border-radius: 14px;
+}
+.eca-root .eca-agenda-nom {
+  margin: 0;
+  font-size: 18px;
+}
+.eca-root .eca-case {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+

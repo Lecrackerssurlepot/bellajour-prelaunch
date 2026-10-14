@@ -121,6 +121,14 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return `Proposition complémentaire acceptée par le client : ${String(payload.libelle ?? "")}.`;
     case "proposition_a_reparler":
       return `Le client veut reparler de la proposition : ${String(payload.libelle ?? "")}.`;
+    case "rdv_pris":
+      return `Rendez-vous pris avec ${String(payload.avec ?? "l'atelier")} : ${String(payload.quand ?? "")} (${par}).`;
+    case "rdv_deplace":
+      return `Rendez-vous avec ${String(payload.avec ?? "l'atelier")} déplacé : ${String(payload.avant ?? "")} → ${String(payload.quand ?? "")} (${par}).`;
+    case "rdv_annule":
+      return `Rendez-vous avec ${String(payload.avec ?? "l'atelier")} du ${String(payload.quand ?? "")} annulé (${par}).`;
+    case "interlocuteur_choisi":
+      return `Interlocuteur de l'atelier : ${String(payload.prenom ?? "aucun")}, choisi par ${par}.`;
     case "livraison_reglee":
       return `Adresse ou jour de livraison réglés par ${par}.`;
     case "style_cree":

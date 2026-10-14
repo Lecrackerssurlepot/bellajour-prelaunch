@@ -7,7 +7,10 @@ import { estUuid } from "@/lib/collectif/cles";
 import { versChampParis, formaterInstantParis } from "@/lib/collectif/dates";
 import { LIBELLE_ETAT_EDITION } from "@/lib/collectif/etats";
 import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
-import { MIGRATION_COLLECTIF } from "@/lib/collectif/migration";
+import { compteAgenda } from "@/lib/collectif/agenda";
+import { libelleCreneau } from "@/lib/collectif/creneaux";
+import { MIGRATION_COLLECTIF, MIGRATION_RDV } from "@/lib/collectif/migration";
+import { lireInterlocuteurs, lireRendezVous } from "@/lib/collectif/rendezvous";
 import { LIBELLE_CAMP, prochaineEtape } from "@/lib/collectif/prochaine";
 import { PARTS_TEXTE } from "@/lib/collectif/brief";
 import { TYPES_DOUBLES } from "@/lib/collectif/styles";
@@ -18,6 +21,7 @@ import PanneauContenus from "./PanneauContenus";
 import PanneauDocuments from "./PanneauDocuments";
 import PanneauGestes from "./PanneauGestes";
 import PanneauMessages from "./PanneauMessages";
+import PanneauRendezVous from "./PanneauRendezVous";
 import PanneauLiens from "./PanneauLiens";
 import PanneauLivraison from "./PanneauLivraison";
 import "../../admin.css";
@@ -78,6 +82,13 @@ export default async function PageFiche({ params }: { params: Promise<{ id: stri
   const liens = liensEdition(origine, e);
   const prochaine = prochaineEtape(etat, e.cloture_le);
 
+  /* Les rendez-vous (D23) : sans la migration 20261015, le panneau le dit. */
+  const supabaseRdv = makeSupabase();
+  const [inters, rdvs] = await Promise.all([lireInterlocuteurs(supabaseRdv), lireRendezVous(supabaseRdv, e.id)]);
+  const rdvAbsent = e.interlocuteur_cle === undefined || !inters.ok || !rdvs.ok;
+  const listeInters = inters.ok ? inters.valeur.filter((i) => i.actif) : [];
+  const maintenantRdv = new Date();
+
   const initiales: ValeursEdition = {
     organisation: e.organisation,
     evenement: e.evenement,
@@ -131,6 +142,22 @@ export default async function PageFiche({ params }: { params: Promise<{ id: stri
         <aside className="eca-colonne">
           <PanneauLiens id={e.id} liens={liens} />
           <PanneauMessages id={e.id} initiaux={messages} />
+          <PanneauRendezVous
+            id={e.id}
+            absent={rdvAbsent}
+            migration={MIGRATION_RDV}
+            interlocuteurs={listeInters.map((i) => ({ cle: i.cle, prenom: i.prenom, relie: Boolean(i.agenda_id) }))}
+            courant={e.interlocuteur_cle ?? null}
+            compteRelie={compteAgenda() !== null}
+            rendezVous={(rdvs.ok ? rdvs.valeur : []).map((r) => ({
+              id: r.id,
+              libelle: libelleCreneau(r.debut),
+              avec: (inters.ok ? inters.valeur : []).find((i) => i.cle === r.interlocuteur_cle)?.prenom ?? r.interlocuteur_cle,
+              motif: r.motif,
+              statut: r.statut,
+              aVenir: Date.parse(r.debut) > maintenantRdv.getTime(),
+            }))}
+          />
           <PanneauGestes id={e.id} etat={etat} archivee={Boolean(e.archive_le)} />
           <PanneauCollecte id={e.id} {...collecte} />
           <PanneauContenus contenus={contenus} />

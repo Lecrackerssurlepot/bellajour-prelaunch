@@ -41,6 +41,8 @@ export const DROITS = {
   choisir_couverture: ["responsable"],
   valider_bat: ["responsable"],
   ecrire_message: ["atelier", "responsable"],
+  /** D23 : prendre, déplacer, annuler un rendez-vous (l'équipe le voit, sans y toucher). */
+  prendre_rendez_vous: ["atelier", "responsable"],
   saisir_livraison: ["atelier"],
 } as const satisfies Record<string, readonly Role[]>;
 

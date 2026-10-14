@@ -144,6 +144,10 @@ import {
   zonesModifiees,
 } from "@/lib/collectif/bat";
 import { cheminSection, MENU, RAISON_VERROU, sectionDuChemin, verrousPour } from "@/lib/collectif/verrous";
+import { chevauche, creneauxDuJour, creneauxLibres, heuresDeDebut, joursOuvres, libelleCreneau, lireCreneau, lireMotif, lireReglageAgenda, lundiDeSemaine, REGLES_RDV } from "@/lib/collectif/creneaux";
+import { invitationIcs, replier } from "@/lib/collectif/ics";
+import { mailRendezVous } from "@/lib/collectif/mailsRdv";
+import { lireCompteAgenda } from "@/lib/collectif/agenda";
 
 let ko = 0;
 const ok = (n: string, c: boolean) => {
@@ -488,6 +492,7 @@ const attenduDroits: Record<Action, Role[]> = {
   choisir_couverture: ["responsable"],
   valider_bat: ["responsable"],
   ecrire_message: ["atelier", "responsable"],
+  prendre_rendez_vous: ["atelier", "responsable"],
   saisir_livraison: ["atelier"],
 };
 ok("chaque action, chaque role : exactement le tableau du PRD",
@@ -1331,7 +1336,7 @@ titre("— revision 14.5 : parler a l'atelier, documents —");
     /filDeConversation/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")) && /Citer un document/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")));
   const restes = fichiersParSuffixe("src/app/edition", /\.tsx?$/).filter((f) => /[Vv]otre dossier|[Tt]on dossier/.test(lire(f)));
   ok(`plus aucun « votre dossier » dans l'espace client${restes.length ? ` (${restes.join(", ")})` : ""}`, restes.length === 0);
-  ok("aucun rendez-vous invente (pas de date ni de duree de rendez-vous dans le fil)", !/\ben visio\b|minutes en|Rendez-vous pris|Prochain rendez-vous/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")));
+  ok("les rendez-vous affiches viennent des donnees (D23) : aucune date ni duree ecrite en dur", (() => { const t = lire("src/app/edition/[token]/atelier/Parler.tsx"); return /libelleCreneau\(r\.debut\)/.test(t) && !/\b\d{1,2} (janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\b/.test(t) && !/\b20 minutes\b|\b30 minutes\b/.test(t); })());
 }
 
 titre("— revision 14.6 : le brief partie par partie —");
@@ -1376,6 +1381,68 @@ titre("— revision 14.3 / 14.7 : photos et livraison —");
   const livraison = lire("src/app/edition/[token]/livraison/page.tsx");
   ok("Livraison : l'en-tete commun et « Écrire à l'atelier » vers Parler a l'atelier",
     /<EnTeteEcran titre="Livraison"/.test(livraison) && livraison.includes("cheminSection(token, 'atelier')") && !livraison.includes("cheminSection(token, 'dossier')"));
+}
+
+titre("— D23 / T-148 : les rendez-vous dans l'espace —");
+{
+  ok("les regles de Mathias : lundi-vendredi, 10 h a 18 h, 30 minutes", JSON.stringify(REGLES_RDV.jours) === "[1,2,3,4,5]" && REGLES_RDV.ouverture === "10:00" && REGLES_RDV.fermeture === "18:00" && REGLES_RDV.dureeMinutes === 30);
+  const h = heuresDeDebut();
+  ok("seize creneaux par jour : 10 h 00 ... 17 h 30", h.length === 16 && h[0] === "10:00" && h[15] === "17:30");
+  ok("le samedi et le dimanche n'ont aucun creneau", creneauxDuJour("2026-10-17").length === 0 && creneauxDuJour("2026-10-18").length === 0);
+  ok("10 h reste 10 h a Paris, heure d'ete (08:00Z) comme d'hiver (09:00Z)", creneauxDuJour("2026-10-23")[0].debut === "2026-10-23T08:00:00.000Z" && creneauxDuJour("2026-10-26")[0].debut === "2026-10-26T09:00:00.000Z");
+  const maintenant = new Date("2026-10-14T08:20:00Z");
+  const jour = creneauxDuJour("2026-10-14");
+  const libres = creneauxLibres(jour, [{ debut: "2026-10-14T09:00:00Z", fin: "2026-10-14T10:00:00Z" }], maintenant);
+  ok("reservable jusqu'a la demi-heure qui arrive (10 h 20 → 10 h 30 propose, 10 h 00 non)", libres[0].debut === "2026-10-14T08:30:00.000Z" && !libres.some((c) => c.debut === "2026-10-14T08:00:00.000Z"));
+  ok("une plage occupee retire les creneaux qu'elle chevauche, et eux seuls", libres.length === 13 && !libres.some((c) => c.debut === "2026-10-14T09:00:00.000Z" || c.debut === "2026-10-14T09:30:00.000Z"));
+  ok("bord contre bord ne chevauche pas", !chevauche({ debut: "2026-10-14T08:00:00Z", fin: "2026-10-14T08:30:00Z" }, { debut: "2026-10-14T08:30:00Z", fin: "2026-10-14T09:00:00Z" }));
+  const propre = { debut: "2026-10-14T13:00:00.000Z", fin: "2026-10-14T13:30:00.000Z" };
+  ok("deplacer : le rendez-vous ne se bloque pas lui-meme", creneauxLibres(jour, [propre], maintenant, propre).some((c) => c.debut === propre.debut));
+  ok("un creneau demande est refait depuis les regles", lireCreneau("2026-10-14T13:30:00Z", maintenant)?.fin === "2026-10-14T14:00:00.000Z");
+  ok("un creneau desaligne, passe, ou un samedi est refuse",
+    lireCreneau("2026-10-14T13:15:00Z", maintenant) === null && lireCreneau("2026-10-14T08:00:00Z", maintenant) === null && lireCreneau("2026-10-17T08:00:00Z", maintenant) === null && lireCreneau("demain", maintenant) === null);
+  ok("le lundi d'un dimanche est celui de la meme semaine", lundiDeSemaine(new Date("2026-10-18T20:00:00Z")) === "2026-10-12" && JSON.stringify(joursOuvres("2026-10-12")) === JSON.stringify(["2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16"]));
+  ok("le libelle : « mercredi 14 octobre à 15 h 30 »", libelleCreneau("2026-10-14T13:30:00Z") === "mercredi 14 octobre à 15 h 30");
+  ok("le motif est facultatif et borne", lireMotif("   ") === null && (lireMotif("x".repeat(900)) ?? "").length === 500);
+  ok("l'agenda : une adresse, le lien visio : https", lireReglageAgenda({ agenda_id: "mathias@gmail.com", meet_url: "https://meet.google.com/abc" }).ok && !lireReglageAgenda({ agenda_id: "mathias" }).ok && !lireReglageAgenda({ meet_url: "http://x" }).ok);
+
+  const ics = invitationIcs({ uid: "u1@bellajour.fr", sequence: 2, debut: "2026-10-15T08:30:00Z", fin: "2026-10-15T09:00:00Z", titre: "Rendez-vous, Bellajour; essai", description: "ligne 1\nligne 2", lieu: "https://meet.google.com/abc", annule: false, maintenant });
+  ok("l'invitation : CRLF, UID et SEQUENCE, dates UTC, texte echappe",
+    ics.includes("\r\nUID:u1@bellajour.fr\r\n") && ics.includes("SEQUENCE:2") && ics.includes("DTSTART:20261015T083000Z") && ics.includes("SUMMARY:Rendez-vous\\, Bellajour\\; essai") && ics.includes("METHOD:PUBLISH"));
+  ok("chaque ligne repliee tient en 75 octets", replier("D".repeat(10) + "é".repeat(80)).split("\r\n").every((l) => Buffer.byteLength(l, "utf8") <= 75));
+  ok("une annulation est un CANCEL", invitationIcs({ uid: "u1", sequence: 3, debut: "2026-10-15T08:30:00Z", fin: "2026-10-15T09:00:00Z", titre: "t", description: "d", lieu: null, annule: true, maintenant }).includes("METHOD:CANCEL"));
+
+  const base = { tu: false, interlocuteur: "Mathias", debut: "2026-10-15T08:30:00Z", ancienDebut: null, dureeMinutes: 30, meetUrl: "https://meet.google.com/abc", motif: "Relire le BAT", lienEspace: "https://www.bellajour.fr/edition/x/atelier" };
+  const pris = mailRendezVous({ ...base, genre: "pris" });
+  const deplace = mailRendezVous({ ...base, genre: "deplace", ancienDebut: "2026-10-14T13:30:00Z" });
+  const annule = mailRendezVous({ ...base, genre: "annule" });
+  ok("mail pris : la date, la visio, le lien de l'espace", pris.sujet.includes("jeudi 15 octobre à 10 h 30") && pris.html.includes("Rejoindre la visio") && pris.texte.includes(base.lienEspace));
+  ok("mail deplace : l'ancien creneau est dit", deplace.texte.includes("mercredi 14 octobre à 15 h 30"));
+  ok("mail annule : pas de bouton visio", !annule.html.includes("Rejoindre la visio") && annule.sujet.includes("annulé"));
+  ok("mails : aucun tiret cadratin, le tu respecte le registre", [pris, deplace, annule].every((m) => !/—/.test(m.sujet + m.html + m.texte)) && mailRendezVous({ ...base, tu: true, genre: "pris" }).sujet.startsWith("Ton"));
+
+  const cleFausse = "-----BEGIN PRIVATE KEY-----\\nabc\\n-----END PRIVATE KEY-----\\n";
+  const json = `{"client_email":"agenda@projet.iam.gserviceaccount.com","private_key":"${cleFausse}"}`;
+  ok("le compte Google se lit en JSON ou en base64, une valeur illisible n'ouvre rien",
+    lireCompteAgenda(json)?.client_email === "agenda@projet.iam.gserviceaccount.com" && lireCompteAgenda(Buffer.from(json).toString("base64"))?.private_key.includes("\n") === true && lireCompteAgenda("n'importe quoi") === null && lireCompteAgenda("") === null);
+
+  const agenda = lire("src/lib/collectif/agenda.ts").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  ok("VIE PRIVEE : l'agenda n'est lu que par free/busy, jamais un evenement lu (aucun GET)", agenda.includes('"/freeBusy"') && !/method: "GET"/.test(agenda) && !/events\?|singleEvents|events\.list/.test(agenda));
+  const rdv = lire("src/lib/collectif/rendezvous.ts");
+  const prendreCorps = rdv.slice(rdv.indexOf("export async function prendre"), rdv.indexOf("async function lireUn"));
+  ok("prendre : la regle, puis l'agenda, puis le VERROU en base, puis l'evenement Google",
+    prendreCorps.indexOf("RDV_A_VENIR_MAX") < prendreCorps.indexOf("plagesOccupees(") && prendreCorps.indexOf("plagesOccupees(") < prendreCorps.indexOf(".insert(") && prendreCorps.indexOf(".insert(") < prendreCorps.indexOf("poserEvenement("));
+  ok("un evenement Google rate defait la ligne (jamais un rendez-vous affiche sans agenda)", /if \(!ev\.ok\) \{[\s\S]{0,200}statut: "annule"/.test(prendreCorps));
+  const mailCorps = rdv.slice(rdv.indexOf("export async function envoyerMailRdv"));
+  ok("MAILS : fermes sans COLLECTIF_MAILS_RDV, coupes par ATELIER_MAILS_COUPES, verrou AVANT Brevo, retire si refus",
+    mailCorps.indexOf("VAR_MAILS_RDV") < mailCorps.indexOf("fetch(") && mailCorps.indexOf("envoisCoupes(") < mailCorps.indexOf("fetch(") && mailCorps.indexOf('from("collectif_mails").insert') < mailCorps.indexOf("fetch(") && /from\("collectif_mails"\)\.delete\(\)/.test(mailCorps));
+  const mig = lire("supabase/migrations/20261015_collectif_rendez_vous.sql");
+  ok("la base refuse deux rendez-vous sur le meme creneau du meme interlocuteur", /create unique index if not exists collectif_rendez_vous_creneau_unique[\s\S]{0,120}\(interlocuteur_cle, debut\)[\s\S]{0,40}where statut = 'pris'/.test(mig));
+  ok("migration atomique, RLS activee, aucune policy", /^begin;/m.test(mig) && /^commit;/m.test(mig) && /collectif_rendez_vous\s+enable row level security/.test(mig) && !/create policy/i.test(mig));
+  ok("les creneaux ne s'ouvrent qu'au responsable (prendre_rendez_vous)", /peut\(acces\.role, "prendre_rendez_vous"\)/.test(lire("src/app/api/collectif/rendez-vous/creneaux/route.ts")) && /peut\(acces\.role, "prendre_rendez_vous"\)/.test(lire("src/app/api/collectif/rendez-vous/route.ts")));
+  const fil = filDeConversation([], [], () => "j", [{ id: "r1", quand: "2026-10-14T09:00:00Z" }]);
+  ok("le rendez-vous pris entre au fil", fil.some((e) => e.genre === "rendezvous"));
+  ok("le journal dit les rendez-vous", phraseEvenement("rdv_pris", { par: "Camille", quand: "jeudi 15 octobre à 10 h 30", avec: "Mathias" }).includes("Mathias"));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

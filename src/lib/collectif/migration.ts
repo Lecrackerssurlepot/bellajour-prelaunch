@@ -76,3 +76,21 @@ export const MESSAGE_REVISION_ABSENTE =
 export function colonneAbsente(code: string | null | undefined): boolean {
   return code === "42703" || code === "PGRST204";
 }
+
+/* ─────────────────────────── les rendez-vous (D23, T-148) ─────────────────────────── */
+
+/**
+ * Deux tables neuves et une colonne : sans elles, l'espace garde le lien de
+ * rendez-vous de la fiche (rien ne casse), et toute écriture de rendez-vous
+ * répond 503 `migration_rdv_absente` en nommant le fichier.
+ */
+export const MIGRATION_RDV = "supabase/migrations/20261015_collectif_rendez_vous.sql";
+export const ERREUR_RDV_ABSENTE = "migration_rdv_absente";
+export const MESSAGE_RDV_ABSENTE =
+  "La mise à jour de la base pour les rendez-vous n'est pas encore appliquée (20261015_collectif_rendez_vous.sql) : rien n'a été enregistré.";
+
+/** La table ou la colonne des rendez-vous manque-t-elle ? */
+export function rdvAbsent(code: string | null | undefined): boolean {
+  return tableAbsente(code) || colonneAbsente(code);
+}
+
