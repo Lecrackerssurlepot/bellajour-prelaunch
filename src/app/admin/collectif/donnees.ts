@@ -20,6 +20,8 @@ import { contenuClient } from "@/lib/collectif/contenus";
 import { compositionDu, stylesDeLaComposition, type BriefLigne } from "@/lib/collectif/brief";
 import { TYPES_DOUBLES } from "@/lib/collectif/styles";
 import { lireMessages } from "@/lib/collectif/messagerie";
+import { aTraiter, conversationsDe, type Conversation, type MessageBoite } from "@/lib/collectif/boite";
+import { lireInterlocuteurs } from "@/lib/collectif/rendezvous";
 import { resumeDeposants } from "@/lib/collectif/grille";
 import type { Message } from "@/lib/collectif/messages";
 import { resumeNote, resumeTour } from "@/lib/collectif/bat";
@@ -110,6 +112,75 @@ export async function listerEditions(
       };
     }),
   };
+}
+
+/**
+ * Les messages des clients que l'atelier n'a pas lus, toutes éditions (la
+ * pastille du commutateur et de « Messagerie », T-152). `null` si la lecture
+ * échoue ou si les tables n'existent pas : une pastille absente vaut mieux
+ * qu'une table de travail qui tombe pour un compteur.
+ */
+export async function compterNonLus(supabase: SupabaseClient, editionId?: string): Promise<number | null> {
+  let requete = supabase.from("collectif_messages").select("id", { count: "exact", head: true }).eq("auteur", "client").is("lu_atelier_le", null);
+  if (editionId) requete = requete.eq("edition_id", editionId);
+  const { count, error } = await requete;
+  if (error) {
+    if (!tableAbsente(error.code)) console.error("[collectif] non-lus illisibles", error.code, error.message);
+    return null;
+  }
+  return count ?? 0;
+}
+
+/* ─────────────────────────────── la boîte de réception ─────────────────────────────── */
+
+/**
+ * La boîte de réception de l'atelier (T-152) : une conversation par édition
+ * non archivée, ce qui est à traiter aujourd'hui. LIT seulement : rien n'est
+ * marqué lu ici (l'ouverture d'une conversation le fait, par un effet).
+ * Les rendez-vous sont un bonus : sans leur migration, la boîte s'affiche
+ * sans eux.
+ */
+export async function chargerBoite(
+  supabase: SupabaseClient,
+  maintenant: Date
+): Promise<{ absent: true } | { absent: false; conversations: Conversation[]; aTraiter: { editionId: string; texte: string }[] }> {
+  const { data, error } = await supabase
+    .from("collectif_editions")
+    .select("id, organisation, evenement, created_at")
+    .is("archive_le", null)
+    .order("created_at", { ascending: false })
+    .limit(200)
+    .returns<{ id: string; organisation: string; evenement: string; created_at: string }[]>();
+  if (error) {
+    if (tableAbsente(error.code)) return { absent: true };
+    echec("éditions de la boîte", error);
+  }
+  const editions = data ?? [];
+  const ids = editions.map((e) => e.id);
+  if (!ids.length) return { absent: false, conversations: [], aTraiter: [] };
+  const [messages, rdvs, inters] = await Promise.all([
+    supabase
+      .from("collectif_messages")
+      .select("edition_id, auteur, texte, created_at, lu_atelier_le")
+      .in("edition_id", ids)
+      .order("created_at", { ascending: false })
+      .limit(3000)
+      .returns<MessageBoite[]>(),
+    supabase
+      .from("collectif_rendez_vous")
+      .select("edition_id, debut, interlocuteur_cle")
+      .in("edition_id", ids)
+      .eq("statut", "pris")
+      .gte("debut", new Date(maintenant.getTime() - 86_400_000).toISOString())
+      .lte("debut", new Date(maintenant.getTime() + 2 * 86_400_000).toISOString())
+      .returns<{ edition_id: string; debut: string; interlocuteur_cle: string }[]>(),
+    lireInterlocuteurs(supabase),
+  ]);
+  if (messages.error) echec("messages de la boîte", messages.error);
+  const conversations = conversationsDe(editions, messages.data ?? [], maintenant);
+  const prenoms = new Map((inters.ok ? inters.valeur : []).map((i) => [i.cle, i.prenom]));
+  const rendezVous = rdvs.error ? [] : (rdvs.data ?? []).map((r) => ({ edition_id: r.edition_id, debut: r.debut, avec: prenoms.get(r.interlocuteur_cle) ?? r.interlocuteur_cle }));
+  return { absent: false, conversations, aTraiter: aTraiter(conversations, rendezVous, maintenant) };
 }
 
 /* ─────────────────────────────────── la fiche ─────────────────────────────────── */

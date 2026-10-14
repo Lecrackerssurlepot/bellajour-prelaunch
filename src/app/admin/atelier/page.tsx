@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
 import { prenomDe } from "@/lib/admin-auth";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
+import { makeSupabase } from "@/lib/supabase";
+import { compterNonLus } from "../collectif/donnees";
 import { chargerListe } from "./donnees";
 import Liste from "./Liste";
 import "../admin.css";
@@ -29,9 +31,13 @@ export default async function PageAtelier() {
      matcher changerait sans que personne n'y pense. */
   if (!qui) redirect("/admin/login");
 
-  const vue = await chargerListe({ cle: qui, prenom: prenomDe(qui) });
-  /* L'Édition collective (13/10/2026) : son lien n'existe que si
-     l'interrupteur est ouvert. Lu ici, côté serveur : un composant client ne
-     lit pas process.env. */
-  return <Liste vue={vue} collectif={collectifOuvert()} />;
+  /* L'Édition collective (13/10/2026) : son côté du commutateur n'existe que
+     si l'interrupteur est ouvert. Lu ici, côté serveur : un composant client
+     ne lit pas process.env. Ses non-lus partent EN MÊME TEMPS que la liste. */
+  const collectif = collectifOuvert();
+  const [vue, nonLus] = await Promise.all([
+    chargerListe({ cle: qui, prenom: prenomDe(qui) }),
+    collectif ? compterNonLus(makeSupabase()) : Promise.resolve(null),
+  ]);
+  return <Liste vue={vue} collectif={collectif} nonLus={nonLus} />;
 }

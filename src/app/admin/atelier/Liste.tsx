@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import BarreAtelier, { liensParticuliers } from "../BarreAtelier";
 import ActionRapide from "./ActionRapide";
 import Relance from "./Relance";
 import Activite from "./Activite";
@@ -283,7 +284,7 @@ function Ligne({
   );
 }
 
-export default function Liste({ vue, collectif = false }: { vue: VueListe; collectif?: boolean }) {
+export default function Liste({ vue, collectif = false, nonLus = null }: { vue: VueListe; collectif?: boolean; nonLus?: number | null }) {
   const [recherche, setRecherche] = useState("");
   const [filtre, setFiltre] = useState<Filtre>("actifs");
   const [reglages, majReglages] = useReglages();
@@ -398,9 +399,14 @@ export default function Liste({ vue, collectif = false }: { vue: VueListe; colle
         </div>
       ) : null}
 
+      {/* La barre commune (T-152) : la même sur les éditions, le commutateur
+          « Particuliers | Éditions » au lieu d'un lien de plus. La démo ne
+          parle jamais des éditions. */}
+      <BarreAtelier monde="particuliers" collectif={collectif && !vue.demo} nonLus={nonLus} liens={liensParticuliers(Boolean(vue.demo))} />
+
       <header className="ate-header">
         <div>
-          <h1 className="ate-h1">L&apos;Atelier</h1>
+          <h1 className="adm-sr">L&apos;Atelier, les particuliers</h1>
           {/* Une phrase, la même que la boîte et les groupes : combien sont à
               nous (et combien en retard), combien sont arrivés depuis hier. */}
           <p className="ate-bonjour">
@@ -429,27 +435,6 @@ export default function Liste({ vue, collectif = false }: { vue: VueListe; colle
             )}
           </p>
         </div>
-
-        <nav className="ate-liens">
-          {/* Le carnet complet : toutes les notes de tous les dossiers, en
-              lecture seule. Sa place est ici, à côté des deux autres écrans
-              qui regardent l'atelier de haut. */}
-          <Link href="/admin/atelier/carnet">Carnet</Link>
-          <Link href="/admin/atelier/metriques">Métriques</Link>
-          <Link href="/admin/atelier/cockpit">Cockpit</Link>
-          <Link href="/admin/atelier/sante">Santé</Link>
-          <Link href="/admin/atelier/factures">Factures</Link>
-          <Link href="/admin">Prévente</Link>
-          {/* L'Édition collective : absente tant que COLLECTIF_OUVERT est
-              fermé (la page répondrait 404). La démo n'en parle jamais. */}
-          {collectif && !vue.demo ? <Link href="/admin/collectif">Éditions collectives</Link> : null}
-          {vue.demo ? null : <Link href="/admin/atelier/demo">Démo</Link>}
-          <form action="/api/admin/logout" method="post" className="adm-logout-form">
-            <button className="adm-btn adm-btn--ghost" type="submit">
-              Quitter
-            </button>
-          </form>
-        </nav>
       </header>
 
       <Arrivees

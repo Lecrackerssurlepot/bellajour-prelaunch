@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
 import FormulaireEdition, { type ValeursEdition } from "../FormulaireEdition";
+import BarreAtelier, { liensEditions } from "../../BarreAtelier";
 import "../../admin.css";
 import "../../atelier/atelier.css";
 import "../collectif.css";
@@ -50,10 +50,8 @@ export default async function PageNouvelle() {
 
   return (
     <div className="adm-root ate-root eca-root">
+      <BarreAtelier monde="editions" collectif liens={liensEditions(null)} />
       <header className="ate-fiche-tete">
-        <Link href="/admin/collectif" className="ate-retour">
-          ← Éditions collectives
-        </Link>
         <h1 className="ate-h1">Ouvrir une édition</h1>
         <p className="ate-bonjour">
           Après signature de la proposition. La création produit trois liens : le responsable, l&apos;équipe (lecture

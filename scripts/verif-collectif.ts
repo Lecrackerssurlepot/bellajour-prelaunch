@@ -103,6 +103,8 @@ import { cheminQr, matriceQr, svgQr } from "@/lib/collectif/qr";
 import { apercuPossible, envoisCourants } from "@/lib/collectif/contenus";
 import * as Dossiers from "@/lib/collectif/dossiers";
 import { genreFichier } from "@/lib/collectif/visionneuse";
+import { aTraiter as aTraiterBoite, conversationsDe, initialesDe, quandCourt } from "@/lib/collectif/boite";
+import { etapesEdition } from "@/lib/collectif/prochaine";
 import { messagePartage } from "@/lib/collectif/partage";
 import { colonneAbsente, MIGRATION_REVISION } from "@/lib/collectif/migration";
 import { libellePlafondLien, lirePlafondLien, plafondLienMax, CURSEUR_LIEN } from "@/lib/collectif/plafonds";
@@ -1738,6 +1740,50 @@ titre("— T-152 : les documents s'ouvrent dans la page, on repond a un message 
     /repondre=\{p\.ecrire \? \(\) => setReponse\(el\.message\) : undefined\}/.test(parler) && /Réponse à \{auteurDe\(e\.reponse\)\}/.test(parler) && /allerAuMessage\(m\.reponseA\.id\)/.test(parler) && /reponseA: e\.reponse\?\.id \?\? null/.test(parler));
   ok("Documents : « Répondre » ouvre la conversation, le document deja cite (pour qui ecrit seulement)",
     /\?citer=\$\{d\.id\}/.test(lire("src/app/edition/[token]/dossier/ListeDocuments.tsx")) && /peut\(role, 'ecrire_message'\) \? versAtelier : null/.test(lire("src/app/edition/[token]/dossier/page.tsx")) && /documents\.some\(\(d\) => d\.id === citer\) \? citer : null/.test(lire("src/app/edition/[token]/atelier/page.tsx")));
+}
+
+titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de reception, fiche en onglets) —");
+{
+  ok("boite : des initiales lisibles", initialesDe("Maison Aubier") === "MA" && initialesDe("Lycée Jean Moulin") === "LJ" && initialesDe("Club de la Rive") === "CR" && initialesDe("Bellajour") === "BE");
+  const midi = new Date("2026-10-14T10:00:00Z");
+  ok("boite : quand, en court (heure de Paris : l'heure, hier, le jour, la date)",
+    quandCourt("2026-10-14T08:05:00Z", midi) === "10 h 05" && quandCourt("2026-10-13T20:00:00Z", midi) === "hier" && /^(sam|dim|lun)/.test(quandCourt("2026-10-11T09:00:00Z", midi)) && quandCourt("2026-10-02T09:00:00Z", midi) === "2 oct.");
+  const ed = (id: string, organisation: string) => ({ id, organisation, evenement: "E", created_at: "2026-10-01T00:00:00Z" });
+  const msg = (edition_id: string, auteur: "client" | "atelier", texte: string, created_at: string, lu: string | null = null) => ({ edition_id, auteur, texte, created_at, lu_atelier_le: lu });
+  const convs = conversationsDe(
+    [ed("a", "Atelier A"), ed("b", "Bureau B"), ed("c", "Club C")],
+    [
+      msg("a", "client", "Bonjour", "2026-10-14T09:00:00Z", "2026-10-14T09:30:00Z"),
+      msg("b", "client", "Demande de modification : Ajouter des pages\n8 pages", "2026-10-13T09:00:00Z"),
+      msg("b", "atelier", "Bien reçu", "2026-10-12T09:00:00Z"),
+    ],
+    midi
+  );
+  ok("boite : a lire d'abord, puis le plus recent, sans message a la fin ; rien n'est marque lu ici",
+    convs.map((c) => c.id).join() === "b,a,c" && convs[0].nonLus === 1 && convs[2].apercu === null && !/update\(|lu_atelier_le: new Date/.test(lire("src/lib/collectif/boite.ts")));
+  ok("boite : « Vous : » quand l'atelier a ecrit en dernier", conversationsDe([ed("x", "X")], [msg("x", "atelier", "Merci", "2026-10-14T09:00:00Z")], midi)[0].apercu === "Vous : Merci");
+  const traiter = aTraiterBoite(convs, [{ edition_id: "a", debut: "2026-10-14T13:30:00Z", avec: "Mathias" }, { edition_id: "a", debut: "2026-10-15T13:30:00Z", avec: "Mathias" }], midi);
+  ok("boite : a traiter = les messages a lire (la demande se dit), puis les rendez-vous du JOUR seulement",
+    traiter.length === 2 && /Bureau B : (une demande de modification|1 message à lire)/.test(traiter[0].texte) && traiter[1].texte === "Rendez-vous à 15 h 30 avec Atelier A (Mathias)");
+  ok("etapes : en cours, faites, a venir ; livree = tout fait",
+    etapesEdition("composition").map((e) => e.statut).join() === "fait,encours,avenir,avenir,avenir" && etapesEdition("bat_valide")[2].statut === "encours" && etapesEdition("livree").every((e) => e.statut === "fait"));
+
+  const barre = lire("src/app/admin/BarreAtelier.tsx");
+  ok("barre commune : un commutateur « Particuliers | Éditions », absent sans l'interrupteur",
+    /collectif \? \(\s*<nav className="atb-switch"/.test(barre) && /Particuliers/.test(barre) && /Éditions/.test(barre) && /href: "\/admin\/collectif\/messages"/.test(barre));
+  const pages = ["src/app/admin/atelier/Liste.tsx", "src/app/admin/atelier/[token]/Fiche.tsx", "src/app/admin/collectif/page.tsx", "src/app/admin/collectif/[id]/page.tsx", "src/app/admin/collectif/messages/page.tsx", "src/app/admin/collectif/styles/page.tsx", "src/app/admin/collectif/agendas/page.tsx", "src/app/admin/collectif/nouvelle/page.tsx", "src/app/admin/collectif/[id]/bat/page.tsx"];
+  ok("barre commune : posee sur chaque ecran des deux mondes (plus de « ← Table de travail »)",
+    pages.every((f) => /<BarreAtelier /.test(lire(f))) && !/← Table de travail/.test(lire("src/app/admin/collectif/page.tsx")));
+  ok("barre commune : la table de travail des particuliers garde ses ecrans, et la demo ne parle jamais des editions",
+    ["Carnet", "Métriques", "Cockpit", "Santé", "Factures", "Prévente", "Démo"].every((t) => barre.includes(t)) && /collectif=\{collectif && !vue\.demo\}/.test(lire("src/app/admin/atelier/Liste.tsx")) && /collectif=\{collectif && !demo\}/.test(lire("src/app/admin/atelier/[token]/Fiche.tsx")));
+  ok("barre commune : les non-lus se comptent SANS rien marquer, en parallele de la liste",
+    /async function compterNonLus[\s\S]*?head: true/.test(lire("src/app/admin/collectif/donnees.ts")) && /Promise\.all\(\[\s*chargerListe/.test(lire("src/app/admin/atelier/page.tsx")));
+  const boitePage = lire("src/app/admin/collectif/messages/page.tsx");
+  ok("boite : une conversation a la fois, remontee a chaque changement (key), le dossier du client a droite",
+    /<ConversationAtelier key=\{courant\.id\}/.test(boitePage) && /Le dossier du client/.test(boitePage) && /Ouvrir la fiche/.test(boitePage) && /chargerBoite\(supabase, maintenant\)/.test(boitePage));
+  const onglets = lire("src/app/admin/collectif/[id]/OngletsFiche.tsx");
+  ok("fiche : des onglets, un onglet monte a sa premiere visite puis garde (les messages ne se marquent lus qu'a leur ouverture)",
+    /vus\.includes\(cle\) \?/.test(onglets) && /hidden=\{cle !== actif\}/.test(onglets) && /replaceState/.test(onglets) && /messages: <PanneauMessages/.test(lire("src/app/admin/collectif/[id]/page.tsx")));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

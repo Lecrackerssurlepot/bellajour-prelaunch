@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
 import { makeSupabase } from "@/lib/supabase";
@@ -6,6 +5,7 @@ import { adresseDuCompte, VAR_COMPTE_AGENDA } from "@/lib/collectif/agenda";
 import { MIGRATION_RDV } from "@/lib/collectif/migration";
 import { lireInterlocuteurs } from "@/lib/collectif/rendezvous";
 import Agendas from "./Agendas";
+import BarreAtelier, { liensEditions } from "../../BarreAtelier";
 import "../../admin.css";
 import "../../atelier/atelier.css";
 import "../collectif.css";
@@ -30,10 +30,8 @@ export default async function PageAgendas() {
 
   return (
     <div className="adm-root ate-root eca-root">
+      <BarreAtelier monde="editions" collectif liens={liensEditions("agendas")} />
       <header className="ate-fiche-tete">
-        <Link href="/admin/collectif" className="ate-retour">
-          ← Éditions collectives
-        </Link>
         <h1 className="ate-h1">Les agendas</h1>
         <p className="ate-bonjour">Les créneaux que les clients voient dans leur espace viennent de ces agendas : libre ou occupé, jamais leur contenu.</p>
       </header>

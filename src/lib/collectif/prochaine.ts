@@ -45,3 +45,27 @@ export function prochaineEtape(etat: EtatEdition, clotureLe: string | null): Pro
       return { camp: "aucun", texte: "Livrée" };
   }
 }
+
+/** Les cinq grandes étapes d'une édition, pour la bande de la fiche (T-152). */
+export type StatutEtape = "fait" | "encours" | "avenir";
+export type EtapeEdition = { cle: "collecte" | "composition" | "bat" | "impression" | "livraison"; nom: string; statut: StatutEtape };
+
+const ETAPES: { cle: EtapeEdition["cle"]; nom: string; etats: readonly EtatEdition[] }[] = [
+  { cle: "collecte", nom: "Collecte et style", etats: ["preparation"] },
+  { cle: "composition", nom: "Composition", etats: ["composition"] },
+  { cle: "bat", nom: "Bon à tirer", etats: ["bat", "bat_valide"] },
+  { cle: "impression", nom: "Impression", etats: ["impression"] },
+  { cle: "livraison", nom: "Livraison", etats: ["expediee", "livree"] },
+];
+const ORDRE: readonly EtatEdition[] = ["preparation", "composition", "bat", "bat_valide", "impression", "expediee", "livree"];
+
+/** Où en est l'édition, étape par étape. « Livrée » : tout est fait. */
+export function etapesEdition(etat: EtatEdition): EtapeEdition[] {
+  const rang = ORDRE.indexOf(etat);
+  return ETAPES.map((e) => {
+    const premier = ORDRE.indexOf(e.etats[0]);
+    const dernier = ORDRE.indexOf(e.etats[e.etats.length - 1]);
+    const statut: StatutEtape = etat === "livree" || rang > dernier ? "fait" : rang >= premier ? "encours" : "avenir";
+    return { cle: e.cle, nom: e.nom, statut };
+  });
+}

@@ -5,6 +5,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { MIGRATION_COLLECTIF } from "@/lib/collectif/migration";
 import { listerStyles } from "../donnees";
 import NouveauStyle from "./NouveauStyle";
+import BarreAtelier, { liensEditions } from "../../BarreAtelier";
 import "../../admin.css";
 import "../../atelier/atelier.css";
 import "../collectif.css";
@@ -32,10 +33,8 @@ export default async function PageStyles() {
 
   return (
     <div className="adm-root ate-root eca-root">
+      <BarreAtelier monde="editions" collectif liens={liensEditions("styles")} />
       <header className="ate-fiche-tete">
-        <Link href="/admin/collectif" className="ate-retour">
-          ← Éditions collectives
-        </Link>
         <h1 className="ate-h1">Les styles du mur</h1>
         <p className="ate-bonjour">
           Dans un magazine, tout l&apos;intérieur suit le style choisi ; seule la couverture peut venir d&apos;un autre

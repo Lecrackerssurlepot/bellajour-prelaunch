@@ -89,6 +89,123 @@
   margin: 0;
 }
 
+/* ─────────────── la barre commune (T-152) : un seul logiciel ─────────────── */
+
+.atb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bj-sp-3) var(--bj-sp-5);
+  padding-bottom: var(--bj-sp-4);
+  margin-bottom: var(--bj-sp-5);
+  border-bottom: var(--ate-ligne-h, 1px solid var(--bj-veil-8));
+}
+.atb-marque {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--bj-action);
+  text-decoration: none;
+}
+/* Le commutateur : deux côtés, un curseur qui glisse sous le côté ouvert. */
+.atb-switch {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-veil-8);
+}
+.atb-switch-cote {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 128px;
+  min-height: 36px;
+  padding: 0 var(--bj-sp-4);
+  border-radius: var(--bj-r-pill);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  text-decoration: none;
+  transition: color var(--bj-dur-fast) var(--bj-ease);
+}
+.atb-switch-cote:hover {
+  color: var(--bj-text);
+}
+.atb-switch-cote[aria-current="page"] {
+  color: var(--bj-text);
+  font-weight: 500;
+}
+.atb-switch-curseur {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-cream);
+  box-shadow: 0 1px 3px var(--bj-veil-16);
+  transition: transform 0.22s var(--bj-ease);
+}
+.atb-switch-curseur--editions {
+  transform: translateX(100%);
+}
+.atb-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.atb-liens {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  font-size: var(--bj-fs-sm);
+}
+.atb-liens a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--bj-text-soft);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.atb-liens a:hover,
+.atb-liens a[aria-current="page"] {
+  color: var(--bj-action);
+  border-bottom-color: var(--bj-action-border);
+}
+.atb-liens .adm-logout-form {
+  margin: 0;
+}
+@media (max-width: 720px) {
+  .atb-switch-cote {
+    min-width: 0;
+  }
+  .atb-liens {
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atb-switch-curseur {
+    transition: none;
+  }
+}
+
 /* ─────────────────────────── les piles ─────────────────────────── */
 
 .ate-pile {

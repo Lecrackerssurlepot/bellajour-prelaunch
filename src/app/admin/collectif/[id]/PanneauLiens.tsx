@@ -1,13 +1,15 @@
 "use client";
 
 /* Les trois liens d'une édition : copier, ouvrir, régénérer (PRD §8).
-   Régénérer coupe l'ancien lien AUSSITÔT : jamais d'un seul clic. */
+   Régénérer coupe l'ancien lien AUSSITÔT : jamais d'un seul clic.
+   `compact` (la vue d'ensemble de la fiche, T-152) : une ligne par lien,
+   « Copier » et « Ouvrir » seulement ; régénérer se fait dans les réglages. */
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LIBELLE_LIEN, QUELS_LIENS, type QuelLien } from "@/lib/collectif/liens";
 
-export default function PanneauLiens({ id, liens }: { id: string; liens: Record<QuelLien, string> }) {
+export default function PanneauLiens({ id, liens, compact }: { id: string; liens: Record<QuelLien, string>; compact?: boolean }) {
   const router = useRouter();
   const [copie, setCopie] = useState<QuelLien | null>(null);
   const [arme, setArme] = useState<QuelLien | null>(null);
@@ -44,6 +46,34 @@ export default function PanneauLiens({ id, liens }: { id: string; liens: Record<
     } finally {
       setEnvoi(false);
     }
+  }
+
+  if (compact) {
+    return (
+      <section className="ate-carte">
+        <h2 className="ate-carte-titre">Les liens du client</h2>
+        <ul className="eca-liens-compacts">
+          {QUELS_LIENS.map((quel) => (
+            <li key={quel}>
+              <span>{LIBELLE_LIEN[quel].titre}</span>
+              <span className="eca-barre">
+                <a className="ate-lien-discret" href={liens[quel]} target="_blank" rel="noopener noreferrer">
+                  Ouvrir
+                </a>
+                <button type="button" className="adm-btn adm-btn--ghost" onClick={() => copier(quel)}>
+                  {copie === quel ? "Copié" : "Copier"}
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+        {erreur ? (
+          <p className="eca-message eca-message--erreur" role="alert">
+            {erreur}
+          </p>
+        ) : null}
+      </section>
+    );
   }
 
   return (

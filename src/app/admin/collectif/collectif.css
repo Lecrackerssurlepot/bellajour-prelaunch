@@ -101,6 +101,17 @@
   background: var(--bj-veil-8);
   color: var(--bj-text);
 }
+.eca-root a.eca-pastille {
+  text-decoration: none;
+}
+.eca-root .eca-lien-messages {
+  color: var(--bj-action);
+  font-weight: 500;
+  text-decoration: none;
+}
+.eca-root .eca-lien-messages:hover {
+  text-decoration: underline;
+}
 .eca-root .eca-pastille {
   display: inline-block;
   min-width: 20px;
@@ -841,3 +852,510 @@
   font-size: 14px;
 }
 
+
+/* ─────────────── la boîte de réception (T-152) ─────────────── */
+
+.eca-root--large {
+  max-width: 1480px;
+}
+.eca-root .eca-boite {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr) 300px;
+  gap: var(--bj-sp-4);
+  height: calc(var(--app-height, 900px) - 150px);
+  min-height: 520px;
+}
+.eca-root .eca-boite > * {
+  min-height: 0;
+  border: 1px solid var(--bj-veil-8);
+  border-radius: var(--bj-r-lg, 16px);
+  background: var(--ate-carte-bg);
+}
+.eca-root .eca-boite-liste {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.eca-root .eca-boite-tete {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-3);
+  padding: var(--bj-sp-4);
+  border-bottom: 1px solid var(--bj-veil-8);
+}
+.eca-root .eca-boite-titre {
+  margin: 0;
+  font-family: var(--bj-font-display);
+  font-weight: 400;
+  font-size: 1.6rem;
+  line-height: 1.1;
+}
+.eca-root .eca-boite-chercher {
+  width: 100%;
+}
+.eca-root .eca-boite-etiquette {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bj-text-faint);
+}
+.eca-root .eca-boite-traiter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  border-bottom: 1px solid var(--bj-veil-8);
+  background: var(--bj-action-soft);
+}
+.eca-root .eca-boite-notif {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text);
+  text-decoration: none;
+}
+.eca-root .eca-boite-notif:hover {
+  color: var(--bj-action);
+}
+.eca-root .eca-boite-point {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--bj-action);
+  transform: translateY(-1px);
+}
+.eca-root .eca-boite-convs {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+}
+.eca-root .eca-boite-convs > .eca-vide {
+  padding: var(--bj-sp-4);
+}
+.eca-root .eca-boite-conv {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  color: var(--bj-text);
+  text-decoration: none;
+}
+.eca-root .eca-boite-conv:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+.eca-root .eca-boite-conv--actif,
+.eca-root .eca-boite-conv--actif:hover {
+  background: #ffffff;
+  box-shadow: 0 1px 3px var(--bj-veil-8);
+}
+.eca-root .eca-boite-ini {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--bj-veil-8);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.eca-root .eca-boite-conv--alire .eca-boite-ini {
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+}
+.eca-root .eca-boite-conv-texte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.eca-root .eca-boite-conv-ligne {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.eca-root .eca-boite-conv-ligne strong {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eca-root .eca-boite-conv--alire .eca-boite-conv-ligne strong {
+  font-weight: 600;
+}
+.eca-root .eca-boite-apercu {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-boite-conv--alire .eca-boite-apercu {
+  color: var(--bj-text);
+}
+.eca-root .eca-boite-fil {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.eca-root .eca-boite-fil > .eca-vide {
+  margin: auto;
+  padding: var(--bj-sp-5);
+}
+.eca-root .eca-boite-fil-tete {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--bj-sp-4) var(--bj-sp-5);
+  border-bottom: 1px solid var(--bj-veil-8);
+}
+.eca-root .eca-boite-fil-nom {
+  font-family: var(--bj-font-display);
+  font-weight: 400;
+  font-size: 1.45rem;
+  line-height: 1.1;
+}
+.eca-root .eca-conversation--pleine {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.eca-root .eca-conversation--pleine .eca-fil {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  padding: var(--bj-sp-4) var(--bj-sp-5);
+}
+.eca-root .eca-conversation--pleine .eca-conversation-ecrire {
+  flex: none;
+  margin: 0;
+  padding: var(--bj-sp-3) var(--bj-sp-5) var(--bj-sp-4);
+  border-top: 1px solid var(--bj-veil-8);
+}
+.eca-root .eca-boite-dossier {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-4);
+  padding: var(--bj-sp-5) var(--bj-sp-4);
+  overflow-y: auto;
+}
+.eca-root .eca-boite-dossier-tete {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.eca-root .eca-boite-dossier-nom {
+  font-family: var(--bj-font-display);
+  font-weight: 400;
+  font-size: 1.4rem;
+  line-height: 1.15;
+}
+.eca-root .eca-boite-chiffres {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.eca-root .eca-boite-chiffres > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-boite-chiffres strong {
+  font-family: var(--bj-font-display);
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--bj-text);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.eca-root .eca-boite-lignes {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-boite-lignes li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--bj-veil-8);
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-boite-gestes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+.eca-root .eca-boite-gestes .eca-lien-bouton {
+  text-align: center;
+}
+.eca-root .eca-boite-espace {
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-action);
+  text-decoration: none;
+  text-align: center;
+}
+@media (max-width: 1180px) {
+  .eca-root .eca-boite {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+  .eca-root .eca-boite-dossier {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .eca-root .eca-boite {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+  .eca-root .eca-boite-fil {
+    min-height: calc(var(--app-height, 900px) * 0.7);
+  }
+}
+
+/* ─────────────── la fiche en onglets (T-152) ─────────────── */
+
+.eca-root .eca-fiche-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bj-sp-4) var(--bj-sp-6);
+  margin-bottom: var(--bj-sp-4);
+}
+.eca-root .eca-fiche-titres {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.eca-root .eca-fiche-h1 {
+  font-size: clamp(1.8rem, 3.4vw, 2.4rem);
+}
+.eca-root .eca-fiche-prochaine {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-left: auto;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: var(--ate-carte-bg);
+  border: 1px solid var(--bj-veil-8);
+  max-width: 380px;
+}
+.eca-root .eca-onglets {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  margin-bottom: var(--bj-sp-5);
+  border-bottom: 1px solid var(--bj-veil-12);
+  scrollbar-width: none;
+}
+.eca-root .eca-onglet {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font: inherit;
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.eca-root .eca-onglet:hover {
+  color: var(--bj-text);
+}
+.eca-root .eca-onglet[aria-current="page"] {
+  color: var(--bj-text);
+  font-weight: 600;
+  border-bottom-color: var(--bj-text);
+}
+.eca-root .eca-onglet-corps[hidden] {
+  display: none;
+}
+.eca-root .eca-etapes {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 var(--bj-sp-5);
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-etape {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--ate-carte-bg);
+  border: 1px solid var(--bj-veil-8);
+}
+.eca-root .eca-etape--encours {
+  border-color: var(--bj-action-border);
+  background: var(--bj-action-soft);
+}
+.eca-root .eca-etape-signe {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--bj-veil-8);
+  font-size: 12px;
+  font-weight: 500;
+}
+.eca-root .eca-etape--fait .eca-etape-signe {
+  background: var(--bj-text);
+  color: var(--bj-cream);
+}
+.eca-root .eca-etape--encours .eca-etape-signe {
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+}
+.eca-root .eca-etape-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.eca-root .eca-etape-texte strong {
+  font-weight: 500;
+}
+.eca-root .eca-apercu {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--bj-sp-4);
+  align-items: start;
+}
+.eca-root .eca-apercu > .ate-carte {
+  margin: 0;
+}
+.eca-root .eca-resume-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.eca-root .eca-resume-lien {
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-action);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.eca-root .eca-resume-lien:hover {
+  text-decoration: underline;
+}
+.eca-root .eca-resume-lignes {
+  display: flex;
+  flex-direction: column;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-resume-lignes li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--bj-veil-8);
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-resume-lignes li:last-child {
+  border-bottom: 0;
+}
+.eca-root .eca-resume-lignes li > span:last-child {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-deux {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--bj-sp-4);
+  align-items: start;
+}
+@media (max-width: 1080px) {
+  .eca-root .eca-apercu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .eca-root .eca-etapes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .eca-root .eca-apercu,
+  .eca-root .eca-deux,
+  .eca-root .eca-etapes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .eca-root .eca-fiche-prochaine {
+    margin-left: 0;
+  }
+}
+
+.eca-root .eca-liens-compacts {
+  display: flex;
+  flex-direction: column;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-liens-compacts li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--bj-veil-8);
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-liens-compacts li:last-child {
+  border-bottom: 0;
+}
+.eca-root .eca-liens-compacts .eca-barre {
+  margin: 0;
+  flex-wrap: nowrap;
+}
+.eca-root .eca-reglages {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: var(--bj-sp-4);
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .eca-root .eca-reglages {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.eca-root .eca-resume-lignes--blocs li {
+  flex-direction: column;
+  gap: 2px;
+}
+.eca-root .eca-resume-lignes--blocs li > span:last-child {
+  text-align: left;
+}
