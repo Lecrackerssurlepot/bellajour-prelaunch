@@ -89,6 +89,9 @@ export default async function PageCollectif({
           <Link href="/admin/collectif/styles" className="adm-btn adm-btn--ghost eca-lien-bouton">
             Les styles du mur
           </Link>
+          <Link href="/admin/collectif/agendas" className="adm-btn adm-btn--ghost eca-lien-bouton">
+            Les agendas
+          </Link>
           <Link href="/admin/collectif/nouvelle" className="adm-btn eca-lien-bouton">
             Ouvrir une édition
           </Link>

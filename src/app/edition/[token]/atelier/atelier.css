@@ -297,6 +297,104 @@
   margin: auto 0 0;
 }
 
+/* Les rendez-vous (D23) : à droite, et en carte dans le fil. */
+.ec-espace .ec-parler-rdv {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ec-line);
+}
+.ec-espace .ec-parler-rdv-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.ec-espace .ec-parler-carte--annule {
+  opacity: 0.62;
+}
+.ec-espace .ec-parler-carte--annule strong {
+  text-decoration: line-through;
+}
+
+/* Choisir un créneau : la semaine, les jours, les heures en pastilles. */
+.ec-espace .ec-rdv-semaine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ec-espace .ec-rdv-rond {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--ec-line-fort);
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ec-espace .ec-rdv-rond:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.ec-espace .ec-rdv-jours {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ec-espace .ec-rdv-jour {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ec-espace .ec-rdv-jour-nom {
+  font-size: 13px;
+  font-weight: 600;
+}
+.ec-espace .ec-rdv-jour-nom::first-letter {
+  text-transform: uppercase;
+}
+.ec-espace .ec-rdv-heures {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 6px;
+}
+.ec-espace .ec-rdv-heure {
+  min-height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--ec-line-fort);
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ec-espace .ec-rdv-heure:hover {
+  border-color: var(--ec-accent);
+}
+.ec-espace .ec-rdv-heure[aria-pressed="true"] {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+}
+.ec-espace .ec-rdv-pied {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ec-espace .ec-rdv-choix {
+  font-size: 14px;
+}
+
 /* La demande de modification, dans sa fenêtre. */
 .ec-espace .ec-demande {
   display: flex;

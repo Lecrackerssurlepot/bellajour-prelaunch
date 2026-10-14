@@ -103,27 +103,30 @@ export function texteDuMessage(brut: unknown, nomPiece: string | null): TexteLu 
   return lireTexteMessage(brut);
 }
 
-/** Un élément du fil de « Parler à l'atelier » : un jour, un message, ou une proposition de l'atelier. */
-export type ElementFil<P> =
+/** Un élément du fil de « Parler à l'atelier » : un jour, un message, une proposition de l'atelier, un rendez-vous. */
+export type ElementFil<P, R = never> =
   | { genre: "jour"; cle: string; jour: string }
   | { genre: "message"; cle: string; message: Message }
-  | { genre: "proposition"; cle: string; proposition: P };
+  | { genre: "proposition"; cle: string; proposition: P }
+  | { genre: "rendezvous"; cle: string; rendezVous: R };
 
 /**
  * Le fil réunit les messages et les propositions complémentaires (des
  * documents de l'atelier), dans l'ordre du temps, avec un séparateur à chaque
  * nouveau jour. `jourDe` met une date en mots (l'heure de Paris, dates.ts).
  */
-export function filDeConversation<P extends { id: string; quand: string }>(
+export function filDeConversation<P extends { id: string; quand: string }, R extends { id: string; quand: string } = never>(
   messages: readonly Message[],
   propositions: readonly P[],
-  jourDe: (iso: string) => string
-): ElementFil<P>[] {
-  const tout = [
+  jourDe: (iso: string) => string,
+  rendezVous: readonly R[] = []
+): ElementFil<P, R>[] {
+  const tout: { quand: string; el: ElementFil<P, R> & { cle: string } }[] = [
     ...messages.map((m) => ({ quand: m.created_at, el: { genre: "message" as const, cle: `m-${m.id}`, message: m } })),
     ...propositions.map((p) => ({ quand: p.quand, el: { genre: "proposition" as const, cle: `p-${p.id}`, proposition: p } })),
+    ...rendezVous.map((r) => ({ quand: r.quand, el: { genre: "rendezvous" as const, cle: `r-${r.id}`, rendezVous: r } })),
   ].sort((a, b) => (a.quand === b.quand ? a.el.cle.localeCompare(b.el.cle) : a.quand.localeCompare(b.quand)));
-  const sortie: ElementFil<P>[] = [];
+  const sortie: ElementFil<P, R>[] = [];
   let dernier = "";
   for (const { quand, el } of tout) {
     const jour = jourDe(quand);

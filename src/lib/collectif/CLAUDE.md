@@ -265,6 +265,32 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   `100cqh`, `50cqw`), jamais un plafond en pixels ; la page seule garde son côté de la pliure ;
   notes dans un panneau repliable (feuille du bas sur téléphone, fermée par défaut).
 
+## Les rendez-vous dans l'espace (D23, T-148)
+
+- **Règles de Mathias** (`creneaux.ts`, `REGLES_RDV`) : lundi-vendredi, 10 h à 18 h (Paris),
+  30 minutes, réservable jusqu'à la demi-heure qui arrive, aussi loin qu'il y a de la place
+  (navigation bornée à `SEMAINES_MAX` semaines). Ne pas inventer d'autre règle (délai minimum,
+  pauses) : elles attendent Mathias. Un créneau demandé n'est JAMAIS cru : `lireCreneau` le
+  refait depuis les règles.
+- **Vie privée** (`agenda.ts`) : on lit l'agenda de l'interlocuteur UNIQUEMENT par « free/busy »
+  (des plages occupées, ni titre ni invité). Aucune fonction ne lit un événement ; on n'écrit et
+  ne retire que ceux qu'on a posés. Le harnais refuse un GET dans ce module.
+- **La connexion** : un compte de service Google (`GOOGLE_AGENDA_COMPTE`, le JSON ou son base64,
+  posé par Mathias, jamais collé dans une conversation) avec lequel chacun PARTAGE son agenda
+  (« Apporter des modifications aux événements »). Un compte de service n'invite pas le client
+  hors Workspace : l'événement va dans l'agenda de l'interlocuteur, le client reçoit notre mail
+  avec l'invitation `.ics` (même UID, `SEQUENCE` + 1 à chaque changement).
+- **L'ordre d'un geste** (`rendezvous.ts`) : règle → agenda → VERROU en base (index unique
+  `interlocuteur_cle, debut` sur les rendez-vous pris) → événement Google ; un événement raté
+  défait la ligne. Jamais un rendez-vous affiché qui n'est pas dans l'agenda de l'atelier.
+- **Les mails** de rendez-vous ne partent que si `COLLECTIF_MAILS_RDV` est ouvert (valeur
+  incomprise = fermé) et que `ATELIER_MAILS_COUPES` ne coupe pas tout ; verrou
+  `collectif_mails` posé avant Brevo, retiré si Brevo refuse. Le texte vit dans `mailsRdv.ts`
+  (expéditeur `contact@bellajour.com`, le seul vérifié chez Brevo).
+- **Repli** : sans la migration `20261015`, sans interlocuteur, sans agenda relié ou sans le
+  compte Google, l'espace garde le lien de rendez-vous de la fiche (`rdv_url`). Supprimer un
+  événement directement dans Google Agenda ne prévient pas l'espace : annuler depuis la fiche.
+
 ## Phase 7 : les accroches déjà posées
 
 `collectif_mails` (verrou unique `edition_id` + `code`, même mécanique que `mails_envoyes` :

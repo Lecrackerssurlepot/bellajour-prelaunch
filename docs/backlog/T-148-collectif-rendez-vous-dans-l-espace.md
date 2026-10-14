@@ -1,7 +1,7 @@
 ---
 id: T-148
 titre: Le client B2B prend son rendez-vous hors de l'espace et ne le retrouve pas dedans
-etat: nouveau
+etat: en pause
 domaine: collectif
 gravite: serieux
 autonomie: avis-requis
@@ -37,15 +37,43 @@ agenda (aucun mot de passe stocké, aucun jeton qui expire). À VÉRIFIER au pre
 inviter le client depuis un compte de service n'est pas permis hors Google Workspace, d'où le
 mail de confirmation envoyé par nous (Brevo) avec un fichier d'agenda (.ics).
 
-## Ce qui attend Mathias (rien ne se devine)
-- Vos agendas : Gmail personnels, ou Google Workspace ?
-- Les règles : jours et heures de rendez-vous, durée d'un rendez-vous, délai minimum avant un
-  rendez-vous, jusqu'à combien de jours à l'avance.
-- Le lien visio de chacun (Google Meet fixe ou autre), ou le téléphone.
-- Le texte du mail de confirmation (proposé par Claude, validé par Mathias) et l'accord pour
-  que ces mails partent : ce sont de vrais mails à de vrais clients.
-- Créer le compte de service Google (pas à pas guidé), puis Mathias et Louis partagent leur
-  agenda avec son adresse.
+## Ce que Mathias a tranché (14/10/2026)
+Du lundi au vendredi, de 10 h à 18 h ; créneaux de 30 minutes ; réservable jusqu'à la
+demi-heure qui arrive, sans délai minimum, aussi loin qu'il y a de la place ; agendas Gmail ;
+visio Google Meet (un lien fixe par personne) ; texte du mail proposé par Claude.
 
-## Ce qui a été fait
-Rien encore. Ticket ouvert le 14/10/2026.
+## Ce qui a été fait (14/10/2026, branche `feat/collectif-rendez-vous`)
+- Règles pures (`creneaux.ts`), invitation `.ics` (`ics.ts`), texte des trois mails
+  (`mailsRdv.ts`), connexion Google par compte de service (`agenda.ts`, free/busy seulement),
+  gestes prendre / déplacer / annuler avec verrou en base (`rendezvous.ts`).
+- Espace : « Prendre rendez-vous » ouvre le panneau des créneaux libres, semaine par semaine ;
+  le rendez-vous s'affiche à droite et en carte dans le fil ; Déplacer, Annuler.
+- Atelier : panneau « Rendez-vous » sur la fiche (interlocuteur, liste, annuler), page
+  `/admin/collectif/agendas` (pas-à-pas Google, agenda et lien Meet, test lecture + écriture).
+- Harnais : règles, fuseau (heure d'été / d'hiver), chevauchements, `.ics`, mails, vie privée,
+  ordre verrou → Google, mails fermés par défaut.
+- Vérifié AVANT la migration : routes en 503 qui nomment le fichier, lien d'équipe en 403,
+  créneau passé refusé, espace inchangé (lien de la fiche), fiche et page Agendas qui le disent.
+
+## En pause, sans être oublié (14/10/2026)
+Mathias : « pas la priorité numéro une » ; d'abord que la plateforme soit fonctionnelle et l'UX
+optimisée. Carte « Édition collective : brancher la prise de rendez-vous dans l'espace client »
+dans le Board Cofondateurs (Notion), statut « En attente ».
+
+**La visio, question de Mathias (14/10)** : pourquoi un lien Meet fixe et pas un lien généré à
+chaque rendez-vous ? Parce qu'un compte de service ne peut, hors Google Workspace, ni créer de
+visio Meet ni inviter le client. La solution recommandée à la reprise : connecter le compte
+Google de chacun (« Se connecter avec Google », OAuth, jeton gardé côté serveur) ; l'événement
+est alors posé EN SON NOM, avec un Meet neuf (`conferenceData`) et le client invité par Google
+lui-même. À trancher avec Mathias avant de reprendre : c'est un changement de `agenda.ts` et de
+la page « Les agendas », pas des règles ni de l'écran client.
+
+## Ce qui reste (Mathias, puis Claude)
+1. ~~Appliquer la migration~~ : appliquée le 14/10 par Mathias, vérifiée en SQL ; le choix de
+   l'interlocuteur marche (Mathias sur « Essai révision »).
+2. Créer le compte de service Google et poser `GOOGLE_AGENDA_COMPTE` (pas-à-pas sur
+   `/admin/collectif/agendas`), puis partager son agenda avec l'adresse affichée (Mathias, Louis).
+3. Renseigner l'agenda et le lien Meet de chacun, « Tester la connexion ».
+4. Relire le texte des mails ; ouvrir `COLLECTIF_MAILS_RDV` seulement après validation.
+5. Claude : rejouer le parcours complet en vrai (prendre, déplacer, annuler, agenda, mail à
+   l'adresse de Mathias), puis PR.

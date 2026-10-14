@@ -10,6 +10,22 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 14/10/2026 (après-midi) — Édition collective : les rendez-vous dans l'espace (D23, T-148), sur branche
+
+- **Code** sur `feat/collectif-rendez-vous` (issue de `main` après la PR #229). Rien en production.
+- **Migration `20261015_collectif_rendez_vous.sql` APPLIQUÉE le 14/10/2026 par Mathias**,
+  vérifiée en SQL le même jour : les deux tables, `collectif_editions.interlocuteur_cle`, l'index
+  unique `collectif_rendez_vous_creneau_unique` (rendez-vous pris), RLS activée sans policy,
+  Mathias et Louis enregistrés SANS agenda ni lien Meet. Avant elle (vérifié aussi) : routes en
+  503 qui nomment le fichier, espace sur le lien de la fiche.
+- Rejoué après la migration (localhost:3000) : « Essai révision (Claude) » a **Mathias pour
+  interlocuteur** (choisi sur la fiche, journal `interlocuteur_choisi`) ; l'espace dit « Un appel
+  avec Mathias » et garde le lien de la fiche ; la route des créneaux répond 409
+  `agenda_non_relie`.
+- **`GOOGLE_AGENDA_COMPTE` absente** (ni Vercel, ni `.env.local`) : à poser par Mathias.
+  **`COLLECTIF_MAILS_RDV` absente** : aucun mail de rendez-vous ne part.
+- Expéditeur Brevo vérifié (lu le 14/10) : un seul, « Bellajour <contact@bellajour.com> ».
+
 ## 14/10/2026 — Édition collective : la révision du 13/10 (PRD §14, T-147), sur branche
 
 - **PR #229 FUSIONNÉE dans `main` le 14/10/2026 à 11:47 (Paris) par Mathias** : elle porte les
