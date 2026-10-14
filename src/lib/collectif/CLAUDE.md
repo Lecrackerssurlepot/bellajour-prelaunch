@@ -129,11 +129,14 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
   3000 (`.claude/launch.json` « Next.js prod 3000 collectif »).
 
 **Phase 4 (13/10/2026), le style :**
-- **`brief.ts`** (pur) — LA RÈGLE DE MATHIAS est dans `lireChoixStyle` (une palette d'un autre
-  style est refusée) et `basculerCouverture` (une couverture de n'importe quel style publié,
-  plafonnée par `couvertures_aimees_max`, `null` = refusé). `briefModifiable` : seulement en
-  `preparation`. Changer un brief validé le remet à valider. `styleVisible` : une école voit
-  les styles « école » et « tous ».
+- **`brief.ts`** (pur) — **D24 (14/10) : le brief se compose PIÈCE PAR PIÈCE, de n'importe quel
+  style** (elle remplace la règle du 08/10 « l'intérieur suit le style »). `compositionDu` est LA
+  lecture d'un brief (les colonnes de D24, sinon `style_id`) ; `lirePiece` (palette, typographies,
+  double page, cinq au plus tous styles confondus), `lireChoixStyle` (prendre le style EN ENTIER :
+  palette, typographies, doubles ; les couvertures restent), `basculerCouverture` (plafond
+  `couvertures_aimees_max`, `null` = refusé), `grouperParChoix` (le choix, ce qui va avec, le
+  reste). `briefModifiable` : seulement en `preparation`. Changer un brief validé le remet à
+  valider. `styleVisible` : une école voit les styles « école » et « tous ».
 - Une seule route, `/api/collectif/brief`, une action par geste ; le droit change selon
   l'action (`valider_brief` pour valider ou rouvrir, `choisir_style` pour le reste).
 - Le mur et la page d'un style lisent `chargerMur` (styles PUBLIÉS et visibles, images signées
@@ -257,10 +260,13 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   Mathias, PRD §12.14). Envoyer de nouveau ajoute une ligne : le plus récent gagne.
 - **Le QR code** (`qr.ts`, `qrcode-generator` épinglé) : modules foncés sur fond clair dans les
   deux modes, une marge de quatre modules.
-- **Le brief partie par partie** (`/style/brief`) : `lirePartieBrief` contrôle palette, texte,
-  doubles pages contre le style DÉJÀ choisi ; aimer une couverture passe par `patchCouvertures`
-  (un brief validé repasse « à valider »). Le slug `brief` est réservé (`SLUGS_RESERVES`) : le
-  segment fixe gagne sur `style/[slug]`.
+- **Le brief pièce par pièce** (D24, remplace la page « partie par partie » archivée) : le mur
+  montre « Tout, en vrac » et « Votre composition » ; `/style/brief?m=&partie=` ouvre le panneau
+  d'UNE partie sur le mur. Aimer une couverture passe par `patchCouvertures` (un brief validé
+  repasse « à valider »). Le slug `brief` est réservé (`SLUGS_RESERVES`) : le segment fixe gagne
+  sur `style/[slug]`. Migration `20261017_collectif_composition.sql` : sans elle, lecture repliée
+  sur `style_id`, « prendre tout le style » s'écrit dans les colonnes d'avant, une pièce répond
+  503 `migration_composition_absente`.
 - **Le BAT plein écran** : la page suit la scène par unités de conteneur (`container-type: size`,
   `100cqh`, `50cqw`), jamais un plafond en pixels ; la page seule garde son côté de la pliure ;
   notes dans un panneau repliable (feuille du bas sur téléphone, fermée par défaut).

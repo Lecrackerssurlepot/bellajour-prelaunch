@@ -73,7 +73,14 @@ ses vraies icônes.
   « Remplacer » et « Citer un de vos envois » rejoués pour de vrai sur « Essai technique » (la
   donnée arrive en base).
 
+- 14/10 : (2, 4) le style « Tout, en vrac » (D24) : chaque pièce (couverture, typographies,
+  palette, double page) vient de n'importe quel style et dit d'où elle vient ; une catégorie
+  met le choix d'abord, puis ce qui va avec les autres choix, puis le reste ; « Votre
+  composition » à droite ; « Modifier » ouvre seulement cette partie dans un panneau latéral
+  (`/style/brief?partie=`) ; la page d'un style permet de le « prendre en entier ». L'atelier
+  voit le style de chaque pièce. Ancienne page archivée (`archive/brief-par-style-2026-10/`).
+  **Migration `20261017_collectif_composition.sql` à appliquer par Mathias** : d'ici là, une
+  pièce répond « pas encore appliquée » sans rien écrire (vérifié le 14/10).
+
 ## Ce qui reste
-- (2, 4) Le style « tout en vrac » et « modifier une partie » (maquettes Main, StyleTypos,
-  StylePartie) : la règle « l'intérieur suit le style » tombe ; changement du modèle de données.
 - T-150 : décoder les HEIC à l'envoi (aperçu et doublons).

@@ -1,35 +1,43 @@
-/* /edition/[token]/style/brief — modifier le brief partie par partie
-   (révision §14.6, maquette StyleBrief). `?m=<rang>` : l'onglet ouvert.
+/* /edition/[token]/style/brief — modifier UNE partie du brief (D24, maquette
+   « Modifier une partie » validée le 14/10). `?m=<rang>` : le magazine ;
+   `?partie=palette|typos|double|couverture|texte` : la partie dont le
+   panneau latéral s'ouvre sur le mur (le choix en haut, « Terminé » revient
+   au mur). Sans partie connue : le mur, panneau fermé.
    Ce segment fixe passe AVANT `style/[slug]` : aucun style ne peut s'appeler
-   `brief` (SLUGS_RESERVES, styles.ts). */
+   `brief` (SLUGS_RESERVES, styles.ts). L'ancienne page est archivée
+   (`archive/brief-par-style-2026-10/`). */
 
 import { notFound } from 'next/navigation'
 import { briefModifiable } from '@/lib/collectif/brief'
 import { peut } from '@/lib/collectif/droits'
 import { etatEffectif } from '@/lib/collectif/etats'
 import { chargerEspace, chargerMur } from '../../donnees'
-import Brief from './Brief'
+import Mur, { type Partie } from '../Mur'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+
+const PARTIES: readonly Partie[] = ['couverture', 'typos', 'palette', 'double', 'texte']
 
 export default async function PageBrief({
   params,
   searchParams,
 }: {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ m?: string }>
+  searchParams: Promise<{ m?: string; partie?: string }>
 }) {
   const { token } = await params
   const acces = await chargerEspace(token)
   if (acces.statut !== 'ok') notFound()
   const { edition, role } = acces
   const { styles, magazines } = await chargerMur(edition)
-  const m = Number((await searchParams).m)
+  const recherche = await searchParams
+  const m = Number(recherche.m)
   const rang = magazines.some((x) => x.rang === m) ? m : magazines[0]?.rang ?? 1
+  const partie = PARTIES.find((x) => x === recherche.partie) ?? null
 
   return (
-    <Brief
+    <Mur
       token={token}
       styles={styles}
       magazines={magazines}
@@ -38,6 +46,7 @@ export default async function PageBrief({
       fige={!briefModifiable(etatEffectif(edition.etat, edition.cloture_le, new Date()))}
       aimeesMax={edition.couvertures_aimees_max}
       tu={edition.registre === 'ecole_tu'}
+      partieInitiale={partie}
     />
   )
 }

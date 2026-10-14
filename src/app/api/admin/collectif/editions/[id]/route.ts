@@ -5,7 +5,8 @@ import { makeSupabase } from "@/lib/supabase";
 import { estUuid } from "@/lib/collectif/cles";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
-import { ERREUR_MIGRATION_ABSENTE, tableAbsente } from "@/lib/collectif/migration";
+import { colonneAbsente, ERREUR_MIGRATION_ABSENTE, tableAbsente } from "@/lib/collectif/migration";
+import { compositionDu, stylesDeLaComposition, type BriefLigne } from "@/lib/collectif/brief";
 import { lireSaisieEdition, planMagazines, type MagazineActuel } from "@/lib/collectif/saisie";
 import type { ReglagesPlafond } from "@/lib/collectif/plafonds";
 
@@ -55,10 +56,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
      doit pas laisser derrière lui des réglages à moitié enregistrés. */
   let plan: ReturnType<typeof planMagazines> | null = null;
   if (saisie.magazines) {
-    const mags = await supabase
-      .from("collectif_magazines")
-      .select("id, rang, nom, style_id, brief_valide_le")
-      .eq("edition_id", id);
+    /* Un magazine n'est « vide » que si RIEN n'y est composé (D24 : une
+       pièce peut venir d'un style sans que `style_id` soit posé). Repli sans
+       les colonnes de la migration 20261017. */
+    const avant = "id, rang, nom, style_id, palette_cle, texte, doubles, couvertures_aimees, brief_valide_le";
+    const lire = (c: string) => supabase.from("collectif_magazines").select(c).eq("edition_id", id).returns<(BriefLigne & { id: string; rang: number; nom: string })[]>();
+    let mags = await lire(`${avant}, palette_style_id, typo_style_id, doubles_aimes`);
+    if (mags.error && colonneAbsente(mags.error.code)) mags = await lire(avant);
     if (mags.error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
     const ids = (mags.data ?? []).map((m) => m.id as string);
     const tours = ids.length
@@ -70,7 +74,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       id: m.id as string,
       rang: m.rang as number,
       nom: m.nom as string,
-      vide: !m.style_id && !m.brief_valide_le && !avecTour.has(m.id as string),
+      vide: stylesDeLaComposition(compositionDu(m)).length === 0 && !m.brief_valide_le && !avecTour.has(m.id as string),
     }));
     plan = planMagazines(actuels, saisie.magazines);
     if (!plan.ok) {

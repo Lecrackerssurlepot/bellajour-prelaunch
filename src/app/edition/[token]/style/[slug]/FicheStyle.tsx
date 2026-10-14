@@ -5,8 +5,10 @@
    Un écran : l'en-tête, le bandeau « pour quel magazine », puis le contenu
    qui défile chez lui, sous une BARRE D'ÉTAPES COLLANTE (1 Palette, 2 Le
    texte, 3 Doubles pages, 4 Couvertures) qui se coche et mène à chaque
-   section ; le résumé et « Choisir … pour le magazine N » restent fixes en
-   bas. La présentation est courte : le nom, une phrase, la règle.
+   section ; le résumé et « Prendre tout le style … » restent fixes en bas.
+   D24 : prendre le style EN ENTIER remplace la palette, les typographies et
+   les doubles pages ; les couvertures aimées et la place du texte restent.
+   Pour n'en prendre qu'une pièce, le mur (« Tout, en vrac »).
 
    ⚠️ La maquette recolore la couverture en direct. Nos couvertures sont des
    IMAGES déposées par l'atelier : on montre la palette choisie à côté, on ne
@@ -15,7 +17,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { DESCRIPTION_DOUBLE, PARTS_TEXTE, resumeBrief } from "@/lib/collectif/brief";
+import { compositionDu, DESCRIPTION_DOUBLE, PARTS_TEXTE, stylesDeLaComposition } from "@/lib/collectif/brief";
 import { TYPES_DOUBLES, type TypeDouble } from "@/lib/collectif/styles";
 import { EnTeteEcran } from "../../../_composants/Ecran";
 import type { MagazineMur, StyleMur } from "../../donnees";
@@ -35,15 +37,17 @@ type Props = {
 export default function FicheStyle(p: Props) {
   const router = useRouter();
   const v = (vous: string, toi: string) => (p.tu ? toi : vous);
-  const memeStyle = p.magazine.style_id === p.style.id;
-  const [palette, setPalette] = useState<string | null>(memeStyle ? p.magazine.palette_cle : p.style.palettes[0]?.cle ?? null);
-  const [texte, setTexte] = useState<string | null>(memeStyle ? p.magazine.texte : null);
-  const [doubles, setDoubles] = useState<string[]>(memeStyle ? p.magazine.doubles : []);
+  /* Ce que la composition prend DÉJÀ de ce style prérègle la page. */
+  const composee = compositionDu(p.magazine);
+  const memeStyle = stylesDeLaComposition(composee).includes(p.style.id);
+  const [palette, setPalette] = useState<string | null>(composee.palette?.style_id === p.style.id ? composee.palette.cle : p.style.palettes[0]?.cle ?? null);
+  const [texte, setTexte] = useState<string | null>(composee.texte);
+  const [doubles, setDoubles] = useState<string[]>(composee.doubles.filter((d) => d.style_id === p.style.id).map((d) => d.double));
   const [erreur, setErreur] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
   const peutAgir = p.ecrire && !p.fige;
   const mur = `/edition/${p.token}/style?m=${p.magazine.rang}`;
-  const autreMag = p.magazines.find((m) => m.id !== p.magazine.id && m.style_id === p.style.id) ?? null;
+  const autreMag = p.magazines.find((m) => m.id !== p.magazine.id && stylesDeLaComposition(compositionDu(m)).includes(p.style.id)) ?? null;
 
   const manques = [!palette && "une palette", !texte && "la question du texte", doubles.length === 0 && "au moins une double page"].filter(Boolean) as string[];
   const paletteChoisie = p.style.palettes.find((x) => x.cle === palette);
@@ -141,16 +145,21 @@ export default function FicheStyle(p: Props) {
               <span className="ec-st-etiquette">
                 Style
                 {autreMag ? (
-                  <span className="ec-tag ec-tag--en-ligne" title={`Le style choisi pour le magazine ${autreMag.rang}`}>
-                    Sélection du magazine {autreMag.rang}
+                  <span className="ec-tag ec-tag--en-ligne" title={`Une pièce de ce style est dans le magazine ${autreMag.rang}`}>
+                    Dans le magazine {autreMag.rang}
                   </span>
                 ) : memeStyle ? (
-                  <span className="ec-tag ec-tag--en-ligne">Sélection du magazine {p.magazine.rang}</span>
+                  <span className="ec-tag ec-tag--en-ligne">Dans le magazine {p.magazine.rang}</span>
                 ) : null}
               </span>
               <h2 className="ec-st-geant">{p.style.nom}</h2>
               {p.style.description ? <p className="ec-texte">{p.style.description}</p> : null}
-              <p className="ec-note">Choisi pour un magazine, ce style en dessine tout l&apos;intérieur. Seule la couverture peut venir d&apos;un autre style.</p>
+              <p className="ec-note">
+                {v(
+                  "Prenez-le en entier, ou seulement une pièce depuis le mur : chaque pièce de votre magazine peut venir d'un style différent.",
+                  "Prends-le en entier, ou seulement une pièce depuis le mur : chaque pièce de ton magazine peut venir d'un style différent."
+                )}
+              </p>
             </div>
             <div className="ec-fiche-couv">
               {p.style.couvertures[0]?.url ? <img src={p.style.couvertures[0].url} alt={`Couverture ${p.style.nom}`} decoding="async" /> : null}
@@ -248,8 +257,8 @@ export default function FicheStyle(p: Props) {
             </div>
             <p className="ec-note">
               {v(
-                "Vous pouvez aimer une couverture d'un autre style que celui du magazine : elle changera la couverture, pas les pages intérieures.",
-                "Tu peux aimer une couverture d'un autre style que celui du magazine : elle changera la couverture, pas les pages intérieures."
+                "Vous pouvez aimer des couvertures de plusieurs styles : l'atelier s'en inspire pour la vôtre.",
+                "Tu peux aimer des couvertures de plusieurs styles : l'atelier s'en inspire pour la tienne."
               )}
             </p>
             {p.style.couvertures.length ? (
@@ -283,19 +292,21 @@ export default function FicheStyle(p: Props) {
       <footer className="ec-st-pied">
         <div className="ec-st-pied-texte">
           <span>
-            {resumeBrief({
-              style: p.style.nom,
-              palette: paletteChoisie?.nom ?? null,
-              doubles: doubles.map(libelleDouble),
-              couvertures: nbAimees,
-            })}
+            {[
+              `Tout le style ${p.style.nom}`,
+              paletteChoisie ? `palette ${paletteChoisie.nom}` : null,
+              doubles.length ? doubles.map(libelleDouble).join(", ") : null,
+              nbAimees ? `${nbAimees} couverture${nbAimees > 1 ? "s" : ""} aimée${nbAimees > 1 ? "s" : ""}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </span>
           {erreur ? (
             <span className="ec-note ec-note--erreur" role="alert">
               {erreur}
             </span>
           ) : peutAgir ? (
-            <span className="ec-note">{manques.length ? `Il reste : ${manques.join(" et ")}.` : `Tout est prêt pour le magazine ${p.magazine.rang}.`}</span>
+            <span className="ec-note">{manques.length ? `Pour le prendre en entier, il reste : ${manques.join(" et ")}.` : `Palette, typographies et doubles pages de ${p.style.nom} pour le magazine ${p.magazine.rang} ; ${v("vos", "tes")} couvertures aimées restent.`}</span>
           ) : p.fige ? (
             <span className="ec-note">La collecte est close : l&apos;atelier compose avec le brief choisi.</span>
           ) : (
@@ -307,7 +318,7 @@ export default function FicheStyle(p: Props) {
         </Link>
         {peutAgir ? (
           <button type="button" className="ec-bouton" disabled={occupe || manques.length > 0} onClick={choisir}>
-            Choisir {p.style.nom} pour le magazine {p.magazine.rang}
+            Prendre tout le style {p.style.nom}
           </button>
         ) : null}
       </footer>

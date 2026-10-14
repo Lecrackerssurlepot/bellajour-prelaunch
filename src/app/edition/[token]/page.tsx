@@ -152,12 +152,12 @@ function CarteStyle({ token, tableau, p }: { token: string; tableau: Tableau; p:
       ) : (
         <>
           <h2 className="ec-tdb-titre" id="ec-tdb-style">
-            {reste ? `Il reste le style de « ${reste.nom} »` : aValider ? `Il reste à valider le brief de « ${aValider.nom} »` : p('Vos styles sont choisis', 'Tes styles sont choisis')}
+            {reste ? `Il reste à composer « ${reste.nom} »` : aValider ? `Il reste à valider le brief de « ${aValider.nom} »` : p('Vos styles sont choisis', 'Tes styles sont choisis')}
           </h2>
           <div className={`ec-tdb-magazines ec-tdb-magazines--${Math.min(n, 4)}`}>
             {mags.map((m) =>
               m.style ? (
-                <Link key={m.id} href={`${brief}?m=${m.rang}`} prefetch={false} className="ec-tdb-magazine">
+                <Link key={m.id} href={`${mur}?m=${m.rang}`} prefetch={false} className="ec-tdb-magazine">
                   <span className={`ec-tdb-couv-mag${m.rang % 2 ? ' ec-tdb-couv-mag--gauche' : ''}`}>
                     {m.styleCouverture ? <img src={m.styleCouverture} alt="" decoding="async" /> : null}
                   </span>
@@ -169,7 +169,7 @@ function CarteStyle({ token, tableau, p }: { token: string; tableau: Tableau; p:
                 <Link key={m.id} href={`${mur}?m=${m.rang}`} prefetch={false} className="ec-tdb-magazine">
                   <span className="ec-tdb-couv-mag ec-tdb-couv-mag--vide">+</span>
                   <span className="ec-note">{m.nom}</span>
-                  <span className="ec-tdb-style-nom">À choisir</span>
+                  <span className="ec-tdb-style-nom">À composer</span>
                   <span className="ec-tdb-lien">Ouvrir le mur</span>
                 </Link>
               )

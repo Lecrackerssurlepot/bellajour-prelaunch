@@ -4,11 +4,14 @@ import { chargerAcces } from "@/lib/collectif/acces";
 import {
   basculerCouverture,
   briefModifiable,
+  compositionDu,
   lireChoixStyle,
-  lirePartieBrief,
+  lirePiece,
+  lireTexte,
   manquesBrief,
   patchCouvertures,
   styleVisible,
+  type BriefLigne,
   type CouvertureAimee,
   type StylePourBrief,
 } from "@/lib/collectif/brief";
@@ -17,17 +20,18 @@ import { peut } from "@/lib/collectif/droits";
 import { etatEffectif } from "@/lib/collectif/etats";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
+import { colonneAbsente, ERREUR_COMPOSITION_ABSENTE, MESSAGE_COMPOSITION_ABSENTE } from "@/lib/collectif/migration";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
-import type { MagazineLigne } from "@/lib/collectif/types";
 
 /**
  * POST /api/collectif/brief — le brief d'un magazine, geste par geste.
  * `{ token, magazineId, action, ... }` :
- * - `choisir` `{ slug, palette_cle, texte, doubles }` : ce style pour ce magazine
- *   (le brief repasse « à valider ») ;
- * - `palette` `{ palette_cle }`, `texte` `{ texte }`, `doubles` `{ doubles }` :
- *   UNE partie du brief (révision §14.6, `/style/brief`), contrôlée contre le
- *   style DÉJÀ choisi ; le brief repasse « à valider » ;
+ * - `choisir` `{ slug, palette_cle, texte, doubles }` : prendre TOUT le style
+ *   pour ce magazine (palette, typographies, doubles pages ; les couvertures
+ *   aimées restent) ;
+ * - `piece` `{ genre, styleId, palette_cle?, double?, ajouter? }` : UNE pièce
+ *   de n'importe quel style publié (D24) : `palette`, `typos`, `double` ;
+ * - `texte` `{ texte }` : la place du texte ;
  * - `couverture` `{ styleId, couverture, aimer }` : aimer une couverture de
  *   n'importe quel style publié (plafond de l'édition) ; un brief validé
  *   repasse « à valider » si la liste change ;
@@ -35,13 +39,23 @@ import type { MagazineLigne } from "@/lib/collectif/types";
  * - `reprendre` `{ depuisMagazineId }` : reprendre le style d'un autre magazine.
  *
  * Responsable seulement (`choisir_style`, `valider_brief`) ; l'équipe reçoit
- * 403. Plus rien ne change après la clôture : l'atelier compose.
+ * 403. Plus rien ne change après la clôture : l'atelier compose. Tout geste
+ * qui change le brief le remet « à valider ».
+ *
+ * Sans la migration 20261017 : la lecture se replie (tout vient de
+ * `style_id`) ; « prendre tout le style » s'écrit encore dans les colonnes
+ * d'avant (il s'y exprime en entier, rien ne se perd) ; une PIÈCE répond 503
+ * `migration_composition_absente`, jamais écrite à moitié.
  */
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type StyleLu = StylePourBrief & { slug: string; nom: string; segment: string };
+type MagLu = BriefLigne & { id: string; rang: number };
+
+const COLONNES_AVANT = "id, rang, style_id, palette_cle, texte, doubles, couvertures_aimees, brief_valide_le";
+const COLONNES = `${COLONNES_AVANT}, palette_style_id, typo_style_id, doubles_aimes`;
 
 export async function POST(request: Request) {
   if (!collectifOuvert()) return new NextResponse(null, { status: 404 });
@@ -62,23 +76,24 @@ export async function POST(request: Request) {
   if (!estUuid(corps.magazineId)) return NextResponse.json({ error: "introuvable" }, { status: 404 });
 
   const supabase = makeSupabase();
-  const { data: mag, error } = await supabase
-    .from("collectif_magazines")
-    .select("id, rang, style_id, palette_cle, texte, doubles, couvertures_aimees, brief_valide_le")
-    .eq("id", corps.magazineId)
-    .eq("edition_id", edition.id)
-    .maybeSingle<MagazineLigne>();
-  if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  const lireMag = (colonnes: string, id: unknown) =>
+    supabase.from("collectif_magazines").select(colonnes).eq("id", id).eq("edition_id", edition.id).maybeSingle<MagLu>();
+  let lu = await lireMag(COLONNES, corps.magazineId);
+  if (lu.error && colonneAbsente(lu.error.code)) lu = await lireMag(COLONNES_AVANT, corps.magazineId);
+  if (lu.error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  const mag = lu.data;
   if (!mag) return NextResponse.json({ error: "introuvable" }, { status: 404 });
 
   const lireStyle = async (filtre: { slug?: string; id?: string }): Promise<StyleLu | null> => {
-    let q = supabase.from("collectif_styles").select("id, slug, nom, segment, publie, palettes, couvertures");
+    let q = supabase.from("collectif_styles").select("id, slug, nom, segment, publie, palettes, couvertures, typos, doubles");
     q = filtre.slug ? q.eq("slug", filtre.slug) : q.eq("id", filtre.id ?? "");
     const { data } = await q.maybeSingle<StyleLu>();
     return data && styleVisible(edition.styles_segment, data.segment) ? data : null;
   };
 
   let patch: Record<string, unknown> = {};
+  /** Le même patch sans les colonnes de D24, quand il s'y exprime en entier (« prendre tout le style »). */
+  let patchAvant: Record<string, unknown> | null = null;
   let journalType = "";
   let journalPayload: Record<string, unknown> = { magazine: mag.rang };
 
@@ -88,6 +103,7 @@ export async function POST(request: Request) {
     const choix = lireChoixStyle(corps, style);
     if (!choix.ok) return NextResponse.json({ error: "saisie", message: choix.message }, { status: 422 });
     patch = choix.patch;
+    patchAvant = choix.patchAvant;
     journalType = "brief_style_choisi";
     journalPayload = { ...journalPayload, style: style.nom };
   } else if (action === "couverture") {
@@ -98,13 +114,19 @@ export async function POST(request: Request) {
     if (!b.ok) return NextResponse.json({ error: "saisie", message: b.message }, { status: 422 });
     patch = patchCouvertures(mag.couvertures_aimees ?? [], b.aimees);
     journalType = corps.aimer === true ? "couverture_aimee" : "couverture_retiree";
-  } else if (action === "palette" || action === "texte" || action === "doubles") {
-    const style = mag.style_id ? await lireStyle({ id: mag.style_id }) : null;
-    const partie = lirePartieBrief(action, corps, style);
-    if (!partie.ok) return NextResponse.json({ error: "saisie", message: partie.message }, { status: 422 });
-    patch = partie.patch;
+  } else if (action === "piece") {
+    const style = estUuid(corps.styleId) ? await lireStyle({ id: corps.styleId }) : null;
+    const piece = lirePiece(corps.genre, corps, style, compositionDu(mag));
+    if (!piece.ok) return NextResponse.json({ error: "saisie", message: piece.message }, { status: 422 });
+    patch = piece.patch;
+    journalType = "brief_piece";
+    journalPayload = { ...journalPayload, piece: piece.libelle, style: style?.nom ?? null, ...(corps.genre === "double" ? { retiree: corps.ajouter === false } : {}) };
+  } else if (action === "texte") {
+    const texte = lireTexte(corps);
+    if (!texte.ok) return NextResponse.json({ error: "saisie", message: texte.message }, { status: 422 });
+    patch = texte.patch;
     journalType = "brief_modifie";
-    journalPayload = { ...journalPayload, partie: partie.partie };
+    journalPayload = { ...journalPayload, partie: "texte" };
   } else if (action === "valider") {
     const manques = manquesBrief(mag);
     if (manques.length) return NextResponse.json({ error: "incomplet", message: `Il manque ${manques.join(", ")}.` }, { status: 422 });
@@ -115,21 +137,28 @@ export async function POST(request: Request) {
     journalType = "brief_rouvert";
   } else if (action === "reprendre") {
     if (!estUuid(corps.depuisMagazineId)) return NextResponse.json({ error: "saisie" }, { status: 422 });
-    const { data: source } = await supabase
-      .from("collectif_magazines")
-      .select("rang, style_id, palette_cle, texte, doubles")
-      .eq("id", corps.depuisMagazineId)
-      .eq("edition_id", edition.id)
-      .maybeSingle<Pick<MagazineLigne, "rang" | "style_id" | "palette_cle" | "texte" | "doubles">>();
-    if (!source?.style_id) return NextResponse.json({ error: "saisie", message: "Ce magazine n'a pas encore de style." }, { status: 422 });
-    patch = { style_id: source.style_id, palette_cle: source.palette_cle, texte: source.texte, doubles: source.doubles, brief_valide_le: null };
+    let src = await lireMag(COLONNES, corps.depuisMagazineId);
+    if (src.error && colonneAbsente(src.error.code)) src = await lireMag(COLONNES_AVANT, corps.depuisMagazineId);
+    const source = src.data;
+    const composee = source ? compositionDu(source) : null;
+    if (!source || !composee || (!composee.palette && !composee.typos && !composee.doubles.length)) {
+      return NextResponse.json({ error: "saisie", message: "Ce magazine n'a encore rien de composé." }, { status: 422 });
+    }
+    patchAvant = { style_id: source.style_id, palette_cle: source.palette_cle, texte: source.texte, doubles: source.doubles, brief_valide_le: null };
+    patch = { ...patchAvant, palette_style_id: source.palette_style_id ?? null, typo_style_id: source.typo_style_id ?? null, doubles_aimes: source.doubles_aimes ?? [] };
     journalType = "brief_repris";
     journalPayload = { ...journalPayload, depuis: source.rang };
   } else {
     return NextResponse.json({ error: "action_inconnue" }, { status: 400 });
   }
 
-  const { error: errEcriture } = await supabase.from("collectif_magazines").update(patch).eq("id", mag.id);
+  let { error: errEcriture } = await supabase.from("collectif_magazines").update(patch).eq("id", mag.id);
+  if (errEcriture && colonneAbsente(errEcriture.code)) {
+    /* Sans la migration 20261017 : un style pris en entier s'écrit dans les
+       colonnes d'avant (rien ne s'y perd) ; une pièce, jamais à moitié. */
+    if (!patchAvant) return NextResponse.json({ error: ERREUR_COMPOSITION_ABSENTE, message: MESSAGE_COMPOSITION_ABSENTE }, { status: 503 });
+    ({ error: errEcriture } = await supabase.from("collectif_magazines").update(patchAvant).eq("id", mag.id));
+  }
   if (errEcriture) {
     console.error("[collectif] brief non écrit", errEcriture.code, errEcriture.message);
     return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });

@@ -588,6 +588,152 @@
 
 /* ─────────────────────────────── téléphone ─────────────────────────────── */
 
+/* ─────────── les pièces du mur (D24, « Tout, en vrac ») ─────────── */
+
+.ec-espace .ec-pieces {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.ec-espace .ec-pieces--larges {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+/* « Tout, en vrac » : une mosaïque, chaque pièce à sa hauteur (une
+   couverture debout, une double page couchée). */
+.ec-espace .ec-pieces--vrac {
+  display: block;
+  columns: 4 170px;
+  column-gap: 14px;
+}
+.ec-espace .ec-pieces--vrac > .ec-piece {
+  break-inside: avoid;
+  margin-bottom: 14px;
+}
+.ec-espace .ec-piece {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--ec-line);
+  border-radius: 16px;
+  background: var(--ec-surface);
+}
+/* Une pièce choisie : un bord, comme une photo présélectionnée. */
+.ec-espace .ec-piece--choisie {
+  border-color: var(--ec-accent);
+  box-shadow: inset 0 0 0 1px var(--ec-accent);
+}
+.ec-espace .ec-piece-visuel {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.05);
+}
+.ec-espace .ec-piece-visuel--large {
+  aspect-ratio: 3 / 2;
+}
+.ec-espace .ec-piece-visuel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ec-espace .ec-piece-bandes {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+.ec-espace .ec-piece-bandes > span {
+  flex: 1;
+}
+.ec-espace .ec-piece-sans {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 10px;
+  text-align: center;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-piece-pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ec-espace .ec-piece-texte {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ec-espace .ec-piece-texte strong {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-piece-raison {
+  font-size: 12px;
+  color: var(--ec-accent);
+}
+.ec-espace .ec-piece-pied .ec-bouton {
+  flex: none;
+}
+.ec-espace .ec-piece-style {
+  font-size: 13px;
+  color: var(--ec-accent);
+  text-decoration: none;
+}
+.ec-espace .ec-piece-style:hover {
+  text-decoration: underline;
+}
+.ec-espace .ec-mur-groupe {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.ec-espace .ec-mur-groupe-titre {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ec-muted);
+}
+/* Dans le panneau latéral : une colonne de deux. */
+.ec-espace .ec-fenetre--cote .ec-pieces {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.ec-espace .ec-mur-textes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ec-espace .ec-mur-texte {
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid var(--ec-line);
+  background: var(--ec-surface);
+  color: var(--ec-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-mur-texte[aria-checked="true"] {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-fenetre--cote .ec-fenetre-pied {
+  justify-content: space-between;
+  align-items: center;
+}
+
 @media (max-width: 860px) {
   .ec-espace .ec-st-mags {
     flex-direction: column;

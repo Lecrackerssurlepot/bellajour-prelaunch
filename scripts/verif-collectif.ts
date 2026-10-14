@@ -66,7 +66,7 @@ import {
   type MagazinePourGeste,
 } from "@/lib/collectif/gestes";
 import { lireInterrupteur } from "@/lib/collectif/interrupteur";
-import { basculerCouverture, briefModifiable, etatDuBrief, lireChoixStyle, lirePartieBrief, manquesBrief, PARTS_TEXTE, patchCouvertures, resumeBrief, styleVisible } from "@/lib/collectif/brief";
+import { basculerCouverture, briefModifiable, compositionDu, etatDuBrief, grouperParChoix, lireChoixStyle, lirePiece, lireTexte, manquesBrief, PARTS_TEXTE, patchCouvertures, raisonsDuStyle, resumeBrief, styleVisible, stylesDeLaComposition, typesDes, type BriefLigne, type Composition } from "@/lib/collectif/brief";
 import { cleFichier, compteDansPlafond, DELAI_DECLARATION_MORTE_MS, lireDeclaration, LOT_DECLARATION, planDeclaration, type Existant } from "@/lib/collectif/depot";
 import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
 import { jourDePhoto, libelleProvenance, lireFiltre, resumeDeposants } from "@/lib/collectif/grille";
@@ -859,14 +859,18 @@ ok("le responsable se nomme comme tel", libelleProvenance("organisateur", "Lou")
 
 /* ═══════════════════════════ PHASE 4 : LE STYLE ET LE BRIEF ═══════════════════════════ */
 
-titre("— la regle de Mathias : l'interieur suit le style, la couverture peut venir d'ailleurs —");
+titre("— D24 : prendre un style EN ENTIER —");
 const riviera = { id: "s-riv", publie: true, palettes: [{ cle: "marine" }, { cle: "sable" }], couvertures: [{ cle: "c1" }, { cle: "c2" }] };
 const nuit = { id: "s-nuit", publie: true, palettes: [{ cle: "noir" }], couvertures: [{ cle: "n1" }] };
 const choix = lireChoixStyle({ palette_cle: "sable", texte: "peu", doubles: ["recit", "aeree", "pirate"] }, riviera);
-ok("choisir un style : sa palette, la part de texte, ses doubles (inconnues ignorees, ordre du style), brief remis a valider",
-   choix.ok && choix.patch.style_id === "s-riv" && choix.patch.palette_cle === "sable" && choix.patch.texte === "peu"
-   && choix.patch.doubles.join() === "aeree,recit" && choix.patch.brief_valide_le === null);
-ok("une palette d'un AUTRE style est refusee (l'interieur suit le style)",
+ok("prendre tout le style : sa palette, ses typographies, ses doubles (inconnues ignorees, ordre des types), brief remis a valider",
+   choix.ok && choix.patch.style_id === "s-riv" && choix.patch.palette_cle === "sable" && choix.patch.palette_style_id === "s-riv" && choix.patch.typo_style_id === "s-riv"
+   && JSON.stringify(choix.patch.doubles_aimes) === JSON.stringify([{ style_id: "s-riv", double: "aeree" }, { style_id: "s-riv", double: "recit" }])
+   && (choix.patch.doubles as string[]).join() === "aeree,recit" && choix.patch.brief_valide_le === null);
+ok("prendre tout le style ne touche pas aux couvertures aimees", choix.ok && !("couvertures_aimees" in choix.patch));
+ok("sans la migration, le style pris en entier s'ecrit tout entier dans les colonnes d'avant",
+   choix.ok && !("palette_style_id" in choix.patchAvant) && !("doubles_aimes" in choix.patchAvant) && choix.patchAvant.style_id === "s-riv" && choix.patchAvant.palette_cle === "sable");
+ok("prendre tout le style : sa palette a LUI (une palette d'un autre style se prend comme une piece)",
    !lireChoixStyle({ palette_cle: "noir", texte: "peu", doubles: ["aeree"] }, riviera).ok);
 ok("sans double page, ou sans la place du texte : refuse",
    !lireChoixStyle({ palette_cle: "sable", texte: "peu", doubles: [] }, riviera).ok
@@ -876,7 +880,7 @@ ok("trois parts de texte, libelles de la maquette", PARTS_TEXTE.map((t) => t.lib
 
 titre("— les couvertures aimees : de n'importe quel style, plafonnees, jamais devinees —");
 const b1 = basculerCouverture([], { style_id: "s-nuit", couverture: "n1" }, true, 2, nuit);
-ok("aimer une couverture d'un AUTRE style que celui du magazine : permis", b1.ok && b1.aimees.length === 1);
+ok("aimer une couverture de n'importe quel style : permis", b1.ok && b1.aimees.length === 1);
 ok("au plafond, une de plus est refusee avec la phrase",
    (() => { const b = basculerCouverture([{ style_id: "s-riv", couverture: "c1" }, { style_id: "s-riv", couverture: "c2" }], { style_id: "s-nuit", couverture: "n1" }, true, 2, nuit); return !b.ok && b.message.includes("2 couvertures"); })());
 ok("plafond non regle par l'atelier : refuse (on n'invente pas de chiffre)",
@@ -887,8 +891,9 @@ ok("une couverture qui n'existe pas dans le style est refusee",
    !basculerCouverture([], { style_id: "s-nuit", couverture: "zz" }, true, 3, nuit).ok);
 
 titre("— valider, et jusqu'a quand —");
-ok("ce qui manque se nomme", manquesBrief({ style_id: null, palette_cle: null, texte: null, doubles: [] }).length === 4
-   && manquesBrief({ style_id: "s", palette_cle: "p", texte: "peu", doubles: ["aeree"] }).length === 0);
+const vierge: BriefLigne = { style_id: null, palette_cle: null, texte: null, doubles: [], couvertures_aimees: [], brief_valide_le: null };
+ok("ce qui manque se nomme : palette, typographies, texte, une double page", manquesBrief(vierge).length === 4
+   && manquesBrief({ ...vierge, style_id: "s", palette_cle: "p", texte: "peu", doubles: ["aeree"] }).length === 0);
 ok("le brief ne bouge plus apres la cloture", briefModifiable("preparation") && !briefModifiable("composition") && !briefModifiable("bat"));
 ok("le mur d'une ecole voit les styles ecole et tous, pas entreprise",
    styleVisible("ecole", "ecole") && styleVisible("ecole", "tous") && !styleVisible("ecole", "entreprise") && styleVisible("tous", "entreprise"));
@@ -1342,34 +1347,88 @@ titre("— revision 14.5 : parler a l'atelier, documents —");
   ok("les rendez-vous affiches viennent des donnees (D23) : aucune date ni duree ecrite en dur", (() => { const t = lire("src/app/edition/[token]/atelier/Parler.tsx"); return /libelleCreneau\(r\.debut\)/.test(t) && !/\b\d{1,2} (janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\b/.test(t) && !/\b20 minutes\b|\b30 minutes\b/.test(t); })());
 }
 
-titre("— revision 14.6 : le brief partie par partie —");
+titre("— D24 : le brief se compose piece par piece, de n'importe quel style —");
 {
-  const style = { id: "s1", publie: true, palettes: [{ cle: "sable" }, { cle: "nuit" }], couvertures: [{ cle: "c1" }] };
-  const autre = lirePartieBrief("palette", { palette_cle: "corail" }, style);
-  ok("palette : une palette d'un AUTRE style est refusee (la regle de Mathias)", !autre.ok);
-  const pal = lirePartieBrief("palette", { palette_cle: "nuit" }, style);
-  ok("palette : celle du style choisi passe, et le brief repasse « a valider »", pal.ok && pal.patch.palette_cle === "nuit" && "brief_valide_le" in pal.patch && pal.patch.brief_valide_le === null);
-  ok("sans style choisi, aucune partie ne s'enregistre", !lirePartieBrief("texte", { texte: "peu" }, null).ok);
-  ok("un style retire du mur refuse les parties", !lirePartieBrief("texte", { texte: "peu" }, { ...style, publie: false }).ok);
-  const tx = lirePartieBrief("texte", { texte: "beaucoup" }, style);
-  ok("texte : une reponse de la liste, rien d'autre", tx.ok && tx.patch.texte === "beaucoup" && !lirePartieBrief("texte", { texte: "roman" }, style).ok);
-  const db = lirePartieBrief("doubles", { doubles: ["recit", "intrus", "aeree"] }, style);
-  ok("doubles : les types connus, dans l'ordre des types, un au moins", db.ok && JSON.stringify(db.patch.doubles) === JSON.stringify(["aeree", "recit"]) && !lirePartieBrief("doubles", { doubles: [] }, style).ok);
-  ok("une partie inconnue est refusee", !lirePartieBrief("couverture", {}, style).ok);
+  const sable = { id: "s1", publie: true, palettes: [{ cle: "sable" }, { cle: "nuit" }], couvertures: [{ cle: "c1" }], typos: { titres: "Fraunces" }, doubles: [{ type: "aeree" }, { type: "recit" }] };
+  const brut = { id: "s2", publie: true, palettes: [{ cle: "noir" }], couvertures: [{ cle: "b1" }], typos: { titres: "Archivo Black" }, doubles: [{ type: "audacieuse" }, { type: "aeree" }] };
+  const avant: BriefLigne = { style_id: "s1", palette_cle: "sable", texte: "peu", doubles: ["aeree"], couvertures_aimees: [{ style_id: "s2", couverture: "b1" }], brief_valide_le: "2026-10-14T10:00:00Z" };
+  const c0 = compositionDu(avant);
+  ok("un brief d'avant D24 se lit en entier depuis style_id (palette, typographies, doubles)",
+    c0.palette?.style_id === "s1" && c0.palette.cle === "sable" && c0.typos?.style_id === "s1" && JSON.stringify(c0.doubles) === JSON.stringify([{ style_id: "s1", double: "aeree" }]) && c0.texte === "peu");
+  const apres: BriefLigne = { ...avant, palette_style_id: "s2", palette_cle: "noir", typo_style_id: "s2", doubles_aimes: [{ style_id: "s1", double: "recit" }, { style_id: "s2", double: "audacieuse" }] };
+  const c1 = compositionDu(apres);
+  ok("les colonnes de D24 l'emportent : chaque piece garde SON style",
+    c1.palette?.style_id === "s2" && c1.palette.cle === "noir" && c1.typos?.style_id === "s2" && c1.doubles.length === 2 && c1.doubles[1].style_id === "s2");
+  ok("les styles de la composition, chacun une fois", JSON.stringify(stylesDeLaComposition(c1)) === JSON.stringify(["s2", "s1"]));
+  ok("une double page d'un style inconnu ou d'un type inconnu est ignoree",
+    compositionDu({ ...avant, doubles_aimes: [{ style_id: "s1", double: "pirate" as never }] }).doubles[0]?.double === "aeree");
+
+  const pal = lirePiece("palette", { palette_cle: "noir" }, brut, c0);
+  ok("prendre la palette d'un AUTRE style que le reste : permis (D24), brief remis a valider",
+    pal.ok && pal.patch.palette_style_id === "s2" && pal.patch.palette_cle === "noir" && pal.patch.brief_valide_le === null);
+  ok("une palette qui n'est pas dans ce style est refusee", !lirePiece("palette", { palette_cle: "sable" }, brut, c0).ok);
+  const ty = lirePiece("typos", {}, brut, c0);
+  ok("prendre les typographies d'un autre style : permis", ty.ok && ty.patch.typo_style_id === "s2");
+  ok("un style sans typographies ne les donne pas", !lirePiece("typos", {}, { ...brut, typos: { titres: "" } }, c0).ok);
+  const db = lirePiece("double", { double: "audacieuse" }, brut, c0);
+  ok("ajouter une double page d'un autre style : elle s'ajoute, la colonne d'avant suit (les types)",
+    db.ok && JSON.stringify(db.patch.doubles_aimes) === JSON.stringify([{ style_id: "s1", double: "aeree" }, { style_id: "s2", double: "audacieuse" }]) && JSON.stringify(db.patch.doubles) === JSON.stringify(["aeree", "audacieuse"]));
+  ok("la meme double page de deux styles : deux pieces distinctes", (() => { const r = lirePiece("double", { double: "aeree" }, brut, c0); return r.ok && (r.patch.doubles_aimes as unknown[]).length === 2; })());
+  ok("une double page absente du style est refusee", !lirePiece("double", { double: "dense" }, brut, c0).ok);
+  const plein: Composition = { ...c0, doubles: ["aeree", "equilibree", "dense", "recit", "audacieuse"].map((d) => ({ style_id: "s1", double: d as "aeree" })) };
+  ok("cinq doubles pages au plus, tous styles confondus", (() => { const r = lirePiece("double", { double: "aeree" }, brut, plein); return !r.ok && r.message.includes("5 doubles pages au plus"); })());
+  ok("retirer une double page, meme la derniere (le brief ne se valide plus tant qu'il n'en a pas)",
+    (() => { const r = lirePiece("double", { double: "aeree", ajouter: false }, sable, c0); return r.ok && (r.patch.doubles_aimes as unknown[]).length === 0 && (r.patch.doubles as unknown[]).length === 0; })());
+  ok("un style retire du mur ne donne aucune piece", !lirePiece("palette", { palette_cle: "noir" }, { ...brut, publie: false }, c0).ok && !lirePiece("typos", {}, null, c0).ok);
+  ok("une piece inconnue est refusee", !lirePiece("couverture", {}, brut, c0).ok);
+  ok("les types d'une liste de doubles, chacun une fois, dans l'ordre des types",
+    JSON.stringify(typesDes([{ style_id: "a", double: "recit" }, { style_id: "b", double: "aeree" }, { style_id: "c", double: "recit" }])) === JSON.stringify(["aeree", "recit"]));
+  const tx = lireTexte({ texte: "beaucoup" });
+  ok("texte : une reponse de la liste, rien d'autre", tx.ok && tx.patch.texte === "beaucoup" && !lireTexte({ texte: "roman" }).ok);
+
+  ok("« avec vos choix » : la raison dit d'ou vient deja une autre piece de ce style",
+    JSON.stringify(raisonsDuStyle(c1, "s2", "typos")) === JSON.stringify(["votre couverture", "votre palette", "vos doubles pages"]) && raisonsDuStyle(c1, "s9", "typos").length === 0);
+  const pieces = [
+    { genre: "typos" as const, style_id: "s1", cle: "" },
+    { genre: "typos" as const, style_id: "s2", cle: "" },
+    { genre: "typos" as const, style_id: "s3", cle: "" },
+  ];
+  const g = grouperParChoix(pieces, compositionDu({ ...avant, typo_style_id: "s1" }));
+  ok("une categorie : le choix d'abord, puis ce qui va avec (la raison dite), puis le reste",
+    g.choisies.map((x) => x.style_id).join() === "s1" && g.avec.map((x) => `${x.piece.style_id}:${x.raison}`).join() === "s2:Du style de votre couverture" && g.autres.map((x) => x.style_id).join() === "s3");
+  const pals = [{ genre: "palette" as const, style_id: "s1", cle: "sable" }, { genre: "palette" as const, style_id: "s1", cle: "nuit" }];
+  ok("une palette du meme style que le choix va « avec »", grouperParChoix(pals, c0).avec[0]?.raison === "Du même style que votre choix");
+
   const a = [{ style_id: "s1", couverture: "c1" }];
   ok("aimer une couverture de plus de-valide le brief", patchCouvertures([], a).brief_valide_le === null && "brief_valide_le" in patchCouvertures([], a));
   ok("un clic qui ne change rien ne de-valide rien", !("brief_valide_le" in patchCouvertures(a, [...a])));
-  ok("le resume : style, palette, doubles, couvertures", resumeBrief({ style: "Riviera", palette: "Sable", doubles: ["Aérée", "Récit"], couvertures: 1 }) === "Riviera, palette Sable · Aérée, Récit · 1 couverture aimée");
-  ok("le resume sans style le dit", resumeBrief({ style: null, palette: null, doubles: [], couvertures: 0 }) === "Aucun style choisi pour l'instant.");
-  ok("l'etat d'un brief dans le bandeau", etatDuBrief({ valide: true, style: "Riviera" }) === "Brief validé" && etatDuBrief({ valide: false, style: "Riviera" }) === "Style : Riviera" && etatDuBrief({ valide: false, style: null }) === "Style à choisir");
+  const noms = [{ id: "s1", nom: "Riviera", palettes: [{ cle: "sable", nom: "Sable" }] }, { id: "s2", nom: "Brut", palettes: [{ cle: "noir", nom: "Noir" }] }];
+  ok("le resume dit chaque piece et son style", resumeBrief(c1, noms) === "Palette Noir, du style Brut · typographies du style Brut · 2 doubles pages · 1 couverture aimée");
+  ok("le resume d'un brief vide le dit", resumeBrief(compositionDu(vierge), noms) === "Rien de composé pour l'instant.");
+  ok("l'etat d'un brief dans le bandeau : valide, un style, plusieurs mêles, rien",
+    etatDuBrief({ valide: true, styles: ["Riviera"] }) === "Brief validé" && etatDuBrief({ valide: false, styles: ["Riviera"] }) === "Style : Riviera" && etatDuBrief({ valide: false, styles: ["Riviera", "Brut", "Nuit"] }) === "3 styles mêlés" && etatDuBrief({ valide: false, styles: [] }) === "À composer");
   ok("le slug « brief » est reserve (la page voisine style/brief)", !lireSaisieStyle({ nom: "Brief", slug: "brief" }, "creation").ok);
+
   const route = lire("src/app/api/collectif/brief/route.ts");
-  ok("l'API du brief lit chaque partie par lirePartieBrief, contre le style DEJA choisi", /lirePartieBrief\(action, corps, style\)/.test(route) && /mag\.style_id \? await lireStyle\(\{ id: mag\.style_id \}\)/.test(route));
+  ok("l'API : une piece passe par lirePiece contre la composition ACTUELLE, de n'importe quel style publie",
+    /lirePiece\(corps\.genre, corps, style, compositionDu\(mag\)\)/.test(route) && /lireStyle\(\{ id: corps\.styleId \}\)/.test(route));
+  ok("l'API : sans la migration, une piece repond 503 nomme ; le style pris en entier s'ecrit dans les colonnes d'avant",
+    /if \(!patchAvant\) return NextResponse\.json\(\{ error: ERREUR_COMPOSITION_ABSENTE/.test(route) && /update\(patchAvant\)/.test(route) && /requete|lireMag\(COLONNES_AVANT/.test(route));
   ok("aimer une couverture passe par patchCouvertures (le brief valide repasse a valider)", /patchCouvertures\(/.test(route));
-  ok("la page « modifier le brief » existe et ouvre un panneau lateral", existsSync(resolve(RACINE, "src/app/edition/[token]/style/brief/page.tsx")) && /<Fenetre\s+cote/.test(lire("src/app/edition/[token]/style/brief/Brief.tsx")));
+  const mig = lire("supabase/migrations/20261017_collectif_composition.sql");
+  ok("migration 20261017 : atomique, idempotente, trois colonnes, PostgREST relit",
+    /^begin;/m.test(mig) && /^commit;/m.test(mig) && (mig.match(/add column if not exists/g) ?? []).length === 3 && /doubles_aimes jsonb not null default '\[\]'::jsonb/.test(mig) && /notify pgrst, 'reload schema'/.test(mig));
+  const mur = lire("src/app/edition/[token]/style/Mur.tsx");
+  ok("le mur : « Tout, en vrac », les categories rangees par les choix, « Votre composition »",
+    /piecesEnVrac\(p\.styles\)/.test(mur) && /grouperParChoix\(/.test(mur) && /Votre composition/.test(mur) && /Tout, en vrac/.test(mur));
+  ok("modifier une partie : un panneau lateral, le choix en haut, « Terminé »",
+    /<Fenetre\s+cote/.test(mur) && /Votre choix reste en haut/.test(mur) && /Terminé/.test(mur) && /partieInitiale=\{partie\}/.test(lire("src/app/edition/[token]/style/brief/page.tsx")));
+  ok("la regle du 08/10 n'est plus ecrite a l'ecran",
+    !fichiersParSuffixe("src/app/edition", /\.tsx?$/).some((f) => /seule la couverture peut venir|L'intérieur suit ce style|ce style en dessine tout l/.test(lire(f))));
   const fiche = lire("src/app/edition/[token]/style/[slug]/FicheStyle.tsx");
-  ok("un style en detail : la barre d'etapes et ses quatre ancres", ["ec-etape-1", "ec-etape-2", "ec-etape-3", "ec-etape-4"].every((a) => fiche.includes(`"${a}"`)) && fiche.includes("ec-fiche-etapes"));
-  ok("le mur : les lignes du brief menent a style/brief", /style\/brief\?m=/.test(lire("src/app/edition/[token]/style/Mur.tsx")));
+  ok("un style en detail : la barre d'etapes et ses quatre ancres, « Prendre tout le style »", ["ec-etape-1", "ec-etape-2", "ec-etape-3", "ec-etape-4"].every((x) => fiche.includes(`"${x}"`)) && fiche.includes("ec-fiche-etapes") && /Prendre tout le style/.test(fiche));
+  ok("l'atelier voit le style de chaque piece", /typos: c\.typos \?/.test(lire("src/app/admin/collectif/donnees.ts")) && /styles mêlés, à harmoniser/.test(lire("src/app/admin/collectif/[id]/page.tsx")));
+  ok("un magazine compose n'est jamais « vide » (il ne se retire pas)", /stylesDeLaComposition\(compositionDu\(m\)\)\.length === 0/.test(lire("src/app/api/admin/collectif/editions/[id]/route.ts")));
 }
 
 titre("— revision 14.3 / 14.7 : photos et livraison —");

@@ -84,7 +84,9 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return `Magazine ${String(payload.magazine)} : ${partie} du brief modifiée par le client.`;
     }
     case "brief_repris":
-      return `Magazine ${String(payload.magazine)} : style repris du magazine ${String(payload.depuis)}.`;
+      return `Magazine ${String(payload.magazine)} : composition reprise du magazine ${String(payload.depuis)}.`;
+    case "brief_piece":
+      return `Magazine ${String(payload.magazine)} : ${payload.retiree ? "une double page retirée" : `${String(payload.piece ?? "une pièce")} prise`}${payload.style ? ` du style ${String(payload.style)}` : ""} par le client.`;
     case "couverture_aimee":
       return `Magazine ${String(payload.magazine)} : une couverture aimée.`;
     case "couverture_retiree":

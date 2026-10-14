@@ -11,7 +11,7 @@ import { cache } from "react";
 import { makeSupabase } from "@/lib/supabase";
 import { signerGet } from "@/lib/atelier/r2";
 import { chargerAcces } from "@/lib/collectif/acces";
-import { styleVisible } from "@/lib/collectif/brief";
+import { compositionDu, styleVisible, stylesDeLaComposition, type BriefLigne } from "@/lib/collectif/brief";
 import { colonneAbsente } from "@/lib/collectif/migration";
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
 import { apercuPossible, contenuClient, envoisCourants, type LigneEnvoi } from "@/lib/collectif/contenus";
@@ -166,11 +166,7 @@ export async function lireEnvois(editionId: string): Promise<EnvoiClient[]> {
 export async function chargerTableau(edition: EditionLigne, origine = ""): Promise<Tableau> {
   const supabase = makeSupabase();
   const [mags, photos, contenus, styles, message, provenances] = await Promise.all([
-    supabase
-      .from("collectif_magazines")
-      .select("id, rang, nom, brief_valide_le, collectif_styles(nom, couvertures)")
-      .eq("edition_id", edition.id)
-      .order("rang", { ascending: true }),
+    lireMagazinesBrief(edition.id),
     supabase
       .from("collectif_photos")
       .select("role_deposant, appareil_id, provenance_id, provenance_type, deposant, vignette_key, confirmee_le")
@@ -195,29 +191,37 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
       .limit(1),
     lireProvenances(edition.id),
   ]);
-  if (mags.error) echec("magazines du tableau de bord", mags.error);
   if (photos.error) echec("photos du tableau de bord", photos.error);
   if (styles.error) echec("styles du tableau de bord", styles.error);
   if (message.error) echec("dernier message du tableau de bord", message.error);
 
-  type Couv = { image_key: string }[] | null;
+  type Couv = { cle?: string; image_key: string }[] | null;
   const premiere = (c: Couv) => c?.find((x) => x.image_key)?.image_key ?? null;
 
+  /* Chaque magazine dit sa COMPOSITION (D24) : le style s'il n'y en a qu'un,
+     sinon combien sont mêlés ; l'image est la première couverture aimée,
+     sinon une couverture du premier style de la composition. Les styles
+     nommés se lisent par leur id, publiés ou non. */
+  const compositions = mags.map((m) => ({ m, c: compositionDu(m) }));
+  const ids = [...new Set(compositions.flatMap((x) => stylesDeLaComposition(x.c)))];
+  const refs = ids.length ? await supabase.from("collectif_styles").select("id, nom, couvertures").in("id", ids) : { data: [], error: null };
+  if (refs.error) echec("styles des briefs", refs.error);
+  const parStyle = new Map(((refs.data ?? []) as { id: string; nom: string; couvertures: Couv }[]).map((x) => [x.id, x]));
   const magazines = await Promise.all(
-    ((mags.data ?? []) as unknown as {
-      id: string;
-      rang: number;
-      nom: string;
-      brief_valide_le: string | null;
-      collectif_styles: { nom: string; couvertures: Couv } | null;
-    }[]).map(async (m) => ({
-      id: m.id,
-      rang: m.rang,
-      nom: m.nom,
-      style: m.collectif_styles?.nom ?? null,
-      styleCouverture: await signerOuRien(premiere(m.collectif_styles?.couvertures ?? null)),
-      briefValide: Boolean(m.brief_valide_le),
-    }))
+    compositions.map(async ({ m, c }) => {
+      const utilises = stylesDeLaComposition(c);
+      const noms = utilises.map((id) => parStyle.get(id)?.nom).filter((x): x is string => Boolean(x));
+      const aimee = c.couvertures[0];
+      const cle = aimee ? parStyle.get(aimee.style_id)?.couvertures?.find((x) => x.cle === aimee.couverture)?.image_key ?? null : premiere(parStyle.get(utilises[0] ?? "")?.couvertures ?? null);
+      return {
+        id: m.id,
+        rang: m.rang,
+        nom: m.nom,
+        style: noms.length === 0 ? null : noms.length === 1 ? noms[0] : `${noms.length} styles mêlés`,
+        styleCouverture: await signerOuRien(cle),
+        briefValide: Boolean(m.brief_valide_le),
+      };
+    })
   );
 
   const eventail = await Promise.all(
@@ -397,16 +401,11 @@ export type StyleMur = {
   doubles: { type: string; url: string | null; legende: string }[];
 };
 
-export type MagazineMur = {
+/** Un magazine vu par le mur : ses colonnes de brief (celles de D24 absentes avant la migration 20261017, `compositionDu` lit les deux). */
+export type MagazineMur = BriefLigne & {
   id: string;
   rang: number;
   nom: string;
-  style_id: string | null;
-  palette_cle: string | null;
-  texte: string | null;
-  doubles: string[];
-  couvertures_aimees: { style_id: string; couverture: string }[];
-  brief_valide_le: string | null;
 };
 
 async function signerOuRien(key: string | null | undefined): Promise<string | null> {
@@ -423,6 +422,18 @@ async function signerOuRien(key: string | null | undefined): Promise<string | nu
  * dans l'ordre du mur, chaque image signée pour une heure ; et les
  * magazines avec leur brief.
  */
+const COLONNES_BRIEF_AVANT = "id, rang, nom, style_id, palette_cle, texte, doubles, couvertures_aimees, brief_valide_le";
+
+/** Les briefs des magazines d'une édition ; repli sans les colonnes de D24 tant que la migration 20261017 n'est pas passée. */
+export async function lireMagazinesBrief(editionId: string): Promise<MagazineMur[]> {
+  const supabase = makeSupabase();
+  const lire = (colonnes: string) => supabase.from("collectif_magazines").select(colonnes).eq("edition_id", editionId).order("rang", { ascending: true });
+  let r = await lire(`${COLONNES_BRIEF_AVANT}, palette_style_id, typo_style_id, doubles_aimes`);
+  if (r.error && colonneAbsente(r.error.code)) r = await lire(COLONNES_BRIEF_AVANT);
+  if (r.error) echec("magazines du mur", r.error);
+  return (r.data ?? []) as unknown as MagazineMur[];
+}
+
 export async function chargerMur(edition: EditionLigne): Promise<{ styles: StyleMur[]; magazines: MagazineMur[] }> {
   const supabase = makeSupabase();
   const [st, mags] = await Promise.all([
@@ -432,14 +443,9 @@ export async function chargerMur(edition: EditionLigne): Promise<{ styles: Style
       .eq("publie", true)
       .order("ordre", { ascending: true })
       .order("created_at", { ascending: true }),
-    supabase
-      .from("collectif_magazines")
-      .select("id, rang, nom, style_id, palette_cle, texte, doubles, couvertures_aimees, brief_valide_le")
-      .eq("edition_id", edition.id)
-      .order("rang", { ascending: true }),
+    lireMagazinesBrief(edition.id),
   ]);
   if (st.error) echec("styles du mur", st.error);
-  if (mags.error) echec("magazines du mur", mags.error);
 
   type Brut = {
     id: string; slug: string; nom: string; description: string | null; segment: string;
@@ -461,7 +467,7 @@ export async function chargerMur(edition: EditionLigne): Promise<{ styles: Style
       doubles: await Promise.all((s.doubles ?? []).map(async (d) => ({ type: d.type, url: await signerOuRien(d.image_key), legende: d.legende }))),
     }))
   );
-  return { styles, magazines: (mags.data ?? []) as MagazineMur[] };
+  return { styles, magazines: mags };
 }
 
 /* ───────────────────────────── le bon à tirer ───────────────────────────── */

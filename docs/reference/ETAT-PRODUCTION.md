@@ -38,7 +38,12 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
     « Tout désélectionner » (présélection revenue à 0).
 - Le 14/10 vers 13 h 28, Mathias a lui-même fait « Tout sélectionner » sur « Essai révision » :
   781 photos présélectionnées (les 32 qu'il avait choisies à la main sont dedans).
-- `verif-collectif.ts` 497 vérifications, `verif-atelier.ts` 1450, verts le 14/10.
+- **Le style « Tout, en vrac » (D24)** : code sur la même branche. **Migration
+  `20261017_collectif_composition.sql` ÉCRITE, PAS APPLIQUÉE** (`collectif_magazines.palette_style_id`,
+  `typo_style_id`, `doubles_aimes`). Vérifié le 14/10 AVANT elle (« Essai révision ») : le mur se
+  lit (les briefs d'avant se lisent depuis `style_id`), et prendre une palette d'un autre style
+  répond 503 en nommant le fichier, sans rien écrire.
+- `verif-collectif.ts` 517 vérifications, `verif-atelier.ts` 1450, verts le 14/10.
 
 ## 14/10/2026 (après-midi) — Édition collective : les rendez-vous dans l'espace (D23, T-148), sur branche
 

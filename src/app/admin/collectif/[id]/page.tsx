@@ -13,7 +13,6 @@ import { MIGRATION_COLLECTIF, MIGRATION_RDV } from "@/lib/collectif/migration";
 import { lireInterlocuteurs, lireRendezVous } from "@/lib/collectif/rendezvous";
 import { LIBELLE_CAMP, prochaineEtape } from "@/lib/collectif/prochaine";
 import { PARTS_TEXTE } from "@/lib/collectif/brief";
-import { TYPES_DOUBLES } from "@/lib/collectif/styles";
 import { chargerEdition } from "../donnees";
 import FormulaireEdition, { type ValeursEdition } from "../FormulaireEdition";
 import PanneauCollecte from "./PanneauCollecte";
@@ -185,7 +184,7 @@ export default async function PageFiche({ params }: { params: Promise<{ id: stri
                           ? `Tour ${m.toursPublies} publié`
                           : m.brief_valide_le
                             ? `Brief validé le ${formaterInstantParis(m.brief_valide_le)}`
-                            : m.brief.style
+                            : m.brief.styles.length
                               ? "Brief en cours"
                               : "Brief à faire"}
                     </span>
@@ -193,21 +192,29 @@ export default async function PageFiche({ params }: { params: Promise<{ id: stri
                   <Link href={`/admin/collectif/${e.id}/bat?m=${m.rang}`} className="eca-lien-bat">
                     Bon à tirer du magazine {m.rang} →
                   </Link>
-                  {m.brief.style ? (
+                  {m.brief.styles.length ? (
                     <span className="eca-brief">
                       <span>
-                        Style <strong>{m.brief.style}</strong>
-                        {m.brief.palette ? `, palette ${m.brief.palette.nom}` : ""}
+                        Composition : <strong>{m.brief.styles.join(", ")}</strong>
+                        {m.brief.styles.length > 1 ? ` (${m.brief.styles.length} styles mêlés, à harmoniser)` : ""}
                       </span>
                       {m.brief.palette ? (
-                        <span className="eca-bandes">
-                          {m.brief.palette.couleurs.map((c, i) => (
-                            <span key={i} style={{ background: c }} />
-                          ))}
+                        <span>
+                          Palette {m.brief.palette.nom} ({m.brief.palette.style}){" "}
+                          <span className="eca-bandes">
+                            {m.brief.palette.couleurs.map((c, i) => (
+                              <span key={i} style={{ background: c }} />
+                            ))}
+                          </span>
                         </span>
-                      ) : null}
+                      ) : (
+                        <span>Palette : ?</span>
+                      )}
+                      <span>
+                        Typographies : {m.brief.typos ? `${[m.brief.typos.titres, m.brief.typos.texte].filter(Boolean).join(" et ") || "?"} (${m.brief.typos.style})` : "?"}
+                      </span>
                       <span>Texte : {PARTS_TEXTE.find((t) => t.cle === m.brief.texte)?.libelle ?? "?"}</span>
-                      <span>Doubles : {m.brief.doubles.map((d) => TYPES_DOUBLES.find((t) => t.cle === d)?.libelle).join(", ") || "?"}</span>
+                      <span>Doubles : {m.brief.doubles.map((d) => `${d.libelle} (${d.style})`).join(", ") || "?"}</span>
                     </span>
                   ) : null}
                   {m.brief.aimees.length ? (

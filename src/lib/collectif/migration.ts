@@ -108,3 +108,17 @@ export const MIGRATION_ENVOIS = "supabase/migrations/20261016_collectif_envois.s
 export const ERREUR_ENVOIS_ABSENTE = "migration_envois_absente";
 export const MESSAGE_ENVOIS_ABSENTE =
   "La mise à jour de la base pour les envois n'est pas encore appliquée (20261016_collectif_envois.sql) : rien n'a été enregistré.";
+
+/* ─────────────────────────── le brief pièce par pièce (D24, 14/10) ─────────────────────────── */
+
+/**
+ * Trois colonnes de `collectif_magazines` : le style de la palette, celui des
+ * typographies, et les doubles pages aimées avec leur style. Sans elles, un
+ * brief se lit comme avant (tout vient de `style_id`) ; prendre un style en
+ * entier s'écrit encore ; prendre une pièce répond 503
+ * `migration_composition_absente` en nommant le fichier.
+ */
+export const MIGRATION_COMPOSITION = "supabase/migrations/20261017_collectif_composition.sql";
+export const ERREUR_COMPOSITION_ABSENTE = "migration_composition_absente";
+export const MESSAGE_COMPOSITION_ABSENTE =
+  "La mise à jour de la base pour composer pièce par pièce n'est pas encore appliquée (20261017_collectif_composition.sql) : rien n'a été enregistré.";
