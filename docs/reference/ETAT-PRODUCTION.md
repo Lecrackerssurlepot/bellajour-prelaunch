@@ -10,6 +10,17 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 14/10/2026 (après-midi) — Édition collective : les rendez-vous dans l'espace (D23, T-148), sur branche
+
+- **Code** sur `feat/collectif-rendez-vous` (issue de `main` après la PR #229). Rien en production.
+- **Migration `20261015_collectif_rendez_vous.sql` ÉCRITE, PAS APPLIQUÉE** (vérifié en SQL le
+  14/10 : ni `collectif_interlocuteurs`, ni `collectif_rendez_vous`, ni
+  `collectif_editions.interlocuteur_cle`). Sans elle, vérifié sur localhost:3000 : les routes de
+  rendez-vous répondent 503 en nommant le fichier, l'espace garde le lien de la fiche.
+- **`GOOGLE_AGENDA_COMPTE` absente** (ni Vercel, ni `.env.local`) : à poser par Mathias.
+  **`COLLECTIF_MAILS_RDV` absente** : aucun mail de rendez-vous ne part.
+- Expéditeur Brevo vérifié (lu le 14/10) : un seul, « Bellajour <contact@bellajour.com> ».
+
 ## 14/10/2026 — Édition collective : la révision du 13/10 (PRD §14, T-147), sur branche
 
 - **PR #229 FUSIONNÉE dans `main` le 14/10/2026 à 11:47 (Paris) par Mathias** : elle porte les
