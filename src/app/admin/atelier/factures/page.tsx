@@ -108,7 +108,7 @@ export default async function PageFactures() {
                 <td>
                   {j.fatura_id && compte ? (
                     <a
-                      href={`https://${compte}.app.invoicexpress.com/invoice_receipts/${j.fatura_id}`}
+                      href={`https://${compte}.web.invoicexpress.com/invoice_receipts/${j.fatura_id}`}
                       target="_blank"
                       rel="noreferrer"
                     >

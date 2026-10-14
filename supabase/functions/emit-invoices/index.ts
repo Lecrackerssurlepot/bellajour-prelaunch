@@ -102,6 +102,9 @@ Deno.serve(async () => {
   }
 
   const baseUrl = `https://${account}.app.invoicexpress.com`;
+  /* L'API reste sur `app.` ; l'interface, elle, vit sur `web.` (adresse vérifiée
+     le 14/10/2026 sur un brouillon réel). Les liens envoyés à un humain vont là. */
+  const webUrl = `https://${account}.web.invoicexpress.com`;
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
   async function ix(method: "GET" | "POST" | "PUT", path: string, body?: unknown): Promise<IxResult> {
@@ -367,7 +370,7 @@ Deno.serve(async () => {
         await alerte("Facture à traiter à la main", {
           "Payment intent": job.stripe_payment_intent,
           Motif: message,
-          "Brouillon InvoiceXpress": docId ? `${baseUrl}/invoice_receipts/${docId}` : "aucun",
+          "Brouillon InvoiceXpress": docId ? `${webUrl}/invoice_receipts/${docId}` : "aucun",
         });
         revues++;
       } else {
@@ -377,7 +380,7 @@ Deno.serve(async () => {
           await alerte("Facture en échec après 3 tentatives", {
             "Payment intent": job.stripe_payment_intent,
             Erreur: message,
-            "Brouillon InvoiceXpress": docId ? `${baseUrl}/invoice_receipts/${docId}` : "aucun",
+            "Brouillon InvoiceXpress": docId ? `${webUrl}/invoice_receipts/${docId}` : "aucun",
           });
         }
         console.error(`[emit-invoices] job ${job.id} échec (${attempts}/${MAX_TENTATIVES})`, message);
