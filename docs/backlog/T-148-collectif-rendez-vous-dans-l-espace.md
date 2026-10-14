@@ -56,7 +56,8 @@ visio Google Meet (un lien fixe par personne) ; texte du mail proposé par Claud
   créneau passé refusé, espace inchangé (lien de la fiche), fiche et page Agendas qui le disent.
 
 ## Ce qui reste (Mathias, puis Claude)
-1. Appliquer `supabase/migrations/20261015_collectif_rendez_vous.sql`.
+1. ~~Appliquer la migration~~ : appliquée le 14/10 par Mathias, vérifiée en SQL ; le choix de
+   l'interlocuteur marche (Mathias sur « Essai révision »).
 2. Créer le compte de service Google et poser `GOOGLE_AGENDA_COMPTE` (pas-à-pas sur
    `/admin/collectif/agendas`), puis partager son agenda avec l'adresse affichée (Mathias, Louis).
 3. Renseigner l'agenda et le lien Meet de chacun, « Tester la connexion ».

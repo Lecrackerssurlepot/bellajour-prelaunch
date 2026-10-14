@@ -1,6 +1,6 @@
 # Base de données
 
-12 tables réelles, RLS activée partout mais **contournée côté serveur par la service key**.
+12 tables réelles (plus celles de l'Édition collective), RLS activée partout mais **contournée côté serveur par la service key**.
 Chargé dès qu'on touche une migration ou le dossier supabase.
 
 | Table | Rôle | Clé à connaître |
@@ -17,7 +17,7 @@ Chargé dès qu'on touche une migration ou le dossier supabase.
 | `invoice_jobs` | facturation Fatura (edge function `emit-invoices`, D22) | `stripe_payment_intent` unique ; statuts `pending` `emitting` `emitted` `error` `draft` `manual_review` `failed` `emitted_manual` ; `client`, `payload_log`, `response_log` = données perso, vidées par `anonymiser-dossiers.ts` ; écriture atelier SANS repli (un job sans série serait mal émis) |
 | `weekly_metrics` | l'agrégat hebdo du cockpit (migration 20260917, **appliquée le 17/09**) | `semaine` AAAASS PK, réécrite entière par le job du lundi : idempotent |
 | `cockpit_settings` | les hypothèses du cockpit | singleton `id = true`, `regle_le` null = jamais réglé |
-| `collectif_*` (13 tables) | l'Édition collective, B2B (migration `20261013_collectif.sql`, **appliquée le 13/10 par Mathias, vérifiée en SQL**) | aucune clé étrangère vers `numeros` ; tokens uniques de 32 caractères ; aucun chiffre par défaut ; tour publié figé par trigger ; pas de repli (tout ou rien, `begin`/`commit`) : une table absente rend 503. Règles dans `src/lib/collectif/CLAUDE.md` |
+| `collectif_*` (15 tables) | l'Édition collective, B2B (migration `20261013_collectif.sql`, **appliquée le 13/10 par Mathias, vérifiée en SQL** ; + `collectif_interlocuteurs` et `collectif_rendez_vous` par `20261015_collectif_rendez_vous.sql`, appliquée le 14/10, les rendez-vous D23) | aucune clé étrangère vers `numeros` ; tokens uniques de 32 caractères ; aucun chiffre par défaut ; tour publié figé par trigger ; pas de repli (tout ou rien, `begin`/`commit`) : une table absente rend 503. Règles dans `src/lib/collectif/CLAUDE.md` |
 
 RPC : `assign_numero_fondateur(p_email)`, appelée par `/api/webhook`.
 
