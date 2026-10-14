@@ -3,7 +3,9 @@
 /* La messagerie, côté atelier (PRD §7). Le même fil que celui du client,
    relu toutes les 3,5 s quand l'onglet est visible. Ouvrir la fiche marque
    lus les messages du client (par un effet, jamais au rendu). Aucun mail ne
-   part : le client voit la réponse dans « Votre dossier ». */
+   part : le client voit la réponse dans « Parler à l'atelier ». Un document
+   cité par le client et sa pièce jointe s'ouvrent d'un clic (liens signés
+   une heure, révision §14.5). */
 
 import { useState } from "react";
 import { formaterInstantParis } from "@/lib/collectif/dates";
@@ -55,14 +57,38 @@ export default function PanneauMessages({ id, initiaux }: { id: string; initiaux
       <h2 className="ate-carte-titre">Messages</h2>
       <div className="eca-fil" aria-live="polite">
         {messages.length === 0 ? (
-          <p className="eca-vide">Aucun message. Le client écrit depuis « Votre dossier ».</p>
+          <p className="eca-vide">Aucun message. Le client écrit depuis « Parler à l&apos;atelier ».</p>
         ) : (
           messages.map((m) => (
             <div key={m.id} className={m.auteur === "atelier" ? "eca-bulle eca-bulle--atelier" : "eca-bulle"}>
               <span className="eca-bulle-qui">
                 {m.auteur === "atelier" ? `Atelier · ${m.qui ?? ""}` : `Client · ${m.qui ?? ""}`} · {formaterInstantParis(m.created_at)}
               </span>
+              {m.document ? (
+                <span className="eca-bulle-joint">
+                  Document cité :{" "}
+                  {m.document.url ? (
+                    <a href={m.document.url} target="_blank" rel="noopener noreferrer">
+                      {m.document.libelle}
+                    </a>
+                  ) : (
+                    m.document.libelle
+                  )}
+                </span>
+              ) : null}
               {m.texte}
+              {m.piece ? (
+                <span className="eca-bulle-joint">
+                  Pièce jointe :{" "}
+                  {m.piece.url ? (
+                    <a href={m.piece.url} target="_blank" rel="noopener noreferrer">
+                      {m.piece.nom}
+                    </a>
+                  ) : (
+                    m.piece.nom
+                  )}
+                </span>
+              ) : null}
             </div>
           ))
         )}

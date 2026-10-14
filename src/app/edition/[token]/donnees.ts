@@ -238,7 +238,7 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
   };
 }
 
-/* ───────────────────────────── votre dossier ───────────────────────────── */
+/* ───────────────────────────── les documents ───────────────────────────── */
 
 export type DocumentDossier = {
   id: string;
@@ -253,21 +253,16 @@ export type DocumentDossier = {
 
 export type Dossier = { documents: DocumentDossier[]; messages: Message[] };
 
-export async function chargerDossier(edition: EditionLigne): Promise<Dossier> {
-  const supabase = makeSupabase();
-  const [docs, fil] = await Promise.all([
-    supabase
-      .from("collectif_documents")
-      .select("id, type, libelle, r2_key, statut_texte, created_at")
-      .eq("edition_id", edition.id)
-      .order("created_at", { ascending: false }),
-    lireMessages(supabase, edition.id, null),
-  ]);
-  if (docs.error) echec("documents du dossier", docs.error);
-  if (!fil.ok) throw new Error(`[collectif] messages du dossier : ${fil.code}`);
-
-  const documents = await Promise.all(
-    ((docs.data ?? []) as { id: string; type: string; libelle: string; r2_key: string | null; statut_texte: string | null; created_at: string }[]).map(
+/** Les documents posés par l'atelier, du plus récent au plus ancien, signés une heure. */
+export async function chargerDocuments(edition: EditionLigne): Promise<DocumentDossier[]> {
+  const { data, error } = await makeSupabase()
+    .from("collectif_documents")
+    .select("id, type, libelle, r2_key, statut_texte, created_at")
+    .eq("edition_id", edition.id)
+    .order("created_at", { ascending: false });
+  if (error) echec("documents de l'édition", error);
+  return Promise.all(
+    ((data ?? []) as { id: string; type: string; libelle: string; r2_key: string | null; statut_texte: string | null; created_at: string }[]).map(
       async (d) => {
         let url: string | null = null;
         if (d.r2_key) {
@@ -290,7 +285,18 @@ export async function chargerDossier(edition: EditionLigne): Promise<Dossier> {
       }
     )
   );
+}
+
+/** Les documents ET le fil : « Parler à l'atelier » cite les uns dans l'autre (révision §14.5). */
+export async function chargerDossier(edition: EditionLigne): Promise<Dossier> {
+  const [documents, fil] = await Promise.all([chargerDocuments(edition), lireMessages(makeSupabase(), edition.id, null)]);
+  if (!fil.ok) throw new Error(`[collectif] messages de l'édition : ${fil.code}`);
   return { documents, messages: fil.messages };
+}
+
+/** Une proposition complémentaire attend-elle une réponse ? (« Acceptée le … » est posé par la route.) */
+export function propositionEnAttente(d: DocumentDossier): boolean {
+  return d.type === "proposition" && !d.statut?.startsWith("Acceptée");
 }
 
 /* ───────────────────────────── le mur des styles ───────────────────────────── */
@@ -520,8 +526,7 @@ export async function chargerBat(edition: EditionLigne, rang: number | null): Pr
 
 /** Les propositions complémentaires posées par l'atelier (documents de type `proposition`). */
 export async function chargerPropositions(edition: EditionLigne): Promise<DocumentDossier[]> {
-  const { documents } = await chargerDossier(edition);
-  return documents.filter((d) => d.type === "proposition");
+  return (await chargerDocuments(edition)).filter((d) => d.type === "proposition");
 }
 
 export type SuiviLivraison = {

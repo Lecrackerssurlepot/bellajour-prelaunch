@@ -13,7 +13,8 @@ import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 
 /**
  * POST /api/collectif/proposition — répondre à une proposition complémentaire
- * posée par l'atelier dans le dossier. `{ token, documentId, reponse }`,
+ * posée par l'atelier dans les documents (la carte du fil de « Parler à
+ * l'atelier »). `{ token, documentId, reponse }`,
  * `reponse` = `accepter` | `reparler`.
  *
  * ⚠️ « Accepter » ne PAIE rien et ne chiffre rien (PRD §0.5) : le document
@@ -75,5 +76,5 @@ export async function POST(request: Request) {
     { document: doc.id, libelle: doc.libelle, par: qui },
     null
   );
-  return NextResponse.json({ ok: true, journal }, { status: 201 });
+  return NextResponse.json({ ok: true, message: ecrit.message, journal }, { status: 201 });
 }

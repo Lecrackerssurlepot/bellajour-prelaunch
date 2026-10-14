@@ -375,6 +375,16 @@
   color: var(--bj-text-faint);
   margin-bottom: 2px;
 }
+/* Le document cité et la pièce jointe d'un message du client (révision §14.5). */
+.eca-root .eca-bulle-joint {
+  display: block;
+  margin: 4px 0;
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+}
+.eca-root .eca-bulle-joint a {
+  color: var(--bj-action);
+}
 
 .eca-root .eca-mag-liste li.eca-mag-brief {
   flex-direction: column;

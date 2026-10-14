@@ -10,7 +10,7 @@ import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
  * POST /api/collectif/messages/lus — le responsable a lu les messages de
  * l'atelier. `{ token }`.
  *
- * Appelée par un EFFET de la page « Votre dossier », jamais au rendu : un
+ * Appelée par un EFFET de « Parler à l'atelier », jamais au rendu : un
  * préchargement de lien exécute la page, et marquerait lu ce que personne
  * n'a vu (Next 16, prefetching). Le lien d'équipe ne marque rien : il lit
  * sans écrire. Pas de ligne de journal : un accusé de lecture n'est pas un

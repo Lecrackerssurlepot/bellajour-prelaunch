@@ -1,0 +1,158 @@
+/* Documents (révision §14.5) — tout sous `.ec-espace`.
+   À gauche (3/5) : l'encart « Nouvelle proposition » s'il y en a une, puis la
+   liste des documents qui défile chez elle ; à droite (2/5) : ce que prévoit
+   le devis. Rien ne fait défiler la page. */
+
+.ec-espace .ec-docs {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 24px;
+  padding-top: 28px;
+}
+.ec-espace .ec-docs-gauche {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ec-espace .ec-docs-etiquette {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-docs-accent {
+  color: var(--ec-accent);
+}
+
+.ec-espace .ec-docs-nouvelle {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 22px;
+  border-radius: 18px;
+  border: 1px solid var(--ec-accent);
+  background: var(--ec-surface);
+  color: var(--ec-text);
+  text-decoration: none;
+}
+.ec-espace .ec-docs-nouvelle-texte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ec-espace .ec-docs-liste {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  border: 1px solid var(--ec-line);
+  background: var(--ec-surface);
+}
+.ec-espace .ec-docs-tete {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--ec-line);
+}
+.ec-espace .ec-docs-vide {
+  margin: 0;
+  padding: 18px 22px;
+}
+/* Sans document, la carte garde sa taille naturelle. */
+.ec-espace .ec-docs-liste:has(.ec-docs-vide) {
+  flex: none;
+}
+.ec-espace .ec-docs-lignes {
+  flex: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ec-espace .ec-docs-lignes li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--ec-line);
+}
+.ec-espace .ec-docs-lignes li:last-child {
+  border-bottom: 0;
+}
+.ec-espace .ec-docs-lignes svg {
+  flex: none;
+  color: var(--ec-accent);
+}
+.ec-espace .ec-docs-nom {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-docs-statut {
+  flex: none;
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+
+.ec-espace .ec-docs-devis {
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 18px 22px;
+  border-radius: 18px;
+  border: 1px solid var(--ec-line);
+  background: var(--ec-surface);
+}
+.ec-espace .ec-docs-prevu {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+.ec-espace .ec-docs-prevu li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--ec-line);
+  font-size: 13px;
+}
+.ec-espace .ec-docs-prevu li > span:first-child {
+  color: var(--ec-muted);
+}
+.ec-espace .ec-docs-prevu li > span:last-child {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-docs-question {
+  padding-top: 12px;
+  font-size: 13px;
+  color: var(--ec-accent);
+  text-decoration: none;
+}
+.ec-espace .ec-docs-question:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 860px) {
+  .ec-espace .ec-docs {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 16px;
+  }
+  .ec-espace .ec-docs-nouvelle {
+    flex-wrap: wrap;
+  }
+  .ec-espace .ec-docs-lignes li {
+    flex-wrap: wrap;
+    padding: 14px 16px;
+  }
+}

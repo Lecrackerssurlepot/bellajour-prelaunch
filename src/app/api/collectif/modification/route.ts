@@ -15,10 +15,12 @@ import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
  * phase 6). `{ token, motif, texte }`.
  *
  * La demande devient un MESSAGE (l'atelier la lit dans la messagerie de la
- * fiche, avec le compteur de non-lus) et une ligne de journal qui garde le
- * motif. Rien d'autre : si elle change le devis, l'atelier pose une
- * proposition complémentaire dans le dossier. Possible jusqu'à la validation
- * du bon à tirer. Le lien d'équipe reçoit 403.
+ * fiche, avec le compteur de non-lus ; le client la voit en carte dans
+ * « Parler à l'atelier », `lireMessageDemande`) et une ligne de journal qui
+ * garde le motif. Rien d'autre : si elle change le devis, l'atelier pose une
+ * proposition complémentaire dans les documents. Possible jusqu'à la
+ * validation du bon à tirer. Le lien d'équipe reçoit 403. Le message écrit
+ * est rendu : l'écran l'ajoute au fil sans attendre la relève.
  */
 
 export const runtime = "nodejs";
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
 
   if (!demandePossible(etatEffectif(edition.etat, edition.cloture_le, new Date()))) {
     return NextResponse.json(
-      { error: "bat_valide", message: "Le bon à tirer est validé : écrivez à l'atelier dans votre dossier." },
+      { error: "bat_valide", message: "Le bon à tirer est validé : écrivez simplement à l'atelier dans la conversation." },
       { status: 409 }
     );
   }
@@ -52,5 +54,5 @@ export async function POST(request: Request) {
   const ecrit = await ecrireMessage(supabase, edition.id, "client", qui, messageDemande(demande));
   if (!ecrit.ok) return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
   const journal = await journaliser(supabase, { editionId: edition.id }, "modification_demandee", { motif: demande.libelle, par: qui }, null);
-  return NextResponse.json({ ok: true, journal }, { status: 201 });
+  return NextResponse.json({ ok: true, message: ecrit.message, journal }, { status: 201 });
 }

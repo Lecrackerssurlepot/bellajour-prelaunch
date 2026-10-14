@@ -119,6 +119,11 @@ export function cleDocument(editionId: string, documentId: string, nomOrigine: s
   return `${prefixeEdition(editionId)}documents/${exigerUuid(documentId, "documentId")}.${extensionSure(nomOrigine)}`;
 }
 
+/** La pièce jointe d'un message (révision §14.5), rangée par l'id du message. */
+export function clePieceJointe(editionId: string, messageId: string, nomOrigine: string): string {
+  return `${prefixeEdition(editionId)}messages/${exigerUuid(messageId, "messageId")}.${extensionSure(nomOrigine)}`;
+}
+
 /** Une image d'un style du mur. Les styles n'appartiennent à aucune édition. */
 export function cleStyle(slug: string, nomFichier: string): string {
   if (!estSlugStyle(slug)) throw new Error(`cles.ts : slug de style invalide (${JSON.stringify(slug)})`);

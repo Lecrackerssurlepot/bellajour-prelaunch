@@ -1,6 +1,6 @@
 "use client";
 
-/* Les documents de « Votre dossier », côté atelier : devis signé, factures,
+/* Les documents de l'espace client (« Documents »), côté atelier : devis signé, factures,
    conditions, accord sur les données, proposition complémentaire. Le fichier
    part tel quel (PDF ou image, 4 Mo au plus) et le client le télécharge
    depuis son espace. Rien ne s'efface. */

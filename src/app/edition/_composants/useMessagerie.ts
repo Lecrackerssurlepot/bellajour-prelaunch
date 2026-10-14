@@ -15,12 +15,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { curseur, fusionnerMessages, INTERVALLE_MESSAGES_MS, type Message } from "@/lib/collectif/messages";
 
+/** Ce qui accompagne un message du client (révision §14.5) : un document cité, un fichier joint. */
+export type Joint = { documentId: string | null; fichier: File | null };
+
 type Options = {
   initiaux: Message[];
   /** Les messages arrivés après `depuis` ; `null` si l'appel a échoué. */
   charger: (depuis: string | null) => Promise<Message[] | null>;
   /** Écrit un message ; rend le message écrit, ou une phrase d'erreur. */
-  envoyer: (texte: string) => Promise<Message | string>;
+  envoyer: (texte: string, joint?: Joint) => Promise<Message | string>;
   /** Le camp qui lit : on marque lus les messages de L'AUTRE camp. */
   lecteur: "client" | "atelier";
   marquerLus?: () => Promise<void>;
@@ -78,11 +81,11 @@ export function useMessagerie(o: Options) {
   }, []);
 
   const envoyer = useCallback(
-    async (texte: string): Promise<boolean> => {
+    async (texte: string, joint?: Joint): Promise<boolean> => {
       setEnvoi(true);
       setErreur(null);
       try {
-        const r = await options.current.envoyer(texte);
+        const r = await options.current.envoyer(texte, joint);
         if (typeof r === "string") {
           setErreur(r);
           return false;
@@ -96,5 +99,7 @@ export function useMessagerie(o: Options) {
     [ajouter]
   );
 
-  return { messages, envoyer, envoi, erreur };
+  /* `ajouter` : un message écrit par une AUTRE route (une demande, une réponse
+     à une proposition) entre au fil sans attendre la relève. */
+  return { messages, envoyer, envoi, erreur, ajouter };
 }

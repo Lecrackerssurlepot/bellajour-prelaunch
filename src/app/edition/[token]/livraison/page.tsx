@@ -118,7 +118,7 @@ export default async function Page({ params }: { params: Promise<{ token: string
           )}
           <p className="ec-note">
             {p('Une question sur la livraison ?', 'Une question sur la livraison ?')}{' '}
-            <Link className="ec-lien-texte" href={cheminSection(token, 'dossier')} prefetch={false}>
+            <Link className="ec-lien-texte" href={cheminSection(token, 'atelier')} prefetch={false}>
               {p('Écrire à l’atelier', 'Écrire à l’atelier')}
             </Link>
           </p>

@@ -44,9 +44,32 @@ export function lireDemande(corps: Record<string, unknown>): Demande {
   return { ok: true, motif: m.cle, libelle: m.libelle, texte };
 }
 
+const PREFIXE_DEMANDE = "Demande de modification · ";
+
 /** Le message qui part dans la messagerie : l'atelier le lit là où il lit tout le reste. */
 export function messageDemande(d: { libelle: string; texte: string }): string {
-  return d.texte ? `Demande de modification · ${d.libelle}\n${d.texte}` : `Demande de modification · ${d.libelle}`;
+  return d.texte ? `${PREFIXE_DEMANDE}${d.libelle}\n${d.texte}` : `${PREFIXE_DEMANDE}${d.libelle}`;
+}
+
+/**
+ * Le chemin inverse (révision §14.5) : un message du client qui EST une
+ * demande devient une carte dans le fil. Seul un motif de la liste compte :
+ * un client qui écrirait la même phrase à la main reste un message.
+ */
+export function lireMessageDemande(texte: string): { motif: string; precision: string } | null {
+  if (!texte.startsWith(PREFIXE_DEMANDE)) return null;
+  const [ligne, ...reste] = texte.slice(PREFIXE_DEMANDE.length).split("\n");
+  const motif = MOTIFS_MODIFICATION.find((m) => m.libelle === ligne.trim());
+  return motif ? { motif: motif.libelle, precision: reste.join("\n").trim() } : null;
+}
+
+/** « Vos demandes » : les demandes du client, lues dans le fil (une demande = un message). */
+export function demandesDuFil(messages: readonly { auteur: string; texte: string; created_at: string }[]): { motif: string; quand: string }[] {
+  return messages
+    .filter((m) => m.auteur === "client")
+    .map((m) => ({ d: lireMessageDemande(m.texte), quand: m.created_at }))
+    .filter((x): x is { d: { motif: string; precision: string }; quand: string } => x.d !== null)
+    .map((x) => ({ motif: x.d.motif, quand: x.quand }));
 }
 
 /** Les deux réponses possibles à une proposition complémentaire. */

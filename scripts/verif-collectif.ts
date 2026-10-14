@@ -22,6 +22,7 @@ import {
   cleCouverture,
   cleDocument,
   cleGrisTour,
+  clePieceJointe,
   clePageTour,
   clePdfTour,
   cleVignettePageTour,
@@ -70,9 +71,9 @@ import { cleFichier, compteDansPlafond, DELAI_DECLARATION_MORTE_MS, lireDeclarat
 import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
 import { jourDePhoto, libelleProvenance, lireFiltre, resumeDeposants } from "@/lib/collectif/grille";
 import { contenusAEnvoyer, ETAPES_CLIENT, etapeClient, initiales, joursAvant, libelleRole, parler, phraseJours } from "@/lib/collectif/espace";
-import { curseur, fusionnerMessages, lireTexteMessage, MESSAGE_MAX, type Message } from "@/lib/collectif/messages";
+import { curseur, filDeConversation, fusionnerMessages, lirePieceJointe, lireTexteMessage, MESSAGE_MAX, PIECE_MAX, texteDuMessage, type Message } from "@/lib/collectif/messages";
 import { libelleTypeDocument, lireSaisieDocument, nomTelechargement } from "@/lib/collectif/documents";
-import { formaterInstantParis, instantDeParis, versChampParis } from "@/lib/collectif/dates";
+import { formaterHeureParis, formaterInstantParis, formaterJourParis, instantDeParis, versChampParis } from "@/lib/collectif/dates";
 import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
 import { prochaineEtape } from "@/lib/collectif/prochaine";
 import { phraseEvenement } from "@/lib/collectif/recit";
@@ -103,10 +104,12 @@ import { colonneAbsente, MIGRATION_REVISION } from "@/lib/collectif/migration";
 import { libellePlafondLien, lirePlafondLien, plafondLienMax, CURSEUR_LIEN } from "@/lib/collectif/plafonds";
 import {
   demandePossible,
+  demandesDuFil,
   estJour,
   etapesLivraison,
   formaterJour,
   lireDemande,
+  lireMessageDemande,
   lireSaisieLivraison,
   messageDemande,
   messageProposition,
@@ -1273,6 +1276,63 @@ ok("de l'enrichissement B2C, seul le COEUR sans table est importe (jamais enrich
    libCollectif.every((f) => !/\b(enrichirPhotos|geocoderNumero|enrichirDossier|logEvenement|envoyerMailAtelier)\b/.test(lire(`src/lib/collectif/${f}`).replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, ""))));
 ok("aucun module de src/lib/collectif ne nomme une table du B2C",
    libCollectif.every((f) => !/from\(["'](numeros|photos|evenements|mails_envoyes)["']\)/.test(lire(`src/lib/collectif/${f}`))));
+
+titre("— revision 14.5 : parler a l'atelier, documents —");
+{
+  ok("piece jointe : un PDF de 1 Mo passe", lirePieceJointe("Programme.pdf", 1_000_000).ok);
+  const exe = lirePieceJointe("outil.exe", 1000);
+  ok("piece jointe : un executable est refuse, par son extension", !exe.ok);
+  ok("piece jointe : au-dela de 4 Mo, refusee", !lirePieceJointe("photo.jpg", PIECE_MAX + 1).ok && lirePieceJointe("photo.jpg", PIECE_MAX).ok);
+  ok("piece jointe : un fichier vide est refuse", !lirePieceJointe("vide.pdf", 0).ok);
+  const seul = texteDuMessage("  ", "Programme.pdf");
+  ok("un fichier envoye seul prend « Fichier joint : nom » (le texte reste obligatoire en base)", seul.ok && seul.texte === "Fichier joint : Programme.pdf");
+  ok("sans fichier, un message vide reste refuse", !texteDuMessage("", null).ok);
+  const d = messageDemande({ libelle: "Ajouter des pages", texte: "8 pages pour la soiree" });
+  const lue = lireMessageDemande(d);
+  ok("une demande se relit en carte : motif et precision", lue?.motif === "Ajouter des pages" && lue.precision === "8 pages pour la soiree");
+  ok("une phrase qui imite une demande sans motif connu reste un message", lireMessageDemande("Demande de modification · n'importe quoi") === null);
+  const m = (id: string, auteur: "client" | "atelier", texte: string, created_at: string): Message => ({ id, auteur, qui: null, texte, created_at });
+  const fil = [
+    m("a", "atelier", "Bienvenue", "2026-10-12T08:02:00Z"),
+    m("b", "client", messageDemande({ libelle: "Ajouter des pages", texte: "" }), "2026-10-14T12:20:00Z"),
+    m("c", "atelier", messageDemande({ libelle: "Ajouter des pages", texte: "" }), "2026-10-14T12:30:00Z"),
+  ];
+  const dem = demandesDuFil(fil);
+  ok("« Vos demandes » : seulement les demandes DU CLIENT", dem.length === 1 && dem[0].motif === "Ajouter des pages");
+  const el = filDeConversation(fil, [{ id: "p1", quand: "2026-10-13T09:00:00Z" }], formaterJourParis);
+  ok("le fil : jours, messages et proposition dans l'ordre du temps",
+    el.map((e) => e.genre).join() === "jour,message,jour,proposition,jour,message,message"
+    && el[0].genre === "jour" && el[0].jour === "12 octobre");
+  ok("l'heure du fil : « 14 h 20 », heure de Paris", formaterHeureParis("2026-10-14T12:20:00Z") === "14 h 20");
+  const ed = "11111111-2222-3333-4444-555555555555";
+  ok("la piece jointe se range sous collectif/<edition>/messages/<id du message>",
+    clePieceJointe(ed, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "Programme final.PDF") === `collectif/${ed}/messages/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.pdf`);
+  let refuse = false;
+  try {
+    clePieceJointe(ed, "../x", "a.pdf");
+  } catch {
+    refuse = true;
+  }
+  ok("un id de message hors forme est refuse par la cle", refuse);
+
+  const envoyer = lire("src/app/api/collectif/messages/envoyer/route.ts");
+  ok("envoyer : la migration est SONDEE avant d'ecrire au coffre (aucun fichier orphelin)",
+    envoyer.indexOf("revisionMessagesAppliquee(") > 0 && envoyer.indexOf("revisionMessagesAppliquee(") < envoyer.indexOf("ecrireObjet("));
+  ok("envoyer : 503 migration_revision_absente, jamais un message sans sa piece", /ERREUR_REVISION_ABSENTE/.test(envoyer) && /colonneAbsente\(ecrit\.code\)/.test(envoyer));
+  ok("envoyer : le document cite appartient a l'edition", /\.eq\("edition_id", edition\.id\)/.test(envoyer));
+  const messagerie = lire("src/lib/collectif/messagerie.ts");
+  ok("le fil se replie sans les colonnes de la revision (lecture)", /colonneAbsente\(error\.code\)\) \(\{ data, error \} = await requete\(COLONNES_AVANT\)\)/.test(messagerie));
+  ok("un message simple ne nomme pas les colonnes de la revision (il s'ecrit avant la migration)", /\.\.\.\(extras\.documentId \?/.test(messagerie));
+  const docs = lire("src/app/edition/[token]/dossier/page.tsx");
+  ok("Documents : plus de messagerie, l'encart « Nouvelle proposition » mene a Parler a l'atelier",
+    !/Messagerie|useMessagerie/.test(docs) && docs.includes("Nouvelle proposition") && docs.includes("cheminSection(token, 'atelier')"));
+  ok("Documents : pas de ligne « Format » inventee", !/Format/.test(docs));
+  ok("Parler a l'atelier : le fil, le « + » (joindre, citer), les demandes",
+    /filDeConversation/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")) && /Citer un document/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")));
+  const restes = fichiersParSuffixe("src/app/edition", /\.tsx?$/).filter((f) => /[Vv]otre dossier|[Tt]on dossier/.test(lire(f)));
+  ok(`plus aucun « votre dossier » dans l'espace client${restes.length ? ` (${restes.join(", ")})` : ""}`, restes.length === 0);
+  ok("aucun rendez-vous invente (pas de date ni de duree de rendez-vous dans le fil)", !/\ben visio\b|minutes en|Rendez-vous pris|Prochain rendez-vous/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")));
+}
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
 process.exit(ko === 0 ? 0 : 1);

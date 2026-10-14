@@ -1,5 +1,5 @@
 /**
- * Les documents que l'atelier pose dans « Votre dossier » (PRD §4.2, §8).
+ * Les documents que l'atelier pose dans « Documents » (PRD §4.2, §8, révision §14.5).
  * Module PUR : aucun accès base, aucun réseau, aucune variable d'environnement.
  *
  * Le contenu de ces documents (devis, factures, CGV, accord sur les données)
