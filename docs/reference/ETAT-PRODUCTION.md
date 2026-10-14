@@ -15,12 +15,18 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 - **Code** sur `feat/collectif-revision-13-10` (issue de `feat/collectif-phases-2-a-6`, non
   fusionnée) : une PR vers `main` porte les phases 2 à 6 ET la révision. Rien ne change en
   production tant qu'elle n'est pas fusionnée et que `COLLECTIF_OUVERT` reste absent de Vercel.
-- **Migration `20261014_collectif_revision.sql` ÉCRITE, PAS APPLIQUÉE** (à appliquer par
-  Mathias) : `collectif_provenances.plafond_par_personne`, `collectif_messages.document_id`,
-  `piece_jointe_key`, `piece_jointe_nom`. Sans elle, vérifié le 14/10 sur localhost:3000 : les
-  lectures se replient (liens et fil s'affichent), un lien AVEC plafond, un document cité ou une
-  pièce jointe répondent 503 `migration_revision_absente` avec la phrase qui nomme le fichier ;
-  un lien « Sans limite » et un message simple passent.
+- **Migration `20261014_collectif_revision.sql` APPLIQUÉE le 14/10/2026 par Mathias**, vérifiée
+  en SQL (lecture seule) le même jour : `collectif_provenances.plafond_par_personne` (integer,
+  contrainte `>= 1`), `collectif_messages.document_id` (uuid, clé vers `collectif_documents`,
+  `on delete set null`), `piece_jointe_key`, `piece_jointe_nom`, l'index partiel
+  `collectif_messages_document_idx`. Avant elle (vérifié aussi le 14/10) : lectures repliées,
+  503 `migration_revision_absente` sur un lien plafonné, une citation, une pièce jointe.
+- **Rejoué après la migration, le 14/10 sur localhost:3000** : un lien « Essai plafond (Claude) »
+  à 5 photos par personne sur « Essai révision », puis un VRAI dépôt de 6 photos : 5 arrivées
+  (R2, `collectif/033b0841-…/photos/`), la 6e refusée avec la phrase du plafond ; sur « Essai
+  livraison », un message qui CITE la proposition « Vingt exemplaires de plus » et un message
+  avec la pièce jointe `tour1.pdf` (R2, `collectif/<id>/messages/`), téléchargée identique à
+  l'original. La fiche atelier montre « Document cité » et « Pièce jointe », liens signés.
 - **Quatrième édition d'essai : « Essai révision (Claude) »** (id `033b0841-…`, deux magazines,
   collecte ouverte), créée le 14/10 pour la révision. Elle porte : le lien de contribution
   « Équipe Lyon » (sans limite), deux contenus reçus (un logo d'essai, le mot du dirigeant au
@@ -28,6 +34,8 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
   brief du **magazine 1 VALIDÉ** (style « Essai technique Claude », palette Essai, beaucoup de
   texte, trois doubles pages, une couverture aimée) ; le magazine 2 n'a pas de style, deux
   couvertures aimées. Aucun mail ne part (phase 7). À archiver quand Mathias l'aura regardée.
+- « Essai révision » porte aussi deux liens créés par Mathias en recette (« OUI OUI », « OKAY »,
+  sans limite).
 - L'édition vierge « Organisation d'essai » n'a pas été touchée : elle reste à Mathias.
 - `verif-collectif.ts` 426 vérifications, `verif-atelier.ts` 1450, verts le 14/10.
 

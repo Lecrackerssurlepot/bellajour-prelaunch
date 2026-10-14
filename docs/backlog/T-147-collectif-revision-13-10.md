@@ -62,5 +62,9 @@ Vérifié : `tsc`, `lint` (0 erreur), `build`, `verif-atelier.ts` (1450) et `ver
 (426) verts ; chaque écran mesuré sans défilement de page en jour ET en nuit, à 1440 × 900 et
 1280 × 800 ; téléphone à 375 px (menu en tiroir, BAT avec notes en feuille du bas).
 
-**Reste à Mathias** : appliquer `supabase/migrations/20261014_collectif_revision.sql` ; relire
-les quatre questions du mot du dirigeant ; trancher les rendez-vous pris (PRD §12.13).
+**Migration appliquée par Mathias le 14/10**, vérifiée en SQL, puis rejouée en vrai : un lien
+plafonné à 5 a reçu 5 photos sur 6 (la 6e refusée avec sa phrase), un document cité et une pièce
+jointe sont arrivés et s'ouvrent des deux côtés (client et fiche atelier).
+
+**Reste à Mathias** : fusionner la PR #229 ; relire les quatre questions du mot du dirigeant ;
+trancher les rendez-vous pris (PRD §12.13).
