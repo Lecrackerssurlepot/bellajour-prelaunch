@@ -536,6 +536,14 @@ Prévoir les accroches, ne rien envoyer :
     et « sur 7 » côté atelier. À trancher en phase 2 (T-141).
 12. **Le texte du consentement et des conditions** du lien participant (§0.5) : texte légal,
     jamais rédigé d'office (T-142).
+13. **Les rendez-vous pris** (« Prochain rendez-vous », cartes « Rendez-vous pris », §14.5) :
+    aucune donnée, le rendez-vous est un lien Google. Les afficher demande une saisie par
+    l'atelier (date, motif) ou une intégration agenda (T-147).
+14. **Les questions du mot du dirigeant** (§14.2) : la maquette n'en écrit qu'une, et elle est
+    fictive. Quatre questions neutres sont posées dans le code (`QUESTIONS_MOT`), à relire
+    (T-147).
+15. **Le format au devis** (« Magazine A4 », §14.5) : aucune colonne ne le porte ; la ligne
+    n'est pas affichée tant qu'il n'est pas réglable dans la fiche (T-147).
 
 ---
 
@@ -547,3 +555,127 @@ Prévoir les accroches, ne rien envoyer :
 2. Ouvrir Claude Code, **Plan Mode** (Maj+Tab deux fois), coller le prompt de lancement
    fourni avec ce document.
 3. Valider le plan de la phase 0, puis une phase à la fois.
+
+---
+
+## 14. Révision du 13/10/2026 — l'espace client devient un logiciel
+
+Après les premiers essais de Mathias. **Cette section prime sur les §4 à §7 quand elle les
+contredit.** Les maquettes de `docs/produit/collectif/maquettes/` ont été remplacées le même jour
+(nouvelles : `CollecteB.dc.html`, `StyleBrief.dc.html`, dossier `assets/` avec les deux logos).
+Les fichiers `V2*.dc.html` sont des **essais abandonnés** : ne rien en reprendre.
+
+### 14.1 Principes, sur tous les écrans du client
+
+- **Rien ne fait défiler la page entière.** Cible : 1440 × 900 sans défilement de page. Seules
+  les zones longues défilent à l'intérieur (grille de photos, conversation, notes, mur des
+  styles). Le menu, l'en-tête de section et les boutons d'action restent toujours visibles.
+- **Menu de gauche identique partout** : vrai logo (en haut), sélecteur d'édition, puis
+  Tableau de bord · Style · Photos · Bon à tirer · Livraison, séparateur, Parler à l'atelier
+  (pastille de non-lus) · Documents (ex « Votre dossier »). En bas : la responsable et le
+  bouton jour / nuit. Étapes pas encore ouvertes : grisées + cadenas + raison au survol (§3.2).
+- **Mode jour / nuit** : une petite icône soleil / lune en bas du menu, jamais un gros bouton.
+  Nuit = `#050505`, texte blanc, accent `--c-accent #d68a63`, logo cuivre
+  (`public/logo-mail-cuivre.png`). Jour = beige `#f3ece2`, panneaux `#ece3d6` / `#fbf8f3`,
+  texte `#1c1c1c`, accent bleu Bellajour `#1d5bb0`, logo bleu
+  (`public/images/v2/ui/logo-bellajour-*.webp`). Le choix est mémorisé sur l'appareil
+  (préférence d'affichage, pas une donnée). Tout passe par des variables CSS sur le scope de
+  l'espace : aucune couleur en dur dans les composants. Les pages de magazine (BAT, styles)
+  gardent leurs vraies couleurs dans les deux modes.
+- **Fenêtres** : verre dépoli (fond translucide + flou), jamais un aplat opaque.
+- Les textes, noms et chiffres des maquettes restent fictifs (§0.5).
+
+### 14.2 Tableau de bord (`Espace.dc.html`)
+
+Deux grands encarts côte à côte, puis la ligne des contenus, puis le dernier message.
+Le sélecteur « Maquette » n'existe pas dans le produit (il montre les états).
+
+- **Style** — deux états :
+  - *rien choisi* : trois grandes couvertures de styles en éventail qui occupent l'encart,
+    bouton « Découvrir les styles » ;
+  - *au moins un choisi* : une couverture par magazine côte à côte (le style choisi rendu en
+    couverture, ou un emplacement vide « + À choisir »), lien « Voir ou modifier le brief »
+    (→ §14.6), bouton vers le magazine qui reste à faire.
+- **Photos** — l'encart change dès qu'il se passe quelque chose :
+  - *aucune photo* : la **zone de dépôt est déjà ouverte** et prend presque tout l'encart
+    (« Déposez vos photos ici », Choisir des photos, Un dossier, dossier de destination
+    « Mes photos » modifiable). En bas, plus petit : **« Inviter des proches à ajouter leurs
+    photos »** — « Un lien de contribution pour chaque personne » ;
+  - *lien créé, rien reçu* : la carte du lien avec son QR code, Copier le lien, WhatsApp, Mail ;
+  - *photos reçues* : le total, la liste des dossiers (provenance, réglage, nombre), une
+    mosaïque, Voir les photos.
+- **Lien de contribution** (fenêtre en deux temps) : 1) le nom de la personne ou du groupe +
+  le nombre de photos **au curseur** (raccourcis 10 / 30 / 50 / Sans limite, valeur affichée en
+  grand) → « Créer le lien » ; 2) le lien, son QR code, Copier / WhatsApp / Mail / QR code.
+  Chaque lien a **son propre plafond** : cela remplace le curseur unique « photos par
+  participant » (§5.1). Idée gardée pour plus tard : un lien ouvert à tous où chacun saisit son
+  nom (c'est déjà le cas du lien participants).
+- **À envoyer à l'atelier** : une puce par contenu demandé (cochée quand reçu). Un clic ouvre
+  la fenêtre d'envoi du contenu : dépôt de fichier (logo, programme, liste) ou questionnaire
+  question par question (mot du dirigeant).
+- **Dernier message de l'atelier** : une ligne, « Répondre » → Parler à l'atelier.
+
+### 14.3 Photos
+
+**On ne change pas l'écran Photos pour l'instant** (`Collecte.dc.html`, proposition A).
+`CollecteB.dc.html` (« dossiers et liens ») est une proposition **non validée** : ne pas
+l'implémenter. Seul changement ici : le menu, le mode jour / nuit, le défilement interne, et la
+fenêtre « lien de contribution » (§14.2) accessible depuis le bouton de partage.
+
+### 14.4 Bon à tirer (`BAT.dc.html`)
+
+- Plein écran : en-tête (tours, Avant / Après, échéance, « Valider ce magazine »), la double
+  page au centre à la taille de l'écran, **la bande des pages toujours visible en bas**, et
+  **les magazines en onglets sous la bande**, l'actif bien marqué.
+- **Les notes vivent dans un panneau à droite qui se replie et se rouvre par un onglet
+  vertical « Notes · n »** collé au bord (pas de croix).
+- Cliquer sur la page pose une épingle et ouvre la nouvelle note **dans ce panneau** : les
+  quatre types, les champs, et « Annuler / Ajouter la note » **toujours visibles** sans défiler.
+- Une seule ligne d'information par tour (pas de bandeaux qui s'empilent).
+- La vignette « Couverture » de la bande montre les propositions de couverture dans la zone
+  centrale (pas une autre page).
+- « Valider ce magazine » ouvre une confirmation : définitif, tirage et couverture rappelés.
+
+### 14.5 Parler à l'atelier (`RendezVous.dc.html`) et Documents (`Dossier.dc.html`)
+
+- **Parler à l'atelier** réunit tout : la conversation (messages, cartes « rendez-vous pris »,
+  cartes « demande de modification » avec la proposition complémentaire, Accepter / En
+  reparler), la zone d'écriture fixe en bas, et à droite le prochain rendez-vous + « Prendre
+  un autre rendez-vous » + la liste des demandes. « Demander une modification » (en-tête) ouvre
+  une fenêtre ; partout ailleurs dans l'espace, ce bouton mène ici.
+- **Le « + » de la zone d'écriture** : « Joindre un fichier depuis l'ordinateur » ou **« Citer un
+  document »** (la liste des documents de l'édition : devis signé, factures, propositions,
+  conditions). Le document cité s'affiche en étiquette au-dessus du message envoyé et l'atelier
+  l'ouvre d'un clic. Donnée : `collectif_messages.document_id` (nullable, vers
+  `collectif_documents`) + pièce jointe éventuelle.
+- **Documents** = seulement les documents, plus un encart « Nouvelle proposition » en tête
+  quand une proposition complémentaire attend une réponse (→ Parler à l'atelier), et le
+  résumé « Ce que prévoit le devis » à droite. La messagerie n'y est plus.
+
+### 14.6 Style
+
+- **Le mur** (`Styles.dc.html`) : le mur défile à l'intérieur, le brief reste fixe à droite.
+- **Un style en détail** (`StyleDetail.dc.html`) : présentation raccourcie ; une **barre
+  d'étapes collante** (1 Palette, 2 Le texte, 3 Doubles pages, 4 Couvertures) qui se coche et
+  mène à la section ; le résumé et « Choisir … pour le magazine N » fixes en bas.
+- **Nouveau : modifier le brief partie par partie** (`StyleBrief.dc.html`, route
+  `/edition/[t]/style/brief`) : un onglet par magazine ; à gauche la couverture recolorée et
+  « Changer de style » ; à droite quatre cartes — palette et texte modifiables sur place,
+  doubles pages et couvertures aimées via « Modifier » qui ouvre un panneau latéral (couvertures
+  filtrables par style, deux au plus). Enregistrement à chaque modification, « Valider le
+  brief ». Le visuel du style sera retravaillé : implémenter la mécanique proprement, sans
+  figer la mise en forme.
+
+### 14.7 Livraison
+
+Même menu, même thème, aucune page qui défile. Le flux « derniers passages » reste hors
+périmètre (§0.5).
+
+### 14.8 Données touchées par la révision
+
+Une migration à écrire (jamais appliquée par Claude Code) :
+- `collectif_provenances.plafond_par_personne integer null` (null + `sans_plafond = true`
+  = sans limite) : le plafond appartient au lien ;
+- `collectif_messages.document_id uuid null references collectif_documents(id) on delete set null`
+  et la pièce jointe du message (clé R2 + nom), si elle n'existe pas déjà.
+Repli « colonne absente » en lecture, 503 explicite en écriture, comme le reste du dépôt.
