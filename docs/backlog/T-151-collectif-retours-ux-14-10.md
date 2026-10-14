@@ -38,5 +38,13 @@ code, et que je pose des questions sur ce que je ne comprends pas.
   d'un autre » tombe-t-elle ?), 6 (la capture), 8 (quel écran, quel message, mêmes photos ou
   nouvelles ? un fichier déjà envoyé est volontairement sauté).
 
+## Les maquettes (14/10, en autonomie, à la demande de Mathias)
+Canevas https://claude.ai/artifact/5G4LC7RG1s6iiEAbZDEe2W, copie dans
+`docs/produit/collectif/maquettes/propositions-14-10/`. **Validées par Mathias le 14/10**
+(« tout le reste me va »), avec une retouche : la présélection se marque par un BORD autour de
+la photo, sans case ni coche (trop de photos), et deux boutons « Tout sélectionner » / « Tout
+désélectionner ». Le menu de la maquette a des carrés à la place des icônes : l'espace garde
+ses vraies icônes.
+
 ## Ce qui a été fait
-Rien encore. Ticket ouvert le 14/10/2026.
+- 14/10 : logo blanc en mode nuit (1) et Entrée envoie (12), branche `feat/collectif-retours-ux-1`.

@@ -38,17 +38,16 @@ a{color:#d68a63}a:hover{color:#ffffff}
         <div style="display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-radius: 14px; border: 1px solid rgba(214,138,99,0.45); background: rgba(214,138,99,0.10)">
           <span style="display: flex; flex-direction: column; flex: 1; min-width: 0">
             <strong style="font-weight: 600">Votre présélection : 12 sur 40</strong>
-            <span style="font-size: 12px; color: rgba(255,255,255,0.72)">Facultative. Cochez les photos que vous tenez à voir dans le magazine ; sans présélection, l'atelier choisit parmi toutes.</span>
+            <span style="font-size: 12px; color: rgba(255,255,255,0.72)">Facultative. Touchez une photo pour la choisir : un bord l'entoure. Sans présélection, l'atelier choisit parmi toutes.</span>
           </span>
-          <button type="button" style="height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit; font-size: 13px; white-space: nowrap">Tout cocher (ce filtre)</button>
-          <button type="button" style="height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit; font-size: 13px; white-space: nowrap">Tout décocher</button>
+          <button type="button" style="height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit; font-size: 13px; white-space: nowrap">Tout sélectionner</button>
+          <button type="button" style="height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit; font-size: 13px; white-space: nowrap">Tout désélectionner</button>
         </div>
         <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; align-content: start">
           <sc-for list="{{ tuiles }}" as="t" hint-placeholder-count="18">
-            <label style="position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: {{ t.fond }}; outline: {{ t.contour }}; outline-offset: 2px">
-              <input type="checkbox" checked="{{ t.coche }}" aria-label="{{ t.libelle }}" style="position: absolute; top: 8px; left: 8px; width: 20px; height: 20px; accent-color: #d68a63">
-              <sc-if value="{{ t.doublon }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; bottom: 6px; left: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(0,0,0,0.6); font-size: 11px">Doublon</span></sc-if>
-            </label>
+            <button type="button" aria-pressed="{{ t.coche }}" aria-label="{{ t.libelle }}" style="position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 10px; overflow: hidden; background: {{ t.fond }}; outline: {{ t.contour }}; outline-offset: 2px">
+              <sc-if value="{{ t.doublon }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; bottom: 6px; left: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(0,0,0,0.6); color: #ffffff; font-size: 11px">Doublon</span></sc-if>
+            </button>
           </sc-for>
         </div>
       </main>
