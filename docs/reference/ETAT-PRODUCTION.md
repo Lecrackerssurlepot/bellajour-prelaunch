@@ -12,9 +12,14 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ## 14/10/2026 — Édition collective : la révision du 13/10 (PRD §14, T-147), sur branche
 
-- **Code** sur `feat/collectif-revision-13-10` (issue de `feat/collectif-phases-2-a-6`, non
-  fusionnée) : une PR vers `main` porte les phases 2 à 6 ET la révision. Rien ne change en
-  production tant qu'elle n'est pas fusionnée et que `COLLECTIF_OUVERT` reste absent de Vercel.
+- **PR #229 FUSIONNÉE dans `main` le 14/10/2026 à 11:47 (Paris) par Mathias** : elle porte les
+  phases 2 à 6 ET la révision (`feat/collectif-revision-13-10`). **`COLLECTIF_OUVERT` est
+  toujours absent de Vercel** (vérifié le 14/10 : 76 variables, aucune `COLLECTIF_*`) : tout le
+  B2B répond 404 en production, rien ne change pour les visiteurs. L'ouvrir = poser la variable,
+  puis redéployer (une variable n'entre en service qu'au déploiement suivant). Déploiement de
+  production du commit de fusion `19305a2` : **succès** (Vercel, 14/10) ; contrôlé en ligne le
+  même jour : `/`, `/magazine`, `/composer`, `/compte` répondent, `/edition/…` et `/depot/…`
+  répondent 404.
 - **Migration `20261014_collectif_revision.sql` APPLIQUÉE le 14/10/2026 par Mathias**, vérifiée
   en SQL (lecture seule) le même jour : `collectif_provenances.plafond_par_personne` (integer,
   contrainte `>= 1`), `collectif_messages.document_id` (uuid, clé vers `collectif_documents`,
