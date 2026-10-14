@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Déposer des photos dans un dossier</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&amp;family=DM+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#d68a63}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #050505; color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; overflow: hidden">
+  <dc-import name="Menu" actif="photos" hint-size="232px,900px"></dc-import>
+  <div style="flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column">
+    <header style="flex: none; height: 68px; box-sizing: border-box; padding: 0 32px; border-bottom: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center">
+      <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px">Les photos</h1>
+    </header>
+    <div aria-hidden="true" style="flex: 1; padding: 24px 32px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-content: start; opacity: 0.25">
+      <sc-for list="{{ fonds }}" as="f" hint-placeholder-count="14"><span style="aspect-ratio: 1; border-radius: 10px; background: {{ f }}"></span></sc-for>
+    </div>
+    <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 24px; padding: 24px; background: rgba(0,0,0,0.5)">
+
+      <section role="dialog" aria-labelledby="titre-deposer" style="width: 560px; box-sizing: border-box; padding: 28px; display: flex; flex-direction: column; gap: 18px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.14); background: rgba(20,20,20,0.9)">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px">
+          <h2 id="titre-deposer" style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px">Déposer des photos</h2>
+          <button type="button" aria-label="Fermer" style="width: 36px; height: 36px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18); background: transparent; color: #ffffff">✕</button>
+        </div>
+        <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 10px">
+          <legend style="padding: 0 0 10px; font-weight: 500">Dans quel dossier ?</legend>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <sc-for list="{{ dossiers }}" as="d" hint-placeholder-count="3">
+              <button type="button" aria-pressed="{{ d.choisi }}" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid {{ d.bord }}; background: {{ d.fond }}; color: #ffffff; font: inherit; font-size: 13px">{{ d.nom }} <span style="color: rgba(255,255,255,0.64)">· {{ d.n }}</span></button>
+            </sc-for>
+          </div>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: rgba(255,255,255,0.72)">Ou un nouveau dossier
+            <input placeholder="Le dîner, Le photographe, Jour 2…" style="height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04); color: #ffffff; font: inherit">
+          </label>
+          <span style="font-size: 12px; color: rgba(255,255,255,0.64)">La première fois, tout va dans « Mes photos ». Vous rangerez ensuite, en glissant un dossier dans un autre.</span>
+        </fieldset>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 28px 20px; border-radius: 18px; border: 1px dashed rgba(255,255,255,0.28); text-align: center">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"></path></svg>
+          <strong style="font-weight: 500; font-size: 16px">Glissez vos photos ici</strong>
+          <span style="font-size: 13px; color: rgba(255,255,255,0.64)">un dossier de votre ordinateur se glisse aussi</span>
+          <button type="button" style="height: 44px; padding: 0 22px; border-radius: 999px; border: 0; background: #d68a63; color: #050505; font: inherit; font-weight: 600">Choisir des photos</button>
+          <span style="font-size: 12px; color: rgba(255,255,255,0.64)">JPEG, HEIC, PNG · une photo déjà envoyée ne part jamais deux fois</span>
+        </div>
+      </section>
+
+      <section role="dialog" aria-labelledby="titre-envoi" style="width: 460px; box-sizing: border-box; padding: 28px; display: flex; flex-direction: column; gap: 18px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.14); background: rgba(20,20,20,0.9)">
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.64)">Pendant l'envoi</span>
+          <h2 id="titre-envoi" style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px">Vers « La soirée de clôture »</h2>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <span style="display: flex; align-items: baseline; gap: 12px">
+            <strong style="font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 88px; line-height: 0.9">312</strong>
+            <span style="font-size: 22px; color: rgba(255,255,255,0.72)">sur 770 arrivées</span>
+          </span>
+          <span style="height: 10px; border-radius: 999px; background: rgba(255,255,255,0.12); overflow: hidden; display: block"><span style="display: block; width: 40%; height: 10px; background: #d68a63"></span></span>
+          <span style="font-size: 13px; color: rgba(255,255,255,0.72)">8 photos en route en ce moment</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+          <sc-for list="{{ compteurs }}" as="c" hint-placeholder-count="3">
+            <span style="display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,0.04)">
+              <strong style="font-size: 24px; font-weight: 500">{{ c.n }}</strong>
+              <span style="font-size: 12px; color: rgba(255,255,255,0.72)">{{ c.libelle }}</span>
+            </span>
+          </sc-for>
+        </div>
+        <span style="font-size: 13px; color: rgba(255,255,255,0.72)">Naviguez librement : la pastille « Envoi en cours » en haut de chaque écran rouvre cette fenêtre. Gardez l'onglet ouvert.</span>
+        <div style="display: flex; gap: 10px">
+          <button type="button" style="flex: 1; height: 44px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit">Ajouter d'autres photos</button>
+          <button type="button" style="flex: 1; height: 44px; border-radius: 999px; border: 0; background: #d68a63; color: #050505; font: inherit; font-weight: 600">Réduire et continuer</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const t = ['#2f5d8a', '#c9a45c', '#8a6a4b', '#b5452f', '#1d3557', '#d64933'];
+    const dossier = (nom, n, choisi) => ({ nom, n, choisi, bord: choisi ? '#d68a63' : 'rgba(255,255,255,0.22)', fond: choisi ? 'rgba(214,138,99,0.16)' : 'transparent' });
+    return {
+      fonds: Array.from({ length: 14 }, (_, i) => 'linear-gradient(135deg, ' + t[i % 6] + ', ' + t[(i + 3) % 6] + ')'),
+      dossiers: [dossier('Mes photos', '54', false), dossier('La soirée de clôture', '120', true), dossier('Photobooth', '40', false)],
+      compteurs: [{ n: '294', libelle: 'arrivées' }, { n: '18', libelle: 'déjà là, sautées' }, { n: '0', libelle: 'à reprendre' }]
+    };
+  }
+}
+</script>
+</body>
+</html>

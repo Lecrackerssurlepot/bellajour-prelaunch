@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Les photos, rangées en dossiers</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&amp;family=DM+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#d68a63}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #050505; color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; overflow: hidden">
+  <dc-import name="Menu" actif="photos" hint-size="232px,900px"></dc-import>
+  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+    <header style="flex: none; height: 68px; box-sizing: border-box; padding: 0 32px; border-bottom: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center; gap: 20px">
+      <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px">Les photos</h1>
+      <nav aria-label="Photos ou liens" style="display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,0.06)">
+        <a href="#" aria-current="page" style="height: 32px; padding: 0 16px; border-radius: 999px; background: #ffffff; color: #050505; text-decoration: none; display: inline-flex; align-items: center; font-size: 13px; font-weight: 500">Les photos</a>
+        <a href="PhotosLiens.dc.html" style="height: 32px; padding: 0 16px; border-radius: 999px; color: #ffffff; text-decoration: none; display: inline-flex; align-items: center; font-size: 13px">Les liens · 4</a>
+      </nav>
+      <a href="EnvoiDossier.dc.html" style="margin-left: auto; height: 40px; padding: 0 20px; border-radius: 999px; background: #d68a63; color: #050505; text-decoration: none; display: inline-flex; align-items: center; font-weight: 600">Déposer des photos</a>
+    </header>
+
+    <div style="flex: none; display: flex; align-items: flex-end; gap: 40px; padding: 18px 32px; border-bottom: 1px solid rgba(255,255,255,0.10)">
+      <sc-for list="{{ chiffres }}" as="c" hint-placeholder-count="3">
+        <span style="display: flex; align-items: baseline; gap: 10px">
+          <strong style="font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 44px; line-height: 1">{{ c.n }}</strong>
+          <span style="color: rgba(255,255,255,0.72)">{{ c.libelle }}</span>
+        </span>
+      </sc-for>
+      <span style="margin-left: auto; width: 300px; display: flex; flex-direction: column; gap: 8px">
+        <span style="display: flex; justify-content: space-between; font-size: 13px"><span>84 photos en cours d'arrivée</span><span style="color: rgba(255,255,255,0.64)">clôture le 28 octobre</span></span>
+        <span style="height: 4px; border-radius: 999px; background: rgba(255,255,255,0.12); overflow: hidden; display: block"><span style="display: block; width: 72%; height: 4px; background: #d68a63"></span></span>
+      </span>
+    </div>
+
+    <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: 300px minmax(0, 1fr)">
+      <aside aria-label="Les dossiers" style="min-height: 0; overflow: hidden; padding: 20px 16px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid rgba(255,255,255,0.10); background: #0a0a0a">
+        <sc-for list="{{ dossiers }}" as="d" hint-placeholder-count="9">
+          <sc-if value="{{ d.titre }}" hint-placeholder-val="{{ false }}">
+            <span style="padding: 14px 12px 6px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.64)">{{ d.nom }}</span>
+          </sc-if>
+          <sc-if value="{{ d.ligne }}" hint-placeholder-val="{{ true }}">
+            <button type="button" aria-pressed="{{ d.actif }}" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px 0 {{ d.retrait }}; border: 0; border-radius: 10px; background: {{ d.fond }}; color: #ffffff; font: inherit; text-align: left">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{ d.icone }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ d.trace }}"></path></svg>
+              <span style="flex: 1; min-width: 0; font-weight: {{ d.graisse }}">{{ d.nom }}</span>
+              <span style="font-size: 13px; color: rgba(255,255,255,0.64)">{{ d.n }}</span>
+            </button>
+          </sc-if>
+        </sc-for>
+        <button type="button" style="margin-top: 10px; min-height: 40px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.22); background: transparent; color: rgba(255,255,255,0.72); font: inherit">+ Nouveau dossier</button>
+        <span style="margin-top: auto; padding: 12px; font-size: 12px; color: rgba(255,255,255,0.64)">Glissez un dossier sur un autre pour le ranger dedans. Double-cliquez un nom pour le changer.</span>
+      </aside>
+
+      <main style="min-height: 0; overflow: hidden; padding: 20px 28px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; align-items: center; gap: 14px">
+          <span style="display: flex; flex-direction: column">
+            <strong style="font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px; line-height: 1.1">La soirée de clôture</strong>
+            <span style="font-size: 13px; color: rgba(255,255,255,0.64)">120 photos · déposées par vous · dont 40 dans « Photobooth »</span>
+          </span>
+          <span style="margin-left: auto; display: flex; gap: 6px">
+            <button type="button" aria-pressed="true" style="height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid #ffffff; background: #ffffff; color: #050505; font: inherit; font-size: 13px">Toutes</button>
+            <button type="button" aria-pressed="false" style="height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit; font-size: 13px">Par jour</button>
+            <button type="button" aria-pressed="false" style="height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit; font-size: 13px">Doublons · 3</button>
+          </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; font-size: 13px; color: rgba(255,255,255,0.72)">
+          <span>Touchez une photo pour l'ajouter à votre sélection (facultatif).</span>
+          <button type="button" style="margin-left: auto; padding: 0; border: 0; background: none; color: #d68a63; font: inherit; font-size: 13px; text-decoration: underline">Sélectionner tout ce dossier</button>
+        </div>
+        <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-content: start">
+          <sc-for list="{{ tuiles }}" as="t" hint-placeholder-count="21">
+            <button type="button" aria-pressed="{{ t.choisie }}" aria-label="{{ t.libelle }}" style="position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 10px; overflow: hidden; background: {{ t.fond }}; box-shadow: {{ t.bord }}">
+              <sc-if value="{{ t.choisie }}" hint-placeholder-val="{{ false }}">
+                <span aria-hidden="true" style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 999px; background: #d68a63; color: #050505; display: grid; place-items: center">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg>
+                </span>
+              </sc-if>
+              <sc-if value="{{ t.doublon }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; bottom: 6px; left: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(0,0,0,0.6); color: #ffffff; font-size: 11px">Doublon</span></sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dossierTrace = 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z';
+    const lienTrace = 'M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1';
+    const personneTrace = 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20a8 8 0 0 1 16 0';
+    const etoileTrace = 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z';
+    const toutTrace = 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z';
+    const ligne = (nom, n, trace, niveau, actif, icone) => ({
+      ligne: true, titre: false, nom, n, trace, actif,
+      retrait: (12 + niveau * 22) + 'px',
+      fond: actif ? 'rgba(214,138,99,0.16)' : 'transparent',
+      graisse: actif ? '600' : '400',
+      icone: icone || 'rgba(255,255,255,0.72)'
+    });
+    const titre = (nom) => ({ ligne: false, titre: true, nom });
+    const teintes = ['#2f5d8a', '#c9a45c', '#8a6a4b', '#b5452f', '#1d3557', '#d64933', '#3a2a22', '#e9dcc6', '#232740'];
+    const tuiles = Array.from({ length: 21 }, (_, i) => {
+      const a = teintes[i % teintes.length], b = teintes[(i * 4 + 3) % teintes.length];
+      const choisie = [1, 3, 4, 9, 12, 16].includes(i);
+      return {
+        fond: 'linear-gradient(135deg, ' + a + ', ' + b + ')', choisie,
+        bord: choisie ? 'inset 0 0 0 3px #d68a63' : 'none',
+        doublon: i === 7 || i === 15,
+        libelle: 'Photo ' + (i + 1) + (choisie ? ', dans votre sélection' : '')
+      };
+    });
+    return {
+      chiffres: [{ n: '1 248', libelle: 'photos reçues' }, { n: '64', libelle: 'personnes' }, { n: '37', libelle: 'doublons repérés' }],
+      dossiers: [
+        ligne('Toutes les photos', '1 248', toutTrace, 0, false),
+        ligne('Ma sélection', '8 sur 300', etoileTrace, 0, false, '#d68a63'),
+        titre('Déposées par vous'),
+        ligne('Mes photos', '54', dossierTrace, 0, false),
+        ligne('La soirée de clôture', '120', dossierTrace, 0, true),
+        ligne('Photobooth', '40', dossierTrace, 1, false),
+        titre('Arrivées par les liens'),
+        ligne('Tous les participants', '682', lienTrace, 0, false),
+        ligne('Équipe Lyon', '210', lienTrace, 0, false),
+        ligne('Camille Renaud', '30', personneTrace, 1, false),
+        ligne('Hugo Martel', '30', personneTrace, 1, false),
+        ligne('Le photographe', '182', lienTrace, 0, false)
+      ],
+      tuiles
+    };
+  }
+}
+</script>
+</body>
+</html>

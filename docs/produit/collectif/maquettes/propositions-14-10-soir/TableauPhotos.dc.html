@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Tableau de bord, la carte Photos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&amp;family=DM+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#d68a63}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #050505; color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; overflow: hidden">
+  <dc-import name="Menu" actif="tableau" hint-size="232px,900px"></dc-import>
+  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+    <header style="flex: none; height: 68px; box-sizing: border-box; padding: 0 32px; border-bottom: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center; gap: 16px">
+      <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px">Tableau de bord</h1>
+      <span style="margin-left: auto; height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18); display: inline-flex; align-items: center; font-size: 13px">Collecte ouverte · clôture le 28 octobre</span>
+    </header>
+    <div style="flex: 1; min-height: 0; padding: 24px 32px; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 20px">
+      <section style="padding: 22px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04); display: flex; flex-direction: column; gap: 14px">
+        <span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.64)">1 · Le style</span>
+        <strong style="font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 28px">Vos styles sont choisis</strong>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+          <span style="aspect-ratio: 3 / 4; border-radius: 12px; background: linear-gradient(160deg, #1d3557, #7fa7c9)"></span>
+          <span style="aspect-ratio: 3 / 4; border-radius: 12px; background: linear-gradient(160deg, #0b0b0b, #d68a63)"></span>
+        </div>
+        <span style="font-size: 13px; color: rgba(255,255,255,0.72)">Le séminaire · 2 styles mêlés · La soirée · Brut</span>
+      </section>
+      <section aria-labelledby="carte-photos" style="padding: 22px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04); display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; justify-content: space-between">
+          <span id="carte-photos" style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.64)">2 · Les photos</span>
+          <a href="PhotosLiens.dc.html" style="font-size: 13px; text-decoration: none">4 liens actifs</a>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 28px">
+          <span style="display: flex; align-items: baseline; gap: 10px"><strong style="font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 64px; line-height: 1">1 248</strong><span style="color: rgba(255,255,255,0.72)">photos</span></span>
+          <span style="display: flex; align-items: baseline; gap: 10px"><strong style="font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 40px; line-height: 1">64</strong><span style="color: rgba(255,255,255,0.72)">personnes</span></span>
+        </div>
+        <ul aria-label="Les dossiers" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+          <sc-for list="{{ dossiers }}" as="d" hint-placeholder-count="5">
+            <li>
+              <a href="PhotosDossiers.dc.html" style="display: grid; grid-template-columns: 22px minmax(0, 1fr) 140px 56px 16px; align-items: center; gap: 12px; padding: 12px 4px; border-top: 1px solid rgba(255,255,255,0.08); color: #ffffff; text-decoration: none">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ d.couleur }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ d.trace }}"></path></svg>
+                <span style="display: flex; flex-direction: column; min-width: 0"><span>{{ d.nom }}</span><span style="font-size: 12px; color: rgba(255,255,255,0.64)">{{ d.detail }}</span></span>
+                <span style="height: 4px; border-radius: 999px; background: rgba(255,255,255,0.10); overflow: hidden; display: block"><span style="display: block; width: {{ d.part }}; height: 4px; background: {{ d.couleur }}"></span></span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums">{{ d.n }}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.64)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+              </a>
+            </li>
+          </sc-for>
+        </ul>
+        <div style="margin-top: auto; display: flex; gap: 10px">
+          <a href="PhotosDossiers.dc.html" style="flex: 1; height: 44px; border-radius: 999px; background: #ffffff; color: #050505; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; font-weight: 500">Voir les photos</a>
+          <a href="EnvoiDossier.dc.html" style="flex: 1; height: 44px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); color: #ffffff; text-decoration: none; display: inline-flex; align-items: center; justify-content: center">Déposer</a>
+          <a href="PhotosLiens.dc.html" style="flex: 1; height: 44px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); color: #ffffff; text-decoration: none; display: inline-flex; align-items: center; justify-content: center">Inviter quelqu'un</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dossierTrace = 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z';
+    const lienTrace = 'M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1';
+    const d = (nom, detail, n, trace, couleur) => ({ nom, detail, n: n.toLocaleString('fr-FR'), part: Math.round((n / 682) * 100) + '%', trace, couleur });
+    return {
+      dossiers: [
+        d('Tous les participants', 'lien général · 56 personnes', 682, lienTrace, '#d68a63'),
+        d('Équipe Lyon', 'lien de groupe · 7 personnes', 210, lienTrace, '#d68a63'),
+        d('Le photographe', 'lien personnel', 182, lienTrace, '#d68a63'),
+        d('La soirée de clôture', 'déposées par vous · 1 sous-dossier', 120, dossierTrace, 'rgba(255,255,255,0.72)'),
+        d('Mes photos', 'déposées par vous', 54, dossierTrace, 'rgba(255,255,255,0.72)')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

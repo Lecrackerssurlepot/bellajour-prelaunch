@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Atelier, la fiche en onglets</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&amp;family=DM+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2f6db5}a:hover{color:#1c1c1c}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #f7f1e9; color: #1c1c1c; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; overflow: hidden">
+  <nav aria-label="Atelier" style="flex: none; width: 76px; box-sizing: border-box; padding: 18px 0; display: flex; flex-direction: column; align-items: center; gap: 6px; border-right: 1px solid rgba(28,28,28,0.10); background: #efe6d8">
+    <span style="font-family: 'Cormorant Garamond', serif; font-size: 22px; padding-bottom: 12px">B</span>
+    <sc-for list="{{ rail }}" as="r" hint-placeholder-count="5">
+      <a href="#" aria-label="{{ r.nom }}" style="width: 56px; padding: 8px 0; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; color: #1c1c1c; text-decoration: none; background: {{ r.fond }}; font-size: 10px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ r.trace }}"></path></svg>
+        {{ r.nom }}
+      </a>
+    </sc-for>
+  </nav>
+  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+    <header style="flex: none; padding: 20px 32px 0; display: flex; flex-direction: column; gap: 14px; border-bottom: 1px solid rgba(28,28,28,0.10)">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <span style="display: flex; flex-direction: column">
+          <span style="font-size: 12px; color: rgba(28,28,28,0.6)">Maison Aubier · Camille Essai</span>
+          <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 34px; line-height: 1.1">Séminaire d'automne</h1>
+        </span>
+        <span style="padding: 4px 12px; border-radius: 999px; background: rgba(47,109,181,0.12); color: #24548c; font-size: 13px">Collecte ouverte · clôture le 28 octobre</span>
+        <span style="margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px">
+          <span style="font-size: 12px; color: rgba(28,28,28,0.6)">Prochaine étape, chez nous</span>
+          <strong style="font-weight: 500">Répondre à la demande « Ajouter des pages »</strong>
+        </span>
+        <a href="AtelierMessagerie.dc.html" style="height: 42px; padding: 0 18px; border-radius: 999px; background: #1c1c1c; color: #ffffff; text-decoration: none; display: inline-flex; align-items: center; font-weight: 500">Répondre</a>
+      </div>
+      <nav aria-label="Sections de la fiche" style="display: flex; gap: 2px">
+        <sc-for list="{{ onglets }}" as="o" hint-placeholder-count="8">
+          <a href="#" aria-current="{{ o.courant }}" style="padding: 10px 14px; color: #1c1c1c; text-decoration: none; border-bottom: 2px solid {{ o.bord }}; font-weight: {{ o.graisse }}">{{ o.nom }}</a>
+        </sc-for>
+      </nav>
+    </header>
+    <main style="flex: 1; min-height: 0; padding: 24px 32px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto auto; gap: 16px; align-content: start; overflow: hidden">
+      <section style="grid-column: 1 / -1; padding: 18px 20px; border-radius: 18px; background: #ffffff; display: flex; align-items: center; gap: 0">
+        <sc-for list="{{ etapes }}" as="e" hint-placeholder-count="5">
+          <span style="flex: 1; display: flex; align-items: center; gap: 10px">
+            <span style="flex: none; width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; background: {{ e.fond }}; color: {{ e.encre }}; font-size: 13px; font-weight: 600">{{ e.signe }}</span>
+            <span style="display: flex; flex-direction: column"><strong style="font-weight: 500">{{ e.nom }}</strong><span style="font-size: 12px; color: rgba(28,28,28,0.6)">{{ e.detail }}</span></span>
+          </span>
+        </sc-for>
+      </section>
+      <sc-for list="{{ cartes }}" as="c" hint-placeholder-count="6">
+        <section style="padding: 18px 20px; border-radius: 18px; background: #ffffff; display: flex; flex-direction: column; gap: 10px">
+          <span style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(28,28,28,0.6)">{{ c.titre }}</span><a href="#" style="font-size: 13px; text-decoration: none">{{ c.lien }}</a></span>
+          <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+            <sc-for list="{{ c.lignes }}" as="l" hint-placeholder-count="3">
+              <li style="display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid rgba(28,28,28,0.06); font-size: 13px"><span style="color: rgba(28,28,28,0.65)">{{ l.cle }}</span><span style="text-align: right">{{ l.valeur }}</span></li>
+            </sc-for>
+          </ul>
+        </section>
+      </sc-for>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const r = (nom, trace, actif) => ({ nom, trace, fond: actif ? '#ffffff' : 'transparent' });
+    const o = (nom, courant) => ({ nom, courant: courant ? 'page' : 'false', bord: courant ? '#1c1c1c' : 'transparent', graisse: courant ? '600' : '400' });
+    const e = (nom, detail, etat, n) => ({ nom, detail, signe: etat === 'fait' ? '✓' : n, fond: etat === 'fait' ? '#1c1c1c' : etat === 'encours' ? 'rgba(196,122,92,0.18)' : 'rgba(28,28,28,0.06)', encre: etat === 'fait' ? '#ffffff' : '#1c1c1c' });
+    const l = (cle, valeur) => ({ cle, valeur });
+    return {
+      rail: [
+        r('Dossiers', 'M4 6h16M4 12h16M4 18h10', false),
+        r('Éditions', 'M4 5h7v14H4zM13 5h7v14h-7z', true),
+        r('Messages', 'M4 5h16v11H8l-4 4z', false),
+        r('Planning', 'M5 5h14v15H5zM5 10h14M9 3v4M15 3v4', false),
+        r('Styles', 'M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.5 0-1.5 1.5-2 2.5-2h1a3 3 0 0 0 3-3A9 9 0 0 0 12 3z', false)
+      ],
+      onglets: [o('Vue d’ensemble', true), o('Magazines et briefs', false), o('Photos', false), o('Bon à tirer', false), o('Messages · 2', false), o('Documents', false), o('Rendez-vous', false), o('Réglages', false), o('Journal', false)],
+      etapes: [e('Devis signé', '2 octobre', 'fait', '1'), e('Collecte', '1 248 photos, jusqu’au 28 oct.', 'encours', '2'), e('Briefs', '2 sur 2 validés', 'fait', '3'), e('Bon à tirer', 'après la clôture', 'avenir', '4'), e('Livraison', 'à confirmer', 'avenir', '5')],
+      cartes: [
+        { titre: 'Magazines', lien: 'Ouvrir', lignes: [l('Le séminaire', '2 styles mêlés · brief validé'), l('La soirée', 'Brut · brief validé'), l('Tirage', '60 exemplaires')] },
+        { titre: 'La collecte', lien: 'Voir les photos', lignes: [l('Photos', '1 248 · 64 personnes'), l('Doublons repérés', '37'), l('Sans aperçu (HEIC)', '423')] },
+        { titre: 'Contenus reçus', lien: 'Tout voir', lignes: [l('Logo', '2 fichiers'), l('Mot du dirigeant', '4 réponses'), l('Programme', 'pas encore')] },
+        { titre: 'Dernier message', lien: 'Répondre', lignes: [l('Camille Essai, 10 h 05', 'Celui-ci pour la couverture…'), l('Demande en attente', 'Ajouter des pages')] },
+        { titre: 'Rendez-vous', lien: 'Planning', lignes: [l('Prochain', 'jeudi 15 oct., 10 h 30'), l('Avec', 'Mathias')] },
+        { titre: 'Les liens du client', lien: 'Copier', lignes: [l('Responsable', 'ouvrir · copier'), l('Équipe', 'ouvrir · copier'), l('Participants', 'ouvrir · copier')] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

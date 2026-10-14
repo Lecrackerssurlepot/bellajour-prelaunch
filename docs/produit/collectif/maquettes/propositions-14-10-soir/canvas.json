@@ -1,0 +1,198 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-14T13:40:00Z"
+  },
+  "title": "Édition collective · propositions du 14/10",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Style · tout en vrac, on compose"
+    },
+    "StyleTypos.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Style · une catégorie, ce qui va avec vos choix en haut"
+    },
+    "StylePartie.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Style · modifier une seule partie"
+    },
+    "Menu.dc.html": {
+      "x": 4560,
+      "y": 0,
+      "w": 232,
+      "h": 900,
+      "title": "Menu · logo blanc en mode nuit"
+    },
+    "Photos.dc.html": {
+      "x": 0,
+      "y": 1400,
+      "w": 1440,
+      "h": 900,
+      "title": "Photos · liens et déposants ensemble, présélection simple"
+    },
+    "EnvoiPhotos.dc.html": {
+      "x": 1520,
+      "y": 1400,
+      "w": 1440,
+      "h": 900,
+      "title": "Photos · l'envoi en cours, qu'on rouvre"
+    },
+    "Contenus.dc.html": {
+      "x": 3040,
+      "y": 1400,
+      "w": 1440,
+      "h": 900,
+      "title": "Tableau de bord · revoir un envoi, Remplacer"
+    },
+    "Messages.dc.html": {
+      "x": 4560,
+      "y": 1400,
+      "w": 1440,
+      "h": 900,
+      "title": "Parler à l'atelier · citer vos envois, Entrée envoie"
+    },
+    "Partage.dc.html": {
+      "x": 6080,
+      "y": 1400,
+      "w": 1440,
+      "h": 900,
+      "title": "Lien de contribution · un message au nom du groupe"
+    },
+    "PhotosDossiers.dc.html": {
+      "x": 0,
+      "y": 2800,
+      "w": 1440,
+      "h": 900,
+      "title": "Photos · les dossiers à gauche, comme sur un ordinateur"
+    },
+    "PhotosLiens.dc.html": {
+      "x": 1520,
+      "y": 2800,
+      "w": 1440,
+      "h": 900,
+      "title": "Photos · l'onglet Liens, chaque personne suivie"
+    },
+    "EnvoiDossier.dc.html": {
+      "x": 3040,
+      "y": 2800,
+      "w": 1440,
+      "h": 900,
+      "title": "Déposer · le nom choisi EST le dossier"
+    },
+    "TableauPhotos.dc.html": {
+      "x": 4560,
+      "y": 2800,
+      "w": 1440,
+      "h": 900,
+      "title": "Tableau de bord · chaque dossier mène à ses photos"
+    },
+    "DocumentApercu.dc.html": {
+      "x": 0,
+      "y": 4200,
+      "w": 1440,
+      "h": 900,
+      "title": "Documents · ouvrir dans la page, télécharger"
+    },
+    "MessagesReponse.dc.html": {
+      "x": 1520,
+      "y": 4200,
+      "w": 1440,
+      "h": 900,
+      "title": "Parler à l'atelier · répondre à un message"
+    },
+    "MenuEdition.dc.html": {
+      "x": 3040,
+      "y": 4200,
+      "w": 232,
+      "h": 900,
+      "title": "Menu · le nom de l'édition sans la boîte"
+    },
+    "AtelierMessagerie.dc.html": {
+      "x": 0,
+      "y": 5600,
+      "w": 1440,
+      "h": 900,
+      "title": "Atelier · une messagerie, le dossier du client à droite"
+    },
+    "AtelierFiche.dc.html": {
+      "x": 1520,
+      "y": 5600,
+      "w": 1440,
+      "h": 900,
+      "title": "Atelier · la fiche en onglets"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "StyleTypos.dc.html",
+    "StylePartie.dc.html",
+    "Menu.dc.html",
+    "Photos.dc.html",
+    "EnvoiPhotos.dc.html",
+    "Contenus.dc.html",
+    "Messages.dc.html",
+    "Partage.dc.html",
+    "PhotosDossiers.dc.html",
+    "PhotosLiens.dc.html",
+    "EnvoiDossier.dc.html",
+    "TableauPhotos.dc.html",
+    "DocumentApercu.dc.html",
+    "MessagesReponse.dc.html",
+    "MenuEdition.dc.html",
+    "AtelierMessagerie.dc.html",
+    "AtelierFiche.dc.html"
+  ],
+  "notes": {
+    "titreStyle": {
+      "x": 0,
+      "y": -300,
+      "text": "Le style : composer librement",
+      "kind": "title1",
+      "maxW": 4792
+    },
+    "titrePhotos": {
+      "x": 0,
+      "y": 1100,
+      "text": "Photos, contenus, messages",
+      "kind": "title1",
+      "maxW": 7520
+    },
+    "titrePhotos2": {
+      "x": 0,
+      "y": 2500,
+      "text": "Propositions du 14/10 au soir · les photos et les liens",
+      "kind": "title1",
+      "maxW": 6000
+    },
+    "titreEchanges": {
+      "x": 0,
+      "y": 3900,
+      "text": "Documents, messages, menu",
+      "kind": "title1",
+      "maxW": 3272
+    },
+    "titreAtelier": {
+      "x": 0,
+      "y": 5300,
+      "text": "Côté atelier",
+      "kind": "title1",
+      "maxW": 2960
+    }
+  },
+  "designSystems": []
+}
