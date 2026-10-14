@@ -20,10 +20,16 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
   couvertures, 5 doubles pages (54 images WebP au coffre). Les noms des palettes hors Riviera,
   les titres et les descriptions sont des textes de remplissage. « Essai technique Claude »
   reste premier (ordre 0) : à retirer du mur par Mathias.
-- **Migration `20261016_collectif_envois.sql` ÉCRITE, PAS APPLIQUÉE** (à appliquer par Mathias) :
-  `collectif_contenus.remplace_le`, `remplace_par`, `collectif_messages.contenu_id`. Vérifié le
-  14/10 AVANT elle : l'espace montre tous les fichiers reçus ; « Remplacer » et « Citer un de vos
-  envois » répondent 503 en nommant le fichier, sans rien écrire (ni coffre, ni base).
+- **Migration `20261016_collectif_envois.sql` APPLIQUÉE le 14/10/2026 par Mathias**, vérifiée en
+  SQL (lecture seule) le même jour : `collectif_contenus.remplace_le`, `remplace_par` (clé vers
+  `collectif_contenus`), `collectif_messages.contenu_id` (clé vers `collectif_contenus`), l'index
+  `collectif_messages_contenu_idx`. AVANT elle (vérifié aussi le 14/10) : l'espace montrait tous
+  les fichiers reçus ; « Remplacer » et « Citer un de vos envois » répondaient 503 en nommant le
+  fichier, sans rien écrire (ni coffre, ni base).
+- Rejoué APRÈS la migration (localhost:3000, « Essai technique (Claude) ») : « Remplacer » range
+  l'ancien `logo-essai-couleur.png` (`remplace_le` posé, `remplace_par` = le nouveau), la puce
+  garde « 4 fichiers » ; un message « Essai de citation (Claude), à ignorer. » cite
+  `logo-essai-blanc.png` (`contenu_id` en base), relu après rechargement.
 - **Données d'essai posées le 14/10** :
   - « Essai révision (Claude) » : 12 photos de bruit gris dans le dossier « Autre source · Essai
     renommé (Claude) » (envoi, reprise « déjà là », renommage) ;

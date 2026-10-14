@@ -69,8 +69,9 @@ ses vraies icônes.
   le nom du dossier.
 - 14/10 : (11) « Citer un de vos envois » dans le « + » des messages ; la bulle et la fiche de
   l'atelier le montrent.
-- **Migration `20261016_collectif_envois.sql` à appliquer par Mathias** pour « Remplacer » et
-  « Citer un de vos envois » (503 qui nomme le fichier d'ici là, rien d'écrit).
+- **Migration `20261016_collectif_envois.sql` appliquée par Mathias le 14/10**, vérifiée en SQL ;
+  « Remplacer » et « Citer un de vos envois » rejoués pour de vrai sur « Essai technique » (la
+  donnée arrive en base).
 
 ## Ce qui reste
 - (2, 4) Le style « tout en vrac » et « modifier une partie » (maquettes Main, StyleTypos,

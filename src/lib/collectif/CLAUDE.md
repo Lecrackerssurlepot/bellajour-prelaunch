@@ -312,7 +312,7 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   le `deposant` des photos du responsable ; « Mes photos » rend son propre nom.
 - **Citer un de ses envois** dans un message (`collectif_messages.contenu_id`) : l'envoi doit être
   de l'édition ; la lecture du fil se replie en trois paliers (envois, révision, avant).
-- **La migration `20261016_collectif_envois.sql`** : lecture repliée (tous les fichiers sont
+- **La migration `20261016_collectif_envois.sql`** (appliquée le 14/10) : lecture repliée (tous les fichiers sont
   courants), « Remplacer » et « Citer » en 503 `migration_envois_absente`, SONDÉS avant d'écrire
   au coffre.
 - ⚠️ **Ne pas compter sur `router.refresh()` pour montrer ce qu'on vient d'écrire** : vu le 14/10,
