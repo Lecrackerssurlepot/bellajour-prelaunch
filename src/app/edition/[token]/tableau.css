@@ -1,0 +1,419 @@
+/* Le tableau de bord (révision §14.2) — tout sous `.ec-espace`.
+   Deux grands encarts qui prennent toute la hauteur restante, puis deux
+   lignes basses : la page ne défile jamais, seule la liste des dossiers de
+   photos défile dans son encart. */
+
+.ec-espace .ec-tdb-grille {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.ec-espace .ec-tdb-carte {
+  min-height: 0;
+  gap: 14px;
+  padding: 24px;
+  border-radius: 18px;
+}
+.ec-espace .ec-tdb-carte-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.ec-espace .ec-tdb-etiquette {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ec-accent);
+}
+.ec-espace .ec-tdb-etiquette--sourde {
+  color: var(--ec-muted);
+}
+/* (0,2,0) contre `.bj-atelier h2`, qui pose 32 à 60 px. */
+.ec-espace .ec-tdb-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(26px, 2.3vw, 34px);
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: var(--ec-text);
+}
+
+/* ── le style : l'éventail de trois couvertures ── */
+.ec-espace .ec-tdb-eventail {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.ec-espace .ec-tdb-couv {
+  position: absolute;
+  height: 80%;
+  aspect-ratio: 210 / 297;
+  border-radius: 3px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+  box-shadow: 0 30px 60px rgba(var(--ec-noir-rgb), 0.45);
+}
+.ec-espace .ec-tdb-couv img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ec-espace .ec-tdb-couv--0 {
+  left: 6%;
+  top: 12%;
+  transform: rotate(-7deg);
+}
+.ec-espace .ec-tdb-couv--1 {
+  left: 50%;
+  top: 2%;
+  height: 86%;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+.ec-espace .ec-tdb-couv--2 {
+  right: 6%;
+  top: 14%;
+  transform: rotate(6deg);
+}
+
+/* ── le style : une couverture par magazine ── */
+.ec-espace .ec-tdb-magazines {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: center;
+}
+.ec-espace .ec-tdb-magazines--1 {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+}
+.ec-espace .ec-tdb-magazines--3,
+.ec-espace .ec-tdb-magazines--4 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.ec-espace .ec-tdb-magazine {
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--ec-text);
+}
+.ec-espace .ec-tdb-couv-mag {
+  flex: 0 1 auto;
+  min-height: 0;
+  height: 68%;
+  aspect-ratio: 210 / 297;
+  display: grid;
+  place-items: center;
+  border-radius: 3px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+  box-shadow: 0 20px 44px rgba(var(--ec-noir-rgb), 0.4);
+  transform: rotate(2deg);
+  margin-bottom: 8px;
+}
+.ec-espace .ec-tdb-couv-mag--gauche {
+  transform: rotate(-2deg);
+}
+.ec-espace .ec-tdb-couv-mag img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ec-espace .ec-tdb-couv-mag--vide {
+  transform: none;
+  box-shadow: none;
+  border: 1.5px dashed var(--ec-accent);
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent);
+  font-size: 34px;
+}
+.ec-espace .ec-tdb-style-nom {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.1;
+}
+.ec-espace .ec-tdb-lien {
+  font-size: 13px;
+  color: var(--ec-accent);
+}
+.ec-espace a.ec-tdb-magazine:hover .ec-tdb-lien {
+  text-decoration: underline;
+}
+
+/* ── les photos ── */
+.ec-espace .ec-tdb-vide,
+.ec-espace .ec-tdb-centre {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+.ec-espace .ec-tdb-centre .ec-carte-lien {
+  padding: 18px;
+  border: 1px solid var(--ec-line);
+  border-radius: 16px;
+  background: var(--ec-surface);
+  text-align: left;
+}
+.ec-espace .ec-tdb-total {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.ec-espace .ec-tdb-total strong {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(44px, 4.4vw, 64px);
+  line-height: 1;
+  color: var(--ec-text);
+}
+.ec-espace .ec-tdb-dossiers {
+  flex: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ec-espace .ec-tdb-dossiers li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--ec-line);
+  font-size: 14px;
+}
+.ec-espace .ec-tdb-point {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ec-faint);
+}
+.ec-espace .ec-tdb-point--lien {
+  background: var(--ec-accent);
+}
+.ec-espace .ec-tdb-dossier {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ec-espace .ec-tdb-n {
+  font-variant-numeric: tabular-nums;
+  color: var(--ec-text);
+}
+.ec-espace .ec-tdb-mosaique {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+}
+.ec-espace .ec-tdb-mosaique img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.ec-espace .ec-tdb-gestes {
+  flex: none;
+  display: flex;
+  gap: 10px;
+}
+.ec-espace .ec-tdb-gestes .ec-bouton {
+  flex: 1 1 0;
+  align-self: stretch;
+  min-height: 46px;
+  padding: 0 12px;
+}
+.ec-espace .ec-tdb-inviter {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--ec-line);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-tdb-inviter:hover {
+  border-color: rgba(var(--ec-ac-rgb), 0.5);
+}
+.ec-espace .ec-tdb-inviter-icone {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent);
+}
+.ec-espace .ec-tdb-inviter-texte {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+}
+.ec-espace .ec-tdb-fleche {
+  color: var(--ec-accent);
+  font-size: 18px;
+}
+
+/* ── la ligne des contenus ── */
+.ec-espace .ec-tdb-ligne {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 14px 20px;
+  border: 1px solid var(--ec-line);
+  border-radius: 18px;
+  background: var(--ec-surface);
+}
+.ec-espace .ec-tdb-puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-tdb-puce {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-accent);
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.ec-espace .ec-tdb-puce:disabled {
+  cursor: default;
+}
+.ec-espace .ec-tdb-puce--recue {
+  border-color: var(--ec-line);
+  color: var(--ec-muted);
+}
+.ec-espace .ec-tdb-coche {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-faint);
+  font-size: 11px;
+}
+.ec-espace .ec-tdb-puce--recue .ec-tdb-coche {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+}
+.ec-espace .ec-tdb-ligne-aide {
+  margin-left: auto;
+}
+
+/* ── le dernier message ── */
+.ec-espace .ec-tdb-message {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px;
+  border: 1px solid var(--ec-line);
+  border-radius: 18px;
+  text-decoration: none;
+  color: var(--ec-text);
+}
+.ec-espace .ec-tdb-message:hover {
+  border-color: rgba(var(--ec-ac-rgb), 0.45);
+}
+.ec-espace .ec-tdb-message-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  font-family: var(--font-display);
+  font-size: 17px;
+}
+.ec-espace .ec-tdb-message-texte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ec-espace .ec-tdb-message-ligne {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 14px;
+}
+.ec-espace .ec-tdb-message-action {
+  flex: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ec-accent);
+}
+
+@media (max-width: 1100px) {
+  .ec-espace .ec-tdb-grille {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+  }
+  .ec-espace .ec-tdb-carte {
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 860px) {
+  .ec-espace .ec-tdb-grille {
+    overflow: visible;
+  }
+  .ec-espace .ec-tdb-eventail {
+    min-height: 260px;
+  }
+  .ec-espace .ec-tdb-magazines {
+    min-height: 260px;
+  }
+  .ec-espace .ec-tdb-gestes {
+    flex-direction: column;
+  }
+  .ec-espace .ec-tdb-ligne-aide {
+    margin-left: 0;
+  }
+  .ec-espace .ec-partage--quatre {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ec-espace .ec-lien-pret {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

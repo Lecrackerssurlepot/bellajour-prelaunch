@@ -14,6 +14,7 @@ import { TYPES_DOUBLES } from "@/lib/collectif/styles";
 import { chargerEdition } from "../donnees";
 import FormulaireEdition, { type ValeursEdition } from "../FormulaireEdition";
 import PanneauCollecte from "./PanneauCollecte";
+import PanneauContenus from "./PanneauContenus";
 import PanneauDocuments from "./PanneauDocuments";
 import PanneauGestes from "./PanneauGestes";
 import PanneauMessages from "./PanneauMessages";
@@ -70,7 +71,7 @@ export default async function PageFiche({ params }: { params: Promise<{ id: stri
     );
   }
   if (!lu.fiche) notFound();
-  const { edition: e, etat, magazines, journal, documents, messages, collecte } = lu.fiche;
+  const { edition: e, etat, magazines, journal, documents, messages, collecte, contenus } = lu.fiche;
 
   const h = await headers();
   const origine = origineDepuis(h.get("x-forwarded-host") ?? h.get("host"), h.get("x-forwarded-proto"));
@@ -132,6 +133,7 @@ export default async function PageFiche({ params }: { params: Promise<{ id: stri
           <PanneauMessages id={e.id} initiaux={messages} />
           <PanneauGestes id={e.id} etat={etat} archivee={Boolean(e.archive_le)} />
           <PanneauCollecte id={e.id} {...collecte} />
+          <PanneauContenus contenus={contenus} />
           <PanneauDocuments id={e.id} documents={documents} />
           <PanneauLivraison
             id={e.id}

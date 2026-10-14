@@ -1,120 +1,136 @@
 "use client";
 
-/* L'encart « Les photos » du tableau de bord (maquette Espace) : le lien à
-   partager aux participants, et le curseur « Photos par participant ».
+/* L'encart « Les photos » du tableau de bord (PRD §14.2, maquette Espace).
+   Il change dès qu'il se passe quelque chose :
+   - aucune photo, aucun lien : la ZONE DE DÉPÔT est déjà ouverte, et en bas
+     « Inviter des proches à ajouter leurs photos » ;
+   - un lien créé, rien reçu : la carte du lien (QR, Copier, WhatsApp, Mail) ;
+   - des photos reçues : le total, les dossiers (un par lien, « Mes photos »…),
+     une mosaïque, et les gestes.
+   Le lien d'équipe voit les compteurs, sans aucun geste. */
 
-   Le curseur ne dépasse jamais le plafond de l'atelier (la route et la base
-   le refusent aussi). Sans plafond atelier, il ne s'affiche pas : on ne
-   règle pas un chiffre que personne n'a fixé. Le lien d'équipe voit tout,
-   sans curseur. Le QR code arrive avec la collecte (phase 3). */
-
+import Link from "next/link";
 import { useState } from "react";
+import FenetreLien, { CarteLien } from "../_composants/LienContribution";
+import ZoneDepot from "../_composants/depot/ZoneDepot";
+import type { DossierPhotos, LienContribution } from "./donnees";
 
 type Props = {
   token: string;
-  lienDepot: string;
+  ecrire: boolean;
+  ouverte: boolean;
   photos: number;
   participants: number;
-  plafondAtelier: number | null;
-  plafondClient: number | null;
-  peutRegler: boolean;
+  dossiers: DossierPhotos[];
+  mosaique: string[];
+  liens: LienContribution[];
+  max: number;
+  evenement: string;
+  cloture: string;
+  statut: string;
+  lienPhotos: string;
   tu: boolean;
 };
 
 export default function CartePhotos(p: Props) {
-  const [copie, setCopie] = useState(false);
-  const [valeur, setValeur] = useState<number | null>(p.plafondClient ?? p.plafondAtelier);
-  const [etat, setEtat] = useState<{ ok: boolean; texte: string } | null>(null);
   const v = (vous: string, toi: string) => (p.tu ? toi : vous);
-
-  async function copier() {
-    try {
-      await navigator.clipboard.writeText(p.lienDepot);
-      setCopie(true);
-      setTimeout(() => setCopie(false), 2000);
-    } catch {
-      setEtat({ ok: false, texte: v("Copie impossible : sélectionnez le lien.", "Copie impossible : sélectionne le lien.") });
-    }
-  }
-
-  async function enregistrer(n: number) {
-    setEtat(null);
-    try {
-      const rep = await fetch("/api/collectif/plafond", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ token: p.token, valeur: n }),
-      });
-      const json = (await rep.json().catch(() => ({}))) as { message?: string };
-      setEtat(rep.ok ? { ok: true, texte: "Enregistré." } : { ok: false, texte: json.message ?? `Non enregistré (erreur ${rep.status}).` });
-    } catch {
-      setEtat({ ok: false, texte: "Le réseau n'a pas répondu. Non enregistré." });
-    }
-  }
+  const [fenetre, setFenetre] = useState(false);
+  const [deposer, setDeposer] = useState(false);
+  const dernier = p.liens[p.liens.length - 1] ?? null;
+  const etat = p.photos > 0 ? "photos" : deposer || !dernier ? "vide" : "lien";
 
   return (
-    <section className="ec-carte" aria-labelledby="ec-carte-photos">
-      <div className="ec-carte-tete">
-        <span>2 · Les photos</span>
-        <span className={p.photos > 0 ? "ec-statut ec-statut--ok" : "ec-statut"}>{p.photos > 0 ? "En cours" : "À lancer"}</span>
+    <section className="ec-carte ec-tdb-carte" aria-labelledby="ec-carte-photos">
+      <div className="ec-tdb-carte-tete">
+        <span className="ec-tdb-etiquette">2 · Les photos</span>
+        <span className="ec-note">{p.statut}</span>
       </div>
-      {p.photos > 0 ? (
+
+      {etat === "photos" ? (
         <>
-          <h2 className="ec-h2" id="ec-carte-photos">
-            La collecte avance
-          </h2>
-          <div className="ec-compteurs">
-            <span className="ec-compteur">
-              <span className="ec-compteur-n">{p.photos}</span>
-              <span className="ec-compteur-l">photos reçues</span>
+          <div className="ec-tdb-total">
+            <strong>{p.photos.toLocaleString("fr-FR")}</strong>
+            <span className="ec-texte">
+              photo{p.photos > 1 ? "s" : ""}
+              {p.participants ? ` de ${p.participants} participant${p.participants > 1 ? "s" : ""}` : ""}
             </span>
-            <span className="ec-compteur">
-              <span className="ec-compteur-n">{p.participants}</span>
-              <span className="ec-compteur-l">participants</span>
-            </span>
+          </div>
+          <ul className="ec-tdb-dossiers ec-defile" aria-label="Les dossiers de photos">
+            {p.dossiers.map((d) => (
+              <li key={d.cle}>
+                <span className={d.lien ? "ec-tdb-point ec-tdb-point--lien" : "ec-tdb-point"} aria-hidden="true" />
+                <span className="ec-tdb-dossier">
+                  <span>{d.libelle}</span>
+                  <span className="ec-note">{d.detail}</span>
+                </span>
+                <span className="ec-tdb-n">{d.n.toLocaleString("fr-FR")}</span>
+              </li>
+            ))}
+          </ul>
+          {p.mosaique.length ? (
+            <div className="ec-tdb-mosaique" aria-hidden="true">
+              {p.mosaique.map((u, i) => (
+                <img key={i} src={u} alt="" loading="lazy" decoding="async" />
+              ))}
+            </div>
+          ) : null}
+          <div className="ec-tdb-gestes">
+            <Link href={p.lienPhotos} prefetch={false} className="ec-bouton">
+              Voir les photos
+            </Link>
+            {p.ecrire && p.ouverte ? (
+              <>
+                <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => setFenetre(true)}>
+                  Envoyer un lien
+                </button>
+                <Link href={p.lienPhotos} prefetch={false} className="ec-bouton ec-bouton--clair">
+                  Déposer
+                </Link>
+              </>
+            ) : null}
+          </div>
+        </>
+      ) : !p.ecrire || !p.ouverte ? (
+        <div className="ec-tdb-vide">
+          <p className="ec-texte">{p.ouverte ? "Aucune photo pour l'instant." : "La collecte est close, sans photo reçue."}</p>
+        </div>
+      ) : etat === "lien" && dernier ? (
+        <>
+          <h2 className="ec-tdb-titre">Lien envoyé, en attente des premières photos</h2>
+          <div className="ec-tdb-centre">
+            <CarteLien lien={dernier} evenement={p.evenement} tu={p.tu} cloture={p.cloture} />
+          </div>
+          <div className="ec-tdb-gestes ec-tdb-gestes--deux">
+            <button type="button" className="ec-bouton" onClick={() => setFenetre(true)}>
+              Envoyer un autre lien
+            </button>
+            <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => setDeposer(true)}>
+              Déposer moi-même
+            </button>
           </div>
         </>
       ) : (
         <>
-          <h2 className="ec-h2" id="ec-carte-photos">
-            Aucune photo pour l&apos;instant
-          </h2>
-          <p className="ec-texte">
-            {v(
-              "Partagez ce lien aux participants : chacun dépose ses photos depuis son téléphone, sans compte.",
-              "Partage ce lien aux participants : chacun dépose ses photos depuis son téléphone, sans compte."
-            )}
-          </p>
+          <ZoneDepot tu={p.tu} />
+          <button type="button" className="ec-tdb-inviter" onClick={() => setFenetre(true)}>
+            <span className="ec-tdb-inviter-icone" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="8" r="3.5" />
+                <path d="M3 20a6 6 0 0 1 12 0M19 8v6M16 11h6" />
+              </svg>
+            </span>
+            <span className="ec-tdb-inviter-texte">
+              <strong>{v("Inviter des proches à ajouter leurs photos", "Inviter des proches à ajouter leurs photos")}</strong>
+              <span className="ec-note">Un lien de contribution pour chaque personne</span>
+            </span>
+            <span className="ec-tdb-fleche" aria-hidden="true">
+              →
+            </span>
+          </button>
         </>
       )}
-      <div className="ec-lien-ligne">
-        <input className="ec-champ" readOnly value={p.lienDepot} aria-label="Lien des participants" onFocus={(e) => e.currentTarget.select()} />
-        <button type="button" className="ec-bouton ec-bouton--clair" onClick={copier}>
-          {copie ? "Copié" : "Copier"}
-        </button>
-      </div>
-      {p.plafondAtelier === null ? (
-        <p className="ec-note">Le nombre de photos par participant sera fixé par l&apos;atelier.</p>
-      ) : p.peutRegler && valeur !== null ? (
-        <label className="ec-curseur">
-          <span>
-            Photos par participant : <strong>{valeur}</strong>
-          </span>
-          <input
-            type="range"
-            min={1}
-            max={p.plafondAtelier}
-            step={1}
-            value={valeur}
-            onChange={(e) => setValeur(Number(e.target.value))}
-            onPointerUp={() => enregistrer(valeur)}
-            onKeyUp={() => enregistrer(valeur)}
-          />
-        </label>
-      ) : (
-        <p className="ec-note">Photos par participant : {p.plafondClient ?? p.plafondAtelier}</p>
-      )}
-      {etat ? <p className={etat.ok ? "ec-note" : "ec-note ec-note--erreur"} role="status">{etat.texte}</p> : null}
+
+      {fenetre ? <FenetreLien token={p.token} max={p.max} evenement={p.evenement} cloture={p.cloture} tu={p.tu} onFermer={() => setFenetre(false)} /> : null}
     </section>
   );
 }

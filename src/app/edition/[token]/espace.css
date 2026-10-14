@@ -1369,3 +1369,202 @@
     transition: none;
   }
 }
+
+/* ─────────────────────────── les pièces partagées (révision) ─────────────────────────── */
+
+.ec-espace .ec-pilule {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-text);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.ec-espace .ec-pilule-point {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--ec-accent);
+}
+.ec-espace .ec-bouton--petit {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+.ec-espace .ec-bouton--plein {
+  align-self: stretch;
+  min-height: 48px;
+  flex: none;
+}
+.ec-espace .ec-actions--centre {
+  justify-content: center;
+}
+.ec-espace .ec-lien-discret {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ec-espace .ec-lien-discret:hover {
+  color: var(--ec-text);
+}
+.ec-espace .ec-zone-texte {
+  min-height: 0;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* Le QR : un objet imprimé, clair sur toutes les couleurs de fond. */
+.ec-espace .ec-qr {
+  flex: none;
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--ec-line);
+}
+.ec-espace .ec-qr-fond {
+  fill: var(--ec-page);
+}
+.ec-espace .ec-qr-modules {
+  fill: var(--ec-encre);
+}
+
+/* Partager un lien : Copier, WhatsApp, Mail (et le QR en fichier). */
+.ec-espace .ec-partage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-partage--quatre {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ec-espace .ec-partage .ec-bouton {
+  align-self: auto;
+}
+.ec-espace .ec-carte-lien,
+.ec-espace .ec-lien-pret {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+.ec-espace .ec-carte-lien-texte,
+.ec-espace .ec-lien-pret-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.ec-espace .ec-carte-lien-texte strong,
+.ec-espace .ec-lien-pret-texte strong {
+  font-size: 16px;
+  color: var(--ec-text);
+}
+.ec-espace .ec-lien-pret-texte {
+  flex: 1;
+}
+.ec-espace .ec-lien-url {
+  flex: none;
+  width: 100%;
+  min-height: 40px;
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-lien-plafond {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-lien-plafond-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.ec-espace .ec-lien-valeur {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--ec-text);
+  white-space: nowrap;
+}
+.ec-espace .ec-lien-plafond input[type="range"] {
+  width: 100%;
+  accent-color: var(--ec-accent);
+}
+
+/* La zone de dépôt, déjà ouverte : glisser, ou choisir. */
+.ec-espace .ec-zone-depot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  border: 1.5px dashed rgba(var(--ec-ac-rgb), 0.6);
+  border-radius: 18px;
+  background: radial-gradient(circle at 50% 40%, var(--ec-accent-soft), transparent 70%);
+  text-align: center;
+  box-sizing: border-box;
+}
+.ec-espace .ec-zone-depot--survol {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-zone-depot--compacte {
+  flex: none;
+  min-height: 180px;
+}
+.ec-espace .ec-zone-depot .ec-texte {
+  max-width: 380px;
+  font-size: 14px;
+}
+.ec-espace .ec-zone-depot-icone {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent);
+}
+.ec-espace .ec-zone-depot-titre {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.1;
+  color: var(--ec-text);
+}
+.ec-espace .ec-zone-depot-dossier {
+  display: flex;
+  gap: 8px;
+  width: min(320px, 100%);
+}
+.ec-espace .ec-zone-depot-envoi {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.ec-espace .ec-zone-depot-envoi .ec-dp-barre-espace {
+  align-self: stretch;
+}
+.ec-espace .ec-questionnaire {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

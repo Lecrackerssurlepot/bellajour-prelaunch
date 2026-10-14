@@ -1,8 +1,11 @@
-/* /edition/[token] — le tableau de bord du client (PRD §4.2, maquette Espace).
+/* /edition/[token] — le tableau de bord du client (PRD §14.2, maquette Espace).
 
-   Le titre, l'échéance unique « Tout avant le … », les étapes, deux encarts
-   (le style, les photos), ce qui reste à envoyer à l'atelier, et « Ensuite ».
-   L'état vide ET l'état en cours se lisent dans les mêmes encarts.
+   Un écran, sans défilement de page : l'en-tête (l'événement, « Bonjour »,
+   l'échéance unique), DEUX GRANDS ENCARTS côte à côte (le style, les photos),
+   la ligne de ce qui reste à envoyer à l'atelier, puis le dernier message.
+   Les étapes numérotées et la phrase « Ensuite » ont disparu avec la
+   révision ; le curseur unique « photos par participant » aussi : chaque lien
+   de contribution porte désormais son plafond.
 
    La porte (lien inconnu, archivé, migration absente) est tenue par le
    layout ; la page relit l'édition par le même `cache`, sans requête de plus. */
@@ -12,12 +15,16 @@ import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { formaterJour } from '@/lib/atelier/dates'
 import { peut } from '@/lib/collectif/droits'
-import { contenusAEnvoyer, ETAPES_CLIENT, etapeClient, joursAvant, parler, phraseJours } from '@/lib/collectif/espace'
-import { etatEffectif } from '@/lib/collectif/etats'
-import { liensEdition, origineDepuis } from '@/lib/collectif/liens'
+import { joursAvant, parler, phraseJours } from '@/lib/collectif/espace'
+import { collecteOuverte, etatEffectif } from '@/lib/collectif/etats'
+import { origineDepuis } from '@/lib/collectif/liens'
+import { plafondLienMax } from '@/lib/collectif/plafonds'
 import { cheminSection } from '@/lib/collectif/verrous'
+import { EnTeteEcran } from '../_composants/Ecran'
 import CartePhotos from './CartePhotos'
-import { chargerEspace, chargerTableau } from './donnees'
+import LigneContenus from './LigneContenus'
+import { chargerEspace, chargerTableau, type Tableau } from './donnees'
+import './tableau.css'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -30,108 +37,154 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
 
   const maintenant = new Date()
   const p = parler(edition.registre)
+  const tu = edition.registre === 'ecole_tu'
   const etat = etatEffectif(edition.etat, edition.cloture_le, maintenant)
-  const courante = etapeClient(etat)
-  const tableau = await chargerTableau(edition)
+  const ouverte = collecteOuverte(edition.etat, edition.cloture_le, maintenant)
   const h = await headers()
-  const lienDepot = liensEdition(origineDepuis(h.get('x-forwarded-host') ?? h.get('host'), h.get('x-forwarded-proto')), edition).depot
-  const contenus = contenusAEnvoyer(edition.contenus_demandes ?? [], tableau.contenusRecus)
+  const origine = origineDepuis(h.get('x-forwarded-host') ?? h.get('host'), h.get('x-forwarded-proto'))
+  const tableau = await chargerTableau(edition, origine)
   const prenom = role === 'responsable' ? (edition.responsable_nom ?? '').trim().split(/\s+/)[0] : ''
-  const briefsValides = tableau.magazines.filter((m) => m.briefValide).length
-  const n = tableau.magazines.length
+  const delai = edition.cloture_le ? phraseJours(joursAvant(edition.cloture_le, maintenant)) : ''
+  const cloture = edition.cloture_le ? formaterJour(edition.cloture_le) : ''
 
   return (
-    <section className="ec-page">
-      <p className="ec-surtitre">{prenom ? `Bonjour ${prenom}` : edition.organisation}</p>
-      <h1 className="ec-h1">{edition.evenement}</h1>
-      {edition.cloture_le && etat === 'preparation' ? (
-        <p className="ec-echeance">
-          <span>
-            Tout avant le <strong>{formaterJour(edition.cloture_le)}</strong>
+    <section className="ec-ecran ec-tdb">
+      <EnTeteEcran titre={edition.evenement} sous={prenom ? `Bonjour ${prenom}` : edition.organisation}>
+        {edition.cloture_le && etat === 'preparation' ? (
+          <span className="ec-pilule">
+            <span className="ec-pilule-point" aria-hidden="true" />
+            Tout avant le {cloture} · {delai}
           </span>
-          <span className="ec-echeance-delai">{phraseJours(joursAvant(edition.cloture_le, maintenant))}</span>
-        </p>
-      ) : null}
+        ) : (
+          <span className="ec-pilule">{ouverte ? 'Collecte ouverte' : 'Collecte close : l’atelier compose'}</span>
+        )}
+      </EnTeteEcran>
 
-      <ol className="ec-etapes" aria-label="Les étapes de l'édition">
-        {ETAPES_CLIENT.map((e, i) => (
-          <li
-            key={e.cle}
-            className={i === courante ? 'ec-etape ec-etape--courante' : i < courante ? 'ec-etape ec-etape--faite' : 'ec-etape'}
-            aria-current={i === courante ? 'step' : undefined}
-          >
-            {i < courante ? '✓ ' : ''}
-            {e.libelle}
-          </li>
-        ))}
-      </ol>
+      <div className="ec-ecran-corps">
+        <div className="ec-tdb-grille">
+          <CarteStyle token={token} tableau={tableau} p={p} />
+          <CartePhotos
+            token={token}
+            ecrire={peut(role, 'deposer_photos')}
+            ouverte={ouverte}
+            photos={tableau.photos}
+            participants={tableau.participants}
+            dossiers={tableau.dossiers}
+            mosaique={tableau.mosaique}
+            liens={tableau.liens}
+            max={plafondLienMax(edition)}
+            evenement={edition.evenement}
+            cloture={cloture}
+            statut={edition.cloture_le && ouverte ? `Clôture ${delai}` : ouverte ? 'Ouverte' : 'Collecte close'}
+            lienPhotos={cheminSection(token, 'photos')}
+            tu={tu}
+          />
+        </div>
 
-      <div className="ec-cartes">
-        <section className="ec-carte" aria-labelledby="ec-carte-style">
-          <div className="ec-carte-tete">
-            <span>1 · Le style</span>
-            <span className={briefsValides === n && n > 0 ? 'ec-statut ec-statut--ok' : 'ec-statut'}>
-              {briefsValides === n && n > 0 ? 'Fait' : briefsValides > 0 ? `${briefsValides} magazine${briefsValides > 1 ? 's' : ''} sur ${n}` : 'À faire'}
-            </span>
-          </div>
-          <h2 className="ec-h2" id="ec-carte-style">
-            {briefsValides === 0
-              ? n > 1
-                ? p(`Choisissez le style de vos ${n} magazines`, `Choisis le style de tes ${n} magazines`)
-                : p('Choisissez le style de votre magazine', 'Choisis le style de ton magazine')
-              : briefsValides < n
-                ? p('Il reste un style à choisir', 'Il reste un style à choisir')
-                : p('Vos styles sont choisis', 'Tes styles sont choisis')}
-          </h2>
-          <ul className="ec-lignes">
-            {tableau.magazines.map((m) => (
-              <li key={m.rang}>
-                <span>
-                  Magazine {m.rang} · <strong>{m.nom}</strong>
-                </span>
-                <span>{m.briefValide ? m.style ?? 'Choisi' : 'À choisir'}</span>
-              </li>
-            ))}
-          </ul>
-          <Link href={cheminSection(token, 'style')} className="ec-bouton" prefetch={false}>
-            Ouvrir le mur des styles
-          </Link>
-        </section>
+        <LigneContenus token={token} demandes={edition.contenus_demandes ?? []} recus={tableau.contenusRecus} ecrire={peut(role, 'envoyer_contenu')} tu={tu} />
 
-        <CartePhotos
-          token={token}
-          lienDepot={lienDepot}
-          photos={tableau.photos}
-          participants={tableau.participants}
-          plafondAtelier={edition.plafond_participant_atelier}
-          plafondClient={edition.plafond_participant_client}
-          peutRegler={peut(role, 'regler_plafond_participant')}
-          tu={edition.registre === 'ecole_tu'}
-        />
+        <Link href={cheminSection(token, 'atelier')} prefetch={false} className="ec-tdb-message">
+          <span className="ec-tdb-message-avatar" aria-hidden="true">
+            B
+          </span>
+          {tableau.dernierMessage ? (
+            <>
+              <span className="ec-tdb-message-texte">
+                <span className="ec-note">L&apos;atelier · {formaterJour(tableau.dernierMessage.quand)}</span>
+                <span className="ec-tdb-message-ligne">{tableau.dernierMessage.texte}</span>
+              </span>
+              <span className="ec-tdb-message-action">{role === 'responsable' ? 'Répondre' : 'Lire'}</span>
+            </>
+          ) : (
+            <>
+              <span className="ec-tdb-message-texte">
+                <span className="ec-note">L&apos;atelier</span>
+                <span className="ec-tdb-message-ligne">{p('Aucun message pour l’instant. Une question ? Écrivez-nous.', 'Aucun message pour l’instant. Une question ? Écris-nous.')}</span>
+              </span>
+              <span className="ec-tdb-message-action">{role === 'responsable' ? 'Écrire' : 'Ouvrir'}</span>
+            </>
+          )}
+        </Link>
+      </div>
+    </section>
+  )
+}
+
+/* L'encart Style, deux états (PRD §14.2) : rien choisi = trois couvertures de
+   styles en éventail ; au moins un choisi = une couverture par magazine. */
+function CarteStyle({ token, tableau, p }: { token: string; tableau: Tableau; p: <T>(vous: T, toi: T) => T }) {
+  const mags = tableau.magazines
+  const n = mags.length
+  const avecStyle = mags.filter((m) => m.style).length
+  const valides = mags.filter((m) => m.briefValide).length
+  const reste = mags.find((m) => !m.style) ?? null
+  const aValider = mags.find((m) => m.style && !m.briefValide) ?? null
+  const mur = cheminSection(token, 'style')
+  const brief = `${mur}/brief`
+  const statut = valides === n && n > 0 ? 'Fait' : avecStyle === 0 ? 'À faire' : `${avecStyle} magazine${avecStyle > 1 ? 's' : ''} sur ${n}`
+
+  return (
+    <section className="ec-carte ec-tdb-carte" aria-labelledby="ec-tdb-style">
+      <div className="ec-tdb-carte-tete">
+        <span className="ec-tdb-etiquette">1 · Le style</span>
+        <span className="ec-note">{statut}</span>
       </div>
 
-      {contenus.length ? (
-        <section className="ec-section" aria-labelledby="ec-envoyer">
-          <h2 className="ec-h2" id="ec-envoyer">
-            À envoyer à l&apos;atelier
+      {avecStyle === 0 ? (
+        <>
+          <h2 className="ec-tdb-titre" id="ec-tdb-style">
+            {n > 1 ? p("Choisissez l’univers de vos magazines", 'Choisis l’univers de tes magazines') : p("Choisissez l’univers de votre magazine", 'Choisis l’univers de ton magazine')}
           </h2>
-          <div className="ec-puces">
-            {contenus.map((c) => (
-              <span key={c.cle} className={c.recu ? 'ec-puce ec-puce--recue' : 'ec-puce'}>
-                {c.recu ? '✓ ' : ''}
-                {c.libelle}
+          <div className="ec-tdb-eventail" aria-hidden="true">
+            {tableau.eventail.map((c, i, tout) => (
+              /* Une seule couverture se tient au centre ; deux, sur les côtés. */
+              <span key={i} className={`ec-tdb-couv ec-tdb-couv--${tout.length === 1 ? 1 : tout.length === 2 ? i * 2 : i}`}>
+                {c.url ? <img src={c.url} alt="" decoding="async" /> : null}
               </span>
             ))}
+            {tableau.eventail.length === 0 ? <span className="ec-note">Les styles arrivent sur le mur.</span> : null}
           </div>
-        </section>
-      ) : null}
-
-      <p className="ec-ensuite">
-        {p(
-          'Après la clôture, l’atelier compose. Le premier bon à tirer et vos propositions de couverture arrivent ici, dans « Bon à tirer ».',
-          'Après la clôture, l’atelier compose. Le premier bon à tirer et tes propositions de couverture arrivent ici, dans « Bon à tirer ».'
-        )}
-      </p>
+          <Link href={mur} prefetch={false} className="ec-bouton ec-bouton--plein">
+            Découvrir les styles
+          </Link>
+        </>
+      ) : (
+        <>
+          <h2 className="ec-tdb-titre" id="ec-tdb-style">
+            {reste ? `Il reste le style de « ${reste.nom} »` : aValider ? `Il reste à valider le brief de « ${aValider.nom} »` : p('Vos styles sont choisis', 'Tes styles sont choisis')}
+          </h2>
+          <div className={`ec-tdb-magazines ec-tdb-magazines--${Math.min(n, 4)}`}>
+            {mags.map((m) =>
+              m.style ? (
+                <Link key={m.id} href={`${brief}?m=${m.rang}`} prefetch={false} className="ec-tdb-magazine">
+                  <span className={`ec-tdb-couv-mag${m.rang % 2 ? ' ec-tdb-couv-mag--gauche' : ''}`}>
+                    {m.styleCouverture ? <img src={m.styleCouverture} alt="" decoding="async" /> : null}
+                  </span>
+                  <span className="ec-note">{m.nom}</span>
+                  <span className="ec-tdb-style-nom">{m.style}</span>
+                  <span className="ec-tdb-lien">{m.briefValide ? 'Brief validé · voir ou modifier' : 'Voir ou modifier le brief'}</span>
+                </Link>
+              ) : (
+                <Link key={m.id} href={`${mur}?m=${m.rang}`} prefetch={false} className="ec-tdb-magazine">
+                  <span className="ec-tdb-couv-mag ec-tdb-couv-mag--vide">+</span>
+                  <span className="ec-note">{m.nom}</span>
+                  <span className="ec-tdb-style-nom">À choisir</span>
+                  <span className="ec-tdb-lien">Ouvrir le mur</span>
+                </Link>
+              )
+            )}
+          </div>
+          {reste ? (
+            <Link href={`${mur}?m=${reste.rang}`} prefetch={false} className="ec-bouton ec-bouton--plein">
+              Choisir le style de « {reste.nom} »
+            </Link>
+          ) : aValider ? (
+            <Link href={`${brief}?m=${aValider.rang}`} prefetch={false} className="ec-bouton ec-bouton--plein">
+              Valider le brief de « {aValider.nom} »
+            </Link>
+          ) : null}
+        </>
+      )}
     </section>
   )
 }

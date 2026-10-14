@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { colonneAbsente } from "@/lib/collectif/migration";
 import { randomUUID } from "node:crypto";
 import { MAX_VIGNETTE_BYTES, MIME_VIGNETTE, signerPut } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
@@ -69,22 +70,26 @@ export async function POST(request: Request) {
 
   /* ── qui dépose, pour quelle provenance ── */
   let sansPlafond = false;
+  let plafondLien: number | null = null;
   let provenanceId: string | null = null;
   let provenanceType: TypeProvenance = role === "responsable" ? "organisateur" : "participant";
   let deposant = typeof corps.deposant === "string" ? corps.deposant.trim().slice(0, 80) || null : null;
   if (role === "participant" && corps.p !== undefined && corps.p !== null && corps.p !== "") {
     if (!estCleProvenance(corps.p)) return NextResponse.json({ error: "provenance_inconnue" }, { status: 404 });
-    const { data: prov, error } = await supabase
-      .from("collectif_provenances")
-      .select("id, type, libelle, sans_plafond")
-      .eq("edition_id", edition.id)
-      .eq("cle", corps.p)
-      .maybeSingle<{ id: string; type: TypeProvenance; libelle: string | null; sans_plafond: boolean }>();
+    type Prov = { id: string; type: TypeProvenance; libelle: string | null; sans_plafond: boolean; plafond_par_personne?: number | null };
+    const lire = (colonnes: string) =>
+      supabase.from("collectif_provenances").select(colonnes).eq("edition_id", edition.id).eq("cle", corps.p as string).maybeSingle<Prov>();
+    /* Repli tant que la migration de la révision n'est pas passée : le lien
+       garde alors la règle de l'édition. */
+    let lu = await lire("id, type, libelle, sans_plafond, plafond_par_personne");
+    if (lu.error && colonneAbsente(lu.error.code)) lu = await lire("id, type, libelle, sans_plafond");
+    const { data: prov, error } = lu;
     if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
     if (!prov) return NextResponse.json({ error: "provenance_inconnue" }, { status: 404 });
     provenanceId = prov.id;
     provenanceType = prov.type;
     sansPlafond = prov.sans_plafond;
+    plafondLien = prov.plafond_par_personne ?? null;
     deposant = deposant ?? prov.libelle;
   }
   if (role === "responsable") {
@@ -97,9 +102,9 @@ export async function POST(request: Request) {
   const appareilLu = appareilDeRequete(request);
   const appareil = appareilLu ?? nouvelAppareil();
 
-  const comptes = await compterPourPlafond(supabase, edition.id, appareil, maintenant);
+  const comptes = await compterPourPlafond(supabase, edition.id, appareil, maintenant, plafondLien !== null ? provenanceId : null);
   if (!comptes) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
-  const place = placeRestante(edition, { role, sansPlafond, dejaParAppareil: comptes.parAppareil }, comptes.total);
+  const place = placeRestante(edition, { role, sansPlafond, plafondLien, dejaParAppareil: comptes.parAppareil }, comptes.total);
 
   const existants = await lireExistants(supabase, edition.id, declaration.fichiers.map((f) => f.cle));
   if (!existants) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });

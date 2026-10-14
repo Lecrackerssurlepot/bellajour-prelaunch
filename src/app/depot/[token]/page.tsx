@@ -13,7 +13,7 @@ import { makeSupabase } from '@/lib/supabase'
 import { chargerAcces } from '@/lib/collectif/acces'
 import { estCleProvenance } from '@/lib/collectif/droits'
 import { collecteOuverte } from '@/lib/collectif/etats'
-import { MIGRATION_COLLECTIF } from '@/lib/collectif/migration'
+import { colonneAbsente, MIGRATION_COLLECTIF } from '@/lib/collectif/migration'
 import { plafondParticipant } from '@/lib/collectif/plafonds'
 import Porte from '../../edition/_composants/Porte'
 import Depot from './Depot'
@@ -46,17 +46,17 @@ export default async function PageDepot({
   const { edition } = acces
   const tu = edition.registre === 'ecole_tu'
 
-  let provenance: { libelle: string | null; sans_plafond: boolean } | null = null
+  type Prov = { libelle: string | null; sans_plafond: boolean; plafond_par_personne?: number | null }
+  let provenance: Prov | null = null
   if (p !== undefined) {
     if (!estCleProvenance(p)) notFound()
-    const { data } = await makeSupabase()
-      .from('collectif_provenances')
-      .select('libelle, sans_plafond')
-      .eq('edition_id', edition.id)
-      .eq('cle', p)
-      .maybeSingle<{ libelle: string | null; sans_plafond: boolean }>()
-    if (!data) notFound()
-    provenance = data
+    const lire = (colonnes: string) =>
+      makeSupabase().from('collectif_provenances').select(colonnes).eq('edition_id', edition.id).eq('cle', p).maybeSingle<Prov>()
+    /* Repli tant que la migration de la révision n'est pas passée. */
+    let lu = await lire('libelle, sans_plafond, plafond_par_personne')
+    if (lu.error && colonneAbsente(lu.error.code)) lu = await lire('libelle, sans_plafond')
+    if (!lu.data) notFound()
+    provenance = lu.data
   }
 
   const ouvert = collecteOuverte(edition.etat, edition.cloture_le, new Date())
@@ -81,7 +81,7 @@ export default async function PageDepot({
             token={token}
             p={p ?? null}
             tu={tu}
-            plafond={plafondParticipant(edition)}
+            plafond={provenance?.plafond_par_personne ?? plafondParticipant(edition)}
             sansPlafond={Boolean(provenance?.sans_plafond)}
             cloture={edition.cloture_le ? formaterJour(edition.cloture_le) : ''}
           />

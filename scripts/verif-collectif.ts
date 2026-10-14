@@ -97,6 +97,10 @@ import {
 } from "@/lib/collectif/plafonds";
 import { estTypeNote, ROLES, TYPES_NOTE, type Role } from "@/lib/collectif/types";
 import { cookieMode, LOGO_MODE, lireMode, MODES } from "@/lib/collectif/affichage";
+import { CONTENUS_CLIENT, contenuClient, lireFichierContenu, lireReponsesMot, QUESTIONS_MOT } from "@/lib/collectif/contenus";
+import { cheminQr, matriceQr, svgQr } from "@/lib/collectif/qr";
+import { colonneAbsente, MIGRATION_REVISION } from "@/lib/collectif/migration";
+import { libellePlafondLien, lirePlafondLien, plafondLienMax, CURSEUR_LIEN } from "@/lib/collectif/plafonds";
 import {
   demandePossible,
   estJour,
@@ -1159,6 +1163,72 @@ ok("le logo suit le mode, et les deux fichiers existent",
   ok("aucune couleur en dur dans les composants de l'espace", composants.every((f) => !/["'`]#[0-9a-fA-F]{3,8}["'`]/.test(lire(f))));
   ok("la pastille des non-lus est sur « Parler à l'atelier »", /e\.cle === "atelier" && nonLus > 0/.test(lire("src/app/edition/[token]/Coquille.tsx")));
   ok("le mode n'utilise pas data-theme (systeme mort, src/app/CLAUDE.md)", !/data-theme/.test(lire("src/app/edition/_composants/RacineEspace.tsx") + lire("src/app/edition/[token]/espace.css")));
+}
+
+
+/* ════════════════════════════ RÉVISION : LE TABLEAU DE BORD ════════════════════════════ */
+
+titre("— la migration de la revision : des colonnes, un repli a la lecture, un 503 a l'ecriture —");
+{
+  const sql = lire(MIGRATION_REVISION);
+  ok("ecrite, atomique, idempotente", /^begin;/m.test(sql) && /^commit;/m.test(sql) && (sql.match(/add column if not exists/g) ?? []).length === 4);
+  ok("le plafond d'un lien, le document cite, la piece jointe",
+     /collectif_provenances[\s\S]*plafond_par_personne integer/.test(sql) && /document_id uuid[\s\S]*references public\.collectif_documents\(id\) on delete set null/.test(sql) && /piece_jointe_key text/.test(sql) && /piece_jointe_nom text/.test(sql));
+  ok("aucune table du B2C touchee", !/\b(numeros|photos|evenements|mails_envoyes)\b(?!_)/.test(sql.replace(/collectif_\w+/g, "").replace(/--.*$/gm, "")));
+  ok("colonne absente : 42703 a la lecture, PGRST204 a l'ecriture, rien d'autre",
+     colonneAbsente("42703") && colonneAbsente("PGRST204") && !colonneAbsente("42P01") && !colonneAbsente(null));
+}
+
+titre("— chaque lien de contribution porte son plafond —");
+{
+  const ed = { plafond_participant_atelier: 40, plafond_participant_client: null, plafond_total: 1000 };
+  ok("le curseur va de 5 a 100, ou jusqu'au plafond de l'atelier", CURSEUR_LIEN.min === 5 && plafondLienMax({ plafond_participant_atelier: null }) === 100 && plafondLienMax(ed) === 40 && plafondLienMax({ plafond_participant_atelier: 300 }) === 100);
+  const l = lirePlafondLien({ plafond: 30 }, ed);
+  ok("30 photos par personne : accepte", l.ok && l.plafond_par_personne === 30 && !l.sans_plafond);
+  ok("au-dela du plafond de l'atelier : refuse, la phrase le dit", (() => { const r = lirePlafondLien({ plafond: 50 }, ed); return !r.ok && r.message.includes("40"); })());
+  ok("« Sans limite » : sans plafond par personne", (() => { const r = lirePlafondLien({ sansPlafond: true, plafond: 9999 }, ed); return r.ok && r.sans_plafond && r.plafond_par_personne === null; })());
+  ok("ni nombre ni « Sans limite » : refuse", !lirePlafondLien({}, ed).ok && !lirePlafondLien({ plafond: "trente" }, ed).ok && !lirePlafondLien({ plafond: 0 }, ed).ok);
+  ok("le libelle d'un lien, et d'un lien d'avant la revision (regle de l'edition)",
+     libellePlafondLien({ sans_plafond: false, plafond_par_personne: 30 }, ed) === "30 photos par personne" &&
+     libellePlafondLien({ sans_plafond: true, plafond_par_personne: null }, ed) === "Sans limite" &&
+     libellePlafondLien({ sans_plafond: false, plafond_par_personne: null }, ed) === "40 photos par personne");
+  const place = placeRestante(ed, { role: "participant", sansPlafond: false, plafondLien: 10, dejaParAppareil: 7 }, 100);
+  ok("le plafond du lien remplace celui de l'edition pour la place restante", !place.illimitee && place.place === 3 && place.borne === "plafond_participant");
+  const sansLien = placeRestante(ed, { role: "participant", sansPlafond: false, dejaParAppareil: 7 }, 100);
+  ok("sans lien : la regle de l'edition, comme avant", !sansLien.illimitee && sansLien.place === 33);
+  const plein = placeRestante(ed, { role: "participant", sansPlafond: false, plafondLien: 10, dejaParAppareil: 0 }, 995);
+  ok("le plafond total compte toujours tout", !plein.illimitee && plein.place === 5 && plein.borne === "plafond_total");
+  ok("la route des liens lit le plafond par la regle pure, et nomme la colonne seulement s'il y en a un",
+     /lirePlafondLien\(/.test(lire("src/app/api/collectif/provenances/route.ts")) && /plafond_par_personne !== null\) ligne\.plafond_par_personne/.test(lire("src/app/api/collectif/provenances/route.ts")));
+  ok("la declaration des photos se replie sans la colonne", /colonneAbsente\(lu\.error\.code\)/.test(lire("src/app/api/collectif/depot/presign/route.ts")));
+}
+
+titre("— le QR code d'un lien : un objet imprime —");
+{
+  const url = "https://bellajour.fr/depot/AbCdEfGhIjKlMnOpQrStUvWxYz012345?p=AbCdEfGhIjKlMnOpQrStUv";
+  const m = matriceQr(url);
+  ok("une matrice carree, assez grande pour ce lien", m.length >= 25 && m.every((l) => l.length === m.length));
+  const { cote } = cheminQr(m);
+  ok("une marge de quatre modules", cote === m.length + 8);
+  ok("le fichier telechargeable est fonce sur clair", /fill="#ffffff"/.test(svgQr(url)) && /fill="#050505"/.test(svgQr(url)));
+  ok("le meme lien donne le meme QR", JSON.stringify(matriceQr(url)) === JSON.stringify(m));
+}
+
+titre("— a envoyer a l'atelier : un fichier, ou des reponses —");
+{
+  ok("cinq contenus, le mot du dirigeant en questionnaire", CONTENUS_CLIENT.length === 5 && contenuClient("mot")?.mode === "questionnaire" && contenuClient("inconnu") === null);
+  ok("quatre questions, a relire par Mathias (PRD §12.14)", QUESTIONS_MOT.length === 4);
+  const logo = contenuClient("logo")!;
+  ok("un logo en SVG : accepte, ecrit en image/svg+xml", (() => { const r = lireFichierContenu(logo, "logo.SVG", 2000); return r.ok && r.extension === "svg" && r.type === "image/svg+xml"; })());
+  ok("une extension inattendue : refusee", !lireFichierContenu(logo, "logo.exe", 2000).ok && !lireFichierContenu(logo, "logo", 2000).ok);
+  ok("vide ou au-dela de 4 Mo : refuse", !lireFichierContenu(logo, "a.png", 0).ok && !lireFichierContenu(logo, "a.png", 5 * 1024 * 1024).ok);
+  ok("un questionnaire n'accepte pas de fichier", !lireFichierContenu(contenuClient("mot")!, "a.pdf", 10).ok);
+  const rep = lireReponsesMot(["  Une belle annee  ", "", 42]);
+  ok("les reponses : au moins une, nettoyees, cle = la question", rep.ok && Object.keys(rep.reponses).length === 1 && rep.reponses[QUESTIONS_MOT[0]] === "Une belle annee");
+  ok("aucune reponse : refuse", !lireReponsesMot(["", " "]).ok && !lireReponsesMot(null).ok);
+  const route = lire("src/app/api/collectif/contenus/route.ts");
+  ok("la route des contenus : responsable seulement, contenu demande par la fiche, token dans le corps",
+     /peut\(acces\.role, "envoyer_contenu"\)/.test(route) && /contenus_demandes/.test(route) && !/searchParams/.test(route));
 }
 
 titre("— chaque porte du B2B lit l'interrupteur —");

@@ -12,6 +12,8 @@ import { makeSupabase } from "@/lib/supabase";
 import { signerGet } from "@/lib/atelier/r2";
 import { chargerAcces } from "@/lib/collectif/acces";
 import { styleVisible } from "@/lib/collectif/brief";
+import { colonneAbsente } from "@/lib/collectif/migration";
+import { libellePlafondLien } from "@/lib/collectif/plafonds";
 import { formaterInstantParis, formaterJourParis } from "@/lib/collectif/dates";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { lireMessages } from "@/lib/collectif/messagerie";
@@ -44,57 +46,195 @@ export async function compterNonLus(editionId: string): Promise<number> {
 /* ───────────────────────────── le tableau de bord ───────────────────────────── */
 
 export type MagazineTableau = {
+  id: string;
   rang: number;
   nom: string;
   style: string | null;
+  /** La couverture du style choisi (signée une heure), pour l'encart Style. */
+  styleCouverture: string | null;
   briefValide: boolean;
+};
+
+/** Un « dossier » de photos de l'encart Photos : un lien de contribution, les photos du responsable… */
+export type DossierPhotos = { cle: string; libelle: string; detail: string; n: number; lien: boolean };
+
+/** Un lien de contribution (une provenance), tel que le responsable le partage. */
+export type LienContribution = {
+  id: string;
+  libelle: string;
+  /** L'adresse complète à partager (QR, copier, WhatsApp, mail). Jamais journalisée. */
+  url: string;
+  plafond: string;
+  recues: number;
 };
 
 export type Tableau = {
   magazines: MagazineTableau[];
+  /** Trois couvertures de styles publiés, pour l'éventail de l'encart vide. */
+  eventail: { nom: string; url: string | null }[];
   photos: number;
   participants: number;
+  dossiers: DossierPhotos[];
+  mosaique: string[];
+  liens: LienContribution[];
   contenusRecus: string[];
+  dernierMessage: { texte: string; quand: string } | null;
 };
 
-export async function chargerTableau(edition: EditionLigne): Promise<Tableau> {
+type ProvenanceLue = { id: string; cle: string; type: string; libelle: string | null; sans_plafond: boolean; plafond_par_personne: number | null; created_at: string };
+
+/**
+ * Les liens de contribution d'une édition. Repli tant que la migration de la
+ * révision n'est pas passée : sans `plafond_par_personne`, un lien garde la
+ * règle de l'édition (`libellePlafondLien`).
+ */
+export async function lireProvenances(editionId: string): Promise<ProvenanceLue[]> {
   const supabase = makeSupabase();
-  const [mags, photos, contenus] = await Promise.all([
+  const avec = await supabase
+    .from("collectif_provenances")
+    .select("id, cle, type, libelle, sans_plafond, plafond_par_personne, created_at")
+    .eq("edition_id", editionId)
+    .order("created_at", { ascending: true });
+  if (!avec.error) return (avec.data ?? []) as ProvenanceLue[];
+  if (!colonneAbsente(avec.error.code)) echec("liens de contribution", avec.error);
+  const sans = await supabase
+    .from("collectif_provenances")
+    .select("id, cle, type, libelle, sans_plafond, created_at")
+    .eq("edition_id", editionId)
+    .order("created_at", { ascending: true });
+  if (sans.error) echec("liens de contribution (repli)", sans.error);
+  return ((sans.data ?? []) as Omit<ProvenanceLue, "plafond_par_personne">[]).map((l) => ({ ...l, plafond_par_personne: null }));
+}
+
+export async function chargerTableau(edition: EditionLigne, origine = ""): Promise<Tableau> {
+  const supabase = makeSupabase();
+  const [mags, photos, contenus, styles, message, provenances] = await Promise.all([
     supabase
       .from("collectif_magazines")
-      .select("rang, nom, brief_valide_le, collectif_styles(nom)")
+      .select("id, rang, nom, brief_valide_le, collectif_styles(nom, couvertures)")
       .eq("edition_id", edition.id)
       .order("rang", { ascending: true }),
     supabase
       .from("collectif_photos")
-      .select("role_deposant, appareil_id")
+      .select("role_deposant, appareil_id, provenance_id, deposant, vignette_key, confirmee_le")
       .eq("edition_id", edition.id)
-      .not("confirmee_le", "is", null),
+      .not("confirmee_le", "is", null)
+      .order("confirmee_le", { ascending: false })
+      .limit(20000),
     supabase.from("collectif_contenus").select("type").eq("edition_id", edition.id),
+    supabase
+      .from("collectif_styles")
+      .select("nom, segment, couvertures")
+      .eq("publie", true)
+      .order("ordre", { ascending: true })
+      .order("created_at", { ascending: true })
+      .limit(24),
+    supabase
+      .from("collectif_messages")
+      .select("texte, created_at")
+      .eq("edition_id", edition.id)
+      .eq("auteur", "atelier")
+      .order("created_at", { ascending: false })
+      .limit(1),
+    lireProvenances(edition.id),
   ]);
   if (mags.error) echec("magazines du tableau de bord", mags.error);
   if (photos.error) echec("photos du tableau de bord", photos.error);
   if (contenus.error) echec("contenus du tableau de bord", contenus.error);
+  if (styles.error) echec("styles du tableau de bord", styles.error);
+  if (message.error) echec("dernier message du tableau de bord", message.error);
 
-  const lignesPhotos = (photos.data ?? []) as { role_deposant: string; appareil_id: string | null }[];
-  const appareils = new Set(
-    lignesPhotos.filter((p) => p.role_deposant === "participant" && p.appareil_id).map((p) => p.appareil_id)
-  );
-  return {
-    magazines: ((mags.data ?? []) as unknown as {
+  type Couv = { image_key: string }[] | null;
+  const premiere = (c: Couv) => c?.find((x) => x.image_key)?.image_key ?? null;
+
+  const magazines = await Promise.all(
+    ((mags.data ?? []) as unknown as {
+      id: string;
       rang: number;
       nom: string;
       brief_valide_le: string | null;
-      collectif_styles: { nom: string } | null;
-    }[]).map((m) => ({
+      collectif_styles: { nom: string; couvertures: Couv } | null;
+    }[]).map(async (m) => ({
+      id: m.id,
       rang: m.rang,
       nom: m.nom,
       style: m.collectif_styles?.nom ?? null,
+      styleCouverture: await signerOuRien(premiere(m.collectif_styles?.couvertures ?? null)),
       briefValide: Boolean(m.brief_valide_le),
-    })),
-    photos: lignesPhotos.length,
+    }))
+  );
+
+  const eventail = await Promise.all(
+    ((styles.data ?? []) as { nom: string; segment: string; couvertures: Couv }[])
+      .filter((st) => styleVisible(edition.styles_segment, st.segment) && premiere(st.couvertures))
+      .slice(0, 3)
+      .map(async (st) => ({ nom: st.nom, url: await signerOuRien(premiere(st.couvertures)) }))
+  );
+
+  const lignes = (photos.data ?? []) as {
+    role_deposant: string;
+    appareil_id: string | null;
+    provenance_id: string | null;
+    deposant: string | null;
+    vignette_key: string | null;
+  }[];
+  const appareils = new Set(lignes.filter((l) => l.role_deposant === "participant" && l.appareil_id).map((l) => l.appareil_id));
+
+  /* Les dossiers : un par lien de contribution, puis ce que le responsable a
+     déposé lui-même (« Mes photos », ou le nom de dossier qu'il a choisi),
+     les participants du lien commun, l'atelier. */
+  const parLien = new Map<string, number>();
+  const autres = new Map<string, DossierPhotos>();
+  const nomResponsable = edition.responsable_nom ?? "";
+  for (const l of lignes) {
+    if (l.provenance_id) {
+      parLien.set(l.provenance_id, (parLien.get(l.provenance_id) ?? 0) + 1);
+      continue;
+    }
+    let cle: string;
+    let d: Omit<DossierPhotos, "n">;
+    if (l.role_deposant === "responsable") {
+      const nom = !l.deposant || l.deposant === nomResponsable || l.deposant === "Le responsable" ? "Mes photos" : l.deposant;
+      cle = `resp:${nom}`;
+      d = { cle, libelle: nom, detail: "déposées par vous", lien: false };
+    } else if (l.role_deposant === "participant") {
+      cle = "participants";
+      d = { cle, libelle: "Lien des participants", detail: `lien commun · ${libellePlafondLien({ sans_plafond: false, plafond_par_personne: null }, edition).toLowerCase()}`, lien: true };
+    } else {
+      cle = "atelier";
+      d = { cle, libelle: "L'atelier", detail: "déposées par l'atelier", lien: false };
+    }
+    const actuel = autres.get(cle);
+    autres.set(cle, actuel ? { ...actuel, n: actuel.n + 1 } : { ...d, n: 1 });
+  }
+  const liens: LienContribution[] = provenances.map((p) => ({
+    id: p.id,
+    libelle: p.libelle ?? "Lien de contribution",
+    url: `${origine}/depot/${edition.token_depot}?p=${p.cle}`,
+    plafond: libellePlafondLien(p, edition),
+    recues: parLien.get(p.id) ?? 0,
+  }));
+  const dossiers: DossierPhotos[] = [
+    ...liens.filter((l) => l.recues > 0).map((l) => ({ cle: l.id, libelle: l.libelle, detail: `lien · ${l.plafond.toLowerCase()}`, n: l.recues, lien: true })),
+    ...[...autres.values()],
+  ].sort((a, b) => b.n - a.n);
+
+  const mosaique = (
+    await Promise.all(lignes.filter((l) => l.vignette_key).slice(0, 8).map((l) => signerOuRien(l.vignette_key)))
+  ).filter((u): u is string => Boolean(u));
+
+  const dernier = ((message.data ?? []) as { texte: string; created_at: string }[])[0] ?? null;
+
+  return {
+    magazines,
+    eventail,
+    photos: lignes.length,
     participants: appareils.size,
+    dossiers,
+    mosaique,
+    liens,
     contenusRecus: [...new Set(((contenus.data ?? []) as { type: string }[]).map((c) => c.type))],
+    dernierMessage: dernier ? { texte: dernier.texte, quand: dernier.created_at } : null,
   };
 }
 

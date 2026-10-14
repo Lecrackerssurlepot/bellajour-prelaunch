@@ -16,6 +16,7 @@ import { prochaineEtape, type Prochaine } from "@/lib/collectif/prochaine";
 import { phraseEvenement } from "@/lib/collectif/recit";
 import { manquesPourPublier } from "@/lib/collectif/styles";
 import { libelleTypeDocument } from "@/lib/collectif/documents";
+import { contenuClient } from "@/lib/collectif/contenus";
 import { lireMessages } from "@/lib/collectif/messagerie";
 import { resumeDeposants } from "@/lib/collectif/grille";
 import type { Message } from "@/lib/collectif/messages";
@@ -137,7 +138,20 @@ export type Collecte = {
   parProvenance: { libelle: string; n: number }[];
 };
 
+/** Un contenu envoyé par le client (logo, programme, mot du dirigeant…), le plus récent d'abord. */
+export type ContenuFiche = {
+  id: string;
+  libelle: string;
+  quand: string;
+  par: string | null;
+  /** Le fichier, signé une heure, sous son nom d'origine ; ou null pour un questionnaire. */
+  url: string | null;
+  nom: string | null;
+  reponses: { question: string; reponse: string }[];
+};
+
 export type Fiche = {
+  contenus: ContenuFiche[];
   collecte: Collecte;
   edition: EditionLigne;
   etat: EtatEdition;
@@ -163,7 +177,7 @@ export async function chargerEdition(
   }
   if (!edition) return { absent: false, fiche: null };
 
-  const [mags, journal, docs, fil, photos] = await Promise.all([
+  const [mags, journal, docs, fil, photos, contenus] = await Promise.all([
     supabase
       .from("collectif_magazines")
       .select("id, rang, nom, style_id, palette_cle, texte, doubles, couvertures_aimees, brief_valide_le, bat_valide_le")
@@ -187,8 +201,15 @@ export async function chargerEdition(
       .eq("edition_id", id)
       .not("confirmee_le", "is", null)
       .limit(20000),
+    supabase
+      .from("collectif_contenus")
+      .select("id, type, r2_key, nom_origine, reponses, recu_le, depose_par")
+      .eq("edition_id", id)
+      .order("recu_le", { ascending: false })
+      .limit(100),
   ]);
   if (photos.error) echec("photos de l'édition", photos.error);
+  if (contenus.error) echec("contenus de l'édition", contenus.error);
   if (mags.error) echec("magazines de l'édition", mags.error);
   if (journal.error) echec("journal de l'édition", journal.error);
   if (docs.error) echec("documents de l'édition", docs.error);
@@ -278,6 +299,31 @@ export async function chargerEdition(
         quand: j.created_at,
         phrase: phraseEvenement(j.type, j.payload ?? {}),
       })),
+      contenus: await Promise.all(
+        ((contenus.data ?? []) as { id: string; type: string; r2_key: string | null; nom_origine: string | null; reponses: Record<string, unknown> | null; recu_le: string; depose_par: string | null }[]).map(
+          async (c) => {
+            let url: string | null = null;
+            if (c.r2_key) {
+              try {
+                url = await signerGet(c.r2_key, undefined, c.nom_origine ?? undefined);
+              } catch {
+                url = null;
+              }
+            }
+            return {
+              id: c.id,
+              libelle: contenuClient(c.type)?.libelle ?? c.type,
+              quand: c.recu_le,
+              par: c.depose_par,
+              url,
+              nom: c.nom_origine,
+              reponses: Object.entries(c.reponses ?? {})
+                .filter(([, r]) => typeof r === "string")
+                .map(([question, r]) => ({ question, reponse: r as string })),
+            };
+          }
+        )
+      ),
       documents: ((docs.data ?? []) as { id: string; type: string; libelle: string; statut_texte: string | null; created_at: string; cree_par: string | null }[]).map(
         (d) => ({ id: d.id, libelle: d.libelle, libelleType: libelleTypeDocument(d.type), quand: d.created_at, par: d.cree_par, statut: d.statut_texte })
       ),
