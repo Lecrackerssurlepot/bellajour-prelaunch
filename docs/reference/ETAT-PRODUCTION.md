@@ -1,4 +1,4 @@
-# État du système — au 14/10/2026 (soir)
+# État du système — au 14/10/2026 (fin de soirée)
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,24 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 14/10/2026 (fin de soirée) — Édition collective : photos en dossiers, documents, répondre, atelier unifié (T-152), sur branche
+
+- **Code** sur `feat/collectif-retours-ux-1` (poussée ; commits f45405f, e9468d4, b1f595d). Rien
+  en production (`COLLECTIF_OUVERT` absente de Vercel). La barre commune touche aussi la table de
+  travail des particuliers (`/admin/atelier`) : sans l'interrupteur elle s'affiche SANS
+  commutateur, ses écrans (Carnet… Démo) restent les mêmes.
+- **Migration `20261018_collectif_liens_reponses.sql` ÉCRITE, PAS APPLIQUÉE**
+  (`collectif_provenances.retire_le`, `collectif_messages.reponse_a`). Vérifié le 14/10 AVANT
+  elle (« Essai révision ») : la page Photos et le fil se lisent ; « Supprimer le lien » et
+  « Répondre » (client et atelier) répondent 503 en nommant le fichier, rien d'écrit, le texte
+  tapé reste dans la zone. `20261017` (D24) attend toujours aussi.
+- **Données d'essai touchées le 14/10** (« Essai révision (Claude) ») : le dossier « Essai renommé
+  (Claude) » (12 photos de bruit) rangé dans « Mes photos », ressorti, renommé « Essai rangé
+  (Claude) » puis rendu à son nom : il est désormais du type « organisateur » (il était « autre »),
+  le journal garde les quatre gestes. Les messages du client de cette édition sont marqués lus
+  (la messagerie de l'atelier y a été ouverte).
+- `verif-collectif.ts` 563 vérifications, `verif-atelier.ts` vert, le 14/10.
 
 ## 14/10/2026 (soir) — Édition collective : les retours UX de Mathias (T-151), sur branche
 

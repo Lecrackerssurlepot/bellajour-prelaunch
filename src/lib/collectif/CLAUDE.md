@@ -299,10 +299,10 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
 
 ## Les retours de Mathias du 14/10 (T-151)
 
-- **« Qui a déposé » et les liens sont UN endroit** (`sources.ts`, pur) : une source par dossier
-  du responsable, par lien de contribution, le lien général, l'atelier, dans un ordre STABLE.
-  La page Photos ET le tableau de bord la lisent. Les clés des liens (`?p=`) ne sortent que pour
-  qui peut en créer (`regler_plafond_participant`) : l'équipe voit les comptes, jamais un lien.
+- **« Qui a déposé » et les liens sont UN endroit** : depuis T-152, l'arbre de `dossiers.ts`
+  (`sources.ts` est archivé dans `archive/sources-photos-2026-10/`). La page Photos ET le tableau
+  de bord le lisent. Les clés des liens (`?p=`) ne sortent que pour qui peut en créer
+  (`regler_plafond_participant`) : l'équipe voit les comptes, jamais un lien.
 - **Le message de partage** (`partage.ts`, pur) salue le groupe, nomme l'organisation et
   l'événement, dit le plafond et la clôture ; le lien général salue « à tous » et vouvoie.
   Le client le retouche avant WhatsApp, Mail ou copie.
@@ -324,6 +324,35 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
 - ⚠️ **Ne pas compter sur `router.refresh()` pour montrer ce qu'on vient d'écrire** : vu le 14/10,
   la relecture part (200) mais l'écran ne la prend pas toujours. La route rend l'objet écrit et
   l'écran l'affiche aussitôt (contenus, nom d'un dossier) ; la relecture confirme ensuite.
+
+## Les retours du 14/10 au soir (T-152)
+
+- **Un dossier de photos n'a PAS de table** (`dossiers.ts`, pur) : c'est le NOM sous lequel le
+  responsable a déposé (`collectif_photos.deposant`, `provenance_type` « organisateur »). Un
+  sous-dossier s'écrit « Parent / Enfant » (`SEPARATEUR`, UN seul niveau, décision de Mathias) ;
+  « Mes photos » est son propre nom (`estPropre`). Ranger (`planDeplacement`) ou renommer
+  (`nouveauChemin`) RÉÉCRIT ce nom, par paquets d'ids de l'édition ; rien ne s'efface, le journal
+  garde l'ancien chemin. Un « / » tapé dans un nom devient « - » (`lireNomDossier`). Les photos
+  d'avant déposées sous un TYPE (photographe, autre) gardent leur nom, sans préfixe de type.
+- **Une clé de dossier dit où regarder** : `tout`, `selection`, `resp:<type>:<nom>`,
+  `lien:<id>`, `participants`, `pers:<id|general>:<nom>`, `atelier`. La grille, le compte, « Tout
+  sélectionner ce dossier » et le tableau de bord lisent TOUS `dansLeDossier` : une seule règle.
+- **Les liens vivent dans l'onglet « Les liens »** ; l'équipe n'en voit aucun (`partage`).
+  Supprimer un lien = `retire_le` (jamais un DELETE) : sa page de dépôt devient introuvable, la
+  route refuse, ses photos restent. Changer son nombre de photos = la règle de la création
+  (`lirePlafondLien`), plafonnée par ce qu'il reste à l'édition.
+- **La visionneuse** (`_composants/Visionneuse.tsx`, `visionneuse.ts`) : un document s'ouvre dans
+  la page par un PORTAIL dans `.ec-contenu` (ouverte depuis une bulle, elle serait sinon de la
+  taille de la bulle). Deux adresses signées : `voir` sans en-tête (elle s'affiche), `url` ou
+  `telecharger` avec le nom propre (elle télécharge). PDF et images se peignent, le reste se
+  télécharge.
+- **Répondre** (`reponse_a`) : le message répondu doit être de la MÊME édition (`lireReponseA`,
+  qui sonde la migration AVANT le coffre) ; la lecture du fil se replie en quatre paliers
+  (réponses, envois, révision, avant). L'atelier écrit par `ConversationAtelier`, partagée par
+  la fiche et la boîte de réception.
+- **La boîte de réception de l'atelier** (`boite.ts`, pur) LIT seulement : l'aperçu d'une
+  conversation ne marque rien ; seule l'ouverture le fait (l'effet de `useMessagerie`). Les
+  non-lus se COMPTENT (`compterNonLus`, `head: true`), jamais en marquant.
 
 ## Phase 7 : les accroches déjà posées
 

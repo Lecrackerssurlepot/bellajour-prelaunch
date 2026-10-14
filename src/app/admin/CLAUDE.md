@@ -105,10 +105,20 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
 
 ## Écrans
 
+**Un seul logiciel (T-152, 14/10/2026)** : `BarreAtelier.tsx` est en tête de CHAQUE écran des
+deux mondes (liste et fiche des particuliers, toutes les pages des éditions, et leurs
+`loading.tsx`). Le commutateur « Particuliers | Éditions » n'existe que si `COLLECTIF_OUVERT` est
+ouvert (lu côté serveur, passé en prop au composant client) ; la démo ne parle jamais des
+éditions. Les messages à lire se comptent EN MÊME TEMPS que la liste (`Promise.all`), et un
+échec de ce compte ne fait jamais tomber la table de travail (`null`, pas d'exception). Un écran
+de plus = la barre en tête, sinon on retombe dans « deux sites ».
+
 **`/admin/collectif/**`** (13/10/2026) — le back-office de l'Édition collective, derrière
 `COLLECTIF_OUVERT` (sinon 404). Ses règles sont dans `src/lib/collectif/CLAUDE.md`. Liste,
-`nouvelle`, fiche `[id]` (réglages, trois liens copier / ouvrir / régénérer, gestes armés en
-deux temps, magazines, journal), `styles` et `styles/[id]` (l'éditeur). Toutes ses écritures
+`nouvelle`, fiche `[id]` EN ONGLETS depuis T-152 (`OngletsFiche` : un onglet monté à sa première
+visite puis gardé, l'adresse suit `?onglet=` ; les messages ne se marquent lus qu'à l'ouverture
+de leur onglet), `messages` (la boîte de réception : conversations, à traiter aujourd'hui, fil,
+dossier du client), `styles` et `styles/[id]` (l'éditeur). Toutes ses écritures
 sont sous `/api/admin/collectif/*`, revérifient l'admin et journalisent dans
 `collectif_evenements`. Sa feuille `collectif.css` est scopée `.eca-root`.
 
