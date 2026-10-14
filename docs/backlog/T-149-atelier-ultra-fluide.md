@@ -32,5 +32,9 @@ l'onglet se ferme.
 - Claude dans le projet : tri, légendes, détection de doublons ou de photos ratées, suggestions
   à l'atelier ; seulement là où ça sert, et jamais une décision prise à la place de l'atelier.
 
+## Le document des analyses possibles
+`docs/produit/collectif/ANALYSE-PHOTOS.md` (14/10) : ce qui marche, ce qui s'active sans IA
+(HEIC, résolution d'impression, captures d'écran, flou, lieux), ce que l'IA peut apporter.
+
 ## Ce qui a été fait
 Rien encore. Ticket ouvert le 14/10/2026, à reprendre quand Mathias le dira.
