@@ -90,7 +90,7 @@ export default async function PageFactures() {
             {jobs.map((j) => (
               <tr key={j.id} className={`ate-facture--${j.status}`}>
                 <td>{LIBELLE[j.status] ?? j.status}</td>
-                <td>{new Date(j.created_at).toLocaleDateString("fr-FR")}</td>
+                <td>{new Date(j.date_affichee).toLocaleDateString("fr-FR")}</td>
                 <td>
                   {j.numero_token ? (
                     <Link href={`/admin/atelier/${j.numero_token}`}>{j.stripe_payment_intent}</Link>

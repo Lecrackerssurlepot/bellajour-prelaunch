@@ -1,4 +1,5 @@
 import { makeSupabase } from "@/lib/supabase";
+import { REGLES_FACTURE } from "@/lib/atelier/facturation";
 
 /**
  * Les jobs de facture, pour /admin/atelier/factures (T-075, 07/10/2026).
@@ -8,6 +9,8 @@ import { makeSupabase } from "@/lib/supabase";
 export type JobFacture = {
   id: string;
   created_at: string;
+  /** La date de la fatura quand elle existe (émise, ou émise à la main), sinon celle du job. */
+  date_affichee: string;
   stripe_payment_intent: string;
   status: string;
   origine: string | null;
@@ -27,12 +30,19 @@ export type JobFacture = {
 };
 
 const COLONNES =
-  "id, created_at, stripe_payment_intent, status, origine, pays_livraison, code_postal, serie, " +
+  "id, created_at, emitted_at, stripe_payment_intent, status, origine, pays_livraison, code_postal, serie, " +
   "taux_tva, montant_ttc, montant_ht, montant_tva, fatura_id, fatura_numero, motif_revue, " +
   "error_message, attempts, numeros(token)";
 const COLONNES_REPLI =
-  "id, created_at, stripe_payment_intent, status, montant_ht, montant_tva, fatura_id, " +
+  "id, created_at, emitted_at, stripe_payment_intent, status, montant_ht, montant_tva, fatura_id, " +
   "fatura_numero, error_message, attempts";
+
+/** Les lignes inscrites à la main (`emitted_manual`) n'ont pas de taux : on
+    le déduit de la série, depuis la table de décision et nulle part ailleurs. */
+function tauxDeLaSerie(serie: unknown): number | null {
+  const r = REGLES_FACTURE.find((x) => x.serie === serie);
+  return r ? r.taux : null;
+}
 
 /** Ce qui demande un geste humain remonte en tête. */
 const PRIORITE: Record<string, number> = {
@@ -66,13 +76,14 @@ export async function chargerFactures(): Promise<{ jobs: JobFacture[]; migration
     return {
       id: String(l["id"]),
       created_at: String(l["created_at"]),
+      date_affichee: String(l["emitted_at"] ?? l["created_at"]),
       stripe_payment_intent: String(l["stripe_payment_intent"]),
       status: String(l["status"]),
       origine: (l["origine"] as string | null) ?? null,
       pays_livraison: (l["pays_livraison"] as string | null) ?? null,
       code_postal: (l["code_postal"] as string | null) ?? null,
       serie: (l["serie"] as string | null) ?? null,
-      taux_tva: num(l["taux_tva"]),
+      taux_tva: num(l["taux_tva"]) ?? tauxDeLaSerie(l["serie"]),
       montant_ttc: ttc,
       montant_ht: num(l["montant_ht"]),
       montant_tva: num(l["montant_tva"]),

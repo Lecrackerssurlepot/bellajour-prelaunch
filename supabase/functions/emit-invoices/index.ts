@@ -311,6 +311,12 @@ Deno.serve(async () => {
         };
         const createRes = await ix("POST", "/invoice_receipts.json", payload);
         if (!createRes.ok) {
+          /* Le refus est gardé en entier, avec ce qu'on a envoyé : le 12/10, un
+             422 n'a laissé que son message, et le payload a dû être reconstitué. */
+          await maj(job.id, {
+            payload_log: payload,
+            response_log: { create: { status: createRes.status, body: createRes.json ?? createRes.raw } },
+          });
           throw new Error(`create HTTP ${createRes.status}: ${(createRes.raw || "").slice(0, 500)}`);
         }
         const id = unwrap(createRes.json)["id"];
