@@ -18,12 +18,19 @@
    fusionne les modules de police dans un chunk partagé, et une face de plus
    déclarée ici serait préchargée sur `/` et /magazine (T-059). Les maquettes
    dessinent la Cormorant en 500 : on reste en 400, comme le reste du monde
-   sombre. */
+   sombre.
+
+   LE MODE JOUR / NUIT (PRD §14.1) est une préférence de l'appareil, gardée
+   dans un cookie : il est lu ICI, pour que la page arrive déjà dans le bon
+   mode, puis porté par `RacineEspace` (`data-ec-mode`). */
 
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
+import { COOKIE_MODE, lireMode } from '@/lib/collectif/affichage'
 import { collectifOuvert } from '@/lib/collectif/interrupteur'
+import RacineEspace from './_composants/RacineEspace'
 import '../(atelier)/theme.css'
 
 const atelierDisplay = Cormorant_Garamond({
@@ -49,11 +56,12 @@ export const metadata: Metadata = {
   referrer: 'no-referrer',
 }
 
-export default function EditionLayout({ children }: { children: React.ReactNode }) {
+export default async function EditionLayout({ children }: { children: React.ReactNode }) {
   if (!collectifOuvert()) notFound()
+  const mode = lireMode((await cookies()).get(COOKIE_MODE)?.value)
   return (
-    <div className={`bj-atelier ec-espace ${atelierDisplay.variable} ${atelierUi.variable}`}>
+    <RacineEspace className={`bj-atelier ec-espace ${atelierDisplay.variable} ${atelierUi.variable}`} modeInitial={mode}>
       {children}
-    </div>
+    </RacineEspace>
   )
 }

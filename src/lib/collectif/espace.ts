@@ -67,7 +67,9 @@ export function phraseJours(n: number | null): string {
 
 /** Les initiales d'un nom, pour l'avatar du menu. « ? » si rien de lisible. */
 export function initiales(nom: string | null): string {
-  const mots = (nom ?? "").trim().split(/\s+/).filter(Boolean);
+  /* Seuls les mots qui commencent par une lettre : « Mathias (essai) » donne
+     « MA », pas « M( ». */
+  const mots = (nom ?? "").trim().split(/\s+/).filter((m) => /^\p{L}/u.test(m));
   if (!mots.length) return "?";
   const lettres = mots.length === 1 ? mots[0].slice(0, 2) : mots[0][0] + mots[mots.length - 1][0];
   return lettres.toUpperCase();
@@ -75,7 +77,7 @@ export function initiales(nom: string | null): string {
 
 /** La ligne sous le nom, dans le menu. Masculin générique (T-117). */
 export function libelleRole(role: Exclude<Role, "atelier" | "participant">): string {
-  return role === "responsable" ? "Responsable du bon à tirer" : "Équipe · lecture seule";
+  return role === "responsable" ? "Responsable du BAT" : "Équipe · lecture seule";
 }
 
 /** Vous ou tu, selon le registre de l'édition. */

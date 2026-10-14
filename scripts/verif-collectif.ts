@@ -96,6 +96,7 @@ import {
   type ReglagesPlafond,
 } from "@/lib/collectif/plafonds";
 import { estTypeNote, ROLES, TYPES_NOTE, type Role } from "@/lib/collectif/types";
+import { cookieMode, LOGO_MODE, lireMode, MODES } from "@/lib/collectif/affichage";
 import {
   demandePossible,
   estJour,
@@ -364,8 +365,8 @@ ok("l'equipe ne voit aucun geste, dans aucun etat",
 titre("— le menu : toujours les memes entrees, dans l'ordre des maquettes —");
 ok("sept entrees, deux groupes",
    MENU.map((e) => e.libelle).join(" | ")
-     === "Tableau de bord | Style | Photos | Bon à tirer | Livraison | Votre dossier | Parler à l'atelier"
-   && MENU.filter((e) => e.groupe === 2).map((e) => e.cle).join() === "dossier,atelier");
+     === "Tableau de bord | Style | Photos | Bon à tirer | Livraison | Parler à l'atelier | Documents"
+   && MENU.filter((e) => e.groupe === 2).map((e) => e.cle).join() === "atelier,dossier");
 const attendus: Record<EtatEdition, { bat: boolean; livraison: boolean }> = {
   preparation: { bat: true, livraison: true },
   composition: { bat: true, livraison: true },
@@ -737,8 +738,8 @@ ok("une date passee le dit", phraseJours(joursAvant("2026-10-01T10:00:00.000Z", 
 ok("sans date, rien", joursAvant(null, midi) === null && phraseJours(null) === "");
 
 titre("— qui regarde, et comment on lui parle —");
-ok("initiales", initiales("Camille Renaud") === "CR" && initiales("Lou") === "LO" && initiales("  ") === "?" && initiales(null) === "?");
-ok("le role au masculin generique", libelleRole("responsable") === "Responsable du bon à tirer" && libelleRole("equipe").includes("lecture seule"));
+ok("initiales", initiales("Camille Renaud") === "CR" && initiales("Lou") === "LO" && initiales("  ") === "?" && initiales(null) === "?" && initiales("Mathias (essai)") === "MA" && initiales("Élise Ô") === "ÉÔ");
+ok("le role au masculin generique", libelleRole("responsable") === "Responsable du BAT" && libelleRole("equipe").includes("lecture seule"));
 ok("vous pour une entreprise, tu pour une ecole", parler("entreprise_vous")("vous", "tu") === "vous" && parler("ecole_tu")("vous", "tu") === "tu");
 const cont = contenusAEnvoyer(["mot", "logo", "pirate"], ["logo"]);
 ok("contenus demandes : ordre de la fiche, inconnu ignore, recu marque",
@@ -1131,6 +1132,34 @@ ok("le titre suit l'etape", titreLivraison("bat_valide").includes("validé") && 
 ok("le journal de la phase 6 se lit en francais",
    phraseEvenement("modification_demandee", { motif: "Ajouter des pages" }).includes("Ajouter des pages") &&
    phraseEvenement("proposition_acceptee", { libelle: "Option" }).includes("acceptée"));
+
+
+/* ════════════════════════════ RÉVISION DU 13/10 : LA COQUILLE ════════════════════════════ */
+
+titre("— jour / nuit : une preference de l'appareil, jamais une donnee —");
+ok("deux modes, la nuit par defaut, toute valeur inconnue vaut nuit",
+   MODES.join() === "nuit,jour" && lireMode(undefined) === "nuit" && lireMode("jour") === "jour" && lireMode("JOUR") === "nuit" && lireMode("<script>") === "nuit");
+ok("le cookie vit un an, sur l'espace seulement", cookieMode("jour") === "bj_ec_mode=jour; path=/edition; max-age=31536000; samesite=lax");
+ok("le logo suit le mode, et les deux fichiers existent",
+   LOGO_MODE.nuit.includes("cuivre") && LOGO_MODE.jour.includes("bleu") &&
+   Object.values(LOGO_MODE).every((f) => existsSync(resolve(RACINE, "public" + f))));
+{
+  /* Aucune couleur écrite en dur hors des blocs de jetons : un composant écrit
+     un RÔLE (`--ec-text`, `rgba(var(--ec-fg-rgb), x)`), jamais une teinte.
+     bat.css garde les vraies couleurs des pages de magazine, en jetons
+     `--ec-page` / `--ec-encre` : il est vérifié de la même façon. */
+  const sansJetons = (css: string) =>
+    css
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\.bj-atelier\.ec-espace(\[data-ec-mode="jour"\])?\s*\{[^}]*\}/g, "");
+  const feuilles = fichiersParSuffixe("src/app/edition/[token]", /\.css$/);
+  const fautives = feuilles.filter((f) => /#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d/.test(sansJetons(lire(f))));
+  ok(`aucune couleur en dur dans les feuilles de l'espace (${feuilles.length} feuilles${fautives.length ? " ; en faute : " + fautives.join(", ") : ""})`, fautives.length === 0);
+  const composants = fichiersParSuffixe("src/app/edition", /\.tsx$/);
+  ok("aucune couleur en dur dans les composants de l'espace", composants.every((f) => !/["'`]#[0-9a-fA-F]{3,8}["'`]/.test(lire(f))));
+  ok("la pastille des non-lus est sur « Parler à l'atelier »", /e\.cle === "atelier" && nonLus > 0/.test(lire("src/app/edition/[token]/Coquille.tsx")));
+  ok("le mode n'utilise pas data-theme (systeme mort, src/app/CLAUDE.md)", !/data-theme/.test(lire("src/app/edition/_composants/RacineEspace.tsx") + lire("src/app/edition/[token]/espace.css")));
+}
 
 titre("— chaque porte du B2B lit l'interrupteur —");
 const layouts = ["src/app/edition/layout.tsx", "src/app/depot/layout.tsx", "src/app/admin/collectif/layout.tsx"];

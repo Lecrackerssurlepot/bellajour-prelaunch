@@ -1,6 +1,13 @@
 "use client";
 
-/* La coquille de l'espace client (PRD §4.1) : le menu de gauche, persistant.
+/* La coquille de l'espace client (PRD §4.1, révision §14.1) : le menu de
+   gauche, persistant, identique sur tous les écrans.
+
+   - Révision du 13/10 : le vrai logo (cuivre la nuit, bleu le jour), le
+     bouton soleil / lune en bas du menu (le mode vit dans `RacineEspace`),
+     la pastille des non-lus sur « Parler à l'atelier », et AUCUNE page qui
+     défile sur un écran d'ordinateur : chaque section tient dans la colonne
+     de contenu et fait défiler ses propres zones longues (espace.css).
 
    - Le layout ne se re-rend pas en navigation (Next 16) : l'entrée active se
      lit donc ici, par `usePathname`, et chaque section est un `<Link>` :
@@ -14,9 +21,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { LOGO_MODE } from "@/lib/collectif/affichage";
 import { cheminSection, MENU, sectionDuChemin, type CleSection, type Verrous } from "@/lib/collectif/verrous";
 import { DepotFournisseur, PastilleEnvoi } from "../_composants/depot/DepotContexte";
+import { useModeEspace } from "../_composants/RacineEspace";
+
+/** Le signal qu'envoie la conversation quand elle a marqué les messages lus : la pastille s'éteint sans recharger. */
+export const EVENEMENT_MESSAGES_LUS = "ec-messages-lus";
 
 type Props = {
   token: string;
@@ -28,14 +40,13 @@ type Props = {
   lectureSeule: boolean;
   verrous: Verrous;
   nonLus: number;
-  bandeauLecture: string;
   /** Le responsable dépose : son moteur d'envoi vit ici, pas dans la page. */
   peutDeposer: boolean;
   children: React.ReactNode;
 };
 
-function Icone({ cle }: { cle: CleSection | "cadenas" | "menu" | "fermer" }) {
-  const p = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+function Icone({ cle }: { cle: CleSection | "cadenas" | "menu" | "fermer" | "soleil" | "lune" }) {
+  const p = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
   switch (cle) {
     case "tableau":
       return <svg {...p}><rect x="3" y="3" width="7" height="9" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="16" width="7" height="5" rx="1.5" /></svg>;
@@ -48,7 +59,7 @@ function Icone({ cle }: { cle: CleSection | "cadenas" | "menu" | "fermer" }) {
     case "livraison":
       return <svg {...p}><path d="M3 7h11v9H3z" /><path d="M14 10h4l3 3v3h-7" /><circle cx="7" cy="17.5" r="1.6" /><circle cx="17" cy="17.5" r="1.6" /></svg>;
     case "dossier":
-      return <svg {...p}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>;
+      return <svg {...p}><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" /><path d="M9 13h6M9 17h6" /></svg>;
     case "atelier":
       return <svg {...p}><path d="M4 5h16v11H8l-4 4z" /></svg>;
     case "cadenas":
@@ -57,12 +68,25 @@ function Icone({ cle }: { cle: CleSection | "cadenas" | "menu" | "fermer" }) {
       return <svg {...p} width={22} height={22}><path d="M4 7h16M4 12h16M4 17h16" /></svg>;
     case "fermer":
       return <svg {...p} width={22} height={22}><path d="M6 6l12 12M18 6 6 18" /></svg>;
+    case "soleil":
+      return <svg {...p} width={16} height={16} strokeWidth={1.8}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>;
+    case "lune":
+      return <svg {...p} width={16} height={16} strokeWidth={1.8}><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>;
   }
 }
 
 export default function Coquille(props: Props) {
   const chemin = usePathname();
   const active = sectionDuChemin(chemin);
+  const { mode, basculer } = useModeEspace();
+  /* La pastille vient du layout (lu une fois) ; la conversation l'éteint en
+     marquant les messages lus. */
+  const [nonLus, setNonLus] = useState(props.nonLus);
+  useEffect(() => {
+    const eteindre = () => setNonLus(0);
+    window.addEventListener(EVENEMENT_MESSAGES_LUS, eteindre);
+    return () => window.removeEventListener(EVENEMENT_MESSAGES_LUS, eteindre);
+  }, []);
   /* Le tiroir et la bulle d'un verrou sont ouverts POUR un chemin : une
      navigation les referme d'elle-même, sans effet ni état à remettre à zéro. */
   const [tiroirPour, setTiroirPour] = useState<string | null>(null);
@@ -118,9 +142,9 @@ export default function Coquille(props: Props) {
           >
             <Icone cle={e.cle} />
             <span className="ec-menu-libelle">{e.libelle}</span>
-            {e.cle === "dossier" && props.nonLus > 0 ? (
-              <span className="ec-menu-pastille" aria-label={`${props.nonLus} message${props.nonLus > 1 ? "s" : ""} non lu${props.nonLus > 1 ? "s" : ""}`}>
-                {props.nonLus}
+            {e.cle === "atelier" && nonLus > 0 ? (
+              <span className="ec-menu-pastille" aria-label={`${nonLus} message${nonLus > 1 ? "s" : ""} non lu${nonLus > 1 ? "s" : ""}`}>
+                {nonLus}
               </span>
             ) : null}
           </Link>
@@ -131,7 +155,7 @@ export default function Coquille(props: Props) {
   return (
     <div className="ec-coquille" data-tiroir={ouvert ? "ouvert" : "ferme"}>
       <header className="ec-barre-mobile">
-        <span className="ec-marque">Bellajour</span>
+        <img className="ec-logo ec-logo--mobile" src={LOGO_MODE[mode]} alt="Bellajour" width={96} height={36} />
         <button
           type="button"
           className="ec-bouton-tiroir"
@@ -145,7 +169,8 @@ export default function Coquille(props: Props) {
       </header>
 
       <aside className="ec-menu" id="ec-menu" aria-label="Menu de l'édition">
-        <span className="ec-marque ec-marque--menu">Bellajour</span>
+        <img className="ec-logo" src={LOGO_MODE[mode]} alt="Bellajour" width={116} height={43} />
+        {/* Un lien ne mène qu'à UNE édition : le sélecteur n'est qu'un repère. */}
         <div className="ec-edition">
           <span className="ec-edition-nom">{props.evenement}</span>
           <span className="ec-edition-orga">{props.organisation}</span>
@@ -163,14 +188,24 @@ export default function Coquille(props: Props) {
             <span className="ec-moi-nom">{props.nom}</span>
             <span className="ec-moi-role">{props.libelleRole}</span>
           </span>
+          <button
+            type="button"
+            className="ec-mode"
+            onClick={basculer}
+            aria-label={mode === "jour" ? "Passer en mode nuit" : "Passer en mode jour"}
+            title={mode === "jour" ? "Passer en mode nuit" : "Passer en mode jour"}
+          >
+            <Icone cle={mode === "jour" ? "lune" : "soleil"} />
+          </button>
         </div>
       </aside>
 
       {ouvert ? <button type="button" className="ec-voile" aria-label="Fermer le menu" onClick={() => setOuvert(false)} /> : null}
 
       <DepotFournisseur token={props.token} actif={props.peutDeposer}>
-        <div className="ec-contenu">
-          {props.lectureSeule ? <p className="ec-bandeau">{props.bandeauLecture}</p> : null}
+        {/* La lecture seule (lien d'équipe) se dit dans le menu, sous le nom :
+            plus de bandeau qui s'empile au-dessus de chaque écran. */}
+        <div className="ec-contenu" data-lecture={props.lectureSeule ? "oui" : undefined}>
           <PastilleEnvoi lien={cheminSection(props.token, "photos")} />
           {props.children}
         </div>

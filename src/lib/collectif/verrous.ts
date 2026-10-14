@@ -41,8 +41,10 @@ export const MENU: readonly EntreeMenu[] = [
   { cle: "photos", libelle: "Photos", segment: "photos", groupe: 1 },
   { cle: "bat", libelle: "Bon à tirer", segment: "bat", groupe: 1 },
   { cle: "livraison", libelle: "Livraison", segment: "livraison", groupe: 1 },
-  { cle: "dossier", libelle: "Votre dossier", segment: "dossier", groupe: 2 },
+  /* Révision du 13/10 (PRD §14.1) : la conversation vit dans « Parler à
+     l'atelier », qui passe devant ; le dossier ne garde que les documents. */
   { cle: "atelier", libelle: "Parler à l'atelier", segment: "atelier", groupe: 2 },
+  { cle: "dossier", libelle: "Documents", segment: "dossier", groupe: 2 },
 ];
 
 /** Les phrases du PRD §3.2, mot pour mot. */

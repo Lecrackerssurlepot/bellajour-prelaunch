@@ -8,6 +8,7 @@ import { useState } from "react";
 import { formaterInstantParis } from "@/lib/collectif/dates";
 import type { Message } from "@/lib/collectif/messages";
 import { useMessagerie } from "../../_composants/useMessagerie";
+import { EVENEMENT_MESSAGES_LUS } from "../Coquille";
 
 type Props = { token: string; initiaux: Message[]; peutEcrire: boolean; tu: boolean };
 
@@ -44,6 +45,8 @@ export default function Messagerie({ token, initiaux, peutEcrire, tu }: Props) {
       ? async () => {
           try {
             await appeler("/api/collectif/messages/lus", { token });
+            /* La pastille du menu s'éteint sans recharger la page. */
+            window.dispatchEvent(new Event(EVENEMENT_MESSAGES_LUS));
           } catch {
             /* un accusé de lecture manqué se rattrape à la visite suivante */
           }

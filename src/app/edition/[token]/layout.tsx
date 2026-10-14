@@ -12,7 +12,7 @@
 import { notFound } from 'next/navigation'
 import { peut } from '@/lib/collectif/droits'
 import { etatEffectif } from '@/lib/collectif/etats'
-import { initiales, libelleRole, parler } from '@/lib/collectif/espace'
+import { initiales, libelleRole } from '@/lib/collectif/espace'
 import { MIGRATION_COLLECTIF } from '@/lib/collectif/migration'
 import { verrousPour } from '@/lib/collectif/verrous'
 import Porte from '../_composants/Porte'
@@ -41,7 +41,6 @@ export default async function EspaceLayout({
   }
 
   const { edition, role } = acces
-  const p = parler(edition.registre)
   const etat = etatEffectif(edition.etat, edition.cloture_le, new Date())
   const nom = role === 'responsable' ? edition.responsable_nom ?? 'Responsable' : 'Équipe'
   const nonLus = role === 'responsable' ? await compterNonLus(edition.id) : 0
@@ -55,10 +54,6 @@ export default async function EspaceLayout({
       initiales={role === 'responsable' ? initiales(edition.responsable_nom) : 'É'}
       libelleRole={libelleRole(role === 'responsable' ? 'responsable' : 'equipe')}
       lectureSeule={role === 'equipe'}
-      bandeauLecture={p(
-        'Lecture seule : vous voyez tout, sans rien pouvoir modifier.',
-        'Lecture seule : tu vois tout, sans rien pouvoir modifier.'
-      )}
       verrous={verrousPour(etat)}
       nonLus={nonLus}
       peutDeposer={peut(role, 'deposer_photos')}
