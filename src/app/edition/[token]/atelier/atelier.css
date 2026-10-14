@@ -241,6 +241,10 @@
 .ec-espace .ec-parler-menu-vide {
   padding: 4px 12px 8px;
 }
+.ec-espace .ec-parler-aide {
+  margin: 0;
+  font-size: 12px;
+}
 .ec-espace .ec-parler-lecture {
   flex: none;
   margin: 0;

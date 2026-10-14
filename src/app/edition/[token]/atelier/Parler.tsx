@@ -523,7 +523,12 @@ function Ecrire(e: {
           placeholder="Écrire à l'atelier…"
           aria-label={v("Votre message", "Ton message")}
           onKeyDown={(ev) => {
-            if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) void soumettre(ev);
+            /* Entrée envoie, Maj + Entrée va à la ligne (Mathias, 14/10). Pas
+               pendant une saisie en cours de composition (accents, IME). */
+            if (ev.key === "Enter" && !ev.shiftKey && !ev.nativeEvent.isComposing) {
+              ev.preventDefault();
+              void soumettre(ev);
+            }
           }}
         />
         <button type="button" className="ec-bouton ec-bouton--clair ec-parler-plus" aria-label="Joindre un fichier ou citer un document" aria-expanded={menu} onClick={() => setMenu((x) => !x)}>
@@ -547,6 +552,7 @@ function Ecrire(e: {
           {refus ?? e.erreur}
         </p>
       ) : null}
+      <span className="ec-note ec-parler-aide">Entrée envoie · Maj + Entrée pour aller à la ligne</span>
     </form>
   );
 }

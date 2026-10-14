@@ -1171,7 +1171,7 @@ ok("deux modes, la nuit par defaut, toute valeur inconnue vaut nuit",
    MODES.join() === "nuit,jour" && lireMode(undefined) === "nuit" && lireMode("jour") === "jour" && lireMode("JOUR") === "nuit" && lireMode("<script>") === "nuit");
 ok("le cookie vit un an, sur l'espace seulement", cookieMode("jour") === "bj_ec_mode=jour; path=/edition; max-age=31536000; samesite=lax");
 ok("le logo suit le mode, et les deux fichiers existent",
-   LOGO_MODE.nuit.includes("cuivre") && LOGO_MODE.jour.includes("bleu") &&
+   LOGO_MODE.nuit.includes("blanc") && LOGO_MODE.jour.includes("bleu") &&
    Object.values(LOGO_MODE).every((f) => existsSync(resolve(RACINE, "public" + f))));
 {
   /* Aucune couleur écrite en dur hors des blocs de jetons : un composant écrit
@@ -1443,6 +1443,13 @@ titre("— D23 / T-148 : les rendez-vous dans l'espace —");
   const fil = filDeConversation([], [], () => "j", [{ id: "r1", quand: "2026-10-14T09:00:00Z" }]);
   ok("le rendez-vous pris entre au fil", fil.some((e) => e.genre === "rendezvous"));
   ok("le journal dit les rendez-vous", phraseEvenement("rdv_pris", { par: "Camille", quand: "jeudi 15 octobre à 10 h 30", avec: "Mathias" }).includes("Mathias"));
+}
+
+titre("— retours de Mathias du 14/10 —");
+{
+  const parler = lire("src/app/edition/[token]/atelier/Parler.tsx");
+  ok("messages : Entree envoie, Maj + Entree va a la ligne, jamais pendant une composition (IME)",
+    /ev\.key === "Enter" && !ev\.shiftKey && !ev\.nativeEvent\.isComposing/.test(parler) && !/ev\.metaKey \|\| ev\.ctrlKey\)\) void soumettre/.test(parler));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
