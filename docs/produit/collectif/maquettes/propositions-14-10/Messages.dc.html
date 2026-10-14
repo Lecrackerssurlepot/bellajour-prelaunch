@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Parler à l'atelier</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&amp;family=DM+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#d68a63}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #050505; color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; overflow: hidden">
+  <dc-import name="Menu" actif="atelier" hint-size="232px,900px"></dc-import>
+  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+    <header style="flex: none; height: 68px; box-sizing: border-box; padding: 0 32px; border-bottom: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center; gap: 16px">
+      <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px">Parler à l'atelier</h1>
+      <span style="color: rgba(255,255,255,0.64); font-size: 13px">Messages, rendez-vous et demandes au même endroit</span>
+    </header>
+    <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 320px">
+      <section style="min-height: 0; display: flex; flex-direction: column">
+        <div style="flex: 1; min-height: 0; overflow: hidden; padding: 24px 32px; display: flex; flex-direction: column; gap: 14px; justify-content: flex-end">
+          <span style="align-self: center; font-size: 12px; color: rgba(255,255,255,0.64)">14 octobre</span>
+          <div style="align-self: flex-start; max-width: 70%; padding: 12px 16px; border-radius: 16px 16px 16px 4px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04)">Bonjour, votre logo est bien arrivé. Préférez-vous la version blanche sur la couverture ?<span style="display: block; font-size: 11px; color: rgba(255,255,255,0.64); padding-top: 4px">L'atelier · Mathias · 10 h 02</span></div>
+          <div style="align-self: flex-end; max-width: 70%; padding: 12px 16px; border-radius: 16px 16px 4px 16px; background: rgba(214,138,99,0.16); display: flex; flex-direction: column; gap: 8px">
+            <span style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04); font-size: 12px">Votre envoi · Logo · logo-aubier-blanc.png</span>
+            <span>Oui, celle-ci, sur le fond bleu.</span>
+            <span style="font-size: 11px; color: rgba(255,255,255,0.64)">Camille Essai · 10 h 05</span>
+          </div>
+        </div>
+        <div style="flex: none; position: relative; padding: 14px 32px 18px; border-top: 1px solid rgba(255,255,255,0.10); display: flex; flex-direction: column; gap: 8px">
+          <div role="menu" aria-label="Joindre ou citer" style="position: absolute; right: 140px; bottom: 74px; width: 360px; padding: 8px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.14); background: rgba(20,20,20,0.92); display: flex; flex-direction: column">
+            <button type="button" role="menuitem" style="padding: 10px 12px; border: 0; border-radius: 10px; background: transparent; color: #ffffff; font: inherit; text-align: left">Joindre un fichier depuis l'ordinateur</button>
+            <sc-for list="{{ groupes }}" as="g" hint-placeholder-count="2">
+              <span style="margin-top: 4px; padding: 10px 12px 6px; border-top: 1px solid rgba(255,255,255,0.10); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.64)">{{ g.titre }}</span>
+              <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="2">
+                <button type="button" role="menuitem" style="padding: 8px 12px; border: 0; border-radius: 10px; background: transparent; color: #ffffff; font: inherit; text-align: left; display: flex; flex-direction: column">
+                  <span>{{ it.nom }}</span><span style="font-size: 12px; color: rgba(255,255,255,0.64)">{{ it.detail }}</span>
+                </button>
+              </sc-for>
+            </sc-for>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: flex-end">
+            <label style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+              <span style="position: absolute; left: -9999px">Votre message</span>
+              <textarea rows="1" placeholder="Écrire à l'atelier…" style="min-height: 44px; padding: 11px 14px; box-sizing: border-box; border-radius: 12px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04); color: #ffffff; font: inherit; resize: none"></textarea>
+            </label>
+            <button type="button" aria-label="Joindre ou citer un document" aria-expanded="true" style="width: 44px; height: 44px; border-radius: 999px; border: 1px solid #d68a63; background: rgba(214,138,99,0.16); color: #ffffff; font-size: 20px">+</button>
+            <button type="button" style="height: 44px; padding: 0 18px; border-radius: 999px; border: 0; background: #d68a63; color: #050505; font: inherit; font-weight: 600">Envoyer</button>
+          </div>
+          <span style="font-size: 12px; color: rgba(255,255,255,0.64)">Entrée envoie · Maj + Entrée pour aller à la ligne</span>
+        </div>
+      </section>
+      <aside style="padding: 24px; border-left: 1px solid rgba(255,255,255,0.10); background: #0a0a0a; display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.64)">Rendez-vous</span>
+        <strong style="font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 24px">Un appel avec Mathias</strong>
+        <span style="font-size: 13px; color: rgba(255,255,255,0.64)">(la prise de rendez-vous dans l'espace arrive : carte Notion « En attente »)</span>
+      </aside>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      groupes: [
+        { titre: "Citer un document de l'atelier", items: [{ nom: 'Devis signé', detail: '2 octobre' }, { nom: 'Proposition complémentaire', detail: '13 octobre' }] },
+        { titre: 'Citer un de vos envois', items: [{ nom: 'Logo · logo-aubier.svg', detail: 'envoyé le 14 octobre' }, { nom: 'Logo · logo-aubier-blanc.png', detail: 'envoyé le 14 octobre' }, { nom: 'Mot du dirigeant', detail: 'vos réponses au questionnaire' }] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

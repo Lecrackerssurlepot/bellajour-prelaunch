@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Revoir un envoi à l'atelier</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&amp;family=DM+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#d68a63}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #050505; color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; overflow: hidden">
+  <dc-import name="Menu" actif="tableau" hint-size="232px,900px"></dc-import>
+  <div style="flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column">
+    <header style="flex: none; height: 68px; box-sizing: border-box; padding: 0 32px; border-bottom: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center; gap: 16px">
+      <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px">Tableau de bord</h1>
+      <span style="color: rgba(255,255,255,0.64); font-size: 13px">Collecte ouverte jusqu'au 28 octobre</span>
+    </header>
+    <div style="flex: 1; min-height: 0; padding: 24px 32px; display: flex; flex-direction: column; gap: 16px">
+      <section aria-labelledby="dossiers" style="padding: 18px 20px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04); display: flex; flex-direction: column; gap: 10px">
+        <h2 id="dossiers" style="margin: 0; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.64); font-weight: 400">Vos dossiers de photos · double-cliquez un nom pour le changer</h2>
+        <div style="display: flex; gap: 12px">
+          <div style="flex: 1; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.04); display: flex; flex-direction: column; gap: 6px">
+            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: rgba(255,255,255,0.64)">Nom du dossier
+              <input value="La soirée de clôture" style="height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid #d68a63; background: transparent; color: #ffffff; font: inherit; font-size: 14px">
+            </label>
+            <span style="font-size: 12px; color: rgba(255,255,255,0.64)">Entrée pour garder · 320 photos</span>
+          </div>
+          <div style="flex: 1; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.04); display: flex; flex-direction: column; gap: 4px"><strong style="font-weight: 500">Équipe Lyon</strong><span style="font-size: 12px; color: rgba(255,255,255,0.64)">210 photos · lien de contribution</span></div>
+          <div style="flex: 1; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.04); display: flex; flex-direction: column; gap: 4px"><strong style="font-weight: 500">Le photographe</strong><span style="font-size: 12px; color: rgba(255,255,255,0.64)">240 photos · lien de contribution</span></div>
+          <button type="button" style="flex: none; width: 160px; border-radius: 12px; border: 1px dashed rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit">Nouveau dossier</button>
+        </div>
+      </section>
+      <section aria-labelledby="contenus" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+        <h2 id="contenus" style="margin: 0; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.64); font-weight: 400">3 · À envoyer à l'atelier</h2>
+        <button type="button" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid #d68a63; background: rgba(214,138,99,0.16); color: #ffffff; font: inherit; font-size: 13px">✓ Logo · 2 fichiers</button>
+        <button type="button" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit; font-size: 13px">Programme</button>
+        <button type="button" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid #d68a63; background: rgba(214,138,99,0.16); color: #ffffff; font: inherit; font-size: 13px">✓ Mot du dirigeant</button>
+      </section>
+    </div>
+
+    <div style="position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(0,0,0,0.5)">
+      <section role="dialog" aria-labelledby="titre-logo" style="width: 600px; box-sizing: border-box; padding: 28px; display: flex; flex-direction: column; gap: 16px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.14); background: rgba(20,20,20,0.86)">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <h2 id="titre-logo" style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px">Le logo</h2>
+            <span style="color: rgba(255,255,255,0.64); font-size: 13px">Ce que l'atelier a reçu. Remplacez un fichier, ou ajoutez-en un.</span>
+          </div>
+          <button type="button" aria-label="Fermer" style="width: 36px; height: 36px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18); background: transparent; color: #ffffff">✕</button>
+        </div>
+        <sc-for list="{{ fichiers }}" as="f" hint-placeholder-count="2">
+          <div style="display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,0.04)">
+            <span style="width: 120px; height: 72px; border-radius: 8px; display: grid; place-items: center; background: {{ f.fond }}; color: {{ f.encre }}; font-family: 'Cormorant Garamond', serif; font-size: 22px; flex: none">Aubier</span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><strong style="font-weight: 500">{{ f.nom }}</strong><span style="font-size: 12px; color: rgba(255,255,255,0.64)">{{ f.detail }}</span></span>
+            <button type="button" style="height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit; font-size: 13px">Remplacer</button>
+          </div>
+        </sc-for>
+        <button type="button" style="height: 44px; border-radius: 999px; border: 1px dashed rgba(255,255,255,0.28); background: transparent; color: #ffffff; font: inherit">Ajouter un autre fichier</button>
+        <span style="font-size: 12px; color: rgba(255,255,255,0.64)">Un fichier remplacé reste à l'atelier, rangé comme ancienne version : rien ne se perd.</span>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      fichiers: [
+        { nom: 'logo-aubier.svg', detail: 'Envoyé le 14 octobre · version couleur', fond: '#f4f1ec', encre: '#111111' },
+        { nom: 'logo-aubier-blanc.png', detail: 'Envoyé le 14 octobre · pour les fonds sombres', fond: '#1d3557', encre: '#ffffff' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
