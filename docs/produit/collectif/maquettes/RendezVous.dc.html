@@ -2,169 +2,129 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Rendez-vous et modifications</title>
+<title>Parler à l'atelier</title>
 <script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;500;600&display=swap">
-<style>
-body{margin:0;background:#050505}
-a{color:#d68a63}a:hover{color:#ffffff}
-textarea::placeholder{color:rgba(255,255,255,0.56)}
-</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@400;500;600&family=Fraunces:ital,wght@0,400;1,400&display=swap">
+<style>body{margin:0;background:#050505}a{color:var(--accent)}</style>
 </helmet>
-<div style="min-height: 1150px; box-sizing: border-box; background: radial-gradient(60% 40% at 15% 0%, rgba(214,138,99,0.12) 0%, #050505 70%); color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.5; display: flex">
-  <aside aria-label="Navigation de l'espace" style="flex: none; width: 248px; box-sizing: border-box; border-right: 1px solid rgba(255,255,255,0.10); background: #050505; padding: 22px 14px; display: flex; flex-direction: column; gap: 22px">
-    <span style="padding: 0 14px; font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; color: #ffffff">Bellajour</span>
-    <button type="button" aria-label="Changer d'édition" style="margin: 0 2px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); color: #ffffff; font-family: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px">
-      <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">Séminaire d'automne</span><span style="font-size: 12px; color: rgba(255,255,255,0.56)">Maison Aubier</span></span>
+<div style="--bg: {{ th.bg }}; --panel: {{ th.panel }}; --surface: {{ th.surface }}; --line: {{ th.line }}; --text: {{ th.text }}; --muted: {{ th.muted }}; --faint: {{ th.faint }}; --accent: {{ th.accent }}; --accent-soft: {{ th.accentSoft }}; --on-accent: {{ th.onAccent }}; --page: {{ th.page }}; --glass: {{ th.glass }}; --fg: {{ th.text }}; --bgc: {{ th.bg }}; --fg-rgb: {{ th.fgRgb }}; --ac-rgb: {{ th.acRgb }}; height: 900px; overflow: hidden; display: flex; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; transition: background 0.3s, color 0.3s">
+  <aside aria-label="Navigation" style="flex: none; width: 232px; box-sizing: border-box; height: 100%; border-right: 1px solid var(--line); background: var(--panel); padding: 22px 12px 16px; display: flex; flex-direction: column; gap: 18px">
+    <img src="{{ th.logo }}" alt="Bellajour" style="width: 116px; height: auto; margin: 0 12px 4px">
+    <button type="button" aria-label="Changer d'édition" style="padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-family: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px">
+      <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">Séminaire d'automne</span><span style="font-size: 12px; color: var(--muted)">Maison Aubier</span></span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5-5 5 5M7 14l5 5 5-5"></path></svg>
     </button>
-    <nav style="display: flex; flex-direction: column; gap: 4px">
-        <a href="Espace.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>Tableau de bord</a>
-        <a href="Styles.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><circle cx="12" cy="12" r="9"></circle><circle cx="8" cy="10.5" r="1.3"></circle><circle cx="12" cy="7.5" r="1.3"></circle><circle cx="16" cy="10.5" r="1.3"></circle><path d="M12 21a3 3 0 0 1 0-6h2"></path></svg>Style</a>
-        <a href="Collecte.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="M21 16l-5-5-9 8"></path></svg>Photos</a>
-        <a href="BAT.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 5h6.5A2.5 2.5 0 0 1 12 7.5V20a2 2 0 0 0-2-2H3z"></path><path d="M21 5h-6.5A2.5 2.5 0 0 0 12 7.5V20a2 2 0 0 1 2-2h7z"></path></svg>Bon à tirer</a>
-        <span role="link" aria-disabled="true" title="Disponible après la validation du bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; font-size: 15px; color: rgba(255,255,255,0.32); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 6h11v10H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="1.8"></circle><circle cx="17" cy="18" r="1.8"></circle></svg>Livraison<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+    <nav style="display: flex; flex-direction: column; gap: 2px">
+      <a href="Espace.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>Tableau de bord</a>
+      <a href="Styles.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><circle cx="12" cy="12" r="9"></circle><circle cx="8" cy="10.5" r="1.3"></circle><circle cx="12" cy="7.5" r="1.3"></circle><circle cx="16" cy="10.5" r="1.3"></circle><path d="M12 21a3 3 0 0 1 0-6h2"></path></svg>Style</a>
+      <a href="Collecte.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="M21 16l-5-5-9 8"></path></svg>Photos</a>
+      <a href="BAT.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 5h6.5A2.5 2.5 0 0 1 12 7.5V20a2 2 0 0 0-2-2H3z"></path><path d="M21 5h-6.5A2.5 2.5 0 0 0 12 7.5V20a2 2 0 0 1 2-2h7z"></path></svg>Bon à tirer</a>
+      <span role="link" aria-disabled="true" title="Disponible après la validation du bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--faint); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 6h11v10H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="1.8"></circle><circle cx="17" cy="18" r="1.8"></circle></svg>Livraison<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
     </nav>
-    <div style="height: 1px; margin: 0 14px; background: rgba(255,255,255,0.10)"></div>
-    <nav style="display: flex; flex-direction: column; gap: 4px">
-        <a href="Dossier.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path><path d="M9 13h6M9 17h6"></path></svg>Votre dossier</a>
-        <a href="RendezVous.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: #ffffff; background: rgba(214,138,99,0.16); font-weight: 600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M4 5h16v11H9l-5 4z"></path></svg>Parler à l'atelier</a>
+    <div style="height: 1px; margin: 0 12px; background: var(--line)"></div>
+    <nav style="display: flex; flex-direction: column; gap: 2px">
+      <a href="RendezVous.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--text); background: var(--accent-soft); font-weight: 600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M4 5h16v11H9l-5 4z"></path></svg>Parler à l'atelier<span style="margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center">1</span></a>
+      <a href="Dossier.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path><path d="M9 13h6M9 17h6"></path></svg>Documents</a>
     </nav>
-    <div style="margin-top: auto; padding: 14px; border-top: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center; gap: 12px">
-      <span style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: rgba(214,138,99,0.18); display: inline-flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 600; font-size: 14px">ML</span>
-      <span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 14px; color: #ffffff">Marion Lefèvre</span><span style="font-size: 12px; color: rgba(255,255,255,0.56)">Responsable du bon à tirer</span></span>
+    <div style="margin-top: auto; padding: 12px 12px 0; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+      <span style="flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft); display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px">ML</span>
+      <span style="flex: 1; display: flex; flex-direction: column; min-width: 0"><span style="font-size: 13px">Marion Lefèvre</span><span style="font-size: 11px; color: var(--muted)">Responsable du BAT</span></span>
+      <button type="button" onClick="{{ basculerTheme }}" title="{{ themeTitre }}" aria-label="{{ themeTitre }}" style="flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">
+        <sc-if value="{{ estNuit }}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+        <sc-if value="{{ estJour }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg></sc-if>
+      </button>
     </div>
   </aside>
+  <div style="flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; position: relative">
+    <header style="flex: none; height: 68px; box-sizing: border-box; padding: 0 32px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 20px">
+      <div style="display: flex; align-items: baseline; gap: 14px; min-width: 0"><h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 30px; line-height: 1; white-space: nowrap">Parler à l'atelier</h1><span style="color: var(--muted); font-size: 13px; white-space: nowrap">Messages, rendez-vous et demandes au même endroit</span></div>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 10px"><a href="#rdv" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500">Prendre rendez-vous</a><button type="button" onClick="{{ ouvrirModif }}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600">Demander une modification</button></div>
+    </header>
 
-  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative">
-
-  <header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 4%; border-bottom: 1px solid rgba(255,255,255,0.10)">
-    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px">
-      <span style="font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 500">Parler à l'atelier</span>
-    </div>
-    <span style="font-size: 14px; color: rgba(255,255,255,0.72)">Modifications possibles jusqu'à la validation du bon à tirer</span>
-  </header>
-
-  <main style="max-width: 1280px; margin: 0 auto; padding: 40px 4% 56px; display: flex; flex-direction: column; gap: 28px">
-    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: stretch">
-
-      <section style="flex: 1 1 420px; min-width: 0; border: 1px solid rgba(255,255,255,0.12); border-radius: 18px; background: rgba(255,255,255,0.03); padding: 32px; display: flex; flex-direction: column; gap: 20px">
-        <span style="font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #d68a63">1 · Votre demande</span>
-        <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 44px; line-height: 1">Demander une modification</h1>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px">
-          <sc-for list="{{ motifs }}" as="m" hint-placeholder-count="5">
-            <button type="button" onClick="{{ m.choisir }}" aria-pressed="{{ m.actif }}" style="height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid {{ m.bord }}; background: {{ m.fond }}; color: {{ m.texte }}; font-family: inherit; font-size: 14px; cursor: pointer">{{ m.label }}</button>
-          </sc-for>
+    <main style="flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 320px">
+      <section style="display: flex; flex-direction: column; min-height: 0">
+        <div style="flex: 1; min-height: 0; overflow: auto; padding: 24px 32px; display: flex; flex-direction: column; gap: 14px">
+          <span style="align-self: center; font-size: 12px; color: var(--muted)">22 septembre</span>
+          <div style="align-self: flex-start; max-width: 70%; padding: 12px 16px; border-radius: 16px 16px 16px 4px; border: 1px solid var(--line); background: var(--surface)"><span>Bienvenue dans votre espace. Nous sommes là pour toute question, ici même.</span><span style="display: block; font-size: 11px; color: var(--muted); padding-top: 4px">L'atelier · 10 h 02</span></div>
+          <span style="align-self: center; font-size: 12px; color: var(--muted)">24 septembre</span>
+          <div style="align-self: flex-end; max-width: 70%; padding: 12px 16px; border-radius: 16px 16px 4px 16px; background: var(--accent-soft)"><span>Pouvez-vous ajouter le logo du domaine en fin de magazine ?</span><span style="display: block; font-size: 11px; color: var(--muted); padding-top: 4px">Vous · 14 h 20</span></div>
+          <div style="align-self: flex-end; max-width: 70%; padding: 12px 16px; border-radius: 16px 16px 4px 16px; background: var(--accent-soft); display: flex; flex-direction: column; gap: 8px"><span style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: 12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path></svg>Devis signé · ligne Tirage</span><span>Le devis prévoit 120 exemplaires : pouvons-nous en ajouter 20 pour l'équipe de Lyon ?</span><span style="font-size: 11px; color: var(--muted)">Vous · 14 h 32</span></div>
+          <div style="align-self: flex-start; max-width: 70%; padding: 12px 16px; border-radius: 16px 16px 16px 4px; border: 1px solid var(--line); background: var(--surface)"><span>Oui, nous le plaçons en troisième de couverture. Vous le verrez au premier bon à tirer.</span><span style="display: block; font-size: 11px; color: var(--muted); padding-top: 4px">L'atelier · 15 h 05</span></div>
+          <div style="align-self: stretch; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 14px 18px; display: flex; gap: 14px; align-items: center"><span style="font-size: 20px">◷</span><span style="flex: 1"><strong>Rendez-vous pris</strong> · jeudi 15 octobre, 10 h 30 · relecture du bon à tirer</span><a href="#" style="color: var(--accent); font-size: 13px">Déplacer</a></div>
+          <div style="align-self: stretch; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); border-color: var(--accent); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+            <span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); color: var(--accent)">Demande de modification · proposition reçue</span>
+            <span><strong>Ajouter des pages</strong> · 8 pages pour la soirée de clôture, tirage porté à 140</span>
+            <span style="color: var(--muted); font-size: 13px">Proposition complémentaire n° 1 · [MONTANT] € HT</span>
+            <div style="display: flex; gap: 8px"><button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; height: 36px">Accepter</button><button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500; height: 36px">En reparler</button></div>
+          </div>
         </div>
-        <label style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: rgba(255,255,255,0.72)">Précisez si vous le souhaitez
-          <textarea rows="4" placeholder="Par exemple : ajouter les photos de la soirée de clôture, environ huit pages" style="padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.04); color: #ffffff; font-family: inherit; font-size: 15px; resize: vertical"></textarea>
-        </label>
-        <span style="font-size: 13px; color: rgba(255,255,255,0.56)">Une demande qui change le contenu du devis fait l'objet d'une proposition complémentaire, que vous acceptez ici même après l'appel.</span>
-      </section>
-
-      <section style="flex: 1.3 1 520px; min-width: 0; border: 1px solid rgba(255,255,255,0.12); border-radius: 18px; background: rgba(255,255,255,0.03); padding: 32px; display: flex; flex-direction: column; gap: 20px">
-        <span style="font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #d68a63">2 · Un appel de 20 minutes</span>
-        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end">
-          <label style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: rgba(255,255,255,0.72)">Motif
-            <select style="height: 48px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.18); background: #050505; color: #ffffff; font-family: inherit; font-size: 15px">
-              <option>Demande de modification</option>
-              <option>Relecture du bon à tirer</option>
-              <option>Question sur la collecte</option>
-              <option>Autre</option>
-            </select>
-          </label>
-          <span style="font-size: 14px; color: rgba(255,255,255,0.72)">Semaine du 12 octobre · heure de Paris</span>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px">
-          <sc-for list="{{ jours }}" as="j" hint-placeholder-count="5">
-            <div style="display: flex; flex-direction: column; gap: 8px">
-              <span style="font-size: 13px; text-align: center; color: rgba(255,255,255,0.72)">{{ j.nom }}</span>
-              <sc-for list="{{ j.creneaux }}" as="c" hint-placeholder-count="2">
-                <button type="button" onClick="{{ c.choisir }}" aria-pressed="{{ c.actif }}" style="height: 44px; border-radius: 10px; border: 1px solid {{ c.bord }}; background: {{ c.fond }}; color: {{ c.texte }}; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer">{{ c.label }}</button>
-              </sc-for>
-              <sc-if value="{{ j.vide }}" hint-placeholder-val="{{ false }}">
-                <span style="font-size: 12px; text-align: center; color: rgba(255,255,255,0.56); padding-top: 12px">Complet</span>
-              </sc-if>
+        <div style="flex: none; position: relative; padding: 14px 32px 18px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px">
+          <sc-if value="{{ aRef }}" hint-placeholder-val="{{ false }}"><span style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 6px 0 12px; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-soft); font-size: 12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path></svg>{{ refChoisie }}<button type="button" onClick="{{ retirerRef }}" aria-label="Retirer" style="width: 22px; height: 22px; border-radius: 50%; border: 0; background: transparent; color: var(--muted); cursor: pointer">✕</button></span></sc-if>
+          <sc-if value="{{ menuJoindre }}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; right: 150px; bottom: 76px; z-index: 5; width: 340px; border-radius: 16px; background: var(--glass); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(var(--fg-rgb), 0.14); box-shadow: 0 24px 60px rgba(0,0,0,0.4); padding: 8px; display: flex; flex-direction: column">
+              <button type="button" style="padding: 10px 12px; border: 0; border-radius: 10px; background: transparent; color: var(--text); font-family: inherit; font-size: 14px; text-align: left; cursor: pointer">Joindre un fichier depuis l'ordinateur</button>
+              <span style="padding: 10px 12px 6px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--line); margin-top: 4px">Citer un document</span>
+              <sc-for list="{{ docsRef }}" as="d" hint-placeholder-count="4"><button type="button" onClick="{{ d.choisir }}" style="padding: 9px 12px; border: 0; border-radius: 10px; background: transparent; color: var(--text); font-family: inherit; font-size: 13px; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path></svg><span style="flex: 1">{{ d.nom }}</span><span style="font-size: 11px; color: var(--muted)">{{ d.info }}</span></button></sc-for>
             </div>
-          </sc-for>
+          </sc-if>
+          <div style="display: flex; gap: 10px; align-items: flex-end">
+          <textarea rows="1" placeholder="Écrire à l'atelier…" style="flex: 1; min-height: 44px; padding: 11px 14px; box-sizing: border-box; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-family: inherit; font-size: 14px; resize: none"></textarea>
+          <button type="button" onClick="{{ basculerJoindre }}" aria-label="Joindre ou citer un document" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500; width: 44px; height: 44px; padding: 0">＋</button>
+          <button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; height: 44px">Envoyer</button>
+          </div>
         </div>
-        <button type="button" style="height: 52px; border: 0; border-radius: 999px; background: {{ confirmerFond }}; color: #050505; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer">{{ confirmer }}</button>
-        <span style="font-size: 13px; color: rgba(255,255,255,0.56)">Une invitation part par mail à la responsable, avec le lien de la visio et le motif.</span>
       </section>
-    </div>
 
-    <section style="border: 1px solid rgba(214,138,99,0.5); border-radius: 18px; background: rgba(214,138,99,0.10); padding: 28px 32px; display: flex; flex-wrap: wrap; gap: 20px 32px; align-items: center">
-      <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
-        <span style="font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #d68a63">Après l'appel</span>
-        <span style="font-family: 'Cormorant Garamond', serif; font-size: 30px; line-height: 1.1">Proposition complémentaire n° 1</span>
-        <span style="color: rgba(255,255,255,0.72)">8 pages en plus pour la soirée de clôture · tirage porté de 120 à 140 exemplaires · <strong style="color: #ffffff">[MONTANT] € HT</strong></span>
+      <aside id="rdv" style="border-left: 1px solid var(--line); background: var(--panel); padding: 24px; display: flex; flex-direction: column; gap: 22px; overflow: auto">
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted)">Prochain rendez-vous</span>
+          <span style="font-family: 'Cormorant Garamond', serif; font-size: 24px; line-height: 1.1">Jeudi 15 octobre · 10 h 30</span>
+          <span style="font-size: 13px; color: var(--muted)">Relecture du bon à tirer · 20 minutes en visio</span>
+          <a href="#" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500">Prendre un autre rendez-vous</a>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 18px">
+          <span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted)">Vos demandes</span>
+          <div style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px"><span>Ajouter des pages</span><span style="color: var(--accent)">Proposition reçue</span></div>
+          <div style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px"><span>Logo en 3e de couverture</span><span style="color: var(--muted)">Fait</span></div>
+        </div>
+        <p style="margin: 0; margin-top: auto; font-size: 12px; color: var(--muted)">L'atelier répond ici. Vous recevez aussi un mail si vous n'êtes pas connectée.</p>
+      </aside>
+    </main>
+
+    <sc-if value="{{ modif }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; inset: 0; z-index: 20; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center">
+        <section role="dialog" aria-label="Demander une modification" style="width: 560px; border-radius: 20px; background: var(--panel); border: 1px solid var(--line); padding: 28px; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-family: 'Cormorant Garamond', serif; font-size: 30px">Demander une modification</span><button type="button" onClick="{{ fermer }}" aria-label="Fermer" style="width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer">✕</button></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{ motifs }}" as="m" hint-placeholder-count="5"><button type="button" onClick="{{ m.choisir }}" aria-pressed="{{ m.actif }}" style="height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid {{ m.bord }}; background: {{ m.fond }}; color: var(--text); font-family: inherit; font-size: 13px; cursor: pointer">{{ m.label }}</button></sc-for></div>
+          <textarea rows="4" placeholder="Précisez si vous le souhaitez" style="padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-family: inherit; font-size: 14px; resize: none"></textarea>
+          <span style="font-size: 12px; color: var(--muted)">Si elle change le devis, l'atelier vous propose un court appel puis une proposition complémentaire, à accepter ici.</span>
+          <button type="button" onClick="{{ fermer }}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; height: 46px">Envoyer la demande</button>
+        </section>
       </div>
-      <div style="display: flex; flex-wrap: wrap; gap: 10px">
-        <button type="button" style="height: 48px; padding: 0 22px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font-family: inherit; font-size: 15px; cursor: pointer">En reparler</button>
-        <button type="button" style="height: 48px; padding: 0 24px; border: 0; border-radius: 999px; background: #ffffff; color: #050505; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer">Accepter la proposition</button>
-      </div>
-    </section>
-  </main>
+    </sc-if>
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1150}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
 class Component extends DCLogic {
   renderVals() {
     const s = this.state || {};
-    const motif = s.motif || 'pages';
-    const creneau = s.creneau || null;
-    const listeMotifs = [
-      ['pages', 'Ajouter des pages'],
-      ['exemplaires', 'Ajouter des exemplaires'],
-      ['equipe', 'Une couverture par équipe'],
-      ['style', 'Changer de style'],
-      ['autre', 'Autre chose']
-    ];
-    const motifs = listeMotifs.map((p) => {
-      const actif = motif === p[0];
-      return {
-        label: p[1],
-        actif: actif,
-        fond: actif ? '#ffffff' : 'transparent',
-        texte: actif ? '#050505' : '#ffffff',
-        bord: actif ? '#ffffff' : 'rgba(255,255,255,0.22)',
-        choisir: () => this.setState({ motif: p[0] })
-      };
-    });
-    const semaine = [
-      ['lundi 12 octobre', 'Lun. 12', ['9 h 30', '11 h', '15 h 30']],
-      ['mardi 13 octobre', 'Mar. 13', ['10 h 30', '14 h']],
-      ['mercredi 14 octobre', 'Mer. 14', []],
-      ['jeudi 15 octobre', 'Jeu. 15', ['9 h', '10 h 30', '16 h']],
-      ['vendredi 16 octobre', 'Ven. 16', ['11 h 30']]
-    ];
-    const jours = semaine.map((j) => ({
-      nom: j[1],
-      vide: j[2].length === 0,
-      creneaux: j[2].map((h) => {
-        const cle = j[0] + ' à ' + h;
-        const actif = creneau === cle;
-        return {
-          label: h,
-          actif: actif,
-          fond: actif ? '#d68a63' : 'transparent',
-          texte: actif ? '#050505' : '#ffffff',
-          bord: actif ? '#d68a63' : 'rgba(255,255,255,0.22)',
-          choisir: () => this.setState({ creneau: cle })
-        };
-      })
-    }));
-    return {
-      motifs: motifs,
-      jours: jours,
-      confirmer: creneau ? 'Confirmer le rendez-vous du ' + creneau : 'Choisissez un créneau',
-      confirmerFond: creneau ? '#d68a63' : 'rgba(255,255,255,0.22)'
+    const TH = {
+      nuit: { bg: '#050505', panel: '#0a0a0a', surface: 'rgba(255,255,255,0.04)', line: 'rgba(255,255,255,0.10)', text: '#ffffff', muted: 'rgba(255,255,255,0.64)', faint: 'rgba(255,255,255,0.34)', accent: '#d68a63', accentSoft: 'rgba(214,138,99,0.16)', onAccent: '#050505', page: '#ffffff', glass: 'rgba(20,20,20,0.66)', logo: 'assets/logo-cuivre.png', fgRgb: '255,255,255', acRgb: '214,138,99' },
+      jour: { bg: '#f3ece2', panel: '#ece3d6', surface: '#fbf8f3', line: 'rgba(28,28,28,0.10)', text: '#1c1c1c', muted: 'rgba(28,28,28,0.62)', faint: 'rgba(28,28,28,0.34)', accent: '#1d5bb0', accentSoft: 'rgba(29,91,176,0.10)', onAccent: '#ffffff', page: '#ffffff', glass: 'rgba(251,248,243,0.72)', logo: 'assets/logo-bleu.png', fgRgb: '28,28,28', acRgb: '29,91,176' }
     };
+    const jour = s.jour !== undefined ? s.jour : false;
+    const th = jour ? TH.jour : TH.nuit;
+    const modes = { basculerTheme: () => this.setState({ jour: !jour }), estNuit: !jour, estJour: jour, themeTitre: jour ? 'Passer en mode nuit' : 'Passer en mode jour' };
+    const motif = s.motif || 'pages';
+    const motifs = [['pages', 'Ajouter des pages'], ['ex', 'Ajouter des exemplaires'], ['couv', 'Une couverture par équipe'], ['style', 'Changer de style'], ['autre', 'Autre chose']].map((m) => ({ label: m[1], actif: motif === m[0], bord: motif === m[0] ? 'var(--accent)' : 'var(--line)', fond: motif === m[0] ? 'var(--accent-soft)' : 'transparent', choisir: () => this.setState({ motif: m[0] }) }));
+    const DOCS = [['Devis signé', '21 sept.'], ["Facture d'acompte", 'payée'], ['Proposition complémentaire n° 1', 'à accepter'], ['Conditions générales', '']];
+    const docsRef = DOCS.map((d) => ({ nom: d[0], info: d[1], choisir: () => this.setState({ ref: d[0], joindre: false }) }));
+    return Object.assign({ th: th }, modes, { docsRef: docsRef, menuJoindre: !!s.joindre, basculerJoindre: () => this.setState({ joindre: !s.joindre }), aRef: !!s.ref, refChoisie: s.ref || '', retirerRef: () => this.setState({ ref: null }), motifs: motifs, modif: !!s.modif, ouvrirModif: () => this.setState({ modif: true }), fermer: () => this.setState({ modif: false }) });
   }
 }
 </script>

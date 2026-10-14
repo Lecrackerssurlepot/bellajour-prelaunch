@@ -30,6 +30,24 @@ const LISIBLE = new Intl.DateTimeFormat("fr-FR", {
   minute: "2-digit",
 });
 
+const JOUR_MOIS = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "long" });
+
+/** « 21 octobre », heure de Paris. Vide si illisible. */
+export function formaterJourParis(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const ms = Date.parse(iso);
+  return Number.isFinite(ms) ? JOUR_MOIS.format(new Date(ms)) : "";
+}
+
+const HEURE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+
+/** « 14 h 20 », heure de Paris (le fil de « Parler à l'atelier »). Vide si illisible. */
+export function formaterHeureParis(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const ms = Date.parse(iso);
+  return Number.isFinite(ms) ? HEURE.format(new Date(ms)).replace(":", " h ") : "";
+}
+
 function morceaux(ms: number): Record<string, number> {
   const out: Record<string, number> = {};
   for (const p of PARTS.formatToParts(new Date(ms))) {

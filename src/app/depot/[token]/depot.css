@@ -1,0 +1,172 @@
+/* Le lien de dépôt des participants (PRD §5.1) : d'abord sur téléphone.
+   Scopé `.bj-atelier .ec-dp` (le layout pose `.bj-atelier.ec-depot`). Noir,
+   blanc, orange ; Cormorant 400 et DM Sans ; pas de `dvh`. */
+
+.bj-atelier .ec-dp {
+  min-height: var(--app-height);
+  background: #050505;
+  color: var(--c-text-pure);
+  padding: 28px 16px 48px;
+  box-sizing: border-box;
+}
+.bj-atelier .ec-dp-in {
+  max-width: 460px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.bj-atelier .ec-dp-marque {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1;
+}
+.bj-atelier .ec-dp-marque span {
+  margin-left: 8px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.56);
+}
+.bj-atelier .ec-dp-surtitre {
+  margin: 0;
+  font-size: 14px;
+  color: var(--c-accent);
+}
+/* (0,2,0) contre `.bj-atelier h1` (0,1,1). */
+.bj-atelier .ec-dp-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(34px, 9vw, 52px);
+  line-height: 1.05;
+  color: var(--c-text-pure);
+}
+.bj-atelier .ec-dp-texte {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.72);
+}
+.bj-atelier .ec-dp-ferme {
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+}
+.bj-atelier .ec-dp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+}
+.bj-atelier .ec-dp-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.72);
+}
+.bj-atelier .ec-dp-input {
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--c-text-pure);
+  font: inherit;
+  font-size: 16px;
+}
+.bj-atelier .ec-dp-input:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 1px;
+}
+.bj-atelier .ec-dp-accord {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 14px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.72);
+}
+.bj-atelier .ec-dp-accord input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--c-accent);
+  flex: none;
+}
+.bj-atelier .ec-dp-bouton {
+  min-height: 52px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--c-accent);
+  color: var(--c-text-onaccent);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.bj-atelier .ec-dp-bouton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.bj-atelier .ec-dp-bouton--clair {
+  min-height: 44px;
+  background: transparent;
+  color: var(--c-text-pure);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+.bj-atelier .ec-dp-progres {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+}
+.bj-atelier .ec-dp-compte {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.72);
+}
+.bj-atelier .ec-dp-compte strong {
+  color: var(--c-text-pure);
+  font-weight: 600;
+}
+.bj-atelier .ec-dp-barre {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.bj-atelier .ec-dp-barre > div {
+  height: 100%;
+  background: var(--c-accent);
+  transition: width 300ms ease;
+}
+.bj-atelier .ec-dp-merci {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.2;
+  color: var(--c-text-pure);
+}
+.bj-atelier .ec-dp-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.56);
+}
+.bj-atelier .ec-dp-note--refus {
+  color: #ff9b7a;
+}
+.bj-atelier .ec-dp-pied {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.56);
+}

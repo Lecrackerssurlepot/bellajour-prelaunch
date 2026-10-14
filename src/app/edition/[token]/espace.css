@@ -1,0 +1,1635 @@
+/* L'espace client de l'Édition collective : jour et nuit (révision §14.1).
+
+   Tout est écrit sous `.bj-atelier.ec-espace` (posé par edition/layout.tsx) :
+   une feuille chargée ne se décharge jamais en navigation client, une classe
+   courte non scopée repeindrait le B2C.
+
+   ══════════════════════════════════════════════════════════════════════════
+   LES COULEURS SONT DES RÔLES, PAS DES TEINTES
+   Le mode vit dans `data-ec-mode` (nuit par défaut, jour sur demande, gardé
+   dans un cookie de l'appareil). Chaque couleur de l'interface est un jeton
+   ci-dessous ; un composant n'écrit JAMAIS une couleur, il écrit un rôle
+   (`--ec-text`, `--ec-line`, `--ec-accent`…), et pour une transparence
+   `rgba(var(--ec-fg-rgb), x)` ou `rgba(var(--ec-ac-rgb), x)`.
+   Exception voulue : les PAGES DE MAGAZINE (BAT, styles) gardent leurs vraies
+   couleurs dans les deux modes (`--ec-page`, `--ec-encre`, et les palettes,
+   qui viennent des données).
+   Les anciens noms (`--ec-blanc`, `--ec-orange`…) sont des alias des rôles,
+   le temps que chaque feuille passe aux nouveaux.
+   ══════════════════════════════════════════════════════════════════════════
+
+   Polices : Cormorant Garamond 400, DM Sans. Pas de `dvh` : la hauteur pleine
+   est `var(--app-height)`. */
+
+.bj-atelier.ec-espace {
+  /* ── la nuit (défaut) ── */
+  --ec-fg-rgb: 255, 255, 255;
+  --ec-ac-rgb: 214, 138, 99;
+  --ec-bg: #050505;
+  --ec-panel: #0a0a0a;
+  --ec-surface: rgba(var(--ec-fg-rgb), 0.04);
+  --ec-text: #ffffff;
+  --ec-accent: #d68a63;
+  --ec-accent-fort: #e39a73;
+  --ec-on-accent: #050505;
+  --ec-accent-soft: rgba(var(--ec-ac-rgb), 0.16);
+  --ec-muted: rgba(var(--ec-fg-rgb), 0.64);
+  --ec-glass: rgba(20, 20, 20, 0.66);
+  --ec-voile: rgba(0, 0, 0, 0.32);
+  --ec-ombre: rgba(0, 0, 0, 0.5);
+  --ec-danger: #ff9b7a;
+  --ec-danger-rgb: 255, 155, 122;
+  color-scheme: dark;
+
+  /* ── les rôles dérivés (communs aux deux modes) ── */
+  --ec-line: rgba(var(--ec-fg-rgb), 0.1);
+  --ec-line-fort: rgba(var(--ec-fg-rgb), 0.16);
+  --ec-faint: rgba(var(--ec-fg-rgb), 0.34);
+
+  /* ── les pages de magazine : les mêmes de jour comme de nuit ── */
+  --ec-page: #ffffff;
+  --ec-page-gris: #f1ebe6;
+  --ec-encre: #050505;
+  /* ombres et reflets PHYSIQUES d'un objet posé (couverture en 3D, double
+     page) : la lumière ne change pas avec le mode */
+  --ec-noir-rgb: 0, 0, 0;
+  --ec-reflet-rgb: 255, 255, 255;
+
+  /* ── alias des anciens noms ── */
+  --ec-fond: var(--ec-bg);
+  --ec-blanc: var(--ec-text);
+  --ec-blanc-72: rgba(var(--ec-fg-rgb), 0.72);
+  --ec-blanc-56: rgba(var(--ec-fg-rgb), 0.56);
+  --ec-blanc-32: rgba(var(--ec-fg-rgb), 0.32);
+  --ec-filet: var(--ec-line);
+  --ec-filet-fort: var(--ec-line-fort);
+  --ec-orange: var(--ec-accent);
+  --ec-orange-voile: var(--ec-accent-soft);
+
+  /* ── le monde sombre partagé (theme.css), repeint DANS ce scope seulement :
+     sans cela l'anneau de focus et les survols resteraient orange en jour ── */
+  --c-accent: var(--ec-accent);
+  --c-accent-strong: var(--ec-accent-fort);
+  --c-text-onaccent: var(--ec-on-accent);
+  --c-text: var(--ec-text);
+
+  --ec-menu-l: 232px;
+  --ec-tete-h: 68px;
+  background: var(--ec-bg);
+  color: var(--ec-text);
+  line-height: 1.5;
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+.bj-atelier.ec-espace[data-ec-mode="jour"] {
+  --ec-fg-rgb: 28, 28, 28;
+  --ec-ac-rgb: 29, 91, 176;
+  --ec-bg: #f3ece2;
+  --ec-panel: #ece3d6;
+  --ec-surface: #fbf8f3;
+  --ec-text: #1c1c1c;
+  --ec-accent: #1d5bb0;
+  --ec-accent-fort: #174a91;
+  --ec-on-accent: #ffffff;
+  --ec-accent-soft: rgba(var(--ec-ac-rgb), 0.1);
+  --ec-muted: rgba(var(--ec-fg-rgb), 0.62);
+  --ec-glass: rgba(251, 248, 243, 0.72);
+  --ec-voile: rgba(28, 28, 28, 0.16);
+  --ec-ombre: rgba(28, 28, 28, 0.18);
+  --ec-danger: #b3412c;
+  --ec-danger-rgb: 179, 65, 44;
+  color-scheme: light;
+}
+
+/* ─────────────────────────────── la coquille ─────────────────────────────── */
+
+/* Sur un écran d'ordinateur, la coquille est EXACTEMENT la hauteur de la
+   fenêtre : rien ne fait défiler la page. La colonne de contenu ne défile
+   qu'en dernier recours (un écran qui n'aurait pas encore ses zones). */
+.ec-espace .ec-coquille {
+  display: grid;
+  grid-template-columns: var(--ec-menu-l) minmax(0, 1fr);
+  height: var(--app-height);
+  overflow: hidden;
+}
+
+.ec-espace .ec-barre-mobile {
+  display: none;
+}
+
+.ec-espace .ec-menu {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px 12px 16px;
+  border-right: 1px solid var(--ec-line);
+  background: var(--ec-panel);
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.ec-espace .ec-logo {
+  display: block;
+  width: 116px;
+  height: auto;
+  margin: 0 12px 4px;
+}
+.ec-espace .ec-logo--mobile {
+  width: 96px;
+  margin: 0;
+}
+
+.ec-espace .ec-edition {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--ec-line);
+  border-radius: 12px;
+  background: var(--ec-surface);
+}
+.ec-espace .ec-edition-nom {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ec-text);
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-edition-orga {
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+
+.ec-espace .ec-menu-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ec-espace .ec-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--ec-muted);
+  text-decoration: none;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.ec-espace a.ec-menu-item:hover {
+  background: rgba(var(--ec-fg-rgb), 0.05);
+  color: var(--ec-text);
+}
+.ec-espace .ec-menu-item[aria-current="page"] {
+  background: var(--ec-accent-soft);
+  color: var(--ec-text);
+  font-weight: 600;
+}
+.ec-espace .ec-menu-item[aria-current="page"] svg {
+  color: var(--ec-accent);
+}
+.ec-espace .ec-menu-item--verrou {
+  color: var(--ec-faint);
+  cursor: not-allowed;
+}
+.ec-espace .ec-menu-libelle {
+  flex: 1;
+  min-width: 0;
+}
+.ec-espace .ec-menu-cadenas {
+  display: inline-flex;
+}
+.ec-espace .ec-menu-pastille {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+}
+.ec-espace .ec-menu-bulle {
+  display: block;
+  margin: 4px 12px 8px 42px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+  border: 1px solid var(--ec-line);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-menu-filet {
+  border: 0;
+  border-top: 1px solid var(--ec-line);
+  margin: 10px 12px;
+}
+
+.ec-espace .ec-moi {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 0;
+  border-top: 1px solid var(--ec-line);
+}
+.ec-espace .ec-avatar {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--ec-accent-soft);
+  color: var(--ec-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.ec-espace .ec-moi-texte {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ec-espace .ec-moi-nom {
+  font-size: 13px;
+  color: var(--ec-text);
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-moi-role {
+  font-size: 11px;
+  color: var(--ec-muted);
+}
+/* Le bouton jour / nuit : une petite icône, jamais un gros bouton. */
+.ec-espace .ec-mode {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--ec-line);
+  background: transparent;
+  color: var(--ec-muted);
+  cursor: pointer;
+}
+.ec-espace .ec-mode:hover {
+  color: var(--ec-text);
+  border-color: var(--ec-line-fort);
+}
+
+.ec-espace .ec-contenu {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.ec-espace .ec-voile {
+  display: none;
+}
+
+/* L'envoi des photos qui continue pendant qu'on navigue : une pastille
+   discrète en haut à droite, au-dessus de l'en-tête. */
+.ec-espace .ec-pastille-envoi {
+  position: absolute;
+  top: 18px;
+  right: 24px;
+  z-index: 30;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--ec-glass);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(var(--ec-ac-rgb), 0.45);
+  color: var(--ec-text);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+/* ─────────────────────────────── l'écran ─────────────────────────────── */
+
+/* Le gabarit commun (Ecran.tsx) : l'en-tête fixe, puis le corps qui prend le
+   reste de la hauteur. Les zones longues portent `.ec-defile`. */
+.ec-espace .ec-ecran {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ec-espace .ec-ecran-tete {
+  flex: none;
+  box-sizing: border-box;
+  min-height: var(--ec-tete-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 32px;
+  border-bottom: 1px solid var(--ec-line);
+}
+.ec-espace .ec-ecran-titres {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  min-width: 0;
+}
+/* (0,2,0) contre `.bj-atelier h1` (0,1,1), qui pose 56 à 150 px. */
+.ec-espace .ec-ecran-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: var(--ec-text);
+}
+.ec-espace .ec-ecran-sous {
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ecran-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.ec-espace .ec-ecran-corps {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 32px 24px;
+  box-sizing: border-box;
+}
+.ec-espace .ec-ecran-corps--centre {
+  justify-content: center;
+}
+.ec-espace .ec-defile {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ec-espace .ec-verrou {
+  max-width: 640px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3.4vw, 46px);
+  line-height: 1.1;
+  color: var(--ec-text);
+}
+.ec-espace .ec-silhouette {
+  min-height: 220px;
+  animation: ec-respire 1.6s ease-in-out infinite;
+}
+@keyframes ec-respire {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ─────────────────────────────── les fenêtres ─────────────────────────────── */
+
+/* Verre dépoli : fond translucide et flou, jamais un aplat. La fenêtre couvre
+   la colonne de contenu (`.ec-contenu` est en position relative), pas le
+   menu. `.ec-panneau*` est l'ancien nom, gardé pour les écrans pas encore
+   repris. */
+.ec-espace .ec-fenetre-voile,
+.ec-espace .ec-panneau-voile {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--ec-voile);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.ec-espace .ec-fenetre,
+.ec-espace .ec-panneau {
+  width: min(520px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+  border-radius: 24px;
+  border: 1px solid rgba(var(--ec-fg-rgb), 0.14);
+  background: var(--ec-glass);
+  -webkit-backdrop-filter: blur(28px) saturate(1.3);
+  backdrop-filter: blur(28px) saturate(1.3);
+  box-shadow: 0 30px 80px var(--ec-ombre);
+  box-sizing: border-box;
+  color: var(--ec-text);
+}
+.ec-espace .ec-fenetre--large,
+.ec-espace .ec-panneau {
+  width: min(560px, 100%);
+}
+/* Le panneau latéral (révision §14.6) : collé à droite, toute la hauteur de
+   la colonne ; l'en-tête et le pied restent, le corps défile. */
+.ec-espace .ec-fenetre-voile--cote {
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  padding: 0;
+}
+.ec-espace .ec-fenetre--cote {
+  width: min(560px, 100%);
+  max-height: none;
+  height: 100%;
+  overflow: hidden;
+  gap: 0;
+  padding: 0;
+  border-radius: 24px 0 0 24px;
+  border-right: 0;
+}
+.ec-espace .ec-fenetre--cote > .ec-fenetre-tete {
+  flex: none;
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid var(--ec-line);
+}
+.ec-espace .ec-fenetre-corps {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ec-espace .ec-fenetre-pied {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 28px 20px;
+  border-top: 1px solid var(--ec-line);
+}
+.ec-espace .ec-fenetre-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.ec-espace .ec-fenetre-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: var(--ec-text);
+}
+.ec-espace .ec-fenetre-fermer {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--ec-line);
+  background: transparent;
+  color: var(--ec-muted);
+  cursor: pointer;
+}
+.ec-espace .ec-fenetre-fermer:hover {
+  color: var(--ec-text);
+}
+
+/* ─────────────────────────────── les pages ─────────────────────────────── */
+
+/* Une page pas encore reprise par la révision : elle garde sa marge et
+   défile dans la colonne de contenu, jamais la page entière. */
+.ec-espace .ec-page {
+  max-width: 1080px;
+  padding: 28px 32px 40px;
+  box-sizing: border-box;
+}
+.ec-espace .ec-surtitre {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+/* (0,2,0) contre `.bj-atelier h1` (0,1,1), qui pose 56 à 150 px. */
+.ec-espace .ec-h1 {
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(36px, 5.5vw, 64px);
+  line-height: 1.04;
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(26px, 3vw, 34px);
+  line-height: 1.1;
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-texte {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-echeance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: baseline;
+  margin: 0 0 22px;
+  font-size: 15px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-echeance strong {
+  color: var(--ec-blanc);
+  font-weight: 500;
+}
+.ec-espace .ec-echeance-delai {
+  color: var(--ec-orange);
+}
+
+.ec-espace .ec-etapes {
+  list-style: none;
+  margin: 0 0 34px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-etape {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-filet);
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-etape--faite {
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-etape--courante {
+  border-color: rgba(var(--ec-ac-rgb), 0.5);
+  background: var(--ec-orange-voile);
+  color: var(--ec-blanc);
+}
+
+.ec-espace .ec-cartes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+.ec-espace .ec-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  border: 1px solid var(--ec-filet);
+  border-radius: 20px;
+  background: var(--ec-surface);
+  min-width: 0;
+}
+.ec-espace .ec-carte-tete {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-statut {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--ec-orange-voile);
+  color: var(--ec-orange);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ec-espace p.ec-statut {
+  display: inline-block;
+  margin: 4px 0;
+}
+.ec-espace .ec-statut--ok {
+  background: rgba(var(--ec-fg-rgb), 0.08);
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-lignes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ec-espace .ec-lignes li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--ec-filet);
+  font-size: 14px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-lignes li strong {
+  color: var(--ec-blanc);
+  font-weight: 500;
+}
+.ec-espace .ec-compteurs {
+  display: flex;
+  gap: 28px;
+}
+.ec-espace .ec-compteur {
+  display: flex;
+  flex-direction: column;
+}
+.ec-espace .ec-compteur-n {
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1;
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-compteur-l {
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+
+.ec-espace .ec-bouton {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+}
+.ec-espace .ec-bouton:hover {
+  background: var(--ec-accent-fort);
+}
+.ec-espace .ec-bouton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ec-espace .ec-bouton--clair {
+  background: transparent;
+  color: var(--ec-blanc);
+  border: 1px solid var(--ec-filet-fort);
+}
+.ec-espace .ec-bouton--clair:hover {
+  background: rgba(var(--ec-fg-rgb), 0.06);
+}
+
+.ec-espace .ec-lien-ligne {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ec-espace .ec-champ {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ec-filet-fort);
+  background: rgba(var(--ec-fg-rgb), 0.04);
+  color: var(--ec-blanc);
+  font: inherit;
+  font-size: 14px;
+}
+.ec-espace .ec-champ:focus-visible,
+.ec-espace .ec-zone:focus-visible {
+  outline: 2px solid var(--ec-orange);
+  outline-offset: 1px;
+}
+.ec-espace .ec-curseur {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-curseur input[type="range"] {
+  accent-color: var(--ec-orange);
+  width: 100%;
+}
+.ec-espace .ec-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-note--erreur {
+  color: var(--ec-danger);
+}
+
+.ec-espace .ec-puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-puce {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-filet-fort);
+  font-size: 13px;
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-puce--recue {
+  color: var(--ec-blanc-32);
+  border-color: var(--ec-filet);
+}
+.ec-espace .ec-ensuite {
+  margin: 28px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--ec-filet);
+  font-size: 14px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-section {
+  margin-bottom: 34px;
+}
+
+/* ─────────────────────────────── le dossier ─────────────────────────────── */
+
+.ec-espace .ec-dossier {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 22px;
+  align-items: start;
+}
+.ec-espace .ec-documents {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ec-espace .ec-documents li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--ec-filet);
+  font-size: 14px;
+}
+.ec-espace .ec-documents a {
+  color: var(--ec-orange);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ec-espace .ec-documents a:hover {
+  color: var(--ec-blanc);
+}
+
+.ec-espace .ec-fil {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(60 * var(--uh));
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.ec-espace .ec-bulle {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ec-blanc);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-bulle--moi {
+  align-self: flex-end;
+  background: var(--ec-orange-voile);
+}
+.ec-espace .ec-bulle-qui {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 12px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-zone {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 92px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--ec-filet-fort);
+  background: rgba(var(--ec-fg-rgb), 0.04);
+  color: var(--ec-blanc);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+
+/* ─────────────────────────────── la collecte ─────────────────────────────── */
+
+/* Révision §14.3 : la page ne défile plus ; la grille et la colonne de
+   droite défilent chacune chez elle (Collecte.tsx). */
+.ec-espace .ec-collecte-zone {
+  gap: 12px;
+}
+.ec-espace .ec-collecte-zone .ec-onglets {
+  flex: none;
+  margin-bottom: 0;
+}
+.ec-espace .ec-collecte-tete {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.ec-espace .ec-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-onglets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.ec-espace .ec-onglet {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-filet-fort);
+  background: transparent;
+  color: var(--ec-blanc-72);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ec-espace .ec-onglet[aria-pressed="true"] {
+  background: var(--ec-orange-voile);
+  border-color: rgba(var(--ec-ac-rgb), 0.5);
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-collecte-corps {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 22px;
+  align-items: stretch;
+}
+.ec-espace .ec-collecte-grille {
+  padding-right: 4px;
+}
+.ec-espace .ec-collecte-cote {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ec-espace .ec-lien-ligne-nom {
+  flex: 1;
+  min-width: 0;
+}
+.ec-espace .ec-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+.ec-espace .ec-grille-titre {
+  grid-column: 1 / -1;
+  margin: 14px 0 2px;
+  font-family: var(--font-ui);
+  font-style: normal;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ec-blanc-72);
+}
+/* Une tuile hors écran ne coûte rien à peindre : 2 000 vignettes restent fluides. */
+.ec-espace .ec-tuile {
+  margin: 0;
+  content-visibility: auto;
+  contain-intrinsic-size: 132px 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ec-espace .ec-tuile-image {
+  position: relative;
+  aspect-ratio: 1;
+  width: 100%;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.05);
+  cursor: pointer;
+}
+.ec-espace .ec-tuile-image:disabled {
+  cursor: default;
+}
+.ec-espace .ec-tuile-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ec-espace .ec-tuile--choisie .ec-tuile-image {
+  border-color: var(--ec-orange);
+}
+.ec-espace .ec-tuile--doublon .ec-tuile-image {
+  opacity: 0.5;
+}
+.ec-espace .ec-tuile-sans {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 6px;
+  font-size: 11px;
+  color: var(--ec-blanc-56);
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-tuile-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  min-height: 18px;
+}
+.ec-espace .ec-badge {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(var(--ec-fg-rgb), 0.08);
+  font-size: 10px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-badge--signal {
+  background: rgba(var(--ec-danger-rgb), 0.16);
+  color: var(--ec-danger);
+}
+.ec-espace .ec-tuile-signal {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ec-blanc-56);
+  font: inherit;
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ec-espace .ec-panneau-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.ec-espace .ec-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-puce--active {
+  border-color: rgba(var(--ec-ac-rgb), 0.6);
+  background: var(--ec-orange-voile);
+  cursor: pointer;
+}
+.ec-espace label.ec-puce {
+  cursor: pointer;
+}
+.ec-espace .ec-depose {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px dashed var(--ec-filet-fort);
+  border-radius: 16px;
+}
+.ec-espace .ec-depose--survol {
+  border-color: var(--ec-orange);
+  background: var(--ec-orange-voile);
+}
+.ec-espace .ec-dp-barre-espace {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(var(--ec-fg-rgb), 0.1);
+  overflow: hidden;
+  margin: 8px 0;
+}
+.ec-espace .ec-dp-barre-espace > div {
+  height: 100%;
+  background: var(--ec-orange);
+  transition: width 300ms ease;
+}
+
+
+/* ─────────────────────────────── le style ─────────────────────────────── */
+
+.ec-espace .ec-regle {
+  margin: 0 0 20px;
+  max-width: 720px;
+}
+.ec-espace .ec-mur-corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 22px;
+  align-items: start;
+}
+.ec-espace .ec-brief {
+  position: sticky;
+  top: 16px;
+}
+.ec-espace .ec-planches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+}
+.ec-espace .ec-planches--larges {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.ec-espace .ec-planche {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--ec-filet);
+  border-radius: 16px;
+  background: var(--ec-surface);
+  color: var(--ec-blanc);
+  text-decoration: none;
+  min-width: 0;
+}
+.ec-espace a.ec-planche:hover {
+  border-color: rgba(var(--ec-ac-rgb), 0.45);
+}
+.ec-espace .ec-planche-image {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.05);
+}
+.ec-espace .ec-planche-image--large {
+  aspect-ratio: 3 / 2;
+}
+.ec-espace .ec-planche-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ec-espace .ec-planche-nom {
+  font-size: 15px;
+  font-weight: 500;
+}
+.ec-espace .ec-planche-ouvrir {
+  font-size: 13px;
+  color: var(--ec-orange);
+}
+.ec-espace .ec-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ec-glass);
+  border: 1px solid rgba(var(--ec-ac-rgb), 0.55);
+  color: var(--ec-blanc);
+  font-size: 12px;
+  backdrop-filter: blur(6px);
+}
+.ec-espace .ec-tag--en-ligne {
+  position: static;
+  margin-left: 8px;
+}
+.ec-espace .ec-bandes {
+  display: flex;
+  height: 34px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ec-espace .ec-bandes > span {
+  flex: 1;
+}
+.ec-espace .ec-lien-texte {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ec-orange);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.ec-espace .ec-lignes a {
+  color: var(--ec-orange);
+  text-decoration: none;
+}
+.ec-espace .ec-ariane {
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-ariane a {
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-style-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+  gap: 28px;
+  align-items: start;
+  margin-bottom: 34px;
+}
+.ec-espace .ec-style-couverture {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-style-couverture img {
+  width: 100%;
+  border-radius: 12px;
+  display: block;
+  box-shadow: 0 30px 60px var(--ec-ombre);
+}
+.ec-espace .ec-style-deux {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+.ec-espace .ec-decale {
+  margin-top: 48px;
+}
+.ec-espace .ec-numero {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-right: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--ec-ac-rgb), 0.6);
+  color: var(--ec-orange);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  vertical-align: middle;
+}
+.ec-espace .ec-palettes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-palette-choix {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--ec-filet);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ec-blanc-72);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-palette-choix[aria-pressed="true"] {
+  border-color: var(--ec-orange);
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-echantillon {
+  width: 100%;
+  border-radius: 10px;
+  margin: 10px 0;
+  display: block;
+}
+.ec-espace .ec-doubles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.ec-espace .ec-double {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 2px solid var(--ec-filet);
+  border-radius: 14px;
+  background: var(--ec-surface);
+  color: var(--ec-blanc);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-double[aria-pressed="true"] {
+  border-color: var(--ec-orange);
+}
+.ec-espace .ec-double-image {
+  display: block;
+  aspect-ratio: 3 / 2;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.05);
+}
+.ec-espace .ec-double-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ec-espace .ec-barre-fixe {
+  position: sticky;
+  bottom: 12px;
+  z-index: 15;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 14px 18px;
+  border: 1px solid var(--ec-filet-fort);
+  border-radius: 18px;
+  background: var(--ec-glass);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+
+/* ─────────────────────────────── à venir, verrou ─────────────────────────────── */
+
+.ec-espace .ec-a-venir {
+  max-width: 560px;
+  padding: 28px;
+  border: 1px dashed var(--ec-filet-fort);
+  border-radius: 20px;
+}
+
+/* ─────────────────────────────── téléphone ─────────────────────────────── */
+
+@media (max-width: 860px) {
+  /* Sur téléphone, un écran ne peut pas tout tenir : la page défile de
+     nouveau, et les zones internes reprennent leur hauteur naturelle. */
+  .ec-espace .ec-coquille {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    min-height: var(--app-height);
+    overflow: visible;
+  }
+  .ec-espace .ec-contenu {
+    overflow: visible;
+  }
+  .ec-espace .ec-ecran {
+    flex: none;
+  }
+  .ec-espace .ec-ecran-tete {
+    padding: 14px 16px;
+    flex-wrap: wrap;
+  }
+  .ec-espace .ec-ecran-titre {
+    font-size: 26px;
+  }
+  .ec-espace .ec-ecran-corps {
+    padding: 16px 16px 32px;
+  }
+  .ec-espace .ec-defile {
+    overflow: visible;
+  }
+  .ec-espace .ec-page {
+    padding: 20px 16px 40px;
+  }
+  .ec-espace .ec-fenetre-voile,
+  .ec-espace .ec-panneau-voile {
+    position: fixed;
+    z-index: 60;
+    padding: 12px;
+  }
+  .ec-espace .ec-fenetre,
+  .ec-espace .ec-panneau {
+    max-height: calc(var(--app-height) - 24px);
+    padding: 22px;
+  }
+  .ec-espace .ec-fenetre-voile--cote {
+    padding: 0;
+  }
+  .ec-espace .ec-fenetre--cote {
+    max-height: none;
+    height: var(--app-height);
+    padding: 0;
+    border-radius: 0;
+  }
+  .ec-espace .ec-pastille-envoi {
+    position: fixed;
+    top: auto;
+    bottom: 16px;
+    right: 16px;
+  }
+  .ec-espace .ec-barre-mobile {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--ec-panel);
+    border-bottom: 1px solid var(--ec-line);
+  }
+  .ec-espace .ec-bouton-tiroir {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-right: -10px;
+    border: 0;
+    background: none;
+    color: var(--ec-blanc);
+    cursor: pointer;
+  }
+  .ec-espace .ec-menu {
+    position: fixed;
+    z-index: 40;
+    top: 0;
+    left: 0;
+    width: min(86vw, 300px);
+    height: var(--app-height);
+    transform: translateX(-102%);
+    transition: transform var(--dur) var(--ease);
+  }
+  .ec-espace .ec-coquille[data-tiroir="ouvert"] .ec-menu {
+    transform: none;
+  }
+  .ec-espace .ec-voile {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    border: 0;
+    background: var(--ec-voile);
+  }
+  .ec-espace .ec-cartes,
+  .ec-espace .ec-dossier,
+  .ec-espace .ec-collecte-corps,
+  .ec-espace .ec-mur-corps,
+  .ec-espace .ec-style-hero,
+  .ec-espace .ec-style-deux {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ec-espace .ec-grille {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .ec-espace .ec-brief {
+    position: static;
+  }
+  .ec-espace .ec-decale {
+    margin-top: 0;
+  }
+  .ec-espace .ec-planches {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ec-espace .ec-carte {
+    padding: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ec-espace .ec-menu {
+    transition: none;
+  }
+}
+
+/* ─────────────────────────── les pièces partagées (révision) ─────────────────────────── */
+
+.ec-espace .ec-pilule {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-text);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.ec-espace .ec-pilule-point {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--ec-accent);
+}
+.ec-espace .ec-bouton--petit {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+.ec-espace .ec-bouton--plein {
+  align-self: stretch;
+  min-height: 48px;
+  flex: none;
+}
+.ec-espace .ec-actions--centre {
+  justify-content: center;
+}
+.ec-espace .ec-lien-discret {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ec-espace .ec-lien-discret:hover {
+  color: var(--ec-text);
+}
+.ec-espace .ec-zone-texte {
+  min-height: 0;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* Le QR : un objet imprimé, clair sur toutes les couleurs de fond. */
+.ec-espace .ec-qr {
+  flex: none;
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--ec-line);
+}
+.ec-espace .ec-qr-fond {
+  fill: var(--ec-page);
+}
+.ec-espace .ec-qr-modules {
+  fill: var(--ec-encre);
+}
+
+/* Partager un lien : Copier, WhatsApp, Mail (et le QR en fichier). */
+.ec-espace .ec-partage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-partage--quatre {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ec-espace .ec-partage .ec-bouton {
+  align-self: auto;
+}
+.ec-espace .ec-carte-lien,
+.ec-espace .ec-lien-pret {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+.ec-espace .ec-carte-lien-texte,
+.ec-espace .ec-lien-pret-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.ec-espace .ec-carte-lien-texte strong,
+.ec-espace .ec-lien-pret-texte strong {
+  font-size: 16px;
+  color: var(--ec-text);
+}
+.ec-espace .ec-lien-pret-texte {
+  flex: 1;
+}
+.ec-espace .ec-lien-url {
+  flex: none;
+  width: 100%;
+  min-height: 40px;
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-lien-plafond {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-lien-plafond-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.ec-espace .ec-lien-valeur {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--ec-text);
+  white-space: nowrap;
+}
+.ec-espace .ec-lien-plafond input[type="range"] {
+  width: 100%;
+  accent-color: var(--ec-accent);
+}
+
+/* La zone de dépôt, déjà ouverte : glisser, ou choisir. */
+.ec-espace .ec-zone-depot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  border: 1.5px dashed rgba(var(--ec-ac-rgb), 0.6);
+  border-radius: 18px;
+  background: radial-gradient(circle at 50% 40%, var(--ec-accent-soft), transparent 70%);
+  text-align: center;
+  box-sizing: border-box;
+}
+.ec-espace .ec-zone-depot--survol {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-zone-depot--compacte {
+  flex: none;
+  min-height: 180px;
+}
+.ec-espace .ec-zone-depot .ec-texte {
+  max-width: 380px;
+  font-size: 14px;
+}
+.ec-espace .ec-zone-depot-icone {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent);
+}
+.ec-espace .ec-zone-depot-titre {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.1;
+  color: var(--ec-text);
+}
+.ec-espace .ec-zone-depot-dossier {
+  display: flex;
+  gap: 8px;
+  width: min(320px, 100%);
+}
+.ec-espace .ec-zone-depot-envoi {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.ec-espace .ec-zone-depot-envoi .ec-dp-barre-espace {
+  align-self: stretch;
+}
+.ec-espace .ec-questionnaire {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

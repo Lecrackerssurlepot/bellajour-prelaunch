@@ -96,6 +96,8 @@ export type Livraison = {
   url?: string | null;
   expediee_le?: Horodatage | null;
   livree_le?: Horodatage | null;
+  /** Le jour prévu, réglé par l'atelier (`AAAA-MM-JJ`, sans heure ni fuseau). */
+  prevue_le?: string | null;
 };
 
 export type EditionLigne = {
@@ -234,7 +236,11 @@ export type ContenuLigne = {
 export type PageTour = {
   index: number;
   image_key: string;
+  /** La miniature de la bande de vignettes (320 px) ; absente sur un tour ancien. */
+  vignette_key?: string | null;
   empreinte: string | null;
+  /** Les mots de la page (sans les mots communs à tout le tour), pour l'apparier au tour suivant. */
+  mots?: string | null;
   /** L'index de la page du tour précédent qui lui ressemble, ou null (« nouvelle page »). */
   apparie_a: number | null;
   /** Les zones modifiées, en pourcentages de la page. */

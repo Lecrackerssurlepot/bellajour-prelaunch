@@ -2,105 +2,96 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Votre dossier</title>
+<title>Documents</title>
 <script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@400;500;600&display=swap">
-<style>
-body{margin:0;background:#050505}
-a{color:#d68a63}a:hover{color:#ffffff}
-textarea::placeholder{color:rgba(255,255,255,0.56)}
-</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@400;500;600&family=Fraunces:ital,wght@0,400;1,400&display=swap">
+<style>body{margin:0;background:#050505}a{color:var(--accent)}</style>
 </helmet>
-<div style="min-height: 1000px; box-sizing: border-box; background: #050505; color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.5; display: flex">
-  <aside aria-label="Navigation de l'espace" style="flex: none; width: 248px; box-sizing: border-box; border-right: 1px solid rgba(255,255,255,0.10); background: #050505; padding: 22px 14px; display: flex; flex-direction: column; gap: 22px">
-    <span style="padding: 0 14px; font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; color: #ffffff">Bellajour</span>
-    <button type="button" aria-label="Changer d'édition" style="margin: 0 2px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); color: #ffffff; font-family: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px">
-      <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">Séminaire d'automne</span><span style="font-size: 12px; color: rgba(255,255,255,0.56)">Maison Aubier</span></span>
+<div style="--bg: {{ th.bg }}; --panel: {{ th.panel }}; --surface: {{ th.surface }}; --line: {{ th.line }}; --text: {{ th.text }}; --muted: {{ th.muted }}; --faint: {{ th.faint }}; --accent: {{ th.accent }}; --accent-soft: {{ th.accentSoft }}; --on-accent: {{ th.onAccent }}; --page: {{ th.page }}; --glass: {{ th.glass }}; --fg: {{ th.text }}; --bgc: {{ th.bg }}; --fg-rgb: {{ th.fgRgb }}; --ac-rgb: {{ th.acRgb }}; height: 900px; overflow: hidden; display: flex; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; transition: background 0.3s, color 0.3s">
+  <aside aria-label="Navigation" style="flex: none; width: 232px; box-sizing: border-box; height: 100%; border-right: 1px solid var(--line); background: var(--panel); padding: 22px 12px 16px; display: flex; flex-direction: column; gap: 18px">
+    <img src="{{ th.logo }}" alt="Bellajour" style="width: 116px; height: auto; margin: 0 12px 4px">
+    <button type="button" aria-label="Changer d'édition" style="padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-family: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px">
+      <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">Séminaire d'automne</span><span style="font-size: 12px; color: var(--muted)">Maison Aubier</span></span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5-5 5 5M7 14l5 5 5-5"></path></svg>
     </button>
-    <nav style="display: flex; flex-direction: column; gap: 4px">
-        <a href="Espace.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>Tableau de bord</a>
-        <a href="Styles.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><circle cx="12" cy="12" r="9"></circle><circle cx="8" cy="10.5" r="1.3"></circle><circle cx="12" cy="7.5" r="1.3"></circle><circle cx="16" cy="10.5" r="1.3"></circle><path d="M12 21a3 3 0 0 1 0-6h2"></path></svg>Style</a>
-        <a href="Collecte.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="M21 16l-5-5-9 8"></path></svg>Photos</a>
-        <span role="link" aria-disabled="true" title="Disponible à la réception du premier bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; font-size: 15px; color: rgba(255,255,255,0.32); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 5h6.5A2.5 2.5 0 0 1 12 7.5V20a2 2 0 0 0-2-2H3z"></path><path d="M21 5h-6.5A2.5 2.5 0 0 0 12 7.5V20a2 2 0 0 1 2-2h7z"></path></svg>Bon à tirer<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
-        <span role="link" aria-disabled="true" title="Disponible après la validation du bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; font-size: 15px; color: rgba(255,255,255,0.32); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 6h11v10H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="1.8"></circle><circle cx="17" cy="18" r="1.8"></circle></svg>Livraison<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+    <nav style="display: flex; flex-direction: column; gap: 2px">
+      <a href="Espace.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>Tableau de bord</a>
+      <a href="Styles.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><circle cx="12" cy="12" r="9"></circle><circle cx="8" cy="10.5" r="1.3"></circle><circle cx="12" cy="7.5" r="1.3"></circle><circle cx="16" cy="10.5" r="1.3"></circle><path d="M12 21a3 3 0 0 1 0-6h2"></path></svg>Style</a>
+      <a href="Collecte.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="M21 16l-5-5-9 8"></path></svg>Photos</a>
+      <a href="BAT.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 5h6.5A2.5 2.5 0 0 1 12 7.5V20a2 2 0 0 0-2-2H3z"></path><path d="M21 5h-6.5A2.5 2.5 0 0 0 12 7.5V20a2 2 0 0 1 2-2h7z"></path></svg>Bon à tirer</a>
+      <span role="link" aria-disabled="true" title="Disponible après la validation du bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--faint); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 6h11v10H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="1.8"></circle><circle cx="17" cy="18" r="1.8"></circle></svg>Livraison<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
     </nav>
-    <div style="height: 1px; margin: 0 14px; background: rgba(255,255,255,0.10)"></div>
-    <nav style="display: flex; flex-direction: column; gap: 4px">
-        <a href="Dossier.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: #ffffff; background: rgba(214,138,99,0.16); font-weight: 600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path><path d="M9 13h6M9 17h6"></path></svg>Votre dossier</a>
-        <a href="RendezVous.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M4 5h16v11H9l-5 4z"></path></svg>Parler à l'atelier</a>
+    <div style="height: 1px; margin: 0 12px; background: var(--line)"></div>
+    <nav style="display: flex; flex-direction: column; gap: 2px">
+      <a href="RendezVous.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M4 5h16v11H9l-5 4z"></path></svg>Parler à l'atelier<span style="margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center">1</span></a>
+      <a href="Dossier.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--text); background: var(--accent-soft); font-weight: 600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path><path d="M9 13h6M9 17h6"></path></svg>Documents</a>
     </nav>
-    <div style="margin-top: auto; padding: 14px; border-top: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center; gap: 12px">
-      <span style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: rgba(214,138,99,0.18); display: inline-flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 600; font-size: 14px">ML</span>
-      <span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 14px; color: #ffffff">Marion Lefèvre</span><span style="font-size: 12px; color: rgba(255,255,255,0.56)">Responsable du bon à tirer</span></span>
+    <div style="margin-top: auto; padding: 12px 12px 0; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+      <span style="flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft); display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px">ML</span>
+      <span style="flex: 1; display: flex; flex-direction: column; min-width: 0"><span style="font-size: 13px">Marion Lefèvre</span><span style="font-size: 11px; color: var(--muted)">Responsable du BAT</span></span>
+      <button type="button" onClick="{{ basculerTheme }}" title="{{ themeTitre }}" aria-label="{{ themeTitre }}" style="flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">
+        <sc-if value="{{ estNuit }}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+        <sc-if value="{{ estJour }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg></sc-if>
+      </button>
     </div>
   </aside>
+  <div style="flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; position: relative">
+    <header style="flex: none; height: 68px; box-sizing: border-box; padding: 0 32px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 20px">
+      <div style="display: flex; align-items: baseline; gap: 14px; min-width: 0"><h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 30px; line-height: 1; white-space: nowrap">Documents</h1><span style="color: var(--muted); font-size: 13px; white-space: nowrap">Tout ce qui est signé, facturé ou envoyé</span></div>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 10px"></div>
+    </header>
 
-  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative">
-  <header style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px 24px; padding: 22px 4%; border-bottom: 1px solid rgba(255,255,255,0.10)"><span style="font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 500">Votre dossier</span><span style="font-size: 14px; color: rgba(255,255,255,0.72)">Devis signé le 21 septembre · acompte reçu</span></header>
-
-  <main style="flex: 1; padding: 32px 4% 48px; display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 24px; align-items: start">
-
-    <div style="display: flex; flex-direction: column; gap: 24px">
-      <section style="border: 1px solid rgba(255,255,255,0.12); border-radius: 18px; background: rgba(255,255,255,0.03); padding: 28px; display: flex; flex-direction: column; gap: 4px">
-        <span style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.56); padding-bottom: 10px">Ce qui est prévu au devis</span>
-        <sc-for list="{{ lignes }}" as="l" hint-placeholder-count="8">
-          <div style="display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08)"><span style="color: rgba(255,255,255,0.72)">{{ l.cle }}</span><span style="text-align: right">{{ l.valeur }}</span></div>
-        </sc-for>
-        <a href="RendezVous.dc.html" style="padding-top: 14px; font-size: 14px">Demander une modification du devis</a>
+    <main style="flex: 1; min-height: 0; padding: 28px 32px; display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 24px">
+      <div style="display: flex; flex-direction: column; gap: 16px; min-height: 0">
+      <a href="RendezVous.dc.html" style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); border-color: var(--accent); padding: 16px 22px; display: flex; align-items: center; gap: 16px; text-decoration: none; color: var(--text)">
+        <span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); color: var(--accent)">Nouvelle proposition</span><span>Proposition complémentaire n° 1 · 8 pages et 20 exemplaires en plus · [MONTANT] € HT</span></span>
+        <span style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; height: 36px">Voir et accepter</span>
+      </a>
+      <section style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); display: flex; flex-direction: column; min-height: 0; flex: 1">
+        <div style="padding: 18px 22px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center"><span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted)">Vos documents</span><span style="font-size: 12px; color: var(--muted)">6</span></div>
+        <div style="flex: 1; min-height: 0; overflow: auto">
+          <sc-for list="{{ docs }}" as="d" hint-placeholder-count="6">
+            <div style="display: flex; align-items: center; gap: 14px; padding: 14px 22px; border-bottom: 1px solid var(--line)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path></svg>
+              <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span>{{ d.nom }}</span><span style="font-size: 12px; color: var(--muted)">{{ d.info }}</span></span>
+              <span style="font-size: 12px; color: {{ d.couleur }}">{{ d.etat }}</span>
+              <button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500; height: 32px; font-size: 13px">Ouvrir</button>
+            </div>
+          </sc-for>
+        </div>
       </section>
-
-      <section style="border: 1px solid rgba(255,255,255,0.12); border-radius: 18px; background: rgba(255,255,255,0.03); padding: 28px; display: flex; flex-direction: column; gap: 12px">
-        <span style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.56)">Documents</span>
-        <sc-for list="{{ documents }}" as="d" hint-placeholder-count="5">
-          <button type="button" style="display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.10); background: transparent; color: #ffffff; font-family: inherit; font-size: 15px; text-align: left; cursor: pointer">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path></svg>
-            <span style="flex: 1; min-width: 0">{{ d.nom }}</span>
-            <span style="font-size: 13px; color: {{ d.couleur }}">{{ d.etat }}</span>
-          </button>
-        </sc-for>
-      </section>
-    </div>
-
-    <section style="border: 1px solid rgba(255,255,255,0.12); border-radius: 18px; background: rgba(255,255,255,0.03); padding: 28px; display: flex; flex-direction: column; gap: 16px">
-      <span style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.56)">Écrire à l'atelier</span>
-      <div style="display: flex; flex-direction: column; gap: 12px">
-        <div style="align-self: flex-end; max-width: 85%; padding: 12px 14px; border-radius: 14px 14px 4px 14px; background: rgba(214,138,99,0.16)"><span>Pouvez-vous ajouter le logo du domaine en fin de magazine ?</span><span style="display: block; font-size: 12px; color: rgba(255,255,255,0.56); padding-top: 4px">Vous · 24 septembre</span></div>
-        <div style="align-self: flex-start; max-width: 85%; padding: 12px 14px; border-radius: 14px 14px 14px 4px; border: 1px solid rgba(255,255,255,0.12)"><span>Oui, nous le plaçons en troisième de couverture. Vous le verrez au premier bon à tirer.</span><span style="display: block; font-size: 12px; color: rgba(255,255,255,0.56); padding-top: 4px">L'atelier Bellajour · 24 septembre</span></div>
       </div>
-      <textarea rows="3" placeholder="Votre message" style="padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.04); color: #ffffff; font-family: inherit; font-size: 15px; resize: vertical"></textarea>
-      <button type="button" style="align-self: flex-start; height: 48px; padding: 0 24px; border: 0; border-radius: 999px; background: #d68a63; color: #050505; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer">Envoyer</button>
-      <span style="font-size: 13px; color: rgba(255,255,255,0.56)">L'atelier vous répond ici et par mail. Tout reste dans l'historique de l'édition.</span>
-    </section>
-  </main>
+      <section style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 18px 22px; display: flex; flex-direction: column; gap: 2px; align-self: start">
+        <span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); padding-bottom: 10px">Ce que prévoit le devis</span>
+        <sc-for list="{{ lignes }}" as="l" hint-placeholder-count="7"><div style="display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13px"><span style="color: var(--muted)">{{ l.cle }}</span><span style="text-align: right">{{ l.val }}</span></div></sc-for>
+        <a href="RendezVous.dc.html" style="padding-top: 12px; font-size: 13px; color: var(--accent); text-decoration: none">Une question sur le devis ? Parler à l'atelier →</a>
+      </section>
+    </main>
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
 class Component extends DCLogic {
   renderVals() {
-    const lignes = [
-      ['Organisation', 'Maison Aubier'],
-      ['Événement', "Séminaire d'automne, 18 au 20 septembre"],
-      ['Magazines', '2 · Le séminaire, La soirée'],
-      ['Format', 'Magazine A4'],
-      ['Tirage', '120 exemplaires'],
-      ['Tours de corrections inclus', '2'],
-      ['Responsable du bon à tirer', 'Marion Lefèvre'],
-      ['Livraison', 'Une adresse, Lyon']
-    ].map((l) => ({ cle: l[0], valeur: l[1] }));
-    const documents = [
-      ['Devis signé', 'Signé le 21 septembre', 'rgba(255,255,255,0.56)'],
-      ["Facture d'acompte", 'Payée', 'rgba(255,255,255,0.56)'],
-      ['Facture de solde', '[Échéance à fixer]', '#d68a63'],
-      ['Conditions générales', '', 'rgba(255,255,255,0.56)'],
-      ['Accord sur les données', '', 'rgba(255,255,255,0.56)']
-    ].map((d) => ({ nom: d[0], etat: d[1], couleur: d[2] }));
-    return { lignes: lignes, documents: documents };
+    const s = this.state || {};
+    const TH = {
+      nuit: { bg: '#050505', panel: '#0a0a0a', surface: 'rgba(255,255,255,0.04)', line: 'rgba(255,255,255,0.10)', text: '#ffffff', muted: 'rgba(255,255,255,0.64)', faint: 'rgba(255,255,255,0.34)', accent: '#d68a63', accentSoft: 'rgba(214,138,99,0.16)', onAccent: '#050505', page: '#ffffff', glass: 'rgba(20,20,20,0.66)', logo: 'assets/logo-cuivre.png', fgRgb: '255,255,255', acRgb: '214,138,99' },
+      jour: { bg: '#f3ece2', panel: '#ece3d6', surface: '#fbf8f3', line: 'rgba(28,28,28,0.10)', text: '#1c1c1c', muted: 'rgba(28,28,28,0.62)', faint: 'rgba(28,28,28,0.34)', accent: '#1d5bb0', accentSoft: 'rgba(29,91,176,0.10)', onAccent: '#ffffff', page: '#ffffff', glass: 'rgba(251,248,243,0.72)', logo: 'assets/logo-bleu.png', fgRgb: '28,28,28', acRgb: '29,91,176' }
+    };
+    const jour = s.jour !== undefined ? s.jour : false;
+    const th = jour ? TH.jour : TH.nuit;
+    const modes = { basculerTheme: () => this.setState({ jour: !jour }), estNuit: !jour, estJour: jour, themeTitre: jour ? 'Passer en mode nuit' : 'Passer en mode jour' };
+    const docs = [
+      ['Devis signé', 'Signé le 21 septembre', '', 'var(--muted)'], ["Facture d'acompte", '21 septembre', 'Payée', 'var(--muted)'],
+      ['Proposition complémentaire n° 1', 'Reçue le 8 octobre', 'À accepter', 'var(--accent)'], ['Facture de solde', '[Échéance à fixer]', 'À venir', 'var(--muted)'],
+      ['Conditions générales', '', '', 'var(--muted)'], ['Accord sur les données', '', '', 'var(--muted)']
+    ].map((d) => ({ nom: d[0], info: d[1], etat: d[2], couleur: d[3] }));
+    const lignes = [['Magazines', '2 · Le séminaire, La soirée'], ['Format', 'Magazine A4'], ['Tirage', '120 exemplaires'], ['Tours de corrections', '2 inclus'], ['Responsable du BAT', 'Marion Lefèvre'], ['Livraison', 'Une adresse, Lyon'], ['Clôture des photos', '4 octobre']].map((l) => ({ cle: l[0], val: l[1] }));
+    return Object.assign({ th: th }, modes, { docs: docs, lignes: lignes });
   }
 }
 </script>

@@ -15,7 +15,16 @@ import { tableAbsente } from "@/lib/collectif/migration";
 import { prochaineEtape, type Prochaine } from "@/lib/collectif/prochaine";
 import { phraseEvenement } from "@/lib/collectif/recit";
 import { manquesPourPublier } from "@/lib/collectif/styles";
-import type { EditionLigne, EvenementLigne, MagazineLigne, StyleLigne } from "@/lib/collectif/types";
+import { libelleTypeDocument } from "@/lib/collectif/documents";
+import { contenuClient } from "@/lib/collectif/contenus";
+import { lireMessages } from "@/lib/collectif/messagerie";
+import { resumeDeposants } from "@/lib/collectif/grille";
+import type { Message } from "@/lib/collectif/messages";
+import { resumeNote, resumeTour } from "@/lib/collectif/bat";
+import { estUuid } from "@/lib/collectif/cles";
+import { formaterInstantParis, versChampParis } from "@/lib/collectif/dates";
+import { couverturesDesTours, precedentDe, toursDuMagazine } from "@/lib/collectif/tours";
+import type { EditionLigne, EvenementLigne, MagazineLigne, NoteLigne, StyleLigne } from "@/lib/collectif/types";
 
 function echec(quoi: string, error: { code?: string; message: string }): never {
   throw new Error(`[collectif] ${quoi} : ${error.code ?? "?"} ${error.message}`);
@@ -107,15 +116,49 @@ export type MagazineFiche = Pick<MagazineLigne, "id" | "rang" | "nom" | "brief_v
   toursPublies: number;
   /** Ni brief commencé, ni tour : il peut se retirer (le dernier seulement). */
   vide: boolean;
+  /** Le brief, lisible par l'atelier (phase 4). */
+  brief: {
+    style: string | null;
+    palette: { nom: string; couleurs: string[] } | null;
+    texte: string | null;
+    doubles: string[];
+    aimees: { style: string; url: string | null }[];
+  };
 };
 
 export type EntreeJournal = { id: string; quand: string; phrase: string };
 
+export type DocumentFiche = { id: string; libelle: string; libelleType: string; quand: string; par: string | null; statut: string | null };
+
+export type Collecte = {
+  total: number;
+  participants: number;
+  signalees: number;
+  sansVignette: number;
+  parProvenance: { libelle: string; n: number }[];
+};
+
+/** Un contenu envoyé par le client (logo, programme, mot du dirigeant…), le plus récent d'abord. */
+export type ContenuFiche = {
+  id: string;
+  libelle: string;
+  quand: string;
+  par: string | null;
+  /** Le fichier, signé une heure, sous son nom d'origine ; ou null pour un questionnaire. */
+  url: string | null;
+  nom: string | null;
+  reponses: { question: string; reponse: string }[];
+};
+
 export type Fiche = {
+  contenus: ContenuFiche[];
+  collecte: Collecte;
   edition: EditionLigne;
   etat: EtatEdition;
   magazines: MagazineFiche[];
   journal: EntreeJournal[];
+  documents: DocumentFiche[];
+  messages: Message[];
 };
 
 export async function chargerEdition(
@@ -134,10 +177,10 @@ export async function chargerEdition(
   }
   if (!edition) return { absent: false, fiche: null };
 
-  const [mags, journal] = await Promise.all([
+  const [mags, journal, docs, fil, photos, contenus] = await Promise.all([
     supabase
       .from("collectif_magazines")
-      .select("id, rang, nom, style_id, brief_valide_le, bat_valide_le")
+      .select("id, rang, nom, style_id, palette_cle, texte, doubles, couvertures_aimees, brief_valide_le, bat_valide_le")
       .eq("edition_id", id)
       .order("rang", { ascending: true }),
     supabase
@@ -146,9 +189,31 @@ export async function chargerEdition(
       .eq("edition_id", id)
       .order("created_at", { ascending: false })
       .limit(100),
+    supabase
+      .from("collectif_documents")
+      .select("id, type, libelle, statut_texte, created_at, cree_par")
+      .eq("edition_id", id)
+      .order("created_at", { ascending: false }),
+    lireMessages(supabase, id, null),
+    supabase
+      .from("collectif_photos")
+      .select("provenance_type, deposant, role_deposant, appareil_id, signalee, vignette_key")
+      .eq("edition_id", id)
+      .not("confirmee_le", "is", null)
+      .limit(20000),
+    supabase
+      .from("collectif_contenus")
+      .select("id, type, r2_key, nom_origine, reponses, recu_le, depose_par")
+      .eq("edition_id", id)
+      .order("recu_le", { ascending: false })
+      .limit(100),
   ]);
+  if (photos.error) echec("photos de l'édition", photos.error);
+  if (contenus.error) echec("contenus de l'édition", contenus.error);
   if (mags.error) echec("magazines de l'édition", mags.error);
   if (journal.error) echec("journal de l'édition", journal.error);
+  if (docs.error) echec("documents de l'édition", docs.error);
+  if (!fil.ok) throw new Error(`[collectif] messages de l'édition : ${fil.code}`);
 
   const magIds = (mags.data ?? []).map((m) => m.id as string);
   const tours = magIds.length
@@ -163,9 +228,57 @@ export async function chargerEdition(
     toursParMag.set(t.magazine_id, c);
   }
 
+  const lignesPhotos = (photos.data ?? []) as {
+    provenance_type: string;
+    deposant: string | null;
+    role_deposant: string;
+    appareil_id: string | null;
+    signalee: boolean;
+    vignette_key: string | null;
+  }[];
+  const collecte: Collecte = {
+    total: lignesPhotos.length,
+    participants: new Set(lignesPhotos.filter((p) => p.role_deposant === "participant" && p.appareil_id).map((p) => p.appareil_id)).size,
+    signalees: lignesPhotos.filter((p) => p.signalee).length,
+    sansVignette: lignesPhotos.filter((p) => !p.vignette_key).length,
+    parProvenance: resumeDeposants(lignesPhotos),
+  };
+
+  /* Les styles que les briefs nomment (choisis ou aimés), pour les lire en clair. */
+  type MagBrut = MagazineLigne & { style_id: string | null };
+  const magsBruts = (mags.data ?? []) as MagBrut[];
+  const idsStyles = [...new Set(magsBruts.flatMap((m) => [m.style_id, ...(m.couvertures_aimees ?? []).map((a) => a.style_id)]).filter(Boolean))] as string[];
+  const stylesLus = idsStyles.length
+    ? await supabase.from("collectif_styles").select("id, nom, palettes, couvertures").in("id", idsStyles)
+    : { data: [], error: null };
+  if (stylesLus.error) echec("styles des briefs", stylesLus.error);
+  const parStyle = new Map(
+    ((stylesLus.data ?? []) as { id: string; nom: string; palettes: { cle: string; nom: string; couleurs: string[] }[]; couvertures: { cle: string; image_key: string }[] }[]).map((x) => [x.id, x])
+  );
+  const briefs = new Map<string, MagazineFiche["brief"]>();
+  for (const m of magsBruts) {
+    const st = m.style_id ? parStyle.get(m.style_id) : undefined;
+    const pal = st?.palettes?.find((x) => x.cle === m.palette_cle);
+    const aimees = await Promise.all(
+      (m.couvertures_aimees ?? []).map(async (a) => {
+        const s2 = parStyle.get(a.style_id);
+        const c = s2?.couvertures?.find((x) => x.cle === a.couverture);
+        return { style: s2?.nom ?? "?", url: c ? await signerOuRien(c.image_key) : null };
+      })
+    );
+    briefs.set(m.id, {
+      style: st?.nom ?? null,
+      palette: pal ? { nom: pal.nom, couleurs: pal.couleurs } : null,
+      texte: m.texte,
+      doubles: m.doubles ?? [],
+      aimees,
+    });
+  }
+
   return {
     absent: false,
     fiche: {
+      collecte,
       edition,
       etat: etatEffectif(edition.etat, edition.cloture_le, maintenant),
       magazines: ((mags.data ?? []) as (MagazineLigne & { style_id: string | null })[]).map((m) => {
@@ -178,6 +291,7 @@ export async function chargerEdition(
           bat_valide_le: m.bat_valide_le,
           toursPublies: t.publies,
           vide: !m.style_id && !m.brief_valide_le && t.total === 0,
+          brief: briefs.get(m.id) ?? { style: null, palette: null, texte: null, doubles: [], aimees: [] },
         };
       }),
       journal: ((journal.data ?? []) as Pick<EvenementLigne, "id" | "type" | "payload" | "created_at">[]).map((j) => ({
@@ -185,6 +299,35 @@ export async function chargerEdition(
         quand: j.created_at,
         phrase: phraseEvenement(j.type, j.payload ?? {}),
       })),
+      contenus: await Promise.all(
+        ((contenus.data ?? []) as { id: string; type: string; r2_key: string | null; nom_origine: string | null; reponses: Record<string, unknown> | null; recu_le: string; depose_par: string | null }[]).map(
+          async (c) => {
+            let url: string | null = null;
+            if (c.r2_key) {
+              try {
+                url = await signerGet(c.r2_key, undefined, c.nom_origine ?? undefined);
+              } catch {
+                url = null;
+              }
+            }
+            return {
+              id: c.id,
+              libelle: contenuClient(c.type)?.libelle ?? c.type,
+              quand: c.recu_le,
+              par: c.depose_par,
+              url,
+              nom: c.nom_origine,
+              reponses: Object.entries(c.reponses ?? {})
+                .filter(([, r]) => typeof r === "string")
+                .map(([question, r]) => ({ question, reponse: r as string })),
+            };
+          }
+        )
+      ),
+      documents: ((docs.data ?? []) as { id: string; type: string; libelle: string; statut_texte: string | null; created_at: string; cree_par: string | null }[]).map(
+        (d) => ({ id: d.id, libelle: d.libelle, libelleType: libelleTypeDocument(d.type), quand: d.created_at, par: d.cree_par, statut: d.statut_texte })
+      ),
+      messages: fil.messages,
     },
   };
 }
@@ -280,6 +423,220 @@ export async function chargerStyle(
         quand: j.created_at,
         phrase: phraseEvenement(j.type, j.payload ?? {}),
       })),
+    },
+  };
+}
+
+/* ─────────────────────────────────── le bon à tirer ─────────────────────────────────── */
+
+export type PageAtelier = { index: number; vignette: string | null; apparie_a: number | null; zones: number };
+
+export type TourAtelier = {
+  id: string;
+  numero: number;
+  publie: boolean;
+  publieTexte: string;
+  echeanceLocal: string;
+  echeanceTexte: string;
+  nbPages: number | null;
+  pdf: boolean;
+  pages: PageAtelier[];
+  resume: { nouvelles: number; modifiees: number; retirees: number[] } | null;
+  precedent: number | null;
+};
+
+export type CouvertureAtelier = { rang: number; legende: string; c1: string | null; c2: string | null; c3: string | null };
+
+export type NoteAtelier = {
+  id: string;
+  numero: number;
+  tour: number;
+  page: number | null;
+  type: string;
+  resume: string;
+  photo: string | null;
+  envoyeeTexte: string;
+  resolue: boolean;
+  reponse: string | null;
+};
+
+export type MagazineBatAtelier = {
+  id: string;
+  rang: number;
+  nom: string;
+  bat_valide_le: string | null;
+  couverture: string;
+  couverture_note: string | null;
+};
+
+export type BatAtelier = {
+  edition: Pick<EditionLigne, "id" | "organisation" | "evenement" | "nb_propositions_couverture" | "tirage" | "token_responsable" | "archive_le">;
+  etat: EtatEdition;
+  magazines: MagazineBatAtelier[];
+  magazine: MagazineBatAtelier | null;
+  tours: TourAtelier[];
+  brouillon: TourAtelier | null;
+  /** Les propositions vivent sur le premier tour (brouillon tant qu'il n'est pas publié). */
+  couvertures: CouvertureAtelier[];
+  couverturesModifiables: boolean;
+  notes: NoteAtelier[];
+};
+
+async function signer(key: string | null | undefined): Promise<string | null> {
+  if (!key) return null;
+  try {
+    return await signerGet(key);
+  } catch {
+    return null;
+  }
+}
+
+/** L'écran « Bon à tirer » de l'atelier, pour un magazine (`rang`, le premier par défaut). */
+export async function chargerBatAtelier(
+  supabase: SupabaseClient,
+  id: string,
+  rang: number | null,
+  maintenant: Date
+): Promise<{ absent: true } | { absent: false; bat: BatAtelier | null }> {
+  const { data: edition, error } = await supabase
+    .from("collectif_editions")
+    .select("id, organisation, evenement, etat, cloture_le, nb_propositions_couverture, tirage, token_responsable, archive_le")
+    .eq("id", id)
+    .maybeSingle<EditionLigne>();
+  if (error) {
+    if (tableAbsente(error.code)) return { absent: true };
+    echec("lecture de l'édition (BAT)", error);
+  }
+  if (!edition) return { absent: false, bat: null };
+
+  const { data: mags, error: errMags } = await supabase
+    .from("collectif_magazines")
+    .select("id, rang, nom, bat_valide_le, couverture_choisie_id, couverture_sans_preference, couverture_note")
+    .eq("edition_id", id)
+    .order("rang", { ascending: true });
+  if (errMags) echec("magazines (BAT)", errMags);
+  const brutes = (mags ?? []) as Pick<MagazineLigne, "id" | "rang" | "nom" | "bat_valide_le" | "couverture_choisie_id" | "couverture_sans_preference" | "couverture_note">[];
+  const choisie = brutes.find((m) => m.rang === rang) ?? brutes[0] ?? null;
+
+  const base = {
+    edition,
+    etat: etatEffectif(edition.etat, edition.cloture_le, maintenant),
+  };
+  if (!choisie) return { absent: false, bat: { ...base, magazines: [], magazine: null, tours: [], brouillon: null, couvertures: [], couverturesModifiables: false, notes: [] } };
+
+  const lus = await toursDuMagazine(supabase, choisie.id);
+  if (!lus.ok) throw new Error(`[collectif] tours (BAT) : ${lus.code}`);
+  const premierId = lus.valeur[0]?.id ?? null;
+  const couv = await couverturesDesTours(supabase, premierId ? [premierId] : []);
+  if (!couv.ok) throw new Error(`[collectif] couvertures (BAT) : ${couv.code}`);
+  const rangChoisi = couv.valeur.find((c) => c.id === choisie.couverture_choisie_id)?.rang ?? null;
+
+  const versMagazine = (m: (typeof brutes)[number]): MagazineBatAtelier => ({
+    id: m.id,
+    rang: m.rang,
+    nom: m.nom,
+    bat_valide_le: m.bat_valide_le,
+    couverture:
+      m.id !== choisie.id
+        ? ""
+        : m.couverture_sans_preference
+          ? "Sans préférence : l'atelier choisit"
+          : rangChoisi
+            ? `Proposition ${rangChoisi} choisie`
+            : "Pas encore choisie",
+    couverture_note: m.couverture_note,
+  });
+
+  const tours: TourAtelier[] = await Promise.all(
+    lus.valeur.map(async (t) => {
+      const precedent = precedentDe(lus.valeur, t.numero);
+      return {
+        id: t.id,
+        numero: t.numero,
+        publie: Boolean(t.publie_le),
+        publieTexte: formaterInstantParis(t.publie_le),
+        echeanceLocal: versChampParis(t.echeance_retours),
+        echeanceTexte: formaterInstantParis(t.echeance_retours),
+        nbPages: t.nb_pages,
+        pdf: Boolean(t.pdf_key),
+        pages: await Promise.all(
+          (t.pages ?? []).map(async (p) => ({
+            index: p.index,
+            vignette: await signer(p.vignette_key ?? p.image_key),
+            apparie_a: p.apparie_a,
+            zones: p.zones?.length ?? 0,
+          }))
+        ),
+        resume: t.pages?.length ? resumeTour(t.pages, precedent ? precedent.pages.length : null) : null,
+        precedent: precedent?.numero ?? null,
+      };
+    })
+  );
+
+  /* Les notes ENVOYÉES : un brouillon du client n'est pas encore pour nous. */
+  const ids = lus.valeur.filter((t) => t.publie_le).map((t) => t.id);
+  const { data: notes, error: errNotes } = ids.length
+    ? await supabase
+        .from("collectif_notes")
+        .select("id, tour_id, page_index, type, contenu, envoyee_le, resolue_le, reponse_atelier, retiree_le, created_at")
+        .in("tour_id", ids)
+        .is("retiree_le", null)
+        .order("created_at", { ascending: true })
+    : { data: [], error: null };
+  if (errNotes) echec("notes (BAT)", errNotes);
+  const toutes = (notes ?? []) as Pick<NoteLigne, "id" | "tour_id" | "page_index" | "type" | "contenu" | "envoyee_le" | "resolue_le" | "reponse_atelier" | "created_at">[];
+  const numeroTour = new Map(lus.valeur.map((t) => [t.id, t.numero]));
+  const photosVoulues = toutes
+    .filter((n) => n.envoyee_le && n.type === "photo" && typeof n.contenu?.photo === "string" && estUuid(n.contenu.photo))
+    .map((n) => n.contenu.photo as string);
+  const vignettesPhotos = new Map<string, string | null>();
+  if (photosVoulues.length) {
+    const { data: ph } = await supabase
+      .from("collectif_photos")
+      .select("id, vignette_key, r2_key")
+      .eq("edition_id", id)
+      .in("id", photosVoulues);
+    for (const x of (ph ?? []) as { id: string; vignette_key: string | null; r2_key: string }[]) {
+      vignettesPhotos.set(x.id, await signer(x.vignette_key ?? x.r2_key));
+    }
+  }
+  const notesAtelier: NoteAtelier[] = toutes
+    .map((n, k) => ({ n, numero: k + 1 }))
+    .filter(({ n }) => n.envoyee_le)
+    .map(({ n, numero }) => ({
+      id: n.id,
+      numero,
+      tour: numeroTour.get(n.tour_id) ?? 0,
+      page: n.page_index,
+      type: n.type,
+      resume: resumeNote(n.type, n.contenu ?? {}),
+      photo: typeof n.contenu?.photo === "string" ? vignettesPhotos.get(n.contenu.photo) ?? null : null,
+      envoyeeTexte: formaterInstantParis(n.envoyee_le),
+      resolue: Boolean(n.resolue_le),
+      reponse: n.reponse_atelier,
+    }));
+
+  const couvertures: CouvertureAtelier[] = await Promise.all(
+    couv.valeur.map(async (c) => ({
+      rang: c.rang,
+      legende: c.legende ?? "",
+      c1: await signer(c.image_key),
+      c2: await signer(c.interieur2_key),
+      c3: await signer(c.interieur3_key),
+    }))
+  );
+  const brouillon = tours.find((t) => !t.publie) ?? null;
+  return {
+    absent: false,
+    bat: {
+      ...base,
+      magazines: brutes.map(versMagazine),
+      magazine: versMagazine(choisie),
+      tours,
+      brouillon,
+      couvertures,
+      couverturesModifiables: Boolean(brouillon && !tours.some((t) => t.publie)),
+      notes: notesAtelier,
     },
   };
 }

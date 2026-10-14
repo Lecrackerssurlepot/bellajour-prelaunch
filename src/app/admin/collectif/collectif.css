@@ -347,6 +347,82 @@
   border-bottom: none;
 }
 
+.eca-root .eca-fil {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.eca-root .eca-bulle {
+  max-width: 88%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--bj-veil-8);
+  font-size: var(--bj-fs-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-bulle--atelier {
+  align-self: flex-end;
+  background: var(--bj-action-soft);
+  border-color: var(--bj-action-border);
+}
+.eca-root .eca-bulle-qui {
+  display: block;
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+  margin-bottom: 2px;
+}
+/* Le document cité et la pièce jointe d'un message du client (révision §14.5). */
+.eca-root .eca-bulle-joint {
+  display: block;
+  margin: 4px 0;
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+}
+.eca-root .eca-bulle-joint a {
+  color: var(--bj-action);
+}
+
+.eca-root .eca-mag-liste li.eca-mag-brief {
+  flex-direction: column;
+  gap: 6px;
+}
+.eca-root .eca-mag-ligne {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--bj-sp-3);
+}
+.eca-root .eca-brief {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-bandes {
+  display: flex;
+  height: 14px;
+  width: 140px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.eca-root .eca-bandes > span {
+  flex: 1;
+}
+.eca-root .eca-aimees {
+  display: flex;
+  gap: 6px;
+}
+.eca-root .eca-aimees img {
+  width: 44px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
 /* ─────────────────────────────── les styles ─────────────────────────────── */
 
 .eca-root .eca-styles {
@@ -515,4 +591,111 @@
     border-bottom: none;
     padding: 2px 0;
   }
+}
+
+/* ─────────────────────────── le bon à tirer (phase 5) ─────────────────────────── */
+
+.eca-root .eca-bat-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 10px;
+  margin: 10px 0 16px;
+}
+.eca-root .eca-bat-page {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--bj-charcoal);
+}
+.eca-root .eca-bat-page img,
+.eca-root .eca-bat-page > span {
+  display: block;
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  object-fit: cover;
+  background: rgba(28, 28, 28, 0.06);
+  box-shadow: 0 2px 8px rgba(28, 28, 28, 0.12);
+}
+.eca-root .eca-bat-couvertures {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 14px 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(28, 28, 28, 0.1);
+}
+.eca-root .eca-bat-couv {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.eca-root .eca-bat-faces {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 120px));
+  gap: 10px;
+}
+.eca-root .eca-bat-face {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.eca-root .eca-bat-face-image {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 210 / 297;
+  background: rgba(28, 28, 28, 0.06);
+  border: 1px dashed rgba(28, 28, 28, 0.25);
+  color: rgba(28, 28, 28, 0.5);
+  overflow: hidden;
+}
+.eca-root .eca-bat-face-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.eca-root .eca-bat-note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.eca-root .eca-bat-note-corps {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.eca-root .eca-bat-note-corps img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.eca-root .eca-lien-bat {
+  font-size: 13px;
+}
+.eca-root .eca-bat-propositions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+.eca-root .eca-bat-propositions figure {
+  margin: 0;
+  width: 84px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+.eca-root .eca-bat-propositions img {
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(28, 28, 28, 0.12);
+}
+.eca-root .eca-bat-propositions figure[data-choisie="true"] img {
+  outline: 2px solid var(--bj-terracotta);
+  outline-offset: 2px;
 }

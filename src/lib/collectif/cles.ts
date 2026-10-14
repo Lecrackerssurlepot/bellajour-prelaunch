@@ -82,6 +82,19 @@ export function clePageTour(
   return `${prefixeEdition(editionId)}tours/${exigerUuid(tourId, "tourId")}/pages/${String(index).padStart(3, "0")}.${extension}`;
 }
 
+/** La miniature d'une page (bande de vignettes du lecteur), à côté de la page. */
+export function cleVignettePageTour(editionId: string, tourId: string, index: number, extension: "webp" | "jpg"): string {
+  return clePageTour(editionId, tourId, index, extension).replace(/\.(webp|jpg)$/, `-v.${extension}`);
+}
+
+/**
+ * Les plans de gris des pages d'un tour (`bat.ts`, `encoderGris`) : le tour
+ * suivant les relit pour calculer ses zones modifiées. Jamais servi au client.
+ */
+export function cleGrisTour(editionId: string, tourId: string): string {
+  return `${prefixeEdition(editionId)}tours/${exigerUuid(tourId, "tourId")}/gris.bin`;
+}
+
 /** Une face d'une proposition de couverture : la 1re, la 2e ou la 3e de couverture. */
 export function cleCouverture(
   editionId: string,
@@ -104,6 +117,11 @@ export function cleContenu(editionId: string, contenuId: string, nomOrigine: str
 /** Un document posé par l'atelier (devis signé, facture, proposition…). */
 export function cleDocument(editionId: string, documentId: string, nomOrigine: string): string {
   return `${prefixeEdition(editionId)}documents/${exigerUuid(documentId, "documentId")}.${extensionSure(nomOrigine)}`;
+}
+
+/** La pièce jointe d'un message (révision §14.5), rangée par l'id du message. */
+export function clePieceJointe(editionId: string, messageId: string, nomOrigine: string): string {
+  return `${prefixeEdition(editionId)}messages/${exigerUuid(messageId, "messageId")}.${extensionSure(nomOrigine)}`;
 }
 
 /** Une image d'un style du mur. Les styles n'appartiennent à aucune édition. */

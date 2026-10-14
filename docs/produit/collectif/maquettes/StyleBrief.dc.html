@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Vos briefs de style</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@400;500;600&family=Fraunces:ital,wght@0,400;1,400&display=swap">
+<style>body{margin:0;background:#050505}a{color:var(--accent)}</style>
+</helmet>
+<div style="--bg: {{ th.bg }}; --panel: {{ th.panel }}; --surface: {{ th.surface }}; --line: {{ th.line }}; --text: {{ th.text }}; --muted: {{ th.muted }}; --faint: {{ th.faint }}; --accent: {{ th.accent }}; --accent-soft: {{ th.accentSoft }}; --on-accent: {{ th.onAccent }}; --page: {{ th.page }}; --glass: {{ th.glass }}; --fg: {{ th.text }}; --bgc: {{ th.bg }}; --fg-rgb: {{ th.fgRgb }}; --ac-rgb: {{ th.acRgb }}; height: 900px; overflow: hidden; display: flex; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; transition: background 0.3s, color 0.3s">
+  <aside aria-label="Navigation" style="flex: none; width: 232px; box-sizing: border-box; height: 100%; border-right: 1px solid var(--line); background: var(--panel); padding: 22px 12px 16px; display: flex; flex-direction: column; gap: 18px">
+    <img src="{{ th.logo }}" alt="Bellajour" style="width: 116px; height: auto; margin: 0 12px 4px">
+    <button type="button" aria-label="Changer d'édition" style="padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-family: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px">
+      <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">Séminaire d'automne</span><span style="font-size: 12px; color: var(--muted)">Maison Aubier</span></span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5-5 5 5M7 14l5 5 5-5"></path></svg>
+    </button>
+    <nav style="display: flex; flex-direction: column; gap: 2px">
+      <a href="Espace.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>Tableau de bord</a>
+      <a href="Styles.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--text); background: var(--accent-soft); font-weight: 600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><circle cx="12" cy="12" r="9"></circle><circle cx="8" cy="10.5" r="1.3"></circle><circle cx="12" cy="7.5" r="1.3"></circle><circle cx="16" cy="10.5" r="1.3"></circle><path d="M12 21a3 3 0 0 1 0-6h2"></path></svg>Style</a>
+      <a href="Collecte.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="M21 16l-5-5-9 8"></path></svg>Photos</a>
+      <span role="link" aria-disabled="true" title="Disponible à la réception du premier bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--faint); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 5h6.5A2.5 2.5 0 0 1 12 7.5V20a2 2 0 0 0-2-2H3z"></path><path d="M21 5h-6.5A2.5 2.5 0 0 0 12 7.5V20a2 2 0 0 1 2-2h7z"></path></svg>Bon à tirer<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+      <span role="link" aria-disabled="true" title="Disponible après la validation du bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--faint); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 6h11v10H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="1.8"></circle><circle cx="17" cy="18" r="1.8"></circle></svg>Livraison<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+    </nav>
+    <div style="height: 1px; margin: 0 12px; background: var(--line)"></div>
+    <nav style="display: flex; flex-direction: column; gap: 2px">
+      <a href="RendezVous.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M4 5h16v11H9l-5 4z"></path></svg>Parler à l'atelier<span style="margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center">1</span></a>
+      <a href="Dossier.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path><path d="M9 13h6M9 17h6"></path></svg>Documents</a>
+    </nav>
+    <div style="margin-top: auto; padding: 12px 12px 0; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+      <span style="flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft); display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px">ML</span>
+      <span style="flex: 1; display: flex; flex-direction: column; min-width: 0"><span style="font-size: 13px">Marion Lefèvre</span><span style="font-size: 11px; color: var(--muted)">Responsable du BAT</span></span>
+      <button type="button" onClick="{{ basculerTheme }}" title="{{ themeTitre }}" aria-label="{{ themeTitre }}" style="flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">
+        <sc-if value="{{ estNuit }}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+        <sc-if value="{{ estJour }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg></sc-if>
+      </button>
+    </div>
+  </aside>
+  <div style="flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; position: relative">
+    <header style="flex: none; height: 68px; box-sizing: border-box; padding: 0 32px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px">
+      <a href="Styles.dc.html" style="font-family: 'Cormorant Garamond', serif; font-size: 30px; color: var(--muted); text-decoration: none">Le style</a><span style="font-family: 'Cormorant Garamond', serif; font-size: 30px; color: var(--faint)">/</span><span style="font-family: 'Cormorant Garamond', serif; font-size: 30px">Vos briefs</span>
+      <a href="Styles.dc.html" style="margin-left: auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500">Explorer le mur des styles</a>
+    </header>
+    <div style="flex: none; height: 52px; padding: 0 32px; border-bottom: 1px solid var(--line); display: flex; align-items: flex-end; gap: 26px">
+      <sc-for list="{{ mags }}" as="m" hint-placeholder-count="2">
+        <button type="button" onClick="{{ m.choisir }}" aria-pressed="{{ m.actif }}" style="height: 52px; padding: 0 2px; border: 0; border-bottom: 2px solid {{ m.bord }}; background: transparent; color: {{ m.couleur }}; font-family: inherit; font-size: 14px; font-weight: {{ m.poids }}; cursor: pointer">{{ m.label }}</button>
+      </sc-for>
+      <span style="margin-left: auto; padding-bottom: 16px; font-size: 12px; color: var(--muted)">Chaque partie se modifie ici, sans repasser par tout le style</span>
+    </div>
+
+    <main style="flex: 1; min-height: 0; display: grid; grid-template-columns: 340px minmax(0, 1fr)">
+      <aside style="border-right: 1px solid var(--line); padding: 28px; display: flex; flex-direction: column; gap: 18px; align-items: center">
+        <div style="width: 220px; aspect-ratio: 210 / 297; background: {{ P.fond }}; padding: 9%; box-sizing: border-box; display: flex; flex-direction: column; gap: 7%; box-shadow: 0 30px 60px rgba(0,0,0,0.4); transition: background 0.3s">
+          <span style="font-family: 'Fraunces', serif; font-size: 30px; line-height: 0.95; color: {{ P.encre }}">Cap au large</span>
+          <span style="flex: 1; background: linear-gradient(135deg, {{ P.accent }}, {{ P.douce }})"></span>
+          <span style="font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase; color: {{ P.encre }}">Le séminaire · 2026</span>
+        </div>
+        <div style="text-align: center; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted)">Style</span><span style="font-family: 'Fraunces', serif; font-style: italic; font-size: 40px; line-height: 1">Riviera</span></div>
+        <p style="margin: 0; font-size: 12px; color: var(--muted); text-align: center">L'intérieur suit ce style. Seule la couverture peut venir d'un autre.</p>
+        <a href="Styles.dc.html" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500">Changer de style</a>
+        <span style="margin-top: auto; font-size: 12px; color: var(--muted)">Enregistré à chaque modification</span>
+      </aside>
+
+      <section style="padding: 24px 32px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto minmax(0, 1fr) auto; gap: 18px; min-height: 0">
+        <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; justify-content: space-between"><span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted)">1 · Palette</span><span style="font-size: 12px; color: var(--accent)">✓</span></div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap"><sc-for list="{{ palettes }}" as="p" hint-placeholder-count="3">
+            <button type="button" onClick="{{ p.choisir }}" aria-pressed="{{ p.actif }}" style="height: 44px; padding: 0 14px 0 6px; border-radius: 999px; border: 1px solid {{ p.bord }}; background: {{ p.fondB }}; color: var(--text); font-family: inherit; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px"><span style="display: flex"><span style="width: 14px; height: 30px; border-radius: 15px 0 0 15px; background: {{ p.c1 }}"></span><span style="width: 14px; height: 30px; background: {{ p.c2 }}"></span><span style="width: 14px; height: 30px; border-radius: 0 15px 15px 0; background: {{ p.c3 }}"></span></span>{{ p.nom }}</button>
+          </sc-for></div>
+        </div>
+        <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; justify-content: space-between"><span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted)">2 · Le texte</span><span style="font-size: 12px; color: var(--accent)">✓</span></div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 12px; border: 1px solid var(--line)"><sc-for list="{{ textes }}" as="x" hint-placeholder-count="3">
+            <button type="button" onClick="{{ x.choisir }}" aria-pressed="{{ x.actif }}" style="min-height: 38px; border: 0; border-radius: 9px; background: {{ x.fond }}; color: {{ x.texte }}; font-family: inherit; font-size: 13px; cursor: pointer">{{ x.label }}</button>
+          </sc-for></div>
+        </div>
+
+        <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px; display: flex; flex-direction: column; gap: 14px; min-height: 0">
+          <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted)">3 · Doubles pages préférées · {{ nbDoubles }}</span><button type="button" onClick="{{ ouvrirDoubles }}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500; height: 32px; font-size: 13px">Modifier</button></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start"><sc-for list="{{ doublesChoisies }}" as="D" hint-placeholder-count="2"><div style="display: flex; flex-direction: column; gap: 6px"><span style="display: flex; width: 100%; aspect-ratio: 420 / 297; background: {{ D.fond }}; flex-direction: {{ D.sens }}; padding: 5%; box-sizing: border-box; gap: 5%; outline: 2px solid {{ D.cadre }}; outline-offset: 3px">
+                <span style="flex: {{ D.fp }}; background: {{ D.photo }}"></span>
+                <span style="flex: 1; display: flex; flex-direction: column; gap: 6%"><span style="font-family: 'Fraunces', serif; font-size: {{ D.taille }}; line-height: 1; color: {{ D.encre }}">{{ D.titre }}</span><span style="height: 2px; width: 80%; background: {{ D.encre }}; opacity: 0.3"></span><span style="height: 2px; width: 60%; background: {{ D.encre }}; opacity: 0.3"></span></span>
+              </span><span style="font-size: 12px">{{ D.nom }}</span></div></sc-for></div>
+        </div>
+        <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px; display: flex; flex-direction: column; gap: 14px; min-height: 0">
+          <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted)">4 · Couvertures aimées · {{ nbCouvs }} sur 2</span><button type="button" onClick="{{ ouvrirCouvs }}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500; height: 32px; font-size: 13px">Modifier</button></div>
+          <div style="display: flex; gap: 14px"><sc-for list="{{ couvsChoisies }}" as="c" hint-placeholder-count="2">
+            <div style="display: flex; flex-direction: column; gap: 6px; width: 96px"><span style="position: relative; width: 96px; aspect-ratio: 210 / 297; background: {{ c.fond }}; padding: 10%; box-sizing: border-box; display: flex; flex-direction: column; gap: 8%"><span style="font-family: 'Fraunces', serif; font-size: 12px; color: {{ c.encre }}">Cap au large</span><span style="flex: 1; background: {{ c.photo }}"></span></span><span style="font-size: 11px; color: var(--muted)">{{ c.style }}</span></div>
+          </sc-for></div>
+          <span style="font-size: 12px; color: var(--muted)">Facultatif. Une couverture d'un autre style ne change que la couverture.</span>
+        </div>
+
+        <div style="grid-column: 1 / -1; display: flex; align-items: center; gap: 14px">
+          <span style="flex: 1; color: var(--muted); font-size: 13px">{{ resume }}</span>
+          <button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; height: 46px">Valider le brief du magazine 1</button>
+        </div>
+      </section>
+    </main>
+
+    <sc-if value="{{ tiroir }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; inset: 0; z-index: 20; background: rgba(0,0,0,0.25); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; justify-content: flex-end">
+        <section role="dialog" aria-label="{{ tiroirTitre }}" style="width: 560px; height: 100%; box-sizing: border-box; background: var(--glass); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px); border-left: 1px solid rgba(var(--fg-rgb), 0.14); display: flex; flex-direction: column">
+          <div style="flex: none; padding: 22px 26px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--line)"><span style="font-family: 'Cormorant Garamond', serif; font-size: 28px">{{ tiroirTitre }}</span><span style="font-size: 12px; color: var(--muted)">{{ tiroirAide }}</span></div>
+          <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 22px 26px">
+            <sc-if value="{{ tDoubles }}" hint-placeholder-val="{{ true }}">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px"><sc-for list="{{ doubles }}" as="D" hint-placeholder-count="5">
+                <button type="button" onClick="{{ D.choisir }}" aria-pressed="{{ D.choisie }}" style="border: 0; background: transparent; padding: 0; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; color: var(--text); font-family: inherit"><span style="display: flex; width: 100%; aspect-ratio: 420 / 297; background: {{ D.fond }}; flex-direction: {{ D.sens }}; padding: 5%; box-sizing: border-box; gap: 5%; outline: 2px solid {{ D.cadre }}; outline-offset: 3px">
+                <span style="flex: {{ D.fp }}; background: {{ D.photo }}"></span>
+                <span style="flex: 1; display: flex; flex-direction: column; gap: 6%"><span style="font-family: 'Fraunces', serif; font-size: {{ D.taille }}; line-height: 1; color: {{ D.encre }}">{{ D.titre }}</span><span style="height: 2px; width: 80%; background: {{ D.encre }}; opacity: 0.3"></span><span style="height: 2px; width: 60%; background: {{ D.encre }}; opacity: 0.3"></span></span>
+              </span><span style="font-size: 13px; font-weight: 600">{{ D.nom }}</span><span style="font-size: 12px; color: var(--muted)">{{ D.legende }}</span></button>
+              </sc-for></div>
+            </sc-if>
+            <sc-if value="{{ tCouvs }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 6px; margin-bottom: 16px"><sc-for list="{{ filtresStyle }}" as="f" hint-placeholder-count="4"><button type="button" onClick="{{ f.choisir }}" style="height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid {{ f.bord }}; background: {{ f.fond }}; color: {{ f.couleur }}; font-family: inherit; font-size: 12px; cursor: pointer">{{ f.label }}</button></sc-for></div>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px"><sc-for list="{{ couvsTout }}" as="c" hint-placeholder-count="6">
+                <button type="button" onClick="{{ c.choisir }}" aria-pressed="{{ c.aimee }}" style="border: 0; background: transparent; padding: 0; cursor: pointer; display: flex; flex-direction: column; gap: 6px; color: var(--text); font-family: inherit; text-align: left">
+                  <span style="width: 100%; aspect-ratio: 210 / 297; background: {{ c.fond }}; padding: 10%; box-sizing: border-box; display: flex; flex-direction: column; gap: 8%; outline: 2px solid {{ c.cadre }}; outline-offset: 3px"><span style="font-family: 'Fraunces', serif; font-size: 13px; color: {{ c.encre }}">Cap au large</span><span style="flex: 1; background: {{ c.photo }}"></span></span>
+                  <span style="font-size: 12px; color: var(--muted)">{{ c.style }}{{ c.marque }}</span>
+                </button>
+              </sc-for></div>
+            </sc-if>
+          </div>
+          <div style="flex: none; padding: 16px 26px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end"><button type="button" onClick="{{ fermer }}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; height: 44px">Terminé</button></div>
+        </section>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const TH = {
+      nuit: { bg: '#050505', panel: '#0a0a0a', surface: 'rgba(255,255,255,0.04)', line: 'rgba(255,255,255,0.10)', text: '#ffffff', muted: 'rgba(255,255,255,0.64)', faint: 'rgba(255,255,255,0.34)', accent: '#d68a63', accentSoft: 'rgba(214,138,99,0.16)', onAccent: '#050505', page: '#ffffff', glass: 'rgba(20,20,20,0.66)', logo: 'assets/logo-cuivre.png', fgRgb: '255,255,255', acRgb: '214,138,99' },
+      jour: { bg: '#f3ece2', panel: '#ece3d6', surface: '#fbf8f3', line: 'rgba(28,28,28,0.10)', text: '#1c1c1c', muted: 'rgba(28,28,28,0.62)', faint: 'rgba(28,28,28,0.34)', accent: '#1d5bb0', accentSoft: 'rgba(29,91,176,0.10)', onAccent: '#ffffff', page: '#ffffff', glass: 'rgba(251,248,243,0.72)', logo: 'assets/logo-bleu.png', fgRgb: '28,28,28', acRgb: '29,91,176' }
+    };
+    const jour = s.jour !== undefined ? s.jour : false;
+    const th = jour ? TH.jour : TH.nuit;
+    const modes = { basculerTheme: () => this.setState({ jour: !jour }), estNuit: !jour, estJour: jour, themeTitre: jour ? 'Passer en mode nuit' : 'Passer en mode jour' };
+    const PAL = {
+      sable: { nom: 'Sable', fond: '#e9dcc6', encre: '#1d3557', accent: '#2f5d8a', douce: '#f6efe3' },
+      marine: { nom: 'Marine', fond: '#1d3557', encre: '#f6efe3', accent: '#7fa7c9', douce: '#2f5d8a' },
+      ecume: { nom: 'Écume', fond: '#f6efe3', encre: '#2f5d8a', accent: '#9fb7c9', douce: '#e9dcc6' }
+    };
+    const cle = s.palette || 'marine';
+    const P = PAL[cle];
+    const palettes = Object.keys(PAL).map((k) => ({ nom: PAL[k].nom, actif: k === cle, c1: PAL[k].fond, c2: PAL[k].encre, c3: PAL[k].accent, bord: k === cle ? 'var(--accent)' : 'var(--line)', fondB: k === cle ? 'var(--accent-soft)' : 'transparent', choisir: () => this.setState({ palette: k }) }));
+    const texte = s.texte || 'peu';
+    const textes = [['peu', 'Surtout des photos'], ['unpeu', 'Un peu de texte'], ['beaucoup', 'Beaucoup']].map((o) => ({ label: o[1], actif: texte === o[0], fond: texte === o[0] ? 'var(--text)' : 'transparent', texte: texte === o[0] ? 'var(--bg)' : 'var(--text)', choisir: () => this.setState({ texte: o[0] }) }));
+    const ph = (a, b, g) => 'linear-gradient(' + g + 'deg, ' + a + ', ' + b + ')';
+    const choisies = s.doubles || ['aeree', 'audacieuse'];
+    const BASE = [
+      ['aeree', 'Aérée', 'Une grande photo, beaucoup de blanc.', 'Jour un', 'row', '1.8', '13px', P.douce, P.encre],
+      ['equilibree', 'Équilibrée', 'Photos et texte à parts égales.', 'La traversée', 'row-reverse', '1', '13px', P.douce, P.encre],
+      ['dense', 'Dense', 'Beaucoup de photos, en mosaïque.', 'Le soir', 'row', '2.4', '11px', P.fond, P.encre],
+      ['recit', 'Récit', 'Une page de texte, une photo en regard.', 'Le mot', 'row-reverse', '0.8', '12px', P.douce, P.encre],
+      ['audacieuse', 'Audacieuse', 'Photo coupée, titre géant.', 'CAP', 'row', '0.6', '30px', P.encre, P.fond]
+    ];
+    const doubles = BASE.map((d) => {
+      const choisie = choisies.indexOf(d[0]) !== -1;
+      return { nom: d[1], legende: d[2], titre: d[3], sens: d[4], fp: d[5], taille: d[6], fond: d[7], encre: d[8], photo: ph(P.accent, P.douce, 135), choisie: choisie, cadre: choisie ? 'var(--accent)' : 'transparent',
+        choisir: () => this.setState({ doubles: choisie ? choisies.filter((x) => x !== d[0]) : choisies.concat([d[0]]) }) };
+    });
+    const doublesChoisies = doubles.filter((d) => d.choisie).map((d) => Object.assign({}, d, { cadre: 'transparent' }));
+    const COUVS = [
+      ['r1', 'Riviera', '#1d3557', '#f6efe3', ph('#7fa7c9', '#f6efe3', 135)], ['r2', 'Riviera', '#e9dcc6', '#1d3557', ph('#2f5d8a', '#f6efe3', 160)],
+      ['n1', 'Nuit', '#0d0d0d', '#ffffff', ph('rgba(214,138,99,0.7)', 'rgba(214,138,99,0.1)', 200)], ['n2', 'Nuit', '#1a1410', '#e9c9a8', ph('#5a3a2a', '#0d0d0d', 160)],
+      ['a1', 'Atelier', '#efe9df', '#1c1c1c', ph('rgba(28,28,28,0.7)', 'rgba(28,28,28,0.15)', 160)], ['a2', 'Atelier', '#ffffff', '#1c1c1c', ph('#b9b1a6', '#efe9df', 135)]
+    ];
+    const aimees = s.couvs || ['r1', 'n1'];
+    const fs = s.fStyle || 'Tous';
+    const couvsTout = COUVS.filter((c) => fs === 'Tous' || c[1] === fs).map((c) => {
+      const aimee = aimees.indexOf(c[0]) !== -1;
+      return { style: c[1], fond: c[2], encre: c[3], photo: c[4], aimee: aimee, cadre: aimee ? 'var(--accent)' : 'transparent', marque: aimee ? ' · aimée' : '',
+        choisir: () => { if (aimee) this.setState({ couvs: aimees.filter((x) => x !== c[0]) }); else if (aimees.length < 2) this.setState({ couvs: aimees.concat([c[0]]) }); else this.setState({ couvs: [aimees[1], c[0]] }); } };
+    });
+    const couvsChoisies = COUVS.filter((c) => aimees.indexOf(c[0]) !== -1).map((c) => ({ style: c[1] === 'Riviera' ? 'Riviera' : c[1] + ' · couverture seule', fond: c[2], encre: c[3], photo: c[4] }));
+    const filtresStyle = ['Tous', 'Riviera', 'Nuit', 'Atelier'].map((f) => ({ label: f, bord: fs === f ? 'var(--text)' : 'var(--line)', fond: fs === f ? 'var(--text)' : 'transparent', couleur: fs === f ? 'var(--bg)' : 'var(--text)', choisir: () => this.setState({ fStyle: f }) }));
+    const tiroir = s.tiroir || null;
+    const mag = s.mag || 1;
+    const mags = [[1, 'Magazine 1 · Le séminaire · Riviera'], [2, 'Magazine 2 · La soirée · à choisir']].map((m) => ({ label: m[1], actif: mag === m[0], bord: mag === m[0] ? 'var(--accent)' : 'transparent', couleur: mag === m[0] ? 'var(--text)' : 'var(--muted)', poids: mag === m[0] ? '600' : '400', choisir: () => m[0] === 2 ? null : this.setState({ mag: m[0] }) }));
+    return Object.assign({ th: th }, modes, {
+      P: P, palettes: palettes, textes: textes, doubles: doubles, doublesChoisies: doublesChoisies, nbDoubles: String(doublesChoisies.length),
+      couvsTout: couvsTout, couvsChoisies: couvsChoisies, nbCouvs: String(aimees.length), filtresStyle: filtresStyle, mags: mags,
+      resume: 'Riviera, palette ' + P.nom + ' · ' + doublesChoisies.map((d) => d.nom).join(' et ') + ' · ' + aimees.length + ' couverture' + (aimees.length > 1 ? 's' : '') + ' aimée' + (aimees.length > 1 ? 's' : ''),
+      tiroir: !!tiroir, tDoubles: tiroir === 'doubles', tCouvs: tiroir === 'couvs',
+      tiroirTitre: tiroir === 'couvs' ? 'Couvertures aimées' : 'Doubles pages préférées',
+      tiroirAide: tiroir === 'couvs' ? 'deux au plus, de n’importe quel style' : 'une à cinq, dans le style Riviera',
+      ouvrirDoubles: () => this.setState({ tiroir: 'doubles' }), ouvrirCouvs: () => this.setState({ tiroir: 'couvs' }), fermer: () => this.setState({ tiroir: null })
+    });
+  }
+}
+</script>
+</body>
+</html>

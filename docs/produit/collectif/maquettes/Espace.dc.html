@@ -2,192 +2,277 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Tableau de bord de l'édition</title>
+<title>Tableau de bord</title>
 <script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@400;500;600&family=Fraunces:ital,wght@0,400;1,400&display=swap">
-<style>
-body{margin:0;background:#050505}
-a{color:#d68a63}a:hover{color:#ffffff}
-</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@400;500;600&family=Fraunces:ital,wght@0,400;1,400&display=swap">
+<style>body{margin:0;background:#050505}a{color:var(--accent)}</style>
 </helmet>
-<div style="min-height: 1080px; box-sizing: border-box; background: #050505; color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.5; display: flex">
-  <aside aria-label="Navigation de l'espace" style="flex: none; width: 248px; box-sizing: border-box; border-right: 1px solid rgba(255,255,255,0.10); background: #050505; padding: 22px 14px; display: flex; flex-direction: column; gap: 22px">
-    <span style="padding: 0 14px; font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; color: #ffffff">Bellajour</span>
-    <button type="button" aria-label="Changer d'édition" style="margin: 0 2px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); color: #ffffff; font-family: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px">
-      <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">Séminaire d'automne</span><span style="font-size: 12px; color: rgba(255,255,255,0.56)">Maison Aubier</span></span>
+<div style="--bg: {{ th.bg }}; --panel: {{ th.panel }}; --surface: {{ th.surface }}; --line: {{ th.line }}; --text: {{ th.text }}; --muted: {{ th.muted }}; --faint: {{ th.faint }}; --accent: {{ th.accent }}; --accent-soft: {{ th.accentSoft }}; --on-accent: {{ th.onAccent }}; --page: {{ th.page }}; --glass: {{ th.glass }}; --fg: {{ th.text }}; --bgc: {{ th.bg }}; --fg-rgb: {{ th.fgRgb }}; --ac-rgb: {{ th.acRgb }}; height: 900px; overflow: hidden; display: flex; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; transition: background 0.3s, color 0.3s">
+  <aside aria-label="Navigation" style="flex: none; width: 232px; box-sizing: border-box; height: 100%; border-right: 1px solid var(--line); background: var(--panel); padding: 22px 12px 16px; display: flex; flex-direction: column; gap: 18px">
+    <img src="{{ th.logo }}" alt="Bellajour" style="width: 116px; height: auto; margin: 0 12px 4px">
+    <button type="button" aria-label="Changer d'édition" style="padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-family: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px">
+      <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">Séminaire d'automne</span><span style="font-size: 12px; color: var(--muted)">Maison Aubier</span></span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5-5 5 5M7 14l5 5 5-5"></path></svg>
     </button>
-    <nav style="display: flex; flex-direction: column; gap: 4px">
-        <a href="Espace.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: #ffffff; background: rgba(214,138,99,0.16); font-weight: 600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>Tableau de bord</a>
-        <a href="Styles.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><circle cx="12" cy="12" r="9"></circle><circle cx="8" cy="10.5" r="1.3"></circle><circle cx="12" cy="7.5" r="1.3"></circle><circle cx="16" cy="10.5" r="1.3"></circle><path d="M12 21a3 3 0 0 1 0-6h2"></path></svg>Style</a>
-        <a href="Collecte.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="M21 16l-5-5-9 8"></path></svg>Photos</a>
-        <span role="link" aria-disabled="true" title="Disponible à la réception du premier bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; font-size: 15px; color: rgba(255,255,255,0.32); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 5h6.5A2.5 2.5 0 0 1 12 7.5V20a2 2 0 0 0-2-2H3z"></path><path d="M21 5h-6.5A2.5 2.5 0 0 0 12 7.5V20a2 2 0 0 1 2-2h7z"></path></svg>Bon à tirer<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
-        <span role="link" aria-disabled="true" title="Disponible après la validation du bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; font-size: 15px; color: rgba(255,255,255,0.32); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 6h11v10H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="1.8"></circle><circle cx="17" cy="18" r="1.8"></circle></svg>Livraison<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+    <nav style="display: flex; flex-direction: column; gap: 2px">
+      <a href="Espace.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--text); background: var(--accent-soft); font-weight: 600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>Tableau de bord</a>
+      <a href="Styles.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><circle cx="12" cy="12" r="9"></circle><circle cx="8" cy="10.5" r="1.3"></circle><circle cx="12" cy="7.5" r="1.3"></circle><circle cx="16" cy="10.5" r="1.3"></circle><path d="M12 21a3 3 0 0 1 0-6h2"></path></svg>Style</a>
+      <a href="Collecte.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="M21 16l-5-5-9 8"></path></svg>Photos</a>
+      <span role="link" aria-disabled="true" title="Disponible à la réception du premier bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--faint); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 5h6.5A2.5 2.5 0 0 1 12 7.5V20a2 2 0 0 0-2-2H3z"></path><path d="M21 5h-6.5A2.5 2.5 0 0 0 12 7.5V20a2 2 0 0 1 2-2h7z"></path></svg>Bon à tirer<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+      <span role="link" aria-disabled="true" title="Disponible après la validation du bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--faint); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 6h11v10H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="1.8"></circle><circle cx="17" cy="18" r="1.8"></circle></svg>Livraison<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
     </nav>
-    <div style="height: 1px; margin: 0 14px; background: rgba(255,255,255,0.10)"></div>
-    <nav style="display: flex; flex-direction: column; gap: 4px">
-        <a href="Dossier.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path><path d="M9 13h6M9 17h6"></path></svg>Votre dossier</a>
-        <a href="RendezVous.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M4 5h16v11H9l-5 4z"></path></svg>Parler à l'atelier</a>
+    <div style="height: 1px; margin: 0 12px; background: var(--line)"></div>
+    <nav style="display: flex; flex-direction: column; gap: 2px">
+      <a href="RendezVous.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M4 5h16v11H9l-5 4z"></path></svg>Parler à l'atelier<span style="margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center">1</span></a>
+      <a href="Dossier.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path><path d="M9 13h6M9 17h6"></path></svg>Documents</a>
     </nav>
-    <div style="margin-top: auto; padding: 14px; border-top: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center; gap: 12px">
-      <span style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: rgba(214,138,99,0.18); display: inline-flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 600; font-size: 14px">ML</span>
-      <span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 14px; color: #ffffff">Marion Lefèvre</span><span style="font-size: 12px; color: rgba(255,255,255,0.56)">Responsable du bon à tirer</span></span>
+    <div style="margin-top: auto; padding: 12px 12px 0; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+      <span style="flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft); display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px">ML</span>
+      <span style="flex: 1; display: flex; flex-direction: column; min-width: 0"><span style="font-size: 13px">Marion Lefèvre</span><span style="font-size: 11px; color: var(--muted)">Responsable du BAT</span></span>
+      <button type="button" onClick="{{ basculerTheme }}" title="{{ themeTitre }}" aria-label="{{ themeTitre }}" style="flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">
+        <sc-if value="{{ estNuit }}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+        <sc-if value="{{ estJour }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg></sc-if>
+      </button>
     </div>
   </aside>
+  <div style="flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; position: relative">
+    <header style="flex: none; height: 68px; box-sizing: border-box; padding: 0 32px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 20px">
+      <div style="display: flex; align-items: baseline; gap: 14px; min-width: 0"><h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 30px; line-height: 1; white-space: nowrap">Séminaire d'automne</h1><span style="color: var(--muted); font-size: 13px; white-space: nowrap">Bonjour Marion</span></div>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 10px"><span style="display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 999px; background: var(--accent-soft); font-size: 13px"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--accent)"></span>Tout avant le 4 octobre · dans 6 jours</span></div>
+    </header>
 
-  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative">
-  <main style="flex: 1; padding: 36px 56px 56px; background: radial-gradient(60% 40% at 85% -5%, rgba(214,138,99,0.12) 0%, rgba(5,5,5,0) 70%); display: flex; flex-direction: column; gap: 30px">
+    <main style="flex: 1; min-height: 0; padding: 12px 32px 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+      <div style="flex: none; display: flex; justify-content: flex-end"><div style="display: flex; align-items: center; gap: 4px; padding: 3px; border: 1px dashed var(--line); border-radius: 999px; font-size: 11px; color: var(--muted)"><span style="padding: 0 6px">Maquette · style</span><sc-for list="{{ etatsStyle }}" as="e" hint-placeholder-count="2"><button type="button" onClick="{{ e.choisir }}" style="height: 24px; padding: 0 10px; border: 0; border-radius: 999px; background: {{ e.fond }}; color: {{ e.texte }}; font-family: inherit; font-size: 11px; cursor: pointer">{{ e.label }}</button></sc-for><span style="padding: 0 6px">photos</span><sc-for list="{{ etats }}" as="e" hint-placeholder-count="3"><button type="button" onClick="{{ e.choisir }}" style="height: 24px; padding: 0 10px; border: 0; border-radius: 999px; background: {{ e.fond }}; color: {{ e.texte }}; font-family: inherit; font-size: 11px; cursor: pointer">{{ e.label }}</button></sc-for></div></div>
+      <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px">
 
-    <div style="align-self: flex-end; display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 14px; border: 1px dashed rgba(214,138,99,0.6); border-radius: 999px; font-size: 13px; color: rgba(255,255,255,0.72)">
-      Maquette seulement · voir l'écran
-      <sc-for list="{{ etats }}" as="e" hint-placeholder-count="2">
-        <button type="button" onClick="{{ e.choisir }}" aria-pressed="{{ e.actif }}" style="height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: {{ e.fond }}; color: {{ e.texte }}; font-family: inherit; font-size: 13px; cursor: pointer">{{ e.label }}</button>
-      </sc-for>
-    </div>
-
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 24px">
-      <div style="display: flex; flex-direction: column; gap: 6px">
-        <span style="color: rgba(255,255,255,0.72)">Bonjour Marion</span>
-        <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 64px; line-height: 0.95">Séminaire d'automne</h1>
-      </div>
-      <div style="flex: 0 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
-        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px"><span>Tout avant le <strong>4 octobre</strong></span><span style="color: #d68a63">dans 6 jours</span></div>
-        <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px">
-          <span style="height: 4px; border-radius: 2px; background: #ffffff"></span>
-          <span style="height: 4px; border-radius: 2px; background: #ffffff"></span>
-          <span style="height: 4px; border-radius: 2px; background: #d68a63"></span>
-          <span style="height: 4px; border-radius: 2px; background: rgba(255,255,255,0.14)"></span>
-          <span style="height: 4px; border-radius: 2px; background: rgba(255,255,255,0.14)"></span>
-          <span style="height: 4px; border-radius: 2px; background: rgba(255,255,255,0.14)"></span>
-        </div>
-        <span style="font-size: 13px; color: rgba(255,255,255,0.56)">Étape 3 sur 6 · Style et photos. Ensuite : composition, bon à tirer, impression, livraison.</span>
-      </div>
-    </div>
-
-    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: stretch">
-
-      <section style="border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; background: rgba(255,255,255,0.03); padding: 32px; display: flex; flex-direction: column; gap: 22px">
-        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px">
-          <span style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #d68a63">1 · Le style</span>
-          <span style="font-size: 13px; color: rgba(255,255,255,0.56)">{{ styleEtat }}</span>
-        </div>
-        <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 36px; line-height: 1.05">{{ styleTitre }}</h2>
-
-        <sc-if value="{{ depart }}" hint-placeholder-val="{{ true }}">
-          <div style="position: relative; height: 230px">
-            <div style="position: absolute; left: 0; top: 18px; width: 34%; aspect-ratio: 210 / 297; background: #1d3557; padding: 7%; box-sizing: border-box; display: flex; flex-direction: column; gap: 8%; box-shadow: 0 24px 50px rgba(0,0,0,0.7); transform: rotate(-4deg)"><span style="font-family: 'Fraunces', serif; font-style: italic; font-size: 22px; line-height: 1; color: #f6efe3">Riviera</span><span style="flex: 1; background: linear-gradient(135deg, #7fa7c9, #f6efe3)"></span></div>
-            <div style="position: absolute; left: 30%; top: 0; width: 36%; aspect-ratio: 210 / 297; background: #0d0d0d; padding: 7%; box-sizing: border-box; display: flex; flex-direction: column-reverse; gap: 8%; box-shadow: 0 30px 60px rgba(0,0,0,0.8); z-index: 1"><span style="font-family: 'Cormorant Garamond', serif; font-size: 24px; line-height: 1; color: #ffffff">Nuit</span><span style="flex: 1; background: linear-gradient(200deg, rgba(214,138,99,0.7), rgba(214,138,99,0.1))"></span></div>
-            <div style="position: absolute; left: 62%; top: 26px; width: 34%; aspect-ratio: 210 / 297; background: #ffffff; padding: 7%; box-sizing: border-box; display: flex; flex-direction: column; gap: 8%; box-shadow: 0 24px 50px rgba(0,0,0,0.7); transform: rotate(5deg)"><span style="font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 16px; letter-spacing: 0.1em; color: #050505">ATELIER</span><span style="flex: 1; background: linear-gradient(160deg, rgba(5,5,5,0.7), rgba(5,5,5,0.15))"></span></div>
-          </div>
-          <p style="margin: 0; color: rgba(255,255,255,0.72)">Parcourez le mur, ouvrez un style, choisissez sa palette et vos doubles pages préférées. Un style par magazine.</p>
-        </sc-if>
-
-        <sc-if value="{{ enCours }}" hint-placeholder-val="{{ false }}">
-          <div style="display: flex; flex-direction: column; gap: 12px">
-            <div style="display: flex; align-items: center; gap: 16px; padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12)">
-              <span style="flex: none; width: 56px; aspect-ratio: 210 / 297; background: #1d3557; box-shadow: 0 10px 24px rgba(0,0,0,0.6); display: flex; align-items: flex-end; padding: 6px; box-sizing: border-box"><span style="width: 100%; height: 40%; background: linear-gradient(135deg, #7fa7c9, #f6efe3)"></span></span>
-              <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 13px; color: rgba(255,255,255,0.56)">Magazine 1 · Le séminaire</span><span style="font-weight: 600">Riviera, palette Marine</span></span>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>
+        <section style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 26px; display: flex; flex-direction: column; gap: 18px; min-height: 0">
+          <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); color: var(--accent)">1 · Le style</span><span style="font-size: 12px; color: var(--muted)">{{ styleEtat }}</span></div>
+          <sc-if value="{{ sVide }}" hint-placeholder-val="{{ true }}">
+            <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 34px; line-height: 1.05">Choisissez l'univers de vos magazines</h2>
+            <div style="flex: 1; min-height: 0; position: relative"><span style="position: absolute; left: 4%; top: 14%; width: 34%; aspect-ratio: 210 / 297; background: #1d3557; padding: 8%; box-sizing: border-box; display: flex; flex-direction: column; gap: 7%; transform: rotate(-7deg); box-shadow: 0 30px 60px rgba(0,0,0,0.45); z-index: 1"><span style="font-family: 'Fraunces', serif; font-size: 22px; line-height: 0.95; color: #f6efe3"><i>Riviera</i></span><span style="flex: 1; background: linear-gradient(135deg, #7fa7c9, #f6efe3)"></span></span><span style="position: absolute; left: 33%; top: 4%; width: 36%; aspect-ratio: 210 / 297; background: #0d0d0d; padding: 8%; box-sizing: border-box; display: flex; flex-direction: column-reverse; gap: 7%; transform: rotate(0deg); box-shadow: 0 30px 60px rgba(0,0,0,0.45); z-index: 2"><span style="font-family: 'Cormorant Garamond', serif; font-size: 26px; line-height: 0.95; color: #ffffff">Nuit</span><span style="flex: 1; background: linear-gradient(200deg, rgba(214,138,99,0.75), rgba(214,138,99,0.12))"></span></span><span style="position: absolute; left: 63%; top: 16%; width: 33%; aspect-ratio: 210 / 297; background: #efe9df; padding: 8%; box-sizing: border-box; display: flex; flex-direction: column; gap: 7%; transform: rotate(6deg); box-shadow: 0 30px 60px rgba(0,0,0,0.45); z-index: 1"><span style="font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 0.95; color: #1c1c1c"><b style="letter-spacing: 0.12em">ATELIER</b></span><span style="flex: 1; background: linear-gradient(160deg, rgba(28,28,28,0.7), rgba(28,28,28,0.15))"></span></span></div>
+            <a href="Styles.dc.html" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; height: 48px">Découvrir les styles</a>
+          </sc-if>
+          <sc-if value="{{ sUn }}" hint-placeholder-val="{{ false }}">
+            <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 34px; line-height: 1.05">Il reste le style de « La soirée »</h2>
+            <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; padding: 0 12px">
+              <a href="StyleBrief.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 12px; text-decoration: none; color: var(--text)">
+                <span style="width: 74%; aspect-ratio: 210 / 297; background: #1d3557; padding: 9%; box-sizing: border-box; display: flex; flex-direction: column; gap: 7%; box-shadow: 0 26px 50px rgba(0,0,0,0.45); transform: rotate(-2deg)"><span style="font-family: 'Fraunces', serif; font-size: 22px; line-height: 0.95; color: #f6efe3">Cap au large</span><span style="flex: 1; background: linear-gradient(135deg, #7fa7c9, #f6efe3)"></span></span>
+                <span style="text-align: center; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: var(--muted)">Le séminaire</span><span style="font-family: 'Fraunces', serif; font-style: italic; font-size: 20px">Riviera</span><span style="font-size: 12px; color: var(--accent)">Voir ou modifier le brief</span></span>
+              </a>
+              <a href="Styles.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 12px; text-decoration: none; color: var(--text)">
+                <span style="width: 74%; aspect-ratio: 210 / 297; border: 1.5px dashed var(--accent); background: var(--accent-soft); box-sizing: border-box; display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 34px; transform: rotate(2deg)">+</span>
+                <span style="text-align: center; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: var(--muted)">La soirée</span><span style="font-family: 'Cormorant Garamond', serif; font-size: 20px">À choisir</span><span style="font-size: 12px; color: var(--accent)">Ouvrir le mur</span></span>
+              </a>
             </div>
-            <div style="display: flex; align-items: center; gap: 16px; padding: 14px; border-radius: 14px; border: 1px dashed rgba(214,138,99,0.6); background: rgba(214,138,99,0.06)">
-              <span style="flex: none; width: 56px; aspect-ratio: 210 / 297; border: 1px dashed rgba(255,255,255,0.3); box-sizing: border-box"></span>
-              <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 13px; color: rgba(255,255,255,0.56)">Magazine 2 · La soirée</span><span style="font-weight: 600">À choisir</span></span>
-            </div>
-          </div>
-        </sc-if>
+            <a href="Styles.dc.html" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; height: 48px">Choisir le style de « La soirée »</a>
+          </sc-if>
+        </section>
 
-        <a href="Styles.dc.html" style="margin-top: auto; align-self: flex-start; display: inline-flex; align-items: center; height: 50px; padding: 0 26px; border-radius: 999px; background: #d68a63; color: #050505; text-decoration: none; font-weight: 600">{{ styleBouton }}</a>
+        <section style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 26px; display: flex; flex-direction: column; gap: 18px; min-height: 0">
+          <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); color: var(--accent)">2 · Les photos</span><span style="font-size: 12px; color: var(--muted)">Clôture dans 6 jours</span></div>
+
+          <sc-if value="{{ pVide }}" hint-placeholder-val="{{ true }}">
+            <div style="flex: 1; min-height: 0; border: 1.5px dashed var(--accent); border-radius: 18px; background: radial-gradient(80% 70% at 50% 40%, var(--accent-soft), transparent); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 20px">
+              <span style="width: 54px; height: 54px; border-radius: 50%; background: var(--accent-soft); display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"></path><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"></path></svg></span>
+              <span style="font-family: 'Cormorant Garamond', serif; font-size: 30px; line-height: 1.05">Déposez vos photos ici</span>
+              <span style="font-size: 13px; color: var(--muted); max-width: 340px">Glissez des photos ou un dossier entier. Sans limite pour vous, les doublons sont écartés tout seuls.</span>
+              <div style="display: flex; gap: 8px"><button type="button" onClick="{{ ouvrirDepot }}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600">Choisir des photos</button><button type="button" onClick="{{ ouvrirDepot }}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500">Un dossier</button></div>
+              <button type="button" onClick="{{ ouvrirDepot }}" style="border: 0; background: transparent; color: var(--muted); font-family: inherit; font-size: 12px; cursor: pointer">Rangées dans « Mes photos » · changer de dossier</button>
+            </div>
+            <button type="button" onClick="{{ ouvrirLien }}" style="flex: none; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-family: inherit; text-align: left; cursor: pointer">
+              <span style="flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--accent-soft); display: inline-flex; align-items: center; justify-content: center"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"></path><path d="M18 8v6M15 11h6"></path></svg></span>
+              <span style="flex: 1; display: flex; flex-direction: column"><span style="font-weight: 600">Inviter des proches à ajouter leurs photos</span><span style="font-size: 12px; color: var(--muted)">Un lien de contribution pour chaque personne</span></span>
+              <span style="color: var(--accent)">→</span>
+            </button>
+          </sc-if>
+
+          <sc-if value="{{ pLien }}" hint-placeholder-val="{{ false }}">
+            <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 34px; line-height: 1.05">Lien envoyé, en attente des premières photos</h2>
+            <div style="flex: 1; min-height: 0; display: flex; align-items: center">
+              <div style="width: 100%; display: flex; align-items: center; gap: 20px; padding: 18px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface)">
+                <div style="flex: none; width: 120px; height: 120px; border-radius: 10px; background: #ffffff; padding: 7px; box-sizing: border-box; display: grid; grid-template-columns: repeat(21, 1fr)"><sc-for list="{{ qr }}" as="q" hint-placeholder-count="441"><span style="background: {{ q.c }}"></span></sc-for></div>
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+                  <span style="font-weight: 600; font-size: 16px">Tous les participants</span>
+                  <span style="font-size: 12px; color: var(--muted)">30 photos par personne · 0 photo reçue · ouvert jusqu'au 4 octobre</span>
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap"><button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; height: 34px; font-size: 13px">Copier le lien</button><button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500; height: 34px; font-size: 13px">WhatsApp</button><button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500; height: 34px; font-size: 13px">Mail</button></div>
+                </div>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px"><button type="button" onClick="{{ ouvrirLien }}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; height: 46px">Envoyer un autre lien</button><button type="button" onClick="{{ ouvrirDepot }}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500; height: 46px">Déposer moi-même</button></div>
+          </sc-if>
+
+          <sc-if value="{{ pPhotos }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'Cormorant Garamond', serif; font-size: 64px; line-height: 0.9">1 248</span><span style="color: var(--muted)">photos de 64 personnes</span></div>
+            <div style="flex: 1; min-height: 0; display: flex; flex-direction: column">
+              <sc-for list="{{ dossiers }}" as="d" hint-placeholder-count="3">
+                <a href="CollecteB.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); text-decoration: none; color: var(--text)"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{ d.puce }}"></span><span style="flex: 1">{{ d.nom }}</span><span style="font-size: 12px; color: var(--muted)">{{ d.info }}</span><span style="min-width: 48px; text-align: right">{{ d.nb }}</span></a>
+              </sc-for>
+              <div style="margin-top: auto; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; padding-top: 14px"><sc-for list="{{ mosaique }}" as="m" hint-placeholder-count="8"><span style="aspect-ratio: 1; border-radius: 6px; background: {{ m.fond }}"></span></sc-for></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px"><a href="CollecteB.dc.html" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; height: 46px">Voir les photos</a><button type="button" onClick="{{ ouvrirLien }}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500; height: 46px">Envoyer un lien</button><button type="button" onClick="{{ ouvrirDepot }}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500; height: 46px">Déposer</button></div>
+          </sc-if>
+        </section>
+      </div>
+
+      <section style="flex: none; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 14px 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+        <span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-right: 6px">3 · À envoyer à l'atelier</span>
+        <sc-for list="{{ contenus }}" as="c" hint-placeholder-count="4">
+          <button type="button" onClick="{{ c.ouvrir }}" style="height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid {{ c.bord }}; background: transparent; color: {{ c.couleur }}; font-family: inherit; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px"><span style="width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid {{ c.rond }}; background: {{ c.rondFond }}; color: var(--on-accent); font-size: 10px; display: inline-flex; align-items: center; justify-content: center">{{ c.coche }}</span>{{ c.label }}</button>
+        </sc-for>
+        <span style="margin-left: auto; font-size: 12px; color: var(--muted)">Cliquez pour envoyer ou remplacer</span>
       </section>
 
-      <section style="border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; background: rgba(255,255,255,0.03); padding: 32px; display: flex; flex-direction: column; gap: 22px">
-        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px">
-          <span style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #d68a63">2 · Les photos</span>
-          <span style="font-size: 13px; color: rgba(255,255,255,0.56)">Clôture le 4 octobre à minuit</span>
-        </div>
+      <a href="RendezVous.dc.html" style="flex: none; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 12px 20px; display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--text)">
+        <span style="flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-soft); display: inline-flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 17px">B</span>
+        <span style="font-size: 12px; color: var(--muted)">L'atelier · hier</span>
+        <span style="flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">Nous plaçons le logo du domaine en troisième de couverture. Vous le verrez au premier bon à tirer.</span>
+        <span style="font-size: 13px; color: var(--accent); font-weight: 600">Répondre</span>
+      </a>
+    </main>
 
-        <sc-if value="{{ depart }}" hint-placeholder-val="{{ true }}">
-          <h2 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 36px; line-height: 1.05">Aucune photo pour l'instant</h2>
-          <p style="margin: 0; color: rgba(255,255,255,0.72)">Envoyez ce lien aux participants. Chacun dépose ses photos depuis son téléphone, sans créer de compte.</p>
-        </sc-if>
-
-        <sc-if value="{{ enCours }}" hint-placeholder-val="{{ false }}">
-          <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 32px">
-            <div style="display: flex; flex-direction: column"><span style="font-family: 'Cormorant Garamond', serif; font-size: 84px; line-height: 0.9">1 248</span><span style="color: rgba(255,255,255,0.72)">photos reçues</span></div>
-            <div style="display: flex; flex-direction: column"><span style="font-family: 'Cormorant Garamond', serif; font-size: 44px; line-height: 1">64</span><span style="color: rgba(255,255,255,0.72)">participants</span></div>
+    <sc-if value="{{ mLien1 }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; inset: 0; z-index: 20; background: rgba(0,0,0,0.28); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center">
+        <section role="dialog" aria-label="Créer un lien de contribution" style="width: 520px; border-radius: 24px; background: var(--glass); backdrop-filter: blur(28px) saturate(1.3); -webkit-backdrop-filter: blur(28px) saturate(1.3); border: 1px solid rgba(var(--fg-rgb), 0.14); padding: 30px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 30px 80px rgba(0,0,0,0.5)">
+          <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-family: 'Cormorant Garamond', serif; font-size: 30px">Créer un lien de contribution</span><button type="button" onClick="{{ fermer }}" aria-label="Fermer" style="width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer">✕</button></div>
+          <p style="margin: 0; color: var(--muted); font-size: 13px">La personne dépose depuis son téléphone, sans compte. Ses photos arrivent dans un dossier à son nom.</p>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted)">Le nom de la personne ou du groupe
+            <input type="text" placeholder="Tous les participants, Le photographe, Équipe Lyon…" style="height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-family: inherit; font-size: 15px">
+          </label>
+          <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: var(--muted)">
+            <div style="display: flex; justify-content: space-between; align-items: baseline"><span>Combien de photos pour cette personne ?</span><span style="font-family: 'Cormorant Garamond', serif; font-size: 30px; line-height: 1; color: var(--text)">{{ plafondVal }}</span></div>
+            <input type="range" min="5" max="100" value="30" style="width: 100%; accent-color: var(--accent)">
+            <div style="display: flex; gap: 6px"><sc-for list="{{ plafonds }}" as="p" hint-placeholder-count="4"><button type="button" onClick="{{ p.choisir }}" style="height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid {{ p.bord }}; background: {{ p.fond }}; color: var(--text); font-family: inherit; font-size: 12px; cursor: pointer">{{ p.label }}</button></sc-for></div>
           </div>
-          <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px">
-            <span style="aspect-ratio: 1; border-radius: 6px; background: linear-gradient(135deg, rgba(214,138,99,0.5), rgba(214,138,99,0.1))"></span>
-            <span style="aspect-ratio: 1; border-radius: 6px; background: linear-gradient(160deg, rgba(255,255,255,0.22), rgba(255,255,255,0.05))"></span>
-            <span style="aspect-ratio: 1; border-radius: 6px; background: linear-gradient(120deg, rgba(214,138,99,0.28), rgba(255,255,255,0.08))"></span>
-            <span style="aspect-ratio: 1; border-radius: 6px; background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(214,138,99,0.24))"></span>
-            <span style="aspect-ratio: 1; border-radius: 6px; background: linear-gradient(200deg, rgba(214,138,99,0.38), rgba(214,138,99,0.06))"></span>
-            <span style="aspect-ratio: 1; border-radius: 6px; background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04))"></span>
-          </div>
-        </sc-if>
+          <button type="button" onClick="{{ creerLien }}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; height: 48px">Créer le lien</button>
+        </section>
+      </div>
+    </sc-if>
 
-        <div style="display: flex; gap: 16px; align-items: center">
-          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
-            <div style="display: flex; gap: 8px">
-              <span style="flex: 1; min-width: 0; height: 48px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; border: 1px solid rgba(255,255,255,0.18); color: rgba(255,255,255,0.72); overflow: hidden; white-space: nowrap; text-overflow: ellipsis">bellajour.fr/c/seminaire-automne</span>
-              <button type="button" style="flex: none; height: 48px; padding: 0 18px; border: 1px solid rgba(255,255,255,0.22); border-radius: 10px; background: transparent; color: #ffffff; font-family: inherit; font-size: 15px; font-weight: 500; cursor: pointer">Copier</button>
+    <sc-if value="{{ mLien2 }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; inset: 0; z-index: 20; background: rgba(0,0,0,0.28); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center">
+        <section role="dialog" aria-label="Lien prêt" style="width: 560px; border-radius: 24px; background: var(--glass); backdrop-filter: blur(28px) saturate(1.3); -webkit-backdrop-filter: blur(28px) saturate(1.3); border: 1px solid rgba(var(--fg-rgb), 0.14); padding: 30px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 30px 80px rgba(0,0,0,0.5)">
+          <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-family: 'Cormorant Garamond', serif; font-size: 30px">Votre lien est prêt</span><button type="button" onClick="{{ fermer }}" aria-label="Fermer" style="width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer">✕</button></div>
+          <div style="display: flex; gap: 20px; align-items: center">
+            <div style="flex: none; width: 136px; height: 136px; border-radius: 12px; background: #ffffff; padding: 8px; box-sizing: border-box; display: grid; grid-template-columns: repeat(21, 1fr)"><sc-for list="{{ qr }}" as="q" hint-placeholder-count="441"><span style="background: {{ q.c }}"></span></sc-for></div>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+              <span style="font-weight: 600">Tous les participants · 30 photos par personne</span>
+              <span style="height: 40px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); font-size: 13px">bellajour.fr/d/seminaire-automne</span>
+              <span style="font-size: 12px; color: var(--muted)">Ouvert jusqu'au 4 octobre, minuit.</span>
             </div>
-            <label style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: rgba(255,255,255,0.72)">Photos par participant : <strong style="color: #ffffff">30</strong>
-              <input type="range" min="5" max="50" value="30" style="width: 100%; accent-color: #d68a63">
-            </label>
           </div>
-          <div style="flex: none; width: 96px; height: 96px; border-radius: 10px; background: #ffffff; color: #050505; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 11px; padding: 8px; box-sizing: border-box">[QR code pour l'événement]</div>
-        </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px">
+            <button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600">Copier</button>
+            <button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500">WhatsApp</button>
+            <button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500">Mail</button>
+            <button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500">QR code</button>
+          </div>
+          <button type="button" onClick="{{ fermer }}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500; height: 44px">Terminé</button>
+        </section>
+      </div>
+    </sc-if>
 
-        <a href="Collecte.dc.html" style="margin-top: auto; align-self: flex-start; display: inline-flex; align-items: center; height: 50px; padding: 0 26px; border-radius: 999px; background: {{ photosFond }}; border: 1px solid {{ photosBord }}; color: {{ photosTexte }}; text-decoration: none; font-weight: 600">{{ photosBouton }}</a>
-      </section>
-    </div>
+    <sc-if value="{{ mDepot }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; inset: 0; z-index: 20; background: rgba(0,0,0,0.28); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center">
+        <section role="dialog" aria-label="Déposer des photos" style="width: 560px; border-radius: 24px; background: var(--glass); backdrop-filter: blur(28px) saturate(1.3); -webkit-backdrop-filter: blur(28px) saturate(1.3); border: 1px solid rgba(var(--fg-rgb), 0.14); padding: 30px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 30px 80px rgba(0,0,0,0.5)">
+          <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-family: 'Cormorant Garamond', serif; font-size: 30px">Déposer des photos</span><button type="button" onClick="{{ fermer }}" aria-label="Fermer" style="width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer">✕</button></div>
+          <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted)">Dans quel dossier ?
+            <div style="display: flex; flex-wrap: wrap; gap: 6px">
+              <sc-for list="{{ dossiersDepot }}" as="d" hint-placeholder-count="3"><button type="button" onClick="{{ d.choisir }}" aria-pressed="{{ d.actif }}" style="height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid {{ d.bord }}; background: {{ d.fond }}; color: var(--text); font-family: inherit; font-size: 13px; cursor: pointer">{{ d.label }}</button></sc-for>
+              <button type="button" style="height: 38px; padding: 0 14px; border-radius: 999px; border: 1px dashed var(--line); background: transparent; color: var(--muted); font-family: inherit; font-size: 13px; cursor: pointer">+ Nouveau dossier</button>
+            </div>
+          </div>
+          <div style="border: 1.5px dashed var(--accent); border-radius: 16px; background: var(--accent-soft); padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center">
+            <span style="font-size: 16px">Glissez vos photos ou un dossier entier ici</span>
+            <div style="display: flex; gap: 8px"><button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600">Choisir des photos</button><button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 500">Choisir un dossier</button></div>
+            <span style="font-size: 12px; color: var(--muted)">Sans limite pour vous · doublons écartés tout seuls</span>
+          </div>
+          <span style="font-size: 12px; color: var(--muted)">L'envoi continue pendant que vous naviguez dans l'espace.</span>
+        </section>
+      </div>
+    </sc-if>
 
-    <section style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 20px 24px; border: 1px solid rgba(255,255,255,0.12); border-radius: 16px">
-      <span style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.56); margin-right: 8px">À envoyer à l'atelier</span>
-      <sc-for list="{{ envois }}" as="v" hint-placeholder-count="4">
-        <button type="button" style="height: 42px; padding: 0 16px; border-radius: 999px; border: 1px solid {{ v.bord }}; background: {{ v.fond }}; color: {{ v.texte }}; font-family: inherit; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px">
-          <sc-if value="{{ v.fait }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></sc-if>{{ v.label }}
-        </button>
-      </sc-for>
-    </section>
-
-    <p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.56)">Après la clôture, l'atelier compose. Le premier bon à tirer et vos propositions de couverture arrivent ici, dans « Bon à tirer ».</p>
-  </main>
+    <sc-if value="{{ mContenu }}" hint-placeholder-val="{{ false }}">
+      <div style="position: absolute; inset: 0; z-index: 20; background: rgba(0,0,0,0.28); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center">
+        <section role="dialog" aria-label="Envoyer un contenu" style="width: 520px; border-radius: 24px; background: var(--glass); backdrop-filter: blur(28px) saturate(1.3); -webkit-backdrop-filter: blur(28px) saturate(1.3); border: 1px solid rgba(var(--fg-rgb), 0.14); padding: 30px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 30px 80px rgba(0,0,0,0.5)">
+          <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-family: 'Cormorant Garamond', serif; font-size: 30px">{{ contenu.titre }}</span><button type="button" onClick="{{ fermer }}" aria-label="Fermer" style="width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer">✕</button></div>
+          <p style="margin: 0; color: var(--muted); font-size: 13px">{{ contenu.aide }}</p>
+          <sc-if value="{{ contenu.fichier }}" hint-placeholder-val="{{ true }}">
+            <div style="border: 1.5px dashed var(--accent); border-radius: 16px; background: var(--accent-soft); padding: 28px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center"><span>Glissez le fichier ici</span><button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600">Choisir un fichier</button><span style="font-size: 12px; color: var(--muted)">{{ contenu.formats }}</span></div>
+          </sc-if>
+          <sc-if value="{{ contenu.questions }}" hint-placeholder-val="{{ false }}">
+            <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted)">1. Que retenez-vous de ces trois jours ?<textarea rows="2" style="padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-family: inherit; font-size: 14px; resize: none"></textarea></label>
+            <span style="font-size: 12px; color: var(--muted)">Question 1 sur 4 · nous écrivons le texte à partir de vos réponses</span>
+            <button type="button" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 999px; font-family: inherit; font-size: 14px; cursor: pointer; text-decoration: none; white-space: nowrap; border: 0; background: var(--accent); color: var(--on-accent); font-weight: 600; height: 44px">Question suivante</button>
+          </sc-if>
+        </section>
+      </div>
+    </sc-if>
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1080}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
 class Component extends DCLogic {
   renderVals() {
     const s = this.state || {};
-    const etat = s.etat || 'depart';
-    const depart = etat === 'depart';
-    const etats = [['depart', 'Avant les premières photos'], ['cours', 'Collecte en cours']].map((e) => {
-      const actif = etat === e[0];
-      return { label: e[1], actif: actif, fond: actif ? '#ffffff' : 'transparent', texte: actif ? '#050505' : '#ffffff', choisir: () => this.setState({ etat: e[0] }) };
-    });
-    const faits = depart ? [] : ['logo', 'programme'];
-    const envois = [['logo', 'Logo'], ['programme', 'Programme'], ['mot', 'Mot du dirigeant'], ['liste', 'Liste des participants']].map((v) => {
-      const fait = faits.indexOf(v[0]) !== -1;
-      return { label: v[1], fait: fait, bord: fait ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.28)', fond: 'transparent', texte: fait ? 'rgba(255,255,255,0.56)' : '#ffffff' };
-    });
-    return {
-      etats: etats,
-      depart: depart,
-      enCours: !depart,
-      styleEtat: depart ? 'À faire' : '1 magazine sur 2',
-      styleTitre: depart ? 'Choisissez le style de vos deux magazines' : 'Il reste le style du magazine 2',
-      styleBouton: depart ? 'Ouvrir le mur des styles' : 'Choisir pour le magazine 2',
-      photosBouton: depart ? 'Déposer mes photos' : 'Voir les photos',
-      photosFond: depart ? 'transparent' : '#ffffff',
-      photosBord: depart ? 'rgba(255,255,255,0.28)' : '#ffffff',
-      photosTexte: depart ? '#ffffff' : '#050505',
-      envois: envois
+    const TH = {
+      nuit: { bg: '#050505', panel: '#0a0a0a', surface: 'rgba(255,255,255,0.04)', line: 'rgba(255,255,255,0.10)', text: '#ffffff', muted: 'rgba(255,255,255,0.64)', faint: 'rgba(255,255,255,0.34)', accent: '#d68a63', accentSoft: 'rgba(214,138,99,0.16)', onAccent: '#050505', page: '#ffffff', glass: 'rgba(20,20,20,0.66)', logo: 'assets/logo-cuivre.png', fgRgb: '255,255,255', acRgb: '214,138,99' },
+      jour: { bg: '#f3ece2', panel: '#ece3d6', surface: '#fbf8f3', line: 'rgba(28,28,28,0.10)', text: '#1c1c1c', muted: 'rgba(28,28,28,0.62)', faint: 'rgba(28,28,28,0.34)', accent: '#1d5bb0', accentSoft: 'rgba(29,91,176,0.10)', onAccent: '#ffffff', page: '#ffffff', glass: 'rgba(251,248,243,0.72)', logo: 'assets/logo-bleu.png', fgRgb: '28,28,28', acRgb: '29,91,176' }
     };
+    const jour = s.jour !== undefined ? s.jour : false;
+    const th = jour ? TH.jour : TH.nuit;
+    const modes = { basculerTheme: () => this.setState({ jour: !jour }), estNuit: !jour, estJour: jour, themeTitre: jour ? 'Passer en mode nuit' : 'Passer en mode jour' };
+    const qrCells = (graine) => {
+      const n = 21, out = [];
+      const finder = (x, y, ox, oy) => { const dx = x - ox, dy = y - oy; if (dx < 0 || dy < 0 || dx > 6 || dy > 6) return null; return (dx === 0 || dy === 0 || dx === 6 || dy === 6 || (dx > 1 && dx < 5 && dy > 1 && dy < 5)); };
+      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+        let v = finder(x, y, 0, 0); if (v === null) v = finder(x, y, 14, 0); if (v === null) v = finder(x, y, 0, 14);
+        if (v === null) v = ((x * 7 + y * 13 + graine * 5 + x * y) % 3) === 0;
+        out.push({ c: v ? '#050505' : '#ffffff' });
+      }
+      return out;
+    };
+    const modal = s.modal || null;
+    const pl = s.plafond || '30';
+    const plafondVal = pl === 'Sans limite' ? 'Sans limite' : pl + ' photos';
+    const plafonds = ['10', '30', '50', 'Sans limite'].map((p) => ({ label: p, actif: pl === p, bord: pl === p ? 'var(--accent)' : 'var(--line)', fond: pl === p ? 'var(--accent-soft)' : 'transparent', choisir: () => this.setState({ plafond: p }) }));
+    const dDepot = s.dDepot || 'moi';
+    const dossiersDepot = [['moi', 'Mes photos'], ['photographe', 'Photographe'], ['soiree', 'La soirée']].map((d) => ({ label: d[1], actif: dDepot === d[0], bord: dDepot === d[0] ? 'var(--accent)' : 'var(--line)', fond: dDepot === d[0] ? 'var(--accent-soft)' : 'transparent', choisir: () => this.setState({ dDepot: d[0] }) }));
+    const modales = {
+      plafondVal: plafondVal, mLien1: modal === 'lien1', mLien2: modal === 'lien2', mDepot: modal === 'depot', plafonds: plafonds, dossiersDepot: dossiersDepot, qr: qrCells(4),
+      ouvrirLien: () => this.setState({ modal: 'lien1' }), ouvrirDepot: () => this.setState({ modal: 'depot' }),
+      creerLien: () => this.setState({ modal: 'lien2', photos: s.photos === 'photos' ? 'photos' : 'lien' }),
+      fermer: () => this.setState({ modal: null })
+    };
+    const photos = s.photos || 'vide';
+    const style = s.style || 'vide';
+    const etatsStyle = [['vide', 'Aucun'], ['un', '1 sur 2']].map((e) => ({ label: e[1], fond: style === e[0] ? 'var(--text)' : 'transparent', texte: style === e[0] ? 'var(--bg)' : 'var(--muted)', choisir: () => this.setState({ style: e[0] }) }));
+    const etats = [['vide', 'Rien encore'], ['lien', 'Lien envoyé'], ['photos', 'Photos reçues']].map((e) => ({ label: e[1], fond: photos === e[0] ? 'var(--text)' : 'transparent', texte: photos === e[0] ? 'var(--bg)' : 'var(--muted)', choisir: () => this.setState({ photos: e[0] }) }));
+    const faits = s.faits || ['logo', 'programme'];
+    const CONTENUS = {
+      logo: { titre: 'Votre logo', aide: 'Le format vectoriel est le meilleur (SVG, PDF, AI). Un PNG de grande taille convient aussi.', formats: 'SVG, PDF, AI, PNG', fichier: true, questions: false },
+      programme: { titre: 'Le programme', aide: 'Le déroulé des trois jours, tel que vous l’avez : un PDF, un document, une photo.', formats: 'PDF, DOCX, JPG', fichier: true, questions: false },
+      mot: { titre: 'Le mot du dirigeant', aide: 'Quatre questions courtes. Nous écrivons le texte et vous le relisez au bon à tirer.', fichier: false, questions: true },
+      liste: { titre: 'La liste des participants', aide: 'Pour le générique, et pour écarter les personnes qui ne souhaitent pas apparaître.', formats: 'XLSX, CSV, PDF', fichier: true, questions: false }
+    };
+    const contenus = [['logo', 'Logo'], ['programme', 'Programme'], ['mot', 'Mot du dirigeant'], ['liste', 'Liste des participants']].map((c) => {
+      const fait = faits.indexOf(c[0]) !== -1;
+      return { label: c[1], coche: fait ? '✓' : '', rond: fait ? 'var(--accent)' : 'var(--faint)', rondFond: fait ? 'var(--accent)' : 'transparent', bord: fait ? 'var(--line)' : 'var(--accent)', couleur: fait ? 'var(--muted)' : 'var(--text)', ouvrir: () => this.setState({ modal: 'contenu', contenu: c[0] }) };
+    });
+    const dossiers = [
+      { nom: 'Tous les participants', info: 'lien · 30 par personne', nb: '1 012', puce: 'var(--accent)' },
+      { nom: 'Photographe', info: 'lien · sans limite', nb: '182', puce: 'var(--accent)' },
+      { nom: 'Mes photos', info: 'déposées par vous', nb: '54', puce: 'var(--muted)' }
+    ];
+    return Object.assign({ th: th }, modes, modales, {
+      mosaique: [0,1,2,3,4,5,6,7].map((i) => ({ fond: 'linear-gradient(' + (120 + i * 31) + 'deg, ' + ['rgba(214,138,99,0.55)', 'rgba(127,167,201,0.55)', 'rgba(160,140,120,0.5)', 'rgba(90,110,140,0.5)'][i % 4] + ', ' + ['rgba(200,180,150,0.5)', 'rgba(214,138,99,0.3)'][i % 2] + ')' })),
+      etatsStyle: etatsStyle, sVide: style === 'vide', sUn: style === 'un', styleEtat: style === 'vide' ? 'À faire' : '1 magazine sur 2',
+      etats: etats, pVide: photos === 'vide', pLien: photos === 'lien', pPhotos: photos === 'photos', dossiers: dossiers, contenus: contenus,
+      mContenu: modal === 'contenu', contenu: CONTENUS[s.contenu || 'mot'], revoirLien: () => this.setState({ modal: 'lien2' })
+    });
   }
 }
 </script>

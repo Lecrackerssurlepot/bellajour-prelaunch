@@ -21,8 +21,11 @@ import {
   cleContenu,
   cleCouverture,
   cleDocument,
+  cleGrisTour,
+  clePieceJointe,
   clePageTour,
   clePdfTour,
+  cleVignettePageTour,
   clePhoto,
   cleStyle,
   cleVignette,
@@ -63,7 +66,14 @@ import {
   type MagazinePourGeste,
 } from "@/lib/collectif/gestes";
 import { lireInterrupteur } from "@/lib/collectif/interrupteur";
-import { formaterInstantParis, instantDeParis, versChampParis } from "@/lib/collectif/dates";
+import { basculerCouverture, briefModifiable, etatDuBrief, lireChoixStyle, lirePartieBrief, manquesBrief, PARTS_TEXTE, patchCouvertures, resumeBrief, styleVisible } from "@/lib/collectif/brief";
+import { cleFichier, compteDansPlafond, DELAI_DECLARATION_MORTE_MS, lireDeclaration, LOT_DECLARATION, planDeclaration, type Existant } from "@/lib/collectif/depot";
+import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
+import { jourDePhoto, libelleProvenance, lireFiltre, resumeDeposants } from "@/lib/collectif/grille";
+import { contenusAEnvoyer, ETAPES_CLIENT, etapeClient, initiales, joursAvant, libelleRole, parler, phraseJours } from "@/lib/collectif/espace";
+import { curseur, filDeConversation, fusionnerMessages, lirePieceJointe, lireTexteMessage, MESSAGE_MAX, PIECE_MAX, texteDuMessage, type Message } from "@/lib/collectif/messages";
+import { libelleTypeDocument, lireSaisieDocument, nomTelechargement } from "@/lib/collectif/documents";
+import { formaterHeureParis, formaterInstantParis, formaterJourParis, instantDeParis, versChampParis } from "@/lib/collectif/dates";
 import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
 import { prochaineEtape } from "@/lib/collectif/prochaine";
 import { phraseEvenement } from "@/lib/collectif/recit";
@@ -87,6 +97,52 @@ import {
   type ReglagesPlafond,
 } from "@/lib/collectif/plafonds";
 import { estTypeNote, ROLES, TYPES_NOTE, type Role } from "@/lib/collectif/types";
+import { cookieMode, LOGO_MODE, lireMode, MODES } from "@/lib/collectif/affichage";
+import { CONTENUS_CLIENT, contenuClient, lireFichierContenu, lireReponsesMot, QUESTIONS_MOT } from "@/lib/collectif/contenus";
+import { cheminQr, matriceQr, svgQr } from "@/lib/collectif/qr";
+import { colonneAbsente, MIGRATION_REVISION } from "@/lib/collectif/migration";
+import { libellePlafondLien, lirePlafondLien, plafondLienMax, CURSEUR_LIEN } from "@/lib/collectif/plafonds";
+import {
+  demandePossible,
+  demandesDuFil,
+  estJour,
+  etapesLivraison,
+  formaterJour,
+  lireDemande,
+  lireMessageDemande,
+  lireSaisieLivraison,
+  messageDemande,
+  messageProposition,
+  MOTIFS_MODIFICATION,
+  titreLivraison,
+} from "@/lib/collectif/livraison";
+import {
+  apparierPages,
+  decoderGris,
+  doublesPages,
+  encoderGris,
+  etatNote,
+  GRIS_H,
+  GRIS_L,
+  libelleBande,
+  libelleDouble,
+  lireChoixCouverture,
+  rappelValidation,
+  lireNote,
+  lirePagesTour,
+  manquesPourPublierTour,
+  MAX_PAGES_TOUR,
+  rectRognage,
+  resumeNote,
+  resumeTour,
+  PLAFOND_EMPREINTE,
+  coutPaire,
+  motsDePage,
+  motsUtiles,
+  texteValidationBat,
+  tourCourant,
+  zonesModifiees,
+} from "@/lib/collectif/bat";
 import { cheminSection, MENU, RAISON_VERROU, sectionDuChemin, verrousPour } from "@/lib/collectif/verrous";
 
 let ko = 0;
@@ -318,8 +374,8 @@ ok("l'equipe ne voit aucun geste, dans aucun etat",
 titre("— le menu : toujours les memes entrees, dans l'ordre des maquettes —");
 ok("sept entrees, deux groupes",
    MENU.map((e) => e.libelle).join(" | ")
-     === "Tableau de bord | Style | Photos | Bon à tirer | Livraison | Votre dossier | Parler à l'atelier"
-   && MENU.filter((e) => e.groupe === 2).map((e) => e.cle).join() === "dossier,atelier");
+     === "Tableau de bord | Style | Photos | Bon à tirer | Livraison | Parler à l'atelier | Documents"
+   && MENU.filter((e) => e.groupe === 2).map((e) => e.cle).join() === "atelier,dossier");
 const attendus: Record<EtatEdition, { bat: boolean; livraison: boolean }> = {
   preparation: { bat: true, livraison: true },
   composition: { bat: true, livraison: true },
@@ -673,6 +729,162 @@ ok("les champs modifies se nomment en francais",
    phraseEvenement("reglages_modifies", { par: "Mathias", champs: ["tirage", "plafond_total"] }).includes("Tirage prévu au devis"));
 ok("un type inconnu reste lisible", phraseEvenement("truc_inconnu", {}) === "truc_inconnu");
 
+
+/* ═══════════════════════════ PHASE 2 : L'ESPACE CLIENT ═══════════════════════════ */
+
+titre("— les etapes du client, sans « N sur M » —");
+ok("cinq etapes nommees", ETAPES_CLIENT.map((e) => e.libelle).join(" | ") === "Style et photos | Composition | Bon à tirer | Impression | Livraison");
+ok("chaque etat tombe sur une etape", ETATS_EDITION.every((e) => etapeClient(e) >= 0));
+ok("bat_valide et impression = Impression ; expediee et livree = Livraison",
+   etapeClient("bat_valide") === 3 && etapeClient("impression") === 3 && etapeClient("expediee") === 4 && etapeClient("livree") === 4);
+
+titre("— le temps qui reste, en jours de Paris —");
+const midi = new Date("2026-10-13T10:00:00.000Z");
+ok("le meme jour = aujourd'hui", phraseJours(joursAvant("2026-10-13T21:59:00.000Z", midi)) === "aujourd'hui");
+ok("le lendemain 00:30 a Paris = demain (pas « dans 0 jour »)", phraseJours(joursAvant("2026-10-13T22:30:00.000Z", midi)) === "demain");
+ok("dans 7 jours", joursAvant("2026-10-20T21:59:00.000Z", midi) === 7 && phraseJours(7) === "dans 7 jours");
+ok("une date passee le dit", phraseJours(joursAvant("2026-10-01T10:00:00.000Z", midi)) === "date passée");
+ok("sans date, rien", joursAvant(null, midi) === null && phraseJours(null) === "");
+
+titre("— qui regarde, et comment on lui parle —");
+ok("initiales", initiales("Camille Renaud") === "CR" && initiales("Lou") === "LO" && initiales("  ") === "?" && initiales(null) === "?" && initiales("Mathias (essai)") === "MA" && initiales("Élise Ô") === "ÉÔ");
+ok("le role au masculin generique", libelleRole("responsable") === "Responsable du BAT" && libelleRole("equipe").includes("lecture seule"));
+ok("vous pour une entreprise, tu pour une ecole", parler("entreprise_vous")("vous", "tu") === "vous" && parler("ecole_tu")("vous", "tu") === "tu");
+const cont = contenusAEnvoyer(["mot", "logo", "pirate"], ["logo"]);
+ok("contenus demandes : ordre de la fiche, inconnu ignore, recu marque",
+   cont.map((c) => `${c.cle}:${c.recu}`).join() === "logo:true,mot:false");
+
+titre("— la messagerie —");
+ok("un message vide ou trop long est refuse",
+   !lireTexteMessage("   ").ok && !lireTexteMessage(42).ok && !lireTexteMessage("x".repeat(MESSAGE_MAX + 1)).ok);
+ok("un message se nettoie (CRLF, espaces autour)",
+   (() => { const t = lireTexteMessage("  Bonjour\r\nà tous  "); return t.ok && t.texte === "Bonjour\nà tous"; })());
+const msg = (id: string, quand: string): Message => ({ id, auteur: "client", qui: null, texte: id, created_at: quand });
+const fil = fusionnerMessages([msg("a", "2026-10-13T10:00:00Z"), msg("b", "2026-10-13T10:01:00Z")], [msg("b", "2026-10-13T10:01:00Z"), msg("c", "2026-10-13T10:00:30Z")]);
+ok("fusion sans doublon, dans l'ordre du temps", fil.map((m) => m.id).join() === "a,c,b");
+ok("le curseur est le dernier message", curseur(fil) === "2026-10-13T10:01:00Z" && curseur([]) === null);
+
+titre("— les documents du dossier —");
+ok("un type inconnu est refuse", !lireSaisieDocument("bulletin", "", "x").ok);
+ok("sans libelle, le type le donne",
+   (() => { const d = lireSaisieDocument("devis", "", "devis-2026"); return d.ok && d.libelle === "Devis signé" && d.nom === "devis-2026"; })());
+ok("l'accord sur les donnees est un document ATELIER, jamais redige par le code", libelleTypeDocument("donnees") === "Accord sur les données");
+ok("le nom de telechargement est en ASCII sur", nomTelechargement("Facture n°3 / été", "pdf") === "Facture n 3 ete.pdf" && nomTelechargement("", "pdf") === "document.pdf");
+ok("le journal raconte un message sans le citer",
+   phraseEvenement("message_client", { par: "Camille", texte: "secret" }) === "Message du client (Camille).");
+
+
+/* ═══════════════════════════ PHASE 3 : LA COLLECTE ═══════════════════════════ */
+
+titre("— la cle de fichier : la reprise sans doublon —");
+ok("nom|taille|date de modification, sur l'ORIGINAL", cleFichier("IMG_1.HEIC", 2048, 1700000000123) === "IMG_1.HEIC|2048|1700000000123");
+const decl = lireDeclaration([
+  { cle: cleFichier("a.jpg", 10, 1), nom: "a.jpg", taille: 900, type: "image/jpeg", tailleVignette: 30, ordre: 0 },
+  { cle: "pas une cle", nom: "b.jpg", taille: 10, type: "image/jpeg" },
+  { cle: cleFichier("c.pdf", 10, 1), nom: "c.pdf", taille: 10, type: "application/pdf" },
+  { cle: cleFichier("d.jpg", 10, 1), nom: "d.jpg", taille: 60 * 1024 * 1024, type: "image/jpeg" },
+]);
+ok("une declaration garde ce qui est lisible et refuse le reste, un par un",
+   decl !== null && decl.fichiers.length === 1 && decl.refus.map((r) => r.erreur).join() === "cle,format,taille");
+ok("un lot vide ou trop gros est refuse en bloc",
+   lireDeclaration([]) === null && lireDeclaration(Array.from({ length: LOT_DECLARATION + 1 }, () => ({}))) === null);
+
+titre("— le partage d'un lot : deja la, reprise, nouvelle, refusee —");
+const f = (nom: string) => ({ cle: cleFichier(nom, 1, 1), nom, taille: 1, type: "image/jpeg", tailleVignette: null, ordre: null });
+const lotDepot = [f("a"), f("b"), f("c"), f("d"), f("e")];
+const existantsDepot = new Map<string, Existant>([
+  [f("a").cle, { id: "A", r2_key: "k/a", confirmee: true }],
+  [f("b").cle, { id: "B", r2_key: "k/b", confirmee: false }],
+]);
+const plan = planDeclaration(lotDepot, existantsDepot, { illimitee: false, place: 2, borne: "plafond_participant" });
+ok("deja arrivee = deja ; declaree jamais arrivee = reprise sur la MEME cle",
+   plan[0].sorte === "deja" && plan[1].sorte === "reprise" && (plan[1] as { r2_key: string }).r2_key === "k/b");
+ok("seules les nouvelles consomment la place : 2 places pour c, d, e = c et d acceptees, e refusee",
+   plan[2].sorte === "nouvelle" && plan[3].sorte === "nouvelle" && plan[4].sorte === "refusee"
+   && (plan[4] as { raison: string }).raison === "plafond_participant");
+const planDouble = planDeclaration([f("x"), f("x")], new Map(), { illimitee: true });
+ok("le meme fichier deux fois dans un lot : la seconde est ignoree", planDouble[0].sorte === "nouvelle" && planDouble[1].sorte === "double");
+ok("un plafond non regle refuse tout le neuf, mais laisse passer les reprises",
+   (() => { const pl = planDeclaration([f("a"), f("z")], existantsDepot, { illimitee: false, place: 0, borne: "plafond_non_regle" }); return pl[0].sorte === "deja" && pl[1].sorte === "refusee"; })());
+const ilya = (ms: number) => new Date(LUNDI.getTime() - ms).toISOString();
+ok("une declaration morte (plus de 2 h sans arriver) ne bloque plus le plafond",
+   compteDansPlafond({ confirmee_le: null, created_at: ilya(10_000) }, LUNDI)
+   && !compteDansPlafond({ confirmee_le: null, created_at: ilya(DELAI_DECLARATION_MORTE_MS + 1) }, LUNDI)
+   && compteDansPlafond({ confirmee_le: ilya(5), created_at: ilya(DELAI_DECLARATION_MORTE_MS * 9) }, LUNDI));
+
+titre("— les doublons rapides = les doublons du B2C, sur des lots synthetiques —");
+let graine = 7;
+const alea = () => { graine = (graine * 1103515245 + 12345) & 0x7fffffff; return graine; };
+const hexAlea = () => Array.from({ length: 16 }, () => (alea() % 16).toString(16)).join("");
+const voisin = (h: string, bits: number) => {
+  const b = [...h].map((c) => parseInt(c, 16).toString(2).padStart(4, "0")).join("").split("");
+  for (let k = 0; k < bits; k++) { const i = alea() % 64; b[i] = b[i] === "0" ? "1" : "0"; }
+  return Array.from({ length: 16 }, (_, i) => parseInt(b.slice(i * 4, i * 4 + 4).join(""), 2).toString(16)).join("");
+};
+let identiques = true;
+for (let lot = 0; lot < 25; lot++) {
+  const photosSynth: { id: string; empreinte: string | null; priseLe: string | null; ordre: number }[] = [];
+  for (let i = 0; i < 60; i++) {
+    const base = i > 0 && alea() % 3 === 0 ? photosSynth[alea() % photosSynth.length].empreinte ?? hexAlea() : hexAlea();
+    photosSynth.push({
+      id: `p${lot}-${i}`,
+      empreinte: alea() % 15 === 0 ? null : voisin(base, alea() % 4),
+      priseLe: alea() % 4 === 0 ? null : `2026-10-0${1 + (alea() % 9)}T10:00:00`,
+      ordre: i,
+    });
+  }
+  if (JSON.stringify(groupesDoublonsRapides(photosSynth)) !== JSON.stringify(groupesDeDoublons(photosSynth))) identiques = false;
+}
+ok("25 lots de 60 photos (rafales, recompressions, sans empreinte) : exactement les memes groupes", identiques);
+
+titre("— la grille —");
+ok("un filtre inconnu retombe sur « toutes »", lireFiltre("pirate") === "toutes" && lireFiltre("doublons") === "doublons");
+ok("le jour d'une photo : sa prise de vue, lue SANS fuseau", jourDePhoto("2024-08-08T23:30:00", "2026-10-13T10:00:00Z").libelle.startsWith("8 août"));
+ok("sans date de prise de vue : le jour d'arrivee, et c'est dit", jourDePhoto(null, "2026-10-13T10:00:00Z").libelle.includes("sans date"));
+ok("qui a depose : par provenance et deposant, le plus fourni d'abord",
+   JSON.stringify(resumeDeposants([
+     { provenance_type: "participant", deposant: "Camille" }, { provenance_type: "photographe", deposant: "Studio X" },
+     { provenance_type: "participant", deposant: "Camille" },
+   ])) === JSON.stringify([{ libelle: "Un participant · Camille", n: 2 }, { libelle: "Le photographe · Studio X", n: 1 }]));
+ok("le responsable se nomme comme tel", libelleProvenance("organisateur", "Lou") === "Le responsable · Lou");
+
+
+/* ═══════════════════════════ PHASE 4 : LE STYLE ET LE BRIEF ═══════════════════════════ */
+
+titre("— la regle de Mathias : l'interieur suit le style, la couverture peut venir d'ailleurs —");
+const riviera = { id: "s-riv", publie: true, palettes: [{ cle: "marine" }, { cle: "sable" }], couvertures: [{ cle: "c1" }, { cle: "c2" }] };
+const nuit = { id: "s-nuit", publie: true, palettes: [{ cle: "noir" }], couvertures: [{ cle: "n1" }] };
+const choix = lireChoixStyle({ palette_cle: "sable", texte: "peu", doubles: ["recit", "aeree", "pirate"] }, riviera);
+ok("choisir un style : sa palette, la part de texte, ses doubles (inconnues ignorees, ordre du style), brief remis a valider",
+   choix.ok && choix.patch.style_id === "s-riv" && choix.patch.palette_cle === "sable" && choix.patch.texte === "peu"
+   && choix.patch.doubles.join() === "aeree,recit" && choix.patch.brief_valide_le === null);
+ok("une palette d'un AUTRE style est refusee (l'interieur suit le style)",
+   !lireChoixStyle({ palette_cle: "noir", texte: "peu", doubles: ["aeree"] }, riviera).ok);
+ok("sans double page, ou sans la place du texte : refuse",
+   !lireChoixStyle({ palette_cle: "sable", texte: "peu", doubles: [] }, riviera).ok
+   && !lireChoixStyle({ palette_cle: "sable", doubles: ["aeree"] }, riviera).ok);
+ok("un style non publie ne se choisit pas", !lireChoixStyle({ palette_cle: "sable", texte: "peu", doubles: ["aeree"] }, { ...riviera, publie: false }).ok);
+ok("trois parts de texte, libelles de la maquette", PARTS_TEXTE.map((t) => t.libelle).join(" | ") === "Surtout des photos | Un peu de texte | Beaucoup de texte");
+
+titre("— les couvertures aimees : de n'importe quel style, plafonnees, jamais devinees —");
+const b1 = basculerCouverture([], { style_id: "s-nuit", couverture: "n1" }, true, 2, nuit);
+ok("aimer une couverture d'un AUTRE style que celui du magazine : permis", b1.ok && b1.aimees.length === 1);
+ok("au plafond, une de plus est refusee avec la phrase",
+   (() => { const b = basculerCouverture([{ style_id: "s-riv", couverture: "c1" }, { style_id: "s-riv", couverture: "c2" }], { style_id: "s-nuit", couverture: "n1" }, true, 2, nuit); return !b.ok && b.message.includes("2 couvertures"); })());
+ok("plafond non regle par l'atelier : refuse (on n'invente pas de chiffre)",
+   !basculerCouverture([], { style_id: "s-nuit", couverture: "n1" }, true, null, nuit).ok);
+ok("ne plus aimer marche toujours, meme sans plafond",
+   (() => { const b = basculerCouverture([{ style_id: "s-nuit", couverture: "n1" }], { style_id: "s-nuit", couverture: "n1" }, false, null, null); return b.ok && b.aimees.length === 0; })());
+ok("une couverture qui n'existe pas dans le style est refusee",
+   !basculerCouverture([], { style_id: "s-nuit", couverture: "zz" }, true, 3, nuit).ok);
+
+titre("— valider, et jusqu'a quand —");
+ok("ce qui manque se nomme", manquesBrief({ style_id: null, palette_cle: null, texte: null, doubles: [] }).length === 4
+   && manquesBrief({ style_id: "s", palette_cle: "p", texte: "peu", doubles: ["aeree"] }).length === 0);
+ok("le brief ne bouge plus apres la cloture", briefModifiable("preparation") && !briefModifiable("composition") && !briefModifiable("bat"));
+ok("le mur d'une ecole voit les styles ecole et tous, pas entreprise",
+   styleVisible("ecole", "ecole") && styleVisible("ecole", "tous") && !styleVisible("ecole", "entreprise") && styleVisible("tous", "entreprise"));
+
 /* ═══════════════════════════ LES GARDES DANS LES FICHIERS ═══════════════════════════ */
 
 function fichiers(dossier: string, nom: string): string[] {
@@ -687,6 +899,359 @@ function fichiers(dossier: string, nom: string): string[] {
   return sortie;
 }
 
+
+/* ════════════════════════════ PHASE 5 : LE BON À TIRER ════════════════════════════ */
+
+function fichiersParSuffixe(dossier: string, motif: RegExp): string[] {
+  const abs = resolve(RACINE, dossier);
+  if (!existsSync(abs)) return [];
+  const sortie: string[] = [];
+  for (const entree of readdirSync(abs)) {
+    const chemin = join(abs, entree);
+    if (statSync(chemin).isDirectory()) sortie.push(...fichiersParSuffixe(join(dossier, entree), motif));
+    else if (motif.test(entree)) sortie.push(join(dossier, entree));
+  }
+  return sortie;
+}
+
+titre("— apparier deux tours : le texte d'abord, l'image ensuite, l'ordre toujours —");
+{
+  /* Des pages de texte : chacune son histoire (mots distincts). */
+  const histoire = (k: number) => ["arrivee domaine matin cafe accueil", "conference directrice strategie annee chiffres", "atelier equipe jeux rires cuisine", "diner soiree musique danse lumieres", "remise prix trophees applaudissements podium"][k];
+  const page = (index: number, k: number, empreinte = "0000000000000000") => ({ index, empreinte, mots: histoire(k) });
+  const t1 = [page(0, 0), page(1, 1), page(2, 2), page(3, 3)];
+  const insere = apparierPages(t1, [page(0, 0), page(1, 1), page(2, 4), page(3, 2), page(4, 3)]);
+  ok("une page ajoutee au milieu : nouvelle, et les suivantes retrouvent leur ancienne",
+     insere.apparie.get(0) === 0 && insere.apparie.get(1) === 1 && insere.apparie.get(2) === null && insere.apparie.get(3) === 2 && insere.apparie.get(4) === 3 && insere.retirees.length === 0);
+  const retire = apparierPages(t1, [page(0, 0), page(1, 2), page(2, 3)]);
+  ok("une page retiree : signalee, les autres appariees", retire.retirees.join() === "1" && retire.apparie.get(1) === 2);
+  /* Le cas mesure le 13/10 : meme gabarit (images a 0 bit), histoires differentes. */
+  const memeGabarit = apparierPages([page(0, 0), page(1, 1)], [page(0, 1), page(1, 0)]);
+  ok("deux pages de meme gabarit mais d'histoires differentes ne sont pas confondues",
+     memeGabarit.apparie.get(0) !== 0 && memeGabarit.apparie.get(1) !== 1);
+  const photoChangee = apparierPages([page(0, 2, "0000000000000000")], [{ index: 0, empreinte: "ffffffffffffffff", mots: histoire(2) + " legende" }]);
+  ok("une photo changee (image tres differente, meme texte) : la meme page, retouchee", photoChangee.apparie.get(0) === 0);
+  /* Les pages sans texte : l'image decide. */
+  const A = "0000000000000000", B = "ffffffff00000000";
+  ok("pleine photo : une retouche de 2 bits reste la meme page", apparierPages([{ index: 0, empreinte: A }], [{ index: 0, empreinte: "0000000000000003" }]).apparie.get(0) === 0);
+  ok(`pleine photo : au-dela de ${PLAFOND_EMPREINTE} bits, une autre page`, apparierPages([{ index: 0, empreinte: A }], [{ index: 0, empreinte: B }]).apparie.get(0) === null);
+  const unique = apparierPages([{ index: 0, empreinte: A }], [{ index: 0, empreinte: A }, { index: 1, empreinte: A }]);
+  ok("une ancienne n'est reprise qu'une fois", [unique.apparie.get(0), unique.apparie.get(1)].filter((x) => x === 0).length === 1);
+  ok("une page sans empreinte ni texte n'est jamais appariee", apparierPages([{ index: 0, empreinte: null }], [{ index: 0, empreinte: null }]).apparie.get(0) === null);
+  ok("les mots : minuscules, sans accent ni chiffre, trois lettres au moins, une fois chacun",
+     motsDePage("Été 2026 : le Séminaire, l'été !").join(" ") === "ete seminaire");
+  ok("les mots communs a plus de la moitie des pages (titre courant) sont retires",
+     motsUtiles([["seminaire", "arrivee"], ["seminaire", "diner"], ["seminaire", "prix"], ["seminaire", "danse"]]).join("|") === "arrivee|diner|prix|danse");
+  ok("le cout d'une paire : texte partage = bon marche, rien en commun = impossible",
+     coutPaire({ empreinte: A, mots: new Set(["a1", "b1", "c1", "d1", "e1"]) }, { empreinte: B, mots: new Set(["a1", "b1", "c1", "d1", "e1"]) }) === 0 &&
+     coutPaire({ empreinte: A, mots: new Set(["a1", "b1", "c1", "d1", "e1"]) }, { empreinte: A, mots: new Set(["v1", "w1", "x1", "y1", "z1"]) }) === Infinity);
+}
+
+titre("— les zones modifiees, en pourcentages —");
+{
+  const l = 40, h = 40;
+  const fond = () => new Uint8Array(l * h).fill(200);
+  const a = fond();
+  ok("deux pages identiques : aucune zone", zonesModifiees(a, fond(), l, h).length === 0);
+  const bruit = fond();
+  for (let k = 0; k < bruit.length; k += 3) bruit[k] = 210;
+  ok("le bruit de recompression reste sous le seuil", zonesModifiees(a, bruit, l, h).length === 0);
+  const b = fond();
+  for (let y = 8; y < 16; y++) for (let x = 0; x < 16; x++) b[y * l + x] = 20;
+  const z = zonesModifiees(a, b, l, h);
+  ok("un bloc change : une zone, au bon endroit", z.length === 1 && z[0].x === 0 && z[0].y === 20 && z[0].l === 40 && z[0].h === 20);
+  for (let y = 32; y < 40; y++) for (let x = 32; x < 40; x++) b[y * l + x] = 20;
+  ok("deux blocs separes : deux zones", zonesModifiees(a, b, l, h).length === 2);
+  const ligne = fond();
+  for (let x = 20; x < 30; x++) ligne[30 * l + x] = 0;
+  ok("une seule ligne de pixels franchement changee (un mot) : une zone, malgre une moyenne faible", zonesModifiees(a, ligne, l, h).length === 1);
+  const unPixel = fond();
+  unPixel[5 * l + 5] = 0;
+  ok("un pixel isole ne fait pas une zone", zonesModifiees(a, unPixel, l, h).length === 0);
+  let leve = false;
+  try {
+    zonesModifiees(a, new Uint8Array(10), l, h);
+  } catch {
+    leve = true;
+  }
+  ok("des tailles differentes levent (on ne compare jamais faux)", leve);
+}
+
+titre("— les doubles pages : la premiere seule, a droite —");
+ok("0 page : rien", doublesPages(0).length === 0);
+ok("1 page : [0]", JSON.stringify(doublesPages(1)) === "[[0]]");
+ok("4 pages : [0] [1,2] [3]", JSON.stringify(doublesPages(4)) === "[[0],[1,2],[3]]");
+ok("5 pages : [0] [1,2] [3,4]", JSON.stringify(doublesPages(5)) === "[[0],[1,2],[3,4]]");
+ok("libelles : « Page 1 », « Pages 2 et 3 »", libelleDouble([0]) === "Page 1" && libelleDouble([1, 2]) === "Pages 2 et 3");
+
+titre("— rogner au format fini (TrimBox) —");
+{
+  const r = rectRognage([0, 0, 624, 876], { x: 12, y: 12, width: 600, height: 852 }, 2);
+  ok("fond perdu de 12 pt retire des quatre cotes", r.sx === 24 && r.sy === 24 && r.sl === 1200 && r.sh === 1704);
+  const sans = rectRognage([0, 0, 600, 800], null, 1);
+  ok("sans TrimBox : la page entiere", sans.sx === 0 && sans.sy === 0 && sans.sl === 600 && sans.sh === 800);
+  const decale = rectRognage([10, 20, 610, 820], { x: 10, y: 20, width: 600, height: 800 }, 1);
+  ok("une vue qui ne part pas de 0 : rien a rogner quand trim = vue", decale.sx === 0 && decale.sy === 0 && decale.sl === 600 && decale.sh === 800);
+}
+
+titre("— une note : chaque type dit ce qu'il exige —");
+ok("type inconnu : refuse", !lireNote({ type: "autre", contenu: {} }, 10).ok);
+ok("corriger un texte sans rien dire : refuse", !lireNote({ type: "texte", contenu: {}, page_index: 0 }, 10).ok);
+ok("corriger un texte avec le remplacement seul : accepte", lireNote({ type: "texte", contenu: { remplacement: "Jour 1" }, page_index: 0 }, 10).ok);
+ok("changer une photo sans photo ni description : refuse", !lireNote({ type: "photo", contenu: {}, page_index: 0 }, 10).ok);
+ok("une idee vide : refusee", !lireNote({ type: "idee", contenu: { texte: "   " } }, 10).ok);
+ok("retirer sans raison : accepte (la raison est facultative)", lireNote({ type: "retirer", contenu: {}, page_index: 2, x_pct: 10, y_pct: 10 }, 10).ok);
+ok("page hors du tour : refusee", !lireNote({ type: "retirer", contenu: {}, page_index: 10 }, 10).ok);
+{
+  const g = lireNote({ type: "idee", contenu: { texte: "Plus de photos de groupe" }, x_pct: 50 }, 10);
+  ok("une note generale n'a pas de position", g.ok && g.note.page_index === null && g.note.x_pct === null && g.note.y_pct === null);
+  const c = lireNote({ type: "retirer", contenu: { raison: "x", inconnu: "y" }, page_index: 1, x_pct: 140, y_pct: -3 }, 10);
+  ok("la position est bornee a la page, les champs inconnus sont ignores",
+     c.ok && c.note.x_pct === 100 && c.note.y_pct === 0 && !("inconnu" in c.note.contenu));
+}
+ok("etat d'une note : brouillon, a traiter, resolue, retiree",
+   etatNote({ envoyee_le: null, resolue_le: null, retiree_le: null }) === "brouillon" &&
+   etatNote({ envoyee_le: "x", resolue_le: null, retiree_le: null }) === "a_traiter" &&
+   etatNote({ envoyee_le: "x", resolue_le: "y", retiree_le: null }) === "resolue" &&
+   etatNote({ envoyee_le: null, resolue_le: null, retiree_le: "z" }) === "retiree");
+ok("la note se resume en une phrase", resumeNote("texte", { cible: "Jour un", remplacement: "Jour 1" }) === "« Jour un » devient « Jour 1 »" && resumeNote("retirer", {}) === "Retirer cet élément");
+
+titre("— la phrase de validation : le tirage de la fiche, jamais devine —");
+ok("avec un tirage : le nombre est dit", texteValidationBat(120).includes("120 exemplaires"));
+ok("sans tirage : aucun chiffre invente", !/\d/.test(texteValidationBat(null)));
+
+titre("— revision 14.4 : la bande, le rappel avant de valider —");
+ok("bande : « 1 » pour la page seule, « 2–3 » pour une double", libelleBande([0]) === "1" && libelleBande([1, 2]) === "2–3");
+{
+  const r = rappelValidation(120, 2, { sansPreference: false, rang: 3 });
+  ok("rappel : le tour, la proposition retenue, le tirage", r.resume === "Tour 2 · couverture : la proposition 3." && r.tirage.includes("120 exemplaires"));
+  ok("rappel : « sans préférence » le dit", rappelValidation(null, 1, { sansPreference: true, rang: null }).resume === "Tour 1 · couverture : sans préférence, l'atelier choisit.");
+  const vide = rappelValidation(null, 1, { sansPreference: false, rang: null });
+  ok("rappel : aucune couverture choisie = rien d'affirme, aucun tirage invente", vide.resume === "Tour 1." && !/\d/.test(vide.tirage));
+}
+const liseuse = lire("src/app/edition/[token]/bat/Liseuse.tsx");
+ok("BAT plein ecran : plus de bouton « Plein écran », ni d'appel « en appel »", !/Plein écran|en appel/.test(liseuse));
+ok("BAT : l'onglet vertical des notes et la note DANS le panneau", liseuse.includes("ec-bat-onglet-notes") && /<aside[^>]*ec-bat-panneau/.test(liseuse) && liseuse.includes("<NoteEnCours"));
+ok("BAT : les magazines en onglets SOUS la bande", liseuse.indexOf('className="ec-bat-bande"') < liseuse.indexOf("{onglets}", liseuse.indexOf('className="ec-bat-bande"')));
+const batCss = lire("src/app/edition/[token]/bat/bat.css");
+ok("BAT : la page suit la scene (unites de conteneur), aucun plafond en px", batCss.includes("container-type: size") && /max-height: 100cqh/.test(batCss) && !/max-height: 520px/.test(batCss));
+
+titre("— les gris d'un tour : un format a nous, relu sans confiance —");
+{
+  const p1 = new Uint8Array(GRIS_L * GRIS_H).fill(7);
+  const p2 = new Uint8Array(GRIS_L * GRIS_H).fill(9);
+  const lu = decoderGris(encoderGris([p1, p2]));
+  ok("aller-retour sans perte", lu !== null && lu.pages.length === 2 && lu.pages[1][5] === 9 && lu.l === GRIS_L && lu.h === GRIS_H);
+  ok("un fichier tronque ou etranger est refuse", decoderGris(encoderGris([p1]).slice(0, 50)) === null && decoderGris(new Uint8Array([1, 2, 3])) === null);
+}
+
+titre("— les pages d'un tour : le serveur recalcule chaque cle —");
+{
+  const ED = "11111111-1111-4111-8111-111111111111", TO = "22222222-2222-4222-8222-222222222222";
+  const cles = { page: (i: number, e: "webp" | "jpg") => clePageTour(ED, TO, i, e), vignette: (i: number, e: "webp" | "jpg") => cleVignettePageTour(ED, TO, i, e) };
+  const page = (i: number, extra: Record<string, unknown> = {}) => ({ index: i, image_key: clePageTour(ED, TO, i, "webp"), vignette_key: cleVignettePageTour(ED, TO, i, "webp"), empreinte: "0123456789abcdef", apparie_a: null, zones: [], ...extra });
+  ok("trois pages bien formees : acceptees", lirePagesTour([page(0), page(1), page(2)], cles, null).ok);
+  ok("une cle qui pointe ailleurs : refusee", !lirePagesTour([{ ...page(0), image_key: clePageTour(ED, "33333333-3333-4333-8333-333333333333", 0, "webp") }], cles, null).ok);
+  ok("une vignette qui pointe ailleurs : refusee", !lirePagesTour([{ ...page(0), vignette_key: clePageTour(ED, TO, 0, "webp") }], cles, null).ok);
+  ok("des index qui ne se suivent pas : refuses", !lirePagesTour([page(0), page(2)], cles, null).ok);
+  ok("un appariement sans tour precedent : refuse", !lirePagesTour([page(0, { apparie_a: 0 })], cles, null).ok);
+  ok("une ancienne page reprise deux fois : refusee", !lirePagesTour([page(0, { apparie_a: 0 }), page(1, { apparie_a: 0 })], cles, 3).ok);
+  ok("une ancienne page qui n'existe pas : refusee", !lirePagesTour([page(0, { apparie_a: 7 })], cles, 3).ok);
+  ok(`plus de ${MAX_PAGES_TOUR} pages : refuse`, !lirePagesTour(Array.from({ length: MAX_PAGES_TOUR + 1 }, (_, i) => page(i)), cles, null).ok);
+  const z = lirePagesTour([page(0, { apparie_a: 1, zones: [{ x: -5, y: 10, l: 150, h: 20 }, { x: "a", y: 0, l: 1, h: 1 }] })], cles, 2);
+  ok("les zones sont bornees, une zone illisible est ecartee", z.ok && z.pages[0].zones.length === 1 && z.pages[0].zones[0].x === 0 && z.pages[0].zones[0].l === 100);
+  const n = lirePagesTour([page(0, { zones: [{ x: 1, y: 1, l: 1, h: 1 }] })], cles, 2);
+  ok("une nouvelle page n'a pas de zones (rien a comparer)", n.ok && n.pages[0].zones.length === 0);
+  const r = resumeTour([{ apparie_a: 0, zones: [{ x: 0, y: 0, l: 1, h: 1 }] }, { apparie_a: null, zones: [] }, { apparie_a: 2, zones: [] }], 4);
+  ok("le resume du tour : modifiees, nouvelles, retirees", r.modifiees === 1 && r.nouvelles === 1 && r.retirees.join() === "1,3");
+  ok("le premier tour n'a rien a resumer", resumeTour([{ apparie_a: null, zones: [] }], null).nouvelles === 0);
+}
+
+titre("— le tour courant, publier, la couverture —");
+ok("le tour courant est le dernier PUBLIE (un brouillon ne compte pas)",
+   tourCourant([{ numero: 1, publie_le: "a" }, { numero: 2, publie_le: "b" }, { numero: 3, publie_le: null }])?.numero === 2);
+{
+  const futur = new Date("2026-10-20T10:00:00Z").toISOString();
+  const maintenant = new Date("2026-10-13T10:00:00Z");
+  const complet = { pdf_key: "k", nb_pages: 24, pages: [1], echeance_retours: futur };
+  const couv = (rang: number) => ({ rang, image_key: "a", interieur2_key: "b", interieur3_key: "c" });
+  ok("tour 2 complet : publiable sans couverture", manquesPourPublierTour(complet, false, [], null, maintenant).length === 0);
+  ok("tour 1 sans nombre de propositions regle : refuse (on ne devine pas « 3 »)", manquesPourPublierTour(complet, true, [couv(1)], null, maintenant).some((m) => m.includes("nombre de propositions")));
+  ok("tour 1 avec le bon nombre de propositions completes : publiable", manquesPourPublierTour(complet, true, [couv(1), couv(2)], 2, maintenant).length === 0);
+  ok("une proposition sans sa 3e de couverture : refusee", manquesPourPublierTour(complet, true, [{ ...couv(1), interieur3_key: null }], 1, maintenant).some((m) => m.includes("3e")));
+  ok("sans echeance, ou une echeance passee : refuse",
+     manquesPourPublierTour({ ...complet, echeance_retours: null }, false, [], null, maintenant).length === 1 &&
+     manquesPourPublierTour({ ...complet, echeance_retours: "2026-10-01T00:00:00Z" }, false, [], null, maintenant).length === 1);
+  ok("sans PDF rendu : refuse", manquesPourPublierTour({ ...complet, pdf_key: null }, false, [], null, maintenant).length === 1);
+}
+ok("choisir une proposition du magazine, ou « sans preference »",
+   lireChoixCouverture({ couvertureId: "p1" }, [{ id: "p1" }]).ok &&
+   !lireChoixCouverture({ couvertureId: "p9" }, [{ id: "p1" }]).ok &&
+   (() => {
+     const r = lireChoixCouverture({ sans_preference: true }, []);
+     return r.ok && r.patch.couverture_sans_preference && r.patch.couverture_choisie_id === null;
+   })());
+
+titre("— le PDF source et les gris ne sortent jamais vers le client —");
+{
+  const ED = "11111111-1111-4111-8111-111111111111", TO = "22222222-2222-4222-8222-222222222222";
+  ok("les gris et les vignettes de pages sont sous collectif/", estCleCollectif(cleGrisTour(ED, TO)) && estCleCollectif(cleVignettePageTour(ED, TO, 3, "jpg")));
+  let leve = false;
+  try {
+    cleGrisTour(ED, "../numeros");
+  } catch {
+    leve = true;
+  }
+  ok("un id de tour qui n'est pas un uuid est refuse", leve);
+  const client = [...fichiersParSuffixe("src/app/edition", /\.tsx?$/), ...fichiers("src/app/api/collectif", "route.ts")];
+  ok(`aucun fichier client ou route publique (${client.length}) ne lit pdf_key, clePdfTour ou cleGrisTour`,
+     client.every((f) => !/\b(pdf_key|clePdfTour|cleGrisTour)\b/.test(lire(f))));
+  ok("le lecteur client ne lit que les tours PUBLIES",
+     /\.filter\(\(t\) => t\.publie_le\)/.test(lire("src/app/edition/[token]/donnees.ts")));
+}
+
+titre("— le journal du bon a tirer se lit en francais, sans token —");
+ok("tour publie, notes envoyees, BAT valide",
+   phraseEvenement("tour_publie", { magazine: 1, tour: 2, par: "mathias" }).includes("tour 2 publié") &&
+   phraseEvenement("notes_envoyees", { magazine: 1, n: 3 }).includes("3 note") &&
+   phraseEvenement("bat_valide", { magazine: 2 }).includes("VALIDÉ"));
+
+
+/* ════════════════════════════ PHASE 6 : L'ATELIER ET LA LIVRAISON ════════════════════════════ */
+
+titre("— demander une modification : un motif, des mots, jusqu'a la validation —");
+ok("cinq motifs, ceux de la maquette", MOTIFS_MODIFICATION.length === 5 && MOTIFS_MODIFICATION.some((m) => m.cle === "autre"));
+ok("sans motif : refuse", !lireDemande({ texte: "x" }).ok);
+ok("« Autre chose » sans un mot : refuse", !lireDemande({ motif: "autre", texte: "  " }).ok);
+{
+  const d = lireDemande({ motif: "pages", texte: "  huit pages pour la soiree  " });
+  ok("un motif et un texte : acceptes, le texte nettoye", d.ok && d.texte === "huit pages pour la soiree" && d.libelle === "Ajouter des pages");
+  ok("le message dit le motif puis le texte", d.ok && messageDemande(d) === "Demande de modification · Ajouter des pages\nhuit pages pour la soiree");
+}
+ok("possible jusqu'au bon a tirer, plus apres",
+   (["preparation", "composition", "bat"] as EtatEdition[]).every(demandePossible) &&
+   !(["bat_valide", "impression", "expediee", "livree"] as EtatEdition[]).some(demandePossible));
+ok("accepter ou reparler d'une proposition : un message sans montant",
+   messageProposition("accepter", "8 pages en plus") === "J'accepte la proposition complémentaire « 8 pages en plus »." &&
+   messageProposition("reparler", "x").startsWith("Je souhaite reparler"));
+ok("aucun montant ecrit dans la phase 6 (le document vient de l'atelier)",
+   ["src/lib/collectif/livraison.ts", "src/app/api/collectif/proposition/route.ts", "src/app/api/collectif/modification/route.ts", "src/app/edition/[token]/atelier/Propositions.tsx"].every((f) => !/€/.test(lire(f))));
+
+titre("— la livraison : un jour du calendrier, des etapes posees par l'atelier —");
+ok("un jour qui existe", estJour("2026-10-29") && !estJour("2026-06-31") && !estJour("29/10/2026") && !estJour(null));
+ok("le jour se lit sans fuseau", formaterJour("2026-10-29") === "jeudi 29 octobre 2026" && formaterJour("x") === "");
+{
+  const s1 = lireSaisieLivraison({ adresse: "  Maison Essai\r\n12 rue du Port  ", prevue_le: "" });
+  ok("l'adresse garde ses lignes, un jour vide reste vide", s1.ok && s1.adresse === "Maison Essai\n12 rue du Port" && s1.prevue_le === null);
+  ok("un jour illisible : refuse", !lireSaisieLivraison({ prevue_le: "2026-13-01" }).ok);
+}
+{
+  const e = etapesLivraison("impression", { bat_valide: "21 octobre", impression: "22 octobre", expediee: "x" });
+  ok("a l'impression : BAT fait, impression en cours, le reste a venir",
+     e[0].faite && !e[0].courante && e[1].courante && !e[2].faite && !e[3].faite);
+  ok("une date ne s'affiche que pour une etape atteinte", e[0].quand === "21 octobre" && e[2].quand === null);
+  const l = etapesLivraison("livree", {});
+  ok("livree : tout est fait, la derniere est la courante", l.every((x) => x.faite) && l[3].courante && l.filter((x) => x.courante).length === 1);
+}
+ok("le titre suit l'etape", titreLivraison("bat_valide").includes("validé") && titreLivraison("expediee") === "Votre magazine arrive." && titreLivraison("livree").includes("arrivé"));
+ok("le journal de la phase 6 se lit en francais",
+   phraseEvenement("modification_demandee", { motif: "Ajouter des pages" }).includes("Ajouter des pages") &&
+   phraseEvenement("proposition_acceptee", { libelle: "Option" }).includes("acceptée"));
+
+
+/* ════════════════════════════ RÉVISION DU 13/10 : LA COQUILLE ════════════════════════════ */
+
+titre("— jour / nuit : une preference de l'appareil, jamais une donnee —");
+ok("deux modes, la nuit par defaut, toute valeur inconnue vaut nuit",
+   MODES.join() === "nuit,jour" && lireMode(undefined) === "nuit" && lireMode("jour") === "jour" && lireMode("JOUR") === "nuit" && lireMode("<script>") === "nuit");
+ok("le cookie vit un an, sur l'espace seulement", cookieMode("jour") === "bj_ec_mode=jour; path=/edition; max-age=31536000; samesite=lax");
+ok("le logo suit le mode, et les deux fichiers existent",
+   LOGO_MODE.nuit.includes("cuivre") && LOGO_MODE.jour.includes("bleu") &&
+   Object.values(LOGO_MODE).every((f) => existsSync(resolve(RACINE, "public" + f))));
+{
+  /* Aucune couleur écrite en dur hors des blocs de jetons : un composant écrit
+     un RÔLE (`--ec-text`, `rgba(var(--ec-fg-rgb), x)`), jamais une teinte.
+     bat.css garde les vraies couleurs des pages de magazine, en jetons
+     `--ec-page` / `--ec-encre` : il est vérifié de la même façon. */
+  const sansJetons = (css: string) =>
+    css
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\.bj-atelier\.ec-espace(\[data-ec-mode="jour"\])?\s*\{[^}]*\}/g, "");
+  const feuilles = fichiersParSuffixe("src/app/edition/[token]", /\.css$/);
+  const fautives = feuilles.filter((f) => /#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d/.test(sansJetons(lire(f))));
+  ok(`aucune couleur en dur dans les feuilles de l'espace (${feuilles.length} feuilles${fautives.length ? " ; en faute : " + fautives.join(", ") : ""})`, fautives.length === 0);
+  const composants = fichiersParSuffixe("src/app/edition", /\.tsx$/);
+  ok("aucune couleur en dur dans les composants de l'espace", composants.every((f) => !/["'`]#[0-9a-fA-F]{3,8}["'`]/.test(lire(f))));
+  ok("la pastille des non-lus est sur « Parler à l'atelier »", /e\.cle === "atelier" && nonLus > 0/.test(lire("src/app/edition/[token]/Coquille.tsx")));
+  ok("le mode n'utilise pas data-theme (systeme mort, src/app/CLAUDE.md)", !/data-theme/.test(lire("src/app/edition/_composants/RacineEspace.tsx") + lire("src/app/edition/[token]/espace.css")));
+}
+
+
+/* ════════════════════════════ RÉVISION : LE TABLEAU DE BORD ════════════════════════════ */
+
+titre("— la migration de la revision : des colonnes, un repli a la lecture, un 503 a l'ecriture —");
+{
+  const sql = lire(MIGRATION_REVISION);
+  ok("ecrite, atomique, idempotente", /^begin;/m.test(sql) && /^commit;/m.test(sql) && (sql.match(/add column if not exists/g) ?? []).length === 4);
+  ok("le plafond d'un lien, le document cite, la piece jointe",
+     /collectif_provenances[\s\S]*plafond_par_personne integer/.test(sql) && /document_id uuid[\s\S]*references public\.collectif_documents\(id\) on delete set null/.test(sql) && /piece_jointe_key text/.test(sql) && /piece_jointe_nom text/.test(sql));
+  ok("aucune table du B2C touchee", !/\b(numeros|photos|evenements|mails_envoyes)\b(?!_)/.test(sql.replace(/collectif_\w+/g, "").replace(/--.*$/gm, "")));
+  ok("colonne absente : 42703 a la lecture, PGRST204 a l'ecriture, rien d'autre",
+     colonneAbsente("42703") && colonneAbsente("PGRST204") && !colonneAbsente("42P01") && !colonneAbsente(null));
+}
+
+titre("— chaque lien de contribution porte son plafond —");
+{
+  const ed = { plafond_participant_atelier: 40, plafond_participant_client: null, plafond_total: 1000 };
+  ok("le curseur va de 5 a 100, ou jusqu'au plafond de l'atelier", CURSEUR_LIEN.min === 5 && plafondLienMax({ plafond_participant_atelier: null }) === 100 && plafondLienMax(ed) === 40 && plafondLienMax({ plafond_participant_atelier: 300 }) === 100);
+  const l = lirePlafondLien({ plafond: 30 }, ed);
+  ok("30 photos par personne : accepte", l.ok && l.plafond_par_personne === 30 && !l.sans_plafond);
+  ok("au-dela du plafond de l'atelier : refuse, la phrase le dit", (() => { const r = lirePlafondLien({ plafond: 50 }, ed); return !r.ok && r.message.includes("40"); })());
+  ok("« Sans limite » : sans plafond par personne", (() => { const r = lirePlafondLien({ sansPlafond: true, plafond: 9999 }, ed); return r.ok && r.sans_plafond && r.plafond_par_personne === null; })());
+  ok("ni nombre ni « Sans limite » : refuse", !lirePlafondLien({}, ed).ok && !lirePlafondLien({ plafond: "trente" }, ed).ok && !lirePlafondLien({ plafond: 0 }, ed).ok);
+  ok("le libelle d'un lien, et d'un lien d'avant la revision (regle de l'edition)",
+     libellePlafondLien({ sans_plafond: false, plafond_par_personne: 30 }, ed) === "30 photos par personne" &&
+     libellePlafondLien({ sans_plafond: true, plafond_par_personne: null }, ed) === "Sans limite" &&
+     libellePlafondLien({ sans_plafond: false, plafond_par_personne: null }, ed) === "40 photos par personne");
+  const place = placeRestante(ed, { role: "participant", sansPlafond: false, plafondLien: 10, dejaParAppareil: 7 }, 100);
+  ok("le plafond du lien remplace celui de l'edition pour la place restante", !place.illimitee && place.place === 3 && place.borne === "plafond_participant");
+  const sansLien = placeRestante(ed, { role: "participant", sansPlafond: false, dejaParAppareil: 7 }, 100);
+  ok("sans lien : la regle de l'edition, comme avant", !sansLien.illimitee && sansLien.place === 33);
+  const plein = placeRestante(ed, { role: "participant", sansPlafond: false, plafondLien: 10, dejaParAppareil: 0 }, 995);
+  ok("le plafond total compte toujours tout", !plein.illimitee && plein.place === 5 && plein.borne === "plafond_total");
+  ok("la route des liens lit le plafond par la regle pure, et nomme la colonne seulement s'il y en a un",
+     /lirePlafondLien\(/.test(lire("src/app/api/collectif/provenances/route.ts")) && /plafond_par_personne !== null\) ligne\.plafond_par_personne/.test(lire("src/app/api/collectif/provenances/route.ts")));
+  ok("la declaration des photos se replie sans la colonne", /colonneAbsente\(lu\.error\.code\)/.test(lire("src/app/api/collectif/depot/presign/route.ts")));
+}
+
+titre("— le QR code d'un lien : un objet imprime —");
+{
+  const url = "https://bellajour.fr/depot/AbCdEfGhIjKlMnOpQrStUvWxYz012345?p=AbCdEfGhIjKlMnOpQrStUv";
+  const m = matriceQr(url);
+  ok("une matrice carree, assez grande pour ce lien", m.length >= 25 && m.every((l) => l.length === m.length));
+  const { cote } = cheminQr(m);
+  ok("une marge de quatre modules", cote === m.length + 8);
+  ok("le fichier telechargeable est fonce sur clair", /fill="#ffffff"/.test(svgQr(url)) && /fill="#050505"/.test(svgQr(url)));
+  ok("le meme lien donne le meme QR", JSON.stringify(matriceQr(url)) === JSON.stringify(m));
+}
+
+titre("— a envoyer a l'atelier : un fichier, ou des reponses —");
+{
+  ok("cinq contenus, le mot du dirigeant en questionnaire", CONTENUS_CLIENT.length === 5 && contenuClient("mot")?.mode === "questionnaire" && contenuClient("inconnu") === null);
+  ok("quatre questions, a relire par Mathias (PRD §12.14)", QUESTIONS_MOT.length === 4);
+  const logo = contenuClient("logo")!;
+  ok("un logo en SVG : accepte, ecrit en image/svg+xml", (() => { const r = lireFichierContenu(logo, "logo.SVG", 2000); return r.ok && r.extension === "svg" && r.type === "image/svg+xml"; })());
+  ok("une extension inattendue : refusee", !lireFichierContenu(logo, "logo.exe", 2000).ok && !lireFichierContenu(logo, "logo", 2000).ok);
+  ok("vide ou au-dela de 4 Mo : refuse", !lireFichierContenu(logo, "a.png", 0).ok && !lireFichierContenu(logo, "a.png", 5 * 1024 * 1024).ok);
+  ok("un questionnaire n'accepte pas de fichier", !lireFichierContenu(contenuClient("mot")!, "a.pdf", 10).ok);
+  const rep = lireReponsesMot(["  Une belle annee  ", "", 42]);
+  ok("les reponses : au moins une, nettoyees, cle = la question", rep.ok && Object.keys(rep.reponses).length === 1 && rep.reponses[QUESTIONS_MOT[0]] === "Une belle annee");
+  ok("aucune reponse : refuse", !lireReponsesMot(["", " "]).ok && !lireReponsesMot(null).ok);
+  const route = lire("src/app/api/collectif/contenus/route.ts");
+  ok("la route des contenus : responsable seulement, contenu demande par la fiche, token dans le corps",
+     /peut\(acces\.role, "envoyer_contenu"\)/.test(route) && /contenus_demandes/.test(route) && !/searchParams/.test(route));
+}
+
 titre("— chaque porte du B2B lit l'interrupteur —");
 const layouts = ["src/app/edition/layout.tsx", "src/app/depot/layout.tsx", "src/app/admin/collectif/layout.tsx"];
 ok("les trois layouts existent et appellent collectifOuvert() puis notFound()",
@@ -695,6 +1260,8 @@ const routes = [...fichiers("src/app/api/collectif", "route.ts"), ...fichiers("s
 ok(`chaque route collectif (${routes.length}) lit l'interrupteur`,
    routes.every((f) => /collectifOuvert\(\)/.test(lire(f))));
 const ECRITURE = /export\s+(async\s+)?function\s+(POST|PUT|PATCH|DELETE)\b/;
+ok("chaque route publique lit le token par chargerAcces (forme, porte, archive)",
+   fichiers("src/app/api/collectif", "route.ts").every((f) => /chargerAcces(Depot)?\(/.test(lire(f))));
 ok("chaque route publique qui ECRIT demande peut(role, action) avant d'agir",
    fichiers("src/app/api/collectif", "route.ts").filter((f) => ECRITURE.test(lire(f))).every((f) => /\bpeut\(/.test(lire(f))));
 ok("chaque route admin revérifie l'admin (defense en profondeur)",
@@ -702,11 +1269,114 @@ ok("chaque route admin revérifie l'admin (defense en profondeur)",
 
 titre("— le B2B n'ecrit jamais dans les tables du B2C —");
 const libCollectif = readdirSync(resolve(RACINE, "src/lib/collectif")).filter((f) => f.endsWith(".ts"));
-const interdits = /@\/lib\/atelier\/(evenements|mails|enrichissement|paiement|cloudprinter|apercu)["']/;
+const interdits = /@\/lib\/atelier\/(evenements|mails|paiement|cloudprinter|apercu)["']/;
 ok("aucun module de src/lib/collectif n'importe un module B2C qui ecrit dans numeros/photos/evenements",
    libCollectif.every((f) => !interdits.test(lire(`src/lib/collectif/${f}`))));
+ok("de l'enrichissement B2C, seul le COEUR sans table est importe (jamais enrichirPhotos ni geocoderNumero)",
+   libCollectif.every((f) => !/\b(enrichirPhotos|geocoderNumero|enrichirDossier|logEvenement|envoyerMailAtelier)\b/.test(lire(`src/lib/collectif/${f}`).replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, ""))));
 ok("aucun module de src/lib/collectif ne nomme une table du B2C",
    libCollectif.every((f) => !/from\(["'](numeros|photos|evenements|mails_envoyes)["']\)/.test(lire(`src/lib/collectif/${f}`))));
+
+titre("— revision 14.5 : parler a l'atelier, documents —");
+{
+  ok("piece jointe : un PDF de 1 Mo passe", lirePieceJointe("Programme.pdf", 1_000_000).ok);
+  const exe = lirePieceJointe("outil.exe", 1000);
+  ok("piece jointe : un executable est refuse, par son extension", !exe.ok);
+  ok("piece jointe : au-dela de 4 Mo, refusee", !lirePieceJointe("photo.jpg", PIECE_MAX + 1).ok && lirePieceJointe("photo.jpg", PIECE_MAX).ok);
+  ok("piece jointe : un fichier vide est refuse", !lirePieceJointe("vide.pdf", 0).ok);
+  const seul = texteDuMessage("  ", "Programme.pdf");
+  ok("un fichier envoye seul prend « Fichier joint : nom » (le texte reste obligatoire en base)", seul.ok && seul.texte === "Fichier joint : Programme.pdf");
+  ok("sans fichier, un message vide reste refuse", !texteDuMessage("", null).ok);
+  const d = messageDemande({ libelle: "Ajouter des pages", texte: "8 pages pour la soiree" });
+  const lue = lireMessageDemande(d);
+  ok("une demande se relit en carte : motif et precision", lue?.motif === "Ajouter des pages" && lue.precision === "8 pages pour la soiree");
+  ok("une phrase qui imite une demande sans motif connu reste un message", lireMessageDemande("Demande de modification · n'importe quoi") === null);
+  const m = (id: string, auteur: "client" | "atelier", texte: string, created_at: string): Message => ({ id, auteur, qui: null, texte, created_at });
+  const fil = [
+    m("a", "atelier", "Bienvenue", "2026-10-12T08:02:00Z"),
+    m("b", "client", messageDemande({ libelle: "Ajouter des pages", texte: "" }), "2026-10-14T12:20:00Z"),
+    m("c", "atelier", messageDemande({ libelle: "Ajouter des pages", texte: "" }), "2026-10-14T12:30:00Z"),
+  ];
+  const dem = demandesDuFil(fil);
+  ok("« Vos demandes » : seulement les demandes DU CLIENT", dem.length === 1 && dem[0].motif === "Ajouter des pages");
+  const el = filDeConversation(fil, [{ id: "p1", quand: "2026-10-13T09:00:00Z" }], formaterJourParis);
+  ok("le fil : jours, messages et proposition dans l'ordre du temps",
+    el.map((e) => e.genre).join() === "jour,message,jour,proposition,jour,message,message"
+    && el[0].genre === "jour" && el[0].jour === "12 octobre");
+  ok("l'heure du fil : « 14 h 20 », heure de Paris", formaterHeureParis("2026-10-14T12:20:00Z") === "14 h 20");
+  const ed = "11111111-2222-3333-4444-555555555555";
+  ok("la piece jointe se range sous collectif/<edition>/messages/<id du message>",
+    clePieceJointe(ed, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "Programme final.PDF") === `collectif/${ed}/messages/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.pdf`);
+  let refuse = false;
+  try {
+    clePieceJointe(ed, "../x", "a.pdf");
+  } catch {
+    refuse = true;
+  }
+  ok("un id de message hors forme est refuse par la cle", refuse);
+
+  const envoyer = lire("src/app/api/collectif/messages/envoyer/route.ts");
+  ok("envoyer : la migration est SONDEE avant d'ecrire au coffre (aucun fichier orphelin)",
+    envoyer.indexOf("revisionMessagesAppliquee(") > 0 && envoyer.indexOf("revisionMessagesAppliquee(") < envoyer.indexOf("ecrireObjet("));
+  ok("envoyer : 503 migration_revision_absente, jamais un message sans sa piece", /ERREUR_REVISION_ABSENTE/.test(envoyer) && /colonneAbsente\(ecrit\.code\)/.test(envoyer));
+  ok("envoyer : le document cite appartient a l'edition", /\.eq\("edition_id", edition\.id\)/.test(envoyer));
+  const messagerie = lire("src/lib/collectif/messagerie.ts");
+  ok("le fil se replie sans les colonnes de la revision (lecture)", /colonneAbsente\(error\.code\)\) \(\{ data, error \} = await requete\(COLONNES_AVANT\)\)/.test(messagerie));
+  ok("un message simple ne nomme pas les colonnes de la revision (il s'ecrit avant la migration)", /\.\.\.\(extras\.documentId \?/.test(messagerie));
+  const docs = lire("src/app/edition/[token]/dossier/page.tsx");
+  ok("Documents : plus de messagerie, l'encart « Nouvelle proposition » mene a Parler a l'atelier",
+    !/Messagerie|useMessagerie/.test(docs) && docs.includes("Nouvelle proposition") && docs.includes("cheminSection(token, 'atelier')"));
+  ok("Documents : pas de ligne « Format » inventee", !/Format/.test(docs));
+  ok("Parler a l'atelier : le fil, le « + » (joindre, citer), les demandes",
+    /filDeConversation/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")) && /Citer un document/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")));
+  const restes = fichiersParSuffixe("src/app/edition", /\.tsx?$/).filter((f) => /[Vv]otre dossier|[Tt]on dossier/.test(lire(f)));
+  ok(`plus aucun « votre dossier » dans l'espace client${restes.length ? ` (${restes.join(", ")})` : ""}`, restes.length === 0);
+  ok("aucun rendez-vous invente (pas de date ni de duree de rendez-vous dans le fil)", !/\ben visio\b|minutes en|Rendez-vous pris|Prochain rendez-vous/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")));
+}
+
+titre("— revision 14.6 : le brief partie par partie —");
+{
+  const style = { id: "s1", publie: true, palettes: [{ cle: "sable" }, { cle: "nuit" }], couvertures: [{ cle: "c1" }] };
+  const autre = lirePartieBrief("palette", { palette_cle: "corail" }, style);
+  ok("palette : une palette d'un AUTRE style est refusee (la regle de Mathias)", !autre.ok);
+  const pal = lirePartieBrief("palette", { palette_cle: "nuit" }, style);
+  ok("palette : celle du style choisi passe, et le brief repasse « a valider »", pal.ok && pal.patch.palette_cle === "nuit" && "brief_valide_le" in pal.patch && pal.patch.brief_valide_le === null);
+  ok("sans style choisi, aucune partie ne s'enregistre", !lirePartieBrief("texte", { texte: "peu" }, null).ok);
+  ok("un style retire du mur refuse les parties", !lirePartieBrief("texte", { texte: "peu" }, { ...style, publie: false }).ok);
+  const tx = lirePartieBrief("texte", { texte: "beaucoup" }, style);
+  ok("texte : une reponse de la liste, rien d'autre", tx.ok && tx.patch.texte === "beaucoup" && !lirePartieBrief("texte", { texte: "roman" }, style).ok);
+  const db = lirePartieBrief("doubles", { doubles: ["recit", "intrus", "aeree"] }, style);
+  ok("doubles : les types connus, dans l'ordre des types, un au moins", db.ok && JSON.stringify(db.patch.doubles) === JSON.stringify(["aeree", "recit"]) && !lirePartieBrief("doubles", { doubles: [] }, style).ok);
+  ok("une partie inconnue est refusee", !lirePartieBrief("couverture", {}, style).ok);
+  const a = [{ style_id: "s1", couverture: "c1" }];
+  ok("aimer une couverture de plus de-valide le brief", patchCouvertures([], a).brief_valide_le === null && "brief_valide_le" in patchCouvertures([], a));
+  ok("un clic qui ne change rien ne de-valide rien", !("brief_valide_le" in patchCouvertures(a, [...a])));
+  ok("le resume : style, palette, doubles, couvertures", resumeBrief({ style: "Riviera", palette: "Sable", doubles: ["Aérée", "Récit"], couvertures: 1 }) === "Riviera, palette Sable · Aérée, Récit · 1 couverture aimée");
+  ok("le resume sans style le dit", resumeBrief({ style: null, palette: null, doubles: [], couvertures: 0 }) === "Aucun style choisi pour l'instant.");
+  ok("l'etat d'un brief dans le bandeau", etatDuBrief({ valide: true, style: "Riviera" }) === "Brief validé" && etatDuBrief({ valide: false, style: "Riviera" }) === "Style : Riviera" && etatDuBrief({ valide: false, style: null }) === "Style à choisir");
+  ok("le slug « brief » est reserve (la page voisine style/brief)", !lireSaisieStyle({ nom: "Brief", slug: "brief" }, "creation").ok);
+  const route = lire("src/app/api/collectif/brief/route.ts");
+  ok("l'API du brief lit chaque partie par lirePartieBrief, contre le style DEJA choisi", /lirePartieBrief\(action, corps, style\)/.test(route) && /mag\.style_id \? await lireStyle\(\{ id: mag\.style_id \}\)/.test(route));
+  ok("aimer une couverture passe par patchCouvertures (le brief valide repasse a valider)", /patchCouvertures\(/.test(route));
+  ok("la page « modifier le brief » existe et ouvre un panneau lateral", existsSync(resolve(RACINE, "src/app/edition/[token]/style/brief/page.tsx")) && /<Fenetre\s+cote/.test(lire("src/app/edition/[token]/style/brief/Brief.tsx")));
+  const fiche = lire("src/app/edition/[token]/style/[slug]/FicheStyle.tsx");
+  ok("un style en detail : la barre d'etapes et ses quatre ancres", ["ec-etape-1", "ec-etape-2", "ec-etape-3", "ec-etape-4"].every((a) => fiche.includes(`"${a}"`)) && fiche.includes("ec-fiche-etapes"));
+  ok("le mur : les lignes du brief menent a style/brief", /style\/brief\?m=/.test(lire("src/app/edition/[token]/style/Mur.tsx")));
+}
+
+titre("— revision 14.3 / 14.7 : photos et livraison —");
+{
+  const collecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  ok("Photos : le chargement par pages observe SA zone de defilement (root), nul sur telephone",
+    /root: racine/.test(collecte) && /matchMedia\(REQUETE_TELEPHONE\)\.matches \? null : zone\.current/.test(collecte));
+  ok("Photos : « Créer un lien » ouvre la fenetre du lien de contribution (plafond PAR LIEN), plus de formulaire « photographe » en dur",
+    /<FenetreLien /.test(collecte) && !/type: "photographe"/.test(collecte));
+  ok("Photos : le depot s'ouvre dans une fenetre en verre", /<Fenetre titre="Déposer des photos"/.test(collecte));
+  ok("Photos : l'ecran garde ses filtres et sa presélection facultative (pas la proposition B)", /Ma présélection/.test(collecte) && /Laisser|laisse l'atelier choisir|laissez l'atelier choisir/.test(collecte));
+  const livraison = lire("src/app/edition/[token]/livraison/page.tsx");
+  ok("Livraison : l'en-tete commun et « Écrire à l'atelier » vers Parler a l'atelier",
+    /<EnTeteEcran titre="Livraison"/.test(livraison) && livraison.includes("cheminSection(token, 'atelier')") && !livraison.includes("cheminSection(token, 'dossier')"));
+}
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
 process.exit(ko === 0 ? 0 : 1);

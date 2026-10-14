@@ -10,6 +10,79 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 14/10/2026 — Édition collective : la révision du 13/10 (PRD §14, T-147), sur branche
+
+- **Code** sur `feat/collectif-revision-13-10` (issue de `feat/collectif-phases-2-a-6`, non
+  fusionnée) : une PR vers `main` porte les phases 2 à 6 ET la révision. Rien ne change en
+  production tant qu'elle n'est pas fusionnée et que `COLLECTIF_OUVERT` reste absent de Vercel.
+- **Migration `20261014_collectif_revision.sql` APPLIQUÉE le 14/10/2026 par Mathias**, vérifiée
+  en SQL (lecture seule) le même jour : `collectif_provenances.plafond_par_personne` (integer,
+  contrainte `>= 1`), `collectif_messages.document_id` (uuid, clé vers `collectif_documents`,
+  `on delete set null`), `piece_jointe_key`, `piece_jointe_nom`, l'index partiel
+  `collectif_messages_document_idx`. Avant elle (vérifié aussi le 14/10) : lectures repliées,
+  503 `migration_revision_absente` sur un lien plafonné, une citation, une pièce jointe.
+- **Rejoué après la migration, le 14/10 sur localhost:3000** : un lien « Essai plafond (Claude) »
+  à 5 photos par personne sur « Essai révision », puis un VRAI dépôt de 6 photos : 5 arrivées
+  (R2, `collectif/033b0841-…/photos/`), la 6e refusée avec la phrase du plafond ; sur « Essai
+  livraison », un message qui CITE la proposition « Vingt exemplaires de plus » et un message
+  avec la pièce jointe `tour1.pdf` (R2, `collectif/<id>/messages/`), téléchargée identique à
+  l'original. La fiche atelier montre « Document cité » et « Pièce jointe », liens signés.
+- **Quatrième édition d'essai : « Essai révision (Claude) »** (id `033b0841-…`, deux magazines,
+  collecte ouverte), créée le 14/10 pour la révision. Elle porte : le lien de contribution
+  « Équipe Lyon » (sans limite), deux contenus reçus (un logo d'essai, le mot du dirigeant au
+  questionnaire), le message « Bonjour, un message d'essai de la révision (Claude). », et le
+  brief du **magazine 1 VALIDÉ** (style « Essai technique Claude », palette Essai, beaucoup de
+  texte, trois doubles pages, une couverture aimée) ; le magazine 2 n'a pas de style, deux
+  couvertures aimées. Aucun mail ne part (phase 7). À archiver quand Mathias l'aura regardée.
+- « Essai révision » porte aussi deux liens créés par Mathias en recette (« OUI OUI », « OKAY »,
+  sans limite).
+- L'édition vierge « Organisation d'essai » n'a pas été touchée : elle reste à Mathias.
+- `verif-collectif.ts` 426 vérifications, `verif-atelier.ts` 1450, verts le 14/10.
+
+## 13/10/2026 (fin d'après-midi) — Édition collective : phases 2 à 6 sur UNE branche, testées en local avant fusion
+
+- Décision de Mathias : ne plus fusionner phase par phase ; les phases 2 à 6 s'enchaînent sur
+  `feat/collectif-phases-2-a-6`, testées sur `localhost:3006`, fusionnées quand il est satisfait.
+  Rien ne change en production entre-temps (`COLLECTIF_OUVERT` absent de Vercel).
+- **Phase 2 faite** (T-141) : espace client, tableau de bord, dossier, messagerie.
+- **Phase 3 faite** (T-142) : la collecte. Le local de recette passe sur **localhost:3000** :
+  c'est la seule origine locale que le CORS du coffre R2 accepte pour un envoi direct (OPTIONS
+  testé le 13/10 : 3000 → 204, 3006 → 403).
+- **Phase 4 faite** (T-143) : le mur des styles et le brief.
+- **Phase 5 faite** (T-144) : le bon à tirer. ⚠️ L'édition d'essai a CHANGÉ D'ÉTAT pour la
+  recette : collecte close (13/10, « Clore maintenant »), `nb_propositions_couverture` = 2,
+  état « Bon à tirer ». Magazine 1 : tours 1 et 2 publiés (PDF synthétiques ; le tour 2 date
+  d'avant le nouvel appariement et dit à tort « 2 nouvelles, 1 retirée »), 2 propositions de
+  couverture, la proposition 2 choisie, deux notes envoyées dont une avec réponse ; **laissé
+  ouvert** pour que Mathias essaie notes, couverture et validation lui-même. Magazine 2 : tours
+  1 à 3 publiés, proposition 1 choisie, **BAT VALIDÉ** le 13/10. Fichiers sur R2 sous
+  `collectif/dcf95f15-…/tours/`. Un tour publié est figé par la base : ces tours ne se
+  suppriment pas, l'édition s'archive.
+- **Phase 6 faite** (T-145) : parler à l'atelier, la livraison. **Seconde édition d'essai
+  créée le 13/10 : « Essai livraison (Claude) »** (un magazine, tirage 40, adresse du
+  responsable `recette-collectif@bellajour.fr`, aucun mail ne part), menée jusqu'à **« Livrée »**
+  : un tour publié, une demande de modification, deux propositions complémentaires (des PDF
+  d'essai) acceptées, BAT validé « sans préférence », impression, expédition Colissimo avec le
+  numéro fictif `TESTCOLLECTIF01`, livrée. À archiver quand Mathias l'aura regardée.
+- **Troisième édition d'essai, VIERGE, créée le 13/10 à la demande de Mathias** pour vivre le
+  parcours client depuis le début : « Organisation d’essai » · « Séminaire d’essai », un
+  magazine, collecte ouverte jusqu'au 27/10/2026 18:00 (Paris). Réglages d'ESSAI posés par
+  Claude (modifiables dans la fiche, aucun n'est une décision) : 30 photos par participant,
+  1 000 au total, présélection 40, 24 pages, tirage 50, 2 tours, 2 propositions de couverture,
+  2 couvertures aimées ; contenus demandés : logo, programme, mot du dirigeant ; pas de lien de
+  rendez-vous. Adresse du responsable `recette-collectif@bellajour.fr` (aucun mail ne part).
+- ⚠️ **Le style « Essai technique Claude » est PUBLIÉ** (13/10) pour que le mur de la recette
+  ne soit pas vide : il apparaîtra sur le mur de TOUTE édition tant qu'il l'est. Le retirer du
+  mur (`/admin/collectif/styles`, « Retirer du mur ») dès que Mathias a publié un vrai style.
+  L'édition d'essai a ses deux briefs validés et `couvertures_aimees_max` = 2.
+- **Données d'essai de la collecte en production** : 11 photos sur R2 sous
+  `collectif/dcf95f15-…/photos/` (8 « Camille Essai », 3 « Studio Essai »), une photo
+  présélectionnée et signalée, deux liens de provenance (« Photographe essai », sans plafond),
+  plafond client réglé à 8. Tout appartient à l'édition « Essai technique (Claude) ».
+- **Données d'essai en production** : l'édition « Essai technique (Claude) » a été RÉCUPÉRÉE
+  (désarchivée) pour la recette de l'espace client ; elle porte quatre messages d'essai et un
+  « Devis d'essai » (PDF minuscule sur R2, `collectif/<id>/documents/`). Plafond client réglé à 8.
+
 ## 13/10/2026 (après-midi) — Édition collective, phase 1 : ouvrir une édition, les styles (T-140), sur branche
 
 - **Code** sur `feat/collectif-phase-1` (PR à fusionner par Mathias) : liste, création, fiche et

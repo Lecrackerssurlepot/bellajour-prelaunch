@@ -1,0 +1,855 @@
+/* Le bon à tirer en plein écran (révision §14.4) — tout sous `.ec-espace` :
+   une feuille chargée ne se décharge jamais en navigation client.
+
+   Rien ne défile : l'en-tête (68 px), puis le corps en ligne. À gauche, la
+   ligne d'information (44), la scène (la double page à SA taille, par unités
+   de conteneur), la bande des pages (96), les onglets des magazines (46) ;
+   à droite, l'onglet vertical « Notes · n » (34) et le panneau (340), qui se
+   replie. Les pages de magazine gardent leurs vraies couleurs (`--ec-page`,
+   `--ec-encre`, ombres physiques `--ec-noir-rgb`) de jour comme de nuit. */
+
+.ec-espace .ec-bat2 {
+  min-height: 0;
+}
+.ec-espace .ec-bat-accent {
+  color: var(--ec-accent);
+}
+.ec-espace .ec-bat-gris {
+  color: var(--ec-muted);
+  font-weight: 400;
+}
+
+/* ─────────── l'en-tête : les tours, Avant / Après, l'échéance, valider ─────────── */
+
+.ec-espace .ec-bat-segments {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--ec-line-fort);
+  border-radius: 999px;
+}
+.ec-espace .ec-bat-segments button {
+  min-height: 30px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ec-espace .ec-bat-segments button:hover {
+  color: var(--ec-text);
+}
+.ec-espace .ec-bat-segments button[aria-pressed="true"] {
+  background: var(--ec-text);
+  color: var(--ec-bg);
+}
+.ec-espace .ec-bat-valider {
+  min-height: 38px;
+  padding: 0 18px;
+}
+
+/* ─────────────────────────────── le corps ─────────────────────────────── */
+
+.ec-espace .ec-bat-corps {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.ec-espace .ec-bat-gauche {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Une seule ligne d'information. */
+.ec-espace .ec-bat-info {
+  flex: none;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px;
+  min-width: 0;
+}
+.ec-espace .ec-bat-rond {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--ec-line-fort);
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ec-espace .ec-bat-rond:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.ec-espace .ec-bat-info-titre {
+  flex: none;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ec-espace .ec-bat-info-ligne {
+  min-width: 0;
+  margin-left: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+
+/* La scène : la double page à la taille de l'écran. `container-type` donne
+   ses dimensions aux pages (cqw, cqh) : une page ne dépasse jamais la
+   hauteur de la scène, ni la moitié de sa largeur. */
+.ec-espace .ec-bat-scene {
+  flex: 1;
+  min-height: 0;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 24px 14px;
+  box-sizing: border-box;
+}
+.ec-espace .ec-bat-double {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  filter: drop-shadow(0 24px 60px rgba(var(--ec-noir-rgb), 0.35));
+}
+/* Une page seule garde son côté de la pliure : la page 1 est une page de
+   DROITE, la dernière (nombre pair de pages) une page de GAUCHE. */
+.ec-espace .ec-bat-double--droite,
+.ec-espace .ec-bat-double--gauche {
+  width: 100cqw;
+  box-sizing: border-box;
+}
+.ec-espace .ec-bat-double--droite {
+  justify-content: flex-start;
+  padding-left: 50cqw;
+}
+.ec-espace .ec-bat-double--gauche {
+  justify-content: flex-end;
+  padding-right: 50cqw;
+}
+.ec-espace .ec-bat-feuille {
+  position: relative;
+  flex: none;
+  line-height: 0;
+  background: var(--ec-page);
+  user-select: none;
+}
+.ec-espace .ec-bat-feuille img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-height: 100cqh;
+  max-width: 50cqw;
+}
+/* La pliure : une ombre dans le creux de la page de droite. */
+.ec-espace .ec-bat-feuille + .ec-bat-feuille::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 1;
+  width: 22px;
+  background: linear-gradient(90deg, rgba(var(--ec-noir-rgb), 0.22), rgba(var(--ec-noir-rgb), 0));
+  pointer-events: none;
+}
+.ec-espace .ec-bat-feuille--note {
+  cursor: crosshair;
+}
+.ec-espace .ec-bat-sans-image {
+  display: grid;
+  place-items: center;
+  width: min(50cqw, calc(100cqh * 0.707));
+  aspect-ratio: 210 / 297;
+  padding: 16px;
+  box-sizing: border-box;
+  color: var(--ec-encre);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  background: repeating-linear-gradient(135deg, var(--ec-page-gris) 0 10px, var(--ec-page) 10px 20px);
+}
+.ec-espace .ec-bat-zone {
+  position: absolute;
+  z-index: 2;
+  outline: 2px solid var(--ec-accent);
+  outline-offset: 4px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+.ec-espace .ec-bat-zone--avant {
+  outline: 2px dashed var(--ec-encre);
+}
+
+/* Les épingles : centrées sur le point cliqué. */
+.ec-espace .ec-bat-epingle {
+  position: absolute;
+  z-index: 3;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border-radius: 999px;
+  border: 2px solid var(--ec-accent);
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(var(--ec-noir-rgb), 0.35);
+}
+.ec-espace .ec-bat-epingle--brouillon {
+  border-style: dashed;
+  border-color: var(--ec-page);
+}
+.ec-espace .ec-bat-epingle--resolue {
+  background: var(--ec-encre);
+  color: var(--ec-page);
+  border-color: var(--ec-page);
+}
+.ec-espace .ec-bat-epingle--nouvelle {
+  pointer-events: none;
+  animation: ec-pose 200ms ease-out;
+}
+@keyframes ec-pose {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* ─────────────────────────── la couverture, dans la scène ─────────────────────────── */
+
+.ec-espace .ec-bat-couv {
+  width: 100%;
+  height: 100cqh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+.ec-espace .ec-bat-scene-vide {
+  max-width: 420px;
+  text-align: center;
+}
+.ec-espace .ec-bat-propositions {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  perspective: 1600px;
+}
+.ec-espace .ec-bat-proposition {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  cursor: pointer;
+}
+.ec-espace .ec-bat-proposition:disabled {
+  cursor: default;
+}
+/* Le magazine posé : légère rotation, reflet, ombre ; la taille suit la scène. */
+.ec-espace .ec-bat-livre {
+  display: block;
+  height: 58cqh;
+  aspect-ratio: 210 / 297;
+}
+.ec-espace .ec-bat-livre-couv {
+  position: relative;
+  display: block;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 2px 5px 5px 2px;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+  transform: rotateY(-14deg);
+  transform-origin: 30% 50%;
+  box-shadow: 18px 24px 44px rgba(var(--ec-noir-rgb), 0.45);
+  outline: 2px solid transparent;
+  outline-offset: 8px;
+  transition: transform 0.3s, outline-color 0.2s;
+}
+.ec-espace .ec-bat-proposition[aria-pressed="true"] .ec-bat-livre-couv {
+  outline-color: var(--ec-accent);
+}
+.ec-espace .ec-bat-proposition:not(:disabled):hover .ec-bat-livre-couv {
+  transform: rotateY(-6deg);
+}
+.ec-espace .ec-bat-livre-couv img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ec-espace .ec-bat-livre-reflet {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, rgba(var(--ec-reflet-rgb), 0.24) 0%, rgba(var(--ec-reflet-rgb), 0) 36%, rgba(var(--ec-reflet-rgb), 0) 72%, rgba(var(--ec-reflet-rgb), 0.08) 100%);
+  pointer-events: none;
+}
+.ec-espace .ec-bat-proposition-nom {
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-bat-proposition[aria-pressed="true"] .ec-bat-proposition-nom {
+  color: var(--ec-text);
+  font-weight: 600;
+}
+.ec-espace .ec-bat-couv-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.ec-espace .ec-bat-couv-gestes .ec-bouton[aria-pressed="true"] {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-bat-couv-note {
+  display: flex;
+  gap: 6px;
+  width: min(380px, 100%);
+}
+.ec-espace .ec-bat-couv-note .ec-champ {
+  flex: 1;
+  min-width: 0;
+  min-height: 34px;
+}
+.ec-espace .ec-bat-ouvert {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  height: 64cqh;
+  perspective: 1800px;
+}
+.ec-espace .ec-bat-ouvert figure {
+  margin: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.ec-espace .ec-bat-ouvert figcaption {
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-bat-ouvert-g,
+.ec-espace .ec-bat-ouvert-d {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  aspect-ratio: 210 / 297;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+}
+.ec-espace .ec-bat-ouvert-g {
+  transform: rotateY(12deg);
+  transform-origin: right center;
+  box-shadow: -18px 26px 44px rgba(var(--ec-noir-rgb), 0.4);
+}
+.ec-espace .ec-bat-ouvert-d {
+  transform: rotateY(-12deg);
+  transform-origin: left center;
+  box-shadow: 18px 26px 44px rgba(var(--ec-noir-rgb), 0.4);
+}
+.ec-espace .ec-bat-ouvert img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ─────────────────────────── la bande des pages, toujours visible ─────────────────────────── */
+
+.ec-espace .ec-bat-bande {
+  flex: none;
+  height: 96px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  border-top: 1px solid var(--ec-line);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+.ec-espace .ec-bat-vignette {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.ec-espace .ec-bat-vignette[aria-current="true"] {
+  color: var(--ec-text);
+}
+.ec-espace .ec-bat-vignette-pages {
+  position: relative;
+  display: flex;
+  gap: 1px;
+  width: 70px;
+  height: 50px;
+  background: var(--ec-page);
+}
+.ec-espace .ec-bat-vignette-pages--seule {
+  width: 36px;
+}
+.ec-espace .ec-bat-vignette-couv {
+  display: block;
+  width: 36px;
+  height: 50px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.1);
+}
+.ec-espace .ec-bat-vignette[aria-current="true"] .ec-bat-vignette-pages,
+.ec-espace .ec-bat-vignette[aria-current="true"] .ec-bat-vignette-couv {
+  outline: 2px solid var(--ec-accent);
+  outline-offset: 2px;
+}
+.ec-espace .ec-bat-vignette-pages img,
+.ec-espace .ec-bat-vignette-pages > span:not(.ec-bat-vignette-point),
+.ec-espace .ec-bat-vignette-couv img {
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ec-espace .ec-bat-vignette-point {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--ec-accent);
+}
+
+/* ─────────────────────────── les magazines, en onglets SOUS la bande ─────────────────────────── */
+
+.ec-espace .ec-bat-magazines {
+  flex: none;
+  height: 46px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 0 24px;
+  border-top: 1px solid var(--ec-line);
+  background: var(--ec-panel);
+  overflow-x: auto;
+}
+.ec-espace .ec-bat-magazine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-top: 2px solid transparent;
+  color: var(--ec-muted);
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ec-espace .ec-bat-magazine:hover {
+  color: var(--ec-text);
+}
+.ec-espace .ec-bat-magazine[aria-current="page"] {
+  border-top-color: var(--ec-accent);
+  background: var(--ec-bg);
+  color: var(--ec-text);
+  font-weight: 600;
+}
+
+/* ─────────────────────────── l'onglet vertical et le panneau des notes ─────────────────────────── */
+
+.ec-espace .ec-bat-onglet-notes {
+  flex: none;
+  width: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0;
+  border: 0;
+  border-left: 1px solid var(--ec-line);
+  background: var(--ec-panel);
+  color: var(--ec-text);
+  font: inherit;
+  cursor: pointer;
+}
+.ec-espace .ec-bat-onglet-notes:hover {
+  background: var(--ec-surface);
+}
+.ec-espace .ec-bat-onglet-fleche {
+  color: var(--ec-accent);
+  font-size: 16px;
+  line-height: 1;
+}
+.ec-espace .ec-bat-onglet-texte {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 13px;
+  font-weight: 600;
+}
+.ec-espace .ec-bat-onglet-n {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+}
+.ec-espace .ec-bat-panneau {
+  flex: none;
+  width: 340px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--ec-panel);
+}
+.ec-espace .ec-bat-panneau[hidden] {
+  display: none;
+}
+.ec-espace .ec-bat-panneau-tete {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px 12px;
+}
+/* (0,2,0) contre `.bj-atelier h2`. */
+.ec-espace .ec-bat-panneau-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: var(--ec-text);
+}
+.ec-espace .ec-bat-liste {
+  flex: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-bat-carte {
+  flex: none;
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(var(--ec-ac-rgb), 0.55);
+  border-radius: 12px;
+  background: var(--ec-surface);
+  scroll-margin: 16px;
+}
+.ec-espace .ec-bat-carte--brouillon {
+  border-style: dashed;
+}
+.ec-espace .ec-bat-carte--resolue {
+  border-color: var(--ec-line);
+}
+.ec-espace .ec-bat-numero {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ec-espace .ec-bat-numero--resolue {
+  background: transparent;
+  border: 1px solid var(--ec-line-fort);
+  color: var(--ec-muted);
+}
+.ec-espace .ec-bat-carte-corps {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-bat-reponse {
+  padding-left: 10px;
+  border-left: 2px solid var(--ec-line-fort);
+  color: var(--ec-muted);
+  font-size: 13px;
+}
+.ec-espace .ec-bat-carte-gestes {
+  display: flex;
+  gap: 12px;
+}
+.ec-espace .ec-bat-indice {
+  padding-top: 4px;
+}
+.ec-espace .ec-bat-panneau-pied {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 20px 18px;
+  border-top: 1px solid var(--ec-line);
+}
+.ec-espace .ec-bat-panneau-pied .ec-bouton--plein {
+  width: 100%;
+  min-height: 44px;
+}
+
+/* La note en cours, DANS le panneau : rien ne la pousse hors de l'écran. */
+.ec-espace .ec-bat-note {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ec-espace .ec-bat-note-tete {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 20px 12px;
+  font-size: 14px;
+}
+.ec-espace .ec-bat-note-corps {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 20px 12px;
+}
+.ec-espace .ec-bat-note-pied,
+.ec-espace .ec-bat-confirmer {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8px;
+}
+.ec-espace .ec-bat-note-pied {
+  padding: 12px 20px 18px;
+  border-top: 1px solid var(--ec-line);
+}
+.ec-espace .ec-bat-note-pied .ec-bouton,
+.ec-espace .ec-bat-confirmer .ec-bouton {
+  align-self: stretch;
+  min-height: 44px;
+}
+.ec-espace .ec-bat-types {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.ec-espace .ec-bat-types button {
+  min-height: 40px;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: 1px solid var(--ec-line-fort);
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ec-espace .ec-bat-types button[aria-pressed="true"] {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-bat-choisir-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px dashed var(--ec-line-fort);
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.ec-espace .ec-bat-choisir-photo img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.ec-espace .ec-bat-photos-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+  max-height: calc(55 * var(--uh));
+  overflow-y: auto;
+}
+.ec-espace .ec-bat-photos-grille button {
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ec-espace .ec-bat-photos-grille button[aria-pressed="true"] {
+  border-color: var(--ec-accent);
+}
+.ec-espace .ec-bat-photos-grille img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ─────────────────────────────── téléphone ─────────────────────────────── */
+
+/* Le bon à tirer reste un écran entier sous la barre du tiroir (65 px) ; les
+   notes deviennent une feuille du bas, ouverte par la pastille « Notes · n »
+   posée en bas à droite (fermée par défaut, Liseuse.tsx). */
+@media (max-width: 860px) {
+  .ec-espace .ec-bat2 {
+    min-height: calc(var(--app-height) - 65px);
+  }
+  .ec-espace .ec-bat2 .ec-ecran-tete {
+    gap: 10px;
+  }
+  .ec-espace .ec-bat2 .ec-ecran-actions {
+    justify-content: flex-start;
+  }
+  .ec-espace .ec-bat-info {
+    padding: 0 12px;
+  }
+  .ec-espace .ec-bat-info-ligne {
+    display: none;
+  }
+  .ec-espace .ec-bat-scene {
+    min-height: 320px;
+    padding: 4px 12px 10px;
+  }
+  .ec-espace .ec-bat-bande,
+  .ec-espace .ec-bat-magazines {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .ec-espace .ec-bat-onglet-notes {
+    position: fixed;
+    right: 12px;
+    bottom: 12px;
+    z-index: 56;
+    width: auto;
+    flex-direction: row;
+    padding: 10px 14px;
+    border: 1px solid var(--ec-line-fort);
+    border-radius: 999px;
+    box-shadow: 0 10px 30px rgba(var(--ec-noir-rgb), 0.35);
+  }
+  .ec-espace .ec-bat-onglet-texte {
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+  .ec-espace .ec-bat-onglet-fleche {
+    display: none;
+  }
+  .ec-espace .ec-bat-panneau {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 55;
+    width: auto;
+    height: calc(72 * var(--uh));
+    border-radius: 18px 18px 0 0;
+    border-top: 1px solid var(--ec-line-fort);
+    box-shadow: 0 -20px 60px rgba(var(--ec-noir-rgb), 0.4);
+  }
+  /* (0,3,0) : la feuille du bas défile chez elle, même sur téléphone. */
+  .ec-espace .ec-bat-panneau .ec-defile {
+    overflow-y: auto;
+  }
+  /* Feuille ouverte : la pastille monte sur son bord et sert à la fermer. */
+  .ec-espace .ec-bat2:not(.ec-bat2--replie) .ec-bat-onglet-notes {
+    bottom: calc(72 * var(--uh) + 10px);
+  }
+  .ec-espace .ec-bat-propositions {
+    gap: 16px;
+  }
+  .ec-espace .ec-bat-livre {
+    height: 44cqh;
+  }
+}
+
+/* Un téléphone lit page par page (Liseuse.tsx, 760 px) : une page prend
+   toute la largeur de la scène. */
+@media (max-width: 760px) {
+  .ec-espace .ec-bat-feuille img {
+    max-width: 100cqw;
+  }
+  .ec-espace .ec-bat-sans-image {
+    width: min(100cqw, calc(100cqh * 0.707));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ec-espace .ec-bat-livre-couv {
+    transition: none;
+  }
+  .ec-espace .ec-bat-epingle--nouvelle {
+    animation: none;
+  }
+}

@@ -8,43 +8,43 @@
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;500;600&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Fraunces:ital,wght@0,400;0,600;1,400&family=Archivo+Black&family=Bodoni+Moda:wght@400;600&family=Syne:wght@500;700&family=Space+Grotesk:wght@500;700&display=swap">
-<style>
-body{margin:0;background:#050505}
-a{color:#d68a63}a:hover{color:#ffffff}
-</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@400;500;600&family=Fraunces:ital,wght@0,400;1,400&display=swap">
+<style>body{margin:0;background:#050505}a{color:var(--accent)}</style>
 </helmet>
-<div style="min-height: 2200px; box-sizing: border-box; background: #050505; color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.5; display: flex">
-  <aside aria-label="Navigation de l'espace" style="flex: none; width: 248px; box-sizing: border-box; border-right: 1px solid rgba(255,255,255,0.10); background: #050505; padding: 22px 14px; display: flex; flex-direction: column; gap: 22px">
-    <span style="padding: 0 14px; font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; color: #ffffff">Bellajour</span>
-    <button type="button" aria-label="Changer d'édition" style="margin: 0 2px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); color: #ffffff; font-family: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px">
-      <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">Séminaire d'automne</span><span style="font-size: 12px; color: rgba(255,255,255,0.56)">Maison Aubier</span></span>
+<div style="--bg: {{ th.bg }}; --panel: {{ th.panel }}; --surface: {{ th.surface }}; --line: {{ th.line }}; --text: {{ th.text }}; --muted: {{ th.muted }}; --faint: {{ th.faint }}; --accent: {{ th.accent }}; --accent-soft: {{ th.accentSoft }}; --on-accent: {{ th.onAccent }}; --page: {{ th.page }}; --fg: {{ th.text }}; --bgc: {{ th.bg }}; --fg-rgb: {{ th.fgRgb }}; --ac-rgb: {{ th.acRgb }}; height: 900px; overflow: hidden; display: flex; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; transition: background 0.3s, color 0.3s">
+  <aside aria-label="Navigation" style="flex: none; width: 232px; box-sizing: border-box; height: 100%; border-right: 1px solid var(--line); background: var(--panel); padding: 22px 12px 16px; display: flex; flex-direction: column; gap: 18px">
+    <img src="{{ th.logo }}" alt="Bellajour" style="width: 116px; height: auto; margin: 0 12px 4px">
+    <button type="button" aria-label="Changer d'édition" style="padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-family: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px">
+      <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">Séminaire d'automne</span><span style="font-size: 12px; color: var(--muted)">Maison Aubier</span></span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5-5 5 5M7 14l5 5 5-5"></path></svg>
     </button>
-    <nav style="display: flex; flex-direction: column; gap: 4px">
-        <a href="Espace.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>Tableau de bord</a>
-        <a href="Styles.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: #ffffff; background: rgba(214,138,99,0.16); font-weight: 600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><circle cx="12" cy="12" r="9"></circle><circle cx="8" cy="10.5" r="1.3"></circle><circle cx="12" cy="7.5" r="1.3"></circle><circle cx="16" cy="10.5" r="1.3"></circle><path d="M12 21a3 3 0 0 1 0-6h2"></path></svg>Style</a>
-        <a href="Collecte.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="M21 16l-5-5-9 8"></path></svg>Photos</a>
-        <span role="link" aria-disabled="true" title="Disponible à la réception du premier bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; font-size: 15px; color: rgba(255,255,255,0.32); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 5h6.5A2.5 2.5 0 0 1 12 7.5V20a2 2 0 0 0-2-2H3z"></path><path d="M21 5h-6.5A2.5 2.5 0 0 0 12 7.5V20a2 2 0 0 1 2-2h7z"></path></svg>Bon à tirer<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
-        <span role="link" aria-disabled="true" title="Disponible après la validation du bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; font-size: 15px; color: rgba(255,255,255,0.32); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 6h11v10H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="1.8"></circle><circle cx="17" cy="18" r="1.8"></circle></svg>Livraison<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+    <nav style="display: flex; flex-direction: column; gap: 2px">
+      <a href="Espace.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>Tableau de bord</a>
+      <a href="Styles.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--text); background: var(--accent-soft); font-weight: 600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><circle cx="12" cy="12" r="9"></circle><circle cx="8" cy="10.5" r="1.3"></circle><circle cx="12" cy="7.5" r="1.3"></circle><circle cx="16" cy="10.5" r="1.3"></circle><path d="M12 21a3 3 0 0 1 0-6h2"></path></svg>Style</a>
+      <a href="Collecte.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="M21 16l-5-5-9 8"></path></svg>Photos</a>
+      <span role="link" aria-disabled="true" title="Disponible à la réception du premier bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--faint); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 5h6.5A2.5 2.5 0 0 1 12 7.5V20a2 2 0 0 0-2-2H3z"></path><path d="M21 5h-6.5A2.5 2.5 0 0 0 12 7.5V20a2 2 0 0 1 2-2h7z"></path></svg>Bon à tirer<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+      <span role="link" aria-disabled="true" title="Disponible après la validation du bon à tirer" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--faint); cursor: not-allowed"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M3 6h11v10H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="1.8"></circle><circle cx="17" cy="18" r="1.8"></circle></svg>Livraison<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex: none; margin-left: auto"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
     </nav>
-    <div style="height: 1px; margin: 0 14px; background: rgba(255,255,255,0.10)"></div>
-    <nav style="display: flex; flex-direction: column; gap: 4px">
-        <a href="Dossier.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path><path d="M9 13h6M9 17h6"></path></svg>Votre dossier</a>
-        <a href="RendezVous.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 10px; text-decoration: none; font-size: 15px; color: rgba(255,255,255,0.72); background: transparent; font-weight: 400"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M4 5h16v11H9l-5 4z"></path></svg>Parler à l'atelier</a>
+    <div style="height: 1px; margin: 0 12px; background: var(--line)"></div>
+    <nav style="display: flex; flex-direction: column; gap: 2px">
+      <a href="RendezVous.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M4 5h16v11H9l-5 4z"></path></svg>Parler à l'atelier<span style="margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center">1</span></a>
+      <a href="Dossier.dc.html" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14px; text-decoration: none; color: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path><path d="M9 13h6M9 17h6"></path></svg>Documents</a>
     </nav>
-    <div style="margin-top: auto; padding: 14px; border-top: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center; gap: 12px">
-      <span style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: rgba(214,138,99,0.18); display: inline-flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 600; font-size: 14px">ML</span>
-      <span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 14px; color: #ffffff">Marion Lefèvre</span><span style="font-size: 12px; color: rgba(255,255,255,0.56)">Responsable du bon à tirer</span></span>
+    <div style="margin-top: auto; padding: 12px 12px 0; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 10px">
+      <span style="flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--accent-soft); display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px">ML</span>
+      <span style="flex: 1; display: flex; flex-direction: column; min-width: 0"><span style="font-size: 13px">Marion Lefèvre</span><span style="font-size: 11px; color: var(--muted)">Responsable du BAT</span></span>
+      <button type="button" onClick="{{ basculerTheme }}" title="{{ themeTitre }}" aria-label="{{ themeTitre }}" style="flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0">
+        <sc-if value="{{ estNuit }}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+        <sc-if value="{{ estJour }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path></svg></sc-if>
+      </button>
     </div>
   </aside>
+  <div style="flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; position: relative; overflow: hidden">
 
-  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative">
+  <header style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px 24px; padding: 22px 4%; border-bottom: 1px solid rgba(var(--fg-rgb), 0.10)"><span style="font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 500">Le style</span><span style="font-size: 14px; color: rgba(var(--fg-rgb), 0.72)">Un brief par magazine</span></header>
 
-  <header style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px 24px; padding: 22px 4%; border-bottom: 1px solid rgba(255,255,255,0.10)"><span style="font-family: 'Cormorant Garamond', serif; font-size: 30px; font-weight: 500">Le style</span><span style="font-size: 14px; color: rgba(255,255,255,0.72)">Un brief par magazine</span></header>
-
-  <div style="padding: 16px 4%; border-bottom: 1px solid rgba(255,255,255,0.10); display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; background: rgba(214,138,99,0.06)">
-    <span style="font-size: 14px; color: rgba(255,255,255,0.72)">Vous préparez</span>
+  <div style="padding: 16px 4%; border-bottom: 1px solid rgba(var(--fg-rgb), 0.10); display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; background: rgba(var(--ac-rgb), 0.06)">
+    <span style="font-size: 14px; color: rgba(var(--fg-rgb), 0.72)">Vous préparez</span>
     <div style="display: flex; flex-wrap: wrap; gap: 8px">
       <sc-for list="{{ magazines }}" as="m" hint-placeholder-count="2">
         <button type="button" onClick="{{ m.choisir }}" aria-pressed="{{ m.actif }}" style="min-height: 52px; padding: 6px 18px; border-radius: 14px; border: 1px solid {{ m.bord }}; background: {{ m.fond }}; color: {{ m.texte }}; font-family: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; justify-content: center">
@@ -55,13 +55,13 @@ a{color:#d68a63}a:hover{color:#ffffff}
     </div>
   </div>
 
-  <div style="display: flex; flex-wrap: wrap; align-items: flex-start">
+  <div style="flex: 1; min-height: 0; display: flex; align-items: stretch">
 
-    <main style="flex: 999 1 640px; min-width: 0; padding: 40px 3% 56px 4%; display: flex; flex-direction: column; gap: 28px">
+    <main style="flex: 999 1 640px; min-width: 0; overflow-y: auto; padding: 32px 3% 48px 4%; display: flex; flex-direction: column; gap: 28px">
       <div style="display: flex; flex-direction: column; gap: 10px; max-width: 720px">
-        <span style="font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #d68a63">Étape 3 · Style et photos</span>
+        <span style="font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent)">Étape 3 · Style et photos</span>
         <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 72px; line-height: 0.95">Le mur des styles</h1>
-        <p style="margin: 0; color: rgba(255,255,255,0.72)">{{ consigne }}</p>
+        <p style="margin: 0; color: rgba(var(--fg-rgb), 0.72)">{{ consigne }}</p>
       </div>
 
       <div style="display: flex; flex-wrap: wrap; gap: 8px">
@@ -73,7 +73,7 @@ a{color:#d68a63}a:hover{color:#ffffff}
       <sc-if value="{{ modeTout }}" hint-placeholder-val="{{ true }}">
         <div style="columns: 2 420px; column-gap: 28px">
           <sc-for list="{{ planches }}" as="s" hint-placeholder-count="6">
-            <a href="StyleDetail.dc.html" aria-label="{{ s.ouvrir }}" style="display: flex; break-inside: avoid; margin: 0 0 32px; border-radius: 16px; padding: 18px; background: rgba(255,255,255,0.03); outline: 2px solid {{ s.cadre }}; outline-offset: -2px; flex-direction: column; gap: 14px; text-decoration: none; color: #ffffff">
+            <a href="StyleDetail.dc.html" aria-label="{{ s.ouvrir }}" style="display: flex; break-inside: avoid; margin: 0 0 32px; border-radius: 16px; padding: 18px; background: rgba(var(--fg-rgb), 0.03); outline: 2px solid {{ s.cadre }}; outline-offset: -2px; flex-direction: column; gap: 14px; text-decoration: none; color: var(--fg)">
               <span style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-areas: {{ s.zones }}; gap: 10px">
                 <span style="grid-area: c; aspect-ratio: 210 / 297; background: {{ s.fond }}; padding: 9%; box-sizing: border-box; display: flex; flex-direction: column; gap: 7%">
                   <span style="font-family: {{ s.police }}; color: {{ s.encre }}; font-size: 30px; line-height: 0.95">{{ s.titreCouv }}</span>
@@ -94,13 +94,13 @@ a{color:#d68a63}a:hover{color:#ffffff}
               <span style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
                 <span style="display: flex; flex-direction: column">
                   <span style="font-family: 'Cormorant Garamond', serif; font-size: 30px; line-height: 1">{{ s.nom }}</span>
-                  <span style="font-size: 13px; color: rgba(255,255,255,0.56)">{{ s.tags }}</span>
+                  <span style="font-size: 13px; color: rgba(var(--fg-rgb), 0.56)">{{ s.tags }}</span>
                 </span>
                 <span style="display: flex; gap: 6px; align-items: center">
                   <sc-for list="{{ s.badges }}" as="bg" hint-placeholder-count="1">
                     <span title="{{ bg.titre }}" style="padding: 6px 12px; border-radius: 999px; border: 1px solid {{ bg.bord }}; background: {{ bg.fond }}; color: {{ bg.texte }}; font-size: 13px; font-weight: 600">{{ bg.label }}</span>
                   </sc-for>
-                  <span style="font-size: 14px; color: rgba(255,255,255,0.72)">Ouvrir →</span>
+                  <span style="font-size: 14px; color: rgba(var(--fg-rgb), 0.72)">Ouvrir →</span>
                 </span>
               </span>
             </a>
@@ -136,7 +136,7 @@ a{color:#d68a63}a:hover{color:#ffffff}
                 </sc-if>
               </div>
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px">
-                <span style="font-size: 13px; color: rgba(255,255,255,0.72)"><strong style="color: #ffffff">{{ p.nom }}</strong> · {{ p.typeLabel }}</span>
+                <span style="font-size: 13px; color: rgba(var(--fg-rgb), 0.72)"><strong style="color: var(--fg)">{{ p.nom }}</strong> · {{ p.typeLabel }}</span>
                 <sc-if value="{{ p.estCouv }}" hint-placeholder-val="{{ false }}">
                   <button type="button" onClick="{{ p.agir }}" aria-pressed="{{ p.aime }}" aria-label="{{ p.libelle }}" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid {{ p.bord }}; background: {{ p.fondBouton }}; cursor: pointer; display: flex; align-items: center; justify-content: center">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="{{ p.coeurFond }}" stroke="{{ p.coeurTrait }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>
@@ -152,18 +152,18 @@ a{color:#d68a63}a:hover{color:#ffffff}
       </sc-if>
     </main>
 
-    <aside style="flex: 1 1 340px; min-width: 0; position: sticky; top: 0; align-self: flex-start; border-left: 1px solid rgba(255,255,255,0.10); padding: 36px 24px 32px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box">
+    <aside style="flex: 1 1 340px; min-width: 0; overflow-y: auto; border-left: 1px solid rgba(var(--fg-rgb), 0.10); padding: 36px 24px 32px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box">
       <div style="display: flex; flex-direction: column; gap: 4px">
         <span style="font-family: 'Cormorant Garamond', serif; font-size: 34px; line-height: 1">{{ titreBrief }}</span>
-        <span style="font-size: 13px; color: #d68a63">{{ progression }}</span>
-        <span style="font-size: 13px; color: rgba(255,255,255,0.56)">Il se remplit tout seul quand vous choisissez un style dans sa page. L'intérieur suit ce style ; seule la couverture peut venir d'un autre.</span>
+        <span style="font-size: 13px; color: var(--accent)">{{ progression }}</span>
+        <span style="font-size: 13px; color: rgba(var(--fg-rgb), 0.56)">Il se remplit tout seul quand vous choisissez un style dans sa page. L'intérieur suit ce style ; seule la couverture peut venir d'un autre.</span>
       </div>
 
       <sc-if value="{{ sansUnivers }}" hint-placeholder-val="{{ false }}">
-        <section style="border: 1px dashed rgba(255,255,255,0.28); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+        <section style="border: 1px dashed rgba(var(--fg-rgb), 0.28); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px">
           <span>Ouvrez une planche du mur, puis choisissez-la pour ce magazine.</span>
           <sc-if value="{{ peutCopier }}" hint-placeholder-val="{{ false }}">
-            <button type="button" onClick="{{ copier }}" style="align-self: flex-start; height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font-family: inherit; font-size: 14px; cursor: pointer">Reprendre le style du magazine 1</button>
+            <button type="button" onClick="{{ copier }}" style="align-self: flex-start; height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(var(--fg-rgb), 0.22); background: transparent; color: var(--fg); font-family: inherit; font-size: 14px; cursor: pointer">Reprendre le style du magazine 1</button>
           </sc-if>
         </section>
       </sc-if>
@@ -171,17 +171,17 @@ a{color:#d68a63}a:hover{color:#ffffff}
       <sc-if value="{{ aUnivers }}" hint-placeholder-val="{{ true }}">
         <div style="display: flex; flex-direction: column; gap: 0">
           <sc-for list="{{ lignes }}" as="l" hint-placeholder-count="4">
-            <div style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-top: 1px solid rgba(255,255,255,0.10)">
-              <span style="flex: none; width: 22px; height: 22px; border-radius: 50%; background: {{ l.pastille }}; color: #050505; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center">{{ l.signe }}</span>
+            <div style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-top: 1px solid rgba(var(--fg-rgb), 0.10)">
+              <span style="flex: none; width: 22px; height: 22px; border-radius: 50%; background: {{ l.pastille }}; color: var(--bgc); font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center">{{ l.signe }}</span>
               <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
-                <span style="font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.56)">{{ l.titre }}</span>
+                <span style="font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(var(--fg-rgb), 0.56)">{{ l.titre }}</span>
                 <span>{{ l.valeur }}</span>
               </div>
               <sc-if value="{{ l.estLien }}" hint-placeholder-val="{{ true }}">
                 <a href="StyleDetail.dc.html" style="font-size: 13px; flex: none">{{ l.action }}</a>
               </sc-if>
               <sc-if value="{{ l.estBouton }}" hint-placeholder-val="{{ false }}">
-                <button type="button" onClick="{{ l.agir }}" style="flex: none; padding: 0; border: 0; background: transparent; color: #d68a63; font-family: inherit; font-size: 13px; cursor: pointer; text-decoration: underline">{{ l.action }}</button>
+                <button type="button" onClick="{{ l.agir }}" style="flex: none; padding: 0; border: 0; background: transparent; color: var(--accent); font-family: inherit; font-size: 13px; cursor: pointer; text-decoration: underline">{{ l.action }}</button>
               </sc-if>
             </div>
           </sc-for>
@@ -189,15 +189,15 @@ a{color:#d68a63}a:hover{color:#ffffff}
       </sc-if>
 
       <sc-if value="{{ alerte }}" hint-placeholder-val="{{ false }}">
-        <span style="border: 1px solid rgba(214,138,99,0.55); background: rgba(214,138,99,0.12); border-radius: 12px; padding: 12px 14px; font-size: 14px">Deux couvertures au plus par magazine. Retirez-en une avant d'en aimer une autre.</span>
+        <span style="border: 1px solid rgba(var(--ac-rgb), 0.55); background: rgba(var(--ac-rgb), 0.12); border-radius: 12px; padding: 12px 14px; font-size: 14px">Deux couvertures au plus par magazine. Retirez-en une avant d'en aimer une autre.</span>
       </sc-if>
 
       <sc-if value="{{ envoye }}" hint-placeholder-val="{{ false }}">
-        <section style="border: 1px solid rgba(214,138,99,0.55); background: rgba(214,138,99,0.12); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+        <section style="border: 1px solid rgba(var(--ac-rgb), 0.55); background: rgba(var(--ac-rgb), 0.12); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 8px">
           <strong>{{ valideTitre }}</strong>
-          <span style="color: rgba(255,255,255,0.72)">{{ promesse }}</span>
+          <span style="color: rgba(var(--fg-rgb), 0.72)">{{ promesse }}</span>
           <sc-if value="{{ resteAutre }}" hint-placeholder-val="{{ false }}">
-            <button type="button" onClick="{{ allerAutre }}" style="align-self: flex-start; height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: #ffffff; color: #050505; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">{{ autreLabel }}</button>
+            <button type="button" onClick="{{ allerAutre }}" style="align-self: flex-start; height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--fg); color: var(--bgc); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">{{ autreLabel }}</button>
           </sc-if>
           <sc-if value="{{ toutValide }}" hint-placeholder-val="{{ false }}">
             <span style="font-size: 14px">Tous vos briefs sont validés. L'atelier commence la composition dès que les photos sont réunies.</span>
@@ -205,22 +205,22 @@ a{color:#d68a63}a:hover{color:#ffffff}
         </section>
       </sc-if>
 
-      <button type="button" onClick="{{ valider }}" style="height: 52px; border: 0; border-radius: 999px; background: {{ validerFond }}; color: #050505; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer">{{ validerLabel }}</button>
+      <button type="button" onClick="{{ valider }}" style="height: 52px; border: 0; border-radius: 999px; background: {{ validerFond }}; color: var(--bgc); font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer">{{ validerLabel }}</button>
     </aside>
   </div>
-  </div>
+    </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2200}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
 class Component extends DCLogic {
-  renderVals() {
+  renderVals0() {
     const S = {
       riviera: { nom: 'Riviera', tags: 'Voile · Été · Grand air', police: "'Fraunces', serif", nomPolice: 'Fraunces', titreCouv: 'Cap au large', phrase: 'Le vent tourne, on garde le cap.', zones: "'c c t t t' 'c c p p p' 'd d d d d'", c: ['#e9dcc6', '#1d3557', '#2f5d8a', '#f6efe3'] },
       nuit: { nom: 'Nuit', tags: 'Gala · Remise de prix', police: "'Syne', sans-serif", nomPolice: 'Syne', titreCouv: 'Le Gala', phrase: 'Un soir, une promo, mille éclats.', zones: "'t t t c c' 'p p p c c' 'd d d d d'", c: ['#0d0f1a', '#f3e7c9', '#c9a45c', '#232740'] },
       editorial: { nom: 'Éditorial', tags: 'Séminaire · Convention', police: "'Playfair Display', serif", nomPolice: 'Playfair Display', titreCouv: 'Le séminaire', phrase: 'Trois jours pour regarder loin.', zones: "'d d d d d' 'c c t t t' 'c c p p p'", c: ['#f4f1ec', '#111111', '#b5452f', '#d9cfc2'] },
-      brut: { nom: 'Brut', tags: 'Soirée · Intégration', police: "'Archivo Black', sans-serif", nomPolice: 'Archivo Black', titreCouv: 'NUIT BLANCHE', phrase: 'On ne dort pas, on se souvient.', zones: "'c c d d d' 'c c t t t' 'p p p p p'", c: ['#0b0b0b', '#ffffff', '#d68a63', '#3a2a22'] },
+      brut: { nom: 'Brut', tags: 'Soirée · Intégration', police: "'Archivo Black', sans-serif", nomPolice: 'Archivo Black', titreCouv: 'NUIT BLANCHE', phrase: 'On ne dort pas, on se souvient.', zones: "'c c d d d' 'c c t t t' 'p p p p p'", c: ['#0b0b0b', 'var(--fg)', 'var(--accent)', '#3a2a22'] },
       archive: { nom: 'Archive', tags: 'Anniversaire · Dix ans', police: "'Bodoni Moda', serif", nomPolice: 'Bodoni Moda', titreCouv: 'Dix ans', phrase: 'Tout a commencé dans un garage.', zones: "'t t t c c' 'd d d c c' 'p p p p p'", c: ['#efe6d6', '#3b2f25', '#8a6a4b', '#d8c7ad'] },
-      grandair: { nom: 'Grand air', tags: 'Ski · Sport', police: "'Space Grotesk', sans-serif", nomPolice: 'Space Grotesk', titreCouv: 'Plein ciel', phrase: 'Première trace, dernière descente.', zones: "'c c t t t' 'c c d d d' 'p p p p p'", c: ['#ffffff', '#0f2a44', '#d64933', '#dfe7ee'] }
+      grandair: { nom: 'Grand air', tags: 'Ski · Sport', police: "'Space Grotesk', sans-serif", nomPolice: 'Space Grotesk', titreCouv: 'Plein ciel', phrase: 'Première trace, dernière descente.', zones: "'c c t t t' 'c c d d d' 'p p p p p'", c: ['var(--fg)', '#0f2a44', '#d64933', '#dfe7ee'] }
     };
     const ordre = ['riviera', 'nuit', 'editorial', 'brut', 'archive', 'grandair'];
     const types = [['couv', 'Couvertures', 'couverture'], ['typo', 'Typographies', 'typographie'], ['palette', 'Palettes', 'palette'], ['double', 'Doubles pages', 'double page']];
@@ -248,12 +248,12 @@ class Component extends DCLogic {
       const actif = mag === n;
       const bn = briefs[n];
       const etat = bn.valide ? 'Brief validé' : (bn.univers ? 'Style : ' + S[bn.univers].nom : 'Style à choisir');
-      return { label: n === 1 ? 'Magazine 1 · Le séminaire' : 'Magazine 2 · La soirée', etat: etat, actif: actif, fond: actif ? '#ffffff' : 'transparent', texte: actif ? '#050505' : '#ffffff', bord: actif ? '#ffffff' : 'rgba(255,255,255,0.22)', choisir: () => this.setState({ mag: n, alerte: false }) };
+      return { label: n === 1 ? 'Magazine 1 · Le séminaire' : 'Magazine 2 · La soirée', etat: etat, actif: actif, fond: actif ? 'var(--fg)' : 'transparent', texte: actif ? 'var(--bgc)' : 'var(--fg)', bord: actif ? 'var(--fg)' : 'rgba(var(--fg-rgb), 0.22)', choisir: () => this.setState({ mag: n, alerte: false }) };
     });
 
     const filtres = [['tout', 'Tout']].concat(types.map((t) => [t[0], t[1]])).map((f) => {
       const actif = filtre === f[0];
-      return { label: f[1], actif: actif, fond: actif ? '#ffffff' : 'transparent', texte: actif ? '#050505' : '#ffffff', bord: actif ? '#ffffff' : 'rgba(255,255,255,0.22)', choisir: () => this.setState({ filtre: f[0] }) };
+      return { label: f[1], actif: actif, fond: actif ? 'var(--fg)' : 'transparent', texte: actif ? 'var(--bgc)' : 'var(--fg)', bord: actif ? 'var(--fg)' : 'rgba(var(--fg-rgb), 0.22)', choisir: () => this.setState({ filtre: f[0] }) };
     });
 
     const planches = ordre.map((cle) => {
@@ -262,15 +262,15 @@ class Component extends DCLogic {
         return {
           label: courant ? 'Magazine ' + n : 'Sélection du magazine ' + n,
           titre: courant ? 'Le style choisi pour ce magazine' : 'Le style que vous avez choisi pour le magazine ' + n,
-          fond: courant ? '#d68a63' : 'rgba(255,255,255,0.08)',
-          texte: courant ? '#050505' : 'rgba(255,255,255,0.72)',
-          bord: courant ? '#d68a63' : 'rgba(255,255,255,0.18)'
+          fond: courant ? 'var(--accent)' : 'rgba(var(--fg-rgb), 0.08)',
+          texte: courant ? 'var(--bgc)' : 'rgba(var(--fg-rgb), 0.72)',
+          bord: courant ? 'var(--accent)' : 'rgba(var(--fg-rgb), 0.18)'
         };
       });
       return Object.assign({}, S[cle], col(cle), {
         badges: badges,
         ouvrir: 'Ouvrir le style ' + S[cle].nom,
-        cadre: b.univers === cle ? '#d68a63' : 'transparent'
+        cadre: b.univers === cle ? 'var(--accent)' : 'transparent'
       });
     });
 
@@ -281,11 +281,11 @@ class Component extends DCLogic {
         estCouv: t[0] === 'couv', pasCouv: t[0] !== 'couv', estTypo: t[0] === 'typo', estPalette: t[0] === 'palette', estDouble: t[0] === 'double',
         typeLabel: t[2],
         aime: aime,
-        cadre: aime ? '#d68a63' : 'transparent',
-        bord: aime ? '#d68a63' : 'rgba(255,255,255,0.22)',
-        fondBouton: aime ? 'rgba(214,138,99,0.22)' : 'transparent',
-        coeurFond: aime ? '#d68a63' : 'none',
-        coeurTrait: aime ? '#d68a63' : '#ffffff',
+        cadre: aime ? 'var(--accent)' : 'transparent',
+        bord: aime ? 'var(--accent)' : 'rgba(var(--fg-rgb), 0.22)',
+        fondBouton: aime ? 'rgba(var(--ac-rgb), 0.22)' : 'transparent',
+        coeurFond: aime ? 'var(--accent)' : 'none',
+        coeurTrait: aime ? 'var(--accent)' : 'var(--fg)',
         libelle: (aime ? 'Retirer la couverture ' : 'Aimer la couverture ') + S[cle].nom,
         agir: () => {
           if (aime) maj({ couvs: b.couvs.filter((x) => x !== cle) });
@@ -295,7 +295,7 @@ class Component extends DCLogic {
       });
     }) : [];
 
-    const ok = (v) => (v ? '#d68a63' : 'rgba(255,255,255,0.22)');
+    const ok = (v) => (v ? 'var(--accent)' : 'rgba(var(--fg-rgb), 0.22)');
     const rien = () => {};
     const lignes = b.univers ? [
       { titre: 'Style et palette', valeur: S[b.univers].nom + ', palette ' + b.palette, signe: '1', pastille: ok(true), estLien: true, estBouton: false, agir: rien, action: 'Changer' },
@@ -332,7 +332,7 @@ class Component extends DCLogic {
         nb[mag] = Object.assign({}, b, { valide: true });
         this.setState({ briefs: nb });
       },
-      validerFond: b.valide ? 'rgba(255,255,255,0.22)' : (complet ? '#d68a63' : 'rgba(255,255,255,0.22)'),
+      validerFond: b.valide ? 'rgba(var(--fg-rgb), 0.22)' : (complet ? 'var(--accent)' : 'rgba(var(--fg-rgb), 0.22)'),
       validerLabel: b.valide ? 'Brief du magazine ' + mag + ' validé' : (complet ? 'Valider le brief du magazine ' + mag : 'Brief incomplet'),
       progression: nbValides + ' brief' + (nbValides > 1 ? 's' : '') + ' validé' + (nbValides > 1 ? 's' : '') + ' sur 2',
       valideTitre: 'Brief du magazine ' + mag + ' validé.',
@@ -341,6 +341,18 @@ class Component extends DCLogic {
       autreLabel: briefs[autre].univers ? 'Terminer le magazine ' + autre + ' →' : 'Passer au magazine ' + autre + ' →',
       allerAutre: () => this.setState({ mag: autre, filtre: 'tout' })
     };
+  }
+  renderVals() {
+    const base = this.renderVals0();
+    const s = this.state || {};
+    const TH = {
+      nuit: { bg: '#050505', panel: '#0a0a0a', surface: 'rgba(255,255,255,0.04)', line: 'rgba(255,255,255,0.10)', text: '#ffffff', muted: 'rgba(255,255,255,0.64)', faint: 'rgba(255,255,255,0.34)', accent: '#d68a63', accentSoft: 'rgba(214,138,99,0.16)', onAccent: '#050505', page: '#ffffff', logo: 'assets/logo-cuivre.png', fgRgb: '255,255,255', acRgb: '214,138,99' },
+      jour: { bg: '#f3ece2', panel: '#ece3d6', surface: '#fbf8f3', line: 'rgba(28,28,28,0.10)', text: '#1c1c1c', muted: 'rgba(28,28,28,0.62)', faint: 'rgba(28,28,28,0.34)', accent: '#1d5bb0', accentSoft: 'rgba(29,91,176,0.10)', onAccent: '#ffffff', page: '#ffffff', logo: 'assets/logo-bleu.png', fgRgb: '28,28,28', acRgb: '29,91,176' }
+    };
+    const jour = s.jour !== undefined ? s.jour : false;
+    const th = jour ? TH.jour : TH.nuit;
+    const modes = { basculerTheme: () => this.setState({ jour: !jour }), estNuit: !jour, estJour: jour, themeTitre: jour ? 'Passer en mode nuit' : 'Passer en mode jour' };
+    return Object.assign({}, base, { th: th }, modes);
   }
 }
 </script>

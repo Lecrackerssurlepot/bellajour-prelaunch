@@ -111,7 +111,12 @@ export type Deposant = {
   role: RoleDeposant;
   /** Le lien de provenance utilisé lève-t-il le plafond par personne ? */
   sansPlafond: boolean;
-  /** Ce que CET appareil a déjà déposé (déclaré ou arrivé). */
+  /**
+   * Le plafond PROPRE du lien de contribution (révision §14.2), par personne.
+   * Absent ou null : la règle de l'édition (`plafondParticipant`).
+   */
+  plafondLien?: number | null;
+  /** Ce que CET appareil a déjà déposé (déclaré ou arrivé) — sur CE lien quand il en a un. */
   dejaParAppareil: number;
 };
 
@@ -139,7 +144,8 @@ export function placeRestante(r: ReglagesPlafond, d: Deposant, totalEdition: num
     return { illimitee: false, place: resteTotal, borne: "plafond_total" };
   }
 
-  const parPersonne = plafondParticipant(r);
+  /* Un lien de contribution porte son plafond ; sinon, celui de l'édition. */
+  const parPersonne = d.plafondLien ?? plafondParticipant(r);
   if (parPersonne === null) return { illimitee: false, place: 0, borne: "plafond_non_regle" };
   const restePerso = Math.max(0, parPersonne - Math.max(0, d.dejaParAppareil));
 
@@ -164,4 +170,43 @@ export function trancherLot(demandees: number, place: Place): Tranche {
   const acceptees = Math.min(n, place.place);
   const refusees = n - acceptees;
   return { acceptees, refusees, raison: refusees > 0 ? place.borne : null };
+}
+
+
+/* ─────────────────────────── le lien de contribution ─────────────────────────── */
+
+/** Le curseur de la fenêtre « lien de contribution » : de 5 à 100 (maquette Espace). */
+export const CURSEUR_LIEN = { min: 5, max: 100 } as const;
+/** Les raccourcis de la maquette ; « Sans limite » est à part. */
+export const RACCOURCIS_LIEN = [10, 30, 50] as const;
+
+/**
+ * Le plus haut plafond qu'un lien peut porter : 100, ou le plafond de
+ * l'atelier s'il est plus bas (le client ne dépasse jamais l'atelier,
+ * comme pour le curseur d'avant la révision).
+ */
+export function plafondLienMax(r: Pick<ReglagesPlafond, "plafond_participant_atelier">): number {
+  const atelier = r.plafond_participant_atelier;
+  return atelier === null ? CURSEUR_LIEN.max : Math.max(1, Math.min(CURSEUR_LIEN.max, atelier));
+}
+
+export type PlafondLien =
+  | { ok: true; sans_plafond: boolean; plafond_par_personne: number | null }
+  | { ok: false; message: string };
+
+/** `{ plafond }` (un entier) ou `{ sansPlafond: true }`, relu par le serveur. */
+export function lirePlafondLien(corps: Record<string, unknown>, r: Pick<ReglagesPlafond, "plafond_participant_atelier">): PlafondLien {
+  if (corps.sansPlafond === true) return { ok: true, sans_plafond: true, plafond_par_personne: null };
+  const n = Number(corps.plafond);
+  const max = plafondLienMax(r);
+  if (!Number.isInteger(n) || n < 1) return { ok: false, message: "Choisir un nombre de photos, ou « Sans limite »." };
+  if (n > max) return { ok: false, message: `${max} photos au plus par personne pour cette édition.` };
+  return { ok: true, sans_plafond: false, plafond_par_personne: n };
+}
+
+/** « 30 photos par personne », « Sans limite », ou la règle de l'édition pour un lien d'avant la révision. */
+export function libellePlafondLien(l: { sans_plafond: boolean; plafond_par_personne: number | null }, r: ReglagesPlafond): string {
+  if (l.sans_plafond) return "Sans limite";
+  const n = l.plafond_par_personne ?? plafondParticipant(r);
+  return n === null ? "Plafond à régler" : `${n} photo${n > 1 ? "s" : ""} par personne`;
 }

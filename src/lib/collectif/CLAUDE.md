@@ -93,6 +93,94 @@ de recette (3006) un PUT direct échouerait sans le dire. Le navigateur réduit 
 `ecrireObjet`. Les PHOTOS de la phase 3 (des milliers, souvent lourdes) ne pourront pas suivre
 ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans le CORS.
 
+**Phase 2 (13/10/2026), l'espace client :**
+- **`espace.ts`** (pur) — les cinq étapes du client par leur NOM (jamais « N sur M », PRD §12.11
+  ouvert), `joursAvant` en jours CALENDAIRES de Paris, `parler(registre)` pour vous / tu,
+  `contenusAEnvoyer`. **`messages.ts`** (pur) — 3,5 s, `fusionnerMessages` sans doublon.
+  **`documents.ts`** (pur) — types de documents, nom de téléchargement en ASCII.
+- **`messagerie.ts`** (effets) — UNE façon de lire, écrire, marquer lu, pour le client et pour
+  l'atelier. **`reponses.ts`** — 404 identique pour inconnu / archivé / fermé, 503 migration,
+  403 `lecture_seule`.
+- ⚠️ **Les routes publiques sont en POST, token dans le CORPS** (`/api/collectif/messages*`,
+  `/api/collectif/plafond`) : jamais un token dans une URL que les journaux garderaient.
+- ⚠️ **« Marquer lu » se fait par un EFFET** (`useMessagerie`), jamais au rendu : un
+  préchargement de `<Link>` exécute la page. Le lien d'équipe ne marque rien.
+- La coquille (`edition/[token]/layout.tsx`) lit l'édition par `cache` (une requête pour layout
+  ET page) ; l'état du tiroir et de la bulle d'un verrou est rattaché au chemin, il se referme
+  seul à la navigation (aucun `setState` dans un effet).
+
+**Phase 3 (13/10/2026), la collecte :**
+- **`depot.ts`** (pur) — `cleFichier` (nom|taille|date de modification de l'ORIGINAL),
+  `lireDeclaration`, `planDeclaration` (déjà là / reprise sur la MÊME clé R2 / nouvelle /
+  refusée ; seules les nouvelles consomment la place), `compteDansPlafond` (une déclaration
+  morte depuis 2 h ne bloque plus personne). **`doublons.ts`** — par trois tronçons (principe
+  des tiroirs), mêmes groupes que `groupesDeDoublons` : le harnais le prouve sur 25 lots.
+  **`grille.ts`** — filtres, jour d'une photo lu SANS fuseau, « qui a déposé ».
+- **`collecte.ts`** (effets) — cookie httpOnly `bj_depot_appareil` (le plafond PAR APPAREIL,
+  un frein honnête), comptes, reprise. **`enrichissement.ts`** (effets) — le voisin de
+  `enrichirPhotos` : importe `lireDepuisCoffre`, `planGeocodage`, `geocoderInverse`, écrit dans
+  `collectif_photos`. Le harnais interdit d'importer `enrichirPhotos`, `geocoderNumero`,
+  `logEvenement`, `envoyerMailAtelier`.
+- ⚠️ **Le moteur d'envoi** (`edition/_composants/depot/moteur.ts`) ne garde RIEN dans le
+  navigateur et ne tient jamais plus de 8 photos réduites en mémoire. Ne pas y ajouter une copie
+  IndexedDB « pour la reprise » : c'est exactement ce qui fait sauter le quota à 2 000 photos.
+- ⚠️ **Le CORS du coffre** n'accepte que bellajour.fr, www, *.vercel.app et `localhost:3000`
+  (vérifié le 13/10 par une requête OPTIONS) : le local de recette des photos tourne donc sur
+  3000 (`.claude/launch.json` « Next.js prod 3000 collectif »).
+
+**Phase 4 (13/10/2026), le style :**
+- **`brief.ts`** (pur) — LA RÈGLE DE MATHIAS est dans `lireChoixStyle` (une palette d'un autre
+  style est refusée) et `basculerCouverture` (une couverture de n'importe quel style publié,
+  plafonnée par `couvertures_aimees_max`, `null` = refusé). `briefModifiable` : seulement en
+  `preparation`. Changer un brief validé le remet à valider. `styleVisible` : une école voit
+  les styles « école » et « tous ».
+- Une seule route, `/api/collectif/brief`, une action par geste ; le droit change selon
+  l'action (`valider_brief` pour valider ou rouvrir, `choisir_style` pour le reste).
+- Le mur et la page d'un style lisent `chargerMur` (styles PUBLIÉS et visibles, images signées
+  une heure). Un style dépublié disparaît du mur ; un brief qui le nomme reste lisible côté
+  atelier (la fiche lit le style par son id, publié ou non).
+
+**Phase 5 (13/10/2026), le bon à tirer :**
+- **`bat.ts`** (pur, importable navigateur) — ⚠️ **L'APPARIEMENT DE DEUX TOURS LIT LE TEXTE
+  D'ABORD.** Mesuré le 13/10 : deux pages de même gabarit ont des empreintes d'image à 0-4 bits
+  même quand leur contenu diffère, et une page dont la photo a changé s'éloigne de 20-28 bits.
+  L'image seule confondait les unes et perdait l'autre. `coutPaire` : la part de mots communs
+  (pdf.js lit le texte, `motsUtiles` retire titre courant et folio) ; l'image seulement pour une
+  page sans texte ; `apparierPages` aligne dans l'ORDRE (un « diff »). Ne pas revenir à un
+  appariement glouton par empreinte. ⚠️ **Les zones** (`zonesModifiees`) comparent des gris de
+  240 × 340 et marquent une cellule aussi sur quelques pixels FRANCHEMENT changés : à 120 px ou
+  à la seule moyenne, un mot corrigé passait inaperçu. `rectRognage` coupe au format fini
+  (TrimBox lue par pdf-lib). `lirePagesTour` RECALCULE chaque clé : le navigateur ne peut faire
+  entrer dans un tour qu'un emplacement de CE tour.
+- **`tours.ts`** (effets) — une seule façon de compter les tours publiés et de trouver le tour
+  précédent d'un brouillon (le dernier PUBLIÉ avant lui, jamais un autre brouillon).
+- Le PDF est rendu dans le NAVIGATEUR de l'atelier (`admin/collectif/[id]/bat/rendreTour.ts`) :
+  le PDF source, les pages et leurs vignettes partent en PUT signé (le CORS du coffre doit
+  accepter l'origine : bellajour.fr, *.vercel.app, localhost:3000) ; les gris passent par le
+  serveur (gzip). Le PDF source et les gris ne sont JAMAIS servis au client : le harnais
+  vérifie qu'aucun fichier de `/edition` ni route publique ne les nomme.
+- Un seul brouillon de tour par magazine (`ouvrir_tour` le rouvre). Les propositions de
+  couverture vivent sur le PREMIER tour ; leur nombre est un réglage de la fiche, `null` refuse
+  la publication. Valider exige une couverture ou « Sans préférence » ET aucune note restée en
+  brouillon.
+- Route client `/api/collectif/bat` : une action par geste, le droit dépend de l'action ; tout
+  est refusé hors de l'état `bat` et sur un magazine validé.
+
+**Phase 6 (13/10/2026), parler à l'atelier et la livraison :**
+- **`livraison.ts`** (pur) — ⚠️ **Pas de suivi en direct, pas de créneaux, pas de montant**
+  (PRD §0.5) : le colis, c'est le transporteur, le numéro et le lien que `suivi.ts` sait
+  construire ; le rendez-vous, c'est le lien Google de la fiche ; une proposition
+  complémentaire est un document de l'atelier, et « Accepter » ne paie rien (message, journal,
+  mention sur le document ; le harnais refuse un « € » dans ces fichiers). Les dates des étapes
+  sont LUES (journal, `livraison`, `bat_valide_le`), jamais estimées. Le jour prévu est un
+  `AAAA-MM-JJ` sans heure : il se lit sans fuseau (`formaterJour`).
+- Une demande de modification devient un MESSAGE : l'atelier la lit où il lit tout le reste
+  (compteur de non-lus compris). Possible jusqu'à la validation du bon à tirer.
+- L'acceptation d'une proposition fait foi dans le JOURNAL (`proposition_acceptee`,
+  `payload.document`) : une seconde acceptation est refusée.
+- `livraison` (jsonb) se FUSIONNE, jamais ne se remplace : l'adresse et le jour prévu viennent
+  du panneau de la fiche, le transporteur et le suivi du geste « Marquer expédiée ».
+
 ## L'interrupteur et la migration
 
 - **`COLLECTIF_OUVERT`** (lu à chaque appel, une valeur incomprise FERME) : sans lui,
@@ -122,11 +210,60 @@ répond `introuvable` à l'identique pour un lien inconnu, archivé, ou tapé su
 
 ## Les écrans
 
-Client : monde SOMBRE, `.bj-atelier` + scope propre (`.ec-espace`, `.ec-depot`), noir, blanc,
-orange `--c-accent`, Cormorant Garamond **400** (jamais 500 : T-059) et DM Sans. Toute classe
-préfixée `ec-` et écrite sous son scope : une feuille chargée ne se décharge jamais en navigation
-client. Admin : monde CRÈME, classes de la table de travail. Masculin générique à l'écran
-(« le responsable »), même si le PRD écrit « la responsable ».
+Client : `.bj-atelier` + scope propre (`.ec-espace`, `.ec-depot`), Cormorant Garamond **400**
+(jamais 500 : T-059) et DM Sans. Toute classe préfixée `ec-` et écrite sous son scope : une
+feuille chargée ne se décharge jamais en navigation client. Admin : monde CRÈME, classes de la
+table de travail. Masculin générique à l'écran (« le responsable »), même si le PRD écrit « la
+responsable ».
+
+## La révision du 13/10 (PRD §14, T-147) : l'espace devient un logiciel
+
+Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
+- **Jour / nuit.** `data-ec-mode` sur la racine (`RacineEspace`), cookie d'affichage `bj_ec_mode`
+  (`affichage.ts`, `path=/edition`) lu par `edition/layout.tsx` : la page arrive dans le bon mode,
+  sans éclair. Des jetons SÉMANTIQUES (`--ec-bg`, `--ec-panel`, `--ec-surface`, `--ec-text`,
+  `--ec-accent`, `--ec-glass`…) redéfinis par mode dans `espace.css` ; les anciens noms
+  (`--ec-blanc*`, `--ec-orange*`, `--ec-filet*`) sont des alias. ⚠️ **Aucune couleur écrite en
+  dur** hors des blocs de jetons (le harnais relit chaque CSS de `edition/[token]` et refuse un
+  hexadécimal dans un `.tsx`). Les pages de magazine (BAT, QR) gardent leurs vraies couleurs dans
+  les deux modes : jetons FIXES `--ec-page`, `--ec-encre`, `--ec-noir-rgb`. Pas de `data-theme`
+  (mort, `src/app/CLAUDE.md`).
+- **Aucune page ne défile** au-dessus de 860 px : `.ec-coquille` fait `var(--app-height)`, chaque
+  écran est `.ec-ecran` (en-tête `EnTeteEcran` de 68 px, puis un corps en `min-height: 0`), et
+  seules les zones `.ec-defile` défilent. Sur téléphone, la page défile de nouveau (`.ec-defile`
+  repasse en `overflow: visible`), menu en tiroir. Un `IntersectionObserver` qui charge par pages
+  observe SA zone (`root`), nul sur téléphone (Photos).
+- **Les fenêtres sont en verre** (`Fenetre`, `cote` pour le panneau latéral) et couvrent la
+  colonne de contenu, pas le menu.
+- **Le plafond appartient au LIEN** (`plafond_par_personne`, compté par appareil SUR ce lien :
+  `compterPourPlafond(…, provenanceId)`). « Sans limite » = `sans_plafond`. Un lien d'avant la
+  révision garde l'ancienne règle (`plafondParticipant`). Le curseur va de 5 à
+  `plafondLienMax` (100, ou le plafond de l'atelier s'il est plus bas).
+- **La migration `20261014_collectif_revision.sql`** ajoute des COLONNES à des tables qui existent :
+  la LECTURE se replie (`colonneAbsente`, 42703 / PGRST204), l'ÉCRITURE qui en a besoin répond 503
+  `migration_revision_absente` (`MESSAGE_REVISION_ABSENTE`). Jamais d'écriture retentée en
+  silence sans la colonne : le plafond choisi ou la pièce jointe disparaîtraient. Un message
+  simple ne NOMME pas les colonnes de la révision (il s'écrit avant la migration).
+- **Joindre un fichier ou citer un document** (`messages/envoyer`, JSON ou multipart) : la
+  migration est SONDÉE avant d'écrire au coffre (aucun fichier orphelin) ; le document cité doit
+  appartenir à l'édition ; la pièce passe par le serveur (4 Mo, type lu à l'EXTENSION,
+  `clePieceJointe`). Un fichier seul prend « Fichier joint : nom » (le texte reste obligatoire).
+- **Le fil de « Parler à l'atelier »** réunit messages, demandes (un message du client qui
+  commence par un motif connu devient une carte, `lireMessageDemande`) et propositions
+  complémentaires (documents `proposition`), jour par jour (`filDeConversation`). « Vos demandes »
+  se lit dans le fil. Aucun rendez-vous inventé : un seul lien, celui de la fiche.
+- **Les contenus** (`contenus.ts`, `/api/collectif/contenus`) : un fichier par le serveur (4 Mo)
+  ou le questionnaire du mot du dirigeant (`QUESTIONS_MOT`, quatre questions NEUTRES à relire par
+  Mathias, PRD §12.14). Envoyer de nouveau ajoute une ligne : le plus récent gagne.
+- **Le QR code** (`qr.ts`, `qrcode-generator` épinglé) : modules foncés sur fond clair dans les
+  deux modes, une marge de quatre modules.
+- **Le brief partie par partie** (`/style/brief`) : `lirePartieBrief` contrôle palette, texte,
+  doubles pages contre le style DÉJÀ choisi ; aimer une couverture passe par `patchCouvertures`
+  (un brief validé repasse « à valider »). Le slug `brief` est réservé (`SLUGS_RESERVES`) : le
+  segment fixe gagne sur `style/[slug]`.
+- **Le BAT plein écran** : la page suit la scène par unités de conteneur (`container-type: size`,
+  `100cqh`, `50cqw`), jamais un plafond en pixels ; la page seule garde son côté de la pliure ;
+  notes dans un panneau repliable (feuille du bas sur téléphone, fermée par défaut).
 
 ## Phase 7 : les accroches déjà posées
 

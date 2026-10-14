@@ -1,7 +1,7 @@
 ---
 id: T-142
 titre: Les participants et le responsable ne peuvent pas déposer leurs photos d'événement
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: avis-requis
@@ -52,4 +52,36 @@ PRD §5, phase 3 :
 réseau, reprend : aucun doublon, le plafond tient, le lien se ferme après la clôture.
 
 ## Ce qui a été fait
-Rien. Ticket ouvert le 13/10/2026.
+13/10/2026, branche `feat/collectif-phases-2-a-6` :
+- **Le moteur d'envoi** `edition/_composants/depot/moteur.ts` (navigateur, sans React) : flux
+  BORNÉ (8 photos réduites en mémoire au plus, déclarées et en route comprises), 4 envois en
+  parallèle, 3 essais, chien de garde de 180 s sans progrès, URL renouvelée à 45 min,
+  déclaration et confirmation par lots de 25, rien gardé dans le navigateur. **Reprise** : les
+  clés de fichier sont vérifiées AVANT toute réduction (`connues`), un fichier déjà arrivé ne
+  repart pas. Le type envoyé suit la charge réduite. `pool.ts` et le worker B2C importés tels quels.
+- **Le lien participant** `/depot/[token]` (d'abord mobile) : prénom, accord `[À FIXER]`, choix
+  des photos, progression, « Merci, N photos reçues », phrase honnête sur la page fermée, fermé
+  après la clôture. `?p=<clé>` : un lien de provenance (sans plafond si demandé).
+- **La page Photos** du responsable : grille par pages de 120 (vignettes signées, tuiles en
+  `content-visibility`), filtres (toutes, par jour, par provenance, doublons, présélection,
+  signalées), présélection facultative, signalement avec motif, « Qui a déposé », liens de
+  provenance, panneau de dépôt (provenance, photos OU dossier entier, glisser-déposer) dont le
+  moteur vit dans la coquille (pastille « Envoi des photos » sur toutes les sections).
+- **Le serveur** : `/api/collectif/depot/presign|complete` (plafond par appareil en cookie
+  httpOnly, total tenu côté serveur, déclarations mortes après 2 h, 409 après la clôture),
+  `/api/collectif/photos`, `/photos/marquer`, `/provenances`. Métadonnées et lieux lus en
+  `after()` par `enrichirCollectif` (le cœur B2C `lireDepuisCoffre` importé, aucune table B2C).
+  Doublons par tronçons (`doublons.ts`), prouvés identiques à `groupesDeDoublons` sur 25 lots.
+- **Côté atelier** : carte « La collecte » de la fiche (arrivées, appareils, signalées, sans
+  vignette, par provenance) et lot téléchargé directement sur le disque, entier ou par provenance
+  (`/api/admin/collectif/editions/[id]/lot`, noms de `lot.ts`, les signalées préfixées).
+- **Prouvé le 13/10 en local (port 3000, le seul que le CORS R2 accepte) contre la production** :
+  10 photos par un participant plafonné à 8 → 8 reçues, 2 refusées avec la phrase ; les mêmes 10
+  renvoyées → rien en double (8 lignes, 8 clés distinctes en base), vignettes, empreintes et
+  métadonnées lues en tâche de fond ; 3 photos du photographe dont une recompression → repérée
+  doublon ; lien d'équipe en 403 sur dépôt et marquage ; clé de provenance inventée en 404 ;
+  clôture → 409 et page « fermé », réouverture → rouvert.
+- **Reste** : le QR code du lien (aucune bibliothèque) ; la vignette HEIC lue par Chrome (lot à
+  part, licence à vérifier) ; le texte de l'accord (légal, Mathias) ; essai sur de vrais
+  téléphones (le local n'est pas joignable d'un téléphone : un déploiement d'aperçu Vercel avec
+  `COLLECTIF_OUVERT` en Preview le permettrait, réglage à décider par Mathias).

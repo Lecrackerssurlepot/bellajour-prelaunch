@@ -53,3 +53,26 @@ export type TableCollectif = (typeof TABLES_COLLECTIF)[number];
 export function tableAbsente(code: string | null | undefined): boolean {
   return code === "PGRST205" || code === "42P01";
 }
+
+
+/* ─────────────────────────── la révision du 13/10 (PRD §14.8) ─────────────────────────── */
+
+/**
+ * La migration des colonnes de la révision : le plafond d'un lien, le document
+ * cité et la pièce jointe d'un message. Contrairement aux tables (tout ou rien),
+ * ces COLONNES arrivent dans des tables qui existent déjà : la lecture se
+ * replie (`colonneAbsente`), l'écriture qui en a besoin répond 503 et le dit.
+ */
+export const MIGRATION_REVISION = "supabase/migrations/20261014_collectif_revision.sql";
+export const ERREUR_REVISION_ABSENTE = "migration_revision_absente";
+export const MESSAGE_REVISION_ABSENTE =
+  "La mise à jour de la base n'est pas encore appliquée (20261014_collectif_revision.sql) : rien n'a été enregistré.";
+
+/**
+ * Une colonne inconnue : 42703 en LECTURE (Postgres), PGRST204 en ÉCRITURE
+ * (le cache de PostgREST). Un repli borné à 42703 ne se déclencherait jamais
+ * sur un INSERT : attraper les deux (supabase/CLAUDE.md, 03/09).
+ */
+export function colonneAbsente(code: string | null | undefined): boolean {
+  return code === "42703" || code === "PGRST204";
+}
