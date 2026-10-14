@@ -14,6 +14,7 @@ import { chargerAcces } from "@/lib/collectif/acces";
 import { styleVisible } from "@/lib/collectif/brief";
 import { colonneAbsente } from "@/lib/collectif/migration";
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
+import { sourcesDesPhotos } from "@/lib/collectif/sources";
 import { formaterInstantParis, formaterJourParis } from "@/lib/collectif/dates";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { compteAgenda } from "@/lib/collectif/agenda";
@@ -118,7 +119,7 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
       .order("rang", { ascending: true }),
     supabase
       .from("collectif_photos")
-      .select("role_deposant, appareil_id, provenance_id, deposant, vignette_key, confirmee_le")
+      .select("role_deposant, appareil_id, provenance_id, provenance_type, deposant, vignette_key, confirmee_le")
       .eq("edition_id", edition.id)
       .not("confirmee_le", "is", null)
       .order("confirmee_le", { ascending: false })
@@ -177,49 +178,25 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
     role_deposant: string;
     appareil_id: string | null;
     provenance_id: string | null;
+    provenance_type: string;
     deposant: string | null;
     vignette_key: string | null;
   }[];
   const appareils = new Set(lignes.filter((l) => l.role_deposant === "participant" && l.appareil_id).map((l) => l.appareil_id));
 
-  /* Les dossiers : un par lien de contribution, puis ce que le responsable a
-     déposé lui-même (« Mes photos », ou le nom de dossier qu'il a choisi),
-     les participants du lien commun, l'atelier. */
-  const parLien = new Map<string, number>();
-  const autres = new Map<string, DossierPhotos>();
-  const nomResponsable = edition.responsable_nom ?? "";
-  for (const l of lignes) {
-    if (l.provenance_id) {
-      parLien.set(l.provenance_id, (parLien.get(l.provenance_id) ?? 0) + 1);
-      continue;
-    }
-    let cle: string;
-    let d: Omit<DossierPhotos, "n">;
-    if (l.role_deposant === "responsable") {
-      const nom = !l.deposant || l.deposant === nomResponsable || l.deposant === "Le responsable" ? "Mes photos" : l.deposant;
-      cle = `resp:${nom}`;
-      d = { cle, libelle: nom, detail: "déposées par vous", lien: false };
-    } else if (l.role_deposant === "participant") {
-      cle = "participants";
-      d = { cle, libelle: "Lien des participants", detail: `lien commun · ${libellePlafondLien({ sans_plafond: false, plafond_par_personne: null }, edition).toLowerCase()}`, lien: true };
-    } else {
-      cle = "atelier";
-      d = { cle, libelle: "L'atelier", detail: "déposées par l'atelier", lien: false };
-    }
-    const actuel = autres.get(cle);
-    autres.set(cle, actuel ? { ...actuel, n: actuel.n + 1 } : { ...d, n: 1 });
-  }
+  /* Les dossiers : les sources qui ont reçu quelque chose (sources.ts, la même
+     lecture que la colonne « Qui a déposé » de la page Photos), la plus
+     fournie d'abord. */
   const liens: LienContribution[] = provenances.map((p) => ({
     id: p.id,
     libelle: p.libelle ?? "Lien de contribution",
     url: `${origine}/depot/${edition.token_depot}?p=${p.cle}`,
     plafond: libellePlafondLien(p, edition),
-    recues: parLien.get(p.id) ?? 0,
+    recues: lignes.filter((l) => l.provenance_id === p.id).length,
   }));
-  const dossiers: DossierPhotos[] = [
-    ...liens.filter((l) => l.recues > 0).map((l) => ({ cle: l.id, libelle: l.libelle, detail: `lien · ${l.plafond.toLowerCase()}`, n: l.recues, lien: true })),
-    ...[...autres.values()],
-  ].sort((a, b) => b.n - a.n);
+  const dossiers: DossierPhotos[] = sourcesDesPhotos(lignes, provenances, edition, false)
+    .map((s) => ({ cle: s.cle, libelle: s.libelle, detail: s.detail, n: s.n, lien: s.cle.startsWith("lien:") || s.cle === "participants" }))
+    .sort((a, b) => b.n - a.n);
 
   const mosaique = (
     await Promise.all(lignes.filter((l) => l.vignette_key).slice(0, 8).map((l) => signerOuRien(l.vignette_key)))

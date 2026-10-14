@@ -73,6 +73,7 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
             mosaique={tableau.mosaique}
             liens={tableau.liens}
             max={plafondLienMax(edition)}
+            organisation={edition.organisation}
             evenement={edition.evenement}
             cloture={cloture}
             statut={edition.cloture_le && ouverte ? `Clôture ${delai}` : ouverte ? 'Ouverte' : 'Collecte close'}

@@ -299,22 +299,73 @@
   display: none;
 }
 
-/* L'envoi des photos qui continue pendant qu'on navigue : une pastille
-   discrète en haut à droite, au-dessus de l'en-tête. */
+/* L'envoi des photos qui continue pendant qu'on navigue : une pastille dans
+   l'en-tête de chaque écran, à gauche des actions (maquette EnvoiPhotos). Un
+   clic rouvre la fenêtre d'envoi. */
 .ec-espace .ec-pastille-envoi {
-  position: absolute;
-  top: 18px;
-  right: 24px;
-  z-index: 30;
-  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 16px;
   border-radius: 999px;
-  background: var(--ec-glass);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(var(--ec-ac-rgb), 0.45);
+  border: 1px solid rgba(var(--ec-ac-rgb), 0.55);
+  background: var(--ec-accent-soft);
   color: var(--ec-text);
+  font: inherit;
   font-size: 13px;
-  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ec-espace .ec-pastille-envoi-barre {
+  display: block;
+  width: 64px;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.18);
+}
+.ec-espace .ec-pastille-envoi-barre > span {
+  display: block;
+  height: 100%;
+  background: var(--ec-accent);
+}
+
+/* La fenêtre d'envoi : le compte en grand, la barre, les lignes. */
+.ec-espace .ec-envoi-compte {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.ec-espace .ec-envoi-n {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1;
+}
+.ec-espace .ec-envoi-n > span {
+  font-size: 20px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-envoi-lignes {
+  margin: 0;
+}
+.ec-espace .ec-envoi-info {
+  margin: 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--ec-surface);
+  font-size: 13px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-envoi-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ec-espace .ec-envoi-gestes > .ec-bouton {
+  flex: 1;
 }
 
 /* ─────────────────────────────── l'écran ─────────────────────────────── */
@@ -867,6 +918,117 @@
 .ec-espace .ec-collecte-zone {
   gap: 12px;
 }
+/* La colonne principale : les filtres, la barre de présélection, puis la
+   grille qui prend le reste et défile chez elle. */
+.ec-espace .ec-collecte-principal {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ec-espace .ec-collecte-principal > .ec-collecte-grille {
+  flex: 1;
+}
+.ec-espace .ec-presel {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--ec-ac-rgb), 0.45);
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-presel-texte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ec-espace .ec-presel-texte strong {
+  font-weight: 600;
+}
+.ec-espace .ec-presel .ec-bouton {
+  white-space: nowrap;
+}
+/* « Qui a déposé » : chaque source, son nombre, et son lien. */
+.ec-espace .ec-cote-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--ec-text);
+}
+.ec-espace .ec-sources {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ec-espace .ec-source {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0;
+  border-top: 1px solid var(--ec-line);
+}
+.ec-espace .ec-source-tete {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ec-espace .ec-source-tete strong {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-source-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ec-espace .ec-source-creer {
+  margin-top: auto;
+  flex: none;
+}
+/* Partager un lien : le QR à gauche, le message à retoucher à droite ; la
+   fenêtre s'élargit à 640 px pour que les quatre gestes tiennent sur une ligne. */
+.ec-espace .ec-fenetre:has(.ec-partage-corps) {
+  width: min(640px, 100%);
+}
+.ec-espace .ec-partage-corps {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+.ec-espace .ec-partage-message {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-partage-message textarea {
+  padding: 12px 14px;
+  resize: none;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ec-text);
+}
+.ec-espace .ec-qr-grand {
+  display: grid;
+  place-items: center;
+}
+.ec-espace .ec-qr-grand-note {
+  margin: 0;
+  text-align: center;
+}
 .ec-espace .ec-collecte-zone .ec-onglets {
   flex: none;
   margin-bottom: 0;
@@ -909,7 +1071,7 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 22px;
   align-items: stretch;
 }
@@ -919,7 +1081,9 @@
 .ec-espace .ec-collecte-cote {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
+  padding-left: 22px;
+  border-left: 1px solid var(--ec-line);
 }
 .ec-espace .ec-lien-ligne-nom {
   flex: 1;
@@ -969,8 +1133,13 @@
   object-fit: cover;
   display: block;
 }
+/* Une photo choisie : un BORD autour, rien d'autre (ni case ni coche, il y a
+   trop de photos : Mathias, 14/10). Le contour est tracé EN DEDANS : la tuile
+   a une containment de peinture (content-visibility), un contour posé à
+   l'extérieur y serait rogné sur trois côtés (vu le 14/10). */
 .ec-espace .ec-tuile--choisie .ec-tuile-image {
-  border-color: var(--ec-orange);
+  outline: 3px solid var(--ec-accent);
+  outline-offset: -3px;
 }
 .ec-espace .ec-tuile--doublon .ec-tuile-image {
   opacity: 0.5;
@@ -1414,6 +1583,23 @@
   .ec-espace .ec-grille {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
+  }
+  .ec-espace .ec-collecte-cote {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .ec-espace .ec-presel {
+    flex-wrap: wrap;
+  }
+  .ec-espace .ec-presel-texte {
+    flex-basis: 100%;
+  }
+  .ec-espace .ec-partage-corps {
+    flex-direction: column;
+    align-items: center;
+  }
+  .ec-espace .ec-partage-message {
+    align-self: stretch;
   }
   .ec-espace .ec-brief {
     position: static;

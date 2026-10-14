@@ -100,6 +100,8 @@ import { estTypeNote, ROLES, TYPES_NOTE, type Role } from "@/lib/collectif/types
 import { cookieMode, LOGO_MODE, lireMode, MODES } from "@/lib/collectif/affichage";
 import { CONTENUS_CLIENT, contenuClient, lireFichierContenu, lireReponsesMot, QUESTIONS_MOT } from "@/lib/collectif/contenus";
 import { cheminQr, matriceQr, svgQr } from "@/lib/collectif/qr";
+import { DOSSIER_RESPONSABLE, sourcesDesPhotos } from "@/lib/collectif/sources";
+import { GROUPE_GENERAL, messagePartage } from "@/lib/collectif/partage";
 import { colonneAbsente, MIGRATION_REVISION } from "@/lib/collectif/migration";
 import { libellePlafondLien, lirePlafondLien, plafondLienMax, CURSEUR_LIEN } from "@/lib/collectif/plafonds";
 import {
@@ -1375,9 +1377,11 @@ titre("— revision 14.3 / 14.7 : photos et livraison —");
   ok("Photos : le chargement par pages observe SA zone de defilement (root), nul sur telephone",
     /root: racine/.test(collecte) && /matchMedia\(REQUETE_TELEPHONE\)\.matches \? null : zone\.current/.test(collecte));
   ok("Photos : « Créer un lien » ouvre la fenetre du lien de contribution (plafond PAR LIEN), plus de formulaire « photographe » en dur",
-    /<FenetreLien /.test(collecte) && !/type: "photographe"/.test(collecte));
-  ok("Photos : le depot s'ouvre dans une fenetre en verre", /<Fenetre titre="Déposer des photos"/.test(collecte));
-  ok("Photos : l'ecran garde ses filtres et sa presélection facultative (pas la proposition B)", /Ma présélection/.test(collecte) && /Laisser|laisse l'atelier choisir|laissez l'atelier choisir/.test(collecte));
+    /<FenetreLien\b/.test(collecte) && !/type: "photographe"/.test(collecte));
+  ok("Photos : le depot s'ouvre dans une fenetre en verre (celle de la coquille, retours du 14/10)",
+    /<Fenetre titre="Déposer des photos"/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")) && /onClick=\{envoi\.ouvrir\}/.test(collecte));
+  ok("Photos : l'ecran garde ses filtres et sa presélection facultative (pas la proposition B)",
+    ["toutes", "jour", "provenance", "doublons", "preselection", "signalees"].every((f) => collecte.includes(`cle: "${f}"`)) && /Facultative/.test(collecte) && /l'atelier choisit parmi toutes/.test(collecte));
   const livraison = lire("src/app/edition/[token]/livraison/page.tsx");
   ok("Livraison : l'en-tete commun et « Écrire à l'atelier » vers Parler a l'atelier",
     /<EnTeteEcran titre="Livraison"/.test(livraison) && livraison.includes("cheminSection(token, 'atelier')") && !livraison.includes("cheminSection(token, 'dossier')"));
@@ -1450,6 +1454,81 @@ titre("— retours de Mathias du 14/10 —");
   const parler = lire("src/app/edition/[token]/atelier/Parler.tsx");
   ok("messages : Entree envoie, Maj + Entree va a la ligne, jamais pendant une composition (IME)",
     /ev\.key === "Enter" && !ev\.shiftKey && !ev\.nativeEvent\.isComposing/.test(parler) && !/ev\.metaKey \|\| ev\.ctrlKey\)\) void soumettre/.test(parler));
+
+  /* 7 : la présélection se marque par un BORD, et se fait ou se défait d'un geste. */
+  const collecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  const css = lire("src/app/edition/[token]/espace.css");
+  ok("presélection : un bord autour de la photo choisie, trace EN DEDANS (la tuile rogne sa peinture), ni case ni coche",
+    /\.ec-tuile--choisie \.ec-tuile-image \{\s*outline: 3px solid var\(--ec-accent\);\s*outline-offset: -3px;/.test(css) && !/type="checkbox"/.test(collecte) && !/[✓✔]/.test(collecte));
+  ok("presélection : « Tout sélectionner » et « Tout désélectionner »",
+    /Tout sélectionner/.test(collecte) && /Tout désélectionner/.test(collecte) && /toutes: true, preselection/.test(collecte));
+  const marquer = lire("src/app/api/collectif/photos/marquer/route.ts");
+  ok("tout selectionner : le droit preselectionner, jamais une photo signalee, journalise",
+    /corps\.toutes === true/.test(marquer) && /peut\(role, "preselectionner"\)/.test(marquer) && /if \(preselection\) requete = requete\.eq\("signalee", false\)/.test(marquer) && /"preselection_toutes" : "preselection_aucune"/.test(marquer));
+  ok("le journal dit « tout selectionne » et « tout deselectionne »",
+    /Tout sélectionné : 12 photo/.test(phraseEvenement("preselection_toutes", { n: 12 })) && /Tout désélectionné : 3 photo/.test(phraseEvenement("preselection_aucune", { n: 3 })));
+
+  /* 9 et 10 : « Qui a déposé » et les liens au même endroit. */
+  const edition = { plafond_participant_atelier: 30, plafond_participant_client: null, plafond_total: 2000, responsable_nom: "Camille Essai" };
+  const liens = [
+    { id: "l1", cle: "c".repeat(22), libelle: "Équipe Lyon", sans_plafond: false, plafond_par_personne: 30 },
+    { id: "l2", cle: "d".repeat(22), libelle: "Le photographe", sans_plafond: true, plafond_par_personne: null },
+  ];
+  const lignes = [
+    { provenance_id: null, provenance_type: "organisateur", role_deposant: "responsable", deposant: "Camille Essai", appareil_id: null },
+    { provenance_id: null, provenance_type: "organisateur", role_deposant: "responsable", deposant: "La soirée", appareil_id: null },
+    { provenance_id: "l1", provenance_type: "participant", role_deposant: "participant", deposant: "Paul", appareil_id: "a1" },
+    { provenance_id: "l1", provenance_type: "participant", role_deposant: "participant", deposant: "Léa", appareil_id: "a2" },
+    { provenance_id: "l1", provenance_type: "participant", role_deposant: "participant", deposant: "Léa", appareil_id: "a2" },
+    { provenance_id: null, provenance_type: "participant", role_deposant: "participant", deposant: null, appareil_id: "a3" },
+    { provenance_id: null, provenance_type: "autre", role_deposant: "atelier", deposant: null, appareil_id: null },
+  ];
+  const resp = sourcesDesPhotos(lignes, liens, edition, true);
+  ok("sources : un ordre STABLE (dossiers du responsable, liens, lien general, atelier)",
+    JSON.stringify(resp.map((x) => x.libelle)) === JSON.stringify([DOSSIER_RESPONSABLE, "La soirée", "Équipe Lyon", "Le photographe", GROUPE_GENERAL, "L'atelier"]));
+  ok("sources : chaque lien compte ses photos et ses personnes (par appareil), son plafond PAR LIEN",
+    resp[2].n === 3 && resp[2].detail === "Lien · 30 photos par personne · 2 personnes" && resp[3].n === 0 && resp[3].detail === "Lien · sans limite");
+  ok("sources : le responsable voit chaque lien (meme vide) avec sa cle ; le lien general a la cle nulle",
+    resp[2].lien?.cle === "c".repeat(22) && resp[3].lien?.cle === "d".repeat(22) && resp[4].lien?.cle === null && resp[0].lien === undefined && resp[5].lien === undefined);
+  const equipe = sourcesDesPhotos(lignes, [], edition, false);
+  ok("sources : l'equipe ne voit AUCUN lien, et pas les liens vides",
+    equipe.every((x) => !x.lien) && !equipe.some((x) => x.libelle === "Le photographe"));
+  const route = lire("src/app/api/collectif/photos/route.ts");
+  ok("route photos : les liens ne sont lus que pour qui peut en creer",
+    /const partage = peut\(acces\.role, "regler_plafond_participant"\)/.test(route) && /partage \? lireProvenances\(acces\.edition\.id\) : Promise\.resolve\(\[\]\)/.test(route) && /sourcesDesPhotos\(toutes, liens, acces\.edition, partage\)/.test(route));
+  ok("Photos : plus de « Copier le lien participants » dans l'en-tete, les liens vivent dans « Qui a déposé »",
+    !/Copier le lien participants/.test(collecte) && /Qui a déposé/.test(collecte) && /Copier le lien/.test(collecte) && /Partager/.test(collecte) && /Créer un lien pour quelqu&apos;un/.test(collecte));
+  ok("Photos : collecte close, ni « Déposer », ni lien a partager, ni « Créer un lien » (la presélection reste)",
+    /envoi\.ouvrir && p\.ouverte/.test(collecte) && /const lien = p\.ouverte \? lienDe\(s\) : null/.test(collecte) && /p\.ecrire && p\.ouverte \?/.test(collecte) && /collecteOuverte\(edition\.etat, edition\.cloture_le, new Date\(\)\)/.test(lire("src/app/edition/[token]/photos/page.tsx")));
+  ok("tableau de bord : ses dossiers sont les memes sources",
+    /sourcesDesPhotos\(lignes, provenances, edition, false\)/.test(lire("src/app/edition/[token]/donnees.ts")));
+
+  /* 5 : le message de partage, écrit pour ce groupe et cet événement. */
+  const base = { organisation: "Maison Aubier", evenement: "Séminaire d'automne", url: "https://bellajour.fr/depot/x?p=y", plafond: "30 photos par personne", cloture: "28 octobre", tu: false };
+  const m1 = messagePartage({ ...base, groupe: "Équipe Lyon" });
+  ok("partage : le groupe salue, l'organisation et l'evenement sont nommes, le plafond et la cloture precises",
+    m1.texte.startsWith("Bonjour Équipe Lyon,") && m1.texte.includes("Maison Aubier prépare le magazine « Séminaire d'automne »") && m1.texte.includes("(30 par personne, jusqu'au 28 octobre)") && m1.texte.includes(base.url) && m1.objet === "Vos photos : Séminaire d'automne");
+  ok("partage : un article se met en minuscule apres « Bonjour », un nom propre ne bouge pas",
+    messagePartage({ ...base, groupe: "Le photographe" }).texte.startsWith("Bonjour le photographe,") && messagePartage({ ...base, groupe: "Laura" }).texte.startsWith("Bonjour Laura,"));
+  const m2 = messagePartage({ ...base, groupe: null, tu: true, plafond: "Sans limite", cloture: "" });
+  ok("partage : le lien general salue « a tous » et vouvoie (un groupe), meme en registre tu ; sans limite ni cloture, aucune parenthese",
+    m2.texte.startsWith("Bonjour à tous,") && /vos photos/.test(m2.texte) && !/\(/.test(m2.texte) && m2.objet.startsWith("Vos photos"));
+  ok("partage : un lien nomme tutoie en registre tu", /tes photos/.test(messagePartage({ ...base, groupe: "La classe de CM2", tu: true }).texte));
+  ok("partage : aucun tiret cadratin", ![m1, m2].some((m) => /—/.test(m.texte + m.objet)));
+  ok("partage : la fenetre montre le message a retoucher, WhatsApp, Mail, Copier le message, Telecharger le QR",
+    ["export function FenetrePartage", "Copier le message", "Télécharger le QR", "WhatsApp", "export function FenetreQr"].every((t) => lire("src/app/edition/_composants/LienContribution.tsx").includes(t)));
+
+  /* 6 et 8 : la fenêtre d'envoi se rouvre ; « déjà là » se dit. */
+  const moteur = lire("src/app/edition/_composants/depot/moteur.ts");
+  ok("envoi : chaque lot garde SA provenance (un second lot ne relabellise jamais le premier)",
+    /provenance: this\.provenance,\n\s*\}\);/.test(moteur) && /provenance: premier\.provenance/.test(moteur) && !/provenance: this\.provenance,\n\s*fichiers/.test(moteur));
+  ok("envoi : un fichier choisi deux fois est compte et dit, plus jamais saute en silence",
+    /this\.dejaAjoutes\+\+/.test(moteur) && /Choisies deux fois, sautées/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")));
+  const fenetre = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
+  ok("envoi : « déjà là » est explique, « Ajouter d'autres photos » et « Réduire et continuer »",
+    /Déjà là, sautées \(même fichier déjà envoyé\)/.test(fenetre) && /n'est jamais envoyée deux fois/.test(fenetre) && /Ajouter d&apos;autres photos/.test(fenetre) && /Réduire et continuer/.test(fenetre));
+  ok("envoi : la fenetre vit dans la coquille, la pastille de chaque en-tete la rouvre",
+    /<HoteFenetreEnvoi \/>/.test(lire("src/app/edition/[token]/Coquille.tsx")) && /<PastilleEnvoi \/>/.test(lire("src/app/edition/_composants/Ecran.tsx")) && /onClick=\{c\.ouvrir\}/.test(lire("src/app/edition/_composants/depot/DepotContexte.tsx")));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

@@ -12,6 +12,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import FenetreLien, { CarteLien } from "../_composants/LienContribution";
+import { useFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import ZoneDepot from "../_composants/depot/ZoneDepot";
 import type { DossierPhotos, LienContribution } from "./donnees";
 
@@ -25,6 +26,7 @@ type Props = {
   mosaique: string[];
   liens: LienContribution[];
   max: number;
+  organisation: string;
   evenement: string;
   cloture: string;
   statut: string;
@@ -36,6 +38,8 @@ export default function CartePhotos(p: Props) {
   const v = (vous: string, toi: string) => (p.tu ? toi : vous);
   const [fenetre, setFenetre] = useState(false);
   const [deposer, setDeposer] = useState(false);
+  const envoi = useFenetreEnvoi();
+  const contexte = { organisation: p.organisation, evenement: p.evenement, cloture: p.cloture, tu: p.tu };
   const dernier = p.liens[p.liens.length - 1] ?? null;
   const etat = p.photos > 0 ? "photos" : deposer || !dernier ? "vide" : "lien";
 
@@ -83,9 +87,11 @@ export default function CartePhotos(p: Props) {
                 <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => setFenetre(true)}>
                   Envoyer un lien
                 </button>
-                <Link href={p.lienPhotos} prefetch={false} className="ec-bouton ec-bouton--clair">
-                  Déposer
-                </Link>
+                {envoi.ouvrir ? (
+                  <button type="button" className="ec-bouton ec-bouton--clair" onClick={envoi.ouvrir}>
+                    Déposer
+                  </button>
+                ) : null}
               </>
             ) : null}
           </div>
@@ -98,7 +104,7 @@ export default function CartePhotos(p: Props) {
         <>
           <h2 className="ec-tdb-titre">Lien envoyé, en attente des premières photos</h2>
           <div className="ec-tdb-centre">
-            <CarteLien lien={dernier} evenement={p.evenement} tu={p.tu} cloture={p.cloture} />
+            <CarteLien lien={dernier} contexte={contexte} />
           </div>
           <div className="ec-tdb-gestes ec-tdb-gestes--deux">
             <button type="button" className="ec-bouton" onClick={() => setFenetre(true)}>
@@ -130,7 +136,7 @@ export default function CartePhotos(p: Props) {
         </>
       )}
 
-      {fenetre ? <FenetreLien token={p.token} max={p.max} evenement={p.evenement} cloture={p.cloture} tu={p.tu} onFermer={() => setFenetre(false)} /> : null}
+      {fenetre ? <FenetreLien token={p.token} max={p.max} contexte={contexte} onFermer={() => setFenetre(false)} /> : null}
     </section>
   );
 }

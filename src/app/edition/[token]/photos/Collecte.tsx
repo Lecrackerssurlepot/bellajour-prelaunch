@@ -1,31 +1,35 @@
 "use client";
 
-/* La page Photos du client (PRD §4.2, §5, maquette Collecte).
+/* La page Photos du client (PRD §4.2, §5, maquette Photos validée le 14/10).
 
    - La grille se lit PAR PAGES (120 vignettes signées à la fois) et se
      complète en descendant : 2 000 photos ne se chargent jamais d'un coup,
      et chaque tuile hors écran ne coûte rien à peindre (content-visibility).
-   - La présélection est FACULTATIVE : toucher une photo l'ajoute ou la
-     retire, jamais obligé, « Laisser l'atelier choisir » le dit.
+   - La présélection est FACULTATIVE. Une photo choisie se marque par un BORD,
+     sans case ni coche (Mathias : « il y a trop de photos ») ; « Tout
+     sélectionner » et « Tout désélectionner » d'un geste. Une photo signalée
+     n'entre jamais dans un « Tout sélectionner ».
    - Signaler une photo (« à ne pas publier ») se voit côté atelier.
-   - Le dépôt du responsable s'ouvre SUR PLACE (une fenêtre en verre), et son
-     moteur vit dans la coquille : on peut quitter la page pendant l'envoi.
-   - L'équipe voit tout, sans bouton qui écrive.
+   - « Qui a déposé » et les liens au MÊME endroit (retours du 14/10, points 9
+     et 10) : chaque source, son nombre de photos et, s'il y en a un, son lien
+     (Copier, Partager avec un message écrit pour ce groupe, QR). L'en-tête
+     ne porte plus de bouton de copie du lien général.
+   - « Déposer des photos » ouvre la fenêtre d'envoi de la COQUILLE
+     (DepotContexte) : on peut quitter la page pendant l'envoi, la pastille de
+     l'en-tête la rouvre. La grille se relit quand la fenêtre se ferme ou que
+     l'envoi se termine, si de nouvelles photos sont arrivées.
+   - L'équipe voit tout, sans bouton qui écrive, et sans aucun lien.
 
-   Révision §14.3 : l'écran reste le même, seuls changent la coquille (rien
-   ne fait défiler la page : la grille et la colonne défilent chez elles), le
-   thème, le partage (« Créer un lien » ouvre la fenêtre du lien de
-   contribution, avec son plafond PAR LIEN) et le dépôt en verre.
    ⚠️ Le chargement par pages observe SA zone de défilement (`root` de
    l'IntersectionObserver) ; sur téléphone, la page défile : `root` nul. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Filtre } from "@/lib/collectif/grille";
-import { useMoteurDepot } from "../../_composants/depot/DepotContexte";
-import { useMoteur, fichiersDuDepot } from "../../_composants/depot/useMoteur";
+import type { Source } from "@/lib/collectif/sources";
+import { useFenetreEnvoi, useMoteurDepot } from "../../_composants/depot/DepotContexte";
+import { useMoteur } from "../../_composants/depot/useMoteur";
 import { EnTeteEcran } from "../../_composants/Ecran";
-import Fenetre from "../../_composants/Fenetre";
-import FenetreLien from "../../_composants/LienContribution";
+import FenetreLien, { FenetrePartage, FenetreQr, type ContexteMessage, type LienPartage } from "../../_composants/LienContribution";
 
 type Photo = {
   id: string;
@@ -43,18 +47,18 @@ type Photo = {
 
 type Compteurs = { toutes: number; liste: number; preselection: number; doublons: number; signalees: number };
 
-type Lien = { libelle: string; chemin: string; sansPlafond: boolean };
-
 type Props = {
   token: string;
   ecrire: boolean;
+  /** La collecte est ouverte : sinon ni dépôt ni lien, la présélection reste. */
+  ouverte: boolean;
   tu: boolean;
+  /** L'adresse complète du lien général des participants ; un lien de contribution y ajoute `?p=`. */
   lienParticipants: string;
   preselectionMax: number | null;
-  origine: string;
-  liens: Lien[];
-  /** La fenêtre du lien de contribution (`plafondLienMax`, l'événement, la clôture). */
+  /** La fenêtre du lien de contribution (`plafondLienMax`) et le message de partage. */
   max: number;
+  organisation: string;
   evenement: string;
   cloture: string;
 };
@@ -66,17 +70,10 @@ const REQUETE_TELEPHONE = "(max-width: 860px)";
 const ONGLETS: { cle: Filtre; libelle: string }[] = [
   { cle: "toutes", libelle: "Toutes" },
   { cle: "jour", libelle: "Par jour" },
-  { cle: "provenance", libelle: "Par provenance" },
+  { cle: "provenance", libelle: "Par source" },
   { cle: "doublons", libelle: "Doublons" },
-  { cle: "preselection", libelle: "Ma présélection" },
+  { cle: "preselection", libelle: "Présélection" },
   { cle: "signalees", libelle: "Signalées" },
-];
-
-const PROVENANCES = [
-  { cle: "organisateur", libelle: "Mes photos" },
-  { cle: "photographe", libelle: "Le photographe" },
-  { cle: "participant", libelle: "Un participant" },
-  { cle: "autre", libelle: "Autre source" },
 ];
 
 export default function Collecte(p: Props) {
@@ -84,16 +81,21 @@ export default function Collecte(p: Props) {
   const [filtre, setFiltre] = useState<Filtre>("toutes");
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [compteurs, setCompteurs] = useState<Compteurs | null>(null);
-  const [deposants, setDeposants] = useState<{ libelle: string; n: number }[]>([]);
+  const [sources, setSources] = useState<Source[]>([]);
   const [suivante, setSuivante] = useState<number | null>(0);
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-  const [panneau, setPanneau] = useState(false);
+  const [toutes, setToutes] = useState(false);
   const [copie, setCopie] = useState<string | null>(null);
   const [fenetreLien, setFenetreLien] = useState(false);
+  const [partage, setPartage] = useState<LienPartage | null>(null);
+  const [qr, setQr] = useState<LienPartage | null>(null);
   const fin = useRef<HTMLDivElement>(null);
   const zone = useRef<HTMLDivElement>(null);
   const version = useRef(0);
+  const envoi = useFenetreEnvoi();
+  const vue = useMoteur(useMoteurDepot());
+  const contexte: ContexteMessage = { organisation: p.organisation, evenement: p.evenement, cloture: p.cloture, tu: p.tu };
 
   const charger = useCallback(
     async (page: number, f: Filtre) => {
@@ -106,12 +108,12 @@ export default function Collecte(p: Props) {
           body: JSON.stringify({ token: p.token, filtre: f, page }),
         });
         if (!rep.ok) throw new Error(String(rep.status));
-        const json = (await rep.json()) as { photos: Photo[]; suivante: number | null; compteurs: Compteurs; deposants: { libelle: string; n: number }[] };
+        const json = (await rep.json()) as { photos: Photo[]; suivante: number | null; compteurs: Compteurs; sources: Source[] };
         if (v0 !== version.current) return;
         setPhotos((deja) => (page === 0 ? json.photos : [...deja, ...json.photos]));
         setSuivante(json.suivante);
         setCompteurs(json.compteurs);
-        setDeposants(json.deposants);
+        setSources(json.sources);
         setErreur(null);
       } catch {
         if (v0 === version.current) setErreur("Les photos n'ont pas pu se charger. Réessayer en rechargeant la page.");
@@ -145,6 +147,24 @@ export default function Collecte(p: Props) {
     return () => obs.disconnect();
   }, [suivante, chargement, filtre, charger]);
 
+  /* Des photos sont arrivées : la grille se relit quand la fenêtre d'envoi se
+     ferme ou que l'envoi se termine. Rien d'arrivé, rien ne bouge (la
+     position dans la grille est gardée). */
+  const fermeturesVues = useRef(envoi.fermetures);
+  const enCoursAvant = useRef(vue.enCours);
+  const arriveesLues = useRef(vue.arrivees);
+  useEffect(() => {
+    const ferme = envoi.fermetures !== fermeturesVues.current;
+    const fini = enCoursAvant.current > 0 && vue.enCours === 0;
+    fermeturesVues.current = envoi.fermetures;
+    enCoursAvant.current = vue.enCours;
+    if ((ferme || fini) && vue.arrivees !== arriveesLues.current) {
+      arriveesLues.current = vue.arrivees;
+      version.current++;
+      void charger(0, filtre);
+    }
+  }, [envoi.fermetures, vue.enCours, vue.arrivees, filtre, charger]);
+
   async function marquer(photo: Photo, corps: Record<string, unknown>) {
     const avant = photos;
     setPhotos((l) => l.map((x) => (x.id === photo.id ? { ...x, ...(corps as Partial<Photo>) } : x)));
@@ -168,291 +188,236 @@ export default function Collecte(p: Props) {
     }
   }
 
+  /** « Tout sélectionner » / « Tout désélectionner » : toute l'édition, d'un geste. */
+  async function marquerToutes(preselection: boolean) {
+    setToutes(true);
+    try {
+      const rep = await fetch("/api/collectif/photos/marquer", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token: p.token, toutes: true, preselection }),
+      });
+      if (!rep.ok) throw new Error(String(rep.status));
+      const { n } = (await rep.json()) as { n: number };
+      setPhotos((l) => l.map((x) => (preselection && x.signalee ? x : { ...x, preselection })));
+      setCompteurs((c) => (c ? { ...c, preselection: preselection ? c.preselection + n : 0 } : c));
+      if (filtre === "preselection") changerFiltre("preselection");
+    } catch {
+      setErreur("Le changement n'a pas été enregistré. Réessayer.");
+    } finally {
+      setToutes(false);
+    }
+  }
+
   async function copier(texte: string, cle: string) {
     try {
       await navigator.clipboard.writeText(texte);
       setCopie(cle);
       setTimeout(() => setCopie(null), 2000);
     } catch {
-      setErreur("Copie impossible : sélectionner le lien à la main.");
+      setErreur("Copie impossible : ouvrir « Partager » pour lire le lien.");
     }
   }
 
+  function lienDe(s: Source): LienPartage | null {
+    if (!s.lien) return null;
+    return {
+      libelle: s.libelle,
+      url: s.lien.cle ? `${p.lienParticipants}?p=${s.lien.cle}` : p.lienParticipants,
+      plafond: s.lien.plafond,
+      recues: s.n,
+      general: s.lien.cle === null,
+    };
+  }
+
   const groupe = filtre === "jour" ? (x: Photo) => x.jour : filtre === "provenance" ? (x: Photo) => x.provenance : null;
+  const choisies = compteurs?.preselection ?? 0;
+  const choisissables = compteurs ? compteurs.toutes - compteurs.signalees : 0;
 
   return (
     <section className="ec-ecran ec-collecte">
-      <EnTeteEcran titre="Les photos" sous={compteurs ? `${compteurs.toutes} photo${compteurs.toutes > 1 ? "s" : ""} reçue${compteurs.toutes > 1 ? "s" : ""}` : undefined}>
-        <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => copier(p.lienParticipants, "participants")}>
-          {copie === "participants" ? "Copié" : "Copier le lien participants"}
-        </button>
-        {p.ecrire ? (
-          <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => setPanneau(true)}>
+      <EnTeteEcran titre="Les photos" sous={compteurs ? `${compteurs.toutes.toLocaleString("fr-FR")} reçue${compteurs.toutes > 1 ? "s" : ""}` : undefined}>
+        {envoi.ouvrir && p.ouverte ? (
+          <button type="button" className="ec-bouton ec-bouton--petit" onClick={envoi.ouvrir}>
             Déposer des photos
           </button>
         ) : null}
       </EnTeteEcran>
 
       <div className="ec-ecran-corps ec-collecte-zone">
-      <nav className="ec-onglets" aria-label="Filtrer les photos">
-        {ONGLETS.map((o) => (
-          <button
-            key={o.cle}
-            type="button"
-            className="ec-onglet"
-            aria-pressed={filtre === o.cle}
-            onClick={() => changerFiltre(o.cle)}
-          >
-            {o.libelle}
-            {o.cle === "doublons" && compteurs ? ` · ${compteurs.doublons}` : ""}
-            {o.cle === "preselection" && compteurs ? ` · ${compteurs.preselection}` : ""}
-            {o.cle === "signalees" && compteurs ? ` · ${compteurs.signalees}` : ""}
-          </button>
-        ))}
-      </nav>
+        <div className="ec-collecte-corps">
+          <div className="ec-collecte-principal">
+            <nav className="ec-onglets" aria-label="Filtrer les photos">
+              {ONGLETS.map((o) => (
+                <button key={o.cle} type="button" className="ec-onglet" aria-pressed={filtre === o.cle} onClick={() => changerFiltre(o.cle)}>
+                  {o.libelle}
+                  {o.cle === "toutes" && compteurs ? ` · ${compteurs.toutes.toLocaleString("fr-FR")}` : ""}
+                  {o.cle === "doublons" && compteurs ? ` · ${compteurs.doublons}` : ""}
+                  {o.cle === "preselection" && compteurs ? ` · ${compteurs.preselection}` : ""}
+                  {o.cle === "signalees" && compteurs ? ` · ${compteurs.signalees}` : ""}
+                </button>
+              ))}
+            </nav>
 
-      <div className="ec-collecte-corps">
-        <div className="ec-collecte-grille ec-defile" ref={zone}>
-          {p.ecrire ? (
-            <p className="ec-note">
-              {v(
-                "Facultatif : touchez une photo pour l'ajouter à votre présélection. Sans présélection, l'atelier choisit parmi toutes les photos.",
-                "Facultatif : touche une photo pour l'ajouter à ta présélection. Sans présélection, l'atelier choisit parmi toutes les photos."
-              )}
-            </p>
-          ) : null}
-          {erreur ? <p className="ec-note ec-note--erreur" role="alert">{erreur}</p> : null}
-          {photos.length === 0 && !chargement ? (
-            <div className="ec-a-venir">
-              <p className="ec-texte">
-                {filtre === "toutes"
-                  ? v("Aucune photo pour l'instant. Partagez le lien participants, ou déposez les vôtres.", "Aucune photo pour l'instant. Partage le lien participants, ou dépose les tiennes.")
-                  : "Rien dans ce filtre."}
-              </p>
-            </div>
-          ) : null}
-          <div className="ec-grille">
-            {photos.map((ph, i) => {
-              const titre = groupe && (i === 0 || groupe(photos[i - 1]) !== groupe(ph)) ? groupe(ph) : null;
-              return (
-                <div key={ph.id} className="ec-tuile-bloc" style={titre ? { gridColumn: "1 / -1", display: "contents" } : { display: "contents" }}>
-                  {titre ? <h2 className="ec-grille-titre">{titre}</h2> : null}
-                  <figure className={`ec-tuile${ph.preselection ? " ec-tuile--choisie" : ""}${ph.doublonDe ? " ec-tuile--doublon" : ""}`}>
-                    <button
-                      type="button"
-                      className="ec-tuile-image"
-                      aria-pressed={ph.preselection}
-                      aria-label={`${ph.nom ?? "Photo"}${ph.preselection ? ", présélectionnée" : ""}`}
-                      disabled={!p.ecrire}
-                      onClick={() => marquer(ph, { preselection: !ph.preselection })}
-                    >
-                      {ph.vignette ? (
-                        <img src={ph.vignette} alt="" loading="lazy" decoding="async" />
-                      ) : (
-                        <span className="ec-tuile-sans">{ph.heic ? "HEIC · aperçu indisponible" : ph.nom ?? "Photo"}</span>
-                      )}
-                    </button>
-                    <figcaption className="ec-tuile-legende">
-                      {ph.doublonDe ? <span className="ec-badge">Doublon</span> : null}
-                      {ph.signalee ? <span className="ec-badge ec-badge--signal">À ne pas publier</span> : null}
-                      {p.ecrire ? (
+            {p.ecrire ? (
+              <div className="ec-presel">
+                <span className="ec-presel-texte">
+                  <strong>
+                    {v("Votre présélection", "Ta présélection")} : {choisies.toLocaleString("fr-FR")}
+                    {p.preselectionMax ? ` sur ${p.preselectionMax}` : ""}
+                  </strong>
+                  <span className="ec-note">
+                    {v(
+                      "Facultative. Touchez une photo pour la choisir : un bord l'entoure. Sans présélection, l'atelier choisit parmi toutes.",
+                      "Facultative. Touche une photo pour la choisir : un bord l'entoure. Sans présélection, l'atelier choisit parmi toutes."
+                    )}
+                    {p.preselectionMax && choisies > p.preselectionMax ? ` C'est plus que les ${p.preselectionMax} prévues : l'atelier choisira parmi elles.` : ""}
+                  </span>
+                </span>
+                <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" disabled={toutes || !compteurs || choisies >= choisissables} onClick={() => marquerToutes(true)}>
+                  Tout sélectionner
+                </button>
+                <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" disabled={toutes || choisies === 0} onClick={() => marquerToutes(false)}>
+                  Tout désélectionner
+                </button>
+              </div>
+            ) : null}
+
+            <div className="ec-collecte-grille ec-defile" ref={zone}>
+              {erreur ? (
+                <p className="ec-note ec-note--erreur" role="alert">
+                  {erreur}
+                </p>
+              ) : null}
+              {photos.length === 0 && !chargement ? (
+                <div className="ec-a-venir">
+                  <p className="ec-texte">
+                    {filtre === "toutes"
+                      ? p.ouverte
+                        ? v("Aucune photo pour l'instant. Déposez les vôtres, ou partagez un lien depuis « Qui a déposé ».", "Aucune photo pour l'instant. Dépose les tiennes, ou partage un lien depuis « Qui a déposé ».")
+                        : "La collecte est close, sans photo reçue."
+                      : "Rien dans ce filtre."}
+                  </p>
+                </div>
+              ) : null}
+              <div className="ec-grille">
+                {photos.map((ph, i) => {
+                  const titre = groupe && (i === 0 || groupe(photos[i - 1]) !== groupe(ph)) ? groupe(ph) : null;
+                  return (
+                    <div key={ph.id} className="ec-tuile-bloc" style={{ display: "contents" }}>
+                      {titre ? <h2 className="ec-grille-titre">{titre}</h2> : null}
+                      <figure className={`ec-tuile${ph.preselection ? " ec-tuile--choisie" : ""}${ph.doublonDe ? " ec-tuile--doublon" : ""}`}>
                         <button
                           type="button"
-                          className="ec-tuile-signal"
-                          onClick={() => {
-                            if (ph.signalee) void marquer(ph, { signalee: false });
-                            else {
-                              const motif = window.prompt("Pourquoi ne pas publier cette photo ? (facultatif)") ?? "";
-                              void marquer(ph, { signalee: true, motif });
-                            }
-                          }}
+                          className="ec-tuile-image"
+                          aria-pressed={ph.preselection}
+                          aria-label={`${ph.nom ?? "Photo"}${ph.preselection ? ", présélectionnée" : ""}`}
+                          disabled={!p.ecrire}
+                          onClick={() => marquer(ph, { preselection: !ph.preselection })}
                         >
-                          {ph.signalee ? "Annuler" : "Signaler"}
+                          {ph.vignette ? (
+                            <img src={ph.vignette} alt="" loading="lazy" decoding="async" />
+                          ) : (
+                            <span className="ec-tuile-sans">{ph.heic ? "HEIC · aperçu indisponible" : ph.nom ?? "Photo"}</span>
+                          )}
                         </button>
-                      ) : null}
-                    </figcaption>
-                  </figure>
-                </div>
-              );
-            })}
+                        <figcaption className="ec-tuile-legende">
+                          {ph.doublonDe ? <span className="ec-badge">Doublon</span> : null}
+                          {ph.signalee ? <span className="ec-badge ec-badge--signal">À ne pas publier</span> : null}
+                          {p.ecrire ? (
+                            <button
+                              type="button"
+                              className="ec-tuile-signal"
+                              onClick={() => {
+                                if (ph.signalee) void marquer(ph, { signalee: false });
+                                else {
+                                  const motif = window.prompt("Pourquoi ne pas publier cette photo ? (facultatif)") ?? "";
+                                  void marquer(ph, { signalee: true, motif });
+                                }
+                              }}
+                            >
+                              {ph.signalee ? "Annuler" : "Signaler"}
+                            </button>
+                          ) : null}
+                        </figcaption>
+                      </figure>
+                    </div>
+                  );
+                })}
+              </div>
+              <div ref={fin} />
+              {chargement ? <p className="ec-note">Chargement des photos…</p> : null}
+              {suivante && !chargement ? (
+                <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => charger(suivante, filtre)}>
+                  Voir la suite
+                </button>
+              ) : null}
+            </div>
           </div>
-          <div ref={fin} />
-          {chargement ? <p className="ec-note">Chargement des photos…</p> : null}
-          {suivante && !chargement ? (
-            <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => charger(suivante, filtre)}>
-              Voir la suite
-            </button>
-          ) : null}
-        </div>
 
-        <aside className="ec-collecte-cote ec-defile">
-          <section className="ec-carte">
-            <div className="ec-carte-tete">
-              <span>{v("Votre présélection · facultative", "Ta présélection · facultative")}</span>
-            </div>
-            <p className="ec-texte">
-              <strong>{compteurs?.preselection ?? 0}</strong>
-              {p.preselectionMax ? ` sur ${p.preselectionMax} photos` : " photos"}
-            </p>
-            <p className="ec-note">
-              {v(
-                "Rien d'obligatoire : laissez l'atelier choisir, il compose avec toutes les photos reçues.",
-                "Rien d'obligatoire : laisse l'atelier choisir, il compose avec toutes les photos reçues."
-              )}
-            </p>
-          </section>
-          <section className="ec-carte">
-            <div className="ec-carte-tete">
-              <span>Qui a déposé</span>
-            </div>
-            {deposants.length ? (
-              <ul className="ec-lignes">
-                {deposants.slice(0, 8).map((d) => (
-                  <li key={d.libelle}>
-                    <span>{d.libelle}</span>
-                    <strong>{d.n}</strong>
-                  </li>
-                ))}
+          <aside className="ec-collecte-cote ec-defile" aria-labelledby="ec-qui-a-depose">
+            <h2 className="ec-cote-titre" id="ec-qui-a-depose">
+              Qui a déposé
+            </h2>
+            {p.ecrire ? (
+              <p className="ec-note">
+                {p.ouverte ? "Chaque source avec ses photos et son lien. Un seul endroit pour les liens." : "La collecte est close : les liens ne reçoivent plus de photos."}
+              </p>
+            ) : null}
+            {sources.length ? (
+              <ul className="ec-sources">
+                {sources.map((s) => {
+                  const lien = p.ouverte ? lienDe(s) : null;
+                  return (
+                    <li key={s.cle} className="ec-source">
+                      <span className="ec-source-tete">
+                        <strong>{s.libelle}</strong>
+                        <span>{s.n.toLocaleString("fr-FR")}</span>
+                      </span>
+                      <span className="ec-note">{s.detail}</span>
+                      {lien ? (
+                        <span className="ec-source-gestes">
+                          <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => copier(lien.url, s.cle)}>
+                            {copie === s.cle ? "Copié" : "Copier le lien"}
+                          </button>
+                          <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => setPartage(lien)}>
+                            Partager
+                          </button>
+                          <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => setQr(lien)}>
+                            QR
+                          </button>
+                        </span>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
-              <p className="ec-note">Personne encore.</p>
+              <p className="ec-note">{chargement ? "Chargement…" : "Personne encore."}</p>
             )}
-          </section>
-          {p.ecrire ? <LiensProvenance origine={p.origine} liens={p.liens} copie={copie} copier={copier} onCreer={() => setFenetreLien(true)} /> : null}
-        </aside>
-      </div>
-      </div>
-
-      {panneau ? <PanneauDepot tu={p.tu} fermer={() => { setPanneau(false); changerFiltre(filtre); }} /> : null}
-      {fenetreLien ? <FenetreLien token={p.token} max={p.max} evenement={p.evenement} cloture={p.cloture} tu={p.tu} onFermer={() => setFenetreLien(false)} /> : null}
-    </section>
-  );
-}
-
-/* ─────────────────────────── le panneau de dépôt ─────────────────────────── */
-
-function PanneauDepot({ tu, fermer }: { tu: boolean; fermer: () => void }) {
-  const moteur = useMoteurDepot();
-  const vue = useMoteur(moteur);
-  const v = (vous: string, toi: string) => (tu ? toi : vous);
-  const [provenance, setProvenance] = useState("organisateur");
-  const [libelle, setLibelle] = useState("");
-  const [survol, setSurvol] = useState(false);
-  const fichiers = useRef<HTMLInputElement>(null);
-  const dossier = useRef<HTMLInputElement>(null);
-
-  /* `webkitdirectory` n'est pas typé par React : posé à la main. */
-  useEffect(() => {
-    dossier.current?.setAttribute("webkitdirectory", "");
-  }, []);
-
-  if (!moteur) return null;
-  const regler = () => moteur.definirProvenance({ type: provenance, libelle });
-  const ajouter = (liste: Iterable<File>) => {
-    regler();
-    moteur.ajouter(liste);
-  };
-  const recues = vue.arrivees + vue.dejaLa;
-
-  return (
-    <Fenetre titre="Déposer des photos" onFermer={fermer} large>
-
-        <fieldset className="ec-fieldset">
-          <legend className="ec-note">1. D&apos;où viennent ces photos ?</legend>
-          <div className="ec-puces">
-            {PROVENANCES.map((o) => (
-              <label key={o.cle} className={`ec-puce${provenance === o.cle ? " ec-puce--active" : ""}`}>
-                <input type="radio" name="provenance" value={o.cle} checked={provenance === o.cle} onChange={() => setProvenance(o.cle)} hidden />
-                {o.libelle}
-              </label>
-            ))}
-          </div>
-          {provenance === "participant" || provenance === "autre" || provenance === "photographe" ? (
-            <input
-              className="ec-champ"
-              placeholder={provenance === "participant" ? "Son nom" : provenance === "photographe" ? "Son nom (facultatif)" : "La source (ex. l'agence)"}
-              value={libelle}
-              onChange={(e) => setLibelle(e.target.value)}
-            />
-          ) : null}
-        </fieldset>
-
-        <div
-          className={`ec-depose${survol ? " ec-depose--survol" : ""}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setSurvol(true);
-          }}
-          onDragLeave={() => setSurvol(false)}
-          onDrop={async (e) => {
-            e.preventDefault();
-            setSurvol(false);
-            ajouter(await fichiersDuDepot(e.dataTransfer));
-          }}
-        >
-          <p className="ec-texte">{v("2. Glissez des photos ou un dossier entier ici", "2. Glisse des photos ou un dossier entier ici")}</p>
-          <div className="ec-actions">
-            <button type="button" className="ec-bouton" onClick={() => fichiers.current?.click()}>
-              Choisir des photos
-            </button>
-            <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => dossier.current?.click()}>
-              Choisir un dossier
-            </button>
-          </div>
-          <p className="ec-note">JPEG, HEIC, PNG · sans plafond par personne pour {v("vous", "toi")} · un fichier déjà envoyé n&apos;est jamais renvoyé</p>
-          <input ref={fichiers} type="file" multiple accept="image/*,.heic,.heif" hidden onChange={(e) => { if (e.target.files) ajouter(e.target.files); e.target.value = ""; }} />
-          <input ref={dossier} type="file" multiple hidden onChange={(e) => { if (e.target.files) ajouter(e.target.files); e.target.value = ""; }} />
+            {p.ecrire && p.ouverte ? (
+              <button type="button" className="ec-bouton ec-bouton--clair ec-source-creer" onClick={() => setFenetreLien(true)}>
+                Créer un lien pour quelqu&apos;un
+              </button>
+            ) : null}
+          </aside>
         </div>
-
-        {vue.total ? (
-          <div className="ec-carte" role="status" aria-live="polite">
-            <p className="ec-texte">
-              <strong>{recues}</strong> sur {vue.total} arrivée{recues > 1 ? "s" : ""}
-              {vue.dejaLa ? ` (dont ${vue.dejaLa} déjà là)` : ""}
-              {vue.enCours ? ` · ${vue.enCours} en cours` : " · terminé"}
-            </p>
-            <div className="ec-dp-barre-espace" aria-hidden="true">
-              <div style={{ width: `${vue.total ? Math.round(((vue.total - vue.enCours) / vue.total) * 100) : 0}%` }} />
-            </div>
-            <p className="ec-note">
-              {v("Vous pouvez naviguer dans l'espace pendant l'envoi. Gardez l'onglet ouvert : les photos déjà arrivées sont gardées.", "Tu peux naviguer dans l'espace pendant l'envoi. Garde l'onglet ouvert : les photos déjà arrivées sont gardées.")}
-            </p>
-            {vue.horsLigne ? <p className="ec-note">Connexion interrompue : l&apos;envoi reprend tout seul.</p> : null}
-            {vue.raisons.map((r) => <p key={r} className="ec-note ec-note--erreur">{r}</p>)}
-            {vue.erreurs ? <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => moteur.reessayer()}>Réessayer ({vue.erreurs})</button> : null}
-            {vue.ignores ? <p className="ec-note">{vue.ignores} fichier(s) ignoré(s) : ce ne sont pas des photos.</p> : null}
-            {vue.ferme ? <p className="ec-note ec-note--erreur">{vue.ferme}</p> : null}
-          </div>
-        ) : null}
-    </Fenetre>
-  );
-}
-
-/* ─────────────────────────── les liens de contribution ─────────────────────────── */
-
-/* Les liens déjà créés, à copier ; « Créer un lien » ouvre la fenêtre du lien
-   de contribution (révision §14.2) : un nom, SON plafond au curseur, le QR. */
-function LiensProvenance(p: { origine: string; liens: Lien[]; copie: string | null; copier: (t: string, cle: string) => void; onCreer: () => void }) {
-  return (
-    <section className="ec-carte">
-      <div className="ec-carte-tete">
-        <span>Les photos sont chez quelqu&apos;un d&apos;autre ?</span>
       </div>
-      <p className="ec-note">Un lien à son nom, par exemple pour le photographe ou une équipe. Ses photos se rangent sous son nom.</p>
-      {p.liens.map((l) => (
-        <div key={l.chemin} className="ec-lien-ligne">
-          <span className="ec-texte ec-lien-ligne-nom">
-            {l.libelle}
-            {l.sansPlafond ? " · sans limite" : ""}
-          </span>
-          <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => p.copier(`${p.origine}${l.chemin}`, l.chemin)}>
-            {p.copie === l.chemin ? "Copié" : "Copier"}
-          </button>
-        </div>
-      ))}
-      <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={p.onCreer}>
-        Créer un lien de contribution
-      </button>
+
+      {fenetreLien ? (
+        <FenetreLien
+          token={p.token}
+          max={p.max}
+          contexte={contexte}
+          onFermer={() => {
+            setFenetreLien(false);
+            version.current++;
+            void charger(0, filtre);
+          }}
+        />
+      ) : null}
+      {partage ? <FenetrePartage lien={partage} contexte={contexte} onFermer={() => setPartage(null)} /> : null}
+      {qr ? <FenetreQr lien={qr} contexte={contexte} onFermer={() => setQr(null)} /> : null}
     </section>
   );
 }

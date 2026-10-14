@@ -4,16 +4,18 @@ import { makeSupabase } from "@/lib/supabase";
 import { chargerAcces } from "@/lib/collectif/acces";
 import { peut } from "@/lib/collectif/droits";
 import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
-import { jourDePhoto, libelleProvenance, lireFiltre, resumeDeposants, TAILLE_PAGE } from "@/lib/collectif/grille";
+import { jourDePhoto, libelleProvenance, lireFiltre, TAILLE_PAGE } from "@/lib/collectif/grille";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
+import { sourcesDesPhotos } from "@/lib/collectif/sources";
+import { lireProvenances } from "@/app/edition/[token]/donnees";
 
 /**
  * POST /api/collectif/photos — une PAGE de la grille des photos.
  * `{ token, filtre?, page? }` (lien responsable ou équipe : voir n'écrit rien).
  *
  * Toutes les photos ARRIVÉES de l'édition sont lues en colonnes légères (pour
- * les compteurs, les doublons, « qui a déposé ») ; seule la page demandée est
+ * les compteurs, les doublons, « qui a déposé » avec les liens, sources.ts) ; seule la page demandée est
  * signée (vignette, une heure). 2 000 photos ne coûtent donc que 120
  * signatures par affichage.
  */
@@ -36,6 +38,9 @@ type Ligne = {
   signalee: boolean;
   signalement_motif: string | null;
   mime: string | null;
+  provenance_id: string | null;
+  role_deposant: string;
+  appareil_id: string | null;
 };
 
 export async function POST(request: Request) {
@@ -51,14 +56,20 @@ export async function POST(request: Request) {
   const filtre = lireFiltre(corps.filtre);
   const page = Math.max(0, Math.min(1000, Number(corps.page) || 0));
 
-  const { data, error } = await makeSupabase()
-    .from("collectif_photos")
-    .select("id, vignette_key, r2_key, nom_origine, provenance_type, deposant, prise_le, confirmee_le, ordre, empreinte, preselection, signalee, signalement_motif, mime")
-    .eq("edition_id", acces.edition.id)
-    .not("confirmee_le", "is", null)
-    .order("confirmee_le", { ascending: true })
-    .limit(20000)
-    .returns<Ligne[]>();
+  /* Les liens ne se montrent qu'à qui peut en créer (le responsable) : une
+     clé de provenance lève un plafond, l'équipe n'a pas à la connaître. */
+  const partage = peut(acces.role, "regler_plafond_participant");
+  const [{ data, error }, liens] = await Promise.all([
+    makeSupabase()
+      .from("collectif_photos")
+      .select("id, vignette_key, r2_key, nom_origine, provenance_type, deposant, prise_le, confirmee_le, ordre, empreinte, preselection, signalee, signalement_motif, mime, provenance_id, role_deposant, appareil_id")
+      .eq("edition_id", acces.edition.id)
+      .not("confirmee_le", "is", null)
+      .order("confirmee_le", { ascending: true })
+      .limit(20000)
+      .returns<Ligne[]>(),
+    partage ? lireProvenances(acces.edition.id) : Promise.resolve([]),
+  ]);
   if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
   const toutes = data ?? [];
 
@@ -131,6 +142,6 @@ export async function POST(request: Request) {
       doublons: doublonDe.size,
       signalees: toutes.filter((p) => p.signalee).length,
     },
-    deposants: resumeDeposants(toutes),
+    sources: sourcesDesPhotos(toutes, liens, acces.edition, partage),
   });
 }

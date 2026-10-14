@@ -63,6 +63,10 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return "Une photo ajoutée à la présélection du client.";
     case "photo_deselectionnee":
       return "Une photo retirée de la présélection du client.";
+    case "preselection_toutes":
+      return `Tout sélectionné : ${String(payload.n ?? 0)} photo(s) ajoutée(s) à la présélection du client.`;
+    case "preselection_aucune":
+      return `Tout désélectionné : ${String(payload.n ?? 0)} photo(s) retirée(s) de la présélection du client.`;
     case "photo_signalee":
       return "Une photo signalée « à ne pas publier ».";
     case "photo_designalee":
