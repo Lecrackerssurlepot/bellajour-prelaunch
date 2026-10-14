@@ -1,7 +1,7 @@
 ---
 id: T-151
 titre: Les retours de Mathias sur l'espace client de l'Édition collective (14/10)
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: avis-requis
@@ -46,5 +46,33 @@ la photo, sans case ni coche (trop de photos), et deux boutons « Tout sélectio
 désélectionner ». Le menu de la maquette a des carrés à la place des icônes : l'espace garde
 ses vraies icônes.
 
-## Ce qui a été fait
-- 14/10 : logo blanc en mode nuit (1) et Entrée envoie (12), branche `feat/collectif-retours-ux-1`.
+## Ce qui a été fait (branche `feat/collectif-retours-ux-1`)
+- 14/10 : logo blanc en mode nuit (1) et Entrée envoie (12).
+- 14/10 : la page Photos de la maquette validée :
+  - (7) la présélection se marque par un BORD (tracé en dedans : la tuile rogne sa peinture, un
+    contour extérieur ne se voyait que dessous), « Tout sélectionner » / « Tout désélectionner »
+    (une photo signalée n'entre jamais dans un « tout »), journalisés ;
+  - (9, 10) « Qui a déposé » réunit chaque source, son nombre de photos et SON lien (Copier,
+    Partager, QR en grand) ; plus de bouton de copie dans l'en-tête ; collecte close, ni dépôt
+    ni lien ; le tableau de bord lit les mêmes sources (`sources.ts`) ;
+  - (5) le message de partage est écrit pour le groupe, l'organisation et l'événement
+    (`partage.ts`), à retoucher avant WhatsApp, Mail ou copie ;
+  - (6, 8) la fenêtre d'envoi vit dans la coquille, la pastille « Envoi en cours » de chaque
+    en-tête la rouvre ; « déjà là » est expliqué, un fichier choisi deux fois est compté
+    (« Choisies deux fois, sautées ») au lieu d'être ignoré en silence ; un second lot ajouté
+    pendant l'envoi garde SA provenance (défaut latent corrigé dans `moteur.ts`).
+- 14/10 : (3) les contenus : un contenu a plusieurs fichiers ; un clic sur une puce reçue montre
+  ce que l'atelier a reçu (aperçu d'une image, « Ouvrir »), « Remplacer » (l'ancien devient une
+  ancienne version, gardée à l'atelier) et « Ajouter un autre fichier » ; le mot du dirigeant
+  se relit et se modifie. Un dossier de photos (un lien, ou un dossier du responsable) se
+  renomme d'un double clic, sur Photos et sur le tableau de bord ; la fenêtre d'envoi demande
+  le nom du dossier.
+- 14/10 : (11) « Citer un de vos envois » dans le « + » des messages ; la bulle et la fiche de
+  l'atelier le montrent.
+- **Migration `20261016_collectif_envois.sql` à appliquer par Mathias** pour « Remplacer » et
+  « Citer un de vos envois » (503 qui nomme le fichier d'ici là, rien d'écrit).
+
+## Ce qui reste
+- (2, 4) Le style « tout en vrac » et « modifier une partie » (maquettes Main, StyleTypos,
+  StylePartie) : la règle « l'intérieur suit le style » tombe ; changement du modèle de données.
+- T-150 : décoder les HEIC à l'envoi (aperçu et doublons).

@@ -82,7 +82,7 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
           />
         </div>
 
-        <LigneContenus token={token} demandes={edition.contenus_demandes ?? []} recus={tableau.contenusRecus} ecrire={peut(role, 'envoyer_contenu')} tu={tu} />
+        <LigneContenus token={token} demandes={edition.contenus_demandes ?? []} envois={tableau.envois} ecrire={peut(role, 'envoyer_contenu')} tu={tu} />
 
         <Link href={cheminSection(token, 'atelier')} prefetch={false} className="ec-tdb-message">
           <span className="ec-tdb-message-avatar" aria-hidden="true">

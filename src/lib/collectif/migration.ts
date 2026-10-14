@@ -94,3 +94,17 @@ export function rdvAbsent(code: string | null | undefined): boolean {
   return tableAbsente(code) || colonneAbsente(code);
 }
 
+
+/* ─────────────────────────── les envois du client (T-151, 14/10) ─────────────────────────── */
+
+/**
+ * Trois colonnes : la version remplacée d'un contenu (`remplace_le`,
+ * `remplace_par`) et l'envoi cité dans un message (`contenu_id`). Sans elles,
+ * l'écran montre tous les fichiers reçus (aucun n'est « ancien »), et
+ * « Remplacer » comme « Citer un de vos envois » répondent 503
+ * `migration_envois_absente` en nommant le fichier.
+ */
+export const MIGRATION_ENVOIS = "supabase/migrations/20261016_collectif_envois.sql";
+export const ERREUR_ENVOIS_ABSENTE = "migration_envois_absente";
+export const MESSAGE_ENVOIS_ABSENTE =
+  "La mise à jour de la base pour les envois n'est pas encore appliquée (20261016_collectif_envois.sql) : rien n'a été enregistré.";

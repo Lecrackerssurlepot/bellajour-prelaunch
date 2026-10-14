@@ -14,6 +14,7 @@ import { chargerAcces } from "@/lib/collectif/acces";
 import { styleVisible } from "@/lib/collectif/brief";
 import { colonneAbsente } from "@/lib/collectif/migration";
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
+import { apercuPossible, contenuClient, envoisCourants, type LigneEnvoi } from "@/lib/collectif/contenus";
 import { sourcesDesPhotos } from "@/lib/collectif/sources";
 import { formaterInstantParis, formaterJourParis } from "@/lib/collectif/dates";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
@@ -81,6 +82,8 @@ export type Tableau = {
   mosaique: string[];
   liens: LienContribution[];
   contenusRecus: string[];
+  /** Les envois COURANTS (une version remplacée n'y est plus), pour revoir, remplacer, ajouter. */
+  envois: EnvoiClient[];
   dernierMessage: { texte: string; quand: string } | null;
 };
 
@@ -109,6 +112,57 @@ export async function lireProvenances(editionId: string): Promise<ProvenanceLue[
   return ((sans.data ?? []) as Omit<ProvenanceLue, "plafond_par_personne">[]).map((l) => ({ ...l, plafond_par_personne: null }));
 }
 
+/** Un envoi du client à l'atelier (un fichier, ou les réponses du mot du dirigeant), tel que l'écran le montre. */
+export type EnvoiClient = {
+  id: string;
+  type: string;
+  /** « Logo », « Mot du dirigeant »… */
+  libelle: string;
+  nom: string | null;
+  /** « 14 octobre ». */
+  recuLe: string;
+  /** L'adresse signée du fichier (une heure), pour l'ouvrir. */
+  url: string | null;
+  /** La même, si c'est une image qui se revoit en aperçu. */
+  apercu: string | null;
+  reponses: Record<string, string> | null;
+};
+
+/**
+ * Les envois COURANTS d'une édition (`envoisCourants`). Repli tant que la
+ * migration 20261016 n'est pas passée : sans `remplace_le`, aucun fichier
+ * n'est « ancien », tous se montrent.
+ */
+export async function lireEnvois(editionId: string): Promise<EnvoiClient[]> {
+  const supabase = makeSupabase();
+  const colonnes = "id, type, r2_key, nom_origine, reponses, recu_le";
+  const avec = await supabase.from("collectif_contenus").select(`${colonnes}, remplace_le`).eq("edition_id", editionId).limit(500);
+  let lignes: LigneEnvoi[];
+  if (!avec.error) lignes = (avec.data ?? []) as LigneEnvoi[];
+  else {
+    if (!colonneAbsente(avec.error.code)) echec("envois du client", avec.error);
+    const sans = await supabase.from("collectif_contenus").select(colonnes).eq("edition_id", editionId).limit(500);
+    if (sans.error) echec("envois du client (repli)", sans.error);
+    lignes = (sans.data ?? []) as LigneEnvoi[];
+  }
+  const courants = [...envoisCourants(lignes).values()].flat();
+  return Promise.all(
+    courants.map(async (l) => {
+      const url = await signerOuRien(l.r2_key);
+      return {
+        id: l.id,
+        type: l.type,
+        libelle: contenuClient(l.type)?.libelle ?? l.type,
+        nom: l.nom_origine,
+        recuLe: formaterJourParis(l.recu_le),
+        url,
+        apercu: url && apercuPossible(l.nom_origine) ? url : null,
+        reponses: l.reponses,
+      };
+    })
+  );
+}
+
 export async function chargerTableau(edition: EditionLigne, origine = ""): Promise<Tableau> {
   const supabase = makeSupabase();
   const [mags, photos, contenus, styles, message, provenances] = await Promise.all([
@@ -124,7 +178,7 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
       .not("confirmee_le", "is", null)
       .order("confirmee_le", { ascending: false })
       .limit(20000),
-    supabase.from("collectif_contenus").select("type").eq("edition_id", edition.id),
+    lireEnvois(edition.id),
     supabase
       .from("collectif_styles")
       .select("nom, segment, couvertures")
@@ -143,7 +197,6 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
   ]);
   if (mags.error) echec("magazines du tableau de bord", mags.error);
   if (photos.error) echec("photos du tableau de bord", photos.error);
-  if (contenus.error) echec("contenus du tableau de bord", contenus.error);
   if (styles.error) echec("styles du tableau de bord", styles.error);
   if (message.error) echec("dernier message du tableau de bord", message.error);
 
@@ -212,7 +265,8 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
     dossiers,
     mosaique,
     liens,
-    contenusRecus: [...new Set(((contenus.data ?? []) as { type: string }[]).map((c) => c.type))],
+    contenusRecus: [...new Set(contenus.map((c) => c.type))],
+    envois: contenus,
     dernierMessage: dernier ? { texte: dernier.texte, quand: dernier.created_at } : null,
   };
 }

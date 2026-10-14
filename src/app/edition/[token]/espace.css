@@ -986,6 +986,37 @@
   font-weight: 500;
   overflow-wrap: anywhere;
 }
+/* Un nom de dossier qui se change d'un double clic (NomDossier). */
+.ec-espace .ec-nom-dossier {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-tdb-dossier .ec-nom-dossier {
+  font-weight: 400;
+}
+.ec-espace .ec-nom-dossier--renommable {
+  cursor: text;
+  border-radius: 4px;
+}
+.ec-espace .ec-nom-dossier--renommable:hover {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.ec-espace .ec-nom-dossier--renommable:focus-visible {
+  outline: 2px solid var(--ec-accent);
+  outline-offset: 2px;
+}
+.ec-espace .ec-nom-dossier-edition {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ec-espace .ec-nom-dossier-champ {
+  min-height: 34px;
+  border-color: var(--ec-accent);
+}
 .ec-espace .ec-source-gestes {
   display: flex;
   flex-wrap: wrap;

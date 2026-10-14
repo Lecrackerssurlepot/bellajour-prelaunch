@@ -10,7 +10,10 @@
    Le lien d'équipe voit les compteurs, sans aucun geste. */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { dossierRenommable } from "@/lib/collectif/sources";
+import NomDossier from "../_composants/NomDossier";
 import FenetreLien, { CarteLien } from "../_composants/LienContribution";
 import { useFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import ZoneDepot from "../_composants/depot/ZoneDepot";
@@ -39,6 +42,7 @@ export default function CartePhotos(p: Props) {
   const [fenetre, setFenetre] = useState(false);
   const [deposer, setDeposer] = useState(false);
   const envoi = useFenetreEnvoi();
+  const router = useRouter();
   const contexte = { organisation: p.organisation, evenement: p.evenement, cloture: p.cloture, tu: p.tu };
   const dernier = p.liens[p.liens.length - 1] ?? null;
   const etat = p.photos > 0 ? "photos" : deposer || !dernier ? "vide" : "lien";
@@ -64,7 +68,7 @@ export default function CartePhotos(p: Props) {
               <li key={d.cle}>
                 <span className={d.lien ? "ec-tdb-point ec-tdb-point--lien" : "ec-tdb-point"} aria-hidden="true" />
                 <span className="ec-tdb-dossier">
-                  <span>{d.libelle}</span>
+                  <NomDossier token={p.token} cle={d.cle} nom={d.libelle} renommable={p.ecrire && dossierRenommable(d.cle) !== null} onRenomme={() => router.refresh()} />
                   <span className="ec-note">{d.detail}</span>
                 </span>
                 <span className="ec-tdb-n">{d.n.toLocaleString("fr-FR")}</span>

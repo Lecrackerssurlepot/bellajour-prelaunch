@@ -11,7 +11,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { signerGet } from "@/lib/atelier/r2";
 import { etatEffectif, LIBELLE_ETAT_EDITION, type EtatEdition } from "@/lib/collectif/etats";
-import { tableAbsente } from "@/lib/collectif/migration";
+import { colonneAbsente, tableAbsente } from "@/lib/collectif/migration";
 import { prochaineEtape, type Prochaine } from "@/lib/collectif/prochaine";
 import { phraseEvenement } from "@/lib/collectif/recit";
 import { manquesPourPublier } from "@/lib/collectif/styles";
@@ -148,6 +148,8 @@ export type ContenuFiche = {
   url: string | null;
   nom: string | null;
   reponses: { question: string; reponse: string }[];
+  /** Remplacé par le client (migration 20261016) : gardé ici, plus sur son écran. */
+  ancienne: boolean;
 };
 
 export type Fiche = {
@@ -201,12 +203,7 @@ export async function chargerEdition(
       .eq("edition_id", id)
       .not("confirmee_le", "is", null)
       .limit(20000),
-    supabase
-      .from("collectif_contenus")
-      .select("id, type, r2_key, nom_origine, reponses, recu_le, depose_par")
-      .eq("edition_id", id)
-      .order("recu_le", { ascending: false })
-      .limit(100),
+    lireContenusFiche(supabase, id),
   ]);
   if (photos.error) echec("photos de l'édition", photos.error);
   if (contenus.error) echec("contenus de l'édition", contenus.error);
@@ -300,7 +297,7 @@ export async function chargerEdition(
         phrase: phraseEvenement(j.type, j.payload ?? {}),
       })),
       contenus: await Promise.all(
-        ((contenus.data ?? []) as { id: string; type: string; r2_key: string | null; nom_origine: string | null; reponses: Record<string, unknown> | null; recu_le: string; depose_par: string | null }[]).map(
+        ((contenus.data ?? []) as { id: string; type: string; r2_key: string | null; nom_origine: string | null; reponses: Record<string, unknown> | null; recu_le: string; depose_par: string | null; remplace_le?: string | null }[]).map(
           async (c) => {
             let url: string | null = null;
             if (c.r2_key) {
@@ -320,6 +317,7 @@ export async function chargerEdition(
               reponses: Object.entries(c.reponses ?? {})
                 .filter(([, r]) => typeof r === "string")
                 .map(([question, r]) => ({ question, reponse: r as string })),
+              ancienne: Boolean(c.remplace_le),
             };
           }
         )
@@ -639,4 +637,15 @@ export async function chargerBatAtelier(
       notes: notesAtelier,
     },
   };
+}
+
+/**
+ * Les contenus d'une édition, le plus récent d'abord, avec `remplace_le`
+ * (migration 20261016) ; repli sans la colonne tant qu'elle n'est pas passée.
+ */
+async function lireContenusFiche(supabase: SupabaseClient, id: string) {
+  const colonnes = "id, type, r2_key, nom_origine, reponses, recu_le, depose_par";
+  const avec = await supabase.from("collectif_contenus").select(`${colonnes}, remplace_le`).eq("edition_id", id).order("recu_le", { ascending: false }).limit(100);
+  if (!avec.error || !colonneAbsente(avec.error.code)) return avec;
+  return supabase.from("collectif_contenus").select(colonnes).eq("edition_id", id).order("recu_le", { ascending: false }).limit(100);
 }

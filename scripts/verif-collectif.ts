@@ -100,7 +100,8 @@ import { estTypeNote, ROLES, TYPES_NOTE, type Role } from "@/lib/collectif/types
 import { cookieMode, LOGO_MODE, lireMode, MODES } from "@/lib/collectif/affichage";
 import { CONTENUS_CLIENT, contenuClient, lireFichierContenu, lireReponsesMot, QUESTIONS_MOT } from "@/lib/collectif/contenus";
 import { cheminQr, matriceQr, svgQr } from "@/lib/collectif/qr";
-import { DOSSIER_RESPONSABLE, sourcesDesPhotos } from "@/lib/collectif/sources";
+import { DOSSIER_RESPONSABLE, dossierRenommable, lireNomDossier, sourcesDesPhotos } from "@/lib/collectif/sources";
+import { apercuPossible, envoisCourants } from "@/lib/collectif/contenus";
 import { GROUPE_GENERAL, messagePartage } from "@/lib/collectif/partage";
 import { colonneAbsente, MIGRATION_REVISION } from "@/lib/collectif/migration";
 import { libellePlafondLien, lirePlafondLien, plafondLienMax, CURSEUR_LIEN } from "@/lib/collectif/plafonds";
@@ -1529,6 +1530,59 @@ titre("— retours de Mathias du 14/10 —");
     /Déjà là, sautées \(même fichier déjà envoyé\)/.test(fenetre) && /n'est jamais envoyée deux fois/.test(fenetre) && /Ajouter d&apos;autres photos/.test(fenetre) && /Réduire et continuer/.test(fenetre));
   ok("envoi : la fenetre vit dans la coquille, la pastille de chaque en-tete la rouvre",
     /<HoteFenetreEnvoi \/>/.test(lire("src/app/edition/[token]/Coquille.tsx")) && /<PastilleEnvoi \/>/.test(lire("src/app/edition/_composants/Ecran.tsx")) && /onClick=\{c\.ouvrir\}/.test(lire("src/app/edition/_composants/depot/DepotContexte.tsx")));
+}
+
+titre("— retours du 14/10 : les envois du client et les dossiers —");
+{
+  const mig = lire("supabase/migrations/20261016_collectif_envois.sql");
+  ok("migration 20261016 : atomique, idempotente, trois colonnes, PostgREST relit",
+    /^begin;/m.test(mig) && /^commit;/m.test(mig) && (mig.match(/add column if not exists/g) ?? []).length === 3 && /remplace_le timestamptz/.test(mig) && /contenu_id uuid/.test(mig) && /on delete set null/.test(mig) && /notify pgrst, 'reload schema'/.test(mig));
+  const l = (id: string, type: string, recu: string, remplace: string | null = null) => ({ id, type, r2_key: `k/${id}`, nom_origine: `${id}.png`, reponses: null, recu_le: recu, remplace_le: remplace });
+  const c = envoisCourants([
+    l("a", "logo", "2026-10-14T10:00:00Z"),
+    l("b", "logo", "2026-10-14T11:00:00Z", "2026-10-14T12:00:00Z"),
+    l("c", "logo", "2026-10-14T12:00:00Z"),
+    l("m1", "mot", "2026-10-14T09:00:00Z"),
+    l("m2", "mot", "2026-10-14T13:00:00Z"),
+    l("x", "inconnu", "2026-10-14T13:00:00Z"),
+  ]);
+  ok("envois : un contenu a plusieurs fichiers, une version remplacee sort de l'ecran",
+    JSON.stringify(c.get("logo")?.map((x) => x.id)) === JSON.stringify(["a", "c"]));
+  ok("envois : le questionnaire n'a qu'une version courante, la plus recente ; un type inconnu est ignore",
+    JSON.stringify(c.get("mot")?.map((x) => x.id)) === JSON.stringify(["m2"]) && !c.has("inconnu"));
+  ok("envois : sans la migration (aucun remplace_le), tous les fichiers se montrent",
+    envoisCourants([{ ...l("a", "logo", "2026-10-14T10:00:00Z"), remplace_le: undefined }, { ...l("b", "logo", "2026-10-14T11:00:00Z"), remplace_le: undefined }]).get("logo")?.length === 2);
+  ok("envois : l'apercu seulement pour une image (png, jpg, svg)", apercuPossible("logo.SVG") && apercuPossible("a.jpeg") && !apercuPossible("logo.pdf") && !apercuPossible(null));
+  const route = lire("src/app/api/collectif/contenus/route.ts");
+  ok("remplacer : la migration est SONDEE avant d'ecrire au coffre (aucun fichier orphelin), 503 nomme",
+    route.indexOf("ERREUR_ENVOIS_ABSENTE") > 0 && route.indexOf("ERREUR_ENVOIS_ABSENTE") < route.indexOf("await ecrireObjet("));
+  ok("remplacer : un fichier courant du meme contenu et de la meme edition, l'ancien devient ancienne version (rien ne s'efface)",
+    /\.eq\("edition_id", edition\.id\)/.test(route) && /data\.type !== contenu\.cle/.test(route) && /remplace_le: new Date\(\)\.toISOString\(\), remplace_par: id/.test(route) && !/\.delete\(/.test(route));
+  const ligne = lire("src/app/edition/[token]/LigneContenus.tsx");
+  ok("contenus : revoir (apercu ou Ouvrir), Remplacer, Ajouter un autre fichier, Modifier les reponses",
+    ["Remplacer", "Ajouter un autre fichier", "Ouvrir", "ancienne version", "Modifier"].every((t) => ligne.includes(t)));
+  ok("contenus : l'atelier voit l'ancienne version", /ancienne version/.test(lire("src/app/admin/collectif/[id]/PanneauContenus.tsx")) && /remplace_le/.test(lire("src/app/admin/collectif/donnees.ts")));
+
+  ok("dossiers : un lien ou un dossier du responsable se renomme ; le lien general et l'atelier non",
+    dossierRenommable("lien:0b1f3c2e-4a5b-4c6d-8e9f-001122334455")?.genre === "lien" && dossierRenommable("resp:organisateur:")?.genre === "responsable" && (dossierRenommable("resp:photographe:Jean") as { deposant: string | null }).deposant === "Jean" && dossierRenommable("participants") === null && dossierRenommable("atelier") === null && dossierRenommable("lien:pas-un-uuid") === null && dossierRenommable("resp:pirate:x") === null);
+  ok("dossiers : un nom d'une ligne, 80 caracteres au plus, jamais vide",
+    lireNomDossier("  La  soirée\n de clôture ").ok && (lireNomDossier("  La  soirée\n de clôture ") as { nom: string }).nom === "La soirée de clôture" && !lireNomDossier("   ").ok && !lireNomDossier("x".repeat(81)).ok);
+  const dossiers = lire("src/app/api/collectif/dossiers/route.ts");
+  ok("dossiers : le droit du responsable, l'edition filtree, journalise ; « Mes photos » rend son propre nom",
+    /peut\(acces\.role, "regler_plafond_participant"\)/.test(dossiers) && /\.eq\("edition_id", edition\.id\)/.test(dossiers) && /"dossier_renomme"/.test(dossiers) && /lu\.nom === DOSSIER_RESPONSABLE \? propre : lu\.nom/.test(dossiers));
+  ok("dossiers : double clic sur le nom (Photos et tableau de bord), Entree garde, Echap annule",
+    /onDoubleClick/.test(lire("src/app/edition/_composants/NomDossier.tsx")) && /<NomDossier/.test(lire("src/app/edition/[token]/photos/Collecte.tsx")) && /<NomDossier/.test(lire("src/app/edition/[token]/CartePhotos.tsx")));
+  ok("le journal dit le renommage et le remplacement",
+    /devient « La soirée »/.test(phraseEvenement("dossier_renomme", { avant: "Mes photos", apres: "La soirée" })) && /ancienne version reste/.test(phraseEvenement("contenu_remplace", { type: "Logo", nom: "logo.png" })));
+
+  const envoyer = lire("src/app/api/collectif/messages/envoyer/route.ts");
+  ok("citer un envoi : sonde la migration, l'envoi doit etre de l'edition, 503 nomme sinon",
+    /envoisMessagesAppliques\(supabase\)/.test(envoyer) && /from\("collectif_contenus"\)[\s\S]{0,120}\.eq\("edition_id", edition\.id\)/.test(envoyer) && /ERREUR_ENVOIS_ABSENTE/.test(envoyer));
+  const messagerie = lire("src/lib/collectif/messagerie.ts");
+  ok("citer un envoi : la lecture se replie en trois paliers (envois, revision, avant)",
+    /requete\(COLONNES_ENVOIS\)[\s\S]{0,200}requete\(COLONNES\)[\s\S]{0,200}requete\(COLONNES_AVANT\)/.test(messagerie));
+  ok("citer un envoi : le « + » propose « Citer un de vos envois », la bulle et l'atelier le montrent",
+    /Citer un de \{v\("vos", "tes"\)\} envois/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")) && /Votre envoi · \{m\.contenu\.libelle\}/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")) && /Envoi du client cité/.test(lire("src/app/admin/collectif/[id]/PanneauMessages.tsx")));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

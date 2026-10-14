@@ -36,11 +36,14 @@ import Reservation, { type Fait } from "./Reservation";
 import "./atelier.css";
 
 type DocumentCite = { id: string; libelle: string; libelleType: string };
+/** Un envoi du client à citer (retours du 14/10, point 11). */
+type EnvoiCite = { id: string; libelle: string; nom: string | null; recuLe: string };
 
 type Props = {
   token: string;
   initiaux: Message[];
   documents: DocumentCite[];
+  envois: EnvoiCite[];
   propositions: DocumentDossier[];
   /** Le responsable : écrire, demander, répondre aux propositions. */
   ecrire: boolean;
@@ -94,12 +97,13 @@ export default function Parler(p: Props) {
     },
     envoyer: async (t, joint) => {
       try {
-        let corps: Record<string, unknown> | FormData = { token: p.token, texte: t, documentId: joint?.documentId ?? null };
+        let corps: Record<string, unknown> | FormData = { token: p.token, texte: t, documentId: joint?.documentId ?? null, contenuId: joint?.contenuId ?? null };
         if (joint?.fichier) {
           const f = new FormData();
           f.set("token", p.token);
           f.set("texte", t);
           if (joint.documentId) f.set("documentId", joint.documentId);
+          if (joint.contenuId) f.set("contenuId", joint.contenuId);
           f.set("fichier", joint.fichier);
           corps = f;
         }
@@ -207,7 +211,7 @@ export default function Parler(p: Props) {
             )}
           </div>
           {p.ecrire ? (
-            <Ecrire documents={p.documents} envoi={envoi} erreur={erreur} tu={p.tu} onEnvoyer={envoyer} />
+            <Ecrire documents={p.documents} envois={p.envois} envoi={envoi} erreur={erreur} tu={p.tu} onEnvoyer={envoyer} />
           ) : (
             <p className="ec-note ec-parler-lecture">Ce lien permet de tout lire, sans écrire.</p>
           )}
@@ -393,6 +397,19 @@ function Bulle({ m }: { m: Message }) {
           </span>
         )
       ) : null}
+      {m.contenu ? (
+        m.contenu.url ? (
+          <a className="ec-parler-cite" href={m.contenu.url} target="_blank" rel="noopener noreferrer">
+            <IconeDocument />
+            Votre envoi · {m.contenu.libelle}
+          </a>
+        ) : (
+          <span className="ec-parler-cite">
+            <IconeDocument />
+            Votre envoi · {m.contenu.libelle}
+          </span>
+        )
+      ) : null}
       {texteSeul ? <span className="ec-parler-texte">{m.texte}</span> : null}
       {m.piece ? (
         m.piece.url ? (
@@ -418,6 +435,7 @@ function Bulle({ m }: { m: Message }) {
    document), Envoyer. Ce qui est joint ou cité s'affiche en étiquette au-dessus. */
 function Ecrire(e: {
   documents: DocumentCite[];
+  envois: EnvoiCite[];
   envoi: boolean;
   erreur: string | null;
   tu: boolean;
@@ -427,6 +445,7 @@ function Ecrire(e: {
   const [texte, setTexte] = useState("");
   const [menu, setMenu] = useState(false);
   const [cite, setCite] = useState<DocumentCite | null>(null);
+  const [envoiCite, setEnvoiCite] = useState<EnvoiCite | null>(null);
   const [fichier, setFichier] = useState<File | null>(null);
   const [refus, setRefus] = useState<string | null>(null);
   const champFichier = useRef<HTMLInputElement>(null);
@@ -435,9 +454,10 @@ function Ecrire(e: {
   async function soumettre(ev: React.FormEvent) {
     ev.preventDefault();
     if (!pret || e.envoi) return;
-    if (await e.onEnvoyer(texte, { documentId: cite?.id ?? null, fichier })) {
+    if (await e.onEnvoyer(texte, { documentId: cite?.id ?? null, fichier, contenuId: envoiCite?.id ?? null })) {
       setTexte("");
       setCite(null);
+      setEnvoiCite(null);
       setFichier(null);
     }
   }
@@ -455,8 +475,17 @@ function Ecrire(e: {
 
   return (
     <form className="ec-parler-ecrire" onSubmit={soumettre} onKeyDown={(ev) => ev.key === "Escape" && setMenu(false)}>
-      {cite || fichier ? (
+      {cite || fichier || envoiCite ? (
         <div className="ec-parler-joints">
+          {envoiCite ? (
+            <span className="ec-parler-joint">
+              <IconeDocument />
+              Votre envoi · {envoiCite.nom ? `${envoiCite.libelle} · ${envoiCite.nom}` : envoiCite.libelle}
+              <button type="button" aria-label="Ne plus citer cet envoi" onClick={() => setEnvoiCite(null)}>
+                ✕
+              </button>
+            </span>
+          ) : null}
           {cite ? (
             <span className="ec-parler-joint">
               <IconeDocument />
@@ -489,7 +518,7 @@ function Ecrire(e: {
           >
             Joindre un fichier depuis l&apos;ordinateur
           </button>
-          <span className="ec-parler-etiquette ec-parler-menu-titre">Citer un document</span>
+          <span className="ec-parler-etiquette ec-parler-menu-titre">Citer un document de l&apos;atelier</span>
           {e.documents.length === 0 ? (
             <span className="ec-note ec-parler-menu-vide">L&apos;atelier n&apos;a encore déposé aucun document.</span>
           ) : (
@@ -507,6 +536,28 @@ function Ecrire(e: {
                 <span className="ec-parler-menu-nom">
                   <span>{d.libelle}</span>
                   <span className="ec-note">{d.libelleType}</span>
+                </span>
+              </button>
+            ))
+          )}
+          <span className="ec-parler-etiquette ec-parler-menu-titre">Citer un de {v("vos", "tes")} envois</span>
+          {e.envois.length === 0 ? (
+            <span className="ec-note ec-parler-menu-vide">Rien d&apos;envoyé encore : le logo, le programme… se déposent depuis le tableau de bord.</span>
+          ) : (
+            e.envois.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setEnvoiCite(d);
+                  setMenu(false);
+                }}
+              >
+                <IconeDocument />
+                <span className="ec-parler-menu-nom">
+                  <span>{d.nom ? `${d.libelle} · ${d.nom}` : d.libelle}</span>
+                  <span className="ec-note">{d.nom ? `envoyé le ${d.recuLe}` : `${v("vos", "tes")} réponses, le ${d.recuLe}`}</span>
                 </span>
               </button>
             ))

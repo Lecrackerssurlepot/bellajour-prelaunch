@@ -25,6 +25,8 @@ export type Message = {
   document?: { id: string; libelle: string; url: string | null } | null;
   /** La pièce jointe, lien signé une heure. */
   piece?: { nom: string; url: string | null } | null;
+  /** Un envoi du client cité (« Votre envoi · Logo · logo-blanc.png », migration 20261016), lien signé une heure. */
+  contenu?: { id: string; libelle: string; url: string | null } | null;
 };
 
 export type TexteLu = { ok: true; texte: string } | { ok: false; message: string };

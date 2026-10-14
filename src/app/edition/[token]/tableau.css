@@ -383,6 +383,93 @@
   color: var(--ec-accent);
 }
 
+/* ─────────── les envois reçus (retours du 14/10, maquette Contenus) ─────────── */
+
+.ec-espace .ec-envois-recus {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-envoi-recu {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--ec-surface);
+}
+/* L'aperçu d'une image reçue, sur le papier : un logo blanc reste lisible sur
+   le damier sombre, un logo foncé sur le clair. */
+.ec-espace .ec-envoi-apercu {
+  flex: none;
+  width: 120px;
+  height: 72px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: repeating-conic-gradient(rgba(var(--ec-fg-rgb), 0.1) 0% 25%, transparent 0% 50%) 50% / 16px 16px, var(--ec-panel);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-envoi-apercu img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.ec-espace .ec-envoi-recu-texte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ec-espace .ec-envoi-recu-texte strong {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-envoi-recu-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.ec-espace .ec-envoi-ajouter {
+  height: 44px;
+  border-radius: 999px;
+  border: 1px dashed var(--ec-filet-fort);
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  cursor: pointer;
+}
+.ec-espace .ec-envoi-ajouter:hover:not(:disabled) {
+  border-color: var(--ec-accent);
+}
+.ec-espace .ec-note--ok {
+  color: var(--ec-accent);
+}
+.ec-espace .ec-reponses {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ec-espace .ec-reponses dt {
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-reponses dd {
+  margin: 2px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 1100px) {
   .ec-espace .ec-tdb-grille {
     grid-template-columns: minmax(0, 1fr);
@@ -394,6 +481,13 @@
 }
 
 @media (max-width: 860px) {
+  .ec-espace .ec-envoi-recu {
+    flex-wrap: wrap;
+  }
+  .ec-espace .ec-envoi-recu-gestes {
+    width: 100%;
+    justify-content: flex-start;
+  }
   .ec-espace .ec-tdb-grille {
     overflow: visible;
   }

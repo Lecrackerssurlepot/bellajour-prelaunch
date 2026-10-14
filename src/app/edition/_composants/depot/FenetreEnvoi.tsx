@@ -17,6 +17,7 @@ import type { MoteurDepot, Provenance } from "./moteur";
 import { fichiersDuDepot, useMoteur } from "./useMoteur";
 
 const AVEC_NOM: Record<string, string> = {
+  organisateur: `Le nom du dossier (${DOSSIER_RESPONSABLE} si vide)`,
   photographe: "Son nom (facultatif)",
   participant: "Son nom",
   autre: "La source (ex. l'agence)",
@@ -46,7 +47,8 @@ export default function FenetreEnvoi({ moteur, tu, fermer }: { moteur: MoteurDep
   }, [choisir]);
 
   function ajouter(liste: Iterable<File>) {
-    moteur.definirProvenance({ type, libelle: type === "organisateur" ? "" : libelle });
+    const nom = libelle.trim();
+    moteur.definirProvenance({ type, libelle: type === "organisateur" && nom === DOSSIER_RESPONSABLE ? "" : nom });
     moteur.ajouter(liste);
     setChoisir(false);
   }
@@ -109,7 +111,7 @@ export default function FenetreEnvoi({ moteur, tu, fermer }: { moteur: MoteurDep
   const part = vue.total ? Math.round((faites / vue.total) * 100) : 0;
   const fini = vue.enCours === 0;
   return (
-    <Fenetre titre={v("L'envoi de vos photos", "L'envoi de tes photos")} sous={`Rangées dans « ${libelleDossier({ type, libelle: type === "organisateur" ? "" : libelle })} »`} onFermer={fermer} large>
+    <Fenetre titre={v("L'envoi de vos photos", "L'envoi de tes photos")} sous={`Rangées dans « ${libelleDossier({ type, libelle })} »`} onFermer={fermer} large>
       <div className="ec-envoi" role="status" aria-live="polite">
         <div className="ec-envoi-compte">
           <strong className="ec-envoi-n">

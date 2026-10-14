@@ -32,7 +32,7 @@ export type LienPourSource = {
 };
 
 export type Source = {
-  /** Stable : `lien:<id>`, `participants`, `resp:<type>:<nom>`, `atelier`. */
+  /** Stable : `lien:<id>`, `participants`, `resp:<type>:<déposant tel qu'en base, vide pour le responsable lui-même>`, `atelier`. */
   cle: string;
   libelle: string;
   detail: string;
@@ -85,7 +85,7 @@ export function sourcesDesPhotos(
             ? DOSSIER_RESPONSABLE
             : (l.deposant as string)
           : `${TYPES_PROVENANCE.find((t) => t.cle === type)?.libelle ?? "Autre source"}${propre ? "" : ` · ${l.deposant}`}`;
-      const cle = `resp:${type}:${libelle}`;
+      const cle = `resp:${type}:${propre ? "" : l.deposant}`;
       const s = responsable.get(cle);
       if (s) s.n++;
       else responsable.set(cle, { cle, libelle, detail: "Déposées depuis votre espace", n: 1 });
@@ -123,4 +123,41 @@ export function sourcesDesPhotos(
   }
   if (atelier) sources.push({ cle: "atelier", libelle: "L'atelier", detail: "Déposées par l'atelier", n: atelier });
   return sources;
+}
+
+/* ─────────────────────────── renommer un dossier ─────────────────────────── */
+
+/** Les dossiers qui se renomment (retours du 14/10, point 3) : un lien de contribution, ou un dossier du responsable. */
+export type DossierRenommable =
+  | { genre: "lien"; id: string }
+  /** `deposant` nul : les photos que le responsable a déposées sous son propre nom (« Mes photos »). */
+  | { genre: "responsable"; type: string; deposant: string | null };
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Relire la clé d'une source : le lien général et l'atelier ne se renomment pas. */
+export function dossierRenommable(cle: unknown): DossierRenommable | null {
+  if (typeof cle !== "string" || cle.length > 200) return null;
+  if (cle.startsWith("lien:")) {
+    const id = cle.slice(5);
+    return UUID.test(id) ? { genre: "lien", id } : null;
+  }
+  const m = /^resp:([a-z]+):([^]*)$/.exec(cle);
+  if (!m || !TYPES_PROVENANCE.some((t) => t.cle === m[1])) return null;
+  return { genre: "responsable", type: m[1], deposant: m[2] || null };
+}
+
+export const NOM_DOSSIER_MAX = 80;
+
+/** Un nouveau nom : du texte, une ligne, 80 caractères au plus. */
+export function lireNomDossier(brut: unknown): { ok: true; nom: string } | { ok: false; message: string } {
+  const nom = typeof brut === "string" ? brut.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim() : "";
+  if (!nom) return { ok: false, message: "Écrire un nom." };
+  if (nom.length > NOM_DOSSIER_MAX) return { ok: false, message: `${NOM_DOSSIER_MAX} caractères au plus.` };
+  return { ok: true, nom };
+}
+
+/** Une source se renomme-t-elle (pour l'écran) ? */
+export function sourceRenommable(s: Pick<Source, "cle">): boolean {
+  return dossierRenommable(s.cle) !== null;
 }

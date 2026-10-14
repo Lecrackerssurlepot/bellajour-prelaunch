@@ -118,7 +118,11 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
     case "bat_valide":
       return `Magazine ${String(payload.magazine)} : bon à tirer VALIDÉ par le client.`;
     case "contenu_recu":
-      return `Contenu reçu du client : ${String(payload.type ?? "")}.`;
+      return `Contenu reçu du client : ${String(payload.type ?? "")}${payload.nom ? ` (${String(payload.nom)})` : ""}.`;
+    case "contenu_remplace":
+      return `Contenu remplacé par le client : ${String(payload.type ?? "")}${payload.nom ? ` (${String(payload.nom)})` : ""}, l'ancienne version reste à l'atelier.`;
+    case "dossier_renomme":
+      return `Dossier de photos renommé : « ${String(payload.avant ?? "")} » devient « ${String(payload.apres ?? "")} ».`;
     case "modification_demandee":
       return `Demande de modification du client : ${String(payload.motif ?? "")}.`;
     case "proposition_acceptee":

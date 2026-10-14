@@ -25,10 +25,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Filtre } from "@/lib/collectif/grille";
-import type { Source } from "@/lib/collectif/sources";
+import { sourceRenommable, type Source } from "@/lib/collectif/sources";
 import { useFenetreEnvoi, useMoteurDepot } from "../../_composants/depot/DepotContexte";
 import { useMoteur } from "../../_composants/depot/useMoteur";
 import { EnTeteEcran } from "../../_composants/Ecran";
+import NomDossier from "../../_composants/NomDossier";
 import FenetreLien, { FenetrePartage, FenetreQr, type ContexteMessage, type LienPartage } from "../../_composants/LienContribution";
 
 type Photo = {
@@ -361,7 +362,7 @@ export default function Collecte(p: Props) {
             </h2>
             {p.ecrire ? (
               <p className="ec-note">
-                {p.ouverte ? "Chaque source avec ses photos et son lien. Un seul endroit pour les liens." : "La collecte est close : les liens ne reçoivent plus de photos."}
+                {p.ouverte ? "Chaque source avec ses photos et son lien. Double-cliquez un nom pour le changer." : "La collecte est close : les liens ne reçoivent plus de photos."}
               </p>
             ) : null}
             {sources.length ? (
@@ -371,7 +372,16 @@ export default function Collecte(p: Props) {
                   return (
                     <li key={s.cle} className="ec-source">
                       <span className="ec-source-tete">
-                        <strong>{s.libelle}</strong>
+                        <NomDossier
+                          token={p.token}
+                          cle={s.cle}
+                          nom={s.libelle}
+                          renommable={p.ecrire && sourceRenommable(s)}
+                          onRenomme={() => {
+                            version.current++;
+                            void charger(0, filtre);
+                          }}
+                        />
                         <span>{s.n.toLocaleString("fr-FR")}</span>
                       </span>
                       <span className="ec-note">{s.detail}</span>

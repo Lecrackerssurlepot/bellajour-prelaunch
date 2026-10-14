@@ -1,4 +1,4 @@
-# État du système — au 14/10/2026
+# État du système — au 14/10/2026 (soir)
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,30 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 14/10/2026 (soir) — Édition collective : les retours UX de Mathias (T-151), sur branche
+
+- **Code** sur `feat/collectif-retours-ux-1` (poussée). Rien en production (`COLLECTIF_OUVERT`
+  absente de Vercel : le B2B y répond 404).
+- **Six styles de la maquette sur le mur, PUBLIÉS en base** (créés par les routes de l'atelier) :
+  Riviera, Nuit, Éditorial, Brut, Archive, Grand air (slugs `riviera`, `nuit`, `editorial`,
+  `brut`, `archive`, `grand-air`, ordre 1 à 6), chacun 3 palettes, un échantillon typo, 3
+  couvertures, 5 doubles pages (54 images WebP au coffre). Les noms des palettes hors Riviera,
+  les titres et les descriptions sont des textes de remplissage. « Essai technique Claude »
+  reste premier (ordre 0) : à retirer du mur par Mathias.
+- **Migration `20261016_collectif_envois.sql` ÉCRITE, PAS APPLIQUÉE** (à appliquer par Mathias) :
+  `collectif_contenus.remplace_le`, `remplace_par`, `collectif_messages.contenu_id`. Vérifié le
+  14/10 AVANT elle : l'espace montre tous les fichiers reçus ; « Remplacer » et « Citer un de vos
+  envois » répondent 503 en nommant le fichier, sans rien écrire (ni coffre, ni base).
+- **Données d'essai posées le 14/10** :
+  - « Essai révision (Claude) » : 12 photos de bruit gris dans le dossier « Autre source · Essai
+    renommé (Claude) » (envoi, reprise « déjà là », renommage) ;
+  - « Essai technique (Claude) » : 4 logos (`logo-essai-*.png`), 3 réponses au mot du dirigeant
+    (« Essai de réponse (Claude), à ignorer »), et un aller-retour « Tout sélectionner » /
+    « Tout désélectionner » (présélection revenue à 0).
+- Le 14/10 vers 13 h 28, Mathias a lui-même fait « Tout sélectionner » sur « Essai révision » :
+  781 photos présélectionnées (les 32 qu'il avait choisies à la main sont dedans).
+- `verif-collectif.ts` 497 vérifications, `verif-atelier.ts` 1450, verts le 14/10.
 
 ## 14/10/2026 (après-midi) — Édition collective : les rendez-vous dans l'espace (D23, T-148), sur branche
 

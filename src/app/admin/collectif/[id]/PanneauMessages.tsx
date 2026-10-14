@@ -76,6 +76,18 @@ export default function PanneauMessages({ id, initiaux }: { id: string; initiaux
                   )}
                 </span>
               ) : null}
+              {m.contenu ? (
+                <span className="eca-bulle-joint">
+                  Envoi du client cité :{" "}
+                  {m.contenu.url ? (
+                    <a href={m.contenu.url} target="_blank" rel="noopener noreferrer">
+                      {m.contenu.libelle}
+                    </a>
+                  ) : (
+                    m.contenu.libelle
+                  )}
+                </span>
+              ) : null}
               {m.texte}
               {m.piece ? (
                 <span className="eca-bulle-joint">

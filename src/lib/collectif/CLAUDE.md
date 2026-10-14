@@ -291,6 +291,34 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   compte Google, l'espace garde le lien de rendez-vous de la fiche (`rdv_url`). Supprimer un
   événement directement dans Google Agenda ne prévient pas l'espace : annuler depuis la fiche.
 
+## Les retours de Mathias du 14/10 (T-151)
+
+- **« Qui a déposé » et les liens sont UN endroit** (`sources.ts`, pur) : une source par dossier
+  du responsable, par lien de contribution, le lien général, l'atelier, dans un ordre STABLE.
+  La page Photos ET le tableau de bord la lisent. Les clés des liens (`?p=`) ne sortent que pour
+  qui peut en créer (`regler_plafond_participant`) : l'équipe voit les comptes, jamais un lien.
+- **Le message de partage** (`partage.ts`, pur) salue le groupe, nomme l'organisation et
+  l'événement, dit le plafond et la clôture ; le lien général salue « à tous » et vouvoie.
+  Le client le retouche avant WhatsApp, Mail ou copie.
+- **La fenêtre d'envoi vit dans la coquille** (`DepotContexte` : `HoteFenetreEnvoi`, la pastille
+  dans `EnTeteEcran`). Un lot garde la provenance choisie À L'AJOUT (`moteur.ts`) : un second
+  lot ajouté pendant l'envoi ne relabellise jamais le premier. Un fichier choisi deux fois est
+  compté (`dejaAjoutes`), jamais sauté en silence.
+- **La présélection est un BORD tracé en dedans** (`outline-offset` négatif) : la tuile a une
+  containment de peinture (`content-visibility`), un contour extérieur y est rogné.
+- **Un contenu a plusieurs fichiers** (`envoisCourants`) ; « Remplacer » range l'ancien comme
+  ANCIENNE VERSION (`remplace_le`), gardée au coffre et à l'atelier ; le questionnaire n'a qu'une
+  version courante. **Renommer un dossier** (`/api/collectif/dossiers`) change le nom du lien ou
+  le `deposant` des photos du responsable ; « Mes photos » rend son propre nom.
+- **Citer un de ses envois** dans un message (`collectif_messages.contenu_id`) : l'envoi doit être
+  de l'édition ; la lecture du fil se replie en trois paliers (envois, révision, avant).
+- **La migration `20261016_collectif_envois.sql`** : lecture repliée (tous les fichiers sont
+  courants), « Remplacer » et « Citer » en 503 `migration_envois_absente`, SONDÉS avant d'écrire
+  au coffre.
+- ⚠️ **Ne pas compter sur `router.refresh()` pour montrer ce qu'on vient d'écrire** : vu le 14/10,
+  la relecture part (200) mais l'écran ne la prend pas toujours. La route rend l'objet écrit et
+  l'écran l'affiche aussitôt (contenus, nom d'un dossier) ; la relecture confirme ensuite.
+
 ## Phase 7 : les accroches déjà posées
 
 `collectif_mails` (verrou unique `edition_id` + `code`, même mécanique que `mails_envoyes` :
