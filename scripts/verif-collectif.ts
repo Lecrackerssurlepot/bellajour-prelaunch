@@ -121,8 +121,10 @@ import {
   etatNote,
   GRIS_H,
   GRIS_L,
+  libelleBande,
   libelleDouble,
   lireChoixCouverture,
+  rappelValidation,
   lireNote,
   lirePagesTour,
   manquesPourPublierTour,
@@ -1014,6 +1016,22 @@ ok("la note se resume en une phrase", resumeNote("texte", { cible: "Jour un", re
 titre("— la phrase de validation : le tirage de la fiche, jamais devine —");
 ok("avec un tirage : le nombre est dit", texteValidationBat(120).includes("120 exemplaires"));
 ok("sans tirage : aucun chiffre invente", !/\d/.test(texteValidationBat(null)));
+
+titre("— revision 14.4 : la bande, le rappel avant de valider —");
+ok("bande : « 1 » pour la page seule, « 2–3 » pour une double", libelleBande([0]) === "1" && libelleBande([1, 2]) === "2–3");
+{
+  const r = rappelValidation(120, 2, { sansPreference: false, rang: 3 });
+  ok("rappel : le tour, la proposition retenue, le tirage", r.resume === "Tour 2 · couverture : la proposition 3." && r.tirage.includes("120 exemplaires"));
+  ok("rappel : « sans préférence » le dit", rappelValidation(null, 1, { sansPreference: true, rang: null }).resume === "Tour 1 · couverture : sans préférence, l'atelier choisit.");
+  const vide = rappelValidation(null, 1, { sansPreference: false, rang: null });
+  ok("rappel : aucune couverture choisie = rien d'affirme, aucun tirage invente", vide.resume === "Tour 1." && !/\d/.test(vide.tirage));
+}
+const liseuse = lire("src/app/edition/[token]/bat/Liseuse.tsx");
+ok("BAT plein ecran : plus de bouton « Plein écran », ni d'appel « en appel »", !/Plein écran|en appel/.test(liseuse));
+ok("BAT : l'onglet vertical des notes et la note DANS le panneau", liseuse.includes("ec-bat-onglet-notes") && /<aside[^>]*ec-bat-panneau/.test(liseuse) && liseuse.includes("<NoteEnCours"));
+ok("BAT : les magazines en onglets SOUS la bande", liseuse.indexOf('className="ec-bat-bande"') < liseuse.indexOf("{onglets}", liseuse.indexOf('className="ec-bat-bande"')));
+const batCss = lire("src/app/edition/[token]/bat/bat.css");
+ok("BAT : la page suit la scene (unites de conteneur), aucun plafond en px", batCss.includes("container-type: size") && /max-height: 100cqh/.test(batCss) && !/max-height: 520px/.test(batCss));
 
 titre("— les gris d'un tour : un format a nous, relu sans confiance —");
 {

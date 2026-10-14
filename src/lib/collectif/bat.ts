@@ -338,6 +338,30 @@ export function texteValidationBat(tirage: number | null): string {
     : "La validation est définitive. Elle confirme le tirage prévu au devis et lance l'impression.";
 }
 
+/**
+ * Ce que rappelle la fenêtre « Valider ce magazine » (révision §14.4) : en
+ * résumé le tour et la couverture retenue, puis le tirage (la phrase du PRD
+ * §6.2). Sans couverture choisie, le résumé n'en dit rien : la validation est
+ * alors refusée (gestes.ts), et la fenêtre le dit.
+ */
+export function rappelValidation(
+  tirage: number | null,
+  tour: number,
+  couverture: { sansPreference: boolean; rang: number | null }
+): { resume: string; tirage: string } {
+  const c = couverture.sansPreference
+    ? " · couverture : sans préférence, l'atelier choisit"
+    : couverture.rang !== null
+      ? ` · couverture : la proposition ${couverture.rang}`
+      : "";
+  return { resume: `Tour ${tour}${c}.`, tirage: texteValidationBat(tirage) };
+}
+
+/** Le libellé court d'une double page dans la bande : « 1 », « 2–3 ». */
+export function libelleBande(indices: readonly number[]): string {
+  return indices.length === 1 ? String(indices[0] + 1) : `${indices[0] + 1}–${indices[indices.length - 1] + 1}`;
+}
+
 /* ───────────────────────── le gris, pour comparer deux tours ───────────────────────── */
 
 /**
