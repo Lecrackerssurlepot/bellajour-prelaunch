@@ -75,6 +75,10 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return `Magazine ${String(payload.magazine)} : brief validé par le client.`;
     case "brief_rouvert":
       return `Magazine ${String(payload.magazine)} : brief rouvert par le client.`;
+    case "brief_modifie": {
+      const partie = { palette: "la palette", texte: "la place du texte", doubles: "les doubles pages" }[String(payload.partie)] ?? "une partie";
+      return `Magazine ${String(payload.magazine)} : ${partie} du brief modifiée par le client.`;
+    }
     case "brief_repris":
       return `Magazine ${String(payload.magazine)} : style repris du magazine ${String(payload.depuis)}.`;
     case "couverture_aimee":

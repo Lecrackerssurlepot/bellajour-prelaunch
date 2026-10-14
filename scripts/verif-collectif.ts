@@ -66,7 +66,7 @@ import {
   type MagazinePourGeste,
 } from "@/lib/collectif/gestes";
 import { lireInterrupteur } from "@/lib/collectif/interrupteur";
-import { basculerCouverture, briefModifiable, lireChoixStyle, manquesBrief, PARTS_TEXTE, styleVisible } from "@/lib/collectif/brief";
+import { basculerCouverture, briefModifiable, etatDuBrief, lireChoixStyle, lirePartieBrief, manquesBrief, PARTS_TEXTE, patchCouvertures, resumeBrief, styleVisible } from "@/lib/collectif/brief";
 import { cleFichier, compteDansPlafond, DELAI_DECLARATION_MORTE_MS, lireDeclaration, LOT_DECLARATION, planDeclaration, type Existant } from "@/lib/collectif/depot";
 import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
 import { jourDePhoto, libelleProvenance, lireFiltre, resumeDeposants } from "@/lib/collectif/grille";
@@ -1332,6 +1332,36 @@ titre("— revision 14.5 : parler a l'atelier, documents —");
   const restes = fichiersParSuffixe("src/app/edition", /\.tsx?$/).filter((f) => /[Vv]otre dossier|[Tt]on dossier/.test(lire(f)));
   ok(`plus aucun « votre dossier » dans l'espace client${restes.length ? ` (${restes.join(", ")})` : ""}`, restes.length === 0);
   ok("aucun rendez-vous invente (pas de date ni de duree de rendez-vous dans le fil)", !/\ben visio\b|minutes en|Rendez-vous pris|Prochain rendez-vous/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")));
+}
+
+titre("— revision 14.6 : le brief partie par partie —");
+{
+  const style = { id: "s1", publie: true, palettes: [{ cle: "sable" }, { cle: "nuit" }], couvertures: [{ cle: "c1" }] };
+  const autre = lirePartieBrief("palette", { palette_cle: "corail" }, style);
+  ok("palette : une palette d'un AUTRE style est refusee (la regle de Mathias)", !autre.ok);
+  const pal = lirePartieBrief("palette", { palette_cle: "nuit" }, style);
+  ok("palette : celle du style choisi passe, et le brief repasse « a valider »", pal.ok && pal.patch.palette_cle === "nuit" && "brief_valide_le" in pal.patch && pal.patch.brief_valide_le === null);
+  ok("sans style choisi, aucune partie ne s'enregistre", !lirePartieBrief("texte", { texte: "peu" }, null).ok);
+  ok("un style retire du mur refuse les parties", !lirePartieBrief("texte", { texte: "peu" }, { ...style, publie: false }).ok);
+  const tx = lirePartieBrief("texte", { texte: "beaucoup" }, style);
+  ok("texte : une reponse de la liste, rien d'autre", tx.ok && tx.patch.texte === "beaucoup" && !lirePartieBrief("texte", { texte: "roman" }, style).ok);
+  const db = lirePartieBrief("doubles", { doubles: ["recit", "intrus", "aeree"] }, style);
+  ok("doubles : les types connus, dans l'ordre des types, un au moins", db.ok && JSON.stringify(db.patch.doubles) === JSON.stringify(["aeree", "recit"]) && !lirePartieBrief("doubles", { doubles: [] }, style).ok);
+  ok("une partie inconnue est refusee", !lirePartieBrief("couverture", {}, style).ok);
+  const a = [{ style_id: "s1", couverture: "c1" }];
+  ok("aimer une couverture de plus de-valide le brief", patchCouvertures([], a).brief_valide_le === null && "brief_valide_le" in patchCouvertures([], a));
+  ok("un clic qui ne change rien ne de-valide rien", !("brief_valide_le" in patchCouvertures(a, [...a])));
+  ok("le resume : style, palette, doubles, couvertures", resumeBrief({ style: "Riviera", palette: "Sable", doubles: ["Aérée", "Récit"], couvertures: 1 }) === "Riviera, palette Sable · Aérée, Récit · 1 couverture aimée");
+  ok("le resume sans style le dit", resumeBrief({ style: null, palette: null, doubles: [], couvertures: 0 }) === "Aucun style choisi pour l'instant.");
+  ok("l'etat d'un brief dans le bandeau", etatDuBrief({ valide: true, style: "Riviera" }) === "Brief validé" && etatDuBrief({ valide: false, style: "Riviera" }) === "Style : Riviera" && etatDuBrief({ valide: false, style: null }) === "Style à choisir");
+  ok("le slug « brief » est reserve (la page voisine style/brief)", !lireSaisieStyle({ nom: "Brief", slug: "brief" }, "creation").ok);
+  const route = lire("src/app/api/collectif/brief/route.ts");
+  ok("l'API du brief lit chaque partie par lirePartieBrief, contre le style DEJA choisi", /lirePartieBrief\(action, corps, style\)/.test(route) && /mag\.style_id \? await lireStyle\(\{ id: mag\.style_id \}\)/.test(route));
+  ok("aimer une couverture passe par patchCouvertures (le brief valide repasse a valider)", /patchCouvertures\(/.test(route));
+  ok("la page « modifier le brief » existe et ouvre un panneau lateral", existsSync(resolve(RACINE, "src/app/edition/[token]/style/brief/page.tsx")) && /<Fenetre\s+cote/.test(lire("src/app/edition/[token]/style/brief/Brief.tsx")));
+  const fiche = lire("src/app/edition/[token]/style/[slug]/FicheStyle.tsx");
+  ok("un style en detail : la barre d'etapes et ses quatre ancres", ["ec-etape-1", "ec-etape-2", "ec-etape-3", "ec-etape-4"].every((a) => fiche.includes(`"${a}"`)) && fiche.includes("ec-fiche-etapes"));
+  ok("le mur : les lignes du brief menent a style/brief", /style\/brief\?m=/.test(lire("src/app/edition/[token]/style/Mur.tsx")));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

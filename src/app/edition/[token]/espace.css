@@ -442,6 +442,47 @@
 .ec-espace .ec-panneau {
   width: min(560px, 100%);
 }
+/* Le panneau latéral (révision §14.6) : collé à droite, toute la hauteur de
+   la colonne ; l'en-tête et le pied restent, le corps défile. */
+.ec-espace .ec-fenetre-voile--cote {
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  padding: 0;
+}
+.ec-espace .ec-fenetre--cote {
+  width: min(560px, 100%);
+  max-height: none;
+  height: 100%;
+  overflow: hidden;
+  gap: 0;
+  padding: 0;
+  border-radius: 24px 0 0 24px;
+  border-right: 0;
+}
+.ec-espace .ec-fenetre--cote > .ec-fenetre-tete {
+  flex: none;
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid var(--ec-line);
+}
+.ec-espace .ec-fenetre-corps {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ec-espace .ec-fenetre-pied {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 28px 20px;
+  border-top: 1px solid var(--ec-line);
+}
 .ec-espace .ec-fenetre-tete {
   display: flex;
   justify-content: space-between;
@@ -1288,6 +1329,15 @@
   .ec-espace .ec-panneau {
     max-height: calc(var(--app-height) - 24px);
     padding: 22px;
+  }
+  .ec-espace .ec-fenetre-voile--cote {
+    padding: 0;
+  }
+  .ec-espace .ec-fenetre--cote {
+    max-height: none;
+    height: var(--app-height);
+    padding: 0;
+    border-radius: 0;
   }
   .ec-espace .ec-pastille-envoi {
     position: fixed;

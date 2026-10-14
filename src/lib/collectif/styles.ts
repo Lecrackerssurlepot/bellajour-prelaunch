@@ -46,6 +46,13 @@ const CLE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export type Erreur = { champ: string; message: string };
 
 /** « Riviéra d'été » → « riviera-d-ete ». Vide si rien de lisible. */
+/**
+ * Les adresses déjà prises sous `/edition/<t>/style/` : `brief` est la page
+ * « modifier le brief partie par partie » (révision §14.6). Un style qui
+ * s'appellerait ainsi serait inatteignable (le segment fixe gagne).
+ */
+export const SLUGS_RESERVES = ["brief"] as const;
+
 export function slugDepuisNom(nom: string): string {
   return nom
     .normalize("NFD")
@@ -204,6 +211,8 @@ export function lireSaisieStyle(
         champ: "slug",
         message: "L'adresse du style : minuscules, chiffres et tirets seulement (ex. riviera).",
       });
+    } else if ((SLUGS_RESERVES as readonly string[]).includes(slug)) {
+      erreurs.push({ champ: "slug", message: `« ${slug} » est une adresse de l'espace client : en choisir une autre.` });
     }
     patch.nom = nom;
     patch.slug = slug;

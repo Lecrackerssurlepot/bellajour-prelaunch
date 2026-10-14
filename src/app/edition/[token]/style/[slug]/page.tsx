@@ -1,6 +1,8 @@
-/* /edition/[token]/style/[slug] — un style en détail (PRD §4.2, maquette
-   StyleDetail). `?m=<rang>` : le magazine pour lequel on le regarde. Un style
-   non publié, ou hors du public de l'édition, répond comme un lien inconnu. */
+/* /edition/[token]/style/[slug] — un style en détail (PRD §4.2, révision
+   §14.6, maquette StyleDetail). `?m=<rang>` : le magazine pour lequel on le
+   regarde. Un style non publié, ou hors du public de l'édition, répond comme
+   un lien inconnu. `brief` n'est jamais un slug (SLUGS_RESERVES) : c'est la
+   page voisine `style/brief`. */
 
 import { notFound } from 'next/navigation'
 import { briefModifiable } from '@/lib/collectif/brief'
@@ -34,6 +36,7 @@ export default async function PageUnStyle({
       token={token}
       style={style}
       magazine={magazine}
+      magazines={magazines}
       ecrire={peut(role, 'choisir_style')}
       fige={!briefModifiable(etatEffectif(edition.etat, edition.cloture_le, new Date()))}
       aimeesMax={edition.couvertures_aimees_max}

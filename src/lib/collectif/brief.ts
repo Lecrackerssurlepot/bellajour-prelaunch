@@ -83,6 +83,64 @@ export function lireChoixStyle(corps: Record<string, unknown>, style: StylePourB
   return { ok: true, patch: { style_id: style.id, palette_cle: palette, texte, doubles, brief_valide_le: null } };
 }
 
+export type PartieBrief = "palette" | "texte" | "doubles";
+export type ChoixPartie = { ok: true; partie: PartieBrief; patch: Record<string, unknown> } | { ok: false; message: string };
+
+/**
+ * Modifier UNE partie du brief (révision §14.6, `/style/brief`), contrôlée
+ * contre le style DÉJÀ choisi pour ce magazine : la palette vient de ce style
+ * (la règle de Mathias), la part de texte d'une liste fermée, les doubles
+ * pages des cinq types (un à cinq). Le brief repasse « à valider ».
+ */
+export function lirePartieBrief(partie: string, corps: Record<string, unknown>, style: StylePourBrief | null): ChoixPartie {
+  if (partie !== "palette" && partie !== "texte" && partie !== "doubles") return { ok: false, message: "Partie du brief inconnue." };
+  if (!style) return { ok: false, message: "Choisir d'abord un style sur le mur." };
+  if (!style.publie) return { ok: false, message: "Ce style n'est plus sur le mur : en choisir un autre." };
+  if (partie === "palette") {
+    const cle = typeof corps.palette_cle === "string" ? corps.palette_cle : "";
+    if (!style.palettes.some((p) => p.cle === cle)) return { ok: false, message: "Choisir une palette de ce style." };
+    return { ok: true, partie, patch: { palette_cle: cle, brief_valide_le: null } };
+  }
+  if (partie === "texte") {
+    const texte = PARTS_TEXTE.find((t) => t.cle === corps.texte)?.cle;
+    if (!texte) return { ok: false, message: "Répondre à « Quelle place pour le texte ? »." };
+    return { ok: true, partie, patch: { texte, brief_valide_le: null } };
+  }
+  const brutes = Array.isArray(corps.doubles) ? corps.doubles : [];
+  const doubles = TYPES_DOUBLES.map((t) => t.cle).filter((c) => brutes.includes(c));
+  if (doubles.length < DOUBLES_MIN) return { ok: false, message: "Garder au moins une double page." };
+  return { ok: true, partie, patch: { doubles, brief_valide_le: null } };
+}
+
+/**
+ * Aimer ou retirer une couverture CHANGE le brief : un brief validé repasse
+ * « à valider » (la règle d'en tête, que ce geste ne tenait pas avant la
+ * révision). Un clic qui ne change rien (déjà aimée) ne dé-valide rien.
+ */
+export function patchCouvertures(avant: readonly CouvertureAimee[], apres: readonly CouvertureAimee[]): Record<string, unknown> {
+  const cle = (l: readonly CouvertureAimee[]) => l.map((a) => `${a.style_id}/${a.couverture}`).sort().join("|");
+  return cle(avant) === cle(apres) ? { couvertures_aimees: [...apres] } : { couvertures_aimees: [...apres], brief_valide_le: null };
+}
+
+/** L'état d'un magazine dans le bandeau du mur (maquette Styles). */
+export function etatDuBrief(b: { valide: boolean; style: string | null }): string {
+  if (b.valide) return "Brief validé";
+  return b.style ? `Style : ${b.style}` : "Style à choisir";
+}
+
+/** Une ligne qui résume le brief (le pied d'« un style en détail » et de `/style/brief`). */
+export function resumeBrief(b: { style: string | null; palette: string | null; doubles: readonly string[]; couvertures: number }): string {
+  if (!b.style) return "Aucun style choisi pour l'instant.";
+  const doubles = b.doubles.length === DOUBLES_MAX ? "les cinq doubles pages" : b.doubles.join(", ");
+  return [
+    b.palette ? `${b.style}, palette ${b.palette}` : b.style,
+    doubles || null,
+    b.couvertures ? `${b.couvertures} couverture${b.couvertures > 1 ? "s" : ""} aimée${b.couvertures > 1 ? "s" : ""}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 /** Ce qui manque pour valider un brief (vide = validable). Les couvertures sont FACULTATIVES. */
 export function manquesBrief(b: Pick<Brief, "style_id" | "palette_cle" | "texte" | "doubles">): string[] {
   const m: string[] = [];

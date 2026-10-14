@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAcces } from "@/lib/collectif/acces";
-import { basculerCouverture, briefModifiable, lireChoixStyle, manquesBrief, styleVisible, type CouvertureAimee, type StylePourBrief } from "@/lib/collectif/brief";
+import {
+  basculerCouverture,
+  briefModifiable,
+  lireChoixStyle,
+  lirePartieBrief,
+  manquesBrief,
+  patchCouvertures,
+  styleVisible,
+  type CouvertureAimee,
+  type StylePourBrief,
+} from "@/lib/collectif/brief";
 import { estUuid } from "@/lib/collectif/cles";
 import { peut } from "@/lib/collectif/droits";
 import { etatEffectif } from "@/lib/collectif/etats";
@@ -15,8 +25,12 @@ import type { MagazineLigne } from "@/lib/collectif/types";
  * `{ token, magazineId, action, ... }` :
  * - `choisir` `{ slug, palette_cle, texte, doubles }` : ce style pour ce magazine
  *   (le brief repasse « à valider ») ;
+ * - `palette` `{ palette_cle }`, `texte` `{ texte }`, `doubles` `{ doubles }` :
+ *   UNE partie du brief (révision §14.6, `/style/brief`), contrôlée contre le
+ *   style DÉJÀ choisi ; le brief repasse « à valider » ;
  * - `couverture` `{ styleId, couverture, aimer }` : aimer une couverture de
- *   n'importe quel style publié (plafond de l'édition) ;
+ *   n'importe quel style publié (plafond de l'édition) ; un brief validé
+ *   repasse « à valider » si la liste change ;
  * - `valider` / `devalider` : le brief complet part à l'atelier, ou revient ;
  * - `reprendre` `{ depuisMagazineId }` : reprendre le style d'un autre magazine.
  *
@@ -82,8 +96,15 @@ export async function POST(request: Request) {
     const cible: CouvertureAimee = { style_id: corps.styleId, couverture: corps.couverture };
     const b = basculerCouverture(mag.couvertures_aimees ?? [], cible, corps.aimer === true, edition.couvertures_aimees_max, style);
     if (!b.ok) return NextResponse.json({ error: "saisie", message: b.message }, { status: 422 });
-    patch = { couvertures_aimees: b.aimees };
+    patch = patchCouvertures(mag.couvertures_aimees ?? [], b.aimees);
     journalType = corps.aimer === true ? "couverture_aimee" : "couverture_retiree";
+  } else if (action === "palette" || action === "texte" || action === "doubles") {
+    const style = mag.style_id ? await lireStyle({ id: mag.style_id }) : null;
+    const partie = lirePartieBrief(action, corps, style);
+    if (!partie.ok) return NextResponse.json({ error: "saisie", message: partie.message }, { status: 422 });
+    patch = partie.patch;
+    journalType = "brief_modifie";
+    journalPayload = { ...journalPayload, partie: partie.partie };
   } else if (action === "valider") {
     const manques = manquesBrief(mag);
     if (manques.length) return NextResponse.json({ error: "incomplet", message: `Il manque ${manques.join(", ")}.` }, { status: 422 });

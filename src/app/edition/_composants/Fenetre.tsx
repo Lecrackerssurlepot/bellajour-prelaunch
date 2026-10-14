@@ -12,6 +12,8 @@ export default function Fenetre({
   sous,
   onFermer,
   large,
+  cote,
+  pied,
   children,
 }: {
   titre: React.ReactNode;
@@ -19,6 +21,10 @@ export default function Fenetre({
   onFermer: () => void;
   /** 560 px au lieu de 520 (la seconde étape d'un lien, par exemple). */
   large?: boolean;
+  /** Un panneau latéral à droite, toute la hauteur (le brief, révision §14.6) : son corps défile, son pied reste. */
+  cote?: boolean;
+  /** Le pied d'un panneau latéral (« Terminé »), toujours visible. */
+  pied?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const id = useId();
@@ -30,9 +36,9 @@ export default function Fenetre({
     return () => window.removeEventListener("keydown", touche);
   }, [onFermer]);
   return (
-    <div className="ec-fenetre-voile" role="presentation" onClick={onFermer}>
+    <div className={cote ? "ec-fenetre-voile ec-fenetre-voile--cote" : "ec-fenetre-voile"} role="presentation" onClick={onFermer}>
       <div
-        className={large ? "ec-fenetre ec-fenetre--large" : "ec-fenetre"}
+        className={cote ? "ec-fenetre ec-fenetre--cote" : large ? "ec-fenetre ec-fenetre--large" : "ec-fenetre"}
         role="dialog"
         aria-modal="true"
         aria-labelledby={id}
@@ -51,7 +57,8 @@ export default function Fenetre({
             </svg>
           </button>
         </div>
-        {children}
+        {cote ? <div className="ec-fenetre-corps">{children}</div> : children}
+        {pied ? <div className="ec-fenetre-pied">{pied}</div> : null}
       </div>
     </div>
   );
