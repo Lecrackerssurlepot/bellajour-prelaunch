@@ -545,3 +545,20 @@ nulle part ailleurs ; l'Edge Function `emit-invoices` n'en connaît que ce que l
 Ajouter un pays = une ligne dans cette table ET la taxe dans `TAXE_PAR_TAUX` de l'émetteur,
 après décision du comptable. Ne pas « simplifier » en émettant au taux normal du pays : c'est
 précisément le défaut qu'on a corrigé.
+
+D23 (14/10/2026) — **Les rendez-vous de l'Édition collective se prennent DANS l'espace client,
+sur les disponibilités du responsable du projet.** Décision de Mathias, qui remplace la ligne
+« Pas de moteur de créneaux » du PRD §0.5.
+
+Ce qui est tranché.
+- L'espace affiche les prochains créneaux LIBRES ; il n'emmène pas sur Google Agenda.
+- Les créneaux viennent de l'agenda de la personne responsable du projet, Mathias ou Louis,
+  choisie dans la fiche atelier.
+- **Rien du contenu de l'agenda ne se montre** : seulement libre ou pas libre.
+- Le rendez-vous pris s'affiche dans l'espace, un mail de confirmation part avec le lien, et le
+  client peut le déplacer.
+- Le plus simple qui tienne ces quatre points : pas d'outil de plus si on peut l'éviter.
+
+**Conséquence :** T-148. Les règles des créneaux (jours, heures, durée, délais) et le texte du
+mail ne se devinent pas : ils attendent Mathias. Le mot du dirigeant, lui, reste comme il est
+pour l'instant (PRD §12.14).
