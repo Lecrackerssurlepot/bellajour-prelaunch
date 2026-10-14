@@ -62,7 +62,7 @@ montants) : **ne jamais les reprendre dans le code**. Écarts connus, à traiter
 | Maquette | Ce qu'elle montre | Ce qu'on construit |
 |---|---|---|
 | `Livraison.dc.html` | « Derniers passages » mis à jour à chaque scan | **Pas de suivi en direct** (aucune API transporteur) : transporteur + numéro + bouton vers le site du transporteur (`suivi.ts`), étapes posées à la main par l'atelier. Le flux de passages est phase 7. |
-| `RendezVous.dc.html` | Grille de créneaux maison | **Lien vers la page de rendez-vous Google** de la fiche (`rdv_url`), ouverte dans un nouvel onglet. Pas de moteur de créneaux. |
+| `RendezVous.dc.html` | Grille de créneaux maison | Phases 2 à 6 : **lien vers la page de rendez-vous Google** de la fiche (`rdv_url`). **Décision du 14/10 (D23, T-148)** : les créneaux libres du responsable du projet s'affichent DANS l'espace (disponibilités seules), réservation, mail de confirmation, déplacer depuis l'espace. |
 | `RendezVous.dc.html` | « Accepter la proposition » | Bouton qui journalise l'acceptation + message à l'atelier. Aucun paiement, aucun montant inventé : le document vient de l'atelier. |
 | `Dossier.dc.html` | « L'atelier vous répond ici et par mail » | Phases 2 à 6 : « L'atelier vous répond ici ». Le mail est phase 7. |
 | `Participant.dc.html` | « Si vous la fermez, l'envoi reprend où il s'était arrêté » | Faux sur iPhone. Écrire : « Gardez cette page ouverte pendant l'envoi. Les photos déjà arrivées sont gardées. » |
@@ -537,11 +537,14 @@ Prévoir les accroches, ne rien envoyer :
 12. **Le texte du consentement et des conditions** du lien participant (§0.5) : texte légal,
     jamais rédigé d'office (T-142).
 13. **Les rendez-vous pris** (« Prochain rendez-vous », cartes « Rendez-vous pris », §14.5) :
-    aucune donnée, le rendez-vous est un lien Google. Les afficher demande une saisie par
-    l'atelier (date, motif) ou une intégration agenda (T-147).
+    **tranché le 14/10 (D23)** : intégration agenda. Les créneaux libres du responsable du
+    projet (Mathias ou Louis) s'affichent dans l'espace, le rendez-vous pris aussi, un mail le
+    confirme, le client le déplace depuis l'espace. Restent à fixer : les règles des créneaux,
+    les liens visio, le texte du mail (T-148).
 14. **Les questions du mot du dirigeant** (§14.2) : la maquette n'en écrit qu'une, et elle est
-    fictive. Quatre questions neutres sont posées dans le code (`QUESTIONS_MOT`), à relire
-    (T-147).
+    fictive. Quatre questions neutres sont posées dans le code (`QUESTIONS_MOT`). Mathias, le
+    14/10 : on les garde pour l'instant ; les catégories de ce que l'atelier demande seront
+    revues plus tard.
 15. **Le format au devis** (« Magazine A4 », §14.5) : aucune colonne ne le porte ; la ligne
     n'est pas affichée tant qu'il n'est pas réglable dans la fiche (T-147).
 
