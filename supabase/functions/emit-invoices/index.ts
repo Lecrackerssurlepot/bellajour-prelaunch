@@ -102,6 +102,9 @@ Deno.serve(async () => {
   }
 
   const baseUrl = `https://${account}.app.invoicexpress.com`;
+  /* L'API reste sur `app.` ; l'interface, elle, vit sur `web.` (adresse vérifiée
+     le 14/10/2026 sur un brouillon réel). Les liens envoyés à un humain vont là. */
+  const webUrl = `https://${account}.web.invoicexpress.com`;
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
   async function ix(method: "GET" | "POST" | "PUT", path: string, body?: unknown): Promise<IxResult> {
@@ -212,7 +215,13 @@ Deno.serve(async () => {
     if (!s.ok || !t.ok) throw new Error(`référentiels InvoiceXpress illisibles (séries ${s.status}, taxes ${t.status})`);
     series = new Map();
     for (const q of (s.json?.["sequences"] as Array<Record<string, unknown>> | undefined) ?? []) {
-      series.set(String(q["serie"]), Number(q["id"]));
+      /* L'id à passer en `sequence_id` est celui de la sous-série du TYPE de
+         document, pas l'id de la série : avec `id`, InvoiceXpress répond 422
+         « A série não corresponde ao tipo de documento » (vu le 12/10/2026).
+         Une série sans sous-série fatura-recibo n'est pas retenue : le job
+         part alors en revue (« série introuvable »), jamais au mieux. */
+      const recibo = Number(q["current_invoice_receipt_sequence_id"]);
+      if (Number.isFinite(recibo) && recibo > 0) series.set(String(q["serie"]), recibo);
     }
     taxes = new Map();
     for (const x of (t.json?.["taxes"] as Array<Record<string, unknown>> | undefined) ?? []) {
@@ -305,6 +314,12 @@ Deno.serve(async () => {
         };
         const createRes = await ix("POST", "/invoice_receipts.json", payload);
         if (!createRes.ok) {
+          /* Le refus est gardé en entier, avec ce qu'on a envoyé : le 12/10, un
+             422 n'a laissé que son message, et le payload a dû être reconstitué. */
+          await maj(job.id, {
+            payload_log: payload,
+            response_log: { create: { status: createRes.status, body: createRes.json ?? createRes.raw } },
+          });
           throw new Error(`create HTTP ${createRes.status}: ${(createRes.raw || "").slice(0, 500)}`);
         }
         const id = unwrap(createRes.json)["id"];
@@ -355,7 +370,7 @@ Deno.serve(async () => {
         await alerte("Facture à traiter à la main", {
           "Payment intent": job.stripe_payment_intent,
           Motif: message,
-          "Brouillon InvoiceXpress": docId ? `${baseUrl}/invoice_receipts/${docId}` : "aucun",
+          "Brouillon InvoiceXpress": docId ? `${webUrl}/invoice_receipts/${docId}` : "aucun",
         });
         revues++;
       } else {
@@ -365,7 +380,7 @@ Deno.serve(async () => {
           await alerte("Facture en échec après 3 tentatives", {
             "Payment intent": job.stripe_payment_intent,
             Erreur: message,
-            "Brouillon InvoiceXpress": docId ? `${baseUrl}/invoice_receipts/${docId}` : "aucun",
+            "Brouillon InvoiceXpress": docId ? `${webUrl}/invoice_receipts/${docId}` : "aucun",
           });
         }
         console.error(`[emit-invoices] job ${job.id} échec (${attempts}/${MAX_TENTATIVES})`, message);
