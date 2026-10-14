@@ -1,0 +1,518 @@
+/* Le back-office de l'Édition collective (monde CRÈME).
+
+   Tout est écrit sous `.eca-root`, posé à côté de `.adm-root .ate-root` dont
+   on garde le fond, la police, la largeur et les cartes (`.ate-carte`,
+   `.ate-h1`, `.ate-camp`). Une feuille chargée ne se décharge jamais en
+   navigation client : une classe courte non scopée repeindrait la table de
+   travail du B2C. Couleurs : les tokens `--bj-*` (tokens.css), rien d'autre. */
+
+.eca-root {
+  --eca-champ-bg: rgba(255, 255, 255, 0.78);
+  --eca-ligne: 1px solid var(--bj-veil-8);
+}
+
+/* ─────────────────────────────── l'en-tête ─────────────────────────────── */
+
+.eca-root .eca-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--bj-sp-4);
+  margin-bottom: var(--bj-sp-5);
+}
+.eca-root .eca-tete-titre {
+  min-width: 0;
+}
+.eca-root .eca-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bj-sp-2);
+  align-items: center;
+}
+.eca-root .eca-lien-bouton {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.eca-root .eca-filtres {
+  display: flex;
+  gap: var(--bj-sp-2);
+  margin-bottom: var(--bj-sp-4);
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-filtre {
+  padding: 4px 12px;
+  border-radius: var(--bj-r-pill);
+  border: 1px solid var(--bj-veil-12);
+  color: var(--bj-text-soft);
+  text-decoration: none;
+}
+.eca-root .eca-filtre[aria-current="page"] {
+  background: var(--bj-action-soft);
+  border-color: var(--bj-action-border);
+  color: var(--bj-action);
+}
+
+/* ─────────────────────────────── la liste ─────────────────────────────── */
+
+.eca-root .eca-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-table th {
+  text-align: left;
+  font-weight: 500;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+  padding: 0 var(--bj-sp-3) var(--bj-sp-2);
+  border-bottom: var(--eca-ligne);
+}
+.eca-root .eca-table td {
+  padding: var(--bj-sp-3);
+  border-bottom: var(--eca-ligne);
+  vertical-align: top;
+}
+.eca-root .eca-table tr:last-child td {
+  border-bottom: none;
+}
+.eca-root .eca-table a {
+  color: var(--bj-text);
+  text-decoration: none;
+}
+.eca-root .eca-table a:hover .eca-orga {
+  color: var(--bj-action);
+}
+.eca-root .eca-orga {
+  font-weight: 500;
+}
+.eca-root .eca-sous {
+  display: block;
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-prochaine {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.eca-root .eca-ate-camp--imprimeur {
+  background: var(--bj-veil-8);
+  color: var(--bj-text);
+}
+.eca-root .eca-pastille {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+  font-size: var(--bj-fs-xxs);
+  text-align: center;
+  line-height: 20px;
+}
+.eca-root .eca-afixer {
+  color: var(--bj-save-warn);
+  font-weight: 500;
+}
+.eca-root .eca-vide {
+  color: var(--bj-text-soft);
+  margin: 0;
+}
+
+/* ─────────────────────────────── les formulaires ─────────────────────────────── */
+
+.eca-root .eca-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-4);
+}
+.eca-root .eca-fieldset {
+  border: var(--eca-ligne);
+  border-radius: var(--bj-r-md);
+  background: rgba(255, 255, 255, 0.55);
+  padding: var(--bj-sp-4) var(--bj-sp-5) var(--bj-sp-5);
+  margin: 0;
+  min-width: 0;
+}
+.eca-root .eca-legende {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: var(--bj-fs-lg);
+  padding: 0 var(--bj-sp-2);
+  color: var(--bj-text);
+}
+.eca-root .eca-champs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--bj-sp-3) var(--bj-sp-4);
+}
+.eca-root .eca-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-champ--large {
+  grid-column: 1 / -1;
+}
+.eca-root .eca-champ-label {
+  font-weight: 500;
+  color: var(--bj-text);
+}
+.eca-root .eca-champ-aide {
+  color: var(--bj-text-faint);
+  font-size: var(--bj-fs-xs);
+}
+.eca-root .eca-champ-erreur {
+  color: #b5442f;
+  font-size: var(--bj-fs-xs);
+}
+.eca-root .eca-input,
+.eca-root .eca-select,
+.eca-root .eca-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text);
+  background: var(--eca-champ-bg);
+  border: 1px solid var(--bj-veil-12);
+  border-radius: var(--bj-r-sm);
+  padding: 8px 10px;
+}
+.eca-root .eca-textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+.eca-root .eca-input:focus-visible,
+.eca-root .eca-select:focus-visible,
+.eca-root .eca-textarea:focus-visible {
+  outline: 2px solid var(--bj-action-ring);
+  outline-offset: 1px;
+}
+.eca-root .eca-input[readonly] {
+  color: var(--bj-text-soft);
+  background: transparent;
+}
+.eca-root .eca-cases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bj-sp-2) var(--bj-sp-4);
+}
+.eca-root .eca-case {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-case--eteinte {
+  color: var(--bj-text-faint);
+}
+.eca-root .eca-magazines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-2);
+}
+.eca-root .eca-magazine {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+}
+.eca-root .eca-magazine-rang {
+  flex: none;
+  width: 92px;
+  color: var(--bj-text-soft);
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bj-sp-3);
+}
+.eca-root .eca-message {
+  font-size: var(--bj-fs-sm);
+  margin: 0;
+}
+.eca-root .eca-message--ok {
+  color: var(--bj-save-ok);
+}
+.eca-root .eca-message--erreur {
+  color: #b5442f;
+}
+.eca-root .eca-encart {
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-warn-soft);
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  font-size: var(--bj-fs-sm);
+  margin: 0;
+}
+
+/* ─────────────────────────────── la fiche ─────────────────────────────── */
+
+.eca-root .eca-fiche {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  gap: var(--bj-sp-5);
+  align-items: start;
+}
+.eca-root .eca-colonne {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-4);
+  min-width: 0;
+}
+.eca-root .eca-lien {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--bj-sp-3) 0;
+  border-bottom: var(--eca-ligne);
+}
+.eca-root .eca-lien:last-child {
+  border-bottom: none;
+}
+.eca-root .eca-lien-titre {
+  font-weight: 500;
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-lien-ligne {
+  display: flex;
+  gap: var(--bj-sp-2);
+  align-items: center;
+}
+.eca-root .eca-lien-ligne .eca-input {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: var(--bj-fs-xs);
+}
+.eca-root .eca-confirm {
+  border: 1px solid var(--bj-action-border);
+  background: var(--bj-action-faint);
+  border-radius: var(--bj-r-sm);
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-2);
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-confirm p {
+  margin: 0;
+}
+.eca-root .eca-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bj-sp-2);
+}
+.eca-root .eca-journal {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-2);
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-journal time {
+  display: block;
+  color: var(--bj-text-faint);
+  font-size: var(--bj-fs-xs);
+}
+.eca-root .eca-etat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bj-sp-2);
+  align-items: center;
+  margin-top: var(--bj-sp-2);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-mag-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-mag-liste li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--bj-sp-3);
+  padding: var(--bj-sp-2) 0;
+  border-bottom: var(--eca-ligne);
+}
+.eca-root .eca-mag-liste li:last-child {
+  border-bottom: none;
+}
+
+/* ─────────────────────────────── les styles ─────────────────────────────── */
+
+.eca-root .eca-styles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--bj-sp-4);
+}
+.eca-root .eca-style-carte {
+  display: flex;
+  flex-direction: column;
+  border: var(--eca-ligne);
+  border-radius: var(--bj-r-md);
+  background: rgba(255, 255, 255, 0.62);
+  overflow: hidden;
+  color: var(--bj-text);
+  text-decoration: none;
+}
+.eca-root .eca-style-carte:hover {
+  border-color: var(--bj-action-border);
+}
+.eca-root .eca-style-image {
+  aspect-ratio: 3 / 4;
+  background: var(--bj-cream-2);
+  display: grid;
+  place-items: center;
+  color: var(--bj-text-faint);
+  font-size: var(--bj-fs-xs);
+}
+.eca-root .eca-style-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.eca-root .eca-style-corps {
+  padding: var(--bj-sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-style-nom {
+  font-weight: 500;
+}
+.eca-root .eca-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bj-sp-2);
+  align-items: center;
+  padding: var(--bj-sp-2) 0;
+  border-bottom: var(--eca-ligne);
+}
+.eca-root .eca-palette .eca-input {
+  width: auto;
+  flex: 1 1 140px;
+}
+.eca-root .eca-couleur {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.eca-root .eca-couleur input[type="color"] {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--bj-veil-12);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+.eca-root .eca-couleur .eca-input {
+  width: 92px;
+  flex: none;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: var(--bj-fs-xs);
+}
+.eca-root .eca-vignettes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--bj-sp-3);
+}
+.eca-root .eca-vignette {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.eca-root .eca-vignette-image {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--bj-r-sm);
+  border: 1px dashed var(--bj-veil-16);
+  background: var(--bj-cream-2);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--bj-text-faint);
+  font-size: var(--bj-fs-xs);
+  text-align: center;
+  padding: 0;
+}
+.eca-root .eca-vignette-image--couverture {
+  aspect-ratio: 3 / 4;
+}
+.eca-root .eca-vignette-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.eca-root .eca-vignette-titre {
+  font-weight: 500;
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-fichier {
+  font-size: var(--bj-fs-xs);
+  max-width: 100%;
+}
+.eca-root .eca-pied {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: var(--bj-sp-4);
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  border: var(--eca-ligne);
+  border-radius: var(--bj-r-md);
+  background: rgba(247, 241, 233, 0.94);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bj-sp-3);
+  align-items: center;
+  justify-content: space-between;
+}
+.eca-root .eca-manques {
+  margin: 0;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+}
+
+@media (max-width: 860px) {
+  .eca-root .eca-fiche {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Sur téléphone, les liens et les gestes d'abord : c'est ce qu'on vient
+     chercher, la longue liste des réglages vient après. */
+  .eca-root .eca-fiche > aside {
+    order: -1;
+  }
+  .eca-root .eca-champs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .eca-root .eca-table thead {
+    display: none;
+  }
+  .eca-root .eca-table,
+  .eca-root .eca-table tbody,
+  .eca-root .eca-table tr,
+  .eca-root .eca-table td {
+    display: block;
+  }
+  .eca-root .eca-table tr {
+    padding: var(--bj-sp-2) 0;
+    border-bottom: var(--eca-ligne);
+  }
+  .eca-root .eca-table td {
+    border-bottom: none;
+    padding: 2px 0;
+  }
+}

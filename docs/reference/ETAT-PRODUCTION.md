@@ -1,4 +1,4 @@
-# État du système — au 07/10/2026
+# État du système — au 13/10/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,46 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 13/10/2026 (après-midi) — Édition collective, phase 1 : ouvrir une édition, les styles (T-140), sur branche
+
+- **Code** sur `feat/collectif-phase-1` (PR à fusionner par Mathias) : liste, création, fiche et
+  éditeur de styles sous `/admin/collectif`, 7 routes sous `/api/admin/collectif/*`. Toujours
+  derrière `COLLECTIF_OUVERT`, toujours absent de Vercel : rien ne change en production.
+- **Données d'essai écrites en PRODUCTION** pendant la recette locale (le local lit la base de
+  production) : l'édition « Essai technique (Claude) » (`dcf95f15-…`, ARCHIVÉE, ses trois liens
+  répondent 404) et le style « Essai technique Claude » (slug `essai-technique-claude`,
+  BROUILLON, jamais publié), avec une image sur R2 sous `collectif/styles/essai-technique-claude/`.
+  Aucun mail, aucune autre table touchée. À retirer si Mathias le demande.
+- **Le local de recette** : `.claude/launch.json` « Next.js prod 3006 collectif »
+  (`COLLECTIF_OUVERT=1`), après un `npm run build`. Connexion admin avec le mot de passe de
+  `.env.local`.
+
+## 13/10/2026 — l'Édition collective (B2B) : le socle, phase 0 (T-139), EN PRODUCTION
+
+- **Code fusionné** par Mathias le 13/10 (PR #225, commit 31b1590), déploiement de production
+  READY sur ce commit ; vérifié sur bellajour.fr : `/` et `/magazine` en 200, `/edition/<token>`
+  et `/depot/<token>` en 404. PRD et maquettes versionnés dans le même lot (`docs/produit/PRD-edition-collective.md`,
+  `docs/produit/collectif/maquettes/`).
+- **Interrupteur `COLLECTIF_OUVERT`** : absent de Vercel à ce jour, donc TOUT le B2B répond 404
+  en production (`/edition`, `/depot`, `/admin/collectif`, `/api/admin/collectif/sante`) et la
+  table de travail n'affiche pas le lien « Éditions collectives ». Le B2C ne lit cette variable
+  nulle part ailleurs.
+- **Migration `20261013_collectif.sql` APPLIQUÉE le 13/10/2026 par Mathias** (SQL Editor,
+  « Success. No rows returned »), puis **vérifiée en SQL en lecture seule** : 13 tables
+  `collectif_*`, RLS activée sur les 13, 0 policy, les 2 triggers (`collectif_tours_fige`,
+  `collectif_couvertures_figees`) et leurs 2 fonctions, les 8 contraintes témoins (dont la clé
+  de couverture et le verrou des mails), 32 colonnes sur `collectif_photos`, **aucune clé
+  étrangère vers `numeros`**. Lue aussi par l'API (PostgREST) avec `etatMigration` : 13
+  présentes, 0 absente, 0 erreur. Tables vides.
+- **Recette du 13/10** (build servi sur 3005 sans interrupteur, 3006 avec) : 404 réels sans
+  l'interrupteur (`curl -I`), écran de migration absente avec `noindex` et `no-referrer` à 1440 et
+  375 px, 503 sur l'API, lien admin présent ; `/`, `/magazine`, `/composer`, `/admin/atelier` en
+  200 sur les deux. `verif-atelier.ts` 1450 vérifications, `verif-collectif.ts` 151, verts.
+- **Prochaine étape** : phase 1 (T-140). Pour voir `/admin/collectif` (« La migration est
+  passée »), poser `COLLECTIF_OUVERT=1` sur Vercel et redéployer.
+- **Avant le premier vrai client B2B** (PRD §12.2) : plan payant Supabase (sauvegardes) et Vercel
+  (Hobby est non commercial) ; le texte du consentement participant (légal).
 
 ## 07/10/2026 — la vente atelier entre en facturation (T-075, D22) : code prêt, déploiement en trois temps
 
