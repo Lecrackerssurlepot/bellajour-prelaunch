@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
 import { makeSupabase } from "@/lib/supabase";
+import { controleAppareilActif } from "@/lib/collectif/appareil";
 import { estUuid } from "@/lib/collectif/cles";
 import { formaterJourParis } from "@/lib/collectif/dates";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
@@ -44,7 +45,7 @@ async function preparer(request: Request, id: string) {
     responsable: data.responsable_nom,
     lien: liensEdition(origine, data).responsable,
     cloture: data.cloture_le ? formaterJourParis(data.cloture_le) : null,
-    avecCode: false,
+    avecCode: controleAppareilActif(process.env),
   });
   return { supabase, edition: data, mail } as const;
 }

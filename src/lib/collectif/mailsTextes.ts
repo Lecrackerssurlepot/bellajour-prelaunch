@@ -94,8 +94,8 @@ export function mailEspacePret(d: DonneesEspacePret): Mail {
     notes.push(
       ligne(
         v(
-          "La première fois que vous l'ouvrez sur un téléphone ou un ordinateur, nous vous envoyons un code à cette adresse.",
-          "La première fois que tu l'ouvres sur un téléphone ou un ordinateur, nous t'envoyons un code à cette adresse."
+          "Sur un nouveau téléphone ou ordinateur, l'espace s'ouvre en lecture : pour modifier, il vous envoie un code à cette adresse.",
+          "Sur un nouveau téléphone ou ordinateur, l'espace s'ouvre en lecture : pour modifier, il t'envoie un code à cette adresse."
         )
       )
     );
@@ -107,4 +107,40 @@ export function mailEspacePret(d: DonneesEspacePret): Mail {
     notes,
   });
   return { sujet: `${v("Votre", "Ton")} espace Bellajour est prêt · ${d.evenement}`, html, texte };
+}
+
+export type DonneesCodeAppareil = {
+  tu: boolean;
+  evenement: string;
+  /** Les six chiffres, en clair : ce mail est le SEUL endroit où ils s'écrivent. */
+  code: string;
+  /** Sa durée de validité, en minutes. */
+  minutes: number;
+  /** L'adresse du site (bellajour.fr, ou la version d'essai) : la personne sait d'où vient la demande. */
+  site: string;
+};
+
+/** Le code pour modifier (T-154) : demandé par le responsable depuis un appareil pas encore reconnu. */
+export function mailCodeAppareil(d: DonneesCodeAppareil): Mail {
+  const v = (vous: string, toi: string) => (d.tu ? toi : vous);
+  const espace = `${d.code.slice(0, 3)} ${d.code.slice(3)}`;
+  const { html, texte } = page({
+    titre: v("Votre code", "Ton code"),
+    bonjour: "Bonjour,",
+    lignes: [
+      ligne(v(`Pour modifier l'espace de « ${d.evenement} » depuis ce nouvel appareil, saisissez ce code :`, `Pour modifier l'espace de « ${d.evenement} » depuis ce nouvel appareil, saisis ce code :`)),
+      { html: `<span style="display:inline-block;padding:10px 18px;border-radius:12px;background:#f6f2ec;font-family:Arial,sans-serif;font-size:28px;letter-spacing:6px;color:#1c1c1c"><strong>${espace}</strong></span>`, texte: espace },
+      ligne(`Il est valable ${d.minutes} minutes, sur l'appareil qui l'a demandé.`),
+    ],
+    notes: [
+      ligne(
+        v(
+          "Vous n'êtes pas à l'origine de cette demande ? Ignorez ce mail : sans ce code, personne ne peut modifier votre espace.",
+          "Tu n'es pas à l'origine de cette demande ? Ignore ce mail : sans ce code, personne ne peut modifier ton espace."
+        )
+      ),
+      ligne(`Demande faite depuis ${d.site.replace(/^https?:\/\//, "")}.`),
+    ],
+  });
+  return { sujet: `${v("Votre", "Ton")} code Bellajour : ${espace}`, html, texte };
 }

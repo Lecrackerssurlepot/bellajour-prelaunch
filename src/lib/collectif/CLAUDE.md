@@ -414,6 +414,29 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   verrou porte l'empreinte du lien du responsable : régénérer le lien permet de le renvoyer.
 - ⚠️ Un lien vers l'espace du responsable porte son token : il ne part qu'à SON adresse.
 
+## Le lien du responsable : modifier demande un appareil reconnu (T-154, 15/10)
+
+- **Décision de Mathias, revue le même jour** : pas un écran qui bloque (« si elle va sur un autre
+  appareil, c'est un peu chiant »), mais « que l'accès soit un peu compliqué pour pas que les gens
+  se permettent de tout le temps modifier ». Donc : sur un appareil pas encore reconnu, le lien du
+  responsable s'ouvre EN LECTURE (`chargerAcces` rend `role: "equipe"`, `appareilInconnu: true`) ;
+  le responsable reste lui-même à l'écran (nom, « Bonjour »), le menu dit « en lecture ici », et
+  une pastille en tête de chaque écran (`PastilleAppareil`) propose « Recevoir un code pour
+  modifier » : un code par mail, saisi dans une fenêtre, et l'appareil est reconnu un an. Le lien
+  de l'équipe et celui des participants ne changent pas ; l'atelier connecté passe toujours.
+- **Coupé par défaut, et doublement** : `controleAppareilActif` exige `COLLECTIF_CODE_APPAREIL` ET
+  `COLLECTIF_MAILS`. ⚠️ Sans mail, personne ne recevrait son code : ne jamais ouvrir le premier
+  sans le second. Sans la migration `20261019_collectif_appareils.sql` (appliquée le 15/10), on
+  laisse passer et le serveur le note.
+- **Rien en clair** : le cookie `bj_ec_appareil` (httpOnly, un an) porte un identifiant aléatoire,
+  la base n'en garde que l'empreinte ; un code n'existe en clair que dans le mail, la base garde
+  son empreinte LIÉE à l'appareil qui l'a demandé. Régénérer le lien du responsable rend tous ses
+  appareils inconnus (`lien_empreinte`).
+- Réglages proposés, à valider par Mathias (`appareil.ts`) : 15 minutes par code, 5 essais,
+  5 codes par heure et par édition. `COLLECTIF_CODE_ESSAI` fixe le code pour une recette LOCALE :
+  il ne vaut que pour une demande venue de localhost (le `.env.local` tiré de Vercel contient
+  `VERCEL`). Une seule route lit l'accès sans le contrôle : `/api/collectif/appareil`.
+
 ## Phase 7 : les accroches déjà posées
 
 `collectif_mails` (verrou unique `edition_id` + `code`, même mécanique que `mails_envoyes` :
