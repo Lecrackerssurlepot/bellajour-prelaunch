@@ -1,7 +1,7 @@
 ---
 id: T-153
 titre: Les serveurs Vercel tournent à Washington, la base à Dublin : chaque lecture traverse l'Atlantique
-etat: en cours
+etat: fermé
 domaine: perf
 gravite: serieux
 autonomie: libre
@@ -44,5 +44,6 @@ Cloudprinter sont appelés depuis la nouvelle région).
   sur deux par la protection anti-robots de Vercel (403 rapides qui faussent la médiane) ;
   `curl` passe. Ne compter que les 200.
 
-## Reste
-- Vérifier après la fusion que la production tourne en `dub1` et que les pages répondent.
+- **En production le 15/10** (PR #237, déploiement `e69e82f` READY, `regions: ["dub1"]`) :
+  les pages dynamiques passent par Paris et s'exécutent à Dublin (`x-vercel-id: cdg1::dub1::…`),
+  l'accueil, /magazine, /composer, /admin/login répondent 200.
