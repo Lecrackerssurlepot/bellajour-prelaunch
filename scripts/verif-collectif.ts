@@ -1858,5 +1858,31 @@ titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de receptio
     /doublons: groupesDoublonsRapides\(/.test(donneesFiche) && /\.slice\(0, 4\)[\s\S]{0,60}signerOuRien\(p\.vignette_key\)/.test(donneesFiche));
 }
 
+titre("— T-150 : les HEIC ont leur aperçu et leur empreinte —");
+{
+  const moteur = lire("src/app/edition/_composants/depot/moteur.ts");
+  const heic = lire("src/app/edition/_composants/depot/heic.ts");
+  const worker = lire("public/heic/vignette-heic.worker.js");
+  const paquet = JSON.parse(lire("package.json")) as { devDependencies?: Record<string, string> };
+  ok("HEIC : le moteur des editions demande la vignette a libheif SEULEMENT quand le navigateur n'en a pas fait (Safari la fait)",
+    /it\.vignette = r\.vignette \?\? \(estHeic\(it\.mime\) \? await vignetteHeic\(it\.fichier\) : null\);/.test(moteur));
+  ok("HEIC : le moteur des PARTICULIERS n'est pas touche (aucun import de heic dans composer/)",
+    !/heic"|vignetteHeic/.test(lire("src/app/(atelier)/composer/depot/moteur.ts")) && !/libheif/.test(lire("src/app/(atelier)/composer/depot/reduire.worker.js")));
+  ok("HEIC : l'original part tel quel (la charge n'est jamais remplacee), deux workers au plus, un delai, jamais d'exception",
+    !/it\.charge = .*vignetteHeic/.test(moteur) && /const WORKERS_MAX = 2;/.test(heic) && /DELAI_MAX_MS/.test(heic) && /Promise\.resolve\(null\)/.test(heic));
+  ok("HEIC : le worker charge libheif a la premiere photo, un decodeur par worker, chaque image liberee",
+    /importScripts\('\/heic\/libheif-bundle\.js'\)/.test(worker) && /decodeur = new lib\.HeifDecoder\(\)/.test(worker) && /i\.free\(\)/.test(worker) && !/\.is_primary\(/.test(worker));
+  const copie = resolve(RACINE, "public/heic/libheif-bundle.js");
+  const source = resolve(RACINE, "node_modules/libheif-js/libheif-wasm/libheif-bundle.js");
+  ok("HEIC : libheif-js epingle a 1.19.8, copie de public/ IDENTIQUE au paquet, licence a cote",
+    paquet.devDependencies?.["libheif-js"] === "1.19.8" && existsSync(resolve(RACINE, "public/heic/LICENSE-libheif.txt"))
+      && (!existsSync(source) || readFileSync(copie).equals(readFileSync(source))));
+  ok("HEIC : le rattrapage lit sans ecrire par defaut (--vraiment), pose la colonne APRES le depot, relit l'empreinte sur la vignette",
+    (() => {
+      const r = lire("scripts/collectif-heic-rattrapage.ts");
+      return /const vraiment = process\.argv\.includes\("--vraiment"\)/.test(r) && r.indexOf("PutObjectCommand({") < r.indexOf('update({ vignette_key: key })') && /lireDepuisCoffre\(\{ r2_key: l\.r2_key, taille: l\.taille, vignette_key: key \}\)/.test(r);
+    })());
+}
+
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
 process.exit(ko === 0 ? 0 : 1);
