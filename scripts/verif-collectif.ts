@@ -1831,8 +1831,8 @@ titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de receptio
     ok("tableau de bord : deux colonnes (1 et 1,08), « À envoyer » sous le style et le message sous les photos, DANS la grille",
       /grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1\.08fr\);\s*grid-template-rows: minmax\(0, 1fr\) auto;/.test(tab)
       && tdb.indexOf("<LigneContenus") > tdb.indexOf('className="ec-tdb-grille"') && tdb.indexOf('className="ec-tdb-message"') < tdb.indexOf("</div>\n      </div>\n    </section>"));
-    ok("tableau de bord : l'encart Style dit « Fait » quand tout est valide, un eventail, une tuile par magazine et « Modifier »",
-      /className="ec-tdb-fait"/.test(tdb) && /ec-tdb-couv--\$\{places\[i\]\}/.test(tdb) && /className=\{reste \? 'ec-tdb-tuile ec-tdb-tuile--a-faire' : 'ec-tdb-tuile'\}/.test(tdb) && /\{ecrire \? 'Modifier' : 'Voir'\}/.test(tdb));
+    ok("tableau de bord : l'encart Style dit « Fait » quand tout est valide, l'eventail Lisbonne / Aussie / Côte d'Azur (couvertures de Bellajour, jamais celles d'essai), une tuile par magazine et « Modifier »",
+      /className="ec-tdb-fait"/.test(tdb) && /\{ nom: 'lisbonne', place: 'gauche' \},\s*\{ nom: 'aussie', place: 'droite' \},\s*\{ nom: 'cote-azur', place: 'centre' \},/.test(tdb) && /\/images\/v2\/accueil\/couverture-\$\{c\.nom\}-360\.webp/.test(tdb) && !/styleCouverture|tableau\.eventail/.test(tdb) && /className=\{reste \? 'ec-tdb-tuile ec-tdb-tuile--a-faire' : 'ec-tdb-tuile'\}/.test(tdb) && /\{ecrire \? 'Modifier' : 'Voir'\}/.test(tdb));
     ok("tableau de bord : une vignette par dossier et son nombre, plus de point ni de fleche",
       /className="ec-tdb-dossier-couv"/.test(carte) && !/ec-tdb-chevron|ec-tdb-point/.test(carte) && /dansLeDossier\(x, d\.cle, edition\.responsable_nom\)/.test(lire("src/app/edition/[token]/donnees.ts")));
     const fen = lire("src/app/edition/_composants/Fenetre.tsx");

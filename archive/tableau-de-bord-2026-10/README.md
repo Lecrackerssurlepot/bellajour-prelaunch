@@ -15,3 +15,11 @@ suivre les maquettes « direction visuelle » validées (Porcelaine A, Charbon A
 - une vignette par dossier et son nombre, sans flèche ; six aperçus juste sous la liste.
 
 Fichiers en `.txt` : hors du périmètre du build et du lint (aucun import).
+
+**Plus tard le même jour**, Mathias a demandé que l'éventail montre « vraiment la Côte d'Azur,
+Lisbonne et Aussie », comme sur la maquette, plutôt que les couvertures d'essai des styles du mur.
+L'éventail est donc FIXE (`EVENTAIL` dans `page.tsx`). Ce qui le nourrissait avant est rangé ici :
+`donnees-eventail.ts.txt` (la requête des styles publiés, la couverture de chaque magazine
+`styleCouverture`, l'éventail du mur) et `eventail-duo.css.txt` (la place « à deux couvertures »).
+À reprendre le jour où les styles du mur auront leurs vraies couvertures, si Mathias le veut.
+

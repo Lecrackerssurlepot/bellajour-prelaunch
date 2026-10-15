@@ -54,8 +54,6 @@ export type MagazineTableau = {
   rang: number;
   nom: string;
   style: string | null;
-  /** La couverture du style choisi (signée une heure), pour l'encart Style. */
-  styleCouverture: string | null;
   briefValide: boolean;
 };
 
@@ -82,8 +80,6 @@ export type LienContribution = {
 
 export type Tableau = {
   magazines: MagazineTableau[];
-  /** Trois couvertures de styles publiés, pour l'éventail de l'encart vide. */
-  eventail: { nom: string; url: string | null }[];
   photos: number;
   participants: number;
   dossiers: DossierPhotos[];
@@ -184,7 +180,7 @@ export async function lireEnvois(editionId: string): Promise<EnvoiClient[]> {
 
 export async function chargerTableau(edition: EditionLigne, origine = ""): Promise<Tableau> {
   const supabase = makeSupabase();
-  const [mags, photos, contenus, styles, message, provenances] = await Promise.all([
+  const [mags, photos, contenus, message, provenances] = await Promise.all([
     lireMagazinesBrief(edition.id),
     supabase
       .from("collectif_photos")
@@ -195,13 +191,6 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
       .limit(20000),
     lireEnvois(edition.id),
     supabase
-      .from("collectif_styles")
-      .select("nom, segment, couvertures")
-      .eq("publie", true)
-      .order("ordre", { ascending: true })
-      .order("created_at", { ascending: true })
-      .limit(24),
-    supabase
       .from("collectif_messages")
       .select("texte, created_at")
       .eq("edition_id", edition.id)
@@ -211,44 +200,29 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
     lireProvenances(edition.id),
   ]);
   if (photos.error) echec("photos du tableau de bord", photos.error);
-  if (styles.error) echec("styles du tableau de bord", styles.error);
   if (message.error) echec("dernier message du tableau de bord", message.error);
 
-  type Couv = { cle?: string; image_key: string }[] | null;
-  const premiere = (c: Couv) => c?.find((x) => x.image_key)?.image_key ?? null;
-
   /* Chaque magazine dit sa COMPOSITION (D24) : le style s'il n'y en a qu'un,
-     sinon combien sont mêlés ; l'image est la première couverture aimée,
-     sinon une couverture du premier style de la composition. Les styles
-     nommés se lisent par leur id, publiés ou non. */
+     sinon combien sont mêlés. Les styles nommés se lisent par leur id, publiés
+     ou non. (L'éventail de l'encart montre des couvertures fixes depuis le
+     15/10 : plus d'image à signer ici.) */
   const compositions = mags.map((m) => ({ m, c: compositionDu(m) }));
   const ids = [...new Set(compositions.flatMap((x) => stylesDeLaComposition(x.c)))];
-  const refs = ids.length ? await supabase.from("collectif_styles").select("id, nom, couvertures").in("id", ids) : { data: [], error: null };
+  const refs = ids.length ? await supabase.from("collectif_styles").select("id, nom").in("id", ids) : { data: [], error: null };
   if (refs.error) echec("styles des briefs", refs.error);
-  const parStyle = new Map(((refs.data ?? []) as { id: string; nom: string; couvertures: Couv }[]).map((x) => [x.id, x]));
-  const magazines = await Promise.all(
-    compositions.map(async ({ m, c }) => {
-      const utilises = stylesDeLaComposition(c);
-      const noms = utilises.map((id) => parStyle.get(id)?.nom).filter((x): x is string => Boolean(x));
-      const aimee = c.couvertures[0];
-      const cle = aimee ? parStyle.get(aimee.style_id)?.couvertures?.find((x) => x.cle === aimee.couverture)?.image_key ?? null : premiere(parStyle.get(utilises[0] ?? "")?.couvertures ?? null);
-      return {
-        id: m.id,
-        rang: m.rang,
-        nom: m.nom,
-        style: noms.length === 0 ? null : noms.length === 1 ? noms[0] : `${noms.length} styles mêlés`,
-        styleCouverture: await signerOuRien(cle),
-        briefValide: Boolean(m.brief_valide_le),
-      };
-    })
-  );
-
-  const eventail = await Promise.all(
-    ((styles.data ?? []) as { nom: string; segment: string; couvertures: Couv }[])
-      .filter((st) => styleVisible(edition.styles_segment, st.segment) && premiere(st.couvertures))
-      .slice(0, 3)
-      .map(async (st) => ({ nom: st.nom, url: await signerOuRien(premiere(st.couvertures)) }))
-  );
+  const parStyle = new Map(((refs.data ?? []) as { id: string; nom: string }[]).map((x) => [x.id, x]));
+  const magazines = compositions.map(({ m, c }) => {
+    const noms = stylesDeLaComposition(c)
+      .map((id) => parStyle.get(id)?.nom)
+      .filter((x): x is string => Boolean(x));
+    return {
+      id: m.id,
+      rang: m.rang,
+      nom: m.nom,
+      style: noms.length === 0 ? null : noms.length === 1 ? noms[0] : `${noms.length} styles mêlés`,
+      briefValide: Boolean(m.brief_valide_le),
+    };
+  });
 
   const lignes = (photos.data ?? []) as {
     role_deposant: string;
@@ -309,7 +283,6 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
 
   return {
     magazines,
-    eventail,
     photos: lignes.length,
     participants: appareils.size,
     dossiers,

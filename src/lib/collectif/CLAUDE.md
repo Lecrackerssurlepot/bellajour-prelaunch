@@ -257,6 +257,9 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   - le tableau de bord est une grille 1 / 1,08, avec « À envoyer » sous le style et le message
     sous les photos ;
   - l'encart Style dit « Fait », montre l'éventail, une tuile par magazine et « Modifier » ;
+    l'éventail est TOUJOURS Lisbonne, Aussie et la Côte d'Azur (`EVENTAIL`, couvertures de
+    Bellajour dans `public/images/v2/accueil/`), choix de Mathias du 15/10 contre les couvertures
+    d'essai du mur ; les tuiles disent le vrai style ;
   - une ligne de dossier porte sa vignette ;
   - un album porte son nombre de photos sur la couverture ;
   - « Vos dossiers » et « Les participants » montrent dessous les huit dernières arrivées

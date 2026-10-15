@@ -102,7 +102,7 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  height: min(50cqh, 47cqw);
+  height: min(58cqh, 52cqw);
   aspect-ratio: 210 / 297;
   border-radius: 16px;
   overflow: hidden;
@@ -123,26 +123,10 @@
 }
 .ec-espace .ec-tdb-couv--centre {
   z-index: 2;
-  height: min(57cqh, 53cqw);
+  height: min(66cqh, 58cqw);
   border-radius: 18px;
   transform: translate(-50%, -52%);
   box-shadow: var(--ec-ombre-couv-forte);
-}
-.ec-espace .ec-tdb-couv--duo-g {
-  height: min(56cqh, 50cqw);
-  transform: translate(-100%, -48%) rotate(-7deg);
-}
-.ec-espace .ec-tdb-couv--duo-d {
-  z-index: 2;
-  height: min(56cqh, 50cqw);
-  transform: translate(0%, -48%) rotate(7deg);
-  box-shadow: var(--ec-ombre-couv-forte);
-}
-.ec-espace .ec-tdb-eventail-vide {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
 }
 
 /* ── le style : une tuile par magazine, puis « Modifier » ── */
@@ -630,18 +614,12 @@
   .ec-espace .ec-tdb-couv--centre {
     height: 196px;
   }
-  .ec-espace .ec-tdb-couv--duo-g,
-  .ec-espace .ec-tdb-couv--duo-d {
-    height: 190px;
-  }
 }
 @media (max-width: 520px) {
   .ec-espace .ec-tdb-couv {
     height: 140px;
   }
-  .ec-espace .ec-tdb-couv--centre,
-  .ec-espace .ec-tdb-couv--duo-g,
-  .ec-espace .ec-tdb-couv--duo-d {
+  .ec-espace .ec-tdb-couv--centre {
     height: 160px;
   }
 }

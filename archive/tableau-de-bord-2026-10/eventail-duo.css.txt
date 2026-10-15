@@ -1,0 +1,33 @@
+/* Retiré de src/app/edition/[token]/tableau.css le 15/10/2026 : l'éventail a toujours ses trois
+   couvertures fixes, plus de place « à deux » ni de message « Les styles arrivent sur le mur ». */
+
+.ec-espace .ec-tdb-couv--duo-g {
+  height: min(56cqh, 50cqw);
+  transform: translate(-100%, -48%) rotate(-7deg);
+}
+.ec-espace .ec-tdb-couv--duo-d {
+  z-index: 2;
+  height: min(56cqh, 50cqw);
+  transform: translate(0%, -48%) rotate(7deg);
+  box-shadow: var(--ec-ombre-couv-forte);
+}
+
+.ec-espace .ec-tdb-eventail-vide {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+  .ec-espace .ec-tdb-couv--centre {
+    height: 196px;
+  }
+  .ec-espace .ec-tdb-couv--duo-g,
+  .ec-espace .ec-tdb-couv--duo-d {
+    height: 190px;
+  }
+  .ec-espace .ec-tdb-couv--centre,
+  .ec-espace .ec-tdb-couv--duo-g,
+  .ec-espace .ec-tdb-couv--duo-d {
+    height: 160px;
+  }

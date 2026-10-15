@@ -1,0 +1,49 @@
+// Retiré de src/app/edition/[token]/donnees.ts (chargerTableau) le 15/10/2026 : l'éventail de
+// l'encart Style montre désormais trois couvertures fixes de Bellajour (voir README).
+
+// 1. La requête des styles publiés (dans le Promise.all, entre lireEnvois et le dernier message) :
+    supabase
+      .from("collectif_styles")
+      .select("nom, segment, couvertures")
+      .eq("publie", true)
+      .order("ordre", { ascending: true })
+      .order("created_at", { ascending: true })
+      .limit(24),
+
+// 2. Le type, la couverture de chaque magazine (styleCouverture) et l'éventail du mur :
+  type Couv = { cle?: string; image_key: string }[] | null;
+  const premiere = (c: Couv) => c?.find((x) => x.image_key)?.image_key ?? null;
+
+  /* Chaque magazine dit sa COMPOSITION (D24) : le style s'il n'y en a qu'un,
+     sinon combien sont mêlés ; l'image est la première couverture aimée,
+     sinon une couverture du premier style de la composition. Les styles
+     nommés se lisent par leur id, publiés ou non. */
+  const compositions = mags.map((m) => ({ m, c: compositionDu(m) }));
+  const ids = [...new Set(compositions.flatMap((x) => stylesDeLaComposition(x.c)))];
+  const refs = ids.length ? await supabase.from("collectif_styles").select("id, nom, couvertures").in("id", ids) : { data: [], error: null };
+  if (refs.error) echec("styles des briefs", refs.error);
+  const parStyle = new Map(((refs.data ?? []) as { id: string; nom: string; couvertures: Couv }[]).map((x) => [x.id, x]));
+  const magazines = await Promise.all(
+    compositions.map(async ({ m, c }) => {
+      const utilises = stylesDeLaComposition(c);
+      const noms = utilises.map((id) => parStyle.get(id)?.nom).filter((x): x is string => Boolean(x));
+      const aimee = c.couvertures[0];
+      const cle = aimee ? parStyle.get(aimee.style_id)?.couvertures?.find((x) => x.cle === aimee.couverture)?.image_key ?? null : premiere(parStyle.get(utilises[0] ?? "")?.couvertures ?? null);
+      return {
+        id: m.id,
+        rang: m.rang,
+        nom: m.nom,
+        style: noms.length === 0 ? null : noms.length === 1 ? noms[0] : `${noms.length} styles mêlés`,
+        styleCouverture: await signerOuRien(cle),
+        briefValide: Boolean(m.brief_valide_le),
+      };
+    })
+  );
+
+  const eventail = await Promise.all(
+    ((styles.data ?? []) as { nom: string; segment: string; couvertures: Couv }[])
+      .filter((st) => styleVisible(edition.styles_segment, st.segment) && premiere(st.couvertures))
+      .slice(0, 3)
+      .map(async (st) => ({ nom: st.nom, url: await signerOuRien(premiere(st.couvertures)) }))
+  );
+

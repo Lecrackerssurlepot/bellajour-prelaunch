@@ -114,11 +114,21 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
   )
 }
 
+/* L'éventail de l'encart Style : trois couvertures de Bellajour, toujours les
+   mêmes (Mathias, 15/10 : « avoir vraiment la Côte d'Azur, Lisbonne et
+   Aussie », celles de la maquette, plutôt que les couvertures d'essai du mur).
+   Lisbonne à gauche, Aussie à droite, la Côte d'Azur devant. Les tuiles du bas
+   disent, elles, le vrai style de chaque magazine. */
+const EVENTAIL = [
+  { nom: 'lisbonne', place: 'gauche' },
+  { nom: 'aussie', place: 'droite' },
+  { nom: 'cote-azur', place: 'centre' },
+] as const
+
 /* L'encart Style (PRD §14.2, maquettes du 15/10) : en haut à droite « Fait »
-   quand tous les briefs sont validés ; au centre l'éventail des couvertures
-   (celles des magazines dès qu'un style est choisi, sinon trois styles du
-   mur) ; en bas une tuile par magazine (son nom, son style, ce qui reste à
-   faire, qui y mène) et « Modifier ». */
+   quand tous les briefs sont validés ; au centre l'éventail ; en bas une tuile
+   par magazine (son nom, son style, ce qui reste à faire, qui y mène) et
+   « Modifier ». */
 function CarteStyle({ token, tableau, p, ecrire }: { token: string; tableau: Tableau; p: <T>(vous: T, toi: T) => T; ecrire: boolean }) {
   const mags = tableau.magazines
   const n = mags.length
@@ -129,9 +139,6 @@ function CarteStyle({ token, tableau, p, ecrire }: { token: string; tableau: Tab
   const aValider = mags.filter((m) => m.style && !m.briefValide).length
   const mur = cheminSection(token, 'style')
   const brief = `${mur}/brief`
-  const couvertures = (avecStyle ? mags.map((m) => m.styleCouverture) : tableau.eventail.map((c) => c.url)).filter((u): u is string => Boolean(u)).slice(0, 3)
-  /* Trois : deux de biais derrière, la troisième au centre devant ; deux : côte à côte, de biais ; une : au centre. */
-  const places = couvertures.length === 3 ? ['gauche', 'droite', 'centre'] : couvertures.length === 2 ? ['duo-g', 'duo-d'] : ['centre']
   const titre =
     avecStyle === 0
       ? n > 1
@@ -172,12 +179,17 @@ function CarteStyle({ token, tableau, p, ecrire }: { token: string; tableau: Tab
       </h2>
 
       <div className="ec-tdb-eventail" aria-hidden="true">
-        {couvertures.map((u, i) => (
-          <span key={i} className={`ec-tdb-couv ec-tdb-couv--${places[i]}`}>
-            <img src={u} alt="" decoding="async" />
+        {EVENTAIL.map((c) => (
+          <span key={c.nom} className={`ec-tdb-couv ec-tdb-couv--${c.place}`}>
+            <img
+              src={`/images/v2/accueil/couverture-${c.nom}-360.webp`}
+              srcSet={`/images/v2/accueil/couverture-${c.nom}-360.webp 360w, /images/v2/accueil/couverture-${c.nom}-640.webp 640w`}
+              sizes="(max-width: 520px) 120px, 240px"
+              alt=""
+              decoding="async"
+            />
           </span>
         ))}
-        {couvertures.length === 0 ? <span className="ec-note ec-tdb-eventail-vide">Les styles arrivent sur le mur.</span> : null}
       </div>
 
       {avecStyle === 0 ? (
