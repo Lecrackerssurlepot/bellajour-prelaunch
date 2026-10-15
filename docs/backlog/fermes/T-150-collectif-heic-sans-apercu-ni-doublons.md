@@ -1,7 +1,7 @@
 ---
 id: T-150
 titre: Les photos HEIC de l'Édition collective n'ont ni aperçu ni empreinte, les doublons ne les voient pas
-etat: nouveau
+etat: fermé
 domaine: collectif
 gravite: serieux
 autonomie: libre
@@ -40,5 +40,20 @@ l'empreinte ; l'original HEIC part tel quel au coffre (rien n'est perdu pour l'i
 « Gérer les photos HEIC sans aperçu, c'est pas normal. » Le rattrapage des 423 HEIC déjà
 envoyés sur « Essai révision » est accordé (écriture en base), une fois l'envoi corrigé.
 
-## Ce qui a été fait
-Rien encore. Ticket ouvert le 14/10/2026.
+## Ce qui a été fait (15/10/2026)
+- **À l'envoi** : quand le navigateur ne lit pas le HEIC (Chrome, Firefox, Android ; Safari sait),
+  le moteur des éditions confie la photo à libheif en WebAssembly (`public/heic/`, `libheif-js`
+  1.19.8, LGPL, copie non modifiée et sa licence), chargé à la première photo seulement. Vignette
+  de 320 px ; l'ORIGINAL part tel quel. L'empreinte et la luminance se calculent ensuite sur la
+  vignette, comme pour un JPEG. Le moteur des particuliers n'est pas touché.
+- **Prouvé** : deux HEIC envoyés depuis Chrome sans tête sur « Essai neuf (Claude) » ont vignette,
+  empreinte, luminance, dimensions et date ; l'original garde sa taille exacte.
+- **Rattrapage** (`scripts/collectif-heic-rattrapage.ts --vraiment`, accord de Mathias) : les 423
+  HEIC d'« Essai révision (Claude) » ont leur vignette et leur empreinte, 0 échec, 0,9 s de
+  décodage par photo (médiane), 10 min 30 en tout. Vérifié en base : 782 photos, 0 sans aperçu,
+  1 sans empreinte (un JPEG d'avant). **Les doublons : 15 groupes, 20 copies (dont 14 groupes avec
+  des HEIC)**, contre une seule copie avant.
+- ⚠️ `is_primary()` n'existe pas dans ce libheif-js : on prend la plus grande image du fichier.
+
+## Reste (hors de ce ticket)
+- Les captures d'écran parmi les photos (`estCaptureEcran` du B2C, pas encore au B2B).

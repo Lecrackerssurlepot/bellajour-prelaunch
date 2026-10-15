@@ -124,6 +124,14 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
 - ⚠️ **Le moteur d'envoi** (`edition/_composants/depot/moteur.ts`) ne garde RIEN dans le
   navigateur et ne tient jamais plus de 8 photos réduites en mémoire. Ne pas y ajouter une copie
   IndexedDB « pour la reprise » : c'est exactement ce qui fait sauter le quota à 2 000 photos.
+- **Les HEIC (T-150, 15/10)** : Safari décode le HEIC et le worker du B2C fait sa vignette ;
+  Chrome, Firefox et Android échouent. Seulement alors, `depot/heic.ts` confie la photo à
+  `public/heic/vignette-heic.worker.js`, qui charge libheif en WebAssembly (`libheif-js` 1.19.8,
+  LGPL, copie NON MODIFIÉE à côté de sa licence, chargée à la première photo seulement) et rend
+  une vignette de 320 px. L'ORIGINAL part toujours tel quel. L'empreinte (doublons) et la
+  luminance se calculent ensuite sur la vignette, comme pour un JPEG. Le moteur du B2C n'est pas
+  touché. ⚠️ `is_primary()` n'existe pas dans ce libheif-js : on prend la plus grande image. Les
+  HEIC envoyés avant : `scripts/collectif-heic-rattrapage.ts`.
 - ⚠️ **Le CORS du coffre** n'accepte que bellajour.fr, www, *.vercel.app et `localhost:3000`
   (vérifié le 13/10 par une requête OPTIONS) : le local de recette des photos tourne donc sur
   3000 (`.claude/launch.json` « Next.js prod 3000 collectif »).

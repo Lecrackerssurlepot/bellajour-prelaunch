@@ -30,6 +30,7 @@
 
 import { reduire } from "@/app/(atelier)/composer/depot/pool";
 import { estHeic, resoudreMime } from "@/lib/atelier/formats";
+import { vignetteHeic } from "./heic";
 import { cleFichier, LOT_CONFIRMATION, LOT_DECLARATION, LOT_VERIFICATION } from "@/lib/collectif/depot";
 
 /** Combien de photos réduites d'avance, au plus : la mémoire reste bornée. */
@@ -304,9 +305,12 @@ export class MoteurDepot {
       const it = this.items.find((i) => i.etat === "attente");
       if (!it) return;
       it.etat = "reduction";
-      void reduire({ id: String(it.n), fichier: it.fichier, reduire: !estHeic(it.mime), estJpeg: it.mime === "image/jpeg" }).then((r) => {
+      void reduire({ id: String(it.n), fichier: it.fichier, reduire: !estHeic(it.mime), estJpeg: it.mime === "image/jpeg" }).then(async (r) => {
         it.charge = r.charge;
-        it.vignette = r.vignette;
+        /* Un HEIC que ce navigateur ne lit pas (Chrome, Firefox, Android) : sa
+           vignette vient de libheif (T-150), l'original part tel quel. Sans elle,
+           ni aperçu ni empreinte, donc aucun doublon repéré. */
+        it.vignette = r.vignette ?? (estHeic(it.mime) ? await vignetteHeic(it.fichier) : null);
         /* Le type suit ce qui part VRAIMENT : une charge réduite est du JPEG. */
         it.typeEnvoye = r.charge?.type || it.mime;
         it.etat = "pret";

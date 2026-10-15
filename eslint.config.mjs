@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     /* T-121 : le worker pdf.js, copié minifié dans public/ (Turbopack ne sait pas
        empaqueter un worker de node_modules). Du code compilé, pas le nôtre. */
     "public/pdfjs/**",
+    // libheif-js, copie non modifiée (T-150) : le code tiers ne se lint pas.
+    "public/heic/libheif-bundle.js",
     "**/.next/**",
     "**/out/**",
     "**/build/**",
