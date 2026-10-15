@@ -1,4 +1,4 @@
-# État du système — au 14/10/2026 (fin de soirée)
+# État du système — au 15/10/2026 (matin)
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -10,14 +10,31 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 15/10/2026 (matin) — Édition collective : migrations 20261017 et 20261018 APPLIQUÉES
+
+- **Appliquées par Mathias le 15/10/2026**, vérifiées en SQL (lecture seule) le même matin :
+  `collectif_magazines.palette_style_id`, `typo_style_id` (clés vers `collectif_styles`, `on
+  delete restrict`), `doubles_aimes` (jsonb, `'[]'` par défaut, non nul) ;
+  `collectif_provenances.retire_le` ; `collectif_messages.reponse_a` (clé vers
+  `collectif_messages`, `on delete set null`).
+- **Rejoué après elles** (localhost:3000), données relues en base :
+  - « Organisation d'essai », magazine 1 : palette Velours du style Nuit, typographies du style
+    Brut, doubles pages Récit (Riviera) et Aérée (Nuit) : quatre styles mêlés ; son brief, vide
+    avant, n'est pas validé ;
+  - « Essai révision » : un lien « Essai suppression (Claude) » créé puis supprimé (`retire_le`
+    posé, son dépôt répondait 200 avant, 404 après) ;
+  - « Essai révision » : « Essai de réponse (Claude), à ignorer. » (le client répond à « J'ai pas
+    de notif ») et « Essai de réponse de l'atelier (Claude), à ignorer. » (l'atelier répond au
+    client) ; `reponse_a` posé sur les deux, la citation relue après rechargement des deux côtés.
+
 ## 14/10/2026 (fin de soirée) — Édition collective : photos en dossiers, documents, répondre, atelier unifié (T-152), sur branche
 
 - **Code** sur `feat/collectif-retours-ux-1` (poussée ; commits f45405f, e9468d4, b1f595d). Rien
   en production (`COLLECTIF_OUVERT` absente de Vercel). La barre commune touche aussi la table de
   travail des particuliers (`/admin/atelier`) : sans l'interrupteur elle s'affiche SANS
   commutateur, ses écrans (Carnet… Démo) restent les mêmes.
-- **Migration `20261018_collectif_liens_reponses.sql` ÉCRITE, PAS APPLIQUÉE**
-  (`collectif_provenances.retire_le`, `collectif_messages.reponse_a`). Vérifié le 14/10 AVANT
+- **Migration `20261018_collectif_liens_reponses.sql`** (`collectif_provenances.retire_le`,
+  `collectif_messages.reponse_a`) : appliquée le 15/10, voir plus haut. Vérifié le 14/10 AVANT
   elle (« Essai révision ») : la page Photos et le fil se lisent ; « Supprimer le lien » et
   « Répondre » (client et atelier) répondent 503 en nommant le fichier, rien d'écrit, le texte
   tapé reste dans la zone. `20261017` (D24) attend toujours aussi.

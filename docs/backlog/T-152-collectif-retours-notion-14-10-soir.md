@@ -95,8 +95,8 @@ ouvert: 2026-10-14
   nommant la migration, sans rien écrire.
 
 ## Reste
-- Mathias applique `20261017` et `20261018`, puis : vérifier en SQL, supprimer un lien d'essai,
-  répondre à un message des deux côtés.
+- ~~Mathias applique `20261017` et `20261018`~~ : appliquées le 15/10, vérifiées en SQL ; une pièce
+  de chaque style, un lien supprimé, une réponse des deux côtés rejoués et relus en base.
 - Question 4 (l'acceptation d'une proposition fait-elle foi ?) : toujours ouverte.
 - Glisser un dossier ne marche qu'à la souris (pas au doigt) : sur téléphone, renommer et
   déposer suffisent ; à revoir si le besoin se présente.
