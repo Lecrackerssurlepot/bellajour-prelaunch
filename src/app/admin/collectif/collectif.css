@@ -9,6 +9,20 @@
 .eca-root {
   --eca-champ-bg: rgba(255, 255, 255, 0.78);
   --eca-ligne: 1px solid var(--bj-veil-8);
+  /* La fiche en cartes (15/10, maquette « Atelier, la fiche ») : les tons des pastilles et des bandeaux. */
+  --eca-chaud-fond: #fff6f0;
+  --eca-chaud: #a4521c;
+  --eca-chaud-point: #e07a3f;
+  --eca-vert-fond: #e7f6ee;
+  --eca-vert: #157347;
+  --eca-bleu-encre: #1d4f8a;
+  --eca-ambre-fond: #fff3dc;
+  --eca-ambre: #8a5a00;
+  --eca-gris-fond: #f2f4f7;
+  --eca-gris-signe: #e7eaf0;
+  --eca-lien: #2b6cb0;
+  --eca-bord-clair: #e4e7ec;
+  --eca-violet: #7b86e6;
 }
 
 /* ─────────────────────────────── l'en-tête ─────────────────────────────── */
@@ -1135,36 +1149,228 @@
   }
 }
 
-/* ─────────────── la fiche en onglets (T-152) ─────────────── */
+/* ─────────────── la fiche en cartes (T-152, 15/10) ─────────────── */
 
+.eca-root .eca-retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  margin-bottom: 12px;
+  padding: 0 14px 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--adm-verre-bord);
+  background: var(--adm-verre);
+  box-shadow: 0 6px 18px var(--bj-veil-6);
+  -webkit-backdrop-filter: var(--adm-flou);
+  backdrop-filter: var(--adm-flou);
+  font-size: 13px;
+  color: var(--bj-text-soft);
+  text-decoration: none;
+}
+.eca-root .eca-retour:hover {
+  color: var(--bj-text);
+  background: #ffffff;
+}
 .eca-root .eca-fiche-tete {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--bj-sp-4) var(--bj-sp-6);
-  margin-bottom: var(--bj-sp-4);
+  gap: 16px 24px;
+  margin-bottom: 16px;
+  padding: 20px 24px;
+  border-radius: 28px;
+  border: 1px solid var(--adm-verre-bord);
+  background: var(--adm-verre);
+  box-shadow: 0 18px 48px rgba(16, 24, 40, 0.07);
+  -webkit-backdrop-filter: var(--adm-flou);
+  backdrop-filter: var(--adm-flou);
+}
+.eca-root .eca-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--bj-action), var(--eca-violet));
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 .eca-root .eca-fiche-titres {
   display: flex;
+  flex: 1 1 240px;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
 }
+.eca-root .eca-fiche-titres .eca-sous {
+  font-size: 13px;
+}
 .eca-root .eca-fiche-h1 {
-  font-size: clamp(1.8rem, 3.4vw, 2.4rem);
+  margin: 0;
+  font-family: var(--bj-font-display);
+  font-style: normal;
+  font-weight: 400;
+  font-size: clamp(1.9rem, 3vw, 2.25rem);
+  line-height: 1;
+  color: var(--bj-text);
 }
 .eca-root .eca-fiche-prochaine {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  margin-left: auto;
-  padding: 12px 18px;
+  gap: 4px;
+  max-width: 400px;
+  padding: 10px 16px;
   border-radius: 20px;
-  background: #ffffff;
-  box-shadow: 0 6px 18px var(--bj-veil-6);
-  max-width: 380px;
+  background: var(--eca-chaud-fond);
 }
+.eca-root .eca-fiche-prochaine-camp {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--eca-chaud);
+}
+.eca-root .eca-fiche-prochaine strong {
+  font-weight: 600;
+}
+.eca-root .eca-fiche-prochaine--client {
+  background: var(--bj-action-soft);
+}
+.eca-root .eca-fiche-prochaine--client .eca-fiche-prochaine-camp {
+  color: var(--eca-bleu-encre);
+}
+.eca-root .eca-fiche-prochaine--imprimeur,
+.eca-root .eca-fiche-prochaine--aucun {
+  background: var(--eca-gris-fond);
+}
+.eca-root .eca-fiche-prochaine--imprimeur .eca-fiche-prochaine-camp,
+.eca-root .eca-fiche-prochaine--aucun .eca-fiche-prochaine-camp {
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-fiche-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Les pilules de la fiche : l'action (bleu), l'encre, la claire. */
+.eca-root .eca-pilule {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.eca-root .eca-pilule--action {
+  background: var(--bj-action);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(74, 144, 217, 0.32);
+}
+.eca-root .eca-pilule--action:hover {
+  color: #ffffff;
+  filter: brightness(1.05);
+}
+.eca-root .eca-pilule--encre {
+  background: var(--bj-text);
+  color: #ffffff;
+  font-weight: 500;
+}
+.eca-root .eca-pilule--claire {
+  background: #ffffff;
+  color: var(--bj-text);
+  font-weight: 500;
+  box-shadow: inset 0 0 0 1px var(--eca-bord-clair);
+}
+.eca-root .eca-pilule--claire:hover {
+  color: var(--bj-text);
+  box-shadow: inset 0 0 0 1px var(--bj-veil-16);
+}
+.eca-root .eca-pilule-compte {
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 12px;
+}
+
+/* Les gestes, rangés derrière un bouton de l'en-tête. */
+.eca-root .eca-gestes-menu {
+  position: relative;
+}
+.eca-root .eca-gestes-bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px var(--eca-bord-clair);
+  font-weight: 500;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.eca-root .eca-gestes-bouton::-webkit-details-marker {
+  display: none;
+}
+.eca-root .eca-gestes-menu[open] .eca-gestes-bouton {
+  background: var(--bj-text);
+  color: #ffffff;
+  box-shadow: none;
+}
+.eca-root .eca-gestes-menu[open] .eca-gestes-bouton svg {
+  transform: rotate(180deg);
+}
+.eca-root .eca-gestes-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid var(--adm-verre-bord);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--bj-shadow-pop);
+  -webkit-backdrop-filter: var(--adm-flou);
+  backdrop-filter: var(--adm-flou);
+}
+.eca-root .eca-gestes-pop-titre {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-gestes-pop .eca-gestes {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.eca-root .eca-gestes-pop .eca-gestes .adm-btn {
+  text-align: left;
+  justify-content: flex-start;
+  width: 100%;
+}
+
 /* 15/10 : les onglets de la fiche, une pilule de verre ; l'onglet ouvert en encre. */
 .eca-root .eca-onglets {
   display: flex;
@@ -1212,99 +1418,307 @@
 .eca-root .eca-etapes {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  margin: 0 0 var(--bj-sp-5);
+  gap: 10px;
+  margin: 0 0 16px;
   padding: 0;
   list-style: none;
 }
 .eca-root .eca-etape {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   padding: 12px 14px;
   border-radius: 20px;
-  background: var(--ate-carte-bg);
-  border: 1px solid var(--adm-verre-bord, var(--bj-veil-8));
-  box-shadow: 0 6px 18px var(--bj-veil-6);
+  background: rgba(255, 255, 255, 0.55);
+}
+.eca-root .eca-etape--fait {
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.05);
 }
 .eca-root .eca-etape--encours {
-  border-color: transparent;
   background: var(--bj-action-soft);
-  box-shadow: inset 0 0 0 1.5px var(--bj-action-border), 0 6px 18px var(--bj-veil-6);
+  box-shadow: inset 0 0 0 1.5px rgba(74, 144, 217, 0.5);
 }
 .eca-root .eca-etape-signe {
   flex: none;
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 999px;
-  background: var(--bj-veil-8);
+  background: var(--eca-gris-signe);
+  color: var(--bj-text-soft);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  font-variant-numeric: lining-nums;
 }
 .eca-root .eca-etape--fait .eca-etape-signe {
   background: var(--bj-text);
-  color: var(--bj-cream);
+  color: #ffffff;
 }
 .eca-root .eca-etape--encours .eca-etape-signe {
   background: var(--bj-action);
-  color: var(--bj-on-action);
+  color: #ffffff;
 }
 .eca-root .eca-etape-texte {
   display: flex;
   flex-direction: column;
-  gap: 2px;
   min-width: 0;
+  line-height: 1.3;
 }
 .eca-root .eca-etape-texte strong {
-  font-weight: 500;
+  font-weight: 600;
 }
-.eca-root .eca-apercu {
+.eca-root .eca-etape-detail {
+  font-size: 12px;
+  color: var(--bj-text-faint);
+  font-variant-numeric: lining-nums;
+}
+.eca-root .eca-etape--encours .eca-etape-detail {
+  color: var(--eca-bleu-encre);
+}
+
+/* Les trois cartes de la vue d'ensemble : même hauteur, le pied en bas. */
+.eca-root .eca-cartes {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--bj-sp-4);
-  align-items: start;
+  gap: 16px;
+  align-items: stretch;
 }
-.eca-root .eca-apercu > .ate-carte {
-  margin: 0;
+.eca-root .eca-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 20px 22px;
+  border-radius: 26px;
+  border: 1px solid var(--adm-verre-bord);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 14px 36px rgba(16, 24, 40, 0.06);
+  -webkit-backdrop-filter: var(--adm-flou);
+  backdrop-filter: var(--adm-flou);
 }
-.eca-root .eca-resume-tete {
+.eca-root .eca-carte-tete {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
 }
-.eca-root .eca-resume-lien {
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-action);
+.eca-root .eca-carte-titre {
+  margin: 0;
+  font-family: var(--bj-font-display);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.1;
+  color: var(--bj-text);
+}
+.eca-root .eca-carte-lien {
+  font-size: 13px;
+  color: var(--eca-lien);
   text-decoration: none;
   white-space: nowrap;
 }
-.eca-root .eca-resume-lien:hover {
-  text-decoration: underline;
+.eca-root .eca-carte-lien:hover {
+  color: var(--bj-text);
 }
-.eca-root .eca-resume-lignes {
+.eca-root .eca-carte-pied {
+  margin-top: auto;
+  font-size: 13px;
+  color: var(--bj-text-faint);
+}
+.eca-root .eca-carte-pied--liens {
   display: flex;
   flex-direction: column;
-  margin: 8px 0 0;
+  gap: 10px;
+}
+.eca-root .eca-carte-pied--liens .eca-carte-lien {
+  align-self: flex-start;
+}
+.eca-root .eca-carte-actions {
+  display: flex;
+  gap: 8px;
+}
+.eca-root .eca-carte-actions .eca-pilule {
+  height: 42px;
+  padding: 0 16px;
+}
+.eca-root .eca-carte-actions .eca-pilule--encre {
+  flex: 1;
+  min-width: 0;
+}
+.eca-root .eca-carte .eca-vide {
+  margin: 0;
+}
+
+.eca-root .eca-mags {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
-.eca-root .eca-resume-lignes li {
+.eca-root .eca-mag {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
   gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--bj-veil-8);
-  font-size: var(--bj-fs-sm);
+  padding: 10px;
+  border-radius: 18px;
+  background: #ffffff;
 }
-.eca-root .eca-resume-lignes li:last-child {
-  border-bottom: 0;
+.eca-root .eca-mag-couv {
+  flex: none;
+  width: 40px;
+  height: 54px;
+  border-radius: 8px;
+  object-fit: cover;
 }
-.eca-root .eca-resume-lignes li > span:last-child {
-  text-align: right;
+.eca-root .eca-mag-couv--palette {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.eca-root .eca-mag-couv--palette span {
+  flex: 1;
+}
+.eca-root .eca-mag-couv--vide {
+  display: grid;
+  place-items: center;
+  background: var(--eca-gris-fond);
+  color: var(--bj-text-faint);
+  font-family: var(--bj-font-display);
+  font-size: 22px;
+  font-variant-numeric: lining-nums;
+}
+.eca-root .eca-mag-texte {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+.eca-root .eca-mag-texte strong {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eca-root .eca-mag-texte .eca-sous {
+  font-size: 12px;
+}
+
+.eca-root .eca-puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.eca-root .eca-puce {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--eca-gris-fond);
+  color: var(--bj-text);
+  font-size: 12px;
+  font-variant-numeric: lining-nums;
+  white-space: nowrap;
+}
+.eca-root .eca-mag .eca-puce {
+  padding: 3px 10px;
+  font-weight: 600;
+}
+.eca-root .eca-puce--vert {
+  background: var(--eca-vert-fond);
+  color: var(--eca-vert);
+}
+.eca-root .eca-puce--bleu {
+  background: var(--bj-action-soft);
+  color: var(--eca-bleu-encre);
+}
+.eca-root .eca-puce--ambre {
+  background: var(--eca-ambre-fond);
+  color: var(--eca-ambre);
+}
+.eca-root .eca-puce--gris {
+  color: var(--bj-text-soft);
+}
+
+.eca-root .eca-chiffre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+.eca-root .eca-chiffre strong {
+  font-size: 44px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: lining-nums;
+}
+.eca-root .eca-chiffre span {
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-mosaique {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.eca-root .eca-mosaique img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--eca-gris-fond);
+}
+
+.eca-root .eca-bulle {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 20px 20px 20px 6px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.05);
   overflow-wrap: anywhere;
+}
+.eca-root .eca-bulle .eca-sous {
+  font-size: 12px;
+}
+.eca-root .eca-bulle--atelier {
+  border-radius: 20px 20px 6px 20px;
+  background: var(--bj-action-soft);
+  box-shadow: none;
+}
+.eca-root .eca-bandeau {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 18px;
+  background: var(--eca-gris-fond);
+  color: var(--bj-text);
+  text-decoration: none;
+}
+.eca-root a.eca-bandeau:hover {
+  background: var(--bj-action-soft);
+  color: var(--bj-text);
+}
+.eca-root .eca-bandeau strong {
+  font-weight: 600;
+}
+.eca-root .eca-bandeau--chaud {
+  background: var(--eca-chaud-fond);
+}
+.eca-root .eca-point {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--eca-chaud-point);
+}
+.eca-root .eca-point--bleu {
+  background: var(--bj-action);
 }
 .eca-root .eca-deux {
   display: grid;
@@ -1312,22 +1726,52 @@
   gap: var(--bj-sp-4);
   align-items: start;
 }
-@media (max-width: 1080px) {
-  .eca-root .eca-apercu {
+@media (min-width: 1181px) {
+  .eca-root .eca-fiche-prochaine {
+    margin-left: auto;
+  }
+}
+@media (max-width: 1180px) {
+  .eca-root .eca-cartes {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .eca-root .eca-cartes > :last-child {
+    grid-column: 1 / -1;
+  }
+  .eca-root .eca-fiche-prochaine {
+    flex: 1 1 280px;
+    max-width: none;
+  }
+}
+@media (max-width: 1080px) {
   .eca-root .eca-etapes {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 @media (max-width: 720px) {
-  .eca-root .eca-apercu,
-  .eca-root .eca-deux,
-  .eca-root .eca-etapes {
+  .eca-root .eca-cartes,
+  .eca-root .eca-deux {
     grid-template-columns: minmax(0, 1fr);
   }
-  .eca-root .eca-fiche-prochaine {
-    margin-left: 0;
+  .eca-root .eca-etapes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .eca-root .eca-fiche-tete {
+    padding: 16px;
+    border-radius: 24px;
+  }
+  .eca-root .eca-fiche-actions {
+    width: 100%;
+  }
+  .eca-root .eca-fiche-actions > a {
+    flex: 1;
+  }
+  .eca-root .eca-gestes-pop {
+    left: 0;
+    right: auto;
+  }
+  .eca-root .eca-carte {
+    padding: 18px;
   }
 }
 
@@ -1364,11 +1808,4 @@
   .eca-root .eca-reglages {
     grid-template-columns: minmax(0, 1fr);
   }
-}
-.eca-root .eca-resume-lignes--blocs li {
-  flex-direction: column;
-  gap: 2px;
-}
-.eca-root .eca-resume-lignes--blocs li > span:last-child {
-  text-align: left;
 }

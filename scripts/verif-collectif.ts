@@ -1815,6 +1815,18 @@ titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de receptio
   const onglets = lire("src/app/admin/collectif/[id]/OngletsFiche.tsx");
   ok("fiche : des onglets, un onglet monte a sa premiere visite puis garde (les messages ne se marquent lus qu'a leur ouverture)",
     /vus\.includes\(cle\) \?/.test(onglets) && /hidden=\{cle !== actif\}/.test(onglets) && /replaceState/.test(onglets) && /messages: <PanneauMessages/.test(lire("src/app/admin/collectif/[id]/page.tsx")));
+
+  /* 15/10 : la fiche en cartes (maquette « Atelier, la fiche » validée par Mathias). */
+  const fiche = lire("src/app/admin/collectif/[id]/page.tsx");
+  ok("fiche en cartes : un retour visible vers la liste des editions, sur la fiche et sa silhouette",
+    /<Link href="\/admin\/collectif" className="eca-retour">[\s\S]{0,80}Les éditions/.test(fiche) && /eca-retour[\s\S]{0,80}Les éditions/.test(lire("src/app/admin/collectif/[id]/loading.tsx")));
+  ok("fiche en cartes : TROIS cartes dans la vue d'ensemble, chacune avec son lien en tete, plus de resumes en lignes",
+    (fiche.match(/<section className="eca-carte">/g) ?? []).length === 3 && (fiche.match(/className="eca-carte-tete"/g) ?? []).length === 3 && !/const resume = /.test(fiche) && !/eca-apercu/.test(fiche));
+  ok("fiche en cartes : les gestes dans un menu de l'en-tete, les trois liens et leur regeneration dans « Réglages et liens »",
+    /<PanneauGestes [^>]*menu \/>/.test(fiche) && /libelle: "Réglages et liens"/.test(fiche) && /reglages: \([\s\S]*?<PanneauLiens id=\{e\.id\} liens=\{liens\} \/>/.test(fiche));
+  const donneesFiche = lire("src/app/admin/collectif/donnees.ts");
+  ok("fiche en cartes : les doublons se comptent par la MEME regle que la page Photos du client, quatre apercus signes au plus",
+    /doublons: groupesDoublonsRapides\(/.test(donneesFiche) && /\.slice\(0, 4\)[\s\S]{0,60}signerOuRien\(p\.vignette_key\)/.test(donneesFiche));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

@@ -5,7 +5,7 @@ import { quiEstConnecte } from "@/lib/admin-session";
 import { makeSupabase } from "@/lib/supabase";
 import { estUuid } from "@/lib/collectif/cles";
 import { formaterHeureParis, formaterInstantParis, formaterJourParis, versChampParis } from "@/lib/collectif/dates";
-import { formaterJour } from "@/lib/collectif/livraison";
+import { demandesDuFil, formaterJour } from "@/lib/collectif/livraison";
 import { extraitDe } from "@/lib/collectif/messages";
 import { LIBELLE_ETAT_EDITION } from "@/lib/collectif/etats";
 import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
@@ -13,7 +13,7 @@ import { compteAgenda } from "@/lib/collectif/agenda";
 import { libelleCreneau } from "@/lib/collectif/creneaux";
 import { MIGRATION_COLLECTIF, MIGRATION_RDV } from "@/lib/collectif/migration";
 import { lireInterlocuteurs, lireRendezVous } from "@/lib/collectif/rendezvous";
-import { etapesEdition, LIBELLE_CAMP, prochaineEtape } from "@/lib/collectif/prochaine";
+import { etapesEdition, prochaineEtape } from "@/lib/collectif/prochaine";
 import { quandRdv } from "@/lib/collectif/boite";
 import { PARTS_TEXTE } from "@/lib/collectif/brief";
 import BarreAtelier, { liensEditions } from "../../BarreAtelier";
@@ -26,6 +26,7 @@ import PanneauGestes from "./PanneauGestes";
 import PanneauMessages from "./PanneauMessages";
 import PanneauRendezVous from "./PanneauRendezVous";
 import PanneauLiens from "./PanneauLiens";
+import LienResponsable from "./LienResponsable";
 import PanneauLivraison from "./PanneauLivraison";
 import OngletsFiche from "./OngletsFiche";
 import "../../admin.css";
@@ -36,13 +37,14 @@ import "../collectif.css";
  * /admin/collectif/[id] — la fiche d'une édition (PRD §8 ; T-152, maquette
  * « Atelier, la fiche » : plus de longue colonne).
  *
- * En tête : l'organisation, l'événement, l'état et la prochaine étape, et
- * « Répondre » quand le client attend. Puis des ONGLETS : la vue d'ensemble
- * (les étapes, les gestes, les liens, un résumé de chaque sujet qui mène à
- * son onglet), les magazines et leurs briefs, les photos, le bon à tirer
- * (sa page), les messages, les documents et les envois du client, les
- * rendez-vous, la livraison, les réglages, le journal. `?onglet=` rouvre
- * le même. Tout se règle sans code.
+ * 15/10, « la fiche d'une édition en cartes » (maquette validée par Mathias) :
+ * le retour à la liste, puis UNE carte d'en-tête (initiales, organisation,
+ * événement, la prochaine étape et son camp, les gestes rangés dans un menu,
+ * « Répondre »). Puis des ONGLETS. La vue d'ensemble tient en deux rangs : la
+ * bande des cinq étapes, et TROIS cartes de même hauteur (Magazines, La
+ * collecte, Le dernier message), chacune avec un seul lien en haut qui dit où
+ * il mène. Le reste (documents, rendez-vous, livraison, les trois liens et
+ * leur régénération) vit dans son onglet. `?onglet=` rouvre le même.
  *
  * Les liens prennent l'origine de la requête : en local, ils s'ouvrent sur
  * le même localhost.
@@ -53,14 +55,28 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Atelier — édition collective", robots: { index: false, follow: false } };
 
-const CLASSE_CAMP = {
-  atelier: "ate-camp ate-camp--atelier",
-  client: "ate-camp ate-camp--cliente",
-  imprimeur: "ate-camp eca-ate-camp--imprimeur",
-  aucun: "ate-camp",
+const s = (n: number | null) => (n === null ? "" : String(n));
+
+/** Les initiales de l'organisation, pour la vignette de l'en-tête : « Maison Aubier » → MA, « SKEMA » → SK. */
+function initialesDe(nom: string): string {
+  const mots = nom.normalize("NFC").split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  if (mots.length === 0) return "?";
+  if (mots.length === 1) return mots[0].slice(0, 2).toUpperCase();
+  return (mots[0][0] + mots[1][0]).toUpperCase();
+}
+
+const LIBELLE_PROCHAINE = {
+  atelier: "Prochaine étape, chez nous",
+  client: "Prochaine étape, chez le client",
+  imprimeur: "Prochaine étape, chez l'imprimeur",
+  aucun: "Tout est fait",
 } as const;
 
-const s = (n: number | null) => (n === null ? "" : String(n));
+const COCHE = (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5 12l5 5 9-10" />
+  </svg>
+);
 
 const ONGLETS = ["apercu", "magazines", "photos", "messages", "documents", "rendezvous", "livraison", "reglages", "journal"] as const;
 
@@ -141,30 +157,26 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
           ? `prévue le ${formaterJour(e.livraison.prevue_le)}`
           : "à confirmer",
   };
-  const dernierClient = [...messages].reverse().find((m) => m.auteur === "client") ?? null;
-  const recus = [...new Set(contenus.filter((c) => !c.ancienne).map((c) => c.libelle))];
+  const dernier = messages.length ? messages[messages.length - 1] : null;
+  const derniereDemande = demandesDuFil(messages).at(-1) ?? null;
   const prochainRdv = (rdvs.ok ? rdvs.valeur : [])
     .filter((r) => r.statut === "pris" && Date.parse(r.debut) > maintenantRdv.getTime())
     .sort((a, b) => a.debut.localeCompare(b.debut))[0];
   const avecRdv = prochainRdv ? ((inters.ok ? inters.valeur : []).find((i) => i.cle === prochainRdv.interlocuteur_cle)?.prenom ?? prochainRdv.interlocuteur_cle) : null;
-  const resume = (titre: string, cible: string, lien: string, lignes: [string, React.ReactNode][], blocs = false) => (
-    <section className="ate-carte eca-resume">
-      <span className="eca-resume-tete">
-        <h2 className="ate-carte-titre">{titre}</h2>
-        <a href={`?onglet=${cible}`} data-onglet={cible} className="eca-resume-lien">
-          {lien} →
-        </a>
-      </span>
-      <ul className={blocs ? "eca-resume-lignes eca-resume-lignes--blocs" : "eca-resume-lignes"}>
-        {lignes.map(([cle, valeur]) => (
-          <li key={cle}>
-            <span className="eca-sous">{cle}</span>
-            <span>{valeur}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
+
+  /* L'état d'un magazine en une pastille : la plus avancée gagne. */
+  const pastilleMag = (m: (typeof magazines)[number]): { texte: string; ton: "vert" | "bleu" | "ambre" | "gris" } =>
+    m.bat_valide_le
+      ? { texte: "BAT validé", ton: "vert" }
+      : m.toursPublies > 0
+        ? { texte: `Tour ${m.toursPublies} publié`, ton: "bleu" }
+        : m.brief_valide_le
+          ? { texte: "Brief validé", ton: "vert" }
+          : m.brief.styles.length
+            ? { texte: "Brief en cours", ton: "ambre" }
+            : { texte: "Brief à faire", ton: "gris" };
+
+  const pluriel = (n: number, mot: string) => `${n.toLocaleString("fr-FR")} ${mot}${n > 1 ? "s" : ""}`;
 
   const apercu = (
     <>
@@ -172,50 +184,133 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
         {etapesEdition(etat).map((et, i) => (
           <li key={et.cle} className={`eca-etape eca-etape--${et.statut}`}>
             <span className="eca-etape-signe" aria-hidden="true">
-              {et.statut === "fait" ? "✓" : i + 1}
+              {et.statut === "fait" ? COCHE : i + 1}
             </span>
             <span className="eca-etape-texte">
               <strong>{et.nom}</strong>
-              <span className="eca-sous">{detailEtape[et.cle]}</span>
+              <span className="eca-etape-detail">{detailEtape[et.cle]}</span>
             </span>
           </li>
         ))}
       </ol>
-      <div className="eca-apercu">
-        <PanneauGestes id={e.id} etat={etat} archivee={Boolean(e.archive_le)} />
-        <PanneauLiens id={e.id} liens={liens} compact />
-        {resume(
-          "Magazines",
-          "magazines",
-          "Les briefs",
-          [
-            ...magazines.map((m): [string, React.ReactNode] => [
-              `${m.rang}. ${m.nom}`,
-              m.bat_valide_le ? "BAT validé" : m.toursPublies > 0 ? `Tour ${m.toursPublies} publié` : m.brief_valide_le ? "Brief validé" : m.brief.styles.length ? "Brief en cours" : "Brief à faire",
-            ]),
-            ["Tirage", e.tirage ? `${e.tirage} exemplaires` : "à fixer"],
-          ]
-        )}
-        {resume("La collecte", "photos", "Les photos", [
-          ["Photos", `${collecte.total.toLocaleString("fr-FR")} · ${collecte.participants} participant${collecte.participants > 1 ? "s" : ""}`],
-          ["Sans aperçu (HEIC)", collecte.sansVignette.toLocaleString("fr-FR")],
-          ["Clôture", e.cloture_le ? formaterJourParis(e.cloture_le) : "à fixer"],
-        ])}
-        {resume("Le dernier message", "messages", nonLusEdition ? `Répondre · ${nonLusEdition}` : "Les messages", [
-          [dernierClient ? `${dernierClient.qui ?? "Le client"}, ${formaterJourParis(dernierClient.created_at)} à ${formaterHeureParis(dernierClient.created_at)}` : "Le client", dernierClient ? extraitDe(dernierClient.texte, 120) : "rien encore"],
-        ], true)}
-        {resume("Documents et envois", "documents", "Tout voir", [
-          ["Documents de l'atelier", documents.length ? `${documents.length} · ${documents[0].libelle}` : "aucun"],
-          ["Envois du client", recus.length ? recus.join(", ") : "rien encore"],
-        ], true)}
-        {resume("Rendez-vous", "rendezvous", "Le planning", [
-          ["Prochain", prochainRdv ? quandRdv(prochainRdv.debut) : "aucun"],
-          ...(avecRdv ? [["Avec", avecRdv] as [string, React.ReactNode]] : []),
-        ])}
-        {resume("Livraison", "livraison", "Régler", [
-          ["Adresse", e.livraison?.adresse || "à confirmer"],
-          ["Jour prévu", e.livraison?.prevue_le ? formaterJour(e.livraison.prevue_le) : "à confirmer"],
-        ])}
+
+      <div className="eca-cartes">
+        <section className="eca-carte">
+          <span className="eca-carte-tete">
+            <h2 className="eca-carte-titre">Magazines</h2>
+            <a href="?onglet=magazines" data-onglet="magazines" className="eca-carte-lien">
+              Les briefs →
+            </a>
+          </span>
+          <ul className="eca-mags">
+            {magazines.map((m) => {
+              const p = pastilleMag(m);
+              const couverture = m.brief.aimees.find((a) => a.url)?.url ?? null;
+              return (
+                <li key={m.id} className="eca-mag">
+                  {couverture ? (
+                    <img className="eca-mag-couv" src={couverture} alt="" />
+                  ) : m.brief.palette ? (
+                    <span className="eca-mag-couv eca-mag-couv--palette" aria-hidden="true">
+                      {m.brief.palette.couleurs.map((c, i) => (
+                        <span key={i} style={{ background: c }} />
+                      ))}
+                    </span>
+                  ) : (
+                    <span className="eca-mag-couv eca-mag-couv--vide" aria-hidden="true">
+                      {m.rang}
+                    </span>
+                  )}
+                  <span className="eca-mag-texte">
+                    <strong>
+                      {m.rang}. {m.nom}
+                    </strong>
+                    <span className="eca-sous">
+                      {m.brief.styles.length === 0 ? "Aucun style choisi" : m.brief.styles.length === 1 ? m.brief.styles[0] : `${m.brief.styles.length} styles mêlés`}
+                    </span>
+                  </span>
+                  <span className={`eca-puce eca-puce--${p.ton}`}>{p.texte}</span>
+                </li>
+              );
+            })}
+          </ul>
+          <span className="eca-carte-pied">Tirage : {e.tirage ? pluriel(e.tirage, "exemplaire") : "à fixer"}</span>
+        </section>
+
+        <section className="eca-carte">
+          <span className="eca-carte-tete">
+            <h2 className="eca-carte-titre">La collecte</h2>
+            <a href="?onglet=photos" data-onglet="photos" className="eca-carte-lien">
+              Les photos →
+            </a>
+          </span>
+          <span className="eca-chiffre">
+            <strong>{collecte.total.toLocaleString("fr-FR")}</strong>
+            <span>
+              photo{collecte.total > 1 ? "s" : ""} · {pluriel(collecte.participants, "participant")}
+            </span>
+          </span>
+          {collecte.apercus.length ? (
+            <div className="eca-mosaique">
+              {collecte.apercus.map((u, i) => (
+                <img key={i} src={u} alt="" />
+              ))}
+            </div>
+          ) : (
+            <p className="eca-vide">
+              {collecte.total ? "Pas encore d'aperçu à montrer." : "Aucune photo encore. Le lien de dépôt est dans « Réglages et liens »."}
+            </p>
+          )}
+          <span className="eca-carte-pied eca-puces">
+            <span className="eca-puce">{e.cloture_le ? `Clôture le ${formaterJourParis(e.cloture_le)}` : "Clôture à fixer"}</span>
+            {collecte.doublons ? <span className="eca-puce">{pluriel(collecte.doublons, "doublon")}</span> : null}
+            {collecte.sansVignette ? <span className="eca-puce">{collecte.sansVignette.toLocaleString("fr-FR")} sans aperçu (HEIC)</span> : null}
+            {collecte.signalees ? <span className="eca-puce eca-puce--ambre">{pluriel(collecte.signalees, "signalée")}</span> : null}
+          </span>
+        </section>
+
+        <section className="eca-carte">
+          <span className="eca-carte-tete">
+            <h2 className="eca-carte-titre">Le dernier message</h2>
+            <Link href={`/admin/collectif/messages?e=${e.id}`} className="eca-carte-lien">
+              {nonLusEdition ? "Répondre →" : "La messagerie →"}
+            </Link>
+          </span>
+          {dernier ? (
+            <span className={dernier.auteur === "client" ? "eca-bulle" : "eca-bulle eca-bulle--atelier"}>
+              <span className="eca-sous">
+                {dernier.auteur === "client" ? (dernier.qui ?? "Le client") : `Vous${dernier.qui ? ` (${dernier.qui})` : ""}`}, {formaterJourParis(dernier.created_at)} à{" "}
+                {formaterHeureParis(dernier.created_at)}
+              </span>
+              <span>{extraitDe(dernier.texte, 160)}</span>
+            </span>
+          ) : (
+            <p className="eca-vide">Aucun message encore.</p>
+          )}
+          {derniereDemande ? (
+            <span className="eca-bandeau eca-bandeau--chaud">
+              <span className="eca-point" aria-hidden="true" />
+              <span>
+                Dernière demande : <strong>{derniereDemande.motif}</strong>, le {formaterJourParis(derniereDemande.quand)}
+              </span>
+            </span>
+          ) : null}
+          {prochainRdv ? (
+            <a href="?onglet=rendezvous" data-onglet="rendezvous" className="eca-bandeau">
+              <span className="eca-point eca-point--bleu" aria-hidden="true" />
+              <span>
+                Rendez-vous le <strong>{quandRdv(prochainRdv.debut)}</strong>
+                {avecRdv ? `, avec ${avecRdv}` : ""}
+              </span>
+            </a>
+          ) : null}
+          <span className="eca-carte-pied eca-carte-pied--liens">
+            <LienResponsable url={liens.responsable} />
+            <a href="?onglet=reglages" data-onglet="reglages" className="eca-carte-lien">
+              Lien de l&apos;équipe, lien de dépôt →
+            </a>
+          </span>
+        </section>
       </div>
     </>
   );
@@ -223,26 +318,41 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
   return (
     <div className="adm-root ate-root eca-root">
       <BarreAtelier monde="editions" collectif nonLus={nonLus} liens={liensEditions(null, nonLus)} />
+      <Link href="/admin/collectif" className="eca-retour">
+        <span aria-hidden="true">←</span> Les éditions
+      </Link>
       <header className="eca-fiche-tete">
+        <span className="eca-avatar" aria-hidden="true">
+          {initialesDe(e.organisation)}
+        </span>
         <div className="eca-fiche-titres">
           <span className="eca-sous">
             {e.organisation}
             {e.responsable_nom ? ` · ${e.responsable_nom}` : ""}
           </span>
-          <h1 className="ate-h1 eca-fiche-h1">{e.evenement}</h1>
+          <h1 className="eca-fiche-h1">{e.evenement}</h1>
           <span className="eca-sous">
             {LIBELLE_ETAT_EDITION[etat]}
             {e.dates_texte ? ` · ${e.dates_texte}` : ""}
             {e.archive_le ? " · archivée" : ""}
           </span>
         </div>
-        <div className="eca-fiche-prochaine">
-          <span className={CLASSE_CAMP[prochaine.camp]}>{LIBELLE_CAMP[prochaine.camp]}</span>
+        <div className={`eca-fiche-prochaine eca-fiche-prochaine--${prochaine.camp}`}>
+          <span className="eca-fiche-prochaine-camp">{LIBELLE_PROCHAINE[prochaine.camp]}</span>
           <strong>{prochaine.texte}</strong>
         </div>
-        <Link href={`/admin/collectif/messages?e=${e.id}`} className={nonLusEdition ? "adm-btn eca-lien-bouton" : "adm-btn adm-btn--ghost eca-lien-bouton"}>
-          {nonLusEdition ? `Répondre · ${nonLusEdition}` : "Messagerie"}
-        </Link>
+        <span className="eca-fiche-actions">
+          <PanneauGestes id={e.id} etat={etat} archivee={Boolean(e.archive_le)} menu />
+          <Link href={`/admin/collectif/messages?e=${e.id}`} className={nonLusEdition ? "eca-pilule eca-pilule--action" : "eca-pilule eca-pilule--claire"}>
+            {nonLusEdition ? (
+              <>
+                Répondre <span className="eca-pilule-compte">{nonLusEdition}</span>
+              </>
+            ) : (
+              "Messagerie"
+            )}
+          </Link>
+        </span>
       </header>
 
       <OngletsFiche
@@ -256,7 +366,7 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
           { cle: "documents", libelle: "Documents" },
           { cle: "rendezvous", libelle: "Rendez-vous" },
           { cle: "livraison", libelle: "Livraison" },
-          { cle: "reglages", libelle: "Réglages" },
+          { cle: "reglages", libelle: "Réglages et liens" },
           { cle: "journal", libelle: "Journal" },
         ]}
         panneaux={{

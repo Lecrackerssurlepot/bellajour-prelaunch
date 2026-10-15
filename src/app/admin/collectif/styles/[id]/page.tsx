@@ -50,8 +50,8 @@ export default async function PageStyle({ params }: { params: Promise<{ id: stri
     <div className="adm-root ate-root eca-root">
       <BarreAtelier monde="editions" collectif liens={liensEditions("styles")} />
       <header className="ate-fiche-tete">
-        <Link href="/admin/collectif/styles" className="ate-retour">
-          ← Les styles du mur
+        <Link href="/admin/collectif/styles" className="eca-retour">
+          <span aria-hidden="true">←</span> Les styles du mur
         </Link>
         <h1 className="ate-h1">{st.nom}</h1>
         <p className="ate-bonjour">

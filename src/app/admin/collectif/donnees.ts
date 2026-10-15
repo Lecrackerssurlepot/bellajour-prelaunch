@@ -23,6 +23,7 @@ import { lireMessages } from "@/lib/collectif/messagerie";
 import { aTraiter, conversationsDe, type Conversation, type MessageBoite } from "@/lib/collectif/boite";
 import { lireInterlocuteurs } from "@/lib/collectif/rendezvous";
 import { resumeDeposants } from "@/lib/collectif/grille";
+import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
 import type { Message } from "@/lib/collectif/messages";
 import { resumeNote, resumeTour } from "@/lib/collectif/bat";
 import { estUuid } from "@/lib/collectif/cles";
@@ -210,6 +211,10 @@ export type Collecte = {
   participants: number;
   signalees: number;
   sansVignette: number;
+  /** Les copies repérées (même règle et même compte que la page Photos du client). */
+  doublons: number;
+  /** Les vignettes des quatre dernières photos arrivées, signées une heure (la vue d'ensemble). */
+  apercus: string[];
   parProvenance: { libelle: string; n: number }[];
 };
 
@@ -270,7 +275,7 @@ export async function chargerEdition(
     lireMessages(supabase, id, null),
     supabase
       .from("collectif_photos")
-      .select("provenance_type, deposant, role_deposant, appareil_id, signalee, vignette_key")
+      .select("id, provenance_type, deposant, role_deposant, appareil_id, signalee, vignette_key, empreinte, prise_le, ordre, confirmee_le")
       .eq("edition_id", id)
       .not("confirmee_le", "is", null)
       .limit(20000),
@@ -297,6 +302,11 @@ export async function chargerEdition(
   }
 
   const lignesPhotos = (photos.data ?? []) as {
+    id: string;
+    empreinte: string | null;
+    prise_le: string | null;
+    ordre: number | null;
+    confirmee_le: string;
     provenance_type: string;
     deposant: string | null;
     role_deposant: string;
@@ -309,6 +319,19 @@ export async function chargerEdition(
     participants: new Set(lignesPhotos.filter((p) => p.role_deposant === "participant" && p.appareil_id).map((p) => p.appareil_id)).size,
     signalees: lignesPhotos.filter((p) => p.signalee).length,
     sansVignette: lignesPhotos.filter((p) => !p.vignette_key).length,
+    doublons: groupesDoublonsRapides(lignesPhotos.map((p, i) => ({ id: p.id, empreinte: p.empreinte, priseLe: p.prise_le, ordre: p.ordre ?? i }))).reduce(
+      (n, g) => n + g.doublons.length,
+      0
+    ),
+    apercus: (
+      await Promise.all(
+        lignesPhotos
+          .filter((p) => p.vignette_key)
+          .sort((a, b) => b.confirmee_le.localeCompare(a.confirmee_le))
+          .slice(0, 4)
+          .map((p) => signerOuRien(p.vignette_key))
+      )
+    ).filter((u): u is string => u !== null),
     parProvenance: resumeDeposants(lignesPhotos),
   };
 

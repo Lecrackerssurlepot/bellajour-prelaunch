@@ -3,9 +3,13 @@
 /* Les gestes de l'atelier sur l'état d'une édition, armés en deux temps :
    le premier clic demande au serveur ce qui va se passer (`verifier: true`),
    le second l'écrit. La table des gestes vit dans `@/lib/collectif/gestes`,
-   relue par la route : cet écran ne décide rien. */
+   relue par la route : cet écran ne décide rien.
 
-import { useState } from "react";
+   `menu` (15/10, la fiche en cartes) : les gestes se rangent derrière un
+   bouton « Gestes » de l'en-tête, dans une fenêtre de verre qui se referme
+   au clic dehors ou une fois le geste écrit. */
+
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GESTES, GESTES_DE_LA_FICHE, type GesteCle } from "@/lib/collectif/gestes";
 import type { EtatEdition } from "@/lib/collectif/etats";
@@ -17,12 +21,15 @@ export default function PanneauGestes({
   id,
   etat,
   archivee,
+  menu,
 }: {
   id: string;
   etat: EtatEdition;
   archivee: boolean;
+  menu?: boolean;
 }) {
   const router = useRouter();
+  const tiroir = useRef<HTMLDetailsElement>(null);
   const [choisi, setChoisi] = useState<GesteCle | null>(null);
   const [cloture, setCloture] = useState("");
   const [transporteur, setTransporteur] = useState("");
@@ -85,6 +92,7 @@ export default function PanneauGestes({
       }
       setChoisi(null);
       setVerif(null);
+      if (tiroir.current) tiroir.current.open = false;
       router.refresh();
     } catch {
       setErreur("Le réseau n'a pas répondu. Rien n'a changé.");
@@ -99,9 +107,18 @@ export default function PanneauGestes({
     setErreur(null);
   }
 
-  return (
-    <section className="ate-carte">
-      <h2 className="ate-carte-titre">Gestes</h2>
+  useEffect(() => {
+    if (!menu) return;
+    function dehors(ev: PointerEvent) {
+      const d = tiroir.current;
+      if (d?.open && !d.contains(ev.target as Node)) d.open = false;
+    }
+    document.addEventListener("pointerdown", dehors);
+    return () => document.removeEventListener("pointerdown", dehors);
+  }, [menu]);
+
+  const corps = (
+    <>
       {proposes.length === 0 ? (
         <p className="eca-vide">Aucun geste de l&apos;atelier à cette étape.</p>
       ) : (
@@ -173,6 +190,30 @@ export default function PanneauGestes({
           {erreur}
         </p>
       ) : null}
+    </>
+  );
+
+  if (menu) {
+    return (
+      <details ref={tiroir} className="eca-gestes-menu">
+        <summary className="eca-gestes-bouton">
+          Gestes
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </summary>
+        <div className="eca-gestes-pop">
+          <span className="eca-gestes-pop-titre">Faire avancer l&apos;édition</span>
+          {corps}
+        </div>
+      </details>
+    );
+  }
+
+  return (
+    <section className="ate-carte">
+      <h2 className="ate-carte-titre">Gestes</h2>
+      {corps}
     </section>
   );
 }

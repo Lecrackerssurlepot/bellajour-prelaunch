@@ -57,8 +57,8 @@ export default async function PageBatAtelier({
     <div className="adm-root ate-root eca-root">
       <BarreAtelier monde="editions" collectif liens={liensEditions(null)} />
       <header className="ate-fiche-tete">
-        <Link href={`/admin/collectif/${id}`} className="ate-retour">
-          ← {bat.edition.organisation}
+        <Link href={`/admin/collectif/${id}`} className="eca-retour">
+          <span aria-hidden="true">←</span> {bat.edition.organisation}, la fiche
         </Link>
         <h1 className="ate-h1">Bon à tirer</h1>
         <p className="ate-bonjour">
