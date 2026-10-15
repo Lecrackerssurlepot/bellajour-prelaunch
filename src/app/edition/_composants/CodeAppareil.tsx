@@ -15,9 +15,9 @@ function phrases(v: (vous: string, toi: string) => string): Record<string, strin
     trop: v("Plusieurs codes viennent d'être envoyés. Attendez une heure avant d'en demander un autre.", "Plusieurs codes viennent d'être envoyés. Attends une heure avant d'en demander un autre."),
     echec: v("Le code n'a pas pu partir. Réessayez dans un instant.", "Le code n'a pas pu partir. Réessaie dans un instant."),
     migration_absente: v("L'espace n'est pas encore prêt à envoyer des codes. Réessayez plus tard.", "L'espace n'est pas encore prêt à envoyer des codes. Réessaie plus tard."),
-    expire: v("Ce code a expiré ou a déjà servi : demandez-en un nouveau.", "Ce code a expiré ou a déjà servi : demandes-en un nouveau."),
-    bloque: v("Trop d'essais avec ce code : demandez-en un nouveau.", "Trop d'essais avec ce code : demandes-en un nouveau."),
-    inactif: v("Plus besoin de code : rechargez la page.", "Plus besoin de code : recharge la page."),
+    expire: v("Ce code a expiré ou a déjà servi\u00a0: demandez-en un nouveau.", "Ce code a expiré ou a déjà servi\u00a0: demandes-en un nouveau."),
+    bloque: v("Trop d'essais avec ce code\u00a0: demandez-en un nouveau.", "Trop d'essais avec ce code\u00a0: demandes-en un nouveau."),
+    inactif: v("Plus besoin de code\u00a0: rechargez la page.", "Plus besoin de code\u00a0: recharge la page."),
   };
 }
 
@@ -116,8 +116,8 @@ export default function CodeAppareil({ token, adresse, tu }: { token: string; ad
       ) : null}
       <p className="ec-code-note">
         {v(
-          "Vous n'êtes pas le responsable ? Demandez-lui le lien de l'équipe : il ouvre l'espace en lecture seule, sans code.",
-          "Tu n'es pas le responsable ? Demande-lui le lien de l'équipe : il ouvre l'espace en lecture seule, sans code."
+          "Vous n'êtes pas le responsable ? Demandez-lui le lien de l'équipe\u00a0: il ouvre l'espace en lecture seule, sans code.",
+          "Tu n'es pas le responsable ? Demande-lui le lien de l'équipe\u00a0: il ouvre l'espace en lecture seule, sans code."
         )}
       </p>
     </div>

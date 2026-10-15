@@ -19,6 +19,7 @@ import { cheminPublic, MASQUE } from "@/lib/analytics/chemin";
 import { groupesDeDoublons } from "@/lib/atelier/empreinte";
 import * as MailsTextes from "@/lib/collectif/mailsTextes";
 import * as Appareil from "@/lib/collectif/appareil";
+import * as Appareils from "@/lib/collectif/appareils";
 import {
   cleContenu,
   cleCouverture,
@@ -1927,8 +1928,15 @@ titre("— T-154 : le lien du responsable ne s'ouvre que sur un appareil reconnu
       && fichiers("src/app/api", "route.ts").filter((f) => /sansAppareil: true/.test(lire(f))).length === 1);
   const appareils = lire("src/lib/collectif/appareils.ts");
   ok("les codes : empreinte seulement, essais comptes, expiration, frein par heure ; le code d'essai est IGNORE sur Vercel",
-    /code_empreinte: empreinteCode\(appareilEmp, code\)/.test(appareils) && !/code_empreinte: code[,\s]/.test(appareils) && /essais >= ESSAIS_MAX/.test(appareils) && /expire_le/.test(appareils) && /CODES_PAR_HEURE/.test(appareils) && /!process\.env\.VERCEL && essai/.test(appareils)
+    /code_empreinte: empreinteCode\(appareilEmp, code\)/.test(appareils) && !/code_empreinte: code[,\s]/.test(appareils) && /essais >= ESSAIS_MAX/.test(appareils) && /expire_le/.test(appareils) && /CODES_PAR_HEURE/.test(appareils) && /localhost\|127\\\.0\\\.0\\\.1/.test(appareils) && !/!process\.env\.VERCEL/.test(appareils)
       && !/if \(!idAppareil\) return false;/.test(appareils) && /empreinte\(idAppareil \?\? "aucun-appareil"\)/.test(appareils));
+  ok("le code d'essai ne vaut QUE depuis localhost, jamais depuis bellajour.fr ni une version d'essai",
+    (() => {
+      const env = { COLLECTIF_CODE_ESSAI: "246810" };
+      return Appareils.codeNeuf("http://localhost:3007", env) === "246810" && Appareils.codeNeuf("http://127.0.0.1:3000", env) === "246810"
+        && Appareils.codeNeuf("https://www.bellajour.fr", env) !== "246810" && Appareils.codeNeuf("https://bellajour-prelaunch-git-x.vercel.app", env) !== "246810"
+        && Appareils.codeNeuf("http://localhost.evil.fr", env) !== "246810" && /^\d{6}$/.test(Appareils.codeNeuf("https://www.bellajour.fr", {}));
+    })());
   const routeApp = lire("src/app/api/collectif/appareil/route.ts");
   ok("la route du code : token dans le CORPS, cookie httpOnly + secure + sameSite lax, le lien d'equipe recoit « introuvable »",
     /lireCorps\(request\)/.test(routeApp) && !/searchParams/.test(routeApp) && /httpOnly: true,\s*secure: true,\s*sameSite: "lax"/.test(routeApp) && /peut\(acces\.role, "ouvrir_sur_appareil"\)/.test(routeApp));

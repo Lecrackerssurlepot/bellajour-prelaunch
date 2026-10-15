@@ -59,7 +59,7 @@ export async function demanderCode(supabase: SupabaseClient, edition: EditionCod
   if (recents.error) return { etat: tableAbsente(recents.error.code) ? "migration_absente" : "echec" };
   if ((recents.count ?? 0) >= CODES_PAR_HEURE) return { etat: "trop" };
 
-  const code = codeNeuf();
+  const code = codeNeuf(origine);
   const appareilEmp = empreinte(idAppareil);
   const ecrit = await supabase
     .from("collectif_codes")
@@ -117,10 +117,12 @@ export async function verifierCode(supabase: SupabaseClient, edition: EditionCod
 
 /**
  * Six chiffres au hasard. ⚠️ `COLLECTIF_CODE_ESSAI` (six chiffres) fixe le code
- * pour une recette LOCALE, mails coupés : il est IGNORÉ sur Vercel.
+ * pour une recette LOCALE, mails coupés : il ne vaut QUE pour une demande venue
+ * de localhost, une adresse que Vercel n'a jamais. (Pas `process.env.VERCEL` :
+ * le `.env.local` tiré de Vercel le contient, vu en recette le 15/10.)
  */
-function codeNeuf(): string {
-  const essai = process.env.COLLECTIF_CODE_ESSAI;
-  if (!process.env.VERCEL && essai && /^\d{6}$/.test(essai)) return essai;
+export function codeNeuf(origine: string, env: Record<string, string | undefined> = process.env): string {
+  const essai = env.COLLECTIF_CODE_ESSAI;
+  if (essai && /^\d{6}$/.test(essai) && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origine)) return essai;
   return String(randomInt(0, 1_000_000)).padStart(6, "0");
 }

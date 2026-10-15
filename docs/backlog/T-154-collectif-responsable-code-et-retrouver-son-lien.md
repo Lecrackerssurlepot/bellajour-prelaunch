@@ -37,7 +37,17 @@ Dépend de T-146 (les mails). Migration probable (codes, appareils reconnus) : a
   `collectif_appareils`), **à appliquer par Mathias**.
 - Coupé par défaut : `COLLECTIF_CODE_APPAREIL` et `COLLECTIF_MAILS`.
 
+- **Migration `20261019` appliquée par Mathias le 15/10**, vérifiée en SQL (deux tables, RLS,
+  index).
+- **Recette locale complète le 15/10** (port 3007, contrôle allumé, mails coupés, code d'essai) :
+  appareil neuf → écran du code et adresse masquée, la liste des photos répond 401 ; cookie
+  d'appareil httpOnly, secure, Lax, un an ; mauvais code → « faux, 4 essais » ; bon code →
+  reconnu, l'espace s'ouvre, la liste des photos répond 200 ; le même code une 2e fois →
+  « expiré » ; un autre appareil → écran du code ; le lien d'équipe et l'atelier connecté →
+  aucun code. En base : aucun code en clair (empreintes de 64 caractères).
+- ⚠️ Le code d'essai (`COLLECTIF_CODE_ESSAI`) ne vaut que pour une demande venue de localhost :
+  le `.env.local` tiré de Vercel contient `VERCEL`, la première garde l'ignorait en local.
+
 ## Reste
-- Mathias applique la migration ; puis recette locale complète (code d'essai, mails coupés).
 - « Retrouver mon espace » et le lien dans `/compte`.
 - Valider les réglages : 15 minutes, 5 essais, 5 codes par heure.
