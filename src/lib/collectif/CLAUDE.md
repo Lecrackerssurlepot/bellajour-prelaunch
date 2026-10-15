@@ -334,8 +334,13 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   (`nouveauChemin`) RÉÉCRIT ce nom, par paquets d'ids de l'édition ; rien ne s'efface, le journal
   garde l'ancien chemin. Un « / » tapé dans un nom devient « - » (`lireNomDossier`). Les photos
   d'avant déposées sous un TYPE (photographe, autre) gardent leur nom, sans préfixe de type.
-- **Une clé de dossier dit où regarder** : `tout`, `selection`, `resp:<type>:<nom>`,
-  `lien:<id>`, `participants`, `pers:<id|general>:<nom>`, `atelier`. La grille, le compte, « Tout
+- **La page Photos n'a PLUS de grande colonne** (15/10, retour de Mathias : avec beaucoup de liens
+  elle devenait longue, archive `photos-colonne-2026-10/`) : des RAYONS au-dessus des photos
+  (`rayonDe`), et deux VUES D'ENSEMBLE (`vous`, `liens`, `estVueEnsemble`) qui montrent des
+  vignettes de dossiers ou de liens, sans grille ni vignette de photo signée ; la route ne signe
+  qu'une couverture par dossier ou lien. Un lien montre ses personnes en pastilles (dès deux).
+- **Une clé de dossier dit où regarder** : `tout`, `selection`, `vous`, `liens`,
+  `resp:<type>:<nom>`, `lien:<id>`, `participants`, `pers:<id|general>:<nom>`, `atelier`. La grille, le compte, « Tout
   sélectionner ce dossier » et le tableau de bord lisent TOUS `dansLeDossier` : une seule règle.
 - **Les liens vivent dans l'onglet « Les liens »** ; l'équipe n'en voit aucun (`partage`).
   Supprimer un lien = `retire_le` (jamais un DELETE) : sa page de dépôt devient introuvable, la

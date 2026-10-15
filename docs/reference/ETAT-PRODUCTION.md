@@ -1,4 +1,4 @@
-# État du système — au 15/10/2026 (matin)
+# État du système — au 15/10/2026 (fin de matinée)
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,18 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 15/10/2026 (fin de matinée) — Édition collective : une édition neuve, la page Photos sans colonne
+
+- **Édition « Essai neuf (Claude) » créée le 15/10** par la route de l'atelier (mêmes réglages
+  qu'« Essai révision » : 2 magazines, clôture le 30/10 à 18 h, 40 photos par personne, 1 000 au
+  total, tirage 60, responsable « Camille Essai », recette-collectif@bellajour.fr), pour que
+  Mathias voie l'espace d'un client neuf. Aucun mail (le B2B n'en envoie pas). Son lien se prend
+  dans l'atelier, fiche de l'édition, « Les liens du client ».
+- **La page Photos sans grande colonne** (rayons, vignettes, fil d'Ariane) : sur la branche,
+  vérifiée à l'écran le 15/10. Pendant la vérification, le dossier « Essai renommé (Claude) »
+  d'« Essai révision » est entré dans « Mes photos » puis en est ressorti (net : rien de changé,
+  deux lignes de journal). Mathias avait lui-même rangé « Le photographe » dans « Mes photos ».
 
 ## 15/10/2026 (matin) — Édition collective : migrations 20261017 et 20261018 APPLIQUÉES
 

@@ -1443,8 +1443,8 @@ titre("— revision 14.3 / 14.7 : photos et livraison —");
     /<FenetreLien\b/.test(collecte) && !/type: "photographe"/.test(collecte));
   ok("Photos : le depot s'ouvre dans une fenetre en verre (celle de la coquille), sur le dossier ouvert",
     /<Fenetre titre="Déposer des photos"/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")) && /envoi\.ouvrir\?\.\(\{ dossier:/.test(collecte));
-  ok("Photos (T-152) : les dossiers a gauche, Toutes / Par jour / Doublons, la selection facultative, plus de pastilles de filtres",
-    /aria-label="Les dossiers"/.test(collecte) && /Par jour/.test(collecte) && /Doublons/.test(collecte) && /Ma sélection/.test(collecte) && /facultatif/.test(collecte) && !/cle: "signalees"/.test(collecte));
+  ok("Photos (T-152, 15/10) : des rayons au-dessus des photos (plus de grande colonne), Toutes / Par jour / Doublons, la selection facultative, plus de pastilles de filtres",
+    /className="ec-ph-rayons"/.test(collecte) && !/aria-label="Les dossiers"/.test(collecte) && /Par jour/.test(collecte) && /Doublons/.test(collecte) && /Ma sélection/.test(collecte) && /facultatif/.test(collecte) && !/cle: "signalees"/.test(collecte));
   const livraison = lire("src/app/edition/[token]/livraison/page.tsx");
   ok("Livraison : l'en-tete commun et « Écrire à l'atelier » vers Parler a l'atelier",
     /<EnTeteEcran titre="Livraison"/.test(livraison) && livraison.includes("cheminSection(token, 'atelier')") && !livraison.includes("cheminSection(token, 'dossier')"));
@@ -1619,8 +1619,8 @@ titre("— retours du 14/10 : les envois du client et les dossiers —");
   const dossiers = lire("src/app/api/collectif/dossiers/route.ts");
   ok("dossiers : le droit du responsable, l'edition filtree, journalise ; « Mes photos » rend son propre nom",
     /peut\(acces\.role, "regler_plafond_participant"\)/.test(dossiers) && /\.eq\("edition_id", edition\.id\)/.test(dossiers) && /"dossier_renomme"/.test(dossiers) && /deposantPour\(n, edition\.responsable_nom\)/.test(dossiers));
-  ok("dossiers : double clic (ou F2) sur un nom dans la page Photos, Entree garde, Echap annule",
-    /onDoubleClick=\{\(\) => p\.ecrire && n\.renommable/.test(collecte) && /e\.key === "F2"/.test(collecte) && /e\.key === "Escape"/.test(collecte));
+  ok("dossiers : le crayon d'une vignette ou du titre (double clic sur le titre), Entree garde, Echap annule",
+    /className="ec-ph-album-renommer"/.test(collecte) && /onDoubleClick=\{\(\) => p\.ecrire && courant\?\.renommable/.test(collecte) && /e\.key === "Enter"/.test(collecte) && /e\.key === "Escape"/.test(collecte));
   ok("le journal dit le renommage et le remplacement",
     /devient « La soirée »/.test(phraseEvenement("dossier_renomme", { avant: "Mes photos", apres: "La soirée" })) && /ancienne version reste/.test(phraseEvenement("contenu_remplace", { type: "Logo", nom: "logo.png" })));
 
@@ -1703,7 +1703,7 @@ titre("— T-152 : les photos rangees en dossiers, les liens a part —");
   ok("Photos : plus de « Signaler », plus de barre de presélection, les grands chiffres en tete",
     !/Signaler/.test(page) && !/ec-presel/.test(page) && /ec-ph-chiffres/.test(page) && /photos reçues/.test(page));
   ok("Photos : ranger en glissant (draggable, onDrop), « + Nouveau dossier » ouvre le depot sur un nom neuf",
-    /draggable=\{peutGlisser\}/.test(page) && /void ranger\(glisse, n\.cle\)/.test(page) && /envoi\.ouvrir\?\.\(\{ nouveau: true \}\)/.test(page));
+    /draggable: true/.test(page) && /void ranger\(glisse, cible === "vous" \? null : cible\)/.test(page) && /envoi\.ouvrir\?\.\(\{ nouveau: true \}\)/.test(page));
   const fen = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
   ok("deposer : « Dans quel dossier ? », les dossiers existants ou un nom neuf, un seul bouton",
     /Dans quel dossier \?/.test(fen) && /Ou un nouveau dossier/.test(fen) && /Choisir des photos/.test(fen) && !/Choisir un dossier/.test(fen) && !/webkitdirectory/.test(fen));
@@ -1740,6 +1740,20 @@ titre("— T-152 : les documents s'ouvrent dans la page, on repond a un message 
     /repondre=\{p\.ecrire \? \(\) => setReponse\(el\.message\) : undefined\}/.test(parler) && /Réponse à \{auteurDe\(e\.reponse\)\}/.test(parler) && /allerAuMessage\(m\.reponseA\.id\)/.test(parler) && /reponseA: e\.reponse\?\.id \?\? null/.test(parler));
   ok("Documents : « Répondre » ouvre la conversation, le document deja cite (pour qui ecrit seulement)",
     /\?citer=\$\{d\.id\}/.test(lire("src/app/edition/[token]/dossier/ListeDocuments.tsx")) && /peut\(role, 'ecrire_message'\) \? versAtelier : null/.test(lire("src/app/edition/[token]/dossier/page.tsx")) && /documents\.some\(\(d\) => d\.id === citer\) \? citer : null/.test(lire("src/app/edition/[token]/atelier/page.tsx")));
+}
+
+titre("— 15/10 : la page Photos sans grande colonne (rayons, albums, fil d'Ariane) —");
+{
+  const D = Dossiers;
+  ok("rayons : chaque cle trouve son onglet", D.rayonDe("tout") === "tout" && D.rayonDe("resp:organisateur:La soirée") === "vous" && D.rayonDe("pers:general:Léa") === "liens" && D.rayonDe("lien:0b1f3c2e-4a5b-4c6d-8e9f-001122334455") === "liens" && D.rayonDe("participants") === "liens" && D.rayonDe("atelier") === "atelier" && D.rayonDe("selection") === "selection");
+  const r = (provenance_id: string | null, role_deposant: string): Dossiers.LignePhoto => ({ provenance_id, provenance_type: "organisateur", role_deposant, deposant: null });
+  ok("vues d'ensemble : « vous » = les photos du responsable, « liens » = celles des participants", D.dansLeDossier(r(null, "responsable"), "vous", "C") && !D.dansLeDossier(r(null, "participant"), "vous", "C") && D.dansLeDossier(r(null, "participant"), "liens", "C") && D.dansLeDossier(r("x", "participant"), "liens", "C") && !D.dansLeDossier(r(null, "atelier"), "liens", "C"));
+  const route = lire("src/app/api/collectif/photos/route.ts");
+  ok("route photos : une vue d'ensemble ne signe aucune vignette de grille, une couverture par dossier ou lien",
+    /const sansGrille = corps\.seulementArbre === true \|\| estVueEnsemble\(dossier\)/.test(route) && /suivante: !sansGrille &&/.test(route) && /couvertures\[n\.cle\] = await signerGet\(p\.vignette_key\)/.test(route));
+  const page = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  ok("Photos : dossiers et liens en vignettes, sous-dossiers en petites vignettes, personnes d'un lien en pastilles, fil d'Ariane",
+    /className="ec-ph-albums"/.test(page) && /ec-ph-albums--petits/.test(page) && /className="ec-ph-personnes"/.test(page) && /className="ec-ph-fil"/.test(page) && existsSync(resolve(RACINE, "archive/photos-colonne-2026-10/README.md")));
 }
 
 titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de reception, fiche en onglets) —");

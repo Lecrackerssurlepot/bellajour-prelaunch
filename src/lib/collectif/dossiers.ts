@@ -165,9 +165,23 @@ export function arbreDesPhotos(lignes: readonly LignePhoto[], liens: readonly Li
 }
 
 /** Cette photo est-elle dans ce dossier ? (La grille filtre l'édition entière par cette règle.) */
+/** Les deux VUES d'ensemble de la page Photos (15/10) : on y voit des vignettes de dossiers ou de liens, pas une grille. */
+export const VUES_ENSEMBLE = ["vous", "liens"] as const;
+export const estVueEnsemble = (cle: string) => (VUES_ENSEMBLE as readonly string[]).includes(cle);
+
+/** Le rayon d'une clé : l'onglet de la page Photos qui l'éclaire. */
+export function rayonDe(cle: string): "tout" | "selection" | "vous" | "liens" | "atelier" {
+  if (cle === "selection" || cle === "atelier" || cle === "vous" || cle === "liens") return cle;
+  if (cle.startsWith("resp:")) return "vous";
+  if (cle === "participants" || cle.startsWith("lien:") || cle.startsWith("pers:")) return "liens";
+  return "tout";
+}
+
 export function dansLeDossier(l: LignePhoto, cle: string, responsable: string | null): boolean {
   if (cle === "tout") return true;
   if (cle === "selection") return Boolean(l.preselection);
+  if (cle === "vous") return l.role_deposant === "responsable" && !l.provenance_id;
+  if (cle === "liens") return l.role_deposant === "participant" || Boolean(l.provenance_id);
   if (cle === "atelier") return l.role_deposant !== "responsable" && l.role_deposant !== "participant" && !l.provenance_id;
   if (cle === "participants") return !l.provenance_id && l.role_deposant === "participant";
   if (cle.startsWith("lien:")) return l.provenance_id === cle.slice(5);

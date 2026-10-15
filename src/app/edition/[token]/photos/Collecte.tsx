@@ -1,20 +1,21 @@
 "use client";
 
 /* La page Photos du client (T-152, maquettes « Photos rangées en dossiers » et
-   « Les liens », validées par Mathias le 14/10 au soir).
+   « Les liens », validées par Mathias le 14/10 au soir ; simplifiée le 15/10).
 
    Deux onglets, un seul écran :
-   - LES PHOTOS : les grands chiffres en tête, les DOSSIERS à gauche comme sur
-     un ordinateur (« Toutes les photos », « Ma sélection », « Déposées par
-     vous » avec un niveau de sous-dossiers, « Arrivées par les liens » avec
-     une ligne par personne), la grille du dossier ouvert à droite. On range
-     un dossier en le glissant sur un autre, on le renomme d'un double clic.
-     Une photo choisie : un bord et une pastille cochée ; « Sélectionner tout
-     ce dossier » ; on désélectionne dans « Ma sélection ».
+   - LES PHOTOS : les grands chiffres en tête, puis des RAYONS (Toutes les
+     photos, Ma sélection, Vos dossiers, Les participants, L'atelier) au lieu
+     de la grande colonne d'avant (archive/photos-colonne-2026-10) : avec
+     beaucoup de liens, elle devenait longue et peu lisible. « Vos dossiers »
+     et « Les participants » s'ouvrent en VIGNETTES, comme des albums (la
+     dernière photo en couverture) ; un dossier montre ses sous-dossiers en
+     petites vignettes puis ses photos, un lien ses personnes en pastilles.
+     Un fil d'Ariane dit où l'on est. On range un dossier en le glissant sur
+     un autre (sur « Vos dossiers » du fil pour l'en sortir), on le renomme au
+     crayon. Une photo choisie : un bord et une pastille cochée.
    - LES LIENS : une carte par lien, chaque personne avec sa barre, un seul
      « Partager » et un menu (le nom, le nombre de photos, supprimer).
-   Plus de pastilles de filtres, plus de barre de présélection, plus de
-   bouton pour écarter une photo, plus de « Copier le lien » éparpillés.
 
    La grille se lit PAR PAGES (120 vignettes signées à la fois) et se complète
    en descendant ; le chargement par pages observe SA zone de défilement
@@ -22,7 +23,7 @@
    sans bouton qui écrive et sans aucun lien. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cheminDuNoeud, cleResp, DOSSIER_RESPONSABLE, noeudDe, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
+import { cheminDuNoeud, cleResp, DOSSIER_RESPONSABLE, estVueEnsemble, noeudDe, rayonDe, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
 import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
 import { useFenetreEnvoi, useMoteurDepot } from "../../_composants/depot/DepotContexte";
 import { useMoteur } from "../../_composants/depot/useMoteur";
@@ -78,6 +79,7 @@ const TRACE = {
   lien: "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1",
   personne: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20a8 8 0 0 1 16 0",
   atelier: "M4 20V8l8-4 8 4v12M9 20v-6h6v6",
+  crayon: "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4",
 };
 
 function Icone({ trace }: { trace: string }) {
@@ -99,6 +101,7 @@ export default function Collecte(p: Props) {
   const [compteurs, setCompteurs] = useState<Compteurs | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [arbre, setArbre] = useState<Arbre | null>(null);
+  const [couvertures, setCouvertures] = useState<Record<string, string>>({});
   const [liens, setLiens] = useState<Liens | null>(null);
   const [suivante, setSuivante] = useState<number | null>(0);
   const [chargement, setChargement] = useState(false);
@@ -131,13 +134,22 @@ export default function Collecte(p: Props) {
           body: JSON.stringify({ token: p.token, dossier: d, vue: vu, page }),
         });
         if (!rep.ok) throw new Error(String(rep.status));
-        const json = (await rep.json()) as { photos: Photo[]; suivante: number | null; compteurs: Compteurs; stats: Stats; arbre: Arbre; liens: Liens | null };
+        const json = (await rep.json()) as {
+          photos: Photo[];
+          suivante: number | null;
+          compteurs: Compteurs;
+          stats: Stats;
+          arbre: Arbre;
+          couvertures?: Record<string, string>;
+          liens: Liens | null;
+        };
         if (v0 !== version.current) return;
         setPhotos((deja) => (page === 0 ? json.photos : [...deja, ...json.photos]));
         setSuivante(json.suivante);
         setCompteurs(json.compteurs);
         setStats(json.stats);
         setArbre(json.arbre);
+        if (page === 0) setCouvertures(json.couvertures ?? {});
         setLiens(json.liens);
         setErreur(null);
       } catch {
@@ -262,101 +274,136 @@ export default function Collecte(p: Props) {
     else relire();
   }
 
-  /* ── L'arbre ── */
+  /* ── Les rayons, les dossiers, les liens (15/10 : plus de grande colonne) ── */
+  const rayon = rayonDe(dossier);
+  const ensemble = estVueEnsemble(dossier);
   const courant = arbre ? noeudDe(arbre, dossier) : undefined;
-  const titre = dossier === "tout" ? "Toutes les photos" : dossier === "selection" ? "Ma sélection" : courant?.nom ?? "Toutes les photos";
   const chemin = arbre && dossier.startsWith("resp:") ? cheminDuNoeud(arbre, dossier) : null;
-  const lienOuvert = dossier.startsWith("lien:") ? dossier.slice(5) : dossier.startsWith("pers:") ? dossier.slice(5, dossier.indexOf(":", 5)) : dossier === "participants" ? "general" : null;
+  const parentResp = arbre && dossier.startsWith("resp:") ? arbre.vous.find((h) => h.enfants.some((e) => e.cle === dossier)) : undefined;
+  const lienDuDossier = !arbre
+    ? undefined
+    : dossier.startsWith("pers:")
+      ? arbre.liens.find((l) => l.enfants.some((e) => e.cle === dossier))
+      : dossier.startsWith("lien:") || dossier === "participants"
+        ? courant
+        : undefined;
+  /* Une édition sans aucune photo : pas de rayons à zéro, un accueil avec les deux gestes. */
+  const vide = stats?.photos === 0;
+  const totalVous = arbre ? arbre.vous.reduce((n, h) => n + h.n, 0) : 0;
+  const totalLiens = arbre ? arbre.liens.reduce((n, l) => n + l.n, 0) : 0;
+  const nomVous = p.ecrire ? v("Vos dossiers", "Tes dossiers") : "Les dossiers du responsable";
+  const titre =
+    dossier === "tout" ? "Toutes les photos" : dossier === "selection" ? "Ma sélection" : dossier === "vous" ? nomVous : dossier === "liens" ? "Les participants" : courant?.nom ?? "Toutes les photos";
+  /* Le fil d'Ariane : d'où l'on vient, chaque étape cliquable. */
+  const fil: { cle: string; nom: string }[] = [];
+  if (rayon === "vous" && !ensemble) {
+    fil.push({ cle: "vous", nom: nomVous });
+    if (parentResp) fil.push({ cle: parentResp.cle, nom: parentResp.nom });
+  } else if (rayon === "liens" && !ensemble) {
+    fil.push({ cle: "liens", nom: "Les participants" });
+    if (dossier.startsWith("pers:") && lienDuDossier) fil.push({ cle: lienDuDossier.cle, nom: lienDuDossier.nom });
+  }
+  const sousDossiers = dossier.startsWith("resp:") ? (courant?.enfants ?? []) : [];
+  const personnes = lienDuDossier && lienDuDossier.enfants.length > 1 ? lienDuDossier.enfants : [];
+  const sousGlisse = Boolean(glisse && arbre?.vous.some((h) => h.enfants.some((x) => x.cle === glisse)));
 
-  function ligne(n: Noeud, niveau: number, trace: string) {
-    const actif = dossier === n.cle;
-    const peutGlisser = p.ecrire && n.deplacable;
-    const recoit = p.ecrire && n.accueille && glisse !== null && glisse !== n.cle;
-    if (edite?.cle === n.cle) {
-      return (
-        <div key={n.cle} className="ec-ph-noeud ec-ph-noeud--edition" style={{ paddingLeft: 12 + niveau * 22 }}>
-          <Icone trace={trace} />
-          <input
-            className="ec-champ ec-ph-noeud-champ"
-            value={edite.valeur}
-            maxLength={80}
-            autoFocus
-            aria-label="Nouveau nom du dossier"
-            onFocus={(e) => e.currentTarget.select()}
-            onChange={(e) => setEdite({ cle: n.cle, valeur: e.target.value })}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void garderNom();
-              } else if (e.key === "Escape") {
-                setEdite(null);
-              }
-            }}
-            onBlur={() => void garderNom()}
-          />
-        </div>
-      );
-    }
+  /* Glisser un dossier sur un autre (le ranger dedans) ou sur « Vos dossiers » du fil (l'en sortir). */
+  const propsGlisser = (n: Noeud) =>
+    p.ecrire && n.deplacable
+      ? {
+          draggable: true,
+          onDragStart: (e: React.DragEvent) => {
+            e.dataTransfer.setData("text/plain", n.cle);
+            e.dataTransfer.effectAllowed = "move";
+            setGlisse(n.cle);
+          },
+          onDragEnd: () => {
+            setGlisse(null);
+            setSurvol(null);
+          },
+        }
+      : {};
+  const propsRecevoir = (cible: string, accepte: boolean) =>
+    p.ecrire && accepte && glisse !== null && glisse !== cible
+      ? {
+          onDragOver: (e: React.DragEvent) => {
+            e.preventDefault();
+            setSurvol(cible);
+          },
+          onDragLeave: () => setSurvol((x) => (x === cible ? null : x)),
+          onDrop: (e: React.DragEvent) => {
+            e.preventDefault();
+            if (glisse) void ranger(glisse, cible === "vous" ? null : cible);
+          },
+        }
+      : {};
+
+  function champNom(cle: string) {
     return (
-      <button
-        key={n.cle}
-        type="button"
-        className={`ec-ph-noeud${actif ? " ec-ph-noeud--actif" : ""}${survol === n.cle && recoit ? " ec-ph-noeud--cible" : ""}`}
-        style={{ paddingLeft: 12 + niveau * 22 }}
-        aria-pressed={actif}
-        draggable={peutGlisser}
-        title={p.ecrire && n.renommable ? "Double-cliquez pour changer le nom" : undefined}
-        onClick={() => ouvrir(n.cle)}
-        onDoubleClick={() => p.ecrire && n.renommable && setEdite({ cle: n.cle, valeur: n.nom })}
+      <input
+        className="ec-champ ec-ph-nom-champ"
+        value={edite?.valeur ?? ""}
+        maxLength={80}
+        autoFocus
+        aria-label="Nouveau nom du dossier"
+        onFocus={(e) => e.currentTarget.select()}
+        onChange={(e) => setEdite({ cle, valeur: e.target.value })}
         onKeyDown={(e) => {
-          if (e.key === "F2" && p.ecrire && n.renommable) setEdite({ cle: n.cle, valeur: n.nom });
+          if (e.key === "Enter") {
+            e.preventDefault();
+            void garderNom();
+          } else if (e.key === "Escape") {
+            setEdite(null);
+          }
         }}
-        onDragStart={(e) => {
-          e.dataTransfer.setData("text/plain", n.cle);
-          e.dataTransfer.effectAllowed = "move";
-          setGlisse(n.cle);
-        }}
-        onDragEnd={() => {
-          setGlisse(null);
-          setSurvol(null);
-        }}
-        onDragOver={(e) => {
-          if (!recoit) return;
-          e.preventDefault();
-          setSurvol(n.cle);
-        }}
-        onDragLeave={() => setSurvol((s) => (s === n.cle ? null : s))}
-        onDrop={(e) => {
-          if (!recoit || !glisse) return;
-          e.preventDefault();
-          void ranger(glisse, n.cle);
-        }}
-      >
-        <Icone trace={trace} />
-        <span className="ec-ph-noeud-nom">{n.nom}</span>
-        <span className="ec-ph-noeud-n">{nombre(n.n)}</span>
-      </button>
+        onBlur={() => void garderNom()}
+      />
     );
   }
 
-  const vousTitre = (
-    <span
-      className={`ec-ph-groupe${glisse && survol === "racine" ? " ec-ph-groupe--cible" : ""}`}
-      onDragOver={(e) => {
-        if (!glisse || !arbre?.vous.some((h) => h.enfants.some((x) => x.cle === glisse))) return;
-        e.preventDefault();
-        setSurvol("racine");
-      }}
-      onDragLeave={() => setSurvol((s) => (s === "racine" ? null : s))}
-      onDrop={(e) => {
-        if (!glisse) return;
-        e.preventDefault();
-        void ranger(glisse, null);
-      }}
-    >
-      Déposées par {v("vous", "toi")}
-    </span>
-  );
+  /* Un dossier ou un lien en vignette, comme un album : sa dernière photo en couverture. */
+  function album(n: Noeud, sous: string, trace: string, petit = false) {
+    const couv = couvertures[n.cle];
+    const cible = survol === n.cle && glisse !== null && glisse !== n.cle && n.accueille;
+    return (
+      <div
+        key={n.cle}
+        className={`ec-ph-album${petit ? " ec-ph-album--petit" : ""}${cible ? " ec-ph-album--cible" : ""}${n.n === 0 ? " ec-ph-album--vide" : ""}`}
+        {...propsRecevoir(n.cle, n.accueille)}
+      >
+        <button type="button" className="ec-ph-album-couv" onClick={() => ouvrir(n.cle, "toutes")} aria-label={`Ouvrir « ${n.nom} »`} {...propsGlisser(n)}>
+          {couv ? <img src={couv} alt="" loading="lazy" decoding="async" /> : <Icone trace={trace} />}
+        </button>
+        <span className="ec-ph-album-texte">
+          {edite?.cle === n.cle ? (
+            champNom(n.cle)
+          ) : (
+            <button type="button" className="ec-ph-album-nom" onClick={() => ouvrir(n.cle, "toutes")}>
+              {n.nom}
+            </button>
+          )}
+          <span className="ec-note">{sous}</span>
+        </span>
+        {p.ecrire && n.renommable && edite?.cle !== n.cle ? (
+          <button type="button" className="ec-ph-album-renommer" aria-label={`Changer le nom de « ${n.nom} »`} title="Changer le nom" onClick={() => setEdite({ cle: n.cle, valeur: n.nom })}>
+            <Icone trace={TRACE.crayon} />
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+  const photosDe = (n: number) => `${nombre(n)} photo${n > 1 ? "s" : ""}`;
+  const sousDossier = (n: Noeud) => `${photosDe(n.n)}${n.enfants.length ? ` · ${n.enfants.length} sous-dossier${n.enfants.length > 1 ? "s" : ""}` : ""}`;
+  const sousLien = (n: Noeud) => (n.n ? `${photosDe(n.n)}${n.enfants.length > 1 ? ` · ${n.enfants.length} personnes` : ""}` : "Rien reçu pour l'instant");
+  function rayonBouton(cle: "tout" | "selection" | "vous" | "liens" | "atelier", nom: string, trace: string, n: number | null, apres = "") {
+    return (
+      <button type="button" className="ec-ph-rayon" aria-pressed={rayon === cle} onClick={() => ouvrir(cle, "toutes")}>
+        <Icone trace={trace} />
+        {nom}
+        {n !== null ? <span className="ec-ph-rayon-n">{nombre(n)}{apres}</span> : null}
+      </button>
+    );
+  }
 
   /* ── Les liens ── */
   const lienDe = (nom: string, cle: string | null, plafondTexte: string, n: number): LienPartage => ({
@@ -424,85 +471,81 @@ export default function Collecte(p: Props) {
             </div>
           ) : null}
 
+          {!vide ? (
+          <nav className="ec-ph-rayons" aria-label="Ranger les photos">
+            {rayonBouton("tout", "Toutes les photos", TRACE.tout, stats?.photos ?? null)}
+            {p.ecrire || (compteurs?.selection ?? 0) > 0
+              ? rayonBouton("selection", "Ma sélection", TRACE.selection, compteurs?.selection ?? 0, p.preselectionMax ? ` sur ${p.preselectionMax}` : "")
+              : null}
+            {arbre && (arbre.vous.length || p.ecrire) ? rayonBouton("vous", nomVous, TRACE.dossier, totalVous) : null}
+            {arbre?.liens.length ? rayonBouton("liens", "Les participants", TRACE.lien, totalLiens) : null}
+            {arbre?.atelier ? rayonBouton("atelier", "L'atelier", TRACE.atelier, arbre.atelier.n) : null}
+          </nav>
+          ) : null}
+
           <div className="ec-ph-corps">
-            <aside className="ec-ph-dossiers ec-defile" aria-label="Les dossiers">
-              <button type="button" className={`ec-ph-noeud${dossier === "tout" ? " ec-ph-noeud--actif" : ""}`} aria-pressed={dossier === "tout"} onClick={() => ouvrir("tout")}>
-                <Icone trace={TRACE.tout} />
-                <span className="ec-ph-noeud-nom">Toutes les photos</span>
-                <span className="ec-ph-noeud-n">{stats ? nombre(stats.photos) : ""}</span>
-              </button>
-              {p.ecrire || (compteurs?.selection ?? 0) > 0 ? (
-                <button type="button" className={`ec-ph-noeud ec-ph-noeud--selection${dossier === "selection" ? " ec-ph-noeud--actif" : ""}`} aria-pressed={dossier === "selection"} onClick={() => ouvrir("selection")}>
-                  <Icone trace={TRACE.selection} />
-                  <span className="ec-ph-noeud-nom">Ma sélection</span>
-                  <span className="ec-ph-noeud-n">
-                    {nombre(compteurs?.selection ?? 0)}
-                    {p.preselectionMax ? ` sur ${p.preselectionMax}` : ""}
-                  </span>
-                </button>
-              ) : null}
-
-              {arbre && (arbre.vous.length || p.ecrire) ? vousTitre : null}
-              {arbre?.vous.map((h) => (
-                <div key={h.cle} className="ec-ph-branche">
-                  {ligne(h, 0, TRACE.dossier)}
-                  {h.enfants.map((e) => ligne(e, 1, TRACE.dossier))}
-                </div>
-              ))}
-              {arbre && !arbre.vous.length && p.ecrire ? <span className="ec-note ec-ph-vide">{v("Rien déposé par vous pour l'instant.", "Rien déposé par toi pour l'instant.")}</span> : null}
-
-              {arbre?.liens.length ? <span className="ec-ph-groupe">Arrivées par les liens</span> : null}
-              {arbre?.liens.map((l) => {
-                const id = l.cle === "participants" ? "general" : l.cle.slice(5);
-                return (
-                  <div key={l.cle} className="ec-ph-branche">
-                    {ligne(l, 0, TRACE.lien)}
-                    {lienOuvert === id ? l.enfants.map((e) => ligne(e, 1, TRACE.personne)) : null}
-                  </div>
-                );
-              })}
-              {arbre?.atelier ? ligne(arbre.atelier, 0, TRACE.atelier) : null}
-
-              {p.ecrire && p.ouverte && envoi.ouvrir ? (
-                <button type="button" className="ec-ph-nouveau" onClick={() => envoi.ouvrir?.({ nouveau: true })}>
-                  + Nouveau dossier
-                </button>
-              ) : null}
-              {p.ecrire ? (
-                <span className="ec-note ec-ph-aide">
-                  {v(
-                    "Glissez un dossier sur un autre pour le ranger dedans, sur « Déposées par vous » pour l'en sortir. Double-cliquez un nom pour le changer.",
-                    "Glisse un dossier sur un autre pour le ranger dedans, sur « Déposées par toi » pour l'en sortir. Double-clique un nom pour le changer."
-                  )}
-                </span>
-              ) : null}
-            </aside>
-
-            <div className="ec-ph-principal">
+            <div className={vide && dossier === "tout" ? "ec-ph-principal ec-ph-principal--vide" : "ec-ph-principal"}>
               <div className="ec-ph-tete">
                 <span className="ec-ph-titres">
-                  <strong className="ec-ph-titre">{titre}</strong>
+                  {fil.length ? (
+                    <nav className="ec-ph-fil" aria-label={v("Où vous êtes", "Où tu es")}>
+                      {fil.map((f) => (
+                        <span key={f.cle} className="ec-ph-fil-etape">
+                          <button
+                            type="button"
+                            className={`ec-ph-lien${survol === f.cle && f.cle === "vous" && sousGlisse ? " ec-ph-fil--cible" : ""}`}
+                            onClick={() => ouvrir(f.cle, "toutes")}
+                            {...propsRecevoir(f.cle, f.cle === "vous" && sousGlisse)}
+                          >
+                            {f.nom}
+                          </button>
+                          <span aria-hidden="true">›</span>
+                        </span>
+                      ))}
+                    </nav>
+                  ) : null}
+                  {edite?.cle === dossier ? (
+                    champNom(dossier)
+                  ) : (
+                    <strong
+                      className="ec-ph-titre"
+                      title={p.ecrire && courant?.renommable ? "Double-cliquez pour changer le nom" : undefined}
+                      onDoubleClick={() => p.ecrire && courant?.renommable && setEdite({ cle: courant.cle, valeur: courant.nom })}
+                    >
+                      {titre}
+                      {p.ecrire && courant?.renommable ? (
+                        <button type="button" className="ec-ph-album-renommer ec-ph-titre-renommer" aria-label={`Changer le nom de « ${courant.nom} »`} title="Changer le nom" onClick={() => setEdite({ cle: courant.cle, valeur: courant.nom })}>
+                          <Icone trace={TRACE.crayon} />
+                        </button>
+                      ) : null}
+                    </strong>
+                  )}
                   <span className="ec-note">
-                    {compteurs ? `${nombre(compteurs.dossier)} photo${compteurs.dossier > 1 ? "s" : ""}` : ""}
-                    {courant && courant.enfants.length && dossier.startsWith("resp:")
-                      ? ` · dont ${courant.enfants.map((e) => `${nombre(e.n)} dans « ${e.nom} »`).join(", ")}`
-                      : ""}
+                    {dossier === "vous"
+                      ? `${arbre?.vous.length ?? 0} dossier${(arbre?.vous.length ?? 0) > 1 ? "s" : ""} · ${photosDe(totalVous)}`
+                      : dossier === "liens"
+                        ? `${arbre?.liens.length ?? 0} lien${(arbre?.liens.length ?? 0) > 1 ? "s" : ""} · ${photosDe(totalLiens)}`
+                        : compteurs
+                          ? photosDe(compteurs.dossier)
+                          : ""}
                     {dossier === "selection" && p.preselectionMax ? ` · ${p.preselectionMax} prévues, facultatif` : ""}
                   </span>
                 </span>
-                <span className="ec-ph-vues" role="group" aria-label="Afficher">
-                  <button type="button" className="ec-onglet" aria-pressed={vue === "toutes"} onClick={() => ouvrir(dossier, "toutes")}>
-                    Toutes
-                  </button>
-                  <button type="button" className="ec-onglet" aria-pressed={vue === "jour"} onClick={() => ouvrir(dossier, "jour")}>
-                    Par jour
-                  </button>
-                  <button type="button" className="ec-onglet" aria-pressed={vue === "doublons"} onClick={() => ouvrir(dossier, "doublons")}>
-                    Doublons{compteurs ? ` · ${compteurs.doublons}` : ""}
-                  </button>
-                </span>
+                {!ensemble && !vide ? (
+                  <span className="ec-ph-vues" role="group" aria-label="Afficher">
+                    <button type="button" className="ec-onglet" aria-pressed={vue === "toutes"} onClick={() => ouvrir(dossier, "toutes")}>
+                      Toutes
+                    </button>
+                    <button type="button" className="ec-onglet" aria-pressed={vue === "jour"} onClick={() => ouvrir(dossier, "jour")}>
+                      Par jour
+                    </button>
+                    <button type="button" className="ec-onglet" aria-pressed={vue === "doublons"} onClick={() => ouvrir(dossier, "doublons")}>
+                      Doublons{compteurs ? ` · ${compteurs.doublons}` : ""}
+                    </button>
+                  </span>
+                ) : null}
               </div>
-              {p.ecrire ? (
+              {p.ecrire && !ensemble && !vide ? (
                 <div className="ec-ph-aide-selection">
                   <span>{v("Touchez une photo pour l'ajouter à votre sélection (facultatif).", "Touche une photo pour l'ajouter à ta sélection (facultatif).")}</span>
                   {dossier === "selection" ? (
@@ -520,7 +563,89 @@ export default function Collecte(p: Props) {
               ) : null}
 
               <div className="ec-collecte-grille ec-defile" ref={zone}>
-                {photos.length === 0 && !chargement ? (
+                {dossier === "vous" && arbre ? (
+                  <>
+                    <div className="ec-ph-albums">
+                      {arbre.vous.map((h) => album(h, sousDossier(h), TRACE.dossier))}
+                      {p.ecrire && p.ouverte && envoi.ouvrir ? (
+                        <button type="button" className="ec-ph-album ec-ph-album--nouveau" onClick={() => envoi.ouvrir?.({ nouveau: true })}>
+                          <span className="ec-ph-album-couv" aria-hidden="true">
+                            +
+                          </span>
+                          <span className="ec-ph-album-texte">
+                            <strong>Nouveau dossier</strong>
+                            <span className="ec-note">{v("Donnez-lui un nom, déposez", "Donne-lui un nom, dépose")}</span>
+                          </span>
+                        </button>
+                      ) : null}
+                    </div>
+                    {!arbre.vous.length ? <p className="ec-note">{v("Rien déposé par vous pour l'instant.", "Rien déposé par toi pour l'instant.")}</p> : null}
+                    {p.ecrire && arbre.vous.length > 1 ? (
+                      <p className="ec-note ec-ph-aide">
+                        {v(
+                          "Glissez un dossier sur un autre pour le ranger dedans ; sur « Vos dossiers », en haut d'un dossier, pour l'en sortir.",
+                          "Glisse un dossier sur un autre pour le ranger dedans ; sur « Tes dossiers », en haut d'un dossier, pour l'en sortir."
+                        )}
+                      </p>
+                    ) : null}
+                  </>
+                ) : null}
+                {dossier === "liens" && arbre ? (
+                  <>
+                    <div className="ec-ph-albums">{arbre.liens.map((l) => album(l, sousLien(l), TRACE.lien))}</div>
+                    {p.ecrire ? (
+                      <p className="ec-note ec-ph-aide">
+                        {v("Partager un lien, changer son nombre de photos : l'onglet « Les liens », en haut.", "Partager un lien, changer son nombre de photos : l'onglet « Les liens », en haut.")}
+                      </p>
+                    ) : null}
+                  </>
+                ) : null}
+                {sousDossiers.length ? <div className="ec-ph-albums ec-ph-albums--petits">{sousDossiers.map((e) => album(e, photosDe(e.n), TRACE.dossier, true))}</div> : null}
+                {personnes.length && lienDuDossier ? (
+                  <div className="ec-ph-personnes" role="group" aria-label="Filtrer par personne">
+                    <button type="button" className="ec-onglet" aria-pressed={dossier === lienDuDossier.cle} onClick={() => ouvrir(lienDuDossier.cle, "toutes")}>
+                      Tout le lien · {nombre(lienDuDossier.n)}
+                    </button>
+                    {personnes.map((x) => (
+                      <button key={x.cle} type="button" className="ec-onglet" aria-pressed={dossier === x.cle} onClick={() => ouvrir(x.cle, "toutes")}>
+                        {x.nom} · {nombre(x.n)}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                {vide && dossier === "tout" ? (
+                  <div className="ec-ph-accueil">
+                    <strong className="ec-ph-accueil-titre">Les photos arriveront ici</strong>
+                    <p className="ec-texte">
+                      {p.ecrire
+                        ? v(
+                            "Déposez les vôtres, et invitez les participants : chacun dépose depuis son téléphone, sans compte. Vous les rangerez ensuite en dossiers.",
+                            "Dépose les tiennes, et invite les participants : chacun dépose depuis son téléphone, sans compte. Tu les rangeras ensuite en dossiers."
+                          )
+                        : "Le responsable et les participants déposent leurs photos ; elles s'afficheront ici."}
+                    </p>
+                    {p.ecrire && p.ouverte ? (
+                      <div className="ec-ph-accueil-gestes">
+                        {envoi.ouvrir ? (
+                          <button type="button" className="ec-bouton" onClick={() => envoi.ouvrir?.()}>
+                            Déposer des photos
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="ec-bouton ec-bouton--clair"
+                          onClick={() => {
+                            changerOnglet("liens");
+                            setFenetreLien(true);
+                          }}
+                        >
+                          Créer un lien pour les participants
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+                {!ensemble && !(vide && dossier === "tout") && photos.length === 0 && !chargement ? (
                   <div className="ec-a-venir">
                     <p className="ec-texte">
                       {dossier === "selection"

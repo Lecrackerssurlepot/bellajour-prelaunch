@@ -5,7 +5,7 @@ import { chargerAcces } from "@/lib/collectif/acces";
 import { peut } from "@/lib/collectif/droits";
 import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
 import { DELAI_DECLARATION_MORTE_MS } from "@/lib/collectif/depot";
-import { arbreDesPhotos, dansLeDossier, plafondDuLien } from "@/lib/collectif/dossiers";
+import { arbreDesPhotos, dansLeDossier, estVueEnsemble, noeudDe, plafondDuLien } from "@/lib/collectif/dossiers";
 import { jourDePhoto, TAILLE_PAGE } from "@/lib/collectif/grille";
 import { GROUPE_GENERAL } from "@/lib/collectif/partage";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
@@ -108,8 +108,11 @@ export async function POST(request: Request) {
     });
   }
 
-  /* `seulementArbre` : la fenêtre de dépôt ne veut que les dossiers, aucune vignette à signer. */
-  const tranche = corps.seulementArbre === true ? [] : liste.slice(page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE);
+  /* `seulementArbre` : la fenêtre de dépôt ne veut que les dossiers, aucune vignette à signer.
+     Une vue d'ensemble (« Vos dossiers », « Les participants ») montre des vignettes de
+     dossiers, pas de grille : rien à signer non plus. */
+  const sansGrille = corps.seulementArbre === true || estVueEnsemble(dossier);
+  const tranche = sansGrille ? [] : liste.slice(page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE);
   const photos = await Promise.all(
     tranche.map(async (p) => {
       let vignette: string | null = null;
@@ -137,6 +140,25 @@ export async function POST(request: Request) {
 
   const liens = partage ? provenances : [];
   const arbre = arbreDesPhotos(toutes, liens, edition, partage);
+  /* La couverture de chaque dossier et de chaque lien (15/10) : la dernière photo arrivée qui
+     a une vignette. Seulement dans les vues d'ensemble et dans un dossier qui en contient
+     d'autres (ses sous-dossiers s'y montrent en vignettes). */
+  const couvertures: Record<string, string> = {};
+  if (corps.seulementArbre !== true) {
+    const courant = noeudDe(arbre, dossier);
+    const aCouvrir = dossier === "vous" ? arbre.vous : dossier === "liens" ? arbre.liens : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
+    await Promise.all(
+      aCouvrir.map(async (n) => {
+        const p = [...toutes].reverse().find((l) => l.vignette_key && dansLeDossier(l, n.cle, responsable));
+        if (!p?.vignette_key) return;
+        try {
+          couvertures[n.cle] = await signerGet(p.vignette_key);
+        } catch {
+          /* une couverture manquée laisse l'icône du dossier */
+        }
+      })
+    );
+  }
   /* Le détail des liens (l'onglet « Les liens ») : chacun, ses personnes, son plafond. */
   const detailLiens = partage
     ? provenances
@@ -157,7 +179,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     photos,
     page,
-    suivante: (page + 1) * TAILLE_PAGE < liste.length ? page + 1 : null,
+    suivante: !sansGrille && (page + 1) * TAILLE_PAGE < liste.length ? page + 1 : null,
     compteurs: {
       dossier: dansDossier.length,
       liste: liste.length,
@@ -173,6 +195,7 @@ export async function POST(request: Request) {
       enCours: enRoute.count ?? 0,
     },
     arbre,
+    couvertures,
     liens: partage
       ? {
           general: { nom: GROUPE_GENERAL, plafond: plafondDuLien({ sans_plafond: false, plafond_par_personne: null }, edition), n: general.length, personnes: personnesDu(general) },

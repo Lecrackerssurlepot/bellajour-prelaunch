@@ -1273,8 +1273,275 @@
 .ec-espace .ec-ph-corps {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Les rayons (15/10) : des onglets au-dessus des photos, à la place de la
+   grande colonne de dossiers. */
+.ec-espace .ec-ph-rayons {
+  flex: none;
+  display: flex;
+  gap: 4px;
+  padding: 0 32px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--ec-line);
+}
+.ec-espace .ec-ph-rayon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 14px;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-rayon:hover {
+  color: var(--ec-text);
+}
+.ec-espace .ec-ph-rayon[aria-pressed="true"] {
+  color: var(--ec-text);
+  font-weight: 600;
+  border-bottom-color: var(--ec-accent);
+}
+.ec-espace .ec-ph-rayon > svg {
+  flex: none;
+}
+.ec-espace .ec-ph-rayon[aria-pressed="true"] > svg {
+  color: var(--ec-accent);
+}
+.ec-espace .ec-ph-rayon-n {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(var(--ec-fg-rgb), 0.07);
+  font-size: 12px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Le fil d'Ariane au-dessus du titre ; « Vos dossiers » reçoit un sous-dossier qu'on en sort. */
+.ec-espace .ec-ph-fil {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ph-fil-etape {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ec-espace .ec-ph-fil .ec-ph-lien {
+  border-radius: 6px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+}
+.ec-espace .ec-ph-fil--cible {
+  background: var(--ec-accent-soft);
+  outline: 2px dashed var(--ec-accent);
+}
+.ec-espace .ec-ph-titre {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.ec-espace .ec-ph-nom-champ {
+  min-height: 40px;
+  max-width: 420px;
+  border-color: var(--ec-accent);
+}
+
+/* Les dossiers et les liens en vignettes, comme des albums. */
+.ec-espace .ec-ph-albums {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 22px 18px;
+  padding: 4px 0 6px;
+}
+.ec-espace .ec-ph-albums--petits {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.ec-espace .ec-ph-album {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.ec-espace .ec-ph-album-couv {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--ec-line);
+  border-radius: 14px;
+  background: var(--ec-surface);
+  color: var(--ec-muted);
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.ec-espace .ec-ph-album-couv > svg {
+  width: 34px;
+  height: 34px;
+}
+.ec-espace .ec-ph-album-couv img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ec-espace .ec-ph-album-couv[draggable="true"] {
+  cursor: grab;
+}
+.ec-espace .ec-ph-album:hover .ec-ph-album-couv {
+  border-color: rgba(var(--ec-ac-rgb), 0.6);
+}
+.ec-espace .ec-ph-album--cible .ec-ph-album-couv {
+  border-color: var(--ec-accent);
+  outline: 3px solid var(--ec-accent);
+  outline-offset: -3px;
+  background: var(--ec-accent-soft);
+  transform: scale(1.02);
+}
+.ec-espace .ec-ph-album-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.ec-espace .ec-ph-album-nom {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-album--petit .ec-ph-album-nom {
+  font-size: 14px;
+}
+.ec-espace .ec-ph-album-renommer {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(var(--ec-fg-rgb), 0.14);
+  border-radius: 999px;
+  background: var(--ec-glass);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: var(--ec-text);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.ec-espace .ec-ph-album:hover .ec-ph-album-renommer,
+.ec-espace .ec-ph-album-renommer:focus-visible {
+  opacity: 1;
+}
+.ec-espace .ec-ph-titre-renommer {
+  position: static;
+  width: 30px;
+  height: 30px;
+  opacity: 0.7;
+}
+.ec-espace .ec-ph-titre:hover .ec-ph-titre-renommer {
+  opacity: 1;
+}
+@media (hover: none) {
+  .ec-espace .ec-ph-album-renommer {
+    opacity: 1;
+  }
+}
+.ec-espace .ec-ph-album--nouveau {
+  cursor: pointer;
+}
+.ec-espace .ec-ph-album--nouveau .ec-ph-album-couv {
+  border: 1px dashed var(--ec-filet-fort);
+  background: transparent;
+  font-size: 34px;
+  font-weight: 300;
+}
+.ec-espace .ec-ph-album--nouveau:hover .ec-ph-album-couv {
+  border-color: var(--ec-accent);
+  color: var(--ec-accent);
+}
+.ec-espace .ec-ph-personnes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.ec-espace .ec-ph-albums ~ .ec-ph-aide {
+  margin-top: 16px;
+  padding: 0;
+}
+.ec-espace .ec-ph-album--vide .ec-ph-album-couv {
+  border-style: dashed;
+  background: transparent;
+  opacity: 0.7;
+}
+/* Une édition sans photo : un accueil et les deux gestes, pas des compteurs à zéro. */
+.ec-espace .ec-ph-principal--vide > .ec-ph-tete {
+  display: none;
+}
+.ec-espace .ec-ph-accueil {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 620px;
+  padding: 36px 32px;
+  border: 1px dashed var(--ec-filet-fort);
+  border-radius: 20px;
+}
+.ec-espace .ec-ph-accueil-titre {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.1;
+}
+.ec-espace .ec-ph-accueil .ec-texte {
+  margin: 0;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ph-accueil-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
 }
 .ec-espace .ec-ph-dossiers {
   display: flex;
@@ -2230,6 +2497,20 @@
   }
   .ec-espace .ec-ph-principal {
     padding: 14px 16px 0;
+  }
+  .ec-espace .ec-ph-rayons {
+    padding: 0 8px;
+  }
+  .ec-espace .ec-ph-rayon {
+    min-height: 44px;
+    padding: 0 10px;
+  }
+  .ec-espace .ec-ph-albums {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 12px;
+  }
+  .ec-espace .ec-ph-albums--petits {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .ec-espace .ec-ph-chiffres {
     padding: 12px 16px;
