@@ -159,7 +159,18 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return `Style retiré du mur par ${par}.`;
     case "style_image":
       return `Image ajoutée par ${par}.`;
+    case "mail_envoye":
+      return `Mail ${libelleMail(payload.code)} envoyé à ${String(payload.a ?? "?")}.`;
+    case "mail_echec":
+      return `Mail ${libelleMail(payload.code)} NON parti (${String(payload.statut ?? "?")}) à ${String(payload.a ?? "?")}.`;
     default:
       return type;
   }
+}
+
+/** Le nom d'un mail des éditions dans le journal, d'après son code (`mails.ts`). */
+function libelleMail(code: unknown): string {
+  const c = String(code ?? "");
+  if (c.startsWith("ESPACE")) return "« Votre espace est prêt »";
+  return `« ${c} »`;
 }

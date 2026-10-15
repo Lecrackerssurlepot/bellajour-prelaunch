@@ -17,6 +17,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { cheminPublic, MASQUE } from "@/lib/analytics/chemin";
 import { groupesDeDoublons } from "@/lib/atelier/empreinte";
+import * as MailsTextes from "@/lib/collectif/mailsTextes";
 import {
   cleContenu,
   cleCouverture,
@@ -1882,6 +1883,26 @@ titre("— T-150 : les HEIC ont leur aperçu et leur empreinte —");
       const r = lire("scripts/collectif-heic-rattrapage.ts");
       return /const vraiment = process\.argv\.includes\("--vraiment"\)/.test(r) && r.indexOf("PutObjectCommand({") < r.indexOf('update({ vignette_key: key })') && /lireDepuisCoffre\(\{ r2_key: l\.r2_key, taille: l\.taille, vignette_key: key \}\)/.test(r);
     })());
+titre("— T-146 : les mails des éditions, un seul circuit, coupé par défaut —");
+{
+  const textes = MailsTextes;
+  const base = { organisation: "Maison Aubier", evenement: "Séminaire d'automne", responsable: "Camille Essai", lien: "https://bellajour.fr/edition/ABCDEFGHIJKLMNOPQRSTUVWXYZ012345", cloture: "28 octobre", avecCode: false };
+  const vous = textes.mailEspacePret({ ...base, tu: false });
+  const toi = textes.mailEspacePret({ ...base, tu: true });
+  const avecCode = textes.mailEspacePret({ ...base, tu: false, avecCode: true });
+  ok("« Votre espace est prêt » : le lien du responsable, l'evenement dans l'objet, vous ou tu, Bonjour + prenom",
+    vous.html.includes(base.lien) && vous.texte.includes(base.lien) && vous.sujet.includes("Séminaire d'automne") && vous.sujet.startsWith("Votre") && toi.sujet.startsWith("Ton") && /Bonjour Camille,/.test(vous.texte) && /tu choisis/.test(toi.texte) && /vous choisissez/.test(vous.texte));
+  ok("« Votre espace est prêt » : aucun tiret cadratin ni demi-cadratin, rien n'est injecte sans echappement",
+    ![vous, toi, avecCode].some((m) => /[—–]/.test(m.html + m.texte + m.sujet)) && textes.mailEspacePret({ ...base, tu: false, evenement: "<script>" }).html.includes("&lt;script&gt;"));
+  ok("« Votre espace est prêt » : le code par appareil n'est annonce QUE quand il est en service (T-154)",
+    !/un code/.test(vous.texte) && /un code/.test(avecCode.texte));
+  const circuit = lire("src/lib/collectif/mails.ts");
+  ok("circuit : coupe par defaut (COLLECTIF_MAILS, ATELIER_MAILS_COUPES), verrou AVANT Brevo et RETIRE si Brevo refuse ou si le reseau tombe, journal",
+    /export const VAR_MAILS_COLLECTIF = "COLLECTIF_MAILS";/.test(circuit) && circuit.indexOf("lireInterrupteur(process.env[VAR_MAILS_COLLECTIF]).ouvert") < circuit.indexOf("fetch(BREVO_SMTP_URL")
+      && circuit.indexOf('from("collectif_mails").insert') < circuit.indexOf("fetch(BREVO_SMTP_URL") && (circuit.match(/await retirer\(\);/g) ?? []).length === 2 && /"mail_envoye"/.test(circuit) && /"mail_echec"/.test(circuit));
+  const routeMail = lire("src/app/api/admin/collectif/editions/[id]/mail-espace/route.ts");
+  ok("route du mail : admin revérifié, « verifier » ne fait rien partir, une edition archivee ne recoit rien, le verrou suit le lien (regenerer permet de renvoyer)",
+    /quiEstConnecteRequete\(request\)/.test(routeMail) && routeMail.indexOf("corps.verifier === true") < routeMail.indexOf("envoyerMailCollectif({") && /archive_le\) return/.test(routeMail) && /createHash\("sha256"\)\.update\(p\.edition\.token_responsable\)/.test(routeMail));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
