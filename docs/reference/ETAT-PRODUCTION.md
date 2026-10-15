@@ -1,4 +1,4 @@
-# État du système — au 15/10/2026 (après-midi)
+# État du système — au 15/10/2026 (fin d'après-midi)
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -10,7 +10,22 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
-## 15/10/2026 (après-midi) — Porcelaine le jour, Charbon la nuit, l'atelier aussi : sur branche
+## 15/10/2026 (fin d'après-midi) — PR #234 FUSIONNÉE : Porcelaine et l'atelier en cartes en production
+
+- **PR #234 fusionnée dans `main` le 15/10 à 12 h 18 (Paris)**, commit `e4fb760` : les 19 commits
+  de `feat/collectif-retours-ux-1` (T-151, T-152, Porcelaine et Charbon, la fiche d'une édition en
+  cartes, le tableau de bord et les Photos repris contre les maquettes).
+- **Visible en production** : la table de travail des particuliers en Porcelaine (CSS seul) et la
+  barre commune en tête de chaque écran de l'atelier, sans le commutateur « Particuliers |
+  Éditions ».
+- **L'Édition collective reste FERMÉE en production** : aucune variable `COLLECTIF*` dans le
+  projet Vercel (relevé du 15/10, toutes cibles confondues). `/edition`, `/depot` et
+  `/admin/collectif` répondent 404.
+- Migrations de la branche toutes appliquées avant la fusion : `20261016`, `20261017`, `20261018`.
+- Choix de Mathias du 15/10 : l'éventail de l'encart Style montre TOUJOURS Lisbonne, Aussie et la
+  Côte d'Azur (« garde ces trois-là »), plus les couvertures des styles du mur.
+
+## 15/10/2026 (après-midi) — Porcelaine le jour, Charbon la nuit, l'atelier aussi : fusionné (PR #234)
 
 - **Validé par Mathias le 15/10** sur les maquettes « direction visuelle »
   (https://claude.ai/artifact/QwBWzndAtne3hSmkWmQEr2) : Porcelaine pour le jour, Charbon pour la
