@@ -1946,9 +1946,11 @@ titre("— T-154 : le lien du responsable ne s'ouvre que sur un appareil reconnu
     /appareil=\{appareilInconnu \? \{ adresse: adresseMasquee\(edition\.responsable_email\) \} : null\}/.test(layoutEspace) && !/CodeAppareil/.test(layoutEspace)
       && /<PastilleAppareil \/>/.test(lire("src/app/edition/_composants/Ecran.tsx")) && /<AppareilFournisseur /.test(lire("src/app/edition/[token]/Coquille.tsx"))
       && fichiers("src/app/edition/[token]", "page.tsx").every((f) => !/appareil_inconnu/.test(lire(f))));
-  const mailCode = MailsTextes.mailCodeAppareil({ tu: false, evenement: "Séminaire", code: "123456", minutes: 15, site: "https://bellajour.fr" });
+  ok("reglages souples (Mathias, 16/10 : « il faut pas que ça soit très compliqué ») : 24 heures par code, 10 essais, 10 codes par heure ; la duree s'ecrit en clair",
+    A.DUREE_CODE_MS === 24 * 60 * 60_000 && A.ESSAIS_MAX === 10 && A.CODES_PAR_HEURE === 10 && A.libelleDuree(A.DUREE_CODE_MS) === "24 heures" && A.libelleDuree(60 * 60_000) === "1 heure" && A.libelleDuree(15 * 60_000) === "15 minutes");
+  const mailCode = MailsTextes.mailCodeAppareil({ tu: false, evenement: "Séminaire", code: "123456", duree: "24 heures", site: "https://bellajour.fr" });
   ok("le mail du code : les six chiffres, la duree, d'ou vient la demande, aucun tiret cadratin",
-    mailCode.sujet.includes("123 456") && mailCode.texte.includes("123 456") && /15 minutes/.test(mailCode.texte) && /bellajour\.fr/.test(mailCode.texte) && !/[—–]/.test(mailCode.html + mailCode.texte));
+    mailCode.sujet.includes("123 456") && mailCode.texte.includes("123 456") && /valable 24 heures/.test(mailCode.texte) && /bellajour\.fr/.test(mailCode.texte) && !/[—–]/.test(mailCode.html + mailCode.texte));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

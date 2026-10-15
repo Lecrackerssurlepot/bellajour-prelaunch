@@ -58,4 +58,5 @@ l'écriture passe ; autre appareil → lecture ; lien d'équipe, atelier → rie
 
 ## Reste
 - « Retrouver mon espace » et le lien dans `/compte`.
-- Valider les réglages : 15 minutes, 5 essais, 5 codes par heure.
+- ~~Valider les réglages~~ : tranchés le 16/10 sur délégation de Mathias (« tu choisis, mais il faut
+  pas que ça soit très compliqué ») : 24 heures par code, 10 essais, 10 codes par heure.

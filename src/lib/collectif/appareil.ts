@@ -26,13 +26,23 @@ export const COOKIE_APPAREIL = "bj_ec_appareil";
 /** Un an : au-delà, on redemande un code (les navigateurs plafonnent à 400 jours). */
 export const DUREE_APPAREIL_S = 365 * 24 * 60 * 60;
 
-/* ── Réglages PROPOSÉS par Claude le 15/10, à valider par Mathias ── */
-/** Durée de validité d'un code. */
-export const DUREE_CODE_MS = 15 * 60_000;
+/* ── Réglages SOUPLES, choisis le 16/10 sur délégation de Mathias : « tu choisis,
+   mais il faut pas que ça soit très compliqué pour les gens […] c'est pour créer
+   un magazine ». Un frein contre les modifications, pas un coffre-fort. ── */
+/** Durée de validité d'un code : le temps d'ouvrir ses mails sans se presser. */
+export const DUREE_CODE_MS = 24 * 60 * 60_000;
 /** Essais par code : au-delà, il faut en redemander un. */
-export const ESSAIS_MAX = 5;
+export const ESSAIS_MAX = 10;
 /** Codes envoyés par heure pour une même édition : un frein contre l'envoi en rafale. */
-export const CODES_PAR_HEURE = 5;
+export const CODES_PAR_HEURE = 10;
+
+/** « 24 heures », « 1 heure », « 15 minutes » : la durée telle qu'elle s'écrit dans le mail. */
+export function libelleDuree(ms: number): string {
+  const minutes = Math.round(ms / 60_000);
+  if (minutes % 60 !== 0) return `${minutes} minute${minutes > 1 ? "s" : ""}`;
+  const heures = minutes / 60;
+  return `${heures} heure${heures > 1 ? "s" : ""}`;
+}
 
 /** Le contrôle est-il en service ? (Lu à chaque appel ; une valeur incomprise FERME.) */
 export function controleAppareilActif(env: Record<string, string | undefined>): boolean {

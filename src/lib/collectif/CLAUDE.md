@@ -432,8 +432,9 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   la base n'en garde que l'empreinte ; un code n'existe en clair que dans le mail, la base garde
   son empreinte LIÉE à l'appareil qui l'a demandé. Régénérer le lien du responsable rend tous ses
   appareils inconnus (`lien_empreinte`).
-- Réglages proposés, à valider par Mathias (`appareil.ts`) : 15 minutes par code, 5 essais,
-  5 codes par heure et par édition. `COLLECTIF_CODE_ESSAI` fixe le code pour une recette LOCALE :
+- Réglages SOUPLES, choisis le 16/10 sur délégation de Mathias (« il faut pas que ça soit très
+  compliqué pour les gens ») : 24 heures par code, 10 essais, 10 codes par heure et par édition,
+  appareil reconnu un an (`appareil.ts`). `COLLECTIF_CODE_ESSAI` fixe le code pour une recette LOCALE :
   il ne vaut que pour une demande venue de localhost (le `.env.local` tiré de Vercel contient
   `VERCEL`). Une seule route lit l'accès sans le contrôle : `/api/collectif/appareil`.
 
