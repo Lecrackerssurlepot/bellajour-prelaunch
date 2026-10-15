@@ -1,0 +1,86 @@
+"use client";
+
+/* Le formulaire de « Retrouver mon espace » : une adresse, un bouton, une
+   réponse qui ne dit JAMAIS si l'adresse est connue (la route non plus). */
+
+import { useState } from "react";
+
+export default function FormulaireRetrouver({ ouvert }: { ouvert: boolean }) {
+  const [email, setEmail] = useState("");
+  const [etat, setEtat] = useState<"saisie" | "envoi" | "fait">("saisie");
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  async function envoyer(e: React.FormEvent) {
+    e.preventDefault();
+    setEtat("envoi");
+    setErreur(null);
+    try {
+      const rep = await fetch("/api/collectif/retrouver", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const json = (await rep.json().catch(() => ({}))) as { message?: string };
+      if (!rep.ok) {
+        setErreur(json.message ?? "La demande n'a pas pu partir. Réessayez dans un instant.");
+        setEtat("saisie");
+        return;
+      }
+      setEtat("fait");
+    } catch {
+      setErreur("Le réseau n'a pas répondu. Réessayez dans un instant.");
+      setEtat("saisie");
+    }
+  }
+
+  if (!ouvert) {
+    return (
+      <div className="ec-retrouver">
+        <p>Ce service ouvre bientôt. En attendant, écrivez à l&apos;atelier : il vous renverra votre lien.</p>
+        <a className="ec-retrouver-mail" href="mailto:contact@bellajour.com">
+          contact@bellajour.com
+        </a>
+      </div>
+    );
+  }
+
+  if (etat === "fait") {
+    return (
+      <div className="ec-retrouver">
+        <p>
+          {/* L'espace explicite : le compilateur React avalait celui qui suit </strong> (vu le 16/10). */}
+          C&apos;est noté. Si <strong>{email}</strong>{" "}est l&apos;adresse d&apos;un responsable, son lien vient de partir.
+        </p>
+        <p className="ec-retrouver-note">Pensez à regarder dans les indésirables. Rien reçu ? Écrivez à contact@bellajour.com.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form className="ec-retrouver" onSubmit={envoyer}>
+      <p>L&apos;adresse e-mail du responsable de l&apos;édition : si un espace lui correspond, nous y envoyons son lien.</p>
+      <label className="ec-retrouver-label" htmlFor="ec-retrouver-email">
+        Adresse e-mail
+      </label>
+      <input
+        id="ec-retrouver-email"
+        className="ec-retrouver-champ"
+        type="email"
+        autoComplete="email"
+        inputMode="email"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="nom@entreprise.fr"
+      />
+      <button type="submit" className="ec-retrouver-bouton" disabled={etat === "envoi" || !email.includes("@")}>
+        {etat === "envoi" ? "Envoi…" : "Recevoir mon lien"}
+      </button>
+      {erreur ? (
+        <p className="ec-retrouver-erreur" role="alert">
+          {erreur}
+        </p>
+      ) : null}
+    </form>
+  );
+}

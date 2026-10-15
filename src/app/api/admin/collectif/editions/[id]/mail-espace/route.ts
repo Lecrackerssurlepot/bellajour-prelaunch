@@ -46,6 +46,7 @@ async function preparer(request: Request, id: string) {
     lien: liensEdition(origine, data).responsable,
     cloture: data.cloture_le ? formaterJourParis(data.cloture_le) : null,
     avecCode: controleAppareilActif(process.env),
+    retrouver: `${origine.replace(/^https?:\/\//, "")}/espace`,
   });
   return { supabase, edition: data, mail } as const;
 }

@@ -78,6 +78,10 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     return [
+      /* « Retrouver mon espace » (T-154) : l'adresse courte qu'écrivent les mails
+         des éditions, « bellajour.fr/espace ». Temporaire (307) : la page peut
+         déménager sans qu'un navigateur garde l'ancienne cible. */
+      { source: "/espace", destination: "/edition/retrouver", permanent: false },
       /* ── L'ANCIENNE ADRESSE DES PAGES LÉGALES (déplacée ici le 09/09/2026) ──
          Avant T-083, les traductions vivaient sur `/cgv?lang=en` ; depuis, elles
          ont leur adresse propre (`/en/cgv`, `/pt/cgv`), et les quatre pages

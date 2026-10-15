@@ -31,7 +31,14 @@ const BREVO_SMTP_URL = "https://api.brevo.com/v3/smtp/email";
 
 export type EtatEnvoi = "envoye" | "coupe" | "deja" | "echec";
 
-/** Les mails des éditions peuvent-ils partir ? (Lu à chaque appel : une valeur incomprise FERME.) */
+/** Le service est-il ouvert (`COLLECTIF_MAILS`) ? Les pages publiques ne regardent QUE lui :
+    en local, `ATELIER_MAILS_COUPES` coupe l'envoi lui-même (et le dit au journal du serveur),
+    sans changer ce que la page montre, pour qu'on puisse en faire la recette. */
+export function mailsCollectifEnService(): boolean {
+  return lireInterrupteur(process.env[VAR_MAILS_COLLECTIF]).ouvert;
+}
+
+/** Les mails des éditions peuvent-ils VRAIMENT partir d'ici ? (Lu à chaque appel : une valeur incomprise FERME.) */
 export function mailsCollectifOuverts(): boolean {
   return lireInterrupteur(process.env[VAR_MAILS_COLLECTIF]).ouvert && !envoisCoupes(process.env[VAR_MAILS_COUPES]);
 }

@@ -70,3 +70,73 @@
   color: var(--c-text-faint);
   overflow-wrap: anywhere;
 }
+
+/* « Retrouver mon espace » (T-154) : un champ, un bouton, dans la porte. */
+.bj-atelier .ec-retrouver {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  width: min(360px, 100%);
+  margin: 0 auto;
+  font-family: var(--font-ui);
+  color: var(--c-text-soft);
+}
+.bj-atelier .ec-retrouver p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+}
+.bj-atelier .ec-retrouver strong {
+  color: var(--c-text-pure);
+  overflow-wrap: anywhere;
+}
+.bj-atelier .ec-retrouver-label {
+  margin-top: 6px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--c-text-faint);
+}
+.bj-atelier .ec-retrouver-champ {
+  height: 52px;
+  padding: 0 16px;
+  border: 1px solid var(--c-line-md);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--c-text-pure);
+  font: inherit;
+  font-size: 16px;
+}
+.bj-atelier .ec-retrouver-champ:focus {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+.bj-atelier .ec-retrouver-bouton {
+  height: 52px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--c-accent);
+  color: var(--c-text-onaccent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bj-atelier .ec-retrouver-bouton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.bj-atelier .ec-retrouver-mail {
+  color: var(--c-accent);
+  font-size: 16px;
+}
+.bj-atelier .ec-retrouver-note {
+  font-size: 13px;
+  color: var(--c-text-faint);
+}
+.bj-atelier .ec-retrouver-erreur {
+  font-size: 14px;
+  color: var(--c-accent);
+}
+.bj-atelier .ec-porte-lien {
+  color: var(--c-accent);
+}
