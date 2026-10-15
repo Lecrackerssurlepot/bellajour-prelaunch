@@ -215,7 +215,8 @@ répond `introuvable` à l'identique pour un lien inconnu, archivé, ou tapé su
 
 Client : `.bj-atelier` + scope propre (`.ec-espace`, `.ec-depot`), Cormorant Garamond **400**
 (jamais 500 : T-059) et DM Sans. Toute classe préfixée `ec-` et écrite sous son scope : une
-feuille chargée ne se décharge jamais en navigation client. Admin : monde CRÈME, classes de la
+feuille chargée ne se décharge jamais en navigation client. Admin : PORCELAINE depuis le 15/10
+(les jetons crème redéfinis dans `admin.css`, voir `src/app/admin/CLAUDE.md`), classes de la
 table de travail. Masculin générique à l'écran (« le responsable »), même si le PRD écrit « la
 responsable ».
 
@@ -238,6 +239,18 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   observe SA zone (`root`), nul sur téléphone (Photos).
 - **Les fenêtres sont en verre** (`Fenetre`, `cote` pour le panneau latéral) et couvrent la
   colonne de contenu, pas le menu.
+- **Porcelaine le jour, Charbon la nuit, du verre partout (15/10, maquettes « direction
+  visuelle » validées par Mathias).** La nuit n'est plus un noir pur (`--ec-bg: #17181c`, texte
+  `#ecedf0` : 15,2 : 1 ; légendes 5,5 : 1, mesurés) ; le jour n'est plus beige (`#f3f4f7`, le bleu
+  de Bellajour). La FORME est en jetons communs : `--ec-r-panneau` 28, `--ec-r-carte` 24,
+  `--ec-r-bloc` 16, `--ec-r-champ` 14, `--ec-flou`, `--ec-carte` / `--ec-carte-bord` /
+  `--ec-ombre-carte` (un panneau de verre), `--ec-actif` (l'onglet ou l'élément ouvert : une
+  pilule claire), `--ec-creux` (le fond d'une pilule segmentée). La coquille FLOTTE : marge de
+  16 px, menu de verre arrondi, deux taches floues derrière (`.ec-coquille::before/::after`,
+  `--ec-aurore-*`). ⚠️ **Plus de traits entre les sections** : un bloc nouveau est un panneau de
+  verre posé sur le fond (ou une ligne claire arrondie dans un panneau), jamais une zone séparée
+  par un `border-bottom`. Un panneau de verre qui contient une zone `position: sticky` repasse en
+  `overflow: visible` sur téléphone (sinon le collant ne colle plus).
 - **Le plafond appartient au LIEN** (`plafond_par_personne`, compté par appareil SUR ce lien :
   `compterPourPlafond(…, provenanceId)`). « Sans limite » = `sans_plafond`. Un lien d'avant la
   révision garde l'ancienne règle (`plafondParticipant`). Le curseur va de 5 à

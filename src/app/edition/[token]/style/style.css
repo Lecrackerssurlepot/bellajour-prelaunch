@@ -8,8 +8,9 @@
 .ec-espace .ec-st-etiquette {
   display: inline-flex;
   align-items: center;
-  font-size: 11px;
-  letter-spacing: 0.16em;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ec-muted);
 }
@@ -99,8 +100,8 @@
 }
 .ec-espace .ec-st-choix {
   min-height: 44px;
-  padding: 6px 12px;
-  border-radius: 12px;
+  padding: 6px 14px;
+  border-radius: var(--ec-r-champ);
   border: 1px solid var(--ec-line-fort);
   background: transparent;
   color: var(--ec-text);
@@ -122,8 +123,7 @@
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 10px 32px;
-  border-bottom: 1px solid var(--ec-line);
+  padding: 0 8px 14px;
 }
 .ec-espace .ec-st-mags-liste {
   display: flex;
@@ -135,11 +135,12 @@
   flex-direction: column;
   justify-content: center;
   min-height: 52px;
-  padding: 6px 16px;
+  padding: 6px 18px;
   box-sizing: border-box;
-  border-radius: 14px;
-  border: 1px solid var(--ec-line-fort);
-  background: transparent;
+  border-radius: 20px;
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-douce);
   color: var(--ec-text);
   font: inherit;
   font-size: 14px;
@@ -171,9 +172,14 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 32px;
-  border-top: 1px solid var(--ec-line);
-  background: var(--ec-panel);
+  margin-top: 12px;
+  padding: 12px 12px 12px 24px;
+  border-radius: var(--ec-r-carte);
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-glass);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
 }
 .ec-espace .ec-st-pied-texte {
   flex: 1;
@@ -192,14 +198,20 @@
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 0;
+  gap: 16px;
   align-items: stretch;
 }
 .ec-espace .ec-mur-mur {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 24px 32px 32px;
+  padding: 24px 28px 28px;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
 }
 .ec-espace .ec-mur-intro {
   display: flex;
@@ -217,9 +229,13 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 24px;
-  border-left: 1px solid var(--ec-line);
-  background: var(--ec-panel);
+  padding: 24px 22px;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
 }
 .ec-espace .ec-mur-brief-tete {
   display: flex;
@@ -231,21 +247,25 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
-  padding: 14px;
-  border-radius: 14px;
+  padding: 16px;
+  border-radius: 20px;
   border: 1px dashed var(--ec-line-fort);
 }
 .ec-espace .ec-mur-lignes {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 .ec-espace .ec-mur-lignes li {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px 0;
-  border-top: 1px solid var(--ec-line);
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--ec-surface);
 }
 .ec-espace .ec-mur-ligne-texte {
   flex: 1;
@@ -260,9 +280,9 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(var(--ec-ac-rgb), 0.5);
+  padding: 16px;
+  border-radius: 20px;
+  border: 0;
   background: var(--ec-accent-soft);
 }
 .ec-espace .ec-mur-gestes {
@@ -280,19 +300,28 @@
 .ec-espace .ec-fiche-defile {
   flex: 1;
   min-height: 0;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
 }
 /* La barre d'étapes, collée en haut de la zone qui défile. */
 .ec-espace .ec-fiche-etapes {
   position: sticky;
-  top: 0;
+  top: 12px;
   z-index: 5;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 10px 32px;
-  border-bottom: 1px solid var(--ec-line);
+  margin: 12px 12px 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-carte-bord);
   background: var(--ec-glass);
+  box-shadow: var(--ec-ombre-douce);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
 }
@@ -350,7 +379,7 @@
 .ec-espace .ec-fiche-couv img {
   display: block;
   width: 100%;
-  border-radius: 6px;
+  border-radius: 16px;
   box-shadow: 0 24px 50px var(--ec-ombre);
 }
 .ec-espace .ec-fiche-deux {
@@ -573,7 +602,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 6px;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 2px solid transparent;
   background: transparent;
   color: var(--ec-text);
@@ -628,7 +657,7 @@
 .ec-espace .ec-piece-visuel {
   position: relative;
   aspect-ratio: 3 / 4;
-  border-radius: 10px;
+  border-radius: 14px;
   overflow: hidden;
   background: rgba(var(--ec-fg-rgb), 0.05);
 }
@@ -753,9 +782,11 @@
   .ec-espace .ec-bf-cartes {
     padding: 16px;
   }
+  .ec-espace .ec-mur .ec-mur-corps {
+    gap: 12px;
+    padding: 0 8px;
+  }
   .ec-espace .ec-mur-brief {
-    border-left: 0;
-    border-top: 1px solid var(--ec-line);
     padding: 20px 16px;
   }
   .ec-espace .ec-fiche-etapes {
@@ -766,10 +797,11 @@
   }
   .ec-espace .ec-st-pied {
     position: sticky;
-    bottom: 0;
+    bottom: 8px;
     z-index: 20;
     flex-wrap: wrap;
-    padding: 12px 16px;
+    margin: 12px 8px 8px;
+    padding: 12px 14px;
   }
   .ec-espace .ec-st-trois {
     grid-template-columns: minmax(0, 1fr);

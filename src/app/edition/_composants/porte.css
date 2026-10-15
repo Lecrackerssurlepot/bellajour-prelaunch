@@ -9,8 +9,8 @@
   place-items: center;
   min-height: var(--app-height);
   padding: clamp(32px, 8vw, 72px) 16px;
-  background: var(--c-void);
-  color: var(--c-text);
+  background: #17181c;
+  color: #ecedf0;
   text-align: center;
 }
 

@@ -368,7 +368,7 @@
 .eca-root .eca-bulle {
   max-width: 88%;
   padding: 8px 12px;
-  border-radius: 12px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.85);
   border: 1px solid var(--bj-veil-8);
   font-size: var(--bj-fs-sm);
@@ -867,9 +867,12 @@
 }
 .eca-root .eca-boite > * {
   min-height: 0;
-  border: 1px solid var(--bj-veil-8);
-  border-radius: var(--bj-r-lg, 16px);
+  border: 1px solid var(--adm-verre-bord, var(--bj-veil-8));
+  border-radius: 28px;
   background: var(--ate-carte-bg);
+  box-shadow: var(--adm-verre-ombre, none);
+  -webkit-backdrop-filter: var(--adm-flou, none);
+  backdrop-filter: var(--adm-flou, none);
 }
 .eca-root .eca-boite-liste {
   display: flex;
@@ -941,7 +944,7 @@
   display: flex;
   gap: 10px;
   padding: 10px;
-  border-radius: 12px;
+  border-radius: 16px;
   color: var(--bj-text);
   text-decoration: none;
 }
@@ -1071,7 +1074,7 @@
   flex-direction: column;
   gap: 2px;
   padding: 10px;
-  border-radius: 12px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.75);
   font-size: var(--bj-fs-xxs);
   color: var(--bj-text-soft);
@@ -1156,18 +1159,26 @@
   align-items: flex-start;
   gap: 6px;
   margin-left: auto;
-  padding: 10px 16px;
-  border-radius: 14px;
-  background: var(--ate-carte-bg);
-  border: 1px solid var(--bj-veil-8);
+  padding: 12px 18px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px var(--bj-veil-6);
   max-width: 380px;
 }
+/* 15/10 : les onglets de la fiche, une pilule de verre ; l'onglet ouvert en encre. */
 .eca-root .eca-onglets {
   display: flex;
-  gap: 2px;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  gap: 4px;
+  padding: 4px;
   overflow-x: auto;
   margin-bottom: var(--bj-sp-5);
-  border-bottom: 1px solid var(--bj-veil-12);
+  border-radius: 999px;
+  border: 1px solid var(--adm-verre-bord, var(--bj-veil-8));
+  background: var(--adm-verre, rgba(255, 255, 255, 0.7));
+  box-shadow: 0 8px 24px var(--bj-veil-6);
   scrollbar-width: none;
 }
 .eca-root .eca-onglet {
@@ -1175,10 +1186,10 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 14px;
-  margin-bottom: -1px;
+  min-height: 38px;
+  padding: 0 14px;
   border: 0;
-  border-bottom: 2px solid transparent;
+  border-radius: 999px;
   background: transparent;
   font: inherit;
   font-size: var(--bj-fs-sm);
@@ -1191,9 +1202,9 @@
   color: var(--bj-text);
 }
 .eca-root .eca-onglet[aria-current="page"] {
-  color: var(--bj-text);
+  color: #ffffff;
   font-weight: 600;
-  border-bottom-color: var(--bj-text);
+  background: var(--bj-text);
 }
 .eca-root .eca-onglet-corps[hidden] {
   display: none;
@@ -1211,13 +1222,15 @@
   align-items: flex-start;
   gap: 10px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: 20px;
   background: var(--ate-carte-bg);
-  border: 1px solid var(--bj-veil-8);
+  border: 1px solid var(--adm-verre-bord, var(--bj-veil-8));
+  box-shadow: 0 6px 18px var(--bj-veil-6);
 }
 .eca-root .eca-etape--encours {
-  border-color: var(--bj-action-border);
+  border-color: transparent;
   background: var(--bj-action-soft);
+  box-shadow: inset 0 0 0 1.5px var(--bj-action-border), 0 6px 18px var(--bj-veil-6);
 }
 .eca-root .eca-etape-signe {
   flex: none;

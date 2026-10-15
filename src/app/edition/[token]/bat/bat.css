@@ -24,13 +24,13 @@
 .ec-espace .ec-bat-segments {
   display: inline-flex;
   gap: 4px;
-  padding: 3px;
-  border: 1px solid var(--ec-line-fort);
+  padding: 4px;
   border-radius: 999px;
+  background: var(--ec-creux);
 }
 .ec-espace .ec-bat-segments button {
-  min-height: 30px;
-  padding: 0 14px;
+  min-height: 34px;
+  padding: 0 16px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -45,8 +45,10 @@
   color: var(--ec-text);
 }
 .ec-espace .ec-bat-segments button[aria-pressed="true"] {
-  background: var(--ec-text);
-  color: var(--ec-bg);
+  background: var(--ec-actif);
+  box-shadow: var(--ec-actif-ombre);
+  color: var(--ec-text);
+  font-weight: 600;
 }
 .ec-espace .ec-bat-valider {
   min-height: 38px;
@@ -55,10 +57,12 @@
 
 /* ─────────────────────────────── le corps ─────────────────────────────── */
 
+/* 15/10 : la scène et les notes sont deux panneaux de verre qui flottent. */
 .ec-espace .ec-bat-corps {
   flex: 1;
   min-height: 0;
   display: flex;
+  gap: 12px;
 }
 .ec-espace .ec-bat-gauche {
   flex: 1;
@@ -66,6 +70,13 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
 }
 
 /* Une seule ligne d'information. */
@@ -398,8 +409,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 24px;
-  border-top: 1px solid var(--ec-line);
+  margin: 0 12px;
+  padding: 10px 14px;
+  border-radius: 20px;
+  background: var(--ec-creux);
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
@@ -468,22 +481,22 @@
 
 .ec-espace .ec-bat-magazines {
   flex: none;
-  height: 46px;
+  height: 54px;
   box-sizing: border-box;
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 4px;
-  padding: 0 24px;
-  border-top: 1px solid var(--ec-line);
-  background: var(--ec-panel);
+  padding: 0 12px;
+  background: transparent;
   overflow-x: auto;
 }
 .ec-espace .ec-bat-magazine {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: 34px;
   padding: 0 16px;
-  border-top: 2px solid transparent;
+  border-radius: 999px;
   color: var(--ec-muted);
   font-size: 13px;
   text-decoration: none;
@@ -493,8 +506,8 @@
   color: var(--ec-text);
 }
 .ec-espace .ec-bat-magazine[aria-current="page"] {
-  border-top-color: var(--ec-accent);
-  background: var(--ec-bg);
+  background: var(--ec-actif);
+  box-shadow: var(--ec-actif-ombre);
   color: var(--ec-text);
   font-weight: 600;
 }
@@ -509,9 +522,13 @@
   align-items: center;
   gap: 10px;
   padding: 14px 0;
-  border: 0;
-  border-left: 1px solid var(--ec-line);
-  background: var(--ec-panel);
+  width: 44px;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: 22px;
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-douce);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
   color: var(--ec-text);
   font: inherit;
   cursor: pointer;
@@ -549,7 +566,13 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--ec-panel);
+  overflow: hidden;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
 }
 .ec-espace .ec-bat-panneau[hidden] {
   display: none;
@@ -585,9 +608,9 @@
   flex: none;
   display: flex;
   gap: 10px;
-  padding: 12px;
+  padding: 14px;
   border: 1px solid rgba(var(--ec-ac-rgb), 0.55);
-  border-radius: 12px;
+  border-radius: 18px;
   background: var(--ec-surface);
   scroll-margin: 16px;
 }
@@ -643,7 +666,6 @@
   align-items: flex-start;
   gap: 10px;
   padding: 12px 20px 18px;
-  border-top: 1px solid var(--ec-line);
 }
 .ec-espace .ec-bat-panneau-pied .ec-bouton--plein {
   width: 100%;
@@ -681,7 +703,6 @@
 }
 .ec-espace .ec-bat-note-pied {
   padding: 12px 20px 18px;
-  border-top: 1px solid var(--ec-line);
 }
 .ec-espace .ec-bat-note-pied .ec-bouton,
 .ec-espace .ec-bat-confirmer .ec-bouton {
@@ -696,7 +717,7 @@
 .ec-espace .ec-bat-types button {
   min-height: 40px;
   padding: 0 8px;
-  border-radius: 10px;
+  border-radius: var(--ec-r-champ);
   border: 1px solid var(--ec-line-fort);
   background: transparent;
   color: var(--ec-text);
@@ -714,7 +735,7 @@
   justify-content: center;
   gap: 10px;
   min-height: 44px;
-  border-radius: 10px;
+  border-radius: var(--ec-r-champ);
   border: 1px dashed var(--ec-line-fort);
   background: transparent;
   color: var(--ec-text);
@@ -739,7 +760,7 @@
   aspect-ratio: 1;
   padding: 0;
   border: 2px solid transparent;
-  border-radius: 8px;
+  border-radius: 16px;
   overflow: hidden;
   background: rgba(var(--ec-fg-rgb), 0.06);
   color: var(--ec-muted);
@@ -771,6 +792,12 @@
   }
   .ec-espace .ec-bat2 .ec-ecran-actions {
     justify-content: flex-start;
+  }
+  .ec-espace .ec-bat-corps {
+    padding: 0 8px;
+  }
+  .ec-espace .ec-bat-gauche {
+    border-radius: var(--ec-r-carte);
   }
   .ec-espace .ec-bat-info {
     padding: 0 12px;
@@ -814,8 +841,7 @@
     z-index: 55;
     width: auto;
     height: calc(72 * var(--uh));
-    border-radius: 18px 18px 0 0;
-    border-top: 1px solid var(--ec-line-fort);
+    border-radius: var(--ec-r-panneau) var(--ec-r-panneau) 0 0;
     box-shadow: 0 -20px 60px rgba(var(--ec-noir-rgb), 0.4);
   }
   /* (0,3,0) : la feuille du bas défile chez elle, même sur téléphone. */

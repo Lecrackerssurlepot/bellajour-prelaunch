@@ -1742,6 +1742,23 @@ titre("— T-152 : les documents s'ouvrent dans la page, on repond a un message 
     /\?citer=\$\{d\.id\}/.test(lire("src/app/edition/[token]/dossier/ListeDocuments.tsx")) && /peut\(role, 'ecrire_message'\) \? versAtelier : null/.test(lire("src/app/edition/[token]/dossier/page.tsx")) && /documents\.some\(\(d\) => d\.id === citer\) \? citer : null/.test(lire("src/app/edition/[token]/atelier/page.tsx")));
 }
 
+titre("— 15/10 : Porcelaine le jour, Charbon la nuit, du verre et des arrondis —");
+{
+  const css = lire("src/app/edition/[token]/espace.css");
+  const nuit = /\.bj-atelier\.ec-espace \{([^}]*)\}/.exec(css)?.[1] ?? "";
+  const jour = /\.bj-atelier\.ec-espace\[data-ec-mode="jour"\] \{([^}]*)\}/.exec(css)?.[1] ?? "";
+  ok("la nuit est un CHARBON (#17181c), plus de noir pur ni de blanc pur pour le texte", /--ec-bg: #17181c;/.test(nuit) && /--ec-text: #ecedf0;/.test(nuit) && !/#050505;/.test(nuit.replace(/--ec-encre[^;]*;/, "")));
+  ok("le jour est une PORCELAINE (#f3f4f7) au bleu de Bellajour, plus de beige", /--ec-bg: #f3f4f7;/.test(jour) && /--ec-accent: #4a90d9;/.test(jour) && !/#f3ece2|#ece3d6|#fbf8f3/.test(jour));
+  ok("la forme est commune : arrondis emboîtés (28/24/16/14), verre, ombres en jetons", ["--ec-r-panneau: 28px", "--ec-r-carte: 24px", "--ec-r-bloc: 16px", "--ec-r-champ: 14px", "--ec-flou:"].every((j) => nuit.includes(j)) && ["--ec-carte:", "--ec-ombre-carte:", "--ec-actif:"].every((j) => nuit.includes(j) && jour.includes(j)));
+  ok("la coquille flotte : un fond vivant (deux taches floues) et un menu de verre arrondi, plus de trait à droite",
+    /\.ec-espace \.ec-coquille::before/.test(css) && /\.ec-espace \.ec-menu \{[^}]*border-radius: var\(--ec-r-panneau\)/.test(css) && !/\.ec-espace \.ec-menu \{[^}]*border-right/.test(css));
+  ok("l'en-tête d'un écran n'est plus souligné d'un trait", !/\.ec-espace \.ec-ecran-tete \{[^}]*border-bottom/.test(css));
+  const admin = lire("src/app/admin/admin.css");
+  ok("l'atelier passe en Porcelaine DANS admin.css (les pages publiques crème ne bougent pas)",
+    /\.adm-root \{[^}]*--bj-cream: #f3f4f7;/.test(admin) && /--bj-cream:\s+#f7f1e9;/.test(lire("src/app/tokens.css")));
+  ok("la page de dépôt des participants est en charbon, plus de noir pur", /background: #17181c;/.test(lire("src/app/depot/[token]/depot.css")) && !/#050505/.test(lire("src/app/depot/[token]/depot.css")));
+}
+
 titre("— 15/10 : la page Photos sans grande colonne (rayons, albums, fil d'Ariane) —");
 {
   const D = Dossiers;

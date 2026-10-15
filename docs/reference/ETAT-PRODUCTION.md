@@ -1,4 +1,4 @@
-# État du système — au 15/10/2026 (fin de matinée)
+# État du système — au 15/10/2026 (après-midi)
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,23 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 15/10/2026 (après-midi) — Porcelaine le jour, Charbon la nuit, l'atelier aussi : sur branche
+
+- **Validé par Mathias le 15/10** sur les maquettes « direction visuelle »
+  (https://claude.ai/artifact/QwBWzndAtne3hSmkWmQEr2) : Porcelaine pour le jour, Charbon pour la
+  nuit. Codé sur `feat/collectif-retours-ux-1` : l'espace client (toutes ses pages), la page de
+  dépôt des participants, la porte, et TOUT l'admin (`.adm-root` : table de travail des
+  particuliers et sa fiche, éditions, messagerie, fiche d'édition, prévente, connexion). Rien en
+  production.
+- ⚠️ **À la fusion, la table de travail des PARTICULIERS change d'apparence en production**
+  (blanc froid, cartes de verre, barre flottante) : CSS seulement, aucun comportement changé.
+  Les pages publiques (/, /magazine, /composer, /numero, /merci, légales) n'ont pas bougé.
+- Vérifié à l'écran le 15/10 (localhost:3000) : chaque écran du client de jour et de nuit à
+  1440 × 900, sans défilement de page ni débord ; téléphone (390 px) pour le tableau de bord,
+  les Photos, la conversation et la page de dépôt ; l'atelier (liste, fiche de démonstration,
+  éditions, messagerie, fiche d'édition). Contrastes mesurés de nuit : texte 15,2 : 1, texte doux
+  7,9 : 1, légendes 5,5 : 1.
 
 ## 15/10/2026 (fin de matinée) — Édition collective : une édition neuve, la page Photos sans colonne
 

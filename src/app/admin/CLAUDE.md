@@ -105,6 +105,13 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
 
 ## Écrans
 
+**Porcelaine (15/10/2026)** : `admin.css` redéfinit les jetons crème (`--bj-cream`, `--bj-text*`,
+`--bj-veil-*`, `--bj-glass-card-*`, rayons) SOUS `.adm-root`, plus `--adm-verre*` et
+`--adm-flou` pour les cartes de verre (`.ate-carte`, la barre `.atb`, la liste `.ate-lignes`,
+les panneaux `.eca-*`). Le fond de page autour d'un atelier plus étroit que la fenêtre suit
+(`body:has(.adm-root)`). Les liserés de camp d'une ligne sont un trait posé en `::before` (une
+ombre intérieure épousait l'arrondi et disparaissait au survol).
+
 **Un seul logiciel (T-152, 14/10/2026)** : `BarreAtelier.tsx` est en tête de CHAQUE écran des
 deux mondes (liste et fiche des particuliers, toutes les pages des éditions, et leurs
 `loading.tsx`). Le commutateur « Particuliers | Éditions » n'existe que si `COLLECTIF_OUVERT` est
