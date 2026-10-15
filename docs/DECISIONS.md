@@ -562,3 +562,28 @@ Ce qui est tranché.
 **Conséquence :** T-148. Les règles des créneaux (jours, heures, durée, délais) et le texte du
 mail ne se devinent pas : ils attendent Mathias. Le mot du dirigeant, lui, reste comme il est
 pour l'instant (PRD §12.14).
+
+D24 (14/10/2026) — **Le brief d'un magazine se compose pièce par pièce, de n'importe quel
+style.** Proposition de Mathias (retours du 14/10, point 4), maquettes « Tout, en vrac »,
+« Typographies » et « Modifier une partie » validées le 14/10. Elle REMPLACE la règle du 08/10
+(« tout l'intérieur suit le style choisi ; seule la couverture peut venir d'un autre »).
+
+Ce qui est tranché.
+- Chaque pièce dit d'où elle vient : la palette, les typographies, chaque double page aimée et
+  chaque couverture aimée peuvent venir de styles différents. L'atelier harmonise l'ensemble et
+  le montre au bon à tirer.
+- « Voir tout le style » montre un style en entier ; on peut le prendre en entier (palette,
+  typographies, doubles pages) ou en partie.
+- Une catégorie (les typographies par exemple) met d'abord le choix du client, puis ce qui vient
+  des styles qu'il a déjà pris ailleurs, puis le reste.
+- Modifier une partie ouvre seulement cette partie, le choix en haut, avec un retour facile.
+
+Ce que je décide seul, faute de mot de Mathias (réversible) :
+- Un brief se valide avec une palette, des typographies, la place du texte et au moins une
+  double page ; les couvertures restent facultatives. Cinq doubles pages au plus, tous styles
+  confondus (le nombre de types).
+- Prendre un style en entier remplace la palette, les typographies et les doubles pages ; il
+  garde les couvertures aimées et la place du texte.
+
+**Conséquence :** migration `20261017_collectif_composition.sql` (la palette, les typographies
+et les doubles pages disent leur style), T-151.

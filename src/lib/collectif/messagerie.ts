@@ -10,9 +10,10 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { signerGet } from "@/lib/atelier/r2";
+import { contenuClient } from "./contenus";
 import { nomTelechargement } from "./documents";
 import { lireInstant } from "./etats";
-import type { Message } from "./messages";
+import { extraitDe, type Message } from "./messages";
 import { colonneAbsente } from "./migration";
 
 /** Le fil le plus long qu'on renvoie d'un coup (garde technique). */
@@ -22,8 +23,14 @@ const PAGE = 300;
    colonnes d'avant (repli en LECTURE : le fil s'affiche, sans étiquette). */
 const COLONNES = "id, auteur, qui, texte, created_at, document_id, piece_jointe_key, piece_jointe_nom";
 const COLONNES_AVANT = "id, auteur, qui, texte, created_at";
+/* L'envoi cité (migration 20261016) : un palier de plus, qui se replie sur la révision. */
+const COLONNES_ENVOIS = `${COLONNES}, contenu_id`;
+/* La réponse à un message (migration 20261018, T-152) : un palier de plus, qui se replie sur les envois. */
+const COLONNES_REPONSES = `${COLONNES_ENVOIS}, reponse_a`;
 
-type Ligne = Omit<Message, "document" | "piece"> & {
+type Ligne = Omit<Message, "document" | "piece" | "contenu" | "reponseA"> & {
+  reponse_a?: string | null;
+  contenu_id?: string | null;
   document_id?: string | null;
   piece_jointe_key?: string | null;
   piece_jointe_nom?: string | null;
@@ -31,15 +38,20 @@ type Ligne = Omit<Message, "document" | "piece"> & {
 
 export type ResultatLecture = { ok: true; messages: Message[] } | { ok: false; code: string | null };
 
-async function signer(key: string, nom: string): Promise<string | null> {
+type Signe = { url: string | null; voir: string | null };
+
+/** Deux adresses signées : `url` télécharge sous un nom propre, `voir` s'affiche dans la visionneuse (T-152). */
+async function signer(key: string, nom: string): Promise<Signe> {
   const ext = /\.([a-z0-9]{1,5})$/i.exec(key)?.[1]?.toLowerCase() ?? "bin";
   try {
-    return await signerGet(key, undefined, nomTelechargement(nom.replace(/\.[A-Za-z0-9]{1,5}$/, ""), ext));
+    const [url, voir] = await Promise.all([signerGet(key, undefined, nomTelechargement(nom.replace(/\.[A-Za-z0-9]{1,5}$/, ""), ext)), signerGet(key)]);
+    return { url, voir };
   } catch (e) {
     console.error("[collectif] pièce de message non signée", e);
-    return null;
+    return { url: null, voir: null };
   }
 }
+const RIEN: Signe = { url: null, voir: null };
 
 /**
  * Les lignes → les messages de l'écran : le document cité (son libellé, son
@@ -48,7 +60,7 @@ async function signer(key: string, nom: string): Promise<string | null> {
  */
 async function habiller(supabase: SupabaseClient, editionId: string, lignes: Ligne[]): Promise<Message[]> {
   const ids = [...new Set(lignes.map((l) => l.document_id).filter((x): x is string => Boolean(x)))];
-  const docs = new Map<string, { libelle: string; url: string | null }>();
+  const docs = new Map<string, { libelle: string } & Signe>();
   if (ids.length) {
     const { data, error } = await supabase
       .from("collectif_documents")
@@ -57,7 +69,39 @@ async function habiller(supabase: SupabaseClient, editionId: string, lignes: Lig
       .in("id", ids)
       .returns<{ id: string; libelle: string; r2_key: string | null }[]>();
     if (error) console.error("[collectif] documents cités illisibles", error.code, error.message);
-    for (const d of data ?? []) docs.set(d.id, { libelle: d.libelle, url: d.r2_key ? await signer(d.r2_key, d.libelle) : null });
+    for (const d of data ?? []) docs.set(d.id, { libelle: d.libelle, ...(d.r2_key ? await signer(d.r2_key, d.libelle) : RIEN) });
+  }
+  /* Les envois du client cités : leur contenu (« Logo »), leur nom, leur lien. */
+  const idsEnvois = [...new Set(lignes.map((l) => l.contenu_id).filter((x): x is string => Boolean(x)))];
+  const envois = new Map<string, { libelle: string } & Signe>();
+  if (idsEnvois.length) {
+    const { data, error } = await supabase
+      .from("collectif_contenus")
+      .select("id, type, nom_origine, r2_key")
+      .eq("edition_id", editionId)
+      .in("id", idsEnvois)
+      .returns<{ id: string; type: string; nom_origine: string | null; r2_key: string | null }[]>();
+    if (error) console.error("[collectif] envois cités illisibles", error.code, error.message);
+    for (const c of data ?? []) {
+      const type = contenuClient(c.type)?.libelle ?? c.type;
+      envois.set(c.id, {
+        libelle: c.nom_origine ? `${type} · ${c.nom_origine}` : type,
+        ...(c.r2_key ? await signer(c.r2_key, c.nom_origine ?? type) : RIEN),
+      });
+    }
+  }
+  /* Les messages auxquels on répond : leur auteur et leur début, de la MÊME édition. */
+  const idsReponses = [...new Set(lignes.map((l) => l.reponse_a).filter((x): x is string => Boolean(x)))];
+  const repondus = new Map<string, NonNullable<Message["reponseA"]>>();
+  if (idsReponses.length) {
+    const { data, error } = await supabase
+      .from("collectif_messages")
+      .select("id, auteur, qui, texte")
+      .eq("edition_id", editionId)
+      .in("id", idsReponses)
+      .returns<{ id: string; auteur: "client" | "atelier"; qui: string | null; texte: string }[]>();
+    if (error) console.error("[collectif] messages cités illisibles", error.code, error.message);
+    for (const r of data ?? []) repondus.set(r.id, { id: r.id, auteur: r.auteur, qui: r.qui, extrait: extraitDe(r.texte) });
   }
   return Promise.all(
     lignes.map(async (l) => {
@@ -69,7 +113,9 @@ async function habiller(supabase: SupabaseClient, editionId: string, lignes: Lig
         texte: l.texte,
         created_at: l.created_at,
         document: l.document_id && doc ? { id: l.document_id, ...doc } : null,
-        piece: l.piece_jointe_key ? { nom: l.piece_jointe_nom ?? "Fichier joint", url: await signer(l.piece_jointe_key, l.piece_jointe_nom ?? "fichier") } : null,
+        piece: l.piece_jointe_key ? { nom: l.piece_jointe_nom ?? "Fichier joint", ...(await signer(l.piece_jointe_key, l.piece_jointe_nom ?? "fichier")) } : null,
+        contenu: l.contenu_id && envois.get(l.contenu_id) ? { id: l.contenu_id, ...(envois.get(l.contenu_id) as { libelle: string } & Signe) } : null,
+        reponseA: l.reponse_a ? (repondus.get(l.reponse_a) ?? null) : null,
       };
     })
   );
@@ -94,7 +140,9 @@ export async function lireMessages(
     if (lireInstant(depuis) !== null) q = q.gt("created_at", depuis as string);
     return q.returns<Ligne[]>();
   };
-  let { data, error } = await requete(COLONNES);
+  let { data, error } = await requete(COLONNES_REPONSES);
+  if (error && colonneAbsente(error.code)) ({ data, error } = await requete(COLONNES_ENVOIS));
+  if (error && colonneAbsente(error.code)) ({ data, error } = await requete(COLONNES));
   if (error && colonneAbsente(error.code)) ({ data, error } = await requete(COLONNES_AVANT));
   if (error) return { ok: false, code: error.code ?? null };
   return { ok: true, messages: await habiller(supabase, editionId, data ?? []) };
@@ -111,7 +159,49 @@ export async function revisionMessagesAppliquee(supabase: SupabaseClient): Promi
   return { ok: false, absente: colonneAbsente(error.code), code: error.code ?? null };
 }
 
-export type Extras = { id?: string; documentId?: string | null; piece?: { key: string; nom: string } | null };
+/** La colonne de l'envoi cité (migration 20261016) existe-t-elle ? Sondé avant d'écrire un message qui cite un envoi. */
+export async function envoisMessagesAppliques(supabase: SupabaseClient): Promise<{ ok: true } | { ok: false; absente: boolean; code: string | null }> {
+  const { error } = await supabase.from("collectif_messages").select("contenu_id").limit(1);
+  if (!error) return { ok: true };
+  return { ok: false, absente: colonneAbsente(error.code), code: error.code ?? null };
+}
+
+/** La colonne de la réponse (migration 20261018) existe-t-elle ? Sondé avant d'écrire une réponse, et avant le coffre. */
+export async function reponsesMessagesAppliquees(supabase: SupabaseClient): Promise<{ ok: true } | { ok: false; absente: boolean; code: string | null }> {
+  const { error } = await supabase.from("collectif_messages").select("reponse_a").limit(1);
+  if (!error) return { ok: true };
+  return { ok: false, absente: colonneAbsente(error.code), code: error.code ?? null };
+}
+
+/**
+ * Le message auquel on répond doit être de la MÊME édition. Rend son id, `null` sans réponse,
+ * ou un refus lisible. La migration est sondée ici, avant tout le reste.
+ */
+export async function lireReponseA(
+  supabase: SupabaseClient,
+  editionId: string,
+  brut: unknown
+): Promise<{ ok: true; id: string | null } | { ok: false; statut: 422 | 503 | 500; absente?: boolean; message?: string }> {
+  if (brut === undefined || brut === null || brut === "") return { ok: true, id: null };
+  if (typeof brut !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(brut)) {
+    return { ok: false, statut: 422, message: "Ce message n'existe pas." };
+  }
+  const sonde = await reponsesMessagesAppliquees(supabase);
+  if (!sonde.ok) return { ok: false, statut: sonde.absente ? 503 : 500, absente: sonde.absente };
+  const { data, error } = await supabase.from("collectif_messages").select("id").eq("id", brut).eq("edition_id", editionId).maybeSingle<{ id: string }>();
+  if (error) return { ok: false, statut: 500 };
+  if (!data) return { ok: false, statut: 422, message: "Ce message n'est plus dans la conversation." };
+  return { ok: true, id: data.id };
+}
+
+export type Extras = {
+  id?: string;
+  documentId?: string | null;
+  piece?: { key: string; nom: string } | null;
+  contenuId?: string | null;
+  /** Le message auquel on répond (déjà vérifié par `lireReponseA`). */
+  reponseA?: string | null;
+};
 
 export async function ecrireMessage(
   supabase: SupabaseClient,
@@ -137,8 +227,10 @@ export async function ecrireMessage(
          message simple s'écrit encore avant la migration. */
       ...(extras.documentId ? { document_id: extras.documentId } : {}),
       ...(extras.piece ? { piece_jointe_key: extras.piece.key, piece_jointe_nom: extras.piece.nom } : {}),
+      ...(extras.contenuId ? { contenu_id: extras.contenuId } : {}),
+      ...(extras.reponseA ? { reponse_a: extras.reponseA } : {}),
     })
-    .select(revision ? COLONNES : COLONNES_AVANT)
+    .select(extras.reponseA ? COLONNES_REPONSES : extras.contenuId ? COLONNES_ENVOIS : revision ? COLONNES : COLONNES_AVANT)
     .single<Ligne>();
   if (error) return { ok: false, code: error.code ?? null };
   const [message] = await habiller(supabase, editionId, [data]);

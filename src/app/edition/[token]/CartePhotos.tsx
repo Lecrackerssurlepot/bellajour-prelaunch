@@ -12,6 +12,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import FenetreLien, { CarteLien } from "../_composants/LienContribution";
+import { useFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import ZoneDepot from "../_composants/depot/ZoneDepot";
 import type { DossierPhotos, LienContribution } from "./donnees";
 
@@ -25,6 +26,7 @@ type Props = {
   mosaique: string[];
   liens: LienContribution[];
   max: number;
+  organisation: string;
   evenement: string;
   cloture: string;
   statut: string;
@@ -36,6 +38,8 @@ export default function CartePhotos(p: Props) {
   const v = (vous: string, toi: string) => (p.tu ? toi : vous);
   const [fenetre, setFenetre] = useState(false);
   const [deposer, setDeposer] = useState(false);
+  const envoi = useFenetreEnvoi();
+  const contexte = { organisation: p.organisation, evenement: p.evenement, cloture: p.cloture, tu: p.tu };
   const dernier = p.liens[p.liens.length - 1] ?? null;
   const etat = p.photos > 0 ? "photos" : deposer || !dernier ? "vide" : "lien";
 
@@ -52,20 +56,32 @@ export default function CartePhotos(p: Props) {
             <strong>{p.photos.toLocaleString("fr-FR")}</strong>
             <span className="ec-texte">
               photo{p.photos > 1 ? "s" : ""}
-              {p.participants ? ` de ${p.participants} participant${p.participants > 1 ? "s" : ""}` : ""}
+              {p.participants ? `, de ${p.participants} participant${p.participants > 1 ? "s" : ""}` : ""}
             </span>
           </div>
           <ul className="ec-tdb-dossiers ec-defile" aria-label="Les dossiers de photos">
-            {p.dossiers.map((d) => (
-              <li key={d.cle}>
-                <span className={d.lien ? "ec-tdb-point ec-tdb-point--lien" : "ec-tdb-point"} aria-hidden="true" />
-                <span className="ec-tdb-dossier">
-                  <span>{d.libelle}</span>
-                  <span className="ec-note">{d.detail}</span>
-                </span>
-                <span className="ec-tdb-n">{d.n.toLocaleString("fr-FR")}</span>
-              </li>
-            ))}
+            {p.dossiers.map((d) => {
+              const plus = Math.max(1, ...p.dossiers.map((x) => x.n));
+              return (
+                <li key={d.cle}>
+                  <Link className="ec-tdb-dossier-lien" href={`${p.lienPhotos}?dossier=${encodeURIComponent(d.cle)}`} prefetch={false}>
+                    {d.couverture ? (
+                      <img className="ec-tdb-dossier-couv" src={d.couverture} alt="" loading="lazy" decoding="async" />
+                    ) : (
+                      <span className={d.lien ? "ec-tdb-dossier-couv ec-tdb-dossier-couv--lien" : "ec-tdb-dossier-couv"} aria-hidden="true" />
+                    )}
+                    <span className="ec-tdb-dossier">
+                      <span>{d.libelle}</span>
+                      <span className="ec-note">{d.detail}</span>
+                    </span>
+                    <span className="ec-tdb-dossier-barre" aria-hidden="true">
+                      <span style={{ width: `${Math.round((d.n / plus) * 100)}%` }} />
+                    </span>
+                    <span className="ec-tdb-n">{d.n.toLocaleString("fr-FR")}</span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
           {p.mosaique.length ? (
             <div className="ec-tdb-mosaique" aria-hidden="true">
@@ -80,11 +96,13 @@ export default function CartePhotos(p: Props) {
             </Link>
             {p.ecrire && p.ouverte ? (
               <>
-                <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => setFenetre(true)}>
-                  Envoyer un lien
-                </button>
-                <Link href={p.lienPhotos} prefetch={false} className="ec-bouton ec-bouton--clair">
-                  Déposer
+                {envoi.ouvrir ? (
+                  <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => envoi.ouvrir?.()}>
+                    Déposer
+                  </button>
+                ) : null}
+                <Link href={`${p.lienPhotos}?onglet=liens`} prefetch={false} className="ec-bouton ec-bouton--clair">
+                  Inviter quelqu&apos;un
                 </Link>
               </>
             ) : null}
@@ -98,7 +116,7 @@ export default function CartePhotos(p: Props) {
         <>
           <h2 className="ec-tdb-titre">Lien envoyé, en attente des premières photos</h2>
           <div className="ec-tdb-centre">
-            <CarteLien lien={dernier} evenement={p.evenement} tu={p.tu} cloture={p.cloture} />
+            <CarteLien lien={dernier} contexte={contexte} />
           </div>
           <div className="ec-tdb-gestes ec-tdb-gestes--deux">
             <button type="button" className="ec-bouton" onClick={() => setFenetre(true)}>
@@ -130,7 +148,7 @@ export default function CartePhotos(p: Props) {
         </>
       )}
 
-      {fenetre ? <FenetreLien token={p.token} max={p.max} evenement={p.evenement} cloture={p.cloture} tu={p.tu} onFermer={() => setFenetre(false)} /> : null}
+      {fenetre ? <FenetreLien token={p.token} max={p.max} contexte={contexte} onFermer={() => setFenetre(false)} /> : null}
     </section>
   );
 }

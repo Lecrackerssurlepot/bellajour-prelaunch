@@ -1,8 +1,11 @@
-/* /edition/[token] — le tableau de bord du client (PRD §14.2, maquette Espace).
+/* /edition/[token] — le tableau de bord du client (PRD §14.2, maquettes
+   « direction visuelle » du 15/10, Porcelaine et Charbon).
 
-   Un écran, sans défilement de page : l'en-tête (l'événement, « Bonjour »,
-   l'échéance unique), DEUX GRANDS ENCARTS côte à côte (le style, les photos),
-   la ligne de ce qui reste à envoyer à l'atelier, puis le dernier message.
+   Un écran, sans défilement de page : l'en-tête (l'événement, « Bonjour »
+   dessous, l'échéance unique), puis une grille de deux colonnes : en haut les
+   DEUX GRANDS ENCARTS (le style, les photos), en bas, sous chacun, sa ligne :
+   ce qui reste à envoyer à l'atelier sous le style, le dernier message sous
+   les photos.
    Les étapes numérotées et la phrase « Ensuite » ont disparu avec la
    révision ; le curseur unique « photos par participant » aussi : chaque lien
    de contribution porte désormais son plafond.
@@ -62,7 +65,7 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
 
       <div className="ec-ecran-corps">
         <div className="ec-tdb-grille">
-          <CarteStyle token={token} tableau={tableau} p={p} />
+          <CarteStyle token={token} tableau={tableau} p={p} ecrire={peut(role, 'choisir_style')} />
           <CartePhotos
             token={token}
             ecrire={peut(role, 'deposer_photos')}
@@ -73,17 +76,17 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
             mosaique={tableau.mosaique}
             liens={tableau.liens}
             max={plafondLienMax(edition)}
+            organisation={edition.organisation}
             evenement={edition.evenement}
             cloture={cloture}
             statut={edition.cloture_le && ouverte ? `Clôture ${delai}` : ouverte ? 'Ouverte' : 'Collecte close'}
             lienPhotos={cheminSection(token, 'photos')}
             tu={tu}
           />
-        </div>
 
-        <LigneContenus token={token} demandes={edition.contenus_demandes ?? []} recus={tableau.contenusRecus} ecrire={peut(role, 'envoyer_contenu')} tu={tu} />
+          <LigneContenus token={token} demandes={edition.contenus_demandes ?? []} envois={tableau.envois} ecrire={peut(role, 'envoyer_contenu')} tu={tu} />
 
-        <Link href={cheminSection(token, 'atelier')} prefetch={false} className="ec-tdb-message">
+          <Link href={cheminSection(token, 'atelier')} prefetch={false} className="ec-tdb-message">
           <span className="ec-tdb-message-avatar" aria-hidden="true">
             B
           </span>
@@ -104,86 +107,116 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
               <span className="ec-tdb-message-action">{role === 'responsable' ? 'Écrire' : 'Ouvrir'}</span>
             </>
           )}
-        </Link>
+          </Link>
+        </div>
       </div>
     </section>
   )
 }
 
-/* L'encart Style, deux états (PRD §14.2) : rien choisi = trois couvertures de
-   styles en éventail ; au moins un choisi = une couverture par magazine. */
-function CarteStyle({ token, tableau, p }: { token: string; tableau: Tableau; p: <T>(vous: T, toi: T) => T }) {
+/* L'éventail de l'encart Style : trois couvertures de Bellajour, toujours les
+   mêmes (Mathias, 15/10 : « avoir vraiment la Côte d'Azur, Lisbonne et
+   Aussie », celles de la maquette, plutôt que les couvertures d'essai du mur).
+   Lisbonne à gauche, Aussie à droite, la Côte d'Azur devant. Les tuiles du bas
+   disent, elles, le vrai style de chaque magazine. */
+const EVENTAIL = [
+  { nom: 'lisbonne', place: 'gauche' },
+  { nom: 'aussie', place: 'droite' },
+  { nom: 'cote-azur', place: 'centre' },
+] as const
+
+/* L'encart Style (PRD §14.2, maquettes du 15/10) : en haut à droite « Fait »
+   quand tous les briefs sont validés ; au centre l'éventail ; en bas une tuile
+   par magazine (son nom, son style, ce qui reste à faire, qui y mène) et
+   « Modifier ». */
+function CarteStyle({ token, tableau, p, ecrire }: { token: string; tableau: Tableau; p: <T>(vous: T, toi: T) => T; ecrire: boolean }) {
   const mags = tableau.magazines
   const n = mags.length
   const avecStyle = mags.filter((m) => m.style).length
   const valides = mags.filter((m) => m.briefValide).length
-  const reste = mags.find((m) => !m.style) ?? null
-  const aValider = mags.find((m) => m.style && !m.briefValide) ?? null
+  const fait = n > 0 && valides === n
+  const sansStyle = mags.filter((m) => !m.style).length
+  const aValider = mags.filter((m) => m.style && !m.briefValide).length
   const mur = cheminSection(token, 'style')
   const brief = `${mur}/brief`
-  const statut = valides === n && n > 0 ? 'Fait' : avecStyle === 0 ? 'À faire' : `${avecStyle} magazine${avecStyle > 1 ? 's' : ''} sur ${n}`
+  const titre =
+    avecStyle === 0
+      ? n > 1
+        ? p('Choisissez l’univers de vos magazines', 'Choisis l’univers de tes magazines')
+        : p('Choisissez l’univers de votre magazine', 'Choisis l’univers de ton magazine')
+      : sansStyle
+        ? sansStyle > 1
+          ? `${sansStyle} magazines attendent leur style`
+          : n > 1
+            ? 'Un magazine attend son style'
+            : 'Le magazine attend son style'
+        : aValider
+          ? aValider > 1
+            ? `${aValider} briefs restent à valider`
+            : n > 1
+              ? 'Un brief reste à valider'
+              : 'Le brief reste à valider'
+          : p('Vos styles sont choisis', 'Tes styles sont choisis')
 
   return (
-    <section className="ec-carte ec-tdb-carte" aria-labelledby="ec-tdb-style">
+    <section className="ec-carte ec-tdb-carte ec-tdb-style" aria-labelledby="ec-tdb-style">
       <div className="ec-tdb-carte-tete">
         <span className="ec-tdb-etiquette">1 · Le style</span>
-        <span className="ec-note">{statut}</span>
+        {fait ? (
+          <span className="ec-tdb-fait">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 12l5 5 9-10" />
+            </svg>
+            Fait
+          </span>
+        ) : (
+          <span className="ec-tdb-etat">{avecStyle === 0 ? 'À faire' : `${valides} brief${valides > 1 ? 's' : ''} validé${valides > 1 ? 's' : ''} sur ${n}`}</span>
+        )}
+      </div>
+
+      <h2 className="ec-tdb-titre" id="ec-tdb-style">
+        {titre}
+      </h2>
+
+      <div className="ec-tdb-eventail" aria-hidden="true">
+        {EVENTAIL.map((c) => (
+          <span key={c.nom} className={`ec-tdb-couv ec-tdb-couv--${c.place}`}>
+            <img
+              src={`/images/v2/accueil/couverture-${c.nom}-360.webp`}
+              srcSet={`/images/v2/accueil/couverture-${c.nom}-360.webp 360w, /images/v2/accueil/couverture-${c.nom}-640.webp 640w`}
+              sizes="(max-width: 520px) 120px, 240px"
+              alt=""
+              decoding="async"
+            />
+          </span>
+        ))}
       </div>
 
       {avecStyle === 0 ? (
-        <>
-          <h2 className="ec-tdb-titre" id="ec-tdb-style">
-            {n > 1 ? p("Choisissez l’univers de vos magazines", 'Choisis l’univers de tes magazines') : p("Choisissez l’univers de votre magazine", 'Choisis l’univers de ton magazine')}
-          </h2>
-          <div className="ec-tdb-eventail" aria-hidden="true">
-            {tableau.eventail.map((c, i, tout) => (
-              /* Une seule couverture se tient au centre ; deux, sur les côtés. */
-              <span key={i} className={`ec-tdb-couv ec-tdb-couv--${tout.length === 1 ? 1 : tout.length === 2 ? i * 2 : i}`}>
-                {c.url ? <img src={c.url} alt="" decoding="async" /> : null}
-              </span>
-            ))}
-            {tableau.eventail.length === 0 ? <span className="ec-note">Les styles arrivent sur le mur.</span> : null}
-          </div>
-          <Link href={mur} prefetch={false} className="ec-bouton ec-bouton--plein">
-            Découvrir les styles
-          </Link>
-        </>
+        <Link href={mur} prefetch={false} className="ec-bouton ec-bouton--plein">
+          Découvrir les styles
+        </Link>
       ) : (
-        <>
-          <h2 className="ec-tdb-titre" id="ec-tdb-style">
-            {reste ? `Il reste le style de « ${reste.nom} »` : aValider ? `Il reste à valider le brief de « ${aValider.nom} »` : p('Vos styles sont choisis', 'Tes styles sont choisis')}
-          </h2>
-          <div className={`ec-tdb-magazines ec-tdb-magazines--${Math.min(n, 4)}`}>
-            {mags.map((m) =>
-              m.style ? (
-                <Link key={m.id} href={`${brief}?m=${m.rang}`} prefetch={false} className="ec-tdb-magazine">
-                  <span className={`ec-tdb-couv-mag${m.rang % 2 ? ' ec-tdb-couv-mag--gauche' : ''}`}>
-                    {m.styleCouverture ? <img src={m.styleCouverture} alt="" decoding="async" /> : null}
-                  </span>
-                  <span className="ec-note">{m.nom}</span>
-                  <span className="ec-tdb-style-nom">{m.style}</span>
-                  <span className="ec-tdb-lien">{m.briefValide ? 'Brief validé · voir ou modifier' : 'Voir ou modifier le brief'}</span>
-                </Link>
-              ) : (
-                <Link key={m.id} href={`${mur}?m=${m.rang}`} prefetch={false} className="ec-tdb-magazine">
-                  <span className="ec-tdb-couv-mag ec-tdb-couv-mag--vide">+</span>
-                  <span className="ec-note">{m.nom}</span>
-                  <span className="ec-tdb-style-nom">À choisir</span>
-                  <span className="ec-tdb-lien">Ouvrir le mur</span>
-                </Link>
-              )
-            )}
-          </div>
-          {reste ? (
-            <Link href={`${mur}?m=${reste.rang}`} prefetch={false} className="ec-bouton ec-bouton--plein">
-              Choisir le style de « {reste.nom} »
-            </Link>
-          ) : aValider ? (
-            <Link href={`${brief}?m=${aValider.rang}`} prefetch={false} className="ec-bouton ec-bouton--plein">
-              Valider le brief de « {aValider.nom} »
-            </Link>
-          ) : null}
-        </>
+        <div className="ec-tdb-style-pied">
+          {mags.map((m) => {
+            const reste = !m.style ? 'Choisir le style' : !m.briefValide && ecrire ? 'Valider le brief' : null
+            return (
+              <Link
+                key={m.id}
+                href={!m.style ? `${mur}?m=${m.rang}` : !m.briefValide && ecrire ? `${brief}?m=${m.rang}` : `${mur}?m=${m.rang}`}
+                prefetch={false}
+                className={reste ? 'ec-tdb-tuile ec-tdb-tuile--a-faire' : 'ec-tdb-tuile'}
+              >
+                <span className="ec-note">{m.nom}</span>
+                <strong>{m.style ?? 'À composer'}</strong>
+                {reste ? <span className="ec-tdb-tuile-action">{reste} →</span> : null}
+              </Link>
+            )
+          })}
+          <Link href={mur} prefetch={false} className="ec-tdb-modifier">
+            {ecrire ? 'Modifier' : 'Voir'}
+          </Link>
+        </div>
       )}
     </section>
   )

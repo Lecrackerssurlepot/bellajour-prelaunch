@@ -7,6 +7,7 @@ import { LIBELLE_ETAT_EDITION } from "@/lib/collectif/etats";
 import { MIGRATION_COLLECTIF } from "@/lib/collectif/migration";
 import { chargerBatAtelier } from "../../donnees";
 import AtelierBat from "./AtelierBat";
+import BarreAtelier, { liensEditions } from "../../../BarreAtelier";
 import "../../../admin.css";
 import "../../../atelier/atelier.css";
 import "../../collectif.css";
@@ -54,9 +55,10 @@ export default async function PageBatAtelier({
 
   return (
     <div className="adm-root ate-root eca-root">
+      <BarreAtelier monde="editions" collectif liens={liensEditions(null)} />
       <header className="ate-fiche-tete">
-        <Link href={`/admin/collectif/${id}`} className="ate-retour">
-          ← {bat.edition.organisation}
+        <Link href={`/admin/collectif/${id}`} className="eca-retour">
+          <span aria-hidden="true">←</span> {bat.edition.organisation}, la fiche
         </Link>
         <h1 className="ate-h1">Bon à tirer</h1>
         <p className="ate-bonjour">

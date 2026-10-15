@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { collectifOuvert } from "@/lib/collectif/interrupteur";
+import BarreAtelier, { liensParticuliers } from "../../BarreAtelier";
 import "../../admin.css";
 import "../atelier.css";
 
@@ -19,6 +21,7 @@ export default function Chargement() {
     <div className="adm-root ate-root ate-fiche ate-squelette" aria-busy="true" aria-live="polite">
       <span className="adm-sr">Chargement du dossier…</span>
 
+      <BarreAtelier monde="particuliers" collectif={collectifOuvert()} liens={liensParticuliers(false)} />
       <header className="ate-fiche-tete">
         <Link href="/admin/atelier" className="ate-retour">
           ← Tous les dossiers

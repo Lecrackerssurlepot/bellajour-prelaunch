@@ -8,6 +8,7 @@ import { MIGRATION_COLLECTIF } from "@/lib/collectif/migration";
 import { TYPES_DOUBLES } from "@/lib/collectif/styles";
 import { chargerStyle } from "../../donnees";
 import EditeurStyle from "./EditeurStyle";
+import BarreAtelier, { liensEditions } from "../../../BarreAtelier";
 import "../../../admin.css";
 import "../../../atelier/atelier.css";
 import "../../collectif.css";
@@ -47,9 +48,10 @@ export default async function PageStyle({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="adm-root ate-root eca-root">
+      <BarreAtelier monde="editions" collectif liens={liensEditions("styles")} />
       <header className="ate-fiche-tete">
-        <Link href="/admin/collectif/styles" className="ate-retour">
-          ← Les styles du mur
+        <Link href="/admin/collectif/styles" className="eca-retour">
+          <span aria-hidden="true">←</span> Les styles du mur
         </Link>
         <h1 className="ate-h1">{st.nom}</h1>
         <p className="ate-bonjour">

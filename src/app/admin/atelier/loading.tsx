@@ -1,3 +1,5 @@
+import { collectifOuvert } from "@/lib/collectif/interrupteur";
+import BarreAtelier, { liensParticuliers } from "../BarreAtelier";
 import "../admin.css";
 import "./atelier.css";
 
@@ -37,9 +39,11 @@ export default function Chargement() {
     <div className="adm-root ate-root ate-squelette" aria-busy="true" aria-live="polite">
       <span className="adm-sr">Chargement des dossiers…</span>
 
+      <BarreAtelier monde="particuliers" collectif={collectifOuvert()} liens={liensParticuliers(false)} />
+
       <header className="ate-header">
         <div>
-          <h1 className="ate-h1">L&apos;Atelier</h1>
+          <h1 className="adm-sr">L&apos;Atelier, les particuliers</h1>
           <p className="ate-bonjour">
             <span className="ate-sq ate-sq--texte" />
           </p>

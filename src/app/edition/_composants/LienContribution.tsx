@@ -5,26 +5,53 @@
    1. le nom et le plafond (raccourcis 10 / 30 / 50 / Sans limite, la valeur
       en grand) → « Créer le lien » ;
    2. le lien prêt : QR code, Copier, WhatsApp, Mail, télécharger le QR.
+   Le message qui part avec le lien est écrit pour CE groupe et CET événement
+   (`partage.ts`, retours du 14/10) ; `FenetrePartage` le montre et le laisse
+   retoucher avant l'envoi.
    Le lien est `/depot/<token_depot>?p=<clé aléatoire>` : jamais un mot
    lisible (droits.ts), même si la maquette en montrait un. */
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { messagePartage } from "@/lib/collectif/partage";
 import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
 import { svgQr } from "@/lib/collectif/qr";
 import Fenetre from "./Fenetre";
 import QrCode from "./QrCode";
 
-export type LienPartage = { libelle: string; url: string; plafond: string; recues?: number };
+export type LienPartage = {
+  libelle: string;
+  url: string;
+  plafond: string;
+  recues?: number;
+  /** Le lien général des participants : salue « à tous ». */
+  general?: boolean;
+};
 
-function messagePartage(evenement: string, url: string, tu: boolean): string {
-  return tu ? `${evenement} : dépose ici tes photos. ${url}` : `${evenement} : déposez ici vos photos. ${url}`;
+/** Ce que le message dit de l'événement : l'organisation, l'événement, la clôture, le registre. */
+export type ContexteMessage = { organisation: string; evenement: string; cloture: string; tu: boolean };
+
+function texteDuLien(lien: LienPartage, c: ContexteMessage) {
+  return messagePartage({ groupe: lien.general ? null : lien.libelle, organisation: c.organisation, evenement: c.evenement, url: lien.url, plafond: lien.plafond, cloture: c.cloture, tu: c.tu });
+}
+
+function nomFichierQr(libelle: string): string {
+  return `qr-${libelle.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").toLowerCase() || "lien"}.svg`;
+}
+
+function telechargerQr(lien: LienPartage) {
+  const blob = new Blob([svgQr(lien.url)], { type: "image/svg+xml" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = nomFichierQr(lien.libelle);
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 /** Copier, WhatsApp, Mail (et le QR code en fichier) : les gestes de partage d'un lien. */
-export function BoutonsPartage({ lien, evenement, tu, avecQr }: { lien: LienPartage; evenement: string; tu: boolean; avecQr?: boolean }) {
+export function BoutonsPartage({ lien, contexte, avecQr }: { lien: LienPartage; contexte: ContexteMessage; avecQr?: boolean }) {
   const [copie, setCopie] = useState<"" | "ok" | "non">("");
-  const texte = messagePartage(evenement, lien.url, tu);
+  const { texte, objet } = texteDuLien(lien, contexte);
   async function copier() {
     try {
       await navigator.clipboard.writeText(lien.url);
@@ -33,14 +60,6 @@ export function BoutonsPartage({ lien, evenement, tu, avecQr }: { lien: LienPart
     } catch {
       setCopie("non");
     }
-  }
-  function telechargerQr() {
-    const blob = new Blob([svgQr(lien.url)], { type: "image/svg+xml" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `qr-${lien.libelle.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").toLowerCase() || "lien"}.svg`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
   return (
     <div className={avecQr ? "ec-partage ec-partage--quatre" : "ec-partage"}>
@@ -52,12 +71,12 @@ export function BoutonsPartage({ lien, evenement, tu, avecQr }: { lien: LienPart
       </a>
       <a
         className="ec-bouton ec-bouton--clair ec-bouton--petit"
-        href={`mailto:?subject=${encodeURIComponent(evenement)}&body=${encodeURIComponent(texte)}`}
+        href={`mailto:?subject=${encodeURIComponent(objet)}&body=${encodeURIComponent(texte)}`}
       >
         Mail
       </a>
       {avecQr ? (
-        <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={telechargerQr}>
+        <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => telechargerQr(lien)}>
           QR code
         </button>
       ) : null}
@@ -66,7 +85,8 @@ export function BoutonsPartage({ lien, evenement, tu, avecQr }: { lien: LienPart
 }
 
 /** La carte d'un lien déjà créé : son QR, son nom, son plafond, ce qu'il a reçu. */
-export function CarteLien({ lien, evenement, tu, cloture }: { lien: LienPartage; evenement: string; tu: boolean; cloture: string }) {
+export function CarteLien({ lien, contexte }: { lien: LienPartage; contexte: ContexteMessage }) {
+  const { cloture } = contexte;
   return (
     <div className="ec-carte-lien">
       <QrCode texte={lien.url} taille={120} etiquette={`QR code du lien « ${lien.libelle} »`} />
@@ -76,7 +96,7 @@ export function CarteLien({ lien, evenement, tu, cloture }: { lien: LienPartage;
           {lien.plafond.charAt(0).toLowerCase() + lien.plafond.slice(1)} · {lien.recues ?? 0} photo{(lien.recues ?? 0) > 1 ? "s" : ""} reçue{(lien.recues ?? 0) > 1 ? "s" : ""}
           {cloture ? ` · ouvert jusqu'au ${cloture}` : ""}
         </span>
-        <BoutonsPartage lien={lien} evenement={evenement} tu={tu} />
+        <BoutonsPartage lien={lien} contexte={contexte} />
       </div>
     </div>
   );
@@ -86,19 +106,16 @@ export function CarteLien({ lien, evenement, tu, cloture }: { lien: LienPartage;
 export default function FenetreLien({
   token,
   max,
-  evenement,
-  cloture,
-  tu,
+  contexte,
   onFermer,
 }: {
   token: string;
   /** Le plafond le plus haut pour un lien (`plafondLienMax`). */
   max: number;
-  evenement: string;
-  cloture: string;
-  tu: boolean;
+  contexte: ContexteMessage;
   onFermer: () => void;
 }) {
+  const { cloture, tu } = contexte;
   const router = useRouter();
   const v = (vous: string, toi: string) => (tu ? toi : vous);
   const min = Math.min(CURSEUR_LIEN.min, max);
@@ -148,7 +165,7 @@ export default function FenetreLien({
             {cloture ? <span className="ec-note">Ouvert jusqu&apos;au {cloture}.</span> : null}
           </div>
         </div>
-        <BoutonsPartage lien={cree} evenement={evenement} tu={tu} avecQr />
+        <BoutonsPartage lien={cree} contexte={contexte} avecQr />
         <button type="button" className="ec-bouton ec-bouton--plein" onClick={fermer}>
           Terminé
         </button>
@@ -220,6 +237,72 @@ export default function FenetreLien({
       ) : null}
       <button type="button" className="ec-bouton ec-bouton--plein" disabled={occupe || !nom.trim()} onClick={creer}>
         Créer le lien
+      </button>
+    </Fenetre>
+  );
+}
+
+/** Partager un lien déjà créé (maquette Partage) : le QR, le message écrit pour ce groupe et cet événement, à retoucher, puis WhatsApp, Mail, Copier le message, Télécharger le QR. */
+export function FenetrePartage({ lien, contexte, onFermer }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void }) {
+  const v = (vous: string, toi: string) => (contexte.tu ? toi : vous);
+  const propose = texteDuLien(lien, contexte);
+  const [texte, setTexte] = useState(propose.texte);
+  const [copie, setCopie] = useState<"" | "ok" | "non">("");
+  async function copier() {
+    try {
+      await navigator.clipboard.writeText(texte);
+      setCopie("ok");
+      setTimeout(() => setCopie(""), 2000);
+    } catch {
+      setCopie("non");
+    }
+  }
+  return (
+    <Fenetre
+      titre={`Partager le lien « ${lien.libelle} »`}
+      sous={v("Le message est écrit pour ce groupe et cet événement. Retouchez-le si vous voulez.", "Le message est écrit pour ce groupe et cet événement. Retouche-le si tu veux.")}
+      onFermer={onFermer}
+      large
+    >
+      <div className="ec-partage-corps">
+        <QrCode texte={lien.url} taille={136} etiquette={`QR code du lien « ${lien.libelle} »`} />
+        <label className="ec-partage-message">
+          Le message
+          <textarea className="ec-champ" rows={8} value={texte} onChange={(e) => setTexte(e.target.value)} />
+        </label>
+      </div>
+      <div className="ec-partage ec-partage--quatre">
+        <a className="ec-bouton ec-bouton--petit" href={`https://wa.me/?text=${encodeURIComponent(texte)}`} target="_blank" rel="noopener noreferrer">
+          WhatsApp
+        </a>
+        <a className="ec-bouton ec-bouton--clair ec-bouton--petit" href={`mailto:?subject=${encodeURIComponent(propose.objet)}&body=${encodeURIComponent(texte)}`}>
+          Mail
+        </a>
+        <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={copier}>
+          {copie === "ok" ? "Copié" : copie === "non" ? "Copie impossible" : "Copier le message"}
+        </button>
+        <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => telechargerQr(lien)}>
+          Télécharger le QR
+        </button>
+      </div>
+      <p className="ec-note">Le mail reprend le même texte, avec pour objet « {propose.objet} ».</p>
+    </Fenetre>
+  );
+}
+
+/** Le QR code en grand, à projeter ou à imprimer le jour de l'événement : on le scanne avec l'appareil photo du téléphone. */
+export function FenetreQr({ lien, contexte, onFermer }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void }) {
+  return (
+    <Fenetre titre={`Le QR code « ${lien.libelle} »`} sous="À projeter ou à imprimer : on le scanne avec l'appareil photo du téléphone, sans application." onFermer={onFermer}>
+      <div className="ec-qr-grand">
+        <QrCode texte={lien.url} taille={280} etiquette={`QR code du lien « ${lien.libelle} »`} />
+      </div>
+      <p className="ec-note ec-qr-grand-note">
+        {lien.plafond}
+        {contexte.cloture ? ` · ouvert jusqu'au ${contexte.cloture}` : ""}
+      </p>
+      <button type="button" className="ec-bouton ec-bouton--plein" onClick={() => telechargerQr(lien)}>
+        Télécharger le QR
       </button>
     </Fenetre>
   );

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Atelier, la messagerie</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&amp;family=DM+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2f6db5}a:hover{color:#1c1c1c}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #f7f1e9; color: #1c1c1c; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; overflow: hidden">
+  <nav aria-label="Atelier" style="flex: none; width: 76px; box-sizing: border-box; padding: 18px 0; display: flex; flex-direction: column; align-items: center; gap: 6px; border-right: 1px solid rgba(28,28,28,0.10); background: #efe6d8">
+    <span style="font-family: 'Cormorant Garamond', serif; font-size: 22px; padding-bottom: 12px">B</span>
+    <sc-for list="{{ rail }}" as="r" hint-placeholder-count="5">
+      <a href="#" aria-label="{{ r.nom }}" style="position: relative; width: 56px; padding: 8px 0; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; color: #1c1c1c; text-decoration: none; background: {{ r.fond }}; font-size: 10px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ r.trace }}"></path></svg>
+        {{ r.nom }}
+        <sc-if value="{{ r.badge }}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: 4px; right: 6px; min-width: 16px; height: 16px; border-radius: 999px; background: #c47a5c; color: #ffffff; font-size: 10px; display: grid; place-items: center">{{ r.badge }}</span></sc-if>
+      </a>
+    </sc-for>
+  </nav>
+
+  <section aria-label="Les conversations" style="flex: none; width: 340px; display: flex; flex-direction: column; border-right: 1px solid rgba(28,28,28,0.10)">
+    <div style="padding: 20px 20px 12px; display: flex; flex-direction: column; gap: 12px">
+      <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px">Messagerie</h1>
+      <label style="display: flex"><span style="position: absolute; left: -9999px">Chercher</span><input placeholder="Chercher un client, un événement…" style="flex: 1; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(28,28,28,0.14); background: #ffffff; font: inherit"></label>
+      <div style="display: flex; gap: 6px">
+        <sc-for list="{{ filtres }}" as="f" hint-placeholder-count="4">
+          <button type="button" aria-pressed="{{ f.actif }}" style="height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid {{ f.bord }}; background: {{ f.fond }}; color: {{ f.couleur }}; font: inherit; font-size: 12px">{{ f.nom }}</button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="margin: 0 12px 8px; padding: 12px; border-radius: 12px; background: rgba(196,122,92,0.10); display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #8a4f36">À traiter aujourd'hui</span>
+      <sc-for list="{{ notifs }}" as="n" hint-placeholder-count="3">
+        <span style="display: flex; gap: 8px; font-size: 13px"><span style="width: 6px; height: 6px; margin-top: 7px; border-radius: 999px; background: #c47a5c; flex: none"></span><span>{{ n }}</span></span>
+      </sc-for>
+    </div>
+    <ul style="list-style: none; margin: 0; padding: 0 8px; display: flex; flex-direction: column; gap: 2px; overflow: hidden">
+      <sc-for list="{{ convs }}" as="c" hint-placeholder-count="5">
+        <li>
+          <a href="#" style="display: flex; gap: 12px; padding: 12px; border-radius: 12px; color: #1c1c1c; text-decoration: none; background: {{ c.fond }}">
+            <span style="flex: none; width: 36px; height: 36px; border-radius: 999px; background: #ffffff; border: 1px solid rgba(28,28,28,0.10); display: grid; place-items: center; font-size: 12px; font-weight: 600">{{ c.ini }}</span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+              <span style="display: flex; justify-content: space-between; gap: 8px"><strong style="font-weight: {{ c.graisse }}">{{ c.nom }}</strong><span style="font-size: 12px; color: rgba(28,28,28,0.6)">{{ c.quand }}</span></span>
+              <span style="font-size: 12px; color: rgba(28,28,28,0.6)">{{ c.genre }}</span>
+              <span style="display: flex; justify-content: space-between; gap: 8px"><span style="overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; color: rgba(28,28,28,0.78)">{{ c.extrait }}</span><sc-if value="{{ c.nonlus }}" hint-placeholder-val="{{ false }}"><span style="flex: none; min-width: 18px; height: 18px; border-radius: 999px; background: #c47a5c; color: #ffffff; font-size: 11px; display: grid; place-items: center">{{ c.nonlus }}</span></sc-if></span>
+            </span>
+          </a>
+        </li>
+      </sc-for>
+    </ul>
+  </section>
+
+  <section aria-label="La conversation" style="flex: 1; min-width: 0; display: flex; flex-direction: column; background: #fbf8f3">
+    <header style="flex: none; padding: 16px 24px; border-bottom: 1px solid rgba(28,28,28,0.10); display: flex; align-items: center; gap: 12px">
+      <span style="display: flex; flex-direction: column"><strong style="font-weight: 600">Maison Aubier</strong><span style="font-size: 12px; color: rgba(28,28,28,0.6)">Séminaire d'automne · Camille Essai, responsable</span></span>
+    </header>
+    <div style="flex: 1; min-height: 0; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; justify-content: flex-end">
+      <div style="align-self: flex-start; max-width: 72%; padding: 12px 16px; border-radius: 16px 16px 16px 4px; background: #ffffff; border: 1px solid rgba(28,28,28,0.08); display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #8a4f36">Demande de modification</span>
+        <span><strong style="font-weight: 600">Ajouter des pages</strong> · 8 pages pour la soirée de clôture</span>
+        <span style="font-size: 11px; color: rgba(28,28,28,0.6)">Camille Essai · 10 h 02</span>
+      </div>
+      <div style="align-self: flex-start; max-width: 72%; padding: 12px 16px; border-radius: 16px 16px 16px 4px; background: #ffffff; border: 1px solid rgba(28,28,28,0.08)">
+        <span style="display: block; padding: 6px 10px; margin-bottom: 6px; border-left: 2px solid #c47a5c; background: #f7f1e9; border-radius: 4px; font-size: 12px; color: rgba(28,28,28,0.7)">Votre envoi · Logo · logo-aubier-blanc.png</span>
+        Celui-ci pour la couverture, s'il vous plaît.
+        <span style="display: block; font-size: 11px; color: rgba(28,28,28,0.6); padding-top: 4px">Camille Essai · 10 h 05</span>
+      </div>
+    </div>
+    <div style="flex: none; padding: 12px 24px 18px; border-top: 1px solid rgba(28,28,28,0.10); display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; gap: 8px">
+        <button type="button" style="height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(28,28,28,0.18); background: #ffffff; font: inherit; font-size: 12px">Répondre par une proposition</button>
+        <button type="button" style="height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(28,28,28,0.18); background: #ffffff; font: inherit; font-size: 12px">Joindre un fichier</button>
+        <button type="button" style="height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(28,28,28,0.18); background: #ffffff; font: inherit; font-size: 12px">Citer un document</button>
+      </div>
+      <div style="display: flex; gap: 10px">
+        <label style="flex: 1; display: flex"><span style="position: absolute; left: -9999px">Votre réponse</span><textarea rows="1" placeholder="Répondre à Maison Aubier…" style="flex: 1; min-height: 44px; padding: 11px 14px; box-sizing: border-box; border-radius: 12px; border: 1px solid rgba(28,28,28,0.14); background: #ffffff; font: inherit; resize: none"></textarea></label>
+        <button type="button" style="height: 44px; padding: 0 18px; border-radius: 999px; border: 0; background: #1c1c1c; color: #ffffff; font: inherit; font-weight: 600">Envoyer</button>
+      </div>
+    </div>
+  </section>
+
+  <aside aria-label="Le dossier du client" style="flex: none; width: 360px; box-sizing: border-box; padding: 20px; display: flex; flex-direction: column; gap: 14px; border-left: 1px solid rgba(28,28,28,0.10); background: #f7f1e9; overflow: hidden">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <span style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(28,28,28,0.6)">Le dossier</span>
+      <strong style="font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 26px; line-height: 1.1">Séminaire d'automne</strong>
+      <span style="align-self: flex-start; padding: 2px 10px; border-radius: 999px; background: rgba(47,109,181,0.12); color: #24548c; font-size: 12px">Collecte ouverte · clôture le 28 octobre</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      <sc-for list="{{ chiffres }}" as="c" hint-placeholder-count="3">
+        <span style="padding: 10px; border-radius: 12px; background: #ffffff; display: flex; flex-direction: column"><strong style="font-size: 20px; font-weight: 500">{{ c.n }}</strong><span style="font-size: 12px; color: rgba(28,28,28,0.6)">{{ c.libelle }}</span></span>
+      </sc-for>
+    </div>
+    <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+      <sc-for list="{{ lignes }}" as="l" hint-placeholder-count="5">
+        <li style="display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid rgba(28,28,28,0.08); font-size: 13px"><span style="color: rgba(28,28,28,0.6)">{{ l.cle }}</span><span style="text-align: right">{{ l.valeur }}</span></li>
+      </sc-for>
+    </ul>
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px">
+      <a href="AtelierFiche.dc.html" style="height: 42px; border-radius: 999px; background: #1c1c1c; color: #ffffff; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; font-weight: 500">Ouvrir la fiche</a>
+      <a href="#" style="height: 42px; border-radius: 999px; border: 1px solid rgba(28,28,28,0.18); color: #1c1c1c; text-decoration: none; display: inline-flex; align-items: center; justify-content: center">Voir son espace comme lui</a>
+    </div>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const r = (nom, trace, actif, badge) => ({ nom, trace, badge, fond: actif ? '#ffffff' : 'transparent' });
+    const filtre = (nom, actif) => ({ nom, actif, fond: actif ? '#1c1c1c' : 'transparent', couleur: actif ? '#ffffff' : '#1c1c1c', bord: actif ? '#1c1c1c' : 'rgba(28,28,28,0.18)' });
+    const conv = (ini, nom, genre, extrait, quand, nonlus, actif) => ({ ini, nom, genre, extrait, quand, nonlus, fond: actif ? '#ffffff' : 'transparent', graisse: nonlus ? '600' : '500' });
+    return {
+      rail: [
+        r('Dossiers', 'M4 6h16M4 12h16M4 18h10', false, false),
+        r('Éditions', 'M4 5h7v14H4zM13 5h7v14h-7z', false, false),
+        r('Messages', 'M4 5h16v11H8l-4 4z', true, '3'),
+        r('Planning', 'M5 5h14v15H5zM5 10h14M9 3v4M15 3v4', false, false),
+        r('Styles', 'M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.5 0-1.5 1.5-2 2.5-2h1a3 3 0 0 0 3-3A9 9 0 0 0 12 3z', false, false)
+      ],
+      filtres: [filtre('Tout', true), filtre('Non lus · 3', false), filtre('Éditions', false), filtre('Particuliers', false)],
+      notifs: ['Maison Aubier : une demande de modification', 'Lycée Jean Moulin : brief du magazine 2 validé', 'Rendez-vous à 15 h 30 avec Club Rive Gauche'],
+      convs: [
+        conv('MA', 'Maison Aubier', 'Édition · Séminaire d’automne', 'Celui-ci pour la couverture, s’il vous plaît.', '10 h 05', '2', true),
+        conv('LJ', 'Lycée Jean Moulin', 'Édition · Voyage à Rome', 'Merci, le brief est validé de notre côté.', 'hier', '1', false),
+        conv('CR', 'Club Rive Gauche', 'Édition · Saison 2026', 'À jeudi pour la relecture !', 'lun.', false, false),
+        conv('MD', 'Marie Dupont', 'Particulier · Notre été', 'Mail M5 parti : corrections faites', '12 oct.', false, false),
+        conv('ST', 'Studio Tessier', 'Édition · Lancement', 'Le devis signé est en pièce jointe.', '9 oct.', false, false)
+      ],
+      chiffres: [{ n: '1 248', libelle: 'photos' }, { n: '2 / 2', libelle: 'briefs validés' }, { n: '0', libelle: 'tour de BAT' }],
+      lignes: [
+        { cle: 'Prochain rendez-vous', valeur: 'jeudi 15 octobre, 10 h 30' },
+        { cle: 'Contenus reçus', valeur: 'Logo (2), mot du dirigeant' },
+        { cle: 'Documents', valeur: 'Devis signé' },
+        { cle: 'Liens de contribution', valeur: '4, dont 1 sans limite' },
+        { cle: 'Responsable', valeur: 'Camille Essai' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

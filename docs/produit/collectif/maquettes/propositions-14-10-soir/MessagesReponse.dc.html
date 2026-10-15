@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Répondre à un message</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&amp;family=DM+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#d68a63}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #050505; color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; overflow: hidden">
+  <dc-import name="Menu" actif="atelier" hint-size="232px,900px"></dc-import>
+  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+    <header style="flex: none; height: 68px; box-sizing: border-box; padding: 0 32px; border-bottom: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center; gap: 16px">
+      <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px">Parler à l'atelier</h1>
+      <span style="color: rgba(255,255,255,0.64); font-size: 13px">Messages, rendez-vous et demandes au même endroit</span>
+    </header>
+    <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 320px">
+      <section style="min-height: 0; display: flex; flex-direction: column">
+        <div style="flex: 1; min-height: 0; overflow: hidden; padding: 24px 32px; display: flex; flex-direction: column; gap: 14px; justify-content: flex-end">
+          <div style="align-self: flex-end; max-width: 70%; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(214,138,99,0.55); background: rgba(214,138,99,0.08); display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #d68a63">Demande de modification</span>
+            <span><strong style="font-weight: 600">Ajouter des pages</strong> · 8 pages pour la soirée de clôture</span>
+            <span style="font-size: 11px; color: rgba(255,255,255,0.64)">Camille Essai · 10 h 02</span>
+          </div>
+          <div style="align-self: flex-start; max-width: 70%; display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border-radius: 16px 16px 16px 4px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04)">
+            <span style="padding: 6px 10px; border-left: 2px solid #d68a63; background: rgba(255,255,255,0.04); border-radius: 4px; font-size: 12px; color: rgba(255,255,255,0.72)">En réponse à : Ajouter des pages · 8 pages pour la soirée de clôture</span>
+            <span>C'est possible : voici notre proposition pour les 8 pages.</span>
+            <span style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.05)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d68a63" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"></path><path d="M14 3v4h4"></path></svg>
+              <span style="flex: 1; display: flex; flex-direction: column"><strong style="font-weight: 500">Proposition complémentaire n° 1</strong><span style="font-size: 12px; color: rgba(255,255,255,0.64)">8 pages de plus · à accepter</span></span>
+              <button type="button" style="height: 34px; padding: 0 14px; border-radius: 999px; border: 0; background: #d68a63; color: #050505; font: inherit; font-size: 13px; font-weight: 600">Accepter</button>
+              <button type="button" style="height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit; font-size: 13px">Ouvrir</button>
+            </span>
+            <span style="font-size: 11px; color: rgba(255,255,255,0.64)">L'atelier · Mathias · 11 h 15</span>
+          </div>
+          <div style="align-self: flex-start; position: relative; max-width: 70%; padding: 12px 16px; border-radius: 16px 16px 16px 4px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06)">
+            Préférez-vous le logo blanc sur la couverture ?
+            <span style="display: block; font-size: 11px; color: rgba(255,255,255,0.64); padding-top: 4px">L'atelier · Mathias · 11 h 20</span>
+            <span style="position: absolute; top: -14px; right: 12px; display: flex; gap: 4px; padding: 4px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); background: #141414">
+              <button type="button" aria-label="Répondre à ce message" style="height: 28px; padding: 0 10px; border-radius: 999px; border: 0; background: rgba(214,138,99,0.16); color: #ffffff; font: inherit; font-size: 12px; display: inline-flex; align-items: center; gap: 6px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 6 6v4"></path></svg>
+                Répondre
+              </button>
+            </span>
+          </div>
+        </div>
+        <div style="flex: none; padding: 12px 32px 18px; border-top: 1px solid rgba(255,255,255,0.10); display: flex; flex-direction: column; gap: 8px">
+          <span style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-left: 2px solid #d68a63; border-radius: 6px; background: rgba(255,255,255,0.04); font-size: 13px">
+            <span style="flex: 1; color: rgba(255,255,255,0.72)">Vous répondez à l'atelier : « Préférez-vous le logo blanc sur la couverture ? »</span>
+            <button type="button" aria-label="Ne plus répondre à ce message" style="border: 0; background: none; color: rgba(255,255,255,0.64); font: inherit">✕</button>
+          </span>
+          <div style="display: flex; gap: 10px; align-items: flex-end">
+            <label style="flex: 1; display: flex">
+              <span style="position: absolute; left: -9999px">Votre message</span>
+              <textarea rows="1" style="flex: 1; min-height: 44px; padding: 11px 14px; box-sizing: border-box; border-radius: 12px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04); color: #ffffff; font: inherit; resize: none">Oui, le blanc, sur le fond bleu.</textarea>
+            </label>
+            <button type="button" aria-label="Joindre ou citer un document" style="width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font-size: 20px">+</button>
+            <button type="button" style="height: 44px; padding: 0 18px; border-radius: 999px; border: 0; background: #d68a63; color: #050505; font: inherit; font-weight: 600">Envoyer</button>
+          </div>
+        </div>
+      </section>
+      <aside style="padding: 24px; border-left: 1px solid rgba(255,255,255,0.10); background: #0a0a0a; display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.64)">Vos demandes</span>
+        <span style="display: flex; justify-content: space-between; gap: 10px"><span>Ajouter des pages</span><span style="color: #d68a63">Proposition reçue</span></span>
+        <span style="display: flex; justify-content: space-between; gap: 10px"><span>Logo en 3e de couverture</span><span style="color: rgba(255,255,255,0.64)">Répondue</span></span>
+      </aside>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

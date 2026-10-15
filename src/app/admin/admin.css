@@ -4,9 +4,46 @@
    (DM Sans, tableaux à fond plein, zéro glass, zéro serif sur chiffres/cellules).
    Aucun hex de charte recodé en dur : tout vient des variables. */
 
+/* 15/10 : l'atelier passe en PORCELAINE (Mathias : « la crème fait vieillot »).
+   Les jetons crème sont redéfinis ICI, pour l'atelier seulement : les pages
+   publiques crème (/merci, les pages légales…) gardent tokens.css tel quel.
+   Un blanc froid, des encres bleutées, du verre blanc et deux taches de
+   couleur très floues derrière (les maquettes « direction visuelle »). */
 .adm-root {
+  --bj-cream: #f3f4f7;
+  --bj-cream-2: #eef0f4;
+  --bj-cream-tint-1: #ffffff;
+  --bj-cream-tint-2: #e9ecf1;
+  --bj-cream-tint-3: #e3e7ee;
+  --bj-charcoal: #101828;
+  --bj-text: #101828;
+  --bj-text-soft: #475467;
+  --bj-text-faint: #7c8698;
+  --bj-action-soft: #eaf2fc;
+  --bj-veil-6: rgba(16, 24, 40, 0.06);
+  --bj-veil-8: rgba(16, 24, 40, 0.08);
+  --bj-veil-12: rgba(16, 24, 40, 0.12);
+  --bj-veil-16: rgba(16, 24, 40, 0.16);
+  --bj-veil-35: rgba(16, 24, 40, 0.35);
+  --bj-glass-card-bg: rgba(255, 255, 255, 0.7);
+  --bj-glass-card-bg-active: rgba(255, 255, 255, 0.86);
+  --bj-glass-card-blur: blur(24px) saturate(1.4);
+  --bj-glass-card-border: 1px solid rgba(255, 255, 255, 0.95);
+  --bj-glass-card-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 18px 48px rgba(16, 24, 40, 0.07);
+  --bj-glass-card-shadow-active: 0 1px 2px rgba(16, 24, 40, 0.06), 0 22px 56px rgba(16, 24, 40, 0.1);
+  --bj-shadow-soft: 0 6px 18px rgba(16, 24, 40, 0.06);
+  --bj-shadow-pop: 0 18px 48px rgba(16, 24, 40, 0.12);
+  --bj-r-md: 20px;
+  --bj-r-lg: 24px;
+  --bj-r-btn: 999px;
+  --adm-verre: rgba(255, 255, 255, 0.7);
+  --adm-verre-bord: rgba(255, 255, 255, 0.95);
+  --adm-verre-ombre: 0 1px 2px rgba(16, 24, 40, 0.04), 0 18px 48px rgba(16, 24, 40, 0.07);
+  --adm-flou: blur(24px) saturate(1.4);
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
-  background: linear-gradient(180deg, var(--bj-cream) 0%, var(--bj-cream-2) 100%);
+  background: var(--bj-cream);
   color: var(--bj-text);
   font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-ui);
@@ -15,8 +52,37 @@
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
 }
+/* Le fond de la page autour d'un atelier plus étroit que la fenêtre : le même
+   blanc froid (sans cela, la crème du site débordait sur les côtés). */
+html:has(.adm-root),
+body:has(.adm-root) {
+  background: #f3f4f7;
+}
 .adm-root * {
   box-sizing: border-box;
+}
+.adm-root::before,
+.adm-root::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(120px);
+}
+.adm-root::before {
+  left: -160px;
+  top: -220px;
+  width: 760px;
+  height: 600px;
+  background: #dce8fa;
+}
+.adm-root::after {
+  right: -180px;
+  bottom: -240px;
+  width: 760px;
+  height: 600px;
+  background: #eae5f6;
 }
 
 /* ── En-tête ── */
@@ -204,7 +270,7 @@
   appearance: none;
   font-family: var(--bj-font-ui);
   border: 1px solid var(--bj-veil-12);
-  border-radius: var(--bj-r-btn);
+  border-radius: 14px;
   padding: var(--bj-sp-2) var(--bj-sp-3);
   font-size: var(--bj-fs-sm);
   background: var(--bj-cream-tint-1);
@@ -451,7 +517,7 @@
   background: var(--bj-action-soft);
   border: 1px solid var(--bj-action-border);
   border-radius: var(--bj-r-btn);
-  padding: var(--bj-sp-2) var(--bj-sp-4);
+  padding: var(--bj-sp-2) 18px;
   cursor: pointer;
   transition: background var(--bj-dur-fast) var(--bj-ease),
     box-shadow var(--bj-dur-fast) var(--bj-ease);
@@ -467,8 +533,8 @@
   margin-left: auto;
 }
 .adm-btn--ghost {
-  color: var(--bj-text-soft);
-  background: transparent;
+  color: var(--bj-text);
+  background: rgba(255, 255, 255, 0.75);
   border-color: var(--bj-veil-12);
 }
 .adm-btn--ghost:hover:not(:disabled) {

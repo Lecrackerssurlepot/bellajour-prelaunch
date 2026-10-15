@@ -22,7 +22,7 @@
   --ate-vert: var(--bj-save-ok);
   --ate-orange: var(--bj-save-warn);
   --ate-ligne-h: 1px solid var(--bj-veil-8);
-  --ate-carte-bg: rgba(255, 255, 255, 0.62);
+  --ate-carte-bg: var(--adm-verre, rgba(255, 255, 255, 0.7));
 
   max-width: 1240px;
   margin: 0 auto;
@@ -87,6 +87,134 @@
 }
 .ate-liens .adm-logout-form {
   margin: 0;
+}
+
+/* ─────────────── la barre commune (T-152) : un seul logiciel ─────────────── */
+
+.atb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bj-sp-3) var(--bj-sp-4);
+  padding: 8px 10px 8px 22px;
+  margin-bottom: var(--bj-sp-5);
+  border-radius: 32px;
+  border: 1px solid var(--adm-verre-bord, var(--bj-veil-8));
+  background: var(--adm-verre, rgba(255, 255, 255, 0.7));
+  box-shadow: var(--adm-verre-ombre, none);
+  -webkit-backdrop-filter: var(--adm-flou, none);
+  backdrop-filter: var(--adm-flou, none);
+}
+.atb-marque {
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--bj-action);
+  text-decoration: none;
+}
+/* Le commutateur : deux côtés, un curseur qui glisse sous le côté ouvert. */
+.atb-switch {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-veil-8);
+}
+.atb-switch-cote {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 128px;
+  min-height: 36px;
+  padding: 0 var(--bj-sp-4);
+  border-radius: var(--bj-r-pill);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  text-decoration: none;
+  transition: color var(--bj-dur-fast) var(--bj-ease);
+}
+.atb-switch-cote:hover {
+  color: var(--bj-text);
+}
+.atb-switch-cote[aria-current="page"] {
+  color: var(--bj-text);
+  font-weight: 500;
+}
+.atb-switch-curseur {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: var(--bj-r-pill);
+  background: #ffffff;
+  box-shadow: 0 1px 3px var(--bj-veil-16);
+  transition: transform 0.22s var(--bj-ease);
+}
+.atb-switch-curseur--editions {
+  transform: translateX(100%);
+}
+.atb-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.atb-liens {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--bj-fs-sm);
+}
+.atb-liens a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 11px;
+  border-radius: 999px;
+  color: var(--bj-text-soft);
+  text-decoration: none;
+}
+.atb-liens a:hover {
+  color: var(--bj-text);
+  background: var(--bj-veil-6);
+}
+.atb-liens a[aria-current="page"] {
+  color: #1d4f8a;
+  background: var(--bj-action-soft);
+  font-weight: 600;
+}
+.atb-liens .adm-logout-form {
+  margin: 0;
+}
+@media (max-width: 720px) {
+  .atb-switch-cote {
+    min-width: 0;
+  }
+  .atb-liens {
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atb-switch-curseur {
+    transition: none;
+  }
 }
 
 /* ─────────────────────────── les piles ─────────────────────────── */
@@ -423,10 +551,12 @@
   justify-content: space-between;
   gap: var(--bj-sp-4);
   flex-wrap: wrap;
-  padding: var(--bj-sp-3) 0;
-  margin-bottom: var(--bj-sp-2);
-  background: var(--bj-cream);
-  border-bottom: var(--ate-ligne-h);
+  padding: 10px 12px;
+  margin-bottom: var(--bj-sp-3);
+  border-radius: 24px;
+  background: rgba(243, 244, 247, 0.82);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
 }
 .ate-seg {
   display: inline-flex;
@@ -454,10 +584,10 @@
   color: var(--bj-text);
 }
 .ate-seg-btn--actif {
-  background: var(--bj-cream);
+  background: #ffffff;
   color: var(--bj-text);
-  font-weight: 500;
-  box-shadow: 0 1px 2px var(--bj-veil-8);
+  font-weight: 600;
+  box-shadow: 0 1px 3px var(--bj-veil-12);
 }
 .ate-seg-compte {
   font-size: 11px;
@@ -630,9 +760,16 @@
 
 /* ─────────────────────────── une ligne ─────────────────────────── */
 
+/* 15/10 : la liste est un panneau de verre ; chaque dossier une ligne arrondie. */
 .ate-lignes {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border-radius: var(--bj-r-lg);
+  border: 1px solid var(--adm-verre-bord, var(--bj-veil-8));
+  background: var(--adm-verre, rgba(255, 255, 255, 0.7));
+  box-shadow: var(--adm-verre-ombre, none);
 }
 /* La grille est déclarée une fois et servie deux fois : aux lignes et à
    l'en-tête de colonnes. Deux déclarations, c'est deux alignements qui
@@ -647,13 +784,14 @@
 }
 .ate-ligne {
   position: relative;
-  border-bottom: var(--ate-ligne-h);
+  border-radius: 16px;
   color: inherit;
-  transition: background var(--bj-dur-fast) var(--bj-ease);
+  transition: background var(--bj-dur-fast) var(--bj-ease), box-shadow var(--bj-dur-fast) var(--bj-ease);
 }
 .ate-ligne:hover,
 .ate-ligne:focus-within {
-  background: var(--bj-action-soft);
+  background: #ffffff;
+  box-shadow: 0 1px 2px var(--bj-veil-6), 0 6px 18px var(--bj-veil-6);
 }
 /* Le lien couvre la ligne mais s'arrête avant la zone d'action : sans ça,
    viser un bouton, c'est ouvrir la fiche. */
@@ -698,14 +836,32 @@
 
 /* Le liseré dit le camp avant même qu'on lise la ligne : bleu = à nous,
    ambre = chez le client, rouge = à nous ET en retard, rien = en dehors. */
-.ate-ligne--atelier {
-  box-shadow: inset 3px 0 0 var(--bj-action);
+/* 15/10 : un trait droit aux bouts ronds, posé DANS la ligne arrondie (une
+   ombre intérieure suivait l'arrondi et dessinait une parenthèse), et qui
+   reste visible au survol. */
+.ate-ligne--atelier,
+.ate-ligne--cliente,
+.ate-ligne--retard {
+  --ate-lisere: var(--bj-action);
 }
 .ate-ligne--cliente {
-  box-shadow: inset 3px 0 0 var(--ate-orange);
+  --ate-lisere: var(--ate-orange);
 }
 .ate-ligne--retard {
-  box-shadow: inset 3px 0 0 var(--ate-rouge);
+  --ate-lisere: var(--ate-rouge);
+}
+.ate-ligne--atelier::before,
+.ate-ligne--cliente::before,
+.ate-ligne--retard::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--ate-lisere);
+  pointer-events: none;
 }
 
 /* ── la colonne « Prochaine étape » (11/09/2026) ──
@@ -882,9 +1038,10 @@
   flex-wrap: wrap;
   margin-bottom: var(--bj-sp-4);
   padding: var(--bj-sp-3) var(--bj-sp-4);
-  border: 1px solid var(--bj-veil-12);
-  border-radius: var(--bj-r-sm);
-  background: var(--bj-veil-8);
+  border: 1px solid var(--adm-verre-bord, var(--bj-veil-12));
+  border-radius: 20px;
+  background: var(--adm-verre, var(--bj-veil-8));
+  box-shadow: var(--bj-shadow-soft);
   font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-sm);
   color: var(--bj-text-soft);
@@ -1990,11 +2147,15 @@
   min-width: 0;
 }
 
+/* 15/10 : des cartes de verre arrondies qui flottent (Porcelaine). */
 .ate-carte {
   background: var(--ate-carte-bg);
-  border: 1px solid var(--bj-veil-8);
-  border-radius: var(--bj-r-md);
-  padding: var(--bj-sp-4) var(--bj-sp-5);
+  border: 1px solid var(--adm-verre-bord, var(--bj-veil-8));
+  border-radius: var(--bj-r-lg);
+  box-shadow: var(--adm-verre-ombre, none);
+  -webkit-backdrop-filter: var(--adm-flou, none);
+  backdrop-filter: var(--adm-flou, none);
+  padding: var(--bj-sp-5);
 }
 .ate-carte-tete {
   display: flex;
@@ -2005,8 +2166,8 @@
 }
 .ate-carte-titre {
   font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 600;
+  font-style: normal;
+  font-weight: 500;
   font-size: var(--bj-fs-display-sm);
   margin: 0 0 var(--bj-sp-3);
   color: var(--bj-text);

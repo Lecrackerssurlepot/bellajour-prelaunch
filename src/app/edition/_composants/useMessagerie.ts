@@ -15,8 +15,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { curseur, fusionnerMessages, INTERVALLE_MESSAGES_MS, type Message } from "@/lib/collectif/messages";
 
-/** Ce qui accompagne un message du client (révision §14.5) : un document cité, un fichier joint. */
-export type Joint = { documentId: string | null; fichier: File | null };
+/** Ce qui accompagne un message (révision §14.5) : un document cité, un fichier joint, un envoi cité, et le message auquel il RÉPOND (T-152). */
+export type Joint = { documentId: string | null; fichier: File | null; contenuId?: string | null; reponseA?: string | null };
 
 type Options = {
   initiaux: Message[];

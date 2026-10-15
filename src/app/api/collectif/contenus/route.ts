@@ -1,14 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { creerPlafond } from "@/lib/compte/garde";
-import { ecrireObjet } from "@/lib/atelier/r2";
+import { ecrireObjet, signerGet } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAcces } from "@/lib/collectif/acces";
-import { cleContenu } from "@/lib/collectif/cles";
-import { contenuClient, lireFichierContenu, lireReponsesMot, OCTETS_MAX_CONTENU } from "@/lib/collectif/contenus";
+import { cleContenu, estUuid } from "@/lib/collectif/cles";
+import { apercuPossible, contenuClient, lireFichierContenu, lireReponsesMot, OCTETS_MAX_CONTENU } from "@/lib/collectif/contenus";
+import { formaterJourParis } from "@/lib/collectif/dates";
+import { nomTelechargement } from "@/lib/collectif/documents";
 import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
+import { colonneAbsente, ERREUR_ENVOIS_ABSENTE, MESSAGE_ENVOIS_ABSENTE } from "@/lib/collectif/migration";
 import { refusAcces, refusDroit } from "@/lib/collectif/reponses";
 
 /**
@@ -19,9 +22,15 @@ import { refusAcces, refusDroit } from "@/lib/collectif/reponses";
  *   coffre sous `collectif/<id>/contenus/` ;
  * - un QUESTIONNAIRE (le mot du dirigeant) : JSON `{ token, type: "mot", reponses: [...] }`.
  *
- * Responsable seulement (`envoyer_contenu`) ; l'équipe reçoit 403. Envoyer de
- * nouveau un contenu ajoute une ligne : le plus récent gagne à l'écran, rien
- * ne s'efface.
+ * Responsable seulement (`envoyer_contenu`) ; l'équipe reçoit 403. Un
+ * fichier de plus s'AJOUTE (un contenu a plusieurs fichiers) ; avec
+ * `remplace` (l'id d'un fichier courant du même contenu), le nouveau prend sa
+ * place et l'ancien devient une ANCIENNE VERSION (`remplace_le`) : il reste au
+ * coffre et à l'atelier. Le questionnaire range la réponse précédente de la
+ * même façon. Rien ne s'efface.
+ *
+ * ⚠️ « Remplacer » exige la migration 20261016 : la colonne est SONDÉE avant
+ * d'écrire au coffre (aucun fichier orphelin), sinon un vrai 503.
  */
 
 export const runtime = "nodejs";
@@ -44,6 +53,7 @@ export async function POST(request: Request) {
   let cle: unknown;
   let fichier: File | null = null;
   let reponses: unknown;
+  let remplace: unknown;
   try {
     if (type.startsWith("multipart/form-data")) {
       const f = await request.formData();
@@ -51,6 +61,7 @@ export async function POST(request: Request) {
       cle = f.get("type");
       const brut = f.get("fichier");
       fichier = brut instanceof File ? brut : null;
+      remplace = f.get("remplace") || null;
     } else {
       const c = (await request.json()) as Record<string, unknown>;
       token = String(c?.token ?? "");
@@ -72,6 +83,24 @@ export async function POST(request: Request) {
 
   const supabase = makeSupabase();
   const qui = edition.responsable_nom ?? "Le responsable";
+
+  /* « Remplacer » : un fichier COURANT du même contenu, de cette édition. La
+     lecture nomme `remplace_le` : elle sonde aussi la migration. */
+  let ancien: string | null = null;
+  if (remplace !== null && remplace !== undefined) {
+    if (!estUuid(remplace)) return non(404, "introuvable");
+    const { data, error } = await supabase
+      .from("collectif_contenus")
+      .select("id, type, remplace_le")
+      .eq("id", remplace)
+      .eq("edition_id", edition.id)
+      .maybeSingle<{ id: string; type: string; remplace_le: string | null }>();
+    if (error && colonneAbsente(error.code)) return non(503, ERREUR_ENVOIS_ABSENTE, MESSAGE_ENVOIS_ABSENTE);
+    if (error) return non(500, "lecture_impossible");
+    if (!data || data.type !== contenu.cle) return non(404, "introuvable");
+    if (data.remplace_le) return non(409, "deja_remplace", "Ce fichier a déjà été remplacé. Rechargez la page.");
+    ancien = data.id;
+  }
   const id = randomUUID();
   let ligne: Record<string, unknown>;
 
@@ -100,6 +129,58 @@ export async function POST(request: Request) {
     console.error("[collectif] contenu non enregistré", error.code, error.message);
     return non(500, "ecriture_impossible");
   }
-  const journal = await journaliser(supabase, { editionId: edition.id }, "contenu_recu", { type: contenu.libelle, par: qui }, null);
-  return NextResponse.json({ ok: true, journal }, { status: 201 });
+  /* L'ancienne version : le fichier remplacé, ou la réponse précédente du
+     questionnaire. Pour le questionnaire, sans la migration, rien n'est
+     perdu : l'écran lit déjà la réponse la plus récente. */
+  if (ancien) {
+    const { error: e } = await supabase
+      .from("collectif_contenus")
+      .update({ remplace_le: new Date().toISOString(), remplace_par: id })
+      .eq("id", ancien)
+      .is("remplace_le", null);
+    if (e) console.error("[collectif] ancienne version non rangée", e.code, e.message);
+  } else if (contenu.mode === "questionnaire") {
+    const { error: e } = await supabase
+      .from("collectif_contenus")
+      .update({ remplace_le: new Date().toISOString(), remplace_par: id })
+      .eq("edition_id", edition.id)
+      .eq("type", contenu.cle)
+      .neq("id", id)
+      .is("remplace_le", null);
+    if (e && !colonneAbsente(e.code)) console.error("[collectif] réponse précédente non rangée", e.code, e.message);
+  }
+
+  const journal = await journaliser(
+    supabase,
+    { editionId: edition.id },
+    ancien ? "contenu_remplace" : "contenu_recu",
+    { type: contenu.libelle, par: qui, ...(fichier ? { nom: fichier.name.slice(0, 160) } : {}) },
+    null
+  );
+  /* L'envoi tel que la fenêtre le montre : elle l'ajoute tout de suite, sans
+     attendre que la page se relise. */
+  const nom = typeof ligne.nom_origine === "string" ? ligne.nom_origine : null;
+  let url: string | null = null;
+  let telecharger: string | null = null;
+  if (typeof ligne.r2_key === "string") {
+    const ext = /\.([a-z0-9]{1,5})$/i.exec(ligne.r2_key)?.[1]?.toLowerCase() ?? "bin";
+    try {
+      [url, telecharger] = await Promise.all([signerGet(ligne.r2_key), signerGet(ligne.r2_key, undefined, nomTelechargement((nom ?? contenu.libelle).replace(/\.[A-Za-z0-9]{1,5}$/, ""), ext))]);
+    } catch {
+      url = null;
+      telecharger = null;
+    }
+  }
+  const envoi = {
+    id,
+    type: contenu.cle,
+    libelle: contenu.libelle,
+    nom,
+    recuLe: formaterJourParis(new Date().toISOString()),
+    url,
+    apercu: url && apercuPossible(nom) ? url : null,
+    telecharger,
+    reponses: (ligne.reponses as Record<string, string> | undefined) ?? null,
+  };
+  return NextResponse.json({ ok: true, id, envoi, remplace: ancien, journal }, { status: 201 });
 }

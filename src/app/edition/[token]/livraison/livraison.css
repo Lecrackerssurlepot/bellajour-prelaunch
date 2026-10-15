@@ -27,9 +27,9 @@
   flex-direction: column;
   gap: 4px;
   padding: 16px 20px;
-  border-radius: 16px;
-  border: 1px solid rgba(var(--ec-ac-rgb), 0.45);
-  background: var(--ec-orange-voile);
+  border-radius: 20px;
+  border: 0;
+  background: var(--ec-accent-soft);
 }
 .ec-espace .ec-livraison-prevue strong {
   font-family: var(--font-display);
@@ -80,7 +80,7 @@
   height: 16px;
   border-radius: 50%;
   border: 2px solid var(--ec-filet-fort);
-  background: var(--ec-fond);
+  background: var(--ec-carte-pleine);
   box-sizing: border-box;
 }
 .ec-espace .ec-livraison-etape--faite .ec-livraison-point {
@@ -149,5 +149,23 @@
   }
   .ec-espace .ec-livraison-etape--courante::before {
     background: var(--ec-filet-fort);
+  }
+}
+
+/* 15/10 : le corps de la livraison est un panneau de verre qui flotte. */
+.ec-espace .ec-livraison > .ec-ecran-corps {
+  padding: 28px 32px;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+}
+@media (max-width: 860px) {
+  .ec-espace .ec-livraison > .ec-ecran-corps {
+    margin: 0 8px 16px;
+    padding: 20px 16px;
+    border-radius: var(--ec-r-carte);
   }
 }

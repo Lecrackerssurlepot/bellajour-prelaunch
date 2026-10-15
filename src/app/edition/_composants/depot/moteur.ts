@@ -60,6 +60,10 @@ type Item = {
   urlVignette: string | null;
   signeLe: number;
   raison: string | null;
+  /** La provenance choisie AU MOMENT de l'ajout : un second lot ajouté
+      pendant l'envoi (« Ajouter d'autres photos ») ne relabellise jamais le
+      premier. */
+  provenance: Provenance | null;
 };
 
 export type Vue = {
@@ -77,6 +81,8 @@ export type Vue = {
   horsLigne: boolean;
   /** Les fichiers ignorés à l'ajout (pas des images). */
   ignores: number;
+  /** Les fichiers choisis une seconde fois pendant CET envoi : sautés, et dits (retours du 14/10, point 8). */
+  dejaAjoutes: number;
 };
 
 export type Configuration = {
@@ -108,6 +114,7 @@ export class MoteurDepot {
   private abonnes = new Set<() => void>();
   private compteur = 0;
   private ignores = 0;
+  private dejaAjoutes = 0;
   private ferme: string | null = null;
   private horsLigne = false;
   private verification = false;
@@ -131,9 +138,14 @@ export class MoteurDepot {
     this.deposant = nom?.trim() || null;
   }
 
-  /** La provenance choisie par le responsable (« Le photographe »…). */
+  /** La provenance choisie par le responsable (« Le photographe »…), pour les PROCHAINS fichiers ajoutés. */
   definirProvenance(p: Provenance | null): void {
     this.provenance = p;
+  }
+
+  /** La provenance des prochains fichiers (la fenêtre la retrouve en se rouvrant). */
+  provenanceChoisie(): Provenance | null {
+    return this.provenance;
   }
 
   /* ───────────────────────────── l'abonnement ───────────────────────────── */
@@ -174,6 +186,7 @@ export class MoteurDepot {
       ferme: this.ferme,
       horsLigne: this.horsLigne,
       ignores: this.ignores,
+      dejaAjoutes: this.dejaAjoutes,
     };
     this.cache = { version: this.version, vue };
     return vue;
@@ -200,7 +213,10 @@ export class MoteurDepot {
         continue;
       }
       const cle = cleFichier(f.name, f.size, f.lastModified);
-      if (this.cles.has(cle)) continue;
+      if (this.cles.has(cle)) {
+        this.dejaAjoutes++;
+        continue;
+      }
       this.cles.add(cle);
       this.items.push({
         n: this.compteur++,
@@ -217,6 +233,7 @@ export class MoteurDepot {
         urlVignette: null,
         signeLe: 0,
         raison: null,
+        provenance: this.provenance,
       });
     }
     this.notifier();
@@ -301,15 +318,18 @@ export class MoteurDepot {
 
   private async declarer(): Promise<void> {
     if (this.declaration) return;
-    const lot = this.items.filter((i) => i.etat === "pret").slice(0, LOT_DECLARATION);
-    if (!lot.length) return;
+    /* Un lot ne mêle jamais deux provenances : celle du premier prêt décide. */
+    const premier = this.items.find((i) => i.etat === "pret");
+    if (!premier) return;
+    const memeProvenance = (i: Item) => i.provenance?.type === premier.provenance?.type && i.provenance?.libelle === premier.provenance?.libelle;
+    const lot = this.items.filter((i) => i.etat === "pret" && memeProvenance(i)).slice(0, LOT_DECLARATION);
     this.declaration = true;
     try {
       const { status, json } = await poster("/api/collectif/depot/presign", {
         token: this.cfg.token,
         p: this.cfg.p ?? null,
         deposant: this.deposant,
-        provenance: this.provenance,
+        provenance: premier.provenance,
         fichiers: lot.map((i) => ({
           cle: i.cle,
           nom: i.fichier.name,

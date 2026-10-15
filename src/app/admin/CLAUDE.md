@@ -105,10 +105,30 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
 
 ## Écrans
 
+**Porcelaine (15/10/2026)** : `admin.css` redéfinit les jetons crème (`--bj-cream`, `--bj-text*`,
+`--bj-veil-*`, `--bj-glass-card-*`, rayons) SOUS `.adm-root`, plus `--adm-verre*` et
+`--adm-flou` pour les cartes de verre (`.ate-carte`, la barre `.atb`, la liste `.ate-lignes`,
+les panneaux `.eca-*`). Le fond de page autour d'un atelier plus étroit que la fenêtre suit
+(`body:has(.adm-root)`). Les liserés de camp d'une ligne sont un trait posé en `::before` (une
+ombre intérieure épousait l'arrondi et disparaissait au survol).
+
+**Un seul logiciel (T-152, 14/10/2026)** : `BarreAtelier.tsx` est en tête de CHAQUE écran des
+deux mondes (liste et fiche des particuliers, toutes les pages des éditions, et leurs
+`loading.tsx`). Le commutateur « Particuliers | Éditions » n'existe que si `COLLECTIF_OUVERT` est
+ouvert (lu côté serveur, passé en prop au composant client) ; la démo ne parle jamais des
+éditions. Les messages à lire se comptent EN MÊME TEMPS que la liste (`Promise.all`), et un
+échec de ce compte ne fait jamais tomber la table de travail (`null`, pas d'exception). Un écran
+de plus = la barre en tête, sinon on retombe dans « deux sites ».
+
 **`/admin/collectif/**`** (13/10/2026) — le back-office de l'Édition collective, derrière
 `COLLECTIF_OUVERT` (sinon 404). Ses règles sont dans `src/lib/collectif/CLAUDE.md`. Liste,
-`nouvelle`, fiche `[id]` (réglages, trois liens copier / ouvrir / régénérer, gestes armés en
-deux temps, magazines, journal), `styles` et `styles/[id]` (l'éditeur). Toutes ses écritures
+`nouvelle`, fiche `[id]` EN ONGLETS depuis T-152 (`OngletsFiche` : un onglet monté à sa première
+visite puis gardé, l'adresse suit `?onglet=` ; les messages ne se marquent lus qu'à l'ouverture
+de leur onglet ; depuis le 15/10 la fiche est EN CARTES comme la maquette validée : « ← Les
+éditions », une carte d'en-tête avec les gestes en menu, la bande des étapes, trois cartes de même
+hauteur, les trois liens et leur régénération dans « Réglages et liens », l'ancienne vue en
+huit résumés dans `archive/fiche-edition-resumes-2026-10/`), `messages` (la boîte de réception : conversations, à traiter aujourd'hui, fil,
+dossier du client), `styles` et `styles/[id]` (l'éditeur). Toutes ses écritures
 sont sous `/api/admin/collectif/*`, revérifient l'admin et journalisent dans
 `collectif_evenements`. Sa feuille `collectif.css` est scopée `.eca-root`.
 

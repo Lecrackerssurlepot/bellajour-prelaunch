@@ -1,4 +1,4 @@
-# État du système — au 14/10/2026
+# État du système — au 15/10/2026 (après-midi)
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,105 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 15/10/2026 (après-midi) — Porcelaine le jour, Charbon la nuit, l'atelier aussi : sur branche
+
+- **Validé par Mathias le 15/10** sur les maquettes « direction visuelle »
+  (https://claude.ai/artifact/QwBWzndAtne3hSmkWmQEr2) : Porcelaine pour le jour, Charbon pour la
+  nuit. Codé sur `feat/collectif-retours-ux-1` : l'espace client (toutes ses pages), la page de
+  dépôt des participants, la porte, et TOUT l'admin (`.adm-root` : table de travail des
+  particuliers et sa fiche, éditions, messagerie, fiche d'édition, prévente, connexion). Rien en
+  production.
+- ⚠️ **À la fusion, la table de travail des PARTICULIERS change d'apparence en production**
+  (blanc froid, cartes de verre, barre flottante) : CSS seulement, aucun comportement changé.
+  Les pages publiques (/, /magazine, /composer, /numero, /merci, légales) n'ont pas bougé.
+- Vérifié à l'écran le 15/10 (localhost:3000) : chaque écran du client de jour et de nuit à
+  1440 × 900, sans défilement de page ni débord ; téléphone (390 px) pour le tableau de bord,
+  les Photos, la conversation et la page de dépôt ; l'atelier (liste, fiche de démonstration,
+  éditions, messagerie, fiche d'édition). Contrastes mesurés de nuit : texte 15,2 : 1, texte doux
+  7,9 : 1, légendes 5,5 : 1.
+
+## 15/10/2026 (fin de matinée) — Édition collective : une édition neuve, la page Photos sans colonne
+
+- **Édition « Essai neuf (Claude) » créée le 15/10** par la route de l'atelier (mêmes réglages
+  qu'« Essai révision » : 2 magazines, clôture le 30/10 à 18 h, 40 photos par personne, 1 000 au
+  total, tirage 60, responsable « Camille Essai », recette-collectif@bellajour.fr), pour que
+  Mathias voie l'espace d'un client neuf. Aucun mail (le B2B n'en envoie pas). Son lien se prend
+  dans l'atelier, fiche de l'édition, « Les liens du client ».
+- **La page Photos sans grande colonne** (rayons, vignettes, fil d'Ariane) : sur la branche,
+  vérifiée à l'écran le 15/10. Pendant la vérification, le dossier « Essai renommé (Claude) »
+  d'« Essai révision » est entré dans « Mes photos » puis en est ressorti (net : rien de changé,
+  deux lignes de journal). Mathias avait lui-même rangé « Le photographe » dans « Mes photos ».
+
+## 15/10/2026 (matin) — Édition collective : migrations 20261017 et 20261018 APPLIQUÉES
+
+- **Appliquées par Mathias le 15/10/2026**, vérifiées en SQL (lecture seule) le même matin :
+  `collectif_magazines.palette_style_id`, `typo_style_id` (clés vers `collectif_styles`, `on
+  delete restrict`), `doubles_aimes` (jsonb, `'[]'` par défaut, non nul) ;
+  `collectif_provenances.retire_le` ; `collectif_messages.reponse_a` (clé vers
+  `collectif_messages`, `on delete set null`).
+- **Rejoué après elles** (localhost:3000), données relues en base :
+  - « Organisation d'essai », magazine 1 : palette Velours du style Nuit, typographies du style
+    Brut, doubles pages Récit (Riviera) et Aérée (Nuit) : quatre styles mêlés ; son brief, vide
+    avant, n'est pas validé ;
+  - « Essai révision » : un lien « Essai suppression (Claude) » créé puis supprimé (`retire_le`
+    posé, son dépôt répondait 200 avant, 404 après) ;
+  - « Essai révision » : « Essai de réponse (Claude), à ignorer. » (le client répond à « J'ai pas
+    de notif ») et « Essai de réponse de l'atelier (Claude), à ignorer. » (l'atelier répond au
+    client) ; `reponse_a` posé sur les deux, la citation relue après rechargement des deux côtés.
+
+## 14/10/2026 (fin de soirée) — Édition collective : photos en dossiers, documents, répondre, atelier unifié (T-152), sur branche
+
+- **Code** sur `feat/collectif-retours-ux-1` (poussée ; commits f45405f, e9468d4, b1f595d). Rien
+  en production (`COLLECTIF_OUVERT` absente de Vercel). La barre commune touche aussi la table de
+  travail des particuliers (`/admin/atelier`) : sans l'interrupteur elle s'affiche SANS
+  commutateur, ses écrans (Carnet… Démo) restent les mêmes.
+- **Migration `20261018_collectif_liens_reponses.sql`** (`collectif_provenances.retire_le`,
+  `collectif_messages.reponse_a`) : appliquée le 15/10, voir plus haut. Vérifié le 14/10 AVANT
+  elle (« Essai révision ») : la page Photos et le fil se lisent ; « Supprimer le lien » et
+  « Répondre » (client et atelier) répondent 503 en nommant le fichier, rien d'écrit, le texte
+  tapé reste dans la zone. `20261017` (D24) attend toujours aussi.
+- **Données d'essai touchées le 14/10** (« Essai révision (Claude) ») : le dossier « Essai renommé
+  (Claude) » (12 photos de bruit) rangé dans « Mes photos », ressorti, renommé « Essai rangé
+  (Claude) » puis rendu à son nom : il est désormais du type « organisateur » (il était « autre »),
+  le journal garde les quatre gestes. Les messages du client de cette édition sont marqués lus
+  (la messagerie de l'atelier y a été ouverte).
+- `verif-collectif.ts` 563 vérifications, `verif-atelier.ts` vert, le 14/10.
+
+## 14/10/2026 (soir) — Édition collective : les retours UX de Mathias (T-151), sur branche
+
+- **Code** sur `feat/collectif-retours-ux-1` (poussée). Rien en production (`COLLECTIF_OUVERT`
+  absente de Vercel : le B2B y répond 404).
+- **Six styles de la maquette sur le mur, PUBLIÉS en base** (créés par les routes de l'atelier) :
+  Riviera, Nuit, Éditorial, Brut, Archive, Grand air (slugs `riviera`, `nuit`, `editorial`,
+  `brut`, `archive`, `grand-air`, ordre 1 à 6), chacun 3 palettes, un échantillon typo, 3
+  couvertures, 5 doubles pages (54 images WebP au coffre). Les noms des palettes hors Riviera,
+  les titres et les descriptions sont des textes de remplissage. « Essai technique Claude »
+  reste premier (ordre 0) : à retirer du mur par Mathias.
+- **Migration `20261016_collectif_envois.sql` APPLIQUÉE le 14/10/2026 par Mathias**, vérifiée en
+  SQL (lecture seule) le même jour : `collectif_contenus.remplace_le`, `remplace_par` (clé vers
+  `collectif_contenus`), `collectif_messages.contenu_id` (clé vers `collectif_contenus`), l'index
+  `collectif_messages_contenu_idx`. AVANT elle (vérifié aussi le 14/10) : l'espace montrait tous
+  les fichiers reçus ; « Remplacer » et « Citer un de vos envois » répondaient 503 en nommant le
+  fichier, sans rien écrire (ni coffre, ni base).
+- Rejoué APRÈS la migration (localhost:3000, « Essai technique (Claude) ») : « Remplacer » range
+  l'ancien `logo-essai-couleur.png` (`remplace_le` posé, `remplace_par` = le nouveau), la puce
+  garde « 4 fichiers » ; un message « Essai de citation (Claude), à ignorer. » cite
+  `logo-essai-blanc.png` (`contenu_id` en base), relu après rechargement.
+- **Données d'essai posées le 14/10** :
+  - « Essai révision (Claude) » : 12 photos de bruit gris dans le dossier « Autre source · Essai
+    renommé (Claude) » (envoi, reprise « déjà là », renommage) ;
+  - « Essai technique (Claude) » : 4 logos (`logo-essai-*.png`), 3 réponses au mot du dirigeant
+    (« Essai de réponse (Claude), à ignorer »), et un aller-retour « Tout sélectionner » /
+    « Tout désélectionner » (présélection revenue à 0).
+- Le 14/10 vers 13 h 28, Mathias a lui-même fait « Tout sélectionner » sur « Essai révision » :
+  781 photos présélectionnées (les 32 qu'il avait choisies à la main sont dedans).
+- **Le style « Tout, en vrac » (D24)** : code sur la même branche. **Migration
+  `20261017_collectif_composition.sql` ÉCRITE, PAS APPLIQUÉE** (`collectif_magazines.palette_style_id`,
+  `typo_style_id`, `doubles_aimes`). Vérifié le 14/10 AVANT elle (« Essai révision ») : le mur se
+  lit (les briefs d'avant se lisent depuis `style_id`), et prendre une palette d'un autre style
+  répond 503 en nommant le fichier, sans rien écrire.
+- `verif-collectif.ts` 517 vérifications, `verif-atelier.ts` 1450, verts le 14/10.
 
 ## 14/10/2026 (après-midi) — Édition collective : les rendez-vous dans l'espace (D23, T-148), sur branche
 

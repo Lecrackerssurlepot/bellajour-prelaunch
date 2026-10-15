@@ -1,3 +1,4 @@
+import BarreAtelier, { liensEditions } from "../../../BarreAtelier";
 import "../../../admin.css";
 import "../../../atelier/atelier.css";
 import "../../collectif.css";
@@ -6,8 +7,9 @@ import "../../collectif.css";
 export default function Chargement() {
   return (
     <div className="adm-root ate-root eca-root" aria-busy="true" aria-live="polite">
+      <BarreAtelier monde="editions" collectif liens={liensEditions(null)} />
       <header className="ate-fiche-tete">
-        <span className="ate-retour">← Édition</span>
+        <span className="eca-retour"><span aria-hidden="true">←</span> La fiche</span>
         <h1 className="ate-h1">Bon à tirer</h1>
       </header>
       <div className="eca-fiche">

@@ -1,7 +1,7 @@
 /* Ce que le client a envoyé à l'atelier (PRD §14.2) : le logo, le programme,
    la liste, et les réponses au mot du dirigeant. Le plus récent d'abord ; un
-   envoi plus ancien du même contenu reste listé (rien ne s'efface).
-   Composant serveur. */
+   fichier que le client a REMPLACÉ reste listé, marqué « ancienne version »
+   (migration 20261016) : rien ne s'efface. Composant serveur. */
 
 import { formaterInstantParis } from "@/lib/collectif/dates";
 import type { ContenuFiche } from "../donnees";
@@ -18,6 +18,7 @@ export default function PanneauContenus({ contenus }: { contenus: ContenuFiche[]
             <li key={c.id} className="eca-bat-note">
               <span className="eca-mag-ligne">
                 <strong>{c.libelle}</strong>
+                {c.ancienne ? <span className="eca-sous">ancienne version</span> : null}
                 <span className="eca-sous">
                   {formaterInstantParis(c.quand)}
                   {c.par ? ` · ${c.par}` : ""}

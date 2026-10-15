@@ -24,7 +24,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LOGO_MODE } from "@/lib/collectif/affichage";
 import { cheminSection, MENU, sectionDuChemin, type CleSection, type Verrous } from "@/lib/collectif/verrous";
-import { DepotFournisseur, PastilleEnvoi } from "../_composants/depot/DepotContexte";
+import { DepotFournisseur, HoteFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import { useModeEspace } from "../_composants/RacineEspace";
 
 /** Le signal qu'envoie la conversation quand elle a marqué les messages lus : la pastille s'éteint sans recharger. */
@@ -42,6 +42,8 @@ type Props = {
   nonLus: number;
   /** Le responsable dépose : son moteur d'envoi vit ici, pas dans la page. */
   peutDeposer: boolean;
+  /** Le registre « tu » (école) : la fenêtre d'envoi tutoie. */
+  tu: boolean;
   children: React.ReactNode;
 };
 
@@ -188,26 +190,25 @@ export default function Coquille(props: Props) {
             <span className="ec-moi-nom">{props.nom}</span>
             <span className="ec-moi-role">{props.libelleRole}</span>
           </span>
-          <button
-            type="button"
-            className="ec-mode"
-            onClick={basculer}
-            aria-label={mode === "jour" ? "Passer en mode nuit" : "Passer en mode jour"}
-            title={mode === "jour" ? "Passer en mode nuit" : "Passer en mode jour"}
-          >
-            <Icone cle={mode === "jour" ? "lune" : "soleil"} />
-          </button>
+          <span className="ec-mode-choix" role="group" aria-label="Affichage">
+            <button type="button" className="ec-mode" aria-pressed={mode === "jour"} onClick={() => mode !== "jour" && basculer()} aria-label="Mode jour" title="Mode jour">
+              <Icone cle="soleil" />
+            </button>
+            <button type="button" className="ec-mode" aria-pressed={mode === "nuit"} onClick={() => mode !== "nuit" && basculer()} aria-label="Mode nuit" title="Mode nuit">
+              <Icone cle="lune" />
+            </button>
+          </span>
         </div>
       </aside>
 
       {ouvert ? <button type="button" className="ec-voile" aria-label="Fermer le menu" onClick={() => setOuvert(false)} /> : null}
 
-      <DepotFournisseur token={props.token} actif={props.peutDeposer}>
+      <DepotFournisseur token={props.token} actif={props.peutDeposer} tu={props.tu}>
         {/* La lecture seule (lien d'équipe) se dit dans le menu, sous le nom :
             plus de bandeau qui s'empile au-dessus de chaque écran. */}
         <div className="ec-contenu" data-lecture={props.lectureSeule ? "oui" : undefined}>
-          <PastilleEnvoi lien={cheminSection(props.token, "photos")} />
           {props.children}
+          <HoteFenetreEnvoi />
         </div>
       </DepotFournisseur>
     </div>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Partager un lien de contribution</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&amp;family=DM+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#d68a63}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #050505; color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; overflow: hidden">
+  <dc-import name="Menu" actif="photos" hint-size="232px,900px"></dc-import>
+  <div style="flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column">
+    <header style="flex: none; height: 68px; box-sizing: border-box; padding: 0 32px; border-bottom: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center; gap: 16px">
+      <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px">Les photos</h1>
+    </header>
+    <div style="position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(0,0,0,0.5)">
+      <section role="dialog" aria-labelledby="titre-partage" style="width: 640px; box-sizing: border-box; padding: 28px; display: flex; flex-direction: column; gap: 16px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.14); background: rgba(20,20,20,0.86)">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <h2 id="titre-partage" style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px">Partager le lien « Équipe Lyon »</h2>
+            <span style="color: rgba(255,255,255,0.64); font-size: 13px">Le message est écrit pour ce groupe et cet événement. Retouchez-le si vous voulez.</span>
+          </div>
+          <button type="button" aria-label="Fermer" style="width: 36px; height: 36px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18); background: transparent; color: #ffffff">✕</button>
+        </div>
+        <div style="display: flex; gap: 18px; align-items: flex-start">
+          <div aria-label="QR code du lien" role="img" style="width: 136px; height: 136px; flex: none; border-radius: 12px; background: #ffffff; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); padding: 12px; box-sizing: border-box; gap: 2px">
+            <sc-for list="{{ qr }}" as="q" hint-placeholder-count="64"><span style="background: {{ q }}"></span></sc-for>
+          </div>
+          <label style="flex: 1; display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.64)">Le message
+            <textarea rows="7" style="padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04); color: #ffffff; font: inherit; font-size: 14px; line-height: 1.5; resize: none">Bonjour l'équipe de Lyon,
+
+Maison Aubier prépare le magazine du Séminaire d'automne, et vos photos y ont leur place. Déposez-les ici, depuis votre téléphone, sans compte (30 par personne, jusqu'au 28 octobre) :
+https://bellajour.fr/depot/…
+
+Merci, et à très vite dans les pages !</textarea>
+          </label>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+          <button type="button" style="height: 40px; border-radius: 999px; border: 0; background: #d68a63; color: #050505; font: inherit; font-weight: 600">WhatsApp</button>
+          <button type="button" style="height: 40px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit">Mail</button>
+          <button type="button" style="height: 40px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit">Copier le message</button>
+          <button type="button" style="height: 40px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit">Télécharger le QR</button>
+        </div>
+        <span style="font-size: 12px; color: rgba(255,255,255,0.64)">Le mail reprend le même texte, avec pour objet « Vos photos du Séminaire d'automne ».</span>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const motif = '1110100110010111101101001001101110110100101101101100101111010011';
+    return { qr: motif.split('').map((c) => (c === '1' ? '#050505' : '#ffffff')) };
+  }
+}
+</script>
+</body>
+</html>

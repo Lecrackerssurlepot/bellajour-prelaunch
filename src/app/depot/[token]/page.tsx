@@ -46,16 +46,18 @@ export default async function PageDepot({
   const { edition } = acces
   const tu = edition.registre === 'ecole_tu'
 
-  type Prov = { libelle: string | null; sans_plafond: boolean; plafond_par_personne?: number | null }
+  type Prov = { libelle: string | null; sans_plafond: boolean; plafond_par_personne?: number | null; retire_le?: string | null }
   let provenance: Prov | null = null
   if (p !== undefined) {
     if (!estCleProvenance(p)) notFound()
     const lire = (colonnes: string) =>
       makeSupabase().from('collectif_provenances').select(colonnes).eq('edition_id', edition.id).eq('cle', p).maybeSingle<Prov>()
     /* Repli tant que la migration de la révision n'est pas passée. */
-    let lu = await lire('libelle, sans_plafond, plafond_par_personne')
+    /* Le lien supprimé (migration 20261018) ne reçoit plus rien : introuvable. */
+    let lu = await lire('libelle, sans_plafond, plafond_par_personne, retire_le')
+    if (lu.error && colonneAbsente(lu.error.code)) lu = await lire('libelle, sans_plafond, plafond_par_personne')
     if (lu.error && colonneAbsente(lu.error.code)) lu = await lire('libelle, sans_plafond')
-    if (!lu.data) notFound()
+    if (!lu.data || lu.data.retire_le) notFound()
     provenance = lu.data
   }
 

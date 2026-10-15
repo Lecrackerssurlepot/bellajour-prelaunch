@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
+import { prenomDe } from "@/lib/admin-auth";
 import { makeSupabase } from "@/lib/supabase";
 import { formaterJour } from "@/lib/atelier/dates";
 import { MIGRATION_COLLECTIF, TABLES_COLLECTIF } from "@/lib/collectif/migration";
 import { LIBELLE_CAMP } from "@/lib/collectif/prochaine";
 import { etatMigration } from "@/lib/collectif/sante";
-import { listerEditions } from "./donnees";
+import BarreAtelier, { liensEditions } from "../BarreAtelier";
+import { compterNonLus, listerEditions } from "./donnees";
 import "../admin.css";
 import "../atelier/atelier.css";
 import "./collectif.css";
@@ -44,16 +46,14 @@ export default async function PageCollectif({
 
   const archivees = (await searchParams).archivees === "1";
   const supabase = makeSupabase();
-  const liste = await listerEditions(supabase, archivees, new Date());
+  const [liste, nonLus] = await Promise.all([listerEditions(supabase, archivees, new Date()), compterNonLus(supabase)]);
 
   if (liste.absent) {
     const etat = await etatMigration(supabase);
     return (
       <div className="adm-root ate-root eca-root">
+        <BarreAtelier monde="editions" collectif liens={liensEditions("liste")} />
         <header className="ate-fiche-tete">
-          <Link href="/admin/atelier" className="ate-retour">
-            ← Table de travail
-          </Link>
           <h1 className="ate-h1">Éditions collectives</h1>
         </header>
         <section className="ate-carte">
@@ -71,41 +71,53 @@ export default async function PageCollectif({
 
   return (
     <div className="adm-root ate-root eca-root">
-      <header className="eca-tete">
-        <div className="eca-tete-titre">
-          <Link href="/admin/atelier" className="ate-retour">
-            ← Table de travail
-          </Link>
-          <h1 className="ate-h1">Éditions collectives</h1>
+      <BarreAtelier monde="editions" collectif nonLus={nonLus} liens={liensEditions("liste", nonLus)} />
+
+      {/* La même tête que les particuliers : une phrase, le geste principal à droite. */}
+      <header className="ate-header">
+        <div>
+          <h1 className="adm-sr">L&apos;Atelier, les éditions</h1>
           <p className="ate-bonjour">
-            {liste.lignes.length === 0
-              ? archivees
-                ? "Aucune édition archivée."
-                : "Aucune édition ouverte pour l'instant."
-              : `${liste.lignes.length} édition${liste.lignes.length > 1 ? "s" : ""} ${archivees ? "archivée" : "en cours"}${liste.lignes.length > 1 ? "s" : ""}.`}
+            Bonjour {prenomDe(qui)}.{" "}
+            {liste.lignes.length === 0 ? (
+              archivees ? (
+                "Aucune édition archivée."
+              ) : (
+                "Aucune édition ouverte pour l'instant."
+              )
+            ) : (
+              <>
+                <strong>
+                  {liste.lignes.length} édition{liste.lignes.length > 1 ? "s" : ""} {archivees ? `archivée${liste.lignes.length > 1 ? "s" : ""}` : "en cours"}
+                </strong>
+                {nonLus ? (
+                  <>
+                    <span className="ate-sep">·</span>
+                    <Link href="/admin/collectif/messages" className="eca-lien-messages">
+                      {nonLus} message{nonLus > 1 ? "s" : ""} à lire
+                    </Link>
+                  </>
+                ) : null}
+                .
+              </>
+            )}
           </p>
         </div>
-        <nav className="eca-actions" aria-label="Éditions collectives">
-          <Link href="/admin/collectif/styles" className="adm-btn adm-btn--ghost eca-lien-bouton">
-            Les styles du mur
-          </Link>
-          <Link href="/admin/collectif/agendas" className="adm-btn adm-btn--ghost eca-lien-bouton">
-            Les agendas
-          </Link>
-          <Link href="/admin/collectif/nouvelle" className="adm-btn eca-lien-bouton">
-            Ouvrir une édition
-          </Link>
-        </nav>
+        <Link href="/admin/collectif/nouvelle" className="adm-btn eca-lien-bouton">
+          Ouvrir une édition
+        </Link>
       </header>
 
-      <nav className="eca-filtres" aria-label="Filtrer">
-        <Link href="/admin/collectif" className="eca-filtre" aria-current={archivees ? undefined : "page"}>
-          En cours
-        </Link>
-        <Link href="/admin/collectif?archivees=1" className="eca-filtre" aria-current={archivees ? "page" : undefined}>
-          Archivées
-        </Link>
-      </nav>
+      <div className="ate-barre">
+        <nav className="ate-seg" aria-label="Filtrer">
+          <Link href="/admin/collectif" className={archivees ? "ate-seg-btn" : "ate-seg-btn ate-seg-btn--actif"} aria-current={archivees ? undefined : "page"}>
+            En cours
+          </Link>
+          <Link href="/admin/collectif?archivees=1" className={archivees ? "ate-seg-btn ate-seg-btn--actif" : "ate-seg-btn"} aria-current={archivees ? "page" : undefined}>
+            Archivées
+          </Link>
+        </nav>
+      </div>
 
       {liste.lignes.length === 0 ? (
         <section className="ate-carte">
@@ -147,7 +159,15 @@ export default async function PageCollectif({
                   </td>
                   <td>{l.clotureLe ? formaterJour(l.clotureLe) : <span className="eca-afixer">[À FIXER]</span>}</td>
                   <td>{l.tirage ?? <span className="eca-afixer">[À FIXER]</span>}</td>
-                  <td>{l.nonLus > 0 ? <span className="eca-pastille">{l.nonLus}</span> : <span className="eca-sous">0</span>}</td>
+                  <td>
+                    {l.nonLus > 0 ? (
+                      <Link href={`/admin/collectif/messages?e=${l.id}`} className="eca-pastille" aria-label={`${l.nonLus} message${l.nonLus > 1 ? "s" : ""} à lire`}>
+                        {l.nonLus}
+                      </Link>
+                    ) : (
+                      <span className="eca-sous">0</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

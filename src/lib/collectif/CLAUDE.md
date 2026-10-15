@@ -129,11 +129,14 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
   3000 (`.claude/launch.json` « Next.js prod 3000 collectif »).
 
 **Phase 4 (13/10/2026), le style :**
-- **`brief.ts`** (pur) — LA RÈGLE DE MATHIAS est dans `lireChoixStyle` (une palette d'un autre
-  style est refusée) et `basculerCouverture` (une couverture de n'importe quel style publié,
-  plafonnée par `couvertures_aimees_max`, `null` = refusé). `briefModifiable` : seulement en
-  `preparation`. Changer un brief validé le remet à valider. `styleVisible` : une école voit
-  les styles « école » et « tous ».
+- **`brief.ts`** (pur) — **D24 (14/10) : le brief se compose PIÈCE PAR PIÈCE, de n'importe quel
+  style** (elle remplace la règle du 08/10 « l'intérieur suit le style »). `compositionDu` est LA
+  lecture d'un brief (les colonnes de D24, sinon `style_id`) ; `lirePiece` (palette, typographies,
+  double page, cinq au plus tous styles confondus), `lireChoixStyle` (prendre le style EN ENTIER :
+  palette, typographies, doubles ; les couvertures restent), `basculerCouverture` (plafond
+  `couvertures_aimees_max`, `null` = refusé), `grouperParChoix` (le choix, ce qui va avec, le
+  reste). `briefModifiable` : seulement en `preparation`. Changer un brief validé le remet à
+  valider. `styleVisible` : une école voit les styles « école » et « tous ».
 - Une seule route, `/api/collectif/brief`, une action par geste ; le droit change selon
   l'action (`valider_brief` pour valider ou rouvrir, `choisir_style` pour le reste).
 - Le mur et la page d'un style lisent `chargerMur` (styles PUBLIÉS et visibles, images signées
@@ -212,7 +215,8 @@ répond `introuvable` à l'identique pour un lien inconnu, archivé, ou tapé su
 
 Client : `.bj-atelier` + scope propre (`.ec-espace`, `.ec-depot`), Cormorant Garamond **400**
 (jamais 500 : T-059) et DM Sans. Toute classe préfixée `ec-` et écrite sous son scope : une
-feuille chargée ne se décharge jamais en navigation client. Admin : monde CRÈME, classes de la
+feuille chargée ne se décharge jamais en navigation client. Admin : PORCELAINE depuis le 15/10
+(les jetons crème redéfinis dans `admin.css`, voir `src/app/admin/CLAUDE.md`), classes de la
 table de travail. Masculin générique à l'écran (« le responsable »), même si le PRD écrit « la
 responsable ».
 
@@ -235,6 +239,40 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   observe SA zone (`root`), nul sur téléphone (Photos).
 - **Les fenêtres sont en verre** (`Fenetre`, `cote` pour le panneau latéral) et couvrent la
   colonne de contenu, pas le menu.
+- **Porcelaine le jour, Charbon la nuit, du verre partout (15/10, maquettes « direction
+  visuelle » validées par Mathias).** La nuit n'est plus un noir pur (`--ec-bg: #17181c`, texte
+  `#ecedf0` : 15,2 : 1 ; légendes 5,5 : 1, mesurés) ; le jour n'est plus beige (`#f3f4f7`, le bleu
+  de Bellajour). La FORME est en jetons communs : `--ec-r-panneau` 28, `--ec-r-carte` 24,
+  `--ec-r-bloc` 16, `--ec-r-champ` 14, `--ec-flou`, `--ec-carte` / `--ec-carte-bord` /
+  `--ec-ombre-carte` (un panneau de verre), `--ec-actif` (l'onglet ou l'élément ouvert : une
+  pilule claire), `--ec-creux` (le fond d'une pilule segmentée). La coquille FLOTTE : marge de
+  16 px, menu de verre arrondi, deux taches floues derrière (`.ec-coquille::before/::after`,
+  `--ec-aurore-*`). ⚠️ **Plus de traits entre les sections** : un bloc nouveau est un panneau de
+  verre posé sur le fond (ou une ligne claire arrondie dans un panneau), jamais une zone séparée
+  par un `border-bottom`. Un panneau de verre qui contient une zone `position: sticky` repasse en
+  `overflow: visible` sur téléphone (sinon le collant ne colle plus).
+  **Les maquettes font foi jusque dans le détail** (retour du 15/10 au soir) :
+  - les lueurs sont à leur place : la nuit, cuivre en haut à DROITE ; le jour, bleu en haut à
+    gauche ;
+  - le tableau de bord est une grille 1 / 1,08, avec « À envoyer » sous le style et le message
+    sous les photos ;
+  - l'encart Style dit « Fait », montre l'éventail, une tuile par magazine et « Modifier » ;
+    l'éventail est TOUJOURS Lisbonne, Aussie et la Côte d'Azur (`EVENTAIL`, couvertures de
+    Bellajour dans `public/images/v2/accueil/`), choix de Mathias du 15/10 contre les couvertures
+    d'essai du mur ; les tuiles disent le vrai style ;
+  - une ligne de dossier porte sa vignette ;
+  - un album porte son nombre de photos sur la couverture ;
+  - « Vos dossiers » et « Les participants » montrent dessous les huit dernières arrivées
+    (`ARRIVEES`, jamais une page de grille).
+  ⚠️ **Les unités de conteneur (`cqh`) valent 0** dans une carte sans hauteur fixe (mesuré à
+  1000 et 390 px) : sous 1100 px, l'éventail passe en tailles fixes.
+  **Règle de Mathias (15/10)** : à partir de TROIS contenus à envoyer (`LIGNE_LONGUE`), la ligne
+  « À envoyer » prend toute la largeur pour qu'on les voie tous, et le message de l'atelier
+  passe DESSOUS.
+  ⚠️ **Une fenêtre (`Fenetre`) s'ouvre toujours dans `.ec-contenu`, par un portail.** Un panneau
+  de verre (`backdrop-filter`) devient le bloc conteneur de tout ce qui est positionné dedans :
+  ouverte en place, la fenêtre restait enfermée dans son encart, inutilisable (vu le 15/10 sur
+  « À envoyer »). Ne pas retirer le portail.
 - **Le plafond appartient au LIEN** (`plafond_par_personne`, compté par appareil SUR ce lien :
   `compterPourPlafond(…, provenanceId)`). « Sans limite » = `sans_plafond`. Un lien d'avant la
   révision garde l'ancienne règle (`plafondParticipant`). Le curseur va de 5 à
@@ -257,10 +295,13 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   Mathias, PRD §12.14). Envoyer de nouveau ajoute une ligne : le plus récent gagne.
 - **Le QR code** (`qr.ts`, `qrcode-generator` épinglé) : modules foncés sur fond clair dans les
   deux modes, une marge de quatre modules.
-- **Le brief partie par partie** (`/style/brief`) : `lirePartieBrief` contrôle palette, texte,
-  doubles pages contre le style DÉJÀ choisi ; aimer une couverture passe par `patchCouvertures`
-  (un brief validé repasse « à valider »). Le slug `brief` est réservé (`SLUGS_RESERVES`) : le
-  segment fixe gagne sur `style/[slug]`.
+- **Le brief pièce par pièce** (D24, remplace la page « partie par partie » archivée) : le mur
+  montre « Tout, en vrac » et « Votre composition » ; `/style/brief?m=&partie=` ouvre le panneau
+  d'UNE partie sur le mur. Aimer une couverture passe par `patchCouvertures` (un brief validé
+  repasse « à valider »). Le slug `brief` est réservé (`SLUGS_RESERVES`) : le segment fixe gagne
+  sur `style/[slug]`. Migration `20261017_collectif_composition.sql` : sans elle, lecture repliée
+  sur `style_id`, « prendre tout le style » s'écrit dans les colonnes d'avant, une pièce répond
+  503 `migration_composition_absente`.
 - **Le BAT plein écran** : la page suit la scène par unités de conteneur (`container-type: size`,
   `100cqh`, `50cqw`), jamais un plafond en pixels ; la page seule garde son côté de la pliure ;
   notes dans un panneau repliable (feuille du bas sur téléphone, fermée par défaut).
@@ -290,6 +331,68 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
 - **Repli** : sans la migration `20261015`, sans interlocuteur, sans agenda relié ou sans le
   compte Google, l'espace garde le lien de rendez-vous de la fiche (`rdv_url`). Supprimer un
   événement directement dans Google Agenda ne prévient pas l'espace : annuler depuis la fiche.
+
+## Les retours de Mathias du 14/10 (T-151)
+
+- **« Qui a déposé » et les liens sont UN endroit** : depuis T-152, l'arbre de `dossiers.ts`
+  (`sources.ts` est archivé dans `archive/sources-photos-2026-10/`). La page Photos ET le tableau
+  de bord le lisent. Les clés des liens (`?p=`) ne sortent que pour qui peut en créer
+  (`regler_plafond_participant`) : l'équipe voit les comptes, jamais un lien.
+- **Le message de partage** (`partage.ts`, pur) salue le groupe, nomme l'organisation et
+  l'événement, dit le plafond et la clôture ; le lien général salue « à tous » et vouvoie.
+  Le client le retouche avant WhatsApp, Mail ou copie.
+- **La fenêtre d'envoi vit dans la coquille** (`DepotContexte` : `HoteFenetreEnvoi`, la pastille
+  dans `EnTeteEcran`). Un lot garde la provenance choisie À L'AJOUT (`moteur.ts`) : un second
+  lot ajouté pendant l'envoi ne relabellise jamais le premier. Un fichier choisi deux fois est
+  compté (`dejaAjoutes`), jamais sauté en silence.
+- **La présélection est un BORD tracé en dedans** (`outline-offset` négatif) : la tuile a une
+  containment de peinture (`content-visibility`), un contour extérieur y est rogné.
+- **Un contenu a plusieurs fichiers** (`envoisCourants`) ; « Remplacer » range l'ancien comme
+  ANCIENNE VERSION (`remplace_le`), gardée au coffre et à l'atelier ; le questionnaire n'a qu'une
+  version courante. **Renommer un dossier** (`/api/collectif/dossiers`) change le nom du lien ou
+  le `deposant` des photos du responsable ; « Mes photos » rend son propre nom.
+- **Citer un de ses envois** dans un message (`collectif_messages.contenu_id`) : l'envoi doit être
+  de l'édition ; la lecture du fil se replie en trois paliers (envois, révision, avant).
+- **La migration `20261016_collectif_envois.sql`** (appliquée le 14/10) : lecture repliée (tous les fichiers sont
+  courants), « Remplacer » et « Citer » en 503 `migration_envois_absente`, SONDÉS avant d'écrire
+  au coffre.
+- ⚠️ **Ne pas compter sur `router.refresh()` pour montrer ce qu'on vient d'écrire** : vu le 14/10,
+  la relecture part (200) mais l'écran ne la prend pas toujours. La route rend l'objet écrit et
+  l'écran l'affiche aussitôt (contenus, nom d'un dossier) ; la relecture confirme ensuite.
+
+## Les retours du 14/10 au soir (T-152)
+
+- **Un dossier de photos n'a PAS de table** (`dossiers.ts`, pur) : c'est le NOM sous lequel le
+  responsable a déposé (`collectif_photos.deposant`, `provenance_type` « organisateur »). Un
+  sous-dossier s'écrit « Parent / Enfant » (`SEPARATEUR`, UN seul niveau, décision de Mathias) ;
+  « Mes photos » est son propre nom (`estPropre`). Ranger (`planDeplacement`) ou renommer
+  (`nouveauChemin`) RÉÉCRIT ce nom, par paquets d'ids de l'édition ; rien ne s'efface, le journal
+  garde l'ancien chemin. Un « / » tapé dans un nom devient « - » (`lireNomDossier`). Les photos
+  d'avant déposées sous un TYPE (photographe, autre) gardent leur nom, sans préfixe de type.
+- **La page Photos n'a PLUS de grande colonne** (15/10, retour de Mathias : avec beaucoup de liens
+  elle devenait longue, archive `photos-colonne-2026-10/`) : des RAYONS au-dessus des photos
+  (`rayonDe`), et deux VUES D'ENSEMBLE (`vous`, `liens`, `estVueEnsemble`) qui montrent des
+  vignettes de dossiers ou de liens, sans grille ni vignette de photo signée ; la route ne signe
+  qu'une couverture par dossier ou lien. Un lien montre ses personnes en pastilles (dès deux).
+- **Une clé de dossier dit où regarder** : `tout`, `selection`, `vous`, `liens`,
+  `resp:<type>:<nom>`, `lien:<id>`, `participants`, `pers:<id|general>:<nom>`, `atelier`. La grille, le compte, « Tout
+  sélectionner ce dossier » et le tableau de bord lisent TOUS `dansLeDossier` : une seule règle.
+- **Les liens vivent dans l'onglet « Les liens »** ; l'équipe n'en voit aucun (`partage`).
+  Supprimer un lien = `retire_le` (jamais un DELETE) : sa page de dépôt devient introuvable, la
+  route refuse, ses photos restent. Changer son nombre de photos = la règle de la création
+  (`lirePlafondLien`), plafonnée par ce qu'il reste à l'édition.
+- **La visionneuse** (`_composants/Visionneuse.tsx`, `visionneuse.ts`) : un document s'ouvre dans
+  la page par un PORTAIL dans `.ec-contenu` (ouverte depuis une bulle, elle serait sinon de la
+  taille de la bulle). Deux adresses signées : `voir` sans en-tête (elle s'affiche), `url` ou
+  `telecharger` avec le nom propre (elle télécharge). PDF et images se peignent, le reste se
+  télécharge.
+- **Répondre** (`reponse_a`) : le message répondu doit être de la MÊME édition (`lireReponseA`,
+  qui sonde la migration AVANT le coffre) ; la lecture du fil se replie en quatre paliers
+  (réponses, envois, révision, avant). L'atelier écrit par `ConversationAtelier`, partagée par
+  la fiche et la boîte de réception.
+- **La boîte de réception de l'atelier** (`boite.ts`, pur) LIT seulement : l'aperçu d'une
+  conversation ne marque rien ; seule l'ouverture le fait (l'effet de `useMessagerie`). Les
+  non-lus se COMPTENT (`compterNonLus`, `head: true`), jamais en marquant.
 
 ## Phase 7 : les accroches déjà posées
 

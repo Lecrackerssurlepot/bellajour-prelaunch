@@ -11,14 +11,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { signerGet } from "@/lib/atelier/r2";
 import { etatEffectif, LIBELLE_ETAT_EDITION, type EtatEdition } from "@/lib/collectif/etats";
-import { tableAbsente } from "@/lib/collectif/migration";
+import { colonneAbsente, tableAbsente } from "@/lib/collectif/migration";
 import { prochaineEtape, type Prochaine } from "@/lib/collectif/prochaine";
 import { phraseEvenement } from "@/lib/collectif/recit";
 import { manquesPourPublier } from "@/lib/collectif/styles";
 import { libelleTypeDocument } from "@/lib/collectif/documents";
 import { contenuClient } from "@/lib/collectif/contenus";
+import { compositionDu, stylesDeLaComposition, type BriefLigne } from "@/lib/collectif/brief";
+import { TYPES_DOUBLES } from "@/lib/collectif/styles";
 import { lireMessages } from "@/lib/collectif/messagerie";
+import { aTraiter, conversationsDe, type Conversation, type MessageBoite } from "@/lib/collectif/boite";
+import { lireInterlocuteurs } from "@/lib/collectif/rendezvous";
 import { resumeDeposants } from "@/lib/collectif/grille";
+import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
 import type { Message } from "@/lib/collectif/messages";
 import { resumeNote, resumeTour } from "@/lib/collectif/bat";
 import { estUuid } from "@/lib/collectif/cles";
@@ -110,18 +115,89 @@ export async function listerEditions(
   };
 }
 
+/**
+ * Les messages des clients que l'atelier n'a pas lus, toutes éditions (la
+ * pastille du commutateur et de « Messagerie », T-152). `null` si la lecture
+ * échoue ou si les tables n'existent pas : une pastille absente vaut mieux
+ * qu'une table de travail qui tombe pour un compteur.
+ */
+export async function compterNonLus(supabase: SupabaseClient, editionId?: string): Promise<number | null> {
+  let requete = supabase.from("collectif_messages").select("id", { count: "exact", head: true }).eq("auteur", "client").is("lu_atelier_le", null);
+  if (editionId) requete = requete.eq("edition_id", editionId);
+  const { count, error } = await requete;
+  if (error) {
+    if (!tableAbsente(error.code)) console.error("[collectif] non-lus illisibles", error.code, error.message);
+    return null;
+  }
+  return count ?? 0;
+}
+
+/* ─────────────────────────────── la boîte de réception ─────────────────────────────── */
+
+/**
+ * La boîte de réception de l'atelier (T-152) : une conversation par édition
+ * non archivée, ce qui est à traiter aujourd'hui. LIT seulement : rien n'est
+ * marqué lu ici (l'ouverture d'une conversation le fait, par un effet).
+ * Les rendez-vous sont un bonus : sans leur migration, la boîte s'affiche
+ * sans eux.
+ */
+export async function chargerBoite(
+  supabase: SupabaseClient,
+  maintenant: Date
+): Promise<{ absent: true } | { absent: false; conversations: Conversation[]; aTraiter: { editionId: string; texte: string }[] }> {
+  const { data, error } = await supabase
+    .from("collectif_editions")
+    .select("id, organisation, evenement, created_at")
+    .is("archive_le", null)
+    .order("created_at", { ascending: false })
+    .limit(200)
+    .returns<{ id: string; organisation: string; evenement: string; created_at: string }[]>();
+  if (error) {
+    if (tableAbsente(error.code)) return { absent: true };
+    echec("éditions de la boîte", error);
+  }
+  const editions = data ?? [];
+  const ids = editions.map((e) => e.id);
+  if (!ids.length) return { absent: false, conversations: [], aTraiter: [] };
+  const [messages, rdvs, inters] = await Promise.all([
+    supabase
+      .from("collectif_messages")
+      .select("edition_id, auteur, texte, created_at, lu_atelier_le")
+      .in("edition_id", ids)
+      .order("created_at", { ascending: false })
+      .limit(3000)
+      .returns<MessageBoite[]>(),
+    supabase
+      .from("collectif_rendez_vous")
+      .select("edition_id, debut, interlocuteur_cle")
+      .in("edition_id", ids)
+      .eq("statut", "pris")
+      .gte("debut", new Date(maintenant.getTime() - 86_400_000).toISOString())
+      .lte("debut", new Date(maintenant.getTime() + 2 * 86_400_000).toISOString())
+      .returns<{ edition_id: string; debut: string; interlocuteur_cle: string }[]>(),
+    lireInterlocuteurs(supabase),
+  ]);
+  if (messages.error) echec("messages de la boîte", messages.error);
+  const conversations = conversationsDe(editions, messages.data ?? [], maintenant);
+  const prenoms = new Map((inters.ok ? inters.valeur : []).map((i) => [i.cle, i.prenom]));
+  const rendezVous = rdvs.error ? [] : (rdvs.data ?? []).map((r) => ({ edition_id: r.edition_id, debut: r.debut, avec: prenoms.get(r.interlocuteur_cle) ?? r.interlocuteur_cle }));
+  return { absent: false, conversations, aTraiter: aTraiter(conversations, rendezVous, maintenant) };
+}
+
 /* ─────────────────────────────────── la fiche ─────────────────────────────────── */
 
 export type MagazineFiche = Pick<MagazineLigne, "id" | "rang" | "nom" | "brief_valide_le" | "bat_valide_le"> & {
   toursPublies: number;
   /** Ni brief commencé, ni tour : il peut se retirer (le dernier seulement). */
   vide: boolean;
-  /** Le brief, lisible par l'atelier (phase 4). */
+  /** Le brief, lisible par l'atelier : chaque pièce dit son style (D24, composition pièce par pièce). */
   brief: {
-    style: string | null;
-    palette: { nom: string; couleurs: string[] } | null;
+    /** Les styles d'où vient la composition, dans l'ordre palette, typographies, doubles, couvertures. */
+    styles: string[];
+    palette: { nom: string; couleurs: string[]; style: string } | null;
+    typos: { titres: string; texte: string; style: string } | null;
     texte: string | null;
-    doubles: string[];
+    doubles: { libelle: string; style: string }[];
     aimees: { style: string; url: string | null }[];
   };
 };
@@ -135,6 +211,10 @@ export type Collecte = {
   participants: number;
   signalees: number;
   sansVignette: number;
+  /** Les copies repérées (même règle et même compte que la page Photos du client). */
+  doublons: number;
+  /** Les vignettes des quatre dernières photos arrivées, signées une heure (la vue d'ensemble). */
+  apercus: string[];
   parProvenance: { libelle: string; n: number }[];
 };
 
@@ -148,6 +228,8 @@ export type ContenuFiche = {
   url: string | null;
   nom: string | null;
   reponses: { question: string; reponse: string }[];
+  /** Remplacé par le client (migration 20261016) : gardé ici, plus sur son écran. */
+  ancienne: boolean;
 };
 
 export type Fiche = {
@@ -178,11 +260,7 @@ export async function chargerEdition(
   if (!edition) return { absent: false, fiche: null };
 
   const [mags, journal, docs, fil, photos, contenus] = await Promise.all([
-    supabase
-      .from("collectif_magazines")
-      .select("id, rang, nom, style_id, palette_cle, texte, doubles, couvertures_aimees, brief_valide_le, bat_valide_le")
-      .eq("edition_id", id)
-      .order("rang", { ascending: true }),
+    lireMagazinesFiche(supabase, id),
     supabase
       .from("collectif_evenements")
       .select("id, type, payload, created_at")
@@ -197,16 +275,11 @@ export async function chargerEdition(
     lireMessages(supabase, id, null),
     supabase
       .from("collectif_photos")
-      .select("provenance_type, deposant, role_deposant, appareil_id, signalee, vignette_key")
+      .select("id, provenance_type, deposant, role_deposant, appareil_id, signalee, vignette_key, empreinte, prise_le, ordre, confirmee_le")
       .eq("edition_id", id)
       .not("confirmee_le", "is", null)
       .limit(20000),
-    supabase
-      .from("collectif_contenus")
-      .select("id, type, r2_key, nom_origine, reponses, recu_le, depose_par")
-      .eq("edition_id", id)
-      .order("recu_le", { ascending: false })
-      .limit(100),
+    lireContenusFiche(supabase, id),
   ]);
   if (photos.error) echec("photos de l'édition", photos.error);
   if (contenus.error) echec("contenus de l'édition", contenus.error);
@@ -229,6 +302,11 @@ export async function chargerEdition(
   }
 
   const lignesPhotos = (photos.data ?? []) as {
+    id: string;
+    empreinte: string | null;
+    prise_le: string | null;
+    ordre: number | null;
+    confirmee_le: string;
     provenance_type: string;
     deposant: string | null;
     role_deposant: string;
@@ -241,36 +319,59 @@ export async function chargerEdition(
     participants: new Set(lignesPhotos.filter((p) => p.role_deposant === "participant" && p.appareil_id).map((p) => p.appareil_id)).size,
     signalees: lignesPhotos.filter((p) => p.signalee).length,
     sansVignette: lignesPhotos.filter((p) => !p.vignette_key).length,
+    doublons: groupesDoublonsRapides(lignesPhotos.map((p, i) => ({ id: p.id, empreinte: p.empreinte, priseLe: p.prise_le, ordre: p.ordre ?? i }))).reduce(
+      (n, g) => n + g.doublons.length,
+      0
+    ),
+    apercus: (
+      await Promise.all(
+        lignesPhotos
+          .filter((p) => p.vignette_key)
+          .sort((a, b) => b.confirmee_le.localeCompare(a.confirmee_le))
+          .slice(0, 4)
+          .map((p) => signerOuRien(p.vignette_key))
+      )
+    ).filter((u): u is string => u !== null),
     parProvenance: resumeDeposants(lignesPhotos),
   };
 
-  /* Les styles que les briefs nomment (choisis ou aimés), pour les lire en clair. */
-  type MagBrut = MagazineLigne & { style_id: string | null };
-  const magsBruts = (mags.data ?? []) as MagBrut[];
-  const idsStyles = [...new Set(magsBruts.flatMap((m) => [m.style_id, ...(m.couvertures_aimees ?? []).map((a) => a.style_id)]).filter(Boolean))] as string[];
+  /* Les styles que les briefs nomment (chaque pièce, D24), pour les lire en clair, publiés ou non. */
+  type MagBrut = MagazineLigne & BriefLigne;
+  const magsBruts = (mags.data ?? []) as unknown as MagBrut[];
+  const compositions = new Map(magsBruts.map((m) => [m.id, compositionDu(m)]));
+  const idsStyles = [...new Set([...compositions.values()].flatMap(stylesDeLaComposition))];
   const stylesLus = idsStyles.length
-    ? await supabase.from("collectif_styles").select("id, nom, palettes, couvertures").in("id", idsStyles)
+    ? await supabase.from("collectif_styles").select("id, nom, palettes, couvertures, typos").in("id", idsStyles)
     : { data: [], error: null };
   if (stylesLus.error) echec("styles des briefs", stylesLus.error);
   const parStyle = new Map(
-    ((stylesLus.data ?? []) as { id: string; nom: string; palettes: { cle: string; nom: string; couleurs: string[] }[]; couvertures: { cle: string; image_key: string }[] }[]).map((x) => [x.id, x])
+    ((stylesLus.data ?? []) as {
+      id: string;
+      nom: string;
+      palettes: { cle: string; nom: string; couleurs: string[] }[];
+      couvertures: { cle: string; image_key: string }[];
+      typos: { titres?: string; texte?: string } | null;
+    }[]).map((x) => [x.id, x])
   );
+  const nom = (styleId: string) => parStyle.get(styleId)?.nom ?? "un style retiré";
   const briefs = new Map<string, MagazineFiche["brief"]>();
   for (const m of magsBruts) {
-    const st = m.style_id ? parStyle.get(m.style_id) : undefined;
-    const pal = st?.palettes?.find((x) => x.cle === m.palette_cle);
+    const c = compositions.get(m.id) ?? compositionDu(m);
+    const pal = c.palette ? parStyle.get(c.palette.style_id)?.palettes?.find((x) => x.cle === c.palette?.cle) : undefined;
+    const ty = c.typos ? parStyle.get(c.typos.style_id)?.typos : undefined;
     const aimees = await Promise.all(
-      (m.couvertures_aimees ?? []).map(async (a) => {
+      c.couvertures.map(async (a) => {
         const s2 = parStyle.get(a.style_id);
-        const c = s2?.couvertures?.find((x) => x.cle === a.couverture);
-        return { style: s2?.nom ?? "?", url: c ? await signerOuRien(c.image_key) : null };
+        const cv = s2?.couvertures?.find((x) => x.cle === a.couverture);
+        return { style: s2?.nom ?? "?", url: cv ? await signerOuRien(cv.image_key) : null };
       })
     );
     briefs.set(m.id, {
-      style: st?.nom ?? null,
-      palette: pal ? { nom: pal.nom, couleurs: pal.couleurs } : null,
-      texte: m.texte,
-      doubles: m.doubles ?? [],
+      styles: stylesDeLaComposition(c).map(nom),
+      palette: c.palette && pal ? { nom: pal.nom, couleurs: pal.couleurs, style: nom(c.palette.style_id) } : null,
+      typos: c.typos ? { titres: ty?.titres ?? "", texte: ty?.texte ?? "", style: nom(c.typos.style_id) } : null,
+      texte: c.texte,
+      doubles: c.doubles.map((d) => ({ libelle: TYPES_DOUBLES.find((t) => t.cle === d.double)?.libelle ?? d.double, style: nom(d.style_id) })),
       aimees,
     });
   }
@@ -281,7 +382,7 @@ export async function chargerEdition(
       collecte,
       edition,
       etat: etatEffectif(edition.etat, edition.cloture_le, maintenant),
-      magazines: ((mags.data ?? []) as (MagazineLigne & { style_id: string | null })[]).map((m) => {
+      magazines: (mags.data ?? []).map((m) => {
         const t = toursParMag.get(m.id) ?? { total: 0, publies: 0 };
         return {
           id: m.id,
@@ -290,8 +391,8 @@ export async function chargerEdition(
           brief_valide_le: m.brief_valide_le,
           bat_valide_le: m.bat_valide_le,
           toursPublies: t.publies,
-          vide: !m.style_id && !m.brief_valide_le && t.total === 0,
-          brief: briefs.get(m.id) ?? { style: null, palette: null, texte: null, doubles: [], aimees: [] },
+          vide: !(briefs.get(m.id)?.styles.length) && !m.brief_valide_le && t.total === 0,
+          brief: briefs.get(m.id) ?? { styles: [], palette: null, typos: null, texte: null, doubles: [], aimees: [] },
         };
       }),
       journal: ((journal.data ?? []) as Pick<EvenementLigne, "id" | "type" | "payload" | "created_at">[]).map((j) => ({
@@ -300,7 +401,7 @@ export async function chargerEdition(
         phrase: phraseEvenement(j.type, j.payload ?? {}),
       })),
       contenus: await Promise.all(
-        ((contenus.data ?? []) as { id: string; type: string; r2_key: string | null; nom_origine: string | null; reponses: Record<string, unknown> | null; recu_le: string; depose_par: string | null }[]).map(
+        ((contenus.data ?? []) as { id: string; type: string; r2_key: string | null; nom_origine: string | null; reponses: Record<string, unknown> | null; recu_le: string; depose_par: string | null; remplace_le?: string | null }[]).map(
           async (c) => {
             let url: string | null = null;
             if (c.r2_key) {
@@ -320,6 +421,7 @@ export async function chargerEdition(
               reponses: Object.entries(c.reponses ?? {})
                 .filter(([, r]) => typeof r === "string")
                 .map(([question, r]) => ({ question, reponse: r as string })),
+              ancienne: Boolean(c.remplace_le),
             };
           }
         )
@@ -639,4 +741,28 @@ export async function chargerBatAtelier(
       notes: notesAtelier,
     },
   };
+}
+
+/**
+ * Les contenus d'une édition, le plus récent d'abord, avec `remplace_le`
+ * (migration 20261016) ; repli sans la colonne tant qu'elle n'est pas passée.
+ */
+async function lireContenusFiche(supabase: SupabaseClient, id: string) {
+  const colonnes = "id, type, r2_key, nom_origine, reponses, recu_le, depose_par";
+  const avec = await supabase.from("collectif_contenus").select(`${colonnes}, remplace_le`).eq("edition_id", id).order("recu_le", { ascending: false }).limit(100);
+  if (!avec.error || !colonneAbsente(avec.error.code)) return avec;
+  return supabase.from("collectif_contenus").select(colonnes).eq("edition_id", id).order("recu_le", { ascending: false }).limit(100);
+}
+
+/**
+ * Les magazines d'une édition avec leur brief, colonnes de D24 comprises
+ * (migration 20261017) ; repli sans elles tant qu'elle n'est pas passée.
+ */
+async function lireMagazinesFiche(supabase: SupabaseClient, id: string) {
+  const colonnes = "id, rang, nom, style_id, palette_cle, texte, doubles, couvertures_aimees, brief_valide_le, bat_valide_le";
+  const lire = (c: string) =>
+    supabase.from("collectif_magazines").select(c).eq("edition_id", id).order("rang", { ascending: true }).returns<(MagazineLigne & BriefLigne)[]>();
+  const avec = await lire(`${colonnes}, palette_style_id, typo_style_id, doubles_aimes`);
+  if (!avec.error || !colonneAbsente(avec.error.code)) return avec;
+  return lire(colonnes);
 }

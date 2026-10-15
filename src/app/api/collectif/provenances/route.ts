@@ -5,10 +5,10 @@ import { nouvelleCleProvenance } from "@/lib/collectif/collecte";
 import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
-import { colonneAbsente, ERREUR_REVISION_ABSENTE, MESSAGE_REVISION_ABSENTE } from "@/lib/collectif/migration";
+import { colonneAbsente, ERREUR_LIENS_ABSENTE, ERREUR_REVISION_ABSENTE, MESSAGE_LIENS_ABSENTE, MESSAGE_REVISION_ABSENTE } from "@/lib/collectif/migration";
 import { libellePlafondLien, lirePlafondLien } from "@/lib/collectif/plafonds";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
-import { TYPES_PROVENANCE, type TypeProvenance } from "@/lib/collectif/types";
+import { TYPES_PROVENANCE, type EditionLigne, type TypeProvenance } from "@/lib/collectif/types";
 
 /**
  * POST /api/collectif/provenances — un lien de contribution (PRD §5.2.4,
@@ -25,6 +25,13 @@ import { TYPES_PROVENANCE, type TypeProvenance } from "@/lib/collectif/types";
  * colonne, la route répond 503 et le dit (jamais un lien créé sans son
  * plafond, qui laisserait passer tout le monde). « Sans limite » n'en a pas
  * besoin.
+ *
+ * Sur un lien qui existe (T-152, l'onglet « Les liens ») :
+ * - `{ token, action: "plafond", id, plafond | sansPlafond }` : changer son
+ *   nombre de photos par personne (même règle qu'à la création) ;
+ * - `{ token, action: "supprimer", id }` : il ne reçoit plus rien, ses photos
+ *   RESTENT (`retire_le`, migration 20261018 : 503 sans elle). Jamais un
+ *   DELETE. Changer son nom passe par `/api/collectif/dossiers`.
  */
 
 export const runtime = "nodejs";
@@ -39,6 +46,8 @@ export async function POST(request: Request) {
   const refus = refusAcces(acces);
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   if (!peut(acces.role, "regler_plafond_participant")) return refusDroit();
+
+  if (corps.action === "plafond" || corps.action === "supprimer") return modifierLien(acces.edition, corps);
 
   const type = TYPES_PROVENANCE.some((t) => t.cle === corps.type) ? (corps.type as TypeProvenance) : "participant";
   const libelle = typeof corps.libelle === "string" ? corps.libelle.trim().slice(0, 80) : "";
@@ -83,4 +92,47 @@ export async function POST(request: Request) {
     },
     { status: 201 }
   );
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function modifierLien(edition: EditionLigne, corps: Record<string, unknown>) {
+  if (typeof corps.id !== "string" || !UUID.test(corps.id)) return NextResponse.json({ error: "introuvable" }, { status: 404 });
+  const supabase = makeSupabase();
+  const { data: lien, error } = await supabase
+    .from("collectif_provenances")
+    .select("id, libelle")
+    .eq("id", corps.id)
+    .eq("edition_id", edition.id)
+    .maybeSingle<{ id: string; libelle: string | null }>();
+  if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  if (!lien) return NextResponse.json({ error: "introuvable" }, { status: 404 });
+  const nom = lien.libelle ?? "Lien de contribution";
+
+  if (corps.action === "supprimer") {
+    const { error: e } = await supabase.from("collectif_provenances").update({ retire_le: new Date().toISOString() }).eq("id", lien.id).eq("edition_id", edition.id);
+    if (e) {
+      if (colonneAbsente(e.code)) return NextResponse.json({ error: ERREUR_LIENS_ABSENTE, message: MESSAGE_LIENS_ABSENTE }, { status: 503 });
+      return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
+    }
+    const journal = await journaliser(supabase, { editionId: edition.id }, "provenance_supprimee", { libelle: nom }, null);
+    return NextResponse.json({ ok: true, journal });
+  }
+
+  const plafond = lirePlafondLien(corps, edition);
+  if (!plafond.ok) return NextResponse.json({ error: "saisie", message: plafond.message }, { status: 422 });
+  const patch: Record<string, unknown> = { sans_plafond: plafond.sans_plafond, plafond_par_personne: plafond.plafond_par_personne };
+  const { error: e } = await supabase.from("collectif_provenances").update(patch).eq("id", lien.id).eq("edition_id", edition.id);
+  if (e) {
+    if (colonneAbsente(e.code)) return NextResponse.json({ error: ERREUR_REVISION_ABSENTE, message: MESSAGE_REVISION_ABSENTE }, { status: 503 });
+    return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
+  }
+  const journal = await journaliser(
+    supabase,
+    { editionId: edition.id },
+    "provenance_plafond",
+    { libelle: nom, sansPlafond: plafond.sans_plafond, plafond: plafond.plafond_par_personne },
+    null
+  );
+  return NextResponse.json({ ok: true, journal, plafond: libellePlafondLien(plafond, edition) });
 }

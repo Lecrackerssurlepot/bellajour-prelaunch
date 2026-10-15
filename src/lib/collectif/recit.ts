@@ -63,6 +63,10 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return "Une photo ajoutée à la présélection du client.";
     case "photo_deselectionnee":
       return "Une photo retirée de la présélection du client.";
+    case "preselection_toutes":
+      return `Tout sélectionné : ${String(payload.n ?? 0)} photo(s) ajoutée(s) à la présélection du client.`;
+    case "preselection_aucune":
+      return `Tout désélectionné : ${String(payload.n ?? 0)} photo(s) retirée(s) de la présélection du client.`;
     case "photo_signalee":
       return "Une photo signalée « à ne pas publier ».";
     case "photo_designalee":
@@ -80,7 +84,9 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return `Magazine ${String(payload.magazine)} : ${partie} du brief modifiée par le client.`;
     }
     case "brief_repris":
-      return `Magazine ${String(payload.magazine)} : style repris du magazine ${String(payload.depuis)}.`;
+      return `Magazine ${String(payload.magazine)} : composition reprise du magazine ${String(payload.depuis)}.`;
+    case "brief_piece":
+      return `Magazine ${String(payload.magazine)} : ${payload.retiree ? "une double page retirée" : `${String(payload.piece ?? "une pièce")} prise`}${payload.style ? ` du style ${String(payload.style)}` : ""} par le client.`;
     case "couverture_aimee":
       return `Magazine ${String(payload.magazine)} : une couverture aimée.`;
     case "couverture_retiree":
@@ -114,7 +120,17 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
     case "bat_valide":
       return `Magazine ${String(payload.magazine)} : bon à tirer VALIDÉ par le client.`;
     case "contenu_recu":
-      return `Contenu reçu du client : ${String(payload.type ?? "")}.`;
+      return `Contenu reçu du client : ${String(payload.type ?? "")}${payload.nom ? ` (${String(payload.nom)})` : ""}.`;
+    case "contenu_remplace":
+      return `Contenu remplacé par le client : ${String(payload.type ?? "")}${payload.nom ? ` (${String(payload.nom)})` : ""}, l'ancienne version reste à l'atelier.`;
+    case "dossier_range":
+      return `Dossier de photos rangé : « ${String(payload.avant ?? "")} » devient « ${String(payload.apres ?? "")} ».`;
+    case "provenance_supprimee":
+      return `Lien de contribution supprimé : « ${String(payload.libelle ?? "")} » ; ses photos restent.`;
+    case "provenance_plafond":
+      return `Lien « ${String(payload.libelle ?? "")} » : ${payload.sansPlafond ? "sans limite" : `${String(payload.plafond ?? "?")} photos par personne`}.`;
+    case "dossier_renomme":
+      return `Dossier de photos renommé : « ${String(payload.avant ?? "")} » devient « ${String(payload.apres ?? "")} ».`;
     case "modification_demandee":
       return `Demande de modification du client : ${String(payload.motif ?? "")}.`;
     case "proposition_acceptee":

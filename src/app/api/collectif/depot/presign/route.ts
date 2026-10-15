@@ -76,16 +76,18 @@ export async function POST(request: Request) {
   let deposant = typeof corps.deposant === "string" ? corps.deposant.trim().slice(0, 80) || null : null;
   if (role === "participant" && corps.p !== undefined && corps.p !== null && corps.p !== "") {
     if (!estCleProvenance(corps.p)) return NextResponse.json({ error: "provenance_inconnue" }, { status: 404 });
-    type Prov = { id: string; type: TypeProvenance; libelle: string | null; sans_plafond: boolean; plafond_par_personne?: number | null };
+    type Prov = { id: string; type: TypeProvenance; libelle: string | null; sans_plafond: boolean; plafond_par_personne?: number | null; retire_le?: string | null };
     const lire = (colonnes: string) =>
       supabase.from("collectif_provenances").select(colonnes).eq("edition_id", edition.id).eq("cle", corps.p as string).maybeSingle<Prov>();
     /* Repli tant que la migration de la révision n'est pas passée : le lien
        garde alors la règle de l'édition. */
-    let lu = await lire("id, type, libelle, sans_plafond, plafond_par_personne");
+    let lu = await lire("id, type, libelle, sans_plafond, plafond_par_personne, retire_le");
+    if (lu.error && colonneAbsente(lu.error.code)) lu = await lire("id, type, libelle, sans_plafond, plafond_par_personne");
     if (lu.error && colonneAbsente(lu.error.code)) lu = await lire("id, type, libelle, sans_plafond");
     const { data: prov, error } = lu;
     if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
-    if (!prov) return NextResponse.json({ error: "provenance_inconnue" }, { status: 404 });
+    /* Un lien supprimé (migration 20261018) ne reçoit plus rien. */
+    if (!prov || prov.retire_le) return NextResponse.json({ error: "provenance_inconnue" }, { status: 404 });
     provenanceId = prov.id;
     provenanceType = prov.type;
     sansPlafond = prov.sans_plafond;
@@ -95,7 +97,8 @@ export async function POST(request: Request) {
   if (role === "responsable") {
     const demande = (corps.provenance ?? {}) as Record<string, unknown>;
     if (TYPES_PROVENANCE.some((t) => t.cle === demande.type)) provenanceType = demande.type as TypeProvenance;
-    const libelle = typeof demande.libelle === "string" ? demande.libelle.trim().slice(0, 80) : "";
+    /* Le nom du dossier, sous-dossier compris (« La soirée / Photobooth », dossiers.ts). */
+    const libelle = typeof demande.libelle === "string" ? demande.libelle.trim().slice(0, 170) : "";
     deposant = libelle || edition.responsable_nom || "Le responsable";
   }
 

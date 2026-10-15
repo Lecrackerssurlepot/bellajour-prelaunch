@@ -6,9 +6,16 @@
  *
  * Le fichier passe PAR LE SERVEUR (4 Mo au plus, la limite d'un corps de
  * requête Vercel), comme les documents de l'atelier ; il est servi en
- * téléchargement (jamais affiché dans la page : un SVG ou un PDF n'exécute
- * rien chez nous). Envoyer de nouveau un contenu le REMPLACE à l'écran : le
- * plus récent gagne, l'ancien reste en base (rien ne s'efface).
+ * téléchargement depuis le coffre. Une IMAGE (PNG, JPG, SVG) se revoit en
+ * aperçu par une balise `<img>` sur l'adresse signée du coffre : un SVG chargé
+ * par `<img>` n'exécute rien, et l'adresse n'est pas la nôtre.
+ *
+ * Retours du 14/10 (point 3) : un contenu a PLUSIEURS fichiers (le logo en
+ * couleur, le logo blanc). « Ajouter un autre fichier » en ajoute un ;
+ * « Remplacer » ajoute le nouveau et range l'ancien comme ANCIENNE VERSION
+ * (`remplace_le`, migration 20261016) : il reste au coffre et à l'atelier, il
+ * sort de l'écran du client. Rien ne s'efface. Le questionnaire, lui, n'a
+ * qu'une version courante : la plus récente.
  */
 
 import type { CleContenu } from "./types";
@@ -127,4 +134,39 @@ export function lireReponsesMot(brut: unknown): ReponsesLues {
   });
   if (!Object.keys(reponses).length) return { ok: false, message: "Répondre à au moins une question." };
   return { ok: true, reponses };
+}
+
+/* ─────────────────────────── les envois reçus ─────────────────────────── */
+
+/** Une ligne de `collectif_contenus`, telle que l'écran la lit. `remplace_le` absent : migration 20261016 pas encore passée. */
+export type LigneEnvoi = {
+  id: string;
+  type: string;
+  r2_key: string | null;
+  nom_origine: string | null;
+  reponses: Record<string, string> | null;
+  recu_le: string;
+  remplace_le?: string | null;
+};
+
+/**
+ * Les envois COURANTS, par contenu : pour un fichier, chaque ligne qui n'a pas
+ * été remplacée (la plus ancienne d'abord, l'ordre où ils sont arrivés) ;
+ * pour le questionnaire, la seule réponse la plus récente.
+ */
+export function envoisCourants<T extends LigneEnvoi>(lignes: readonly T[]): Map<string, T[]> {
+  const parType = new Map<string, T[]>();
+  const tri = [...lignes].filter((l) => !l.remplace_le).sort((a, b) => a.recu_le.localeCompare(b.recu_le));
+  for (const l of tri) {
+    const c = contenuClient(l.type);
+    if (!c) continue;
+    if (c.mode === "questionnaire") parType.set(l.type, [l]);
+    else parType.set(l.type, [...(parType.get(l.type) ?? []), l]);
+  }
+  return parType;
+}
+
+/** Ce fichier se revoit-il en aperçu (une image que le navigateur sait peindre) ? */
+export function apercuPossible(nom: string | null): boolean {
+  return /\.(png|jpe?g|svg)$/i.test(nom ?? "");
 }

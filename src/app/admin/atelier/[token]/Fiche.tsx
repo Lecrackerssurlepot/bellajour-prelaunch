@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import BarreAtelier, { liensParticuliers } from "../../BarreAtelier";
 import PanneauAction from "./PanneauAction";
 import Parcours from "./Parcours";
 import Carnet from "./Carnet";
@@ -648,11 +649,16 @@ export default function Fiche({
   fiche,
   moi,
   demo,
+  collectif = false,
+  nonLus = null,
 }: {
   fiche: FicheVue;
   /** Identifiant du compte connecté — décide qui peut supprimer ses notes. */
   moi: string;
   demo?: boolean;
+  /** La barre commune (T-152) : l'interrupteur des éditions et leurs messages à lire. */
+  collectif?: boolean;
+  nonLus?: number | null;
 }) {
   /* Un COMPTE, pas un booleen. La grille servait les ORIGINAUX R2 (plafond
      5200 px, plusieurs Mo piece) dans des cases de 84 px : deplier d'un coup
@@ -917,6 +923,8 @@ export default function Fiche({
           <Link href="/admin/atelier">Revenir aux vrais dossiers</Link>
         </div>
       ) : null}
+
+      <BarreAtelier monde="particuliers" collectif={collectif && !demo} nonLus={nonLus} liens={liensParticuliers(Boolean(demo))} />
 
       <header className="ate-fiche-tete">
         <Link href={base} className="ate-retour">

@@ -1,111 +1,317 @@
 "use client";
 
-/* « À envoyer à l'atelier » (PRD §14.2) : une puce par contenu demandé dans
-   la fiche, cochée quand il est reçu. Un clic ouvre la fenêtre d'envoi : un
-   fichier (logo, programme, liste…) ou le questionnaire du mot du dirigeant,
-   question par question. Envoyer de nouveau REMPLACE à l'écran (le plus
-   récent gagne) ; rien ne s'efface. Le lien d'équipe voit les puces, sans
-   pouvoir rien envoyer. */
+/* « À envoyer à l'atelier » (PRD §14.2, retours du 14/10 point 3, maquette
+   Contenus validée) : une puce par contenu demandé dans la fiche, cochée quand
+   il est reçu, avec le nombre de fichiers. Un clic ouvre la fenêtre :
+   - rien de reçu : la zone d'envoi (un ou plusieurs fichiers), ou le
+     questionnaire du mot du dirigeant, question par question ;
+   - déjà reçu : CE QUE L'ATELIER A REÇU, à revoir (aperçu d'une image, ou
+     « Ouvrir »), avec « Remplacer » sur chaque fichier et « Ajouter un autre
+     fichier » ; pour le questionnaire, les réponses et « Modifier ».
+   Un fichier remplacé reste à l'atelier comme ancienne version : rien ne se
+   perd. Le lien d'équipe revoit ce qui est reçu, sans rien pouvoir envoyer. */
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { CONTENUS_CLIENT, QUESTIONS_MOT, type ContenuClient } from "@/lib/collectif/contenus";
+import { contenuClient, CONTENUS_CLIENT, QUESTIONS_MOT, type ContenuClient } from "@/lib/collectif/contenus";
 import Fenetre from "../_composants/Fenetre";
+import { useVisionneuse } from "../_composants/Visionneuse";
+import type { EnvoiClient } from "./donnees";
 
-type Props = { token: string; demandes: string[]; recus: string[]; ecrire: boolean; tu: boolean };
+/** À partir de combien de contenus demandés la ligne « À envoyer » prend toute la largeur. */
+const LIGNE_LONGUE = 3;
+
+type Props = { token: string; demandes: string[]; envois: EnvoiClient[]; ecrire: boolean; tu: boolean };
 
 export default function LigneContenus(p: Props) {
   const [ouvert, setOuvert] = useState<ContenuClient | null>(null);
+  /* Ce qui vient d'être envoyé se montre TOUT DE SUITE, puce et fenêtre (la
+     route rend l'envoi) : la relecture de la page le confirme ensuite, sans
+     qu'on dépende d'elle (vu le 14/10 : elle n'arrive pas toujours). */
+  const [ajoutes, setAjoutes] = useState<EnvoiClient[]>([]);
+  const [retires, setRetires] = useState<string[]>([]);
+  const envois = courantsAffiches(p.envois, ajoutes, retires);
   const contenus = CONTENUS_CLIENT.filter((c) => p.demandes.includes(c.cle));
   if (!contenus.length) return null;
+  /* Règle de Mathias (15/10) : à partir de TROIS choses à envoyer, la ligne
+     prend toute la largeur pour qu'on les voie toutes, et le message de
+     l'atelier passe dessous. */
+  const longue = contenus.length >= LIGNE_LONGUE;
   return (
-    <section className="ec-tdb-ligne" aria-labelledby="ec-tdb-contenus">
+    <section className={longue ? "ec-tdb-ligne ec-tdb-ligne--longue" : "ec-tdb-ligne"} aria-labelledby="ec-tdb-contenus">
       <span className="ec-tdb-etiquette ec-tdb-etiquette--sourde" id="ec-tdb-contenus">
-        3 · À envoyer à l&apos;atelier
+        3 · À envoyer
       </span>
       <div className="ec-tdb-puces">
         {contenus.map((c) => {
-          const recu = p.recus.includes(c.cle);
+          const n = envois.filter((e) => e.type === c.cle).length;
           return (
             <button
               key={c.cle}
               type="button"
-              className={recu ? "ec-tdb-puce ec-tdb-puce--recue" : "ec-tdb-puce"}
-              disabled={!p.ecrire}
+              className={n ? "ec-tdb-puce ec-tdb-puce--recue" : "ec-tdb-puce"}
+              disabled={!p.ecrire && !n}
               onClick={() => setOuvert(c)}
-              aria-label={`${c.libelle}${recu ? ", reçu" : ", à envoyer"}`}
+              title={p.ecrire ? (n ? "Revoir, remplacer ou ajouter un fichier" : "Envoyer à l'atelier") : undefined}
+              aria-label={`${c.libelle}${n ? `, reçu${n > 1 ? `, ${n} fichiers` : ""}` : ", à envoyer"}`}
             >
               <span className="ec-tdb-coche" aria-hidden="true">
-                {recu ? "✓" : ""}
+                {n ? "✓" : ""}
               </span>
               {c.libelle}
+              {n > 1 ? ` · ${n} fichiers` : ""}
             </button>
           );
         })}
       </div>
-      {p.ecrire ? <span className="ec-note ec-tdb-ligne-aide">Cliquez pour envoyer ou remplacer</span> : null}
-      {ouvert ? <FenetreContenu token={p.token} contenu={ouvert} recu={p.recus.includes(ouvert.cle)} tu={p.tu} onFermer={() => setOuvert(null)} /> : null}
+      {ouvert ? (
+        <FenetreContenu
+          token={p.token}
+          contenu={ouvert}
+          recus={envois.filter((e) => e.type === ouvert.cle)}
+          ecrire={p.ecrire}
+          tu={p.tu}
+          onEnvoye={(envoi, remplace) => {
+            setAjoutes((l) => [...l, envoi]);
+            if (remplace) setRetires((l) => [...l, remplace]);
+          }}
+          onFermer={() => setOuvert(null)}
+        />
+      ) : null}
     </section>
   );
 }
 
-function FenetreContenu({ token, contenu, recu, tu, onFermer }: { token: string; contenu: ContenuClient; recu: boolean; tu: boolean; onFermer: () => void }) {
+/** Les envois du serveur, plus ceux de cette page, moins les remplacés ; le questionnaire garde sa réponse la plus récente. */
+function courantsAffiches(serveur: EnvoiClient[], ajoutes: EnvoiClient[], retires: string[]): EnvoiClient[] {
+  const tous = [...serveur, ...ajoutes.filter((a) => !serveur.some((s) => s.id === a.id))].filter((e) => !retires.includes(e.id));
+  const mots = tous.filter((e) => contenuClient(e.type)?.mode === "questionnaire");
+  const dernierMot = new Map(mots.map((e) => [e.type, e.id]));
+  return tous.filter((e) => contenuClient(e.type)?.mode !== "questionnaire" || dernierMot.get(e.type) === e.id);
+}
+
+function extension(nom: string | null): string {
+  return /\.([A-Za-z0-9]{1,5})$/.exec(nom ?? "")?.[1].toUpperCase() ?? "FICHIER";
+}
+
+function FenetreContenu({
+  token,
+  contenu,
+  recus,
+  ecrire,
+  tu,
+  onEnvoye,
+  onFermer,
+}: {
+  token: string;
+  contenu: ContenuClient;
+  recus: EnvoiClient[];
+  ecrire: boolean;
+  tu: boolean;
+  /** L'envoi qui vient d'arriver (et le fichier qu'il remplace) : la ligne le montre tout de suite. */
+  onEnvoye: (envoi: EnvoiClient, remplace: string | null) => void;
+  onFermer: () => void;
+}) {
   const router = useRouter();
   const v = (vous: string, toi: string) => (tu ? toi : vous);
-  const [occupe, setOccupe] = useState(false);
+  const [occupe, setOccupe] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
-  const [fait, setFait] = useState(false);
+  const [fait, setFait] = useState<string | null>(null);
   const [survol, setSurvol] = useState(false);
+  const [modifier, setModifier] = useState(false);
+  const vision = useVisionneuse();
   const [question, setQuestion] = useState(0);
-  const [reponses, setReponses] = useState<string[]>(QUESTIONS_MOT.map(() => ""));
-  const fichier = useRef<HTMLInputElement>(null);
+  const courants = recus;
+  const deja = courants[0]?.reponses ?? null;
+  const [reponses, setReponses] = useState<string[]>(QUESTIONS_MOT.map((q) => deja?.[q] ?? ""));
+  /* Deux champs : AJOUTER prend plusieurs fichiers, REMPLACER un seul. */
+  const ajout = useRef<HTMLInputElement>(null);
+  const remplacement = useRef<HTMLInputElement>(null);
+  /** Le fichier que le prochain choix remplace (`null` : on en ajoute). */
+  const remplace = useRef<string | null>(null);
 
-  async function envoyer(corps: FormData | string) {
-    setOccupe(true);
+  async function envoyer(corps: FormData | string): Promise<boolean> {
     setErreur(null);
+    const remplaceAvant = remplace.current;
     try {
       const rep = await fetch("/api/collectif/contenus", {
         method: "POST",
         headers: typeof corps === "string" ? { "content-type": "application/json" } : undefined,
         body: corps,
       });
-      const json = (await rep.json().catch(() => ({}))) as { message?: string };
+      const json = (await rep.json().catch(() => ({}))) as { message?: string; envoi?: EnvoiClient; remplace?: string | null };
       if (!rep.ok) {
         setErreur(json.message ?? `Non envoyé (erreur ${rep.status}).`);
-        return;
+        return false;
       }
-      setFait(true);
-      router.refresh();
+      if (json.envoi) onEnvoye(json.envoi, json.remplace ?? remplaceAvant);
+      return true;
     } catch {
       setErreur("Le réseau n'a pas répondu. Rien n'est parti.");
-    } finally {
-      setOccupe(false);
+      return false;
     }
   }
 
-  function envoyerFichier(f: File | undefined) {
-    if (!f) return;
-    const d = new FormData();
-    d.set("token", token);
-    d.set("type", contenu.cle);
-    d.set("fichier", f);
-    void envoyer(d);
+  /** Un ou plusieurs fichiers, l'un après l'autre ; « Remplacer » n'en prend qu'un. */
+  async function envoyerFichiers(liste: FileList | File[] | null | undefined) {
+    const fichiers = [...(liste ?? [])];
+    if (!fichiers.length) return;
+    const cible = remplace.current;
+    const lot = cible ? fichiers.slice(0, 1) : fichiers;
+    let arrives = 0;
+    for (const [i, f] of lot.entries()) {
+      setOccupe(lot.length > 1 ? `Envoi ${i + 1} sur ${lot.length}…` : "Envoi…");
+      const d = new FormData();
+      d.set("token", token);
+      d.set("type", contenu.cle);
+      d.set("fichier", f);
+      if (cible) d.set("remplace", cible);
+      if (!(await envoyer(d))) break;
+      arrives++;
+    }
+    setOccupe(null);
+    remplace.current = null;
+    if (arrives) {
+      setFait(cible ? "Remplacé. L'ancienne version reste à l'atelier." : arrives > 1 ? `${arrives} fichiers arrivés à l'atelier. Merci.` : "C'est arrivé à l'atelier. Merci.");
+      router.refresh();
+    }
   }
 
-  if (fait) {
+  function choisir(cible: string | null) {
+    remplace.current = cible;
+    (cible ? remplacement : ajout).current?.click();
+  }
+
+  async function envoyerReponses() {
+    setOccupe("Envoi…");
+    const ok = await envoyer(JSON.stringify({ token, type: contenu.cle, reponses }));
+    setOccupe(null);
+    if (ok) {
+      setFait("C'est arrivé à l'atelier. Merci.");
+      setModifier(false);
+      router.refresh();
+    }
+  }
+
+  const accept = contenu.extensions.map((e) => `.${e}`).join(",");
+  const entree = (
+    <>
+      <input
+        ref={ajout}
+        type="file"
+        multiple
+        hidden
+        accept={accept}
+        onChange={(e) => {
+          remplace.current = null;
+          void envoyerFichiers(e.target.files);
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={remplacement}
+        type="file"
+        hidden
+        accept={accept}
+        onChange={(e) => {
+          void envoyerFichiers(e.target.files);
+          e.target.value = "";
+        }}
+      />
+    </>
+  );
+  const etat = (
+    <>
+      {occupe ? (
+        <p className="ec-note" role="status">
+          {occupe}
+        </p>
+      ) : fait ? (
+        <p className="ec-note ec-note--ok" role="status">
+          {fait}
+        </p>
+      ) : null}
+      {erreur ? (
+        <p className="ec-note ec-note--erreur" role="alert">
+          {erreur}
+        </p>
+      ) : null}
+    </>
+  );
+
+  /* Le questionnaire déjà rempli : les réponses, et « Modifier ». */
+  if (contenu.mode === "questionnaire" && courants.length && !modifier) {
+    const r = courants[0];
     return (
-      <Fenetre titre={contenu.titre} onFermer={onFermer}>
-        <p className="ec-texte">{v("C'est arrivé à l'atelier. Merci.", "C'est arrivé à l'atelier. Merci.")}</p>
-        <button type="button" className="ec-bouton ec-bouton--plein" onClick={onFermer}>
-          Terminé
-        </button>
+      <Fenetre titre={contenu.titre} sous={`Reçu le ${r.recuLe}. L'atelier écrit le texte à partir de ces réponses.`} onFermer={onFermer} large>
+        <dl className="ec-reponses">
+          {Object.entries(r.reponses ?? {}).map(([q, rep]) => (
+            <div key={q}>
+              <dt>{q}</dt>
+              <dd>{rep}</dd>
+            </div>
+          ))}
+        </dl>
+        {etat}
+        {ecrire ? (
+          <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => { setFait(null); setModifier(true); }}>
+            Modifier {v("vos", "tes")} réponses
+          </button>
+        ) : null}
+      </Fenetre>
+    );
+  }
+
+  /* Des fichiers déjà reçus : les revoir, remplacer, ajouter. */
+  if (contenu.mode === "fichier" && courants.length) {
+    return (
+      <Fenetre titre={contenu.titre} sous={ecrire ? "Ce que l'atelier a reçu. Remplacez un fichier, ou ajoutez-en un." : "Ce que l'atelier a reçu."} onFermer={onFermer} large>
+        <ul className="ec-envois-recus">
+          {courants.map((e) => (
+            <li key={e.id} className="ec-envoi-recu">
+              <span className="ec-envoi-apercu">
+                {e.apercu ? <img src={e.apercu} alt="" loading="lazy" decoding="async" /> : <span>{extension(e.nom)}</span>}
+              </span>
+              <span className="ec-envoi-recu-texte">
+                <strong>{e.nom ?? contenu.libelle}</strong>
+                <span className="ec-note">Envoyé le {e.recuLe}</span>
+              </span>
+              <span className="ec-envoi-recu-gestes">
+                {e.url ? (
+                  <button
+                    type="button"
+                    className="ec-bouton ec-bouton--clair ec-bouton--petit"
+                    onClick={() => vision.ouvrir({ titre: e.nom ?? contenu.libelle, sous: `${contenu.libelle} · envoyé le ${e.recuLe}`, voir: e.url as string, telecharger: e.telecharger, nom: e.nom })}
+                  >
+                    Ouvrir
+                  </button>
+                ) : null}
+                {ecrire ? (
+                  <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" disabled={Boolean(occupe)} onClick={() => choisir(e.id)}>
+                    Remplacer
+                  </button>
+                ) : null}
+              </span>
+            </li>
+          ))}
+        </ul>
+        {vision.rendu}
+        {ecrire ? (
+          <>
+            <button type="button" className="ec-envoi-ajouter" disabled={Boolean(occupe)} onClick={() => choisir(null)}>
+              Ajouter un autre fichier
+            </button>
+            <p className="ec-note">Un fichier remplacé reste à l&apos;atelier, rangé comme ancienne version : rien ne se perd.</p>
+          </>
+        ) : null}
+        {etat}
+        {entree}
       </Fenetre>
     );
   }
 
   return (
     <Fenetre titre={contenu.titre} sous={contenu.aide} onFermer={onFermer}>
-      {recu ? <p className="ec-note">Déjà reçu : un nouvel envoi le remplacera.</p> : null}
       {contenu.mode === "fichier" ? (
         <div
           className={`ec-zone-depot ec-zone-depot--compacte${survol ? " ec-zone-depot--survol" : ""}`}
@@ -117,24 +323,16 @@ function FenetreContenu({ token, contenu, recu, tu, onFermer }: { token: string;
           onDrop={(e) => {
             e.preventDefault();
             setSurvol(false);
-            envoyerFichier(e.dataTransfer.files[0]);
+            remplace.current = null;
+            void envoyerFichiers(e.dataTransfer.files);
           }}
         >
           <strong className="ec-zone-depot-titre">{v("Glissez le fichier ici", "Glisse le fichier ici")}</strong>
-          <span className="ec-note">{contenu.extensions.map((e) => e.toUpperCase()).join(", ")} · 4 Mo au plus</span>
-          <button type="button" className="ec-bouton" disabled={occupe} onClick={() => fichier.current?.click()}>
+          <span className="ec-note">{contenu.extensions.map((e) => e.toUpperCase()).join(", ")} · 4 Mo au plus · plusieurs fichiers possibles</span>
+          <button type="button" className="ec-bouton" disabled={Boolean(occupe)} onClick={() => choisir(null)}>
             {occupe ? "Envoi…" : "Choisir un fichier"}
           </button>
-          <input
-            ref={fichier}
-            type="file"
-            hidden
-            accept={contenu.extensions.map((e) => `.${e}`).join(",")}
-            onChange={(e) => {
-              envoyerFichier(e.target.files?.[0]);
-              e.target.value = "";
-            }}
-          />
+          {entree}
         </div>
       ) : (
         <div className="ec-questionnaire">
@@ -162,23 +360,14 @@ function FenetreContenu({ token, contenu, recu, tu, onFermer }: { token: string;
                 Question suivante
               </button>
             ) : (
-              <button
-                type="button"
-                className="ec-bouton"
-                disabled={occupe || reponses.every((r) => !r.trim())}
-                onClick={() => envoyer(JSON.stringify({ token, type: contenu.cle, reponses }))}
-              >
+              <button type="button" className="ec-bouton" disabled={Boolean(occupe) || reponses.every((r) => !r.trim())} onClick={envoyerReponses}>
                 {occupe ? "Envoi…" : "Envoyer à l'atelier"}
               </button>
             )}
           </div>
         </div>
       )}
-      {erreur ? (
-        <p className="ec-note ec-note--erreur" role="alert">
-          {erreur}
-        </p>
-      ) : null}
+      {etat}
     </Fenetre>
   );
 }

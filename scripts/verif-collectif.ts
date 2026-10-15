@@ -66,12 +66,12 @@ import {
   type MagazinePourGeste,
 } from "@/lib/collectif/gestes";
 import { lireInterrupteur } from "@/lib/collectif/interrupteur";
-import { basculerCouverture, briefModifiable, etatDuBrief, lireChoixStyle, lirePartieBrief, manquesBrief, PARTS_TEXTE, patchCouvertures, resumeBrief, styleVisible } from "@/lib/collectif/brief";
+import { basculerCouverture, briefModifiable, compositionDu, etatDuBrief, grouperParChoix, lireChoixStyle, lirePiece, lireTexte, manquesBrief, PARTS_TEXTE, patchCouvertures, raisonsDuStyle, resumeBrief, styleVisible, stylesDeLaComposition, typesDes, type BriefLigne, type Composition } from "@/lib/collectif/brief";
 import { cleFichier, compteDansPlafond, DELAI_DECLARATION_MORTE_MS, lireDeclaration, LOT_DECLARATION, planDeclaration, type Existant } from "@/lib/collectif/depot";
 import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
 import { jourDePhoto, libelleProvenance, lireFiltre, resumeDeposants } from "@/lib/collectif/grille";
 import { contenusAEnvoyer, ETAPES_CLIENT, etapeClient, initiales, joursAvant, libelleRole, parler, phraseJours } from "@/lib/collectif/espace";
-import { curseur, filDeConversation, fusionnerMessages, lirePieceJointe, lireTexteMessage, MESSAGE_MAX, PIECE_MAX, texteDuMessage, type Message } from "@/lib/collectif/messages";
+import { curseur, extraitDe, filDeConversation, fusionnerMessages, lirePieceJointe, lireTexteMessage, MESSAGE_MAX, PIECE_MAX, texteDuMessage, type Message } from "@/lib/collectif/messages";
 import { libelleTypeDocument, lireSaisieDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { formaterHeureParis, formaterInstantParis, formaterJourParis, instantDeParis, versChampParis } from "@/lib/collectif/dates";
 import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
@@ -100,6 +100,12 @@ import { estTypeNote, ROLES, TYPES_NOTE, type Role } from "@/lib/collectif/types
 import { cookieMode, LOGO_MODE, lireMode, MODES } from "@/lib/collectif/affichage";
 import { CONTENUS_CLIENT, contenuClient, lireFichierContenu, lireReponsesMot, QUESTIONS_MOT } from "@/lib/collectif/contenus";
 import { cheminQr, matriceQr, svgQr } from "@/lib/collectif/qr";
+import { apercuPossible, envoisCourants } from "@/lib/collectif/contenus";
+import * as Dossiers from "@/lib/collectif/dossiers";
+import { genreFichier } from "@/lib/collectif/visionneuse";
+import { aTraiter as aTraiterBoite, conversationsDe, initialesDe, quandCourt } from "@/lib/collectif/boite";
+import { etapesEdition } from "@/lib/collectif/prochaine";
+import { messagePartage } from "@/lib/collectif/partage";
 import { colonneAbsente, MIGRATION_REVISION } from "@/lib/collectif/migration";
 import { libellePlafondLien, lirePlafondLien, plafondLienMax, CURSEUR_LIEN } from "@/lib/collectif/plafonds";
 import {
@@ -856,14 +862,18 @@ ok("le responsable se nomme comme tel", libelleProvenance("organisateur", "Lou")
 
 /* ═══════════════════════════ PHASE 4 : LE STYLE ET LE BRIEF ═══════════════════════════ */
 
-titre("— la regle de Mathias : l'interieur suit le style, la couverture peut venir d'ailleurs —");
+titre("— D24 : prendre un style EN ENTIER —");
 const riviera = { id: "s-riv", publie: true, palettes: [{ cle: "marine" }, { cle: "sable" }], couvertures: [{ cle: "c1" }, { cle: "c2" }] };
 const nuit = { id: "s-nuit", publie: true, palettes: [{ cle: "noir" }], couvertures: [{ cle: "n1" }] };
 const choix = lireChoixStyle({ palette_cle: "sable", texte: "peu", doubles: ["recit", "aeree", "pirate"] }, riviera);
-ok("choisir un style : sa palette, la part de texte, ses doubles (inconnues ignorees, ordre du style), brief remis a valider",
-   choix.ok && choix.patch.style_id === "s-riv" && choix.patch.palette_cle === "sable" && choix.patch.texte === "peu"
-   && choix.patch.doubles.join() === "aeree,recit" && choix.patch.brief_valide_le === null);
-ok("une palette d'un AUTRE style est refusee (l'interieur suit le style)",
+ok("prendre tout le style : sa palette, ses typographies, ses doubles (inconnues ignorees, ordre des types), brief remis a valider",
+   choix.ok && choix.patch.style_id === "s-riv" && choix.patch.palette_cle === "sable" && choix.patch.palette_style_id === "s-riv" && choix.patch.typo_style_id === "s-riv"
+   && JSON.stringify(choix.patch.doubles_aimes) === JSON.stringify([{ style_id: "s-riv", double: "aeree" }, { style_id: "s-riv", double: "recit" }])
+   && (choix.patch.doubles as string[]).join() === "aeree,recit" && choix.patch.brief_valide_le === null);
+ok("prendre tout le style ne touche pas aux couvertures aimees", choix.ok && !("couvertures_aimees" in choix.patch));
+ok("sans la migration, le style pris en entier s'ecrit tout entier dans les colonnes d'avant",
+   choix.ok && !("palette_style_id" in choix.patchAvant) && !("doubles_aimes" in choix.patchAvant) && choix.patchAvant.style_id === "s-riv" && choix.patchAvant.palette_cle === "sable");
+ok("prendre tout le style : sa palette a LUI (une palette d'un autre style se prend comme une piece)",
    !lireChoixStyle({ palette_cle: "noir", texte: "peu", doubles: ["aeree"] }, riviera).ok);
 ok("sans double page, ou sans la place du texte : refuse",
    !lireChoixStyle({ palette_cle: "sable", texte: "peu", doubles: [] }, riviera).ok
@@ -873,7 +883,7 @@ ok("trois parts de texte, libelles de la maquette", PARTS_TEXTE.map((t) => t.lib
 
 titre("— les couvertures aimees : de n'importe quel style, plafonnees, jamais devinees —");
 const b1 = basculerCouverture([], { style_id: "s-nuit", couverture: "n1" }, true, 2, nuit);
-ok("aimer une couverture d'un AUTRE style que celui du magazine : permis", b1.ok && b1.aimees.length === 1);
+ok("aimer une couverture de n'importe quel style : permis", b1.ok && b1.aimees.length === 1);
 ok("au plafond, une de plus est refusee avec la phrase",
    (() => { const b = basculerCouverture([{ style_id: "s-riv", couverture: "c1" }, { style_id: "s-riv", couverture: "c2" }], { style_id: "s-nuit", couverture: "n1" }, true, 2, nuit); return !b.ok && b.message.includes("2 couvertures"); })());
 ok("plafond non regle par l'atelier : refuse (on n'invente pas de chiffre)",
@@ -884,8 +894,9 @@ ok("une couverture qui n'existe pas dans le style est refusee",
    !basculerCouverture([], { style_id: "s-nuit", couverture: "zz" }, true, 3, nuit).ok);
 
 titre("— valider, et jusqu'a quand —");
-ok("ce qui manque se nomme", manquesBrief({ style_id: null, palette_cle: null, texte: null, doubles: [] }).length === 4
-   && manquesBrief({ style_id: "s", palette_cle: "p", texte: "peu", doubles: ["aeree"] }).length === 0);
+const vierge: BriefLigne = { style_id: null, palette_cle: null, texte: null, doubles: [], couvertures_aimees: [], brief_valide_le: null };
+ok("ce qui manque se nomme : palette, typographies, texte, une double page", manquesBrief(vierge).length === 4
+   && manquesBrief({ ...vierge, style_id: "s", palette_cle: "p", texte: "peu", doubles: ["aeree"] }).length === 0);
 ok("le brief ne bouge plus apres la cloture", briefModifiable("preparation") && !briefModifiable("composition") && !briefModifiable("bat"));
 ok("le mur d'une ecole voit les styles ecole et tous, pas entreprise",
    styleVisible("ecole", "ecole") && styleVisible("ecole", "tous") && !styleVisible("ecole", "entreprise") && styleVisible("tous", "entreprise"));
@@ -1171,7 +1182,7 @@ ok("deux modes, la nuit par defaut, toute valeur inconnue vaut nuit",
    MODES.join() === "nuit,jour" && lireMode(undefined) === "nuit" && lireMode("jour") === "jour" && lireMode("JOUR") === "nuit" && lireMode("<script>") === "nuit");
 ok("le cookie vit un an, sur l'espace seulement", cookieMode("jour") === "bj_ec_mode=jour; path=/edition; max-age=31536000; samesite=lax");
 ok("le logo suit le mode, et les deux fichiers existent",
-   LOGO_MODE.nuit.includes("cuivre") && LOGO_MODE.jour.includes("bleu") &&
+   LOGO_MODE.nuit.includes("blanc") && LOGO_MODE.jour.includes("bleu") &&
    Object.values(LOGO_MODE).every((f) => existsSync(resolve(RACINE, "public" + f))));
 {
   /* Aucune couleur écrite en dur hors des blocs de jetons : un composant écrit
@@ -1339,34 +1350,88 @@ titre("— revision 14.5 : parler a l'atelier, documents —");
   ok("les rendez-vous affiches viennent des donnees (D23) : aucune date ni duree ecrite en dur", (() => { const t = lire("src/app/edition/[token]/atelier/Parler.tsx"); return /libelleCreneau\(r\.debut\)/.test(t) && !/\b\d{1,2} (janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\b/.test(t) && !/\b20 minutes\b|\b30 minutes\b/.test(t); })());
 }
 
-titre("— revision 14.6 : le brief partie par partie —");
+titre("— D24 : le brief se compose piece par piece, de n'importe quel style —");
 {
-  const style = { id: "s1", publie: true, palettes: [{ cle: "sable" }, { cle: "nuit" }], couvertures: [{ cle: "c1" }] };
-  const autre = lirePartieBrief("palette", { palette_cle: "corail" }, style);
-  ok("palette : une palette d'un AUTRE style est refusee (la regle de Mathias)", !autre.ok);
-  const pal = lirePartieBrief("palette", { palette_cle: "nuit" }, style);
-  ok("palette : celle du style choisi passe, et le brief repasse « a valider »", pal.ok && pal.patch.palette_cle === "nuit" && "brief_valide_le" in pal.patch && pal.patch.brief_valide_le === null);
-  ok("sans style choisi, aucune partie ne s'enregistre", !lirePartieBrief("texte", { texte: "peu" }, null).ok);
-  ok("un style retire du mur refuse les parties", !lirePartieBrief("texte", { texte: "peu" }, { ...style, publie: false }).ok);
-  const tx = lirePartieBrief("texte", { texte: "beaucoup" }, style);
-  ok("texte : une reponse de la liste, rien d'autre", tx.ok && tx.patch.texte === "beaucoup" && !lirePartieBrief("texte", { texte: "roman" }, style).ok);
-  const db = lirePartieBrief("doubles", { doubles: ["recit", "intrus", "aeree"] }, style);
-  ok("doubles : les types connus, dans l'ordre des types, un au moins", db.ok && JSON.stringify(db.patch.doubles) === JSON.stringify(["aeree", "recit"]) && !lirePartieBrief("doubles", { doubles: [] }, style).ok);
-  ok("une partie inconnue est refusee", !lirePartieBrief("couverture", {}, style).ok);
+  const sable = { id: "s1", publie: true, palettes: [{ cle: "sable" }, { cle: "nuit" }], couvertures: [{ cle: "c1" }], typos: { titres: "Fraunces" }, doubles: [{ type: "aeree" }, { type: "recit" }] };
+  const brut = { id: "s2", publie: true, palettes: [{ cle: "noir" }], couvertures: [{ cle: "b1" }], typos: { titres: "Archivo Black" }, doubles: [{ type: "audacieuse" }, { type: "aeree" }] };
+  const avant: BriefLigne = { style_id: "s1", palette_cle: "sable", texte: "peu", doubles: ["aeree"], couvertures_aimees: [{ style_id: "s2", couverture: "b1" }], brief_valide_le: "2026-10-14T10:00:00Z" };
+  const c0 = compositionDu(avant);
+  ok("un brief d'avant D24 se lit en entier depuis style_id (palette, typographies, doubles)",
+    c0.palette?.style_id === "s1" && c0.palette.cle === "sable" && c0.typos?.style_id === "s1" && JSON.stringify(c0.doubles) === JSON.stringify([{ style_id: "s1", double: "aeree" }]) && c0.texte === "peu");
+  const apres: BriefLigne = { ...avant, palette_style_id: "s2", palette_cle: "noir", typo_style_id: "s2", doubles_aimes: [{ style_id: "s1", double: "recit" }, { style_id: "s2", double: "audacieuse" }] };
+  const c1 = compositionDu(apres);
+  ok("les colonnes de D24 l'emportent : chaque piece garde SON style",
+    c1.palette?.style_id === "s2" && c1.palette.cle === "noir" && c1.typos?.style_id === "s2" && c1.doubles.length === 2 && c1.doubles[1].style_id === "s2");
+  ok("les styles de la composition, chacun une fois", JSON.stringify(stylesDeLaComposition(c1)) === JSON.stringify(["s2", "s1"]));
+  ok("une double page d'un style inconnu ou d'un type inconnu est ignoree",
+    compositionDu({ ...avant, doubles_aimes: [{ style_id: "s1", double: "pirate" as never }] }).doubles[0]?.double === "aeree");
+
+  const pal = lirePiece("palette", { palette_cle: "noir" }, brut, c0);
+  ok("prendre la palette d'un AUTRE style que le reste : permis (D24), brief remis a valider",
+    pal.ok && pal.patch.palette_style_id === "s2" && pal.patch.palette_cle === "noir" && pal.patch.brief_valide_le === null);
+  ok("une palette qui n'est pas dans ce style est refusee", !lirePiece("palette", { palette_cle: "sable" }, brut, c0).ok);
+  const ty = lirePiece("typos", {}, brut, c0);
+  ok("prendre les typographies d'un autre style : permis", ty.ok && ty.patch.typo_style_id === "s2");
+  ok("un style sans typographies ne les donne pas", !lirePiece("typos", {}, { ...brut, typos: { titres: "" } }, c0).ok);
+  const db = lirePiece("double", { double: "audacieuse" }, brut, c0);
+  ok("ajouter une double page d'un autre style : elle s'ajoute, la colonne d'avant suit (les types)",
+    db.ok && JSON.stringify(db.patch.doubles_aimes) === JSON.stringify([{ style_id: "s1", double: "aeree" }, { style_id: "s2", double: "audacieuse" }]) && JSON.stringify(db.patch.doubles) === JSON.stringify(["aeree", "audacieuse"]));
+  ok("la meme double page de deux styles : deux pieces distinctes", (() => { const r = lirePiece("double", { double: "aeree" }, brut, c0); return r.ok && (r.patch.doubles_aimes as unknown[]).length === 2; })());
+  ok("une double page absente du style est refusee", !lirePiece("double", { double: "dense" }, brut, c0).ok);
+  const plein: Composition = { ...c0, doubles: ["aeree", "equilibree", "dense", "recit", "audacieuse"].map((d) => ({ style_id: "s1", double: d as "aeree" })) };
+  ok("cinq doubles pages au plus, tous styles confondus", (() => { const r = lirePiece("double", { double: "aeree" }, brut, plein); return !r.ok && r.message.includes("5 doubles pages au plus"); })());
+  ok("retirer une double page, meme la derniere (le brief ne se valide plus tant qu'il n'en a pas)",
+    (() => { const r = lirePiece("double", { double: "aeree", ajouter: false }, sable, c0); return r.ok && (r.patch.doubles_aimes as unknown[]).length === 0 && (r.patch.doubles as unknown[]).length === 0; })());
+  ok("un style retire du mur ne donne aucune piece", !lirePiece("palette", { palette_cle: "noir" }, { ...brut, publie: false }, c0).ok && !lirePiece("typos", {}, null, c0).ok);
+  ok("une piece inconnue est refusee", !lirePiece("couverture", {}, brut, c0).ok);
+  ok("les types d'une liste de doubles, chacun une fois, dans l'ordre des types",
+    JSON.stringify(typesDes([{ style_id: "a", double: "recit" }, { style_id: "b", double: "aeree" }, { style_id: "c", double: "recit" }])) === JSON.stringify(["aeree", "recit"]));
+  const tx = lireTexte({ texte: "beaucoup" });
+  ok("texte : une reponse de la liste, rien d'autre", tx.ok && tx.patch.texte === "beaucoup" && !lireTexte({ texte: "roman" }).ok);
+
+  ok("« avec vos choix » : la raison dit d'ou vient deja une autre piece de ce style",
+    JSON.stringify(raisonsDuStyle(c1, "s2", "typos")) === JSON.stringify(["votre couverture", "votre palette", "vos doubles pages"]) && raisonsDuStyle(c1, "s9", "typos").length === 0);
+  const pieces = [
+    { genre: "typos" as const, style_id: "s1", cle: "" },
+    { genre: "typos" as const, style_id: "s2", cle: "" },
+    { genre: "typos" as const, style_id: "s3", cle: "" },
+  ];
+  const g = grouperParChoix(pieces, compositionDu({ ...avant, typo_style_id: "s1" }));
+  ok("une categorie : le choix d'abord, puis ce qui va avec (la raison dite), puis le reste",
+    g.choisies.map((x) => x.style_id).join() === "s1" && g.avec.map((x) => `${x.piece.style_id}:${x.raison}`).join() === "s2:Du style de votre couverture" && g.autres.map((x) => x.style_id).join() === "s3");
+  const pals = [{ genre: "palette" as const, style_id: "s1", cle: "sable" }, { genre: "palette" as const, style_id: "s1", cle: "nuit" }];
+  ok("une palette du meme style que le choix va « avec »", grouperParChoix(pals, c0).avec[0]?.raison === "Du même style que votre choix");
+
   const a = [{ style_id: "s1", couverture: "c1" }];
   ok("aimer une couverture de plus de-valide le brief", patchCouvertures([], a).brief_valide_le === null && "brief_valide_le" in patchCouvertures([], a));
   ok("un clic qui ne change rien ne de-valide rien", !("brief_valide_le" in patchCouvertures(a, [...a])));
-  ok("le resume : style, palette, doubles, couvertures", resumeBrief({ style: "Riviera", palette: "Sable", doubles: ["Aérée", "Récit"], couvertures: 1 }) === "Riviera, palette Sable · Aérée, Récit · 1 couverture aimée");
-  ok("le resume sans style le dit", resumeBrief({ style: null, palette: null, doubles: [], couvertures: 0 }) === "Aucun style choisi pour l'instant.");
-  ok("l'etat d'un brief dans le bandeau", etatDuBrief({ valide: true, style: "Riviera" }) === "Brief validé" && etatDuBrief({ valide: false, style: "Riviera" }) === "Style : Riviera" && etatDuBrief({ valide: false, style: null }) === "Style à choisir");
+  const noms = [{ id: "s1", nom: "Riviera", palettes: [{ cle: "sable", nom: "Sable" }] }, { id: "s2", nom: "Brut", palettes: [{ cle: "noir", nom: "Noir" }] }];
+  ok("le resume dit chaque piece et son style", resumeBrief(c1, noms) === "Palette Noir, du style Brut · typographies du style Brut · 2 doubles pages · 1 couverture aimée");
+  ok("le resume d'un brief vide le dit", resumeBrief(compositionDu(vierge), noms) === "Rien de composé pour l'instant.");
+  ok("l'etat d'un brief dans le bandeau : valide, un style, plusieurs mêles, rien",
+    etatDuBrief({ valide: true, styles: ["Riviera"] }) === "Brief validé" && etatDuBrief({ valide: false, styles: ["Riviera"] }) === "Style : Riviera" && etatDuBrief({ valide: false, styles: ["Riviera", "Brut", "Nuit"] }) === "3 styles mêlés" && etatDuBrief({ valide: false, styles: [] }) === "À composer");
   ok("le slug « brief » est reserve (la page voisine style/brief)", !lireSaisieStyle({ nom: "Brief", slug: "brief" }, "creation").ok);
+
   const route = lire("src/app/api/collectif/brief/route.ts");
-  ok("l'API du brief lit chaque partie par lirePartieBrief, contre le style DEJA choisi", /lirePartieBrief\(action, corps, style\)/.test(route) && /mag\.style_id \? await lireStyle\(\{ id: mag\.style_id \}\)/.test(route));
+  ok("l'API : une piece passe par lirePiece contre la composition ACTUELLE, de n'importe quel style publie",
+    /lirePiece\(corps\.genre, corps, style, compositionDu\(mag\)\)/.test(route) && /lireStyle\(\{ id: corps\.styleId \}\)/.test(route));
+  ok("l'API : sans la migration, une piece repond 503 nomme ; le style pris en entier s'ecrit dans les colonnes d'avant",
+    /if \(!patchAvant\) return NextResponse\.json\(\{ error: ERREUR_COMPOSITION_ABSENTE/.test(route) && /update\(patchAvant\)/.test(route) && /requete|lireMag\(COLONNES_AVANT/.test(route));
   ok("aimer une couverture passe par patchCouvertures (le brief valide repasse a valider)", /patchCouvertures\(/.test(route));
-  ok("la page « modifier le brief » existe et ouvre un panneau lateral", existsSync(resolve(RACINE, "src/app/edition/[token]/style/brief/page.tsx")) && /<Fenetre\s+cote/.test(lire("src/app/edition/[token]/style/brief/Brief.tsx")));
+  const mig = lire("supabase/migrations/20261017_collectif_composition.sql");
+  ok("migration 20261017 : atomique, idempotente, trois colonnes, PostgREST relit",
+    /^begin;/m.test(mig) && /^commit;/m.test(mig) && (mig.match(/add column if not exists/g) ?? []).length === 3 && /doubles_aimes jsonb not null default '\[\]'::jsonb/.test(mig) && /notify pgrst, 'reload schema'/.test(mig));
+  const mur = lire("src/app/edition/[token]/style/Mur.tsx");
+  ok("le mur : « Tout, en vrac », les categories rangees par les choix, « Votre composition »",
+    /piecesEnVrac\(p\.styles\)/.test(mur) && /grouperParChoix\(/.test(mur) && /Votre composition/.test(mur) && /Tout, en vrac/.test(mur));
+  ok("modifier une partie : un panneau lateral, le choix en haut, « Terminé »",
+    /<Fenetre\s+cote/.test(mur) && /Votre choix reste en haut/.test(mur) && /Terminé/.test(mur) && /partieInitiale=\{partie\}/.test(lire("src/app/edition/[token]/style/brief/page.tsx")));
+  ok("la regle du 08/10 n'est plus ecrite a l'ecran",
+    !fichiersParSuffixe("src/app/edition", /\.tsx?$/).some((f) => /seule la couverture peut venir|L'intérieur suit ce style|ce style en dessine tout l/.test(lire(f))));
   const fiche = lire("src/app/edition/[token]/style/[slug]/FicheStyle.tsx");
-  ok("un style en detail : la barre d'etapes et ses quatre ancres", ["ec-etape-1", "ec-etape-2", "ec-etape-3", "ec-etape-4"].every((a) => fiche.includes(`"${a}"`)) && fiche.includes("ec-fiche-etapes"));
-  ok("le mur : les lignes du brief menent a style/brief", /style\/brief\?m=/.test(lire("src/app/edition/[token]/style/Mur.tsx")));
+  ok("un style en detail : la barre d'etapes et ses quatre ancres, « Prendre tout le style »", ["ec-etape-1", "ec-etape-2", "ec-etape-3", "ec-etape-4"].every((x) => fiche.includes(`"${x}"`)) && fiche.includes("ec-fiche-etapes") && /Prendre tout le style/.test(fiche));
+  ok("l'atelier voit le style de chaque piece", /typos: c\.typos \?/.test(lire("src/app/admin/collectif/donnees.ts")) && /styles mêlés, à harmoniser/.test(lire("src/app/admin/collectif/[id]/page.tsx")));
+  ok("un magazine compose n'est jamais « vide » (il ne se retire pas)", /stylesDeLaComposition\(compositionDu\(m\)\)\.length === 0/.test(lire("src/app/api/admin/collectif/editions/[id]/route.ts")));
 }
 
 titre("— revision 14.3 / 14.7 : photos et livraison —");
@@ -1375,9 +1440,11 @@ titre("— revision 14.3 / 14.7 : photos et livraison —");
   ok("Photos : le chargement par pages observe SA zone de defilement (root), nul sur telephone",
     /root: racine/.test(collecte) && /matchMedia\(REQUETE_TELEPHONE\)\.matches \? null : zone\.current/.test(collecte));
   ok("Photos : « Créer un lien » ouvre la fenetre du lien de contribution (plafond PAR LIEN), plus de formulaire « photographe » en dur",
-    /<FenetreLien /.test(collecte) && !/type: "photographe"/.test(collecte));
-  ok("Photos : le depot s'ouvre dans une fenetre en verre", /<Fenetre titre="Déposer des photos"/.test(collecte));
-  ok("Photos : l'ecran garde ses filtres et sa presélection facultative (pas la proposition B)", /Ma présélection/.test(collecte) && /Laisser|laisse l'atelier choisir|laissez l'atelier choisir/.test(collecte));
+    /<FenetreLien\b/.test(collecte) && !/type: "photographe"/.test(collecte));
+  ok("Photos : le depot s'ouvre dans une fenetre en verre (celle de la coquille), sur le dossier ouvert",
+    /<Fenetre titre="Déposer des photos"/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")) && /envoi\.ouvrir\?\.\(\{ dossier:/.test(collecte));
+  ok("Photos (T-152, 15/10) : des rayons au-dessus des photos (plus de grande colonne), Toutes / Par jour / Doublons, la selection facultative, plus de pastilles de filtres",
+    /className="ec-ph-rayons"/.test(collecte) && !/aria-label="Les dossiers"/.test(collecte) && /Par jour/.test(collecte) && /Doublons/.test(collecte) && /Ma sélection/.test(collecte) && /facultatif/.test(collecte) && !/cle: "signalees"/.test(collecte));
   const livraison = lire("src/app/edition/[token]/livraison/page.tsx");
   ok("Livraison : l'en-tete commun et « Écrire à l'atelier » vers Parler a l'atelier",
     /<EnTeteEcran titre="Livraison"/.test(livraison) && livraison.includes("cheminSection(token, 'atelier')") && !livraison.includes("cheminSection(token, 'dossier')"));
@@ -1443,6 +1510,352 @@ titre("— D23 / T-148 : les rendez-vous dans l'espace —");
   const fil = filDeConversation([], [], () => "j", [{ id: "r1", quand: "2026-10-14T09:00:00Z" }]);
   ok("le rendez-vous pris entre au fil", fil.some((e) => e.genre === "rendezvous"));
   ok("le journal dit les rendez-vous", phraseEvenement("rdv_pris", { par: "Camille", quand: "jeudi 15 octobre à 10 h 30", avec: "Mathias" }).includes("Mathias"));
+}
+
+titre("— retours de Mathias du 14/10 —");
+{
+  const parler = lire("src/app/edition/[token]/atelier/Parler.tsx");
+  ok("messages : Entree envoie, Maj + Entree va a la ligne, jamais pendant une composition (IME)",
+    /ev\.key === "Enter" && !ev\.shiftKey && !ev\.nativeEvent\.isComposing/.test(parler) && !/ev\.metaKey \|\| ev\.ctrlKey\)\) void soumettre/.test(parler));
+
+  /* 7 : la présélection se marque par un BORD, et se fait ou se défait d'un geste. */
+  const collecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  const css = lire("src/app/edition/[token]/espace.css");
+  ok("presélection : un bord autour de la photo choisie, trace EN DEDANS (la tuile rogne sa peinture), ni case ni coche",
+    /\.ec-tuile--choisie \.ec-tuile-image \{\s*outline: 3px solid var\(--ec-accent\);\s*outline-offset: -3px;/.test(css) && !/type="checkbox"/.test(collecte) && !/[✓✔]/.test(collecte));
+  ok("selection : « Sélectionner tout ce dossier », « Vider la sélection » dans Ma sélection",
+    /Sélectionner tout ce dossier/.test(collecte) && /Vider la sélection/.test(collecte) && /toutes: true, preselection, dossier/.test(collecte));
+  const marquer = lire("src/app/api/collectif/photos/marquer/route.ts");
+  ok("tout selectionner : le droit preselectionner, jamais une photo signalee, journalise",
+    /corps\.toutes === true/.test(marquer) && /peut\(role, "preselectionner"\)/.test(marquer) && /if \(preselection\) requete = requete\.eq\("signalee", false\)/.test(marquer) && /"preselection_toutes" : "preselection_aucune"/.test(marquer));
+  ok("le journal dit « tout selectionne » et « tout deselectionne »",
+    /Tout sélectionné : 12 photo/.test(phraseEvenement("preselection_toutes", { n: 12 })) && /Tout désélectionné : 3 photo/.test(phraseEvenement("preselection_aucune", { n: 3 })));
+
+  /* 9 et 10 : « Qui a déposé » et les liens au même endroit (l'arbre lui-même : bloc T-152). */
+  const route = lire("src/app/api/collectif/photos/route.ts");
+  ok("route photos : les liens ne sortent que pour qui peut en creer",
+    /const partage = peut\(acces\.role, "regler_plafond_participant"\)/.test(route) && /const liens = partage \? provenances : \[\]/.test(route) && /liens: partage\s*\?/.test(route) && /arbreDesPhotos\(toutes, liens, edition, partage\)/.test(route));
+  ok("Photos : les liens vivent dans l'onglet « Les liens » (un « Partager », un menu), plus de « Copier le lien » eparpilles",
+    !/Copier le lien participants/.test(collecte) && /Les liens · /.test(collecte) && /Partager/.test(collecte) && /Changer le nombre de photos/.test(collecte) && /Supprimer le lien/.test(collecte) && !/Copier le lien</.test(collecte));
+  ok("Photos : collecte close, ni « Déposer », ni « Créer un lien », ni « Partager » (la selection reste)",
+    /envoi\.ouvrir && p\.ouverte/.test(collecte) && /onglet === "liens" && p\.ouverte/.test(collecte) && /c\.ouverte \?/.test(collecte) && /collecteOuverte\(edition\.etat, edition\.cloture_le, new Date\(\)\)/.test(lire("src/app/edition/[token]/photos/page.tsx")));
+  ok("tableau de bord : ses dossiers sont le meme arbre que la page Photos, chaque ligne y mene",
+    /arbreDesPhotos\(lignes, provenances, edition, false\)/.test(lire("src/app/edition/[token]/donnees.ts")) && /\?dossier=\$\{encodeURIComponent\(d\.cle\)\}/.test(lire("src/app/edition/[token]/CartePhotos.tsx")));
+
+  /* 5 : le message de partage, écrit pour ce groupe et cet événement. */
+  const base = { organisation: "Maison Aubier", evenement: "Séminaire d'automne", url: "https://bellajour.fr/depot/x?p=y", plafond: "30 photos par personne", cloture: "28 octobre", tu: false };
+  const m1 = messagePartage({ ...base, groupe: "Équipe Lyon" });
+  ok("partage : le groupe salue, l'organisation et l'evenement sont nommes, le plafond et la cloture precises",
+    m1.texte.startsWith("Bonjour Équipe Lyon,") && m1.texte.includes("Maison Aubier prépare le magazine « Séminaire d'automne »") && m1.texte.includes("(30 par personne, jusqu'au 28 octobre)") && m1.texte.includes(base.url) && m1.objet === "Vos photos : Séminaire d'automne");
+  ok("partage : un article se met en minuscule apres « Bonjour », un nom propre ne bouge pas",
+    messagePartage({ ...base, groupe: "Le photographe" }).texte.startsWith("Bonjour le photographe,") && messagePartage({ ...base, groupe: "Laura" }).texte.startsWith("Bonjour Laura,"));
+  const m2 = messagePartage({ ...base, groupe: null, tu: true, plafond: "Sans limite", cloture: "" });
+  ok("partage : le lien general salue « a tous » et vouvoie (un groupe), meme en registre tu ; sans limite ni cloture, aucune parenthese",
+    m2.texte.startsWith("Bonjour à tous,") && /vos photos/.test(m2.texte) && !/\(/.test(m2.texte) && m2.objet.startsWith("Vos photos"));
+  ok("partage : un lien nomme tutoie en registre tu", /tes photos/.test(messagePartage({ ...base, groupe: "La classe de CM2", tu: true }).texte));
+  ok("partage : aucun tiret cadratin", ![m1, m2].some((m) => /—/.test(m.texte + m.objet)));
+  ok("partage : la fenetre montre le message a retoucher, WhatsApp, Mail, Copier le message, Telecharger le QR",
+    ["export function FenetrePartage", "Copier le message", "Télécharger le QR", "WhatsApp", "export function FenetreQr"].every((t) => lire("src/app/edition/_composants/LienContribution.tsx").includes(t)));
+
+  /* 6 et 8 : la fenêtre d'envoi se rouvre ; « déjà là » se dit. */
+  const moteur = lire("src/app/edition/_composants/depot/moteur.ts");
+  ok("envoi : chaque lot garde SA provenance (un second lot ne relabellise jamais le premier)",
+    /provenance: this\.provenance,\n\s*\}\);/.test(moteur) && /provenance: premier\.provenance/.test(moteur) && !/provenance: this\.provenance,\n\s*fichiers/.test(moteur));
+  ok("envoi : un fichier choisi deux fois est compte et dit, plus jamais saute en silence",
+    /this\.dejaAjoutes\+\+/.test(moteur) && /vue\.dejaLa \+ vue\.dejaAjoutes/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")));
+  const fenetre = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
+  ok("envoi : « déjà là » est explique, « Ajouter d'autres photos » et « Réduire et continuer », le compte en grand",
+    /déjà là, sautées/.test(fenetre) && /n'est jamais envoyée deux fois/.test(fenetre) && /Ajouter d&apos;autres photos/.test(fenetre) && /Réduire et continuer/.test(fenetre) && /ec-envoi-n/.test(fenetre));
+  ok("envoi : la fenetre vit dans la coquille, la pastille de chaque en-tete la rouvre",
+    /<HoteFenetreEnvoi \/>/.test(lire("src/app/edition/[token]/Coquille.tsx")) && /<PastilleEnvoi \/>/.test(lire("src/app/edition/_composants/Ecran.tsx")) && /onClick=\{\(\) => c\.ouvrir\(\)\}/.test(lire("src/app/edition/_composants/depot/DepotContexte.tsx")));
+}
+
+titre("— retours du 14/10 : les envois du client et les dossiers —");
+{
+  const collecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  const mig = lire("supabase/migrations/20261016_collectif_envois.sql");
+  ok("migration 20261016 : atomique, idempotente, trois colonnes, PostgREST relit",
+    /^begin;/m.test(mig) && /^commit;/m.test(mig) && (mig.match(/add column if not exists/g) ?? []).length === 3 && /remplace_le timestamptz/.test(mig) && /contenu_id uuid/.test(mig) && /on delete set null/.test(mig) && /notify pgrst, 'reload schema'/.test(mig));
+  const l = (id: string, type: string, recu: string, remplace: string | null = null) => ({ id, type, r2_key: `k/${id}`, nom_origine: `${id}.png`, reponses: null, recu_le: recu, remplace_le: remplace });
+  const c = envoisCourants([
+    l("a", "logo", "2026-10-14T10:00:00Z"),
+    l("b", "logo", "2026-10-14T11:00:00Z", "2026-10-14T12:00:00Z"),
+    l("c", "logo", "2026-10-14T12:00:00Z"),
+    l("m1", "mot", "2026-10-14T09:00:00Z"),
+    l("m2", "mot", "2026-10-14T13:00:00Z"),
+    l("x", "inconnu", "2026-10-14T13:00:00Z"),
+  ]);
+  ok("envois : un contenu a plusieurs fichiers, une version remplacee sort de l'ecran",
+    JSON.stringify(c.get("logo")?.map((x) => x.id)) === JSON.stringify(["a", "c"]));
+  ok("envois : le questionnaire n'a qu'une version courante, la plus recente ; un type inconnu est ignore",
+    JSON.stringify(c.get("mot")?.map((x) => x.id)) === JSON.stringify(["m2"]) && !c.has("inconnu"));
+  ok("envois : sans la migration (aucun remplace_le), tous les fichiers se montrent",
+    envoisCourants([{ ...l("a", "logo", "2026-10-14T10:00:00Z"), remplace_le: undefined }, { ...l("b", "logo", "2026-10-14T11:00:00Z"), remplace_le: undefined }]).get("logo")?.length === 2);
+  ok("envois : l'apercu seulement pour une image (png, jpg, svg)", apercuPossible("logo.SVG") && apercuPossible("a.jpeg") && !apercuPossible("logo.pdf") && !apercuPossible(null));
+  const route = lire("src/app/api/collectif/contenus/route.ts");
+  ok("remplacer : la migration est SONDEE avant d'ecrire au coffre (aucun fichier orphelin), 503 nomme",
+    route.indexOf("ERREUR_ENVOIS_ABSENTE") > 0 && route.indexOf("ERREUR_ENVOIS_ABSENTE") < route.indexOf("await ecrireObjet("));
+  ok("remplacer : un fichier courant du meme contenu et de la meme edition, l'ancien devient ancienne version (rien ne s'efface)",
+    /\.eq\("edition_id", edition\.id\)/.test(route) && /data\.type !== contenu\.cle/.test(route) && /remplace_le: new Date\(\)\.toISOString\(\), remplace_par: id/.test(route) && !/\.delete\(/.test(route));
+  const ligne = lire("src/app/edition/[token]/LigneContenus.tsx");
+  ok("contenus : revoir (apercu ou Ouvrir), Remplacer, Ajouter un autre fichier, Modifier les reponses",
+    ["Remplacer", "Ajouter un autre fichier", "Ouvrir", "ancienne version", "Modifier"].every((t) => ligne.includes(t)));
+  ok("contenus : l'atelier voit l'ancienne version", /ancienne version/.test(lire("src/app/admin/collectif/[id]/PanneauContenus.tsx")) && /remplace_le/.test(lire("src/app/admin/collectif/donnees.ts")));
+
+  {
+    const a = Dossiers.arbreDesPhotos(
+      [{ provenance_id: null, provenance_type: "photographe", role_deposant: "responsable", deposant: "Jean" }, { provenance_id: null, provenance_type: "participant", role_deposant: "participant", deposant: null }, { provenance_id: null, provenance_type: "autre", role_deposant: "atelier", deposant: null }],
+      [{ id: "0b1f3c2e-4a5b-4c6d-8e9f-001122334455", cle: "c".repeat(22), libelle: "Équipe Lyon", sans_plafond: true, plafond_par_personne: null }],
+      { plafond_participant_atelier: 30, plafond_participant_client: null, plafond_total: 2000, responsable_nom: "Camille" },
+      true
+    );
+    ok("dossiers : un lien ou un dossier du responsable se renomme ; le lien general et l'atelier non ; une cle inconnue est refusee",
+      a.vous[0].renommable && a.liens.find((l) => l.cle.startsWith("lien:"))?.renommable === true && a.liens.find((l) => l.cle === "participants")?.renommable === false && a.atelier?.renommable === false
+      && Dossiers.lireCleResp("resp:photographe:Jean")?.brut === "Jean" && Dossiers.lireCleResp("resp:pirate:x") === null && Dossiers.lireCleResp("participants") === null);
+    ok("dossiers : un dossier d'avant T-152 garde son nom, sans « Autre source · » ni « Le photographe · »", a.vous[0].nom === "Jean");
+  }
+  ok("dossiers : un nom d'une ligne, 80 caracteres au plus, jamais vide",
+    Dossiers.lireNomDossier("  La  soirée\n de clôture ").ok && (Dossiers.lireNomDossier("  La  soirée\n de clôture ") as { nom: string }).nom === "La soirée de clôture" && !Dossiers.lireNomDossier("   ").ok && !Dossiers.lireNomDossier("x".repeat(81)).ok);
+  const dossiers = lire("src/app/api/collectif/dossiers/route.ts");
+  ok("dossiers : le droit du responsable, l'edition filtree, journalise ; « Mes photos » rend son propre nom",
+    /peut\(acces\.role, "regler_plafond_participant"\)/.test(dossiers) && /\.eq\("edition_id", edition\.id\)/.test(dossiers) && /"dossier_renomme"/.test(dossiers) && /deposantPour\(n, edition\.responsable_nom\)/.test(dossiers));
+  ok("dossiers : le crayon d'une vignette ou du titre (double clic sur le titre), Entree garde, Echap annule",
+    /className="ec-ph-album-renommer"/.test(collecte) && /onDoubleClick=\{\(\) => p\.ecrire && courant\?\.renommable/.test(collecte) && /e\.key === "Enter"/.test(collecte) && /e\.key === "Escape"/.test(collecte));
+  ok("le journal dit le renommage et le remplacement",
+    /devient « La soirée »/.test(phraseEvenement("dossier_renomme", { avant: "Mes photos", apres: "La soirée" })) && /ancienne version reste/.test(phraseEvenement("contenu_remplace", { type: "Logo", nom: "logo.png" })));
+
+  const envoyer = lire("src/app/api/collectif/messages/envoyer/route.ts");
+  ok("citer un envoi : sonde la migration, l'envoi doit etre de l'edition, 503 nomme sinon",
+    /envoisMessagesAppliques\(supabase\)/.test(envoyer) && /from\("collectif_contenus"\)[\s\S]{0,120}\.eq\("edition_id", edition\.id\)/.test(envoyer) && /ERREUR_ENVOIS_ABSENTE/.test(envoyer));
+  const messagerie = lire("src/lib/collectif/messagerie.ts");
+  ok("citer un envoi : la lecture se replie en trois paliers (envois, revision, avant)",
+    /requete\(COLONNES_ENVOIS\)[\s\S]{0,200}requete\(COLONNES\)[\s\S]{0,200}requete\(COLONNES_AVANT\)/.test(messagerie));
+  ok("citer un envoi : le « + » propose « Citer un de vos envois », la bulle et l'atelier le montrent",
+    /Citer un de \{v\("vos", "tes"\)\} envois/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")) && /Votre envoi · \{m\.contenu\.libelle\}/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")) && /Envoi du client cité/.test(lire("src/app/admin/collectif/ConversationAtelier.tsx")));
+}
+
+titre("— T-152 : les photos rangees en dossiers, les liens a part —");
+{
+  const D = Dossiers;
+  const ed = { plafond_participant_atelier: 30, plafond_participant_client: null, plafond_total: 2000, responsable_nom: "Camille" };
+  const r = (deposant: string | null, extra: Partial<Dossiers.LignePhoto> = {}): Dossiers.LignePhoto => ({ provenance_id: null, provenance_type: "organisateur", role_deposant: "responsable", deposant, ...extra });
+  const p = (lien: string | null, nom: string | null): Dossiers.LignePhoto => ({ provenance_id: lien, provenance_type: "participant", role_deposant: "participant", deposant: nom });
+  const L = "0b1f3c2e-4a5b-4c6d-8e9f-001122334455";
+  const liens = [{ id: L, cle: "c".repeat(22), libelle: "Équipe Lyon", sans_plafond: false, plafond_par_personne: 30 }];
+  const lignes = [
+    r("Camille"), r(null), r("La soirée"), r("La soirée / Photobooth"), r("La soirée / Photobooth"), r("Mes photos / Brouillons"),
+    p(L, "Hugo"), p(L, "Hugo"), p(L, "Inès"), p(null, null), p(null, "Léa"),
+  ];
+  const a = D.arbreDesPhotos(lignes, liens, ed, true);
+  ok("dossiers : « Mes photos » d'abord, un dossier par nom, ses sous-dossiers dedans (un niveau)",
+    JSON.stringify(a.vous.map((h) => `${h.nom}:${h.n}[${h.enfants.map((e) => `${e.nom}:${e.n}`).join(",")}]`)) === JSON.stringify(["Mes photos:3[Brouillons:1]", "La soirée:3[Photobooth:2]"]));
+  ok("dossiers : un dossier qui a des sous-dossiers ne se range pas dans un autre ; les autres oui",
+    a.vous.every((h) => h.deplacable === (h.enfants.length === 0)) && a.vous.every((h) => h.enfants.every((e) => e.deplacable && !e.accueille)));
+  ok("liens : le lien general et chaque lien, une ligne par personne dedans (« Sans nom » si pas de nom)",
+    a.liens.map((l) => `${l.nom}:${l.n}`).join() === "Tous les participants:2,Équipe Lyon:3" && a.liens[1].enfants.map((e) => `${e.nom}:${e.n}`).join() === "Hugo:2,Inès:1" && a.liens[0].enfants.some((e) => e.nom === "Sans nom"));
+  ok("liens : une seule personne qui porte le nom du lien n'est pas detaillee ; un lien supprime et vide disparait",
+    D.arbreDesPhotos([p(L, "Équipe Lyon")], liens, ed, true).liens[1].enfants.length === 0
+    && D.arbreDesPhotos([], [{ ...liens[0], retire_le: "2026-10-14T20:00:00Z" }], ed, true).liens.length === 1);
+  ok("l'equipe ne voit pas les liens vides", D.arbreDesPhotos([], liens, ed, false).liens.length === 0);
+  const dans = (cle: string) => lignes.filter((l) => D.dansLeDossier(l, cle, "Camille")).length;
+  ok("un dossier montre ses photos ET celles de ses sous-dossiers ; un sous-dossier les siennes",
+    dans("resp:organisateur:") === 3 && dans("resp:organisateur:La soirée") === 3 && dans("resp:organisateur:La soirée / Photobooth") === 2);
+  ok("un lien, une personne, le lien general, tout", dans(`lien:${L}`) === 3 && dans(`pers:${L}:Hugo`) === 2 && dans("participants") === 2 && dans("pers:general:Sans nom") === 1 && dans("tout") === lignes.length);
+  ok("« Ma sélection » : les photos choisies", D.dansLeDossier({ ...r(null), preselection: true }, "selection", "Camille") && !D.dansLeDossier(r(null), "selection", "Camille"));
+  const soiree = D.noeudDe(a, "resp:organisateur:La soirée");
+  const mes = D.noeudDe(a, "resp:organisateur:");
+  const photobooth = D.noeudDe(a, "resp:organisateur:La soirée / Photobooth");
+  const seul = D.arbreDesPhotos([r("Le dîner"), r("La soirée")], [], ed, false);
+  const plan1 = D.planDeplacement(D.noeudDe(seul, "resp:organisateur:Le dîner"), D.noeudDe(seul, "resp:organisateur:La soirée"), seul);
+  ok("ranger : un dossier sans sous-dossier entre dans un autre (« La soirée / Le dîner »)", plan1.ok && plan1.avant === "Le dîner" && plan1.apres === "La soirée / Le dîner");
+  ok("ranger : un dossier qui a des sous-dossiers refuse (un seul niveau), un sous-dossier ne recoit rien",
+    !D.planDeplacement(soiree, mes, a).ok && !D.planDeplacement(D.noeudDe(a, "resp:organisateur:Mes photos / Brouillons"), photobooth, a).ok && !D.planDeplacement(soiree, soiree, a).ok);
+  const sortir = D.planDeplacement(photobooth, null, a);
+  ok("ranger : un sous-dossier revient au premier niveau", sortir.ok && sortir.avant === "La soirée / Photobooth" && sortir.apres === "Photobooth");
+  ok("renommer : le dossier et ses sous-dossiers suivent, les autres ne bougent pas",
+    D.nouveauChemin("La soirée", "La soirée", "Le gala") === "Le gala" && D.nouveauChemin("La soirée / Photobooth", "La soirée", "Le gala") === "Le gala / Photobooth" && D.nouveauChemin("La soirée bis", "La soirée", "Le gala") === null);
+  ok("un nom de dossier : sans « / » (il separe le sous-dossier), une ligne, 80 caracteres",
+    (D.lireNomDossier("Jour 1/2") as { nom: string }).nom === "Jour 1-2" && !D.lireNomDossier("  ").ok && !D.lireNomDossier("x".repeat(81)).ok);
+  ok("« Mes photos » redevient le nom du responsable en base", D.deposantPour("Mes photos", "Camille") === "Camille" && D.deposantPour("La soirée / Photobooth", "Camille") === "La soirée / Photobooth");
+
+  const route = lire("src/app/api/collectif/dossiers/route.ts");
+  ok("route dossiers : ranger par planDeplacement, renommer par nouveauChemin, ecrire par paquets d'ids de l'edition",
+    /planDeplacement\(source, dans, arbre\)/.test(route) && /nouveauChemin\(cheminDe\(l, edition\.responsable_nom\)\.chemin, avant, apres\)/.test(route) && /\.in\("id", ids\.slice\(i, i \+ 500\)\)/.test(route) && /"dossier_range"/.test(route));
+  ok("le depot du responsable accepte un chemin de sous-dossier (170 caracteres)", /demande\.libelle\.trim\(\)\.slice\(0, 170\)/.test(lire("src/app/api/collectif/depot/presign/route.ts")));
+  const photos = lire("src/app/api/collectif/photos/route.ts");
+  ok("route photos : la grille filtre par dansLeDossier, « en cours d'arrivee » = declarees non confirmees depuis 2 h",
+    /dansLeDossier\(p, dossier, responsable\)/.test(photos) && /\.is\("confirmee_le", null\)\.gt\("created_at", depuis\)/.test(photos) && /seulementArbre === true/.test(photos));
+  ok("selectionner tout un dossier : la meme regle que la grille, jamais une photo signalee",
+    /dansLeDossier\(l, dossier, responsable\)/.test(lire("src/app/api/collectif/photos/marquer/route.ts")) && /!preselection \|\| !l\.signalee/.test(lire("src/app/api/collectif/photos/marquer/route.ts")));
+
+  const prov = lire("src/app/api/collectif/provenances/route.ts");
+  ok("supprimer un lien : un marqueur (retire_le), jamais un DELETE ; 503 nomme sans la migration ; ses photos restent",
+    /update\(\{ retire_le: new Date\(\)\.toISOString\(\) \}\)/.test(prov) && !/\.delete\(/.test(prov) && /ERREUR_LIENS_ABSENTE/.test(prov) && /"provenance_supprimee"/.test(prov));
+  ok("changer le nombre de photos d'un lien : la meme regle qu'a la creation (lirePlafondLien), journalise",
+    /async function modifierLien[\s\S]*lirePlafondLien\(corps, edition\)/.test(prov) && /"provenance_plafond"/.test(prov));
+  ok("un lien supprime ne recoit plus rien : la page de depot est introuvable, la route refuse",
+    /lu\.data\.retire_le\) notFound\(\)/.test(lire("src/app/depot/[token]/page.tsx")) && /!prov \|\| prov\.retire_le/.test(lire("src/app/api/collectif/depot/presign/route.ts")));
+  const mig = lire("supabase/migrations/20261018_collectif_liens_reponses.sql");
+  ok("migration 20261018 : atomique, idempotente, retire_le et reponse_a, PostgREST relit",
+    /^begin;/m.test(mig) && /^commit;/m.test(mig) && /retire_le timestamptz/.test(mig) && /reponse_a uuid/.test(mig) && /notify pgrst, 'reload schema'/.test(mig));
+
+  const page = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  ok("Photos : plus de « Signaler », plus de barre de presélection, les grands chiffres en tete",
+    !/Signaler/.test(page) && !/ec-presel/.test(page) && /ec-ph-chiffres/.test(page) && /photos reçues/.test(page));
+  ok("Photos : ranger en glissant (draggable, onDrop), « + Nouveau dossier » ouvre le depot sur un nom neuf",
+    /draggable: true/.test(page) && /void ranger\(glisse, cible === "vous" \? null : cible\)/.test(page) && /envoi\.ouvrir\?\.\(\{ nouveau: true \}\)/.test(page));
+  const fen = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
+  ok("deposer : « Dans quel dossier ? », les dossiers existants ou un nom neuf, un seul bouton",
+    /Dans quel dossier \?/.test(fen) && /Ou un nouveau dossier/.test(fen) && /Choisir des photos/.test(fen) && !/Choisir un dossier/.test(fen) && !/webkitdirectory/.test(fen));
+  const css = lire("src/app/edition/[token]/espace.css");
+  ok("le bleu de Bellajour en mode jour (#4a90d9), le nom de l'edition sans boite",
+    /--ec-accent: #4a90d9;/.test(css) && /--ec-ac-rgb: 74, 144, 217;/.test(css) && !/\.ec-espace \.ec-edition \{[^}]*border: 1px/.test(css));
+}
+
+titre("— T-152 : les documents s'ouvrent dans la page, on repond a un message —");
+{
+  ok("visionneuse : un PDF et une image courante se peignent, le reste se telecharge ; la requete d'une adresse signee est ignoree",
+    genreFichier("devis.pdf") === "pdf" && genreFichier(null, "https://x.r2/collectif/a/devis.PDF?X-Amz-Signature=1") === "pdf" && genreFichier("logo.png") === "image" && genreFichier("photo.heic") === "autre" && genreFichier("note.docx") === "autre" && genreFichier("sans-extension", "https://x/y.webp?a=b") === "image");
+  const vis = lire("src/app/edition/_composants/Visionneuse.tsx");
+  ok("visionneuse : posee dans la colonne par un portail, l'icone qui telecharge, ouvrir dans un onglet",
+    /createPortal\(/.test(vis) && /document\.querySelector\("\.ec-contenu"\)/.test(vis) && /aria-label="Télécharger"/.test(vis) && /download/.test(vis) && /Ouvrir dans un nouvel onglet/.test(vis));
+  const donnees = lire("src/app/edition/[token]/donnees.ts");
+  ok("documents : deux adresses signees, l'une telecharge (nom propre), l'autre s'affiche",
+    /\[url, voir\] = await Promise\.all\(\[signerGet\(d\.r2_key, undefined, nomTelechargement\(d\.libelle, ext\)\), signerGet\(d\.r2_key\)\]\)/.test(donnees) && /telecharger,/.test(donnees));
+  ok("visionneuse branchee : Documents, propositions, envois, fichiers cites dans le fil ; plus aucun « Ouvrir » vers un nouvel onglet",
+    /vision\.ouvrir/.test(lire("src/app/edition/[token]/dossier/ListeDocuments.tsx")) && /vision\.ouvrir/.test(lire("src/app/edition/[token]/atelier/Propositions.tsx")) && /vision\.ouvrir/.test(lire("src/app/edition/[token]/LigneContenus.tsx")) && /ouvrir=\{vision\.ouvrir\}/.test(lire("src/app/edition/[token]/atelier/Parler.tsx"))
+    && ["src/app/edition/[token]/atelier/Parler.tsx", "src/app/edition/[token]/atelier/Propositions.tsx", "src/app/edition/[token]/LigneContenus.tsx"].every((f) => !/href=\{(m\.(document|contenu|piece)|d|e)\.url\} target="_blank"/.test(lire(f))));
+  const ms = lire("src/lib/collectif/messagerie.ts");
+  ok("reponse : la lecture se replie en quatre paliers (reponses, envois, revision, avant)",
+    /requete\(COLONNES_REPONSES\)[\s\S]*requete\(COLONNES_ENVOIS\)[\s\S]*requete\(COLONNES\)[\s\S]*requete\(COLONNES_AVANT\)/.test(ms) && /COLONNES_REPONSES = `\$\{COLONNES_ENVOIS\}, reponse_a`/.test(ms));
+  ok("reponse : le message repondu est de la MEME edition, la migration sondee avant tout",
+    /async function lireReponseA[\s\S]*reponsesMessagesAppliquees\(supabase\)[\s\S]*\.eq\("edition_id", editionId\)/.test(ms) && /\.eq\("edition_id", editionId\)\s*\.in\("id", idsReponses\)/.test(ms));
+  const env = lire("src/app/api/collectif/messages/envoyer/route.ts");
+  ok("reponse cote client : sondee AVANT le coffre, 503 nomme sans la migration",
+    env.indexOf("lireReponseA(") > 0 && env.indexOf("lireReponseA(") < env.indexOf("ecrireObjet(cle.key") && /ERREUR_LIENS_ABSENTE, MESSAGE_LIENS_ABSENTE/.test(env));
+  ok("reponse cote atelier : la meme regle", /lireReponseA\(supabase, g\.id, corps\.reponseA\)/.test(lire("src/app/api/admin/collectif/editions/[id]/messages/route.ts")));
+  ok("reponse : un extrait d'une ligne, coupe au mot", extraitDe("Bonjour\n\nla  couverture") === "Bonjour la couverture" && extraitDe("a".repeat(50) + " " + "b".repeat(200)).endsWith("…") && extraitDe("a".repeat(50) + " " + "b".repeat(200)).length <= 141);
+  const parler = lire("src/app/edition/[token]/atelier/Parler.tsx");
+  ok("reponse : « Répondre » sur la bulle (pour qui ecrit), la citation dans la zone d'ecriture et dans la bulle, un clic y ramene",
+    /repondre=\{p\.ecrire \? \(\) => setReponse\(el\.message\) : undefined\}/.test(parler) && /Réponse à \{auteurDe\(e\.reponse\)\}/.test(parler) && /allerAuMessage\(m\.reponseA\.id\)/.test(parler) && /reponseA: e\.reponse\?\.id \?\? null/.test(parler));
+  ok("Documents : « Répondre » ouvre la conversation, le document deja cite (pour qui ecrit seulement)",
+    /\?citer=\$\{d\.id\}/.test(lire("src/app/edition/[token]/dossier/ListeDocuments.tsx")) && /peut\(role, 'ecrire_message'\) \? versAtelier : null/.test(lire("src/app/edition/[token]/dossier/page.tsx")) && /documents\.some\(\(d\) => d\.id === citer\) \? citer : null/.test(lire("src/app/edition/[token]/atelier/page.tsx")));
+}
+
+titre("— 15/10 : Porcelaine le jour, Charbon la nuit, du verre et des arrondis —");
+{
+  const css = lire("src/app/edition/[token]/espace.css");
+  const nuit = /\.bj-atelier\.ec-espace \{([^}]*)\}/.exec(css)?.[1] ?? "";
+  const jour = /\.bj-atelier\.ec-espace\[data-ec-mode="jour"\] \{([^}]*)\}/.exec(css)?.[1] ?? "";
+  ok("la nuit est un CHARBON (#17181c), plus de noir pur ni de blanc pur pour le texte", /--ec-bg: #17181c;/.test(nuit) && /--ec-text: #ecedf0;/.test(nuit) && !/#050505;/.test(nuit.replace(/--ec-encre[^;]*;/, "")));
+  ok("le jour est une PORCELAINE (#f3f4f7) au bleu de Bellajour, plus de beige", /--ec-bg: #f3f4f7;/.test(jour) && /--ec-accent: #4a90d9;/.test(jour) && !/#f3ece2|#ece3d6|#fbf8f3/.test(jour));
+  ok("la forme est commune : arrondis emboîtés (28/24/16/14), verre, ombres en jetons", ["--ec-r-panneau: 28px", "--ec-r-carte: 24px", "--ec-r-bloc: 16px", "--ec-r-champ: 14px", "--ec-flou:"].every((j) => nuit.includes(j)) && ["--ec-carte:", "--ec-ombre-carte:", "--ec-actif:"].every((j) => nuit.includes(j) && jour.includes(j)));
+  ok("la coquille flotte : un fond vivant (deux taches floues) et un menu de verre arrondi, plus de trait à droite",
+    /\.ec-espace \.ec-coquille::before/.test(css) && /\.ec-espace \.ec-menu \{[^}]*border-radius: var\(--ec-r-panneau\)/.test(css) && !/\.ec-espace \.ec-menu \{[^}]*border-right/.test(css));
+  ok("l'en-tête d'un écran n'est plus souligné d'un trait", !/\.ec-espace \.ec-ecran-tete \{[^}]*border-bottom/.test(css));
+  const admin = lire("src/app/admin/admin.css");
+  ok("l'atelier passe en Porcelaine DANS admin.css (les pages publiques crème ne bougent pas)",
+    /\.adm-root \{[^}]*--bj-cream: #f3f4f7;/.test(admin) && /--bj-cream:\s+#f7f1e9;/.test(lire("src/app/tokens.css")));
+  ok("la page de dépôt des participants est en charbon, plus de noir pur", /background: #17181c;/.test(lire("src/app/depot/[token]/depot.css")) && !/#050505/.test(lire("src/app/depot/[token]/depot.css")));
+}
+
+titre("— 15/10 : la page Photos sans grande colonne (rayons, albums, fil d'Ariane) —");
+{
+  const D = Dossiers;
+  ok("rayons : chaque cle trouve son onglet", D.rayonDe("tout") === "tout" && D.rayonDe("resp:organisateur:La soirée") === "vous" && D.rayonDe("pers:general:Léa") === "liens" && D.rayonDe("lien:0b1f3c2e-4a5b-4c6d-8e9f-001122334455") === "liens" && D.rayonDe("participants") === "liens" && D.rayonDe("atelier") === "atelier" && D.rayonDe("selection") === "selection");
+  const r = (provenance_id: string | null, role_deposant: string): Dossiers.LignePhoto => ({ provenance_id, provenance_type: "organisateur", role_deposant, deposant: null });
+  ok("vues d'ensemble : « vous » = les photos du responsable, « liens » = celles des participants", D.dansLeDossier(r(null, "responsable"), "vous", "C") && !D.dansLeDossier(r(null, "participant"), "vous", "C") && D.dansLeDossier(r(null, "participant"), "liens", "C") && D.dansLeDossier(r("x", "participant"), "liens", "C") && !D.dansLeDossier(r(null, "atelier"), "liens", "C"));
+  const route = lire("src/app/api/collectif/photos/route.ts");
+  ok("route photos : une vue d'ensemble ne signe aucune PAGE de grille (les huit dernieres arrivees seulement), une couverture par dossier ou lien",
+    /const sansGrille = corps\.seulementArbre === true \|\| estVueEnsemble\(dossier\)/.test(route) && /suivante: !sansGrille &&/.test(route) && /couvertures\[n\.cle\] = await signerGet\(p\.vignette_key\)/.test(route)
+    && /const ARRIVEES = 8;/.test(route) && /sansGrille \? dansDossier\.slice\(-ARRIVEES\)\.reverse\(\)/.test(route));
+  const page = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  ok("Photos : dossiers et liens en vignettes, sous-dossiers en petites vignettes, personnes d'un lien en pastilles, fil d'Ariane",
+    /className="ec-ph-albums"/.test(page) && /ec-ph-albums--petits/.test(page) && /className="ec-ph-personnes"/.test(page) && /className="ec-ph-fil"/.test(page) && existsSync(resolve(RACINE, "archive/photos-colonne-2026-10/README.md")));
+}
+
+titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de reception, fiche en onglets) —");
+{
+  ok("boite : des initiales lisibles", initialesDe("Maison Aubier") === "MA" && initialesDe("Lycée Jean Moulin") === "LJ" && initialesDe("Club de la Rive") === "CR" && initialesDe("Bellajour") === "BE");
+  const midi = new Date("2026-10-14T10:00:00Z");
+  ok("boite : quand, en court (heure de Paris : l'heure, hier, le jour, la date)",
+    quandCourt("2026-10-14T08:05:00Z", midi) === "10 h 05" && quandCourt("2026-10-13T20:00:00Z", midi) === "hier" && /^(sam|dim|lun)/.test(quandCourt("2026-10-11T09:00:00Z", midi)) && quandCourt("2026-10-02T09:00:00Z", midi) === "2 oct.");
+  const ed = (id: string, organisation: string) => ({ id, organisation, evenement: "E", created_at: "2026-10-01T00:00:00Z" });
+  const msg = (edition_id: string, auteur: "client" | "atelier", texte: string, created_at: string, lu: string | null = null) => ({ edition_id, auteur, texte, created_at, lu_atelier_le: lu });
+  const convs = conversationsDe(
+    [ed("a", "Atelier A"), ed("b", "Bureau B"), ed("c", "Club C")],
+    [
+      msg("a", "client", "Bonjour", "2026-10-14T09:00:00Z", "2026-10-14T09:30:00Z"),
+      msg("b", "client", "Demande de modification : Ajouter des pages\n8 pages", "2026-10-13T09:00:00Z"),
+      msg("b", "atelier", "Bien reçu", "2026-10-12T09:00:00Z"),
+    ],
+    midi
+  );
+  ok("boite : a lire d'abord, puis le plus recent, sans message a la fin ; rien n'est marque lu ici",
+    convs.map((c) => c.id).join() === "b,a,c" && convs[0].nonLus === 1 && convs[2].apercu === null && !/update\(|lu_atelier_le: new Date/.test(lire("src/lib/collectif/boite.ts")));
+  ok("boite : « Vous : » quand l'atelier a ecrit en dernier", conversationsDe([ed("x", "X")], [msg("x", "atelier", "Merci", "2026-10-14T09:00:00Z")], midi)[0].apercu === "Vous : Merci");
+  const traiter = aTraiterBoite(convs, [{ edition_id: "a", debut: "2026-10-14T13:30:00Z", avec: "Mathias" }, { edition_id: "a", debut: "2026-10-15T13:30:00Z", avec: "Mathias" }], midi);
+  ok("boite : a traiter = les messages a lire (la demande se dit), puis les rendez-vous du JOUR seulement",
+    traiter.length === 2 && /Bureau B : (une demande de modification|1 message à lire)/.test(traiter[0].texte) && traiter[1].texte === "Rendez-vous à 15 h 30 avec Atelier A (Mathias)");
+  ok("etapes : en cours, faites, a venir ; livree = tout fait",
+    etapesEdition("composition").map((e) => e.statut).join() === "fait,encours,avenir,avenir,avenir" && etapesEdition("bat_valide")[2].statut === "encours" && etapesEdition("livree").every((e) => e.statut === "fait"));
+
+  const barre = lire("src/app/admin/BarreAtelier.tsx");
+  ok("barre commune : un commutateur « Particuliers | Éditions », absent sans l'interrupteur",
+    /collectif \? \(\s*<nav className="atb-switch"/.test(barre) && /Particuliers/.test(barre) && /Éditions/.test(barre) && /href: "\/admin\/collectif\/messages"/.test(barre));
+  const pages = ["src/app/admin/atelier/Liste.tsx", "src/app/admin/atelier/[token]/Fiche.tsx", "src/app/admin/collectif/page.tsx", "src/app/admin/collectif/[id]/page.tsx", "src/app/admin/collectif/messages/page.tsx", "src/app/admin/collectif/styles/page.tsx", "src/app/admin/collectif/agendas/page.tsx", "src/app/admin/collectif/nouvelle/page.tsx", "src/app/admin/collectif/[id]/bat/page.tsx"];
+  ok("barre commune : posee sur chaque ecran des deux mondes (plus de « ← Table de travail »)",
+    pages.every((f) => /<BarreAtelier /.test(lire(f))) && !/← Table de travail/.test(lire("src/app/admin/collectif/page.tsx")));
+  ok("barre commune : la table de travail des particuliers garde ses ecrans, et la demo ne parle jamais des editions",
+    ["Carnet", "Métriques", "Cockpit", "Santé", "Factures", "Prévente", "Démo"].every((t) => barre.includes(t)) && /collectif=\{collectif && !vue\.demo\}/.test(lire("src/app/admin/atelier/Liste.tsx")) && /collectif=\{collectif && !demo\}/.test(lire("src/app/admin/atelier/[token]/Fiche.tsx")));
+  ok("barre commune : les non-lus se comptent SANS rien marquer, en parallele de la liste",
+    /async function compterNonLus[\s\S]*?head: true/.test(lire("src/app/admin/collectif/donnees.ts")) && /Promise\.all\(\[\s*chargerListe/.test(lire("src/app/admin/atelier/page.tsx")));
+  const boitePage = lire("src/app/admin/collectif/messages/page.tsx");
+  ok("boite : une conversation a la fois, remontee a chaque changement (key), le dossier du client a droite",
+    /<ConversationAtelier key=\{courant\.id\}/.test(boitePage) && /Le dossier du client/.test(boitePage) && /Ouvrir la fiche/.test(boitePage) && /chargerBoite\(supabase, maintenant\)/.test(boitePage));
+  const onglets = lire("src/app/admin/collectif/[id]/OngletsFiche.tsx");
+  ok("fiche : des onglets, un onglet monte a sa premiere visite puis garde (les messages ne se marquent lus qu'a leur ouverture)",
+    /vus\.includes\(cle\) \?/.test(onglets) && /hidden=\{cle !== actif\}/.test(onglets) && /replaceState/.test(onglets) && /messages: <PanneauMessages/.test(lire("src/app/admin/collectif/[id]/page.tsx")));
+
+  /* 15/10 au soir : ce qui manquait des maquettes « direction visuelle » (retour de Mathias). */
+  {
+    const css = lire("src/app/edition/[token]/espace.css");
+    const tab = lire("src/app/edition/[token]/tableau.css");
+    const tdb = lire("src/app/edition/[token]/page.tsx");
+    const carte = lire("src/app/edition/[token]/CartePhotos.tsx");
+    const col = lire("src/app/edition/[token]/photos/Collecte.tsx");
+    ok("maquettes : la nuit, la lueur cuivree en haut a DROITE ; le jour, le bleu en haut a gauche",
+      /\.ec-espace \.ec-coquille::before \{[^}]*right: -200px;[^}]*top: -260px;/.test(css) && /\[data-ec-mode="jour"\] \.ec-coquille::before \{[^}]*left: -160px;/.test(css));
+    ok("maquettes : jour | nuit en deux boutons (soleil et lune), le mode en cours eclaire",
+      /className="ec-mode-choix" role="group"/.test(lire("src/app/edition/[token]/Coquille.tsx")) && (lire("src/app/edition/[token]/Coquille.tsx").match(/className="ec-mode" aria-pressed=/g) ?? []).length === 2);
+    ok("tableau de bord : deux colonnes (1 et 1,08), « À envoyer » sous le style et le message sous les photos, DANS la grille",
+      /grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1\.08fr\);\s*grid-template-rows: minmax\(0, 1fr\) auto;/.test(tab)
+      && tdb.indexOf("<LigneContenus") > tdb.indexOf('className="ec-tdb-grille"') && tdb.indexOf('className="ec-tdb-message"') < tdb.indexOf("</div>\n      </div>\n    </section>"));
+    ok("tableau de bord : l'encart Style dit « Fait » quand tout est valide, l'eventail Lisbonne / Aussie / Côte d'Azur (couvertures de Bellajour, jamais celles d'essai), une tuile par magazine et « Modifier »",
+      /className="ec-tdb-fait"/.test(tdb) && /\{ nom: 'lisbonne', place: 'gauche' \},\s*\{ nom: 'aussie', place: 'droite' \},\s*\{ nom: 'cote-azur', place: 'centre' \},/.test(tdb) && /\/images\/v2\/accueil\/couverture-\$\{c\.nom\}-360\.webp/.test(tdb) && !/styleCouverture|tableau\.eventail/.test(tdb) && /className=\{reste \? 'ec-tdb-tuile ec-tdb-tuile--a-faire' : 'ec-tdb-tuile'\}/.test(tdb) && /\{ecrire \? 'Modifier' : 'Voir'\}/.test(tdb));
+    ok("tableau de bord : une vignette par dossier et son nombre, plus de point ni de fleche",
+      /className="ec-tdb-dossier-couv"/.test(carte) && !/ec-tdb-chevron|ec-tdb-point/.test(carte) && /dansLeDossier\(x, d\.cle, edition\.responsable_nom\)/.test(lire("src/app/edition/[token]/donnees.ts")));
+    const fen = lire("src/app/edition/_composants/Fenetre.tsx");
+    ok("fenetres : toujours ouvertes dans la colonne de contenu (portail), jamais prisonnieres d'un panneau de verre",
+      /document\.querySelector\("\.ec-contenu"\)/.test(fen) && /createPortal\(fenetre, hote\)/.test(fen) && /useSyncExternalStore\(rien, \(\) => true, \(\) => false\)/.test(fen));
+    ok("tableau de bord : a partir de TROIS contenus, « À envoyer » prend toute la largeur et le message passe dessous (regle de Mathias)",
+      /const LIGNE_LONGUE = 3;/.test(lire("src/app/edition/[token]/LigneContenus.tsx")) && /contenus\.length >= LIGNE_LONGUE/.test(lire("src/app/edition/[token]/LigneContenus.tsx"))
+      && /\.ec-tdb-grille > \.ec-tdb-ligne--longue,\s*\.ec-espace \.ec-tdb-grille > \.ec-tdb-ligne--longue \+ \.ec-tdb-message \{\s*grid-column: 1 \/ -1;/.test(tab));
+    ok("Photos : le nombre POSE sur la couverture d'un album, « Dernières arrivées » sous les albums, les rayons DANS le panneau",
+      /<span className="ec-ph-album-n">/.test(col) && /Dernières arrivées/.test(col) && col.indexOf('className="ec-ph-rayons"') > col.indexOf('"ec-ph-principal"'));
+  }
+
+  /* 15/10 : la fiche en cartes (maquette « Atelier, la fiche » validée par Mathias). */
+  const fiche = lire("src/app/admin/collectif/[id]/page.tsx");
+  ok("fiche en cartes : un retour visible vers la liste des editions, sur la fiche et sa silhouette",
+    /<Link href="\/admin\/collectif" className="eca-retour">[\s\S]{0,80}Les éditions/.test(fiche) && /eca-retour[\s\S]{0,80}Les éditions/.test(lire("src/app/admin/collectif/[id]/loading.tsx")));
+  ok("fiche en cartes : TROIS cartes dans la vue d'ensemble, chacune avec son lien en tete, plus de resumes en lignes",
+    (fiche.match(/<section className="eca-carte">/g) ?? []).length === 3 && (fiche.match(/className="eca-carte-tete"/g) ?? []).length === 3 && !/const resume = /.test(fiche) && !/eca-apercu/.test(fiche));
+  ok("fiche en cartes : les gestes dans un menu de l'en-tete, les trois liens et leur regeneration dans « Réglages et liens »",
+    /<PanneauGestes [^>]*menu \/>/.test(fiche) && /libelle: "Réglages et liens"/.test(fiche) && /reglages: \([\s\S]*?<PanneauLiens id=\{e\.id\} liens=\{liens\} \/>/.test(fiche));
+  const donneesFiche = lire("src/app/admin/collectif/donnees.ts");
+  ok("fiche en cartes : les doublons se comptent par la MEME regle que la page Photos du client, quatre apercus signes au plus",
+    /doublons: groupesDoublonsRapides\(/.test(donneesFiche) && /\.slice\(0, 4\)[\s\S]{0,60}signerOuRien\(p\.vignette_key\)/.test(donneesFiche));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

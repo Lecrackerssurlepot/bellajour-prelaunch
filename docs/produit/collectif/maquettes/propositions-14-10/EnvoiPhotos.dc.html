@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>L'envoi des photos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&amp;family=DM+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#d68a63}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; background: #050505; color: #ffffff; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.45; overflow: hidden">
+  <dc-import name="Menu" actif="photos" hint-size="232px,900px"></dc-import>
+  <div style="flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column">
+    <header style="flex: none; height: 68px; box-sizing: border-box; padding: 0 32px; border-bottom: 1px solid rgba(255,255,255,0.10); display: flex; align-items: center; gap: 16px">
+      <h1 style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px">Les photos</h1>
+      <span style="color: rgba(255,255,255,0.64); font-size: 13px">770 reçues</span>
+    </header>
+    <div aria-hidden="true" style="flex: 1; padding: 24px 32px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; align-content: start; opacity: 0.3">
+      <sc-for list="{{ fonds }}" as="f" hint-placeholder-count="12"><span style="aspect-ratio: 1; border-radius: 10px; background: {{ f }}"></span></sc-for>
+    </div>
+    <div style="position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(0,0,0,0.5)">
+      <section role="dialog" aria-labelledby="titre-envoi" style="width: 560px; box-sizing: border-box; padding: 28px; display: flex; flex-direction: column; gap: 18px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.14); background: rgba(20,20,20,0.86)">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <h2 id="titre-envoi" style="margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 30px">L'envoi de vos photos</h2>
+            <span style="color: rgba(255,255,255,0.64); font-size: 13px">Rangées dans « Mes photos »</span>
+          </div>
+          <button type="button" style="height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18); background: transparent; color: #ffffff; font: inherit; font-size: 13px">Réduire</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <span style="display: flex; justify-content: space-between; align-items: baseline"><strong style="font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 44px; line-height: 1">312 <span style="font-size: 20px; color: rgba(255,255,255,0.64)">sur 770</span></strong><span style="color: rgba(255,255,255,0.72)">8 en cours</span></span>
+          <span style="height: 6px; border-radius: 999px; background: rgba(255,255,255,0.12); overflow: hidden; display: block"><span style="display: block; width: 40%; height: 6px; background: #d68a63"></span></span>
+        </div>
+        <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+          <li style="display: flex; justify-content: space-between"><span>Arrivées</span><strong style="font-weight: 500">294</strong></li>
+          <li style="display: flex; justify-content: space-between"><span>Déjà là, sautées (même fichier déjà envoyé)</span><strong style="font-weight: 500">18</strong></li>
+          <li style="display: flex; justify-content: space-between"><span>À reprendre</span><strong style="font-weight: 500">0</strong></li>
+        </ul>
+        <span style="padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.04); font-size: 13px; color: rgba(255,255,255,0.72)">Vous pouvez naviguer dans l'espace pendant l'envoi : la pastille « Envoi en cours » en haut de chaque page rouvre cette fenêtre. Gardez l'onglet ouvert.</span>
+        <div style="display: flex; gap: 10px">
+          <button type="button" style="flex: 1; height: 44px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #ffffff; font: inherit">Ajouter d'autres photos</button>
+          <button type="button" style="flex: 1; height: 44px; border-radius: 999px; border: 0; background: #d68a63; color: #050505; font: inherit; font-weight: 600">Réduire et continuer</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const t = ['#2f5d8a', '#c9a45c', '#8a6a4b', '#b5452f', '#1d3557', '#d64933'];
+    return { fonds: Array.from({ length: 12 }, (_, i) => 'linear-gradient(135deg, ' + t[i % 6] + ', ' + t[(i + 3) % 6] + ')') };
+  }
+}
+</script>
+</body>
+</html>

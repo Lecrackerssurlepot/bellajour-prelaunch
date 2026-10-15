@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formaterHeureParis } from "@/lib/collectif/dates";
 import type { Message } from "@/lib/collectif/messages";
+import { useVisionneuse } from "../../_composants/Visionneuse";
 import type { DocumentDossier } from "../donnees";
 
 export default function CarteProposition({
@@ -28,6 +29,7 @@ export default function CarteProposition({
   const router = useRouter();
   const v = (vous: string, toi: string) => (tu ? toi : vous);
   const [confirmer, setConfirmer] = useState(false);
+  const vision = useVisionneuse();
   const [occupe, setOccupe] = useState(false);
   const [message, setMessage] = useState<{ texte: string; erreur: boolean } | null>(null);
   /* Acceptée ici même : les boutons disparaissent sans attendre le
@@ -90,11 +92,12 @@ export default function CarteProposition({
         </div>
       ) : (
         <div className="ec-actions">
-          {d.url ? (
-            <a className="ec-bouton ec-bouton--clair ec-bouton--petit" href={d.url} target="_blank" rel="noopener noreferrer">
+          {d.voir ? (
+            <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => vision.ouvrir({ titre: d.libelle, sous: d.libelleType, voir: d.voir as string, telecharger: d.url })}>
               Ouvrir
-            </a>
+            </button>
           ) : null}
+          {vision.rendu}
           {ecrire && !acceptee ? (
             <>
               <button type="button" className="ec-bouton ec-bouton--petit" disabled={occupe} onClick={() => setConfirmer(true)}>

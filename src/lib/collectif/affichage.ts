@@ -24,8 +24,8 @@ export function cookieMode(mode: ModeEspace): string {
   return `${COOKIE_MODE}=${mode}; path=/edition; max-age=31536000; samesite=lax`;
 }
 
-/** Le logo suit le mode : cuivre la nuit, bleu le jour. */
+/** Le logo suit le mode : BLANC la nuit (Mathias, 14/10), bleu le jour. */
 export const LOGO_MODE: Record<ModeEspace, string> = {
-  nuit: "/images/collectif/logo-cuivre.webp",
+  nuit: "/images/collectif/logo-blanc.webp",
   jour: "/images/collectif/logo-bleu.webp",
 };

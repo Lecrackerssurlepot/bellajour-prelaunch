@@ -1,13 +1,47 @@
 /* Le lien de dépôt des participants (PRD §5.1) : d'abord sur téléphone.
-   Scopé `.bj-atelier .ec-dp` (le layout pose `.bj-atelier.ec-depot`). Noir,
-   blanc, orange ; Cormorant 400 et DM Sans ; pas de `dvh`. */
+   Scopé `.bj-atelier .ec-dp` (le layout pose `.bj-atelier.ec-depot`).
+   15/10 : le CHARBON de l'espace (plus de noir pur), un panneau de verre
+   arrondi sur un fond vivant ; Cormorant 400 et DM Sans ; pas de `dvh`. */
 
 .bj-atelier .ec-dp {
+  --dp-texte: #ecedf0;
+  --dp-doux: #a9adb5;
+  --dp-filet: rgba(255, 255, 255, 0.12);
+  --dp-surface: rgba(255, 255, 255, 0.05);
+  --dp-accent: #e3a27f;
+  --dp-sur-accent: #1b1410;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   min-height: var(--app-height);
-  background: #050505;
-  color: var(--c-text-pure);
-  padding: 28px 16px 48px;
+  background: #17181c;
+  color: var(--dp-texte);
+  padding: 20px 12px 40px;
   box-sizing: border-box;
+}
+.bj-atelier .ec-dp::before,
+.bj-atelier .ec-dp::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+}
+.bj-atelier .ec-dp::before {
+  right: -160px;
+  top: -180px;
+  width: 520px;
+  height: 460px;
+  background: #3a2a22;
+  opacity: 0.8;
+}
+.bj-atelier .ec-dp::after {
+  left: -140px;
+  bottom: -200px;
+  width: 520px;
+  height: 420px;
+  background: #23262f;
 }
 .bj-atelier .ec-dp-in {
   max-width: 460px;
@@ -15,6 +49,14 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  padding: 26px 22px 28px;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+  box-sizing: border-box;
 }
 .bj-atelier .ec-dp-marque {
   margin: 0 0 18px;
@@ -28,12 +70,12 @@
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.56);
+  color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-surtitre {
   margin: 0;
   font-size: 14px;
-  color: var(--c-accent);
+  color: var(--dp-accent);
 }
 /* (0,2,0) contre `.bj-atelier h1` (0,1,1). */
 .bj-atelier .ec-dp-titre {
@@ -43,18 +85,18 @@
   font-style: normal;
   font-size: clamp(34px, 9vw, 52px);
   line-height: 1.05;
-  color: var(--c-text-pure);
+  color: var(--dp-texte);
 }
 .bj-atelier .ec-dp-texte {
   margin: 0;
   font-size: 16px;
   line-height: 1.55;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-ferme {
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 14px;
+  border: 1px solid var(--dp-filet);
+  border-radius: 18px;
 }
 .bj-atelier .ec-dp-form {
   display: flex;
@@ -67,20 +109,20 @@
   flex-direction: column;
   gap: 6px;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-input {
   min-height: 48px;
   padding: 0 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--c-text-pure);
+  border-radius: 14px;
+  border: 1px solid var(--dp-filet);
+  background: var(--dp-surface);
+  color: var(--dp-texte);
   font: inherit;
   font-size: 16px;
 }
 .bj-atelier .ec-dp-input:focus-visible {
-  outline: 2px solid var(--c-accent);
+  outline: 2px solid var(--dp-accent);
   outline-offset: 1px;
 }
 .bj-atelier .ec-dp-accord {
@@ -89,24 +131,25 @@
   align-items: flex-start;
   font-size: 14px;
   line-height: 1.45;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-accord input {
   margin-top: 3px;
   width: 18px;
   height: 18px;
-  accent-color: var(--c-accent);
+  accent-color: var(--dp-accent);
   flex: none;
 }
 .bj-atelier .ec-dp-bouton {
   min-height: 52px;
   border: 0;
   border-radius: 999px;
-  background: var(--c-accent);
-  color: var(--c-text-onaccent);
+  background: var(--dp-accent);
+  color: var(--dp-sur-accent);
   font: inherit;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
+  box-shadow: 0 10px 26px rgba(227, 162, 127, 0.22);
   cursor: pointer;
 }
 .bj-atelier .ec-dp-bouton:disabled {
@@ -116,37 +159,38 @@
 .bj-atelier .ec-dp-bouton--clair {
   min-height: 44px;
   background: transparent;
-  color: var(--c-text-pure);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--dp-texte);
+  border: 1px solid var(--dp-filet);
+  box-shadow: none;
 }
 .bj-atelier .ec-dp-progres {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.035);
+  border: 0;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.2);
 }
 .bj-atelier .ec-dp-compte {
   display: flex;
   justify-content: space-between;
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-compte strong {
-  color: var(--c-text-pure);
+  color: var(--dp-texte);
   font-weight: 600;
 }
 .bj-atelier .ec-dp-barre {
   height: 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
 .bj-atelier .ec-dp-barre > div {
   height: 100%;
-  background: var(--c-accent);
+  background: var(--dp-accent);
   transition: width 300ms ease;
 }
 .bj-atelier .ec-dp-merci {
@@ -154,13 +198,13 @@
   font-family: var(--font-display);
   font-size: 26px;
   line-height: 1.2;
-  color: var(--c-text-pure);
+  color: var(--dp-texte);
 }
 .bj-atelier .ec-dp-note {
   margin: 0;
   font-size: 13px;
   line-height: 1.45;
-  color: rgba(255, 255, 255, 0.56);
+  color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-note--refus {
   color: #ff9b7a;
@@ -168,5 +212,5 @@
 .bj-atelier .ec-dp-pied {
   margin: 8px 0 0;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.56);
+  color: var(--dp-doux);
 }

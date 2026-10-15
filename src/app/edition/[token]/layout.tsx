@@ -57,6 +57,7 @@ export default async function EspaceLayout({
       verrous={verrousPour(etat)}
       nonLus={nonLus}
       peutDeposer={peut(role, 'deposer_photos')}
+      tu={edition.registre === 'ecole_tu'}
     >
       {children}
     </Coquille>

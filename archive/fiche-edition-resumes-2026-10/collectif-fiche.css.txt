@@ -1,0 +1,197 @@
+/* ─────────────── la fiche en onglets (T-152) ─────────────── */
+
+.eca-root .eca-fiche-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bj-sp-4) var(--bj-sp-6);
+  margin-bottom: var(--bj-sp-4);
+}
+.eca-root .eca-fiche-titres {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.eca-root .eca-fiche-h1 {
+  font-size: clamp(1.8rem, 3.4vw, 2.4rem);
+}
+.eca-root .eca-fiche-prochaine {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-left: auto;
+  padding: 12px 18px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px var(--bj-veil-6);
+  max-width: 380px;
+}
+/* 15/10 : les onglets de la fiche, une pilule de verre ; l'onglet ouvert en encre. */
+.eca-root .eca-onglets {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  gap: 4px;
+  padding: 4px;
+  overflow-x: auto;
+  margin-bottom: var(--bj-sp-5);
+  border-radius: 999px;
+  border: 1px solid var(--adm-verre-bord, var(--bj-veil-8));
+  background: var(--adm-verre, rgba(255, 255, 255, 0.7));
+  box-shadow: 0 8px 24px var(--bj-veil-6);
+  scrollbar-width: none;
+}
+.eca-root .eca-onglet {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.eca-root .eca-onglet:hover {
+  color: var(--bj-text);
+}
+.eca-root .eca-onglet[aria-current="page"] {
+  color: #ffffff;
+  font-weight: 600;
+  background: var(--bj-text);
+}
+.eca-root .eca-onglet-corps[hidden] {
+  display: none;
+}
+.eca-root .eca-etapes {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 var(--bj-sp-5);
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-etape {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 20px;
+  background: var(--ate-carte-bg);
+  border: 1px solid var(--adm-verre-bord, var(--bj-veil-8));
+  box-shadow: 0 6px 18px var(--bj-veil-6);
+}
+.eca-root .eca-etape--encours {
+  border-color: transparent;
+  background: var(--bj-action-soft);
+  box-shadow: inset 0 0 0 1.5px var(--bj-action-border), 0 6px 18px var(--bj-veil-6);
+}
+.eca-root .eca-etape-signe {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--bj-veil-8);
+  font-size: 12px;
+  font-weight: 500;
+}
+.eca-root .eca-etape--fait .eca-etape-signe {
+  background: var(--bj-text);
+  color: var(--bj-cream);
+}
+.eca-root .eca-etape--encours .eca-etape-signe {
+  background: var(--bj-action);
+  color: var(--bj-on-action);
+}
+.eca-root .eca-etape-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.eca-root .eca-etape-texte strong {
+  font-weight: 500;
+}
+.eca-root .eca-apercu {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--bj-sp-4);
+  align-items: start;
+}
+.eca-root .eca-apercu > .ate-carte {
+  margin: 0;
+}
+.eca-root .eca-resume-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.eca-root .eca-resume-lien {
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-action);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.eca-root .eca-resume-lien:hover {
+  text-decoration: underline;
+}
+.eca-root .eca-resume-lignes {
+  display: flex;
+  flex-direction: column;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-resume-lignes li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--bj-veil-8);
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-resume-lignes li:last-child {
+  border-bottom: 0;
+}
+.eca-root .eca-resume-lignes li > span:last-child {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-deux {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--bj-sp-4);
+  align-items: start;
+}
+@media (max-width: 1080px) {
+  .eca-root .eca-apercu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .eca-root .eca-etapes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .eca-root .eca-apercu,
+  .eca-root .eca-deux,
+  .eca-root .eca-etapes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .eca-root .eca-fiche-prochaine {
+    margin-left: 0;
+  }
+}
+
+.eca-root .eca-liens-compacts {

@@ -5,7 +5,10 @@ Chargé dès qu'on touche une page ou une feuille de style. Complète le socle, 
 ## Deux palettes, deux mondes. Ne jamais les mélanger.
 
 **`src/app/tokens.css`** (~70 tokens `--bj-*`, importé par `globals.css`) — le monde CRÈME :
-l'admin, `/merci`, `/ambassadeurs`, les pages légales.
+`/merci`, `/ambassadeurs`, les pages légales. ⚠️ **L'admin (atelier, éditions, prévente) est en
+PORCELAINE depuis le 15/10** : `admin.css` REDÉFINIT les jetons crème sous `.adm-root` (blanc
+froid, encres bleutées, verre blanc, deux taches floues). Changer la crème ici ne change donc
+plus l'atelier, et la changer là-bas ne change pas les pages publiques.
 `--bj-cream #f7f1e9` · `--bj-charcoal #1c1c1c` · `--bj-terracotta #bc977d` ·
 `--bj-action #4a90d9` (CTA, liens, focus) · échelles `--bj-sp-1..8`, `--bj-fs-*`, `--bj-r-*` ·
 `--bj-topbar-h`, `--bj-bar-h` · les verres `--bj-glass-*` · les ombres `--bj-shadow-*`.
