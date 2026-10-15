@@ -1927,7 +1927,8 @@ titre("— T-154 : le lien du responsable ne s'ouvre que sur un appareil reconnu
       && fichiers("src/app/api", "route.ts").filter((f) => /sansAppareil: true/.test(lire(f))).length === 1);
   const appareils = lire("src/lib/collectif/appareils.ts");
   ok("les codes : empreinte seulement, essais comptes, expiration, frein par heure ; le code d'essai est IGNORE sur Vercel",
-    /code_empreinte: empreinteCode\(appareilEmp, code\)/.test(appareils) && !/code_empreinte: code[,\s]/.test(appareils) && /essais >= ESSAIS_MAX/.test(appareils) && /expire_le/.test(appareils) && /CODES_PAR_HEURE/.test(appareils) && /!process\.env\.VERCEL && essai/.test(appareils));
+    /code_empreinte: empreinteCode\(appareilEmp, code\)/.test(appareils) && !/code_empreinte: code[,\s]/.test(appareils) && /essais >= ESSAIS_MAX/.test(appareils) && /expire_le/.test(appareils) && /CODES_PAR_HEURE/.test(appareils) && /!process\.env\.VERCEL && essai/.test(appareils)
+      && !/if \(!idAppareil\) return false;/.test(appareils) && /empreinte\(idAppareil \?\? "aucun-appareil"\)/.test(appareils));
   const routeApp = lire("src/app/api/collectif/appareil/route.ts");
   ok("la route du code : token dans le CORPS, cookie httpOnly + secure + sameSite lax, le lien d'equipe recoit « introuvable »",
     /lireCorps\(request\)/.test(routeApp) && !/searchParams/.test(routeApp) && /httpOnly: true,\s*secure: true,\s*sameSite: "lax"/.test(routeApp) && /peut\(acces\.role, "ouvrir_sur_appareil"\)/.test(routeApp));

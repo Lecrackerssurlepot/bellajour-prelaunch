@@ -25,12 +25,13 @@ export function nouvelIdAppareil(): string {
 
 /** Cet appareil est-il reconnu pour le lien ACTUEL du responsable ? `null` : la table manque. */
 export async function appareilReconnu(supabase: SupabaseClient, edition: EditionCode, idAppareil: string | null): Promise<boolean | null> {
-  if (!idAppareil) return false;
+  /* On interroge MÊME sans cookie : c'est la requête qui dit si la table existe.
+     Sans elle (migration absente), on laisse passer ; vu en recette le 15/10. */
   const { data, error } = await supabase
     .from("collectif_appareils")
     .select("id")
     .eq("edition_id", edition.id)
-    .eq("appareil_empreinte", empreinte(idAppareil))
+    .eq("appareil_empreinte", empreinte(idAppareil ?? "aucun-appareil"))
     .eq("lien_empreinte", empreinte(edition.token_responsable))
     .is("oublie_le", null)
     .limit(1);
@@ -42,7 +43,7 @@ export async function appareilReconnu(supabase: SupabaseClient, edition: Edition
     console.error("[collectif] appareil illisible", error.code, error.message);
     return false;
   }
-  return Boolean(data?.length);
+  return Boolean(idAppareil && data?.length);
 }
 
 export type IssueDemande = { etat: "envoye" | "coupe" | "echec" | "trop" | "migration_absente" };
