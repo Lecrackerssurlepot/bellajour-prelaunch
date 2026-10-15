@@ -108,3 +108,39 @@ export function mailEspacePret(d: DonneesEspacePret): Mail {
   });
   return { sujet: `${v("Votre", "Ton")} espace Bellajour est prêt · ${d.evenement}`, html, texte };
 }
+
+export type DonneesCodeAppareil = {
+  tu: boolean;
+  evenement: string;
+  /** Les six chiffres, en clair : ce mail est le SEUL endroit où ils s'écrivent. */
+  code: string;
+  /** Sa durée de validité, en minutes. */
+  minutes: number;
+  /** L'adresse du site (bellajour.fr, ou la version d'essai) : la personne sait d'où vient la demande. */
+  site: string;
+};
+
+/** Le code par appareil (T-154) : envoyé quand le lien du responsable s'ouvre sur un appareil inconnu. */
+export function mailCodeAppareil(d: DonneesCodeAppareil): Mail {
+  const v = (vous: string, toi: string) => (d.tu ? toi : vous);
+  const espace = `${d.code.slice(0, 3)} ${d.code.slice(3)}`;
+  const { html, texte } = page({
+    titre: v("Votre code", "Ton code"),
+    bonjour: "Bonjour,",
+    lignes: [
+      ligne(v(`Pour ouvrir l'espace de « ${d.evenement} » sur ce nouvel appareil, saisissez ce code :`, `Pour ouvrir l'espace de « ${d.evenement} » sur ce nouvel appareil, saisis ce code :`)),
+      { html: `<span style="display:inline-block;padding:10px 18px;border-radius:12px;background:#f6f2ec;font-family:Arial,sans-serif;font-size:28px;letter-spacing:6px;color:#1c1c1c"><strong>${espace}</strong></span>`, texte: espace },
+      ligne(`Il est valable ${d.minutes} minutes, sur l'appareil qui l'a demandé.`),
+    ],
+    notes: [
+      ligne(
+        v(
+          "Vous n'êtes pas à l'origine de cette demande ? Ignorez ce mail : sans ce code, personne ne peut entrer dans votre espace.",
+          "Tu n'es pas à l'origine de cette demande ? Ignore ce mail : sans ce code, personne ne peut entrer dans ton espace."
+        )
+      ),
+      ligne(`Demande faite depuis ${d.site.replace(/^https?:\/\//, "")}.`),
+    ],
+  });
+  return { sujet: `${v("Votre", "Ton")} code Bellajour : ${espace}`, html, texte };
+}

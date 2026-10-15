@@ -18,6 +18,7 @@ import { join, resolve } from "node:path";
 import { cheminPublic, MASQUE } from "@/lib/analytics/chemin";
 import { groupesDeDoublons } from "@/lib/atelier/empreinte";
 import * as MailsTextes from "@/lib/collectif/mailsTextes";
+import * as Appareil from "@/lib/collectif/appareil";
 import {
   cleContenu,
   cleCouverture,
@@ -501,6 +502,8 @@ const attenduDroits: Record<Action, Role[]> = {
   ecrire_message: ["atelier", "responsable"],
   prendre_rendez_vous: ["atelier", "responsable"],
   saisir_livraison: ["atelier"],
+  /* T-154 (15/10) : seul le lien du responsable reçoit un code d'appareil. */
+  ouvrir_sur_appareil: ["responsable"],
 };
 ok("chaque action, chaque role : exactement le tableau du PRD",
    ACTIONS.length === Object.keys(attenduDroits).length
@@ -1905,6 +1908,36 @@ titre("— T-146 : les mails des éditions, un seul circuit, coupé par défaut 
   const routeMail = lire("src/app/api/admin/collectif/editions/[id]/mail-espace/route.ts");
   ok("route du mail : admin revérifié, « verifier » ne fait rien partir, une edition archivee ne recoit rien, le verrou suit le lien (regenerer permet de renvoyer)",
     /quiEstConnecteRequete\(request\)/.test(routeMail) && routeMail.indexOf("corps.verifier === true") < routeMail.indexOf("envoyerMailCollectif({") && /archive_le\) return/.test(routeMail) && /createHash\("sha256"\)\.update\(p\.edition\.token_responsable\)/.test(routeMail));
+}
+
+titre("— T-154 : le lien du responsable ne s'ouvre que sur un appareil reconnu —");
+{
+  const A = Appareil;
+  ok("code : six chiffres, espaces et tirets toleres, rien d'autre",
+    A.lireCode("123 456") === "123456" && A.lireCode("123-456") === "123456" && A.lireCode("12345") === null && A.lireCode("12345a") === null && A.lireCode(123456) === null && A.codeAffiche("123456") === "123 456");
+  ok("le controle n'est actif QUE si COLLECTIF_CODE_APPAREIL ET COLLECTIF_MAILS sont ouverts (sans mail, personne ne recevrait son code)",
+    A.controleAppareilActif({ COLLECTIF_CODE_APPAREIL: "1", COLLECTIF_MAILS: "1" }) && !A.controleAppareilActif({ COLLECTIF_CODE_APPAREIL: "1" }) && !A.controleAppareilActif({ COLLECTIF_MAILS: "1" }) && !A.controleAppareilActif({ COLLECTIF_CODE_APPAREIL: "peut-etre", COLLECTIF_MAILS: "1" }));
+  ok("un code est LIE a l'appareil qui l'a demande, jamais stocke en clair, compare a duree constante",
+    A.empreinteCode(A.empreinte("app-1"), "123456") !== A.empreinteCode(A.empreinte("app-2"), "123456") && A.memeEmpreinte("abc", "abc") && !A.memeEmpreinte("abc", "abd") && !A.memeEmpreinte("abc", "abcd"));
+  ok("identifiant d'appareil : 32 a 64 caracteres base64url ; adresse masquee",
+    A.idAppareilValide("A".repeat(43)) && !A.idAppareilValide("court") && !A.idAppareilValide("A".repeat(43) + "!") && A.adresseMasquee("camille@exemple.fr") === "c***@exemple.fr");
+  const acces = lire("src/lib/collectif/acces.ts");
+  ok("la porte : responsable SEULEMENT, l'atelier connecte passe, sans la migration on laisse passer, une seule route sans le controle",
+    /role === "responsable" && !options\.sansAppareil && controleAppareilActif\(process\.env\)/.test(acces) && /if \(await quiEstConnecte\(\)\) return true;/.test(acces) && /return reconnu \?\? true;/.test(acces)
+      && fichiers("src/app/api", "route.ts").filter((f) => /sansAppareil: true/.test(lire(f))).length === 1);
+  const appareils = lire("src/lib/collectif/appareils.ts");
+  ok("les codes : empreinte seulement, essais comptes, expiration, frein par heure ; le code d'essai est IGNORE sur Vercel",
+    /code_empreinte: empreinteCode\(appareilEmp, code\)/.test(appareils) && !/code_empreinte: code[,\s]/.test(appareils) && /essais >= ESSAIS_MAX/.test(appareils) && /expire_le/.test(appareils) && /CODES_PAR_HEURE/.test(appareils) && /!process\.env\.VERCEL && essai/.test(appareils));
+  const routeApp = lire("src/app/api/collectif/appareil/route.ts");
+  ok("la route du code : token dans le CORPS, cookie httpOnly + secure + sameSite lax, le lien d'equipe recoit « introuvable »",
+    /lireCorps\(request\)/.test(routeApp) && !/searchParams/.test(routeApp) && /httpOnly: true,\s*secure: true,\s*sameSite: "lax"/.test(routeApp) && /peut\(acces\.role, "ouvrir_sur_appareil"\)/.test(routeApp));
+  const layoutEspace = lire("src/app/edition/[token]/layout.tsx");
+  ok("l'espace : la coquille montre l'ecran du code (adresse masquee), chaque page ne rend rien derriere",
+    /acces\.statut === 'appareil_inconnu'/.test(layoutEspace) && /<CodeAppareil token=\{token\} adresse=\{adresseMasquee\(/.test(layoutEspace)
+      && fichiers("src/app/edition/[token]", "page.tsx").every((f) => !/acces\.statut !== 'ok'\) notFound\(\)/.test(lire(f)) || /if \(acces\.statut === 'appareil_inconnu'\) return null/.test(lire(f))));
+  const mailCode = MailsTextes.mailCodeAppareil({ tu: false, evenement: "Séminaire", code: "123456", minutes: 15, site: "https://bellajour.fr" });
+  ok("le mail du code : les six chiffres, la duree, d'ou vient la demande, aucun tiret cadratin",
+    mailCode.sujet.includes("123 456") && mailCode.texte.includes("123 456") && /15 minutes/.test(mailCode.texte) && /bellajour\.fr/.test(mailCode.texte) && !/[—–]/.test(mailCode.html + mailCode.texte));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

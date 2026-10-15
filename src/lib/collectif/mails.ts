@@ -20,6 +20,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { envoisCoupes, VAR_MAILS_COUPES } from "@/lib/envois";
+import { adresseMasquee } from "./appareil";
 import { lireInterrupteur } from "./interrupteur";
 import { journaliser } from "./journal";
 import type { Mail } from "./mailsTextes";
@@ -29,13 +30,6 @@ const EXPEDITEUR = { email: "contact@bellajour.com", name: "Bellajour" };
 const BREVO_SMTP_URL = "https://api.brevo.com/v3/smtp/email";
 
 export type EtatEnvoi = "envoye" | "coupe" | "deja" | "echec";
-
-/** « c***@exemple.fr » : le journal dit à qui, sans recopier l'adresse entière. */
-export function adresseMasquee(email: string): string {
-  const [nom, domaine] = email.split("@");
-  if (!domaine) return "***";
-  return `${nom.slice(0, 1)}***@${domaine}`;
-}
 
 /** Les mails des éditions peuvent-ils partir ? (Lu à chaque appel : une valeur incomprise FERME.) */
 export function mailsCollectifOuverts(): boolean {

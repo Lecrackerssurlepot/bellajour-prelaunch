@@ -28,6 +28,8 @@ const A_CONFIRMER = 'à confirmer avec l’atelier'
 export default async function PageDocuments({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   const acces = await chargerEspace(token)
+  /* Appareil inconnu (T-154) : la coquille montre l'écran du code, la page ne rend rien. */
+  if (acces.statut === 'appareil_inconnu') return null
   if (acces.statut !== 'ok') notFound()
   const { edition: e, role } = acces
   const p = parler(e.registre)

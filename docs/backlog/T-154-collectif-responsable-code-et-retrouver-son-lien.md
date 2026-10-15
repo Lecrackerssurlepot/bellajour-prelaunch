@@ -1,7 +1,7 @@
 ---
 id: T-154
 titre: Rien ne vérifie que le lien du responsable est ouvert par le responsable, et il ne peut pas le retrouver seul
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: avis-requis
@@ -29,5 +29,15 @@ Décision du 15/10 : **un code sur chaque nouvel appareil** (option recommandée
 3. Le lien dans le compte Bellajour (`/compte`) quand on s'y connecte avec la même adresse.
 Dépend de T-146 (les mails). Migration probable (codes, appareils reconnus) : appliquée par Mathias.
 
-## Ce qui a été fait
-Rien encore.
+## Ce qui a été fait (15/10, branche `feat/collectif-code-appareil`)
+- Le code par appareil, écrit et prouvé au harnais : `appareil.ts` (pur), `appareils.ts`
+  (effets), la porte `chargerAcces` (`appareil_inconnu`), la route `/api/collectif/appareil`,
+  l'écran `CodeAppareil`, le mail du code (`mailCodeAppareil`, texte proposé à valider).
+- Migration `20261019_collectif_appareils.sql` ÉCRITE (deux tables : `collectif_codes`,
+  `collectif_appareils`), **à appliquer par Mathias**.
+- Coupé par défaut : `COLLECTIF_CODE_APPAREIL` et `COLLECTIF_MAILS`.
+
+## Reste
+- Mathias applique la migration ; puis recette locale complète (code d'essai, mails coupés).
+- « Retrouver mon espace » et le lien dans `/compte`.
+- Valider les réglages : 15 minutes, 5 essais, 5 codes par heure.

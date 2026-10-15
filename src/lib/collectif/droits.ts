@@ -44,6 +44,8 @@ export const DROITS = {
   /** D23 : prendre, déplacer, annuler un rendez-vous (l'équipe le voit, sans y toucher). */
   prendre_rendez_vous: ["atelier", "responsable"],
   saisir_livraison: ["atelier"],
+  /** T-154 : recevoir et saisir le code qui reconnaît un appareil (le lien du responsable seulement). */
+  ouvrir_sur_appareil: ["responsable"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Action = keyof typeof DROITS;

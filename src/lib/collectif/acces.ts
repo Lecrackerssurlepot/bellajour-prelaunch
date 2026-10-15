@@ -9,11 +9,19 @@
  * 3. la lecture, dont l'erreur dit si la migration manque ;
  * 4. archivée, inconnue ou mauvaise porte : la MÊME réponse (`introuvable`).
  *    Pas d'annuaire : un lien d'équipe tapé sur `/depot` ne révèle pas qu'il
- *    existe une édition derrière (PRD §10).
+ *    existe une édition derrière (PRD §10) ;
+ * 5. le lien du RESPONSABLE sur un appareil inconnu (T-154) : `appareil_inconnu`
+ *    tant que l'appareil n'a pas reçu de code, si le contrôle est en service.
+ *    L'atelier connecté passe. Les routes répondent 401, l'espace montre l'écran
+ *    du code. `sansAppareil` : la seule route qui demande et vérifie le code.
  */
 
+import { cookies } from "next/headers";
+import { quiEstConnecte } from "@/lib/admin-session";
 import { isValidNumeroToken } from "@/lib/atelier/tokenForme";
 import { makeSupabase } from "@/lib/supabase";
+import { COOKIE_APPAREIL, controleAppareilActif, idAppareilValide } from "./appareil";
+import { appareilReconnu } from "./appareils";
 import { roleAdmisSur, roleDuToken, type Surface } from "./droits";
 import { collectifOuvert } from "./interrupteur";
 import { tableAbsente } from "./migration";
@@ -23,9 +31,10 @@ export type Acces =
   | { statut: "ferme" }
   | { statut: "introuvable" }
   | { statut: "migration_absente" }
+  | { statut: "appareil_inconnu"; edition: EditionLigne }
   | { statut: "ok"; edition: EditionLigne; role: Exclude<Role, "atelier"> };
 
-export async function chargerAcces(token: string, surface: Surface): Promise<Acces> {
+export async function chargerAcces(token: string, surface: Surface, options: { sansAppareil?: boolean } = {}): Promise<Acces> {
   if (!collectifOuvert()) return { statut: "ferme" };
   if (!isValidNumeroToken(token)) return { statut: "introuvable" };
 
@@ -53,7 +62,19 @@ export async function chargerAcces(token: string, surface: Surface): Promise<Acc
   const role = roleDuToken(data, token);
   if (!role || !roleAdmisSur(surface, role)) return { statut: "introuvable" };
 
+  if (role === "responsable" && !options.sansAppareil && controleAppareilActif(process.env) && !(await appareilPasse(supabase, data))) {
+    return { statut: "appareil_inconnu", edition: data };
+  }
+
   return { statut: "ok", edition: data, role };
+}
+
+/** L'atelier connecté, ou un appareil reconnu pour le lien actuel. Sans la migration : on laisse passer. */
+async function appareilPasse(supabase: ReturnType<typeof makeSupabase>, edition: EditionLigne): Promise<boolean> {
+  if (await quiEstConnecte()) return true;
+  const id = (await cookies()).get(COOKIE_APPAREIL)?.value ?? null;
+  const reconnu = await appareilReconnu(supabase, edition, idAppareilValide(id) ? id : null);
+  return reconnu ?? true;
 }
 
 /**

@@ -35,6 +35,8 @@ export const dynamic = 'force-dynamic'
 export default async function TableauDeBord({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   const acces = await chargerEspace(token)
+  /* Appareil inconnu (T-154) : la coquille montre l'écran du code, la page ne rend rien. */
+  if (acces.statut === 'appareil_inconnu') return null
   if (acces.statut !== 'ok') notFound()
   const { edition, role } = acces
 
