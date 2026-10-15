@@ -1,9 +1,10 @@
 "use client";
 
-/* L'écran du code (T-154) : le lien du responsable s'ouvre sur un appareil
-   que l'espace ne connaît pas encore. Un clic envoie un code à SON adresse
-   (montrée masquée : qui a le lien sans la boîte mail ne la découvre pas),
-   il le tape, l'appareil est reconnu et l'espace s'ouvre. */
+/* Le code pour modifier (T-154) : le lien du responsable s'ouvre en lecture
+   sur un appareil que l'espace ne connaît pas encore. Un clic envoie un code
+   à SON adresse (montrée masquée : qui a le lien sans la boîte mail ne la
+   découvre pas), il le tape, l'appareil est reconnu et l'espace se recharge
+   avec tous ses droits. Affiché dans une fenêtre (`AppareilContexte`). */
 
 import { useState } from "react";
 
@@ -11,7 +12,7 @@ type Etat = "repos" | "envoye" | "envoi" | "verification";
 
 function phrases(v: (vous: string, toi: string) => string): Record<string, string> {
   return {
-    coupe: v("L'envoi des codes est coupé pour l'instant. Écrivez à l'atelier pour ouvrir votre espace.", "L'envoi des codes est coupé pour l'instant. Écris à l'atelier pour ouvrir ton espace."),
+    coupe: v("L'envoi des codes est coupé pour l'instant. Écrivez à l'atelier pour modifier votre espace.", "L'envoi des codes est coupé pour l'instant. Écris à l'atelier pour modifier ton espace."),
     trop: v("Plusieurs codes viennent d'être envoyés. Attendez une heure avant d'en demander un autre.", "Plusieurs codes viennent d'être envoyés. Attends une heure avant d'en demander un autre."),
     echec: v("Le code n'a pas pu partir. Réessayez dans un instant.", "Le code n'a pas pu partir. Réessaie dans un instant."),
     migration_absente: v("L'espace n'est pas encore prêt à envoyer des codes. Réessayez plus tard.", "L'espace n'est pas encore prêt à envoyer des codes. Réessaie plus tard."),
@@ -76,8 +77,8 @@ export default function CodeAppareil({ token, adresse, tu }: { token: string; ad
     <div className="ec-code">
       <p>
         {v(
-          "Pour protéger votre espace, il s'ouvre seulement sur les appareils du responsable. La première fois sur celui-ci, nous envoyons un code à ",
-          "Pour protéger ton espace, il s'ouvre seulement sur les appareils du responsable. La première fois sur celui-ci, nous envoyons un code à "
+          "Sur cet appareil, votre espace s'ouvre en lecture. Pour modifier (choisir le style, valider, déposer des photos…), nous envoyons un code à ",
+          "Sur cet appareil, ton espace s'ouvre en lecture. Pour modifier (choisir le style, valider, déposer des photos…), nous envoyons un code à "
         )}
         <strong>{adresse}</strong>.
       </p>
@@ -102,7 +103,7 @@ export default function CodeAppareil({ token, adresse, tu }: { token: string; ad
             autoFocus
           />
           <button type="submit" className="ec-bouton" disabled={etat === "verification" || saisie.replace(/\D/g, "").length !== 6}>
-            {etat === "verification" ? "Vérification…" : v("Ouvrir mon espace", "Ouvrir mon espace")}
+            {etat === "verification" ? "Vérification…" : "Valider le code"}
           </button>
           <button type="button" className="ec-code-renvoyer" onClick={demander}>
             {v("Renvoyer un code", "Renvoyer un code")}
@@ -115,10 +116,7 @@ export default function CodeAppareil({ token, adresse, tu }: { token: string; ad
         </p>
       ) : null}
       <p className="ec-code-note">
-        {v(
-          "Vous n'êtes pas le responsable ? Demandez-lui le lien de l'équipe\u00a0: il ouvre l'espace en lecture seule, sans code.",
-          "Tu n'es pas le responsable ? Demande-lui le lien de l'équipe\u00a0: il ouvre l'espace en lecture seule, sans code."
-        )}
+        {v("Cet appareil sera ensuite reconnu pendant un an.", "Cet appareil sera ensuite reconnu pendant un an.")}
       </p>
     </div>
   );

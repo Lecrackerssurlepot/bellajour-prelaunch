@@ -439,6 +439,100 @@
   white-space: nowrap;
   cursor: pointer;
 }
+/* T-154 : la fenêtre « Modifier depuis cet appareil » (le code par mail). */
+.ec-espace .ec-code {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ec-espace .ec-code p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ec-text);
+}
+.ec-espace .ec-code > .ec-bouton {
+  align-self: flex-start;
+}
+.ec-espace .ec-code-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-code-label {
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-code-champ {
+  width: 100%;
+  box-sizing: border-box;
+  height: 56px;
+  padding: 0 16px;
+  border: 1px solid var(--ec-line-fort);
+  border-radius: var(--ec-r-champ);
+  background: var(--ec-surface);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 26px;
+  letter-spacing: 0.3em;
+  text-align: center;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.ec-espace .ec-code-champ:focus {
+  outline: 2px solid var(--ec-accent);
+  outline-offset: 2px;
+}
+.ec-espace .ec-code-renvoyer {
+  align-self: flex-start;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ec-espace .ec-code-message {
+  font-size: 14px;
+  color: var(--ec-accent-texte);
+}
+.ec-espace .ec-code p.ec-code-note {
+  font-size: 13px;
+  color: var(--ec-faint);
+}
+/* T-154 : le responsable sur un appareil pas encore reconnu lit l'espace ; la
+   pastille propose le code pour modifier, en tête de chaque écran. */
+.ec-espace .ec-pastille-appareil {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-douce);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ec-espace .ec-pastille-appareil:hover {
+  border-color: rgba(var(--ec-ac-rgb), 0.55);
+}
+.ec-espace .ec-pastille-appareil > svg {
+  flex: none;
+  color: var(--ec-accent);
+}
+@media (max-width: 860px) {
+  .ec-espace .ec-pastille-appareil-long {
+    display: none;
+  }
+}
 .ec-espace .ec-pastille-envoi-barre {
   display: block;
   width: 64px;

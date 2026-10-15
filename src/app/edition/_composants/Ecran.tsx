@@ -5,6 +5,7 @@
    Composant serveur ; la pastille « Envoi en cours » (client) s'y pose à
    gauche des actions, sur tous les écrans (maquette EnvoiPhotos). */
 
+import { PastilleAppareil } from './AppareilContexte'
 import { PastilleEnvoi } from './depot/DepotContexte'
 
 export function EnTeteEcran({ titre, sous, children }: { titre: React.ReactNode; sous?: React.ReactNode; children?: React.ReactNode }) {
@@ -16,6 +17,7 @@ export function EnTeteEcran({ titre, sous, children }: { titre: React.ReactNode;
       </div>
       <div className="ec-ecran-actions">
         <PastilleEnvoi />
+        <PastilleAppareil />
         {children}
       </div>
     </header>

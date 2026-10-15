@@ -16,7 +16,6 @@ import { initiales, libelleRole } from '@/lib/collectif/espace'
 import { MIGRATION_COLLECTIF } from '@/lib/collectif/migration'
 import { verrousPour } from '@/lib/collectif/verrous'
 import { adresseMasquee } from '@/lib/collectif/appareil'
-import CodeAppareil from '../_composants/CodeAppareil'
 import Porte from '../_composants/Porte'
 import { chargerEspace, compterNonLus } from './donnees'
 import Coquille from './Coquille'
@@ -42,20 +41,14 @@ export default async function EspaceLayout({
     )
   }
 
-  /* Le lien du responsable sur un appareil inconnu (T-154) : l'écran du code, rien d'autre. */
-  if (acces.statut === 'appareil_inconnu') {
-    const tu = acces.edition.registre === 'ecole_tu'
-    return (
-      <Porte surtitre={acces.edition.evenement} titre={tu ? 'Ouvrir ton espace sur cet appareil' : 'Ouvrir votre espace sur cet appareil'}>
-        <CodeAppareil token={token} adresse={adresseMasquee(acces.edition.responsable_email)} tu={tu} />
-      </Porte>
-    )
-  }
-
   const { edition, role } = acces
+  /* Le responsable sur un appareil pas encore reconnu (T-154) : il LIT (droits de
+     l'équipe) mais reste lui-même à l'écran, et le menu lui propose le code. */
+  const appareilInconnu = Boolean(acces.appareilInconnu)
+  const responsableIci = role === 'responsable' || appareilInconnu
   const etat = etatEffectif(edition.etat, edition.cloture_le, new Date())
-  const nom = role === 'responsable' ? edition.responsable_nom ?? 'Responsable' : 'Équipe'
-  const nonLus = role === 'responsable' ? await compterNonLus(edition.id) : 0
+  const nom = responsableIci ? edition.responsable_nom ?? 'Responsable' : 'Équipe'
+  const nonLus = responsableIci ? await compterNonLus(edition.id) : 0
 
   return (
     <Coquille
@@ -63,9 +56,10 @@ export default async function EspaceLayout({
       organisation={edition.organisation}
       evenement={edition.evenement}
       nom={nom}
-      initiales={role === 'responsable' ? initiales(edition.responsable_nom) : 'É'}
-      libelleRole={libelleRole(role === 'responsable' ? 'responsable' : 'equipe')}
+      initiales={responsableIci ? initiales(edition.responsable_nom) : 'É'}
+      libelleRole={appareilInconnu ? 'Responsable · en lecture ici' : libelleRole(role === 'responsable' ? 'responsable' : 'equipe')}
       lectureSeule={role === 'equipe'}
+      appareil={appareilInconnu ? { adresse: adresseMasquee(edition.responsable_email) } : null}
       verrous={verrousPour(etat)}
       nonLus={nonLus}
       peutDeposer={peut(role, 'deposer_photos')}

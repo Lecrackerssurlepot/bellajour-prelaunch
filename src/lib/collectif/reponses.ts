@@ -18,12 +18,6 @@ export function refusAcces(acces: Acces): NextResponse | null {
   if (acces.statut === "migration_absente") {
     return NextResponse.json({ error: ERREUR_MIGRATION_ABSENTE }, { status: 503 });
   }
-  if (acces.statut === "appareil_inconnu") {
-    return NextResponse.json(
-      { error: "appareil_inconnu", message: "Cet appareil n'est pas encore reconnu : rechargez la page pour recevoir un code." },
-      { status: 401 }
-    );
-  }
   return null;
 }
 

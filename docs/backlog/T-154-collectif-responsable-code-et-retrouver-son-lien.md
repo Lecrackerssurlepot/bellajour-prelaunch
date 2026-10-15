@@ -48,6 +48,14 @@ Dépend de T-146 (les mails). Migration probable (codes, appareils reconnus) : a
 - ⚠️ Le code d'essai (`COLLECTIF_CODE_ESSAI`) ne vaut que pour une demande venue de localhost :
   le `.env.local` tiré de Vercel contient `VERCEL`, la première garde l'ignorait en local.
 
+## Revu avec Mathias le 15/10 au soir
+« Si elle veut aller sur un autre appareil, c'est un peu chiant […] On veut juste que l'accès soit
+un peu compliqué pour pas que les gens se permettent de tout le temps modifier. » Plus d'écran
+bloquant : sur un appareil pas encore reconnu, le lien du responsable s'ouvre EN LECTURE ; une
+pastille propose « Recevoir un code pour modifier ». Recette refaite (7 cas) : appareil neuf →
+l'espace s'ouvre en lecture, une écriture répond 403 ; code saisi → la pastille disparaît,
+l'écriture passe ; autre appareil → lecture ; lien d'équipe, atelier → rien ne change.
+
 ## Reste
 - « Retrouver mon espace » et le lien dans `/compte`.
 - Valider les réglages : 15 minutes, 5 essais, 5 codes par heure.

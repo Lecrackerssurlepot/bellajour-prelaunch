@@ -24,6 +24,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LOGO_MODE } from "@/lib/collectif/affichage";
 import { cheminSection, MENU, sectionDuChemin, type CleSection, type Verrous } from "@/lib/collectif/verrous";
+import { AppareilFournisseur } from "../_composants/AppareilContexte";
 import { DepotFournisseur, HoteFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import { useModeEspace } from "../_composants/RacineEspace";
 
@@ -44,6 +45,8 @@ type Props = {
   peutDeposer: boolean;
   /** Le registre « tu » (école) : la fenêtre d'envoi tutoie. */
   tu: boolean;
+  /** T-154 : le responsable sur un appareil pas encore reconnu (il lit ; un code par mail pour modifier). */
+  appareil: { adresse: string } | null;
   children: React.ReactNode;
 };
 
@@ -207,7 +210,9 @@ export default function Coquille(props: Props) {
         {/* La lecture seule (lien d'équipe) se dit dans le menu, sous le nom :
             plus de bandeau qui s'empile au-dessus de chaque écran. */}
         <div className="ec-contenu" data-lecture={props.lectureSeule ? "oui" : undefined}>
-          {props.children}
+          <AppareilFournisseur token={props.token} appareil={props.appareil} tu={props.tu}>
+            {props.children}
+          </AppareilFournisseur>
           <HoteFenetreEnvoi />
         </div>
       </DepotFournisseur>

@@ -35,8 +35,6 @@ export const dynamic = 'force-dynamic'
 export default async function TableauDeBord({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   const acces = await chargerEspace(token)
-  /* Appareil inconnu (T-154) : la coquille montre l'écran du code, la page ne rend rien. */
-  if (acces.statut === 'appareil_inconnu') return null
   if (acces.statut !== 'ok') notFound()
   const { edition, role } = acces
 
@@ -48,7 +46,8 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
   const h = await headers()
   const origine = origineDepuis(h.get('x-forwarded-host') ?? h.get('host'), h.get('x-forwarded-proto'))
   const tableau = await chargerTableau(edition, origine)
-  const prenom = role === 'responsable' ? (edition.responsable_nom ?? '').trim().split(/\s+/)[0] : ''
+  /* Le responsable sur un appareil pas encore reconnu (T-154) reste salué : il lit, il est lui-même. */
+  const prenom = role === 'responsable' || acces.appareilInconnu ? (edition.responsable_nom ?? '').trim().split(/\s+/)[0] : ''
   const delai = edition.cloture_le ? phraseJours(joursAvant(edition.cloture_le, maintenant)) : ''
   const cloture = edition.cloture_le ? formaterJour(edition.cloture_le) : ''
 

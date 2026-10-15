@@ -1923,8 +1923,9 @@ titre("— T-154 : le lien du responsable ne s'ouvre que sur un appareil reconnu
   ok("identifiant d'appareil : 32 a 64 caracteres base64url ; adresse masquee",
     A.idAppareilValide("A".repeat(43)) && !A.idAppareilValide("court") && !A.idAppareilValide("A".repeat(43) + "!") && A.adresseMasquee("camille@exemple.fr") === "c***@exemple.fr");
   const acces = lire("src/lib/collectif/acces.ts");
-  ok("la porte : responsable SEULEMENT, l'atelier connecte passe, sans la migration on laisse passer, une seule route sans le controle",
-    /role === "responsable" && !options\.sansAppareil && controleAppareilActif\(process\.env\)/.test(acces) && /if \(await quiEstConnecte\(\)\) return true;/.test(acces) && /return reconnu \?\? true;/.test(acces)
+  ok("la porte : sur un appareil inconnu, le responsable LIT (droits de l'equipe) au lieu d'etre bloque ; l'atelier connecte passe ; sans la migration on laisse passer ; une seule route sans le controle",
+    /role === "responsable" && !options\.sansAppareil && controleAppareilActif\(process\.env\)/.test(acces) && /return \{ statut: "ok", edition: data, role: "equipe", appareilInconnu: true \};/.test(acces)
+      && /if \(await quiEstConnecte\(\)\) return true;/.test(acces) && /return reconnu \?\? true;/.test(acces) && !/appareil_inconnu/.test(acces)
       && fichiers("src/app/api", "route.ts").filter((f) => /sansAppareil: true/.test(lire(f))).length === 1);
   const appareils = lire("src/lib/collectif/appareils.ts");
   ok("les codes : empreinte seulement, essais comptes, expiration, frein par heure ; le code d'essai est IGNORE sur Vercel",
@@ -1941,9 +1942,10 @@ titre("— T-154 : le lien du responsable ne s'ouvre que sur un appareil reconnu
   ok("la route du code : token dans le CORPS, cookie httpOnly + secure + sameSite lax, le lien d'equipe recoit « introuvable »",
     /lireCorps\(request\)/.test(routeApp) && !/searchParams/.test(routeApp) && /httpOnly: true,\s*secure: true,\s*sameSite: "lax"/.test(routeApp) && /peut\(acces\.role, "ouvrir_sur_appareil"\)/.test(routeApp));
   const layoutEspace = lire("src/app/edition/[token]/layout.tsx");
-  ok("l'espace : la coquille montre l'ecran du code (adresse masquee), chaque page ne rend rien derriere",
-    /acces\.statut === 'appareil_inconnu'/.test(layoutEspace) && /<CodeAppareil token=\{token\} adresse=\{adresseMasquee\(/.test(layoutEspace)
-      && fichiers("src/app/edition/[token]", "page.tsx").every((f) => !/acces\.statut !== 'ok'\) notFound\(\)/.test(lire(f)) || /if \(acces\.statut === 'appareil_inconnu'\) return null/.test(lire(f))));
+  ok("l'espace : le responsable reste lui-meme a l'ecran, une pastille propose le code pour modifier, plus aucun ecran bloquant",
+    /appareil=\{appareilInconnu \? \{ adresse: adresseMasquee\(edition\.responsable_email\) \} : null\}/.test(layoutEspace) && !/CodeAppareil/.test(layoutEspace)
+      && /<PastilleAppareil \/>/.test(lire("src/app/edition/_composants/Ecran.tsx")) && /<AppareilFournisseur /.test(lire("src/app/edition/[token]/Coquille.tsx"))
+      && fichiers("src/app/edition/[token]", "page.tsx").every((f) => !/appareil_inconnu/.test(lire(f))));
   const mailCode = MailsTextes.mailCodeAppareil({ tu: false, evenement: "Séminaire", code: "123456", minutes: 15, site: "https://bellajour.fr" });
   ok("le mail du code : les six chiffres, la duree, d'ou vient la demande, aucun tiret cadratin",
     mailCode.sujet.includes("123 456") && mailCode.texte.includes("123 456") && /15 minutes/.test(mailCode.texte) && /bellajour\.fr/.test(mailCode.texte) && !/[—–]/.test(mailCode.html + mailCode.texte));
