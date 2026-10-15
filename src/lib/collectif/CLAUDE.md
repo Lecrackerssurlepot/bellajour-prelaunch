@@ -251,6 +251,18 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   verre posé sur le fond (ou une ligne claire arrondie dans un panneau), jamais une zone séparée
   par un `border-bottom`. Un panneau de verre qui contient une zone `position: sticky` repasse en
   `overflow: visible` sur téléphone (sinon le collant ne colle plus).
+  **Les maquettes font foi jusque dans le détail** (retour du 15/10 au soir) :
+  - les lueurs sont à leur place : la nuit, cuivre en haut à DROITE ; le jour, bleu en haut à
+    gauche ;
+  - le tableau de bord est une grille 1 / 1,08, avec « À envoyer » sous le style et le message
+    sous les photos ;
+  - l'encart Style dit « Fait », montre l'éventail, une tuile par magazine et « Modifier » ;
+  - une ligne de dossier porte sa vignette ;
+  - un album porte son nombre de photos sur la couverture ;
+  - « Vos dossiers » et « Les participants » montrent dessous les huit dernières arrivées
+    (`ARRIVEES`, jamais une page de grille).
+  ⚠️ **Les unités de conteneur (`cqh`) valent 0** dans une carte sans hauteur fixe (mesuré à
+  1000 et 390 px) : sous 1100 px, l'éventail passe en tailles fixes.
 - **Le plafond appartient au LIEN** (`plafond_par_personne`, compté par appareil SUR ce lien :
   `compterPourPlafond(…, provenanceId)`). « Sans limite » = `sans_plafond`. Un lien d'avant la
   révision garde l'ancienne règle (`plafondParticipant`). Le curseur va de 5 à

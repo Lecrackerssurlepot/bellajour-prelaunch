@@ -1,14 +1,29 @@
-/* Le tableau de bord (révision §14.2) — tout sous `.ec-espace`.
-   Deux grands encarts qui prennent toute la hauteur restante, puis deux
-   lignes basses : la page ne défile jamais, seule la liste des dossiers de
-   photos défile dans son encart. */
+/* Le tableau de bord (révision §14.2, maquettes du 15/10) — tout sous `.ec-espace`.
+   Une grille de deux colonnes (1 et 1,08) : les deux grands encarts prennent
+   la hauteur restante, et sous chacun sa ligne basse (« À envoyer » sous le
+   style, le dernier message sous les photos). La page ne défile jamais ;
+   seule la liste des dossiers de photos défile dans son encart. */
 
 .ec-espace .ec-tdb-grille {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 16px;
+}
+/* L'en-tête du tableau de bord : « Bonjour » SOUS l'événement. */
+.ec-espace .ec-tdb .ec-ecran-titres {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.ec-espace .ec-tdb .ec-ecran-titre {
+  font-size: 40px;
+  line-height: 1;
+}
+.ec-espace .ec-tdb .ec-ecran-sous {
+  font-size: 14px;
 }
 .ec-espace .ec-tdb-carte {
   min-height: 0;
@@ -44,20 +59,55 @@
   color: var(--ec-titre);
 }
 
-/* ── le style : l'éventail de trois couvertures ── */
+/* ── le style : « Fait » ou l'état, en haut à droite ── */
+.ec-espace .ec-tdb-fait,
+.ec-espace .ec-tdb-etat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ec-espace .ec-tdb-fait {
+  background: var(--ec-ok-soft);
+  color: var(--ec-ok);
+}
+.ec-espace .ec-tdb-etat {
+  background: var(--ec-creux);
+  color: var(--ec-muted);
+}
+.ec-espace .ec-tdb-style .ec-tdb-carte-tete {
+  align-items: center;
+}
+.ec-espace .ec-tdb-style .ec-tdb-titre {
+  margin-top: 0;
+  font-size: clamp(28px, 2.4vw, 34px);
+}
+
+/* ── le style : l'éventail. Les couvertures se règlent sur la PLACE qu'il
+   reste (unités de conteneur) : à 1280 × 800 comme à 1440 × 900, rien ne
+   déborde ni ne pousse la tuile du bas. ── */
 .ec-espace .ec-tdb-eventail {
   position: relative;
   flex: 1;
   min-height: 0;
+  margin: 4px 0;
+  container-type: size;
 }
 .ec-espace .ec-tdb-couv {
   position: absolute;
-  height: 80%;
+  left: 50%;
+  top: 50%;
+  height: min(50cqh, 47cqw);
   aspect-ratio: 210 / 297;
   border-radius: 16px;
   overflow: hidden;
   background: rgba(var(--ec-fg-rgb), 0.06);
-  box-shadow: 0 24px 56px rgba(var(--ec-noir-rgb), 0.28);
+  box-shadow: var(--ec-ombre-couv);
 }
 .ec-espace .ec-tdb-couv img {
   display: block;
@@ -65,97 +115,94 @@
   height: 100%;
   object-fit: cover;
 }
-.ec-espace .ec-tdb-couv--0 {
-  left: 6%;
-  top: 12%;
-  transform: rotate(-7deg);
+.ec-espace .ec-tdb-couv--gauche {
+  transform: translate(-128%, -46%) rotate(-9deg);
 }
-.ec-espace .ec-tdb-couv--1 {
-  left: 50%;
-  top: 2%;
-  height: 86%;
-  transform: translateX(-50%);
+.ec-espace .ec-tdb-couv--droite {
+  transform: translate(28%, -46%) rotate(9deg);
+}
+.ec-espace .ec-tdb-couv--centre {
   z-index: 2;
+  height: min(57cqh, 53cqw);
+  border-radius: 18px;
+  transform: translate(-50%, -52%);
+  box-shadow: var(--ec-ombre-couv-forte);
 }
-.ec-espace .ec-tdb-couv--2 {
-  right: 6%;
-  top: 14%;
-  transform: rotate(6deg);
+.ec-espace .ec-tdb-couv--duo-g {
+  height: min(56cqh, 50cqw);
+  transform: translate(-100%, -48%) rotate(-7deg);
 }
-
-/* ── le style : une couverture par magazine ── */
-.ec-espace .ec-tdb-magazines {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-  align-items: center;
+.ec-espace .ec-tdb-couv--duo-d {
+  z-index: 2;
+  height: min(56cqh, 50cqw);
+  transform: translate(0%, -48%) rotate(7deg);
+  box-shadow: var(--ec-ombre-couv-forte);
 }
-.ec-espace .ec-tdb-magazines--1 {
-  grid-template-columns: minmax(0, 1fr);
-  justify-items: center;
-}
-.ec-espace .ec-tdb-magazines--3,
-.ec-espace .ec-tdb-magazines--4 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-.ec-espace .ec-tdb-magazine {
-  min-height: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  text-align: center;
-  text-decoration: none;
-  color: var(--ec-text);
-}
-.ec-espace .ec-tdb-couv-mag {
-  flex: 0 1 auto;
-  min-height: 0;
-  height: 68%;
-  aspect-ratio: 210 / 297;
+.ec-espace .ec-tdb-eventail-vide {
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+}
+
+/* ── le style : une tuile par magazine, puis « Modifier » ── */
+.ec-espace .ec-tdb-style-pied {
+  flex: none;
+  display: flex;
+  gap: 10px;
+}
+.ec-espace .ec-tdb-tuile {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--ec-surface);
+  color: var(--ec-text);
+  text-decoration: none;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ec-espace .ec-tdb-tuile:hover {
+  background: var(--ec-actif);
+  box-shadow: var(--ec-actif-ombre);
+}
+.ec-espace .ec-tdb-tuile strong {
+  font-weight: 600;
   overflow: hidden;
-  background: rgba(var(--ec-fg-rgb), 0.06);
-  box-shadow: 0 18px 40px rgba(var(--ec-noir-rgb), 0.25);
-  transform: rotate(2deg);
-  margin-bottom: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.ec-espace .ec-tdb-couv-mag--gauche {
-  transform: rotate(-2deg);
+.ec-espace .ec-tdb-tuile .ec-note {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.ec-espace .ec-tdb-couv-mag img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.ec-espace .ec-tdb-tuile--a-faire {
+  box-shadow: inset 0 0 0 1.5px rgba(var(--ec-ac-rgb), 0.5);
 }
-.ec-espace .ec-tdb-couv-mag--vide {
-  transform: none;
-  box-shadow: none;
-  border: 1.5px dashed var(--ec-accent);
-  background: var(--ec-accent-soft);
-  color: var(--ec-accent);
-  font-size: 34px;
+.ec-espace .ec-tdb-tuile-action {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ec-accent-texte);
 }
-.ec-espace .ec-tdb-style-nom {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 20px;
-  line-height: 1.1;
+.ec-espace .ec-tdb-modifier {
+  flex: none;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 18px;
+  border-radius: 18px;
+  background: var(--ec-text);
+  color: var(--ec-bg);
+  font-weight: 600;
+  text-decoration: none;
 }
-.ec-espace .ec-tdb-lien {
-  font-size: 13px;
-  color: var(--ec-accent);
-}
-.ec-espace a.ec-tdb-magazine:hover .ec-tdb-lien {
-  text-decoration: underline;
+.ec-espace .ec-tdb-modifier:hover {
+  color: var(--ec-bg);
+  opacity: 0.9;
 }
 
 /* ── les photos ── */
@@ -195,7 +242,7 @@
   flex: 0 1 auto;
   min-height: 0;
   list-style: none;
-  margin: 0 0 auto;
+  margin: 0;
   padding: 6px;
   border-radius: 22px;
   background: var(--ec-creux);
@@ -237,29 +284,22 @@
   border-radius: inherit;
   background: var(--ec-accent);
 }
-.ec-espace .ec-tdb-chevron {
-  flex: none;
-  color: var(--ec-faint);
-  transition: transform 0.15s ease, color 0.15s ease;
-}
-.ec-espace .ec-tdb-dossier-lien:hover .ec-tdb-chevron {
-  color: var(--ec-text);
-  transform: translateX(2px);
-}
 @media (max-width: 520px) {
   .ec-espace .ec-tdb-dossier-barre {
     display: none;
   }
 }
-.ec-espace .ec-tdb-point {
+/* Chaque ligne porte la vignette de sa dernière photo (maquettes du 15/10). */
+.ec-espace .ec-tdb-dossier-couv {
   flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--ec-faint);
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--ec-creux);
 }
-.ec-espace .ec-tdb-point--lien {
-  background: var(--ec-accent);
+.ec-espace .ec-tdb-dossier-couv--lien {
+  background: var(--ec-accent-soft);
 }
 .ec-espace .ec-tdb-dossier {
   flex: 1;
@@ -268,14 +308,19 @@
   flex-direction: column;
 }
 .ec-espace .ec-tdb-n {
+  min-width: 44px;
+  text-align: right;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--ec-text);
 }
+/* Les dernières arrivées, juste sous la liste (la place libre reste dessous). */
 .ec-espace .ec-tdb-mosaique {
-  flex: none;
+  flex: 1 0 auto;
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  align-content: start;
 }
 .ec-espace .ec-tdb-mosaique img {
   display: block;
@@ -338,10 +383,11 @@
 /* ── la ligne des contenus ── */
 .ec-espace .ec-tdb-ligne {
   flex: none;
+  min-width: 0;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px 16px;
+  gap: 10px 12px;
   padding: 14px 20px;
   border: 1px solid var(--ec-carte-bord);
   border-radius: var(--ec-r-carte);
@@ -351,6 +397,8 @@
   backdrop-filter: var(--ec-flou);
 }
 .ec-espace .ec-tdb-puces {
+  flex: 1 1 260px;
+  min-width: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -393,13 +441,20 @@
   background: var(--ec-accent);
   color: var(--ec-on-accent);
 }
-.ec-espace .ec-tdb-ligne-aide {
-  margin-left: auto;
-}
 
 /* ── le dernier message ── */
+/* Le message vit sous les photos ; sans ligne « À envoyer » (aucun contenu
+   demandé), il prend toute la largeur. */
+.ec-espace .ec-tdb-grille > .ec-tdb-message {
+  grid-column: 2;
+}
+.ec-espace .ec-tdb-grille > .ec-tdb-carte + .ec-tdb-carte + .ec-tdb-message {
+  grid-column: 1 / -1;
+}
 .ec-espace .ec-tdb-message {
   flex: none;
+  min-width: 0;
+  align-self: stretch;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -543,10 +598,40 @@
 @media (max-width: 1100px) {
   .ec-espace .ec-tdb-grille {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
     overflow-y: auto;
+  }
+  .ec-espace .ec-tdb-grille > .ec-tdb-message {
+    grid-column: auto;
   }
   .ec-espace .ec-tdb-carte {
     min-height: 420px;
+  }
+  /* Une carte sans hauteur fixe : les unités de conteneur y valent 0 (mesuré
+     le 15/10 à 1000 et 390 px). L'éventail prend des tailles fixes. */
+  .ec-espace .ec-tdb-eventail {
+    min-height: 280px;
+    container-type: normal;
+  }
+  .ec-espace .ec-tdb-couv {
+    height: 170px;
+  }
+  .ec-espace .ec-tdb-couv--centre {
+    height: 196px;
+  }
+  .ec-espace .ec-tdb-couv--duo-g,
+  .ec-espace .ec-tdb-couv--duo-d {
+    height: 190px;
+  }
+}
+@media (max-width: 520px) {
+  .ec-espace .ec-tdb-couv {
+    height: 140px;
+  }
+  .ec-espace .ec-tdb-couv--centre,
+  .ec-espace .ec-tdb-couv--duo-g,
+  .ec-espace .ec-tdb-couv--duo-d {
+    height: 160px;
   }
 }
 
@@ -564,14 +649,19 @@
   .ec-espace .ec-tdb-eventail {
     min-height: 260px;
   }
-  .ec-espace .ec-tdb-magazines {
-    min-height: 260px;
+  .ec-espace .ec-tdb-style-pied {
+    flex-wrap: wrap;
+  }
+  .ec-espace .ec-tdb-tuile {
+    flex-basis: 40%;
+  }
+  .ec-espace .ec-tdb-modifier {
+    flex: 1 0 100%;
+    justify-content: center;
+    min-height: 44px;
   }
   .ec-espace .ec-tdb-gestes {
     flex-direction: column;
-  }
-  .ec-espace .ec-tdb-ligne-aide {
-    margin-left: 0;
   }
   .ec-espace .ec-partage--quatre {
     grid-template-columns: repeat(2, minmax(0, 1fr));

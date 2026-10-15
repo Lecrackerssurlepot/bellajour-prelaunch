@@ -15,7 +15,7 @@ import { compositionDu, styleVisible, stylesDeLaComposition, type BriefLigne } f
 import { colonneAbsente } from "@/lib/collectif/migration";
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
 import { apercuPossible, contenuClient, envoisCourants, type LigneEnvoi } from "@/lib/collectif/contenus";
-import { arbreDesPhotos, plafondDuLien } from "@/lib/collectif/dossiers";
+import { arbreDesPhotos, dansLeDossier, plafondDuLien } from "@/lib/collectif/dossiers";
 import { formaterInstantParis, formaterJourParis } from "@/lib/collectif/dates";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { compteAgenda } from "@/lib/collectif/agenda";
@@ -60,7 +60,15 @@ export type MagazineTableau = {
 };
 
 /** Un « dossier » de photos de l'encart Photos : un lien de contribution, les photos du responsable… */
-export type DossierPhotos = { cle: string; libelle: string; detail: string; n: number; lien: boolean };
+export type DossierPhotos = {
+  cle: string;
+  libelle: string;
+  detail: string;
+  n: number;
+  lien: boolean;
+  /** La vignette de sa dernière photo arrivée, signée une heure (maquettes du 15/10 : une vignette par ligne). */
+  couverture: string | null;
+};
 
 /** Un lien de contribution (une provenance), tel que le responsable le partage. */
 export type LienContribution = {
@@ -274,17 +282,27 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
       detail: `déposées par vous${h.enfants.length ? ` · ${h.enfants.length} sous-dossier${h.enfants.length > 1 ? "s" : ""}` : ""}`,
       n: h.n,
       lien: false,
+      couverture: null,
     })),
     ...arbre.liens.map((l) => {
       const prov = l.cle.startsWith("lien:") ? parId.get(l.cle.slice(5)) : undefined;
       const regle = prov ? plafondDuLien(prov, edition) : plafondDuLien({ sans_plafond: false, plafond_par_personne: null }, edition);
-      return { cle: l.cle, libelle: l.nom, detail: `${prov ? "lien" : "lien général"} · ${regle.toLowerCase()}${personnes(l)}`, n: l.n, lien: true };
+      return { cle: l.cle, libelle: l.nom, detail: `${prov ? "lien" : "lien général"} · ${regle.toLowerCase()}${personnes(l)}`, n: l.n, lien: true, couverture: null };
     }),
-    ...(arbre.atelier ? [{ cle: "atelier", libelle: arbre.atelier.nom, detail: "déposées par l'atelier", n: arbre.atelier.n, lien: false }] : []),
+    ...(arbre.atelier ? [{ cle: "atelier", libelle: arbre.atelier.nom, detail: "déposées par l'atelier", n: arbre.atelier.n, lien: false, couverture: null }] : []),
   ].sort((a, b) => b.n - a.n);
+  /* Les lignes arrivent de la plus récente à la plus ancienne : la première
+     qui a une vignette dans le dossier est sa couverture (même règle que la
+     page Photos, `dansLeDossier`). */
+  await Promise.all(
+    dossiers.map(async (d) => {
+      const l = lignes.find((x) => x.vignette_key && dansLeDossier(x, d.cle, edition.responsable_nom));
+      d.couverture = l ? await signerOuRien(l.vignette_key) : null;
+    })
+  );
 
   const mosaique = (
-    await Promise.all(lignes.filter((l) => l.vignette_key).slice(0, 8).map((l) => signerOuRien(l.vignette_key)))
+    await Promise.all(lignes.filter((l) => l.vignette_key).slice(0, 6).map((l) => signerOuRien(l.vignette_key)))
   ).filter((u): u is string => Boolean(u));
 
   const dernier = ((message.data ?? []) as { texte: string; created_at: string }[])[0] ?? null;

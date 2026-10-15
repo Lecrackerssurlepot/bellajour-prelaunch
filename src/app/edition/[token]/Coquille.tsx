@@ -190,15 +190,14 @@ export default function Coquille(props: Props) {
             <span className="ec-moi-nom">{props.nom}</span>
             <span className="ec-moi-role">{props.libelleRole}</span>
           </span>
-          <button
-            type="button"
-            className="ec-mode"
-            onClick={basculer}
-            aria-label={mode === "jour" ? "Passer en mode nuit" : "Passer en mode jour"}
-            title={mode === "jour" ? "Passer en mode nuit" : "Passer en mode jour"}
-          >
-            <Icone cle={mode === "jour" ? "lune" : "soleil"} />
-          </button>
+          <span className="ec-mode-choix" role="group" aria-label="Affichage">
+            <button type="button" className="ec-mode" aria-pressed={mode === "jour"} onClick={() => mode !== "jour" && basculer()} aria-label="Mode jour" title="Mode jour">
+              <Icone cle="soleil" />
+            </button>
+            <button type="button" className="ec-mode" aria-pressed={mode === "nuit"} onClick={() => mode !== "nuit" && basculer()} aria-label="Mode nuit" title="Mode nuit">
+              <Icone cle="lune" />
+            </button>
+          </span>
         </div>
       </aside>
 

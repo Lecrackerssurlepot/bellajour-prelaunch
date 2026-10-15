@@ -92,6 +92,14 @@ function Icone({ trace }: { trace: string }) {
 
 const nombre = (n: number) => n.toLocaleString("fr-FR");
 
+/** Les initiales d'une personne, pour sa pastille (« Léa Martin » → LM, « Sans nom » → ?). */
+function initialesDe(nom: string): string {
+  if (nom === "Sans nom") return "?";
+  const mots = nom.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  if (mots.length === 0) return "?";
+  return (mots.length === 1 ? mots[0].slice(0, 2) : mots[0][0] + mots[1][0]).toUpperCase();
+}
+
 export default function Collecte(p: Props) {
   const v = (vous: string, toi: string) => (p.tu ? toi : vous);
   const [onglet, setOnglet] = useState<Onglet>(p.ecrire ? p.ongletInitial : "photos");
@@ -373,6 +381,7 @@ export default function Collecte(p: Props) {
       >
         <button type="button" className="ec-ph-album-couv" onClick={() => ouvrir(n.cle, "toutes")} aria-label={`Ouvrir « ${n.nom} »`} {...propsGlisser(n)}>
           {couv ? <img src={couv} alt="" loading="lazy" decoding="async" /> : <Icone trace={trace} />}
+          {n.n ? <span className="ec-ph-album-n">{nombre(n.n)}</span> : null}
         </button>
         <span className="ec-ph-album-texte">
           {edite?.cle === n.cle ? (
@@ -393,8 +402,9 @@ export default function Collecte(p: Props) {
     );
   }
   const photosDe = (n: number) => `${nombre(n)} photo${n > 1 ? "s" : ""}`;
-  const sousDossier = (n: Noeud) => `${photosDe(n.n)}${n.enfants.length ? ` · ${n.enfants.length} sous-dossier${n.enfants.length > 1 ? "s" : ""}` : ""}`;
-  const sousLien = (n: Noeud) => (n.n ? `${photosDe(n.n)}${n.enfants.length > 1 ? ` · ${n.enfants.length} personnes` : ""}` : "Rien reçu pour l'instant");
+  /* Le nombre est sur la couverture (la pastille) : la ligne dit ce qu'il y a DEDANS. */
+  const sousDossier = (n: Noeud) => (n.enfants.length ? `${n.enfants.length} sous-dossier${n.enfants.length > 1 ? "s" : ""}` : photosDe(n.n));
+  const sousLien = (n: Noeud) => (n.n ? (n.enfants.length > 1 ? `${n.enfants.length} personnes` : photosDe(n.n)) : "Rien reçu pour l'instant");
   function rayonBouton(cle: "tout" | "selection" | "vous" | "liens" | "atelier", nom: string, trace: string, n: number | null, apres = "") {
     return (
       <button type="button" className="ec-ph-rayon" aria-pressed={rayon === cle} onClick={() => ouvrir(cle, "toutes")}>
@@ -471,20 +481,20 @@ export default function Collecte(p: Props) {
             </div>
           ) : null}
 
-          {!vide ? (
-          <nav className="ec-ph-rayons" aria-label="Ranger les photos">
-            {rayonBouton("tout", "Toutes les photos", TRACE.tout, stats?.photos ?? null)}
-            {p.ecrire || (compteurs?.selection ?? 0) > 0
-              ? rayonBouton("selection", "Ma sélection", TRACE.selection, compteurs?.selection ?? 0, p.preselectionMax ? ` sur ${p.preselectionMax}` : "")
-              : null}
-            {arbre && (arbre.vous.length || p.ecrire) ? rayonBouton("vous", nomVous, TRACE.dossier, totalVous) : null}
-            {arbre?.liens.length ? rayonBouton("liens", "Les participants", TRACE.lien, totalLiens) : null}
-            {arbre?.atelier ? rayonBouton("atelier", "L'atelier", TRACE.atelier, arbre.atelier.n) : null}
-          </nav>
-          ) : null}
 
           <div className="ec-ph-corps">
             <div className={vide && dossier === "tout" ? "ec-ph-principal ec-ph-principal--vide" : "ec-ph-principal"}>
+              {!vide ? (
+              <nav className="ec-ph-rayons" aria-label="Ranger les photos">
+                {rayonBouton("tout", "Toutes les photos", TRACE.tout, stats?.photos ?? null)}
+                {p.ecrire || (compteurs?.selection ?? 0) > 0
+                  ? rayonBouton("selection", "Ma sélection", TRACE.selection, compteurs?.selection ?? 0, p.preselectionMax ? ` sur ${p.preselectionMax}` : "")
+                  : null}
+                {arbre && (arbre.vous.length || p.ecrire) ? rayonBouton("vous", nomVous, TRACE.dossier, totalVous) : null}
+                {arbre?.liens.length ? rayonBouton("liens", "Les participants", TRACE.lien, totalLiens) : null}
+                {arbre?.atelier ? rayonBouton("atelier", "L'atelier", TRACE.atelier, arbre.atelier.n) : null}
+              </nav>
+              ) : null}
               <div className="ec-ph-tete">
                 <span className="ec-ph-titres">
                   {fil.length ? (
@@ -603,11 +613,17 @@ export default function Collecte(p: Props) {
                 {sousDossiers.length ? <div className="ec-ph-albums ec-ph-albums--petits">{sousDossiers.map((e) => album(e, photosDe(e.n), TRACE.dossier, true))}</div> : null}
                 {personnes.length && lienDuDossier ? (
                   <div className="ec-ph-personnes" role="group" aria-label="Filtrer par personne">
-                    <button type="button" className="ec-onglet" aria-pressed={dossier === lienDuDossier.cle} onClick={() => ouvrir(lienDuDossier.cle, "toutes")}>
+                    <button type="button" className="ec-ph-personne" aria-pressed={dossier === lienDuDossier.cle} onClick={() => ouvrir(lienDuDossier.cle, "toutes")}>
+                      <span className="ec-ph-initiales" aria-hidden="true">
+                        Tout
+                      </span>
                       Tout le lien · {nombre(lienDuDossier.n)}
                     </button>
                     {personnes.map((x) => (
-                      <button key={x.cle} type="button" className="ec-onglet" aria-pressed={dossier === x.cle} onClick={() => ouvrir(x.cle, "toutes")}>
+                      <button key={x.cle} type="button" className="ec-ph-personne" aria-pressed={dossier === x.cle} onClick={() => ouvrir(x.cle, "toutes")}>
+                        <span className="ec-ph-initiales" aria-hidden="true">
+                          {initialesDe(x.nom)}
+                        </span>
                         {x.nom} · {nombre(x.n)}
                       </button>
                     ))}
@@ -658,7 +674,13 @@ export default function Collecte(p: Props) {
                     </p>
                   </div>
                 ) : null}
-                <div className="ec-grille">
+                {ensemble && photos.length ? (
+                  <div className="ec-ph-arrivees-tete">
+                    <strong className="ec-ph-arrivees-titre">Dernières arrivées</strong>
+                    {p.ecrire ? <span className="ec-note">{v("Touchez une photo pour la choisir", "Touche une photo pour la choisir")}</span> : null}
+                  </div>
+                ) : null}
+                <div className={ensemble ? "ec-grille ec-grille--arrivees" : "ec-grille"}>
                   {photos.map((ph, i) => {
                     const jour = vue === "jour" && (i === 0 || photos[i - 1].jour !== ph.jour) ? ph.jour : null;
                     return (

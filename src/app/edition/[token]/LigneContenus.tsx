@@ -33,7 +33,7 @@ export default function LigneContenus(p: Props) {
   return (
     <section className="ec-tdb-ligne" aria-labelledby="ec-tdb-contenus">
       <span className="ec-tdb-etiquette ec-tdb-etiquette--sourde" id="ec-tdb-contenus">
-        3 · À envoyer à l&apos;atelier
+        3 · À envoyer
       </span>
       <div className="ec-tdb-puces">
         {contenus.map((c) => {
@@ -45,6 +45,7 @@ export default function LigneContenus(p: Props) {
               className={n ? "ec-tdb-puce ec-tdb-puce--recue" : "ec-tdb-puce"}
               disabled={!p.ecrire && !n}
               onClick={() => setOuvert(c)}
+              title={p.ecrire ? (n ? "Revoir, remplacer ou ajouter un fichier" : "Envoyer à l'atelier") : undefined}
               aria-label={`${c.libelle}${n ? `, reçu${n > 1 ? `, ${n} fichiers` : ""}` : ", à envoyer"}`}
             >
               <span className="ec-tdb-coche" aria-hidden="true">
@@ -56,7 +57,6 @@ export default function LigneContenus(p: Props) {
           );
         })}
       </div>
-      {p.ecrire ? <span className="ec-note ec-tdb-ligne-aide">Cliquez pour envoyer, revoir ou remplacer</span> : null}
       {ouvert ? (
         <FenetreContenu
           token={p.token}

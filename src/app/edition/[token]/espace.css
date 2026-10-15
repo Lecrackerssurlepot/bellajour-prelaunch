@@ -60,6 +60,8 @@
   --ec-actif: rgba(255, 255, 255, 0.09);
   --ec-actif-ombre: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   --ec-creux: rgba(0, 0, 0, 0.22);
+  --ec-ombre-couv: 0 24px 50px rgba(0, 0, 0, 0.5);
+  --ec-ombre-couv-forte: 0 30px 64px rgba(0, 0, 0, 0.6);
   --ec-aurore-1: #3a2a22;
   --ec-aurore-2: #23262f;
   --ec-aurore-force: 0.75;
@@ -145,6 +147,8 @@
   --ec-actif: #ffffff;
   --ec-actif-ombre: 0 1px 2px rgba(16, 24, 40, 0.06), 0 4px 14px rgba(16, 24, 40, 0.05);
   --ec-creux: rgba(16, 24, 40, 0.05);
+  --ec-ombre-couv: 0 18px 40px rgba(16, 24, 40, 0.18);
+  --ec-ombre-couv-forte: 0 24px 56px rgba(16, 24, 40, 0.24);
   --ec-aurore-1: #dce8fa;
   --ec-aurore-2: #eae5f6;
   --ec-aurore-force: 1;
@@ -169,6 +173,10 @@
 }
 /* Le fond vivant (15/10) : deux grandes taches de couleur très floues, que le
    verre des panneaux laisse deviner. Rien ne bouge, rien ne se charge. */
+/* Les deux lueurs, aux places des maquettes (15/10, retour de Mathias : « la
+   lumière n'est même pas du même côté ») : la NUIT, le cuivre en haut à DROITE
+   et un gris bleuté en bas ; le JOUR, le bleu en haut à gauche et le lilas en
+   bas à droite. */
 .ec-espace .ec-coquille::before,
 .ec-espace .ec-coquille::after {
   content: "";
@@ -176,22 +184,38 @@
   z-index: -1;
   border-radius: 50%;
   pointer-events: none;
-  opacity: var(--ec-aurore-force);
   filter: blur(120px);
 }
 .ec-espace .ec-coquille::before {
-  left: -160px;
-  top: -220px;
-  width: 720px;
-  height: 600px;
+  right: -200px;
+  top: -260px;
+  width: 760px;
+  height: 620px;
+  filter: blur(130px);
+  opacity: var(--ec-aurore-force);
   background: var(--ec-aurore-1);
 }
 .ec-espace .ec-coquille::after {
+  left: 240px;
+  bottom: -300px;
+  width: 760px;
+  height: 560px;
+  background: var(--ec-aurore-2);
+}
+.bj-atelier.ec-espace[data-ec-mode="jour"] .ec-coquille::before {
+  right: auto;
+  left: -160px;
+  top: -200px;
+  width: 720px;
+  height: 620px;
+  filter: blur(110px);
+}
+.bj-atelier.ec-espace[data-ec-mode="jour"] .ec-coquille::after {
+  left: auto;
   right: -180px;
-  bottom: -240px;
+  bottom: -220px;
   width: 760px;
   height: 600px;
-  background: var(--ec-aurore-2);
 }
 
 .ec-espace .ec-barre-mobile {
@@ -355,22 +379,34 @@
   color: var(--ec-muted);
 }
 /* Le bouton jour / nuit : une petite icône, jamais un gros bouton. */
-.ec-espace .ec-mode {
+/* Jour | nuit : deux boutons dans un creux, le mode en cours éclairé (maquettes du 15/10). */
+.ec-espace .ec-mode-choix {
   flex: none;
+  display: flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--ec-creux);
+}
+.ec-espace .ec-mode {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   padding: 0;
+  border: 0;
   border-radius: 999px;
-  border: 1px solid var(--ec-line);
   background: transparent;
-  color: var(--ec-muted);
+  color: var(--ec-faint);
   cursor: pointer;
 }
 .ec-espace .ec-mode:hover {
   color: var(--ec-text);
-  border-color: var(--ec-line-fort);
+}
+.ec-espace .ec-mode[aria-pressed="true"] {
+  background: var(--ec-actif);
+  box-shadow: var(--ec-actif-ombre);
+  color: var(--ec-text);
+  cursor: default;
 }
 
 .ec-espace .ec-contenu {
@@ -1396,8 +1432,8 @@
   overflow: hidden;
 }
 
-/* Les rayons (15/10) : une pilule segmentée au-dessus du panneau, à la place
-   de la grande colonne de dossiers. */
+/* Les rayons (15/10) : une pilule segmentée EN HAUT DU PANNEAU (maquettes
+   Photos), à la place de la grande colonne de dossiers. */
 .ec-espace .ec-ph-rayons {
   flex: none;
   align-self: flex-start;
@@ -1405,7 +1441,7 @@
   box-sizing: border-box;
   display: flex;
   gap: 4px;
-  margin: 0 8px 14px;
+  margin: 0 0 6px;
   padding: 4px;
   border-radius: 999px;
   background: var(--ec-creux);
@@ -1443,14 +1479,18 @@
 .ec-espace .ec-ph-rayon[aria-pressed="true"] > svg {
   color: var(--ec-accent);
 }
+/* Le nombre d'un rayon : discret ; celui du rayon ouvert dans une pastille de l'accent. */
 .ec-espace .ec-ph-rayon-n {
-  padding: 1px 8px;
+  padding: 1px 7px;
   border-radius: 999px;
-  background: rgba(var(--ec-fg-rgb), 0.07);
-  color: var(--ec-muted);
+  color: var(--ec-faint);
   font-size: 12px;
   font-weight: 400;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.ec-espace .ec-ph-rayon[aria-pressed="true"] .ec-ph-rayon-n {
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
 }
 
 /* Le fil d'Ariane au-dessus du titre ; « Vos dossiers » reçoit un sous-dossier qu'on en sort. */
@@ -1514,6 +1554,7 @@
   text-align: left;
 }
 .ec-espace .ec-ph-album-couv {
+  position: relative;
   display: grid;
   place-items: center;
   width: 100%;
@@ -1543,6 +1584,91 @@
 }
 .ec-espace .ec-ph-album-couv[draggable="true"] {
   cursor: grab;
+}
+/* Le nombre de photos POSÉ sur la couverture, en verre (maquettes Photos, 15/10). */
+.ec-espace .ec-ph-album-n {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ec-glass);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--ec-text);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+  pointer-events: none;
+}
+.ec-espace .ec-ph-album--petit .ec-ph-album-n {
+  left: 8px;
+  bottom: 8px;
+  padding: 3px 8px;
+  font-size: 11px;
+}
+/* Les personnes d'un lien : une pastille avec ses initiales (maquette Photos Charbon). */
+.ec-espace .ec-ph-personne {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px 0 6px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ec-surface);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-personne:hover {
+  background: var(--ec-actif);
+}
+.ec-espace .ec-ph-personne[aria-pressed="true"] {
+  background: var(--ec-text);
+  color: var(--ec-bg);
+  font-weight: 600;
+}
+.ec-espace .ec-ph-initiales {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
+  font-size: 11px;
+  font-weight: 600;
+}
+.ec-espace .ec-ph-personne[aria-pressed="true"] .ec-ph-initiales {
+  background: var(--ec-bg);
+  color: var(--ec-text);
+}
+/* Les dernières arrivées, sous les albums d'une vue d'ensemble. */
+.ec-espace .ec-ph-arrivees-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin-top: 16px;
+  padding: 0 4px;
+}
+.ec-espace .ec-ph-arrivees-titre {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.1;
+  color: var(--ec-titre);
+}
+.ec-espace .ec-grille--arrivees {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
 }
 .ec-espace .ec-ph-album:hover .ec-ph-album-couv {
   border-color: rgba(var(--ec-ac-rgb), 0.6);
@@ -2646,7 +2772,7 @@
     padding: 14px 16px 0;
   }
   .ec-espace .ec-ph-rayons {
-    margin: 0 12px 12px;
+    margin: 0 0 8px;
   }
   .ec-espace .ec-ph-rayon {
     min-height: 40px;

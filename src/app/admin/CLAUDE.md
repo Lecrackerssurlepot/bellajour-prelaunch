@@ -124,7 +124,10 @@ de plus = la barre en tête, sinon on retombe dans « deux sites ».
 `COLLECTIF_OUVERT` (sinon 404). Ses règles sont dans `src/lib/collectif/CLAUDE.md`. Liste,
 `nouvelle`, fiche `[id]` EN ONGLETS depuis T-152 (`OngletsFiche` : un onglet monté à sa première
 visite puis gardé, l'adresse suit `?onglet=` ; les messages ne se marquent lus qu'à l'ouverture
-de leur onglet), `messages` (la boîte de réception : conversations, à traiter aujourd'hui, fil,
+de leur onglet ; depuis le 15/10 la fiche est EN CARTES comme la maquette validée : « ← Les
+éditions », une carte d'en-tête avec les gestes en menu, la bande des étapes, trois cartes de même
+hauteur, les trois liens et leur régénération dans « Réglages et liens », l'ancienne vue en
+huit résumés dans `archive/fiche-edition-resumes-2026-10/`), `messages` (la boîte de réception : conversations, à traiter aujourd'hui, fil,
 dossier du client), `styles` et `styles/[id]` (l'éditeur). Toutes ses écritures
 sont sous `/api/admin/collectif/*`, revérifient l'admin et journalisent dans
 `collectif_evenements`. Sa feuille `collectif.css` est scopée `.eca-root`.

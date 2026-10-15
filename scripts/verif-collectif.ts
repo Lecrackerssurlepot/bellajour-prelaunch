@@ -1766,8 +1766,9 @@ titre("— 15/10 : la page Photos sans grande colonne (rayons, albums, fil d'Ari
   const r = (provenance_id: string | null, role_deposant: string): Dossiers.LignePhoto => ({ provenance_id, provenance_type: "organisateur", role_deposant, deposant: null });
   ok("vues d'ensemble : « vous » = les photos du responsable, « liens » = celles des participants", D.dansLeDossier(r(null, "responsable"), "vous", "C") && !D.dansLeDossier(r(null, "participant"), "vous", "C") && D.dansLeDossier(r(null, "participant"), "liens", "C") && D.dansLeDossier(r("x", "participant"), "liens", "C") && !D.dansLeDossier(r(null, "atelier"), "liens", "C"));
   const route = lire("src/app/api/collectif/photos/route.ts");
-  ok("route photos : une vue d'ensemble ne signe aucune vignette de grille, une couverture par dossier ou lien",
-    /const sansGrille = corps\.seulementArbre === true \|\| estVueEnsemble\(dossier\)/.test(route) && /suivante: !sansGrille &&/.test(route) && /couvertures\[n\.cle\] = await signerGet\(p\.vignette_key\)/.test(route));
+  ok("route photos : une vue d'ensemble ne signe aucune PAGE de grille (les huit dernieres arrivees seulement), une couverture par dossier ou lien",
+    /const sansGrille = corps\.seulementArbre === true \|\| estVueEnsemble\(dossier\)/.test(route) && /suivante: !sansGrille &&/.test(route) && /couvertures\[n\.cle\] = await signerGet\(p\.vignette_key\)/.test(route)
+    && /const ARRIVEES = 8;/.test(route) && /sansGrille \? dansDossier\.slice\(-ARRIVEES\)\.reverse\(\)/.test(route));
   const page = lire("src/app/edition/[token]/photos/Collecte.tsx");
   ok("Photos : dossiers et liens en vignettes, sous-dossiers en petites vignettes, personnes d'un lien en pastilles, fil d'Ariane",
     /className="ec-ph-albums"/.test(page) && /ec-ph-albums--petits/.test(page) && /className="ec-ph-personnes"/.test(page) && /className="ec-ph-fil"/.test(page) && existsSync(resolve(RACINE, "archive/photos-colonne-2026-10/README.md")));
@@ -1815,6 +1816,28 @@ titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de receptio
   const onglets = lire("src/app/admin/collectif/[id]/OngletsFiche.tsx");
   ok("fiche : des onglets, un onglet monte a sa premiere visite puis garde (les messages ne se marquent lus qu'a leur ouverture)",
     /vus\.includes\(cle\) \?/.test(onglets) && /hidden=\{cle !== actif\}/.test(onglets) && /replaceState/.test(onglets) && /messages: <PanneauMessages/.test(lire("src/app/admin/collectif/[id]/page.tsx")));
+
+  /* 15/10 au soir : ce qui manquait des maquettes « direction visuelle » (retour de Mathias). */
+  {
+    const css = lire("src/app/edition/[token]/espace.css");
+    const tab = lire("src/app/edition/[token]/tableau.css");
+    const tdb = lire("src/app/edition/[token]/page.tsx");
+    const carte = lire("src/app/edition/[token]/CartePhotos.tsx");
+    const col = lire("src/app/edition/[token]/photos/Collecte.tsx");
+    ok("maquettes : la nuit, la lueur cuivree en haut a DROITE ; le jour, le bleu en haut a gauche",
+      /\.ec-espace \.ec-coquille::before \{[^}]*right: -200px;[^}]*top: -260px;/.test(css) && /\[data-ec-mode="jour"\] \.ec-coquille::before \{[^}]*left: -160px;/.test(css));
+    ok("maquettes : jour | nuit en deux boutons (soleil et lune), le mode en cours eclaire",
+      /className="ec-mode-choix" role="group"/.test(lire("src/app/edition/[token]/Coquille.tsx")) && (lire("src/app/edition/[token]/Coquille.tsx").match(/className="ec-mode" aria-pressed=/g) ?? []).length === 2);
+    ok("tableau de bord : deux colonnes (1 et 1,08), « À envoyer » sous le style et le message sous les photos, DANS la grille",
+      /grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1\.08fr\);\s*grid-template-rows: minmax\(0, 1fr\) auto;/.test(tab)
+      && tdb.indexOf("<LigneContenus") > tdb.indexOf('className="ec-tdb-grille"') && tdb.indexOf('className="ec-tdb-message"') < tdb.indexOf("</div>\n      </div>\n    </section>"));
+    ok("tableau de bord : l'encart Style dit « Fait » quand tout est valide, un eventail, une tuile par magazine et « Modifier »",
+      /className="ec-tdb-fait"/.test(tdb) && /ec-tdb-couv--\$\{places\[i\]\}/.test(tdb) && /className=\{reste \? 'ec-tdb-tuile ec-tdb-tuile--a-faire' : 'ec-tdb-tuile'\}/.test(tdb) && /\{ecrire \? 'Modifier' : 'Voir'\}/.test(tdb));
+    ok("tableau de bord : une vignette par dossier et son nombre, plus de point ni de fleche",
+      /className="ec-tdb-dossier-couv"/.test(carte) && !/ec-tdb-chevron|ec-tdb-point/.test(carte) && /dansLeDossier\(x, d\.cle, edition\.responsable_nom\)/.test(lire("src/app/edition/[token]/donnees.ts")));
+    ok("Photos : le nombre POSE sur la couverture d'un album, « Dernières arrivées » sous les albums, les rayons DANS le panneau",
+      /<span className="ec-ph-album-n">/.test(col) && /Dernières arrivées/.test(col) && col.indexOf('className="ec-ph-rayons"') > col.indexOf('"ec-ph-principal"'));
+  }
 
   /* 15/10 : la fiche en cartes (maquette « Atelier, la fiche » validée par Mathias). */
   const fiche = lire("src/app/admin/collectif/[id]/page.tsx");

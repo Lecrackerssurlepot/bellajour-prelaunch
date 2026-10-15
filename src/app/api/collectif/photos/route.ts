@@ -12,6 +12,9 @@ import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 import { lireProvenances } from "@/app/edition/[token]/donnees";
 
+/** Les dernières arrivées sous les albums d'une vue d'ensemble : une rangée. */
+const ARRIVEES = 8;
+
 /**
  * POST /api/collectif/photos — une PAGE de la grille des photos (T-152 :
  * les photos rangées en dossiers). `{ token, dossier?, vue?, page? }` (lien
@@ -110,9 +113,10 @@ export async function POST(request: Request) {
 
   /* `seulementArbre` : la fenêtre de dépôt ne veut que les dossiers, aucune vignette à signer.
      Une vue d'ensemble (« Vos dossiers », « Les participants ») montre des vignettes de
-     dossiers, pas de grille : rien à signer non plus. */
+     dossiers et, dessous, les DERNIÈRES ARRIVÉES (maquettes du 15/10) : les huit plus
+     récentes de la vue, jamais une page de grille ni de page suivante. */
   const sansGrille = corps.seulementArbre === true || estVueEnsemble(dossier);
-  const tranche = sansGrille ? [] : liste.slice(page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE);
+  const tranche = corps.seulementArbre === true ? [] : sansGrille ? dansDossier.slice(-ARRIVEES).reverse() : liste.slice(page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE);
   const photos = await Promise.all(
     tranche.map(async (p) => {
       let vignette: string | null = null;

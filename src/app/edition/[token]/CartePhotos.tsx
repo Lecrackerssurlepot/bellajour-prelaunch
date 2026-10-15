@@ -56,7 +56,7 @@ export default function CartePhotos(p: Props) {
             <strong>{p.photos.toLocaleString("fr-FR")}</strong>
             <span className="ec-texte">
               photo{p.photos > 1 ? "s" : ""}
-              {p.participants ? ` de ${p.participants} participant${p.participants > 1 ? "s" : ""}` : ""}
+              {p.participants ? `, de ${p.participants} participant${p.participants > 1 ? "s" : ""}` : ""}
             </span>
           </div>
           <ul className="ec-tdb-dossiers ec-defile" aria-label="Les dossiers de photos">
@@ -65,7 +65,11 @@ export default function CartePhotos(p: Props) {
               return (
                 <li key={d.cle}>
                   <Link className="ec-tdb-dossier-lien" href={`${p.lienPhotos}?dossier=${encodeURIComponent(d.cle)}`} prefetch={false}>
-                    <span className={d.lien ? "ec-tdb-point ec-tdb-point--lien" : "ec-tdb-point"} aria-hidden="true" />
+                    {d.couverture ? (
+                      <img className="ec-tdb-dossier-couv" src={d.couverture} alt="" loading="lazy" decoding="async" />
+                    ) : (
+                      <span className={d.lien ? "ec-tdb-dossier-couv ec-tdb-dossier-couv--lien" : "ec-tdb-dossier-couv"} aria-hidden="true" />
+                    )}
                     <span className="ec-tdb-dossier">
                       <span>{d.libelle}</span>
                       <span className="ec-note">{d.detail}</span>
@@ -74,9 +78,6 @@ export default function CartePhotos(p: Props) {
                       <span style={{ width: `${Math.round((d.n / plus) * 100)}%` }} />
                     </span>
                     <span className="ec-tdb-n">{d.n.toLocaleString("fr-FR")}</span>
-                    <svg className="ec-tdb-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M9 6l6 6-6 6" />
-                    </svg>
                   </Link>
                 </li>
               );

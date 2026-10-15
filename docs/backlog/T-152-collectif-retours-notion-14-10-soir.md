@@ -94,6 +94,25 @@ ouvert: 2026-10-14
   ranger, sortir, renommer ; menus des liens ; supprimer un lien et répondre répondent 503 en
   nommant la migration, sans rien écrire.
 
+## Ce qui est fait le 15/10 (même branche)
+- La page Photos sans grande colonne : onglets, albums, fil d'Ariane.
+- Porcelaine le jour et Charbon la nuit, du verre et des arrondis partout, client et atelier
+  (de71c16).
+- La fiche d'une édition en cartes, comme la maquette (5d57393) :
+  - « ← Les éditions » pour revenir à la liste ;
+  - une carte d'en-tête, les étapes nettes ;
+  - trois cartes de même hauteur ;
+  - les gestes dans un menu, « Réglages et liens ».
+- Retour de Mathias sur les maquettes « direction visuelle » (« tu n'as pas adapté tous les
+  points ») :
+  - la lueur cuivrée de nuit en haut à droite ;
+  - jour et nuit en deux boutons ;
+  - l'encart Style avec « Fait », l'éventail, une tuile par magazine et « Modifier » ;
+  - « À envoyer » sous le style, le message sous les photos ;
+  - une vignette par dossier, sans flèche ;
+  - sur Photos : le nombre posé sur les albums, « Dernières arrivées », les onglets dans le
+    panneau, les personnes en pastilles à initiales.
+
 ## Reste
 - ~~Mathias applique `20261017` et `20261018`~~ : appliquées le 15/10, vérifiées en SQL ; une pièce
   de chaque style, un lien supprimé, une réponse des deux côtés rejoués et relus en base.
