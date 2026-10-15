@@ -1835,6 +1835,12 @@ titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de receptio
       /className="ec-tdb-fait"/.test(tdb) && /ec-tdb-couv--\$\{places\[i\]\}/.test(tdb) && /className=\{reste \? 'ec-tdb-tuile ec-tdb-tuile--a-faire' : 'ec-tdb-tuile'\}/.test(tdb) && /\{ecrire \? 'Modifier' : 'Voir'\}/.test(tdb));
     ok("tableau de bord : une vignette par dossier et son nombre, plus de point ni de fleche",
       /className="ec-tdb-dossier-couv"/.test(carte) && !/ec-tdb-chevron|ec-tdb-point/.test(carte) && /dansLeDossier\(x, d\.cle, edition\.responsable_nom\)/.test(lire("src/app/edition/[token]/donnees.ts")));
+    const fen = lire("src/app/edition/_composants/Fenetre.tsx");
+    ok("fenetres : toujours ouvertes dans la colonne de contenu (portail), jamais prisonnieres d'un panneau de verre",
+      /document\.querySelector\("\.ec-contenu"\)/.test(fen) && /createPortal\(fenetre, hote\)/.test(fen) && /useSyncExternalStore\(rien, \(\) => true, \(\) => false\)/.test(fen));
+    ok("tableau de bord : a partir de TROIS contenus, « À envoyer » prend toute la largeur et le message passe dessous (regle de Mathias)",
+      /const LIGNE_LONGUE = 3;/.test(lire("src/app/edition/[token]/LigneContenus.tsx")) && /contenus\.length >= LIGNE_LONGUE/.test(lire("src/app/edition/[token]/LigneContenus.tsx"))
+      && /\.ec-tdb-grille > \.ec-tdb-ligne--longue,\s*\.ec-espace \.ec-tdb-grille > \.ec-tdb-ligne--longue \+ \.ec-tdb-message \{\s*grid-column: 1 \/ -1;/.test(tab));
     ok("Photos : le nombre POSE sur la couverture d'un album, « Dernières arrivées » sous les albums, les rayons DANS le panneau",
       /<span className="ec-ph-album-n">/.test(col) && /Dernières arrivées/.test(col) && col.indexOf('className="ec-ph-rayons"') > col.indexOf('"ec-ph-principal"'));
   }

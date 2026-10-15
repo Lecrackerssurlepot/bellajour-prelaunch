@@ -146,18 +146,22 @@
 }
 
 /* ── le style : une tuile par magazine, puis « Modifier » ── */
+/* Plus petit que la maquette (Mathias, 15/10 : « que ça prenne un peu moins de place »). */
 .ec-espace .ec-tdb-style-pied {
   flex: none;
   display: flex;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
 }
 .ec-espace .ec-tdb-tuile {
   flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 12px 14px;
-  border-radius: 18px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.35;
   background: var(--ec-surface);
   color: var(--ec-text);
   text-decoration: none;
@@ -174,7 +178,7 @@
   white-space: nowrap;
 }
 .ec-espace .ec-tdb-tuile .ec-note {
-  font-size: 12px;
+  font-size: 11px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -183,20 +187,21 @@
   box-shadow: inset 0 0 0 1.5px rgba(var(--ec-ac-rgb), 0.5);
 }
 .ec-espace .ec-tdb-tuile-action {
-  margin-top: 2px;
-  font-size: 12px;
+  margin-top: 1px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--ec-accent-texte);
 }
 .ec-espace .ec-tdb-modifier {
   flex: none;
-  align-self: stretch;
   display: inline-flex;
   align-items: center;
-  padding: 0 18px;
-  border-radius: 18px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
   background: var(--ec-text);
   color: var(--ec-bg);
+  font-size: 13px;
   font-weight: 600;
   text-decoration: none;
 }
@@ -451,6 +456,12 @@
 .ec-espace .ec-tdb-grille > .ec-tdb-carte + .ec-tdb-carte + .ec-tdb-message {
   grid-column: 1 / -1;
 }
+/* Trois contenus ou plus (règle de Mathias, 15/10) : la ligne « À envoyer »
+   prend toute la largeur, chaque puce visible, et le message passe dessous. */
+.ec-espace .ec-tdb-grille > .ec-tdb-ligne--longue,
+.ec-espace .ec-tdb-grille > .ec-tdb-ligne--longue + .ec-tdb-message {
+  grid-column: 1 / -1;
+}
 .ec-espace .ec-tdb-message {
   flex: none;
   min-width: 0;
@@ -658,7 +669,7 @@
   .ec-espace .ec-tdb-modifier {
     flex: 1 0 100%;
     justify-content: center;
-    min-height: 44px;
+    height: 40px;
   }
   .ec-espace .ec-tdb-gestes {
     flex-direction: column;

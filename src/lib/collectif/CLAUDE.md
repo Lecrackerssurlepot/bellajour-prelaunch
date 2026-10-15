@@ -263,6 +263,13 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
     (`ARRIVEES`, jamais une page de grille).
   ⚠️ **Les unités de conteneur (`cqh`) valent 0** dans une carte sans hauteur fixe (mesuré à
   1000 et 390 px) : sous 1100 px, l'éventail passe en tailles fixes.
+  **Règle de Mathias (15/10)** : à partir de TROIS contenus à envoyer (`LIGNE_LONGUE`), la ligne
+  « À envoyer » prend toute la largeur pour qu'on les voie tous, et le message de l'atelier
+  passe DESSOUS.
+  ⚠️ **Une fenêtre (`Fenetre`) s'ouvre toujours dans `.ec-contenu`, par un portail.** Un panneau
+  de verre (`backdrop-filter`) devient le bloc conteneur de tout ce qui est positionné dedans :
+  ouverte en place, la fenêtre restait enfermée dans son encart, inutilisable (vu le 15/10 sur
+  « À envoyer »). Ne pas retirer le portail.
 - **Le plafond appartient au LIEN** (`plafond_par_personne`, compté par appareil SUR ce lien :
   `compterPourPlafond(…, provenanceId)`). « Sans limite » = `sans_plafond`. Un lien d'avant la
   révision garde l'ancienne règle (`plafondParticipant`). Le curseur va de 5 à

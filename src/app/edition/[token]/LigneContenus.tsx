@@ -18,6 +18,9 @@ import Fenetre from "../_composants/Fenetre";
 import { useVisionneuse } from "../_composants/Visionneuse";
 import type { EnvoiClient } from "./donnees";
 
+/** À partir de combien de contenus demandés la ligne « À envoyer » prend toute la largeur. */
+const LIGNE_LONGUE = 3;
+
 type Props = { token: string; demandes: string[]; envois: EnvoiClient[]; ecrire: boolean; tu: boolean };
 
 export default function LigneContenus(p: Props) {
@@ -30,8 +33,12 @@ export default function LigneContenus(p: Props) {
   const envois = courantsAffiches(p.envois, ajoutes, retires);
   const contenus = CONTENUS_CLIENT.filter((c) => p.demandes.includes(c.cle));
   if (!contenus.length) return null;
+  /* Règle de Mathias (15/10) : à partir de TROIS choses à envoyer, la ligne
+     prend toute la largeur pour qu'on les voie toutes, et le message de
+     l'atelier passe dessous. */
+  const longue = contenus.length >= LIGNE_LONGUE;
   return (
-    <section className="ec-tdb-ligne" aria-labelledby="ec-tdb-contenus">
+    <section className={longue ? "ec-tdb-ligne ec-tdb-ligne--longue" : "ec-tdb-ligne"} aria-labelledby="ec-tdb-contenus">
       <span className="ec-tdb-etiquette ec-tdb-etiquette--sourde" id="ec-tdb-contenus">
         3 · À envoyer
       </span>

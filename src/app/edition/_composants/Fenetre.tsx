@@ -3,9 +3,18 @@
 /* Une fenêtre de l'espace client (révision §14.1) : du verre dépoli (fond
    translucide et flou), jamais un aplat opaque. Elle couvre la colonne de
    contenu, pas le menu, comme dans les maquettes ; sur téléphone, tout
-   l'écran. Échap ou un clic sur le voile la ferment. */
+   l'écran. Échap ou un clic sur le voile la ferment.
 
-import { useEffect, useId } from "react";
+   ⚠️ Elle s'ouvre TOUJOURS dans `.ec-contenu`, par un portail (15/10) : un
+   panneau de verre (`backdrop-filter`) enferme ce qui est positionné dedans,
+   et la fenêtre ouverte depuis la ligne « À envoyer » ou l'encart Photos
+   restait prisonnière de son encart, inutilisable. Au premier rendu (serveur,
+   hydratation) elle reste en place, puis passe dans la colonne. */
+
+import { useEffect, useId, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
+
+const rien = () => () => {};
 
 export default function Fenetre({
   titre,
@@ -34,6 +43,7 @@ export default function Fenetre({
   children: React.ReactNode;
 }) {
   const id = useId();
+  const client = useSyncExternalStore(rien, () => true, () => false);
   useEffect(() => {
     function touche(e: KeyboardEvent) {
       if (e.key === "Escape") onFermer();
@@ -41,7 +51,7 @@ export default function Fenetre({
     window.addEventListener("keydown", touche);
     return () => window.removeEventListener("keydown", touche);
   }, [onFermer]);
-  return (
+  const fenetre = (
     <div className={cote ? "ec-fenetre-voile ec-fenetre-voile--cote" : "ec-fenetre-voile"} role="presentation" onClick={onFermer}>
       <div
         className={cote ? "ec-fenetre ec-fenetre--cote" : pleine ? "ec-fenetre ec-fenetre--pleine" : large ? "ec-fenetre ec-fenetre--large" : "ec-fenetre"}
@@ -71,4 +81,6 @@ export default function Fenetre({
       </div>
     </div>
   );
+  const hote = client ? document.querySelector(".ec-contenu") : null;
+  return hote ? createPortal(fenetre, hote) : fenetre;
 }
