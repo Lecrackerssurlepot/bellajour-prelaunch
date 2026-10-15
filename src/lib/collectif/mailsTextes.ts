@@ -114,8 +114,8 @@ export type DonneesCodeAppareil = {
   evenement: string;
   /** Les six chiffres, en clair : ce mail est le SEUL endroit où ils s'écrivent. */
   code: string;
-  /** Sa durée de validité, en minutes. */
-  minutes: number;
+  /** Sa durée de validité, telle qu'elle s'écrit (« 24 heures »). */
+  duree: string;
   /** L'adresse du site (bellajour.fr, ou la version d'essai) : la personne sait d'où vient la demande. */
   site: string;
 };
@@ -130,7 +130,7 @@ export function mailCodeAppareil(d: DonneesCodeAppareil): Mail {
     lignes: [
       ligne(v(`Pour modifier l'espace de « ${d.evenement} » depuis ce nouvel appareil, saisissez ce code :`, `Pour modifier l'espace de « ${d.evenement} » depuis ce nouvel appareil, saisis ce code :`)),
       { html: `<span style="display:inline-block;padding:10px 18px;border-radius:12px;background:#f6f2ec;font-family:Arial,sans-serif;font-size:28px;letter-spacing:6px;color:#1c1c1c"><strong>${espace}</strong></span>`, texte: espace },
-      ligne(`Il est valable ${d.minutes} minutes, sur l'appareil qui l'a demandé.`),
+      ligne(`Il est valable ${d.duree}, sur l'appareil qui l'a demandé.`),
     ],
     notes: [
       ligne(

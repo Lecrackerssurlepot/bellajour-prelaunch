@@ -10,7 +10,7 @@
 
 import { randomBytes, randomInt } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { CODES_PAR_HEURE, DUREE_CODE_MS, empreinte, empreinteCode, ESSAIS_MAX, memeEmpreinte } from "./appareil";
+import { CODES_PAR_HEURE, DUREE_CODE_MS, empreinte, empreinteCode, ESSAIS_MAX, libelleDuree, memeEmpreinte } from "./appareil";
 import { envoyerMailCollectif, type EtatEnvoi } from "./mails";
 import { mailCodeAppareil } from "./mailsTextes";
 import { tableAbsente } from "./migration";
@@ -73,7 +73,7 @@ export async function demanderCode(supabase: SupabaseClient, edition: EditionCod
     editionId: edition.id,
     code: `CODE-${ecrit.data.id}`,
     a: { email: edition.responsable_email, nom: edition.responsable_nom },
-    mail: mailCodeAppareil({ tu: edition.registre === "ecole_tu", evenement: edition.evenement, code, minutes: Math.round(DUREE_CODE_MS / 60_000), site: origine }),
+    mail: mailCodeAppareil({ tu: edition.registre === "ecole_tu", evenement: edition.evenement, code, duree: libelleDuree(DUREE_CODE_MS), site: origine }),
     verrou: false,
     qui: null,
   });
