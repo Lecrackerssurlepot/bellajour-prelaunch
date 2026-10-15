@@ -1,4 +1,4 @@
-# État du système — au 15/10/2026 (fin d'après-midi)
+# État du système — au 15/10/2026 (soir)
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,24 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 15/10/2026 (soir) — Dublin, HEIC, mails des éditions ; le code par appareil attend sa migration
+
+- **Les fonctions Vercel tournent à Dublin** (`vercel.json` `regions: ["dub1"]`, PR #237, en
+  production depuis le 15/10 ; base Supabase en `eu-west-1`). Mesuré avant sur deux versions
+  d'essai : tableau de bord d'une édition 1 190 → 361 ms, liste des photos 1 041 → 424 ms.
+  Vérifié en production : `x-vercel-id: cdg1::dub1::…` sur les pages dynamiques.
+- **HEIC** (PR #238) : aperçu et empreinte même envoyés depuis Chrome (libheif en WebAssembly,
+  `public/heic/`). Rattrapage fait sur « Essai révision (Claude) » : 423 HEIC, 0 échec ;
+  doublons : 20 copies en 15 groupes (une seule avant).
+- **Mails des éditions** (PR #239) : circuit commun coupé par défaut ; `COLLECTIF_MAILS` n'existe
+  pas sur Vercel, rien ne part. « Votre espace est prêt » : texte proposé, à valider par Mathias.
+- **`COLLECTIF_OUVERT=1` posé sur les versions d'essai (Preview) SEULEMENT** le 15/10, avec
+  l'accord de Mathias (T-155) ; la production reste fermée (aucune variable `COLLECTIF*` en
+  Production). ⚠️ Une version d'essai lit et écrit la base de PRODUCTION, comme le local.
+- **Code par appareil** (T-154, PR #240 en brouillon) : écrit et recetté sans migration ;
+  **`supabase/migrations/20261019_collectif_appareils.sql` à appliquer par Mathias**, puis recette
+  complète et fusion. Coupé par défaut (`COLLECTIF_CODE_APPAREIL` et `COLLECTIF_MAILS`).
 
 ## 15/10/2026 (fin d'après-midi) — PR #234 FUSIONNÉE : Porcelaine et l'atelier en cartes en production
 
