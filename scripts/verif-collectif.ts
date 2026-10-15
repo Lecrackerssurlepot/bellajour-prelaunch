@@ -1883,6 +1883,8 @@ titre("— T-150 : les HEIC ont leur aperçu et leur empreinte —");
       const r = lire("scripts/collectif-heic-rattrapage.ts");
       return /const vraiment = process\.argv\.includes\("--vraiment"\)/.test(r) && r.indexOf("PutObjectCommand({") < r.indexOf('update({ vignette_key: key })') && /lireDepuisCoffre\(\{ r2_key: l\.r2_key, taille: l\.taille, vignette_key: key \}\)/.test(r);
     })());
+}
+
 titre("— T-146 : les mails des éditions, un seul circuit, coupé par défaut —");
 {
   const textes = MailsTextes;
