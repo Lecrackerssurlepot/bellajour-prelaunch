@@ -57,6 +57,11 @@ l'espace s'ouvre en lecture, une écriture répond 403 ; code saisi → la pasti
 l'écriture passe ; autre appareil → lecture ; lien d'équipe, atelier → rien ne change.
 
 ## Reste
-- « Retrouver mon espace » et le lien dans `/compte`.
+- ~~« Retrouver mon espace »~~ : fait le 16/10 (`/edition/retrouver`, adresse courte `/espace`,
+  réponse identique connue ou non, mail après la réponse, un par quart d'heure et par édition ;
+  lien depuis la page « introuvable » et dans le mail « Votre espace est prêt »). Recette locale :
+  adresse connue → le serveur aurait envoyé le lien (coupé en local) aux 4 éditions d'essai qui
+  la partagent ; adresse inconnue → rien ; même réponse, 200 dans les deux cas.
+- Le lien dans `/compte`.
 - ~~Valider les réglages~~ : tranchés le 16/10 sur délégation de Mathias (« tu choisis, mais il faut
   pas que ça soit très compliqué ») : 24 heures par code, 10 essais, 10 codes par heure.

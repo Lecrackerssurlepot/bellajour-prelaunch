@@ -1281,10 +1281,16 @@ const routes = [...fichiers("src/app/api/collectif", "route.ts"), ...fichiers("s
 ok(`chaque route collectif (${routes.length}) lit l'interrupteur`,
    routes.every((f) => /collectifOuvert\(\)/.test(lire(f))));
 const ECRITURE = /export\s+(async\s+)?function\s+(POST|PUT|PATCH|DELETE)\b/;
+/* Une seule route publique SANS token : « Retrouver mon espace » (T-154). Elle a ses
+   propres controles plus bas (reponse identique, mails apres la reponse, frein). */
+const SANS_TOKEN = ["src/app/api/collectif/retrouver/route.ts"];
+const avecToken = fichiers("src/app/api/collectif", "route.ts").filter((f) => !SANS_TOKEN.some((x) => f.endsWith(x)));
 ok("chaque route publique lit le token par chargerAcces (forme, porte, archive)",
-   fichiers("src/app/api/collectif", "route.ts").every((f) => /chargerAcces(Depot)?\(/.test(lire(f))));
+   avecToken.every((f) => /chargerAcces(Depot)?\(/.test(lire(f))));
 ok("chaque route publique qui ECRIT demande peut(role, action) avant d'agir",
-   fichiers("src/app/api/collectif", "route.ts").filter((f) => ECRITURE.test(lire(f))).every((f) => /\bpeut\(/.test(lire(f))));
+   avecToken.filter((f) => ECRITURE.test(lire(f))).every((f) => /\bpeut\(/.test(lire(f))));
+ok("une SEULE route publique sans token, et c'est « Retrouver mon espace »",
+   fichiers("src/app/api/collectif", "route.ts").length - avecToken.length === SANS_TOKEN.length);
 ok("chaque route admin revérifie l'admin (defense en profondeur)",
    fichiers("src/app/api/admin/collectif", "route.ts").every((f) => /quiEstConnecteRequete\(/.test(lire(f))));
 
@@ -1951,6 +1957,24 @@ titre("— T-154 : le lien du responsable ne s'ouvre que sur un appareil reconnu
   const mailCode = MailsTextes.mailCodeAppareil({ tu: false, evenement: "Séminaire", code: "123456", duree: "24 heures", site: "https://bellajour.fr" });
   ok("le mail du code : les six chiffres, la duree, d'ou vient la demande, aucun tiret cadratin",
     mailCode.sujet.includes("123 456") && mailCode.texte.includes("123 456") && /valable 24 heures/.test(mailCode.texte) && /bellajour\.fr/.test(mailCode.texte) && !/[—–]/.test(mailCode.html + mailCode.texte));
+}
+
+titre("— T-154 : « Retrouver mon espace » —");
+{
+  const r = lire("src/app/api/collectif/retrouver/route.ts");
+  ok("la route repond la MEME chose que l'adresse soit connue ou non : les mails partent APRES la reponse, derriere un delai neutre",
+    /after\(async \(\) => \{/.test(r) && /await delaiNeutre\(\);\s*return NextResponse\.json\(\{ ok: true \}\);/.test(r) && r.indexOf("after(async") < r.indexOf("await delaiNeutre()") && !/data\.length|trouve|inconnu/.test(r.slice(r.indexOf("await delaiNeutre()"))));
+  ok("le lien ne part qu'a l'adresse du responsable, jamais pour une edition archivee, un mail par quart d'heure et par edition",
+    /\.eq\("responsable_email", email\)/.test(r) && /\.is\("archive_le", null\)/.test(r) && /a: \{ email: e\.responsable_email/.test(r) && /code: `RETROUVER-\$\{quart\}`/.test(r) && /verrou: true/.test(r) && /collectifOuvert\(\)/.test(r));
+  const page = lire("src/app/edition/retrouver/page.tsx") + lire("src/app/edition/retrouver/FormulaireRetrouver.tsx");
+  ok("la page : rien ne pretend etre parti quand les mails sont coupes ; la reponse ne dit jamais si l'adresse est connue",
+    /mailsCollectifEnService\(\)/.test(page) && /Ce service ouvre bientôt/.test(page) && /Si <strong>\{email\}<\/strong>\{" "\}est l&apos;adresse d&apos;un responsable/.test(page));
+  ok("l'adresse courte /espace mene a la page, la page « lien introuvable » y renvoie, le mail « Votre espace est prêt » la cite",
+    /source: "\/espace", destination: "\/edition\/retrouver"/.test(lire("next.config.ts")) && /<Link className="ec-porte-lien" href="\/edition\/retrouver">/.test(lire("src/app/edition/not-found.tsx"))
+      && MailsTextes.mailEspacePret({ tu: false, organisation: "O", evenement: "E", responsable: null, lien: "https://x/edition/A", cloture: null, avecCode: false, retrouver: "bellajour.fr/espace" }).texte.includes("bellajour.fr/espace"));
+  const m = MailsTextes.mailRetrouverEspace({ tu: false, organisation: "Maison Aubier", evenement: "Séminaire", responsable: "Camille Essai", lien: "https://bellajour.fr/edition/ABC" });
+  ok("le mail « Votre lien » : le lien, l'evenement, aucun tiret cadratin",
+    m.texte.includes("https://bellajour.fr/edition/ABC") && m.sujet.includes("Séminaire") && /Bonjour Camille,/.test(m.texte) && !/[—–]/.test(m.html + m.texte + m.sujet));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

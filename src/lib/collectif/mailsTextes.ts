@@ -68,6 +68,8 @@ export type DonneesEspacePret = {
   cloture: string | null;
   /** Le code par appareil (T-154) est en service : le mail le dit. */
   avecCode: boolean;
+  /** L'adresse courte pour retrouver son lien (« bellajour.fr/espace »), ou null pour ne pas l'écrire. */
+  retrouver?: string | null;
 };
 
 /** Le premier mail : l'espace est ouvert, voici le lien. Envoyé par l'atelier depuis la fiche. */
@@ -90,6 +92,8 @@ export function mailEspacePret(d: DonneesEspacePret): Mail {
       )
     ),
   ];
+  if (d.retrouver)
+    notes.push(ligne(v(`Lien perdu ? Retrouvez-le à tout moment sur ${d.retrouver}.`, `Lien perdu ? Retrouve-le à tout moment sur ${d.retrouver}.`)));
   if (d.avecCode)
     notes.push(
       ligne(
@@ -143,4 +147,34 @@ export function mailCodeAppareil(d: DonneesCodeAppareil): Mail {
     ],
   });
   return { sujet: `${v("Votre", "Ton")} code Bellajour : ${espace}`, html, texte };
+}
+
+export type DonneesRetrouver = {
+  tu: boolean;
+  organisation: string;
+  evenement: string;
+  responsable: string | null;
+  /** Le lien du responsable (son token) : il ne part qu'à son adresse, qui vient de le demander. */
+  lien: string;
+};
+
+/** « Retrouver mon espace » (T-154) : le responsable a tapé son adresse, voici son lien. */
+export function mailRetrouverEspace(d: DonneesRetrouver): Mail {
+  const v = (vous: string, toi: string) => (d.tu ? toi : vous);
+  const { html, texte } = page({
+    titre: v("Votre lien", "Ton lien"),
+    bonjour: bonjour(d.responsable),
+    lignes: [ligne(v(`Voici le lien de votre espace « ${d.evenement} » (${d.organisation}).`, `Voici le lien de ton espace « ${d.evenement} » (${d.organisation}).`))],
+    bouton: { href: d.lien, libelle: "Ouvrir mon espace" },
+    notes: [
+      ligne(v("Ce lien vous est personnel : gardez ce mail, il vous servira à revenir.", "Ce lien t'est personnel : garde ce mail, il te servira à revenir.")),
+      ligne(
+        v(
+          "Vous n'êtes pas à l'origine de cette demande ? Ignorez ce mail : il n'est parti qu'à votre adresse.",
+          "Tu n'es pas à l'origine de cette demande ? Ignore ce mail : il n'est parti qu'à ton adresse."
+        )
+      ),
+    ],
+  });
+  return { sujet: `${v("Votre", "Ton")} lien Bellajour · ${d.evenement}`, html, texte };
 }

@@ -438,6 +438,23 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   il ne vaut que pour une demande venue de localhost (le `.env.local` tiré de Vercel contient
   `VERCEL`). Une seule route lit l'accès sans le contrôle : `/api/collectif/appareil`.
 
+## « Retrouver mon espace » (T-154, 16/10)
+
+- `/edition/retrouver`, joignable par l'adresse courte `/espace` (`next.config.ts`, 307) : le
+  responsable tape son adresse, son lien part par mail À CETTE ADRESSE. ⚠️ **La réponse est la
+  même que l'adresse soit connue ou non** (patron `/api/waitlist`) : même corps, même statut, et
+  les mails partent APRÈS la réponse (`after`) derrière `delaiNeutre`. Sinon la page serait un
+  annuaire des clients.
+- C'est la SEULE route publique sans token (le harnais la nomme : `SANS_TOKEN`) : ni
+  `chargerAcces` ni `peut`, elle ne lit qu'une adresse (enregistrée en minuscules par
+  `saisie.ts`) et n'écrit qu'un verrou de mail. Frein : un mail au plus par quart d'heure et par
+  édition (`RETROUVER-<quart d'heure>`). Une édition archivée ne reçoit rien.
+- La page et la route ne regardent QUE `COLLECTIF_MAILS` (`mailsCollectifEnService`) : fermé, la
+  page dit « ce service ouvre bientôt » et donne contact@bellajour.com ; en local,
+  `ATELIER_MAILS_COUPES` coupe l'envoi lui-même et le serveur note à qui il serait parti.
+- La page « lien introuvable » (`edition/not-found.tsx`, la même pour tout lien inconnu) y renvoie ;
+  le mail « Votre espace est prêt » cite l'adresse courte.
+
 ## Phase 7 : les accroches déjà posées
 
 `collectif_mails` (verrou unique `edition_id` + `code`, même mécanique que `mails_envoyes` :
