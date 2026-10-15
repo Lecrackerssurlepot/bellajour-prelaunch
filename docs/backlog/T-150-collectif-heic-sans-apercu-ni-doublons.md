@@ -36,5 +36,9 @@ l'empreinte ; l'original HEIC part tel quel au coffre (rien n'est perdu pour l'i
 À défaut, le même décodeur côté serveur dans l'enrichissement. À mesurer sur 400 HEIC réels
 (temps, mémoire, iPhone) avant de choisir. Pas d'IA nécessaire pour ça.
 
+## Décision de Mathias (15/10)
+« Gérer les photos HEIC sans aperçu, c'est pas normal. » Le rattrapage des 423 HEIC déjà
+envoyés sur « Essai révision » est accordé (écriture en base), une fois l'envoi corrigé.
+
 ## Ce qui a été fait
 Rien encore. Ticket ouvert le 14/10/2026.
