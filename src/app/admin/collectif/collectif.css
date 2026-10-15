@@ -1798,6 +1798,15 @@
   margin: 0;
   flex-wrap: nowrap;
 }
+.eca-root .eca-pile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-4);
+  min-width: 0;
+}
+.eca-root .eca-pile > .ate-carte {
+  margin: 0;
+}
 .eca-root .eca-reglages {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 380px;

@@ -1,7 +1,7 @@
 ---
 id: T-146
 titre: Mails, relances, temps réel et imports de l'Édition collective sont prévus mais pas codés
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: confort
 autonomie: avis-requis
@@ -33,5 +33,25 @@ PRD §11, phase 7 (rien ne part sans l'accord de Mathias) :
 - rebonds Brevo reconnus pour les adresses B2B ;
 - page publique « Édition collective » (`Main.dc.html`) ; espace multi-éditions.
 
-## Ce qui a été fait
-Rien. Ticket ouvert le 13/10/2026.
+## Repris le 15/10/2026 à la demande de Mathias
+« Brevo, au moins si c'est juste connecté, on créera la liste de mails, mais au moins tu
+l'intègres dedans et on pourra définir cela. »
+
+## Ce qui a été fait (15/10, branche `feat/collectif-mails`)
+- **Un seul circuit** (`src/lib/collectif/mails.ts`, `envoyerMailCollectif`) : coupé par défaut
+  (`COLLECTIF_MAILS`, valeur incomprise = fermé ; `ATELIER_MAILS_COUPES` coupe aussi), verrou
+  `collectif_mails` posé avant Brevo et retiré si Brevo refuse, journal `mail_envoye` /
+  `mail_echec` (adresse masquée). Brevo est déjà branché : `BREVO_API_KEY` en place, envoi par
+  l'API SMTP avec le texte écrit dans le code (comme les mails de rendez-vous).
+- **Le premier mail, « Votre espace est prêt »** (`mailsTextes.ts`, texte PROPOSÉ, à valider par
+  Mathias) : le lien du responsable, vous ou tu, envoyé depuis la fiche (onglet « Réglages et
+  liens ») en deux temps, avec un aperçu (« Voir le mail ») ; une fois par lien, « Renvoyer quand
+  même » sinon.
+- Harnais : texte (vous/tu, aucun tiret cadratin, échappement), circuit, route.
+
+## Reste
+- Mathias relit le texte, puis ouvre `COLLECTIF_MAILS` (Vercel) quand il le veut.
+- La liste des autres mails, à fixer par Mathias : code par appareil (T-154), retrouver mon
+  espace (T-154), nouveau message de l'atelier, bon à tirer disponible, rappel avant clôture,
+  expédition.
+- Les rebonds des adresses B2B (le webhook Brevo ne connaît que `numeros`).

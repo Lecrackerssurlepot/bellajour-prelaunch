@@ -402,6 +402,18 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   conversation ne marque rien ; seule l'ouverture le fait (l'effet de `useMessagerie`). Les
   non-lus se COMPTENT (`compterNonLus`, `head: true`), jamais en marquant.
 
+## Les mails des éditions (T-146, 15/10)
+
+- **Un seul circuit** : `mails.ts` → `envoyerMailCollectif` (coupé par défaut par
+  `COLLECTIF_MAILS`, verrou `collectif_mails` AVANT Brevo et RETIRÉ si Brevo refuse ou si le
+  réseau tombe, journal `mail_envoye` / `mail_echec` avec l'adresse masquée). Tout nouveau mail
+  des éditions passe par lui ; son texte vit dans `mailsTextes.ts` (pur, harnais, aperçu dans
+  l'atelier), jamais dans un modèle Brevo. Les mails de rendez-vous gardent leur chemin
+  (`envoyerMailRdv`, `COLLECTIF_MAILS_RDV`).
+- « Votre espace est prêt » part depuis la fiche (« Réglages et liens »), en deux temps ; le
+  verrou porte l'empreinte du lien du responsable : régénérer le lien permet de le renvoyer.
+- ⚠️ Un lien vers l'espace du responsable porte son token : il ne part qu'à SON adresse.
+
 ## Phase 7 : les accroches déjà posées
 
 `collectif_mails` (verrou unique `edition_id` + `code`, même mécanique que `mails_envoyes` :

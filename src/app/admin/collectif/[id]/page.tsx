@@ -27,6 +27,7 @@ import PanneauMessages from "./PanneauMessages";
 import PanneauRendezVous from "./PanneauRendezVous";
 import PanneauLiens from "./PanneauLiens";
 import LienResponsable from "./LienResponsable";
+import EnvoiLienResponsable from "./EnvoiLienResponsable";
 import PanneauLivraison from "./PanneauLivraison";
 import OngletsFiche from "./OngletsFiche";
 import "../../admin.css";
@@ -473,7 +474,10 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
                 <h2 className="ate-carte-titre">Réglages de l&apos;édition</h2>
                 <FormulaireEdition mode="modification" id={e.id} initiales={initiales} plafondClient={e.plafond_participant_client} />
               </section>
-              <PanneauLiens id={e.id} liens={liens} />
+              <div className="eca-pile">
+                <PanneauLiens id={e.id} liens={liens} />
+                <EnvoiLienResponsable id={e.id} />
+              </div>
             </div>
           ),
           journal: (
