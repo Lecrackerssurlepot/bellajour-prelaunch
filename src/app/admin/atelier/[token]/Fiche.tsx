@@ -997,7 +997,7 @@ export default function Fiche({
       {l.emailRebond ? (
         <div className="ate-bandeau ate-bandeau--alerte">
           <b>Cette adresse ne reçoit pas nos mails.</b> Un envoi a définitivement
-          rebondi sur {l.email || "cette adresse"} : cette adresse n&apos;a donc reçu aucun
+          rebondi sur {l.email || "cette adresse"}{" "}: cette adresse n&apos;a donc reçu aucun
           de nos messages, et n&apos;en recevra aucun. Le détail est dans le journal,
           en bas de cette fiche.
           {fiche.telephone ? (
@@ -1053,11 +1053,11 @@ export default function Fiche({
         <div className="ate-bandeau ate-bandeau--attention">
           <strong>
             Son dépôt s&apos;est interrompu : {l.nbPhotos} photos sur les{" "}
-            {fiche.photosAttendues} qu&apos;il envoyait.
+            {fiche.photosAttendues}{" "}qu&apos;il envoyait.
           </strong>{" "}
           Il a bien validé (le droit d&apos;usage est donné, le dossier est à
           nous), puis il a quitté la page avant la fin du transfert. Les{" "}
-          {fiche.photosAttendues - l.nbPhotos} manquantes sont restées sur son
+          {fiche.photosAttendues - l.nbPhotos}{" "}manquantes sont restées sur son
           téléphone et ne reviendront pas toutes seules. Compose avec ce qu&apos;on
           a, ou propose-lui d&apos;en redéposer (« Demander plus de photos »).
         </div>
@@ -1080,7 +1080,7 @@ export default function Fiche({
         </div>
       ) : fiche.adresse?.dom ? (
         <div className="ate-bandeau ate-bandeau--attention">
-          Adresse en {fiche.adresse.codePostal} — département d&apos;outre-mer. Stripe l&apos;a
+          Adresse en {fiche.adresse.codePostal}{" "}— département d&apos;outre-mer. Stripe l&apos;a
           traitée comme la France métropolitaine : vérifie le coût du port AVANT de commander
           chez l&apos;imprimeur.
         </div>

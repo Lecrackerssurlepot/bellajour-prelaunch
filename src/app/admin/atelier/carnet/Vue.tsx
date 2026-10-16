@@ -137,7 +137,7 @@ export default function VueCarnetEcran({ vue }: { vue: VueCarnet }) {
           <h2 className="ate-carte-titre">Carnet non installé</h2>
           <p>
             La table <code>notes</code> n&apos;est pas lisible : la migration{" "}
-            <code>20260825_atelier_notes_et_canva.sql</code> n&apos;a probablement pas été
+            <code>20260825_atelier_notes_et_canva.sql</code>{" "}n&apos;a probablement pas été
             appliquée. Aucune note n&apos;est perdue, cet écran ne peut simplement pas les lire.
           </p>
         </section>

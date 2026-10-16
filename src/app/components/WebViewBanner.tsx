@@ -78,7 +78,7 @@ export default function WebViewBanner() {
       <div className="wvb-body">
         {showIosHelp ? (
           <p className="wvb-text wvb-text--help">
-            Appuyez sur <span className="wvb-glyph">⋯</span> en haut à droite,
+            Appuyez sur <span className="wvb-glyph">⋯</span>{' '}en haut à droite,
             puis «&nbsp;Ouvrir dans Safari&nbsp;».
           </p>
         ) : (

@@ -48,7 +48,7 @@ export default function FormulaireRetrouver({ ouvert }: { ouvert: boolean }) {
     return (
       <div className="ec-retrouver">
         <p>
-          {/* L'espace explicite : le compilateur React avalait celui qui suit </strong> (vu le 16/10). */}
+          {/* L'espace explicite : SWC avale celui qui suit la balise quand le texte porte une entité et va à la ligne (src/app/CLAUDE.md). */}
           C&apos;est noté. Si <strong>{email}</strong>{" "}est l&apos;adresse d&apos;un responsable, son lien vient de partir.
         </p>
         <p className="ec-retrouver-note">Pensez à regarder dans les indésirables. Rien reçu ? Écrivez à contact@bellajour.com.</p>

@@ -379,7 +379,7 @@ export default function Impression({
       ) : null}
       {enCoursAilleurs !== null ? (
         <p className="ate-faint" role="status">
-          La fusion a démarré à {heureParis(enCoursAilleurs)} (lancée par la commande d&apos;impression, ou
+          La fusion a démarré à {heureParis(enCoursAilleurs)}{" "}(lancée par la commande d&apos;impression, ou
           depuis un autre onglet). Rien à relancer : recharge la page dans une minute si elle ne
           s&apos;est pas mise à jour d&apos;elle-même.
         </p>

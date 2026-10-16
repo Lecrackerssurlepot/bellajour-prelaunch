@@ -108,7 +108,7 @@ export default function PanneauLiens({ id, liens, compact }: { id: string; liens
           {arme === quel ? (
             <div className="eca-confirm">
               <p>
-                <strong>L&apos;ancien lien cessera de fonctionner tout de suite.</strong> Quiconque l&apos;a reçu
+                <strong>L&apos;ancien lien cessera de fonctionner tout de suite.</strong>{" "}Quiconque l&apos;a reçu
                 tombera sur une page introuvable. Il faudra envoyer le nouveau.
               </p>
               <div className="eca-barre">
