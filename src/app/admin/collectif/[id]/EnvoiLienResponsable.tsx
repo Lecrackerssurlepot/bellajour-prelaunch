@@ -72,7 +72,7 @@ export default function EnvoiLienResponsable({ id }: { id: string }) {
           </p>
           {verif.ouverts ? null : (
             <p>
-              <strong>Les mails des éditions sont coupés</strong> ({verif.interrupteur} n&apos;est pas ouvert) : rien ne partira.
+              <strong>Les mails des éditions sont coupés</strong> ({verif.interrupteur}{" "}n&apos;est pas ouvert) : rien ne partira.
             </p>
           )}
           <div className="eca-barre">

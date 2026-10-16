@@ -1712,7 +1712,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
               /* Jamais deux commandes : si le numéro en porte déjà une, le
                  bouton disparaît et l'écran dit laquelle. */
               <p className="ate-fait">
-                Commande nº {fiche.cloudprinterOrderId} déjà passée chez l&apos;imprimeur.
+                Commande nº {fiche.cloudprinterOrderId}{" "}déjà passée chez l&apos;imprimeur.
               </p>
             ) : (
               <>
@@ -2057,7 +2057,7 @@ export default function PanneauAction({ fiche, demo }: { fiche: Fiche; demo?: bo
                   ) : choisie.mail ? (
                     choisie.mail.absent ? (
                       <span className="ate-alerte">
-                        {choisie.mail.code} n&apos;est pas encore câblé : le client ne sera PAS prévenu.
+                        {choisie.mail.code}{" "}n&apos;est pas encore câblé : le client ne sera PAS prévenu.
                         Préviens-le à la main.
                       </span>
                     ) : (

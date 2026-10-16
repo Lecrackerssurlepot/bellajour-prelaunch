@@ -131,6 +131,27 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
    (0,2,0), donc **le masquer demande la même spécificité** (une media query n'en ajoute pas),
    et sans `flex: 0 0 auto` le jeton du compte se fait écraser à 2 px par ses voisins.
 
+8. **L'espace avant un texte qui porte une entité : SWC l'avale** (16/10/2026).
+   `Si <strong>{email}</strong> est l&apos;adresse…` suivi d'un retour à la ligne s'affichait
+   « …@exemple.frest l'adresse ». La règle exacte, vérifiée contre le SWC de Next 16.2.3 sur les
+   273 textes JSX de `src/` qui commencent par un blanc : **le blanc de tête de la PREMIÈRE ligne
+   d'un texte JSX disparaît quand ce texte contient une entité (`&apos;`, `&nbsp;`, `&amp;`,
+   `&rsquo;`…) ET un retour à la ligne.** Sur une seule ligne, ou avec une apostrophe `’` sans
+   entité, l'espace survit. Le blanc de fin de dernière ligne n'est jamais touché. Après `</b>`,
+   `</code>` ou `{expr}`, c'est pareil.
+   Ce n'est ni le compilateur React, ni le rendu conditionnel, ni le composant client. Le
+   compilateur ne fait que **masquer** le défaut dans le navigateur quand il réussit à compiler
+   le composant (il réécrit le JSX, entités décodées, sur une ligne), et il ne tourne jamais côté
+   serveur. D'où trois visages :
+   - composant compilé : l'espace est là dans le navigateur mais absent du HTML serveur, et React
+     lève l'erreur d'hydratation #418 (vu le 16/10 sur une page d'essai) ;
+   - composant que le compilateur abandonne (`try … finally`, un `??` ou un ternaire dans un
+     `try`, un `throw` dans un `try`) : espace perdu partout. C'était `FormulaireRetrouver` ;
+   - composant serveur : espace perdu.
+   Le remède : un `{" "}` explicite à la place de l'espace (`</strong>{" "}est l&apos;adresse`).
+   **Le harnais surveille** (`verif-atelier.ts`, « l'espace avant un texte JSX qui porte une
+   entité ») : il lit chaque `.tsx` de `src/` et nomme le fichier et la ligne fautifs.
+
 ## Le questionnaire — chaque phrase est un correctif, pas du style
 
 `(atelier)/composer/` — six écrans. **Aucune de ces formulations n'est décorative** : chacune

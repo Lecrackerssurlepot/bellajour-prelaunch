@@ -16,8 +16,9 @@
  * n'avoir rien du tout, et il tourne en une seconde.
  */
 
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import ts from "typescript";
 import { preparerTransition, actionsDepuis, cleCadrageCouverture } from "@/lib/atelier/transitions";
 import { urgencePour, comparerUrgence, etapeDepot } from "@/lib/atelier/urgence";
 import { gestePour, prochaineEtape, LIBELLE_CAMP } from "@/lib/atelier/prochaineEtape";
@@ -5478,6 +5479,71 @@ titre("— T-134 : le gabarit de M5 selon qu'on corrige ou non —");
   else process.env.BREVO_TEMPLATE_M5_ID = avant.m5;
   if (avant.m5c === undefined) delete process.env.BREVO_TEMPLATE_M5C_ID;
   else process.env.BREVO_TEMPLATE_M5C_ID = avant.m5c;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   L'ESPACE QUE SWC AVALE (16/10/2026)
+
+   SWC (Next 16.2.3) supprime le blanc de tete de la PREMIERE ligne d'un
+   texte JSX quand ce texte porte une entite (`&apos;`, `&nbsp;`, `&amp;`…)
+   ET passe a la ligne. `<b>{x}</b> est l&apos;adresse` suivi d'un retour
+   a la ligne s'affiche « x@b.frest l'adresse ». Sur une seule ligne, ou avec
+   une apostrophe typographique, l'espace survit. Detail et preuves :
+   src/app/CLAUDE.md, « L'espace avant un texte qui porte une entite ».
+
+   La regle est lexicale et ne depend pas de SWC : si SWC est corrige un
+   jour, elle reste vraie, juste prudente. Le remede est `{" "}`.
+   ══════════════════════════════════════════════════════════════════════ */
+titre("— l'espace avant un texte JSX qui porte une entité (SWC) —");
+{
+  /* Les lignes des textes JSX qu'SWC amputerait : un blanc puis du texte
+     sur la premiere ligne, une entite, et au moins un retour a la ligne. */
+  const textesAmputes = (source: string, nom: string): number[] => {
+    const sf = ts.createSourceFile(nom, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const lignes: number[] = [];
+    const visite = (n: ts.Node) => {
+      if (n.kind === ts.SyntaxKind.JsxText) {
+        const brut = source.slice(n.pos, n.end);
+        const premiere = brut.split(/\r\n|\n|\r/)[0];
+        if (/^[ \t]+\S/.test(premiere) && /&[#a-zA-Z0-9]+;/.test(brut) && /[\r\n]/.test(brut)) {
+          lignes.push(sf.getLineAndCharacterOfPosition(n.pos).line + 1);
+        }
+      }
+      ts.forEachChild(n, visite);
+    };
+    visite(sf);
+    return lignes;
+  };
+
+  /* Le detecteur d'abord, sur le cas reel du 16/10 et ses voisins sains. */
+  const p = (corps: string) => `export const P = (x: string) => <p>${corps}</p>;`;
+  ok("le cas du 16/10 est vu (</strong>, entité, retour à la ligne)",
+     textesAmputes(p("\n  Si <strong>{x}</strong> est l&apos;adresse.\n"), "a.tsx").length === 1);
+  ok("après une accolade aussi ({x} qu&apos;il…)",
+     textesAmputes(p("\n  Les {x} qu&apos;il envoyait.\n"), "a.tsx").length === 1);
+  ok("{\" \"} explicite : rien à signaler",
+     textesAmputes(p("\n  Si <strong>{x}</strong>{\" \"}est l&apos;adresse.\n"), "a.tsx").length === 0);
+  ok("une seule ligne : rien à signaler",
+     textesAmputes(p("Si <strong>{x}</strong> est l&apos;adresse."), "a.tsx").length === 0);
+  ok("apostrophe typographique, sans entité : rien à signaler",
+     textesAmputes(p("\n  Si <strong>{x}</strong> est l’adresse.\n"), "a.tsx").length === 0);
+  ok("ligne de tête vide (le texte commence à la ligne) : rien à signaler",
+     textesAmputes(p("\n  C&apos;est noté.\n"), "a.tsx").length === 0);
+
+  const fichiersTsx = (dossier: string): string[] =>
+    readdirSync(dossier, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? fichiersTsx(join(dossier, e.name)) : e.name.endsWith(".tsx") ? [join(dossier, e.name)] : [],
+    );
+  const racine = resolve(process.cwd(), "src");
+  const fautifs = fichiersTsx(racine).flatMap((chemin) =>
+    textesAmputes(readFileSync(chemin, "utf8"), chemin).map((l) => `${chemin.slice(racine.length + 1)}:${l}`),
+  );
+  ok(
+    fautifs.length === 0
+      ? "aucun texte JSX de src/ ne perd son espace de tête"
+      : `espace avalé par SWC, poser {" "} : ${fautifs.join(", ")}`,
+    fautifs.length === 0,
+  );
 }
 
 /* On repose le globe comme on l'a trouve : la suite du harnais ne doit pas
