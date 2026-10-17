@@ -101,6 +101,13 @@ type Graine = {
   retouches?: boolean;
   /** T-113 : archivé il y a N heures. Un seul, pour voir le filtre « Archivés ». */
   archiveIlYA?: number;
+  /**
+   * T-156 : tout ou partie du lot se retrouve, au fichier près, dans le
+   * dossier d'une autre graine (`chez` = son token). Un seul dossier, pour
+   * voir la remarque de la carte des photos sans base : c'est le cas du
+   * 06/10, un lot entier d'une autre cliente.
+   */
+  lotAilleurs?: { chez: string; photos: number };
 };
 
 const GRAINES: Graine[] = [
@@ -152,6 +159,7 @@ const GRAINES: Graine[] = [
     palier: null,
     depuis: 14,
     ouvertIlYA: 1,
+    lotAilleurs: { chez: T("demo1"), photos: 41 },
   },
   {
     token: T("demo4"),
@@ -652,6 +660,14 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
   /* L'état courant, SAUF s'il vient déjà d'être poussé au-dessus : pour un
      dossier « payée », la boucle produisait deux « Paiement reçu » à la
      suite, ce qui donnait à la démonstration l'air d'un bug du journal. */
+  /* T-156 — la ligne que l'enrichissement pose quand le lot existe ailleurs. */
+  if (g.lotAilleurs) {
+    journal.push({
+      type: "doublons_autre_dossier",
+      payload: { photos: g.lotAilleurs.photos, dossiers: [{ numero_id: `demo-${g.lotAilleurs.chez}`, photos: g.lotAilleurs.photos }] },
+      h: g.ouvertIlYA * 24 - 3,
+    });
+  }
   if (!journal.some((e) => e.payload?.vers === g.etat)) {
     journal.push({ type: "etat_change", payload: { vers: g.etat, par: "Mathias" }, h: g.depuis });
   }
@@ -726,6 +742,19 @@ export function ficheDemo(token: string, maintenant = new Date()): Fiche | null 
     /* La démo ne joue pas le dépôt interrompu : `null` veut dire « aucun
        témoin », donc aucune alerte — exactement ce qu'on veut par défaut. */
     photosAttendues: null,
+    doublonsAilleurs: (() => {
+      const autre = g.lotAilleurs ? GRAINES.find((x) => x.token === g.lotAilleurs!.chez) : null;
+      return g.lotAilleurs && autre
+        ? [{
+            numeroId: `demo-${autre.token}`,
+            token: autre.token,
+            titre: autre.titre,
+            prenom: autre.prenom,
+            photos: g.lotAilleurs.photos,
+            le: il(g.ouvertIlYA * 24 - 3),
+          }]
+        : [];
+    })(),
     /* T-090/T-093 — la démo joue le format normal : DEUX couvertures
        proposées (pour montrer le choix et son rang « par défaut ») et deux
        doubles pages, dans leurs gestionnaires réordonnables. Un dossier non

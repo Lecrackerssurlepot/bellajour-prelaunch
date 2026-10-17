@@ -51,6 +51,12 @@ import {
 import { empreinteDepuisGris, TAILLE_DCT } from "./empreinte";
 import { planGeocodage } from "./lieux";
 import { geocoderInverse } from "./geocodage";
+import {
+  EVT_DOUBLONS_AILLEURS,
+  doublonsAilleurs,
+  payloadDoublonsAilleurs,
+  type PhotoAuCoffre,
+} from "./doublonsAilleurs";
 
 /** Ce qu'on lit d'un JPEG pour trouver son EXIF : le segment APP1 est en
  *  tête et fait 64 Ko au plus. 512 Ko couvrent aussi les PNG d'iPhone (eXIf
@@ -282,6 +288,9 @@ export async function enrichirPhotos(
   let curseur = 0;
   let arret = false;
   const maintenant = new Date();
+  /* T-156 — ce que ce passage a écrit, pour chercher le même fichier dans
+     un autre dossier une fois le lot fini. */
+  const empreintesEcrites: PhotoAuCoffre[] = [];
 
   const traiter = async (l: Ligne): Promise<void> => {
     const nom = l.nom_origine ?? l.id;
@@ -317,6 +326,9 @@ export async function enrichirPhotos(
         }
       }
       bilan.traitees++;
+      if (!opts.essai && lecture.empreinte) {
+        empreintesEcrites.push({ id: l.id, numeroId, taille: l.taille, empreinte: lecture.empreinte });
+      }
       if (lecture.priseLe) bilan.datees++;
       if (lecture.gpsLat !== null) bilan.geolocalisees++;
     } catch (err) {
@@ -336,7 +348,53 @@ export async function enrichirPhotos(
       }
     }),
   );
+  if (empreintesEcrites.length) await signalerDoublonsAilleurs(supabase, numeroId, empreintesEcrites, dire);
   return bilan;
+}
+
+/**
+ * T-156 — le lot qu'on vient de lire existe-t-il déjà dans un AUTRE dossier ?
+ * Même taille au fichier près et même empreinte (règle pure dans
+ * `doublonsAilleurs.ts`). Si oui, une ligne `doublons_autre_dossier` sur le
+ * dossier qui REÇOIT, que la fiche montre en remarque. Rien n'est refusé,
+ * rien n'est retiré, aucun mail. Ne throw jamais : une remarque qu'on n'a
+ * pas pu faire ne doit jamais coûter une photo.
+ */
+export async function signalerDoublonsAilleurs(
+  supabase: SupabaseClient,
+  numeroId: string,
+  lot: PhotoAuCoffre[],
+  dire: (ligne: string) => void = () => {},
+): Promise<void> {
+  try {
+    const tailles = [...new Set(lot.map((p) => p.taille).filter((t): t is number => typeof t === "number" && t > 0))];
+    if (!tailles.length) return;
+    /* La taille au fichier près fait presque tout le tri en base ; la
+       comparaison des empreintes se fait ici. Plafond large : il faudrait
+       mille photos de même taille ailleurs pour qu'il morde. */
+    const { data, error } = await supabase
+      .from("photos")
+      .select("id, numero_id, taille, empreinte")
+      .in("taille", tailles)
+      .neq("numero_id", numeroId)
+      .not("empreinte", "is", null)
+      .limit(1000)
+      .returns<Array<{ id: string; numero_id: string; taille: number | null; empreinte: string | null }>>();
+    if (error) {
+      console.error("[enrichissement] doublons ailleurs : lecture échouée", error.code, error.message);
+      return;
+    }
+    const groupes = doublonsAilleurs(
+      lot,
+      (data ?? []).map((p) => ({ id: p.id, numeroId: p.numero_id, taille: p.taille, empreinte: p.empreinte })),
+    );
+    if (!groupes.length) return;
+    const payload = payloadDoublonsAilleurs(groupes);
+    dire(`  ⚠ ${payload.photos} photo(s) déjà présentes dans ${groupes.length} autre(s) dossier(s)`);
+    await logEvenement(supabase, numeroId, EVT_DOUBLONS_AILLEURS, payload);
+  } catch (err) {
+    console.error("[enrichissement] doublons ailleurs : exception", (err as Error)?.message);
+  }
 }
 
 export type BilanLieux = {

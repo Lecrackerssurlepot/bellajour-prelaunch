@@ -28,8 +28,9 @@ fichier ou toute réécriture de texte dans le tunnel `/composer` → `/numero` 
 | 9 | Les rebonds sont écoutés | `lib/atelier/rebond.ts` + `api/brevo/webhook` | Une adresse morte = un dossier mort, invisible |
 | 10 | Le webhook ne ment pas sur son succès | `api/brevo/webhook` + `lib/atelier/evenements.ts` | Brevo ne réessaie pas, le rebond est perdu |
 | 11 | La faute de frappe est attrapée avant l'envoi | `lib/atelier/questionnaire.ts` | Le rebond arrive quand même, en aval |
+| 12 | L'écran 5 NOMME le dossier qui reçoit (titre, prénom, lus au serveur) ; la reprise d'un AUTRE token repart d'un brouillon propre et ne s'écrit qu'une fois le serveur entendu, jamais chez l'atelier connecté ; `?nouveau=1` ne rouvre jamais un dossier existant, et un dossier rouvert depuis le brouillon du navigateur propose « Commencer un nouveau numéro » (T-156, 17/10) | `composer/dossier.ts`, `composer/draft.ts` (`brouillonDeReprise`, `brouillonDuDepart`), `Composer.tsx` (`ecrire`), `api/atelier/numero` (GET), les liens de `/compte` et `/numero` | 92 photos d'une cliente déposées dans le dossier d'une autre, le 06/10, sans que rien à l'écran ne le montre |
 
-## Les cinq pièges qui ressemblent à du ménage
+## Les six pièges qui ressemblent à du ménage
 
 Ce sont les endroits où une simplification de bonne foi casse quelque chose sans bruit.
 
@@ -47,6 +48,15 @@ Ce sont les endroits où une simplification de bonne foi casse quelque chose san
 5. **`sante.ts` exclut volontairement le dépôt non terminé des « oubliés ».** Ça ressemble à un
    oubli, c'est une correction du 25/08 : la balle est chez la cliente, et une page santé qui
    crie pour rien cesse d'être crue.
+6. **`brouillonDeReprise` jette les réponses du brouillon local quand le token diffère.** Ça
+   ressemble à une perte : c'est la correction du 06/10. Ces réponses appartiennent à un AUTRE
+   numéro (son consentement déjà coché, son titre repris par l'écran 6), et celles du dossier
+   repris sont déjà en base. Et `ecrire` reste faux tant que le serveur n'a pas dit « ce dossier
+   existe, et ce n'est pas l'atelier » : écrire tout de suite, c'est reposer le dossier d'un
+   client comme dépôt en cours dans le navigateur de l'atelier. Et `?nouveau=1` sur les liens
+   « composer » de `/compte` et de `/numero` n'est pas du bruit d'URL : sans lui, « Composer un
+   nouveau numéro » rouvrait le brouillon du navigateur, et le 17/10 c'était le dossier d'une
+   autre cliente, à l'écran 5. (T-156)
 
 ## Comment prouver que rien n'est cassé
 

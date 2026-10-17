@@ -62,7 +62,10 @@ const Screen6Fin = dynamic(() => import('./screens/Screen6Fin'), {
     </>
   ),
 })
-import { EMPTY_DRAFT, brouillonSansDossier, loadDraft, saveDraft, type Draft } from './draft'
+import {
+  EMPTY_DRAFT, PARAM_NOUVEAU, brouillonDuDepart, brouillonSansDossier, loadDraft, saveDraft, type Draft,
+} from './draft'
+import { lireDossierServeur, type DossierServeur } from './dossier'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { PARAM_PROVENANCE, cheminRetour, motRetour } from './provenance'
 import {
@@ -108,18 +111,24 @@ function profondeur(): number {
 
 type EtatDossier = 'existe' | 'introuvable' | 'indecidable'
 
-async function etatDuDossier(token: string): Promise<EtatDossier> {
+/* T-156 — la même lecture rend aussi le titre, le prénom et `atelier` (le
+   cookie admin, que le navigateur ne peut pas lire seul). `dossier` n'est
+   rempli que pour `existe`. */
+async function etatDuDossier(token: string): Promise<{ etat: EtatDossier; dossier: DossierServeur | null }> {
   /* Un token qui n'a pas la forme d'un token ne désigne aucun dossier, et la
      route répondrait 400, c'est-à-dire « je ne sais pas » — le seul verdict
      dont on ne saurait pas sortir. On tranche ici, sans appeler personne. */
-  if (!isValidNumeroToken(token)) return 'introuvable'
+  if (!isValidNumeroToken(token)) return { etat: 'introuvable', dossier: null }
   try {
     const r = await fetch(`/api/atelier/numero?token=${encodeURIComponent(token)}`)
-    if (r.status === 404) return 'introuvable'
-    if (r.ok) return 'existe'
-    return 'indecidable'
+    if (r.status === 404) return { etat: 'introuvable', dossier: null }
+    if (r.ok) {
+      const dossier = lireDossierServeur(await r.json().catch(() => null))
+      return { etat: 'existe', dossier }
+    }
+    return { etat: 'indecidable', dossier: null }
   } catch {
-    return 'indecidable'
+    return { etat: 'indecidable', dossier: null }
   }
 }
 
@@ -154,6 +163,29 @@ export default function Composer() {
      bout des 90 jours de rétention). Ses réponses, elles, sont intactes : on
      le dit et on le laisse continuer, le dossier se recrée à l'écran 4. */
   const [dossierPerdu, setDossierPerdu] = useState(false)
+  /* T-156 — `?reprendre=` menait à un dossier qui n'existe plus, et ce
+     n'était pas celui du brouillon de cet appareil : on rend ce brouillon
+     intact et on le dit, au lieu de vider ses réponses à lui. */
+  const [lienMort, setLienMort] = useState(false)
+  /* T-156 — le brouillon s'écrit-il dans CE navigateur ? Faux pendant la
+     reprise du dossier d'un AUTRE token, tant que le serveur n'a pas dit
+     que ce dossier existe et que ce n'est pas l'atelier qui l'ouvre. Le
+     06/10, le bouton « Ajouter des photos » d'une page client, cliqué
+     depuis le navigateur de l'atelier, y avait posé le dossier d'une
+     cliente comme dépôt en cours ; rouvert plus tard, /composer y a
+     déposé le lot d'une autre. Sans écriture, l'URL porte toujours le
+     token : un rechargement reprend au même endroit. */
+  const [ecrire, setEcrire] = useState(true)
+  /* T-156 — ce que le serveur dit du dossier vérifié au montage, et pour
+     quel token. L'écran 6 en tire le titre : le brouillon propre d'une
+     reprise n'en a pas, et celui d'avant le 17/10 y mettait le titre d'un
+     AUTRE numéro. */
+  const [dossierServeur, setDossierServeur] = useState<{ token: string; dossier: DossierServeur } | null>(null)
+  /* T-156 — le token que le brouillon de CE navigateur portait en arrivant,
+     sans lien de reprise. Le 06/10 puis le 17/10, c'est par là qu'un dossier
+     d'une autre cliente s'est rouvert à l'écran 5. Tant que l'écran 5 montre
+     ce dossier-là, il propose d'en sortir (« Commencer un nouveau numéro »). */
+  const [tokenDuBrouillon, setTokenDuBrouillon] = useState<string | null>(null)
   /* D'où l'on vient (08/09) — lu une fois au montage, comme `reprendre`, et
      jamais pendant le rendu serveur : `window` n'y existe pas. `null` tant
      qu'on n'a pas lu, ce qui rend le défaut (/magazine) exact aussi bien
@@ -221,7 +253,8 @@ export default function Composer() {
     const params = new URLSearchParams(window.location.search)
     setDe(params.get(PARAM_PROVENANCE))
     const reprendre = params.get('reprendre')
-    const estReprise = Boolean(reprendre && isValidNumeroToken(reprendre))
+    const tokenRepris = reprendre && isValidNumeroToken(reprendre) ? reprendre : null
+    const estReprise = tokenRepris !== null
     /* T-058 — le paramètre est là mais sa forme est fausse : le lien a été
        coupé en route. On n'avance PAS (`pret` reste faux, donc le brouillon
        local n'est jamais réécrit) : avancer, c'était créer un doublon en bout
@@ -230,7 +263,15 @@ export default function Composer() {
       setLienAbime(true)
       return
     }
-    setDraft(estReprise ? { ...repris, token: reprendre, screen: 5 } : repris)
+    /* T-156 — le départ se décide dans draft.ts (`brouillonDuDepart`, pur) :
+       une reprise d'un AUTRE dossier repart propre et n'écrit rien dans ce
+       navigateur tant que le serveur n'a pas parlé (voir `ecrire`) ;
+       `?nouveau=1` ne rouvre jamais un dossier existant. */
+    const depart = brouillonDuDepart(repris, tokenRepris, params.get(PARAM_NOUVEAU) === '1')
+    const etranger = depart.etranger
+    setDraft(depart.draft)
+    setEcrire(!etranger)
+    setTokenDuBrouillon(depart.tokenDuBrouillon)
     setReprise(estReprise)
     setPret(true)
     /* Lot 1 (07/09) — l'écran de départ entre dans l'historique. Sans cette
@@ -239,9 +280,14 @@ export default function Composer() {
        `bjDepth` (11/09) : voir `reculer`. Il est RELU quand il est déjà là —
        un simple rechargement ne remet pas la pile à plat, les entrées
        empilées avant lui sont toujours derrière. */
+    /* T-156 — `?nouveau=1` n'a servi qu'une fois : resté dans l'adresse, un
+       rechargement à l'écran 5 oublierait le dossier qu'on vient d'ouvrir. */
+    const adresse = new URL(window.location.href)
+    adresse.searchParams.delete(PARAM_NOUVEAU)
     window.history.replaceState(
-      { bjScreen: estReprise ? 5 : repris.screen, bjDepth: profondeur() },
+      { bjScreen: depart.draft.screen, bjDepth: profondeur() },
       '',
+      adresse.pathname + adresse.search + adresse.hash,
     )
 
     /* ── LE TOKEN DU BROUILLON PEUT DÉSIGNER UN DOSSIER MORT (11/09/2026) ──
@@ -258,11 +304,32 @@ export default function Composer() {
        moteur, lui, tomberait de toute façon sur le même 404.
 
        ⚠️ Seul `introuvable` efface quoi que ce soit (voir etatDuDossier). */
-    const aVerifier = estReprise ? reprendre : repris.token
+    const aVerifier = depart.draft.token
     if (!aVerifier) return
     let monte = true
-    void etatDuDossier(aVerifier).then((etat) => {
-      if (!monte || etat !== 'introuvable') return
+    void etatDuDossier(aVerifier).then(({ etat, dossier }) => {
+      if (!monte) return
+      if (etat === 'existe') {
+        if (dossier) setDossierServeur({ token: aVerifier, dossier })
+        /* T-156 — le dossier existe : la reprise devient le brouillon de cet
+           appareil, SAUF pour l'atelier connecté. Lui dépose pour le client,
+           il ne compose pas : son navigateur garde son propre brouillon. */
+        if (etranger && !dossier?.atelier) setEcrire(true)
+        return
+      }
+      if (etat !== 'introuvable') return
+      if (etranger) {
+        /* Le lien mène à un dossier mort qui n'était pas celui de cet
+           appareil : le brouillon local n'a jamais été écrasé (`ecrire` est
+           resté faux), on le rend tel quel. */
+        setDraft(repris)
+        setEcrire(true)
+        setTokenDuBrouillon(repris.token)
+        setReprise(false)
+        setLienMort(true)
+        scroller.current?.scrollTo({ top: 0 })
+        return
+      }
       setDraft(brouillonSansDossier)
       /* Plus de dossier, donc plus de photos « déjà chez nous » à annoncer. */
       setReprise(false)
@@ -332,10 +399,11 @@ export default function Composer() {
     }
   }, [draft.screen, pret])
 
-  /* Sauvegarde à chaque changement, une fois la reprise faite. */
+  /* Sauvegarde à chaque changement, une fois la reprise faite, et seulement
+     quand ce brouillon appartient à cet appareil (T-156, voir `ecrire`). */
   useEffect(() => {
-    if (pret) saveDraft(draft)
-  }, [draft, pret])
+    if (pret && ecrire) saveDraft(draft)
+  }, [draft, pret, ecrire])
 
   const patch = useCallback((p: Partial<Draft>) => {
     setDraft((d) => ({ ...d, ...p }))
@@ -455,6 +523,18 @@ export default function Composer() {
     scroller.current?.scrollTo({ top: 0 })
   }, [])
 
+  /* ── T-156 : « CE N'EST PAS VOTRE DOSSIER ? » ───────────────────────
+     Rechargement voulu (le moteur d'envoi est un singleton hors React,
+     voir la croix) vers `?nouveau=1`, qui oublie ce brouillon au montage :
+     le dossier, lui, reste en base, joignable par `/numero` et `/compte`.
+     Si des photos sont dans la grille, le navigateur demande d'abord
+     confirmation (Screen5Depot pose `beforeunload`). La provenance suit. */
+  const commencerAutre = useCallback(() => {
+    const cible = new URLSearchParams({ [PARAM_NOUVEAU]: '1' })
+    if (de) cible.set(PARAM_PROVENANCE, de)
+    window.location.assign(`/composer?${cible.toString()}`)
+  }, [de])
+
   /* Fin d'écran 4 : création du dossier. Idempotent par le token. */
   const creerNumero = useCallback(async () => {
     /* Tous les champs, pas seulement ceux de l'écran 4 : c'est ici que le
@@ -482,7 +562,7 @@ export default function Composer() {
     setErreur(null)
     try {
       if (draft.token) {
-        const etat = await etatDuDossier(draft.token)
+        const { etat } = await etatDuDossier(draft.token)
         if (etat !== 'introuvable') { aller(5); return }
         /* Le dossier a disparu entre le montage et ce clic (ou la
            vérification du montage n'a pas abouti). On efface, on le dit, et
@@ -708,6 +788,15 @@ export default function Composer() {
               qui est arrivé. Rien n'est caché des photos perdues : le
               dossier n'existe plus, elles non plus. Faire semblant se
               paierait à l'écran 5, devant une grille vide. */}
+          {/* T-156 — le lien de reprise menait à un dossier qui n'existe
+              plus, et cet appareil a son propre brouillon : rendu intact. */}
+          {lienMort && !dossierPerdu && n !== 6 && (
+            <p className="at-q-avis" role="status">
+              Ce lien mène à un dossier qui n’existe plus : les photos qui y
+              avaient été envoyées ne sont plus chez nous. Vous pouvez composer
+              un nouveau numéro.
+            </p>
+          )}
           {dossierPerdu && n !== 6 && (
             <p className="at-q-avis" role="status">
               {draft.token
@@ -756,13 +845,23 @@ export default function Composer() {
                 setDraft((d) => ({ ...d, termine: true, screen: 6 }))
               }}
               onDossierPerdu={oublierDossier}
+              onAutreDossier={draft.token && draft.token === tokenDuBrouillon ? commencerAutre : undefined}
             />
           )}
           {n === 6 && (
             /* T2-1 : la case « montrer des extraits » a quitté cet écran
                pour la page /numero (ConsentCommunication.tsx) — un moment
                de conclusion ne se partage pas. */
-            <Screen6Fin titre={draft.titre} token={draft.token} nbPhotos={photosEnvoyees} />
+            /* T-156 — le titre du SERVEUR quand on l'a lu pour ce token : une
+               reprise repart d'un brouillon sans titre. */
+            <Screen6Fin
+              titre={
+                (dossierServeur && dossierServeur.token === draft.token && dossierServeur.dossier.titre) ||
+                draft.titre
+              }
+              token={draft.token}
+              nbPhotos={photosEnvoyees}
+            />
           )}
         </div>
       </div>

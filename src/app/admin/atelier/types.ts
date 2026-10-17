@@ -402,6 +402,18 @@ export type Fiche = {
       `nbPhotos` est la SEULE trace du trou. `null` = le navigateur n'a rien
       annoncé (dossier antérieur au 01/09) : on ne conclut rien. */
   photosAttendues: number | null;
+  /** T-156 — les autres dossiers qui portent déjà des photos de ce lot
+      (même fichier au poids près, même empreinte), lus au journal
+      `doublons_autre_dossier`. Une REMARQUE pour l'atelier, jamais un
+      refus. `token` est null quand l'autre dossier a été supprimé depuis. */
+  doublonsAilleurs: Array<{
+    numeroId: string;
+    token: string | null;
+    titre: string | null;
+    prenom: string | null;
+    photos: number;
+    le: string;
+  }>;
   /** Signés pour l'affichage (URL courtes, régénérées à chaque rendu).
       `plat` (T2-2) : la couverture à plat — présent, il remplace c1/c4.
       `doubles` (T-090) : 0 à cinq doubles pages, dans l'ordre d'affichage ;

@@ -94,6 +94,12 @@ ne throw jamais, s'arrête sur colonne absente sans boucler). ⚠️ Les remarqu
 doublon, capture) sont des REMARQUES pour l'œil de l'atelier, jamais des exclusions : l'ancien
 projet a marqué 80 % d'un album réel avec un seuil de flou, puis l'a débranché. ⚠️ `prise_le`
 est l'heure LOCALE de l'appareil : ne pas la convertir, ne pas la comparer à `created_at`.
+**`doublonsAilleurs.ts`** (T-156, 17/10/2026, pur) : un lot retrouvé dans un AUTRE dossier, même
+TAILLE au fichier près ET même empreinte à `SEUIL_DOUBLON` près (la vignette est refaite par chaque
+navigateur). `enrichirPhotos` le cherche après chaque lot et journalise `doublons_autre_dossier`
+sur le dossier qui reçoit (identifiants seulement, jamais de token) ; la fiche cumule et nomme
+l'autre dossier. Une REMARQUE, jamais un refus (deux invités d'un mariage partagent des photos),
+et sans `TAILLE_GROUPE_MAX` : un lot entier retrouvé ailleurs est le signal (le 06/10, 92 photos).
 Les modules à effets : `mails.ts`, `r2.ts`, `cloudprinter.ts`, `paiement.ts`, `evenements.ts`,
 `apercu.ts`, `enrichissement.ts`, `geocodage.ts`. La règle de séparation est volontaire : **tout ce qui est testable sans réseau l'est**,
 et `scripts/verif-atelier.ts` le prouve à chaque exécution.

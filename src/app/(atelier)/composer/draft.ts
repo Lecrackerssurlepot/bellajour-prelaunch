@@ -142,6 +142,66 @@ export function brouillonSansDossier(draft: Draft): Draft {
   }
 }
 
+/**
+ * Le brouillon d'une reprise par `?reprendre=<token>` (T-156, 17/10/2026).
+ *
+ * Jusqu'au 17/10 : `{ ...brouillonLocal, token: repris, screen: 5 }`. Le
+ * token d'un dossier était fusionné avec TOUT le reste d'un brouillon local
+ * antérieur, qui pouvait appartenir à un autre numéro, voire à une autre
+ * personne : la case de consentement déjà cochée pour un autre dépôt, et le
+ * titre d'un autre numéro repris par l'écran 6. Le 06/10, 92 photos d'une
+ * cliente sont parties dans le dossier d'une autre par ce chemin.
+ *
+ * — Même token que le brouillon local : c'est SON dossier, sur SON appareil.
+ *   On garde tout, on va à l'écran 5 (le comportement d'avant).
+ * — Autre token, ou pas de token : on repart d'un brouillon PROPRE. Les
+ *   réponses de ce dossier sont déjà en base, rien n'est perdu, et rien
+ *   d'un autre dossier ne s'y mêle. Le brouillon local, lui, n'est pas
+ *   touché ici : le Composer ne l'écrase qu'une fois le serveur entendu.
+ */
+export function brouillonDeReprise(local: Draft, token: string): Draft {
+  if (local.token === token) return { ...local, screen: 5 }
+  return { ...EMPTY_DRAFT, token, screen: 5 }
+}
+
+/** `/composer?nouveau=1` : on vient commencer un AUTRE numéro (T-156). */
+export const PARAM_NOUVEAU = 'nouveau'
+
+/**
+ * Le brouillon de départ du questionnaire, selon l'adresse (T-156, 17/10/2026).
+ *
+ * Le 17/10, l'atelier est entré par « Composer un nouveau numéro » de
+ * `/compte` (`/composer?de=compte`), sans `?reprendre=` : le brouillon de ce
+ * navigateur portait le dossier d'une AUTRE cliente, et l'a rouvert à
+ * l'écran 5, en silence. Un bouton qui dit « nouveau » ne doit jamais
+ * rouvrir un dossier existant.
+ *
+ * — `?reprendre=<token>` : la reprise explicite, `brouillonDeReprise`.
+ *   `etranger` dit qu'elle vise un autre dossier que le brouillon local.
+ * — `?nouveau=1` et un brouillon qui porte un token : le dossier existe en
+ *   base, il reste joignable par `/numero` et `/compte` ; on repart du
+ *   brouillon vide. Un brouillon SANS token est gardé : ses réponses ne
+ *   vivent que sur cet appareil, et c'est lui, le numéro qu'on commence.
+ * — sinon le brouillon local, et `tokenDuBrouillon` dit que le dossier
+ *   affiché vient de CE navigateur, pas d'un lien : c'est là que l'écran 5
+ *   propose « Commencer un nouveau numéro ».
+ */
+export function brouillonDuDepart(
+  local: Draft,
+  tokenRepris: string | null,
+  nouveau: boolean,
+): { draft: Draft; etranger: boolean; tokenDuBrouillon: string | null } {
+  if (tokenRepris !== null) {
+    return {
+      draft: brouillonDeReprise(local, tokenRepris),
+      etranger: local.token !== tokenRepris,
+      tokenDuBrouillon: null,
+    }
+  }
+  if (nouveau && local.token) return { draft: EMPTY_DRAFT, etranger: false, tokenDuBrouillon: null }
+  return { draft: local, etranger: false, tokenDuBrouillon: local.token }
+}
+
 export function saveDraft(draft: Draft): void {
   if (typeof window === 'undefined') return
   try {

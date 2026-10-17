@@ -1416,6 +1416,37 @@ export default function Fiche({
             {/* T-123 — ce que le lot sait de lui-même, en une ligne, avant
                 d'ouvrir quoi que ce soit. Vide tant que rien n'a été lu. */}
             {resumePhotos ? <p className="ate-carte-sous ate-photos-resume">{resumePhotos}</p> : null}
+            {/* ── T-156 : CE LOT EXISTE DANS UN AUTRE DOSSIER ──────────────
+                Le 06/10, 92 photos d'une cliente sont arrivées, au fichier
+                près, dans le dossier d'une autre, et rien ne l'a dit : on
+                l'a su en enquêtant. L'enrichissement compare maintenant
+                chaque lot aux autres dossiers (même poids, même empreinte)
+                et journalise ; ici, l'autre dossier est NOMMÉ, avec son lien.
+                Une REMARQUE, jamais un refus : deux invités d'un même
+                mariage se partagent les mêmes photos. */}
+            {fiche.doublonsAilleurs.length ? (
+              <div className="ate-bandeau ate-bandeau--attention ate-photos-ailleurs" role="note">
+                {fiche.doublonsAilleurs.map((d) => {
+                  const nom = d.titre ? `« ${d.titre} »${d.prenom ? ` de ${d.prenom}` : ""}` : d.prenom ?? "sans titre";
+                  return (
+                    <p key={d.numeroId}>
+                      <strong>
+                        {d.photos === 1
+                          ? "1 photo de ce dossier est identique, au fichier près, à une photo du dossier "
+                          : `${d.photos} photos de ce dossier sont identiques, au fichier près, à celles du dossier `}
+                        {d.token ? <Link href={`${base}/${d.token}`}>{nom}</Link> : `${nom}, supprimé depuis`}
+                      </strong>{" "}
+                      (remarqué le {new Date(d.le).toLocaleDateString("fr-FR", { day: "2-digit", month: "long" })}).
+                    </p>
+                  );
+                })}
+                <p>
+                  Une remarque, pas un refus : deux invités d&apos;un même événement partagent souvent
+                  des photos. Un lot entier venu d&apos;un autre client, en revanche, se vérifie avant
+                  de composer.
+                </p>
+              </div>
+            ) : null}
             {lecture === "erreur" ? (
               <p className="ate-carte-sous ate-photos-resume">
                 La lecture a échoué. Si la migration 20260921 n&apos;est pas passée, c&apos;est attendu.

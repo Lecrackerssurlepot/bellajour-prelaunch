@@ -30,6 +30,7 @@ import { normaliserFinition } from "@/lib/atelier/impression";
 import { normaliserPays } from "@/lib/atelier/pays";
 import { normaliserQuantite } from "@/lib/atelier/exemplaires";
 import { rangSuivant } from "@/lib/atelier/rang";
+import { quiEstConnecteRequete } from "@/lib/admin-session";
 
 export const runtime = "nodejs";
 
@@ -103,6 +104,16 @@ function clean(value: unknown, max: number): string {
  * lignes du numéro — déclarées comprises, puisqu'elles tiennent un rang. Le
  * moteur s'en sert pour ranger les ajouts d'une seconde session derrière le
  * premier dépôt, sans jamais renuméroter ce que le client a déjà choisi.
+ *
+ * T-156 (17/10/2026) : rend aussi `titre` et `prenom`, et `atelier: true`
+ * quand le navigateur porte un cookie `bj_admin` valide. Le 06/10, 92 photos
+ * d'une cliente sont parties dans le dossier d'une autre par l'écran 5, qui
+ * ne nommait pas le dossier : on déposait « dans le brouillon », sans voir
+ * dans le dossier de qui. Le titre et le prénom sont ceux que la page
+ * `/numero/<token>` montre déjà au porteur du même token : rien de neuf ne
+ * sort. `atelier` ne dit au navigateur que ce que son propre cookie vaut
+ * (httpOnly, il ne peut pas le lire seul) et n'ouvre aucune porte : le
+ * questionnaire s'en sert pour prévenir au lieu de reprendre en silence.
  */
 export async function GET(request: Request) {
   try {
@@ -118,9 +129,9 @@ export async function GET(request: Request) {
     const supabase = makeSupabase();
     const { data: numero, error: errNum } = await supabase
       .from("numeros")
-      .select("id")
+      .select("id, titre, prenom")
       .eq("token", token)
-      .maybeSingle();
+      .maybeSingle<{ id: string; titre: string | null; prenom: string | null }>();
 
     if (errNum) {
       console.error("[numero GET] lookup échoué", errNum.code);
@@ -152,7 +163,19 @@ export async function GET(request: Request) {
     if (errRang) console.error("[numero GET] rang échoué", errRang.code);
     const ordreSuivant = rangSuivant(dernier?.ordre != null ? [dernier.ordre] : []);
 
-    return NextResponse.json({ nbPhotos: count ?? 0, ordreSuivant }, { status: 200 });
+    const atelier = Boolean(await quiEstConnecteRequete(request));
+
+    return NextResponse.json(
+      {
+        nbPhotos: count ?? 0,
+        ordreSuivant,
+        titre: numero.titre ?? "",
+        prenom: numero.prenom ?? "",
+        ...(atelier ? { atelier: true } : {}),
+      },
+      /* La réponse dépend du cookie : jamais en cache partagé. */
+      { status: 200, headers: { "Cache-Control": "private, no-store" } },
+    );
   } catch (err) {
     console.error("[numero GET] exception", (err as Error)?.message);
     return NextResponse.json({ error: "internal" }, { status: 500 });

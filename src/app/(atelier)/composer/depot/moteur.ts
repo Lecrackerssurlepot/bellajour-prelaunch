@@ -28,6 +28,7 @@ import {
 import { fermerPool, poolIndisponible, reduire, tailleDuPool } from './pool'
 import * as stockage from './stockage'
 import { decalageVersLeCoffre, rangSuivant } from '@/lib/atelier/rang'
+import { lireDossierServeur, type DossierServeur } from '../dossier'
 import { MAX_PHOTOS } from './paliers'
 
 /* ── Réglages ─────────────────────────────────────────────────────────── */
@@ -148,6 +149,10 @@ export type Vue = {
       montre que cette session : ce compte est le seul témoin des photos
       déjà chez nous. */
   serveur: number | null
+  /** T-156 — le titre et le prénom du dossier de CE token, lus au serveur
+      par la même lecture que `serveur` ; null tant qu'il n'a pas parlé.
+      L'écran 5 les affiche : on voit dans quel dossier on dépose. */
+  dossier: DossierServeur | null
 }
 
 export type Refus = { nom: string; raison: string }
@@ -168,6 +173,7 @@ class Moteur {
   private prochaineDeclarationA = 0
 
   private nbServeur: number | null = null
+  private dossier: DossierServeur | null = null
   /* T-095 — la lecture d'initialisation ne part qu'une fois par moteur. */
   private serveurInterroge = false
   /* T-114 : tant que cette date n'est pas passée et que le serveur n'a pas
@@ -293,6 +299,10 @@ class Moteur {
       const r = await fetch(`/api/atelier/numero?token=${encodeURIComponent(this.token)}`)
       if (!r.ok) return
       const data = (await r.json()) as { nbPhotos?: number; ordreSuivant?: number }
+      /* T-156 — avant le compte : un compte illisible n'empêche pas de
+         nommer le dossier. */
+      this.dossier = lireDossierServeur(data)
+      if (this.dossier) this.changement()
       if (typeof data.nbPhotos !== 'number') return
       this.nbServeur = Math.max(this.nbServeur ?? 0, data.nbPhotos)
       if (typeof data.ordreSuivant === 'number') this.calerApresLeCoffre(data.ordreSuivant)
@@ -1054,6 +1064,7 @@ class Moteur {
       attendues: this.attendues,
       bandeau: this.bandeau,
       serveur: this.nbServeur,
+      dossier: this.dossier,
     }
   }
 
