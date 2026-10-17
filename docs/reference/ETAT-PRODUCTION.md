@@ -1,4 +1,4 @@
-# État du système — au 15/10/2026 (soir)
+# État du système — au 17/10/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,37 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 17/10/2026 — L'Édition collective est EN LIGNE sur bellajour.fr
+
+- **`COLLECTIF_OUVERT=1` en Production ET en Preview** depuis le 17/10 vers 12 h 30 (Paris),
+  accord de Mathias (« Oui, ouvre-la »). C'est la même variable Vercel, étendue à la cible
+  Production (id `AJXe7XAWD35egFoO`). Le premier déploiement qui la lit : `dpl_2mZRB3YnjL1Y8xpv65stoa8gADCW`
+  (commit `19f607a`, PR #245), READY, alias www.bellajour.fr et bellajour.fr.
+- **Vérifié en production le 17/10**, sur « Essai neuf (Claude) » avant son archivage :
+  tableau de bord du responsable et espace de l'équipe 200 ; dépôt 200 avec le texte d'accord
+  (plus de « [À FIXER] ») ; lien inconnu 404 ; `/espace` → `/edition/retrouver` (307) ;
+  `/admin/collectif` sans cookie → `/admin/login` ; dépôt sans débordement à 390 px. Le CORS du
+  coffre répond 204 à `https://www.bellajour.fr` et `https://bellajour.fr` (PUT, prévol), 403 à
+  une autre origine.
+- **Le texte d'accord du dépôt** (PR #245), choisi par Mathias le 17/10 (« version complète ») :
+  « J'accepte que Bellajour utilise ces photos pour composer le magazine « … » de/d'…, et je
+  confirme avoir le droit de les partager, y compris pour les personnes qu'on y voit. » Aucune
+  durée de conservation n'y est promise : la politique de rétention reste à écrire.
+- **Les 7 éditions de la base étaient des essais, toutes ARCHIVÉES le 17/10** par le geste
+  « Archiver » de l'atelier (journal `collectif_evenements`, compte Mathias) : Essai technique,
+  Essai livraison, Organisation d'essai, Essai révision, Essai neuf, SKEMA, BON. Leurs 21 liens
+  répondent 404 en production. Rien n'est effacé : « Récupérer » sur la fiche les rouvre.
+- **Toujours FERMÉ en production** (aucune variable sur Vercel) :
+  - `COLLECTIF_MAILS` : aucun mail d'édition ne part. « Votre espace est prêt » répond « coupé »,
+    et « Retrouver mon espace » dit « Ce service ouvre bientôt » et renvoie vers l'atelier.
+    L'atelier envoie donc le lien du responsable lui-même.
+  - `COLLECTIF_CODE_APPAREIL` : le lien du responsable donne tous ses droits sur n'importe quel
+    appareil (le code par mail exige aussi `COLLECTIF_MAILS`).
+- **Fusionné le 16/10, sans entrée ici jusqu'à aujourd'hui** : le code pour modifier sur un
+  appareil nouveau (PR #240 puis #242 : lecture d'abord, code par mail valable 24 h, 10 essais,
+  10 codes par heure ; migration `20261019_collectif_appareils.sql` appliquée par Mathias),
+  « Retrouver mon espace » (PR #243) et l'espace avalé par SWC (PR #244).
 
 ## 15/10/2026 (soir) — Dublin, HEIC, mails des éditions ; le code par appareil attend sa migration
 

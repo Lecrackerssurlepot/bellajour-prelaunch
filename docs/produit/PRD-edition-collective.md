@@ -535,7 +535,11 @@ Prévoir les accroches, ne rien envoyer :
 11. **Le compte des étapes** affiché au client : les maquettes disent « Étape N sur 6 » côté client
     et « sur 7 » côté atelier. À trancher en phase 2 (T-141).
 12. **Le texte du consentement et des conditions** du lien participant (§0.5) : texte légal,
-    jamais rédigé d'office (T-142).
+    jamais rédigé d'office (T-142). **Le consentement est tranché le 17/10 par Mathias**
+    (« version complète », PR #245) : « J'accepte que Bellajour utilise ces photos pour composer
+    le magazine « … » de/d'…, et je confirme avoir le droit de les partager, y compris pour les
+    personnes qu'on y voit. » Restent ouvertes : les conditions détaillées et la durée de
+    conservation, que le texte ne promet pas.
 13. **Les rendez-vous pris** (« Prochain rendez-vous », cartes « Rendez-vous pris », §14.5) :
     **tranché le 14/10 (D23)** : intégration agenda. Les créneaux libres du responsable du
     projet (Mathias ou Louis) s'affichent dans l'espace, le rendez-vous pris aussi, un mail le

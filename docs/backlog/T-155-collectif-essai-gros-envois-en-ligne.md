@@ -26,4 +26,9 @@ un envoi depuis un iPhone en 4G (Mathias), sur une édition d'essai. Relever : t
 reprise, doublons, mémoire. Si l'arrêt sur iPhone gêne : rouvrir T-149.
 
 ## Ce qui a été fait
-Rien encore.
+- 17/10 : l'Édition collective est ouverte en PRODUCTION (`COLLECTIF_OUVERT` en Production et
+  en Preview, accord de Mathias). L'essai peut donc se faire directement sur bellajour.fr. Le
+  CORS du coffre accepte `https://www.bellajour.fr` et `https://bellajour.fr` (prévol PUT 204).
+- 17/10 : les 7 éditions d'essai sont archivées, « Essai neuf » compris : son lien ne répond plus.
+  Pour l'essai, créer une édition neuve dans l'atelier, ou « Récupérer » Essai neuf sur sa fiche.
+- L'envoi de 2000 photos et l'essai iPhone en 4G restent à faire.

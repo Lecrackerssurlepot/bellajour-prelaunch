@@ -47,6 +47,8 @@ PRD §5, phase 3 :
   phase commence par l'honnête « pas de vignette pour un HEIC ».
 
 **Avis requis** : le texte du consentement et des conditions est un texte LÉGAL : `[À FIXER]`.
+**Tranché le 17/10** : Mathias a choisi la « version complète » du texte d'accord (PR #245),
+en ligne depuis le même jour. Les conditions détaillées et la durée de conservation restent ouvertes.
 
 **Recette** : 3 téléphones déposent, le responsable dépose un dossier de 300 photos, coupe le
 réseau, reprend : aucun doublon, le plafond tient, le lien se ferme après la clôture.
