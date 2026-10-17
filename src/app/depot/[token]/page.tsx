@@ -86,6 +86,8 @@ export default async function PageDepot({
             plafond={provenance?.plafond_par_personne ?? plafondParticipant(edition)}
             sansPlafond={Boolean(provenance?.sans_plafond)}
             cloture={edition.cloture_le ? formaterJour(edition.cloture_le) : ''}
+            organisation={edition.organisation}
+            evenement={edition.evenement}
           />
         ) : (
           <p className="ec-dp-texte ec-dp-ferme">

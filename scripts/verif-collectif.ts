@@ -18,6 +18,7 @@ import { join, resolve } from "node:path";
 import { cheminPublic, MASQUE } from "@/lib/analytics/chemin";
 import { groupesDeDoublons } from "@/lib/atelier/empreinte";
 import * as MailsTextes from "@/lib/collectif/mailsTextes";
+import * as Espace from "@/lib/collectif/espace";
 import * as Appareil from "@/lib/collectif/appareil";
 import * as Appareils from "@/lib/collectif/appareils";
 import {
@@ -785,6 +786,13 @@ ok("un type inconnu est refuse", !lireSaisieDocument("bulletin", "", "x").ok);
 ok("sans libelle, le type le donne",
    (() => { const d = lireSaisieDocument("devis", "", "devis-2026"); return d.ok && d.libelle === "Devis signé" && d.nom === "devis-2026"; })());
 ok("l'accord sur les donnees est un document ATELIER, jamais redige par le code", libelleTypeDocument("donnees") === "Accord sur les données");
+ok("la case d'accord des participants porte le texte CHOISI par Mathias le 17/10 (version complete), plus aucun [À FIXER] sur la page de depot",
+   (() => {
+     const d = lire("src/app/depot/[token]/Depot.tsx");
+     return /J&apos;accepte que Bellajour utilise ces photos pour composer le magazine « \{props\.evenement\} » \{deNom\(props\.organisation\)\}, et je confirme\s+avoir le droit de les partager, y compris pour les personnes qu&apos;on y voit\./.test(d)
+       && !/\[À FIXER\]/.test(d.replace(/\/\*[\s\S]*?\*\//g, "")) && /disabled=\{!accord\}/.test(d)
+       && Espace.deNom("SKEMA") === "de SKEMA" && Espace.deNom("Air France") === "d'Air France" && Espace.deNom("Essai neuf") === "d'Essai neuf" && Espace.deNom("Hermès") === "de Hermès";
+   })());
 ok("le nom de telechargement est en ASCII sur", nomTelechargement("Facture n°3 / été", "pdf") === "Facture n 3 ete.pdf" && nomTelechargement("", "pdf") === "document.pdf");
 ok("le journal raconte un message sans le citer",
    phraseEvenement("message_client", { par: "Camille", texte: "secret" }) === "Message du client (Camille).");
