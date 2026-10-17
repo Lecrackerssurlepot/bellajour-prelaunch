@@ -189,6 +189,9 @@ rouvre le trou.
    dossier d'une autre, et l'écran ne disait pas lequel. L'atelier connecté (cookie `bj_admin`,
    que seul le serveur lit) voit en plus un bandeau franc, et la reprise par `?reprendre=` d'un
    autre token repart d'un brouillon propre (`brouillonDeReprise`) sans s'écrire chez lui.
+   Le 17/10, le même dossier s'est rouvert par « Composer un nouveau numéro » de `/compte` :
+   tout lien qui COMMENCE un numéro porte `?nouveau=1` (`PARAM_NOUVEAU`, `brouillonDuDepart`),
+   et un dossier rouvert depuis le brouillon propose « Commencer un nouveau numéro ».
    ⚠️ Le volet Browser masqué gèle `requestAnimationFrame` : la vue du moteur n'y est jamais
    republiée et la ligne reste vide. Prouver en Chrome headless, pas dans le volet.
 

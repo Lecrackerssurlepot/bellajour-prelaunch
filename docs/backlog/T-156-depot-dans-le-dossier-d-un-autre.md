@@ -77,11 +77,31 @@ peut donc pas être rejouée sur l'incident réel : elle est prouvée au harnais
    porte. Sans migration.
 
 Vérifié : `tsc`, lint (0 erreur, aucun avertissement nouveau), `build` verts ; harnais
-1483 ok, 0 KO (1457 sur `main`, +26 assertions T-156). Écran 5 en Chrome headless sur le build de la branche,
+1483 ok, 0 KO à ce stade (1457 sur `main`). Écran 5 en Chrome headless sur le build de la branche,
 `window.fetch` patché avant le chargement (aucune requête vers la base), faux token de 32
 caractères : client (bureau et mobile), atelier en reprise (bandeau, brouillon local de
 « Madeira 2026 » NON écrasé), client en reprise (brouillon propre écrit, consentement décoché),
 puis `/composer` rouvert chez l'atelier (son propre brouillon revient, pas celui du client).
+
+**Complément du 17/10, après la lecture de l'historique Chrome de Mathias (avec son accord, par
+la session d'enquête)** : c'est bien le navigateur d'un administrateur qui a déposé le 06/10,
+`/composer` ouvert SANS paramètre (12:23:54 à 12:24:40 UTC, première photo confirmée à 12:24:53).
+Le 17/10, Mathias est arrivé par « Composer un nouveau numéro » de `/compte`
+(`/composer?de=compte`, 10:48:56 UTC) et le même brouillon l'a reposé à l'écran 5 du dossier de
+Justine. Donc toute arrivée sans `?reprendre=` pouvait rouvrir le dossier d'un autre. Ajouté :
+4. **`brouillonDuDepart`** (draft.ts, pur) décide du brouillon de départ. `?nouveau=1` ne rouvre
+   jamais un dossier existant (un brouillon qui porte un token est oublié ; un brouillon sans
+   token, dont les réponses ne vivent que sur l'appareil, est gardé). Le paramètre est retiré de
+   l'adresse au montage. Les quatre liens « composer » de `/compte` et « Et le prochain moment ? »
+   de `/numero` le portent : un bouton qui dit « nouveau » ne rouvre plus rien.
+5. **« Ce n'est pas votre dossier ? Commencer un nouveau numéro »** sous le nom, à l'écran 5,
+   quand le dossier affiché vient du brouillon du navigateur (pas d'un lien, pas créé dans la
+   session). Rechargement vers `?nouveau=1` : le brouillon est oublié, le dossier reste en base.
+   Le bandeau de l'atelier s'affiche quel que soit le chemin d'arrivée.
+Prouvé en headless (même méthode) : ancien lien `?de=compte` chez l'atelier (nom, bouton,
+bandeau) et chez un client sur mobile ; clic → écran 1, brouillon vide, adresse
+`/composer?de=compte` ; nouveau lien `?nouveau=1&de=compte` → écran 1 ; dossier créé dans la
+session → pas de bouton. Harnais 1488 ok (+31 depuis `main`), tsc, lint, build verts.
 
 Reste : la fusion et le déploiement ; la remarque de la fiche n'a pas été vue à l'écran
 (capture admin refusée en local faute de session d'atelier), seulement prouvée au harnais et

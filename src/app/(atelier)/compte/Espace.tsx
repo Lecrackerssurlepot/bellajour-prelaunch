@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { COMPOSER_HREF, CTA_LABEL, CTA_NOUVEAU_LABEL } from '../content'
 import { PARAM_PROVENANCE } from '../composer/provenance'
+import { PARAM_NOUVEAU } from '../composer/draft'
 import { JALONS } from './jalons'
 
 /* ⚠️ TOUT LIEN D'ICI VERS /composer DIT D'OÙ IL VIENT (08/09/2026).
@@ -12,6 +13,13 @@ import { JALONS } from './jalons'
    composer/provenance.ts — c'est une CLÉ d'une liste fermée, jamais un
    chemin, et jamais une redirection ouverte. */
 const DEPUIS_COMPTE = `${PARAM_PROVENANCE}=compte`
+/* T-156 (17/10/2026) — les liens « composer » d'ici COMMENCENT un numéro :
+   le dépôt en cours a son propre lien, « Reprendre le dépôt » (?reprendre=).
+   Sans `nouveau=1`, /composer rouvrait le brouillon du navigateur, et le
+   17/10 c'était le dossier d'une autre cliente, à l'écran 5. Un brouillon
+   sans dossier (réponses sur l'appareil seulement) est gardé : voir
+   `brouillonDuDepart` (composer/draft.ts). */
+const NOUVEAU_DEPUIS_COMPTE = `${PARAM_NOUVEAU}=1&${DEPUIS_COMPTE}`
 import BoutonDeconnexion from './BoutonDeconnexion'
 
 /**
@@ -238,7 +246,7 @@ export default function Espace({
               <p className="cpt-vide-mot">
                 Aucun numéro en cours. Le prochain moment n’attend que vous.
               </p>
-              <Link className="at-cta cpt-cta" href={`${COMPOSER_HREF}?${DEPUIS_COMPTE}`}>
+              <Link className="at-cta cpt-cta" href={`${COMPOSER_HREF}?${NOUVEAU_DEPUIS_COMPTE}`}>
                 {CTA_LABEL}
               </Link>
             </section>
@@ -260,7 +268,7 @@ export default function Espace({
                       : 'Tout est entre nos mains. On vous écrit à chaque étape.'}
                   </p>
                 </div>
-                <Link className="cpt-nouveau" href={`${COMPOSER_HREF}?${DEPUIS_COMPTE}`}>
+                <Link className="cpt-nouveau" href={`${COMPOSER_HREF}?${NOUVEAU_DEPUIS_COMPTE}`}>
                   <span aria-hidden="true">+</span> {CTA_NOUVEAU_LABEL}
                 </Link>
               </div>
@@ -276,7 +284,7 @@ export default function Espace({
             <p className="cpt-vide-mot">
               Votre étagère est encore vide. Elle se remplira à la première livraison.
             </p>
-            <Link className="at-cta cpt-cta" href={`${COMPOSER_HREF}?${DEPUIS_COMPTE}`}>
+            <Link className="at-cta cpt-cta" href={`${COMPOSER_HREF}?${NOUVEAU_DEPUIS_COMPTE}`}>
               {CTA_LABEL}
             </Link>
           </section>
@@ -290,7 +298,7 @@ export default function Espace({
                   {livres.length > 1 ? 's' : ''}, à revoir et à télécharger quand vous voulez.
                 </p>
               </div>
-              <Link className="cpt-nouveau" href={`${COMPOSER_HREF}?${DEPUIS_COMPTE}`}>
+              <Link className="cpt-nouveau" href={`${COMPOSER_HREF}?${NOUVEAU_DEPUIS_COMPTE}`}>
                 <span aria-hidden="true">+</span> {CTA_NOUVEAU_LABEL}
               </Link>
             </div>

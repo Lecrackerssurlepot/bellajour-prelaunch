@@ -60,7 +60,7 @@ const RAISONS: Record<string, string> = {
 }
 
 export default function Screen5Depot({
-  token, reprise, consent, onConsent, onTermine, onDossierPerdu,
+  token, reprise, consent, onConsent, onTermine, onDossierPerdu, onAutreDossier,
 }: {
   token: string | null
   /** T2-4 — arrivée par `?reprendre=` : des photos sont déjà chez nous. */
@@ -76,6 +76,9 @@ export default function Screen5Depot({
       Il ne vit que dans le moteur de dépôt : sans ce passage de relais,
       l'écran de fin ne peut que rester vague. */
   onTermine: (nbPhotos: number) => void
+  /** T-156 — présent quand le dossier affiché vient du brouillon de ce
+      navigateur, pas d'un lien : « Commencer un nouveau numéro » l'oublie. */
+  onAutreDossier?: () => void
 }) {
   const { vue, compteur, ajouter, supprimer, reprendrePhoto, finaliser } = useDepot(token)
   const [refus, setRefus] = useState<Refus[]>([])
@@ -213,6 +216,17 @@ export default function Screen5Depot({
           dès le premier rendu, vide, pour que le titre ne saute pas quand le
           nom arrive, et pour que son arrivée soit annoncée. */}
       <p className="at-kicker at-d-dossier" aria-live="polite">{ligne ?? '\u00a0'}</p>
+      {/* Le 06/10 puis le 17/10, ce dossier s'est rouvert depuis le
+          brouillon d'un navigateur, y compris par « Composer un nouveau
+          numéro ». Le nom le montre ; ce geste en sort, sans rien effacer en
+          base. Seulement quand le nom est connu : on ne propose pas de
+          quitter un dossier qu'on n'a pas encore nommé. */}
+      {ligne && onAutreDossier && (
+        <p className="at-d-autre">
+          Ce n’est pas votre dossier ?{' '}
+          <button type="button" onClick={onAutreDossier}>Commencer un nouveau numéro</button>
+        </p>
+      )}
       <h2>Vos photos,<br />maintenant.</h2>
       {/* Le chiffre qui compte est le PLANCHER, pas la fourchette. « Entre 40
           et 100 » posait deux nombres dont un seul décide de quelque chose ;

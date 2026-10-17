@@ -152,7 +152,7 @@ import {
   RELIURE_LIBELLE,
 } from "@/lib/atelier/grille";
 import { palierPour as bandePour } from "@/app/(atelier)/composer/depot/paliers";
-import { EMPTY_DRAFT, brouillonDeReprise, brouillonSansDossier } from "@/app/(atelier)/composer/draft";
+import { EMPTY_DRAFT, brouillonDeReprise, brouillonDuDepart, brouillonSansDossier } from "@/app/(atelier)/composer/draft";
 import { ligneDepot, lireDossierServeur, phraseAtelier } from "@/app/(atelier)/composer/dossier";
 import {
   EVT_DOUBLONS_AILLEURS,
@@ -3277,6 +3277,33 @@ titre("— T-156 : la reprise d'un AUTRE dossier repart d'un brouillon propre �
      AUTRE.pays === EMPTY_DRAFT.pays && AUTRE.termine === false && AUTRE.modele === "");
   ok("pas de brouillon local du tout : même brouillon propre",
      JSON.stringify(brouillonDeReprise(EMPTY_DRAFT, AUTRE_TOKEN)) === JSON.stringify(AUTRE));
+}
+
+titre("— T-156 : le départ du questionnaire ne rouvre pas en silence le dossier d'un autre —");
+{
+  const AUTRE_TOKEN = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy";
+  /* Le 17/10 : « Composer un nouveau numéro » de /compte, brouillon local
+     portant le dossier d'une autre cliente. */
+  const nouveau = brouillonDuDepart(BROUILLON_MORT, null, true);
+  ok("?nouveau=1 et un brouillon qui porte un dossier : on repart du brouillon vide",
+     JSON.stringify(nouveau.draft) === JSON.stringify(EMPTY_DRAFT) && nouveau.tokenDuBrouillon === null
+     && nouveau.etranger === false);
+  const SANS_TOKEN = { ...BROUILLON_MORT, token: null, screen: 3 };
+  const garde = brouillonDuDepart(SANS_TOKEN, null, true);
+  ok("?nouveau=1 et un brouillon SANS dossier : ses réponses sont gardées (c'est lui, le nouveau numéro)",
+     garde.draft === SANS_TOKEN && garde.tokenDuBrouillon === null);
+  /* Le 06/10 : /composer sans paramètre. Le dossier revient, mais il est
+     marqué : l'écran 5 proposera d'en sortir. */
+  const sansParam = brouillonDuDepart(BROUILLON_MORT, null, false);
+  ok("sans paramètre : le brouillon local, et son dossier est désigné comme venant du navigateur",
+     sansParam.draft === BROUILLON_MORT && sansParam.tokenDuBrouillon === BROUILLON_MORT.token
+     && sansParam.etranger === false);
+  const reprise = brouillonDuDepart(BROUILLON_MORT, AUTRE_TOKEN, true);
+  ok("?reprendre= l'emporte sur ?nouveau=1 : reprise propre, étrangère, sans proposition d'en sortir",
+     reprise.draft.token === AUTRE_TOKEN && reprise.draft.screen === 5 && reprise.etranger === true
+     && reprise.tokenDuBrouillon === null);
+  ok("?reprendre= du même dossier : pas étrangère",
+     brouillonDuDepart(BROUILLON_MORT, BROUILLON_MORT.token, false).etranger === false);
 }
 
 titre("— T-156 : l'écran 5 nomme le dossier, d'après le serveur —");

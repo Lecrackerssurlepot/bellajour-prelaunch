@@ -18,6 +18,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Footer from '../../(atelier)/components/Footer'
 import { COMPOSER_HREF, CTA_LABEL, CONTACT_EMAIL } from '../../(atelier)/content'
+import { PARAM_NOUVEAU } from '../../(atelier)/composer/draft'
 import { makeSupabase } from '@/lib/supabase'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { ICONE_EXTERNE } from './icones'
@@ -853,7 +854,10 @@ export default async function NumeroPage({
               {numero.souvenir_pdf_key ? '' : `${titre} est chez vous. `}
               Un numéro par moment : la collection commence au deuxième.
             </p>
-            <a className="nu-cta-second" href={dIci ? `${COMPOSER_HREF}?${dIci}` : COMPOSER_HREF}>
+            {/* T-156 — « le prochain moment » COMMENCE un numéro : sans
+                `nouveau=1`, /composer rouvrait le brouillon de ce navigateur,
+                qui peut porter le dossier de quelqu'un d'autre. */}
+            <a className="nu-cta-second" href={`${COMPOSER_HREF}?${PARAM_NOUVEAU}=1${dIci ? `&${dIci}` : ''}`}>
               {CTA_LABEL} <span className="at-cta-arrow">→</span>
             </a>
           </div>

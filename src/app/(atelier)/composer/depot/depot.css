@@ -264,6 +264,27 @@
   color: var(--c-text-soft);
 }
 
+/* « Ce n'est pas votre dossier ? » : sous le nom, discret mais lisible ; le
+   geste est un lien souligné, pas un second bouton qui concurrencerait
+   « Choisir des photos ». */
+.bj-atelier .at-d-autre {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+.bj-atelier .at-d-autre button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--c-text-soft);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.bj-atelier .at-d-autre button:hover { color: var(--c-text); }
+
 /* ── avis et refus ─────────────────────────────────────────────────────── */
 
 .bj-atelier .at-d-avis {
