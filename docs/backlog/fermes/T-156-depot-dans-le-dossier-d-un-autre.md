@@ -1,7 +1,7 @@
 ---
 id: T-156
 titre: On peut déposer les photos d'un client dans le dossier d'un autre sans que l'écran le montre
-etat: en cours
+etat: fermé
 domaine: atelier
 gravite: bloquant
 autonomie: libre
@@ -106,3 +106,20 @@ session → pas de bouton. Harnais 1488 ok (+31 depuis `main`), tsc, lint, build
 Reste : la fusion et le déploiement ; la remarque de la fiche n'a pas été vue à l'écran
 (capture admin refusée en local faute de session d'atelier), seulement prouvée au harnais et
 au typage. Les photos de l'incident ont déjà été retirées : la règle 3 ne se rejoue pas dessus.
+
+## En production (17/10)
+PR #247 fusionnée le 17/10 à 17:39 UTC (commit de fusion `5c0e622`), déploiement de production
+`dpl_4pRin1w4…` prêt et servi sur bellajour.fr et www.bellajour.fr. Vérifié EN LIGNE, sans rien
+écrire en base :
+- `GET /api/atelier/numero` rend désormais `titre` et `prenom` (ce que seule la nouvelle version fait).
+- bellajour.fr/composer rejoué dans la situation du 06/10 (un brouillon local qui porte le token
+  d'un autre dossier, arrivée par le lien « Composer avec l'atelier », `window.fetch` simulé, faux
+  token de 32 caractères) : « Dépôt pour « Malaysia », Justine », « Ce n'est pas votre dossier ?
+  Commencer un nouveau numéro » et le bandeau atelier s'affichent ; le clic ramène à l'écran 1,
+  brouillon sans token. Aucun dossier créé, rien sur celui de Justine (vérifié en SQL).
+- La remarque « 41 photos identiques à celles d'un autre dossier » vue sur la fiche de démonstration
+  « La maison de Kerlouan » (serveur local sur `main` à `5c0e622`) : encadré orange qui nomme l'autre
+  dossier et sa date, ligne au récit.
+Les données du 06/10 ont été nettoyées à part, sur accord de Mathias (180 objets R2, 90 lignes,
+compteur à 0, événement `photos_retirees`). Rien ne reste à faire sur ce ticket.
+
