@@ -96,3 +96,9 @@ export function contenusAEnvoyer(demandes: readonly string[], recus: readonly st
     recu: recus.includes(c.cle),
   }));
 }
+
+/** « de SKEMA », « d'Air France » : l'élision devant une voyelle (le h, muet ou non, garde « de »). */
+export function deNom(nom: string): string {
+  const n = nom.trim();
+  return /^[aeiouyàâäéèêëîïôöûùü]/i.test(n) ? `d'${n}` : `de ${n}`;
+}

@@ -4,14 +4,16 @@
    téléphone. Prénom facultatif → accord → choisir des photos → l'envoi part
    tout seul → « Merci, N photos reçues ».
 
-   ⚠️ Le texte de l'accord est un texte LÉGAL : il reste [À FIXER] tant que
-   Mathias ne l'a pas validé (PRD §0.5). La case existe et se coche ; ce
-   qu'elle dit n'est pas écrit d'office.
+   ⚠️ Le texte de l'accord est un texte LÉGAL : celui-ci a été choisi par
+   Mathias le 17/10/2026 (« version complète »). Ne pas le réécrire sans lui.
+   Il ne promet AUCUNE durée de conservation : rien ne supprime encore les
+   photos après la livraison.
    ⚠️ Aucune promesse que l'écran ne tient pas : l'envoi ne continue pas page
    fermée (iOS surtout), on le dit. Le plafond par personne est tenu par
    appareil, on ne prétend pas le contraire. */
 
 import { useMemo, useRef, useState } from "react";
+import { deNom } from "@/lib/collectif/espace";
 import { MoteurDepot } from "../../edition/_composants/depot/moteur";
 import { useMoteur } from "../../edition/_composants/depot/useMoteur";
 
@@ -22,6 +24,8 @@ type Props = {
   plafond: number | null;
   sansPlafond: boolean;
   cloture: string;
+  organisation: string;
+  evenement: string;
 };
 
 export default function Depot(props: Props) {
@@ -58,7 +62,10 @@ export default function Depot(props: Props) {
 
       <label className="ec-dp-accord">
         <input type="checkbox" checked={accord} onChange={(e) => setAccord(e.target.checked)} />
-        <span>[À FIXER] Texte de l&apos;accord sur l&apos;usage des photos, à valider par l&apos;atelier.</span>
+        <span>
+          J&apos;accepte que Bellajour utilise ces photos pour composer le magazine « {props.evenement} » {deNom(props.organisation)}, et je confirme
+          avoir le droit de les partager, y compris pour les personnes qu&apos;on y voit.
+        </span>
       </label>
 
       <input
