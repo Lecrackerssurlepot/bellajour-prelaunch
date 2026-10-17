@@ -18,6 +18,11 @@ Chargé dès qu'on touche une route.
 - **`/api/atelier/*`** — pas d'authentification : **le token de 32 caractères EST l'identité**.
   C'est la seule barrière. Ne jamais exposer un token dans une URL partageable, un log ou un mail
   autre que celui de sa cliente.
+- **`GET /api/atelier/numero?token=`** rend aussi `titre`, `prenom` (ceux que `/numero/<token>`
+  montre déjà au porteur du token) et `atelier: true` quand la requête porte un cookie `bj_admin`
+  VALIDE (T-156). Ce drapeau n'ouvre rien : il dit au navigateur ce que vaut son propre cookie
+  httpOnly, pour que l'écran 5 prévienne au lieu de reprendre en silence. `Cache-Control: private,
+  no-store`, la réponse dépend du cookie.
 - **`/api/atelier/mails/relever`** — secret d'en-tête, comparé à durée constante (`memeSecret`) :
   `Authorization: Bearer <CRON_SECRET>` ou `x-atelier-secret`. 404 si le secret manque côté serveur.
 - **`/api/atelier/cockpit/agreger`** — le job du lundi du cockpit (cron Vercel), mêmes deux secrets

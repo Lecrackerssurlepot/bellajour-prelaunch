@@ -2777,6 +2777,12 @@
 .ate-photos-resume {
   margin-bottom: var(--bj-sp-3);
 }
+/* T-156 — la remarque d'un lot retrouvé dans un autre dossier : le bandeau
+   « attention » de la fiche, posé DANS la carte des photos, là où l'on
+   regarde avant de composer. Le lien garde la couleur du bandeau. */
+.ate-photos-ailleurs p { margin: 0; }
+.ate-photos-ailleurs p + p { margin-top: var(--bj-sp-2); }
+.ate-photos-ailleurs a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 /* T-130 — le titre d'un sous-groupe par lieu, sur toute la largeur de la
    grille : la ville (sinon le pays) et son compte. Le premier n'a pas de
    filet au-dessus, il suit directement la phrase de résumé. */

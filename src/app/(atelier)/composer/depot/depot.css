@@ -251,6 +251,19 @@
 
 .bj-atelier .at-d-reste { margin-top: 10px; }
 
+/* ── T-156 : le dossier qui reçoit (17/10/2026) ─────────────────────────
+   À la place du chapeau des autres écrans, et dans sa typographie, mais en
+   phrase : un titre de numéro en capitales espacées ne se relit pas. La
+   ligne existe vide avant la réponse du serveur (une espace insécable) :
+   le titre de l'écran ne saute pas quand le nom arrive. */
+.bj-atelier .at-d-dossier {
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--c-text-soft);
+}
+
 /* ── avis et refus ─────────────────────────────────────────────────────── */
 
 .bj-atelier .at-d-avis {
@@ -268,6 +281,16 @@
 /* T2-4 — la reprise n'est pas un avertissement : c'est une bonne nouvelle
    (vos photos sont la), elle parle avec la voix du texte, pas de l'alerte. */
 .bj-atelier .at-d-avis--reprise b { font-weight: 400; color: var(--c-text); }
+
+/* T-156 (17/10) — l'atelier connecté dépose dans le dossier d'un client.
+   Pas une bonne nouvelle comme la reprise, pas une panne : un avertissement
+   franc, que l'on ne survole pas. Trait plein et texte à pleine encre. */
+.bj-atelier .at-d-avis--atelier {
+  border-left-width: 3px;
+  border-left-color: var(--c-accent-strong);
+  color: var(--c-text);
+}
+.bj-atelier .at-d-avis--atelier b { font-weight: 500; }
 
 /* 11/09 — l'avis qui porte un geste : le dossier n'existe plus, et le bouton
    est la sortie. Colonne, parce qu'un bouton posé au bout d'une phrase de

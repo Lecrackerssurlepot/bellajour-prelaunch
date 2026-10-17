@@ -22,7 +22,7 @@ const VUE_VIDE: Vue = {
   octetsEnvoyes: 0, octetsTotal: 0, stockageDegrade: false,
   reductionDegradee: false, clos: false, dossierIntrouvable: false,
   finalise: false, attendues: 0,
-  bandeau: null, serveur: null,
+  bandeau: null, serveur: null, dossier: null,
 }
 
 export function useDepot(token: string | null) {

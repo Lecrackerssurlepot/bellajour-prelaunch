@@ -152,7 +152,14 @@ import {
   RELIURE_LIBELLE,
 } from "@/lib/atelier/grille";
 import { palierPour as bandePour } from "@/app/(atelier)/composer/depot/paliers";
-import { brouillonSansDossier } from "@/app/(atelier)/composer/draft";
+import { EMPTY_DRAFT, brouillonDeReprise, brouillonSansDossier } from "@/app/(atelier)/composer/draft";
+import { ligneDepot, lireDossierServeur, phraseAtelier } from "@/app/(atelier)/composer/dossier";
+import {
+  EVT_DOUBLONS_AILLEURS,
+  cumulerDoublonsAilleurs,
+  doublonsAilleurs,
+  payloadDoublonsAilleurs,
+} from "@/lib/atelier/doublonsAilleurs";
 import { COVER_MODELS, MODELES_VALIDES } from "@/app/(atelier)/composer/coverModels";
 import { peutRecommander } from "@/lib/atelier/reimpression";
 import {
@@ -3247,6 +3254,131 @@ ok("les deux mots de couverture facultatifs suivent leurs reponses",
    15/09) : il traverse la recreation comme ses reponses. */
 ok("le style de couverture retenu survit a la perte du dossier",
    RESCAPE.modele === "sicile");
+
+/* ── T-156 (17/10/2026) : LE DÉPÔT DANS LE DOSSIER D'UN AUTRE ─────────────
+   Le 06/10, 92 photos d'une cliente sont parties dans le dossier d'une
+   autre, par le parcours normal. Trois pièges, trois règles pures. */
+titre("— T-156 : la reprise d'un AUTRE dossier repart d'un brouillon propre —");
+{
+  const MEME = brouillonDeReprise(BROUILLON_MORT, BROUILLON_MORT.token);
+  ok("même token que le brouillon local : tout est gardé, écran 5",
+     MEME.screen === 5 && MEME.titre === BROUILLON_MORT.titre && MEME.consentPhotos === true
+     && MEME.token === BROUILLON_MORT.token);
+  const AUTRE_TOKEN = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy";
+  const AUTRE = brouillonDeReprise(BROUILLON_MORT, AUTRE_TOKEN);
+  ok("autre token : le token repris, écran 5",
+     AUTRE.token === AUTRE_TOKEN && AUTRE.screen === 5);
+  /* Le cas du 06/10 : rien d'un autre dossier ne se mêle à celui-ci. */
+  ok("autre token : le consentement d'un autre dépôt n'est PAS repris",
+     AUTRE.consentPhotos === false);
+  ok("autre token : ni titre, ni prénom, ni histoire d'un autre numéro",
+     AUTRE.titre === "" && AUTRE.prenom === "" && AUTRE.histoire === "" && AUTRE.email === "");
+  ok("autre token : le reste vaut le brouillon vide",
+     AUTRE.pays === EMPTY_DRAFT.pays && AUTRE.termine === false && AUTRE.modele === "");
+  ok("pas de brouillon local du tout : même brouillon propre",
+     JSON.stringify(brouillonDeReprise(EMPTY_DRAFT, AUTRE_TOKEN)) === JSON.stringify(AUTRE));
+}
+
+titre("— T-156 : l'écran 5 nomme le dossier, d'après le serveur —");
+{
+  const d = lireDossierServeur({ nbPhotos: 0, ordreSuivant: 0, titre: " Malaysia ", prenom: "Justine" });
+  ok("la réponse GET se lit : titre et prénom nettoyés, pas d'atelier",
+     d !== null && d.titre === "Malaysia" && d.prenom === "Justine" && d.atelier === false);
+  ok("« Dépôt pour « Malaysia », Justine » (guillemets insécables)",
+     ligneDepot(d) === "Dépôt pour «\u00a0Malaysia\u00a0», Justine");
+  ok("titre seul, prénom seul",
+     ligneDepot({ titre: "Malaysia", prenom: "", atelier: false }) === "Dépôt pour «\u00a0Malaysia\u00a0»"
+     && ligneDepot({ titre: "", prenom: "Justine", atelier: false }) === "Dépôt pour Justine");
+  ok("ni titre ni prénom : aucune ligne plutôt qu'une ligne fausse",
+     ligneDepot({ titre: "", prenom: "", atelier: false }) === null && ligneDepot(null) === null);
+  ok("une réponse sans titre ni prénom (erreur, ancienne version) ne nomme rien",
+     lireDossierServeur({ nbPhotos: 3 }) === null && lireDossierServeur({ error: "introuvable" }) === null
+     && lireDossierServeur(null) === null);
+  const a = lireDossierServeur({ titre: "Malaysia", prenom: "Justine", atelier: true });
+  ok("atelier : seul `true` compte",
+     a?.atelier === true && lireDossierServeur({ titre: "x", prenom: "y", atelier: "oui" })?.atelier === false);
+  ok("le bandeau de l'atelier nomme la personne et le numéro",
+     a !== null && phraseAtelier(a) === "Vous êtes connecté en atelier : ce dépôt va dans le dossier de Justine, «\u00a0Malaysia\u00a0».");
+  ok("le bandeau tient sans titre ni prénom",
+     phraseAtelier({ titre: "", prenom: "", atelier: true }).endsWith("dans le dossier de ce lien."));
+  ok("aucun tiret dans les phrases de l'écran",
+     ![ligneDepot(d), a && phraseAtelier(a)].some((t) => t && /[—–]/.test(t)));
+}
+
+titre("— T-156 : un lot retrouvé, au fichier près, dans un autre dossier —");
+{
+  const H = "a1b2c3d4e5f60718";
+  const H1 = "a1b2c3d4e5f60719"; // un bit d'écart : la vignette refaite ailleurs
+  const LOIN = "5e4d3c2b1a0f9e8d";
+  const lot = [
+    { id: "j1", numeroId: "justine", taille: 1_234_567, empreinte: H },
+    { id: "j2", numeroId: "justine", taille: 2_000_000, empreinte: H1 },
+    { id: "j3", numeroId: "justine", taille: 3_000_000, empreinte: LOIN },
+    { id: "j4", numeroId: "justine", taille: null, empreinte: H },
+    { id: "j5", numeroId: "justine", taille: 1_234_567, empreinte: null },
+  ];
+  const ailleurs = [
+    { id: "m1", numeroId: "merisa", taille: 1_234_567, empreinte: H },
+    { id: "m2", numeroId: "merisa", taille: 2_000_000, empreinte: H },
+    /* Même poids, image sans rapport : la coïncidence que l'empreinte écarte. */
+    { id: "x1", numeroId: "autre", taille: 3_000_000, empreinte: H },
+    /* Même image, poids différent : un autre fichier (recompressé). */
+    { id: "x2", numeroId: "autre", taille: 3_000_001, empreinte: LOIN },
+    /* Le dossier lui-même ne compte jamais comme « ailleurs ». */
+    { id: "j9", numeroId: "justine", taille: 1_234_567, empreinte: H },
+    /* Une empreinte mal formée ne fait pas tomber le passage. */
+    { id: "z1", numeroId: "abime", taille: 1_234_567, empreinte: "pas-un-hash" },
+  ];
+  const g = doublonsAilleurs(lot, ailleurs);
+  ok("même poids ET même empreinte (à un bit près) : retrouvées chez Merisa",
+     g.length === 1 && g[0].numeroId === "merisa" && g[0].photos.join() === "j1,j2");
+  ok("même poids, image différente : rien", !g.some((x) => x.numeroId === "autre"));
+  ok("le dossier qui reçoit n'est jamais son propre doublon",
+     !g.some((x) => x.numeroId === "justine"));
+  ok("sans poids ou sans empreinte, une photo ne se compare pas",
+     !g.flatMap((x) => x.photos).some((id) => id === "j4" || id === "j5"));
+  ok("au-delà du seuil d'empreinte, ce n'est plus la même photo",
+     doublonsAilleurs(lot, [{ id: "m3", numeroId: "merisa", taille: 3_000_000, empreinte: "a1b2c3d4e5f6071f" }]).length === 0);
+  /* Le cas du 06/10 à l'échelle : un lot entier, sans dissolution. */
+  const gros = Array.from({ length: 92 }, (_, i) => ({
+    id: `p${i}`, numeroId: "justine", taille: 1_000_000 + i, empreinte: H,
+  }));
+  const coffre = gros.map((p, i) => ({ ...p, id: `m${i}`, numeroId: "merisa" }));
+  const g92 = doublonsAilleurs(gros, coffre);
+  ok("92 photos identiques : 92 retrouvées, rien n'est dissous (pas de TAILLE_GROUPE_MAX)",
+     g92.length === 1 && g92[0].photos.length === 92);
+  const deuxFois = doublonsAilleurs(
+    [{ id: "j1", numeroId: "justine", taille: 10, empreinte: H }],
+    [{ id: "a", numeroId: "merisa", taille: 10, empreinte: H }, { id: "b", numeroId: "merisa", taille: 10, empreinte: H }],
+  );
+  ok("une photo qui ressemble à deux photos du même dossier n'y compte qu'une fois",
+     deuxFois.length === 1 && deuxFois[0].photos.length === 1);
+
+  const charge = payloadDoublonsAilleurs([
+    { numeroId: "merisa", photos: ["j1", "j2"] },
+    { numeroId: "autre", photos: ["j2"] },
+  ]);
+  ok("le journal porte des identifiants de dossier, jamais un token, et compte chaque photo une fois",
+     charge.photos === 2 && charge.dossiers.length === 2 && charge.dossiers[0].numero_id === "merisa"
+     && charge.dossiers[0].photos === 2 && !JSON.stringify(charge).includes("token"));
+  ok("le type de la ligne de journal", EVT_DOUBLONS_AILLEURS === "doublons_autre_dossier");
+
+  const cumul = cumulerDoublonsAilleurs([
+    { payload: { photos: 25, dossiers: [{ numero_id: "merisa", photos: 25 }] }, created_at: "2026-10-06T12:24:00Z" },
+    { payload: { photos: 67, dossiers: [{ numero_id: "merisa", photos: 67 }] }, created_at: "2026-10-06T12:26:00Z" },
+    { payload: { photos: 1, dossiers: [{ numero_id: "autre", photos: 1 }] }, created_at: "2026-10-06T12:20:00Z" },
+    { payload: { dossiers: "abime" }, created_at: "2026-10-07T00:00:00Z" },
+    { payload: null, created_at: "2026-10-07T00:00:00Z" },
+    { payload: { dossiers: [{ numero_id: 42, photos: 3 }, { numero_id: "x", photos: 0 }] }, created_at: "2026-10-07T00:00:00Z" },
+  ]);
+  ok("la fiche cumule les lots par dossier (25 + 67 = 92), le plus touché d'abord",
+     cumul.length === 2 && cumul[0].numeroId === "merisa" && cumul[0].photos === 92
+     && cumul[0].le === "2026-10-06T12:24:00Z" && cumul[1].numeroId === "autre");
+  const r = raconter("doublons_autre_dossier", { photos: 92, dossiers: [{ numero_id: "merisa", photos: 92 }] });
+  ok("le journal se lit en français, en remarque",
+     r.texte === "92 photos identiques à celles d'un autre dossier" && r.ton === "alerte"
+     && (r.detail ?? "").startsWith("Remarque, rien n'est refusé"));
+}
 
 /* La liste blanche de la route : ce qu'un POST peut ecrire en base. Elle
    protege la fiche admin d'un style qui n'existe pas — un brouillon d'une

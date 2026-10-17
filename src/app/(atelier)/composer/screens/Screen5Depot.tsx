@@ -38,6 +38,7 @@ import {
   MAX_PHOTOS, MIN_PHOTOS, blocageEnvoi, manquantes, palierPour, peutEnvoyer, restantes,
 } from '../depot/paliers'
 import type { Refus } from '../depot/moteur'
+import { ligneDepot, phraseAtelier } from '../dossier'
 import '../depot/depot.css'
 
 const ACCEPTE = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif'
@@ -92,6 +93,9 @@ export default function Screen5Depot({
     setRefus(ajouter(Array.from(liste)))
     setErreur(null)
   }, [ajouter])
+
+  /* T-156 — le dossier de ce token, tel que le SERVEUR le nomme. */
+  const ligne = ligneDepot(vue.dossier)
 
   const palier = palierPour(vue.confirmees)
   const ilManque = manquantes(vue.confirmees)
@@ -198,6 +202,17 @@ export default function Screen5Depot({
           des trois qui n'apprend rien — le titre le dit mieux, la barre situe.
           La barre, elle, n'est pas touchée : elle sert les cinq écrans, et sur
           les quatre autres son nom d'étape est utile. */}
+      {/* ── T-156 : L'ÉCRAN NOMME LE DOSSIER QUI REÇOIT (17/10/2026) ─────
+          Le 06/10, 92 photos d'une cliente sont parties dans le dossier
+          d'une autre : cet écran ne disait pas lequel, et un brouillon
+          resté dans le navigateur avait choisi pour la personne qui
+          déposait. Le titre et le prénom viennent du SERVEUR, jamais du
+          brouillon (c'est lui qui peut porter le token d'un autre). Ce
+          n'est pas le chapeau retiré le 08/09 : il redisait « Vos photos »,
+          cette ligne dit une chose que rien d'autre ne dit. La ligne existe
+          dès le premier rendu, vide, pour que le titre ne saute pas quand le
+          nom arrive, et pour que son arrivée soit annoncée. */}
+      <p className="at-kicker at-d-dossier" aria-live="polite">{ligne ?? '\u00a0'}</p>
       <h2>Vos photos,<br />maintenant.</h2>
       {/* Le chiffre qui compte est le PLANCHER, pas la fourchette. « Entre 40
           et 100 » posait deux nombres dont un seul décide de quelque chose ;
@@ -223,6 +238,19 @@ export default function Screen5Depot({
         }}
         aria-label="Choisir des photos"
       />
+
+      {/* ── T-156 : L'ATELIER CONNECTÉ NE REPREND PAS EN SILENCE ────────
+          Le bouton « Ajouter des photos » de la page d'un client mène ici
+          avec SON token. Ouvert depuis le navigateur de l'atelier, il le
+          posait en dépôt en cours, et rien ne le disait ensuite. Le serveur
+          sait lire le cookie `bj_admin` (httpOnly, pas nous) : il le dit, et
+          l'écran le dit en clair avant le premier fichier. */}
+      {vue.dossier?.atelier && (
+        <p className="at-d-avis at-d-avis--atelier" role="status">
+          <b>{phraseAtelier(vue.dossier)}</b> Vérifiez que ce sont bien ses
+          photos avant de les déposer.
+        </p>
+      )}
 
       {/* ── T2-4 : LA REPRISE DIT CE QUI EST DÉJÀ LÀ ──────────────────
           Le lien du mail ramène au bon endroit, mais sans cette ligne

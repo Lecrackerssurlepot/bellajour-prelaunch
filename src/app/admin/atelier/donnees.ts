@@ -19,6 +19,7 @@ import { canonicalizeEmail } from "@/lib/email";
 import { signerGet } from "@/lib/atelier/r2";
 import { etatGenerationSouvenir } from "@/lib/atelier/souvenir";
 import { doublonsParPhoto, groupesDeDoublons } from "@/lib/atelier/empreinte";
+import { EVT_DOUBLONS_AILLEURS, cumulerDoublonsAilleurs } from "@/lib/atelier/doublonsAilleurs";
 import {
   resoudreApercu,
   lireDoublesBrutes,
@@ -1095,6 +1096,48 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
         }
       : null;
 
+  /* ── T-156 : CE LOT EXISTE-T-IL DANS UN AUTRE DOSSIER ? ──────────
+     Le journal `doublons_autre_dossier` est posé par l'enrichissement de
+     chaque lot. Requête dédiée, pour la même raison que `finsDepot` : la
+     liste d'affichage est plafonnée à 200 lignes. Puis l'autre dossier est
+     NOMMÉ (titre, prénom, lien) : le journal ne porte que son identifiant.
+     Un dossier supprimé depuis reste dit, sans lien. Tout échec rend une
+     liste vide : une remarque ne fait jamais tomber une fiche. */
+  const doublonsAilleurs = await (async (): Promise<Fiche["doublonsAilleurs"]> => {
+    try {
+      const { data: lignes } = await supabase
+        .from("evenements")
+        .select("payload, created_at")
+        .eq("numero_id", id)
+        .eq("type", EVT_DOUBLONS_AILLEURS)
+        .order("created_at", { ascending: true })
+        .limit(100)
+        .returns<Array<{ payload: Record<string, unknown> | null; created_at: string }>>();
+      const cumul = cumulerDoublonsAilleurs(lignes ?? []);
+      if (!cumul.length) return [];
+      const { data: autres } = await supabase
+        .from("numeros")
+        .select("id, token, titre, prenom")
+        .in("id", cumul.map((c) => c.numeroId))
+        .returns<Array<{ id: string; token: string; titre: string | null; prenom: string | null }>>();
+      const parId = new Map((autres ?? []).map((a) => [a.id, a]));
+      return cumul.map((c) => {
+        const a = parId.get(c.numeroId);
+        return {
+          numeroId: c.numeroId,
+          token: a?.token ?? null,
+          titre: a?.titre?.trim() || null,
+          prenom: a?.prenom?.trim() || null,
+          photos: c.photos,
+          le: c.le,
+        };
+      });
+    } catch (err) {
+      console.error("[admin/atelier] doublons ailleurs", (err as Error)?.message);
+      return [];
+    }
+  })();
+
   const apercu = await resoudreApercu(n.apercu_urls);
   const brut = (n.apercu_urls && typeof n.apercu_urls === "object" ? n.apercu_urls : {}) as Record<string, string>;
 
@@ -1205,6 +1248,7 @@ export async function chargerFiche(token: string): Promise<Fiche | null> {
     retouchesLe: (n.retouches_demandees_le as string) ?? null,
     depotInitialJusqua,
     photosAttendues,
+    doublonsAilleurs,
     apercu,
     choixCouverture: choixCouvertureFiche?.choix ?? null,
     /* La DATE du choix (11/09/2026) : sans elle, « Couverture 2 » lu trois

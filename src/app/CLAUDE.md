@@ -183,6 +183,14 @@ rouvre le trou.
    « Aucune préférence » de l'écran 3 disparaissait sous le verre (retour client du 18/09/2026).
    Et le piège de spécificité de `.at-nav-suivi` vaut ici aussi : `.at-q-barre-retour` ne se
    masque sur mobile qu'en `.bj-atelier .at-q-barre-retour`, sinon `.bj-atelier .at-q-back` gagne.
+8. **L'écran 5 NOMME le dossier qui reçoit** (T-156, 17/10/2026) : « Dépôt pour « Malaysia »,
+   Justine » à la place du chapeau, lu au SERVEUR par la lecture GET que le moteur fait déjà
+   (`vue.dossier`), jamais au brouillon. Le 06/10, 92 photos d'une cliente sont parties dans le
+   dossier d'une autre, et l'écran ne disait pas lequel. L'atelier connecté (cookie `bj_admin`,
+   que seul le serveur lit) voit en plus un bandeau franc, et la reprise par `?reprendre=` d'un
+   autre token repart d'un brouillon propre (`brouillonDeReprise`) sans s'écrire chez lui.
+   ⚠️ Le volet Browser masqué gèle `requestAnimationFrame` : la vue du moteur n'y est jamais
+   republiée et la ligne reste vide. Prouver en Chrome headless, pas dans le volet.
 
 ## Ce qui est mort — ne pas ressusciter
 

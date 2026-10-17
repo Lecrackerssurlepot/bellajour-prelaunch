@@ -491,6 +491,23 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         ton: "elle",
       };
 
+    /* T-156 (17/10/2026) — un lot identique, au fichier près, à des photos
+       d'un AUTRE dossier. Une remarque pour l'œil de l'atelier, jamais un
+       refus : la fiche nomme l'autre dossier sur la carte des photos (le
+       récit est pur, il ne connaît que l'identifiant). */
+    case "doublons_autre_dossier": {
+      const n = typeof payload.photos === "number" ? payload.photos : null;
+      const autres = Array.isArray(payload.dossiers) ? payload.dossiers.length : 0;
+      return {
+        texte:
+          n === null
+            ? "Des photos identiques à celles d'un autre dossier"
+            : `${n} photo${n > 1 ? "s" : ""} identique${n > 1 ? "s" : ""} à celles ${autres > 1 ? `de ${autres} autres dossiers` : "d'un autre dossier"}`,
+        detail: "Remarque, rien n'est refusé : l'autre dossier est nommé sur la carte des photos",
+        ton: "alerte",
+      };
+    }
+
     case "checkout_expire":
       return { texte: "Panier abandonné (session expirée)", detail: "Le numéro reste commandable", ton: "neutre" };
 
