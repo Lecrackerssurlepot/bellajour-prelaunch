@@ -53,6 +53,22 @@ Branche `feat/collectif-collecte-solide` :
 4. T-167 / T-168 dans la même branche.
 
 ## Ce qui a été fait
-Voir la PR (19/10 au soir). Reste à prouver sur de VRAIS téléphones (T-155) : un iPhone en 4G
-avec l'écran qui se verrouille, un Samsung, et une édition d'essai réelle en production (accord
-de Mathias requis pour l'écriture).
+Branche `feat/collectif-collecte-solide` (19/10 au soir), types, lint, build, deux harnais verts.
+
+**Banc, avant → après** (mêmes scénarios) : re-choix iPhone 20 photos en base → 10 ; wifi qui
+bloque le coffre 90 s : 20 erreurs → 20 arrivées sans clic ; clôture pendant l'envoi : 1 photo
+au coffre invisible → 0, 3 arrivées → 10 ; vignettes perdues après coupures (4/24, 4/12, 24/24)
+→ aucune ; 500 photos au-delà du plafond : 480 déclarations → 53.
+
+**Essai RÉEL en production** (accord de Mathias, 19/10 au soir) : édition « Essai Claude »
+(`56c31f25…`), servie par la nouvelle version en local, base et coffre de production.
+- iPhone émulé, 4G faible, 24 photos de 2 à 3 Mo, coupure d'une minute : 24/24 arrivées,
+  « Merci Camille », 0 sans vignette, nom et accord enregistrés sur chaque photo.
+- Retour sur le lien : « Tu envoies en tant que Camille Essai · 24 photos déjà reçues » ; les
+  10 mêmes photos re-choisies (date iOS fraîche) : 0 doublon (24 en base).
+- Lien « sans limite » créé par la responsable, Android émulé, 300 photos d'un coup : 68 s,
+  0 échec, 16 déclarations. Total 324/324 confirmées, 2 personnes, 0 doublon, page Photos de la
+  responsable correcte.
+- Édition ARCHIVÉE ensuite (lien participants : 404). Rien d'effacé.
+
+Reste : un vrai iPhone et un vrai Samsung (T-155), l'écran verrouillé en plein envoi.
