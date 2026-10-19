@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { quiEstConnecte } from "@/lib/admin-session";
 import { makeSupabase } from "@/lib/supabase";
 import { FOUNDER_CAP } from "@/lib/founder";
 import AdminDashboard from "./AdminDashboard";
@@ -129,6 +131,13 @@ function dayRange(start: string, end: string): string[] {
 const CHART_START = "2026-06-13"; // début prévente
 
 export default async function AdminPage() {
+  /* La seule page de /admin qui ne se gardait pas elle-même (audit du
+     19/10/2026) : elle ne comptait que sur le middleware, or Next.js 16.2.3
+     porte plusieurs failles qui le contournent. Elle lit tous les inscrits,
+     adresses comprises : la même garde que les pages de l'atelier. */
+  const qui = await quiEstConnecte();
+  if (!qui) redirect("/admin/login");
+
   const supabase = makeSupabase();
 
   // 1. Lire la dernière visite AVANT de la mettre à jour (sert aux badges "nouveau").
