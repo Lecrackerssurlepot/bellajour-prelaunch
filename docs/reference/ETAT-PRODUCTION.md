@@ -10,6 +10,27 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 19/10/2026, soir — Les retours UX de Mathias livrés, deux migrations à appliquer
+
+- **En production le 19/10** (chaque lot vérifié, fusionné, déploiement READY) : les huit
+  planches du matin (PR #258 à #263 : photos par personne et en direct, terminer la collecte
+  (D25), fiche de l'atelier en cartes, messagerie de l'atelier, style en barre, création en six
+  étapes et écran des trois liens), puis celles du soir (PR #267 : calendrier Bellajour, poubelle
+  par magazine, chiffres en pastille, aperçu du message d'accueil ; PR #268 : demandes sur
+  mesure).
+- **`COLLECTIF_MAILS` reste FERMÉ** (Mathias : « n'ouvre rien sans moi ») : l'écran des liens
+  dit « Mails coupés : copiez les liens ».
+- **Deux migrations écrites, à appliquer par Mathias :**
+  - `20261020_collectif_accord_participant.sql` (T-184) : l'accord du participant enregistré
+    avec chaque photo. Son code est dans la **PR #266, NON fusionnée** : l'appliquer AVANT de
+    fusionner.
+  - `20261021_collectif_demandes.sql` (T-191) : relâche la contrainte de
+    `collectif_contenus.type`. Son code est DÉJÀ en production (PR #268) et se replie : les cinq
+    contenus d'origine marchent, un envoi sur une demande NOUVELLE répond 503
+    `migration_demandes_absente` jusqu'à l'application. Vérification en tête du fichier.
+- Non vus en vrai faute de données : une photo qui arrive écran ouvert, un message non lu, une
+  collecte réellement terminée, la suppression d'un magazine vide en réglages.
+
 ## 19/10/2026 — Faille d'authentification de l'atelier corrigée (T-161), audit de sécurité
 
 - **L'atelier s'ouvrait sans mot de passe** avec un cookie `bj_admin` au nom d'une propriété
