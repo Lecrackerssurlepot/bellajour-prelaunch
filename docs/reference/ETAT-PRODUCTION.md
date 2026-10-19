@@ -10,15 +10,39 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
-## 19/10/2026 (soir) — L'accord des participants (T-184) attend sa migration
+## 19/10/2026, fin d'après-midi — L'accord des participants (T-184) : migration appliquée, PR #266 fusionnée
 
-- **Codé sur `feat/collectif-accord-participant`, PR #266 NON fusionnée.** Rien n'a changé en
-  production : la case d'accord de `/depot` n'y est toujours enregistrée nulle part.
-- **`supabase/migrations/20261020_collectif_accord_participant.sql` à appliquer par Mathias**,
-  AVANT la fusion : deux colonnes sur `collectif_photos` (`accord_version`, `accord_le`).
-  Relevé en lecture le 19/10 : la colonne n'existe pas en base (42703).
-- Une seule édition active en base le 19/10 : « Première édition » (clôture le 24/10, 12 photos,
-  aucune avec un accord enregistré). Les essais de la PR n'y ont rien écrit (12 avant, 12 après).
+- **`20261020_collectif_accord_participant.sql` appliquée par Mathias le 19/10 vers 15 h 30**,
+  vérifiée en lecture juste après : `accord_version` et `accord_le` lues par PostgREST sur
+  `collectif_photos` (aucune photo n'a encore d'accord à ce moment-là).
+- **PR #266 fusionnée APRÈS elle** : un participant sans accord est refusé (400
+  `accord_requis`) ; la version du texte (`2026-10-17`) et l'heure du serveur s'écrivent avec
+  chacune de ses photos. Le texte affiché n'a pas changé.
+- **Reste** : voir sur un premier vrai dépôt de participant que l'accord ARRIVE en base (requête
+  dans la fiche T-184). Les photos déposées avant gardent un accord nul.
+- Une seule édition active en base le 19/10 : « Première édition » (clôture le 24/10, 12 photos).
+  Les essais de la PR n'y ont rien écrit (12 avant, 12 après).
+
+## 19/10/2026, soir — Les retours UX de Mathias livrés, deux migrations à appliquer
+
+- **En production le 19/10** (chaque lot vérifié, fusionné, déploiement READY) : les huit
+  planches du matin (PR #258 à #263 : photos par personne et en direct, terminer la collecte
+  (D25), fiche de l'atelier en cartes, messagerie de l'atelier, style en barre, création en six
+  étapes et écran des trois liens), puis celles du soir (PR #267 : calendrier Bellajour, poubelle
+  par magazine, chiffres en pastille, aperçu du message d'accueil ; PR #268 : demandes sur
+  mesure).
+- **`COLLECTIF_MAILS` reste FERMÉ** (Mathias : « n'ouvre rien sans moi ») : l'écran des liens
+  dit « Mails coupés : copiez les liens ».
+- **Deux migrations écrites, à appliquer par Mathias :**
+  - `20261020_collectif_accord_participant.sql` (T-184) : l'accord du participant enregistré
+    avec chaque photo. Son code est dans la **PR #266, NON fusionnée** : l'appliquer AVANT de
+    fusionner.
+  - `20261021_collectif_demandes.sql` (T-191) : relâche la contrainte de
+    `collectif_contenus.type`. Son code est DÉJÀ en production (PR #268) et se replie : les cinq
+    contenus d'origine marchent, un envoi sur une demande NOUVELLE répond 503
+    `migration_demandes_absente` jusqu'à l'application. Vérification en tête du fichier.
+- Non vus en vrai faute de données : une photo qui arrive écran ouvert, un message non lu, une
+  collecte réellement terminée, la suppression d'un magazine vide en réglages.
 
 ## 19/10/2026 — Faille d'authentification de l'atelier corrigée (T-161), audit de sécurité
 

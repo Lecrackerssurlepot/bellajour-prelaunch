@@ -1,0 +1,304 @@
+/* Les demandes au client (T-191, planche 12 du 19/10 au soir, validée par
+   Mathias) : l'étape « À envoyer par le client » du formulaire
+   (`DemandesClient.tsx`) et la carte de la fiche (`[id]/PanneauContenus.tsx`).
+   Porcelaine, scopé `.eca-root`. Les valeurs sont celles de la maquette
+   (`retours-19-10-soir.html`, section #p12) ; la bande « Ce que voit le
+   client » est en Charbon, comme l'espace du client la nuit. */
+
+.eca-root .eca-dem {
+  --eca-dem-ligne: rgba(16, 24, 40, 0.08);
+  --eca-dem-ligne-forte: rgba(16, 24, 40, 0.16);
+  --eca-dem-verre: rgba(255, 255, 255, 0.92);
+  --eca-dem-accent-doux: rgba(74, 144, 217, 0.14);
+  --eca-dem-accent-texte: #1d4f8a;
+  --eca-dem-charbon: #17181c;
+  --eca-dem-charbon-texte: #ecedf0;
+  --eca-dem-charbon-doux: #a9adb5;
+  --eca-dem-cuivre: #e3a27f;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+/* ── une ligne par demande : icône, nom, forme, poubelle ── */
+.eca-root .eca-dem-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.eca-root .eca-dem-ligne {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto 36px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 16px;
+  background: var(--eca-dem-verre);
+  border: 1px solid var(--eca-dem-ligne);
+}
+.eca-root .eca-dem-ico {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--eca-dem-accent-doux, rgba(74, 144, 217, 0.14));
+  color: var(--eca-dem-accent-texte, #1d4f8a);
+  font-size: 15px;
+  line-height: 1;
+}
+.eca-root .eca-dem-nom {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+/* Le nom s'écrit EN PLACE : il a l'air du texte de la maquette, et devient un champ au survol et au clavier. */
+.eca-root .eca-dem-champ {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: -3px 0 -3px -7px;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--bj-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+}
+.eca-root .eca-dem-champ::placeholder {
+  color: var(--bj-text-faint);
+  font-weight: 400;
+}
+.eca-root .eca-dem-champ:hover {
+  border-color: var(--eca-dem-ligne-forte);
+}
+.eca-root .eca-dem-champ:focus-visible {
+  outline: none;
+  border-color: var(--bj-action);
+  box-shadow: 0 0 0 3px var(--eca-dem-accent-doux);
+  background: #ffffff;
+}
+.eca-root .eca-dem-champ[aria-invalid="true"] {
+  border-color: var(--eca-alerte);
+}
+.eca-root .eca-dem-nom small {
+  font-size: 11.5px;
+  color: var(--bj-text-soft);
+}
+
+/* La forme, en pastille segmentée. */
+.eca-root .eca-dem-formes {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(16, 24, 40, 0.05);
+}
+.eca-root .eca-dem-formes button {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bj-text-soft);
+  font: inherit;
+  font-size: 11.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.eca-root .eca-dem-formes button:hover {
+  color: var(--bj-text);
+}
+.eca-root .eca-dem-formes button[aria-checked="true"] {
+  background: #ffffff;
+  color: var(--bj-text);
+  box-shadow: 0 1px 4px rgba(16, 24, 40, 0.1);
+}
+
+.eca-root .eca-dem-poubelle {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--eca-dem-ligne-forte);
+  background: var(--eca-dem-verre);
+  color: var(--eca-alerte);
+  cursor: pointer;
+}
+.eca-root .eca-dem-poubelle svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── « + Ajouter une demande » et ses modèles ── */
+.eca-root .eca-dem-modeles {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1.5px dashed var(--eca-dem-ligne-forte);
+}
+.eca-root .eca-dem-modeles b {
+  margin-right: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.eca-root .eca-dem-modeles button {
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--eca-dem-ligne);
+  background: var(--eca-dem-verre);
+  color: var(--bj-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.eca-root .eca-dem-modeles button:hover:not(:disabled) {
+  border-color: var(--bj-action);
+}
+.eca-root .eca-dem-modeles button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── ce que voit le client, dans « À envoyer » ── */
+.eca-root .eca-dem-client {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--eca-dem-charbon);
+  color: var(--eca-dem-charbon-texte);
+}
+.eca-root .eca-dem-client-titre {
+  width: 100%;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--eca-dem-charbon-doux);
+}
+.eca-root .eca-dem-client-puce {
+  max-width: 100%;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-dem-client-puce i {
+  margin-right: 6px;
+  font-style: normal;
+  color: var(--eca-dem-cuivre);
+}
+.eca-root .eca-dem-client-puce--vide {
+  color: var(--eca-dem-charbon-doux);
+  font-style: italic;
+}
+.eca-root .eca-dem-client-rien {
+  font-size: 12.5px;
+  color: var(--eca-dem-charbon-doux);
+}
+
+/* La migration qui manque : la phrase dit ce qui marche et ce qui attend. */
+.eca-root .eca-dem-migration {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Une colonne étroite (téléphone, ou les réglages à côté des liens) : la forme passe sous le nom. */
+@container (max-width: 560px) {
+  .eca-root .eca-dem-ligne {
+    grid-template-columns: 34px minmax(0, 1fr) 36px;
+  }
+  .eca-root .eca-dem-ligne > .eca-dem-poubelle {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .eca-root .eca-dem-ligne > .eca-dem-formes {
+    grid-column: 2 / 4;
+    grid-row: 2;
+    justify-self: start;
+  }
+}
+
+/* ── la carte de la fiche : les demandes et ce qui est reçu ── */
+.eca-root .eca-dem-fiche {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.eca-root .eca-dem-fiche-ligne {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(16, 24, 40, 0.08);
+}
+.eca-root .eca-dem-fiche-ligne .eca-dem-ico {
+  background: rgba(74, 144, 217, 0.14);
+  color: #1d4f8a;
+}
+.eca-root .eca-dem-fiche-corps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font-size: 13px;
+}
+.eca-root .eca-dem-fiche-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.eca-root .eca-dem-fiche-tete strong {
+  font-weight: 500;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-dem-etat {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--eca-gris-fond, rgba(16, 24, 40, 0.05));
+  color: var(--bj-text-soft);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.eca-root .eca-dem-etat--recu {
+  background: var(--eca-vert-fond);
+  color: var(--eca-vert);
+}
+.eca-root .eca-dem-envois {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.eca-root .eca-dem-envoi {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-left: 10px;
+  border-left: 2px solid rgba(16, 24, 40, 0.08);
+}

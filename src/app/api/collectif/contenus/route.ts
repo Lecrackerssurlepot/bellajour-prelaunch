@@ -1,26 +1,41 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { creerPlafond } from "@/lib/compte/garde";
-import { ecrireObjet, signerGet } from "@/lib/atelier/r2";
+import { ecrireObjet, signerGet, supprimer } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAcces } from "@/lib/collectif/acces";
 import { cleContenu, estUuid } from "@/lib/collectif/cles";
-import { apercuPossible, contenuClient, lireFichierContenu, lireReponsesMot, OCTETS_MAX_CONTENU } from "@/lib/collectif/contenus";
+import { apercuPossible, lireReponsesMot, OCTETS_MAX_CONTENU } from "@/lib/collectif/contenus";
 import { formaterJourParis } from "@/lib/collectif/dates";
+import { estCleHeritee, lireDemandes, lireFichierDemande, vueDemande } from "@/lib/collectif/demandes";
 import { nomTelechargement } from "@/lib/collectif/documents";
 import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
-import { colonneAbsente, ERREUR_ENVOIS_ABSENTE, MESSAGE_ENVOIS_ABSENTE } from "@/lib/collectif/migration";
+import {
+  colonneAbsente,
+  contrainteRefusee,
+  ERREUR_DEMANDES_ABSENTE,
+  ERREUR_ENVOIS_ABSENTE,
+  MESSAGE_DEMANDES_ABSENTE,
+  MESSAGE_ENVOIS_ABSENTE,
+} from "@/lib/collectif/migration";
 import { refusAcces, refusDroit } from "@/lib/collectif/reponses";
+import { migrationDemandes } from "@/lib/collectif/sondeDemandes";
 
 /**
  * POST /api/collectif/contenus — « À envoyer à l'atelier » (PRD §14.2).
- * - un FICHIER (logo, programme, liste, rubrique) : `multipart/form-data`
- *   avec `token`, `type` et `fichier`. Le token reste dans le CORPS, jamais
- *   dans l'URL. Le fichier passe par le serveur (4 Mo au plus) et s'écrit au
- *   coffre sous `collectif/<id>/contenus/` ;
- * - un QUESTIONNAIRE (le mot du dirigeant) : JSON `{ token, type: "mot", reponses: [...] }`.
+ * - un FICHIER : `multipart/form-data` avec `token`, `type` (la CLÉ de la
+ *   demande) et `fichier`. Le token reste dans le CORPS, jamais dans l'URL. Le
+ *   fichier passe par le serveur (4 Mo au plus) et s'écrit au coffre sous
+ *   `collectif/<id>/contenus/` ;
+ * - un QUESTIONNAIRE (le « mot de… ») : JSON `{ token, type, reponses: [...] }`.
+ *
+ * T-191 (19/10) : l'atelier compose ses DEMANDES (nom, forme, clé ;
+ * `demandes.ts`). La route refuse une clé que l'édition ne demande pas, et un
+ * fichier dont la FORME ne correspond pas (extension ET type annoncé, lus ici :
+ * « Seulement une image », « Seulement un PDF ou un SVG »). Le prix n'a rien à
+ * voir ici : rien ne se paie.
  *
  * Responsable seulement (`envoyer_contenu`) ; l'équipe reçoit 403. Un
  * fichier de plus s'AJOUTE (un contenu a plusieurs fichiers) ; avec
@@ -29,8 +44,13 @@ import { refusAcces, refusDroit } from "@/lib/collectif/reponses";
  * coffre et à l'atelier. Le questionnaire range la réponse précédente de la
  * même façon. Rien ne s'efface.
  *
- * ⚠️ « Remplacer » exige la migration 20261016 : la colonne est SONDÉE avant
- * d'écrire au coffre (aucun fichier orphelin), sinon un vrai 503.
+ * ⚠️ Deux migrations, toutes deux SONDÉES avant d'écrire au coffre (aucun
+ * fichier orphelin), sinon un vrai 503 qui nomme le fichier :
+ * - « Remplacer » exige 20261016 (la colonne `remplace_le`) ;
+ * - une demande NOUVELLE (une clé qui n'est pas l'une des cinq d'origine)
+ *   exige 20261021 : sans elle, la contrainte de `collectif_contenus.type`
+ *   refuse la ligne (23514). Les cinq clés d'origine, renommées ou non,
+ *   passent avant comme après.
  */
 
 export const runtime = "nodejs";
@@ -78,11 +98,31 @@ export async function POST(request: Request) {
   if (!peut(acces.role, "envoyer_contenu")) return refusDroit();
   const { edition } = acces;
 
-  const contenu = contenuClient(cle);
-  if (!contenu || !(edition.contenus_demandes ?? []).includes(contenu.cle)) return non(422, "saisie", "L'atelier n'a pas demandé ce contenu.");
+  /* La demande : une clé que CETTE édition demande (contenus_demandes), lue sous ses deux formes. */
+  const demande = typeof cle === "string" ? lireDemandes(edition.contenus_demandes).find((d) => d.cle === cle) : undefined;
+  if (!demande) return non(422, "saisie", "L'atelier n'a pas demandé ce contenu.");
+  const contenu = vueDemande(demande, edition.registre);
+
+  /* La forme, AVANT toute écriture : le fichier (extension et type annoncé), ou les réponses. */
+  let lu: { extension: string; type: string } | null = null;
+  let lues: Record<string, string> | null = null;
+  if (contenu.mode === "questionnaire") {
+    const r = lireReponsesMot(reponses);
+    if (!r.ok) return non(422, "saisie", r.message);
+    lues = r.reponses;
+  } else {
+    if (!fichier) return non(422, "saisie", "Choisir un fichier.");
+    const f = lireFichierDemande(contenu, fichier.name, fichier.size, fichier.type);
+    if (!f.ok) return non(422, "saisie", f.message);
+    lu = f;
+  }
 
   const supabase = makeSupabase();
   const qui = edition.responsable_nom ?? "Le responsable";
+
+  /* Une demande NOUVELLE exige la migration 20261021 : sondée avant le coffre. */
+  const nouvelle = !estCleHeritee(contenu.cle);
+  if (nouvelle && (await migrationDemandes(supabase)) === "absente") return non(503, ERREUR_DEMANDES_ABSENTE, MESSAGE_DEMANDES_ABSENTE);
 
   /* « Remplacer » : un fichier COURANT du même contenu, de cette édition. La
      lecture nomme `remplace_le` : elle sonde aussi la migration. */
@@ -104,14 +144,10 @@ export async function POST(request: Request) {
   const id = randomUUID();
   let ligne: Record<string, unknown>;
 
-  if (contenu.mode === "questionnaire") {
-    const lues = lireReponsesMot(reponses);
-    if (!lues.ok) return non(422, "saisie", lues.message);
-    ligne = { id, edition_id: edition.id, type: contenu.cle, reponses: lues.reponses, depose_par: qui };
+  if (lues) {
+    ligne = { id, edition_id: edition.id, type: contenu.cle, reponses: lues, depose_par: qui };
   } else {
-    if (!fichier) return non(422, "saisie", "Choisir un fichier.");
-    const lu = lireFichierContenu(contenu, fichier.name, fichier.size);
-    if (!lu.ok) return non(422, "saisie", lu.message);
+    if (!fichier || !lu) return non(422, "saisie", "Choisir un fichier.");
     const octets = new Uint8Array(await fichier.arrayBuffer());
     if (octets.byteLength > OCTETS_MAX_CONTENU) return non(413, "trop_lourd", "4 Mo au plus.");
     const key = cleContenu(edition.id, id, `contenu.${lu.extension}`);
@@ -127,6 +163,12 @@ export async function POST(request: Request) {
   const { error } = await supabase.from("collectif_contenus").insert(ligne);
   if (error) {
     console.error("[collectif] contenu non enregistré", error.code, error.message);
+    /* La sonde n'a pas su répondre, ou la base a changé entre deux : la
+       contrainte du type refuse la ligne. Le fichier déjà au coffre est retiré. */
+    if (contrainteRefusee(error.code)) {
+      if (typeof ligne.r2_key === "string") await supprimer(ligne.r2_key);
+      return non(503, ERREUR_DEMANDES_ABSENTE, MESSAGE_DEMANDES_ABSENTE);
+    }
     return non(500, "ecriture_impossible");
   }
   /* L'ancienne version : le fichier remplacé, ou la réponse précédente du
@@ -150,11 +192,12 @@ export async function POST(request: Request) {
     if (e && !colonneAbsente(e.code)) console.error("[collectif] réponse précédente non rangée", e.code, e.message);
   }
 
+  /* `type` : le NOM que le client a lu (le journal le raconte tel quel) ; `cle` : la demande. */
   const journal = await journaliser(
     supabase,
     { editionId: edition.id },
     ancien ? "contenu_remplace" : "contenu_recu",
-    { type: contenu.libelle, par: qui, ...(fichier ? { nom: fichier.name.slice(0, 160) } : {}) },
+    { type: contenu.libelle, cle: contenu.cle, par: qui, ...(fichier ? { nom: fichier.name.slice(0, 160) } : {}) },
     null
   );
   /* L'envoi tel que la fenêtre le montre : elle l'ajoute tout de suite, sans

@@ -28,7 +28,7 @@ export default async function PageAtelier({
   const acces = await chargerEspace(token)
   if (acces.statut !== 'ok') notFound()
   const { edition, role } = acces
-  const [{ documents, messages }, reservation, envois] = await Promise.all([chargerDossier(edition), chargerReservation(edition), lireEnvois(edition.id)])
+  const [{ documents, messages }, reservation, envois] = await Promise.all([chargerDossier(edition), chargerReservation(edition), lireEnvois(edition)])
 
   return (
     <Parler

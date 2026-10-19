@@ -25,9 +25,17 @@
    (`instantDeParis`). L'instant présent vient du SERVEUR (prop `maintenant`) :
    les raccourcis ne dépendent pas du fuseau de l'ordinateur de l'atelier, et le
    rendu reste pur. En réglages, une clôture inchangée n'est pas renvoyée : une
-   édition close reste réglable (saisie.ts). */
+   édition close reste réglable (saisie.ts).
 
-import { useId, useRef, useState } from "react";
+   Planches 9, 10 et 11 du 19/10 au soir (T-189, T-190, validées par Mathias) :
+   AUCUN champ du navigateur pour une date ou un chiffre. Le calendrier Bellajour
+   (`Calendrier`) en plage pour les dates de l'événement (écrites « du 2 au 4
+   octobre 2026 » dans `dates_texte`), en jour pour la clôture et la livraison ;
+   les chiffres en pastille (`Pastille`) ; une poubelle par magazine
+   (`ListeMagazines`) ; l'aperçu de la page des participants sous le message
+   d'accueil (`ApercuDepot`). L'ancienne version : archive/formulaire-champs-navigateur-2026-10/. */
+
+import { useCallback, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { suggestionEmail } from "@/lib/atelier/questionnaire";
 import {
@@ -36,17 +44,30 @@ import {
   formaterJourCourt,
   HEURE_CLOTURE,
   joursEntre,
+  libelleJour,
   lireChampCloture,
+  lirePlage,
+  phraseDepot,
   phraseDuree,
+  phraseJoursPlage,
   pucesCloture,
+  textePlage,
 } from "@/lib/collectif/calendrier";
-import { contenuClient } from "@/lib/collectif/contenus";
+import DemandesClient from "./DemandesClient";
 import { instantDeParis, versChampParis } from "@/lib/collectif/dates";
 import { formaterJour } from "@/lib/collectif/livraison";
-import { ETAPES_EDITION, lireSaisieEdition, MAX_MAGAZINES, rangEtapeDuChamp } from "@/lib/collectif/saisie";
-import { CONTENUS, type CleContenu } from "@/lib/collectif/types";
+import { accueilParDefaut, ETAPES_EDITION, lireSaisieEdition, rangEtapeDuChamp, VALEURS_RAPIDES } from "@/lib/collectif/saisie";
+import type { DemandeEnBase } from "@/lib/collectif/demandes";
+import ApercuDepot from "./ApercuDepot";
+import Calendrier from "./Calendrier";
+import ListeMagazines, { type MagazineFormulaire } from "./ListeMagazines";
+import Pastille from "./Pastille";
+import "./formulaire.css";
 
-export type MagazineFormulaire = { id: string | null; nom: string; vide: boolean };
+export type { MagazineFormulaire };
+
+/** Le calendrier ouvert, s'il y en a un (un seul à la fois). */
+type Ouvert = "dates" | "cloture" | "livraison";
 
 export type ValeursEdition = {
   organisation: string;
@@ -65,7 +86,7 @@ export type ValeursEdition = {
   nb_propositions_couverture: string;
   couvertures_aimees_max: string;
   styles_segment: string;
-  contenus_demandes: string[];
+  contenus_demandes: DemandeEnBase[];
   invitation_texte: string;
   responsable_email: string;
   responsable_nom: string;
@@ -86,16 +107,6 @@ type Props =
     };
 
 type Erreurs = Record<string, string>;
-
-/* Ce que l'atelier lit sur chaque case (la planche 5) ; ce que le client voit
-   vient de `contenuClient` (le nom de la case dans son espace). */
-const CASES: Record<CleContenu, string> = {
-  logo: "Le logo, en vectoriel",
-  programme: "Le programme",
-  mot: "Le mot du dirigeant",
-  liste: "La liste des participants",
-  rubrique: "Une rubrique à contenu fourni",
-};
 
 const TONS = [
   { valeur: "entreprise_vous", libelle: "Vous · entreprise" },
@@ -135,8 +146,15 @@ export default function FormulaireEdition(props: Props) {
   const [envoi, setEnvoi] = useState(false);
   const [etape, setEtape] = useState(0);
   const [vues, setVues] = useState<number[]>([0]);
-  const [calendrier, setCalendrier] = useState(false);
-  const [heure, setHeure] = useState(HEURE_CLOTURE);
+  /* Le calendrier ouvert, et s'il prend le focus (ouvert au clavier ou par son bouton). */
+  const [ouvert, setOuvert] = useState<Ouvert | null>(null);
+  const [focusCalendrier, setFocusCalendrier] = useState(false);
+  const zoneDates = useRef<HTMLDivElement>(null);
+  const zoneCloture = useRef<HTMLDivElement>(null);
+  const zoneLivraison = useRef<HTMLDivElement>(null);
+  const boutonDates = useRef<HTMLButtonElement>(null);
+  const boutonCloture = useRef<HTMLButtonElement>(null);
+  const boutonLivraison = useRef<HTMLButtonElement>(null);
 
   const maintenantMs = Date.parse(props.maintenant);
   const aujourdhui = versChampParis(props.maintenant).slice(0, 10);
@@ -150,8 +168,24 @@ export default function FormulaireEdition(props: Props) {
     setMessage(null);
   };
 
+  function ouvrir(quel: Ouvert, focus: boolean) {
+    setOuvert(quel);
+    setFocusCalendrier(focus);
+  }
+
+  /* Échap, « Garder », un jour choisi : le focus revient au bouton du champ ; un clic dehors le laisse où il est. */
+  const fermer = useCallback(
+    (rendreFocus: boolean) => {
+      const bouton = ouvert === "dates" ? boutonDates : ouvert === "cloture" ? boutonCloture : boutonLivraison;
+      setOuvert(null);
+      if (rendreFocus) bouton.current?.focus();
+    },
+    [ouvert]
+  );
+
   function aller(i: number) {
     const cible = Math.max(0, Math.min(DERNIERE, i));
+    setOuvert(null);
     setEtape(cible);
     setVues((x) => (x.includes(cible) ? x : [...x, cible]));
     /* Sur téléphone, l'étape suivante commence en haut : on y remonte si le haut du formulaire est sorti de l'écran,
@@ -161,11 +195,27 @@ export default function FormulaireEdition(props: Props) {
     rail.current?.children[cible]?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 
-  function signaler(parChamp: Erreurs) {
+  function signaler(parChamp: Erreurs, partiel = false) {
     setErreurs(parChamp);
     const rangs = [...new Set(Object.keys(parChamp).map(rangEtapeDuChamp))].sort((a, b) => a - b);
     aller(rangs[0] ?? 0);
-    setMessage({ ok: false, texte: `Rien n'est enregistré : à corriger dans ${nommerEtapes(rangs)}.` });
+    setMessage({
+      ok: false,
+      texte: partiel ? `Le reste est enregistré ; à revoir dans ${nommerEtapes(rangs)}.` : `Rien n'est enregistré : à corriger dans ${nommerEtapes(rangs)}.`,
+    });
+  }
+
+  /* Après l'écriture, la liste de la base (ne pas compter sur `router.refresh()` : l'état
+     de l'écran ne la relirait pas, et un magazine ajouté repartirait en double). */
+  function reprendreMagazines(relus?: { id: string; nom: string }[]) {
+    if (!relus) return;
+    setV((x) => ({
+      ...x,
+      magazines: relus.map((r) => {
+        const avant = x.magazines.find((m) => m.id === r.id);
+        return avant ? { ...avant, nom: r.nom } : { id: r.id, nom: r.nom, vide: true, etiquette: { texte: "vide", ton: "vide" } };
+      }),
+    }));
   }
 
   function choisirCloture(champ: string) {
@@ -239,12 +289,20 @@ export default function FormulaireEdition(props: Props) {
         id?: string;
         error?: string;
         erreurs?: { champ: string; message: string }[];
+        /** 409 d'un magazine commencé PENDANT l'enregistrement : le reste est écrit. */
+        partiel?: boolean;
+        /** Les magazines tels que la base les garde après l'écriture (réglages). */
+        magazines?: { id: string; nom: string }[];
       };
       if (!rep.ok) {
         if (json.erreurs?.length) {
           const parChamp: Erreurs = {};
           for (const er of json.erreurs) parChamp[er.champ] = parChamp[er.champ] ? `${parChamp[er.champ]} ${er.message}` : er.message;
-          signaler(parChamp);
+          signaler(parChamp, Boolean(json.partiel));
+          if (json.partiel) {
+            reprendreMagazines(json.magazines);
+            router.refresh();
+          }
         } else if (json.error === "migration_collectif_absente") {
           setMessage({ ok: false, texte: "La migration collectif n'est pas appliquée." });
         } else {
@@ -256,6 +314,7 @@ export default function FormulaireEdition(props: Props) {
         router.push(`/admin/collectif/creee/${json.id}`);
         return;
       }
+      reprendreMagazines(json.magazines);
       setMessage({ ok: true, texte: "Enregistré." });
       router.refresh();
     } catch {
@@ -295,27 +354,27 @@ export default function FormulaireEdition(props: Props) {
     </label>
   );
 
-  /* Un chiffre porte son unité (« 30 photos par personne ») ; vide, il reste à fixer (ou facultatif). */
+  /* Un chiffre en pastille « − 30 photos par personne + » (planche 11) : l'unité dedans,
+     le clavier toujours possible, vide = à fixer (ou facultatif), jamais pré-rempli. */
   const chiffre = (champ: keyof ValeursEdition, label: string, unite: string, aide: string, min: number, vide = "à fixer") => (
-    <label className="eca-champ">
-      <span className="eca-champ-label">{label}</span>
-      <span className="eca-unite">
-        <input
-          className="eca-input eca-input--chiffre"
-          type="number"
-          inputMode="numeric"
-          min={min}
-          step={1}
-          value={v[champ] as string}
-          placeholder={vide}
-          onChange={(e) => maj(champ, e.target.value as never)}
-          aria-invalid={erreurs[champ] ? true : undefined}
-        />
-        <span className="eca-unite-texte">{unite}</span>
-      </span>
-      <span className="eca-champ-aide">{aide}</span>
+    <div className="eca-champ">
+      <label className="eca-champ-label" htmlFor={`${uid}-${champ}`}>
+        {label}
+      </label>
+      <Pastille
+        id={`${uid}-${champ}`}
+        valeur={v[champ] as string}
+        onChange={(x) => maj(champ, x as never)}
+        unite={unite}
+        min={min}
+        vide={vide}
+        libelle={label}
+        invalide={Boolean(erreurs[champ])}
+        rapides={VALEURS_RAPIDES[champ]}
+      />
+      {aide ? <span className="eca-champ-aide">{aide}</span> : null}
       {erreur(champ)}
-    </label>
+    </div>
   );
 
   const choix = (
@@ -347,8 +406,85 @@ export default function FormulaireEdition(props: Props) {
     </div>
   );
 
-  const dernierMag = v.magazines[v.magazines.length - 1];
-  const peutRetirer = v.magazines.length > 1 && dernierMag && (dernierMag.id === null || dernierMag.vide);
+  /* ─────────────────────────────── les calendriers (planche 9) ─────────────────────────────── */
+  const plage = lirePlage(v.dates_texte);
+  const heureCloture = cloture?.heure ?? HEURE_CLOTURE;
+
+  /* « Dates de l'événement » : un texte qu'on peut toujours taper, et le calendrier en plage. Un
+     texte d'avant qui ne se relit pas (« début octobre ») reste tel quel, rien n'est sélectionné. */
+  const champDates = (
+    <div className="eca-champ">
+      <label className="eca-champ-label" htmlFor={`${uid}-dates`}>
+        {"Dates de l'événement"}
+      </label>
+      <div className="eca-cal-ancre" ref={zoneDates}>
+        <span className={ouvert === "dates" ? "eca-cal-champ eca-cal-champ--ouvert" : "eca-cal-champ"}>
+          <input
+            id={`${uid}-dates`}
+            className="eca-cal-saisie"
+            value={v.dates_texte}
+            placeholder="du 2 au 4 octobre 2026"
+            autoComplete="off"
+            onChange={(e) => maj("dates_texte", e.target.value)}
+            onClick={() => {
+              if (ouvert !== "dates") ouvrir("dates", false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                ouvrir("dates", true);
+              } else if (e.key === "Escape" && ouvert === "dates") {
+                e.preventDefault();
+                fermer(false);
+              }
+            }}
+            aria-invalid={erreurs.dates_texte ? true : undefined}
+          />
+          <button
+            ref={boutonDates}
+            type="button"
+            className="eca-cal-ico"
+            aria-label="Choisir les dates au calendrier"
+            aria-haspopup="dialog"
+            aria-expanded={ouvert === "dates"}
+            onClick={() => {
+              if (ouvert === "dates") fermer(false);
+              else ouvrir("dates", true);
+            }}
+          >
+            ▾
+          </button>
+        </span>
+        {ouvert === "dates" ? (
+          <Calendrier
+            mode="plage"
+            libelle="Dates de l'événement"
+            aujourdhui={aujourdhui}
+            zone={zoneDates}
+            focusAuDebut={focusCalendrier}
+            onFermer={fermer}
+            plage={plage}
+            onPlage={(p) => maj("dates_texte", textePlage(p))}
+            pied={
+              <>
+                <span>{plage ? phraseJoursPlage(plage) : "Le premier jour, puis le dernier"}</span>
+                <span className="eca-cal-puces">
+                  <button type="button" className="eca-cal-puce" onClick={() => maj("dates_texte", "")}>
+                    Effacer
+                  </button>
+                  <button type="button" className="eca-cal-puce eca-cal-puce--on" onClick={() => fermer(true)}>
+                    Garder
+                  </button>
+                </span>
+              </>
+            }
+          />
+        ) : null}
+      </div>
+      <span className="eca-champ-aide">{"Pour l'atelier seulement : elles s'affichent en tête de la fiche."}</span>
+      {erreur("dates_texte")}
+    </div>
+  );
 
   /* ─────────────────────────────── la frise ─────────────────────────────── */
   const instantCloture = cloture ? Date.parse(instantDeParis(v.cloture_local) ?? "") : NaN;
@@ -440,47 +576,64 @@ export default function FormulaireEdition(props: Props) {
         <span className="eca-champ-label" id={`${uid}-cloture`}>
           Clôture de la collecte
         </span>
-        <span className="eca-choix-liste" role="group" aria-labelledby={`${uid}-cloture`}>
-          {puces.map((p) => (
+        {/* Les raccourcis, puis le calendrier en JOUR (planche 9) : les jours passés barrés, la
+            clôture à 23 h 59 heure de Paris (une clôture d'une autre heure garde la sienne). */}
+        <div className="eca-cal-ancre" ref={zoneCloture}>
+          <span className="eca-choix-liste" role="group" aria-labelledby={`${uid}-cloture`}>
+            {puces.map((p) => (
+              <button
+                key={p.cle}
+                type="button"
+                className="eca-choix"
+                aria-pressed={p.actif}
+                onClick={() => {
+                  if (p.cle !== "choisie") {
+                    setOuvert(null);
+                    choisirCloture(p.champ);
+                  } else if (ouvert === "cloture") fermer(false);
+                  else ouvrir("cloture", true);
+                }}
+              >
+                {p.libelle}
+              </button>
+            ))}
             <button
-              key={p.cle}
+              ref={boutonCloture}
               type="button"
               className="eca-choix"
-              aria-pressed={p.actif}
-              onClick={() => (p.cle === "choisie" ? setCalendrier(true) : choisirCloture(p.champ))}
-            >
-              {p.libelle}
-            </button>
-          ))}
-          <button type="button" className="eca-choix" aria-expanded={calendrier} onClick={() => setCalendrier((c) => !c)}>
-            Choisir au calendrier…
-          </button>
-        </span>
-        {calendrier ? (
-          <span className="eca-calendrier">
-            <input
-              className="eca-input"
-              type="date"
-              min={aujourdhui}
-              value={cloture?.jour ?? ""}
-              aria-label="Jour de la clôture"
-              onChange={(e) => choisirCloture(e.target.value ? champCloture(e.target.value, cloture?.heure ?? heure) : "")}
-            />
-            <span>à</span>
-            <input
-              className="eca-input eca-input--heure"
-              type="time"
-              value={cloture?.heure ?? heure}
-              aria-label="Heure de la clôture, heure de Paris"
-              onChange={(e) => {
-                if (!/^\d{2}:\d{2}$/.test(e.target.value)) return;
-                setHeure(e.target.value);
-                if (cloture) choisirCloture(champCloture(cloture.jour, e.target.value));
+              aria-haspopup="dialog"
+              aria-expanded={ouvert === "cloture"}
+              onClick={() => {
+                if (ouvert === "cloture") fermer(false);
+                else ouvrir("cloture", true);
               }}
-            />
-            <span className="eca-champ-aide">heure de Paris</span>
+            >
+              Choisir au calendrier…
+            </button>
           </span>
-        ) : null}
+          {ouvert === "cloture" ? (
+            <Calendrier
+              mode="jour"
+              libelle="Clôture de la collecte"
+              aujourdhui={aujourdhui}
+              min={aujourdhui}
+              zone={zoneCloture}
+              focusAuDebut={focusCalendrier}
+              onFermer={fermer}
+              jour={cloture?.jour ?? null}
+              onJour={(jour) => {
+                choisirCloture(champCloture(jour, heureCloture));
+                fermer(true);
+              }}
+              pied={
+                <>
+                  <span className="eca-cal-heure">{`à ${formaterHeure(heureCloture)}, heure de Paris`}</span>
+                  {ecart !== null && ecart >= 0 ? <span>{phraseDepot(ecart)}</span> : null}
+                </>
+              }
+            />
+          ) : null}
+        </div>
         <span className="eca-champ-aide">
           {`À ${formaterHeure(cloture?.heure ?? HEURE_CLOTURE)}, heure de Paris. Les liens des participants se ferment seuls ; vous pouvez clore plus tôt depuis la fiche, ou le client peut terminer lui-même.`}
           {cloture ? (
@@ -495,24 +648,65 @@ export default function FormulaireEdition(props: Props) {
         {erreur("cloture_le")}
       </div>
       <div className="eca-deux-champs">
-        {texte("dates_texte", "Dates de l'événement", {
-          placeholder: "du 2 au 4 octobre",
-          aide: "Pour l'atelier seulement : elles s'affichent en tête de la fiche.",
-        })}
+        {champDates}
         {creation ? (
-          <label className="eca-champ">
-            <span className="eca-champ-label">Livraison souhaitée</span>
-            <input
-              className="eca-input"
-              type="date"
-              min={aujourdhui}
-              value={v.livraison_prevue_le}
-              onChange={(e) => maj("livraison_prevue_le", e.target.value)}
-              aria-invalid={erreurs.livraison_prevue_le ? true : undefined}
-            />
+          <div className="eca-champ">
+            <span className="eca-champ-label" id={`${uid}-livraison`}>
+              Livraison souhaitée
+            </span>
+            {/* Le même calendrier, en JOUR et sans heure (planche 9). */}
+            <div className="eca-cal-ancre" ref={zoneLivraison}>
+              <button
+                ref={boutonLivraison}
+                type="button"
+                className={`eca-cal-champ eca-cal-champ--bouton${ouvert === "livraison" ? " eca-cal-champ--ouvert" : ""}${erreurs.livraison_prevue_le ? " eca-cal-champ--erreur" : ""}`}
+                aria-haspopup="dialog"
+                aria-expanded={ouvert === "livraison"}
+                aria-labelledby={`${uid}-livraison ${uid}-livraison-valeur`}
+                onClick={() => {
+                  if (ouvert === "livraison") fermer(false);
+                  else ouvrir("livraison", true);
+                }}
+              >
+                <span id={`${uid}-livraison-valeur`} className={v.livraison_prevue_le ? "eca-cal-valeur" : "eca-cal-valeur eca-cal-valeur--vide"}>
+                  {v.livraison_prevue_le ? formaterJour(v.livraison_prevue_le) : "Choisir un jour"}
+                </span>
+                <span className="eca-cal-ico" aria-hidden="true">
+                  ▾
+                </span>
+              </button>
+              {ouvert === "livraison" ? (
+                <Calendrier
+                  mode="jour"
+                  libelle="Livraison souhaitée"
+                  aujourdhui={aujourdhui}
+                  min={aujourdhui}
+                  zone={zoneLivraison}
+                  focusAuDebut={focusCalendrier}
+                  onFermer={fermer}
+                  jour={v.livraison_prevue_le || null}
+                  onJour={(jour) => {
+                    maj("livraison_prevue_le", jour);
+                    fermer(true);
+                  }}
+                  pied={
+                    <>
+                      <span>{v.livraison_prevue_le ? libelleJour(v.livraison_prevue_le) : "Un jour, sans heure"}</span>
+                      {v.livraison_prevue_le ? (
+                        <span className="eca-cal-puces">
+                          <button type="button" className="eca-cal-puce" onClick={() => maj("livraison_prevue_le", "")}>
+                            Effacer
+                          </button>
+                        </span>
+                      ) : null}
+                    </>
+                  }
+                />
+              ) : null}
+            </div>
             <span className="eca-champ-aide">Facultatif. Le client la voit dans « Livraison ».</span>
             {erreur("livraison_prevue_le")}
-          </label>
+          </div>
         ) : (
           <div className="eca-champ">
             <span className="eca-champ-label">Livraison souhaitée</span>
@@ -537,44 +731,13 @@ export default function FormulaireEdition(props: Props) {
 
     /* 3 · Les magazines */
     <>
-      <div className="eca-champ">
-        <span className="eca-champ-label">Magazines *</span>
-        <div className="eca-magazines">
-          {v.magazines.map((m, i) => (
-            <div className="eca-magazine" key={m.id ?? `nouveau-${i}`}>
-              <span className="eca-magazine-rang">Magazine {i + 1}</span>
-              <input
-                className="eca-input"
-                value={m.nom}
-                placeholder="Le séminaire, la soirée…"
-                aria-label={`Nom du magazine ${i + 1}`}
-                onChange={(e) =>
-                  maj(
-                    "magazines",
-                    v.magazines.map((x, j) => (j === i ? { ...x, nom: e.target.value } : x))
-                  )
-                }
-              />
-            </div>
-          ))}
-        </div>
-        <div className="eca-barre">
-          <button
-            type="button"
-            className="eca-bouton"
-            disabled={v.magazines.length >= MAX_MAGAZINES}
-            onClick={() => maj("magazines", [...v.magazines, { id: null, nom: "", vide: true }])}
-          >
-            Ajouter un magazine
-          </button>
-          {peutRetirer ? (
-            <button type="button" className="eca-bouton" onClick={() => maj("magazines", v.magazines.slice(0, -1))}>
-              Retirer le dernier
-            </button>
-          ) : null}
-        </div>
+      {/* Une poubelle par ligne (planche 10) : la règle est `retraitMagazine`, relue par le PATCH. */}
+      <div className="eca-champ eca-fm-champ-mags">
+        <ListeMagazines magazines={v.magazines} onChange={(m) => maj("magazines", m)} invalide={Boolean(erreurs.magazines)} />
         <span className="eca-champ-aide">
-          {"Chaque magazine a son brief : le client le compose pièce par pièce sur le mur (palette, typographies, doubles pages, couvertures), d'un seul style ou de plusieurs. On ne retire que le dernier, et seulement s'il est encore vide."}
+          {creation
+            ? "Chaque magazine a son brief : le client le compose pièce par pièce sur le mur (palette, typographies, doubles pages, couvertures), d'un seul style ou de plusieurs."
+            : "Chaque magazine a son brief : le client le compose pièce par pièce sur le mur. Un magazine encore vide se retire ; à l'enregistrement, les suivants prennent son numéro."}
         </span>
         {erreur("magazines")}
       </div>
@@ -598,8 +761,8 @@ export default function FormulaireEdition(props: Props) {
     /* 4 · Les photos */
     <>
       <div className="eca-deux-champs">
-        {chiffre("plafond_participant_atelier", "Photos par personne", "photos par personne", "Le responsable peut baisser ce nombre, jamais le dépasser.", 1)}
-        {chiffre("plafond_total", "Photos au total", "photos au total", "Compte tout le monde sauf l'atelier.", 1)}
+        {chiffre("plafond_participant_atelier", "Par personne", "photos par personne", "Le responsable peut baisser ce nombre, jamais le dépasser.", 1)}
+        {chiffre("plafond_total", "Pour toute l'édition", "photos au total", "Compte tout le monde, sauf l'atelier.", 1)}
       </div>
       {props.mode === "modification" ? (
         <p className="eca-champ-aide">
@@ -615,42 +778,30 @@ export default function FormulaireEdition(props: Props) {
         0,
         "facultatif"
       )}
-      <label className="eca-champ">
-        <span className="eca-champ-label">Message d&apos;accueil du lien des participants</span>
-        <textarea className="eca-textarea" value={v.invitation_texte} onChange={(e) => maj("invitation_texte", e.target.value)} />
-        <span className="eca-champ-aide">{"La phrase que lisent les participants en ouvrant le lien. Rien n'est promis à leur place."}</span>
-        {erreur("invitation_texte")}
-      </label>
+      {/* Où va ce message (planche 11) : la page des participants en petit, qui suit la frappe. */}
+      <div className="eca-fm-apercu-zone">
+        <div className="eca-champ">
+          <label className="eca-champ-label" htmlFor={`${uid}-invitation`}>
+            {"Message d'accueil des participants"}
+          </label>
+          <textarea
+            id={`${uid}-invitation`}
+            className="eca-textarea"
+            value={v.invitation_texte}
+            onChange={(e) => maj("invitation_texte", e.target.value)}
+            aria-invalid={erreurs.invitation_texte ? true : undefined}
+          />
+          <span className="eca-champ-aide">
+            {`Il s'affiche sous le nom de l'événement, sur la page qu'ouvrent les participants avec le lien ou le QR code. Vide : « ${accueilParDefaut(v.registre)} »`}
+          </span>
+          {erreur("invitation_texte")}
+        </div>
+        <ApercuDepot organisation={v.organisation} evenement={v.evenement} message={v.invitation_texte} registre={v.registre} />
+      </div>
     </>,
 
-    /* 5 · À envoyer par le client */
-    <>
-      <div className="eca-cases-effet">
-        {CONTENUS.map((c) => {
-          const coche = v.contenus_demandes.includes(c.cle);
-          const chezLui = contenuClient(c.cle)?.libelle ?? c.libelle;
-          return (
-            <label className="eca-case-effet" key={c.cle}>
-              <input
-                type="checkbox"
-                checked={coche}
-                onChange={(e) =>
-                  maj(
-                    "contenus_demandes",
-                    e.target.checked ? [...v.contenus_demandes, c.cle] : v.contenus_demandes.filter((x) => x !== c.cle)
-                  )
-                }
-              />
-              <span>
-                {CASES[c.cle]}
-                <small>{coche ? `Une case « ${chezLui} » dans son espace, qu'il doit remplir.` : "Non demandée : la case n'apparaît pas chez lui."}</small>
-              </span>
-            </label>
-          );
-        })}
-      </div>
-      {erreur("contenus_demandes")}
-    </>,
+    /* 5 · À envoyer par le client : les demandes sur mesure (T-191, planche 12), dans leur propre composant. */
+    <DemandesClient key="envoyer" valeur={v.contenus_demandes} onChange={(d) => maj("contenus_demandes", d)} erreur={erreurs.contenus_demandes} />,
 
     /* 6 · Le devis */
     <>

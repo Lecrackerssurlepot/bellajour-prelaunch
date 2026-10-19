@@ -16,6 +16,10 @@
  * (`remplace_le`, migration 20261016) : il reste au coffre et à l'atelier, il
  * sort de l'écran du client. Rien ne s'efface. Le questionnaire, lui, n'a
  * qu'une version courante : la plus récente.
+ *
+ * T-191 (19/10) : l'atelier compose ses DEMANDES (nom, forme) dans
+ * `demandes.ts`. Les cinq contenus d'ici sont devenus les demandes HÉRITÉES :
+ * une édition d'avant les lit exactement comme avant (`CONTENUS_CLIENT`).
  */
 
 import type { CleContenu } from "./types";
@@ -107,6 +111,22 @@ export const TYPE_PAR_EXTENSION: Record<string, string> = {
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   csv: "text/csv",
+  /* T-191 : les formes « Images » et « Tout » d'une demande sur mesure. Une
+     extension absente d'ici s'écrit `application/octet-stream` : elle se
+     télécharge, elle ne s'exécute jamais (pas de `text/html`). */
+  webp: "image/webp",
+  heic: "image/heic",
+  heif: "image/heif",
+  gif: "image/gif",
+  tif: "image/tiff",
+  tiff: "image/tiff",
+  txt: "text/plain",
+  doc: "application/msword",
+  xls: "application/vnd.ms-excel",
+  odt: "application/vnd.oasis.opendocument.text",
+  ods: "application/vnd.oasis.opendocument.spreadsheet",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  zip: "application/zip",
 };
 
 export type FichierLu = { ok: true; extension: string; type: string } | { ok: false; message: string };
@@ -153,14 +173,21 @@ export type LigneEnvoi = {
  * Les envois COURANTS, par contenu : pour un fichier, chaque ligne qui n'a pas
  * été remplacée (la plus ancienne d'abord, l'ordre où ils sont arrivés) ;
  * pour le questionnaire, la seule réponse la plus récente.
+ *
+ * `modeDe` dit si un type est un fichier ou un questionnaire (T-191 : celui de
+ * la DEMANDE de l'édition, `modeDeLEnvoi`) ; `null` : sa demande n'existe plus,
+ * l'envoi ne se montre pas au client. Par défaut, les cinq contenus d'origine.
  */
-export function envoisCourants<T extends LigneEnvoi>(lignes: readonly T[]): Map<string, T[]> {
+export function envoisCourants<T extends LigneEnvoi>(
+  lignes: readonly T[],
+  modeDe: (type: string) => ContenuClient["mode"] | null = (type) => contenuClient(type)?.mode ?? null
+): Map<string, T[]> {
   const parType = new Map<string, T[]>();
   const tri = [...lignes].filter((l) => !l.remplace_le).sort((a, b) => a.recu_le.localeCompare(b.recu_le));
   for (const l of tri) {
-    const c = contenuClient(l.type);
-    if (!c) continue;
-    if (c.mode === "questionnaire") parType.set(l.type, [l]);
+    const mode = modeDe(l.type);
+    if (!mode) continue;
+    if (mode === "questionnaire") parType.set(l.type, [l]);
     else parType.set(l.type, [...(parType.get(l.type) ?? []), l]);
   }
   return parType;

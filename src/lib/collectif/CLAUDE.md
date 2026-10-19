@@ -61,6 +61,7 @@ Un client B2B (entreprise, école) ouvre une **édition** d'un ou plusieurs **ma
   magazines ont chacun leur tour 1 : écart corrigé du PRD §6.1).
 - **`types.ts`** — le miroir des treize tables et le vocabulaire. `TYPES_NOTE` est une liste
   EXTENSIBLE : texte libre en base, une ligne ici pour un nouveau type.
+- **`demandes.ts`** — ce que l'atelier demande au client (T-191), voir plus bas.
 - **`interrupteur.ts`**, **`migration.ts`** — voir plus bas.
 
 **Phase 1 (13/10/2026), les purs de l'atelier :**
@@ -73,8 +74,8 @@ Un client B2B (entreprise, école) ouvre une **édition** d'un ou plusieurs **ma
   T-186 plus bas ; tout chiffre vide reste `null` ;
   `rdv_url` en https seulement ; `suggestionEmail` suggère, ne bloque pas ; la case
   « démonstration » ne s'écrit jamais d'ici). `planMagazines` : renommer toujours, ajouter à la
-  suite, retirer SEULEMENT le dernier et seulement s'il est vide : les rangs ne se renumérotent
-  jamais (le client lit « magazine 2 »).
+  suite, retirer n'importe quel magazine ENCORE VIDE, les suivants prenant le numéro libéré
+  (T-190, renumérotation validée par Mathias le 19/10 au soir ; voir plus bas).
 - **`styles.ts`** — la forme d'un style (palettes de 4 couleurs, deux typos + un échantillon en
   IMAGE, couvertures, TOUJOURS cinq doubles pages types), sa saisie (le slug ne change jamais,
   une image d'un autre style est refusée), `manquesPourPublier` (le serveur refuse de publier
@@ -301,7 +302,8 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   se lit dans le fil. Aucun rendez-vous inventé : un seul lien, celui de la fiche.
 - **Les contenus** (`contenus.ts`, `/api/collectif/contenus`) : un fichier par le serveur (4 Mo)
   ou le questionnaire du mot du dirigeant (`QUESTIONS_MOT`, quatre questions NEUTRES à relire par
-  Mathias, PRD §12.14). Envoyer de nouveau ajoute une ligne : le plus récent gagne.
+  Mathias, PRD §12.14). Envoyer de nouveau ajoute une ligne : le plus récent gagne. Depuis T-191,
+  ce sont des DEMANDES nommées par l'atelier : voir « Les demandes sur mesure » plus bas.
 - **Le QR code** (`qr.ts`, `qrcode-generator` épinglé) : modules foncés sur fond clair dans les
   deux modes, une marge de quatre modules.
 - **Le brief pièce par pièce** (D24, remplace la page « partie par partie » archivée) : le mur
@@ -458,6 +460,47 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   « Marquer comme non lu » (`{ nonLu: true }`) rend non lu le dernier message du client.
   L'espace client garde son marquage sans borne.
 
+## Les demandes sur mesure (T-191, planche 12 du 19/10 au soir)
+
+- **L'atelier compose ses DEMANDES** (`demandes.ts`, pur) : un NOM qu'il écrit (le client le lit
+  tel quel, puce et titre de fenêtre), une FORME (`images`, `pdf` = PDF ou SVG, `tout`, ou
+  `questionnaire` = les quatre questions de `QUESTIONS_MOT`), une CLÉ. L'écran est
+  `admin/collectif/DemandesClient.tsx` (l'étape 5 du formulaire, son propre composant) ; la fiche
+  les montre dans `[id]/PanneauContenus.tsx` avec ce qui est reçu.
+- ⚠️ **`contenus_demandes` (jsonb) a DEUX formes, une seule lecture** : les clés texte d'avant
+  (`"logo"`…) se lisent comme des demandes HÉRITÉES (`lireDemandes`), avec le nom, les formats et
+  les phrases de `CONTENUS_CLIENT`, et repartent en clé texte tant qu'on n'y touche pas : une
+  édition existante ne change pas d'un pixel. Une liste qui n'a que
+  des clés texte se lit dans l'ordre d'aujourd'hui. Le formulaire lit par `demandesDuFormulaire`
+  (une demande sans nom y reste, le nom n'est pas nettoyé pendant la frappe) ; jamais l'inverse.
+- **La clé** : héritée, c'est le type d'origine ; renommer une héritée GARDE sa clé (ses envois
+  restent les siens, et elle marche avant la migration). Nouvelle, elle est tirée au sort
+  (`nouvelleCle`, « d-… ») et ne sert qu'une fois. Une édition neuve part de
+  `DEMANDES_PAR_DEFAUT` (les clés d'origine, sous les noms de la planche).
+- **La règle de saisie** (`lireDemandesSaisies`, appelée par `lireSaisieEdition`) : nom non vide,
+  80 caractères, forme connue, 12 au plus, clés ET noms uniques, « Le mot de » à compléter.
+- **La forme d'un fichier** (`lireFichierDemande`) : l'extension ET le type annoncé par le
+  navigateur (un type vide ou générique laisse décider l'extension) ; le navigateur la relit AVANT
+  d'envoyer et dit pourquoi (« Seulement une image », « Seulement un PDF ou un SVG »). Le type
+  écrit au coffre vient de l'extension, par `Object.hasOwn` ; inconnue, `application/octet-stream`
+  (jamais `text/html`). Une héritée garde la règle d'avant, message compris.
+- **Vous / tu** (`vueDemande`) : aides et questions suivent le registre (`QUESTIONS_MOT_TU`, la
+  transposition à relire avec `QUESTIONS_MOT`) ; les RÉPONSES se rangent toujours sous la question
+  au vouvoiement. Une héritée garde son texte d'avant, au vouvoiement comme avant.
+- **Les envois portent le nom de leur demande** (`nomDeLEnvoi`, `modeDeLEnvoi`) : tableau de bord,
+  « Parler à l'atelier », envoi cité, fiche, journal (`payload.type` = le nom lu, `payload.cle`).
+  Une demande retirée disparaît chez le client ; ses envois restent à l'atelier (« Demande retirée »).
+- **La migration `20261021_collectif_demandes.sql`** ne fait que relâcher la contrainte de
+  `collectif_contenus.type`. Sans elle : les cinq clés d'origine (renommées ou non) marchent ; une
+  demande NOUVELLE se crée et se voit, mais un envoi y est refusé (23514) : la route le SONDE
+  avant le coffre (`migrationDemandes`, `sondeDemandes.ts`) et répond 503
+  `migration_demandes_absente` ; si la base refuse quand même, le fichier écrit est retiré. ⚠️ Une
+  contrainte ne se lit pas par PostgREST : la sonde tente une insertion vouée à l'échec (une
+  édition qui n'existe pas). Contrainte présente : 23514 avant toute écriture ; relâchée : la clé
+  étrangère refuse (23503) et l'instruction est annulée. Aucune ligne ne survit. L'étape 5 la
+  demande une fois par chargement (`GET /api/admin/collectif/demandes`) et le DIT quand une
+  demande nouvelle existe.
+
 ## Les mails des éditions (T-146, 15/10)
 
 - **Un seul circuit** : `mails.ts` → `envoyerMailCollectif` (coupé par défaut par
@@ -513,6 +556,42 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   layout de l'espace ne calcule le lien d'équipe que si `voitLienEquipe` (le responsable, y
   compris sur un appareil pas encore reconnu) ; l'équipe ne le reçoit jamais dans sa page.
 
+## Le calendrier, les magazines, les chiffres (T-189, T-190, planches 9 à 11 du 19/10 au soir)
+
+- **Aucun champ du navigateur pour une date ou un chiffre** dans le formulaire d'une édition (le
+  harnais refuse `type="date|datetime-local|time|number"`). Le calendrier est `Calendrier.tsx`
+  (admin/collectif), en PLAGE pour les dates de l'événement, en JOUR pour la clôture et la
+  livraison ; la logique est pure dans `calendrier.ts` (`grilleMois`, `cliquerPlage`,
+  `textePlage`, `lirePlage`, `jourAuClavier`…). Il manie des JOURS, jamais une heure : 23 h 59
+  Paris, l'instant et le refus du passé restent à `champCloture`, `instantDeParis`, `saisie.ts`.
+  Aujourd'hui vient du SERVEUR (prop `maintenant`), jamais de l'ordinateur.
+- **`dates_texte` reste un texte** : le calendrier l'écrit (« du 2 au 4 octobre 2026 ») et
+  `lirePlage` le relit ; un texte qu'il ne relit pas reste tel quel, éditable, rien n'est
+  sélectionné. `textePlage` et `lirePlage` sont l'aller et le retour l'un de l'autre (harnais) :
+  changer l'un, c'est changer l'autre.
+- ⚠️ **Un verre dans un verre ne floute pas** (Chrome, vu le 19/10) : posé sous `.eca-form-corps`
+  (lui-même en `backdrop-filter`), le panneau laissait lire net le texte qu'il couvre. Tant qu'un
+  calendrier est ouvert, le corps pose son flou (`.eca-form-corps:has(.eca-cal)`). Tout nouveau
+  panneau de verre posé DANS un verre a le même défaut.
+- **Retirer un magazine** : `magazineVide` est LA règle (aucune pièce de brief ni couverture
+  aimée ni part de texte, ni brief ni BAT validé, aucun tour ; `collectif_tours` est la seule
+  table qui pointe vers un magazine), lue par la fiche (`donnees.ts`) et par le PATCH. Le PATCH
+  répond 409 `magazine_commence` sur un commencé. ⚠️ `unique (edition_id, rang)` : retraits
+  d'abord, puis les rangs resserrés UN PAR UN du plus petit au plus grand (`resserrerRangs` :
+  chacun descend sur une place libre), puis les ajouts. Jamais un `update` groupé des rangs, ni
+  l'ordre inverse. La suppression redit les colonnes brutes : un magazine commencé entre la
+  lecture et l'écriture reste, la route resserre ce qui est vraiment resté et répond 409
+  `partiel`. Chaque retrait se journalise (`magazine_retire`).
+- **La route rend la liste des magazines écrite**, l'écran la reprend (`reprendreMagazines`) :
+  l'état du formulaire survit à `router.refresh()`, et un magazine ajouté repartait en double au
+  second « Enregistrer ».
+- **Les chiffres** (`Pastille.tsx`) : texte numérique, vide = `null`, « − » jamais sous le
+  minimum, « + » sur un vide part du minimum. `VALEURS_RAPIDES` (saisie.ts) : des raccourcis là
+  où la planche en montre, jamais une valeur par défaut.
+- **Le message d'accueil** : l'aperçu (`ApercuDepot.tsx`) suit la frappe, sans rien lire en base ;
+  `accueilParDefaut` est MOT POUR MOT la phrase de `/depot/[token]` (le harnais compare les deux) :
+  changer l'une, c'est changer l'autre.
+
 ## L'accord du participant, enregistré avec chaque photo (T-184, 19/10)
 
 - **La case d'accord de `/depot` n'est plus un simple verrou d'écran.** Cocher donne au moteur la
@@ -526,7 +605,8 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   `TEXTES_ACCORD` (une `Map`, jamais un objet littéral : T-161). Changer un mot = ajouter une
   version et la rendre courante ; le harnais compare le texte affiché à la version courante.
   Une version ne se retire jamais : des photos la portent.
-- **Migration `20261020_collectif_accord_participant.sql`** : sans elle, le refus tient déjà mais
+- **Migration `20261020_collectif_accord_participant.sql`** (appliquée par Mathias le 19/10,
+  colonnes vérifiées en lecture) : sans elle, le refus tient déjà mais
   l'insertion se replie SANS les deux colonnes et le serveur le note à chaque lot. Ce repli
   d'écriture est voulu (à rebours de la révision) : bloquer tous les participants ne protégerait
   personne. Après l'avoir appliquée, vérifier que la donnée ARRIVE (`supabase/CLAUDE.md`).

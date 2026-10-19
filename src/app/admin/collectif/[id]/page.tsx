@@ -17,6 +17,7 @@ import { etapesEdition, prochaineEtape } from "@/lib/collectif/prochaine";
 import { quandRdv } from "@/lib/collectif/boite";
 import { PARTS_TEXTE } from "@/lib/collectif/brief";
 import { premierNouveau } from "@/lib/collectif/nouveaux";
+import { etiquetteMagazine } from "@/lib/collectif/saisie";
 import BarreAtelier, { liensEditions } from "../../BarreAtelier";
 import { chargerEdition, compterConversationsEnAttente, compterNonLus } from "../donnees";
 import FormulaireEdition, { type ValeursEdition } from "../FormulaireEdition";
@@ -142,7 +143,12 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
     responsable_email: e.responsable_email,
     responsable_nom: e.responsable_nom ?? "",
     rdv_url: e.rdv_url ?? "",
-    magazines: magazines.map((m) => ({ id: m.id, nom: m.nom, vide: m.vide })),
+    magazines: magazines.map((m) => ({
+      id: m.id,
+      nom: m.nom,
+      vide: m.vide,
+      etiquette: etiquetteMagazine({ ...m, briefCommence: m.brief.styles.length > 0 || Boolean(m.brief.texte) || m.brief.aimees.length > 0 }),
+    })),
   };
 
   /* La vue d'ensemble : ce que chaque onglet contient, en une ligne ou deux. */
@@ -473,7 +479,7 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
           documents: (
             <div className="eca-deux">
               <PanneauDocuments id={e.id} documents={documents} />
-              <PanneauContenus contenus={contenus} />
+              <PanneauContenus contenus={contenus} demandes={lu.fiche.demandes} />
             </div>
           ),
           rendezvous: (

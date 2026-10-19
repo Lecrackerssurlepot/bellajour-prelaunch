@@ -5,7 +5,8 @@
  */
 
 import type { EtatEdition } from "./etats";
-import { CONTENUS, type CleContenu, type Registre, type Role } from "./types";
+import { lireDemandes } from "./demandes";
+import type { Registre, Role } from "./types";
 
 /**
  * Les étapes que le CLIENT traverse, sans numéro « N sur M ».
@@ -96,15 +97,15 @@ export function parler(registre: Registre) {
   return <T>(vous: T, toi: T): T => (tu ? toi : vous);
 }
 
-export type ContenuAEnvoyer = { cle: CleContenu; libelle: string; recu: boolean };
+export type ContenuAEnvoyer = { cle: string; libelle: string; recu: boolean };
 
-/** Les contenus demandés par l'atelier, chacun avec « reçu » ou non, dans l'ordre de la fiche. */
-export function contenusAEnvoyer(demandes: readonly string[], recus: readonly string[]): ContenuAEnvoyer[] {
-  return CONTENUS.filter((c) => demandes.includes(c.cle)).map((c) => ({
-    cle: c.cle,
-    libelle: c.libelle,
-    recu: recus.includes(c.cle),
-  }));
+/**
+ * Les demandes de l'atelier (T-191 : clés d'origine ou demandes nommées),
+ * chacune avec « reçu » ou non, dans l'ordre de la fiche ; le libellé est le
+ * NOM que le client lit.
+ */
+export function contenusAEnvoyer(demandes: unknown, recus: readonly string[]): ContenuAEnvoyer[] {
+  return lireDemandes(demandes).map((d) => ({ cle: d.cle, libelle: d.nom, recu: recus.includes(d.cle) }));
 }
 
 /** « de SKEMA », « d'Air France » : l'élision devant une voyelle (le h, muet ou non, garde « de »). */

@@ -83,6 +83,7 @@ import { lienAbrege, liensEdition, origineDepuis, texteTroisLiens } from "@/lib/
 import { prochaineEtape } from "@/lib/collectif/prochaine";
 import { phraseEvenement } from "@/lib/collectif/recit";
 import { ETAPE_DU_CHAMP, ETAPES_EDITION, LIBELLE_CHAMP, lireSaisieEdition, planMagazines, rangEtapeDuChamp, type MagazineActuel } from "@/lib/collectif/saisie";
+import * as Saisie from "@/lib/collectif/saisie";
 import * as Calendrier from "@/lib/collectif/calendrier";
 import {
   estCleImageStyle,
@@ -163,6 +164,10 @@ import { invitationIcs, replier } from "@/lib/collectif/ics";
 import { mailRendezVous } from "@/lib/collectif/mailsRdv";
 import { lireCompteAgenda } from "@/lib/collectif/agenda";
 import * as Pieces from "@/app/edition/[token]/style/pieces";
+import * as Demandes from "@/lib/collectif/demandes";
+import { contrainteRefusee, ERREUR_DEMANDES_ABSENTE, MESSAGE_DEMANDES_ABSENTE, MIGRATION_DEMANDES } from "@/lib/collectif/migration";
+import { migrationDemandes, TYPE_SONDE } from "@/lib/collectif/sondeDemandes";
+import { estUuid } from "@/lib/collectif/cles";
 import type { StyleMur } from "@/app/edition/[token]/donnees";
 
 let ko = 0;
@@ -714,8 +719,11 @@ titre("— T-186 : la cloture passee est refusee (a la creation, et en reglage s
   ok("l'aide fausse est partie (D24 : le brief se compose piece par piece), « Dates de l'evenement » dit la verite",
     !/tout l&apos;intérieur suit le style|tout l'intérieur suit le style/.test(formulaire) && /pièce par pièce/.test(formulaire)
       && /Pour l'atelier seulement : elles s'affichent en tête de la fiche\./.test(formulaire) && !/tel que le client le lira/.test(formulaire));
-  ok("chaque case dit son effet chez le client ; vide, la clôture le dit en rouge",
-    /Une case « \$\{chezLui\} » dans son espace, qu'il doit remplir\./.test(formulaire) && /Non demandée : la case n'apparaît pas chez lui\./.test(formulaire)
+  /* T-191 (19/10 soir) : les cinq cases sont devenues les DEMANDES (DemandesClient) ; chaque ligne
+     dit en petit ce que le client voit, et la bande du bas montre sa ligne « À envoyer ». */
+  ok("chaque demande dit son effet chez le client (T-191) ; vide, la clôture le dit en rouge",
+    /<DemandesClient /.test(formulaire) && /<small>\{aideAtelier\(d\)\}<\/small>/.test(lire("src/app/admin/collectif/DemandesClient.tsx"))
+      && /Ce que voit le client, dans « À envoyer »/.test(lire("src/app/admin/collectif/DemandesClient.tsx"))
       && /Sans date de clôture, la collecte reste ouverte jusqu'à ce que quelqu'un la ferme\./.test(formulaire));
   ok("aucun chiffre pre-rempli a la creation (la page part de champs vides)",
     (() => {
@@ -746,26 +754,214 @@ titre("— T-186 : la cloture passee est refusee (a la creation, et en reglage s
       && Calendrier.lireChampCloture("2026-11-14T23:59")?.jour === "2026-11-14" && Calendrier.lireChampCloture("2026-02-30T23:59") === null && Calendrier.champCloture("2026-11-14") === "2026-11-14T23:59");
   ok("l'instant d'un raccourci passe par l'heure de Paris (23 h 59 a Paris le 14 novembre = 22 h 59 UTC)",
     instantDeParis(Calendrier.champCloture("2026-11-14")) === "2026-11-14T22:59:00.000Z");
+
+  titre("— T-189 : le calendrier Bellajour (planche 9), la grille, la plage, le texte —");
+  const g = Calendrier.grilleMois("2026-10");
+  ok("octobre 2026 : lundi d'abord, cinq semaines, du lundi 28 septembre au dimanche 1er novembre (la planche)",
+    g.length === 5 && g[0][0].jour === "2026-09-28" && !g[0][0].dansLeMois && g[0][3].jour === "2026-10-01" && g[0][3].dansLeMois
+      && g[4][6].jour === "2026-11-01" && !g[4][6].dansLeMois && g.every((s) => s.length === 7)
+      && Calendrier.INITIALES_JOURS.join("") === "LMMJVSD" && Calendrier.titreMois("2026-10") === "Octobre 2026");
+  ok("novembre 2026 a SIX semaines (le 30 est un lundi : la planche l'avait oublie) ; fevrier 2027 en a quatre ; le mois d'apres decembre est janvier",
+    Calendrier.grilleMois("2026-11").length === 6 && Calendrier.grilleMois("2026-11")[5][0].jour === "2026-11-30"
+      && Calendrier.grilleMois("2027-02").length === 4 && Calendrier.moisPlus("2026-12", 1) === "2027-01" && Calendrier.moisPlus("2027-01", -1) === "2026-12"
+      && Calendrier.grilleMois("pas un mois").length === 0);
+  ok("la plage au clic : le premier pose le debut (un seul jour, deja valable), le second la fin, un second AVANT le debut devient le debut, un troisieme recommence",
+    (() => {
+      const a = Calendrier.cliquerPlage(null, false, "2026-10-02");
+      const b = Calendrier.cliquerPlage(a.plage, a.enAttente, "2026-10-04");
+      const c = Calendrier.cliquerPlage(b.plage, b.enAttente, "2026-10-09");
+      const d = Calendrier.cliquerPlage(a.plage, a.enAttente, "2026-09-30");
+      const e = Calendrier.cliquerPlage(a.plage, a.enAttente, "2026-10-02");
+      return JSON.stringify(a) === '{"plage":{"debut":"2026-10-02","fin":"2026-10-02"},"enAttente":true}'
+        && JSON.stringify(b) === '{"plage":{"debut":"2026-10-02","fin":"2026-10-04"},"enAttente":false}'
+        && JSON.stringify(c.plage) === '{"debut":"2026-10-09","fin":"2026-10-09"}' && c.enAttente
+        && JSON.stringify(d.plage) === '{"debut":"2026-09-30","fin":"2026-10-02"}'
+        && JSON.stringify(e.plage) === '{"debut":"2026-10-02","fin":"2026-10-02"}' && !e.enAttente;
+    })());
+  ok("le texte ecrit : « du 2 au 4 octobre 2026 », « le 2 octobre 2026 », « le 1er », entre deux mois, entre deux annees ; une plage a l'envers remise dans l'ordre",
+    Calendrier.textePlage({ debut: "2026-10-02", fin: "2026-10-04" }) === "du 2 au 4 octobre 2026"
+      && Calendrier.textePlage({ debut: "2026-10-02", fin: "2026-10-02" }) === "le 2 octobre 2026"
+      && Calendrier.textePlage({ debut: "2026-10-01", fin: "2026-10-03" }) === "du 1er au 3 octobre 2026"
+      && Calendrier.textePlage({ debut: "2026-09-30", fin: "2026-10-02" }) === "du 30 septembre au 2 octobre 2026"
+      && Calendrier.textePlage({ debut: "2026-12-28", fin: "2027-01-03" }) === "du 28 décembre 2026 au 3 janvier 2027"
+      && Calendrier.textePlage({ debut: "2026-10-04", fin: "2026-10-02" }) === "du 2 au 4 octobre 2026");
+  ok("relire ce qu'on a ecrit donne la meme plage (aller-retour sur 400 plages), casse, espaces et accents toleres",
+    (() => {
+      for (let i = 0; i < 400; i++) {
+        const debut = Calendrier.jourPlus("2026-01-01", { jours: i * 3 });
+        const fin = Calendrier.jourPlus(debut, { jours: i % 45 });
+        const p = Calendrier.lirePlage(Calendrier.textePlage({ debut, fin }));
+        if (!p || p.debut !== debut || p.fin !== fin) return false;
+      }
+      return JSON.stringify(Calendrier.lirePlage("  Du 2 au 4   OCTOBRE 2026 ")) === '{"debut":"2026-10-02","fin":"2026-10-04"}'
+        && JSON.stringify(Calendrier.lirePlage("du 28 decembre 2026 au 3 janvier 2027")) === '{"debut":"2026-12-28","fin":"2027-01-03"}';
+    })());
+  ok("un texte d'avant qui ne se relit pas reste TEL QUEL (null : rien de selectionne, rien de reecrit) ; un jour qui n'existe pas non plus",
+    Calendrier.lirePlage("du 2 au 4 octobre") === null && Calendrier.lirePlage("début octobre") === null && Calendrier.lirePlage("") === null
+      && Calendrier.lirePlage("le 31 novembre 2026") === null && Calendrier.lirePlage("du 4 au 2 octobre 2026") === null);
+  ok("les pieds : « 3 jours », « 1 jour » ; « 26 jours pour déposer » du 19 octobre au 14 novembre, « Jusqu'à ce soir » le jour meme",
+    Calendrier.phraseJoursPlage({ debut: "2026-10-02", fin: "2026-10-04" }) === "3 jours" && Calendrier.phraseJoursPlage({ debut: "2026-10-02", fin: "2026-10-02" }) === "1 jour"
+      && Calendrier.phraseDepot(Calendrier.joursEntre("2026-10-19", "2026-11-14") ?? -1) === "26 jours pour déposer" && Calendrier.phraseDepot(0) === "Jusqu'à ce soir");
+  ok("le clavier : fleches d'un jour ou d'une semaine, pages d'un mois (le 31 janvier + 1 mois = fin fevrier), une autre touche ne bouge rien",
+    Calendrier.jourAuClavier("2026-10-31", "ArrowRight") === "2026-11-01" && Calendrier.jourAuClavier("2026-10-01", "ArrowUp") === "2026-09-24"
+      && Calendrier.jourAuClavier("2026-01-31", "PageDown") === "2026-02-28" && Calendrier.jourAuClavier("2026-10-02", "a") === null
+      && Calendrier.libelleJour("2026-10-02") === "vendredi 2 octobre 2026" && Calendrier.libelleJour("2026-11-01") === "dimanche 1er novembre 2026");
+
+  const form = lire("src/app/admin/collectif/FormulaireEdition.tsx");
+  const cal = lire("src/app/admin/collectif/Calendrier.tsx");
+  ok("plus AUCUN champ du navigateur pour une date, une heure ou un chiffre dans le formulaire ; le calendrier Bellajour aux trois endroits",
+    !/type="(date|datetime-local|time|number)"/.test(form + lire("src/app/admin/collectif/Pastille.tsx") + cal)
+      && (form.match(/<Calendrier\b/g) ?? []).length === 3
+      && /mode="plage"/.test(form) && (form.match(/mode="jour"/g) ?? []).length === 2
+      && /onPlage=\{\(p\) => maj\("dates_texte", textePlage\(p\)\)\}/.test(form));
+  ok("la cloture au calendrier : les jours passes barres (min = aujourd'hui, venu du serveur), 23 h 59 heure de Paris par champCloture, le pied le dit",
+    /libelle="Clôture de la collecte"\s*aujourdhui=\{aujourdhui\}\s*min=\{aujourdhui\}/.test(form)
+      && /choisirCloture\(champCloture\(jour, heureCloture\)\)/.test(form) && /const heureCloture = cloture\?\.heure \?\? HEURE_CLOTURE;/.test(form)
+      && /`à \$\{formaterHeure\(heureCloture\)\}, heure de Paris`/.test(form) && /const aujourdhui = versChampParis\(props\.maintenant\)\.slice\(0, 10\);/.test(form));
+  ok("le panneau : Echap et un clic dehors referment, un jour passe ne se choisit pas, aujourd'hui est marque (aria-current)",
+    /e\.key !== "Escape"/.test(cal) && /addEventListener\("pointerdown", dehors\)/.test(cal) && /if \(min && jour < min\) return;/.test(cal)
+      && /aria-current=\{jour === aujourdhui \? "date" : undefined\}/.test(cal) && !/setState|set[A-Z]\w*\(/.test(cal.slice(cal.indexOf("useEffect("), cal.indexOf("const semaines"))));
 }
 
-titre("— les magazines : renommer, ajouter a la suite, retirer le dernier s'il est vide —");
+titre("— les magazines : renommer, ajouter a la suite, retirer un magazine VIDE (T-190, planche 10) —");
 const actuels: MagazineActuel[] = [
   { id: "a", rang: 1, nom: "Le seminaire", vide: false },
   { id: "b", rang: 2, nom: "La soiree", vide: true },
 ];
 const pRen = planMagazines(actuels, [{ id: "a", nom: "Le grand seminaire" }, { id: "b", nom: "La soiree" }]);
-ok("renommer le premier", pRen.ok && pRen.renommer.length === 1 && pRen.renommer[0].nom === "Le grand seminaire" && !pRen.ajouter.length);
+ok("renommer le premier", pRen.ok && pRen.renommer.length === 1 && pRen.renommer[0].nom === "Le grand seminaire" && !pRen.ajouter.length && !pRen.renumeroter.length);
 const pAj = planMagazines(actuels, [{ id: "a", nom: "Le seminaire" }, { id: "b", nom: "La soiree" }, { id: null, nom: "Le voyage" }]);
 ok("ajouter a la suite : rang 3", pAj.ok && pAj.ajouter.length === 1 && pAj.ajouter[0].rang === 3);
 const pRet = planMagazines(actuels, [{ id: "a", nom: "Le seminaire" }]);
-ok("retirer le dernier, vide", pRet.ok && pRet.retirer.join() === "b");
-ok("retirer un magazine qui a un brief : refuse",
-   !planMagazines([{ ...actuels[0] }, { ...actuels[1], vide: false }], [{ id: "a", nom: "x" }]).ok);
-ok("retirer le premier en gardant le second : refuse (pas de renumerotation)",
-   !planMagazines(actuels, [{ id: "b", nom: "La soiree" }]).ok);
+ok("retirer le dernier, vide", pRet.ok && pRet.retirer.join() === "b" && !pRet.renumeroter.length);
+ok("retirer un magazine qui a un brief : refuse, en CONFLIT (409), le message le nomme et propose de le renommer",
+   (() => { const p = planMagazines([{ ...actuels[0] }, { ...actuels[1], vide: false }], [{ id: "a", nom: "x" }]); return !p.ok && p.conflit === true && /« La soiree »/.test(p.message) && /Changez son nom si besoin\./.test(p.message); })());
 ok("un id etranger a l'edition : refuse", !planMagazines(actuels, [{ id: "zzz", nom: "x" }]).ok);
 ok("a la creation, tout s'ajoute a partir du rang 1",
    (() => { const p = planMagazines([], [{ id: null, nom: "Un" }, { id: null, nom: "Deux" }]); return p.ok && p.ajouter.map((x) => x.rang).join() === "1,2"; })());
+
+{
+  /* Rejoue un plan sur une table qui tient `unique (edition_id, rang)` : retraits, puis
+     rangs un par un dans l'ordre donne, puis ajouts. Rend les rangs finaux, ou l'etape qui heurte. */
+  const rejouer = (avant: MagazineActuel[], p: ReturnType<typeof planMagazines>): string => {
+    if (!p.ok) return `refus : ${p.message}`;
+    const table = new Map(avant.map((m) => [m.id, { rang: m.rang, nom: m.nom }]));
+    const occupe = (rang: number, sauf?: string) => [...table].some(([id, m]) => id !== sauf && m.rang === rang);
+    for (const id of p.retirer) table.delete(id);
+    for (const r of p.renumeroter) {
+      if (occupe(r.rang, r.id)) return `collision au rang ${r.rang}`;
+      table.get(r.id)!.rang = r.rang;
+    }
+    p.ajouter.forEach((m, i) => {
+      if (occupe(m.rang)) throw new Error(`collision a l'ajout, rang ${m.rang}`);
+      table.set(`nouveau-${i}`, { rang: m.rang, nom: m.nom });
+    });
+    for (const r of p.renommer) table.get(r.id)!.nom = r.nom;
+    return [...table.values()].sort((x, y) => x.rang - y.rang).map((m) => `${m.rang}:${m.nom}`).join(", ");
+  };
+  const trois: MagazineActuel[] = [
+    { id: "e", rang: 1, nom: "Les eleves", vide: false },
+    { id: "p", rang: 2, nom: "Les professeurs", vide: true },
+    { id: "s", rang: 3, nom: "La soiree", vide: false },
+  ];
+
+  ok("CREATION : retirer le 2 sur 3, les numeros se resserrent (1, 2) et les noms suivent",
+    (() => {
+      const lignes = [{ id: null, nom: "Un", vide: true }, { id: null, nom: "Deux", vide: true }, { id: null, nom: "Trois", vide: true }];
+      const restent = Saisie.retirerMagazine(lignes, 1);
+      const p = planMagazines([], restent);
+      return restent.map((m) => m.nom).join() === "Un,Trois" && p.ok && p.ajouter.map((m) => `${m.rang}:${m.nom}`).join() === "1:Un,2:Trois";
+    })());
+  ok("REGLAGES : retirer un magazine VIDE au milieu, le suivant prend son numero (rangs 1, 2), sans collision",
+    (() => {
+      const p = planMagazines(trois, [{ id: "e", nom: "Les eleves" }, { id: "s", nom: "La soiree" }]);
+      return p.ok && p.retirer.join() === "p" && JSON.stringify(p.renumeroter) === '[{"id":"s","rang":2}]'
+        && rejouer(trois, p) === "1:Les eleves, 2:La soiree";
+    })());
+  ok("REGLAGES : retirer un magazine COMMENCE est refuse (conflit), rien n'est prevu",
+    (() => { const p = planMagazines(trois, [{ id: "e", nom: "Les eleves" }, { id: "p", nom: "Les professeurs" }]); return !p.ok && p.conflit === true && /« La soiree »/.test(p.message); })());
+  ok("REGLAGES : retirer le PREMIER (vide) fait descendre tous les suivants, un par un, du plus petit au plus grand, sans collision",
+    (() => {
+      const quatre: MagazineActuel[] = [
+        { id: "w", rang: 1, nom: "W", vide: true }, { id: "x", rang: 2, nom: "X", vide: false },
+        { id: "y", rang: 3, nom: "Y", vide: true }, { id: "z", rang: 4, nom: "Z", vide: false },
+      ];
+      const p = planMagazines(quatre, [{ id: "x", nom: "X" }, { id: "z", nom: "Z" }]);
+      return p.ok && p.renumeroter.map((r) => `${r.id}${r.rang}`).join() === "x1,z2" && rejouer(quatre, p) === "1:X, 2:Z";
+    })());
+  ok("REGLAGES : retirer ET ajouter dans le meme enregistrement (le nouveau prend la suite des restants)",
+    (() => {
+      const p = planMagazines(trois, [{ id: "e", nom: "Les eleves" }, { id: "s", nom: "La soiree" }, { id: null, nom: "Le voyage" }]);
+      return p.ok && p.ajouter[0]?.rang === 3 && rejouer(trois, p) === "1:Les eleves, 2:La soiree, 3:Le voyage";
+    })());
+  ok("refuses : changer l'ordre, glisser un nouveau entre deux anciens, demander deux fois le meme",
+    !planMagazines(trois, [{ id: "s", nom: "x" }, { id: "e", nom: "y" }, { id: "p", nom: "z" }]).ok
+      && !planMagazines(trois, [{ id: "e", nom: "x" }, { id: null, nom: "n" }, { id: "p", nom: "y" }, { id: "s", nom: "z" }]).ok
+      && !planMagazines(trois, [{ id: "e", nom: "x" }, { id: "e", nom: "x" }, { id: "s", nom: "z" }]).ok);
+  ok("resserrerRangs : des rangs troues (1, 3, 7) redeviennent 1, 2, 3, seulement ceux qui changent, dans l'ordre",
+    JSON.stringify(Saisie.resserrerRangs([{ id: "c", rang: 7 }, { id: "a", rang: 1 }, { id: "b", rang: 3 }])) === '[{"id":"b","rang":2},{"id":"c","rang":3}]');
+  ok("la poubelle : un nouveau ou un vide se retire ; un commence dit pourquoi (mot pour mot la planche) ; le dernier reste",
+    Saisie.retraitMagazine({ id: null, vide: true }, 2).ok && Saisie.retraitMagazine({ id: "a", vide: true }, 2).ok
+      && (() => { const r = Saisie.retraitMagazine({ id: "a", vide: false }, 3); return !r.ok && r.raison === "Le client a commencé ce magazine : il ne se retire pas. Changez son nom si besoin."; })()
+      && (() => { const r = Saisie.retraitMagazine({ id: null, vide: true }, 1); return !r.ok && r.raison === Saisie.RAISON_DERNIER_MAGAZINE; })()
+      && Saisie.retirerMagazine([{ id: "a", vide: false }, { id: "b", vide: true }], 0).length === 2);
+  const brief = (b: Partial<BriefLigne> & { bat_valide_le?: string | null } = {}) =>
+    ({ style_id: null, palette_cle: null, texte: null, doubles: [], couvertures_aimees: [], brief_valide_le: null, ...b }) as BriefLigne & { bat_valide_le?: string | null };
+  ok("magazineVide : rien de compose, aucun tour, rien de valide ; une seule piece, un tour ou une validation suffit a le dire commence",
+    Saisie.magazineVide(brief(), 0)
+      && !Saisie.magazineVide(brief(), 1)
+      && !Saisie.magazineVide(brief({ typo_style_id: "s1" }), 0)
+      && !Saisie.magazineVide(brief({ couvertures_aimees: [{ style_id: "s1", couverture: "c" }] }), 0)
+      && !Saisie.magazineVide(brief({ texte: "equilibre" }), 0)
+      && !Saisie.magazineVide(brief({ brief_valide_le: "2026-10-19T10:00:00Z" }), 0)
+      && !Saisie.magazineVide(brief({ bat_valide_le: "2026-10-19T10:00:00Z" }), 0));
+  ok("l'etiquette d'une ligne en reglages : « vide », « brief validé », « bon à tirer validé », « 2 tours publiés », « brief commencé »",
+    Saisie.etiquetteMagazine({ vide: true, brief_valide_le: null, bat_valide_le: null, toursPublies: 0, briefCommence: false }).texte === "vide"
+      && Saisie.etiquetteMagazine({ vide: false, brief_valide_le: "x", bat_valide_le: null, toursPublies: 0, briefCommence: true }).texte === "brief validé"
+      && Saisie.etiquetteMagazine({ vide: false, brief_valide_le: "x", bat_valide_le: "y", toursPublies: 3, briefCommence: true }).texte === "bon à tirer validé"
+      && Saisie.etiquetteMagazine({ vide: false, brief_valide_le: "x", bat_valide_le: null, toursPublies: 2, briefCommence: true }).texte === "2 tours publiés"
+      && Saisie.etiquetteMagazine({ vide: false, brief_valide_le: null, bat_valide_le: null, toursPublies: 0, briefCommence: true }).texte === "brief commencé");
+
+  const routeReglages = lire("src/app/api/admin/collectif/editions/[id]/route.ts");
+  const fiche = lire("src/app/admin/collectif/donnees.ts");
+  ok("la route : magazineVide (avec les tours) pour chaque magazine, 409 sur un magazine commence, la suppression redit les colonnes brutes et se compte",
+    /vide: magazineVide\(m, nbTours\.get\(m\.id as string\) \?\? 0\)/.test(routeReglages)
+      && /status: plan\.conflit \? 409 : 422/.test(routeReglages)
+      && /\.delete\(\)\s*\.in\("id", retirer\)\s*\.eq\("edition_id", id\)\s*\.is\("brief_valide_le", null\)\s*\.is\("bat_valide_le", null\)\s*\.is\("style_id", null\)\s*\.is\("palette_cle", null\)\s*\.is\("texte", null\)\s*\.select\("id"\)/.test(routeReglages));
+  ok("la route : retraits, PUIS rangs resserres un par un, PUIS ajouts (jamais deux magazines au meme rang) ; chaque retrait journalise",
+    (() => {
+      const iRetrait = routeReglages.indexOf(".delete()");
+      const iRang = routeReglages.indexOf("update({ rang: r.rang })");
+      const iAjout = routeReglages.indexOf(".insert(ajouter.map(");
+      return iRetrait > 0 && iRang > iRetrait && iAjout > iRang
+        && /journaliser\(supabase, \{ editionId: id \}, "magazine_retire", \{ par, nom: m\.nom, rang: m\.rang \}, qui\)/.test(routeReglages)
+        && /magazines,\s*journal: journalOk/.test(routeReglages);
+    })());
+  ok("la fiche lit la MEME regle que la route (la poubelle et le PATCH ne se contredisent pas)",
+    /vide: magazineVide\(m, t\.total\)/.test(fiche));
+  ok("le journal dit le retrait en francais, sans token",
+    phraseEvenement("magazine_retire", { par: "Mathias", nom: "Les professeurs", rang: 2 }) === "« Les professeurs » (magazine 2) retiré par Mathias.");
+  ok("l'ecran reprend la liste ecrite par la route (un magazine ajoute ne repart pas en double au prochain « Enregistrer »)",
+    /reprendreMagazines\(json\.magazines\);/.test(lire("src/app/admin/collectif/FormulaireEdition.tsx")));
+
+  titre("— T-190 : les chiffres en pastille, et ou va le message d'accueil (planche 11) —");
+  const formP = lire("src/app/admin/collectif/FormulaireEdition.tsx");
+  const pastille = lire("src/app/admin/collectif/Pastille.tsx");
+  const depotPage = lire("src/app/depot/[token]/page.tsx");
+  ok("les valeurs rapides : 10, 20, 30, 50 pour les photos par personne, nulle part ailleurs ; jamais une valeur par defaut",
+    JSON.stringify(Saisie.VALEURS_RAPIDES) === '{"plafond_participant_atelier":[10,20,30,50]}'
+      && /plafond_participant_atelier: "",/.test(lire("src/app/admin/collectif/nouvelle/page.tsx")));
+  ok("la pastille : chiffres seulement, vide reste vide (null en base), « − » ne descend pas sous le minimum, l'unite dans la pastille",
+    /replace\(\/\\D\/g, ""\)/.test(pastille) && /disabled=\{n === null \|\| n <= plancher\}/.test(pastille)
+      && /n === null \? null : <span className="eca-fm-pas-unite">\{p\.unite\}<\/span>/.test(pastille) && /inputMode="numeric"/.test(pastille)
+      && (() => { const x = lireSaisieEdition({ ...creation, plafond_total: "" }, "creation"); return x.ok && x.edition.plafond_total === null; })());
+  ok("le message d'accueil : l'aide dit ou il s'affiche, et la phrase par defaut est MOT POUR MOT celle de la page des participants (vous et tu)",
+    /Il s'affiche sous le nom de l'événement, sur la page qu'ouvrent les participants avec le lien ou le QR code\. Vide : « \$\{accueilParDefaut\(v\.registre\)\} »/.test(formP)
+      && depotPage.includes(`'${Saisie.accueilParDefaut("entreprise_vous")}'`) && depotPage.includes(`'${Saisie.accueilParDefaut("ecole_tu")}'`));
+  ok("l'apercu suit la frappe (les valeurs du formulaire, rien lu en base), avec le nom, l'invitation, le prenom et le bouton",
+    /<ApercuDepot organisation=\{v\.organisation\} evenement=\{v\.evenement\} message=\{v\.invitation_texte\} registre=\{v\.registre\} \/>/.test(formP)
+      && (() => { const a = lire("src/app/admin/collectif/ApercuDepot.tsx"); return /vous invite/.test(a) && /t’invite/.test(a) && /Votre prénom et votre nom \(facultatif\)/.test(a) && /eca-fm-tel-bouton/.test(a) && !/supabase|fetch\(/.test(a) && !/#[0-9a-f]{3,8}\b/i.test(a); })());
+}
 
 /* ═══════════════════════════ PHASE 1 : LES STYLES ═══════════════════════════ */
 
@@ -1542,7 +1738,9 @@ titre("— D24 : le brief se compose piece par piece, de n'importe quel style �
   const fiche = lire("src/app/edition/[token]/style/[slug]/FicheStyle.tsx");
   ok("un style en detail : la barre d'etapes et ses quatre ancres, « Prendre tout le style »", ["ec-etape-1", "ec-etape-2", "ec-etape-3", "ec-etape-4"].every((x) => fiche.includes(`"${x}"`)) && fiche.includes("ec-fiche-etapes") && /Prendre tout le style/.test(fiche));
   ok("l'atelier voit le style de chaque piece (T-185 : chaque piece du brief dit son style, sous sa vignette)", /typos: c\.typos \?/.test(lire("src/app/admin/collectif/donnees.ts")) && /styles mêlés : \$\{m\.brief\.styles\.join/.test(lire("src/app/admin/collectif/[id]/page.tsx")) && /className="eca-piece-style"/.test(lire("src/app/admin/collectif/[id]/page.tsx")));
-  ok("un magazine compose n'est jamais « vide » (il ne se retire pas)", /stylesDeLaComposition\(compositionDu\(m\)\)\.length === 0/.test(lire("src/app/api/admin/collectif/editions/[id]/route.ts")));
+  ok("un magazine compose n'est jamais « vide » (il ne se retire pas)",
+    /const c = compositionDu\(m\);\s*return \(\s*stylesDeLaComposition\(c\)\.length === 0 &&/.test(lire("src/lib/collectif/saisie.ts"))
+      && /vide: magazineVide\(m, nbTours\.get\(m\.id as string\) \?\? 0\)/.test(lire("src/app/api/admin/collectif/editions/[id]/route.ts")));
 }
 
 titre("— T-179 : la composition en images ; chaque geste se dit et s'annule —");
@@ -2472,6 +2670,7 @@ titre("— T-187 : l'ecran « L'edition est creee », et le lien d'equipe chez l
     /return lireInterrupteur\(process\.env\[VAR_MAILS_COLLECTIF\]\)\.ouvert && !envoisCoupes\(process\.env\[VAR_MAILS_COUPES\]\);/.test(lire("src/lib/collectif/mails.ts")) && !lireInterrupteur(undefined).ouvert);
 }
 
+
 titre("— T-184 : l'accord du participant, envoye avec ses photos, exige par le serveur, enregistre horodate —");
 {
   const v = Accord.VERSION_ACCORD;
@@ -2548,5 +2747,242 @@ titre("— T-184 : l'accord du participant, envoye avec ses photos, exige par le
       && (mig.match(/add column if not exists/g) ?? []).length === 2);
 }
 
-console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
-process.exit(ko === 0 ? 0 : 1);
+/* ════════════════════ T-191 : LES DEMANDES SUR MESURE (planche 12 du 19/10 au soir) ════════════════════ */
+
+titre("— T-191 : les demandes, lues sous leurs deux formes (une edition existante ne change pas d'un pixel) —");
+{
+  const avant = Demandes.lireDemandes(["logo", "programme", "mot", "liste"]);
+  ok("des cles texte d'avant : des demandes HERITEES, avec le nom d'aujourd'hui",
+    avant.length === 4 && avant.every((d) => d.heritee) && avant.map((d) => d.nom).join(" | ") === "Logo | Programme | Mot du dirigeant | Liste des participants");
+  ok("des cles texte dans le desordre : l'ordre d'aujourd'hui (celui de l'ecran du client), une cle inconnue ignoree",
+    Demandes.lireDemandes(["mot", "pirate", "logo"]).map((d) => d.cle).join() === "logo,mot");
+  const heritees = CONTENUS_CLIENT.map((c) => Demandes.vueDemande(Demandes.lireDemandes([c.cle])[0], "ecole_tu"));
+  ok("une heritee se montre EXACTEMENT comme avant (puce, titre, aide, formats, mode), meme au tutoiement",
+    heritees.every((v, i) => {
+      const c = CONTENUS_CLIENT[i];
+      return v.heritee && v.libelle === c.libelle && v.titre === c.titre && v.aide === c.aide && v.mode === c.mode
+        && JSON.stringify(v.extensions) === JSON.stringify(c.extensions) && v.formats === c.extensions.map((e) => e.toUpperCase()).join(", ")
+        && Demandes.accepteDe(v) === c.extensions.map((e) => `.${e}`).join(",") && (c.mode !== "questionnaire" || v.questions === QUESTIONS_MOT);
+    }));
+  const logo = heritees[0];
+  ok("une heritee refuse et accepte les memes fichiers, avec les memes mots, que la regle d'avant",
+    ["logo.exe", "logo", "a.png", "logo.SVG", "x.ai"].every((n) => JSON.stringify(Demandes.lireFichierDemande(logo, n, 2000, "application/pdf")) === JSON.stringify(lireFichierContenu(contenuClient("logo")!, n, 2000)))
+      && JSON.stringify(Demandes.lireFichierDemande(logo, "a.png", 0)) === JSON.stringify(lireFichierContenu(contenuClient("logo")!, "a.png", 0)));
+  const melange = Demandes.lireDemandes([
+    "logo",
+    { cle: "d-abc1234567", nom: "  La photo   de classe\n officielle ", forme: "images" },
+    { cle: "mot", nom: "Le mot du proviseur", forme: "questionnaire" },
+  ]);
+  ok("les deux formes ensemble : l'ordre de l'atelier, le nom nettoye, une heritee renommee garde SA cle",
+    melange.map((d) => `${d.cle}:${d.heritee}`).join() === "logo:true,d-abc1234567:false,mot:false" && melange[1].nom === "La photo de classe officielle" && melange[2].nom === "Le mot du proviseur");
+  ok("lecture tolerante : nom vide, forme inconnue, cle illisible, cle en double, autre chose qu'une liste : ignores",
+    Demandes.lireDemandes([{ cle: "d-aaaaaaaaaa", nom: " ", forme: "tout" }, { cle: "d-bbbbbbbbbb", nom: "X", forme: "video" }, { cle: "D X", nom: "Y", forme: "tout" }, "logo", { cle: "logo", nom: "Logo bis", forme: "pdf" }, 42, null]).map((d) => d.cle).join() === "logo"
+      && Demandes.lireDemandes({ logo: true }).length === 0 && Demandes.lireDemandes(null).length === 0);
+  ok("reenregistrer une autre etape reecrit les cles d'avant A L'IDENTIQUE (des cles texte, pas des objets)",
+    (() => { const x = lireSaisieEdition({ ...creation, contenus_demandes: ["logo", "programme", "mot", "liste"] }, "creation"); return x.ok && JSON.stringify(x.edition.contenus_demandes) === '["logo","programme","mot","liste"]'; })());
+  const renomme = Demandes.renommer(avant[2], "Le mot du proviseur");
+  ok("renommer une heritee : elle s'ecrit en objet, sa cle reste « mot » (ses envois aussi) ; non touchee, elle reste une cle texte",
+    JSON.stringify(Demandes.versBase(renomme)) === '{"cle":"mot","nom":"Le mot du proviseur","forme":"questionnaire"}' && Demandes.versBase(avant[0]) === "logo" && Demandes.renommer(avant[0], "Logo") === avant[0]);
+  ok("le formulaire garde une demande sans nom (« Autre » qu'on va nommer) et le nom tel qu'on le tape ; le client, jamais",
+    (() => { const f = Demandes.demandesDuFormulaire([{ cle: "d-cccccccccc", nom: "", forme: "tout" }, { cle: "d-dddddddddd", nom: "Le mot de ", forme: "questionnaire" }]); return f.length === 2 && f[1].nom === "Le mot de "; })()
+      && Demandes.lireDemandes([{ cle: "d-cccccccccc", nom: "", forme: "tout" }]).length === 0);
+}
+
+titre("— T-191 : la regle de saisie (nom, 80 caracteres, forme connue, 12 au plus, cles et noms uniques) —");
+{
+  const d = (cle: string, nom: string, forme: string) => ({ cle, nom, forme });
+  const lit = (l: unknown[]) => lireSaisieEdition({ ...creation, contenus_demandes: l }, "creation");
+  const erreurs = (l: unknown[]) => { const x = lit(l); return x.ok ? [] : x.erreurs.filter((e) => e.champ === "contenus_demandes").map((e) => e.message); };
+  ok("des demandes nommees : acceptees, nettoyees, dans l'ordre de l'atelier",
+    (() => { const x = lit([d("d-aaaaaaaaaa", "  Logo,  en vectoriel ", "pdf"), "mot", d("d-bbbbbbbbbb", "Liste des élèves", "tout")]); return x.ok && JSON.stringify(x.edition.contenus_demandes) === '[{"cle":"d-aaaaaaaaaa","nom":"Logo, en vectoriel","forme":"pdf"},"mot",{"cle":"d-bbbbbbbbbb","nom":"Liste des élèves","forme":"tout"}]'; })());
+  ok("un nom vide : refuse, sur l'etape « À envoyer par le client »", erreurs([d("d-aaaaaaaaaa", "   ", "tout")]).some((m) => /a un nom/.test(m)) && ETAPE_DU_CHAMP.contenus_demandes === "envoyer");
+  ok("81 caracteres : refuse ; 80 : accepte", erreurs([d("d-aaaaaaaaaa", "x".repeat(81), "tout")]).some((m) => /80 caractères au plus/.test(m)) && erreurs([d("d-aaaaaaaaaa", "x".repeat(80), "tout")]).length === 0);
+  ok("une forme inconnue ou une cle illisible : refusee", erreurs([d("d-aaaaaaaaaa", "Film", "video")]).length === 1 && erreurs([d("../x", "Film", "tout")]).length === 1);
+  ok("13 demandes : refuse ; 12 : accepte",
+    erreurs(Array.from({ length: 13 }, (_, i) => d(`d-${String(i).padStart(10, "a")}`, `Demande ${i}`, "tout"))).some((m) => /Au plus 12 demandes/.test(m))
+      && erreurs(Array.from({ length: 12 }, (_, i) => d(`d-${String(i).padStart(10, "a")}`, `Demande ${i}`, "tout"))).length === 0);
+  ok("deux fois la meme cle : refuse", erreurs([d("d-aaaaaaaaaa", "Un", "tout"), d("d-aaaaaaaaaa", "Deux", "tout")]).some((m) => /même clé/.test(m)));
+  ok("deux fois le meme nom (casse comprise), heritee comprise : refuse",
+    erreurs([d("d-aaaaaaaaaa", "Programme", "tout"), d("d-bbbbbbbbbb", "programme", "images")]).some((m) => /s'appellent/.test(m)) && erreurs(["liste", d("d-bbbbbbbbbb", "Liste des participants", "tout")]).length === 1);
+  ok("« Le mot de » laisse tel quel : a completer (« Le mot du proviseur » passe)",
+    erreurs([d("d-aaaaaaaaaa", "Le mot de ", "questionnaire")]).some((m) => /à compléter/.test(m)) && erreurs([d("d-aaaaaaaaaa", "Le mot du proviseur", "questionnaire")]).length === 0 && Demandes.nomInacheve("Le mot d'") && !Demandes.nomInacheve("Le mot d'Anne"));
+  ok("le modele « Le mot de… » laisse le nom a completer ; les cinq modeles de la planche, dans l'ordre",
+    Demandes.MODELES_DEMANDE.map((m) => m.libelle).join(" | ") === "Logo | Programme | Le mot de… | Liste des participants | Autre"
+      && Demandes.MODELES_DEMANDE[2].forme === "questionnaire" && Demandes.nomInacheve(Demandes.MODELES_DEMANDE[2].nom) && Demandes.MODELES_DEMANDE[0].forme === "pdf" && Demandes.MODELES_DEMANDE[4].nom === "");
+  ok("une edition NEUVE : les quatre demandes de la planche, sous les cles d'origine (elles marchent avant la migration), la regle les accepte",
+    Demandes.DEMANDES_PAR_DEFAUT.length === 4 && Demandes.DEMANDES_PAR_DEFAUT.every((x) => Demandes.estCleHeritee(x.cle)) && Demandes.DEMANDES_PAR_DEFAUT[0].nom === "Logo, en vectoriel" && Demandes.DEMANDES_PAR_DEFAUT[0].forme === "pdf"
+      && Demandes.lireDemandesSaisies(Demandes.DEMANDES_PAR_DEFAUT).erreurs.length === 0 && /contenus_demandes: \[\.\.\.DEMANDES_PAR_DEFAUT\],/.test(lire("src/app/admin/collectif/nouvelle/page.tsx")));
+  let n = 0;
+  const suite = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+  const cle = Demandes.nouvelleCle(["d-aaaaaaaaaa"], () => suite[n++ % suite.length]);
+  ok("une cle neuve : tiree au sort, jamais une cle deja prise ni une cle d'origine", /^d-[a-z0-9]{10}$/.test(cle) && cle !== "d-aaaaaaaaaa" && !Demandes.estCleHeritee(cle) && Demandes.estCleHeritee("mot"));
+  ok("la forme : Images, PDF ou SVG, Tout ; une heritee de fichier n'allume aucune pastille (ses formats d'avant ne sont aucune des trois)",
+    Demandes.FORMES_FICHIER.map((f) => f.libelle).join() === "Images,PDF ou SVG,Tout" && Demandes.formeAffichee(Demandes.lireDemandes(["logo"])[0]) === null
+      && Demandes.formeAffichee(Demandes.lireDemandes(["mot"])[0]) === "questionnaire" && Demandes.changerForme(Demandes.lireDemandes(["mot"])[0], "questionnaire").heritee
+      && !Demandes.changerForme(Demandes.lireDemandes(["logo"])[0], "tout").heritee);
+  ok("ce que voit le client, en petit, sous chaque nom (planche 12)",
+    Demandes.aideAtelier({ cle: "d-x0", nom: "a", forme: "images", heritee: false }) === "Seulement une image"
+      && Demandes.aideAtelier({ cle: "d-x0", nom: "a", forme: "pdf", heritee: false }) === "Seulement un PDF ou un SVG"
+      && Demandes.aideAtelier({ cle: "d-x0", nom: "a", forme: "tout", heritee: false }) === "N'importe quel fichier (tableur, PDF, texte)"
+      && Demandes.aideAtelier({ cle: "d-x0", nom: "a", forme: "questionnaire", heritee: false }) === "Quatre questions, il répond dans son espace"
+      && Demandes.aideAtelier(Demandes.lireDemandes(["logo"])[0]) === "Formats d'avant : SVG, PDF, AI, EPS ou PNG");
+}
+
+titre("— T-191 : la forme d'un envoi, lue cote serveur (extension ET type annonce) —");
+{
+  const vue = (forme: "images" | "pdf" | "tout" | "questionnaire", registre: "entreprise_vous" | "ecole_tu" = "entreprise_vous") =>
+    Demandes.vueDemande({ cle: "d-abc1234567", nom: "La photo de classe officielle", forme, heritee: false }, registre);
+  const images = vue("images");
+  const lu = (v: ReturnType<typeof vue>, nom: string, mime = "", taille = 2000) => Demandes.lireFichierDemande(v, nom, taille, mime);
+  ok("Images : une photo passe (JPEG, HEIC sans type annonce, type generique) ; le type ecrit vient de l'extension",
+    (() => { const r = lu(images, "Photo.JPEG", "image/jpeg"); return r.ok && r.extension === "jpg" && r.type === "image/jpeg"; })()
+      && (() => { const r = lu(images, "IMG_0001.HEIC", ""); return r.ok && r.type === "image/heic"; })() && lu(images, "a.webp", "application/octet-stream").ok);
+  ok("Images : un PDF est refuse et le client lit pourquoi (« Seulement une image »)",
+    (() => { const r = lu(images, "programme.pdf", "application/pdf"); return !r.ok && r.message.startsWith("Seulement une image"); })());
+  ok("Images : une « photo.png » annoncee en PDF est refusee (le type annonce contredit l'extension)", !lu(images, "photo.png", "application/pdf").ok);
+  const pdf = vue("pdf");
+  ok("PDF ou SVG : un PDF et un SVG passent ; un PNG est refuse (« Seulement un PDF ou un SVG. »)",
+    lu(pdf, "logo.pdf", "application/pdf").ok && (() => { const r = lu(pdf, "logo.svg", "image/svg+xml"); return r.ok && r.type === "image/svg+xml"; })()
+      && (() => { const r = lu(pdf, "logo.png", "image/png"); return !r.ok && r.message === "Seulement un PDF ou un SVG."; })() && !lu(pdf, "logo.pdf", "image/png").ok);
+  const tout = vue("tout");
+  ok("Tout : un tableur, un fichier sans extension ; jamais servi en text/html (une page web se telecharge)",
+    lu(tout, "liste.xlsx").ok && (() => { const r = lu(tout, "notes"); return r.ok && r.extension === "bin" && r.type === "application/octet-stream"; })()
+      && (() => { const r = lu(tout, "page.html", "text/html"); return r.ok && r.type === "application/octet-stream"; })() && Demandes.accepteDe(tout) === undefined);
+  ok("vide ou au-dela de 4 Mo : refuse, toutes formes", !lu(tout, "a.pdf", "", 0).ok && !lu(images, "a.jpg", "", 5 * 1024 * 1024).ok && !lu(pdf, "a.pdf", "", 4 * 1024 * 1024 + 1).ok);
+  ok("un questionnaire n'accepte pas de fichier", !lu(vue("questionnaire"), "a.pdf", "application/pdf").ok);
+  ok("l'extension venue du client se lit par Object.hasOwn (jamais TABLE[saisie], T-161)",
+    /Object\.hasOwn\(TYPE_PAR_EXTENSION, ext\)/.test(lire("src/lib/collectif/demandes.ts")) && !/TYPE_PAR_EXTENSION\[ext\] \?\?/.test(lire("src/lib/collectif/demandes.ts")));
+}
+
+titre("— T-191 : vous ou tu, et le nom choisi en titre —");
+{
+  const v = (forme: "images" | "pdf" | "tout" | "questionnaire", registre: "entreprise_vous" | "ecole_tu") =>
+    Demandes.vueDemande({ cle: "d-abc1234567", nom: "Le mot du proviseur", forme, heritee: false }, registre);
+  const vous = v("questionnaire", "entreprise_vous");
+  const tu = v("questionnaire", "ecole_tu");
+  ok("le questionnaire est titre du NOM choisi, puce comprise", vous.titre === "Le mot du proviseur" && vous.libelle === "Le mot du proviseur" && vous.mode === "questionnaire");
+  ok("vous : « vos réponses », les quatre questions au vouvoiement", /vos réponses, et vous le relisez/.test(vous.aide) && vous.questions === QUESTIONS_MOT);
+  ok("tu : « tes réponses », les quatre questions au tutoiement, autant que de questions",
+    /tes réponses, et tu le relis/.test(tu.aide) && tu.questions === Demandes.QUESTIONS_MOT_TU && Demandes.QUESTIONS_MOT_TU.length === QUESTIONS_MOT.length && Demandes.QUESTIONS_MOT_TU[0] === "Que retiens-tu de cet événement ?");
+  ok("un fichier : « Vous pouvez » / « Tu peux », « écrivez » / « écris » à l'atelier",
+    /Vous pouvez/.test(v("images", "entreprise_vous").aide) && /Tu peux/.test(v("images", "ecole_tu").aide) && /écrivez à l'atelier/.test(v("tout", "entreprise_vous").lourd) && /écris à l'atelier/.test(v("tout", "ecole_tu").lourd)
+      && /si vous l'avez/.test(v("pdf", "entreprise_vous").aide) && /si tu l'as/.test(v("pdf", "ecole_tu").aide));
+  ok("aucune phrase de demande au vouvoiement quand l'edition tutoie",
+    (["images", "pdf", "tout", "questionnaire"] as const).every((f) => { const x = v(f, "ecole_tu"); return !/(^|[^\p{L}])(vous|vos|votre|écrivez|envoyez|retenez)(?!\p{L})/iu.test(`${x.aide} ${x.lourd} ${x.questions.join(" ")}`); })
+      && /(^|[^\p{L}])(vous|vos|votre|écrivez|envoyez|retenez)(?!\p{L})/iu.test(v("tout", "entreprise_vous").lourd));
+  ok("les reponses se rangent sous la question au vouvoiement : l'atelier lit les memes quatre questions",
+    (() => { const r = lireReponsesMot(["Une belle annee"]); return r.ok && Object.keys(r.reponses)[0] === QUESTIONS_MOT[0]; })()
+      && /contenu\.questions\[QUESTIONS_MOT\.indexOf\(/.test(lire("src/app/edition/[token]/LigneContenus.tsx")));
+}
+
+titre("— T-191 : les envois portent le nom de leur demande —");
+{
+  const demandes = Demandes.lireDemandes([{ cle: "mot", nom: "Le mot du proviseur", forme: "questionnaire" }, { cle: "d-abc1234567", nom: "La photo de classe", forme: "images" }, { cle: "d-qqqqqqqqqq", nom: "Le mot de la présidente", forme: "questionnaire" }]);
+  ok("le nom d'un envoi : celui de sa demande ; une cle d'origine non demandee, son nom d'avant ; une demande retiree, rien",
+    Demandes.nomDeLEnvoi("mot", demandes) === "Le mot du proviseur" && Demandes.nomDeLEnvoi("d-abc1234567", demandes) === "La photo de classe"
+      && Demandes.nomDeLEnvoi("programme", demandes) === "Programme" && Demandes.nomDeLEnvoi("d-retiree00", demandes) === null);
+  const l = (id: string, type: string, recu: string) => ({ id, type, r2_key: null, nom_origine: null, reponses: { q: "r" }, recu_le: recu, remplace_le: null });
+  const c = envoisCourants([l("a", "d-qqqqqqqqqq", "2026-10-19T10:00:00Z"), l("b", "d-qqqqqqqqqq", "2026-10-19T11:00:00Z"), l("x", "d-retiree00", "2026-10-19T11:00:00Z"), l("p1", "d-abc1234567", "2026-10-19T09:00:00Z"), l("p2", "d-abc1234567", "2026-10-19T09:30:00Z")], (t) => Demandes.modeDeLEnvoi(t, demandes));
+  ok("un questionnaire NOUVEAU n'a qu'une reponse courante ; une demande d'images garde tous ses fichiers ; une demande retiree ne se montre plus au client",
+    JSON.stringify(c.get("d-qqqqqqqqqq")?.map((x) => x.id)) === '["b"]' && c.get("d-abc1234567")?.length === 2 && !c.has("d-retiree00"));
+  ok("« À envoyer » (contenusAEnvoyer) : les noms choisis, recu marque",
+    Espace.contenusAEnvoyer([{ cle: "mot", nom: "Le mot du proviseur", forme: "questionnaire" }, "logo"], ["logo"]).map((x) => `${x.libelle}:${x.recu}`).join() === "Le mot du proviseur:false,Logo:true");
+  ok("partout ou les envois se montrent, le nom vient de la demande (tableau de bord, Parler a l'atelier, fil cite, fiche)",
+    /nomDeLEnvoi\(l\.type, demandes\)/.test(lire("src/app/edition/[token]/donnees.ts")) && /modeDeLEnvoi\(type, demandes\)/.test(lire("src/app/edition/[token]/donnees.ts"))
+      && /lireEnvois\(edition\)/.test(lire("src/app/edition/[token]/atelier/page.tsx")) && /nomDeLEnvoi\(c\.type, demandes\)/.test(lire("src/lib/collectif/messagerie.ts"))
+      && /nomDeLEnvoi\(c\.type, demandes\) \?\? "Demande retirée"/.test(lire("src/app/admin/collectif/donnees.ts")) && !/contenuClient\(/.test(lire("src/app/admin/collectif/donnees.ts")));
+  ok("le journal raconte le NOM que le client a lu, et garde la cle", /\{ type: contenu\.libelle, cle: contenu\.cle, par: qui/.test(lire("src/app/api/collectif/contenus/route.ts")));
+}
+
+titre("— T-191 : la route refuse hors demande et hors forme ; la migration absente rend un vrai 503, sans fichier orphelin —");
+{
+  const route = lire("src/app/api/collectif/contenus/route.ts");
+  const coffre = route.indexOf("await ecrireObjet(");
+  ok("la demande vient de CETTE edition (ses deux formes) ; une cle qu'elle n'a pas : 422",
+    /const demande = typeof cle === "string" \? lireDemandes\(edition\.contenus_demandes\)\.find\(\(d\) => d\.cle === cle\) : undefined;/.test(route) && /if \(!demande\) return non\(422, "saisie", "L'atelier n'a pas demandé ce contenu\."\);/.test(route));
+  ok("la forme est lue par le serveur (extension ET type annonce), AVANT le coffre",
+    /lireFichierDemande\(contenu, fichier\.name, fichier\.size, fichier\.type\)/.test(route) && route.indexOf("lireFichierDemande(contenu") < coffre);
+  ok("une demande NOUVELLE : la migration est SONDEE avant le coffre, 503 qui le dit ; les cinq cles d'origine passent sans sonde",
+    /const nouvelle = !estCleHeritee\(contenu\.cle\);/.test(route) && /if \(nouvelle && \(await migrationDemandes\(supabase\)\) === "absente"\) return non\(503, ERREUR_DEMANDES_ABSENTE, MESSAGE_DEMANDES_ABSENTE\);/.test(route)
+      && route.indexOf("await migrationDemandes(supabase)") < coffre && route.indexOf("await migrationDemandes(supabase)") > route.indexOf("if (!demande)"));
+  ok("si la base refuse quand meme (23514) : le fichier deja au coffre est retire, et c'est le meme 503",
+    /if \(contrainteRefusee\(error\.code\)\) \{\s*if \(typeof ligne\.r2_key === "string"\) await supprimer\(ligne\.r2_key\);\s*return non\(503, ERREUR_DEMANDES_ABSENTE, MESSAGE_DEMANDES_ABSENTE\);/.test(route) && !/\.delete\(/.test(route));
+  ok("23514, et lui seul, est la contrainte refusee", contrainteRefusee("23514") && !contrainteRefusee("23503") && !contrainteRefusee("42703") && !contrainteRefusee(null));
+  ok("le message nomme le fichier de la migration, et ce fichier existe",
+    MESSAGE_DEMANDES_ABSENTE.includes("20261021_collectif_demandes.sql") && ERREUR_DEMANDES_ABSENTE === "migration_demandes_absente" && existsSync(resolve(RACINE, MIGRATION_DEMANDES)));
+  const sonde = lire("src/lib/collectif/sondeDemandes.ts");
+  ok("la sonde n'ecrit rien : une edition qui n'existe pas (cle etrangere), jamais d'update ; le seul delete vise la ligne de sonde",
+    /edition_id: randomUUID\(\), type: TYPE_SONDE, reponses: \{\}/.test(sonde) && !/\.update\(/.test(sonde) && (sonde.match(/\.delete\(\)/g) ?? []).length === 1 && /\.delete\(\)\.eq\("id", id\)\.eq\("type", TYPE_SONDE\)/.test(sonde)
+      && !Demandes.estCleHeritee(TYPE_SONDE));
+  const admin = lire("src/app/api/admin/collectif/demandes/route.ts");
+  ok("la route de la sonde (l'etape 5) : GET seul, cookie atelier exige, interrupteur, jamais mise en cache",
+    /export async function GET\(/.test(admin) && !ECRITURE.test(admin) && /quiEstConnecteRequete\(request\)/.test(admin) && /collectifOuvert\(\)/.test(admin) && /private, no-store/.test(admin));
+}
+
+titre("— T-191 : la migration 20261021 (ecrite, jamais appliquee d'ici) —");
+{
+  const sql = lire(MIGRATION_DEMANDES);
+  ok("atomique, rejouable : elle retire la contrainte des cinq valeurs et garde une borne de forme",
+    /^begin;/m.test(sql) && /^commit;/m.test(sql) && /drop constraint if exists collectif_contenus_type_check;/.test(sql)
+      && /add constraint collectif_contenus_type_forme\s+check \(char_length\(type\) between 1 and 64\);/.test(sql) && /drop constraint if exists collectif_contenus_type_forme;/.test(sql));
+  ok("elle verifie qu'aucune contrainte ne limite encore le type (sinon tout est annule)", /raise exception/.test(sql) && /ilike '%rubrique%'/.test(sql));
+  ok("elle ne touche qu'une contrainte : ni colonne, ni table, ni donnee",
+    !/add column|create table|drop table|drop column|\bupdate\b|\binsert\b|\bdelete\b/i.test(sql.replace(/--.*$/gm, "")));
+  ok("aucune table du B2C touchee", !/\b(numeros|photos|evenements|mails_envoyes)\b(?!_)/.test(sql.replace(/collectif_\w+/g, "").replace(/--.*$/gm, "")));
+}
+
+titre("— T-191 : les ecrans (etape 5, « À envoyer », la fiche) —");
+{
+  const dem = lire("src/app/admin/collectif/DemandesClient.tsx");
+  const form = lire("src/app/admin/collectif/FormulaireEdition.tsx");
+  ok("l'etape 5 est un composant a part ; le formulaire ne fait que l'inserer",
+    /<DemandesClient key="envoyer" valeur=\{v\.contenus_demandes\} onChange=\{\(d\) => maj\("contenus_demandes", d\)\} erreur=\{erreurs\.contenus_demandes\} \/>/.test(form) && !/eca-case-effet/.test(form) && !/CONTENUS\b/.test(form));
+  ok("une ligne par demande : icone, nom modifiable, ce que voit le client, la forme en pastille, la poubelle",
+    /className="eca-dem-ico"/.test(dem) && /className="eca-dem-champ"/.test(dem) && /<small>\{aideAtelier\(d\)\}<\/small>/.test(dem) && /role="radiogroup"/.test(dem) && /className="eca-dem-poubelle"/.test(dem)
+      && /Questionnaire/.test(dem) && /Fichier/.test(dem) && /FORMES_FICHIER\.map/.test(dem) && /maxLength=\{NOM_DEMANDE_MAX\}/.test(dem));
+  ok("« + Ajouter une demande » et ses modeles ; « Ce que voit le client, dans « À envoyer » »",
+    /\+ Ajouter une demande/.test(dem) && /MODELES_DEMANDE\.map/.test(dem) && /Ce que voit le client, dans « À envoyer »/.test(dem) && /nouvelleCle\(/.test(dem) && /crypto\.getRandomValues/.test(dem));
+  ok("apres un essai refuse, l'erreur suit la saisie (la meme regle, relue) : une demande corrigee ne laisse pas de message perime",
+    /const aCorriger = erreur \? lireDemandesSaisies\(valeur\)\.erreurs\.join\(" "\) : "";/.test(dem) && /\{aCorriger \? \(/.test(dem));
+  ok("la migration manquante se DIT sur l'etape 5, apres une seule sonde par chargement",
+    /fetch\("\/api\/admin\/collectif\/demandes"/.test(dem) && /if \(!lancee\) \{\s*lancee = true;/.test(dem) && /etat\?\.migration === "absente" && nouvelles\.length > 0/.test(dem) && /Les demandes d'origine/.test(dem));
+  const ligne = lire("src/app/edition/[token]/LigneContenus.tsx");
+  ok("« À envoyer » : les noms choisis (vuesDemandes), le fichier refuse dit pourquoi AVANT de partir, accept suit la forme",
+    /demandes=\{vuesDemandes\(edition\.contenus_demandes, edition\.registre\)\}/.test(lire("src/app/edition/[token]/page.tsx")) && /const contenus = p\.demandes;/.test(ligne)
+      && ligne.indexOf("lireFichierDemande(contenu, f.name, f.size, f.type)") > 0 && ligne.indexOf("lireFichierDemande(contenu, f.name, f.size, f.type)") < ligne.indexOf("await envoyer(d)") && /const accept = accepteDe\(contenu\);/.test(ligne)
+      && /\{contenu\.formats\} · 4 Mo au plus/.test(ligne));
+  const panneau = lire("src/app/admin/collectif/[id]/PanneauContenus.tsx");
+  ok("la fiche : une ligne par demande sous son nom, ce qui est recu, « Pas encore reçu », et ce qui reste d'une demande retiree",
+    /demandes\.map\(\(d\) =>/.test(panneau) && /<strong>\{d\.nom\}<\/strong>/.test(panneau) && /Pas encore reçu/.test(panneau) && /Demande retirée/.test(panneau)
+      && /<PanneauContenus contenus=\{contenus\} demandes=\{lu\.fiche\.demandes\} \/>/.test(lire("src/app/admin/collectif/[id]/page.tsx")));
+  ok("une puce au nom long passe a la ligne dans sa carte (80 caracteres), sans changer une puce courte",
+    /\.ec-espace \.ec-tdb-puce-nom \{\s*min-width: 0;\s*overflow-wrap: anywhere;/.test(lire("src/app/edition/[token]/tableau.css")) && /<span className="ec-tdb-puce-nom">/.test(ligne));
+}
+
+/* La sonde, jouee contre une fausse base (sans reseau) : 23514 = absente, 23503 = appliquee (et plus jamais resondee), le reste = inconnue. */
+async function sondeT191() {
+  titre("— T-191 : la sonde de la migration, contre une fausse base —");
+  const appels: Record<string, unknown>[] = [];
+  const fausse = (code: string | null) =>
+    ({
+      from: (table: string) => ({
+        insert: async (ligne: Record<string, unknown>) => {
+          appels.push({ table, ...ligne });
+          return { error: code ? { code, message: "faux" } : null };
+        },
+        delete: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }),
+      }),
+    }) as unknown as Parameters<typeof migrationDemandes>[0];
+  const absente = await migrationDemandes(fausse("23514"));
+  const premier = appels[0] as { table: string; type: string; edition_id: string; reponses: unknown } | undefined;
+  ok("contrainte encore la (23514) : « absente »", absente === "absente" && premier?.table === "collectif_contenus" && premier.type === TYPE_SONDE && estUuid(premier.edition_id) && JSON.stringify(premier.reponses) === "{}");
+  ok("une autre erreur : « inconnue » (la route laisse alors la base trancher)", (await migrationDemandes(fausse("08006"))) === "inconnue");
+  ok("la cle etrangere refuse l'edition inconnue (23503) : « appliquee »", (await migrationDemandes(fausse("23503"))) === "appliquee");
+  const avant = appels.length;
+  ok("une fois vue appliquee, l'instance ne sonde plus", (await migrationDemandes(fausse("23514"))) === "appliquee" && appels.length === avant);
+}
+
+void sondeT191().then(() => {
+  console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
+  process.exit(ko === 0 ? 0 : 1);
+});

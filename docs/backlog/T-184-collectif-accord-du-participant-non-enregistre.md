@@ -1,7 +1,7 @@
 ---
 id: T-184
 titre: L'accord que coche chaque participant avant d'envoyer ses photos n'est enregistré nulle part
-etat: en pause
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: avis-requis
@@ -70,12 +70,14 @@ Lié à T-158 (la confidentialité des participants).
   avec `accord: "true"`, avec une version inconnue ou « constructor » ; la vérification d'une
   reprise 200 ; **12 photos dans l'édition avant, 12 après**.
 
-## Ce qui reste — Mathias
-1. **Appliquer `supabase/migrations/20261020_collectif_accord_participant.sql`** (deux colonnes,
-   atomique, rejouable sans effet). Vérifier ensuite en lecture :
-   `select column_name from information_schema.columns where table_name = 'collectif_photos' and column_name like 'accord_%';`
-   (deux lignes attendues).
-2. **Seulement après**, fusionner la PR #266 (https://github.com/Lecrackerssurlepot/bellajour-prelaunch/pull/266).
+## La migration, puis la fusion (19/10, fin d'après-midi)
+1. **Migration appliquée par Mathias le 19/10 vers 15 h 30.** Vérifiée juste après, en lecture :
+   `accord_version` et `accord_le` lues par PostgREST sur `collectif_photos`, aucune photo avec
+   un accord à ce moment-là.
+2. **PR #266 fusionnée APRÈS elle** (https://github.com/Lecrackerssurlepot/bellajour-prelaunch/pull/266),
+   recalée sur `main` (PR #265 à #269 arrivées entre-temps, conflits de documentation seulement).
+
+## Ce qui reste
 3. Au premier vrai dépôt d'un participant, vérifier que la donnée ARRIVE (le repli peut la faire
    disparaître en silence, `supabase/CLAUDE.md`) :
    `select accord_version, accord_le from collectif_photos where role_deposant = 'participant' order by created_at desc limit 5;`
