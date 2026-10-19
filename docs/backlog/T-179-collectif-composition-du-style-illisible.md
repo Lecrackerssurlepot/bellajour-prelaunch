@@ -42,5 +42,9 @@ Aucune migration, aucune règle de `brief.ts` ne change : seulement l'écran.
 
 **Attend** la validation des planches 1 et 2 par Mathias (règle : maquette d'abord).
 
+## Validé par Mathias le 19/10/2026
+« Je valide les huit planches telles quelles. Pour les questions, prends tes recommandations, sauf le mail : n'ouvre rien sans moi. »
+Planches 1 et 2 telles quelles ; la barre de la composition est EN BAS (ma recommandation).
+
 ## Ce qui a été fait
 Rien encore (maquettes seulement).

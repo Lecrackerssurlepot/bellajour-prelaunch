@@ -39,5 +39,10 @@ Aucune migration (la date de clôture et les gestes existent).
 **À trancher par Mathias** : « Terminer » ferme les liens des participants (proposé), ou
 prévient seulement l'atelier ?
 
+## Validé par Mathias le 19/10/2026
+« Je valide les huit planches telles quelles. Pour les questions, prends tes recommandations, sauf le mail : n'ouvre rien sans moi. »
+Planche 4 telle quelle. **Tranché (D25)** : « Terminer la collecte » FERME les liens des
+participants ; l'atelier peut rouvrir tant qu'aucun tour n'est publié.
+
 ## Ce qui a été fait
 Rien encore.

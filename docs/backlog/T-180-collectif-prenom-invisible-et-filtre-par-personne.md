@@ -49,5 +49,9 @@ Aucune migration.
 
 **Attend** la validation de la planche 3 par Mathias.
 
+## Validé par Mathias le 19/10/2026
+« Je valide les huit planches telles quelles. Pour les questions, prends tes recommandations, sauf le mail : n'ouvre rien sans moi. »
+Planche 3 telle quelle.
+
 ## Ce qui a été fait
 Rien encore (maquette seulement).
