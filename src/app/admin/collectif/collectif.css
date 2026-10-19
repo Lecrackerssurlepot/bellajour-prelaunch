@@ -1028,13 +1028,22 @@
   margin: auto;
   padding: var(--bj-sp-5);
 }
+/* L'en-tête du fil : le client à gauche, « Marquer comme non lu » à droite (T-188, planche 8). */
 .eca-root .eca-boite-fil-tete {
   flex: none;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
   padding: var(--bj-sp-4) var(--bj-sp-5);
   border-bottom: 1px solid var(--bj-veil-8);
+}
+.eca-root .eca-boite-fil-titres {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 .eca-root .eca-boite-fil-nom {
   font-family: var(--bj-font-display);
@@ -1131,6 +1140,39 @@
   text-decoration: none;
   text-align: center;
 }
+/* T-188 : aucune conversation ouverte d'office. L'écran vide invite à en
+   choisir une, et prend la place du dossier (il n'y en a pas). */
+.eca-root .eca-boite-fil--vide {
+  grid-column: 2 / -1;
+}
+.eca-root .eca-boite-choisir {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: 34ch;
+  padding: var(--bj-sp-5);
+  text-align: center;
+}
+.eca-root .eca-boite-choisir-compte {
+  margin-top: 6px;
+  padding: 4px 12px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-action-soft);
+  color: var(--eca-bleu-encre);
+  font-size: var(--bj-fs-xxs);
+  font-weight: 500;
+}
+/* L'heure d'une conversation non lue passe en couleur d'accent (planche 8). */
+.eca-root .eca-boite-heure {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.eca-root .eca-boite-conv .eca-boite-heure--alire {
+  color: var(--eca-bleu-encre);
+  font-weight: 500;
+}
 @media (max-width: 1180px) {
   .eca-root .eca-boite {
     grid-template-columns: 300px minmax(0, 1fr);
@@ -1147,6 +1189,122 @@
   .eca-root .eca-boite-fil {
     min-height: calc(var(--app-height, 900px) * 0.7);
   }
+  /* Sur téléphone la liste EST l'écran : pas de grand cadre vide dessous. */
+  .eca-root .eca-boite-fil--vide {
+    display: none;
+  }
+}
+
+/* ─────────────── le fil de l'atelier : jours, trait, lu / nouveau (T-188) ─────────────── */
+
+/* Maquette du 19/10, planche 8 : les jours au centre, en petit ; le trait
+   « N nouveaux messages » en couleur d'accent entre deux filets ; les
+   nouveaux messages du client cerclés d'un liseré, les anciens atténués ; la
+   signature et l'heure SOUS le texte ; nos bulles en gris, pour que le seul
+   bleu du fil soit ce qui est nouveau. Tout est sous `.eca-fil` : la carte
+   « Le dernier message » de la fiche garde ses bulles. */
+.eca-root .eca-fil-jour {
+  flex: none;
+  align-self: center;
+  padding-top: 4px;
+  font-size: var(--bj-fs-xxs);
+  color: var(--bj-text-faint);
+}
+.eca-root .eca-fil-trait {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--bj-fs-xxs);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--eca-bleu-encre);
+  white-space: nowrap;
+}
+.eca-root .eca-fil-trait::before,
+.eca-root .eca-fil-trait::after {
+  content: "";
+  flex: 1;
+  height: 1.5px;
+  border-radius: 2px;
+  background: var(--bj-action);
+  opacity: 0.6;
+}
+.eca-root .eca-fil .eca-bulle {
+  flex: none;
+  max-width: 78%;
+  border-color: transparent;
+}
+.eca-root .eca-fil .eca-bulle--atelier {
+  background: var(--bj-veil-6);
+  box-shadow: none;
+}
+.eca-root .eca-fil .eca-bulle--ancien {
+  opacity: 0.78;
+}
+.eca-root .eca-fil .eca-bulle--nouveau {
+  box-shadow: 0 0 0 1.5px var(--bj-action), 0 6px 18px rgba(16, 24, 40, 0.05);
+}
+.eca-root .eca-fil .eca-bulle-qui {
+  margin: 0;
+  justify-content: space-between;
+}
+.eca-root .eca-fil .eca-bulle-qui time {
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 700px) {
+  .eca-root .eca-fil .eca-bulle {
+    max-width: 92%;
+  }
+}
+
+/* « Marquer comme non lu » : un petit bouton blanc, en tête du fil (boîte) et de l'onglet Messages (fiche). */
+.eca-root .eca-non-lu {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.eca-root .eca-bouton-petit {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border: 1px solid var(--bj-veil-12);
+  border-radius: var(--bj-r-pill);
+  background: #ffffff;
+  color: var(--bj-text);
+  font: inherit;
+  font-size: var(--bj-fs-xxs);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: box-shadow var(--bj-dur-fast) var(--bj-ease);
+}
+.eca-root .eca-bouton-petit:hover:not(:disabled) {
+  box-shadow: 0 0 0 3px var(--bj-veil-8);
+}
+.eca-root .eca-bouton-petit:focus-visible {
+  outline: 2px solid var(--bj-action);
+  outline-offset: 2px;
+}
+.eca-root .eca-bouton-petit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.eca-root .eca-non-lu-erreur {
+  font-size: var(--bj-fs-xxs);
+  color: #b5442f;
+}
+.eca-root .eca-panneau-messages-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: var(--bj-sp-3);
+}
+.eca-root .eca-panneau-messages-tete .ate-carte-titre {
+  margin: 0;
 }
 
 /* ─────────────── la fiche en cartes (T-152, 15/10) ─────────────── */

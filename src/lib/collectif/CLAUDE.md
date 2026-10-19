@@ -437,6 +437,21 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   l'onglet Photos de la fiche, « Télécharger la sélection » (le lot avec `selection: true`, écrit
   dans le dossier « Sélection du client »), et « Collecte terminée par … » lu au journal.
 
+## La messagerie de l'atelier : ce qui est nouveau (T-188, 19/10)
+
+- **« Messages » compte des CONVERSATIONS** (éditions non archivées avec au moins un message du
+  client non lu), pas des messages : `compterConversationsEnAttente` (`admin/collectif/donnees.ts`,
+  exact au-delà de 1000 lignes), la route GET `/api/admin/collectif/en-attente`, relue chaque
+  minute onglet visible (`VeilleMessages`, patron `Rafraichissement.tsx`), et l'onglet du
+  navigateur « (3) Atelier · … ». La barre des particuliers lit le même compte.
+- **Le trait « N nouveaux messages »** se calcule au rendu SERVEUR, AVANT tout marquage
+  (`nonLusAtelier` de la fiche, `premierNouveau` de `nouveaux.ts`, pur), puis reste en état local.
+- **Le marquage est BORNÉ** à ce que l'écran affiche (`marquerLus(…, jusqua)`, le PATCH reçoit
+  `{ jusqua }` tel que la base l'a rendu) ; une borne illisible est refusée (422), jamais lue
+  comme « tout marquer ». La boîte n'ouvre plus rien d'office : sans `?e=`, rien n'est marqué.
+  « Marquer comme non lu » (`{ nonLu: true }`) rend non lu le dernier message du client.
+  L'espace client garde son marquage sans borne.
+
 ## Les mails des éditions (T-146, 15/10)
 
 - **Un seul circuit** : `mails.ts` → `envoyerMailCollectif` (coupé par défaut par

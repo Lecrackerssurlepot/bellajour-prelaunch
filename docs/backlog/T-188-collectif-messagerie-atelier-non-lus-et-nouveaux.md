@@ -1,7 +1,7 @@
 ---
 id: T-188
 titre: Dans la messagerie de l'atelier, on ne voit ni quels messages sont nouveaux, ni qu'un message arrive sans recharger
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: libre
@@ -49,4 +49,47 @@ est noté dans T-146 et attend Mathias.
 Planche 8 telle quelle. Le mail A1 à l'atelier reste dans T-146 (« n'ouvre rien sans moi »).
 
 ## Ce qui a été fait
-Rien encore (maquette seulement).
+19/10, planche 8 codée (copie de travail, pas encore fusionnée). Aucune migration, aucun mail.
+
+- **Le compte** : « Messages » porte le nombre de CONVERSATIONS qui attendent (éditions non
+  archivées avec au moins un message du client non lu) : `compterConversationsEnAttente`
+  (`admin/collectif/donnees.ts`, une colonne, l'archive filtrée par la jointure, exact même
+  au-delà des 1000 lignes de PostgREST) et une route GET légère
+  `/api/admin/collectif/en-attente` (cookie atelier, `no-store`). La barre le porte sur chaque
+  écran des éditions (`VeilleMessages.tsx`, `compteMessages.ts`) : une lecture par minute,
+  rien onglet caché, rattrapage au retour ; la boîte et la liste des éditions se relisent
+  (`router.refresh()`) quand le nombre change. Styles, Agendas, Nouvelle édition et Bon à tirer
+  ne comptent pas au serveur : leur barre lit la route à l'ouverture. Le lien s'appelle
+  « Messages » (planche 8). Côté particuliers, la pastille du commutateur compte aussi les
+  conversations (relue par `Rafraichissement`, pas de relève en plus). L'intervalle de 3,5 s du
+  fil n'a pas bougé (T-169).
+- **L'onglet** : « (3) Atelier · Messages » ; le compte se pose devant le titre de chaque écran
+  des éditions, et disparaît à zéro.
+- **La liste** : l'heure d'une conversation non lue en couleur d'accent ; la conversation
+  ouverte quitte « À traiter aujourd'hui » (son rendez-vous du jour reste).
+- **Le fil** (boîte ET onglet Messages de la fiche) : les jours (« Aujourd'hui », « Hier », la
+  date), le trait « N nouveaux messages » calculé au rendu SERVEUR (`premierNouveau`, les ids non
+  lus lus par `donnees.ts` avant tout marquage, `lireMessages` non touché) puis gardé en état
+  local ; les nouveaux cerclés d'un liseré, les anciens atténués, « · lu » sous un message du
+  client déjà lu, la signature et l'heure sous le texte, nos bulles en gris. Un message du client
+  arrivé en direct pose le trait s'il n'y en avait pas. Le fil s'ouvre sur le trait, sinon sur
+  le dernier message.
+- **Le marquage** : `/admin/collectif/messages` sans `?e=` n'ouvre plus rien (« Choisissez une
+  conversation ») ; le PATCH porte `jusqua`, la date du dernier message affiché (une borne
+  illisible est refusée en 422, jamais lue comme « tout marquer » ; sans corps, l'ancien
+  comportement). Après un marquage effectif, la barre se relit, et la page à l'ouverture.
+- **« Marquer comme non lu »** en tête du fil et de l'onglet Messages : PATCH `{ nonLu: true }`,
+  le dernier message du client repasse à `lu_atelier_le = null` (non journalisé, comme le
+  marquage). Dans la boîte, retour à la liste.
+- **Le client ne change pas** : `useMessagerie` passe la borne au rappel, `Parler.tsx` l'ignore,
+  la route du client marque sans borne.
+- Pur : `src/lib/collectif/nouveaux.ts` ; 27 contrôles « T-188 » dans `verif-collectif.ts`.
+- Vérifié : `tsc`, lint (0 erreur), build, `verif-atelier`, `verif-collectif` verts. À l'écran
+  (Chrome headless sur le build, toute écriture interceptée), 1440 et 375 px : la boîte vide sans
+  aucun PATCH, le vrai fil de « Première édition » et de « Essai révision » (jours, « · lu »,
+  PATCH borné), la barre des particuliers intacte.
+- **Pas vu sur de vraies données** : aucun message non lu en base le 19/10. Le trait en direct a
+  été vu avec deux messages injectés dans la page ; le trait calculé au serveur et l'heure en
+  accent, sur un rendu serveur des vrais composants avec les données de la maquette ; la pastille
+  et « (3) » avec une réponse de la route fabriquée dans la page. À revoir au premier vrai
+  message d'un client.

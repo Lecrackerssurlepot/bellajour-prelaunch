@@ -16,8 +16,9 @@ import { lireInterlocuteurs, lireRendezVous } from "@/lib/collectif/rendezvous";
 import { etapesEdition, prochaineEtape } from "@/lib/collectif/prochaine";
 import { quandRdv } from "@/lib/collectif/boite";
 import { PARTS_TEXTE } from "@/lib/collectif/brief";
+import { premierNouveau } from "@/lib/collectif/nouveaux";
 import BarreAtelier, { liensEditions } from "../../BarreAtelier";
-import { chargerEdition, compterNonLus } from "../donnees";
+import { chargerEdition, compterConversationsEnAttente, compterNonLus } from "../donnees";
 import FormulaireEdition, { type ValeursEdition } from "../FormulaireEdition";
 import PanneauCollecte from "./PanneauCollecte";
 import PanneauContenus from "./PanneauContenus";
@@ -90,7 +91,9 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
   const { onglet: ongletDemande } = await searchParams;
   const onglet = (ONGLETS as readonly string[]).includes(ongletDemande ?? "") ? (ongletDemande as string) : "apercu";
 
-  const [lu, nonLus, nonLusEdition] = await Promise.all([chargerEdition(makeSupabase(), id, new Date()), compterNonLus(makeSupabase()), compterNonLus(makeSupabase(), id)]);
+  /* `rendu` : l'instant de la lecture, pris AVANT elle (la barre garde la valeur la plus récente ; « Aujourd'hui » du fil, T-188). */
+  const rendu = new Date();
+  const [lu, nonLus, nonLusEdition] = await Promise.all([chargerEdition(makeSupabase(), id, rendu), compterConversationsEnAttente(makeSupabase()), compterNonLus(makeSupabase(), id)]);
   if (lu.absent) {
     return (
       <div className="adm-root ate-root eca-root">
@@ -319,7 +322,7 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
 
   return (
     <div className="adm-root ate-root eca-root">
-      <BarreAtelier monde="editions" collectif nonLus={nonLus} liens={liensEditions(null, nonLus)} />
+      <BarreAtelier monde="editions" collectif nonLus={nonLus} nonLusLe={rendu.toISOString()} liens={liensEditions(null, nonLus)} />
       <Link href="/admin/collectif" className="eca-retour">
         <span aria-hidden="true">←</span> Les éditions
       </Link>
@@ -465,7 +468,7 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
             </div>
           ),
           photos: <PanneauCollecte id={e.id} {...collecte} />,
-          messages: <PanneauMessages id={e.id} initiaux={messages} />,
+          messages: <PanneauMessages id={e.id} initiaux={messages} premierNouveau={premierNouveau(messages, lu.fiche.nonLusAtelier)} maintenant={rendu.toISOString()} />,
           documents: (
             <div className="eca-deux">
               <PanneauDocuments id={e.id} documents={documents} />

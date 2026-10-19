@@ -21,7 +21,8 @@ import { contenuClient } from "@/lib/collectif/contenus";
 import { compositionDu, stylesDeLaComposition, type BriefLigne } from "@/lib/collectif/brief";
 import { TYPES_DOUBLES } from "@/lib/collectif/styles";
 import { lireMessages } from "@/lib/collectif/messagerie";
-import { aTraiter, conversationsDe, type Conversation, type MessageBoite } from "@/lib/collectif/boite";
+import { aTraiter, conversationsDe, type ATraiter, type Conversation, type MessageBoite } from "@/lib/collectif/boite";
+import { conversationsEnAttente } from "@/lib/collectif/nouveaux";
 import { lireInterlocuteurs } from "@/lib/collectif/rendezvous";
 import { resumeDeposants } from "@/lib/collectif/grille";
 import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
@@ -133,6 +134,42 @@ export async function compterNonLus(supabase: SupabaseClient, editionId?: string
   return count ?? 0;
 }
 
+/** Le plus de lignes que PostgREST rend d'un coup (« Max rows » du projet, T-167). */
+const PAGE_COMPTE = 1000;
+
+/**
+ * Les CONVERSATIONS qui attendent une réponse de l'atelier (T-188, planche 8) :
+ * les éditions NON archivées qui ont au moins un message du client non lu. C'est
+ * le nombre de « Messages » dans la barre, partout, et celui de l'onglet du
+ * navigateur. Lecture LÉGÈRE : une seule colonne, l'archive filtrée par la
+ * jointure, rien n'est marqué. Une édition déjà trouvée est écartée de la passe
+ * suivante : au-delà de 1000 messages non lus, le compte reste exact (chaque
+ * passe pleine en apporte au moins une de plus). `null` si la lecture échoue :
+ * une pastille absente vaut mieux qu'un écran qui tombe pour un compteur.
+ */
+export async function compterConversationsEnAttente(supabase: SupabaseClient): Promise<number | null> {
+  const lignes: { edition_id: string }[] = [];
+  for (let passe = 0; passe < 20; passe++) {
+    const vues = [...new Set(lignes.map((l) => l.edition_id))];
+    let requete = supabase
+      .from("collectif_messages")
+      .select("edition_id, collectif_editions!inner(archive_le)")
+      .eq("auteur", "client")
+      .is("lu_atelier_le", null)
+      .is("collectif_editions.archive_le", null)
+      .limit(PAGE_COMPTE);
+    if (vues.length) requete = requete.not("edition_id", "in", `(${vues.join(",")})`);
+    const { data, error } = await requete.returns<{ edition_id: string }[]>();
+    if (error) {
+      if (!tableAbsente(error.code)) console.error("[collectif] conversations en attente illisibles", error.code, error.message);
+      return null;
+    }
+    lignes.push(...(data ?? []));
+    if ((data ?? []).length < PAGE_COMPTE) break;
+  }
+  return conversationsEnAttente(lignes);
+}
+
 /* ─────────────────────────────── la boîte de réception ─────────────────────────────── */
 
 /**
@@ -145,7 +182,7 @@ export async function compterNonLus(supabase: SupabaseClient, editionId?: string
 export async function chargerBoite(
   supabase: SupabaseClient,
   maintenant: Date
-): Promise<{ absent: true } | { absent: false; conversations: Conversation[]; aTraiter: { editionId: string; texte: string }[] }> {
+): Promise<{ absent: true } | { absent: false; conversations: Conversation[]; aTraiter: ATraiter[] }> {
   const { data, error } = await supabase
     .from("collectif_editions")
     .select("id, organisation, evenement, created_at")
@@ -247,6 +284,13 @@ export type Fiche = {
   journal: EntreeJournal[];
   documents: DocumentFiche[];
   messages: Message[];
+  /**
+   * Les messages du client que l'atelier n'avait PAS lus au moment du rendu
+   * (`lu_atelier_le` vide), lus AVANT tout marquage : le trait « N nouveaux
+   * messages » se pose sur le premier (T-188). Une requête à part, pour ne pas
+   * toucher `lireMessages`, partagé avec la route du client.
+   */
+  nonLusAtelier: string[];
 };
 
 export async function chargerEdition(
@@ -265,7 +309,7 @@ export async function chargerEdition(
   }
   if (!edition) return { absent: false, fiche: null };
 
-  const [mags, journal, docs, fil, photos, contenus] = await Promise.all([
+  const [mags, journal, docs, fil, photos, contenus, nonLus] = await Promise.all([
     lireMagazinesFiche(supabase, id),
     supabase
       .from("collectif_evenements")
@@ -286,7 +330,18 @@ export async function chargerEdition(
       .not("confirmee_le", "is", null)
       .limit(20000),
     lireContenusFiche(supabase, id),
+    supabase
+      .from("collectif_messages")
+      .select("id")
+      .eq("edition_id", id)
+      .eq("auteur", "client")
+      .is("lu_atelier_le", null)
+      .order("created_at", { ascending: true })
+      .limit(300)
+      .returns<{ id: string }[]>(),
   ]);
+  /* Le trait est un repère, pas une donnée : illisible, le fil s'affiche sans lui. */
+  if (nonLus.error) console.error("[collectif] non-lus du fil illisibles", nonLus.error.code, nonLus.error.message);
   if (photos.error) echec("photos de l'édition", photos.error);
   if (contenus.error) echec("contenus de l'édition", contenus.error);
   if (mags.error) echec("magazines de l'édition", mags.error);
@@ -453,6 +508,7 @@ export async function chargerEdition(
         (d) => ({ id: d.id, libelle: d.libelle, libelleType: libelleTypeDocument(d.type), quand: d.created_at, par: d.cree_par, statut: d.statut_texte })
       ),
       messages: fil.messages,
+      nonLusAtelier: nonLus.error ? [] : (nonLus.data ?? []).map((m) => m.id),
     },
   };
 }

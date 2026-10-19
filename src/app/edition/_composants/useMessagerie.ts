@@ -10,7 +10,9 @@
    bulle « envoyée » qui n'existerait pas en base.
 
    `marquerLus` est appelé par un EFFET, jamais au rendu : un préchargement
-   de page ne doit pas faire croire que quelqu'un a lu. */
+   de page ne doit pas faire croire que quelqu'un a lu. Il reçoit la date du
+   dernier message AFFICHÉ (T-188) : l'atelier borne ainsi son marquage à ce
+   qu'il a sous les yeux. L'espace client ignore cet argument : rien n'y change. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { curseur, fusionnerMessages, INTERVALLE_MESSAGES_MS, type Message } from "@/lib/collectif/messages";
@@ -26,7 +28,8 @@ type Options = {
   envoyer: (texte: string, joint?: Joint) => Promise<Message | string>;
   /** Le camp qui lit : on marque lus les messages de L'AUTRE camp. */
   lecteur: "client" | "atelier";
-  marquerLus?: () => Promise<void>;
+  /** `jusqua` : la date du dernier message affiché (le fil au rendu, puis le dernier arrivé en direct). */
+  marquerLus?: (jusqua: string | null) => Promise<void>;
 };
 
 export function useMessagerie(o: Options) {
@@ -46,7 +49,7 @@ export function useMessagerie(o: Options) {
       dernier.current = curseur(tout);
       return tout;
     });
-    if (nouveaux.some((m) => m.auteur !== options.current.lecteur)) void options.current.marquerLus?.();
+    if (nouveaux.some((m) => m.auteur !== options.current.lecteur)) void options.current.marquerLus?.(curseur(fusionnerMessages([], nouveaux)));
   }, []);
 
   useEffect(() => {
@@ -77,7 +80,7 @@ export function useMessagerie(o: Options) {
 
   /* À l'ouverture : ce que l'autre camp a écrit est désormais lu. */
   useEffect(() => {
-    if (options.current.initiaux.some((m) => m.auteur !== options.current.lecteur)) void options.current.marquerLus?.();
+    if (options.current.initiaux.some((m) => m.auteur !== options.current.lecteur)) void options.current.marquerLus?.(curseur(fusionnerMessages([], options.current.initiaux)));
   }, []);
 
   const envoyer = useCallback(

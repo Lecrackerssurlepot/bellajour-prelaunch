@@ -9,11 +9,13 @@ import { formaterJourParis } from "@/lib/collectif/dates";
 import { LIBELLE_ETAT_EDITION } from "@/lib/collectif/etats";
 import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
 import { MIGRATION_COLLECTIF } from "@/lib/collectif/migration";
+import { phraseEnAttente, premierNouveau } from "@/lib/collectif/nouveaux";
 import { LIBELLE_CAMP, prochaineEtape } from "@/lib/collectif/prochaine";
 import { lireInterlocuteurs, lireRendezVous } from "@/lib/collectif/rendezvous";
 import BarreAtelier, { liensEditions } from "../../BarreAtelier";
 import ConversationAtelier from "../ConversationAtelier";
-import { chargerBoite, chargerEdition, compterNonLus } from "../donnees";
+import { chargerBoite, chargerEdition, compterConversationsEnAttente } from "../donnees";
+import MarquerNonLu from "../MarquerNonLu";
 import ListeConversations from "./ListeConversations";
 import "../../admin.css";
 import "../../atelier/atelier.css";
@@ -26,15 +28,20 @@ import "../collectif.css";
  * du client à droite. Les éditions seulement : les particuliers n'y sont
  * pas encore (Mathias, 14/10).
  *
- * `?e=<id>` ouvre une conversation ; sans lui, la plus urgente. Ouvrir une
- * conversation la marque lue (l'effet de `useMessagerie`) ; la liste, elle,
- * ne marque rien.
+ * `?e=<id>` ouvre une conversation. Sans lui, AUCUNE n'est ouverte (T-188,
+ * planche 8) : un état vide invite à en choisir une, car ouvrir, c'est marquer
+ * lu, et cela ne se fait que par l'atelier. Le marquage (l'effet de
+ * `useMessagerie`) est borné au dernier message affiché ; la liste, elle, ne
+ * marque rien. Le trait « N nouveaux messages » se calcule ICI, au rendu,
+ * avant tout marquage. La barre relit le compte chaque minute et relit la page
+ * quand il change (`rafraichir`).
  */
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Atelier — messagerie", robots: { index: false, follow: false } };
+/* « (3) Atelier · Messages » : le compte se pose devant, dans le navigateur (VeilleMessages). */
+export const metadata = { title: "Atelier · Messages", robots: { index: false, follow: false } };
 
 const CLASSE_CAMP = {
   atelier: "ate-camp ate-camp--atelier",
@@ -50,7 +57,7 @@ export default async function PageMessagerie({ searchParams }: { searchParams: P
   const { e: choisie } = await searchParams;
   const supabase = makeSupabase();
   const maintenant = new Date();
-  const [boite, nonLus] = await Promise.all([chargerBoite(supabase, maintenant), compterNonLus(supabase)]);
+  const [boite, nonLus] = await Promise.all([chargerBoite(supabase, maintenant), compterConversationsEnAttente(supabase)]);
 
   if (boite.absent) {
     return (
@@ -66,11 +73,9 @@ export default async function PageMessagerie({ searchParams }: { searchParams: P
     );
   }
 
-  const courant =
-    (choisie && estUuid(choisie) ? boite.conversations.find((c) => c.id === choisie) : undefined) ??
-    boite.conversations.find((c) => c.nonLus) ??
-    boite.conversations[0] ??
-    null;
+  /* Seule la conversation CHOISIE s'ouvre : jamais d'office la première non lue. */
+  const courant = (choisie && estUuid(choisie) ? boite.conversations.find((c) => c.id === choisie) : undefined) ?? null;
+  const aLire = boite.conversations.filter((c) => c.nonLus).length;
   const lu = courant ? await chargerEdition(supabase, courant.id, maintenant) : null;
   const fiche = lu && !lu.absent ? lu.fiche : null;
 
@@ -150,25 +155,38 @@ export default async function PageMessagerie({ searchParams }: { searchParams: P
 
   return (
     <div className="adm-root ate-root eca-root eca-root--large">
-      <BarreAtelier monde="editions" collectif nonLus={nonLus} liens={liensEditions("messages", nonLus)} />
+      <BarreAtelier monde="editions" collectif nonLus={nonLus} nonLusLe={maintenant.toISOString()} rafraichir liens={liensEditions("messages", nonLus)} />
       <div className="eca-boite">
         <ListeConversations conversations={boite.conversations} aTraiter={boite.aTraiter} courant={courant?.id ?? null} />
-        <section className="eca-boite-fil" aria-label="La conversation">
-          {fiche && courant ? (
-            <>
-              <header className="eca-boite-fil-tete">
+        {fiche && courant ? (
+          <section className="eca-boite-fil" aria-label="La conversation">
+            <header className="eca-boite-fil-tete">
+              <span className="eca-boite-fil-titres">
                 <strong className="eca-boite-fil-nom">{courant.organisation}</strong>
                 <span className="eca-sous">
                   {courant.evenement}
                   {fiche.edition.responsable_nom ? ` · ${fiche.edition.responsable_nom}, responsable` : ""}
                 </span>
-              </header>
-              <ConversationAtelier key={courant.id} id={courant.id} initiaux={fiche.messages} pleine />
-            </>
-          ) : (
-            <p className="eca-vide">Aucune conversation : les éditions ouvertes apparaissent ici dès leur création.</p>
-          )}
-        </section>
+              </span>
+              <MarquerNonLu key={courant.id} id={courant.id} possible={fiche.messages.some((m) => m.auteur === "client")} retour="/admin/collectif/messages" />
+            </header>
+            <ConversationAtelier key={courant.id} id={courant.id} initiaux={fiche.messages} premierNouveau={premierNouveau(fiche.messages, fiche.nonLusAtelier)} maintenant={maintenant.toISOString()} pleine />
+          </section>
+        ) : (
+          <section className="eca-boite-fil eca-boite-fil--vide" aria-label="La conversation">
+            <div className="eca-boite-choisir">
+              <strong className="eca-boite-fil-nom">
+                {boite.conversations.length ? "Choisissez une conversation" : "Aucune conversation"}
+              </strong>
+              <p className="eca-vide">
+                {boite.conversations.length
+                  ? "Elle ne se marque lue qu'une fois ouverte."
+                  : "Les éditions ouvertes apparaissent ici dès leur création."}
+              </p>
+              {aLire ? <span className="eca-boite-choisir-compte">{phraseEnAttente(aLire)}.</span> : null}
+            </div>
+          </section>
+        )}
         {dossier}
       </div>
     </div>
