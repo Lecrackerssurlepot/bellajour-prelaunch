@@ -271,6 +271,7 @@ import {
 import {
   comptesAdmin,
   PRENOM_COMPTE,
+  motDePasseDe,
   signAdminCookie,
   verifierCookieAdmin,
 } from "@/lib/admin-auth";
@@ -3649,6 +3650,21 @@ const verifierT005 = async () => {
      (await verifierCookieAdmin(cookieMathias)) === "mathias");
   const cookieLouis = await signAdminCookie("louis", "mdp-de-louis-pour-le-test", dansUneSemaine);
   ok("celle de Louis aussi", (await verifierCookieAdmin(cookieLouis)) === "louis");
+  ok("motDePasseDe trouve encore les deux vrais comptes",
+     motDePasseDe("mathias") === "mdp-de-mathias-pour-le-test" && motDePasseDe("louis") === "mdp-de-louis-pour-le-test");
+
+  /* 19/10/2026, audit de sécurité : `qui` vient du cookie, donc du client.
+     Sur un objet littéral, `comptes["constructor"]` rend la fonction Object,
+     `comptes["__proto__"]` l'objet de base : des valeurs non vides et connues
+     de tous. Le HMAC les convertit en texte, et ce texte signait un cookie
+     valide sans aucun mot de passe. Chaque nom hérité doit être refusé. */
+  for (const herite of ["constructor", "__proto__", "toString", "hasOwnProperty", "valueOf", "isPrototypeOf"]) {
+    const valeurPublique = String(({} as Record<string, unknown>)[herite]);
+    const forge = await signAdminCookie(herite, valeurPublique, dansUneSemaine);
+    ok(`un cookie au nom hérité « ${herite} », signé de sa valeur publique, est REFUSÉ`,
+       (await verifierCookieAdmin(forge)) === null);
+    ok(`motDePasseDe(« ${herite} ») ne trouve aucun mot de passe (connexion comprise)`, motDePasseDe(herite) === null);
+  }
 
   /* Le journal d'avant le 31/08 porte la clé « atelier » : elle doit encore
      s'AFFICHER, sans pour autant authentifier. */

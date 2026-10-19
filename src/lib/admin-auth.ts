@@ -49,12 +49,32 @@ const ENC = new TextEncoder();
  * pas coexister.
  */
 export function comptesAdmin(): Record<string, string> {
-  const comptes: Record<string, string> = {};
+  /* Sans prototype : un objet littéral répond aussi à `constructor`,
+     `__proto__`, `toString`… (voir `motDePasseDe`). */
+  const comptes: Record<string, string> = Object.create(null);
   if (process.env.ADMIN_PASSWORD_MATHIAS) comptes.mathias = process.env.ADMIN_PASSWORD_MATHIAS;
   if (process.env.ADMIN_PASSWORD_LOUIS) comptes.louis = process.env.ADMIN_PASSWORD_LOUIS;
   /* ADMIN_PASSWORD (partagé, compte « atelier ») n'est volontairement PAS lu :
      retiré le 31/08/2026 (T-005). Ne pas le remettre. */
   return comptes;
+}
+
+/**
+ * Le mot de passe d'un compte, ou null. `qui` vient TOUJOURS du client (le
+ * cookie, le formulaire de connexion) : seule une clé PROPRE de `comptesAdmin()`
+ * compte, et seulement si c'est un texte non vide.
+ *
+ * Jusqu'au 19/10/2026, la lecture se faisait par `comptesAdmin()[qui]` sur un
+ * objet littéral : `qui = "constructor"` rendait la fonction Object, dont le
+ * texte est le même sur toute machine, et ce texte signait un cookie que la
+ * vérification acceptait. Quiconque ouvrait l'atelier sans mot de passe
+ * (audit de sécurité du 19/10). Le harnais forge ces cookies et exige le refus.
+ */
+export function motDePasseDe(qui: string): string | null {
+  const comptes = comptesAdmin();
+  if (!Object.hasOwn(comptes, qui)) return null;
+  const mdp = comptes[qui];
+  return typeof mdp === "string" && mdp.length > 0 ? mdp : null;
 }
 
 /** Le prénom tel qu'il s'affiche. Le reste du code ne manipule que la clé.
@@ -127,8 +147,8 @@ export async function verifierCookieAdmin(
   const expMs = Number(expStr);
   if (!Number.isFinite(expMs) || expMs < Date.now()) return null;
 
-  const password = comptesAdmin()[qui];
-  if (!password) return null; // compte révoqué ou variable absente
+  const password = motDePasseDe(qui);
+  if (!password) return null; // compte inconnu, révoqué, ou variable absente
 
   const expectedSig = await hmacBase64url(password, `bj-admin|${expStr}|${qui}`);
   return timingSafeEqualStr(providedSig, expectedSig) ? qui : null;

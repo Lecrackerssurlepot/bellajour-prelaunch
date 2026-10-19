@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
-import { ADMIN_COOKIE, ADMIN_TTL_MS, comptesAdmin, signAdminCookie } from "@/lib/admin-auth";
+import { ADMIN_COOKIE, ADMIN_TTL_MS, comptesAdmin, motDePasseDe, signAdminCookie } from "@/lib/admin-auth";
 import {
   apresEchec,
   delaiPourEchecs,
@@ -85,7 +85,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }
 
-  const attendu = comptes[qui];
+  /* `motDePasseDe`, jamais `comptes[qui]` : `qui` vient du formulaire, et un nom
+     hérité (`constructor`…) ne doit trouver aucun mot de passe (19/10/2026). */
+  const attendu = motDePasseDe(qui);
   if (!timingSafeCompare(submitted, attendu ?? TEMOIN) || !attendu) {
     /* Échec : on compte, on journalise si ça se répète, et on fait attendre
        AVANT de répondre — un délai croissant côté serveur, incompressible
