@@ -304,7 +304,12 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
 - **Le QR code** (`qr.ts`, `qrcode-generator` épinglé) : modules foncés sur fond clair dans les
   deux modes, une marge de quatre modules.
 - **Le brief pièce par pièce** (D24, remplace la page « partie par partie » archivée) : le mur
-  montre « Tout, en vrac » et « Votre composition » ; `/style/brief?m=&partie=` ouvre le panneau
+  prend TOUTE la largeur (T-179, 19/10 : plus de colonne à droite, archive
+  `composition-colonne-2026-10/`) ; une barre « Votre composition » en bas montre les choix en
+  IMAGES et ce qui manque, « Voir ma composition » ouvre une feuille (portail dans `.ec-contenu`)
+  où l'on valide le brief. Chaque geste passe par `jouer()` (`Mur.tsx`) : il s'annonce
+  (`role="status"`) et « Annuler » rejoue l'inverse (`gesteInverse`, `pieces.ts`, prouvé au
+  harnais) par le même envoi ; aucune règle de `brief.ts` n'est réécrite à l'écran ; `/style/brief?m=&partie=` ouvre le panneau
   d'UNE partie sur le mur. Aimer une couverture passe par `patchCouvertures` (un brief validé
   repasse « à valider »). Le slug `brief` est réservé (`SLUGS_RESERVES`) : le segment fixe gagne
   sur `style/[slug]`. Migration `20261017_collectif_composition.sql` : sans elle, lecture repliée
