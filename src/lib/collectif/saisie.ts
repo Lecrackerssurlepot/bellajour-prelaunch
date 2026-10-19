@@ -13,6 +13,7 @@
 
 import { EMAIL_PATTERN, suggestionEmail } from "@/lib/atelier/questionnaire";
 import { lireInstant } from "./etats";
+import { estJour } from "./livraison";
 import { lireEntierPositif, reglerPlafondAtelier, type ReglagesPlafond } from "./plafonds";
 import { CONTENUS, REGISTRES, SEGMENTS, type CleContenu, type Registre, type Segment } from "./types";
 
@@ -46,24 +47,80 @@ export const LIBELLE_CHAMP: Record<string, string> = {
   organisation: "Organisation",
   evenement: "Nom de l'événement",
   dates_texte: "Dates de l'événement",
-  registre: "Registre",
+  registre: "Le ton de l'espace",
   cloture_le: "Clôture de la collecte",
-  plafond_participant_atelier: "Photos au plus par participant",
-  plafond_total: "Photos au plus pour toute l'édition",
-  preselection_max: "Présélection remise à l'atelier",
+  livraison_prevue_le: "Livraison souhaitée",
+  plafond_participant_atelier: "Photos par personne",
+  plafond_total: "Photos au total",
+  preselection_max: "La sélection du client",
   pagination_prevue: "Pagination prévue au devis",
   tirage: "Tirage prévu au devis",
   tours_inclus: "Tours de corrections inclus",
   nb_propositions_couverture: "Propositions de couverture au premier tour",
-  couvertures_aimees_max: "Couvertures aimées au plus, par magazine",
+  couvertures_aimees_max: "Couvertures que le client peut aimer",
   styles_segment: "Styles proposés sur le mur",
-  contenus_demandes: "Ce qu'on demande au client",
-  invitation_texte: "Message d'accueil du lien participants",
+  contenus_demandes: "À envoyer par le client",
+  invitation_texte: "Message d'accueil du lien des participants",
   responsable_email: "E-mail du responsable",
   responsable_nom: "Nom du responsable",
   rdv_url: "Lien de rendez-vous",
   magazines: "Magazines",
 };
+
+/* ─────────────────── les six étapes du formulaire (T-186, planche 5) ─────────────────── */
+
+/** Les étapes de la création et des réglages, dans l'ordre où l'on pense : la même liste pour les deux. */
+export const ETAPES_EDITION = [
+  { cle: "client", nom: "Le client" },
+  { cle: "calendrier", nom: "Le calendrier" },
+  { cle: "magazines", nom: "Les magazines" },
+  { cle: "photos", nom: "Les photos" },
+  { cle: "envoyer", nom: "À envoyer par le client" },
+  { cle: "devis", nom: "Le devis" },
+] as const;
+
+export type CleEtape = (typeof ETAPES_EDITION)[number]["cle"];
+
+/** L'étape où vit chaque champ : une erreur du serveur y ramène l'écran et la nomme. */
+export const ETAPE_DU_CHAMP: Record<string, CleEtape> = {
+  organisation: "client",
+  evenement: "client",
+  registre: "client",
+  responsable_nom: "client",
+  responsable_email: "client",
+  rdv_url: "client",
+  cloture_le: "calendrier",
+  dates_texte: "calendrier",
+  livraison_prevue_le: "calendrier",
+  magazines: "magazines",
+  couvertures_aimees_max: "magazines",
+  styles_segment: "magazines",
+  plafond_participant_atelier: "photos",
+  plafond_total: "photos",
+  preselection_max: "photos",
+  invitation_texte: "photos",
+  contenus_demandes: "envoyer",
+  pagination_prevue: "devis",
+  tirage: "devis",
+  tours_inclus: "devis",
+  nb_propositions_couverture: "devis",
+};
+
+/** Le rang (0 à 5) de l'étape d'un champ ; un champ inconnu ramène à la première. */
+export function rangEtapeDuChamp(champ: string): number {
+  const cle = ETAPE_DU_CHAMP[champ];
+  const i = ETAPES_EDITION.findIndex((e) => e.cle === cle);
+  return i === -1 ? 0 : i;
+}
+
+/** Ce que l'écran sait de l'édition avant la saisie : les plafonds (curseur du client) et la clôture en base. */
+export type ActuelEdition = ReglagesPlafond & { cloture_le?: string | null };
+
+/** Deux instants dans la même minute : un champ `datetime-local` ne garde pas les secondes. */
+function memeMinute(t: number, iso: string | null | undefined): boolean {
+  const a = iso ? lireInstant(iso) : null;
+  return a !== null && Math.floor(a / 60_000) === Math.floor(t / 60_000);
+}
 
 function texte(v: unknown, max: number): string {
   return typeof v === "string" ? v.trim().slice(0, max) : "";
@@ -107,15 +164,28 @@ export type SaisieEdition =
  * moins un magazine sont exigés. Modification : seuls les champs présents
  * sont lus. Les plafonds passent par `reglerPlafondAtelier`, qui ramène le
  * curseur du client s'il dépasse (sinon la contrainte de la base refuserait).
+ *
+ * La clôture (T-186) : une date PASSÉE est refusée à la création, et en
+ * réglage SEULEMENT si on la change (comparée à `actuel.cloture_le`, à la
+ * minute : le champ de l'écran ne garde pas les secondes). Une édition close
+ * doit rester réglable : son tirage ou ses magazines se changent sans toucher
+ * à sa clôture. Inchangée, la clôture n'est pas réécrite (les secondes d'une
+ * clôture posée par « Clore maintenant » restent celles de la base).
+ *
+ * La livraison souhaitée (`livraison_prevue_le`, `AAAA-MM-JJ`) ne se lit qu'à
+ * la CRÉATION : elle devient `livraison: { prevue_le }`. En réglage, le jsonb
+ * `livraison` appartient à l'onglet Livraison, qui le FUSIONNE ; d'ici, il ne
+ * s'écrit jamais (il écraserait l'adresse).
  */
 export function lireSaisieEdition(
   corps: unknown,
   mode: "creation" | "modification",
-  actuel: ReglagesPlafond = {
+  actuel: ActuelEdition = {
     plafond_participant_atelier: null,
     plafond_participant_client: null,
     plafond_total: null,
-  }
+  },
+  maintenant: Date = new Date()
 ): SaisieEdition {
   const s = (corps && typeof corps === "object" ? corps : {}) as Record<string, unknown>;
   const erreurs: Erreur[] = [];
@@ -144,8 +214,18 @@ export function lireSaisieEdition(
       const t = lireInstant(brut);
       if (t === null) {
         erreurs.push({ champ: "cloture_le", message: "Date de clôture illisible." });
+      } else if (mode === "modification" && memeMinute(t, actuel.cloture_le)) {
+        /* Inchangée : rien à écrire, et une clôture passée reste ce qu'elle est. */
+      } else if (t <= maintenant.getTime()) {
+        erreurs.push({ champ: "cloture_le", message: "Clôture de la collecte : cette date est déjà passée. Choisir une date à venir." });
       } else e.cloture_le = new Date(t).toISOString();
     }
+  }
+
+  if (mode === "creation") {
+    const jour = typeof s.livraison_prevue_le === "string" ? s.livraison_prevue_le.trim() : "";
+    if (jour && !estJour(jour)) erreurs.push({ champ: "livraison_prevue_le", message: "Livraison souhaitée : jour illisible." });
+    else if (jour) e.livraison = { prevue_le: jour };
   }
 
   for (const c of ENTIERS_POSITIFS) {

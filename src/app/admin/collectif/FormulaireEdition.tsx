@@ -1,23 +1,50 @@
 "use client";
 
-/* Le formulaire d'une édition : le même pour l'ouvrir (/nouvelle) et pour la
-   régler (la fiche). La règle est dans `@/lib/collectif/saisie`, relue par la
-   route ; ce composant ne fait que la montrer.
+/* Le formulaire d'une édition, en SIX ÉTAPES (T-186, planche 5 du 19/10, validée
+   par Mathias) : le même pour l'ouvrir (/nouvelle) et pour la régler (l'onglet
+   « Réglages et liens » de la fiche). La règle est dans `@/lib/collectif/saisie`,
+   relue par la route ; ce composant ne fait que la montrer.
 
-   ⚠️ AUCUN CHIFFRE PRÉ-REMPLI. Un champ chiffré vide part vide, la base le
-   garde à null et la fiche l'écrit [À FIXER] (PRD §0.3, §12). Les valeurs des
-   maquettes (30, 2000, 300, 24, 120, 2, 3) sont des exemples, pas des
-   décisions.
+   - Les étapes, dans l'ordre où l'on pense : le client, le calendrier, les
+     magazines, les photos, ce que le client doit envoyer, le devis
+     (`ETAPES_EDITION`). Un rail à gauche (horizontal sur téléphone), une étape
+     à la fois, « ← étape précédente » et « étape suivante → » qui la nomment.
+   - En création, « Créer l'édition » est au bout. La saisie est relue AVANT
+     l'envoi par la même règle (`lireSaisieEdition`, module pur) : un champ fautif
+     ramène à son étape et la nomme ; une erreur du serveur fait de même
+     (`rangEtapeDuChamp`). Puis l'écran « L'édition est créée » (T-187).
+   - En réglages, « Enregistrer » à chaque étape, et JAMAIS une carte dans une
+     carte : le rail et le corps sont deux verres posés côte à côte, sans cadre
+     autour ni cadres dedans (Mathias trouvait les cinq cadres brouillons).
 
-   La clôture se tape à l'heure de PARIS et part en instant ISO avec fuseau
-   (`instantDeParis`) : l'heure de la machine n'est pas celle de Paris. */
+   ⚠️ AUCUN CHIFFRE PRÉ-REMPLI. Un champ chiffré vide part vide, la base le garde
+   à null et la fiche l'écrit [À FIXER] (PRD §0.3, §12).
 
-import { useState } from "react";
+   La clôture se choisit en un clic (« Dans 2 semaines »…) ou au calendrier, à
+   23 h 59 heure de PARIS par défaut, et part en instant ISO avec fuseau
+   (`instantDeParis`). L'instant présent vient du SERVEUR (prop `maintenant`) :
+   les raccourcis ne dépendent pas du fuseau de l'ordinateur de l'atelier, et le
+   rendu reste pur. En réglages, une clôture inchangée n'est pas renvoyée : une
+   édition close reste réglable (saisie.ts). */
+
+import { useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { suggestionEmail } from "@/lib/atelier/questionnaire";
-import { instantDeParis } from "@/lib/collectif/dates";
-import { MAX_MAGAZINES } from "@/lib/collectif/saisie";
-import { CONTENUS } from "@/lib/collectif/types";
+import {
+  champCloture,
+  formaterHeure,
+  formaterJourCourt,
+  HEURE_CLOTURE,
+  joursEntre,
+  lireChampCloture,
+  phraseDuree,
+  pucesCloture,
+} from "@/lib/collectif/calendrier";
+import { contenuClient } from "@/lib/collectif/contenus";
+import { instantDeParis, versChampParis } from "@/lib/collectif/dates";
+import { formaterJour } from "@/lib/collectif/livraison";
+import { ETAPES_EDITION, lireSaisieEdition, MAX_MAGAZINES, rangEtapeDuChamp } from "@/lib/collectif/saisie";
+import { CONTENUS, type CleContenu } from "@/lib/collectif/types";
 
 export type MagazineFormulaire = { id: string | null; nom: string; vide: boolean };
 
@@ -27,6 +54,8 @@ export type ValeursEdition = {
   dates_texte: string;
   registre: string;
   cloture_local: string;
+  /** `AAAA-MM-JJ`. Écrit seulement à la création ; en réglages, lu pour la frise (l'onglet Livraison le règle). */
+  livraison_prevue_le: string;
   plafond_participant_atelier: string;
   plafond_total: string;
   preselection_max: string;
@@ -45,59 +74,126 @@ export type ValeursEdition = {
 };
 
 type Props =
-  | { mode: "creation"; initiales: ValeursEdition }
-  | { mode: "modification"; id: string; initiales: ValeursEdition; plafondClient: number | null };
+  | { mode: "creation"; initiales: ValeursEdition; maintenant: string }
+  | {
+      mode: "modification";
+      id: string;
+      initiales: ValeursEdition;
+      maintenant: string;
+      /** Le jour où l'édition a été ouverte (`AAAA-MM-JJ`, Paris) : le premier jalon de la frise. */
+      ouverteLe: string;
+      plafondClient: number | null;
+    };
 
 type Erreurs = Record<string, string>;
 
-const CHIFFRES: { champ: keyof ValeursEdition; label: string; aide?: string; min: number }[] = [
-  { champ: "plafond_participant_atelier", label: "Photos au plus par participant", aide: "Le responsable peut baisser ce nombre, jamais le dépasser.", min: 1 },
-  { champ: "plafond_total", label: "Photos au plus pour toute l'édition", aide: "Compte tout le monde sauf l'atelier.", min: 1 },
-  { champ: "preselection_max", label: "Présélection remise à l'atelier", aide: "Le client peut présélectionner, jamais obligé.", min: 0 },
-];
+/* Ce que l'atelier lit sur chaque case (la planche 5) ; ce que le client voit
+   vient de `contenuClient` (le nom de la case dans son espace). */
+const CASES: Record<CleContenu, string> = {
+  logo: "Le logo, en vectoriel",
+  programme: "Le programme",
+  mot: "Le mot du dirigeant",
+  liste: "La liste des participants",
+  rubrique: "Une rubrique à contenu fourni",
+};
 
-const CHIFFRES_BAT: { champ: keyof ValeursEdition; label: string; aide?: string; min: number }[] = [
-  { champ: "pagination_prevue", label: "Pagination prévue au devis", aide: "Indicative. La pagination réelle est lue dans chaque PDF déposé.", min: 1 },
-  { champ: "tirage", label: "Tirage prévu au devis", min: 1 },
-  { champ: "tours_inclus", label: "Tours de corrections inclus", min: 1 },
-  { champ: "nb_propositions_couverture", label: "Propositions de couverture au premier tour", aide: "Le client les voit avec le premier bon à tirer.", min: 1 },
-];
+const TONS = [
+  { valeur: "entreprise_vous", libelle: "Vous · entreprise" },
+  { valeur: "ecole_tu", libelle: "Tu · école" },
+] as const;
+
+const SEGMENTS_MUR = [
+  { valeur: "tous", libelle: "Tous" },
+  { valeur: "entreprise", libelle: "Entreprise" },
+  { valeur: "ecole", libelle: "École" },
+] as const;
+
+const DERNIERE = ETAPES_EDITION.length - 1;
+
+/** Une étape est « faite » si on l'a vue et que ses champs exigés sont remplis. */
+function etapeComplete(i: number, v: ValeursEdition): boolean {
+  if (i === 0) return Boolean(v.organisation.trim() && v.evenement.trim() && v.responsable_email.trim());
+  if (i === 2) return v.magazines.length > 0 && v.magazines.every((m) => m.nom.trim());
+  return true;
+}
+
+/** « « Le client » », « « Le client » et « Le devis » ». */
+function nommerEtapes(rangs: number[]): string {
+  const noms = rangs.map((r) => `« ${ETAPES_EDITION[r].nom} »`);
+  return noms.length > 1 ? `${noms.slice(0, -1).join(", ")} et ${noms[noms.length - 1]}` : noms[0] ?? "";
+}
 
 export default function FormulaireEdition(props: Props) {
   const router = useRouter();
+  const uid = useId();
+  const haut = useRef<HTMLFormElement>(null);
+  const rail = useRef<HTMLOListElement>(null);
+  const creation = props.mode === "creation";
   const [v, setV] = useState<ValeursEdition>(props.initiales);
   const [erreurs, setErreurs] = useState<Erreurs>({});
   const [message, setMessage] = useState<{ ok: boolean; texte: string } | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  const [etape, setEtape] = useState(0);
+  const [vues, setVues] = useState<number[]>([0]);
+  const [calendrier, setCalendrier] = useState(false);
+  const [heure, setHeure] = useState(HEURE_CLOTURE);
+
+  const maintenantMs = Date.parse(props.maintenant);
+  const aujourdhui = versChampParis(props.maintenant).slice(0, 10);
+  const cloture = lireChampCloture(v.cloture_local);
+  const puces = pucesCloture(aujourdhui, v.cloture_local);
+  const suggestion = v.responsable_email.includes("@") ? suggestionEmail(v.responsable_email.trim().toLowerCase()) : null;
+  const enErreur = [...new Set(Object.keys(erreurs).map(rangEtapeDuChamp))];
 
   const maj = <K extends keyof ValeursEdition>(champ: K, valeur: ValeursEdition[K]) => {
     setV((x) => ({ ...x, [champ]: valeur }));
     setMessage(null);
   };
 
-  const suggestion = v.responsable_email.includes("@") ? suggestionEmail(v.responsable_email.trim().toLowerCase()) : null;
+  function aller(i: number) {
+    const cible = Math.max(0, Math.min(DERNIERE, i));
+    setEtape(cible);
+    setVues((x) => (x.includes(cible) ? x : [...x, cible]));
+    /* Sur téléphone, l'étape suivante commence en haut : on y remonte si le haut du formulaire est sorti de l'écran,
+       et le rail (qui y défile de côté) montre l'étape où l'on va. */
+    const f = haut.current;
+    if (f && f.getBoundingClientRect().top < 0) f.scrollIntoView({ block: "start" });
+    rail.current?.children[cible]?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
 
-  async function envoyer(e: React.FormEvent) {
-    e.preventDefault();
+  function signaler(parChamp: Erreurs) {
+    setErreurs(parChamp);
+    const rangs = [...new Set(Object.keys(parChamp).map(rangEtapeDuChamp))].sort((a, b) => a - b);
+    aller(rangs[0] ?? 0);
+    setMessage({ ok: false, texte: `Rien n'est enregistré : à corriger dans ${nommerEtapes(rangs)}.` });
+  }
+
+  function choisirCloture(champ: string) {
+    maj("cloture_local", champ);
+    setErreurs((x) => {
+      const reste = { ...x };
+      delete reste.cloture_le;
+      return reste;
+    });
+  }
+
+  async function envoyer() {
     if (envoi) return;
     const locales: Erreurs = {};
+    /* En réglages, une clôture inchangée ne repart pas : une édition close reste réglable. */
+    const clotureChangee = creation || v.cloture_local !== props.initiales.cloture_local;
     let cloture_le = "";
-    if (v.cloture_local.trim()) {
+    if (clotureChangee && v.cloture_local.trim()) {
       const iso = instantDeParis(v.cloture_local);
       if (!iso) locales.cloture_le = "Cette heure n'existe pas à Paris (changement d'heure) ou la date est illisible.";
       else cloture_le = iso;
     }
-    if (Object.keys(locales).length) {
-      setErreurs(locales);
-      return;
-    }
 
-    const corps = {
+    const corps: Record<string, unknown> = {
       organisation: v.organisation,
       evenement: v.evenement,
       dates_texte: v.dates_texte,
       registre: v.registre,
-      cloture_le,
       plafond_participant_atelier: v.plafond_participant_atelier,
       plafond_total: v.plafond_total,
       preselection_max: v.preselection_max,
@@ -114,6 +210,18 @@ export default function FormulaireEdition(props: Props) {
       rdv_url: v.rdv_url,
       magazines: v.magazines.map((m) => ({ id: m.id, nom: m.nom })),
     };
+    if (clotureChangee) corps.cloture_le = cloture_le;
+    if (creation) corps.livraison_prevue_le = v.livraison_prevue_le;
+
+    /* La même règle que la route, avant de rien envoyer : le champ fautif ramène à son étape. */
+    if (creation && !Object.keys(locales).length) {
+      const relue = lireSaisieEdition(corps, "creation", undefined, new Date());
+      if (!relue.ok) for (const er of relue.erreurs) locales[er.champ] = locales[er.champ] ? `${locales[er.champ]} ${er.message}` : er.message;
+    }
+    if (Object.keys(locales).length) {
+      signaler(locales);
+      return;
+    }
 
     setEnvoi(true);
     setErreurs({});
@@ -136,8 +244,7 @@ export default function FormulaireEdition(props: Props) {
         if (json.erreurs?.length) {
           const parChamp: Erreurs = {};
           for (const er of json.erreurs) parChamp[er.champ] = parChamp[er.champ] ? `${parChamp[er.champ]} ${er.message}` : er.message;
-          setErreurs(parChamp);
-          setMessage({ ok: false, texte: "Rien n'est enregistré : corriger les champs signalés." });
+          signaler(parChamp);
         } else if (json.error === "migration_collectif_absente") {
           setMessage({ ok: false, texte: "La migration collectif n'est pas appliquée." });
         } else {
@@ -146,7 +253,7 @@ export default function FormulaireEdition(props: Props) {
         return;
       }
       if (props.mode === "creation" && json.id) {
-        router.push(`/admin/collectif/${json.id}`);
+        router.push(`/admin/collectif/creee/${json.id}`);
         return;
       }
       setMessage({ ok: true, texte: "Enregistré." });
@@ -165,7 +272,11 @@ export default function FormulaireEdition(props: Props) {
       </span>
     ) : null;
 
-  const texteChamp = (champ: keyof ValeursEdition, label: string, opts: { requis?: boolean; aide?: string; large?: boolean; type?: string } = {}) => (
+  const texte = (
+    champ: keyof ValeursEdition,
+    label: string,
+    opts: { requis?: boolean; aide?: string; type?: string; placeholder?: string; large?: boolean } = {}
+  ) => (
     <label className={`eca-champ${opts.large ? " eca-champ--large" : ""}`}>
       <span className="eca-champ-label">
         {label}
@@ -175,181 +286,354 @@ export default function FormulaireEdition(props: Props) {
         className="eca-input"
         type={opts.type ?? "text"}
         value={v[champ] as string}
+        placeholder={opts.placeholder}
         onChange={(e) => maj(champ, e.target.value as never)}
-        required={opts.requis}
+        aria-invalid={erreurs[champ] ? true : undefined}
       />
       {opts.aide ? <span className="eca-champ-aide">{opts.aide}</span> : null}
       {erreur(champ)}
     </label>
   );
 
-  const chiffre = (c: { champ: keyof ValeursEdition; label: string; aide?: string; min: number }) => (
-    <label className="eca-champ" key={c.champ}>
-      <span className="eca-champ-label">{c.label}</span>
-      <input
-        className="eca-input"
-        type="number"
-        inputMode="numeric"
-        min={c.min}
-        step={1}
-        value={v[c.champ] as string}
-        placeholder="[À FIXER]"
-        onChange={(e) => maj(c.champ, e.target.value as never)}
-      />
-      {c.aide ? <span className="eca-champ-aide">{c.aide}</span> : null}
-      {erreur(c.champ)}
+  /* Un chiffre porte son unité (« 30 photos par personne ») ; vide, il reste à fixer (ou facultatif). */
+  const chiffre = (champ: keyof ValeursEdition, label: string, unite: string, aide: string, min: number, vide = "à fixer") => (
+    <label className="eca-champ">
+      <span className="eca-champ-label">{label}</span>
+      <span className="eca-unite">
+        <input
+          className="eca-input eca-input--chiffre"
+          type="number"
+          inputMode="numeric"
+          min={min}
+          step={1}
+          value={v[champ] as string}
+          placeholder={vide}
+          onChange={(e) => maj(champ, e.target.value as never)}
+          aria-invalid={erreurs[champ] ? true : undefined}
+        />
+        <span className="eca-unite-texte">{unite}</span>
+      </span>
+      <span className="eca-champ-aide">{aide}</span>
+      {erreur(champ)}
     </label>
   );
 
-  const dernier = v.magazines[v.magazines.length - 1];
-  const peutRetirer = v.magazines.length > 1 && dernier && (dernier.id === null || dernier.vide);
+  const choix = (
+    champ: "registre" | "styles_segment",
+    label: string,
+    options: readonly { valeur: string; libelle: string }[],
+    aide: string
+  ) => (
+    <div className="eca-champ">
+      <span className="eca-champ-label" id={`${uid}-${champ}`}>
+        {label}
+      </span>
+      <span className="eca-choix-liste" role="radiogroup" aria-labelledby={`${uid}-${champ}`}>
+        {options.map((o) => (
+          <button
+            key={o.valeur}
+            type="button"
+            role="radio"
+            aria-checked={v[champ] === o.valeur}
+            className="eca-choix"
+            onClick={() => maj(champ, o.valeur)}
+          >
+            {o.libelle}
+          </button>
+        ))}
+      </span>
+      <span className="eca-champ-aide">{aide}</span>
+      {erreur(champ)}
+    </div>
+  );
 
-  return (
-    <form className="eca-form" onSubmit={envoyer} noValidate>
-      <fieldset className="eca-fieldset">
-        <legend className="eca-legende">Le client et l&apos;événement</legend>
-        <div className="eca-champs">
-          {texteChamp("organisation", "Organisation", { requis: true })}
-          {texteChamp("evenement", "Nom de l'événement", { requis: true })}
-          {texteChamp("dates_texte", "Dates de l'événement", { aide: "En clair, tel que le client le lira (ex. du 2 au 4 octobre)." })}
-          <label className="eca-champ">
-            <span className="eca-champ-label">Registre *</span>
-            <select className="eca-select" value={v.registre} onChange={(e) => maj("registre", e.target.value)}>
-              <option value="entreprise_vous">Entreprise, vouvoiement</option>
-              <option value="ecole_tu">École, tutoiement</option>
-            </select>
-            {erreur("registre")}
-          </label>
-        </div>
-      </fieldset>
+  const dernierMag = v.magazines[v.magazines.length - 1];
+  const peutRetirer = v.magazines.length > 1 && dernierMag && (dernierMag.id === null || dernierMag.vide);
 
-      <fieldset className="eca-fieldset">
-        <legend className="eca-legende">La collecte des photos</legend>
-        <div className="eca-champs">
-          <label className="eca-champ">
-            <span className="eca-champ-label">Clôture de la collecte</span>
+  /* ─────────────────────────────── la frise ─────────────────────────────── */
+  const instantCloture = cloture ? Date.parse(instantDeParis(v.cloture_local) ?? "") : NaN;
+  const ecart = cloture ? joursEntre(aujourdhui, cloture.jour) : null;
+  /* En création, la durée depuis aujourd'hui ; en réglages, ce qu'il reste (ou que c'est fini). */
+  const duree =
+    !cloture || ecart === null
+      ? null
+      : !creation && Number.isFinite(instantCloture) && instantCloture <= maintenantMs
+        ? "La collecte est close"
+        : !creation && ecart > 0
+          ? `Encore ${phraseDuree(ecart)}`
+          : phraseDuree(ecart);
+  const debut = props.mode === "creation" ? aujourdhui : props.ouverteLe;
+
+  const frise = (
+    <div className="eca-frise" role="list" aria-label="Le calendrier de l'édition">
+      <span className="eca-jalon eca-jalon--plein" role="listitem">
+        <i aria-hidden="true" />
+        <b>{creation ? "Aujourd'hui" : "Ouverture"}</b>
+        <span>{formaterJourCourt(debut)}</span>
+        <span>{creation ? "les liens s'ouvrent" : "les liens se sont ouverts"}</span>
+      </span>
+      <span className="eca-jalon" role="listitem">
+        <i aria-hidden="true" />
+        <b>L&apos;événement</b>
+        <span>{v.dates_texte.trim() || "à préciser"}</span>
+      </span>
+      <span className={cloture ? "eca-jalon eca-jalon--plein" : "eca-jalon eca-jalon--alerte"} role="listitem">
+        <i aria-hidden="true" />
+        <b>Clôture</b>
+        <span>{cloture ? `${formaterJourCourt(cloture.jour)}, ${formaterHeure(cloture.heure)}` : "à fixer"}</span>
+        {cloture ? <span>les liens se ferment</span> : null}
+      </span>
+      <span className={v.livraison_prevue_le ? "eca-jalon" : "eca-jalon eca-jalon--creux"} role="listitem">
+        <i aria-hidden="true" />
+        <b>Livraison</b>
+        <span>{v.livraison_prevue_le ? formaterJourCourt(v.livraison_prevue_le) : "facultatif"}</span>
+        {creation ? null : <span>{"réglée dans l'onglet Livraison"}</span>}
+      </span>
+      {duree ? <span className="eca-duree">{duree}</span> : null}
+    </div>
+  );
+
+  /* ─────────────────────────────── les étapes ─────────────────────────────── */
+  const etapes: React.ReactNode[] = [
+    /* 1 · Le client */
+    <>
+      <div className="eca-deux-champs">
+        {texte("organisation", "Organisation", { requis: true, placeholder: "Lycée Montaigne, Maison Aubier…" })}
+        {texte("evenement", "Nom de l'événement", { requis: true, placeholder: "Promo 2026, Séminaire d'automne…" })}
+      </div>
+      {choix("registre", "Le ton de l'espace", TONS, "Tout l'espace et les mails parlent ainsi.")}
+      <div className="eca-deux-champs">
+        {texte("responsable_nom", "Nom du responsable")}
+        {texte("responsable_email", "E-mail du responsable", {
+          requis: true,
+          type: "email",
+          aide: "Reçoit le lien de l'espace ; c'est lui qui valide le bon à tirer.",
+        })}
+      </div>
+      {suggestion ? (
+        <p className="eca-encart">
+          Faute de frappe ? Vouliez-vous dire <strong>{suggestion}</strong> ?{" "}
+          <button type="button" className="adm-btn adm-btn--ghost" onClick={() => maj("responsable_email", suggestion)}>
+            Corriger
+          </button>
+        </p>
+      ) : null}
+      {texte("rdv_url", "Lien de rendez-vous (Google)", {
+        type: "url",
+        placeholder: "https://calendar.app.google/…",
+        aide: "Le client l'ouvre depuis son espace pour prendre rendez-vous, tant que les créneaux de l'atelier n'y sont pas reliés. https:// seulement.",
+      })}
+      {creation ? (
+        <p className="eca-champ-aide">
+          <label className="eca-case eca-case--eteinte">
+            <input type="checkbox" disabled /> Édition de démonstration
+          </label>{" "}
+          Arrive plus tard (photos et notes fictives, aucun mail, hors chiffres).
+        </p>
+      ) : null}
+    </>,
+
+    /* 2 · Le calendrier */
+    <>
+      {frise}
+      <div className="eca-champ">
+        <span className="eca-champ-label" id={`${uid}-cloture`}>
+          Clôture de la collecte
+        </span>
+        <span className="eca-choix-liste" role="group" aria-labelledby={`${uid}-cloture`}>
+          {puces.map((p) => (
+            <button
+              key={p.cle}
+              type="button"
+              className="eca-choix"
+              aria-pressed={p.actif}
+              onClick={() => (p.cle === "choisie" ? setCalendrier(true) : choisirCloture(p.champ))}
+            >
+              {p.libelle}
+            </button>
+          ))}
+          <button type="button" className="eca-choix" aria-expanded={calendrier} onClick={() => setCalendrier((c) => !c)}>
+            Choisir au calendrier…
+          </button>
+        </span>
+        {calendrier ? (
+          <span className="eca-calendrier">
             <input
               className="eca-input"
-              type="datetime-local"
-              value={v.cloture_local}
-              onChange={(e) => maj("cloture_local", e.target.value)}
+              type="date"
+              min={aujourdhui}
+              value={cloture?.jour ?? ""}
+              aria-label="Jour de la clôture"
+              onChange={(e) => choisirCloture(e.target.value ? champCloture(e.target.value, cloture?.heure ?? heure) : "")}
             />
-            <span className="eca-champ-aide">Heure de Paris. Le lien participants se ferme tout seul à cette heure-là.</span>
-            {erreur("cloture_le")}
-          </label>
-          {CHIFFRES.map(chiffre)}
-          {props.mode === "modification" ? (
-            <p className="eca-champ eca-champ-aide">
-              Réglé par le responsable au curseur :{" "}
-              {props.plafondClient === null ? "pas encore (le plafond de l'atelier s'applique)" : `${props.plafondClient} photos par personne`}.
-            </p>
-          ) : null}
-          <label className="eca-champ eca-champ--large">
-            <span className="eca-champ-label">Message d&apos;accueil du lien participants</span>
-            <textarea
-              className="eca-textarea"
-              value={v.invitation_texte}
-              onChange={(e) => maj("invitation_texte", e.target.value)}
+            <span>à</span>
+            <input
+              className="eca-input eca-input--heure"
+              type="time"
+              value={cloture?.heure ?? heure}
+              aria-label="Heure de la clôture, heure de Paris"
+              onChange={(e) => {
+                if (!/^\d{2}:\d{2}$/.test(e.target.value)) return;
+                setHeure(e.target.value);
+                if (cloture) choisirCloture(champCloture(cloture.jour, e.target.value));
+              }}
             />
-            <span className="eca-champ-aide">La phrase d&apos;invitation que lisent les participants. Rien n&apos;est promis à leur place.</span>
-            {erreur("invitation_texte")}
-          </label>
-        </div>
-      </fieldset>
-
-      <fieldset className="eca-fieldset">
-        <legend className="eca-legende">Le magazine et le bon à tirer</legend>
-        <div className="eca-champs">
-          {CHIFFRES_BAT.map(chiffre)}
-          {texteChamp("responsable_email", "E-mail du responsable du bon à tirer", {
-            requis: true,
-            type: "email",
-            aide: "Une seule personne, la seule à pouvoir choisir le style, noter et valider.",
-          })}
-          {texteChamp("responsable_nom", "Nom du responsable")}
-          {suggestion ? (
-            <p className="eca-encart eca-champ--large">
-              Faute de frappe ? Vouliez-vous dire <strong>{suggestion}</strong> ?{" "}
-              <button type="button" className="adm-btn adm-btn--ghost" onClick={() => maj("responsable_email", suggestion)}>
-                Corriger
+            <span className="eca-champ-aide">heure de Paris</span>
+          </span>
+        ) : null}
+        <span className="eca-champ-aide">
+          {`À ${formaterHeure(cloture?.heure ?? HEURE_CLOTURE)}, heure de Paris. Les liens des participants se ferment seuls ; vous pouvez clore plus tôt depuis la fiche, ou le client peut terminer lui-même.`}
+          {cloture ? (
+            <>
+              {" "}
+              <button type="button" className="eca-lien-texte" onClick={() => choisirCloture("")}>
+                Retirer la date
               </button>
-            </p>
+            </>
           ) : null}
-          {texteChamp("rdv_url", "Lien de rendez-vous (Google)", {
-            large: true,
-            type: "url",
-            aide: "La page de prise de rendez-vous, ouverte dans un nouvel onglet. https:// seulement.",
-          })}
-        </div>
-      </fieldset>
-
-      <fieldset className="eca-fieldset">
-        <legend className="eca-legende">Les magazines et le mur des styles</legend>
-        <div className="eca-champs">
-          <div className="eca-champ eca-champ--large">
-            <span className="eca-champ-label">Magazines *</span>
-            <div className="eca-magazines">
-              {v.magazines.map((m, i) => (
-                <div className="eca-magazine" key={m.id ?? `nouveau-${i}`}>
-                  <span className="eca-magazine-rang">Magazine {i + 1}</span>
-                  <input
-                    className="eca-input"
-                    value={m.nom}
-                    placeholder="Le séminaire, la soirée…"
-                    onChange={(e) =>
-                      maj(
-                        "magazines",
-                        v.magazines.map((x, j) => (j === i ? { ...x, nom: e.target.value } : x))
-                      )
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="eca-barre">
-              <button
-                type="button"
-                className="adm-btn adm-btn--ghost"
-                disabled={v.magazines.length >= MAX_MAGAZINES}
-                onClick={() => maj("magazines", [...v.magazines, { id: null, nom: "", vide: true }])}
-              >
-                Ajouter un magazine
-              </button>
-              {peutRetirer ? (
-                <button
-                  type="button"
-                  className="adm-btn adm-btn--ghost"
-                  onClick={() => maj("magazines", v.magazines.slice(0, -1))}
-                >
-                  Retirer le dernier
-                </button>
-              ) : null}
-            </div>
-            <span className="eca-champ-aide">
-              Dans un magazine, tout l&apos;intérieur suit le style choisi ; seule la couverture peut venir d&apos;un autre style.
-            </span>
-            {erreur("magazines")}
-          </div>
-          {chiffre({ champ: "couvertures_aimees_max", label: "Couvertures aimées au plus, par magazine", min: 0 })}
+        </span>
+        {erreur("cloture_le")}
+      </div>
+      <div className="eca-deux-champs">
+        {texte("dates_texte", "Dates de l'événement", {
+          placeholder: "du 2 au 4 octobre",
+          aide: "Pour l'atelier seulement : elles s'affichent en tête de la fiche.",
+        })}
+        {creation ? (
           <label className="eca-champ">
-            <span className="eca-champ-label">Styles proposés sur le mur</span>
-            <select className="eca-select" value={v.styles_segment} onChange={(e) => maj("styles_segment", e.target.value)}>
-              <option value="tous">Tous</option>
-              <option value="entreprise">Entreprise seulement</option>
-              <option value="ecole">École seulement</option>
-            </select>
+            <span className="eca-champ-label">Livraison souhaitée</span>
+            <input
+              className="eca-input"
+              type="date"
+              min={aujourdhui}
+              value={v.livraison_prevue_le}
+              onChange={(e) => maj("livraison_prevue_le", e.target.value)}
+              aria-invalid={erreurs.livraison_prevue_le ? true : undefined}
+            />
+            <span className="eca-champ-aide">Facultatif. Le client la voit dans « Livraison ».</span>
+            {erreur("livraison_prevue_le")}
           </label>
-        </div>
-      </fieldset>
+        ) : (
+          <div className="eca-champ">
+            <span className="eca-champ-label">Livraison souhaitée</span>
+            <span className="eca-input eca-input--lu">{v.livraison_prevue_le ? formaterJour(v.livraison_prevue_le) : "Pas encore fixée"}</span>
+            <span className="eca-champ-aide">
+              {"Elle se règle dans l'onglet "}
+              <a href="?onglet=livraison" data-onglet="livraison" className="eca-lien-texte">
+                Livraison
+              </a>
+              {", avec l'adresse. Le client la voit dans « Livraison »."}
+            </span>
+          </div>
+        )}
+      </div>
+      {cloture ? null : (
+        <p className="eca-avert" role="note">
+          <b aria-hidden="true">!</b>
+          <span>{"Sans date de clôture, la collecte reste ouverte jusqu'à ce que quelqu'un la ferme."}</span>
+        </p>
+      )}
+    </>,
 
-      <fieldset className="eca-fieldset">
-        <legend className="eca-legende">Ce qu&apos;on demande au client dans son espace</legend>
-        <div className="eca-cases">
-          {CONTENUS.map((c) => (
-            <label className="eca-case" key={c.cle}>
+    /* 3 · Les magazines */
+    <>
+      <div className="eca-champ">
+        <span className="eca-champ-label">Magazines *</span>
+        <div className="eca-magazines">
+          {v.magazines.map((m, i) => (
+            <div className="eca-magazine" key={m.id ?? `nouveau-${i}`}>
+              <span className="eca-magazine-rang">Magazine {i + 1}</span>
+              <input
+                className="eca-input"
+                value={m.nom}
+                placeholder="Le séminaire, la soirée…"
+                aria-label={`Nom du magazine ${i + 1}`}
+                onChange={(e) =>
+                  maj(
+                    "magazines",
+                    v.magazines.map((x, j) => (j === i ? { ...x, nom: e.target.value } : x))
+                  )
+                }
+              />
+            </div>
+          ))}
+        </div>
+        <div className="eca-barre">
+          <button
+            type="button"
+            className="eca-bouton"
+            disabled={v.magazines.length >= MAX_MAGAZINES}
+            onClick={() => maj("magazines", [...v.magazines, { id: null, nom: "", vide: true }])}
+          >
+            Ajouter un magazine
+          </button>
+          {peutRetirer ? (
+            <button type="button" className="eca-bouton" onClick={() => maj("magazines", v.magazines.slice(0, -1))}>
+              Retirer le dernier
+            </button>
+          ) : null}
+        </div>
+        <span className="eca-champ-aide">
+          {"Chaque magazine a son brief : le client le compose pièce par pièce sur le mur (palette, typographies, doubles pages, couvertures), d'un seul style ou de plusieurs. On ne retire que le dernier, et seulement s'il est encore vide."}
+        </span>
+        {erreur("magazines")}
+      </div>
+      <div className="eca-deux-champs">
+        {chiffre(
+          "couvertures_aimees_max",
+          "Couvertures que le client peut aimer",
+          "couvertures par magazine",
+          "Il les marque sur le mur ; au-delà, il en retire une. Vide : il ne peut en aimer aucune.",
+          0
+        )}
+        {choix(
+          "styles_segment",
+          "Styles proposés sur le mur",
+          SEGMENTS_MUR,
+          "Le mur ne montre que les styles publiés pour ce public, et ceux faits pour tous. « Tous » les montre tous."
+        )}
+      </div>
+    </>,
+
+    /* 4 · Les photos */
+    <>
+      <div className="eca-deux-champs">
+        {chiffre("plafond_participant_atelier", "Photos par personne", "photos par personne", "Le responsable peut baisser ce nombre, jamais le dépasser.", 1)}
+        {chiffre("plafond_total", "Photos au total", "photos au total", "Compte tout le monde sauf l'atelier.", 1)}
+      </div>
+      {props.mode === "modification" ? (
+        <p className="eca-champ-aide">
+          Réglé par le responsable au curseur :{" "}
+          {props.plafondClient === null ? "pas encore (le plafond de l'atelier s'applique)" : `${props.plafondClient} photos par personne`}.
+        </p>
+      ) : null}
+      {chiffre(
+        "preselection_max",
+        "La sélection du client",
+        "photos qu'il peut mettre de côté",
+        "Facultatif. Il lit « Ma sélection, 12 sur ce nombre » : un repère, pas une limite.",
+        0,
+        "facultatif"
+      )}
+      <label className="eca-champ">
+        <span className="eca-champ-label">Message d&apos;accueil du lien des participants</span>
+        <textarea className="eca-textarea" value={v.invitation_texte} onChange={(e) => maj("invitation_texte", e.target.value)} />
+        <span className="eca-champ-aide">{"La phrase que lisent les participants en ouvrant le lien. Rien n'est promis à leur place."}</span>
+        {erreur("invitation_texte")}
+      </label>
+    </>,
+
+    /* 5 · À envoyer par le client */
+    <>
+      <div className="eca-cases-effet">
+        {CONTENUS.map((c) => {
+          const coche = v.contenus_demandes.includes(c.cle);
+          const chezLui = contenuClient(c.cle)?.libelle ?? c.libelle;
+          return (
+            <label className="eca-case-effet" key={c.cle}>
               <input
                 type="checkbox"
-                checked={v.contenus_demandes.includes(c.cle)}
+                checked={coche}
                 onChange={(e) =>
                   maj(
                     "contenus_demandes",
@@ -357,35 +641,109 @@ export default function FormulaireEdition(props: Props) {
                   )
                 }
               />
-              {c.libelle}
+              <span>
+                {CASES[c.cle]}
+                <small>{coche ? `Une case « ${chezLui} » dans son espace, qu'il doit remplir.` : "Non demandée : la case n'apparaît pas chez lui."}</small>
+              </span>
             </label>
-          ))}
+          );
+        })}
+      </div>
+      {erreur("contenus_demandes")}
+    </>,
+
+    /* 6 · Le devis */
+    <>
+      <div className="eca-deux-champs">
+        {chiffre("pagination_prevue", "Pagination prévue au devis", "pages", "Indicative : la pagination réelle se lit dans chaque PDF déposé.", 1)}
+        {chiffre("tirage", "Tirage prévu au devis", "exemplaires", "Le client le lit dans ses documents.", 1)}
+        {chiffre("tours_inclus", "Tours de corrections inclus", "tours", "Les tours de bon à tirer compris dans le devis.", 1)}
+        {chiffre(
+          "nb_propositions_couverture",
+          "Propositions de couverture au premier tour",
+          "propositions",
+          "Montrées avec le premier bon à tirer. Vide : le premier tour ne se publie pas.",
+          1
+        )}
+      </div>
+      <p className="eca-champ-aide">{"Aucun chiffre n'est proposé d'avance : un champ vide reste « à fixer »."}</p>
+    </>,
+  ];
+
+  const precedente = etape > 0 ? ETAPES_EDITION[etape - 1] : null;
+  const suivante = etape < DERNIERE ? ETAPES_EDITION[etape + 1] : null;
+
+  return (
+    <form
+      ref={haut}
+      className={creation ? "eca-form-grille" : "eca-form-grille eca-form-grille--reglages"}
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        /* Entrée dans un champ : en création, l'étape suivante ; au bout, ou en réglages, l'envoi. */
+        if (creation && etape < DERNIERE) aller(etape + 1);
+        else void envoyer();
+      }}
+    >
+      <ol ref={rail} className="eca-form-rail" aria-label="Les étapes">
+        {ETAPES_EDITION.map((et, i) => {
+          const statut = i === etape ? "on" : enErreur.includes(i) ? "erreur" : creation && vues.includes(i) && etapeComplete(i, v) ? "fait" : "";
+          return (
+            <li key={et.cle}>
+              <button
+                type="button"
+                className={statut ? `eca-form-pas eca-form-pas--${statut}` : "eca-form-pas"}
+                aria-current={i === etape ? "step" : undefined}
+                onClick={() => aller(i)}
+              >
+                <span className="eca-form-signe" aria-hidden="true">
+                  {statut === "fait" ? "✓" : statut === "erreur" ? "!" : i + 1}
+                </span>
+                <span>{et.nom}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+
+      <div className="eca-form-corps">
+        <h2 className="eca-form-titre">{ETAPES_EDITION[etape].nom}</h2>
+        {etapes[etape]}
+        <div className="eca-form-pied">
+          <span className="eca-form-nav">
+            {precedente ? (
+              <button type="button" className="eca-bouton" aria-label={`Étape précédente : ${precedente.nom}`} onClick={() => aller(etape - 1)}>
+                ← {precedente.nom}
+              </button>
+            ) : null}
+            {!creation && suivante ? (
+              <button type="button" className="eca-bouton" aria-label={`Étape suivante : ${suivante.nom}`} onClick={() => aller(etape + 1)}>
+                {suivante.nom} →
+              </button>
+            ) : null}
+          </span>
+          {/* ⚠️ Deux CLÉS distinctes : sans elles, React garde le même <button> et le passe en
+              `submit` pendant le clic sur « Le devis → », et le navigateur envoie le formulaire
+              (vu à la recette du 19/10 : l'édition se créait sans passer par la dernière étape). */}
+          {creation && suivante ? (
+            <button key="suivante" type="button" className="eca-bouton eca-bouton--plein" aria-label={`Étape suivante : ${suivante.nom}`} onClick={() => aller(etape + 1)}>
+              {suivante.nom} →
+            </button>
+          ) : (
+            <button key="envoyer" type="submit" className="eca-bouton eca-bouton--plein" disabled={envoi}>
+              {envoi ? "Enregistrement…" : creation ? "Créer l'édition" : "Enregistrer les modifications"}
+            </button>
+          )}
         </div>
-        {props.mode === "creation" ? (
-          <p className="eca-champ-aide" style={{ marginTop: 12 }}>
-            <label className="eca-case eca-case--eteinte">
-              <input type="checkbox" disabled /> Édition de démonstration
-            </label>{" "}
-            Arrive plus tard (photos et notes fictives, aucun mail, hors chiffres).
+        {creation && etape === DERNIERE ? (
+          <p className="eca-champ-aide eca-form-rien">
+            {"Rien ne part chez le client à cette étape : l'écran suivant vous propose d'envoyer les liens."}
           </p>
         ) : null}
-      </fieldset>
-
-      <div className="eca-barre">
-        <button type="submit" className="adm-btn" disabled={envoi}>
-          {envoi
-            ? "Enregistrement…"
-            : props.mode === "creation"
-              ? "Créer l'édition et obtenir les liens"
-              : "Enregistrer les modifications"}
-        </button>
         {message ? (
           <p className={`eca-message ${message.ok ? "eca-message--ok" : "eca-message--erreur"}`} role="status">
             {message.texte}
           </p>
-        ) : null}
-        {props.mode === "creation" ? (
-          <p className="eca-champ-aide">Aucun mail ne part à cette étape. Vous envoyez les liens vous-même, après relecture.</p>
         ) : null}
       </div>
     </form>

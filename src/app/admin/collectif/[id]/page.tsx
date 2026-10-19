@@ -127,6 +127,7 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
     dates_texte: e.dates_texte ?? "",
     registre: e.registre,
     cloture_local: versChampParis(e.cloture_le),
+    livraison_prevue_le: e.livraison?.prevue_le ?? "",
     plafond_participant_atelier: s(e.plafond_participant_atelier),
     plafond_total: s(e.plafond_total),
     preselection_max: s(e.preselection_max),
@@ -503,10 +504,15 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
           ),
           reglages: (
             <div className="eca-reglages">
-              <section className="ate-carte">
-                <h2 className="ate-carte-titre">Réglages de l&apos;édition</h2>
-                <FormulaireEdition mode="modification" id={e.id} initiales={initiales} plafondClient={e.plafond_participant_client} />
-              </section>
+              {/* T-186 : les six étapes de la création, JAMAIS une carte dans une carte. */}
+              <FormulaireEdition
+                mode="modification"
+                id={e.id}
+                initiales={initiales}
+                maintenant={maintenantRdv.toISOString()}
+                ouverteLe={versChampParis(e.created_at).slice(0, 10)}
+                plafondClient={e.plafond_participant_client}
+              />
               <div className="eca-pile">
                 <PanneauLiens id={e.id} liens={liens} />
                 <EnvoiLienResponsable id={e.id} />

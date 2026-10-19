@@ -1,7 +1,7 @@
 ---
 id: T-186
 titre: Le formulaire de création d'une édition cache ce que font ses dates et ses cases, et une de ses aides est fausse
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: libre
@@ -52,4 +52,30 @@ création et ses cases ; « cocher au niveau des dates » = le choix de la clôt
 traités par la planche.
 
 ## Ce qui a été fait
-Rien encore (maquette seulement).
+19/10/2026, planche 5 codée (non commitée, en attente de relecture) :
+- `FormulaireEdition.tsx` réécrit en SIX ÉTAPES (`ETAPES_EDITION`, saisie.ts) : rail à gauche
+  (horizontal et défilant sur téléphone), une étape à la fois, « ← Le client » / « Les magazines → »
+  qui nomment l'étape, « Créer l'édition » au bout avec « Rien ne part chez le client à cette
+  étape : l'écran suivant vous propose d'envoyer les liens. » La saisie est relue avant l'envoi
+  par la même règle (`lireSaisieEdition`) ; une erreur, locale ou du serveur, ramène à l'étape
+  du champ et la nomme (`ETAPE_DU_CHAMP`). Réglages (onglet de la fiche) : les mêmes étapes,
+  « Enregistrer les modifications » à chacune, plus de carte autour du formulaire ni de cadres
+  dedans.
+- Le calendrier : frise (aujourd'hui, l'événement, la clôture, la livraison) et durée calculée
+  (`calendrier.ts`, pur) ; clôture en un clic (« Dans 2 semaines », « Dans 3 semaines », « Dans
+  1 mois », « Choisir au calendrier… »), 23 h 59 heure de Paris par défaut, le jour choisi rangé
+  parmi les raccourcis ; vide, l'avertissement rouge. Clôture PASSÉE refusée par `saisie.ts` à la
+  création, et en réglage seulement si on la change (prouvé au harnais). « Dates de l'événement »
+  dit la vérité. Livraison souhaitée réglable à la création (écrite dans `livraison`), montrée
+  et renvoyée à l'onglet Livraison en réglages.
+- Chaque chiffre porte son unité, chaque case dit son effet chez le client, l'aide fausse du
+  08/10 est remplacée par D24, « Le ton de l'espace » en deux boutons. Aucun chiffre par défaut.
+- Défaut trouvé à la recette et corrigé : « Le devis → » créait l'édition (React recyclait le
+  bouton en `submit` pendant le clic). Clés distinctes, verrouillé au harnais.
+- Vérifié : tsc, lint (0 erreur), build, `verif-atelier`, `verif-collectif` (preuves T-186
+  ajoutées) ; captures 1440 et 375 px en Chrome headless, aucune écriture en base.
+
+Écarts à la planche, assumés : rail de 196 px au lieu de 170 ; en réglages le rail passe au-dessus
+du corps (deux rangs de trois) car la colonne des liens occupe la droite ; la sélection du client
+n'écrit pas « jusqu'à » (le nombre est un repère affiché au client, rien ne l'impose) ; l'aide de
+la clôture garde « ou le client peut terminer lui-même » (D25), vrai quand T-182 sera livré.

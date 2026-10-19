@@ -80,6 +80,16 @@ export function libelleRole(role: Exclude<Role, "atelier" | "participant">): str
   return role === "responsable" ? "Responsable du BAT" : "Équipe · lecture seule";
 }
 
+/**
+ * « Partager avec mon équipe » (T-187) : le lien d'équipe ne se montre qu'au
+ * RESPONSABLE, y compris sur un appareil pas encore reconnu (T-154 : il lit
+ * comme l'équipe mais tient le lien du responsable, qui donne plus que celui
+ * qu'il partage). L'équipe l'a déjà ; un participant ne voit jamais l'espace.
+ */
+export function voitLienEquipe(role: Role, appareilInconnu: boolean): boolean {
+  return role === "responsable" || (role === "equipe" && appareilInconnu);
+}
+
 /** Vous ou tu, selon le registre de l'édition. */
 export function parler(registre: Registre) {
   const tu = registre === "ecole_tu";

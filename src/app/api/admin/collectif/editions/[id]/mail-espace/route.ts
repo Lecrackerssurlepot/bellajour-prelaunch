@@ -4,16 +4,17 @@ import { quiEstConnecteRequete } from "@/lib/admin-session";
 import { makeSupabase } from "@/lib/supabase";
 import { controleAppareilActif } from "@/lib/collectif/appareil";
 import { estUuid } from "@/lib/collectif/cles";
-import { formaterJourParis } from "@/lib/collectif/dates";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
-import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
+import { origineDepuis } from "@/lib/collectif/liens";
 import { envoyerMailCollectif, mailsCollectifOuverts, VAR_MAILS_COLLECTIF } from "@/lib/collectif/mails";
-import { mailEspacePret } from "@/lib/collectif/mailsTextes";
+import { donneesEspacePret, mailEspacePret } from "@/lib/collectif/mailsTextes";
 import { ERREUR_MIGRATION_ABSENTE, tableAbsente } from "@/lib/collectif/migration";
 import type { EditionLigne } from "@/lib/collectif/types";
 
 /**
- * /api/admin/collectif/editions/[id]/mail-espace — « Votre espace est prêt » (T-146).
+ * /api/admin/collectif/editions/[id]/mail-espace — « Votre espace est prêt » (T-146),
+ * avec les trois liens depuis T-187. Appelée par l'onglet « Réglages et liens » ET
+ * par l'écran « L'édition est créée » (`/admin/collectif/creee/[id]`).
  *
  * GET : l'aperçu HTML du mail, tel qu'il partirait (l'atelier le relit avant).
  * POST `{ verifier: true }` : à qui, quel objet, et si les mails des éditions
@@ -38,16 +39,10 @@ async function preparer(request: Request, id: string) {
   if (error) return { erreur: tableAbsente(error.code) ? NextResponse.json({ error: ERREUR_MIGRATION_ABSENTE }, { status: 503 }) : NextResponse.json({ error: "lecture_impossible" }, { status: 500 }) } as const;
   if (!data) return { erreur: NextResponse.json({ error: "introuvable" }, { status: 404 }) } as const;
   const origine = origineDepuis(request.headers.get("x-forwarded-host") ?? request.headers.get("host"), request.headers.get("x-forwarded-proto"));
-  const mail = mailEspacePret({
-    tu: data.registre === "ecole_tu",
-    organisation: data.organisation,
-    evenement: data.evenement,
-    responsable: data.responsable_nom,
-    lien: liensEdition(origine, data).responsable,
-    cloture: data.cloture_le ? formaterJourParis(data.cloture_le) : null,
-    avecCode: controleAppareilActif(process.env),
-    retrouver: `${origine.replace(/^https?:\/\//, "")}/espace`,
-  });
+  /* Les TROIS liens (T-187) : le sien, celui de l'équipe, celui des participants
+     (`liensEdition`, par `donneesEspacePret`). Aucun ne va au journal : le code du
+     verrou porte une empreinte du lien du responsable, jamais le lien. */
+  const mail = mailEspacePret(donneesEspacePret(data, origine, controleAppareilActif(process.env)));
   return { supabase, edition: data, mail } as const;
 }
 

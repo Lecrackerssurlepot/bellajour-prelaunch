@@ -1,0 +1,23 @@
+.eca-root .eca-liens-compacts {
+  display: flex;
+  flex-direction: column;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-liens-compacts li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--bj-veil-8);
+  font-size: var(--bj-fs-sm);
+}
+.eca-root .eca-liens-compacts li:last-child {
+  border-bottom: 0;
+}
+.eca-root .eca-liens-compacts .eca-barre {
+  margin: 0;
+  flex-wrap: nowrap;
+}

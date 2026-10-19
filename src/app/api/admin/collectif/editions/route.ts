@@ -11,8 +11,9 @@ import { lireSaisieEdition, planMagazines } from "@/lib/collectif/saisie";
 /**
  * POST /api/admin/collectif/editions — ouvrir une édition (PRD §3, étape 2).
  *
- * Crée la ligne, ses trois tokens et ses magazines. AUCUN MAIL ne part :
- * l'atelier copie les liens et les envoie lui-même (le mail E1 est la phase 7).
+ * Crée la ligne, ses trois tokens et ses magazines. AUCUN MAIL ne part : l'écran
+ * suivant (« L'édition est créée », `/admin/collectif/creee/[id]`, T-187) PROPOSE
+ * d'envoyer les liens, en deux temps, par la route `mail-espace`.
  *
  * Il n'y a pas de transaction entre deux appels PostgREST : si les magazines
  * ne s'écrivent pas, l'édition tout juste créée est retirée aussitôt (rien
@@ -41,7 +42,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
   }
 
-  const saisie = lireSaisieEdition(corps, "creation");
+  /* `new Date()` : une clôture déjà passée est refusée (T-186). La livraison
+     souhaitée, si elle est donnée, entre dans `livraison` (insertion : rien à
+     écraser). */
+  const saisie = lireSaisieEdition(corps, "creation", undefined, new Date());
   if (!saisie.ok) return NextResponse.json({ error: "saisie", erreurs: saisie.erreurs }, { status: 422 });
   const plan = planMagazines([], saisie.magazines ?? []);
   if (!plan.ok) return NextResponse.json({ error: "saisie", erreurs: [{ champ: "magazines", message: plan.message }] }, { status: 422 });

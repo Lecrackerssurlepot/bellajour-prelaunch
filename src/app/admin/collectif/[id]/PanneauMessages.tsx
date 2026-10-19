@@ -21,11 +21,11 @@ export default function PanneauMessages({
   maintenant: string;
 }) {
   return (
-    <section className="ate-carte">
-      <div className="eca-panneau-messages-tete">
-        <h2 className="ate-carte-titre">Messages</h2>
+    <section className="eca-carte">
+      <span className="eca-carte-tete">
+        <h2 className="eca-carte-titre">Messages</h2>
         <MarquerNonLu id={id} possible={initiaux.some((m) => m.auteur === "client")} />
-      </div>
+      </span>
       <ConversationAtelier id={id} initiaux={initiaux} premierNouveau={premierNouveau} maintenant={maintenant} />
     </section>
   );
