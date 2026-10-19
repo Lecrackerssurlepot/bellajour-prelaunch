@@ -19,6 +19,12 @@ SEULEMENT (`COLLECTIF_OUVERT` en Preview), jamais en production.
   confirmation par lots de 25, photos réduites à 5200 px au plus, HEIC envoyés tels quels.
 - Le CORS du coffre accepte `*.vercel.app` (vérifié le 13/10).
 - Limite connue et dite à l'écran : sur iPhone, l'envoi s'arrête page fermée ou écran verrouillé.
+- 19/10 (audit de performance, simulateur sur le vrai moteur) : rien n'est réduit sous 5 200 px
+  ni aucun HEIC (`reduire.worker.js:34`, `moteur.ts:308`), donc une photo d'iPhone part en
+  original. Pour 500 photos de 3 Mo (hypothèse) : ≈ 14 min à 4 Mbit/s par voie, ≈ 27 min à
+  1,3 Mbit/s ; les 4 voies restent saturées. Le participant garde la page ouverte tout ce temps.
+  Non mesuré : un vrai iPhone (mémoire en 48 Mpx, mise en veille). Voir aussi T-168 (la charge
+  côté serveur de chaque envoi).
 
 ## Ce que je propose
 Une version d'essai avec `COLLECTIF_OUVERT=1` ; un envoi de 2000 photos depuis un ordinateur,
