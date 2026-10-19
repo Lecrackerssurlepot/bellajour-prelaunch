@@ -55,7 +55,13 @@ export default function PanneauCollecte({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ provenance, selection: choisies }),
       });
-      if (!rep.ok) throw new Error(String(rep.status));
+      if (!rep.ok) {
+        /* Un lot incomplet (T-167 : moins de photos lues que la base n'en compte) se DIT, avec
+           les deux nombres : jamais « 1 000 photos écrites » sur un lot qui en a perdu. */
+        const refus = (await rep.json().catch(() => null)) as { message?: unknown } | null;
+        setEtat(typeof refus?.message === "string" ? refus.message : "Le lot n'a pas pu se préparer. Réessayer.");
+        return;
+      }
       const { photos } = (await rep.json()) as { photos: { nom: string; url: string | null }[] };
       if (!dossier) {
         const liste = photos.filter((p) => p.url).map((p) => p.url).join("\n");

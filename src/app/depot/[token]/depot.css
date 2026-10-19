@@ -111,6 +111,38 @@
   font-size: 14px;
   color: var(--dp-doux);
 }
+/* Le nom : prénom et nom côte à côte, puis, une fois donné, une ligne figée (participant.ts). */
+.bj-atelier .ec-dp-nom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bj-atelier .ec-dp-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.bj-atelier .ec-dp-duo .ec-dp-input {
+  min-width: 0;
+}
+.bj-atelier .ec-dp-qui {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--dp-filet);
+  background: var(--dp-surface);
+}
+.bj-atelier .ec-dp-qui p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--dp-doux);
+}
+.bj-atelier .ec-dp-qui strong {
+  color: var(--dp-texte);
+  font-weight: 600;
+}
 .bj-atelier .ec-dp-input {
   min-height: 48px;
   padding: 0 14px;

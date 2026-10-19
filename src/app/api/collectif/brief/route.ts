@@ -18,7 +18,7 @@ import {
 import { estUuid } from "@/lib/collectif/cles";
 import { peut } from "@/lib/collectif/droits";
 import { etatEffectif } from "@/lib/collectif/etats";
-import { collectifOuvert } from "@/lib/collectif/interrupteur";
+import { collectifOuvert, stylesOuverts } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
 import { colonneAbsente, ERREUR_COMPOSITION_ABSENTE, MESSAGE_COMPOSITION_ABSENTE } from "@/lib/collectif/migration";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
@@ -68,6 +68,11 @@ export async function POST(request: Request) {
   const action = String(corps.action ?? "");
   const droit = action === "valider" || action === "devalider" ? "valider_brief" : "choisir_style";
   if (!peut(acces.role, droit)) return refusDroit();
+  /* Le choix du style est fermé pour toutes les éditions (interrupteur.ts) : la page montre
+     une vitrine, et aucun geste ne passe, même envoyé à la main. Rien n'est effacé. */
+  if (!stylesOuverts()) {
+    return NextResponse.json({ error: "styles_fermes", message: "Le choix du style n'est pas encore ouvert." }, { status: 409 });
+  }
   const { edition } = acces;
 
   if (!briefModifiable(etatEffectif(edition.etat, edition.cloture_le, new Date()))) {

@@ -10,6 +10,8 @@ import { appareilDeRequete, compterPourPlafond, COOKIE_APPAREIL, lireExistants, 
 import { estCleFichier, LOT_VERIFICATION, lireDeclaration, planDeclaration } from "@/lib/collectif/depot";
 import { estCleProvenance, peut } from "@/lib/collectif/droits";
 import { collecteOuverte } from "@/lib/collectif/etats";
+import { NOM_MAX } from "@/lib/collectif/participant";
+import { nomDeLAppareil } from "@/lib/collectif/participantConnu";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { MESSAGE_PLAFOND, placeRestante } from "@/lib/collectif/plafonds";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
@@ -87,7 +89,8 @@ export async function POST(request: Request) {
   let plafondLien: number | null = null;
   let provenanceId: string | null = null;
   let provenanceType: TypeProvenance = role === "responsable" ? "organisateur" : "participant";
-  let deposant = typeof corps.deposant === "string" ? corps.deposant.trim().slice(0, 80) || null : null;
+  let deposant = typeof corps.deposant === "string" ? corps.deposant.trim().slice(0, NOM_MAX) || null : null;
+  let libelleLien: string | null = null;
   if (role === "participant" && corps.p !== undefined && corps.p !== null && corps.p !== "") {
     if (!estCleProvenance(corps.p)) return NextResponse.json({ error: "provenance_inconnue" }, { status: 404 });
     type Prov = { id: string; type: TypeProvenance; libelle: string | null; sans_plafond: boolean; plafond_par_personne?: number | null; retire_le?: string | null };
@@ -106,8 +109,18 @@ export async function POST(request: Request) {
     provenanceType = prov.type;
     sansPlafond = prov.sans_plafond;
     plafondLien = prov.plafond_par_personne ?? null;
-    deposant = deposant ?? prov.libelle;
+    libelleLien = prov.libelle;
   }
+  const appareilLu = appareilDeRequete(request);
+  /* Le nom ne change plus une fois donné (participant.ts, retours du 19/10 au soir) :
+     celui que CET appareil a déjà donné dans l'édition passe avant celui que le
+     navigateur envoie, même vidé ou retapé autrement. Sans nom, un lien de
+     provenance prête son libellé, comme avant. */
+  if (role === "participant" && appareilLu) {
+    const connu = await nomDeLAppareil(supabase, edition.id, appareilLu, libelleLien);
+    if (connu) deposant = connu;
+  }
+  if (role === "participant") deposant = deposant ?? libelleLien;
   if (role === "responsable") {
     const demande = (corps.provenance ?? {}) as Record<string, unknown>;
     if (TYPES_PROVENANCE.some((t) => t.cle === demande.type)) provenanceType = demande.type as TypeProvenance;
@@ -116,15 +129,15 @@ export async function POST(request: Request) {
     deposant = libelle || edition.responsable_nom || "Le responsable";
   }
 
-  const appareilLu = appareilDeRequete(request);
   const appareil = appareilLu ?? nouvelAppareil();
 
-  const comptes = await compterPourPlafond(supabase, edition.id, appareil, maintenant, plafondLien !== null ? provenanceId : null);
-  if (!comptes) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  /* Les deux lectures sont indépendantes : en parallèle (T-168). */
+  const [comptes, existants] = await Promise.all([
+    compterPourPlafond(supabase, edition.id, appareil, maintenant, plafondLien !== null ? provenanceId : null),
+    lireExistants(supabase, edition.id, declaration.fichiers.map((f) => f.cle)),
+  ]);
+  if (!comptes || !existants) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
   const place = placeRestante(edition, { role, sansPlafond, plafondLien, dejaParAppareil: comptes.parAppareil }, comptes.total);
-
-  const existants = await lireExistants(supabase, edition.id, declaration.fichiers.map((f) => f.cle));
-  if (!existants) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
   const decisions = planDeclaration(declaration.fichiers, existants, place);
 
   /* Les nouvelles s'écrivent en UNE insertion : 25 allers-retours de moins. */

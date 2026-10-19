@@ -61,11 +61,21 @@ export default function ZoneDepot({ tu }: { tu: boolean }) {
           <strong className="ec-zone-depot-titre">
             {recues} sur {vue.total}
           </strong>
-          <span className="ec-texte">{vue.enCours ? `${vue.enCours} en cours d'envoi` : "Toutes les photos sont arrivées."}</span>
+          <span className="ec-texte">
+            {vue.enCours
+              ? `${vue.enCours} en cours d'envoi`
+              : vue.erreurs
+                ? `${vue.erreurs} photo${vue.erreurs > 1 ? "s" : ""} n'${vue.erreurs > 1 ? "ont" : "a"} pas pu partir.`
+                : vue.refusees
+                  ? `Terminé : ${vue.refusees} photo${vue.refusees > 1 ? "s" : ""} refusée${vue.refusees > 1 ? "s" : ""}.`
+                  : "Toutes les photos sont arrivées."}
+          </span>
           <div className="ec-dp-barre-espace" aria-hidden="true">
             <div style={{ width: `${vue.total ? Math.round(((vue.total - vue.enCours) / vue.total) * 100) : 0}%` }} />
           </div>
           {vue.horsLigne ? <p className="ec-note">Connexion interrompue : l&apos;envoi reprend tout seul.</p> : null}
+          {vue.serveurLent ? <p className="ec-note">Le serveur répond lentement : l&apos;envoi reprend tout seul.</p> : null}
+          {vue.ignores ? <p className="ec-note">{vue.ignores} fichier(s) ignoré(s) : ce ne sont pas des photos.</p> : null}
           {vue.raisons.map((r) => (
             <p key={r} className="ec-note ec-note--erreur">
               {r}

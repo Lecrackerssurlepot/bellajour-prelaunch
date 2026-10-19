@@ -200,7 +200,13 @@ export default function FenetreEnvoi({
         <div className="ec-envoi-barre" aria-hidden="true">
           <div style={{ width: `${part}%` }} />
         </div>
-        <span className="ec-note">{fini ? "Terminé" : `${vue.enCours} photo${vue.enCours > 1 ? "s" : ""} en route en ce moment`}</span>
+        <span className="ec-note">
+          {!fini
+            ? `${vue.enCours} photo${vue.enCours > 1 ? "s" : ""} en route en ce moment`
+            : vue.erreurs
+              ? `${vue.erreurs} photo${vue.erreurs > 1 ? "s" : ""} n'${vue.erreurs > 1 ? "ont" : "a"} pas pu partir : « Réessayer » les renvoie.`
+              : "Terminé"}
+        </span>
       </div>
 
       <div className="ec-envoi-cases">
@@ -213,9 +219,15 @@ export default function FenetreEnvoi({
           <span>déjà là, sautées</span>
         </span>
         <span className="ec-envoi-case">
-          <strong>{(vue.erreurs + vue.refusees).toLocaleString("fr-FR")}</strong>
+          <strong>{vue.erreurs.toLocaleString("fr-FR")}</strong>
           <span>à reprendre</span>
         </span>
+        {vue.refusees ? (
+          <span className="ec-envoi-case">
+            <strong>{vue.refusees.toLocaleString("fr-FR")}</strong>
+            <span>refusées</span>
+          </span>
+        ) : null}
       </div>
 
       {vue.dejaLa || vue.dejaAjoutes ? (
@@ -232,6 +244,7 @@ export default function FenetreEnvoi({
         </p>
       ))}
       {vue.horsLigne ? <p className="ec-note">Connexion interrompue : l&apos;envoi reprend tout seul.</p> : null}
+      {vue.serveurLent ? <p className="ec-note">Le serveur répond lentement : l&apos;envoi reprend tout seul.</p> : null}
       {vue.ignores ? <p className="ec-note">{vue.ignores} fichier(s) ignoré(s) : ce ne sont pas des photos.</p> : null}
       {vue.ferme ? <p className="ec-note ec-note--erreur">{vue.ferme}</p> : null}
       {!fini ? (

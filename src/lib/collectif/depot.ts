@@ -26,8 +26,14 @@ import { trancherLot, type Place, type RaisonPlafond } from "./plafonds";
 export const LOT_DECLARATION = 25;
 /** Une confirmation par appel (les HEAD R2 se font par paquets de 8). */
 export const LOT_CONFIRMATION = 25;
-/** La vérification « déjà là ? » d'une reprise : des clés seulement, pas de signature. */
-export const LOT_VERIFICATION = 500;
+/**
+ * La vérification « déjà là ? » d'une reprise : des clés seulement, pas de
+ * signature. 100, pas 500 : les clés partent dans l'URL du filtre `in`
+ * (`lireExistants`), et 500 clés de fichier font 20 à 40 Ko d'URL, au-delà de
+ * la limite de l'API ; 100 en font 8 au plus (mesuré le 19/10, `PAQUET_IN`
+ * dans lignes.ts).
+ */
+export const LOT_VERIFICATION = 100;
 /**
  * Une ligne déclarée et jamais arrivée cesse de compter dans les plafonds
  * passé ce délai : l'URL signée a expiré (1 h), l'envoi est mort. Sans ce

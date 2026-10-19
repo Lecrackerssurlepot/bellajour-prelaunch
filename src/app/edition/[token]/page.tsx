@@ -21,6 +21,7 @@ import { vuesDemandes } from '@/lib/collectif/demandes'
 import { peut } from '@/lib/collectif/droits'
 import { joursAvant, parler, phraseJours } from '@/lib/collectif/espace'
 import { collecteOuverte, etatEffectif } from '@/lib/collectif/etats'
+import { stylesOuverts } from '@/lib/collectif/interrupteur'
 import { origineDepuis } from '@/lib/collectif/liens'
 import { plafondLienMax } from '@/lib/collectif/plafonds'
 import { cheminSection } from '@/lib/collectif/verrous'
@@ -67,7 +68,7 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
 
       <div className="ec-ecran-corps">
         <div className="ec-tdb-grille">
-          <CarteStyle token={token} tableau={tableau} p={p} ecrire={peut(role, 'choisir_style')} />
+          <CarteStyle token={token} tableau={tableau} p={p} ecrire={peut(role, 'choisir_style')} ouverts={stylesOuverts()} />
           <CartePhotos
             token={token}
             ecrire={peut(role, 'deposer_photos')}
@@ -129,11 +130,50 @@ const EVENTAIL = [
   { nom: 'cote-azur', place: 'centre' },
 ] as const
 
+function Eventail() {
+  return (
+    <div className="ec-tdb-eventail" aria-hidden="true">
+      {EVENTAIL.map((c) => (
+        <span key={c.nom} className={`ec-tdb-couv ec-tdb-couv--${c.place}`}>
+          <img
+            src={`/images/v2/accueil/couverture-${c.nom}-360.webp`}
+            srcSet={`/images/v2/accueil/couverture-${c.nom}-360.webp 360w, /images/v2/accueil/couverture-${c.nom}-640.webp 640w`}
+            sizes="(max-width: 520px) 120px, 240px"
+            alt=""
+            decoding="async"
+          />
+        </span>
+      ))}
+    </div>
+  )
+}
+
+function CarteStyleBientot({ token, p }: { token: string; p: <T>(vous: T, toi: T) => T }) {
+  return (
+    <section className="ec-carte ec-tdb-carte ec-tdb-style" aria-labelledby="ec-tdb-style">
+      <div className="ec-tdb-carte-tete">
+        <span className="ec-tdb-etiquette">1 · Le style</span>
+        <span className="ec-tdb-etat">Bientôt</span>
+      </div>
+      <h2 className="ec-tdb-titre" id="ec-tdb-style">
+        {p('L’atelier prépare vos styles', 'L’atelier prépare tes styles')}
+      </h2>
+      <Eventail />
+      <Link href={cheminSection(token, 'style')} prefetch={false} className="ec-bouton ec-bouton--plein">
+        Voir nos magazines
+      </Link>
+    </section>
+  )
+}
+
 /* L'encart Style (PRD §14.2, maquettes du 15/10) : en haut à droite « Fait »
    quand tous les briefs sont validés ; au centre l'éventail ; en bas une tuile
    par magazine (son nom, son style, ce qui reste à faire, qui y mène) et
    « Modifier ». */
-function CarteStyle({ token, tableau, p, ecrire }: { token: string; tableau: Tableau; p: <T>(vous: T, toi: T) => T; ecrire: boolean }) {
+function CarteStyle({ token, tableau, p, ecrire, ouverts }: { token: string; tableau: Tableau; p: <T>(vous: T, toi: T) => T; ecrire: boolean; ouverts: boolean }) {
+  /* Le choix du style est fermé (interrupteur.ts, 19/10 au soir) : l'encart garde l'éventail,
+     dit « Bientôt » et mène à la vitrine, jamais à un mur ou un brief fermés. */
+  if (!ouverts) return <CarteStyleBientot token={token} p={p} />
   const mags = tableau.magazines
   const n = mags.length
   const avecStyle = mags.filter((m) => m.style).length
@@ -182,19 +222,7 @@ function CarteStyle({ token, tableau, p, ecrire }: { token: string; tableau: Tab
         {titre}
       </h2>
 
-      <div className="ec-tdb-eventail" aria-hidden="true">
-        {EVENTAIL.map((c) => (
-          <span key={c.nom} className={`ec-tdb-couv ec-tdb-couv--${c.place}`}>
-            <img
-              src={`/images/v2/accueil/couverture-${c.nom}-360.webp`}
-              srcSet={`/images/v2/accueil/couverture-${c.nom}-360.webp 360w, /images/v2/accueil/couverture-${c.nom}-640.webp 640w`}
-              sizes="(max-width: 520px) 120px, 240px"
-              alt=""
-              decoding="async"
-            />
-          </span>
-        ))}
-      </div>
+      <Eventail />
 
       {avecStyle === 0 ? (
         <Link href={mur} prefetch={false} className="ec-bouton ec-bouton--plein">

@@ -27,6 +27,14 @@ function champs(v: unknown): string {
     .join(", ");
 }
 
+/**
+ * Les lignes écrites UNE FOIS PAR LOT de photos (25 au plus) : des centaines
+ * par édition. La fiche de l'atelier ne les lit pas dans son journal (ses 100
+ * dernières lignes), sinon elles chassaient tout le reste (T-167). Elles
+ * restent écrites et lisibles en base.
+ */
+export const JOURNAL_DE_LOT = ["photos_confirmees", "metadonnees_lues"] as const;
+
 /** Une ligne de journal → une phrase. Un type inconnu reste lisible (son nom brut). */
 export function phraseEvenement(type: string, payload: Record<string, unknown>): string {
   const par = nom(payload.par);

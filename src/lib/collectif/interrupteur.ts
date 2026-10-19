@@ -40,3 +40,27 @@ export function collectifOuvert(): boolean {
   }
   return lu.ouvert;
 }
+
+/* ─────────────────────────── le choix du style (19/10 au soir) ─────────────────────────── */
+
+/**
+ * `COLLECTIF_STYLES` : le mur des styles et le brief, pour TOUTES les éditions.
+ * Fermé par défaut (absent, vide ou incompris = fermé, comme `COLLECTIF_MAILS`).
+ *
+ * Décision de Mathias, 19/10 au soir (première vraie édition, Audencia) : les
+ * visuels du mur ne sont pas prêts (« des visuels très moches »). Fermé, la
+ * page Style montre une VITRINE de nos magazines (images statiques déjà
+ * publiées sur bellajour.fr) et dit que le choix ouvre bientôt ; la route
+ * `/api/collectif/brief` refuse tout geste (409 `styles_fermes`). Rien n'est
+ * effacé : un brief déjà composé reste en base, intact. Poser
+ * `COLLECTIF_STYLES=1` sur Vercel rouvre le mur sans redéploiement.
+ */
+export const VAR_STYLES = "COLLECTIF_STYLES";
+
+export function stylesOuverts(): boolean {
+  const lu = lireInterrupteur(process.env[VAR_STYLES]);
+  if (lu.incompris) {
+    console.error(`[collectif] ${VAR_STYLES}="${process.env[VAR_STYLES]}" n'est ni oui ni non : le choix du style reste fermé.`);
+  }
+  return lu.ouvert;
+}

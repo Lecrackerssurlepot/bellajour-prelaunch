@@ -6,6 +6,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { estUuid } from "@/lib/collectif/cles";
 import { libelleProvenance } from "@/lib/collectif/grille";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
+import { lireToutesLesLignes } from "@/lib/collectif/lignes";
 import { ERREUR_MIGRATION_ABSENTE, tableAbsente } from "@/lib/collectif/migration";
 
 /**
@@ -56,19 +57,41 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     provenance = null;
   }
 
-  const { data, error } = await makeSupabase()
-    .from("collectif_photos")
-    .select("id, r2_key, nom_origine, provenance_type, deposant, prise_le, lieu_ville, lieu_pays, signalee, preselection")
-    .eq("edition_id", id)
-    .not("confirmee_le", "is", null)
-    .order("confirmee_le", { ascending: true })
-    .limit(20000)
-    .returns<Ligne[]>();
+  /* T-167 : le COMPTE d'abord, puis les lignes par tranches de 1 000 (le plafond de l'API).
+     Lues d'un coup, les photos s'arrêtaient à 1 000 sans erreur et l'atelier composait le
+     magazine sans les autres. Une photo arrivée PENDANT la lecture s'ajoute à la fin (tri
+     par `confirmee_le`) : lire plus que le compte n'est pas une perte, lire moins en est une. */
+  const supabase = makeSupabase();
+  const compte = await supabase.from("collectif_photos").select("id", { count: "exact", head: true }).eq("edition_id", id).not("confirmee_le", "is", null);
+  if (compte.error) {
+    if (tableAbsente(compte.error.code)) return NextResponse.json({ error: ERREUR_MIGRATION_ABSENTE }, { status: 503 });
+    return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  }
+  const { data, error } = await lireToutesLesLignes<Ligne>(
+    () =>
+      supabase
+        .from("collectif_photos")
+        .select("id, r2_key, nom_origine, provenance_type, deposant, prise_le, lieu_ville, lieu_pays, signalee, preselection")
+        .eq("edition_id", id)
+        .not("confirmee_le", "is", null)
+        .returns<Ligne[]>(),
+    { colonne: "confirmee_le", croissant: true },
+    "photos du lot"
+  );
   if (error) {
     if (tableAbsente(error.code)) return NextResponse.json({ error: ERREUR_MIGRATION_ABSENTE }, { status: 503 });
     return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
   }
-  const lot = (data ?? []).filter((p) => (!provenance || libelleProvenance(p.provenance_type, p.deposant) === provenance) && (!selection || p.preselection));
+  const total = compte.count;
+  if (total === null || data.length < total) {
+    const message =
+      total === null
+        ? "Le nombre de photos de l'édition est illisible : aucun lot n'est préparé. Réessayer."
+        : `${data.length.toLocaleString("fr-FR")} photos lues sur ${total.toLocaleString("fr-FR")} arrivées : le lot serait incomplet, rien n'est écrit. Réessayer.`;
+    console.error(`[collectif] lot de l'édition ${id} : ${data.length} lues, ${total ?? "?"} comptées`);
+    return NextResponse.json({ error: "lot_incomplet", message, lues: data.length, total }, { status: 500 });
+  }
+  const lot = data.filter((p) => (!provenance || libelleProvenance(p.provenance_type, p.deposant) === provenance) && (!selection || p.preselection));
   const noms = nomsDeFichiers(
     lot.map((p) => ({ nom: p.signalee ? `A-NE-PAS-PUBLIER ${p.nom_origine ?? "photo"}` : p.nom_origine, priseLe: p.prise_le, lieuVille: p.lieu_ville, lieuPays: p.lieu_pays }))
   );
@@ -81,5 +104,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       }
     })
   );
-  return NextResponse.json({ photos, provenance, selection });
+  /* `total` : les photos arrivées de l'édition, comptées par la base (le lot d'une provenance
+     ou de la sélection en est une part) ; `lues` : celles que la lecture a rendues. */
+  return NextResponse.json({ photos, provenance, selection, total, lues: data.length });
 }

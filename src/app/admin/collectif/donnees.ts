@@ -14,7 +14,8 @@ import { signerGet } from "@/lib/atelier/r2";
 import { etatEffectif, LIBELLE_ETAT_EDITION, type EtatEdition } from "@/lib/collectif/etats";
 import { colonneAbsente, tableAbsente } from "@/lib/collectif/migration";
 import { prochaineEtape, type Prochaine } from "@/lib/collectif/prochaine";
-import { phraseEvenement } from "@/lib/collectif/recit";
+import { JOURNAL_DE_LOT, phraseEvenement } from "@/lib/collectif/recit";
+import { lireToutesLesLignes } from "@/lib/collectif/lignes";
 import { manquesPourPublier } from "@/lib/collectif/styles";
 import { libelleTypeDocument } from "@/lib/collectif/documents";
 import { aideAtelier, iconeDe, lireDemandes, nomDeLEnvoi, type FormeDemande } from "@/lib/collectif/demandes";
@@ -300,6 +301,22 @@ export type Fiche = {
   nonLusAtelier: string[];
 };
 
+type LignePhotoFiche = {
+  id: string;
+  empreinte: string | null;
+  prise_le: string | null;
+  ordre: number | null;
+  confirmee_le: string;
+  provenance_type: string;
+  provenance_id: string | null;
+  deposant: string | null;
+  role_deposant: string;
+  appareil_id: string | null;
+  signalee: boolean;
+  vignette_key: string | null;
+  preselection: boolean;
+};
+
 export async function chargerEdition(
   supabase: SupabaseClient,
   id: string,
@@ -318,10 +335,15 @@ export async function chargerEdition(
 
   const [mags, journal, docs, fil, photos, contenus, nonLus] = await Promise.all([
     lireMagazinesFiche(supabase, id),
+    /* Les 100 dernières lignes, SANS les deux qui s'écrivent une fois par lot de photos
+       (`JOURNAL_DE_LOT`) : des centaines par édition, elles chassaient tout le reste
+       (gestes, messages, « Collecte terminée par … »). Les arrivées se lisent dans
+       l'onglet Photos (le compte, les dernières vignettes). */
     supabase
       .from("collectif_evenements")
       .select("id, type, payload, created_at")
       .eq("edition_id", id)
+      .not("type", "in", `(${JOURNAL_DE_LOT.join(",")})`)
       .order("created_at", { ascending: false })
       .limit(100),
     supabase
@@ -330,12 +352,20 @@ export async function chargerEdition(
       .eq("edition_id", id)
       .order("created_at", { ascending: false }),
     lireMessages(supabase, id, null),
-    supabase
-      .from("collectif_photos")
-      .select("id, provenance_type, provenance_id, deposant, role_deposant, appareil_id, signalee, vignette_key, empreinte, prise_le, ordre, confirmee_le, preselection")
-      .eq("edition_id", id)
-      .not("confirmee_le", "is", null)
-      .limit(20000),
+    /* Toutes les photos arrivées, par tranches de 1 000 (le plafond de l'API, T-167),
+       dans l'ordre d'arrivée : le rang de secours des doublons (`ordre ?? i`) ne change
+       plus d'un affichage à l'autre. */
+    lireToutesLesLignes<LignePhotoFiche>(
+      () =>
+        supabase
+          .from("collectif_photos")
+          .select("id, provenance_type, provenance_id, deposant, role_deposant, appareil_id, signalee, vignette_key, empreinte, prise_le, ordre, confirmee_le, preselection")
+          .eq("edition_id", id)
+          .not("confirmee_le", "is", null)
+          .returns<LignePhotoFiche[]>(),
+      { colonne: "confirmee_le", croissant: true },
+      "photos de la fiche"
+    ),
     lireContenusFiche(supabase, id),
     supabase
       .from("collectif_messages")
@@ -371,21 +401,7 @@ export async function chargerEdition(
     toursParMag.set(t.magazine_id, c);
   }
 
-  const lignesPhotos = (photos.data ?? []) as {
-    id: string;
-    empreinte: string | null;
-    prise_le: string | null;
-    ordre: number | null;
-    confirmee_le: string;
-    provenance_type: string;
-    provenance_id: string | null;
-    deposant: string | null;
-    role_deposant: string;
-    appareil_id: string | null;
-    signalee: boolean;
-    vignette_key: string | null;
-    preselection: boolean;
-  }[];
+  const lignesPhotos = photos.data ?? [];
   const choisies = lignesPhotos.filter((p) => p.preselection);
   const fin = ((journal.data ?? []) as { type: string; payload: Record<string, unknown> | null; created_at: string }[]).find(
     (j) => j.type === "geste" && j.payload?.cle === "terminer_collecte"
