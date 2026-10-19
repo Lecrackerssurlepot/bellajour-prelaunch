@@ -39,6 +39,12 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
     }
     case "magazines_modifies":
       return `Magazines modifiés par ${par}.`;
+    case "magazine_retire": {
+      /* T-190 : un magazine encore vide retiré en réglages ; les suivants ont pris son numéro. */
+      const titre = typeof payload.nom === "string" && payload.nom ? `« ${payload.nom} »` : "Un magazine";
+      const rang = typeof payload.rang === "number" ? ` (magazine ${payload.rang})` : "";
+      return `${titre}${rang} retiré par ${par}.`;
+    }
     case "geste": {
       const g = GESTES[payload.cle as GesteCle];
       return g ? `${g.libelle}, par ${par}.` : `Geste ${String(payload.cle)}, par ${par}.`;

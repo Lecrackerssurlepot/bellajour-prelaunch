@@ -1,0 +1,370 @@
+/* Le formulaire d'une édition, planches 10 et 11 du 19/10 au soir (T-190) : les
+   chiffres en pastille, une poubelle par magazine, l'aperçu de la page des
+   participants. Importée par `FormulaireEdition.tsx` (le calendrier a la sienne,
+   `calendrier.css`). Tout sous `.eca-root`, classes `eca-fm-*` : une feuille chargée
+   ne se décharge jamais. ⚠️ Cette feuille arrive AVANT `collectif.css` dans la page
+   (la page importe le formulaire, puis la feuille) : pour reprendre une règle de
+   `collectif.css`, un sélecteur PLUS précis, jamais l'ordre. */
+
+.eca-root {
+  /* La planche : le verre fort des pastilles et le voile bleu du survol. */
+  --eca-fm-verre-fort: rgba(255, 255, 255, 0.92);
+  --eca-fm-accent-doux: rgba(74, 144, 217, 0.14);
+  --eca-fm-ombre: 0 14px 36px rgba(16, 24, 40, 0.06);
+  /* La page des participants, en Charbon (depot.css). */
+  --eca-tel-cadre: #0c0d10;
+  --eca-tel-fond: #17181c;
+  --eca-tel-lueur: #3a2a22;
+  --eca-tel-texte: #ecedf0;
+  --eca-tel-doux: #a9adb5;
+  --eca-tel-accent: #e3a27f;
+  --eca-tel-bouton: rgba(227, 162, 127, 0.45);
+  --eca-tel-champ: rgba(255, 255, 255, 0.06);
+  --eca-tel-champ-bord: rgba(255, 255, 255, 0.1);
+  --eca-tel-ombre: 0 24px 60px rgba(16, 24, 40, 0.18);
+}
+
+/* ─────────────── un chiffre : « − 30 photos par personne + » ─────────────── */
+
+.eca-root .eca-fm-pas {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  min-height: 44px;
+  max-width: 100%;
+  border: 1px solid var(--bj-veil-16);
+  border-radius: 999px;
+  background: var(--eca-fm-verre-fort);
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.eca-root .eca-fm-pas:focus-within {
+  border-color: var(--bj-action);
+  box-shadow: 0 0 0 3px var(--eca-fm-accent-doux);
+}
+.eca-root .eca-fm-pas--erreur {
+  border-color: var(--eca-alerte);
+}
+.eca-root .eca-fm-pas > button {
+  flex: none;
+  width: 42px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--eca-bleu-encre);
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.eca-root .eca-fm-pas > button:hover:not(:disabled) {
+  background: var(--eca-fm-accent-doux);
+}
+.eca-root .eca-fm-pas > button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.eca-root .eca-fm-pas > button:focus-visible {
+  outline: 2px solid var(--bj-action);
+  outline-offset: -4px;
+}
+.eca-root .eca-fm-pas-val {
+  display: flex;
+  align-items: baseline;
+  align-self: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px 6px;
+  font-size: 14px;
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-fm-pas-val input {
+  box-sizing: content-box;
+  width: calc(var(--eca-fm-chiffres, 2) * 1ch + 2px);
+  min-width: 2.2ch;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--bj-text);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.eca-root .eca-fm-pas-val input:focus-visible {
+  outline: none;
+}
+.eca-root .eca-fm-pas-val input:placeholder-shown {
+  font-size: 14px;
+  font-weight: 400;
+  text-align: center;
+}
+.eca-root .eca-fm-pas-val input::placeholder {
+  color: var(--bj-text-faint);
+  opacity: 1;
+}
+.eca-root .eca-fm-pas-unite {
+  line-height: 1.25;
+}
+/* Les valeurs fréquentes, sous la pastille. */
+.eca-root .eca-fm-rapides {
+  align-self: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.eca-root .eca-fm-rapides button {
+  padding: 4px 9px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--bj-veil-6);
+  color: var(--bj-text-soft);
+  font: inherit;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.eca-root .eca-fm-rapides button:hover {
+  background: var(--bj-veil-12);
+  color: var(--bj-text);
+}
+.eca-root .eca-fm-rapides button:focus-visible {
+  outline: 2px solid var(--bj-action);
+  outline-offset: 2px;
+}
+
+/* ─────────────── les magazines : une poubelle par ligne ─────────────── */
+
+.eca-root .eca-fm-mags {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.eca-root .eca-fm-mag {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 36px;
+  gap: 10px;
+  align-items: center;
+}
+.eca-root .eca-fm-num {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--bj-veil-6);
+  font-family: var(--bj-font-display);
+  font-size: 17px;
+  line-height: 1;
+  color: var(--bj-text);
+}
+/* Le nom et, au bout, où en est le client : le cadre est porté par la ligne, le champ est nu. */
+.eca-root .eca-fm-nom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+  min-height: 42px;
+  padding-right: 12px;
+  border: 1px solid var(--bj-veil-16);
+  border-radius: 12px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+.eca-root .eca-fm-nom:focus-within {
+  border-color: var(--bj-action);
+}
+.eca-root .eca-form-corps .eca-fm-nom .eca-input {
+  flex: 1 1 140px;
+  min-width: 0;
+  min-height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+}
+.eca-root .eca-form-corps .eca-fm-nom .eca-input:focus-visible {
+  outline: none;
+}
+.eca-root .eca-fm-nom:has(.eca-input[aria-invalid="true"]) {
+  border-color: var(--eca-alerte);
+}
+.eca-root .eca-fm-etat {
+  flex: none;
+  font-size: 12px;
+  color: var(--bj-text-soft);
+  white-space: nowrap;
+}
+.eca-root .eca-fm-etat--fait,
+.eca-root .eca-fm-etat--en_cours {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+.eca-root .eca-fm-etat--fait {
+  background: var(--eca-vert-fond);
+  color: var(--eca-vert);
+}
+.eca-root .eca-fm-etat--en_cours {
+  background: var(--bj-action-soft);
+  color: var(--eca-bleu-encre);
+}
+.eca-root .eca-fm-poubelle {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--bj-veil-16);
+  border-radius: 999px;
+  background: var(--eca-fm-verre-fort);
+  color: var(--eca-alerte);
+  cursor: pointer;
+}
+.eca-root .eca-fm-poubelle:hover {
+  background: var(--eca-alerte-fond);
+}
+.eca-root .eca-fm-poubelle:focus-visible {
+  outline: 2px solid var(--bj-action);
+  outline-offset: 2px;
+}
+.eca-root .eca-fm-poubelle svg {
+  width: 16px;
+  height: 16px;
+}
+.eca-root .eca-fm-poubelle--off,
+.eca-root .eca-fm-poubelle--off:hover {
+  border-style: dashed;
+  background: transparent;
+  color: var(--bj-text-faint);
+  cursor: not-allowed;
+}
+/* La raison d'une poubelle grisée : au survol ou au clavier (en CSS), au toucher (l'état). */
+.eca-root .eca-fm-bulle {
+  margin: 0 0 0 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--bj-veil-8);
+  background: var(--eca-fm-verre-fort);
+  box-shadow: var(--eca-fm-ombre);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-fm-mag:has(.eca-fm-poubelle--off:hover) + .eca-fm-bulle[hidden],
+.eca-root .eca-fm-mag:has(.eca-fm-poubelle--off:focus-visible) + .eca-fm-bulle[hidden] {
+  display: block;
+}
+/* « + Ajouter un magazine » : le petit bouton de la planche. */
+.eca-root .eca-bouton.eca-fm-ajouter {
+  min-height: 0;
+  padding: 5px 11px;
+  border-color: var(--bj-veil-16);
+  background: var(--eca-fm-verre-fort);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* ─────────────── où va le message d'accueil : la page des participants en petit ─────────────── */
+
+.eca-root .eca-fm-apercu-zone {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 16px;
+  align-items: start;
+}
+/* La planche : un message sur trois lignes au moins (84 px), pas une ligne de champ. */
+.eca-root .eca-form-corps .eca-fm-apercu-zone .eca-textarea {
+  min-height: 84px;
+}
+.eca-root .eca-fm-tel {
+  padding: 8px;
+  border-radius: 26px;
+  background: var(--eca-tel-cadre);
+  box-shadow: var(--eca-tel-ombre);
+}
+.eca-root .eca-fm-tel-ecran {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 300px;
+  padding: 14px 12px 18px;
+  border-radius: 20px;
+  background: radial-gradient(120% 60% at 100% 0%, var(--eca-tel-lueur), var(--eca-tel-fond) 60%);
+  color: var(--eca-tel-texte);
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-fm-tel-marque {
+  font-family: var(--bj-font-display);
+  font-size: 15px;
+  line-height: 1.2;
+}
+.eca-root .eca-fm-tel-marque small {
+  margin-left: 4px;
+  font-family: var(--bj-font-ui);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--eca-tel-doux);
+}
+.eca-root .eca-fm-tel-sur {
+  font-size: 10px;
+  color: var(--eca-tel-accent);
+}
+.eca-root .eca-fm-tel-titre {
+  font-family: var(--bj-font-display);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+}
+.eca-root .eca-fm-tel-msg {
+  padding: 6px 8px;
+  border-radius: 8px;
+  outline: 1.5px dashed var(--eca-tel-accent);
+  outline-offset: 2px;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+.eca-root .eca-fm-tel-msg--defaut,
+.eca-root .eca-fm-tel--attente {
+  color: var(--eca-tel-doux);
+}
+.eca-root .eca-fm-tel-lbl {
+  font-size: 9.5px;
+  color: var(--eca-tel-doux);
+}
+.eca-root .eca-fm-tel-champ {
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid var(--eca-tel-champ-bord);
+  background: var(--eca-tel-champ);
+}
+.eca-root .eca-fm-tel-bouton {
+  height: 30px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: var(--eca-tel-bouton);
+}
+
+@media (max-width: 720px) {
+  .eca-root .eca-fm-apercu-zone {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .eca-root .eca-fm-tel {
+    width: 100%;
+    max-width: 240px;
+    box-sizing: border-box;
+  }
+  /* Sur téléphone, le nom garde toute la ligne ; où en est le client passe dessous, dans le cadre. */
+  .eca-root .eca-form-corps .eca-fm-nom .eca-input {
+    flex-basis: 100%;
+  }
+  .eca-root .eca-fm-etat {
+    margin: -8px 0 8px 12px;
+  }
+}

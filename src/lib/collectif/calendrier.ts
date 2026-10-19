@@ -116,3 +116,203 @@ export function pucesCloture(aujourdhui: string, valeur: string): PuceCloture[] 
   const rang = puces.findIndex((p) => p.champ > valeur);
   return rang === -1 ? [...puces, perso] : [...puces.slice(0, rang), perso, ...puces.slice(rang)];
 }
+
+/* ─────────────── le calendrier Bellajour (T-189, planche 9 du 19/10 au soir) ───────────────
+   Le mois en grille, lundi d'abord ; une PLAGE pour les dates de l'événement
+   (écrite en toutes lettres dans `dates_texte`, relue de même), un JOUR pour la
+   clôture et la livraison. Tout se calcule en jours du calendrier (« 2026-10-02 »),
+   sans heure ni fuseau : le jour d'aujourd'hui vient du serveur (`versChampParis`). */
+
+const NOMS_MOIS = [
+  "janvier",
+  "février",
+  "mars",
+  "avril",
+  "mai",
+  "juin",
+  "juillet",
+  "août",
+  "septembre",
+  "octobre",
+  "novembre",
+  "décembre",
+] as const;
+
+const NOMS_JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"] as const;
+
+/** Les initiales des colonnes, lundi d'abord (la planche : L M M J V S D). */
+export const INITIALES_JOURS = ["L", "M", "M", "J", "V", "S", "D"] as const;
+
+const MOIS = /^(\d{4})-(\d{2})$/;
+
+/** « 2026-10-02 » est-il un jour qui existe ? */
+export function estJourCalendrier(jour: string): boolean {
+  return lireJour(jour) !== null;
+}
+
+/** « 2026-10-02 » → « 2026-10 ». Vide si illisible. */
+export function moisDe(jour: string): string {
+  return lireJour(jour) ? jour.slice(0, 7) : "";
+}
+
+/** Un mois plus N mois (N négatif pour reculer) : « 2026-12 » + 1 = « 2027-01 ». */
+export function moisPlus(mois: string, n: number): string {
+  const x = MOIS.exec(mois);
+  if (!x) return "";
+  const d = new Date(Date.UTC(Number(x[1]), Number(x[2]) - 1 + n, 1));
+  return d.toISOString().slice(0, 7);
+}
+
+/** « 2026-10 » → « Octobre 2026 » (le titre du panneau). */
+export function titreMois(mois: string): string {
+  const x = MOIS.exec(mois);
+  if (!x) return "";
+  const nom = NOMS_MOIS[Number(x[2]) - 1];
+  return nom ? `${nom[0].toUpperCase()}${nom.slice(1)} ${x[1]}` : "";
+}
+
+export type CaseJour = { jour: string; dansLeMois: boolean };
+
+/**
+ * Les semaines d'un mois, du lundi au dimanche : la première commence le lundi
+ * qui précède (ou qui est) le 1er, la dernière finit le dimanche qui suit (ou qui
+ * est) le dernier jour. Quatre à six semaines selon le mois (novembre 2026 en a
+ * six : le 30 est un lundi).
+ */
+export function grilleMois(mois: string): CaseJour[][] {
+  const x = MOIS.exec(mois);
+  if (!x) return [];
+  const a = Number(x[1]);
+  const m = Number(x[2]) - 1;
+  const premier = new Date(Date.UTC(a, m, 1));
+  const decalage = (premier.getUTCDay() + 6) % 7; /* lundi = 0 */
+  const nbJours = new Date(Date.UTC(a, m + 1, 0)).getUTCDate();
+  const nbSemaines = Math.ceil((decalage + nbJours) / 7);
+  const semaines: CaseJour[][] = [];
+  for (let s = 0; s < nbSemaines; s++) {
+    const semaine: CaseJour[] = [];
+    for (let j = 0; j < 7; j++) {
+      const d = new Date(Date.UTC(a, m, 1 - decalage + s * 7 + j));
+      semaine.push({ jour: ecrire(d), dansLeMois: d.getUTCMonth() === m });
+    }
+    semaines.push(semaine);
+  }
+  return semaines;
+}
+
+/** « vendredi 2 octobre 2026 » : ce que lit un lecteur d'écran sur une case. */
+export function libelleJour(jour: string): string {
+  const x = lireJour(jour);
+  if (!x) return "";
+  const nom = NOMS_JOURS[new Date(Date.UTC(x.a, x.m - 1, x.j)).getUTCDay()];
+  return `${nom} ${x.j === 1 ? "1er" : x.j} ${NOMS_MOIS[x.m - 1]} ${x.a}`;
+}
+
+/** Le jour où mène une touche du clavier dans la grille, ou `null` pour une autre touche. */
+export function jourAuClavier(jour: string, touche: string): string | null {
+  if (!lireJour(jour)) return null;
+  if (touche === "ArrowLeft") return jourPlus(jour, { jours: -1 });
+  if (touche === "ArrowRight") return jourPlus(jour, { jours: 1 });
+  if (touche === "ArrowUp") return jourPlus(jour, { jours: -7 });
+  if (touche === "ArrowDown") return jourPlus(jour, { jours: 7 });
+  if (touche === "PageUp") return jourPlus(jour, { mois: -1 });
+  if (touche === "PageDown") return jourPlus(jour, { mois: 1 });
+  return null;
+}
+
+export type Plage = { debut: string; fin: string };
+
+/**
+ * Un clic dans le calendrier en PLAGE : le premier clic pose le début (un seul
+ * jour, déjà valable), le second la fin ; un second clic AVANT le début devient
+ * le début. Un troisième clic recommence. `enAttente` : on attend la fin.
+ */
+export function cliquerPlage(plage: Plage | null, enAttente: boolean, jour: string): { plage: Plage; enAttente: boolean } {
+  if (!plage || !enAttente) return { plage: { debut: jour, fin: jour }, enAttente: true };
+  return jour < plage.debut
+    ? { plage: { debut: jour, fin: plage.fin }, enAttente: false }
+    : { plage: { debut: plage.debut, fin: jour }, enAttente: false };
+}
+
+/** Le nombre de jours d'une plage, bornes comprises (du 2 au 4 : 3 jours). */
+export function joursDansPlage(p: Plage): number {
+  const n = joursEntre(p.debut, p.fin);
+  return n === null ? 0 : Math.abs(n) + 1;
+}
+
+/** « 3 jours », « 1 jour » : le pied du calendrier en plage. */
+export function phraseJoursPlage(p: Plage): string {
+  const n = joursDansPlage(p);
+  return `${n} jour${n > 1 ? "s" : ""}`;
+}
+
+/** Le pied du calendrier de clôture : « 26 jours pour déposer », le jour même « Jusqu'à ce soir ». */
+export function phraseDepot(jours: number): string {
+  if (jours <= 0) return "Jusqu'à ce soir";
+  return `${jours} jour${jours > 1 ? "s" : ""} pour déposer`;
+}
+
+const ecrireJour = (j: number) => (j === 1 ? "1er" : String(j));
+
+/**
+ * La plage en toutes lettres, comme `dates_texte` la garde :
+ * « le 2 octobre 2026 », « du 2 au 4 octobre 2026 »,
+ * « du 30 septembre au 2 octobre 2026 », « du 28 décembre 2026 au 3 janvier 2027 ».
+ * Une plage à l'envers est remise dans l'ordre ; illisible, vide.
+ */
+export function textePlage(p: Plage): string {
+  const [d, f] = p.debut <= p.fin ? [p.debut, p.fin] : [p.fin, p.debut];
+  const x = lireJour(d);
+  const y = lireJour(f);
+  if (!x || !y) return "";
+  const md = NOMS_MOIS[x.m - 1];
+  const mf = NOMS_MOIS[y.m - 1];
+  if (d === f) return `le ${ecrireJour(x.j)} ${md} ${x.a}`;
+  if (x.a === y.a && x.m === y.m) return `du ${ecrireJour(x.j)} au ${ecrireJour(y.j)} ${mf} ${y.a}`;
+  if (x.a === y.a) return `du ${ecrireJour(x.j)} ${md} au ${ecrireJour(y.j)} ${mf} ${y.a}`;
+  return `du ${ecrireJour(x.j)} ${md} ${x.a} au ${ecrireJour(y.j)} ${mf} ${y.a}`;
+}
+
+const sansAccent = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "");
+const NUMERO_MOIS = new Map(NOMS_MOIS.map((n, i) => [sansAccent(n), i + 1]));
+
+function jourDe(j: string, mois: string, an: string): string | null {
+  const m = NUMERO_MOIS.get(sansAccent(mois));
+  const n = Number(j.replace(/er$/, ""));
+  if (!m || !Number.isInteger(n)) return null;
+  const jour = `${an}-${String(m).padStart(2, "0")}-${String(n).padStart(2, "0")}`;
+  return lireJour(jour) ? jour : null;
+}
+
+const J = "(1er|\\d{1,2})";
+const M = "([a-zéèûô]+)";
+const A = "(\\d{4})";
+const LE = new RegExp(`^le ${J} ${M} ${A}$`);
+const DU_MEME_MOIS = new RegExp(`^du ${J} au ${J} ${M} ${A}$`);
+const DU_MEME_AN = new RegExp(`^du ${J} ${M} au ${J} ${M} ${A}$`);
+const DU_DEUX_ANS = new RegExp(`^du ${J} ${M} ${A} au ${J} ${M} ${A}$`);
+
+/**
+ * Relire un `dates_texte` écrit par le calendrier (et ses variantes de casse,
+ * d'espaces ou d'accents). Un texte d'avant, tapé à la main (« début octobre »),
+ * rend `null` : l'écran le garde TEL QUEL, éditable, sans rien sélectionner.
+ */
+export function lirePlage(texte: string): Plage | null {
+  const t = (texte ?? "").normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ");
+  let debut: string | null = null;
+  let fin: string | null = null;
+  let x: RegExpExecArray | null;
+  if ((x = LE.exec(t))) debut = fin = jourDe(x[1], x[2], x[3]);
+  else if ((x = DU_MEME_MOIS.exec(t))) {
+    debut = jourDe(x[1], x[3], x[4]);
+    fin = jourDe(x[2], x[3], x[4]);
+  } else if ((x = DU_MEME_AN.exec(t))) {
+    debut = jourDe(x[1], x[2], x[5]);
+    fin = jourDe(x[3], x[4], x[5]);
+  } else if ((x = DU_DEUX_ANS.exec(t))) {
+    debut = jourDe(x[1], x[2], x[3]);
+    fin = jourDe(x[4], x[5], x[6]);
+  }
+  if (!debut || !fin || fin < debut) return null;
+  return { debut, fin };
+}
