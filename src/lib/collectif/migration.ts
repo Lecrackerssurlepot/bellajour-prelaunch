@@ -136,6 +136,19 @@ export const ERREUR_LIENS_ABSENTE = "migration_liens_absente";
 export const MESSAGE_LIENS_ABSENTE =
   "La mise à jour de la base pour supprimer un lien et répondre à un message n'est pas encore appliquée (20261018_collectif_liens_reponses.sql) : rien n'a été enregistré.";
 
+/* ─────────────────────────── l'accord du participant (T-184, 19/10) ─────────────────────────── */
+
+/**
+ * Deux colonnes de `collectif_photos` : la version du texte d'accord et
+ * l'heure du serveur (`accord.ts`). Sans elles, la route refuse DÉJÀ un dépôt
+ * de participant sans accord, mais l'insertion se replie sans les colonnes et
+ * le serveur le note : l'accord n'est alors pas enregistré. Ce repli
+ * d'ÉCRITURE est voulu (à rebours de la révision, qui répond 503) : le refus
+ * tient sans la colonne, et bloquer tous les participants en attendant la
+ * migration ne protégerait personne. La PR ne se fusionne qu'APRÈS elle.
+ */
+export const MIGRATION_ACCORD = "supabase/migrations/20261020_collectif_accord_participant.sql";
+
 /* ─────────────────────────── les demandes sur mesure (T-191, 19/10 soir) ─────────────────────────── */
 
 /**

@@ -21,6 +21,7 @@ import * as MailsTextes from "@/lib/collectif/mailsTextes";
 import * as Espace from "@/lib/collectif/espace";
 import * as Appareil from "@/lib/collectif/appareil";
 import * as Appareils from "@/lib/collectif/appareils";
+import * as Accord from "@/lib/collectif/accord";
 import {
   cleContenu,
   cleCouverture,
@@ -114,7 +115,7 @@ import { aTraiter as aTraiterBoite, conversationsDe, initialesDe, quandCourt } f
 import * as Nouveaux from "@/lib/collectif/nouveaux";
 import { etapesEdition } from "@/lib/collectif/prochaine";
 import { messagePartage } from "@/lib/collectif/partage";
-import { colonneAbsente, MIGRATION_REVISION } from "@/lib/collectif/migration";
+import { colonneAbsente, MIGRATION_ACCORD, MIGRATION_REVISION } from "@/lib/collectif/migration";
 import { libellePlafondLien, lirePlafondLien, plafondLienMax, CURSEUR_LIEN } from "@/lib/collectif/plafonds";
 import {
   demandePossible,
@@ -2008,7 +2009,7 @@ titre("— retours de Mathias du 14/10 —");
   /* 6 et 8 : la fenêtre d'envoi se rouvre ; « déjà là » se dit. */
   const moteur = lire("src/app/edition/_composants/depot/moteur.ts");
   ok("envoi : chaque lot garde SA provenance (un second lot ne relabellise jamais le premier)",
-    /provenance: this\.provenance,\n\s*\}\);/.test(moteur) && /provenance: premier\.provenance/.test(moteur) && !/provenance: this\.provenance,\n\s*fichiers/.test(moteur));
+    /provenance: this\.provenance,\n(\s*accord: this\.accord,\n)?\s*\}\);/.test(moteur) && /provenance: premier\.provenance/.test(moteur) && !/provenance: this\.provenance,\n\s*fichiers/.test(moteur));
   ok("envoi : un fichier choisi deux fois est compte et dit, plus jamais saute en silence",
     /this\.dejaAjoutes\+\+/.test(moteur) && /vue\.dejaLa \+ vue\.dejaAjoutes/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")));
   const fenetre = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
@@ -2667,6 +2668,83 @@ titre("— T-187 : l'ecran « L'edition est creee », et le lien d'equipe chez l
     /router\.push\(`\/admin\/collectif\/creee\/\$\{json\.id\}`\)/.test(lire("src/app/admin/collectif/FormulaireEdition.tsx")));
   ok("les mails des editions restent COUPES par defaut : rien de ce chantier n'ouvre COLLECTIF_MAILS",
     /return lireInterrupteur\(process\.env\[VAR_MAILS_COLLECTIF\]\)\.ouvert && !envoisCoupes\(process\.env\[VAR_MAILS_COUPES\]\);/.test(lire("src/lib/collectif/mails.ts")) && !lireInterrupteur(undefined).ouvert);
+}
+
+
+titre("— T-184 : l'accord du participant, envoye avec ses photos, exige par le serveur, enregistre horodate —");
+{
+  const v = Accord.VERSION_ACCORD;
+  ok("l'accord vaut SEULEMENT `accord: true` (le booleen) avec une version connue",
+    Accord.lireAccord({ accord: true, accordVersion: v })?.version === v
+      && Accord.lireAccord({}) === null && Accord.lireAccord({ accordVersion: v }) === null
+      && Accord.lireAccord({ accord: false, accordVersion: v }) === null && Accord.lireAccord({ accord: "true", accordVersion: v }) === null
+      && Accord.lireAccord({ accord: 1, accordVersion: v }) === null && Accord.lireAccord({ accord: true }) === null
+      && Accord.lireAccord({ accord: true, accordVersion: null }) === null && Accord.lireAccord({ accord: true, accordVersion: "2099-01-01" }) === null
+      && Accord.lireAccord({ accord: true, accordVersion: 20261017 }) === null);
+  ok("une version qui n'en est pas une ne trouve rien (« constructor », « __proto__ », « toString » : la lecon de T-161)",
+    ["constructor", "__proto__", "toString", "hasOwnProperty", "valueOf", ""].every((x) => Accord.lireAccord({ accord: true, accordVersion: x }) === null));
+  ok("le participant coche ; le responsable (il a signe le devis), l'atelier et l'equipe, non",
+    Accord.accordExige("participant") && !Accord.accordExige("responsable") && !Accord.accordExige("atelier") && !Accord.accordExige("equipe"));
+  const t = new Date("2026-10-20T08:15:30.123Z");
+  ok("avec l'accord : la version et l'heure du SERVEUR ; sans : aucune colonne (jamais un accord invente)",
+    JSON.stringify(Accord.colonnesAccord({ version: v }, t)) === JSON.stringify({ accord_version: v, accord_le: "2026-10-20T08:15:30.123Z" })
+      && JSON.stringify(Accord.colonnesAccord(null, t)) === "{}");
+  ok("le refus parle au registre de l'edition, sans tiret cadratin",
+    Accord.messageAccord("entreprise_vous") === "Cochez l'accord pour envoyer vos photos." && Accord.messageAccord("ecole_tu") === "Coche l'accord pour envoyer tes photos."
+      && Accord.ERREUR_ACCORD === "accord_requis" && ![Accord.messageAccord("entreprise_vous"), Accord.messageAccord("ecole_tu")].some((m) => /[—–]/.test(m)));
+
+  const depot = lire("src/app/depot/[token]/Depot.tsx");
+  const span = /<label className="ec-dp-accord">[\s\S]*?<span>([\s\S]*?)<\/span>/.exec(depot)?.[1] ?? "";
+  const affiche = span
+    .replace(/\{props\.evenement\}/g, "{evenement}")
+    .replace(/\{deNom\(props\.organisation\)\}/g, "{deOrganisation}")
+    .replace(/&apos;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+  ok("le texte AFFICHE est mot pour mot celui de la version envoyee : changer un mot = une NOUVELLE version dans TEXTES_ACCORD",
+    affiche.length > 100 && affiche === Accord.TEXTES_ACCORD.get(v));
+  ok("la version courante est le jour du choix de Mathias (17/10, PR #245)", v === "2026-10-17" && Accord.TEXTES_ACCORD.has("2026-10-17"));
+  ok("cocher donne la version au moteur, decocher la retire ; le bouton reste ferme sans accord",
+    /moteur\.definirAccord\(e\.target\.checked \? VERSION_ACCORD : null\)/.test(depot) && /disabled=\{!accord\}/.test(depot));
+
+  const moteur = lire("src/app/edition/_composants/depot/moteur.ts");
+  ok("le moteur garde l'accord de CHAQUE photo a l'ajout (comme la provenance), n'en mele jamais deux dans un lot, et envoie `accord: true` avec la version",
+    /provenance: this\.provenance,\s*accord: this\.accord,\s*\}\);/.test(moteur) && /i\.accord === premier\.accord/.test(moteur)
+      && /accord: premier\.accord !== null,\s*accordVersion: premier\.accord,/.test(moteur));
+  ok("un refus faute d'accord finit le lot avec la phrase du serveur, jamais en « Connexion interrompue » qui reessaierait sans fin",
+    /status === 400 && json\.error === ERREUR_ACCORD/.test(moteur) && moteur.indexOf("json.error === ERREUR_ACCORD") < moteur.indexOf("throw new Error(`presign"));
+  ok("le depot du responsable (l'espace) ne coche rien : son moteur n'appelle jamais definirAccord",
+    !/definirAccord/.test(lire("src/app/edition/_composants/depot/DepotContexte.tsx") + lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx") + lire("src/app/edition/_composants/depot/ZoneDepot.tsx")));
+
+  const route = lire("src/app/api/collectif/depot/presign/route.ts");
+  const iVerif = route.indexOf("Array.isArray(corps.connues)");
+  const iAccord = route.indexOf("if (accordExige(role) && !accord)");
+  const iDecl = route.indexOf("lireDeclaration(corps.fichiers)");
+  const iCompte = route.indexOf("compterPourPlafond(");
+  const iInsert = route.indexOf('from("collectif_photos").insert(lignes)');
+  ok("la route : un participant sans accord repart en 400 `accord_requis` AVANT toute lecture du lot et toute ecriture ; la verification d'une reprise (qui n'ecrit rien) ne le demande pas",
+    iVerif > 0 && iAccord > iVerif && iDecl > iAccord && iCompte > iAccord && iInsert > iAccord
+      && /return NextResponse\.json\(\{ error: ERREUR_ACCORD, message: messageAccord\(edition\.registre\) \}, \{ status: 400 \}\)/.test(route));
+  ok("la version et l'heure du serveur partent avec CHAQUE photo nouvelle du participant, dans la MEME insertion que la photo",
+    /const champsAccord = accordExige\(role\) \? colonnesAccord\(accord, maintenant\) : \{\};/.test(route)
+      && /const lignes = sansAccord\.map\(\(l\) => \(\{ \.\.\.l, \.\.\.champsAccord \}\)\);/.test(route));
+  ok("sans la migration : l'insertion se replie SANS les deux colonnes (42703 et PGRST204) et le serveur le dit a chaque lot ; le refus, lui, tient deja",
+    /colonneAbsente\(error\.code\) && "accord_version" in champsAccord/.test(route)
+      && /console\.error\(`\[collectif\] accord du participant NON enregistré : \$\{MIGRATION_ACCORD\} absente`\)/.test(route)
+      && /\(\{ error \} = await supabase\.from\("collectif_photos"\)\.insert\(sansAccord\)\)/.test(route)
+      && colonneAbsente("42703") && colonneAbsente("PGRST204"));
+
+  const mig = lire(MIGRATION_ACCORD);
+  const sqlSeul = mig.split("\n").filter((l) => !/^\s*--/.test(l)).join("\n").replace(/'(?:[^']|'')*'/g, "''");
+  ok("migration 20261020 : atomique, idempotente, deux colonnes SANS valeur par defaut sur collectif_photos, PostgREST relit, aucune ligne touchee",
+    /^\s*begin;\s*$/m.test(mig) && /^\s*commit;\s*$/m.test(mig)
+      && /alter table public\.collectif_photos\s+add column if not exists accord_version text;/.test(mig)
+      && /alter table public\.collectif_photos\s+add column if not exists accord_le timestamptz;/.test(mig)
+      && /notify pgrst, 'reload schema';/.test(mig)
+      && !/\b(default|drop|update|delete|insert|truncate)\b/i.test(sqlSeul));
+  ok("les colonnes ecrites par la route sont exactement celles de la migration",
+    Object.keys(Accord.colonnesAccord({ version: v }, t)).every((k) => new RegExp(`add column if not exists ${k}\\b`).test(mig))
+      && (mig.match(/add column if not exists/g) ?? []).length === 2);
 }
 
 /* ════════════════════ T-191 : LES DEMANDES SUR MESURE (planche 12 du 19/10 au soir) ════════════════════ */

@@ -10,6 +10,19 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 19/10/2026, fin d'après-midi — L'accord des participants (T-184) : migration appliquée, PR #266 fusionnée
+
+- **`20261020_collectif_accord_participant.sql` appliquée par Mathias le 19/10 vers 15 h 30**,
+  vérifiée en lecture juste après : `accord_version` et `accord_le` lues par PostgREST sur
+  `collectif_photos` (aucune photo n'a encore d'accord à ce moment-là).
+- **PR #266 fusionnée APRÈS elle** : un participant sans accord est refusé (400
+  `accord_requis`) ; la version du texte (`2026-10-17`) et l'heure du serveur s'écrivent avec
+  chacune de ses photos. Le texte affiché n'a pas changé.
+- **Reste** : voir sur un premier vrai dépôt de participant que l'accord ARRIVE en base (requête
+  dans la fiche T-184). Les photos déposées avant gardent un accord nul.
+- Une seule édition active en base le 19/10 : « Première édition » (clôture le 24/10, 12 photos).
+  Les essais de la PR n'y ont rien écrit (12 avant, 12 après).
+
 ## 19/10/2026, soir — Les retours UX de Mathias livrés, deux migrations à appliquer
 
 - **En production le 19/10** (chaque lot vérifié, fusionné, déploiement READY) : les huit

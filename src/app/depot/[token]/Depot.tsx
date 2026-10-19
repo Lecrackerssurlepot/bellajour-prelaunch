@@ -7,7 +7,10 @@
    ⚠️ Le texte de l'accord est un texte LÉGAL : celui-ci a été choisi par
    Mathias le 17/10/2026 (« version complète »). Ne pas le réécrire sans lui.
    Il ne promet AUCUNE durée de conservation : rien ne supprime encore les
-   photos après la livraison.
+   photos après la livraison. Sa VERSION est `VERSION_ACCORD` (accord.ts) :
+   changer un mot, c'est une nouvelle version (le harnais compare). Cocher la
+   case donne la version au moteur, qui l'envoie avec chaque photo ; le
+   serveur refuse un participant sans elle et l'enregistre horodatée (T-184).
    ⚠️ Aucune promesse que l'écran ne tient pas : l'envoi ne continue pas page
    fermée (iOS surtout), on le dit. Le plafond par personne est tenu par
    appareil, on ne prétend pas le contraire.
@@ -15,6 +18,7 @@
    retrouve, et le même nom range les photos sous la même personne. */
 
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { VERSION_ACCORD } from "@/lib/collectif/accord";
 import { deNom } from "@/lib/collectif/espace";
 import { MoteurDepot } from "../../edition/_composants/depot/moteur";
 import { useMoteur } from "../../edition/_composants/depot/useMoteur";
@@ -87,7 +91,14 @@ export default function Depot(props: Props) {
       </label>
 
       <label className="ec-dp-accord">
-        <input type="checkbox" checked={accord} onChange={(e) => setAccord(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={accord}
+          onChange={(e) => {
+            setAccord(e.target.checked);
+            moteur.definirAccord(e.target.checked ? VERSION_ACCORD : null);
+          }}
+        />
         <span>
           J&apos;accepte que Bellajour utilise ces photos pour composer le magazine « {props.evenement} » {deNom(props.organisation)}, et je confirme
           avoir le droit de les partager, y compris pour les personnes qu&apos;on y voit.
