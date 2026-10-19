@@ -55,3 +55,21 @@ l'intègres dedans et on pourra définir cela. »
   espace (T-154), nouveau message de l'atelier, bon à tirer disponible, rappel avant clôture,
   expédition.
 - Les rebonds des adresses B2B (le webhook Brevo ne connaît que `numeros`).
+
+## Ajouté le 19/10/2026 (retours de Mathias, à garder pour plus tard)
+- **Relancer les participants à qui il reste des photos.** Mathias : « on va peut-être envoyer
+  un mail aux participants qui ont envoyé des photos, ou pas d'ailleurs, envoyé leurs photos et
+  qui ont reçu un lien. Et si on a leur adresse mail, donc ça, c'est à voir comment ça
+  fonctionne. Et s'ils ont encore des photos disponibles, par exemple, ils n'en avaient que 20
+  sur 30, et ben, on leur envoie un mail après tant de jours après la fin du projet. […] Vous
+  avez encore 10 photos de possibles. »
+  Vérifié le 19/10 : le lien participant ne demande AUCUNE adresse, par décision du PRD (§5.1
+  « Pas de mail, pas d'adresse demandée », `PRD-edition-collective.md:503`). Le reste se calcule
+  par appareil et par lien (`plafond_par_personne` moins les photos CONFIRMÉES de l'appareil,
+  borné par le reste du total), jamais par personne. Il faudrait : une adresse facultative et sa
+  colonne (migration), une case d'accord pour les rappels (texte légal, T-158, T-184), un mail
+  dans `mailsTextes.ts`, un déclencheur planifié, un désabonnement. Question ouverte : « après la
+  fin du projet » ? Après la clôture, les liens sont fermés : sans doute quelques jours AVANT.
+- **A1, prévenir l'atelier qu'un client a écrit** (PRD §11). Aucun mail ne part aujourd'hui
+  (`api/collectif/messages/envoyer/route.ts:44-45`). La fréquence (regroupé, une fois par heure
+  au plus ?) est à fixer par Mathias. L'écran de l'atelier, lui, est dans T-188.
