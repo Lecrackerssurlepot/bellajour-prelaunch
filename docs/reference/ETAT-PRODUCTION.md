@@ -1,4 +1,4 @@
-# État du système — au 17/10/2026
+# État du système — au 19/10/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,23 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 19/10/2026 — Faille d'authentification de l'atelier corrigée (T-161), audit de sécurité
+
+- **L'atelier s'ouvrait sans mot de passe** avec un cookie `bj_admin` au nom d'une propriété
+  héritée (`constructor`, `__proto__`…), signé du texte public de cette propriété. Trouvé par
+  l'audit de sécurité du 19/10, corrigé et fusionné le même jour (PR #249, déploiement `6983a28`
+  READY). Vérifié en production : les cookies forgés reçoivent `307 → /admin/login`.
+- **Traces** (lecture seule en base) : aucune écriture d'un auteur inconnu dans
+  `collectif_evenements`, `notes`, `numeros.en_charge`, `evenements`. Une lecture de pages par
+  un tiers, elle, ne laisse pas de trace au-delà d'une heure de journaux Vercel : non exclue.
+- **`/admin` (prévente) se garde lui-même** (PR #250) : c'était la seule page de l'admin qui ne
+  comptait que sur le middleware, que Next.js 16.2.3 permet de contourner (T-162).
+- Toujours ouverts après l'audit : la mise à jour de Next.js et de cinq dépendances (T-162), les
+  en-têtes de protection (T-163), et, avant d'ouvrir `COLLECTIF_MAILS`, l'origine des liens de
+  mail (T-164) et le frein de « Retrouver » (T-166).
+- **Le style d'essai « Essai technique Claude » est toujours publié en tête du mur** (T-157) :
+  le retrait attend l'accord explicite de Mathias.
 
 ## 17/10/2026 — L'Édition collective est EN LIGNE sur bellajour.fr
 
