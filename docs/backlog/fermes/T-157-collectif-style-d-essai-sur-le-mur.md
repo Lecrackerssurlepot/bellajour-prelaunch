@@ -1,7 +1,7 @@
 ---
 id: T-157
 titre: Un style d'essai, « Essai technique Claude », est en première place sur le mur que voit un vrai client
-etat: nouveau
+etat: fermé
 domaine: collectif
 gravite: serieux
 autonomie: libre
@@ -31,3 +31,9 @@ neuve.
   (`publie = false`, lu en base), pas le style d'essai. « Essai technique Claude » reste publié,
   en première place. Question posée à Mathias : retirer aussi le style d'essai, et remettre
   « Grand air » si son retrait n'était pas voulu.
+- 19/10, 12 h 53 (heure de Paris), sur l'accord explicite de Mathias (« Retire-le, et remets
+  Grand air ») : par la route de l'éditeur des styles (`PATCH /api/admin/collectif/styles/[id]`,
+  servie en local sur la base de production), « Essai technique Claude » retiré du mur
+  (`style_depublie`) et « Grand air » republié (`style_publie`, contrôle `manquesPourPublier`
+  passé). Vérifié en base : six styles publiés (Riviera, Nuit, Éditorial, Brut, Archive,
+  Grand air), le style d'essai ne l'est plus. Rien n'est effacé.

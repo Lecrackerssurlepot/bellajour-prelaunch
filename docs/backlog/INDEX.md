@@ -33,8 +33,7 @@ de passe), et 16 tickets ouverts (T-162 à T-177), plus ceux de la liste « avan
 (T-157 à T-160). L'ordre proposé :
 
 1. **Sécurité, tout de suite** : T-162 (mettre à jour Next.js, failles publiques), T-163 (en-têtes).
-2. **Avant la première vraie édition** : T-157 (style d'essai sur le mur, attend l'accord de
-   Mathias), T-167 (au-delà de 1 000 photos), T-172 (mur des styles trop lourd), T-158 et T-159
+2. **Avant la première vraie édition** : T-167 (au-delà de 1 000 photos), T-172 (mur des styles trop lourd), T-158 et T-159
    (confidentialité et durée de conservation : Mathias tranche), T-160 (pannes invisibles).
 3. **Avant d'ouvrir `COLLECTIF_MAILS`** : T-164 (origine des liens), T-166 (frein de
    « Retrouver »), puis T-146 et T-154.
@@ -319,7 +318,7 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-154 | Rien ne vérifie que le lien du responsable est ouvert par le responsable, et il ne peut pas le retrouver seul | collectif | serieux | avis-requis | en cours (16/10) — lecture sur un appareil nouveau, code par mail pour modifier (24 h, 10 essais) ; « Retrouver mon espace » fait (`/espace`) ; tout coupé tant que `COLLECTIF_MAILS` (et `COLLECTIF_CODE_APPAREIL`) ne sont pas ouverts ; reste le lien dans `/compte` |
 | T-155 | Les gros envois de photos n'ont été prouvés qu'en local, jamais en ligne ni sur un iPhone en 4G | collectif | serieux | libre | nouveau (15/10) — 17/10 : B2B ouvert en production, les 7 essais archivés ; reste l'envoi de 2000 photos et l'iPhone en 4G, sur une édition neuve |
 | T-156 | On peut déposer les photos d'un client dans le dossier d'un autre sans que l'écran le montre | atelier | bloquant | libre | **fermé** (fiche dans `fermes/`) — 17/10, PR #247 en production : l'écran de dépôt nomme le dossier (titre, prénom lus au serveur), bandeau quand l'atelier est connecté, « nouveau numéro » ne rouvre plus un dossier existant, un lot identique à celui d'un autre dossier devient une remarque sur la fiche ; vérifié en ligne. Incident du 06/10 (92 photos de Merisa chez Justine) nettoyé à part |
-| T-157 | Un style d'essai, « Essai technique Claude », est en première place sur le mur que voit un vrai client | collectif | serieux | libre | nouveau (19/10) — toujours publié en tête ; Mathias a retiré « Grand air » à la place, question posée |
+| T-157 | Un style d'essai, « Essai technique Claude », est en première place sur le mur que voit un vrai client | collectif | serieux | libre | **fermé** (fiche dans `fermes/`) — 19/10 : style d'essai retiré du mur, « Grand air » remis, sur l'accord de Mathias |
 | T-158 | La politique de confidentialité ne parle ni des participants d'une édition ni de leurs photos, et il n'existe aucun accord sur les données pour les entreprises | collectif | serieux | avis-requis | nouveau (19/10) — texte légal : je prépare la liste exacte de ce que le B2B collecte, Mathias fait rédiger |
 | T-159 | Rien n'efface les photos d'une édition collective après la livraison, et aucune durée n'est fixée | collectif | serieux | avis-requis | nouveau (19/10) — délai à fixer par Mathias (PRD §12.5), puis script sur le modèle d'`anonymiser-dossiers` |
 | T-160 | Si une route de l'Édition collective échoue, rien ne le montre à l'atelier | collectif | serieux | libre | nouveau (19/10) — la page Santé ignore les éditions, les journaux Vercel ne vivent qu'une heure |
