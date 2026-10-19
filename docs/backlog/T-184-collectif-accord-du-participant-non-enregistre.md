@@ -45,7 +45,7 @@ Lié à T-158 (la confidentialité des participants).
   participants en attendant ne protégerait personne. La PR ne se fusionne de toute façon
   qu'APRÈS la migration.
 
-## Ce qui a été fait (19/10, branche `feat/collectif-accord-participant`, PR NON fusionnée)
+## Ce qui a été fait (19/10, branche `feat/collectif-accord-participant`, PR #266 NON fusionnée)
 - `src/lib/collectif/accord.ts` (pur) : `VERSION_ACCORD`, `TEXTES_ACCORD` (une `Map` : une
   version « constructor » ne trouve rien, leçon de T-161), `lireAccord` (seulement `accord: true`
   le booléen ET une version connue), `accordExige` (le participant seul), `colonnesAccord`,
@@ -75,7 +75,7 @@ Lié à T-158 (la confidentialité des participants).
    atomique, rejouable sans effet). Vérifier ensuite en lecture :
    `select column_name from information_schema.columns where table_name = 'collectif_photos' and column_name like 'accord_%';`
    (deux lignes attendues).
-2. **Seulement après**, fusionner la PR.
+2. **Seulement après**, fusionner la PR #266 (https://github.com/Lecrackerssurlepot/bellajour-prelaunch/pull/266).
 3. Au premier vrai dépôt d'un participant, vérifier que la donnée ARRIVE (le repli peut la faire
    disparaître en silence, `supabase/CLAUDE.md`) :
    `select accord_version, accord_le from collectif_photos where role_deposant = 'participant' order by created_at desc limit 5;`

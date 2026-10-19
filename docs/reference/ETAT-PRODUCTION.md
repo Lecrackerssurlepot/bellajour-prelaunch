@@ -12,7 +12,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ## 19/10/2026 (soir) — L'accord des participants (T-184) attend sa migration
 
-- **Codé sur `feat/collectif-accord-participant`, PR NON fusionnée.** Rien n'a changé en
+- **Codé sur `feat/collectif-accord-participant`, PR #266 NON fusionnée.** Rien n'a changé en
   production : la case d'accord de `/depot` n'y est toujours enregistrée nulle part.
 - **`supabase/migrations/20261020_collectif_accord_participant.sql` à appliquer par Mathias**,
   AVANT la fusion : deux colonnes sur `collectif_photos` (`accord_version`, `accord_le`).
