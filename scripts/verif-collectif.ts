@@ -2842,8 +2842,8 @@ titre("— T-192 : le choix du style ferme, une vitrine a la place —");
   const tdb = lire("src/app/edition/[token]/page.tsx");
   ok("le tableau de bord dit « Bientot » et mene a la vitrine, jamais au mur ni au brief", /if \(!ouverts\) return <CarteStyleBientot/.test(tdb) && /ouverts=\{stylesOuverts\(\)\}/.test(tdb));
   const vitrine = lire("src/app/edition/[token]/style/Vitrine.tsx");
-  const chemins = [...vitrine.matchAll(/\$\{([AMC])\}\/([a-z0-9-]+\.webp)/g)].map((m) => ({ A: "public/images/v2/accueil", M: "public/images/v2/magazine", C: "public/images/v2/composer" })[m[1] as "A" | "M" | "C"] + "/" + m[2]);
-  ok(`la vitrine ne montre que des images STATIQUES deja publiees, toutes presentes (${chemins.length})`, chemins.length >= 15 && chemins.every((c) => existsSync(c)) && !/signerGet|chargerMur|image_key/.test(vitrine));
+  const chemins = [...vitrine.matchAll(/\$\{([AM])\}\/([a-z0-9-]+\.webp)/g)].map((m) => ({ A: "public/images/v2/accueil", M: "public/images/v2/magazine", C: "public/images/v2/composer" })[m[1] as "A" | "M" | "C"] + "/" + m[2]);
+  ok(`la vitrine ne montre que des images STATIQUES deja publiees, toutes presentes (${chemins.length})`, chemins.length >= 13 && chemins.every((c) => existsSync(c)) && !/signerGet|chargerMur|image_key/.test(vitrine));
   ok("la vitrine n'a aucune couleur en dur", !/#[0-9a-f]{3,8}\b/i.test(lire("src/app/edition/[token]/style/vitrine.css")) && !/#[0-9a-f]{3,8}\b/i.test(vitrine));
 }
 

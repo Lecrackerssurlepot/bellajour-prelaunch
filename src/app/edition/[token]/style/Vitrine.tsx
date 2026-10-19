@@ -21,10 +21,10 @@ type Couverture = { nom: string; src: string; srcSet: string }
 
 const A = '/images/v2/accueil'
 const M = '/images/v2/magazine'
-const C = '/images/v2/composer'
 
-/* Sept couvertures de Bellajour, choisies pour une école comme pour une entreprise
-   (le soir, la ville, le voyage, l'année) ; « That's Life », presque noire, est écartée. */
+/* Six couvertures de Bellajour (une rangée sur ordinateur, deux de trois sur téléphone), choisies
+   pour une école comme pour une entreprise : le soir, la ville, le voyage. « That's Life »,
+   presque noire, est écartée ; « 26 » aussi (une septième restait seule sur sa rangée). */
 export const COUVERTURES_VITRINE: readonly Couverture[] = [
   { nom: 'Lisbonne', src: `${A}/couverture-lisbonne-360.webp`, srcSet: `${A}/couverture-lisbonne-360.webp 360w, ${A}/couverture-lisbonne-640.webp 640w` },
   { nom: 'The Boys', src: `${A}/couverture-the-boys-360.webp`, srcSet: `${A}/couverture-the-boys-360.webp 360w, ${A}/couverture-the-boys-640.webp 640w` },
@@ -32,7 +32,6 @@ export const COUVERTURES_VITRINE: readonly Couverture[] = [
   { nom: 'Rio', src: `${A}/couverture-rio-450.webp`, srcSet: `${A}/couverture-rio-450.webp 450w, ${A}/couverture-rio-700.webp 700w` },
   { nom: 'Aussie', src: `${A}/couverture-aussie-360.webp`, srcSet: `${A}/couverture-aussie-360.webp 360w, ${A}/couverture-aussie-640.webp 640w` },
   { nom: 'Sicile', src: `${M}/couverture-sicile-450.webp`, srcSet: `${M}/couverture-sicile-450.webp 450w, ${M}/couverture-sicile-900.webp 900w` },
-  { nom: '26', src: `${C}/modele-mon-annee-grand-336.webp`, srcSet: `${C}/modele-mon-annee-grand-336.webp 336w, ${C}/modele-mon-annee-grand-900.webp 900w` },
 ]
 
 export const DOUBLE_VITRINE = {
