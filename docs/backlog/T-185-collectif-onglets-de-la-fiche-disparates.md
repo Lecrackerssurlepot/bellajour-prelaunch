@@ -57,5 +57,13 @@ Planche 7 telle quelle. Le « dashboard » est la vue d'ensemble de la fiche (ma
 - Harnais : la vue d'ensemble vérifiée dans SON bloc (trois cartes), un contrôle T-185 sur les
   onglets. Captures au pilote (aucune écriture) sur « Essai révision », 1440 et 375 px, aucun
   débordement.
-Reste : l'onglet **Réglages** (il attend la refonte du formulaire, T-186) et l'onglet
-**Messages** (T-188), puis archiver le mode `compact` mort de `PanneauLiens`.
+19/10, seconde partie (branche `feat/collectif-creation-et-liens`, avec T-186/T-187) :
+- **Réglages** : les six étapes du formulaire, plus de carte dans une carte (T-186) ; « Les
+  liens » et « Envoyer ses liens au responsable » dans la famille `eca-carte`.
+- **Messages** : la carte de la vue d'ensemble, « Marquer comme non lu » dans son en-tête.
+- Le mode `compact` mort de `PanneauLiens` archivé (`archive/panneau-liens-compact-2026-10/`,
+  avec ses règles CSS) ; les deux derniers styles en ligne de `PanneauGestes` remplacés.
+- Vérifié au pilote (aucune écriture hors le PATCH de lecture intercepté) : Réglages sans
+  carte dans une carte, Messages en carte.
+Reste : rien de la planche 7. (L'écran « Migration collectif absente » garde l'ancienne carte :
+c'est un écran d'erreur.)

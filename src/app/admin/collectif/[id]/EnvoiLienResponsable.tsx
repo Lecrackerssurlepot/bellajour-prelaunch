@@ -13,8 +13,10 @@ export default function EnvoiLienResponsable({ id }: { id: string }) {
   const { verif, etat, erreur, envoi, verifier, confirmer, renvoyer, annuler } = useEnvoiEspace(id);
 
   return (
-    <section className="ate-carte">
-      <h2 className="ate-carte-titre">Envoyer ses liens au responsable</h2>
+    <section className="eca-carte">
+      <span className="eca-carte-tete">
+        <h2 className="eca-carte-titre">Envoyer ses liens au responsable</h2>
+      </span>
       <p className="eca-champ-aide">
         Le mail « Votre espace est prêt », avec ses trois liens : le sien, celui de l&apos;équipe, celui des participants. Il ne part
         qu&apos;à l&apos;adresse du responsable.

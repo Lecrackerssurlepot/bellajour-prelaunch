@@ -138,7 +138,7 @@ export default function PanneauGestes({
       )}
 
       {choisi ? (
-        <div className="eca-confirm" style={{ marginTop: 12 }}>
+        <div className="eca-confirm eca-confirm--geste">
           <p>{GESTES[choisi].explication}</p>
           {choisi === "rouvrir_collecte" ? (
             <label className="eca-champ">
@@ -186,7 +186,7 @@ export default function PanneauGestes({
       ) : null}
 
       {erreur ? (
-        <p className="eca-message eca-message--erreur" role="alert" style={{ marginTop: 8 }}>
+        <p className="eca-message eca-message--erreur eca-message--geste" role="alert">
           {erreur}
         </p>
       ) : null}
