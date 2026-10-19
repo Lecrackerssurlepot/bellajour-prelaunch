@@ -71,11 +71,18 @@ Lié à T-158 (la confidentialité des participants).
   reprise 200 ; **12 photos dans l'édition avant, 12 après**.
 
 ## La migration, puis la fusion (19/10, fin d'après-midi)
-1. **Migration appliquée par Mathias le 19/10 vers 15 h 30.** Vérifiée juste après, en lecture :
+1. **Migration appliquée par Mathias le 19/10 vers 16 h 30 (Paris).** Vérifiée juste après, en lecture :
    `accord_version` et `accord_le` lues par PostgREST sur `collectif_photos`, aucune photo avec
    un accord à ce moment-là.
 2. **PR #266 fusionnée APRÈS elle** (https://github.com/Lecrackerssurlepot/bellajour-prelaunch/pull/266),
    recalée sur `main` (PR #265 à #269 arrivées entre-temps, conflits de documentation seulement).
+   Fusion à 16 h 36 (Paris), commit `1529310`, déploiement READY.
+   ⚠️ Pendant ce recalage, l'ancienne fin du harnais (`process.exit`) était restée au milieu du
+   fichier : il affichait « TOUT PASSE » sans jouer les vérifications de T-191. `tsc` l'a vu
+   (le code d'après était mort) ; corrigé avant la fusion, 837 vérifications jouées.
+   **Vérifié en production** (bellajour.fr et www), par des requêtes qui ne peuvent rien écrire :
+   sans accord 400 `accord_requis`, version inconnue 400, version `2026-10-17` acceptée ; la page
+   de dépôt affiche le texte ; 12 photos avant, 12 après.
 
 ## Ce qui reste
 3. Au premier vrai dépôt d'un participant, vérifier que la donnée ARRIVE (le repli peut la faire
