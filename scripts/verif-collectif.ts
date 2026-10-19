@@ -106,6 +106,7 @@ import { CONTENUS_CLIENT, contenuClient, lireFichierContenu, lireReponsesMot, QU
 import { cheminQr, matriceQr, svgQr } from "@/lib/collectif/qr";
 import { apercuPossible, envoisCourants } from "@/lib/collectif/contenus";
 import * as Dossiers from "@/lib/collectif/dossiers";
+import * as Arrivees from "@/lib/collectif/arrivees";
 import { genreFichier } from "@/lib/collectif/visionneuse";
 import { aTraiter as aTraiterBoite, conversationsDe, initialesDe, quandCourt } from "@/lib/collectif/boite";
 import { etapesEdition } from "@/lib/collectif/prochaine";
@@ -1983,6 +1984,63 @@ titre("— T-154 : « Retrouver mon espace » —");
   const m = MailsTextes.mailRetrouverEspace({ tu: false, organisation: "Maison Aubier", evenement: "Séminaire", responsable: "Camille Essai", lien: "https://bellajour.fr/edition/ABC" });
   ok("le mail « Votre lien » : le lien, l'evenement, aucun tiret cadratin",
     m.texte.includes("https://bellajour.fr/edition/ABC") && m.sujet.includes("Séminaire") && /Bonjour Camille,/.test(m.texte) && !/[—–]/.test(m.html + m.texte + m.sujet));
+}
+
+titre("— T-180 / T-181 : chaque personne nommée, les photos qui arrivent en direct —");
+{
+  const D = Dossiers;
+  const A = Arrivees;
+  type L = { provenance_id: string | null; provenance_type: string; role_deposant: string; deposant: string | null; appareil_id?: string | null };
+  const part = (deposant: string | null, appareil = "a1", prov: string | null = null): L => ({ provenance_id: prov, provenance_type: "participant", role_deposant: "participant", deposant, appareil_id: appareil });
+  const resp = (deposant: string | null): L => ({ provenance_id: null, provenance_type: "organisateur", role_deposant: "responsable", deposant, appareil_id: null });
+  ok("une personne = son nom compare sans la casse ni les espaces ; vide = « Sans nom »",
+    D.clePersonne("Mathias") === D.clePersonne(" mathias  ") && D.clePersonne("Mathias  Durand") === D.clePersonne("mathias durand") && D.nomDePersonne(null) === "Sans nom" && D.nomDePersonne("  ") === "Sans nom" && D.clePersonne("Léa") !== D.clePersonne("Lea"));
+  const ps = D.personnesDe([{ deposant: "mathias" }, { deposant: "Mathias" }, { deposant: "Mathias" }, { deposant: "Léa" }]);
+  ok("les personnes : regroupees, sous l'orthographe la plus frequente, la plus fournie d'abord",
+    ps.length === 2 && ps[0].nom === "Mathias" && ps[0].n === 3 && ps[1].nom === "Léa" && ps[1].n === 1);
+  ok("compter les personnes : un nom compte une fois quel que soit le telephone ; deux anonymes sur deux telephones font deux ; le responsable ne compte pas",
+    D.compterPersonnes([part("Mathias", "a1"), part("mathias", "a2"), part(null, "a3"), part(null, "a4"), part(null, "a4"), resp("Claire")]) === 3);
+  const ed = { responsable_nom: "Claire", plafond_participant: 30, plafond_total: 2000 } as unknown as Parameters<typeof D.arbreDesPhotos>[2];
+  const seul = D.arbreDesPhotos([part("Mathias Durand"), part("Mathias Durand")] as never, [], ed, true);
+  ok("T-180 : seul sur son lien, le participant a sa pastille (Mathias ne voyait son nom nulle part)",
+    seul.liens[0].enfants.length === 1 && seul.liens[0].enfants[0].nom === "Mathias Durand" && seul.personnes.map((x) => x.nom).join() === "Mathias Durand");
+  const melange = D.arbreDesPhotos([resp(null), resp("La soirée"), part("Léa"), part("léa", "a2"), part("Tom", "a3", "0b1f3c2e-4a5b-4c6d-8e9f-001122334455")] as never, [], ed, true);
+  ok("« Toutes les photos » : le responsable d'abord (toutes ses photos, tous dossiers), puis chaque participant, tous liens confondus",
+    melange.personnes.map((x) => `${x.cle}=${x.n}`).join() === `${D.QUI_RESPONSABLE}=2,qui:léa=2,qui:tom=1`);
+  const lignes = [resp(null), resp("La soirée"), part("Léa"), part("LÉA", "a2"), part("Tom", "a3", "0b1f3c2e-4a5b-4c6d-8e9f-001122334455")];
+  const dans = (cle: string) => lignes.filter((l) => D.dansLeDossier(l as never, cle, "Claire")).length;
+  ok("le filtre par personne : sans la casse, dans un lien comme dans toute l'edition",
+    dans("qui:léa") === 2 && dans("qui:Léa") === 2 && dans(D.QUI_RESPONSABLE) === 2 && dans("pers:general:léa") === 2 && dans("pers:general:LÉA") === 2 && dans("qui:tom") === 1 && D.rayonDe("qui:léa") === "tout");
+  const n = (deposants: (string | null)[], appareils?: string[]) => A.nouvellesDepuis(deposants.map((d, i) => part(d, appareils?.[i] ?? `a${i}`)) as never);
+  ok("T-181 : « 12 nouvelles photos de Mathias » ; deux noms ; puis « et N autres personnes »",
+    A.phraseArrivees(n(Array(12).fill("Mathias"), Array(12).fill("x"))) === "12 nouvelles photos de Mathias"
+    && A.phraseArrivees(n(["Léa", "Tom"])) === "2 nouvelles photos de Léa et Tom"
+    && A.phraseArrivees(n(["Léa", "Léa", "Tom", "Inès", "Sacha"])) === "5 nouvelles photos de Léa, Inès et 2 autres personnes"
+    && A.phraseArrivees(n(["Léa"])) === "1 nouvelle photo de Léa");
+  ok("T-181 : « Sans nom » ne se dit pas comme un nom ; le responsable seul ne s'annonce pas ; au-dela de la lecture : « Plus de »",
+    A.phraseArrivees(n([null, null], ["x", "y"])) === "2 nouvelles photos"
+    && A.phraseArrivees(n(["Léa", null], ["x", "y"])) === "2 nouvelles photos de Léa et 1 autre personne"
+    && A.phraseArrivees(A.nouvellesDepuis([resp(null)] as never)) === null
+    && A.phraseArrivees(A.nouvellesDepuis(Array(3).fill(part("Léa")) as never, 3))?.startsWith("Plus de 3 ") === true);
+  ok("T-181 : la cadence (30 s sur Photos, une minute sur le tableau), jamais onglet cache, tout de suite au retour apres 20 s",
+    A.SONDAGE_PHOTOS_MS === 30_000 && A.SONDAGE_TABLEAU_MS === 60_000
+    && !A.aRelire(100_000, 0, false, 30_000) && A.aRelire(30_000, 0, true, 30_000) && !A.aRelire(29_999, 0, true, 30_000)
+    && A.aRelire(20_000, 0, true, 60_000, true) && !A.aRelire(19_999, 0, true, 60_000, true));
+  const etat = lire("src/app/api/collectif/photos/etat/route.ts");
+  ok("la lecture legere : le token par chargerAcces, le droit de voir, un compte en `head`, aucune ecriture, et `depuis` passe TEL QUEL (microsecondes)",
+    /chargerAcces\(/.test(etat) && /peut\(acces\.role, "voir_espace"\)/.test(etat) && /count: "exact", head: true/.test(etat) && !/\.(insert|update|upsert|delete)\(/.test(etat) && /String\(corps\.depuis\)\.trim\(\)/.test(etat) && /limit\(depuis \? ARRIVEES_LUES_MAX : 1\)/.test(etat));
+  const collecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  const carte = lire("src/app/edition/[token]/CartePhotos.tsx");
+  ok("l'ecran : les pastilles des la premiere personne, le nom sur chaque vignette, l'annonce et « Les voir », le sondage de 30 s (pas 3,5 s)",
+    /lienDuDossier\.enfants\.length >= 1/.test(collecte) && /className="ec-ph-qui"/.test(collecte) && /className="ec-ph-annonce"/.test(collecte) && /Les voir/.test(collecte) && /useSondage\(/.test(collecte) && /SONDAGE_PHOTOS_MS/.test(collecte)
+      && /useSondage\(/.test(carte) && /SONDAGE_TABLEAU_MS/.test(carte) && !/INTERVALLE_MESSAGES_MS/.test(collecte + carte));
+  const depot = lire("src/app/depot/[token]/Depot.tsx");
+  ok("le participant retrouve son prenom sur son telephone (lu sans setState d'hydratation) et il part avec les photos",
+    /useSyncExternalStore\(/.test(depot) && /moteur\.definirDeposant\(prenom\);\s*if \(e\.target\.files\) moteur\.ajouter/.test(depot));
+  const photos = lire("src/app/api/collectif/photos/route.ts");
+  ok("la grille : « Toutes » commence par la derniere arrivee ; chaque photo dit qui et quand ; « N personnes » suit la meme regle que les pastilles",
+    /vue === "toutes" \? \[\.\.\.dansDossier\]\.reverse\(\)/.test(photos) && /qui: role === "participant"/.test(photos) && /arrivee: p\.confirmee_le/.test(photos) && /personnes: compterPersonnes\(toutes\)/.test(photos)
+      && /participants: compterPersonnes\(lignes\)/.test(lire("src/app/edition/[token]/donnees.ts")));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

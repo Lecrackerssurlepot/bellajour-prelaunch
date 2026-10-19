@@ -1720,9 +1720,15 @@
   background: var(--ec-actif);
 }
 .ec-espace .ec-ph-personne[aria-pressed="true"] {
-  background: var(--ec-text);
-  color: var(--ec-bg);
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
   font-weight: 600;
+}
+/* Son nombre de photos, plus discret que son nom (planche 3 du 19/10). */
+.ec-espace .ec-ph-personne-n {
+  font-weight: 400;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
 }
 .ec-espace .ec-ph-initiales {
   flex: none;
@@ -1739,8 +1745,8 @@
   font-weight: 600;
 }
 .ec-espace .ec-ph-personne[aria-pressed="true"] .ec-ph-initiales {
-  background: var(--ec-bg);
-  color: var(--ec-text);
+  background: rgba(var(--ec-reflet-rgb), 0.25);
+  color: var(--ec-on-accent);
 }
 /* Les dernières arrivées, sous les albums d'une vue d'ensemble. */
 .ec-espace .ec-ph-arrivees-tete {
@@ -2088,12 +2094,89 @@
 .ec-espace .ec-ph-badge {
   position: absolute;
   bottom: 6px;
-  left: 6px;
+  right: 6px;
   padding: 2px 8px;
   border-radius: 999px;
   background: rgba(var(--ec-noir-rgb), 0.6);
   color: var(--ec-page);
   font-size: 11px;
+}
+
+/* Qui l'a envoyée (T-180) : son nom en bas à gauche de chaque vignette, une
+   ligne, coupé s'il est long. Le doublon passe en bas à droite. */
+.ec-espace .ec-ph-qui {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  max-width: calc(100% - 12px);
+  overflow: hidden;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(var(--ec-noir-rgb), 0.55);
+  color: var(--ec-page);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.ec-espace .ec-ph-tuile--doublon .ec-ph-qui {
+  max-width: calc(100% - 84px);
+}
+/* Arrivée depuis la dernière vue (T-181) : un liseré et « nouvelle » en haut à gauche. */
+.ec-espace .ec-ph-tuile--neuve {
+  box-shadow: inset 0 0 0 2px var(--ec-accent);
+}
+.ec-espace .ec-ph-neuve {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+/* L'annonce des arrivées, au-dessus de la grille, sans recharger la page. */
+.ec-espace .ec-ph-annonce {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 8px 8px 8px 14px;
+  border-radius: var(--ec-r-bloc);
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
+  font-size: 14px;
+}
+.ec-espace .ec-ph-annonce strong {
+  font-weight: 600;
+}
+.ec-espace .ec-ph-annonce .ec-bouton {
+  margin-left: auto;
+}
+.ec-espace .ec-ph-annonce-point {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ec-accent);
+  box-shadow: 0 0 0 4px var(--ec-accent-soft);
+  animation: ec-ph-pouls 1.8s ease-in-out infinite;
+}
+@keyframes ec-ph-pouls {
+  50% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ec-espace .ec-ph-annonce-point {
+    animation: none;
+  }
 }
 
 /* ─────────── L'onglet « Les liens » (T-152) ─────────── */
@@ -2882,6 +2965,18 @@
   .ec-espace .ec-ph-chiffres {
     padding: 0 12px 12px;
     gap: 8px;
+  }
+  /* Sur téléphone, les personnes défilent de côté sur une ligne (planche 3 du 19/10) :
+     vingt pastilles empilées repousseraient les photos loin sous le pouce. */
+  .ec-espace .ec-ph-personnes {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-right: -12px;
+    padding-right: 12px;
+  }
+  .ec-espace .ec-ph-personne {
+    flex: none;
   }
   .ec-espace .ec-ph-chiffre {
     padding: 8px 14px;

@@ -381,9 +381,11 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   elle devenait longue, archive `photos-colonne-2026-10/`) : des RAYONS au-dessus des photos
   (`rayonDe`), et deux VUES D'ENSEMBLE (`vous`, `liens`, `estVueEnsemble`) qui montrent des
   vignettes de dossiers ou de liens, sans grille ni vignette de photo signée ; la route ne signe
-  qu'une couverture par dossier ou lien. Un lien montre ses personnes en pastilles (dès deux).
+  qu'une couverture par dossier ou lien. Un lien montre ses personnes en pastilles DÈS LA PREMIÈRE
+  (T-180 : seul sur son lien, un participant ne voyait son nom nulle part).
 - **Une clé de dossier dit où regarder** : `tout`, `selection`, `vous`, `liens`,
-  `resp:<type>:<nom>`, `lien:<id>`, `participants`, `pers:<id|general>:<nom>`, `atelier`. La grille, le compte, « Tout
+  `resp:<type>:<nom>`, `lien:<id>`, `participants`, `pers:<id|general>:<nom>`, `qui:<nom>`, `qui:@responsable`,
+  `atelier`. La grille, le compte, « Tout
   sélectionner ce dossier » et le tableau de bord lisent TOUS `dansLeDossier` : une seule règle.
 - **Les liens vivent dans l'onglet « Les liens »** ; l'équipe n'en voit aucun (`partage`).
   Supprimer un lien = `retire_le` (jamais un DELETE) : sa page de dépôt devient introuvable, la
@@ -401,6 +403,27 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
 - **La boîte de réception de l'atelier** (`boite.ts`, pur) LIT seulement : l'aperçu d'une
   conversation ne marque rien ; seule l'ouverture le fait (l'effet de `useMessagerie`). Les
   non-lus se COMPTENT (`compterNonLus`, `head: true`), jamais en marquant.
+
+## Qui a envoyé, et les photos qui arrivent (T-180, T-181, 19/10)
+
+- **Une personne, c'est un NOM comparé sans la casse ni les espaces** (`clePersonne`,
+  `personnesDe`, `compterPersonnes` dans `dossiers.ts`) : « Mathias » et « mathias » sont une
+  seule personne, montrée sous l'orthographe la plus fréquente ; « Sans nom » compte un
+  téléphone par anonyme. Les pastilles, « N personnes » (page Photos ET tableau de bord) et le
+  filtre lisent cette règle-là, et non plus le nombre d'appareils. Chaque vignette porte le nom de qui
+  l'a envoyée (`qui` dans la réponse de `/api/collectif/photos`) ; « Toutes les photos » a sa
+  rangée de personnes, tous liens confondus (`qui:<clé>`, le responsable en `qui:@responsable`).
+- Le participant retrouve son prénom sur son téléphone (`localStorage`, lu par
+  `useSyncExternalStore`), et il part avec les photos même s'il ne l'a pas retapé.
+- **Voir arriver sans recharger** : `/api/collectif/photos/etat` est une lecture LÉGÈRE (un
+  compte en `head`, et les lignes arrivées depuis la dernière vue, `ARRIVEES_LUES_MAX`). La page
+  Photos l'interroge toutes les 30 s, le tableau de bord chaque minute, jamais onglet caché
+  (`useSondage`, `arrivees.ts`). ⚠️ Ne jamais sonder `/api/collectif/photos` (toutes les photos,
+  les doublons, 120 signatures) : il ne se relit qu'au clic sur « Les voir ». ⚠️ `depuis`
+  voyage TEL QUE la base l'a rendu : relu par `Date`, il perd ses microsecondes et la dernière
+  photo vue se recompterait. Les envois du responsable ne s'annoncent pas.
+- « Toutes » montre la DERNIÈRE arrivée d'abord (ce qui arrive est en haut) ; « Par jour » garde
+  l'ordre des jours de prise de vue.
 
 ## Les mails des éditions (T-146, 15/10)
 

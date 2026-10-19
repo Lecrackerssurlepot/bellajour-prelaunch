@@ -10,7 +10,10 @@
    Le lien d'équipe voit les compteurs, sans aucun geste. */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { SONDAGE_TABLEAU_MS } from "@/lib/collectif/arrivees";
+import { useSondage } from "../_composants/useSondage";
 import FenetreLien, { CarteLien } from "../_composants/LienContribution";
 import { useFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import ZoneDepot from "../_composants/depot/ZoneDepot";
@@ -42,6 +45,24 @@ export default function CartePhotos(p: Props) {
   const contexte = { organisation: p.organisation, evenement: p.evenement, cloture: p.cloture, tu: p.tu };
   const dernier = p.liens[p.liens.length - 1] ?? null;
   const etat = p.photos > 0 ? "photos" : deposer || !dernier ? "vide" : "lien";
+  /* Les photos qui arrivent pendant que le tableau est ouvert (T-181) : une lecture LÉGÈRE
+     chaque minute, onglet visible ; si le nombre a bougé, la page se relit, et la ligne
+     « N nouvelles photos » le dit déjà (la relecture ne repeint pas toujours). */
+  const router = useRouter();
+  const [enDirect, setEnDirect] = useState<number | null>(null);
+  useSondage(
+    async () => {
+      const rep = await fetch("/api/collectif/photos/etat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token }) });
+      if (!rep.ok) return;
+      const j = (await rep.json()) as { photos: number };
+      if (j.photos === (enDirect ?? p.photos)) return;
+      setEnDirect(j.photos);
+      router.refresh();
+    },
+    SONDAGE_TABLEAU_MS,
+    p.ouverte
+  );
+  const nouvelles = enDirect === null ? 0 : Math.max(0, enDirect - p.photos);
 
   return (
     <section className="ec-carte ec-tdb-carte" aria-labelledby="ec-carte-photos">
@@ -52,6 +73,20 @@ export default function CartePhotos(p: Props) {
 
       {etat === "photos" ? (
         <>
+          {nouvelles ? (
+            <div className="ec-ph-annonce" role="status">
+              <span className="ec-ph-annonce-point" aria-hidden="true" />
+              <span>
+                <strong>
+                  {nouvelles} nouvelle{nouvelles > 1 ? "s" : ""} photo{nouvelles > 1 ? "s" : ""}
+                </strong>
+                , à l&apos;instant
+              </span>
+              <Link href={p.lienPhotos} prefetch={false} className="ec-bouton ec-bouton--petit">
+                Les voir
+              </Link>
+            </div>
+          ) : null}
           <div className="ec-tdb-total">
             <strong>{p.photos.toLocaleString("fr-FR")}</strong>
             <span className="ec-texte">
