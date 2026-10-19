@@ -1,0 +1,1005 @@
+<title>Édition collective, retours du 19/10</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap">
+<style>
+/* Mise en page : une planche par retour de Mathias, le texte à gauche, l'écran proposé à droite.
+   Couleurs : celles de l'espace réel (espace.css), Porcelaine le jour, Charbon la nuit. */
+:root {
+  --bg: #f3f4f7;
+  --carte: rgba(255, 255, 255, 0.72);
+  --carte-pleine: #ffffff;
+  --carte-bord: rgba(255, 255, 255, 0.95);
+  --texte: #101828;
+  --doux: #5b6577;
+  --pale: #7c8698;
+  --ligne: rgba(16, 24, 40, 0.08);
+  --ligne-forte: rgba(16, 24, 40, 0.14);
+  --accent: #4a90d9;
+  --accent-fort: #3a7cc4;
+  --accent-texte: #1d4f8a;
+  --sur-accent: #ffffff;
+  --accent-doux: rgba(74, 144, 217, 0.12);
+  --accent-voile: rgba(74, 144, 217, 0.06);
+  --ok: #157347;
+  --ok-doux: #e7f6ee;
+  --alerte: #b3412c;
+  --alerte-doux: #fbece8;
+  --creux: rgba(16, 24, 40, 0.05);
+  --voile: rgba(16, 24, 40, 0.28);
+  --ombre: 0 1px 2px rgba(16, 24, 40, 0.04), 0 18px 48px rgba(16, 24, 40, 0.07);
+  --ombre-douce: 0 6px 18px rgba(16, 24, 40, 0.06);
+  --ombre-haute: 0 24px 60px rgba(16, 24, 40, 0.18);
+  --aurore-1: #dce8fa;
+  --aurore-2: #eae5f6;
+  --photo-a: #c9d6e8;
+  --photo-b: #e6d9cc;
+  --photo-c: #d4e2d4;
+  --photo-d: #e3d3df;
+  --couv-1: #1d3b5c;
+  --couv-2: #c96f4a;
+  --couv-3: #2b2b2b;
+  --couv-4: #e8dcc8;
+  --f-titre: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --f-texte: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r-panneau: 28px;
+  --r-carte: 20px;
+  --r-bloc: 14px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17181c; --carte: rgba(255, 255, 255, 0.045); --carte-pleine: #1f2126; --carte-bord: rgba(255, 255, 255, 0.08);
+    --texte: #ecedf0; --doux: #a9adb5; --pale: #8b9099; --ligne: rgba(255, 255, 255, 0.08); --ligne-forte: rgba(255, 255, 255, 0.14);
+    --accent: #e3a27f; --accent-fort: #ecb394; --accent-texte: #f2c7af; --sur-accent: #1b1410; --accent-doux: rgba(227, 162, 127, 0.16); --accent-voile: rgba(227, 162, 127, 0.07);
+    --ok: #8ee0b0; --ok-doux: rgba(110, 207, 151, 0.14); --alerte: #ff9b7a; --alerte-doux: rgba(255, 155, 122, 0.12);
+    --creux: rgba(0, 0, 0, 0.22); --voile: rgba(0, 0, 0, 0.5);
+    --ombre: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.3); --ombre-douce: 0 10px 30px rgba(0, 0, 0, 0.28); --ombre-haute: 0 30px 70px rgba(0, 0, 0, 0.55);
+    --aurore-1: #3a2a22; --aurore-2: #23262f;
+    --photo-a: #3a4658; --photo-b: #4a3e35; --photo-c: #36463a; --photo-d: #463a44;
+    --couv-4: #3d3830;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17181c; --carte: rgba(255, 255, 255, 0.045); --carte-pleine: #1f2126; --carte-bord: rgba(255, 255, 255, 0.08);
+  --texte: #ecedf0; --doux: #a9adb5; --pale: #8b9099; --ligne: rgba(255, 255, 255, 0.08); --ligne-forte: rgba(255, 255, 255, 0.14);
+  --accent: #e3a27f; --accent-fort: #ecb394; --accent-texte: #f2c7af; --sur-accent: #1b1410; --accent-doux: rgba(227, 162, 127, 0.16); --accent-voile: rgba(227, 162, 127, 0.07);
+  --ok: #8ee0b0; --ok-doux: rgba(110, 207, 151, 0.14); --alerte: #ff9b7a; --alerte-doux: rgba(255, 155, 122, 0.12);
+  --creux: rgba(0, 0, 0, 0.22); --voile: rgba(0, 0, 0, 0.5);
+  --ombre: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.3); --ombre-douce: 0 10px 30px rgba(0, 0, 0, 0.28); --ombre-haute: 0 30px 70px rgba(0, 0, 0, 0.55);
+  --aurore-1: #3a2a22; --aurore-2: #23262f;
+  --photo-a: #3a4658; --photo-b: #4a3e35; --photo-c: #36463a; --photo-d: #463a44;
+  --couv-4: #3d3830;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--texte);
+  font-family: var(--f-texte);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-inline: 16px;
+  padding-block: 0 64px;
+}
+.page { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; font-weight: 400; }
+p { margin: 0; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── en-tête de la planche ── */
+.tete { padding-block: 40px 4px; display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
+.surtitre { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--doux); }
+.tete h1 { font-family: var(--f-titre); font-size: clamp(34px, 5vw, 52px); line-height: 1.05; }
+.tete p { color: var(--doux); max-width: 64ch; }
+.sommaire {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  display: flex; gap: 6px; overflow-x: auto; padding: 10px 0; margin-inline: -16px; padding-inline: 16px;
+  background: linear-gradient(var(--bg) 70%, transparent);
+  scrollbar-width: none;
+}
+.sommaire a {
+  flex: 0 0 auto; text-decoration: none; color: var(--texte); font-size: 13px;
+  padding: 7px 12px; border-radius: 999px; background: var(--carte); border: 1px solid var(--carte-bord); box-shadow: var(--ombre-douce);
+}
+.sommaire a span { color: var(--pale); margin-right: 6px; font-variant-numeric: tabular-nums; }
+.sommaire a.attente { color: var(--doux); }
+
+/* ── une planche ── */
+.planche {
+  scroll-margin-top: 64px;
+  display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); gap: 20px;
+  padding: 22px; border-radius: var(--r-panneau);
+  background: var(--carte); border: 1px solid var(--carte-bord); box-shadow: var(--ombre);
+}
+.recit { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.recit .num { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-texte); }
+.recit h2 { font-family: var(--f-titre); font-size: 30px; line-height: 1.1; }
+.bloc-r { display: flex; flex-direction: column; gap: 6px; }
+.bloc-r h3 { font-family: var(--f-texte); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--pale); font-weight: 500; }
+.bloc-r p, .bloc-r li { font-size: 14px; color: var(--doux); }
+.bloc-r ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.bloc-r strong { color: var(--texte); font-weight: 500; }
+.citation { font-family: var(--f-titre); font-style: italic; font-size: 19px; line-height: 1.35; color: var(--texte); }
+.trancher { padding: 12px 14px; border-radius: var(--r-bloc); background: var(--accent-voile); border: 1px solid var(--accent-doux); }
+.trancher h3 { color: var(--accent-texte); }
+.trancher p, .trancher li { color: var(--texte); }
+
+/* ── l'écran proposé ── */
+.ecran {
+  position: relative; isolation: isolate; overflow: hidden; min-width: 0;
+  border-radius: 24px; background: var(--bg); border: 1px solid var(--ligne);
+  padding: 16px; display: flex; flex-direction: column; gap: 12px;
+}
+.ecran::before, .ecran::after { content: ""; position: absolute; z-index: -1; border-radius: 50%; filter: blur(60px); }
+.ecran::before { width: 55%; height: 60%; top: -20%; right: -10%; background: var(--aurore-1); }
+.ecran::after { width: 45%; height: 50%; bottom: -20%; left: -10%; background: var(--aurore-2); }
+.legende-ecran { font-size: 12px; color: var(--pale); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.legende-ecran b { color: var(--doux); font-weight: 500; }
+.verre { background: var(--carte); border: 1px solid var(--carte-bord); border-radius: var(--r-carte); box-shadow: var(--ombre-douce); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4); }
+.titre-ecran { font-family: var(--f-titre); font-size: 30px; line-height: 1; }
+.note { font-size: 12px; color: var(--doux); }
+.pale { color: var(--pale); }
+.ligne-flex { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.entre { justify-content: space-between; }
+.bouton { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--ligne-forte); background: var(--carte-pleine); font-size: 13px; cursor: pointer; white-space: nowrap; }
+.bouton.plein { background: var(--accent); border-color: var(--accent); color: var(--sur-accent); box-shadow: 0 8px 20px rgba(74, 144, 217, 0.25); }
+.bouton.petit { padding: 5px 10px; font-size: 12px; }
+.bouton.lien { border: 0; background: none; padding: 0; color: var(--accent-texte); text-decoration: underline; text-underline-offset: 3px; }
+.pastille { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; background: var(--creux); color: var(--doux); white-space: nowrap; }
+.pastille.accent { background: var(--accent-doux); color: var(--accent-texte); }
+.pastille.ok { background: var(--ok-doux); color: var(--ok); }
+.onglets { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--creux); width: fit-content; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.onglets span { padding: 6px 12px; border-radius: 999px; font-size: 12.5px; color: var(--doux); white-space: nowrap; }
+.onglets span.on { background: var(--carte-pleine); color: var(--texte); box-shadow: var(--ombre-douce); }
+.compte { font-variant-numeric: tabular-nums; }
+
+/* ── 1. le mur, composition repliée ── */
+.mags { display: flex; gap: 8px; flex-wrap: wrap; }
+.mag { display: flex; flex-direction: column; gap: 2px; padding: 8px 14px; border-radius: 16px; background: var(--creux); font-size: 13px; }
+.mag.on { background: var(--carte-pleine); box-shadow: var(--ombre-douce); }
+.mag small { font-size: 11.5px; color: var(--doux); }
+.mur { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.piece { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 16px; background: var(--carte); border: 1px solid var(--ligne); min-width: 0; }
+.piece .vis { position: relative; aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden; max-width: 100%; }
+.piece .vis.large { aspect-ratio: 4 / 3; }
+.piece .pied { display: flex; align-items: flex-end; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+.piece .pied > div { min-width: 0; }
+.piece .pied b { font-size: 12px; font-weight: 500; display: block; }
+.piece .pied span { font-size: 11px; color: var(--doux); }
+.piece.choisie { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), var(--ombre-douce); background: var(--accent-voile); }
+.piece.choisie .vis::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.25), transparent 40%); }
+.sceau { position: absolute; z-index: 2; top: 14px; left: 14px; right: 14px; width: fit-content; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; background: var(--accent); color: var(--sur-accent); font-size: 11px; font-weight: 500; }
+.remplace { position: absolute; z-index: 2; top: 14px; left: 14px; right: 14px; padding: 4px 8px; border-radius: 8px; background: var(--carte-pleine); font-size: 11px; color: var(--doux); box-shadow: var(--ombre-douce); }
+.couv { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 10px; color: #fff; }
+.couv b { font-family: var(--f-titre); font-weight: 500; font-size: 18px; line-height: 1; }
+.couv i { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; font-style: normal; opacity: 0.85; }
+.bandes { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(4, 1fr); }
+.typo { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 12px; background: var(--carte-pleine); }
+.typo b { font-family: var(--f-titre); font-size: 34px; line-height: 0.9; font-weight: 400; }
+.typo span { font-size: 10px; color: var(--doux); line-height: 1.3; }
+.double { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 8px; background: var(--carte-pleine); }
+.double > div { border-radius: 3px; }
+.dock {
+  position: relative; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 10px 10px 16px; border-radius: 22px; background: var(--carte-pleine); box-shadow: var(--ombre-haute); border: 1px solid var(--ligne);
+}
+.dock .mini { display: flex; gap: 4px; align-items: center; }
+.dock .mini > span { width: 26px; height: 34px; border-radius: 5px; display: block; }
+.dock .mini .ronds { display: flex; }
+.dock .mini .ronds i { width: 14px; height: 14px; border-radius: 50%; margin-left: -4px; border: 2px solid var(--carte-pleine); }
+.dock .mini .aa { width: 34px; height: 34px; border-radius: 8px; background: var(--creux); display: grid; place-items: center; font-family: var(--f-titre); font-size: 18px; }
+.dock .mini .vide { width: 34px; height: 34px; border-radius: 8px; border: 1.5px dashed var(--ligne-forte); }
+.dock .quoi { display: flex; flex-direction: column; min-width: 0; flex: 1 1 160px; }
+.dock .quoi b { font-size: 13px; font-weight: 500; }
+.toast { align-self: center; display: inline-flex; align-items: center; gap: 12px; padding: 8px 8px 8px 14px; border-radius: 999px; background: var(--texte); color: var(--bg); font-size: 12.5px; box-shadow: var(--ombre-haute); max-width: 100%; flex-wrap: wrap; }
+.toast button { background: none; border: 0; color: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 12.5px; padding: 4px 8px; }
+
+/* ── 2. la composition ouverte ── */
+.feuille { display: flex; flex-direction: column; gap: 16px; padding: 22px; border-radius: 26px; background: var(--carte-pleine); box-shadow: var(--ombre-haute); border: 1px solid var(--ligne); }
+.feuille-tete { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.feuille-tete h3 { font-family: var(--f-titre); font-size: 40px; line-height: 0.95; }
+.planche-compo { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 14px; }
+.case { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 18px; background: var(--bg); min-width: 0; }
+.case-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.case-tete h4 { margin: 0; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--pale); font-weight: 500; }
+.couvs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.couvs figure { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.couvs .vis { position: relative; aspect-ratio: 3 / 4; border-radius: 8px; overflow: hidden; box-shadow: 0 14px 30px rgba(16,24,40,0.18); max-width: 100%; }
+.couvs figcaption { font-size: 11px; color: var(--doux); }
+.couvs .place { aspect-ratio: 3 / 4; border-radius: 8px; border: 1.5px dashed var(--ligne-forte); display: grid; place-items: center; font-size: 11px; color: var(--pale); text-align: center; padding: 6px; }
+.nuancier { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.nuancier div { display: flex; flex-direction: column; gap: 4px; }
+.nuancier i { display: block; aspect-ratio: 1; border-radius: 10px; max-width: 100%; }
+.nuancier span { font-size: 10.5px; color: var(--doux); font-family: ui-monospace, Menlo, monospace; }
+.specimen { display: flex; flex-direction: column; gap: 4px; }
+.specimen b { font-family: var(--f-titre); font-weight: 400; font-size: 38px; line-height: 0.95; }
+.specimen p { font-size: 12px; color: var(--doux); max-width: 40ch; }
+.doubles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.doubles figure { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.doubles .vis { position: relative; aspect-ratio: 4 / 3; border-radius: 6px; overflow: hidden; background: var(--carte-pleine); box-shadow: var(--ombre-douce); max-width: 100%; }
+.doubles figcaption { font-size: 11px; color: var(--doux); }
+.jauge { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 12px; background: var(--creux); }
+.jauge span { text-align: center; font-size: 11.5px; padding: 7px 4px; border-radius: 9px; color: var(--doux); }
+.jauge span.on { background: var(--carte-pleine); color: var(--texte); box-shadow: var(--ombre-douce); }
+.feuille-pied { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 4px; }
+
+/* ── 3. photos par personne ── */
+.photos-corps { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 12px; }
+.albums { display: flex; flex-direction: column; gap: 2px; padding: 10px; font-size: 13px; }
+.albums .grp { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--pale); padding: 10px 8px 4px; }
+.albums .alb { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 10px; }
+.albums .alb.on { background: var(--carte-pleine); box-shadow: var(--ombre-douce); }
+.albums .alb small { color: var(--pale); font-variant-numeric: tabular-nums; }
+.albums .pers { padding-left: 22px; }
+.albums .pers.on { background: var(--accent-doux); color: var(--accent-texte); }
+.albums .neuf { color: var(--accent-texte); font-weight: 500; }
+.contenu { display: flex; flex-direction: column; gap: 10px; padding: 12px; min-width: 0; }
+.fil { font-size: 12px; color: var(--doux); }
+.fil b { color: var(--texte); font-weight: 500; }
+.personnes { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.perso { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 999px; background: var(--creux); font-size: 12px; }
+.perso i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 10px; font-weight: 600; background: var(--carte-pleine); color: var(--doux); }
+.perso.on { background: var(--accent); color: var(--sur-accent); }
+.perso.on i { background: rgba(255,255,255,0.25); color: var(--sur-accent); }
+.perso small { opacity: 0.7; font-variant-numeric: tabular-nums; }
+.arrivee { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 12px; border-radius: 14px; background: var(--accent-doux); color: var(--accent-texte); font-size: 12.5px; flex-wrap: wrap; }
+.arrivee .point { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-doux); }
+.grille { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.tuile { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; max-width: 100%; }
+.tuile .qui { position: absolute; left: 5px; bottom: 5px; padding: 2px 7px; border-radius: 999px; background: rgba(16,24,40,0.55); color: #fff; font-size: 10px; backdrop-filter: blur(6px); }
+.tuile.neuve { box-shadow: inset 0 0 0 2px var(--accent); }
+.tuile.neuve::after { content: "nouvelle"; position: absolute; top: 5px; right: 5px; padding: 1px 6px; border-radius: 999px; background: var(--accent); color: var(--sur-accent); font-size: 9.5px; }
+
+/* ── 8. messagerie de l'atelier ── */
+.barre-adm { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 6px; border-radius: 999px; }
+.barre-adm span { padding: 6px 12px; border-radius: 999px; font-size: 12.5px; color: var(--doux); display: inline-flex; gap: 6px; align-items: center; }
+.barre-adm span.on { background: var(--carte-pleine); color: var(--texte); box-shadow: var(--ombre-douce); }
+.compteur { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: var(--sur-accent); font-size: 10.5px; font-weight: 600; display: inline-grid; place-items: center; font-variant-numeric: tabular-nums; }
+.onglet-nav { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 10px 10px 0 0; background: var(--carte-pleine); font-size: 12px; border: 1px solid var(--ligne); border-bottom: 0; width: fit-content; max-width: 100%; }
+.onglet-nav i { width: 12px; height: 12px; border-radius: 3px; background: var(--accent); }
+.messagerie { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 12px; }
+.convs { display: flex; flex-direction: column; gap: 4px; padding: 8px; }
+.conv { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 9px 10px; border-radius: 14px; font-size: 12.5px; }
+.conv .p { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; }
+.conv.nonlu .p { background: var(--accent); }
+.conv.nonlu b { font-weight: 600; color: var(--texte); }
+.conv b { font-weight: 400; color: var(--doux); display: block; }
+.conv small { display: block; color: var(--pale); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conv.nonlu small { color: var(--doux); }
+.conv.on { background: var(--carte-pleine); box-shadow: var(--ombre-douce); }
+.conv .h { font-size: 10.5px; color: var(--pale); font-variant-numeric: tabular-nums; text-align: right; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.conv.nonlu .h { color: var(--accent-texte); font-weight: 500; }
+.filtre-conv { display: flex; gap: 4px; padding: 0 2px 6px; }
+.fil-msg { display: flex; flex-direction: column; gap: 8px; padding: 14px; min-width: 0; }
+.bulle { max-width: 78%; padding: 8px 12px; border-radius: 16px; font-size: 12.5px; background: var(--carte-pleine); box-shadow: var(--ombre-douce); }
+.bulle small { display: block; font-size: 10.5px; color: var(--pale); margin-top: 2px; }
+.bulle.nous { align-self: flex-end; background: var(--creux); box-shadow: none; }
+.bulle.lu { opacity: 0.78; }
+.bulle.neuf { box-shadow: 0 0 0 1.5px var(--accent), var(--ombre-douce); }
+.separateur { display: flex; align-items: center; gap: 10px; color: var(--accent-texte); font-size: 11.5px; font-weight: 500; letter-spacing: 0.02em; }
+.separateur::before, .separateur::after { content: ""; flex: 1; height: 1.5px; background: var(--accent); opacity: 0.6; border-radius: 2px; }
+.jour { align-self: center; font-size: 10.5px; color: var(--pale); }
+
+/* ── 5. création ── */
+.creation { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 12px; }
+.etapes-form { display: flex; flex-direction: column; gap: 2px; padding: 10px; font-size: 12.5px; }
+.etapes-form span { display: flex; gap: 8px; align-items: center; padding: 7px 8px; border-radius: 10px; color: var(--doux); }
+.etapes-form span i { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 10.5px; background: var(--creux); }
+.etapes-form span.fait i { background: var(--ok-doux); color: var(--ok); }
+.etapes-form span.on { background: var(--carte-pleine); color: var(--texte); box-shadow: var(--ombre-douce); }
+.etapes-form span.on i { background: var(--accent); color: var(--sur-accent); }
+.form-corps { display: flex; flex-direction: column; gap: 14px; padding: 16px; min-width: 0; }
+.form-corps h4 { margin: 0; font-family: var(--f-titre); font-size: 24px; font-weight: 400; }
+.frise { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding-top: 6px; }
+.frise::before { content: ""; position: absolute; left: 6%; right: 6%; top: 15px; height: 2px; background: var(--ligne-forte); }
+.jalon { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; font-size: 11.5px; color: var(--doux); }
+.jalon i { width: 20px; height: 20px; border-radius: 50%; background: var(--carte-pleine); border: 2px solid var(--ligne-forte); }
+.jalon.plein i { background: var(--accent); border-color: var(--accent); }
+.jalon.creux i { border-style: dashed; }
+.jalon b { color: var(--texte); font-weight: 500; font-size: 12px; }
+.duree { grid-column: 2 / 4; text-align: center; font-size: 11px; color: var(--accent-texte); margin-top: -2px; }
+.champ { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.champ label { font-size: 12.5px; font-weight: 500; }
+.champ .saisie { padding: 9px 12px; border-radius: 12px; background: var(--carte-pleine); border: 1px solid var(--ligne-forte); font-size: 13px; }
+.champ .aide { font-size: 11.5px; color: var(--doux); }
+.puces-choix { display: flex; gap: 6px; flex-wrap: wrap; }
+.puces-choix span { padding: 6px 11px; border-radius: 999px; background: var(--creux); font-size: 12px; }
+.puces-choix span.on { background: var(--accent); color: var(--sur-accent); }
+.deux-champs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.avert { display: flex; gap: 8px; padding: 9px 12px; border-radius: 12px; background: var(--alerte-doux); color: var(--alerte); font-size: 12px; }
+.case-effet { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; font-size: 12.5px; align-items: start; }
+.case-effet .coche { width: 18px; height: 18px; border-radius: 5px; background: var(--accent); color: var(--sur-accent); display: grid; place-items: center; font-size: 11px; }
+.case-effet .coche.non { background: var(--carte-pleine); border: 1.5px solid var(--ligne-forte); }
+.case-effet small { display: block; color: var(--doux); font-size: 11.5px; }
+
+/* ── 6. fin de création ── */
+.fin { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); gap: 12px; }
+.liens { display: flex; flex-direction: column; gap: 10px; }
+.lien-carte { display: flex; flex-direction: column; gap: 8px; padding: 14px; }
+.lien-carte .url { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; padding: 7px 10px; border-radius: 10px; background: var(--creux); color: var(--doux); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lien-carte b { font-weight: 500; }
+.lien-carte.premier { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--ombre-douce); }
+.mail { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 18px; background: var(--carte-pleine); border: 1px solid var(--ligne); font-size: 12.5px; }
+.mail .entete { display: flex; flex-direction: column; gap: 2px; padding-bottom: 8px; border-bottom: 1px solid var(--ligne); font-size: 11.5px; color: var(--doux); }
+.mail .entete b { color: var(--texte); font-weight: 500; }
+.mail h5 { margin: 0; font-family: var(--f-titre); font-size: 22px; font-weight: 400; }
+.mail .lien-mail { display: flex; flex-direction: column; gap: 4px; padding: 10px; border-radius: 12px; background: var(--bg); }
+.mail .lien-mail small { color: var(--doux); }
+.mail .btn-mail { align-self: flex-start; padding: 7px 14px; border-radius: 999px; background: var(--accent); color: var(--sur-accent); font-size: 12px; }
+.mail .btn-mail.clair { background: var(--creux); color: var(--texte); }
+
+/* ── 7. fiche en onglets ── */
+.onglets-fiche { display: flex; gap: 4px; flex-wrap: wrap; }
+.onglets-fiche span { padding: 7px 12px; border-radius: 999px; font-size: 12.5px; color: var(--doux); }
+.onglets-fiche span.on { background: var(--carte-pleine); color: var(--texte); box-shadow: var(--ombre-douce); }
+.cartes-fiche { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.carte-fiche { display: flex; flex-direction: column; gap: 10px; padding: 16px; min-width: 0; }
+.carte-fiche .tete-c { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.carte-fiche h4 { margin: 0; font-family: var(--f-titre); font-size: 22px; font-weight: 400; }
+.mag-ligne { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 10px; align-items: center; }
+.mag-ligne .mini-couv { aspect-ratio: 3 / 4; border-radius: 5px; max-width: 100%; }
+.puce { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--doux); }
+.puce::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--pale); }
+.puce.vert::before { background: var(--ok); }
+.puce.bleu::before { background: var(--accent); }
+.gros { font-family: var(--f-titre); font-size: 40px; line-height: 1; font-variant-numeric: tabular-nums; }
+.pieces-brief { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.pieces-brief div { display: flex; flex-direction: column; gap: 3px; font-size: 10.5px; color: var(--doux); }
+.pieces-brief i { display: block; height: 30px; border-radius: 6px; }
+
+/* ── attente ── */
+.attente-bloc { display: grid; place-items: center; min-height: 220px; text-align: center; padding: 24px; border-radius: 24px; border: 1.5px dashed var(--ligne-forte); color: var(--doux); font-size: 14px; }
+
+/* ── plus tard ── */
+.plus-tard { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.plus-tard .verre { padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+.plus-tard h3 { font-family: var(--f-titre); font-size: 22px; }
+.plus-tard p { font-size: 14px; color: var(--doux); }
+
+@media (max-width: 980px) {
+  .planche { grid-template-columns: minmax(0, 1fr); }
+  .planche-compo { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 700px) {
+  .planche { padding: 14px; }
+  .photos-corps, .messagerie { grid-template-columns: minmax(0, 1fr); }
+  .grille { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .plus-tard { grid-template-columns: minmax(0, 1fr); }
+  .creation, .fin, .cartes-fiche, .deux-champs { grid-template-columns: minmax(0, 1fr); }
+  .etapes-form { flex-direction: row; overflow-x: auto; scrollbar-width: none; }
+  .etapes-form span { flex: 0 0 auto; }
+  .frise { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 14px; }
+  .frise::before, .duree { display: none; }
+  .couvs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bulle { max-width: 92%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .arrivee .point { animation: pouls 1.8s ease-in-out infinite; }
+  @keyframes pouls { 50% { box-shadow: 0 0 0 7px transparent; } }
+}
+</style>
+
+<div class="page">
+  <header class="tete">
+    <span class="surtitre">Édition collective · propositions du 19/10/2026</span>
+    <h1>Tes retours du 19/10, mis en écrans</h1>
+    <p>Une planche par point. À gauche ce que tu as dit, ce que fait le code aujourd'hui et ce que je propose ; à droite l'écran proposé, avec les vraies couleurs de l'espace. Réponds par le numéro : « je valide 1 et 2, pour 5 je préfère… ».</p>
+  </header>
+
+  <nav class="sommaire" aria-label="Les planches">
+    <a href="#p1"><span>1</span>Le style, en choisissant</a>
+    <a href="#p2"><span>2</span>Le style, la composition ouverte</a>
+    <a href="#p3"><span>3</span>Les photos, par personne</a>
+    <a href="#p4"><span>4</span>Terminer la collecte</a>
+    <a href="#p5"><span>5</span>Créer une édition</a>
+    <a href="#p6"><span>6</span>Les liens et le mail</a>
+    <a href="#p7"><span>7</span>La fiche en cartes</a>
+    <a href="#p8"><span>8</span>La messagerie de l'atelier</a>
+    <a href="#plus-tard"><span>+</span>Pour plus tard</a>
+  </nav>
+
+  <!-- 1 ─────────────────────────────────────────────── -->
+  <section class="planche" id="p1">
+    <div class="recit">
+      <span class="num">Planche 1 · espace client</span>
+      <h2>Le style : le mur prend toute la place</h2>
+      <p class="citation">« Entre la composition au milieu et le récap à droite, ce n'est pas très clair. Quand on choisit, les modifications ne sont pas claires. »</p>
+      <div class="bloc-r">
+        <h3>Aujourd'hui</h3>
+        <p>Le mur au centre, et à droite une colonne fixe « Ta composition » : cinq lignes de texte (« Palette · Marine, du style Riviera »). Une pièce choisie n'a qu'un liseré bleu fin et un bouton qui passe de « Ajouter » à « Choisie ». Rien ne dit qu'une nouvelle palette a <strong>remplacé</strong> l'ancienne.</p>
+      </div>
+      <div class="bloc-r">
+        <h3>Je propose</h3>
+        <ul>
+          <li>La colonne de droite disparaît : le mur prend toute la largeur.</li>
+          <li>En bas, une barre « Ta composition » montre tes choix <strong>en images</strong> (couvertures, pastilles de la palette, « Aa », doubles pages) et ce qui manque. Un clic l'ouvre en grand (planche 2).</li>
+          <li>Une pièce choisie se voit de loin : cadre épais, sceau « ✓ Dans ta composition », bouton « Retirer ».</li>
+          <li>Chaque geste se dit : « Palette Marine ajoutée. Elle remplace Sable. Annuler ».</li>
+          <li>Au survol d'une palette quand tu en as déjà une : « Remplacera Sable ».</li>
+        </ul>
+      </div>
+      <div class="trancher bloc-r">
+        <h3>À trancher</h3>
+        <p>La barre en bas de l'écran (proposé), ou un bouton « Ma composition » en haut à droite ?</p>
+      </div>
+    </div>
+
+    <div class="ecran" aria-label="Maquette : le mur des styles, composition repliée">
+      <div class="legende-ecran"><b>/edition/…/style</b><span>ordinateur, mode jour ou nuit selon ton appareil</span></div>
+      <div class="ligne-flex entre">
+        <div><div class="titre-ecran">Le style</div><span class="note">Compose librement, une pièce à la fois</span></div>
+        <div class="mags">
+          <div class="mag on">Magazine 1 · Promo 2026<small>3 pièces sur 4 exigées</small></div>
+          <div class="mag">Magazine 2 · Les professeurs<small>À composer</small></div>
+        </div>
+      </div>
+      <div class="onglets"><span class="on">Tout</span><span>Couvertures</span><span>Typographies</span><span>Palettes</span><span>Doubles pages</span></div>
+
+      <div class="mur">
+        <article class="piece choisie">
+          <span class="sceau">✓ Dans ta composition</span>
+          <div class="vis"><div class="couv" style="background: linear-gradient(160deg, var(--couv-1), #0f2236)"><i>Riviera</i><b>Promo<br>2026</b></div></div>
+          <div class="pied"><div><b>Couverture</b><span>du style Riviera</span></div><button class="bouton petit">Retirer</button></div>
+        </article>
+        <article class="piece">
+          <div class="vis"><div class="typo"><b>Aa</b><span>Cormorant et DM Sans<br>du style Éditorial</span></div></div>
+          <div class="pied"><div><b>Typographies</b><span>Éditorial</span></div><button class="bouton petit">Ajouter</button></div>
+        </article>
+        <article class="piece choisie">
+          <span class="sceau">✓ Ta palette</span>
+          <div class="vis"><div class="bandes"><span style="background:#1d3b5c"></span><span style="background:#4a7fa8"></span><span style="background:#e9e1d3"></span><span style="background:#c96f4a"></span></div></div>
+          <div class="pied"><div><b>Palette · Marine</b><span>du style Riviera</span></div><span class="pastille accent">Choisie</span></div>
+        </article>
+        <article class="piece">
+          <span class="remplace">Remplacera ta palette Marine</span>
+          <div class="vis"><div class="bandes"><span style="background:#2b2b2b"></span><span style="background:#6b6259"></span><span style="background:#d8cfc2"></span><span style="background:#f4efe6"></span></div></div>
+          <div class="pied"><div><b>Palette · Sable</b><span>du style Archive</span></div><button class="bouton petit">Prendre</button></div>
+        </article>
+        <article class="piece">
+          <div class="vis large"><div class="double"><div style="background:var(--photo-a)"></div><div style="background:var(--creux)"></div></div></div>
+          <div class="pied"><div><b>Double · Aérée</b><span>du style Nuit</span></div><button class="bouton petit">Ajouter</button></div>
+        </article>
+        <article class="piece">
+          <div class="vis"><div class="couv" style="background: linear-gradient(160deg, var(--couv-2), #8a3f22)"><i>Grand air</i><b>Promo<br>2026</b></div></div>
+          <div class="pied"><div><b>Couverture</b><span>du style Grand air</span></div><button class="bouton petit">Aimer</button></div>
+        </article>
+        <article class="piece choisie">
+          <span class="sceau">✓ Dans ta composition</span>
+          <div class="vis large"><div class="double"><div style="background:var(--photo-b)"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px"><div style="background:var(--photo-c)"></div><div style="background:var(--photo-d)"></div></div></div></div>
+          <div class="pied"><div><b>Double · Dense</b><span>du style Brut</span></div><button class="bouton petit">Retirer</button></div>
+        </article>
+        <article class="piece">
+          <div class="vis"><div class="typo"><b style="font-family: var(--f-texte); font-weight: 600; font-size: 30px">Aa</b><span>DM Sans seule<br>du style Brut</span></div></div>
+          <div class="pied"><div><b>Typographies</b><span>Brut</span></div><button class="bouton petit">Ajouter</button></div>
+        </article>
+      </div>
+
+      <div class="toast" role="status">Palette Marine ajoutée. Elle remplace Sable. <button type="button">Annuler</button></div>
+
+      <div class="dock">
+        <div class="mini" aria-hidden="true">
+          <span style="background: linear-gradient(160deg, var(--couv-1), #0f2236)"></span>
+          <span class="ronds"><i style="background:#1d3b5c;margin-left:0"></i><i style="background:#4a7fa8"></i><i style="background:#e9e1d3"></i><i style="background:#c96f4a"></i></span>
+          <span class="vide" title="Typographies à choisir"></span>
+          <span style="background:var(--photo-b);width:40px;height:30px"></span>
+        </div>
+        <div class="quoi"><b>Ta composition · Magazine 1</b><span class="note">Il manque les typographies. 2 styles mêlés.</span></div>
+        <button class="bouton plein">Voir ma composition</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 ─────────────────────────────────────────────── -->
+  <section class="planche" id="p2">
+    <div class="recit">
+      <span class="num">Planche 2 · espace client</span>
+      <h2>La composition ouverte : une planche, pas une liste</h2>
+      <p class="citation">« Un récap caché qui, quand on l'ouvre, est vraiment visuellement beau, et on comprend ce qu'on avait choisi. »</p>
+      <div class="bloc-r">
+        <h3>Je propose</h3>
+        <ul>
+          <li>« Voir ma composition » ouvre une grande feuille par-dessus le mur.</li>
+          <li>On y <strong>voit</strong> le magazine : les couvertures aimées en grand, la palette en nuancier, un spécimen des typographies, les doubles pages en vignettes, la place du texte en curseur.</li>
+          <li>Chaque case porte « Modifier », qui ouvre seulement cette partie, comme aujourd'hui.</li>
+          <li>Une case vide se dessine en pointillés, avec ce qu'il faut faire.</li>
+          <li>« Valider le brief » vit ici, en bas : on valide en regardant l'ensemble.</li>
+        </ul>
+      </div>
+      <div class="bloc-r">
+        <h3>Ce que ça change dans le code</h3>
+        <p>Rien en base, rien dans les règles du brief (<strong>brief.ts</strong>) : seulement l'écran du mur. Sur téléphone, la feuille prend tout l'écran.</p>
+      </div>
+    </div>
+
+    <div class="ecran" aria-label="Maquette : la composition ouverte">
+      <div class="legende-ecran"><b>« Voir ma composition »</b><span>la feuille s'ouvre par-dessus le mur</span></div>
+      <div class="feuille">
+        <div class="feuille-tete">
+          <div>
+            <span class="note">Magazine 1 · Promo 2026</span>
+            <h3>Ta composition</h3>
+            <span class="note">Trois styles mêlés : Riviera, Éditorial, Brut. L'atelier accorde l'ensemble et te le montre au bon à tirer.</span>
+          </div>
+          <span class="pastille">Fermer ✕</span>
+        </div>
+        <div class="planche-compo">
+          <div class="case">
+            <div class="case-tete"><h4>Couvertures aimées · 2 sur 3</h4><button class="bouton lien">Modifier</button></div>
+            <div class="couvs">
+              <figure><div class="vis"><div class="couv" style="background: linear-gradient(160deg, var(--couv-1), #0f2236)"><i>Riviera</i><b>Promo<br>2026</b></div></div><figcaption>de Riviera</figcaption></figure>
+              <figure><div class="vis"><div class="couv" style="background: linear-gradient(160deg, var(--couv-3), #000)"><i>Nuit</i><b>Promo<br>2026</b></div></div><figcaption>de Nuit</figcaption></figure>
+              <div class="place">Une de plus, si tu veux</div>
+            </div>
+          </div>
+          <div class="case">
+            <div class="case-tete"><h4>La palette · Marine</h4><button class="bouton lien">Modifier</button></div>
+            <div class="nuancier">
+              <div><i style="background:#1d3b5c"></i><span>#1D3B5C</span></div>
+              <div><i style="background:#4a7fa8"></i><span>#4A7FA8</span></div>
+              <div><i style="background:#e9e1d3"></i><span>#E9E1D3</span></div>
+              <div><i style="background:#c96f4a"></i><span>#C96F4A</span></div>
+            </div>
+            <span class="note">du style Riviera</span>
+          </div>
+          <div class="case">
+            <div class="case-tete"><h4>Les typographies</h4><button class="bouton lien">Modifier</button></div>
+            <div class="specimen">
+              <b>Promo 2026</b>
+              <p>Le texte courant s'écrit ainsi, sur toutes les pages du magazine. Cormorant pour les titres, DM Sans pour le reste.</p>
+            </div>
+            <span class="note">du style Éditorial</span>
+          </div>
+          <div class="case">
+            <div class="case-tete"><h4>Doubles pages · 2</h4><button class="bouton lien">Modifier</button></div>
+            <div class="doubles">
+              <figure><div class="vis"><div class="double"><div style="background:var(--photo-a)"></div><div style="background:var(--creux)"></div></div></div><figcaption>Aérée · Nuit</figcaption></figure>
+              <figure><div class="vis"><div class="double"><div style="background:var(--photo-b)"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px"><div style="background:var(--photo-c)"></div><div style="background:var(--photo-d)"></div></div></div></div><figcaption>Dense · Brut</figcaption></figure>
+              <div class="place" style="aspect-ratio:4/3">+ jusqu'à 5</div>
+            </div>
+            <div class="case-tete" style="margin-top:6px"><h4>La place du texte</h4><button class="bouton lien">Modifier</button></div>
+            <div class="jauge"><span>Surtout des photos</span><span class="on">Un peu de texte</span><span>Beaucoup de texte</span></div>
+          </div>
+        </div>
+        <div class="feuille-pied">
+          <span class="pastille ok">✓ Tout ce qu'il faut est choisi</span>
+          <div class="ligne-flex"><button class="bouton">Continuer à composer</button><button class="bouton plein">Valider le brief du magazine 1</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 ─────────────────────────────────────────────── -->
+  <section class="planche" id="p3">
+    <div class="recit">
+      <span class="num">Planche 3 · espace client</span>
+      <h2>Les photos : chaque personne nommée, et les arrivées en direct</h2>
+      <p class="citation">« Je m'appelle Mathias, je l'ai marqué comme nom : ça aurait dû afficher Mathias à un endroit clair. Et ça ne se met pas à jour sans rafraîchir. »</p>
+      <div class="bloc-r">
+        <h3>Aujourd'hui</h3>
+        <ul>
+          <li>Ton prénom est bien enregistré. Mais les pastilles par personne n'apparaissent qu'<strong>à partir de deux personnes</strong> sur un même lien : seul, tu n'en avais aucune.</li>
+          <li>Aucune vignette ne porte de nom. Le prénom ne se lit que dans l'onglet « Les liens » et côté atelier.</li>
+          <li>Le filtre par personne n'existe pas dans « Toutes les photos ». « Mathias » et « mathias » comptent pour deux personnes.</li>
+          <li>Revenir sur le lien du participant redonne un champ prénom vide.</li>
+          <li>La page Photos se charge une fois, puis ne se relit qu'après <strong>tes</strong> envois. Le tableau de bord, pareil.</li>
+        </ul>
+      </div>
+      <div class="bloc-r">
+        <h3>Je propose</h3>
+        <ul>
+          <li>Dans un dossier, une rangée de personnes : « Tout le monde », puis chaque prénom avec son nombre, <strong>dès la première personne</strong>. Un clic filtre.</li>
+          <li>Dans « Toutes les photos » aussi, la même rangée, tous liens confondus.</li>
+          <li>Chaque vignette porte le prénom de qui l'a envoyée.</li>
+          <li>« Mathias », « mathias » et « Mathias  » sont la même personne.</li>
+          <li>Le lien du participant se souvient de son prénom sur son téléphone.</li>
+          <li>Les arrivées en direct : « 12 nouvelles photos de Mathias, à l'instant », sans recharger. Les nouvelles sont marquées.</li>
+          <li>Pour cela, l'écran demande seulement « combien de photos, et la dernière ? » : toutes les 30 secondes sur Photos, chaque minute sur le tableau de bord, jamais quand l'onglet est caché. Il ne recharge la grille que si le nombre a changé.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ecran" aria-label="Maquette : les photos rangées par personne">
+      <div class="legende-ecran"><b>/edition/…/photos</b><span>le responsable, pendant la collecte</span></div>
+      <div class="ligne-flex entre">
+        <div><div class="titre-ecran">Les photos</div><span class="note compte">1 248 photos · 23 personnes · 86 dans ta sélection</span></div>
+        <button class="bouton plein">Ajouter des photos</button>
+      </div>
+      <div class="photos-corps">
+        <div class="albums verre">
+          <div class="alb"><span>Toutes les photos</span><small>1 248</small></div>
+          <div class="alb"><span>Ma sélection</span><small>86</small></div>
+          <div class="grp">Déposées par toi</div>
+          <div class="alb"><span>Soirée de gala</span><small>310</small></div>
+          <div class="alb"><span>Remise des diplômes</span><small>214</small></div>
+          <div class="grp">Arrivées par les liens</div>
+          <div class="alb on"><span>Lien des élèves</span><small class="neuf">412 · +12</small></div>
+          <div class="alb pers on"><span>Mathias</span><small>12</small></div>
+          <div class="alb pers"><span>Léa</span><small>30</small></div>
+          <div class="alb pers"><span>Inès</span><small>27</small></div>
+          <div class="alb pers"><span class="pale">+ 17 personnes</span></div>
+          <div class="alb"><span>Lien du photographe</span><small>312</small></div>
+        </div>
+        <div class="contenu verre">
+          <div class="fil">Arrivées par les liens / <b>Lien des élèves</b></div>
+          <div class="arrivee" role="status"><span class="point" aria-hidden="true"></span><span><b>12 nouvelles photos de Mathias</b>, à l'instant</span><button class="bouton petit">Les voir</button></div>
+          <div class="personnes" aria-label="Filtrer par personne">
+            <span class="perso"><i>412</i>Tout le monde</span>
+            <span class="perso on"><i>M</i>Mathias <small>12</small></span>
+            <span class="perso"><i>L</i>Léa <small>30</small></span>
+            <span class="perso"><i>I</i>Inès <small>27</small></span>
+            <span class="perso"><i>T</i>Tom <small>8</small></span>
+            <span class="perso"><i>S</i>Sacha <small>30</small></span>
+          </div>
+          <div class="ligne-flex entre"><span class="note">Mathias · 12 photos · arrivées ce soir entre 18 h 40 et 18 h 42</span><span class="note">Trier : <b>par arrivée</b></span></div>
+          <div class="grille">
+            <div class="tuile neuve" style="background:var(--photo-a)"><span class="qui">Mathias</span></div>
+            <div class="tuile neuve" style="background:var(--photo-b)"><span class="qui">Mathias</span></div>
+            <div class="tuile neuve" style="background:var(--photo-c)"><span class="qui">Mathias</span></div>
+            <div class="tuile neuve" style="background:var(--photo-d)"><span class="qui">Mathias</span></div>
+            <div class="tuile neuve" style="background:var(--photo-b)"><span class="qui">Mathias</span></div>
+            <div class="tuile" style="background:var(--photo-c)"><span class="qui">Mathias</span></div>
+            <div class="tuile" style="background:var(--photo-a)"><span class="qui">Mathias</span></div>
+            <div class="tuile" style="background:var(--photo-d)"><span class="qui">Mathias</span></div>
+            <div class="tuile" style="background:var(--photo-a)"><span class="qui">Mathias</span></div>
+            <div class="tuile" style="background:var(--photo-b)"><span class="qui">Mathias</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 ─────────────────────────────────────────────── -->
+  <section class="planche" id="p4">
+    <div class="recit">
+      <span class="num">Planche 4 · espace client et atelier</span>
+      <h2>« Tout est là » : finir la collecte avant la date</h2>
+      <p class="citation">« Est-ce que les gens peuvent valider en disant : on a envoyé toutes les photos, voici la sélection, et nous on l'a en avance ? Ou il faut attendre le dernier jour ? »</p>
+      <div class="bloc-r">
+        <h3>Aujourd'hui</h3>
+        <ul>
+          <li>La collecte se ferme seule à la date de clôture. Avant, seul l'<strong>atelier</strong> peut « Clore maintenant ».</li>
+          <li>Le responsable n'a aucun bouton pour dire « c'est complet ». Il ne peut que l'écrire dans les messages.</li>
+          <li>L'atelier <strong>voit déjà</strong> chaque photo dès qu'elle arrive, et peut tout télécharger pendant la collecte.</li>
+          <li>Mais il ne voit <strong>pas</strong> « Ma sélection » : ni sur la fiche, ni dans le téléchargement. Seul le journal dit « une photo ajoutée à la présélection », sans dire laquelle.</li>
+        </ul>
+      </div>
+      <div class="bloc-r">
+        <h3>Je propose</h3>
+        <ul>
+          <li>Sur le tableau de bord du responsable, une carte « Toutes les photos sont là ? » avec « Terminer la collecte ».</li>
+          <li>Le geste se confirme en deux temps et dit ce qui va se passer (les liens se ferment, l'atelier commence).</li>
+          <li>L'atelier reçoit l'information dans sa boîte, et peut rouvrir la collecte tant qu'aucune maquette n'est publiée, comme aujourd'hui.</li>
+          <li>Côté atelier, la sélection devient visible : un filtre « Sélection du client · 86 » sur l'onglet Photos, et un dossier « selection » dans le téléchargement.</li>
+        </ul>
+      </div>
+      <div class="trancher bloc-r">
+        <h3>À trancher</h3>
+        <p>« Terminer la collecte » <strong>ferme les liens</strong> des participants (proposé), ou prévient seulement l'atelier, les liens restant ouverts jusqu'à la date ?</p>
+      </div>
+    </div>
+
+    <div class="ecran" aria-label="Maquette : terminer la collecte depuis le tableau de bord">
+      <div class="legende-ecran"><b>/edition/… (tableau de bord)</b><span>le responsable, pendant la collecte</span></div>
+      <div class="ligne-flex entre">
+        <div><div class="titre-ecran">Bonjour Claire</div><span class="note">Promo 2026 · Lycée Montaigne</span></div>
+        <span class="pastille accent">Collecte ouverte jusqu'au 14 novembre</span>
+      </div>
+      <div class="verre" style="padding:18px;display:flex;flex-direction:column;gap:12px">
+        <div class="ligne-flex entre">
+          <div>
+            <div style="font-family:var(--f-titre);font-size:26px;line-height:1.05">Toutes les photos sont là ?</div>
+            <span class="note">L'atelier peut commencer dès aujourd'hui au lieu d'attendre le 14 novembre.</span>
+          </div>
+          <span class="compte" style="font-family:var(--f-titre);font-size:42px;line-height:1">1 248<span class="note" style="font-family:var(--f-texte);margin-left:6px">photos</span></span>
+        </div>
+        <div class="ligne-flex"><span class="pastille">23 personnes</span><span class="pastille">2 dossiers à toi</span><span class="pastille accent">86 dans ta sélection</span></div>
+        <div class="ligne-flex"><button class="bouton plein">Terminer la collecte</button><span class="note">Tu peux aussi laisser courir jusqu'à la date.</span></div>
+      </div>
+      <div class="verre" style="padding:18px;display:flex;flex-direction:column;gap:10px;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent), var(--ombre-douce)">
+        <span class="note" style="color:var(--accent-texte)">Après un clic sur « Terminer la collecte »</span>
+        <div style="font-family:var(--f-titre);font-size:22px;line-height:1.1">Terminer la collecte maintenant ?</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--doux);display:flex;flex-direction:column;gap:2px">
+          <li>Les liens des participants se ferment : ils verront « La collecte est terminée ».</li>
+          <li>L'atelier commence avec les 1 248 photos et tes 86 choisies.</li>
+          <li>Si tu as oublié quelqu'un, écris à l'atelier : il peut rouvrir.</li>
+        </ul>
+        <div class="ligne-flex"><button class="bouton plein">Oui, terminer</button><button class="bouton">Pas encore</button></div>
+      </div>
+      <div class="verre" style="padding:14px;display:flex;flex-direction:column;gap:8px">
+        <span class="note">Et côté atelier, onglet Photos de la fiche</span>
+        <div class="onglets"><span>Toutes · 1 248</span><span class="on">Sélection du client · 86</span><span>Par personne</span><span>Doublons · 14</span></div>
+        <div class="grille" style="grid-template-columns:repeat(8,minmax(0,1fr))">
+          <div class="tuile" style="background:var(--photo-a)"></div><div class="tuile" style="background:var(--photo-c)"></div><div class="tuile" style="background:var(--photo-b)"></div><div class="tuile" style="background:var(--photo-d)"></div>
+          <div class="tuile" style="background:var(--photo-c)"></div><div class="tuile" style="background:var(--photo-a)"></div><div class="tuile" style="background:var(--photo-d)"></div><div class="tuile" style="background:var(--photo-b)"></div>
+        </div>
+        <div class="ligne-flex"><span class="pastille ok">✓ Collecte terminée par Claire le 3 novembre</span><button class="bouton petit">Télécharger la sélection</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 ─────────────────────────────────────────────── -->
+  <section class="planche" id="p5">
+    <div class="recit">
+      <span class="num">Planche 5 · atelier</span>
+      <h2>Créer une édition : le calendrier d'abord, chaque case dit ce qu'elle fait</h2>
+      <p class="citation">« Quand on crée une édition, les dates et les attributs pourraient être beaucoup plus clairs. Pour cocher, ça devrait être plus clair au niveau des dates. »</p>
+      <div class="bloc-r">
+        <h3>Aujourd'hui</h3>
+        <ul>
+          <li>Une seule vraie date : la clôture, un champ date-heure brut. <strong>Vide</strong>, la collecte ne se ferme jamais seule ; <strong>dans le passé</strong>, l'édition passe aussitôt en composition. Aucune des deux choses n'est dite.</li>
+          <li>« Dates de l'événement » est un texte libre qui promet « tel que le client le lira » : le client ne le lit nulle part.</li>
+          <li>Les chiffres du devis (pages, tirage, tours) passent avant le responsable et les magazines.</li>
+          <li>« Présélection remise à l'atelier », « Tours de corrections inclus » : sans unité ni aide.</li>
+          <li>L'aide des magazines dit encore « tout l'intérieur suit le style choisi », règle remplacée le 14/10 (D24).</li>
+          <li>Les cinq cases « ce qu'on demande au client » ne disent pas ce qu'elles font.</li>
+        </ul>
+      </div>
+      <div class="bloc-r">
+        <h3>Je propose</h3>
+        <ul>
+          <li>Six étapes dans l'ordre où on pense : le client, le calendrier, les magazines, les photos, ce que le client doit envoyer, le devis.</li>
+          <li>Le calendrier en frise : aujourd'hui, l'événement, la clôture, la livraison. La durée de la collecte se calcule (« 26 jours pour déposer »).</li>
+          <li>La clôture se choisit en un clic (« dans 2 semaines », « 3 semaines », « 1 mois ») ou au calendrier, 23 h 59 par défaut, heure de Paris. Une date passée est refusée ; laisser vide le dit en rouge.</li>
+          <li>Chaque case dit son effet chez le client.</li>
+          <li>Les chiffres portent leur unité (« 30 photos par personne »).</li>
+        </ul>
+      </div>
+      <div class="trancher bloc-r">
+        <h3>À préciser</h3>
+        <p>« La liste dans le lancement n'est pas claire » : tu parles de la liste des magazines, des cinq cases « ce qu'on demande au client », ou de la liste des éditions ? Et « cocher au niveau des dates » : c'est le calendrier du champ de clôture ?</p>
+      </div>
+    </div>
+
+    <div class="ecran" aria-label="Maquette : créer une édition, étape du calendrier">
+      <div class="legende-ecran"><b>/admin/collectif/nouvelle</b><span>valeurs d'exemple</span></div>
+      <div class="ligne-flex entre"><div class="titre-ecran">Nouvelle édition</div><span class="note">Rien ne part chez le client à cette étape</span></div>
+      <div class="creation">
+        <div class="etapes-form verre">
+          <span class="fait"><i>✓</i>Le client</span>
+          <span class="on"><i>2</i>Le calendrier</span>
+          <span><i>3</i>Les magazines</span>
+          <span><i>4</i>Les photos</span>
+          <span><i>5</i>À envoyer par le client</span>
+          <span><i>6</i>Le devis</span>
+        </div>
+        <div class="form-corps verre">
+          <h4>Le calendrier</h4>
+          <div class="frise">
+            <div class="jalon plein"><i></i><b>Aujourd'hui</b>19 oct.<br>les liens s'ouvrent</div>
+            <div class="jalon"><i></i><b>L'événement</b>du 2 au 4 octobre</div>
+            <div class="jalon plein"><i></i><b>Clôture</b>14 nov., 23 h 59<br>les liens se ferment</div>
+            <div class="jalon creux"><i></i><b>Livraison</b>facultatif</div>
+            <span class="duree">26 jours pour déposer les photos</span>
+          </div>
+          <div class="champ">
+            <label>Clôture de la collecte</label>
+            <div class="puces-choix"><span>Dans 2 semaines</span><span>Dans 3 semaines</span><span class="on">14 novembre</span><span>Dans 1 mois</span><span>Choisir au calendrier…</span></div>
+            <span class="aide">À 23 h 59, heure de Paris. Les liens des participants se ferment seuls ; tu peux clore plus tôt depuis la fiche, ou le client peut terminer lui-même.</span>
+          </div>
+          <div class="deux-champs">
+            <div class="champ"><label>Dates de l'événement</label><div class="saisie">du 2 au 4 octobre</div><span class="aide">Pour toi seulement : elles s'affichent en tête de la fiche.</span></div>
+            <div class="champ"><label>Livraison souhaitée</label><div class="saisie pale">jj / mm / aaaa</div><span class="aide">Facultatif. Le client la voit dans « Livraison ».</span></div>
+          </div>
+          <div class="avert" role="note"><b>!</b><span>Sans date de clôture, la collecte reste ouverte jusqu'à ce que quelqu'un la ferme.</span></div>
+          <div class="champ" style="gap:8px">
+            <label>Étape 5, pour comparer : ce que le client doit envoyer</label>
+            <div class="case-effet"><span class="coche">✓</span><span>Le logo, en vectoriel<small>Une case « Logo » dans son espace, qu'il doit remplir.</small></span></div>
+            <div class="case-effet"><span class="coche non"></span><span>La liste des participants<small>Non demandée : la case n'apparaît pas chez lui.</small></span></div>
+          </div>
+          <div class="ligne-flex entre"><button class="bouton">← Le client</button><button class="bouton plein">Les magazines →</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 ─────────────────────────────────────────────── -->
+  <section class="planche" id="p6">
+    <div class="recit">
+      <span class="num">Planche 6 · atelier</span>
+      <h2>Fin de création : les trois liens, et le mail prêt à partir</h2>
+      <p class="citation">« Il devrait y avoir à la fin de l'édition, quand on la crée, le mail qui permet de donner l'accès aux liens de l'équipe et surtout de la personne responsable directement. »</p>
+      <div class="bloc-r">
+        <h3>Aujourd'hui</h3>
+        <ul>
+          <li>Après « Créer », on arrive sur la fiche, sans un mot. Le mail « Votre espace est prêt » existe, mais il est rangé dans l'onglet « Réglages et liens ».</li>
+          <li>Ce mail ne contient que le lien du responsable. Il <strong>parle</strong> d'un lien d'équipe que l'espace client ne donne nulle part : seul l'atelier le voit.</li>
+          <li>En production, les mails de l'Édition collective sont coupés, et le texte attend ta relecture depuis le 15/10.</li>
+        </ul>
+      </div>
+      <div class="bloc-r">
+        <h3>Je propose</h3>
+        <ul>
+          <li>Après « Créer l'édition », un écran « L'édition est créée » avec les trois liens, chacun avec son rôle en une ligne.</li>
+          <li>Le mail au responsable porte les trois liens, bien séparés : le sien (à garder), celui de l'équipe (lecture seule, à transférer), celui des participants (avec le QR code).</li>
+          <li>« Envoyer au responsable » s'arme en deux temps, avec l'aperçu à côté. Si les mails sont coupés, le bouton le dit et « Copier les trois liens » prend le relais.</li>
+          <li>Le lien d'équipe devient visible dans l'espace du responsable (« Partager avec mon équipe »).</li>
+        </ul>
+      </div>
+      <div class="trancher bloc-r">
+        <h3>À trancher</h3>
+        <ul>
+          <li>Le texte du mail ci-contre te va ?</li>
+          <li>On ouvre les mails de l'Édition collective en production (la variable <strong>COLLECTIF_MAILS</strong>, sur Vercel) ? Aucun mail ne partira sans ton accord.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ecran" aria-label="Maquette : l'écran après la création, et le mail au responsable">
+      <div class="legende-ecran"><b>juste après « Créer l'édition »</b><span>valeurs d'exemple</span></div>
+      <div><div class="titre-ecran">L'édition est créée</div><span class="note">Promo 2026 · Lycée Montaigne · 2 magazines · collecte jusqu'au 14 novembre</span></div>
+      <div class="fin">
+        <div class="liens">
+          <div class="lien-carte verre premier">
+            <div class="ligne-flex entre"><b>Le lien de Claire, la responsable</b><span class="pastille accent">à envoyer</span></div>
+            <span class="note">Elle y fait tout : photos, style, bon à tirer. À ne pas transférer.</span>
+            <span class="url">bellajour.fr/edition/kq3f…</span>
+            <div class="ligne-flex"><button class="bouton plein petit">Envoyer à claire.dubois@lycee-montaigne.fr</button><button class="bouton petit">Copier</button></div>
+          </div>
+          <div class="lien-carte verre">
+            <b>Le lien de l'équipe</b>
+            <span class="note">Lecture seule : suivre sans rien modifier. Claire le transfère à qui elle veut.</span>
+            <span class="url">bellajour.fr/edition/x8pl…</span>
+          </div>
+          <div class="lien-carte verre">
+            <b>Le lien des participants</b>
+            <span class="note">Pour déposer ses photos, avec un QR code. Il s'ouvre maintenant et se ferme le 14 novembre.</span>
+            <span class="url">bellajour.fr/depot/mf2z…</span>
+          </div>
+          <div class="ligne-flex"><button class="bouton petit">Copier les trois liens</button><button class="bouton lien">Aller à la fiche →</button></div>
+        </div>
+        <div class="mail" aria-label="Aperçu du mail">
+          <div class="entete"><span>À : <b>claire.dubois@lycee-montaigne.fr</b></span><span>Objet : <b>Votre espace Bellajour est prêt, Promo 2026</b></span></div>
+          <h5>Bonjour Claire,</h5>
+          <p>L'espace de votre édition « Promo 2026 » est ouvert. Voici vos trois liens.</p>
+          <div class="lien-mail"><b>Votre lien</b><small>Pour tout faire : photos, style, bon à tirer. Gardez-le pour vous.</small><span class="btn-mail">Ouvrir mon espace</span></div>
+          <div class="lien-mail"><b>Le lien de votre équipe</b><small>Lecture seule. Transférez-le à vos collègues.</small><span class="btn-mail clair">Copier le lien d'équipe</span></div>
+          <div class="lien-mail"><b>Le lien des participants</b><small>Pour que chacun dépose ses photos, jusqu'au 14 novembre. Le QR code est dans votre espace.</small><span class="btn-mail clair">Copier le lien de dépôt</span></div>
+          <p class="note">L'atelier Bellajour</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 ─────────────────────────────────────────────── -->
+  <section class="planche" id="p7">
+    <div class="recit">
+      <span class="num">Planche 7 · atelier</span>
+      <h2>La fiche : chaque onglet bâti comme la vue d'ensemble</h2>
+      <p class="citation">« Les différents onglets ne sont pas très propres à l'intérieur, comme pourrait l'être le dashboard, qui est actuellement bien. »</p>
+      <div class="bloc-r">
+        <h3>Aujourd'hui</h3>
+        <ul>
+          <li>La vue d'ensemble est faite de cartes : vignettes, pastilles de couleur, grands chiffres, mosaïque de photos.</li>
+          <li>Les huit autres onglets sont faits d'une autre famille de cartes : titres plus petits, listes de texte nu (« Palette : … », « Typographies : … »), aucune vignette.</li>
+          <li>« Réglages et liens » met tout le formulaire dans une carte, qui contient elle-même cinq cadres : des cartes dans une carte.</li>
+        </ul>
+      </div>
+      <div class="bloc-r">
+        <h3>Je propose</h3>
+        <ul>
+          <li>Une seule famille de cartes pour toute la fiche, celle de la vue d'ensemble.</li>
+          <li><strong>Magazines</strong> : une carte par magazine, avec sa couverture, son état en pastille et son brief en images (palette, « Aa », doubles pages).</li>
+          <li><strong>Photos</strong> : les grands chiffres, la mosaïque, les personnes, la sélection du client (planche 4).</li>
+          <li><strong>Réglages</strong> : les mêmes six étapes que la création (planche 5), jamais de cadre dans un cadre.</li>
+        </ul>
+      </div>
+      <div class="trancher bloc-r">
+        <h3>À préciser</h3>
+        <p>Le « dashboard » que tu trouves bien, c'est bien la vue d'ensemble de la fiche ? Ou le tableau de bord de l'espace client ?</p>
+      </div>
+    </div>
+
+    <div class="ecran" aria-label="Maquette : l'onglet Magazines de la fiche, en cartes">
+      <div class="legende-ecran"><b>/admin/collectif/… · onglet Magazines</b><span>valeurs d'exemple</span></div>
+      <div class="ligne-flex entre"><div><div class="titre-ecran">Lycée Montaigne</div><span class="note">Promo 2026 · collecte ouverte, 26 jours restants</span></div><span class="pastille accent">À vous : rien pour l'instant</span></div>
+      <div class="onglets-fiche verre" style="padding:4px;border-radius:999px;width:fit-content;max-width:100%"><span>Vue d'ensemble</span><span class="on">Magazines</span><span>Photos</span><span>Messages</span><span>Documents</span><span>Rendez-vous</span><span>Livraison</span><span>Réglages</span><span>Journal</span></div>
+      <div class="cartes-fiche">
+        <div class="carte-fiche verre">
+          <div class="tete-c"><h4>Magazine 1 · Les élèves</h4><span class="puce vert">Brief validé</span></div>
+          <div class="mag-ligne"><span class="mini-couv" style="background:linear-gradient(160deg,var(--couv-1),#0f2236)"></span><span class="note">48 pages · 3 styles mêlés : Riviera, Éditorial, Brut · validé le 22 octobre par Claire</span></div>
+          <div class="pieces-brief">
+            <div><i style="background:linear-gradient(90deg,#1d3b5c 25%,#4a7fa8 25% 50%,#e9e1d3 50% 75%,#c96f4a 75%)"></i>Palette Marine</div>
+            <div><i style="background:var(--creux);display:grid;place-items:center;font-family:var(--f-titre);font-size:20px;color:var(--texte);font-style:normal">Aa</i>Éditorial</div>
+            <div><i style="background:var(--photo-a)"></i>Aérée</div>
+            <div><i style="background:var(--photo-b)"></i>Dense</div>
+          </div>
+          <div class="ligne-flex entre"><span class="note">2 couvertures aimées · un peu de texte</span><button class="bouton petit">Bon à tirer →</button></div>
+        </div>
+        <div class="carte-fiche verre">
+          <div class="tete-c"><h4>Magazine 2 · Les professeurs</h4><span class="puce">À composer</span></div>
+          <div class="mag-ligne"><span class="mini-couv" style="border:1.5px dashed var(--ligne-forte)"></span><span class="note">24 pages · aucune pièce choisie pour l'instant</span></div>
+          <div class="pieces-brief">
+            <div><i style="border:1.5px dashed var(--ligne-forte)"></i>Palette</div>
+            <div><i style="border:1.5px dashed var(--ligne-forte)"></i>Typographies</div>
+            <div><i style="border:1.5px dashed var(--ligne-forte)"></i>Doubles</div>
+            <div><i style="border:1.5px dashed var(--ligne-forte)"></i>Couvertures</div>
+          </div>
+          <div class="ligne-flex entre"><span class="note">Le client n'a pas encore ouvert le mur</span><button class="bouton petit">Lui écrire</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 ─────────────────────────────────────────────── -->
+  <section class="planche" id="p8">
+    <div class="recit">
+      <span class="num">Planche 8 · atelier</span>
+      <h2>La messagerie : qui attend une réponse, et depuis où</h2>
+      <p class="citation">« Il nous faut des notifications quand il y a un nouveau message, des couleurs pour lu et non lu, et un trait pour voir quels sont les anciens messages et les nouveaux. »</p>
+      <div class="bloc-r">
+        <h3>Aujourd'hui</h3>
+        <ul>
+          <li>La liste des conversations distingue déjà les non lues (nom en gras, pastille, filtre « Non lus »).</li>
+          <li><strong>Dans le fil</strong>, rien ne distingue un message lu d'un nouveau, et il n'y a ni trait ni séparation des jours.</li>
+          <li>Ouvrir « Messages » marque <strong>aussitôt</strong> lue la première conversation, avant même que tu l'aies regardée.</li>
+          <li>Les pastilles ne se mettent jamais à jour seules : un nouveau message n'apparaît qu'en rechargeant. Elles manquent sur les pages Styles, Agendas, Nouvelle édition et Bon à tirer.</li>
+          <li>Hors de la page, rien : ni onglet du navigateur, ni mail.</li>
+        </ul>
+      </div>
+      <div class="bloc-r">
+        <h3>Je propose</h3>
+        <ul>
+          <li><strong>Partout dans l'atelier</strong> : « Messages » porte le nombre de conversations qui attendent, rafraîchi chaque minute, et l'onglet du navigateur aussi : « (3) Atelier ».</li>
+          <li><strong>La liste</strong> : on garde ce qui existe, l'heure passe en bleu, la liste se met à jour seule.</li>
+          <li><strong>Le fil</strong> : un trait « 2 nouveaux messages » posé là où tu t'étais arrêté, et les jours séparés. Le trait reste en place tant que tu es dans la conversation.</li>
+          <li>Une conversation ne se marque lue qu'une fois ouverte <strong>par toi</strong>, jamais d'office. « Marquer comme non lu » pour en garder une à traiter.</li>
+        </ul>
+      </div>
+      <div class="trancher bloc-r">
+        <h3>À trancher</h3>
+        <p>Un mail à l'atelier quand un client écrit (regroupé, une fois par heure au plus) ? Il passe par Brevo, donc il attend ton accord.</p>
+      </div>
+    </div>
+
+    <div class="ecran" aria-label="Maquette : la messagerie de l'atelier avec les non lus">
+      <div class="onglet-nav"><i aria-hidden="true"></i>(3) Atelier · Messages</div>
+      <div class="barre-adm verre">
+        <span>Dossiers</span><span>Éditions</span><span class="on">Messages <b class="compteur">3</b></span><span>Planning</span><span>Styles</span>
+      </div>
+      <div class="messagerie">
+        <div class="convs verre">
+          <div class="filtre-conv onglets"><span class="on">Non lus · 3</span><span>Tous · 9</span></div>
+          <div class="conv nonlu on"><span class="p"></span><div><b>Lycée Montaigne · Promo 2026</b><small>Claire : On peut ajouter un magazine pour…</small></div><span class="h">18:42<b class="compteur">2</b></span></div>
+          <div class="conv nonlu"><span class="p"></span><div><b>Atelier Moreau · Séminaire</b><small>Paul : Le logo en vectoriel, le voici</small></div><span class="h">16:05<b class="compteur">1</b></span></div>
+          <div class="conv nonlu"><span class="p"></span><div><b>Club de voile · Saison</b><small>Inès : Merci !</small></div><span class="h">hier<b class="compteur">1</b></span></div>
+          <div class="conv"><span class="p"></span><div><b>Mairie de Sète · Fête</b><small>Vous : Le bon à tirer est en ligne</small></div><span class="h">lun.</span></div>
+          <div class="conv"><span class="p"></span><div><b>École Jules-Ferry</b><small>Vous : Parfait, on lance</small></div><span class="h">12/10</span></div>
+        </div>
+        <div class="fil-msg verre">
+          <div class="ligne-flex entre"><b style="font-weight:500">Lycée Montaigne · Promo 2026</b><button class="bouton petit">Marquer comme non lu</button></div>
+          <span class="jour">Hier</span>
+          <div class="bulle lu">Bonjour, on a bien reçu le lien pour les élèves. Merci !<small>Claire · 10:12 · lu</small></div>
+          <div class="bulle nous lu">Avec plaisir. Le plafond est à 30 photos par élève.<small>Vous · 10:40</small></div>
+          <span class="jour">Aujourd'hui</span>
+          <div class="separateur">2 nouveaux messages</div>
+          <div class="bulle neuf">On peut ajouter un magazine pour les professeurs ?<small>Claire · 18:41</small></div>
+          <div class="bulle neuf">Même format, une vingtaine de pages.<small>Claire · 18:42</small></div>
+          <div class="ligne-flex" style="margin-top:4px"><span class="pastille" style="flex:1;justify-content:flex-start;padding:10px 14px">Écrire à Claire…</span><button class="bouton plein">Envoyer</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- plus tard ──────────────────────────────────────── -->
+  <section id="plus-tard" class="planche" style="grid-template-columns:minmax(0,1fr)">
+    <div class="recit">
+      <span class="num">Pour plus tard · noté au backlog, rien n'est codé</span>
+      <h2>Ce que tu as mis de côté</h2>
+    </div>
+    <div class="plus-tard">
+      <div class="verre">
+        <h3>Relancer les participants à qui il reste des photos</h3>
+        <p>« Il te reste 10 photos sur 30 », à ceux qui ont laissé une adresse. Aujourd'hui, le lien ne demande <strong>aucune adresse</strong> : c'est un choix écrit du cahier des charges (« pas de mail, pas d'adresse demandée »). Il faudrait une adresse facultative, une case d'accord pour les rappels (texte légal), une colonne en base et un mail. Le reste se calcule déjà, par téléphone.</p>
+        <p><strong>Question :</strong> tu as dit « après la fin du projet ». Après la clôture, les liens sont fermés. Tu voulais dire quelques jours <em>avant</em> la clôture ?</p>
+      </div>
+      <div class="verre">
+        <h3>Repenser la sélection</h3>
+        <p>Comprendre comment les gens choisissent vraiment (ou ne choisissent pas) avant de redessiner « Ma sélection ». À observer sur les premières vraies éditions.</p>
+      </div>
+    </div>
+  </section>
+</div>
