@@ -19,6 +19,7 @@ import { manquesPourPublier } from "@/lib/collectif/styles";
 import { libelleTypeDocument } from "@/lib/collectif/documents";
 import { contenuClient } from "@/lib/collectif/contenus";
 import { compositionDu, stylesDeLaComposition, type BriefLigne } from "@/lib/collectif/brief";
+import { magazineVide } from "@/lib/collectif/saisie";
 import { TYPES_DOUBLES } from "@/lib/collectif/styles";
 import { lireMessages } from "@/lib/collectif/messagerie";
 import { aTraiter, conversationsDe, type ATraiter, type Conversation, type MessageBoite } from "@/lib/collectif/boite";
@@ -226,7 +227,7 @@ export async function chargerBoite(
 
 export type MagazineFiche = Pick<MagazineLigne, "id" | "rang" | "nom" | "brief_valide_le" | "bat_valide_le"> & {
   toursPublies: number;
-  /** Ni brief commencé, ni tour : il peut se retirer (le dernier seulement). */
+  /** Aucune pièce de brief, aucun tour, rien de validé (`magazineVide`) : il peut se retirer (T-190). */
   vide: boolean;
   /** Le brief, lisible par l'atelier : chaque pièce dit son style (D24, composition pièce par pièce). */
   brief: {
@@ -469,7 +470,8 @@ export async function chargerEdition(
           brief_valide_le: m.brief_valide_le,
           bat_valide_le: m.bat_valide_le,
           toursPublies: t.publies,
-          vide: !(briefs.get(m.id)?.styles.length) && !m.brief_valide_le && t.total === 0,
+          /* La MÊME règle que le PATCH qui retire (T-190) : la poubelle et la route ne se contredisent pas. */
+          vide: magazineVide(m, t.total),
           brief: briefs.get(m.id) ?? { styles: [], palette: null, typos: null, texte: null, doubles: [], aimees: [] },
         };
       }),

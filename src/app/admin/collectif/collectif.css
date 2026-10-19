@@ -240,22 +240,6 @@
 .eca-root .eca-case--eteinte {
   color: var(--bj-text-faint);
 }
-.eca-root .eca-magazines {
-  display: flex;
-  flex-direction: column;
-  gap: var(--bj-sp-2);
-}
-.eca-root .eca-magazine {
-  display: flex;
-  align-items: center;
-  gap: var(--bj-sp-2);
-}
-.eca-root .eca-magazine-rang {
-  flex: none;
-  width: 92px;
-  color: var(--bj-text-soft);
-  font-size: var(--bj-fs-sm);
-}
 .eca-root .eca-barre {
   display: flex;
   flex-wrap: wrap;
@@ -2326,17 +2310,6 @@
 .eca-root .eca-lien-texte:hover {
   color: var(--bj-text);
 }
-.eca-root .eca-calendrier {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--bj-text-soft);
-}
-.eca-root .eca-form-corps .eca-calendrier .eca-input {
-  width: auto;
-}
 .eca-root .eca-input--lu {
   display: block;
   color: var(--bj-text-soft);
@@ -2420,23 +2393,6 @@
 }
 .eca-root .eca-avert b {
   font-weight: 700;
-}
-
-/* Un chiffre et son unité, sur une ligne. */
-.eca-root .eca-unite {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-.eca-root .eca-form-corps .eca-input--chiffre {
-  flex: none;
-  width: 104px;
-}
-.eca-root .eca-unite-texte {
-  min-width: 0;
-  font-size: 13px;
-  color: var(--bj-text-soft);
 }
 
 /* Chaque case dit son effet chez le client. */

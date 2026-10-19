@@ -82,6 +82,7 @@ import { lienAbrege, liensEdition, origineDepuis, texteTroisLiens } from "@/lib/
 import { prochaineEtape } from "@/lib/collectif/prochaine";
 import { phraseEvenement } from "@/lib/collectif/recit";
 import { ETAPE_DU_CHAMP, ETAPES_EDITION, LIBELLE_CHAMP, lireSaisieEdition, planMagazines, rangEtapeDuChamp, type MagazineActuel } from "@/lib/collectif/saisie";
+import * as Saisie from "@/lib/collectif/saisie";
 import * as Calendrier from "@/lib/collectif/calendrier";
 import {
   estCleImageStyle,
@@ -745,26 +746,214 @@ titre("— T-186 : la cloture passee est refusee (a la creation, et en reglage s
       && Calendrier.lireChampCloture("2026-11-14T23:59")?.jour === "2026-11-14" && Calendrier.lireChampCloture("2026-02-30T23:59") === null && Calendrier.champCloture("2026-11-14") === "2026-11-14T23:59");
   ok("l'instant d'un raccourci passe par l'heure de Paris (23 h 59 a Paris le 14 novembre = 22 h 59 UTC)",
     instantDeParis(Calendrier.champCloture("2026-11-14")) === "2026-11-14T22:59:00.000Z");
+
+  titre("— T-189 : le calendrier Bellajour (planche 9), la grille, la plage, le texte —");
+  const g = Calendrier.grilleMois("2026-10");
+  ok("octobre 2026 : lundi d'abord, cinq semaines, du lundi 28 septembre au dimanche 1er novembre (la planche)",
+    g.length === 5 && g[0][0].jour === "2026-09-28" && !g[0][0].dansLeMois && g[0][3].jour === "2026-10-01" && g[0][3].dansLeMois
+      && g[4][6].jour === "2026-11-01" && !g[4][6].dansLeMois && g.every((s) => s.length === 7)
+      && Calendrier.INITIALES_JOURS.join("") === "LMMJVSD" && Calendrier.titreMois("2026-10") === "Octobre 2026");
+  ok("novembre 2026 a SIX semaines (le 30 est un lundi : la planche l'avait oublie) ; fevrier 2027 en a quatre ; le mois d'apres decembre est janvier",
+    Calendrier.grilleMois("2026-11").length === 6 && Calendrier.grilleMois("2026-11")[5][0].jour === "2026-11-30"
+      && Calendrier.grilleMois("2027-02").length === 4 && Calendrier.moisPlus("2026-12", 1) === "2027-01" && Calendrier.moisPlus("2027-01", -1) === "2026-12"
+      && Calendrier.grilleMois("pas un mois").length === 0);
+  ok("la plage au clic : le premier pose le debut (un seul jour, deja valable), le second la fin, un second AVANT le debut devient le debut, un troisieme recommence",
+    (() => {
+      const a = Calendrier.cliquerPlage(null, false, "2026-10-02");
+      const b = Calendrier.cliquerPlage(a.plage, a.enAttente, "2026-10-04");
+      const c = Calendrier.cliquerPlage(b.plage, b.enAttente, "2026-10-09");
+      const d = Calendrier.cliquerPlage(a.plage, a.enAttente, "2026-09-30");
+      const e = Calendrier.cliquerPlage(a.plage, a.enAttente, "2026-10-02");
+      return JSON.stringify(a) === '{"plage":{"debut":"2026-10-02","fin":"2026-10-02"},"enAttente":true}'
+        && JSON.stringify(b) === '{"plage":{"debut":"2026-10-02","fin":"2026-10-04"},"enAttente":false}'
+        && JSON.stringify(c.plage) === '{"debut":"2026-10-09","fin":"2026-10-09"}' && c.enAttente
+        && JSON.stringify(d.plage) === '{"debut":"2026-09-30","fin":"2026-10-02"}'
+        && JSON.stringify(e.plage) === '{"debut":"2026-10-02","fin":"2026-10-02"}' && !e.enAttente;
+    })());
+  ok("le texte ecrit : « du 2 au 4 octobre 2026 », « le 2 octobre 2026 », « le 1er », entre deux mois, entre deux annees ; une plage a l'envers remise dans l'ordre",
+    Calendrier.textePlage({ debut: "2026-10-02", fin: "2026-10-04" }) === "du 2 au 4 octobre 2026"
+      && Calendrier.textePlage({ debut: "2026-10-02", fin: "2026-10-02" }) === "le 2 octobre 2026"
+      && Calendrier.textePlage({ debut: "2026-10-01", fin: "2026-10-03" }) === "du 1er au 3 octobre 2026"
+      && Calendrier.textePlage({ debut: "2026-09-30", fin: "2026-10-02" }) === "du 30 septembre au 2 octobre 2026"
+      && Calendrier.textePlage({ debut: "2026-12-28", fin: "2027-01-03" }) === "du 28 décembre 2026 au 3 janvier 2027"
+      && Calendrier.textePlage({ debut: "2026-10-04", fin: "2026-10-02" }) === "du 2 au 4 octobre 2026");
+  ok("relire ce qu'on a ecrit donne la meme plage (aller-retour sur 400 plages), casse, espaces et accents toleres",
+    (() => {
+      for (let i = 0; i < 400; i++) {
+        const debut = Calendrier.jourPlus("2026-01-01", { jours: i * 3 });
+        const fin = Calendrier.jourPlus(debut, { jours: i % 45 });
+        const p = Calendrier.lirePlage(Calendrier.textePlage({ debut, fin }));
+        if (!p || p.debut !== debut || p.fin !== fin) return false;
+      }
+      return JSON.stringify(Calendrier.lirePlage("  Du 2 au 4   OCTOBRE 2026 ")) === '{"debut":"2026-10-02","fin":"2026-10-04"}'
+        && JSON.stringify(Calendrier.lirePlage("du 28 decembre 2026 au 3 janvier 2027")) === '{"debut":"2026-12-28","fin":"2027-01-03"}';
+    })());
+  ok("un texte d'avant qui ne se relit pas reste TEL QUEL (null : rien de selectionne, rien de reecrit) ; un jour qui n'existe pas non plus",
+    Calendrier.lirePlage("du 2 au 4 octobre") === null && Calendrier.lirePlage("début octobre") === null && Calendrier.lirePlage("") === null
+      && Calendrier.lirePlage("le 31 novembre 2026") === null && Calendrier.lirePlage("du 4 au 2 octobre 2026") === null);
+  ok("les pieds : « 3 jours », « 1 jour » ; « 26 jours pour déposer » du 19 octobre au 14 novembre, « Jusqu'à ce soir » le jour meme",
+    Calendrier.phraseJoursPlage({ debut: "2026-10-02", fin: "2026-10-04" }) === "3 jours" && Calendrier.phraseJoursPlage({ debut: "2026-10-02", fin: "2026-10-02" }) === "1 jour"
+      && Calendrier.phraseDepot(Calendrier.joursEntre("2026-10-19", "2026-11-14") ?? -1) === "26 jours pour déposer" && Calendrier.phraseDepot(0) === "Jusqu'à ce soir");
+  ok("le clavier : fleches d'un jour ou d'une semaine, pages d'un mois (le 31 janvier + 1 mois = fin fevrier), une autre touche ne bouge rien",
+    Calendrier.jourAuClavier("2026-10-31", "ArrowRight") === "2026-11-01" && Calendrier.jourAuClavier("2026-10-01", "ArrowUp") === "2026-09-24"
+      && Calendrier.jourAuClavier("2026-01-31", "PageDown") === "2026-02-28" && Calendrier.jourAuClavier("2026-10-02", "a") === null
+      && Calendrier.libelleJour("2026-10-02") === "vendredi 2 octobre 2026" && Calendrier.libelleJour("2026-11-01") === "dimanche 1er novembre 2026");
+
+  const form = lire("src/app/admin/collectif/FormulaireEdition.tsx");
+  const cal = lire("src/app/admin/collectif/Calendrier.tsx");
+  ok("plus AUCUN champ du navigateur pour une date, une heure ou un chiffre dans le formulaire ; le calendrier Bellajour aux trois endroits",
+    !/type="(date|datetime-local|time|number)"/.test(form + lire("src/app/admin/collectif/Pastille.tsx") + cal)
+      && (form.match(/<Calendrier\b/g) ?? []).length === 3
+      && /mode="plage"/.test(form) && (form.match(/mode="jour"/g) ?? []).length === 2
+      && /onPlage=\{\(p\) => maj\("dates_texte", textePlage\(p\)\)\}/.test(form));
+  ok("la cloture au calendrier : les jours passes barres (min = aujourd'hui, venu du serveur), 23 h 59 heure de Paris par champCloture, le pied le dit",
+    /libelle="Clôture de la collecte"\s*aujourdhui=\{aujourdhui\}\s*min=\{aujourdhui\}/.test(form)
+      && /choisirCloture\(champCloture\(jour, heureCloture\)\)/.test(form) && /const heureCloture = cloture\?\.heure \?\? HEURE_CLOTURE;/.test(form)
+      && /`à \$\{formaterHeure\(heureCloture\)\}, heure de Paris`/.test(form) && /const aujourdhui = versChampParis\(props\.maintenant\)\.slice\(0, 10\);/.test(form));
+  ok("le panneau : Echap et un clic dehors referment, un jour passe ne se choisit pas, aujourd'hui est marque (aria-current)",
+    /e\.key !== "Escape"/.test(cal) && /addEventListener\("pointerdown", dehors\)/.test(cal) && /if \(min && jour < min\) return;/.test(cal)
+      && /aria-current=\{jour === aujourdhui \? "date" : undefined\}/.test(cal) && !/setState|set[A-Z]\w*\(/.test(cal.slice(cal.indexOf("useEffect("), cal.indexOf("const semaines"))));
 }
 
-titre("— les magazines : renommer, ajouter a la suite, retirer le dernier s'il est vide —");
+titre("— les magazines : renommer, ajouter a la suite, retirer un magazine VIDE (T-190, planche 10) —");
 const actuels: MagazineActuel[] = [
   { id: "a", rang: 1, nom: "Le seminaire", vide: false },
   { id: "b", rang: 2, nom: "La soiree", vide: true },
 ];
 const pRen = planMagazines(actuels, [{ id: "a", nom: "Le grand seminaire" }, { id: "b", nom: "La soiree" }]);
-ok("renommer le premier", pRen.ok && pRen.renommer.length === 1 && pRen.renommer[0].nom === "Le grand seminaire" && !pRen.ajouter.length);
+ok("renommer le premier", pRen.ok && pRen.renommer.length === 1 && pRen.renommer[0].nom === "Le grand seminaire" && !pRen.ajouter.length && !pRen.renumeroter.length);
 const pAj = planMagazines(actuels, [{ id: "a", nom: "Le seminaire" }, { id: "b", nom: "La soiree" }, { id: null, nom: "Le voyage" }]);
 ok("ajouter a la suite : rang 3", pAj.ok && pAj.ajouter.length === 1 && pAj.ajouter[0].rang === 3);
 const pRet = planMagazines(actuels, [{ id: "a", nom: "Le seminaire" }]);
-ok("retirer le dernier, vide", pRet.ok && pRet.retirer.join() === "b");
-ok("retirer un magazine qui a un brief : refuse",
-   !planMagazines([{ ...actuels[0] }, { ...actuels[1], vide: false }], [{ id: "a", nom: "x" }]).ok);
-ok("retirer le premier en gardant le second : refuse (pas de renumerotation)",
-   !planMagazines(actuels, [{ id: "b", nom: "La soiree" }]).ok);
+ok("retirer le dernier, vide", pRet.ok && pRet.retirer.join() === "b" && !pRet.renumeroter.length);
+ok("retirer un magazine qui a un brief : refuse, en CONFLIT (409), le message le nomme et propose de le renommer",
+   (() => { const p = planMagazines([{ ...actuels[0] }, { ...actuels[1], vide: false }], [{ id: "a", nom: "x" }]); return !p.ok && p.conflit === true && /« La soiree »/.test(p.message) && /Changez son nom si besoin\./.test(p.message); })());
 ok("un id etranger a l'edition : refuse", !planMagazines(actuels, [{ id: "zzz", nom: "x" }]).ok);
 ok("a la creation, tout s'ajoute a partir du rang 1",
    (() => { const p = planMagazines([], [{ id: null, nom: "Un" }, { id: null, nom: "Deux" }]); return p.ok && p.ajouter.map((x) => x.rang).join() === "1,2"; })());
+
+{
+  /* Rejoue un plan sur une table qui tient `unique (edition_id, rang)` : retraits, puis
+     rangs un par un dans l'ordre donne, puis ajouts. Rend les rangs finaux, ou l'etape qui heurte. */
+  const rejouer = (avant: MagazineActuel[], p: ReturnType<typeof planMagazines>): string => {
+    if (!p.ok) return `refus : ${p.message}`;
+    const table = new Map(avant.map((m) => [m.id, { rang: m.rang, nom: m.nom }]));
+    const occupe = (rang: number, sauf?: string) => [...table].some(([id, m]) => id !== sauf && m.rang === rang);
+    for (const id of p.retirer) table.delete(id);
+    for (const r of p.renumeroter) {
+      if (occupe(r.rang, r.id)) return `collision au rang ${r.rang}`;
+      table.get(r.id)!.rang = r.rang;
+    }
+    p.ajouter.forEach((m, i) => {
+      if (occupe(m.rang)) throw new Error(`collision a l'ajout, rang ${m.rang}`);
+      table.set(`nouveau-${i}`, { rang: m.rang, nom: m.nom });
+    });
+    for (const r of p.renommer) table.get(r.id)!.nom = r.nom;
+    return [...table.values()].sort((x, y) => x.rang - y.rang).map((m) => `${m.rang}:${m.nom}`).join(", ");
+  };
+  const trois: MagazineActuel[] = [
+    { id: "e", rang: 1, nom: "Les eleves", vide: false },
+    { id: "p", rang: 2, nom: "Les professeurs", vide: true },
+    { id: "s", rang: 3, nom: "La soiree", vide: false },
+  ];
+
+  ok("CREATION : retirer le 2 sur 3, les numeros se resserrent (1, 2) et les noms suivent",
+    (() => {
+      const lignes = [{ id: null, nom: "Un", vide: true }, { id: null, nom: "Deux", vide: true }, { id: null, nom: "Trois", vide: true }];
+      const restent = Saisie.retirerMagazine(lignes, 1);
+      const p = planMagazines([], restent);
+      return restent.map((m) => m.nom).join() === "Un,Trois" && p.ok && p.ajouter.map((m) => `${m.rang}:${m.nom}`).join() === "1:Un,2:Trois";
+    })());
+  ok("REGLAGES : retirer un magazine VIDE au milieu, le suivant prend son numero (rangs 1, 2), sans collision",
+    (() => {
+      const p = planMagazines(trois, [{ id: "e", nom: "Les eleves" }, { id: "s", nom: "La soiree" }]);
+      return p.ok && p.retirer.join() === "p" && JSON.stringify(p.renumeroter) === '[{"id":"s","rang":2}]'
+        && rejouer(trois, p) === "1:Les eleves, 2:La soiree";
+    })());
+  ok("REGLAGES : retirer un magazine COMMENCE est refuse (conflit), rien n'est prevu",
+    (() => { const p = planMagazines(trois, [{ id: "e", nom: "Les eleves" }, { id: "p", nom: "Les professeurs" }]); return !p.ok && p.conflit === true && /« La soiree »/.test(p.message); })());
+  ok("REGLAGES : retirer le PREMIER (vide) fait descendre tous les suivants, un par un, du plus petit au plus grand, sans collision",
+    (() => {
+      const quatre: MagazineActuel[] = [
+        { id: "w", rang: 1, nom: "W", vide: true }, { id: "x", rang: 2, nom: "X", vide: false },
+        { id: "y", rang: 3, nom: "Y", vide: true }, { id: "z", rang: 4, nom: "Z", vide: false },
+      ];
+      const p = planMagazines(quatre, [{ id: "x", nom: "X" }, { id: "z", nom: "Z" }]);
+      return p.ok && p.renumeroter.map((r) => `${r.id}${r.rang}`).join() === "x1,z2" && rejouer(quatre, p) === "1:X, 2:Z";
+    })());
+  ok("REGLAGES : retirer ET ajouter dans le meme enregistrement (le nouveau prend la suite des restants)",
+    (() => {
+      const p = planMagazines(trois, [{ id: "e", nom: "Les eleves" }, { id: "s", nom: "La soiree" }, { id: null, nom: "Le voyage" }]);
+      return p.ok && p.ajouter[0]?.rang === 3 && rejouer(trois, p) === "1:Les eleves, 2:La soiree, 3:Le voyage";
+    })());
+  ok("refuses : changer l'ordre, glisser un nouveau entre deux anciens, demander deux fois le meme",
+    !planMagazines(trois, [{ id: "s", nom: "x" }, { id: "e", nom: "y" }, { id: "p", nom: "z" }]).ok
+      && !planMagazines(trois, [{ id: "e", nom: "x" }, { id: null, nom: "n" }, { id: "p", nom: "y" }, { id: "s", nom: "z" }]).ok
+      && !planMagazines(trois, [{ id: "e", nom: "x" }, { id: "e", nom: "x" }, { id: "s", nom: "z" }]).ok);
+  ok("resserrerRangs : des rangs troues (1, 3, 7) redeviennent 1, 2, 3, seulement ceux qui changent, dans l'ordre",
+    JSON.stringify(Saisie.resserrerRangs([{ id: "c", rang: 7 }, { id: "a", rang: 1 }, { id: "b", rang: 3 }])) === '[{"id":"b","rang":2},{"id":"c","rang":3}]');
+  ok("la poubelle : un nouveau ou un vide se retire ; un commence dit pourquoi (mot pour mot la planche) ; le dernier reste",
+    Saisie.retraitMagazine({ id: null, vide: true }, 2).ok && Saisie.retraitMagazine({ id: "a", vide: true }, 2).ok
+      && (() => { const r = Saisie.retraitMagazine({ id: "a", vide: false }, 3); return !r.ok && r.raison === "Le client a commencé ce magazine : il ne se retire pas. Changez son nom si besoin."; })()
+      && (() => { const r = Saisie.retraitMagazine({ id: null, vide: true }, 1); return !r.ok && r.raison === Saisie.RAISON_DERNIER_MAGAZINE; })()
+      && Saisie.retirerMagazine([{ id: "a", vide: false }, { id: "b", vide: true }], 0).length === 2);
+  const brief = (b: Partial<BriefLigne> & { bat_valide_le?: string | null } = {}) =>
+    ({ style_id: null, palette_cle: null, texte: null, doubles: [], couvertures_aimees: [], brief_valide_le: null, ...b }) as BriefLigne & { bat_valide_le?: string | null };
+  ok("magazineVide : rien de compose, aucun tour, rien de valide ; une seule piece, un tour ou une validation suffit a le dire commence",
+    Saisie.magazineVide(brief(), 0)
+      && !Saisie.magazineVide(brief(), 1)
+      && !Saisie.magazineVide(brief({ typo_style_id: "s1" }), 0)
+      && !Saisie.magazineVide(brief({ couvertures_aimees: [{ style_id: "s1", couverture: "c" }] }), 0)
+      && !Saisie.magazineVide(brief({ texte: "equilibre" }), 0)
+      && !Saisie.magazineVide(brief({ brief_valide_le: "2026-10-19T10:00:00Z" }), 0)
+      && !Saisie.magazineVide(brief({ bat_valide_le: "2026-10-19T10:00:00Z" }), 0));
+  ok("l'etiquette d'une ligne en reglages : « vide », « brief validé », « bon à tirer validé », « 2 tours publiés », « brief commencé »",
+    Saisie.etiquetteMagazine({ vide: true, brief_valide_le: null, bat_valide_le: null, toursPublies: 0, briefCommence: false }).texte === "vide"
+      && Saisie.etiquetteMagazine({ vide: false, brief_valide_le: "x", bat_valide_le: null, toursPublies: 0, briefCommence: true }).texte === "brief validé"
+      && Saisie.etiquetteMagazine({ vide: false, brief_valide_le: "x", bat_valide_le: "y", toursPublies: 3, briefCommence: true }).texte === "bon à tirer validé"
+      && Saisie.etiquetteMagazine({ vide: false, brief_valide_le: "x", bat_valide_le: null, toursPublies: 2, briefCommence: true }).texte === "2 tours publiés"
+      && Saisie.etiquetteMagazine({ vide: false, brief_valide_le: null, bat_valide_le: null, toursPublies: 0, briefCommence: true }).texte === "brief commencé");
+
+  const routeReglages = lire("src/app/api/admin/collectif/editions/[id]/route.ts");
+  const fiche = lire("src/app/admin/collectif/donnees.ts");
+  ok("la route : magazineVide (avec les tours) pour chaque magazine, 409 sur un magazine commence, la suppression redit les colonnes brutes et se compte",
+    /vide: magazineVide\(m, nbTours\.get\(m\.id as string\) \?\? 0\)/.test(routeReglages)
+      && /status: plan\.conflit \? 409 : 422/.test(routeReglages)
+      && /\.delete\(\)\s*\.in\("id", retirer\)\s*\.eq\("edition_id", id\)\s*\.is\("brief_valide_le", null\)\s*\.is\("bat_valide_le", null\)\s*\.is\("style_id", null\)\s*\.is\("palette_cle", null\)\s*\.is\("texte", null\)\s*\.select\("id"\)/.test(routeReglages));
+  ok("la route : retraits, PUIS rangs resserres un par un, PUIS ajouts (jamais deux magazines au meme rang) ; chaque retrait journalise",
+    (() => {
+      const iRetrait = routeReglages.indexOf(".delete()");
+      const iRang = routeReglages.indexOf("update({ rang: r.rang })");
+      const iAjout = routeReglages.indexOf(".insert(ajouter.map(");
+      return iRetrait > 0 && iRang > iRetrait && iAjout > iRang
+        && /journaliser\(supabase, \{ editionId: id \}, "magazine_retire", \{ par, nom: m\.nom, rang: m\.rang \}, qui\)/.test(routeReglages)
+        && /magazines,\s*journal: journalOk/.test(routeReglages);
+    })());
+  ok("la fiche lit la MEME regle que la route (la poubelle et le PATCH ne se contredisent pas)",
+    /vide: magazineVide\(m, t\.total\)/.test(fiche));
+  ok("le journal dit le retrait en francais, sans token",
+    phraseEvenement("magazine_retire", { par: "Mathias", nom: "Les professeurs", rang: 2 }) === "« Les professeurs » (magazine 2) retiré par Mathias.");
+  ok("l'ecran reprend la liste ecrite par la route (un magazine ajoute ne repart pas en double au prochain « Enregistrer »)",
+    /reprendreMagazines\(json\.magazines\);/.test(lire("src/app/admin/collectif/FormulaireEdition.tsx")));
+
+  titre("— T-190 : les chiffres en pastille, et ou va le message d'accueil (planche 11) —");
+  const formP = lire("src/app/admin/collectif/FormulaireEdition.tsx");
+  const pastille = lire("src/app/admin/collectif/Pastille.tsx");
+  const depotPage = lire("src/app/depot/[token]/page.tsx");
+  ok("les valeurs rapides : 10, 20, 30, 50 pour les photos par personne, nulle part ailleurs ; jamais une valeur par defaut",
+    JSON.stringify(Saisie.VALEURS_RAPIDES) === '{"plafond_participant_atelier":[10,20,30,50]}'
+      && /plafond_participant_atelier: "",/.test(lire("src/app/admin/collectif/nouvelle/page.tsx")));
+  ok("la pastille : chiffres seulement, vide reste vide (null en base), « − » ne descend pas sous le minimum, l'unite dans la pastille",
+    /replace\(\/\\D\/g, ""\)/.test(pastille) && /disabled=\{n === null \|\| n <= plancher\}/.test(pastille)
+      && /n === null \? null : <span className="eca-fm-pas-unite">\{p\.unite\}<\/span>/.test(pastille) && /inputMode="numeric"/.test(pastille)
+      && (() => { const x = lireSaisieEdition({ ...creation, plafond_total: "" }, "creation"); return x.ok && x.edition.plafond_total === null; })());
+  ok("le message d'accueil : l'aide dit ou il s'affiche, et la phrase par defaut est MOT POUR MOT celle de la page des participants (vous et tu)",
+    /Il s'affiche sous le nom de l'événement, sur la page qu'ouvrent les participants avec le lien ou le QR code\. Vide : « \$\{accueilParDefaut\(v\.registre\)\} »/.test(formP)
+      && depotPage.includes(`'${Saisie.accueilParDefaut("entreprise_vous")}'`) && depotPage.includes(`'${Saisie.accueilParDefaut("ecole_tu")}'`));
+  ok("l'apercu suit la frappe (les valeurs du formulaire, rien lu en base), avec le nom, l'invitation, le prenom et le bouton",
+    /<ApercuDepot organisation=\{v\.organisation\} evenement=\{v\.evenement\} message=\{v\.invitation_texte\} registre=\{v\.registre\} \/>/.test(formP)
+      && (() => { const a = lire("src/app/admin/collectif/ApercuDepot.tsx"); return /vous invite/.test(a) && /t’invite/.test(a) && /Votre prénom et votre nom \(facultatif\)/.test(a) && /eca-fm-tel-bouton/.test(a) && !/supabase|fetch\(/.test(a) && !/#[0-9a-f]{3,8}\b/i.test(a); })());
+}
 
 /* ═══════════════════════════ PHASE 1 : LES STYLES ═══════════════════════════ */
 
@@ -1541,7 +1730,9 @@ titre("— D24 : le brief se compose piece par piece, de n'importe quel style �
   const fiche = lire("src/app/edition/[token]/style/[slug]/FicheStyle.tsx");
   ok("un style en detail : la barre d'etapes et ses quatre ancres, « Prendre tout le style »", ["ec-etape-1", "ec-etape-2", "ec-etape-3", "ec-etape-4"].every((x) => fiche.includes(`"${x}"`)) && fiche.includes("ec-fiche-etapes") && /Prendre tout le style/.test(fiche));
   ok("l'atelier voit le style de chaque piece (T-185 : chaque piece du brief dit son style, sous sa vignette)", /typos: c\.typos \?/.test(lire("src/app/admin/collectif/donnees.ts")) && /styles mêlés : \$\{m\.brief\.styles\.join/.test(lire("src/app/admin/collectif/[id]/page.tsx")) && /className="eca-piece-style"/.test(lire("src/app/admin/collectif/[id]/page.tsx")));
-  ok("un magazine compose n'est jamais « vide » (il ne se retire pas)", /stylesDeLaComposition\(compositionDu\(m\)\)\.length === 0/.test(lire("src/app/api/admin/collectif/editions/[id]/route.ts")));
+  ok("un magazine compose n'est jamais « vide » (il ne se retire pas)",
+    /const c = compositionDu\(m\);\s*return \(\s*stylesDeLaComposition\(c\)\.length === 0 &&/.test(lire("src/lib/collectif/saisie.ts"))
+      && /vide: magazineVide\(m, nbTours\.get\(m\.id as string\) \?\? 0\)/.test(lire("src/app/api/admin/collectif/editions/[id]/route.ts")));
 }
 
 titre("— T-179 : la composition en images ; chaque geste se dit et s'annule —");

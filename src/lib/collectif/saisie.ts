@@ -12,6 +12,7 @@
  */
 
 import { EMAIL_PATTERN, suggestionEmail } from "@/lib/atelier/questionnaire";
+import { compositionDu, stylesDeLaComposition, type BriefLigne } from "./brief";
 import { lireInstant } from "./etats";
 import { estJour } from "./livraison";
 import { lireEntierPositif, reglerPlafondAtelier, type ReglagesPlafond } from "./plafonds";
@@ -21,6 +22,24 @@ export type Erreur = { champ: string; message: string };
 
 /** Garde technique : au-delà, une édition se découpe en deux. */
 export const MAX_MAGAZINES = 12;
+
+/**
+ * Les valeurs fréquentes en un clic sous un chiffre (T-190, planche 11 du 19/10 au
+ * soir) : seulement là où la maquette en montre. Ce sont des RACCOURCIS, jamais une
+ * valeur par défaut : le champ part vide (`null`, « à fixer »).
+ */
+export const VALEURS_RAPIDES: Readonly<Record<string, readonly number[]>> = {
+  plafond_participant_atelier: [10, 20, 30, 50],
+};
+
+/**
+ * Ce que lit un participant quand le message d'accueil est vide : la phrase de la
+ * page `/depot/[token]`, MOT POUR MOT (le harnais compare les deux). Le formulaire
+ * la cite sous le champ et dans l'aperçu (T-190, planche 11).
+ */
+export function accueilParDefaut(registre: string): string {
+  return registre === "ecole_tu" ? "Dépose ici tes photos de l’événement." : "Déposez ici vos photos de l’événement.";
+}
 
 const LONGUEURS = {
   organisation: 120,
@@ -299,30 +318,120 @@ export function lireSaisieEdition(
 
 /* ─────────────────────────── les magazines d'une édition ─────────────────────────── */
 
+/* T-190, planche 10 du 19/10 au soir, validée par Mathias (« la renumérotation des
+   magazines dans les réglages me va ») : une poubelle sur CHAQUE magazine. À la
+   création rien n'existe, les numéros se resserrent ; en réglages, seul un magazine
+   ENCORE VIDE se retire, et les suivants prennent le numéro libéré (le client lit
+   « magazine 2 » devenir « magazine 1 »). Un magazine commencé ne se retire pas. */
+
 export type MagazineActuel = {
   id: string;
   rang: number;
   nom: string;
-  /** Rien n'y est attaché : ni brief commencé, ni tour. Seul un magazine vide se retire. */
+  /** Rien n'y est attaché : aucune pièce de brief, aucun tour, rien de validé (`magazineVide`). */
   vide: boolean;
 };
+
+/** Ce que dit la poubelle grisée d'un magazine commencé (planche 10, mot pour mot). */
+export const RAISON_MAGAZINE_COMMENCE = "Le client a commencé ce magazine : il ne se retire pas. Changez son nom si besoin.";
+/** Ce que dit la poubelle grisée du seul magazine qui reste. */
+export const RAISON_DERNIER_MAGAZINE = "Une édition garde au moins un magazine.";
+
+/**
+ * Un magazine est VIDE si rien ne le référence ni ne le remplit : aucune pièce de
+ * brief (palette, typographies, doubles pages, couvertures aimées, part de texte,
+ * de n'importe quel style, D24), ni brief ni bon à tirer validé, et aucun tour
+ * (`collectif_tours`, la seule table qui pointe vers un magazine ; les notes et
+ * les couvertures proposées pointent vers un tour). Lu par la fiche ET par le PATCH,
+ * dont la suppression redit les colonnes brutes (`style_id`, `palette_cle`, `texte`,
+ * les deux validations) : une ligne qu'on croit vide l'est aussi pour la base.
+ */
+export function magazineVide(m: BriefLigne & { bat_valide_le?: string | null }, nbTours: number): boolean {
+  const c = compositionDu(m);
+  return (
+    stylesDeLaComposition(c).length === 0 &&
+    c.couvertures.length === 0 &&
+    !c.texte &&
+    !m.style_id &&
+    !m.palette_cle &&
+    !m.texte &&
+    !m.brief_valide_le &&
+    !m.bat_valide_le &&
+    nbTours === 0
+  );
+}
+
+/** La ligne d'un magazine dans le formulaire : `id` nul tant qu'il n'est pas enregistré. */
+export type MagazineRetirable = { id: string | null; vide: boolean };
+
+/**
+ * La poubelle d'une ligne : un magazine pas encore enregistré ou encore vide se
+ * retire, tant qu'il en reste un autre. Sinon, la raison à dire.
+ */
+export function retraitMagazine(m: MagazineRetirable, total: number): { ok: true } | { ok: false; raison: string } {
+  if (total <= 1) return { ok: false, raison: RAISON_DERNIER_MAGAZINE };
+  if (m.id !== null && !m.vide) return { ok: false, raison: RAISON_MAGAZINE_COMMENCE };
+  return { ok: true };
+}
+
+/** La liste sans la ligne `i` (si elle se retire) : les suivantes remontent d'un rang. */
+export function retirerMagazine<T extends MagazineRetirable>(liste: T[], i: number): T[] {
+  const m = liste[i];
+  if (!m || !retraitMagazine(m, liste.length).ok) return liste;
+  return liste.filter((_, j) => j !== i);
+}
+
+export type EtiquetteMagazine = { texte: string; ton: "vide" | "fait" | "en_cours" };
+
+/** Ce que la ligne d'un magazine montre en réglages : « vide », ou où en est le client. */
+export function etiquetteMagazine(m: {
+  vide: boolean;
+  brief_valide_le: string | null;
+  bat_valide_le: string | null;
+  toursPublies: number;
+  briefCommence: boolean;
+}): EtiquetteMagazine {
+  if (m.vide) return { texte: "vide", ton: "vide" };
+  if (m.bat_valide_le) return { texte: "bon à tirer validé", ton: "fait" };
+  if (m.toursPublies > 0) return { texte: `${m.toursPublies} tour${m.toursPublies > 1 ? "s" : ""} publié${m.toursPublies > 1 ? "s" : ""}`, ton: "en_cours" };
+  if (m.brief_valide_le) return { texte: "brief validé", ton: "fait" };
+  if (m.briefCommence) return { texte: "brief commencé", ton: "en_cours" };
+  return { texte: "tour en préparation", ton: "en_cours" };
+}
+
+/**
+ * Les rangs resserrés 1, 2, 3… dans l'ordre actuel : seulement ceux qui changent,
+ * du plus petit au plus grand. Appliqués UN PAR UN dans cet ordre, ils ne heurtent
+ * jamais `unique (edition_id, rang)` : chaque magazine DESCEND (son nouveau rang
+ * est au plus l'ancien) et la place qu'il prend vient d'être libérée par un retrait
+ * ou par le magazine d'avant.
+ */
+export function resserrerRangs(restants: { id: string; rang: number }[]): { id: string; rang: number }[] {
+  return [...restants]
+    .sort((a, b) => a.rang - b.rang)
+    .map((m, i) => ({ id: m.id, avant: m.rang, rang: i + 1 }))
+    .filter((m) => m.rang !== m.avant)
+    .map(({ id, rang }) => ({ id, rang }));
+}
 
 export type PlanMagazines =
   | {
       ok: true;
       renommer: { id: string; nom: string }[];
+      /** À appliquer APRÈS les retraits, dans l'ordre (`resserrerRangs`). */
+      renumeroter: { id: string; rang: number }[];
       ajouter: { rang: number; nom: string }[];
       retirer: string[];
     }
-  | { ok: false; message: string };
+  | { ok: false; message: string; /** Un magazine commencé : 409, pas une saisie fautive. */ conflit?: boolean };
 
 /**
- * Ce que la fiche demande, face à ce qui existe.
+ * Ce que le formulaire demande, face à ce qui existe.
  *
- * Renommer : toujours. Ajouter : à la suite. Retirer : seulement le DERNIER,
- * et seulement s'il est vide. Ainsi les rangs restent 1, 2, 3 sans jamais
- * renuméroter (le rang est unique en base, et c'est lui que le client lit :
- * « magazine 2 »).
+ * Renommer : toujours. Ajouter : à la suite. Retirer : n'importe quel magazine
+ * ENCORE VIDE ; les suivants descendent d'un rang (`resserrerRangs`). Refusé :
+ * retirer un magazine commencé (`conflit`), changer l'ordre, un nouveau glissé
+ * entre deux anciens, un id d'une autre édition ou demandé deux fois.
  */
 export function planMagazines(actuels: MagazineActuel[], demandes: MagazineSaisi[]): PlanMagazines {
   const tries = [...actuels].sort((a, b) => a.rang - b.rang);
@@ -333,25 +442,31 @@ export function planMagazines(actuels: MagazineActuel[], demandes: MagazineSaisi
   }
   const gardes = demandes.filter((d) => d.id).map((d) => d.id as string);
   const nouveaux = demandes.filter((d) => !d.id);
+  if (new Set(gardes).size !== gardes.length) return { ok: false, message: "Un magazine est demandé deux fois." };
 
-  /* Les magazines gardés doivent être les premiers, dans leur ordre. */
-  const prefixe = tries.slice(0, gardes.length).map((m) => m.id);
-  if (gardes.join() !== prefixe.join()) {
-    return { ok: false, message: "On ne retire que le dernier magazine, et on ne change pas leur ordre." };
-  }
-  const retires = tries.slice(gardes.length);
-  if (retires.some((m) => !m.vide)) {
-    return { ok: false, message: "Ce magazine a déjà un brief ou un bon à tirer : il ne se retire pas." };
-  }
-  if (retires.length && nouveaux.length) {
-    return { ok: false, message: "Retirer et ajouter un magazine en même temps : faire l'un, puis l'autre." };
+  /* Les magazines gardés restent dans leur ordre, et les nouveaux viennent après eux. */
+  const ordre = tries.filter((m) => gardes.includes(m.id)).map((m) => m.id);
+  if (ordre.join() !== gardes.join()) return { ok: false, message: "L'ordre des magazines ne se change pas." };
+  const premierNouveau = demandes.findIndex((d) => !d.id);
+  if (premierNouveau !== -1 && demandes.slice(premierNouveau).some((d) => d.id)) {
+    return { ok: false, message: "Un nouveau magazine s'ajoute à la suite des autres." };
   }
 
+  const retires = tries.filter((m) => !gardes.includes(m.id));
+  const commence = retires.find((m) => !m.vide);
+  if (commence) {
+    return {
+      ok: false,
+      conflit: true,
+      message: `« ${commence.nom} » : le client a commencé ce magazine, il ne se retire pas. Changez son nom si besoin.`,
+    };
+  }
+
+  const restants = tries.filter((m) => gardes.includes(m.id));
   const renommer = demandes
     .filter((d) => d.id && parId.get(d.id)!.nom !== d.nom)
     .map((d) => ({ id: d.id as string, nom: d.nom }));
-  const dernierRang = gardes.length ? parId.get(gardes[gardes.length - 1])!.rang : 0;
-  const ajouter = nouveaux.map((d, i) => ({ rang: dernierRang + i + 1, nom: d.nom }));
+  const ajouter = nouveaux.map((d, i) => ({ rang: restants.length + i + 1, nom: d.nom }));
 
-  return { ok: true, renommer, ajouter, retirer: retires.map((m) => m.id) };
+  return { ok: true, renommer, renumeroter: resserrerRangs(restants), ajouter, retirer: retires.map((m) => m.id) };
 }
