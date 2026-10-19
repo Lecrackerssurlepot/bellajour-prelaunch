@@ -38,5 +38,10 @@ Planche 6 du canevas du 19/10 :
 **Avis requis** : le texte du mail, et l'ouverture de `COLLECTIF_MAILS` en production. Aucun
 envoi réel sans l'accord de Mathias (interdit n° 2).
 
+## Validé par Mathias le 19/10/2026
+« Je valide les huit planches telles quelles. Pour les questions, prends tes recommandations, sauf le mail : n'ouvre rien sans moi. »
+Planche 6 telle quelle, texte du mail compris. **`COLLECTIF_MAILS` reste FERMÉ** : l'ouvrir
+en production attend Mathias, aucun envoi réel sans lui.
+
 ## Ce qui a été fait
 Rien encore (maquette seulement).

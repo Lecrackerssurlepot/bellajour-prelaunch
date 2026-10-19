@@ -36,5 +36,9 @@ pour le responsable sans le refresh. » (19/10/2026)
    (planche 3 du canevas du 19/10).
 Charge : 120 appels par heure et par onglet ouvert sur Photos, à mettre en regard de T-169.
 
+## Validé par Mathias le 19/10/2026
+« Je valide les huit planches telles quelles. Pour les questions, prends tes recommandations, sauf le mail : n'ouvre rien sans moi. »
+Planche 3 telle quelle (les arrivées en direct).
+
 ## Ce qui a été fait
 Rien encore.

@@ -45,5 +45,11 @@ client ; chaque chiffre son unité ; les deux aides fausses corrigées.
 **À préciser par Mathias** : « la liste dans le lancement » (les magazines ? les cinq cases ?
 la liste des éditions ?) et « cocher au niveau des dates ».
 
+## Validé par Mathias le 19/10/2026
+« Je valide les huit planches telles quelles. Pour les questions, prends tes recommandations, sauf le mail : n'ouvre rien sans moi. »
+Planche 5 telle quelle. Lecture retenue : « la liste dans le lancement » = le formulaire de
+création et ses cases ; « cocher au niveau des dates » = le choix de la clôture. Les deux sont
+traités par la planche.
+
 ## Ce qui a été fait
 Rien encore (maquette seulement).

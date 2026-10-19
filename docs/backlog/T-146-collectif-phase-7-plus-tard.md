@@ -68,8 +68,8 @@ l'intègres dedans et on pourra définir cela. »
   par appareil et par lien (`plafond_par_personne` moins les photos CONFIRMÉES de l'appareil,
   borné par le reste du total), jamais par personne. Il faudrait : une adresse facultative et sa
   colonne (migration), une case d'accord pour les rappels (texte légal, T-158, T-184), un mail
-  dans `mailsTextes.ts`, un déclencheur planifié, un désabonnement. Question ouverte : « après la
-  fin du projet » ? Après la clôture, les liens sont fermés : sans doute quelques jours AVANT.
+  dans `mailsTextes.ts`, un déclencheur planifié, un désabonnement. Retenu le 19/10 (ma recommandation,
+  acceptée par Mathias) : quelques jours AVANT la clôture. Toujours pour plus tard.
 - **A1, prévenir l'atelier qu'un client a écrit** (PRD §11). Aucun mail ne part aujourd'hui
   (`api/collectif/messages/envoyer/route.ts:44-45`). La fréquence (regroupé, une fois par heure
   au plus ?) est à fixer par Mathias. L'écran de l'atelier, lui, est dans T-188.

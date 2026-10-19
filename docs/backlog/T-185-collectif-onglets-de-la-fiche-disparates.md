@@ -39,5 +39,9 @@ la création (T-186), sans cadre dans un cadre ; retirer les styles en ligne, ar
 
 **À préciser par Mathias** : le « dashboard » est-il bien la vue d'ensemble de la fiche ?
 
+## Validé par Mathias le 19/10/2026
+« Je valide les huit planches telles quelles. Pour les questions, prends tes recommandations, sauf le mail : n'ouvre rien sans moi. »
+Planche 7 telle quelle. Le « dashboard » est la vue d'ensemble de la fiche (ma recommandation).
+
 ## Ce qui a été fait
 Rien encore (maquette seulement).

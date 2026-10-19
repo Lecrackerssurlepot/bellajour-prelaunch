@@ -44,5 +44,9 @@ comme non lu ».
 **Hors de ce ticket** : un mail à l'atelier quand un client écrit (A1) est un envoi réel : il
 est noté dans T-146 et attend Mathias.
 
+## Validé par Mathias le 19/10/2026
+« Je valide les huit planches telles quelles. Pour les questions, prends tes recommandations, sauf le mail : n'ouvre rien sans moi. »
+Planche 8 telle quelle. Le mail A1 à l'atelier reste dans T-146 (« n'ouvre rien sans moi »).
+
 ## Ce qui a été fait
 Rien encore (maquette seulement).

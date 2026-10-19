@@ -587,3 +587,19 @@ Ce que je décide seul, faute de mot de Mathias (réversible) :
 
 **Conséquence :** migration `20261017_collectif_composition.sql` (la palette, les typographies
 et les doubles pages disent leur style), T-151.
+
+D25 (19/10/2026) — **Le responsable d'une édition peut terminer la collecte lui-même, et cela
+ferme les liens des participants.** Retours du 19/10 (planche 4, T-182), validés par Mathias
+(« prends tes recommandations »).
+
+Ce qui est tranché.
+- « Terminer la collecte » est un geste du RESPONSABLE (jamais de l'équipe en lecture), confirmé
+  en deux temps. Il a le même effet que « Clore maintenant » de l'atelier : la date de clôture
+  devient maintenant, les liens des participants disent que la collecte est terminée, l'atelier
+  commence.
+- Rouvrir reste un geste de l'ATELIER, possible tant qu'aucun tour n'est publié (règle du 13/10).
+- L'atelier voit la sélection du client (filtre sur la fiche, dossier à part dans le lot).
+
+**Conséquence :** la matrice des droits du PRD §2 gagne une ligne (le responsable termine la
+collecte) ; aucune migration.
+
