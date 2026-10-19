@@ -78,10 +78,11 @@ import { contenusAEnvoyer, ETAPES_CLIENT, etapeClient, initiales, joursAvant, li
 import { curseur, extraitDe, filDeConversation, fusionnerMessages, INTERVALLE_MESSAGES_MS, lirePieceJointe, lireTexteMessage, MESSAGE_MAX, PIECE_MAX, texteDuMessage, type Message } from "@/lib/collectif/messages";
 import { libelleTypeDocument, lireSaisieDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { formaterHeureParis, formaterInstantParis, formaterJourParis, instantDeParis, versChampParis } from "@/lib/collectif/dates";
-import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
+import { lienAbrege, liensEdition, origineDepuis, texteTroisLiens } from "@/lib/collectif/liens";
 import { prochaineEtape } from "@/lib/collectif/prochaine";
 import { phraseEvenement } from "@/lib/collectif/recit";
-import { lireSaisieEdition, planMagazines, type MagazineActuel } from "@/lib/collectif/saisie";
+import { ETAPE_DU_CHAMP, ETAPES_EDITION, LIBELLE_CHAMP, lireSaisieEdition, planMagazines, rangEtapeDuChamp, type MagazineActuel } from "@/lib/collectif/saisie";
+import * as Calendrier from "@/lib/collectif/calendrier";
 import {
   estCleImageStyle,
   lireSaisieStyle,
@@ -632,7 +633,7 @@ ok("le segment par defaut est « tous » (un choix, pas un chiffre)", cr1.ok && 
 ok("une cloture sans fuseau est refusee (l'ecran envoie de l'ISO)",
    (() => { const x = lireSaisieEdition({ ...creation, cloture_le: "2026-10-20T23:59" }, "creation"); return !x.ok && x.erreurs.some((e) => e.champ === "cloture_le"); })());
 ok("une cloture ISO avec fuseau passe",
-   (() => { const x = lireSaisieEdition({ ...creation, cloture_le: "2026-10-20T21:59:00.000Z" }, "creation"); return x.ok && x.edition.cloture_le === "2026-10-20T21:59:00.000Z"; })());
+   (() => { const x = lireSaisieEdition({ ...creation, cloture_le: "2026-10-20T21:59:00.000Z" }, "creation", undefined, new Date("2026-10-01T10:00:00.000Z")); return x.ok && x.edition.cloture_le === "2026-10-20T21:59:00.000Z"; })());
 const sansRien = lireSaisieEdition({}, "creation");
 ok("sans organisation, evenement, e-mail ni magazine : quatre refus nommes",
    !sansRien.ok && ["organisation", "evenement", "responsable_email", "magazines"].every((c) => sansRien.erreurs.some((e) => e.champ === c)));
@@ -660,6 +661,91 @@ const mo2 = lireSaisieEdition({ plafond_participant_atelier: "10" }, "modificati
   { plafond_participant_atelier: 30, plafond_participant_client: 20, plafond_total: 2000 });
 ok("baisser le plafond atelier sous le curseur client ramene le curseur (meme ecriture)",
    mo2.ok && mo2.edition.plafond_participant_atelier === 10 && mo2.edition.plafond_participant_client === 10);
+
+titre("— T-186 : la cloture passee est refusee (a la creation, et en reglage seulement si elle change) —");
+{
+  const MAINTENANT = new Date("2026-10-19T10:00:00.000Z");
+  const PASSEE = "2026-10-18T21:59:00.000Z";
+  const FUTURE = "2026-11-14T22:59:00.000Z";
+  const plafonds = { plafond_participant_atelier: null, plafond_participant_client: null, plafond_total: null };
+  const refusCloture = (x: ReturnType<typeof lireSaisieEdition>) => !x.ok && x.erreurs.some((e) => e.champ === "cloture_le" && /déjà passée/.test(e.message));
+  ok("creation : une cloture passee est refusee, nommee sur son champ",
+    refusCloture(lireSaisieEdition({ ...creation, cloture_le: PASSEE }, "creation", undefined, MAINTENANT)));
+  ok("creation : une cloture a l'instant meme est refusee, une cloture a venir passe, sans cloture aussi (null)",
+    refusCloture(lireSaisieEdition({ ...creation, cloture_le: MAINTENANT.toISOString() }, "creation", undefined, MAINTENANT))
+      && (() => { const x = lireSaisieEdition({ ...creation, cloture_le: FUTURE }, "creation", undefined, MAINTENANT); return x.ok && x.edition.cloture_le === FUTURE; })()
+      && (() => { const x = lireSaisieEdition({ ...creation, cloture_le: "" }, "creation", undefined, MAINTENANT); return x.ok && x.edition.cloture_le === null; })());
+  ok("reglage : une edition CLOSE reste reglable, sa cloture passee inchangee (meme minute, secondes perdues par l'ecran) n'est ni refusee ni reecrite",
+    (() => {
+      const x = lireSaisieEdition({ cloture_le: "2026-10-18T21:59:00.000Z", tirage: "120" }, "modification", { ...plafonds, cloture_le: "2026-10-18T21:59:41.123456+00:00" }, MAINTENANT);
+      return x.ok && !("cloture_le" in x.edition) && x.edition.tirage === 120;
+    })());
+  ok("reglage : sans le champ cloture, rien a verifier (le tirage d'une edition close se change)",
+    (() => { const x = lireSaisieEdition({ tirage: "80" }, "modification", { ...plafonds, cloture_le: PASSEE }, MAINTENANT); return x.ok && JSON.stringify(x.edition) === '{"tirage":80}'; })());
+  ok("reglage : CHANGER pour une autre date passee est refuse ; pour une date a venir, ecrit",
+    refusCloture(lireSaisieEdition({ cloture_le: "2026-10-17T21:59:00.000Z" }, "modification", { ...plafonds, cloture_le: PASSEE }, MAINTENANT))
+      && refusCloture(lireSaisieEdition({ cloture_le: PASSEE }, "modification", { ...plafonds, cloture_le: null }, MAINTENANT))
+      && (() => { const x = lireSaisieEdition({ cloture_le: FUTURE }, "modification", { ...plafonds, cloture_le: PASSEE }, MAINTENANT); return x.ok && x.edition.cloture_le === FUTURE; })());
+  ok("reglage : vider la cloture reste possible (null)",
+    (() => { const x = lireSaisieEdition({ cloture_le: "" }, "modification", { ...plafonds, cloture_le: FUTURE }, MAINTENANT); return x.ok && x.edition.cloture_le === null; })());
+  ok("les deux routes passent l'instant present ; le PATCH lit la cloture en base pour comparer",
+    /lireSaisieEdition\(corps, "creation", undefined, new Date\(\)\)/.test(lire("src/app/api/admin/collectif/editions/route.ts"))
+      && /lireSaisieEdition\(corps, "modification", actuel, new Date\(\)\)/.test(lire("src/app/api/admin/collectif/editions/[id]/route.ts"))
+      && /\.select\("id, plafond_participant_atelier, plafond_participant_client, plafond_total, cloture_le"\)/.test(lire("src/app/api/admin/collectif/editions/[id]/route.ts")));
+  ok("l'ecran ne renvoie pas une cloture inchangee en reglage (une edition close reste reglable)",
+    /const clotureChangee = creation \|\| v\.cloture_local !== props\.initiales\.cloture_local;/.test(lire("src/app/admin/collectif/FormulaireEdition.tsx"))
+      && /if \(clotureChangee\) corps\.cloture_le = cloture_le;/.test(lire("src/app/admin/collectif/FormulaireEdition.tsx")));
+
+  titre("— T-186 : la livraison souhaitee s'ecrit a la creation seulement, dans le jsonb, sans rien ecraser —");
+  ok("creation : le jour devient livraison.prevue_le ; vide, rien ; illisible, refuse sur son champ",
+    (() => { const x = lireSaisieEdition({ ...creation, livraison_prevue_le: "2026-12-04" }, "creation", undefined, MAINTENANT); return x.ok && JSON.stringify(x.edition.livraison) === '{"prevue_le":"2026-12-04"}'; })()
+      && (() => { const x = lireSaisieEdition({ ...creation, livraison_prevue_le: "" }, "creation", undefined, MAINTENANT); return x.ok && !("livraison" in x.edition); })()
+      && (() => { const x = lireSaisieEdition({ ...creation, livraison_prevue_le: "2026-02-30" }, "creation", undefined, MAINTENANT); return !x.ok && x.erreurs.some((e) => e.champ === "livraison_prevue_le"); })());
+  ok("reglage : jamais `livraison` depuis ici (l'onglet Livraison FUSIONNE, l'adresse y vit)",
+    (() => { const x = lireSaisieEdition({ livraison_prevue_le: "2026-12-04", tirage: "50" }, "modification", plafonds, MAINTENANT); return x.ok && !("livraison" in x.edition); })());
+
+  titre("— T-186 : six etapes, chaque champ a la sienne, aucun chiffre invente —");
+  ok("les six etapes, dans l'ordre de la planche",
+    ETAPES_EDITION.map((e) => e.nom).join(" | ") === "Le client | Le calendrier | Les magazines | Les photos | À envoyer par le client | Le devis");
+  ok("chaque champ de la saisie a son etape (une erreur du serveur y ramene)",
+    Object.keys(LIBELLE_CHAMP).every((c) => c in ETAPE_DU_CHAMP) && rangEtapeDuChamp("cloture_le") === 1 && rangEtapeDuChamp("tirage") === 5 && rangEtapeDuChamp("inconnu") === 0);
+  const formulaire = lire("src/app/admin/collectif/FormulaireEdition.tsx");
+  ok("l'aide fausse est partie (D24 : le brief se compose piece par piece), « Dates de l'evenement » dit la verite",
+    !/tout l&apos;intérieur suit le style|tout l'intérieur suit le style/.test(formulaire) && /pièce par pièce/.test(formulaire)
+      && /Pour l'atelier seulement : elles s'affichent en tête de la fiche\./.test(formulaire) && !/tel que le client le lira/.test(formulaire));
+  ok("chaque case dit son effet chez le client ; vide, la clôture le dit en rouge",
+    /Une case « \$\{chezLui\} » dans son espace, qu'il doit remplir\./.test(formulaire) && /Non demandée : la case n'apparaît pas chez lui\./.test(formulaire)
+      && /Sans date de clôture, la collecte reste ouverte jusqu'à ce que quelqu'un la ferme\./.test(formulaire));
+  ok("aucun chiffre pre-rempli a la creation (la page part de champs vides)",
+    (() => {
+      const page = lire("src/app/admin/collectif/nouvelle/page.tsx");
+      return ["plafond_participant_atelier", "plafond_total", "preselection_max", "pagination_prevue", "tirage", "tours_inclus", "nb_propositions_couverture", "couvertures_aimees_max"].every((c) => new RegExp(`${c}: "",`).test(page));
+    })());
+  ok("« Le devis → » ne cree PAS l'edition : le bouton suivant et « Créer l'édition » ont chacun leur cle (sinon React recycle le bouton en submit pendant le clic)",
+    /key="suivante" type="button"/.test(formulaire) && /key="envoyer" type="submit"/.test(formulaire)
+      && /if \(creation && etape < DERNIERE\) aller\(etape \+ 1\);/.test(formulaire));
+  ok("reglages : le formulaire n'est plus dans une carte (jamais une carte dans une carte)",
+    !/<section className="ate-carte">\s*<h2 className="ate-carte-titre">Réglages de l&apos;édition<\/h2>/.test(lire("src/app/admin/collectif/[id]/page.tsx")) && !/eca-fieldset/.test(formulaire));
+
+  titre("— T-186 : le calendrier, les raccourcis de cloture, la duree —");
+  ok("« Dans 2 semaines », « Dans 3 semaines », « Dans 1 mois », a 23 h 59",
+    Calendrier.RACCOURCIS_CLOTURE.map((r) => r.libelle).join() === "Dans 2 semaines,Dans 3 semaines,Dans 1 mois"
+      && Calendrier.pucesCloture("2026-10-19", "").map((p) => p.champ).join() === "2026-11-02T23:59,2026-11-09T23:59,2026-11-19T23:59");
+  ok("un mois apres le 31 janvier : le dernier jour de fevrier, jamais le 3 mars ; les jours passent les mois et les annees",
+    Calendrier.jourPlus("2026-01-31", { mois: 1 }) === "2026-02-28" && Calendrier.jourPlus("2028-01-31", { mois: 1 }) === "2028-02-29"
+      && Calendrier.jourPlus("2026-12-25", { jours: 14 }) === "2027-01-08" && Calendrier.jourPlus("pas un jour", { jours: 1 }) === "");
+  ok("le jour choisi qui n'est pas un raccourci se range a sa place dans le temps (la planche : « 14 novembre » entre 3 semaines et 1 mois)",
+    Calendrier.pucesCloture("2026-10-19", "2026-11-14T23:59").map((p) => `${p.libelle}${p.actif ? "*" : ""}`).join() === "Dans 2 semaines,Dans 3 semaines,14 novembre*,Dans 1 mois"
+      && Calendrier.pucesCloture("2026-10-19", "2026-11-02T23:59").filter((p) => p.actif).map((p) => p.libelle).join() === "Dans 2 semaines");
+  ok("la duree : « 26 jours pour déposer les photos » du 19 octobre au 14 novembre ; le jour meme, « jusqu'à ce soir »",
+    Calendrier.phraseDuree(Calendrier.joursEntre("2026-10-19", "2026-11-14") ?? -1) === "26 jours pour déposer les photos"
+      && Calendrier.phraseDuree(1) === "1 jour pour déposer les photos" && /ce soir/.test(Calendrier.phraseDuree(0)));
+  ok("l'ecriture : « 19 oct. », « 14 novembre », « 23 h 59 », un champ illisible ne donne rien",
+    Calendrier.formaterJourCourt("2026-10-19") === "19 oct." && Calendrier.formaterJourLong("2026-11-14") === "14 novembre" && Calendrier.formaterHeure("23:59") === "23 h 59"
+      && Calendrier.lireChampCloture("2026-11-14T23:59")?.jour === "2026-11-14" && Calendrier.lireChampCloture("2026-02-30T23:59") === null && Calendrier.champCloture("2026-11-14") === "2026-11-14T23:59");
+  ok("l'instant d'un raccourci passe par l'heure de Paris (23 h 59 a Paris le 14 novembre = 22 h 59 UTC)",
+    instantDeParis(Calendrier.champCloture("2026-11-14")) === "2026-11-14T22:59:00.000Z");
+}
 
 titre("— les magazines : renommer, ajouter a la suite, retirer le dernier s'il est vide —");
 const actuels: MagazineActuel[] = [
@@ -2057,16 +2143,40 @@ titre("— T-150 : les HEIC ont leur aperçu et leur empreinte —");
 titre("— T-146 : les mails des éditions, un seul circuit, coupé par défaut —");
 {
   const textes = MailsTextes;
-  const base = { organisation: "Maison Aubier", evenement: "Séminaire d'automne", responsable: "Camille Essai", lien: "https://bellajour.fr/edition/ABCDEFGHIJKLMNOPQRSTUVWXYZ012345", cloture: "28 octobre", avecCode: false };
+  const liens = {
+    responsable: "https://bellajour.fr/edition/RESPONSABLEAAAAAAAAAAAAAAAAAAAAA",
+    equipe: "https://bellajour.fr/edition/EQUIPEBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    depot: "https://bellajour.fr/depot/DEPOTCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+  };
+  const base = { organisation: "Maison Aubier", evenement: "Séminaire d'automne", responsable: "Camille Essai", liens, cloture: "28 octobre", avecCode: false };
   const vous = textes.mailEspacePret({ ...base, tu: false });
   const toi = textes.mailEspacePret({ ...base, tu: true });
   const avecCode = textes.mailEspacePret({ ...base, tu: false, avecCode: true });
-  ok("« Votre espace est prêt » : le lien du responsable, l'evenement dans l'objet, vous ou tu, Bonjour + prenom",
-    vous.html.includes(base.lien) && vous.texte.includes(base.lien) && vous.sujet.includes("Séminaire d'automne") && vous.sujet.startsWith("Votre") && toi.sujet.startsWith("Ton") && /Bonjour Camille,/.test(vous.texte) && /tu choisis/.test(toi.texte) && /vous choisissez/.test(vous.texte));
-  ok("« Votre espace est prêt » : aucun tiret cadratin ni demi-cadratin, rien n'est injecte sans echappement",
-    ![vous, toi, avecCode].some((m) => /[—–]/.test(m.html + m.texte + m.sujet)) && textes.mailEspacePret({ ...base, tu: false, evenement: "<script>" }).html.includes("&lt;script&gt;"));
+  ok("« Votre espace est prêt » : l'evenement dans l'objet, vous ou tu, Bonjour + prenom",
+    vous.sujet === "Votre espace Bellajour est prêt, Séminaire d'automne" && toi.sujet.startsWith("Ton") && /Bonjour Camille,/.test(vous.texte)
+      && /L'espace de votre édition « Séminaire d'automne » est ouvert\. Voici vos trois liens\./.test(vous.texte) && /Voici tes trois liens\./.test(toi.texte));
+  ok("T-187 : les TROIS liens, separes, dans le HTML ET le texte (planche 6), le sien en bouton, les deux autres en adresse lisible",
+    [vous, toi].every((m) => Object.values(liens).every((l) => m.html.includes(l) && m.texte.includes(l)))
+      && (vous.html.match(/Ouvrir mon espace/g) ?? []).length === 1 && vous.html.includes(`>${liens.equipe}</a>`) && vous.html.includes(`>${liens.depot}</a>`)
+      && vous.texte.indexOf("Votre lien") < vous.texte.indexOf("Le lien de votre équipe") && vous.texte.indexOf("Le lien de votre équipe") < vous.texte.indexOf("Le lien des participants"));
+  ok("T-187 : les mots de la planche, en vous et en tu (garder le sien, transferer celui de l'equipe, le QR dans l'espace, la cloture)",
+    /Pour tout faire : photos, style, bon à tirer\. Gardez-le pour vous\./.test(vous.texte) && /Lecture seule\. Transférez-le à vos collègues\./.test(vous.texte)
+      && /Pour que chacun dépose ses photos, jusqu'au 28 octobre\. Le QR code est dans votre espace\./.test(vous.texte)
+      && /Ton lien/.test(toi.texte) && /Garde-le pour toi\./.test(toi.texte) && /Le lien de ton équipe/.test(toi.texte) && /Transfère-le à tes collègues\./.test(toi.texte) && /dans ton espace\./.test(toi.texte)
+      && !/votre|vous/i.test(toi.texte.replace(/Bellajour/g, "")) && /Pour que chacun dépose ses photos\. Le QR/.test(textes.mailEspacePret({ ...base, cloture: null, tu: false }).texte));
+  ok("« Votre espace est prêt » : aucun tiret cadratin ni demi-cadratin, rien n'est injecte sans echappement (texte ET adresses)",
+    ![vous, toi, avecCode].some((m) => /[—–]/.test(m.html + m.texte + m.sujet)) && textes.mailEspacePret({ ...base, tu: false, evenement: "<script>" }).html.includes("&lt;script&gt;")
+      && (() => { const m = textes.mailEspacePret({ ...base, tu: false, liens: { ...liens, equipe: 'https://x/edition/"><img src=x>' } }); return !m.html.includes('"><img') && m.html.includes("&quot;&gt;&lt;img"); })());
   ok("« Votre espace est prêt » : le code par appareil n'est annonce QUE quand il est en service (T-154)",
     !/un code/.test(vous.texte) && /un code/.test(avecCode.texte));
+  const donnees = textes.donneesEspacePret(
+    { token_responsable: "R".repeat(32), token_equipe: "E".repeat(32), token_depot: "D".repeat(32), registre: "ecole_tu", organisation: "Lycée", evenement: "Promo", responsable_nom: "Claire Dubois", cloture_le: "2026-11-14T22:59:00.000Z" },
+    "https://bellajour.fr",
+    false
+  );
+  ok("T-187 : la route et l'ecran lisent les TROIS liens par liensEdition (donneesEspacePret), la cloture a l'heure de Paris, l'adresse courte",
+    donnees.liens.responsable === `https://bellajour.fr/edition/${"R".repeat(32)}` && donnees.liens.equipe === `https://bellajour.fr/edition/${"E".repeat(32)}` && donnees.liens.depot === `https://bellajour.fr/depot/${"D".repeat(32)}`
+      && donnees.tu && donnees.cloture === "14 novembre" && donnees.retrouver === "bellajour.fr/espace");
   const circuit = lire("src/lib/collectif/mails.ts");
   ok("circuit : coupe par defaut (COLLECTIF_MAILS, ATELIER_MAILS_COUPES), verrou AVANT Brevo et RETIRE si Brevo refuse ou si le reseau tombe, journal",
     /export const VAR_MAILS_COLLECTIF = "COLLECTIF_MAILS";/.test(circuit) && circuit.indexOf("lireInterrupteur(process.env[VAR_MAILS_COLLECTIF]).ouvert") < circuit.indexOf("fetch(BREVO_SMTP_URL")
@@ -2074,6 +2184,12 @@ titre("— T-146 : les mails des éditions, un seul circuit, coupé par défaut 
   const routeMail = lire("src/app/api/admin/collectif/editions/[id]/mail-espace/route.ts");
   ok("route du mail : admin revérifié, « verifier » ne fait rien partir, une edition archivee ne recoit rien, le verrou suit le lien (regenerer permet de renvoyer)",
     /quiEstConnecteRequete\(request\)/.test(routeMail) && routeMail.indexOf("corps.verifier === true") < routeMail.indexOf("envoyerMailCollectif({") && /archive_le\) return/.test(routeMail) && /createHash\("sha256"\)\.update\(p\.edition\.token_responsable\)/.test(routeMail));
+  ok("T-187 : la route lit les trois tokens et passe les TROIS liens au gabarit (donneesEspacePret, liensEdition)",
+    /token_responsable, token_equipe, token_depot/.test(routeMail) && /mailEspacePret\(donneesEspacePret\(data, origine, controleAppareilActif\(process\.env\)\)\)/.test(routeMail)
+      && /liens: liensEdition\(origine, e\)/.test(lire("src/lib/collectif/mailsTextes.ts")) && !/lien: liensEdition/.test(routeMail));
+  ok("T-187 : le journal ne garde JAMAIS un token (code = empreinte, adresse masquee, aucun lien passe a journaliser)",
+    /code = corps\.renvoyer === true \? `ESPACE-\$\{empreinte\}-R/.test(routeMail) && !/journaliser/.test(routeMail)
+      && (circuit.match(/journaliser\([^)]*\)/g) ?? []).every((j) => !/lien|token|mail\.html|mail\.texte/.test(j)) && /a: adresseMasquee\(p\.a\.email\)/.test(circuit));
 }
 
 titre("— T-154 : le lien du responsable ne s'ouvre que sur un appareil reconnu —");
@@ -2130,7 +2246,7 @@ titre("— T-154 : « Retrouver mon espace » —");
     /mailsCollectifEnService\(\)/.test(page) && /Ce service ouvre bientôt/.test(page) && /Si <strong>\{email\}<\/strong>\{" "\}est l&apos;adresse d&apos;un responsable/.test(page));
   ok("l'adresse courte /espace mene a la page, la page « lien introuvable » y renvoie, le mail « Votre espace est prêt » la cite",
     /source: "\/espace", destination: "\/edition\/retrouver"/.test(lire("next.config.ts")) && /<Link className="ec-porte-lien" href="\/edition\/retrouver">/.test(lire("src/app/edition/not-found.tsx"))
-      && MailsTextes.mailEspacePret({ tu: false, organisation: "O", evenement: "E", responsable: null, lien: "https://x/edition/A", cloture: null, avecCode: false, retrouver: "bellajour.fr/espace" }).texte.includes("bellajour.fr/espace"));
+      && MailsTextes.mailEspacePret({ tu: false, organisation: "O", evenement: "E", responsable: null, liens: { responsable: "https://x/edition/A", equipe: "https://x/edition/B", depot: "https://x/depot/C" }, cloture: null, avecCode: false, retrouver: "bellajour.fr/espace" }).texte.includes("bellajour.fr/espace"));
   const m = MailsTextes.mailRetrouverEspace({ tu: false, organisation: "Maison Aubier", evenement: "Séminaire", responsable: "Camille Essai", lien: "https://bellajour.fr/edition/ABC" });
   ok("le mail « Votre lien » : le lien, l'evenement, aucun tiret cadratin",
     m.texte.includes("https://bellajour.fr/edition/ABC") && m.sujet.includes("Séminaire") && /Bonjour Camille,/.test(m.texte) && !/[—–]/.test(m.html + m.texte + m.sujet));
@@ -2319,6 +2435,40 @@ titre("— T-188 : la messagerie de l'atelier, non lus et nouveaux (planche 8 du
       && /\.eca-root \.eca-boite-conv \.eca-boite-heure--alire \{\s*color: var\(--eca-bleu-encre\);/.test(lire("src/app/admin/collectif/collectif.css")));
   ok("aucun mail a l'atelier dans ce lot (A1 attend Mathias, T-146)",
     [veille, conv, enAttente, routeMsg, boite].every((t) => !/envoyerMail|brevo/i.test(t)));
+}
+
+titre("— T-187 : l'ecran « L'edition est creee », et le lien d'equipe chez le responsable seulement —");
+{
+  ok("le lien d'equipe se montre au RESPONSABLE (y compris sur un appareil pas encore reconnu), jamais a l'equipe ni a un participant",
+    Espace.voitLienEquipe("responsable", false) && Espace.voitLienEquipe("equipe", true)
+      && !Espace.voitLienEquipe("equipe", false) && !Espace.voitLienEquipe("participant", false) && !Espace.voitLienEquipe("participant", true));
+  const layoutEspace = lire("src/app/edition/[token]/layout.tsx");
+  const coquille = lire("src/app/edition/[token]/Coquille.tsx");
+  const partage = lire("src/app/edition/[token]/PartageEquipe.tsx");
+  ok("l'espace : le layout ne calcule le lien d'equipe QUE si voitLienEquipe, la coquille n'affiche l'entree que s'il existe",
+    /if \(voitLienEquipe\(role, appareilInconnu\)\) \{/.test(layoutEspace) && /let lienEquipe: string \| null = null/.test(layoutEspace) && /lienEquipe=\{lienEquipe\}/.test(layoutEspace)
+      && /\{props\.lienEquipe \? <PartageEquipe lien=\{props\.lienEquipe\}/.test(coquille));
+  ok("« Partager avec mon équipe » : le lien, « Copier », « Lecture seule : votre équipe suit tout sans rien modifier. » (et tu)",
+    /Partager avec mon équipe/.test(partage) && /Lecture seule : votre équipe suit tout sans rien modifier\./.test(partage) && /Lecture seule : ton équipe suit tout sans rien modifier\./.test(partage)
+      && /navigator\.clipboard\.writeText\(lien\)/.test(partage) && /<Fenetre/.test(partage) && !/#[0-9a-f]{3,8}\b/i.test(partage));
+  ok("l'ecran montre les adresses ABREGEES (le token entier ne sort que par « Copier »), copier les trois liens les nomme",
+    lienAbrege(`https://bellajour.fr/edition/${"k".repeat(32)}`) === "bellajour.fr/edition/kkkk…" && lienAbrege("http://localhost:3109/depot/ABCD1234efgh5678ijkl9012mnop3456") === "localhost:3109/depot/ABCD…"
+      && (() => { const t = texteTroisLiens({ responsable: "R", equipe: "E", depot: "D" }); return t.split("\n").length === 3 && /responsable.*: R$/m.test(t) && /équipe.*lecture seule : E$/m.test(t) && /participants.*: D$/m.test(t); })());
+  const page = lire("src/app/admin/collectif/creee/[id]/page.tsx");
+  const fin = lire("src/app/admin/collectif/creee/[id]/FinCreation.tsx");
+  const hook = lire("src/app/admin/collectif/[id]/useEnvoiEspace.ts");
+  ok("l'ecran : admin revérifié, les memes donnees que la route (objet du vrai mail), l'etat des mails lu par le SERVEUR",
+    /quiEstConnecte\(\)/.test(page) && /donneesEspacePret\(e, origine, controleAppareilActif\(process\.env\)\)/.test(page) && /ouverts=\{mailsCollectifOuverts\(\)\}/.test(page) && /sujet=\{mail\.sujet\}/.test(page));
+  ok("mails coupes : le bouton le dit et ne fait rien ; « Copier les trois liens » devient le geste principal",
+    /Mails coupés : copiez les liens/.test(fin) && /!p\.ouverts \? \(\s*<button type="button" className="eca-bouton eca-bouton--petit eca-bouton--coupe" disabled/.test(fin)
+      && /p\.ouverts && !p\.archivee \? "eca-bouton eca-bouton--petit" : "eca-bouton eca-bouton--petit eca-bouton--plein"/.test(fin));
+  ok("l'envoi est en DEUX TEMPS (verifier, puis confirmer) par le flux partage avec l'onglet Reglages ; l'apercu est le GET de la route",
+    /envoi\.verifier/.test(fin) && /envoi\.confirmer/.test(fin) && /verifier: \(\) => appeler\(\{ verifier: true \}\)/.test(hook) && /confirmer: \(\) => appeler\(\{\}\)/.test(hook)
+      && /useEnvoiEspace\(id\)/.test(lire("src/app/admin/collectif/[id]/EnvoiLienResponsable.tsx")) && /src=\{`\/api\/admin\/collectif\/editions\/\$\{p\.id\}\/mail-espace`\}/.test(fin));
+  ok("apres « Créer l'édition », l'ecran des liens (et non plus la fiche sans un mot)",
+    /router\.push\(`\/admin\/collectif\/creee\/\$\{json\.id\}`\)/.test(lire("src/app/admin/collectif/FormulaireEdition.tsx")));
+  ok("les mails des editions restent COUPES par defaut : rien de ce chantier n'ouvre COLLECTIF_MAILS",
+    /return lireInterrupteur\(process\.env\[VAR_MAILS_COLLECTIF\]\)\.ouvert && !envoisCoupes\(process\.env\[VAR_MAILS_COUPES\]\);/.test(lire("src/lib/collectif/mails.ts")) && !lireInterrupteur(undefined).ouvert);
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

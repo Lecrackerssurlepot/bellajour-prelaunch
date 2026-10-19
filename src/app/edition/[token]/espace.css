@@ -378,6 +378,35 @@
   font-size: 11px;
   color: var(--ec-muted);
 }
+/* « Partager avec mon équipe » (T-187) : une entrée discrète au-dessus du nom,
+   pour le responsable seulement. Elle prend la marge automatique du bloc « moi ». */
+.ec-espace .ec-equipe-entree {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--ec-r-bloc);
+  background: transparent;
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.ec-espace .ec-equipe-entree:hover {
+  background: rgba(var(--ec-fg-rgb), 0.05);
+  color: var(--ec-text);
+}
+.ec-espace .ec-equipe-entree svg {
+  flex: none;
+}
+.ec-espace .ec-equipe-entree + .ec-moi {
+  margin-top: -10px;
+}
 /* Le bouton jour / nuit : une petite icône, jamais un gros bouton. */
 /* Jour | nuit : deux boutons dans un creux, le mode en cours éclairé (maquettes du 15/10). */
 .ec-espace .ec-mode-choix {

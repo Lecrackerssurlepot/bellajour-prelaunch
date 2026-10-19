@@ -38,18 +38,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   const supabase = makeSupabase();
+  /* La clôture en base : une date passée n'est refusée que si on la CHANGE
+     (T-186), une édition close reste réglable. */
   const { data: actuel, error: errLecture } = await supabase
     .from("collectif_editions")
-    .select("id, plafond_participant_atelier, plafond_participant_client, plafond_total")
+    .select("id, plafond_participant_atelier, plafond_participant_client, plafond_total, cloture_le")
     .eq("id", id)
-    .maybeSingle<ReglagesPlafond & { id: string }>();
+    .maybeSingle<ReglagesPlafond & { id: string; cloture_le: string | null }>();
   if (errLecture) {
     if (tableAbsente(errLecture.code)) return NextResponse.json({ error: ERREUR_MIGRATION_ABSENTE }, { status: 503 });
     return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
   }
   if (!actuel) return NextResponse.json({ error: "introuvable" }, { status: 404 });
 
-  const saisie = lireSaisieEdition(corps, "modification", actuel);
+  const saisie = lireSaisieEdition(corps, "modification", actuel, new Date());
   if (!saisie.ok) return NextResponse.json({ error: "saisie", erreurs: saisie.erreurs }, { status: 422 });
 
   /* Les magazines d'abord VÉRIFIÉS (sans rien écrire) : un plan refusé ne

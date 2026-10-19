@@ -1,7 +1,7 @@
 ---
 id: T-187
 titre: Après la création d'une édition, rien ne propose d'envoyer les liens, et le mail prévu ne porte pas le lien de l'équipe
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: avis-requis
@@ -44,4 +44,30 @@ Planche 6 telle quelle, texte du mail compris. **`COLLECTIF_MAILS` reste FERMÉ*
 en production attend Mathias, aucun envoi réel sans lui.
 
 ## Ce qui a été fait
-Rien encore (maquette seulement).
+19/10/2026, planche 6 codée (non commitée, en attente de relecture) ; `COLLECTIF_MAILS` reste
+FERMÉ, aucun mail envoyé, aucune variable posée :
+- Après « Créer l'édition », l'écran « L'édition est créée » (`/admin/collectif/creee/[id]`, hors
+  de `[id]/` pour ne pas montrer la silhouette de la fiche pendant le chargement) : la ligne de
+  résumé, les trois liens en cartes avec leur rôle (adresses abrégées, le lien entier ne sort que
+  par « Copier »), « Envoyer à <adresse> » en deux temps (`useEnvoiEspace`, le flux de l'onglet
+  Réglages, désormais partagé), « Copier les trois liens », « Aller à la fiche → », l'aperçu du
+  vrai mail (iframe du GET `mail-espace`) avec « À » et « Objet ». Mails coupés : le bouton dit
+  « Mails coupés : copiez les liens » et ne fait rien, « Copier les trois liens » passe en bleu.
+  Édition archivée : « Édition archivée : aucun mail ne part ».
+- Le gabarit « Votre espace est prêt » (`mailsTextes.ts`) porte les TROIS liens séparés, avec les
+  mots de la planche, en vous et en tu ; l'équipe et les participants en adresse écrite et
+  cliquable. Objet : « Votre espace Bellajour est prêt, <événement> ». `donneesEspacePret` est
+  l'unique assemblage (route ET écran) ; le journal ne garde que l'empreinte et l'adresse masquée.
+- L'espace du responsable montre « Partager avec mon équipe » en bas du menu (fenêtre : le lien,
+  « Copier », « Lecture seule : votre équipe suit tout sans rien modifier. ») ; le layout ne
+  calcule ce lien que pour le responsable (`voitLienEquipe`), l'équipe ne le reçoit jamais.
+- Vérifié : harnais (trois liens, vous/tu, aucun tiret cadratin, échappement des adresses, route,
+  journal sans token, lien d'équipe au responsable seulement) ; captures 1440 et 375 px, jour et
+  nuit, aucune écriture en base (le pilote a intercepté les seuls POST de création, factices).
+
+Écarts à la planche, assumés : le titre de la carte dit « Le lien de Claire, responsable de
+l'édition » (masculin générique sans accord forcé) ; la note de l'équipe dit « Claire le transfère
+à son équipe » ; le mail garde l'en-tête « Bellajour · Édition collective », le titre « Votre
+espace est prêt » et « À très vite » de la maison commune des mails des éditions ; « Copier le
+lien d'équipe » de la planche devient l'adresse écrite (un mail ne copie pas). Non vu à l'écran :
+le second temps de l'envoi (mails coupés, le bouton ne vérifie rien) ; prouvé au harnais.

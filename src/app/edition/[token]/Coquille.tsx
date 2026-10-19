@@ -27,6 +27,7 @@ import { cheminSection, MENU, sectionDuChemin, type CleSection, type Verrous } f
 import { AppareilFournisseur } from "../_composants/AppareilContexte";
 import { DepotFournisseur, HoteFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import { useModeEspace } from "../_composants/RacineEspace";
+import PartageEquipe from "./PartageEquipe";
 
 /** Le signal qu'envoie la conversation quand elle a marqué les messages lus : la pastille s'éteint sans recharger. */
 export const EVENEMENT_MESSAGES_LUS = "ec-messages-lus";
@@ -47,6 +48,8 @@ type Props = {
   tu: boolean;
   /** T-154 : le responsable sur un appareil pas encore reconnu (il lit ; un code par mail pour modifier). */
   appareil: { adresse: string } | null;
+  /** T-187 : le lien d'équipe, pour « Partager avec mon équipe ». Null sauf pour le responsable (`voitLienEquipe`). */
+  lienEquipe: string | null;
   children: React.ReactNode;
 };
 
@@ -185,6 +188,8 @@ export default function Coquille(props: Props) {
           <hr className="ec-menu-filet" />
           <ul className="ec-menu-liste">{entrees(2)}</ul>
         </nav>
+        {/* T-187 : le lien d'équipe, au responsable seulement ; le tiroir se referme quand la fenêtre s'ouvre. */}
+        {props.lienEquipe ? <PartageEquipe lien={props.lienEquipe} tu={props.tu} avantOuvrir={() => setOuvert(false)} /> : null}
         <div className="ec-moi">
           <span className="ec-avatar" aria-hidden="true">
             {props.initiales}

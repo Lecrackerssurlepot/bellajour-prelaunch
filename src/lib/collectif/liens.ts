@@ -4,8 +4,8 @@
  *
  * L'origine vient de la requête qui affiche la fiche : en local, des liens
  * `http://localhost:3006/…` qu'on peut ouvrir tout de suite ; en production,
- * `https://bellajour.fr/…`. Aucun mail ne part avec eux : l'atelier les envoie
- * lui-même (le mail E1 est la phase 7).
+ * `https://bellajour.fr/…`. Le mail « Votre espace est prêt » les porte tous
+ * les trois (T-187), et ne part que si l'atelier le confirme.
  */
 
 import type { TokensEdition } from "./droits";
@@ -51,4 +51,23 @@ export function liensEdition(origine: string, e: TokensEdition): Record<QuelLien
     equipe: `${o}/edition/${e.token_equipe}`,
     depot: `${o}/depot/${e.token_depot}`,
   };
+}
+
+/**
+ * L'adresse telle que l'écran la MONTRE (« bellajour.fr/edition/kq3f… », planche 6) :
+ * sans le protocole, le token réduit à ses quatre premiers caractères. Le lien
+ * entier ne sort que par « Copier » : une capture d'écran ou un regard par-dessus
+ * l'épaule ne l'emporte pas.
+ */
+export function lienAbrege(url: string): string {
+  return url.replace(/^https?:\/\//, "").replace(/([A-Za-z0-9_-]{4})[A-Za-z0-9_-]{20,}/g, "$1…");
+}
+
+/** « Copier les trois liens » (T-187) : chacun sur sa ligne, avec son rôle, à coller dans un mail. */
+export function texteTroisLiens(l: Record<QuelLien, string>): string {
+  return [
+    `Le lien du responsable, à garder pour soi : ${l.responsable}`,
+    `Le lien de l'équipe, en lecture seule : ${l.equipe}`,
+    `Le lien des participants, pour déposer ses photos : ${l.depot}`,
+  ].join("\n");
 }

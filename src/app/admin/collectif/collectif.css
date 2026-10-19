@@ -23,6 +23,9 @@
   --eca-lien: #2b6cb0;
   --eca-bord-clair: #e4e7ec;
   --eca-violet: #7b86e6;
+  /* Créer une édition (T-186, planche 5) : l'avertissement rouge de la clôture vide. */
+  --eca-alerte: #b3412c;
+  --eca-alerte-fond: #fbece8;
 }
 
 /* ─────────────────────────────── l'en-tête ─────────────────────────────── */
@@ -2089,5 +2092,578 @@
 @media (max-width: 960px) {
   .eca-root .eca-reglages {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ─────────────── créer et régler une édition (T-186, planche 5 du 19/10) ───────────────
+   Le rail des six étapes et le corps : deux verres côte à côte, jamais une carte
+   dans une carte. En réglages (`--reglages`), le rail passe au-dessus du corps :
+   la colonne des liens occupe déjà la droite. */
+
+.eca-root .eca-tete-ecran {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin: var(--bj-sp-4) 0 14px;
+}
+.eca-root .eca-tete-ecran--pile {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.eca-root .eca-titre-ecran {
+  margin: 0;
+  font-family: var(--bj-font-display);
+  font-style: normal;
+  font-weight: 400;
+  font-size: clamp(1.9rem, 3vw, 2.25rem);
+  line-height: 1;
+  color: var(--bj-text);
+}
+.eca-root .eca-note {
+  font-size: 13px;
+  color: var(--bj-text-soft);
+}
+
+.eca-root .eca-form-grille {
+  display: grid;
+  grid-template-columns: 196px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.eca-root .eca-form-rail {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 10px;
+  list-style: none;
+  border-radius: 22px;
+  border: 1px solid var(--adm-verre-bord);
+  background: var(--adm-verre);
+  box-shadow: 0 6px 18px var(--bj-veil-6);
+  -webkit-backdrop-filter: var(--adm-flou);
+  backdrop-filter: var(--adm-flou);
+}
+.eca-root .eca-form-pas {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 9px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--bj-text-soft);
+  text-align: left;
+  cursor: pointer;
+}
+.eca-root button.eca-form-pas:hover {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--bj-text);
+}
+.eca-root .eca-form-signe {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bj-veil-6);
+  font-size: 11px;
+  font-weight: 500;
+}
+.eca-root .eca-form-pas--on,
+.eca-root button.eca-form-pas--on:hover {
+  background: #ffffff;
+  color: var(--bj-text);
+  box-shadow: 0 6px 18px var(--bj-veil-6);
+}
+.eca-root .eca-form-pas--on .eca-form-signe {
+  background: var(--bj-action);
+  color: #ffffff;
+}
+.eca-root .eca-form-pas--fait .eca-form-signe {
+  background: var(--eca-vert-fond);
+  color: var(--eca-vert);
+}
+.eca-root .eca-form-pas--erreur {
+  color: var(--eca-alerte);
+}
+.eca-root .eca-form-pas--erreur .eca-form-signe {
+  background: var(--eca-alerte-fond);
+  color: var(--eca-alerte);
+}
+.eca-root .eca-form-corps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 22px 24px 24px;
+  border-radius: 26px;
+  border: 1px solid var(--adm-verre-bord);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 14px 36px rgba(16, 24, 40, 0.06);
+  -webkit-backdrop-filter: var(--adm-flou);
+  backdrop-filter: var(--adm-flou);
+}
+.eca-root .eca-form-titre {
+  margin: 0;
+  font-family: var(--bj-font-display);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.1;
+  color: var(--bj-text);
+}
+.eca-root .eca-form-corps .eca-input,
+.eca-root .eca-form-corps .eca-textarea {
+  min-height: 42px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border-color: var(--bj-veil-16);
+  background: #ffffff;
+}
+.eca-root .eca-form-corps .eca-champ-label {
+  font-size: 13px;
+}
+.eca-root .eca-form-corps .eca-champ-aide {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-deux-champs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+  align-items: start;
+}
+.eca-root .eca-form-pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+.eca-root .eca-form-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.eca-root .eca-form-rien {
+  margin: -6px 0 0;
+  text-align: right;
+}
+
+/* Les boutons de la planche : une pilule blanche, la bleue pour le geste principal. */
+.eca-root .eca-bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--bj-veil-16);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--bj-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+.eca-root .eca-bouton:hover:not(:disabled) {
+  box-shadow: 0 0 0 3px var(--bj-veil-6);
+}
+.eca-root .eca-bouton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.eca-root .eca-bouton--plein {
+  border-color: var(--bj-action);
+  background: var(--bj-action);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(74, 144, 217, 0.25);
+}
+.eca-root .eca-bouton--plein:hover:not(:disabled) {
+  filter: brightness(1.05);
+  box-shadow: 0 8px 20px rgba(74, 144, 217, 0.32);
+}
+.eca-root .eca-bouton--petit {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+/* Les mails coupés : un bouton qui dit pourquoi il ne fait rien, lisible, pas grisé à moitié. */
+.eca-root .eca-bouton--coupe:disabled {
+  opacity: 1;
+  border-color: transparent;
+  background: var(--eca-gris-fond);
+  color: var(--bj-text-soft);
+}
+
+/* Les choix en pilules : le ton, le mur, les raccourcis de clôture. */
+.eca-root .eca-choix-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.eca-root .eca-choix {
+  padding: 7px 13px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--bj-veil-6);
+  color: var(--bj-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.eca-root .eca-choix:hover {
+  background: var(--bj-veil-8);
+}
+.eca-root .eca-choix[aria-checked="true"],
+.eca-root .eca-choix[aria-pressed="true"] {
+  background: var(--bj-action);
+  color: #ffffff;
+}
+.eca-root .eca-choix[aria-expanded="true"] {
+  box-shadow: inset 0 0 0 1px var(--bj-action);
+}
+/* Un lien dans une phrase d'aide (« Retirer la date », « Livraison ») : souligné, sans marge. */
+.eca-root .eca-lien-texte {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--eca-bleu-encre);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.eca-root .eca-lien-texte:hover {
+  color: var(--bj-text);
+}
+.eca-root .eca-calendrier {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-form-corps .eca-calendrier .eca-input {
+  width: auto;
+}
+.eca-root .eca-input--lu {
+  display: block;
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-form-corps .eca-input--lu {
+  background: transparent;
+}
+
+/* La frise du calendrier : aujourd'hui, l'événement, la clôture, la livraison. */
+.eca-root .eca-frise {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding-top: 6px;
+}
+.eca-root .eca-frise::before {
+  content: "";
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 15px;
+  height: 2px;
+  background: var(--bj-veil-12);
+}
+.eca-root .eca-jalon {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--bj-text-soft);
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-jalon i {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  border: 2px solid var(--bj-veil-16);
+  background: #ffffff;
+}
+.eca-root .eca-jalon b {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--bj-text);
+}
+.eca-root .eca-jalon--plein i {
+  border-color: var(--bj-action);
+  background: var(--bj-action);
+}
+.eca-root .eca-jalon--creux i {
+  border-style: dashed;
+}
+.eca-root .eca-jalon--alerte i {
+  border-color: var(--eca-alerte);
+}
+.eca-root .eca-jalon--alerte span {
+  color: var(--eca-alerte);
+}
+.eca-root .eca-duree {
+  grid-column: 2 / 4;
+  text-align: center;
+  font-size: 12px;
+  color: var(--eca-bleu-encre);
+}
+.eca-root .eca-avert {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--eca-alerte-fond);
+  color: var(--eca-alerte);
+  font-size: 13px;
+}
+.eca-root .eca-avert b {
+  font-weight: 700;
+}
+
+/* Un chiffre et son unité, sur une ligne. */
+.eca-root .eca-unite {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.eca-root .eca-form-corps .eca-input--chiffre {
+  flex: none;
+  width: 104px;
+}
+.eca-root .eca-unite-texte {
+  min-width: 0;
+  font-size: 13px;
+  color: var(--bj-text-soft);
+}
+
+/* Chaque case dit son effet chez le client. */
+.eca-root .eca-cases-effet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.eca-root .eca-case-effet {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  font-size: 14px;
+  cursor: pointer;
+}
+.eca-root .eca-case-effet input {
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--bj-action);
+}
+.eca-root .eca-case-effet small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--bj-text-soft);
+}
+
+/* En réglages, le rail au-dessus du corps, en deux rangs de trois (une rangée
+   laissait « Le devis » seul sur la seconde ligne). */
+.eca-root .eca-form-grille--reglages {
+  grid-template-columns: minmax(0, 1fr);
+}
+.eca-root .eca-form-grille--reglages .eca-form-rail {
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.eca-root .eca-form-grille--reglages .eca-form-pas {
+  white-space: nowrap;
+}
+
+/* ─────────────── « L'édition est créée » (T-187, planche 6) ─────────────── */
+
+.eca-root .eca-fin {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: 16px;
+  align-items: start;
+}
+.eca-root .eca-fin-liens {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.eca-root .eca-lien-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 18px 20px;
+  border-radius: 22px;
+  border: 1px solid var(--adm-verre-bord);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 6px 18px var(--bj-veil-6);
+  -webkit-backdrop-filter: var(--adm-flou);
+  backdrop-filter: var(--adm-flou);
+}
+.eca-root .eca-lien-carte b {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--bj-text);
+}
+.eca-root .eca-lien-carte--premier {
+  border-color: var(--bj-action);
+  box-shadow: 0 0 0 1px var(--bj-action), 0 6px 18px var(--bj-veil-6);
+}
+.eca-root .eca-lien-carte-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.eca-root .eca-etiquette {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--bj-action-soft);
+  color: var(--eca-bleu-encre);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.eca-root .eca-etiquette--ok {
+  background: var(--eca-vert-fond);
+  color: var(--eca-vert);
+}
+.eca-root .eca-url {
+  overflow: hidden;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--bj-veil-6);
+  color: var(--bj-text-soft);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eca-root .eca-fin-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.eca-root .eca-lien-fiche {
+  color: var(--eca-bleu-encre);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.eca-root .eca-mail {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid var(--bj-veil-8);
+  background: #ffffff;
+}
+.eca-root .eca-mail-entete {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--bj-veil-8);
+  font-size: 12.5px;
+  color: var(--bj-text-soft);
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-mail-entete b {
+  font-weight: 500;
+  color: var(--bj-text);
+}
+.eca-root .eca-mail-cadre {
+  display: block;
+  width: 100%;
+  border: 0;
+}
+
+@media (max-width: 720px) {
+  .eca-root .eca-form-grille {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .eca-root .eca-form-rail,
+  .eca-root .eca-form-grille--reglages .eca-form-rail {
+    position: static;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .eca-root .eca-form-rail li {
+    flex: none;
+  }
+  .eca-root .eca-form-pas {
+    white-space: nowrap;
+  }
+  .eca-root .eca-form-corps {
+    padding: 18px 16px 20px;
+    border-radius: 22px;
+  }
+  .eca-root .eca-form-titre {
+    font-size: 26px;
+  }
+  .eca-root .eca-deux-champs,
+  .eca-root .eca-fin {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .eca-root .eca-frise {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 14px;
+  }
+  .eca-root .eca-frise::before,
+  .eca-root .eca-duree {
+    display: none;
+  }
+  .eca-root .eca-form-rien {
+    text-align: left;
+  }
+  .eca-root .eca-bouton {
+    white-space: normal;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+  .eca-root .eca-mail {
+    position: static;
   }
 }

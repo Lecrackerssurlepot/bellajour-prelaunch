@@ -69,7 +69,8 @@ Un client B2B (entreprise, école) ouvre une **édition** d'un ou plusieurs **ma
   `versChampParis`, `formaterInstantParis`. Jamais `new Date(champ)` : il lit l'heure de la
   machine, et ni celle de Vercel (UTC) ni celle de l'atelier ne sont forcément Paris.
 - **`saisie.ts`** — la règle de création ET de réglage d'une édition (exigés : organisation,
-  événement, registre, e-mail du responsable, un magazine ; tout chiffre vide reste `null` ;
+  événement, registre, e-mail du responsable, un magazine ; une clôture passée refusée, voir
+  T-186 plus bas ; tout chiffre vide reste `null` ;
   `rdv_url` en https seulement ; `suggestionEmail` suggère, ne bloque pas ; la case
   « démonstration » ne s'écrit jamais d'ici). `planMagazines` : renommer toujours, ajouter à la
   suite, retirer SEULEMENT le dernier et seulement s'il est vide : les rangs ne se renumérotent
@@ -465,9 +466,52 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   des éditions passe par lui ; son texte vit dans `mailsTextes.ts` (pur, harnais, aperçu dans
   l'atelier), jamais dans un modèle Brevo. Les mails de rendez-vous gardent leur chemin
   (`envoyerMailRdv`, `COLLECTIF_MAILS_RDV`).
-- « Votre espace est prêt » part depuis la fiche (« Réglages et liens »), en deux temps ; le
-  verrou porte l'empreinte du lien du responsable : régénérer le lien permet de le renvoyer.
+- « Votre espace est prêt » part depuis la fiche (« Réglages et liens ») ou l'écran « L'édition
+  est créée » (T-187), en deux temps ; le verrou porte l'empreinte du lien du responsable :
+  régénérer le lien permet de le renvoyer.
 - ⚠️ Un lien vers l'espace du responsable porte son token : il ne part qu'à SON adresse.
+
+## Créer une édition, et l'écran des liens (T-186, T-187, planches 5 et 6 du 19/10)
+
+- **Six étapes, une seule liste** (`ETAPES_EDITION`, saisie.ts) pour la création ET l'onglet
+  « Réglages et liens » : le client, le calendrier, les magazines, les photos, à envoyer par le
+  client, le devis. `ETAPE_DU_CHAMP` range chaque champ : une erreur (relue AVANT l'envoi par
+  `lireSaisieEdition` dans le navigateur, ou rendue par la route) ramène à son étape et la nomme.
+  Un champ ajouté à la saisie s'ajoute à `ETAPE_DU_CHAMP` (le harnais le vérifie). En réglages,
+  le formulaire n'est JAMAIS dans une carte (rail et corps côte à côte, ou le rail en deux rangs
+  au-dessus quand la colonne des liens est à droite).
+- ⚠️ **Le bouton « étape suivante » et « Créer l'édition » portent chacun leur `key`.** Sans elles,
+  React garde le même `<button>` et le passe en `submit` PENDANT le clic sur « Le devis → » : le
+  navigateur envoie le formulaire et l'édition se crée sans passer par la dernière étape (vu à la
+  recette du 19/10).
+- **La clôture** (`calendrier.ts`, pur) : raccourcis « Dans 2 semaines / 3 semaines / 1 mois »
+  (un mois après le 31 janvier = le dernier jour de février), ou le calendrier ; 23 h 59 heure de
+  Paris par défaut ; le jour choisi se range parmi les raccourcis. Le jour d'AUJOURD'HUI vient du
+  serveur (prop `maintenant`), jamais de l'heure de l'ordinateur. **Une clôture passée est
+  refusée par `saisie.ts`** : à la création toujours, en réglage SEULEMENT si elle change
+  (comparée à la minute à `actuel.cloture_le`, que le PATCH lit). Inchangée, elle n'est ni
+  refusée ni réécrite, et l'écran ne la renvoie même pas : une édition close reste réglable.
+  ⚠️ Pré-existant, non touché : déplacer la clôture d'une édition close PAR LE TEMPS (état stocké
+  `preparation`) vers le futur, ou la vider, la rouvre de fait, sans passer par le geste
+  `rouvrir_collecte` et sa règle (aucun tour publié).
+- **La livraison souhaitée** ne s'écrit qu'à la CRÉATION (`livraison_prevue_le` → `livraison:
+  { prevue_le }`, insertion : rien à écraser). En réglage, saisie.ts ne produit jamais `livraison`
+  (l'onglet Livraison la FUSIONNE) : la frise la montre et renvoie à l'onglet.
+- **« L'édition est créée »** vit à `/admin/collectif/creee/[id]`, PAS sous `[id]/` : sous la
+  fiche, `[id]/loading.tsx` (la silhouette de la fiche) s'afficherait d'abord. Les adresses s'y
+  montrent ABRÉGÉES (`lienAbrege`, quatre caractères du token) ; le lien entier ne sort que par
+  « Copier ». L'envoi passe par `useEnvoiEspace` (le même flux en deux temps que l'onglet
+  Réglages) ; l'état des mails est lu par le SERVEUR (`mailsCollectifOuverts`) : fermés, le
+  bouton dit « Mails coupés : copiez les liens » et ne fait rien, « Copier les trois liens »
+  (`texteTroisLiens`) devient le geste principal. L'aperçu est l'iframe du GET `mail-espace`.
+- **Le mail « Votre espace est prêt » porte les TROIS liens** (texte de la planche 6 validé par
+  Mathias le 19/10) : `donneesEspacePret` est la seule façon de l'assembler (route ET écran). Le
+  sien en bouton, l'équipe et les participants en ADRESSE écrite et cliquable (un mail ne
+  copie pas). Le journal ne voit que l'empreinte du lien du responsable et l'adresse masquée.
+  `COLLECTIF_MAILS` reste fermé : l'ouvrir attend Mathias.
+- **« Partager avec mon équipe »** (`PartageEquipe.tsx`, en bas du menu de la coquille) : le
+  layout de l'espace ne calcule le lien d'équipe que si `voitLienEquipe` (le responsable, y
+  compris sur un appareil pas encore reconnu) ; l'équipe ne le reçoit jamais dans sa page.
 
 ## Le lien du responsable : modifier demande un appareil reconnu (T-154, 15/10)
 

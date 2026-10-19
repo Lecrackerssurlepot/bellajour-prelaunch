@@ -9,10 +9,12 @@
    compte des messages non lus. `loading.tsx` ne couvre pas les lectures de
    ce layout (Next 16) : il ne doit pas en ajouter de lentes. */
 
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { peut } from '@/lib/collectif/droits'
 import { etatEffectif } from '@/lib/collectif/etats'
-import { initiales, libelleRole } from '@/lib/collectif/espace'
+import { initiales, libelleRole, voitLienEquipe } from '@/lib/collectif/espace'
+import { liensEdition, origineDepuis } from '@/lib/collectif/liens'
 import { MIGRATION_COLLECTIF } from '@/lib/collectif/migration'
 import { verrousPour } from '@/lib/collectif/verrous'
 import { adresseMasquee } from '@/lib/collectif/appareil'
@@ -49,6 +51,13 @@ export default async function EspaceLayout({
   const etat = etatEffectif(edition.etat, edition.cloture_le, new Date())
   const nom = responsableIci ? edition.responsable_nom ?? 'Responsable' : 'Équipe'
   const nonLus = responsableIci ? await compterNonLus(edition.id) : 0
+  /* T-187 : « Partager avec mon équipe », au responsable seulement (voitLienEquipe).
+     Le lien d'équipe n'entre jamais dans la page de l'équipe elle-même. */
+  let lienEquipe: string | null = null
+  if (voitLienEquipe(role, appareilInconnu)) {
+    const h = await headers()
+    lienEquipe = liensEdition(origineDepuis(h.get('x-forwarded-host') ?? h.get('host'), h.get('x-forwarded-proto')), edition).equipe
+  }
 
   return (
     <Coquille
@@ -60,6 +69,7 @@ export default async function EspaceLayout({
       libelleRole={appareilInconnu ? 'Responsable · en lecture ici' : libelleRole(role === 'responsable' ? 'responsable' : 'equipe')}
       lectureSeule={role === 'equipe'}
       appareil={appareilInconnu ? { adresse: adresseMasquee(edition.responsable_email) } : null}
+      lienEquipe={lienEquipe}
       verrous={verrousPour(etat)}
       nonLus={nonLus}
       peutDeposer={peut(role, 'deposer_photos')}
