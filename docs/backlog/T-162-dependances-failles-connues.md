@@ -1,7 +1,7 @@
 ---
 id: T-162
 titre: Next.js 16.2.3 et cinq autres dépendances portent des failles connues, dont des contournements du middleware
-etat: nouveau
+etat: en cours
 domaine: exploitation
 gravite: serieux
 autonomie: libre
@@ -36,4 +36,15 @@ copie `public/pdfjs/` (vérifier le contrôle des bords T-121), puis le reste. M
 ligne « Stack » du `CLAUDE.md` racine.
 
 ## Ce qui a été fait
-Rien encore (la garde de `/admin`, PR #250, réduit le risque sans le fermer).
+- 19/10 : PR #250, `/admin` se garde seul (réduit le risque des contournements du middleware).
+- 19/10 : **Next.js 16.2.3 → 16.4.2**, seul (le verrou ne bouge que pour Next et ses propres
+  paquets : `@next/*`, `@swc/helpers`, sa copie de sharp ; postcss et nanoid corrigés au
+  passage). `npm audit --omit=dev` : de 7 paquets (1 critique, 5 hauts, 1 modéré) à 3 hauts.
+  `eslint-config-next` reste en 16.2.3 : la 16.4.2 tire `eslint-plugin-react-hooks` 7.1.1, dont
+  la règle plus stricte lève 6 erreurs dans du code inchangé (T-178).
+  Vérifié : tsc, lint (0 erreur), build, les deux harnais, onze pages chargées dans Chrome sans
+  erreur (accueil, page produit, questionnaire, CGV, compte, Retrouver, atelier, démo, éditions,
+  styles, nouvelle édition). L'écart de rendu React sur `/admin` (graphique des inscrits)
+  existait déjà en 16.2.3 (rejoué) : sans lien avec la mise à jour.
+- Reste : **pdfjs-dist** (avec sa copie `public/pdfjs/`, puis rejouer le contrôle des bords
+  T-121), **sharp** 0.35.5 (scripts d'images), **source-map-js** (outillage).
