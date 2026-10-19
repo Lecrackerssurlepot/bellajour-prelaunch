@@ -3,11 +3,16 @@
 /* La colonne de gauche de la boîte de réception (T-152) : chercher un
    client, n'afficher que les non-lus, ce qui est à traiter aujourd'hui, et
    les conversations. Un clic ouvre la conversation (l'adresse change : un
-   rechargement la rouvre). L'aperçu ne marque rien comme lu. */
+   rechargement la rouvre). L'aperçu ne marque rien comme lu.
+
+   T-188 : l'heure d'une conversation non lue passe en couleur d'accent ; la
+   conversation OUVERTE est lue, elle quitte donc « À traiter aujourd'hui »
+   (ses messages ; son rendez-vous du jour reste). La page se relit quand le
+   compte de la barre change (VeilleMessages). */
 
 import Link from "next/link";
 import { useState } from "react";
-import type { Conversation } from "@/lib/collectif/boite";
+import type { ATraiter, Conversation } from "@/lib/collectif/boite";
 
 export default function ListeConversations({
   conversations,
@@ -15,13 +20,14 @@ export default function ListeConversations({
   courant,
 }: {
   conversations: Conversation[];
-  aTraiter: { editionId: string; texte: string }[];
+  aTraiter: ATraiter[];
   courant: string | null;
 }) {
   const [recherche, setRecherche] = useState("");
   const [nonLus, setNonLus] = useState(false);
   const q = recherche.trim().toLocaleLowerCase("fr");
   const aLire = conversations.filter((c) => c.nonLus && c.id !== courant).length;
+  const traiter = aTraiter.filter((t) => t.genre === "rdv" || t.editionId !== courant);
   const visibles = conversations.filter(
     (c) => (!nonLus || (c.nonLus && c.id !== courant) || c.id === courant) && (!q || `${c.organisation} ${c.evenement}`.toLocaleLowerCase("fr").includes(q))
   );
@@ -48,10 +54,10 @@ export default function ListeConversations({
         </div>
       </div>
 
-      {aTraiter.length ? (
+      {traiter.length ? (
         <div className="eca-boite-traiter">
           <span className="eca-boite-etiquette">À traiter aujourd&apos;hui</span>
-          {aTraiter.map((t, i) => (
+          {traiter.map((t, i) => (
             <Link key={i} href={`/admin/collectif/messages?e=${t.editionId}`} className="eca-boite-notif">
               <span className="eca-boite-point" aria-hidden="true" />
               {t.texte}
@@ -80,7 +86,7 @@ export default function ListeConversations({
                   <span className="eca-boite-conv-texte">
                     <span className="eca-boite-conv-ligne">
                       <strong>{c.organisation}</strong>
-                      {c.quand ? <span className="eca-sous">{c.quand}</span> : null}
+                      {c.quand ? <span className={badge ? "eca-sous eca-boite-heure eca-boite-heure--alire" : "eca-sous eca-boite-heure"}>{c.quand}</span> : null}
                     </span>
                     <span className="eca-sous">{c.evenement}</span>
                     <span className="eca-boite-conv-ligne">

@@ -5,7 +5,8 @@ import { makeSupabase } from "@/lib/supabase";
 import { estUuid } from "@/lib/collectif/cles";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
-import { ecrireMessage, lireMessages, lireReponseA, marquerLus } from "@/lib/collectif/messagerie";
+import { lireInstant } from "@/lib/collectif/etats";
+import { ecrireMessage, lireMessages, lireReponseA, marquerLus, marquerNonLuAtelier } from "@/lib/collectif/messagerie";
 import { lireTexteMessage } from "@/lib/collectif/messages";
 import { colonneAbsente, ERREUR_LIENS_ABSENTE, ERREUR_MIGRATION_ABSENTE, MESSAGE_LIENS_ABSENTE, tableAbsente } from "@/lib/collectif/migration";
 
@@ -17,6 +18,13 @@ import { colonneAbsente, ERREUR_LIENS_ABSENTE, ERREUR_MIGRATION_ABSENTE, MESSAGE
  * son prénom, et peut RÉPONDRE à un message du fil (T-152, migration
  * 20261018 : 503 `migration_liens_absente` sans elle). PATCH : l'atelier a lu (appelé par un effet de la fiche, jamais au
  * rendu). Aucun mail ne part (E8, phase 7).
+ *
+ * T-188 : le PATCH lit un corps facultatif. `{ jusqua }` BORNE le marquage à ce
+ * que l'écran affiche (le dernier message du fil) : un message arrivé après le
+ * rendu reste non lu. `{ nonLu: true }` : « Marquer comme non lu », le dernier
+ * message du client redevient non lu. Sans corps, l'ancien comportement (tout
+ * marquer) : un onglet ouvert avant le déploiement continue de fonctionner.
+ * Le marquage n'est pas journalisé ; son inverse ne l'est pas non plus.
  */
 
 export const runtime = "nodejs";
@@ -79,7 +87,26 @@ export async function POST(request: Request, ctx: Ctx) {
 export async function PATCH(request: Request, ctx: Ctx) {
   const g = await garde(request, ctx);
   if (g instanceof NextResponse) return g;
-  const r = await marquerLus(makeSupabase(), g.id, "atelier");
+  let corps: { jusqua?: unknown; nonLu?: unknown } = {};
+  const brut = await request.text().catch(() => "");
+  if (brut.trim()) {
+    try {
+      corps = (JSON.parse(brut) ?? {}) as { jusqua?: unknown; nonLu?: unknown };
+    } catch {
+      return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
+    }
+  }
+  if (corps.nonLu === true) {
+    const r = await marquerNonLuAtelier(makeSupabase(), g.id);
+    if (!r.ok) return echec(r.code);
+    return NextResponse.json({ ok: true, nonLus: r.n });
+  }
+  /* Une borne illisible ne devient jamais « tout marquer » : on refuse. */
+  if (corps.jusqua !== undefined && corps.jusqua !== null && lireInstant(corps.jusqua) === null) {
+    return NextResponse.json({ error: "jusqua_illisible" }, { status: 422 });
+  }
+  const jusqua = typeof corps.jusqua === "string" ? corps.jusqua.trim() : null;
+  const r = await marquerLus(makeSupabase(), g.id, "atelier", jusqua);
   if (!r.ok) return echec(r.code);
   return NextResponse.json({ ok: true, marques: r.n });
 }

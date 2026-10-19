@@ -3,7 +3,7 @@ import { quiEstConnecte } from "@/lib/admin-session";
 import { isValidNumeroToken } from "@/lib/atelier/token";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { makeSupabase } from "@/lib/supabase";
-import { compterNonLus } from "../../collectif/donnees";
+import { compterConversationsEnAttente } from "../../collectif/donnees";
 import { chargerFiche, marquerVu } from "../donnees";
 import Fiche from "./Fiche";
 import Rafraichissement from "../Rafraichissement";
@@ -22,9 +22,9 @@ export default async function PageFiche({ params }: { params: Promise<{ token: s
   const { token } = await params;
   if (!isValidNumeroToken(token)) notFound();
 
-  /* La barre commune (T-152) : les non-lus des éditions partent avec la fiche. */
+  /* La barre commune (T-152) : les conversations des éditions qui attendent (T-188) partent avec la fiche. */
   const collectif = collectifOuvert();
-  const [fiche, nonLus] = await Promise.all([chargerFiche(token), collectif ? compterNonLus(makeSupabase()) : Promise.resolve(null)]);
+  const [fiche, nonLus] = await Promise.all([chargerFiche(token), collectif ? compterConversationsEnAttente(makeSupabase()) : Promise.resolve(null)]);
   if (!fiche) notFound();
 
   /* Ouvrir la fiche, c'est avoir vu le dossier : le badge « nouveau »

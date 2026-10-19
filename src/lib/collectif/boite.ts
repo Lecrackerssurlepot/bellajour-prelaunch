@@ -93,12 +93,16 @@ export function conversationsDe(editions: readonly EditionBoite[], messages: rea
 
 export type RdvBoite = { edition_id: string; debut: string; avec: string };
 
+/** Une ligne de « À traiter aujourd'hui ». `genre` : la liste retire la conversation OUVERTE (elle est lue), jamais son rendez-vous (T-188). */
+export type ATraiter = { editionId: string; texte: string; genre: "message" | "rdv" };
+
 /** Ce qui est à traiter aujourd'hui : les demandes et messages à lire, puis les rendez-vous du jour. */
-export function aTraiter(conversations: readonly Conversation[], rdvs: readonly RdvBoite[], maintenant: Date): { editionId: string; texte: string }[] {
-  const lignes = conversations
+export function aTraiter(conversations: readonly Conversation[], rdvs: readonly RdvBoite[], maintenant: Date): ATraiter[] {
+  const lignes: ATraiter[] = conversations
     .filter((c) => c.nonLus)
     .map((c) => ({
       editionId: c.id,
+      genre: "message" as const,
       texte: c.demandeNonLue
         ? `${c.organisation} : une demande de modification`
         : `${c.organisation} : ${c.nonLus} message${c.nonLus > 1 ? "s" : ""} à lire`,
@@ -107,7 +111,7 @@ export function aTraiter(conversations: readonly Conversation[], rdvs: readonly 
   const noms = new Map(conversations.map((c) => [c.id, c.organisation]));
   for (const r of [...rdvs].sort((a, b) => a.debut.localeCompare(b.debut))) {
     if (jourParis(Date.parse(r.debut)) !== aujourdhui || !noms.has(r.edition_id)) continue;
-    lignes.push({ editionId: r.edition_id, texte: `Rendez-vous à ${formaterHeureParis(r.debut)} avec ${noms.get(r.edition_id)} (${r.avec})` });
+    lignes.push({ editionId: r.edition_id, genre: "rdv", texte: `Rendez-vous à ${formaterHeureParis(r.debut)} avec ${noms.get(r.edition_id)} (${r.avec})` });
   }
   return lignes;
 }

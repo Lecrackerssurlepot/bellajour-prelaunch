@@ -8,7 +8,8 @@ import { MIGRATION_COLLECTIF, TABLES_COLLECTIF } from "@/lib/collectif/migration
 import { LIBELLE_CAMP } from "@/lib/collectif/prochaine";
 import { etatMigration } from "@/lib/collectif/sante";
 import BarreAtelier, { liensEditions } from "../BarreAtelier";
-import { compterNonLus, listerEditions } from "./donnees";
+import { phraseEnAttente } from "@/lib/collectif/nouveaux";
+import { compterConversationsEnAttente, listerEditions } from "./donnees";
 import "../admin.css";
 import "../atelier/atelier.css";
 import "./collectif.css";
@@ -46,7 +47,9 @@ export default async function PageCollectif({
 
   const archivees = (await searchParams).archivees === "1";
   const supabase = makeSupabase();
-  const [liste, nonLus] = await Promise.all([listerEditions(supabase, archivees, new Date()), compterNonLus(supabase)]);
+  /* L'instant de la lecture, pris AVANT elle : la barre garde la plus récente des valeurs qu'elle connaît (T-188). */
+  const lu = new Date();
+  const [liste, nonLus] = await Promise.all([listerEditions(supabase, archivees, lu), compterConversationsEnAttente(supabase)]);
 
   if (liste.absent) {
     const etat = await etatMigration(supabase);
@@ -71,7 +74,7 @@ export default async function PageCollectif({
 
   return (
     <div className="adm-root ate-root eca-root">
-      <BarreAtelier monde="editions" collectif nonLus={nonLus} liens={liensEditions("liste", nonLus)} />
+      <BarreAtelier monde="editions" collectif nonLus={nonLus} nonLusLe={lu.toISOString()} rafraichir liens={liensEditions("liste", nonLus)} />
 
       {/* La même tête que les particuliers : une phrase, le geste principal à droite. */}
       <header className="ate-header">
@@ -94,7 +97,7 @@ export default async function PageCollectif({
                   <>
                     <span className="ate-sep">·</span>
                     <Link href="/admin/collectif/messages" className="eca-lien-messages">
-                      {nonLus} message{nonLus > 1 ? "s" : ""} à lire
+                      {phraseEnAttente(nonLus)}
                     </Link>
                   </>
                 ) : null}

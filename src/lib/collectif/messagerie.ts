@@ -237,21 +237,55 @@ export async function ecrireMessage(
   return { ok: true, message };
 }
 
-/** Marque lus, pour un camp, les messages de l'AUTRE camp. Rend le nombre marqué. */
+/**
+ * Marque lus, pour un camp, les messages de l'AUTRE camp. Rend le nombre marqué.
+ *
+ * `jusqua` (T-188, côté atelier) BORNE le marquage à ce que l'écran affiche : le
+ * dernier message du fil au rendu, puis le dernier arrivé en direct. Un message
+ * écrit après, que personne n'a encore vu, reste non lu. Sans borne (la route
+ * du client), tout ce qui précède est marqué, comme avant.
+ */
 export async function marquerLus(
   supabase: SupabaseClient,
   editionId: string,
-  lecteur: "client" | "atelier"
+  lecteur: "client" | "atelier",
+  jusqua?: string | null
 ): Promise<{ ok: true; n: number } | { ok: false; code: string | null }> {
   const colonne = lecteur === "client" ? "lu_client_le" : "lu_atelier_le";
   const auteur = lecteur === "client" ? "atelier" : "client";
-  const { data, error } = await supabase
+  let requete = supabase
     .from("collectif_messages")
     .update({ [colonne]: new Date().toISOString() })
     .eq("edition_id", editionId)
     .eq("auteur", auteur)
-    .is(colonne, null)
-    .select("id");
+    .is(colonne, null);
+  if (jusqua) requete = requete.lte("created_at", jusqua);
+  const { data, error } = await requete.select("id");
   if (error) return { ok: false, code: error.code ?? null };
   return { ok: true, n: data?.length ?? 0 };
+}
+
+/**
+ * « Marquer comme non lu » (T-188) : le DERNIER message du client redevient non
+ * lu pour l'atelier (`lu_atelier_le` vide). La conversation reprend sa place
+ * parmi celles qui attendent une réponse ; rien d'autre ne bouge. Rend 0 s'il
+ * n'y a aucun message du client.
+ */
+export async function marquerNonLuAtelier(
+  supabase: SupabaseClient,
+  editionId: string
+): Promise<{ ok: true; n: number } | { ok: false; code: string | null }> {
+  const { data: dernier, error } = await supabase
+    .from("collectif_messages")
+    .select("id")
+    .eq("edition_id", editionId)
+    .eq("auteur", "client")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ id: string }>();
+  if (error) return { ok: false, code: error.code ?? null };
+  if (!dernier) return { ok: true, n: 0 };
+  const maj = await supabase.from("collectif_messages").update({ lu_atelier_le: null }).eq("id", dernier.id).eq("edition_id", editionId).select("id");
+  if (maj.error) return { ok: false, code: maj.error.code ?? null };
+  return { ok: true, n: maj.data?.length ?? 0 };
 }

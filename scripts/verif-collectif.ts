@@ -75,7 +75,7 @@ import { cleFichier, compteDansPlafond, DELAI_DECLARATION_MORTE_MS, lireDeclarat
 import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
 import { jourDePhoto, libelleProvenance, lireFiltre, resumeDeposants } from "@/lib/collectif/grille";
 import { contenusAEnvoyer, ETAPES_CLIENT, etapeClient, initiales, joursAvant, libelleRole, parler, phraseJours } from "@/lib/collectif/espace";
-import { curseur, extraitDe, filDeConversation, fusionnerMessages, lirePieceJointe, lireTexteMessage, MESSAGE_MAX, PIECE_MAX, texteDuMessage, type Message } from "@/lib/collectif/messages";
+import { curseur, extraitDe, filDeConversation, fusionnerMessages, INTERVALLE_MESSAGES_MS, lirePieceJointe, lireTexteMessage, MESSAGE_MAX, PIECE_MAX, texteDuMessage, type Message } from "@/lib/collectif/messages";
 import { libelleTypeDocument, lireSaisieDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { formaterHeureParis, formaterInstantParis, formaterJourParis, instantDeParis, versChampParis } from "@/lib/collectif/dates";
 import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
@@ -109,6 +109,7 @@ import * as Dossiers from "@/lib/collectif/dossiers";
 import * as Arrivees from "@/lib/collectif/arrivees";
 import { genreFichier } from "@/lib/collectif/visionneuse";
 import { aTraiter as aTraiterBoite, conversationsDe, initialesDe, quandCourt } from "@/lib/collectif/boite";
+import * as Nouveaux from "@/lib/collectif/nouveaux";
 import { etapesEdition } from "@/lib/collectif/prochaine";
 import { messagePartage } from "@/lib/collectif/partage";
 import { colonneAbsente, MIGRATION_REVISION } from "@/lib/collectif/migration";
@@ -2075,6 +2076,107 @@ titre("— T-182 / D25 : le responsable termine la collecte, l'atelier voit la s
   ok("l'atelier voit la selection du client (nombre, vignettes) et la telecharge a part ; « collecte terminee par » vient du journal",
     /\(!selection \|\| p\.preselection\)/.test(lot) && /Télécharger la sélection/.test(panneau) && /selectionApercus/.test(panneau) && /"Sélection du client"/.test(panneau)
       && /j\.payload\?\.cle === "terminer_collecte"/.test(lire("src/app/admin/collectif/donnees.ts")));
+}
+
+titre("— T-188 : la messagerie de l'atelier, non lus et nouveaux (planche 8 du 19/10) —");
+{
+  const N = Nouveaux;
+  ok("le compte de « Messages » est celui des CONVERSATIONS : une edition compte une fois, quel que soit son nombre de non-lus",
+    N.conversationsEnAttente([{ edition_id: "a" }, { edition_id: "a" }, { edition_id: "b" }]) === 2 && N.conversationsEnAttente([]) === 0);
+  ok("l'onglet du navigateur : « (3) Atelier · Messages », le compte d'avant remplace (jamais empile), rien a zero",
+    N.titreAvecCompte("Atelier · Messages", 3) === "(3) Atelier · Messages" && N.titreAvecCompte("(3) Atelier · Messages", 5) === "(5) Atelier · Messages"
+      && N.titreAvecCompte("(3) Atelier · Messages", 0) === "Atelier · Messages" && N.titreAvecCompte("(12) Atelier — styles du mur", null) === "Atelier — styles du mur");
+  ok("la phrase du compte, au singulier et au pluriel",
+    N.phraseEnAttente(1) === "1 conversation attend une réponse" && N.phraseEnAttente(3) === "3 conversations attendent une réponse");
+  const magasin = { n: 4, le: "2026-10-19T10:00:30.000Z" };
+  ok("la plus recente des deux lectures gagne (instants SERVEUR, jamais l'horloge du navigateur)",
+    N.plusRecent(2, "2026-10-19T10:01:00.000Z", magasin) === 2 && N.plusRecent(2, "2026-10-19T10:00:00.000Z", magasin) === 4
+      && N.plusRecent(2, null, magasin) === 4 && N.plusRecent(2, null, { n: null, le: "" }) === 2 && N.plusRecent(undefined, undefined, { n: null, le: "" }) === null);
+
+  const m = (id: string, auteur: "client" | "atelier", created_at: string): Message => ({ id, auteur, qui: auteur === "client" ? "Claire" : "Mathias", texte: id, created_at });
+  /* L'exemple de la maquette : Claire hier a 10 h 12 (lu), nous a 10 h 40, puis deux nouveaux ce soir. */
+  const fil = [m("c1", "client", "2026-10-18T08:12:00Z"), m("a1", "atelier", "2026-10-18T08:40:00Z"), m("c2", "client", "2026-10-19T16:41:00Z"), m("c3", "client", "2026-10-19T16:42:00Z")];
+  ok("le trait se pose sur le premier message du CLIENT non lu (un id d'atelier n'y compte pas), rien sans non-lu",
+    N.premierNouveau(fil, ["c3", "c2", "a1"]) === "c2" && N.premierNouveau(fil, []) === null && N.premierNouveau(fil, ["a1"]) === null);
+  ok("le trait dit « 1 nouveau message », « 2 nouveaux messages »", N.libelleNouveaux(1) === "1 nouveau message" && N.libelleNouveaux(2) === "2 nouveaux messages");
+  const soir = new Date("2026-10-19T16:45:00Z");
+  ok("les jours, a l'heure de PARIS : Aujourd'hui, Hier, la date (l'annee si ce n'est pas la meme)",
+    N.jourRelatif("2026-10-19T08:00:00Z", soir) === "Aujourd'hui" && N.jourRelatif("2026-10-18T21:30:00Z", soir) === "Hier"
+      && N.jourRelatif("2026-10-18T22:30:00Z", soir) === "Aujourd'hui" && N.jourRelatif("2026-10-12T10:00:00Z", soir) === "12 octobre"
+      && N.jourRelatif("2025-12-31T10:00:00Z", soir) === "31 décembre 2025" && N.jourRelatif("pas une date", soir) === "");
+  const tous = new Set(fil.map((x) => x.id));
+  const jourDe = (iso: string) => N.jourRelatif(iso, soir);
+  type ElMessage = Extract<Nouveaux.ElementAtelier, { genre: "message" }>;
+  type ElTrait = Extract<Nouveaux.ElementAtelier, { genre: "trait" }>;
+  const els = N.filAtelier(fil, { premier: "c2", initiaux: tous, jourDe });
+  const msgs = els.filter((e): e is ElMessage => e.genre === "message");
+  const trait = els.find((e): e is ElTrait => e.genre === "trait");
+  ok("le fil de la maquette : Hier, deux anciens, Aujourd'hui, PUIS le trait « 2 nouveaux messages », puis les deux nouveaux",
+    els.map((e) => (e.genre === "jour" ? e.jour : e.genre)).join("|") === "Hier|message|message|Aujourd'hui|trait|message|message" && trait?.nombre === 2);
+  ok("anciens attenues (les deux camps), nouveaux du client cercles, « lu » sur le message du client deja lu seulement",
+    msgs.map((x) => x.ton).join() === "ancien,ancien,nouveau,nouveau" && msgs.map((x) => x.lu).join() === "true,false,false,false");
+  const reponse = N.filAtelier([...fil, m("a2", "atelier", "2026-10-19T16:50:00Z")], { premier: "c2", initiaux: tous, jourDe });
+  const dernierReponse = reponse[reponse.length - 1];
+  ok("une reponse de l'atelier apres le trait n'est ni comptee ni cerclee",
+    reponse.find((e): e is ElTrait => e.genre === "trait")?.nombre === 2 && dernierReponse.genre === "message" && dernierReponse.ton === null);
+  const direct = N.filAtelier([...fil, m("c4", "client", "2026-10-19T16:55:00Z")], { premier: null, initiaux: tous, jourDe });
+  const iTrait = direct.findIndex((e) => e.genre === "trait");
+  const traitDirect = direct[iTrait];
+  const dernierDirect = direct[direct.length - 1];
+  ok("sans non-lu a l'ouverture, un message du client arrive EN DIRECT pose le trait juste avant lui (« 1 nouveau message »)",
+    iTrait === direct.length - 2 && traitDirect?.genre === "trait" && traitDirect.nombre === 1 && dernierDirect.genre === "message" && dernierDirect.ton === "nouveau");
+  const rien = N.filAtelier(fil, { premier: null, initiaux: tous, jourDe });
+  const rienMsgs = rien.filter((e): e is ElMessage => e.genre === "message");
+  ok("rien de nouveau : ni trait, ni attenuation, les messages du client deja lus disent « lu »",
+    !rien.some((e) => e.genre === "trait") && rienMsgs.every((e) => e.ton === null) && rienMsgs.filter((x) => x.lu).length === 3);
+
+  const boite = lire("src/app/admin/collectif/messages/page.tsx");
+  ok("la boite n'ouvre plus d'office la premiere conversation non lue : seule ?e= ouvre, sinon un ecran qui invite a choisir",
+    !/conversations\.find\(\(c\) => c\.nonLus\)/.test(boite) && /const courant = \(choisie && estUuid\(choisie\)[^\n]*\?\? null;/.test(boite) && /Choisissez une conversation/.test(boite) && /eca-boite-fil--vide/.test(boite));
+  ok("la boite : le trait calcule au rendu serveur, le compte des conversations, la liste relue quand il change, « Marquer comme non lu »",
+    /premierNouveau=\{premierNouveau\(fiche\.messages, fiche\.nonLusAtelier\)\}/.test(boite) && /compterConversationsEnAttente\(supabase\)/.test(boite)
+      && /nonLusLe=\{maintenant\.toISOString\(\)\} rafraichir/.test(boite) && /<MarquerNonLu key=\{courant\.id\} id=\{courant\.id\}/.test(boite) && /title: "Atelier · Messages"/.test(boite));
+  const fiche188 = lire("src/app/admin/collectif/[id]/page.tsx");
+  ok("la fiche : le meme trait dans l'onglet Messages, et la barre au compte des conversations",
+    /<PanneauMessages id=\{e\.id\} initiaux=\{messages\} premierNouveau=\{premierNouveau\(messages, lu\.fiche\.nonLusAtelier\)\}/.test(fiche188)
+      && /compterConversationsEnAttente\(makeSupabase\(\)\)/.test(fiche188) && /<MarquerNonLu /.test(lire("src/app/admin/collectif/[id]/PanneauMessages.tsx")));
+  const donnees = lire("src/app/admin/collectif/donnees.ts");
+  const compte = donnees.slice(donnees.indexOf("export async function compterConversationsEnAttente"), donnees.indexOf("/* ─────────────────────────────── la boîte de réception"));
+  ok("le compte lit seulement (une colonne, editions NON archivees, aucun marquage), exact meme au-dela du plafond de 1000 lignes",
+    /\.eq\("auteur", "client"\)/.test(compte) && /\.is\("lu_atelier_le", null\)/.test(compte) && /\.is\("collectif_editions\.archive_le", null\)/.test(compte)
+      && /\.not\("edition_id", "in"/.test(compte) && !/update\(|insert\(|delete\(/.test(compte) && /conversationsEnAttente\(lignes\)/.test(compte));
+  const messagerie188 = lire("src/lib/collectif/messagerie.ts");
+  ok("le trait lit lu_atelier_le par une requete de donnees.ts ; lireMessages (partage avec le client) n'y touche pas",
+    /nonLusAtelier: nonLus\.error \? \[\] :/.test(donnees) && !/lu_atelier_le|lu_client_le/.test(messagerie188.slice(0, messagerie188.indexOf("export async function revisionMessagesAppliquee"))));
+  const enAttente = lire("src/app/api/admin/collectif/en-attente/route.ts");
+  ok("la route du compte : GET seul, cookie atelier exige, interrupteur, jamais mise en cache",
+    /export async function GET\(/.test(enAttente) && !ECRITURE.test(enAttente) && /quiEstConnecteRequete\(request\)/.test(enAttente) && /collectifOuvert\(\)/.test(enAttente) && /private, no-store/.test(enAttente));
+  const routeMsg = lire("src/app/api/admin/collectif/editions/[id]/messages/route.ts");
+  ok("le marquage est BORNE au dernier message affiche ; une borne illisible est refusee, jamais lue comme « tout marquer »",
+    /lireInstant\(corps\.jusqua\) === null\) \{\s*return NextResponse\.json\(\{ error: "jusqua_illisible" \}, \{ status: 422 \}\)/.test(routeMsg)
+      && /marquerLus\(makeSupabase\(\), g\.id, "atelier", jusqua\)/.test(routeMsg) && /requete = requete\.lte\("created_at", jusqua\)/.test(messagerie188));
+  ok("« Marquer comme non lu » passe par la MEME route PATCH (un champ en plus) : le dernier message du client redevient non lu",
+    /corps\.nonLu === true[\s\S]*?marquerNonLuAtelier\(makeSupabase\(\), g\.id\)/.test(routeMsg)
+      && /\.order\("created_at", \{ ascending: false \}\)\s*\.limit\(1\)[\s\S]*?update\(\{ lu_atelier_le: null \}\)/.test(messagerie188));
+  ok("le client ne change pas : sa route marque sans borne, son rappel ignore l'argument",
+    /marquerLus\(makeSupabase\(\), acces\.edition\.id, "client"\)/.test(lire("src/app/api/collectif/messages/lus/route.ts")) && /marquerLus: p\.ecrire\s*\? async \(\) =>/.test(lire("src/app/edition/[token]/atelier/Parler.tsx")));
+  const conv = lire("src/app/admin/collectif/ConversationAtelier.tsx");
+  ok("le fil : le repere fige en etat local, le marquage envoie sa borne, puis les compteurs se relisent",
+    /const \[premier\] = useState\(premierNouveau\)/.test(conv) && /body: JSON\.stringify\(\{ jusqua \}\)/.test(conv) && /void relireCompte\(\);\s*if \(premiere\) router\.refresh\(\);/.test(conv) && /filAtelier\(messages,/.test(conv));
+  const veille = lire("src/app/admin/collectif/VeilleMessages.tsx") + lire("src/app/admin/collectif/compteMessages.ts");
+  ok("la releve : une minute, rien onglet cache, rattrapage au retour, refresh seulement si le nombre change, jamais location.reload",
+    /PERIODE_MS = 60_000/.test(veille) && /visibilitychange/.test(veille) && /if \(rafraichir && apres !== null && avant !== null && apres !== avant\) router\.refresh\(\)/.test(veille) && !/location\.reload\(/.test(veille));
+  ok("le fil garde SA releve de 3,5 s (T-169, a part)", INTERVALLE_MESSAGES_MS === 3500);
+  const barre188 = lire("src/app/admin/BarreAtelier.tsx");
+  ok("la barre : « Messages » porte le compte vivant sur chaque ecran des editions, la releve ne tourne que cote editions",
+    /libelle: "Messages", badge: nonLus \?\? null, courant: courant === "messages", compteMessages: true/.test(barre188) && /\{collectif && editions \? <VeilleMessages /.test(barre188)
+      && /l\.compteMessages \? \(\s*<PastilleMessages/.test(barre188) && /suivre=\{editions\}/.test(barre188));
+  const liste188 = lire("src/app/admin/collectif/messages/ListeConversations.tsx");
+  ok("la liste : l'heure d'une conversation non lue en couleur d'accent, la conversation ouverte quitte « À traiter » (pas son rendez-vous)",
+    /eca-boite-heure--alire/.test(liste188) && /t\.genre === "rdv" \|\| t\.editionId !== courant/.test(liste188)
+      && /\.eca-root \.eca-boite-conv \.eca-boite-heure--alire \{\s*color: var\(--eca-bleu-encre\);/.test(lire("src/app/admin/collectif/collectif.css")));
+  ok("aucun mail a l'atelier dans ce lot (A1 attend Mathias, T-146)",
+    [veille, conv, enAttente, routeMsg, boite].every((t) => !/envoyerMail|brevo/i.test(t)));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
