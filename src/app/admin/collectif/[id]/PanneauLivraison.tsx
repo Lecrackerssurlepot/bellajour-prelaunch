@@ -37,8 +37,10 @@ export default function PanneauLivraison({ id, livraison, expedieeTexte, livreeT
   }
 
   return (
-    <section className="ate-carte">
-      <h2 className="ate-carte-titre">Livraison</h2>
+    <section className="eca-carte">
+      <span className="eca-carte-tete">
+        <h2 className="eca-carte-titre">Livraison</h2>
+      </span>
       <label className="eca-champ">
         <span className="eca-champ-label">Adresse de livraison</span>
         <textarea className="eca-textarea" rows={4} value={adresse} onChange={(e) => setAdresse(e.target.value)} placeholder={"Nom, société\nAdresse\nCode postal, ville"} />

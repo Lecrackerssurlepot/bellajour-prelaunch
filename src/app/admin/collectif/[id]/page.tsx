@@ -178,6 +178,7 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
             : { texte: "Brief à faire", ton: "gris" };
 
   const pluriel = (n: number, mot: string) => `${n.toLocaleString("fr-FR")} ${mot}${n > 1 ? "s" : ""}`;
+  const couverturesAimees = (n: number) => (n === 0 ? "aucune couverture aimée" : `${n} couverture${n > 1 ? "s" : ""} aimée${n > 1 ? "s" : ""}`);
 
   const apercu = (
     <>
@@ -248,7 +249,7 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
           <span className="eca-chiffre">
             <strong>{collecte.total.toLocaleString("fr-FR")}</strong>
             <span>
-              photo{collecte.total > 1 ? "s" : ""} · {pluriel(collecte.participants, "participant")}
+              photo{collecte.total > 1 ? "s" : ""} · {pluriel(collecte.participants, "personne")}
             </span>
           </span>
           {collecte.apercus.length ? (
@@ -372,56 +373,69 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
         ]}
         panneaux={{
           apercu,
+          /* T-185 (planche 7) : une carte par magazine, comme la vue d'ensemble ; le brief se VOIT
+             (palette, typographies, doubles pages, couvertures aimées) au lieu d'une liste de mots. */
           magazines: (
-            <section className="ate-carte">
-              <h2 className="ate-carte-titre">Magazines</h2>
-              <ul className="eca-mag-liste">
-                {magazines.map((m) => (
-                  <li key={m.id} className="eca-mag-brief">
-                    <span className="eca-mag-ligne">
-                      <span>
-                        {m.rang}. {m.nom}
-                      </span>
-                      <span className="eca-sous">
-                        {m.bat_valide_le
-                          ? "BAT validé"
-                          : m.toursPublies > 0
-                            ? `Tour ${m.toursPublies} publié`
-                            : m.brief_valide_le
-                              ? `Brief validé le ${formaterInstantParis(m.brief_valide_le)}`
-                              : m.brief.styles.length
-                                ? "Brief en cours"
-                                : "Brief à faire"}
-                      </span>
+            <div className="eca-cartes eca-cartes--deux">
+              {magazines.map((m) => {
+                const p = pastilleMag(m);
+                const couverture = m.brief.aimees.find((a) => a.url)?.url ?? null;
+                const vide = m.brief.styles.length === 0 && m.brief.aimees.length === 0;
+                const infos = [
+                  e.pagination_prevue ? pluriel(e.pagination_prevue, "page") : null,
+                  m.brief.styles.length === 0 ? null : m.brief.styles.length === 1 ? `style ${m.brief.styles[0]}` : `${m.brief.styles.length} styles mêlés : ${m.brief.styles.join(", ")}`,
+                  m.brief_valide_le ? `brief validé le ${formaterJourParis(m.brief_valide_le)}` : null,
+                ].filter(Boolean);
+                return (
+                  <section key={m.id} className="eca-carte">
+                    <span className="eca-carte-tete">
+                      <h2 className="eca-carte-titre">
+                        Magazine {m.rang} · {m.nom}
+                      </h2>
+                      <span className={`eca-puce eca-puce--${p.ton}`}>{p.texte}</span>
                     </span>
-                    <Link href={`/admin/collectif/${e.id}/bat?m=${m.rang}`} className="eca-lien-bat">
-                      Bon à tirer du magazine {m.rang} →
-                    </Link>
-                    {m.brief.styles.length ? (
-                      <span className="eca-brief">
-                        <span>
-                          Composition : <strong>{m.brief.styles.join(", ")}</strong>
-                          {m.brief.styles.length > 1 ? ` (${m.brief.styles.length} styles mêlés, à harmoniser)` : ""}
+                    <span className="eca-mag-resume">
+                      {couverture ? (
+                        <img className="eca-mag-couv" src={couverture} alt="" />
+                      ) : (
+                        <span className="eca-mag-couv eca-mag-couv--vide" aria-hidden="true">
+                          {m.rang}
                         </span>
+                      )}
+                      <span className="eca-sous">{infos.length ? infos.join(" · ") : "Aucune pièce choisie pour l'instant."}</span>
+                    </span>
+                    <ul className="eca-pieces" aria-label={`Le brief du magazine ${m.rang}`}>
+                      <li className="eca-piece">
                         {m.brief.palette ? (
-                          <span>
-                            Palette {m.brief.palette.nom} ({m.brief.palette.style}){" "}
-                            <span className="eca-bandes">
-                              {m.brief.palette.couleurs.map((c, i) => (
-                                <span key={i} style={{ background: c }} />
-                              ))}
-                            </span>
+                          <span className="eca-piece-vis eca-piece-bandes" aria-hidden="true">
+                            {m.brief.palette.couleurs.map((c, i) => (
+                              <span key={i} style={{ background: c }} />
+                            ))}
                           </span>
                         ) : (
-                          <span>Palette : ?</span>
+                          <span className="eca-piece-vis eca-piece-vis--vide" aria-hidden="true" />
                         )}
-                        <span>
-                          Typographies : {m.brief.typos ? `${[m.brief.typos.titres, m.brief.typos.texte].filter(Boolean).join(" et ") || "?"} (${m.brief.typos.style})` : "?"}
+                        <span className="eca-piece-nom">{m.brief.palette ? `Palette ${m.brief.palette.nom}` : "Palette"}</span>
+                        <span className="eca-piece-style">{m.brief.palette?.style ?? "à choisir"}</span>
+                      </li>
+                      <li className="eca-piece">
+                        <span className={m.brief.typos ? "eca-piece-vis eca-piece-aa" : "eca-piece-vis eca-piece-vis--vide"} aria-hidden="true">
+                          {m.brief.typos ? "Aa" : null}
                         </span>
-                        <span>Texte : {PARTS_TEXTE.find((t) => t.cle === m.brief.texte)?.libelle ?? "?"}</span>
-                        <span>Doubles : {m.brief.doubles.map((d) => `${d.libelle} (${d.style})`).join(", ") || "?"}</span>
-                      </span>
-                    ) : null}
+                        <span className="eca-piece-nom">{m.brief.typos ? [m.brief.typos.titres, m.brief.typos.texte].filter(Boolean).join(" et ") || "Typographies" : "Typographies"}</span>
+                        <span className="eca-piece-style">{m.brief.typos?.style ?? "à choisir"}</span>
+                      </li>
+                      {(m.brief.doubles.length ? m.brief.doubles : [null]).slice(0, 3).map((d, i) => (
+                        <li key={i} className="eca-piece">
+                          <span className={d ? "eca-piece-vis eca-piece-double" : "eca-piece-vis eca-piece-vis--vide"} aria-hidden="true">
+                            {d ? <span /> : null}
+                            {d ? <span /> : null}
+                          </span>
+                          <span className="eca-piece-nom">{d ? d.libelle : "Doubles pages"}</span>
+                          <span className="eca-piece-style">{d ? d.style : "au moins une"}</span>
+                        </li>
+                      ))}
+                    </ul>
                     {m.brief.aimees.length ? (
                       <span className="eca-aimees">
                         {m.brief.aimees.map((a, i) =>
@@ -429,10 +443,26 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
                         )}
                       </span>
                     ) : null}
-                  </li>
-                ))}
-              </ul>
-            </section>
+                    <span className="eca-carte-pied eca-mag-pied">
+                      <span>
+                        {vide
+                          ? "Le client n'a encore rien choisi sur le mur."
+                          : [couverturesAimees(m.brief.aimees.length), PARTS_TEXTE.find((t) => t.cle === m.brief.texte)?.libelle.toLowerCase()].filter(Boolean).join(" · ")}
+                      </span>
+                      {vide ? (
+                        <Link href={`/admin/collectif/messages?e=${e.id}`} className="adm-btn adm-btn--ghost">
+                          Lui écrire
+                        </Link>
+                      ) : (
+                        <Link href={`/admin/collectif/${e.id}/bat?m=${m.rang}`} className="adm-btn adm-btn--ghost">
+                          Bon à tirer →
+                        </Link>
+                      )}
+                    </span>
+                  </section>
+                );
+              })}
+            </div>
           ),
           photos: <PanneauCollecte id={e.id} {...collecte} />,
           messages: <PanneauMessages id={e.id} initiaux={messages} />,
@@ -481,8 +511,10 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
             </div>
           ),
           journal: (
-            <section className="ate-carte">
-              <h2 className="ate-carte-titre">Journal</h2>
+            <section className="eca-carte">
+              <span className="eca-carte-tete">
+                <h2 className="eca-carte-titre">Journal</h2>
+              </span>
               {journal.length === 0 ? (
                 <p className="eca-vide">Rien encore.</p>
               ) : (

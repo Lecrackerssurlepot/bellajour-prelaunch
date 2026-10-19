@@ -8,8 +8,10 @@ import type { ContenuFiche } from "../donnees";
 
 export default function PanneauContenus({ contenus }: { contenus: ContenuFiche[] }) {
   return (
-    <section className="ate-carte">
-      <h2 className="ate-carte-titre">Contenus reçus</h2>
+    <section className="eca-carte">
+      <span className="eca-carte-tete">
+        <h2 className="eca-carte-titre">Contenus reçus</h2>
+      </span>
       {contenus.length === 0 ? (
         <p className="eca-vide">Rien encore. Le client les envoie depuis son tableau de bord.</p>
       ) : (

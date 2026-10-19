@@ -1451,7 +1451,7 @@ titre("— D24 : le brief se compose piece par piece, de n'importe quel style �
     !fichiersParSuffixe("src/app/edition", /\.tsx?$/).some((f) => /seule la couverture peut venir|L'intérieur suit ce style|ce style en dessine tout l/.test(lire(f))));
   const fiche = lire("src/app/edition/[token]/style/[slug]/FicheStyle.tsx");
   ok("un style en detail : la barre d'etapes et ses quatre ancres, « Prendre tout le style »", ["ec-etape-1", "ec-etape-2", "ec-etape-3", "ec-etape-4"].every((x) => fiche.includes(`"${x}"`)) && fiche.includes("ec-fiche-etapes") && /Prendre tout le style/.test(fiche));
-  ok("l'atelier voit le style de chaque piece", /typos: c\.typos \?/.test(lire("src/app/admin/collectif/donnees.ts")) && /styles mêlés, à harmoniser/.test(lire("src/app/admin/collectif/[id]/page.tsx")));
+  ok("l'atelier voit le style de chaque piece (T-185 : chaque piece du brief dit son style, sous sa vignette)", /typos: c\.typos \?/.test(lire("src/app/admin/collectif/donnees.ts")) && /styles mêlés : \$\{m\.brief\.styles\.join/.test(lire("src/app/admin/collectif/[id]/page.tsx")) && /className="eca-piece-style"/.test(lire("src/app/admin/collectif/[id]/page.tsx")));
   ok("un magazine compose n'est jamais « vide » (il ne se retire pas)", /stylesDeLaComposition\(compositionDu\(m\)\)\.length === 0/.test(lire("src/app/api/admin/collectif/editions/[id]/route.ts")));
 }
 
@@ -1870,8 +1870,14 @@ titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de receptio
   const fiche = lire("src/app/admin/collectif/[id]/page.tsx");
   ok("fiche en cartes : un retour visible vers la liste des editions, sur la fiche et sa silhouette",
     /<Link href="\/admin\/collectif" className="eca-retour">[\s\S]{0,80}Les éditions/.test(fiche) && /eca-retour[\s\S]{0,80}Les éditions/.test(lire("src/app/admin/collectif/[id]/loading.tsx")));
+  const vueEnsemble = fiche.slice(fiche.indexOf("const apercu = ("), fiche.indexOf("\n  return (", fiche.indexOf("const apercu = (")));
   ok("fiche en cartes : TROIS cartes dans la vue d'ensemble, chacune avec son lien en tete, plus de resumes en lignes",
-    (fiche.match(/<section className="eca-carte">/g) ?? []).length === 3 && (fiche.match(/className="eca-carte-tete"/g) ?? []).length === 3 && !/const resume = /.test(fiche) && !/eca-apercu/.test(fiche));
+    (vueEnsemble.match(/<section className="eca-carte">/g) ?? []).length === 3 && (vueEnsemble.match(/className="eca-carte-tete"/g) ?? []).length === 3 && !/const resume = /.test(fiche) && !/eca-apercu/.test(fiche));
+  /* T-185 (19/10, planche 7) : les onglets aussi sont en cartes de la vue d'ensemble. */
+  const panneaux = ["PanneauCollecte", "PanneauDocuments", "PanneauContenus", "PanneauRendezVous", "PanneauLivraison"].map((f) => lire(`src/app/admin/collectif/[id]/${f}.tsx`));
+  ok("T-185 : les onglets Magazines, Photos, Documents, Rendez-vous, Livraison, Journal en cartes de la vue d'ensemble, sans style en ligne ni ancienne carte",
+    panneaux.every((t) => /className="eca-carte(?: [a-z-]+)?"/.test(t) && !/ate-carte/.test(t)) && !/style=\{\{/.test(panneaux[0] + panneaux[1])
+      && /magazines: \(\s*<div className="eca-cartes eca-cartes--deux">/.test(fiche) && /<h2 className="eca-carte-titre">Journal<\/h2>/.test(fiche) && /className="eca-pieces"/.test(fiche));
   ok("fiche en cartes : les gestes dans un menu de l'en-tete, les trois liens et leur regeneration dans « Réglages et liens »",
     /<PanneauGestes [^>]*menu \/>/.test(fiche) && /libelle: "Réglages et liens"/.test(fiche) && /reglages: \([\s\S]*?<PanneauLiens id=\{e\.id\} liens=\{liens\} \/>/.test(fiche));
   const donneesFiche = lire("src/app/admin/collectif/donnees.ts");

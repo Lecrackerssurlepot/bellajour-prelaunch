@@ -8,6 +8,7 @@
  * édition ».
  */
 
+import { compterPersonnes } from "@/lib/collectif/dossiers";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { signerGet } from "@/lib/atelier/r2";
 import { etatEffectif, LIBELLE_ETAT_EDITION, type EtatEdition } from "@/lib/collectif/etats";
@@ -280,7 +281,7 @@ export async function chargerEdition(
     lireMessages(supabase, id, null),
     supabase
       .from("collectif_photos")
-      .select("id, provenance_type, deposant, role_deposant, appareil_id, signalee, vignette_key, empreinte, prise_le, ordre, confirmee_le, preselection")
+      .select("id, provenance_type, provenance_id, deposant, role_deposant, appareil_id, signalee, vignette_key, empreinte, prise_le, ordre, confirmee_le, preselection")
       .eq("edition_id", id)
       .not("confirmee_le", "is", null)
       .limit(20000),
@@ -313,6 +314,7 @@ export async function chargerEdition(
     ordre: number | null;
     confirmee_le: string;
     provenance_type: string;
+    provenance_id: string | null;
     deposant: string | null;
     role_deposant: string;
     appareil_id: string | null;
@@ -326,7 +328,8 @@ export async function chargerEdition(
   );
   const collecte: Collecte = {
     total: lignesPhotos.length,
-    participants: new Set(lignesPhotos.filter((p) => p.role_deposant === "participant" && p.appareil_id).map((p) => p.appareil_id)).size,
+    /* Les personnes, comptées comme côté client (T-180) : un nom, ou un téléphone pour les anonymes. */
+    participants: compterPersonnes(lignesPhotos),
     signalees: lignesPhotos.filter((p) => p.signalee).length,
     sansVignette: lignesPhotos.filter((p) => !p.vignette_key).length,
     doublons: groupesDoublonsRapides(lignesPhotos.map((p, i) => ({ id: p.id, empreinte: p.empreinte, priseLe: p.prise_le, ordre: p.ordre ?? i }))).reduce(

@@ -1,7 +1,7 @@
 ---
 id: T-185
 titre: Dans la fiche d'une édition, les onglets ne sont pas bâtis comme la vue d'ensemble et paraissent brouillons
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: libre
@@ -44,4 +44,18 @@ la création (T-186), sans cadre dans un cadre ; retirer les styles en ligne, ar
 Planche 7 telle quelle. Le « dashboard » est la vue d'ensemble de la fiche (ma recommandation).
 
 ## Ce qui a été fait
-Rien encore (maquette seulement).
+19/10, branche `feat/collectif-fiche-en-cartes` (planche 7, première partie) :
+- **Magazines** : une carte par magazine (deux par rangée), son état en pastille, sa couverture,
+  une ligne de résumé (pages, styles mêlés, date de validation), le brief en PIÈCES (la palette
+  en bandes, « Aa » et les polices, chaque double page, chacune avec son style), les couvertures
+  aimées, et « Bon à tirer → » (ou « Lui écrire » quand rien n'est choisi).
+- **Photos** : trois cartes (la collecte en grand chiffre avec les dernières arrivées et ses
+  pastilles ; la sélection du client, T-182 ; « Qui a déposé » avec chaque téléchargement).
+  « Participants (appareils) » devient « personnes », comptées comme côté client (T-180).
+- **Documents, Rendez-vous, Livraison, Journal** : la famille de cartes de la vue d'ensemble
+  (`eca-carte`), plus de style écrit en ligne dans ces panneaux.
+- Harnais : la vue d'ensemble vérifiée dans SON bloc (trois cartes), un contrôle T-185 sur les
+  onglets. Captures au pilote (aucune écriture) sur « Essai révision », 1440 et 375 px, aucun
+  débordement.
+Reste : l'onglet **Réglages** (il attend la refonte du formulaire, T-186) et l'onglet
+**Messages** (T-188), puis archiver le mode `compact` mort de `PanneauLiens`.

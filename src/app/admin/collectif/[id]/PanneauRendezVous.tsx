@@ -61,8 +61,10 @@ export default function PanneauRendezVous({
 
   if (absent) {
     return (
-      <section className="ate-carte">
-        <h2 className="ate-carte-titre">Rendez-vous</h2>
+      <section className="eca-carte">
+        <span className="eca-carte-tete">
+          <h2 className="eca-carte-titre">Rendez-vous</h2>
+        </span>
         <p className="eca-sous">
           Migration à appliquer : <code>{migration}</code>. En attendant, le client voit le lien de rendez-vous des réglages.
         </p>
@@ -75,8 +77,10 @@ export default function PanneauRendezVous({
   const autres = rendezVous.filter((r) => !(r.statut === "pris" && r.aVenir));
 
   return (
-    <section className="ate-carte">
-      <h2 className="ate-carte-titre">Rendez-vous</h2>
+    <section className="eca-carte">
+      <span className="eca-carte-tete">
+        <h2 className="eca-carte-titre">Rendez-vous</h2>
+      </span>
       <label className="eca-champ">
         <span className="eca-champ-label">Interlocuteur du projet</span>
         <select
