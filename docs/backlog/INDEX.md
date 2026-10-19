@@ -24,6 +24,25 @@ exactement l'écart que la passe du 01/09/2026 a corrigé, sur 36 lignes.
 Semé le 29/08/2026 par l'audit de structure. Tous les tickets ci-dessous sont **prouvés dans le
 code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
+## Où on en est (19/10/2026 : l'Édition collective en ligne, audits de sécurité et de performance)
+
+L'Édition collective est ouverte en production depuis le 17/10 ; les 7 éditions d'essai sont
+archivées, aucun vrai client encore. Le 19/10, deux audits (lecture seule, constats revérifiés
+dans le code) : **une faille grave, corrigée le jour même** (T-161, l'atelier s'ouvrait sans mot
+de passe), et 16 tickets ouverts (T-162 à T-177), plus ceux de la liste « avant un vrai client »
+(T-157 à T-160). L'ordre proposé :
+
+1. **Sécurité, tout de suite** : T-162 (mettre à jour Next.js, failles publiques), T-163 (en-têtes).
+2. **Avant la première vraie édition** : T-157 (style d'essai sur le mur, attend l'accord de
+   Mathias), T-167 (au-delà de 1 000 photos), T-172 (mur des styles trop lourd), T-158 et T-159
+   (confidentialité et durée de conservation : Mathias tranche), T-160 (pannes invisibles).
+3. **Avant d'ouvrir `COLLECTIF_MAILS`** : T-164 (origine des liens), T-166 (frein de
+   « Retrouver »), puis T-146 et T-154.
+4. **Avant les grosses éditions** : T-168, T-169, T-170, T-155 (essai réel).
+5. **Confort** : T-165, T-171, T-173 à T-177.
+
+Les retours d'expérience de Mathias après son test viennent s'intercaler en 2.
+
 ## Où on en est (16/09/2026 : le modèle de prix v3)
 
 **La grille est hors taxes, la livraison a ses zones, le client peut commander plusieurs
@@ -300,3 +319,24 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-154 | Rien ne vérifie que le lien du responsable est ouvert par le responsable, et il ne peut pas le retrouver seul | collectif | serieux | avis-requis | en cours (16/10) — lecture sur un appareil nouveau, code par mail pour modifier (24 h, 10 essais) ; « Retrouver mon espace » fait (`/espace`) ; tout coupé tant que `COLLECTIF_MAILS` (et `COLLECTIF_CODE_APPAREIL`) ne sont pas ouverts ; reste le lien dans `/compte` |
 | T-155 | Les gros envois de photos n'ont été prouvés qu'en local, jamais en ligne ni sur un iPhone en 4G | collectif | serieux | libre | nouveau (15/10) — 17/10 : B2B ouvert en production, les 7 essais archivés ; reste l'envoi de 2000 photos et l'iPhone en 4G, sur une édition neuve |
 | T-156 | On peut déposer les photos d'un client dans le dossier d'un autre sans que l'écran le montre | atelier | bloquant | libre | **fermé** (fiche dans `fermes/`) — 17/10, PR #247 en production : l'écran de dépôt nomme le dossier (titre, prénom lus au serveur), bandeau quand l'atelier est connecté, « nouveau numéro » ne rouvre plus un dossier existant, un lot identique à celui d'un autre dossier devient une remarque sur la fiche ; vérifié en ligne. Incident du 06/10 (92 photos de Merisa chez Justine) nettoyé à part |
+| T-157 | Un style d'essai, « Essai technique Claude », est en première place sur le mur que voit un vrai client | collectif | serieux | libre | nouveau (19/10) — vérifié en base : publié, `ordre = 0` ; à dépublier, rien à effacer |
+| T-158 | La politique de confidentialité ne parle ni des participants d'une édition ni de leurs photos, et il n'existe aucun accord sur les données pour les entreprises | collectif | serieux | avis-requis | nouveau (19/10) — texte légal : je prépare la liste exacte de ce que le B2B collecte, Mathias fait rédiger |
+| T-159 | Rien n'efface les photos d'une édition collective après la livraison, et aucune durée n'est fixée | collectif | serieux | avis-requis | nouveau (19/10) — délai à fixer par Mathias (PRD §12.5), puis script sur le modèle d'`anonymiser-dossiers` |
+| T-160 | Si une route de l'Édition collective échoue, rien ne le montre à l'atelier | collectif | serieux | libre | nouveau (19/10) — la page Santé ignore les éditions, les journaux Vercel ne vivent qu'une heure |
+| T-161 | L'atelier s'ouvrait sans mot de passe, avec un faux cookie au nom d'une propriété héritée | admin | bloquant | libre | **fermé** (fiche dans `fermes/`) — 19/10 : trouvé par l'audit, corrigé le jour même (PR #249), prouvé en production (`307 → /admin/login`) ; aucune écriture d'intrus en base ; `/admin` se garde aussi seule (PR #250) |
+| T-162 | Next.js 16.2.3 et cinq autres dépendances portent des failles connues, dont des contournements du middleware | exploitation | serieux | libre | nouveau (19/10) — `npm audit` : 1 critique, 5 hauts ; Next 16.4.2 d'abord, puis pdfjs-dist avec `public/pdfjs/` ; risque réduit par PR #250 |
+| T-163 | Le site n'envoie aucun en-tête de protection, l'atelier peut être affiché dans la page d'un autre site | exploitation | serieux | libre | nouveau (19/10) — ni CSP ni `X-Frame-Options`, vérifié au `curl` |
+| T-164 | Les liens des mails d'une édition prennent leur adresse dans un en-tête de la requête, que l'appelant peut écrire | collectif | serieux | libre | nouveau (19/10) — sans effet tant que `COLLECTIF_MAILS` est fermé ; à faire AVANT de l'ouvrir |
+| T-165 | Un logo SVG déposé par un client exécute son script si l'atelier l'ouvre dans un nouvel onglet | collectif | confort | libre | nouveau (19/10) — domaine R2, pas bellajour.fr ; servir en téléchargement |
+| T-166 | « Retrouver mon espace » n'a aucun frein par appelant, une fois les mails ouverts elle peut servir à arroser de vraies adresses | collectif | confort | libre | nouveau (19/10) — avec T-164, avant d'ouvrir `COLLECTIF_MAILS` |
+| T-167 | Au-delà de 1 000 photos, une édition perdrait des photos sans rien dire (grille, plafond total, lot de l'atelier) | collectif | serieux | libre | nouveau (19/10) — sept lectures comptent sur `.limit(20000)`, Supabase plafonne par défaut à 1 000 ; réglage à lire par Mathias ; AVANT la première vraie édition |
+| T-168 | Chaque envoi de photos relit toutes les photos de l'édition, la charge croît au carré du nombre de photos | collectif | serieux | libre | nouveau (19/10) — ≈ 200 Mo lus pour une édition de 2 000 photos (calculé) |
+| T-169 | La messagerie interroge le serveur toutes les 3,5 secondes, même quand rien ne bouge | collectif | serieux | libre | nouveau (19/10) — ≈ 180 000 appels par mois et par onglet ouvert (calculé), quota Hobby à vérifier |
+| T-170 | Le repérage des doublons devient très lent quand beaucoup de photos sont identiques, jusqu'à bloquer la grille | collectif | serieux | libre | nouveau (19/10) — 16 s pour 1 000 empreintes identiques (mesuré) |
+| T-171 | Une photo dont la vignette a échoué s'affiche dans la grille en original, et rien ne refait la vignette | collectif | confort | libre | nouveau (19/10) — 28 photos sur 879 en base |
+| T-172 | Le mur des styles affiche les images maîtresses (jusqu'à 2 400 px et 4 Mo) dans des cartes de 300 px | collectif | serieux | libre | nouveau (19/10) — premier écran du client, poids réel non mesuré |
+| T-173 | La page Documents charge tout le tableau de bord pour afficher le nom des magazines | collectif | confort | libre | nouveau (19/10) |
+| T-174 | La page produit précharge 333 Ko qu'elle n'utilise pas, un quart des données mobiles | front | confort | libre | nouveau (19/10) — mesuré en mobile lent |
+| T-175 | Sur téléphone lent, le titre de la page produit reste invisible trois secondes après l'apparition de la barre | front | confort | libre | nouveau (19/10) — le mouvement est voulu : maquette à montrer avant de toucher |
+| T-176 | Les vignettes de photos sont retéléchargées à chaque visite, faute de cache | exploitation | confort | libre | nouveau (19/10) |
+| T-177 | Le bon à tirer, la boîte de réception de l'atelier et le fil des messages attendent des lectures l'une après l'autre sans raison | collectif | confort | libre | nouveau (19/10) |

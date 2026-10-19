@@ -70,6 +70,12 @@ Lire le résultat, rendre 500 sinon (T-038).
 
 ## Règles
 
+- **Jamais `TABLE[saisie]` sur un objet littéral quand la clé vient du client** (cookie, corps,
+  paramètre d'URL). `{}` répond aussi à `constructor`, `__proto__`, `toString`… : des valeurs non
+  vides et publiques. C'est ainsi qu'un faux cookie au nom de `constructor` ouvrait tout
+  l'atelier sans mot de passe jusqu'au 19/10/2026 (T-161). Lire par `Object.hasOwn(table, cle)`,
+  un objet `Object.create(null)` ou une `Map`, et vérifier le type de la valeur trouvée.
+  Les comptes de l'atelier ne se lisent QUE par `motDePasseDe()` (`@/lib/admin-auth`).
 - **Le prix vient du serveur, jamais du client.** Le front envoie `expected_offer` pour l'affichage
   seul et gère le 409 `offer_changed`. Ne jamais coder en dur un montant ni `FOUNDER_CAP` côté front.
 - **La remise fondatrice aussi.** `/api/atelier/checkout` relit `waitlist` lui-même et pose
