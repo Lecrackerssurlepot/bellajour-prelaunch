@@ -22,6 +22,7 @@ import type { Livraison, Role } from "./types";
 
 export type GesteCle =
   | "clore_collecte"
+  | "terminer_collecte"
   | "rouvrir_collecte"
   | "publier_tour"
   | "valider_bat"
@@ -68,6 +69,19 @@ export const GESTES: Record<GesteCle, Geste> = {
     explication:
       "Ferme le lien participants tout de suite et fait passer l'édition en composition. La date de clôture devient maintenant.",
     action: "regler_edition",
+    de: ["preparation"],
+    vers: "composition",
+    deuxTemps: true,
+  },
+
+  /* D25 (19/10, planche 4) : le RESPONSABLE dit « toutes les photos sont là ».
+     Même effet que « Clore maintenant » de l'atelier ; l'atelier seul rouvre. */
+  terminer_collecte: {
+    cle: "terminer_collecte",
+    libelle: "Terminer la collecte",
+    explication:
+      "Ferme les liens des participants tout de suite : l'atelier commence avec les photos reçues. L'atelier peut rouvrir tant qu'aucun bon à tirer n'est publié.",
+    action: "terminer_collecte",
     de: ["preparation"],
     vers: "composition",
     deuxTemps: true,
@@ -265,6 +279,7 @@ export function preparerGeste(cle: GesteCle, ctx: ContexteGeste): Preparation {
 
   switch (cle) {
     case "clore_collecte":
+    case "terminer_collecte":
       return {
         ok: true,
         geste,

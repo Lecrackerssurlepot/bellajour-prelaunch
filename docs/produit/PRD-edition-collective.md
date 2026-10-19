@@ -114,6 +114,7 @@ l'intérieur suit le style choisi ; seule la couverture peut venir d'un autre st
 | Déposer des photos | ✔ | ✔ sans plafond | | ✔ plafonné |
 | Présélectionner / signaler des photos | ✔ | ✔ | | |
 | Choisir style et brief, valider le brief | | ✔ | | |
+| Terminer la collecte (« toutes les photos sont là », D25 du 19/10 ; rouvrir reste à l'atelier) | | ✔ | | |
 | Envoyer les contenus (logo, programme, mot du dirigeant, liste) | | ✔ | | |
 | Déposer un tour de BAT, répondre aux notes | ✔ | | | |
 | Poser, résoudre, envoyer des notes ; choisir la couverture ; valider le BAT | | ✔ | | |

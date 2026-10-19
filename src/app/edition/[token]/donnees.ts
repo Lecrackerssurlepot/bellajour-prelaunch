@@ -82,6 +82,8 @@ export type Tableau = {
   magazines: MagazineTableau[];
   photos: number;
   participants: number;
+  /** Les photos mises dans « Ma sélection » (T-182 : la fenêtre « Terminer la collecte » les compte). */
+  selection: number;
   dossiers: DossierPhotos[];
   mosaique: string[];
   liens: LienContribution[];
@@ -184,7 +186,7 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
     lireMagazinesBrief(edition.id),
     supabase
       .from("collectif_photos")
-      .select("role_deposant, appareil_id, provenance_id, provenance_type, deposant, vignette_key, confirmee_le")
+      .select("role_deposant, appareil_id, provenance_id, provenance_type, deposant, vignette_key, confirmee_le, preselection")
       .eq("edition_id", edition.id)
       .not("confirmee_le", "is", null)
       .order("confirmee_le", { ascending: false })
@@ -231,6 +233,7 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
     provenance_type: string;
     deposant: string | null;
     vignette_key: string | null;
+    preselection: boolean;
   }[];
 
   /* Les dossiers : les sources qui ont reçu quelque chose (sources.ts, la même
@@ -285,6 +288,7 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
     photos: lignes.length,
     /* Les personnes comptées comme partout (T-180) : un nom, ou un téléphone pour les anonymes. */
     participants: compterPersonnes(lignes),
+    selection: lignes.filter((l) => l.preselection).length,
     dossiers,
     mosaique,
     liens,
