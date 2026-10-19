@@ -45,7 +45,10 @@ T-179 à T-188, chacun avec sa planche dans le canevas du 19/10
 (https://claude.ai/artifact/C4s2QmaRb1GN389a85i3Zd, copie dans
 `docs/produit/collectif/maquettes/propositions-19-10/`). Rien n'est codé :
 **les huit planches sont validées telles quelles le 19/10**, ses questions tranchées sur mes
-recommandations (D25), `COLLECTIF_MAILS` reste fermé jusqu'à son accord.
+recommandations (D25), et **toutes LIVRÉES le jour même** (PR #258 à #263, en production) :
+T-179 à T-182 et T-185 à T-188 sont en recette chez Mathias. `COLLECTIF_MAILS` reste fermé
+jusqu'à son accord. Restent ouverts : T-184 (l'accord des participants, migration), T-183 (en
+pause, à observer).
 T-184 (l'accord des participants non enregistré) est le seul trouvé en chemin.
 
 ## Où on en est (16/09/2026 : le modèle de prix v3)
@@ -346,13 +349,13 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-176 | Les vignettes de photos sont retéléchargées à chaque visite, faute de cache | exploitation | confort | libre | nouveau (19/10) |
 | T-177 | Le bon à tirer, la boîte de réception de l'atelier et le fil des messages attendent des lectures l'une après l'autre sans raison | collectif | confort | libre | nouveau (19/10) |
 | T-178 | Six composants appellent setState directement dans un effet, ce que la nouvelle règle de lint de React refuse | front | confort | libre | nouveau (19/10) — `eslint-config-next` gardé en 16.2.3 en attendant |
-| T-179 | Sur le mur des styles, la composition en colonne à droite et les choix faits ne se lisent pas | collectif | serieux | libre | nouveau (19/10) — planches 1 et 2 validées le 19/10 |
-| T-180 | Le prénom d'un participant n'apparaît pas tant qu'il est seul sur un lien, et on ne peut pas trier les photos par personne partout | collectif | serieux | libre | nouveau (19/10) — planche 3 validée le 19/10 |
-| T-181 | Le responsable ne voit les photos des participants arriver qu'en rechargeant la page | collectif | serieux | libre | nouveau (19/10) — une lecture légère du compte, 30 s sur Photos, 60 s sur le tableau |
-| T-182 | Le responsable ne peut pas dire « toutes les photos sont là », et l'atelier ne voit pas sa sélection | collectif | serieux | libre | nouveau (19/10) — planche 4 validée ; « Terminer » ferme les liens (D25) |
+| T-179 | Sur le mur des styles, la composition en colonne à droite et les choix faits ne se lisent pas | collectif | serieux | libre | en cours — livré le 19/10 (PR #262, planches 1 et 2) ; reste la recette de Mathias (plusieurs magazines, un vrai iPhone) |
+| T-180 | Le prénom d'un participant n'apparaît pas tant qu'il est seul sur un lien, et on ne peut pas trier les photos par personne partout | collectif | serieux | libre | en cours — livré le 19/10 (PR #258, planche 3) ; reste la recette de Mathias |
+| T-181 | Le responsable ne voit les photos des participants arriver qu'en rechargeant la page | collectif | serieux | libre | en cours — livré le 19/10 (PR #258) ; reste à voir une vraie arrivée pendant que l'écran est ouvert (simulée au pilote) |
+| T-182 | Le responsable ne peut pas dire « toutes les photos sont là », et l'atelier ne voit pas sa sélection | collectif | serieux | libre | en cours — livré le 19/10 (PR #259, D25) ; reste une vraie collecte terminée (le clic a été intercepté) |
 | T-183 | La sélection des photos n'est pas claire, et on ne sait pas encore comment les clients choisiront | collectif | confort | libre | en pause (19/10) — à observer sur les premières vraies éditions |
 | T-184 | L'accord que coche chaque participant avant d'envoyer ses photos n'est enregistré nulle part | collectif | serieux | avis-requis | nouveau (19/10) — trouvé en vérifiant ; migration à appliquer par Mathias |
-| T-185 | Dans la fiche d'une édition, les onglets ne sont pas bâtis comme la vue d'ensemble et paraissent brouillons | collectif | serieux | libre | nouveau (19/10) — planche 7 validée ; le « dashboard » = la vue d'ensemble |
-| T-186 | Le formulaire de création d'une édition cache ce que font ses dates et ses cases, et une de ses aides est fausse | collectif | serieux | libre | nouveau (19/10) — planche 5 validée |
-| T-187 | Après la création d'une édition, rien ne propose d'envoyer les liens, et le mail prévu ne porte pas le lien de l'équipe | collectif | serieux | avis-requis | nouveau (19/10) — planche 6 validée, texte compris ; `COLLECTIF_MAILS` reste fermé jusqu'à son accord |
-| T-188 | Dans la messagerie de l'atelier, on ne voit ni quels messages sont nouveaux, ni qu'un message arrive sans recharger | collectif | serieux | libre | nouveau (19/10) — planche 8 validée |
+| T-185 | Dans la fiche d'une édition, les onglets ne sont pas bâtis comme la vue d'ensemble et paraissent brouillons | collectif | serieux | libre | en cours — livré le 19/10 (PR #260 et #263, planche 7 complète) ; reste la recette de Mathias |
+| T-186 | Le formulaire de création d'une édition cache ce que font ses dates et ses cases, et une de ses aides est fausse | collectif | serieux | libre | en cours — livré le 19/10 (PR #263, planche 5) ; reste la recette de Mathias |
+| T-187 | Après la création d'une édition, rien ne propose d'envoyer les liens, et le mail prévu ne porte pas le lien de l'équipe | collectif | serieux | avis-requis | en cours — livré le 19/10 (PR #263, planche 6) ; `COLLECTIF_MAILS` FERMÉ : l'envoi attend l'accord de Mathias |
+| T-188 | Dans la messagerie de l'atelier, on ne voit ni quels messages sont nouveaux, ni qu'un message arrive sans recharger | collectif | serieux | libre | en cours — livré le 19/10 (PR #261, planche 8) ; reste un vrai message non lu (montré sur données fournies) |
