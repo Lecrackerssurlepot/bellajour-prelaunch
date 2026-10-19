@@ -1,0 +1,428 @@
+<title>Édition collective, retours du 19/10 au soir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap">
+<style>
+/* Mise en page : une planche par retour, le texte à gauche, l'écran de l'atelier à droite.
+   La page suit le thème du lecteur ; les écrans dessinés gardent la Porcelaine de l'atelier
+   (l'atelier n'a pas de mode nuit), d'où des jetons --a-* définis une seule fois. */
+:root {
+  --bg: #f3f4f7;
+  --carte: rgba(255, 255, 255, 0.72);
+  --carte-bord: rgba(255, 255, 255, 0.95);
+  --texte: #101828;
+  --doux: #5b6577;
+  --pale: #7c8698;
+  --accent-texte: #1d4f8a;
+  --accent-voile: rgba(74, 144, 217, 0.06);
+  --accent-doux: rgba(74, 144, 217, 0.12);
+  --ombre: 0 1px 2px rgba(16, 24, 40, 0.04), 0 18px 48px rgba(16, 24, 40, 0.07);
+  /* L'atelier, Porcelaine, dans les deux thèmes */
+  --a-fond: #f3f4f7;
+  --a-verre: rgba(255, 255, 255, 0.78);
+  --a-verre-fort: rgba(255, 255, 255, 0.92);
+  --a-bord: rgba(255, 255, 255, 0.95);
+  --a-ligne: rgba(16, 24, 40, 0.08);
+  --a-ligne-forte: rgba(16, 24, 40, 0.16);
+  --a-texte: #101828;
+  --a-doux: #5b6577;
+  --a-pale: #8a93a3;
+  --a-accent: #4a90d9;
+  --a-accent-fort: #3a7cc4;
+  --a-accent-doux: rgba(74, 144, 217, 0.14);
+  --a-accent-texte: #1d4f8a;
+  --a-sur-accent: #ffffff;
+  --a-gris: #f2f4f7;
+  --a-alerte: #b3412c;
+  --a-alerte-doux: #fbece8;
+  --a-ok: #157347;
+  --a-ok-doux: #e7f6ee;
+  --a-aurore-1: #dce8fa;
+  --a-aurore-2: #eae5f6;
+  --a-ombre: 0 14px 36px rgba(16, 24, 40, 0.06);
+  --a-ombre-haute: 0 24px 60px rgba(16, 24, 40, 0.18);
+  /* La page des participants, Charbon */
+  --p-fond: #17181c;
+  --p-carte: #1f2126;
+  --p-texte: #ecedf0;
+  --p-doux: #a9adb5;
+  --p-accent: #e3a27f;
+  --f-titre: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --f-texte: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17181c; --carte: rgba(255, 255, 255, 0.045); --carte-bord: rgba(255, 255, 255, 0.08);
+    --texte: #ecedf0; --doux: #a9adb5; --pale: #8b9099; --accent-texte: #f2c7af;
+    --accent-voile: rgba(227, 162, 127, 0.07); --accent-doux: rgba(227, 162, 127, 0.16);
+    --ombre: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17181c; --carte: rgba(255, 255, 255, 0.045); --carte-bord: rgba(255, 255, 255, 0.08);
+  --texte: #ecedf0; --doux: #a9adb5; --pale: #8b9099; --accent-texte: #f2c7af;
+  --accent-voile: rgba(227, 162, 127, 0.07); --accent-doux: rgba(227, 162, 127, 0.16);
+  --ombre: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--texte); font-family: var(--f-texte); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 0 64px; }
+.page { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1, h2, h3, h4 { text-wrap: balance; margin: 0; font-weight: 400; }
+p { margin: 0; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--a-accent); outline-offset: 2px; }
+.tete { padding-block: 40px 4px; display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
+.surtitre { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--doux); }
+.tete h1 { font-family: var(--f-titre); font-size: clamp(34px, 5vw, 52px); line-height: 1.05; }
+.tete p { color: var(--doux); max-width: 64ch; }
+.sommaire { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; display: flex; gap: 6px; overflow-x: auto; padding: 10px 16px; margin-inline: -16px; background: linear-gradient(var(--bg) 70%, transparent); scrollbar-width: none; }
+.sommaire a { flex: 0 0 auto; text-decoration: none; color: var(--texte); font-size: 13px; padding: 7px 12px; border-radius: 999px; background: var(--carte); border: 1px solid var(--carte-bord); box-shadow: var(--ombre); }
+.sommaire a span { color: var(--pale); margin-right: 6px; }
+.planche { scroll-margin-top: 64px; display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); gap: 20px; padding: 22px; border-radius: 28px; background: var(--carte); border: 1px solid var(--carte-bord); box-shadow: var(--ombre); }
+.recit { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.recit .num { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-texte); }
+.recit h2 { font-family: var(--f-titre); font-size: 30px; line-height: 1.1; }
+.bloc-r { display: flex; flex-direction: column; gap: 6px; }
+.bloc-r h3 { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--pale); font-weight: 500; }
+.bloc-r p, .bloc-r li { font-size: 14px; color: var(--doux); }
+.bloc-r ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.bloc-r strong { color: var(--texte); font-weight: 500; }
+.citation { font-family: var(--f-titre); font-style: italic; font-size: 19px; line-height: 1.35; }
+.trancher { padding: 12px 14px; border-radius: 14px; background: var(--accent-voile); border: 1px solid var(--accent-doux); }
+.trancher h3 { color: var(--accent-texte); }
+.trancher p, .trancher li { color: var(--texte); }
+
+/* ── l'écran de l'atelier (Porcelaine) ── */
+.ecran { position: relative; isolation: isolate; overflow: hidden; min-width: 0; border-radius: 24px; background: var(--a-fond); color: var(--a-texte); border: 1px solid var(--a-ligne); padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.ecran::before, .ecran::after { content: ""; position: absolute; z-index: -1; border-radius: 50%; filter: blur(60px); }
+.ecran::before { width: 55%; height: 60%; top: -20%; left: -10%; background: var(--a-aurore-1); }
+.ecran::after { width: 45%; height: 50%; bottom: -20%; right: -10%; background: var(--a-aurore-2); }
+.legende { font-size: 12px; color: var(--a-pale); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.legende b { color: var(--a-doux); font-weight: 500; }
+.verre { background: var(--a-verre); border: 1px solid var(--a-bord); border-radius: 22px; box-shadow: var(--a-ombre); backdrop-filter: blur(20px) saturate(1.4); -webkit-backdrop-filter: blur(20px) saturate(1.4); }
+.corps-form { display: flex; flex-direction: column; gap: 14px; padding: 18px; }
+.corps-form h4 { font-family: var(--f-titre); font-size: 26px; }
+.champ { display: flex; flex-direction: column; gap: 5px; min-width: 0; position: relative; }
+.champ > label { font-size: 13px; font-weight: 500; }
+.saisie { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 42px; padding: 0 12px; border-radius: 14px; background: var(--a-verre-fort); border: 1px solid var(--a-ligne-forte); font-size: 14px; }
+.saisie.active { border-color: var(--a-accent); box-shadow: 0 0 0 3px var(--a-accent-doux); }
+.saisie .ico { color: var(--a-doux); font-size: 13px; }
+.aide { font-size: 12px; color: var(--a-doux); }
+.deux { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.bouton { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--a-ligne-forte); background: var(--a-verre-fort); font-size: 13px; cursor: pointer; white-space: nowrap; color: var(--a-texte); }
+.bouton.plein { background: var(--a-accent); border-color: var(--a-accent); color: var(--a-sur-accent); box-shadow: 0 8px 20px rgba(74, 144, 217, 0.25); }
+.bouton.petit { padding: 5px 11px; font-size: 12px; }
+.puces { display: flex; gap: 6px; flex-wrap: wrap; }
+.puces span { padding: 6px 11px; border-radius: 999px; background: rgba(16, 24, 40, 0.05); font-size: 12.5px; }
+.puces span.on { background: var(--a-accent); color: var(--a-sur-accent); }
+
+/* ── le calendrier Bellajour ── */
+.cal { position: relative; z-index: 3; width: 300px; max-width: 100%; margin-top: 6px; padding: 14px; border-radius: 22px; background: rgba(255, 255, 255, 0.66); border: 1px solid rgba(255, 255, 255, 0.95); box-shadow: var(--a-ombre-haute); backdrop-filter: blur(26px) saturate(1.5); -webkit-backdrop-filter: blur(26px) saturate(1.5); }
+.cal-tete { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cal-tete b { font-family: var(--f-titre); font-size: 22px; font-weight: 400; }
+.cal-nav { display: flex; gap: 4px; }
+.cal-nav span { width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; background: rgba(16, 24, 40, 0.05); font-size: 14px; color: var(--a-doux); }
+.cal-grille { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px 0; text-align: center; font-size: 13px; font-variant-numeric: tabular-nums; }
+.cal-grille .j { font-size: 10.5px; letter-spacing: 0.06em; color: var(--a-pale); padding-bottom: 4px; }
+.cal-grille span.d { height: 34px; display: grid; place-items: center; }
+.cal-grille span.d i { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 999px; font-style: normal; }
+.cal-grille span.hors { color: rgba(16, 24, 40, 0.25); }
+.cal-grille span.passe { color: rgba(16, 24, 40, 0.3); text-decoration: line-through; text-decoration-color: rgba(16, 24, 40, 0.2); }
+.cal-grille span.auj i { box-shadow: inset 0 0 0 1.5px var(--a-accent); }
+.cal-grille span.plage { background: var(--a-accent-doux); }
+.cal-grille span.debut { background: linear-gradient(90deg, transparent 50%, var(--a-accent-doux) 50%); }
+.cal-grille span.fin { background: linear-gradient(90deg, var(--a-accent-doux) 50%, transparent 50%); }
+.cal-grille span.choisi i { background: var(--a-accent); color: var(--a-sur-accent); font-weight: 600; box-shadow: 0 6px 14px rgba(74, 144, 217, 0.35); }
+.cal-pied { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--a-ligne); font-size: 12px; color: var(--a-doux); }
+.cal-heure { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: rgba(16, 24, 40, 0.05); font-size: 12px; color: var(--a-texte); }
+.duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+
+/* ── magazines ── */
+.mags { display: flex; flex-direction: column; gap: 8px; }
+.mag { display: grid; grid-template-columns: 34px minmax(0, 1fr) 36px; gap: 10px; align-items: center; }
+.mag .n { width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center; background: rgba(16, 24, 40, 0.05); font-family: var(--f-titre); font-size: 17px; }
+.poubelle { width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center; border: 1px solid var(--a-ligne-forte); background: var(--a-verre-fort); color: var(--a-alerte); cursor: pointer; }
+.poubelle.off { color: var(--a-pale); background: transparent; border-style: dashed; cursor: not-allowed; }
+.poubelle svg { width: 16px; height: 16px; }
+.bulle-info { margin-left: 44px; padding: 8px 12px; border-radius: 12px; background: var(--a-verre-fort); border: 1px solid var(--a-ligne); font-size: 12px; color: var(--a-doux); box-shadow: var(--a-ombre); }
+.pastille { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 11px; background: var(--a-ok-doux); color: var(--a-ok); margin-left: 6px; }
+
+/* ── chiffres ── */
+.pas { display: flex; align-items: center; gap: 0; height: 44px; border-radius: 999px; background: var(--a-verre-fort); border: 1px solid var(--a-ligne-forte); overflow: hidden; width: fit-content; max-width: 100%; }
+.pas button { width: 42px; height: 100%; border: 0; background: transparent; font-size: 18px; color: var(--a-accent-texte); cursor: pointer; }
+.pas button:hover { background: var(--a-accent-doux); }
+.pas .val { display: flex; align-items: baseline; gap: 6px; padding: 0 6px; font-size: 14px; color: var(--a-doux); white-space: nowrap; }
+.pas .val b { font-size: 18px; color: var(--a-texte); font-weight: 600; font-variant-numeric: tabular-nums; min-width: 2.2ch; text-align: right; }
+.raccourcis { display: flex; gap: 4px; }
+.raccourcis span { padding: 4px 9px; border-radius: 999px; background: rgba(16, 24, 40, 0.05); font-size: 11.5px; color: var(--a-doux); }
+
+/* ── aperçu de la page des participants ── */
+.apercu-zone { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 16px; align-items: start; }
+.telephone { border-radius: 26px; padding: 8px; background: #0c0d10; box-shadow: var(--a-ombre-haute); }
+.tel-ecran { border-radius: 20px; padding: 14px 12px 18px; background: radial-gradient(120% 60% at 100% 0%, #3a2a22, var(--p-fond) 60%); color: var(--p-texte); display: flex; flex-direction: column; gap: 8px; min-height: 300px; }
+.tel-ecran .marque { font-family: var(--f-titre); font-size: 15px; }
+.tel-ecran .marque small { font-family: var(--f-texte); font-size: 8.5px; letter-spacing: 0.1em; color: var(--p-doux); margin-left: 4px; }
+.tel-ecran .sur { font-size: 10px; color: var(--p-accent); }
+.tel-ecran h5 { margin: 0; font-family: var(--f-titre); font-weight: 400; font-size: 24px; line-height: 1; }
+.tel-ecran .msg { font-size: 11px; padding: 6px 8px; border-radius: 8px; outline: 1.5px dashed var(--p-accent); outline-offset: 2px; }
+.tel-ecran .faux-champ { height: 26px; border-radius: 8px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1); }
+.tel-ecran .faux-bouton { height: 30px; border-radius: 999px; background: rgba(227, 162, 127, 0.45); margin-top: 4px; }
+.tel-ecran .lbl { font-size: 9.5px; color: var(--p-doux); }
+
+/* ── demandes sur mesure ── */
+.demandes { display: flex; flex-direction: column; gap: 8px; }
+.demande { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto 36px; gap: 10px; align-items: center; padding: 10px; border-radius: 16px; background: var(--a-verre-fort); border: 1px solid var(--a-ligne); }
+.demande .ico-d { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--a-accent-doux); color: var(--a-accent-texte); font-size: 15px; }
+.demande .nom { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.demande .nom b { font-weight: 500; font-size: 14px; }
+.demande .nom small { font-size: 11.5px; color: var(--a-doux); }
+.formes { display: flex; gap: 3px; padding: 3px; border-radius: 999px; background: rgba(16, 24, 40, 0.05); }
+.formes span { padding: 5px 10px; border-radius: 999px; font-size: 11.5px; color: var(--a-doux); white-space: nowrap; }
+.formes span.on { background: #ffffff; color: var(--a-texte); box-shadow: 0 1px 4px rgba(16, 24, 40, 0.1); }
+.modeles { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 10px; border-radius: 16px; border: 1.5px dashed var(--a-ligne-forte); }
+.modeles b { font-size: 13px; font-weight: 500; margin-right: 4px; }
+.modeles span { padding: 5px 11px; border-radius: 999px; background: var(--a-verre-fort); border: 1px solid var(--a-ligne); font-size: 12px; }
+.client-ligne { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; border-radius: 16px; background: var(--p-fond); color: var(--p-texte); }
+.client-ligne .t { width: 100%; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--p-doux); }
+.client-ligne span { padding: 6px 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); font-size: 12.5px; }
+.client-ligne span i { font-style: normal; color: var(--p-accent); margin-right: 6px; }
+
+@media (max-width: 980px) {
+  .planche { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 700px) {
+  .planche { padding: 14px; }
+  .duo, .deux, .apercu-zone { grid-template-columns: minmax(0, 1fr); }
+  .demande { grid-template-columns: 34px minmax(0, 1fr) 36px; }
+  .demande .formes { grid-column: 2 / 4; justify-self: start; }
+  .telephone { max-width: 240px; }
+}
+</style>
+
+<div class="page">
+  <header class="tete">
+    <span class="surtitre">Édition collective · propositions du 19/10/2026, au soir</span>
+    <h1>Le formulaire de création, retouché</h1>
+    <p>Tes cinq remarques sur la nouvelle édition, en quatre planches. Réponds par le numéro, comme ce matin.</p>
+  </header>
+
+  <nav class="sommaire" aria-label="Les planches">
+    <a href="#p9"><span>9</span>Le calendrier Bellajour</a>
+    <a href="#p10"><span>10</span>Les magazines</a>
+    <a href="#p11"><span>11</span>Les chiffres et le message d'accueil</a>
+    <a href="#p12"><span>12</span>À envoyer, sur mesure</a>
+  </nav>
+
+  <!-- 9 ─────────────────────────────── -->
+  <section class="planche" id="p9">
+    <div class="recit">
+      <span class="num">Planche 9 · atelier · T-189</span>
+      <h2>Le calendrier Bellajour, pour toutes les dates</h2>
+      <p class="citation">« On n'a pas le calendrier avec les dates. Un truc en transparence dans notre design à nous, plutôt que ce vieux truc tout moche. »</p>
+      <div class="bloc-r">
+        <h3>Aujourd'hui</h3>
+        <p>« Dates de l'événement » est un texte libre. La clôture et la livraison ouvrent le calendrier gris du navigateur, qui ne ressemble pas à l'atelier.</p>
+      </div>
+      <div class="bloc-r">
+        <h3>Je propose</h3>
+        <ul>
+          <li>Un seul calendrier, le nôtre : un panneau de verre posé sur le champ, le mois en grille, la sélection en bleu, aujourd'hui cerclé.</li>
+          <li><strong>Les dates de l'événement</strong> : on clique le premier jour puis le dernier. Le champ écrit « du 2 au 4 octobre 2026 ». Un seul jour marche aussi.</li>
+          <li><strong>La clôture</strong> : un seul jour, à 23 h 59 heure de Paris comme aujourd'hui. Les raccourcis (« Dans 2 semaines »…) restent, et les jours passés sont barrés.</li>
+          <li><strong>La livraison</strong> : le même calendrier.</li>
+          <li>Au clavier : les flèches pour bouger, Entrée pour choisir, Échap pour fermer.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ecran" aria-label="Maquette : le calendrier Bellajour">
+      <div class="legende"><b>Nouvelle édition · Le calendrier</b><span>valeurs d'exemple</span></div>
+      <div class="duo">
+        <div class="champ">
+          <label>Dates de l'événement</label>
+          <div class="saisie active"><span>du 2 au 4 octobre 2026</span><span class="ico">▾</span></div>
+          <div class="cal" aria-label="Calendrier, octobre 2026, du 2 au 4">
+            <div class="cal-tete"><b>Octobre 2026</b><span class="cal-nav"><span>‹</span><span>›</span></span></div>
+            <div class="cal-grille">
+              <span class="j">L</span><span class="j">M</span><span class="j">M</span><span class="j">J</span><span class="j">V</span><span class="j">S</span><span class="j">D</span>
+              <span class="d hors"><i>28</i></span><span class="d hors"><i>29</i></span><span class="d hors"><i>30</i></span><span class="d"><i>1</i></span><span class="d choisi debut"><i>2</i></span><span class="d plage"><i>3</i></span><span class="d choisi fin"><i>4</i></span>
+              <span class="d"><i>5</i></span><span class="d"><i>6</i></span><span class="d"><i>7</i></span><span class="d"><i>8</i></span><span class="d"><i>9</i></span><span class="d"><i>10</i></span><span class="d"><i>11</i></span>
+              <span class="d"><i>12</i></span><span class="d"><i>13</i></span><span class="d"><i>14</i></span><span class="d"><i>15</i></span><span class="d"><i>16</i></span><span class="d"><i>17</i></span><span class="d"><i>18</i></span>
+              <span class="d auj"><i>19</i></span><span class="d"><i>20</i></span><span class="d"><i>21</i></span><span class="d"><i>22</i></span><span class="d"><i>23</i></span><span class="d"><i>24</i></span><span class="d"><i>25</i></span>
+              <span class="d"><i>26</i></span><span class="d"><i>27</i></span><span class="d"><i>28</i></span><span class="d"><i>29</i></span><span class="d"><i>30</i></span><span class="d"><i>31</i></span><span class="d hors"><i>1</i></span>
+            </div>
+            <div class="cal-pied"><span>3 jours</span><span class="puces"><span>Effacer</span><span class="on">Garder</span></span></div>
+          </div>
+        </div>
+        <div class="champ">
+          <label>Clôture de la collecte</label>
+          <div class="puces"><span>Dans 2 semaines</span><span>Dans 3 semaines</span><span class="on">14 novembre</span><span>Dans 1 mois</span></div>
+          <div class="cal" aria-label="Calendrier, novembre 2026, le 14">
+            <div class="cal-tete"><b>Novembre 2026</b><span class="cal-nav"><span>‹</span><span>›</span></span></div>
+            <div class="cal-grille">
+              <span class="j">L</span><span class="j">M</span><span class="j">M</span><span class="j">J</span><span class="j">V</span><span class="j">S</span><span class="j">D</span>
+              <span class="d hors"><i>26</i></span><span class="d hors"><i>27</i></span><span class="d hors"><i>28</i></span><span class="d hors"><i>29</i></span><span class="d hors"><i>30</i></span><span class="d hors"><i>31</i></span><span class="d"><i>1</i></span>
+              <span class="d"><i>2</i></span><span class="d"><i>3</i></span><span class="d"><i>4</i></span><span class="d"><i>5</i></span><span class="d"><i>6</i></span><span class="d"><i>7</i></span><span class="d"><i>8</i></span>
+              <span class="d"><i>9</i></span><span class="d"><i>10</i></span><span class="d"><i>11</i></span><span class="d"><i>12</i></span><span class="d"><i>13</i></span><span class="d choisi"><i>14</i></span><span class="d"><i>15</i></span>
+              <span class="d"><i>16</i></span><span class="d"><i>17</i></span><span class="d"><i>18</i></span><span class="d"><i>19</i></span><span class="d"><i>20</i></span><span class="d"><i>21</i></span><span class="d"><i>22</i></span>
+              <span class="d"><i>23</i></span><span class="d"><i>24</i></span><span class="d"><i>25</i></span><span class="d"><i>26</i></span><span class="d"><i>27</i></span><span class="d"><i>28</i></span><span class="d"><i>29</i></span>
+            </div>
+            <div class="cal-pied"><span class="cal-heure">à 23 h 59, heure de Paris</span><span>26 jours pour déposer</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 ─────────────────────────────── -->
+  <section class="planche" id="p10">
+    <div class="recit">
+      <span class="num">Planche 10 · atelier · T-190</span>
+      <h2>Les magazines : une poubelle sur chaque ligne</h2>
+      <p class="citation">« Juste une poubelle à droite qui permet de le supprimer, parce que si j'en crée trois, je peux retirer que le dernier. »</p>
+      <div class="bloc-r">
+        <h3>Pourquoi la règle existe</h3>
+        <p>Le client lit « magazine 2 ». Si l'on retirait un magazine qu'il a déjà commencé (style choisi, bon à tirer), il perdrait son travail, et la base refuse deux magazines au même numéro.</p>
+      </div>
+      <div class="bloc-r">
+        <h3>Je propose</h3>
+        <ul>
+          <li><strong>À la création</strong> : une poubelle sur chaque ligne. Rien n'existe encore, les numéros se resserrent tout seuls.</li>
+          <li><strong>Dans les réglages</strong> : une poubelle sur chaque magazine encore vide ; les suivants prennent le numéro libéré.</li>
+          <li>Sur un magazine que le client a commencé, la poubelle est grisée. Au survol, elle dit pourquoi et propose de le renommer.</li>
+        </ul>
+      </div>
+      <div class="trancher bloc-r">
+        <h3>À trancher</h3>
+        <p>Dans les réglages, renuméroter les magazines suivants (proposé) te va ? Le client verra « magazine 2 » devenir « magazine 1 ».</p>
+      </div>
+    </div>
+
+    <div class="ecran" aria-label="Maquette : les magazines avec une poubelle par ligne">
+      <div class="legende"><b>Nouvelle édition · Les magazines</b><span>puis la même liste dans les réglages</span></div>
+      <div class="verre corps-form">
+        <h4>Les magazines</h4>
+        <div class="mags">
+          <div class="mag"><span class="n">1</span><div class="saisie"><span>Les élèves</span></div><button class="poubelle" aria-label="Retirer « Les élèves »"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button></div>
+          <div class="mag"><span class="n">2</span><div class="saisie"><span>Les profeseurs</span><span class="aide">faute de frappe ?</span></div><button class="poubelle" aria-label="Retirer « Les profeseurs »"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button></div>
+          <div class="mag"><span class="n">3</span><div class="saisie"><span>La soirée</span></div><button class="poubelle" aria-label="Retirer « La soirée »"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button></div>
+        </div>
+        <div><span class="bouton petit">+ Ajouter un magazine</span></div>
+      </div>
+      <div class="verre corps-form">
+        <h4>Dans les réglages d'une édition en cours</h4>
+        <div class="mags">
+          <div class="mag"><span class="n">1</span><div class="saisie"><span>Les élèves <span class="pastille">brief validé</span></span></div><span class="poubelle off" aria-label="Ne se retire pas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></span></div>
+          <div class="bulle-info">Le client a commencé ce magazine : il ne se retire pas. Changez son nom si besoin.</div>
+          <div class="mag"><span class="n">2</span><div class="saisie"><span>Les professeurs</span><span class="aide">vide</span></div><button class="poubelle" aria-label="Retirer « Les professeurs »"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 ─────────────────────────────── -->
+  <section class="planche" id="p11">
+    <div class="recit">
+      <span class="num">Planche 11 · atelier · T-190</span>
+      <h2>Les chiffres, et où va le message d'accueil</h2>
+      <p class="citation">« Les petites flèches plus, moins, c'est bien, mais un truc un peu plus clean ? Le message d'accueil, j'aimerais bien savoir où il se met. »</p>
+      <div class="bloc-r">
+        <h3>Ta question</h3>
+        <p>Le message d'accueil s'affiche sur la page qu'ouvrent les participants avec le lien ou le QR code, <strong>juste sous le nom de l'événement</strong>. Sur ton édition d'essai, on y lit « SALUT SALUT » sous « BOUGNOUL ». Vide, il vaut « Déposez ici vos photos de l'événement ».</p>
+      </div>
+      <div class="bloc-r">
+        <h3>Je propose</h3>
+        <ul>
+          <li>Les chiffres en pastille « − 30 photos par personne + », avec l'unité dans le champ. On peut toujours taper le nombre au clavier.</li>
+          <li>Quand il y en a, des valeurs fréquentes en un clic : les mêmes que celles du client pour un lien (10, 20, 30, 50).</li>
+          <li>À côté du message d'accueil, la page des participants en petit, qui se met à jour pendant qu'on tape.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ecran" aria-label="Maquette : les chiffres et l'aperçu du message d'accueil">
+      <div class="legende"><b>Nouvelle édition · Les photos</b><span>valeurs d'exemple</span></div>
+      <div class="verre corps-form">
+        <h4>Les photos</h4>
+        <div class="deux">
+          <div class="champ">
+            <label>Par personne</label>
+            <div class="pas"><button aria-label="Moins">−</button><span class="val"><b>30</b>photos par personne</span><button aria-label="Plus">+</button></div>
+            <div class="raccourcis"><span>10</span><span>20</span><span>30</span><span>50</span></div>
+          </div>
+          <div class="champ">
+            <label>Pour toute l'édition</label>
+            <div class="pas"><button aria-label="Moins">−</button><span class="val"><b>2 000</b>photos au total</span><button aria-label="Plus">+</button></div>
+            <span class="aide">Compte tout le monde, sauf l'atelier.</span>
+          </div>
+        </div>
+        <div class="apercu-zone">
+          <div class="champ">
+            <label>Message d'accueil des participants</label>
+            <div class="saisie active" style="min-height: 84px; align-items: flex-start; padding-top: 10px"><span>Envoyez vos plus belles photos de la promo : elles feront le magazine de fin d'année.</span></div>
+            <span class="aide">Il s'affiche sous le nom de l'événement, sur la page qu'ouvrent les participants avec le lien ou le QR code. Vide : « Déposez ici vos photos de l'événement. »</span>
+          </div>
+          <div class="telephone" aria-label="Aperçu de la page des participants">
+            <div class="tel-ecran">
+              <div class="marque">Bellajour<small>ÉDITION COLLECTIVE</small></div>
+              <div class="sur">Lycée Montaigne vous invite</div>
+              <h5>Promo 2026</h5>
+              <div class="msg">Envoyez vos plus belles photos de la promo : elles feront le magazine de fin d'année.</div>
+              <div class="lbl">Votre prénom et votre nom (facultatif)</div>
+              <div class="faux-champ"></div>
+              <div class="faux-bouton"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 ─────────────────────────────── -->
+  <section class="planche" id="p12">
+    <div class="recit">
+      <span class="num">Planche 12 · atelier et client · T-191</span>
+      <h2>« À envoyer par le client », sur mesure</h2>
+      <p class="citation">« C'est nous qui mettons le nom et le type de fichier accepté, ou alors tout. Le mot du dirigeant, ce ne sera pas le dirigeant, ce sera le mot de je sais pas qui. »</p>
+      <div class="bloc-r">
+        <h3>Aujourd'hui</h3>
+        <p>Cinq cases figées : logo, programme, mot du dirigeant, liste des participants, rubrique. La base n'accepte que ces cinq-là : en ajouter demande une <strong>migration</strong>, que tu appliques toi-même.</p>
+      </div>
+      <div class="bloc-r">
+        <h3>Je propose</h3>
+        <ul>
+          <li>Une liste de demandes. Chacune a son nom (que l'atelier écrit), sa forme et une poubelle.</li>
+          <li>Les formes possibles : un fichier (images, PDF, ou tout), ou le petit questionnaire du « mot de… ».</li>
+          <li>« + Ajouter une demande » avec des modèles en un clic : Logo, Programme, Le mot de…, Liste des participants, Autre.</li>
+          <li>Le client voit exactement les noms choisis dans « À envoyer » ; un fichier refusé dit pourquoi (« seulement une image »).</li>
+          <li>Les quatre questions du « mot » restent neutres : seul le nom change (« Le mot du proviseur »).</li>
+        </ul>
+      </div>
+      <div class="trancher bloc-r">
+        <h3>À trancher</h3>
+        <p>D'accord pour la migration (elle ne touche qu'une contrainte, et l'écran se replie tant qu'elle n'est pas appliquée) ?</p>
+      </div>
+    </div>
+
+    <div class="ecran" aria-label="Maquette : les demandes sur mesure">
+      <div class="legende"><b>Nouvelle édition · À envoyer par le client</b><span>valeurs d'exemple</span></div>
+      <div class="verre corps-form">
+        <h4>À envoyer par le client</h4>
+        <div class="demandes">
+          <div class="demande"><span class="ico-d">◆</span><span class="nom"><b>Logo, en vectoriel</b><small>Une case « Logo, en vectoriel » dans son espace</small></span><span class="formes"><span>Images</span><span class="on">PDF ou SVG</span><span>Tout</span></span><button class="poubelle" aria-label="Retirer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button></div>
+          <div class="demande"><span class="ico-d">✎</span><span class="nom"><b>Le mot du proviseur</b><small>Quatre questions, il répond dans son espace</small></span><span class="formes"><span class="on">Questionnaire</span><span>Fichier</span></span><button class="poubelle" aria-label="Retirer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button></div>
+          <div class="demande"><span class="ico-d">▤</span><span class="nom"><b>Liste des élèves</b><small>N'importe quel fichier (tableur, PDF, texte)</small></span><span class="formes"><span>Images</span><span>PDF</span><span class="on">Tout</span></span><button class="poubelle" aria-label="Retirer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button></div>
+          <div class="demande"><span class="ico-d">▣</span><span class="nom"><b>La photo de classe officielle</b><small>Seulement une image</small></span><span class="formes"><span class="on">Images</span><span>PDF</span><span>Tout</span></span><button class="poubelle" aria-label="Retirer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button></div>
+        </div>
+        <div class="modeles"><b>+ Ajouter une demande</b><span>Logo</span><span>Programme</span><span>Le mot de…</span><span>Liste des participants</span><span>Autre</span></div>
+        <div class="client-ligne" aria-label="Ce que voit le client">
+          <span class="t">Ce que voit le client, dans « À envoyer »</span>
+          <span><i>○</i>Logo, en vectoriel</span><span><i>○</i>Le mot du proviseur</span><span><i>○</i>Liste des élèves</span><span><i>○</i>La photo de classe officielle</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
