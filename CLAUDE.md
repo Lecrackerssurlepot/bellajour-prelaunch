@@ -82,7 +82,7 @@ Une capture ou une vérification dans le navigateur pour tout ce qui se voit —
 
 ## Stack
 
-Next.js 16.2.3 (App Router, `reactCompiler`) · React 19.2.4 · TypeScript strict (zéro `any`)
+Next.js 16.4.2 (App Router, `reactCompiler`) · React 19.2.4 · TypeScript strict (zéro `any`)
 Supabase (service key, RLS contournée côté serveur) · Stripe · Brevo · Cloudflare R2 ·
 Cloudprinter · Vercel. **Tailwind est installé mais aucune directive n'est importée : il ne
 produit rien.** Tout le style est du CSS vanilla, un fichier par section.
