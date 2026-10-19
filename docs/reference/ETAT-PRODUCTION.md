@@ -21,11 +21,17 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
   un tiers, elle, ne laisse pas de trace au-delà d'une heure de journaux Vercel : non exclue.
 - **`/admin` (prévente) se garde lui-même** (PR #250) : c'était la seule page de l'admin qui ne
   comptait que sur le middleware, que Next.js 16.2.3 permet de contourner (T-162).
-- Toujours ouverts après l'audit : la mise à jour de Next.js et de cinq dépendances (T-162), les
-  en-têtes de protection (T-163), et, avant d'ouvrir `COLLECTIF_MAILS`, l'origine des liens de
-  mail (T-164) et le frein de « Retrouver » (T-166).
-- **Le style d'essai « Essai technique Claude » est toujours publié en tête du mur** (T-157) :
-  le retrait attend l'accord explicite de Mathias.
+- **Next.js 16.4.2 en production** depuis le 19/10 (PR #252, déploiement `8d81e27` READY) :
+  l'avis critique et les contournements du middleware sont fermés. Vérifié sur bellajour.fr :
+  pages publiques, compte, Retrouver, `/espace`, l'admin renvoie à la connexion, le faux cookie
+  `constructor` aussi ; temps revenus à ≈ 0,1 s une fois le cache rempli. `eslint-config-next`
+  reste en 16.2.3 (T-178). `npm audit --omit=dev` : restent pdfjs-dist, sharp, source-map-js.
+- Toujours ouverts après l'audit : ces trois dépendances (T-162), les en-têtes de protection
+  (T-163), et, avant d'ouvrir `COLLECTIF_MAILS`, l'origine des liens de mail (T-164) et le frein
+  de « Retrouver » (T-166). Supabase plafonne bien les réponses à 1 000 lignes (« Max rows »,
+  lu par Mathias le 19/10) : T-167 à faire avant la première vraie édition.
+- **Le style d'essai « Essai technique Claude » est toujours publié en tête du mur** (T-157).
+  Mathias a retiré « Grand air » du mur le 19/10 à 10 h 29 (heure de Paris) ; question posée.
 
 ## 17/10/2026 — L'Édition collective est EN LIGNE sur bellajour.fr
 
