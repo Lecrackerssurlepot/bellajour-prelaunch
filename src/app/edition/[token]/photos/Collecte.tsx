@@ -23,7 +23,8 @@
    sans bouton qui écrive et sans aucun lien. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cheminDuNoeud, cleResp, DOSSIER_RESPONSABLE, estVueEnsemble, noeudDe, rayonDe, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
+import { phraseArrivees, SONDAGE_PHOTOS_MS, type Nouvelles } from "@/lib/collectif/arrivees";
+import { cheminDuNoeud, clePersonne, cleResp, DOSSIER_RESPONSABLE, estVueEnsemble, noeudDe, QUI_RESPONSABLE, rayonDe, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
 import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
 import { useFenetreEnvoi, useMoteurDepot } from "../../_composants/depot/DepotContexte";
 import { useMoteur } from "../../_composants/depot/useMoteur";
@@ -31,11 +32,17 @@ import { EnTeteEcran } from "../../_composants/Ecran";
 import Fenetre from "../../_composants/Fenetre";
 import FenetreLien, { FenetrePartage, type ContexteMessage, type LienPartage } from "../../_composants/LienContribution";
 import QrCode from "../../_composants/QrCode";
+import { useSondage } from "../../_composants/useSondage";
 
 type Photo = {
   id: string;
   vignette: string | null;
   nom: string | null;
+  /** Qui l'a envoyée (T-180) : le nom du participant, le responsable ou l'atelier. */
+  qui: string;
+  role: "participant" | "responsable" | "atelier";
+  /** L'instant d'arrivée, tel que la base l'a rendu (T-181). */
+  arrivee: string;
   jour: string;
   jourCle: string;
   preselection: boolean;
@@ -44,7 +51,7 @@ type Photo = {
 };
 
 type Compteurs = { dossier: number; liste: number; doublons: number; selection: number; choisissables: number };
-type Stats = { photos: number; personnes: number; doublons: number; enCours: number };
+type Stats = { photos: number; personnes: number; doublons: number; enCours: number; derniere: string | null };
 type Personne = { nom: string; n: number };
 type LienDetail = { id: string; cle: string; nom: string; plafond: string; plafondNombre: number | null; sansPlafond: boolean; n: number; personnes: Personne[] };
 type Liens = { general: { nom: string; plafond: string; n: number; personnes: Personne[] }; liens: LienDetail[]; reste: number | null };
@@ -124,6 +131,11 @@ export default function Collecte(p: Props) {
   const [renommer, setRenommer] = useState<{ id: string; nom: string } | null>(null);
   const [plafond, setPlafond] = useState<{ id: string | null; nom: string; valeur: number; sansLimite: boolean } | null>(null);
   const [supprimer, setSupprimer] = useState<{ id: string; nom: string; n: number } | null>(null);
+  /* Les arrivées en direct (T-181) : la dernière arrivée déjà montrée, l'annonce de celles
+     d'après, et le seuil au-delà duquel une vignette est marquée « nouvelle ». */
+  const [vuJusqua, setVuJusqua] = useState<string | null>(null);
+  const [annonce, setAnnonce] = useState<{ texte: string; noms: string[] } | null>(null);
+  const [seuilNouvelles, setSeuilNouvelles] = useState<string | null>(null);
   const fin = useRef<HTMLDivElement>(null);
   const zone = useRef<HTMLDivElement>(null);
   const version = useRef(0);
@@ -157,7 +169,12 @@ export default function Collecte(p: Props) {
         setCompteurs(json.compteurs);
         setStats(json.stats);
         setArbre(json.arbre);
-        if (page === 0) setCouvertures(json.couvertures ?? {});
+        if (page === 0) {
+          setCouvertures(json.couvertures ?? {});
+          /* Tout ce qui est arrivé jusqu'ici est désormais compté : l'annonce s'efface. */
+          setVuJusqua(json.stats.derniere);
+          setAnnonce(null);
+        }
         setLiens(json.liens);
         setErreur(null);
       } catch {
@@ -224,6 +241,36 @@ export default function Collecte(p: Props) {
       void charger(0, dossier, vue);
     }
   }, [envoi.fermetures, moteur.enCours, moteur.arrivees, dossier, vue, charger]);
+
+  /* Les photos arrivent-elles ? Une lecture LÉGÈRE toutes les 30 s, onglet visible (T-181) ;
+     la grille ne se relit qu'au clic sur « Les voir ». Les envois du responsable lui-même ne
+     s'annoncent pas : la grille se relit déjà à la fin de son envoi. */
+  useSondage(
+    async () => {
+      if (!vuJusqua) return;
+      const rep = await fetch("/api/collectif/photos/etat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token: p.token, depuis: vuJusqua }),
+      });
+      if (!rep.ok) return;
+      const j = (await rep.json()) as { photos: number; nouvelles: Nouvelles | null };
+      if (!j.nouvelles?.n) return;
+      setStats((s) => (s ? { ...s, photos: j.photos } : s));
+      const texte = phraseArrivees(j.nouvelles);
+      if (texte) setAnnonce({ texte, noms: j.nouvelles.noms.map((x) => x.nom) });
+    },
+    SONDAGE_PHOTOS_MS,
+    p.ouverte
+  );
+
+  /** « Les voir » : les photos d'UNE personne s'il n'y en a qu'une, sinon toutes ; les plus récentes en haut, marquées. */
+  function voirArrivees() {
+    if (!annonce) return;
+    setSeuilNouvelles(vuJusqua);
+    const seule = annonce.noms.length === 1 ? `qui:${clePersonne(annonce.noms[0])}` : null;
+    ouvrir(seule ?? "tout", "toutes");
+  }
 
   async function appeler(url: string, corps: Record<string, unknown>): Promise<Record<string, unknown> | null> {
     setOccupe(true);
@@ -300,8 +347,20 @@ export default function Collecte(p: Props) {
   const totalVous = arbre ? arbre.vous.reduce((n, h) => n + h.n, 0) : 0;
   const totalLiens = arbre ? arbre.liens.reduce((n, l) => n + l.n, 0) : 0;
   const nomVous = p.ecrire ? v("Vos dossiers", "Tes dossiers") : "Les dossiers du responsable";
+  /* Le responsable, dans les filtres par personne et sur ses vignettes : « Vous » pour lui-même. */
+  const nomPersonne = (n: { cle: string; nom: string }) => (n.cle === QUI_RESPONSABLE && p.ecrire ? v("Vous", "Toi") : n.nom);
   const titre =
-    dossier === "tout" ? "Toutes les photos" : dossier === "selection" ? "Ma sélection" : dossier === "vous" ? nomVous : dossier === "liens" ? "Les participants" : courant?.nom ?? "Toutes les photos";
+    dossier === "tout"
+      ? "Toutes les photos"
+      : dossier === "selection"
+        ? "Ma sélection"
+        : dossier === "vous"
+          ? nomVous
+          : dossier === "liens"
+            ? "Les participants"
+            : courant
+              ? nomPersonne(courant)
+              : "Toutes les photos";
   /* Le fil d'Ariane : d'où l'on vient, chaque étape cliquable. */
   const fil: { cle: string; nom: string }[] = [];
   if (rayon === "vous" && !ensemble) {
@@ -310,9 +369,18 @@ export default function Collecte(p: Props) {
   } else if (rayon === "liens" && !ensemble) {
     fil.push({ cle: "liens", nom: "Les participants" });
     if (dossier.startsWith("pers:") && lienDuDossier) fil.push({ cle: lienDuDossier.cle, nom: lienDuDossier.nom });
+  } else if (dossier.startsWith("qui:")) {
+    fil.push({ cle: "tout", nom: "Toutes les photos" });
   }
   const sousDossiers = dossier.startsWith("resp:") ? (courant?.enfants ?? []) : [];
-  const personnes = lienDuDossier && lienDuDossier.enfants.length > 1 ? lienDuDossier.enfants : [];
+  /* Les personnes, DÈS LA PREMIÈRE (T-180 : seul sur son lien, Mathias ne voyait son nom nulle
+     part) : celles d'un lien dans ce lien, celles de toute l'édition dans « Toutes les photos ». */
+  const filtrePersonnes: { tout: { cle: string; n: number }; personnes: Noeud[] } | null =
+    lienDuDossier && lienDuDossier.enfants.length >= 1
+      ? { tout: { cle: lienDuDossier.cle, n: lienDuDossier.n }, personnes: lienDuDossier.enfants }
+      : (dossier === "tout" || dossier.startsWith("qui:")) && arbre?.personnes.length
+        ? { tout: { cle: "tout", n: stats?.photos ?? 0 }, personnes: arbre.personnes }
+        : null;
   const sousGlisse = Boolean(glisse && arbre?.vous.some((h) => h.enfants.some((x) => x.cle === glisse)));
 
   /* Glisser un dossier sur un autre (le ranger dedans) ou sur « Vos dossiers » du fil (l'en sortir). */
@@ -495,6 +563,17 @@ export default function Collecte(p: Props) {
                 {arbre?.atelier ? rayonBouton("atelier", "L'atelier", TRACE.atelier, arbre.atelier.n) : null}
               </nav>
               ) : null}
+              {annonce ? (
+                <div className="ec-ph-annonce" role="status">
+                  <span className="ec-ph-annonce-point" aria-hidden="true" />
+                  <span>
+                    <strong>{annonce.texte}</strong>, à l&apos;instant
+                  </span>
+                  <button type="button" className="ec-bouton ec-bouton--petit" onClick={voirArrivees}>
+                    Les voir
+                  </button>
+                </div>
+              ) : null}
               <div className="ec-ph-tete">
                 <span className="ec-ph-titres">
                   {fil.length ? (
@@ -611,20 +690,20 @@ export default function Collecte(p: Props) {
                   </>
                 ) : null}
                 {sousDossiers.length ? <div className="ec-ph-albums ec-ph-albums--petits">{sousDossiers.map((e) => album(e, photosDe(e.n), TRACE.dossier, true))}</div> : null}
-                {personnes.length && lienDuDossier ? (
+                {filtrePersonnes ? (
                   <div className="ec-ph-personnes" role="group" aria-label="Filtrer par personne">
-                    <button type="button" className="ec-ph-personne" aria-pressed={dossier === lienDuDossier.cle} onClick={() => ouvrir(lienDuDossier.cle, "toutes")}>
+                    <button type="button" className="ec-ph-personne" aria-pressed={dossier === filtrePersonnes.tout.cle} onClick={() => ouvrir(filtrePersonnes.tout.cle, "toutes")}>
                       <span className="ec-ph-initiales" aria-hidden="true">
-                        Tout
+                        {nombre(filtrePersonnes.tout.n)}
                       </span>
-                      Tout le lien · {nombre(lienDuDossier.n)}
+                      Tout le monde
                     </button>
-                    {personnes.map((x) => (
+                    {filtrePersonnes.personnes.map((x) => (
                       <button key={x.cle} type="button" className="ec-ph-personne" aria-pressed={dossier === x.cle} onClick={() => ouvrir(x.cle, "toutes")}>
                         <span className="ec-ph-initiales" aria-hidden="true">
-                          {initialesDe(x.nom)}
+                          {initialesDe(nomPersonne(x))}
                         </span>
-                        {x.nom} · {nombre(x.n)}
+                        {nomPersonne(x)} <span className="ec-ph-personne-n">{nombre(x.n)}</span>
                       </button>
                     ))}
                   </div>
@@ -683,14 +762,16 @@ export default function Collecte(p: Props) {
                 <div className={ensemble ? "ec-grille ec-grille--arrivees" : "ec-grille"}>
                   {photos.map((ph, i) => {
                     const jour = vue === "jour" && (i === 0 || photos[i - 1].jour !== ph.jour) ? ph.jour : null;
+                    const neuve = seuilNouvelles !== null && ph.arrivee > seuilNouvelles;
+                    const qui = ph.role === "responsable" && p.ecrire ? v("Vous", "Toi") : ph.qui;
                     return (
                       <div key={ph.id} style={{ display: "contents" }}>
                         {jour ? <h2 className="ec-grille-titre">{jour}</h2> : null}
                         <button
                           type="button"
-                          className={`ec-tuile-image ec-ph-tuile${ph.preselection ? " ec-ph-tuile--choisie" : ""}${ph.doublonDe ? " ec-ph-tuile--doublon" : ""}`}
+                          className={`ec-tuile-image ec-ph-tuile${ph.preselection ? " ec-ph-tuile--choisie" : ""}${ph.doublonDe ? " ec-ph-tuile--doublon" : ""}${neuve ? " ec-ph-tuile--neuve" : ""}`}
                           aria-pressed={ph.preselection}
-                          aria-label={`${ph.nom ?? "Photo"}${ph.preselection ? ", dans votre sélection" : ""}${ph.doublonDe ? ", doublon" : ""}`}
+                          aria-label={`${ph.nom ?? "Photo"}, de ${qui}${neuve ? ", nouvelle" : ""}${ph.preselection ? ", dans votre sélection" : ""}${ph.doublonDe ? ", doublon" : ""}`}
                           disabled={!p.ecrire}
                           onClick={() => basculer(ph)}
                         >
@@ -707,6 +788,8 @@ export default function Collecte(p: Props) {
                             </span>
                           ) : null}
                           {ph.doublonDe ? <span className="ec-ph-badge">Doublon</span> : null}
+                          {neuve ? <span className="ec-ph-neuve">nouvelle</span> : null}
+                          <span className="ec-ph-qui">{qui}</span>
                         </button>
                       </div>
                     );

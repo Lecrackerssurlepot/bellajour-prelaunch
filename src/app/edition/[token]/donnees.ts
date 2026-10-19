@@ -15,7 +15,7 @@ import { compositionDu, styleVisible, stylesDeLaComposition, type BriefLigne } f
 import { colonneAbsente } from "@/lib/collectif/migration";
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
 import { apercuPossible, contenuClient, envoisCourants, type LigneEnvoi } from "@/lib/collectif/contenus";
-import { arbreDesPhotos, dansLeDossier, plafondDuLien } from "@/lib/collectif/dossiers";
+import { arbreDesPhotos, compterPersonnes, dansLeDossier, plafondDuLien } from "@/lib/collectif/dossiers";
 import { formaterInstantParis, formaterJourParis } from "@/lib/collectif/dates";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { compteAgenda } from "@/lib/collectif/agenda";
@@ -232,7 +232,6 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
     deposant: string | null;
     vignette_key: string | null;
   }[];
-  const appareils = new Set(lignes.filter((l) => l.role_deposant === "participant" && l.appareil_id).map((l) => l.appareil_id));
 
   /* Les dossiers : les sources qui ont reçu quelque chose (sources.ts, la même
      lecture que la colonne « Qui a déposé » de la page Photos), la plus
@@ -284,7 +283,8 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
   return {
     magazines,
     photos: lignes.length,
-    participants: appareils.size,
+    /* Les personnes comptées comme partout (T-180) : un nom, ou un téléphone pour les anonymes. */
+    participants: compterPersonnes(lignes),
     dossiers,
     mosaique,
     liens,

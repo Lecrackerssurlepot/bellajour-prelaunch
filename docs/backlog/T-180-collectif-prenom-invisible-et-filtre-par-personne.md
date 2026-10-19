@@ -1,7 +1,7 @@
 ---
 id: T-180
 titre: Le prénom d'un participant n'apparaît pas tant qu'il est seul sur un lien, et on ne peut pas trier les photos par personne partout
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: libre
@@ -54,4 +54,21 @@ Aucune migration.
 Planche 3 telle quelle.
 
 ## Ce qui a été fait
-Rien encore (maquette seulement).
+19/10, branche `fix/collectif-photos-par-personne` (planche 3) :
+- Une personne = un nom comparé sans la casse ni les espaces (`clePersonne`, `personnesDe`,
+  `compterPersonnes`, `dossiers.ts`) ; « N personnes » de la page Photos et du tableau de bord
+  suivent la même règle (et non plus le nombre d'appareils) ; les anonymes comptent un par téléphone.
+- Les pastilles par personne dès la PREMIÈRE, dans un lien ET dans « Toutes les photos » (tous
+  liens confondus, le responsable en tête : « Vous ») ; « Tout le monde » ; la pastille choisie
+  en couleur d'accent ; défilement de côté sur téléphone.
+- Le nom de qui a envoyé sur chaque vignette (« Vous » pour le responsable), le doublon passe
+  en bas à droite.
+- Le lien du participant garde son prénom sur le téléphone et l'envoie avec les photos.
+- Harnais : 7 contrôles (casse, regroupement, comptage, seul sur son lien, rangée de l'édition,
+  filtre, écran).
+- Vérifié à l'écran (pilote headless, AUCUNE écriture : tout POST intercepté) sur « Première
+  édition » : « Tout le monde 12 · Mathias Durand 12 » dans « Toutes les photos » et dans le
+  lien « Le parrain », le nom sur les 12 vignettes, le filtre « Mathias Durand » (fil d'Ariane
+  « Toutes les photos › »), jour, nuit, 375 px sans débordement.
+Reste : rien de cette planche. Hors planche, latent : renommer un lien ne réécrit pas le
+`deposant` des photos arrivées SANS prénom par ce lien (elles gardent l'ancien nom du lien).

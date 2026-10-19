@@ -47,7 +47,7 @@ export type LienEdition = {
 };
 
 export type Noeud = {
-  /** `tout`, `selection`, `resp:<type>:<chemin>`, `lien:<id>`, `participants`, `pers:<id|general>:<nom>`, `atelier`. */
+  /** `tout`, `selection`, `resp:<type>:<chemin>`, `lien:<id>`, `participants`, `pers:<id|general>:<nom comparé>`, `qui:<nom comparé>` (T-180), `qui:@responsable`, `atelier`. */
   cle: string;
   nom: string;
   n: number;
@@ -60,7 +60,61 @@ export type Noeud = {
   accueille: boolean;
 };
 
-export type Arbre = { vous: Noeud[]; liens: Noeud[]; atelier: Noeud | null };
+/** `personnes` (T-180) : chaque personne de l'édition, tous liens confondus (le filtre de « Toutes les photos »). */
+export type Arbre = { vous: Noeud[]; liens: Noeud[]; atelier: Noeud | null; personnes: Noeud[] };
+
+/* ══════════════════════════════════════════════════════════════════════════
+   QUI EST UNE PERSONNE (T-180, 19/10/2026). Un participant, c'est le NOM qu'il
+   a tapé, comparé sans la casse ni les espaces : « Mathias », « mathias » et
+   « Mathias  » sont une seule personne, affichée sous l'orthographe la plus
+   fréquente. Sans nom : « Sans nom ». Les pastilles, le compte « N personnes »
+   et le filtre lisent TOUS cette règle-ci (avant, l'en-tête comptait les
+   appareils et les pastilles les chaînes exactes : trois définitions).
+   ══════════════════════════════════════════════════════════════════════════ */
+export const SANS_NOM = "Sans nom";
+/** Le nom tel qu'on l'affiche : une ligne, espaces resserrés ; vide → « Sans nom ». */
+export function nomDePersonne(deposant: string | null | undefined): string {
+  return (deposant ?? "").normalize("NFC").replace(/\s+/g, " ").trim() || SANS_NOM;
+}
+/** Le nom tel qu'on le COMPARE : sans la casse. */
+export const clePersonne = (deposant: string | null | undefined) => nomDePersonne(deposant).toLocaleLowerCase("fr");
+
+/** Les personnes d'un ensemble de photos : une par nom comparé, sous son orthographe la plus fréquente, la plus fournie d'abord. */
+export function personnesDe(lignes: readonly { deposant: string | null }[]): { cle: string; nom: string; n: number }[] {
+  const parCle = new Map<string, { n: number; graphies: Map<string, number> }>();
+  for (const l of lignes) {
+    const nom = nomDePersonne(l.deposant);
+    const cle = nom.toLocaleLowerCase("fr");
+    const p = parCle.get(cle) ?? { n: 0, graphies: new Map<string, number>() };
+    p.n++;
+    p.graphies.set(nom, (p.graphies.get(nom) ?? 0) + 1);
+    parCle.set(cle, p);
+  }
+  return [...parCle]
+    .map(([cle, p]) => ({ cle, n: p.n, nom: [...p.graphies].sort((a, b) => b[1] - a[1])[0][0] }))
+    .sort((a, b) => b.n - a.n || a.nom.localeCompare(b.nom, "fr"));
+}
+
+/** La clé de la personne « le responsable » dans le filtre de « Toutes les photos » (`qui:<clé>` pour un participant). */
+export const QUI_RESPONSABLE = "qui:@responsable";
+
+/** Une photo de participant (lien général ou lien de contribution). */
+export const deParticipant = (l: Pick<LignePhoto, "role_deposant" | "provenance_id">) => l.role_deposant === "participant" || Boolean(l.provenance_id);
+
+/**
+ * Combien de PERSONNES ont envoyé des photos (« 23 personnes ») : chaque nom
+ * distinct, et pour les photos « Sans nom », chaque téléphone (deux anonymes
+ * ne sont pas une seule personne). Le responsable et l'atelier ne comptent pas.
+ */
+export function compterPersonnes(lignes: readonly Pick<LignePhoto, "role_deposant" | "provenance_id" | "deposant" | "appareil_id">[]): number {
+  const vus = new Set<string>();
+  for (const l of lignes) {
+    if (!deParticipant(l)) continue;
+    const cle = clePersonne(l.deposant);
+    vus.add(cle === clePersonne(null) ? `anonyme:${l.appareil_id ?? ""}` : `nom:${cle}`);
+  }
+  return vus.size;
+}
 
 type Edition = ReglagesPlafond & { responsable_nom: string | null };
 
@@ -103,10 +157,13 @@ export function arbreDesPhotos(lignes: readonly LignePhoto[], liens: readonly Li
     return n;
   };
   /* ── « Arrivées par les liens » ── */
-  const parLien = new Map<string, Map<string, number>>();
+  const parLien = new Map<string, { deposant: string | null }[]>();
+  const participants: { deposant: string | null }[] = [];
+  let duResponsable = 0;
   let atelier = 0;
   for (const l of lignes) {
     if (l.role_deposant === "responsable" && !l.provenance_id) {
+      duResponsable++;
       const c = cheminDe(l, resp);
       const p = c.type === "organisateur" ? parent(c.chemin) : null;
       if (p) {
@@ -124,12 +181,12 @@ export function arbreDesPhotos(lignes: readonly LignePhoto[], liens: readonly Li
       } else {
         haut(c.type, c.brut, c.chemin).n++;
       }
-    } else if (l.role_deposant === "participant" || l.provenance_id) {
+    } else if (deParticipant(l)) {
       const id = l.provenance_id ?? "general";
-      const m = parLien.get(id) ?? new Map<string, number>();
-      const nom = l.deposant?.trim() || "Sans nom";
-      m.set(nom, (m.get(nom) ?? 0) + 1);
+      const m = parLien.get(id) ?? [];
+      m.push(l);
       parLien.set(id, m);
+      participants.push(l);
     } else {
       atelier++;
     }
@@ -138,14 +195,13 @@ export function arbreDesPhotos(lignes: readonly LignePhoto[], liens: readonly Li
     .map((h) => ({ ...h, deplacable: h.enfants.length === 0, enfants: [...h.enfants].sort((a, b) => a.nom.localeCompare(b.nom, "fr")) }))
     .sort((a, b) => (a.nom === DOSSIER_RESPONSABLE ? -1 : b.nom === DOSSIER_RESPONSABLE ? 1 : a.nom.localeCompare(b.nom, "fr")));
 
+  /* Une personne d'un lien : sa clé porte le nom COMPARÉ (`clePersonne`), l'écran l'orthographe la plus fréquente. */
   const personnes = (id: string, nomLien: string): Noeud[] => {
-    const m = parLien.get(id);
-    if (!m) return [];
-    const l = [...m].map(([nom, n]) => ({ cle: `pers:${id}:${nom}`, nom, n, enfants: [], renommable: false, deplacable: false, accueille: false }));
+    const l = personnesDe(parLien.get(id) ?? []).map((x) => ({ cle: `pers:${id}:${x.cle}`, nom: x.nom, n: x.n, enfants: [], renommable: false, deplacable: false, accueille: false }));
     /* Une seule personne qui porte le nom du lien : rien à détailler. */
-    return l.length === 1 && l[0].nom === nomLien ? [] : l.sort((a, b) => b.n - a.n || a.nom.localeCompare(b.nom, "fr"));
+    return l.length === 1 && clePersonne(l[0].nom) === clePersonne(nomLien) ? [] : l;
   };
-  const total = (id: string) => [...(parLien.get(id)?.values() ?? [])].reduce((a, b) => a + b, 0);
+  const total = (id: string) => parLien.get(id)?.length ?? 0;
   const noeudsLiens: Noeud[] = [];
   const general = total("general");
   if (general || avecLiensVides) {
@@ -157,10 +213,19 @@ export function arbreDesPhotos(lignes: readonly LignePhoto[], liens: readonly Li
     const nom = l.libelle?.trim() || "Lien de contribution";
     noeudsLiens.push({ cle: `lien:${l.id}`, nom, n, enfants: personnes(l.id, nom), renommable: !l.retire_le, deplacable: false, accueille: false });
   }
+  /* Chaque personne de l'édition, tous liens confondus (T-180) : le responsable d'abord
+     (`qui:@responsable`, toutes ses photos, quel que soit le dossier), puis les
+     participants par nom comparé (`qui:<clé>`). L'atelier n'est pas une personne. */
+  const feuilleQui = (cle: string, nom: string, n: number): Noeud => ({ cle, nom, n, enfants: [], renommable: false, deplacable: false, accueille: false });
+  const personnesEdition = [
+    ...(duResponsable ? [feuilleQui(QUI_RESPONSABLE, resp?.trim() || "Le responsable", duResponsable)] : []),
+    ...personnesDe(participants).map((x) => feuilleQui(`qui:${x.cle}`, x.nom, x.n)),
+  ];
   return {
     vous,
     liens: noeudsLiens,
     atelier: atelier ? { cle: "atelier", nom: "L'atelier", n: atelier, enfants: [], renommable: false, deplacable: false, accueille: false } : null,
+    personnes: personnesEdition,
   };
 }
 
@@ -171,6 +236,8 @@ export const estVueEnsemble = (cle: string) => (VUES_ENSEMBLE as readonly string
 
 /** Le rayon d'une clé : l'onglet de la page Photos qui l'éclaire. */
 export function rayonDe(cle: string): "tout" | "selection" | "vous" | "liens" | "atelier" {
+  /* Une personne choisie dans « Toutes les photos » reste dans « Toutes les photos ». */
+  if (cle.startsWith("qui:")) return "tout";
   if (cle === "selection" || cle === "atelier" || cle === "vous" || cle === "liens") return cle;
   if (cle.startsWith("resp:")) return "vous";
   if (cle === "participants" || cle.startsWith("lien:") || cle.startsWith("pers:")) return "liens";
@@ -191,8 +258,10 @@ export function dansLeDossier(l: LignePhoto, cle: string, responsable: string | 
     const id = reste.slice(0, i);
     const nom = reste.slice(i + 1);
     const lienOk = id === "general" ? !l.provenance_id && l.role_deposant === "participant" : l.provenance_id === id;
-    return lienOk && (l.deposant?.trim() || "Sans nom") === nom;
+    return lienOk && clePersonne(l.deposant) === clePersonne(nom);
   }
+  if (cle === QUI_RESPONSABLE) return l.role_deposant === "responsable" && !l.provenance_id;
+  if (cle.startsWith("qui:")) return deParticipant(l) && clePersonne(l.deposant) === clePersonne(cle.slice(4));
   const r = lireCleResp(cle);
   if (!r || l.role_deposant !== "responsable" || l.provenance_id) return false;
   const c = cheminDe(l, responsable);
@@ -275,7 +344,7 @@ export function cheminDuNoeud(arbre: Arbre, cle: string): string | null {
 
 /** Trouver un nœud de l'arbre par sa clé, à tous les niveaux. */
 export function noeudDe(arbre: Arbre, cle: string): Noeud | undefined {
-  for (const n of [...arbre.vous, ...arbre.liens, ...(arbre.atelier ? [arbre.atelier] : [])]) {
+  for (const n of [...arbre.vous, ...arbre.liens, ...(arbre.atelier ? [arbre.atelier] : []), ...arbre.personnes]) {
     if (n.cle === cle) return n;
     const e = n.enfants.find((x) => x.cle === cle);
     if (e) return e;

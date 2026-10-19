@@ -5,7 +5,7 @@ import { chargerAcces } from "@/lib/collectif/acces";
 import { peut } from "@/lib/collectif/droits";
 import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
 import { DELAI_DECLARATION_MORTE_MS } from "@/lib/collectif/depot";
-import { arbreDesPhotos, dansLeDossier, estVueEnsemble, noeudDe, plafondDuLien } from "@/lib/collectif/dossiers";
+import { arbreDesPhotos, compterPersonnes, dansLeDossier, deParticipant, estVueEnsemble, noeudDe, nomDePersonne, personnesDe, plafondDuLien } from "@/lib/collectif/dossiers";
 import { jourDePhoto, TAILLE_PAGE } from "@/lib/collectif/grille";
 import { GROUPE_GENERAL } from "@/lib/collectif/partage";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
@@ -102,7 +102,9 @@ export async function POST(request: Request) {
 
   const responsable = edition.responsable_nom;
   const dansDossier = toutes.filter((p) => dansLeDossier(p, dossier, responsable));
-  let liste = vue === "doublons" ? dansDossier.filter((p) => dansUnGroupe.has(p.id)) : dansDossier;
+  /* « Toutes » : la plus récente arrivée d'abord (T-181) ; ce qui vient d'arriver est en haut,
+     pas à la dernière page. « Par jour » garde l'ordre des jours de prise de vue. */
+  let liste = vue === "doublons" ? dansDossier.filter((p) => dansUnGroupe.has(p.id)) : vue === "toutes" ? [...dansDossier].reverse() : dansDossier;
   if (vue === "jour") {
     liste = [...liste].sort((a, b) => {
       const ja = jourDePhoto(a.prise_le, a.confirmee_le).cle;
@@ -129,10 +131,15 @@ export async function POST(request: Request) {
         vignette = null;
       }
       const jour = jourDePhoto(p.prise_le, p.confirmee_le);
+      /* Qui l'a envoyée (T-180) : le nom du participant, sinon le responsable ou l'atelier. */
+      const role = deParticipant(p) ? "participant" : p.role_deposant === "responsable" ? "responsable" : "atelier";
       return {
         id: p.id,
         vignette,
         nom: p.nom_origine,
+        qui: role === "participant" ? nomDePersonne(p.deposant) : role === "responsable" ? responsable?.trim() || "Le responsable" : "L'atelier",
+        role,
+        arrivee: p.confirmee_le,
         jour: jour.libelle,
         jourCle: jour.cle,
         preselection: p.preselection,
@@ -194,9 +201,11 @@ export async function POST(request: Request) {
     },
     stats: {
       photos: toutes.length,
-      personnes: new Set(toutes.filter((p) => p.role_deposant === "participant" && p.appareil_id).map((p) => p.appareil_id)).size,
+      personnes: compterPersonnes(toutes),
       doublons: doublonDe.size,
       enCours: enRoute.count ?? 0,
+      /* La dernière arrivée : le point de départ de « N nouvelles photos » (T-181). */
+      derniere: toutes.length ? toutes[toutes.length - 1].confirmee_le : null,
     },
     arbre,
     couvertures,
@@ -210,12 +219,7 @@ export async function POST(request: Request) {
   });
 }
 
-/** Les personnes d'un lien : leur nom (« Sans nom » si elles ne l'ont pas donné) et leurs photos, la plus fournie d'abord. */
+/** Les personnes d'un lien : la règle de `dossiers.ts` (un nom comparé sans la casse, « Sans nom » sinon), la plus fournie d'abord. */
 function personnesDu(lignes: readonly Ligne[]): { nom: string; n: number }[] {
-  const m = new Map<string, number>();
-  for (const l of lignes) {
-    const nom = l.deposant?.trim() || "Sans nom";
-    m.set(nom, (m.get(nom) ?? 0) + 1);
-  }
-  return [...m].map(([nom, n]) => ({ nom, n })).sort((a, b) => b.n - a.n || a.nom.localeCompare(b.nom, "fr"));
+  return personnesDe(lignes).map(({ nom, n }) => ({ nom, n }));
 }

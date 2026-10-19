@@ -10,9 +10,11 @@
    photos après la livraison.
    ⚠️ Aucune promesse que l'écran ne tient pas : l'envoi ne continue pas page
    fermée (iOS surtout), on le dit. Le plafond par personne est tenu par
-   appareil, on ne prétend pas le contraire. */
+   appareil, on ne prétend pas le contraire.
+   Le prénom se GARDE sur le téléphone (T-180) : revenir sur le lien le
+   retrouve, et le même nom range les photos sous la même personne. */
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { deNom } from "@/lib/collectif/espace";
 import { MoteurDepot } from "../../edition/_composants/depot/moteur";
 import { useMoteur } from "../../edition/_composants/depot/useMoteur";
@@ -28,8 +30,31 @@ type Props = {
   evenement: string;
 };
 
+/** Le prénom gardé sur ce téléphone (localStorage peut manquer : navigation privée, refus). */
+const CLE_PRENOM = "bj-depot-prenom";
+function prenomGarde(): string {
+  try {
+    return window.localStorage.getItem(CLE_PRENOM) ?? "";
+  } catch {
+    return "";
+  }
+}
+function garderPrenom(v: string) {
+  try {
+    if (v.trim()) window.localStorage.setItem(CLE_PRENOM, v.trim());
+    else window.localStorage.removeItem(CLE_PRENOM);
+  } catch {
+    /* rien de gardé : on le redemandera */
+  }
+}
+const sansAbonnement = () => () => {};
+
 export default function Depot(props: Props) {
-  const [prenom, setPrenom] = useState("");
+  /* `null` tant que la personne n'a rien tapé : on montre le prénom gardé. Lu par
+     useSyncExternalStore (rien côté serveur), jamais par un setState d'hydratation. */
+  const garde = useSyncExternalStore(sansAbonnement, prenomGarde, () => "");
+  const [saisi, setSaisi] = useState<string | null>(null);
+  const prenom = saisi ?? garde;
   const [accord, setAccord] = useState(false);
   const moteur = useMemo(() => new MoteurDepot({ token: props.token, p: props.p }), [props.token, props.p]);
   const vue = useMoteur(moteur);
@@ -52,8 +77,9 @@ export default function Depot(props: Props) {
           className="ec-dp-input"
           value={prenom}
           onChange={(e) => {
-            setPrenom(e.target.value);
+            setSaisi(e.target.value);
             moteur.definirDeposant(e.target.value);
+            garderPrenom(e.target.value);
           }}
           autoComplete="name"
           maxLength={80}
@@ -75,6 +101,8 @@ export default function Depot(props: Props) {
         multiple
         hidden
         onChange={(e) => {
+          /* Le prénom gardé, jamais retapé, part aussi avec les photos. */
+          moteur.definirDeposant(prenom);
           if (e.target.files) moteur.ajouter(e.target.files);
           e.target.value = "";
         }}

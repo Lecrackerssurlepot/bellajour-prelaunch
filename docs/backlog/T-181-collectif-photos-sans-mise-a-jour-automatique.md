@@ -1,7 +1,7 @@
 ---
 id: T-181
 titre: Le responsable ne voit les photos des participants arriver qu'en rechargeant la page
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: libre
@@ -41,4 +41,19 @@ Charge : 120 appels par heure et par onglet ouvert sur Photos, à mettre en rega
 Planche 3 telle quelle (les arrivées en direct).
 
 ## Ce qui a été fait
-Rien encore.
+19/10, même branche (planche 3) :
+- `/api/collectif/photos/etat` : un compte en `head`, et qui a envoyé depuis la dernière vue
+  (300 lignes au plus) ; lecture seule, `chargerAcces` + `peut(voir_espace)`, `no-store`.
+- `useSondage` (onglet visible seulement, rattrapage au retour après 20 s) : 30 s sur Photos,
+  60 s sur le tableau de bord ; `arrivees.ts` (pur) dit la phrase (« 12 nouvelles photos de
+  Mathias », « … de Léa, Inès et 2 autres personnes », « Plus de 300… »), jamais pour les envois
+  du responsable lui-même.
+- Photos : l'annonce au-dessus de la grille, le compte d'en-tête mis à jour aussitôt, « Les
+  voir » ouvre la personne (ou toutes les photos) avec les nouvelles marquées ; « Toutes »
+  montre la dernière arrivée d'abord. Tableau de bord : « N nouvelles photos, à l'instant ·
+  Les voir », et la page se relit.
+- Vérifié au pilote, réponse de la lecture légère FAUSSÉE (3 photos de Léa) : l'annonce paraît
+  au bout de 30 s sur Photos, au bout d'une minute sur le tableau de bord, avec UNE seule
+  lecture légère en 63 s ; aucune écriture. **Non vu en vrai** : une arrivée réelle pendant que
+  l'écran est ouvert (il faudrait déposer une photo en production), ni les vignettes marquées
+  « nouvelle » sur de vraies données.
