@@ -32,6 +32,7 @@ import { reduire } from "@/app/(atelier)/composer/depot/pool";
 import { estHeic, resoudreMime } from "@/lib/atelier/formats";
 import { vignetteHeic } from "./heic";
 import { cleFichier, LOT_CONFIRMATION, LOT_DECLARATION, LOT_VERIFICATION } from "@/lib/collectif/depot";
+import { ERREUR_ACCORD } from "@/lib/collectif/accord";
 
 /** Combien de photos réduites d'avance, au plus : la mémoire reste bornée. */
 const FENETRE = 8;
@@ -65,6 +66,9 @@ type Item = {
       pendant l'envoi (« Ajouter d'autres photos ») ne relabellise jamais le
       premier. */
   provenance: Provenance | null;
+  /** La version du texte d'accord cochée AU MOMENT de l'ajout (T-184) ;
+      `null` pour le responsable, qui ne coche rien. */
+  accord: string | null;
 };
 
 export type Vue = {
@@ -131,6 +135,7 @@ export class MoteurDepot {
 
   private deposant: string | null = null;
   private provenance: Provenance | null = null;
+  private accord: string | null = null;
 
   constructor(private readonly cfg: Configuration) {}
 
@@ -142,6 +147,12 @@ export class MoteurDepot {
   /** La provenance choisie par le responsable (« Le photographe »…), pour les PROCHAINS fichiers ajoutés. */
   definirProvenance(p: Provenance | null): void {
     this.provenance = p;
+  }
+
+  /** L'accord coché par le participant (la VERSION du texte affiché), pour les
+      PROCHAINS fichiers ajoutés ; `null` s'il le décoche (T-184). */
+  definirAccord(version: string | null): void {
+    this.accord = version;
   }
 
   /** La provenance des prochains fichiers (la fenêtre la retrouve en se rouvrant). */
@@ -235,6 +246,7 @@ export class MoteurDepot {
         signeLe: 0,
         raison: null,
         provenance: this.provenance,
+        accord: this.accord,
       });
     }
     this.notifier();
@@ -322,11 +334,12 @@ export class MoteurDepot {
 
   private async declarer(): Promise<void> {
     if (this.declaration) return;
-    /* Un lot ne mêle jamais deux provenances : celle du premier prêt décide. */
+    /* Un lot ne mêle jamais deux provenances ni deux accords : le premier prêt décide. */
     const premier = this.items.find((i) => i.etat === "pret");
     if (!premier) return;
-    const memeProvenance = (i: Item) => i.provenance?.type === premier.provenance?.type && i.provenance?.libelle === premier.provenance?.libelle;
-    const lot = this.items.filter((i) => i.etat === "pret" && memeProvenance(i)).slice(0, LOT_DECLARATION);
+    const memeLot = (i: Item) =>
+      i.provenance?.type === premier.provenance?.type && i.provenance?.libelle === premier.provenance?.libelle && i.accord === premier.accord;
+    const lot = this.items.filter((i) => i.etat === "pret" && memeLot(i)).slice(0, LOT_DECLARATION);
     this.declaration = true;
     try {
       const { status, json } = await poster("/api/collectif/depot/presign", {
@@ -334,6 +347,10 @@ export class MoteurDepot {
         p: this.cfg.p ?? null,
         deposant: this.deposant,
         provenance: premier.provenance,
+        /* L'accord du participant et la version du texte qu'il a lu : sans
+           eux, le serveur refuse le lot (T-184). */
+        accord: premier.accord !== null,
+        accordVersion: premier.accord,
         fichiers: lot.map((i) => ({
           cle: i.cle,
           nom: i.fichier.name,
@@ -349,6 +366,13 @@ export class MoteurDepot {
       }
       if (status === 409) {
         await attendre(1_000);
+        return;
+      }
+      if (status === 400 && json.error === ERREUR_ACCORD) {
+        /* Refusé faute d'accord : le lot ne part pas, et l'écran dit pourquoi
+           (jamais « Connexion interrompue », qui réessaierait sans fin). */
+        const raison = typeof json.message === "string" ? json.message : "Cochez l'accord pour envoyer vos photos.";
+        for (const it of lot) this.finir(it, "refuse", raison);
         return;
       }
       if (status !== 200) throw new Error(`presign ${status}`);

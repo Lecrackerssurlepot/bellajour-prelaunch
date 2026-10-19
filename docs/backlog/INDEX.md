@@ -49,7 +49,9 @@ recommandations (D25), et **toutes LIVRÉES le jour même** (PR #258 à #263, en
 T-179 à T-182 et T-185 à T-188 sont en recette chez Mathias. `COLLECTIF_MAILS` reste fermé
 jusqu'à son accord. Restent ouverts : T-184 (l'accord des participants, migration), T-183 (en
 pause, à observer).
-T-184 (l'accord des participants non enregistré) est le seul trouvé en chemin.
+T-184 (l'accord des participants non enregistré) est le seul trouvé en chemin : **codé le soir
+du 19/10** (refus sans accord, version et heure écrites avec chaque photo), PR en attente de la
+migration `20261020_collectif_accord_participant.sql`, que Mathias applique AVANT la fusion.
 
 ## Où on en est (16/09/2026 : le modèle de prix v3)
 
@@ -354,7 +356,7 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-181 | Le responsable ne voit les photos des participants arriver qu'en rechargeant la page | collectif | serieux | libre | en cours — livré le 19/10 (PR #258) ; reste à voir une vraie arrivée pendant que l'écran est ouvert (simulée au pilote) |
 | T-182 | Le responsable ne peut pas dire « toutes les photos sont là », et l'atelier ne voit pas sa sélection | collectif | serieux | libre | en cours — livré le 19/10 (PR #259, D25) ; reste une vraie collecte terminée (le clic a été intercepté) |
 | T-183 | La sélection des photos n'est pas claire, et on ne sait pas encore comment les clients choisiront | collectif | confort | libre | en pause (19/10) — à observer sur les premières vraies éditions |
-| T-184 | L'accord que coche chaque participant avant d'envoyer ses photos n'est enregistré nulle part | collectif | serieux | avis-requis | nouveau (19/10) — trouvé en vérifiant ; migration à appliquer par Mathias |
+| T-184 | L'accord que coche chaque participant avant d'envoyer ses photos n'est enregistré nulle part | collectif | serieux | avis-requis | en pause (19/10) — codé et prouvé sur `feat/collectif-accord-participant`, PR NON fusionnée : attend que Mathias applique `20261020_collectif_accord_participant.sql`, puis fusion |
 | T-185 | Dans la fiche d'une édition, les onglets ne sont pas bâtis comme la vue d'ensemble et paraissent brouillons | collectif | serieux | libre | en cours — livré le 19/10 (PR #260 et #263, planche 7 complète) ; reste la recette de Mathias |
 | T-186 | Le formulaire de création d'une édition cache ce que font ses dates et ses cases, et une de ses aides est fausse | collectif | serieux | libre | en cours — livré le 19/10 (PR #263, planche 5) ; reste la recette de Mathias |
 | T-187 | Après la création d'une édition, rien ne propose d'envoyer les liens, et le mail prévu ne porte pas le lien de l'équipe | collectif | serieux | avis-requis | en cours — livré le 19/10 (PR #263, planche 6) ; `COLLECTIF_MAILS` FERMÉ : l'envoi attend l'accord de Mathias |

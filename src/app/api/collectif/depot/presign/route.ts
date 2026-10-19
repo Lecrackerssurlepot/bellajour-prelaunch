@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { colonneAbsente } from "@/lib/collectif/migration";
+import { colonneAbsente, MIGRATION_ACCORD } from "@/lib/collectif/migration";
 import { randomUUID } from "node:crypto";
 import { MAX_VIGNETTE_BYTES, MIME_VIGNETTE, signerPut } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAccesDepot } from "@/lib/collectif/acces";
+import { accordExige, colonnesAccord, ERREUR_ACCORD, lireAccord, messageAccord } from "@/lib/collectif/accord";
 import { clePhoto, cleVignette } from "@/lib/collectif/cles";
 import { appareilDeRequete, compterPourPlafond, COOKIE_APPAREIL, lireExistants, nouvelAppareil } from "@/lib/collectif/collecte";
 import { estCleFichier, LOT_VERIFICATION, lireDeclaration, planDeclaration } from "@/lib/collectif/depot";
@@ -22,10 +23,16 @@ import { TYPES_PROVENANCE, type TypeProvenance } from "@/lib/collectif/types";
  * - `{ token, connues: [clés] }` : la VÉRIFICATION d'une reprise. Rend les
  *   clés déjà arrivées, sans rien signer : le navigateur ne réduit pas pour
  *   rien trois cents photos déjà là.
- * - `{ token, fichiers: [...], p?, deposant?, provenance? }` : la
- *   déclaration. Chaque fichier repart avec sa décision (`depot.ts`) : déjà
- *   là, reprise sur la même clé, nouvelle, ou refusée par le plafond avec la
- *   phrase qui le dit.
+ * - `{ token, fichiers: [...], p?, deposant?, provenance?, accord?,
+ *   accordVersion? }` : la déclaration. Chaque fichier repart avec sa
+ *   décision (`depot.ts`) : déjà là, reprise sur la même clé, nouvelle, ou
+ *   refusée par le plafond avec la phrase qui le dit.
+ *
+ * L'accord du participant (T-184, `accord.ts`) : un PARTICIPANT sans
+ * `accord: true` et une version connue est refusé (400 `accord_requis`)
+ * avant toute écriture ; la version et l'heure du serveur s'écrivent sur
+ * chacune de ses photos nouvelles. Le responsable ne coche rien. La
+ * vérification d'une reprise n'écrit rien : elle ne demande pas l'accord.
  *
  * Le plafond par personne est tenu PAR APPAREIL (cookie httpOnly posé ici) :
  * un frein honnête. Le plafond total est tenu ici, côté serveur. Après la
@@ -64,6 +71,13 @@ export async function POST(request: Request) {
     if (!existants) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
     return NextResponse.json({ confirmees: [...existants.entries()].filter(([, e]) => e.confirmee).map(([c]) => c) });
   }
+
+  /* ── l'accord, avant toute écriture (T-184) ── */
+  const accord = lireAccord(corps);
+  if (accordExige(role) && !accord) {
+    return NextResponse.json({ error: ERREUR_ACCORD, message: messageAccord(edition.registre) }, { status: 400 });
+  }
+  const champsAccord = accordExige(role) ? colonnesAccord(accord, maintenant) : {};
 
   const declaration = lireDeclaration(corps.fichiers);
   if (!declaration) return NextResponse.json({ error: "lot_invalide" }, { status: 400 });
@@ -115,7 +129,7 @@ export async function POST(request: Request) {
 
   /* Les nouvelles s'écrivent en UNE insertion : 25 allers-retours de moins. */
   const ids = new Map<string, string>();
-  const lignes = declaration.fichiers
+  const sansAccord = declaration.fichiers
     .filter((f, i) => decisions[i].sorte === "nouvelle")
     .map((f) => {
       const id = randomUUID();
@@ -135,8 +149,16 @@ export async function POST(request: Request) {
         appareil_id: appareil,
       };
     });
+  const lignes = sansAccord.map((l) => ({ ...l, ...champsAccord }));
   if (lignes.length) {
-    const { error } = await supabase.from("collectif_photos").insert(lignes);
+    let { error } = await supabase.from("collectif_photos").insert(lignes);
+    if (error && colonneAbsente(error.code) && "accord_version" in champsAccord) {
+      /* Le repli tant que Mathias n'a pas appliqué la migration : le refus
+         sans accord tient déjà, mais l'accord n'est PAS enregistré, et on le
+         dit à chaque lot. */
+      console.error(`[collectif] accord du participant NON enregistré : ${MIGRATION_ACCORD} absente`);
+      ({ error } = await supabase.from("collectif_photos").insert(sansAccord));
+    }
     if (error) {
       /* Deux onglets ont déclaré le même fichier en même temps : le lot se
          rejoue, et la reprise le reconnaîtra. */

@@ -10,6 +10,16 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 19/10/2026 (soir) — L'accord des participants (T-184) attend sa migration
+
+- **Codé sur `feat/collectif-accord-participant`, PR NON fusionnée.** Rien n'a changé en
+  production : la case d'accord de `/depot` n'y est toujours enregistrée nulle part.
+- **`supabase/migrations/20261020_collectif_accord_participant.sql` à appliquer par Mathias**,
+  AVANT la fusion : deux colonnes sur `collectif_photos` (`accord_version`, `accord_le`).
+  Relevé en lecture le 19/10 : la colonne n'existe pas en base (42703).
+- Une seule édition active en base le 19/10 : « Première édition » (clôture le 24/10, 12 photos,
+  aucune avec un accord enregistré). Les essais de la PR n'y ont rien écrit (12 avant, 12 après).
+
 ## 19/10/2026 — Faille d'authentification de l'atelier corrigée (T-161), audit de sécurité
 
 - **L'atelier s'ouvrait sans mot de passe** avec un cookie `bj_admin` au nom d'une propriété

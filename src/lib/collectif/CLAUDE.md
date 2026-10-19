@@ -513,6 +513,24 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   layout de l'espace ne calcule le lien d'équipe que si `voitLienEquipe` (le responsable, y
   compris sur un appareil pas encore reconnu) ; l'équipe ne le reçoit jamais dans sa page.
 
+## L'accord du participant, enregistré avec chaque photo (T-184, 19/10)
+
+- **La case d'accord de `/depot` n'est plus un simple verrou d'écran.** Cocher donne au moteur la
+  VERSION du texte (`VERSION_ACCORD`, `accord.ts`, pur) ; chaque photo la garde AU MOMENT du
+  choix (comme la provenance) et la déclaration porte `accord: true` + `accordVersion`. La route
+  `depot/presign` refuse un PARTICIPANT sans elles (400 `accord_requis`, avant toute écriture),
+  puis écrit `accord_version` et `accord_le` (heure du SERVEUR) dans la MÊME insertion que la
+  photo. Le responsable et l'atelier ne cochent rien (accord nul). La vérification d'une reprise
+  (`connues`) n'écrit rien et ne le demande pas.
+- ⚠️ **Le texte est légal et VERSIONNÉ** : il vit dans `Depot.tsx`, ses versions dans
+  `TEXTES_ACCORD` (une `Map`, jamais un objet littéral : T-161). Changer un mot = ajouter une
+  version et la rendre courante ; le harnais compare le texte affiché à la version courante.
+  Une version ne se retire jamais : des photos la portent.
+- **Migration `20261020_collectif_accord_participant.sql`** : sans elle, le refus tient déjà mais
+  l'insertion se replie SANS les deux colonnes et le serveur le note à chaque lot. Ce repli
+  d'écriture est voulu (à rebours de la révision) : bloquer tous les participants ne protégerait
+  personne. Après l'avoir appliquée, vérifier que la donnée ARRIVE (`supabase/CLAUDE.md`).
+
 ## Le lien du responsable : modifier demande un appareil reconnu (T-154, 15/10)
 
 - **Décision de Mathias, revue le même jour** : pas un écran qui bloque (« si elle va sur un autre
