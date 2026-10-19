@@ -26,4 +26,8 @@ effacer : il sert encore à la recette locale. Vérifier ensuite l'ordre du mur 
 neuve.
 
 ## Ce qui a été fait
-Rien encore.
+- 19/10 : le retrait par script a été bloqué par le garde-fou (écriture en production sans accord
+  explicite). Mathias a retiré un style lui-même à 10 h 29 (heure de Paris) : c'est **« Grand air »**
+  (`publie = false`, lu en base), pas le style d'essai. « Essai technique Claude » reste publié,
+  en première place. Question posée à Mathias : retirer aussi le style d'essai, et remettre
+  « Grand air » si son retrait n'était pas voulu.

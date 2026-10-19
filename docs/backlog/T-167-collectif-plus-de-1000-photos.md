@@ -18,16 +18,15 @@ performance du site, la sécurité, donc voir toutes les failles, etc. » (19/10
   `dossiers/route.ts:77`, `src/app/api/admin/collectif/editions/[id]/lot/route.ts:61`,
   `src/lib/collectif/collecte.ts:60`, `src/app/admin/collectif/donnees.ts:281`).
 - Supabase plafonne par défaut chaque réponse à 1 000 lignes (réglage « Max rows » de l'API), et
-  `.limit()` ne peut que réduire. **Non prouvé sur notre projet** : le réglage ne se lit pas
-  depuis la base, et aucune table n'a encore 1 000 lignes (19/10 : 879 photos d'édition en tout,
-  782 pour la plus grosse). Le code des métriques pagine déjà par 1 000 (`metriques.ts:205`).
+  `.limit()` ne peut que réduire. **Confirmé le 19/10 par Mathias** dans les réglages de
+  Supabase : « Max rows = 1000 ». Aucune table n'a encore 1 000 lignes (19/10 : 879 photos
+  d'édition en tout, 782 pour la plus grosse) : le défaut n'a encore touché personne. Le code des métriques pagine déjà par 1 000 (`metriques.ts:205`).
 - Le PRD vise 1 000 à 2 000 photos par édition. Si le plafond est à 1 000 : la grille et le
   tableau de bord s'arrêtent à 1 000 ; `compterPourPlafond` ne dépasse jamais 1 000, donc le
   plafond total ne s'applique plus ; « Télécharger le lot » omet en silence les photos au-delà,
   et l'atelier compose le magazine sans elles.
 
 ## Ce que je propose
-Mathias lit « Settings > API > Max rows » dans Supabase (30 secondes). Quelle que soit la valeur :
 compter par `count: "exact"` là où seul le nombre sert, et paginer par tranches de 1 000
 ordonnées (patron de `metriques.ts`) là où il faut les lignes. Un test au harnais avec une
 lecture simulée plafonnée. **À faire avant la première vraie édition.**
