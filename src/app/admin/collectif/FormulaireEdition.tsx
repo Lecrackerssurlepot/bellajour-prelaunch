@@ -53,11 +53,11 @@ import {
   pucesCloture,
   textePlage,
 } from "@/lib/collectif/calendrier";
-import { contenuClient } from "@/lib/collectif/contenus";
+import DemandesClient from "./DemandesClient";
 import { instantDeParis, versChampParis } from "@/lib/collectif/dates";
 import { formaterJour } from "@/lib/collectif/livraison";
 import { accueilParDefaut, ETAPES_EDITION, lireSaisieEdition, rangEtapeDuChamp, VALEURS_RAPIDES } from "@/lib/collectif/saisie";
-import { CONTENUS, type CleContenu } from "@/lib/collectif/types";
+import type { DemandeEnBase } from "@/lib/collectif/demandes";
 import ApercuDepot from "./ApercuDepot";
 import Calendrier from "./Calendrier";
 import ListeMagazines, { type MagazineFormulaire } from "./ListeMagazines";
@@ -86,7 +86,7 @@ export type ValeursEdition = {
   nb_propositions_couverture: string;
   couvertures_aimees_max: string;
   styles_segment: string;
-  contenus_demandes: string[];
+  contenus_demandes: DemandeEnBase[];
   invitation_texte: string;
   responsable_email: string;
   responsable_nom: string;
@@ -107,16 +107,6 @@ type Props =
     };
 
 type Erreurs = Record<string, string>;
-
-/* Ce que l'atelier lit sur chaque case (la planche 5) ; ce que le client voit
-   vient de `contenuClient` (le nom de la case dans son espace). */
-const CASES: Record<CleContenu, string> = {
-  logo: "Le logo, en vectoriel",
-  programme: "Le programme",
-  mot: "Le mot du dirigeant",
-  liste: "La liste des participants",
-  rubrique: "Une rubrique à contenu fourni",
-};
 
 const TONS = [
   { valeur: "entreprise_vous", libelle: "Vous · entreprise" },
@@ -810,34 +800,8 @@ export default function FormulaireEdition(props: Props) {
       </div>
     </>,
 
-    /* 5 · À envoyer par le client */
-    <>
-      <div className="eca-cases-effet">
-        {CONTENUS.map((c) => {
-          const coche = v.contenus_demandes.includes(c.cle);
-          const chezLui = contenuClient(c.cle)?.libelle ?? c.libelle;
-          return (
-            <label className="eca-case-effet" key={c.cle}>
-              <input
-                type="checkbox"
-                checked={coche}
-                onChange={(e) =>
-                  maj(
-                    "contenus_demandes",
-                    e.target.checked ? [...v.contenus_demandes, c.cle] : v.contenus_demandes.filter((x) => x !== c.cle)
-                  )
-                }
-              />
-              <span>
-                {CASES[c.cle]}
-                <small>{coche ? `Une case « ${chezLui} » dans son espace, qu'il doit remplir.` : "Non demandée : la case n'apparaît pas chez lui."}</small>
-              </span>
-            </label>
-          );
-        })}
-      </div>
-      {erreur("contenus_demandes")}
-    </>,
+    /* 5 · À envoyer par le client : les demandes sur mesure (T-191, planche 12), dans leur propre composant. */
+    <DemandesClient key="envoyer" valeur={v.contenus_demandes} onChange={(d) => maj("contenus_demandes", d)} erreur={erreurs.contenus_demandes} />,
 
     /* 6 · Le devis */
     <>

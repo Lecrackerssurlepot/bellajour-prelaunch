@@ -17,7 +17,7 @@ Chargé dès qu'on touche une migration ou le dossier supabase.
 | `invoice_jobs` | facturation Fatura (edge function `emit-invoices`, D22) | `stripe_payment_intent` unique ; statuts `pending` `emitting` `emitted` `error` `draft` `manual_review` `failed` `emitted_manual` ; `client`, `payload_log`, `response_log` = données perso, vidées par `anonymiser-dossiers.ts` ; écriture atelier SANS repli (un job sans série serait mal émis) |
 | `weekly_metrics` | l'agrégat hebdo du cockpit (migration 20260917, **appliquée le 17/09**) | `semaine` AAAASS PK, réécrite entière par le job du lundi : idempotent |
 | `cockpit_settings` | les hypothèses du cockpit | singleton `id = true`, `regle_le` null = jamais réglé |
-| `collectif_*` (15 tables) | l'Édition collective, B2B (migration `20261013_collectif.sql`, **appliquée le 13/10 par Mathias, vérifiée en SQL** ; + `collectif_interlocuteurs` et `collectif_rendez_vous` par `20261015_collectif_rendez_vous.sql`, appliquée le 14/10, les rendez-vous D23 ; `20261016_collectif_envois.sql`, trois colonnes (versions des contenus, envoi cité), appliquée le 14/10, vérifiée en SQL ; `20261017_collectif_composition.sql` (le brief pièce par pièce, D24) et `20261018_collectif_liens_reponses.sql` (`retire_le` d'un lien, `reponse_a` d'un message, T-152) : des COLONNES, lecture repliée sans elles, écriture en 503 qui nomme le fichier ; l'état d'application est dans ETAT-PRODUCTION.md) | aucune clé étrangère vers `numeros` ; tokens uniques de 32 caractères ; aucun chiffre par défaut ; tour publié figé par trigger ; pas de repli (tout ou rien, `begin`/`commit`) : une table absente rend 503. Règles dans `src/lib/collectif/CLAUDE.md` |
+| `collectif_*` (15 tables) | l'Édition collective, B2B (migration `20261013_collectif.sql`, **appliquée le 13/10 par Mathias, vérifiée en SQL** ; + `collectif_interlocuteurs` et `collectif_rendez_vous` par `20261015_collectif_rendez_vous.sql`, appliquée le 14/10, les rendez-vous D23 ; `20261016_collectif_envois.sql`, trois colonnes (versions des contenus, envoi cité), appliquée le 14/10, vérifiée en SQL ; `20261017_collectif_composition.sql` (le brief pièce par pièce, D24) et `20261018_collectif_liens_reponses.sql` (`retire_le` d'un lien, `reponse_a` d'un message, T-152) : des COLONNES, lecture repliée sans elles, écriture en 503 qui nomme le fichier ; `20261021_collectif_demandes.sql` (T-191) : une CONTRAINTE relâchée, `collectif_contenus.type` devient la clé d'une demande, voir plus bas ; l'état d'application est dans ETAT-PRODUCTION.md) | aucune clé étrangère vers `numeros` ; tokens uniques de 32 caractères ; aucun chiffre par défaut ; tour publié figé par trigger ; pas de repli (tout ou rien, `begin`/`commit`) : une table absente rend 503. Règles dans `src/lib/collectif/CLAUDE.md` |
 
 RPC : `assign_numero_fondateur(p_email)`, appelée par `/api/webhook`.
 
@@ -50,6 +50,17 @@ d'écriture borné à `42703` ne se déclenche jamais — attraper LES DEUX.
 ⚠️ **Le repli a un revers, et il a déjà mordu** : il fait DISPARAÎTRE le champ du patch en silence.
 Une colonne jamais migrée donne un code qui « marche » et une donnée qui n'est jamais enregistrée.
 Après toute migration, vérifier que la donnée arrive vraiment — pas seulement que la page s'affiche.
+
+⚠️ **Une CONTRAINTE ne se sonde pas comme une colonne** (T-191, `20261021_collectif_demandes.sql`,
+qui relâche le `check` de `collectif_contenus.type`). PostgREST ne montre pas les `check` : aucun
+`select` ne dit si la migration est passée. Le code ne nomme aucune colonne fraîche (rien à
+replier) ; il SONDE par une insertion vouée à l'échec (`src/lib/collectif/sondeDemandes.ts`) :
+une édition qui n'existe pas, donc 23514 si la contrainte est là (PostgreSQL vérifie les `check`
+AVANT d'écrire la ligne), 23503 si elle est relâchée (la clé étrangère refuse, l'instruction est
+annulée). Aucune ligne ne survit dans aucun cas. Une écriture réelle refusée en 23514 répond un vrai
+503 `migration_demandes_absente`. Après l'avoir appliquée : la requête de vérification est en tête
+du fichier (`pg_constraint`), puis un envoi sur une demande nouvelle doit arriver dans
+`collectif_contenus` avec sa clé « d-… » comme `type`.
 
 ## État connu
 

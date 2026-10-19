@@ -61,6 +61,7 @@ Un client B2B (entreprise, école) ouvre une **édition** d'un ou plusieurs **ma
   magazines ont chacun leur tour 1 : écart corrigé du PRD §6.1).
 - **`types.ts`** — le miroir des treize tables et le vocabulaire. `TYPES_NOTE` est une liste
   EXTENSIBLE : texte libre en base, une ligne ici pour un nouveau type.
+- **`demandes.ts`** — ce que l'atelier demande au client (T-191), voir plus bas.
 - **`interrupteur.ts`**, **`migration.ts`** — voir plus bas.
 
 **Phase 1 (13/10/2026), les purs de l'atelier :**
@@ -301,7 +302,8 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   se lit dans le fil. Aucun rendez-vous inventé : un seul lien, celui de la fiche.
 - **Les contenus** (`contenus.ts`, `/api/collectif/contenus`) : un fichier par le serveur (4 Mo)
   ou le questionnaire du mot du dirigeant (`QUESTIONS_MOT`, quatre questions NEUTRES à relire par
-  Mathias, PRD §12.14). Envoyer de nouveau ajoute une ligne : le plus récent gagne.
+  Mathias, PRD §12.14). Envoyer de nouveau ajoute une ligne : le plus récent gagne. Depuis T-191,
+  ce sont des DEMANDES nommées par l'atelier : voir « Les demandes sur mesure » plus bas.
 - **Le QR code** (`qr.ts`, `qrcode-generator` épinglé) : modules foncés sur fond clair dans les
   deux modes, une marge de quatre modules.
 - **Le brief pièce par pièce** (D24, remplace la page « partie par partie » archivée) : le mur
@@ -457,6 +459,47 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   comme « tout marquer ». La boîte n'ouvre plus rien d'office : sans `?e=`, rien n'est marqué.
   « Marquer comme non lu » (`{ nonLu: true }`) rend non lu le dernier message du client.
   L'espace client garde son marquage sans borne.
+
+## Les demandes sur mesure (T-191, planche 12 du 19/10 au soir)
+
+- **L'atelier compose ses DEMANDES** (`demandes.ts`, pur) : un NOM qu'il écrit (le client le lit
+  tel quel, puce et titre de fenêtre), une FORME (`images`, `pdf` = PDF ou SVG, `tout`, ou
+  `questionnaire` = les quatre questions de `QUESTIONS_MOT`), une CLÉ. L'écran est
+  `admin/collectif/DemandesClient.tsx` (l'étape 5 du formulaire, son propre composant) ; la fiche
+  les montre dans `[id]/PanneauContenus.tsx` avec ce qui est reçu.
+- ⚠️ **`contenus_demandes` (jsonb) a DEUX formes, une seule lecture** : les clés texte d'avant
+  (`"logo"`…) se lisent comme des demandes HÉRITÉES (`lireDemandes`), avec le nom, les formats et
+  les phrases de `CONTENUS_CLIENT`, et repartent en clé texte tant qu'on n'y touche pas : une
+  édition existante ne change pas d'un pixel. Une liste qui n'a que
+  des clés texte se lit dans l'ordre d'aujourd'hui. Le formulaire lit par `demandesDuFormulaire`
+  (une demande sans nom y reste, le nom n'est pas nettoyé pendant la frappe) ; jamais l'inverse.
+- **La clé** : héritée, c'est le type d'origine ; renommer une héritée GARDE sa clé (ses envois
+  restent les siens, et elle marche avant la migration). Nouvelle, elle est tirée au sort
+  (`nouvelleCle`, « d-… ») et ne sert qu'une fois. Une édition neuve part de
+  `DEMANDES_PAR_DEFAUT` (les clés d'origine, sous les noms de la planche).
+- **La règle de saisie** (`lireDemandesSaisies`, appelée par `lireSaisieEdition`) : nom non vide,
+  80 caractères, forme connue, 12 au plus, clés ET noms uniques, « Le mot de » à compléter.
+- **La forme d'un fichier** (`lireFichierDemande`) : l'extension ET le type annoncé par le
+  navigateur (un type vide ou générique laisse décider l'extension) ; le navigateur la relit AVANT
+  d'envoyer et dit pourquoi (« Seulement une image », « Seulement un PDF ou un SVG »). Le type
+  écrit au coffre vient de l'extension, par `Object.hasOwn` ; inconnue, `application/octet-stream`
+  (jamais `text/html`). Une héritée garde la règle d'avant, message compris.
+- **Vous / tu** (`vueDemande`) : aides et questions suivent le registre (`QUESTIONS_MOT_TU`, la
+  transposition à relire avec `QUESTIONS_MOT`) ; les RÉPONSES se rangent toujours sous la question
+  au vouvoiement. Une héritée garde son texte d'avant, au vouvoiement comme avant.
+- **Les envois portent le nom de leur demande** (`nomDeLEnvoi`, `modeDeLEnvoi`) : tableau de bord,
+  « Parler à l'atelier », envoi cité, fiche, journal (`payload.type` = le nom lu, `payload.cle`).
+  Une demande retirée disparaît chez le client ; ses envois restent à l'atelier (« Demande retirée »).
+- **La migration `20261021_collectif_demandes.sql`** ne fait que relâcher la contrainte de
+  `collectif_contenus.type`. Sans elle : les cinq clés d'origine (renommées ou non) marchent ; une
+  demande NOUVELLE se crée et se voit, mais un envoi y est refusé (23514) : la route le SONDE
+  avant le coffre (`migrationDemandes`, `sondeDemandes.ts`) et répond 503
+  `migration_demandes_absente` ; si la base refuse quand même, le fichier écrit est retiré. ⚠️ Une
+  contrainte ne se lit pas par PostgREST : la sonde tente une insertion vouée à l'échec (une
+  édition qui n'existe pas). Contrainte présente : 23514 avant toute écriture ; relâchée : la clé
+  étrangère refuse (23503) et l'instruction est annulée. Aucune ligne ne survit. L'étape 5 la
+  demande une fois par chargement (`GET /api/admin/collectif/demandes`) et le DIT quand une
+  demande nouvelle existe.
 
 ## Les mails des éditions (T-146, 15/10)
 

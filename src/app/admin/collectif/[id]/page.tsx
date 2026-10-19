@@ -479,7 +479,7 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
           documents: (
             <div className="eca-deux">
               <PanneauDocuments id={e.id} documents={documents} />
-              <PanneauContenus contenus={contenus} />
+              <PanneauContenus contenus={contenus} demandes={lu.fiche.demandes} />
             </div>
           ),
           rendezvous: (

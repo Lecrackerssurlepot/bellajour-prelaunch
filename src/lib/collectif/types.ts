@@ -18,6 +18,7 @@
  * deviendrait une promesse faite au client (règle 5 du socle).
  */
 
+import type { DemandeEnBase } from "./demandes";
 import type { EtatEdition } from "./etats";
 import type { CouvertureStyle, DoubleStyle, Palette, Typos } from "./styles";
 
@@ -54,7 +55,11 @@ export const TYPES_PROVENANCE: readonly { cle: TypeProvenance; libelle: string }
  */
 export type RoleDeposant = "atelier" | "responsable" | "participant";
 
-/** Ce que l'atelier peut demander au client dans son espace (PRD §9.1). */
+/**
+ * Ce que l'atelier pouvait demander au client dans son espace (PRD §9.1) :
+ * depuis T-191, les cinq clés d'origine, lues comme des demandes HÉRITÉES
+ * (`demandes.ts`). Les demandes sur mesure ne passent pas par cette liste.
+ */
 export type CleContenu = "logo" | "programme" | "mot" | "liste" | "rubrique";
 export const CONTENUS: readonly { cle: CleContenu; libelle: string }[] = [
   { cle: "logo", libelle: "Logo vectoriel" },
@@ -123,7 +128,8 @@ export type EditionLigne = {
   nb_propositions_couverture: number | null;
   couvertures_aimees_max: number | null;
   styles_segment: Segment;
-  contenus_demandes: CleContenu[];
+  /** Les demandes de l'atelier (T-191) : des clés d'origine (« logo ») ou `{ cle, nom, forme }`. Se lit par `lireDemandes`. */
+  contenus_demandes: DemandeEnBase[];
   invitation_texte: string | null;
   responsable_email: string;
   responsable_nom: string | null;
@@ -226,7 +232,8 @@ export type PhotoLigne = {
 export type ContenuLigne = {
   id: string;
   edition_id: string;
-  type: CleContenu;
+  /** La clé de la demande (T-191) : une clé d'origine, ou une clé tirée au sort. */
+  type: string;
   r2_key: string | null;
   nom_origine: string | null;
   reponses: Record<string, unknown> | null;

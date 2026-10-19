@@ -17,7 +17,7 @@ import { prochaineEtape, type Prochaine } from "@/lib/collectif/prochaine";
 import { phraseEvenement } from "@/lib/collectif/recit";
 import { manquesPourPublier } from "@/lib/collectif/styles";
 import { libelleTypeDocument } from "@/lib/collectif/documents";
-import { contenuClient } from "@/lib/collectif/contenus";
+import { aideAtelier, iconeDe, lireDemandes, nomDeLEnvoi, type FormeDemande } from "@/lib/collectif/demandes";
 import { compositionDu, stylesDeLaComposition, type BriefLigne } from "@/lib/collectif/brief";
 import { magazineVide } from "@/lib/collectif/saisie";
 import { TYPES_DOUBLES } from "@/lib/collectif/styles";
@@ -262,9 +262,14 @@ export type Collecte = {
   terminee: { par: string; le: string } | null;
 };
 
+/** Une demande de l'atelier au client (T-191), telle que la fiche la montre. */
+export type DemandeFiche = { cle: string; nom: string; forme: FormeDemande; icone: string; aide: string };
+
 /** Un contenu envoyé par le client (logo, programme, mot du dirigeant…), le plus récent d'abord. */
 export type ContenuFiche = {
   id: string;
+  /** La clé de sa demande ; le nom vient de la demande (« Demande retirée » si l'atelier l'a ôtée). */
+  cle: string;
   libelle: string;
   quand: string;
   par: string | null;
@@ -277,6 +282,7 @@ export type ContenuFiche = {
 };
 
 export type Fiche = {
+  demandes: DemandeFiche[];
   contenus: ContenuFiche[];
   collecte: Collecte;
   edition: EditionLigne;
@@ -349,6 +355,8 @@ export async function chargerEdition(
   if (journal.error) echec("journal de l'édition", journal.error);
   if (docs.error) echec("documents de l'édition", docs.error);
   if (!fil.ok) throw new Error(`[collectif] messages de l'édition : ${fil.code}`);
+  /* Les demandes au client (T-191) : leurs noms, et celui de chaque envoi. */
+  const demandes = lireDemandes(edition.contenus_demandes);
 
   const magIds = (mags.data ?? []).map((m) => m.id as string);
   const tours = magIds.length
@@ -480,6 +488,7 @@ export async function chargerEdition(
         quand: j.created_at,
         phrase: phraseEvenement(j.type, j.payload ?? {}),
       })),
+      demandes: demandes.map((d) => ({ cle: d.cle, nom: d.nom, forme: d.forme, icone: iconeDe(d), aide: aideAtelier(d) })),
       contenus: await Promise.all(
         ((contenus.data ?? []) as { id: string; type: string; r2_key: string | null; nom_origine: string | null; reponses: Record<string, unknown> | null; recu_le: string; depose_par: string | null; remplace_le?: string | null }[]).map(
           async (c) => {
@@ -493,7 +502,8 @@ export async function chargerEdition(
             }
             return {
               id: c.id,
-              libelle: contenuClient(c.type)?.libelle ?? c.type,
+              cle: c.type,
+              libelle: nomDeLEnvoi(c.type, demandes) ?? "Demande retirée",
               quand: c.recu_le,
               par: c.depose_par,
               url,

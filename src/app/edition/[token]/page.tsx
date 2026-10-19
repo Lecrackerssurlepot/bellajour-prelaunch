@@ -17,6 +17,7 @@ import Link from 'next/link'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { formaterJour } from '@/lib/atelier/dates'
+import { vuesDemandes } from '@/lib/collectif/demandes'
 import { peut } from '@/lib/collectif/droits'
 import { joursAvant, parler, phraseJours } from '@/lib/collectif/espace'
 import { collecteOuverte, etatEffectif } from '@/lib/collectif/etats'
@@ -87,7 +88,7 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
             tu={tu}
           />
 
-          <LigneContenus token={token} demandes={edition.contenus_demandes ?? []} envois={tableau.envois} ecrire={peut(role, 'envoyer_contenu')} tu={tu} />
+          <LigneContenus token={token} demandes={vuesDemandes(edition.contenus_demandes, edition.registre)} envois={tableau.envois} ecrire={peut(role, 'envoyer_contenu')} tu={tu} />
 
           <Link href={cheminSection(token, 'atelier')} prefetch={false} className="ec-tdb-message">
           <span className="ec-tdb-message-avatar" aria-hidden="true">
