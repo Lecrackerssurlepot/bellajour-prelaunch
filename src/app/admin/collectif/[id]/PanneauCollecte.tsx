@@ -25,6 +25,8 @@ export default function PanneauCollecte({
   selection,
   selectionApercus,
   terminee,
+  apercus,
+  doublons,
 }: {
   id: string;
   total: number;
@@ -35,6 +37,8 @@ export default function PanneauCollecte({
   selection: number;
   selectionApercus: string[];
   terminee: { par: string; le: string } | null;
+  apercus: string[];
+  doublons: number;
 }) {
   const [etat, setEtat] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
@@ -96,64 +100,78 @@ export default function PanneauCollecte({
     }
   }
 
+  const n = (x: number, mot: string) => `${x.toLocaleString("fr-FR")} ${mot}${x > 1 ? "s" : ""}`;
+  /* T-185 (planche 7) : trois cartes, comme la vue d'ensemble. Les grands chiffres et les
+     dernières arrivées ; la sélection du client (T-182) ; qui a déposé, et le lot. */
   return (
-    <section className="ate-carte">
-      <h2 className="ate-carte-titre">La collecte</h2>
-      {terminee ? (
-        <p className="eca-bandeau eca-bandeau--ok">
-          <strong>Collecte terminée par {terminee.par}</strong> le {formaterInstantParis(terminee.le)} : toutes les photos sont là.
-        </p>
-      ) : null}
-      <div className="eca-selection">
-        <div className="eca-selection-tete">
+    <div className="eca-cartes eca-cartes--deux">
+      <section className="eca-carte">
+        <span className="eca-carte-tete">
+          <h2 className="eca-carte-titre">La collecte</h2>
+        </span>
+        {terminee ? (
+          <p className="eca-bandeau eca-bandeau--ok">
+            <strong>Collecte terminée par {terminee.par}</strong> le {formaterInstantParis(terminee.le)} : toutes les photos sont là.
+          </p>
+        ) : null}
+        <span className="eca-chiffre">
+          <strong>{total.toLocaleString("fr-FR")}</strong>
           <span>
-            <strong>Sélection du client</strong>{" "}
-            <span className="eca-sous">{selection ? `${selection} photo${selection > 1 ? "s" : ""}` : "vide pour l'instant"}</span>
+            photo{total > 1 ? "s" : ""} · {n(participants, "personne")}
           </span>
-          <button type="button" className="adm-btn adm-btn--ghost" disabled={occupe || selection === 0} onClick={() => telecharger(null, true)}>
-            Télécharger la sélection
-          </button>
-        </div>
-        {selectionApercus.length ? (
-          <div className="eca-mosaique eca-mosaique--huit" aria-label="Les premières photos de la sélection du client">
-            {selectionApercus.map((u, i) => (
+        </span>
+        {apercus.length ? (
+          <div className="eca-mosaique" aria-label="Les dernières photos arrivées">
+            {apercus.map((u, i) => (
               <img key={i} src={u} alt="" loading="lazy" decoding="async" />
             ))}
           </div>
         ) : (
-          <p className="eca-champ-aide">Le client met de côté les photos qu&apos;il préfère (facultatif). Elles arriveront ici.</p>
+          <p className="eca-vide">{total ? "Pas encore d'aperçu à montrer." : "Aucune photo encore."}</p>
         )}
-      </div>
-      <ul className="eca-mag-liste">
-        <li>
-          <span>Photos arrivées</span>
-          <strong>{total}</strong>
-        </li>
-        <li>
-          <span>Participants (appareils)</span>
-          <strong>{participants}</strong>
-        </li>
-        <li>
-          <span>Signalées « à ne pas publier »</span>
-          <strong>{signalees}</strong>
-        </li>
-        {sansVignette ? (
-          <li>
-            <span>Sans vignette (HEIC lu par Chrome)</span>
-            <strong>{sansVignette}</strong>
-          </li>
-        ) : null}
-      </ul>
-      {parProvenance.length ? (
-        <>
-          <p className="eca-champ-aide" style={{ marginTop: 12 }}>
-            Par provenance
-          </p>
-          <ul className="eca-mag-liste">
+        <span className="eca-carte-pied eca-puces">
+          {doublons ? <span className="eca-puce">{n(doublons, "doublon")}</span> : null}
+          {signalees ? <span className="eca-puce eca-puce--ambre">{n(signalees, "signalée")} « à ne pas publier »</span> : null}
+          {sansVignette ? <span className="eca-puce">{sansVignette.toLocaleString("fr-FR")} sans aperçu (HEIC)</span> : null}
+          {!doublons && !signalees && !sansVignette ? <span>Ni doublon, ni photo signalée.</span> : null}
+        </span>
+      </section>
+
+      <section className="eca-carte">
+        <span className="eca-carte-tete">
+          <h2 className="eca-carte-titre">Sélection du client</h2>
+          <span className="eca-puce">{selection ? n(selection, "photo") : "vide"}</span>
+        </span>
+        {selectionApercus.length ? (
+          <div className="eca-mosaique" aria-label="Les premières photos de la sélection du client">
+            {selectionApercus.slice(0, 8).map((u, i) => (
+              <img key={i} src={u} alt="" loading="lazy" decoding="async" />
+            ))}
+          </div>
+        ) : (
+          <p className="eca-vide">Le client met de côté les photos qu&apos;il préfère (facultatif). Elles arriveront ici.</p>
+        )}
+        <span className="eca-carte-pied eca-mag-pied">
+          <span>{selection ? "Ce qu'il préfère, pour composer." : "Rien de choisi pour l'instant."}</span>
+          <button type="button" className="adm-btn adm-btn--ghost" disabled={occupe || selection === 0} onClick={() => telecharger(null, true)}>
+            Télécharger la sélection
+          </button>
+        </span>
+      </section>
+
+      <section className="eca-carte eca-carte--large">
+        <span className="eca-carte-tete">
+          <h2 className="eca-carte-titre">Qui a déposé</h2>
+          <button type="button" className="adm-btn" disabled={occupe || total === 0} onClick={() => telecharger(null)}>
+            Télécharger tout le lot
+          </button>
+        </span>
+        {parProvenance.length ? (
+          <ul className="eca-provenances">
             {parProvenance.map((l) => (
               <li key={l.libelle}>
                 <span>
-                  {l.libelle} <span className="eca-sous">{l.n}</span>
+                  {l.libelle} <span className="eca-sous">{l.n.toLocaleString("fr-FR")}</span>
                 </span>
                 <button type="button" className="adm-btn adm-btn--ghost" disabled={occupe} onClick={() => telecharger(l.libelle)}>
                   Télécharger
@@ -161,18 +179,15 @@ export default function PanneauCollecte({
               </li>
             ))}
           </ul>
-        </>
-      ) : null}
-      <div className="eca-barre" style={{ marginTop: 12 }}>
-        <button type="button" className="adm-btn" disabled={occupe || total === 0} onClick={() => telecharger(null)}>
-          Télécharger tout le lot
-        </button>
-      </div>
-      {etat ? (
-        <p className="eca-message" role="status">
-          {etat}
-        </p>
-      ) : null}
-    </section>
+        ) : (
+          <p className="eca-vide">Personne n&apos;a encore déposé.</p>
+        )}
+        {etat ? (
+          <p className="eca-message" role="status">
+            {etat}
+          </p>
+        ) : null}
+      </section>
+    </div>
   );
 }

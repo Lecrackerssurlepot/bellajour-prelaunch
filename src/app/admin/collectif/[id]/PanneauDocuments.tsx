@@ -56,8 +56,10 @@ export default function PanneauDocuments({ id, documents }: { id: string; docume
   }
 
   return (
-    <section className="ate-carte">
-      <h2 className="ate-carte-titre">Documents du client</h2>
+    <section className="eca-carte">
+      <span className="eca-carte-tete">
+        <h2 className="eca-carte-titre">Documents du client</h2>
+      </span>
       {documents.length ? (
         <ul className="eca-mag-liste">
           {documents.map((d) => (
@@ -75,7 +77,7 @@ export default function PanneauDocuments({ id, documents }: { id: string; docume
       ) : (
         <p className="eca-vide">Aucun document pour l&apos;instant.</p>
       )}
-      <form className="eca-form" onSubmit={deposer} style={{ marginTop: 12, gap: 8 }}>
+      <form className="eca-form eca-form--serre" onSubmit={deposer}>
         <select className="eca-select" value={type} onChange={(e) => setType(e.target.value)} aria-label="Type du document">
           {TYPES_DOCUMENT.map((t) => (
             <option key={t.cle} value={t.cle}>

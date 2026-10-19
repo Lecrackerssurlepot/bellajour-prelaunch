@@ -1710,34 +1710,120 @@
 .eca-root .eca-bandeau--chaud {
   background: var(--eca-chaud-fond);
 }
-/* T-182 : le client a terminé la collecte (D25), et sa sélection. */
-.eca-root .eca-bandeau--ok {
-  background: var(--eca-vert-fond, var(--eca-gris-fond));
-  margin: 0 0 12px;
+/* T-185 (planche 7) : les onglets de la fiche sont bâtis comme la vue d'ensemble. Deux cartes
+   par rangée (un magazine, une partie de la collecte) ; le brief se voit en pièces. */
+.eca-root .eca-cartes--deux {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.eca-root .eca-selection {
+.eca-root .eca-cartes--deux > :last-child {
+  grid-column: auto;
+}
+.eca-root .eca-cartes--une {
+  grid-template-columns: minmax(0, 1fr);
+}
+.eca-root .eca-mag-resume {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.eca-root .eca-pieces {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-piece {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin: 0 0 14px;
-  padding: 12px;
-  border-radius: 18px;
+  gap: 3px;
+  min-width: 0;
+  font-size: 12px;
+}
+.eca-root .eca-piece-vis {
+  display: flex;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+.eca-root .eca-piece-vis--vide {
+  background: transparent;
+  box-shadow: none;
+  border: 1.5px dashed rgba(16, 24, 40, 0.18);
+}
+.eca-root .eca-piece-bandes span {
+  flex: 1;
+}
+.eca-root .eca-piece-aa {
+  align-items: center;
+  justify-content: center;
+  font-family: var(--bj-font-display);
+  font-size: 24px;
+  color: var(--bj-text);
+}
+.eca-root .eca-piece-double {
+  gap: 2px;
+  padding: 6px;
+  background: #ffffff;
+}
+.eca-root .eca-piece-double span {
+  flex: 1;
+  border-radius: 3px;
   background: var(--eca-gris-fond);
 }
-.eca-root .eca-selection-tete {
+.eca-root .eca-piece-nom {
+  overflow: hidden;
+  color: var(--bj-text);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.eca-root .eca-piece-style {
+  color: var(--bj-text-faint);
+}
+.eca-root .eca-carte--large {
+  grid-column: 1 / -1;
+}
+.eca-root .eca-cartes--deux > .eca-carte--large:last-child {
+  grid-column: 1 / -1;
+}
+.eca-root .eca-provenances {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-provenances li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 8px 8px 14px;
+  border-radius: 14px;
+  background: var(--eca-gris-fond);
+}
+.eca-root .eca-mag-pied {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
 }
-.eca-root .eca-mosaique--huit {
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+
+/* T-182 : le client a terminé la collecte (D25), et sa sélection. */
+.eca-root .eca-bandeau--ok {
+  margin: 0;
+  background: var(--eca-vert-fond, var(--eca-gris-fond));
 }
-@media (max-width: 700px) {
-  .eca-root .eca-mosaique--huit {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+/* Le formulaire d'un document, sous la liste (remplace un style en ligne). */
+.eca-root .eca-form--serre {
+  margin-top: 4px;
+  gap: 8px;
 }
 .eca-root .eca-point {
   flex: none;
